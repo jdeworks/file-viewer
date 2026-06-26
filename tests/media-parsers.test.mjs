@@ -42,10 +42,12 @@ import {
   addElement,
   addLane,
   buildVideoMixExportPlan,
+  buildVideoProxyPlan,
   createElement,
   createLane,
   createProjectFromAssetMetadata,
   renderVideoMixWithFfmpeg,
+  renderVideoProxiesWithFfmpeg,
   setElementTransition,
 } from '../docs/types/media/mixer/index.js';
 import {
@@ -459,6 +461,44 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
     () => renderVideoMixWithFfmpeg(fakeFfmpeg, renderPlan, new Map([['asset-video-a', new File(['x'], 'main.webm')]])),
     /Missing local media for overlay\.png/,
     'modular video mix export: runtime requires local handles for every planned input',
+  );
+
+  let proxyProject = addAsset(mixProject, {
+    id: 'asset-proxy-video',
+    name: 'needs-proxy.avi',
+    mime: 'video/x-msvideo',
+    size: 120,
+    status: 'needs-proxy',
+    capabilities: { hasAudio: true, hasVideo: true, needsFfmpegForPreview: true },
+    media: { durationMs: 1000, videoWidth: 320, videoHeight: 180 },
+  });
+  const proxyDisabled = buildVideoProxyPlan(proxyProject, { ffmpegEnabled: false, ffmpegLoaded: false });
+  assert.equal(proxyDisabled.canRender, false, 'modular video proxy: disabled ffmpeg cannot render proxy');
+  assert.equal(proxyDisabled.items.length, 0, 'modular video proxy: disabled plan has no runnable items');
+  assert.match(proxyDisabled.warnings.join(' '), /Media Transcoding/, 'modular video proxy: disabled plan explains opt-in');
+  const proxyPlan = buildVideoProxyPlan(proxyProject, { ffmpegEnabled: true, ffmpegLoaded: true });
+  assert.equal(proxyPlan.canRender, true, 'modular video proxy: loaded ffmpeg can render proxy');
+  assert.equal(proxyPlan.provenance.renderPath, 'ffmpeg-video-proxy', 'modular video proxy: records proxy render path');
+  assert.deepEqual(proxyPlan.items[0].args.slice(0, 2), ['-i', 'needs-proxy.avi'], 'modular video proxy: args read the original asset');
+  assert.equal(proxyPlan.items[0].args.includes('-movflags'), true, 'modular video proxy: args create browser-streamable mp4');
+  assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache|mediaBytes/i.test(JSON.stringify(proxyPlan)), false, 'modular video proxy: plan remains config-only');
+  const proxyOverBudget = buildVideoProxyPlan(proxyProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxInputBytes: 80 });
+  assert.equal(proxyOverBudget.canRender, false, 'modular video proxy: over-budget proxy plan cannot render');
+  assert.equal(proxyOverBudget.provenance.renderBudget.overBudget, true, 'modular video proxy: records over-budget state');
+  fakeFs.clear();
+  fakeFfmpeg.ran = null;
+  const renderedProxy = await renderVideoProxiesWithFfmpeg(fakeFfmpeg, proxyPlan, new Map([
+    ['asset-proxy-video', new File([Uint8Array.from([1, 2, 3, 4])], 'needs-proxy.avi', { type: 'video/x-msvideo' })],
+  ]));
+  assert.deepEqual(fakeFfmpeg.ran, proxyPlan.items[0].args, 'modular video proxy: runtime executes planned args exactly');
+  assert.equal(renderedProxy.proxies[0].filename, 'needs-proxy.proxy.mp4', 'modular video proxy: runtime returns proxy filename');
+  assert.equal(renderedProxy.proxies[0].blob.type, 'video/mp4', 'modular video proxy: runtime returns MP4 proxy blob');
+  assert.equal(renderedProxy.proxies[0].bytes, 4, 'modular video proxy: runtime reports proxy byte count');
+  assert.equal(fakeFs.size, 0, 'modular video proxy: runtime cleans MEMFS input and output');
+  await assert.rejects(
+    () => renderVideoProxiesWithFfmpeg(fakeFfmpeg, proxyPlan, new Map()),
+    /Missing local media for needs-proxy\.avi/,
+    'modular video proxy: runtime requires local source media',
   );
 
   assert.equal(parseTimestamp('0:00:02.500'), 2.5, 'timestamp: minute-only HH:SS variant');

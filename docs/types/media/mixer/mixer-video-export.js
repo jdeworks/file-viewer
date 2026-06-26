@@ -72,6 +72,76 @@ export function buildVideoMixExportPlan(project, options = {}) {
   };
 }
 
+export function buildVideoProxyPlan(project, options = {}) {
+  const capabilities = evaluateMixerCapabilities({
+    ffmpegEnabled: !!options.ffmpegEnabled,
+    ffmpegLoaded: !!options.ffmpegLoaded,
+  }, project);
+  const status = capabilities.actions.ffmpegConversion;
+  const proxyAssets = (project.assets || [])
+    .filter((asset) => asset.status === 'needs-proxy' || asset.capabilities?.needsFfmpegForPreview);
+  const maxInputBytes = Math.max(0, Number(options.maxInputBytes ?? MIXER_LIMITS.ffmpegInputMaxBytes) || 0);
+  const totalInputBytes = proxyAssets.reduce((sum, asset) => sum + Math.max(0, Number(asset.size) || 0), 0);
+  const inputBudgetExceeded = maxInputBytes > 0 && totalInputBytes > maxInputBytes;
+  const warnings = [];
+  if (!proxyAssets.length) warnings.push('No assets need ffmpeg proxy conversion.');
+  if (status.status !== CAPABILITY_STATUS.AVAILABLE) warnings.push(status.message);
+  if (inputBudgetExceeded) warnings.push(`Proxy input media totals ${formatBytes(totalInputBytes)}, above the browser ffmpeg limit of ${formatBytes(maxInputBytes)}.`);
+  const canRender = status.status === CAPABILITY_STATUS.AVAILABLE && proxyAssets.length > 0 && !inputBudgetExceeded;
+  const items = proxyAssets.map((asset, index) => {
+    const inputName = safeMediaName(asset.name || `${asset.id}.media`, index);
+    const outputName = `${safeName(asset.name || asset.id)}.proxy.mp4`;
+    return {
+      assetId: asset.id,
+      assetName: asset.name,
+      inputName,
+      outputName,
+      size: Math.max(0, Number(asset.size) || 0),
+      media: asset.media || {},
+      args: [
+        '-i', inputName,
+        '-map', '0:v:0',
+        '-map', '0:a?',
+        '-c:v', 'libx264',
+        '-preset', options.preset || 'ultrafast',
+        '-crf', String(options.crf ?? 28),
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', options.audioBitrate || '128k',
+        '-movflags', '+faststart',
+        outputName,
+      ],
+    };
+  });
+  return {
+    kind: 'video-proxy',
+    format: 'mp4',
+    requiresFfmpeg: proxyAssets.length > 0,
+    canRender,
+    status: proxyAssets.length ? status.status : CAPABILITY_STATUS.AVAILABLE,
+    statusMessage: proxyAssets.length ? status.message : 'No proxy conversion is required.',
+    warnings,
+    items: canRender ? items : [],
+    provenance: {
+      renderPath: canRender ? 'ffmpeg-video-proxy' : (proxyAssets.length ? 'ffmpeg-proxy-opt-in-required' : 'no-proxy-required'),
+      renderBudget: {
+        totalInputBytes,
+        maxInputBytes,
+        overBudget: inputBudgetExceeded,
+      },
+      assets: proxyAssets.map((asset) => ({
+        id: asset.id,
+        name: asset.name,
+        status: asset.status,
+        capabilities: asset.capabilities,
+        media: asset.media,
+      })),
+      items,
+      warnings,
+    },
+  };
+}
+
 function collectElements(project, predicate) {
   return (project.elements || [])
     .filter(predicate)
@@ -163,14 +233,14 @@ export async function renderVideoMixWithFfmpeg(ff, plan, runtimeFiles) {
     throw new Error(`Input media totals ${formatBytes(totalRuntimeBytes)}, above the browser ffmpeg limit of ${formatBytes(budget.maxInputBytes)}.`);
   }
   const written = [];
-  for (const input of inputs) {
-    const file = runtimeFiles?.get?.(input.id);
-    if (!file?.arrayBuffer) throw new Error(`Missing local media for ${input.name || input.id}.`);
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    ff.FS('writeFile', input.inputName, bytes);
-    written.push(input.inputName);
-  }
   try {
+    for (const input of inputs) {
+      const file = runtimeFiles?.get?.(input.id);
+      if (!file?.arrayBuffer) throw new Error(`Missing local media for ${input.name || input.id}.`);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      ff.FS('writeFile', input.inputName, bytes);
+      written.push(input.inputName);
+    }
     await ff.run(...plan.args);
     const result = ff.FS('readFile', outputName);
     const bytes = result instanceof Uint8Array ? result : new Uint8Array(result);
@@ -187,6 +257,42 @@ export async function renderVideoMixWithFfmpeg(ff, plan, runtimeFiles) {
     }
     try { ff.FS('unlink', outputName); } catch { /* ignore cleanup misses */ }
   }
+}
+
+export async function renderVideoProxiesWithFfmpeg(ff, plan, runtimeFiles) {
+  if (!plan?.canRender) throw new Error(plan?.statusMessage || 'Proxy conversion is not renderable yet.');
+  const budget = plan.provenance?.renderBudget || {};
+  const totalRuntimeBytes = (plan.provenance?.items || []).reduce((sum, item) => {
+    const file = runtimeFiles?.get?.(item.assetId);
+    return sum + Math.max(0, Number(file?.size ?? item.size) || 0);
+  }, 0);
+  if (budget.maxInputBytes > 0 && totalRuntimeBytes > budget.maxInputBytes) {
+    throw new Error(`Proxy input media totals ${formatBytes(totalRuntimeBytes)}, above the browser ffmpeg limit of ${formatBytes(budget.maxInputBytes)}.`);
+  }
+  const results = [];
+  for (const item of plan.provenance?.items || []) {
+    const file = runtimeFiles?.get?.(item.assetId);
+    if (!file?.arrayBuffer) throw new Error(`Missing local media for ${item.assetName || item.assetId}.`);
+    const inputName = item.inputName;
+    const outputName = item.outputName;
+    ff.FS('writeFile', inputName, new Uint8Array(await file.arrayBuffer()));
+    try {
+      await ff.run(...item.args);
+      const result = ff.FS('readFile', outputName);
+      const bytes = result instanceof Uint8Array ? result : new Uint8Array(result);
+      results.push({
+        assetId: item.assetId,
+        assetName: item.assetName,
+        filename: outputName,
+        blob: new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], { type: 'video/mp4' }),
+        bytes: bytes.byteLength,
+      });
+    } finally {
+      try { ff.FS('unlink', inputName); } catch { /* ignore cleanup misses */ }
+      try { ff.FS('unlink', outputName); } catch { /* ignore cleanup misses */ }
+    }
+  }
+  return { plan, proxies: results };
 }
 
 function inputArgs(entry, duration) {

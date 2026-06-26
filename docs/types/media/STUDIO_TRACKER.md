@@ -317,6 +317,13 @@ Stage 5 video/image elements and seek-frame preview has started:
   renders sparse runtime thumbnails for browser-playable video, and shows a
   conversion/proxy warning plus proxy-required thumbnail strip state for
   unsupported dropped AVI while ffmpeg remains unloaded.
+- Added an ffmpeg-gated preview proxy path. `buildVideoProxyPlan()` produces
+  config-only proxy provenance and concrete MP4 conversion args for assets with
+  `needsFfmpegForPreview`; Mix and modular video-source surfaces render a
+  proxy status/action panel that stays coherent with ffmpeg disabled and can
+  lazily render runtime-only browser-playable proxies when Media Transcoding is
+  enabled. The proxy runtime rechecks browser ffmpeg byte budgets and keeps
+  generated proxy blobs out of project settings export.
 - Validation passed for this slice:
   - `node --check docs/types/media/mixer/mixer-visual-preview.js docs/types/media/mixer/mixer-renderer.js docs/types/media/mixer/mixer-ui.js docs/types/media/mixer/mixer-audio-multi-helpers.js tests/areas/media-studio-mixer-shell.mjs`
   - `node --check docs/types/media/mixer/mixer-media-drop.js docs/types/media/mixer/mixer-audio-multi.js tests/areas/media-studio-mixer-audio-listen.mjs`
@@ -330,8 +337,9 @@ Stage 5 video/image elements and seek-frame preview has started:
   - `node tests/media-parsers.test.mjs`
   - `node tests/smoke-area.mjs media-studio`
   - `./scripts/check.sh --fast`
-- Stage 5 remaining work: ffmpeg-backed proxy generation/conversion paths and
-  replacing the old video timeline with modular multi-lane editing.
+- Stage 5 remaining work: broaden ffmpeg-backed proxy/conversion hardening for
+  more formats and replace any remaining old video timeline assumptions with
+  modular multi-lane editing.
 
 Stage 6 Compare on the shared model has started:
 

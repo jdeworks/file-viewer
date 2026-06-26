@@ -9,11 +9,14 @@ import {
   exportProjectSettingsJson,
   buildAudioMixExportPlan,
   buildVideoMixExportPlan,
+  buildVideoProxyPlan,
   moveElement,
   renderVideoMixWithFfmpeg,
+  renderVideoProxiesWithFfmpeg,
   renderAudioMixToWav,
   selectTarget,
   summarizeReducedCapabilities,
+  updateAsset,
   updateElement,
   updateLane,
   updateMaster,
@@ -50,6 +53,7 @@ import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
 import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
+import { renderVideoProxyPlanPanel } from './mixer-video-proxy-ui.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -65,6 +69,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let draggingElement = null;
   let lastExportPlan = null;
   let lastVideoExportPlan = null;
+  let lastProxyPlan = null;
   const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set('asset-listen-source', intake.file);
@@ -190,6 +195,10 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       render();
       return;
     }
+    if (button.matches('.mmx-video-proxy-run')) {
+      renderPreviewProxies();
+      return;
+    }
     if (button.matches('.mmx-video-render-run')) renderFinalVideoExport();
   };
   const onPointerDown = (event) => {
@@ -258,7 +267,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getPlaybackState: () => playback.getState(),
     getLastExportPlan: () => lastExportPlan,
     getLastVideoExportPlan: () => lastVideoExportPlan,
+    getLastProxyPlan: () => lastProxyPlan,
     buildVideoExportPlan,
+    buildProxyPlan,
     getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
     importSettings: settingsUi.importSettings,
@@ -284,7 +295,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getPlaybackState: () => playback.getState(),
     getLastExportPlan: () => lastExportPlan,
     getLastVideoExportPlan: () => lastVideoExportPlan,
+    getLastProxyPlan: () => lastProxyPlan,
     buildVideoExportPlan,
+    buildProxyPlan,
     dispatch,
     destroy() {
       destroyed = true;
@@ -374,6 +387,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     caps.textContent = reduced.map((item) => `${item.id}: ${item.message}`).join(' ');
     inspector.append(caps);
     if (hasVisualElements(project)) {
+      const proxyPlan = lastProxyPlan || buildProxyPlan();
+      if (proxyPlan.provenance.assets.length) inspector.append(renderVideoProxyPlanPanel(proxyPlan, runtime));
       inspector.append(renderVideoExportPlanPanel(lastVideoExportPlan || buildVideoExportPlan(), runtime));
     }
   }
@@ -477,6 +492,71 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     });
   }
 
+  function buildProxyPlan() {
+    return buildVideoProxyPlan(project, {
+      ffmpegEnabled: runtime.ffmpegEnabled,
+      ffmpegLoaded: runtime.ffmpegLoaded,
+    });
+  }
+
+  async function renderPreviewProxies() {
+    lastProxyPlan = buildProxyPlan();
+    root.dataset.lastVideoProxyPlan = JSON.stringify(lastProxyPlan.provenance);
+    if (!runtime.ffmpegEnabled) {
+      root.dataset.videoProxyRunState = 'opt-in-required';
+      render();
+      return;
+    }
+    root.dataset.videoProxyRunState = 'loading';
+    root.dataset.videoProxyError = '';
+    render();
+    try {
+      const { loadFfmpeg } = await import('../transcoder.js');
+      const ff = await loadFfmpeg(({ ratio }) => {
+        root.dataset.videoProxyProgress = String(Math.round((ratio || 0) * 100));
+      });
+      runtime.ffmpegLoaded = true;
+      lastProxyPlan = buildProxyPlan();
+      root.dataset.lastVideoProxyPlan = JSON.stringify(lastProxyPlan.provenance);
+      root.dataset.videoProxyRunState = 'rendering';
+      render();
+      const result = await renderVideoProxiesWithFfmpeg(ff, lastProxyPlan, runtimeFiles);
+      applyProxyResults(result.proxies);
+      root.dataset.videoProxyRunState = 'complete';
+      root.dataset.lastVideoProxyCount = String(result.proxies.length);
+    } catch (error) {
+      const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));
+      root.dataset.videoProxyRunState = 'error';
+      root.dataset.videoProxyError = formatFfmpegError(error);
+    } finally {
+      render();
+    }
+  }
+
+  function applyProxyResults(proxies = []) {
+    for (const proxy of proxies) {
+      const file = new File([proxy.blob], proxy.filename, { type: 'video/mp4', lastModified: Date.now() });
+      runtimeFiles.set(proxy.assetId, file);
+      project = updateAsset(project, proxy.assetId, (asset) => ({
+        ...asset,
+        mime: 'video/mp4',
+        size: proxy.bytes,
+        status: 'available',
+        capabilities: {
+          ...asset.capabilities,
+          needsFfmpegForPreview: false,
+          proxyGenerated: true,
+        },
+        media: {
+          ...asset.media,
+          proxyName: proxy.filename,
+          proxyBytes: proxy.bytes,
+        },
+      }));
+    }
+    lastProxyPlan = buildProxyPlan();
+  }
+
   async function renderFinalVideoExport() {
     lastVideoExportPlan = buildVideoExportPlan();
     root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
@@ -549,6 +629,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.dataset.hasDroppedVisual = project.assets.some((asset) => asset.id.startsWith('asset-drop-') && (asset.capabilities?.hasVideo || asset.capabilities?.hasImage)) ? 'true' : 'false';
     root.dataset.videoExportStatus = lastVideoExportPlan?.status || '';
     root.dataset.videoExportCanRender = lastVideoExportPlan?.canRender ? 'true' : 'false';
+    root.dataset.videoProxyStatus = lastProxyPlan?.status || '';
+    root.dataset.videoProxyCanRender = lastProxyPlan?.canRender ? 'true' : 'false';
     root.dataset.decodedCacheEntries = String(decodedAudioCache.stats().entryCount);
     root.dataset.decodedCacheBudgetBytes = String(decodedAudioCache.stats().budgetBytes);
     reflectMultiPlaybackState(root, playback.getState());

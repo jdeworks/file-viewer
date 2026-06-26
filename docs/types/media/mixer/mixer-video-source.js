@@ -1,12 +1,15 @@
 import {
   createMixerSnapshot,
   buildVideoMixExportPlan,
+  buildVideoProxyPlan,
   exportProjectSettingsJson,
   moveElement,
   renderVideoMixWithFfmpeg,
+  renderVideoProxiesWithFfmpeg,
   selectTarget,
   setElementTransition,
   trimElement,
+  updateAsset,
   updateElement,
 } from './index.js';
 import { renderMixerShell } from './mixer-renderer.js';
@@ -26,6 +29,7 @@ import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 import { downloadBlob } from './mixer-audio-multi-helpers.js';
+import { renderVideoProxyPlanPanel } from './mixer-video-proxy-ui.js';
 import {
   SOURCE_ASSET_ID,
   buildVideoProject,
@@ -55,6 +59,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   let destroyed = false;
   let draggingElement = null;
   let lastExportPlan = null;
+  let lastProxyPlan = null;
   const runtime = {
     ffmpegEnabled: !!options.enableFfmpeg,
     ffmpegLoaded: !!options.ffmpegLoaded,
@@ -135,7 +140,9 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     getProject: () => project,
     getViewport: () => viewport,
     buildExportPlan,
+    buildProxyPlan,
     getLastExportPlan: () => lastExportPlan,
+    getLastProxyPlan: () => lastProxyPlan,
     exportSettings: () => exportProjectSettingsJson(project),
     importSettings: settingsUi.importSettings,
     relinkFiles: settingsUi.relinkFiles,
@@ -200,6 +207,8 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     root.dataset.ffmpegEnabled = runtime.ffmpegEnabled ? 'true' : 'false';
     root.dataset.videoExportStatus = lastExportPlan?.status || '';
     root.dataset.videoExportCanRender = lastExportPlan?.canRender ? 'true' : 'false';
+    root.dataset.videoProxyStatus = lastProxyPlan?.status || '';
+    root.dataset.videoProxyCanRender = lastProxyPlan?.canRender ? 'true' : 'false';
     root.querySelector('.mmx-ruler')?.classList.add('mmx-video-ruler');
     root.querySelector('.mmx-playhead')?.classList.add('mmx-video-playhead');
     root.querySelector('.mmx-body')?.classList.add('mmx-video-timeline');
@@ -223,7 +232,11 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       toolbar.append(renderSecondMediaControls());
     }
     const inspector = root.querySelector('.mmx-inspector');
-    if (inspector) inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
+    if (inspector) {
+      const proxyPlan = lastProxyPlan || buildProxyPlan();
+      if (proxyPlan.provenance.assets.length) inspector.append(renderVideoProxyPlanPanel(proxyPlan, runtime));
+      inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
+    }
   }
 
   function onClick(event) {
@@ -233,6 +246,10 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       lastExportPlan = buildExportPlan();
       root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
       render();
+      return;
+    }
+    if (button.matches('.mmx-video-proxy-run')) {
+      renderPreviewProxies();
       return;
     }
     if (button.matches('.mmx-video-transition-apply')) {
@@ -337,6 +354,13 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       ffmpegEnabled: runtime.ffmpegEnabled,
       ffmpegLoaded: runtime.ffmpegLoaded,
       filename: `${(intake?.filename || 'video-source').replace(/\.[^.]+$/, '')}.mp4`,
+    });
+  }
+
+  function buildProxyPlan() {
+    return buildVideoProxyPlan(project, {
+      ffmpegEnabled: runtime.ffmpegEnabled,
+      ffmpegLoaded: runtime.ffmpegLoaded,
     });
   }
 
@@ -528,6 +552,64 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     } finally {
       render();
     }
+  }
+
+  async function renderPreviewProxies() {
+    lastProxyPlan = buildProxyPlan();
+    root.dataset.lastVideoProxyPlan = JSON.stringify(lastProxyPlan.provenance);
+    if (!runtime.ffmpegEnabled) {
+      root.dataset.videoProxyRunState = 'opt-in-required';
+      render();
+      return;
+    }
+    root.dataset.videoProxyRunState = 'loading';
+    root.dataset.videoProxyError = '';
+    render();
+    try {
+      const { loadFfmpeg } = await import('../transcoder.js');
+      const ff = await loadFfmpeg(({ ratio }) => {
+        root.dataset.videoProxyProgress = String(Math.round((ratio || 0) * 100));
+      });
+      runtime.ffmpegLoaded = true;
+      lastProxyPlan = buildProxyPlan();
+      root.dataset.lastVideoProxyPlan = JSON.stringify(lastProxyPlan.provenance);
+      root.dataset.videoProxyRunState = 'rendering';
+      render();
+      const result = await renderVideoProxiesWithFfmpeg(ff, lastProxyPlan, runtimeFiles);
+      applyProxyResults(result.proxies);
+      root.dataset.videoProxyRunState = 'complete';
+      root.dataset.lastVideoProxyCount = String(result.proxies.length);
+    } catch (error) {
+      const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));
+      root.dataset.videoProxyRunState = 'error';
+      root.dataset.videoProxyError = formatFfmpegError(error);
+    } finally {
+      render();
+    }
+  }
+
+  function applyProxyResults(proxies = []) {
+    for (const proxy of proxies) {
+      const file = new File([proxy.blob], proxy.filename, { type: 'video/mp4', lastModified: Date.now() });
+      runtimeFiles.set(proxy.assetId, file);
+      project = updateAsset(project, proxy.assetId, (asset) => ({
+        ...asset,
+        mime: 'video/mp4',
+        size: proxy.bytes,
+        status: 'available',
+        capabilities: {
+          ...asset.capabilities,
+          needsFfmpegForPreview: false,
+          proxyGenerated: true,
+        },
+        media: {
+          ...asset.media,
+          proxyName: proxy.filename,
+          proxyBytes: proxy.bytes,
+        },
+      }));
+    }
+    lastProxyPlan = buildProxyPlan();
   }
 
   function fitZoom() {

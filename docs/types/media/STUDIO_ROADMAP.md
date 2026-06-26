@@ -142,10 +142,14 @@ browser-playable video now also mounts a one-lane modular source mixer in
 Timeline mode, so the same shared model drives the ruler, zoom, red playhead,
 selection, visual transforms, sparse runtime thumbnail strips, config-only
 settings export, and sampled seek-frame preview before the older
-trim/transition timeline is opened. Remaining Stage 5 work is ffmpeg-backed
-proxy generation/conversion paths, replacing the old video timeline with
-modular multi-lane editing, and then Compare on top of the same selected-object
-model.
+trim/transition timeline is opened. The modular surfaces now also expose an
+ffmpeg-gated preview proxy path: unsupported assets get config-only proxy
+provenance and concrete MP4 conversion args, disabled ffmpeg shows an opt-in
+panel, and enabled ffmpeg can lazily create runtime-only browser-playable
+proxies without embedding media bytes in project settings. Remaining Stage 5
+work is broadening proxy/conversion hardening for more formats, replacing any
+remaining old video timeline assumptions with modular multi-lane editing, and
+then Compare on top of the same selected-object model.
 
 Stage 6 has started with an additive modular Compare surface for audio and
 video. It builds a two-lane shared mixer project from the opened media, stores

@@ -481,6 +481,7 @@ export async function run(ctx) {
     const project = root.__mediaMixerMulti.getProject();
     const asset = project.assets.find((item) => item.name === 'needs-proxy.avi');
     const element = project.elements.find((item) => item.assetId === asset?.id);
+    const plan = root.__mediaMixerMulti.getLastProxyPlan?.() || root.__mediaMixerMulti.buildProxyPlan?.();
     return {
       hasVideo: !!element?.capabilities?.hasVideo,
       needsProxy: !!asset?.capabilities?.needsFfmpegForPreview,
@@ -489,9 +490,19 @@ export async function run(ctx) {
       capabilityNote: root.querySelector('.mmx-mix-capability-note')?.textContent || '',
       proxyThumb: root.querySelector(`.mmx-thumb-strip[data-element-id="${element?.id}"]`)?.dataset.needsProxy || '',
       metadataStatus: root.dataset.lastVisualMetadata,
+      proxyPanel: !!root.querySelector('.mmx-video-proxy-status'),
+      proxyButtonDisabled: !!root.querySelector('.mmx-video-proxy-run')?.disabled,
+      proxyStatus: root.querySelector('.mmx-video-proxy-status')?.dataset.status || '',
+      proxyCanRender: root.querySelector('.mmx-video-proxy-status')?.dataset.canRender || '',
+      proxyCount: Number(root.querySelector('.mmx-video-proxy-status')?.dataset.proxyCount || 0),
+      proxyPlanPath: plan?.provenance?.renderPath || '',
+      proxyPlanAssets: plan?.provenance?.assets?.length || 0,
+      proxyHasBytes: /mediaBytes|blob:|objectURL|data:/.test(JSON.stringify(plan || {})),
     };
   });
-  if (unsupportedVideo.hasVideo && unsupportedVideo.needsProxy && unsupportedVideo.status === 'needs-proxy' && unsupportedVideo.proxyThumb === 'true' && /ffmpeg|proxy|conversion|Transcoding/i.test(`${unsupportedVideo.warning} ${unsupportedVideo.capabilityNote}`))
+  if (unsupportedVideo.hasVideo && unsupportedVideo.needsProxy && unsupportedVideo.status === 'needs-proxy' && unsupportedVideo.proxyThumb === 'true' && /ffmpeg|proxy|conversion|Transcoding/i.test(`${unsupportedVideo.warning} ${unsupportedVideo.capabilityNote}`)
+    && unsupportedVideo.proxyPanel && unsupportedVideo.proxyButtonDisabled && unsupportedVideo.proxyStatus === 'opt-in' && unsupportedVideo.proxyCanRender === 'false'
+    && unsupportedVideo.proxyCount >= 1 && unsupportedVideo.proxyPlanPath === 'ffmpeg-proxy-opt-in-required' && unsupportedVideo.proxyPlanAssets >= 1 && !unsupportedVideo.proxyHasBytes)
     pass('modular audio mix: unsupported dropped video shows conversion/proxy warning without ffmpeg load');
   else fail('modular audio mix unsupported video warning mismatch: ' + JSON.stringify(unsupportedVideo));
 }
