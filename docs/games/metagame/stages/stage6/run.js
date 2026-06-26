@@ -9,6 +9,7 @@ import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
 import { makeRng } from "./combat.js";
 import { STARTING_DECK, REWARD_POOL } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
+import { applyModifiers } from "./modifiers.js";
 import { rollRelic, relicById } from "./relics.js";
 
 export const PLAYER_MAX_HP = 60;
@@ -47,10 +48,18 @@ export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     removalsPurchased: 0,
     status: "map",
     pendingReward: null,
-    notice: null
+    notice: null,
+    // Prestige rule-modifier knobs (defaults = no modifier); applyModifiers tunes them by version.
+    handshakeMult: 1,
+    restHealMod: 0,
+    windowCapMod: 0,
+    eliteHpBonus: 0,
+    bossHpMult: 1,
+    modifiers: []
   };
   // Prestige: each Protocol Version grants one starting relic (until the pool is exhausted).
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
+  applyModifiers(run, version); // stack the Ascension-style rule modifiers
   return run;
 }
 
@@ -93,7 +102,7 @@ export function resolveCombat(run, { win, hpRemaining }) {
 
   if (node.type === "boss") return clearBoss(run);
 
-  run.handshakes += HANDSHAKE_REWARD[node.type] ?? HANDSHAKE_REWARD.combat;
+  run.handshakes += Math.round((HANDSHAKE_REWARD[node.type] ?? HANDSHAKE_REWARD.combat) * (run.handshakeMult ?? 1));
   const reward = { cards: rollRewardCards(run, node.id) };
   if (node.type === "elite") {
     const relicId = grantRelic(run, node.id);
@@ -118,7 +127,7 @@ export function takeReward(run, cardId) {
 export function rest(run, choice, payload) {
   const node = nodeById(run.map, run.currentNodeId);
   if (node?.type !== "rest") return { ok: false, reason: "not-rest" };
-  if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * REST_HEAL_FRACTION));
+  if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * Math.max(0, REST_HEAL_FRACTION + (run.restHealMod || 0))));
   else if (choice === "upgrade") {
     const r = upgradeDeckCard(run, Number(payload));
     if (!r.ok) return r; // not spent

@@ -62,20 +62,27 @@ export function accepts(combat, card) {
   return demandMet(combat);
 }
 
+// Per-phase HP for this fight, scaled by a prestige `hpMult` (tougher-boss modifier).
+function phaseHp(phase, hpMult) {
+  return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
+}
+
 // Wire the negotiation onto a freshly-created combat whose enemy is the-refused-connection.
 // `locked` (ch9 unread) makes every Signal a mismatch ⇒ the fight is unwinnable (B3).
-export function wireBossCombat(combat, { locked = false } = {}) {
+// `hpMult` scales each phase's HP pool (prestige tougher-boss modifier).
+export function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
-  combat.enemy.hp = BOSS_PHASE_HP[1];
-  combat.enemy.maxHp = BOSS_PHASE_HP[1];
+  combat.bossHpMult = hpMult;
+  combat.enemy.hp = phaseHp(1, hpMult);
+  combat.enemy.maxHp = phaseHp(1, hpMult);
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;
     if (phase >= 3) return false;
     c.bossPhase = phase + 1;
-    c.enemy.hp = BOSS_PHASE_HP[c.bossPhase];
-    c.enemy.maxHp = BOSS_PHASE_HP[c.bossPhase];
+    c.enemy.hp = phaseHp(c.bossPhase, c.bossHpMult);
+    c.enemy.maxHp = phaseHp(c.bossPhase, c.bossHpMult);
     c.log = [...(c.log || []), `Phase ${c.bossPhase}.`].slice(-10);
     return true;
   };

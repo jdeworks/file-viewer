@@ -42,14 +42,14 @@ function shuffle(list, rng) {
   return out;
 }
 
-export function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false }) {
+export function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
   const rng = makeRng(seed);
   const combat = {
     rng,
     relics,
     congestion,            // THROUGHPUT: when true, energy is a dynamic congestion window
     window: START_ENERGY,  // current window size (== maxEnergy while in congestion mode)
-    windowCap: WINDOW_CAP,
+    windowCap: Math.max(START_ENERGY, windowCap),
     windowDecay: 1,        // how much a wide turn shrinks the window (relics can worsen this)
     player: {
       hp: player.hp,

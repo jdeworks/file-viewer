@@ -100,18 +100,21 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function makeCombat(run) {
     const enemyId = enemyForCurrentNode(run, makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
+    // Prestige modifier: meaner elites carry extra HP.
+    if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
     const c = createCombat({
       deck: run.deck,
       player: { hp: run.hp, maxHp: run.maxHp },
       enemy,
       seed: strHash(`${run.seed}:${run.currentNodeId}:combat`),
       relics: relicsFor(run.relics),
-      congestion: run.act === 3 // THROUGHPUT: Act 3 fights run on the dynamic congestion window
+      congestion: run.act === 3, // THROUGHPUT: Act 3 fights run on the dynamic congestion window
+      windowCap: 5 + (run.windowCapMod || 0) // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
     // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every
     // Signal deals 0 (the load-bearing un-cheat); reading the codex rebuilds this combat unlocked.
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked });
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1 });
     return c;
   }
 

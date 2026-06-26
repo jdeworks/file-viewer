@@ -22,6 +22,13 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   assert.equal(typeof c.acceptance, "function", "acceptance wired");
 }
 
+// ── E1: prestige hpMult scales the boss phase HP ───────────────────────────────────────────────────
+{
+  const c = createCombat({ deck: ["SYN"], player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("the-refused-connection", 4), seed: 1 });
+  wireBossCombat(c, { hpMult: 1.3 });
+  assert.equal(c.enemy.hp, Math.round(BOSS_PHASE_HP[1] * 1.3), "tougher-boss scales phase-1 HP");
+}
+
 // ── phase 1: Signals land only when SYN leads the turn ────────────────────────────────────────────
 {
   const c = bossCombat();

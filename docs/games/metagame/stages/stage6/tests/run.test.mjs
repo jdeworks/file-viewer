@@ -336,6 +336,37 @@ function findNode(run, pred) {
   return null;
 }
 
+// ── E1: prestige applies stacking RULE modifiers deterministically ─────────────────────────────────
+{
+  const v0 = createRun({ seed: 1, version: 0 });
+  assert.deepEqual(v0.modifiers, [], "v0 has no rule modifiers");
+  assert.equal(v0.handshakeMult, 1, "v0 economy is unmodified");
+
+  const v2 = createRun({ seed: 1, version: 2 });
+  assert.equal(v2.modifiers.length, 2, "v2 stacks the first 2 modifiers");
+  assert.deepEqual(v2.modifiers, ["lean-rewards", "stingy-rest"], "in order");
+  assert.equal(v2.handshakeMult, 0.75, "lean-rewards cuts handshake rewards 25%");
+  assert.equal(v2.restHealMod, -0.10, "stingy-rest lowers rest healing");
+
+  const v5 = createRun({ seed: 1, version: 5 });
+  assert.equal(v5.modifiers.length, 5, "v5 stacks all five modifiers");
+  assert.equal(v5.windowCapMod, -1, "tight-window applied");
+  assert.equal(v5.eliteHpBonus, 24, "meaner-elites applied");
+  assert.ok(Math.abs(v5.bossHpMult - 1.3) < 1e-9, "tougher-boss applied");
+
+  // deterministic: same version ⇒ same modifier fields.
+  const a = createRun({ seed: 9, version: 3 });
+  const b = createRun({ seed: 9, version: 3 });
+  assert.deepEqual(a.modifiers, b.modifiers, "same version ⇒ same modifiers");
+}
+{
+  // Functional: a lean-rewards run earns 75% handshakes from a combat.
+  const run = createRun({ seed: 1, version: 1 });
+  moveTo(run, availableNodes(run)[0].id);
+  resolveCombat(run, { win: true, hpRemaining: run.hp });
+  assert.equal(run.handshakes, Math.round(10 * 0.75), "lean-rewards: combat pays 8 (75% of 10)");
+}
+
 function reaches(run, fromId, targetId) {
   const seen = new Set();
   const stack = [fromId];

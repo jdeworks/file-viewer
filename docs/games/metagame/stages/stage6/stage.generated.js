@@ -685,7 +685,7 @@ function shuffle(list, rng) {
   }
   return out;
 }
-function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false }) {
+function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
   const rng = makeRng(seed);
   const combat = {
     rng,
@@ -694,7 +694,7 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
     // THROUGHPUT: when true, energy is a dynamic congestion window
     window: START_ENERGY,
     // current window size (== maxEnergy while in congestion mode)
-    windowCap: WINDOW_CAP,
+    windowCap: Math.max(START_ENERGY, windowCap),
     windowDecay: 1,
     // how much a wide turn shrinks the window (relics can worsen this)
     player: {
@@ -1628,6 +1628,51 @@ var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
+// ../../docs/games/metagame/stages/stage6/modifiers.js
+var MODIFIERS = [
+  {
+    id: "lean-rewards",
+    text: "Lean economy — handshake rewards are reduced by 25%.",
+    apply: (r) => {
+      r.handshakeMult = (r.handshakeMult ?? 1) * 0.75;
+    }
+  },
+  {
+    id: "stingy-rest",
+    text: "Stingy rests — rest sites heal 10% less.",
+    apply: (r) => {
+      r.restHealMod = (r.restHealMod ?? 0) - 0.1;
+    }
+  },
+  {
+    id: "tight-window",
+    text: "Tight windows — the Act-3 congestion cap is 1 lower.",
+    apply: (r) => {
+      r.windowCapMod = (r.windowCapMod ?? 0) - 1;
+    }
+  },
+  {
+    id: "meaner-elites",
+    text: "Meaner elites — elites gain +24 HP.",
+    apply: (r) => {
+      r.eliteHpBonus = (r.eliteHpBonus ?? 0) + 24;
+    }
+  },
+  {
+    id: "tougher-boss",
+    text: "Tougher negotiation — The Refused Connection has +30% phase HP.",
+    apply: (r) => {
+      r.bossHpMult = (r.bossHpMult ?? 1) * 1.3;
+    }
+  }
+];
+function applyModifiers(run, version) {
+  const n = Math.max(0, Math.min(Number(version) || 0, MODIFIERS.length));
+  run.modifiers = MODIFIERS.slice(0, n).map((m) => m.id);
+  for (let i = 0; i < n; i++) MODIFIERS[i].apply(run);
+  return run;
+}
+
 // ../../docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
@@ -1659,9 +1704,17 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     removalsPurchased: 0,
     status: "map",
     pendingReward: null,
-    notice: null
+    notice: null,
+    // Prestige rule-modifier knobs (defaults = no modifier); applyModifiers tunes them by version.
+    handshakeMult: 1,
+    restHealMod: 0,
+    windowCapMod: 0,
+    eliteHpBonus: 0,
+    bossHpMult: 1,
+    modifiers: []
   };
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
+  applyModifiers(run, version);
   return run;
 }
 function availableNodes(run) {
@@ -1694,7 +1747,7 @@ function resolveCombat(run, { win, hpRemaining }) {
   }
   run.clearedIds.push(node.id);
   if (node.type === "boss") return clearBoss(run);
-  run.handshakes += HANDSHAKE_REWARD[node.type] ?? HANDSHAKE_REWARD.combat;
+  run.handshakes += Math.round((HANDSHAKE_REWARD[node.type] ?? HANDSHAKE_REWARD.combat) * (run.handshakeMult ?? 1));
   const reward = { cards: rollRewardCards(run, node.id) };
   if (node.type === "elite") {
     const relicId = grantRelic(run, node.id);
@@ -1715,7 +1768,7 @@ function takeReward(run, cardId) {
 function rest(run, choice, payload) {
   const node = nodeById(run.map, run.currentNodeId);
   if (node?.type !== "rest") return { ok: false, reason: "not-rest" };
-  if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * REST_HEAL_FRACTION));
+  if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * Math.max(0, REST_HEAL_FRACTION + (run.restHealMod || 0))));
   else if (choice === "upgrade") {
     const r = upgradeDeckCard(run, Number(payload));
     if (!r.ok) return r;
@@ -1856,18 +1909,22 @@ function accepts(combat, card) {
   if (combat.bossLocked) return false;
   return demandMet(combat);
 }
-function wireBossCombat(combat, { locked = false } = {}) {
+function phaseHp(phase, hpMult) {
+  return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
+}
+function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
-  combat.enemy.hp = BOSS_PHASE_HP[1];
-  combat.enemy.maxHp = BOSS_PHASE_HP[1];
+  combat.bossHpMult = hpMult;
+  combat.enemy.hp = phaseHp(1, hpMult);
+  combat.enemy.maxHp = phaseHp(1, hpMult);
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;
     if (phase >= 3) return false;
     c.bossPhase = phase + 1;
-    c.enemy.hp = BOSS_PHASE_HP[c.bossPhase];
-    c.enemy.maxHp = BOSS_PHASE_HP[c.bossPhase];
+    c.enemy.hp = phaseHp(c.bossPhase, c.bossHpMult);
+    c.enemy.maxHp = phaseHp(c.bossPhase, c.bossHpMult);
     c.log = [...c.log || [], `Phase ${c.bossPhase}.`].slice(-10);
     return true;
   };
@@ -2106,11 +2163,17 @@ function hubView(state, lock) {
     <div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
-      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP &amp; +1 starting relic</span>
+      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
+      ${activeModifiers(m.protocolVersion)}
     </div>
     <p class="s6db-hint">${esc2(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
+}
+function activeModifiers(version) {
+  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+  if (!active.length) return "";
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ ${esc2(mod.text)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -2442,17 +2505,20 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   function makeCombat(run) {
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
+    if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
     const c = createCombat({
       deck: run.deck,
       player: { hp: run.hp, maxHp: run.maxHp },
       enemy,
       seed: strHash2(`${run.seed}:${run.currentNodeId}:combat`),
       relics: relicsFor(run.relics),
-      congestion: run.act === 3
+      congestion: run.act === 3,
       // THROUGHPUT: Act 3 fights run on the dynamic congestion window
+      windowCap: 5 + (run.windowCapMod || 0)
+      // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked });
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1 });
     return c;
   }
   function finishCombat(run) {

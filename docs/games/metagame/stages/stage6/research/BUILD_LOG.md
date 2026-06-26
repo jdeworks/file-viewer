@@ -99,3 +99,9 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   demand. boss-combat.test: phase-3 demand flips per turn; a Protocol-less deck stalls at phase 2
   (deck-building matters). **Phase D COMPLETE** (sequence/delay/throughput/negotiate verbs all live).
   Next: Phase E (E1 prestige rule-modifiers, E2 balance + full smoke) — and split combat.js (384 LOC).
+- E1 — Prestige = stacking RULE modifiers (new modifiers.js): version N applies the first N of 5
+  Ascension-style rules (lean-rewards −25% handshakes, stingy-rest −10% heal, tight-window −1 Act-3
+  cap, meaner-elites +24 HP, tougher-boss +30% phase HP) ON TOP of the existing +5 HP / +1 relic.
+  createRun seeds run-level knobs + applyModifiers; run.js economy/rest read them; renderer wires
+  window/elite/boss; wireBossCombat gains hpMult; createCombat gains windowCap. Hub lists active
+  rules. run.test: v0/v2/v5 stacks + deterministic + lean-rewards pays 8; boss-combat.test: hpMult.

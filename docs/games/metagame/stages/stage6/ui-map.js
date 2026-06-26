@@ -6,6 +6,7 @@
 // as the act-4 boss node of a full run (see renderer route). The run is mandatory.
 
 import { availableNodes, prestigeCost } from "./run.js";
+import { MODIFIERS } from "./modifiers.js";
 
 const NODE_ICON = {
   combat: "⚔", elite: "☠", rest: "♨", shop: "⛁", event: "❓", boss: "☣"
@@ -37,13 +38,22 @@ export function hubView(state, lock) {
     <div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
-      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP &amp; +1 starting relic</span>
+      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
+      ${activeModifiers(m.protocolVersion)}
     </div>
     <p class="s6db-hint">${esc(lock.unlocked
       ? "Chapter 9 is read. The connection can be negotiated."
       : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
+}
+
+// Show the stacked prestige rule-modifiers active at the current Protocol Version.
+function activeModifiers(version) {
+  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+  if (!active.length) return "";
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active
+    .map((mod) => `<li>⚠ ${esc(mod.text)}</li>`).join("")}</ul>`;
 }
 
 export function mapView(run) {
