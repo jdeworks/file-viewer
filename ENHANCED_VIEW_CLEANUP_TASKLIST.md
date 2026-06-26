@@ -93,6 +93,7 @@ These should help users find broken structure and dependency/reference problems.
 These should prioritize risk, masking, source traceability, and relationship maps.
 
 - [ ] CI/CD configs: GitHub Actions, GitLab CI, CircleCI, Travis, CodeBuild, Woodpecker, Azure Pipelines.
+- [x] GitHub Actions: source-linked job graph, unpinned actions, broad permissions, risky triggers, shell download pipes, and secret-like env masking.
 - [ ] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
 - [ ] Render CI job dependency graphs from `needs`/workflow equivalents.
 - [ ] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
