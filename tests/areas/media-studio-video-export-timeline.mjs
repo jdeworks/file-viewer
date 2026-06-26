@@ -276,6 +276,55 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   if (modularMusicBed.audioItems >= 2 && modularMusicBed.visualItems >= 1 && !modularMusicBed.hasMediaBytes)
     pass('P6: modular Timeline final export provenance includes source audio plus music bed without media bytes');
   else fail('modular Timeline music-bed export provenance: ' + JSON.stringify(modularMusicBed));
+  const modularSecondVideoTransition = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const file = new File([new Uint8Array(768)], 'second-clip.webm', { type: 'video/webm', lastModified: 456 });
+    const added = root.__mediaMixerVideoSource.addMediaFile(file, { startMs: 400 });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const kind = root.querySelector('.mmx-video-transition-kind');
+    const duration = root.querySelector('.mmx-video-transition-duration');
+    kind.value = 'wipe-left';
+    kind.dispatchEvent(new Event('input', { bubbles: true }));
+    duration.value = '0.45';
+    duration.dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-transition-apply')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const project = root.__mediaMixerVideoSource.getProject();
+    const addedElement = project.elements.find((element) => element.assetId === added?.assetId);
+    const transition = project.transitions.find((item) => item.toElementId === addedElement?.id);
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    return {
+      addedKind: added?.kind || '',
+      selectedId: project.selection?.primary?.id || '',
+      addedElementId: addedElement?.id || '',
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      transitions: plan?.provenance?.transitions?.length || 0,
+      transitionKind: transition?.kind || '',
+      transitionMs: transition?.durationMs || 0,
+      transitionFrom: transition?.fromElementId || '',
+      transitionTo: transition?.toElementId || '',
+      datasetTarget: root.dataset.lastTransitionTarget || '',
+      datasetKind: root.dataset.lastTransitionKind || '',
+      filterGraph: plan?.provenance?.filterGraph || '',
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (modularSecondVideoTransition.addedKind === 'video'
+    && modularSecondVideoTransition.selectedId === modularSecondVideoTransition.addedElementId
+    && modularSecondVideoTransition.transitionTo === modularSecondVideoTransition.addedElementId)
+    pass('P6: modular Timeline applies transition workflow to the selected second visual lane');
+  else fail('modular Timeline second-video transition target: ' + JSON.stringify(modularSecondVideoTransition));
+  if (modularSecondVideoTransition.transitionKind === 'wipe-left'
+    && modularSecondVideoTransition.transitionMs === 450
+    && modularSecondVideoTransition.datasetTarget === modularSecondVideoTransition.addedElementId
+    && modularSecondVideoTransition.datasetKind === 'wipe-left')
+    pass('P6: modular Timeline stores selected visual transition kind and duration');
+  else fail('modular Timeline selected transition state: ' + JSON.stringify(modularSecondVideoTransition));
+  if (modularSecondVideoTransition.visualItems >= 2
+    && modularSecondVideoTransition.transitions >= 1
+    && /if\(lt\(t\\,/.test(modularSecondVideoTransition.filterGraph)
+    && !modularSecondVideoTransition.hasBytes)
+    pass('P6: modular Timeline transition export provenance includes wipe overlay graph without media bytes');
+  else fail('modular Timeline transition export provenance: ' + JSON.stringify(modularSecondVideoTransition));
   const modularTimelineGrammar = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
     let project = root.__mediaMixerVideoSource?.getProject?.();
     const sourceVisual = project?.elements?.find((item) => item.capabilities?.hasVideo || item.capabilities?.hasImage);

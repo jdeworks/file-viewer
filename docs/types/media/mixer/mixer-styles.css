@@ -547,3 +547,27 @@
 .mmx-video-music-bed-readout {
   min-inline-size: 118px;
 }
+
+.mmx-video-transition-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mmx-video-transition-kind {
+  min-height: 28px;
+}
+
+.mmx-video-transition-duration {
+  inline-size: 72px;
+  min-height: 28px;
+}
+
+.mmx-video-transition-apply {
+  min-height: 28px;
+}
+
+.mmx-video-transition-readout {
+  min-inline-size: 138px;
+}

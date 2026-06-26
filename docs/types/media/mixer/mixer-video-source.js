@@ -6,6 +6,7 @@ import {
   moveElement,
   renderVideoMixWithFfmpeg,
   selectTarget,
+  setElementTransition,
   updateAsset,
   updateElement,
 } from './index.js';
@@ -223,16 +224,25 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       render();
       return;
     }
+    if (button.matches('.mmx-video-transition-apply')) {
+      applyToolbarTransition();
+      return;
+    }
     if (button.matches('.mmx-video-render-run')) renderFinalExport();
   }
 
   function onInput(event) {
     const target = event.target;
-    if (!target?.matches?.('.mmx-video-music-bed')) return;
-    const gain = clamp(Number(target.value), 0, 1);
-    project = updateMusicBedGain(project, gain);
-    root.dataset.musicBedGain = String(gain);
-    render();
+    if (target?.matches?.('.mmx-video-music-bed')) {
+      const gain = clamp(Number(target.value), 0, 1);
+      project = updateMusicBedGain(project, gain);
+      root.dataset.musicBedGain = String(gain);
+      render();
+      return;
+    }
+    if (target?.matches?.('.mmx-video-transition-kind, .mmx-video-transition-duration')) {
+      syncTransitionReadout();
+    }
   }
 
   function onDragOver(event) {
@@ -333,8 +343,64 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     readout.className = 'mmx-video-music-bed-readout';
     readout.textContent = `${Math.round(Number(slider.value) * 100)}% under video audio`;
     music.append(musicText, slider, readout);
-    wrap.append(text, music);
+    const transition = document.createElement('div');
+    transition.className = 'mmx-video-transition-tools';
+    const transitionText = document.createElement('span');
+    transitionText.textContent = 'Selected visual transition';
+    const kind = document.createElement('select');
+    kind.className = 'mmx-video-transition-kind';
+    kind.setAttribute('aria-label', 'Selected visual transition kind');
+    [
+      ['dissolve', 'Dissolve'],
+      ['wipe-left', 'Wipe left'],
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      kind.append(option);
+    });
+    const duration = document.createElement('input');
+    duration.type = 'number';
+    duration.className = 'mmx-video-transition-duration';
+    duration.min = '0';
+    duration.step = '0.05';
+    duration.value = '0.4';
+    duration.setAttribute('aria-label', 'Selected visual transition duration in seconds');
+    const apply = document.createElement('button');
+    apply.type = 'button';
+    apply.className = 'mmx-video-transition-apply';
+    apply.textContent = 'Apply';
+    const transitionReadout = document.createElement('span');
+    transitionReadout.className = 'mmx-video-transition-readout';
+    transitionReadout.textContent = transitionSummary(project);
+    transition.append(transitionText, kind, duration, apply, transitionReadout);
+    wrap.append(text, music, transition);
     return wrap;
+  }
+
+  function applyToolbarTransition() {
+    const target = selectedVisualElement(project) || latestVisualElement(project);
+    if (!target) return;
+    const kind = root.querySelector('.mmx-video-transition-kind')?.value || 'dissolve';
+    const seconds = Number(root.querySelector('.mmx-video-transition-duration')?.value);
+    const durationMs = Math.max(0, Math.round((Number.isFinite(seconds) ? seconds : 0) * 1000));
+    project = setElementTransition(project, target.id, {
+      kind,
+      durationMs,
+      fromElementId: previousVisualElement(project, target)?.id || null,
+    });
+    project = selectTarget(project, { type: 'element', id: target.id }, [{ type: 'element', id: target.id }]);
+    root.dataset.lastTransitionTarget = target.id;
+    root.dataset.lastTransitionKind = kind;
+    root.dataset.lastTransitionMs = String(durationMs);
+    lastExportPlan = buildExportPlan();
+    root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
+    render();
+  }
+
+  function syncTransitionReadout() {
+    const readout = root.querySelector('.mmx-video-transition-readout');
+    if (readout) readout.textContent = transitionSummary(project);
   }
 
   async function renderFinalExport() {
@@ -479,4 +545,41 @@ function updateMusicBedGain(project, gain) {
     }));
   }
   return next;
+}
+
+function selectedVisualElement(project) {
+  const selectedId = project.selection?.primary?.type === 'element' ? project.selection.primary.id : null;
+  const selected = selectedId ? project.elements.find((element) => element.id === selectedId) : null;
+  return isVisualElement(selected) ? selected : null;
+}
+
+function latestVisualElement(project) {
+  return (project.elements || [])
+    .filter(isVisualElement)
+    .sort((a, b) => {
+      const aStart = Number(a.timeline?.startMs) || 0;
+      const bStart = Number(b.timeline?.startMs) || 0;
+      if (aStart !== bStart) return bStart - aStart;
+      return (project.elements.indexOf(b) - project.elements.indexOf(a));
+    })[0] || null;
+}
+
+function previousVisualElement(project, target) {
+  const targetStart = Number(target?.timeline?.startMs) || 0;
+  return (project.elements || [])
+    .filter((element) => element.id !== target?.id && isVisualElement(element))
+    .filter((element) => (Number(element.timeline?.startMs) || 0) <= targetStart)
+    .sort((a, b) => (Number(b.timeline?.startMs) || 0) - (Number(a.timeline?.startMs) || 0))[0] || null;
+}
+
+function transitionSummary(project) {
+  const target = selectedVisualElement(project) || latestVisualElement(project);
+  if (!target) return 'No visual target';
+  const transition = (project.transitions || []).find((item) => item.toElementId === target.id && item.enabled !== false);
+  if (!transition) return `${target.type || 'visual'}: no transition`;
+  return `${target.type || 'visual'}: ${transition.kind || 'dissolve'} ${Math.round(transition.durationMs || 0)} ms`;
+}
+
+function isVisualElement(element) {
+  return !!(element?.capabilities?.hasVideo || element?.capabilities?.hasImage);
 }

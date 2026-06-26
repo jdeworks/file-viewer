@@ -468,6 +468,11 @@ Stage 7 project settings import/export UI has started:
   to a 35% music-bed gain under the original video audio, exposes a modular
   music-bed gain control, probes added visual metadata/thumbnails, and includes
   the added bed in config-only final-export provenance.
+- Added a direct modular Timeline transition workflow for selected visual lanes.
+  The video-source mixer toolbar now applies dissolve or wipe-left transitions
+  to the selected or most recent visual element, records the source/target
+  transition in shared project state, and refreshes final-export provenance with
+  the matching wipe overlay graph without serializing media bytes.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -486,10 +491,10 @@ Stage 7 project settings import/export UI has started:
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
-- Stage 8 remaining work: continue moving any remaining trim and cross-clip
-  transition action behavior that only exists in legacy helpers onto the shared
-  modular surface, then remove compatibility-only legacy surfaces once
-  equivalent workflows are directly covered.
+- Stage 8 remaining work: continue moving any remaining trim/fade action
+  behavior that only exists in legacy helpers onto the shared modular surface,
+  then remove compatibility-only legacy surfaces once equivalent workflows are
+  directly covered.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

@@ -201,10 +201,12 @@ Timeline mode now follows the same retirement pattern: it opens on the modular
 video-source mixer by default, and the old `timeline.js` surface is only behind
 an explicit "Detailed legacy timeline" disclosure. Music-bed and second-media
 intake now live on the modular video-source mixer as additional shared-model
-lanes with config-only export provenance. The next retirement work is moving
-any remaining trim and cross-clip transition action behavior that only exists
-in the legacy helper onto the shared modular surface, then removing the
-compatibility surface entirely.
+lanes with config-only export provenance. Selected visual transition controls
+also now live on the modular Timeline toolbar and write dissolve/wipe-left
+records directly into shared project state. The next retirement work is moving
+any remaining trim/fade action behavior that only exists in the legacy helper
+onto the shared modular surface, then removing the compatibility surface
+entirely.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
