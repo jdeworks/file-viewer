@@ -12,6 +12,7 @@ const SECTIONS = [
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
+  ["Affixes", "Some weapons carry an on-hit affix — vampiric (lifesteal), cleaving (hit adjacent foes), burning, knockback or double-strike. The one you pick up last is active; deeper weapons roll affixes more often."],
   ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],

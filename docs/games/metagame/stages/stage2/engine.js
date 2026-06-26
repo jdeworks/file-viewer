@@ -11,6 +11,7 @@ import { detonate } from "./monsters.js";
 import { applyStatus, tickStatuses } from "./status.js";
 import { enterHazard } from "./hazards.js";
 import { springTrap } from "./traps.js";
+import { rollAffix, affixLabel, affixDamage, applyHitAffix, WEAPON_AFFIXES } from "./affixes.js";
 import { DIRS, DIR_LIST } from "./dirs.js";
 
 export { DIRS };
@@ -86,7 +87,7 @@ function awardXp(player, amount, events) {
 function dropElite(world, foe, events) {
   if (!foe.elite) return;
   const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 2);
-  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], taken: false });
+  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], affix: WEAPON_AFFIXES[world.floor % WEAPON_AFFIXES.length], taken: false });
   let dropped = 0;
   for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
     if (dropped >= 3) break;
@@ -138,7 +139,9 @@ export function step(world, player, dir) {
   if (foe) {
     // Record the clash so the renderer can lunge @ and foe toward each other (view.js).
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    foe.hp -= Math.max(1, player.atk);
+    const dmg = affixDamage(player);            // double-strike swings harder (C2)
+    foe.hp -= dmg;
+    applyHitAffix(world, player, foe, dmg, events); // vampiric / burning / knockback / cleave
     if (foe.hp <= 0) {
       foe.alive = false;
       events.killed = true;
@@ -186,9 +189,10 @@ export function step(world, player, dir) {
   if (weapon && weapon.atk > 0) {
     weapon.taken = true;
     player.atk += weapon.atk;
+    player.affix = weapon.affix || null; // the carried weapon's on-hit identity (C2)
     player.equipment = { ...(player.equipment || {}), weapon: weapon.name };
     events.pickup = "weapon";
-    events.log.push(`found ${weapon.name.replace(/_/g, " ")}. +${weapon.atk} ATK.`);
+    events.log.push(`found ${weapon.name.replace(/_/g, " ")}${weapon.affix ? ` (${affixLabel(weapon.affix)})` : ""}. +${weapon.atk} ATK.`);
   }
   const glyph = world.glyphs.find((g) => !g.taken && g.x === nx && g.y === ny);
   if (glyph) {
@@ -239,7 +243,7 @@ function revealHidden(world, player, h, events) {
     for (let i = 0; i < ng; i += 1) { const c = take(); world.glyphs.push({ x: c.x, y: c.y, taken: false }); }
     const nw = rng.int(2, 5);
     const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 1);
-    for (let i = 0; i < nw; i += 1) { const c = take(); world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], taken: false }); }
+    for (let i = 0; i < nw; i += 1) { const c = take(); world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, world.floor), taken: false }); }
     events.log.push("hidden cache! potions, glyphs and weapons spill out.");
   } else if (h.type === "trap") {
     const n = rng.int(3, 5);
@@ -269,7 +273,7 @@ function revealHidden(world, player, h, events) {
   } else if (h.type === "vault") {
     const cx = h.x + (h.w >> 1);
     const cy = h.y + (h.h >> 1);
-    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], taken: false }); // a prime weapon
+    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], affix: rng.pick(WEAPON_AFFIXES), taken: false }); // a prime, affixed weapon
     const guards = rng.int(2, 3);
     for (let i = 0; i < guards; i += 1) {
       const c = take();

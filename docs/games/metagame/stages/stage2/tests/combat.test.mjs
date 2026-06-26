@@ -6,6 +6,7 @@ import { spawnMonster } from "../data.js";
 import { enterHazard, hazardIndex } from "../hazards.js";
 import { springTrap } from "../traps.js";
 import { useConsumable } from "../consumables.js";
+import { affixDamage, applyHitAffix } from "../affixes.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -218,6 +219,20 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const p2 = { hp: 50, def: 0, statuses: {}, inventory: { freeze: 1 } };
   useConsumable(w2, p2, "freeze", { log: [], damageTaken: 0, died: false });
   ok(hasStatus(f2, "frozen"), "freeze locks nearby foes");
+}
+
+// ── C2 weapon affixes ────────────────────────────────────────────────────────────────────────────
+{
+  ok(affixDamage({ atk: 7, affix: "double" }) === 14, "double-strike doubles hit damage");
+  const w = arena(7);
+  const target = foe({ x: 2, y: 1, hp: 30 });
+  w.monsters = [target];
+  const vamp = { hp: 20, maxHp: 50, atk: 10, affix: "vampiric" };
+  applyHitAffix(w, vamp, target, 10, { log: [] });
+  ok(vamp.hp > 20, "vampiric heals the player on hit");
+  const burner = { hp: 50, maxHp: 50, atk: 10, affix: "burning" };
+  applyHitAffix(w, burner, target, 10, { log: [] });
+  ok(hasStatus(target, "burn"), "burning affix sets burn on the struck foe");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

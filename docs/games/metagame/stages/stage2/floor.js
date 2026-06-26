@@ -8,6 +8,7 @@ import { WEAPONS, spawnMonster } from "./data.js";
 import { placeHazards, hazardIndex } from "./hazards.js";
 import { placeTraps, trapIndex } from "./traps.js";
 import { placeConsumables } from "./consumables.js";
+import { rollAffix } from "./affixes.js";
 
 // Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
 // grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
@@ -121,7 +122,7 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
   const weaponCount = Math.max(2, Math.min(36, Math.round(roomN * 0.18 * bounty)));
   for (let i = 0; i < weaponCount; i += 1) {
     const wc = take();
-    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
   }
   // Health potions scattered through the floor.
   const potions = [];
@@ -143,7 +144,7 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
     const idx = d.y * width + d.x;
     if (flood.dist[idx] < 0) continue;
     if ((d.x === start.x && d.y === start.y) || (d.x === exit.x && d.y === exit.y)) continue;
-    if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+    if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }

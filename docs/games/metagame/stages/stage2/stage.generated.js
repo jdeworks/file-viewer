@@ -543,7 +543,7 @@ function xpForLevel(level) {
   return 6 + (level - 1) * 5;
 }
 function rollEntity(shopUpgrades = {}) {
-  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" }, inventory: {}, statuses: {} };
+  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" }, affix: null, inventory: {}, statuses: {} };
   for (const up of SHOP_UPGRADES) {
     const n = Number(shopUpgrades[up.id] || 0);
     if (n > 0) up.apply(stats, n);
@@ -1094,6 +1094,45 @@ function makeBlinkRng(world, trap) {
   } };
 }
 
+// ../../docs/games/metagame/stages/stage2/affixes.js
+var WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double"];
+var LABEL2 = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike" };
+function rollAffix(rng, floor) {
+  const chance = Math.min(0.6, 0.12 + floor * 0.05);
+  return rng.float() < chance ? rng.pick(WEAPON_AFFIXES) : null;
+}
+function affixLabel(a) {
+  return a ? LABEL2[a] || a : "";
+}
+function affixDamage(player) {
+  const base = Math.max(1, player.atk);
+  return player.affix === "double" ? base * 2 : base;
+}
+function applyHitAffix(world, player, foe, dmg, events) {
+  const a = player.affix;
+  if (!a) return;
+  if (a === "vampiric") {
+    player.hp = Math.min(player.maxHp, player.hp + Math.max(1, Math.round(dmg * 0.2)));
+  } else if (a === "burning") {
+    applyStatus(foe, "burn", 3, 2);
+  } else if (a === "knockback" && foe.hp > 0) {
+    const tx = foe.x + Math.sign(foe.x - world.pos.x);
+    const ty = foe.y + Math.sign(foe.y - world.pos.y);
+    if (world.grid[ty] && world.grid[ty][tx] === "." && !world.monsters.some((m) => m.alive && m.x === tx && m.y === ty)) {
+      foe.x = tx;
+      foe.y = ty;
+    }
+  } else if (a === "cleave") {
+    for (const o of world.monsters) {
+      if (!o.alive || o === foe || o.ally) continue;
+      if (Math.abs(o.x - world.pos.x) + Math.abs(o.y - world.pos.y) === 1) {
+        o.hp -= Math.max(1, Math.round(dmg * 0.5));
+        if (o.hp <= 0) o.alive = false;
+      }
+    }
+  }
+}
+
 // ../../docs/games/metagame/stages/stage2/consumables.js
 var CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
@@ -1279,7 +1318,7 @@ function buildFloor(runSeed, floorNum, mods = {}) {
   const weaponCount = Math.max(2, Math.min(36, Math.round(roomN * 0.18 * bounty)));
   for (let i = 0; i < weaponCount; i += 1) {
     const wc = take();
-    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
   }
   const potions = [];
   const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
@@ -1298,7 +1337,7 @@ function buildFloor(runSeed, floorNum, mods = {}) {
     const idx = d.y * width + d.x;
     if (flood.dist[idx] < 0) continue;
     if (d.x === start.x && d.y === start.y || d.x === exit.x && d.y === exit.y) continue;
-    if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+    if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
@@ -1430,7 +1469,7 @@ function awardXp(player, amount, events) {
 function dropElite(world, foe, events) {
   if (!foe.elite) return;
   const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 2);
-  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], taken: false });
+  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], affix: WEAPON_AFFIXES[world.floor % WEAPON_AFFIXES.length], taken: false });
   let dropped = 0;
   for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
     if (dropped >= 3) break;
@@ -1472,7 +1511,9 @@ function step(world, player, dir) {
   const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
   if (foe) {
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    foe.hp -= Math.max(1, player.atk);
+    const dmg = affixDamage(player);
+    foe.hp -= dmg;
+    applyHitAffix(world, player, foe, dmg, events);
     if (foe.hp <= 0) {
       foe.alive = false;
       events.killed = true;
@@ -1491,8 +1532,8 @@ function step(world, player, dir) {
         return events;
       }
     } else {
-      const dmg = bite(foe, player, events);
-      events.log.push(`${foe.name} hits for ${dmg}.`);
+      const dmg2 = bite(foe, player, events);
+      events.log.push(`${foe.name} hits for ${dmg2}.`);
       if (foe.fast && player.hp > 0) {
         const d2 = bite(foe, player, events);
         events.log.push(`${foe.name} strikes again for ${d2}.`);
@@ -1519,9 +1560,10 @@ function step(world, player, dir) {
   if (weapon && weapon.atk > 0) {
     weapon.taken = true;
     player.atk += weapon.atk;
+    player.affix = weapon.affix || null;
     player.equipment = { ...player.equipment || {}, weapon: weapon.name };
     events.pickup = "weapon";
-    events.log.push(`found ${weapon.name.replace(/_/g, " ")}. +${weapon.atk} ATK.`);
+    events.log.push(`found ${weapon.name.replace(/_/g, " ")}${weapon.affix ? ` (${affixLabel(weapon.affix)})` : ""}. +${weapon.atk} ATK.`);
   }
   const glyph = world.glyphs.find((g) => !g.taken && g.x === nx && g.y === ny);
   if (glyph) {
@@ -1577,7 +1619,7 @@ function revealHidden(world, player, h, events) {
     const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 1);
     for (let i = 0; i < nw; i += 1) {
       const c = take();
-      world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+      world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, world.floor), taken: false });
     }
     events.log.push("hidden cache! potions, glyphs and weapons spill out.");
   } else if (h.type === "trap") {
@@ -1620,7 +1662,7 @@ function revealHidden(world, player, h, events) {
   } else if (h.type === "vault") {
     const cx = h.x + (h.w >> 1);
     const cy = h.y + (h.h >> 1);
-    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], taken: false });
+    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], affix: rng.pick(WEAPON_AFFIXES), taken: false });
     const guards = rng.int(2, 3);
     for (let i = 0; i < guards; i += 1) {
       const c = take();
@@ -1733,6 +1775,7 @@ var SECTIONS = [
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
+  ["Affixes", "Some weapons carry an on-hit affix — vampiric (lifesteal), cleaving (hit adjacent foes), burning, knockback or double-strike. The one you pick up last is active; deeper weapons roll affixes more often."],
   ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
