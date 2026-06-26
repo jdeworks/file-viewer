@@ -526,6 +526,27 @@ export async function run(ctx) {
   if (/article/i.test(texText)) pass('tex-doc: document class shown'); else fail('tex-doc class: ' + texText.slice(0, 300));
   if (/amsmath|graphicx|hyperref/i.test(texText)) pass('tex-doc: packages listed'); else fail('tex-doc packages: ' + texText.slice(0, 300));
   if (/Introduction|Mathematics|Conclusion/i.test(texText)) pass('tex-doc: section titles shown'); else fail('tex-doc sections: ' + texText.slice(0, 300));
+  if (/Document Outline|Packages|Labels|Refs|Cites|Includes/i.test(texText)) pass('tex-doc: enhanced outline/reference cards shown'); else fail('tex-doc enhanced cards: ' + texText.slice(0, 900));
+  const texSourceOpen = await page.$eval('#previewHost .tex-doc .kf-source-details', (e) => e.open);
+  if (!texSourceOpen) pass('tex-doc: source starts collapsed'); else fail('tex-doc source should start collapsed');
+  await page.click('#previewHost .tex-doc .tex-list .kf-source-link');
+  const texJump = await page.$eval('#previewHost .tex-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (texJump.open && texJump.highlighted) pass('tex-doc: item click opens and highlights source'); else fail('tex-doc source jump: ' + JSON.stringify(texJump));
+  const texBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/tex-doc/renderer.js');
+    const text = '\\documentclass{article}\\n\\usepackage[utf8]{inputenc}\\n\\section{Intro}\\label{sec:intro}\\nAgain \\label{sec:intro}\\nSee \\ref{sec:missing} and \\cite{doe2024}.\\n\\input{chapters/intro}\\n\\includegraphics{figures/plot.png}\\n\\begin{thebibliography}{9}\\n\\bibitem{known} Known\\n\\end{thebibliography}';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Labels And References|Citations And Bibliography|Includes And Assets|duplicate label|unresolved ref|unresolved cite|chapters\/intro|figures\/plot/i.test(texBad.out + texBad.issues) && !texBad.open) pass('tex-doc: labels, refs, cites, includes, and diagnostics shown'); else fail('tex-doc synthetic diagnostics: ' + JSON.stringify(texBad).slice(0, 900));
 
   // ── forth-lang viewer ──
   await openExample('sample.fth');
