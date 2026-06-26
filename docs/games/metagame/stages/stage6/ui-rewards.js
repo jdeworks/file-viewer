@@ -5,12 +5,14 @@
 //   [data-upgrade="<deckIndex>"]       rest: upgrade a card in place
 //   [data-remove="<deckIndex>"]        rest: thin a card from the deck
 //   [data-buy="<cardId>"]              shop: buy a card (price in data-price)
+//   [data-buy-remove="<deckIndex>"]    shop: buy a deck removal (escalating price)
 //   [data-action="to-map"]             leave shop/event back to the map
 //   [data-event="<key>"]               resolve an event choice
 
 import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
 import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
+import { removalCost } from "./run.js";
 import { makeRng } from "./combat.js";
 import { relicById } from "./relics.js";
 
@@ -81,6 +83,22 @@ export function shopView(run) {
     return chip;
   }));
   el.appendChild(row);
+
+  // Removal sink: deck-thinning is the strongest action, so it costs more each time you buy it.
+  const cost = removalCost(run);
+  const affordable = run.handshakes >= cost && run.deck.length > 1;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s6db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`);
+  const purge = el.querySelector(".s6db-shop-remove");
+  const purgeRow = document.createElement("div");
+  purgeRow.className = "s6db-card-row";
+  purgeRow.replaceChildren(...run.deck.map((id, i) => {
+    const chip = cardOption(id, "buy-remove", String(i));
+    chip.disabled = !affordable;
+    return chip;
+  }));
+  purge.appendChild(purgeRow);
+
   el.insertAdjacentHTML("beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`);
   return el;

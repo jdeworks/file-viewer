@@ -11,7 +11,7 @@ import { relicsFor, relicById } from "./relics.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost, FINAL_BOSS_ACT,
+  takeReward, rest, removeCard, closeNode, buyCard, buyRemoval, awardRelic, prestigeCost, FINAL_BOSS_ACT,
   seatAtFinalBoss
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
@@ -188,6 +188,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (restEl) { rest(run, restEl.dataset.rest); return true; }
     const buy = event.target.closest("[data-buy]");
     if (buy) { buyCard(run, buy.dataset.buy, Number(buy.dataset.price)); return true; }
+    const buyRemove = event.target.closest("[data-buy-remove]");
+    if (buyRemove) { buyRemoval(run, Number(buyRemove.dataset.buyRemove)); return true; }
     const ev = event.target.closest("[data-event]");
     if (ev) { resolveEvent(run, ev.dataset.event); return true; }
     return false;

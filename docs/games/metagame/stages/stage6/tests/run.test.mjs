@@ -3,20 +3,22 @@ import { generateRun, nodeById, enemyForNode } from "../mapgen.js";
 import {
   availableNodes,
   buyCard,
+  buyRemoval,
   closeNode,
   createRun,
   enemyForCurrentNode,
   moveTo,
   prestigeCost,
+  removalCost,
   rest,
   resolveCombat,
   seatAtFinalBoss,
   takeReward,
+  upgradeDeckCard,
   FINAL_BOSS_ACT
 } from "../run.js";
 import { makeRng, createCombat, playCard } from "../combat.js";
 import { instantiateEnemy } from "../enemies.js";
-import { upgradeDeckCard } from "../run.js";
 import { STARTING_DECK } from "../cards.js";
 
 // ── mapgen: structure + full connectivity ────────────────────────────────────────────────────────
@@ -201,6 +203,41 @@ import { STARTING_DECK } from "../cards.js";
       assert.notEqual(enemy, "the-refused-connection", `act ${act} boss is a different mini-boss`);
     }
   }
+}
+
+// ── C2a: escalating deck-removal economy + skip-for-handshakes ─────────────────────────────────────
+{
+  const run = createRun({ seed: 1, handshakes: 200 });
+  assert.equal(removalCost(run), 25, "first removal costs the base price");
+  const len0 = run.deck.length;
+  const r1 = buyRemoval(run, 0);
+  assert.ok(r1.ok && r1.cost === 25, "first removal succeeds at 25");
+  assert.equal(run.deck.length, len0 - 1, "a card was removed");
+  assert.equal(run.handshakes, 175, "handshakes deducted deterministically");
+  assert.equal(removalCost(run), 50, "the price climbs after a purchase");
+  const r2 = buyRemoval(run, 0);
+  assert.ok(r2.ok && r2.cost === 50, "second removal costs 50");
+  assert.equal(removalCost(run), 75, "and climbs again");
+
+  // insufficient handshakes are rejected; nothing is spent or removed.
+  const poor = createRun({ seed: 1, handshakes: 10 });
+  const len1 = poor.deck.length;
+  const bad = buyRemoval(poor, 0);
+  assert.equal(bad.ok, false, "cannot afford a removal");
+  assert.equal(poor.deck.length, len1, "deck unchanged when too poor");
+  assert.equal(poor.handshakes, 10, "handshakes unchanged when too poor");
+}
+{
+  // Skipping a reward pays a few handshakes (keeps decks thin).
+  const run = createRun({ seed: 1 });
+  moveTo(run, availableNodes(run)[0].id);
+  resolveCombat(run, { win: true, hpRemaining: run.hp });
+  const before = run.handshakes;
+  const lenBefore = run.deck.length;
+  const r = takeReward(run, null); // skip
+  assert.ok(r.ok && r.skipped, "skip reported");
+  assert.equal(run.deck.length, lenBefore, "skipping adds no card");
+  assert.equal(run.handshakes, before + 5, "skipping pays 5 handshakes");
 }
 
 // ── C1: rest = heal XOR upgrade; upgraded card resolves the stronger effect ────────────────────────

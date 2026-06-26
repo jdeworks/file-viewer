@@ -1061,6 +1061,9 @@ var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
 var REWARD_CHOICES = 3;
 var HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
+var SKIP_REWARD = 5;
+var REMOVAL_BASE = 25;
+var REMOVAL_STEP = 25;
 var FINAL_BOSS_ACT = 4;
 var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
 var PRESTIGE_HP_PER_VERSION = 5;
@@ -1081,6 +1084,7 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     hp: maxHp,
     maxHp,
     handshakes,
+    removalsPurchased: 0,
     status: "map",
     pendingReward: null,
     notice: null
@@ -1131,9 +1135,10 @@ function resolveCombat(run, { win, hpRemaining }) {
 function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
+  else run.handshakes += SKIP_REWARD;
   run.pendingReward = null;
   run.status = "map";
-  return { ok: true };
+  return { ok: true, skipped: !cardId };
 }
 function rest(run, choice, payload) {
   const node = nodeById(run.map, run.currentNodeId);
@@ -1172,6 +1177,19 @@ function buyCard(run, cardId, cost) {
   run.handshakes -= cost;
   run.deck.push(cardId);
   return { ok: true };
+}
+function removalCost(run) {
+  return REMOVAL_BASE + REMOVAL_STEP * (run.removalsPurchased || 0);
+}
+function buyRemoval(run, index) {
+  const cost = removalCost(run);
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  if (index < 0 || index >= run.deck.length) return { ok: false, reason: "bad-index", cost };
+  if (run.deck.length <= 1) return { ok: false, reason: "deck-floor", cost };
+  run.handshakes -= cost;
+  run.deck.splice(index, 1);
+  run.removalsPurchased = (run.removalsPurchased || 0) + 1;
+  return { ok: true, cost };
 }
 function seatAtFinalBoss(run, deck) {
   run.act = FINAL_BOSS_ACT;
@@ -1630,6 +1648,21 @@ function shopView(run) {
     return chip;
   }));
   el.appendChild(row);
+  const cost = removalCost(run);
+  const affordable = run.handshakes >= cost && run.deck.length > 1;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`
+  );
+  const purge = el.querySelector(".s6db-shop-remove");
+  const purgeRow = document.createElement("div");
+  purgeRow.className = "s6db-card-row";
+  purgeRow.replaceChildren(...run.deck.map((id, i) => {
+    const chip = cardOption(id, "buy-remove", String(i));
+    chip.disabled = !affordable;
+    return chip;
+  }));
+  purge.appendChild(purgeRow);
   el.insertAdjacentHTML(
     "beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`
@@ -1878,6 +1911,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const buy = event.target.closest("[data-buy]");
     if (buy) {
       buyCard(run, buy.dataset.buy, Number(buy.dataset.price));
+      return true;
+    }
+    const buyRemove = event.target.closest("[data-buy-remove]");
+    if (buyRemove) {
+      buyRemoval(run, Number(buyRemove.dataset.buyRemove));
       return true;
     }
     const ev = event.target.closest("[data-event]");

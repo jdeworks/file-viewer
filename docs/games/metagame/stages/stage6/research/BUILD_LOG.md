@@ -37,3 +37,7 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   base-aware so SYN+/ACK+ still satisfy the negotiation. run.js `rest(choice,payload)` + `upgradeDeckCard`
   (in-place, one-of, failed upgrade doesn't spend the site); ui-rewards restView shows the upgraded face;
   renderer handles `data-upgrade`. Unit tests: heal XOR upgrade, in-place upgrade, SYN+ deals 11 vs 8.
+- C2a — Shop economy core: escalating deck-removal (`removalCost`=25+25·purchases, `buyRemoval` with a
+  1-card deck floor) + skipping a reward card now pays 5 handshakes (keeps decks lean). shopView gains a
+  "Purge a card" sink (rising price); renderer handles `data-buy-remove`. Unit: price climbs 25→50→75,
+  deducts deterministically, too-poor rejected, skip pays +5.

@@ -15,6 +15,11 @@ export const PLAYER_MAX_HP = 60;
 const REST_HEAL_FRACTION = 0.30;
 const REWARD_CHOICES = 3;
 const HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
+// Skipping a reward card pays a few handshakes — deck-thinning is rewarded, so decks stay lean (12–18).
+const SKIP_REWARD = 5;
+// Deck removal is the strongest shop action, so its price ESCALATES per purchase within a run.
+const REMOVAL_BASE = 25;
+const REMOVAL_STEP = 25;
 export const FINAL_BOSS_ACT = 4;
 // Per-act combat mini-bosses; the final act is the codex-gated negotiation (handled in the UI).
 const ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
@@ -39,6 +44,7 @@ export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     hp: maxHp,
     maxHp,
     handshakes,
+    removalsPurchased: 0,
     status: "map",
     pendingReward: null,
     notice: null
@@ -101,9 +107,10 @@ export function resolveCombat(run, { win, hpRemaining }) {
 export function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
+  else run.handshakes += SKIP_REWARD; // skipping the card keeps the deck thin and pays a little
   run.pendingReward = null;
   run.status = "map";
-  return { ok: true };
+  return { ok: true, skipped: !cardId };
 }
 
 // A rest site grants exactly ONE of: heal, upgrade a card, or remove a card. `payload` is the deck
@@ -152,6 +159,23 @@ export function buyCard(run, cardId, cost) {
   run.handshakes -= cost;
   run.deck.push(cardId);
   return { ok: true };
+}
+
+// Current price to remove a card — escalates each time you buy a removal this run.
+export function removalCost(run) {
+  return REMOVAL_BASE + REMOVAL_STEP * (run.removalsPurchased || 0);
+}
+
+// Buy a deck removal at the shop. Price climbs per purchase; deck-thinning is the strongest action.
+export function buyRemoval(run, index) {
+  const cost = removalCost(run);
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  if (index < 0 || index >= run.deck.length) return { ok: false, reason: "bad-index", cost };
+  if (run.deck.length <= 1) return { ok: false, reason: "deck-floor", cost }; // never empty the deck
+  run.handshakes -= cost;
+  run.deck.splice(index, 1);
+  run.removalsPurchased = (run.removalsPurchased || 0) + 1;
+  return { ok: true, cost };
 }
 
 // TEST/DEBUG ONLY — seat a run directly at the act-4 boss node without playing acts 1–3.
