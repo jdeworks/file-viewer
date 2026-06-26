@@ -74,6 +74,27 @@ export async function run(ctx) {
   if (/block|Blocks/i.test(j2Text)) pass('sample.j2: blocks listed'); else fail('j2 blocks: ' + j2Text.slice(0, 300));
   if (/extends/i.test(j2Text)) pass('sample.j2: extends shown'); else fail('j2 extends: ' + j2Text.slice(0, 300));
   if (/upper|lower|default|replace/i.test(j2Text)) pass('sample.j2: filters listed'); else fail('j2 filters: ' + j2Text.slice(0, 300));
+  if (/template dependency|External Context Variables|environment_vars|app_name/i.test(j2Text)) pass('sample.j2: dependencies and context variables shown'); else fail('j2 details: ' + j2Text.slice(0, 900));
+  const j2BlockHint = await page.$eval('#previewHost .j2-doc .j2-tag', (e) => e.title);
+  if (/Block supplied|parent template|inheritance/i.test(j2BlockHint)) pass('sample.j2: block hover help present'); else fail('j2 block hint: ' + j2BlockHint);
+  const j2SourceOpen = await page.$eval('#previewHost .j2-doc .kf-source-details', (e) => e.open);
+  if (!j2SourceOpen) pass('sample.j2: source starts collapsed'); else fail('j2 source should start collapsed');
+  await page.click('#previewHost .j2-doc .kf-source-link');
+  const j2Jump = await page.$eval('#previewHost .j2-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (j2Jump.open && j2Jump.highlighted) pass('sample.j2: item click opens and highlights source'); else fail('j2 source jump: ' + JSON.stringify(j2Jump));
+  const j2Bad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/jinja2-template/renderer.js');
+    const rendered = mod.render({ text: '{% block body %}a{% endblock %}\n{% block body %}b{% endblock %}\n{% macro card(title) %}{{ title }}{% endmacro %}\n{% macro card(text) %}{{ text }}{% endmacro %}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/duplicate block|duplicate macro/i.test(j2Bad.text + j2Bad.issues)) pass('sample.j2: duplicate block and macro diagnostics shown'); else fail('j2 diagnostics: ' + JSON.stringify(j2Bad).slice(0, 500));
 
   // ── sample.mustache viewer (Mustache Template) ──
   await openExample('sample.mustache');

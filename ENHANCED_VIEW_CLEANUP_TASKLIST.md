@@ -76,7 +76,7 @@ These should help users find broken structure and dependency/reference problems.
 
 - [ ] `handlebars-template`: unclosed/mismatched sections, custom helper inventory, partial dependencies.
 - [x] `mustache-template`: section stack validation, unresolved partial hints, variable grouping.
-- [ ] `jinja2-template`: extends/includes/imports graph, duplicate blocks/macros, external context variables.
+- [x] `jinja2-template`: extends/includes/imports graph, duplicate blocks/macros, external context variables.
 - [ ] `nunjucks`: same template diagnostics as Jinja-style files.
 - [ ] `asciidoc`: anchors, xrefs, includes, images, admonitions, duplicate/missing references.
 - [ ] `restructuredtext`: labels, refs, substitutions, toctree/include/image directives, malformed directive options.
