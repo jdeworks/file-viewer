@@ -156,6 +156,9 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 /* DELAY: the 2-turns-ahead enemy intent telegraph. */
 .s6db-intent-next { margin-top: 4px; font-size: 0.75rem; color: #6b513a; opacity: 0.8; }
 
+/* THROUGHPUT: the congestion-window readout next to the energy pips. */
+.s6db-window { margin-left: 10px; font-size: 0.78rem; color: #2f6f6a; font-weight: 600; }
+
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }

@@ -252,4 +252,65 @@ function bigEnemyCombat(deck, relics = [], seed = 9) {
   assert.equal(c2.enemy.rttStacks, 0, "interrupting the RTT resets its ramp");
 }
 
+// ── D3 THROUGHPUT: the congestion window shrinks on wide turns, regrows on restraint ───────────────
+function congestionCombat(seed = 11) {
+  const c = createCombat({ deck: STARTING_DECK, player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("corrupt-packet", 1), seed, congestion: true });
+  c.enemy.hp = 400; c.enemy.maxHp = 400;
+  return c;
+}
+{
+  // Wide turn (spend the whole window) ⇒ next window shrinks by 1.
+  const c = congestionCombat();
+  assert.equal(c.player.energy, 3, "window starts at 3");
+  c.hand = ["SYN", "SYN", "SYN"]; c.player.energy = 3; // cost-bearing cards to actually spend the window
+  c.player.block = 0;
+  playCard(c, 0); playCard(c, 0); playCard(c, 0); // spent 3 of 3 ⇒ wide
+  c.hand = []; endTurn(c);
+  assert.equal(c.player.maxEnergy, 2, "a wide turn shrinks the window to 2");
+}
+{
+  // Restrained turn (spend nothing) ⇒ window regrows toward the cap.
+  const c = congestionCombat();
+  c.hand = []; c.player.energy = 3; // spend 0
+  endTurn(c);
+  assert.equal(c.player.maxEnergy, 4, "restraint regrows the window to 4");
+}
+{
+  // Backoff prevents the shrink on a wide turn (BACKOFF is cost 0, so 3 SYN still spend the window).
+  const c = congestionCombat();
+  c.hand = ["SYN", "SYN", "SYN", "BACKOFF"]; c.player.energy = 3;
+  while (c.hand.length) playCard(c, 0); // spend all 3 energy (wide) + play BACKOFF (no-shrink)
+  c.hand = []; endTurn(c);
+  assert.equal(c.player.maxEnergy, 3, "Backoff cancels the shrink (window stays 3)");
+}
+{
+  // Bandwidth widens the window immediately.
+  const c = congestionCombat();
+  c.hand = ["BANDWIDTH"]; c.player.energy = 3;
+  playCard(c, 0); // widenWindow(1)
+  assert.equal(c.window, 4, "Bandwidth widens the window to 4");
+  assert.equal(c.player.maxEnergy, 4, "and raises max energy");
+}
+{
+  // Congestion Collapse deals damage scaling with the energy you spent.
+  const c = createCombat({ deck: STARTING_DECK, player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("congestion-collapse", 1), seed: 4, congestion: true });
+  c.enemy.intentIndex = 1; // the "Collapse" step
+  c.hand = ["SYN", "SYN"]; c.player.energy = 3;
+  playCard(c, 0); playCard(c, 0); // spent 2 energy
+  c.player.block = 0;
+  const hp0 = c.player.hp;
+  c.hand = []; endTurn(c); // collapse: 3 * 2 = 6
+  assert.equal(hp0 - c.player.hp, 6, "Collapse deals 3 × energy spent");
+}
+{
+  // Deterministic window trajectory: same inputs ⇒ same window each turn.
+  function trajectory() {
+    const c = congestionCombat(21);
+    const out = [];
+    for (let t = 0; t < 4; t++) { c.hand = []; endTurn(c); out.push(c.player.maxEnergy); }
+    return out;
+  }
+  assert.deepEqual(trajectory(), trajectory(), "same seed ⇒ identical window trajectory");
+}
+
 console.log("stage6 combat engine tests passed");

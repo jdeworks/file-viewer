@@ -71,6 +71,12 @@ export const RELICS = [
     id: "fast-retransmit", name: "Fast Retransmit", rarity: "uncommon",
     text: "Your first delayed effect each combat resolves a turn sooner.",
     hooks: { onCombatStart: (ctx) => { ctx.combat.delaySpeedup = true; } }
+  },
+  // ── Act 3 NETWORK · THROUGHPUT: bigger pipe, harsher collapse (cursed Overclock successor) ──────────
+  {
+    id: "overclock-bus", name: "Overclock Bus", rarity: "rare", cursed: true,
+    text: "Cursed. Your congestion window cap is +1, but a wide turn shrinks it by 2.",
+    hooks: { onCombatStart: (ctx) => { ctx.combat.windowCap = (ctx.combat.windowCap || 5) + 1; ctx.combat.windowDecay = 2; } }
   }
 ];
 

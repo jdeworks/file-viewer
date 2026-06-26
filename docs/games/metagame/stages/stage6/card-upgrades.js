@@ -55,7 +55,10 @@ const SPECS = {
   // D2 DELAY
   WINDOWED_SEND: { text: "Deal 6. Deal 10 at the start of your next turn.", effect: (ctx) => { ctx.deal(6); ctx.queue(1, (c) => c.deal(10)); } },
   RETRANSMIT: { text: "Deal 24 in 2 turns.", effect: (ctx) => ctx.queue(2, (c) => c.deal(24)) },
-  DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => { ctx.block(6); ctx.queue(1, (c) => c.block(9)); } }
+  DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => { ctx.block(6); ctx.queue(1, (c) => c.block(9)); } },
+  // D3 THROUGHPUT
+  BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
+  BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => { ctx.block(11); ctx.noWindowShrink(); } }
 };
 
 export function isUpgradedId(id) {

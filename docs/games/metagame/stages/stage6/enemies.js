@@ -79,6 +79,18 @@ export const ENEMIES = {
       { label: "Flood — Attack 7, three times", attack: 7, hits: 3 }
     ]
   },
+  // Appears act 3: punishes WIDE turns — its Collapse deals damage scaling with the energy you spent.
+  "congestion-collapse": {
+    id: "congestion-collapse",
+    name: "Congestion Collapse",
+    tier: "standard",
+    hp: 58, hpPerAct: 16, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Buffer — Block 10", block: 10 },
+      { label: "Collapse — 3 × energy you spent", congest: 3 },
+      { label: "Attack 12", attack: 12 }
+    ]
+  },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
   "expired-certificate": {
     // Stalls behind heavy block, then expires for a large UNBLOCKABLE hit — race it or heal.

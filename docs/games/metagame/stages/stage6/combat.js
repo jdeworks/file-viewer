@@ -11,6 +11,10 @@ import { cardById } from "./cards.js";
 
 const HAND_SIZE = 5;
 const START_ENERGY = 3;
+// THROUGHPUT (Act 3): the congestion window — a dynamic energy cap. A wide turn (spend it all)
+// shrinks next turn's window; a restrained turn regrows it toward the cap (TCP slow-start).
+const WINDOW_CAP = 5;
+const WINDOW_FLOOR = 2;
 
 // Upgraded cards share their base id minus a trailing "+" (see card-upgrades.js). Combos that key
 // off a specific card (e.g. "ACK was played") match the base, so an upgrade never breaks a synergy.
@@ -38,11 +42,15 @@ function shuffle(list, rng) {
   return out;
 }
 
-export function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
+export function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false }) {
   const rng = makeRng(seed);
   const combat = {
     rng,
     relics,
+    congestion,            // THROUGHPUT: when true, energy is a dynamic congestion window
+    window: START_ENERGY,  // current window size (== maxEnergy while in congestion mode)
+    windowCap: WINDOW_CAP,
+    windowDecay: 1,        // how much a wide turn shrinks the window (relics can worsen this)
     player: {
       hp: player.hp,
       maxHp: player.maxHp,
@@ -164,6 +172,13 @@ function makeCtx(combat, card) {
       if (combat.delaySpeedup && !combat.delayUsed) { ahead = Math.max(1, ahead - 1); combat.delayUsed = true; }
       combat.pending.push({ turn: combat.turn + ahead, fn });
     },
+    // THROUGHPUT: widen the congestion window by n (and gain n energy now).
+    widenWindow: (n) => {
+      combat.window = (combat.window || combat.player.maxEnergy) + n;
+      combat.player.maxEnergy += n;
+      combat.player.energy += n;
+    },
+    noWindowShrink: () => { combat.noShrinkNextTurn = true; },
     clearSelfDebuffs: () => {
       let cleared = 0;
       for (const key of Object.keys(combat.player.statuses)) {
@@ -203,7 +218,7 @@ export function endTurn(combat) {
   // New player turn.
   combat.turn += 1;
   combat.player.block = 0;
-  combat.player.energy = combat.player.maxEnergy;
+  applyTurnEnergy(combat); // flat refill, or recompute the congestion window from this turn's spend
   combat.cardsPlayedThisTurn = 0;
   combat.energySpentThisTurn = 0;
   combat.playedIdsThisTurn = [];
@@ -212,6 +227,22 @@ export function endTurn(combat) {
   runHook(combat, "onPlayerTurnStart");
   resolvePending(combat); // DELAY: deferred effects land at the start of the new player turn
   return combat;
+}
+
+// Set the next turn's energy. In congestion mode the window shrinks after a WIDE turn (you spent the
+// whole window) and regrows toward the cap after a restrained turn (slow-start). Fully deterministic.
+function applyTurnEnergy(combat) {
+  if (!combat.congestion) { combat.player.energy = combat.player.maxEnergy; return; }
+  const wide = combat.energySpentThisTurn >= combat.window;
+  if (combat.noShrinkNextTurn) {
+    combat.noShrinkNextTurn = false; // Backoff: skip the shrink once
+  } else if (wide) {
+    combat.window = Math.max(WINDOW_FLOOR, combat.window - (combat.windowDecay || 1));
+  } else {
+    combat.window = Math.min(combat.windowCap || WINDOW_CAP, combat.window + 1);
+  }
+  combat.player.maxEnergy = combat.window;
+  combat.player.energy = combat.window;
 }
 
 // Resolve any queued (delayed) effects whose target turn has arrived. Deterministic, no RNG.
@@ -252,6 +283,8 @@ function resolveIntent(combat, intent) {
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
+  // THROUGHPUT: a congestion punisher deals damage scaling with the energy you spent last turn.
+  if (intent.congest) dealToPlayer(combat, intent.congest * (combat.energySpentThisTurn || 0));
   // Man-in-the-Middle: reflect the player's just-finished turn — damage scales with cards played.
   if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);

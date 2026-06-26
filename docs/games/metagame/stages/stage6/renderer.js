@@ -105,7 +105,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       player: { hp: run.hp, maxHp: run.maxHp },
       enemy,
       seed: strHash(`${run.seed}:${run.currentNodeId}:combat`),
-      relics: relicsFor(run.relics)
+      relics: relicsFor(run.relics),
+      congestion: run.act === 3 // THROUGHPUT: Act 3 fights run on the dynamic congestion window
     });
     c.nodeId = run.currentNodeId;
     // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every

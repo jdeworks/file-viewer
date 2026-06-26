@@ -80,3 +80,10 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   "then …" telegraph + a ⏫ growing marker. combat.test: queue resolves on the exact future turn,
   fast-retransmit speedup, RTT ramp (8+6·2=20) and interrupt-reset. Pool 42. (combat.js now 334 LOC
   — over soft cap, under hard; split candidate after D3.)
+- D3a — Act 3 NETWORK · THROUGHPUT (new primitive #2): opt-in congestion window (`createCombat
+  {congestion}`, enabled for act-3 fights). A wide turn (spend the whole window) shrinks it by
+  `windowDecay`; restraint regrows it toward `windowCap` (slow-start). ctx.widenWindow / noWindowShrink
+  primitives. Cards BANDWIDTH (Layer, widen) + BACKOFF (Protocol, skip the shrink); enemy Congestion
+  Collapse (`congest` intent = N × energy spent) in act 3; cursed relic Overclock Bus (+1 cap, −2 decay);
+  ui-combat shows the window readout. combat.test: shrink/regrow, Backoff, Bandwidth, Collapse scaling,
+  deterministic trajectory. Acts 1–2 keep flat energy. (Packet-Loss jam + Defrag → D3b.)

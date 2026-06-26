@@ -36,6 +36,7 @@ export function combatView(combat, run) {
     <div class="s6db-energy" aria-label="energy">
       ${energyPips(combat.player.energy, combat.player.maxEnergy)}
       <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
+      ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">

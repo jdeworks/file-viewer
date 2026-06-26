@@ -539,6 +539,18 @@ var PROTOCOL_CARDS = [
       ctx.block(5);
       ctx.queue(1, (c) => c.block(7));
     }
+  },
+  // Act 3 NETWORK · THROUGHPUT: spend big without the window shrinking next turn.
+  {
+    id: "BACKOFF",
+    type: "Protocol",
+    cost: 0,
+    rarity: "uncommon",
+    text: "Gain 8 block. Your congestion window does not shrink next turn.",
+    effect: (ctx) => {
+      ctx.block(8);
+      ctx.noWindowShrink();
+    }
   }
 ];
 
@@ -612,6 +624,15 @@ var LAYER_CARDS = [
     exhaust: true,
     text: "Gain 3 Strength. Exhaust.",
     effect: (ctx) => ctx.applySelf("strength", 3)
+  },
+  // Act 3 NETWORK · THROUGHPUT: permanently widen the congestion window (and gain energy now).
+  {
+    id: "BANDWIDTH",
+    type: "Layer",
+    cost: 1,
+    rarity: "rare",
+    text: "Widen your congestion window by 1 (gain 1 energy now).",
+    effect: (ctx) => ctx.widenWindow(1)
   }
 ];
 
@@ -630,6 +651,8 @@ var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "AC
 // ../../docs/games/metagame/stages/stage6/combat.js
 var HAND_SIZE = 5;
 var START_ENERGY = 3;
+var WINDOW_CAP = 5;
+var WINDOW_FLOOR = 2;
 function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
@@ -651,11 +674,18 @@ function shuffle(list, rng) {
   }
   return out;
 }
-function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
+function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false }) {
   const rng = makeRng(seed);
   const combat = {
     rng,
     relics,
+    congestion,
+    // THROUGHPUT: when true, energy is a dynamic congestion window
+    window: START_ENERGY,
+    // current window size (== maxEnergy while in congestion mode)
+    windowCap: WINDOW_CAP,
+    windowDecay: 1,
+    // how much a wide turn shrinks the window (relics can worsen this)
     player: {
       hp: player.hp,
       maxHp: player.maxHp,
@@ -778,6 +808,15 @@ function makeCtx(combat, card) {
       }
       combat.pending.push({ turn: combat.turn + ahead, fn });
     },
+    // THROUGHPUT: widen the congestion window by n (and gain n energy now).
+    widenWindow: (n) => {
+      combat.window = (combat.window || combat.player.maxEnergy) + n;
+      combat.player.maxEnergy += n;
+      combat.player.energy += n;
+    },
+    noWindowShrink: () => {
+      combat.noShrinkNextTurn = true;
+    },
     clearSelfDebuffs: () => {
       let cleared = 0;
       for (const key of Object.keys(combat.player.statuses)) {
@@ -828,7 +867,7 @@ function endTurn(combat) {
   if (combat.over) return combat;
   combat.turn += 1;
   combat.player.block = 0;
-  combat.player.energy = combat.player.maxEnergy;
+  applyTurnEnergy(combat);
   combat.cardsPlayedThisTurn = 0;
   combat.energySpentThisTurn = 0;
   combat.playedIdsThisTurn = [];
@@ -837,6 +876,22 @@ function endTurn(combat) {
   runHook(combat, "onPlayerTurnStart");
   resolvePending(combat);
   return combat;
+}
+function applyTurnEnergy(combat) {
+  if (!combat.congestion) {
+    combat.player.energy = combat.player.maxEnergy;
+    return;
+  }
+  const wide = combat.energySpentThisTurn >= combat.window;
+  if (combat.noShrinkNextTurn) {
+    combat.noShrinkNextTurn = false;
+  } else if (wide) {
+    combat.window = Math.max(WINDOW_FLOOR, combat.window - (combat.windowDecay || 1));
+  } else {
+    combat.window = Math.min(combat.windowCap || WINDOW_CAP, combat.window + 1);
+  }
+  combat.player.maxEnergy = combat.window;
+  combat.player.energy = combat.window;
 }
 function resolvePending(combat) {
   if (!combat.pending || !combat.pending.length) return;
@@ -872,6 +927,7 @@ function resolveIntent(combat, intent) {
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
+  if (intent.congest) dealToPlayer(combat, intent.congest * (combat.energySpentThisTurn || 0));
   if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
   if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
@@ -1026,6 +1082,21 @@ var ENEMIES = {
       { label: "Attack 14", attack: 14 },
       { label: "Block 12 + Attack 10", block: 12, attack: 10 },
       { label: "Flood — Attack 7, three times", attack: 7, hits: 3 }
+    ]
+  },
+  // Appears act 3: punishes WIDE turns — its Collapse deals damage scaling with the energy you spent.
+  "congestion-collapse": {
+    id: "congestion-collapse",
+    name: "Congestion Collapse",
+    tier: "standard",
+    hp: 58,
+    hpPerAct: 16,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Buffer — Block 10", block: 10 },
+      { label: "Collapse — 3 × energy you spent", congest: 3 },
+      { label: "Attack 12", attack: 12 }
     ]
   },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
@@ -1251,6 +1322,18 @@ var RELICS = [
     hooks: { onCombatStart: (ctx) => {
       ctx.combat.delaySpeedup = true;
     } }
+  },
+  // ── Act 3 NETWORK · THROUGHPUT: bigger pipe, harsher collapse (cursed Overclock successor) ──────────
+  {
+    id: "overclock-bus",
+    name: "Overclock Bus",
+    rarity: "rare",
+    cursed: true,
+    text: "Cursed. Your congestion window cap is +1, but a wide turn shrinks it by 2.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.windowCap = (ctx.combat.windowCap || 5) + 1;
+      ctx.combat.windowDecay = 2;
+    } }
   }
 ];
 var BY_ID2 = new Map(RELICS.map((relic) => [relic.id, relic]));
@@ -1272,7 +1355,7 @@ function rollRelic(seed, owned = []) {
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
   2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
-  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer"],
+  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
   4: ["null-pointer", "race-condition", "packet-storm"]
 };
 var ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
@@ -1485,6 +1568,12 @@ var SPECS = {
   DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => {
     ctx.block(6);
     ctx.queue(1, (c) => c.block(9));
+  } },
+  // D3 THROUGHPUT
+  BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
+  BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => {
+    ctx.block(11);
+    ctx.noWindowShrink();
   } }
 };
 function isUpgradedId(id) {
@@ -1807,6 +1896,7 @@ function combatView(combat, run) {
     <div class="s6db-energy" aria-label="energy">
       ${energyPips(combat.player.energy, combat.player.maxEnergy)}
       <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
+      ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
@@ -2312,7 +2402,9 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       player: { hp: run.hp, maxHp: run.maxHp },
       enemy,
       seed: strHash2(`${run.seed}:${run.currentNodeId}:combat`),
-      relics: relicsFor(run.relics)
+      relics: relicsFor(run.relics),
+      congestion: run.act === 3
+      // THROUGHPUT: Act 3 fights run on the dynamic congestion window
     });
     c.nodeId = run.currentNodeId;
     if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked });

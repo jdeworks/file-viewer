@@ -37,5 +37,11 @@ export const LAYER_CARDS = [
     id: "ONION", type: "Layer", cost: 3, rarity: "rare", exhaust: true,
     text: "Gain 3 Strength. Exhaust.",
     effect: (ctx) => ctx.applySelf("strength", 3)
+  },
+  // Act 3 NETWORK · THROUGHPUT: permanently widen the congestion window (and gain energy now).
+  {
+    id: "BANDWIDTH", type: "Layer", cost: 1, rarity: "rare",
+    text: "Widen your congestion window by 1 (gain 1 energy now).",
+    effect: (ctx) => ctx.widenWindow(1)
   }
 ];
