@@ -25,6 +25,7 @@ const CSS = `
 `;
 
 const BUILTIN_HELPERS = new Set(['if', 'each', 'with', 'unless', 'log', 'lookup', 'blockHelperMissing', 'helperMissing']);
+const BUILTIN_LITERALS = new Set(['else', 'this', 'true', 'false', 'null', 'undefined']);
 
 function analyzeHandlebars(text) {
   const lineStarts = lineStartOffsets(text);
@@ -52,7 +53,7 @@ function analyzeHandlebars(text) {
       if (block.name) {
         addOccurrence(blockHelpers, block.name, { line, kind: block.kind });
         if (block.kind === 'block partial') addOccurrence(partials, block.name, { line, kind: 'block partial' });
-        if (block.name && !BUILTIN_HELPERS.has(block.name) && block.kind !== 'block partial') addOccurrence(customHelpers, block.name, { line, kind: 'helper' });
+        if (block.name && !BUILTIN_HELPERS.has(block.name) && block.kind !== 'block partial') addOccurrence(variables, block.name, { line, kind: 'section context' });
         stack.push({ name: block.name, line, kind: block.kind });
       }
     } else if (sigil === '/') {
@@ -69,8 +70,14 @@ function analyzeHandlebars(text) {
       if (partialName) addOccurrence(partials, partialName, { line, kind: 'partial' });
     } else {
       expressionCount++;
-      const name = inner.replace(/^[{&~\s]+|[}~\s]+$/g, '').split(/\s/)[0];
-      if (name && !/^(else|this|@)/.test(name) && !BUILTIN_HELPERS.has(name)) addOccurrence(variables, name, { line, kind: sigil === '&' || m[0].startsWith('{{{') ? 'unescaped' : 'output' });
+      const expr = inner.replace(/^[{&~\s]+|[}~\s]+$/g, '');
+      const name = expr.split(/\s/)[0];
+      if (isInlineHelper(expr)) {
+        addOccurrence(customHelpers, name, { line, kind: 'inline helper' });
+        for (const ref of helperArguments(expr)) addOccurrence(variables, ref, { line, kind: 'helper argument' });
+      } else if (name && isVariableName(name)) {
+        addOccurrence(variables, name, { line, kind: sigil === '&' || m[0].startsWith('{{{') ? 'unescaped' : 'output' });
+      }
     }
   }
   for (const open of stack.reverse()) {
@@ -107,6 +114,27 @@ function blockName(inner) {
   const trimmed = inner.trim();
   if (trimmed.startsWith('>')) return { name: trimmed.slice(1).trim().split(/\s/)[0], kind: 'block partial' };
   return { name: trimmed.split(/[\s(]/)[0], kind: 'block helper' };
+}
+
+function isInlineHelper(expr) {
+  const parts = String(expr || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return false;
+  const name = parts[0];
+  if (!isVariableName(name) || name.includes('.') || name.includes('/')) return false;
+  if (BUILTIN_HELPERS.has(name) || BUILTIN_LITERALS.has(name) || name.startsWith('@')) return false;
+  return true;
+}
+
+function helperArguments(expr) {
+  const withoutStrings = String(expr || '').replace(/(["']).*?\1/g, ' ');
+  const parts = withoutStrings.trim().split(/\s+/).slice(1);
+  return parts
+    .map((part) => part.replace(/^['"]|['"],?$/g, '').replace(/,$/, ''))
+    .filter((part) => isVariableName(part) && !BUILTIN_LITERALS.has(part));
+}
+
+function isVariableName(name) {
+  return /^[A-Za-z_@][\w@./-]*$/.test(name) && !BUILTIN_LITERALS.has(name) && !name.startsWith('@');
 }
 
 function addOccurrence(map, name, item) {
@@ -198,11 +226,16 @@ function makeSection(title, items, tagFn) {
       const tag = document.createElement('span');
       tag.className = 'hbs-tag';
       tag.textContent = tagFn(item);
+      tag.title = tagHint(tag.textContent);
       li.appendChild(tag);
     }
     li.appendChild(sourceButton(item.name, item.firstLine, `Open ${item.name} on line ${item.firstLine}`));
     li.appendChild(chip(`line ${item.firstLine}`, 'muted'));
     if (item.count > 1) li.appendChild(chip(`${item.count} uses`, 'info'));
+    if (item.kinds?.includes('partial') || item.kinds?.includes('block partial')) li.appendChild(chip('template dependency', 'warn', 'Partial must be supplied by the render host.'));
+    if (item.kinds?.includes('inline helper')) li.appendChild(chip('render helper', 'warn', 'Custom helper must be registered by the render host.'));
+    if (item.kinds?.includes('section context')) li.appendChild(chip('section context', 'info', 'Non-built-in block may be a context section or a registered block helper.'));
+    if (item.kinds?.includes('unescaped')) li.appendChild(chip('unescaped', 'warn', 'Triple-stache or ampersand output is not HTML-escaped by Handlebars.'));
     if (item.kinds?.length) {
       const note = document.createElement('div');
       note.className = 'hbs-note';
@@ -277,4 +310,17 @@ export function render(intake) {
   wireSourceLinks(host, { idPrefix: 'hbs-line' });
 
   return { parentNode: host };
+}
+
+function tagHint(label) {
+  const hints = {
+    'built-in': 'Built-in Handlebars control helper.',
+    helper: 'Non-built-in block; may be a context section or registered block helper.',
+    custom: 'Custom inline helper that must be registered by the render host.',
+    partial: 'Includes another template supplied by the render host.',
+    'block partial': 'Block partial layout/template dependency supplied by the render host.',
+    output: 'Escaped output expression.',
+    unescaped: 'Unescaped output; review for trusted HTML only.',
+  };
+  return hints[label] || '';
 }

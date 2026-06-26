@@ -74,7 +74,7 @@ These already extract symbols but leave too much user value on the table.
 
 These should help users find broken structure and dependency/reference problems.
 
-- [ ] `handlebars-template`: unclosed/mismatched sections, custom helper inventory, partial dependencies.
+- [x] `handlebars-template`: unclosed/mismatched sections, custom helper inventory, partial dependencies.
 - [x] `mustache-template`: section stack validation, unresolved partial hints, variable grouping.
 - [x] `jinja2-template`: extends/includes/imports graph, duplicate blocks/macros, external context variables.
 - [x] `nunjucks`: same template diagnostics as Jinja-style files.

@@ -56,6 +56,11 @@ export async function run(ctx) {
   if (/if|each|with|unless/i.test(hbsText)) pass('sample.hbs: block helpers listed'); else fail('hbs block helpers: ' + hbsText.slice(0, 300));
   if (/partial|partials/i.test(hbsText)) pass('sample.hbs: partials shown'); else fail('hbs partials: ' + hbsText.slice(0, 300));
   if (/External-looking Variables|user\.email|formatDate/i.test(hbsText)) pass('sample.hbs: variable/helper inventory shown'); else fail('hbs inventory: ' + hbsText.slice(0, 500));
+  if (/render helper|template dependency|unescaped|section context/i.test(hbsText)) pass('sample.hbs: helper, dependency, and output hints shown'); else fail('hbs details: ' + hbsText.slice(0, 900));
+  const hbsPartialHint = await page.$$eval('#previewHost .hbs-doc .hbs-tag', (tags) => tags.find((el) => el.textContent === 'partial')?.title || '');
+  if (/Includes another template|render host/i.test(hbsPartialHint)) pass('sample.hbs: partial hover help present'); else fail('hbs partial hint: ' + hbsPartialHint);
+  const hbsCustomText = await page.$$eval('#previewHost .hbs-doc .hbs-section', (sections) => sections.find((el) => /Custom Helpers/.test(el.textContent || ''))?.textContent || '');
+  if (/capitalize|formatDate|isoDate|truncate/i.test(hbsCustomText) && !/breadcrumbItems/.test(hbsCustomText)) pass('sample.hbs: inline custom helpers separated from sections'); else fail('hbs custom helpers: ' + hbsCustomText.slice(0, 700));
   const hbsSourceOpen = await page.$eval('#previewHost .hbs-doc .kf-source-details', (e) => e.open);
   if (!hbsSourceOpen) pass('sample.hbs: source starts collapsed'); else fail('hbs source should start collapsed');
   await page.click('#previewHost .hbs-doc .kf-source-link');
@@ -64,6 +69,16 @@ export async function run(ctx) {
     highlighted: !!e.querySelector('.kf-source-hit'),
   }));
   if (hbsJump.open && hbsJump.highlighted) pass('sample.hbs: summary click opens and highlights source'); else fail('hbs source jump: ' + JSON.stringify(hbsJump));
+  const hbsBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/handlebars-template/renderer.js');
+    const rendered = mod.render({ text: '{{#if user}}\n{{name}}\n{{/each}}\n{{#open}}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/mismatch|unclosed block/i.test(hbsBad.text + hbsBad.issues)) pass('sample.hbs: malformed block diagnostics shown'); else fail('hbs diagnostics: ' + JSON.stringify(hbsBad).slice(0, 500));
 
   // ── sample.j2 viewer (Jinja2 Template) ──
   await openExample('sample.j2');
