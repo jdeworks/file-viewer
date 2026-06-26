@@ -384,14 +384,20 @@ export async function run(ctx) {
   // ── INI / .env ── key-value tables grouped by section. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ini');
-  const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const inif = await frameOf('iframe.fv-preview-frame');
-  await inif.waitForSelector('.kv-table', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .ini-preview .kv-table', { timeout: 30000 });
   const iniType = await page.$eval('#typeSelect', (s) => s.value);
   if (iniType === 'ini') pass('.ini detected as Config (INI/env)'); else fail('ini type: ' + iniType);
-  const iniSecs = await inif.$$eval('.kv-section h3', (els) => els.map((e) => e.textContent));
-  const iniKeys = await inif.$$eval('.kv-key', (els) => els.map((e) => e.textContent));
+  const iniSecs = await page.$$eval('#previewHost .ini-preview .kv-section h3', (els) => els.map((e) => e.textContent));
+  const iniKeys = await page.$$eval('#previewHost .ini-preview .kv-key', (els) => els.map((e) => e.textContent));
   if (iniSecs.some((s) => /server/.test(s)) && iniKeys.includes('port')) pass('INI rendered as sectioned key-value tables'); else fail('ini secs=' + iniSecs.join(',') + ' keys=' + iniKeys.join(','));
+  const iniSourceCollapsed = await page.$eval('#previewHost .ini-preview .kf-source-details', (el) => !el.open);
+  if (iniSourceCollapsed) pass('INI redacted source starts collapsed'); else fail('ini source unexpectedly open');
+  await page.$eval('#previewHost .ini-preview .kf-source-link[data-source-line]', (e) => e.click());
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#previewHost .ini-preview');
+    return root?.querySelector('.kf-source-details')?.open && root.querySelector('.kf-source-hit');
+  }, null, { timeout: 3000 });
+  pass('INI key links open redacted source');
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const iniMeta = await page.$eval('#metaBody', (e) => e.textContent);
@@ -421,6 +427,19 @@ export async function run(ctx) {
   }, null, { timeout: 4000 });
   const iniEditedText = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (/EDITED_BY_SMOKE/.test(iniEditedText)) pass('INI form edit flushes back into the editable text'); else fail('ini form edit not flushed: ' + iniEditedText.slice(0, 120));
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(async () => window.__fv.openViewerFile('secrets.ini', {
+    text: '[auth]\npassword = plain-text-secret\napi_key = abcdefghijklmnopqrstuvwxyz123456\n[server]\nhost = 127.0.0.1\n',
+  }));
+  await page.waitForFunction(() => document.querySelector('#previewHost .ini-preview .kf-issues'), null, { timeout: 8000 });
+  const iniSecret = await page.$eval('#previewHost .ini-preview', (el) => ({
+    text: el.textContent,
+    html: el.innerHTML,
+    sourceOpen: el.querySelector('.kf-source-details')?.open || false,
+  }));
+  if (/INI Structure Review|secret|\[configured\]/i.test(iniSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(iniSecret.text + iniSecret.html) && !iniSecret.sourceOpen) pass('INI secret-like values are warned and redacted');
+  else fail('ini secret redaction: ' + JSON.stringify({ ...iniSecret, html: iniSecret.html.slice(0, 300), text: iniSecret.text.slice(0, 300) }));
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.env (environment variables)');

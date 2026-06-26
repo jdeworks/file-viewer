@@ -122,6 +122,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Grafana INI: public bind/domain/secret review warnings, masking reasons, source-linked rows, and collapsed redacted source.
 - [ ] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.
 - [x] Generic JSON: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
+- [x] Generic INI: shared secret classifier, masked key/value rows, review warnings, source-linked keys, and collapsed redacted source.
 - [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
