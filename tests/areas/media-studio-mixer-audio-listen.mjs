@@ -327,6 +327,34 @@ export async function run(ctx) {
     pass('modular audio mix: dropped image becomes visual shared-model lane with seek-frame preview');
   else fail('modular audio mix dropped visual mismatch: ' + JSON.stringify(droppedVisual));
 
+  const visualExportPlan = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
+    const hasButton = !!el.querySelector('.mx-video-export-plan');
+    const statusPanel = el.querySelector('.mmx-video-export-status');
+    el.querySelector('.mx-video-export-plan')?.click();
+    const plan = el.__mediaMixerMulti.getLastVideoExportPlan();
+    return {
+      hasButton,
+      initialStatus: statusPanel?.dataset.status || '',
+      status: plan?.status || '',
+      canRender: !!plan?.canRender,
+      requiresFfmpeg: !!plan?.requiresFfmpeg,
+      renderPath: plan?.provenance?.renderPath || '',
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      audioItems: plan?.provenance?.audioItems?.length || 0,
+      hasDroppedImage: !!plan?.provenance?.visualItems?.some((item) => item.assetName === 'dropped-card.svg' && item.visual?.opacity === 1),
+      note: el.querySelector('.mmx-video-export-note')?.textContent || '',
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (visualExportPlan.hasButton && visualExportPlan.initialStatus === 'opt-in'
+    && visualExportPlan.status === 'opt-in' && !visualExportPlan.canRender
+    && visualExportPlan.requiresFfmpeg && visualExportPlan.renderPath === 'ffmpeg-opt-in-required'
+    && visualExportPlan.visualItems >= 1 && visualExportPlan.audioItems >= 1
+    && visualExportPlan.hasDroppedImage
+    && /Media Transcoding/i.test(visualExportPlan.note) && !visualExportPlan.hasBytes)
+    pass('modular audio mix: visual composition exposes ffmpeg-gated video export provenance');
+  else fail('modular audio mix video export plan mismatch: ' + JSON.stringify(visualExportPlan));
+
   const settingsUi = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
     const json = el.__mediaMixerMulti.exportSettings();
     const imported = el.__mediaMixerMulti.importSettings(json);

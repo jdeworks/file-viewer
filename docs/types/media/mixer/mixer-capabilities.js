@@ -26,8 +26,9 @@ export function evaluateMixerCapabilities(runtimeInput = {}, project = {}) {
   const assets = Array.isArray(project.assets) ? project.assets : [];
   const hasAudio = assets.some((asset) => asset.capabilities?.hasAudio);
   const hasVideo = assets.some((asset) => asset.capabilities?.hasVideo);
+  const hasImage = assets.some((asset) => asset.capabilities?.hasImage);
   const hasUnsupportedPreview = assets.some((asset) => asset.capabilities?.needsFfmpegForPreview);
-  const hasFfmpegExport = assets.some((asset) => asset.capabilities?.needsFfmpegForExport || asset.capabilities?.hasVideo);
+  const hasFfmpegExport = assets.some((asset) => asset.capabilities?.needsFfmpegForExport || asset.capabilities?.hasVideo || asset.capabilities?.hasImage);
   return {
     runtime,
     actions: {
@@ -106,4 +107,3 @@ function ffmpegStatus(runtime, message) {
   if (runtime.ffmpegEnabled) return optIn('Media Transcoding is enabled but not loaded yet. ' + message);
   return optIn(message);
 }
-

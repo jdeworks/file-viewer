@@ -383,18 +383,23 @@ Stage 7 project settings import/export UI has started:
   compact export status panel. With ffmpeg disabled, the surface remains usable
   and shows the Media Transcoding opt-in note instead of loading ffmpeg or
   presenting a broken render action.
+- Multi-lane Mix now exposes the same final-video export planning when the
+  shared project contains image/video elements. Image-only visual compositions
+  are correctly treated as ffmpeg-gated final video renders, and the plan
+  records mixed audio plus visual-layer provenance without serializing runtime
+  files, frame caches, or thumbnails.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
-  media, exposes all three required reapply choices, and applies the ask-per-
-  element choice without serializing media bytes. `tests/areas/media-studio-
-  video-export-timeline.mjs` proves the same settings surface on opened video
-  source, including drag/drop relink for a missing imported video asset and
-  ffmpeg-gated final export provenance, and `tests/areas/media-studio-compare.mjs`
-  proves it on modular Compare for audio and video. `tests/media-mixer-video-
-  export.test.mjs` covers the pure video export planner.
+  media, exposes all three required reapply choices, applies the ask-per-
+  element choice without serializing media bytes, and proves dropped-image
+  visual compositions expose ffmpeg-gated video export provenance. `tests/areas/
+  media-studio-video-export-timeline.mjs` proves the same settings surface on
+  opened video source, including drag/drop relink for a missing imported video
+  asset and ffmpeg-gated final export provenance, and `tests/areas/media-studio-
+  compare.mjs` proves it on modular Compare for audio and video.
 - Stage 7 remaining work: connect the modular video export plan to lazy ffmpeg
-  execution and extend the shared provenance plan across multi-lane video/image
-  compositions.
+  execution and deepen the shared video/image export planner from provenance
+  into concrete multi-input filter graphs for transforms/layering.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

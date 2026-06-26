@@ -9,9 +9,10 @@ export function decorateMultiToolbar(toolbar, project) {
   const addTone = createButton('+ Tone', 'Add generated tone lane', 'mx-add-btn');
   const addPink = createButton('+ Pink noise', 'Add pink-noise room-tone lane', 'mx-add-pink');
   const mix = createButton('Mixdown -> WAV', 'Download browser audio mixdown WAV', 'mx-mix-btn');
+  const videoPlan = createButton('Plan video export', 'Plan ffmpeg-gated video/image export', 'mx-video-export-plan mmx-video-export-plan');
   const drop = document.createElement('span');
   drop.className = 'mx-drop-zone';
-  drop.textContent = 'Drop audio to add lane';
+  drop.textContent = 'Drop audio, image, or video to add lane';
   const master = document.createElement('label');
   master.className = 'mx-master';
   const masterText = document.createElement('span');
@@ -24,7 +25,10 @@ export function decorateMultiToolbar(toolbar, project) {
   masterSlider.step = '0.01';
   masterSlider.value = String(project.master?.audio?.gain ?? 1);
   master.append(masterText, masterSlider);
-  controls.append(play, stop, addTone, addPink, master, mix, drop);
+  const hasVisual = (project.elements || []).some((element) => element.capabilities?.hasVideo || element.capabilities?.hasImage);
+  controls.append(play, stop, addTone, addPink, master, mix);
+  if (hasVisual) controls.append(videoPlan);
+  controls.append(drop);
   toolbar.append(controls);
 }
 

@@ -8,6 +8,7 @@ import {
   evaluateMixerCapabilities,
   exportProjectSettingsJson,
   buildAudioMixExportPlan,
+  buildVideoMixExportPlan,
   moveElement,
   renderAudioMixToWav,
   selectTarget,
@@ -62,13 +63,14 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let destroyed = false;
   let draggingElement = null;
   let lastExportPlan = null;
+  let lastVideoExportPlan = null;
   const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set('asset-listen-source', intake.file);
   const visualRuntime = createMixerVisualRuntime({ runtimeFiles, onUpdate: render });
   const runtime = {
     ffmpegEnabled: !!options.enableFfmpeg,
-    ffmpegLoaded: false,
+    ffmpegLoaded: !!options.ffmpegLoaded,
     canExportAudioMixBrowser: true,
   };
   const setCursorMs = (cursorMs) => {
@@ -179,6 +181,12 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     }
     if (button.matches('.mx-mix-btn')) {
       downloadMixdown();
+      return;
+    }
+    if (button.matches('.mx-video-export-plan')) {
+      lastVideoExportPlan = buildVideoExportPlan();
+      root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
+      render();
     }
   };
   const onPointerDown = (event) => {
@@ -246,6 +254,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getAudioCacheStats: () => decodedAudioCache.stats(),
     getPlaybackState: () => playback.getState(),
     getLastExportPlan: () => lastExportPlan,
+    getLastVideoExportPlan: () => lastVideoExportPlan,
+    buildVideoExportPlan,
     getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
     importSettings: settingsUi.importSettings,
@@ -270,6 +280,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getAudioCacheStats: () => decodedAudioCache.stats(),
     getPlaybackState: () => playback.getState(),
     getLastExportPlan: () => lastExportPlan,
+    getLastVideoExportPlan: () => lastVideoExportPlan,
+    buildVideoExportPlan,
     dispatch,
     destroy() {
       destroyed = true;
@@ -358,6 +370,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     const reduced = summarizeReducedCapabilities(evaluateMixerCapabilities(runtime, project));
     caps.textContent = reduced.map((item) => `${item.id}: ${item.message}`).join(' ');
     inspector.append(caps);
+    if (hasVisualElements(project)) {
+      inspector.append(renderVideoExportPlanPanel(lastVideoExportPlan || buildVideoExportPlan()));
+    }
   }
 
   function addGeneratedLane(kind, label, roomTone) {
@@ -451,6 +466,14 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     });
   }
 
+  function buildVideoExportPlan() {
+    return buildVideoMixExportPlan(project, {
+      ffmpegEnabled: runtime.ffmpegEnabled,
+      ffmpegLoaded: runtime.ffmpegLoaded,
+      filename: `${(intake?.filename || 'media-mix').replace(/\.[^.]+$/, '')}.mp4`,
+    });
+  }
+
   function fitZoom() {
     const width = Math.max(240, root.clientWidth - MIXER_LAYOUT.gutterWidth);
     const duration = Math.max(1000, project.project.durationMs || 1000);
@@ -486,8 +509,31 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.dataset.waveformBuckets = String(waveformSummary?.buckets || 0);
     root.dataset.hasDroppedAudio = project.assets.some((asset) => asset.id.startsWith('asset-drop-') && asset.capabilities?.hasAudio) ? 'true' : 'false';
     root.dataset.hasDroppedVisual = project.assets.some((asset) => asset.id.startsWith('asset-drop-') && (asset.capabilities?.hasVideo || asset.capabilities?.hasImage)) ? 'true' : 'false';
+    root.dataset.videoExportStatus = lastVideoExportPlan?.status || '';
+    root.dataset.videoExportCanRender = lastVideoExportPlan?.canRender ? 'true' : 'false';
     root.dataset.decodedCacheEntries = String(decodedAudioCache.stats().entryCount);
     root.dataset.decodedCacheBudgetBytes = String(decodedAudioCache.stats().budgetBytes);
     reflectMultiPlaybackState(root, playback.getState());
   }
+}
+
+function hasVisualElements(project) {
+  return (project.elements || []).some((element) => element.capabilities?.hasVideo || element.capabilities?.hasImage);
+}
+
+function renderVideoExportPlanPanel(plan) {
+  const panel = document.createElement('section');
+  panel.className = 'mmx-video-export-status';
+  panel.dataset.status = plan.status;
+  panel.dataset.canRender = plan.canRender ? 'true' : 'false';
+  const title = document.createElement('strong');
+  title.textContent = plan.canRender ? 'Final video export ready' : 'Final video export needs Media Transcoding';
+  const summary = document.createElement('span');
+  summary.className = 'mmx-video-export-summary';
+  summary.textContent = `${plan.provenance.visualItems.length} visual · ${plan.provenance.audioItems.length} audio · ${Math.round(plan.durationMs)} ms`;
+  const note = document.createElement('p');
+  note.className = 'mmx-video-export-note';
+  note.textContent = plan.warnings[0] || plan.statusMessage || 'ffmpeg render planning is available for this composition.';
+  panel.append(title, summary, note);
+  return panel;
 }

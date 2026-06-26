@@ -169,8 +169,11 @@ runtime map while the project receives only matched identity/config metadata.
 The modular video source now also exposes a pure final-video export plan with
 ffmpeg opt-in gating and config-only provenance for assets, timeline items,
 transforms, trims, fades, master settings, warnings, and render path. The next
-Stage 7 work is connecting that plan to lazy ffmpeg execution and broadening it
-from opened one-source video to full multi-lane video/image compositions.
+Stage 7 slice broadened that same planner into multi-lane Mix projects whenever
+image/video elements are present, including image-only visual compositions that
+still require final video rendering. The next work is connecting the plan to
+lazy ffmpeg execution and deepening it into concrete multi-input filter graphs
+for transforms/layering.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
