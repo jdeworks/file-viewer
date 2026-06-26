@@ -5,6 +5,7 @@ import { buildFloor, step, exitDistanceField, stepToExit } from "../engine.js";
 import { spawnMonster } from "../data.js";
 import { enterHazard, hazardIndex } from "../hazards.js";
 import { springTrap } from "../traps.js";
+import { useConsumable } from "../consumables.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -198,6 +199,25 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
     steps += 1;
   }
   ok(w.pos.x === w.exit.x && w.pos.y === w.exit.y && steps === startDist, "compass routes the exact shortest path to the stairs");
+}
+
+// ── B3 consumables: firebolt spends + burns; freeze locks; empty fizzles ──────────────────────────
+{
+  const w = arena(12);
+  w.floor = 4;
+  w.monsters = [foe({ x: 5, y: 1, hp: 30, name: "target" })];
+  const player = { hp: 50, def: 0, statuses: {}, inventory: { firebolt: 1, freeze: 0 } };
+  const ev = { log: [], damageTaken: 0, died: false };
+  ok(useConsumable(w, player, "firebolt", ev) && w.monsters[0].hp < 30 && hasStatus(w.monsters[0], "burn"), "firebolt damages + burns the nearest foe and is spent");
+  ok(player.inventory.firebolt === 0, "firebolt count decremented");
+  ok(useConsumable(w, player, "freeze", { log: [], damageTaken: 0, died: false }) === false, "an empty consumable can't be used");
+  const w2 = arena(12);
+  const f2 = foe({ x: 3, y: 1, name: "icy" });
+  w2.monsters = [f2];
+  w2.pos = { x: 4, y: 1 };
+  const p2 = { hp: 50, def: 0, statuses: {}, inventory: { freeze: 1 } };
+  useConsumable(w2, p2, "freeze", { log: [], damageTaken: 0, died: false });
+  ok(hasStatus(f2, "frozen"), "freeze locks nearby foes");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

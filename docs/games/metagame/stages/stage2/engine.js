@@ -205,6 +205,15 @@ export function step(world, player, dir) {
     events.pickup = events.pickup || "potion";
     events.log.push(`parse potion. +${heal} HP.`);
   }
+  // Glyph consumable pickup (B3) — banked into the run inventory.
+  const item = world.consumables && world.consumables.find((c) => !c.taken && c.x === nx && c.y === ny);
+  if (item) {
+    item.taken = true;
+    const inv = player.inventory || (player.inventory = {});
+    inv[item.type] = Number(inv[item.type] || 0) + 1;
+    events.pickup = events.pickup || "consumable";
+    events.log.push(`picked up a ${item.type} rune.`);
+  }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   // B5: the optional branch stair descends to a deadlier, richer floor.
   if (world.branchExit && nx === world.branchExit.x && ny === world.branchExit.y) { events.descend = true; events.branch = true; }

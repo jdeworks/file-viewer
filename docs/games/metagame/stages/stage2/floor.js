@@ -7,6 +7,7 @@ import { generate, floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster } from "./data.js";
 import { placeHazards, hazardIndex } from "./hazards.js";
 import { placeTraps, trapIndex } from "./traps.js";
+import { placeConsumables } from "./consumables.js";
 
 // Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
 // grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
@@ -157,7 +158,8 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
   // Hazards + traps last, on the floor cells nothing else claimed (unique via the shared `take`).
   const hazards = placeHazards(rng, floorNum, roomN, take);
   const traps = placeTraps(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps };
+  const consumables = placeConsumables(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps, consumables };
   defineGrid(world, grid);
   defineHazards(world);
   return world;

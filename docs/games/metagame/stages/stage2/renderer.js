@@ -4,6 +4,7 @@ import { exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.
 import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
+import { useConsumable, CONSUMABLE_KEYS, CONSUMABLES } from "./consumables.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
 import { createView, renderHpBar } from "./view.js";
@@ -53,6 +54,7 @@ export function renderStage2({
       </div>
       <div class="s2-controls">
         <div class="s2-compass" data-field="compass" hidden></div>
+        <div class="s2-items" data-field="items"></div>
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
@@ -89,6 +91,7 @@ export function renderStage2({
   let lastHp = -1;
   let lastMaxHp = -1;
   let lastLogSig = "";
+  let lastItemSig = "";
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
   let monsterClocks = []; // the 5 real-time monster-movement intervals
@@ -119,6 +122,7 @@ export function renderStage2({
     const status = statusSummary(e);
     setHidden(fields.status, !status);
     setText(fields.status, status);
+    paintItems(e);
     setText(fields.bossStatus, state.run.boss.defeated
       ? "defeated. BTS trace available."
       : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
@@ -158,6 +162,38 @@ export function renderStage2({
     setHidden(fields.compass, false);
     if (!next || next.steps === 0) { setText(fields.compass, "⇲ stairs — here"); return; }
     setText(fields.compass, `⇲ stairs ${DIR_ARROW[next.dir]} ${next.steps}`);
+  }
+
+  // Consumable inventory bar (B3) — one button per tool with its count + hotkey. Rebuilt only when
+  // a count actually changes (guarded by a signature), then the counts re-bound for clicks.
+  function paintItems(e) {
+    const inv = e.inventory || {};
+    const sig = CONSUMABLE_KEYS.map((k) => inv[k] || 0).join(",");
+    if (sig === lastItemSig) return;
+    lastItemSig = sig;
+    const total = CONSUMABLE_KEYS.reduce((s, k) => s + (inv[k] || 0), 0);
+    setHidden(fields.items, total === 0); // only show once you actually carry a rune
+    fields.items.innerHTML = CONSUMABLE_KEYS.map((k, i) => {
+      const n = inv[k] || 0;
+      const def = CONSUMABLES[k];
+      return `<button type="button" data-use="${k}" title="${def.desc}" ${n > 0 ? "" : "disabled"}>[${i + 1}] ${def.glyph} ${k} ×${n}</button>`;
+    }).join("");
+  }
+
+  // Spend a consumable (key 1/2/3 or a button). A firebolt with no target fizzles without spending.
+  function useItem(type) {
+    if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
+    const world = state.run.world;
+    const e = state.run.entity;
+    if (!e.inventory || !(e.inventory[type] > 0)) return;
+    const events = { moved: false, log: [], damageTaken: 0, died: false };
+    const used = useConsumable(world, e, type, events);
+    for (const line of events.log) appendLog(state, line);
+    if (used) {
+      if (typeof save === "function") save();
+      view.paintExplore(world); // blink moves the camera / firebolt may clear a foe
+    }
+    paintHud();
   }
 
   // The dungeon screen — boss arena art, or the camera-following exploration view.
@@ -239,6 +275,11 @@ export function renderStage2({
     if (!root.isConnected) return;
     const tag = (event.target && event.target.tagName) || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
+    if (event.key >= "1" && event.key <= "3") {
+      const type = CONSUMABLE_KEYS[Number(event.key) - 1];
+      if (type) { event.preventDefault(); useItem(type); }
+      return;
+    }
     const dir = MOVE_KEYS[event.key];
     if (!dir) return;
     event.preventDefault();
@@ -249,6 +290,8 @@ export function renderStage2({
   root.addEventListener("click", (event) => {
     const moveBtn = event.target.closest("button[data-move]");
     if (moveBtn) { move(moveBtn.dataset.move); return; }
+    const useBtn = event.target.closest("button[data-use]");
+    if (useBtn) { useItem(useBtn.dataset.use); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
@@ -271,6 +314,7 @@ export function renderStage2({
     else if (id === "atk") e.atk += 5;
     else if (id === "lvl") { e.level += 1; e.maxHp += 5; e.atk += 1; e.hp = e.maxHp; }
     else if (id === "glyphs") e.glyphsThisRun = Number(e.glyphsThisRun || 0) + 1000;
+    else if (id === "items") { e.inventory = e.inventory || {}; for (const k of CONSUMABLE_KEYS) e.inventory[k] = Number(e.inventory[k] || 0) + 3; }
     else if (id === "map") { view.toggleFullMap(state.run.world); return; }
     if (typeof save === "function") save();
     paintHud();

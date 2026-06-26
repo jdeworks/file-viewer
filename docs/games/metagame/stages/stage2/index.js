@@ -15,6 +15,7 @@ export const stageMeta = {
     { id: "atk", label: "+5 ATK" },
     { id: "lvl", label: "+1 LVL" },
     { id: "glyphs", label: "+1k glyphs" },
+    { id: "items", label: "+3 of each rune" },
     { id: "map", label: "Zoom out (full map)" }
   ]
 };

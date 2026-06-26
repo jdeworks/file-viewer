@@ -74,7 +74,7 @@ export function xpForLevel(level) {
 
 // Roll a fresh run entity from BASE_STATS + purchased upgrades.
 export function rollEntity(shopUpgrades = {}) {
-  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: 'hand_cursor' } };
+  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: 'hand_cursor' }, inventory: {}, statuses: {} };
   for (const up of SHOP_UPGRADES) {
     const n = Number(shopUpgrades[up.id] || 0);
     if (n > 0) up.apply(stats, n);

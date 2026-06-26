@@ -543,7 +543,7 @@ function xpForLevel(level) {
   return 6 + (level - 1) * 5;
 }
 function rollEntity(shopUpgrades = {}) {
-  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" } };
+  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" }, inventory: {}, statuses: {} };
   for (const up of SHOP_UPGRADES) {
     const n = Number(shopUpgrades[up.id] || 0);
     if (n > 0) up.apply(stats, n);
@@ -1094,6 +1094,91 @@ function makeBlinkRng(world, trap) {
   } };
 }
 
+// ../../docs/games/metagame/stages/stage2/consumables.js
+var CONSUMABLES = {
+  blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
+  firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" }
+};
+var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze"];
+function placeConsumables(rng, floor, roomN, takeCell) {
+  const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
+  const out = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    out.push({ x: c.x, y: c.y, type: rng.pick(CONSUMABLE_KEYS), taken: false });
+  }
+  return out;
+}
+function nearbyOpen(world, rad) {
+  let h = world.pos.x * 73856093 ^ world.pos.y * 19349663 ^ (world.stepCount || 0) * 83492791;
+  for (let t = 0; t < 60; t += 1) {
+    h = h * 1103515245 + 12345 & 2147483647;
+    const dx = h % (rad * 2 + 1) - rad;
+    h = h * 1103515245 + 12345 & 2147483647;
+    const dy = h % (rad * 2 + 1) - rad;
+    const x = world.pos.x + dx;
+    const y = world.pos.y + dy;
+    if ((dx || dy) && isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
+  }
+  return null;
+}
+function nearestVisibleFoe(world, rad) {
+  let best = null;
+  let bd = Infinity;
+  for (const m of world.monsters) {
+    if (!m.alive || m.ally) continue;
+    const d = Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y);
+    if (d <= rad && d < bd && hasLOS(world, world.pos.x, world.pos.y, m.x, m.y)) {
+      bd = d;
+      best = m;
+    }
+  }
+  return best;
+}
+function useConsumable(world, player, type, events) {
+  const inv = player.inventory || (player.inventory = {});
+  if (!inv[type] || inv[type] <= 0) return false;
+  if (type === "blink") {
+    const spot = nearbyOpen(world, 7);
+    if (!spot) {
+      events.log.push("the blink rune finds nowhere to land.");
+      return false;
+    }
+    world.pos = { x: spot.x, y: spot.y };
+    events.moved = true;
+    events.blinked = true;
+    events.log.push("blink rune — you flicker across the floor.");
+  } else if (type === "firebolt") {
+    const foe = nearestVisibleFoe(world, 10);
+    if (!foe) {
+      events.log.push("firebolt fizzles — no target in sight.");
+      return false;
+    }
+    const dmg = 12 + world.floor * 3;
+    foe.hp -= dmg;
+    applyStatus(foe, "burn", 4, 2);
+    if (foe.hp <= 0) foe.alive = false;
+    events.log.push(`firebolt scorches ${foe.name} for ${dmg}${foe.hp <= 0 ? " — unparsed" : ""}.`);
+  } else if (type === "freeze") {
+    let n = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 5) {
+        applyStatus(m, "frozen", 4, 1);
+        if (m.ambush) m.hidden = false;
+        n += 1;
+      }
+    }
+    events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+  } else {
+    return false;
+  }
+  inv[type] -= 1;
+  events.used = type;
+  return true;
+}
+
 // ../../docs/games/metagame/stages/stage2/floor.js
 var GROWTH = 1.35;
 function floorDims(runSeed, floorNum) {
@@ -1229,7 +1314,8 @@ function buildFloor(runSeed, floorNum, mods = {}) {
   }
   const hazards = placeHazards(rng, floorNum, roomN, take);
   const traps = placeTraps(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps };
+  const consumables = placeConsumables(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps, consumables };
   defineGrid(world, grid);
   defineHazards(world);
   return world;
@@ -1452,6 +1538,14 @@ function step(world, player, dir) {
     events.pickup = events.pickup || "potion";
     events.log.push(`parse potion. +${heal} HP.`);
   }
+  const item = world.consumables && world.consumables.find((c) => !c.taken && c.x === nx && c.y === ny);
+  if (item) {
+    item.taken = true;
+    const inv = player.inventory || (player.inventory = {});
+    inv[item.type] = Number(inv[item.type] || 0) + 1;
+    events.pickup = events.pickup || "consumable";
+    events.log.push(`picked up a ${item.type} rune.`);
+  }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
   if (world.branchExit && nx === world.branchExit.x && ny === world.branchExit.y) {
     events.descend = true;
@@ -1643,6 +1737,7 @@ var SECTIONS = [
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
+  ["Runes", "Pink ♦ runes are one-shot tools: pick them up, then press 1/2/3 (or the buttons) — blink (escape), firebolt (scorch the nearest foe), freeze (lock foes around you)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
 ];
@@ -1790,6 +1885,9 @@ function createView(screenEl) {
     });
     if (world.potions) world.potions.forEach((p, i) => {
       if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion");
+    });
+    if (world.consumables) world.consumables.forEach((c, i) => {
+      if (!c.taken) place("c" + i, c.x, c.y, (CONSUMABLES[c.type] || {}).glyph || "♦", "s2-c-consum");
     });
     if (world.hidden) world.hidden.forEach((h, i) => {
       if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret");
@@ -1952,6 +2050,9 @@ function createView(screenEl) {
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) {
       for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
+    }
+    if (world.consumables) {
+      for (const c of world.consumables) if (!c.taken) dot(c.x, c.y, "#ff7bf0", 3);
     }
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
@@ -2130,6 +2231,7 @@ function renderStage2({
       </div>
       <div class="s2-controls">
         <div class="s2-compass" data-field="compass" hidden></div>
+        <div class="s2-items" data-field="items"></div>
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
@@ -2167,6 +2269,7 @@ function renderStage2({
   let lastHp = -1;
   let lastMaxHp = -1;
   let lastLogSig = "";
+  let lastItemSig = "";
   let flashTimer = null;
   let overlay = null;
   let monsterClocks = [];
@@ -2194,6 +2297,7 @@ function renderStage2({
     const status = statusSummary(e);
     setHidden(fields.status, !status);
     setText(fields.status, status);
+    paintItems(e);
     setText(fields.bossStatus, state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
     setText(fields.hint, lock.hint);
     const biome = biomeForFloor(state.run.floor);
@@ -2229,6 +2333,33 @@ function renderStage2({
       return;
     }
     setText(fields.compass, `⇲ stairs ${DIR_ARROW[next.dir]} ${next.steps}`);
+  }
+  function paintItems(e) {
+    const inv = e.inventory || {};
+    const sig = CONSUMABLE_KEYS.map((k) => inv[k] || 0).join(",");
+    if (sig === lastItemSig) return;
+    lastItemSig = sig;
+    const total = CONSUMABLE_KEYS.reduce((s, k) => s + (inv[k] || 0), 0);
+    setHidden(fields.items, total === 0);
+    fields.items.innerHTML = CONSUMABLE_KEYS.map((k, i) => {
+      const n = inv[k] || 0;
+      const def = CONSUMABLES[k];
+      return `<button type="button" data-use="${k}" title="${def.desc}" ${n > 0 ? "" : "disabled"}>[${i + 1}] ${def.glyph} ${k} ×${n}</button>`;
+    }).join("");
+  }
+  function useItem(type) {
+    if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
+    const world = state.run.world;
+    const e = state.run.entity;
+    if (!e.inventory || !(e.inventory[type] > 0)) return;
+    const events = { moved: false, log: [], damageTaken: 0, died: false };
+    const used = useConsumable(world, e, type, events);
+    for (const line of events.log) appendLog(state, line);
+    if (used) {
+      if (typeof save === "function") save();
+      view.paintExplore(world);
+    }
+    paintHud();
   }
   function paintWorld() {
     if (state.run.boss.reached) {
@@ -2305,6 +2436,14 @@ function renderStage2({
     if (!root.isConnected) return;
     const tag = event.target && event.target.tagName || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
+    if (event.key >= "1" && event.key <= "3") {
+      const type = CONSUMABLE_KEYS[Number(event.key) - 1];
+      if (type) {
+        event.preventDefault();
+        useItem(type);
+      }
+      return;
+    }
     const dir = MOVE_KEYS[event.key];
     if (!dir) return;
     event.preventDefault();
@@ -2315,6 +2454,11 @@ function renderStage2({
     const moveBtn = event.target.closest("button[data-move]");
     if (moveBtn) {
       move(moveBtn.dataset.move);
+      return;
+    }
+    const useBtn = event.target.closest("button[data-use]");
+    if (useBtn) {
+      useItem(useBtn.dataset.use);
       return;
     }
     const button = event.target.closest("button[data-action]");
@@ -2349,7 +2493,10 @@ function renderStage2({
       e.atk += 1;
       e.hp = e.maxHp;
     } else if (id === "glyphs") e.glyphsThisRun = Number(e.glyphsThisRun || 0) + 1e3;
-    else if (id === "map") {
+    else if (id === "items") {
+      e.inventory = e.inventory || {};
+      for (const k of CONSUMABLE_KEYS) e.inventory[k] = Number(e.inventory[k] || 0) + 3;
+    } else if (id === "map") {
       view.toggleFullMap(state.run.world);
       return;
     }
@@ -2504,6 +2651,7 @@ var stageMeta = {
     { id: "atk", label: "+5 ATK" },
     { id: "lvl", label: "+1 LVL" },
     { id: "glyphs", label: "+1k glyphs" },
+    { id: "items", label: "+3 of each rune" },
     { id: "map", label: "Zoom out (full map)" }
   ]
 };

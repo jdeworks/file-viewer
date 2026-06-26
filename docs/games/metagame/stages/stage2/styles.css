@@ -63,6 +63,28 @@
   display: none;
 }
 
+/* Consumable inventory bar (B3) — a row of small rune buttons with counts + hotkeys. */
+.s2-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.s2-items button {
+  background: #21180d;
+  border: 1px solid var(--s2-border);
+  color: #ff7bf0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82em;
+  min-height: 30px;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.s2-items button:disabled { color: var(--s2-dim); cursor: default; opacity: 0.5; }
+.s2-items button:not(:disabled):hover { border-color: #ffc46f; outline: 1px solid #ffc46f; }
+
 .s2-hud {
   border-bottom: 1px solid var(--s2-border);
   padding-bottom: 8px;
@@ -227,6 +249,7 @@
 .s2-c-item { color: #ffd54a; }
 .s2-c-potion { color: #6effa6; font-weight: 700; }
 .s2-c-glyph { color: #d78bff; }
+.s2-c-consum { color: #ff7bf0; font-weight: 700; text-shadow: 0 0 4px #ff00cc; } /* B3 consumable rune */
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
 .s2-c-branch { color: #c98bff; font-weight: 700; text-shadow: 0 0 5px #8a3aff; } /* B5 branch stair */
 
