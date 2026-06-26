@@ -78,7 +78,7 @@ These should help users find broken structure and dependency/reference problems.
 - [x] `mustache-template`: section stack validation, unresolved partial hints, variable grouping.
 - [x] `jinja2-template`: extends/includes/imports graph, duplicate blocks/macros, external context variables.
 - [x] `nunjucks`: same template diagnostics as Jinja-style files.
-- [ ] `asciidoc`: anchors, xrefs, includes, images, admonitions, duplicate/missing references.
+- [x] `asciidoc`: anchors, xrefs, includes, images, admonitions, duplicate/missing references.
 - [ ] `restructuredtext`: labels, refs, substitutions, toctree/include/image directives, malformed directive options.
 - [ ] `org-mode`: TODO distribution, tags, deadlines/scheduled timestamps, source block names/results, broken links.
 - [ ] `mediawiki-markup`: parser functions, duplicate categories, citation/ref health, file alt/caption extraction.

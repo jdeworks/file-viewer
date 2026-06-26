@@ -299,6 +299,26 @@ export async function run(ctx) {
   if (/Getting Started/i.test(adocText)) pass('sample.adoc: document title shown'); else fail('asciidoc title: ' + adocText.slice(0, 300));
   if (/Jane Developer/i.test(adocText)) pass('sample.adoc: author shown'); else fail('asciidoc author: ' + adocText.slice(0, 300));
   if (/Installation|Usage|Introduction/i.test(adocText)) pass('sample.adoc: section headings shown'); else fail('asciidoc sections: ' + adocText.slice(0, 300));
+  if (/Anchors|getting_started_guide|implicit heading/i.test(adocText)) pass('sample.adoc: anchors and heading source metadata shown'); else fail('asciidoc anchors: ' + adocText.slice(0, 800));
+  const adocSourceOpen = await page.$eval('#previewHost .adoc-doc .kf-source-details', (e) => e.open);
+  if (!adocSourceOpen) pass('sample.adoc: source starts collapsed'); else fail('asciidoc source should start collapsed');
+  await page.click('#previewHost .adoc-doc .kf-source-link');
+  const adocJump = await page.$eval('#previewHost .adoc-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (adocJump.open && adocJump.highlighted) pass('sample.adoc: item click opens and highlights source'); else fail('asciidoc source jump: ' + JSON.stringify(adocJump));
+  const adocBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/asciidoc/renderer.js');
+    const text = '= Demo\n\n[[intro]]\n== Intro\n\n[#intro]\n== Duplicate\n\nSee xref:missing[Missing].\ninclude::partials/card.adoc[]\nimage::images/hero.png[Hero]\nWARNING: Check this path.';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { out, issues };
+  });
+  if (/duplicate anchor|missing xref|partials\/card\.adoc|images\/hero\.png|WARNING/i.test(adocBad.out + adocBad.issues)) pass('sample.adoc: references, media, admonitions, and diagnostics shown'); else fail('asciidoc diagnostics: ' + JSON.stringify(adocBad).slice(0, 700));
 
   // ── sample.capnp viewer (Cap'n Proto) ──
   await openExample('sample.capnp');
