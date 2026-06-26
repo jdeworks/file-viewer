@@ -76,6 +76,20 @@ export async function run(ctx) {
   if (/clusters\/production|\.\/clusters/i.test(fkText)) pass('flux-kustomization.yaml: path shown'); else fail('flux-kust path: ' + fkText.slice(0, 300));
   if (/prune|force|wait/i.test(fkText)) pass('flux-kustomization.yaml: sync settings shown'); else fail('flux-kust settings: ' + fkText.slice(0, 300));
   if (/infrastructure|dependsOn/i.test(fkText)) pass('flux-kustomization.yaml: dependsOn shown'); else fail('flux-kust deps: ' + fkText.slice(0, 300));
+  if (/Flux Kustomization Review|prune|dependency/i.test(fkText)) pass('flux-kustomization.yaml: review findings shown'); else fail('flux-kust review: ' + fkText.slice(0, 400));
+  const fkHelpTitle = await page.$eval('#previewHost .fkust-doc .fkust-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Flux Kustomization|Open line|source/i.test(fkHelpTitle)) pass('flux-kustomization.yaml: hover source help shown'); else fail('flux-kust source help title missing');
+  const fkSourceCollapsed = await page.$eval('#previewHost .fkust-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (fkSourceCollapsed) pass('flux-kustomization.yaml: source collapsed'); else fail('flux-kustomization.yaml: source not collapsed');
+  const fkSourceLine = await page.$eval('#previewHost .fkust-doc .fkust-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .fkust-doc .kf-source-details');
+    return details?.open && document.getElementById(`fkust-line-${line}`);
+  }, fkSourceLine);
+  pass('flux-kustomization.yaml: source links open source');
 
   // ── CycloneDX SBOM viewer ──
   await openExample('sbom.cyclonedx.json (CycloneDX SBOM)');

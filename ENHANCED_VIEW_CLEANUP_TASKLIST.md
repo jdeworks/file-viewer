@@ -106,6 +106,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Kubernetes generic manifest: source-linked container/resource review, mutable images, privileged containers, host namespace/hostPort exposure, missing healthchecks, and secret-like env masking.
 - [x] Nomad job: source-linked jobs/groups/tasks/services, mutable image/health-check/exec-driver review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Podman Quadlet: source-linked image/env/volume/network/port/service settings, image/published-port/restart/secret review findings, secret-like env redaction, and collapsed redacted source.
+- [x] Flux Kustomization: source-linked source/path/sync/health/dependency settings, prune/force/wait/health/dependency review findings, hover explanations, and collapsed source.
 - [ ] Add warnings for privileged mode, host network/PID, Docker socket mounts, `:latest`, public binds, missing healthchecks.
 - [ ] Credentials/env: `.env`, AWS credentials, GCP service account, kubeconfig, appsettings, INI self-hosted configs.
 - [x] Generic `.env`: shared secret classifier, masking reasons, line-linked table rows, and collapsed wrapped redacted source.
