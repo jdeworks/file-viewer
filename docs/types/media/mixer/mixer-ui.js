@@ -6,6 +6,7 @@ import {
 } from './mixer-model.js';
 import { createMixerSnapshot, renderMixerShell } from './mixer-renderer.js';
 import { attachMixerInteractions } from './mixer-interactions.js';
+import { updateVideoFilterEffect } from './mixer-audio-multi-helpers.js';
 
 export function mountMediaMixerShell(root, options = {}) {
   ensureMixerStyles();
@@ -161,6 +162,9 @@ function updateProjectElementField(project, action) {
       ...element,
       audio: { ...element.audio, fadeOutMs: Math.max(0, value) },
     }));
+  }
+  if (action.field?.startsWith('effect-')) {
+    return updateElement(project, elementId, (element) => updateVideoFilterEffect(element, action.field, value));
   }
   if (action.field?.startsWith('visual-')) {
     const visualField = {

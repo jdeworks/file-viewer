@@ -196,8 +196,28 @@ function renderElementInspectorFields(element) {
       inspectorNumber('Visual fade in', 'visual-fade-in', element, element.visual?.fadeInMs ?? 0, { min: 0, step: 5 }),
       inspectorNumber('Visual fade out', 'visual-fade-out', element, element.visual?.fadeOutMs ?? 0, { min: 0, step: 5 }),
     );
+    const filter = videoFilterParams(element);
+    group.append(
+      inspectorNumber('Brightness', 'effect-brightness', element, filter.brightness, { min: -1, max: 1, step: 0.01 }),
+      inspectorNumber('Contrast', 'effect-contrast', element, filter.contrast, { min: 0, max: 3, step: 0.01 }),
+      inspectorNumber('Saturation', 'effect-saturation', element, filter.saturation, { min: 0, max: 3, step: 0.01 }),
+      inspectorNumber('Blur', 'effect-blur', element, filter.blur, { min: 0, max: 20, step: 0.1 }),
+      inspectorNumber('Grayscale', 'effect-grayscale', element, filter.grayscale, { min: 0, max: 1, step: 1 }),
+    );
   }
   return group;
+}
+
+function videoFilterParams(element) {
+  const effect = (element.effects || []).find((item) => item.kind === 'video-filter' && item.enabled !== false);
+  const params = effect?.params || {};
+  return {
+    brightness: finite(params.brightness, 0),
+    contrast: finite(params.contrast, 1),
+    saturation: finite(params.saturation, 1),
+    blur: finite(params.blur, 0),
+    grayscale: finite(params.grayscale, 0),
+  };
 }
 
 function renderVisualBadge(element) {
@@ -352,4 +372,9 @@ function formatTime(ms) {
   const ss = String(seconds % 60).padStart(2, '0');
   const tenths = Math.floor((total % 1000) / 100);
   return `${mm}:${ss}.${tenths}`;
+}
+
+function finite(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }

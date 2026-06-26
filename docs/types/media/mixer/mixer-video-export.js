@@ -238,6 +238,7 @@ function visualFilterChain({ element }, input) {
   const rotation = finite(visual.rotation, 0);
   const fadeInMs = Math.max(0, finite(visual.fadeInMs, 0));
   const fadeOutMs = Math.max(0, finite(visual.fadeOutMs, 0));
+  const filter = videoFilterParams(element);
   const filters = [
     `[${input}:v]trim=start=${sourceIn}:duration=${duration}`,
     'setpts=PTS-STARTPTS',
@@ -248,7 +249,35 @@ function visualFilterChain({ element }, input) {
   if (fadeInMs) filters.push(`fade=t=in:st=0:d=${seconds(fadeInMs)}:alpha=1`);
   if (fadeOutMs) filters.push(`fade=t=out:st=${seconds(Math.max(0, durationMs - fadeOutMs))}:d=${seconds(fadeOutMs)}:alpha=1`);
   if (opacity < 1) filters.push(`colorchannelmixer=aa=${round(opacity)}`);
+  filters.push(...videoFilterChain(filter));
   return filters.join(',');
+}
+
+function videoFilterParams(element) {
+  const effect = (element.effects || []).find((item) => item.kind === 'video-filter' && item.enabled !== false);
+  const params = effect?.params || {};
+  return {
+    brightness: finite(params.brightness, 0),
+    contrast: finite(params.contrast, 1),
+    saturation: finite(params.saturation, 1),
+    blur: finite(params.blur, 0),
+    grayscale: finite(params.grayscale, 0),
+  };
+}
+
+function videoFilterChain(filter) {
+  const out = [];
+  const brightness = Math.max(-1, Math.min(1, finite(filter.brightness, 0)));
+  const contrast = Math.max(0, Math.min(3, finite(filter.contrast, 1)));
+  const saturation = Math.max(0, Math.min(3, finite(filter.saturation, 1)));
+  const blur = Math.max(0, Math.min(20, finite(filter.blur, 0)));
+  const grayscale = finite(filter.grayscale, 0) >= 0.5;
+  if (brightness || contrast !== 1 || saturation !== 1) {
+    out.push(`eq=brightness=${round(brightness)}:contrast=${round(contrast)}:saturation=${round(saturation)}`);
+  }
+  if (grayscale) out.push('hue=s=0');
+  if (blur) out.push(`boxblur=${round(blur)}:1`);
+  return out;
 }
 
 function audioFilterChain({ element }, input) {

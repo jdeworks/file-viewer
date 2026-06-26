@@ -26,6 +26,9 @@ export function updateProjectElementField(project, action) {
       audio: { ...element.audio, fadeOutMs: Math.max(0, value) },
     }));
   }
+  if (action.field?.startsWith('effect-')) {
+    return updateElement(project, elementId, (element) => updateVideoFilterEffect(element, action.field, value));
+  }
   if (action.field?.startsWith('visual-')) {
     const visualField = {
       'visual-x': 'x',
@@ -52,6 +55,49 @@ export function updateProjectElementField(project, action) {
     }));
   }
   return project;
+}
+
+export function updateVideoFilterEffect(element, field, value) {
+  const param = {
+    'effect-brightness': 'brightness',
+    'effect-contrast': 'contrast',
+    'effect-saturation': 'saturation',
+    'effect-blur': 'blur',
+    'effect-grayscale': 'grayscale',
+  }[field];
+  if (!param) return element;
+  const defaults = { brightness: 0, contrast: 1, saturation: 1, blur: 0, grayscale: 0 };
+  const clamped = clampEffectParam(param, value);
+  let found = false;
+  const effects = (element.effects || []).map((effect) => {
+    if (effect.kind !== 'video-filter') return effect;
+    found = true;
+    return {
+      ...effect,
+      enabled: true,
+      params: { ...defaults, ...effect.params, [param]: clamped },
+    };
+  });
+  if (!found) {
+    effects.push({
+      id: `effect-${element.id}-video-filter`,
+      targetType: 'element',
+      targetId: element.id,
+      kind: 'video-filter',
+      enabled: true,
+      params: { ...defaults, [param]: clamped },
+      keyframes: [],
+    });
+  }
+  return { ...element, effects };
+}
+
+function clampEffectParam(param, value) {
+  if (param === 'brightness') return clamp(value, -1, 1);
+  if (param === 'contrast' || param === 'saturation') return clamp(value, 0, 3);
+  if (param === 'blur') return clamp(value, 0, 20);
+  if (param === 'grayscale') return value >= 0.5 ? 1 : 0;
+  return value;
 }
 
 export function laneRange(className, laneId, value, min, max, step, label) {

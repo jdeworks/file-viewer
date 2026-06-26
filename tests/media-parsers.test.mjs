@@ -358,6 +358,12 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
       timeline: { ...element.timeline, startMs: 500, sourceInMs: 200, durationMs: 1000, placementDurationMs: 1000 },
       audio: { ...element.audio, gain: 0.7, fadeInMs: 100, fadeOutMs: 200 },
       visual: { ...element.visual, x: 10, y: -5, scaleX: 1.25, scaleY: 1.1, rotation: 90, opacity: 0.5, fadeInMs: 100, fadeOutMs: 300 },
+      effects: [{
+        id: 'effect-video-filter-a',
+        kind: 'video-filter',
+        enabled: true,
+        params: { brightness: 0.12, contrast: 1.2, saturation: 0.8, grayscale: 1, blur: 2.5 },
+      }],
     })),
   };
   mixProject = addAsset(mixProject, {
@@ -395,6 +401,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.ok(filterGraph.includes('[0:v]trim=start=0.2:duration=1,setpts=PTS-STARTPTS,scale=iw*1.25:ih*1.1,rotate=1.5708'), 'modular video mix export: applies trim, scale, and rotation to visual input');
   assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: applies visual opacity');
   assert.ok(filterGraph.includes('fade=t=in:st=0:d=0.1:alpha=1,fade=t=out:st=0.7:d=0.3:alpha=1'), 'modular video mix export: applies visual alpha fades');
+  assert.ok(filterGraph.includes('eq=brightness=0.12:contrast=1.2:saturation=0.8,hue=s=0,boxblur=2.5:1'), 'modular video mix export: applies video filter effects');
   assert.ok(filterGraph.includes("overlay=x=(W-w)/2+10:y=(H-h)/2-5:enable='between(t,0.5,1.5)'"), 'modular video mix export: overlays first visual at timeline position');
   assert.ok(filterGraph.includes('[1:v]trim=start=0:duration=1.5,setpts=PTS-STARTPTS,scale=iw*0.8:ih*0.8'), 'modular video mix export: includes second visual layer');
   assert.ok(filterGraph.includes('[0:a]atrim=start=0.2:duration=1,asetpts=PTS-STARTPTS,adelay=500:all=1,afade=t=in:st=0:d=0.1,afade=t=out:st=0.8:d=0.2,volume=0.7'), 'modular video mix export: applies audio trim, delay, fades, and gain');

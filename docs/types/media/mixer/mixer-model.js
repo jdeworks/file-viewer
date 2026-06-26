@@ -107,8 +107,9 @@ export function createElement(input = {}) {
   const sourceIn = Math.max(0, finiteNumber(input.timeline?.sourceInMs ?? input.sourceInMs, 0));
   const sourceOut = positiveNumber(input.timeline?.sourceOutMs ?? input.sourceOutMs, rawDuration || sourceIn + duration);
   const type = input.type || typeForCapabilities(caps);
+  const id = input.id || makeId('element');
   return {
-    id: input.id || makeId('element'),
+    id,
     laneId: input.laneId || null,
     assetId: input.assetId || null,
     type,
@@ -145,7 +146,7 @@ export function createElement(input = {}) {
     },
     analysis: clone(input.analysis || {}),
     keyframes: Array.isArray(input.keyframes) ? clone(input.keyframes) : [],
-    effects: Array.isArray(input.effects) ? clone(input.effects) : [],
+    effects: normalizeElementEffects(input.effects, id),
   };
 }
 
@@ -440,6 +441,19 @@ function normalizeCapabilities(input = {}) {
     needsFfmpegForPreview: !!input.needsFfmpegForPreview,
     needsFfmpegForExport: !!input.needsFfmpegForExport,
   };
+}
+
+function normalizeElementEffects(effects = [], elementId = null) {
+  if (!Array.isArray(effects)) return [];
+  return effects.map((effect) => ({
+    id: effect.id || makeId('effect'),
+    targetType: effect.targetType || 'element',
+    targetId: effect.targetId || elementId,
+    kind: effect.kind || 'custom',
+    enabled: effect.enabled !== false,
+    params: clone(effect.params || {}),
+    keyframes: Array.isArray(effect.keyframes) ? clone(effect.keyframes) : [],
+  }));
 }
 
 function laneRoleForAsset(asset) {
