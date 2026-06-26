@@ -262,6 +262,27 @@ export async function run(ctx) {
   if (/html/i.test(xslText)) pass('sample.xsl: output method shown'); else fail('xsl output method: ' + xslText.slice(0, 300));
   if (/book-header|format-price/i.test(xslText)) pass('sample.xsl: named templates listed'); else fail('xsl named templates: ' + xslText.slice(0, 300));
   if (/lang|showDetails/i.test(xslText)) pass('sample.xsl: params listed'); else fail('xsl params: ' + xslText.slice(0, 300));
+  if (/Template Calls|Apply Templates|book -> book-header|catalogue\/book|unused binding/i.test(xslText)) pass('sample.xsl: call graph and binding review shown'); else fail('xsl graph details: ' + xslText.slice(0, 900));
+  const xslSourceOpen = await page.$eval('#previewHost .xsl-doc .kf-source-details', (e) => e.open);
+  if (!xslSourceOpen) pass('sample.xsl: source starts collapsed'); else fail('xsl source should start collapsed');
+  await page.click('#previewHost .xsl-doc .xsl-list .kf-source-link');
+  const xslJump = await page.$eval('#previewHost .xsl-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (xslJump.open && xslJump.highlighted) pass('sample.xsl: item click opens and highlights source'); else fail('xsl source jump: ' + JSON.stringify(xslJump));
+  const xslBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/xslt-stylesheet/renderer.js');
+    const text = '<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:param name="unused"/><xsl:template name="dup"><xsl:call-template name="missing"/></xsl:template><xsl:template name="dup"/></xsl:stylesheet>';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/duplicate template|missing callee|unused binding|Template Calls/i.test(xslBad.out + xslBad.issues) && !xslBad.open) pass('sample.xsl: duplicate, missing callee, and unused diagnostics shown'); else fail('xsl synthetic diagnostics: ' + JSON.stringify(xslBad).slice(0, 900));
 
   // ── sample.svelte viewer (Svelte Component) ──
   await openExample('sample.svelte');

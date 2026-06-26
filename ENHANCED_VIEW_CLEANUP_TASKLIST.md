@@ -84,7 +84,7 @@ These should help users find broken structure and dependency/reference problems.
 - [x] `mediawiki-markup`: parser functions, duplicate categories, citation/ref health, file alt/caption extraction.
 - [x] `textile-markup`: malformed image/link syntax, heading source links.
 - [x] `bbcode-text`: unmatched tags, repeated links/images, quote/code block navigation.
-- [ ] `xslt-stylesheet`: call graph, modes, callers/callees, duplicate template names, unused params/vars.
+- [x] `xslt-stylesheet`: call graph, modes, callers/callees, duplicate template names, unused params/vars.
 - [ ] `kdl-doc`: brace imbalance, disabled nodes, duplicate sibling names, expandable tree with line numbers.
 - [ ] `tex-doc`: labels/refs/cites/includes/packages, full outline, duplicate/unresolved refs.
 
