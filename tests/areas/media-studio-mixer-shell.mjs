@@ -21,6 +21,8 @@ export async function run(ctx) {
       lanes: root.querySelectorAll('.mmx-lane').length,
       labels: root.querySelectorAll('.mmx-lane-label').length,
       elements: root.querySelectorAll('.mmx-element').length,
+      waveformCanvases: root.querySelectorAll('.mmx-element-waveform').length,
+      waveformPainted: canvasHasPaint(root.querySelector('.mmx-element-waveform')),
       inspector: !!root.querySelector('.mmx-inspector'),
       selectedId: root.querySelector('.mmx-inspector')?.dataset.selectedId || '',
       zoom: Number(shell.dataset.zoom),
@@ -50,6 +52,13 @@ export async function run(ctx) {
     }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const selectedAfterElement = root.querySelector('.mmx-inspector')?.dataset.selectedId || '';
+    const inspectorFields = ['.mmx-inspector-start', '.mmx-inspector-source-in', '.mmx-inspector-source-out', '.mmx-inspector-gain', '.mmx-inspector-fade-in', '.mmx-inspector-fade-out']
+      .every((selector) => !!root.querySelector(selector));
+    const gainInput = root.querySelector('.mmx-inspector-gain');
+    gainInput.value = '0.66';
+    gainInput.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const selectedGain = controller.getProject().elements.find((item) => item.id === selectedAfterElement)?.audio?.gain;
 
     controller.dispatch({ type: 'zoom', pxPerMs: 0.3 });
     await new Promise((resolve) => requestAnimationFrame(resolve));
@@ -64,9 +73,21 @@ export async function run(ctx) {
       zoomed,
       cursorAfterSeek,
       selectedAfterElement,
+      inspectorFields,
+      selectedGain,
       scrollAfterPan,
       destroyed,
     };
+
+    function canvasHasPaint(canvas) {
+      if (!canvas || !canvas.width || !canvas.height) return false;
+      const ctx = canvas.getContext('2d');
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] !== 0) return true;
+      }
+      return false;
+    }
   });
 
   if (result.initial.toolbar && result.initial.modes.includes('Listen') && result.initial.ruler && result.initial.playhead && result.initial.inspector)
@@ -76,6 +97,10 @@ export async function run(ctx) {
   if (result.initial.lanes >= 2 && result.initial.labels >= 2 && result.initial.elements >= 2)
     pass('modular mixer shell: lane stack, lane labels, and element blocks render');
   else fail('modular mixer shell lane/element counts wrong: ' + JSON.stringify(result.initial));
+
+  if (result.initial.waveformCanvases >= 1 && result.initial.waveformPainted)
+    pass('modular mixer shell: audio-capable element paints waveform canvas');
+  else fail('modular mixer shell waveform did not paint: ' + JSON.stringify(result.initial));
 
   if (result.zoomed > result.initial.zoom) pass('modular mixer shell: zoom changes timeline scale');
   else fail('modular mixer shell zoom did not increase: ' + JSON.stringify({ before: result.initial.zoom, after: result.zoomed }));
@@ -88,6 +113,10 @@ export async function run(ctx) {
 
   if (result.selectedAfterElement) pass('modular mixer shell: selecting element updates inspector target');
   else fail('modular mixer shell inspector did not receive selected element: ' + JSON.stringify(result));
+
+  if (result.inspectorFields && result.selectedGain === 0.66)
+    pass('modular mixer shell: selected element inspector updates shared project state');
+  else fail('modular mixer shell inspector controls did not update state: ' + JSON.stringify(result));
 
   if (result.destroyed) pass('modular mixer shell: destroy clears mounted DOM');
   else fail('modular mixer shell destroy left DOM mounted');

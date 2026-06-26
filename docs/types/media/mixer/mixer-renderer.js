@@ -1,4 +1,5 @@
 import { buildMixerLayout, MIXER_LAYOUT, timeMsToX } from './mixer-hit-test.js';
+import { drawWaveformSummary } from '../waveform-data.js';
 
 export function createMixerSnapshot(project = {}) {
   const lanes = (project.lanes || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -52,6 +53,7 @@ export function renderMixerShell(root, snapshot, viewportInput = {}, options = {
 
   const inspector = renderInspector(snapshot);
   root.append(toolbar, body, inspector);
+  drawElementWaveforms(root, snapshot, options);
   return {
     layout,
     elements: { toolbar, body, timeline, inspector },
@@ -99,12 +101,19 @@ function renderLaneStack(snapshot, layout) {
 
   for (const rect of layout.elementRects) {
     const element = snapshot.elements.find((item) => item.id === rect.elementId);
-    const block = el('button', 'mmx-element', [
+    const children = [
       el('span', 'mmx-element-title', [elementLabel(element)]),
       el('span', 'mmx-element-meta', [elementMeta(element)]),
       el('span', 'mmx-fade mmx-fade-in'),
       el('span', 'mmx-fade mmx-fade-out'),
-    ]);
+    ];
+    if (element?.capabilities?.hasAudio) {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'mmx-element-waveform';
+      canvas.dataset.elementId = rect.elementId;
+      children.unshift(canvas);
+    }
+    const block = el('button', 'mmx-element', children);
     block.type = 'button';
     block.dataset.elementId = rect.elementId;
     block.dataset.laneId = rect.laneId;
@@ -141,18 +150,63 @@ function renderInspector(snapshot) {
     : selectedLane
       ? selectedLane.label || selectedLane.role
       : 'No selection';
-  const inspector = el('aside', 'mmx-inspector', [
+  const children = [
     el('div', 'mmx-inspector-kicker', ['Inspector']),
     el('h3', 'mmx-inspector-title', [title]),
-    el('p', 'mmx-inspector-body', [selectedElement
-      ? `Element ${selectedElement.type}, ${formatTime(selectedElement.timeline?.startMs || 0)} start`
-      : selectedLane
-        ? `Lane ${selectedLane.role}`
-        : 'Select a lane or element to edit timing, gain, fades, transforms, and effects.']),
-  ]);
+  ];
+  if (selectedElement) {
+    children.push(renderElementInspectorFields(selectedElement));
+  } else {
+    children.push(el('p', 'mmx-inspector-body', [selectedLane
+      ? `Lane ${selectedLane.role}`
+      : 'Select a lane or element to edit timing, gain, fades, transforms, and effects.']));
+  }
+  const inspector = el('aside', 'mmx-inspector', children);
   inspector.dataset.selectedType = primary?.type || '';
   inspector.dataset.selectedId = primary?.id || '';
   return inspector;
+}
+
+function renderElementInspectorFields(element) {
+  const group = el('div', 'mmx-inspector-grid');
+  group.append(
+    inspectorNumber('Start', 'start', element, (element.timeline?.startMs || 0) / 1000, { min: 0, step: 0.01 }),
+    inspectorNumber('In', 'source-in', element, (element.timeline?.sourceInMs || 0) / 1000, { min: 0, step: 0.01 }),
+    inspectorNumber('Out', 'source-out', element, (element.timeline?.sourceOutMs || element.timeline?.durationMs || 0) / 1000, { min: 0, step: 0.01 }),
+    inspectorNumber('Gain', 'gain', element, element.audio?.gain ?? 1, { min: 0, max: 2, step: 0.01 }),
+    inspectorNumber('Fade in', 'fade-in', element, element.audio?.fadeInMs ?? 0, { min: 0, step: 5 }),
+    inspectorNumber('Fade out', 'fade-out', element, element.audio?.fadeOutMs ?? 0, { min: 0, step: 5 }),
+  );
+  return group;
+}
+
+function inspectorNumber(labelText, field, element, value, attrs = {}) {
+  const label = el('label', 'mmx-inspector-field');
+  const text = el('span', '', [labelText]);
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = `mmx-inspector-${field}`;
+  input.dataset.action = 'update-element';
+  input.dataset.elementId = element.id;
+  input.dataset.field = field;
+  input.value = String(Math.round(Number(value) * 1000) / 1000);
+  for (const [key, attrValue] of Object.entries(attrs)) input.setAttribute(key, String(attrValue));
+  label.append(text, input);
+  return label;
+}
+
+function drawElementWaveforms(root, snapshot, options = {}) {
+  for (const canvas of root.querySelectorAll('.mmx-element-waveform')) {
+    const element = snapshot.elements.find((item) => item.id === canvas.dataset.elementId);
+    const summary = element?.analysis?.waveformSummary
+      || options.waveforms?.[element?.id]
+      || options.waveforms?.[element?.assetId];
+    if (!summary) continue;
+    drawWaveformSummary(canvas, summary, {
+      startTime: (element.timeline?.sourceInMs || 0) / 1000,
+      endTime: (element.timeline?.sourceOutMs || element.timeline?.durationMs || 0) / 1000,
+    });
+  }
 }
 
 function button(label, action, text) {

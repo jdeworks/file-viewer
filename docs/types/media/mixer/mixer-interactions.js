@@ -38,6 +38,14 @@ export function attachMixerInteractions(root, getState, dispatch) {
   const onInput = (event) => {
     const action = event.target?.dataset?.action;
     if (action === 'zoom') dispatch({ type: 'zoom', pxPerMs: Number(event.target.value) });
+    if (action === 'update-element') {
+      dispatch({
+        type: 'update-element',
+        elementId: event.target.dataset.elementId,
+        field: event.target.dataset.field,
+        value: Number(event.target.value),
+      });
+    }
   };
 
   const onScroll = (event) => {

@@ -1,4 +1,9 @@
-import { createProjectFromAssetMetadata, selectTarget } from './mixer-model.js';
+import {
+  createProjectFromAssetMetadata,
+  selectTarget,
+  trimElement,
+  updateElement,
+} from './mixer-model.js';
 import { createMixerSnapshot, renderMixerShell } from './mixer-renderer.js';
 import { attachMixerInteractions } from './mixer-interactions.js';
 
@@ -26,6 +31,7 @@ export function mountMediaMixerShell(root, options = {}) {
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
     if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: 0.08 };
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
+    if (action.type === 'update-element') project = updateProjectElementField(project, action);
     render();
     options.onChange?.({ action, project, viewport, snapshot });
   };
@@ -54,6 +60,7 @@ export function createFakeMixerProject() {
     capabilities: { hasAudio: true },
     media: { durationMs: 9000, audioSampleRate: 48000, audioChannels: 2 },
   }, { name: 'Stage 2 modular mixer' });
+  const waveformSummary = createFakeWaveformSummary(9);
   project = {
     ...project,
     lanes: [
@@ -75,7 +82,13 @@ export function createFakeMixerProject() {
       },
     ],
     elements: [
-      project.elements[0],
+      {
+        ...project.elements[0],
+        analysis: {
+          ...project.elements[0].analysis,
+          waveformSummary,
+        },
+      },
       {
         id: 'element-stage2-image',
         laneId: 'lane-stage2-image',
@@ -117,4 +130,64 @@ function clampZoom(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0.08;
   return Math.max(0.02, Math.min(0.4, n));
+}
+
+function updateProjectElementField(project, action) {
+  const elementId = action.elementId;
+  const value = Number(action.value);
+  if (!elementId || !Number.isFinite(value)) return project;
+  if (action.field === 'start') {
+    return updateElement(project, elementId, (element) => ({
+      ...element,
+      timeline: { ...element.timeline, startMs: Math.max(0, value * 1000) },
+    }));
+  }
+  if (action.field === 'source-in') return trimElement(project, elementId, { sourceInMs: value * 1000 });
+  if (action.field === 'source-out') return trimElement(project, elementId, { sourceOutMs: value * 1000 });
+  if (action.field === 'gain') {
+    return updateElement(project, elementId, (element) => ({
+      ...element,
+      audio: { ...element.audio, gain: Math.max(0, Math.min(2, value)) },
+    }));
+  }
+  if (action.field === 'fade-in') {
+    return updateElement(project, elementId, (element) => ({
+      ...element,
+      audio: { ...element.audio, fadeInMs: Math.max(0, value) },
+    }));
+  }
+  if (action.field === 'fade-out') {
+    return updateElement(project, elementId, (element) => ({
+      ...element,
+      audio: { ...element.audio, fadeOutMs: Math.max(0, value) },
+    }));
+  }
+  return project;
+}
+
+function createFakeWaveformSummary(durationSec) {
+  const peaksPerSecond = 20;
+  const buckets = durationSec * peaksPerSecond;
+  const min = new Float32Array(buckets);
+  const max = new Float32Array(buckets);
+  const rms = new Float32Array(buckets);
+  const peak = new Float32Array(buckets);
+  for (let i = 0; i < buckets; i += 1) {
+    const t = i / peaksPerSecond;
+    const level = 0.15 + Math.abs(Math.sin(t * 3.2)) * 0.65;
+    min[i] = -level * (0.75 + Math.sin(t * 1.7) * 0.15);
+    max[i] = level * (0.75 + Math.cos(t * 1.3) * 0.15);
+    rms[i] = level * 0.42;
+    peak[i] = Math.max(Math.abs(min[i]), Math.abs(max[i]));
+  }
+  return {
+    min,
+    max,
+    rms,
+    peak,
+    buckets,
+    peaksPerSecond,
+    duration: durationSec,
+    sampleRate: 48000,
+  };
 }
