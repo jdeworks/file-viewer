@@ -340,10 +340,20 @@ export async function render(intake, ctx = {}) {
         renderUnlock();
         for (const password of list) {
           if (stopRequested) break;
-          status = 'Trying candidate ' + (attempts + 1) + '...';
-          updateProgress();
-          if (await runOne(password)) return;
-          if (attempts % Math.min(10, LOOP_YIELD_EVERY) === 0) await delayFrame();
+          if (attempts % LOOP_YIELD_EVERY === 0) {
+            status = 'Trying candidate ' + (attempts + 1) + '...';
+            updateProgress();
+            await delayFrame();
+          }
+          attempts++;
+          if (testEntry && !verifyZipCryptoPassword(intake.bytes, testEntry, password)) continue;
+          try {
+            await tryPassword(password);
+            return;
+          } catch {
+            const elapsed = Math.max(0.001, (performance.now() - runStarted) / 1000);
+            rate = attempts / elapsed;
+          }
         }
         running = false;
         status = stopRequested ? 'Stopped after ' + attempts + ' attempts.' : 'No match after ' + attempts + ' attempts.';
