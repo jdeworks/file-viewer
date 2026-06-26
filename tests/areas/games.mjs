@@ -808,6 +808,9 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
+  const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
+  if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 10 renders the awakening ending (capstone)'); else fail('Stage 10 awakening ending unexpected: ' + awakening);
   pass('Stage 10 resolves, integrates all memories, and completes Awakening');
   await page.click('.games-close');
 

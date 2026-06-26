@@ -697,7 +697,17 @@ function renderCompletion(state, finalState) {
         ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       ${renderFinalOutcome(state, finalState)}
+      ${renderAwakening(finalState)}
     </section>
+  `;
+}
+function renderAwakening(finalState) {
+  const fullCapstone = finalState.routeSummary?.tier === "capstone";
+  const paragraphs = awakeningText({ fullCapstone }).split("\n\n");
+  return `
+    <div class="mg-stage10__awakening" data-field="awakening">
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </div>
   `;
 }
 function renderFinalOutcome(state, finalState) {

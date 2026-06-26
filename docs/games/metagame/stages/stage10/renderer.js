@@ -1,4 +1,4 @@
-import { memories } from "./content.js";
+import { memories, awakeningText } from "./content.js";
 import {
   chooseFinal,
   getFinalChoiceState,
@@ -239,7 +239,20 @@ function renderCompletion(state, finalState) {
         ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       ${renderFinalOutcome(state, finalState)}
+      ${renderAwakening(finalState)}
     </section>
+  `;
+}
+
+// The ending narration — the awakening itself, in the first person. Capstone routes get the extra
+// line. Previously authored (content.awakeningText) but never rendered; this is the finale screen.
+function renderAwakening(finalState) {
+  const fullCapstone = finalState.routeSummary?.tier === "capstone";
+  const paragraphs = awakeningText({ fullCapstone }).split("\n\n");
+  return `
+    <div class="mg-stage10__awakening" data-field="awakening">
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </div>
   `;
 }
 
