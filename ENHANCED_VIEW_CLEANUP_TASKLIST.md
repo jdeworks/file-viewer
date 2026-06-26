@@ -63,7 +63,7 @@ These already extract symbols but leave too much user value on the table.
 - [x] `groovy-lang`: method signatures, annotation explanations, Groovydoc, source links.
 - [x] `haxe-lang`: method signatures, metadata explanations, inheritance/implements, docs.
 - [x] `julia-lang`: full signatures, docstrings, multiple-dispatch grouping, source spans.
-- [ ] `odin-lang`: proc signatures, calling convention hover help, compile-time `when` locations.
+- [x] `odin-lang`: proc signatures, calling convention hover help, compile-time `when` locations.
 - [ ] `pony-lang`: receiver/capability metadata, actor/behaviour explanations, type-owned API grouping.
 - [ ] `solidity-lang`: ABI-like signatures, NatSpec docs, payable/external/selfdestruct explanations, event/error params.
 - [ ] `kotlin-lang`: KDoc, params/returns, annotation hover help, line-linked outline.

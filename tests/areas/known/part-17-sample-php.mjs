@@ -82,6 +82,18 @@ export async function run(ctx) {
   await openExample('sample.odin');
   await page.waitForSelector('#previewHost .odin-doc', { timeout: 12000 });
   pass('odin-lang: rendered');
+  const odinText = await page.$eval('#previewHost .odin-doc', (e) => e.textContent);
+  if (/foreign_proc_example|returns i32|ctx: rawptr|Vector2.*2 fields|ODIN_OS == \.Windows/i.test(odinText)) pass('odin-lang: signatures, fields, calling convention, and when shown'); else fail('odin details: ' + odinText.slice(0, 900));
+  const odinCcHint = await page.$eval('#previewHost .odin-doc .odin-tag-cc', (e) => e.title);
+  if (/Calling convention|ABI/i.test(odinCcHint)) pass('odin-lang: calling convention hover help present'); else fail('odin cc hint: ' + odinCcHint);
+  const odinSourceOpen = await page.$eval('#previewHost .odin-doc .kf-source-details', (e) => e.open);
+  if (!odinSourceOpen) pass('odin-lang: source starts collapsed'); else fail('odin source should start collapsed');
+  await page.click('#previewHost .odin-doc .kf-source-link');
+  const odinJump = await page.$eval('#previewHost .odin-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (odinJump.open && odinJump.highlighted) pass('odin-lang: item click opens and highlights source'); else fail('odin source jump: ' + JSON.stringify(odinJump));
 
   // ── haxe-lang: rendered ──
   await openExample('sample.hx');
