@@ -16,8 +16,12 @@ export async function run(ctx) {
     return {
       nativeHidden: !audio.controls && rect.width <= 2 && rect.height <= 2 && getComputedStyle(audio).opacity === '0',
       mixerContext: el.dataset.mixerContext,
+      directListen: el.classList.contains('mmx-direct-listen'),
       projectId: el.dataset.mixerProjectId,
       elementId: el.dataset.mixerElementId,
+      sharedShell: el.classList.contains('mmx-shell'),
+      sharedElementWaveform: !!el.querySelector('.mmx-element-waveform.media-wv-canvas'),
+      sharedInspector: !!el.querySelector('.mmx-inspector .media-lane-gain'),
       lane: !!el.querySelector('.media-lane-label-name'),
       ruler: !!el.querySelector('.media-lane-ruler'),
       cursor: !!el.querySelector('.media-lane-cursor'),
@@ -33,10 +37,10 @@ export async function run(ctx) {
         .every((selector) => !!el.querySelector(selector)),
     };
   });
-  if (initial.nativeHidden && initial.mixerContext === 'listen' && initial.projectId && initial.elementId)
+  if (initial.nativeHidden && initial.mixerContext === 'listen' && initial.directListen && initial.sharedShell && initial.projectId && initial.elementId)
     pass('modular audio listen: Sample.wav opens through mixer-owned context with hidden native source');
   else fail('modular audio listen context missing: ' + JSON.stringify(initial));
-  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.controls && initial.zoom && initial.pan && initial.capabilityNote && initial.waveformStatus !== 'pending' && (initial.waveformStatus !== 'available' || (initial.waveformBuckets > 0 && initial.projectHasWaveformSummary)))
+  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.sharedElementWaveform && initial.sharedInspector && initial.controls && initial.zoom && initial.pan && initial.capabilityNote && initial.waveformStatus !== 'pending' && (initial.waveformStatus !== 'available' || (initial.waveformBuckets > 0 && initial.projectHasWaveformSummary)))
     pass('modular audio listen: one-lane waveform editor controls render');
   else fail('modular audio listen surfaces missing: ' + JSON.stringify(initial));
 

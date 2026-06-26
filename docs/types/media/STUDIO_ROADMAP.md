@@ -46,7 +46,7 @@ Reference alignment:
 
 ### R0a — Modular Media Mixer Foundation
 
-Status: Stage 3 shared renderer capability extended.
+Status: Stage 3 direct shared-renderer Listen implemented.
 
 The next media-studio foundation is a modular, capability-gated media
 mixer/editor, not a narrow replacement of the current audio Listen lane. The
@@ -92,14 +92,14 @@ shared project model.
 
 Stage 3 is in progress. Default MP3/WAV Listen is routed through
 `mixer/mixer-audio-listen.js`, creating a shared mixer project for the open
-audio source, adding config-only settings JSON roundtrip coverage, and now
-proving transport, zoom/pan, capability-note, and direct source-region dragging
-behavior in focused smoke coverage. It also reports waveform analysis status
-and hands available bounded waveform summaries into the shared project element
-while stripping runtime analysis from config-only project export. The remaining
-Stage 3 work is to remove the compatibility adapter layer and make the visible
-Listen lane render directly from the shared renderer/interaction surface using
-that analysis-status bridge.
+audio source, adding config-only settings JSON roundtrip coverage, and proving
+transport, zoom/pan, capability-note, and direct source-region dragging behavior
+in focused smoke coverage. It reports waveform analysis status and hands
+available bounded waveform summaries into the shared project element while
+stripping runtime analysis from config-only project export. The visible Listen
+lane now renders directly from the shared renderer/interaction surface; legacy
+Listen class names remain only as compatibility aliases for surrounding tests
+and panels while the new mixer contract is expanded.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

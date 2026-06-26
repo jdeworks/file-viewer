@@ -1,122 +1,464 @@
-import { buildAudioListenSurface } from '../audio-listen-surface.js';
+import { computeWaveformSummary } from '../waveform-data.js';
 import {
   createProjectFromAssetMetadata,
+  moveElement,
+  selectTarget,
+  trimElement,
   updateElement,
 } from './mixer-model.js';
-import {
-  exportProjectSettingsJson,
-  importProjectSettings,
-} from './mixer-import-export.js';
+import { exportProjectSettingsJson, importProjectSettings } from './mixer-import-export.js';
+import { createMixerSnapshot, renderMixerShell } from './mixer-renderer.js';
+import { attachMixerInteractions } from './mixer-interactions.js';
+import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { ensureMixerStyles } from './mixer-ui.js';
 
 export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   ensureMixerStyles();
-  const base = buildAudioListenSurface(mediaEl, intake, {
-    ...options,
-    onWaveformSummary(summary) {
-      attachWaveformSummary(summary);
-      options.onWaveformSummary?.(summary);
-    },
-    onWaveformSummaryStatus(status) {
-      setWaveformStatus(status);
-      options.onWaveformSummaryStatus?.(status);
-    },
-  });
-  const root = base.el;
-  root.classList.add('mmx-audio-listen');
+  mediaEl.controls = false;
+  mediaEl.classList.add('media-view-hidden');
+  mediaEl.setAttribute('aria-hidden', 'true');
+  mediaEl.tabIndex = -1;
+
+  const root = document.createElement('section');
+  root.className = 'media-listen-surface mmx-audio-listen mmx-direct-listen';
   root.dataset.mixerContext = 'listen';
 
-  let project = buildProject(mediaEl, intake);
-  let zoom = 1;
-  let pan = 0;
+  let project = selectFirstElement(buildProject(mediaEl, intake));
+  let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.08, width: 960 };
+  let chapters = Array.isArray(options.chapters) ? options.chapters : [];
+  let waveformSummary = null;
   let waveformStatus = 'pending';
+  let onRegionSelect = typeof options.onRegionSelect === 'function' ? options.onRegionSelect : null;
+  let destroyed = false;
+  let rafId = 0;
+  let canvasPointer = null;
+  let suppressCanvasClick = false;
+
   const firstElementId = () => project.elements[0]?.id;
+  const firstElement = () => project.elements[0];
+  const durationSec = () => {
+    const mediaDuration = Number(mediaEl.duration);
+    if (Number.isFinite(mediaDuration) && mediaDuration > 0) return mediaDuration;
+    if (Number.isFinite(waveformSummary?.duration) && waveformSummary.duration > 0) return waveformSummary.duration;
+    return Math.max(0, (firstElement()?.timeline?.rawDurationMs || firstElement()?.timeline?.durationMs || 0) / 1000);
+  };
 
-  const capabilityNote = document.createElement('div');
-  capabilityNote.className = 'mmx-capability-note';
-  capabilityNote.textContent = 'You can edit timing, fades, gain, room tone, and project settings now. Enable Media Transcoding for render paths that need ffmpeg.';
-
-  const viewportTools = document.createElement('div');
-  viewportTools.className = 'mmx-listen-viewport-tools';
-  const zoomOutBtn = smallButton('Zoom out', '-');
-  zoomOutBtn.classList.add('mmx-listen-zoom-out');
-  const zoomInBtn = smallButton('Zoom in', '+');
-  zoomInBtn.classList.add('mmx-listen-zoom-in');
-  const zoomInput = document.createElement('input');
-  zoomInput.type = 'range';
-  zoomInput.className = 'mmx-listen-zoom';
-  zoomInput.min = '1';
-  zoomInput.max = '4';
-  zoomInput.step = '0.1';
-  zoomInput.value = '1';
-  zoomInput.setAttribute('aria-label', 'Listen lane zoom');
-  const panInput = document.createElement('input');
-  panInput.type = 'range';
-  panInput.className = 'mmx-listen-pan';
-  panInput.min = '0';
-  panInput.max = '100';
-  panInput.step = '1';
-  panInput.value = '0';
-  panInput.setAttribute('aria-label', 'Listen lane pan');
-  viewportTools.append(zoomOutBtn, zoomInput, zoomInBtn, panInput);
-
-  const projectTools = document.createElement('div');
-  projectTools.className = 'mmx-listen-project-tools';
-  const exportBtn = document.createElement('button');
-  exportBtn.type = 'button';
-  exportBtn.className = 'mmx-settings-export';
-  exportBtn.textContent = 'Export settings';
-  const importBtn = document.createElement('button');
-  importBtn.type = 'button';
-  importBtn.className = 'mmx-settings-import';
-  importBtn.textContent = 'Import settings';
-  importBtn.hidden = true;
-  projectTools.append(exportBtn, importBtn);
-  root.prepend(capabilityNote);
-  root.append(viewportTools, projectTools);
-
-  function syncProjectFromControls() {
-    const id = firstElementId();
-    if (!id) return;
-    const offsetSec = readNumber(root, '.media-lane-offset', 0);
-    const inSec = readNumber(root, '.media-lane-in', 0);
-    const outSec = readNumber(root, '.media-lane-out', mediaDuration(mediaEl));
-    const gain = readNumber(root, '.media-lane-gain', 1);
-    const fadeInMs = readNumber(root, '.media-lane-fade-in', 0);
-    const fadeOutMs = readNumber(root, '.media-lane-fade-out', 0);
-    const roomTone = !!root.querySelector('.media-lane-room-toggle')?.checked;
-    project = updateElement(project, id, (element) => ({
-      ...element,
-      timeline: {
-        ...element.timeline,
-        startMs: Math.max(0, offsetSec * 1000),
-        sourceInMs: Math.max(0, inSec * 1000),
-        sourceOutMs: Math.max(inSec * 1000, outSec * 1000),
-        durationMs: Math.max(0, (outSec - inSec) * 1000),
-        placementDurationMs: Math.max(0, (outSec - inSec) * 1000),
-      },
-      audio: {
-        ...element.audio,
-        gain,
-        fadeInMs,
-        fadeOutMs,
-        roomTone: roomTone ? { kind: 'room-tone', source: 'derived-gap-bed', levelDb: -52 } : null,
-      },
-    }));
+  function render() {
+    if (destroyed) return;
+    viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
+    renderMixerShell(root, createMixerSnapshot(project), viewport, { minZoom: 0.02, maxZoom: 0.8 });
+    decorateRenderedShell();
     reflectProjectState();
   }
 
-  function reflectProjectState() {
-    const element = project.elements[0];
-    root.dataset.mixerProjectId = project.project.id;
-    root.dataset.mixerElementId = element?.id || '';
-    root.dataset.mixerOffsetMs = String(Math.round(element?.timeline?.startMs || 0));
-    root.dataset.mixerGain = String(element?.audio?.gain ?? 1);
-    root.dataset.mixerRoomTone = element?.audio?.roomTone ? 'true' : 'false';
-    root.dataset.mixerZoom = String(Math.round(zoom * 100) / 100);
-    root.dataset.mixerPan = String(Math.round(pan));
-    root.dataset.mixerWaveformStatus = waveformStatus;
-    root.dataset.mixerWaveformBuckets = String(element?.analysis?.waveformSummary?.buckets || 0);
+  function dispatch(action) {
+    if (action.type === 'seek') {
+      setCursorMs(action.cursorMs);
+      mediaEl.currentTime = clamp(action.cursorMs / 1000 - elementStartSec(), 0, durationSec());
+    }
+    if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
+    if (action.type === 'zoom-relative') viewport = { ...viewport, pxPerMs: clampZoom(viewport.pxPerMs * action.factor) };
+    if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
+    if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: 0.08 };
+    if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
+    if (action.type === 'update-element') updateFromInspector(action.field, action.value);
+    render();
+  }
+
+  const interactions = attachMixerInteractions(root, () => ({
+    project,
+    snapshot: createMixerSnapshot(project),
+    viewport,
+  }), dispatch);
+
+  const onMediaUpdate = () => {
+    setCursorMs((elementStartSec() + (Number(mediaEl.currentTime) || 0)) * 1000);
+    updateTransportLabels();
+    reflectProjectState();
+  };
+  const onLoadedMetadata = () => {
+    project = mergeDuration(project, mediaDuration(mediaEl) * 1000);
+    attachWaveformSummary(waveformSummary);
+    render();
+  };
+  const onInput = (event) => {
+    if (event.target?.matches?.('.media-lane-offset, .media-lane-in, .media-lane-out, .media-lane-gain, .media-lane-fade-in, .media-lane-fade-out')) {
+      updateFromCompatInput(event.target);
+    }
+  };
+  const onChange = (event) => {
+    if (event.target?.matches?.('.media-lane-room-toggle')) {
+      setRoomTone(event.target.checked);
+      render();
+    }
+  };
+  const onClickCapture = (event) => {
+    const play = event.target?.closest?.('.media-listen-play');
+    if (play && root.contains(play)) {
+      if (mediaEl.paused) mediaEl.play().catch(() => {});
+      else mediaEl.pause();
+      updateTransportLabels();
+      event.stopPropagation();
+      return;
+    }
+    const stop = event.target?.closest?.('.media-listen-stop');
+    if (stop && root.contains(stop)) {
+      mediaEl.pause();
+      mediaEl.currentTime = 0;
+      onMediaUpdate();
+      event.stopPropagation();
+      return;
+    }
+    const waveform = event.target?.closest?.('.media-wv-canvas, .media-waveform-surface');
+    if (waveform && root.contains(waveform) && !event.target?.closest?.('.media-lane-trim')) {
+      if (suppressCanvasClick) {
+        suppressCanvasClick = false;
+        event.stopPropagation();
+        return;
+      }
+      if (!canvasPointer?.moved) {
+        const timeMs = canvasClientXToTimeMs(event.clientX);
+        mediaEl.currentTime = clamp(timeMs / 1000 - elementStartSec(), 0, durationSec());
+        setCursorMs(timeMs);
+        render();
+      }
+      event.stopPropagation();
+    }
+  };
+  const onPointerDownCapture = (event) => {
+    const waveform = event.target?.closest?.('.media-wv-canvas, .media-waveform-surface');
+    if (!waveform || !root.contains(waveform) || event.target?.closest?.('.media-lane-trim') || event.button !== 0) return;
+    canvasPointer = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      moved: false,
+    };
+    try { waveform.setPointerCapture?.(event.pointerId); } catch { /* ignore synthetic capture */ }
+    event.stopPropagation();
+  };
+  const onPointerMoveCapture = (event) => {
+    if (!canvasPointer || event.pointerId !== canvasPointer.pointerId) return;
+    if (Math.abs(event.clientX - canvasPointer.startX) < 3) return;
+    canvasPointer.moved = true;
+    const a = canvasClientXToSourceSec(canvasPointer.startX);
+    const b = canvasClientXToSourceSec(event.clientX);
+    updateTrimRange(Math.min(a, b), Math.max(a, b));
+    render();
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  const onPointerUpCapture = (event) => {
+    if (!canvasPointer || event.pointerId !== canvasPointer.pointerId) return;
+    const wasMoved = canvasPointer.moved;
+    const startX = canvasPointer.startX;
+    canvasPointer = null;
+    if (wasMoved) {
+      suppressCanvasClick = true;
+      const a = canvasClientXToSourceSec(startX);
+      const b = canvasClientXToSourceSec(event.clientX);
+      const start = Math.min(a, b);
+      const end = Math.max(a, b);
+      updateTrimRange(start, end);
+      if (onRegionSelect && end > start) onRegionSelect({ start, end });
+      render();
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+  const detachDrag = attachSourceMoveDrag(root, (deltaSec) => {
+    const element = firstElement();
+    if (!element) return;
+    project = moveElement(project, element.id, element.timeline.startMs + deltaSec * 1000);
+    render();
+  });
+
+  root.addEventListener('click', onClickCapture, true);
+  root.addEventListener('pointerdown', onPointerDownCapture, true);
+  root.addEventListener('pointermove', onPointerMoveCapture, true);
+  root.addEventListener('pointerup', onPointerUpCapture, true);
+  root.addEventListener('input', onInput);
+  root.addEventListener('change', onChange);
+  mediaEl.addEventListener('loadedmetadata', onLoadedMetadata);
+  ['timeupdate', 'play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((event) => mediaEl.addEventListener(event, onMediaUpdate));
+  window.addEventListener('resize', render);
+
+  decodeSummary(intake).then((summary) => {
+    if (destroyed) return;
+    if (summary) {
+      waveformSummary = summary;
+      waveformStatus = 'available';
+      if (Number.isFinite(summary.duration) && summary.duration > 0) project = mergeDuration(project, summary.duration * 1000);
+      attachWaveformSummary(summary);
+      options.onWaveformSummary?.(summary);
+    } else {
+      waveformStatus = 'unavailable';
+    }
+    options.onWaveformSummaryStatus?.(waveformStatus);
+    render();
+  }).catch(() => {
+    if (destroyed) return;
+    waveformStatus = 'unavailable';
+    options.onWaveformSummaryStatus?.(waveformStatus);
+    render();
+  });
+
+  function loop() {
+    if (destroyed) return;
+    onMediaUpdate();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  root.__mediaMixerListen = {
+    getProject: () => project,
+    exportSettings,
+    importSettings,
+    getWaveformSummary: () => waveformSummary,
+    setZoom(value) {
+      viewport = { ...viewport, pxPerMs: clampZoom(Number(value) * 0.08) };
+      render();
+    },
+    setPan(value) {
+      viewport = { ...viewport, scrollLeft: Math.max(0, Number(value) || 0) };
+      render();
+    },
+  };
+
+  render();
+  rafId = requestAnimationFrame(loop);
+
+  return {
+    el: root,
+    getProject: () => project,
+    exportSettings,
+    importSettings,
+    setChapters(nextChapters) {
+      chapters = Array.isArray(nextChapters) ? nextChapters : [];
+      render();
+    },
+    setRegionSelect(fn) {
+      onRegionSelect = typeof fn === 'function' ? fn : null;
+    },
+    getState() {
+      const element = firstElement();
+      return {
+        offsetSec: elementStartSec(),
+        inSec: (element?.timeline?.sourceInMs || 0) / 1000,
+        outSec: (element?.timeline?.sourceOutMs || element?.timeline?.durationMs || 0) / 1000,
+        gain: element?.audio?.gain ?? 1,
+        fadeInMs: element?.audio?.fadeInMs ?? 0,
+        fadeOutMs: element?.audio?.fadeOutMs ?? 0,
+        roomTone: !!element?.audio?.roomTone,
+        durationSec: durationSec(),
+        currentTime: Number(mediaEl.currentTime) || 0,
+      };
+    },
+    destroy() {
+      destroyed = true;
+      cancelAnimationFrame(rafId);
+      interactions.destroy();
+      detachDrag();
+      root.removeEventListener('click', onClickCapture, true);
+      root.removeEventListener('pointerdown', onPointerDownCapture, true);
+      root.removeEventListener('pointermove', onPointerMoveCapture, true);
+      root.removeEventListener('pointerup', onPointerUpCapture, true);
+      root.removeEventListener('input', onInput);
+      root.removeEventListener('change', onChange);
+      mediaEl.removeEventListener('loadedmetadata', onLoadedMetadata);
+      ['timeupdate', 'play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((event) => mediaEl.removeEventListener(event, onMediaUpdate));
+      window.removeEventListener('resize', render);
+      delete root.__mediaMixerListen;
+      root.remove();
+    },
+  };
+
+  function decorateRenderedShell() {
+    const toolbar = root.querySelector('.mmx-toolbar');
+    const body = root.querySelector('.mmx-body');
+    const element = firstElement();
+    const currentSec = Number(mediaEl.currentTime) || 0;
+    const sourceOutSec = (element?.timeline?.sourceOutMs || element?.timeline?.durationMs || 0) / 1000;
+    const sourceInSec = (element?.timeline?.sourceInMs || 0) / 1000;
+
+    root.querySelector('.mmx-ruler')?.classList.add('media-lane-ruler');
+    const playhead = root.querySelector('.mmx-playhead');
+    playhead?.classList.add('media-wv-playhead', 'media-lane-cursor');
+    if (playhead && !playhead.querySelector('.media-wv-playhead-label')) {
+      const label = document.createElement('span');
+      label.className = 'media-wv-playhead-label';
+      label.textContent = fmtTime(viewport.cursorMs / 1000);
+      playhead.append(label);
+    }
+    root.querySelector('.mmx-lane-label')?.classList.add('media-lane-label-name');
+    root.querySelector('.mmx-element')?.classList.add('media-lane-trim');
+    const waveformCanvas = root.querySelector('.mmx-element-waveform');
+    waveformCanvas?.classList.add('media-wv-canvas', 'media-lane-canvas');
+    if (waveformCanvas) waveformCanvas.style.width = `${Math.round((viewport.pxPerMs / 0.08) * 100)}%`;
+    if (body) body.classList.add('media-waveform-surface', 'media-lane-waveform');
+
+    if (toolbar) {
+      toolbar.querySelector('.mmx-zoom')?.classList.add('mmx-listen-zoom');
+      toolbar.querySelector('[data-action="zoom-out"]')?.classList.add('mmx-listen-zoom-out');
+      toolbar.querySelector('[data-action="zoom-in"]')?.classList.add('mmx-listen-zoom-in');
+      const transport = document.createElement('div');
+      transport.className = 'media-lane-transport';
+      const stop = button('Stop', 'Stop and rewind', 'media-listen-btn media-listen-stop');
+      const play = button(mediaEl.paused ? 'Play' : 'Pause', mediaEl.paused ? 'Play' : 'Pause', 'media-listen-btn media-listen-play');
+      const time = document.createElement('span');
+      time.className = 'media-listen-time media-lane-time';
+      time.textContent = `${fmtTime(currentSec)} / ${durationSec() > 0 ? fmtTime(durationSec()) : '--:--'}`;
+      transport.append(stop, play, time);
+      toolbar.append(transport);
+
+      const pan = document.createElement('input');
+      pan.type = 'range';
+      pan.className = 'mmx-listen-pan';
+      pan.min = '0';
+      pan.max = String(Math.max(100, root.querySelector('.mmx-body')?.scrollWidth || 100));
+      pan.step = '1';
+      pan.value = String(Math.round(viewport.scrollLeft));
+      pan.setAttribute('aria-label', 'Listen lane pan');
+      pan.addEventListener('input', () => dispatch({ type: 'pan', scrollLeft: Number(pan.value) }));
+      toolbar.append(pan);
+
+      const exportBtn = button('Export settings', 'Export mixer settings', 'mmx-settings-export');
+      exportBtn.addEventListener('click', exportSettings);
+      toolbar.append(exportBtn);
+
+      const note = document.createElement('div');
+      note.className = 'mmx-capability-note';
+      note.textContent = 'You can edit timing, fades, gain, room tone, and project settings now. Enable Media Transcoding for render paths that need ffmpeg.';
+      root.insertBefore(note, toolbar);
+    }
+
+    const inspector = root.querySelector('.mmx-inspector');
+    if (inspector) {
+      aliasInput('.mmx-inspector-start', 'media-lane-offset');
+      aliasInput('.mmx-inspector-source-in', 'media-lane-in');
+      aliasInput('.mmx-inspector-source-out', 'media-lane-out');
+      aliasInput('.mmx-inspector-gain', 'media-lane-gain');
+      aliasInput('.mmx-inspector-fade-in', 'media-lane-fade-in');
+      aliasInput('.mmx-inspector-fade-out', 'media-lane-fade-out');
+      const roomField = document.createElement('label');
+      roomField.className = 'mmx-inspector-field media-lane-room-field';
+      const room = document.createElement('input');
+      room.type = 'checkbox';
+      room.className = 'media-lane-room-toggle';
+      room.checked = !!element?.audio?.roomTone;
+      const span = document.createElement('span');
+      span.textContent = 'Pink-noise / room-tone bed';
+      roomField.append(span, room);
+      inspector.querySelector('.mmx-inspector-grid')?.append(roomField);
+      const duration = document.createElement('div');
+      duration.className = 'media-lane-duration';
+      duration.textContent = `Duration ${fmtTime(Math.max(0, sourceOutSec - sourceInSec))}`;
+      inspector.append(duration);
+    }
+
+    decorateRoomTone(body, element);
+    decorateChapters(body);
+    updateTransportLabels();
+  }
+
+  function aliasInput(selector, className) {
+    const input = root.querySelector(selector);
+    if (input) input.classList.add(className);
+  }
+
+  function decorateRoomTone(body, element) {
+    if (!body) return;
+    const layer = document.createElement('div');
+    layer.className = 'media-lane-room-tone';
+    layer.hidden = !element?.audio?.roomTone;
+    body.append(layer);
+  }
+
+  function decorateChapters(body) {
+    if (!body) return;
+    const layer = document.createElement('div');
+    layer.className = 'media-wv-chapter-layer';
+    const totalMs = Math.max(1, project.project.durationMs || 1000);
+    for (const [index, chapter] of chapters.entries()) {
+      const marker = document.createElement('div');
+      marker.className = 'media-wv-chapter-marker';
+      marker.title = chapter.title || `Chapter ${index + 1}`;
+      marker.dataset.chapter = String(index + 1);
+      marker.style.left = `${(Math.max(0, Number(chapter.start) || 0) * 1000 / totalMs) * 100}%`;
+      const label = document.createElement('span');
+      label.className = 'media-wv-chapter-label';
+      label.textContent = marker.title;
+      marker.append(label);
+      layer.append(marker);
+    }
+    body.append(layer);
+  }
+
+  function updateTransportLabels() {
+    const play = root.querySelector('.media-listen-play');
+    if (play) {
+      play.textContent = mediaEl.paused ? 'Play' : 'Pause';
+      play.setAttribute('aria-label', mediaEl.paused ? 'Play' : 'Pause');
+    }
+    const time = root.querySelector('.media-listen-time');
+    if (time) time.textContent = `${fmtTime(Number(mediaEl.currentTime) || 0)} / ${durationSec() > 0 ? fmtTime(durationSec()) : '--:--'}`;
+    const playhead = root.querySelector('.media-wv-playhead');
+    if (playhead) {
+      playhead.style.left = `${MIXER_LAYOUT.gutterWidth + viewport.cursorMs * viewport.pxPerMs - viewport.scrollLeft}px`;
+      const label = playhead.querySelector('.media-wv-playhead-label');
+      if (label) label.textContent = fmtTime(viewport.cursorMs / 1000);
+    }
+  }
+
+  function updateFromInspector(field, value) {
+    const element = firstElement();
+    if (!element) return;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    if (field === 'start') project = moveElement(project, element.id, n * 1000);
+    if (field === 'source-in') project = trimElement(project, element.id, { sourceInMs: n * 1000 });
+    if (field === 'source-out') project = trimElement(project, element.id, { sourceOutMs: n * 1000 });
+    if (field === 'gain') {
+      project = updateElement(project, element.id, (item) => ({ ...item, audio: { ...item.audio, gain: clamp(n, 0, 2) } }));
+      mediaEl.volume = clamp(n, 0, 1);
+    }
+    if (field === 'fade-in') project = updateElement(project, element.id, (item) => ({ ...item, audio: { ...item.audio, fadeInMs: Math.max(0, n) } }));
+    if (field === 'fade-out') project = updateElement(project, element.id, (item) => ({ ...item, audio: { ...item.audio, fadeOutMs: Math.max(0, n) } }));
+  }
+
+  function updateFromCompatInput(input) {
+    const map = {
+      'media-lane-offset': 'start',
+      'media-lane-in': 'source-in',
+      'media-lane-out': 'source-out',
+      'media-lane-gain': 'gain',
+      'media-lane-fade-in': 'fade-in',
+      'media-lane-fade-out': 'fade-out',
+    };
+    const field = Object.keys(map).find((className) => input.classList.contains(className));
+    if (field) {
+      updateFromInspector(map[field], input.value);
+      render();
+    }
+  }
+
+  function setRoomTone(enabled) {
+    const id = firstElementId();
+    if (!id) return;
+    project = updateElement(project, id, (element) => ({
+      ...element,
+      audio: {
+        ...element.audio,
+        roomTone: enabled ? { kind: 'room-tone', source: 'derived-gap-bed', levelDb: -52 } : null,
+      },
+    }));
+  }
+
+  function updateTrimRange(startSec, endSec) {
+    const element = firstElement();
+    if (!element) return;
+    project = trimElement(project, element.id, {
+      sourceInMs: clamp(startSec, 0, durationSec()) * 1000,
+      sourceOutMs: clamp(endSec, 0, durationSec()) * 1000,
+    });
   }
 
   function attachWaveformSummary(summary) {
@@ -129,45 +471,28 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
         waveformSummary: summary,
       },
     }));
-    reflectProjectState();
   }
 
-  function setWaveformStatus(status) {
-    waveformStatus = status || 'unavailable';
-    reflectProjectState();
+  function setCursorMs(cursorMs) {
+    viewport = { ...viewport, cursorMs: Math.max(0, Number(cursorMs) || 0) };
   }
 
-  function applyViewport() {
-    const surface = root.querySelector('.media-waveform-surface');
-    const canvas = root.querySelector('.media-wv-canvas');
-    if (surface) {
-      surface.style.setProperty('--mmx-listen-zoom', String(zoom));
-      surface.scrollLeft = Math.max(0, pan);
-    }
-    if (canvas) {
-      canvas.style.width = `${Math.round(zoom * 100)}%`;
-      canvas.style.minWidth = `${Math.round(zoom * 100)}%`;
-    }
-    reflectProjectState();
+  function elementStartSec() {
+    return (firstElement()?.timeline?.startMs || 0) / 1000;
   }
 
-  function setZoom(value) {
-    zoom = clampNumber(value, 1, 4, 1);
-    zoomInput.value = String(zoom);
-    const surface = root.querySelector('.media-waveform-surface');
-    const maxPan = surface ? Math.max(0, surface.scrollWidth - surface.clientWidth) : 0;
-    panInput.max = String(Math.max(100, Math.ceil(maxPan)));
-    applyViewport();
+  function canvasClientXToTimeMs(clientX) {
+    const rect = root.querySelector('.mmx-body')?.getBoundingClientRect();
+    if (!rect) return 0;
+    const x = clientX - rect.left + viewport.scrollLeft - MIXER_LAYOUT.gutterWidth;
+    return Math.max(0, x / Math.max(0.001, viewport.pxPerMs));
   }
 
-  function setPan(value) {
-    pan = Math.max(0, Number(value) || 0);
-    panInput.value = String(Math.round(pan));
-    applyViewport();
+  function canvasClientXToSourceSec(clientX) {
+    return clamp(canvasClientXToTimeMs(clientX) / 1000 - elementStartSec(), 0, durationSec());
   }
 
   function exportSettings() {
-    syncProjectFromControls();
     const json = exportProjectSettingsJson(project);
     root.dataset.projectSettings = json;
     return json;
@@ -175,119 +500,42 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
 
   function importSettings(json) {
     const imported = importProjectSettings(json);
-    project = imported.project;
-    const element = project.elements[0];
-    if (element) {
-      setValue(root, '.media-lane-offset', (element.timeline.startMs || 0) / 1000);
-      setValue(root, '.media-lane-in', (element.timeline.sourceInMs || 0) / 1000);
-      setValue(root, '.media-lane-out', (element.timeline.sourceOutMs || element.timeline.durationMs || 0) / 1000);
-      setValue(root, '.media-lane-gain', element.audio?.gain ?? 1);
-      setValue(root, '.media-lane-fade-in', element.audio?.fadeInMs ?? 0);
-      setValue(root, '.media-lane-fade-out', element.audio?.fadeOutMs ?? 0);
-      const room = root.querySelector('.media-lane-room-toggle');
-      if (room) {
-        room.checked = !!element.audio?.roomTone;
-        room.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    }
-    reflectProjectState();
+    project = selectFirstElement(imported.project);
+    attachWaveformSummary(waveformSummary);
+    render();
     return imported;
   }
 
-  const onInput = (event) => {
-    if (event.target?.matches?.('.media-lane-offset, .media-lane-in, .media-lane-out, .media-lane-gain, .media-lane-fade-in, .media-lane-fade-out')) {
-      syncProjectFromControls();
-    }
-  };
-  const onChange = (event) => {
-    if (event.target?.matches?.('.media-lane-room-toggle')) syncProjectFromControls();
-  };
-  const onZoomInput = () => setZoom(Number(zoomInput.value));
-  const onPanInput = () => setPan(Number(panInput.value));
-  const onZoomOut = () => setZoom(zoom - 0.25);
-  const onZoomIn = () => setZoom(zoom + 0.25);
-  const onLoadedMetadata = () => {
-    project = buildProject(mediaEl, intake);
-    attachWaveformSummary(base.getWaveformSummary?.());
-    syncProjectFromControls();
-    setZoom(zoom);
-  };
-  root.addEventListener('input', onInput);
-  root.addEventListener('change', onChange);
-  mediaEl.addEventListener('loadedmetadata', onLoadedMetadata);
-  exportBtn.addEventListener('click', exportSettings);
-  zoomInput.addEventListener('input', onZoomInput);
-  panInput.addEventListener('input', onPanInput);
-  zoomOutBtn.addEventListener('click', onZoomOut);
-  zoomInBtn.addEventListener('click', onZoomIn);
-  const detachDrag = attachSourceMoveDrag(root, (deltaSec) => {
-    const offset = root.querySelector('.media-lane-offset');
-    if (!offset) return;
-    offset.value = String(Math.max(0, Math.round((readNumber(root, '.media-lane-offset', 0) + deltaSec) * 1000) / 1000));
-    offset.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-
-  root.__mediaMixerListen = {
-    getProject: () => project,
-    exportSettings,
-    importSettings,
-    getWaveformSummary: () => base.getWaveformSummary?.() || project.elements[0]?.analysis?.waveformSummary || null,
-    setZoom,
-    setPan,
-  };
-  reflectProjectState();
-  applyViewport();
-
-  return {
-    ...base,
-    el: root,
-    getProject: () => project,
-    exportSettings,
-    importSettings,
-    destroy() {
-      root.removeEventListener('input', onInput);
-      root.removeEventListener('change', onChange);
-      mediaEl.removeEventListener('loadedmetadata', onLoadedMetadata);
-      zoomInput.removeEventListener('input', onZoomInput);
-      panInput.removeEventListener('input', onPanInput);
-      zoomOutBtn.removeEventListener('click', onZoomOut);
-      zoomInBtn.removeEventListener('click', onZoomIn);
-      detachDrag();
-      delete root.__mediaMixerListen;
-      base.destroy?.();
-    },
-  };
-}
-
-function smallButton(label, text) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'mmx-listen-tool';
-  button.textContent = text;
-  button.setAttribute('aria-label', label);
-  return button;
+  function reflectProjectState() {
+    const element = firstElement();
+    root.dataset.mixerProjectId = project.project.id;
+    root.dataset.mixerElementId = element?.id || '';
+    root.dataset.mixerOffsetMs = String(Math.round(element?.timeline?.startMs || 0));
+    root.dataset.mixerGain = String(element?.audio?.gain ?? 1);
+    root.dataset.mixerRoomTone = element?.audio?.roomTone ? 'true' : 'false';
+    root.dataset.mixerZoom = String(Math.round((viewport.pxPerMs / 0.08) * 100) / 100);
+    root.dataset.mixerPan = String(Math.round(viewport.scrollLeft));
+    root.dataset.mixerWaveformStatus = waveformStatus;
+    root.dataset.mixerWaveformBuckets = String(element?.analysis?.waveformSummary?.buckets || 0);
+    root.dataset.mixerDurationSec = String(Math.max(0.001, project.project.durationMs / 1000));
+  }
 }
 
 function attachSourceMoveDrag(root, onMoveDelta) {
-  const region = root.querySelector('.media-lane-trim');
-  const surface = root.querySelector('.media-waveform-surface');
-  if (!region || !surface) return () => {};
   let active = null;
   const onPointerDown = (event) => {
-    if (event.button !== 0) return;
+    const region = event.target?.closest?.('.media-lane-trim');
+    const surface = root.querySelector('.media-waveform-surface');
+    if (!region || !surface || event.button !== 0) return;
     active = {
       pointerId: event.pointerId,
       startX: event.clientX,
-      width: Math.max(1, surface.getBoundingClientRect().width),
-      duration: readTimelineDuration(root),
+      width: Math.max(1, surface.getBoundingClientRect().width - MIXER_LAYOUT.gutterWidth),
+      duration: Number(root.dataset.mixerDurationSec) || 1,
       lastDeltaSec: 0,
     };
     region.classList.add('mmx-source-moving');
-    try {
-      region.setPointerCapture?.(event.pointerId);
-    } catch {
-      // Synthetic smoke-test pointer events may not have an active pointer capture target.
-    }
+    try { region.setPointerCapture?.(event.pointerId); } catch { /* synthetic events may not capture */ }
     event.preventDefault();
     event.stopPropagation();
   };
@@ -302,26 +550,36 @@ function attachSourceMoveDrag(root, onMoveDelta) {
   };
   const finish = (event) => {
     if (!active || event.pointerId !== active.pointerId) return;
-    region.classList.remove('mmx-source-moving');
+    root.querySelector('.media-lane-trim')?.classList.remove('mmx-source-moving');
     active = null;
     event.stopPropagation();
   };
-  region.addEventListener('pointerdown', onPointerDown);
-  region.addEventListener('pointermove', onPointerMove);
-  region.addEventListener('pointerup', finish);
-  region.addEventListener('pointercancel', finish);
+  root.addEventListener('pointerdown', onPointerDown);
+  root.addEventListener('pointermove', onPointerMove);
+  root.addEventListener('pointerup', finish);
+  root.addEventListener('pointercancel', finish);
   return () => {
-    region.removeEventListener('pointerdown', onPointerDown);
-    region.removeEventListener('pointermove', onPointerMove);
-    region.removeEventListener('pointerup', finish);
-    region.removeEventListener('pointercancel', finish);
+    root.removeEventListener('pointerdown', onPointerDown);
+    root.removeEventListener('pointermove', onPointerMove);
+    root.removeEventListener('pointerup', finish);
+    root.removeEventListener('pointercancel', finish);
   };
 }
 
-function readTimelineDuration(root) {
-  const offset = readNumber(root, '.media-lane-offset', 0);
-  const out = readNumber(root, '.media-lane-out', 0);
-  return Math.max(0.001, offset + out);
+async function decodeSummary(intake) {
+  const file = intake.file || (intake.bytes ? new File([intake.bytes], intake.filename || 'audio') : null);
+  if (!file) return null;
+  const maxDecode = 96 * 1024 * 1024;
+  const sliceBytes = 60 * 256 * 128;
+  const source = file.size && file.size <= maxDecode ? file : file.slice(0, sliceBytes);
+  const bytes = await source.arrayBuffer();
+  const ac = new AudioContext();
+  try {
+    const buffer = await ac.decodeAudioData(bytes.slice(0));
+    return computeWaveformSummary(buffer);
+  } finally {
+    ac.close().catch(() => {});
+  }
 }
 
 function buildProject(mediaEl, intake) {
@@ -329,7 +587,7 @@ function buildProject(mediaEl, intake) {
   return createProjectFromAssetMetadata({
     id: 'asset-listen-source',
     name: intake.filename || intake.file?.name || 'Audio source',
-    mime: intake.mime || intake.file?.type || '',
+    mime: intake.mime || intake.mimeType || intake.file?.type || '',
     size: intake.size || intake.file?.size || 0,
     lastModified: intake.file?.lastModified || null,
     capabilities: { hasAudio: true, hasVideo: false, hasImage: false },
@@ -344,25 +602,63 @@ function buildProject(mediaEl, intake) {
   });
 }
 
+function mergeDuration(project, durationMs) {
+  if (!Number.isFinite(durationMs) || durationMs <= 0) return project;
+  const id = project.elements[0]?.id;
+  const next = {
+    ...project,
+    project: { ...project.project, durationMs },
+  };
+  return id ? updateElement(next, id, (element) => ({
+    ...element,
+    durationMs,
+    rawDurationMs: durationMs,
+    timeline: {
+      ...element.timeline,
+      durationMs,
+      rawDurationMs: durationMs,
+      placementDurationMs: durationMs,
+      sourceOutMs: durationMs,
+    },
+  })) : next;
+}
+
+function selectFirstElement(project) {
+  const id = project.elements[0]?.id;
+  return id ? selectTarget(project, { type: 'element', id }, [{ type: 'element', id }]) : project;
+}
+
 function mediaDuration(mediaEl) {
   const value = Number(mediaEl.duration);
   return Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-function readNumber(root, selector, fallback) {
-  const value = Number(root.querySelector(selector)?.value);
-  return Number.isFinite(value) ? value : fallback;
+function button(text, label, className) {
+  const node = document.createElement('button');
+  node.type = 'button';
+  node.className = className;
+  node.textContent = text;
+  node.setAttribute('aria-label', label);
+  return node;
 }
 
-function setValue(root, selector, value) {
-  const input = root.querySelector(selector);
-  if (!input) return;
-  input.value = String(Math.round(Number(value) * 1000) / 1000);
-  input.dispatchEvent(new Event('input', { bubbles: true }));
+function fmtTime(value) {
+  const total = Math.max(0, Math.floor(Number(value) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
 
-function clampNumber(value, min, max, fallback) {
+function clamp(value, min, max) {
   const n = Number(value);
-  if (!Number.isFinite(n)) return fallback;
+  if (!Number.isFinite(n)) return min;
   return Math.max(min, Math.min(max, n));
+}
+
+function clampZoom(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 0.08;
+  return Math.max(0.02, Math.min(0.8, n));
 }
