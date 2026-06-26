@@ -13,3 +13,9 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   normalize legacy saves → hub (state.js). Boss is now reachable ONLY as the act-4 boss node of a
   run. Rewrote the games smoke to reach the boss via `__fvStage6.jumpToBoss` + asserts NO confront
   on the hub. Unit test: act-4 boss IS The Refused Connection; acts 1–3 are other mini-bosses.
+- B2a — Real-deck boss engine (additive, no UI switch yet): combat.js gains 3 inert optional hooks
+  (`acceptance` gates Signal damage, `advancePhase` on enemy-zero, `onPlayerTurnEnd`); new
+  boss-combat.js ports boss.js's phase rules into a combat-time `accepts()` predicate +
+  `wireBossCombat()` (3 phases, ch9 `locked` flag, phase-3 ongoing damage) + `autoNegotiate()`
+  test driver; enemies.js gains `the-refused-connection`. Unit test boss-combat.test.mjs:
+  SYN-lead/ACK gating, phase advance, full real-deck win (deterministic), locked⇒unwinnable.

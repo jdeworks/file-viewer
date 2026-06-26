@@ -132,7 +132,15 @@ function makeCtx(combat, card) {
   return {
     combat,
     card,
-    deal: (n) => dealToEnemy(combat, n),
+    // Boss negotiation (optional): a Signal-type card whose handshake is unmet deals 0 —
+    // "PROTOCOL MISMATCH". Protocol/Layer cards always resolve. See boss-combat.js.
+    deal: (n) => {
+      if (combat.acceptance && card && card.type === "Signal" && !combat.acceptance(combat, card)) {
+        log(combat, "PROTOCOL MISMATCH — signal refused.");
+        return;
+      }
+      dealToEnemy(combat, n);
+    },
     block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => { combat.player.energy += n; },
@@ -159,6 +167,9 @@ function makeCtx(combat, card) {
 // ── Turn loop ───────────────────────────────────────────────────────────────────────────────────
 
 export function endTurn(combat) {
+  if (combat.over) return combat;
+  // Boss negotiation (optional): end-of-turn protocol response (e.g. phase-3 ongoing damage).
+  if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
   if (combat.over) return combat;
   // Discard the hand.
   combat.discard.push(...combat.hand);
@@ -265,6 +276,8 @@ export function drawCards(combat, n) {
 
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
+    // Boss negotiation (optional): a multi-phase boss refills to its next phase instead of dying.
+    if (typeof combat.advancePhase === "function" && combat.advancePhase(combat)) return;
     combat.over = true;
     combat.result = "win";
   }

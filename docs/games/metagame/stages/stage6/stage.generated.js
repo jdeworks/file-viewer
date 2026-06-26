@@ -497,7 +497,15 @@ function makeCtx(combat, card) {
   return {
     combat,
     card,
-    deal: (n) => dealToEnemy(combat, n),
+    // Boss negotiation (optional): a Signal-type card whose handshake is unmet deals 0 —
+    // "PROTOCOL MISMATCH". Protocol/Layer cards always resolve. See boss-combat.js.
+    deal: (n) => {
+      if (combat.acceptance && card && card.type === "Signal" && !combat.acceptance(combat, card)) {
+        log(combat, "PROTOCOL MISMATCH — signal refused.");
+        return;
+      }
+      dealToEnemy(combat, n);
+    },
     block: (n) => {
       combat.player.block += Math.max(0, Math.round(n));
     },
@@ -542,6 +550,8 @@ function makeCtx(combat, card) {
   };
 }
 function endTurn(combat) {
+  if (combat.over) return combat;
+  if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
   if (combat.over) return combat;
   combat.discard.push(...combat.hand);
   combat.hand = [];
@@ -629,6 +639,7 @@ function drawCards(combat, n) {
 }
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
+    if (typeof combat.advancePhase === "function" && combat.advancePhase(combat)) return;
     combat.over = true;
     combat.result = "win";
   }
@@ -794,6 +805,24 @@ var ENEMIES = {
       { label: "Block 26", block: 26 },
       { label: "Attack 16 + Vulnerable", attack: 16, applyPlayer: { status: "vulnerable", value: 1 } },
       { label: "Deadlock — Attack 32", attack: 32 }
+    ]
+  },
+  // ── The act-4 finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
+  // HP here is the PHASE-1 pool; phase advance refills to BOSS_PHASE_HP[2]/[3]. Pressure is modest —
+  // the challenge is satisfying the handshake (lead SYN / play ACK), not a raw damage race.
+  "the-refused-connection": {
+    id: "the-refused-connection",
+    name: "The Refused Connection",
+    tier: "boss",
+    hp: 60,
+    hpPerAct: 0,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Backpressure — Attack 8", attack: 8 },
+      { label: "Re-handshake — Block 12", block: 12 },
+      { label: "Reset — Attack 6, twice", attack: 6, hits: 2 },
+      { label: "Silence — Block 10 + Attack 7", block: 10, attack: 7 }
     ]
   }
 };
