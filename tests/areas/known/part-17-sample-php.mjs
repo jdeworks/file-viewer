@@ -254,6 +254,17 @@ export async function run(ctx) {
   const balText = await page.$eval('#previewHost .bal-doc', (e) => e.textContent);
   if (/Ballerina/i.test(balText)) pass('ballerina-lang: badge shown'); else fail('ballerina-lang badge: ' + balText.slice(0, 200));
   if (/Imports|Services|Functions|Types/i.test(balText)) pass('ballerina-lang: structure shown'); else fail('ballerina-lang structure: ' + balText.slice(0, 300));
+  if (/resource function get products|returns error\?|http:Caller caller|sensitive config/i.test(balText)) pass('ballerina-lang: signatures, params, and review notes shown'); else fail('ballerina-lang details: ' + balText.slice(0, 800));
+  const balResourceHint = await page.$eval('#previewHost .bal-doc .bal-tag-resource', (e) => e.title);
+  if (/resource path|HTTP/i.test(balResourceHint)) pass('ballerina-lang: qualifier hover help present'); else fail('ballerina-lang qualifier hint: ' + balResourceHint);
+  const balSourceOpen = await page.$eval('#previewHost .bal-doc .kf-source-details', (e) => e.open);
+  if (!balSourceOpen) pass('ballerina-lang: source starts collapsed'); else fail('ballerina source should start collapsed');
+  await page.click('#previewHost .bal-doc .kf-source-link');
+  const balJump = await page.$eval('#previewHost .bal-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (balJump.open && balJump.highlighted) pass('ballerina-lang: item click opens and highlights source'); else fail('ballerina source jump: ' + JSON.stringify(balJump));
 
   // ── nix-flake viewer ──
   await openExample('flake.nix');

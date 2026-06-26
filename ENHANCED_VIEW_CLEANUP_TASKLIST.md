@@ -56,7 +56,7 @@ Use a few representative viewers to validate helpers before broad migration.
 These already extract symbols but leave too much user value on the table.
 
 - [x] `gdscript-lang`: full symbol index, docs, export metadata, line-linked source.
-- [ ] `ballerina-lang`: full service/resource/function signatures, endpoint detail, qualifier explanations.
+- [x] `ballerina-lang`: full service/resource/function signatures, endpoint detail, qualifier explanations.
 - [ ] `gleam-lang`: public API signatures, `///` docs, arity, module dependency grouping.
 - [ ] `mojo-lang`: clickable signatures, struct field counts, `@value`/alias/let-var explanations.
 - [ ] `fortran-lang`: procedure signatures, missing `IMPLICIT NONE` warning, `COMMON` explanation, procedure length.
