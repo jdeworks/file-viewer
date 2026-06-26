@@ -8,6 +8,7 @@ import { springTrap } from "../traps.js";
 import { useConsumable } from "../consumables.js";
 import { affixDamage, applyHitAffix } from "../affixes.js";
 import { runHeat } from "../data.js";
+import { igniteCell, tickFire } from "../fire.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -263,6 +264,25 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const storm = buildFloor("heat-test", 4, { run: { elite_storm: true } });
   ok(storm.monsters.filter((m) => m.elite).length > base.monsters.filter((m) => m.elite).length, "Elite Storm adds elites");
   ok(runHeat({}) === 1 && runHeat({ swarm: true, no_potions: true }) === 1.5, "each active modifier raises the glyph multiplier");
+}
+
+// ── C1 spreading fire: chains through spores, bounded by fuel, burns out ──────────────────────────
+{
+  const grid = ["##########", "#........#", "##########"];
+  const w = { floor: 5, width: 10, grid, pos: { x: 9, y: 1 }, monsters: [], hazards: [] };
+  for (let x = 2; x <= 7; x += 1) w.hazards.push({ x, y: 1, type: "spores" });
+  w.hazardAt = hazardIndex(w);
+  igniteCell(w, 2, 1);
+  let peak = 0;
+  for (let t = 0; t < 12; t += 1) { tickFire(w, { hp: 100, maxHp: 100, statuses: {} }, { log: [], damageTaken: 0, died: false }); peak = Math.max(peak, w.fires.length); }
+  ok(peak > 1 && w.burned.length === 6, "fire chains across the spore field (all 6 cells burned)");
+  ok(w.fires.length === 0, "fire burns out — it's fuel-bounded, not endless");
+
+  const w2 = { floor: 5, width: 6, grid: ["######", "#....#", "######"], pos: { x: 5, y: 1 }, monsters: [], hazards: [] };
+  w2.hazardAt = hazardIndex(w2);
+  igniteCell(w2, 2, 1);
+  for (let t = 0; t < 8; t += 1) tickFire(w2, { hp: 100, maxHp: 100, statuses: {} }, { log: [], damageTaken: 0, died: false });
+  ok(w2.fires.length === 0, "fire never spreads across bare floor (no fuel)");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

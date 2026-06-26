@@ -243,6 +243,10 @@
 .s2-c-spikes { color: #9aa4ad; }
 .s2-c-chasm { color: #6a7bb0; }
 .s2-c-trap { color: #c0563a; } /* sprung trap marker */
+.s2-c-fire { color: #ff7a1e; text-shadow: 0 0 6px #ff3a00; animation: s2-fire 0.4s steps(2) infinite; } /* C1 spreading fire */
+
+@keyframes s2-fire { 50% { color: #ffd24a; opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .s2-c-fire { animation: none; } }
 /* Layer order in the absolute sprite stack: hazards under loot under foes under @. */
 .s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm, .s2-c-trap { z-index: 0; }
 .s2-c-foe, .s2-c-foe-b, .s2-c-foe2, .s2-c-elite, .s2-c-ambush, .s2-c-guardian, .s2-c-ally { z-index: 2; }

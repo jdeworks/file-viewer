@@ -5,6 +5,7 @@
 
 import { applyStatus } from "./status.js";
 import { hasLOS, isOpen } from "./monsters.js";
+import { igniteCell } from "./fire.js";
 
 export const CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
@@ -68,6 +69,7 @@ export function useConsumable(world, player, type, events) {
     foe.hp -= dmg;
     applyStatus(foe, "burn", 4, 2);
     if (foe.hp <= 0) foe.alive = false;
+    igniteCell(world, foe.x, foe.y); // C1: lights the impact cell — chains through spore fields
     events.log.push(`firebolt scorches ${foe.name} for ${dmg}${foe.hp <= 0 ? " — unparsed" : ""}.`);
   } else if (type === "freeze") {
     let n = 0;

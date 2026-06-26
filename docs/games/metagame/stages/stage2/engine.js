@@ -171,8 +171,10 @@ export function step(world, player, dir) {
   world.stepCount = (world.stepCount || 0) + 1; // drives A4 lingering pressure
 
   // Hazard on-enter (A2): lava burns, spores poison, spikes bleed, a chasm drops you a floor.
+  // A spore tile that fire already consumed (C1) is spent — no poison.
   const hz = world.hazardAt && world.hazardAt(nx, ny);
-  if (hz) {
+  const burntSpore = hz === "spores" && Array.isArray(world.burned) && world.burned.includes(ny * world.width + nx);
+  if (hz && !burntSpore) {
     enterHazard(world, player, hz, events);
     if (events.died) return events;
     if (events.descend) return events; // chasm fall — skip the rest of this floor's resolution

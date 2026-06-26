@@ -1167,6 +1167,58 @@ function applyHitAffix(world, player, foe, dmg, events) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage2/fire.js
+var FIRE_GLYPH = "▴";
+var FIRE_LIFE = 5;
+var MAX_FIRES = 400;
+function burnedSet(world) {
+  world.burned = world.burned || [];
+  return world.burned;
+}
+function igniteCell(world, x, y, life = FIRE_LIFE) {
+  if (!world.grid[y] || world.grid[y][x] === "#") return;
+  world.fires = world.fires || [];
+  if (world.fires.length >= MAX_FIRES || world.fires.some((f) => f.x === x && f.y === y)) return;
+  world.fires.push({ x, y, life });
+  const idx = y * world.width + x;
+  if (!burnedSet(world).includes(idx)) world.burned.push(idx);
+}
+function tickFire(world, player, events) {
+  if (!world.fires || !world.fires.length) return;
+  const burned = burnedSet(world);
+  const dmg = 4 + world.floor;
+  const next = [];
+  const fresh = [];
+  for (const f of world.fires) {
+    if (world.pos.x === f.x && world.pos.y === f.y) {
+      player.hp = Math.max(0, player.hp - dmg);
+      events.damageTaken = (events.damageTaken || 0) + dmg;
+      applyStatus(player, "burn", 3, 2);
+      if (player.hp <= 0) events.died = true;
+    }
+    for (const m of world.monsters) {
+      if (m.alive && m.x === f.x && m.y === f.y) {
+        m.hp -= dmg;
+        applyStatus(m, "burn", 3, 2);
+        if (m.hp <= 0) m.alive = false;
+      }
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = f.x + dx;
+      const ny = f.y + dy;
+      const idx = ny * world.width + nx;
+      if (world.hazardAt && world.hazardAt(nx, ny) === "spores" && !burned.includes(idx) && !fresh.some((g) => g.x === nx && g.y === ny)) {
+        fresh.push({ x: nx, y: ny, life: FIRE_LIFE });
+        burned.push(idx);
+      }
+    }
+    f.life -= 1;
+    if (f.life > 0) next.push(f);
+  }
+  world.fires = next.concat(fresh);
+  events.fireActive = world.fires.length;
+}
+
 // ../../docs/games/metagame/stages/stage2/consumables.js
 var CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
@@ -1233,6 +1285,7 @@ function useConsumable(world, player, type, events) {
     foe.hp -= dmg;
     applyStatus(foe, "burn", 4, 2);
     if (foe.hp <= 0) foe.alive = false;
+    igniteCell(world, foe.x, foe.y);
     events.log.push(`firebolt scorches ${foe.name} for ${dmg}${foe.hp <= 0 ? " — unparsed" : ""}.`);
   } else if (type === "freeze") {
     let n = 0;
@@ -1589,7 +1642,8 @@ function step(world, player, dir) {
   events.moved = true;
   world.stepCount = (world.stepCount || 0) + 1;
   const hz = world.hazardAt && world.hazardAt(nx, ny);
-  if (hz) {
+  const burntSpore = hz === "spores" && Array.isArray(world.burned) && world.burned.includes(ny * world.width + nx);
+  if (hz && !burntSpore) {
     enterHazard(world, player, hz, events);
     if (events.died) return events;
     if (events.descend) return events;
@@ -1851,6 +1905,7 @@ var SECTIONS = [
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
   ["Runes", "Pink ♦ runes are one-shot tools: pick them up, then press 1/2/3 (or the buttons) — blink (escape), firebolt (scorch the nearest foe), freeze (lock foes around you)."],
+  ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward."],
   ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
@@ -2017,6 +2072,7 @@ function createView(screenEl) {
     if (world.consumables) world.consumables.forEach((c, i) => {
       if (!c.taken) place("c" + i, c.x, c.y, (CONSUMABLES[c.type] || {}).glyph || "♦", "s2-c-consum");
     });
+    if (world.fires) world.fires.forEach((f, i) => place("fire" + i, f.x, f.y, FIRE_GLYPH, "s2-c-fire"));
     if (world.hidden) world.hidden.forEach((h, i) => {
       if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret");
     });
@@ -2175,6 +2231,7 @@ function createView(screenEl) {
     }
     const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
+    if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
     if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2);
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) {
@@ -2659,6 +2716,7 @@ function renderStage2({
       if (ps.died) events.died = true;
     }
     if (bucket === 2 && pressureSpawn(world)) appendLog(state, "something else stirs in the dark.");
+    if (bucket === 3 && !events.died) tickFire(world, state.run.entity, events);
     if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
@@ -2668,7 +2726,8 @@ function renderStage2({
       persistAndPaint();
       return;
     }
-    view.tickMonsters(world);
+    if (world.fires && world.fires.length) view.paintExplore(world);
+    else view.tickMonsters(world);
     paintHud();
   }
   function startMonsterClocks() {

@@ -5,6 +5,7 @@ import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
 import { useConsumable, CONSUMABLE_KEYS, CONSUMABLES } from "./consumables.js";
+import { tickFire } from "./fire.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
 import { createView, renderHpBar } from "./view.js";
@@ -349,6 +350,7 @@ export function renderStage2({
       if (ps.died) events.died = true;
     }
     if (bucket === 2 && pressureSpawn(world)) appendLog(state, "something else stirs in the dark.");
+    if (bucket === 3 && !events.died) tickFire(world, state.run.entity, events); // C1 spreading fire
     if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
@@ -358,7 +360,10 @@ export function renderStage2({
       persistAndPaint();
       return;
     }
-    view.tickMonsters(world);
+    // While fire is alive, do the fuller repaint so flames spread/age and burned foes clear; else
+    // the cheap sprite-only monster tick.
+    if (world.fires && world.fires.length) view.paintExplore(world);
+    else view.tickMonsters(world);
     paintHud();
   }
 

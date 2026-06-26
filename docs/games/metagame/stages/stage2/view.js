@@ -11,6 +11,7 @@
 import { HAZARD_GLYPH, HAZARD_CLASS } from "./hazards.js";
 import { TRAP_GLYPH, TRAP_CLASS } from "./traps.js";
 import { CONSUMABLES } from "./consumables.js";
+import { FIRE_GLYPH } from "./fire.js";
 
 // Fixed viewport in cells. Deeper floors are far bigger (see engine.buildFloor) so only this
 // chunk is ever visible — the rest has to be explored.
@@ -175,6 +176,7 @@ export function createView(screenEl) {
     world.glyphs.forEach((g, i) => { if (!g.taken) place("g" + i, g.x, g.y, "%", "s2-c-glyph"); });
     if (world.potions) world.potions.forEach((p, i) => { if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion"); });
     if (world.consumables) world.consumables.forEach((c, i) => { if (!c.taken) place("c" + i, c.x, c.y, (CONSUMABLES[c.type] || {}).glyph || "♦", "s2-c-consum"); });
+    if (world.fires) world.fires.forEach((f, i) => place("fire" + i, f.x, f.y, FIRE_GLYPH, "s2-c-fire")); // C1 spreading fire
     // Secret doors: a '#' in a slightly-off wall colour over the terrain (findable, not obvious).
     if (world.hidden) world.hidden.forEach((h, i) => { if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret"); });
     for (const id of [...itemEls.keys()]) if (!live.has(id)) { itemEls.get(id).remove(); itemEls.delete(id); }
@@ -311,6 +313,7 @@ export function createView(screenEl) {
     if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
+    if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
     if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2); // dev: traps (dim=armed)
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
