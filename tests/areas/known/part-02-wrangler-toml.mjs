@@ -80,6 +80,18 @@ export async function run(ctx) {
   const azpText = await page.$eval('#previewHost .azp-doc', (e) => e.textContent);
   if (/Azure Pipelines/i.test(azpText)) pass('azure-pipelines.yml: badge shown'); else fail('azure badge: ' + azpText.slice(0, 200));
   if (/Build|Test|ubuntu/i.test(azpText)) pass('azure-pipelines.yml: stages and pool shown'); else fail('azure content: ' + azpText.slice(0, 200));
+  if (/Azure Pipelines Review|hosted image|stage dependency|deploy step/i.test(azpText)) pass('azure-pipelines.yml: review findings shown'); else fail('azure review: ' + azpText.slice(0, 500));
+  if (/depends on Build|NODE_VERSION|CACHE_VERSION/i.test(azpText)) pass('azure-pipelines.yml: dependency and variable details shown'); else fail('azure details: ' + azpText.slice(0, 500));
+  const azpHelpTitle = await page.$eval('#previewHost .azp-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Azure Pipelines|Open line|source/i.test(azpHelpTitle)) pass('azure-pipelines.yml: hover explains source action'); else fail('azure hover title: ' + azpHelpTitle);
+  const azpSourceCollapsed = await page.$eval('#previewHost .azp-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (azpSourceCollapsed) pass('azure-pipelines.yml: source starts collapsed'); else fail('azure source was not collapsed');
+  const azpSourceLine = await page.$eval('#previewHost .azp-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .azp-doc .kf-source-details');
+    return details?.open && document.getElementById(`azp-line-${line}`);
+  }, azpSourceLine);
+  pass('azure-pipelines.yml: clicking item opens source line');
 
   // ── vscode-settings.json viewer ──
   await openExample('vscode-settings.json');
