@@ -111,6 +111,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
 - [ ] Server/service configs: Apache, Nginx, Caddy, HAProxy, PostgreSQL, MySQL, Redis, MongoDB, SSHD.
+- [x] SSHD config: source-linked directives, hover explanations, public bind/auth review findings, and collapsed numbered source.
 - [ ] Add rule packs for weak TLS/proxy headers, open bind addresses, directory listing, permissive auth, debug logging.
 - [ ] Deployment configs: Vercel, Netlify, Wrangler, Railway, Firebase.
 - [ ] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.

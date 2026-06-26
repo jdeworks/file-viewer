@@ -188,6 +188,20 @@ export async function run(ctx) {
   if (/SSHD|sshd_config/i.test(sshdcfgText)) pass('sshd_config: badge shown'); else fail('sshd_config badge: ' + sshdcfgText.slice(0, 200));
   if (/PermitRootLogin/i.test(sshdcfgText)) pass('sshd_config: PermitRootLogin shown'); else fail('sshd_config permit-root: ' + sshdcfgText.slice(0, 300));
   if (/PasswordAuthentication/i.test(sshdcfgText)) pass('sshd_config: PasswordAuthentication shown'); else fail('sshd_config passwd-auth: ' + sshdcfgText.slice(0, 300));
+  if (/SSHD Review|public bind/i.test(sshdcfgText)) pass('sshd_config: review findings shown'); else fail('sshd_config review: ' + sshdcfgText.slice(0, 400));
+  const sshdHelpTitle = await page.$eval('#previewHost .sshdcfg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/source|Open line/i.test(sshdHelpTitle)) pass('sshd_config: directive hover help shown'); else fail('sshd_config source help title missing');
+  const sshdSourceCollapsed = await page.$eval('#previewHost .sshdcfg-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (sshdSourceCollapsed) pass('sshd_config: source collapsed'); else fail('sshd_config: source not collapsed');
+  const sshdSourceLine = await page.$eval('#previewHost .sshdcfg-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .sshdcfg-doc .kf-source-details');
+    return details?.open && document.getElementById(`sshd-line-${line}`);
+  }, sshdSourceLine);
+  pass('sshd_config: source links open source');
 
   // ── Postman Collection viewer ──
   await openExample('api.postman_collection.json (Postman)');
