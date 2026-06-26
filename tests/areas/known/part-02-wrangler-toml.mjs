@@ -253,6 +253,18 @@ export async function run(ctx) {
   const glbText = await page.$eval('#previewHost .glb-doc', (e) => e.textContent);
   if (/GitLab/i.test(glbText)) pass('.gitlab-ci.yml: badge shown'); else fail('gitlab-ci badge: ' + glbText.slice(0, 200));
   if (/install|lint|test|build|deploy/i.test(glbText)) pass('.gitlab-ci.yml: stages/jobs shown'); else fail('gitlab-ci jobs: ' + glbText.slice(0, 200));
+  if (/GitLab CI Review|mutable image|needs graph/i.test(glbText)) pass('.gitlab-ci.yml: review findings shown'); else fail('gitlab-ci review: ' + glbText.slice(0, 500));
+  if (/needs: install|needs: lint, test:unit/i.test(glbText)) pass('.gitlab-ci.yml: job needs graph shown'); else fail('gitlab-ci needs: ' + glbText.slice(0, 500));
+  const glbHelpTitle = await page.$eval('#previewHost .glb-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/GitLab CI|Open line|source/i.test(glbHelpTitle)) pass('.gitlab-ci.yml: hover explains source action'); else fail('gitlab-ci hover title: ' + glbHelpTitle);
+  const glbSourceCollapsed = await page.$eval('#previewHost .glb-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (glbSourceCollapsed) pass('.gitlab-ci.yml: source starts collapsed'); else fail('gitlab-ci source was not collapsed');
+  const glbSourceLine = await page.$eval('#previewHost .glb-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .glb-doc .kf-source-details');
+    return details?.open && document.getElementById(`glb-line-${line}`);
+  }, glbSourceLine);
+  pass('.gitlab-ci.yml: clicking item opens source line');
 
   // ── pnpm-workspace.yaml viewer ──
   await openExample('pnpm-workspace.yaml');
