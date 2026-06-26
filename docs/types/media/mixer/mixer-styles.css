@@ -1,0 +1,213 @@
+.mmx-shell {
+  --mmx-border: color-mix(in srgb, currentColor 18%, transparent);
+  --mmx-muted: color-mix(in srgb, currentColor 58%, transparent);
+  display: grid;
+  grid-template-rows: auto minmax(180px, auto) auto;
+  gap: 8px;
+  width: 100%;
+  color: var(--fg, #1f2933);
+}
+
+.mmx-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  border-bottom: 1px solid var(--mmx-border);
+}
+
+.mmx-title {
+  min-width: 0;
+  flex: 1;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mmx-modebar {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--mmx-border);
+  border-radius: 6px;
+}
+
+.mmx-mode {
+  height: 26px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+}
+
+.mmx-mode.is-active {
+  background: color-mix(in srgb, #4c78a8 24%, canvas 76%);
+}
+
+.mmx-tool {
+  min-width: 32px;
+  height: 30px;
+}
+
+.mmx-zoom {
+  width: 128px;
+}
+
+.mmx-time {
+  min-width: 64px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--mmx-muted);
+}
+
+.mmx-body {
+  position: relative;
+  min-height: 180px;
+  overflow: auto;
+  border: 1px solid var(--mmx-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, canvas 94%, currentColor 6%);
+}
+
+.mmx-timeline {
+  position: relative;
+  min-width: 100%;
+}
+
+.mmx-ruler {
+  position: absolute;
+  top: 0;
+  height: 32px;
+  border-bottom: 1px solid var(--mmx-border);
+}
+
+.mmx-ruler-tick {
+  position: absolute;
+  top: 0;
+  height: 32px;
+  padding-left: 4px;
+  border-left: 1px solid var(--mmx-border);
+  font-size: 11px;
+  line-height: 30px;
+  color: var(--mmx-muted);
+  white-space: nowrap;
+}
+
+.mmx-lanes {
+  position: absolute;
+  inset: 0;
+}
+
+.mmx-lane {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-bottom: 1px solid var(--mmx-border);
+}
+
+.mmx-lane-header {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border-right: 1px solid var(--mmx-border);
+  background: color-mix(in srgb, canvas 90%, currentColor 10%);
+}
+
+.mmx-lane-label,
+.mmx-lane-role,
+.mmx-element-title,
+.mmx-element-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mmx-lane-role,
+.mmx-element-meta {
+  font-size: 11px;
+  color: var(--mmx-muted);
+}
+
+.mmx-lane-rail {
+  position: absolute;
+  inset-block: 0;
+  background-image: linear-gradient(to right, color-mix(in srgb, currentColor 8%, transparent) 1px, transparent 1px);
+  background-size: 80px 100%;
+}
+
+.mmx-element {
+  position: absolute;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  min-width: 18px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, #4c78a8 75%, #000 15%);
+  border-radius: 6px;
+  background: color-mix(in srgb, #4c78a8 32%, canvas 68%);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mmx-element.is-selected {
+  outline: 2px solid #e5534b;
+  outline-offset: 2px;
+}
+
+.mmx-fade {
+  position: absolute;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-top: 2px solid currentColor;
+  opacity: 0.6;
+}
+
+.mmx-fade-in {
+  left: 0;
+  border-left: 2px solid currentColor;
+}
+
+.mmx-fade-out {
+  right: 0;
+  border-right: 2px solid currentColor;
+}
+
+.mmx-playhead {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  background: #e5534b;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.mmx-inspector {
+  min-height: 84px;
+  padding: 10px;
+  border: 1px solid var(--mmx-border);
+  border-radius: 8px;
+}
+
+.mmx-inspector-kicker {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--mmx-muted);
+}
+
+.mmx-inspector-title {
+  margin: 2px 0 4px;
+  font-size: 15px;
+}
+
+.mmx-inspector-body {
+  margin: 0;
+  color: var(--mmx-muted);
+}

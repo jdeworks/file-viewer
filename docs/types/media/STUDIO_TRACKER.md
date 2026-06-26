@@ -76,7 +76,7 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ### A0 — Modular Media Mixer Source Of Truth
 
-Status: approved; Stage 1 pure-core implementation started.
+Status: Stage 2 renderer skeleton implemented.
 
 The active design target has moved from a narrow audio-only lane redesign to a
 general modular media mixer/editor. Use
@@ -116,6 +116,29 @@ Stage 1 pure-core implementation has started under `docs/types/media/mixer/`:
   `./scripts/check.sh --fast` currently reaches aggregate smoke but fails in
   the independently reproduced `media-3d` area waiting for
   `#previewHost .media-doc video.media-view`.
+
+Stage 2 renderer skeleton is implemented under `docs/types/media/mixer/`:
+
+- Added `mixer-renderer.js`, `mixer-hit-test.js`, `mixer-interactions.js`,
+  `mixer-context-menu.js`, `mixer-ui.js`, and `mixer-styles.css`.
+- The shell renders toolbar, mode controls, ruler, red playhead, lane stack,
+  lane labels, element blocks, selection outline, and inspector placeholder
+  from immutable snapshots.
+- Hit-testing distinguishes ruler, lane header, empty lane, element body,
+  trim handles, and fade handles.
+- Temporary fake-project mounting is available through
+  `mountMediaMixerShell()` for Stage 2 only; it does not replace Listen yet.
+- Validation passed:
+  - `node tests/media-mixer-model.test.mjs`
+  - `node tests/media-mixer-import-export.test.mjs`
+  - `node tests/media-mixer-capabilities.test.mjs`
+  - `node tests/media-mixer-hit-test.test.mjs`
+  - `node tests/media-parsers.test.mjs`
+  - `node tests/smoke-area.mjs media-studio-mixer-shell media-studio`
+- Validation caveat: `./scripts/check.sh --fast` still fails in the same
+  independently reproduced aggregate-smoke `media-3d` checkpoint waiting for
+  `#previewHost .media-doc video.media-view`. The new mixer shell unit tests,
+  the new mixer shell smoke, and the targeted media-studio smoke pass.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

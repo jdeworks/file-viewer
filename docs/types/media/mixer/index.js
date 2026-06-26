@@ -4,4 +4,8 @@ export * from './mixer-capabilities.js';
 export * from './mixer-model.js';
 export * from './mixer-import-export.js';
 export * from './mixer-hash.js';
-
+export * from './mixer-hit-test.js';
+export * from './mixer-renderer.js';
+export * from './mixer-interactions.js';
+export * from './mixer-context-menu.js';
+export * from './mixer-ui.js';

@@ -145,6 +145,7 @@ FULL_UNIT_TESTS=(
   tests/media-mixer-model.test.mjs
   tests/media-mixer-import-export.test.mjs
   tests/media-mixer-capabilities.test.mjs
+  tests/media-mixer-hit-test.test.mjs
   tests/movediff.test.mjs
   tests/markdown-edit-actions.test.mjs
   tests/image-fill.test.mjs
@@ -179,6 +180,7 @@ MEDIA_MIXER_UNIT_TESTS=(
   tests/media-mixer-model.test.mjs
   tests/media-mixer-import-export.test.mjs
   tests/media-mixer-capabilities.test.mjs
+  tests/media-mixer-hit-test.test.mjs
 )
 
 collect_changed_paths() {
@@ -430,6 +432,9 @@ run_smoke_core() {
 
     non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
+      docs/types/media/mixer/*|tests/areas/media-studio-mixer-shell.mjs)
+        add_smoke_area media-studio-mixer-shell
+        ;;
       docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_smoke_area media-studio
         ;;

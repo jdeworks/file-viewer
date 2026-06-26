@@ -46,7 +46,7 @@ Reference alignment:
 
 ### R0a — Modular Media Mixer Foundation
 
-Status: approved; Stage 1 pure-core implementation started.
+Status: Stage 2 renderer skeleton implemented.
 
 The next media-studio foundation is a modular, capability-gated media
 mixer/editor, not a narrow replacement of the current audio Listen lane. The
@@ -78,11 +78,17 @@ Implementation should follow:
 The current file-viewer Mix, Compare, and video Timeline implementations remain
 prototype coverage only. Do not evolve them as the final architecture.
 
-Stage 1 implementation now begins with `docs/types/media/mixer/` pure modules
-and unit tests for model/timing, capability gating, config-only project
-settings import/export, relink/reapply state, hashing, and EQ schema. The next
-implementation slice is the renderer skeleton from
-`modular-mixer-research/09-build-runbook.md`.
+Stage 1 implementation added `docs/types/media/mixer/` pure modules and unit
+tests for model/timing, capability gating, config-only project settings
+import/export, relink/reapply state, hashing, and EQ schema.
+
+Stage 2 implementation added the modular renderer shell, hit-testing,
+interaction dispatch, context-menu item model, mount helper, and CSS. It is
+validated by `tests/media-mixer-hit-test.test.mjs` and
+`tests/areas/media-studio-mixer-shell.mjs`.
+
+The next implementation slice is Stage 3: integrate one-lane MP3/WAV Listen
+through the new modular mixer context.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
