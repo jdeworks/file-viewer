@@ -117,6 +117,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] MySQL config: source-linked server/client/dump settings, directive hover explanations, bind/slow-log/dump-packet review findings, masking reasons, and collapsed redacted source.
 - [x] Nginx config: source-linked servers/listens/locations/upstreams, directive hover explanations, HTTP/default/upstream review findings, and collapsed numbered source.
 - [x] PostgreSQL config: source-linked settings, masking reasons/redacted source for sensitive key-like values, bind/SSL/WAL review findings, and collapsed redacted source.
+- [x] Redis config: source-linked network/persistence/security directives, repeated save/rename-command handling, bind/password/persistence review findings, and collapsed redacted source.
 - [x] SSHD config: source-linked directives, hover explanations, public bind/auth review findings, and collapsed numbered source.
 - [ ] Add rule packs for weak TLS/proxy headers, open bind addresses, directory listing, permissive auth, debug logging.
 - [ ] Deployment configs: Vercel, Netlify, Wrangler, Railway, Firebase.

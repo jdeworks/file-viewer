@@ -351,6 +351,27 @@ export async function run(ctx) {
   if (/9200/i.test(esText)) pass('elasticsearch.yml: http.port shown'); else fail('elasticsearch http port: ' + esText.slice(0, 300));
   if (/••••••••|sensitive|keystore|truststore/i.test(esText)) pass('elasticsearch.yml: X-Pack sensitive keys masked'); else fail('elasticsearch security masking: ' + esText.slice(0, 300));
 
+  // ── redis.conf viewer ──
+  await openExample('redis.conf');
+  await page.waitForSelector('#previewHost .rd-doc', { timeout: 12000 });
+  const rdText = await page.$eval('#previewHost .rd-doc', (e) => e.textContent);
+  const rdHtml = await page.$eval('#previewHost .rd-doc', (e) => e.innerHTML);
+  if (/Redis/i.test(rdText)) pass('redis.conf: Redis badge shown'); else fail('redis badge: ' + rdText.slice(0, 200));
+  if (/6379|127\.0\.0\.1/i.test(rdText)) pass('redis.conf: network settings shown'); else fail('redis network: ' + rdText.slice(0, 300));
+  if (/RDB snapshots|AOF enabled|900 1/i.test(rdText)) pass('redis.conf: persistence settings shown'); else fail('redis persistence: ' + rdText.slice(0, 300));
+  if (/Redis Review|bind scope|password set|renamed commands/i.test(rdText)) pass('redis.conf: review findings shown'); else fail('redis review: ' + rdText.slice(0, 500));
+  if ((rdText + rdHtml).includes('s3cur3p@ssw0rd')) fail('redis.conf: requirepass leaked'); else pass('redis.conf: requirepass redacted');
+  const rdHelpTitle = await page.$eval('#previewHost .rd-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Redis|Open line|source/i.test(rdHelpTitle)) pass('redis.conf: directive hover explains source action'); else fail('redis hover title: ' + rdHelpTitle);
+  const rdSourceCollapsed = await page.$eval('#previewHost .rd-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (rdSourceCollapsed) pass('redis.conf: redacted source starts collapsed'); else fail('redis source was not collapsed');
+  const rdSourceLine = await page.$eval('#previewHost .rd-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .rd-doc .kf-source-details');
+    return details?.open && document.getElementById(`rd-line-${line}`);
+  }, rdSourceLine);
+  pass('redis.conf: clicking directive opens source line');
+
   // ── sentinel.conf viewer ──
   await openExample('sentinel.conf (Redis Sentinel)');
   await page.waitForSelector('#previewHost .rds-doc', { timeout: 12000 });
