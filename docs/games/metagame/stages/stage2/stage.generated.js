@@ -1847,6 +1847,7 @@ var SECTIONS = [
   ["Affixes", "Some weapons carry an on-hit affix — vampiric (lifesteal), cleaving (hit adjacent foes), burning, knockback or double-strike. The one you pick up last is active; deeper weapons roll affixes more often."],
   ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
+  ["Darkness", "From the deeper bands your sight shrinks — you only see a radius around @, and foes loom out of the dark. Move carefully."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
   ["Runes", "Pink ♦ runes are one-shot tools: pick them up, then press 1/2/3 (or the buttons) — blink (escape), firebolt (scorch the nearest foe), freeze (lock foes around you)."],
@@ -1889,6 +1890,16 @@ var CELL_CLASS = {
 };
 var HEAVY_FOES = /* @__PURE__ */ new Set(["L", "O"]);
 var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function lightRadius(floor) {
+  if (floor <= 3) return null;
+  if (floor <= 6) return { rx: 13, ry: 7 };
+  if (floor <= 9) return { rx: 9, ry: 5 };
+  return { rx: 7, ry: 4 };
+}
+function lit(world, x, y) {
+  const L = lightRadius(world.floor);
+  return !L || Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry;
+}
 function hpBar(cur, max, width) {
   const ratio = max > 0 ? clamp(cur / max, 0, 1) : 0;
   let filled = Math.round(ratio * width);
@@ -1959,13 +1970,17 @@ function createView(screenEl) {
     reconcileSprites(world);
   }
   function terrainText(world) {
+    const L = lightRadius(world.floor);
+    const px = world.pos.x;
+    const py = world.pos.y;
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
       const gy = cam.y + vy;
       let line = "";
       for (let vx = 0; vx < VIEW_W; vx += 1) {
         const gx = cam.x + vx;
-        line += gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width ? " " : world.grid[gy][gx];
+        const dark = L && (Math.abs(gx - px) > L.rx || Math.abs(gy - py) > L.ry);
+        line += dark || gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width ? " " : world.grid[gy][gx];
       }
       rows.push(line);
     }
@@ -1974,7 +1989,7 @@ function createView(screenEl) {
   function reconcileItems(world) {
     const live = /* @__PURE__ */ new Set();
     const place = (id, x, y, ch, cls) => {
-      if (!inView(x, y)) return;
+      if (!inView(x, y) || !lit(world, x, y)) return;
       live.add(id);
       let el = itemEls.get(id);
       if (!el) {
@@ -2014,7 +2029,7 @@ function createView(screenEl) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = /* @__PURE__ */ new Set();
     world.monsters.forEach((m, i) => {
-      if (!m.alive || !inView(m.x, m.y)) {
+      if (!m.alive || !inView(m.x, m.y) || !lit(world, m.x, m.y)) {
         dropMob(i);
         return;
       }

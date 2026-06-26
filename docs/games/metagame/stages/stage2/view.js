@@ -33,6 +33,20 @@ const HEAVY_FOES = new Set(["L", "O"]);
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+// Darkness / FOV (C4): deeper floors shrink how far the player can SEE (rendering only — monster AI
+// keeps its own LOS sight). Returns null for the shallow floors (full camera), else a per-axis
+// radius (ry < rx because monospace cells are ~2× taller than wide, so this reads as a circle).
+export function lightRadius(floor) {
+  if (floor <= 3) return null;
+  if (floor <= 6) return { rx: 13, ry: 7 };
+  if (floor <= 9) return { rx: 9, ry: 5 };
+  return { rx: 7, ry: 4 };
+}
+function lit(world, x, y) {
+  const L = lightRadius(world.floor);
+  return !L || (Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry);
+}
+
 // Width-`w` red ASCII health bar: '#' for kept HP, '.' for lost. Never empty while alive.
 export function hpBar(cur, max, width) {
   const ratio = max > 0 ? clamp(cur / max, 0, 1) : 0;
@@ -123,13 +137,17 @@ export function createView(screenEl) {
   }
 
   function terrainText(world) {
+    const L = lightRadius(world.floor);
+    const px = world.pos.x;
+    const py = world.pos.y;
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
       const gy = cam.y + vy;
       let line = "";
       for (let vx = 0; vx < VIEW_W; vx += 1) {
         const gx = cam.x + vx;
-        line += (gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) ? " " : world.grid[gy][gx];
+        const dark = L && (Math.abs(gx - px) > L.rx || Math.abs(gy - py) > L.ry);
+        line += (dark || gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) ? " " : world.grid[gy][gx];
       }
       rows.push(line);
     }
@@ -141,7 +159,7 @@ export function createView(screenEl) {
   function reconcileItems(world) {
     const live = new Set();
     const place = (id, x, y, ch, cls) => {
-      if (!inView(x, y)) return;
+      if (!inView(x, y) || !lit(world, x, y)) return;
       live.add(id);
       let el = itemEls.get(id);
       if (!el) { el = makeSprite(ch, cls); itemEls.set(id, el); sprites.append(el); }
@@ -168,7 +186,7 @@ export function createView(screenEl) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = new Set();
     world.monsters.forEach((m, i) => {
-      if (!m.alive || !inView(m.x, m.y)) { dropMob(i); return; }
+      if (!m.alive || !inView(m.x, m.y) || !lit(world, m.x, m.y)) { dropMob(i); return; }
       live.add(i);
       let s = mobEls.get(i);
       let fresh = false;

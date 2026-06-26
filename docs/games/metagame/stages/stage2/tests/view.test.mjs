@@ -1,6 +1,6 @@
 // Stage 2 flair pass: red ASCII HP bars, depth-scaled maps (fixed camera viewport), and the
 // events.attack payload the renderer turns into the @/foe clash animation.
-import { hpBar } from "../view.js";
+import { hpBar, lightRadius } from "../view.js";
 import { buildFloor, step } from "../engine.js";
 
 let failed = 0;
@@ -34,6 +34,11 @@ const player = { atk: 99, def: 0, hp: 30, maxHp: 30, level: 1, xp: 0, glyphsThis
 const ev = step(world, player, "right");
 ok(ev.attack && ev.attack.foeIndex === 0 && ev.attack.killed === true, "kill emits events.attack {foeIndex, killed}");
 ok(ev.killed === true, "foe is marked killed");
+
+// C4 darkness: shallow floors see the full camera; deeper bands shrink the sight radius.
+ok(lightRadius(1) === null && lightRadius(3) === null, "floors 1-3 have no darkness (full camera)");
+ok(lightRadius(5).rx === 13 && lightRadius(8).rx === 9 && lightRadius(11).rx === 7, "sight radius shrinks with depth");
+ok(lightRadius(11).ry < lightRadius(11).rx, "vertical radius is tighter (cells are taller than wide)");
 
 console.log(failed ? `\nSTAGE 2 VIEW FAILED (${failed})` : "\nSTAGE 2 VIEW PASSED");
 if (failed) process.exit(1);
