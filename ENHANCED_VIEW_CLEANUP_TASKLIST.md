@@ -103,7 +103,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Woodpecker CI: source-linked steps/services/when/matrix/secrets/clone config, image/secret/deploy review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
 - [x] Render CI job dependency graphs from `needs`/workflow equivalents.
-- [ ] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
+- [x] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
 - [x] Kubernetes generic manifest: source-linked container/resource review, mutable images, privileged containers, host namespace/hostPort exposure, missing healthchecks, and secret-like env masking.
 - [x] Nomad job: source-linked jobs/groups/tasks/services, mutable image/health-check/exec-driver review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Podman Quadlet: source-linked image/env/volume/network/port/service settings, image/published-port/restart/secret review findings, secret-like env redaction, and collapsed redacted source.
@@ -112,7 +112,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Helmfile: source-linked repositories/releases/defaults/environments, stable-repo/latest/local-chart/secret/defaults review findings, secret-like source redaction, and collapsed redacted source.
 - [x] Helm Chart.yaml: source-linked identity/maintainers/dependencies/annotations, SemVer/dependency-range/repository/condition review findings, hover explanations, and collapsed source.
 - [x] Helm values.yaml: source-linked image/service/ingress/resources/autoscaling/env/config values, exposure/autoscaling/reference/secret review findings, masking reasons, and collapsed redacted source.
-- [ ] Add warnings for privileged mode, host network/PID, Docker socket mounts, `:latest`, public binds, missing healthchecks.
+- [x] Add warnings for privileged mode, host network/PID, Docker socket mounts, `:latest`, public binds, missing healthchecks.
 - [ ] Credentials/env: `.env`, AWS credentials, GCP service account, kubeconfig, appsettings, INI self-hosted configs.
 - [x] Generic `.env`: shared secret classifier, masking reasons, line-linked table rows, and collapsed wrapped redacted source.
 - [x] AWS credentials: static key review warnings, masking reasons, source-linked profiles/fields, and collapsed redacted source.
