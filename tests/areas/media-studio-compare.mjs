@@ -254,11 +254,11 @@ export async function exerciseCompare(ctx, kind) {
   else fail(`${kind} modular compare settings import: ` + JSON.stringify(modularSettings));
   const legacyDefault = await page.$eval(panelSel, (panel) => ({
     legacyMounted: !!panel.querySelector('.media-compare'),
-    legacyToggle: !!panel.querySelector('.media-legacy-compare-wrap .media-wv-toggle'),
+    legacyToggle: !!panel.querySelector('.media-legacy-compare-wrap'),
     modularMounted: !!panel.querySelector('.mmx-compare-source'),
   }));
-  if (!legacyDefault.legacyMounted && legacyDefault.legacyToggle && legacyDefault.modularMounted)
-    pass(`${kind} compare: legacy compare is not mounted by default`);
+  if (!legacyDefault.legacyMounted && !legacyDefault.legacyToggle && legacyDefault.modularMounted)
+    pass(`${kind} compare: legacy compare surface is removed`);
   else fail(`${kind} compare legacy default state: ` + JSON.stringify(legacyDefault));
   await assertCompareNoOverflow(ctx, kind, 'desktop');
   const priorViewport = page.viewportSize();

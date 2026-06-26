@@ -508,9 +508,15 @@ Stage 7 project settings import/export UI has started:
   `.tl-*` stylesheet block, and old Timeline viewport helper test have been
   deleted. Pure one-shot ffmpeg arg-builder coverage remains in
   `video-filters.js` and the focused media-studio smoke.
-- Stage 8 remaining work: retire the remaining legacy Compare disclosure once
-  equivalent detailed compare readouts are directly represented by the modular
-  Compare surface.
+- Removed the legacy Compare compatibility surface. Audio and video Compare now
+  mount only `mixer/mixer-compare.js`; the old `compare-ui*` DOM helpers,
+  `.media-compare*` stylesheet block, and lazy legacy disclosure have been
+  deleted. Pure compare math/audio helpers remain because they still back active
+  modular checks and export tests.
+- Stage 8 remaining work: continue replacing compatibility aliases/selectors in
+  broad smoke coverage with direct `.mmx-*` modular mixer contracts, then audit
+  any remaining old Mix prototype paths that are no longer part of the final
+  architecture.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

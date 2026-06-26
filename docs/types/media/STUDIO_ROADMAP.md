@@ -217,7 +217,10 @@ modular video-source mixer; the old `timeline.js` compatibility DOM helper and
 `.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
 coverage remains in `video-filters.js`. The next Stage 8 work is retiring the
 remaining legacy Compare disclosure after the modular Compare surface carries
-the needed detailed readouts directly.
+the needed detailed readouts directly. Audio and video Compare now also mount
+only `mixer/mixer-compare.js`; the old `compare-ui*` DOM helpers, lazy legacy
+disclosure, and `.media-compare*` stylesheet block have been removed while pure
+compare math/audio helpers remain for active modular checks and export tests.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

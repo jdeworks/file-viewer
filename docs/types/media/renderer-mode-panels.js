@@ -187,18 +187,7 @@ export async function mountAudioModePanels({
   });
   registerMode('compare', 'Compare', async (panel) => {
     const { mountModularCompare } = await import('./mixer/mixer-compare.js');
-    const modular = mountModularCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
-    const legacyToggle = makeTogglePanel({
-      label: 'Detailed legacy compare',
-      panelClass: 'media-legacy-compare-panel',
-      mount: async (innerPanel) => {
-        const { mountMediaCompare } = await import('./compare-ui.js');
-        return mountMediaCompare(innerPanel, intake, mediaElement, 'audio', { enableFfmpeg });
-      },
-    });
-    legacyToggle.wrap.classList.add('media-legacy-compare-wrap');
-    panel.append(legacyToggle.wrap);
-    return combinedController(modular, legacyToggle);
+    return mountModularCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
   });
   registerMode('mix', 'Mix', async (panel) => {
     const { mountModularAudioMixer } = await import('./mixer/mixer-audio-multi.js');
@@ -294,18 +283,7 @@ export async function mountVideoModePanels({
   });
   registerMode('compare', 'Compare', async (panel) => {
     const { mountModularCompare } = await import('./mixer/mixer-compare.js');
-    const modular = mountModularCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
-    const legacyToggle = makeTogglePanel({
-      label: 'Detailed legacy compare',
-      panelClass: 'media-legacy-compare-panel',
-      mount: async (innerPanel) => {
-        const { mountMediaCompare } = await import('./compare-ui.js');
-        return mountMediaCompare(innerPanel, intake, mediaElement, 'video', { enableFfmpeg });
-      },
-    });
-    legacyToggle.wrap.classList.add('media-legacy-compare-wrap');
-    panel.append(legacyToggle.wrap);
-    return combinedController(modular, legacyToggle);
+    return mountModularCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
   });
 
   if (watchMode) {
@@ -316,12 +294,4 @@ export async function mountVideoModePanels({
 
   void setMode('watch');
   return { subtitleController };
-}
-
-function combinedController(...controllers) {
-  return {
-    destroy() {
-      controllers.forEach((controller) => controller?.destroy?.());
-    },
-  };
 }
