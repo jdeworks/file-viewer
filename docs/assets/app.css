@@ -966,6 +966,49 @@ body.fv-dragging .intake::after {
 .arc-del-name { font-family: ui-monospace, monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg, #24292f); }
 .arc-del-marked .arc-del-name { text-decoration: line-through; color: var(--fg-2, #888); }
 
+/* ── Release status badge ── */
+.construction-badge {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 180;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent, #0969da) 45%, var(--border, #e0e0e0));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg, #fff) 92%, var(--accent, #0969da));
+  color: var(--fg, #24292f);
+  box-shadow: 0 8px 24px rgba(0,0,0,.16);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  user-select: none;
+  cursor: help;
+}
+.construction-badge::after {
+  content: attr(data-hover);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: min(260px, calc(100vw - 24px));
+  padding: 8px 10px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  color: var(--fg, #24292f);
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+  font-weight: 500;
+  line-height: 1.35;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity .12s, transform .12s;
+}
+.construction-badge:hover::after,
+.construction-badge:focus::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* ── Cold-open boot spinner ── shown by boot.js when a file is opened before the heavy app
    finishes loading. Mirrored in index.html's critical CSS so it can paint before app.css swaps in. */
 .boot-spinner { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column;

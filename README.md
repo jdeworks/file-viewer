@@ -4,6 +4,8 @@ A **mobile-first, client-only file viewer** that runs entirely in your browser. 
 
 **▶ Live: https://jdeworks.github.io/file-viewer/**
 
+> **Under construction:** File Viewer is actively being built and should not be treated as a finished full release yet.
+
 No install. No PWA. No account. Nothing to run.
 
 ## Why
