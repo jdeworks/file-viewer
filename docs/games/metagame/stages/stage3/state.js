@@ -1,45 +1,52 @@
-const DEFAULT_PIECES = ['<sec', 'ret', 'key>'];
+// Stage 3 save state (v2). The game is an in-modal nonogram roguelite: solve "memory snapshots"
+// (seeded nonograms) to earn REGISTERS, bank RETAINED fragments, push deeper as corruption rises.
+// Deterministic — seeds derive from runCount, NEVER Date.now() (the old v1 bug). The boss keeps its
+// memoryPair for now (reworked to a seeded diff key in a later increment).
 
-export function defaultState(context = {}) {
-  const seed = String(context.seed || context.now || Date.now()).replace(/\D/g, '').slice(-4) || '2470';
+const DEFAULT_PIECES = ["<sec", "ret", "key>"];
+
+export function defaultState() {
+  return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
+}
+
+// Build a state around persistent meta (registers/retained/shop/runCount), drawing a fresh run.
+function freshFrom(meta) {
+  const runCount = Number(meta.runCount || 0);
   return {
-    version: 1,
-    registers: 0,
-    retained: 0,
-    solvedFragments: [],
-    memoryPair: {
-      runId: `mem-${seed}`,
-      pieces: [...DEFAULT_PIECES],
-      key: DEFAULT_PIECES.join(''),
-    },
-    boss: {
-      reached: false,
-      attempts: 0,
-      lockHintStep: 0,
-      unlocked: false,
-      defeated: false,
-    },
-    log: ['memory grid mounted.', 'columns missing from current log.'],
+    version: 2,
+    registers: Number(meta.registers || 0),
+    retained: Number(meta.retained || 0),
+    shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
+    runCount,
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
+    memoryPair: { runId: `mem-${runCount}`, pieces: [...DEFAULT_PIECES], key: DEFAULT_PIECES.join("") },
+    boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false },
+    log: ["memory grid online.", "solve snapshots to retain fragments."]
   };
 }
 
-export function normalizeState(state, context = {}) {
-  const fresh = defaultState(context);
-  const target = state && typeof state === 'object' ? state : {};
-  target.version = 1;
-  target.registers = Number.isFinite(target.registers) ? target.registers : fresh.registers;
-  target.retained = Number.isFinite(target.retained) ? target.retained : fresh.retained;
-  target.solvedFragments = Array.isArray(target.solvedFragments) ? target.solvedFragments : [];
-  target.memoryPair = mergePlain(fresh.memoryPair, target.memoryPair);
-  target.memoryPair.pieces = Array.isArray(target.memoryPair.pieces) && target.memoryPair.pieces.length
-    ? target.memoryPair.pieces.map(String)
-    : [...fresh.memoryPair.pieces];
-  target.memoryPair.key = String(target.memoryPair.key || target.memoryPair.pieces.join(''));
-  target.boss = mergePlain(fresh.boss, target.boss);
-  target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
-  return target;
-}
-
-function mergePlain(base, override) {
-  return { ...base, ...(override && typeof override === 'object' ? override : {}) };
+export function normalizeState(state) {
+  // Anything before v2 (the fake-grid era) is structurally incompatible — start clean but keep any
+  // earned currency if present.
+  if (!state || typeof state !== "object" || Number(state.version) !== 2) {
+    return freshFrom({
+      registers: Number(state?.registers || 0),
+      retained: Number(state?.retained || 0),
+      shopUpgrades: state?.shopUpgrades || {},
+      runCount: Number(state?.runCount || 0)
+    });
+  }
+  const fresh = freshFrom(state);
+  state.registers = Number.isFinite(state.registers) ? state.registers : 0;
+  state.retained = Number.isFinite(state.retained) ? state.retained : 0;
+  state.shopUpgrades = state.shopUpgrades && typeof state.shopUpgrades === "object" ? state.shopUpgrades : {};
+  state.runCount = Number.isFinite(state.runCount) ? state.runCount : 0;
+  state.run = { ...fresh.run, ...(state.run && typeof state.run === "object" ? state.run : {}) };
+  state.memoryPair = { ...fresh.memoryPair, ...(state.memoryPair || {}) };
+  state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length
+    ? state.memoryPair.pieces.map(String) : [...DEFAULT_PIECES];
+  state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
+  state.boss = { ...fresh.boss, ...(state.boss || {}) };
+  state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
+  return state;
 }
