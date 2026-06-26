@@ -1,6 +1,6 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
-import { attachGrid, buildFloor, monsterTurn, step } from "./engine.js";
+import { attachGrid, buildFloor, exitDistanceField, monsterTurn, step, stepToExit } from "./engine.js";
 import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
@@ -34,7 +34,6 @@ export function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
-      <div class="s2-compass" data-field="compass" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -50,6 +49,7 @@ export function renderStage2({
         </div>
       </div>
       <div class="s2-controls">
+        <div class="s2-compass" data-field="compass" hidden></div>
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
@@ -89,6 +89,7 @@ export function renderStage2({
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
   let monsterClocks = []; // the 5 real-time monster-movement intervals
+  let routeCache = null; // { world, field } — BFS-from-stairs distance field for the compass
 
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -136,16 +137,19 @@ export function renderStage2({
     setHidden(btsBtn, !state.run.boss.defeated);
   }
 
-  // Stairs compass — a HUD arrow + tile distance to the exit, unlocked once by the glyph-shop
-  // "Stairwell Sense" purchase. Guarded writes, so it only updates as you actually move.
+  // Stairs compass — the actual shortest-route next step + path length to the exit, unlocked once by
+  // the glyph-shop "Stairwell Sense" purchase. Routes via a BFS-from-stairs field (engine) that's
+  // cheap to query each move; the field is flooded once per world and cached (re-flooded when the
+  // grid mutates — a revealed hidden room — or a new world is drawn). Guarded writes.
   function updateCompass() {
     const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
     const w = state.run.world;
-    if (!owned || !w || state.run.boss.reached) { setHidden(fields.compass, true); return; }
-    const dx = w.exit.x - w.pos.x;
-    const dy = w.exit.y - w.pos.y;
+    if (!owned || !w || !w.grid || state.run.boss.reached) { setHidden(fields.compass, true); return; }
+    if (!routeCache || routeCache.world !== w) routeCache = { world: w, field: exitDistanceField(w) };
+    const next = stepToExit(w, routeCache.field);
     setHidden(fields.compass, false);
-    setText(fields.compass, `⇲ stairs ${compassArrow(dx, dy)} ${Math.abs(dx) + Math.abs(dy)}`);
+    if (!next || next.steps === 0) { setText(fields.compass, "⇲ stairs — here"); return; }
+    setText(fields.compass, `⇲ stairs ${DIR_ARROW[next.dir]} ${next.steps}`);
   }
 
   // The dungeon screen — boss arena art, or the camera-following exploration view.
@@ -187,6 +191,7 @@ export function renderStage2({
     }
     // Walk / bump-attack / opened a hidden room — repaint the screen + HUD. A plain wall bump
     // changes nothing, so skip the screen repaint (paintHud is guarded and stays a no-op).
+    if (events.reveal) routeCache = null; // a revealed hidden room carves new floor → re-flood
     const changed = events.moved || events.attack || events.reveal;
     if (changed) {
       if (typeof save === "function") save();
@@ -374,15 +379,8 @@ function resetRun(state, { banked, death }) {
 }
 
 // ── Rendering helpers ─────────────────────────────────────────────────────────────────────────
-// 8-way arrow pointing from @ toward the stairs (for the Stairwell Sense compass).
-function compassArrow(dx, dy) {
-  const ax = Math.abs(dx);
-  const ay = Math.abs(dy);
-  if (ax < ay / 2) return dy < 0 ? "↑" : "↓";
-  if (ay < ax / 2) return dx < 0 ? "←" : "→";
-  if (dx < 0) return dy < 0 ? "↖" : "↙";
-  return dy < 0 ? "↗" : "↘";
-}
+// Cardinal arrow for the next step of the Stairwell Sense route (one of the four move dirs).
+const DIR_ARROW = { up: "↑", down: "↓", left: "←", right: "→" };
 
 const NOISE_CHARS = "╳✕X#▓░*/\\";
 function damageNoise(fatal) {

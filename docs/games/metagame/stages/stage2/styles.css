@@ -200,7 +200,15 @@
 .s2-c-glyph { color: #d78bff; }
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
 
-.s2-compass { color: #79f0ff; font-weight: 700; }
+/* Stairwell Sense readout — a status chip above the action buttons (shortest-route next step). */
+.s2-compass {
+  border: 1px dashed var(--s2-border);
+  color: #79f0ff;
+  font-weight: 700;
+  padding: 5px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
 .s2-c-secret { color: #9a7838; } /* secret-door wall — a hair brighter than terrain (#6b5026) */
 
 .s2-legend {
@@ -420,6 +428,11 @@
     flex: 1 1 42%;
     text-align: center;
     width: auto;
+  }
+
+  /* Keep the compass as a full-width header above the wrapped button grid. */
+  .s2-compass {
+    flex: 1 1 100%;
   }
 
   /* Touch movement pad — full-width row below the action buttons. */

@@ -135,6 +135,32 @@ export function buildFloor(runSeed, floorNum) {
   return world;
 }
 
+// ── Stairwell Sense routing ─────────────────────────────────────────────────────────────────────
+// Best-route hint for the compass. Every floor tile costs 1, so the shortest path is a plain BFS
+// from the stairs (≡ A* with a zero/consistent heuristic) — flood once per floor, cache it, then
+// the next step is just the open neighbour with the lowest distance-to-exit. Never points at a wall.
+export function exitDistanceField(world) {
+  return floodDistances(world.grid, world.exit);
+}
+
+// First move of the shortest @→stairs path, given a precomputed field: returns a DIRS key + the
+// remaining step count, or null once standing on the exit (or if somehow walled off).
+export function stepToExit(world, field) {
+  const W = world.width;
+  const here = field.dist[world.pos.y * W + world.pos.x];
+  if (here === 0) return { dir: null, steps: 0 };
+  let best = null;
+  let bestD = Infinity;
+  for (const dir of DIR_LIST) {
+    const nx = world.pos.x + DIRS[dir].dx;
+    const ny = world.pos.y + DIRS[dir].dy;
+    if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= W || world.grid[ny][nx] === "#") continue;
+    const d = field.dist[ny * W + nx];
+    if (d >= 0 && d < bestD) { bestD = d; best = dir; }
+  }
+  return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
+}
+
 function gainGlyphs(player, base) {
   const mult = Number(player.glyphMult || 1);
   const got = Math.max(1, Math.round(base * mult));

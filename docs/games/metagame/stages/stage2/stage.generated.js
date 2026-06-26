@@ -675,6 +675,27 @@ function buildFloor(runSeed, floorNum) {
   defineGrid(world, grid);
   return world;
 }
+function exitDistanceField(world) {
+  return floodDistances(world.grid, world.exit);
+}
+function stepToExit(world, field) {
+  const W = world.width;
+  const here = field.dist[world.pos.y * W + world.pos.x];
+  if (here === 0) return { dir: null, steps: 0 };
+  let best = null;
+  let bestD = Infinity;
+  for (const dir of DIR_LIST) {
+    const nx = world.pos.x + DIRS[dir].dx;
+    const ny = world.pos.y + DIRS[dir].dy;
+    if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= W || world.grid[ny][nx] === "#") continue;
+    const d = field.dist[ny * W + nx];
+    if (d >= 0 && d < bestD) {
+      bestD = d;
+      best = dir;
+    }
+  }
+  return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
+}
 function gainGlyphs(player, base) {
   const mult = Number(player.glyphMult || 1);
   const got = Math.max(1, Math.round(base * mult));
@@ -1340,7 +1361,6 @@ function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
-      <div class="s2-compass" data-field="compass" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -1356,6 +1376,7 @@ function renderStage2({
         </div>
       </div>
       <div class="s2-controls">
+        <div class="s2-compass" data-field="compass" hidden></div>
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
@@ -1396,6 +1417,7 @@ function renderStage2({
   let flashTimer = null;
   let overlay = null;
   let monsterClocks = [];
+  let routeCache = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -1437,14 +1459,18 @@ function renderStage2({
   function updateCompass() {
     const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
     const w = state.run.world;
-    if (!owned || !w || state.run.boss.reached) {
+    if (!owned || !w || !w.grid || state.run.boss.reached) {
       setHidden(fields.compass, true);
       return;
     }
-    const dx = w.exit.x - w.pos.x;
-    const dy = w.exit.y - w.pos.y;
+    if (!routeCache || routeCache.world !== w) routeCache = { world: w, field: exitDistanceField(w) };
+    const next = stepToExit(w, routeCache.field);
     setHidden(fields.compass, false);
-    setText(fields.compass, `⇲ stairs ${compassArrow(dx, dy)} ${Math.abs(dx) + Math.abs(dy)}`);
+    if (!next || next.steps === 0) {
+      setText(fields.compass, "⇲ stairs — here");
+      return;
+    }
+    setText(fields.compass, `⇲ stairs ${DIR_ARROW[next.dir]} ${next.steps}`);
   }
   function paintWorld() {
     if (state.run.boss.reached) {
@@ -1479,6 +1505,7 @@ function renderStage2({
       persistAndPaint();
       return;
     }
+    if (events.reveal) routeCache = null;
     const changed = events.moved || events.attack || events.reveal;
     if (changed) {
       if (typeof save === "function") save();
@@ -1663,14 +1690,7 @@ function resetRun(state, { banked, death }) {
   run.boss.reached = false;
   run.world = buildFloor(run.seed, 1);
 }
-function compassArrow(dx, dy) {
-  const ax = Math.abs(dx);
-  const ay = Math.abs(dy);
-  if (ax < ay / 2) return dy < 0 ? "↑" : "↓";
-  if (ay < ax / 2) return dx < 0 ? "←" : "→";
-  if (dx < 0) return dy < 0 ? "↖" : "↙";
-  return dy < 0 ? "↗" : "↘";
-}
+var DIR_ARROW = { up: "↑", down: "↓", left: "←", right: "→" };
 var NOISE_CHARS = "╳✕X#▓░*/\\";
 function damageNoise(fatal) {
   const rows = fatal ? 7 : 4;
