@@ -26,6 +26,14 @@ const CSS = `
 .kf-issues-list{margin:0;padding:0;list-style:none}
 .kf-issues-list li{padding:7px 14px;border-bottom:1px solid var(--border,#eaecf0);display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;font-size:12px}
 .kf-issues-list li:last-child{border-bottom:none}
+.kf-symbol{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 10px;align-items:start;padding:8px 10px;border-bottom:1px solid var(--border,#eaecf0);font-size:12px}
+.kf-symbol:last-child{border-bottom:none}
+.kf-symbol-kind{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.kf-symbol-main{min-width:0}
+.kf-symbol-name{font-weight:700}
+.kf-symbol-signature{font-family:ui-monospace,monospace;word-break:break-word}
+.kf-symbol-docs{margin-top:2px;color:var(--fg-2,#5a6678)}
+.kf-symbol-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
 `;
 
 export function ensureKnownUiStyle(root = document) {
@@ -43,6 +51,16 @@ export function chip(text, tone = 'info', title = '') {
   el.textContent = text;
   if (title) el.title = title;
   return el;
+}
+
+export function severityChip(level, vocabulary = {}) {
+  const raw = String(level || 'info');
+  const key = raw.toLowerCase();
+  const mapped = vocabulary[key] || vocabulary[raw] || {};
+  const label = mapped.label || raw;
+  const tone = mapped.tone || severityTone(key);
+  const title = mapped.title || mapped.description || '';
+  return chip(label, tone, title);
 }
 
 export function sourceButton(label, line, title = '') {
@@ -67,7 +85,7 @@ export function issueList(items, { title = 'Issues' } = {}) {
   ul.className = 'kf-issues-list';
   for (const item of items) {
     const li = document.createElement('li');
-    li.appendChild(chip(item.label || item.severity || 'note', item.tone || severityTone(item.severity)));
+    li.appendChild(severityChip(item.label || item.severity || 'note', item.tone ? { [item.label || item.severity || 'note']: { tone: item.tone } } : {}));
     const msg = document.createElement('span');
     msg.textContent = item.message || '';
     li.appendChild(msg);
@@ -76,6 +94,55 @@ export function issueList(items, { title = 'Issues' } = {}) {
   }
   wrap.appendChild(ul);
   return wrap;
+}
+
+export function symbolRow({
+  kind = 'symbol',
+  name = '',
+  signature = '',
+  docs = '',
+  line = 1,
+  tags = [],
+  title = '',
+} = {}) {
+  const row = document.createElement('div');
+  row.className = 'kf-symbol';
+  if (title) row.title = title;
+  const kindEl = document.createElement('div');
+  kindEl.className = 'kf-symbol-kind';
+  kindEl.appendChild(chip(kind, 'muted', title));
+  if (line) kindEl.appendChild(sourceButton(`line ${line}`, line, 'Open source at this symbol'));
+  row.appendChild(kindEl);
+
+  const main = document.createElement('div');
+  main.className = 'kf-symbol-main';
+  const nameEl = document.createElement('div');
+  nameEl.className = signature ? 'kf-symbol-signature' : 'kf-symbol-name';
+  nameEl.textContent = signature || name;
+  main.appendChild(nameEl);
+  if (signature && name) {
+    const nameNote = document.createElement('div');
+    nameNote.className = 'kf-note';
+    nameNote.textContent = name;
+    main.appendChild(nameNote);
+  }
+  if (docs) {
+    const docsEl = document.createElement('div');
+    docsEl.className = 'kf-symbol-docs';
+    docsEl.textContent = docs;
+    main.appendChild(docsEl);
+  }
+  if (tags?.length) {
+    const tagWrap = document.createElement('div');
+    tagWrap.className = 'kf-symbol-tags';
+    for (const tag of tags) {
+      if (typeof tag === 'string') tagWrap.appendChild(chip(tag, 'info'));
+      else tagWrap.appendChild(chip(tag.label || tag.text || '', tag.tone || 'info', tag.title || ''));
+    }
+    main.appendChild(tagWrap);
+  }
+  row.appendChild(main);
+  return row;
 }
 
 export function sourcePreview(text, {

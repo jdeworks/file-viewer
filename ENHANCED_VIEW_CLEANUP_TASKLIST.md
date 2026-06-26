@@ -34,9 +34,9 @@ Counts and static lists are not enough. A view is meaningfully enhanced when it 
 - [x] Add DOM-first helpers, plus minimal HTML-string helpers for renderers that currently return strings.
 - [x] Add `sourcePreview(text, { collapsed, numbered, highlighter, maxLines })`.
 - [x] Add `wireSourceLinks(root, selector, lineGetter, previewSelector)`.
-- [ ] Add `symbolRow({ kind, name, signature, docs, line, tags, title })`.
+- [x] Add `symbolRow({ kind, name, signature, docs, line, tags, title })`.
 - [x] Add `issueList(items)` for warnings/errors/findings.
-- [ ] Add `severityChip(level, vocabulary)` for risk/severity/status chips.
+- [x] Add `severityChip(level, vocabulary)` for risk/severity/status chips.
 - [x] Add `maskedValue(value, reason)` and a shared secret classifier.
 - [x] Add focused unit coverage for escaping, truncation, source IDs, severity mapping, and secret masking.
 
