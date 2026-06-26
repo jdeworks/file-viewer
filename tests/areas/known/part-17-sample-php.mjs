@@ -406,6 +406,27 @@ export async function run(ctx) {
   if (/Textile/i.test(textileText)) pass('textile-markup: badge shown'); else fail('textile-markup badge: ' + textileText.slice(0, 200));
   if (/heading|link|image|code|table|word/i.test(textileText)) pass('textile-markup: stats shown'); else fail('textile-markup stats: ' + textileText.slice(0, 300));
   if (/Getting Started|Text Formatting|Links/i.test(textileText)) pass('textile-markup: heading outline shown'); else fail('textile-markup outline: ' + textileText.slice(0, 300));
+  if (/Images|Links|alt|Company Logo/i.test(textileText)) pass('textile-markup: enhanced link and image details shown'); else fail('textile-markup enhanced details: ' + textileText.slice(0, 900));
+  const textileSourceOpen = await page.$eval('#previewHost .textile-doc .kf-source-details', (e) => e.open);
+  if (!textileSourceOpen) pass('textile-markup: source starts collapsed'); else fail('textile-markup source should start collapsed');
+  await page.click('#previewHost .textile-doc .textile-outline .kf-source-link');
+  const textileJump = await page.$eval('#previewHost .textile-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (textileJump.open && textileJump.highlighted) pass('textile-markup: heading click opens and highlights source'); else fail('textile-markup source jump: ' + JSON.stringify(textileJump));
+  const textileBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/textile-markup/renderer.js');
+    const text = 'h1. Demo\n\nBroken "link":notaurl\nBroken image !missing.png\nGood image !/ok.png(Alt text)!';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/malformed link|malformed image|Alt text/i.test(textileBad.out + textileBad.issues) && !textileBad.open) pass('textile-markup: malformed link/image diagnostics shown'); else fail('textile-markup synthetic diagnostics: ' + JSON.stringify(textileBad).slice(0, 900));
 
   // ── mediawiki-markup viewer ──
   await openExample('sample.mediawiki');
