@@ -6,13 +6,15 @@
 //   [data-remove="<deckIndex>"]        rest: thin a card from the deck
 //   [data-buy="<cardId>"]              shop: buy a card (price in data-price)
 //   [data-buy-remove="<deckIndex>"]    shop: buy a deck removal (escalating price)
+//   [data-buy-upgrade="<deckIndex>"]   shop: buy an in-place card upgrade (price in data-price)
+//   [data-buy-relic="1"]               shop: buy a relic (price in data-price)
 //   [data-action="to-map"]             leave shop/event back to the map
 //   [data-event="<key>"]               resolve an event choice
 
 import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
 import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
-import { removalCost } from "./run.js";
+import { removalCost, UPGRADE_COST, RELIC_COST } from "./run.js";
 import { makeRng } from "./combat.js";
 import { relicById } from "./relics.js";
 
@@ -98,6 +100,28 @@ export function shopView(run) {
     return chip;
   }));
   purge.appendChild(purgeRow);
+
+  // Upgrade sink: pay handshakes to sharpen a card (flat price; shows the upgraded face).
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  if (upgradeable.length) {
+    el.insertAdjacentHTML("beforeend",
+      `<div class="s6db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`);
+    const upRow = document.createElement("div");
+    upRow.className = "s6db-card-row";
+    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
+      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      chip.dataset.price = String(UPGRADE_COST);
+      chip.disabled = run.handshakes < UPGRADE_COST;
+      return chip;
+    }));
+    el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
+  }
+
+  // Relic sink: buy a relic if any remain in the pool.
+  const relicAffordable = run.handshakes >= RELIC_COST;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s6db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
+       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`);
 
   el.insertAdjacentHTML("beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`);

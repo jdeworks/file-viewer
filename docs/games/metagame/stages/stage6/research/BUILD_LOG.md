@@ -41,3 +41,8 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   1-card deck floor) + skipping a reward card now pays 5 handshakes (keeps decks lean). shopView gains a
   "Purge a card" sink (rising price); renderer handles `data-buy-remove`. Unit: price climbs 25→50→75,
   deducts deterministically, too-poor rejected, skip pays +5.
+- C2b — Shop upgrade + relic sinks: `buyUpgrade` (40 ✋, in-place, no spend if not upgradable) +
+  `buyRelic` (65 ✋, grants a distinct relic until the 5-relic pool is exhausted → sold-out, no spend).
+  shopView surfaces "Sharpen a card" (upgraded face) and "Acquire a relic"; renderer handles
+  `data-buy-upgrade` / `data-buy-relic`. Unit: upgrade deducts + rejects re-upgrade/poor; relic buys
+  5 distinct then sold-out spends nothing.

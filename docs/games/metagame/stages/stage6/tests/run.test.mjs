@@ -3,7 +3,9 @@ import { generateRun, nodeById, enemyForNode } from "../mapgen.js";
 import {
   availableNodes,
   buyCard,
+  buyRelic,
   buyRemoval,
+  buyUpgrade,
   closeNode,
   createRun,
   enemyForCurrentNode,
@@ -15,6 +17,8 @@ import {
   seatAtFinalBoss,
   takeReward,
   upgradeDeckCard,
+  RELIC_COST,
+  UPGRADE_COST,
   FINAL_BOSS_ACT
 } from "../run.js";
 import { makeRng, createCombat, playCard } from "../combat.js";
@@ -238,6 +242,39 @@ import { STARTING_DECK } from "../cards.js";
   assert.ok(r.ok && r.skipped, "skip reported");
   assert.equal(run.deck.length, lenBefore, "skipping adds no card");
   assert.equal(run.handshakes, before + 5, "skipping pays 5 handshakes");
+}
+
+// ── C2b: shop upgrade + relic buys ─────────────────────────────────────────────────────────────────
+{
+  // buyUpgrade: deducts and upgrades; not-upgradable spends nothing; too-poor rejected.
+  const run = createRun({ seed: 1, handshakes: 100 });
+  const idx = run.deck.indexOf("SYN");
+  const r = buyUpgrade(run, idx, UPGRADE_COST);
+  assert.ok(r.ok, "upgrade purchased");
+  assert.equal(run.deck[idx], "SYN+", "card upgraded");
+  assert.equal(run.handshakes, 100 - UPGRADE_COST, "handshakes deducted");
+  const again = buyUpgrade(run, idx, UPGRADE_COST); // already upgraded
+  assert.equal(again.ok, false, "cannot upgrade an upgraded card");
+  assert.equal(run.handshakes, 100 - UPGRADE_COST, "no spend on a failed upgrade");
+  const poor = createRun({ seed: 1, handshakes: 5 });
+  assert.equal(buyUpgrade(poor, 0, UPGRADE_COST).ok, false, "too poor to upgrade");
+  assert.equal(poor.handshakes, 5, "nothing spent when too poor");
+}
+{
+  // buyRelic: grants distinct relics until the pool is exhausted, then reports sold-out (no spend).
+  const run = createRun({ seed: 1, handshakes: 10000 });
+  run.currentNodeId = "a1-l3-n0";
+  let granted = 0;
+  for (let i = 0; i < 10; i++) {
+    const r = buyRelic(run, RELIC_COST);
+    if (r.ok) granted++;
+    else { assert.equal(r.reason, "sold-out", "pool exhausts with sold-out"); break; }
+  }
+  assert.equal(granted, 5, "all 5 relics can be bought, then the pool is empty");
+  assert.equal(new Set(run.relics).size, run.relics.length, "bought relics are distinct");
+  const before = run.handshakes;
+  assert.equal(buyRelic(run, RELIC_COST).ok, false, "no relics left to buy");
+  assert.equal(run.handshakes, before, "sold-out spends nothing");
 }
 
 // ── C1: rest = heal XOR upgrade; upgraded card resolves the stronger effect ────────────────────────

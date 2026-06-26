@@ -1191,6 +1191,22 @@ function buyRemoval(run, index) {
   run.removalsPurchased = (run.removalsPurchased || 0) + 1;
   return { ok: true, cost };
 }
+var UPGRADE_COST = 40;
+var RELIC_COST = 65;
+function buyUpgrade(run, index, cost = UPGRADE_COST) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const r = upgradeDeckCard(run, index);
+  if (!r.ok) return r;
+  run.handshakes -= cost;
+  return { ok: true, id: r.id, cost };
+}
+function buyRelic(run, cost = RELIC_COST) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const id = grantRelic(run, `shop:${run.currentNodeId}`);
+  if (!id) return { ok: false, reason: "sold-out", cost };
+  run.handshakes -= cost;
+  return { ok: true, relic: id, cost };
+}
 function seatAtFinalBoss(run, deck) {
   run.act = FINAL_BOSS_ACT;
   const bossNode = run.map.acts[FINAL_BOSS_ACT - 1].layers.at(-1)[0];
@@ -1663,6 +1679,28 @@ function shopView(run) {
     return chip;
   }));
   purge.appendChild(purgeRow);
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  if (upgradeable.length) {
+    el.insertAdjacentHTML(
+      "beforeend",
+      `<div class="s6db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`
+    );
+    const upRow = document.createElement("div");
+    upRow.className = "s6db-card-row";
+    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
+      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      chip.dataset.price = String(UPGRADE_COST);
+      chip.disabled = run.handshakes < UPGRADE_COST;
+      return chip;
+    }));
+    el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
+  }
+  const relicAffordable = run.handshakes >= RELIC_COST;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
+       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`
+  );
   el.insertAdjacentHTML(
     "beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`
@@ -1916,6 +1954,16 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const buyRemove = event.target.closest("[data-buy-remove]");
     if (buyRemove) {
       buyRemoval(run, Number(buyRemove.dataset.buyRemove));
+      return true;
+    }
+    const buyUp = event.target.closest("[data-buy-upgrade]");
+    if (buyUp) {
+      buyUpgrade(run, Number(buyUp.dataset.buyUpgrade), Number(buyUp.dataset.price));
+      return true;
+    }
+    const buyRel = event.target.closest("[data-buy-relic]");
+    if (buyRel) {
+      buyRelic(run, Number(buyRel.dataset.price));
       return true;
     }
     const ev = event.target.closest("[data-event]");

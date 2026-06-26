@@ -178,6 +178,27 @@ export function buyRemoval(run, index) {
   return { ok: true, cost };
 }
 
+export const UPGRADE_COST = 40;
+export const RELIC_COST = 65;
+
+// Buy an in-place card upgrade at the shop. No spend if the card cannot be upgraded.
+export function buyUpgrade(run, index, cost = UPGRADE_COST) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const r = upgradeDeckCard(run, index);
+  if (!r.ok) return r; // not upgradable — nothing spent
+  run.handshakes -= cost;
+  return { ok: true, id: r.id, cost };
+}
+
+// Buy a relic at the shop. No spend if the relic pool is exhausted.
+export function buyRelic(run, cost = RELIC_COST) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const id = grantRelic(run, `shop:${run.currentNodeId}`);
+  if (!id) return { ok: false, reason: "sold-out", cost };
+  run.handshakes -= cost;
+  return { ok: true, relic: id, cost };
+}
+
 // TEST/DEBUG ONLY — seat a run directly at the act-4 boss node without playing acts 1–3.
 // This is NOT a player affordance (no hub button); the smoke harness uses it to reach the
 // negotiation in one hop. Optionally swaps in a known `deck` so the boss fight is reproducible.
