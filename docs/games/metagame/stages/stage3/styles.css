@@ -83,6 +83,12 @@
 .s3-cell.s3-fill { background: var(--s3-fg); color: #fffdf7; }
 .s3-cell.s3-mark { color: #c06a5a; }
 .s3-cell.s3-cursor { outline: 2px solid #e08a2e; outline-offset: -2px; position: relative; z-index: 1; }
+.s3-cell.s3-wrong { animation: s3-wrong 1.4s ease-out; }
+
+@keyframes s3-wrong {
+  0%, 60% { background: #d6453a; color: #fff; }
+  100% { background: var(--s3-fg); color: #fffdf7; }
+}
 
 .s3-boss {
   background: #fffaf0;

@@ -76,11 +76,10 @@ export function buildGrid(puzzle, handlers) {
       }
     }
     const cur = `${board.cursor.x},${board.cursor.y}`;
-    if (cur !== lastCursor) {
-      if (lastCursor) { const [px, py] = lastCursor.split(",").map(Number); cells[py][px].el.classList.remove("s3-cursor"); }
-      cells[board.cursor.y][board.cursor.x].el.classList.add("s3-cursor");
-      lastCursor = cur;
-    }
+    if (cur !== lastCursor && lastCursor) { const [px, py] = lastCursor.split(",").map(Number); cells[py][px].el.classList.remove("s3-cursor"); }
+    lastCursor = cur;
+    // Re-assert idempotently: a cell whose state changed had its className rebuilt (wiping cursor).
+    cells[board.cursor.y][board.cursor.x].el.classList.add("s3-cursor");
     for (let r = 0; r < height; r += 1) {
       const d = lineDone(puzzle, marks, "row", r);
       if (d !== doneRow[r]) { doneRow[r] = d; rowClueEls[r].forEach((e) => e.classList.toggle("s3-done", d)); }
@@ -91,5 +90,14 @@ export function buildGrid(puzzle, handlers) {
     }
   }
 
-  return { el: wrap, update };
+  // Briefly highlight a list of {x,y} cells (the Parity check flags wrong fills).
+  function flashWrong(list, ms = 1400) {
+    for (const { x, y } of list) {
+      const el = cells[y][x].el;
+      el.classList.add("s3-wrong");
+      setTimeout(() => el.classList.remove("s3-wrong"), ms);
+    }
+  }
+
+  return { el: wrap, update, flashWrong };
 }

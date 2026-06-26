@@ -13,8 +13,7 @@ export const SHOP_UPGRADES = [
 const BASE = { prefetch: 40, throughput: 80, oracle: 60, parity: 70, overclock: 150 };
 const GROWTH = { prefetch: 1.7, throughput: 1.9, oracle: 1.8, parity: 1.8, overclock: 2.0 };
 
-// Upgrades wired so far (others appear in the shop once their in-game hooks land).
-const ACTIVE = new Set(["prefetch", "throughput", "overclock"]);
+const ACTIVE = new Set(["prefetch", "throughput", "overclock", "oracle", "parity"]);
 
 export function upgradeCost(id, level) {
   return Math.round((BASE[id] || 50) * (GROWTH[id] || 1.8) ** level);

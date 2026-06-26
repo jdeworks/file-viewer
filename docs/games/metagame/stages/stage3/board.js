@@ -91,6 +91,27 @@ export function lineDone(puzzle, marks, kind, i) {
   return true;
 }
 
+// First solution cell not yet filled (Oracle hint reveals it). Null when nothing's left to reveal.
+export function firstHintCell(board) {
+  for (let y = 0; y < board.puzzle.height; y += 1) {
+    for (let x = 0; x < board.puzzle.width; x += 1) {
+      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) return { x, y };
+    }
+  }
+  return null;
+}
+
+// Cells the player filled that the solution leaves empty (Parity check flags these).
+export function wrongCells(board) {
+  const out = [];
+  for (let y = 0; y < board.puzzle.height; y += 1) {
+    for (let x = 0; x < board.puzzle.width; x += 1) {
+      if (board.marks[y][x] === FILLED && board.puzzle.solution[y][x] !== FILLED) out.push({ x, y });
+    }
+  }
+  return out;
+}
+
 // Count of correctly-filled vs total filled-in-solution — drives a progress readout.
 export function progress(puzzle, marks) {
   let need = 0;

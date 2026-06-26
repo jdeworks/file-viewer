@@ -2,7 +2,7 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { applyPrefetch, createBoard, encodeMarks, moveCursor, progress, puzzleForRun, setCell, sizeForRun } from "./board.js";
+import { applyPrefetch, createBoard, encodeMarks, firstHintCell, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
 
 const MOVE = {
@@ -27,7 +27,11 @@ export function renderStage3(ctx) {
     <div class="s3-play">
       <div class="s3-grid-col">
         <div class="s3-grid-host"></div>
-        <div class="s3-toolbar"><button type="button" data-action="shop">defrag shop</button></div>
+        <div class="s3-toolbar">
+          <button type="button" data-action="shop">defrag shop</button>
+          <button type="button" data-action="hint" data-field="hintBtn" hidden></button>
+          <button type="button" data-action="check" data-field="checkBtn" hidden></button>
+        </div>
       </div>
       <aside class="s3-side">
         <div class="s3-help">arrows / WASD move · space fill · x mark · click fills, right-click marks</div>
@@ -72,6 +76,8 @@ export function renderStage3(ctx) {
     const fresh = !state.run.marks;
     const puzzle = puzzleForRun(state.run, state.shopUpgrades);
     board = createBoard(puzzle, state.run.marks);
+    board.hintsUsed = 0;
+    board.checksUsed = 0;
     if (fresh && upgradeLevel(state, "prefetch")) { applyPrefetch(board, upgradeLevel(state, "prefetch")); state.run.marks = encodeMarks(board.marks); }
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => { board.cursor = { x, y }; applyCell(x, y, mark); } });
     gridHost.replaceChildren(grid.el);
@@ -118,11 +124,40 @@ export function renderStage3(ctx) {
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
+    // Oracle / Parity assist buttons (shown once the upgrade is owned; count = remaining this snapshot).
+    const oracle = upgradeLevel(state, "oracle");
+    const parity = upgradeLevel(state, "parity");
+    setHidden(fields.hintBtn, oracle <= 0);
+    setHidden(fields.checkBtn, parity <= 0);
+    if (oracle > 0) { const left = oracle - (board.hintsUsed || 0); setText(fields.hintBtn, `hint (${left})`); fields.hintBtn.disabled = left <= 0 || board.solved; }
+    if (parity > 0) { const left = parity - (board.checksUsed || 0); setText(fields.checkBtn, `check (${left})`); fields.checkBtn.disabled = left <= 0 || board.solved; }
     const sig = state.log.slice(-6).join("\n");
     if (sig !== lastLog) {
       lastLog = sig;
       log.replaceChildren(...state.log.slice(-6).map((line) => { const li = document.createElement("li"); li.textContent = line; return li; }));
     }
+  }
+
+  // Oracle hint: reveal one correct cell, costing one of this snapshot's hints.
+  function useHint() {
+    if (board.solved || (board.hintsUsed || 0) >= upgradeLevel(state, "oracle")) return;
+    const cell = firstHintCell(board);
+    if (!cell) return;
+    board.hintsUsed = (board.hintsUsed || 0) + 1;
+    board.cursor = { ...cell };
+    pushLog(state, "oracle reveals a cell.");
+    applyCell(cell.x, cell.y, false);
+  }
+
+  // Parity check: flag any wrong fills (cells you filled that should be empty), costing one check.
+  function useCheck() {
+    if (board.solved || (board.checksUsed || 0) >= upgradeLevel(state, "parity")) return;
+    board.checksUsed = (board.checksUsed || 0) + 1;
+    const wrong = wrongCells(board);
+    if (wrong.length) { grid.flashWrong(wrong); pushLog(state, `parity check: ${wrong.length} wrong cell${wrong.length === 1 ? "" : "s"} flagged.`); }
+    else pushLog(state, "parity check: no errors.");
+    save?.();
+    paintHud();
   }
 
   // Defrag shop overlay — buying upgrades spends registers; closing repaints (next snapshot reflects
@@ -155,6 +190,8 @@ export function renderStage3(ctx) {
     if (!button) return;
     const action = button.dataset.action;
     if (action === "shop") { toggleShop(); return; }
+    if (action === "hint") { useHint(); return; }
+    if (action === "check") { useCheck(); return; }
     if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
     if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
     if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });
