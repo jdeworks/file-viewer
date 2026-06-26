@@ -96,7 +96,15 @@ function buildFfmpegRenderPlan(project, visualItems, audioItems, options) {
   const inputIndex = new Map(inputs.map((asset, index) => [asset.id, index]));
   const duration = seconds(project.project?.durationMs || projectDuration(visualItems, audioItems));
   const graph = buildFilterGraph(project, visualItems, audioItems, inputIndex, duration);
-  const args = inputs.flatMap((asset) => inputArgs(asset, duration));
+  const inputEntries = inputs.map((asset, index) => ({
+    index,
+    id: asset.id,
+    name: asset.name,
+    inputName: safeMediaName(asset.name || `${asset.id}.media`, index),
+    status: asset.status,
+    kind: assetKind(asset),
+  }));
+  const args = inputEntries.flatMap((entry) => inputArgs(entry, duration));
   if (graph.filterGraph) args.push('-filter_complex', graph.filterGraph);
   if (duration !== '0') args.push('-t', duration);
   args.push('-map', graph.videoOut);
@@ -109,21 +117,47 @@ function buildFfmpegRenderPlan(project, visualItems, audioItems, options) {
     args,
     filterGraph: graph.filterGraph,
     outputMaps: [graph.videoOut, graph.audioOut].filter(Boolean),
-    inputs: inputs.map((asset, index) => ({
-      index,
-      id: asset.id,
-      name: asset.name,
-      status: asset.status,
-      kind: assetKind(asset),
-      args: inputArgs(asset, duration),
+    inputs: inputEntries.map((entry) => ({
+      ...entry,
+      args: inputArgs(entry, duration),
     })),
   };
 }
 
-function inputArgs(asset, duration) {
-  const name = asset.name || `${asset.id}.media`;
-  if (assetKind(asset) === 'image') return ['-loop', '1', '-t', duration, '-i', name];
-  return ['-i', name];
+export async function renderVideoMixWithFfmpeg(ff, plan, runtimeFiles) {
+  if (!plan?.canRender) throw new Error(plan?.statusMessage || 'Final video export is not renderable yet.');
+  const inputs = plan.provenance?.inputs || [];
+  const outputName = plan.args?.at?.(-1) || 'output.mp4';
+  const written = [];
+  for (const input of inputs) {
+    const file = runtimeFiles?.get?.(input.id);
+    if (!file?.arrayBuffer) throw new Error(`Missing local media for ${input.name || input.id}.`);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    ff.FS('writeFile', input.inputName, bytes);
+    written.push(input.inputName);
+  }
+  try {
+    await ff.run(...plan.args);
+    const result = ff.FS('readFile', outputName);
+    const bytes = result instanceof Uint8Array ? result : new Uint8Array(result);
+    const blob = new Blob([bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)], { type: mimeForFormat(plan.format) });
+    return {
+      blob,
+      bytes: bytes.byteLength,
+      filename: plan.filename,
+      plan,
+    };
+  } finally {
+    for (const name of written) {
+      try { ff.FS('unlink', name); } catch { /* ignore cleanup misses */ }
+    }
+    try { ff.FS('unlink', outputName); } catch { /* ignore cleanup misses */ }
+  }
+}
+
+function inputArgs(entry, duration) {
+  if (entry.kind === 'image') return ['-loop', '1', '-t', duration, '-i', entry.inputName];
+  return ['-i', entry.inputName];
 }
 
 function assetKind(asset) {
@@ -260,6 +294,19 @@ function uniqueAssets(items) {
 
 function safeName(name) {
   return String(name || 'media-mix').replace(/\.[^.]+$/, '').replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'media-mix';
+}
+
+function safeMediaName(name, index) {
+  const raw = String(name || `input-${index}.media`);
+  if (/^[a-z0-9._-]+$/i.test(raw)) return raw;
+  const ext = raw.includes('.') ? raw.split('.').pop().replace(/[^a-z0-9]/gi, '').toLowerCase() : 'media';
+  return `input-${index}.${ext || 'media'}`;
+}
+
+function mimeForFormat(format) {
+  if (format === 'webm') return 'video/webm';
+  if (format === 'mov') return 'video/quicktime';
+  return 'video/mp4';
 }
 
 function seconds(ms) {

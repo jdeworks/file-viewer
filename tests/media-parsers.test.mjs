@@ -45,6 +45,7 @@ import {
   createElement,
   createLane,
   createProjectFromAssetMetadata,
+  renderVideoMixWithFfmpeg,
 } from '../docs/types/media/mixer/index.js';
 import {
   classifyFfmpegError,
@@ -396,6 +397,39 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.ok(filterGraph.includes('[0:a]atrim=start=0.2:duration=1,asetpts=PTS-STARTPTS,adelay=500:all=1,afade=t=in:st=0:d=0.1,afade=t=out:st=0.8:d=0.2,volume=0.7'), 'modular video mix export: applies audio trim, delay, fades, and gain');
   assert.ok(filterGraph.includes('[a0]amix=inputs=1:duration=longest:dropout_transition=0,volume=0.8[aout]'), 'modular video mix export: applies master audio gain after mix');
   assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache/i.test(JSON.stringify(renderPlan)), false, 'modular video mix export: plan remains config-only');
+  const fakeFs = new Map();
+  const fakeFfmpeg = {
+    ran: null,
+    FS(op, name, data) {
+      if (op === 'writeFile') {
+        fakeFs.set(name, data);
+        return undefined;
+      }
+      if (op === 'readFile') return Uint8Array.from([1, 2, 3, 4]);
+      if (op === 'unlink') {
+        fakeFs.delete(name);
+        return undefined;
+      }
+      throw new Error(`Unexpected FS op: ${op}`);
+    },
+    async run(...args) {
+      this.ran = args;
+    },
+  };
+  const renderedMix = await renderVideoMixWithFfmpeg(fakeFfmpeg, renderPlan, new Map([
+    ['asset-video-a', new File([Uint8Array.from([9, 8, 7])], 'main.webm', { type: 'video/webm' })],
+    ['asset-image-b', new File([Uint8Array.from([6, 5])], 'overlay.png', { type: 'image/png' })],
+  ]));
+  assert.deepEqual(fakeFfmpeg.ran, renderPlan.args, 'modular video mix export: runtime executes planned args exactly');
+  assert.equal(renderedMix.filename, 'Layered-video-export.mp4', 'modular video mix export: runtime returns planned filename');
+  assert.equal(renderedMix.blob.type, 'video/mp4', 'modular video mix export: runtime returns an MP4 blob');
+  assert.equal(renderedMix.bytes, 4, 'modular video mix export: runtime reports output byte count');
+  assert.equal(fakeFs.size, 0, 'modular video mix export: runtime cleans MEMFS inputs and output');
+  await assert.rejects(
+    () => renderVideoMixWithFfmpeg(fakeFfmpeg, renderPlan, new Map([['asset-video-a', new File(['x'], 'main.webm')]])),
+    /Missing local media for overlay\.png/,
+    'modular video mix export: runtime requires local handles for every planned input',
+  );
 
   assert.equal(parseTimestamp('0:00:02.500'), 2.5, 'timestamp: minute-only HH:SS variant');
   assert.equal(parseTimestamp('01:02:03,004'), 3723.004, 'timestamp: comma ms variant');

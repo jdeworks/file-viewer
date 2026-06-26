@@ -105,6 +105,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       hasSettingsExport: !!root.querySelector('.mmx-settings-download'),
       hasSettingsImport: !!root.querySelector('.mmx-settings-import'),
       hasVideoExportPlan: !!root.querySelector('.mmx-video-export-plan'),
+      hasRenderButton: !!root.querySelector('.mmx-video-render-run'),
+      renderDisabled: !!root.querySelector('.mmx-video-render-run')?.disabled,
       exportStatus: root.querySelector('.mmx-video-export-status')?.dataset.status || '',
       exportCanRender: root.querySelector('.mmx-video-export-status')?.dataset.canRender || '',
       exportNote: root.querySelector('.mmx-video-export-note')?.textContent || '',
@@ -131,7 +133,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   if (modularVideoSource.hasSettingsExport && modularVideoSource.hasSettingsImport)
     pass('P6: modular video source exposes project settings import/export controls');
   else fail('modular video source settings controls: ' + JSON.stringify(modularVideoSource));
-  if (modularVideoSource.hasVideoExportPlan && modularVideoSource.exportStatus === 'opt-in'
+  if (modularVideoSource.hasVideoExportPlan && modularVideoSource.hasRenderButton
+    && !modularVideoSource.renderDisabled && modularVideoSource.exportStatus === 'opt-in'
     && modularVideoSource.exportCanRender === 'false'
     && /Media Transcoding/i.test(modularVideoSource.exportNote))
     pass('P6: modular video source shows ffmpeg-gated final export plan');

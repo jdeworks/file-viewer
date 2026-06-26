@@ -10,6 +10,7 @@ import {
   buildAudioMixExportPlan,
   buildVideoMixExportPlan,
   moveElement,
+  renderVideoMixWithFfmpeg,
   renderAudioMixToWav,
   selectTarget,
   summarizeReducedCapabilities,
@@ -187,7 +188,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       lastVideoExportPlan = buildVideoExportPlan();
       root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
       render();
+      return;
     }
+    if (button.matches('.mmx-video-render-run')) renderFinalVideoExport();
   };
   const onPointerDown = (event) => {
     const element = event.target?.closest?.('.mmx-element');
@@ -371,7 +374,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     caps.textContent = reduced.map((item) => `${item.id}: ${item.message}`).join(' ');
     inspector.append(caps);
     if (hasVisualElements(project)) {
-      inspector.append(renderVideoExportPlanPanel(lastVideoExportPlan || buildVideoExportPlan()));
+      inspector.append(renderVideoExportPlanPanel(lastVideoExportPlan || buildVideoExportPlan(), runtime));
     }
   }
 
@@ -474,6 +477,41 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     });
   }
 
+  async function renderFinalVideoExport() {
+    lastVideoExportPlan = buildVideoExportPlan();
+    root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
+    if (!runtime.ffmpegEnabled) {
+      root.dataset.videoExportRunState = 'opt-in-required';
+      render();
+      return;
+    }
+    root.dataset.videoExportRunState = 'loading';
+    root.dataset.videoExportError = '';
+    render();
+    try {
+      const { loadFfmpeg } = await import('../transcoder.js');
+      const ff = await loadFfmpeg(({ ratio }) => {
+        root.dataset.videoExportProgress = String(Math.round((ratio || 0) * 100));
+      });
+      runtime.ffmpegLoaded = true;
+      lastVideoExportPlan = buildVideoExportPlan();
+      root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
+      root.dataset.videoExportRunState = 'rendering';
+      render();
+      const result = await renderVideoMixWithFfmpeg(ff, lastVideoExportPlan, runtimeFiles);
+      root.dataset.videoExportRunState = 'complete';
+      root.dataset.lastVideoExportBytes = String(result.bytes);
+      root.dataset.lastVideoExportFilename = result.filename;
+      downloadBlob(result.blob, result.filename);
+    } catch (error) {
+      const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));
+      root.dataset.videoExportRunState = 'error';
+      root.dataset.videoExportError = formatFfmpegError(error);
+    } finally {
+      render();
+    }
+  }
+
   function fitZoom() {
     const width = Math.max(240, root.clientWidth - MIXER_LAYOUT.gutterWidth);
     const duration = Math.max(1000, project.project.durationMs || 1000);
@@ -521,7 +559,7 @@ function hasVisualElements(project) {
   return (project.elements || []).some((element) => element.capabilities?.hasVideo || element.capabilities?.hasImage);
 }
 
-function renderVideoExportPlanPanel(plan) {
+function renderVideoExportPlanPanel(plan, runtime = {}) {
   const panel = document.createElement('section');
   panel.className = 'mmx-video-export-status';
   panel.dataset.status = plan.status;
@@ -534,6 +572,12 @@ function renderVideoExportPlanPanel(plan) {
   const note = document.createElement('p');
   note.className = 'mmx-video-export-note';
   note.textContent = plan.warnings[0] || plan.statusMessage || 'ffmpeg render planning is available for this composition.';
-  panel.append(title, summary, note);
+  const render = document.createElement('button');
+  render.type = 'button';
+  render.className = 'mmx-video-render-run';
+  render.textContent = 'Render final export';
+  render.disabled = !runtime.ffmpegEnabled;
+  render.title = runtime.ffmpegEnabled ? 'Load Media Transcoding and render this mix' : 'Enable Media Transcoding to render this mix';
+  panel.append(title, summary, note, render);
   return panel;
 }

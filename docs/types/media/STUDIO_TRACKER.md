@@ -421,6 +421,13 @@ Stage 7 project settings import/export UI has started:
   overlay order, audio trim/delay/fades/gain, amix, and master gain. Static
   image inputs are planned as looped ffmpeg inputs, while disabled ffmpeg still
   returns config-only provenance instead of runnable args.
+- Added the lazy final-render bridge for those plans. Opened video source and
+  multi-lane Mix now show a `Render final export` action in the same export
+  panel; if Media Transcoding is enabled but not loaded, the click path loads
+  ffmpeg, rebuilds the plan as renderable, writes only local runtime file
+  handles to MEMFS, runs the planned args, downloads the output, and cleans
+  MEMFS. If ffmpeg is not enabled, the action remains a clear opt-in affordance
+  instead of a broken render.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -431,10 +438,11 @@ Stage 7 project settings import/export UI has started:
   asset and ffmpeg-gated final export provenance, and `tests/areas/media-studio-
   compare.mjs` proves it on modular Compare for audio and video. Parser unit
   coverage now also proves disabled/enabled video export plans, filter graph
-  layering, and config-only provenance.
-- Stage 7 remaining work: connect the modular video export plan to lazy ffmpeg
-  execution and expand filter coverage for additional transitions/effects as
-  those controls become user-facing.
+  layering, config-only provenance, and the fake-ffmpeg runtime execution
+  contract.
+- Stage 7 remaining work: expand filter coverage for additional
+  transitions/effects as those controls become user-facing, and harden real
+  browser ffmpeg renders against large client-side compositions.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

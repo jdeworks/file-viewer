@@ -329,11 +329,15 @@ export async function run(ctx) {
 
   const visualExportPlan = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const hasButton = !!el.querySelector('.mx-video-export-plan');
+    const hasRenderButton = !!el.querySelector('.mmx-video-render-run');
+    const renderDisabled = !!el.querySelector('.mmx-video-render-run')?.disabled;
     const statusPanel = el.querySelector('.mmx-video-export-status');
     el.querySelector('.mx-video-export-plan')?.click();
     const plan = el.__mediaMixerMulti.getLastVideoExportPlan();
     return {
       hasButton,
+      hasRenderButton,
+      renderDisabled,
       initialStatus: statusPanel?.dataset.status || '',
       status: plan?.status || '',
       canRender: !!plan?.canRender,
@@ -346,7 +350,8 @@ export async function run(ctx) {
       hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/.test(JSON.stringify(plan || {})),
     };
   });
-  if (visualExportPlan.hasButton && visualExportPlan.initialStatus === 'opt-in'
+  if (visualExportPlan.hasButton && visualExportPlan.hasRenderButton && visualExportPlan.renderDisabled
+    && visualExportPlan.initialStatus === 'opt-in'
     && visualExportPlan.status === 'opt-in' && !visualExportPlan.canRender
     && visualExportPlan.requiresFfmpeg && visualExportPlan.renderPath === 'ffmpeg-opt-in-required'
     && visualExportPlan.visualItems >= 1 && visualExportPlan.audioItems >= 1

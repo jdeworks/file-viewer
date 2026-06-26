@@ -4,6 +4,7 @@ import {
   buildVideoMixExportPlan,
   exportProjectSettingsJson,
   moveElement,
+  renderVideoMixWithFfmpeg,
   selectTarget,
   updateAsset,
   updateElement,
@@ -17,6 +18,7 @@ import { classifyMixerFile } from './mixer-media-drop.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
+import { downloadBlob } from './mixer-audio-multi-helpers.js';
 
 const SOURCE_ASSET_ID = 'asset-video-source';
 
@@ -189,15 +191,19 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       toolbar.append(button);
     }
     const inspector = root.querySelector('.mmx-inspector');
-    if (inspector) inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan()));
+    if (inspector) inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
   }
 
   function onClick(event) {
-    const button = event.target?.closest?.('.mmx-video-export-plan');
+    const button = event.target?.closest?.('button');
     if (!button || !root.contains(button)) return;
-    lastExportPlan = buildExportPlan();
-    root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
-    render();
+    if (button.matches('.mmx-video-export-plan')) {
+      lastExportPlan = buildExportPlan();
+      root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
+      render();
+      return;
+    }
+    if (button.matches('.mmx-video-render-run')) renderFinalExport();
   }
 
   function buildExportPlan() {
@@ -208,6 +214,41 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     });
   }
 
+  async function renderFinalExport() {
+    lastExportPlan = buildExportPlan();
+    root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
+    if (!runtime.ffmpegEnabled) {
+      root.dataset.videoExportRunState = 'opt-in-required';
+      render();
+      return;
+    }
+    root.dataset.videoExportRunState = 'loading';
+    root.dataset.videoExportError = '';
+    render();
+    try {
+      const { loadFfmpeg } = await import('../transcoder.js');
+      const ff = await loadFfmpeg(({ ratio }) => {
+        root.dataset.videoExportProgress = String(Math.round((ratio || 0) * 100));
+      });
+      runtime.ffmpegLoaded = true;
+      lastExportPlan = buildExportPlan();
+      root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
+      root.dataset.videoExportRunState = 'rendering';
+      render();
+      const result = await renderVideoMixWithFfmpeg(ff, lastExportPlan, runtimeFiles);
+      root.dataset.videoExportRunState = 'complete';
+      root.dataset.lastVideoExportBytes = String(result.bytes);
+      root.dataset.lastVideoExportFilename = result.filename;
+      downloadBlob(result.blob, result.filename);
+    } catch (error) {
+      const { formatFfmpegError } = await import('../transcoder.js').catch(() => ({ formatFfmpegError: (err) => err?.message || String(err) }));
+      root.dataset.videoExportRunState = 'error';
+      root.dataset.videoExportError = formatFfmpegError(error);
+    } finally {
+      render();
+    }
+  }
+
   function fitZoom() {
     const width = Math.max(240, root.clientWidth - MIXER_LAYOUT.gutterWidth);
     const duration = Math.max(1000, project.project.durationMs || 1000);
@@ -215,7 +256,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   }
 }
 
-function renderExportPlanPanel(plan) {
+function renderExportPlanPanel(plan, runtime = {}) {
   const panel = document.createElement('section');
   panel.className = 'mmx-video-export-status';
   panel.dataset.status = plan.status;
@@ -228,7 +269,13 @@ function renderExportPlanPanel(plan) {
   const note = document.createElement('p');
   note.className = 'mmx-video-export-note';
   note.textContent = plan.warnings[0] || plan.statusMessage || 'ffmpeg render planning is available for this project.';
-  panel.append(title, summary, note);
+  const render = document.createElement('button');
+  render.type = 'button';
+  render.className = 'mmx-video-render-run';
+  render.textContent = 'Render final export';
+  render.disabled = !runtime.ffmpegEnabled;
+  render.title = runtime.ffmpegEnabled ? 'Load Media Transcoding and render this mix' : 'Enable Media Transcoding to render this mix';
+  panel.append(title, summary, note, render);
   return panel;
 }
 
