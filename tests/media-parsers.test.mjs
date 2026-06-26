@@ -361,6 +361,14 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
       timeline: { ...element.timeline, startMs: 500, sourceInMs: 200, durationMs: 1000, placementDurationMs: 1000 },
       audio: { ...element.audio, gain: 0.7, fadeInMs: 100, fadeOutMs: 200 },
       visual: { ...element.visual, x: 10, y: -5, scaleX: 1.25, scaleY: 1.1, rotation: 90, opacity: 0.5, fadeInMs: 100, fadeOutMs: 300, crop: { x: 0.1, y: 0.2, width: 0.8, height: 0.7 } },
+      keyframes: [
+        { path: 'visual.x', timeMs: 500, value: 10 },
+        { path: 'visual.x', timeMs: 1500, value: 50 },
+        { path: 'visual.y', timeMs: 500, value: -5 },
+        { path: 'visual.y', timeMs: 1500, value: 15 },
+        { path: 'visual.opacity', timeMs: 500, value: 0.5 },
+        { path: 'visual.opacity', timeMs: 1500, value: 0.9 },
+      ],
       effects: [{
         id: 'effect-video-filter-a',
         kind: 'video-filter',
@@ -406,11 +414,14 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: applies visual opacity');
   assert.ok(filterGraph.includes('fade=t=in:st=0:d=0.1:alpha=1,fade=t=out:st=0.7:d=0.3:alpha=1'), 'modular video mix export: applies visual alpha fades');
   assert.ok(filterGraph.includes('eq=brightness=0.12:contrast=1.2:saturation=0.8,hue=h=30,hue=s=0,negate,colorchannelmixer=0.6965:0.3845:0.0945:0:0.1745:0.843:0.084:0:0.136:0.267:0.5655:0:0:0:0:1,boxblur=2.5:1'), 'modular video mix export: applies video filter effects');
-  assert.ok(filterGraph.includes("overlay=x=(W-w)/2+10:y=(H-h)/2-5:enable='between(t,0.5,1.5)'"), 'modular video mix export: overlays first visual at timeline position');
+  assert.ok(filterGraph.includes("overlay=x=if(lt(t\\,0.5)\\,(W-w)/2+10\\,if(lt(t\\,1.5)\\,(W-w)/2+(10+40*((t-0.5)/1))\\,(W-w)/2+50)):y=if(lt(t\\,0.5)\\,(H-h)/2-5\\,if(lt(t\\,1.5)\\,(H-h)/2+(-5+20*((t-0.5)/1))\\,(H-h)/2+15)):enable='between(t,0.5,1.5)'"), 'modular video mix export: overlays first visual with keyframed position expressions');
+  assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: samples visual opacity keyframe at clip start for static filter path');
   assert.ok(filterGraph.includes('[1:v]trim=start=0:duration=1.5,setpts=PTS-STARTPTS,scale=iw*0.8:ih*0.8'), 'modular video mix export: includes second visual layer');
   assert.ok(filterGraph.includes("overlay=x=if(lt(t\\,1)\\,-w+((W-w)/2-20+w)*((t-0.75)/0.25)\\,(W-w)/2-20):y=(H-h)/2+12:enable='between(t,0.75,2.25)'"), 'modular video mix export: applies wipe-left visual transition expression');
   assert.equal(renderPlan.provenance.transitions[0].kind, 'wipe-left', 'modular video mix export: records transition kind in provenance');
   assert.equal(renderPlan.provenance.transitions[0].durationMs, 250, 'modular video mix export: records transition duration in provenance');
+  assert.equal(renderPlan.provenance.visualItems[0].keyframes.length, 6, 'modular video mix export: records config-only keyframes in provenance');
+  assert.equal(renderPlan.provenance.renderBudget.keyframeCount, 6, 'modular video mix export: render budget counts keyframes');
   assert.ok(filterGraph.includes('[0:a]atrim=start=0.2:duration=1,asetpts=PTS-STARTPTS,adelay=500:all=1,afade=t=in:st=0:d=0.1,afade=t=out:st=0.8:d=0.2,volume=0.7'), 'modular video mix export: applies audio trim, delay, fades, and gain');
   assert.ok(filterGraph.includes('[a0]amix=inputs=1:duration=longest:dropout_transition=0,volume=0.8[aout]'), 'modular video mix export: applies master audio gain after mix');
   assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache/i.test(JSON.stringify(renderPlan)), false, 'modular video mix export: plan remains config-only');
@@ -427,7 +438,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.match(longRenderPlan.warnings.join(' '), /safe render limit/, 'modular video mix export: long render plan explains safe render limit');
   const complexRenderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxCompositionItems: 3 });
   assert.equal(complexRenderPlan.canRender, false, 'modular video mix export: complex browser ffmpeg plan cannot render');
-  assert.equal(complexRenderPlan.provenance.renderBudget.compositionItems, 5, 'modular video mix export: complexity budget counts visual, audio, effects, and transitions');
+  assert.equal(complexRenderPlan.provenance.renderBudget.compositionItems, 11, 'modular video mix export: complexity budget counts visual, audio, effects, transitions, and keyframes');
   assert.equal(complexRenderPlan.provenance.renderBudget.complexityOverBudget, true, 'modular video mix export: complexity budget records over-budget state');
   assert.match(complexRenderPlan.warnings.join(' '), /safe complexity limit/, 'modular video mix export: complex render plan explains safe complexity limit');
   const fakeFs = new Map();

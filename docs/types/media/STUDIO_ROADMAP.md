@@ -202,8 +202,11 @@ config-only keyframes at the current cursor, and those keyframes survive project
 settings export/import. The seek-frame preview now evaluates those visual
 transform, crop, and filter keyframes at the current cursor, so orientation
 frames reflect the animated path instead of only the selected clip's current
-static values. The next work is carrying the same evaluated keyframe state into
-more export paths and continuing to harden long or complex client-side renders.
+static values. Final video export planning now carries the same keyframe model
+into ffmpeg planning for keyframed overlay positions, records keyframes in
+config-only provenance, and counts them in browser render-complexity budgets.
+The next work is expanding animated export coverage beyond position paths and
+continuing to harden long or complex client-side renders.
 
 Stage 8 has started for Compare. Audio and video Compare now mount only the
 modular shared-model surface as the default/final UI; the old `compare-ui*`

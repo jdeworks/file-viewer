@@ -1,5 +1,6 @@
 import { CAPABILITY_STATUS, evaluateMixerCapabilities } from './mixer-capabilities.js';
 import { MIXER_LIMITS } from './mixer-config.js';
+import { evaluateElementKeyframes } from './mixer-visual-preview.js';
 
 export function buildVideoMixExportPlan(project, options = {}) {
   const capabilities = evaluateMixerCapabilities({
@@ -72,6 +73,7 @@ export function buildVideoMixExportPlan(project, options = {}) {
         visualItemCount: composition.visualItemCount,
         audioItemCount: composition.audioItemCount,
         effectCount: composition.effectCount,
+        keyframeCount: composition.keyframeCount,
         transitionCount: composition.transitionCount,
       },
       master: {
@@ -192,6 +194,12 @@ function itemProvenance({ element, lane, asset }) {
     fadeInMs: element.audio?.fadeInMs || 0,
     fadeOutMs: element.audio?.fadeOutMs || 0,
     visual: element.visual || {},
+    keyframes: (element.keyframes || []).map((keyframe) => ({
+      path: keyframe.path,
+      timeMs: Math.max(0, Math.round(finite(keyframe.timeMs, 0))),
+      value: cloneConfigValue(keyframe.value),
+      interpolation: keyframe.interpolation || 'linear',
+    })),
   };
 }
 
@@ -342,7 +350,7 @@ function buildFilterGraph(project, visualItems, audioItems, inputIndex, duration
     const label = `v${index}`;
     const placed = `vbase${index + 1}`;
     filters.push(`${visualFilterChain(item, input, transition)}[${label}]`);
-    filters.push(`[${previousVideo}][${label}]overlay=x=${overlayExpr(item.element.visual?.x || 0, 'x', item.element, transition)}:y=${overlayExpr(item.element.visual?.y || 0, 'y', item.element, transition)}:enable='between(t,${seconds(item.element.timeline?.startMs || 0)},${seconds(elementEndMs(item.element))})'[${placed}]`);
+    filters.push(`[${previousVideo}][${label}]overlay=x=${overlayExprForElement(item.element, 'x', transition)}:y=${overlayExprForElement(item.element, 'y', transition)}:enable='between(t,${seconds(item.element.timeline?.startMs || 0)},${seconds(elementEndMs(item.element))})'[${placed}]`);
     previousVideo = placed;
   });
 
@@ -375,7 +383,8 @@ function transitionFor(project, element) {
 
 function visualFilterChain({ element }, input, transition = null) {
   const timeline = element.timeline || {};
-  const visual = element.visual || {};
+  const evaluated = evaluateElementKeyframes(element, timeline.startMs || 0);
+  const visual = { ...(element.visual || {}), ...(evaluated.visual || {}) };
   const sourceIn = seconds(timeline.sourceInMs || 0);
   const duration = seconds(timeline.durationMs || timeline.placementDurationMs || 0);
   const durationMs = Math.max(0, Number(timeline.durationMs || timeline.placementDurationMs) || 0);
@@ -390,7 +399,7 @@ function visualFilterChain({ element }, input, transition = null) {
     ? Math.max(0, finite(transition.durationMs, 0))
     : 0;
   const alphaFadeInMs = Math.max(fadeInMs, transitionInMs);
-  const filter = videoFilterParams(element);
+  const filter = evaluated.filter || videoFilterParams(element);
   const filters = [
     `[${input}:v]trim=start=${sourceIn}:duration=${duration}`,
     'setpts=PTS-STARTPTS',
@@ -498,10 +507,48 @@ function normalizeCrop(crop) {
   return { x, y, width, height };
 }
 
+function overlayExprForElement(element, axis, transition = null) {
+  const path = axis === 'y' ? 'visual.y' : 'visual.x';
+  const fallback = axis === 'y' ? element?.visual?.y : element?.visual?.x;
+  if (!(axis === 'x' && transition?.kind === 'wipe-left')) {
+    const keyed = keyframedPositionExpr(element, path, fallback, axis);
+    if (keyed) return keyed;
+  }
+  return overlayExpr(fallback || 0, axis, element, transition);
+}
+
+function keyframedPositionExpr(element, path, fallback, axis) {
+  const frames = (element?.keyframes || [])
+    .filter((keyframe) => keyframe?.path === path && Number.isFinite(Number(keyframe.value)))
+    .map((keyframe) => ({
+      timeMs: Math.max(0, Math.round(finite(keyframe.timeMs, 0))),
+      value: finite(keyframe.value, fallback || 0),
+    }))
+    .sort((a, b) => a.timeMs - b.timeMs);
+  if (!frames.length) return null;
+  if (frames.length === 1) return overlayExpr(frames[0].value, axis, element, null);
+  const first = frames[0];
+  let expr = overlayExpr(frames[frames.length - 1].value, axis, element, null);
+  for (let i = frames.length - 1; i >= 1; i -= 1) {
+    const prev = frames[i - 1];
+    const next = frames[i];
+    const durationSec = Math.max(0.001, (next.timeMs - prev.timeMs) / 1000);
+    const delta = next.value - prev.value;
+    const valueExpr = delta === 0
+      ? round(prev.value)
+      : `${round(prev.value)}${delta > 0 ? '+' : ''}${round(delta)}*((t-${seconds(prev.timeMs)})/${round(durationSec)})`;
+    const segment = positionExpr(valueExpr, axis);
+    expr = `if(lt(t\\,${seconds(next.timeMs)})\\,${segment}\\,${expr})`;
+  }
+  if (first.timeMs > 0) {
+    expr = `if(lt(t\\,${seconds(first.timeMs)})\\,${overlayExpr(first.value, axis, element, null)}\\,${expr})`;
+  }
+  return expr;
+}
+
 function overlayExpr(value, axis, element = null, transition = null) {
   const number = finite(value, 0);
-  const center = axis === 'y' ? '(H-h)/2' : '(W-w)/2';
-  const base = number === 0 ? center : `${center}${number > 0 ? '+' : ''}${round(number)}`;
+  const base = positionExpr(round(number), axis);
   const durationMs = Math.max(0, finite(transition?.durationMs, 0));
   if (axis === 'x' && transition?.kind === 'wipe-left' && durationMs > 0) {
     const start = seconds(element?.timeline?.startMs || 0);
@@ -510,6 +557,15 @@ function overlayExpr(value, axis, element = null, transition = null) {
     return `if(lt(t\\,${end})\\,-w+(${base}+w)*((t-${start})/${duration})\\,${base})`;
   }
   return base;
+}
+
+function positionExpr(valueExpr, axis) {
+  const center = axis === 'y' ? '(H-h)/2' : '(W-w)/2';
+  if (Number.isFinite(Number(valueExpr))) {
+    const number = Number(valueExpr);
+    return number === 0 ? center : `${center}${number > 0 ? '+' : ''}${round(number)}`;
+  }
+  return `${center}+(${valueExpr})`;
 }
 
 function safeColor(color) {
@@ -540,6 +596,8 @@ function uniqueAssets(items) {
 function summarizeComposition(project, visualItems, audioItems) {
   const effectCount = (project.elements || [])
     .reduce((sum, element) => sum + (element.effects || []).filter((effect) => effect.enabled !== false).length, 0);
+  const keyframeCount = (project.elements || [])
+    .reduce((sum, element) => sum + (element.keyframes || []).length, 0);
   const transitionCount = (project.transitions || []).filter((transition) => transition.enabled !== false).length;
   const visualItemCount = visualItems.length;
   const audioItemCount = audioItems.length;
@@ -547,9 +605,15 @@ function summarizeComposition(project, visualItems, audioItems) {
     visualItemCount,
     audioItemCount,
     effectCount,
+    keyframeCount,
     transitionCount,
-    totalItems: visualItemCount + audioItemCount + effectCount + transitionCount,
+    totalItems: visualItemCount + audioItemCount + effectCount + transitionCount + keyframeCount,
   };
+}
+
+function cloneConfigValue(value) {
+  if (value == null || typeof value !== 'object') return value;
+  return JSON.parse(JSON.stringify(value));
 }
 
 function safeName(name) {

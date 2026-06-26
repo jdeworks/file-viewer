@@ -561,6 +561,11 @@ Stage 7 project settings import/export UI has started:
   Preview composition now evaluates transform, opacity, crop, and video-filter
   params at the current cursor, so frame orientation follows the animated path
   rather than only the clip's static inspector values.
+- Carried visual keyframes into final video export planning. Keyframed
+  `visual.x`/`visual.y` paths now emit ffmpeg `overlay` time expressions,
+  static filter paths sample the shared keyframe evaluator at clip start, and
+  export provenance/render budgets record config-only keyframes so complex
+  browser-side renders can be gated before ffmpeg starts.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
