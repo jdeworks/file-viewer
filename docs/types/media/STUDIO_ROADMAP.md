@@ -221,6 +221,10 @@ the needed detailed readouts directly. Audio and video Compare now also mount
 only `mixer/mixer-compare.js`; the old `compare-ui*` DOM helpers, lazy legacy
 disclosure, and `.media-compare*` stylesheet block have been removed while pure
 compare math/audio helpers remain for active modular checks and export tests.
+The old root-level Mix prototype files have also been removed; active Mix now
+runs through `mixer/mixer-audio-multi.js`, with remaining `.mx-*` selectors
+treated as compatibility aliases until broad smoke coverage is fully moved to
+direct `.mmx-*` modular contracts.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

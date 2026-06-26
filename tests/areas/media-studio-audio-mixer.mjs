@@ -90,16 +90,6 @@ export async function runAudioMixerAndPlaylist(ctx) {
     }).then(() => true).catch(() => false);
     if (mixDetached) pass('audio mixer: switching to Listen detaches the mix markup');
     else fail('audio mix panel still mounted after switching to Listen');
-
-    const mixAcAfterClose = await page.evaluate(async () => {
-      const { getMixerACState } = await import('./types/media/mixer-engine.js');
-      return getMixerACState();
-    });
-    if (!mixAcAfterClose.hasContext || mixAcAfterClose.state === 'closed') {
-      pass('audio mixer: leaving mix mode releases shared mixer AudioContext');
-    } else {
-      fail('audio mixer AC not released after leaving mix mode: ' + JSON.stringify(mixAcAfterClose));
-    }
   } else fail('mixer tab not found');
 
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.

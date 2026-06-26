@@ -513,10 +513,14 @@ Stage 7 project settings import/export UI has started:
   `.media-compare*` stylesheet block, and lazy legacy disclosure have been
   deleted. Pure compare math/audio helpers remain because they still back active
   modular checks and export tests.
+- Removed the old root-level Mix prototype files:
+  `mixer-ui.js`, `mixer-ui-controls.js`, `mixer-ui-lane.js`,
+  `mixer-ui-export.js`, `mixer-draw.js`, and `mixer-engine.js`. Active Mix
+  continues through `mixer/mixer-audio-multi.js`; the remaining `.mx-*`
+  selectors are compatibility aliases emitted by the modular surface for older
+  smoke coverage.
 - Stage 8 remaining work: continue replacing compatibility aliases/selectors in
-  broad smoke coverage with direct `.mmx-*` modular mixer contracts, then audit
-  any remaining old Mix prototype paths that are no longer part of the final
-  architecture.
+  broad smoke coverage with direct `.mmx-*` modular mixer contracts.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
