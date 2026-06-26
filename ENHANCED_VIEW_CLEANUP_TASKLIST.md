@@ -103,6 +103,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Generic `.env`: shared secret classifier, masking reasons, line-linked table rows, and collapsed wrapped redacted source.
 - [x] AWS credentials: static key review warnings, masking reasons, source-linked profiles/fields, and collapsed redacted source.
 - [x] GCP service account: private-key/key-id review warnings, masking reasons, source-linked fields, and collapsed redacted source.
+- [x] Generic kubeconfig: current-context, TLS skip, embedded credential review warnings, source-linked tables, and collapsed redacted source.
 - [ ] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.
 - [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.

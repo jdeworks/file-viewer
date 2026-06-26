@@ -18,7 +18,7 @@ function appendCurrentContext(body, parsed) {
 
   const ctxValue = document.createElement('span');
   ctxValue.className = 'kc-current-ctx-value';
-  ctxValue.textContent = parsed.currentContext;
+  ctxValue.appendChild(sourceLink(parsed.currentContext, parsed.currentContextLine, 'Open current-context in source'));
 
   ctxBox.appendChild(ctxLabel);
   ctxBox.appendChild(ctxValue);
@@ -56,17 +56,17 @@ function appendContextsTable(body, parsed) {
       star.textContent = '★';
       nameTd.appendChild(star);
     }
-    nameTd.appendChild(document.createTextNode(ctx.name));
+    nameTd.appendChild(sourceLink(ctx.name, ctx.line, 'Open context in source'));
 
     const clusterTd = document.createElement('td');
-    clusterTd.textContent = ctx.cluster ?? '';
+    clusterTd.appendChild(sourceLink(ctx.cluster ?? '', ctx.clusterLine || ctx.line, 'Open referenced cluster in source'));
 
     const userTd = document.createElement('td');
-    userTd.textContent = ctx.user ?? '';
+    userTd.appendChild(sourceLink(ctx.user ?? '', ctx.userLine || ctx.line, 'Open referenced user in source'));
 
     const nsTd = document.createElement('td');
     if (ctx.namespace) {
-      nsTd.textContent = ctx.namespace;
+      nsTd.appendChild(sourceLink(ctx.namespace, ctx.namespaceLine || ctx.line, 'Open namespace in source'));
     } else {
       const nullSpan = document.createElement('span');
       nullSpan.className = 'kc-null';
@@ -108,7 +108,7 @@ function appendClustersTable(body, parsed) {
     const tr = document.createElement('tr');
 
     const nameTd = document.createElement('td');
-    nameTd.textContent = cluster.name ?? '';
+    nameTd.appendChild(sourceLink(cluster.name ?? '', cluster.line, 'Open cluster in source'));
 
     const serverTd = document.createElement('td');
     if (cluster.server) {
@@ -165,12 +165,12 @@ function appendUsersTable(body, parsed) {
     const tr = document.createElement('tr');
 
     const nameTd = document.createElement('td');
-    nameTd.textContent = user.name ?? '';
+    nameTd.appendChild(sourceLink(user.name ?? '', user.line, 'Open user in source'));
 
     const authTd = document.createElement('td');
     const authSpan = document.createElement('span');
     authSpan.className = 'kc-auth-method';
-    authSpan.textContent = user.authMethod;
+    authSpan.appendChild(sourceLink(user.authMethod, user.authLine || user.line, 'Open auth method in source'));
     authTd.appendChild(authSpan);
 
     tr.appendChild(nameTd);
@@ -188,4 +188,16 @@ function appendEmptyState(body, parsed) {
   empty.className = 'kc-empty-state';
   empty.textContent = 'No clusters, contexts, or users found.';
   body.appendChild(empty);
+}
+
+function sourceLink(text, line, title) {
+  const value = String(text ?? '');
+  if (!value) return document.createTextNode('');
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'kf-source-link';
+  btn.dataset.sourceLine = String(line || 1);
+  btn.title = title;
+  btn.textContent = value;
+  return btn;
 }

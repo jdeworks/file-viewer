@@ -550,6 +550,15 @@ export async function run(ctx) {
   const kubeTxt = await page.textContent('#previewHost .kc-root');
   if (kubeTxt.includes('prod-cluster') || kubeTxt.includes('dev-cluster')) pass('kubeconfig cluster names shown'); else fail('kube clusters: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
   if (kubeTxt.includes('prod-admin') || kubeTxt.includes('developer')) pass('kubeconfig users shown'); else fail('kube users: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
+  const kubeHtml = await page.$eval('#previewHost .kc-root', (e) => e.innerHTML);
+  if (/Kubeconfig Review|TLS skip|embedded credential|current context/i.test(kubeTxt)) pass('kubeconfig review warnings shown'); else fail('kube review: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 240));
+  if (/Redacted source/i.test(kubeTxt) && !/example-token-payload|UFJJVkFURSBLRVk/.test(kubeTxt + kubeHtml)) pass('kubeconfig redacted source does not leak token/key data'); else fail('kube source leaked: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 240));
+  const kubeSourceCollapsed = await page.$eval('#previewHost .kc-root .kf-source-details', (e) => !e.open);
+  if (kubeSourceCollapsed) pass('kubeconfig redacted source is collapsed'); else fail('kube source unexpectedly expanded');
+  await page.click('#previewHost .kc-root [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .kc-root .kf-source-details')?.open, null, { timeout: 3000 });
+  const kubeSourceOpened = await page.$eval('#previewHost .kc-root .kf-source-details', (e) => e.open && !!e.querySelector('#kc-line-1'));
+  if (kubeSourceOpened) pass('kubeconfig source links open source preview'); else fail('kube source link did not open preview');
 
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
   await page.goto(origin, { waitUntil: 'load' });
