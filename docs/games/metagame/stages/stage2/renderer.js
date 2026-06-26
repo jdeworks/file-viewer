@@ -1,7 +1,7 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
 import { attachGrid, buildFloor, exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
-import { monsterTurn } from "./monsters.js";
+import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
@@ -49,6 +49,7 @@ export function renderStage2({
           <span class="s2-c-potion">!</span> potion
           <span class="s2-c-glyph">%</span> glyph
           <span class="s2-c-exit">&gt;</span> stairs
+          <span class="s2-c-lava">≈</span> hazard
         </div>
       </div>
       <div class="s2-controls">
@@ -302,6 +303,7 @@ export function renderStage2({
       events.damageTaken += ps.damageTaken;
       if (ps.died) events.died = true;
     }
+    if (bucket === 2 && pressureSpawn(world)) appendLog(state, "something else stirs in the dark.");
     if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);

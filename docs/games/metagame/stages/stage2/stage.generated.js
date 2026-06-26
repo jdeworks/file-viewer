@@ -737,6 +737,42 @@ function adjacentFree(world, m, occupied) {
   }
   return null;
 }
+function pressureSpawn(world) {
+  if (world.stepCount == null) return 0;
+  const interval = Math.max(12, 40 - world.floor * 4);
+  const first = Math.max(20, 60 - world.floor * 5);
+  if (world._nextWander == null) world._nextWander = first;
+  if (world.stepCount < world._nextWander) return 0;
+  if (world.monsters.filter((m2) => m2.alive).length >= SUMMON_CAP * 4) return 0;
+  world._nextWander = world.stepCount + interval;
+  world._wanderN = (world._wanderN || 0) + 1;
+  const rng = makeRng(`${world.seed}:${world.floor}:wander:${world._wanderN}`);
+  const spot = offscreenCell(world, rng);
+  if (!spot) return 0;
+  const m = spawnMonster(rng, world.floor, world.monsters.length);
+  m.x = spot.x;
+  m.y = spot.y;
+  m.home = { x: spot.x, y: spot.y };
+  m.chasing = true;
+  m.bucket = world._wanderN % 5;
+  if (m.ambush) {
+    m.ambush = false;
+    m.hidden = false;
+  }
+  world.monsters.push(m);
+  return 1;
+}
+function offscreenCell(world, rng) {
+  for (let t = 0; t < 60; t += 1) {
+    const dx = rng.int(-44, 44);
+    const dy = rng.int(-30, 30);
+    if (Math.abs(dx) <= 26 && Math.abs(dy) <= 13) continue;
+    const x = world.pos.x + dx;
+    const y = world.pos.y + dy;
+    if (isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
+  }
+  return null;
+}
 function makeMinion(world) {
   const scale = 1 + (world.floor - 1) * 0.35;
   const hp = Math.round(12 * scale);
@@ -871,6 +907,63 @@ function monsterTurn(world, player, events, filter) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage2/hazards.js
+var HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":" };
+var HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm" };
+function hazardPlan(floor) {
+  if (floor <= 2) return { types: ["spikes"], density: 0.35 };
+  if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
+  if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
+  return { types: ["lava", "spores", "chasm", "spikes"], density: 1.7 };
+}
+function placeHazards(rng, floor, roomN, takeCell) {
+  const plan = hazardPlan(floor);
+  const count = Math.round(roomN * 0.45 * plan.density);
+  const hazards = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    hazards.push({ x: c.x, y: c.y, type: rng.pick(plan.types) });
+  }
+  return hazards;
+}
+function hazardIndex(world) {
+  const map = /* @__PURE__ */ new Map();
+  if (Array.isArray(world.hazards)) for (const h of world.hazards) map.set(h.y * world.width + h.x, h.type);
+  return (x, y) => map.get(y * world.width + x);
+}
+function enterHazard(world, player, hz, events) {
+  if (hz === "lava") {
+    const dmg = 6 + world.floor * 2;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "burn", 3, 2 + Math.floor(world.floor / 3));
+    events.log.push(`lava! ${dmg} damage — you're burning.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (hz === "spores") {
+    applyStatus(player, "poison", 4, 1 + Math.floor(world.floor / 4));
+    events.log.push("a spore cloud bursts — poisoned.");
+  } else if (hz === "spikes") {
+    const dmg = 3 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "bleed", 3, 1);
+    events.log.push(`spikes! ${dmg} damage — bleeding.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (hz === "chasm") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (player.hp <= 0) {
+      events.died = true;
+      return;
+    }
+    events.descend = true;
+    events.fell = true;
+    events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
+  }
+}
+
 // ../../docs/games/metagame/stages/stage2/engine.js
 var GROWTH = 1.35;
 function floorDims(runSeed, floorNum) {
@@ -898,7 +991,11 @@ function attachGrid(world, runSeed, floorNum) {
     for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h);
   }
   defineGrid(world, grid);
+  defineHazards(world);
   return world;
+}
+function defineHazards(world) {
+  Object.defineProperty(world, "hazardAt", { value: hazardIndex(world), enumerable: false, writable: true, configurable: true });
 }
 function buildFloor(runSeed, floorNum) {
   const { grid, rooms, hidden, decor, dims, rng } = buildGrid(runSeed, floorNum);
@@ -972,8 +1069,10 @@ function buildFloor(runSeed, floorNum) {
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden };
+  const hazards = placeHazards(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards };
   defineGrid(world, grid);
+  defineHazards(world);
   return world;
 }
 function exitDistanceField(world) {
@@ -1086,6 +1185,13 @@ function step(world, player, dir) {
   }
   world.pos = { x: nx, y: ny };
   events.moved = true;
+  world.stepCount = (world.stepCount || 0) + 1;
+  const hz = world.hazardAt && world.hazardAt(nx, ny);
+  if (hz) {
+    enterHazard(world, player, hz, events);
+    if (events.died) return events;
+    if (events.descend) return events;
+  }
   const weapon = world.weapons.find((wp) => !wp.taken && wp.x === nx && wp.y === ny);
   if (weapon && weapon.atk > 0) {
     weapon.taken = true;
@@ -1222,6 +1328,7 @@ var SECTIONS = [
   ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
+  ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
@@ -1359,6 +1466,7 @@ function createView(screenEl) {
       pos(el, x, y);
     };
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
     world.weapons.forEach((w, i) => {
       if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item");
     });
@@ -1523,6 +1631,8 @@ function createView(screenEl) {
     if (world.hidden) {
       for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     }
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
+    if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) {
       for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
@@ -1621,6 +1731,7 @@ function renderStage2({
           <span class="s2-c-potion">!</span> potion
           <span class="s2-c-glyph">%</span> glyph
           <span class="s2-c-exit">&gt;</span> stairs
+          <span class="s2-c-lava">≈</span> hazard
         </div>
       </div>
       <div class="s2-controls">
@@ -1871,6 +1982,7 @@ function renderStage2({
       events.damageTaken += ps.damageTaken;
       if (ps.died) events.died = true;
     }
+    if (bucket === 2 && pressureSpawn(world)) appendLog(state, "something else stirs in the dark.");
     if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);

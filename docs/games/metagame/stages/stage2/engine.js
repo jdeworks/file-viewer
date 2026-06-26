@@ -12,6 +12,7 @@ import { generate, floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
 import { detonate } from "./monsters.js";
 import { applyStatus, tickStatuses } from "./status.js";
+import { placeHazards, hazardIndex, enterHazard } from "./hazards.js";
 import { DIRS } from "./dirs.js";
 
 export { DIRS };
@@ -51,7 +52,14 @@ export function attachGrid(world, runSeed, floorNum) {
   const grid = buildGrid(runSeed, floorNum).grid; // hidden rooms come back sealed…
   if (Array.isArray(world.hidden)) for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h); // …re-open the ones already found
   defineGrid(world, grid);
+  defineHazards(world); // rebuild the O(1) hazard lookup from the saved hazards array
   return world;
+}
+
+// Non-enumerable hazard lookup (built from the enumerable, saved world.hazards) — same pattern as
+// the grid: the data is serialised, the index is rebuilt in memory on load.
+function defineHazards(world) {
+  Object.defineProperty(world, "hazardAt", { value: hazardIndex(world), enumerable: false, writable: true, configurable: true });
 }
 
 // Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
@@ -128,8 +136,11 @@ export function buildFloor(runSeed, floorNum) {
     else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden };
+  // Hazards last, on the floor cells nothing else claimed (so a foe/loot never starts on lava).
+  const hazards = placeHazards(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden, hazards };
   defineGrid(world, grid);
+  defineHazards(world);
   return world;
 }
 
@@ -259,9 +270,18 @@ export function step(world, player, dir) {
     return events;
   }
 
-  // Open tile — move there, then resolve pickups / stairs.
+  // Open tile — move there, then resolve hazards / pickups / stairs.
   world.pos = { x: nx, y: ny };
   events.moved = true;
+  world.stepCount = (world.stepCount || 0) + 1; // drives A4 lingering pressure
+
+  // Hazard on-enter (A2): lava burns, spores poison, spikes bleed, a chasm drops you a floor.
+  const hz = world.hazardAt && world.hazardAt(nx, ny);
+  if (hz) {
+    enterHazard(world, player, hz, events);
+    if (events.died) return events;
+    if (events.descend) return events; // chasm fall — skip the rest of this floor's resolution
+  }
 
   const weapon = world.weapons.find((wp) => !wp.taken && wp.x === nx && wp.y === ny);
   if (weapon && weapon.atk > 0) {

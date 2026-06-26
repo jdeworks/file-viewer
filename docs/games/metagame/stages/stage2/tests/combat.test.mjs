@@ -1,8 +1,9 @@
 // Stage 2 escalation: status-effect substrate (A5), monster behaviour archetypes (A1) and elites (A3).
 import { applyStatus, tickStatuses, hasStatus, skipsTurn } from "../status.js";
-import { monsterTurn, detonate, hasLOS } from "../monsters.js";
+import { monsterTurn, detonate, hasLOS, pressureSpawn } from "../monsters.js";
 import { buildFloor, step } from "../engine.js";
 import { spawnMonster } from "../data.js";
+import { enterHazard, hazardIndex } from "../hazards.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -91,6 +92,41 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const player = { atk: 999, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {} };
   step(w, player, "right");
   ok(w.weapons.length > before, "killing an elite drops a guaranteed weapon cache");
+}
+
+// ── A2 hazards: on-enter effects + monster avoidance ─────────────────────────────────────────────
+{
+  const w = arena();
+  w.floor = 6;
+  const player = { hp: 100, def: 0, statuses: {} };
+  const ev = { log: [], damageTaken: 0, died: false };
+  enterHazard(w, player, "lava", ev);
+  ok(player.hp < 100 && hasStatus(player, "burn"), "lava deals damage and sets burn");
+  const ev2 = { log: [], damageTaken: 0, died: false };
+  enterHazard(w, { hp: 100, def: 0, statuses: {} }, "chasm", ev2);
+  ok(ev2.descend === true && ev2.fell === true, "chasm triggers a fall to the next floor");
+}
+{
+  // A monster won't step onto lava: block every route except a lava cell.
+  const w = arena(7);
+  w.hazards = [{ x: 3, y: 1, type: "lava" }];
+  w.hazardAt = hazardIndex(w);
+  const m = foe({ x: 2, y: 1, chasing: false, dir: "right" });
+  w.monsters = [m];
+  w.pos = { x: 5, y: 1 }; // player on the far floor cell; lava at x=3 walls off the single corridor
+  monsterTurn(w, { hp: 100, def: 0, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(m.x === 2, "monster refuses to step onto a lava tile");
+}
+
+// ── A4 lingering pressure: off-camera wanderers as the player lingers ────────────────────────────
+{
+  const w = buildFloor("pressure-test", 5);
+  const before = w.monsters.length;
+  let spawned = 0;
+  for (let s = 0; s < 200; s += 1) { w.stepCount = s; spawned += pressureSpawn(w); }
+  ok(spawned > 0, "lingering on a floor spawns wanderers");
+  const off = w.monsters.slice(before).every((m) => Math.abs(m.x - w.pos.x) > 26 || Math.abs(m.y - w.pos.y) > 13);
+  ok(off, "wanderers appear off-camera");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

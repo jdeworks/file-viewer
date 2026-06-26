@@ -8,6 +8,8 @@
 
 import { DIRS, DIR_LIST } from "./dirs.js";
 import { tickStatuses, skipsTurn, applyStatus } from "./status.js";
+import { spawnMonster } from "./data.js";
+import { makeRng } from "./rng.js";
 
 const SUMMON_CAP = 90; // hard ceiling on live monsters so a summoner can't runaway-spawn
 const RANGED_COOLDOWN = 2;
@@ -88,6 +90,44 @@ function adjacentFree(world, m, occupied) {
     const x = m.x + DIRS[d].dx;
     const y = m.y + DIRS[d].dy;
     if (freeCell(world, x, y, occupied)) return { x, y };
+  }
+  return null;
+}
+
+// ── A4 lingering pressure ─────────────────────────────────────────────────────────────────────
+// As the player lingers on a floor (step count climbs), extra wanderers fade in OFF-camera and
+// hunt — the anti-turtle valve. The first spawn + the interval both shrink with depth, so deeper
+// floors pressure you sooner and faster. Call on a real-time clock; returns how many spawned.
+export function pressureSpawn(world) {
+  if (world.stepCount == null) return 0;
+  const interval = Math.max(12, 40 - world.floor * 4);
+  const first = Math.max(20, 60 - world.floor * 5);
+  if (world._nextWander == null) world._nextWander = first;
+  if (world.stepCount < world._nextWander) return 0;
+  if (world.monsters.filter((m) => m.alive).length >= SUMMON_CAP * 4) return 0; // absolute safety cap
+  world._nextWander = world.stepCount + interval;
+  world._wanderN = (world._wanderN || 0) + 1;
+  const rng = makeRng(`${world.seed}:${world.floor}:wander:${world._wanderN}`);
+  const spot = offscreenCell(world, rng);
+  if (!spot) return 0;
+  const m = spawnMonster(rng, world.floor, world.monsters.length);
+  m.x = spot.x; m.y = spot.y; m.home = { x: spot.x, y: spot.y };
+  m.chasing = true;
+  m.bucket = world._wanderN % 5;
+  if (m.ambush) { m.ambush = false; m.hidden = false; } // wanderers hunt, they don't lie in wait
+  world.monsters.push(m);
+  return 1;
+}
+
+// A reachable floor cell outside the ~48×22 camera box (so wanderers appear off-screen, then walk in).
+function offscreenCell(world, rng) {
+  for (let t = 0; t < 60; t += 1) {
+    const dx = rng.int(-44, 44);
+    const dy = rng.int(-30, 30);
+    if (Math.abs(dx) <= 26 && Math.abs(dy) <= 13) continue; // inside the visible box — skip
+    const x = world.pos.x + dx;
+    const y = world.pos.y + dy;
+    if (isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
   }
   return null;
 }
