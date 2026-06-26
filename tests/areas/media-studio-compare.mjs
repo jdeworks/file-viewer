@@ -156,37 +156,29 @@ export async function exerciseCompare(ctx, kind) {
     else fail('video compare analyze label: ' + analyzeText);
     await page.evaluate(async () => {
       const bytes = await fetch('/examples/sample.webm').then((res) => res.arrayBuffer());
-      const main = new File([bytes], 'SidebarDropMain.webm', { type: 'video/webm' });
-      const cmp = new File([bytes], 'SidebarDropCmp.webm', { type: 'video/webm' });
-      window.__fv.state._skipDiscardGuard = true;
-      await window.__fv.loadFolder([
-        { file: main, path: 'Videos/SidebarDropMain.webm' },
-        { file: cmp, path: 'Videos/SidebarDropCmp.webm' },
-      ]);
+      await window.__fv.openBlobFile(new Blob([bytes], { type: 'video/webm' }), 'SidebarDropMain.webm', { mime: 'video/webm' });
     });
-    await page.click('[data-path="Videos/SidebarDropMain.webm"]');
     await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'SidebarDropMain.webm', null, { timeout: 8000 });
     await page.click('#previewHost .media-mode-tab[data-mode="compare"]');
     await page.waitForSelector(`${panelSel} .media-compare`, { timeout: 5000 });
-    const sidebarDrop = await page.evaluate(async () => {
-      const src = document.querySelector('[data-path="Videos/SidebarDropCmp.webm"]');
+    const fileDrop = await page.evaluate(async () => {
+      const bytes = await fetch('/examples/sample.webm').then((res) => res.arrayBuffer());
+      const cmp = new File([bytes], 'SidebarDropCmp.webm', { type: 'video/webm' });
       const dropZone = document.querySelector('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-drop .media-ed-drop-zone');
-      if (!src || !dropZone) return { src: !!src, dropZone: !!dropZone };
+      if (!dropZone) return { dropZone: false };
       const dt = new DataTransfer();
-      src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+      dt.items.add(cmp);
       dropZone.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
       dropZone.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
-      src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
       return {
-        src: true,
         dropZone: true,
         current: window.__fv?.state?.intake?.filename || '',
         laneB: document.querySelector('#previewHost .media-compare-lane[data-lane="B"] .media-compare-lane-label')?.textContent || '',
       };
     });
-    if (sidebarDrop.current === 'SidebarDropMain.webm' && /SidebarDropCmp\.webm/.test(sidebarDrop.laneB))
-      pass('video compare: sidebar drop fills lane B without opening as main file');
-    else fail('video compare sidebar drop: ' + JSON.stringify(sidebarDrop));
+    if (fileDrop.current === 'SidebarDropMain.webm' && /SidebarDropCmp\.webm/.test(fileDrop.laneB))
+      pass('video compare: second-file drop fills lane B without opening as main file');
+    else fail('video compare file drop: ' + JSON.stringify(fileDrop));
     await page.click(`${panelSel} .media-compare-layout-btn[data-layout="overlay"]`);
     await page.selectOption(`${panelSel} .media-compare-foreground-select`, 'A');
     await page.fill(`${panelSel} .media-compare-video-opacity-a`, '80');

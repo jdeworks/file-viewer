@@ -36,11 +36,24 @@ export async function runAudioListenAndChapters(ctx) {
       w: r.width,
       h: r.height,
       buttons: [...el.querySelectorAll('.media-listen-btn')].map((btn) => btn.textContent.trim()),
-      progress: !!el.querySelector('.media-listen-progress'),
+      waveform: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
+      ruler: !!el.querySelector('.media-lane-ruler'),
+      cursor: !!el.querySelector('.media-wv-playhead'),
+      controls: {
+        offset: !!el.querySelector('.media-lane-offset'),
+        in: !!el.querySelector('.media-lane-in'),
+        out: !!el.querySelector('.media-lane-out'),
+        gain: !!el.querySelector('.media-lane-gain'),
+        fadeIn: !!el.querySelector('.media-lane-fade-in'),
+        fadeOut: !!el.querySelector('.media-lane-fade-out'),
+        room: !!el.querySelector('.media-lane-room-toggle'),
+      },
     };
   });
-  if (listenSurface.w > 0 && listenSurface.h > 0 && listenSurface.buttons.includes('Play') && listenSurface.progress)
-    pass('audio listen: custom lane transport replaces native controls');
+  if (listenSurface.w > 0 && listenSurface.h > 0 && listenSurface.buttons.includes('Play') && listenSurface.buttons.includes('Stop')
+    && listenSurface.waveform && listenSurface.ruler && listenSurface.cursor
+    && Object.values(listenSurface.controls).every(Boolean))
+    pass('audio listen: auto-audiobook-style waveform lane replaces native controls');
   else fail('custom listen surface: ' + JSON.stringify(listenSurface));
 
   // Streaming: the File handle is retained on the intake (blob built from the File = disk-backed,
@@ -88,6 +101,54 @@ export async function runAudioListenAndChapters(ctx) {
   if (waveformDrawn.width > 0 && waveformDrawn.height > 0 && waveformDrawn.painted > 20)
     pass('audio waveform: visible workspace canvas paints by default');
   else fail('waveform canvas: ' + JSON.stringify(waveformDrawn));
+
+  const seekBefore = await page.$eval('#previewHost audio.media-view', (audio) => audio.currentTime || 0);
+  const waveformBox = await page.locator('#previewHost .media-waveform-surface canvas.media-wv-canvas').boundingBox();
+  if (waveformBox) {
+    await page.mouse.click(waveformBox.x + waveformBox.width * 0.64, waveformBox.y + waveformBox.height * 0.52);
+    await page.waitForTimeout(160);
+  }
+  const seekAfter = await page.$eval('#previewHost', (host) => {
+    const audio = host.querySelector('audio.media-view');
+    const cursor = host.querySelector('.media-wv-playhead');
+    return { currentTime: audio?.currentTime || 0, left: cursor?.style.left || '' };
+  });
+  if (waveformBox && seekAfter.currentTime > seekBefore && seekAfter.left && seekAfter.left !== '0%')
+    pass('audio listen: waveform click-to-seek moves the red cursor');
+  else fail('listen click-to-seek: ' + JSON.stringify({ waveformBox: !!waveformBox, seekBefore, seekAfter }));
+
+  const laneState = await page.$eval('#previewHost .media-listen-surface', (el) => {
+    const set = (sel, value) => {
+      const input = el.querySelector(sel);
+      input.value = String(value);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    set('.media-lane-offset', 0.12);
+    set('.media-lane-in', 0.05);
+    set('.media-lane-out', 0.4);
+    set('.media-lane-gain', 0.67);
+    set('.media-lane-fade-in', 25);
+    set('.media-lane-fade-out', 80);
+    const room = el.querySelector('.media-lane-room-toggle');
+    room.checked = false;
+    room.dispatchEvent(new Event('change', { bubbles: true }));
+    return {
+      offset: el.querySelector('.media-lane-offset')?.value,
+      in: el.querySelector('.media-lane-in')?.value,
+      out: el.querySelector('.media-lane-out')?.value,
+      gain: el.querySelector('.media-lane-gain')?.value,
+      fadeIn: el.querySelector('.media-lane-fade-in')?.value,
+      fadeOut: el.querySelector('.media-lane-fade-out')?.value,
+      roomChecked: room?.checked,
+      roomHidden: el.querySelector('.media-lane-room-tone')?.hidden,
+      duration: el.querySelector('.media-lane-duration')?.textContent || '',
+    };
+  });
+  if (laneState.offset === '0.12' && laneState.in === '0.05' && laneState.out === '0.4'
+    && laneState.gain === '0.67' && laneState.fadeIn === '25' && laneState.fadeOut === '80'
+    && laneState.roomChecked === false && laneState.roomHidden === true && /Duration/.test(laneState.duration))
+    pass('audio listen: start/end/fade/gain controls update lane state and room-tone option');
+  else fail('listen lane state controls: ' + JSON.stringify(laneState));
 
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker').length >= 3, null, { timeout: 6000 });
   const chapterMarkers = await page.$$eval('#previewHost .media-waveform-surface .media-wv-chapter-marker', (els) => els.map((el) => ({
@@ -159,4 +220,21 @@ export async function runAudioListenAndChapters(ctx) {
     && sidecarChapters.list.join('|') === 'Sidecar Prologue|Sidecar Chapter One')
     pass('R2: folder sidecar chapters reach markers, list, and source status');
   else fail('folder sidecar chapters: ' + JSON.stringify(sidecarChapters));
+
+  await openExample('Sample.mp3');
+  await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
+  await page.waitForFunction(() => Number.isFinite(document.querySelector('#previewHost audio.media-view')?.duration), null, { timeout: 8000 });
+  const mp3Lane = await page.$eval('#previewHost .media-listen-surface', (el) => ({
+    nativeHidden: (() => {
+      const audio = document.querySelector('#previewHost audio.media-view');
+      const r = audio.getBoundingClientRect();
+      return !audio.controls && r.width <= 2 && r.height <= 2 && getComputedStyle(audio).opacity === '0';
+    })(),
+    waveform: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
+    cursor: !!el.querySelector('.media-wv-playhead'),
+    room: !!el.querySelector('.media-lane-room-toggle'),
+  }));
+  if (mp3Lane.nativeHidden && mp3Lane.waveform && mp3Lane.cursor && mp3Lane.room)
+    pass('audio listen: Sample.mp3 uses the same hidden-native waveform lane');
+  else fail('Sample.mp3 listen lane: ' + JSON.stringify(mp3Lane));
 }

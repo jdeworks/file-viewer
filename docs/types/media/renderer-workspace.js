@@ -8,7 +8,6 @@ export function buildMediaWorkspace(intake, info, mediaElement, options = {}) {
   let workspaceTime = null;
   let audioWorkspace = null;
   let videoWorkspace = null;
-  let waveformSurface = null;
   let audioModes = null;
   let videoModes = null;
   let modeTabs = null;
@@ -29,12 +28,9 @@ export function buildMediaWorkspace(intake, info, mediaElement, options = {}) {
     mediaSurface.append(mediaElement);
     if (options.audioListenSurface) mediaSurface.append(options.audioListenSurface);
 
-    waveformSurface = document.createElement('div');
-    waveformSurface.className = 'media-waveform-surface';
-
     const workspaceBody = document.createElement('div');
     workspaceBody.className = 'media-workspace-body';
-    workspaceBody.append(mediaSurface, waveformSurface);
+    workspaceBody.append(mediaSurface);
 
     audioWorkspace = document.createElement('div');
     audioWorkspace.className = 'media-workspace media-audio-workspace';
@@ -82,7 +78,6 @@ export function buildMediaWorkspace(intake, info, mediaElement, options = {}) {
   return {
     host,
     workspaceTime,
-    waveformSurface,
     modeTabs,
     modePanelWrap,
     audioWorkspace,

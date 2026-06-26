@@ -111,7 +111,6 @@ export async function render(intake, ctx = {}) {
   const {
     host,
     workspaceTime,
-    waveformSurface,
     modeTabs,
     modePanelWrap,
     audioWorkspace,
@@ -133,6 +132,7 @@ export async function render(intake, ctx = {}) {
   let coverRevoke = null;
   const refreshChapters = () => {
     normalizedChapters = normalizeChapters(rawChapters, Number.isFinite(el.duration) ? el.duration : undefined);
+    listenSurface?.setChapters?.(normalizedChapters);
     exportPanel?.updateChapters?.(normalizedChapters);
   };
   if (info.kind === 'audio' && intake.file && typeof intake.file.slice === 'function') {
@@ -217,6 +217,11 @@ export async function render(intake, ctx = {}) {
     exportRevoke = exp.revoke;
     refreshChapters();
   }
+  if (listenSurface) {
+    listenSurface.setRegionSelect?.(editorController?.prefillTrim ? ({ start, end }) => {
+      editorController.prefillTrim({ start, end });
+    } : null);
+  }
 
   const { tools, trackListEl, advanceTrack, cancelSleep } = buildMediaTools({
     intake,
@@ -260,14 +265,10 @@ export async function render(intake, ctx = {}) {
       intake,
       tools,
       trackListEl,
-      waveformSurface,
       enableFfmpeg,
-      editorController,
       exportPanel,
-      normalizedChapters,
       onRegisterController: registerModeController,
       onReleaseController: releaseModeController,
-      onAuxController: (controller) => panels.push(controller),
     });
     audioListenMode = audioModeData.audioListenMode;
   }

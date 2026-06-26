@@ -154,14 +154,10 @@ export async function mountAudioModePanels({
   intake,
   tools,
   trackListEl,
-  waveformSurface,
   enableFfmpeg,
-  editorController,
   exportPanel,
-  normalizedChapters,
   onRegisterController,
   onReleaseController,
-  onAuxController,
 }) {
   const states = createWorkspaceModes({
     tabWrap: modeTabs,
@@ -197,16 +193,6 @@ export async function mountAudioModePanels({
     const { mountMixer } = await import('./mixer-ui.js');
     return mountMixer(panel, intake);
   });
-
-  const { mountWaveform } = await import('./waveform.js');
-  const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
-  const wv = await mountWaveform(waveformSurface, file, {
-    chapters: normalizedChapters,
-    onRegionSelect: editorController?.prefillTrim ? ({ start, end }) => {
-      editorController.prefillTrim({ start, end });
-    } : null,
-  });
-  if (wv) onAuxController?.({ destroy() { wv.destroy(); } });
 
   const audioListenMode = states.states.get('listen');
   audioListenMode.panel.append(tools);

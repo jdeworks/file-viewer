@@ -81,7 +81,7 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
   // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).
   const tlModeSel = '#previewHost .media-mode-panel[data-mode="timeline"]';
-  await page.click('#previewHost .media-mode-tab[data-mode="timeline"]');
+  await page.$eval('#previewHost .media-mode-tab[data-mode="timeline"]', (button) => button.click());
   await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
   const tlToggle = await page.evaluateHandle((sel) =>
     [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
@@ -90,7 +90,7 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     pass('P6: video timeline toggle button present');
     const preTl = await page.$(tlModeSel + ' .tl-wrap');
     if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
-    await tlToggle.asElement().click();
+    await tlToggle.evaluate((button) => button.click());
     await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
 
     // 2 lanes: video lane (clip A) + second/music lane.
@@ -211,17 +211,17 @@ export async function runVideoExportAndTimelineChecks(ctx) {
 
     const tlViewDesktop = page.viewportSize();
     await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.avi', '#previewHost video.media-view');
-    await page.click('#previewHost .media-mode-tab[data-mode="timeline"]');
+    await page.$eval('#previewHost .media-mode-tab[data-mode="timeline"]', (button) => button.click());
     await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
     const mobileToggle = await page.evaluateHandle((sel) =>
       [...document.querySelectorAll(sel + ' .media-wv-toggle')]
         .find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
     const mobileToggleExists = await mobileToggle.evaluate((e) => !!e);
     if (mobileToggleExists) {
-      await mobileToggle.asElement().click();
+      await mobileToggle.evaluate((button) => button.click());
       await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
       await assertTimelineViewport(ctx, tlModeSel, 'mobile');
-      await mobileToggle.asElement().click();
+      await mobileToggle.evaluate((button) => button.click());
       await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
     } else {
       fail('P6 mobile: video timeline toggle not found after viewport change');

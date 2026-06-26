@@ -105,6 +105,18 @@ The latest roadmap items R0-R5 are recorded below as committed or implemented. I
 the earlier R4 foundation note is superseded by the implemented R4 section later in this file
 and by `STUDIO_ROADMAP.md`.
 
+Progress:
+
+- Default single-track `Listen` slice implemented in this increment:
+  - Replaced the separate Listen transport plus standalone waveform with one auto-audiobook-style
+    lane surface for MP3/WAV: fixed lane label, integrated transport, ruler, waveform canvas,
+    red cursor, click-to-seek, in/out selection, start-later offset, gain, fade in/out, duration
+    readout, and pink-noise/room-tone bed toggle.
+  - Native audio remains hidden as the decode/playback source.
+  - Chapter markers and existing ffmpeg Trim prefill now attach to the lane waveform.
+  - Smoke coverage now proves the new lane for both `Sample.wav` and `Sample.mp3`.
+  - Validation passed: `node tests/smoke-area.mjs media-studio`, `./scripts/check.sh --fast`.
+
 ### P-Start — Checkpoint Current Verified Work
 
 Status: committed.

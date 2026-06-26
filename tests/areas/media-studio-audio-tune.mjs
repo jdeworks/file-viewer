@@ -28,7 +28,7 @@ export async function runAudioTuneAndDynamics(ctx) {
       label: playhead?.textContent || '',
     };
   });
-  if (waveformBox && seekState.currentTime > 0 && seekState.left && seekState.left !== '0%' && /\d\d:\d\d:\d\d/.test(seekState.label))
+  if (waveformBox && seekState.currentTime > 0 && seekState.left && seekState.left !== '0%' && /(?:\d+:)?\d+:\d\d/.test(seekState.label))
     pass('audio waveform: full waveform seekbar scrubs native audio');
   else fail('audio waveform seekbar: ' + JSON.stringify({ waveformBox: !!waveformBox, seekState }));
   const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));

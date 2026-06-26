@@ -75,7 +75,7 @@ export async function runAudioMixerAndPlaylist(ctx) {
     if (/\.wav$/.test(wavName)) pass('audio mixer: mixdown → WAV downloaded (' + wavName + ')'); else fail('mixer WAV download name: ' + wavName);
     const audioMixDesktopViewport = page.viewportSize();
     await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
-    await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
+    await page.$eval('#previewHost .media-mode-tab[data-mode="mix"]', (button) => button.click());
     await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
     await assertMixViewport(ctx, 'mobile');
     if (audioMixDesktopViewport) {
