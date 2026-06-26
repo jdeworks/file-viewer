@@ -8,7 +8,9 @@ import {
   createMixerSnapshot,
   evaluateMixerCapabilities,
   exportProjectSettingsJson,
+  buildAudioMixExportPlan,
   moveElement,
+  renderAudioMixToWav,
   selectTarget,
   summarizeReducedCapabilities,
   updateAsset,
@@ -32,10 +34,10 @@ import {
 } from './mixer-audio-listen-helpers.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import {
-  createSilentWav,
   hasAudioDrop,
   isAudioFile,
   laneRange,
+  downloadBlob,
   updateProjectElementField,
 } from './mixer-audio-multi-helpers.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
@@ -53,6 +55,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let waveformSummary = null;
   let destroyed = false;
   let draggingElement = null;
+  let lastExportPlan = null;
   const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set('asset-listen-source', intake.file);
@@ -224,6 +227,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     exportSettings: () => exportProjectSettingsJson(project),
     getAudioCacheStats: () => decodedAudioCache.stats(),
     getPlaybackState: () => playback.getState(),
+    getLastExportPlan: () => lastExportPlan,
     dispatch,
     addPinkNoise() {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
@@ -243,6 +247,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getViewport: () => viewport,
     getAudioCacheStats: () => decodedAudioCache.stats(),
     getPlaybackState: () => playback.getState(),
+    getLastExportPlan: () => lastExportPlan,
     dispatch,
     destroy() {
       destroyed = true;
@@ -441,20 +446,16 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   }
 
   function downloadMixdown() {
-    const seconds = Math.max(1, Math.ceil((project.project.durationMs || 1000) / 1000));
-    const sampleRate = project.project.sampleRate || 48000;
-    const wav = createSilentWav(seconds, sampleRate, project.project.channels || 1);
-    const blob = new Blob([wav], { type: 'audio/wav' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'mixdown.wav';
-    document.body.append(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(a.href);
-      a.remove();
-    }, 0);
-    root.dataset.lastMixdownPlan = exportProjectSettingsJson(project, 0);
+    lastExportPlan = buildAudioMixExportPlan(project);
+    root.dataset.lastMixdownPlan = JSON.stringify(lastExportPlan.provenance);
+    renderAudioMixToWav(project, { runtimeFiles, cache: decodedAudioCache }).then(({ blob, plan }) => {
+      lastExportPlan = plan;
+      root.dataset.lastMixdownPlan = JSON.stringify(plan.provenance);
+      root.dataset.lastMixdownBytes = String(blob.size);
+      downloadBlob(blob, plan.filename);
+    }).catch((error) => {
+      root.dataset.lastMixdownError = error?.message || String(error);
+    });
   }
 
   function fitZoom() {

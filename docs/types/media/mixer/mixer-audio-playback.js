@@ -150,7 +150,7 @@ export function createMixerAudioPlayback({
       };
     }
     const node = ctx.createBufferSource();
-    node.buffer = createNoiseBuffer(ctx, Math.max(2, item.durationMs / 1000), roomTone.kind || 'pink-noise');
+    node.buffer = createNoiseBufferForMixer(ctx, Math.max(2, item.durationMs / 1000), roomTone.kind || 'pink-noise');
     node.loop = true;
     return {
       node,
@@ -256,7 +256,7 @@ function createAudioContext() {
   }
 }
 
-function createNoiseBuffer(ctx, seconds, kind) {
+export function createNoiseBufferForMixer(ctx, seconds, kind) {
   const length = Math.max(1, Math.floor(ctx.sampleRate * seconds));
   const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
   const out = buffer.getChannelData(0);

@@ -202,7 +202,7 @@ Stage 3 one-lane MP3/WAV Listen integration is in progress:
   moving compatibility-only selectors out of the required smoke contract as the
   shared mixer tests take over.
 
-Stage 4 multi-lane audio has started:
+Stage 4 multi-lane audio is implemented:
 
 - Audio `Mix` now mounts `docs/types/media/mixer/mixer-audio-multi.js`, a
   shared-model controller rendered through `mixer-renderer.js`, instead of the
@@ -247,16 +247,24 @@ Stage 4 multi-lane audio has started:
   assets are decoded lazily through the runtime file map and decoded-audio cache;
   generated sources are synthesized directly. The Mix Play/Stop controls now
   drive this scheduler and the red cursor follows the AudioContext clock.
+- Added `mixer-audio-export.js`, which derives a browser WAV export plan and
+  deterministic provenance from the same shared schedule state. Mixdown now
+  uses `OfflineAudioContext` where feasible, reuses the runtime file map and
+  decoded-audio cache for file assets, renders generated tone and pink-noise
+  room-tone elements, and records provenance for assets, trims, offsets, fades,
+  lane/element/master gains, EQ preset ids, room-tone state, render path,
+  scheduled/skipped counts, and warnings without serializing media bytes.
 - Validation passed:
   - `node --check docs/types/media/mixer/mixer-audio-multi.js`
   - `node --check docs/types/media/mixer/mixer-audio-cache.js`
   - `node --check docs/types/media/mixer/mixer-audio-playback.js`
+  - `node --check docs/types/media/mixer/mixer-audio-export.js`
   - `node --check tests/areas/media-studio-mixer-audio-listen.mjs`
   - `node tests/media-mixer-model.test.mjs`
   - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/smoke-area.mjs media-studio`
-- Remaining Stage 4 work: final mix export/provenance derived from the same
-  shared timeline state.
+- Stage 4 remaining work: none known for the accepted audio scope. Next A0
+  implementation target is Stage 5 video/image elements and seek-frame preview.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

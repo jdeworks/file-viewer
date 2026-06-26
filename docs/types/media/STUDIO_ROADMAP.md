@@ -116,8 +116,12 @@ runtime cache stats without serializing cache state into settings JSON.
 WebAudio Mix preview now schedules from the same shared timeline state, using
 cursor offsets, trims, mute/solo, lane gain, element gain/fades, master gain,
 generated tone, and pink-noise/room-tone elements, with file assets decoded
-lazily through the runtime cache. Remaining Stage 4 work is final mix
-export/provenance from the shared timeline state.
+lazily through the runtime cache. Browser WAV mixdown now derives export
+provenance from that same shared schedule state, including assets, offsets,
+trims, fades, gains, EQ preset ids, room tone, render path, scheduled/skipped
+counts, and warnings without serializing media bytes. Stage 4 audio is complete
+for the accepted browser-feasible scope; the next foundation stage is video/image
+elements and seek-frame preview.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

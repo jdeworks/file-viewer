@@ -1,6 +1,7 @@
 import {
   addElement,
   addLane,
+  buildAudioMixExportPlan,
   buildDecodedAudioCacheKey,
   buildProcessedAudioCacheKey,
   buildSchedulePlan,
@@ -25,6 +26,9 @@ export async function run(ctx) {
   const scheduleProof = proveScheduleSemantics();
   if (scheduleProof.ok) pass('modular audio mix: schedule plan respects offsets, trims, gains, mute/solo, and room tone');
   else fail('modular audio mix schedule semantics mismatch: ' + JSON.stringify(scheduleProof));
+  const exportProof = proveExportPlanSemantics();
+  if (exportProof.ok) pass('modular audio mix: export plan provenance reads the shared timeline state');
+  else fail('modular audio mix export plan mismatch: ' + JSON.stringify(exportProof));
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
@@ -302,20 +306,46 @@ export async function run(ctx) {
   else fail('modular audio mix dropped file mismatch: ' + JSON.stringify(dropped));
 
   const mixSettings = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
-    const json = el.__mediaMixerMulti.exportSettings();
-    const parsed = JSON.parse(json);
-    return {
-      schema: parsed.schema,
-      lanes: parsed.lanes.length,
-      elements: parsed.elements.length,
-      droppedAsset: parsed.assets.some((asset) => asset.name === 'dropped-lane.wav'),
-      hasMediaBytes: /mediaBytes|dataUrl|objectUrl|blob:/.test(json),
-      hasRuntimeAnalysis: /waveformSummary|decodedBuffer|frameCache|thumbnailCache/.test(json),
-    };
+    el.querySelector('.mx-mute[aria-pressed="true"]')?.click();
+    el.querySelector('.mx-solo[aria-pressed="true"]')?.click();
+    el.querySelector('.mx-mix-btn').click();
+    return new Promise((resolve) => {
+      const started = Date.now();
+      const tick = () => {
+        const json = el.__mediaMixerMulti.exportSettings();
+        const parsed = JSON.parse(json);
+        const plan = el.__mediaMixerMulti.getLastExportPlan();
+        const done = Number(el.dataset.lastMixdownBytes || 0) > 44 || Date.now() - started > 5000;
+        if (!done) {
+          setTimeout(tick, 50);
+          return;
+        }
+        resolve({
+          schema: parsed.schema,
+          lanes: parsed.lanes.length,
+          elements: parsed.elements.length,
+          droppedAsset: parsed.assets.some((asset) => asset.name === 'dropped-lane.wav'),
+          hasMediaBytes: /mediaBytes|dataUrl|objectUrl|blob:/.test(json),
+          hasRuntimeAnalysis: /waveformSummary|decodedBuffer|frameCache|thumbnailCache/.test(json),
+          mixBytes: Number(el.dataset.lastMixdownBytes || 0),
+          planItems: plan?.provenance?.items?.length || 0,
+          scheduled: plan?.provenance?.scheduled || 0,
+          renderPath: plan?.provenance?.renderPath || '',
+          hasRoomTone: !!plan?.provenance?.items?.some((item) => item.roomTone?.kind === 'pink-noise'),
+          hasGain: !!plan?.provenance?.items?.some((item) => Number.isFinite(item.gain)),
+          lastMixdownPlanSafe: !/mediaBytes|dataUrl|objectUrl|blob:/.test(el.dataset.lastMixdownPlan || ''),
+          error: el.dataset.lastMixdownError || '',
+        });
+      };
+      tick();
+    });
   });
   if (mixSettings.schema === 'file-viewer.media-mixer.project' && mixSettings.lanes >= 3 && mixSettings.elements >= 3 && mixSettings.droppedAsset && !mixSettings.hasMediaBytes && !mixSettings.hasRuntimeAnalysis)
     pass('modular audio mix: settings export is config-only shared project state');
   else fail('modular audio mix settings export mismatch: ' + JSON.stringify(mixSettings));
+  if (mixSettings.mixBytes > 44 && mixSettings.planItems >= 3 && mixSettings.scheduled >= 3 && mixSettings.renderPath === 'browser-offline-audio' && mixSettings.hasRoomTone && mixSettings.hasGain && mixSettings.lastMixdownPlanSafe && !mixSettings.error)
+    pass('modular audio mix: browser WAV export includes shared-state provenance');
+  else fail('modular audio mix WAV export/provenance mismatch: ' + JSON.stringify(mixSettings));
 }
 
 function proveAudioCachePolicy() {
@@ -421,5 +451,47 @@ function proveScheduleSemantics() {
       && room?.delayMs === 1500
       && room?.element.audio.roomTone.kind === 'pink-noise'
       && !plan.items.some((item) => item.element.id === 'element-muted'),
+  };
+}
+
+function proveExportPlanSemantics() {
+  let project = createProjectFromAssetMetadata({
+    id: 'asset-audio',
+    name: 'voice.wav',
+    capabilities: { hasAudio: true },
+    media: { durationMs: 10000, audioSampleRate: 48000, audioChannels: 1 },
+  });
+  const elementId = project.elements[0].id;
+  const laneId = project.lanes[0].id;
+  project = moveElement(project, elementId, 1000);
+  project = trimElement(project, elementId, { sourceInMs: 250, sourceOutMs: 5250 });
+  project = updateElement(project, elementId, (item) => ({ ...item, audio: { ...item.audio, gain: 0.5, fadeInMs: 50, fadeOutMs: 75 } }));
+  project = updateLane(project, laneId, (lane) => ({ ...lane, audio: { ...lane.audio, gain: 0.5 } }));
+  const roomLane = createLane({ id: 'lane-room-export', role: 'room-tone', order: 1 });
+  project = addLane(project, roomLane);
+  project = addElement(project, createGeneratedElement({
+    id: 'element-room-export',
+    laneId: roomLane.id,
+    kind: 'pink-noise',
+    durationMs: 1000,
+    rawDurationMs: 1000,
+    startMs: 0,
+    audio: { gain: 0.25, roomTone: { kind: 'pink-noise', levelDb: -52 } },
+  }));
+  const plan = buildAudioMixExportPlan(project, { sampleRate: 48000, channels: 1 });
+  const source = plan.provenance.items.find((item) => item.elementId === elementId);
+  const room = plan.provenance.items.find((item) => item.elementId === 'element-room-export');
+  return {
+    ok: plan.canRenderInBrowser
+      && plan.itemCount === 2
+      && plan.provenance.renderPath === 'browser-offline-audio'
+      && plan.provenance.sampleRate === 48000
+      && source?.startMs === 1000
+      && source?.sourceInMs === 250
+      && source?.sourceOutMs === 5250
+      && source?.fadeInMs === 50
+      && source?.fadeOutMs === 75
+      && Math.abs((source?.gain || 0) - 0.25) < 0.0001
+      && room?.roomTone?.kind === 'pink-noise',
   };
 }

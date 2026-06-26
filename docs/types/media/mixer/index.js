@@ -10,6 +10,7 @@ export * from './mixer-interactions.js';
 export * from './mixer-context-menu.js';
 export * from './mixer-audio-cache.js';
 export * from './mixer-audio-playback.js';
+export * from './mixer-audio-export.js';
 export * from './mixer-ui.js';
 export * from './mixer-audio-listen.js';
 export * from './mixer-audio-multi.js';

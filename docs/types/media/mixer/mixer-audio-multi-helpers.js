@@ -77,6 +77,18 @@ export function isAudioFile(file) {
   return /\.(wav|wave|mp3|m4a|aac|flac|ogg|oga|opus|webm)$/i.test(file.name || '');
 }
 
+export function downloadBlob(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.append(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 0);
+}
+
 function writeAscii(view, offset, text) {
   for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
 }
