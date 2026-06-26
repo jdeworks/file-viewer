@@ -234,6 +234,27 @@ export async function run(ctx) {
   if (/base\.html/i.test(njkText)) pass('sample.njk: extends shown'); else fail('njk extends: ' + njkText.slice(0, 300));
   if (/title|content|sidebar/i.test(njkText)) pass('sample.njk: blocks listed'); else fail('njk blocks: ' + njkText.slice(0, 300));
   if (/pagination/i.test(njkText)) pass('sample.njk: macros listed'); else fail('njk macros: ' + njkText.slice(0, 300));
+  if (/template dependency|External Context Variables|setfeatured|page|posts|site/i.test(njkText)) pass('sample.njk: dependencies, set vars, and context variables shown'); else fail('njk details: ' + njkText.slice(0, 900));
+  const njkBlockHint = await page.$eval('#previewHost .njk-doc .njk-tag', (e) => e.title);
+  if (/Block supplied|parent template|inheritance/i.test(njkBlockHint)) pass('sample.njk: block hover help present'); else fail('njk block hint: ' + njkBlockHint);
+  const njkSourceOpen = await page.$eval('#previewHost .njk-doc .kf-source-details', (e) => e.open);
+  if (!njkSourceOpen) pass('sample.njk: source starts collapsed'); else fail('njk source should start collapsed');
+  await page.click('#previewHost .njk-doc .kf-source-link');
+  const njkJump = await page.$eval('#previewHost .njk-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (njkJump.open && njkJump.highlighted) pass('sample.njk: item click opens and highlights source'); else fail('njk source jump: ' + JSON.stringify(njkJump));
+  const njkBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/nunjucks/renderer.js');
+    const rendered = mod.render({ text: '{% block body %}a{% endblock %}\n{% block body %}b{% endblock %}\n{% macro card(title) %}{{ title }}{% endmacro %}\n{% macro card(text) %}{{ text }}{% endmacro %}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/duplicate block|duplicate macro/i.test(njkBad.text + njkBad.issues)) pass('sample.njk: duplicate block and macro diagnostics shown'); else fail('njk diagnostics: ' + JSON.stringify(njkBad).slice(0, 500));
 
   // ── sample.hs viewer (Haskell) ──
   await openExample('sample.hs');
