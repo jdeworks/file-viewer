@@ -66,6 +66,13 @@ export function renderStage3(ctx) {
   let lastLog = "";
   let board = null;
   let grid = null;
+  const awarded = state.achievements = state.achievements || {};
+  function award(id, title) {
+    if (awarded[id]) return;
+    awarded[id] = true;
+    achievements?.unlockAchievement?.(`stage3.${id}`, { stage: 3, title });
+    pushLog(state, `achievement — ${title}`);
+  }
 
   loadBoard();
   paintHud();
@@ -78,6 +85,7 @@ export function renderStage3(ctx) {
     board = createBoard(puzzle, state.run.marks);
     board.hintsUsed = 0;
     board.checksUsed = 0;
+    board.mistakes = 0;
     if (fresh && upgradeLevel(state, "prefetch")) { applyPrefetch(board, upgradeLevel(state, "prefetch")); state.run.marks = encodeMarks(board.marks); }
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => { board.cursor = { x, y }; applyCell(x, y, mark); } });
     gridHost.replaceChildren(grid.el);
@@ -86,7 +94,7 @@ export function renderStage3(ctx) {
 
   function applyCell(x, y, mark) {
     if (board.solved) return;
-    setCell(board, x, y, mark);
+    if (setCell(board, x, y, mark)) board.mistakes = (board.mistakes || 0) + 1; // a wrong fill
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
     if (board.solved) onSolved();
@@ -106,6 +114,12 @@ export function renderStage3(ctx) {
     state.run.marks = null;
     pushLog(state, `snapshot restored. +${reward} registers.`);
     if (state.run.solvedCount % RETAIN_EVERY === 0) { state.retained += 1; pushLog(state, "a fragment crystallized. +1 retained."); }
+    // Achievements (#18).
+    award("first_restore", "Restored your first snapshot");
+    if ((board.mistakes || 0) === 0) award("flawless", "Flawless restore — no wrong cells");
+    if (corruptionForRun(state.run) >= 4) award("deep_defrag", "Reached corruption 4");
+    if (size >= 10) award("wide_recall", "Cleared a 10×10 snapshot");
+    if (state.retained >= 5) award("retainer", "Retained 5 fragments");
     save?.();
     loadBoard();
     paintHud();
@@ -117,7 +131,7 @@ export function renderStage3(ctx) {
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = sizeForRun(state.run, state.shopUpgrades);
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}`);
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
     setText(fields.objective, board.solved
       ? "snapshot restored — drawing the next…"
@@ -206,6 +220,12 @@ export function renderStage3(ctx) {
     repaint: paintHud,
     destroy() { window.removeEventListener("keydown", onKey); root.remove(); }
   };
+}
+
+// Difficulty rating (#16) from the solver-pass count (the Leiden metric): ★ to ★★★★.
+function rating(passes) {
+  const n = Math.max(1, Math.min(4, Math.ceil((Number(passes) || 1) / 2)));
+  return "★".repeat(n) + "☆".repeat(4 - n);
 }
 
 function once(fn) {
