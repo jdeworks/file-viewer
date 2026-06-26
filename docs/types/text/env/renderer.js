@@ -1,16 +1,33 @@
 // .env file viewer — parses KEY=VALUE pairs, redacts sensitive values by default.
-// Reveal toggle is an inline script (sandbox allows-scripts is always set by iframe.js).
-// SECURITY: sensitive keys are blurred/dotted; no copy button for them.
+// SECURITY: sensitive values are never embedded in the preview DOM.
+
+import { maskedValue } from '../../../core/known-ui.js';
 
 const esc = (s) => String(s == null ? '' : s)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const SENSITIVE = /SECRET|PASSWORD|PASSWD|TOKEN|KEY|AUTH|CREDENTIAL|PRIVATE|PWD|SALT|SIGNING|MASTER|WEBHOOK/i;
+const SENSITIVE = /SECRET|PASSWORD|PASSWD|TOKEN|AUTH|CREDENTIAL|PRIVATE|PWD|SALT|SIGNING|MASTER|WEBHOOK/i;
 const NOT_SENSITIVE = /_LENGTH$|_TIMEOUT$|_COUNT$|_SIZE$|_MAX$|_MIN$|^NODE_ENV$|^PORT$|^HOST$|^DEBUG$|^LOG_LEVEL$/i;
 
-function isSensitive(key) {
+function legacySecretReason(key) {
   if (NOT_SENSITIVE.test(key)) return false;
-  return SENSITIVE.test(key);
+  return SENSITIVE.test(key) ? `masked because "${key}" matches a common secret variable name` : '';
+}
+
+function classifyValue(key, value) {
+  const shared = maskedValue(key, value);
+  if (shared.masked) return shared;
+  const legacyReason = legacySecretReason(key);
+  if (legacyReason) return { text: '********', masked: true, reason: legacyReason };
+  if (hasUrlCreds(value)) {
+    return {
+      text: redactUrlCreds(value),
+      masked: true,
+      partial: true,
+      reason: 'masked because the value contains URL credentials',
+    };
+  }
+  return { text: String(value ?? ''), masked: false, reason: '' };
 }
 
 // Credentials embedded in a connection-string value (e.g. DATABASE_URL=postgres://user:pass@host),
@@ -25,20 +42,22 @@ function parseEnv(text) {
   const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
   for (let i = 0; i < lines.length; i++) {
+    const lineNo = i + 1;
     const line = lines[i];
     const trimmed = line.trim();
 
-    if (!trimmed) { entries.push({ type: 'blank' }); continue; }
-    if (trimmed.startsWith('#')) { entries.push({ type: 'comment', text: trimmed.slice(1).trim() }); continue; }
+    if (!trimmed) { entries.push({ type: 'blank', line: lineNo, raw: line }); continue; }
+    if (trimmed.startsWith('#')) { entries.push({ type: 'comment', text: trimmed.slice(1).trim(), line: lineNo, raw: line }); continue; }
 
     // Strip 'export ' prefix
     const stripped = trimmed.replace(/^export\s+/, '');
 
     const eqIdx = stripped.indexOf('=');
-    if (eqIdx < 0) { entries.push({ type: 'raw', text: trimmed }); continue; }
+    if (eqIdx < 0) { entries.push({ type: 'raw', text: trimmed, line: lineNo, raw: line }); continue; }
 
     const key = stripped.slice(0, eqIdx).trim();
     let value = stripped.slice(eqIdx + 1);
+    let endLine = lineNo;
 
     // Handle quoted values (single or double, possibly multi-line)
     if (value.startsWith('"') || value.startsWith("'")) {
@@ -53,6 +72,7 @@ function parseEnv(text) {
         let acc = value.slice(1);
         while (++i < lines.length) {
           const nextLine = lines[i];
+          endLine = i + 1;
           const closeIdx = nextLine.indexOf(q);
           if (closeIdx >= 0) { acc += '\n' + nextLine.slice(0, closeIdx); break; }
           acc += '\n' + nextLine;
@@ -68,7 +88,7 @@ function parseEnv(text) {
       .replace(/\\"/g, '"')
       .replace(/\\\\/g, '\\');
 
-    entries.push({ type: 'pair', key, value });
+    entries.push({ type: 'pair', key, value, line: lineNo, endLine, raw: line });
   }
   return entries;
 }
@@ -77,20 +97,11 @@ function isUrl(value) {
   return /^https?:\/\/\S+$/.test(value.trim());
 }
 
-function renderValue(key, value, sensitive) {
-  if (sensitive) {
-    // Escape value for embedding in data attribute (html-encoded)
-    const escapedVal = esc(value);
-    return `<span class="env-secret-val" data-val="${escapedVal}">&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;</span>`
-      + `<button class="env-reveal-btn" onclick="envReveal(this)" aria-label="Reveal value">reveal</button>`;
-  }
-
-  // Value with embedded URL credentials — show the value with only the password masked.
-  if (hasUrlCreds(value)) {
-    const masked = esc(redactUrlCreds(value));
-    const full = esc(value);
-    return `<span class="env-secret-val env-cred-val" data-val="${full}" data-redacted="${masked}">${masked}</span>`
-      + `<button class="env-reveal-btn" onclick="envReveal(this)" aria-label="Reveal value">reveal</button>`;
+function renderValue(key, value, classified) {
+  if (classified.masked) {
+    const cls = classified.partial ? 'env-secret-val env-cred-val' : 'env-secret-val';
+    return `<span class="${cls}" title="${esc(classified.reason)}">${esc(classified.text)}</span>`
+      + `<span class="env-reason" title="${esc(classified.reason)}">${esc(classified.reason)}</span>`;
   }
 
   // NODE_ENV badge
@@ -114,12 +125,41 @@ function renderValue(key, value, sensitive) {
   return `<span class="env-val-text">${display}</span>${urlIcon}`;
 }
 
+function redactedSource(text, entries) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  for (const entry of entries) {
+    if (entry.type !== 'pair') continue;
+    const classified = classifyValue(entry.key, entry.value);
+    if (!classified.masked) continue;
+    const idx = entry.line - 1;
+    const raw = lines[idx] || '';
+    const eqIdx = raw.indexOf('=');
+    if (eqIdx >= 0) {
+      lines[idx] = raw.slice(0, eqIdx + 1) + classified.text;
+    } else {
+      lines[idx] = `${entry.key}=${classified.text}`;
+    }
+    for (let i = entry.line; i < (entry.endLine || entry.line); i++) lines[i] = '';
+  }
+  return lines;
+}
+
+function sourceHtml(lines) {
+  return `<details class="env-source-details">
+<summary>Redacted source (${lines.length} lines)</summary>
+<pre class="env-source">${lines.map((line, idx) => {
+    const lineNo = idx + 1;
+    return `<span id="env-src-${lineNo}" class="env-src-line" data-line="${lineNo}"><span class="env-src-ln">${lineNo}</span><span class="env-src-code">${esc(line)}</span></span>`;
+  }).join('')}</pre>
+</details>`;
+}
+
 export async function render(intake, _ctx) {
   const text = intake.text || '';
   const entries = parseEnv(text);
 
   const pairs = entries.filter((e) => e.type === 'pair');
-  const sensitiveCount = pairs.filter((e) => isSensitive(e.key) || hasUrlCreds(e.value)).length;
+  const sensitiveCount = pairs.filter((e) => classifyValue(e.key, e.value).masked).length;
 
   const hasSensitive = sensitiveCount > 0;
 
@@ -140,13 +180,15 @@ tbody tr { border-bottom: 1px solid #f1f5f9; }
 tbody tr:last-child { border-bottom: none; }
 tbody tr:hover { background: #f8fafc; }
 td { padding: 7px 12px; vertical-align: top; }
+td.env-line-cell { width: 1%; white-space: nowrap; color: #64748b; font-family: ui-monospace, monospace; font-size: 11px; }
 td.env-key-cell { font-family: monospace; font-size: 12px; white-space: nowrap; color: #1d4ed8; font-weight: 600; width: 1%; padding-right: 20px; }
 td.env-val-cell { font-family: monospace; font-size: 12px; word-break: break-all; }
 tr.env-comment-row td { padding: 5px 12px; font-style: italic; color: #888; background: transparent; font-family: sans-serif; font-size: 11px; }
 tr.env-comment-row td::before { content: "# "; opacity: 0.6; }
 .env-secret-val { color: #9ca3af; letter-spacing: 0.1em; user-select: none; }
-.env-reveal-btn { margin-left: 8px; padding: 1px 8px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #374151; cursor: pointer; font-family: sans-serif; }
-.env-reveal-btn:hover { background: #e5e7eb; }
+.env-reason { display: inline-block; margin-left: 8px; color: #713f12; font-family: system-ui, sans-serif; font-size: 11px; letter-spacing: 0; }
+.env-line-btn { border: 0; background: transparent; color: inherit; padding: 0; font: inherit; cursor: pointer; text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+.env-line-btn:hover { color: #1d4ed8; }
 .env-expand-btn { margin-left: 6px; padding: 1px 6px; font-size: 11px; border: 1px solid #d1d5db; border-radius: 4px; background: #f9fafb; color: #374151; cursor: pointer; font-family: sans-serif; }
 .env-expand-btn:hover { background: #e5e7eb; }
 .env-ellipsis { color: #9ca3af; }
@@ -157,10 +199,17 @@ tr.env-comment-row td::before { content: "# "; opacity: 0.6; }
 .env-url-icon { font-size: 11px; opacity: 0.6; margin-left: 4px; }
 .env-sensitive-icon { color: #9ca3af; font-size: 11px; }
 .env-empty { padding: 24px; text-align: center; color: #888; font-style: italic; }
+.env-source-details { margin-top: 14px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background: #fff; }
+.env-source-details summary { cursor: pointer; padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-weight: 600; font-size: 12px; }
+.env-source { margin: 0; max-height: 60vh; overflow: auto; font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: normal; }
+.env-src-line { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); align-items: start; }
+.env-src-line.env-source-hit { background: #fff7cc; }
+.env-src-ln { position: sticky; left: 0; text-align: right; padding: 0 10px; color: #64748b; background: #f8fafc; border-right: 1px solid #e2e8f0; user-select: none; }
+.env-src-code { white-space: pre-wrap; overflow-wrap: anywhere; padding: 0 12px; }
 body.fv-dark { background: #1e1e1e; color: #e5e7eb; }
 body.fv-dark .env-stats { background: #252a31; border-color: #3b4552; }
 body.fv-dark .env-stat-num { color: #f8fafc; }
-body.fv-dark .env-stat-label, body.fv-dark thead th, body.fv-dark tr.env-comment-row td { color: #a8b3c2; }
+body.fv-dark .env-stat-label, body.fv-dark thead th, body.fv-dark tr.env-comment-row td, body.fv-dark td.env-line-cell { color: #a8b3c2; }
 body.fv-dark .env-stat-sep { color: #5b6573; }
 body.fv-dark .env-notice { background: #3f3217; border-color: #8a6a18; color: #f8e7a1; }
 body.fv-dark table { border-color: #3b4552; }
@@ -169,23 +218,17 @@ body.fv-dark tbody tr { border-bottom-color: #2f3742; }
 body.fv-dark tbody tr:hover { background: #252a31; }
 body.fv-dark td.env-key-cell { color: #93c5fd; }
 body.fv-dark .env-secret-val, body.fv-dark .env-sensitive-icon, body.fv-dark .env-ellipsis { color: #a8b3c2; }
-body.fv-dark .env-reveal-btn, body.fv-dark .env-expand-btn { background: #252a31; border-color: #4b5563; color: #e5e7eb; }
-body.fv-dark .env-reveal-btn:hover, body.fv-dark .env-expand-btn:hover { background: #374151; }
+body.fv-dark .env-reason { color: #f8e7a1; }
+body.fv-dark .env-line-btn:hover { color: #93c5fd; }
+body.fv-dark .env-expand-btn { background: #252a31; border-color: #4b5563; color: #e5e7eb; }
+body.fv-dark .env-expand-btn:hover { background: #374151; }
+body.fv-dark .env-source-details { border-color: #3b4552; background: #1e1e1e; }
+body.fv-dark .env-source-details summary, body.fv-dark .env-src-ln { background: #252a31; border-color: #3b4552; color: #a8b3c2; }
+body.fv-dark .env-src-line.env-source-hit { background: #4b421e; }
 </style>`;
 
   const SCRIPT = `
 <script>
-function envReveal(btn) {
-  var span = btn.previousElementSibling;
-  var masked = span.dataset.redacted || '••••••••••';
-  if (span.textContent === span.dataset.val) {
-    span.textContent = masked;
-    btn.textContent = 'reveal';
-  } else {
-    span.textContent = span.dataset.val;
-    btn.textContent = 'hide';
-  }
-}
 function envExpand(btn) {
   var container = btn.parentElement;
   var isExpanded = btn.textContent === 'collapse';
@@ -201,6 +244,15 @@ function envExpand(btn) {
     btn.textContent = 'collapse';
   }
 }
+function envGoLine(line) {
+  var details = document.querySelector('.env-source-details');
+  if (details) details.open = true;
+  var row = document.getElementById('env-src-' + line);
+  if (!row) return;
+  row.classList.add('env-source-hit');
+  row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  window.setTimeout(function () { row.classList.remove('env-source-hit'); }, 1500);
+}
 </scr` + `ipt>`;
 
   // Build stats bar
@@ -210,7 +262,7 @@ function envExpand(btn) {
 </div>`;
 
   const noticeHtml = hasSensitive
-    ? `<div class="env-notice"><span class="env-notice-icon">&#x1F512;</span><span>Values matching secret patterns are hidden by default. Click <strong>reveal</strong> to show.</span></div>`
+    ? `<div class="env-notice"><span class="env-notice-icon">&#x1F512;</span><span>Secret-like values and URL credentials are redacted in the table and source preview. Hover the note beside a value for the masking reason.</span></div>`
     : '';
 
   // Build table rows
@@ -219,23 +271,24 @@ function envExpand(btn) {
     if (entry.type === 'blank') continue;
 
     if (entry.type === 'comment') {
-      rows.push(`<tr class="env-comment-row"><td colspan="3">${esc(entry.text)}</td></tr>`);
+      rows.push(`<tr class="env-comment-row"><td colspan="4">${esc(entry.text)}</td></tr>`);
       continue;
     }
 
     if (entry.type === 'raw') {
-      rows.push(`<tr><td colspan="3" style="font-family:monospace;font-size:12px;color:#888">${esc(entry.text)}</td></tr>`);
+      rows.push(`<tr><td colspan="4" style="font-family:monospace;font-size:12px;color:#888">${esc(entry.text)}</td></tr>`);
       continue;
     }
 
     if (entry.type === 'pair') {
-      const sensitive = isSensitive(entry.key);
-      const valHtml = renderValue(entry.key, entry.value, sensitive);
-      const redacted = sensitive || hasUrlCreds(entry.value);
+      const classified = classifyValue(entry.key, entry.value);
+      const valHtml = renderValue(entry.key, entry.value, classified);
+      const redacted = classified.masked;
       const sensitiveCell = redacted
-        ? `<td class="env-sensitive-icon" title="Sensitive — redacted by default">&#x1F512;</td>`
+        ? `<td class="env-sensitive-icon" title="${esc(classified.reason)}">&#x1F512;</td>`
         : `<td></td>`;
       rows.push(`<tr>
+  <td class="env-line-cell"><button class="env-line-btn" onclick="envGoLine(${entry.line})" title="Open redacted source at line ${entry.line}">${entry.line}</button></td>
   <td class="env-key-cell">${esc(entry.key)}</td>
   <td class="env-val-cell">${valHtml}</td>
   ${sensitiveCell}
@@ -251,11 +304,11 @@ function envExpand(btn) {
   }
 
   const tableHtml = `<table>
-<thead><tr><th>Key</th><th>Value</th><th></th></tr></thead>
+<thead><tr><th>Line</th><th>Key</th><th>Value</th><th></th></tr></thead>
 <tbody>${rows.join('\n')}</tbody>
 </table>`;
 
-  const bodyHtml = STYLES + SCRIPT + `\n<div class="env-doc">\n${statsHtml}${noticeHtml}${tableHtml}\n</div>`;
+  const bodyHtml = STYLES + SCRIPT + `\n<div class="env-doc">\n${statsHtml}${noticeHtml}${tableHtml}${sourceHtml(redactedSource(text, entries))}\n</div>`;
 
   return { bodyHtml, hadUnsafe: false };
 }

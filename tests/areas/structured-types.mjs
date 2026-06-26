@@ -378,7 +378,17 @@ export async function run(ctx) {
   const envf = await frameOf('iframe.fv-preview-frame');
   await envf.waitForSelector('.env-secret-val', { timeout: 8000 });
   const envText = await envf.$eval('body', (e) => e.textContent);
-  if (/sensitive \(redacted\)/i.test(envText) && !/(super_secret_password_123|sk_test_|whsec_)/.test(envText)) pass('.env preview redacts sensitive values by default'); else fail('env preview leaked or missed redaction: ' + envText.replace(/\s+/g, ' ').slice(0, 160));
+  const envHtml = await envf.$eval('body', (e) => e.innerHTML);
+  if (/sensitive \(redacted\)/i.test(envText) && /masked because/i.test(envText) && !/(super_secret_password_123|sk_test_|whsec_|REDACTED_PASSWORD)/.test(envText + envHtml)) pass('.env preview redacts sensitive values and DOM attributes'); else fail('env preview leaked or missed redaction: ' + envText.replace(/\s+/g, ' ').slice(0, 180));
+  const envSourceCollapsed = await envf.$eval('.env-source-details', (e) => !e.open && /Redacted source/.test(e.querySelector('summary')?.textContent || ''));
+  if (envSourceCollapsed) pass('.env redacted source is collapsed with a source summary'); else fail('env redacted source was not collapsed');
+  await envf.click('.env-line-btn');
+  await envf.waitForFunction(() => document.querySelector('.env-source-details')?.open, null, { timeout: 3000 });
+  const envLineLinked = await envf.$eval('.env-source-details', (e) => {
+    const firstLine = e.querySelector('#env-src-1');
+    return e.open && !!firstLine && getComputedStyle(firstLine.querySelector('.env-src-code')).whiteSpace === 'pre-wrap';
+  });
+  if (envLineLinked) pass('.env line numbers open the wrapped redacted source view'); else fail('env source line link did not open wrapped source');
   const envCentered = await envf.$eval('.env-doc', (e) => {
     const body = document.body.getBoundingClientRect();
     const doc = e.getBoundingClientRect();
