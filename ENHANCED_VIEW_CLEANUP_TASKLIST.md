@@ -114,6 +114,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Apache HTTPD config: source-linked globals/vhosts/access blocks, directive hover explanations, HTTP/TLS/proxy/directory review findings, and collapsed numbered source.
 - [x] Caddyfile: source-linked sites/directives, directive hover explanations, TLS/proxy/HSTS/directory-listing review findings, and collapsed numbered source.
 - [x] HAProxy config: source-linked globals/defaults/frontends/backends/listens, bind/backend/stats review findings, stats auth redaction, and collapsed redacted source.
+- [x] MySQL config: source-linked server/client/dump settings, directive hover explanations, bind/slow-log/dump-packet review findings, masking reasons, and collapsed redacted source.
 - [x] Nginx config: source-linked servers/listens/locations/upstreams, directive hover explanations, HTTP/default/upstream review findings, and collapsed numbered source.
 - [x] PostgreSQL config: source-linked settings, masking reasons/redacted source for sensitive key-like values, bind/SSL/WAL review findings, and collapsed redacted source.
 - [x] SSHD config: source-linked directives, hover explanations, public bind/auth review findings, and collapsed numbered source.

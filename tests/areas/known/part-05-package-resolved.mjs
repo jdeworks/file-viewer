@@ -306,6 +306,17 @@ export async function run(ctx) {
   if (/3306|127\.0\.0\.1/i.test(myText)) pass('my.cnf: [mysqld] section shown (port/bind)'); else fail('my.cnf mysqld: ' + myText.slice(0, 300));
   if (/256M|innodb_buffer_pool/i.test(myText)) pass('my.cnf: InnoDB buffer pool shown'); else fail('my.cnf innodb: ' + myText.slice(0, 300));
   if (/utf8mb4|default-character-set/i.test(myText)) pass('my.cnf: character set shown'); else fail('my.cnf charset: ' + myText.slice(0, 300));
+  if (/MySQL Review|bind scope|slow log|dump packet/i.test(myText)) pass('my.cnf: review findings shown'); else fail('my.cnf review: ' + myText.slice(0, 500));
+  const myHelpTitle = await page.$eval('#previewHost .my-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/MySQL|Open line|source/i.test(myHelpTitle)) pass('my.cnf: setting hover explains source action'); else fail('my.cnf hover title: ' + myHelpTitle);
+  const mySourceCollapsed = await page.$eval('#previewHost .my-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (mySourceCollapsed) pass('my.cnf: redacted source starts collapsed'); else fail('my.cnf source was not collapsed');
+  const mySourceLine = await page.$eval('#previewHost .my-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .my-doc .kf-source-details');
+    return details?.open && document.getElementById(`my-line-${line}`);
+  }, mySourceLine);
+  pass('my.cnf: clicking setting opens source line');
 
   // ── postgresql.conf viewer ──
   await openExample('postgresql.conf');
