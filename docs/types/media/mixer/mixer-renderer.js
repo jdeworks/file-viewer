@@ -52,7 +52,7 @@ export function renderMixerShell(root, snapshot, viewportInput = {}, options = {
   timeline.append(renderPlayhead(layout));
   body.append(timeline);
 
-  const preview = buildSeekFramePreview(snapshot, layout.viewport.cursorMs, options.previewSize);
+  const preview = buildSeekFramePreview(snapshot, layout.viewport.cursorMs, { ...options.previewSize, frames: options.visualFrames });
   const inspector = renderInspector(snapshot);
   root.append(toolbar, body);
   renderSeekFramePreview(root, preview);

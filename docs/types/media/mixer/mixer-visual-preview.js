@@ -1,6 +1,7 @@
 export function buildSeekFramePreview(snapshot = {}, cursorMs = 0, output = {}) {
   const width = Math.max(1, Number(output.width) || 320);
   const height = Math.max(1, Number(output.height) || 180);
+  const frames = output.frames || new Map();
   const active = (snapshot.elements || [])
     .filter((element) => isVisualElement(element) && isActiveAt(element, cursorMs))
     .map((element) => ({
@@ -14,12 +15,14 @@ export function buildSeekFramePreview(snapshot = {}, cursorMs = 0, output = {}) 
       startMs: element.timeline?.startMs || 0,
       endMs: (element.timeline?.startMs || 0) + (element.timeline?.placementDurationMs || element.timeline?.durationMs || 0),
       visual: normalizeVisual(element.visual),
+      frame: frameFor(frames, element),
     }));
   return {
     cursorMs,
     width,
     height,
     active,
+    frameCount: active.filter((item) => item.frame?.source).length,
     warnings: active.filter((item) => item.needsFfmpegForPreview).map((item) => `${item.label} needs ffmpeg/proxy conversion for accurate preview.`),
   };
 }
@@ -28,6 +31,7 @@ export function renderSeekFramePreview(root, preview) {
   const panel = document.createElement('section');
   panel.className = 'mmx-frame-preview';
   panel.dataset.activeVisuals = String(preview.active.length);
+  panel.dataset.frameSources = String(preview.frameCount || 0);
   panel.dataset.cursorMs = String(Math.round(preview.cursorMs));
 
   const heading = document.createElement('div');
@@ -41,7 +45,7 @@ export function renderSeekFramePreview(root, preview) {
   const status = document.createElement('div');
   status.className = 'mmx-frame-preview-status';
   status.textContent = preview.active.length
-    ? `${preview.active.length} visual element(s) at cursor`
+    ? `${preview.active.length} visual element(s) at cursor · ${preview.frameCount || 0} frame source(s)`
     : 'No active visual elements at cursor';
   if (preview.warnings.length) {
     const warn = document.createElement('div');
@@ -75,8 +79,12 @@ function drawVisualItem(ctx, canvas, item, index) {
   ctx.globalAlpha = visual.opacity;
   ctx.translate(cx, cy);
   ctx.rotate((visual.rotation * Math.PI) / 180);
-  ctx.fillStyle = item.hasVideo ? '#7a5cbd' : '#54a24b';
-  ctx.fillRect(-baseW / 2, -baseH / 2, baseW, baseH);
+  if (item.frame?.source) {
+    drawContainedFrame(ctx, item.frame.source, -baseW / 2, -baseH / 2, baseW, baseH);
+  } else {
+    ctx.fillStyle = item.hasVideo ? '#7a5cbd' : '#54a24b';
+    ctx.fillRect(-baseW / 2, -baseH / 2, baseW, baseH);
+  }
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 2;
   ctx.strokeRect(-baseW / 2, -baseH / 2, baseW, baseH);
@@ -85,6 +93,21 @@ function drawVisualItem(ctx, canvas, item, index) {
   ctx.fillText(item.hasVideo ? 'VIDEO' : 'IMAGE', -baseW / 2 + 8, -baseH / 2 + 18);
   ctx.fillText(String(index + 1), baseW / 2 - 18, baseH / 2 - 8);
   ctx.restore();
+}
+
+function drawContainedFrame(ctx, source, x, y, width, height) {
+  const sourceWidth = source.naturalWidth || source.videoWidth || source.width || width;
+  const sourceHeight = source.naturalHeight || source.videoHeight || source.height || height;
+  const scale = Math.min(width / sourceWidth, height / sourceHeight);
+  const drawW = sourceWidth * scale;
+  const drawH = sourceHeight * scale;
+  ctx.drawImage(source, x + (width - drawW) / 2, y + (height - drawH) / 2, drawW, drawH);
+}
+
+function frameFor(frames, element) {
+  if (!frames) return null;
+  if (typeof frames.get === 'function') return frames.get(element.id) || frames.get(element.assetId) || null;
+  return frames[element.id] || frames[element.assetId] || null;
 }
 
 function isVisualElement(element) {

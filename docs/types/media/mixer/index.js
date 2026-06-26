@@ -7,6 +7,7 @@ export * from './mixer-hash.js';
 export * from './mixer-hit-test.js';
 export * from './mixer-renderer.js';
 export * from './mixer-visual-preview.js';
+export * from './mixer-visual-runtime.js';
 export * from './mixer-media-drop.js';
 export * from './mixer-interactions.js';
 export * from './mixer-context-menu.js';

@@ -290,17 +290,19 @@ export async function run(ctx) {
 
   const droppedVisual = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
     const before = el.__mediaMixerMulti.getProject();
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="40"><rect width="64" height="40" fill="#54a24b"/></svg>';
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="40"><rect width="64" height="40" fill="#e91e63"/></svg>';
     const file = new File([svg], 'dropped-card.svg', { type: 'image/svg+xml' });
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
     el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
     el.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-    await new Promise((resolve) => setTimeout(resolve, 120));
+    await new Promise((resolve) => setTimeout(resolve, 180));
     const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
     const project = root.__mediaMixerMulti.getProject();
     const asset = project.assets.find((item) => item.name === 'dropped-card.svg');
     const element = project.elements.find((item) => item.assetId === asset?.id);
+    const canvas = root.querySelector('.mmx-frame-preview-canvas');
+    const pixel = canvas.getContext('2d').getImageData(Math.floor(canvas.width / 2), Math.floor(canvas.height / 2), 1, 1).data;
     return {
       beforeLanes: before.lanes.length,
       lanes: project.lanes.length,
@@ -316,10 +318,12 @@ export async function run(ctx) {
       datasetDropped: root.dataset.hasDroppedVisual,
       visualBadge: !!root.querySelector('.mmx-element-visual'),
       framePreviewActive: Number(root.querySelector('.mmx-frame-preview')?.dataset.activeVisuals || 0),
+      frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
+      centerPixel: Array.from(pixel.slice(0, 3)),
       visualInspector: !!root.querySelector('.mmx-inspector-visual-opacity'),
     };
   });
-  if (droppedVisual.lanes === droppedVisual.beforeLanes + 1 && droppedVisual.assetName === 'dropped-card.svg' && droppedVisual.laneRole === 'image' && droppedVisual.type === 'image' && droppedVisual.hasImage && !droppedVisual.hasAudio && droppedVisual.durationMs === 5000 && droppedVisual.width === 64 && droppedVisual.height === 40 && droppedVisual.metadataStatus === 'available' && droppedVisual.datasetDropped === 'true' && droppedVisual.visualBadge && droppedVisual.framePreviewActive >= 1 && droppedVisual.visualInspector)
+  if (droppedVisual.lanes === droppedVisual.beforeLanes + 1 && droppedVisual.assetName === 'dropped-card.svg' && droppedVisual.laneRole === 'image' && droppedVisual.type === 'image' && droppedVisual.hasImage && !droppedVisual.hasAudio && droppedVisual.durationMs === 5000 && droppedVisual.width === 64 && droppedVisual.height === 40 && droppedVisual.metadataStatus === 'available' && droppedVisual.datasetDropped === 'true' && droppedVisual.visualBadge && droppedVisual.framePreviewActive >= 1 && droppedVisual.frameSources >= 1 && droppedVisual.centerPixel[0] > 180 && droppedVisual.centerPixel[1] < 80 && droppedVisual.centerPixel[2] > 70 && droppedVisual.visualInspector)
     pass('modular audio mix: dropped image becomes visual shared-model lane with seek-frame preview');
   else fail('modular audio mix dropped visual mismatch: ' + JSON.stringify(droppedVisual));
 
@@ -364,6 +368,31 @@ export async function run(ctx) {
   if (mixSettings.mixBytes > 44 && mixSettings.planItems >= 3 && mixSettings.scheduled >= 3 && mixSettings.renderPath === 'browser-offline-audio' && mixSettings.hasRoomTone && mixSettings.hasGain && mixSettings.lastMixdownPlanSafe && !mixSettings.error)
     pass('modular audio mix: browser WAV export includes shared-state provenance');
   else fail('modular audio mix WAV export/provenance mismatch: ' + JSON.stringify(mixSettings));
+
+  const droppedVideo = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
+    const bytes = await (await fetch('examples/sample.webm')).arrayBuffer();
+    const file = new File([bytes], 'dropped-video.webm', { type: 'video/webm' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
+    el.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+    const project = root.__mediaMixerMulti.getProject();
+    const asset = project.assets.find((item) => item.name === 'dropped-video.webm');
+    const element = project.elements.find((item) => item.assetId === asset?.id);
+    return {
+      hasVideo: !!element?.capabilities?.hasVideo,
+      nativePreview: !asset?.capabilities?.needsFfmpegForPreview,
+      durationMs: element?.timeline?.durationMs || 0,
+      width: asset?.media?.videoWidth || 0,
+      height: asset?.media?.videoHeight || 0,
+      frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
+    };
+  });
+  if (droppedVideo.hasVideo && droppedVideo.nativePreview && droppedVideo.durationMs > 0 && droppedVideo.width > 0 && droppedVideo.height > 0 && droppedVideo.frameSources >= 2)
+    pass('modular audio mix: browser-playable dropped video samples a seek-frame preview source');
+  else fail('modular audio mix dropped video preview mismatch: ' + JSON.stringify(droppedVideo));
 
   const unsupportedVideo = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
     const file = new File([new Uint8Array([0, 1, 2, 3])], 'needs-proxy.avi', { type: 'video/x-msvideo' });

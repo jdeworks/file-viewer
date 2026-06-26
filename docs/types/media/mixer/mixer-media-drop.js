@@ -20,13 +20,18 @@ export function classifyMixerFile(file) {
   if (!file) return { kind: 'unknown', capabilities: {} };
   const mime = String(file.type || '').toLowerCase();
   const name = String(file.name || '');
-  if (/^audio\//.test(mime) || AUDIO_EXT.test(name)) return { kind: 'audio', capabilities: { hasAudio: true } };
-  if (/^image\//.test(mime) || IMAGE_EXT.test(name)) return { kind: 'image', capabilities: { hasImage: true } };
-  if (/^video\//.test(mime) || VIDEO_EXT.test(name)) {
+  if (/^video\//.test(mime)) return videoClassification(mime, name);
+  if (/^audio\//.test(mime)) return { kind: 'audio', capabilities: { hasAudio: true } };
+  if (/^image\//.test(mime)) return { kind: 'image', capabilities: { hasImage: true } };
+  if (IMAGE_EXT.test(name)) return { kind: 'image', capabilities: { hasImage: true } };
+  if (VIDEO_EXT.test(name)) return videoClassification(mime, name);
+  if (AUDIO_EXT.test(name)) return { kind: 'audio', capabilities: { hasAudio: true } };
+  return { kind: 'unknown', capabilities: {} };
+}
+
+function videoClassification(mime, name) {
     const needsFfmpegForPreview = !(/^video\/(mp4|webm|ogg|quicktime)/.test(mime) || NATIVE_VIDEO_EXT.test(name));
     return { kind: 'video', capabilities: { hasAudio: true, hasVideo: true, needsFfmpegForPreview } };
-  }
-  return { kind: 'unknown', capabilities: {} };
 }
 
 export function addDroppedMediaFile(project, file, options = {}) {

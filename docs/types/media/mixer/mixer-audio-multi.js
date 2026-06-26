@@ -44,6 +44,7 @@ import {
   isMixerDropFile,
   probeDroppedVisualMetadata,
 } from './mixer-media-drop.js';
+import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
 import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 
@@ -63,6 +64,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set('asset-listen-source', intake.file);
+  const visualRuntime = createMixerVisualRuntime({ runtimeFiles, onUpdate: render });
   const runtime = {
     ffmpegEnabled: !!options.enableFfmpeg,
     ffmpegLoaded: false,
@@ -86,7 +88,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     renderMixerShell(root, createMixerSnapshot(project), viewport, {
       minZoom: 0.02,
       maxZoom: 0.8,
+      visualFrames: visualRuntime.frames,
     });
+    visualRuntime.update(project, viewport.cursorMs);
     decorateShell();
     reflectState();
   }
@@ -258,6 +262,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       destroyed = true;
       playback.destroy();
       interactions.destroy();
+      visualRuntime.dispose();
       decodedAudioCache.releaseProject(project.project.id);
       root.removeEventListener('input', onInput);
       root.removeEventListener('click', onClick, true);
