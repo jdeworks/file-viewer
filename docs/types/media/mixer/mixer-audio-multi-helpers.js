@@ -96,11 +96,14 @@ export function updateVideoFilterEffect(element, field, value) {
     'effect-brightness': 'brightness',
     'effect-contrast': 'contrast',
     'effect-saturation': 'saturation',
+    'effect-hue': 'hue',
     'effect-blur': 'blur',
     'effect-grayscale': 'grayscale',
+    'effect-invert': 'invert',
+    'effect-sepia': 'sepia',
   }[field];
   if (!param) return element;
-  const defaults = { brightness: 0, contrast: 1, saturation: 1, blur: 0, grayscale: 0 };
+  const defaults = { brightness: 0, contrast: 1, saturation: 1, hue: 0, blur: 0, grayscale: 0, invert: 0, sepia: 0 };
   const clamped = clampEffectParam(param, value);
   let found = false;
   const effects = (element.effects || []).map((effect) => {
@@ -129,8 +132,10 @@ export function updateVideoFilterEffect(element, field, value) {
 function clampEffectParam(param, value) {
   if (param === 'brightness') return clamp(value, -1, 1);
   if (param === 'contrast' || param === 'saturation') return clamp(value, 0, 3);
+  if (param === 'hue') return clamp(value, -180, 180);
   if (param === 'blur') return clamp(value, 0, 20);
-  if (param === 'grayscale') return value >= 0.5 ? 1 : 0;
+  if (param === 'grayscale' || param === 'invert') return value >= 0.5 ? 1 : 0;
+  if (param === 'sepia') return clamp(value, 0, 1);
   return value;
 }
 

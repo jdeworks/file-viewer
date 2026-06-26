@@ -86,7 +86,7 @@ export async function run(ctx) {
       clientY: imageRect.top + imageRect.height / 2,
     }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity', '.mmx-inspector-visual-fade-in', '.mmx-inspector-visual-fade-out', '.mmx-inspector-visual-crop-x', '.mmx-inspector-visual-crop-y', '.mmx-inspector-visual-crop-width', '.mmx-inspector-visual-crop-height', '.mmx-inspector-transition-in', '.mmx-inspector-transition-kind', '.mmx-inspector-effect-brightness', '.mmx-inspector-effect-contrast', '.mmx-inspector-effect-saturation', '.mmx-inspector-effect-blur', '.mmx-inspector-effect-grayscale']
+    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity', '.mmx-inspector-visual-fade-in', '.mmx-inspector-visual-fade-out', '.mmx-inspector-visual-crop-x', '.mmx-inspector-visual-crop-y', '.mmx-inspector-visual-crop-width', '.mmx-inspector-visual-crop-height', '.mmx-inspector-transition-in', '.mmx-inspector-transition-kind', '.mmx-inspector-effect-brightness', '.mmx-inspector-effect-contrast', '.mmx-inspector-effect-saturation', '.mmx-inspector-effect-hue', '.mmx-inspector-effect-blur', '.mmx-inspector-effect-grayscale', '.mmx-inspector-effect-invert', '.mmx-inspector-effect-sepia']
       .every((selector) => !!root.querySelector(selector));
     const visualX = root.querySelector('.mmx-inspector-visual-x');
     visualX.value = '42';
@@ -121,6 +121,15 @@ export async function run(ctx) {
     const grayscale = root.querySelector('.mmx-inspector-effect-grayscale');
     grayscale.value = '1';
     grayscale.dispatchEvent(new Event('input', { bubbles: true }));
+    const hue = root.querySelector('.mmx-inspector-effect-hue');
+    hue.value = '45';
+    hue.dispatchEvent(new Event('input', { bubbles: true }));
+    const invert = root.querySelector('.mmx-inspector-effect-invert');
+    invert.value = '1';
+    invert.dispatchEvent(new Event('input', { bubbles: true }));
+    const sepia = root.querySelector('.mmx-inspector-effect-sepia');
+    sepia.value = '0.6';
+    sepia.dispatchEvent(new Event('input', { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const editedImage = controller.getProject().elements.find((item) => item.id === 'element-stage2-image');
     const editedFilter = editedImage?.effects?.find((effect) => effect.kind === 'video-filter');
@@ -154,6 +163,12 @@ export async function run(ctx) {
       transitionKind: editedTransition?.kind,
       filterBrightness: editedFilter?.params?.brightness,
       filterGrayscale: editedFilter?.params?.grayscale,
+      filterHue: editedFilter?.params?.hue,
+      filterInvert: editedFilter?.params?.invert,
+      filterSepia: editedFilter?.params?.sepia,
+      previewHue: activeAfterTransform?.filter?.hue,
+      previewInvert: activeAfterTransform?.filter?.invert,
+      previewSepia: activeAfterTransform?.filter?.sepia,
       previewX: activeAfterTransform?.visual?.x,
       previewOpacity: activeAfterTransform?.visual?.opacity,
       previewCropX: activeAfterTransform?.visual?.crop?.x,
@@ -210,7 +225,7 @@ export async function run(ctx) {
     pass('modular mixer shell: selected element inspector updates shared project state');
   else fail('modular mixer shell inspector controls did not update state: ' + JSON.stringify(result));
 
-  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.imageCropX === 0.15 && result.imageCropWidth === 0.6 && result.transitionDuration === 300 && result.transitionKind === 'wipe-left' && result.filterBrightness === 0.2 && result.filterGrayscale === 1 && result.previewX === 42 && result.previewOpacity === 0.5 && result.previewCropX === 0.15 && result.previewCropWidth === 0.6)
+  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.imageCropX === 0.15 && result.imageCropWidth === 0.6 && result.transitionDuration === 300 && result.transitionKind === 'wipe-left' && result.filterBrightness === 0.2 && result.filterGrayscale === 1 && result.filterHue === 45 && result.filterInvert === 1 && result.filterSepia === 0.6 && result.previewX === 42 && result.previewOpacity === 0.5 && result.previewCropX === 0.15 && result.previewCropWidth === 0.6 && result.previewHue === 45 && result.previewInvert === 1 && result.previewSepia === 0.6)
     pass('modular mixer shell: visual transform controls update model and seek-frame preview');
   else fail('modular mixer shell visual transform controls mismatch: ' + JSON.stringify(result));
 

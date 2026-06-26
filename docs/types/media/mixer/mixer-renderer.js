@@ -213,8 +213,11 @@ function renderElementInspectorFields(element, snapshot = {}) {
       inspectorNumber('Brightness', 'effect-brightness', element, filter.brightness, { min: -1, max: 1, step: 0.01 }),
       inspectorNumber('Contrast', 'effect-contrast', element, filter.contrast, { min: 0, max: 3, step: 0.01 }),
       inspectorNumber('Saturation', 'effect-saturation', element, filter.saturation, { min: 0, max: 3, step: 0.01 }),
+      inspectorNumber('Hue', 'effect-hue', element, filter.hue, { min: -180, max: 180, step: 1 }),
       inspectorNumber('Blur', 'effect-blur', element, filter.blur, { min: 0, max: 20, step: 0.1 }),
       inspectorNumber('Grayscale', 'effect-grayscale', element, filter.grayscale, { min: 0, max: 1, step: 1 }),
+      inspectorNumber('Invert', 'effect-invert', element, filter.invert, { min: 0, max: 1, step: 1 }),
+      inspectorNumber('Sepia', 'effect-sepia', element, filter.sepia, { min: 0, max: 1, step: 0.01 }),
     );
   }
   return group;
@@ -237,8 +240,11 @@ function videoFilterParams(element) {
     brightness: finite(params.brightness, 0),
     contrast: finite(params.contrast, 1),
     saturation: finite(params.saturation, 1),
+    hue: finite(params.hue, 0),
     blur: finite(params.blur, 0),
     grayscale: finite(params.grayscale, 0),
+    invert: finite(params.invert, 0),
+    sepia: finite(params.sepia, 0),
   };
 }
 

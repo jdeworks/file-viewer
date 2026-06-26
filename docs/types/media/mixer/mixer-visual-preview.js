@@ -15,6 +15,7 @@ export function buildSeekFramePreview(snapshot = {}, cursorMs = 0, output = {}) 
       startMs: element.timeline?.startMs || 0,
       endMs: (element.timeline?.startMs || 0) + (element.timeline?.placementDurationMs || element.timeline?.durationMs || 0),
       visual: normalizeVisual(element.visual),
+      filter: normalizeVideoFilter(element),
       frame: frameFor(frames, element),
     }));
   return {
@@ -77,6 +78,7 @@ function drawVisualItem(ctx, canvas, item, index) {
   const cy = canvas.height / 2 + visual.y;
   ctx.save();
   ctx.globalAlpha = visual.opacity;
+  ctx.filter = canvasFilter(item.filter);
   ctx.translate(cx, cy);
   ctx.rotate((visual.rotation * Math.PI) / 180);
   if (item.frame?.source) {
@@ -93,6 +95,20 @@ function drawVisualItem(ctx, canvas, item, index) {
   ctx.fillText(item.hasVideo ? 'VIDEO' : 'IMAGE', -baseW / 2 + 8, -baseH / 2 + 18);
   ctx.fillText(String(index + 1), baseW / 2 - 18, baseH / 2 - 8);
   ctx.restore();
+}
+
+function canvasFilter(filter) {
+  const parts = [];
+  if (!filter) return 'none';
+  if (filter.brightness) parts.push(`brightness(${Math.max(0, 1 + filter.brightness)})`);
+  if (filter.contrast !== 1) parts.push(`contrast(${filter.contrast})`);
+  if (filter.saturation !== 1) parts.push(`saturate(${filter.saturation})`);
+  if (filter.hue) parts.push(`hue-rotate(${filter.hue}deg)`);
+  if (filter.grayscale) parts.push('grayscale(1)');
+  if (filter.invert) parts.push('invert(1)');
+  if (filter.sepia) parts.push(`sepia(${filter.sepia})`);
+  if (filter.blur) parts.push(`blur(${filter.blur}px)`);
+  return parts.join(' ') || 'none';
 }
 
 function drawContainedFrame(ctx, source, x, y, width, height, crop = null) {
@@ -134,6 +150,21 @@ function normalizeVisual(visual = {}) {
     rotation: finite(visual.rotation, 0),
     opacity: Math.max(0, Math.min(1, finite(visual.opacity, 1))),
     crop: normalizeCrop(visual.crop),
+  };
+}
+
+function normalizeVideoFilter(element) {
+  const effect = (element.effects || []).find((item) => item.kind === 'video-filter' && item.enabled !== false);
+  const params = effect?.params || {};
+  return {
+    brightness: Math.max(-1, Math.min(1, finite(params.brightness, 0))),
+    contrast: Math.max(0, Math.min(3, finite(params.contrast, 1))),
+    saturation: Math.max(0, Math.min(3, finite(params.saturation, 1))),
+    hue: Math.max(-180, Math.min(180, finite(params.hue, 0))),
+    blur: Math.max(0, Math.min(20, finite(params.blur, 0))),
+    grayscale: finite(params.grayscale, 0) >= 0.5 ? 1 : 0,
+    invert: finite(params.invert, 0) >= 0.5 ? 1 : 0,
+    sepia: Math.max(0, Math.min(1, finite(params.sepia, 0))),
   };
 }
 

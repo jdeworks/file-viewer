@@ -545,6 +545,12 @@ Stage 7 project settings import/export UI has started:
 - Split final video export status rendering into `mixer-video-export-ui.js` so
   audio Mix and video Timeline share the same Media Transcoding opt-in,
   hard-block, and run-button gating semantics.
+- Expanded shared visual filter effects beyond the first pass. Selected visual
+  elements now expose hue rotation, invert, and sepia controls beside
+  brightness/contrast/saturation/blur/grayscale; the shared model stores those
+  params as config-safe `video-filter` state, seek-frame preview carries the
+  same filter values for orientation, and final video export emits matching
+  ffmpeg `hue`, `negate`, and interpolated `colorchannelmixer` filters.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

@@ -413,8 +413,11 @@ function videoFilterParams(element) {
     brightness: finite(params.brightness, 0),
     contrast: finite(params.contrast, 1),
     saturation: finite(params.saturation, 1),
+    hue: finite(params.hue, 0),
     blur: finite(params.blur, 0),
     grayscale: finite(params.grayscale, 0),
+    invert: finite(params.invert, 0),
+    sepia: finite(params.sepia, 0),
   };
 }
 
@@ -423,14 +426,31 @@ function videoFilterChain(filter) {
   const brightness = Math.max(-1, Math.min(1, finite(filter.brightness, 0)));
   const contrast = Math.max(0, Math.min(3, finite(filter.contrast, 1)));
   const saturation = Math.max(0, Math.min(3, finite(filter.saturation, 1)));
+  const hue = Math.max(-180, Math.min(180, finite(filter.hue, 0)));
   const blur = Math.max(0, Math.min(20, finite(filter.blur, 0)));
   const grayscale = finite(filter.grayscale, 0) >= 0.5;
+  const invert = finite(filter.invert, 0) >= 0.5;
+  const sepia = Math.max(0, Math.min(1, finite(filter.sepia, 0)));
   if (brightness || contrast !== 1 || saturation !== 1) {
     out.push(`eq=brightness=${round(brightness)}:contrast=${round(contrast)}:saturation=${round(saturation)}`);
   }
+  if (hue) out.push(`hue=h=${round(hue)}`);
   if (grayscale) out.push('hue=s=0');
+  if (invert) out.push('negate');
+  if (sepia) out.push(sepiaFilter(sepia));
   if (blur) out.push(`boxblur=${round(blur)}:1`);
   return out;
+}
+
+function sepiaFilter(amount) {
+  const s = Math.max(0, Math.min(1, finite(amount, 0)));
+  const mix = (identity, target) => round(identity + (target - identity) * s);
+  return [
+    'colorchannelmixer=',
+    mix(1, 0.393), ':', mix(0, 0.769), ':', mix(0, 0.189), ':0:',
+    mix(0, 0.349), ':', mix(1, 0.686), ':', mix(0, 0.168), ':0:',
+    mix(0, 0.272), ':', mix(0, 0.534), ':', mix(1, 0.131), ':0:0:0:0:1',
+  ].join('');
 }
 
 function audioFilterChain({ element }, input) {

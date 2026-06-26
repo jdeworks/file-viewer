@@ -195,9 +195,10 @@ records now live in the shared project model, can be edited from the selected
 visual-element inspector, and export as dissolve alpha fades or wipe-left
 overlay expressions with config-only provenance. Normalized source crop
 rectangles now also flow through the shared inspector, seek-frame preview, and
-ffmpeg export chain. The next work is expanding
-transition/effect coverage beyond those initial controls and hardening long or
-complex client-side renders.
+ffmpeg export chain. Visual filter coverage now also includes hue rotation,
+invert, and sepia in the same shared inspector/model/preview/export path. The
+next work is expanding transition/effect coverage beyond those controls and
+continuing to harden long or complex client-side renders.
 
 Stage 8 has started for Compare. Audio and video Compare now mount only the
 modular shared-model surface as the default/final UI; the old `compare-ui*`

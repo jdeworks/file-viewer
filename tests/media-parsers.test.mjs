@@ -365,7 +365,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
         id: 'effect-video-filter-a',
         kind: 'video-filter',
         enabled: true,
-        params: { brightness: 0.12, contrast: 1.2, saturation: 0.8, grayscale: 1, blur: 2.5 },
+        params: { brightness: 0.12, contrast: 1.2, saturation: 0.8, hue: 30, grayscale: 1, invert: 1, sepia: 0.5, blur: 2.5 },
       }],
     })),
   };
@@ -405,7 +405,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.ok(filterGraph.includes('[0:v]trim=start=0.2:duration=1,setpts=PTS-STARTPTS,crop=iw*0.8:ih*0.7:iw*0.1:ih*0.2,scale=iw*1.25:ih*1.1,rotate=1.5708'), 'modular video mix export: applies trim, crop, scale, and rotation to visual input');
   assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: applies visual opacity');
   assert.ok(filterGraph.includes('fade=t=in:st=0:d=0.1:alpha=1,fade=t=out:st=0.7:d=0.3:alpha=1'), 'modular video mix export: applies visual alpha fades');
-  assert.ok(filterGraph.includes('eq=brightness=0.12:contrast=1.2:saturation=0.8,hue=s=0,boxblur=2.5:1'), 'modular video mix export: applies video filter effects');
+  assert.ok(filterGraph.includes('eq=brightness=0.12:contrast=1.2:saturation=0.8,hue=h=30,hue=s=0,negate,colorchannelmixer=0.6965:0.3845:0.0945:0:0.1745:0.843:0.084:0:0.136:0.267:0.5655:0:0:0:0:1,boxblur=2.5:1'), 'modular video mix export: applies video filter effects');
   assert.ok(filterGraph.includes("overlay=x=(W-w)/2+10:y=(H-h)/2-5:enable='between(t,0.5,1.5)'"), 'modular video mix export: overlays first visual at timeline position');
   assert.ok(filterGraph.includes('[1:v]trim=start=0:duration=1.5,setpts=PTS-STARTPTS,scale=iw*0.8:ih*0.8'), 'modular video mix export: includes second visual layer');
   assert.ok(filterGraph.includes("overlay=x=if(lt(t\\,1)\\,-w+((W-w)/2-20+w)*((t-0.75)/0.25)\\,(W-w)/2-20):y=(H-h)/2+12:enable='between(t,0.75,2.25)'"), 'modular video mix export: applies wipe-left visual transition expression');
