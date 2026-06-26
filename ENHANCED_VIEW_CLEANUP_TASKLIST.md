@@ -97,6 +97,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [ ] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
 - [ ] Render CI job dependency graphs from `needs`/workflow equivalents.
 - [ ] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
+- [x] Kubernetes generic manifest: source-linked container/resource review, mutable images, privileged containers, host namespace/hostPort exposure, missing healthchecks, and secret-like env masking.
 - [ ] Add warnings for privileged mode, host network/PID, Docker socket mounts, `:latest`, public binds, missing healthchecks.
 - [ ] Credentials/env: `.env`, AWS credentials, GCP service account, kubeconfig, appsettings, INI self-hosted configs.
 - [ ] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.

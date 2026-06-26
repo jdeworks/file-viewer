@@ -201,6 +201,27 @@ export async function run(ctx) {
   if (/Kubernetes/i.test(k8sText)) pass('Kubernetes: badge shown'); else fail('k8s badge: ' + k8sText.slice(0, 200));
   if (/Deployment/i.test(k8sText)) pass('Kubernetes: kind shown'); else fail('k8s kind: ' + k8sText.slice(0, 200));
   if (/web-app|production/i.test(k8sText)) pass('Kubernetes: name/namespace shown'); else fail('k8s meta: ' + k8sText.slice(0, 200));
+  if (/Containers|nginx:1\.25-alpine|Workload Review|missing healthcheck/i.test(k8sText)) pass('Kubernetes: containers and workload review shown'); else fail('k8s review: ' + k8sText.slice(0, 900));
+  const k8sSourceOpen = await page.$eval('#previewHost .k8s-doc .kf-source-details', (e) => e.open);
+  if (!k8sSourceOpen) pass('Kubernetes: source starts collapsed'); else fail('Kubernetes source should start collapsed');
+  await page.click('#previewHost .k8s-doc .k8s-list .kf-source-link');
+  const k8sJump = await page.$eval('#previewHost .k8s-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (k8sJump.open && k8sJump.highlighted) pass('Kubernetes: item click opens and highlights source'); else fail('k8s source jump: ' + JSON.stringify(k8sJump));
+  const k8sBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/yaml/known/k8s-manifest/renderer.js');
+    const text = 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: risky-pod\nspec:\n  hostNetwork: true\n  hostPID: true\n  containers:\n    - name: app\n      image: nginx:latest\n      ports:\n        - containerPort: 80\n          hostPort: 8080\n      securityContext:\n        privileged: true\n        allowPrivilegeEscalation: true\n      env:\n        - name: DB_PASSWORD\n          value: super-secret';
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/mutable image|privileged|privilege escalation|public bind|hostNetwork|hostPID|missing healthcheck|secret env|DB_PASSWORD|\\*\\*\\*\\*\\*\\*\\*\\*/i.test(k8sBad.out + k8sBad.issues) && !/super-secret/.test(k8sBad.out) && !k8sBad.open) pass('Kubernetes: workload risks and secret masking shown'); else fail('k8s synthetic diagnostics: ' + JSON.stringify(k8sBad).slice(0, 1000));
 
   // ── Kubernetes RBAC viewer ──
   await openExample('k8s-role.yaml');
