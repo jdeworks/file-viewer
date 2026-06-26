@@ -66,7 +66,7 @@ These already extract symbols but leave too much user value on the table.
 - [x] `odin-lang`: proc signatures, calling convention hover help, compile-time `when` locations.
 - [x] `pony-lang`: receiver/capability metadata, actor/behaviour explanations, type-owned API grouping.
 - [x] `solidity-lang`: ABI-like signatures, NatSpec docs, payable/external/selfdestruct explanations, event/error params.
-- [ ] `kotlin-lang`: KDoc, params/returns, annotation hover help, line-linked outline.
+- [x] `kotlin-lang`: KDoc, params/returns, annotation hover help, line-linked outline.
 - [ ] `dart-lang`: methods/functions, Dartdoc, Flutter/package import explanations, folded classes.
 - [ ] `php-lang`: PHPDoc, params/return types, class/member nesting, include/namespace explanations.
 

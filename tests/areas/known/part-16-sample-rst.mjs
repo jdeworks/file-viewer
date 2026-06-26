@@ -212,6 +212,18 @@ export async function run(ctx) {
   if (/com\.example\.demo/.test(ktText)) pass('sample.kt: package shown'); else fail('kt package: ' + ktText.slice(0, 300));
   if (/Point|Circle|MathUtils/i.test(ktText)) pass('sample.kt: types listed'); else fail('kt types: ' + ktText.slice(0, 300));
   if (/distanceBetween|fetchPoints|main/i.test(ktText)) pass('sample.kt: functions listed'); else fail('kt functions: ' + ktText.slice(0, 300));
+  if (/returns Double|receiver Circle|a: Point|constructor param|suspend/i.test(ktText)) pass('sample.kt: signatures, params, and coroutine details shown'); else fail('kt details: ' + ktText.slice(0, 900));
+  if (!/area.*in MathUtils/is.test(ktText)) pass('sample.kt: top-level extension is not attached to object owner'); else fail('kt extension owner: ' + ktText.slice(0, 900));
+  const ktSuspendHint = await page.$eval('#previewHost .kt-doc .kt-tag-suspend', (e) => e.title);
+  if (/coroutine|suspend/i.test(ktSuspendHint)) pass('sample.kt: suspend hover help present'); else fail('kt suspend hint: ' + ktSuspendHint);
+  const ktSourceOpen = await page.$eval('#previewHost .kt-doc .kf-source-details', (e) => e.open);
+  if (!ktSourceOpen) pass('sample.kt: source starts collapsed'); else fail('kt source should start collapsed');
+  await page.click('#previewHost .kt-doc .kf-source-link');
+  const ktJump = await page.$eval('#previewHost .kt-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (ktJump.open && ktJump.highlighted) pass('sample.kt: item click opens and highlights source'); else fail('kt source jump: ' + JSON.stringify(ktJump));
 
   // ── sample.scala viewer (Scala) ──
   await openExample('sample.scala');
