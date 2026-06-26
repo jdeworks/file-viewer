@@ -3,7 +3,15 @@
 // Deterministic — seeds derive from runCount, NEVER Date.now() (the old v1 bug). The boss keeps its
 // memoryPair for now (reworked to a seeded diff key in a later increment).
 
-const DEFAULT_PIECES = ["<sec", "ret", "key>"];
+import { makeRng } from "./rng.js";
+
+// The boss restoration key is SEED-DERIVED per run (not a static password), so its value lives only
+// in the diff of the two memory logs — the player must actually read it. Three short base-36 chunks.
+export function makePieces(runCount) {
+  const rng = makeRng(`s3-pieces:${runCount}`);
+  const tok = () => Math.floor(rng.float() * 46655).toString(36).padStart(3, "0"); // 3 chars, 0..zzz
+  return [tok(), tok(), tok()];
+}
 
 export function defaultState() {
   return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
@@ -12,6 +20,7 @@ export function defaultState() {
 // Build a state around persistent meta (registers/retained/shop/runCount), drawing a fresh run.
 function freshFrom(meta) {
   const runCount = Number(meta.runCount || 0);
+  const pieces = makePieces(runCount);
   return {
     version: 2,
     registers: Number(meta.registers || 0),
@@ -19,7 +28,7 @@ function freshFrom(meta) {
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
     run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
-    memoryPair: { runId: `mem-${runCount}`, pieces: [...DEFAULT_PIECES], key: DEFAULT_PIECES.join("") },
+    memoryPair: { runId: `mem-${runCount}`, pieces, key: pieces.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
   };
@@ -44,7 +53,7 @@ export function normalizeState(state) {
   state.run = { ...fresh.run, ...(state.run && typeof state.run === "object" ? state.run : {}) };
   state.memoryPair = { ...fresh.memoryPair, ...(state.memoryPair || {}) };
   state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length
-    ? state.memoryPair.pieces.map(String) : [...DEFAULT_PIECES];
+    ? state.memoryPair.pieces.map(String) : makePieces(state.runCount);
   state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
   state.boss = { ...fresh.boss, ...(state.boss || {}) };
   state.log = Array.isArray(state.log) ? state.log : [...fresh.log];

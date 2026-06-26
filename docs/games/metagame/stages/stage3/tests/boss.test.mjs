@@ -18,13 +18,17 @@ const lockedActions = { hasAction: () => false, setAction() {} };
 }
 
 {
+  // The key is SEED-DERIVED (3 chunks), carried by v1 and stripped from v2 — recoverable only by
+  // diffing the two logs.
   const state = defaultState({ now: 1234 });
   const key = diffKeyFromState(state);
-  assert.equal(key, '<secretkey>');
-  assert(memoryV1Text(state).includes('<sec'));
-  assert(memoryV1Text(state).includes('ret'));
-  assert(memoryV1Text(state).includes('key>'));
-  assert(!memoryV2Text(state).includes('<sec'));
+  const [a, b, c] = state.memoryPair.pieces;
+  assert.equal(key, a + b + c);
+  assert.equal(key.length, 9);
+  const v1 = memoryV1Text(state);
+  assert(v1.includes(a) && v1.includes(b) && v1.includes(c), 'v1 carries the chunks');
+  const v2 = memoryV2Text(state);
+  assert(v2.includes('[missing]') && !v2.includes(a), 'v2 strips the chunks');
 }
 
 {
@@ -35,7 +39,7 @@ const lockedActions = { hasAction: () => false, setAction() {} };
     actions: { setAction: (...args) => actions.push(args) },
     achievements: { unlockAchievement() {} },
     bell: { showBell() {} },
-    input: '<secretkey>',
+    input: diffKeyFromState(state), // the recovered key
   });
   assert.equal(result.ok, true);
   assert.equal(state.boss.unlocked, true);

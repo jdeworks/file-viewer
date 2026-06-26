@@ -26,23 +26,27 @@ var lockedHintLadder = [
 ];
 
 // ../../docs/games/metagame/stages/stage3/content.js
+function pieces(state) {
+  return Array.isArray(state?.memoryPair?.pieces) ? state.memoryPair.pieces : ["", "", ""];
+}
 function memoryV1Text(state) {
   const id = state.memoryPair.runId;
+  const [a, b, c] = pieces(state);
   return [
-    `MEMORY SNAPSHOT ${id} / v1`,
+    `MEMORY SNAPSHOT ${id} / v1 (backup)`,
     "sector 01: retained visual boundary",
-    "sector 02: restoration chunk <sec",
+    `sector 02: restoration chunk ${a}`,
     "sector 03: child process @ still moving",
-    "sector 04: restoration chunk ret",
+    `sector 04: restoration chunk ${b}`,
     "sector 05: registers stable",
-    "sector 06: restoration chunk key>",
+    `sector 06: restoration chunk ${c}`,
     "sector 07: leak not yet visible"
   ].join("\n");
 }
 function memoryV2Text(state) {
   const id = state.memoryPair.runId;
   return [
-    `MEMORY SNAPSHOT ${id} / v2`,
+    `MEMORY SNAPSHOT ${id} / v2 (corrupted)`,
     "sector 01: retained visual boundary",
     "sector 02: restoration chunk [missing]",
     "sector 03: child process @ still moving",
@@ -53,7 +57,7 @@ function memoryV2Text(state) {
   ].join("\n");
 }
 function diffKeyFromState(state) {
-  return state.memoryPair.pieces.join("");
+  return pieces(state).join("");
 }
 
 // ../../docs/games/metagame/stages/stage3/boss.js
@@ -813,12 +817,17 @@ function once(fn) {
 }
 
 // ../../docs/games/metagame/stages/stage3/state.js
-var DEFAULT_PIECES = ["<sec", "ret", "key>"];
+function makePieces(runCount) {
+  const rng = makeRng(`s3-pieces:${runCount}`);
+  const tok = () => Math.floor(rng.float() * 46655).toString(36).padStart(3, "0");
+  return [tok(), tok(), tok()];
+}
 function defaultState() {
   return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
 }
 function freshFrom(meta) {
   const runCount = Number(meta.runCount || 0);
+  const pieces2 = makePieces(runCount);
   return {
     version: 2,
     registers: Number(meta.registers || 0),
@@ -826,7 +835,7 @@ function freshFrom(meta) {
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
     run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
-    memoryPair: { runId: `mem-${runCount}`, pieces: [...DEFAULT_PIECES], key: DEFAULT_PIECES.join("") },
+    memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, key: pieces2.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
   };
@@ -847,7 +856,7 @@ function normalizeState(state) {
   state.runCount = Number.isFinite(state.runCount) ? state.runCount : 0;
   state.run = { ...fresh.run, ...state.run && typeof state.run === "object" ? state.run : {} };
   state.memoryPair = { ...fresh.memoryPair, ...state.memoryPair || {} };
-  state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length ? state.memoryPair.pieces.map(String) : [...DEFAULT_PIECES];
+  state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length ? state.memoryPair.pieces.map(String) : makePieces(state.runCount);
   state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
   state.boss = { ...fresh.boss, ...state.boss || {} };
   state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
