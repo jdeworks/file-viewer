@@ -170,6 +170,19 @@
   pointer-events: none;
 }
 
+.mmx-element-visual {
+  position: absolute;
+  inset: 6px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #fff 48%, transparent);
+  background: color-mix(in srgb, #54a24b 34%, transparent);
+  font-size: 11px;
+  color: inherit;
+  opacity: 0.75;
+  pointer-events: none;
+}
+
 .mmx-element-title,
 .mmx-element-meta {
   position: relative;
@@ -248,6 +261,34 @@
   height: 28px;
   box-sizing: border-box;
   color: inherit;
+}
+
+.mmx-frame-preview {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--mmx-border);
+  border-radius: 8px;
+}
+
+.mmx-frame-preview-heading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--mmx-muted);
+}
+
+.mmx-frame-preview-canvas {
+  width: min(100%, 320px);
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  background: #111827;
+}
+
+.mmx-frame-preview-status,
+.mmx-frame-preview-warning {
+  font-size: 12px;
+  color: var(--mmx-muted);
 }
 
 .mmx-audio-listen .media-waveform-surface {

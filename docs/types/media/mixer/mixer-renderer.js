@@ -1,5 +1,6 @@
 import { buildMixerLayout, MIXER_LAYOUT, timeMsToX } from './mixer-hit-test.js';
 import { drawWaveformSummary } from '../waveform-data.js';
+import { buildSeekFramePreview, renderSeekFramePreview } from './mixer-visual-preview.js';
 
 export function createMixerSnapshot(project = {}) {
   const lanes = (project.lanes || []).slice().sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -51,8 +52,11 @@ export function renderMixerShell(root, snapshot, viewportInput = {}, options = {
   timeline.append(renderPlayhead(layout));
   body.append(timeline);
 
+  const preview = buildSeekFramePreview(snapshot, layout.viewport.cursorMs, options.previewSize);
   const inspector = renderInspector(snapshot);
-  root.append(toolbar, body, inspector);
+  root.append(toolbar, body);
+  renderSeekFramePreview(root, preview);
+  root.append(inspector);
   drawElementWaveforms(root, snapshot, options);
   return {
     layout,
@@ -112,6 +116,9 @@ function renderLaneStack(snapshot, layout) {
       canvas.className = 'mmx-element-waveform';
       canvas.dataset.elementId = rect.elementId;
       children.unshift(canvas);
+    }
+    if (element?.capabilities?.hasVideo || element?.capabilities?.hasImage) {
+      children.unshift(renderVisualBadge(element));
     }
     const block = el('button', 'mmx-element', children);
     block.type = 'button';
@@ -177,7 +184,23 @@ function renderElementInspectorFields(element) {
     inspectorNumber('Fade in', 'fade-in', element, element.audio?.fadeInMs ?? 0, { min: 0, step: 5 }),
     inspectorNumber('Fade out', 'fade-out', element, element.audio?.fadeOutMs ?? 0, { min: 0, step: 5 }),
   );
+  if (element.capabilities?.hasVideo || element.capabilities?.hasImage) {
+    group.append(
+      inspectorNumber('X', 'visual-x', element, element.visual?.x ?? 0, { step: 1 }),
+      inspectorNumber('Y', 'visual-y', element, element.visual?.y ?? 0, { step: 1 }),
+      inspectorNumber('Scale X', 'visual-scale-x', element, element.visual?.scaleX ?? 1, { min: 0.01, step: 0.01 }),
+      inspectorNumber('Scale Y', 'visual-scale-y', element, element.visual?.scaleY ?? 1, { min: 0.01, step: 0.01 }),
+      inspectorNumber('Rotate', 'visual-rotation', element, element.visual?.rotation ?? 0, { step: 1 }),
+      inspectorNumber('Opacity', 'visual-opacity', element, element.visual?.opacity ?? 1, { min: 0, max: 1, step: 0.01 }),
+    );
+  }
   return group;
+}
+
+function renderVisualBadge(element) {
+  const badge = el('span', 'mmx-element-visual', [element.capabilities?.hasVideo ? 'Video frame' : 'Image frame']);
+  badge.dataset.opacity = String(element.visual?.opacity ?? 1);
+  return badge;
 }
 
 function inspectorNumber(labelText, field, element, value, attrs = {}) {

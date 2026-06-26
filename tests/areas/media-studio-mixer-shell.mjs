@@ -3,6 +3,18 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   const result = await page.evaluate(async () => {
     const mod = await import('/types/media/mixer/index.js');
+    const previewProof = (() => {
+      const project = mod.createFakeMixerProject();
+      const snapshot = mod.createMixerSnapshot(project);
+      const before = mod.buildSeekFramePreview(snapshot, 0);
+      const active = mod.buildSeekFramePreview(snapshot, 3000);
+      return {
+        inactive: before.active.length,
+        active: active.active.length,
+        hasImage: active.active.some((item) => item.hasImage && item.elementId === 'element-stage2-image'),
+        opacity: active.active.find((item) => item.elementId === 'element-stage2-image')?.visual.opacity,
+      };
+    })();
     const host = document.querySelector('#previewHost');
     host.replaceChildren();
     const root = document.createElement('section');
@@ -23,6 +35,9 @@ export async function run(ctx) {
       elements: root.querySelectorAll('.mmx-element').length,
       waveformCanvases: root.querySelectorAll('.mmx-element-waveform').length,
       waveformPainted: canvasHasPaint(root.querySelector('.mmx-element-waveform')),
+      visualBadges: root.querySelectorAll('.mmx-element-visual').length,
+      framePreview: !!root.querySelector('.mmx-frame-preview'),
+      framePreviewActive: Number(root.querySelector('.mmx-frame-preview')?.dataset.activeVisuals || 0),
       inspector: !!root.querySelector('.mmx-inspector'),
       selectedId: root.querySelector('.mmx-inspector')?.dataset.selectedId || '',
       zoom: Number(shell.dataset.zoom),
@@ -60,6 +75,31 @@ export async function run(ctx) {
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const selectedGain = controller.getProject().elements.find((item) => item.id === selectedAfterElement)?.audio?.gain;
 
+    controller.dispatch({ type: 'seek', cursorMs: 3000 });
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const activeVisualsAtCursor = Number(root.querySelector('.mmx-frame-preview')?.dataset.activeVisuals || 0);
+    const imageElement = root.querySelector('[data-element-id="element-stage2-image"]');
+    const imageRect = imageElement.getBoundingClientRect();
+    imageElement.dispatchEvent(new MouseEvent('click', {
+      bubbles: true,
+      clientX: imageRect.left + imageRect.width / 2,
+      clientY: imageRect.top + imageRect.height / 2,
+    }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity']
+      .every((selector) => !!root.querySelector(selector));
+    const visualX = root.querySelector('.mmx-inspector-visual-x');
+    visualX.value = '42';
+    visualX.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const visualOpacity = root.querySelector('.mmx-inspector-visual-opacity');
+    visualOpacity.value = '0.5';
+    visualOpacity.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const editedImage = controller.getProject().elements.find((item) => item.id === 'element-stage2-image');
+    const activeAfterTransform = mod.buildSeekFramePreview(controller.getSnapshot(), 3000).active
+      .find((item) => item.elementId === 'element-stage2-image');
+
     controller.dispatch({ type: 'zoom', pxPerMs: 0.3 });
     await new Promise((resolve) => requestAnimationFrame(resolve));
     controller.dispatch({ type: 'pan', scrollLeft: 120 });
@@ -75,8 +115,15 @@ export async function run(ctx) {
       selectedAfterElement,
       inspectorFields,
       selectedGain,
+      activeVisualsAtCursor,
+      visualFields,
+      imageX: editedImage?.visual?.x,
+      imageOpacity: editedImage?.visual?.opacity,
+      previewX: activeAfterTransform?.visual?.x,
+      previewOpacity: activeAfterTransform?.visual?.opacity,
       scrollAfterPan,
       destroyed,
+      previewProof,
     };
 
     function canvasHasPaint(canvas) {
@@ -102,6 +149,14 @@ export async function run(ctx) {
     pass('modular mixer shell: audio-capable element paints waveform canvas');
   else fail('modular mixer shell waveform did not paint: ' + JSON.stringify(result.initial));
 
+  if (result.previewProof.inactive === 0 && result.previewProof.active === 1 && result.previewProof.hasImage && result.previewProof.opacity === 0.85)
+    pass('modular mixer shell: seek-frame preview model finds active visual elements');
+  else fail('modular mixer shell preview model mismatch: ' + JSON.stringify(result.previewProof));
+
+  if (result.initial.visualBadges >= 1 && result.initial.framePreview && result.initial.framePreviewActive === 0 && result.activeVisualsAtCursor >= 1)
+    pass('modular mixer shell: visual placeholders and frame preview render from cursor');
+  else fail('modular mixer shell visual preview missing: ' + JSON.stringify(result));
+
   if (result.zoomed > result.initial.zoom) pass('modular mixer shell: zoom changes timeline scale');
   else fail('modular mixer shell zoom did not increase: ' + JSON.stringify({ before: result.initial.zoom, after: result.zoomed }));
 
@@ -117,6 +172,10 @@ export async function run(ctx) {
   if (result.inspectorFields && result.selectedGain === 0.66)
     pass('modular mixer shell: selected element inspector updates shared project state');
   else fail('modular mixer shell inspector controls did not update state: ' + JSON.stringify(result));
+
+  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.previewX === 42 && result.previewOpacity === 0.5)
+    pass('modular mixer shell: visual transform controls update model and seek-frame preview');
+  else fail('modular mixer shell visual transform controls mismatch: ' + JSON.stringify(result));
 
   if (result.destroyed) pass('modular mixer shell: destroy clears mounted DOM');
   else fail('modular mixer shell destroy left DOM mounted');

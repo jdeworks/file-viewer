@@ -46,7 +46,7 @@ Reference alignment:
 
 ### R0a — Modular Media Mixer Foundation
 
-Status: Stage 3 direct shared-renderer Listen implemented.
+Status: Stage 5 video/image seek-frame preview started.
 
 The next media-studio foundation is a modular, capability-gated media
 mixer/editor, not a narrow replacement of the current audio Listen lane. The
@@ -122,6 +122,17 @@ trims, fades, gains, EQ preset ids, room tone, render path, scheduled/skipped
 counts, and warnings without serializing media bytes. Stage 4 audio is complete
 for the accepted browser-feasible scope; the next foundation stage is video/image
 elements and seek-frame preview.
+
+Stage 5 has started with a shared seek-frame preview slice. The modular mixer
+now derives active image/video-capable elements at the current cursor from the
+same project snapshot as the timeline, renders a bounded orientation canvas, and
+exposes selected-element visual transform controls for position, scale,
+rotation, and opacity. This preview is deliberately lighter than realtime video
+playback; it gives enough frame-context grammar to place images/video elements
+while preserving client-side memory constraints. Remaining Stage 5 work is
+visual file intake/drop, thumbnails or metadata-backed frame availability,
+coherent reduced-mode warnings when ffmpeg/video decode is unavailable, and then
+Compare on top of the same selected-object model.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

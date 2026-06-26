@@ -140,7 +140,10 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     canvasPointer.moved = true;
     const a = canvasClientXToSourceSec(canvasPointer.startX);
     const b = canvasClientXToSourceSec(event.clientX);
-    updateTrimRange(Math.min(a, b), Math.max(a, b));
+    const start = Math.min(a, b);
+    const end = Math.max(a, b);
+    updateTrimRange(start, end);
+    if (onRegionSelect && end > start) onRegionSelect({ start, end });
     render();
     event.preventDefault();
     event.stopPropagation();

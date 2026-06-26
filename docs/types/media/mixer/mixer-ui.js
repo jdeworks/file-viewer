@@ -162,6 +162,24 @@ function updateProjectElementField(project, action) {
       audio: { ...element.audio, fadeOutMs: Math.max(0, value) },
     }));
   }
+  if (action.field?.startsWith('visual-')) {
+    const visualField = {
+      'visual-x': 'x',
+      'visual-y': 'y',
+      'visual-scale-x': 'scaleX',
+      'visual-scale-y': 'scaleY',
+      'visual-rotation': 'rotation',
+      'visual-opacity': 'opacity',
+    }[action.field];
+    if (!visualField) return project;
+    return updateElement(project, elementId, (element) => ({
+      ...element,
+      visual: {
+        ...element.visual,
+        [visualField]: visualField === 'opacity' ? Math.max(0, Math.min(1, value)) : value,
+      },
+    }));
+  }
   return project;
 }
 

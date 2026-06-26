@@ -76,7 +76,7 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ### A0 — Modular Media Mixer Source Of Truth
 
-Status: Stage 3 direct shared-renderer Listen implemented.
+Status: Stage 5 video/image seek-frame preview started.
 
 The active design target has moved from a narrow audio-only lane redesign to a
 general modular media mixer/editor. Use
@@ -265,6 +265,36 @@ Stage 4 multi-lane audio is implemented:
   - `node tests/smoke-area.mjs media-studio`
 - Stage 4 remaining work: none known for the accepted audio scope. Next A0
   implementation target is Stage 5 video/image elements and seek-frame preview.
+
+Stage 5 video/image elements and seek-frame preview has started:
+
+- Added `mixer-visual-preview.js`, a client-side orientation preview module
+  that derives active visual elements from the shared project snapshot at the
+  current seek cursor and renders a bounded canvas composition placeholder.
+  This is not realtime video playback; it is a seek-frame orientation surface
+  for placing images/video-capable elements without forcing heavy decode.
+- The shared renderer now shows visual badges for image/video-capable elements,
+  renders the seek-frame preview below the timeline, and exposes selected
+  visual transform controls for X/Y position, scale, rotation, and opacity.
+- The mixer interaction helpers update visual transform state in the same
+  shared project model used by audio timing/gain/fade controls.
+- Focused smoke coverage in `tests/areas/media-studio-mixer-shell.mjs` now
+  proves active visual-element discovery at the cursor, frame-preview rendering,
+  visual placeholders, and transform/opacity inspector edits feeding back into
+  the seek-frame preview model.
+- Validation passed for this slice:
+  - `node --check docs/types/media/mixer/mixer-visual-preview.js docs/types/media/mixer/mixer-renderer.js docs/types/media/mixer/mixer-ui.js docs/types/media/mixer/mixer-audio-multi-helpers.js tests/areas/media-studio-mixer-shell.mjs`
+  - `node tests/smoke-area.mjs media-studio-mixer-shell`
+  - `node tests/media-mixer-model.test.mjs`
+  - `node tests/media-mixer-import-export.test.mjs`
+  - `node tests/media-mixer-capabilities.test.mjs`
+  - `node tests/media-mixer-hit-test.test.mjs`
+  - `node tests/media-parsers.test.mjs`
+  - `node tests/smoke-area.mjs media-studio`
+  - `./scripts/check.sh --fast`
+- Stage 5 remaining work: real visual file intake/drop paths, image thumbnail
+  extraction, video metadata/frame availability warnings, optional ffmpeg-backed
+  conversion paths, and then Compare rebuild on the same shared model.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
