@@ -170,6 +170,18 @@ export async function run(ctx) {
   await openExample('sample.pony');
   await page.waitForSelector('#previewHost .pony-doc', { timeout: 12000 });
   pass('pony-lang: rendered');
+  const ponyText = await page.$eval('#previewHost .pony-doc', (e) => e.textContent);
+  if (/Counter|3 behaviours|cb: \{\(U64\)\} iso|in Dog|ColorSet|arity 2/i.test(ponyText)) pass('pony-lang: owned APIs, behaviours, capabilities, and aliases shown'); else fail('pony details: ' + ponyText.slice(0, 900));
+  const ponyBeHint = await page.$eval('#previewHost .pony-doc .pony-tag-be', (e) => e.title);
+  if (/asynchronous message|Behaviour/i.test(ponyBeHint)) pass('pony-lang: behaviour hover help present'); else fail('pony behaviour hint: ' + ponyBeHint);
+  const ponySourceOpen = await page.$eval('#previewHost .pony-doc .kf-source-details', (e) => e.open);
+  if (!ponySourceOpen) pass('pony-lang: source starts collapsed'); else fail('pony source should start collapsed');
+  await page.click('#previewHost .pony-doc .kf-source-link');
+  const ponyJump = await page.$eval('#previewHost .pony-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (ponyJump.open && ponyJump.highlighted) pass('pony-lang: item click opens and highlights source'); else fail('pony source jump: ' + JSON.stringify(ponyJump));
 
   // ── wren-lang: rendered ──
   await openExample('sample.wren');
