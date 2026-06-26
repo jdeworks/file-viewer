@@ -80,5 +80,10 @@ export const PROTOCOL_CARDS = [
     id: "BACKOFF", type: "Protocol", cost: 0, rarity: "uncommon",
     text: "Gain 8 block. Your congestion window does not shrink next turn.",
     effect: (ctx) => { ctx.block(8); ctx.noWindowShrink(); }
+  },
+  {
+    id: "DEFRAG", type: "Protocol", cost: 1, rarity: "uncommon",
+    text: "Return all jammed cards (Packet Loss) to your hand. Draw 1.",
+    effect: (ctx) => { ctx.defrag(); ctx.draw(1); }
   }
 ];

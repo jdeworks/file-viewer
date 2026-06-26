@@ -58,7 +58,8 @@ const SPECS = {
   DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => { ctx.block(6); ctx.queue(1, (c) => c.block(9)); } },
   // D3 THROUGHPUT
   BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
-  BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => { ctx.block(11); ctx.noWindowShrink(); } }
+  BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => { ctx.block(11); ctx.noWindowShrink(); } },
+  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => { ctx.defrag(); ctx.draw(2); } }
 };
 
 export function isUpgradedId(id) {

@@ -313,4 +313,40 @@ function congestionCombat(seed = 11) {
   assert.deepEqual(trajectory(), trajectory(), "same seed ⇒ identical window trajectory");
 }
 
+// ── D3b PACKET LOSS: dumping 4+ cards jams one next turn; Defrag clears it ──────────────────────────
+{
+  // Play 4 cards (cost-0) ⇒ oversize ⇒ next turn one card is jammed.
+  const c = congestionCombat(31);
+  c.hand = ["SEGMENT", "SEGMENT", "SEGMENT", "SEGMENT"]; c.player.energy = 5;
+  while (c.hand.length) playCard(c, 0); // 4 cards played
+  c.hand = []; endTurn(c);
+  assert.equal(c.jammed.length, 1, "an oversize turn jams one card next turn");
+  const handAfterJam = c.hand.length;
+
+  // Defrag returns the jammed card to hand and clears the jam.
+  c.hand.push("DEFRAG"); c.player.energy = 5;
+  playCard(c, c.hand.indexOf("DEFRAG"));
+  assert.equal(c.jammed.length, 0, "Defrag clears the jam");
+  assert.ok(c.hand.length >= handAfterJam, "Defrag returned the jammed card to hand");
+}
+{
+  // A jam lasts only one turn: it releases on the following turn.
+  const c = congestionCombat(32);
+  c.hand = ["SEGMENT", "SEGMENT", "SEGMENT", "SEGMENT"]; c.player.energy = 5;
+  while (c.hand.length) playCard(c, 0);
+  c.hand = []; endTurn(c);
+  assert.equal(c.jammed.length, 1, "jammed after the oversize turn");
+  c.hand = []; endTurn(c); // a normal (small) turn
+  assert.equal(c.jammed.length, 0, "the jam releases the following turn");
+}
+{
+  // No jam without congestion, even when dumping many cards.
+  const c = createCombat({ deck: STARTING_DECK, player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("corrupt-packet", 1), seed: 4 });
+  c.enemy.hp = 400;
+  c.hand = ["SEGMENT", "SEGMENT", "SEGMENT", "SEGMENT"]; c.player.energy = 9;
+  while (c.hand.length) playCard(c, 0);
+  c.hand = []; endTurn(c);
+  assert.equal(c.jammed.length, 0, "flat-energy combats never jam");
+}
+
 console.log("stage6 combat engine tests passed");

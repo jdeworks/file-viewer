@@ -158,6 +158,9 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 
 /* THROUGHPUT: the congestion-window readout next to the energy pips. */
 .s6db-window { margin-left: 10px; font-size: 0.78rem; color: #2f6f6a; font-weight: 600; }
+.s6db-jammed { margin: 6px 0; font-size: 0.8rem; color: #8b2020; }
+.s6db-jammed-label { font-weight: 700; }
+.s6db-card--jammed { display: inline-block; padding: 2px 6px; margin: 0 4px; border: 1px dashed #8b2020; border-radius: 4px; opacity: 0.7; }
 
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }

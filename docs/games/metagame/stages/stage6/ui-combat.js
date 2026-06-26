@@ -38,6 +38,7 @@ export function combatView(combat, run) {
       <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
       ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
+    ${jammedRow(combat)}
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
       <button type="button" data-action="end-turn">end turn ▸</button>
@@ -122,6 +123,13 @@ function enemyPanel(enemy, intent, combat) {
       </div>
       ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+
+// THROUGHPUT: show Packet-Loss jammed cards (unplayable this turn; Defrag returns them).
+function jammedRow(combat) {
+  if (!combat.jammed || !combat.jammed.length) return "";
+  const chips = combat.jammed.map((id) => `<span class="s6db-card s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc(id)}</span>`).join("");
+  return `<div class="s6db-jammed" aria-label="jammed (packet loss)"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</div>`;
 }
 
 // DELAY: telegraph the enemy's NEXT intent (2 turns ahead) so a growing RTT hit is learnable.

@@ -76,6 +76,7 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [], conge
     discard: [],
     exhaust: [],
     pending: [], // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
+    jammed: [],  // THROUGHPUT (Act 3): cards set aside (Packet Loss) — unplayable until released/Defrag'd
     turn: 1,
     cardsPlayedThisTurn: 0,
     firstCardDiscount: 0, // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
@@ -179,6 +180,8 @@ function makeCtx(combat, card) {
       combat.player.energy += n;
     },
     noWindowShrink: () => { combat.noShrinkNextTurn = true; },
+    // THROUGHPUT: return all Packet-Loss jammed cards to hand (Defrag).
+    defrag: () => { combat.hand.push(...combat.jammed); combat.jammed = []; },
     clearSelfDebuffs: () => {
       let cleared = 0;
       for (const key of Object.keys(combat.player.statuses)) {
@@ -223,16 +226,30 @@ export function endTurn(combat) {
   combat.energySpentThisTurn = 0;
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
+  releaseJam(combat); // Packet Loss from last turn cycles back into the deck before the new draw
   drawCards(combat, HAND_SIZE);
   runHook(combat, "onPlayerTurnStart");
   resolvePending(combat); // DELAY: deferred effects land at the start of the new player turn
+  if (combat.jamPending) { jamOne(combat); combat.jamPending = false; } // jam one of the new hand
   return combat;
+}
+
+// Packet Loss: set aside one card from the freshly-drawn hand (unplayable this turn).
+function jamOne(combat) {
+  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
+}
+
+// Release last turn's jammed cards back into the deck (discard) so they can return later.
+function releaseJam(combat) {
+  if (combat.jammed.length) { combat.discard.push(...combat.jammed); combat.jammed = []; }
 }
 
 // Set the next turn's energy. In congestion mode the window shrinks after a WIDE turn (you spent the
 // whole window) and regrows toward the cap after a restrained turn (slow-start). Fully deterministic.
 function applyTurnEnergy(combat) {
   if (!combat.congestion) { combat.player.energy = combat.player.maxEnergy; return; }
+  // Packet Loss: dumping many cards (4+) in a turn jams one card next turn.
+  combat.jamPending = combat.cardsPlayedThisTurn >= 4;
   const wide = combat.energySpentThisTurn >= combat.window;
   if (combat.noShrinkNextTurn) {
     combat.noShrinkNextTurn = false; // Backoff: skip the shrink once

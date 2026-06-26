@@ -551,6 +551,17 @@ var PROTOCOL_CARDS = [
       ctx.block(8);
       ctx.noWindowShrink();
     }
+  },
+  {
+    id: "DEFRAG",
+    type: "Protocol",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Return all jammed cards (Packet Loss) to your hand. Draw 1.",
+    effect: (ctx) => {
+      ctx.defrag();
+      ctx.draw(1);
+    }
   }
 ];
 
@@ -712,6 +723,8 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
     exhaust: [],
     pending: [],
     // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
+    jammed: [],
+    // THROUGHPUT (Act 3): cards set aside (Packet Loss) — unplayable until released/Defrag'd
     turn: 1,
     cardsPlayedThisTurn: 0,
     firstCardDiscount: 0,
@@ -817,6 +830,11 @@ function makeCtx(combat, card) {
     noWindowShrink: () => {
       combat.noShrinkNextTurn = true;
     },
+    // THROUGHPUT: return all Packet-Loss jammed cards to hand (Defrag).
+    defrag: () => {
+      combat.hand.push(...combat.jammed);
+      combat.jammed = [];
+    },
     clearSelfDebuffs: () => {
       let cleared = 0;
       for (const key of Object.keys(combat.player.statuses)) {
@@ -872,16 +890,31 @@ function endTurn(combat) {
   combat.energySpentThisTurn = 0;
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
+  releaseJam(combat);
   drawCards(combat, HAND_SIZE);
   runHook(combat, "onPlayerTurnStart");
   resolvePending(combat);
+  if (combat.jamPending) {
+    jamOne(combat);
+    combat.jamPending = false;
+  }
   return combat;
+}
+function jamOne(combat) {
+  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
+}
+function releaseJam(combat) {
+  if (combat.jammed.length) {
+    combat.discard.push(...combat.jammed);
+    combat.jammed = [];
+  }
 }
 function applyTurnEnergy(combat) {
   if (!combat.congestion) {
     combat.player.energy = combat.player.maxEnergy;
     return;
   }
+  combat.jamPending = combat.cardsPlayedThisTurn >= 4;
   const wide = combat.energySpentThisTurn >= combat.window;
   if (combat.noShrinkNextTurn) {
     combat.noShrinkNextTurn = false;
@@ -1574,6 +1607,10 @@ var SPECS = {
   BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => {
     ctx.block(11);
     ctx.noWindowShrink();
+  } },
+  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => {
+    ctx.defrag();
+    ctx.draw(2);
   } }
 };
 function isUpgradedId(id) {
@@ -1898,6 +1935,7 @@ function combatView(combat, run) {
       <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
       ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
+    ${jammedRow(combat)}
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
       <button type="button" data-action="end-turn">end turn ▸</button>
@@ -1969,6 +2007,11 @@ function enemyPanel(enemy, intent, combat) {
       </div>
       ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+function jammedRow(combat) {
+  if (!combat.jammed || !combat.jammed.length) return "";
+  const chips = combat.jammed.map((id) => `<span class="s6db-card s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc(id)}</span>`).join("");
+  return `<div class="s6db-jammed" aria-label="jammed (packet loss)"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</div>`;
 }
 function nextIntentTelegraph(enemy, combat) {
   const script = enemy.script;

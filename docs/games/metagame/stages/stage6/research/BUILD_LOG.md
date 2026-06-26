@@ -87,3 +87,8 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   Collapse (`congest` intent = N × energy spent) in act 3; cursed relic Overclock Bus (+1 cap, −2 decay);
   ui-combat shows the window readout. combat.test: shrink/regrow, Backoff, Bandwidth, Collapse scaling,
   deterministic trajectory. Acts 1–2 keep flat energy. (Packet-Loss jam + Defrag → D3b.)
+- D3b — Packet Loss + Defrag: dumping 4+ cards in a congestion turn jams one card next turn (set
+  aside, unplayable; cycles back to the deck after a turn). ctx.defrag + card DEFRAG return jammed
+  cards to hand. ui-combat renders a JAMMED row. combat.test: oversize ⇒ 1 jammed, Defrag clears,
+  jam releases next turn, never jams without congestion. **Phase D ⅓ left** (D4 mutating handshake).
+  Pool 45. combat.js now 384 LOC (under hard cap; split candidate once D4 lands).
