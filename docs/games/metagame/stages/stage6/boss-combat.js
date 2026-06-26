@@ -7,18 +7,22 @@
 // phase rules (kept intact for its own unit test) into combat terms, so the player must satisfy
 // the handshake with their REAL Protocol cards while their Signals carry the damage.
 //
-//   Phase 1 (HANDSHAKE)  — Signals land only if the FIRST card played this turn was SYN.
-//   Phase 2 (ESTABLISHED)— Signals land only if an ACK (Protocol) was played earlier this turn.
-//   Phase 3 (MAINTAIN)   — Signals always land, but a turn with no ACK costs 8 ongoing damage.
+//   Phase 1 (HANDSHAKE)  — demands LEAD-SYN: Signals land only if the first card this turn was SYN.
+//   Phase 2 (ESTABLISHED)— demands ACK-FIRST: Signals land only if an ACK was played earlier.
+//   Phase 3 (MAINTAIN)   — the demand MUTATES each turn (D4): it alternates between LEAD-SYN and
+//                          ACK-FIRST, so the player must re-sequence on the fly with the deck built
+//                          across acts 1–3 (sequence + protocol both pay off).
 //
-// Deck-building matters: a deck with no ACK/Protocol cards can never satisfy phases 2–3.
+// Deck-building matters: a deck with no ACK/Protocol cards can never satisfy the ACK-FIRST demand.
 
-import { playCard, endTurn, dealToPlayer } from "./combat.js";
+import { playCard, endTurn } from "./combat.js";
 import { cardById } from "./cards.js";
 
 // Per-phase HP pools (mirror boss.js PHASE_HP). Each phase is a fresh pool; overkill is lost.
 export const BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
-export const ONGOING_DAMAGE = 8; // phase-3 penalty when a turn ends with no ACK
+
+export const DEMAND_LEAD_SYN = "lead-syn";
+export const DEMAND_ACK_FIRST = "ack-first";
 
 export function isSignalCard(card) {
   return card?.type === "Signal";
@@ -30,20 +34,32 @@ function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
 
-// acceptance(combat, card) — consulted by the engine only for Signal cards.
-// Returns false ⇒ that Signal deals 0 ("PROTOCOL MISMATCH").
-export function accepts(combat, card) {
-  if (!isSignalCard(card)) return true;          // Protocol/Layer always resolve
-  if (combat.bossLocked) return false;           // ch9 unread ⇒ permanent mismatch (B3)
+// The protocol the boss demands THIS turn. Phases 1–2 are fixed; phase 3 mutates by turn parity.
+export function currentDemand(combat) {
   const phase = combat.bossPhase || 1;
-  if (phase === 1) return baseId(combat.playedIdsThisTurn[0]) === "SYN";
-  if (phase === 2) return combat.playedIdsThisTurn.some((id) => baseId(id) === "ACK");
-  return true;                                    // phase 3: always accepted
+  if (phase === 1) return DEMAND_LEAD_SYN;
+  if (phase === 2) return DEMAND_ACK_FIRST;
+  return (combat.turn % 2 === 1) ? DEMAND_LEAD_SYN : DEMAND_ACK_FIRST; // phase 3 mutates each turn
 }
 
 // Did the player play an ACK (or ACK+) this turn?
 function ackPlayed(combat) {
   return combat.playedIdsThisTurn.some((id) => baseId(id) === "ACK");
+}
+
+// Is the current turn's demand satisfied?
+function demandMet(combat) {
+  return currentDemand(combat) === DEMAND_LEAD_SYN
+    ? baseId(combat.playedIdsThisTurn[0]) === "SYN"
+    : ackPlayed(combat);
+}
+
+// acceptance(combat, card) — consulted by the engine only for Signal cards.
+// Returns false ⇒ that Signal deals 0 ("PROTOCOL MISMATCH").
+export function accepts(combat, card) {
+  if (!isSignalCard(card)) return true;          // Protocol/Layer always resolve
+  if (combat.bossLocked) return false;           // ch9 unread ⇒ permanent mismatch (B3)
+  return demandMet(combat);
 }
 
 // Wire the negotiation onto a freshly-created combat whose enemy is the-refused-connection.
@@ -63,14 +79,6 @@ export function wireBossCombat(combat, { locked = false } = {}) {
     c.log = [...(c.log || []), `Phase ${c.bossPhase}.`].slice(-10);
     return true;
   };
-  combat.onPlayerTurnEnd = (c) => {
-    if ((c.bossPhase || 1) !== 3 || c.bossLocked) return;
-    if (!ackPlayed(c)) {
-      c.log = [...(c.log || []), "no ACK — 8 ongoing damage."].slice(-10);
-      dealToPlayer(c, ONGOING_DAMAGE);
-      if (c.player.hp <= 0 && !c.over) { c.over = true; c.result = "lose"; }
-    }
-  };
   return combat;
 }
 
@@ -89,8 +97,8 @@ export function autoNegotiate(combat, maxTurns = 80) {
 }
 
 function playHandshakeTurn(combat) {
-  // Lead correctly for the phase: SYN first in phase 1, an ACK/Protocol first in phase 2/3.
-  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => baseId(c.id) === "SYN");
+  // Satisfy THIS turn's demand first: lead SYN for LEAD-SYN, play a Protocol (ACK) for ACK-FIRST.
+  if (currentDemand(combat) === DEMAND_LEAD_SYN) playFirstMatch(combat, (c) => baseId(c.id) === "SYN");
   else playFirstMatch(combat, (c) => c.type === "Protocol");
   // Then spend remaining energy on anything affordable.
   let guard = 0;

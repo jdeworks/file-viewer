@@ -7,17 +7,26 @@
 
 import { cardById } from "./cards.js";
 import { currentIntent } from "./combat.js";
+import { currentDemand } from "./boss-combat.js";
 
 const STATUS_LABEL = {
   strength: "STR", vulnerable: "VULN", weak: "WEAK"
 };
 const TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 
-const PHASE_RULE = {
-  1: "HANDSHAKE — lead each turn with SYN, or your Signals are refused.",
-  2: "ESTABLISHED — play an ACK before your Signals, or they are refused.",
-  3: "MAINTAIN — Signals always land, but a turn with no ACK costs 8 ongoing."
+const PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
+const DEMAND_TEXT = {
+  "lead-syn": "lead this turn with SYN, or your Signals are refused.",
+  "ack-first": "play an ACK before your Signals, or they are refused."
 };
+
+// The live handshake rule for the current phase/turn. Phase 3's demand mutates each turn (D4).
+function phaseRuleText(combat) {
+  const phase = combat.bossPhase || 1;
+  const demand = currentDemand(combat);
+  const mutating = phase === 3 ? "MUTATING — " : "";
+  return `${PHASE_NAME[phase] || ""} — ${mutating}${DEMAND_TEXT[demand] || ""}`;
+}
 
 export function combatView(combat, run) {
   const el = document.createElement("div");
@@ -66,7 +75,7 @@ function bossBanner(combat) {
         <strong>THE REFUSED CONNECTION</strong>
         <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
       </div>
-      <p class="s6db-boss-rule">${esc(PHASE_RULE[combat.bossPhase] || "")}</p>
+      <p class="s6db-boss-rule">${esc(phaseRuleText(combat))}</p>
       ${locked
         ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
            <button type="button" data-action="epub">open the codex</button>`

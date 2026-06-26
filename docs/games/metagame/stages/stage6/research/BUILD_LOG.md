@@ -92,3 +92,10 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   cards to hand. ui-combat renders a JAMMED row. combat.test: oversize ⇒ 1 jammed, Defrag clears,
   jam releases next turn, never jams without congestion. **Phase D ⅓ left** (D4 mutating handshake).
   Pool 45. combat.js now 384 LOC (under hard cap; split candidate once D4 lands).
+- D4 — Act 4 SESSION · NEGOTIATE (mutating handshake, no new primitive): boss-combat's acceptance is
+  now demand-driven (`currentDemand`): phase 1 = LEAD-SYN, phase 2 = ACK-FIRST, phase 3 MUTATES each
+  turn between the two (by turn parity) so the player must re-sequence on the fly. Dropped the flat
+  phase-3 ongoing-damage in favour of the mutation. autoNegotiate + the boss banner follow the live
+  demand. boss-combat.test: phase-3 demand flips per turn; a Protocol-less deck stalls at phase 2
+  (deck-building matters). **Phase D COMPLETE** (sequence/delay/throughput/negotiate verbs all live).
+  Next: Phase E (E1 prestige rule-modifiers, E2 balance + full smoke) — and split combat.js (384 LOC).

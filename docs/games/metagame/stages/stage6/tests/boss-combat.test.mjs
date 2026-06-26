@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { createCombat, playCard, endTurn } from "../combat.js";
 import { instantiateEnemy } from "../enemies.js";
-import { wireBossCombat, autoNegotiate, BOSS_PHASE_HP } from "../boss-combat.js";
+import { wireBossCombat, autoNegotiate, currentDemand, BOSS_PHASE_HP } from "../boss-combat.js";
 
 function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {}) {
   const c = createCombat({
@@ -59,24 +59,30 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   assert.ok(c.enemy.hp < before, "phase 2: Signal after ACK lands");
 }
 
-// ── phase 3: Signals always land; a turn with no ACK costs 8 ongoing ──────────────────────────────
+// ── D4 phase 3: the demand MUTATES each turn (lead-SYN ⇄ ACK-first) ────────────────────────────────
 {
+  // Odd turn ⇒ LEAD-SYN demand.
   const c = bossCombat();
-  c.bossPhase = 3; c.enemy.hp = BOSS_PHASE_HP[3];
+  c.bossPhase = 3; c.enemy.hp = BOSS_PHASE_HP[3]; c.turn = 1;
+  assert.equal(currentDemand(c), "lead-syn", "phase 3 odd turn demands lead-SYN");
+  c.hand = ["ACK", "SYN"]; c.player.energy = 5;
+  const before = c.enemy.hp;
+  playCard(c, 0); // lead ACK ⇒ violates lead-SYN
+  playCard(c, 0); // SYN refused (turn was not SYN-led)
+  assert.equal(c.enemy.hp, before, "lead-SYN turn: a non-SYN lead refuses Signals");
+}
+{
+  // Even turn ⇒ ACK-FIRST demand.
+  const c = bossCombat();
+  c.bossPhase = 3; c.enemy.hp = BOSS_PHASE_HP[3]; c.turn = 2;
+  assert.equal(currentDemand(c), "ack-first", "phase 3 even turn demands ACK-first");
   c.hand = ["SYN"]; c.player.energy = 5;
   const before = c.enemy.hp;
-  playCard(c, 0);
-  assert.ok(c.enemy.hp < before, "phase 3: Signal lands without ACK");
-
-  // onPlayerTurnEnd in isolation (avoids the enemy attack confounding the HP delta).
-  c.playedIdsThisTurn = [];
-  const hp0 = c.player.hp;
-  c.onPlayerTurnEnd(c);
-  assert.equal(c.player.hp, hp0 - 8, "phase 3: no-ACK turn costs 8 ongoing");
-  c.playedIdsThisTurn = ["ACK"];
-  const hp1 = c.player.hp;
-  c.onPlayerTurnEnd(c);
-  assert.equal(c.player.hp, hp1, "phase 3: an ACK turn avoids the ongoing damage");
+  playCard(c, 0); // SYN with no ACK ⇒ refused
+  assert.equal(c.enemy.hp, before, "ACK-first turn: a Signal before ACK is refused");
+  c.hand = ["ACK", "SYN"]; c.player.energy = 5;
+  playCard(c, 0); playCard(c, 0); // ACK then SYN ⇒ lands
+  assert.ok(c.enemy.hp < before, "ACK-first turn: Signal after ACK lands");
 }
 
 // ── phase advance: depleting a phase refills to the next pool ──────────────────────────────────────
@@ -98,6 +104,15 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   autoNegotiate(b);
   assert.equal(b.result, a.result, "same seed ⇒ same result");
   assert.equal(b.turn, a.turn, "same seed ⇒ same turn count");
+}
+
+// ── D4: deck-building matters — a Protocol-less deck cannot satisfy the ACK-FIRST demand ────────────
+{
+  const deck = ["SYN", "SYN", "SYN", "SYN", "PRIORITY_PACKET", "PRIORITY_PACKET", "JITTER", "JITTER", "PUSH", "PUSH"]; // no Protocol
+  const c = bossCombat({ deck, hp: 1000, seed: 3 });
+  autoNegotiate(c, 60);
+  assert.ok(!(c.over && c.result === "win"), "a Protocol-less deck cannot clear the negotiation");
+  assert.equal(c.bossPhase, 2, "it stalls at phase 2 (the ACK-FIRST demand is unmeetable)");
 }
 
 // ── locked (ch9 unread): every Signal is refused in EVERY phase ⇒ unwinnable (the un-cheat) ────────

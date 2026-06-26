@@ -1831,23 +1831,30 @@ function hashSeed(seed, nodeId2) {
 
 // ../../docs/games/metagame/stages/stage6/boss-combat.js
 var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
-var ONGOING_DAMAGE = 8;
+var DEMAND_LEAD_SYN = "lead-syn";
+var DEMAND_ACK_FIRST = "ack-first";
 function isSignalCard(card) {
   return card?.type === "Signal";
 }
 function baseId2(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
-function accepts(combat, card) {
-  if (!isSignalCard(card)) return true;
-  if (combat.bossLocked) return false;
+function currentDemand(combat) {
   const phase = combat.bossPhase || 1;
-  if (phase === 1) return baseId2(combat.playedIdsThisTurn[0]) === "SYN";
-  if (phase === 2) return combat.playedIdsThisTurn.some((id) => baseId2(id) === "ACK");
-  return true;
+  if (phase === 1) return DEMAND_LEAD_SYN;
+  if (phase === 2) return DEMAND_ACK_FIRST;
+  return combat.turn % 2 === 1 ? DEMAND_LEAD_SYN : DEMAND_ACK_FIRST;
 }
 function ackPlayed(combat) {
   return combat.playedIdsThisTurn.some((id) => baseId2(id) === "ACK");
+}
+function demandMet(combat) {
+  return currentDemand(combat) === DEMAND_LEAD_SYN ? baseId2(combat.playedIdsThisTurn[0]) === "SYN" : ackPlayed(combat);
+}
+function accepts(combat, card) {
+  if (!isSignalCard(card)) return true;
+  if (combat.bossLocked) return false;
+  return demandMet(combat);
 }
 function wireBossCombat(combat, { locked = false } = {}) {
   combat.bossPhase = 1;
@@ -1864,17 +1871,6 @@ function wireBossCombat(combat, { locked = false } = {}) {
     c.log = [...c.log || [], `Phase ${c.bossPhase}.`].slice(-10);
     return true;
   };
-  combat.onPlayerTurnEnd = (c) => {
-    if ((c.bossPhase || 1) !== 3 || c.bossLocked) return;
-    if (!ackPlayed(c)) {
-      c.log = [...c.log || [], "no ACK — 8 ongoing damage."].slice(-10);
-      dealToPlayer(c, ONGOING_DAMAGE);
-      if (c.player.hp <= 0 && !c.over) {
-        c.over = true;
-        c.result = "lose";
-      }
-    }
-  };
   return combat;
 }
 function autoNegotiate(combat, maxTurns = 80) {
@@ -1887,7 +1883,7 @@ function autoNegotiate(combat, maxTurns = 80) {
   return combat;
 }
 function playHandshakeTurn(combat) {
-  if ((combat.bossPhase || 1) === 1) playFirstMatch(combat, (c) => baseId2(c.id) === "SYN");
+  if (currentDemand(combat) === DEMAND_LEAD_SYN) playFirstMatch(combat, (c) => baseId2(c.id) === "SYN");
   else playFirstMatch(combat, (c) => c.type === "Protocol");
   let guard = 0;
   while (guard++ < 20 && playFirstMatch(combat, () => true)) {
@@ -1911,11 +1907,17 @@ var STATUS_LABEL = {
   weak: "WEAK"
 };
 var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
-var PHASE_RULE = {
-  1: "HANDSHAKE — lead each turn with SYN, or your Signals are refused.",
-  2: "ESTABLISHED — play an ACK before your Signals, or they are refused.",
-  3: "MAINTAIN — Signals always land, but a turn with no ACK costs 8 ongoing."
+var PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
+var DEMAND_TEXT = {
+  "lead-syn": "lead this turn with SYN, or your Signals are refused.",
+  "ack-first": "play an ACK before your Signals, or they are refused."
 };
+function phaseRuleText(combat) {
+  const phase = combat.bossPhase || 1;
+  const demand = currentDemand(combat);
+  const mutating = phase === 3 ? "MUTATING — " : "";
+  return `${PHASE_NAME[phase] || ""} — ${mutating}${DEMAND_TEXT[demand] || ""}`;
+}
 function combatView(combat, run) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
@@ -1957,7 +1959,7 @@ function bossBanner(combat) {
         <strong>THE REFUSED CONNECTION</strong>
         <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
       </div>
-      <p class="s6db-boss-rule">${esc(PHASE_RULE[combat.bossPhase] || "")}</p>
+      <p class="s6db-boss-rule">${esc(phaseRuleText(combat))}</p>
       ${locked ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
            <button type="button" data-action="epub">open the codex</button>` : ""}
     </div>`;
