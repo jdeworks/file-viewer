@@ -194,6 +194,12 @@ ffmpeg export chain. The next work is expanding
 transition/effect coverage beyond those initial controls and hardening long or
 complex client-side renders.
 
+Stage 8 has started for Compare. Audio and video Compare now mount the modular
+shared-model surface as the default/final UI, while the older detailed
+`compare-ui.js` surface is only behind an explicit lazy legacy disclosure. The
+next retirement target is the old video Timeline surface once the modular
+timeline covers the remaining trim/transition/music-bed workflows directly.
+
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
 Status: superseded as the primary direction by the modular mixer foundation

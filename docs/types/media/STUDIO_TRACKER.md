@@ -451,6 +451,11 @@ Stage 7 project settings import/export UI has started:
   controls now live beside transforms in the shared inspector, seek-frame
   preview applies the same source crop for orientation, and final video export
   emits matching ffmpeg `crop` filters before scale/rotation.
+- Started Stage 8 prototype retirement for Compare. Audio and video Compare now
+  mount the modular shared-model surface as the default/final UI; the older
+  `compare-ui.js` surface is available only behind a lazy "Detailed legacy
+  compare" disclosure and is no longer required by focused media-studio smoke
+  coverage.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -469,6 +474,9 @@ Stage 7 project settings import/export UI has started:
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
+- Stage 8 remaining work: retire the old video Timeline and any remaining
+  compatibility-only legacy surfaces once equivalent modular workflows are
+  directly covered.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

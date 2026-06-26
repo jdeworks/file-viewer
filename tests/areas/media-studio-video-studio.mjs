@@ -53,11 +53,17 @@ export async function runVideoStudioChecks(ctx) {
   await openExample('Sample.webm');
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   await exerciseCompare(ctx, 'video');
-  const videoCompareGrammar = await page.$eval('#previewHost .media-mode-panel[data-mode="compare"] .media-compare-copy', (el) => el.textContent);
-  if (/shifted|Overlap|Missing\/extra/.test(videoCompareGrammar)) pass('video Compare has equivalent overlay/offset grammar');
-  else fail('video compare grammar copy: ' + videoCompareGrammar);
+  const videoCompareGrammar = await page.$eval('#previewHost .media-mode-panel[data-mode="compare"] .mmx-compare-source', (root) => ({
+    overlapText: root.querySelector('.mmx-compare-overlap')?.textContent || '',
+    overlay: !!root.querySelector('.mmx-compare-overlay'),
+    offsetDeltaMs: root.querySelector('.mmx-compare-overlay')?.dataset.offsetDeltaMs || '',
+    view: root.dataset.compareView || '',
+  }));
+  if (/Overlap/i.test(videoCompareGrammar.overlapText) && videoCompareGrammar.view === 'overlay' && videoCompareGrammar.overlay)
+    pass('video Compare has equivalent overlay/offset grammar');
+  else fail('video compare grammar state: ' + JSON.stringify(videoCompareGrammar));
   await page.click('#previewHost .media-mode-tab[data-mode="watch"]');
-  const videoCompareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .media-compare');
+  const videoCompareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .mmx-compare-source');
   if (!videoCompareUnmounted) pass('video Compare tears down when leaving mode'); else fail('video Compare stayed mounted after leaving mode');
 
   // ── Video studio ── Adjust now uses an intent-first look card plus raw advanced
