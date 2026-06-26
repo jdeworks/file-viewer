@@ -310,9 +310,25 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .helmfile-doc', { timeout: 12000 });
   pass('helmfile.yaml: renders');
   const helmfileText = await page.$eval('#previewHost .helmfile-doc', el => el.textContent);
+  const helmfileHtml = await page.$eval('#previewHost .helmfile-doc', el => el.innerHTML);
   if (!helmfileText.includes('Helmfile')) fail('helmfile.yaml: missing badge'); else pass('helmfile.yaml: badge shown');
   if (!helmfileText.includes('nginx-ingress') && !helmfileText.includes('cert-manager') && !helmfileText.includes('release')) fail('helmfile.yaml: no releases shown'); else pass('helmfile.yaml: releases shown');
   if (!helmfileText.includes('bitnami') && !helmfileText.includes('stable') && !helmfileText.includes('repo')) fail('helmfile.yaml: no repos shown'); else pass('helmfile.yaml: repos shown');
+  if (/Helmfile Review|stable repo|latest fallback|env secret|atomic/i.test(helmfileText)) pass('helmfile.yaml: review findings shown'); else fail('helmfile.yaml: review missing: ' + helmfileText.slice(0, 400));
+  if ((helmfileText + helmfileHtml).includes('adminPassword: "{{ requiredEnv')) fail('helmfile.yaml: secret-like source leaked'); else pass('helmfile.yaml: secret-like source redacted');
+  const helmfileHelpTitle = await page.$eval('#previewHost .helmfile-doc .helmfile-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Helmfile|Open line|source/i.test(helmfileHelpTitle)) pass('helmfile.yaml: hover source help shown'); else fail('helmfile.yaml source help title missing');
+  const helmfileSourceCollapsed = await page.$eval('#previewHost .helmfile-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (helmfileSourceCollapsed) pass('helmfile.yaml: redacted source collapsed'); else fail('helmfile.yaml: redacted source not collapsed');
+  const helmfileSourceLine = await page.$eval('#previewHost .helmfile-doc .helmfile-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .helmfile-doc .kf-source-details');
+    return details?.open && document.getElementById(`helmfile-line-${line}`);
+  }, helmfileSourceLine);
+  pass('helmfile.yaml: source links open redacted source');
 
   // ── .release-it.yml viewer ──
   await openExample('.release-it.yml');
