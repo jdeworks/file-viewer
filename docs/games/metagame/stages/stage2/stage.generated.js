@@ -483,10 +483,23 @@ var MONSTERS = [
   { id: "mite", glyph: "m", name: "parse mite", hp: 16, atk: 5, xp: 2, drop: 1, minFloor: 1 },
   { id: "spider", glyph: "s", name: "syntax spider", hp: 20, atk: 6, xp: 3, drop: 1, minFloor: 1 },
   { id: "null", glyph: "n", name: "null pointer", hp: 18, atk: 9, xp: 4, drop: 2, minFloor: 2 },
+  { id: "ambusher", glyph: "a", name: "dangling ref", hp: 24, atk: 8, xp: 6, drop: 3, minFloor: 3, ambush: true },
   { id: "race", glyph: "r", name: "race condition", hp: 22, atk: 7, xp: 6, drop: 2, minFloor: 3, fast: true },
   { id: "leak", glyph: "L", name: "memory leak", hp: 40, atk: 6, xp: 5, drop: 3, minFloor: 3 },
-  { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 }
+  { id: "spitter", glyph: "y", name: "syntax spitter", hp: 18, atk: 7, xp: 6, drop: 3, minFloor: 4, ranged: true },
+  { id: "exploder", glyph: "x", name: "segfault", hp: 16, atk: 6, xp: 5, drop: 3, minFloor: 4, explode: true },
+  { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 },
+  { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true }
 ];
+var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush"];
+var ELITE_PREFIXES = [
+  { key: "armored", name: "armored", hpMult: 1.8, atkMult: 1.1 },
+  { key: "venomous", name: "venomous", hpMult: 1.3, atkMult: 1.3, venom: true },
+  { key: "frenzied", name: "frenzied", hpMult: 1.4, atkMult: 1.5, fast: true }
+];
+function eliteChance(floor) {
+  return Math.min(0.28, 0.04 + (floor - 1) * 0.05);
+}
 var WEAPONS = [
   { name: "hand_cursor", atk: 0 },
   { name: "parser_blade", atk: 3 },
@@ -538,39 +551,327 @@ function rollEntity(shopUpgrades = {}) {
   return stats;
 }
 function spawnMonster(rng, floor, index) {
-  const eligible = MONSTERS.filter((m) => m.minFloor <= floor);
+  const eligible = MONSTERS.filter((m2) => m2.minFloor <= floor);
   const def = rng.pick(eligible.length ? eligible : MONSTERS);
   const scale = 1 + (floor - 1) * 0.35;
-  const hp = Math.round(def.hp * scale) + index % 2;
-  return {
+  let hp = Math.round(def.hp * scale) + index % 2;
+  let atk = Math.round(def.atk * scale);
+  const m = {
     id: def.id,
     glyph: def.glyph,
     name: def.name,
     fast: Boolean(def.fast),
     xp: def.xp,
     drop: def.drop,
-    hp,
-    maxHp: hp,
-    atk: Math.round(def.atk * scale),
     alive: true,
     x: 0,
     y: 0,
     // Patrol heading + how far it can spot @ (set at generation; fast foes are more alert).
     dir: rng.pick(["up", "down", "left", "right"]),
-    sight: def.fast ? 7 : 5,
+    sight: def.fast || def.ranged ? 7 : 5,
     chasing: false,
     // Which of the 5 shared real-time movement clocks this monster ticks on (0=fastest .4s).
     bucket: rng.int(0, 4)
   };
+  for (const b of BEHAVIOURS) if (def[b]) m[b] = true;
+  if (m.ambush) m.hidden = true;
+  if (floor >= 2 && rng.float() < eliteChance(floor)) {
+    const p = rng.pick(ELITE_PREFIXES);
+    hp = Math.round(hp * p.hpMult);
+    atk = Math.round(atk * p.atkMult);
+    m.elite = true;
+    m.prefix = p.key;
+    m.name = `${p.name} ${def.name}`;
+    m.drop = def.drop + 2;
+    m.xp = def.xp + 4;
+    if (p.fast) m.fast = true;
+    if (p.venom) m.venom = true;
+    m.sight = Math.max(m.sight, 7);
+  }
+  m.hp = hp;
+  m.maxHp = hp;
+  m.atk = atk;
+  return m;
 }
 
-// ../../docs/games/metagame/stages/stage2/engine.js
+// ../../docs/games/metagame/stages/stage2/dirs.js
 var DIRS = {
   up: { dx: 0, dy: -1 },
   down: { dx: 0, dy: 1 },
   left: { dx: -1, dy: 0 },
   right: { dx: 1, dy: 0 }
 };
+var DIR_LIST2 = ["up", "down", "left", "right"];
+
+// ../../docs/games/metagame/stages/stage2/status.js
+var DOT = { poison: true, burn: true, bleed: true };
+var LABEL = { poison: "poison", burn: "burning", bleed: "bleeding" };
+function applyStatus(ent, type, turns, power = 1) {
+  if (!ent || turns <= 0) return;
+  ent.statuses = ent.statuses || {};
+  const cur = ent.statuses[type];
+  ent.statuses[type] = {
+    turns: Math.max(turns, cur ? cur.turns : 0),
+    power: Math.max(power, cur ? cur.power : 0)
+  };
+}
+function hasStatus(ent, type) {
+  return Boolean(ent && ent.statuses && ent.statuses[type] && ent.statuses[type].turns > 0);
+}
+var ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄" };
+function statusSummary(ent) {
+  if (!ent || !ent.statuses) return "";
+  return Object.keys(ent.statuses).filter((t) => ent.statuses[t] && ent.statuses[t].turns > 0).map((t) => `${ICON[t] || "•"}${ent.statuses[t].turns}`).join(" ");
+}
+function tickStatuses(ent, events, isPlayer) {
+  if (!ent || !ent.statuses) return 0;
+  let dmg = 0;
+  const sources = [];
+  for (const type of Object.keys(ent.statuses)) {
+    const st = ent.statuses[type];
+    if (!st || st.turns <= 0) {
+      delete ent.statuses[type];
+      continue;
+    }
+    if (DOT[type]) {
+      dmg += st.power;
+      sources.push(LABEL[type] || type);
+    }
+    st.turns -= 1;
+    if (st.turns <= 0) delete ent.statuses[type];
+  }
+  if (dmg > 0 && typeof ent.hp === "number") {
+    ent.hp = Math.max(0, ent.hp - dmg);
+    if (events) {
+      if (isPlayer) {
+        events.damageTaken = (events.damageTaken || 0) + dmg;
+        if (ent.hp <= 0) events.died = true;
+      }
+      if (events.log) events.log.push(`${isPlayer ? "@" : ent.name || "foe"} takes ${dmg} from ${sources.join(" + ")}.`);
+    }
+  }
+  return dmg;
+}
+function skipsTurn(ent) {
+  if (hasStatus(ent, "stun") || hasStatus(ent, "frozen")) return true;
+  if (hasStatus(ent, "slow")) {
+    ent._slowPhase = !ent._slowPhase;
+    return ent._slowPhase;
+  }
+  return false;
+}
+
+// ../../docs/games/metagame/stages/stage2/monsters.js
+var SUMMON_CAP = 90;
+var RANGED_COOLDOWN = 2;
+var SUMMON_COOLDOWN = 4;
+var EXPLODE_RADIUS = 2;
+function isOpen(world, x, y) {
+  return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
+}
+function freeCell(world, x, y, occupied) {
+  if (!isOpen(world, x, y) || occupied.has(y * world.width + x)) return false;
+  if (x === world.pos.x && y === world.pos.y) return false;
+  if (world.hazardAt && world.hazardAt(x, y) && !world.hazardSafe) {
+    const hz = world.hazardAt(x, y);
+    if (hz === "lava" || hz === "spikes") return false;
+  }
+  return true;
+}
+function hasLOS(world, x0, y0, x1, y1) {
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  let x = x0;
+  let y = y0;
+  for (let guard = 0; guard < 80; guard += 1) {
+    if (x === x1 && y === y1) return true;
+    const e2 = 2 * err;
+    if (e2 > -dy) {
+      err -= dy;
+      x += sx;
+    }
+    if (e2 < dx) {
+      err += dx;
+      y += sy;
+    }
+    if (world.grid[y] && world.grid[y][x] === "#") return false;
+  }
+  return false;
+}
+function monsterBite(m, player, events) {
+  const dmg = Math.max(1, m.atk - Number(player.def || 0));
+  player.hp = Math.max(0, player.hp - dmg);
+  events.damageTaken = (events.damageTaken || 0) + dmg;
+  if (m.venom) applyStatus(player, "poison", 3, 1);
+  if (player.hp <= 0) events.died = true;
+  if (events.log) events.log.push(`${m.name} bites for ${dmg}.`);
+  return dmg;
+}
+function greedyStep(world, m, px, py, occupied) {
+  const ddx = px - m.x;
+  const ddy = py - m.y;
+  const order = Math.abs(ddx) >= Math.abs(ddy) ? [[Math.sign(ddx), 0], [0, Math.sign(ddy)]] : [[0, Math.sign(ddy)], [Math.sign(ddx), 0]];
+  for (const [sx, sy] of order) {
+    if (!sx && !sy) continue;
+    if (freeCell(world, m.x + sx, m.y + sy, occupied)) return { x: m.x + sx, y: m.y + sy };
+  }
+  return null;
+}
+function patrolStep(world, m, occupied) {
+  const dirs = [m.dir, ...DIR_LIST2.filter((d) => d !== m.dir)];
+  for (const d of dirs) {
+    const mv = DIRS[d];
+    if (!mv) continue;
+    if (freeCell(world, m.x + mv.dx, m.y + mv.dy, occupied)) return { x: m.x + mv.dx, y: m.y + mv.dy, dir: d };
+  }
+  return null;
+}
+function adjacentFree(world, m, occupied) {
+  for (const d of DIR_LIST2) {
+    const x = m.x + DIRS[d].dx;
+    const y = m.y + DIRS[d].dy;
+    if (freeCell(world, x, y, occupied)) return { x, y };
+  }
+  return null;
+}
+function makeMinion(world) {
+  const scale = 1 + (world.floor - 1) * 0.35;
+  const hp = Math.round(12 * scale);
+  world._summonN = (world._summonN || 0) + 1;
+  return {
+    id: "spawnling",
+    glyph: "·",
+    name: "fork spawn",
+    hp,
+    maxHp: hp,
+    atk: Math.max(2, Math.round(4 * scale)),
+    xp: 1,
+    drop: 1,
+    alive: true,
+    x: 0,
+    y: 0,
+    dir: "down",
+    sight: 6,
+    chasing: true,
+    bucket: world._summonN % 5
+  };
+}
+function detonate(world, at, player, events) {
+  const reach = EXPLODE_RADIUS;
+  const power = Math.max(3, Math.round((at.atk || 6) * 1.2));
+  const pd = Math.abs(world.pos.x - at.x) + Math.abs(world.pos.y - at.y);
+  if (typeof player.hp === "number" && pd <= reach) {
+    const dmg = Math.max(1, power - Number(player.def || 0));
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (events.log) events.log.push(`${at.name} detonates for ${dmg}!`);
+    if (player.hp <= 0) events.died = true;
+  } else if (events.log) {
+    events.log.push(`${at.name} detonates.`);
+  }
+  for (const o of world.monsters) {
+    if (!o.alive || o === at) continue;
+    if (Math.abs(o.x - at.x) + Math.abs(o.y - at.y) <= reach) {
+      o.hp -= power;
+      if (o.hp <= 0) o.alive = false;
+    }
+  }
+  events.blast = { x: at.x, y: at.y };
+}
+function monsterTurn(world, player, events, filter) {
+  const px = world.pos.x;
+  const py = world.pos.y;
+  const occupied = /* @__PURE__ */ new Set();
+  for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
+  for (const m of world.monsters) {
+    if (!m.alive) continue;
+    if (filter && !filter(m)) continue;
+    if (m.statuses) {
+      tickStatuses(m, events, false);
+      if (m.hp <= 0) {
+        m.alive = false;
+        occupied.delete(m.y * world.width + m.x);
+        if (m.explode) detonate(world, m, player, events);
+        if (player.hp <= 0) {
+          events.died = true;
+          return;
+        }
+        continue;
+      }
+    }
+    if (skipsTurn(m)) continue;
+    const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
+    const sight = m.sight || 5;
+    const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
+    if (m.ambush && m.hidden) {
+      if (dist <= 2) {
+        m.hidden = false;
+        m.chasing = true;
+        if (events.log) events.log.push(`${m.name} springs from the wall!`);
+      } else continue;
+    }
+    const adjacent = dist === 1;
+    if (adjacent && (sees || m.chasing)) {
+      m.chasing = true;
+      monsterBite(m, player, events);
+      if (m.fast && player.hp > 0) monsterBite(m, player, events);
+      if (player.hp <= 0) {
+        events.died = true;
+        return;
+      }
+      continue;
+    }
+    if (m.ranged) {
+      if (sees && dist > 1 && (m._cd || 0) <= 0) {
+        const dmg = Math.max(1, Math.round(m.atk * 0.7) - Number(player.def || 0));
+        player.hp = Math.max(0, player.hp - dmg);
+        events.damageTaken = (events.damageTaken || 0) + dmg;
+        applyStatus(player, "poison", 3, 1);
+        if (events.log) events.log.push(`${m.name} spits for ${dmg}.`);
+        m._cd = RANGED_COOLDOWN;
+        m.chasing = true;
+        if (player.hp <= 0) {
+          events.died = true;
+          return;
+        }
+        continue;
+      }
+      if (m._cd > 0) m._cd -= 1;
+    }
+    if (m.summon && sees) {
+      if ((m._cd || 0) <= 0 && world.monsters.filter((o) => o.alive).length < SUMMON_CAP) {
+        const spot = adjacentFree(world, m, occupied);
+        if (spot) {
+          const minion = makeMinion(world);
+          minion.x = spot.x;
+          minion.y = spot.y;
+          minion.home = { x: spot.x, y: spot.y };
+          world.monsters.push(minion);
+          occupied.add(spot.y * world.width + spot.x);
+          m._cd = SUMMON_COOLDOWN;
+          m.chasing = true;
+          if (events.log) events.log.push(`${m.name} forks a spawn.`);
+          continue;
+        }
+      } else if (m._cd > 0) {
+        m._cd -= 1;
+      }
+    }
+    const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied)) : (m.chasing = false, patrolStep(world, m, occupied));
+    if (target) {
+      occupied.delete(m.y * world.width + m.x);
+      m.x = target.x;
+      m.y = target.y;
+      if (target.dir) m.dir = target.dir;
+      occupied.add(m.y * world.width + m.x);
+    }
+  }
+}
+
+// ../../docs/games/metagame/stages/stage2/engine.js
 var GROWTH = 1.35;
 function floorDims(runSeed, floorNum) {
   const dimRng = makeRng(`${runSeed}:dims`);
@@ -714,10 +1015,32 @@ function awardXp(player, amount, events) {
     events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
   }
 }
+function dropElite(world, foe, events) {
+  if (!foe.elite) return;
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 2);
+  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], taken: false });
+  let dropped = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (dropped >= 3) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !(x === world.pos.x && y === world.pos.y)) {
+      world.glyphs.push({ x, y, taken: false });
+      dropped += 1;
+    }
+  }
+  events.log.push(`${foe.name} drops a cache!`);
+}
+function tickPlayerStatus(player) {
+  const events = { log: [], damageTaken: 0, died: false };
+  tickStatuses(player, events, true);
+  return events;
+}
 function bite(foe, player, events) {
   const dmg = Math.max(1, foe.atk - Number(player.def || 0));
   player.hp = Math.max(0, player.hp - dmg);
   events.damageTaken += dmg;
+  if (foe.venom) applyStatus(player, "poison", 3, 1);
   if (player.hp <= 0) events.died = true;
   return dmg;
 }
@@ -745,6 +1068,12 @@ function step(world, player, dir) {
       const got = gainGlyphs(player, foe.drop);
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
+      dropElite(world, foe, events);
+      if (foe.explode) detonate(world, foe, player, events);
+      if (player.hp <= 0) {
+        events.died = true;
+        return events;
+      }
     } else {
       const dmg = bite(foe, player, events);
       events.log.push(`${foe.name} hits for ${dmg}.`);
@@ -835,94 +1164,6 @@ function revealHidden(world, player, h, events) {
     events.log.push("a teleport sigil! flung straight to the stairwell.");
   }
 }
-var DIR_LIST = ["up", "down", "left", "right"];
-function isOpen(world, x, y) {
-  return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
-}
-function freeCell(world, x, y, occupied) {
-  return isOpen(world, x, y) && !occupied.has(y * world.width + x) && !(x === world.pos.x && y === world.pos.y);
-}
-function hasLOS(world, x0, y0, x1, y1) {
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-  let x = x0;
-  let y = y0;
-  for (let guard = 0; guard < 80; guard += 1) {
-    if (x === x1 && y === y1) return true;
-    const e2 = 2 * err;
-    if (e2 > -dy) {
-      err -= dy;
-      x += sx;
-    }
-    if (e2 < dx) {
-      err += dx;
-      y += sy;
-    }
-    if (world.grid[y] && world.grid[y][x] === "#") return false;
-  }
-  return false;
-}
-function monsterBite(m, player, events) {
-  const dmg = Math.max(1, m.atk - Number(player.def || 0));
-  player.hp = Math.max(0, player.hp - dmg);
-  events.damageTaken += dmg;
-  if (player.hp <= 0) events.died = true;
-  events.log.push(`${m.name} bites for ${dmg}.`);
-  return dmg;
-}
-function greedyStep(world, m, px, py, occupied) {
-  const ddx = px - m.x;
-  const ddy = py - m.y;
-  const order = Math.abs(ddx) >= Math.abs(ddy) ? [[Math.sign(ddx), 0], [0, Math.sign(ddy)]] : [[0, Math.sign(ddy)], [Math.sign(ddx), 0]];
-  for (const [sx, sy] of order) {
-    if (!sx && !sy) continue;
-    if (freeCell(world, m.x + sx, m.y + sy, occupied)) return { x: m.x + sx, y: m.y + sy };
-  }
-  return null;
-}
-function patrolStep(world, m, occupied) {
-  const dirs = [m.dir, ...DIR_LIST.filter((d) => d !== m.dir)];
-  for (const d of dirs) {
-    const mv = DIRS[d];
-    if (!mv) continue;
-    if (freeCell(world, m.x + mv.dx, m.y + mv.dy, occupied)) return { x: m.x + mv.dx, y: m.y + mv.dy, dir: d };
-  }
-  return null;
-}
-function monsterTurn(world, player, events, filter) {
-  const px = world.pos.x;
-  const py = world.pos.y;
-  const occupied = /* @__PURE__ */ new Set();
-  for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
-  for (const m of world.monsters) {
-    if (!m.alive) continue;
-    if (filter && !filter(m)) continue;
-    const sight = m.sight || 5;
-    const adjacent = Math.abs(px - m.x) + Math.abs(py - m.y) === 1;
-    const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
-    if (adjacent && (sees || m.chasing)) {
-      m.chasing = true;
-      monsterBite(m, player, events);
-      if (m.fast && player.hp > 0) monsterBite(m, player, events);
-      if (player.hp <= 0) {
-        events.died = true;
-        return;
-      }
-      continue;
-    }
-    const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied)) : (m.chasing = false, patrolStep(world, m, occupied));
-    if (target) {
-      occupied.delete(m.y * world.width + m.x);
-      m.x = target.x;
-      m.y = target.y;
-      if (target.dir) m.dir = target.dir;
-      occupied.add(m.y * world.width + m.x);
-    }
-  }
-}
 
 // ../../docs/games/metagame/stages/stage2/shop.js
 function buildShopPanel({ state, save, onClose }) {
@@ -978,7 +1219,9 @@ var SECTIONS = [
   ["Goal", "Descend 5 floors, then beat THE AMBIGUOUS EXPRESSION at the bottom."],
   ["Move", "Arrow keys, WASD, or the on-screen d-pad. One tile per press."],
   ["Fight", "Walk into a foe to attack (your ATK vs its HP). It hits back — watch your HP. Fast foes (race conditions) strike twice."],
-  ["Foes", "s m n r are light; L O are heavy. Deeper floors spawn tougher ones."],
+  ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
+  ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
+  ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
@@ -1150,10 +1393,14 @@ function createView(screenEl) {
         sprites.append(s.el);
         fresh = true;
       }
-      if (s.glyph.textContent !== m.glyph) s.glyph.textContent = m.glyph;
-      const cls = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      const disguised = m.ambush && m.hidden;
+      const glyph = disguised ? "#" : m.glyph;
+      if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
+      const color = disguised ? "s2-c-ambush" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
+      const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
+      const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
-      if (m.hp < m.maxHp) {
+      if (!disguised && m.hp < m.maxHp) {
         if (s.hp.hidden) s.hp.hidden = false;
         if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) {
           renderHpBar(s.hp, m.hp, m.maxHp, 5);
@@ -1361,6 +1608,7 @@ function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
+      <div class="s2-status" data-field="status" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -1438,6 +1686,9 @@ function renderStage2({
     setText(fields.atk, e.atk);
     setText(fields.def, e.def);
     setText(fields.glyphs, `${state.meta.glyphsBanked} +${e.glyphsThisRun}`);
+    const status = statusSummary(e);
+    setHidden(fields.status, !status);
+    setText(fields.status, status);
     setText(fields.bossStatus, state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
     setText(fields.hint, lock.hint);
     setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
@@ -1614,7 +1865,13 @@ function renderStage2({
     const world = state.run.world;
     if (!world || !world.grid) return;
     const events = { moved: false, log: [], damageTaken: 0, died: false };
-    monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
+    if (bucket === 0 && state.run.entity.statuses) {
+      const ps = tickPlayerStatus(state.run.entity);
+      for (const line of ps.log) events.log.push(line);
+      events.damageTaken += ps.damageTaken;
+      if (ps.died) events.died = true;
+    }
+    if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
     if (events.died) {

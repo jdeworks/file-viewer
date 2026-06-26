@@ -73,6 +73,13 @@
   font-size: 0.92em;
 }
 
+/* Active player status effects (poison/burn/bleed…) — a small amber chip in the HUD. */
+.s2-status {
+  color: #ff8a5a;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
 .s2-screen {
   position: relative;
 }
@@ -195,6 +202,9 @@
 .s2-c-player { color: #79f0ff; font-weight: 700; }
 .s2-c-foe { color: #ff5a4a; font-weight: 700; }
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
+.s2-c-elite { color: #ffd24a; font-weight: 700; text-shadow: 0 0 5px #ff9b2e; } /* elite — gilded + glow */
+.s2-c-ambush { color: #6b5026; font-weight: 400; } /* disguised ambusher — exact terrain colour */
+.s2-foe-dot { filter: hue-rotate(45deg) brightness(1.1); } /* poisoned/burning tint */
 .s2-c-item { color: #ffd54a; }
 .s2-c-potion { color: #6effa6; font-weight: 700; }
 .s2-c-glyph { color: #d78bff; }

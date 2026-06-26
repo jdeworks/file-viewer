@@ -1,6 +1,8 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
-import { attachGrid, buildFloor, exitDistanceField, monsterTurn, step, stepToExit } from "./engine.js";
+import { attachGrid, buildFloor, exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
+import { monsterTurn } from "./monsters.js";
+import { statusSummary } from "./status.js";
 import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
@@ -34,6 +36,7 @@ export function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
+      <div class="s2-status" data-field="status" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -113,6 +116,9 @@ export function renderStage2({
     setText(fields.atk, e.atk);
     setText(fields.def, e.def);
     setText(fields.glyphs, `${state.meta.glyphsBanked} +${e.glyphsThisRun}`);
+    const status = statusSummary(e);
+    setHidden(fields.status, !status);
+    setText(fields.status, status);
     setText(fields.bossStatus, state.run.boss.defeated
       ? "defeated. BTS trace available."
       : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
@@ -288,7 +294,15 @@ export function renderStage2({
     const world = state.run.world;
     if (!world || !world.grid) return;
     const events = { moved: false, log: [], damageTaken: 0, died: false };
-    monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
+    // The fast clock also burns down the player's damage-over-time effects (poison/burn/bleed) so
+    // they tick even while standing still.
+    if (bucket === 0 && state.run.entity.statuses) {
+      const ps = tickPlayerStatus(state.run.entity);
+      for (const line of ps.log) events.log.push(line);
+      events.damageTaken += ps.damageTaken;
+      if (ps.died) events.died = true;
+    }
+    if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
     if (events.died) {

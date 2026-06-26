@@ -10,13 +10,11 @@
 import { makeRng } from "./rng.js";
 import { generate, floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
+import { detonate } from "./monsters.js";
+import { applyStatus, tickStatuses } from "./status.js";
+import { DIRS } from "./dirs.js";
 
-export const DIRS = {
-  up: { dx: 0, dy: -1 },
-  down: { dx: 0, dy: 1 },
-  left: { dx: -1, dy: 0 },
-  right: { dx: 1, dy: 0 }
-};
+export { DIRS };
 
 // Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
 // grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
@@ -181,10 +179,38 @@ function awardXp(player, amount, events) {
   }
 }
 
+// Elites (A3) leave a guaranteed cache on death: a high-tier weapon on the death cell plus a few
+// glyph shards on adjacent open cells — so engaging the marked, tougher foe pays off.
+function dropElite(world, foe, events) {
+  if (!foe.elite) return;
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 2);
+  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], taken: false });
+  let dropped = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (dropped >= 3) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !(x === world.pos.x && y === world.pos.y)) {
+      world.glyphs.push({ x, y, taken: false });
+      dropped += 1;
+    }
+  }
+  events.log.push(`${foe.name} drops a cache!`);
+}
+
+// Tick the player's status effects (poison/burn/bleed) by one turn. The renderer calls this on a
+// real-time clock so damage-over-time keeps burning even while @ stands still.
+export function tickPlayerStatus(player) {
+  const events = { log: [], damageTaken: 0, died: false };
+  tickStatuses(player, events, true);
+  return events;
+}
+
 function bite(foe, player, events) {
   const dmg = Math.max(1, foe.atk - Number(player.def || 0));
   player.hp = Math.max(0, player.hp - dmg);
   events.damageTaken += dmg;
+  if (foe.venom) applyStatus(player, "poison", 3, 1);
   if (player.hp <= 0) events.died = true;
   return dmg;
 }
@@ -218,6 +244,9 @@ export function step(world, player, dir) {
       const got = gainGlyphs(player, foe.drop);
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
+      dropElite(world, foe, events);            // elites leave a guaranteed cache (A3)
+      if (foe.explode) detonate(world, foe, player, events); // segfaults blast on death (A1)
+      if (player.hp <= 0) { events.died = true; return events; }
     } else {
       const dmg = bite(foe, player, events);
       events.log.push(`${foe.name} hits for ${dmg}.`);
@@ -298,101 +327,5 @@ function revealHidden(world, player, h, events) {
     }
     events.moved = true;
     events.log.push("a teleport sigil! flung straight to the stairwell.");
-  }
-}
-
-// ── Monster turn — patrol, chase on sight ───────────────────────────────────────────────────────
-const DIR_LIST = ["up", "down", "left", "right"];
-
-function isOpen(world, x, y) {
-  return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
-}
-
-function freeCell(world, x, y, occupied) {
-  return isOpen(world, x, y) && !occupied.has(y * world.width + x) && !(x === world.pos.x && y === world.pos.y);
-}
-
-// Cheap Bresenham line-of-sight: any wall between monster and @ blocks the sighting.
-function hasLOS(world, x0, y0, x1, y1) {
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-  let x = x0;
-  let y = y0;
-  for (let guard = 0; guard < 80; guard += 1) {
-    if (x === x1 && y === y1) return true;
-    const e2 = 2 * err;
-    if (e2 > -dy) { err -= dy; x += sx; }
-    if (e2 < dx) { err += dx; y += sy; }
-    if (world.grid[y] && world.grid[y][x] === "#") return false;
-  }
-  return false;
-}
-
-function monsterBite(m, player, events) {
-  const dmg = Math.max(1, m.atk - Number(player.def || 0));
-  player.hp = Math.max(0, player.hp - dmg);
-  events.damageTaken += dmg;
-  if (player.hp <= 0) events.died = true;
-  events.log.push(`${m.name} bites for ${dmg}.`);
-  return dmg;
-}
-
-// Greedy chase: close the larger axis first, fall back to the other; never onto @ (that's a bite).
-function greedyStep(world, m, px, py, occupied) {
-  const ddx = px - m.x;
-  const ddy = py - m.y;
-  const order = Math.abs(ddx) >= Math.abs(ddy)
-    ? [[Math.sign(ddx), 0], [0, Math.sign(ddy)]]
-    : [[0, Math.sign(ddy)], [Math.sign(ddx), 0]];
-  for (const [sx, sy] of order) {
-    if (!sx && !sy) continue;
-    if (freeCell(world, m.x + sx, m.y + sy, occupied)) return { x: m.x + sx, y: m.y + sy };
-  }
-  return null;
-}
-
-// Patrol: keep the current heading; on a block, take the first open direction (paces corridors,
-// bounces in rooms). The heading lives on the monster so it persists across turns/saves.
-function patrolStep(world, m, occupied) {
-  const dirs = [m.dir, ...DIR_LIST.filter((d) => d !== m.dir)];
-  for (const d of dirs) {
-    const mv = DIRS[d];
-    if (!mv) continue;
-    if (freeCell(world, m.x + mv.dx, m.y + mv.dy, occupied)) return { x: m.x + mv.dx, y: m.y + mv.dy, dir: d };
-  }
-  return null;
-}
-
-// Advance monsters one tile. `filter` (optional) restricts which monsters act this call — used to
-// drive the 5 shared real-time clocks (one bucket per call) so monsters move without the player.
-// Mutates monsters + the player entity (bites) and appends to `events`.
-export function monsterTurn(world, player, events, filter) {
-  const px = world.pos.x;
-  const py = world.pos.y;
-  const occupied = new Set();
-  for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
-  for (const m of world.monsters) {
-    if (!m.alive) continue;
-    if (filter && !filter(m)) continue;
-    const sight = m.sight || 5;
-    const adjacent = Math.abs(px - m.x) + Math.abs(py - m.y) === 1;
-    const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
-    if (adjacent && (sees || m.chasing)) {
-      m.chasing = true;
-      monsterBite(m, player, events);
-      if (m.fast && player.hp > 0) monsterBite(m, player, events);
-      if (player.hp <= 0) { events.died = true; return; }
-      continue;
-    }
-    const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied))
-      : (m.chasing = false, patrolStep(world, m, occupied));
-    if (target) {
-      occupied.delete(m.y * world.width + m.x);
-      m.x = target.x; m.y = target.y; if (target.dir) m.dir = target.dir;
-      occupied.add(m.y * world.width + m.x);
-    }
   }
 }
