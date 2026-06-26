@@ -231,10 +231,13 @@ function visualFilterChain({ element }, input) {
   const visual = element.visual || {};
   const sourceIn = seconds(timeline.sourceInMs || 0);
   const duration = seconds(timeline.durationMs || timeline.placementDurationMs || 0);
+  const durationMs = Math.max(0, Number(timeline.durationMs || timeline.placementDurationMs) || 0);
   const scaleX = finite(visual.scaleX, 1);
   const scaleY = finite(visual.scaleY, 1);
   const opacity = Math.max(0, Math.min(1, finite(visual.opacity, 1)));
   const rotation = finite(visual.rotation, 0);
+  const fadeInMs = Math.max(0, finite(visual.fadeInMs, 0));
+  const fadeOutMs = Math.max(0, finite(visual.fadeOutMs, 0));
   const filters = [
     `[${input}:v]trim=start=${sourceIn}:duration=${duration}`,
     'setpts=PTS-STARTPTS',
@@ -242,6 +245,8 @@ function visualFilterChain({ element }, input) {
   ];
   if (rotation) filters.push(`rotate=${round((rotation * Math.PI) / 180)}:ow=rotw(iw):oh=roth(ih):c=none`);
   filters.push('format=rgba');
+  if (fadeInMs) filters.push(`fade=t=in:st=0:d=${seconds(fadeInMs)}:alpha=1`);
+  if (fadeOutMs) filters.push(`fade=t=out:st=${seconds(Math.max(0, durationMs - fadeOutMs))}:d=${seconds(fadeOutMs)}:alpha=1`);
   if (opacity < 1) filters.push(`colorchannelmixer=aa=${round(opacity)}`);
   return filters.join(',');
 }

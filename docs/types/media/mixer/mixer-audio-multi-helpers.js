@@ -34,13 +34,20 @@ export function updateProjectElementField(project, action) {
       'visual-scale-y': 'scaleY',
       'visual-rotation': 'rotation',
       'visual-opacity': 'opacity',
+      'visual-fade-in': 'fadeInMs',
+      'visual-fade-out': 'fadeOutMs',
     }[action.field];
     if (!visualField) return project;
+    const nextValue = visualField === 'opacity'
+      ? clamp(value, 0, 1)
+      : visualField === 'fadeInMs' || visualField === 'fadeOutMs'
+        ? Math.max(0, value)
+        : value;
     return updateElement(project, elementId, (element) => ({
       ...element,
       visual: {
         ...element.visual,
-        [visualField]: visualField === 'opacity' ? clamp(value, 0, 1) : value,
+        [visualField]: nextValue,
       },
     }));
   }

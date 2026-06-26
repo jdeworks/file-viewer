@@ -86,7 +86,7 @@ export async function run(ctx) {
       clientY: imageRect.top + imageRect.height / 2,
     }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity']
+    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity', '.mmx-inspector-visual-fade-in', '.mmx-inspector-visual-fade-out']
       .every((selector) => !!root.querySelector(selector));
     const visualX = root.querySelector('.mmx-inspector-visual-x');
     visualX.value = '42';
@@ -95,6 +95,10 @@ export async function run(ctx) {
     const visualOpacity = root.querySelector('.mmx-inspector-visual-opacity');
     visualOpacity.value = '0.5';
     visualOpacity.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const visualFadeIn = root.querySelector('.mmx-inspector-visual-fade-in');
+    visualFadeIn.value = '250';
+    visualFadeIn.dispatchEvent(new Event('input', { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const editedImage = controller.getProject().elements.find((item) => item.id === 'element-stage2-image');
     const activeAfterTransform = mod.buildSeekFramePreview(controller.getSnapshot(), 3000).active
@@ -119,6 +123,7 @@ export async function run(ctx) {
       visualFields,
       imageX: editedImage?.visual?.x,
       imageOpacity: editedImage?.visual?.opacity,
+      imageFadeIn: editedImage?.visual?.fadeInMs,
       previewX: activeAfterTransform?.visual?.x,
       previewOpacity: activeAfterTransform?.visual?.opacity,
       scrollAfterPan,
@@ -173,7 +178,7 @@ export async function run(ctx) {
     pass('modular mixer shell: selected element inspector updates shared project state');
   else fail('modular mixer shell inspector controls did not update state: ' + JSON.stringify(result));
 
-  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.previewX === 42 && result.previewOpacity === 0.5)
+  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.previewX === 42 && result.previewOpacity === 0.5)
     pass('modular mixer shell: visual transform controls update model and seek-frame preview');
   else fail('modular mixer shell visual transform controls mismatch: ' + JSON.stringify(result));
 

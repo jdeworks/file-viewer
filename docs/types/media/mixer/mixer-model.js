@@ -138,6 +138,8 @@ export function createElement(input = {}) {
       scaleY: finiteNumber(input.visual?.scaleY, 1),
       rotation: finiteNumber(input.visual?.rotation, 0),
       opacity: clampNumber(input.visual?.opacity, 0, 1, 1),
+      fadeInMs: Math.max(0, finiteNumber(input.visual?.fadeInMs, 0)),
+      fadeOutMs: Math.max(0, finiteNumber(input.visual?.fadeOutMs, 0)),
       crop: input.visual?.crop || null,
       anchor: input.visual?.anchor || 'center',
     },

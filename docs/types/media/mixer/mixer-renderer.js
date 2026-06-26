@@ -193,6 +193,8 @@ function renderElementInspectorFields(element) {
       inspectorNumber('Scale Y', 'visual-scale-y', element, element.visual?.scaleY ?? 1, { min: 0.01, step: 0.01 }),
       inspectorNumber('Rotate', 'visual-rotation', element, element.visual?.rotation ?? 0, { step: 1 }),
       inspectorNumber('Opacity', 'visual-opacity', element, element.visual?.opacity ?? 1, { min: 0, max: 1, step: 0.01 }),
+      inspectorNumber('Visual fade in', 'visual-fade-in', element, element.visual?.fadeInMs ?? 0, { min: 0, step: 5 }),
+      inspectorNumber('Visual fade out', 'visual-fade-out', element, element.visual?.fadeOutMs ?? 0, { min: 0, step: 5 }),
     );
   }
   return group;

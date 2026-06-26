@@ -433,6 +433,10 @@ Stage 7 project settings import/export UI has started:
   blocks runnable args when inputs exceed the configured cap, and the runtime
   helper rechecks relinked local `File.size` values before reading bytes into
   MEMFS.
+- Added visual fade controls to the shared modular inspector for video/image
+  elements. The shared model now normalizes `visual.fadeInMs` and
+  `visual.fadeOutMs`, and final video export maps them to ffmpeg alpha fades in
+  the per-layer filter chain before overlay composition.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -444,10 +448,11 @@ Stage 7 project settings import/export UI has started:
   compare.mjs` proves it on modular Compare for audio and video. Parser unit
   coverage now also proves disabled/enabled video export plans, filter graph
   layering, config-only provenance, the fake-ffmpeg runtime execution contract,
-  and browser ffmpeg input-budget enforcement.
+  browser ffmpeg input-budget enforcement, and visual alpha-fade export filters.
 - Stage 7 remaining work: expand filter coverage for additional
-  transitions/effects as those controls become user-facing, and continue
-  hardening real browser ffmpeg renders against long/complex compositions.
+  transitions/effects beyond per-layer fades as those controls become
+  user-facing, and continue hardening real browser ffmpeg renders against
+  long/complex compositions.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

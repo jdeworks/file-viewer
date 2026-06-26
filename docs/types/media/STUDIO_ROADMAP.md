@@ -181,9 +181,11 @@ config-only. The opened video source and multi-lane Mix now bridge that plan to
 lazy ffmpeg execution through the same opt-in state: enabled-but-unloaded users
 can render from the export panel, while disabled ffmpeg still shows reduced
 capability affordances. The plan also records a browser ffmpeg input-byte budget
-and blocks over-budget runnable args before full media reads. The next work is
-expanding filter coverage as more effects become user-facing and hardening long
-or complex client-side renders.
+and blocks over-budget runnable args before full media reads. Per-layer visual
+fade-in/fade-out controls are now part of the shared inspector/model and export
+as ffmpeg alpha fades. The next work is expanding filter coverage beyond simple
+layer fades as more effects become user-facing and hardening long or complex
+client-side renders.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
