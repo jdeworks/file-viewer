@@ -59,6 +59,18 @@ export const SHOP_UPGRADES = [
   { id: 'compass', name: 'Stairwell Sense', desc: 'reveals the way to the stairs (HUD compass)', max: 1, apply: () => {} }
 ];
 
+// Run modifiers (C3, "Heat") — opt-in difficulty toggles set in the shop. Each active one raises the
+// run's banked-glyph reward by HEAT_PER_MOD. Applied in buildFloor (swarm/drought/elite storm).
+export const RUN_MODS = [
+  { id: 'swarm', name: 'Swarm', desc: '+60% monsters' },
+  { id: 'no_potions', name: 'Drought', desc: 'no health potions on the floor' },
+  { id: 'elite_storm', name: 'Elite Storm', desc: 'far more elites' }
+];
+export const HEAT_PER_MOD = 0.25;
+export function runHeat(runMods = {}) {
+  return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods[m.id]).length;
+}
+
 const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1000 };
 const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
 

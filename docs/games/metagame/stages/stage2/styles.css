@@ -406,6 +406,13 @@
   outline: 1px solid #ffc46f;
 }
 
+/* Heat toggle (C3): lit when the modifier is active. */
+.s2-shop-row button.s2-mod-on {
+  background: #5a2410;
+  border-color: #ff7a3a;
+  color: #ffb98a;
+}
+
 /* How-to-play overlay (shares the shop's placement). */
 .s2-help {
   background: #140f0a;

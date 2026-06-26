@@ -3,18 +3,21 @@
 // beyond the damage-noise string the renderer paints.
 
 import { buildFloor, attachGrid } from "./engine.js";
-import { rollEntity } from "./data.js";
+import { rollEntity, runHeat } from "./data.js";
 import { CIPHER_PATH, BTS_PATH } from "./messages.js";
 
 // Floors per run before the boss (the descent length).
 export const MAX_FLOOR = 5;
+
+// The active opt-in run modifiers (C3 Heat), passed into buildFloor as mods.run.
+function runMods(state) { return (state.meta && state.meta.runMods) || {}; }
 
 // ── Floor / run lifecycle ─────────────────────────────────────────────────────────────────────
 export function ensureWorld(state) {
   const run = state.run;
   if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
   if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
-    run.world = buildFloor(run.seed, run.floor);
+    run.world = buildFloor(run.seed, run.floor, { run: runMods(state) });
   } else if (!run.world.grid) {
     // Loaded from a save: the grid is non-enumerable so it wasn't serialised. Regenerate the
     // deterministic terrain (entities kept their saved positions) and re-attach it in memory.
@@ -34,7 +37,7 @@ export function descend(state, opts = {}) {
     return;
   }
   run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch) });
+  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch), run: runMods(state) });
   if (opts.branch) appendLog(state, `you take the branching stair — a deadlier, richer floor ${run.floor}.`);
   else appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
 }
@@ -43,7 +46,9 @@ export function descend(state, opts = {}) {
 export function resetRun(state, { banked, death }) {
   const run = state.run;
   if (banked) {
-    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + Number(run.entity.glyphsThisRun || 0);
+    // Heat (C3): the active run modifiers multiply the whole run's banked glyphs.
+    const earned = Math.round(Number(run.entity.glyphsThisRun || 0) * runHeat(runMods(state)));
+    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + earned;
   }
   if (death) state.meta.deaths = Number(state.meta.deaths || 0) + 1;
   state.meta.runCount = Number(state.meta.runCount || 0) + 1;
@@ -52,7 +57,7 @@ export function resetRun(state, { banked, death }) {
   run.floor = 1;
   run.active = false;
   run.boss.reached = false;
-  run.world = buildFloor(run.seed, 1);
+  run.world = buildFloor(run.seed, 1, { run: runMods(state) });
 }
 
 // ── Rendering helpers ─────────────────────────────────────────────────────────────────────────

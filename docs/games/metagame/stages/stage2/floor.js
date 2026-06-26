@@ -105,14 +105,20 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
   // Counts scale with the number of rooms (one room per BSP leaf), so density tracks the map. A
   // branch floor (B5) is deadlier AND richer — the reward for taking the optional harder descent.
   const roomN = rooms.length;
+  const run = mods.run || {}; // C3 run modifiers (Heat)
   const danger = mods.branch ? 1.4 : 1;
   const bounty = mods.branch ? 1.5 : 1;
-  const monsterCount = Math.max(16, Math.min(500, Math.round(roomN * 2.4 * danger)));
+  const monsterCount = Math.max(16, Math.min(700, Math.round(roomN * 2.4 * danger * (run.swarm ? 1.6 : 1))));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
     if (!c) break;
     const m = spawnMonster(rng, floorNum, i);
+    // Elite Storm: promote many extra non-elites to elites (stat bump + guaranteed cache).
+    if (run.elite_storm && !m.elite && rng.float() < 0.3) {
+      m.elite = true; m.hp = Math.round(m.hp * 1.5); m.maxHp = m.hp; m.atk = Math.round(m.atk * 1.2);
+      m.drop += 2; m.name = `elite ${m.name}`;
+    }
     m.x = c.x; m.y = c.y; m.home = { x: c.x, y: c.y };
     monsters.push(m);
   }
@@ -126,7 +132,7 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
   }
   // Health potions scattered through the floor.
   const potions = [];
-  const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
+  const potionCount = run.no_potions ? 0 : Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
   for (let i = 0; i < potionCount; i += 1) {
     const c = take();
     if (c) potions.push({ x: c.x, y: c.y, taken: false });
@@ -145,7 +151,7 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
     if (flood.dist[idx] < 0) continue;
     if ((d.x === start.x && d.y === start.y) || (d.x === exit.x && d.y === exit.y)) continue;
     if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
-    else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
+    else if (d.kind === "potion" && !run.no_potions) potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
   // B6 floor guardian on band floors (3, 5, 7, 9…): a beefy, mechanic-bearing foe posted by the

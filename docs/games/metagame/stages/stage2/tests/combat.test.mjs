@@ -7,6 +7,7 @@ import { enterHazard, hazardIndex } from "../hazards.js";
 import { springTrap } from "../traps.js";
 import { useConsumable } from "../consumables.js";
 import { affixDamage, applyHitAffix } from "../affixes.js";
+import { runHeat } from "../data.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -251,6 +252,17 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   w2.monsters = [a, b];
   monsterTurn(w2, { hp: 100, def: 0, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
   ok(a.hp === 20 && b.hp === 20, "same-faction foes don't infight");
+}
+
+// ── C3 run modifiers (Heat) ──────────────────────────────────────────────────────────────────────
+{
+  const base = buildFloor("heat-test", 4);
+  const swarm = buildFloor("heat-test", 4, { run: { swarm: true } });
+  ok(swarm.monsters.length > base.monsters.length, "Swarm modifier adds monsters");
+  ok(buildFloor("heat-test", 4, { run: { no_potions: true } }).potions.length === 0, "Drought removes all floor potions");
+  const storm = buildFloor("heat-test", 4, { run: { elite_storm: true } });
+  ok(storm.monsters.filter((m) => m.elite).length > base.monsters.filter((m) => m.elite).length, "Elite Storm adds elites");
+  ok(runHeat({}) === 1 && runHeat({ swarm: true, no_potions: true }) === 1.5, "each active modifier raises the glyph multiplier");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

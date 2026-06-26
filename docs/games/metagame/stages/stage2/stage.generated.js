@@ -534,6 +534,15 @@ var SHOP_UPGRADES = [
   { id: "compass", name: "Stairwell Sense", desc: "reveals the way to the stairs (HUD compass)", max: 1, apply: () => {
   } }
 ];
+var RUN_MODS = [
+  { id: "swarm", name: "Swarm", desc: "+60% monsters" },
+  { id: "no_potions", name: "Drought", desc: "no health potions on the floor" },
+  { id: "elite_storm", name: "Elite Storm", desc: "far more elites" }
+];
+var HEAT_PER_MOD = 0.25;
+function runHeat(runMods2 = {}) {
+  return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods2[m.id]).length;
+}
 var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1e3 };
 var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
 function upgradeCost(id, level) {
@@ -1325,14 +1334,23 @@ function buildFloor(runSeed, floorNum, mods = {}) {
     return null;
   };
   const roomN = rooms.length;
+  const run = mods.run || {};
   const danger = mods.branch ? 1.4 : 1;
   const bounty = mods.branch ? 1.5 : 1;
-  const monsterCount = Math.max(16, Math.min(500, Math.round(roomN * 2.4 * danger)));
+  const monsterCount = Math.max(16, Math.min(700, Math.round(roomN * 2.4 * danger * (run.swarm ? 1.6 : 1))));
   const monsters = [];
   for (let i = 0; i < monsterCount; i += 1) {
     const c = take();
     if (!c) break;
     const m = spawnMonster(rng, floorNum, i);
+    if (run.elite_storm && !m.elite && rng.float() < 0.3) {
+      m.elite = true;
+      m.hp = Math.round(m.hp * 1.5);
+      m.maxHp = m.hp;
+      m.atk = Math.round(m.atk * 1.2);
+      m.drop += 2;
+      m.name = `elite ${m.name}`;
+    }
     m.x = c.x;
     m.y = c.y;
     m.home = { x: c.x, y: c.y };
@@ -1346,7 +1364,7 @@ function buildFloor(runSeed, floorNum, mods = {}) {
     if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
   }
   const potions = [];
-  const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
+  const potionCount = run.no_potions ? 0 : Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
   for (let i = 0; i < potionCount; i += 1) {
     const c = take();
     if (c) potions.push({ x: c.x, y: c.y, taken: false });
@@ -1363,7 +1381,7 @@ function buildFloor(runSeed, floorNum, mods = {}) {
     if (flood.dist[idx] < 0) continue;
     if (d.x === start.x && d.y === start.y || d.x === exit.x && d.y === exit.y) continue;
     if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
-    else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
+    else if (d.kind === "potion" && !run.no_potions) potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
   if (floorNum >= 3 && floorNum % 2 === 1) {
@@ -1759,17 +1777,41 @@ function buildShopPanel({ state, save, onClose }) {
       <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${label}</button>
     </div>`;
   }
+  function modHtml(mod) {
+    const on = Boolean((state.meta.runMods || {})[mod.id]);
+    return `<div class="s2-shop-row">
+      <div class="s2-shop-info">
+        <strong>${mod.name}</strong> <span class="s2-shop-lv">+${Math.round(HEAT_PER_MOD * 100)}% glyphs</span>
+        <div class="s2-shop-desc">${mod.desc}</div>
+      </div>
+      <button type="button" data-mod="${mod.id}" class="${on ? "s2-mod-on" : ""}">${on ? "ON" : "off"}</button>
+    </div>`;
+  }
   function paint() {
     const banked = Number(state.meta.glyphsBanked || 0);
+    const heat = runHeat(state.meta.runMods || {});
     box.innerHTML = `
       <div class="s2-shop-head">GLYPH SHOP
         <span class="s2-shop-bank"><span class="s2-c-glyph">${banked}</span> banked</span>
         <button type="button" data-shop="close" class="s2-shop-x" aria-label="close shop">&#10005;</button>
       </div>
       <div class="s2-shop-note">applies when your next run begins (after death / retreat). only banked glyphs spend.</div>
-      <div class="s2-shop-list">${SHOP_UPGRADES.map(rowHtml).join("")}</div>`;
+      <div class="s2-shop-list">${SHOP_UPGRADES.map(rowHtml).join("")}</div>
+      <div class="s2-shop-head" style="margin-top:10px">HEAT — opt-in difficulty
+        <span class="s2-shop-bank">×${heat.toFixed(2)} glyphs</span>
+      </div>
+      <div class="s2-shop-note">tougher runs bank more glyphs. takes effect next run.</div>
+      <div class="s2-shop-list">${RUN_MODS.map(modHtml).join("")}</div>`;
     box.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
+    box.querySelectorAll("[data-mod]").forEach((b) => b.addEventListener("click", () => toggleMod(b.dataset.mod)));
     box.querySelector('[data-shop="close"]').addEventListener("click", () => onClose());
+  }
+  function toggleMod(id) {
+    const meta = state.meta;
+    meta.runMods = meta.runMods || {};
+    meta.runMods[id] = !meta.runMods[id];
+    if (typeof save === "function") save();
+    paint();
   }
   function buy(id) {
     const up = SHOP_UPGRADES.find((u) => u.id === id);
@@ -1809,6 +1851,7 @@ var SECTIONS = [
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
   ["Runes", "Pink ♦ runes are one-shot tools: pick them up, then press 1/2/3 (or the buttons) — blink (escape), firebolt (scorch the nearest foe), freeze (lock foes around you)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
+  ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward."],
   ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
 ];
 function buildHelpPanel({ onClose }) {
@@ -2173,11 +2216,14 @@ function escapeChar(ch) {
 
 // ../../docs/games/metagame/stages/stage2/runloop.js
 var MAX_FLOOR = 5;
+function runMods(state) {
+  return state.meta && state.meta.runMods || {};
+}
 function ensureWorld(state) {
   const run = state.run;
   if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
   if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
-    run.world = buildFloor(run.seed, run.floor);
+    run.world = buildFloor(run.seed, run.floor, { run: runMods(state) });
   } else if (!run.world.grid) {
     attachGrid(run.world, run.seed, run.world.floor);
   }
@@ -2194,14 +2240,15 @@ function descend(state, opts = {}) {
     return;
   }
   run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch) });
+  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch), run: runMods(state) });
   if (opts.branch) appendLog(state, `you take the branching stair — a deadlier, richer floor ${run.floor}.`);
   else appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
 }
 function resetRun(state, { banked, death }) {
   const run = state.run;
   if (banked) {
-    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + Number(run.entity.glyphsThisRun || 0);
+    const earned = Math.round(Number(run.entity.glyphsThisRun || 0) * runHeat(runMods(state)));
+    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + earned;
   }
   if (death) state.meta.deaths = Number(state.meta.deaths || 0) + 1;
   state.meta.runCount = Number(state.meta.runCount || 0) + 1;
@@ -2210,7 +2257,7 @@ function resetRun(state, { banked, death }) {
   run.floor = 1;
   run.active = false;
   run.boss.reached = false;
-  run.world = buildFloor(run.seed, 1);
+  run.world = buildFloor(run.seed, 1, { run: runMods(state) });
 }
 var DIR_ARROW = { up: "↑", down: "↓", left: "←", right: "→" };
 var NOISE_CHARS = "╳✕X#▓░*/\\";
