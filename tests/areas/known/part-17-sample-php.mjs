@@ -156,6 +156,18 @@ export async function run(ctx) {
   await openExample('sample.mojo');
   await page.waitForSelector('#previewHost .mojo-doc', { timeout: 12000 });
   pass('mojo-lang: rendered');
+  const mojoText = await page.$eval('#previewHost .mojo-doc', (e) => e.textContent);
+  if (/Point|2 fields|method of Matrix|returns Float32|alias|field of Point|arity 4/i.test(mojoText)) pass('mojo-lang: signatures, struct fields, aliases, and bindings shown'); else fail('mojo-lang details: ' + mojoText.slice(0, 900));
+  const mojoValueHint = await page.$eval('#previewHost .mojo-doc .mojo-tag-value', (e) => e.title);
+  if (/value type|generated value semantics/i.test(mojoValueHint)) pass('mojo-lang: @value hover help present'); else fail('mojo-lang value hint: ' + mojoValueHint);
+  const mojoSourceOpen = await page.$eval('#previewHost .mojo-doc .kf-source-details', (e) => e.open);
+  if (!mojoSourceOpen) pass('mojo-lang: source starts collapsed'); else fail('mojo source should start collapsed');
+  await page.click('#previewHost .mojo-doc .kf-source-link');
+  const mojoJump = await page.$eval('#previewHost .mojo-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (mojoJump.open && mojoJump.highlighted) pass('mojo-lang: item click opens and highlights source'); else fail('mojo source jump: ' + JSON.stringify(mojoJump));
 
   // ── janet-lang: rendered ──
   await openExample('sample.janet');
