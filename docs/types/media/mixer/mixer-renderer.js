@@ -218,6 +218,7 @@ function renderElementInspectorFields(element, snapshot = {}) {
       inspectorNumber('Grayscale', 'effect-grayscale', element, filter.grayscale, { min: 0, max: 1, step: 1 }),
       inspectorNumber('Invert', 'effect-invert', element, filter.invert, { min: 0, max: 1, step: 1 }),
       inspectorNumber('Sepia', 'effect-sepia', element, filter.sepia, { min: 0, max: 1, step: 0.01 }),
+      inspectorButton('Capture keyframe', 'capture-keyframe', element),
     );
   }
   return group;
@@ -348,6 +349,16 @@ function inspectorSelect(labelText, field, element, value, options = []) {
   }
   label.append(text, input);
   return label;
+}
+
+function inspectorButton(labelText, action, element) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `mmx-inspector-${action}`;
+  button.dataset.action = action;
+  button.dataset.elementId = element.id;
+  button.textContent = labelText;
+  return button;
 }
 
 function drawElementWaveforms(root, snapshot, options = {}) {

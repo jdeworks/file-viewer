@@ -130,6 +130,8 @@ export async function run(ctx) {
     const sepia = root.querySelector('.mmx-inspector-effect-sepia');
     sepia.value = '0.6';
     sepia.dispatchEvent(new Event('input', { bubbles: true }));
+    const keyframeButton = root.querySelector('.mmx-inspector-capture-keyframe');
+    keyframeButton?.click();
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const editedImage = controller.getProject().elements.find((item) => item.id === 'element-stage2-image');
     const editedFilter = editedImage?.effects?.find((effect) => effect.kind === 'video-filter');
@@ -166,6 +168,11 @@ export async function run(ctx) {
       filterHue: editedFilter?.params?.hue,
       filterInvert: editedFilter?.params?.invert,
       filterSepia: editedFilter?.params?.sepia,
+      keyframeButton: !!keyframeButton,
+      keyframeCount: editedImage?.keyframes?.length || 0,
+      keyframeCursor: editedImage?.keyframes?.find((keyframe) => keyframe.path === 'visual.x')?.timeMs,
+      keyframeOpacity: editedImage?.keyframes?.find((keyframe) => keyframe.path === 'visual.opacity')?.value,
+      keyframeFilterHue: editedImage?.keyframes?.find((keyframe) => keyframe.path === 'effect.video-filter.params')?.value?.hue,
       previewHue: activeAfterTransform?.filter?.hue,
       previewInvert: activeAfterTransform?.filter?.invert,
       previewSepia: activeAfterTransform?.filter?.sepia,
@@ -225,7 +232,7 @@ export async function run(ctx) {
     pass('modular mixer shell: selected element inspector updates shared project state');
   else fail('modular mixer shell inspector controls did not update state: ' + JSON.stringify(result));
 
-  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.imageCropX === 0.15 && result.imageCropWidth === 0.6 && result.transitionDuration === 300 && result.transitionKind === 'wipe-left' && result.filterBrightness === 0.2 && result.filterGrayscale === 1 && result.filterHue === 45 && result.filterInvert === 1 && result.filterSepia === 0.6 && result.previewX === 42 && result.previewOpacity === 0.5 && result.previewCropX === 0.15 && result.previewCropWidth === 0.6 && result.previewHue === 45 && result.previewInvert === 1 && result.previewSepia === 0.6)
+  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.imageCropX === 0.15 && result.imageCropWidth === 0.6 && result.transitionDuration === 300 && result.transitionKind === 'wipe-left' && result.filterBrightness === 0.2 && result.filterGrayscale === 1 && result.filterHue === 45 && result.filterInvert === 1 && result.filterSepia === 0.6 && result.keyframeButton && result.keyframeCount >= 7 && result.keyframeCursor === 3000 && result.keyframeOpacity === 0.5 && result.keyframeFilterHue === 45 && result.previewX === 42 && result.previewOpacity === 0.5 && result.previewCropX === 0.15 && result.previewCropWidth === 0.6 && result.previewHue === 45 && result.previewInvert === 1 && result.previewSepia === 0.6)
     pass('modular mixer shell: visual transform controls update model and seek-frame preview');
   else fail('modular mixer shell visual transform controls mismatch: ' + JSON.stringify(result));
 

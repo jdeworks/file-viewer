@@ -1,4 +1,5 @@
 import {
+  captureElementKeyframe,
   createProjectFromAssetMetadata,
   selectTarget,
   setElementTransition,
@@ -33,6 +34,7 @@ export function mountMediaMixerShell(root, options = {}) {
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
     if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: 0.08 };
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
+    if (action.type === 'capture-keyframe') project = captureElementKeyframe(project, action.elementId, viewport.cursorMs);
     if (action.type === 'update-element') project = updateProjectElementField(project, action);
     render();
     options.onChange?.({ action, project, viewport, snapshot });

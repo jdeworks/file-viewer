@@ -3,6 +3,7 @@ import {
   applyVideoProxyResults,
   buildVideoMixExportPlan,
   buildVideoProxyPlan,
+  captureElementKeyframe,
   exportProjectSettingsJson,
   moveElement,
   renderVideoMixWithFfmpeg,
@@ -83,6 +84,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
     if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: fitZoom() };
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
+    if (action.type === 'capture-keyframe') project = captureElementKeyframe(project, action.elementId, viewport.cursorMs);
     if (action.type === 'update-element') project = updateProjectElementField(project, action);
     render();
   };

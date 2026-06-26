@@ -2,6 +2,7 @@ import {
   addElement,
   addAsset,
   addLane,
+  captureElementKeyframe,
   computeCompareOverlap,
   createElement,
   createLane,
@@ -63,6 +64,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
     if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: 0.06 };
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
+    if (action.type === 'capture-keyframe') project = captureElementKeyframe(project, action.elementId, viewport.cursorMs);
     if (action.type === 'update-element') {
       project = updateProjectElementField(project, action);
       project = refreshCompareTargets(project);

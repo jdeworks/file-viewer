@@ -304,6 +304,31 @@ export function setElementPlacementDuration(project, elementId, placementDuratio
   }));
 }
 
+export function captureElementKeyframe(project, elementId, timeMs, options = {}) {
+  const element = project.elements.find((item) => item.id === elementId);
+  if (!element) return cloneProject(project);
+  const values = keyframeValuesFor(element, options.paths);
+  if (!values.length) return cloneProject(project);
+  const t = Math.max(0, Math.round(finiteNumber(timeMs, 0)));
+  return updateElement(project, elementId, (current) => {
+    const next = (current.keyframes || [])
+      .filter((keyframe) => !(Math.round(finiteNumber(keyframe.timeMs, 0)) === t
+        && values.some((value) => value.path === keyframe.path)));
+    for (const value of values) {
+      next.push({
+        id: `keyframe-${current.id}-${safeKeyPath(value.path)}-${t}`,
+        targetId: current.id,
+        path: value.path,
+        timeMs: t,
+        value: clone(value.value),
+        interpolation: options.interpolation || 'linear',
+      });
+    }
+    next.sort((a, b) => (a.timeMs - b.timeMs) || String(a.path).localeCompare(String(b.path)));
+    return { ...current, keyframes: next };
+  });
+}
+
 export function splitElement(project, elementId, splitAtMs) {
   const element = project.elements.find((item) => item.id === elementId);
   if (!element) return cloneProject(project);
@@ -476,6 +501,29 @@ function normalizeElementEffects(effects = [], elementId = null) {
     params: clone(effect.params || {}),
     keyframes: Array.isArray(effect.keyframes) ? clone(effect.keyframes) : [],
   }));
+}
+
+function keyframeValuesFor(element, paths = null) {
+  const requested = new Set(Array.isArray(paths) ? paths : []);
+  const include = (path) => !requested.size || requested.has(path);
+  const values = [];
+  const add = (path, value) => {
+    if (include(path)) values.push({ path, value });
+  };
+  add('visual.x', finiteNumber(element.visual?.x, 0));
+  add('visual.y', finiteNumber(element.visual?.y, 0));
+  add('visual.scaleX', finiteNumber(element.visual?.scaleX, 1));
+  add('visual.scaleY', finiteNumber(element.visual?.scaleY, 1));
+  add('visual.rotation', finiteNumber(element.visual?.rotation, 0));
+  add('visual.opacity', clampNumber(element.visual?.opacity, 0, 1, 1));
+  if (element.visual?.crop) add('visual.crop', normalizeVisualCrop(element.visual.crop));
+  const filter = (element.effects || []).find((effect) => effect.kind === 'video-filter' && effect.enabled !== false);
+  if (filter?.params) add('effect.video-filter.params', clone(filter.params));
+  return values;
+}
+
+function safeKeyPath(path) {
+  return String(path || 'value').replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'value';
 }
 
 function normalizeTransition(transition = {}) {

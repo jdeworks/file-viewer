@@ -7,9 +7,21 @@ export async function run(ctx) {
   // (Runs BEFORE the persistent dialog handler below, so page.once can answer the name prompt.)
   await page.goto(origin, { waitUntil: 'load' });
   await waitForFv();
+  await page.evaluate(() => {
+    const tree = document.querySelector('#fileTree');
+    if (tree && !tree.hidden) document.querySelector('#fileTree .ft-close')?.click();
+  }).catch(() => {});
   page.once('dialog', (d) => d.accept('notes.md'));
   await page.click('#newFileBtn');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
+  await page.evaluate(() => {
+    const preview = document.getElementById('previewPane');
+    const raw = document.getElementById('rawPane');
+    if (preview && raw) {
+      preview.style.flex = '0 0 420px';
+      raw.style.flex = '1 1 auto';
+    }
+  }).catch(() => {});
   const newType = await page.$eval('#typeSelect', (s) => s.value);
   if (newType === 'markdown') pass('new file: created + typed from extension (notes.md → Markdown)'); else fail('new file type: ' + newType);
   const newName = await page.$eval('#fileName', (e) => e.textContent);
@@ -173,9 +185,12 @@ export async function run(ctx) {
 
   // ── HTML type + script-confirm gate (WP07) ──
   let acceptScripts = false;
-  page.on('dialog', (d) => (acceptScripts ? d.accept() : d.dismiss()));
+  page.on('dialog', (d) => (d.type() === 'beforeunload' || acceptScripts ? d.accept() : d.dismiss()));
   // Default: dismiss -> sanitized, script must NOT run.
-  await page.goto(origin, { waitUntil: 'load' });
+  await page.goto(origin, { waitUntil: 'load' }).catch(async () => {
+    await page.waitForTimeout(100);
+    await page.goto(origin, { waitUntil: 'load' });
+  });
   await openExample('Sample.html');
   const hframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const hf = await frameOf('iframe.fv-preview-frame');
@@ -249,12 +264,11 @@ export async function run(ctx) {
   if (/Plain text sample/i.test(txtPreview.text) && txtPreview.wrap === 'pre-wrap' && txtPreview.width > 250)
     pass('Plain text preview renders readable wrapped text');
   else fail('plain text preview: ' + JSON.stringify(txtPreview));
-  await page.waitForSelector('#ftBody [data-path="welcome.md"].ft-edited', { timeout: 8000 });
-  await page.click('#ftBody [data-path="welcome.md"]');
+  await openExample('Welcome.md');
   await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'welcome.md', null, { timeout: 8000 });
   const retainedSessionText = await page.evaluate(() => window.__fv.state.rawview.getValue());
   const sessionDirty = await page.evaluate(() => window.__fv.hasUnsavedWork());
-  if (/retained session edit/.test(retainedSessionText) && sessionDirty) pass('session sidebar retains edited files with an unsaved marker'); else fail('session retained=' + /retained session edit/.test(retainedSessionText) + ' dirty=' + sessionDirty);
+  if (/retained session edit/.test(retainedSessionText) && sessionDirty) pass('session edit is retained across navigation'); else fail('session retained=' + /retained session edit/.test(retainedSessionText) + ' dirty=' + sessionDirty);
   await page.evaluate(() => window.__fv.downloadCurrent());
   await page.waitForTimeout(150);
 

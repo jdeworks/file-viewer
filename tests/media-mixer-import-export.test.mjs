@@ -7,6 +7,7 @@ import {
   createProjectFromAssetMetadata,
   exportProjectSettings,
   exportProjectSettingsJson,
+  captureElementKeyframe,
   hashFileIdentity,
   importProjectSettings,
   partialByteRanges,
@@ -31,6 +32,14 @@ import {
     decodedBuffer: { shouldNotExport: true },
     retainedNote: 'manual-marker',
   };
+  project.elements[0].keyframes = [{
+    id: 'kf-visual-opacity',
+    targetId: project.elements[0].id,
+    path: 'visual.opacity',
+    timeMs: 1000,
+    value: 0.5,
+    interpolation: 'linear',
+  }];
   const settings = exportProjectSettings(project);
   assert.equal(settings.schema, MIXER_PROJECT_SCHEMA, 'export: writes mixer schema');
   assert.equal(settings.assets[0].hash.value, 'abc', 'export: keeps identity hash');
@@ -40,12 +49,26 @@ import {
   assert.equal(settings.elements[0].analysis.waveformSummary, undefined, 'export: omits runtime waveform summaries');
   assert.equal(settings.elements[0].analysis.decodedBuffer, undefined, 'export: omits decoded audio buffers');
   assert.equal(settings.elements[0].analysis.retainedNote, 'manual-marker', 'export: keeps non-runtime analysis notes');
+  assert.equal(settings.elements[0].keyframes[0].path, 'visual.opacity', 'export: keeps config keyframes');
 
   const json = exportProjectSettingsJson(project);
   assert.equal(/waveformSummary|decodedBuffer/.test(json), false, 'export: runtime analysis not serialized to JSON');
   const imported = importProjectSettings(json);
+  assert.equal(imported.project.elements[0].keyframes[0].value, 0.5, 'import: restores config keyframes');
   assert.equal(imported.project.assets[0].status, 'missing', 'import: asset is missing until relinked');
   assert.equal(imported.needsRelink, true, 'import: reports missing media');
+}
+
+{
+  const project = createProjectFromAssetMetadata({
+    id: 'asset-image',
+    name: 'still.png',
+    capabilities: { hasImage: true },
+    media: { durationMs: 0 },
+  });
+  const withKeyframe = captureElementKeyframe(project, project.elements[0].id, 500);
+  const imported = importProjectSettings(exportProjectSettingsJson(withKeyframe));
+  assert.equal(imported.project.elements[0].keyframes.some((keyframe) => keyframe.path === 'visual.opacity'), true, 'import/export: captured keyframes survive settings JSON');
 }
 
 {

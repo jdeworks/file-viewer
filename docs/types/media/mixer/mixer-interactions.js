@@ -60,6 +60,10 @@ export function attachMixerInteractions(root, getState, dispatch) {
     if (action === 'zoom-in') dispatch({ type: 'zoom-relative', factor: 1.2 });
     if (action === 'zoom-out') dispatch({ type: 'zoom-relative', factor: 1 / 1.2 });
     if (action === 'fit') dispatch({ type: 'fit' });
+    if (action === 'capture-keyframe') {
+      const elementId = event.target?.closest?.('[data-action]')?.dataset?.elementId;
+      dispatch({ type: 'capture-keyframe', elementId });
+    }
   };
 
   root.addEventListener('click', onClick);

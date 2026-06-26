@@ -551,6 +551,12 @@ Stage 7 project settings import/export UI has started:
   params as config-safe `video-filter` state, seek-frame preview carries the
   same filter values for orientation, and final video export emits matching
   ffmpeg `hue`, `negate`, and interpolated `colorchannelmixer` filters.
+- Added a first user-facing keyframe capture flow for selected visual clips.
+  The shared inspector now exposes `Capture keyframe`; Mix, Compare, Timeline,
+  and the mixer shell dispatch it through the same interaction path, recording
+  visual transform/crop/filter state at the current cursor into
+  `element.keyframes`. Settings export/import preserves those config-only
+  keyframes without media bytes.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

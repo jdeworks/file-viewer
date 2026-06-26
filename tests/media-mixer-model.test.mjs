@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   addElement,
   addLane,
+  captureElementKeyframe,
   computeCompareOverlap,
   createDefaultEq,
   createGeneratedElement,
@@ -70,6 +71,16 @@ import {
   assert.equal(withTransition.transitions[0].durationMs, 250, 'model: transition duration is preserved');
   const withoutTransition = setElementTransition(withTransition, 'element-image', { durationMs: 0 });
   assert.equal(withoutTransition.transitions.length, 0, 'model: zero-duration transition removes transition record');
+  const withKeyframe = captureElementKeyframe(withImage, 'element-image', 1234);
+  const imageKeyframes = withKeyframe.elements.find((element) => element.id === 'element-image').keyframes;
+  assert.equal(imageKeyframes.some((keyframe) => keyframe.path === 'visual.x' && keyframe.timeMs === 1234 && keyframe.value === 10), true, 'model: captures visual transform keyframe');
+  assert.equal(imageKeyframes.some((keyframe) => keyframe.path === 'effect.video-filter.params' && keyframe.value.brightness === 0.1), true, 'model: captures video filter keyframe');
+  const replacedKeyframe = captureElementKeyframe(captureElementKeyframe(withKeyframe, 'element-image', 1234), 'element-image', 1234);
+  assert.equal(
+    replacedKeyframe.elements.find((element) => element.id === 'element-image').keyframes.length,
+    imageKeyframes.length,
+    'model: recapturing the same keyframe time replaces path values instead of duplicating them',
+  );
 
   const imageProject = createProjectFromAssetMetadata({
     id: 'asset-image',
