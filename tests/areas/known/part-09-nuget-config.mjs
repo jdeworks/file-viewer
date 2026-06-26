@@ -107,6 +107,20 @@ export async function run(ctx) {
   if (/Caddy/i.test(cdfText)) pass('Caddyfile: badge shown'); else fail('caddyfile badge: ' + cdfText.slice(0, 200));
   if (/example\.com/i.test(cdfText)) pass('Caddyfile: site address shown'); else fail('caddyfile site: ' + cdfText.slice(0, 300));
   if (/reverse_proxy|file_server|encode/i.test(cdfText)) pass('Caddyfile: directives shown'); else fail('caddyfile directives: ' + cdfText.slice(0, 300));
+  if (/Caddy Review|proxy target|directory listing|hsts/i.test(cdfText)) pass('Caddyfile: review findings shown'); else fail('caddyfile review: ' + cdfText.slice(0, 400));
+  const cdfHelpTitle = await page.$eval('#previewHost .cdf-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Caddyfile|source|Open line/i.test(cdfHelpTitle)) pass('Caddyfile: directive hover help shown'); else fail('Caddyfile source help title missing');
+  const cdfSourceCollapsed = await page.$eval('#previewHost .cdf-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (cdfSourceCollapsed) pass('Caddyfile: source collapsed'); else fail('Caddyfile: source not collapsed');
+  const cdfSourceLine = await page.$eval('#previewHost .cdf-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .cdf-doc .kf-source-details');
+    return details?.open && document.getElementById(`caddy-line-${line}`);
+  }, cdfSourceLine);
+  pass('Caddyfile: source links open source');
 
   // ── nginx.conf viewer ──
   await openExample('nginx.conf');
