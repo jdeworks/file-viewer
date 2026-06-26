@@ -8,6 +8,7 @@ const SECTIONS = [
   ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
   ["Guardian", "Band floors post a pink Ω guardian by the stairs — huge HP and a trick (it forks minions or splits into shards). Beat it to pass."],
+  ["Factions", "Foes come in two rival camps (red vs orange). When they're not chasing you they fight each other — lead a pack past a rival and let them thin each other out."],
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],

@@ -105,7 +105,9 @@ export function spawnMonster(rng, floor, index) {
     sight: def.fast || def.ranged ? 7 : 5,
     chasing: false,
     // Which of the 5 shared real-time movement clocks this monster ticks on (0=fastest .4s).
-    bucket: rng.int(0, 4)
+    bucket: rng.int(0, 4),
+    // Faction (C5): two rival camps that fight each other when not engaged with @ — bait them.
+    faction: rng.int(0, 1)
   };
   for (const b of BEHAVIOURS) if (def[b]) m[b] = true;
   if (m.ambush) m.hidden = true; // disguised as a wall until @ steps close

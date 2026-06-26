@@ -572,7 +572,9 @@ function spawnMonster(rng, floor, index) {
     sight: def.fast || def.ranged ? 7 : 5,
     chasing: false,
     // Which of the 5 shared real-time movement clocks this monster ticks on (0=fastest .4s).
-    bucket: rng.int(0, 4)
+    bucket: rng.int(0, 4),
+    // Faction (C5): two rival camps that fight each other when not engaged with @ — bait them.
+    faction: rng.int(0, 1)
   };
   for (const b of BEHAVIOURS) if (def[b]) m[b] = true;
   if (m.ambush) m.hidden = true;
@@ -730,6 +732,15 @@ function patrolStep(world, m, occupied) {
   }
   return null;
 }
+function adjacentRival(world, m) {
+  for (const d of DIR_LIST) {
+    const x = m.x + DIRS[d].dx;
+    const y = m.y + DIRS[d].dy;
+    const o = world.monsters.find((q) => q.alive && !q.ally && q.x === x && q.y === y && q.faction !== m.faction && q !== m);
+    if (o) return o;
+  }
+  return null;
+}
 function adjacentFree(world, m, occupied) {
   for (const d of DIR_LIST) {
     const x = m.x + DIRS[d].dx;
@@ -793,7 +804,8 @@ function makeMinion(world) {
     dir: "down",
     sight: 6,
     chasing: true,
-    bucket: world._summonN % 5
+    bucket: world._summonN % 5,
+    faction: 0
   };
 }
 function detonate(world, at, player, events) {
@@ -927,6 +939,7 @@ function monsterTurn(world, player, events, filter) {
         const spot = adjacentFree(world, m, occupied);
         if (spot) {
           const minion = makeMinion(world);
+          minion.faction = m.faction;
           minion.x = spot.x;
           minion.y = spot.y;
           minion.home = { x: spot.x, y: spot.y };
@@ -939,6 +952,18 @@ function monsterTurn(world, player, events, filter) {
         }
       } else if (m._cd > 0) {
         m._cd -= 1;
+      }
+    }
+    if (!sees && !m.chasing) {
+      const rival = adjacentRival(world, m);
+      if (rival) {
+        rival.hp -= Math.max(1, Math.round(m.atk * 0.8));
+        if (rival.hp <= 0) {
+          rival.alive = false;
+          occupied.delete(rival.y * world.width + rival.x);
+          if (rival.explode) detonate(world, rival, { hp: null }, events);
+        }
+        continue;
       }
     }
     const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied)) : (m.chasing = false, patrolStep(world, m, occupied));
@@ -1442,7 +1467,8 @@ function spawnSplit(world, foe) {
         sight: 7,
         chasing: true,
         bucket: (made + 1) % 5,
-        statuses: {}
+        statuses: {},
+        faction: foe.faction || 0
       });
       made += 1;
     }
@@ -1771,6 +1797,7 @@ var SECTIONS = [
   ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
   ["Guardian", "Band floors post a pink Ω guardian by the stairs — huge HP and a trick (it forks minions or splits into shards). Beat it to pass."],
+  ["Factions", "Foes come in two rival camps (red vs orange). When they're not chasing you they fight each other — lead a pack past a rival and let them thin each other out."],
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
@@ -1960,7 +1987,8 @@ function createView(screenEl) {
       const disguised = m.ambush && m.hidden;
       const glyph = disguised ? "#" : m.glyph;
       if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
-      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.guardian ? "s2-c-guardian" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
+      const baseFoe = m.faction === 1 ? "s2-c-foe-b" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.guardian ? "s2-c-guardian" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : baseFoe;
       const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
       const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;

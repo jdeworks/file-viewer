@@ -85,6 +85,17 @@ function patrolStep(world, m, occupied) {
   return null;
 }
 
+// An alive, non-ally monster of the OTHER faction on a cardinally-adjacent cell (C5 infighting).
+function adjacentRival(world, m) {
+  for (const d of DIR_LIST) {
+    const x = m.x + DIRS[d].dx;
+    const y = m.y + DIRS[d].dy;
+    const o = world.monsters.find((q) => q.alive && !q.ally && q.x === x && q.y === y && q.faction !== m.faction && q !== m);
+    if (o) return o;
+  }
+  return null;
+}
+
 function adjacentFree(world, m, occupied) {
   for (const d of DIR_LIST) {
     const x = m.x + DIRS[d].dx;
@@ -142,7 +153,7 @@ function makeMinion(world) {
     id: "spawnling", glyph: "·", name: "fork spawn", hp, maxHp: hp,
     atk: Math.max(2, Math.round(4 * scale)), xp: 1, drop: 1,
     alive: true, x: 0, y: 0, dir: "down", sight: 6, chasing: true,
-    bucket: world._summonN % 5
+    bucket: world._summonN % 5, faction: 0
   };
 }
 
@@ -270,6 +281,7 @@ export function monsterTurn(world, player, events, filter) {
         const spot = adjacentFree(world, m, occupied);
         if (spot) {
           const minion = makeMinion(world);
+          minion.faction = m.faction; // minions share their summoner's camp
           minion.x = spot.x; minion.y = spot.y; minion.home = { x: spot.x, y: spot.y };
           world.monsters.push(minion);
           occupied.add(spot.y * world.width + spot.x);
@@ -280,6 +292,16 @@ export function monsterTurn(world, player, events, filter) {
         }
       } else if (m._cd > 0) {
         m._cd -= 1;
+      }
+    }
+
+    // Faction infighting (C5): an idle monster (not engaged with @) bites an adjacent rival camp.
+    if (!sees && !m.chasing) {
+      const rival = adjacentRival(world, m);
+      if (rival) {
+        rival.hp -= Math.max(1, Math.round(m.atk * 0.8));
+        if (rival.hp <= 0) { rival.alive = false; occupied.delete(rival.y * world.width + rival.x); if (rival.explode) detonate(world, rival, { hp: null }, events); }
+        continue;
       }
     }
 

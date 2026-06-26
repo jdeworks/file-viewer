@@ -229,6 +229,7 @@
 .s2-c-void { color: #050403; }
 .s2-c-player { color: #79f0ff; font-weight: 700; }
 .s2-c-foe { color: #ff5a4a; font-weight: 700; }
+.s2-c-foe-b { color: #ff9a3a; font-weight: 700; } /* C5 rival faction tint */
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
 .s2-c-elite { color: #ffd24a; font-weight: 700; text-shadow: 0 0 5px #ff9b2e; } /* elite — gilded + glow */
 .s2-c-ambush { color: #6b5026; font-weight: 400; } /* disguised ambusher — exact terrain colour */
@@ -244,7 +245,7 @@
 .s2-c-trap { color: #c0563a; } /* sprung trap marker */
 /* Layer order in the absolute sprite stack: hazards under loot under foes under @. */
 .s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm, .s2-c-trap { z-index: 0; }
-.s2-c-foe, .s2-c-foe2, .s2-c-elite, .s2-c-ambush { z-index: 2; }
+.s2-c-foe, .s2-c-foe-b, .s2-c-foe2, .s2-c-elite, .s2-c-ambush, .s2-c-guardian, .s2-c-ally { z-index: 2; }
 .s2-c-player { z-index: 3; }
 .s2-c-item { color: #ffd54a; }
 .s2-c-potion { color: #6effa6; font-weight: 700; }

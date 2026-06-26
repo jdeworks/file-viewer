@@ -55,7 +55,7 @@ function spawnSplit(world, foe) {
       world.monsters.push({
         id: "shard", glyph: "ω", name: `shard of ${foe.name}`, hp, maxHp: hp,
         atk: Math.max(2, Math.round(foe.atk * 0.6)), xp: 2, drop: 1, alive: true,
-        x, y, home: { x, y }, dir: "down", sight: 7, chasing: true, bucket: (made + 1) % 5, statuses: {}
+        x, y, home: { x, y }, dir: "down", sight: 7, chasing: true, bucket: (made + 1) % 5, statuses: {}, faction: foe.faction || 0
       });
       made += 1;
     }

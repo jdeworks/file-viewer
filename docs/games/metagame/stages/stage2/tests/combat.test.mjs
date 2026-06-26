@@ -235,5 +235,23 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   ok(hasStatus(target, "burn"), "burning affix sets burn on the struck foe");
 }
 
+// ── C5 faction infighting: idle rivals trade blows; same camp doesn't ────────────────────────────
+{
+  const w = arena(7);
+  w.pos = { x: 6, y: 1 }; // player on the wall → no LOS, foes idle
+  const red = foe({ x: 2, y: 1, hp: 20, faction: 0, chasing: false, sight: 4 });
+  const orange = foe({ x: 3, y: 1, hp: 20, faction: 1, chasing: false, sight: 4 });
+  w.monsters = [red, orange];
+  monsterTurn(w, { hp: 100, def: 0, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(red.hp < 20 && orange.hp < 20, "idle rival factions bite each other");
+  const w2 = arena(7);
+  w2.pos = { x: 6, y: 1 };
+  const a = foe({ x: 2, y: 1, hp: 20, faction: 0, chasing: false, sight: 4 });
+  const b = foe({ x: 3, y: 1, hp: 20, faction: 0, chasing: false, sight: 4 });
+  w2.monsters = [a, b];
+  monsterTurn(w2, { hp: 100, def: 0, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(a.hp === 20 && b.hp === 20, "same-faction foes don't infight");
+}
+
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");
 if (failed) process.exit(1);
