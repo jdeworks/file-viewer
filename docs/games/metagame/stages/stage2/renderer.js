@@ -1,16 +1,14 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
-import { attachGrid, buildFloor, exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
+import { exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
 import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
-import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
 import { createView, renderHpBar } from "./view.js";
-import { BTS_PATH, CIPHER_PATH, bellMessages } from "./messages.js";
-
-const MAX_FLOOR = 5;
+import { BTS_PATH, bellMessages } from "./messages.js";
+import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, openCipher, openBts, once, DIR_ARROW } from "./runloop.js";
 
 const MOVE_KEYS = {
   ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
@@ -350,94 +348,4 @@ export function renderStage2({
       completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
     }
   }
-}
-
-// ── Floor / run lifecycle ─────────────────────────────────────────────────────────────────────
-function ensureWorld(state) {
-  const run = state.run;
-  if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
-  if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
-    run.world = buildFloor(run.seed, run.floor);
-  } else if (!run.world.grid) {
-    // Loaded from a save: the grid is non-enumerable so it wasn't serialised. Regenerate the
-    // deterministic terrain (entities kept their saved positions) and re-attach it in memory.
-    attachGrid(run.world, run.seed, run.world.floor);
-  }
-}
-
-function descend(state, opts = {}) {
-  const run = state.run;
-  run.entity.glyphsThisRun += 3;
-  run.active = true;
-  state.meta.bestFloor = Math.max(Number(state.meta.bestFloor || 0), run.floor);
-  state.meta.floorsCleared[run.floor] = true;
-  if (run.floor >= MAX_FLOOR) {
-    run.boss.reached = true;
-    appendLog(state, "the stairs end at the boss syntax. it waits.");
-    return;
-  }
-  run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch) });
-  if (opts.branch) appendLog(state, `you take the branching stair — a deadlier, richer floor ${run.floor}.`);
-  else appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
-}
-
-// Bank the run's glyphs, roll a fresh entity from purchased upgrades, and draw a new dungeon.
-function resetRun(state, { banked, death }) {
-  const run = state.run;
-  if (banked) {
-    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + Number(run.entity.glyphsThisRun || 0);
-  }
-  if (death) state.meta.deaths = Number(state.meta.deaths || 0) + 1;
-  state.meta.runCount = Number(state.meta.runCount || 0) + 1;
-  run.seed = `s2-run${state.meta.runCount}`;
-  run.entity = rollEntity(state.meta.shopUpgrades);
-  run.floor = 1;
-  run.active = false;
-  run.boss.reached = false;
-  run.world = buildFloor(run.seed, 1);
-}
-
-// ── Rendering helpers ─────────────────────────────────────────────────────────────────────────
-// Cardinal arrow for the next step of the Stairwell Sense route (one of the four move dirs).
-const DIR_ARROW = { up: "↑", down: "↓", left: "←", right: "→" };
-
-const NOISE_CHARS = "╳✕X#▓░*/\\";
-function damageNoise(fatal) {
-  const rows = fatal ? 7 : 4;
-  const cols = fatal ? 34 : 26;
-  const lines = [];
-  for (let y = 0; y < rows; y += 1) {
-    let line = "";
-    for (let x = 0; x < cols; x += 1) {
-      line += Math.random() < 0.7 ? NOISE_CHARS[Math.floor(Math.random() * NOISE_CHARS.length)] : " ";
-    }
-    lines.push(line);
-  }
-  return lines.join("\n");
-}
-
-function appendLog(state, line) {
-  state.run.combatLog = [...state.run.combatLog, line].slice(-6);
-}
-
-function openCipher(viewer) {
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(CIPHER_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(CIPHER_PATH);
-}
-
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(2);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(2);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
-  };
 }
