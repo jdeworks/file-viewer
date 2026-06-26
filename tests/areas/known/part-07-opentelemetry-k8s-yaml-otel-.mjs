@@ -98,6 +98,20 @@ export async function run(ctx) {
   if (/Apache/i.test(apacheText)) pass('httpd.conf: Apache badge shown'); else fail('apache badge: ' + apacheText.slice(0, 200));
   if (/VirtualHost|example\.com/i.test(apacheText)) pass('httpd.conf: VirtualHost or ServerName shown'); else fail('apache vhosts: ' + apacheText.slice(0, 300));
   if (/SSL|DocumentRoot/i.test(apacheText)) pass('httpd.conf: SSL or DocumentRoot shown'); else fail('apache ssl/docroot: ' + apacheText.slice(0, 300));
+  if (/Apache Review|http redirect|directory listing|public access/i.test(apacheText)) pass('httpd.conf: review findings shown'); else fail('apache review: ' + apacheText.slice(0, 400));
+  const apacheHelpTitle = await page.$eval('#previewHost .apachecfg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Apache|source|Open line/i.test(apacheHelpTitle)) pass('httpd.conf: directive hover help shown'); else fail('apache source help title missing');
+  const apacheSourceCollapsed = await page.$eval('#previewHost .apachecfg-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (apacheSourceCollapsed) pass('httpd.conf: source collapsed'); else fail('httpd.conf: source not collapsed');
+  const apacheSourceLine = await page.$eval('#previewHost .apachecfg-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .apachecfg-doc .kf-source-details');
+    return details?.open && document.getElementById(`apache-line-${line}`);
+  }, apacheSourceLine);
+  pass('httpd.conf: source links open source');
 
   // ── haproxy.cfg viewer ──
   await openExample('haproxy.cfg');
