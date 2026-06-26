@@ -161,6 +161,36 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const composerHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   if (composerHrefs.some((h) => /packagist\.org\/packages\/guzzlehttp\/guzzle/.test(h))) pass('composer.json: dependencies link to Packagist'); else fail('packagist links: ' + composerHrefs.join(','));
+  const composerSourceOpen = await page.$eval('#previewHost .pj-doc .kf-source-details', (e) => e.open);
+  if (!composerSourceOpen) pass('composer.json: source starts collapsed'); else fail('composer source should start collapsed');
+  await page.click('#previewHost .pj-doc .kf-list .kf-source-link');
+  const composerJump = await page.$eval('#previewHost .pj-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (composerJump.open && composerJump.highlighted) pass('composer.json: dependency click opens and highlights source'); else fail('composer source jump: ' + JSON.stringify(composerJump));
+  const composerBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/composer-json/render.js');
+    const text = JSON.stringify({
+      name: 'acme/risky',
+      require: {
+        php: '*',
+        'monolog/monolog': 'dev-main',
+        'guzzlehttp/guzzle': '^7.0',
+      },
+      'require-dev': {
+        'guzzlehttp/guzzle': '^7.0',
+      },
+    }, null, 2);
+    const rendered = (await mod.render({ text, filename: 'composer.json' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Composer Review|broad range|platform wildcard|moving branch|duplicate dependency|monolog\/monolog|guzzlehttp\/guzzle/i.test(composerBad.out + composerBad.issues) && !composerBad.open) pass('composer.json: broad, platform, branch, and duplicate diagnostics shown'); else fail('composer synthetic diagnostics: ' + JSON.stringify(composerBad).slice(0, 1000));
 
   await openExample('Gemfile');
   await page.waitForSelector('#previewHost .gemfile-doc', { timeout: 12000 });
