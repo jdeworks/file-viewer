@@ -203,6 +203,11 @@ function analyzeLock(lock, lines) {
   }
 
   const directNames = new Set(rootDeps.map((dep) => dep.name));
+  for (const dep of rootDeps) {
+    if (!hasDirectPackage(packages, dep.name)) {
+      issues.push({ severity: 'warning', label: 'manifest/lock mismatch', line: dep.line, message: `${dep.name} is declared at the root but has no direct resolved package entry in this lockfile.` });
+    }
+  }
   const directCount = packagesObj
     ? packages.filter((pkg) => (pkg.path.match(/node_modules\//g) || []).length === 1 && directNames.has(pkg.name)).length || rootDeps.length
     : packages.filter((pkg) => !pkg.dev).length;
@@ -214,6 +219,10 @@ function analyzeLock(lock, lines) {
     packages: packages.sort((a, b) => a.name.localeCompare(b.name)),
     issues,
   };
+}
+
+function hasDirectPackage(packages, name) {
+  return packages.some((pkg) => pkg.name === name && (pkg.path === name || pkg.path === `node_modules/${name}` || pkg.path.endsWith(`/node_modules/${name}`)));
 }
 
 function reviewResolvedPackage(pkg, issues) {

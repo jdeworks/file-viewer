@@ -134,6 +134,7 @@ export async function run(ctx) {
           dependencies: {
             loose: '*',
             custom: '^1.0.0',
+            missing: '^2.0.0',
           },
         },
         'node_modules/loose': {
@@ -155,7 +156,7 @@ export async function run(ctx) {
     rendered.remove();
     return { out, issues, open };
   });
-  if (/Package Lock Review|broad range|missing integrity|plain HTTP|custom source|loose|custom/i.test(plkBad.out + plkBad.issues) && !plkBad.open) pass('package-lock.json: broad range and resolution diagnostics shown'); else fail('package-lock synthetic diagnostics: ' + JSON.stringify(plkBad).slice(0, 1000));
+  if (/Package Lock Review|broad range|missing integrity|plain HTTP|custom source|manifest\/lock mismatch|loose|custom|missing/i.test(plkBad.out + plkBad.issues) && !plkBad.open) pass('package-lock.json: broad range, mismatch, and resolution diagnostics shown'); else fail('package-lock synthetic diagnostics: ' + JSON.stringify(plkBad).slice(0, 1000));
 
   // ── composer.lock viewer ──
   await openExample('composer.lock');

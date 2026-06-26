@@ -124,12 +124,12 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Generic JSON: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
 - [x] Generic INI: shared secret classifier, masked key/value rows, review warnings, source-linked keys, and collapsed redacted source.
 - [x] Generic TOML masking: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
-- [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
+- [x] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [x] Cargo.toml: source-linked dependencies, crates/docs links, broad/git/path dependency review findings, duplicate dependency categories, and collapsed source.
 - [x] Composer manifest: source-linked package requirements, Packagist links, platform wildcard/dev-branch/duplicate dependency findings, and collapsed source.
 - [x] package-lock.json: source-linked root dependencies/resolved packages, integrity/custom-source/plain-HTTP review findings, npm links, and collapsed source.
-- [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
+- [x] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
 - [ ] Server/service configs: Apache, Nginx, Caddy, HAProxy, PostgreSQL, MySQL, Redis, MongoDB, SSHD.
 - [x] Apache HTTPD config: source-linked globals/vhosts/access blocks, directive hover explanations, HTTP/TLS/proxy/directory review findings, and collapsed numbered source.
 - [x] Caddyfile: source-linked sites/directives, directive hover explanations, TLS/proxy/HSTS/directory-listing review findings, and collapsed numbered source.
