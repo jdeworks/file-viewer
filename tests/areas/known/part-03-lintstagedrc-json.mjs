@@ -97,6 +97,17 @@ export async function run(ctx) {
   const hvText = await page.$eval('#previewHost .helmvalues-doc', (e) => e.textContent);
   if (/Helm/i.test(hvText)) pass('values.yaml: Helm Values badge shown'); else fail('helm-values badge: ' + hvText.slice(0, 200));
   if (/image|service/i.test(hvText)) pass('values.yaml: values info shown'); else fail('helm-values content: ' + hvText.slice(0, 200));
+  if (/Helm Values Review|autoscaling|reference|public host/i.test(hvText)) pass('values.yaml: review findings shown'); else fail('helm-values review: ' + hvText.slice(0, 300));
+  const hvHelpTitle = await page.$eval('#previewHost .helmvalues-doc .helmvalues-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Helm values|Open line|source/i.test(hvHelpTitle)) pass('values.yaml: hover source help shown'); else fail('helm-values hover help: ' + hvHelpTitle);
+  const hvSourceCollapsed = await page.$eval('#previewHost .helmvalues-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (hvSourceCollapsed) pass('values.yaml: source collapsed'); else fail('helm-values source should start collapsed');
+  const hvSourceLine = await page.$eval('#previewHost .helmvalues-doc .helmvalues-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .helmvalues-doc .kf-source-details');
+    return details?.open && document.getElementById(`helmvalues-line-${line}`);
+  }, hvSourceLine, { timeout: 3000 });
+  pass('values.yaml: source links open source');
 
   // ── package-lock.json viewer ──
   await openExample('package-lock.json');
