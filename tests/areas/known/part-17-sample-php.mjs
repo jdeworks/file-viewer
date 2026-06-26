@@ -8,6 +8,22 @@ export async function run(ctx) {
   await openExample('sample.php');
   await page.waitForSelector('#previewHost .php-doc', { timeout: 12000 });
   pass('php-lang: rendered');
+  const phpText = await page.$eval('#previewHost .php-doc', (e) => e.textContent);
+  if (/namespace App\\Services|ContentService|RepositoryInterface/i.test(phpText)) pass('php-lang: namespace and types shown'); else fail('php-lang namespace/types: ' + phpText.slice(0, 400));
+  if (/returns Post|int \$id|in ContentService|privateclearCache|staticgetInstanceCount/i.test(phpText)) pass('php-lang: member ownership, params, and returns shown'); else fail('php-lang function details: ' + phpText.slice(0, 1000));
+  if (/require_once|dynamic path|App\\Helpers\\format_date|MAX_ITEMS_PER_PAGE/i.test(phpText)) pass('php-lang: includes and use declarations explained'); else fail('php-lang imports/includes: ' + phpText.slice(0, 1000));
+  const phpTypeHint = await page.$eval('#previewHost .php-doc .php-tag-class', (e) => e.title);
+  if (/Instantiable|state|behavior/i.test(phpTypeHint)) pass('php-lang: type hover help present'); else fail('php-lang type hint: ' + phpTypeHint);
+  const phpPrivateHint = await page.$eval('#previewHost .php-doc .php-tag-private', (e) => e.title);
+  if (/declaring class|accessible/i.test(phpPrivateHint)) pass('php-lang: visibility hover help present'); else fail('php-lang visibility hint: ' + phpPrivateHint);
+  const phpSourceOpen = await page.$eval('#previewHost .php-doc .kf-source-details', (e) => e.open);
+  if (!phpSourceOpen) pass('php-lang: source starts collapsed'); else fail('php-lang source should start collapsed');
+  await page.click('#previewHost .php-doc .kf-source-link');
+  const phpJump = await page.$eval('#previewHost .php-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (phpJump.open && phpJump.highlighted) pass('php-lang: item click opens and highlights source'); else fail('php-lang source jump: ' + JSON.stringify(phpJump));
 
   // ── sample.ps1 viewer (powershell-lang plugin) ──
   await openExample('sample.ps1');
