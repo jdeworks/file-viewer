@@ -69,6 +69,7 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
     exhaust: [],
     turn: 1,
     cardsPlayedThisTurn: 0,
+    firstCardDiscount: 0, // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
     energySpentThisTurn: 0,
     playedIdsThisTurn: [],
     lastCardPlayed: null,
@@ -115,10 +116,13 @@ export function playCard(combat, handIndex) {
   if (cardId == null) return { ok: false, reason: "no-card" };
   const card = cardById(cardId);
   if (!card) return { ok: false, reason: "unknown-card" };
-  if (card.cost > combat.player.energy) return { ok: false, reason: "no-energy" };
+  // SEQUENCE: the first card played each turn may be discounted (Root Certificate relic).
+  const isFirst = combat.cardsPlayedThisTurn === 0;
+  const cost = Math.max(0, card.cost - (isFirst ? (combat.firstCardDiscount || 0) : 0));
+  if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
 
-  combat.player.energy -= card.cost;
-  combat.energySpentThisTurn += card.cost;
+  combat.player.energy -= cost;
+  combat.energySpentThisTurn += cost;
   combat.cardsPlayedThisTurn += 1;
   combat.hand.splice(handIndex, 1);
   combat.playedIdsThisTurn.push(card.id);
@@ -162,6 +166,9 @@ function makeCtx(combat, card) {
     skipEnemyNext: () => { combat.enemy.skipNext = true; },
     // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
     playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
+    // SEQUENCE: true while resolving the FIRST card played this turn (the counter is bumped before
+    // the effect runs, so the first card sees cardsPlayedThisTurn === 1).
+    get isFirstCard() { return combat.cardsPlayedThisTurn === 1; },
     get cardsPlayed() { return combat.cardsPlayedThisTurn; },
     get energySpent() { return combat.energySpentThisTurn; },
     get handSize() { return combat.hand.length; },

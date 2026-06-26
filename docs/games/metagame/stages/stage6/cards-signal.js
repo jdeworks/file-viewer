@@ -88,5 +88,16 @@ export const SIGNAL_CARDS = [
     id: "REPLAY", type: "Signal", cost: 2, rarity: "uncommon",
     text: "Deal 10. If ACK was played this turn, deal 5 more.",
     effect: (ctx) => { ctx.deal(10); if (ctx.playedThisTurn("ACK")) ctx.deal(5); }
+  },
+  // ── Act 1 LINK · SEQUENCE: opener (reward leading) + closer (reward following) ─────────────────────
+  {
+    id: "PREAMBLE", type: "Signal", cost: 1, rarity: "common",
+    text: "Deal 6. If it's the first card you play this turn, deal 6 more.",
+    effect: (ctx) => { ctx.deal(6); if (ctx.isFirstCard) ctx.deal(6); }
+  },
+  {
+    id: "FINALIZE", type: "Signal", cost: 1, rarity: "uncommon",
+    text: "Deal 8. If it's NOT the first card you play this turn, deal 8 more.",
+    effect: (ctx) => { ctx.deal(8); if (!ctx.isFirstCard) ctx.deal(8); }
   }
 ];

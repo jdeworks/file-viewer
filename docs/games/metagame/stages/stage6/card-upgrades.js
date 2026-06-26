@@ -47,7 +47,11 @@ const SPECS = {
   HANDSHAKE_LAYER: { cost: 0, text: "Gain 1 Strength. (cost 0)", effect: (ctx) => ctx.applySelf("strength", 1) },
   DEEP_PACKET: { text: "Gain 2 Strength. Apply 2 Vulnerable to the enemy.", effect: (ctx) => { ctx.applySelf("strength", 2); ctx.applyEnemy("vulnerable", 2); } },
   SESSION_KEY: { text: "Gain 2 Strength. Draw 1.", effect: (ctx) => { ctx.applySelf("strength", 2); ctx.draw(1); } },
-  ONION: { text: "Gain 4 Strength. Exhaust.", effect: (ctx) => ctx.applySelf("strength", 4) }
+  ONION: { text: "Gain 4 Strength. Exhaust.", effect: (ctx) => ctx.applySelf("strength", 4) },
+  // D1 SEQUENCE
+  PREAMBLE: { text: "Deal 8. If it's the first card this turn, deal 8 more.", effect: (ctx) => { ctx.deal(8); if (ctx.isFirstCard) ctx.deal(8); } },
+  FINALIZE: { text: "Deal 10. If it's NOT the first card this turn, deal 10 more.", effect: (ctx) => { ctx.deal(10); if (!ctx.isFirstCard) ctx.deal(10); } },
+  ROOT_CERTIFICATE: { text: "Gain 5 block. If it's the first card this turn, gain 1 energy and draw 2.", effect: (ctx) => { ctx.block(5); if (ctx.isFirstCard) { ctx.gainEnergy(1); ctx.draw(2); } } }
 };
 
 export function isUpgradedId(id) {

@@ -9,6 +9,7 @@ import {
 } from "../combat.js";
 import { STARTING_DECK } from "../cards.js";
 import { instantiateEnemy } from "../enemies.js";
+import { relicsFor } from "../relics.js";
 
 const player = { hp: 50, maxHp: 50 };
 
@@ -153,6 +154,52 @@ function fresh(enemyId = "corrupt-packet", seed = 7) {
   c.player.block = 0; // drop the block those ACKs granted to read the mirror cleanly
   endTurn(c); // mirror = 6 * 2 = 12
   assert.equal(c.player.hp, 50 - 12, "MitM mirrors 6 per card played");
+}
+
+// ── D1 SEQUENCE: opener/closer cards make play ORDER matter (lenticular) ───────────────────────────
+{
+  function firstCardDamage(cardId) {
+    const c = createCombat({ deck: STARTING_DECK, player, enemy: instantiateEnemy("corrupt-packet", 1), seed: 5 });
+    c.hand = [cardId, "ACK"]; c.player.energy = 5;
+    const before = c.enemy.hp;
+    playCard(c, 0); // play target as the FIRST card
+    return before - c.enemy.hp;
+  }
+  function secondCardDamage(cardId) {
+    const c = createCombat({ deck: STARTING_DECK, player, enemy: instantiateEnemy("corrupt-packet", 1), seed: 5 });
+    c.hand = ["ACK", cardId]; c.player.energy = 5;
+    playCard(c, 0); // ACK first (no damage)
+    const before = c.enemy.hp;
+    playCard(c, 0); // target as the SECOND card
+    return before - c.enemy.hp;
+  }
+  assert.equal(firstCardDamage("PREAMBLE"), 12, "PREAMBLE doubles when it leads");
+  assert.equal(secondCardDamage("PREAMBLE"), 6, "PREAMBLE is single when it follows");
+  assert.equal(firstCardDamage("FINALIZE"), 8, "FINALIZE is single when it leads");
+  assert.equal(secondCardDamage("FINALIZE"), 16, "FINALIZE doubles when it follows");
+
+  // Lenticular hand: opener-first is provably better than greedy closer-first.
+  function totalDamage(order) {
+    const c = createCombat({ deck: STARTING_DECK, player, enemy: instantiateEnemy("corrupt-packet", 1), seed: 5 });
+    c.hand = [...order]; c.player.energy = 5;
+    const before = c.enemy.hp;
+    playCard(c, 0); playCard(c, 0);
+    return before - c.enemy.hp;
+  }
+  const optimal = totalDamage(["PREAMBLE", "FINALIZE"]); // 12 + 16 = 28
+  const greedy = totalDamage(["FINALIZE", "PREAMBLE"]);  // 8 + 6 = 14
+  assert.ok(optimal > greedy, "leading with the opener beats the greedy order");
+  assert.equal(optimal, 28, "optimal order total");
+  assert.equal(greedy, 14, "greedy order total");
+}
+{
+  // TCP Fast Open: the first card each turn costs 1 less.
+  const c = createCombat({ deck: STARTING_DECK, player, enemy: instantiateEnemy("corrupt-packet", 1), seed: 5, relics: relicsFor(["tcp-fast-open"]) });
+  c.hand = ["RST", "RST"]; c.player.energy = 3; // RST costs 2
+  playCard(c, 0); // first card: 2 - 1 = 1 energy
+  assert.equal(c.player.energy, 2, "first card discounted by 1");
+  playCard(c, 0); // second card: full cost 2
+  assert.equal(c.player.energy, 0, "second card pays full cost");
 }
 
 console.log("stage6 combat engine tests passed");

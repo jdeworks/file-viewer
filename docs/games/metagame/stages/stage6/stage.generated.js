@@ -354,6 +354,29 @@ var SIGNAL_CARDS = [
       ctx.deal(10);
       if (ctx.playedThisTurn("ACK")) ctx.deal(5);
     }
+  },
+  // ── Act 1 LINK · SEQUENCE: opener (reward leading) + closer (reward following) ─────────────────────
+  {
+    id: "PREAMBLE",
+    type: "Signal",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 6. If it's the first card you play this turn, deal 6 more.",
+    effect: (ctx) => {
+      ctx.deal(6);
+      if (ctx.isFirstCard) ctx.deal(6);
+    }
+  },
+  {
+    id: "FINALIZE",
+    type: "Signal",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 8. If it's NOT the first card you play this turn, deal 8 more.",
+    effect: (ctx) => {
+      ctx.deal(8);
+      if (!ctx.isFirstCard) ctx.deal(8);
+    }
   }
 ];
 
@@ -468,6 +491,21 @@ var PROTOCOL_CARDS = [
     effect: (ctx) => {
       ctx.block(6);
       ctx.draw(2);
+    }
+  },
+  // Act 1 LINK · SEQUENCE: a strong opener that wants to lead the turn.
+  {
+    id: "ROOT_CERTIFICATE",
+    type: "Protocol",
+    cost: 1,
+    rarity: "rare",
+    text: "Gain 4 block. If it's the first card you play this turn, gain 1 energy and draw 1.",
+    effect: (ctx) => {
+      ctx.block(4);
+      if (ctx.isFirstCard) {
+        ctx.gainEnergy(1);
+        ctx.draw(1);
+      }
     }
   }
 ];
@@ -612,6 +650,8 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
     exhaust: [],
     turn: 1,
     cardsPlayedThisTurn: 0,
+    firstCardDiscount: 0,
+    // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
     energySpentThisTurn: 0,
     playedIdsThisTurn: [],
     lastCardPlayed: null,
@@ -656,9 +696,11 @@ function playCard(combat, handIndex) {
   if (cardId == null) return { ok: false, reason: "no-card" };
   const card = cardById(cardId);
   if (!card) return { ok: false, reason: "unknown-card" };
-  if (card.cost > combat.player.energy) return { ok: false, reason: "no-energy" };
-  combat.player.energy -= card.cost;
-  combat.energySpentThisTurn += card.cost;
+  const isFirst = combat.cardsPlayedThisTurn === 0;
+  const cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
+  if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
+  combat.player.energy -= cost;
+  combat.energySpentThisTurn += cost;
   combat.cardsPlayedThisTurn += 1;
   combat.hand.splice(handIndex, 1);
   combat.playedIdsThisTurn.push(card.id);
@@ -707,6 +749,11 @@ function makeCtx(combat, card) {
     },
     // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
     playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
+    // SEQUENCE: true while resolving the FIRST card played this turn (the counter is bumped before
+    // the effect runs, so the first card sees cardsPlayedThisTurn === 1).
+    get isFirstCard() {
+      return combat.cardsPlayedThisTurn === 1;
+    },
     get cardsPlayed() {
       return combat.cardsPlayedThisTurn;
     },
@@ -1110,6 +1157,16 @@ var RELICS = [
       ctx.gainEnergy(1);
       ctx.applySelf("vulnerable", 1);
     } }
+  },
+  // ── Act 1 LINK · SEQUENCE: rewards leading the turn with the right card ─────────────────────────────
+  {
+    id: "tcp-fast-open",
+    name: "TCP Fast Open",
+    rarity: "rare",
+    text: "The first card you play each turn costs 1 less.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.firstCardDiscount = (ctx.combat.firstCardDiscount || 0) + 1;
+    } }
   }
 ];
 var BY_ID2 = new Map(RELICS.map((relic) => [relic.id, relic]));
@@ -1318,7 +1375,23 @@ var SPECS = {
     ctx.applySelf("strength", 2);
     ctx.draw(1);
   } },
-  ONION: { text: "Gain 4 Strength. Exhaust.", effect: (ctx) => ctx.applySelf("strength", 4) }
+  ONION: { text: "Gain 4 Strength. Exhaust.", effect: (ctx) => ctx.applySelf("strength", 4) },
+  // D1 SEQUENCE
+  PREAMBLE: { text: "Deal 8. If it's the first card this turn, deal 8 more.", effect: (ctx) => {
+    ctx.deal(8);
+    if (ctx.isFirstCard) ctx.deal(8);
+  } },
+  FINALIZE: { text: "Deal 10. If it's NOT the first card this turn, deal 10 more.", effect: (ctx) => {
+    ctx.deal(10);
+    if (!ctx.isFirstCard) ctx.deal(10);
+  } },
+  ROOT_CERTIFICATE: { text: "Gain 5 block. If it's the first card this turn, gain 1 energy and draw 2.", effect: (ctx) => {
+    ctx.block(5);
+    if (ctx.isFirstCard) {
+      ctx.gainEnergy(1);
+      ctx.draw(2);
+    }
+  } }
 };
 function isUpgradedId(id) {
   return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);

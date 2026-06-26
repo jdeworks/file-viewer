@@ -62,5 +62,11 @@ export const PROTOCOL_CARDS = [
     id: "SACK", type: "Protocol", cost: 2, rarity: "rare",
     text: "Gain 6 block. Draw 2.",
     effect: (ctx) => { ctx.block(6); ctx.draw(2); }
+  },
+  // Act 1 LINK · SEQUENCE: a strong opener that wants to lead the turn.
+  {
+    id: "ROOT_CERTIFICATE", type: "Protocol", cost: 1, rarity: "rare",
+    text: "Gain 4 block. If it's the first card you play this turn, gain 1 energy and draw 1.",
+    effect: (ctx) => { ctx.block(4); if (ctx.isFirstCard) { ctx.gainEnergy(1); ctx.draw(1); } }
   }
 ];

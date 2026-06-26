@@ -67,3 +67,8 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   primitives, each with a card-upgrades SPEC. cards.test now asserts ≥36 + per-archetype depth.
   **Phase C COMPLETE** (deck-building now matters: upgrades, economy sinks, build-defining relics,
   authored maps, three real archetypes). Next: Phase D (one new verb/act) — D1 sequence.
+- D1 — Act 1 LINK · SEQUENCE: combat.js gains `firstCardDiscount` (first card each turn costs less)
+  + `ctx.isFirstCard`. New cards PREAMBLE (opener: doubles when it leads), FINALIZE (closer: doubles
+  when it follows), ROOT_CERTIFICATE (lead → +energy/draw); relic TCP Fast Open (first card −1 cost).
+  combat.test proves the opener/closer doubling and a LENTICULAR hand where opener-first (28) beats
+  greedy closer-first (14), plus the discount. Pool now 39.
