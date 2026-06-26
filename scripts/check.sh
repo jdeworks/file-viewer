@@ -432,6 +432,9 @@ run_smoke_core() {
 
     non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
+      docs/types/media/mixer/mixer-audio-listen.js|tests/areas/media-studio-mixer-audio-listen.mjs)
+        add_smoke_area media-studio-mixer-audio-listen
+        ;;
       docs/types/media/mixer/*|tests/areas/media-studio-mixer-shell.mjs)
         add_smoke_area media-studio-mixer-shell
         ;;

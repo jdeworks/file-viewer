@@ -87,8 +87,12 @@ interaction dispatch, context-menu item model, mount helper, and CSS. It is
 validated by `tests/media-mixer-hit-test.test.mjs` and
 `tests/areas/media-studio-mixer-shell.mjs`.
 
-The next implementation slice is Stage 3: integrate one-lane MP3/WAV Listen
-through the new modular mixer context.
+Stage 3 has started by routing default MP3/WAV Listen through
+`mixer/mixer-audio-listen.js`, creating a shared mixer project for the open
+audio source, and adding config-only settings JSON roundtrip coverage. The
+remaining Stage 3 work is to remove the compatibility adapter layer and make
+the visible Listen lane fully use the shared renderer/interaction surface with
+zoom/pan and direct drag/move behavior.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

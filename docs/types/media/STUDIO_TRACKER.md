@@ -140,6 +140,28 @@ Stage 2 renderer skeleton is implemented under `docs/types/media/mixer/`:
   `#previewHost .media-doc video.media-view`. The new mixer shell unit tests,
   the new mixer shell smoke, and the targeted media-studio smoke pass.
 
+Stage 3 one-lane MP3/WAV Listen integration has started:
+
+- `renderer.js` now imports the default audio Listen surface through
+  `docs/types/media/mixer/mixer-audio-listen.js`.
+- The mixer-owned Listen adapter creates a shared mixer project for the open
+  audio source, mirrors offset/in/out/gain/fade/room-tone controls into the
+  project element, and exposes config-only settings JSON export/import.
+- Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
+  proves `Sample.wav` and `Sample.mp3` open through the mixer-owned Listen
+  context, keep native audio hidden, render the one-lane waveform editor, and
+  roundtrip one-lane settings JSON without media bytes.
+- Validation passed:
+  - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
+  - `node tests/smoke-area.mjs media-studio`
+- Validation caveat: `./scripts/check.sh --fast` still fails in the same
+  aggregate-smoke `media-3d` checkpoint waiting for
+  `#previewHost .media-doc video.media-view` after unit selection passes.
+- Remaining Stage 3 work: replace the compatibility adapter with the shared
+  renderer surface directly, add explicit zoom/pan controls for Listen, add
+  direct drag/move behavior over the source element, and broaden smoke evidence
+  for play/pause/stop plus capability notes.
+
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
 Status: superseded by A0 as the primary implementation direction.

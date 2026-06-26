@@ -24,7 +24,7 @@ import { attachShortcuts, buildChapterList, buildCoverArt } from './playback-ext
 import { buildMediaWorkspace } from './renderer-workspace.js';
 import { buildMediaTools, buildPlaybackExtras } from './renderer-tools.js';
 import { mountAudioModePanels, mountVideoModePanels } from './renderer-mode-panels.js';
-import { buildAudioListenSurface } from './audio-listen-surface.js';
+import { buildMixerAudioListenSurface } from './mixer/mixer-audio-listen.js';
 
 // Lazily import editor.js (and its transcoder.js dep) only when ffmpeg is enabled.
 // This prevents a stale SW-cached transcoder.js from breaking the entire preview.
@@ -106,7 +106,7 @@ export async function render(intake, ctx = {}) {
   el.src = url;
   if (info.kind === 'video') el.setAttribute('playsinline', '');
 
-  const listenSurface = info.kind === 'audio' ? buildAudioListenSurface(el, intake) : null;
+  const listenSurface = info.kind === 'audio' ? buildMixerAudioListenSurface(el, intake) : null;
   const workspace = buildMediaWorkspace(intake, info, el, { audioListenSurface: listenSurface?.el });
   const {
     host,
