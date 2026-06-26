@@ -466,6 +466,27 @@ export async function run(ctx) {
   if (/BBCode/i.test(bbcText)) pass('bbcode-text: badge shown'); else fail('bbcode-text badge: ' + bbcText.slice(0, 200));
   if (/tag type|link|quote|code block|bold|italic/i.test(bbcText)) pass('bbcode-text: stats shown'); else fail('bbcode-text stats: ' + bbcText.slice(0, 300));
   if (/url|img|quote|code/i.test(bbcText)) pass('bbcode-text: tag inventory shown'); else fail('bbcode-text tags: ' + bbcText.slice(0, 300));
+  if (/Code Blocks|Links|Images|Quotes/i.test(bbcText)) pass('bbcode-text: enhanced navigation sections shown'); else fail('bbcode-text enhanced sections: ' + bbcText.slice(0, 900));
+  const bbcSourceOpen = await page.$eval('#previewHost .bbc-doc .kf-source-details', (e) => e.open);
+  if (!bbcSourceOpen) pass('bbcode-text: source starts collapsed'); else fail('bbcode-text source should start collapsed');
+  await page.click('#previewHost .bbc-doc .bbc-section .kf-source-link');
+  const bbcJump = await page.$eval('#previewHost .bbc-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (bbcJump.open && bbcJump.highlighted) pass('bbcode-text: item click opens and highlights source'); else fail('bbcode-text source jump: ' + JSON.stringify(bbcJump));
+  const bbcBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/bbcode-text/renderer.js');
+    const text = '[b]bold[i]bad[/b]\n[url=https://example.com]A[/url]\n[url=https://example.com]B[/url]\n[img]https://example.com/a.png[/img]\n[img]https://example.com/a.png[/img]\n[quote=Someone]hello';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/tag mismatch|unclosed tag|repeated link|repeated image/i.test(bbcBad.out + bbcBad.issues) && !bbcBad.open) pass('bbcode-text: tag and repeated asset diagnostics shown'); else fail('bbcode-text synthetic diagnostics: ' + JSON.stringify(bbcBad).slice(0, 900));
 
   // ── vala-lang viewer ──
   await openExample('sample.vala');
