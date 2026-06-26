@@ -555,8 +555,21 @@ export async function run(ctx) {
   await page.waitForFunction(() => !document.querySelector('.sbs-overlay'), null, { timeout: 4000 });
 
   // ── Split divider: drag must keep working across preview iframes and Monaco surfaces ──
+  await page.setViewportSize({ width: 1400, height: 800 });
   await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(() => {
+    const tree = document.querySelector('#fileTree');
+    if (tree && !tree.hidden) document.querySelector('#fileTree .ft-close')?.click();
+  }).catch(() => {});
   await openExample('Sample.ans');
+  await page.evaluate(() => {
+    document.getElementById('fileTree')?.setAttribute('hidden', '');
+    document.getElementById('ftResize')?.setAttribute('hidden', '');
+    const values = window.__fv?.state?.settingsModel?.values;
+    if (!values) return;
+    values.previewWidthMode = 'custom';
+    values.previewMaxWidth = 520;
+  });
   await page.click('#viewMode button[data-mode="split"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });

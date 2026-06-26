@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   addElement,
   addLane,
+  buildSeekFramePreview,
   captureElementKeyframe,
   computeCompareOverlap,
   createDefaultEq,
@@ -91,6 +92,47 @@ import {
   });
   assert.equal(imageProject.lanes[0].role, 'image', 'model: image metadata creates an image lane');
   assert.equal(imageProject.elements[0].timeline.placementDurationMs, 5000, 'model: image metadata gets default editable duration');
+}
+
+{
+  let project = createProjectFromAssetMetadata({
+    id: 'asset-video',
+    name: 'clip.mp4',
+    mime: 'video/mp4',
+    capabilities: { hasAudio: true, hasVideo: true },
+    media: { durationMs: 5000, videoWidth: 1280, videoHeight: 720 },
+  });
+  const elementId = project.elements[0].id;
+  project = addElement({
+    ...project,
+    elements: project.elements.filter((element) => element.id !== elementId),
+  }, {
+    id: elementId,
+    laneId: project.lanes[0].id,
+    assetId: 'asset-video',
+    capabilities: { hasAudio: true, hasVideo: true },
+    durationMs: 5000,
+    visual: { x: 0, y: 0, opacity: 1, crop: { x: 0, y: 0, width: 1, height: 1 } },
+    effects: [{ kind: 'video-filter', params: { brightness: 0, contrast: 1, hue: 0 } }],
+    keyframes: [
+      { path: 'visual.x', timeMs: 1000, value: 10 },
+      { path: 'visual.x', timeMs: 3000, value: 50 },
+      { path: 'visual.opacity', timeMs: 1000, value: 0.2 },
+      { path: 'visual.opacity', timeMs: 3000, value: 0.8 },
+      { path: 'visual.crop', timeMs: 1000, value: { x: 0, y: 0, width: 1, height: 1 } },
+      { path: 'visual.crop', timeMs: 3000, value: { x: 0.2, y: 0.1, width: 0.6, height: 0.7 } },
+      { path: 'effect.video-filter.params', timeMs: 1000, value: { brightness: 0, contrast: 1, hue: 0, sepia: 0 } },
+      { path: 'effect.video-filter.params', timeMs: 3000, value: { brightness: 0.4, contrast: 1.4, hue: 60, sepia: 0.8 } },
+    ],
+  });
+  const active = buildSeekFramePreview(project, 2000).active.find((item) => item.elementId === elementId);
+  assert.equal(active.visual.x, 30, 'preview: interpolates visual transform keyframes at cursor');
+  assert.equal(active.visual.opacity, 0.5, 'preview: interpolates opacity keyframes at cursor');
+  assert.deepEqual(active.visual.crop, { x: 0.1, y: 0.05, width: 0.8, height: 0.85 }, 'preview: interpolates crop keyframes at cursor');
+  assert.equal(active.filter.brightness, 0.2, 'preview: interpolates video filter brightness keyframes at cursor');
+  assert.equal(active.filter.contrast, 1.2, 'preview: interpolates video filter contrast keyframes at cursor');
+  assert.equal(active.filter.hue, 30, 'preview: interpolates video filter hue keyframes at cursor');
+  assert.equal(active.filter.sepia, 0.4, 'preview: interpolates video filter sepia keyframes at cursor');
 }
 
 {

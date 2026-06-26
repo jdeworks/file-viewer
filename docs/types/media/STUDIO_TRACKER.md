@@ -557,6 +557,10 @@ Stage 7 project settings import/export UI has started:
   visual transform/crop/filter state at the current cursor into
   `element.keyframes`. Settings export/import preserves those config-only
   keyframes without media bytes.
+- Wired captured visual keyframes into the calculated seek-frame preview.
+  Preview composition now evaluates transform, opacity, crop, and video-filter
+  params at the current cursor, so frame orientation follows the animated path
+  rather than only the clip's static inspector values.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

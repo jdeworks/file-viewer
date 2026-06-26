@@ -199,8 +199,11 @@ ffmpeg export chain. Visual filter coverage now also includes hue rotation,
 invert, and sepia in the same shared inspector/model/preview/export path. The
 shared inspector can now capture selected visual transform/crop/filter state as
 config-only keyframes at the current cursor, and those keyframes survive project
-settings export/import. The next work is rendering more animation paths from
-those keyframes and continuing to harden long or complex client-side renders.
+settings export/import. The seek-frame preview now evaluates those visual
+transform, crop, and filter keyframes at the current cursor, so orientation
+frames reflect the animated path instead of only the selected clip's current
+static values. The next work is carrying the same evaluated keyframe state into
+more export paths and continuing to harden long or complex client-side renders.
 
 Stage 8 has started for Compare. Audio and video Compare now mount only the
 modular shared-model surface as the default/final UI; the old `compare-ui*`

@@ -4,20 +4,23 @@ export function buildSeekFramePreview(snapshot = {}, cursorMs = 0, output = {}) 
   const frames = output.frames || new Map();
   const active = (snapshot.elements || [])
     .filter((element) => isVisualElement(element) && isActiveAt(element, cursorMs))
-    .map((element) => ({
-      elementId: element.id,
-      laneId: element.laneId,
-      type: element.type,
-      label: element.assetId || element.type || 'visual',
-      hasVideo: !!element.capabilities?.hasVideo,
-      hasImage: !!element.capabilities?.hasImage,
-      needsFfmpegForPreview: !!element.capabilities?.needsFfmpegForPreview,
-      startMs: element.timeline?.startMs || 0,
-      endMs: (element.timeline?.startMs || 0) + (element.timeline?.placementDurationMs || element.timeline?.durationMs || 0),
-      visual: normalizeVisual(element.visual),
-      filter: normalizeVideoFilter(element),
-      frame: frameFor(frames, element),
-    }));
+    .map((element) => {
+      const animated = evaluateElementKeyframes(element, cursorMs);
+      return {
+        elementId: element.id,
+        laneId: element.laneId,
+        type: element.type,
+        label: element.assetId || element.type || 'visual',
+        hasVideo: !!element.capabilities?.hasVideo,
+        hasImage: !!element.capabilities?.hasImage,
+        needsFfmpegForPreview: !!element.capabilities?.needsFfmpegForPreview,
+        startMs: element.timeline?.startMs || 0,
+        endMs: (element.timeline?.startMs || 0) + (element.timeline?.placementDurationMs || element.timeline?.durationMs || 0),
+        visual: animated.visual,
+        filter: animated.filter,
+        frame: frameFor(frames, element),
+      };
+    });
   return {
     cursorMs,
     width,
@@ -26,6 +29,27 @@ export function buildSeekFramePreview(snapshot = {}, cursorMs = 0, output = {}) 
     frameCount: active.filter((item) => item.frame?.source).length,
     warnings: active.filter((item) => item.needsFfmpegForPreview).map((item) => `${item.label} needs ffmpeg/proxy conversion for accurate preview.`),
   };
+}
+
+export function evaluateElementKeyframes(element = {}, cursorMs = 0) {
+  const visual = normalizeVisual(element.visual);
+  const filter = normalizeVideoFilter(element);
+  const groups = keyframesByPath(element.keyframes || []);
+  const t = Math.max(0, Math.round(finite(cursorMs, 0)));
+  for (const [path, frames] of groups.entries()) {
+    const value = interpolateKeyframeValue(frames, t);
+    if (path === 'visual.x') visual.x = finite(value, visual.x);
+    if (path === 'visual.y') visual.y = finite(value, visual.y);
+    if (path === 'visual.scaleX') visual.scaleX = Math.max(0.01, finite(value, visual.scaleX));
+    if (path === 'visual.scaleY') visual.scaleY = Math.max(0.01, finite(value, visual.scaleY));
+    if (path === 'visual.rotation') visual.rotation = finite(value, visual.rotation);
+    if (path === 'visual.opacity') visual.opacity = Math.max(0, Math.min(1, finite(value, visual.opacity)));
+    if (path === 'visual.crop') visual.crop = normalizeCrop(value);
+    if (path === 'effect.video-filter.params') {
+      Object.assign(filter, normalizeFilterParams({ ...filter, ...value }));
+    }
+  }
+  return { visual, filter };
 }
 
 export function renderSeekFramePreview(root, preview) {
@@ -155,7 +179,10 @@ function normalizeVisual(visual = {}) {
 
 function normalizeVideoFilter(element) {
   const effect = (element.effects || []).find((item) => item.kind === 'video-filter' && item.enabled !== false);
-  const params = effect?.params || {};
+  return normalizeFilterParams(effect?.params || {});
+}
+
+function normalizeFilterParams(params = {}) {
   return {
     brightness: Math.max(-1, Math.min(1, finite(params.brightness, 0))),
     contrast: Math.max(0, Math.min(3, finite(params.contrast, 1))),
@@ -166,6 +193,67 @@ function normalizeVideoFilter(element) {
     invert: finite(params.invert, 0) >= 0.5 ? 1 : 0,
     sepia: Math.max(0, Math.min(1, finite(params.sepia, 0))),
   };
+}
+
+function keyframesByPath(keyframes) {
+  const groups = new Map();
+  for (const keyframe of keyframes) {
+    const path = String(keyframe?.path || '');
+    if (!path) continue;
+    if (!groups.has(path)) groups.set(path, []);
+    groups.get(path).push({
+      timeMs: Math.max(0, Math.round(finite(keyframe.timeMs, 0))),
+      value: cloneValue(keyframe.value),
+      interpolation: keyframe.interpolation || 'linear',
+    });
+  }
+  for (const frames of groups.values()) frames.sort((a, b) => a.timeMs - b.timeMs);
+  return groups;
+}
+
+function interpolateKeyframeValue(frames, cursorMs) {
+  if (!frames.length) return null;
+  if (cursorMs <= frames[0].timeMs) return cloneValue(frames[0].value);
+  const last = frames[frames.length - 1];
+  if (cursorMs >= last.timeMs) return cloneValue(last.value);
+  for (let i = 1; i < frames.length; i += 1) {
+    const next = frames[i];
+    if (cursorMs > next.timeMs) continue;
+    const prev = frames[i - 1];
+    if (cursorMs === next.timeMs || next.timeMs === prev.timeMs) return cloneValue(next.value);
+    if (prev.interpolation === 'hold') return cloneValue(prev.value);
+    const ratio = Math.max(0, Math.min(1, (cursorMs - prev.timeMs) / (next.timeMs - prev.timeMs)));
+    return interpolateValue(prev.value, next.value, ratio);
+  }
+  return cloneValue(last.value);
+}
+
+function interpolateValue(a, b, ratio) {
+  if (Number.isFinite(Number(a)) && Number.isFinite(Number(b))) {
+    return Number(a) + (Number(b) - Number(a)) * ratio;
+  }
+  if (isPlainObject(a) && isPlainObject(b)) {
+    const output = {};
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    for (const key of keys) {
+      if (Number.isFinite(Number(a[key])) && Number.isFinite(Number(b[key]))) {
+        output[key] = Number(a[key]) + (Number(b[key]) - Number(a[key])) * ratio;
+      } else {
+        output[key] = ratio < 1 ? cloneValue(a[key]) : cloneValue(b[key]);
+      }
+    }
+    return output;
+  }
+  return ratio < 1 ? cloneValue(a) : cloneValue(b);
+}
+
+function isPlainObject(value) {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cloneValue(value) {
+  if (value == null || typeof value !== 'object') return value;
+  return JSON.parse(JSON.stringify(value));
 }
 
 function normalizeCrop(crop) {

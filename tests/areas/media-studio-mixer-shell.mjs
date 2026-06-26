@@ -8,11 +8,29 @@ export async function run(ctx) {
       const snapshot = mod.createMixerSnapshot(project);
       const before = mod.buildSeekFramePreview(snapshot, 0);
       const active = mod.buildSeekFramePreview(snapshot, 3000);
+      const animatedProject = mod.updateElement(project, 'element-stage2-image', (element) => ({
+        ...element,
+        effects: [{ kind: 'video-filter', params: { hue: 0, sepia: 0 } }],
+        keyframes: [
+          { path: 'visual.x', timeMs: 2200, value: 10 },
+          { path: 'visual.x', timeMs: 4200, value: 50 },
+          { path: 'visual.opacity', timeMs: 2200, value: 0.25 },
+          { path: 'visual.opacity', timeMs: 4200, value: 0.75 },
+          { path: 'effect.video-filter.params', timeMs: 2200, value: { hue: 0, sepia: 0 } },
+          { path: 'effect.video-filter.params', timeMs: 4200, value: { hue: 40, sepia: 0.8 } },
+        ],
+      }));
+      const animated = mod.buildSeekFramePreview(animatedProject, 3200).active
+        .find((item) => item.elementId === 'element-stage2-image');
       return {
         inactive: before.active.length,
         active: active.active.length,
         hasImage: active.active.some((item) => item.hasImage && item.elementId === 'element-stage2-image'),
         opacity: active.active.find((item) => item.elementId === 'element-stage2-image')?.visual.opacity,
+        animatedX: animated?.visual?.x,
+        animatedOpacity: animated?.visual?.opacity,
+        animatedHue: animated?.filter?.hue,
+        animatedSepia: animated?.filter?.sepia,
       };
     })();
     const host = document.querySelector('#previewHost');
@@ -208,8 +226,8 @@ export async function run(ctx) {
     pass('modular mixer shell: audio-capable element paints waveform canvas');
   else fail('modular mixer shell waveform did not paint: ' + JSON.stringify(result.initial));
 
-  if (result.previewProof.inactive === 0 && result.previewProof.active === 1 && result.previewProof.hasImage && result.previewProof.opacity === 0.85)
-    pass('modular mixer shell: seek-frame preview model finds active visual elements');
+  if (result.previewProof.inactive === 0 && result.previewProof.active === 1 && result.previewProof.hasImage && result.previewProof.opacity === 0.85 && result.previewProof.animatedX === 30 && result.previewProof.animatedOpacity === 0.5 && result.previewProof.animatedHue === 20 && result.previewProof.animatedSepia === 0.4)
+    pass('modular mixer shell: seek-frame preview model finds active and animated visual elements');
   else fail('modular mixer shell preview model mismatch: ' + JSON.stringify(result.previewProof));
 
   if (result.initial.visualBadges >= 1 && result.initial.framePreview && result.initial.framePreviewActive === 0 && result.activeVisualsAtCursor >= 1)
