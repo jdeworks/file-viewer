@@ -219,7 +219,9 @@ Mix and video Timeline use the same ffmpeg opt-in/progress/error behavior and
 config-safe proxy asset updates. Final video export planning also now has
 browser-side duration and composition-complexity budgets, with config-only
 provenance fields that explain why long or dense renders are withheld before
-ffmpeg starts. Timeline mode now mounts only the
+ffmpeg starts. The final video export status panel now lives in a shared module
+used by audio Mix and video Timeline, so opt-in and hard-blocked states present
+the same way. Timeline mode now mounts only the
 modular video-source mixer; the old `timeline.js` compatibility DOM helper and
 `.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
 coverage remains in `video-filters.js`. Audio and video Compare now also mount

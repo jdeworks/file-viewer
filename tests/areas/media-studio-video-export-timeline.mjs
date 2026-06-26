@@ -102,6 +102,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       renderDisabled: !!root.querySelector('.mmx-video-render-run')?.disabled,
       exportStatus: root.querySelector('.mmx-video-export-status')?.dataset.status || '',
       exportCanRender: root.querySelector('.mmx-video-export-status')?.dataset.canRender || '',
+      exportCanAttempt: root.querySelector('.mmx-video-export-status')?.dataset.canAttemptRender || '',
+      exportHardBlocked: root.querySelector('.mmx-video-export-status')?.dataset.hardBlocked || '',
       exportNote: root.querySelector('.mmx-video-export-note')?.textContent || '',
       hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(settings || ''),
       hasVideo: !!element?.capabilities?.hasVideo,
@@ -129,6 +131,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   if (modularVideoSource.hasVideoExportPlan && modularVideoSource.hasRenderButton
     && !modularVideoSource.renderDisabled && modularVideoSource.exportStatus === 'opt-in'
     && modularVideoSource.exportCanRender === 'false'
+    && modularVideoSource.exportCanAttempt === 'true'
+    && modularVideoSource.exportHardBlocked === 'false'
     && /Media Transcoding/i.test(modularVideoSource.exportNote))
     pass('P6: modular video source shows ffmpeg-gated final export plan');
   else fail('modular video source export plan state: ' + JSON.stringify(modularVideoSource));

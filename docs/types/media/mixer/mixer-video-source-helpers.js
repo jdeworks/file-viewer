@@ -8,29 +8,6 @@ import { classifyMixerFile } from './mixer-media-drop.js';
 
 export const SOURCE_ASSET_ID = 'asset-video-source';
 
-export function renderExportPlanPanel(plan, runtime = {}) {
-  const panel = document.createElement('section');
-  panel.className = 'mmx-video-export-status';
-  panel.dataset.status = plan.status;
-  panel.dataset.canRender = plan.canRender ? 'true' : 'false';
-  const title = document.createElement('strong');
-  title.textContent = plan.canRender ? 'Final video export ready' : 'Final video export needs Media Transcoding';
-  const summary = document.createElement('span');
-  summary.className = 'mmx-video-export-summary';
-  summary.textContent = `${plan.provenance.visualItems.length} visual · ${plan.provenance.audioItems.length} audio · ${Math.round(plan.durationMs)} ms`;
-  const note = document.createElement('p');
-  note.className = 'mmx-video-export-note';
-  note.textContent = plan.warnings[0] || plan.statusMessage || 'ffmpeg render planning is available for this project.';
-  const render = document.createElement('button');
-  render.type = 'button';
-  render.className = 'mmx-video-render-run';
-  render.textContent = 'Render final export';
-  render.disabled = !runtime.ffmpegEnabled;
-  render.title = runtime.ffmpegEnabled ? 'Load Media Transcoding and render this mix' : 'Enable Media Transcoding to render this mix';
-  panel.append(title, summary, note, render);
-  return panel;
-}
-
 export function buildVideoProject(mediaEl, intake) {
   const classification = classifyMixerFile(intake.file || { name: intake.filename || '', type: intake.mime || intake.mimeType || '' });
   const durationMs = Math.max(0, mediaDuration(mediaEl) * 1000);

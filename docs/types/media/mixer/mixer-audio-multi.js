@@ -53,6 +53,7 @@ import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
 import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
+import { renderVideoExportPlanPanel } from './mixer-video-export-ui.js';
 import { renderVideoProxyPlanPanel } from './mixer-video-proxy-ui.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
@@ -596,27 +597,4 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
 
 function hasVisualElements(project) {
   return (project.elements || []).some((element) => element.capabilities?.hasVideo || element.capabilities?.hasImage);
-}
-
-function renderVideoExportPlanPanel(plan, runtime = {}) {
-  const panel = document.createElement('section');
-  panel.className = 'mmx-video-export-status';
-  panel.dataset.status = plan.status;
-  panel.dataset.canRender = plan.canRender ? 'true' : 'false';
-  const title = document.createElement('strong');
-  title.textContent = plan.canRender ? 'Final video export ready' : 'Final video export needs Media Transcoding';
-  const summary = document.createElement('span');
-  summary.className = 'mmx-video-export-summary';
-  summary.textContent = `${plan.provenance.visualItems.length} visual · ${plan.provenance.audioItems.length} audio · ${Math.round(plan.durationMs)} ms`;
-  const note = document.createElement('p');
-  note.className = 'mmx-video-export-note';
-  note.textContent = plan.warnings[0] || plan.statusMessage || 'ffmpeg render planning is available for this composition.';
-  const render = document.createElement('button');
-  render.type = 'button';
-  render.className = 'mmx-video-render-run';
-  render.textContent = 'Render final export';
-  render.disabled = !runtime.ffmpegEnabled;
-  render.title = runtime.ffmpegEnabled ? 'Load Media Transcoding and render this mix' : 'Enable Media Transcoding to render this mix';
-  panel.append(title, summary, note, render);
-  return panel;
 }

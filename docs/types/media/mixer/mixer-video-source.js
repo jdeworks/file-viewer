@@ -29,6 +29,7 @@ import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 import { downloadBlob } from './mixer-audio-multi-helpers.js';
+import { renderVideoExportPlanPanel } from './mixer-video-export-ui.js';
 import { renderVideoProxyPlanPanel } from './mixer-video-proxy-ui.js';
 import {
   SOURCE_ASSET_ID,
@@ -39,7 +40,6 @@ import {
   latestVisualElement,
   mergeVideoMetadata,
   previousVisualElement,
-  renderExportPlanPanel,
   selectedEditableElement,
   selectedVisualElement,
   transitionSummary,
@@ -235,7 +235,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (inspector) {
       const proxyPlan = lastProxyPlan || buildProxyPlan();
       if (proxyPlan.provenance.assets.length) inspector.append(renderVideoProxyPlanPanel(proxyPlan, runtime));
-      inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
+      inspector.append(renderVideoExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
     }
   }
 

@@ -542,6 +542,9 @@ Stage 7 project settings import/export UI has started:
   composition item count, effect count, transition count, and over-budget flags
   in config-only provenance, and they withhold runnable args with an explicit
   warning before long or complex client-side renders can stall the browser.
+- Split final video export status rendering into `mixer-video-export-ui.js` so
+  audio Mix and video Timeline share the same Media Transcoding opt-in,
+  hard-block, and run-button gating semantics.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

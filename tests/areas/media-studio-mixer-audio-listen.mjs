@@ -339,6 +339,8 @@ export async function run(ctx) {
       hasRenderButton,
       renderDisabled,
       initialStatus: statusPanel?.dataset.status || '',
+      canAttempt: statusPanel?.dataset.canAttemptRender || '',
+      hardBlocked: statusPanel?.dataset.hardBlocked || '',
       status: plan?.status || '',
       canRender: !!plan?.canRender,
       requiresFfmpeg: !!plan?.requiresFfmpeg,
@@ -352,6 +354,8 @@ export async function run(ctx) {
   });
   if (visualExportPlan.hasButton && visualExportPlan.hasRenderButton && visualExportPlan.renderDisabled
     && visualExportPlan.initialStatus === 'opt-in'
+    && visualExportPlan.canAttempt === 'false'
+    && visualExportPlan.hardBlocked === 'false'
     && visualExportPlan.status === 'opt-in' && !visualExportPlan.canRender
     && visualExportPlan.requiresFfmpeg && visualExportPlan.renderPath === 'ffmpeg-opt-in-required'
     && visualExportPlan.visualItems >= 1 && visualExportPlan.audioItems >= 1
