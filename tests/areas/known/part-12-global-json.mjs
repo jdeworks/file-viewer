@@ -100,6 +100,16 @@ export async function run(ctx) {
   const renderText = await page.$eval('#previewHost .renderyaml-doc', el => el.textContent);
   if (!renderText.includes('Render')) fail('render.yaml: missing badge'); else pass('render.yaml: badge shown');
   if (!renderText.includes('web-app') && !renderText.includes('web')) fail('render.yaml: services not shown'); else pass('render.yaml: services shown');
+  if (!renderText.includes('Render Review') || !renderText.includes('health check')) fail('render.yaml: review findings missing'); else pass('render.yaml: review findings shown');
+  if (!renderText.includes('[dashboard managed]') || !renderText.includes('fromDatabase:main-db.connectionString')) fail('render.yaml: env notes missing'); else pass('render.yaml: env notes shown');
+  const renderSourceCollapsed = await page.$eval('#previewHost .renderyaml-doc .kf-source-details', el => !el.open);
+  if (renderSourceCollapsed) pass('render.yaml: source collapsed'); else fail('render.yaml source should start collapsed');
+  const renderSourceLine = await page.$eval('#previewHost .renderyaml-doc .rdr-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .renderyaml-doc .kf-source-details');
+    return details?.open && document.getElementById(`render-line-${line}`);
+  }, renderSourceLine, { timeout: 3000 });
+  pass('render.yaml: source links open source');
 
   // ── .htaccess (Apache per-directory config) viewer ──
   await openExample('.htaccess');
