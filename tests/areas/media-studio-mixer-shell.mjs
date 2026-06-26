@@ -86,7 +86,7 @@ export async function run(ctx) {
       clientY: imageRect.top + imageRect.height / 2,
     }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
-    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity', '.mmx-inspector-visual-fade-in', '.mmx-inspector-visual-fade-out', '.mmx-inspector-transition-in', '.mmx-inspector-transition-kind', '.mmx-inspector-effect-brightness', '.mmx-inspector-effect-contrast', '.mmx-inspector-effect-saturation', '.mmx-inspector-effect-blur', '.mmx-inspector-effect-grayscale']
+    const visualFields = ['.mmx-inspector-visual-x', '.mmx-inspector-visual-y', '.mmx-inspector-visual-scale-x', '.mmx-inspector-visual-opacity', '.mmx-inspector-visual-fade-in', '.mmx-inspector-visual-fade-out', '.mmx-inspector-visual-crop-x', '.mmx-inspector-visual-crop-y', '.mmx-inspector-visual-crop-width', '.mmx-inspector-visual-crop-height', '.mmx-inspector-transition-in', '.mmx-inspector-transition-kind', '.mmx-inspector-effect-brightness', '.mmx-inspector-effect-contrast', '.mmx-inspector-effect-saturation', '.mmx-inspector-effect-blur', '.mmx-inspector-effect-grayscale']
       .every((selector) => !!root.querySelector(selector));
     const visualX = root.querySelector('.mmx-inspector-visual-x');
     visualX.value = '42';
@@ -99,6 +99,13 @@ export async function run(ctx) {
     const visualFadeIn = root.querySelector('.mmx-inspector-visual-fade-in');
     visualFadeIn.value = '250';
     visualFadeIn.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    const cropX = root.querySelector('.mmx-inspector-visual-crop-x');
+    cropX.value = '0.15';
+    cropX.dispatchEvent(new Event('input', { bubbles: true }));
+    const cropWidth = root.querySelector('.mmx-inspector-visual-crop-width');
+    cropWidth.value = '0.6';
+    cropWidth.dispatchEvent(new Event('input', { bubbles: true }));
     await new Promise((resolve) => requestAnimationFrame(resolve));
     const transitionIn = root.querySelector('.mmx-inspector-transition-in');
     transitionIn.value = '300';
@@ -141,12 +148,16 @@ export async function run(ctx) {
       imageX: editedImage?.visual?.x,
       imageOpacity: editedImage?.visual?.opacity,
       imageFadeIn: editedImage?.visual?.fadeInMs,
+      imageCropX: editedImage?.visual?.crop?.x,
+      imageCropWidth: editedImage?.visual?.crop?.width,
       transitionDuration: editedTransition?.durationMs,
       transitionKind: editedTransition?.kind,
       filterBrightness: editedFilter?.params?.brightness,
       filterGrayscale: editedFilter?.params?.grayscale,
       previewX: activeAfterTransform?.visual?.x,
       previewOpacity: activeAfterTransform?.visual?.opacity,
+      previewCropX: activeAfterTransform?.visual?.crop?.x,
+      previewCropWidth: activeAfterTransform?.visual?.crop?.width,
       scrollAfterPan,
       destroyed,
       previewProof,
@@ -199,7 +210,7 @@ export async function run(ctx) {
     pass('modular mixer shell: selected element inspector updates shared project state');
   else fail('modular mixer shell inspector controls did not update state: ' + JSON.stringify(result));
 
-  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.transitionDuration === 300 && result.transitionKind === 'wipe-left' && result.filterBrightness === 0.2 && result.filterGrayscale === 1 && result.previewX === 42 && result.previewOpacity === 0.5)
+  if (result.visualFields && result.imageX === 42 && result.imageOpacity === 0.5 && result.imageFadeIn === 250 && result.imageCropX === 0.15 && result.imageCropWidth === 0.6 && result.transitionDuration === 300 && result.transitionKind === 'wipe-left' && result.filterBrightness === 0.2 && result.filterGrayscale === 1 && result.previewX === 42 && result.previewOpacity === 0.5 && result.previewCropX === 0.15 && result.previewCropWidth === 0.6)
     pass('modular mixer shell: visual transform controls update model and seek-frame preview');
   else fail('modular mixer shell visual transform controls mismatch: ' + JSON.stringify(result));
 

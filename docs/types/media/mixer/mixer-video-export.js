@@ -255,6 +255,7 @@ function visualFilterChain({ element }, input, transition = null) {
   const scaleY = finite(visual.scaleY, 1);
   const opacity = Math.max(0, Math.min(1, finite(visual.opacity, 1)));
   const rotation = finite(visual.rotation, 0);
+  const crop = normalizeCrop(visual.crop);
   const fadeInMs = Math.max(0, finite(visual.fadeInMs, 0));
   const fadeOutMs = Math.max(0, finite(visual.fadeOutMs, 0));
   const transitionInMs = transition && transition.enabled !== false && transition.kind === 'dissolve'
@@ -265,8 +266,9 @@ function visualFilterChain({ element }, input, transition = null) {
   const filters = [
     `[${input}:v]trim=start=${sourceIn}:duration=${duration}`,
     'setpts=PTS-STARTPTS',
-    `scale=iw*${round(scaleX)}:ih*${round(scaleY)}`,
   ];
+  if (crop) filters.push(`crop=iw*${round(crop.width)}:ih*${round(crop.height)}:iw*${round(crop.x)}:ih*${round(crop.y)}`);
+  filters.push(`scale=iw*${round(scaleX)}:ih*${round(scaleY)}`);
   if (rotation) filters.push(`rotate=${round((rotation * Math.PI) / 180)}:ow=rotw(iw):oh=roth(ih):c=none`);
   filters.push('format=rgba');
   if (alphaFadeInMs) filters.push(`fade=t=in:st=0:d=${seconds(alphaFadeInMs)}:alpha=1`);
@@ -336,6 +338,16 @@ function outputSize(project) {
     width: Math.max(2, Math.round(video.width || project.project?.width || 1280)),
     height: Math.max(2, Math.round(video.height || project.project?.height || 720)),
   };
+}
+
+function normalizeCrop(crop) {
+  if (!crop) return null;
+  const x = Math.max(0, Math.min(0.99, finite(crop.x, 0)));
+  const y = Math.max(0, Math.min(0.99, finite(crop.y, 0)));
+  const width = Math.max(0.01, Math.min(1 - x, finite(crop.width, 1 - x)));
+  const height = Math.max(0.01, Math.min(1 - y, finite(crop.height, 1 - y)));
+  if (x <= 0 && y <= 0 && width >= 1 && height >= 1) return null;
+  return { x, y, width, height };
 }
 
 function overlayExpr(value, axis, element = null, transition = null) {

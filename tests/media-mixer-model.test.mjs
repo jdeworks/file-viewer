@@ -53,12 +53,13 @@ import {
     assetId: 'asset-image',
     capabilities: { hasImage: true },
     durationMs: 3000,
-    visual: { x: 10, y: 20, scaleX: 1.5, opacity: 0.75 },
+    visual: { x: 10, y: 20, scaleX: 1.5, opacity: 0.75, crop: { x: 0.2, y: 0.1, width: 0.9, height: 0.95 } },
     effects: [{ kind: 'video-filter', params: { brightness: 0.1, contrast: 1.2 } }],
   });
   const image = withImage.elements.find((element) => element.id === 'element-image');
   assert.equal(image.type, 'image', 'model: image element is typed as image');
   assert.equal(image.visual.scaleX, 1.5, 'model: image element stores visual transforms');
+  assert.deepEqual(image.visual.crop, { x: 0.2, y: 0.1, width: 0.8, height: 0.9 }, 'model: image element normalizes visual crop inside source bounds');
   assert.equal(image.effects[0].targetId, 'element-image', 'model: image element normalizes effect target id');
   assert.equal(image.effects[0].enabled, true, 'model: image element normalizes effect enabled state');
   assert.equal(image.effects[0].params.brightness, 0.1, 'model: image element stores video filter effect params');

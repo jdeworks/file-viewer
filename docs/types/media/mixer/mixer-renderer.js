@@ -188,6 +188,7 @@ function renderElementInspectorFields(element, snapshot = {}) {
   );
   if (element.capabilities?.hasVideo || element.capabilities?.hasImage) {
     const transition = incomingTransition(snapshot, element);
+    const crop = visualCrop(element);
     group.append(
       inspectorNumber('X', 'visual-x', element, element.visual?.x ?? 0, { step: 1 }),
       inspectorNumber('Y', 'visual-y', element, element.visual?.y ?? 0, { step: 1 }),
@@ -197,6 +198,10 @@ function renderElementInspectorFields(element, snapshot = {}) {
       inspectorNumber('Opacity', 'visual-opacity', element, element.visual?.opacity ?? 1, { min: 0, max: 1, step: 0.01 }),
       inspectorNumber('Visual fade in', 'visual-fade-in', element, element.visual?.fadeInMs ?? 0, { min: 0, step: 5 }),
       inspectorNumber('Visual fade out', 'visual-fade-out', element, element.visual?.fadeOutMs ?? 0, { min: 0, step: 5 }),
+      inspectorNumber('Crop X', 'visual-crop-x', element, crop.x, { min: 0, max: 0.99, step: 0.01 }),
+      inspectorNumber('Crop Y', 'visual-crop-y', element, crop.y, { min: 0, max: 0.99, step: 0.01 }),
+      inspectorNumber('Crop W', 'visual-crop-width', element, crop.width, { min: 0.01, max: 1, step: 0.01 }),
+      inspectorNumber('Crop H', 'visual-crop-height', element, crop.height, { min: 0.01, max: 1, step: 0.01 }),
       inspectorNumber('Transition in', 'transition-in', element, transition.durationMs, { min: 0, step: 25 }),
       inspectorSelect('Transition kind', 'transition-kind', element, transition.kind, [
         ['dissolve', 'Dissolve'],
@@ -213,6 +218,16 @@ function renderElementInspectorFields(element, snapshot = {}) {
     );
   }
   return group;
+}
+
+function visualCrop(element) {
+  const crop = element.visual?.crop || {};
+  return {
+    x: finite(crop.x, 0),
+    y: finite(crop.y, 0),
+    width: finite(crop.width, 1),
+    height: finite(crop.height, 1),
+  };
 }
 
 function videoFilterParams(element) {

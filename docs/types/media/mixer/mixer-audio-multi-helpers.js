@@ -47,6 +47,24 @@ export function updateProjectElementField(project, action) {
       'visual-fade-in': 'fadeInMs',
       'visual-fade-out': 'fadeOutMs',
     }[action.field];
+    const cropField = {
+      'visual-crop-x': 'x',
+      'visual-crop-y': 'y',
+      'visual-crop-width': 'width',
+      'visual-crop-height': 'height',
+    }[action.field];
+    if (cropField) {
+      return updateElement(project, elementId, (element) => {
+        const base = element.visual?.crop || { x: 0, y: 0, width: 1, height: 1 };
+        return {
+          ...element,
+          visual: {
+            ...element.visual,
+            crop: clampCrop({ ...base, [cropField]: value }),
+          },
+        };
+      });
+    }
     if (!visualField) return project;
     const nextValue = visualField === 'opacity'
       ? clamp(value, 0, 1)
@@ -62,6 +80,15 @@ export function updateProjectElementField(project, action) {
     }));
   }
   return project;
+}
+
+export function clampCrop(crop) {
+  const x = clamp(crop.x, 0, 0.99);
+  const y = clamp(crop.y, 0, 0.99);
+  const width = clamp(crop.width, 0.01, 1 - x);
+  const height = clamp(crop.height, 0.01, 1 - y);
+  if (x <= 0 && y <= 0 && width >= 1 && height >= 1) return null;
+  return { x, y, width, height };
 }
 
 export function updateVideoFilterEffect(element, field, value) {

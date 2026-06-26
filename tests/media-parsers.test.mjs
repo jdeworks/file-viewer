@@ -358,7 +358,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
       ...element,
       timeline: { ...element.timeline, startMs: 500, sourceInMs: 200, durationMs: 1000, placementDurationMs: 1000 },
       audio: { ...element.audio, gain: 0.7, fadeInMs: 100, fadeOutMs: 200 },
-      visual: { ...element.visual, x: 10, y: -5, scaleX: 1.25, scaleY: 1.1, rotation: 90, opacity: 0.5, fadeInMs: 100, fadeOutMs: 300 },
+      visual: { ...element.visual, x: 10, y: -5, scaleX: 1.25, scaleY: 1.1, rotation: 90, opacity: 0.5, fadeInMs: 100, fadeOutMs: 300, crop: { x: 0.1, y: 0.2, width: 0.8, height: 0.7 } },
       effects: [{
         id: 'effect-video-filter-a',
         kind: 'video-filter',
@@ -400,7 +400,7 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(renderPlan.args.includes('[aout]'), true, 'modular video mix export: maps mixed audio output');
   assert.deepEqual(renderPlan.provenance.inputs[1].args, ['-loop', '1', '-t', '2.25', '-i', 'overlay.png'], 'modular video mix export: loops image inputs for full composition duration');
   assert.ok(filterGraph.includes('color=c=0x112233:s=640x360:r=24:d=2.25[vbase0]'), 'modular video mix export: starts with configured background canvas');
-  assert.ok(filterGraph.includes('[0:v]trim=start=0.2:duration=1,setpts=PTS-STARTPTS,scale=iw*1.25:ih*1.1,rotate=1.5708'), 'modular video mix export: applies trim, scale, and rotation to visual input');
+  assert.ok(filterGraph.includes('[0:v]trim=start=0.2:duration=1,setpts=PTS-STARTPTS,crop=iw*0.8:ih*0.7:iw*0.1:ih*0.2,scale=iw*1.25:ih*1.1,rotate=1.5708'), 'modular video mix export: applies trim, crop, scale, and rotation to visual input');
   assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: applies visual opacity');
   assert.ok(filterGraph.includes('fade=t=in:st=0:d=0.1:alpha=1,fade=t=out:st=0.7:d=0.3:alpha=1'), 'modular video mix export: applies visual alpha fades');
   assert.ok(filterGraph.includes('eq=brightness=0.12:contrast=1.2:saturation=0.8,hue=s=0,boxblur=2.5:1'), 'modular video mix export: applies video filter effects');

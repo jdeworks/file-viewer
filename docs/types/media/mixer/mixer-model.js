@@ -141,7 +141,7 @@ export function createElement(input = {}) {
       opacity: clampNumber(input.visual?.opacity, 0, 1, 1),
       fadeInMs: Math.max(0, finiteNumber(input.visual?.fadeInMs, 0)),
       fadeOutMs: Math.max(0, finiteNumber(input.visual?.fadeOutMs, 0)),
-      crop: input.visual?.crop || null,
+      crop: normalizeVisualCrop(input.visual?.crop),
       anchor: input.visual?.anchor || 'center',
     },
     analysis: clone(input.analysis || {}),
@@ -489,6 +489,16 @@ function normalizeTransition(transition = {}) {
     offsetMs: finiteNumber(transition.offsetMs, 0),
     params: clone(transition.params || {}),
   };
+}
+
+function normalizeVisualCrop(crop) {
+  if (!crop) return null;
+  const x = clampNumber(crop.x, 0, 0.99, 0);
+  const y = clampNumber(crop.y, 0, 0.99, 0);
+  const width = clampNumber(crop.width, 0.01, 1 - x, 1 - x);
+  const height = clampNumber(crop.height, 0.01, 1 - y, 1 - y);
+  if (x <= 0 && y <= 0 && width >= 1 && height >= 1) return null;
+  return { x, y, width, height };
 }
 
 function existingTransition(project, elementId) {

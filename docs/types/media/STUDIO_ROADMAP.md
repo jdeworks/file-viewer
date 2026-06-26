@@ -188,7 +188,9 @@ elements, edited from the shared inspector, and exported as ffmpeg brightness,
 contrast, saturation, grayscale, and blur filters. Incoming visual transition
 records now live in the shared project model, can be edited from the selected
 visual-element inspector, and export as dissolve alpha fades or wipe-left
-overlay expressions with config-only provenance. The next work is expanding
+overlay expressions with config-only provenance. Normalized source crop
+rectangles now also flow through the shared inspector, seek-frame preview, and
+ffmpeg export chain. The next work is expanding
 transition/effect coverage beyond those initial controls and hardening long or
 complex client-side renders.
 

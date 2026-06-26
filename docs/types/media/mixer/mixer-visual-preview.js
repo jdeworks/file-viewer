@@ -80,7 +80,7 @@ function drawVisualItem(ctx, canvas, item, index) {
   ctx.translate(cx, cy);
   ctx.rotate((visual.rotation * Math.PI) / 180);
   if (item.frame?.source) {
-    drawContainedFrame(ctx, item.frame.source, -baseW / 2, -baseH / 2, baseW, baseH);
+    drawContainedFrame(ctx, item.frame.source, -baseW / 2, -baseH / 2, baseW, baseH, visual.crop);
   } else {
     ctx.fillStyle = item.hasVideo ? '#7a5cbd' : '#54a24b';
     ctx.fillRect(-baseW / 2, -baseH / 2, baseW, baseH);
@@ -95,13 +95,18 @@ function drawVisualItem(ctx, canvas, item, index) {
   ctx.restore();
 }
 
-function drawContainedFrame(ctx, source, x, y, width, height) {
+function drawContainedFrame(ctx, source, x, y, width, height, crop = null) {
   const sourceWidth = source.naturalWidth || source.videoWidth || source.width || width;
   const sourceHeight = source.naturalHeight || source.videoHeight || source.height || height;
-  const scale = Math.min(width / sourceWidth, height / sourceHeight);
-  const drawW = sourceWidth * scale;
-  const drawH = sourceHeight * scale;
-  ctx.drawImage(source, x + (width - drawW) / 2, y + (height - drawH) / 2, drawW, drawH);
+  const sourceCrop = crop || { x: 0, y: 0, width: 1, height: 1 };
+  const sx = sourceWidth * sourceCrop.x;
+  const sy = sourceHeight * sourceCrop.y;
+  const sw = sourceWidth * sourceCrop.width;
+  const sh = sourceHeight * sourceCrop.height;
+  const scale = Math.min(width / sw, height / sh);
+  const drawW = sw * scale;
+  const drawH = sh * scale;
+  ctx.drawImage(source, sx, sy, sw, sh, x + (width - drawW) / 2, y + (height - drawH) / 2, drawW, drawH);
 }
 
 function frameFor(frames, element) {
@@ -128,7 +133,18 @@ function normalizeVisual(visual = {}) {
     scaleY: Math.max(0.01, finite(visual.scaleY, 1)),
     rotation: finite(visual.rotation, 0),
     opacity: Math.max(0, Math.min(1, finite(visual.opacity, 1))),
+    crop: normalizeCrop(visual.crop),
   };
+}
+
+function normalizeCrop(crop) {
+  if (!crop) return null;
+  const x = Math.max(0, Math.min(0.99, finite(crop.x, 0)));
+  const y = Math.max(0, Math.min(0.99, finite(crop.y, 0)));
+  const width = Math.max(0.01, Math.min(1 - x, finite(crop.width, 1 - x)));
+  const height = Math.max(0.01, Math.min(1 - y, finite(crop.height, 1 - y)));
+  if (x <= 0 && y <= 0 && width >= 1 && height >= 1) return null;
+  return { x, y, width, height };
 }
 
 function finite(value, fallback) {

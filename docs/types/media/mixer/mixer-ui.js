@@ -7,7 +7,7 @@ import {
 } from './mixer-model.js';
 import { createMixerSnapshot, renderMixerShell } from './mixer-renderer.js';
 import { attachMixerInteractions } from './mixer-interactions.js';
-import { updateVideoFilterEffect } from './mixer-audio-multi-helpers.js';
+import { clampCrop, updateVideoFilterEffect } from './mixer-audio-multi-helpers.js';
 
 export function mountMediaMixerShell(root, options = {}) {
   ensureMixerStyles();
@@ -185,6 +185,24 @@ function updateProjectElementField(project, action) {
       'visual-fade-in': 'fadeInMs',
       'visual-fade-out': 'fadeOutMs',
     }[action.field];
+    const cropField = {
+      'visual-crop-x': 'x',
+      'visual-crop-y': 'y',
+      'visual-crop-width': 'width',
+      'visual-crop-height': 'height',
+    }[action.field];
+    if (cropField) {
+      return updateElement(project, elementId, (element) => {
+        const base = element.visual?.crop || { x: 0, y: 0, width: 1, height: 1 };
+        return {
+          ...element,
+          visual: {
+            ...element.visual,
+            crop: clampCrop({ ...base, [cropField]: value }),
+          },
+        };
+      });
+    }
     if (!visualField) return project;
     const nextValue = visualField === 'opacity'
       ? Math.max(0, Math.min(1, value))

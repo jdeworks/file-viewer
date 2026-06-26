@@ -447,6 +447,10 @@ Stage 7 project settings import/export UI has started:
   inspector, and final video export maps dissolve transitions to alpha fades and
   wipe-left transitions to overlay expressions while recording config-only
   transition provenance.
+- Added normalized visual crop rectangles to shared visual elements. Crop
+  controls now live beside transforms in the shared inspector, seek-frame
+  preview applies the same source crop for orientation, and final video export
+  emits matching ffmpeg `crop` filters before scale/rotation.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -460,7 +464,8 @@ Stage 7 project settings import/export UI has started:
   layering, config-only provenance, the fake-ffmpeg runtime execution contract,
   browser ffmpeg input-budget enforcement, visual alpha-fade export filters,
   normalized video-filter effects, video-filter ffmpeg graph output, and
-  incoming visual transition provenance/filter graph output.
+  incoming visual transition provenance/filter graph output, plus normalized
+  visual crop state and export filters.
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
