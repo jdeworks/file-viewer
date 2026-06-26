@@ -52,6 +52,31 @@ export async function exerciseCompare(ctx, kind) {
     && modularCompare.hasSettingsExport && modularCompare.hasSettingsImport && !modularCompare.hasBytes)
     pass(`${kind} compare: modular shared-model A/B surface mounts with config-only state`);
   else fail(`${kind} modular compare state: ` + JSON.stringify(modularCompare));
+  const modularTargetIds = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
+    const project = root.__mediaMixerCompare?.getProject?.();
+    return {
+      a: project?.compare?.a?.elementId || '',
+      b: project?.compare?.b?.elementId || '',
+      selects: root.querySelectorAll('.mmx-compare-target-select').length,
+      aOptions: root.querySelectorAll('.mmx-compare-target-select[data-side="a"] option').length,
+      bOptions: root.querySelectorAll('.mmx-compare-target-select[data-side="b"] option').length,
+    };
+  });
+  await page.selectOption(`${panelSel} .mmx-compare-source .mmx-compare-target-select[data-side="a"]`, modularTargetIds.b);
+  const modularRetargeted = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
+    const project = root.__mediaMixerCompare?.getProject?.();
+    return {
+      compareA: project?.compare?.a?.elementId || '',
+      selectedA: root.querySelector('.mmx-compare-target-select[data-side="a"]')?.value || '',
+      overlapMs: root.__mediaMixerCompare?.getOverlap?.()?.overlap?.durationMs || 0,
+    };
+  });
+  await page.selectOption(`${panelSel} .mmx-compare-source .mmx-compare-target-select[data-side="a"]`, modularTargetIds.a);
+  if (modularTargetIds.selects === 2 && modularTargetIds.aOptions >= 2 && modularTargetIds.bOptions >= 2
+    && modularRetargeted.compareA === modularTargetIds.b && modularRetargeted.selectedA === modularTargetIds.b
+    && modularRetargeted.overlapMs > 0)
+    pass(`${kind} compare: modular A/B selectors choose from existing mixer elements`);
+  else fail(`${kind} modular compare target selectors: ` + JSON.stringify({ modularTargetIds, modularRetargeted }));
   await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-offset[data-side="b"]`, '0.2');
   await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-range-start[data-side="a"]`, '0.1');
   await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-range-end[data-side="a"]`, '0.6');

@@ -399,6 +399,11 @@
   min-height: 28px;
 }
 
+.mmx-compare-field select {
+  max-inline-size: 180px;
+  min-height: 28px;
+}
+
 .mmx-compare-b-drop {
   display: inline-flex;
   align-items: center;

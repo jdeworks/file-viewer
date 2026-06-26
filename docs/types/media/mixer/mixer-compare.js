@@ -102,6 +102,16 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     render();
   };
   const onChange = (event) => {
+    if (event.target?.matches?.('.mmx-compare-target-select')) {
+      const side = event.target.dataset.side;
+      const element = project.elements.find((item) => item.id === event.target.value);
+      if ((side === 'a' || side === 'b') && element) {
+        const current = project.compare?.[side] || {};
+        updateCompareTarget(side, targetFromElement(element, current.offsetMs || 0));
+        render();
+      }
+      return;
+    }
     if (!event.target?.matches?.('.mmx-compare-b-input')) return;
     const file = event.target.files?.[0];
     if (file) replaceCompareBFile(file);
@@ -272,11 +282,28 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     title.textContent = side.toUpperCase();
     wrap.append(
       title,
+      label('source', renderTargetSelect(side)),
       label('offset', compareNumberInput(side, 'offsetMs', target.offsetMs || 0, -600, 600)),
       label('in', compareNumberInput(side, 'rangeStartMs', target.rangeStartMs || 0, 0, 3600)),
       label('out', compareNumberInput(side, 'rangeEndMs', target.rangeEndMs || 0, 0, 3600)),
     );
     return wrap;
+  }
+
+  function renderTargetSelect(side) {
+    const select = document.createElement('select');
+    select.className = 'mmx-compare-target-select';
+    select.dataset.side = side;
+    select.setAttribute('aria-label', `${side.toUpperCase()} compare source`);
+    const selected = project.compare?.[side]?.elementId || '';
+    project.elements.forEach((element, index) => {
+      const option = document.createElement('option');
+      option.value = element.id;
+      option.textContent = elementLabel(element, index);
+      option.selected = element.id === selected;
+      select.append(option);
+    });
+    return select;
   }
 
   function compareNumberInput(side, field, valueMs, min, max) {
@@ -296,7 +323,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
 
   function updateCompareTarget(side, patch) {
     const current = project.compare?.[side] || {};
-    const element = project.elements.find((item) => item.id === current.elementId);
+    const element = project.elements.find((item) => item.id === (patch.elementId || current.elementId));
     const durationMs = element?.timeline?.durationMs || 3600000;
     const next = {
       ...current,
@@ -311,6 +338,12 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     project = setCompareTarget(project, side, next);
     lastAnalysis = null;
     delete root.dataset.lastCompareAnalysis;
+  }
+
+  function elementLabel(element, index) {
+    const lane = project.lanes.find((item) => item.id === element.laneId);
+    const asset = project.assets.find((item) => item.id === element.assetId);
+    return `${lane?.label || `Lane ${index + 1}`} · ${asset?.name || element.type || 'element'}`;
   }
 
   function renderAnalyzeButton() {
@@ -435,21 +468,20 @@ function buildCompareProject(mediaEl, intake, kind) {
 function refreshCompareTargets(project) {
   const [a, b] = project.elements;
   if (!a || !b) return project;
-  const durationA = a.timeline?.durationMs || 0;
-  const durationB = b.timeline?.durationMs || 0;
-  let next = setCompareTarget(project, 'a', {
-    elementId: a.id,
-    rangeStartMs: a.timeline?.sourceInMs || 0,
-    rangeEndMs: Math.max(a.timeline?.sourceInMs || 0, durationA),
-    offsetMs: project.compare?.a?.offsetMs || 0,
-  });
-  next = setCompareTarget(next, 'b', {
-    elementId: b.id,
-    rangeStartMs: b.timeline?.sourceInMs || 0,
-    rangeEndMs: Math.max(b.timeline?.sourceInMs || 0, durationB),
-    offsetMs: project.compare?.b?.offsetMs || 0,
-  });
+  let next = setCompareTarget(project, 'a', targetFromElement(a, project.compare?.a?.offsetMs || 0));
+  next = setCompareTarget(next, 'b', targetFromElement(b, project.compare?.b?.offsetMs || 0));
   return next;
+}
+
+function targetFromElement(element, offsetMs = 0) {
+  const startMs = element.timeline?.sourceInMs || 0;
+  const endMs = Math.max(startMs, element.timeline?.durationMs || 0);
+  return {
+    elementId: element.id,
+    rangeStartMs: startMs,
+    rangeEndMs: endMs,
+    offsetMs,
+  };
 }
 
 function label(text, input) {

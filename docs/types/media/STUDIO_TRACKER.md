@@ -367,10 +367,12 @@ Stage 6 Compare on the shared model has started:
   and in/out ranges through `setCompareTarget()`, clears stale modular analysis
   after edits, and smoke coverage proves the controls update both
   `project.compare` and the rendered overlap metadata for audio and video.
-- Stage 6 remaining work: choose A/B from arbitrary existing mixer elements,
-  deepen modular analysis to replace the legacy detailed diff/readout flows,
-  and retire the old Compare UI once equivalent coverage has moved to modular
-  selectors.
+- Added modular A/B source selectors. The modular toolbar now lists existing
+  mixer elements for each compare side, retargets through `setCompareTarget()`,
+  and smoke coverage proves A/B can be chosen from the shared project elements.
+- Stage 6 remaining work: deepen modular analysis to replace the legacy
+  detailed diff/readout flows, and retire the old Compare UI once equivalent
+  coverage has moved to modular selectors.
 
 Stage 7 project settings import/export UI has started:
 
