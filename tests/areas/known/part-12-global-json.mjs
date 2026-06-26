@@ -39,10 +39,29 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .grafanaini-doc', { timeout: 12000 });
   pass('grafana.ini: badge shown');
   const grafText = await page.$eval('#previewHost .grafanaini-doc', el => el.textContent);
+  const grafHtml = await page.$eval('#previewHost .grafanaini-doc', el => el.innerHTML);
   if (!grafText.includes('3000') && !grafText.includes('grafana.example.com')) fail('grafana.ini: server not shown'); else pass('grafana.ini: server shown');
   if (!grafText.includes('postgres')) fail('grafana.ini: database type not shown'); else pass('grafana.ini: database type shown');
-  if (grafText.includes('db-secret-password') || grafText.includes('strong-admin-password')) fail('grafana.ini: secrets leaked'); else pass('grafana.ini: secrets masked');
+  if ([
+    'db-secret-password',
+    'strong-admin-password',
+    'github-client-secret',
+    'smtp-password',
+    'grafana-secret-key-here',
+  ].some(secret => (grafText + grafHtml).includes(secret))) fail('grafana.ini: secrets leaked'); else pass('grafana.ini: secrets masked');
   if (!grafText.includes('github')) fail('grafana.ini: auth providers not shown'); else pass('grafana.ini: auth providers shown');
+  if (!/Grafana Review|public bind|domain check|secret configured|external auth/i.test(grafText)) fail('grafana.ini: review findings missing'); else pass('grafana.ini: review findings shown');
+  const grafSourceCollapsed = await page.$eval('#previewHost .grafanaini-doc .kf-source-details', el => !el.open && el.textContent.includes('Redacted source'));
+  if (!grafSourceCollapsed) fail('grafana.ini: redacted source not collapsed'); else pass('grafana.ini: redacted source collapsed');
+  const grafSourceLine = await page.$eval('#previewHost .grafanaini-doc [data-source-line]', el => {
+    el.click();
+    return el.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .grafanaini-doc .kf-source-details');
+    return details?.open && document.getElementById(`grafana-line-${line}`);
+  }, grafSourceLine);
+  pass('grafana.ini: source links open redacted source');
 
   // ── mix.exs (Elixir Mix build file) viewer ──
   await openExample('mix.exs');
