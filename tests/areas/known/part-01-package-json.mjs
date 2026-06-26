@@ -336,6 +336,18 @@ export async function run(ctx) {
   const vclText = await page.$eval('.verceljson-doc', (e) => e.textContent);
   if (/Vercel/i.test(vclText)) pass('vercel.json: badge shown'); else fail('vercel badge: ' + vclText.slice(0, 200));
   if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
+  if (/Vercel Review|Content-Security-Policy|rewrite|public env|function/i.test(vclText)) pass('vercel.json: review findings shown'); else fail('vercel review: ' + vclText.slice(0, 300));
+  if (!vclText.includes('@api-secret-key') && !vclText.includes('@stripe-token')) pass('vercel.json: secrets masked'); else fail('vercel secrets leaked: ' + vclText.slice(0, 500));
+  const vclHelpTitle = await page.$eval('.verceljson-doc .vcl-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Vercel|Open line|source/i.test(vclHelpTitle)) pass('vercel.json: hover source help shown'); else fail('vercel hover help: ' + vclHelpTitle);
+  const vclSourceCollapsed = await page.$eval('.verceljson-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (vclSourceCollapsed) pass('vercel.json: source collapsed'); else fail('vercel source should start collapsed');
+  const vclSourceLine = await page.$eval('.verceljson-doc .vcl-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('.verceljson-doc .kf-source-details');
+    return details?.open && document.getElementById(`vercel-line-${line}`);
+  }, vclSourceLine, { timeout: 3000 });
+  pass('vercel.json: source links open source');
 
   // ── pyproject.toml viewer ──
   await openExample('pyproject.toml');
