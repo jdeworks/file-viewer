@@ -209,9 +209,9 @@ Stage 4 multi-lane audio is implemented:
   older `docs/types/media/mixer-ui.js` prototype surface.
 - The Mix surface opens from the same one-file project shape as Listen, then
   expands into multiple lanes through generated tone and pink-noise/room-tone
-  elements. The `.mx-*` selectors remain compatibility aliases only, so existing
-  broad smoke coverage can keep proving lifecycle and viewport behavior while
-  focused modular tests assert the new `.mmx-*` contract.
+  elements. Active Mix controls, lanes, and smoke coverage now use direct
+  `.mmx-*` modular selector contracts instead of the retired `.mx-*` prototype
+  aliases.
 - Lane gain, mute, solo, element fades, generated room-tone/pink-noise, master
   gain, lane EQ schema, and master EQ schema are all represented in the shared
   project model. New `updateLane()` and `updateMaster()` helpers make these
@@ -516,11 +516,10 @@ Stage 7 project settings import/export UI has started:
 - Removed the old root-level Mix prototype files:
   `mixer-ui.js`, `mixer-ui-controls.js`, `mixer-ui-lane.js`,
   `mixer-ui-export.js`, `mixer-draw.js`, and `mixer-engine.js`. Active Mix
-  continues through `mixer/mixer-audio-multi.js`; the remaining `.mx-*`
-  selectors are compatibility aliases emitted by the modular surface for older
-  smoke coverage.
-- Stage 8 remaining work: continue replacing compatibility aliases/selectors in
-  broad smoke coverage with direct `.mmx-*` modular mixer contracts.
+  continues through `mixer/mixer-audio-multi.js`.
+- Replaced the remaining active mixer `.mx-*` compatibility aliases/selectors
+  with direct `.mmx-*` modular contracts in Mix, video-source, and smoke
+  coverage.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

@@ -45,7 +45,7 @@ import {
 export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
   const root = document.createElement('section');
-  root.className = 'mmx-video-source mx-wrap';
+  root.className = 'mmx-video-source';
   root.dataset.mixerContext = 'video-source';
   root.tabIndex = -1;
   panel.append(root);
@@ -200,9 +200,9 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     root.dataset.ffmpegEnabled = runtime.ffmpegEnabled ? 'true' : 'false';
     root.dataset.videoExportStatus = lastExportPlan?.status || '';
     root.dataset.videoExportCanRender = lastExportPlan?.canRender ? 'true' : 'false';
-    root.querySelector('.mmx-ruler')?.classList.add('mx-ruler');
-    root.querySelector('.mmx-playhead')?.classList.add('mx-playhead');
-    root.querySelector('.mmx-body')?.classList.add('mx-timeline');
+    root.querySelector('.mmx-ruler')?.classList.add('mmx-video-ruler');
+    root.querySelector('.mmx-playhead')?.classList.add('mmx-video-playhead');
+    root.querySelector('.mmx-body')?.classList.add('mmx-video-timeline');
     const toolbar = root.querySelector('.mmx-toolbar');
     if (toolbar && !toolbar.querySelector('.mmx-video-source-note')) {
       const note = document.createElement('div');

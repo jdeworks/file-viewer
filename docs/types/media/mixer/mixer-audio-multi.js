@@ -54,7 +54,7 @@ import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
   const root = document.createElement('section');
-  root.className = 'mmx-audio-multi mx-wrap';
+  root.className = 'mmx-audio-multi mmx-mix';
   root.dataset.mixerContext = 'mix';
   root.tabIndex = -1;
   panel.append(root);
@@ -125,22 +125,22 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   const onInput = (event) => {
     const target = event.target;
     if (!target?.matches) return;
-    if (target.matches('.mx-lane-gain')) {
+    if (target.matches('.mmx-mix-lane-gain')) {
       project = updateLane(project, target.dataset.laneId, (lane) => ({
         ...lane,
         audio: { ...lane.audio, gain: clamp(Number(target.value), 0, 2) },
       }));
       render();
     }
-    if (target.matches('.mx-master-slider')) {
+    if (target.matches('.mmx-mix-master-slider')) {
       project = updateMaster(project, (master) => ({
         ...master,
         audio: { ...master.audio, gain: clamp(Number(target.value), 0, 2) },
       }));
       render();
     }
-    if (target.matches('.mx-fade-in, .mx-fade-out')) {
-      const field = target.matches('.mx-fade-in') ? 'fadeInMs' : 'fadeOutMs';
+    if (target.matches('.mmx-mix-fade-in, .mmx-mix-fade-out')) {
+      const field = target.matches('.mmx-mix-fade-in') ? 'fadeInMs' : 'fadeOutMs';
       const elementId = firstElementForLane(target.dataset.laneId)?.id;
       if (elementId) {
         project = updateElement(project, elementId, (element) => ({
@@ -155,36 +155,36 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     const target = event.target;
     const button = target?.closest?.('button');
     if (!button || !root.contains(button)) return;
-    if (button.matches('.mx-add-btn')) {
+    if (button.matches('.mmx-mix-add-tone')) {
       addGeneratedLane('tone', 'Tone', { kind: 'tone', frequency: 440, levelDb: -18 });
       render();
       return;
     }
-    if (button.matches('.mx-add-pink')) {
+    if (button.matches('.mmx-mix-add-pink')) {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
       render();
       return;
     }
-    if (button.matches('.mx-mute, .mx-solo')) {
-      const field = button.matches('.mx-mute') ? 'muted' : 'solo';
+    if (button.matches('.mmx-mix-mute, .mmx-mix-solo')) {
+      const field = button.matches('.mmx-mix-mute') ? 'muted' : 'solo';
       project = updateLane(project, button.dataset.laneId, (lane) => ({ ...lane, [field]: !lane[field] }));
       render();
       return;
     }
-    if (button.matches('.mx-play')) {
+    if (button.matches('.mmx-mix-play')) {
       playback.play();
       return;
     }
-    if (button.matches('.mx-stop')) {
+    if (button.matches('.mmx-mix-stop')) {
       playback.stop({ resetCursor: true });
       render();
       return;
     }
-    if (button.matches('.mx-mix-btn')) {
+    if (button.matches('.mmx-mix-download')) {
       downloadMixdown();
       return;
     }
-    if (button.matches('.mx-video-export-plan')) {
+    if (button.matches('.mmx-mix-video-export-plan')) {
       lastVideoExportPlan = buildVideoExportPlan();
       root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
       render();
@@ -309,10 +309,10 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   };
 
   function decorateShell() {
-    root.querySelector('.mmx-ruler')?.classList.add('mx-ruler');
-    root.querySelector('.mmx-playhead')?.classList.add('mx-playhead');
-    root.querySelector('.mmx-lanes')?.classList.add('mx-lanes');
-    root.querySelector('.mmx-body')?.classList.add('mx-timeline');
+    root.querySelector('.mmx-ruler')?.classList.add('mmx-mix-ruler');
+    root.querySelector('.mmx-playhead')?.classList.add('mmx-mix-playhead');
+    root.querySelector('.mmx-lanes')?.classList.add('mmx-mix-lanes');
+    root.querySelector('.mmx-body')?.classList.add('mmx-mix-timeline');
     const toolbar = root.querySelector('.mmx-toolbar');
     if (toolbar) decorateMultiToolbar(toolbar, project);
     decorateLanes();
@@ -323,24 +323,24 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   function decorateLanes() {
     const lanes = [...root.querySelectorAll('.mmx-lane')];
     lanes.forEach((laneNode, index) => {
-      laneNode.classList.add('mx-lane');
+      laneNode.classList.add('mmx-mix-lane');
       const lane = project.lanes.find((item) => item.id === laneNode.dataset.laneId);
       const header = laneNode.querySelector('.mmx-lane-header');
       if (!header || !lane) return;
       const indexNode = document.createElement('span');
-      indexNode.className = 'mx-lane-index';
+      indexNode.className = 'mmx-mix-lane-index';
       indexNode.textContent = String(index + 1);
       const controls = document.createElement('div');
-      controls.className = 'mx-lane-controls';
-      const mute = createButton('M', 'Mute lane', 'mx-mute');
+      controls.className = 'mmx-mix-lane-controls';
+      const mute = createButton('M', 'Mute lane', 'mmx-mix-mute');
       mute.dataset.laneId = lane.id;
       mute.setAttribute('aria-pressed', lane.muted ? 'true' : 'false');
-      const solo = createButton('S', 'Solo lane', 'mx-solo');
+      const solo = createButton('S', 'Solo lane', 'mmx-mix-solo');
       solo.dataset.laneId = lane.id;
       solo.setAttribute('aria-pressed', lane.solo ? 'true' : 'false');
-      const gain = laneRange('mx-lane-gain', lane.id, lane.audio?.gain ?? 1, 0, 2, 0.01, 'Lane gain');
-      const fadeIn = laneRange('mx-fade-in', lane.id, firstElementForLane(lane.id)?.audio?.fadeInMs ?? 0, 0, 5000, 10, 'Fade in');
-      const fadeOut = laneRange('mx-fade-out', lane.id, firstElementForLane(lane.id)?.audio?.fadeOutMs ?? 0, 0, 5000, 10, 'Fade out');
+      const gain = laneRange('mmx-mix-lane-gain', lane.id, lane.audio?.gain ?? 1, 0, 2, 0.01, 'Lane gain');
+      const fadeIn = laneRange('mmx-mix-fade-in', lane.id, firstElementForLane(lane.id)?.audio?.fadeInMs ?? 0, 0, 5000, 10, 'Fade in');
+      const fadeOut = laneRange('mmx-mix-fade-out', lane.id, firstElementForLane(lane.id)?.audio?.fadeOutMs ?? 0, 0, 5000, 10, 'Fade out');
       controls.append(mute, solo, gain, fadeIn, fadeOut);
       header.prepend(indexNode);
       header.append(controls);
@@ -351,7 +351,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     const inspector = root.querySelector('.mmx-inspector');
     if (!inspector) return;
     const context = document.createElement('div');
-    context.className = 'mx-context';
+    context.className = 'mmx-mix-context';
     const selectedLane = selectedLaneInfo();
     const selectedElement = selectedElementInfo();
     context.textContent = selectedElement
@@ -362,14 +362,14 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     inspector.prepend(context);
 
     const eq = document.createElement('div');
-    eq.className = 'mx-eq-summary';
+    eq.className = 'mmx-mix-eq-summary';
     eq.textContent = selectedLane
       ? 'Track EQ: lane-level 9-band schema · Master EQ: global bus schema'
       : 'Track EQ and master EQ are stored separately in the mixer model.';
     inspector.append(eq);
 
     const caps = document.createElement('div');
-    caps.className = 'mx-capability-note';
+    caps.className = 'mmx-mix-capability-note mmx-capability-note';
     const reduced = summarizeReducedCapabilities(evaluateMixerCapabilities(runtime, project));
     caps.textContent = reduced.map((item) => `${item.id}: ${item.message}`).join(' ');
     inspector.append(caps);
@@ -440,11 +440,11 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (!hasMixerFileDrop(event.dataTransfer)) return;
     event.preventDefault();
     event.stopPropagation();
-    root.classList.add('mx-drop-active');
+    root.classList.add('mmx-mix-drop-active');
   }
 
   function onDragLeave(event) {
-    if (!root.contains(event.relatedTarget)) root.classList.remove('mx-drop-active');
+    if (!root.contains(event.relatedTarget)) root.classList.remove('mmx-mix-drop-active');
   }
 
   function onDrop(event) {
@@ -452,7 +452,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (!files.length) return;
     event.preventDefault();
     event.stopPropagation();
-    root.classList.remove('mx-drop-active');
+    root.classList.remove('mmx-mix-drop-active');
     for (const file of files) addDroppedFile(file, { startMs: viewport.cursorMs });
   }
 

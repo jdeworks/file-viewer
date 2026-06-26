@@ -107,10 +107,11 @@ through the modular mixer shell. It starts from the open file as lane 1 and can
 add generated tone, pink-noise/room-tone lanes, or dropped audio-file lanes,
 with lane gain/mute/solo, element fades, track EQ schema, master EQ schema,
 capability notes, and config-only settings export all backed by the mixer
-project model. The old `.mx-*` selectors are compatibility aliases while
-focused modular smoke coverage asserts the `.mmx-*` surface. A Narratu-style
-decoded-audio cache module now provides explicit byte budgets, LRU eviction,
-per-project release, and processed cache keys that include the relevant lane,
+project model. Active Mix controls, lanes, video-source wrappers, and smoke
+coverage now use direct `.mmx-*` modular contracts instead of the retired
+`.mx-*` prototype aliases. A Narratu-style decoded-audio cache module now
+provides explicit byte budgets, LRU eviction, per-project release, and
+processed cache keys that include the relevant lane,
 element, room-tone, EQ, placement, and master-bus settings; Mix exposes those
 runtime cache stats without serializing cache state into settings JSON.
 WebAudio Mix preview now schedules from the same shared timeline state, using
@@ -222,8 +223,7 @@ only `mixer/mixer-compare.js`; the old `compare-ui*` DOM helpers, lazy legacy
 disclosure, and `.media-compare*` stylesheet block have been removed while pure
 compare math/audio helpers remain for active modular checks and export tests.
 The old root-level Mix prototype files have also been removed; active Mix now
-runs through `mixer/mixer-audio-multi.js`, with remaining `.mx-*` selectors
-treated as compatibility aliases until broad smoke coverage is fully moved to
+runs through `mixer/mixer-audio-multi.js`, with broad smoke coverage moved to
 direct `.mmx-*` modular contracts.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane

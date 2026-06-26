@@ -186,16 +186,16 @@ export async function run(ctx) {
       context: el.dataset.mixerContext,
       lanes: project.lanes.length,
       elements: project.elements.length,
-      hasSharedLanes: !!el.querySelector('.mmx-lanes.mx-lanes'),
+      hasSharedLanes: !!el.querySelector('.mmx-lanes'),
       hasWaveform: !!el.querySelector('.mmx-element-waveform'),
       selectedElement: project.selection.primary?.type === 'element',
       masterEqBands: project.master.audio.eq.bands.length,
       trackEqBands: project.lanes[0].audio.eq.bands.length,
       cacheStats: el.__mediaMixerMulti.getAudioCacheStats(),
       cacheBudgetDataset: Number(el.dataset.decodedCacheBudgetBytes || 0),
-      controls: ['.mx-play', '.mx-stop', '.mx-master-slider', '.mx-lane-gain', '.mx-mute', '.mx-solo', '.mx-fade-in', '.mx-fade-out']
+      controls: ['.mmx-mix-play', '.mmx-mix-stop', '.mmx-mix-master-slider', '.mmx-mix-lane-gain', '.mmx-mix-mute', '.mmx-mix-solo', '.mmx-mix-fade-in', '.mmx-mix-fade-out']
         .every((selector) => !!el.querySelector(selector)),
-      capabilityNote: /Media Transcoding|Project settings/.test(el.querySelector('.mx-capability-note')?.textContent || ''),
+      capabilityNote: /Media Transcoding|Project settings/.test(el.querySelector('.mmx-mix-capability-note')?.textContent || ''),
     };
   });
   if (mixInitial.context === 'mix' && mixInitial.lanes === 1 && mixInitial.elements === 1 && mixInitial.hasSharedLanes && mixInitial.hasWaveform && mixInitial.selectedElement)
@@ -206,13 +206,13 @@ export async function run(ctx) {
   else fail('modular audio mix controls missing: ' + JSON.stringify(mixInitial));
 
   const mixPlayback = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
-    el.querySelector('.mx-add-btn').click();
+    el.querySelector('.mmx-mix-add-tone').click();
     const before = Number(el.dataset.cursorMs || 0);
-    el.querySelector('.mx-play').click();
+    el.querySelector('.mmx-mix-play').click();
     await new Promise((resolve) => setTimeout(resolve, 180));
     const playingState = el.__mediaMixerMulti.getPlaybackState();
     const during = Number(el.dataset.cursorMs || 0);
-    el.querySelector('.mx-stop').click();
+    el.querySelector('.mmx-mix-stop').click();
     await new Promise((resolve) => setTimeout(resolve, 40));
     const stoppedState = el.__mediaMixerMulti.getPlaybackState();
     return {
@@ -233,11 +233,11 @@ export async function run(ctx) {
   else fail('modular audio mix playback mismatch: ' + JSON.stringify(mixPlayback));
 
   const mixLaneEdit = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
-    const gain = el.querySelector('.mx-lane-gain');
+    const gain = el.querySelector('.mmx-mix-lane-gain');
     gain.value = '0.42';
     gain.dispatchEvent(new Event('input', { bubbles: true }));
-    el.querySelector('.mx-mute').click();
-    el.querySelector('.mx-solo').click();
+    el.querySelector('.mmx-mix-mute').click();
+    el.querySelector('.mmx-mix-solo').click();
     const lane = el.__mediaMixerMulti.getProject().lanes[0];
     return { gain: lane.audio.gain, muted: lane.muted, solo: lane.solo };
   });
@@ -246,7 +246,7 @@ export async function run(ctx) {
   else fail('modular audio mix lane edit mismatch: ' + JSON.stringify(mixLaneEdit));
 
   const mixGenerated = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
-    el.querySelector('.mx-add-pink').click();
+    el.querySelector('.mmx-mix-add-pink').click();
     const project = el.__mediaMixerMulti.getProject();
     return {
       lanes: project.lanes.length,
@@ -328,11 +328,11 @@ export async function run(ctx) {
   else fail('modular audio mix dropped visual mismatch: ' + JSON.stringify(droppedVisual));
 
   const visualExportPlan = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
-    const hasButton = !!el.querySelector('.mx-video-export-plan');
+    const hasButton = !!el.querySelector('.mmx-mix-video-export-plan');
     const hasRenderButton = !!el.querySelector('.mmx-video-render-run');
     const renderDisabled = !!el.querySelector('.mmx-video-render-run')?.disabled;
     const statusPanel = el.querySelector('.mmx-video-export-status');
-    el.querySelector('.mx-video-export-plan')?.click();
+    el.querySelector('.mmx-mix-video-export-plan')?.click();
     const plan = el.__mediaMixerMulti.getLastVideoExportPlan();
     return {
       hasButton,
@@ -390,9 +390,9 @@ export async function run(ctx) {
   else fail('modular audio mix project settings UI mismatch: ' + JSON.stringify(settingsUi));
 
   const mixSettings = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
-    el.querySelector('.mx-mute[aria-pressed="true"]')?.click();
-    el.querySelector('.mx-solo[aria-pressed="true"]')?.click();
-    el.querySelector('.mx-mix-btn').click();
+    el.querySelector('.mmx-mix-mute[aria-pressed="true"]')?.click();
+    el.querySelector('.mmx-mix-solo[aria-pressed="true"]')?.click();
+    el.querySelector('.mmx-mix-download').click();
     return new Promise((resolve) => {
       const started = Date.now();
       const tick = () => {
@@ -486,7 +486,7 @@ export async function run(ctx) {
       needsProxy: !!asset?.capabilities?.needsFfmpegForPreview,
       status: asset?.status,
       warning: root.querySelector('.mmx-frame-preview-warning')?.textContent || '',
-      capabilityNote: root.querySelector('.mx-capability-note')?.textContent || '',
+      capabilityNote: root.querySelector('.mmx-mix-capability-note')?.textContent || '',
       proxyThumb: root.querySelector(`.mmx-thumb-strip[data-element-id="${element?.id}"]`)?.dataset.needsProxy || '',
       metadataStatus: root.dataset.lastVisualMetadata,
     };

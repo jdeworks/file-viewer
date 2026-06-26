@@ -74,15 +74,15 @@ export async function assertAudioTopViewport({ page, pass, fail }, label) {
 }
 
 export async function assertMixViewport({ page, pass, fail }, label) {
-  const geometry = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', (el) => {
+  const geometry = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const host = document.querySelector('#previewHost');
     const hostRect = host?.getBoundingClientRect();
     const wrapRect = el.getBoundingClientRect();
-    const ruler = el.querySelector('.mx-ruler');
-    const playhead = el.querySelector('.mx-playhead');
-    const lanes = el.querySelector('.mx-lanes');
-    const timeline = el.querySelector('.mx-timeline');
-    const context = el.querySelector('.mx-context');
+    const ruler = el.querySelector('.mmx-ruler');
+    const playhead = el.querySelector('.mmx-playhead');
+    const lanes = el.querySelector('.mmx-lanes');
+    const timeline = el.querySelector('.mmx-body');
+    const context = el.querySelector('.mmx-mix-context');
     if (!hostRect || !ruler || !playhead || !lanes || !timeline || !context) return null;
     const docEl = document.documentElement;
     const rulerRect = ruler.getBoundingClientRect();
