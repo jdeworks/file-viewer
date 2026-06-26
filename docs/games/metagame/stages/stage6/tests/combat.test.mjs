@@ -7,7 +7,7 @@ import {
   endTurn,
   playCard
 } from "../combat.js";
-import { STARTING_DECK } from "../cards.js";
+import { STARTING_DECK, cardById } from "../cards.js";
 import { instantiateEnemy } from "../enemies.js";
 import { relicsFor } from "../relics.js";
 
@@ -347,6 +347,39 @@ function congestionCombat(seed = 11) {
   while (c.hand.length) playCard(c, 0);
   c.hand = []; endTurn(c);
   assert.equal(c.jammed.length, 0, "flat-energy combats never jam");
+}
+
+// ── E2 integration: real combats with the full card pool always TERMINATE, deterministically ───────
+// (The boss's winnability with correct play is proven separately by boss-combat's autoNegotiate.)
+{
+  function autoBattle(deck, enemyId, act, seed, congestion = false, maxTurns = 200) {
+    const c = createCombat({ deck, player: { hp: 100, maxHp: 100 }, enemy: instantiateEnemy(enemyId, act), seed, congestion });
+    let turns = 0;
+    while (!c.over && turns++ < maxTurns) {
+      let played = true;
+      while (played && !c.over) {
+        played = false;
+        for (let i = 0; i < c.hand.length; i++) {
+          const card = cardById(c.hand[i]);
+          if (card && card.cost <= c.player.energy) { playCard(c, i); played = true; break; }
+        }
+      }
+      if (!c.over) endTurn(c);
+    }
+    return c;
+  }
+  // A deck spanning every archetype + every new verb (sequence/delay/throughput cards).
+  const deck = ["SYN", "ACK", "PREAMBLE", "FINALIZE", "WINDOWED_SEND", "RETRANSMIT", "DELAYED_ACK",
+    "BANDWIDTH", "BACKOFF", "DEFRAG", "PRIORITY_PACKET", "FLOOD", "CIPHER_LAYER", "SEGMENT"];
+  const enemies = ["corrupt-packet", "round-trip-timer", "congestion-collapse", "man-in-the-middle",
+    "expired-certificate", "kernel-panic", "deadlock"];
+  for (const enemyId of enemies) {
+    const c = autoBattle(deck, enemyId, 3, 7, true);
+    assert.ok(c.over, `${enemyId}: real combat terminates (no infinite loop) within the turn cap`);
+    const again = autoBattle(deck, enemyId, 3, 7, true);
+    assert.equal(again.result, c.result, `${enemyId}: same seed ⇒ same outcome`);
+    assert.equal(again.turn, c.turn, `${enemyId}: same seed ⇒ same length`);
+  }
 }
 
 console.log("stage6 combat engine tests passed");

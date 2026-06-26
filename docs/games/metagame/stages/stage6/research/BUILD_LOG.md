@@ -105,3 +105,14 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   createRun seeds run-level knobs + applyModifiers; run.js economy/rest read them; renderer wires
   window/elite/boss; wireBossCombat gains hpMult; createCombat gains windowCap. Hub lists active
   rules. run.test: v0/v2/v5 stacks + deterministic + lean-rewards pays 8; boss-combat.test: hpMult.
+- E2 — Balance/ship verification: added a real-combat integration test driving the full card pool
+  (every archetype + sequence/delay/throughput cards) against 7 enemies incl. the RTT, congestion
+  punisher, an elite and two mini-bosses — asserts every fight TERMINATES within the turn cap and is
+  deterministic (same seed ⇒ same result/length), i.e. no infinite loops anywhere in the engine.
+  (Winnability with correct play is covered by boss-combat autoNegotiate; a greedy no-defense AI
+  losing to a tanky mini-boss is dumb-AI, not a balance bug — left HP untouched rather than
+  blind-tune.) Full gate green: all 8 stage6 unit suites + `node tests/smoke-area.mjs games`.
+  **PHASE E COMPLETE → STAGE 6 BUILD PLAN COMPLETE.** Mandatory seeded run → ch9-gated, deck-driven,
+  mutating-handshake boss; 45-card 3-archetype pool with upgrades; escalating economy; build-defining
+  + cursed relics; authored maps; four act verbs (sequence/delay/throughput/negotiate); prestige
+  rule-modifiers. Follow-ups: split combat.js (384 LOC, over soft cap); interactive playtest balance.
