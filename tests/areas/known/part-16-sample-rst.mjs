@@ -44,6 +44,15 @@ export async function run(ctx) {
   if (/expression|block helper/i.test(hbsText)) pass('sample.hbs: expression counts shown'); else fail('hbs counts: ' + hbsText.slice(0, 300));
   if (/if|each|with|unless/i.test(hbsText)) pass('sample.hbs: block helpers listed'); else fail('hbs block helpers: ' + hbsText.slice(0, 300));
   if (/partial|partials/i.test(hbsText)) pass('sample.hbs: partials shown'); else fail('hbs partials: ' + hbsText.slice(0, 300));
+  if (/External-looking Variables|user\.email|formatDate/i.test(hbsText)) pass('sample.hbs: variable/helper inventory shown'); else fail('hbs inventory: ' + hbsText.slice(0, 500));
+  const hbsSourceOpen = await page.$eval('#previewHost .hbs-doc .kf-source-details', (e) => e.open);
+  if (!hbsSourceOpen) pass('sample.hbs: source starts collapsed'); else fail('hbs source should start collapsed');
+  await page.click('#previewHost .hbs-doc .kf-source-link');
+  const hbsJump = await page.$eval('#previewHost .hbs-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (hbsJump.open && hbsJump.highlighted) pass('sample.hbs: summary click opens and highlights source'); else fail('hbs source jump: ' + JSON.stringify(hbsJump));
 
   // ── sample.j2 viewer (Jinja2 Template) ──
   await openExample('sample.j2');

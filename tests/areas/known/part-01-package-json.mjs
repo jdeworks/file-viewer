@@ -58,6 +58,16 @@ export async function run(ctx) {
   const composeText = await page.$eval('#previewHost', (e) => e.textContent);
   if (/current directory build context/.test(composeText) && /relative bind/.test(composeText) && /host-local paths/.test(composeText)) pass('docker-compose: build and local bind hints are visible');
   else fail('compose text: ' + composeText.replace(/\s+/g, ' ').slice(0, 220));
+  if (/POSTGRES_PASSWORD=\*{8}/.test(composeText) && !/POSTGRES_PASSWORD=secret/.test(composeText)) pass('docker-compose: secret-like environment values are masked'); else fail('compose secret masking: ' + composeText.replace(/\s+/g, ' ').slice(0, 260));
+  if (/Compose Review/.test(composeText) && /no healthcheck|secret env|published port/i.test(composeText)) pass('docker-compose: review warnings are shown'); else fail('compose review: ' + composeText.replace(/\s+/g, ' ').slice(0, 260));
+  const composeSourceOpen = await page.$eval('#previewHost .kf-source-details', (e) => e.open);
+  if (!composeSourceOpen) pass('docker-compose: source starts collapsed'); else fail('compose source should start collapsed');
+  await page.click('#previewHost .kf-svc h3 .kf-source-link');
+  const composeJump = await page.$eval('#previewHost', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (composeJump.open && composeJump.highlighted) pass('docker-compose: service click opens and highlights source'); else fail('compose source jump: ' + JSON.stringify(composeJump));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const composeMeta = await page.$eval('#metaBody', (e) => e.textContent);

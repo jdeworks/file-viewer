@@ -13,6 +13,20 @@ export async function run(ctx) {
   await openExample('sample.ps1');
   await page.waitForSelector('#previewHost .ps1-doc', { timeout: 12000 });
   pass('powershell-lang: rendered');
+  const ps1Text = await page.$eval('#previewHost .ps1-doc', (e) => e.textContent);
+  if (/Script Parameters \(3\)/.test(ps1Text) && /ValidateSet: dev, staging, prod/.test(ps1Text)) pass('powershell-lang: parameter metadata shown'); else fail('powershell-lang params: ' + ps1Text.slice(0, 400));
+  const ps1FnTitle = await page.$eval('#previewHost .ps1-link', (e) => e.getAttribute('title') || '');
+  if (/Line \d+/.test(ps1FnTitle) && /parameter/.test(ps1FnTitle)) pass('powershell-lang: function hover details shown'); else fail('powershell-lang function title: ' + ps1FnTitle);
+  const ps1SourceInitiallyOpen = await page.$eval('#previewHost .ps1-details', (e) => e.open);
+  if (!ps1SourceInitiallyOpen) pass('powershell-lang: source starts collapsed'); else fail('powershell-lang source should start collapsed');
+  await page.click('#previewHost .ps1-link');
+  const ps1Jump = await page.$eval('#previewHost .ps1-doc', (e) => ({
+    open: e.querySelector('.ps1-details')?.open || false,
+    highlighted: !!e.querySelector('.ps1-line-hit'),
+    lines: e.querySelectorAll('.ps1-line').length,
+    numbers: e.querySelectorAll('.ps1-ln').length,
+  }));
+  if (ps1Jump.open && ps1Jump.highlighted && ps1Jump.lines > 20 && ps1Jump.lines === ps1Jump.numbers) pass('powershell-lang: function click opens numbered source'); else fail('powershell-lang jump: ' + JSON.stringify(ps1Jump));
 
   // ── solidity-lang: Solidity smart contract viewer ──
   await openExample('sample.sol');
@@ -207,6 +221,15 @@ export async function run(ctx) {
   const gdscriptText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
   if (/GDScript|Godot Tool Script/i.test(gdscriptText)) pass('gdscript-lang: badge shown'); else fail('gdscript-lang badge: ' + gdscriptText.slice(0, 200));
   if (/Extends|Functions|Signals|Exports/i.test(gdscriptText)) pass('gdscript-lang: structure shown'); else fail('gdscript-lang structure: ' + gdscriptText.slice(0, 300));
+  if (/sync_position|branches|lines|@rpc/i.test(gdscriptText)) pass('gdscript-lang: signature and complexity hints shown'); else fail('gdscript-lang detail: ' + gdscriptText.slice(0, 500));
+  const gdSourceOpen = await page.$eval('#previewHost .gd-doc .kf-source-details', (e) => e.open);
+  if (!gdSourceOpen) pass('gdscript-lang: source starts collapsed'); else fail('gdscript source should start collapsed');
+  await page.click('#previewHost .gd-doc .kf-source-link');
+  const gdJump = await page.$eval('#previewHost .gd-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (gdJump.open && gdJump.highlighted) pass('gdscript-lang: symbol click opens and highlights source'); else fail('gdscript source jump: ' + JSON.stringify(gdJump));
 
   // ── ink-script viewer ──
   await openExample('sample.ink');
