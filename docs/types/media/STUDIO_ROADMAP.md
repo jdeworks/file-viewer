@@ -174,9 +174,11 @@ ffmpeg opt-in gating and config-only provenance for assets, timeline items,
 transforms, trims, fades, master settings, warnings, and render path. The next
 Stage 7 slice broadened that same planner into multi-lane Mix projects whenever
 image/video elements are present, including image-only visual compositions that
-still require final video rendering. The next work is connecting the plan to
-lazy ffmpeg execution and deepening it into concrete multi-input filter graphs
-for transforms/layering.
+still require final video rendering. The planner now emits concrete multi-input
+ffmpeg filter graphs for background, layered visual transforms/overlays, audio
+trim/delay/fades/gain, and master mix gain while keeping disabled-ffmpeg states
+config-only. The next work is connecting the plan to lazy ffmpeg execution and
+expanding filter coverage as more effects become user-facing.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

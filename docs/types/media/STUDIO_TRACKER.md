@@ -415,6 +415,12 @@ Stage 7 project settings import/export UI has started:
   are correctly treated as ffmpeg-gated final video renders, and the plan
   records mixed audio plus visual-layer provenance without serializing runtime
   files, frame caches, or thumbnails.
+- The modular video export planner now emits a concrete multi-input
+  `filter_complex` plan for layered video/image compositions: background
+  canvas, trim/source-in timing, timeline offsets, scale, rotation, opacity,
+  overlay order, audio trim/delay/fades/gain, amix, and master gain. Static
+  image inputs are planned as looped ffmpeg inputs, while disabled ffmpeg still
+  returns config-only provenance instead of runnable args.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -423,10 +429,12 @@ Stage 7 project settings import/export UI has started:
   media-studio-video-export-timeline.mjs` proves the same settings surface on
   opened video source, including drag/drop relink for a missing imported video
   asset and ffmpeg-gated final export provenance, and `tests/areas/media-studio-
-  compare.mjs` proves it on modular Compare for audio and video.
+  compare.mjs` proves it on modular Compare for audio and video. Parser unit
+  coverage now also proves disabled/enabled video export plans, filter graph
+  layering, and config-only provenance.
 - Stage 7 remaining work: connect the modular video export plan to lazy ffmpeg
-  execution and deepen the shared video/image export planner from provenance
-  into concrete multi-input filter graphs for transforms/layering.
+  execution and expand filter coverage for additional transitions/effects as
+  those controls become user-facing.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

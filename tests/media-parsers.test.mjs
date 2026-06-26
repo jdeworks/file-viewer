@@ -38,6 +38,15 @@ import {
 } from '../docs/types/media/compare-audio.js';
 import { buildMuxMusicArgs, buildVideoExportFilterChain } from '../docs/types/media/video-filters.js';
 import {
+  addAsset,
+  addElement,
+  addLane,
+  buildVideoMixExportPlan,
+  createElement,
+  createLane,
+  createProjectFromAssetMetadata,
+} from '../docs/types/media/mixer/index.js';
+import {
   classifyFfmpegError,
   cancelFfmpeg,
   formatFfmpegError,
@@ -330,6 +339,63 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(args.includes('-c'), false, 'subtitle burn: does not stream-copy all streams');
   assert.equal(args[args.indexOf('-c:a') + 1], 'aac', 'subtitle burn: encodes MP4-compatible AAC audio');
   assert.equal(args.at(-1), 'out.mp4', 'subtitle burn: writes requested MP4 output');
+
+  let mixProject = createProjectFromAssetMetadata({
+    id: 'asset-video-a',
+    name: 'main.webm',
+    mime: 'video/webm',
+    capabilities: { hasAudio: true, hasVideo: true },
+    media: { durationMs: 2000, videoWidth: 640, videoHeight: 360, frameRate: 24 },
+  }, { name: 'Layered video export', fps: 24 });
+  mixProject = {
+    ...mixProject,
+    project: { ...mixProject.project, durationMs: 2500, background: '#112233' },
+    master: { ...mixProject.master, audio: { ...mixProject.master.audio, gain: 0.8 }, video: { ...mixProject.master.video, width: 640, height: 360 } },
+    elements: mixProject.elements.map((element) => ({
+      ...element,
+      timeline: { ...element.timeline, startMs: 500, sourceInMs: 200, durationMs: 1000, placementDurationMs: 1000 },
+      audio: { ...element.audio, gain: 0.7, fadeInMs: 100, fadeOutMs: 200 },
+      visual: { ...element.visual, x: 10, y: -5, scaleX: 1.25, scaleY: 1.1, rotation: 90, opacity: 0.5 },
+    })),
+  };
+  mixProject = addAsset(mixProject, {
+    id: 'asset-image-b',
+    name: 'overlay.png',
+    mime: 'image/png',
+    capabilities: { hasImage: true },
+    media: { durationMs: 0, videoWidth: 320, videoHeight: 180 },
+  });
+  const imageLane = createLane({ id: 'lane-image-b', role: 'image', label: 'Overlay', order: 2 });
+  mixProject = addLane(mixProject, imageLane);
+  mixProject = addElement(mixProject, createElement({
+    id: 'element-image-b',
+    laneId: imageLane.id,
+    assetId: 'asset-image-b',
+    type: 'image',
+    capabilities: { hasImage: true },
+    startMs: 750,
+    durationMs: 1500,
+    placementDurationMs: 1500,
+    visual: { x: -20, y: 12, scaleX: 0.8, scaleY: 0.8, rotation: 0, opacity: 1 },
+  }));
+  const gatedPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: false, ffmpegLoaded: false });
+  assert.equal(gatedPlan.canRender, false, 'modular video mix export: ffmpeg-disabled plan cannot render');
+  assert.equal(gatedPlan.args.length, 0, 'modular video mix export: ffmpeg-disabled plan has no runnable args');
+  const renderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, outputName: 'render.mp4' });
+  const filterGraph = renderPlan.provenance.filterGraph;
+  assert.equal(renderPlan.canRender, true, 'modular video mix export: loaded ffmpeg can render');
+  assert.equal(renderPlan.args.includes('-filter_complex'), true, 'modular video mix export: emits filter_complex');
+  assert.equal(renderPlan.args[renderPlan.args.indexOf('-map') + 1], '[vbase2]', 'modular video mix export: maps composed video output');
+  assert.equal(renderPlan.args.includes('[aout]'), true, 'modular video mix export: maps mixed audio output');
+  assert.deepEqual(renderPlan.provenance.inputs[1].args, ['-loop', '1', '-t', '2.25', '-i', 'overlay.png'], 'modular video mix export: loops image inputs for full composition duration');
+  assert.ok(filterGraph.includes('color=c=0x112233:s=640x360:r=24:d=2.25[vbase0]'), 'modular video mix export: starts with configured background canvas');
+  assert.ok(filterGraph.includes('[0:v]trim=start=0.2:duration=1,setpts=PTS-STARTPTS,scale=iw*1.25:ih*1.1,rotate=1.5708'), 'modular video mix export: applies trim, scale, and rotation to visual input');
+  assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: applies visual opacity');
+  assert.ok(filterGraph.includes("overlay=x=(W-w)/2+10:y=(H-h)/2-5:enable='between(t,0.5,1.5)'"), 'modular video mix export: overlays first visual at timeline position');
+  assert.ok(filterGraph.includes('[1:v]trim=start=0:duration=1.5,setpts=PTS-STARTPTS,scale=iw*0.8:ih*0.8'), 'modular video mix export: includes second visual layer');
+  assert.ok(filterGraph.includes('[0:a]atrim=start=0.2:duration=1,asetpts=PTS-STARTPTS,adelay=500:all=1,afade=t=in:st=0:d=0.1,afade=t=out:st=0.8:d=0.2,volume=0.7'), 'modular video mix export: applies audio trim, delay, fades, and gain');
+  assert.ok(filterGraph.includes('[a0]amix=inputs=1:duration=longest:dropout_transition=0,volume=0.8[aout]'), 'modular video mix export: applies master audio gain after mix');
+  assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache/i.test(JSON.stringify(renderPlan)), false, 'modular video mix export: plan remains config-only');
 
   assert.equal(parseTimestamp('0:00:02.500'), 2.5, 'timestamp: minute-only HH:SS variant');
   assert.equal(parseTimestamp('01:02:03,004'), 3723.004, 'timestamp: comma ms variant');
