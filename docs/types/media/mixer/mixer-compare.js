@@ -385,6 +385,12 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     panel.dataset.overlapMs = String(Math.round(analysis.overlapMs || 0));
     panel.dataset.metric = analysis.metric || '';
     panel.dataset.value = String(analysis.value ?? '');
+    panel.dataset.maxDelta = String(analysis.maxDelta ?? '');
+    panel.dataset.averageEnergy = String(analysis.averageEnergy ?? '');
+    panel.dataset.highRatio = String(analysis.highRatio ?? '');
+    panel.dataset.averageDifference = String(analysis.averageDifference ?? '');
+    panel.dataset.highPixels = String(analysis.highPixels ?? '');
+    panel.dataset.transformDelta = analysis.transformDelta?.summary || '';
     if (analysis.timing) {
       panel.dataset.aOnlyMs = String(Math.round(analysis.timing.aOnlyMs || 0));
       panel.dataset.bOnlyMs = String(Math.round(analysis.timing.bOnlyMs || 0));
@@ -397,8 +403,22 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     message.className = 'mmx-compare-analysis-message';
     message.textContent = analysis.message;
     panel.append(title, message);
+    if (analysis.detailRows?.length) panel.append(renderAnalysisDetails(analysis.detailRows));
     if (analysis.timing) panel.append(renderTimingDetails(analysis.timing));
     return panel;
+  }
+
+  function renderAnalysisDetails(rows) {
+    const list = document.createElement('dl');
+    list.className = 'mmx-compare-analysis-details';
+    for (const [labelText, rawValue] of rows) {
+      const term = document.createElement('dt');
+      term.textContent = labelText;
+      const value = document.createElement('dd');
+      value.textContent = typeof rawValue === 'number' ? String(Math.round(rawValue * 10000) / 10000) : String(rawValue);
+      list.append(term, value);
+    }
+    return list;
   }
 
   function renderTimingDetails(timing) {

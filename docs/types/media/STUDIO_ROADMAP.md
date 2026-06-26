@@ -160,10 +160,10 @@ retarget the existing B lane/element, and refresh `project.compare.b` while
 keeping file bytes runtime-only. Overlay mode now paints shared-coordinate A/B
 waveform or visual preview canvases from the modular project instead of a
 placeholder. The modular surface also has an explicit selected-overlap analysis
-hook and result panel for audio waveform deltas and visual frame-source/transform
-coverage. The existing Compare UI remains mounted for deeper detailed analysis/
-live-preview coverage until the modular surface can choose A/B from arbitrary
-existing mixer elements and render equivalent diff/readout controls.
+hook and result panel for audio waveform deltas, shifted-overlap timing, RMS/
+peak difference details, visual frame-source coverage, bounded frame-difference
+metrics when runtime frames are available, and transform deltas. Audio/video
+Compare no longer depends on the old Compare UI for detailed readouts.
 
 Stage 7 has started with a reusable project settings UI helper. Multi-lane Mix,
 opened video source, and modular Compare now have toolbar controls for
@@ -199,20 +199,17 @@ ffmpeg export chain. The next work is expanding
 transition/effect coverage beyond those initial controls and hardening long or
 complex client-side renders.
 
-Stage 8 has started for Compare. Audio and video Compare now mount the modular
-shared-model surface as the default/final UI, while the older detailed
-`compare-ui.js` surface is only behind an explicit lazy legacy disclosure.
-Timeline mode now follows the same retirement pattern: it opens on the modular
-video-source mixer by default, and the old `timeline.js` surface is only behind
-an explicit "Detailed legacy timeline" disclosure. Music-bed and second-media
+Stage 8 has started for Compare. Audio and video Compare now mount only the
+modular shared-model surface as the default/final UI; the old `compare-ui*`
+DOM helpers and lazy legacy disclosure have been removed. Timeline mode now
+follows the same retirement pattern: it opens on the modular video-source mixer
+by default, and the old `timeline.js` surface has been removed. Music-bed and second-media
 intake now live on the modular video-source mixer as additional shared-model
 lanes with config-only export provenance. Selected visual transition controls
 also now live on the modular Timeline toolbar and write dissolve/wipe-left
 records directly into shared project state. Selected clip trim/fade controls
 also now live on the modular Timeline toolbar and write source in/out plus
-audio/visual fade state into the shared model. The next retirement work is
-mapping or intentionally retiring the remaining one-shot legacy ffmpeg wrappers,
-then removing the compatibility surface entirely. The remaining legacy Timeline
+audio/visual fade state into the shared model. The remaining legacy Timeline
 helper has been audited: the modular surface now owns second-media lanes,
 music-bed lanes, transitions, trim/fade state, visual preview, settings
 import/export, and final export planning, while source-project helpers and
@@ -220,9 +217,7 @@ toolbar summaries have been split into `mixer-video-source-helpers.js` to keep
 the modular Timeline mount maintainable. Timeline mode now mounts only the
 modular video-source mixer; the old `timeline.js` compatibility DOM helper and
 `.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
-coverage remains in `video-filters.js`. The next Stage 8 work is retiring the
-remaining legacy Compare disclosure after the modular Compare surface carries
-the needed detailed readouts directly. Audio and video Compare now also mount
+coverage remains in `video-filters.js`. Audio and video Compare now also mount
 only `mixer/mixer-compare.js`; the old `compare-ui*` DOM helpers, lazy legacy
 disclosure, and `.media-compare*` stylesheet block have been removed while pure
 compare math/audio helpers remain for active modular checks and export tests.

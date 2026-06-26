@@ -465,6 +465,7 @@
   font-size: 12px;
 }
 
+.mmx-compare-analysis-details,
 .mmx-compare-analysis-timing {
   display: grid;
   grid-template-columns: repeat(4, max-content);
@@ -474,11 +475,18 @@
   font-size: 12px;
 }
 
+.mmx-compare-analysis-details {
+  grid-template-columns: repeat(2, max-content);
+}
+
+.mmx-compare-analysis-details dt,
+.mmx-compare-analysis-details dd,
 .mmx-compare-analysis-timing dt,
 .mmx-compare-analysis-timing dd {
   margin: 0;
 }
 
+.mmx-compare-analysis-details dt,
 .mmx-compare-analysis-timing dt {
   font-weight: 650;
 }

@@ -167,6 +167,19 @@ export async function exerciseCompare(ctx, kind) {
       metric: analysis?.metric || '',
       value: Number.isFinite(analysis?.value) ? analysis.value : null,
       normalized: !!analysis?.normalized,
+      maxDelta: Number.isFinite(analysis?.maxDelta) ? analysis.maxDelta : null,
+      averageEnergy: Number.isFinite(analysis?.averageEnergy) ? analysis.averageEnergy : null,
+      highRatio: Number.isFinite(analysis?.highRatio) ? analysis.highRatio : null,
+      averageDifference: Number.isFinite(analysis?.averageDifference) ? analysis.averageDifference : null,
+      highPixels: Number.isFinite(analysis?.highPixels) ? analysis.highPixels : null,
+      transformDelta: analysis?.transformDelta?.summary || '',
+      detailRows: panel?.querySelectorAll('.mmx-compare-analysis-details dt').length || 0,
+      panelMaxDelta: panel?.dataset.maxDelta || '',
+      panelAverageEnergy: panel?.dataset.averageEnergy || '',
+      panelHighRatio: panel?.dataset.highRatio || '',
+      panelAverageDifference: panel?.dataset.averageDifference || '',
+      panelHighPixels: panel?.dataset.highPixels || '',
+      panelTransformDelta: panel?.dataset.transformDelta || '',
       overlapMs: analysis?.overlapMs || 0,
       timingOverlapMs: analysis?.timing?.overlapMs || 0,
       timingAOnlyMs: analysis?.timing?.aOnlyMs || 0,
@@ -197,6 +210,20 @@ export async function exerciseCompare(ctx, kind) {
     && modularAnalysis.panelUnionMs === Math.round(modularAnalysis.timingUnionMs)
     && modularAnalysis.timingRows === 4
     && (kind !== 'audio' || modularAnalysis.normalized)
+    && modularAnalysis.detailRows >= 4
+    && (kind !== 'audio' || (
+      modularAnalysis.maxDelta !== null
+      && modularAnalysis.averageEnergy !== null
+      && modularAnalysis.highRatio !== null
+      && modularAnalysis.panelMaxDelta !== ''
+      && modularAnalysis.panelAverageEnergy !== ''
+      && modularAnalysis.panelHighRatio !== ''
+    ))
+    && (kind !== 'video' || (
+      /Δpos/.test(modularAnalysis.transformDelta)
+      && modularAnalysis.panelTransformDelta === modularAnalysis.transformDelta
+      && modularAnalysis.panelHighPixels !== ''
+    ))
     && /Analyzed selected/i.test(modularAnalysis.message)
     && /A only/i.test(modularAnalysis.timingText) && /B only/i.test(modularAnalysis.timingText))
     pass(`${kind} compare: modular explicit analyze hook reports selected overlap and shifted ranges`);

@@ -352,9 +352,9 @@ Stage 6 Compare on the shared model has started:
   range fields backed by the shared compare state. It also accepts a browsed or
   dropped B media file, adds that file as a config-only project asset, retargets
   the existing B lane/element, stores the file only in the runtime file map, and
-  refreshes `project.compare.b`. The existing detailed Compare UI remains
-  mounted for current analysis, drag, live video overlay, and smoke coverage
-  until the modular surface replaces it completely.
+  refreshes `project.compare.b`. The old detailed Compare UI has been retired;
+  current analysis, drag, overlay, and smoke coverage run through the modular
+  `.mmx-*` surface.
 - Focused smoke coverage in `tests/areas/media-studio-compare.mjs` now proves
   the modular Compare surface mounts for audio and video with two lanes, two
   elements, A/B targets, positive overlap, config-only settings, and overlay
@@ -387,10 +387,16 @@ Stage 6 Compare on the shared model has started:
   A-only range, B-only range, union duration, and overlap ratio. The modular
   analysis panel renders that timing summary, and focused media-studio smoke
   proves the result without relying on the legacy Compare readout.
-- Stage 6 remaining work: continue replacing the legacy detailed diff/readout
-  flows where deeper audio/video analysis still depends on old modules, and
-  retire the old Compare UI once equivalent coverage has moved to modular
-  selectors.
+- Added richer modular diff/readout metrics. Audio Compare now reports
+  average/max peak delta, average RMS-energy delta, high-difference columns,
+  and high-ratio details from the selected shifted overlap. Visual Compare now
+  reports frame-source coverage, bounded frame-difference metrics when both
+  runtime frame sources are available, and visual transform deltas. The
+  `.mmx-compare-analysis` panel exposes these details directly and focused
+  smoke coverage asserts them for audio and video.
+- Stage 6 remaining work: none known for the accepted modular Compare scope.
+  Further analysis depth should be added to `mixer-compare-analysis.js` and
+  `.mmx-*` readouts, not by restoring old Compare UI.
 
 Stage 7 project settings import/export UI has started:
 
