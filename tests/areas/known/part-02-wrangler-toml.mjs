@@ -403,6 +403,17 @@ export async function run(ctx) {
   const fbsText = await page.$eval('#previewHost .fbs-doc', (e) => e.textContent);
   if (/Firebase/i.test(fbsText)) pass('firebase.json: badge shown'); else fail('firebase badge: ' + fbsText.slice(0, 200));
   if (/dist|hosting|functions|emulators/i.test(fbsText)) pass('firebase.json: config sections shown'); else fail('firebase config: ' + fbsText.slice(0, 200));
+  if (/Firebase Review|Content-Security-Policy|Strict-Transport-Security|broad hosting rewrite|nodejs18/i.test(fbsText)) pass('firebase.json: review findings shown'); else fail('firebase review: ' + fbsText.slice(0, 300));
+  const fbsHelpTitle = await page.$eval('#previewHost .fbs-doc .fbs-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Firebase|Open line|source/i.test(fbsHelpTitle)) pass('firebase.json: hover source help shown'); else fail('firebase hover help: ' + fbsHelpTitle);
+  const fbsSourceCollapsed = await page.$eval('#previewHost .fbs-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));
+  if (fbsSourceCollapsed) pass('firebase.json: source collapsed'); else fail('firebase source should start collapsed');
+  const fbsSourceLine = await page.$eval('#previewHost .fbs-doc .fbs-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .fbs-doc .kf-source-details');
+    return details?.open && document.getElementById(`firebase-line-${line}`);
+  }, fbsSourceLine, { timeout: 3000 });
+  pass('firebase.json: source links open source');
 
   // ── app.json (Expo) viewer ──
   await openExample('app.json (Expo)');
