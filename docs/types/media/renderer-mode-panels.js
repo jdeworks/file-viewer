@@ -265,13 +265,14 @@ export async function mountVideoModePanels({
       return mixerController;
     }
     const timelineToggle = makeTogglePanel({
-      label: 'Video timeline',
-      panelClass: 'media-tl-panel',
+      label: 'Detailed legacy timeline',
+      panelClass: 'media-legacy-timeline-panel',
       mount: async (innerPanel) => {
         const { mountTimeline } = await import('./timeline.js');
         return mountTimeline(innerPanel, intake, mediaElement, onTranscodedSource);
       },
     });
+    timelineToggle.wrap.classList.add('media-legacy-timeline-wrap');
     panel.append(timelineToggle.wrap);
     return {
       destroy() {

@@ -1,12 +1,5 @@
-import {
-  MEDIA_DEFAULT_DESKTOP_VIEWPORT,
-  MEDIA_MOBILE_VIEWPORT,
-  assertTimelineViewport,
-  reloadExampleAtViewport,
-} from './media-studio-helpers.mjs';
-
 export async function runVideoExportAndTimelineChecks(ctx) {
-  const { browser, page, origin, pass, fail, openExample } = ctx;
+  const { page, pass, fail, openExample } = ctx;
 
   // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
@@ -78,7 +71,7 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     pass('R5: pure webvideo -vf builder composes transform/look/scale without ffmpeg');
   else fail('video export vf builder: ' + JSON.stringify(exportVf));
 
-  // ── P6: Video timeline (modular source lane + legacy transition coverage) ─────
+  // ── P6: Video timeline (modular source lane + config-only export coverage) ────
   // Use browser-playable video here so the modular seek-frame preview can sample.
   await openExample('Sample.webm');
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
@@ -240,161 +233,83 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     (node) => Number(node.dataset.thumbCount || 0));
   if (sourceThumbCount > 0) pass('P6: modular video source renders sparse runtime thumbnails');
   else fail('modular video source thumbnail count: ' + sourceThumbCount);
-  const tlToggle = await page.evaluateHandle((sel) =>
-    [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
-  const tlToggleExists = await tlToggle.evaluate((e) => !!e);
-  if (tlToggleExists) {
-    pass('P6: video timeline toggle button present');
-    const preTl = await page.$(tlModeSel + ' .tl-wrap');
-    if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
-    await tlToggle.evaluate((button) => button.click());
-    await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-
-    // 2 lanes: video lane (clip A) + second/music lane.
-    const lanes = await page.$$eval(tlModeSel + ' .tl-lane', (els) => els.length);
-    if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
-    const tlHeader = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      const title = root.querySelector('.tl-head-title');
-      const status = root.querySelector('.tl-head-status');
-      const context = root.querySelector('.tl-context');
-      const ruler = root.querySelector('.tl-ruler');
-      const playhead = root.querySelector('.tl-playhead');
-      const lanesWrap = root.querySelector('.tl-lane-view');
-      return {
-        title: title?.textContent?.trim() || '',
-        statusText: status?.textContent?.trim() || '',
-        contextText: context?.textContent?.trim() || '',
-        ruler: !!ruler,
-        playhead: !!playhead,
-        lanesWrap: !!lanesWrap,
-        viewportStatus: root.getBoundingClientRect()?.width > 0,
-      };
-    }, tlModeSel);
-    if (tlHeader && /Timeline/.test(tlHeader.title)) pass('P6: timeline intent/workspace header title present'); else fail('timeline header: ' + JSON.stringify(tlHeader));
-    if (/Trim:/.test(tlHeader.statusText)) pass('P6: timeline header status includes trim status');
-    else fail('timeline header status: ' + (tlHeader?.statusText || ''));
-    if (tlHeader?.contextText) pass('P6: timeline workspace context present');
-    else fail('timeline header context: ' + JSON.stringify(tlHeader));
-    if (tlHeader?.ruler && tlHeader?.playhead && tlHeader?.lanesWrap) pass('P6: timeline grammar includes ruler + playhead + lanes');
-    else fail('timeline grammar: ' + JSON.stringify(tlHeader));
-    if (tlHeader?.viewportStatus) pass('P6: timeline workspace has positive viewport width');
-    else fail('timeline workspace geometry: ' + JSON.stringify(tlHeader));
-    // Thumbnail strip with a load-on-demand button + trim handles (in/out).
-    const tlBits = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      return {
-        strip: !!root.querySelector('.tl-strip'),
-        thumbBtn: !!root.querySelector('.tl-thumb-btn'),
-        handleIn: !!root.querySelector('.tl-handle-in'),
-        handleOut: !!root.querySelector('.tl-handle-out'),
-        drop: !!root.querySelector('.tl-lane--b .media-ed-drop-zone'),
-      };
-    }, tlModeSel);
-    if (!tlBits) fail('P6: cannot find timeline mode panel root');
-    if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
-    if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
-    if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
-    const tlGroups = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      const actionGroups = [...root.querySelectorAll('.tl-action-group')].map((g) => ({
-        buttons: [...g.querySelectorAll('button')].map((b) => b.className),
-      }));
-      const trim = root.querySelector('.tl-lane--video .tl-trim-label');
-      return {
-        groups: actionGroups,
-        trimLabel: trim?.textContent || '',
-      };
-    }, tlModeSel);
-    if (tlGroups && tlGroups.groups.length === 2) {
-      const single = tlGroups.groups[0]?.buttons || [];
-      const dual = tlGroups.groups[1]?.buttons || [];
-      if (single.includes('tl-act tl-act-trim') && single.includes('tl-act tl-act-fade')
-        && dual.includes('tl-act tl-act-xfade') && dual.includes('tl-act tl-act-across') && dual.includes('tl-act tl-act-mux'))
-        pass('P6: action groups separate single-clip and two-clip actions');
-      else fail('timeline action grouping: ' + JSON.stringify(tlGroups.groups));
-    } else {
-      fail('timeline action groups: ' + JSON.stringify(tlGroups));
-    }
-    if (tlGroups?.trimLabel && /Trim:/.test(tlGroups.trimLabel)) pass('P6: trim label present in timeline lane');
-    else fail('timeline trim label: ' + JSON.stringify(tlGroups));
-    // Transition controls: dissolve/xfade selector + length + the four action buttons.
-    const transOpts = await page.$$eval(tlModeSel + ' .tl-trans-sel option', (els) => els.map((e) => e.value));
-    if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
-    const musicBed = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      const gain = root?.querySelector('.tl-music-gain');
-      const readout = root?.querySelector('.tl-music-readout');
-      if (!gain || !readout) return null;
-      const before = { value: gain.value, readout: readout.textContent || '', title: gain.title || '' };
-      gain.value = '0.6';
-      gain.dispatchEvent(new Event('input', { bubbles: true }));
-      return {
-        before,
-        after: { value: gain.value, readout: readout.textContent || '' },
-      };
-    }, tlModeSel);
-    if (musicBed && musicBed.before.value === '0.35' && /35% under video audio/.test(musicBed.before.readout))
-      pass('R5: music-bed ducking control defaults to 35% under video audio');
-    else fail('music-bed default: ' + JSON.stringify(musicBed));
-    if (musicBed && musicBed.after.value === '0.6' && /60% under video audio/.test(musicBed.after.readout))
-      pass('R5: music-bed ducking control updates readout when changed');
-    else fail('music-bed changed: ' + JSON.stringify(musicBed));
-    if (musicBed && /original video audio stays unchanged/i.test(musicBed.before.title))
-      pass('R5: music-bed control states original video audio is unchanged');
-    else fail('music-bed title: ' + JSON.stringify(musicBed));
-    const acts = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      return {
-        trim: !!root.querySelector('.tl-act-trim'),
-        fade: !!root.querySelector('.tl-act-fade'),
-        xfade: !!root.querySelector('.tl-act-xfade'),
-        across: !!root.querySelector('.tl-act-across'),
-        mux: !!root.querySelector('.tl-act-mux'),
-      };
-    }, tlModeSel);
-    if (acts && acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
-      pass('P6: trim + fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
-    const trimBtnText = await page.$eval(tlModeSel + ' .tl-act-trim', (e) => e.textContent);
-    if (trimBtnText.includes('Trim selected range')) pass('P6: trim action has visible label'); else fail('trim button text: ' + trimBtnText);
-    // Cross-clip actions disabled until a second clip is dropped.
-    const xfadeDisabled = await page.$eval(tlModeSel + ' .tl-act-xfade', (e) => e.disabled);
-    if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
-    await assertTimelineViewport(ctx, tlModeSel, 'desktop');
-
-    const tlViewDesktop = page.viewportSize();
-    await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.avi', '#previewHost video.media-view');
-    await page.$eval('#previewHost .media-mode-tab[data-mode="timeline"]', (button) => button.click());
-    await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
-    const mobileToggle = await page.evaluateHandle((sel) =>
-      [...document.querySelectorAll(sel + ' .media-wv-toggle')]
-        .find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
-    const mobileToggleExists = await mobileToggle.evaluate((e) => !!e);
-    if (mobileToggleExists) {
-      await mobileToggle.evaluate((button) => button.click());
-      await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-      await assertTimelineViewport(ctx, tlModeSel, 'mobile');
-      await mobileToggle.evaluate((button) => button.click());
-      await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
-    } else {
-      fail('P6 mobile: video timeline toggle not found after viewport change');
-    }
-    if (tlViewDesktop) {
-      await page.setViewportSize(tlViewDesktop);
-    } else {
-      await page.setViewportSize(MEDIA_DEFAULT_DESKTOP_VIEWPORT);
-    }
-    await page.goto(origin, { waitUntil: 'load' });
-    await openExample('Sample.avi');
-    await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
-    pass('P6: video timeline panel collapses + tears down');
-  } else {
-    fail('P6 video timeline toggle not found');
-  }
+  const modularTimelineGrammar = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    const project = root.__mediaMixerVideoSource?.getProject?.();
+    const selected = project?.selection?.primary?.id || '';
+    const element = project?.elements?.find((item) => item.id === selected) || project?.elements?.[0];
+    const setField = (selector, value) => {
+      const input = root.querySelector(selector);
+      if (!input) return false;
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    };
+    setField('.mmx-inspector-gain', '0.64');
+    setField('.mmx-inspector-start', '0.25');
+    setField('.mmx-inspector-source-in', '0.1');
+    setField('.mmx-inspector-source-out', '1.2');
+    setField('.mmx-inspector-fade-in', '125');
+    setField('.mmx-inspector-fade-out', '175');
+    setField('.mmx-inspector-transition-in', '250');
+    setField('.mmx-inspector-transition-kind', 'wipe-left');
+    setField('.mmx-inspector-visual-x', '11');
+    setField('.mmx-inspector-visual-opacity', '0.72');
+    const updatedProject = root.__mediaMixerVideoSource?.getProject?.();
+    const updated = updatedProject?.elements?.find((item) => item.id === element?.id);
+    const transition = updatedProject?.transitions?.find((item) => item.toElementId === element?.id);
+    const body = root.querySelector('.mmx-body');
+    const timeline = root.querySelector('.mmx-timeline');
+    const host = document.querySelector('#previewHost');
+    const hostRect = host?.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const docEl = document.documentElement;
+    return {
+      ruler: !!root.querySelector('.mmx-ruler'),
+      playhead: !!root.querySelector('.mmx-playhead'),
+      lanes: root.querySelectorAll('.mmx-lane').length,
+      elements: root.querySelectorAll('.mmx-element').length,
+      timelineScrollable: timeline.scrollWidth >= Math.round(body.clientWidth),
+      overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+      fitsHost: rootRect.left >= hostRect.left - 1 && rootRect.right <= hostRect.right + 1,
+      rootWidth: Math.round(rootRect.width),
+      bodyWidth: Math.round(body.getBoundingClientRect().width),
+      selected,
+      startMs: Math.round(updated?.timeline?.startMs || 0),
+      sourceInMs: Math.round(updated?.timeline?.sourceInMs || 0),
+      sourceOutMs: Math.round(updated?.timeline?.sourceOutMs || 0),
+      gain: updated?.audio?.gain,
+      fadeInMs: updated?.audio?.fadeInMs,
+      fadeOutMs: updated?.audio?.fadeOutMs,
+      transitionMs: transition?.durationMs || 0,
+      transitionKind: transition?.kind || '',
+      visualX: updated?.visual?.x,
+      visualOpacity: updated?.visual?.opacity,
+      legacyMounted: !!root.closest('[data-mode="timeline"]')?.querySelector('.tl-wrap'),
+      legacyToggle: [...root.closest('[data-mode="timeline"]')?.querySelectorAll('.media-wv-toggle') || []]
+        .some((button) => /Detailed legacy timeline/.test(button.textContent || '')),
+    };
+  });
+  if (modularTimelineGrammar.ruler && modularTimelineGrammar.playhead
+    && modularTimelineGrammar.lanes >= 1 && modularTimelineGrammar.elements >= 1)
+    pass('P6: modular Timeline grammar includes ruler, playhead, lanes, and source element');
+  else fail('modular Timeline grammar: ' + JSON.stringify(modularTimelineGrammar));
+  if (modularTimelineGrammar.bodyWidth > 0 && modularTimelineGrammar.fitsHost
+    && modularTimelineGrammar.overflowX === 0)
+    pass('P6: modular Timeline fits the media studio viewport without page overflow');
+  else fail('modular Timeline viewport: ' + JSON.stringify(modularTimelineGrammar));
+  if (modularTimelineGrammar.startMs === 250 && modularTimelineGrammar.sourceInMs === 100
+    && modularTimelineGrammar.sourceOutMs >= 1000 && modularTimelineGrammar.sourceOutMs <= 1200
+    && modularTimelineGrammar.gain === 0.64
+    && modularTimelineGrammar.fadeInMs === 125 && modularTimelineGrammar.fadeOutMs === 175)
+    pass('P6: modular Timeline inspector updates timing, clamped trim, gain, and fades');
+  else fail('modular Timeline inspector state: ' + JSON.stringify(modularTimelineGrammar));
+  if (modularTimelineGrammar.transitionMs === 250 && modularTimelineGrammar.transitionKind === 'wipe-left'
+    && modularTimelineGrammar.visualX === 11 && modularTimelineGrammar.visualOpacity === 0.72)
+    pass('P6: modular Timeline inspector updates visual transform and incoming transition state');
+  else fail('modular Timeline visual state: ' + JSON.stringify(modularTimelineGrammar));
+  if (!modularTimelineGrammar.legacyMounted && modularTimelineGrammar.legacyToggle)
+    pass('P6: legacy video timeline stays lazy behind an explicit detailed legacy disclosure');
+  else fail('legacy timeline default state: ' + JSON.stringify(modularTimelineGrammar));
 
   // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
   const tlArgs = await page.evaluate(async () => {

@@ -456,6 +456,12 @@ Stage 7 project settings import/export UI has started:
   `compare-ui.js` surface is available only behind a lazy "Detailed legacy
   compare" disclosure and is no longer required by focused media-studio smoke
   coverage.
+- Continued Stage 8 prototype retirement for video Timeline. Timeline mode now
+  opens on the modular video-source mixer as the default/final UI; the older
+  `timeline.js` surface is renamed to an explicit lazy "Detailed legacy
+  timeline" disclosure and focused smoke coverage now asserts the modular
+  ruler/playhead/lane grammar, inspector state updates, frame preview,
+  config-only settings import/export, and ffmpeg-gated final export plan.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -474,9 +480,10 @@ Stage 7 project settings import/export UI has started:
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
-- Stage 8 remaining work: retire the old video Timeline and any remaining
-  compatibility-only legacy surfaces once equivalent modular workflows are
-  directly covered.
+- Stage 8 remaining work: continue moving any remaining trim/transition/music-
+  bed behavior that only exists in legacy helpers onto the shared modular
+  surface, then remove compatibility-only legacy surfaces once equivalent
+  workflows are directly covered.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
