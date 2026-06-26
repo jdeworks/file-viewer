@@ -264,6 +264,14 @@ function defaultState(context = {}) {
     version: 1,
     cycles: 240,
     wave: 4,
+    // Full-TD fields (engine.js reads/writes these; see stage4 buildplan A3). Enemies are ephemeral
+    // (regenerated per wave, never persisted). towerNextId replaces any Math.random id generation.
+    integrity: 100,
+    waveGroup: 1,
+    waveActive: false,
+    waveNumber: 1,
+    enemies: [],
+    towerNextId: 1,
     recursion: {
       pointSetId: `fractal-${seed}`,
       points: generateRecursionPoints(seed)
@@ -285,6 +293,12 @@ function normalizeState(state, context = {}) {
   target.version = 1;
   target.cycles = Number.isFinite(target.cycles) ? target.cycles : fresh.cycles;
   target.wave = Number.isFinite(target.wave) ? target.wave : fresh.wave;
+  target.integrity = Number.isFinite(target.integrity) ? target.integrity : fresh.integrity;
+  target.waveGroup = Number.isFinite(target.waveGroup) ? target.waveGroup : fresh.waveGroup;
+  target.waveActive = Boolean(target.waveActive);
+  target.waveNumber = Number.isFinite(target.waveNumber) ? target.waveNumber : fresh.waveNumber;
+  target.enemies = [];
+  target.towerNextId = Number.isFinite(target.towerNextId) ? target.towerNextId : fresh.towerNextId;
   target.recursion = mergePlain(fresh.recursion, target.recursion);
   target.recursion.pointSetId = String(target.recursion.pointSetId || fresh.recursion.pointSetId);
   target.recursion.points = normalizePoints(target.recursion.points, fresh.recursion.points);
@@ -324,11 +338,15 @@ function normalizeTower(tower) {
   if (!tower || typeof tower !== "object") return null;
   const x = clampInt(tower.x, 0, 39);
   const y = clampInt(tower.y, 0, 39);
+  const type = String(tower.type || "pulse_node");
   return {
-    id: String(tower.id || `tower-${x}-${y}`),
-    type: String(tower.type || "pulse_node"),
+    id: String(tower.id || `tower-${type}-${x}-${y}`),
+    type,
     x,
-    y
+    y,
+    level: clampInt(tower.level || 1, 1, 3),
+    abilityReady: tower.abilityReady !== false,
+    abilityUsed: Boolean(tower.abilityUsed)
   };
 }
 function stageSeed(context) {
