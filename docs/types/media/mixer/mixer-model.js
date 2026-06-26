@@ -197,19 +197,24 @@ export function addAsset(project, assetInput) {
   return touch(next);
 }
 
+export function updateAsset(project, assetId, updater) {
+  const next = cloneProject(project);
+  next.assets = next.assets.map((asset) => (asset.id === assetId
+    ? createAsset(typeof updater === 'function' ? updater(clone(asset)) : { ...asset, ...updater })
+    : asset));
+  return touch(recomputeDuration(next));
+}
 export function addLane(project, laneInput) {
   const next = cloneProject(project);
   next.lanes.push(createLane({ ...laneInput, order: laneInput.order ?? next.lanes.length }));
   next.lanes.sort((a, b) => a.order - b.order);
   return touch(next);
 }
-
 export function addElement(project, elementInput) {
   const next = cloneProject(project);
   next.elements.push(createElement(elementInput));
   return touch(recomputeDuration(next));
 }
-
 export function updateElement(project, elementId, updater) {
   const next = cloneProject(project);
   next.elements = next.elements.map((element) => {
@@ -218,7 +223,6 @@ export function updateElement(project, elementId, updater) {
   });
   return touch(recomputeDuration(next));
 }
-
 export function updateLane(project, laneId, updater) {
   const next = cloneProject(project);
   next.lanes = next.lanes.map((lane) => {

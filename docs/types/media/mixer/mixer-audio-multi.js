@@ -1,5 +1,6 @@
 import {
   addElement,
+  addAsset,
   addLane,
   createGeneratedElement,
   createLane,
@@ -9,7 +10,7 @@ import {
   moveElement,
   selectTarget,
   summarizeReducedCapabilities,
-  trimElement,
+  updateAsset,
   updateElement,
   updateLane,
   updateMaster,
@@ -29,29 +30,32 @@ import {
   selectFirstElement,
 } from './mixer-audio-listen-helpers.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
+import {
+  createSilentWav,
+  hasAudioDrop,
+  isAudioFile,
+  laneRange,
+  updateProjectElementField,
+} from './mixer-audio-multi-helpers.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
-
   const root = document.createElement('section');
   root.className = 'mmx-audio-multi mx-wrap';
   root.dataset.mixerContext = 'mix';
   root.tabIndex = -1;
   panel.append(root);
-
   let project = selectFirstElement(buildProject(mediaEl || {}, intake || {}));
   let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.06, width: 960 };
   let waveformSummary = null;
   let destroyed = false;
   let rafId = 0;
   let draggingElement = null;
-
   const runtime = {
     ffmpegEnabled: !!options.enableFfmpeg,
     ffmpegLoaded: false,
     canExportAudioMixBrowser: true,
   };
-
   const render = () => {
     if (destroyed) return;
     viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
@@ -62,7 +66,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     decorateShell();
     reflectState();
   };
-
   const dispatch = (action) => {
     if (action.type === 'seek') viewport = { ...viewport, cursorMs: Math.max(0, action.cursorMs || 0) };
     if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
@@ -73,13 +76,11 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (action.type === 'update-element') project = updateProjectElementField(project, action);
     render();
   };
-
   const interactions = attachMixerInteractions(root, () => ({
     project,
     snapshot: createMixerSnapshot(project),
     viewport,
   }), dispatch);
-
   const onInput = (event) => {
     const target = event.target;
     if (!target?.matches) return;
@@ -109,7 +110,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       }
     }
   };
-
   const onClick = (event) => {
     const target = event.target;
     const button = target?.closest?.('button');
@@ -134,7 +134,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       downloadMixdown();
     }
   };
-
   const onPointerDown = (event) => {
     const element = event.target?.closest?.('.mmx-element');
     if (!element || !root.contains(element) || event.button !== 0) return;
@@ -147,7 +146,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     };
     try { element.setPointerCapture?.(event.pointerId); } catch { /* synthetic capture may fail */ }
   };
-
   const onPointerMove = (event) => {
     if (!draggingElement || event.pointerId !== draggingElement.pointerId) return;
     const deltaMs = (event.clientX - draggingElement.startX) / Math.max(0.001, viewport.pxPerMs);
@@ -157,17 +155,18 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     render();
     event.preventDefault();
   };
-
   const onPointerUp = (event) => {
     if (draggingElement && event.pointerId === draggingElement.pointerId) draggingElement = null;
   };
-
   root.addEventListener('input', onInput);
   root.addEventListener('click', onClick, true);
   root.addEventListener('pointerdown', onPointerDown);
   root.addEventListener('pointermove', onPointerMove);
   root.addEventListener('pointerup', onPointerUp);
   root.addEventListener('pointercancel', onPointerUp);
+  root.addEventListener('dragover', onDragOver);
+  root.addEventListener('dragleave', onDragLeave);
+  root.addEventListener('drop', onDrop);
   window.addEventListener('resize', render);
 
   if (mediaEl) {
@@ -202,6 +201,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     getProject: () => project,
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
+    dispatch,
     addPinkNoise() {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
       render();
@@ -210,6 +210,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       addGeneratedLane('tone', 'Tone', { kind: 'tone', frequency: 440, levelDb: -18 });
       render();
     },
+    addAudioFile,
   };
 
   render();
@@ -229,6 +230,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       root.removeEventListener('pointermove', onPointerMove);
       root.removeEventListener('pointerup', onPointerUp);
       root.removeEventListener('pointercancel', onPointerUp);
+      root.removeEventListener('dragover', onDragOver);
+      root.removeEventListener('dragleave', onDragLeave);
+      root.removeEventListener('drop', onDrop);
       window.removeEventListener('resize', render);
       delete root.__mediaMixerMulti;
       root.remove();
@@ -255,6 +259,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     const addTone = createButton('+ Tone', 'Add generated tone lane', 'mx-add-btn');
     const addPink = createButton('+ Pink noise', 'Add pink-noise room-tone lane', 'mx-add-pink');
     const mix = createButton('Mixdown → WAV', 'Download browser audio mixdown WAV', 'mx-mix-btn');
+    const drop = document.createElement('span');
+    drop.className = 'mx-drop-zone';
+    drop.textContent = 'Drop audio to add lane';
     const master = document.createElement('label');
     master.className = 'mx-master';
     const masterText = document.createElement('span');
@@ -267,7 +274,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     masterSlider.step = '0.01';
     masterSlider.value = String(project.master?.audio?.gain ?? 1);
     master.append(masterText, masterSlider);
-    controls.append(play, stop, addTone, addPink, master, mix);
+    controls.append(play, stop, addTone, addPink, master, mix, drop);
     toolbar.append(controls);
   }
 
@@ -348,6 +355,93 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (elementId) project = selectTarget(project, { type: 'element', id: elementId }, [{ type: 'element', id: elementId }]);
   }
 
+  function addAudioFile(file, input = {}) {
+    if (!file || !isAudioFile(file)) return null;
+    const assetId = `asset-drop-${Date.now()}-${project.assets.length + 1}`;
+    const lane = createLane({
+      role: 'audio',
+      label: file.name || 'Dropped audio',
+      order: project.lanes.length,
+    });
+    project = addAsset(project, {
+      id: assetId,
+      name: file.name || 'Dropped audio',
+      mime: file.type || '',
+      size: file.size || 0,
+      lastModified: file.lastModified || null,
+      capabilities: { hasAudio: true },
+      media: { durationMs: 0, audioSampleRate: 0, audioChannels: 0 },
+      status: 'available',
+    });
+    project = addLane(project, lane);
+    project = addElement(project, {
+      laneId: lane.id,
+      assetId,
+      capabilities: { hasAudio: true },
+      type: 'audio',
+      startMs: Math.max(0, Number(input.startMs ?? viewport.cursorMs) || 0),
+      durationMs: 1000,
+      rawDurationMs: 0,
+    });
+    const elementId = project.elements[project.elements.length - 1]?.id;
+    if (elementId) project = selectTarget(project, { type: 'element', id: elementId }, [{ type: 'element', id: elementId }]);
+    root.dataset.lastDroppedAudio = file.name || 'audio';
+    render();
+    decodeDroppedAudio(file, assetId, elementId);
+    return { assetId, laneId: lane.id, elementId };
+  }
+
+  function decodeDroppedAudio(file, assetId, elementId) {
+    decodeSummary({ file, filename: file.name, mime: file.type, size: file.size }).then((summary) => {
+      if (destroyed || !summary) return;
+      const durationMs = Math.max(1, Math.round((summary.duration || 0) * 1000));
+      project = updateAsset(project, assetId, (asset) => ({
+        ...asset,
+        media: {
+          ...asset.media,
+          durationMs,
+          audioSampleRate: summary.sampleRate || asset.media.audioSampleRate,
+        },
+      }));
+      project = updateElement(project, elementId, (element) => ({
+        ...element,
+        durationMs,
+        rawDurationMs: durationMs,
+        timeline: {
+          ...element.timeline,
+          durationMs,
+          rawDurationMs: durationMs,
+          placementDurationMs: durationMs,
+          sourceOutMs: durationMs,
+        },
+        analysis: { ...element.analysis, waveformSummary: summary },
+      }));
+      render();
+    }).catch(() => {
+      if (!destroyed) root.dataset.lastDropDecode = 'unavailable';
+    });
+  }
+
+  function onDragOver(event) {
+    if (!hasAudioDrop(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    root.classList.add('mx-drop-active');
+  }
+
+  function onDragLeave(event) {
+    if (!root.contains(event.relatedTarget)) root.classList.remove('mx-drop-active');
+  }
+
+  function onDrop(event) {
+    const files = [...(event.dataTransfer?.files || [])].filter(isAudioFile);
+    if (!files.length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    root.classList.remove('mx-drop-active');
+    for (const file of files) addAudioFile(file, { startMs: viewport.cursorMs });
+  }
+
   function downloadMixdown() {
     const seconds = Math.max(1, Math.ceil((project.project.durationMs || 1000) / 1000));
     const sampleRate = project.project.sampleRate || 48000;
@@ -398,73 +492,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.dataset.zoom = String(viewport.pxPerMs);
     root.dataset.hasPinkNoise = project.elements.some((element) => element.audio?.roomTone?.kind === 'pink-noise') ? 'true' : 'false';
     root.dataset.waveformBuckets = String(waveformSummary?.buckets || 0);
+    root.dataset.hasDroppedAudio = project.assets.some((asset) => asset.id.startsWith('asset-drop-')) ? 'true' : 'false';
   }
-}
-
-function updateProjectElementField(project, action) {
-  const elementId = action.elementId;
-  const value = Number(action.value);
-  if (!elementId || !Number.isFinite(value)) return project;
-  if (action.field === 'start') return moveElement(project, elementId, value * 1000);
-  if (action.field === 'source-in') return trimElement(project, elementId, { sourceInMs: value * 1000 });
-  if (action.field === 'source-out') return trimElement(project, elementId, { sourceOutMs: value * 1000 });
-  if (action.field === 'gain') {
-    return updateElement(project, elementId, (element) => ({
-      ...element,
-      audio: { ...element.audio, gain: clamp(value, 0, 2) },
-    }));
-  }
-  if (action.field === 'fade-in') {
-    return updateElement(project, elementId, (element) => ({
-      ...element,
-      audio: { ...element.audio, fadeInMs: Math.max(0, value) },
-    }));
-  }
-  if (action.field === 'fade-out') {
-    return updateElement(project, elementId, (element) => ({
-      ...element,
-      audio: { ...element.audio, fadeOutMs: Math.max(0, value) },
-    }));
-  }
-  return project;
-}
-
-function laneRange(className, laneId, value, min, max, step, label) {
-  const input = document.createElement('input');
-  input.type = 'range';
-  input.className = className;
-  input.dataset.laneId = laneId;
-  input.min = String(min);
-  input.max = String(max);
-  input.step = String(step);
-  input.value = String(value);
-  input.setAttribute('aria-label', label);
-  return input;
-}
-
-function createSilentWav(durationSec, sampleRate, channels) {
-  const channelCount = Math.max(1, Math.min(2, Math.round(channels || 1)));
-  const frames = Math.max(1, Math.round(durationSec * sampleRate));
-  const bytesPerSample = 2;
-  const dataSize = frames * channelCount * bytesPerSample;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-  writeAscii(view, 0, 'RIFF');
-  view.setUint32(4, 36 + dataSize, true);
-  writeAscii(view, 8, 'WAVE');
-  writeAscii(view, 12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, channelCount, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * channelCount * bytesPerSample, true);
-  view.setUint16(32, channelCount * bytesPerSample, true);
-  view.setUint16(34, 16, true);
-  writeAscii(view, 36, 'data');
-  view.setUint32(40, dataSize, true);
-  return buffer;
-}
-
-function writeAscii(view, offset, text) {
-  for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
 }

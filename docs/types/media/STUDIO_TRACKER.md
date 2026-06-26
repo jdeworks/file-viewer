@@ -220,20 +220,28 @@ Stage 4 multi-lane audio has started:
   and keeps ffmpeg as an opt-in/final-render concern rather than loading it on
   mount.
 - Focused smoke coverage in
-  `tests/areas/media-studio-mixer-audio-multi.mjs` proves lazy mount, one-lane
-  initial state, shared waveform lane rendering, lane controls updating model
-  state, first-class pink-noise/room-tone lane state, separate track/master EQ
-  state, and config-only settings export without media bytes or runtime
-  analysis arrays.
+  `tests/areas/media-studio-mixer-audio-listen.mjs` proves lazy mount,
+  one-lane initial state, shared waveform lane rendering, lane controls
+  updating model state, first-class pink-noise/room-tone lane state, separate
+  track/master EQ state, and config-only settings export without media bytes or
+  runtime analysis arrays.
+- The Mix surface now accepts dropped audio files without bubbling the drop to
+  the global file opener. A dropped WAV/MP3-style file creates a new audio lane,
+  asset, and element at the current cursor/start position, then bounded browser
+  decode attaches duration and waveform summary data to that element while
+  settings export continues to strip runtime waveform arrays.
+- Added `updateAsset()` for explicit shared-model asset metadata mutation when
+  dropped-file analysis discovers duration/sample-rate facts after initial
+  intake.
 - Validation passed:
   - `node --check docs/types/media/mixer/mixer-audio-multi.js`
-  - `node --check tests/areas/media-studio-mixer-audio-multi.mjs`
+  - `node --check tests/areas/media-studio-mixer-audio-listen.mjs`
   - `node tests/media-mixer-model.test.mjs`
-  - `node tests/smoke-area.mjs media-studio-mixer-audio-listen media-studio-mixer-audio-multi`
+  - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/smoke-area.mjs media-studio`
-- Remaining Stage 4 work: drag/drop additional audio assets, real WebAudio
-  scheduled playback over the shared timeline, decoded/processed cache budgets,
-  and final mix export/provenance derived from the same state.
+- Remaining Stage 4 work: real WebAudio scheduled playback over the shared
+  timeline, decoded/processed cache budgets, and final mix export/provenance
+  derived from the same state.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

@@ -219,6 +219,34 @@ export async function run(ctx) {
     pass('modular audio mix: pink-noise room-tone lane is first-class model state');
   else fail('modular audio mix pink-noise mismatch: ' + JSON.stringify(mixGenerated));
 
+  const dropped = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
+    const before = el.__mediaMixerMulti.getProject();
+    const bytes = await (await fetch('examples/sample.wav')).arrayBuffer();
+    const file = new File([bytes], 'dropped-lane.wav', { type: 'audio/wav' });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
+    el.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+    const project = root.__mediaMixerMulti.getProject();
+    const asset = project.assets.find((item) => item.name === 'dropped-lane.wav');
+    const element = project.elements.find((item) => item.assetId === asset?.id);
+    return {
+      beforeLanes: before.lanes.length,
+      lanes: project.lanes.length,
+      elements: project.elements.length,
+      assetName: asset?.name,
+      startMs: element?.timeline.startMs,
+      hasAudio: element?.capabilities.hasAudio,
+      hasWaveform: !!element?.analysis.waveformSummary,
+      datasetDropped: root.dataset.hasDroppedAudio,
+    };
+  });
+  if (dropped.lanes === dropped.beforeLanes + 1 && dropped.elements >= dropped.lanes && dropped.assetName === 'dropped-lane.wav' && dropped.startMs === 0 && dropped.hasAudio && dropped.datasetDropped === 'true')
+    pass('modular audio mix: dropped audio file creates a new shared-model lane and element');
+  else fail('modular audio mix dropped file mismatch: ' + JSON.stringify(dropped));
+
   const mixSettings = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const json = el.__mediaMixerMulti.exportSettings();
     const parsed = JSON.parse(json);
@@ -226,11 +254,12 @@ export async function run(ctx) {
       schema: parsed.schema,
       lanes: parsed.lanes.length,
       elements: parsed.elements.length,
+      droppedAsset: parsed.assets.some((asset) => asset.name === 'dropped-lane.wav'),
       hasMediaBytes: /mediaBytes|dataUrl|objectUrl|blob:/.test(json),
       hasRuntimeAnalysis: /waveformSummary|decodedBuffer|frameCache|thumbnailCache/.test(json),
     };
   });
-  if (mixSettings.schema === 'file-viewer.media-mixer.project' && mixSettings.lanes >= 2 && mixSettings.elements >= 2 && !mixSettings.hasMediaBytes && !mixSettings.hasRuntimeAnalysis)
+  if (mixSettings.schema === 'file-viewer.media-mixer.project' && mixSettings.lanes >= 3 && mixSettings.elements >= 3 && mixSettings.droppedAsset && !mixSettings.hasMediaBytes && !mixSettings.hasRuntimeAnalysis)
     pass('modular audio mix: settings export is config-only shared project state');
   else fail('modular audio mix settings export mismatch: ' + JSON.stringify(mixSettings));
 }
