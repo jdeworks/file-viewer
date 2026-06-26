@@ -495,10 +495,17 @@ Stage 7 project settings import/export UI has started:
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
-- Stage 8 remaining work: audit the remaining legacy Timeline helper for
-  behavior that is not yet represented by the shared modular surface, then
-  remove compatibility-only legacy surfaces once equivalent workflows are
-  directly covered.
+- Stage 8 audit note: the remaining legacy Timeline helper is now mostly
+  compatibility coverage around one-shot ffmpeg wrapper buttons. The modular
+  video-source mixer owns second-media lanes, music-bed lanes, transition state,
+  trim/fade state, visual preview, settings import/export, and final export
+  planning. The source-project helpers, export-plan panel, selected-element
+  lookup, music-bed gain, and edit/transition summaries have been split into
+  `mixer-video-source-helpers.js` so the modular Timeline mount can keep
+  shrinking toward removal of the compatibility surface.
+- Stage 8 remaining work: map or intentionally retire the remaining one-shot
+  legacy ffmpeg wrappers, then remove compatibility-only legacy surfaces once
+  equivalent workflows are directly covered.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

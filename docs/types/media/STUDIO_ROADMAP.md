@@ -206,9 +206,13 @@ also now live on the modular Timeline toolbar and write dissolve/wipe-left
 records directly into shared project state. Selected clip trim/fade controls
 also now live on the modular Timeline toolbar and write source in/out plus
 audio/visual fade state into the shared model. The next retirement work is
-auditing the remaining legacy Timeline helper for any behavior that is still not
-represented by the shared modular surface, then removing the compatibility
-surface entirely.
+mapping or intentionally retiring the remaining one-shot legacy ffmpeg wrappers,
+then removing the compatibility surface entirely. The remaining legacy Timeline
+helper has been audited: the modular surface now owns second-media lanes,
+music-bed lanes, transitions, trim/fade state, visual preview, settings
+import/export, and final export planning, while source-project helpers and
+toolbar summaries have been split into `mixer-video-source-helpers.js` to keep
+the modular Timeline mount maintainable.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
