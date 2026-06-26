@@ -65,6 +65,18 @@ export async function run(ctx) {
   await openExample('sample.gleam');
   await page.waitForSelector('#previewHost .gleam-doc', { timeout: 12000 });
   pass('gleam-lang: rendered');
+  const gleamText = await page.$eval('#previewHost .gleam-doc', (e) => e.textContent);
+  if (/arity 1|returns Float|shape: Shape|Internal Functions|stdlib/i.test(gleamText)) pass('gleam-lang: signatures, params, and import groups shown'); else fail('gleam-lang details: ' + gleamText.slice(0, 800));
+  const gleamPubHint = await page.$eval('#previewHost .gleam-doc .gleam-tag-pub', (e) => e.title);
+  if (/Public function/i.test(gleamPubHint)) pass('gleam-lang: public function hover help present'); else fail('gleam-lang pub hint: ' + gleamPubHint);
+  const gleamSourceOpen = await page.$eval('#previewHost .gleam-doc .kf-source-details', (e) => e.open);
+  if (!gleamSourceOpen) pass('gleam-lang: source starts collapsed'); else fail('gleam source should start collapsed');
+  await page.click('#previewHost .gleam-doc .kf-source-link');
+  const gleamJump = await page.$eval('#previewHost .gleam-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (gleamJump.open && gleamJump.highlighted) pass('gleam-lang: item click opens and highlights source'); else fail('gleam source jump: ' + JSON.stringify(gleamJump));
 
   // ── odin-lang: rendered ──
   await openExample('sample.odin');
