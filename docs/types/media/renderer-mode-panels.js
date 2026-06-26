@@ -186,8 +186,11 @@ export async function mountAudioModePanels({
     return null;
   });
   registerMode('compare', 'Compare', async (panel) => {
+    const { mountModularCompare } = await import('./mixer/mixer-compare.js');
     const { mountMediaCompare } = await import('./compare-ui.js');
-    return mountMediaCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
+    const modular = mountModularCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
+    const current = mountMediaCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
+    return combinedController(modular, current);
   });
   registerMode('mix', 'Mix', async (panel) => {
     const { mountModularAudioMixer } = await import('./mixer/mixer-audio-multi.js');
@@ -297,8 +300,11 @@ export async function mountVideoModePanels({
     return null;
   });
   registerMode('compare', 'Compare', async (panel) => {
+    const { mountModularCompare } = await import('./mixer/mixer-compare.js');
     const { mountMediaCompare } = await import('./compare-ui.js');
-    return mountMediaCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
+    const modular = mountModularCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
+    const current = mountMediaCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
+    return combinedController(modular, current);
   });
 
   if (watchMode) {
@@ -309,4 +315,12 @@ export async function mountVideoModePanels({
 
   void setMode('watch');
   return { subtitleController };
+}
+
+function combinedController(...controllers) {
+  return {
+    destroy() {
+      controllers.forEach((controller) => controller?.destroy?.());
+    },
+  };
 }

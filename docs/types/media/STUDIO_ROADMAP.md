@@ -146,6 +146,14 @@ proxy generation/conversion paths, replacing the old video timeline with
 modular multi-lane editing, and then Compare on top of the same selected-object
 model.
 
+Stage 6 has started with an additive modular Compare surface for audio and
+video. It builds a two-lane shared mixer project from the opened media, stores
+A/B targets in `project.compare`, computes overlap through the mixer model, and
+exposes stacked/overlay controls with config-only settings export. The existing
+Compare UI remains mounted for detailed analysis/live-preview coverage until
+the modular surface can choose A/B from real mixer elements or dropped assets
+and render equivalent waveform/visual overlay analysis.
+
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
 Status: superseded as the primary direction by the modular mixer foundation

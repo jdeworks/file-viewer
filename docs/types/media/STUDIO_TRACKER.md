@@ -330,9 +330,28 @@ Stage 5 video/image elements and seek-frame preview has started:
   - `node tests/media-parsers.test.mjs`
   - `node tests/smoke-area.mjs media-studio`
   - `./scripts/check.sh --fast`
-- Stage 5 remaining work: sparse thumbnail strips/proxy generation,
-  optional ffmpeg-backed conversion paths, replacing the old video timeline with
-  modular multi-lane editing, and then Compare rebuild on the same shared model.
+- Stage 5 remaining work: ffmpeg-backed proxy generation/conversion paths and
+  replacing the old video timeline with modular multi-lane editing.
+
+Stage 6 Compare on the shared model has started:
+
+- Added `mixer-compare.js`, an additive modular Compare surface mounted ahead
+  of the current Compare UI for both audio and video. It builds a two-lane
+  shared mixer project from the opened media, assigns Compare A/B through
+  `project.compare`, computes overlap through `computeCompareOverlap()`, and
+  keeps settings export config-only.
+- The surface exposes stacked/overlay view controls and a B offset field backed
+  by the shared compare state. The existing detailed Compare UI remains mounted
+  for current analysis, drag, live video overlay, and smoke coverage until the
+  modular surface replaces it completely.
+- Focused smoke coverage in `tests/areas/media-studio-compare.mjs` now proves
+  the modular Compare surface mounts for audio and video with two lanes, two
+  elements, A/B targets, positive overlap, config-only settings, and overlay
+  mode rendering.
+- Stage 6 remaining work: choose A/B from existing mixer elements or dropped
+  assets, render true overlaid waveform/visual coordinates in the modular
+  surface, wire explicit analysis hooks, and retire the old Compare UI once
+  equivalent coverage has moved to modular selectors.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

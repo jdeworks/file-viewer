@@ -28,6 +28,36 @@ export async function exerciseCompare(ctx, kind) {
   else fail(`${kind} Compare should not mount before tab selection`);
   await page.click('#previewHost .media-mode-tab[data-mode="compare"]');
   await page.waitForSelector(`${panelSel} .media-compare`, { timeout: 5000 });
+  await page.waitForSelector(`${panelSel} .mmx-compare-source`, { timeout: 5000 });
+  const modularCompare = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
+    const project = root.__mediaMixerCompare?.getProject?.();
+    const overlap = root.__mediaMixerCompare?.getOverlap?.();
+    const settings = root.__mediaMixerCompare?.exportSettings?.() || '';
+    return {
+      lanes: project?.lanes?.length || 0,
+      elements: project?.elements?.length || 0,
+      compareA: !!project?.compare?.a?.elementId,
+      compareB: !!project?.compare?.b?.elementId,
+      overlapMs: overlap?.overlap?.durationMs || 0,
+      view: root.dataset.compareView,
+      hasOverlayButton: !!root.querySelector('.mmx-compare-view[data-view="overlay"]'),
+      hasBytes: /blob:|data:|objectURL|mediaBytes|frameCache|thumbnailCache/i.test(settings),
+    };
+  });
+  if (modularCompare.lanes === 2 && modularCompare.elements === 2
+    && modularCompare.compareA && modularCompare.compareB && modularCompare.overlapMs > 0
+    && modularCompare.view === 'stacked' && modularCompare.hasOverlayButton && !modularCompare.hasBytes)
+    pass(`${kind} compare: modular shared-model A/B surface mounts with config-only state`);
+  else fail(`${kind} modular compare state: ` + JSON.stringify(modularCompare));
+  await page.click(`${panelSel} .mmx-compare-source .mmx-compare-view[data-view="overlay"]`);
+  const modularOverlay = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => ({
+    view: root.dataset.compareView,
+    overlay: !!root.querySelector('.mmx-compare-overlay'),
+    overlapMs: Number(root.dataset.compareOverlapMs || 0),
+  }));
+  if (modularOverlay.view === 'overlay' && modularOverlay.overlay && modularOverlay.overlapMs > 0)
+    pass(`${kind} compare: modular shared-model overlay mode renders`);
+  else fail(`${kind} modular compare overlay: ` + JSON.stringify(modularOverlay));
   const layouts = await page.$$eval(`${panelSel} .media-compare-layout-btn`, (els) => els.map((el) => ({
     layout: el.dataset.layout,
     text: el.textContent.trim(),
