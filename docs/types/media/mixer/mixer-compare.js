@@ -19,6 +19,8 @@ import { ensureMixerStyles } from './mixer-ui.js';
 import { clampZoom, decodeSummary, mediaDuration, selectFirstElement } from './mixer-audio-listen-helpers.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { updateProjectElementField } from './mixer-audio-multi-helpers.js';
+import { analyzeCompareSelection } from './mixer-compare-analysis.js';
+import { drawCompareOverlay, overlayKind } from './mixer-compare-overlay.js';
 import {
   applyDroppedAudioSummary,
   applyDroppedVisualMetadata,
@@ -41,6 +43,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
   let project = buildCompareProject(mediaEl || {}, intake || {}, kind);
   let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.06, width: 960 };
   let destroyed = false;
+  let lastAnalysis = null;
   const runtimeFiles = new Map();
   if (intake?.file) runtimeFiles.set(ASSET_ID, intake.file);
   const visualRuntime = createMixerVisualRuntime({ runtimeFiles, onUpdate: render });
@@ -74,8 +77,15 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
 
   const onClick = (event) => {
     const button = event.target?.closest?.('.mmx-compare-view');
-    if (!button || !root.contains(button)) return;
-    project = { ...project, compare: { ...project.compare, view: button.dataset.view || 'stacked' } };
+    if (button && root.contains(button)) {
+      project = { ...project, compare: { ...project.compare, view: button.dataset.view || 'stacked' } };
+      render();
+      return;
+    }
+    const analyzeButton = event.target?.closest?.('.mmx-compare-analyze');
+    if (!analyzeButton || !root.contains(analyzeButton)) return;
+    lastAnalysis = analyzeCompareSelection(project, visualRuntime.frames);
+    root.dataset.lastCompareAnalysis = lastAnalysis.status;
     render();
   };
   const onInput = (event) => {
@@ -131,6 +141,13 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     getProject: () => project,
     getViewport: () => viewport,
     getOverlap: () => computeCompareOverlap(project),
+    analyze: () => {
+      lastAnalysis = analyzeCompareSelection(project, visualRuntime.frames);
+      root.dataset.lastCompareAnalysis = lastAnalysis.status;
+      render();
+      return lastAnalysis;
+    },
+    getLastAnalysis: () => lastAnalysis,
     exportSettings: () => exportProjectSettingsJson(project),
     importSettings: settingsUi.importSettings,
     relinkFiles: settingsUi.relinkFiles,
@@ -194,9 +211,11 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     offset.value = String(Math.round((project.compare.b?.offsetMs || 0) / 100) / 10);
     group.append(label('B offset', offset));
     group.append(renderBInput());
+    group.append(renderAnalyzeButton());
     group.append(renderOverlap());
     toolbar.append(group);
     if (project.compare.view === 'overlay') root.append(renderOverlay());
+    if (lastAnalysis) root.append(renderAnalysisPanel(lastAnalysis));
   }
 
   function renderOverlap() {
@@ -239,6 +258,31 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     input.accept = kind === 'video' ? 'video/*,image/*,audio/*' : 'audio/*,video/*,image/*';
     wrap.append(input);
     return wrap;
+  }
+
+  function renderAnalyzeButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'mmx-compare-analyze';
+    button.textContent = overlayKind(project) === 'visual' ? 'Analyze overlap frames' : 'Analyze overlap audio';
+    return button;
+  }
+
+  function renderAnalysisPanel(analysis) {
+    const panel = document.createElement('section');
+    panel.className = 'mmx-compare-analysis';
+    panel.dataset.status = analysis.status;
+    panel.dataset.kind = analysis.kind;
+    panel.dataset.overlapMs = String(Math.round(analysis.overlapMs || 0));
+    panel.dataset.metric = analysis.metric || '';
+    panel.dataset.value = String(analysis.value ?? '');
+    const title = document.createElement('strong');
+    title.textContent = analysis.kind === 'visual' ? 'Visual overlap analysis' : 'Audio overlap analysis';
+    const message = document.createElement('span');
+    message.className = 'mmx-compare-analysis-message';
+    message.textContent = analysis.message;
+    panel.append(title, message);
+    return panel;
   }
 
   function replaceCompareBFile(file) {
@@ -371,120 +415,6 @@ function mediaForKind(kind, durationMs) {
   if (kind === 'image') return { durationMs, videoWidth: 0, videoHeight: 0, frameRate: 0 };
   if (kind === 'video') return { durationMs: 0, videoWidth: 0, videoHeight: 0, frameRate: 0, audioSampleRate: 0, audioChannels: 0 };
   return { durationMs: 0, audioSampleRate: 0, audioChannels: 0 };
-}
-
-function overlayKind(project) {
-  return project.elements.some((element) => element.capabilities?.hasVideo || element.capabilities?.hasImage)
-    ? 'visual'
-    : 'audio';
-}
-
-function drawCompareOverlay(canvas, project, frames) {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#111827';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-  ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
-  const [a, b] = compareElements(project);
-  if (overlayKind(project) === 'visual') drawVisualOverlay(ctx, canvas, a, b, frames);
-  else drawAudioOverlay(ctx, canvas, a, b);
-  canvas.dataset.variedPixels = String(countVariedPixels(ctx, canvas));
-}
-
-function compareElements(project) {
-  return ['a', 'b'].map((side) => {
-    const id = project.compare?.[side]?.elementId;
-    return project.elements.find((element) => element.id === id) || null;
-  });
-}
-
-function drawAudioOverlay(ctx, canvas, a, b) {
-  drawWave(ctx, canvas, a?.analysis?.waveformSummary, '#4c78a8', 0.72);
-  drawWave(ctx, canvas, b?.analysis?.waveformSummary, '#e5534b', 0.58);
-  ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('A', 10, 18);
-  ctx.fillStyle = 'rgba(229,83,75,0.92)';
-  ctx.fillText('B', 30, 18);
-}
-
-function drawWave(ctx, canvas, summary, color, alpha) {
-  const mid = canvas.height / 2;
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = color;
-  if (!summary?.buckets) {
-    ctx.fillRect(0, mid - 1, canvas.width, 2);
-    ctx.restore();
-    return;
-  }
-  for (let x = 0; x < canvas.width; x += 1) {
-    const index = Math.min(summary.buckets - 1, Math.floor((x / canvas.width) * summary.buckets));
-    const hi = Math.max(0.02, summary.max?.[index] || summary.peak?.[index] || 0);
-    const lo = Math.min(-0.02, summary.min?.[index] || -(summary.peak?.[index] || 0));
-    const top = mid - Math.max(1, hi * mid * 0.88);
-    const bottom = mid - Math.min(-1, lo * mid * 0.88);
-    ctx.fillRect(x, top, 1, Math.max(1, bottom - top));
-  }
-  ctx.restore();
-}
-
-function drawVisualOverlay(ctx, canvas, a, b, frames) {
-  drawVisual(ctx, canvas, a, frames, '#4c78a8', 0.72, 'A', -canvas.width * 0.08);
-  drawVisual(ctx, canvas, b, frames, '#e5534b', 0.54, 'B', canvas.width * 0.08);
-}
-
-function drawVisual(ctx, canvas, element, frames, color, alpha, labelText, offsetX) {
-  if (!element) return;
-  const source = frameFor(frames, element)?.source;
-  const visual = element.visual || {};
-  const w = canvas.width * 0.56 * Math.max(0.05, Number(visual.scaleX) || 1);
-  const h = canvas.height * 0.66 * Math.max(0.05, Number(visual.scaleY) || 1);
-  const cx = canvas.width / 2 + offsetX + (Number(visual.x) || 0);
-  const cy = canvas.height / 2 + (Number(visual.y) || 0);
-  ctx.save();
-  ctx.globalAlpha = Math.max(0, Math.min(1, alpha * (visual.opacity ?? 1)));
-  ctx.translate(cx, cy);
-  ctx.rotate(((Number(visual.rotation) || 0) * Math.PI) / 180);
-  if (source) drawContained(ctx, source, -w / 2, -h / 2, w, h);
-  else {
-    ctx.fillStyle = color;
-    ctx.fillRect(-w / 2, -h / 2, w, h);
-  }
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 4;
-  ctx.strokeRect(-w / 2, -h / 2, w, h);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = '13px sans-serif';
-  ctx.fillText(labelText, -w / 2 + 8, -h / 2 + 18);
-  ctx.restore();
-}
-
-function drawContained(ctx, source, x, y, width, height) {
-  const sourceWidth = source.naturalWidth || source.videoWidth || source.width || width;
-  const sourceHeight = source.naturalHeight || source.videoHeight || source.height || height;
-  const scale = Math.min(width / sourceWidth, height / sourceHeight);
-  const drawW = sourceWidth * scale;
-  const drawH = sourceHeight * scale;
-  ctx.drawImage(source, x + (width - drawW) / 2, y + (height - drawH) / 2, drawW, drawH);
-}
-
-function frameFor(frames, element) {
-  if (!frames) return null;
-  if (typeof frames.get === 'function') return frames.get(element.id) || frames.get(element.assetId) || null;
-  return frames[element.id] || frames[element.assetId] || null;
-}
-
-function countVariedPixels(ctx, canvas) {
-  const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-  const first = [data[0], data[1], data[2], data[3]];
-  let varied = 0;
-  for (let i = 0; i < data.length; i += 32) {
-    if (data[i] !== first[0] || data[i + 1] !== first[1] || data[i + 2] !== first[2] || data[i + 3] !== first[3]) varied += 1;
-  }
-  return varied;
 }
 
 function renderOverlayStatus(canvas, overlap) {

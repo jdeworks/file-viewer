@@ -358,9 +358,15 @@ Stage 6 Compare on the shared model has started:
   single canvas with overlay opacity metadata. Smoke coverage asserts the
   modular overlay canvas kind, A/B bindings, overlap, and nonblank pixel
   variation for both audio and video.
+- Added explicit modular Compare analysis hooks. The modular surface now exposes
+  an analyze action and result panel backed by the shared compare target/range
+  state: audio reports selected-overlap peak-delta analysis from waveform
+  summaries, and visual compare reports frame-source/transform coverage for the
+  selected overlap without using the legacy Compare analyzer or loading ffmpeg.
 - Stage 6 remaining work: choose A/B from arbitrary existing mixer elements,
-  wire explicit analysis hooks into the modular surface, and retire the old
-  Compare UI once equivalent coverage has moved to modular selectors.
+  deepen modular analysis to replace the legacy detailed diff/readout flows,
+  and retire the old Compare UI once equivalent coverage has moved to modular
+  selectors.
 
 Stage 7 project settings import/export UI has started:
 

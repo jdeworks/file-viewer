@@ -71,6 +71,36 @@ export async function exerciseCompare(ctx, kind) {
     && new RegExp(`${expectedOverlayKind} overlay`, 'i').test(modularOverlay.status))
     pass(`${kind} compare: modular shared-model overlay mode paints shared coordinates`);
   else fail(`${kind} modular compare overlay: ` + JSON.stringify(modularOverlay));
+  if (kind === 'audio') {
+    await page.waitForFunction((sel) => {
+      const project = document.querySelector(sel)?.__mediaMixerCompare?.getProject?.();
+      return project?.elements?.every((element) => element.analysis?.waveformSummary);
+    }, `${panelSel} .mmx-compare-source`, { timeout: 12000 });
+  }
+  await page.click(`${panelSel} .mmx-compare-source .mmx-compare-analyze`);
+  const modularAnalysis = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
+    const analysis = root.__mediaMixerCompare.getLastAnalysis();
+    const panel = root.querySelector('.mmx-compare-analysis');
+    return {
+      status: analysis?.status || '',
+      kind: analysis?.kind || '',
+      metric: analysis?.metric || '',
+      value: Number.isFinite(analysis?.value) ? analysis.value : null,
+      overlapMs: analysis?.overlapMs || 0,
+      panelStatus: panel?.dataset.status || '',
+      panelKind: panel?.dataset.kind || '',
+      message: panel?.textContent || '',
+    };
+  });
+  if (modularAnalysis.status === 'analyzed'
+    && modularAnalysis.kind === expectedOverlayKind
+    && modularAnalysis.metric
+    && modularAnalysis.overlapMs > 0
+    && modularAnalysis.panelStatus === 'analyzed'
+    && modularAnalysis.panelKind === expectedOverlayKind
+    && /Analyzed selected/i.test(modularAnalysis.message))
+    pass(`${kind} compare: modular explicit analyze hook reports selected overlap`);
+  else fail(`${kind} modular compare analysis: ` + JSON.stringify(modularAnalysis));
   await page.setInputFiles(`${panelSel} .mmx-compare-source .mmx-compare-b-input`,
     new URL(kind === 'video' ? '../../docs/examples/sample.webm' : '../../docs/examples/sample.wav', import.meta.url).pathname);
   await page.waitForFunction(({ sel, expected }) => {

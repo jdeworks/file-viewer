@@ -389,6 +389,20 @@
   font-size: 12px;
 }
 
+.mmx-compare-analysis {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--mmx-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, canvas 92%, #54a24b 8%);
+}
+
+.mmx-compare-analysis-message {
+  color: var(--mmx-muted);
+  font-size: 12px;
+}
+
 .mmx-audio-listen .media-waveform-surface {
   overflow-x: auto;
 }
