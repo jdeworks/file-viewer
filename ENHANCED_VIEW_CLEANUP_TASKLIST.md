@@ -115,6 +115,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Caddyfile: source-linked sites/directives, directive hover explanations, TLS/proxy/HSTS/directory-listing review findings, and collapsed numbered source.
 - [x] HAProxy config: source-linked globals/defaults/frontends/backends/listens, bind/backend/stats review findings, stats auth redaction, and collapsed redacted source.
 - [x] Nginx config: source-linked servers/listens/locations/upstreams, directive hover explanations, HTTP/default/upstream review findings, and collapsed numbered source.
+- [x] PostgreSQL config: source-linked settings, masking reasons/redacted source for sensitive key-like values, bind/SSL/WAL review findings, and collapsed redacted source.
 - [x] SSHD config: source-linked directives, hover explanations, public bind/auth review findings, and collapsed numbered source.
 - [ ] Add rule packs for weak TLS/proxy headers, open bind addresses, directory listing, permissive auth, debug logging.
 - [ ] Deployment configs: Vercel, Netlify, Wrangler, Railway, Firebase.

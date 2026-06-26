@@ -311,10 +311,23 @@ export async function run(ctx) {
   await openExample('postgresql.conf');
   await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
   const pgText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
+  const pgHtml = await page.$eval('#previewHost .pg-doc', (e) => e.innerHTML);
   if (/PostgreSQL/i.test(pgText)) pass('postgresql.conf: PostgreSQL badge shown'); else fail('postgresql badge: ' + pgText.slice(0, 200));
   if (/5432|localhost/i.test(pgText)) pass('postgresql.conf: connections section shown'); else fail('postgresql conns: ' + pgText.slice(0, 300));
   if (/128MB|shared_buffers/i.test(pgText)) pass('postgresql.conf: memory settings shown'); else fail('postgresql mem: ' + pgText.slice(0, 300));
   if (/replica|wal_level/i.test(pgText)) pass('postgresql.conf: WAL section shown'); else fail('postgresql wal: ' + pgText.slice(0, 300));
+  if (/PostgreSQL Review|bind scope|ssl enabled/i.test(pgText)) pass('postgresql.conf: review findings shown'); else fail('postgresql review: ' + pgText.slice(0, 500));
+  if ((pgText + pgHtml).includes('server.key')) fail('postgresql.conf: ssl key path leaked'); else pass('postgresql.conf: ssl key path redacted');
+  const pgHelpTitle = await page.$eval('#previewHost .pg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/PostgreSQL|Open line|source/i.test(pgHelpTitle)) pass('postgresql.conf: setting hover explains source action'); else fail('postgresql hover title: ' + pgHelpTitle);
+  const pgSourceCollapsed = await page.$eval('#previewHost .pg-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (pgSourceCollapsed) pass('postgresql.conf: redacted source starts collapsed'); else fail('postgresql source was not collapsed');
+  const pgSourceLine = await page.$eval('#previewHost .pg-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .pg-doc .kf-source-details');
+    return details?.open && document.getElementById(`pg-line-${line}`);
+  }, pgSourceLine);
+  pass('postgresql.conf: clicking setting opens source line');
 
   // ── pgbouncer.ini viewer ──
   await openExample('pgbouncer.ini');
