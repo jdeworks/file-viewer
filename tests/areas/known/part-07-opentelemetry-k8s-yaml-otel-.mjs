@@ -22,6 +22,15 @@ export async function run(ctx) {
   if (/AKIA/i.test(awscText)) pass('aws-credentials: access key ID shown (masked)'); else fail('aws-credentials key id: ' + awscText.slice(0, 300));
   if (/•{4,}/.test(awscText)) pass('aws-credentials: secret key is masked'); else fail('aws-credentials secret mask: ' + awscText.slice(0, 300));
   if (/handle with care/i.test(awscText)) pass('aws-credentials: security warning shown'); else fail('aws-credentials warning: ' + awscText.slice(0, 300));
+  const awscHtml = await page.$eval('#previewHost .awsc-doc', (e) => e.innerHTML);
+  if (/Credential Review|long-lived key|production key/i.test(awscText)) pass('aws-credentials: credential review warnings shown'); else fail('aws-credentials review: ' + awscText.slice(0, 400));
+  if (/Redacted source/i.test(awscText) && !/wJalrXUtnFEMI|je7MtGbClwBF|someSecretKeyExample/.test(awscText + awscHtml)) pass('aws-credentials: source preview redacts raw secrets'); else fail('aws-credentials source leak: ' + awscText.slice(0, 400));
+  const awscSourceCollapsed = await page.$eval('#previewHost .awsc-doc .kf-source-details', (e) => !e.open);
+  if (awscSourceCollapsed) pass('aws-credentials: redacted source is collapsed'); else fail('aws-credentials source unexpectedly expanded');
+  await page.click('#previewHost .awsc-doc [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .awsc-doc .kf-source-details')?.open, null, { timeout: 3000 });
+  const awscSourceOpened = await page.$eval('#previewHost .awsc-doc .kf-source-details', (e) => e.open && !!e.querySelector('#awsc-line-1'));
+  if (awscSourceOpened) pass('aws-credentials: source links open source preview'); else fail('aws-credentials source link did not open preview');
 
   // ── aws-config viewer ──
   await openExample('aws-config (AWS)');
