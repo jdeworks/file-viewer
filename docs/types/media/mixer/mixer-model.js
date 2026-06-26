@@ -219,6 +219,21 @@ export function updateElement(project, elementId, updater) {
   return touch(recomputeDuration(next));
 }
 
+export function updateLane(project, laneId, updater) {
+  const next = cloneProject(project);
+  next.lanes = next.lanes.map((lane) => {
+    if (lane.id !== laneId) return lane;
+    return createLane(typeof updater === 'function' ? updater(clone(lane)) : { ...lane, ...updater });
+  }).sort((a, b) => a.order - b.order);
+  return touch(recomputeDuration(next));
+}
+
+export function updateMaster(project, updater) {
+  const next = cloneProject(project);
+  next.master = createDefaultMaster(typeof updater === 'function' ? updater(clone(next.master)) : { ...next.master, ...updater });
+  return touch(recomputeDuration(next));
+}
+
 export function moveElement(project, elementId, startMs, laneId) {
   return updateElement(project, elementId, (element) => ({
     ...element,

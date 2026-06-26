@@ -190,8 +190,8 @@ export async function mountAudioModePanels({
     return mountMediaCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
   });
   registerMode('mix', 'Mix', async (panel) => {
-    const { mountMixer } = await import('./mixer-ui.js');
-    return mountMixer(panel, intake);
+    const { mountModularAudioMixer } = await import('./mixer/mixer-audio-multi.js');
+    return mountModularAudioMixer(panel, intake, mediaElement, { enableFfmpeg });
   });
 
   const audioListenMode = states.states.get('listen');

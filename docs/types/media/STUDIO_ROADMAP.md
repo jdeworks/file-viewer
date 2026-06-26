@@ -101,6 +101,17 @@ lane now renders directly from the shared renderer/interaction surface; legacy
 Listen class names remain only as compatibility aliases for surrounding tests
 and panels while the new mixer contract is expanded.
 
+Stage 4 has started. Audio `Mix` now routes to
+`mixer/mixer-audio-multi.js`, a shared-model multi-lane controller rendered
+through the modular mixer shell. It starts from the open file as lane 1 and can
+add generated tone or pink-noise/room-tone lanes, with lane gain/mute/solo,
+element fades, track EQ schema, master EQ schema, capability notes, and
+config-only settings export all backed by the mixer project model. The old
+`.mx-*` selectors are compatibility aliases while focused modular smoke
+coverage asserts the `.mmx-*` surface. Remaining Stage 4 work is real drag/drop
+asset intake, scheduled WebAudio timeline playback, decoded/processed cache
+budgets, and final mix export/provenance from the shared timeline state.
+
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
 Status: superseded as the primary direction by the modular mixer foundation

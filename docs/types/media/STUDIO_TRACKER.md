@@ -202,6 +202,39 @@ Stage 3 one-lane MP3/WAV Listen integration is in progress:
   moving compatibility-only selectors out of the required smoke contract as the
   shared mixer tests take over.
 
+Stage 4 multi-lane audio has started:
+
+- Audio `Mix` now mounts `docs/types/media/mixer/mixer-audio-multi.js`, a
+  shared-model controller rendered through `mixer-renderer.js`, instead of the
+  older `docs/types/media/mixer-ui.js` prototype surface.
+- The Mix surface opens from the same one-file project shape as Listen, then
+  expands into multiple lanes through generated tone and pink-noise/room-tone
+  elements. The `.mx-*` selectors remain compatibility aliases only, so existing
+  broad smoke coverage can keep proving lifecycle and viewport behavior while
+  focused modular tests assert the new `.mmx-*` contract.
+- Lane gain, mute, solo, element fades, generated room-tone/pink-noise, master
+  gain, lane EQ schema, and master EQ schema are all represented in the shared
+  project model. New `updateLane()` and `updateMaster()` helpers make these
+  mutations explicit and testable.
+- Mix exposes capability/reduced-mode notes from the mixer capability evaluator
+  and keeps ffmpeg as an opt-in/final-render concern rather than loading it on
+  mount.
+- Focused smoke coverage in
+  `tests/areas/media-studio-mixer-audio-multi.mjs` proves lazy mount, one-lane
+  initial state, shared waveform lane rendering, lane controls updating model
+  state, first-class pink-noise/room-tone lane state, separate track/master EQ
+  state, and config-only settings export without media bytes or runtime
+  analysis arrays.
+- Validation passed:
+  - `node --check docs/types/media/mixer/mixer-audio-multi.js`
+  - `node --check tests/areas/media-studio-mixer-audio-multi.mjs`
+  - `node tests/media-mixer-model.test.mjs`
+  - `node tests/smoke-area.mjs media-studio-mixer-audio-listen media-studio-mixer-audio-multi`
+  - `node tests/smoke-area.mjs media-studio`
+- Remaining Stage 4 work: drag/drop additional audio assets, real WebAudio
+  scheduled playback over the shared timeline, decoded/processed cache budgets,
+  and final mix export/provenance derived from the same state.
+
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
 Status: superseded by A0 as the primary implementation direction.
