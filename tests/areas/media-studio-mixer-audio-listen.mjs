@@ -5,6 +5,10 @@ export async function run(ctx) {
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.waitForSelector('#previewHost .media-listen-surface.mmx-audio-listen', { timeout: 12000 });
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#previewHost .media-listen-surface.mmx-audio-listen')?.dataset.mixerWaveformStatus;
+    return status && status !== 'pending';
+  }, null, { timeout: 12000 });
 
   const initial = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
     const audio = document.querySelector('#previewHost audio.media-view');
@@ -21,6 +25,9 @@ export async function run(ctx) {
       exportButton: !!el.querySelector('.mmx-settings-export'),
       zoom: !!el.querySelector('.mmx-listen-zoom'),
       pan: !!el.querySelector('.mmx-listen-pan'),
+      waveformBuckets: Number(el.dataset.mixerWaveformBuckets || 0),
+      waveformStatus: el.dataset.mixerWaveformStatus || '',
+      projectHasWaveformSummary: !!el.__mediaMixerListen.getProject().elements[0]?.analysis?.waveformSummary,
       capabilityNote: /Enable Media Transcoding/.test(el.querySelector('.mmx-capability-note')?.textContent || ''),
       controls: ['.media-lane-offset', '.media-lane-in', '.media-lane-out', '.media-lane-gain', '.media-lane-fade-in', '.media-lane-fade-out', '.media-lane-room-toggle']
         .every((selector) => !!el.querySelector(selector)),
@@ -29,7 +36,7 @@ export async function run(ctx) {
   if (initial.nativeHidden && initial.mixerContext === 'listen' && initial.projectId && initial.elementId)
     pass('modular audio listen: Sample.wav opens through mixer-owned context with hidden native source');
   else fail('modular audio listen context missing: ' + JSON.stringify(initial));
-  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.controls && initial.zoom && initial.pan && initial.capabilityNote)
+  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.controls && initial.zoom && initial.pan && initial.capabilityNote && initial.waveformStatus !== 'pending' && (initial.waveformStatus !== 'available' || (initial.waveformBuckets > 0 && initial.projectHasWaveformSummary)))
     pass('modular audio listen: one-lane waveform editor controls render');
   else fail('modular audio listen surfaces missing: ' + JSON.stringify(initial));
 
@@ -123,13 +130,14 @@ export async function run(ctx) {
       lanes: parsed.lanes.length,
       elements: parsed.elements.length,
       hasMediaBytes: /mediaBytes|dataUrl|objectUrl|blob:/.test(json),
+      hasRuntimeAnalysis: /waveformSummary|decodedBuffer|frameCache|thumbnailCache/.test(json),
       offset: el.querySelector('.media-lane-offset').value,
       gain: el.querySelector('.media-lane-gain').value,
       room: el.querySelector('.media-lane-room-toggle').checked,
       projectSettingsStored: !!el.dataset.projectSettings,
     };
   });
-  if (roundtrip.schema === 'file-viewer.media-mixer.project' && roundtrip.assets === 1 && roundtrip.lanes === 1 && roundtrip.elements === 1 && !roundtrip.hasMediaBytes)
+  if (roundtrip.schema === 'file-viewer.media-mixer.project' && roundtrip.assets === 1 && roundtrip.lanes === 1 && roundtrip.elements === 1 && !roundtrip.hasMediaBytes && !roundtrip.hasRuntimeAnalysis)
     pass('modular audio listen: config-only settings JSON exports shared project model');
   else fail('modular audio listen settings export invalid: ' + JSON.stringify(roundtrip));
   if (roundtrip.offset === '0.25' && roundtrip.gain === '0.72' && roundtrip.room && roundtrip.projectSettingsStored)

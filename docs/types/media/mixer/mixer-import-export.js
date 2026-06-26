@@ -108,7 +108,17 @@ function stripRuntimeFields(project) {
     void file; void fileObject; void objectUrl; void objectURL; void mediaBytes; void dataUrl; void dataURL;
     return safe;
   });
+  out.elements = out.elements.map((element) => ({
+    ...element,
+    analysis: stripRuntimeAnalysis(element.analysis),
+  }));
   return out;
+}
+
+function stripRuntimeAnalysis(analysis = {}) {
+  const { waveformSummary, decodedBuffer, frameCache, thumbnailCache, ...safe } = analysis || {};
+  void waveformSummary; void decodedBuffer; void frameCache; void thumbnailCache;
+  return safe;
 }
 
 function bestAssetMatch(imported, localAssets, used) {
@@ -144,4 +154,3 @@ function scoreAssetMatch(imported, asset) {
   }
   return { asset, confidence: score >= 0.5 ? score : 0, reason: reasons.join('+') };
 }
-

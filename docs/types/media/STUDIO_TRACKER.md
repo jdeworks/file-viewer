@@ -161,17 +161,25 @@ Stage 3 one-lane MP3/WAV Listen integration is in progress:
 - The Listen surface now has mixer-owned viewport controls for zoom and pan,
   a capability note for reduced/ffmpeg-opt-in behavior, and direct source
   region dragging that updates the same start-offset state as the lane control.
+- The older Listen decode path now reports waveform analysis status
+  (`pending`, `available`, or `unavailable`) to the mixer adapter. When a
+  bounded browser decode produces a waveform summary, that runtime summary is
+  attached to the shared project element for renderer handoff; project settings
+  export strips runtime summaries and decoded buffers back out.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves `Sample.wav` and `Sample.mp3` open through the mixer-owned Listen
   context, keep native audio hidden, render the one-lane waveform editor,
-  operate play/pause/stop against the hidden decode source, update zoom/pan,
-  move source offset by dragging the waveform region, and roundtrip one-lane
-  settings JSON without media bytes.
+  expose waveform analysis status, operate play/pause/stop against the hidden
+  decode source, update zoom/pan, move source offset by dragging the waveform
+  region, and roundtrip one-lane settings JSON without media bytes or runtime
+  waveform analysis arrays.
 - Validation passed:
   - `node --check docs/types/media/mixer/mixer-audio-listen.js`
   - `node --check docs/types/media/mixer/mixer-renderer.js`
   - `node --check docs/types/media/mixer/mixer-ui.js`
   - `node --check docs/types/media/mixer/mixer-interactions.js`
+  - `node --check docs/types/media/mixer/mixer-import-export.js`
+  - `node --check docs/types/media/audio-listen-surface.js`
   - `node --check tests/areas/media-studio-mixer-audio-listen.mjs`
   - `node --check tests/areas/media-studio-mixer-shell.mjs`
   - `node tests/media-mixer-model.test.mjs`
@@ -182,10 +190,13 @@ Stage 3 one-lane MP3/WAV Listen integration is in progress:
   - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/smoke-area.mjs media-studio-mixer-shell`
   - `node tests/smoke-area.mjs media-studio`
-  - `./scripts/check.sh --fast`
+- Validation caveat: `./scripts/check.sh --fast` fell back to aggregate smoke
+  because `tests/media-mixer-import-export.test.mjs` has no smoke-area owner,
+  then failed in the unrelated, previously reproduced `media-3d` checkpoint
+  waiting for `#previewHost .media-doc video.media-view`.
 - Remaining Stage 3 work: replace the compatibility adapter with the shared
-  renderer surface directly, including real audio summary handoff from the
-  default Listen decode path into the shared lane renderer.
+  renderer surface directly, using the new analysis-status/summary bridge to
+  draw the default Listen lane from the shared lane renderer.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

@@ -26,14 +26,23 @@ import {
     objectUrl: 'blob:local',
     mediaBytes: new Uint8Array([1, 2, 3]),
   });
+  project.elements[0].analysis = {
+    waveformSummary: { peak: new Float32Array([0.1, 0.2]), buckets: 2 },
+    decodedBuffer: { shouldNotExport: true },
+    retainedNote: 'manual-marker',
+  };
   const settings = exportProjectSettings(project);
   assert.equal(settings.schema, MIXER_PROJECT_SCHEMA, 'export: writes mixer schema');
   assert.equal(settings.assets[0].hash.value, 'abc', 'export: keeps identity hash');
   assert.equal(settings.assets[0].fileObject, undefined, 'export: omits runtime file references');
   assert.equal(settings.assets[0].objectUrl, undefined, 'export: omits object URLs');
   assert.equal(settings.assets[0].mediaBytes, undefined, 'export: omits embedded media bytes');
+  assert.equal(settings.elements[0].analysis.waveformSummary, undefined, 'export: omits runtime waveform summaries');
+  assert.equal(settings.elements[0].analysis.decodedBuffer, undefined, 'export: omits decoded audio buffers');
+  assert.equal(settings.elements[0].analysis.retainedNote, 'manual-marker', 'export: keeps non-runtime analysis notes');
 
   const json = exportProjectSettingsJson(project);
+  assert.equal(/waveformSummary|decodedBuffer/.test(json), false, 'export: runtime analysis not serialized to JSON');
   const imported = importProjectSettings(json);
   assert.equal(imported.project.assets[0].status, 'missing', 'import: asset is missing until relinked');
   assert.equal(imported.needsRelink, true, 'import: reports missing media');

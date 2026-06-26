@@ -94,10 +94,12 @@ Stage 3 is in progress. Default MP3/WAV Listen is routed through
 `mixer/mixer-audio-listen.js`, creating a shared mixer project for the open
 audio source, adding config-only settings JSON roundtrip coverage, and now
 proving transport, zoom/pan, capability-note, and direct source-region dragging
-behavior in focused smoke coverage. The remaining Stage 3 work is to remove the
-compatibility adapter layer and make the visible Listen lane render directly
-from the shared renderer/interaction surface, including handoff of real decoded
-waveform summaries into that renderer.
+behavior in focused smoke coverage. It also reports waveform analysis status
+and hands available bounded waveform summaries into the shared project element
+while stripping runtime analysis from config-only project export. The remaining
+Stage 3 work is to remove the compatibility adapter layer and make the visible
+Listen lane render directly from the shared renderer/interaction surface using
+that analysis-status bridge.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

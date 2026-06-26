@@ -78,6 +78,8 @@ export function buildAudioListenSurface(mediaEl, intake, options = {}) {
   let selecting = false;
   let selectionStartPx = 0;
   let onRegionSelect = typeof options.onRegionSelect === 'function' ? options.onRegionSelect : null;
+  const onWaveformSummary = typeof options.onWaveformSummary === 'function' ? options.onWaveformSummary : null;
+  const onWaveformSummaryStatus = typeof options.onWaveformSummaryStatus === 'function' ? options.onWaveformSummaryStatus : null;
 
   const file = intake.file || new File([intake.bytes || new Uint8Array()], intake.filename || 'audio');
 
@@ -425,8 +427,17 @@ export function buildAudioListenSurface(mediaEl, intake, options = {}) {
   decodeSummary(file).then((next) => {
     if (destroyed) return;
     summary = next;
+    if (summary) {
+      onWaveformSummary?.(summary);
+      onWaveformSummaryStatus?.('available');
+    } else {
+      onWaveformSummaryStatus?.('unavailable');
+    }
     sync();
-  }).catch(() => sync());
+  }).catch(() => {
+    onWaveformSummaryStatus?.('unavailable');
+    sync();
+  });
 
   function loop() {
     if (destroyed) return;
@@ -448,6 +459,9 @@ export function buildAudioListenSurface(mediaEl, intake, options = {}) {
     },
     getState() {
       return { ...state, durationSec: duration(), currentTime: current() };
+    },
+    getWaveformSummary() {
+      return summary;
     },
     destroy() {
       destroyed = true;

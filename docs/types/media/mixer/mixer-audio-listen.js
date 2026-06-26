@@ -11,7 +11,17 @@ import { ensureMixerStyles } from './mixer-ui.js';
 
 export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   ensureMixerStyles();
-  const base = buildAudioListenSurface(mediaEl, intake, options);
+  const base = buildAudioListenSurface(mediaEl, intake, {
+    ...options,
+    onWaveformSummary(summary) {
+      attachWaveformSummary(summary);
+      options.onWaveformSummary?.(summary);
+    },
+    onWaveformSummaryStatus(status) {
+      setWaveformStatus(status);
+      options.onWaveformSummaryStatus?.(status);
+    },
+  });
   const root = base.el;
   root.classList.add('mmx-audio-listen');
   root.dataset.mixerContext = 'listen';
@@ -19,6 +29,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   let project = buildProject(mediaEl, intake);
   let zoom = 1;
   let pan = 0;
+  let waveformStatus = 'pending';
   const firstElementId = () => project.elements[0]?.id;
 
   const capabilityNote = document.createElement('div');
@@ -104,6 +115,26 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     root.dataset.mixerRoomTone = element?.audio?.roomTone ? 'true' : 'false';
     root.dataset.mixerZoom = String(Math.round(zoom * 100) / 100);
     root.dataset.mixerPan = String(Math.round(pan));
+    root.dataset.mixerWaveformStatus = waveformStatus;
+    root.dataset.mixerWaveformBuckets = String(element?.analysis?.waveformSummary?.buckets || 0);
+  }
+
+  function attachWaveformSummary(summary) {
+    const id = firstElementId();
+    if (!id || !summary) return;
+    project = updateElement(project, id, (element) => ({
+      ...element,
+      analysis: {
+        ...element.analysis,
+        waveformSummary: summary,
+      },
+    }));
+    reflectProjectState();
+  }
+
+  function setWaveformStatus(status) {
+    waveformStatus = status || 'unavailable';
+    reflectProjectState();
   }
 
   function applyViewport() {
@@ -177,6 +208,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   const onZoomIn = () => setZoom(zoom + 0.25);
   const onLoadedMetadata = () => {
     project = buildProject(mediaEl, intake);
+    attachWaveformSummary(base.getWaveformSummary?.());
     syncProjectFromControls();
     setZoom(zoom);
   };
@@ -199,6 +231,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     getProject: () => project,
     exportSettings,
     importSettings,
+    getWaveformSummary: () => base.getWaveformSummary?.() || project.elements[0]?.analysis?.waveformSummary || null,
     setZoom,
     setPan,
   };
