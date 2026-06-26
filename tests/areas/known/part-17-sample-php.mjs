@@ -415,6 +415,27 @@ export async function run(ctx) {
   if (/MediaWiki/i.test(mwText)) pass('mediawiki-markup: badge shown'); else fail('mediawiki-markup badge: ' + mwText.slice(0, 200));
   if (/section|template|categor|link/i.test(mwText)) pass('mediawiki-markup: stats shown'); else fail('mediawiki-markup stats: ' + mwText.slice(0, 300));
   if (/Introduction|Headings|References/i.test(mwText)) pass('mediawiki-markup: sections shown'); else fail('mediawiki-markup sections: ' + mwText.slice(0, 300));
+  if (/Files & Images|caption|references list|Tables/i.test(mwText)) pass('mediawiki-markup: enhanced file/ref/table details shown'); else fail('mediawiki-markup enhanced details: ' + mwText.slice(0, 900));
+  const mwSourceOpen = await page.$eval('#previewHost .mw-doc .kf-source-details', (e) => e.open);
+  if (!mwSourceOpen) pass('mediawiki-markup: source starts collapsed'); else fail('mediawiki-markup source should start collapsed');
+  await page.click('#previewHost .mw-doc .mw-outline .kf-source-link');
+  const mwJump = await page.$eval('#previewHost .mw-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (mwJump.open && mwJump.highlighted) pass('mediawiki-markup: outline click opens and highlights source'); else fail('mediawiki-markup source jump: ' + JSON.stringify(mwJump));
+  const mwBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/mediawiki-markup/renderer.js');
+    const text = '== Intro ==\n{{#if:{{{name|}}}|Hello}}\n[[File:Demo.png|thumb|alt=Accessible demo|Visible caption]]\nText<ref name=\"a\">A</ref>\nAgain<ref name=\"a\">B</ref>\nMissing<ref name=\"missing\" />\n[[Category:Demo]]\n[[Category:Demo]]';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Parser Functions|#if|caption|alt|duplicate category|duplicate ref|missing ref|references list/i.test(mwBad.out + mwBad.issues) && !mwBad.open) pass('mediawiki-markup: parser functions, media, and markup diagnostics shown'); else fail('mediawiki-markup synthetic diagnostics: ' + JSON.stringify(mwBad).slice(0, 900));
 
   // ── bbcode-text viewer ──
   await openExample('sample.bbc');

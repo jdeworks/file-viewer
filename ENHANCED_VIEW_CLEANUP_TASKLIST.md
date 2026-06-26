@@ -81,7 +81,7 @@ These should help users find broken structure and dependency/reference problems.
 - [x] `asciidoc`: anchors, xrefs, includes, images, admonitions, duplicate/missing references.
 - [x] `restructuredtext`: labels, refs, substitutions, toctree/include/image directives, malformed directive options.
 - [x] `org-mode`: TODO distribution, tags, deadlines/scheduled timestamps, source block names/results, broken links.
-- [ ] `mediawiki-markup`: parser functions, duplicate categories, citation/ref health, file alt/caption extraction.
+- [x] `mediawiki-markup`: parser functions, duplicate categories, citation/ref health, file alt/caption extraction.
 - [ ] `textile-markup`: malformed image/link syntax, heading source links.
 - [ ] `bbcode-text`: unmatched tags, repeated links/images, quote/code block navigation.
 - [ ] `xslt-stylesheet`: call graph, modes, callers/callees, duplicate template names, unused params/vars.
