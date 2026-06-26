@@ -373,6 +373,18 @@ export async function run(ctx) {
   await openExample('sample.f90');
   await page.waitForSelector('#previewHost .f90-doc', { timeout: 12000 });
   pass('fortran-lang: sample.f90 renders');
+  const f90Text = await page.$eval('#previewHost .f90-doc', (e) => e.textContent);
+  if (/PURE FUNCTION dot_real|RESULT\(res\)|arity 6|ONLY: REAL64, INT32|PARAMETER/i.test(f90Text)) pass('fortran-lang: signatures, imports, and parameters shown'); else fail('fortran details: ' + f90Text.slice(0, 900));
+  const f90FunctionHint = await page.$eval('#previewHost .f90-doc .f90-tag-fn', (e) => e.title);
+  if (/returns a value|RESULT/i.test(f90FunctionHint)) pass('fortran-lang: procedure hover help present'); else fail('fortran function hint: ' + f90FunctionHint);
+  const f90SourceOpen = await page.$eval('#previewHost .f90-doc .kf-source-details', (e) => e.open);
+  if (!f90SourceOpen) pass('fortran-lang: source starts collapsed'); else fail('fortran source should start collapsed');
+  await page.click('#previewHost .f90-doc .kf-source-link');
+  const f90Jump = await page.$eval('#previewHost .f90-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (f90Jump.open && f90Jump.highlighted) pass('fortran-lang: item click opens and highlights source'); else fail('fortran source jump: ' + JSON.stringify(f90Jump));
 
   // ── sample.rb viewer (ruby-lang plugin) ──
   await openExample('sample.rb');

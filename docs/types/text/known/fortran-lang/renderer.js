@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .f90-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -21,20 +21,27 @@ const CSS = `
 .f90-tag-use{background:#fff8e1;color:#f57f17;}
 .f90-tag-param{background:#fce4ec;color:#880e4f;}
 .f90-tag-common{background:#e0f2f1;color:#00695c;}
+.f90-sig{font-family:ui-monospace,monospace;white-space:normal;overflow-wrap:anywhere;}
+.f90-source-keyword{color:#2e7d32;font-weight:700;}
+.f90-source-type{color:#1565c0;font-weight:600;}
+.f90-source-string{color:#b45309;}
+.f90-source-comment{color:var(--fg-2,#6e7681);font-style:italic;}
 `;
 
 function analyzeFortran(text) {
   const lines = text.split(/\r?\n/);
-  let programName = null;
-  const moduleNames = [];
+  let program = null;
+  const modules = [];
   const subroutines = [];
   const functions = [];
   const useStmts = [];
   let implicitNoneCount = 0;
   const commonBlocks = [];
   const parameters = [];
+  const issues = [];
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
     // Skip comment lines (! in free form, C/c/* in fixed form at column 1)
     if (trimmed.startsWith('!') || /^[Cc*]/.test(line[0] || '')) continue;
@@ -44,52 +51,144 @@ function analyzeFortran(text) {
 
     // PROGRAM name
     const progM = codePart.match(/^PROGRAM\s+(\w+)/i);
-    if (progM && !programName) { programName = progM[1]; continue; }
+    if (progM && !program) { program = { name: progM[1], line: i + 1 }; continue; }
 
     // MODULE name (not MODULE PROCEDURE)
     const modM = codePart.match(/^MODULE\s+(?!PROCEDURE\b)(\w+)/i);
-    if (modM) { moduleNames.push(modM[1]); continue; }
+    if (modM) { modules.push({ name: modM[1], line: i + 1 }); continue; }
 
     // SUBROUTINE name
-    const subM = codePart.match(/^(?:(?:PURE|ELEMENTAL|RECURSIVE)\s+)?SUBROUTINE\s+(\w+)/i);
-    if (subM) { subroutines.push(subM[1]); continue; }
+    const subM = codePart.match(/^((?:(?:PURE|ELEMENTAL|RECURSIVE)\s+)*)SUBROUTINE\s+(\w+)\s*(?:\(([^)]*)\))?/i);
+    if (subM) {
+      subroutines.push({
+        name: subM[2],
+        qualifiers: words(subM[1]),
+        args: splitArgs(subM[3] || ''),
+        signature: codePart,
+        line: i + 1,
+        bodyLines: procedureLength(lines, i),
+      });
+      continue;
+    }
 
     // FUNCTION name
-    const fnM = codePart.match(/^(?:(?:PURE|ELEMENTAL|RECURSIVE|(?:INTEGER|REAL|DOUBLE\s+PRECISION|COMPLEX|LOGICAL|CHARACTER|TYPE\s*\(\w+\))\s+))?FUNCTION\s+(\w+)/i);
-    if (fnM) { functions.push(fnM[1]); continue; }
+    const fnM = codePart.match(/^((?:(?:PURE|ELEMENTAL|RECURSIVE)\s+)*(?:(?:INTEGER|REAL|DOUBLE\s+PRECISION|COMPLEX|LOGICAL|CHARACTER|TYPE\s*\(\w+\))\s+)?)FUNCTION\s+(\w+)\s*(?:\(([^)]*)\))?(?:\s+RESULT\s*\((\w+)\))?/i);
+    if (fnM) {
+      functions.push({
+        name: fnM[2],
+        qualifiers: words(fnM[1]).filter((w) => !/^(INTEGER|REAL|DOUBLE|PRECISION|COMPLEX|LOGICAL|CHARACTER|TYPE)$/i.test(w)),
+        result: fnM[4] || '',
+        args: splitArgs(fnM[3] || ''),
+        signature: codePart,
+        line: i + 1,
+        bodyLines: procedureLength(lines, i),
+      });
+      continue;
+    }
 
     // USE module
-    const useM = codePart.match(/^USE\s+(?:::)?\s*(\w+)/i);
-    if (useM) { useStmts.push(useM[1]); continue; }
+    const useM = codePart.match(/^USE\s+(?:::)?\s*(\w+)(?:\s*,\s*ONLY\s*:\s*(.+))?/i);
+    if (useM) { useStmts.push({ module: useM[1], only: useM[2] ? useM[2].split(',').map((s) => s.trim()).filter(Boolean) : [], line: i + 1 }); continue; }
 
     // IMPLICIT NONE
     if (/^IMPLICIT\s+NONE/i.test(codePart)) { implicitNoneCount++; continue; }
 
     // COMMON blocks
     const commonM = codePart.match(/^COMMON\s*\/(\w+)\//i);
-    if (commonM) { commonBlocks.push(commonM[1]); continue; }
+    if (commonM) { commonBlocks.push({ name: commonM[1], line: i + 1 }); continue; }
     const commonAnon = codePart.match(/^COMMON\s+(?!\/)/i);
-    if (commonAnon) { commonBlocks.push('(unnamed)'); continue; }
+    if (commonAnon) { commonBlocks.push({ name: '(unnamed)', line: i + 1 }); continue; }
 
     // PARAMETER declarations
     const paramM = codePart.match(/^(?:(?:INTEGER|REAL|DOUBLE\s+PRECISION|COMPLEX|LOGICAL|CHARACTER)\s*,\s*)?PARAMETER\s*::\s*(.+)/i);
     if (paramM) {
       const names = paramM[1].match(/\w+\s*=/g) || [];
-      for (const n of names) parameters.push(n.replace(/\s*=$/, '').trim());
+      for (const n of names) parameters.push({ name: n.replace(/\s*=$/, '').trim(), line: i + 1 });
       continue;
     }
   }
 
+  if (implicitNoneCount === 0) {
+    issues.push({ severity: 'warning', label: 'implicit typing', message: 'No IMPLICIT NONE declaration was found; undeclared names may become implicit variables.' });
+  }
+  if (commonBlocks.length) {
+    issues.push({ severity: 'info', label: 'COMMON block', line: commonBlocks[0].line, message: 'COMMON shares storage across program units and is legacy global state; verify callers agree on layout and type.' });
+  }
+
   return {
-    programName,
-    moduleNames: [...new Set(moduleNames)],
+    program,
+    modules: uniqueByName(modules),
     subroutines,
     functions,
-    useStmts: [...new Set(useStmts)],
+    useStmts: uniqueByName(useStmts, 'module'),
     implicitNoneCount,
-    commonBlocks: [...new Set(commonBlocks)],
+    commonBlocks: uniqueByName(commonBlocks),
     parameters,
+    issues,
   };
+}
+
+function words(text) {
+  return String(text || '').trim().split(/\s+/).filter(Boolean);
+}
+
+function splitArgs(text) {
+  return String(text || '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function uniqueByName(items, key = 'name') {
+  const seen = new Set();
+  const out = [];
+  for (const item of items) {
+    const value = String(item[key]).toLowerCase();
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push(item);
+  }
+  return out;
+}
+
+function procedureLength(lines, start) {
+  let count = 0;
+  for (let i = start + 1; i < lines.length; i++) {
+    const code = lines[i].trim().split('!')[0].trim();
+    if (/^END\s+(SUBROUTINE|FUNCTION)\b/i.test(code)) return count;
+    if (code) count++;
+  }
+  return count;
+}
+
+function tag(text, cls = 'f90-tag') {
+  const span = document.createElement('span');
+  span.className = cls;
+  span.textContent = text;
+  span.title = tagHint(text);
+  return span;
+}
+
+function tagHint(text) {
+  const hints = {
+    PROGRAM: 'Executable Fortran program unit.',
+    MODULE: 'Reusable namespace for procedures, types, and constants.',
+    USE: 'Imports symbols from another module.',
+    SUBROUTINE: 'Procedure called for side effects; it does not return a value directly.',
+    FUNCTION: 'Procedure that returns a value, optionally through RESULT(name).',
+    PARAMETER: 'Named compile-time constant.',
+    COMMON: 'Legacy shared storage block; check layout consistency across program units.',
+    PURE: 'Procedure should have no side effects visible outside its arguments/result.',
+    RECURSIVE: 'Procedure may call itself.',
+    ELEMENTAL: 'Procedure can apply element-wise to arrays.',
+  };
+  return hints[text] || '';
+}
+
+function highlightFortranLine(line) {
+  if (/^\s*!/.test(line)) return `<span class="f90-source-comment">${esc(line)}</span>`;
+  let out = esc(line);
+  out = out.replace(/(&#39;[^&]*?&#39;|&quot;[^&]*?&quot;)/g, '<span class="f90-source-string">$1</span>');
+  out = out.replace(/\b(PROGRAM|MODULE|USE|ONLY|IMPLICIT|NONE|CONTAINS|SUBROUTINE|FUNCTION|RESULT|END|DO|IF|THEN|ELSE|CALL|PARAMETER|COMMON|PURE|RECURSIVE|ELEMENTAL)\b/gi, '<span class="f90-source-keyword">$1</span>');
+  out = out.replace(/\b(INTEGER|REAL|DOUBLE PRECISION|COMPLEX|LOGICAL|CHARACTER|TYPE)\b/gi, '<span class="f90-source-type">$1</span>');
+  return out;
 }
 
 function makeSection(host, title) {
@@ -117,7 +216,7 @@ export async function render(intake, _ctx) {
   const isLegacy = ext === '.f' || ext === '.for' || ext === '.f77';
   const badgeLabel = isLegacy ? 'Fortran 77' : 'Free Form Fortran';
 
-  const { programName, moduleNames, subroutines, functions, useStmts, implicitNoneCount, commonBlocks, parameters } = analyzeFortran(text);
+  const { program, modules, subroutines, functions, useStmts, implicitNoneCount, commonBlocks, parameters, issues } = analyzeFortran(text);
 
   const host = document.createElement('div');
   host.className = 'f90-doc';
@@ -125,6 +224,7 @@ export async function render(intake, _ctx) {
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
+  ensureKnownUiStyle(host);
 
   // Title
   const title = document.createElement('div');
@@ -135,7 +235,7 @@ export async function render(intake, _ctx) {
   title.appendChild(badge);
   const sub1 = document.createElement('span');
   sub1.className = 'f90-badge-sub';
-  sub1.textContent = programName || (moduleNames.length ? moduleNames[0] : filename);
+  sub1.textContent = program?.name || (modules.length ? modules[0].name : filename);
   title.appendChild(sub1);
   host.appendChild(title);
 
@@ -143,8 +243,8 @@ export async function render(intake, _ctx) {
   const sub = document.createElement('div');
   sub.className = 'f90-sub';
   const parts = [];
-  if (programName) parts.push('program: ' + programName);
-  if (moduleNames.length) parts.push(`${moduleNames.length} module${moduleNames.length !== 1 ? 's' : ''}`);
+  if (program) parts.push('program: ' + program.name);
+  if (modules.length) parts.push(`${modules.length} module${modules.length !== 1 ? 's' : ''}`);
   parts.push(`${subroutines.length} subroutine${subroutines.length !== 1 ? 's' : ''}`);
   parts.push(`${functions.length} function${functions.length !== 1 ? 's' : ''}`);
   if (useStmts.length) parts.push(`${useStmts.length} USE import${useStmts.length !== 1 ? 's' : ''}`);
@@ -174,19 +274,16 @@ export async function render(intake, _ctx) {
   host.appendChild(cards);
 
   // Program / Module names
-  if (programName || moduleNames.length > 0) {
+  if (program || modules.length > 0) {
     const items = [];
-    if (programName) items.push({ kind: 'PROGRAM', name: programName });
-    for (const m of moduleNames) items.push({ kind: 'MODULE', name: m });
+    if (program) items.push({ kind: 'PROGRAM', name: program.name, line: program.line });
+    for (const m of modules) items.push({ kind: 'MODULE', name: m.name, line: m.line });
     const sec = makeSection(host, 'Program Units');
     const ul = makeList(sec);
-    for (const { kind, name } of items) {
+    for (const { kind, name, line } of items) {
       const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'f90-tag';
-      tag.textContent = kind;
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + name));
+      li.appendChild(tag(kind));
+      li.appendChild(sourceButton(name, line, 'Open program unit in source'));
       ul.appendChild(li);
     }
   }
@@ -197,11 +294,9 @@ export async function render(intake, _ctx) {
     const ul = makeList(sec);
     for (const u of useStmts) {
       const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'f90-tag f90-tag-use';
-      tag.textContent = 'USE';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + u));
+      li.appendChild(tag('USE', 'f90-tag f90-tag-use'));
+      li.appendChild(sourceButton(u.module, u.line, 'Open USE statement in source'));
+      if (u.only.length) li.appendChild(chip(`ONLY: ${u.only.join(', ')}`, 'info'));
       ul.appendChild(li);
     }
   }
@@ -213,11 +308,16 @@ export async function render(intake, _ctx) {
     const ul = makeList(sec);
     for (const s of subroutines.slice(0, MAX)) {
       const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'f90-tag f90-tag-sub';
-      tag.textContent = 'SUBROUTINE';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + s));
+      li.appendChild(tag('SUBROUTINE', 'f90-tag f90-tag-sub'));
+      for (const q of s.qualifiers) li.appendChild(chip(q, 'info', tagHint(q.toUpperCase())));
+      li.appendChild(sourceButton(s.name, s.line, 'Open subroutine in source'));
+      li.appendChild(chip(`arity ${s.args.length}`, 'muted'));
+      li.appendChild(chip(`${s.bodyLines} lines`, s.bodyLines > 25 ? 'warn' : 'muted'));
+      const sig = document.createElement('span');
+      sig.className = 'f90-sig';
+      sig.textContent = s.signature;
+      li.appendChild(sig);
+      for (const arg of s.args) li.appendChild(chip(arg, 'muted', 'Dummy argument from the subroutine signature.'));
       ul.appendChild(li);
     }
     if (subroutines.length > MAX) {
@@ -235,11 +335,17 @@ export async function render(intake, _ctx) {
     const ul = makeList(sec);
     for (const f of functions.slice(0, MAX)) {
       const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'f90-tag f90-tag-fn';
-      tag.textContent = 'FUNCTION';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + f));
+      li.appendChild(tag('FUNCTION', 'f90-tag f90-tag-fn'));
+      for (const q of f.qualifiers) li.appendChild(chip(q, 'info', tagHint(q.toUpperCase())));
+      li.appendChild(sourceButton(f.name, f.line, 'Open function in source'));
+      li.appendChild(chip(`arity ${f.args.length}`, 'muted'));
+      if (f.result) li.appendChild(chip(`RESULT(${f.result})`, 'info'));
+      li.appendChild(chip(`${f.bodyLines} lines`, f.bodyLines > 25 ? 'warn' : 'muted'));
+      const sig = document.createElement('span');
+      sig.className = 'f90-sig';
+      sig.textContent = f.signature;
+      li.appendChild(sig);
+      for (const arg of f.args) li.appendChild(chip(arg, 'muted', 'Dummy argument from the function signature.'));
       ul.appendChild(li);
     }
     if (functions.length > MAX) {
@@ -256,11 +362,8 @@ export async function render(intake, _ctx) {
     const ul = makeList(sec);
     for (const c of commonBlocks) {
       const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'f90-tag f90-tag-common';
-      tag.textContent = 'COMMON';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' /' + c + '/'));
+      li.appendChild(tag('COMMON', 'f90-tag f90-tag-common'));
+      li.appendChild(sourceButton('/' + c.name + '/', c.line, 'Open COMMON block in source'));
       ul.appendChild(li);
     }
   }
@@ -272,11 +375,8 @@ export async function render(intake, _ctx) {
     const ul = makeList(sec);
     for (const p of parameters.slice(0, MAX)) {
       const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'f90-tag f90-tag-param';
-      tag.textContent = 'PARAMETER';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + p));
+      li.appendChild(tag('PARAMETER', 'f90-tag f90-tag-param'));
+      li.appendChild(sourceButton(p.name, p.line, 'Open parameter declaration in source'));
       ul.appendChild(li);
     }
     if (parameters.length > MAX) {
@@ -286,6 +386,12 @@ export async function render(intake, _ctx) {
       ul.appendChild(li);
     }
   }
+
+  const issueEl = issueList(issues, { title: 'Review Notes' });
+  if (issueEl) host.appendChild(issueEl);
+
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'f90-line', highlighter: highlightFortranLine }));
+  wireSourceLinks(host, { idPrefix: 'f90-line' });
 
   return { parentNode: host };
 }
