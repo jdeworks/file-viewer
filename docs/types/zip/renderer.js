@@ -2,7 +2,7 @@
 // packed size, and date. Non-encrypted entries use JSZip for fast extraction. Legacy
 // ZipCrypto entries can be unlocked locally through libarchive; AES-encrypted ZIP entries
 // are shown as unsupported instead of advertising a password field that cannot help.
-import { readZip, fmtSize, encryptedNames, listCentralDirectory, extractEntry, extractEncryptedEntry, verifyZipCryptoPasswordFull } from './ziplib.js';
+import { readZip, fmtSize, encryptedNames, listCentralDirectory, extractEntry, extractEncryptedEntry, verifyZipCryptoPassword, verifyZipCryptoPasswordFull } from './ziplib.js';
 import { intakeFromBytes } from '../../core/intake.js';
 import { loadTemplate, fill, esc, fillEach } from '../../core/template.js';
 
@@ -158,6 +158,9 @@ export async function render(intake, ctx = {}) {
       let runStarted = 0;
       let runMode = 'manual';
       let nextProgressAt = 0;
+      let lastProgressAt = 0;
+      let lastProgressAttempts = 0;
+      let currentRate = DEFAULT_GUESS_RATE;
 
       function finish(password) {
         controller.abort();
@@ -205,6 +208,7 @@ export async function render(intake, ctx = {}) {
             <div class="zip-progress-meta">
               <progress class="zip-progress" value="${progressValue}" max="100"></progress>
               <div id="zipProgressCount">${formatCount(BigInt(attempts))}${totalAttempts ? ' / ' + formatCount(totalAttempts) : ''} attempts</div>
+              <div id="zipProgressRate">${formatCount(Math.round(currentRate))}/s current, ${formatCount(Math.round(rate))}/s average</div>
             </div>
           </div>` : '';
         host.innerHTML = `
@@ -260,10 +264,19 @@ export async function render(intake, ctx = {}) {
         const now = performance.now();
         if (!force && now < nextProgressAt) return;
         nextProgressAt = now + PROGRESS_UPDATE_MS;
+        if (lastProgressAt > 0 && now > lastProgressAt) {
+          currentRate = (attempts - lastProgressAttempts) / ((now - lastProgressAt) / 1000);
+        }
+        lastProgressAt = now;
+        lastProgressAttempts = attempts;
+        const elapsed = Math.max(0.001, (now - runStarted) / 1000);
+        rate = attempts / elapsed;
         const progress = host.querySelector('.zip-progress');
         if (progress) progress.value = progressPercent();
         const count = host.querySelector('#zipProgressCount');
         if (count) count.textContent = formatCount(BigInt(attempts)) + (totalAttempts ? ' / ' + formatCount(totalAttempts) : '') + ' attempts';
+        const rateEl = host.querySelector('#zipProgressRate');
+        if (rateEl) rateEl.textContent = formatCount(Math.round(currentRate)) + '/s current, ' + formatCount(Math.round(rate)) + '/s average';
         const statusEl = host.querySelector('#zipGuessStatus');
         if (statusEl) {
           statusEl.textContent = status;
@@ -298,6 +311,11 @@ export async function render(intake, ctx = {}) {
       async function runOne(password) {
         attempts++;
         try {
+          if (testEntry && !verifyZipCryptoPassword(intake.bytes, testEntry, password)) {
+            const elapsed = Math.max(0.001, (performance.now() - runStarted) / 1000);
+            rate = attempts / elapsed;
+            return false;
+          }
           await tryPassword(password);
           return true;
         } catch {
@@ -316,6 +334,9 @@ export async function render(intake, ctx = {}) {
         totalAttempts = BigInt(list.length);
         runStarted = performance.now();
         nextProgressAt = 0;
+        lastProgressAt = 0;
+        lastProgressAttempts = 0;
+        currentRate = rate;
         renderUnlock();
         for (const password of list) {
           if (stopRequested) break;
@@ -345,6 +366,9 @@ export async function render(intake, ctx = {}) {
         totalAttempts = bruteCount(chars.length, minLen, maxLen);
         runStarted = performance.now();
         nextProgressAt = 0;
+        lastProgressAt = 0;
+        lastProgressAttempts = 0;
+        currentRate = rate;
         renderUnlock();
         for (const password of bruteCandidates(chars, minLen, maxLen)) {
           if (stopRequested) break;
@@ -354,7 +378,15 @@ export async function render(intake, ctx = {}) {
             updateProgress();
             await delayFrame();
           }
-          if (await runOne(password)) return;
+          attempts++;
+          if (testEntry && !verifyZipCryptoPassword(intake.bytes, testEntry, password)) continue;
+          try {
+            await tryPassword(password);
+            return;
+          } catch {
+            const elapsed = Math.max(0.001, (performance.now() - runStarted) / 1000);
+            rate = attempts / elapsed;
+          }
         }
         running = false;
         status = stopRequested ? 'Stopped after ' + attempts + ' attempts.' : 'No match after ' + attempts + ' attempts.';
