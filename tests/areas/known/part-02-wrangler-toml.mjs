@@ -115,6 +115,18 @@ export async function run(ctx) {
   const trvText = await page.$eval('#previewHost .trv-doc', (e) => e.textContent);
   if (/Travis CI/i.test(trvText)) pass('travis.yml: badge shown'); else fail('travis badge: ' + trvText.slice(0, 200));
   if (/node_js|node|python|ruby/i.test(trvText)) pass('travis.yml: language shown'); else fail('travis language: ' + trvText.slice(0, 200));
+  if (/Travis CI Review|runtime version|branch guard/i.test(trvText)) pass('travis.yml: review findings shown'); else fail('travis review: ' + trvText.slice(0, 500));
+  if (/NODE_ENV|CI|main|release/i.test(trvText)) pass('travis.yml: env and branch details shown'); else fail('travis env/branches: ' + trvText.slice(0, 500));
+  const trvHelpTitle = await page.$eval('#previewHost .trv-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Travis CI|Open line|source/i.test(trvHelpTitle)) pass('travis.yml: hover explains source action'); else fail('travis hover title: ' + trvHelpTitle);
+  const trvSourceCollapsed = await page.$eval('#previewHost .trv-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (trvSourceCollapsed) pass('travis.yml: source starts collapsed'); else fail('travis source was not collapsed');
+  const trvSourceLine = await page.$eval('#previewHost .trv-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .trv-doc .kf-source-details');
+    return details?.open && document.getElementById(`trv-line-${line}`);
+  }, trvSourceLine);
+  pass('travis.yml: clicking item opens source line');
 
   // ── circleci.yml viewer ──
   await openExample('CircleCI config');
