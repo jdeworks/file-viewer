@@ -13,6 +13,17 @@ export async function run(ctx) {
   if (/Getting Started/i.test(rstText)) pass('sample.rst: document title shown'); else fail('rst title: ' + rstText.slice(0, 300));
   if (/Installation|Usage|Introduction/i.test(rstText)) pass('sample.rst: section headings shown'); else fail('rst sections: ' + rstText.slice(0, 300));
   if (/note|code-block|warning/i.test(rstText)) pass('sample.rst: directives listed'); else fail('rst directives: ' + rstText.slice(0, 300));
+  if (/References|Reference Review|document ref/i.test(rstText)) pass('sample.rst: references and standalone doc warnings shown'); else fail('rst references: ' + rstText.slice(0, 500));
+  const rstSourceOpen = await page.$eval('#previewHost .rst-doc .kf-source-details', (e) => e.open);
+  if (!rstSourceOpen) pass('sample.rst: source starts collapsed'); else fail('rst source should start collapsed');
+  const rstDirectiveHint = await page.$eval('#previewHost .rst-doc .rst-dir-tag', (e) => e.title);
+  if (/directive|admonition|code block|Sphinx|table/i.test(rstDirectiveHint)) pass('sample.rst: directive hover help present'); else fail('rst directive hint: ' + rstDirectiveHint);
+  await page.click('#previewHost .rst-doc .rst-outline .kf-source-link');
+  const rstJump = await page.$eval('#previewHost .rst-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (rstJump.open && rstJump.highlighted) pass('sample.rst: outline click opens and highlights source'); else fail('rst source jump: ' + JSON.stringify(rstJump));
 
   // ── sample.org viewer (Org-mode) ──
   await openExample('sample.org');

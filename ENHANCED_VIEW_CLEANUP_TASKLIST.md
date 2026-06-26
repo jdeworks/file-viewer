@@ -48,7 +48,7 @@ Use a few representative viewers to validate helpers before broad migration.
 - [x] Migrate `gdscript-lang`: symbol line numbers, docs from `##`, `@tool/@rpc/@export` hover help, source jumps.
 - [x] Migrate one template viewer, preferably `handlebars-template`: block matching, partial/include inventory, broken section diagnostics, source jumps.
 - [x] Migrate one config-risk viewer, preferably `docker-compose`: secret masking, risky option warnings, dependency graph, source jumps.
-- [ ] Migrate one document outline viewer, preferably `asciidoc` or `restructuredtext`: heading/source links, duplicate anchors, unresolved refs/includes.
+- [x] Migrate one document outline viewer, preferably `asciidoc` or `restructuredtext`: heading/source links, duplicate anchors, unresolved refs/includes.
 - [x] Add smoke assertions that verify real UX behavior, not only that the renderer loaded.
 
 ## Wave 2: High-Value Code And Script Views
