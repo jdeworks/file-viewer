@@ -40,6 +40,13 @@ const HELP = {
   source: 'Open this Vercel setting in source.',
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  '$schema', 'build', 'buildCommand', 'cleanUrls', 'crons', 'devCommand', 'distDir',
+  'env', 'framework', 'functions', 'github', 'headers', 'ignoreCommand',
+  'images', 'installCommand', 'outputDirectory', 'public', 'redirects', 'regions',
+  'rewrites', 'routes', 'trailingSlash', 'version',
+]);
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -94,6 +101,11 @@ function headerNames(rule) {
 
 function collectIssues(cfg, text, model) {
   const issues = [];
+  for (const key of Object.keys(cfg || {})) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key)) {
+      issues.push({ severity: 'info', label: 'unknown key', line: keyLine(text, key), message: `"${key}" is not a common Vercel top-level key; check for a typo or unsupported schema field.` });
+    }
+  }
   if (!cfg.version) {
     issues.push({ severity: 'info', label: 'version', line: keyLine(text, 'version'), message: 'No Vercel schema version is declared.' });
   }

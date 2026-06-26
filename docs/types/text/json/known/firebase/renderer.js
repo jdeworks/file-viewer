@@ -34,6 +34,11 @@ const HELP = {
   source: 'Open this Firebase setting in source.',
 };
 
+const KNOWN_TOP_LEVEL_KEYS = new Set([
+  '$schema', 'database', 'emulators', 'extensions', 'firestore', 'functions',
+  'hosting', 'remoteconfig', 'storage',
+]);
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -70,6 +75,11 @@ function row(label, value, line, help) {
 
 function collectIssues(cfg, text) {
   const issues = [];
+  for (const key of Object.keys(cfg || {})) {
+    if (!KNOWN_TOP_LEVEL_KEYS.has(key)) {
+      issues.push({ severity: 'info', label: 'unknown key', line: keyLine(text, key), message: `"${key}" is not a common firebase.json top-level key; check for a typo or unsupported Firebase service.` });
+    }
+  }
   const hosting = cfg.hosting || {};
   const rewrites = Array.isArray(hosting.rewrites) ? hosting.rewrites : [];
   const headers = Array.isArray(hosting.headers) ? hosting.headers : [];

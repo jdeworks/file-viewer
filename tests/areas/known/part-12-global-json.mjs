@@ -82,6 +82,17 @@ export async function run(ctx) {
   if (!railwayText.includes('web') && !railwayText.includes('worker')) fail('railway.json: services not shown'); else pass('railway.json: services shown');
   if (railwayText.includes('supersecret123') || railwayText.includes('tok_abc123') || railwayText.includes('s3cr3t')) fail('railway.json: secrets leaked'); else pass('railway.json: secrets masked');
   if (/Railway Review|healthcheck|restart|reference|volume/i.test(railwayText)) pass('railway.json: review findings shown'); else fail('railway review: ' + railwayText.slice(0, 300));
+  const railwayBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/railway-json/renderer.js');
+    const text = JSON.stringify({ servicess: [{ name: 'web' }], deploy: { restartPolicyType: 'ALWAYS' } }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Railway Review|unknown key|servicess/i.test(railwayBad.out) && !railwayBad.open) pass('railway.json: unknown top-level key diagnostic shown'); else fail('railway unknown key: ' + JSON.stringify(railwayBad).slice(0, 700));
   const railwayHelpTitle = await page.$eval('#previewHost .railwayjson-doc .rwj2-link[data-source-line]', (e) => e.getAttribute('title') || '');
   if (/Railway|Open line|source/i.test(railwayHelpTitle)) pass('railway.json: hover source help shown'); else fail('railway hover help: ' + railwayHelpTitle);
   const railwaySourceCollapsed = await page.$eval('#previewHost .railwayjson-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
@@ -102,6 +113,16 @@ export async function run(ctx) {
   if (!renderText.includes('web-app') && !renderText.includes('web')) fail('render.yaml: services not shown'); else pass('render.yaml: services shown');
   if (!renderText.includes('Render Review') || !renderText.includes('health check')) fail('render.yaml: review findings missing'); else pass('render.yaml: review findings shown');
   if (!renderText.includes('[dashboard managed]') || !renderText.includes('fromDatabase:main-db.connectionString')) fail('render.yaml: env notes missing'); else pass('render.yaml: env notes shown');
+  const renderBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/yaml/known/render-yaml/renderer.js');
+    const rendered = (await mod.render({ text: 'servicess:\n  - name: web\n    type: web\n' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Render Review|unknown key|servicess/i.test(renderBad.out) && !renderBad.open) pass('render.yaml: unknown top-level key diagnostic shown'); else fail('render unknown key: ' + JSON.stringify(renderBad).slice(0, 700));
   const renderSourceCollapsed = await page.$eval('#previewHost .renderyaml-doc .kf-source-details', el => !el.open);
   if (renderSourceCollapsed) pass('render.yaml: source collapsed'); else fail('render.yaml source should start collapsed');
   const renderSourceLine = await page.$eval('#previewHost .renderyaml-doc .rdr-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
@@ -182,6 +203,27 @@ export async function run(ctx) {
   const nginxText = await page.$eval('.nginxconf-doc', el => el.textContent);
   if (!nginxText.includes('NGINX') && !nginxText.includes('nginx')) fail('nginx.conf: missing badge'); else pass('nginx.conf: badge shown');
   if (!nginxText.includes('server') && !nginxText.includes('listen')) fail('nginx.conf: no server info'); else pass('nginx.conf: server info shown');
+  const nginxBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/nginx-conf/renderer.js');
+    const text = `server {
+  listen 443 ssl;
+  server_name risky.example.test;
+  server_tokens on;
+  error_log /var/log/nginx/error.log debug;
+  location /files/ { autoindex on; }
+  location /api/ {
+    proxy_pass http://backend;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+}`;
+    const rendered = mod.render({ text, filename: 'nginx.conf' }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Nginx Review|missing hsts|server tokens|debug logging|directory listing|proxy headers/i.test(nginxBad.out) && !nginxBad.open) pass('nginx.conf: server rule-pack diagnostics shown'); else fail('nginx.conf diagnostics: ' + JSON.stringify(nginxBad).slice(0, 700));
 
   // ── haproxy.cfg viewer (haproxycfg-doc class) ──
   await openExample('haproxy.cfg');

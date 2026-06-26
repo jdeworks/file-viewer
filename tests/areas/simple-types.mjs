@@ -442,6 +442,33 @@ export async function run(ctx) {
   if (/compose stack|docker.compose/i.test(dcText)) pass('docker-compose heading shown'); else fail('dc heading: ' + dcText.slice(0, 200));
   if (/web|api|db/i.test(dcText)) pass('docker-compose services shown'); else fail('dc services: ' + dcText.slice(0, 200));
 
+  // ── Generic YAML fallback: workflow-like steps get a useful summary above the tree ──
+  const genericYaml = await page.evaluate(async () => {
+    const mod = await import('/types/text/yaml/renderer.js');
+    const text = [
+      'name: generic workflow',
+      'jobs:',
+      '  build:',
+      '    steps:',
+      '      - name: Checkout',
+      '        uses: actions/checkout@v4',
+      '      - name: Test',
+      '        run: npm test',
+    ].join('\n');
+    const rendered = (await mod.render({ text, filename: 'workflow-ish.yaml' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const collapsed = !rendered.querySelector('.kf-source-details')?.open;
+    rendered.querySelector('.yaml-steps .yaml-link[data-source-line]')?.click();
+    const opened = !!rendered.querySelector('.kf-source-details')?.open;
+    const highlighted = !!rendered.querySelector('.kf-source-hit');
+    rendered.remove();
+    return { out, collapsed, opened, highlighted };
+  });
+  if (/Steps \(2\)|Checkout|actions\/checkout@v4|Test|npm test/i.test(genericYaml.out) && genericYaml.collapsed && genericYaml.opened && genericYaml.highlighted)
+    pass('generic YAML: workflow steps summarized with source links');
+  else fail('generic yaml steps: ' + JSON.stringify(genericYaml).slice(0, 500));
+
   // ── SARIF security scan viewer ──
   await openExample('SARIF security scan results (demo)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });

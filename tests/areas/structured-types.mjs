@@ -198,6 +198,13 @@ export async function run(ctx) {
   if (yBool > 0) pass('YAML scalar types preserved (booleans rendered)'); else fail('no yaml booleans');
   const yamlPreviewText = await page.$eval('#previewHost .yaml-preview', (el) => el.textContent);
   if (/trust\.server|server\.hosts/.test(yamlPreviewText)) pass('YAML path breadcrumbs shown'); else fail('yaml path text: ' + yamlPreviewText.replace(/\s+/g, ' ').slice(0, 300));
+  const yamlQpPresent = await page.$('#previewHost .yaml-qp .qp-panel .qp-input');
+  if (yamlQpPresent) pass('YAML query panel rendered'); else fail('yaml query panel missing');
+  await page.fill('#previewHost .yaml-qp .qp-input', '$..mobileFirst');
+  await page.click('#previewHost .yaml-qp .qp-btn');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .yaml-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const yamlMatches = await page.$$eval('#previewHost .yaml-tree .qp-match', (els) => els.length);
+  if (yamlMatches > 0) pass('YAML query panel highlights JSONPath-style matches (' + yamlMatches + ')'); else fail('yaml query no matches');
   const yamlSourceCollapsed = await page.$eval('#previewHost .yaml-preview .kf-source-details', (el) => !el.open);
   if (yamlSourceCollapsed) pass('YAML redacted source starts collapsed'); else fail('yaml source unexpectedly open');
   const yamlSourceLine = await page.$eval('#previewHost .yaml-preview .yaml-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
@@ -258,6 +265,13 @@ export async function run(ctx) {
   if (tBool >= 4 && tNum >= 2) pass('TOML scalar types preserved (booleans + numbers)'); else fail('toml scalars: bool=' + tBool + ' num=' + tNum);
   const tomlPathText = await page.$eval('#previewHost .toml-preview', (el) => el.textContent);
   if (/trust\.server|types\.0\.id/.test(tomlPathText)) pass('TOML path breadcrumbs shown'); else fail('toml path text: ' + tomlPathText.replace(/\s+/g, ' ').slice(0, 300));
+  const tomlQpPresent = await page.$('#previewHost .toml-qp .qp-panel .qp-input');
+  if (tomlQpPresent) pass('TOML query panel rendered'); else fail('toml query panel missing');
+  await page.fill('#previewHost .toml-qp .qp-input', 'id');
+  await page.click('#previewHost .toml-qp .qp-btn');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .toml-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const tomlMatches = await page.$$eval('#previewHost .toml-tree .qp-match', (els) => els.length);
+  if (tomlMatches > 0) pass('TOML query panel highlights JSONPath-style matches (' + tomlMatches + ')'); else fail('toml query no matches');
   const tomlSourceCollapsed = await page.$eval('#previewHost .toml-preview .kf-source-details', (el) => !el.open);
   if (tomlSourceCollapsed) pass('TOML source starts collapsed'); else fail('toml source unexpectedly open');
   const tomlSourceLine = await page.$eval('#previewHost .toml-preview .toml-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });

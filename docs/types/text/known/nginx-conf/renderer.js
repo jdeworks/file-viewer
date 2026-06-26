@@ -69,7 +69,7 @@ function parseNginx(text) {
     if (serverMatch && !inServer && !inUpstream) {
       inServer = true;
       serverDepth = depth;
-      serverData = { line: lineNo, serverNames: [], listens: [], root: null, index: null, locations: [] };
+      serverData = { line: lineNo, serverNames: [], listens: [], root: null, index: null, locations: [], addHeaders: [], serverTokens: null, errorLogs: [] };
     }
 
     if (upstreamMatch && !inUpstream && !inServer) {
@@ -83,7 +83,7 @@ function parseNginx(text) {
       locationDepth = depth;
       // Determine path from match groups
       const path = locationMatch[2] || locationMatch[1];
-      locationData = { path, line: lineNo, proxyPass: null, returnDirective: null, alias: null, root: null, tryFiles: null, fastcgiPass: null };
+      locationData = { path, line: lineNo, proxyPass: null, returnDirective: null, alias: null, root: null, tryFiles: null, fastcgiPass: null, autoindex: null, addHeaders: [], proxySetHeaders: [] };
     }
 
     // Update depth after detecting block starts
@@ -108,6 +108,15 @@ function parseNginx(text) {
 
       const fastcgiMatch = /^fastcgi_pass\s+(\S+?);/.exec(stripped);
       if (fastcgiMatch) locationData.fastcgiPass = { value: fastcgiMatch[1], line: lineNo };
+
+      const autoindexMatch = /^autoindex\s+(\S+?);/.exec(stripped);
+      if (autoindexMatch) locationData.autoindex = { value: autoindexMatch[1], line: lineNo };
+
+      const headerMatch = /^add_header\s+(\S+)\s+(.+?);/.exec(stripped);
+      if (headerMatch) locationData.addHeaders.push({ name: headerMatch[1], value: headerMatch[2], line: lineNo });
+
+      const proxyHeaderMatch = /^proxy_set_header\s+(\S+)\s+(.+?);/.exec(stripped);
+      if (proxyHeaderMatch) locationData.proxySetHeaders.push({ name: proxyHeaderMatch[1], value: proxyHeaderMatch[2], line: lineNo });
     }
 
     // Collect directives inside server block (but not inside location)
@@ -127,6 +136,15 @@ function parseNginx(text) {
 
       const indexMatch = /^index\s+(.+?);/.exec(stripped);
       if (indexMatch) serverData.index = { value: indexMatch[1].trim(), line: lineNo };
+
+      const headerMatch = /^add_header\s+(\S+)\s+(.+?);/.exec(stripped);
+      if (headerMatch) serverData.addHeaders.push({ name: headerMatch[1], value: headerMatch[2], line: lineNo });
+
+      const tokensMatch = /^server_tokens\s+(\S+?);/.exec(stripped);
+      if (tokensMatch) serverData.serverTokens = { value: tokensMatch[1], line: lineNo };
+
+      const errorLogMatch = /^error_log\s+(.+?);/.exec(stripped);
+      if (errorLogMatch) serverData.errorLogs.push({ value: errorLogMatch[1], line: lineNo });
     }
 
     // Collect directives inside upstream block
@@ -165,8 +183,13 @@ const HELP = {
   index: 'Default files tried for directory requests.',
   location: 'URI matcher that selects request handling rules.',
   proxy_pass: 'Forwards matching requests to an upstream URL or named upstream.',
+  proxy_set_header: 'Headers forwarded to the upstream. Missing Host or X-Forwarded-Proto can break audit trails and app URL generation.',
   return: 'Stops processing and returns a status or redirect.',
   alias: 'Maps a location to a filesystem path; trailing slash semantics matter.',
+  autoindex: 'Directory listing control for this location.',
+  add_header: 'Response header emitted by Nginx.',
+  server_tokens: 'Controls whether Nginx version details are exposed in responses.',
+  error_log: 'Error log path and verbosity.',
   try_files: 'Checks files in order before falling back.',
   fastcgi_pass: 'Forwards matching requests to a FastCGI backend.',
   upstream: 'Named backend pool used by proxy_pass or related directives.',
@@ -226,7 +249,63 @@ function collectIssues({ serverBlocks, upstreams }) {
         message: 'Server block has no server_name directive; it may act as a catch-all depending on listen order.',
       });
     }
+    const headers = server.addHeaders.concat(server.locations.flatMap((loc) => loc.addHeaders || []));
+    const headerNames = new Set(headers.map((header) => header.name.toLowerCase()));
+    const hasTlsListen = server.listens.some((listen) => /\bssl\b/.test(listen.value.toLowerCase()) || /\b443\b/.test(listen.value));
+    if (hasTlsListen && !headerNames.has('strict-transport-security')) {
+      issues.push({
+        severity: 'warning',
+        label: 'missing hsts',
+        line: server.line,
+        message: 'TLS server block does not set Strict-Transport-Security.',
+      });
+    }
+    if (!headerNames.has('x-content-type-options')) {
+      issues.push({
+        severity: 'info',
+        label: 'proxy headers',
+        line: server.line,
+        message: 'No X-Content-Type-Options header is configured in this server block.',
+      });
+    }
+    if (server.serverTokens && server.serverTokens.value.toLowerCase() !== 'off') {
+      issues.push({
+        severity: 'warning',
+        label: 'server tokens',
+        line: server.serverTokens.line,
+        message: `server_tokens is ${server.serverTokens.value}; version details may be exposed.`,
+      });
+    }
+    for (const log of server.errorLogs) {
+      if (/\bdebug\b/i.test(log.value)) {
+        issues.push({
+          severity: 'warning',
+          label: 'debug logging',
+          line: log.line,
+          message: `error_log uses debug verbosity (${log.value}); avoid debug logging in production.`,
+        });
+      }
+    }
     for (const loc of server.locations) {
+      if (loc.autoindex && loc.autoindex.value.toLowerCase() === 'on') {
+        issues.push({
+          severity: 'warning',
+          label: 'directory listing',
+          line: loc.autoindex.line,
+          message: `location ${loc.path} enables autoindex directory listings.`,
+        });
+      }
+      if (loc.proxyPass) {
+        const forwarded = new Set((loc.proxySetHeaders || []).map((header) => header.name.toLowerCase()));
+        if (!forwarded.has('host') || !forwarded.has('x-forwarded-proto')) {
+          issues.push({
+            severity: 'info',
+            label: 'proxy headers',
+            line: loc.proxyPass.line,
+            message: `location ${loc.path} proxies without both Host and X-Forwarded-Proto headers set.`,
+          });
+        }
+      }
       if (loc.alias && !loc.path.endsWith('/') && loc.alias.value.endsWith('/')) {
         issues.push({
           severity: 'warning',

@@ -92,7 +92,7 @@ These should help users find broken structure and dependency/reference problems.
 
 These should prioritize risk, masking, source traceability, and relationship maps.
 
-- [ ] CI/CD configs: GitHub Actions, GitLab CI, CircleCI, Travis, CodeBuild, Woodpecker, Azure Pipelines.
+- [x] CI/CD configs: GitHub Actions, GitLab CI, CircleCI, Travis, CodeBuild, Woodpecker, Azure Pipelines.
 - [x] Azure Pipelines: source-linked triggers/pool/stages/jobs/variables, hosted image/dependency/deploy-step review findings, secret-like variable redaction, and collapsed redacted source.
 - [x] CircleCI: source-linked orbs/workflows/jobs, orb pinning and workflow requires review findings, secret-like environment redaction, and collapsed redacted source.
 - [x] AWS CodeBuild buildspec: source-linked phases/commands/runtime/artifacts/cache, runtime/deploy-command review findings, secret-like env redaction support, and collapsed redacted source.
@@ -101,9 +101,9 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] GitLab CI: source-linked stages/jobs/variables/includes, mutable image and needs graph review findings, secret-like variable redaction, and collapsed redacted source.
 - [x] Travis CI: source-linked runtime/services/env/script/branch filters, runtime/branch/secret review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Woodpecker CI: source-linked steps/services/when/matrix/secrets/clone config, image/secret/deploy review findings, secret-like env redaction, and collapsed redacted source.
-- [ ] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
-- [ ] Render CI job dependency graphs from `needs`/workflow equivalents.
-- [ ] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
+- [x] Add warnings for `pull_request_target`, broad permissions, unpinned actions, secret-like env values, shell download pipes.
+- [x] Render CI job dependency graphs from `needs`/workflow equivalents.
+- [x] Container/orchestration: Docker Compose, Kubernetes, Helm, Flux, Nomad, Systemd, Quadlet.
 - [x] Kubernetes generic manifest: source-linked container/resource review, mutable images, privileged containers, host namespace/hostPort exposure, missing healthchecks, and secret-like env masking.
 - [x] Nomad job: source-linked jobs/groups/tasks/services, mutable image/health-check/exec-driver review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Podman Quadlet: source-linked image/env/volume/network/port/service settings, image/published-port/restart/secret review findings, secret-like env redaction, and collapsed redacted source.
@@ -112,8 +112,8 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Helmfile: source-linked repositories/releases/defaults/environments, stable-repo/latest/local-chart/secret/defaults review findings, secret-like source redaction, and collapsed redacted source.
 - [x] Helm Chart.yaml: source-linked identity/maintainers/dependencies/annotations, SemVer/dependency-range/repository/condition review findings, hover explanations, and collapsed source.
 - [x] Helm values.yaml: source-linked image/service/ingress/resources/autoscaling/env/config values, exposure/autoscaling/reference/secret review findings, masking reasons, and collapsed redacted source.
-- [ ] Add warnings for privileged mode, host network/PID, Docker socket mounts, `:latest`, public binds, missing healthchecks.
-- [ ] Credentials/env: `.env`, AWS credentials, GCP service account, kubeconfig, appsettings, INI self-hosted configs.
+- [x] Add warnings for privileged mode, host network/PID, Docker socket mounts, `:latest`, public binds, missing healthchecks.
+- [x] Credentials/env: `.env`, AWS credentials, GCP service account, kubeconfig, appsettings, INI self-hosted configs.
 - [x] Generic `.env`: shared secret classifier, masking reasons, line-linked table rows, and collapsed wrapped redacted source.
 - [x] AWS credentials: static key review warnings, masking reasons, source-linked profiles/fields, and collapsed redacted source.
 - [x] GCP service account: private-key/key-id review warnings, masking reasons, source-linked fields, and collapsed redacted source.
@@ -124,12 +124,13 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Generic JSON: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
 - [x] Generic INI: shared secret classifier, masked key/value rows, review warnings, source-linked keys, and collapsed redacted source.
 - [x] Generic TOML masking: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
-- [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
+- [x] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [x] Cargo.toml: source-linked dependencies, crates/docs links, broad/git/path dependency review findings, duplicate dependency categories, and collapsed source.
 - [x] Composer manifest: source-linked package requirements, Packagist links, platform wildcard/dev-branch/duplicate dependency findings, and collapsed source.
-- [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
-- [ ] Server/service configs: Apache, Nginx, Caddy, HAProxy, PostgreSQL, MySQL, Redis, MongoDB, SSHD.
+- [x] package-lock.json: source-linked root dependencies/resolved packages, integrity/custom-source/plain-HTTP review findings, npm links, and collapsed source.
+- [x] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
+- [x] Server/service configs: Apache, Nginx, Caddy, HAProxy, PostgreSQL, MySQL, Redis, MongoDB, SSHD.
 - [x] Apache HTTPD config: source-linked globals/vhosts/access blocks, directive hover explanations, HTTP/TLS/proxy/directory review findings, and collapsed numbered source.
 - [x] Caddyfile: source-linked sites/directives, directive hover explanations, TLS/proxy/HSTS/directory-listing review findings, and collapsed numbered source.
 - [x] HAProxy config: source-linked globals/defaults/frontends/backends/listens, bind/backend/stats review findings, stats auth redaction, and collapsed redacted source.
@@ -139,7 +140,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] PostgreSQL config: source-linked settings, masking reasons/redacted source for sensitive key-like values, bind/SSL/WAL review findings, and collapsed redacted source.
 - [x] Redis config: source-linked network/persistence/security directives, repeated save/rename-command handling, bind/password/persistence review findings, and collapsed redacted source.
 - [x] SSHD config: source-linked directives, hover explanations, public bind/auth review findings, and collapsed numbered source.
-- [ ] Add rule packs for weak TLS/proxy headers, open bind addresses, directory listing, permissive auth, debug logging.
+- [x] Add rule packs for weak TLS/proxy headers, open bind addresses, directory listing, permissive auth, debug logging.
 - [x] Deployment configs: Vercel, Netlify, Wrangler, Railway, Firebase.
 - [x] Vercel config: source-linked build/routes/headers/functions/env settings, broad rewrite/security-header/public-env/function-limit review findings, masking reasons, and collapsed redacted source.
 - [x] Netlify config: source-linked build/redirect/header/context/env/dev settings, broad rewrite/security-header review findings, masking reasons, and collapsed redacted source.
@@ -147,26 +148,26 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Railway config: source-linked services/source/build/deploy/env/mount/network settings, healthcheck/restart/reference/volume/secret review findings, masking reasons, and collapsed redacted source.
 - [x] Firebase config: source-linked hosting/rewrites/redirects/headers/functions/emulators/services settings, broad rewrite/security-header/runtime/emulator review findings, and collapsed source.
 - [x] Render.com config: source-linked services/build/start/schedule/env/database settings, healthcheck/reference/secret review findings, managed-secret notes, and collapsed redacted source.
-- [ ] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
-- [ ] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
+- [x] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
+- [x] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
 - [x] Generic TOML: live fallback tree with path breadcrumbs, duplicate-key/table diagnostics, click-to-source rows, and collapsed numbered source.
-- [x] Generic YAML: live fallback tree with path breadcrumbs, secret-like scalar warnings/redaction, click-to-source rows, and collapsed redacted source.
+- [x] Generic YAML: live fallback tree with path breadcrumbs, workflow-like steps summary, secret-like scalar warnings/redaction, click-to-source rows, and collapsed redacted source.
 
 ## View Audit Checklist
 
 For each enhanced renderer:
 
-- [ ] Identify what it extracts today.
-- [ ] Identify the user question it should answer.
-- [ ] Preserve line/source metadata for every extracted item where feasible.
-- [ ] Add click-to-source for summary rows.
-- [ ] Add hover/help text for non-obvious flags, modifiers, directives, severities, or config options.
-- [ ] Add signatures/types/params/docs for code symbols where applicable.
-- [ ] Add diagnostics for malformed, duplicate, unresolved, risky, deprecated, or secret content.
-- [ ] Add masking for sensitive values and verify they do not leak in text content.
-- [ ] Collapse duplicated source by default when raw/Monaco source is already available.
-- [ ] Add or update a focused smoke assertion for the new user-facing behavior.
-- [ ] Regenerate `docs/asset-manifest.json` and `docs/sw.js` after runtime asset changes.
+- [x] Identify what it extracts today.
+- [x] Identify the user question it should answer.
+- [x] Preserve line/source metadata for every extracted item where feasible.
+- [x] Add click-to-source for summary rows.
+- [x] Add hover/help text for non-obvious flags, modifiers, directives, severities, or config options.
+- [x] Add signatures/types/params/docs for code symbols where applicable.
+- [x] Add diagnostics for malformed, duplicate, unresolved, risky, deprecated, or secret content.
+- [x] Add masking for sensitive values and verify they do not leak in text content.
+- [x] Collapse duplicated source by default when raw/Monaco source is already available.
+- [x] Add or update a focused smoke assertion for the new user-facing behavior.
+- [x] Regenerate `docs/asset-manifest.json` and `docs/sw.js` after runtime asset changes.
 
 ## Validation Expectations
 

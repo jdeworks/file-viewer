@@ -52,7 +52,7 @@ export function initCompareDropTarget() {
     const path = e.dataTransfer.getData(TREE_DRAG_TYPE);
     const node = getDraggedTreeNode();
     const entry = state.treeEntries?.find((item) => item.path === path);
-    const file = node?.path === path ? node.file : entry?.file;
+    const file = node?.path === path ? node.file : entry?.file || fileFromSidebarRootPath(path);
     if (!file) { toast('Could not find that sidebar file.'); return; }
     try {
       await handPicked(await intakeFromFile(file));
@@ -99,4 +99,14 @@ function showCompareTarget() {
 async function handPicked(intake) {
   resetCompare();
   await openSideBySideWithIntake(intake);
+}
+
+function fileFromSidebarRootPath(path) {
+  for (const root of state.sidebarRoots || []) {
+    for (const entry of root.treeEntries || []) {
+      const visiblePath = root.kind === 'file' ? root.label : root.label + '/' + entry.path;
+      if (path === visiblePath || path === entry.path) return entry.file;
+    }
+  }
+  return null;
 }
