@@ -33,6 +33,17 @@ export async function run(ctx) {
   if (/Helm/i.test(hcText)) pass('Chart.yaml: Helm badge shown'); else fail('helm-chart badge: ' + hcText.slice(0, 200));
   if (/version|name/i.test(hcText)) pass('Chart.yaml: chart info shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
   if (/my-app|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
+  if (/Helm Chart Review|dependency range|condition/i.test(hcText)) pass('Chart.yaml: review findings shown'); else fail('helm-chart review: ' + hcText.slice(0, 300));
+  const hcHelpTitle = await page.$eval('#previewHost .helmchart-doc .helmchart-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Helm chart|Open line|source/i.test(hcHelpTitle)) pass('Chart.yaml: hover source help shown'); else fail('helm-chart hover help: ' + hcHelpTitle);
+  const hcSourceCollapsed = await page.$eval('#previewHost .helmchart-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));
+  if (hcSourceCollapsed) pass('Chart.yaml: source collapsed'); else fail('helm-chart source should start collapsed');
+  const hcSourceLine = await page.$eval('#previewHost .helmchart-doc .helmchart-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .helmchart-doc .kf-source-details');
+    return details?.open && document.getElementById(`helmchart-line-${line}`);
+  }, hcSourceLine, { timeout: 3000 });
+  pass('Chart.yaml: source links open source');
 
   // ── kustomization.yaml (Kustomize) viewer ──
   await openExample('kustomization.yaml (Kustomize)');
