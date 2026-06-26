@@ -100,7 +100,10 @@ function nodeId(act, layer, col) {
   return `a${act}-l${layer}-n${col}`;
 }
 
-export function enemyForNode(node, act = 1, rng = Math.random) {
+// `rng` is REQUIRED — a seeded `makeRng(...)` from the caller. There is deliberately no
+// `Math.random` fallback: enemy picks must be replayable from the run seed (no live entropy).
+export function enemyForNode(node, act = 1, rng) {
+  if (typeof rng !== "function") throw new TypeError("enemyForNode requires a seeded rng");
   if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
   const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
   return pool[Math.floor(rng() * pool.length)];

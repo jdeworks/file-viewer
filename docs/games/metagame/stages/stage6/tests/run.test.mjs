@@ -1,16 +1,18 @@
 import assert from "node:assert/strict";
-import { generateRun, nodeById } from "../mapgen.js";
+import { generateRun, nodeById, enemyForNode } from "../mapgen.js";
 import {
   availableNodes,
   buyCard,
   closeNode,
   createRun,
+  enemyForCurrentNode,
   moveTo,
   prestigeCost,
   rest,
   resolveCombat,
   takeReward
 } from "../run.js";
+import { makeRng } from "../combat.js";
 import { STARTING_DECK } from "../cards.js";
 
 // ── mapgen: structure + full connectivity ────────────────────────────────────────────────────────
@@ -141,6 +143,25 @@ import { STARTING_DECK } from "../cards.js";
   assert.equal(v2.hp, 70, "starts at full HP");
   assert.equal(v2.relics.length, 2, "version grants one starting relic each");
   assert.equal(new Set(v2.relics).size, 2, "starting relics are distinct");
+}
+
+// ── A1: enemy picks are deterministic from seed (no Math.random leak) ─────────────────────────────
+{
+  // enemyForNode requires a seeded rng — no live-entropy fallback.
+  const combatNode = { type: "combat" };
+  assert.throws(() => enemyForNode(combatNode, 1), /seeded rng/, "enemyForNode rejects a missing rng");
+
+  // Same seed ⇒ identical enemy id at the same node across two independent runs.
+  for (const seed of [1, 7, 42, 1234]) {
+    const a = createRun({ seed });
+    const b = createRun({ seed });
+    a.currentNodeId = b.currentNodeId = a.map.acts[0].startIds[0];
+    const ea = enemyForCurrentNode(a, makeRng(101));
+    const eb = enemyForCurrentNode(b, makeRng(101));
+    assert.equal(ea, eb, `seed ${seed}: same node ⇒ same enemy`);
+    // The default rng path is also deterministic (derived from run.seed + node), never Math.random.
+    assert.equal(enemyForCurrentNode(a), enemyForCurrentNode(b), `seed ${seed}: default rng is replayable`);
+  }
 }
 
 function reaches(run, fromId, targetId) {

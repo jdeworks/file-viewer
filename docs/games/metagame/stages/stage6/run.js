@@ -65,7 +65,9 @@ export function moveTo(run, nodeId) {
   return { ok: true, node };
 }
 
-export function enemyForCurrentNode(run, rng = Math.random) {
+// `rng` is REQUIRED — a seeded rng (e.g. `makeRng(hashSeed(seed, nodeId))`). No `Math.random`
+// fallback: which enemy a node spawns must be deterministic from the run seed.
+export function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
   if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : (ACT_BOSSES[run.act] || "kernel-panic");

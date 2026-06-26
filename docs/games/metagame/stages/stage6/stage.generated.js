@@ -942,7 +942,8 @@ function wireEdges(layers, rng) {
 function nodeId(act, layer, col) {
   return `a${act}-l${layer}-n${col}`;
 }
-function enemyForNode(node, act = 1, rng = Math.random) {
+function enemyForNode(node, act = 1, rng) {
+  if (typeof rng !== "function") throw new TypeError("enemyForNode requires a seeded rng");
   if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
   const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
   return pool[Math.floor(rng() * pool.length)];
@@ -995,7 +996,7 @@ function moveTo(run, nodeId2) {
   run.status = screenForNode(node);
   return { ok: true, node };
 }
-function enemyForCurrentNode(run, rng = Math.random) {
+function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
   if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
