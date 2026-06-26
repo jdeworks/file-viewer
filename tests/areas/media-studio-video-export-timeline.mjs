@@ -78,11 +78,55 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     pass('R5: pure webvideo -vf builder composes transform/look/scale without ffmpeg');
   else fail('video export vf builder: ' + JSON.stringify(exportVf));
 
-  // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
-  // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).
+  // ── P6: Video timeline (modular source lane + legacy transition coverage) ─────
+  // Use browser-playable video here so the modular seek-frame preview can sample.
+  await openExample('Sample.webm');
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   const tlModeSel = '#previewHost .media-mode-panel[data-mode="timeline"]';
   await page.$eval('#previewHost .media-mode-tab[data-mode="timeline"]', (button) => button.click());
   await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
+  await page.waitForSelector(tlModeSel + ' .mmx-video-source .mmx-element-visual', { timeout: 12000 });
+  const modularVideoSource = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    const project = root.__mediaMixerVideoSource?.getProject?.();
+    const asset = project?.assets?.find((item) => item.id === 'asset-video-source');
+    const element = project?.elements?.find((item) => item.assetId === asset?.id);
+    const settings = root.__mediaMixerVideoSource?.exportSettings?.();
+    return {
+      lanes: root.dataset.laneCount,
+      elements: root.dataset.elementCount,
+      frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
+      hasRuler: !!root.querySelector('.mmx-ruler'),
+      hasPlayhead: !!root.querySelector('.mmx-playhead'),
+      hasZoom: !!root.querySelector('.mmx-zoom'),
+      hasPreview: !!root.querySelector('.mmx-frame-preview'),
+      hasVisual: !!root.querySelector('.mmx-element-visual'),
+      hasTransform: !!root.querySelector('.mmx-inspector-visual-opacity'),
+      hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache/i.test(settings || ''),
+      hasVideo: !!element?.capabilities?.hasVideo,
+      hasAudio: !!element?.capabilities?.hasAudio,
+      width: asset?.media?.videoWidth || 0,
+      durationMs: element?.timeline?.durationMs || 0,
+    };
+  });
+  if (modularVideoSource.lanes === '1' && modularVideoSource.elements === '1'
+    && modularVideoSource.hasRuler && modularVideoSource.hasPlayhead && modularVideoSource.hasZoom)
+    pass('P6: opened video timeline mounts the modular source mixer lane');
+  else fail('modular video source lane: ' + JSON.stringify(modularVideoSource));
+  if (modularVideoSource.hasPreview && modularVideoSource.hasVisual && modularVideoSource.hasTransform)
+    pass('P6: modular video source exposes frame preview and visual transform controls');
+  else fail('modular video source visual controls: ' + JSON.stringify(modularVideoSource));
+  if (modularVideoSource.hasVideo && modularVideoSource.hasAudio
+    && modularVideoSource.width > 0 && modularVideoSource.durationMs > 0)
+    pass('P6: modular video source project captures opened media metadata');
+  else fail('modular video source metadata: ' + JSON.stringify(modularVideoSource));
+  if (!modularVideoSource.hasMediaBytes) pass('P6: modular video source settings export remains config-only');
+  else fail('modular video settings export leaked media data');
+  await page.waitForFunction((sel) => Number(document.querySelector(sel)?.dataset.frameSources || 0) > 0,
+    tlModeSel + ' .mmx-video-source .mmx-frame-preview', { timeout: 12000 });
+  const sourceFrameCount = await page.$eval(tlModeSel + ' .mmx-video-source .mmx-frame-preview',
+    (node) => Number(node.dataset.frameSources || 0));
+  if (sourceFrameCount > 0) pass('P6: modular video source samples the current seek-frame preview');
+  else fail('modular video source frame sources: ' + sourceFrameCount);
   const tlToggle = await page.evaluateHandle((sel) =>
     [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
   const tlToggleExists = await tlToggle.evaluate((e) => !!e);

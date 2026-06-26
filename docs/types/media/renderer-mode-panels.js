@@ -245,11 +245,13 @@ export async function mountVideoModePanels({
     return null;
   });
   registerMode('timeline', 'Timeline', async (panel) => {
+    const { mountModularVideoSourceMixer } = await import('./mixer/mixer-video-source.js');
+    const mixerController = mountModularVideoSourceMixer(panel, intake, mediaElement, { enableFfmpeg });
     if (!enableFfmpeg) {
       panel.append(buildFfNotEnabledHint(
-        'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock the timeline tools.',
+        'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock conversion, proxy generation, and final video render.',
       ));
-      return null;
+      return mixerController;
     }
     const timelineToggle = makeTogglePanel({
       label: 'Video timeline',
@@ -260,7 +262,12 @@ export async function mountVideoModePanels({
       },
     });
     panel.append(timelineToggle.wrap);
-    return timelineToggle;
+    return {
+      destroy() {
+        mixerController?.destroy?.();
+        timelineToggle?.destroy?.();
+      },
+    };
   });
 
   let subtitleController = null;

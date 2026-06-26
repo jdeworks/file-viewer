@@ -136,10 +136,14 @@ visual files now perform bounded native metadata probing: image dimensions and
 browser video duration/dimensions can update the shared model, while unsupported
 video keeps a coherent `needs-proxy`/Media Transcoding warning. A runtime-only
 visual frame cache now draws decoded image sources and sparse browser-playable
-video samples into the seek-frame preview without serializing frame data.
+video samples into the seek-frame preview without serializing frame data. Opened
+browser-playable video now also mounts a one-lane modular source mixer in
+Timeline mode, so the same shared model drives the ruler, zoom, red playhead,
+selection, visual transforms, config-only settings export, and sampled
+seek-frame preview before the older trim/transition timeline is opened.
 Remaining Stage 5 work is sparse thumbnail strips/proxy generation, optional
-ffmpeg-backed conversion paths, video opening through the modular mixer project,
-and then Compare on top of the same selected-object model.
+ffmpeg-backed conversion paths, replacing the old video timeline with modular
+multi-lane editing, and then Compare on top of the same selected-object model.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
