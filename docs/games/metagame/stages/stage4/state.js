@@ -66,16 +66,21 @@ function normalizePoints(points, fallback) {
 
 function normalizeTower(tower) {
   if (!tower || typeof tower !== 'object') return null;
+  const x = clampInt(tower.x, 0, 39);
+  const y = clampInt(tower.y, 0, 39);
+  // Deterministic id from the tower's cell (no Math.random in the live path) — one tower per cell.
   return {
-    id: String(tower.id || `tower-${Math.random().toString(16).slice(2)}`),
+    id: String(tower.id || `tower-${x}-${y}`),
     type: String(tower.type || 'pulse_node'),
-    x: clampInt(tower.x, 0, 39),
-    y: clampInt(tower.y, 0, 39),
+    x,
+    y,
   };
 }
 
+// Deterministic stage seed: an explicit context.seed (tests/replays) or a FIXED default. Never the
+// wall clock — the recursion puzzle must be the same every session so the file-tree un-cheat is real.
 function stageSeed(context) {
-  return String(context.seed || context.now || Date.now()).replace(/\W/g, '').slice(-8) || 'stage4';
+  return String(context.seed || 'fractal-bastion').replace(/\W/g, '').slice(-8) || 'stage4';
 }
 
 function hashSeed(seed) {
