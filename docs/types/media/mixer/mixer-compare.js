@@ -89,9 +89,16 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     render();
   };
   const onInput = (event) => {
-    if (!event.target?.matches?.('.mmx-compare-offset-b')) return;
-    const value = Math.max(-600000, Math.min(600000, Number(event.target.value) * 1000 || 0));
-    project = { ...project, compare: { ...project.compare, b: { ...project.compare.b, offsetMs: value } } };
+    const input = event.target;
+    if (!input?.matches?.('.mmx-compare-target-input')) return;
+    const side = input.dataset.side;
+    if (side !== 'a' && side !== 'b') return;
+    const field = input.dataset.field;
+    const seconds = Number(input.value);
+    const value = Math.round((Number.isFinite(seconds) ? seconds : 0) * 1000);
+    if (field === 'offsetMs') updateCompareTarget(side, { offsetMs: clampMs(value, -600000, 600000) });
+    if (field === 'rangeStartMs') updateCompareTarget(side, { rangeStartMs: clampMs(value, 0, 3600000) });
+    if (field === 'rangeEndMs') updateCompareTarget(side, { rangeEndMs: clampMs(value, 0, 3600000) });
     render();
   };
   const onChange = (event) => {
@@ -204,12 +211,8 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
       button.textContent = view;
       group.append(button);
     }
-    const offset = document.createElement('input');
-    offset.className = 'mmx-compare-offset-b';
-    offset.type = 'number';
-    offset.step = '0.1';
-    offset.value = String(Math.round((project.compare.b?.offsetMs || 0) / 100) / 10);
-    group.append(label('B offset', offset));
+    group.append(renderTargetControls('a'));
+    group.append(renderTargetControls('b'));
     group.append(renderBInput());
     group.append(renderAnalyzeButton());
     group.append(renderOverlap());
@@ -258,6 +261,56 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     input.accept = kind === 'video' ? 'video/*,image/*,audio/*' : 'audio/*,video/*,image/*';
     wrap.append(input);
     return wrap;
+  }
+
+  function renderTargetControls(side) {
+    const target = project.compare?.[side] || {};
+    const wrap = document.createElement('div');
+    wrap.className = 'mmx-compare-target-controls';
+    wrap.dataset.side = side;
+    const title = document.createElement('strong');
+    title.textContent = side.toUpperCase();
+    wrap.append(
+      title,
+      label('offset', compareNumberInput(side, 'offsetMs', target.offsetMs || 0, -600, 600)),
+      label('in', compareNumberInput(side, 'rangeStartMs', target.rangeStartMs || 0, 0, 3600)),
+      label('out', compareNumberInput(side, 'rangeEndMs', target.rangeEndMs || 0, 0, 3600)),
+    );
+    return wrap;
+  }
+
+  function compareNumberInput(side, field, valueMs, min, max) {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.step = '0.1';
+    input.min = String(min);
+    input.max = String(max);
+    input.dataset.side = side;
+    input.dataset.field = field;
+    input.className = `mmx-compare-target-input mmx-compare-${field.replace(/Ms$/, '').replace(/[A-Z]/g, (char) => `-${char.toLowerCase()}`)} mmx-compare-${side}-${field.replace(/Ms$/, '').toLowerCase()}`;
+    if (side === 'b' && field === 'offsetMs') input.classList.add('mmx-compare-offset-b');
+    input.value = secondsString(valueMs);
+    input.setAttribute('aria-label', `${side.toUpperCase()} ${field}`);
+    return input;
+  }
+
+  function updateCompareTarget(side, patch) {
+    const current = project.compare?.[side] || {};
+    const element = project.elements.find((item) => item.id === current.elementId);
+    const durationMs = element?.timeline?.durationMs || 3600000;
+    const next = {
+      ...current,
+      ...patch,
+    };
+    next.rangeStartMs = clampMs(next.rangeStartMs ?? 0, 0, durationMs);
+    next.rangeEndMs = clampMs(next.rangeEndMs ?? durationMs, 0, durationMs);
+    if (next.rangeEndMs < next.rangeStartMs) {
+      if (Object.prototype.hasOwnProperty.call(patch, 'rangeStartMs')) next.rangeEndMs = next.rangeStartMs;
+      else next.rangeStartMs = next.rangeEndMs;
+    }
+    project = setCompareTarget(project, side, next);
+    lastAnalysis = null;
+    delete root.dataset.lastCompareAnalysis;
   }
 
   function renderAnalyzeButton() {
@@ -404,6 +457,15 @@ function label(text, input) {
   wrap.className = 'mmx-compare-field';
   wrap.append(text, input);
   return wrap;
+}
+
+function secondsString(valueMs) {
+  return String(Math.round((Number(valueMs) || 0) / 100) / 10);
+}
+
+function clampMs(value, min, max) {
+  const number = Number(value);
+  return Math.max(min, Math.min(max, Number.isFinite(number) ? number : min));
 }
 
 function durationForKind(kind) {

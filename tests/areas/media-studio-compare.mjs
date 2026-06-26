@@ -52,6 +52,32 @@ export async function exerciseCompare(ctx, kind) {
     && modularCompare.hasSettingsExport && modularCompare.hasSettingsImport && !modularCompare.hasBytes)
     pass(`${kind} compare: modular shared-model A/B surface mounts with config-only state`);
   else fail(`${kind} modular compare state: ` + JSON.stringify(modularCompare));
+  await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-offset[data-side="b"]`, '0.2');
+  await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-range-start[data-side="a"]`, '0.1');
+  await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-range-end[data-side="a"]`, '0.6');
+  const modularTiming = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
+    const project = root.__mediaMixerCompare?.getProject?.();
+    const overlap = root.__mediaMixerCompare?.getOverlap?.();
+    return {
+      inputs: root.querySelectorAll('.mmx-compare-target-input').length,
+      offsetB: project?.compare?.b?.offsetMs,
+      rangeStartA: project?.compare?.a?.rangeStartMs,
+      rangeEndA: project?.compare?.a?.rangeEndMs,
+      overlapMs: overlap?.overlap?.durationMs || 0,
+      renderedOverlapMs: Number(root.dataset.compareOverlapMs || 0),
+      hasAnalysis: !!root.__mediaMixerCompare?.getLastAnalysis?.(),
+      offsetValue: root.querySelector('.mmx-compare-offset[data-side="b"]')?.value || '',
+      rangeStartValue: root.querySelector('.mmx-compare-range-start[data-side="a"]')?.value || '',
+      rangeEndValue: root.querySelector('.mmx-compare-range-end[data-side="a"]')?.value || '',
+    };
+  });
+  if (modularTiming.inputs === 6 && modularTiming.offsetB === 200
+    && modularTiming.rangeStartA === 100 && modularTiming.rangeEndA === 600
+    && modularTiming.overlapMs > 0 && modularTiming.renderedOverlapMs === Math.round(modularTiming.overlapMs)
+    && !modularTiming.hasAnalysis
+    && modularTiming.offsetValue === '0.2' && modularTiming.rangeStartValue === '0.1' && modularTiming.rangeEndValue === '0.6')
+    pass(`${kind} compare: modular A/B offset and range controls update shared overlap state`);
+  else fail(`${kind} modular compare timing controls: ` + JSON.stringify(modularTiming));
   await page.click(`${panelSel} .mmx-compare-source .mmx-compare-view[data-view="overlay"]`);
   const modularOverlay = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => ({
     view: root.dataset.compareView,

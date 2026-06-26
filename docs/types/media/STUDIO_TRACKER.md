@@ -340,13 +340,13 @@ Stage 6 Compare on the shared model has started:
   shared mixer project from the opened media, assigns Compare A/B through
   `project.compare`, computes overlap through `computeCompareOverlap()`, and
   keeps settings export config-only.
-- The surface exposes stacked/overlay view controls and a B offset field backed
-  by the shared compare state. It also accepts a browsed or dropped B media file,
-  adds that file as a config-only project asset, retargets the existing B
-  lane/element, stores the file only in the runtime file map, and refreshes
-  `project.compare.b`. The existing detailed Compare UI remains mounted for
-  current analysis, drag, live video overlay, and smoke coverage until the
-  modular surface replaces it completely.
+- The surface exposes stacked/overlay view controls plus A/B offset and in/out
+  range fields backed by the shared compare state. It also accepts a browsed or
+  dropped B media file, adds that file as a config-only project asset, retargets
+  the existing B lane/element, stores the file only in the runtime file map, and
+  refreshes `project.compare.b`. The existing detailed Compare UI remains
+  mounted for current analysis, drag, live video overlay, and smoke coverage
+  until the modular surface replaces it completely.
 - Focused smoke coverage in `tests/areas/media-studio-compare.mjs` now proves
   the modular Compare surface mounts for audio and video with two lanes, two
   elements, A/B targets, positive overlap, config-only settings, and overlay
@@ -363,6 +363,10 @@ Stage 6 Compare on the shared model has started:
   state: audio reports selected-overlap peak-delta analysis from waveform
   summaries, and visual compare reports frame-source/transform coverage for the
   selected overlap without using the legacy Compare analyzer or loading ffmpeg.
+- Added modular A/B timing coverage. The modular toolbar now drives A/B offset
+  and in/out ranges through `setCompareTarget()`, clears stale modular analysis
+  after edits, and smoke coverage proves the controls update both
+  `project.compare` and the rendered overlap metadata for audio and video.
 - Stage 6 remaining work: choose A/B from arbitrary existing mixer elements,
   deepen modular analysis to replace the legacy detailed diff/readout flows,
   and retire the old Compare UI once equivalent coverage has moved to modular
