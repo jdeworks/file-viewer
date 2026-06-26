@@ -65,6 +65,12 @@ export const RELICS = [
     id: "tcp-fast-open", name: "TCP Fast Open", rarity: "rare",
     text: "The first card you play each turn costs 1 less.",
     hooks: { onCombatStart: (ctx) => { ctx.combat.firstCardDiscount = (ctx.combat.firstCardDiscount || 0) + 1; } }
+  },
+  // ── Act 2 TRANSPORT · DELAY: lands the first delayed packet a turn sooner ───────────────────────────
+  {
+    id: "fast-retransmit", name: "Fast Retransmit", rarity: "uncommon",
+    text: "Your first delayed effect each combat resolves a turn sooner.",
+    hooks: { onCombatStart: (ctx) => { ctx.combat.delaySpeedup = true; } }
   }
 ];
 

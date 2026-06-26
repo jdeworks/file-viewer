@@ -67,6 +67,7 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
     hand: [],
     discard: [],
     exhaust: [],
+    pending: [], // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
     turn: 1,
     cardsPlayedThisTurn: 0,
     firstCardDiscount: 0, // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
@@ -156,6 +157,13 @@ function makeCtx(combat, card) {
     gainEnergy: (n) => { combat.player.energy += n; },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
+    // DELAY: schedule `fn(ctx)` to resolve at the start of a future player turn (deterministic).
+    // A relic (Fast Retransmit) can land the FIRST queued effect one turn sooner.
+    queue: (turnsAhead, fn) => {
+      let ahead = Math.max(1, Math.floor(turnsAhead) || 1);
+      if (combat.delaySpeedup && !combat.delayUsed) { ahead = Math.max(1, ahead - 1); combat.delayUsed = true; }
+      combat.pending.push({ turn: combat.turn + ahead, fn });
+    },
     clearSelfDebuffs: () => {
       let cleared = 0;
       for (const key of Object.keys(combat.player.statuses)) {
@@ -202,7 +210,20 @@ export function endTurn(combat) {
   tickStatuses(combat.player);
   drawCards(combat, HAND_SIZE);
   runHook(combat, "onPlayerTurnStart");
+  resolvePending(combat); // DELAY: deferred effects land at the start of the new player turn
   return combat;
+}
+
+// Resolve any queued (delayed) effects whose target turn has arrived. Deterministic, no RNG.
+function resolvePending(combat) {
+  if (!combat.pending || !combat.pending.length) return;
+  const due = combat.pending.filter((p) => p.turn <= combat.turn);
+  combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
+  for (const p of due) {
+    if (combat.over) break;
+    p.fn(makeCtx(combat, null));
+    checkEnemyDead(combat);
+  }
 }
 
 function enemyTurn(combat) {
@@ -211,9 +232,11 @@ function enemyTurn(combat) {
   const intent = currentIntent(combat);
   if (enemy.skipNext) {
     enemy.skipNext = false;
+    enemy.rttStacks = 0; // DELAY: interrupting a Round-Trip Timer resets its growing hit
     log(combat, `${enemy.name} action interrupted.`);
   } else {
     resolveIntent(combat, intent);
+    enemy.rttStacks = (enemy.rttStacks || 0) + 1; // uninterrupted turns ramp the RTT hit
   }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
@@ -225,7 +248,9 @@ function resolveIntent(combat, intent) {
   if (intent.block) enemy.block += intent.block;
   if (intent.attack) {
     const hits = intent.hits || 1;
-    for (let i = 0; i < hits; i++) dealToPlayer(combat, intent.attack, { pierce: Boolean(intent.pierce) });
+    // DELAY: a `ramp` intent grows by the number of uninterrupted enemy turns (Round-Trip Timer).
+    const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
+    for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
   // Man-in-the-Middle: reflect the player's just-finished turn — damage scales with cards played.
   if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);

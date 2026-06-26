@@ -202,4 +202,54 @@ function fresh(enemyId = "corrupt-packet", seed = 7) {
   assert.equal(c.player.energy, 0, "second card pays full cost");
 }
 
+// ── D2 DELAY: queued effects resolve on the correct future turn (deterministic) ────────────────────
+function bigEnemyCombat(deck, relics = [], seed = 9) {
+  const c = createCombat({ deck, player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("corrupt-packet", 1), seed, relics });
+  c.enemy.hp = 400; c.enemy.maxHp = 400; // survive long enough to observe the delay
+  return c;
+}
+{
+  const c = bigEnemyCombat(STARTING_DECK);
+  c.hand = ["WINDOWED_SEND"]; c.player.energy = 3;
+  const e0 = c.enemy.hp;
+  playCard(c, 0); // 4 now, 8 queued for next turn
+  assert.equal(e0 - c.enemy.hp, 4, "WINDOWED_SEND deals 4 immediately");
+  const e1 = c.enemy.hp;
+  c.hand = []; endTurn(c); // start of next turn → queued 8 lands
+  assert.equal(e1 - c.enemy.hp, 8, "the queued 8 resolves at the start of the next turn");
+}
+{
+  const c = bigEnemyCombat(STARTING_DECK);
+  c.hand = ["RETRANSMIT"]; c.player.energy = 3;
+  const e0 = c.enemy.hp;
+  playCard(c, 0); // queue 18 in 2 turns; nothing now
+  assert.equal(c.enemy.hp, e0, "RETRANSMIT deals nothing immediately");
+  c.hand = []; endTurn(c);
+  assert.equal(c.enemy.hp, e0, "still nothing after 1 turn");
+  c.hand = []; endTurn(c);
+  assert.equal(e0 - c.enemy.hp, 18, "resolves exactly 2 turns later");
+}
+{
+  // Fast Retransmit: the FIRST delayed effect lands a turn sooner.
+  const c = bigEnemyCombat(STARTING_DECK, relicsFor(["fast-retransmit"]));
+  c.hand = ["RETRANSMIT"]; c.player.energy = 3;
+  const e0 = c.enemy.hp;
+  playCard(c, 0); // queue(2) → sped up to 1
+  c.hand = []; endTurn(c);
+  assert.equal(e0 - c.enemy.hp, 18, "Fast Retransmit lands the first delayed packet a turn sooner");
+}
+{
+  // Round-Trip Timer ramps each uninterrupted round; an interrupt resets the ramp.
+  const c = createCombat({ deck: STARTING_DECK, player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("round-trip-timer", 1), seed: 2 });
+  c.enemy.intentIndex = 2; c.enemy.rttStacks = 2; // the ramp step, after 2 uninterrupted rounds
+  const hp0 = c.player.hp;
+  c.hand = []; endTurn(c); // fires 8 + 6*2 = 20
+  assert.equal(hp0 - c.player.hp, 20, "RTT hit grows with uninterrupted rounds (8 + 6*2)");
+
+  const c2 = createCombat({ deck: STARTING_DECK, player: { hp: 300, maxHp: 300 }, enemy: instantiateEnemy("round-trip-timer", 1), seed: 2 });
+  c2.enemy.rttStacks = 3; c2.enemy.skipNext = true; // interrupt this turn
+  c2.hand = []; endTurn(c2);
+  assert.equal(c2.enemy.rttStacks, 0, "interrupting the RTT resets its ramp");
+}
+
 console.log("stage6 combat engine tests passed");

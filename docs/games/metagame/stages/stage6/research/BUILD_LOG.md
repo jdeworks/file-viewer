@@ -72,3 +72,11 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   when it follows), ROOT_CERTIFICATE (lead → +energy/draw); relic TCP Fast Open (first card −1 cost).
   combat.test proves the opener/closer doubling and a LENTICULAR hand where opener-first (28) beats
   greedy closer-first (14), plus the discount. Pool now 39.
+- D2 — Act 2 TRANSPORT · DELAY (new primitive #1): combat.js gains a per-combat `pending` queue +
+  `ctx.queue(turnsAhead, fn)` resolved deterministically at each player-turn start. Cards
+  WINDOWED_SEND / RETRANSMIT (signal) + DELAYED_ACK (protocol); enemy Round-Trip Timer whose
+  `ramp` attack grows each uninterrupted round and resets on interrupt (skipEnemyNext), in act 2/3
+  pools; relic Fast Retransmit (first delayed effect lands a turn sooner); ui-combat shows a 2-step
+  "then …" telegraph + a ⏫ growing marker. combat.test: queue resolves on the exact future turn,
+  fast-retransmit speedup, RTT ramp (8+6·2=20) and interrupt-reset. Pool 42. (combat.js now 334 LOC
+  — over soft cap, under hard; split candidate after D3.)

@@ -82,12 +82,14 @@ function describeIntent(intent, combat) {
   }
   if (intent.attack) {
     const hits = intent.hits || 1;
-    const total = intent.attack * hits;
+    // DELAY: a ramp intent grows with the enemy's uninterrupted-turn count.
+    const each = intent.attack + (intent.ramp ? intent.ramp * (combat?.enemy?.rttStacks || 0) : 0);
+    const total = each * hits;
     return {
       kind: intent.pierce ? "pierce" : "attack",
       icon: intent.pierce ? "⚡" : "⚔",
       primary: String(total),
-      detail: (hits > 1 ? `${intent.attack}×${hits}` : "") + (intent.pierce ? " unblockable" : "")
+      detail: (hits > 1 ? `${each}×${hits}` : "") + (intent.ramp ? " ⏫ growing" : "") + (intent.pierce ? " unblockable" : "")
     };
   }
   if (intent.block) return { kind: "block", icon: "🛡", primary: String(intent.block), detail: "defend" };
@@ -117,7 +119,17 @@ function enemyPanel(enemy, intent, combat) {
         <span class="s6db-intent-num">${esc(d.primary)}</span>
         <span class="s6db-intent-detail">${esc(d.detail || intent?.label || "")}</span>
       </div>
+      ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+
+// DELAY: telegraph the enemy's NEXT intent (2 turns ahead) so a growing RTT hit is learnable.
+function nextIntentTelegraph(enemy, combat) {
+  const script = enemy.script;
+  if (!script || script.length < 2) return "";
+  const next = script[(enemy.intentIndex + 1) % script.length];
+  const d = describeIntent(next, combat);
+  return `<div class="s6db-intent-next" title="${esc(next?.label || "")}">then ${d.icon} <strong>${esc(d.primary)}</strong></div>`;
 }
 
 function playerPanel(player) {

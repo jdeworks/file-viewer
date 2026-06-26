@@ -51,7 +51,11 @@ const SPECS = {
   // D1 SEQUENCE
   PREAMBLE: { text: "Deal 8. If it's the first card this turn, deal 8 more.", effect: (ctx) => { ctx.deal(8); if (ctx.isFirstCard) ctx.deal(8); } },
   FINALIZE: { text: "Deal 10. If it's NOT the first card this turn, deal 10 more.", effect: (ctx) => { ctx.deal(10); if (!ctx.isFirstCard) ctx.deal(10); } },
-  ROOT_CERTIFICATE: { text: "Gain 5 block. If it's the first card this turn, gain 1 energy and draw 2.", effect: (ctx) => { ctx.block(5); if (ctx.isFirstCard) { ctx.gainEnergy(1); ctx.draw(2); } } }
+  ROOT_CERTIFICATE: { text: "Gain 5 block. If it's the first card this turn, gain 1 energy and draw 2.", effect: (ctx) => { ctx.block(5); if (ctx.isFirstCard) { ctx.gainEnergy(1); ctx.draw(2); } } },
+  // D2 DELAY
+  WINDOWED_SEND: { text: "Deal 6. Deal 10 at the start of your next turn.", effect: (ctx) => { ctx.deal(6); ctx.queue(1, (c) => c.deal(10)); } },
+  RETRANSMIT: { text: "Deal 24 in 2 turns.", effect: (ctx) => ctx.queue(2, (c) => c.deal(24)) },
+  DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => { ctx.block(6); ctx.queue(1, (c) => c.block(9)); } }
 };
 
 export function isUpgradedId(id) {

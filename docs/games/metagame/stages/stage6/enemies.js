@@ -54,6 +54,19 @@ export const ENEMIES = {
       { label: "Data race — Attack 26", attack: 26 }
     ]
   },
+  // Appears act 2+: a Round-Trip Timer whose retransmit storm GROWS each uninterrupted round —
+  // interrupt it (skipEnemyNext, e.g. RST) to reset the ramp. Telegraphed two steps ahead in the UI.
+  "round-trip-timer": {
+    id: "round-trip-timer",
+    name: "Round-Trip Timer",
+    tier: "standard",
+    hp: 52, hpPerAct: 18, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Measuring RTT — block 8", block: 8 },
+      { label: "Probe — Attack 6", attack: 6 },
+      { label: "Retransmit storm — Attack 8 (+6 each uninterrupted round)", attack: 8, ramp: 6 }
+    ]
+  },
   // Appears act 3+: armored bruiser, long fights, sustained pressure.
   "packet-storm": {
     id: "packet-storm",

@@ -99,5 +99,16 @@ export const SIGNAL_CARDS = [
     id: "FINALIZE", type: "Signal", cost: 1, rarity: "uncommon",
     text: "Deal 8. If it's NOT the first card you play this turn, deal 8 more.",
     effect: (ctx) => { ctx.deal(8); if (!ctx.isFirstCard) ctx.deal(8); }
+  },
+  // ── Act 2 TRANSPORT · DELAY: deferred resolution (deterministic, resolves on a future turn) ─────────
+  {
+    id: "WINDOWED_SEND", type: "Signal", cost: 1, rarity: "uncommon",
+    text: "Deal 4. Deal 8 at the start of your next turn.",
+    effect: (ctx) => { ctx.deal(4); ctx.queue(1, (c) => c.deal(8)); }
+  },
+  {
+    id: "RETRANSMIT", type: "Signal", cost: 2, rarity: "rare",
+    text: "Deal 18 in 2 turns.",
+    effect: (ctx) => ctx.queue(2, (c) => c.deal(18))
   }
 ];

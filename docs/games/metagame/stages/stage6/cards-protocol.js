@@ -68,5 +68,11 @@ export const PROTOCOL_CARDS = [
     id: "ROOT_CERTIFICATE", type: "Protocol", cost: 1, rarity: "rare",
     text: "Gain 4 block. If it's the first card you play this turn, gain 1 energy and draw 1.",
     effect: (ctx) => { ctx.block(4); if (ctx.isFirstCard) { ctx.gainEnergy(1); ctx.draw(1); } }
+  },
+  // Act 2 TRANSPORT · DELAY: block that arrives across two turns.
+  {
+    id: "DELAYED_ACK", type: "Protocol", cost: 1, rarity: "uncommon",
+    text: "Gain 5 block. Gain 7 block at the start of your next turn.",
+    effect: (ctx) => { ctx.block(5); ctx.queue(1, (c) => c.block(7)); }
   }
 ];

@@ -11,8 +11,8 @@ export const NODE_TYPES = ["combat", "elite", "rest", "shop", "event", "boss"];
 // Standard trash pool widens and hardens by act, so later acts feel meaner than the opener.
 const STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
-  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition"],
-  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm"],
+  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
+  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer"],
   4: ["null-pointer", "race-condition", "packet-storm"]
 };
 const ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];

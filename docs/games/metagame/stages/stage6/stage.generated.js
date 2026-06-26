@@ -377,6 +377,26 @@ var SIGNAL_CARDS = [
       ctx.deal(8);
       if (!ctx.isFirstCard) ctx.deal(8);
     }
+  },
+  // ── Act 2 TRANSPORT · DELAY: deferred resolution (deterministic, resolves on a future turn) ─────────
+  {
+    id: "WINDOWED_SEND",
+    type: "Signal",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 4. Deal 8 at the start of your next turn.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      ctx.queue(1, (c) => c.deal(8));
+    }
+  },
+  {
+    id: "RETRANSMIT",
+    type: "Signal",
+    cost: 2,
+    rarity: "rare",
+    text: "Deal 18 in 2 turns.",
+    effect: (ctx) => ctx.queue(2, (c) => c.deal(18))
   }
 ];
 
@@ -506,6 +526,18 @@ var PROTOCOL_CARDS = [
         ctx.gainEnergy(1);
         ctx.draw(1);
       }
+    }
+  },
+  // Act 2 TRANSPORT · DELAY: block that arrives across two turns.
+  {
+    id: "DELAYED_ACK",
+    type: "Protocol",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Gain 5 block. Gain 7 block at the start of your next turn.",
+    effect: (ctx) => {
+      ctx.block(5);
+      ctx.queue(1, (c) => c.block(7));
     }
   }
 ];
@@ -648,6 +680,8 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
     hand: [],
     discard: [],
     exhaust: [],
+    pending: [],
+    // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
     turn: 1,
     cardsPlayedThisTurn: 0,
     firstCardDiscount: 0,
@@ -734,6 +768,16 @@ function makeCtx(combat, card) {
     },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
+    // DELAY: schedule `fn(ctx)` to resolve at the start of a future player turn (deterministic).
+    // A relic (Fast Retransmit) can land the FIRST queued effect one turn sooner.
+    queue: (turnsAhead, fn) => {
+      let ahead = Math.max(1, Math.floor(turnsAhead) || 1);
+      if (combat.delaySpeedup && !combat.delayUsed) {
+        ahead = Math.max(1, ahead - 1);
+        combat.delayUsed = true;
+      }
+      combat.pending.push({ turn: combat.turn + ahead, fn });
+    },
     clearSelfDebuffs: () => {
       let cleared = 0;
       for (const key of Object.keys(combat.player.statuses)) {
@@ -791,7 +835,18 @@ function endTurn(combat) {
   tickStatuses(combat.player);
   drawCards(combat, HAND_SIZE);
   runHook(combat, "onPlayerTurnStart");
+  resolvePending(combat);
   return combat;
+}
+function resolvePending(combat) {
+  if (!combat.pending || !combat.pending.length) return;
+  const due = combat.pending.filter((p) => p.turn <= combat.turn);
+  combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
+  for (const p of due) {
+    if (combat.over) break;
+    p.fn(makeCtx(combat, null));
+    checkEnemyDead(combat);
+  }
 }
 function enemyTurn(combat) {
   const enemy = combat.enemy;
@@ -799,9 +854,11 @@ function enemyTurn(combat) {
   const intent = currentIntent(combat);
   if (enemy.skipNext) {
     enemy.skipNext = false;
+    enemy.rttStacks = 0;
     log(combat, `${enemy.name} action interrupted.`);
   } else {
     resolveIntent(combat, intent);
+    enemy.rttStacks = (enemy.rttStacks || 0) + 1;
   }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
@@ -812,7 +869,8 @@ function resolveIntent(combat, intent) {
   if (intent.block) enemy.block += intent.block;
   if (intent.attack) {
     const hits = intent.hits || 1;
-    for (let i = 0; i < hits; i++) dealToPlayer(combat, intent.attack, { pierce: Boolean(intent.pierce) });
+    const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
+    for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
   if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
@@ -937,6 +995,22 @@ var ENEMIES = {
       { label: "Attack 8, twice", attack: 8, hits: 2 },
       { label: "Attack 11 + Vulnerable", attack: 11, applyPlayer: { status: "vulnerable", value: 1 } },
       { label: "Data race — Attack 26", attack: 26 }
+    ]
+  },
+  // Appears act 2+: a Round-Trip Timer whose retransmit storm GROWS each uninterrupted round —
+  // interrupt it (skipEnemyNext, e.g. RST) to reset the ramp. Telegraphed two steps ahead in the UI.
+  "round-trip-timer": {
+    id: "round-trip-timer",
+    name: "Round-Trip Timer",
+    tier: "standard",
+    hp: 52,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Measuring RTT — block 8", block: 8 },
+      { label: "Probe — Attack 6", attack: 6 },
+      { label: "Retransmit storm — Attack 8 (+6 each uninterrupted round)", attack: 8, ramp: 6 }
     ]
   },
   // Appears act 3+: armored bruiser, long fights, sustained pressure.
@@ -1167,6 +1241,16 @@ var RELICS = [
     hooks: { onCombatStart: (ctx) => {
       ctx.combat.firstCardDiscount = (ctx.combat.firstCardDiscount || 0) + 1;
     } }
+  },
+  // ── Act 2 TRANSPORT · DELAY: lands the first delayed packet a turn sooner ───────────────────────────
+  {
+    id: "fast-retransmit",
+    name: "Fast Retransmit",
+    rarity: "uncommon",
+    text: "Your first delayed effect each combat resolves a turn sooner.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.delaySpeedup = true;
+    } }
   }
 ];
 var BY_ID2 = new Map(RELICS.map((relic) => [relic.id, relic]));
@@ -1187,8 +1271,8 @@ function rollRelic(seed, owned = []) {
 // ../../docs/games/metagame/stages/stage6/mapgen.js
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
-  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition"],
-  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm"],
+  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
+  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer"],
   4: ["null-pointer", "race-condition", "packet-storm"]
 };
 var ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
@@ -1391,6 +1475,16 @@ var SPECS = {
       ctx.gainEnergy(1);
       ctx.draw(2);
     }
+  } },
+  // D2 DELAY
+  WINDOWED_SEND: { text: "Deal 6. Deal 10 at the start of your next turn.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.queue(1, (c) => c.deal(10));
+  } },
+  RETRANSMIT: { text: "Deal 24 in 2 turns.", effect: (ctx) => ctx.queue(2, (c) => c.deal(24)) },
+  DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.queue(1, (c) => c.block(9));
   } }
 };
 function isUpgradedId(id) {
@@ -1748,12 +1842,13 @@ function describeIntent(intent, combat) {
   }
   if (intent.attack) {
     const hits = intent.hits || 1;
-    const total = intent.attack * hits;
+    const each = intent.attack + (intent.ramp ? intent.ramp * (combat?.enemy?.rttStacks || 0) : 0);
+    const total = each * hits;
     return {
       kind: intent.pierce ? "pierce" : "attack",
       icon: intent.pierce ? "⚡" : "⚔",
       primary: String(total),
-      detail: (hits > 1 ? `${intent.attack}×${hits}` : "") + (intent.pierce ? " unblockable" : "")
+      detail: (hits > 1 ? `${each}×${hits}` : "") + (intent.ramp ? " ⏫ growing" : "") + (intent.pierce ? " unblockable" : "")
     };
   }
   if (intent.block) return { kind: "block", icon: "🛡", primary: String(intent.block), detail: "defend" };
@@ -1782,7 +1877,15 @@ function enemyPanel(enemy, intent, combat) {
         <span class="s6db-intent-num">${esc(d.primary)}</span>
         <span class="s6db-intent-detail">${esc(d.detail || intent?.label || "")}</span>
       </div>
+      ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+function nextIntentTelegraph(enemy, combat) {
+  const script = enemy.script;
+  if (!script || script.length < 2) return "";
+  const next = script[(enemy.intentIndex + 1) % script.length];
+  const d = describeIntent(next, combat);
+  return `<div class="s6db-intent-next" title="${esc(next?.label || "")}">then ${d.icon} <strong>${esc(d.primary)}</strong></div>`;
 }
 function playerPanel(player) {
   return `

@@ -153,6 +153,9 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-boss-rule { margin: 6px 0 0; font-style: italic; color: #3b2a1c; }
 .s6db-boss-mismatch { margin: 6px 0; color: #8b2020; font-weight: 700; }
 
+/* DELAY: the 2-turns-ahead enemy intent telegraph. */
+.s6db-intent-next { margin-top: 4px; font-size: 0.75rem; color: #6b513a; opacity: 0.8; }
+
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }
