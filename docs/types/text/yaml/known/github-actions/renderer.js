@@ -14,6 +14,7 @@ const CSS = `
 .gha-list{margin:0;padding:0;list-style:none;}
 .gha-list li{padding:6px 14px;border-bottom:1px solid var(--border,#eaecf0);font-size:12px;display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;}
 .gha-list li:last-child{border-bottom:none;}
+.gha-edge{font-family:ui-monospace,monospace;}
 .gha-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px;flex-basis:100%;}
 .gha-yaml-key{color:#0550ae;font-weight:600;}
 .gha-yaml-str{color:#0a6640;}
@@ -92,6 +93,15 @@ export async function render(intake) {
     li.appendChild(chip(`${job.stepCount} steps`, 'muted'));
   });
 
+  appendList(host, 'Dependency Edges', model.edges, (li, edge) => {
+    li.appendChild(chip('needs', edge.missing ? 'warn' : 'info', edge.missing ? 'Dependency target is not defined as a job in this workflow.' : 'Job dependency edge.'));
+    const text = `${edge.from} -> ${edge.to}`;
+    const label = document.createElement('span');
+    label.className = 'gha-edge';
+    label.appendChild(sourceButton(text, edge.line, 'Open dependency in source'));
+    li.appendChild(label);
+  });
+
   appendList(host, 'Action Steps', model.actions, (li, action) => {
     li.appendChild(chip('uses', isPinnedAction(action.ref) ? 'ok' : 'warn', isPinnedAction(action.ref) ? 'Pinned to a commit SHA.' : 'Mutable tags and missing refs can change without review.'));
     li.appendChild(sourceButton(action.uses, action.line, 'Open action step in source'));
@@ -140,6 +150,8 @@ function parseWorkflow(text, filename) {
   const runs = [];
   const permissions = parsePermissions(lines);
   const issues = [];
+  const edges = collectEdges(jobs);
+  const jobIds = new Set(jobs.map((job) => job.id));
 
   for (const job of jobs) {
     actions.push(...job.actions);
@@ -170,8 +182,14 @@ function parseWorkflow(text, filename) {
     const masked = maskedValue(item.key, item.value);
     if (masked.masked) issues.push({ severity: 'warning', label: 'secret env', line: item.line, message: `${item.key} looks sensitive and is masked in the preview.` });
   }
+  for (const edge of edges) {
+    if (!jobIds.has(edge.from)) {
+      edge.missing = true;
+      issues.push({ severity: 'warning', label: 'missing need', line: edge.line, message: `${edge.to} needs "${edge.from}", but no job with that id was found.` });
+    }
+  }
 
-  return { name, triggers, jobs, env, actions, runs, permissions, issues };
+  return { name, triggers, jobs, env, actions, runs, permissions, edges, issues };
 }
 
 function scalarAt(lines, key) {
@@ -232,7 +250,8 @@ function parseJobs(lines) {
       const run = block[j].match(/^ {6}-?\s*run\s*:\s*(.+)$/) || block[j].match(/^ {8}run\s*:\s*(.+)$/);
       if (run) runs.push({ command: cleanScalar(run[1]), line: i + j + 1 });
     }
-    jobs.push({ id: m[1], line: i + 1, runsOn: runsOn ? cleanScalar(runsOn) : '', needs: parseNeeds(needsRaw), stepCount: (block.join('\n').match(/^ {6}-\s/gm) || []).length, actions, runs });
+    const needsLine = needsRaw ? i + block.findIndex((line) => /^ {4}needs\s*:/.test(line)) + 1 : i + 1;
+    jobs.push({ id: m[1], line: i + 1, needsLine, runsOn: runsOn ? cleanScalar(runsOn) : '', needs: parseNeeds(needsRaw), stepCount: (block.join('\n').match(/^ {6}-\s/gm) || []).length, actions, runs });
     i = end - 1;
   }
   return jobs;
@@ -284,6 +303,16 @@ function cleanScalar(value) {
 
 function parseNeeds(raw = '') {
   return cleanScalar(raw).replace(/[[\]]/g, '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function collectEdges(jobs) {
+  const edges = [];
+  for (const job of jobs) {
+    for (const need of job.needs) {
+      edges.push({ from: need, to: job.id, line: job.needsLine || job.line, missing: false });
+    }
+  }
+  return edges;
 }
 
 function actionInfo(uses, line) {

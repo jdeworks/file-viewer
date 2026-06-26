@@ -97,6 +97,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] CircleCI: source-linked orbs/workflows/jobs, orb pinning and workflow requires review findings, secret-like environment redaction, and collapsed redacted source.
 - [x] AWS CodeBuild buildspec: source-linked phases/commands/runtime/artifacts/cache, runtime/deploy-command review findings, secret-like env redaction support, and collapsed redacted source.
 - [x] GitHub Actions: source-linked job graph, unpinned actions, broad permissions, risky triggers, shell download pipes, and secret-like env masking.
+- [x] GitHub Actions dependency edges: dedicated source-linked `needs` edges and unresolved dependency review findings.
 - [x] GitLab CI: source-linked stages/jobs/variables/includes, mutable image and needs graph review findings, secret-like variable redaction, and collapsed redacted source.
 - [x] Travis CI: source-linked runtime/services/env/script/branch filters, runtime/branch/secret review findings, secret-like env redaction, and collapsed redacted source.
 - [x] Woodpecker CI: source-linked steps/services/when/matrix/secrets/clone config, image/secret/deploy review findings, secret-like env redaction, and collapsed redacted source.

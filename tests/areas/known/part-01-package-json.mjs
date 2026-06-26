@@ -208,6 +208,7 @@ export async function run(ctx) {
   if (/push|pull.request|workflow.dispatch/i.test(ghaText)) pass('GitHub Actions: triggers shown'); else fail('gha triggers: ' + ghaText.slice(0, 200));
   if (/test|lint|build/i.test(ghaText)) pass('GitHub Actions: jobs shown'); else fail('gha jobs: ' + ghaText.slice(0, 200));
   if (/Job Graph|needs test, lint|Workflow Review|unpinned action/i.test(ghaText)) pass('GitHub Actions: job graph and risk notes shown'); else fail('gha risk notes: ' + ghaText.slice(0, 900));
+  if (/Dependency Edges|test -> build|lint -> build/i.test(ghaText)) pass('GitHub Actions: dependency edges shown'); else fail('gha dependency edges: ' + ghaText.slice(0, 900));
   const ghaSourceOpen = await page.$eval('#previewHost .gha-doc .kf-source-details', (e) => e.open);
   if (!ghaSourceOpen) pass('GitHub Actions: source starts collapsed'); else fail('GitHub Actions source should start collapsed');
   await page.click('#previewHost .gha-doc .gha-list .kf-source-link');
@@ -218,7 +219,7 @@ export async function run(ctx) {
   if (ghaJump.open && ghaJump.highlighted) pass('GitHub Actions: item click opens and highlights source'); else fail('gha source jump: ' + JSON.stringify(ghaJump));
   const ghaBad = await page.evaluate(async () => {
     const mod = await import('/types/text/yaml/known/github-actions/renderer.js');
-    const text = 'name: risky\non:\n  pull_request_target:\npermissions: write-all\nenv:\n  API_TOKEN: super-secret\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: curl https://example.com/install.sh | bash';
+    const text = 'name: risky\non:\n  pull_request_target:\npermissions: write-all\nenv:\n  API_TOKEN: super-secret\njobs:\n  build:\n    needs: missing-job\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: curl https://example.com/install.sh | bash';
     const rendered = (await mod.render({ text, filename: '.github/workflows/risky.yml' })).parentNode;
     document.body.appendChild(rendered);
     const out = rendered.textContent;
@@ -227,7 +228,7 @@ export async function run(ctx) {
     rendered.remove();
     return { out, issues, open };
   });
-  if (/risky trigger|broad permission|unpinned action|shell download|secret env|API_TOKEN|\\*\\*\\*\\*\\*\\*\\*\\*/i.test(ghaBad.out + ghaBad.issues) && !/super-secret/.test(ghaBad.out) && !ghaBad.open) pass('GitHub Actions: risky trigger, permissions, shell, action, and secret diagnostics shown'); else fail('gha synthetic diagnostics: ' + JSON.stringify(ghaBad).slice(0, 1000));
+  if (/risky trigger|broad permission|unpinned action|shell download|secret env|missing need|missing-job|API_TOKEN|\\*\\*\\*\\*\\*\\*\\*\\*/i.test(ghaBad.out + ghaBad.issues) && !/super-secret/.test(ghaBad.out) && !ghaBad.open) pass('GitHub Actions: risky trigger, permissions, shell, action, missing need, and secret diagnostics shown'); else fail('gha synthetic diagnostics: ' + JSON.stringify(ghaBad).slice(0, 1000));
 
   // ── Kubernetes manifest viewer ──
   await openExample('Kubernetes Deployment manifest (demo)');
