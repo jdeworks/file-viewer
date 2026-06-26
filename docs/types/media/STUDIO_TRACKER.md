@@ -357,6 +357,25 @@ Stage 6 Compare on the shared model has started:
   explicit analysis hooks, and retire the old Compare UI once equivalent
   coverage has moved to modular selectors.
 
+Stage 7 project settings import/export UI has started:
+
+- Added `mixer-project-settings-ui.js`, a reusable modular settings helper that
+  decorates mixer toolbars with config-only project settings export/import.
+  Import uses `importProjectSettings()` plus runtime local-asset evidence, then
+  renders the required reapply choices: `Apply to all elements`, `Ask per
+  element`, and `Do not change media objects`.
+- Wired the helper into the multi-lane Mix controller. The controller now exposes
+  `importSettings()` and last-import state for smoke coverage while the UI
+  provides the user-facing settings export/import and reapply panel.
+- Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
+  proves the Mix settings UI imports config-only state, reports matched/missing
+  media, exposes all three required reapply choices, and applies the ask-per-
+  element choice without serializing media bytes.
+- Stage 7 remaining work: extend the reusable settings UI to video source and
+  modular Compare surfaces, add drag-to-relink missing assets, implement the
+  final video export path behind capability/ffmpeg gating, and move export
+  provenance to the shared project plan for all media kinds.
+
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
 Status: superseded by A0 as the primary implementation direction.

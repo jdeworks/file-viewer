@@ -47,6 +47,7 @@ import {
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
 import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
+import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -81,6 +82,14 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     runtimeFiles,
     onState: (state) => reflectMultiPlaybackState(root, state),
     onTick: render,
+  });
+  const settingsUi = createProjectSettingsUi({
+    root,
+    getProject: () => project,
+    setProject: (next) => { project = next; },
+    runtimeFiles,
+    render,
+    filename: `${(intake?.filename || 'media-mix').replace(/\.[^.]+$/, '')}.mixer.json`,
   });
   function render() {
     if (destroyed) return;
@@ -230,14 +239,16 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     render();
   }).catch(() => {});
 
-  root.__mediaMixerMulti = {
+    root.__mediaMixerMulti = {
     getProject: () => project,
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
     getAudioCacheStats: () => decodedAudioCache.stats(),
     getPlaybackState: () => playback.getState(),
     getLastExportPlan: () => lastExportPlan,
+    getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
+    importSettings: settingsUi.importSettings,
     addPinkNoise() {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
       render();
@@ -264,6 +275,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       playback.destroy();
       interactions.destroy();
       visualRuntime.dispose();
+      settingsUi.destroy();
       decodedAudioCache.releaseProject(project.project.id);
       root.removeEventListener('input', onInput);
       root.removeEventListener('click', onClick, true);
@@ -289,6 +301,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (toolbar) decorateMultiToolbar(toolbar, project);
     decorateLanes();
     decorateInspector();
+    settingsUi.decorate();
   }
 
   function decorateLanes() {

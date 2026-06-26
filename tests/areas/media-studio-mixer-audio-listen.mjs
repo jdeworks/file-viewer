@@ -327,6 +327,35 @@ export async function run(ctx) {
     pass('modular audio mix: dropped image becomes visual shared-model lane with seek-frame preview');
   else fail('modular audio mix dropped visual mismatch: ' + JSON.stringify(droppedVisual));
 
+  const settingsUi = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
+    const json = el.__mediaMixerMulti.exportSettings();
+    const imported = el.__mediaMixerMulti.importSettings(json);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+    const buttons = [...root.querySelectorAll('.mmx-relink-choice')].map((button) => ({
+      text: button.textContent.trim(),
+      choice: button.dataset.choice,
+    }));
+    root.querySelector('.mmx-relink-choice[data-choice="ask-per-element"]')?.click();
+    return {
+      hasExport: !!root.querySelector('.mmx-settings-download'),
+      hasImport: !!root.querySelector('.mmx-settings-import'),
+      modal: !!root.querySelector('.mmx-relink-modal'),
+      buttons,
+      importedMatches: imported.relink.matches.length,
+      importedMissing: imported.relink.missing.length,
+      lastChoice: root.dataset.lastRelinkChoice,
+      pending: Number(root.dataset.lastRelinkPending || 0),
+      hasMediaBytes: /mediaBytes|dataUrl|objectUrl|blob:|waveformSummary|frameCache|thumbnailCache/.test(json),
+    };
+  });
+  if (settingsUi.hasExport && settingsUi.hasImport && settingsUi.modal
+    && settingsUi.buttons.map((button) => button.text).join('|') === 'Apply to all elements|Ask per element|Do not change media objects'
+    && settingsUi.importedMatches >= 1 && settingsUi.importedMissing === 0
+    && settingsUi.lastChoice === 'ask-per-element' && settingsUi.pending >= 1 && !settingsUi.hasMediaBytes)
+    pass('modular audio mix: project settings UI imports config-only state and exposes reapply choices');
+  else fail('modular audio mix project settings UI mismatch: ' + JSON.stringify(settingsUi));
+
   const mixSettings = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     el.querySelector('.mx-mute[aria-pressed="true"]')?.click();
     el.querySelector('.mx-solo[aria-pressed="true"]')?.click();
