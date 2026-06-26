@@ -149,7 +149,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Firebase config: source-linked hosting/rewrites/redirects/headers/functions/emulators/services settings, broad rewrite/security-header/runtime/emulator review findings, and collapsed source.
 - [x] Render.com config: source-linked services/build/start/schedule/env/database settings, healthcheck/reference/secret review findings, managed-secret notes, and collapsed redacted source.
 - [x] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
-- [ ] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
+- [x] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
 - [x] Generic TOML: live fallback tree with path breadcrumbs, duplicate-key/table diagnostics, click-to-source rows, and collapsed numbered source.
 - [x] Generic YAML: live fallback tree with path breadcrumbs, workflow-like steps summary, secret-like scalar warnings/redaction, click-to-source rows, and collapsed redacted source.
 
@@ -157,17 +157,17 @@ These should prioritize risk, masking, source traceability, and relationship map
 
 For each enhanced renderer:
 
-- [ ] Identify what it extracts today.
-- [ ] Identify the user question it should answer.
-- [ ] Preserve line/source metadata for every extracted item where feasible.
-- [ ] Add click-to-source for summary rows.
-- [ ] Add hover/help text for non-obvious flags, modifiers, directives, severities, or config options.
-- [ ] Add signatures/types/params/docs for code symbols where applicable.
-- [ ] Add diagnostics for malformed, duplicate, unresolved, risky, deprecated, or secret content.
-- [ ] Add masking for sensitive values and verify they do not leak in text content.
-- [ ] Collapse duplicated source by default when raw/Monaco source is already available.
-- [ ] Add or update a focused smoke assertion for the new user-facing behavior.
-- [ ] Regenerate `docs/asset-manifest.json` and `docs/sw.js` after runtime asset changes.
+- [x] Identify what it extracts today.
+- [x] Identify the user question it should answer.
+- [x] Preserve line/source metadata for every extracted item where feasible.
+- [x] Add click-to-source for summary rows.
+- [x] Add hover/help text for non-obvious flags, modifiers, directives, severities, or config options.
+- [x] Add signatures/types/params/docs for code symbols where applicable.
+- [x] Add diagnostics for malformed, duplicate, unresolved, risky, deprecated, or secret content.
+- [x] Add masking for sensitive values and verify they do not leak in text content.
+- [x] Collapse duplicated source by default when raw/Monaco source is already available.
+- [x] Add or update a focused smoke assertion for the new user-facing behavior.
+- [x] Regenerate `docs/asset-manifest.json` and `docs/sw.js` after runtime asset changes.
 
 ## Validation Expectations
 

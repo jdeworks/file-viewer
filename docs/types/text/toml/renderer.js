@@ -1,6 +1,7 @@
 // TOML preview: parse with the hand-rolled parser and render a live tree with
 // path breadcrumbs, source jumps, duplicate-key/secret diagnostics, and collapsed source.
 import { issueList, maskedValue, sourcePreview, wireSourceLinks } from '../../../core/known-ui.js';
+import { createQueryPanel, jsonPathQuery } from '../../../core/query-panel.js';
 import { parseTOML } from './toml.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -155,26 +156,27 @@ function pathBadge(path) {
 function valueNode(key, val, path, sourceInfo) {
   const keyHtml = key !== null ? '<span class="j-key">' + sourceButton(key, path, sourceInfo) + '</span>: ' : '';
   const pathHtml = pathBadge(path);
-  if (val === null || val === undefined) return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="j-null">null</span>' + pathHtml + '</div>';
-  if (val instanceof Date) return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="j-str">' + esc(val.toISOString()) + '</span>' + pathHtml + '</div>';
+  const pathAttrs = ' data-toml-path="' + esc(path) + '" data-qp-path="' + esc(path) + '"';
+  if (val === null || val === undefined) return '<div class="j-row"' + pathAttrs + '>' + keyHtml + '<span class="j-null">null</span>' + pathHtml + '</div>';
+  if (val instanceof Date) return '<div class="j-row"' + pathAttrs + '>' + keyHtml + '<span class="j-str">' + esc(val.toISOString()) + '</span>' + pathHtml + '</div>';
   const t = typeof val;
   if (t === 'object') {
     const isArr = Array.isArray(val);
     const entries = isArr ? val.map((v, i) => [i, v]) : Object.entries(val);
     const open = isArr ? '[' : '{', close = isArr ? ']' : '}';
-    if (!entries.length) return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="j-punc">' + open + close + '</span>' + pathHtml + '</div>';
+    if (!entries.length) return '<div class="j-row"' + pathAttrs + '>' + keyHtml + '<span class="j-punc">' + open + close + '</span>' + pathHtml + '</div>';
     const children = entries.map(([k, v]) => valueNode(isArr ? null : k, v, path ? path + '.' + k : String(k), sourceInfo)).join('');
-    return '<details class="j-node" open data-toml-path="' + esc(path) + '"><summary>' + keyHtml
+    return '<details class="j-node" open' + pathAttrs + '><summary>' + keyHtml
       + '<span class="j-punc">' + open + '</span><span class="j-count">' + entries.length + (isArr ? ' items' : ' keys') + '</span>' + pathHtml + '</summary>'
       + '<div class="j-children">' + children + '</div><div class="j-row j-close">' + close + '</div></details>';
   }
   const cls = t === 'number' ? 'j-num' : t === 'boolean' ? 'j-bool' : 'j-str';
   const masked = maskedValue(key, val);
   if (masked.masked) {
-    return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="toml-masked" title="' + esc(masked.reason) + '">"[configured]"</span>' + pathHtml + '</div>';
+    return '<div class="j-row"' + pathAttrs + '>' + keyHtml + '<span class="toml-masked" title="' + esc(masked.reason) + '">"[configured]"</span>' + pathHtml + '</div>';
   }
   const disp = t === 'string' ? '"' + esc(val) + '"' : esc(String(val));
-  return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="' + cls + '">' + disp + '</span>' + pathHtml + '</div>';
+  return '<div class="j-row"' + pathAttrs + '>' + keyHtml + '<span class="' + cls + '">' + disp + '</span>' + pathHtml + '</div>';
 }
 
 function redactedSource(text, sourceInfo) {
@@ -206,10 +208,30 @@ export async function render(intake, _ctx) {
   const bodyHtml = treeHtml;
 
   const host = document.createElement('div');
-  host.className = 'toml-preview';
+  host.className = 'toml-preview qp-preview toml-qp';
   host.innerHTML = `<style>${CSS}</style>
     <div class="toml-tools"><span class="toml-badge">TOML</span><span class="toml-note">Click keys or paths to open source lines.</span></div>
     ${treeHtml}`;
+  const treeRoot = host.querySelector('.toml-tree');
+  const panel = createQueryPanel({
+    placeholder: "TOMLPath… e.g. $..name or types[*].id",
+    hint: 'JSONPath-style TOML queries: $.table.key · $..key · $.array[*] · bare key',
+    root: treeRoot,
+    filterUnit: '.j-node, .j-row',
+    evaluate(query) {
+      let results;
+      try { results = jsonPathQuery(data, query); }
+      catch (e) { return { error: e.message || 'bad query' }; }
+      const set = new Set();
+      for (const r of results) {
+        const sel = '[data-qp-path="' + (window.CSS?.escape ? window.CSS.escape(r.path) : r.path) + '"]';
+        const node = treeRoot.querySelector(sel);
+        if (node) set.add(node);
+      }
+      return set;
+    },
+  });
+  host.prepend(panel.el);
   const review = issueList(sourceInfo.issues, { title: 'TOML Structure Review' });
   if (review) host.appendChild(review);
   host.appendChild(sourcePreview(redactedSource(text, sourceInfo), {
