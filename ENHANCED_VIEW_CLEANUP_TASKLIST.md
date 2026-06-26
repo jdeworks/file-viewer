@@ -121,6 +121,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] ASP.NET appsettings: public host/JWT/connection-string review warnings, shared masking reasons, source-linked rows, and collapsed redacted source.
 - [x] Grafana INI: public bind/domain/secret review warnings, masking reasons, source-linked rows, and collapsed redacted source.
 - [ ] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.
+- [x] Generic JSON: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
 - [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.

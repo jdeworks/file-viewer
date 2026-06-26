@@ -93,6 +93,28 @@ export async function run(ctx) {
   if (/Parse mode\s*JSONC recovery/.test(jsoncMeta)) pass('JSON metadata reports JSONC recovery mode');
   else fail('jsonc meta: ' + jsoncMeta.replace(/\s+/g, ' ').slice(0, 180));
 
+  await page.evaluate(() => window.__fv.openViewerFile('secrets.json', {
+    text: JSON.stringify({
+      name: 'app',
+      apiKey: 'abcdefghijklmnopqrstuvwxyz123456',
+      nested: { password: 'plain-text-secret' },
+    }, null, 2),
+  }));
+  await page.waitForSelector('#previewHost .json-qp .kf-issues', { timeout: 8000 });
+  const jsonSecret = await page.$eval('#previewHost .json-qp', (el) => ({
+    text: el.textContent,
+    html: el.innerHTML,
+    sourceOpen: el.querySelector('.kf-source-details')?.open || false,
+  }));
+  if (/JSON Structure Review|secret|\[configured\]/i.test(jsonSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(jsonSecret.text + jsonSecret.html) && !jsonSecret.sourceOpen) pass('JSON secret-like values are warned and redacted');
+  else fail('json secret redaction: ' + JSON.stringify({ ...jsonSecret, html: jsonSecret.html.slice(0, 300), text: jsonSecret.text.slice(0, 300) }));
+  await page.$eval('#previewHost .json-qp .kf-source-link[data-source-line]', (e) => e.click());
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#previewHost .json-qp');
+    return root?.querySelector('.kf-source-details')?.open && root.querySelector('.kf-source-hit');
+  }, null, { timeout: 3000 });
+  pass('JSON secret review links open redacted source');
+
   // ── HAR ── JSON-shaped HTTP archive gets a waterfall, filters, sortable request table.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.har');
