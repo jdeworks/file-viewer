@@ -3,6 +3,7 @@ import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
 import { attachGrid, buildFloor, exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
 import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
+import { biomeForFloor } from "./biome.js";
 import { rollEntity } from "./data.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
@@ -124,9 +125,11 @@ export function renderStage2({
       ? "defeated. BTS trace available."
       : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
     setText(fields.hint, lock.hint);
+    const biome = biomeForFloor(state.run.floor);
+    if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
     setText(fields.objective, state.run.boss.reached
       ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
-      : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+      : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {

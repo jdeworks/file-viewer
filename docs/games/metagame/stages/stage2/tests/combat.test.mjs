@@ -129,5 +129,23 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   ok(off, "wanderers appear off-camera");
 }
 
+// ── B2 freed ally: hunts hostiles, never the player ──────────────────────────────────────────────
+{
+  const w = arena(10);
+  const ally = foe({ x: 2, y: 1, ally: true, atk: 7, name: "ally", sight: 8 });
+  const enemy = foe({ x: 4, y: 1, hp: 20, name: "enemy" });
+  w.monsters = [ally, enemy];
+  w.pos = { x: 8, y: 1 };
+  const onlyAlly = (m) => m.ally; // isolate the ally so the enemy doesn't wander mid-assert
+  // step 1: ally closes on the enemy (not the far player)
+  monsterTurn(w, { hp: 100, def: 0, statuses: {} }, { log: [], damageTaken: 0, died: false }, onlyAlly);
+  ok(ally.x === 3, "ally advances toward the hostile, not the player");
+  // step 2: now adjacent → ally bites the enemy, player untouched
+  const ev = { log: [], damageTaken: 0, died: false };
+  monsterTurn(w, { hp: 100, def: 0, statuses: {} }, ev, onlyAlly);
+  ok(enemy.hp < 20, "ally bites the hostile");
+  ok(ev.damageTaken === 0, "the freed ally never damages the player");
+}
+
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");
 if (failed) process.exit(1);

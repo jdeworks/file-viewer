@@ -171,6 +171,35 @@ export function detonate(world, at, player, events) {
   events.blast = { x: at.x, y: at.y };
 }
 
+// A freed captive ally (B2): close on and bite the nearest hostile monster; idle-patrol if none in
+// reach. Never targets or damages the player. Killing an exploder still detonates (player unhurt).
+function allyTurn(world, m, occupied, events) {
+  let target = null;
+  let bd = Infinity;
+  for (const o of world.monsters) {
+    if (!o.alive || o.ally || o === m) continue;
+    const d = Math.abs(o.x - m.x) + Math.abs(o.y - m.y);
+    if (d < bd) { bd = d; target = o; }
+  }
+  if (target && bd <= (m.sight || 6) + 4) {
+    if (bd === 1) {
+      target.hp -= Math.max(1, m.atk);
+      if (target.hp <= 0) {
+        target.alive = false;
+        occupied.delete(target.y * world.width + target.x);
+        if (target.explode) detonate(world, target, { hp: null }, events);
+        if (events.log) events.log.push(`your ally fells ${target.name}.`);
+      }
+      return;
+    }
+    const t = greedyStep(world, m, target.x, target.y, occupied);
+    if (t) { occupied.delete(m.y * world.width + m.x); m.x = t.x; m.y = t.y; occupied.add(m.y * world.width + m.x); }
+    return;
+  }
+  const t = patrolStep(world, m, occupied);
+  if (t) { occupied.delete(m.y * world.width + m.x); m.x = t.x; m.y = t.y; m.dir = t.dir; occupied.add(m.y * world.width + m.x); }
+}
+
 // Advance monsters one tile. `filter` (optional) restricts which act this call — used to drive the
 // 5 shared real-time clocks (one bucket per call). Mutates monsters + the player (bites/spits) and
 // appends to `events`. Behaviour archetypes branch here before the default chase/patrol.
@@ -183,6 +212,9 @@ export function monsterTurn(world, player, events, filter) {
   for (const m of world.monsters) {
     if (!m.alive) continue;
     if (filter && !filter(m)) continue;
+
+    // Freed captives (B2) fight FOR you — they hunt the nearest hostile, never the player.
+    if (m.ally) { allyTurn(world, m, occupied, events); continue; }
 
     // Damage-over-time first — a foe can die to poison/burn before it acts (exploders blast).
     if (m.statuses) {

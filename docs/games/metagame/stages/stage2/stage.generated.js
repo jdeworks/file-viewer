@@ -355,6 +355,7 @@ function carveAndConnect(node, grid, rng, rooms, minRoom, decor) {
   node.room = a || b;
   return node.room;
 }
+var HIDDEN_TYPES = ["treasure", "treasure", "trap", "trap", "teleport", "shrine", "vault", "captive"];
 function attachHiddenRooms(grid, rooms, rng) {
   const height = grid.length;
   const width = grid[0].length;
@@ -415,7 +416,7 @@ function attachHiddenRooms(grid, rooms, rng) {
     if (!allWall(hx, hy, hw, hh) || overlaps(box, reserved)) continue;
     if (grid[door.y][door.x] !== "#" || grid[inner.y][inner.x] !== ".") continue;
     reserved.push(box);
-    hidden.push({ x: hx, y: hy, w: hw, h: hh, entrance: door, type: rng.pick(["treasure", "trap", "teleport"]), revealed: false });
+    hidden.push({ x: hx, y: hy, w: hw, h: hh, entrance: door, type: rng.pick(HIDDEN_TYPES), revealed: false });
   }
   return hidden;
 }
@@ -817,6 +818,46 @@ function detonate(world, at, player, events) {
   }
   events.blast = { x: at.x, y: at.y };
 }
+function allyTurn(world, m, occupied, events) {
+  let target = null;
+  let bd = Infinity;
+  for (const o of world.monsters) {
+    if (!o.alive || o.ally || o === m) continue;
+    const d = Math.abs(o.x - m.x) + Math.abs(o.y - m.y);
+    if (d < bd) {
+      bd = d;
+      target = o;
+    }
+  }
+  if (target && bd <= (m.sight || 6) + 4) {
+    if (bd === 1) {
+      target.hp -= Math.max(1, m.atk);
+      if (target.hp <= 0) {
+        target.alive = false;
+        occupied.delete(target.y * world.width + target.x);
+        if (target.explode) detonate(world, target, { hp: null }, events);
+        if (events.log) events.log.push(`your ally fells ${target.name}.`);
+      }
+      return;
+    }
+    const t2 = greedyStep(world, m, target.x, target.y, occupied);
+    if (t2) {
+      occupied.delete(m.y * world.width + m.x);
+      m.x = t2.x;
+      m.y = t2.y;
+      occupied.add(m.y * world.width + m.x);
+    }
+    return;
+  }
+  const t = patrolStep(world, m, occupied);
+  if (t) {
+    occupied.delete(m.y * world.width + m.x);
+    m.x = t.x;
+    m.y = t.y;
+    m.dir = t.dir;
+    occupied.add(m.y * world.width + m.x);
+  }
+}
 function monsterTurn(world, player, events, filter) {
   const px = world.pos.x;
   const py = world.pos.y;
@@ -825,6 +866,10 @@ function monsterTurn(world, player, events, filter) {
   for (const m of world.monsters) {
     if (!m.alive) continue;
     if (filter && !filter(m)) continue;
+    if (m.ally) {
+      allyTurn(world, m, occupied, events);
+      continue;
+    }
     if (m.statuses) {
       tickStatuses(m, events, false);
       if (m.hp <= 0) {
@@ -1257,7 +1302,7 @@ function revealHidden(world, player, h, events) {
       world.monsters.push(m);
     }
     events.log.push(`ambush! ${n} foes pour out of the dark.`);
-  } else {
+  } else if (h.type === "teleport") {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
       const tx = world.exit.x + dx;
       const ty = world.exit.y + dy;
@@ -1268,7 +1313,73 @@ function revealHidden(world, player, h, events) {
     }
     events.moved = true;
     events.log.push("a teleport sigil! flung straight to the stairwell.");
+  } else if (h.type === "shrine") {
+    const cost = Math.min(Math.max(0, player.hp - 1), Math.max(5, Math.round(player.maxHp * 0.15)));
+    player.hp = Math.max(1, player.hp - cost);
+    const boon = rng.pick(["atk", "def", "maxhp"]);
+    if (boon === "atk") {
+      player.atk += 2;
+      events.log.push(`a shrine — you bleed ${cost} HP for +2 ATK.`);
+    } else if (boon === "def") {
+      player.def = Number(player.def || 0) + 1;
+      events.log.push(`a shrine — you bleed ${cost} HP for +1 DEF.`);
+    } else {
+      player.maxHp += 8;
+      events.log.push(`a shrine — you bleed ${cost} HP for +8 max HP.`);
+    }
+  } else if (h.type === "vault") {
+    const cx = h.x + (h.w >> 1);
+    const cy = h.y + (h.h >> 1);
+    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], taken: false });
+    const guards = rng.int(2, 3);
+    for (let i = 0; i < guards; i += 1) {
+      const c = take();
+      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
+      m.x = c.x;
+      m.y = c.y;
+      m.home = { x: c.x, y: c.y };
+      m.chasing = true;
+      m.elite = true;
+      m.hp = Math.round(m.hp * 1.5);
+      m.maxHp = m.hp;
+      m.atk = Math.round(m.atk * 1.2);
+      m.name = `vault guard`;
+      m.drop += 2;
+      world.monsters.push(m);
+    }
+    events.log.push(`a vault! a prime weapon — but ${guards} elite guards stir.`);
+  } else if (h.type === "captive") {
+    const c = take();
+    const ally = spawnMonster(rng, world.floor, world.monsters.length);
+    ally.x = c.x;
+    ally.y = c.y;
+    ally.home = { x: c.x, y: c.y };
+    ally.ally = true;
+    ally.chasing = false;
+    ally.ranged = false;
+    ally.summon = false;
+    ally.explode = false;
+    ally.ambush = false;
+    ally.hidden = false;
+    ally.elite = false;
+    ally.venom = false;
+    ally.hp = Math.round(ally.hp * 1.6);
+    ally.maxHp = ally.hp;
+    ally.name = "freed process";
+    world.monsters.push(ally);
+    events.log.push("a captive process — freed, it fights at your side.");
   }
+}
+
+// ../../docs/games/metagame/stages/stage2/biome.js
+var BIOMES = [
+  { id: "warrens", name: "The Warrens", maxFloor: 3 },
+  { id: "cisterns", name: "Flooded Cisterns", maxFloor: 6 },
+  { id: "emberworks", name: "Emberworks", maxFloor: 9 },
+  { id: "overflow", name: "The Overflow", maxFloor: Infinity }
+];
+function biomeForFloor(floor) {
+  return BIOMES.find((b) => floor <= b.maxFloor) || BIOMES[BIOMES.length - 1];
 }
 
 // ../../docs/games/metagame/stages/stage2/shop.js
@@ -1330,6 +1441,8 @@ var SECTIONS = [
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
   ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
+  ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
+  ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
@@ -1504,7 +1617,7 @@ function createView(screenEl) {
       const disguised = m.ambush && m.hidden;
       const glyph = disguised ? "#" : m.glyph;
       if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
-      const color = disguised ? "s2-c-ambush" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
       const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
       const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
@@ -1802,7 +1915,9 @@ function renderStage2({
     setText(fields.status, status);
     setText(fields.bossStatus, state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
     setText(fields.hint, lock.hint);
-    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+    const biome = biomeForFloor(state.run.floor);
+    if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
+    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {

@@ -125,6 +125,12 @@
   width: max-content;
 }
 
+/* Biome bands (B1): each floor band recolours the terrain + screen background so depth has a place
+   identity. Cosmetic only — the grid stays one global colour (no per-cell spans). */
+.stage2-glyph-dungeon[data-biome="cisterns"] .s2-grid { color: #4f6b78; background: #060a0c; }
+.stage2-glyph-dungeon[data-biome="emberworks"] .s2-grid { color: #7a4a2a; background: #0c0706; }
+.stage2-glyph-dungeon[data-biome="overflow"] .s2-grid { color: #6a5a85; background: #0a0710; }
+
 /* Hidden ruler: a zero-padding twin of the grid used to measure exact cell px metrics
    (see view.measure) so sprites land on their cells at any font-size. */
 .s2-ruler {
@@ -204,6 +210,7 @@
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
 .s2-c-elite { color: #ffd24a; font-weight: 700; text-shadow: 0 0 5px #ff9b2e; } /* elite — gilded + glow */
 .s2-c-ambush { color: #6b5026; font-weight: 400; } /* disguised ambusher — exact terrain colour */
+.s2-c-ally { color: #5effc4; font-weight: 700; text-shadow: 0 0 5px #00d68a; } /* freed captive ally */
 .s2-foe-dot { filter: hue-rotate(45deg) brightness(1.1); } /* poisoned/burning tint */
 
 /* Hazard tiles (A2) — sparse colored cells. */

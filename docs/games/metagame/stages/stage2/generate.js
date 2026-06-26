@@ -89,6 +89,9 @@ function carveAndConnect(node, grid, rng, rooms, minRoom, decor) {
 // the door steps straight into it. The reserved rectangle is solid wall already (we never carve it
 // here), so the map's connectivity is exactly the no-hidden-room baseline — sealing it can isolate
 // nothing, so no connectivity guard is needed. carveHiddenRoom opens the box + door on reveal.
+// Hidden-room kinds, weighted by repetition (B2 adds shrine / vault / captive to the original three).
+const HIDDEN_TYPES = ['treasure', 'treasure', 'trap', 'trap', 'teleport', 'shrine', 'vault', 'captive'];
+
 function attachHiddenRooms(grid, rooms, rng) {
   const height = grid.length;
   const width = grid[0].length;
@@ -129,7 +132,7 @@ function attachHiddenRooms(grid, rooms, rng) {
     if (!allWall(hx, hy, hw, hh) || overlaps(box, reserved)) continue;
     if (grid[door.y][door.x] !== '#' || grid[inner.y][inner.x] !== '.') continue; // door bumpable from host floor
     reserved.push(box);
-    hidden.push({ x: hx, y: hy, w: hw, h: hh, entrance: door, type: rng.pick(['treasure', 'trap', 'teleport']), revealed: false });
+    hidden.push({ x: hx, y: hy, w: hw, h: hh, entrance: door, type: rng.pick(HIDDEN_TYPES), revealed: false });
   }
   return hidden;
 }

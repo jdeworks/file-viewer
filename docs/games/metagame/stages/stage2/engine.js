@@ -311,7 +311,8 @@ export function step(world, player, dir) {
 }
 
 // Open a hidden room: carve it to floor, then resolve its kind — treasure (loot), trap (ambush),
-// or teleport (warp to the stairs). Deterministic per door via the run seed; results are persisted.
+// teleport (warp to the stairs), shrine (pay HP for a buff), vault (prime weapon + elite guards),
+// captive (free an ally that fights for you). Deterministic per door via the run seed; persisted.
 function revealHidden(world, player, h, events) {
   h.revealed = true;
   carveHiddenRoom(world.grid, h);
@@ -339,7 +340,7 @@ function revealHidden(world, player, h, events) {
       world.monsters.push(m);
     }
     events.log.push(`ambush! ${n} foes pour out of the dark.`);
-  } else {
+  } else if (h.type === "teleport") {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
       const tx = world.exit.x + dx;
       const ty = world.exit.y + dy;
@@ -347,5 +348,37 @@ function revealHidden(world, player, h, events) {
     }
     events.moved = true;
     events.log.push("a teleport sigil! flung straight to the stairwell.");
+  } else if (h.type === "shrine") {
+    // Pay a slice of current HP for a permanent (this-run) buff — never lethal.
+    const cost = Math.min(Math.max(0, player.hp - 1), Math.max(5, Math.round(player.maxHp * 0.15)));
+    player.hp = Math.max(1, player.hp - cost);
+    const boon = rng.pick(["atk", "def", "maxhp"]);
+    if (boon === "atk") { player.atk += 2; events.log.push(`a shrine — you bleed ${cost} HP for +2 ATK.`); }
+    else if (boon === "def") { player.def = Number(player.def || 0) + 1; events.log.push(`a shrine — you bleed ${cost} HP for +1 DEF.`); }
+    else { player.maxHp += 8; events.log.push(`a shrine — you bleed ${cost} HP for +8 max HP.`); }
+  } else if (h.type === "vault") {
+    const cx = h.x + (h.w >> 1);
+    const cy = h.y + (h.h >> 1);
+    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], taken: false }); // a prime weapon
+    const guards = rng.int(2, 3);
+    for (let i = 0; i < guards; i += 1) {
+      const c = take();
+      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
+      m.x = c.x; m.y = c.y; m.home = { x: c.x, y: c.y }; m.chasing = true;
+      m.elite = true; m.hp = Math.round(m.hp * 1.5); m.maxHp = m.hp; m.atk = Math.round(m.atk * 1.2);
+      m.name = `vault guard`; m.drop += 2;
+      world.monsters.push(m);
+    }
+    events.log.push(`a vault! a prime weapon — but ${guards} elite guards stir.`);
+  } else if (h.type === "captive") {
+    const c = take();
+    const ally = spawnMonster(rng, world.floor, world.monsters.length);
+    ally.x = c.x; ally.y = c.y; ally.home = { x: c.x, y: c.y };
+    ally.ally = true; ally.chasing = false;
+    ally.ranged = false; ally.summon = false; ally.explode = false; ally.ambush = false; ally.hidden = false; ally.elite = false; ally.venom = false;
+    ally.hp = Math.round(ally.hp * 1.6); ally.maxHp = ally.hp;
+    ally.name = "freed process";
+    world.monsters.push(ally);
+    events.log.push("a captive process — freed, it fights at your side.");
   }
 }

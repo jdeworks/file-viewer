@@ -171,7 +171,7 @@ export function createView(screenEl) {
       const disguised = m.ambush && m.hidden;
       const glyph = disguised ? "#" : m.glyph;
       if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
-      const color = disguised ? "s2-c-ambush" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe";
       const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
       const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
