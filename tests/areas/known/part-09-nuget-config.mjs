@@ -115,6 +115,20 @@ export async function run(ctx) {
   if (/nginx/i.test(ngxText)) pass('nginx.conf: badge shown'); else fail('nginx badge: ' + ngxText.slice(0, 200));
   if (/backend/i.test(ngxText)) pass('nginx.conf: upstream shown'); else fail('nginx upstream: ' + ngxText.slice(0, 300));
   if (/example\.com/i.test(ngxText)) pass('nginx.conf: server_name shown'); else fail('nginx server_name: ' + ngxText.slice(0, 300));
+  if (/Nginx Review|http redirect/i.test(ngxText)) pass('nginx.conf: review findings shown'); else fail('nginx review: ' + ngxText.slice(0, 400));
+  const ngxHelpTitle = await page.$eval('#previewHost .ngx-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Nginx|source|Open line/i.test(ngxHelpTitle)) pass('nginx.conf: directive hover help shown'); else fail('nginx source help title missing');
+  const ngxSourceCollapsed = await page.$eval('#previewHost .ngx-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (ngxSourceCollapsed) pass('nginx.conf: source collapsed'); else fail('nginx.conf: source not collapsed');
+  const ngxSourceLine = await page.$eval('#previewHost .ngx-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .ngx-doc .kf-source-details');
+    return details?.open && document.getElementById(`nginx-line-${line}`);
+  }, ngxSourceLine);
+  pass('nginx.conf: source links open source');
 
   // ── ansible.cfg viewer ──
   await openExample('ansible.cfg (Ansible Config)');
