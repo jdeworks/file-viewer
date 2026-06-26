@@ -61,7 +61,7 @@ These already extract symbols but leave too much user value on the table.
 - [x] `mojo-lang`: clickable signatures, struct field counts, `@value`/alias/let-var explanations.
 - [x] `fortran-lang`: procedure signatures, missing `IMPLICIT NONE` warning, `COMMON` explanation, procedure length.
 - [x] `groovy-lang`: method signatures, annotation explanations, Groovydoc, source links.
-- [ ] `haxe-lang`: method signatures, metadata explanations, inheritance/implements, docs.
+- [x] `haxe-lang`: method signatures, metadata explanations, inheritance/implements, docs.
 - [ ] `julia-lang`: full signatures, docstrings, multiple-dispatch grouping, source spans.
 - [ ] `odin-lang`: proc signatures, calling convention hover help, compile-time `when` locations.
 - [ ] `pony-lang`: receiver/capability metadata, actor/behaviour explanations, type-owned API grouping.

@@ -87,6 +87,18 @@ export async function run(ctx) {
   await openExample('sample.hx');
   await page.waitForSelector('#previewHost .haxe-doc', { timeout: 12000 });
   pass('haxe-lang: rendered');
+  const haxeText = await page.$eval('#previewHost .haxe-doc', (e) => e.textContent);
+  if (/extends Sprite|implements Updatable|returns Void|entity:Entity|@:keep|arity 2/i.test(haxeText)) pass('haxe-lang: signatures, metadata, and inheritance shown'); else fail('haxe-lang details: ' + haxeText.slice(0, 900));
+  const haxeMetaHint = await page.$eval('#previewHost .haxe-doc .haxe-tag-meta', (e) => e.title);
+  if (/dead-code|metadata|Expose/i.test(haxeMetaHint)) pass('haxe-lang: metadata hover help present'); else fail('haxe metadata hint: ' + haxeMetaHint);
+  const haxeSourceOpen = await page.$eval('#previewHost .haxe-doc .kf-source-details', (e) => e.open);
+  if (!haxeSourceOpen) pass('haxe-lang: source starts collapsed'); else fail('haxe source should start collapsed');
+  await page.click('#previewHost .haxe-doc .kf-source-link');
+  const haxeJump = await page.$eval('#previewHost .haxe-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (haxeJump.open && haxeJump.highlighted) pass('haxe-lang: item click opens and highlights source'); else fail('haxe source jump: ' + JSON.stringify(haxeJump));
 
   // ── ada-lang: rendered ──
   await openExample('sample.ads');
