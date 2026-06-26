@@ -152,10 +152,11 @@ A/B targets in `project.compare`, computes overlap through the mixer model, and
 exposes stacked/overlay controls with config-only settings export. The modular
 surface can now browse or drop a B media file, add it as a project asset,
 retarget the existing B lane/element, and refresh `project.compare.b` while
-keeping file bytes runtime-only. The existing Compare UI remains mounted for
-detailed analysis/live-preview coverage until the modular surface can choose A/B
-from arbitrary existing mixer elements and render equivalent waveform/visual
-overlay analysis.
+keeping file bytes runtime-only. Overlay mode now paints shared-coordinate A/B
+waveform or visual preview canvases from the modular project instead of a
+placeholder. The existing Compare UI remains mounted for detailed analysis/live-
+preview coverage until the modular surface can choose A/B from arbitrary
+existing mixer elements and render equivalent analysis controls.
 
 Stage 7 has started with a reusable project settings UI helper. Multi-lane Mix,
 opened video source, and modular Compare now have toolbar controls for

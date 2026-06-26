@@ -352,10 +352,15 @@ Stage 6 Compare on the shared model has started:
   elements, A/B targets, positive overlap, config-only settings, and overlay
   mode rendering. It also proves browsing `sample.wav`/`sample.webm` as Compare
   B retargets the shared compare state without serializing media bytes.
+- Modular overlay mode now paints a shared-coordinate canvas instead of a text
+  placeholder. Audio Compare draws both A/B waveform summaries over the same
+  ruler space; visual Compare draws both A/B frame sources or placeholders on a
+  single canvas with overlay opacity metadata. Smoke coverage asserts the
+  modular overlay canvas kind, A/B bindings, overlap, and nonblank pixel
+  variation for both audio and video.
 - Stage 6 remaining work: choose A/B from arbitrary existing mixer elements,
-  render true overlaid waveform/visual coordinates in the modular surface, wire
-  explicit analysis hooks, and retire the old Compare UI once equivalent
-  coverage has moved to modular selectors.
+  wire explicit analysis hooks into the modular surface, and retire the old
+  Compare UI once equivalent coverage has moved to modular selectors.
 
 Stage 7 project settings import/export UI has started:
 

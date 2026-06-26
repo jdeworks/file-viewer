@@ -56,10 +56,20 @@ export async function exerciseCompare(ctx, kind) {
   const modularOverlay = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => ({
     view: root.dataset.compareView,
     overlay: !!root.querySelector('.mmx-compare-overlay'),
+    canvasKind: root.querySelector('.mmx-compare-overlay-canvas')?.dataset.kind || '',
+    compareA: root.querySelector('.mmx-compare-overlay-canvas')?.dataset.compareA || '',
+    compareB: root.querySelector('.mmx-compare-overlay-canvas')?.dataset.compareB || '',
+    varied: Number(root.querySelector('.mmx-compare-overlay-canvas')?.dataset.variedPixels || 0),
+    status: root.querySelector('.mmx-compare-overlay-status')?.textContent || '',
     overlapMs: Number(root.dataset.compareOverlapMs || 0),
   }));
-  if (modularOverlay.view === 'overlay' && modularOverlay.overlay && modularOverlay.overlapMs > 0)
-    pass(`${kind} compare: modular shared-model overlay mode renders`);
+  const expectedOverlayKind = kind === 'video' ? 'visual' : 'audio';
+  if (modularOverlay.view === 'overlay' && modularOverlay.overlay
+    && modularOverlay.canvasKind === expectedOverlayKind
+    && modularOverlay.compareA && modularOverlay.compareB
+    && modularOverlay.varied > 8 && modularOverlay.overlapMs > 0
+    && new RegExp(`${expectedOverlayKind} overlay`, 'i').test(modularOverlay.status))
+    pass(`${kind} compare: modular shared-model overlay mode paints shared coordinates`);
   else fail(`${kind} modular compare overlay: ` + JSON.stringify(modularOverlay));
   await page.setInputFiles(`${panelSel} .mmx-compare-source .mmx-compare-b-input`,
     new URL(kind === 'video' ? '../../docs/examples/sample.webm' : '../../docs/examples/sample.wav', import.meta.url).pathname);
