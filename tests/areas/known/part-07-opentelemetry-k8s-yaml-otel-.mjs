@@ -236,14 +236,33 @@ export async function run(ctx) {
   if (/step|pipeline/i.test(wpcText)) pass('.woodpecker.yml: steps shown'); else fail('woodpecker steps: ' + wpcText.slice(0, 200));
   if (/image|plugin/i.test(wpcText)) pass('.woodpecker.yml: step images shown'); else fail('woodpecker images: ' + wpcText.slice(0, 200));
   if (/secret|when|clone|matrix/i.test(wpcText)) pass('.woodpecker.yml: pipeline metadata shown'); else fail('woodpecker metadata: ' + wpcText.slice(0, 200));
+  if (/Woodpecker Review|step image|secret ref|pipeline guard|deploy step/i.test(wpcText)) pass('.woodpecker.yml: review findings shown'); else fail('woodpecker review: ' + wpcText.slice(0, 400));
+  const wpcHelpTitle = await page.$eval('#previewHost .wpc-doc .wpc-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Woodpecker|Open line|source/i.test(wpcHelpTitle)) pass('.woodpecker.yml: hover source help shown'); else fail('woodpecker source help title missing');
+  const wpcSourceCollapsed = await page.$eval('#previewHost .wpc-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (wpcSourceCollapsed) pass('.woodpecker.yml: redacted source collapsed'); else fail('.woodpecker.yml: redacted source not collapsed');
+  const wpcSourceLine = await page.$eval('#previewHost .wpc-doc .wpc-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .wpc-doc .kf-source-details');
+    return details?.open && document.getElementById(`wpc-line-${line}`);
+  }, wpcSourceLine);
+  pass('.woodpecker.yml: source links open redacted source');
 
   // ── woodpecker.yml (non-hidden) viewer ──
   await openExample('woodpecker.yml (Woodpecker CI)');
   await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
   const wpcYmlText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
+  const wpcYmlHtml = await page.$eval('#previewHost .wpc-doc', (e) => e.innerHTML);
   if (/Woodpecker/i.test(wpcYmlText)) pass('woodpecker.yml: badge shown'); else fail('woodpecker.yml badge: ' + wpcYmlText.slice(0, 200));
   if (/step|pipeline/i.test(wpcYmlText)) pass('woodpecker.yml: steps shown'); else fail('woodpecker.yml steps: ' + wpcYmlText.slice(0, 200));
   if (/postgres|service/i.test(wpcYmlText)) pass('woodpecker.yml: services shown'); else fail('woodpecker.yml services: ' + wpcYmlText.slice(0, 300));
+  if (/Woodpecker Review|service image|service secret|deploy step/i.test(wpcYmlText)) pass('woodpecker.yml: review findings shown'); else fail('woodpecker.yml review: ' + wpcYmlText.slice(0, 400));
+  if ((wpcYmlText + wpcYmlHtml).includes('testpass')) fail('woodpecker.yml: service secret leaked'); else pass('woodpecker.yml: service secret redacted');
+  const wpcYmlSourceCollapsed = await page.$eval('#previewHost .wpc-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (wpcYmlSourceCollapsed) pass('woodpecker.yml: redacted source collapsed'); else fail('woodpecker.yml: redacted source not collapsed');
 
   // ── harness-pipeline.yaml viewer ──
   await openExample('Harness Pipeline');
