@@ -39,8 +39,8 @@ export function floorDims(runSeed, floorNum) {
 function buildGrid(runSeed, floorNum) {
   const dims = floorDims(runSeed, floorNum);
   const rng = makeRng(`${runSeed}:${floorNum}`);
-  const { grid, rooms, hidden } = generate(rng, dims);
-  return { grid, rooms, hidden, dims, rng };
+  const { grid, rooms, hidden, decor } = generate(rng, dims);
+  return { grid, rooms, hidden, decor, dims, rng };
 }
 
 // The grid is large (a 750² floor is ~600KB of strings) and fully derivable from the seed, so we
@@ -58,7 +58,7 @@ export function attachGrid(world, runSeed, floorNum) {
 
 // Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
 export function buildFloor(runSeed, floorNum) {
-  const { grid, rooms, hidden, dims, rng } = buildGrid(runSeed, floorNum);
+  const { grid, rooms, hidden, decor, dims, rng } = buildGrid(runSeed, floorNum);
   const width = dims.width;
   const height = dims.height;
   const start = { x: rooms[0].cx, y: rooms[0].cy };
@@ -119,6 +119,16 @@ export function buildFloor(runSeed, floorNum) {
     const c = take();
     if (!c) break;
     glyphs.push({ x: c.x, y: c.y, taken: false });
+  }
+  // Loot anchored to interior structures (a sword behind a corner, a potion in an alcove). Skip any
+  // marker the layout sealed off, or that coincides with the spawn / stairs.
+  for (const d of (decor || [])) {
+    const idx = d.y * width + d.x;
+    if (flood.dist[idx] < 0) continue;
+    if ((d.x === start.x && d.y === start.y) || (d.x === exit.x && d.y === exit.y)) continue;
+    if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
+    else if (d.kind === "potion") potions.push({ x: d.x, y: d.y, taken: false });
+    else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
   const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden };
   defineGrid(world, grid);
