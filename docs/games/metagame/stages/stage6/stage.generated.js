@@ -1055,6 +1055,16 @@ function buyCard(run, cardId, cost) {
   run.deck.push(cardId);
   return { ok: true };
 }
+function seatAtFinalBoss(run, deck) {
+  run.act = FINAL_BOSS_ACT;
+  const bossNode = run.map.acts[FINAL_BOSS_ACT - 1].layers.at(-1)[0];
+  run.currentNodeId = bossNode.id;
+  run.status = "boss";
+  run.pendingReward = null;
+  run.notice = null;
+  if (Array.isArray(deck)) run.deck = [...deck];
+  return bossNode.id;
+}
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
     run.status = "won";
@@ -1556,7 +1566,18 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   };
   root.addEventListener("click", handleClick);
   route();
+  window.__fvStage6 = {
+    jumpToBoss(deck) {
+      if (!state.run) beginRun();
+      seatAtFinalBoss(state.run, deck);
+      state.ui.screen = "run";
+      combat = null;
+      commit();
+      return state.run.currentNodeId;
+    }
+  };
   return { repaint: route, destroy() {
+    if (window.__fvStage6) delete window.__fvStage6;
     root.remove();
   } };
   function route() {

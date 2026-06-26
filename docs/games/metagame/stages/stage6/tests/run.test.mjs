@@ -10,7 +10,9 @@ import {
   prestigeCost,
   rest,
   resolveCombat,
-  takeReward
+  seatAtFinalBoss,
+  takeReward,
+  FINAL_BOSS_ACT
 } from "../run.js";
 import { makeRng } from "../combat.js";
 import { STARTING_DECK } from "../cards.js";
@@ -162,6 +164,25 @@ import { STARTING_DECK } from "../cards.js";
     // The default rng path is also deterministic (derived from run.seed + node), never Math.random.
     assert.equal(enemyForCurrentNode(a), enemyForCurrentNode(b), `seed ${seed}: default rng is replayable`);
   }
+}
+
+// ── A2: seatAtFinalBoss lands a run at the act-4 boss node (test/debug helper) ────────────────────
+{
+  const run = createRun({ seed: 3 });
+  assert.equal(run.act, 1, "fresh run starts in act 1");
+  const bossId = seatAtFinalBoss(run);
+  assert.equal(run.act, FINAL_BOSS_ACT, "seated in the final act");
+  assert.equal(run.status, "boss", "status is boss");
+  assert.equal(run.currentNodeId, bossId, "current node is the returned boss id");
+  const node = nodeById(run.map, run.currentNodeId);
+  assert.equal(node.type, "boss", "the seated node is the boss node");
+  assert.equal(enemyForCurrentNode(run, makeRng(1)), "the-refused-connection", "act-4 boss is The Refused Connection");
+  // Optional deck swap is honoured and isolated (copy, not alias).
+  const known = ["SYN", "ACK", "Signal"];
+  seatAtFinalBoss(run, known);
+  assert.deepEqual(run.deck, known, "known deck installed");
+  run.deck.push("X");
+  assert.deepEqual(known, ["SYN", "ACK", "Signal"], "deck swap copies, does not alias");
 }
 
 function reaches(run, fromId, targetId) {

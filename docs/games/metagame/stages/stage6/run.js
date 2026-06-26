@@ -138,6 +138,21 @@ export function buyCard(run, cardId, cost) {
   return { ok: true };
 }
 
+// TEST/DEBUG ONLY — seat a run directly at the act-4 boss node without playing acts 1–3.
+// This is NOT a player affordance (no hub button); the smoke harness uses it to reach the
+// negotiation in one hop. Optionally swaps in a known `deck` so the boss fight is reproducible.
+// Returns the boss node id. Deterministic: only mutates run position/act/status.
+export function seatAtFinalBoss(run, deck) {
+  run.act = FINAL_BOSS_ACT;
+  const bossNode = run.map.acts[FINAL_BOSS_ACT - 1].layers.at(-1)[0];
+  run.currentNodeId = bossNode.id;
+  run.status = "boss";
+  run.pendingReward = null;
+  run.notice = null;
+  if (Array.isArray(deck)) run.deck = [...deck];
+  return bossNode.id;
+}
+
 // ── internals ────────────────────────────────────────────────────────────────────────────────────
 
 function clearBoss(run) {

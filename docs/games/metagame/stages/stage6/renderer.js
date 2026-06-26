@@ -9,7 +9,8 @@ import { relicsFor, relicById } from "./relics.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost, FINAL_BOSS_ACT
+  takeReward, rest, removeCard, closeNode, buyCard, awardRelic, prestigeCost, FINAL_BOSS_ACT,
+  seatAtFinalBoss
 } from "./run.js";
 import {
   applyProtocolChapter9Unlock, getBossLockState, recordLockedBossAttempt,
@@ -39,7 +40,21 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   root.addEventListener("click", handleClick);
   route();
 
-  return { repaint: route, destroy() { root.remove(); } };
+  // TEST/DEBUG hook (not a player affordance, not a hub button): seat a run directly at the
+  // act-4 boss so the smoke harness can reach the negotiation in one hop instead of 19 fights.
+  // It only fast-forwards position — it does NOT bypass the ch9 un-cheat or the real-deck fight.
+  window.__fvStage6 = {
+    jumpToBoss(deck) {
+      if (!state.run) beginRun();
+      seatAtFinalBoss(state.run, deck);
+      state.ui.screen = "run";
+      combat = null;
+      commit();
+      return state.run.currentNodeId;
+    }
+  };
+
+  return { repaint: route, destroy() { if (window.__fvStage6) delete window.__fvStage6; root.remove(); } };
 
   // ── routing ──────────────────────────────────────────────────────────────────────────────────
   function route() {
