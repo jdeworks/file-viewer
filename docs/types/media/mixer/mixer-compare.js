@@ -84,9 +84,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     }
     const analyzeButton = event.target?.closest?.('.mmx-compare-analyze');
     if (!analyzeButton || !root.contains(analyzeButton)) return;
-    lastAnalysis = analyzeCompareSelection(project, visualRuntime.frames);
-    root.dataset.lastCompareAnalysis = lastAnalysis.status;
-    render();
+    runCompareAnalysis();
   };
   const onInput = (event) => {
     const input = event.target;
@@ -102,6 +100,13 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     render();
   };
   const onChange = (event) => {
+    if (event.target?.matches?.('.mmx-compare-normalize-input')) {
+      project = { ...project, compare: { ...project.compare, normalizeAudio: event.target.checked } };
+      lastAnalysis = null;
+      delete root.dataset.lastCompareAnalysis;
+      render();
+      return;
+    }
     if (event.target?.matches?.('.mmx-compare-target-select')) {
       const side = event.target.dataset.side;
       const element = project.elements.find((item) => item.id === event.target.value);
@@ -158,12 +163,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     getProject: () => project,
     getViewport: () => viewport,
     getOverlap: () => computeCompareOverlap(project),
-    analyze: () => {
-      lastAnalysis = analyzeCompareSelection(project, visualRuntime.frames);
-      root.dataset.lastCompareAnalysis = lastAnalysis.status;
-      render();
-      return lastAnalysis;
-    },
+    analyze: runCompareAnalysis,
     getLastAnalysis: () => lastAnalysis,
     exportSettings: () => exportProjectSettingsJson(project),
     importSettings: settingsUi.importSettings,
@@ -223,6 +223,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     }
     group.append(renderTargetControls('a'));
     group.append(renderTargetControls('b'));
+    if (kind === 'audio') group.append(renderNormalizeToggle());
     group.append(renderBInput());
     group.append(renderAnalyzeButton());
     group.append(renderOverlap());
@@ -270,6 +271,17 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     input.className = 'mmx-compare-b-input';
     input.accept = kind === 'video' ? 'video/*,image/*,audio/*' : 'audio/*,video/*,image/*';
     wrap.append(input);
+    return wrap;
+  }
+
+  function renderNormalizeToggle() {
+    const wrap = document.createElement('label');
+    wrap.className = 'mmx-compare-normalize';
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.className = 'mmx-compare-normalize-input';
+    input.checked = !!project.compare?.normalizeAudio;
+    wrap.append(input, `Normalize ${input.checked ? 'on' : 'off'}`);
     return wrap;
   }
 
@@ -351,7 +363,18 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     button.type = 'button';
     button.className = 'mmx-compare-analyze';
     button.textContent = overlayKind(project) === 'visual' ? 'Analyze overlap frames' : 'Analyze overlap audio';
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      runCompareAnalysis();
+    });
     return button;
+  }
+
+  function runCompareAnalysis() {
+    lastAnalysis = analyzeCompareSelection(project, visualRuntime.frames);
+    root.dataset.lastCompareAnalysis = lastAnalysis.status;
+    render();
+    return lastAnalysis;
   }
 
   function renderAnalysisPanel(analysis) {

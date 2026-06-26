@@ -27,12 +27,15 @@ function analyzeAudio(project, overlap, a, b) {
       message: 'Waveform summaries are still loading or unavailable.',
     });
   }
+  const normalizeAudio = !!project.compare?.normalizeAudio;
+  const scaleA = normalizeAudio ? maxPeak(summaryA) || 1 : 1;
+  const scaleB = normalizeAudio ? maxPeak(summaryB) || 1 : 1;
   const samples = Math.min(96, summaryA.buckets, summaryB.buckets);
   let sum = 0;
   for (let i = 0; i < samples; i += 1) {
     const ia = Math.min(summaryA.buckets - 1, Math.floor((i / samples) * summaryA.buckets));
     const ib = Math.min(summaryB.buckets - 1, Math.floor((i / samples) * summaryB.buckets));
-    sum += Math.abs((summaryA.peak?.[ia] || 0) - (summaryB.peak?.[ib] || 0));
+    sum += Math.abs(((summaryA.peak?.[ia] || 0) / scaleA) - ((summaryB.peak?.[ib] || 0) / scaleB));
   }
   const average = samples ? sum / samples : 0;
   return baseResult('audio', overlap, {
@@ -40,8 +43,17 @@ function analyzeAudio(project, overlap, a, b) {
     metric: 'average-peak-delta',
     value: Number(average.toFixed(4)),
     samples,
-    message: `Analyzed selected overlap: average peak delta ${average.toFixed(4)}.`,
+    normalized: normalizeAudio,
+    message: `Analyzed selected overlap: average peak delta ${average.toFixed(4)} (${normalizeAudio ? 'peak normalized' : 'raw peaks'}).`,
   });
+}
+
+function maxPeak(summary) {
+  let max = 0;
+  const peak = summary.peak || [];
+  const length = Number(peak.length) || 0;
+  for (let i = 0; i < length; i += 1) max = Math.max(max, Math.abs(Number(peak[i]) || 0));
+  return max;
 }
 
 function analyzeVisual(project, frames, overlap, a, b) {

@@ -370,6 +370,10 @@ Stage 6 Compare on the shared model has started:
 - Added modular A/B source selectors. The modular toolbar now lists existing
   mixer elements for each compare side, retargets through `setCompareTarget()`,
   and smoke coverage proves A/B can be chosen from the shared project elements.
+- Added modular audio normalization control. Audio Compare now exposes an
+  explicit off-by-default normalization toggle stored in `project.compare`,
+  feeds that state into modular peak-delta analysis, and keeps the control
+  absent for visual/video Compare.
 - Stage 6 remaining work: deepen modular analysis to replace the legacy
   detailed diff/readout flows, and retire the old Compare UI once equivalent
   coverage has moved to modular selectors.

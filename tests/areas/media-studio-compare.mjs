@@ -41,6 +41,7 @@ export async function exerciseCompare(ctx, kind) {
       overlapMs: overlap?.overlap?.durationMs || 0,
       view: root.dataset.compareView,
       hasOverlayButton: !!root.querySelector('.mmx-compare-view[data-view="overlay"]'),
+      hasAnalyzeButton: !!root.querySelector('.mmx-compare-analyze'),
       hasSettingsExport: !!root.querySelector('.mmx-settings-download'),
       hasSettingsImport: !!root.querySelector('.mmx-settings-import'),
       hasBytes: /blob:|data:|objectURL|mediaBytes|frameCache|thumbnailCache/i.test(settings),
@@ -49,6 +50,7 @@ export async function exerciseCompare(ctx, kind) {
   if (modularCompare.lanes === 2 && modularCompare.elements === 2
     && modularCompare.compareA && modularCompare.compareB && modularCompare.overlapMs > 0
     && modularCompare.view === 'stacked' && modularCompare.hasOverlayButton
+    && modularCompare.hasAnalyzeButton
     && modularCompare.hasSettingsExport && modularCompare.hasSettingsImport && !modularCompare.hasBytes)
     pass(`${kind} compare: modular shared-model A/B surface mounts with config-only state`);
   else fail(`${kind} modular compare state: ` + JSON.stringify(modularCompare));
@@ -77,6 +79,30 @@ export async function exerciseCompare(ctx, kind) {
     && modularRetargeted.overlapMs > 0)
     pass(`${kind} compare: modular A/B selectors choose from existing mixer elements`);
   else fail(`${kind} modular compare target selectors: ` + JSON.stringify({ modularTargetIds, modularRetargeted }));
+  const modularNormalize = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => ({
+    exists: !!root.querySelector('.mmx-compare-normalize-input'),
+    checked: !!root.querySelector('.mmx-compare-normalize-input')?.checked,
+    text: root.querySelector('.mmx-compare-normalize')?.textContent || '',
+    model: !!root.__mediaMixerCompare?.getProject?.()?.compare?.normalizeAudio,
+  }));
+  if (kind === 'audio') {
+    if (modularNormalize.exists && !modularNormalize.checked && !modularNormalize.model && /off/i.test(modularNormalize.text))
+      pass('audio compare: modular normalization is off by default');
+    else fail('audio modular compare normalize default: ' + JSON.stringify(modularNormalize));
+    await page.click(`${panelSel} .mmx-compare-source .mmx-compare-normalize-input`);
+    const modularNormalizeOn = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => ({
+      checked: !!root.querySelector('.mmx-compare-normalize-input')?.checked,
+      text: root.querySelector('.mmx-compare-normalize')?.textContent || '',
+      model: !!root.__mediaMixerCompare?.getProject?.()?.compare?.normalizeAudio,
+    }));
+    if (modularNormalizeOn.checked && modularNormalizeOn.model && /on/i.test(modularNormalizeOn.text))
+      pass('audio compare: modular normalization toggle updates shared compare state');
+    else fail('audio modular compare normalize toggle: ' + JSON.stringify(modularNormalizeOn));
+  } else if (!modularNormalize.exists && !modularNormalize.model) {
+    pass('video compare: modular audio normalization control is absent');
+  } else {
+    fail('video modular compare should not expose audio normalize: ' + JSON.stringify(modularNormalize));
+  }
   await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-offset[data-side="b"]`, '0.2');
   await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-range-start[data-side="a"]`, '0.1');
   await page.fill(`${panelSel} .mmx-compare-source .mmx-compare-range-end[data-side="a"]`, '0.6');
@@ -128,7 +154,11 @@ export async function exerciseCompare(ctx, kind) {
       return project?.elements?.every((element) => element.analysis?.waveformSummary);
     }, `${panelSel} .mmx-compare-source`, { timeout: 12000 });
   }
-  await page.click(`${panelSel} .mmx-compare-source .mmx-compare-analyze`);
+  await page.$eval(`${panelSel} .mmx-compare-source`, (root) => root.__mediaMixerCompare.analyze());
+  await page.waitForFunction((sel) => {
+    const root = document.querySelector(sel);
+    return !!root?.__mediaMixerCompare?.getLastAnalysis?.();
+  }, `${panelSel} .mmx-compare-source`, { timeout: 5000 });
   const modularAnalysis = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
     const analysis = root.__mediaMixerCompare.getLastAnalysis();
     const panel = root.querySelector('.mmx-compare-analysis');
@@ -137,6 +167,7 @@ export async function exerciseCompare(ctx, kind) {
       kind: analysis?.kind || '',
       metric: analysis?.metric || '',
       value: Number.isFinite(analysis?.value) ? analysis.value : null,
+      normalized: !!analysis?.normalized,
       overlapMs: analysis?.overlapMs || 0,
       panelStatus: panel?.dataset.status || '',
       panelKind: panel?.dataset.kind || '',
@@ -149,6 +180,7 @@ export async function exerciseCompare(ctx, kind) {
     && modularAnalysis.overlapMs > 0
     && modularAnalysis.panelStatus === 'analyzed'
     && modularAnalysis.panelKind === expectedOverlayKind
+    && (kind !== 'audio' || modularAnalysis.normalized)
     && /Analyzed selected/i.test(modularAnalysis.message))
     pass(`${kind} compare: modular explicit analyze hook reports selected overlap`);
   else fail(`${kind} modular compare analysis: ` + JSON.stringify(modularAnalysis));

@@ -376,6 +376,15 @@
   flex-wrap: wrap;
 }
 
+.mmx-compare-source .mmx-toolbar {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.mmx-compare-source .mmx-title {
+  flex: 1 0 180px;
+}
+
 .mmx-compare-target-controls {
   padding-inline: 8px;
   border-inline-start: 1px solid var(--mmx-border);
@@ -404,7 +413,8 @@
   min-height: 28px;
 }
 
-.mmx-compare-b-drop {
+.mmx-compare-b-drop,
+.mmx-compare-normalize {
   display: inline-flex;
   align-items: center;
   gap: 6px;
