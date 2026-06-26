@@ -255,7 +255,7 @@ function once(fn) {
 
 // ../../docs/games/metagame/stages/stage5/state.js
 function defaultState(context = {}) {
-  const seed = String(context.seed || context.now || Date.now()).replace(/\W/g, "").slice(-8) || "stage5";
+  const seed = String(context.seed || "signal-racer").replace(/\W/g, "").slice(-8) || "stage5";
   return {
     version: 1,
     packets: 125,

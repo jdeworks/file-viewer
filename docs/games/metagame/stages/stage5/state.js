@@ -1,7 +1,9 @@
 import { LOOP_DURATION_MS } from './messages.js';
 
 export function defaultState(context = {}) {
-  const seed = String(context.seed || context.now || Date.now()).replace(/\W/g, '').slice(-8) || 'stage5';
+  // Deterministic seed: explicit context.seed (tests/replays) or a fixed default — never the wall
+  // clock (the old context.now/Date.now fallback made the calibration label non-reproducible).
+  const seed = String(context.seed || 'signal-racer').replace(/\W/g, '').slice(-8) || 'stage5';
   return {
     version: 1,
     packets: 125,
