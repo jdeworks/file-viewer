@@ -149,10 +149,13 @@ model.
 Stage 6 has started with an additive modular Compare surface for audio and
 video. It builds a two-lane shared mixer project from the opened media, stores
 A/B targets in `project.compare`, computes overlap through the mixer model, and
-exposes stacked/overlay controls with config-only settings export. The existing
-Compare UI remains mounted for detailed analysis/live-preview coverage until
-the modular surface can choose A/B from real mixer elements or dropped assets
-and render equivalent waveform/visual overlay analysis.
+exposes stacked/overlay controls with config-only settings export. The modular
+surface can now browse or drop a B media file, add it as a project asset,
+retarget the existing B lane/element, and refresh `project.compare.b` while
+keeping file bytes runtime-only. The existing Compare UI remains mounted for
+detailed analysis/live-preview coverage until the modular surface can choose A/B
+from arbitrary existing mixer elements and render equivalent waveform/visual
+overlay analysis.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

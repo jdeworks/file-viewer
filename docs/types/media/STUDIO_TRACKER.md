@@ -341,17 +341,21 @@ Stage 6 Compare on the shared model has started:
   `project.compare`, computes overlap through `computeCompareOverlap()`, and
   keeps settings export config-only.
 - The surface exposes stacked/overlay view controls and a B offset field backed
-  by the shared compare state. The existing detailed Compare UI remains mounted
-  for current analysis, drag, live video overlay, and smoke coverage until the
+  by the shared compare state. It also accepts a browsed or dropped B media file,
+  adds that file as a config-only project asset, retargets the existing B
+  lane/element, stores the file only in the runtime file map, and refreshes
+  `project.compare.b`. The existing detailed Compare UI remains mounted for
+  current analysis, drag, live video overlay, and smoke coverage until the
   modular surface replaces it completely.
 - Focused smoke coverage in `tests/areas/media-studio-compare.mjs` now proves
   the modular Compare surface mounts for audio and video with two lanes, two
   elements, A/B targets, positive overlap, config-only settings, and overlay
-  mode rendering.
-- Stage 6 remaining work: choose A/B from existing mixer elements or dropped
-  assets, render true overlaid waveform/visual coordinates in the modular
-  surface, wire explicit analysis hooks, and retire the old Compare UI once
-  equivalent coverage has moved to modular selectors.
+  mode rendering. It also proves browsing `sample.wav`/`sample.webm` as Compare
+  B retargets the shared compare state without serializing media bytes.
+- Stage 6 remaining work: choose A/B from arbitrary existing mixer elements,
+  render true overlaid waveform/visual coordinates in the modular surface, wire
+  explicit analysis hooks, and retire the old Compare UI once equivalent
+  coverage has moved to modular selectors.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

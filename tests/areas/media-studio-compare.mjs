@@ -58,6 +58,38 @@ export async function exerciseCompare(ctx, kind) {
   if (modularOverlay.view === 'overlay' && modularOverlay.overlay && modularOverlay.overlapMs > 0)
     pass(`${kind} compare: modular shared-model overlay mode renders`);
   else fail(`${kind} modular compare overlay: ` + JSON.stringify(modularOverlay));
+  await page.setInputFiles(`${panelSel} .mmx-compare-source .mmx-compare-b-input`,
+    new URL(kind === 'video' ? '../../docs/examples/sample.webm' : '../../docs/examples/sample.wav', import.meta.url).pathname);
+  await page.waitForFunction(({ sel, expected }) => {
+    const root = document.querySelector(sel);
+    const project = root?.__mediaMixerCompare?.getProject?.();
+    const b = project?.elements?.find((element) => element.id === project?.compare?.b?.elementId);
+    const asset = project?.assets?.find((item) => item.id === b?.assetId);
+    return asset?.name === expected;
+  }, {
+    sel: `${panelSel} .mmx-compare-source`,
+    expected: kind === 'video' ? 'sample.webm' : 'sample.wav',
+  }, { timeout: 12000 });
+  const modularDrop = await page.$eval(`${panelSel} .mmx-compare-source`, (root) => {
+    const project = root.__mediaMixerCompare?.getProject?.();
+    const b = project?.elements?.find((element) => element.id === project?.compare?.b?.elementId);
+    const asset = project?.assets?.find((item) => item.id === b?.assetId);
+    const settings = root.__mediaMixerCompare?.exportSettings?.() || '';
+    return {
+      bName: asset?.name || '',
+      bHasAudio: !!b?.capabilities?.hasAudio,
+      bHasVideo: !!b?.capabilities?.hasVideo,
+      bHasImage: !!b?.capabilities?.hasImage,
+      compareB: project?.compare?.b?.elementId === b?.id,
+      overlapMs: root.__mediaMixerCompare?.getOverlap?.()?.overlap?.durationMs || 0,
+      hasBytes: /blob:|data:|objectURL|mediaBytes|frameCache|thumbnailCache/i.test(settings),
+    };
+  });
+  const expectedName = kind === 'video' ? 'sample.webm' : 'sample.wav';
+  const expectedCaps = kind === 'video' ? modularDrop.bHasVideo : modularDrop.bHasAudio;
+  if (modularDrop.bName === expectedName && expectedCaps && modularDrop.compareB && modularDrop.overlapMs > 0 && !modularDrop.hasBytes)
+    pass(`${kind} compare: modular B file browse retargets shared compare state`);
+  else fail(`${kind} modular compare B file: ` + JSON.stringify(modularDrop));
   const layouts = await page.$$eval(`${panelSel} .media-compare-layout-btn`, (els) => els.map((el) => ({
     layout: el.dataset.layout,
     text: el.textContent.trim(),

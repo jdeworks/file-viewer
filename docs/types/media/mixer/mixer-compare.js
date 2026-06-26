@@ -1,5 +1,6 @@
 import {
   addElement,
+  addAsset,
   addLane,
   computeCompareOverlap,
   createElement,
@@ -9,6 +10,8 @@ import {
   exportProjectSettingsJson,
   selectTarget,
   setCompareTarget,
+  updateElement,
+  updateLane,
 } from './index.js';
 import { renderMixerShell } from './mixer-renderer.js';
 import { attachMixerInteractions } from './mixer-interactions.js';
@@ -16,7 +19,14 @@ import { ensureMixerStyles } from './mixer-ui.js';
 import { clampZoom, decodeSummary, mediaDuration, selectFirstElement } from './mixer-audio-listen-helpers.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { updateProjectElementField } from './mixer-audio-multi-helpers.js';
-import { classifyMixerFile } from './mixer-media-drop.js';
+import {
+  applyDroppedAudioSummary,
+  applyDroppedVisualMetadata,
+  classifyMixerFile,
+  hasMixerFileDrop,
+  isMixerDropFile,
+  probeDroppedVisualMetadata,
+} from './mixer-media-drop.js';
 
 const ASSET_ID = 'asset-compare-source';
 
@@ -65,8 +75,33 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     project = { ...project, compare: { ...project.compare, b: { ...project.compare.b, offsetMs: value } } };
     render();
   };
+  const onChange = (event) => {
+    if (!event.target?.matches?.('.mmx-compare-b-input')) return;
+    const file = event.target.files?.[0];
+    if (file) replaceCompareBFile(file);
+    event.target.value = '';
+  };
+  const onDragOver = (event) => {
+    if (!hasMixerFileDrop(event.dataTransfer)) return;
+    event.preventDefault();
+    root.classList.add('mmx-compare-drop-active');
+  };
+  const onDragLeave = (event) => {
+    if (!root.contains(event.relatedTarget)) root.classList.remove('mmx-compare-drop-active');
+  };
+  const onDrop = (event) => {
+    const file = [...(event.dataTransfer?.files || [])].find(isMixerDropFile);
+    if (!file) return;
+    event.preventDefault();
+    root.classList.remove('mmx-compare-drop-active');
+    replaceCompareBFile(file);
+  };
   root.addEventListener('click', onClick);
   root.addEventListener('input', onInput);
+  root.addEventListener('change', onChange);
+  root.addEventListener('dragover', onDragOver);
+  root.addEventListener('dragleave', onDragLeave);
+  root.addEventListener('drop', onDrop);
   window.addEventListener('resize', render);
 
   if (kind === 'audio') {
@@ -99,6 +134,10 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
       visualRuntime.dispose();
       root.removeEventListener('click', onClick);
       root.removeEventListener('input', onInput);
+      root.removeEventListener('change', onChange);
+      root.removeEventListener('dragover', onDragOver);
+      root.removeEventListener('dragleave', onDragLeave);
+      root.removeEventListener('drop', onDrop);
       window.removeEventListener('resize', render);
       delete root.__mediaMixerCompare;
       root.remove();
@@ -140,6 +179,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     offset.step = '0.1';
     offset.value = String(Math.round((project.compare.b?.offsetMs || 0) / 100) / 10);
     group.append(label('B offset', offset));
+    group.append(renderBInput());
     group.append(renderOverlap());
     toolbar.append(group);
     if (project.compare.view === 'overlay') root.append(renderOverlay());
@@ -158,6 +198,79 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     node.className = 'mmx-compare-overlay';
     node.textContent = 'Shared-model overlay preview';
     return node;
+  }
+
+  function renderBInput() {
+    const wrap = document.createElement('label');
+    wrap.className = 'mmx-compare-b-drop';
+    wrap.textContent = 'B file';
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.className = 'mmx-compare-b-input';
+    input.accept = kind === 'video' ? 'video/*,image/*,audio/*' : 'audio/*,video/*,image/*';
+    wrap.append(input);
+    return wrap;
+  }
+
+  function replaceCompareBFile(file) {
+    const classification = classifyMixerFile(file);
+    if (classification.kind === 'unknown') return null;
+    const b = project.elements[1];
+    const lane = project.lanes.find((item) => item.id === b?.laneId);
+    if (!b || !lane) return null;
+    const assetId = `asset-compare-b-${Date.now()}`;
+    const durationMs = durationForKind(classification.kind);
+    project = addAsset(project, {
+      id: assetId,
+      name: file.name || `Compare B ${classification.kind}`,
+      mime: file.type || '',
+      size: file.size || 0,
+      lastModified: file.lastModified || null,
+      capabilities: classification.capabilities,
+      media: mediaForKind(classification.kind, durationMs),
+      status: classification.capabilities.needsFfmpegForPreview ? 'needs-proxy' : 'available',
+    });
+    project = updateLane(project, lane.id, (item) => ({
+      ...item,
+      role: classification.kind === 'unknown' ? 'compare' : classification.kind,
+      label: `B · ${file.name || classification.kind}`,
+    }));
+    project = updateElement(project, b.id, (element) => ({
+      ...element,
+      assetId,
+      type: classification.kind,
+      capabilities: classification.capabilities,
+      timeline: {
+        ...element.timeline,
+        durationMs,
+        rawDurationMs: classification.kind === 'image' ? durationMs : 0,
+        placementDurationMs: durationMs,
+        sourceInMs: 0,
+        sourceOutMs: durationMs,
+      },
+      visual: classification.kind === 'audio' ? element.visual : { ...element.visual, opacity: element.visual?.opacity ?? 1 },
+      analysis: {},
+    }));
+    runtimeFiles.set(assetId, file);
+    project = refreshCompareTargets(project);
+    project = selectTarget(project, { type: 'element', id: b.id }, [{ type: 'element', id: b.id }]);
+    root.dataset.compareBFile = file.name || classification.kind;
+    render();
+    if (classification.kind === 'audio') {
+      decodeSummary({ file, filename: file.name, mime: file.type, size: file.size }).then((summary) => {
+        if (destroyed || !summary) return;
+        project = refreshCompareTargets(applyDroppedAudioSummary(project, assetId, b.id, summary));
+        render();
+      }).catch(() => {});
+    }
+    if (classification.kind === 'image' || classification.kind === 'video') {
+      probeDroppedVisualMetadata(file, classification.kind).then((metadata) => {
+        if (destroyed || !metadata) return;
+        project = refreshCompareTargets(applyDroppedVisualMetadata(project, assetId, b.id, metadata));
+        render();
+      }).catch(() => {});
+    }
+    return { assetId, elementId: b.id, kind: classification.kind };
   }
 }
 
@@ -218,4 +331,15 @@ function label(text, input) {
   wrap.className = 'mmx-compare-field';
   wrap.append(text, input);
   return wrap;
+}
+
+function durationForKind(kind) {
+  if (kind === 'image') return 5000;
+  return 1000;
+}
+
+function mediaForKind(kind, durationMs) {
+  if (kind === 'image') return { durationMs, videoWidth: 0, videoHeight: 0, frameRate: 0 };
+  if (kind === 'video') return { durationMs: 0, videoWidth: 0, videoHeight: 0, frameRate: 0, audioSampleRate: 0, audioChannels: 0 };
+  return { durationMs: 0, audioSampleRate: 0, audioChannels: 0 };
 }
