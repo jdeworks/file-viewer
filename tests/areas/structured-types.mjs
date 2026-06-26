@@ -274,6 +274,18 @@ export async function run(ctx) {
   const tomlDupText = await page.$eval('#previewHost .toml-preview', (el) => el.textContent);
   if (/TOML Structure Review|duplicate key|title|tool\.name/i.test(tomlDupText)) pass('TOML duplicate key diagnostics shown'); else fail('toml duplicate diagnostics: ' + tomlDupText.replace(/\s+/g, ' ').slice(0, 400));
 
+  await page.evaluate(() => window.__fv.openViewerFile('secrets.toml', {
+    text: 'name = "app"\napi_key = "abcdefghijklmnopqrstuvwxyz123456"\n[auth]\npassword = "plain-text-secret"\n',
+  }));
+  await page.waitForSelector('#previewHost .toml-preview .kf-issues', { timeout: 8000 });
+  const tomlSecret = await page.$eval('#previewHost .toml-preview', (el) => ({
+    text: el.textContent,
+    html: el.innerHTML,
+    sourceOpen: el.querySelector('.kf-source-details')?.open || false,
+  }));
+  if (/TOML Structure Review|secret|\[configured\]/i.test(tomlSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(tomlSecret.text + tomlSecret.html) && !tomlSecret.sourceOpen) pass('TOML secret-like values are warned and redacted');
+  else fail('toml secret redaction: ' + JSON.stringify({ ...tomlSecret, html: tomlSecret.html.slice(0, 300), text: tomlSecret.text.slice(0, 300) }));
+
   // ── TOML toolbar ── Validate button appears for TOML files in raw view.
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });

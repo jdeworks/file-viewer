@@ -1,6 +1,6 @@
 // TOML preview: parse with the hand-rolled parser and render a live tree with
-// path breadcrumbs, source jumps, duplicate-key diagnostics, and collapsed source.
-import { issueList, sourcePreview, wireSourceLinks } from '../../../core/known-ui.js';
+// path breadcrumbs, source jumps, duplicate-key/secret diagnostics, and collapsed source.
+import { issueList, maskedValue, sourcePreview, wireSourceLinks } from '../../../core/known-ui.js';
 import { parseTOML } from './toml.js';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -13,6 +13,7 @@ const CSS = `
 .toml-path{margin-left:8px;color:var(--fg-2,#6b7280);font:11px/1.4 ui-monospace,monospace}
 .toml-link{border:0;background:transparent;color:inherit;font:inherit;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px}
 .toml-link:hover{color:var(--accent,#2563eb)}
+.toml-masked{color:var(--fg-2,#6b7280);font-style:italic}
 .toml-src-key{color:#0550ae;font-weight:700}
 .toml-src-string{color:#0a7f38}
 `;
@@ -77,6 +78,7 @@ function collectSourceInfo(text) {
   const lines = String(text || '').split(/\r?\n/);
   const lineMap = new Map();
   const issues = [];
+  const secretLines = new Map();
   const seenKeys = new Map();
   const seenTables = new Map();
   const arrayIndexes = new Map();
@@ -110,14 +112,21 @@ function collectSourceInfo(text) {
     const keyPath = splitTomlKey(trimmed.slice(0, eq));
     if (!keyPath.length) continue;
     const full = [...tablePath, ...keyPath].join('.');
+    const key = keyPath[keyPath.length - 1];
+    const rawValue = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
     if (seenKeys.has(full)) {
       issues.push({ severity: 'warning', label: 'duplicate key', line: lineNo, message: `${full} overwrites an earlier value from line ${seenKeys.get(full)}.` });
     } else {
       seenKeys.set(full, lineNo);
     }
     if (!lineMap.has(full)) lineMap.set(full, lineNo);
+    const masked = maskedValue(key, rawValue);
+    if (masked.masked) {
+      secretLines.set(lineNo, key);
+      issues.push({ severity: 'warning', label: 'secret', line: lineNo, message: `${full} looks sensitive and is redacted in the preview.` });
+    }
   }
-  return { lineMap, issues };
+  return { lineMap, issues, secretLines };
 }
 
 function lineFor(path, sourceInfo) {
@@ -160,8 +169,23 @@ function valueNode(key, val, path, sourceInfo) {
       + '<div class="j-children">' + children + '</div><div class="j-row j-close">' + close + '</div></details>';
   }
   const cls = t === 'number' ? 'j-num' : t === 'boolean' ? 'j-bool' : 'j-str';
+  const masked = maskedValue(key, val);
+  if (masked.masked) {
+    return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="toml-masked" title="' + esc(masked.reason) + '">"[configured]"</span>' + pathHtml + '</div>';
+  }
   const disp = t === 'string' ? '"' + esc(val) + '"' : esc(String(val));
   return '<div class="j-row" data-toml-path="' + esc(path) + '">' + keyHtml + '<span class="' + cls + '">' + disp + '</span>' + pathHtml + '</div>';
+}
+
+function redactedSource(text, sourceInfo) {
+  if (!sourceInfo.secretLines?.size) return text || '';
+  return String(text || '').split(/\r?\n/).map((line, idx) => {
+    const key = sourceInfo.secretLines.get(idx + 1);
+    if (!key) return line;
+    const eq = firstEquals(line);
+    if (eq < 0) return line;
+    return `${line.slice(0, eq + 1)} "[configured]"`;
+  }).join('\n');
 }
 
 function highlightTomlLine(line) {
@@ -188,8 +212,8 @@ export async function render(intake, _ctx) {
     ${treeHtml}`;
   const review = issueList(sourceInfo.issues, { title: 'TOML Structure Review' });
   if (review) host.appendChild(review);
-  host.appendChild(sourcePreview(text, {
-    title: 'Source',
+  host.appendChild(sourcePreview(redactedSource(text, sourceInfo), {
+    title: sourceInfo.secretLines.size ? 'Redacted source' : 'Source',
     collapsed: true,
     idPrefix: 'toml-line',
     highlighter: highlightTomlLine,

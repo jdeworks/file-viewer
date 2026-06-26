@@ -120,9 +120,10 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [x] Generic kubeconfig: current-context, TLS skip, embedded credential review warnings, source-linked tables, and collapsed redacted source.
 - [x] ASP.NET appsettings: public host/JWT/connection-string review warnings, shared masking reasons, source-linked rows, and collapsed redacted source.
 - [x] Grafana INI: public bind/domain/secret review warnings, masking reasons, source-linked rows, and collapsed redacted source.
-- [ ] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.
+- [x] Apply shared secret classifier and masked-value hover reasons across env/JSON/YAML/TOML/INI renderers.
 - [x] Generic JSON: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
 - [x] Generic INI: shared secret classifier, masked key/value rows, review warnings, source-linked keys, and collapsed redacted source.
+- [x] Generic TOML masking: shared secret classifier, redacted tree values, review warnings, and collapsed redacted source for secret-like keys.
 - [ ] Package/manifests: package.json, Cargo, Composer, Poetry, lockfiles, SBOMs.
 - [x] package.json: source-linked scripts/dependencies, lifecycle scripts, shell download commands, broad version ranges, and duplicate dependency groups.
 - [ ] Add warnings for lifecycle scripts, shell/network install commands, broad ranges, duplicate dependency categories, manifest/lock mismatches.
