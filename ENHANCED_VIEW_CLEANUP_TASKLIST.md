@@ -85,7 +85,7 @@ These should help users find broken structure and dependency/reference problems.
 - [x] `textile-markup`: malformed image/link syntax, heading source links.
 - [x] `bbcode-text`: unmatched tags, repeated links/images, quote/code block navigation.
 - [x] `xslt-stylesheet`: call graph, modes, callers/callees, duplicate template names, unused params/vars.
-- [ ] `kdl-doc`: brace imbalance, disabled nodes, duplicate sibling names, expandable tree with line numbers.
+- [x] `kdl-doc`: brace imbalance, disabled nodes, duplicate sibling names, expandable tree with line numbers.
 - [ ] `tex-doc`: labels/refs/cites/includes/packages, full outline, duplicate/unresolved refs.
 
 ## Wave 4: Config, Security, And Operations Views
