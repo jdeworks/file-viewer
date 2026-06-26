@@ -20,7 +20,8 @@ const BRUTE_SETS = {
 };
 
 const delayFrame = () => new Promise((resolve) => setTimeout(resolve, 0));
-const PROGRESS_UPDATE_EVERY = 500;
+const PROGRESS_UPDATE_MS = 500;
+const LOOP_YIELD_EVERY = 5000;
 
 function formatCount(n) {
   if (typeof n === 'bigint') {
@@ -156,6 +157,7 @@ export async function render(intake, ctx = {}) {
       let totalAttempts = 0n;
       let runStarted = 0;
       let runMode = 'manual';
+      let nextProgressAt = 0;
 
       function finish(password) {
         controller.abort();
@@ -194,7 +196,6 @@ export async function render(intake, ctx = {}) {
         const charset = selectedChars();
         const disabled = running ? ' disabled' : '';
         const errorHtml = error ? '<div class="pw-error">' + esc(error) + '</div>' : '';
-        const statusHtml = status ? '<div class="zip-guess-status">' + esc(status) + '</div>' : '';
         const progressValue = totalAttempts > 0n
           ? Math.max(0, Math.min(100, Math.floor((attempts / Number(totalAttempts > 1000000000n ? 1000000000n : totalAttempts)) * 100)))
           : 0;
@@ -203,7 +204,7 @@ export async function render(intake, ctx = {}) {
             <div class="zip-spinner" aria-hidden="true"></div>
             <div class="zip-progress-meta">
               <progress class="zip-progress" value="${progressValue}" max="100"></progress>
-              <div>${formatCount(BigInt(attempts))}${totalAttempts ? ' / ' + formatCount(totalAttempts) : ''} attempts</div>
+              <div id="zipProgressCount">${formatCount(BigInt(attempts))}${totalAttempts ? ' / ' + formatCount(totalAttempts) : ''} attempts</div>
             </div>
           </div>` : '';
         host.innerHTML = `
@@ -244,9 +245,30 @@ export async function render(intake, ctx = {}) {
               </div>
             </details>
             ${progressHtml}
-            ${statusHtml}
+            <div class="zip-guess-status" id="zipGuessStatus" ${status ? '' : 'hidden'}>${esc(status)}</div>
           </div>`;
         host.querySelector('#zipPwInput')?.focus();
+      }
+
+      function progressPercent() {
+        if (totalAttempts <= 0n) return 0;
+        const cappedTotal = Number(totalAttempts > 1000000000n ? 1000000000n : totalAttempts);
+        return Math.max(0, Math.min(100, Math.floor((attempts / cappedTotal) * 100)));
+      }
+
+      function updateProgress({ force = false } = {}) {
+        const now = performance.now();
+        if (!force && now < nextProgressAt) return;
+        nextProgressAt = now + PROGRESS_UPDATE_MS;
+        const progress = host.querySelector('.zip-progress');
+        if (progress) progress.value = progressPercent();
+        const count = host.querySelector('#zipProgressCount');
+        if (count) count.textContent = formatCount(BigInt(attempts)) + (totalAttempts ? ' / ' + formatCount(totalAttempts) : '') + ' attempts';
+        const statusEl = host.querySelector('#zipGuessStatus');
+        if (statusEl) {
+          statusEl.textContent = status;
+          statusEl.hidden = !status;
+        }
       }
 
       async function tryPassword(password) {
@@ -293,13 +315,14 @@ export async function render(intake, ctx = {}) {
         attempts = 0;
         totalAttempts = BigInt(list.length);
         runStarted = performance.now();
+        nextProgressAt = 0;
         renderUnlock();
         for (const password of list) {
           if (stopRequested) break;
           status = 'Trying candidate ' + (attempts + 1) + '...';
-          if (attempts % Math.min(10, PROGRESS_UPDATE_EVERY) === 0) renderUnlock();
+          updateProgress();
           if (await runOne(password)) return;
-          if (attempts % Math.min(10, PROGRESS_UPDATE_EVERY) === 0) await delayFrame();
+          if (attempts % Math.min(10, LOOP_YIELD_EVERY) === 0) await delayFrame();
         }
         running = false;
         status = stopRequested ? 'Stopped after ' + attempts + ' attempts.' : 'No match after ' + attempts + ' attempts.';
@@ -321,13 +344,14 @@ export async function render(intake, ctx = {}) {
         attempts = 0;
         totalAttempts = bruteCount(chars.length, minLen, maxLen);
         runStarted = performance.now();
+        nextProgressAt = 0;
         renderUnlock();
         for (const password of bruteCandidates(chars, minLen, maxLen)) {
           if (stopRequested) break;
-          if (attempts % PROGRESS_UPDATE_EVERY === 0) {
+          if (attempts % LOOP_YIELD_EVERY === 0) {
             const remaining = Number(totalAttempts > 1000000000000000n ? 1000000000000000n : totalAttempts) - attempts;
             status = 'Trying ' + password + ' (' + attempts + '/' + formatCount(totalAttempts) + '), about ' + formatDuration(remaining / Math.max(rate, 0.1)) + ' left.';
-            renderUnlock();
+            updateProgress();
             await delayFrame();
           }
           if (await runOne(password)) return;
