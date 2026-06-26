@@ -199,10 +199,12 @@ shared-model surface as the default/final UI, while the older detailed
 `compare-ui.js` surface is only behind an explicit lazy legacy disclosure.
 Timeline mode now follows the same retirement pattern: it opens on the modular
 video-source mixer by default, and the old `timeline.js` surface is only behind
-an explicit "Detailed legacy timeline" disclosure. The next retirement work is
-moving any remaining trim/transition/music-bed behaviors that only exist in the
-legacy helper onto the shared modular surface, then removing the compatibility
-surface entirely.
+an explicit "Detailed legacy timeline" disclosure. Music-bed and second-media
+intake now live on the modular video-source mixer as additional shared-model
+lanes with config-only export provenance. The next retirement work is moving
+any remaining trim and cross-clip transition action behavior that only exists
+in the legacy helper onto the shared modular surface, then removing the
+compatibility surface entirely.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

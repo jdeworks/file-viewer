@@ -12,9 +12,17 @@ import {
 import { renderMixerShell } from './mixer-renderer.js';
 import { attachMixerInteractions } from './mixer-interactions.js';
 import { ensureMixerStyles } from './mixer-ui.js';
-import { clamp, clampZoom, mediaDuration, selectFirstElement } from './mixer-audio-listen-helpers.js';
+import { clamp, clampZoom, decodeSummary, mediaDuration, selectFirstElement } from './mixer-audio-listen-helpers.js';
 import { updateProjectElementField } from './mixer-audio-multi-helpers.js';
-import { classifyMixerFile } from './mixer-media-drop.js';
+import {
+  addDroppedMediaFile,
+  applyDroppedAudioSummary,
+  applyDroppedVisualMetadata,
+  classifyMixerFile,
+  hasMixerFileDrop,
+  isMixerDropFile,
+  probeDroppedVisualMetadata,
+} from './mixer-media-drop.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
@@ -95,6 +103,10 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   root.addEventListener('pointerup', onPointerUp);
   root.addEventListener('pointercancel', onPointerUp);
   root.addEventListener('click', onClick, true);
+  root.addEventListener('input', onInput);
+  root.addEventListener('dragover', onDragOver);
+  root.addEventListener('dragleave', onDragLeave);
+  root.addEventListener('drop', onDrop);
   window.addEventListener('resize', render);
 
   const updateFromMedia = () => {
@@ -117,6 +129,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     relinkFiles: settingsUi.relinkFiles,
     getLastSettingsImport: () => settingsUi.getLastImport(),
     dispatch,
+    addMediaFile: addDroppedFile,
   };
   render();
 
@@ -134,6 +147,10 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       root.removeEventListener('pointerup', onPointerUp);
       root.removeEventListener('pointercancel', onPointerUp);
       root.removeEventListener('click', onClick, true);
+      root.removeEventListener('input', onInput);
+      root.removeEventListener('dragover', onDragOver);
+      root.removeEventListener('dragleave', onDragLeave);
+      root.removeEventListener('drop', onDrop);
       window.removeEventListener('resize', render);
       mediaEl?.removeEventListener?.('loadedmetadata', updateFromMedia);
       mediaEl?.removeEventListener?.('durationchange', updateFromMedia);
@@ -190,6 +207,9 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       button.textContent = 'Plan final export';
       toolbar.append(button);
     }
+    if (toolbar && !toolbar.querySelector('.mmx-video-second-drop')) {
+      toolbar.append(renderSecondMediaControls());
+    }
     const inspector = root.querySelector('.mmx-inspector');
     if (inspector) inspector.append(renderExportPlanPanel(lastExportPlan || buildExportPlan(), runtime));
   }
@@ -206,12 +226,115 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (button.matches('.mmx-video-render-run')) renderFinalExport();
   }
 
+  function onInput(event) {
+    const target = event.target;
+    if (!target?.matches?.('.mmx-video-music-bed')) return;
+    const gain = clamp(Number(target.value), 0, 1);
+    project = updateMusicBedGain(project, gain);
+    root.dataset.musicBedGain = String(gain);
+    render();
+  }
+
+  function onDragOver(event) {
+    if (!hasMixerFileDrop(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    root.classList.add('mmx-video-drop-active');
+  }
+
+  function onDragLeave(event) {
+    if (!root.contains(event.relatedTarget)) root.classList.remove('mmx-video-drop-active');
+  }
+
+  function onDrop(event) {
+    const files = [...(event.dataTransfer?.files || [])].filter(isMixerDropFile);
+    if (!files.length) return;
+    event.preventDefault();
+    event.stopPropagation();
+    root.classList.remove('mmx-video-drop-active');
+    for (const file of files) addDroppedFile(file, { startMs: viewport.cursorMs });
+  }
+
+  function addDroppedFile(file, input = {}) {
+    const result = addDroppedMediaFile(project, file, { startMs: input.startMs ?? viewport.cursorMs });
+    if (!result) return null;
+    project = result.project;
+    runtimeFiles.set(result.assetId, file);
+    if (result.kind === 'audio') {
+      project = updateElement(project, result.elementId, (element) => ({
+        ...element,
+        audio: { ...element.audio, gain: 0.35 },
+      }));
+      root.dataset.lastMusicBed = file.name || 'audio';
+    }
+    if (result.elementId) {
+      project = selectTarget(project, { type: 'element', id: result.elementId }, [{ type: 'element', id: result.elementId }]);
+    }
+    root.dataset.lastDroppedKind = result.kind;
+    if (result.kind !== 'audio') root.dataset.lastDroppedVisual = file.name || result.kind;
+    render();
+    if (result.kind === 'audio') decodeDroppedAudio(file, result.assetId, result.elementId);
+    if (result.kind === 'image' || result.kind === 'video') probeDroppedVisual(file, result);
+    return result;
+  }
+
+  function decodeDroppedAudio(file, assetId, elementId) {
+    decodeSummary({ file, filename: file.name, mime: file.type, size: file.size }).then((summary) => {
+      if (destroyed || !summary) return;
+      project = applyDroppedAudioSummary(project, assetId, elementId, summary);
+      project = updateElement(project, elementId, (element) => ({
+        ...element,
+        audio: { ...element.audio, gain: 0.35 },
+      }));
+      render();
+    }).catch(() => {
+      if (!destroyed) root.dataset.lastDropDecode = 'unavailable';
+    });
+  }
+
+  function probeDroppedVisual(file, drop) {
+    probeDroppedVisualMetadata(file, drop.kind).then((metadata) => {
+      if (destroyed || !metadata) return;
+      project = applyDroppedVisualMetadata(project, drop.assetId, drop.elementId, metadata);
+      root.dataset.lastVisualMetadata = metadata.status || 'available';
+      render();
+    }).catch(() => {
+      if (!destroyed) root.dataset.lastVisualMetadata = 'metadata-unavailable';
+    });
+  }
+
   function buildExportPlan() {
     return buildVideoMixExportPlan(project, {
       ffmpegEnabled: runtime.ffmpegEnabled,
       ffmpegLoaded: runtime.ffmpegLoaded,
       filename: `${(intake?.filename || 'video-source').replace(/\.[^.]+$/, '')}.mp4`,
     });
+  }
+
+  function renderSecondMediaControls() {
+    const wrap = document.createElement('div');
+    wrap.className = 'mmx-video-second-drop';
+    const text = document.createElement('span');
+    text.textContent = 'Drop second video, image overlay, or music bed';
+    const music = document.createElement('label');
+    music.className = 'mmx-video-music-bed-wrap';
+    const musicText = document.createElement('span');
+    musicText.textContent = 'Music bed';
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'mmx-video-music-bed';
+    slider.min = '0';
+    slider.max = '1';
+    slider.step = '0.05';
+    slider.value = String(currentMusicBedGain(project));
+    slider.setAttribute('aria-label', 'Music bed level under original video audio');
+    slider.title = 'Music bed level; original video audio stays unchanged';
+    const readout = document.createElement('span');
+    readout.className = 'mmx-video-music-bed-readout';
+    readout.textContent = `${Math.round(Number(slider.value) * 100)}% under video audio`;
+    music.append(musicText, slider, readout);
+    wrap.append(text, music);
+    return wrap;
   }
 
   async function renderFinalExport() {
@@ -333,5 +456,27 @@ function mergeVideoMetadata(project, mediaEl) {
       sourceOutMs: Math.max(element.timeline.sourceInMs || 0, durationMs),
     },
   }));
+  return next;
+}
+
+function currentMusicBedGain(project) {
+  const music = (project.elements || []).find((element) => (
+    element.capabilities?.hasAudio
+    && !element.capabilities?.hasVideo
+    && !element.capabilities?.hasImage
+  ));
+  return music ? clamp(Number(music.audio?.gain), 0, 1) : 0.35;
+}
+
+function updateMusicBedGain(project, gain) {
+  const value = clamp(Number(gain), 0, 1);
+  let next = project;
+  for (const element of project.elements || []) {
+    if (!element.capabilities?.hasAudio || element.capabilities?.hasVideo || element.capabilities?.hasImage) continue;
+    next = updateElement(next, element.id, (item) => ({
+      ...item,
+      audio: { ...item.audio, gain: value },
+    }));
+  }
   return next;
 }

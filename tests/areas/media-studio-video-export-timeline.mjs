@@ -233,8 +233,59 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     (node) => Number(node.dataset.thumbCount || 0));
   if (sourceThumbCount > 0) pass('P6: modular video source renders sparse runtime thumbnails');
   else fail('modular video source thumbnail count: ' + sourceThumbCount);
+  const modularMusicBed = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const file = new File([new Uint8Array(512)], 'music-bed.mp3', { type: 'audio/mpeg', lastModified: 123 });
+    const added = root.__mediaMixerVideoSource.addMediaFile(file, { startMs: 250 });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const slider = root.querySelector('.mmx-video-music-bed');
+    const beforeValue = slider?.value || '';
+    slider.value = '0.6';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-video-export-plan')?.click();
+    const project = root.__mediaMixerVideoSource.getProject();
+    const music = project.elements.find((element) => element.assetId === added?.assetId);
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    return {
+      addedKind: added?.kind || '',
+      lanes: project.lanes.length,
+      elements: project.elements.length,
+      selectedId: project.selection?.primary?.id || '',
+      musicId: music?.id || '',
+      startMs: Math.round(music?.timeline?.startMs || 0),
+      beforeValue,
+      gain: music?.audio?.gain,
+      lastMusicBed: root.dataset.lastMusicBed || '',
+      dropControl: !!root.querySelector('.mmx-video-second-drop'),
+      musicControl: !!root.querySelector('.mmx-video-music-bed'),
+      audioItems: plan?.provenance?.audioItems?.length || 0,
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      hasMediaBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (modularMusicBed.addedKind === 'audio' && modularMusicBed.lanes >= 2
+    && modularMusicBed.elements >= 2 && modularMusicBed.selectedId === modularMusicBed.musicId
+    && modularMusicBed.startMs === 250)
+    pass('P6: modular Timeline adds a second music-bed lane from local media');
+  else fail('modular Timeline music-bed add: ' + JSON.stringify(modularMusicBed));
+  if (modularMusicBed.dropControl && modularMusicBed.musicControl
+    && modularMusicBed.beforeValue === '0.35' && modularMusicBed.gain === 0.6
+    && /music-bed\.mp3/.test(modularMusicBed.lastMusicBed))
+    pass('R5: modular Timeline exposes music-bed ducking and updates shared gain state');
+  else fail('modular Timeline music-bed gain: ' + JSON.stringify(modularMusicBed));
+  if (modularMusicBed.audioItems >= 2 && modularMusicBed.visualItems >= 1 && !modularMusicBed.hasMediaBytes)
+    pass('P6: modular Timeline final export provenance includes source audio plus music bed without media bytes');
+  else fail('modular Timeline music-bed export provenance: ' + JSON.stringify(modularMusicBed));
   const modularTimelineGrammar = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
-    const project = root.__mediaMixerVideoSource?.getProject?.();
+    let project = root.__mediaMixerVideoSource?.getProject?.();
+    const sourceVisual = project?.elements?.find((item) => item.capabilities?.hasVideo || item.capabilities?.hasImage);
+    if (sourceVisual) {
+      root.__mediaMixerVideoSource?.dispatch?.({
+        type: 'select',
+        target: { type: 'element', id: sourceVisual.id },
+      });
+      project = root.__mediaMixerVideoSource?.getProject?.();
+    }
     const selected = project?.selection?.primary?.id || '';
     const element = project?.elements?.find((item) => item.id === selected) || project?.elements?.[0];
     const setField = (selector, value) => {

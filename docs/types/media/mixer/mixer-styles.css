@@ -515,3 +515,35 @@
   outline-offset: 2px;
   cursor: grabbing;
 }
+
+.mmx-video-second-drop {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border: 1px dashed var(--mmx-border, color-mix(in srgb, currentColor 20%, transparent));
+  border-radius: 8px;
+  color: var(--mmx-muted, color-mix(in srgb, currentColor 58%, transparent));
+  background: color-mix(in srgb, canvas 94%, #54a24b 6%);
+  font-size: 12px;
+}
+
+.mmx-video-drop-active .mmx-video-second-drop {
+  border-color: #54a24b;
+  background: color-mix(in srgb, canvas 88%, #54a24b 12%);
+}
+
+.mmx-video-music-bed-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mmx-video-music-bed {
+  inline-size: 110px;
+}
+
+.mmx-video-music-bed-readout {
+  min-inline-size: 118px;
+}
