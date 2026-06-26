@@ -233,15 +233,22 @@ Stage 4 multi-lane audio has started:
 - Added `updateAsset()` for explicit shared-model asset metadata mutation when
   dropped-file analysis discovers duration/sample-rate facts after initial
   intake.
+- Added `mixer-audio-cache.js`, a Narratu-style runtime cache policy for
+  decoded audio buffers with explicit byte budget, LRU eviction, per-project
+  release, and deterministic decoded/processed cache keys that include source
+  ranges, lane gain/EQ, element gain/fades, placement, room-tone state, and the
+  master bus. Mix owns a cache instance, exposes cache budget stats for runtime
+  verification, and releases project cache entries on teardown; settings export
+  remains config-only.
 - Validation passed:
   - `node --check docs/types/media/mixer/mixer-audio-multi.js`
+  - `node --check docs/types/media/mixer/mixer-audio-cache.js`
   - `node --check tests/areas/media-studio-mixer-audio-listen.mjs`
   - `node tests/media-mixer-model.test.mjs`
   - `node tests/smoke-area.mjs media-studio-mixer-audio-listen`
   - `node tests/smoke-area.mjs media-studio`
 - Remaining Stage 4 work: real WebAudio scheduled playback over the shared
-  timeline, decoded/processed cache budgets, and final mix export/provenance
-  derived from the same state.
+  timeline and final mix export/provenance derived from the same state.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 

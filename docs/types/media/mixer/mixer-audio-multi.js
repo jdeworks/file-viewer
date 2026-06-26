@@ -2,6 +2,7 @@ import {
   addElement,
   addAsset,
   addLane,
+  createAudioBufferCache,
   createGeneratedElement,
   createLane,
   createMixerSnapshot,
@@ -49,8 +50,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.06, width: 960 };
   let waveformSummary = null;
   let destroyed = false;
-  let rafId = 0;
   let draggingElement = null;
+  const decodedAudioCache = createAudioBufferCache({ budgetBytes: options.decodedAudioBudgetBytes });
   const runtime = {
     ffmpegEnabled: !!options.enableFfmpeg,
     ffmpegLoaded: false,
@@ -192,15 +193,11 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     render();
   }).catch(() => {});
 
-  function loop() {
-    if (destroyed) return;
-    rafId = requestAnimationFrame(loop);
-  }
-
   root.__mediaMixerMulti = {
     getProject: () => project,
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
+    getAudioCacheStats: () => decodedAudioCache.stats(),
     dispatch,
     addPinkNoise() {
       addGeneratedLane('room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
@@ -214,16 +211,16 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   };
 
   render();
-  rafId = requestAnimationFrame(loop);
 
   return {
     getProject: () => project,
     getViewport: () => viewport,
+    getAudioCacheStats: () => decodedAudioCache.stats(),
     dispatch,
     destroy() {
       destroyed = true;
-      cancelAnimationFrame(rafId);
       interactions.destroy();
+      decodedAudioCache.releaseProject(project.project.id);
       root.removeEventListener('input', onInput);
       root.removeEventListener('click', onClick, true);
       root.removeEventListener('pointerdown', onPointerDown);
@@ -493,5 +490,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     root.dataset.hasPinkNoise = project.elements.some((element) => element.audio?.roomTone?.kind === 'pink-noise') ? 'true' : 'false';
     root.dataset.waveformBuckets = String(waveformSummary?.buckets || 0);
     root.dataset.hasDroppedAudio = project.assets.some((asset) => asset.id.startsWith('asset-drop-')) ? 'true' : 'false';
+    root.dataset.decodedCacheEntries = String(decodedAudioCache.stats().entryCount);
+    root.dataset.decodedCacheBudgetBytes = String(decodedAudioCache.stats().budgetBytes);
   }
 }

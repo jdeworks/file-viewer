@@ -1,5 +1,21 @@
+import {
+  buildDecodedAudioCacheKey,
+  buildProcessedAudioCacheKey,
+  createAudioBufferCache,
+  createProjectFromAssetMetadata,
+  estimateAudioBufferBytes,
+  moveElement,
+  updateElement,
+  updateLane,
+  updateMaster,
+} from '../../docs/types/media/mixer/index.js';
+
 export async function run(ctx) {
   const { page, origin, openExample, pass, fail } = ctx;
+
+  const cacheProof = proveAudioCachePolicy();
+  if (cacheProof.ok) pass('modular audio mix: decoded cache budget and processed cache keys are deterministic');
+  else fail('modular audio mix cache policy mismatch: ' + JSON.stringify(cacheProof));
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
@@ -179,6 +195,8 @@ export async function run(ctx) {
       selectedElement: project.selection.primary?.type === 'element',
       masterEqBands: project.master.audio.eq.bands.length,
       trackEqBands: project.lanes[0].audio.eq.bands.length,
+      cacheStats: el.__mediaMixerMulti.getAudioCacheStats(),
+      cacheBudgetDataset: Number(el.dataset.decodedCacheBudgetBytes || 0),
       controls: ['.mx-play', '.mx-stop', '.mx-master-slider', '.mx-lane-gain', '.mx-mute', '.mx-solo', '.mx-fade-in', '.mx-fade-out']
         .every((selector) => !!el.querySelector(selector)),
       capabilityNote: /Media Transcoding|Project settings/.test(el.querySelector('.mx-capability-note')?.textContent || ''),
@@ -187,7 +205,7 @@ export async function run(ctx) {
   if (mixInitial.context === 'mix' && mixInitial.lanes === 1 && mixInitial.elements === 1 && mixInitial.hasSharedLanes && mixInitial.hasWaveform && mixInitial.selectedElement)
     pass('modular audio mix: opens as one shared-model lane for the loaded file');
   else fail('modular audio mix initial state mismatch: ' + JSON.stringify(mixInitial));
-  if (mixInitial.controls && mixInitial.masterEqBands > 0 && mixInitial.trackEqBands > 0 && mixInitial.capabilityNote)
+  if (mixInitial.controls && mixInitial.masterEqBands > 0 && mixInitial.trackEqBands > 0 && mixInitial.capabilityNote && mixInitial.cacheStats.budgetBytes > 0 && mixInitial.cacheBudgetDataset === mixInitial.cacheStats.budgetBytes)
     pass('modular audio mix: lane controls plus track/master EQ and capability notes are represented');
   else fail('modular audio mix controls missing: ' + JSON.stringify(mixInitial));
 
@@ -262,4 +280,50 @@ export async function run(ctx) {
   if (mixSettings.schema === 'file-viewer.media-mixer.project' && mixSettings.lanes >= 3 && mixSettings.elements >= 3 && mixSettings.droppedAsset && !mixSettings.hasMediaBytes && !mixSettings.hasRuntimeAnalysis)
     pass('modular audio mix: settings export is config-only shared project state');
   else fail('modular audio mix settings export mismatch: ' + JSON.stringify(mixSettings));
+}
+
+function proveAudioCachePolicy() {
+  const fake = (length, channels = 1) => ({ length, numberOfChannels: channels, sampleRate: 48000 });
+  const evicted = [];
+  const cache = createAudioBufferCache({ budgetBytes: 10000, onEvict: (key) => evicted.push(key) });
+  cache.set('a', fake(1000), { projectId: 'p1' });
+  cache.set('b', fake(1000), { projectId: 'p1' });
+  cache.get('a');
+  cache.set('c', fake(1000), { projectId: 'p2' });
+  let project = createProjectFromAssetMetadata({
+    id: 'asset-audio',
+    name: 'voice.wav',
+    hash: { value: 'hash-a' },
+    size: 4096,
+    lastModified: 123,
+    capabilities: { hasAudio: true },
+    media: { durationMs: 10000, audioSampleRate: 48000, audioChannels: 1 },
+  });
+  const elementId = project.elements[0].id;
+  const laneId = project.lanes[0].id;
+  const decodedA = buildDecodedAudioCacheKey({ projectId: project.project.id, asset: project.assets[0], element: project.elements[0], sampleRate: 48000, channels: 1 });
+  const decodedB = buildDecodedAudioCacheKey({ projectId: project.project.id, asset: project.assets[0], element: project.elements[0], range: { sourceInMs: 250, sourceOutMs: 10000 }, sampleRate: 48000, channels: 1 });
+  const processed = () => buildProcessedAudioCacheKey({ project, lane: project.lanes[0], element: project.elements[0], asset: project.assets[0] });
+  const processedA = processed();
+  project = updateElement(project, elementId, (item) => ({ ...item, audio: { ...item.audio, fadeInMs: 120, gain: 0.8 } }));
+  const processedB = processed();
+  project = updateLane(project, laneId, (lane) => ({ ...lane, audio: { ...lane.audio, gain: 0.5 } }));
+  const processedC = processed();
+  project = updateMaster(project, (master) => ({ ...master, audio: { ...master.audio, gain: 0.7 } }));
+  const processedD = processed();
+  project = moveElement(project, elementId, 500);
+  const processedE = processed();
+  cache.releaseProject('p1');
+  return {
+    ok: estimateAudioBufferBytes(fake(1000, 2)) === 8000
+      && cache.has('a') === false
+      && cache.has('b') === false
+      && cache.has('c') === true
+      && evicted.join(',') === 'b'
+      && decodedA !== decodedB
+      && processedA !== processedB
+      && processedB !== processedC
+      && processedC !== processedD
+      && processedD !== processedE,
+  };
 }

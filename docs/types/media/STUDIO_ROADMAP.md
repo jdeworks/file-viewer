@@ -108,9 +108,13 @@ add generated tone, pink-noise/room-tone lanes, or dropped audio-file lanes,
 with lane gain/mute/solo, element fades, track EQ schema, master EQ schema,
 capability notes, and config-only settings export all backed by the mixer
 project model. The old `.mx-*` selectors are compatibility aliases while
-focused modular smoke coverage asserts the `.mmx-*` surface. Remaining Stage 4
-work is scheduled WebAudio timeline playback, decoded/processed cache budgets,
-and final mix export/provenance from the shared timeline state.
+focused modular smoke coverage asserts the `.mmx-*` surface. A Narratu-style
+decoded-audio cache module now provides explicit byte budgets, LRU eviction,
+per-project release, and processed cache keys that include the relevant lane,
+element, room-tone, EQ, placement, and master-bus settings; Mix exposes those
+runtime cache stats without serializing cache state into settings JSON.
+Remaining Stage 4 work is scheduled WebAudio timeline playback and final mix
+export/provenance from the shared timeline state.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 
