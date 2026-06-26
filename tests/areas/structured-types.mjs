@@ -210,17 +210,32 @@ export async function run(ctx) {
   // ── TOML ── hand-rolled parser, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const tf = await frameOf('iframe.fv-preview-frame');
-  await tf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .toml-preview .json-tree .j-key', { timeout: 30000 });
   const tType = await page.$eval('#typeSelect', (s) => s.value);
   if (tType === 'toml') pass('.toml detected as TOML'); else fail('toml type: ' + tType);
-  const tKeys = await tf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  const tKeys = await page.$$eval('#previewHost .toml-preview .json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (tKeys.includes('trust') && tKeys.includes('types')) pass('TOML tables rendered as tree (' + tKeys.length + ' keys)'); else fail('toml keys: ' + tKeys.join(','));
   // Array-of-tables [[types]] -> an array with 2 entries; booleans preserved.
-  const tBool = await tf.$$eval('.json-tree .j-bool', (els) => els.length);
-  const tNum = await tf.$$eval('.json-tree .j-num', (els) => els.length);
+  const tBool = await page.$$eval('#previewHost .toml-preview .json-tree .j-bool', (els) => els.length);
+  const tNum = await page.$$eval('#previewHost .toml-preview .json-tree .j-num', (els) => els.length);
   if (tBool >= 4 && tNum >= 2) pass('TOML scalar types preserved (booleans + numbers)'); else fail('toml scalars: bool=' + tBool + ' num=' + tNum);
+  const tomlPathText = await page.$eval('#previewHost .toml-preview', (el) => el.textContent);
+  if (/trust\.server|types\.0\.id/.test(tomlPathText)) pass('TOML path breadcrumbs shown'); else fail('toml path text: ' + tomlPathText.replace(/\s+/g, ' ').slice(0, 300));
+  const tomlSourceCollapsed = await page.$eval('#previewHost .toml-preview .kf-source-details', (el) => !el.open);
+  if (tomlSourceCollapsed) pass('TOML source starts collapsed'); else fail('toml source unexpectedly open');
+  const tomlSourceLine = await page.$eval('#previewHost .toml-preview .toml-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .toml-preview .kf-source-details');
+    return details?.open && document.getElementById(`toml-line-${line}`);
+  }, tomlSourceLine, { timeout: 3000 });
+  pass('TOML source links open source');
+
+  await page.evaluate(() => window.__fv.openViewerFile('duplicate.toml', {
+    text: 'title = "first"\ntitle = "second"\n[tool]\nname = "one"\nname = "two"\n',
+  }));
+  await page.waitForSelector('#previewHost .toml-preview .kf-issues', { timeout: 8000 });
+  const tomlDupText = await page.$eval('#previewHost .toml-preview', (el) => el.textContent);
+  if (/TOML Structure Review|duplicate key|title|tool\.name/i.test(tomlDupText)) pass('TOML duplicate key diagnostics shown'); else fail('toml duplicate diagnostics: ' + tomlDupText.replace(/\s+/g, ' ').slice(0, 400));
 
   // ── TOML toolbar ── Validate button appears for TOML files in raw view.
   await page.click('#viewMode button[data-mode="raw"]');
@@ -248,7 +263,7 @@ export async function run(ctx) {
   // Re-use the already-open Sample.toml page (now at raw view); navigate back to it.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .toml-preview', { timeout: 30000 });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const tomlFormBtnEl = await page.$('#tomlFormBtn');
