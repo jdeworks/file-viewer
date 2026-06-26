@@ -283,6 +283,17 @@ export async function run(ctx) {
   if (/NumericalUtils/i.test(jlText)) pass('sample.jl: module name shown'); else fail('julia module: ' + jlText.slice(0, 300));
   if (/distance|centroid|normalize/i.test(jlText)) pass('sample.jl: functions listed'); else fail('julia functions: ' + jlText.slice(0, 300));
   if (/Point|BoundingBox/i.test(jlText)) pass('sample.jl: structs listed'); else fail('julia structs: ' + jlText.slice(0, 300));
+  if (/returns Float64|p1::Point|symbols: show, length|4 fields|@timed_call/i.test(jlText)) pass('sample.jl: signatures, dispatch args, imports, and type details shown'); else fail('julia details: ' + jlText.slice(0, 900));
+  const jlTypeHint = await page.$eval('#previewHost .jl-doc .jl-tag-mutable', (e) => e.title);
+  if (/fields can be reassigned|mutable/i.test(jlTypeHint)) pass('sample.jl: type hover help present'); else fail('julia type hint: ' + jlTypeHint);
+  const jlSourceOpen = await page.$eval('#previewHost .jl-doc .kf-source-details', (e) => e.open);
+  if (!jlSourceOpen) pass('sample.jl: source starts collapsed'); else fail('julia source should start collapsed');
+  await page.click('#previewHost .jl-doc .kf-source-link');
+  const jlJump = await page.$eval('#previewHost .jl-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (jlJump.open && jlJump.highlighted) pass('sample.jl: item click opens and highlights source'); else fail('julia source jump: ' + JSON.stringify(jlJump));
 
   // ── sample.R viewer (R) ──
   await openExample('sample.R');
