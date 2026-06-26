@@ -67,7 +67,7 @@ export async function run(ctx) {
   // Verify toolbar is hidden for non-JSON files
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .yaml-preview', { timeout: 30000 });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const jsonToolsHiddenForYaml = await page.$eval('#jsonTools', (el) => el.hidden);
@@ -162,20 +162,35 @@ export async function run(ctx) {
   // ── YAML ── parse with js-yaml, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const yf = await frameOf('iframe.fv-preview-frame');
-  await yf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .yaml-preview .json-tree .j-key', { timeout: 30000 });
   const yType = await page.$eval('#typeSelect', (s) => s.value);
   if (yType === 'yaml') pass('.yaml detected as YAML'); else fail('yaml type: ' + yType);
-  const yKeys = await yf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  const yKeys = await page.$$eval('#previewHost .yaml-preview .json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (yKeys.includes('mobileFirst') && yKeys.includes('trust')) pass('YAML rendered as tree (' + yKeys.length + ' keys)'); else fail('yaml keys: ' + yKeys.join(','));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const yamlMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Mappings\s*\d+/.test(yamlMeta) && /Sequences\s*\d+/.test(yamlMeta)) pass('YAML metadata includes mapping/sequence counts'); else fail('yaml meta: ' + yamlMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
-  const yBool = await yf.$$eval('.json-tree .j-bool', (els) => els.length);
+  const yBool = await page.$$eval('#previewHost .yaml-preview .json-tree .j-bool', (els) => els.length);
   if (yBool > 0) pass('YAML scalar types preserved (booleans rendered)'); else fail('no yaml booleans');
+  const yamlPreviewText = await page.$eval('#previewHost .yaml-preview', (el) => el.textContent);
+  if (/trust\.server|server\.hosts/.test(yamlPreviewText)) pass('YAML path breadcrumbs shown'); else fail('yaml path text: ' + yamlPreviewText.replace(/\s+/g, ' ').slice(0, 300));
+  const yamlSourceCollapsed = await page.$eval('#previewHost .yaml-preview .kf-source-details', (el) => !el.open);
+  if (yamlSourceCollapsed) pass('YAML redacted source starts collapsed'); else fail('yaml source unexpectedly open');
+  const yamlSourceLine = await page.$eval('#previewHost .yaml-preview .yaml-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .yaml-preview .kf-source-details');
+    return details?.open && document.getElementById(`yaml-line-${line}`);
+  }, yamlSourceLine, { timeout: 3000 });
+  pass('YAML source links open source');
+  await page.evaluate(() => window.__fv.openViewerFile('secrets.yaml', {
+    text: 'name: app\npassword: plain-text-secret\nnested:\n  apiKey: abcdefghijklmnopqrstuvwxyz123456\n',
+  }));
+  await page.waitForSelector('#previewHost .yaml-preview .kf-issues', { timeout: 8000 });
+  const yamlSecretText = await page.$eval('#previewHost .yaml-preview', (el) => el.textContent);
+  const yamlSecretHtml = await page.$eval('#previewHost .yaml-preview', (el) => el.innerHTML);
+  if (/YAML Structure Review|secret|\[configured\]/i.test(yamlSecretText) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(yamlSecretHtml)) pass('YAML secret-like values are warned and redacted'); else fail('yaml secret redaction: ' + yamlSecretText.replace(/\s+/g, ' ').slice(0, 400));
   const yamlHasEditor = await page.$('#editor .monaco-editor');
   if (yamlHasEditor) pass('YAML has raw editor (editable text)'); else fail('YAML missing raw editor');
 

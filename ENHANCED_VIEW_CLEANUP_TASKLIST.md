@@ -144,6 +144,7 @@ These should prioritize risk, masking, source traceability, and relationship map
 - [ ] Add schema/key validation, public env warnings, broad rewrites, missing security headers, stale compatibility dates.
 - [ ] Generic YAML/TOML: add JSONPath-style query parity, path breadcrumbs, duplicate key detection where possible, source-line mapping.
 - [x] Generic TOML: live fallback tree with path breadcrumbs, duplicate-key/table diagnostics, click-to-source rows, and collapsed numbered source.
+- [x] Generic YAML: live fallback tree with path breadcrumbs, secret-like scalar warnings/redaction, click-to-source rows, and collapsed redacted source.
 
 ## View Audit Checklist
 
