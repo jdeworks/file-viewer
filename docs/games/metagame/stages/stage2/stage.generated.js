@@ -602,7 +602,7 @@ var DIRS = {
   left: { dx: -1, dy: 0 },
   right: { dx: 1, dy: 0 }
 };
-var DIR_LIST2 = ["up", "down", "left", "right"];
+var DIR_LIST = ["up", "down", "left", "right"];
 
 // ../../docs/games/metagame/stages/stage2/status.js
 var DOT = { poison: true, burn: true, bleed: true };
@@ -722,7 +722,7 @@ function greedyStep(world, m, px, py, occupied) {
   return null;
 }
 function patrolStep(world, m, occupied) {
-  const dirs = [m.dir, ...DIR_LIST2.filter((d) => d !== m.dir)];
+  const dirs = [m.dir, ...DIR_LIST.filter((d) => d !== m.dir)];
   for (const d of dirs) {
     const mv = DIRS[d];
     if (!mv) continue;
@@ -731,7 +731,7 @@ function patrolStep(world, m, occupied) {
   return null;
 }
 function adjacentFree(world, m, occupied) {
-  for (const d of DIR_LIST2) {
+  for (const d of DIR_LIST) {
     const x = m.x + DIRS[d].dx;
     const y = m.y + DIRS[d].dy;
     if (freeCell(world, x, y, occupied)) return { x, y };
@@ -1094,7 +1094,7 @@ function makeBlinkRng(world, trap) {
   } };
 }
 
-// ../../docs/games/metagame/stages/stage2/engine.js
+// ../../docs/games/metagame/stages/stage2/floor.js
 var GROWTH = 1.35;
 function floorDims(runSeed, floorNum) {
   const dimRng = makeRng(`${runSeed}:dims`);
@@ -1234,27 +1234,6 @@ function buildFloor(runSeed, floorNum, mods = {}) {
   defineHazards(world);
   return world;
 }
-function exitDistanceField(world) {
-  return floodDistances(world.grid, world.exit);
-}
-function stepToExit(world, field) {
-  const W = world.width;
-  const here = field.dist[world.pos.y * W + world.pos.x];
-  if (here === 0) return { dir: null, steps: 0 };
-  let best = null;
-  let bestD = Infinity;
-  for (const dir of DIR_LIST) {
-    const nx = world.pos.x + DIRS[dir].dx;
-    const ny = world.pos.y + DIRS[dir].dy;
-    if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= W || world.grid[ny][nx] === "#") continue;
-    const d = field.dist[ny * W + nx];
-    if (d >= 0 && d < bestD) {
-      bestD = d;
-      best = dir;
-    }
-  }
-  return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
-}
 function makeGuardian(rng, floor, idx) {
   const g = spawnMonster(rng, floor, idx);
   g.hp = Math.round(g.maxHp * 3);
@@ -1289,6 +1268,29 @@ function adjacentOpen(grid, p) {
     if (grid[y] && grid[y][x] === ".") return { x, y };
   }
   return null;
+}
+
+// ../../docs/games/metagame/stages/stage2/engine.js
+function exitDistanceField(world) {
+  return floodDistances(world.grid, world.exit);
+}
+function stepToExit(world, field) {
+  const W = world.width;
+  const here = field.dist[world.pos.y * W + world.pos.x];
+  if (here === 0) return { dir: null, steps: 0 };
+  let best = null;
+  let bestD = Infinity;
+  for (const dir of DIR_LIST) {
+    const nx = world.pos.x + DIRS[dir].dx;
+    const ny = world.pos.y + DIRS[dir].dy;
+    if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= W || world.grid[ny][nx] === "#") continue;
+    const d = field.dist[ny * W + nx];
+    if (d >= 0 && d < bestD) {
+      bestD = d;
+      best = dir;
+    }
+  }
+  return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
 }
 function spawnSplit(world, foe) {
   let made = 0;

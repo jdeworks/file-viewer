@@ -1,7 +1,7 @@
 // Stage 2 escalation: status-effect substrate (A5), monster behaviour archetypes (A1) and elites (A3).
 import { applyStatus, tickStatuses, hasStatus, skipsTurn } from "../status.js";
 import { monsterTurn, detonate, hasLOS, pressureSpawn } from "../monsters.js";
-import { buildFloor, step } from "../engine.js";
+import { buildFloor, step, exitDistanceField, stepToExit } from "../engine.js";
 import { spawnMonster } from "../data.js";
 import { enterHazard, hazardIndex } from "../hazards.js";
 import { springTrap } from "../traps.js";
@@ -182,6 +182,22 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const g = w.monsters.find((m) => m.guardian);
   ok(g && (g.summon || g.split) && Math.abs(g.x - w.exit.x) + Math.abs(g.y - w.exit.y) <= 2, "a guardian with a mechanic posts by the stairs on band floors");
   ok(!buildFloor("guardian", 2).monsters.some((m) => m.guardian), "no guardian on a non-band floor");
+}
+
+// ── Stairwell Sense routing: BFS-from-stairs next step is the true shortest path ─────────────────
+{
+  const w = buildFloor("route-test", 3);
+  w.monsters = [];
+  const field = exitDistanceField(w);
+  const startDist = field.dist[w.pos.y * w.width + w.pos.x];
+  let steps = 0;
+  let guard = startDist + 20;
+  while (!(w.pos.x === w.exit.x && w.pos.y === w.exit.y) && guard-- > 0) {
+    const n = stepToExit(w, field);
+    step(w, { hp: 1e9, maxHp: 1e9, atk: 1, def: 0, statuses: {} }, n.dir);
+    steps += 1;
+  }
+  ok(w.pos.x === w.exit.x && w.pos.y === w.exit.y && steps === startDist, "compass routes the exact shortest path to the stairs");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");
