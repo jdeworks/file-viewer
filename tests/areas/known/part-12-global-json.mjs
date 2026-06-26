@@ -203,6 +203,27 @@ export async function run(ctx) {
   const nginxText = await page.$eval('.nginxconf-doc', el => el.textContent);
   if (!nginxText.includes('NGINX') && !nginxText.includes('nginx')) fail('nginx.conf: missing badge'); else pass('nginx.conf: badge shown');
   if (!nginxText.includes('server') && !nginxText.includes('listen')) fail('nginx.conf: no server info'); else pass('nginx.conf: server info shown');
+  const nginxBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/nginx-conf/renderer.js');
+    const text = `server {
+  listen 443 ssl;
+  server_name risky.example.test;
+  server_tokens on;
+  error_log /var/log/nginx/error.log debug;
+  location /files/ { autoindex on; }
+  location /api/ {
+    proxy_pass http://backend;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+}`;
+    const rendered = mod.render({ text, filename: 'nginx.conf' }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Nginx Review|missing hsts|server tokens|debug logging|directory listing|proxy headers/i.test(nginxBad.out) && !nginxBad.open) pass('nginx.conf: server rule-pack diagnostics shown'); else fail('nginx.conf diagnostics: ' + JSON.stringify(nginxBad).slice(0, 700));
 
   // ── haproxy.cfg viewer (haproxycfg-doc class) ──
   await openExample('haproxy.cfg');
