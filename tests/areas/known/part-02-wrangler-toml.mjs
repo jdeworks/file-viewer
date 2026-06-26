@@ -10,6 +10,17 @@ export async function run(ctx) {
   const wglText = await page.$eval('#previewHost .wgl-doc', (e) => e.textContent);
   if (/Wrangler|Cloudflare/i.test(wglText)) pass('wrangler.toml: badge shown'); else fail('wrangler badge: ' + wglText.slice(0, 200));
   if (/my-worker|MY_KV|example\.com/i.test(wglText)) pass('wrangler.toml: content shown'); else fail('wrangler content: ' + wglText.slice(0, 200));
+  if (/Wrangler Review|compatibility|wildcard route/i.test(wglText)) pass('wrangler.toml: review findings shown'); else fail('wrangler review: ' + wglText.slice(0, 300));
+  const wglHelpTitle = await page.$eval('#previewHost .wgl-doc .wgl-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Wrangler|Open line|source/i.test(wglHelpTitle)) pass('wrangler.toml: hover source help shown'); else fail('wrangler hover help: ' + wglHelpTitle);
+  const wglSourceCollapsed = await page.$eval('#previewHost .wgl-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (wglSourceCollapsed) pass('wrangler.toml: source collapsed'); else fail('wrangler source should start collapsed');
+  const wglSourceLine = await page.$eval('#previewHost .wgl-doc .wgl-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .wgl-doc .kf-source-details');
+    return details?.open && document.getElementById(`wrangler-line-${line}`);
+  }, wglSourceLine, { timeout: 3000 });
+  pass('wrangler.toml: source links open source');
 
   // ── fly.toml viewer ──
   await openExample('fly.toml');
