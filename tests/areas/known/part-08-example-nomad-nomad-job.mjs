@@ -14,6 +14,22 @@ export async function run(ctx) {
   if (/service/i.test(nomadText)) pass('example.nomad: job type shown'); else fail('nomad type: ' + nomadText.slice(0, 300));
   if (/dc1|dc2/i.test(nomadText)) pass('example.nomad: datacenters shown'); else fail('nomad datacenters: ' + nomadText.slice(0, 300));
   if (/api|worker/i.test(nomadText)) pass('example.nomad: task groups shown'); else fail('nomad groups: ' + nomadText.slice(0, 300));
+  const nomadHtml = await page.$eval('#previewHost .nj-doc', (e) => e.innerHTML);
+  if (/Nomad Review|task image|secret env|exec driver|health check/i.test(nomadText)) pass('example.nomad: review findings shown'); else fail('nomad review: ' + nomadText.slice(0, 400));
+  if ((nomadText + nomadHtml).includes('changeme')) fail('example.nomad: inline secret leaked'); else pass('example.nomad: inline secret redacted');
+  const nomadHelpTitle = await page.$eval('#previewHost .nj-doc .nj-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Nomad|Open line|source/i.test(nomadHelpTitle)) pass('example.nomad: hover source help shown'); else fail('nomad source help title missing');
+  const nomadSourceCollapsed = await page.$eval('#previewHost .nj-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (nomadSourceCollapsed) pass('example.nomad: redacted source collapsed'); else fail('example.nomad: redacted source not collapsed');
+  const nomadSourceLine = await page.$eval('#previewHost .nj-doc .nj-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .nj-doc .kf-source-details');
+    return details?.open && document.getElementById(`nomad-line-${line}`);
+  }, nomadSourceLine);
+  pass('example.nomad: source links open redacted source');
 
   // ── docker-stack viewer ──
   await openExample('docker-stack.yml (Docker Stack)');
