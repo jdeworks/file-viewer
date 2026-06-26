@@ -46,3 +46,9 @@ One line per green increment (newest at bottom). See `buildplan.md` for the orde
   shopView surfaces "Sharpen a card" (upgraded face) and "Acquire a relic"; renderer handles
   `data-buy-upgrade` / `data-buy-relic`. Unit: upgrade deducts + rejects re-upgrade/poor; relic buys
   5 distinct then sold-out spends nothing.
+- C3 — Build-definer + cursed relics (pool 5→10): Full Duplex (draw on the 3rd card → reward wide
+  turns), Checksum Offload (Protocol plays deal 3 → defensive deck becomes a kill plan), Cipher Cascade
+  (Layer plays gain block); cursed Memory Leak (+2 Strength but +2 Weak) and Overcommit Buffer (+1
+  energy/turn but Vulnerable each turn) — both tagged `cursed`. All use existing hooks; the act-verb
+  (delay/throughput) relics wait for D2/D3. relics.test: build-definers fire on the right primitive,
+  cursed downsides apply. (Made the C2b relic-exhaustion test pool-size-agnostic via RELICS.length.)

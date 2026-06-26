@@ -23,6 +23,7 @@ import {
 } from "../run.js";
 import { makeRng, createCombat, playCard } from "../combat.js";
 import { instantiateEnemy } from "../enemies.js";
+import { RELICS } from "../relics.js";
 import { STARTING_DECK } from "../cards.js";
 
 // ── mapgen: structure + full connectivity ────────────────────────────────────────────────────────
@@ -262,15 +263,15 @@ import { STARTING_DECK } from "../cards.js";
 }
 {
   // buyRelic: grants distinct relics until the pool is exhausted, then reports sold-out (no spend).
-  const run = createRun({ seed: 1, handshakes: 10000 });
+  const run = createRun({ seed: 1, handshakes: 100000 });
   run.currentNodeId = "a1-l3-n0";
   let granted = 0;
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < RELICS.length + 5; i++) {
     const r = buyRelic(run, RELIC_COST);
     if (r.ok) granted++;
     else { assert.equal(r.reason, "sold-out", "pool exhausts with sold-out"); break; }
   }
-  assert.equal(granted, 5, "all 5 relics can be bought, then the pool is empty");
+  assert.equal(granted, RELICS.length, "every relic can be bought, then the pool is empty");
   assert.equal(new Set(run.relics).size, run.relics.length, "bought relics are distinct");
   const before = run.handshakes;
   assert.equal(buyRelic(run, RELIC_COST).ok, false, "no relics left to buy");

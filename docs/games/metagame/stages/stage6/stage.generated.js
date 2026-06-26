@@ -885,6 +885,60 @@ var RELICS = [
     rarity: "rare",
     text: "At the start of each combat, gain 1 Strength.",
     hooks: { onCombatStart: (ctx) => ctx.applySelf("strength", 1) }
+  },
+  // ── Build-definers: relics that change HOW you build, not just stat-sticks ──────────────────────────
+  {
+    // Rewards WIDE turns — makes dumping your hand a plan, not a panic.
+    id: "full-duplex",
+    name: "Full Duplex",
+    rarity: "uncommon",
+    text: "Each turn, when you play your 3rd card, draw 1.",
+    hooks: { onCardPlay: (ctx) => {
+      if (ctx.combat.cardsPlayedThisTurn === 3) ctx.draw(1);
+    } }
+  },
+  {
+    // Turns a Protocol/defensive deck into a KILL plan — Protocol cards now bite.
+    id: "checksum-offload",
+    name: "Checksum Offload",
+    rarity: "rare",
+    text: "Whenever you play a Protocol card, deal 3 to the enemy.",
+    hooks: { onCardPlay: (ctx) => {
+      if (ctx.card?.type === "Protocol") ctx.deal(3);
+    } }
+  },
+  {
+    // Layer/power decks get an extra payoff for stacking Strength.
+    id: "cipher-cascade",
+    name: "Cipher Cascade",
+    rarity: "uncommon",
+    text: "Whenever you play a Layer card, gain 2 block.",
+    hooks: { onCardPlay: (ctx) => {
+      if (ctx.card?.type === "Layer") ctx.block(2);
+    } }
+  },
+  // ── Cursed: strong, with a real downside (tag `cursed` so the UI can warn) ──────────────────────────
+  {
+    id: "memory-leak",
+    name: "Memory Leak",
+    rarity: "rare",
+    cursed: true,
+    text: "Cursed. At the start of each combat, gain 2 Strength — but also 2 Weak.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.applySelf("strength", 2);
+      ctx.applySelf("weak", 2);
+    } }
+  },
+  {
+    id: "overcommit-buffer",
+    name: "Overcommit Buffer",
+    rarity: "rare",
+    cursed: true,
+    text: "Cursed. At the start of each of your turns, gain 1 energy — but become Vulnerable.",
+    hooks: { onPlayerTurnStart: (ctx) => {
+      ctx.gainEnergy(1);
+      ctx.applySelf("vulnerable", 1);
+    } }
   }
 ];
 var BY_ID2 = new Map(RELICS.map((relic) => [relic.id, relic]));
