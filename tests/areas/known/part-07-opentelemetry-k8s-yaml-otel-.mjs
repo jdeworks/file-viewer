@@ -108,6 +108,22 @@ export async function run(ctx) {
   if (/http_front|https_front/i.test(haText)) pass('haproxy.cfg: frontend blocks shown'); else fail('haproxy frontends: ' + haText.slice(0, 300));
   if (/web_backend|api_backend/i.test(haText)) pass('haproxy.cfg: backend blocks shown'); else fail('haproxy backends: ' + haText.slice(0, 300));
   if (/roundrobin|leastconn/i.test(haText)) pass('haproxy.cfg: balance algorithms shown'); else fail('haproxy balance: ' + haText.slice(0, 300));
+  if (/HAProxy Review|plain bind|public bind|secret configured/i.test(haText)) pass('haproxy.cfg: review findings shown'); else fail('haproxy review: ' + haText.slice(0, 400));
+  const haHtml = await page.$eval('#previewHost .hpcfg-doc', (e) => e.innerHTML);
+  if ((haText + haHtml).includes('admin:secret')) fail('haproxy.cfg: stats auth secret leaked'); else pass('haproxy.cfg: stats auth secret redacted');
+  const haHelpTitle = await page.$eval('#previewHost .hpcfg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/HAProxy|source|Open line/i.test(haHelpTitle)) pass('haproxy.cfg: directive hover help shown'); else fail('haproxy source help title missing');
+  const haSourceCollapsed = await page.$eval('#previewHost .hpcfg-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (haSourceCollapsed) pass('haproxy.cfg: redacted source collapsed'); else fail('haproxy.cfg: redacted source not collapsed');
+  const haSourceLine = await page.$eval('#previewHost .hpcfg-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .hpcfg-doc .kf-source-details');
+    return details?.open && document.getElementById(`haproxy-line-${line}`);
+  }, haSourceLine);
+  pass('haproxy.cfg: source links open redacted source');
 
   // ── squid.conf viewer ──
   await openExample('squid.conf');
