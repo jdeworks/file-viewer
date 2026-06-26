@@ -44,9 +44,50 @@ Reference alignment:
 
 ## Remaining Work
 
-### R0a — Auto-Audiobook-Grade Default Audio Lane
+### R0a — Modular Media Mixer Foundation
 
-Status: open.
+Status: approved; Stage 1 pure-core implementation started.
+
+The next media-studio foundation is a modular, capability-gated media
+mixer/editor, not a narrow replacement of the current audio Listen lane. The
+approved source package is
+`docs/types/media/modular-mixer-research/`, starting with
+`00-scope-and-decisions.md`.
+
+The target module should support reduced and expanded contexts from the same
+model:
+
+- MP3/WAV opens as one audio-capable source element on one lane.
+- Mix expands the same project into multiple lanes.
+- Compare constrains the same model to two selected objects/ranges.
+- Video files become timeline elements with `hasVideo` and possibly `hasAudio`.
+- Dragged images become visual timeline elements.
+- Project settings import/export stores config, file identity, and edit
+  decisions without embedding media bytes by default.
+- Optional functionality is capability/config gated: available now, available
+  after opt-in, or unsupported in the current browser/session.
+- ffmpeg remains opt-in and lazy; disabled ffmpeg should produce coherent
+  reduced UI with notes about what opt-in unlocks, not broken panels.
+
+Implementation should follow:
+
+- `modular-mixer-research/08-acceptance-and-test-strategy.md`
+- `modular-mixer-research/09-build-runbook.md`
+- `modular-mixer-research/10-review-checklist.md`
+
+The current file-viewer Mix, Compare, and video Timeline implementations remain
+prototype coverage only. Do not evolve them as the final architecture.
+
+Stage 1 implementation now begins with `docs/types/media/mixer/` pure modules
+and unit tests for model/timing, capability gating, config-only project
+settings import/export, relink/reapply state, hashing, and EQ schema. The next
+implementation slice is the renderer skeleton from
+`modular-mixer-research/09-build-runbook.md`.
+
+### R0a-old — Auto-Audiobook-Grade Default Audio Lane
+
+Status: superseded as the primary direction by the modular mixer foundation
+above.
 
 The current audio `Listen` surface is a custom transport over a hidden decode element, but it
 is not yet the target default MP3 workflow. Do not build this redesign on the current
@@ -80,6 +121,9 @@ Reference alignment:
 - `auto-audiobook/src/utils/mixer-playback.ts`: scheduled playback from cursor with
   per-region gain/fade.
 - `auto-audiobook/src/engine/audio-processor.ts`: fade/early-stop/pink-noise semantics.
+
+This section remains useful as audio-specific input for the one-lane MP3/WAV
+slice of the modular mixer.
 
 ### R0 — Roadmap Hygiene And Code Shape
 

@@ -142,6 +142,9 @@ run_phase_unit_tests() {
 
 FULL_UNIT_TESTS=(
   tests/media-parsers.test.mjs
+  tests/media-mixer-model.test.mjs
+  tests/media-mixer-import-export.test.mjs
+  tests/media-mixer-capabilities.test.mjs
   tests/movediff.test.mjs
   tests/markdown-edit-actions.test.mjs
   tests/image-fill.test.mjs
@@ -170,6 +173,12 @@ IMAGE_UNIT_TESTS=(
 FAST_GAME_UNIT_TESTS=(
   tests/metagame-platform.test.mjs
   tests/metagame-viewer-actions.test.mjs
+)
+
+MEDIA_MIXER_UNIT_TESTS=(
+  tests/media-mixer-model.test.mjs
+  tests/media-mixer-import-export.test.mjs
+  tests/media-mixer-capabilities.test.mjs
 )
 
 collect_changed_paths() {
@@ -256,6 +265,13 @@ run_fast_unit_tests() {
     done
   }
 
+  add_media_mixer_unit_tests() {
+    local mixer_test
+    for mixer_test in "${MEDIA_MIXER_UNIT_TESTS[@]}"; do
+      add_unit_test "$mixer_test"
+    done
+  }
+
   require_full_units() {
     local reason="$1"
     if [ -z "$full_reason" ]; then
@@ -275,6 +291,9 @@ run_fast_unit_tests() {
 
     non_neutral_path_count=$((non_neutral_path_count + 1))
     case "$path" in
+      docs/types/media/mixer/*|tests/media-mixer-*.test.mjs)
+        add_media_mixer_unit_tests
+        ;;
       docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_unit_test tests/media-parsers.test.mjs
         ;;

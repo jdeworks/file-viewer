@@ -74,9 +74,52 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ## Active Queue
 
+### A0 — Modular Media Mixer Source Of Truth
+
+Status: approved; Stage 1 pure-core implementation started.
+
+The active design target has moved from a narrow audio-only lane redesign to a
+general modular media mixer/editor. Use
+`docs/types/media/modular-mixer-research/00-scope-and-decisions.md` as the
+source of truth for implementation. The package covers the
+OpenShot-style timeline/layer direction, auto-audiobook audio lane semantics,
+Narratu EQ/master-bus lessons, capability-gated reduced modes, config-only
+project import/export/reapply, memory constraints, risks, staged implementation,
+acceptance criteria, build runbook, and review checklist.
+
+Implementation must not build on the current file-viewer Mix, Compare, or video
+Timeline prototypes as final architecture. They remain prototype coverage only.
+
+Review before build:
+
+- `docs/types/media/modular-mixer-research/00-scope-and-decisions.md`
+- `docs/types/media/modular-mixer-research/08-acceptance-and-test-strategy.md`
+- `docs/types/media/modular-mixer-research/09-build-runbook.md`
+- `docs/types/media/modular-mixer-research/10-review-checklist.md`
+
+The older audio-only requirements file,
+`docs/types/media/AUDIO_LANE_REQUIREMENTS.md`, is now supporting detail for the
+MP3/WAV one-lane case, not the primary direction.
+
+Stage 1 pure-core implementation has started under `docs/types/media/mixer/`:
+
+- Added pure model, capability, config, hashing, import/export, and EQ schema
+  modules.
+- Added project/lane/element timing utilities, derived lane descriptors,
+  compare overlap state, config-only settings JSON, relink/reapply state, and
+  capability status evaluation.
+- Added focused unit coverage:
+  - `tests/media-mixer-model.test.mjs`
+  - `tests/media-mixer-import-export.test.mjs`
+  - `tests/media-mixer-capabilities.test.mjs`
+- Validation: new mixer unit tests pass; `tests/areas/media-studio.mjs` passes.
+  `./scripts/check.sh --fast` currently reaches aggregate smoke but fails in
+  the independently reproduced `media-3d` area waiting for
+  `#previewHost .media-doc video.media-view`.
+
 ### A1 — Auto-Audiobook-Grade Default Audio Lane
 
-Status: open.
+Status: superseded by A0 as the primary implementation direction.
 
 The visible native audio player has been removed, but default `Listen` is still not yet
 aligned with `auto-audiobook`. Do not extend the current file-viewer `Mix` or `Compare`
@@ -100,6 +143,9 @@ mixer grammar, reduced to the relevant one-track/default case:
 - Reference source: `repos/auto-audiobook/src/components/AudioMixerView.tsx`,
   `MixerTrack.tsx`, `MixerToolbar.tsx`, `stores/mixer-store.ts`,
   `utils/mixer-playback.ts`, and `engine/audio-processor.ts`.
+
+This remains valid audio-specific input for the default MP3/WAV one-lane slice,
+but implementation should start from the modular mixer package in A0.
 
 The latest roadmap items R0-R5 are recorded below as committed or implemented. In particular,
 the earlier R4 foundation note is superseded by the implemented R4 section later in this file
