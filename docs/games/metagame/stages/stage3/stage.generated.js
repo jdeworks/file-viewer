@@ -265,9 +265,11 @@ function cluesOf(sol, width, height) {
   for (let c = 0; c < width; c += 1) colClues.push(runLengths(sol.map((row) => row[c])));
   return { rowClues, colClues };
 }
-function attempt(seed, width, height, density, maxTries) {
+function attempt(seed, width, height, density, maxTries, want) {
   const minFill = Math.max(1, Math.round(width * height * 0.18));
-  for (let n = 0; n < maxTries; n += 1) {
+  let best = null;
+  let found = 0;
+  for (let n = 0; n < maxTries && found < want; n += 1) {
     const rng = makeRng(`${seed}:${n}`);
     const sol = Array.from({ length: height }, () => Array.from({ length: width }, () => rng.float() < density ? FILLED : EMPTY));
     let filled = 0;
@@ -276,19 +278,21 @@ function attempt(seed, width, height, density, maxTries) {
     const { rowClues, colClues } = cluesOf(sol, width, height);
     const res = solve(rowClues, colClues);
     if (res && res.solved) {
-      return { width, height, solution: sol, rowClues, colClues, seed: `${seed}:${n}`, difficulty: res.passes };
+      found += 1;
+      if (!best || res.passes > best.difficulty) best = { width, height, solution: sol, rowClues, colClues, seed: `${seed}:${n}`, difficulty: res.passes };
     }
   }
-  return null;
+  return best;
 }
 function fallback(width, height) {
   const sol = Array.from({ length: height }, (_, r) => Array.from({ length: width }, () => r % 2 === 0 ? FILLED : EMPTY));
   const { rowClues, colClues } = cluesOf(sol, width, height);
   return { width, height, solution: sol, rowClues, colClues, seed: "fallback", difficulty: 1, isFallback: true };
 }
-function makePuzzle(seed, { width = 5, height = 5 } = {}) {
+function makePuzzle(seed, { width = 5, height = 5, hard = 0 } = {}) {
+  const want = 1 + Math.min(8, Math.max(0, hard)) * 5;
   for (const density of [0.55, 0.5, 0.45, 0.4, 0.35, 0.3]) {
-    const p = attempt(`${seed}:d${Math.round(density * 100)}`, width, height, density, 250);
+    const p = attempt(`${seed}:d${Math.round(density * 100)}`, width, height, density, 300, want);
     if (p) return p;
   }
   return fallback(width, height);
@@ -301,9 +305,12 @@ function sizeForRun(run, shop) {
   const cap = 12 + Number((shop || {}).overclock || 0);
   return Math.max(5, Math.min(cap, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
 }
+function corruptionForRun(run) {
+  return Math.min(8, Math.floor(Number(run.solvedCount || 0) / 3));
+}
 function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size });
+  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruptionForRun(run) });
 }
 function applyPrefetch(board, count) {
   if (!count) return board;
@@ -666,7 +673,8 @@ function renderStage3(ctx) {
   function onSolved() {
     const size = board.puzzle.width;
     const mult = 1 + 0.25 * upgradeLevel(state, "throughput");
-    const reward = Math.round((size * size + 5) * mult);
+    const corrBonus = 1 + 0.12 * corruptionForRun(state.run);
+    const reward = Math.round((size * size + 5) * mult * corrBonus);
     state.registers += reward;
     state.run.solvedCount += 1;
     state.run.index += 1;
@@ -686,7 +694,7 @@ function renderStage3(ctx) {
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = sizeForRun(state.run, state.shopUpgrades);
-    setText(fields.size, `${size}×${size}`);
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}`);
     const pr = progress(board.puzzle, board.marks);
     setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit. clear snapshots to retain fragments.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);

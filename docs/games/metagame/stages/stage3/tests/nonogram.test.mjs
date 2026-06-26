@@ -48,5 +48,17 @@ const fillCount = a.solution.reduce((s, row) => s + row.reduce((t, v) => t + v, 
 const rowClueSum = a.rowClues.reduce((s, c) => s + c.reduce((t, v) => t + v, 0), 0);
 ok(fillCount === rowClueSum && fillCount > 0, "row clues sum to the filled-cell count");
 
+// Corruption (`hard`) yields tougher puzzles (more solver passes) while staying unique + deterministic.
+function avgPasses(hard) {
+  let s = 0;
+  let bad = 0;
+  for (let i = 0; i < 12; i += 1) { const p = makePuzzle(`hard${i}`, { width: 10, height: 10, hard }); s += p.difficulty; if (!verify(p)) bad += 1; }
+  return { avg: s / 12, bad };
+}
+const easy = avgPasses(0);
+const hard = avgPasses(6);
+ok(hard.avg > easy.avg && easy.bad === 0 && hard.bad === 0, "higher corruption → harder but still uniquely-solvable puzzles");
+ok(JSON.stringify(makePuzzle("z", { width: 9, height: 9, hard: 4 }).solution) === JSON.stringify(makePuzzle("z", { width: 9, height: 9, hard: 4 }).solution), "(seed,hard) is deterministic");
+
 console.log(failed ? `\nSTAGE 3 NONOGRAM FAILED (${failed})` : "\nSTAGE 3 NONOGRAM PASSED");
 if (failed) process.exit(1);

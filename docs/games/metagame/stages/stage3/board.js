@@ -14,9 +14,15 @@ export function sizeForRun(run, shop) {
   return Math.max(5, Math.min(cap, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
 }
 
+// Corruption rises as you clear snapshots — the escalation driver. It makes the generator pick
+// qualitatively harder (more solver-passes) puzzles, on top of the size ramp.
+export function corruptionForRun(run) {
+  return Math.min(8, Math.floor(Number(run.solvedCount || 0) / 3));
+}
+
 export function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size });
+  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruptionForRun(run) });
 }
 
 // Prefetch Cache: pre-fill the first `count` solution cells (deterministic order) so a snapshot

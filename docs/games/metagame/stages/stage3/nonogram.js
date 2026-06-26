@@ -114,10 +114,14 @@ function cluesOf(sol, width, height) {
   return { rowClues, colClues };
 }
 
-// One generation attempt at a fixed density: random solution → clues → accept iff line-solvable.
-function attempt(seed, width, height, density, maxTries) {
+// Sample line-solvable candidates at a fixed density and return the HARDEST found (most solver
+// passes) once `want` have been collected — so higher corruption can demand tougher puzzles. With
+// want=1 this returns the first line-solvable puzzle (the easy path). Deterministic.
+function attempt(seed, width, height, density, maxTries, want) {
   const minFill = Math.max(1, Math.round(width * height * 0.18));
-  for (let n = 0; n < maxTries; n += 1) {
+  let best = null;
+  let found = 0;
+  for (let n = 0; n < maxTries && found < want; n += 1) {
     const rng = makeRng(`${seed}:${n}`);
     const sol = Array.from({ length: height }, () => Array.from({ length: width }, () => (rng.float() < density ? FILLED : EMPTY)));
     let filled = 0;
@@ -126,10 +130,11 @@ function attempt(seed, width, height, density, maxTries) {
     const { rowClues, colClues } = cluesOf(sol, width, height);
     const res = solve(rowClues, colClues);
     if (res && res.solved) {
-      return { width, height, solution: sol, rowClues, colClues, seed: `${seed}:${n}`, difficulty: res.passes };
+      found += 1;
+      if (!best || res.passes > best.difficulty) best = { width, height, solution: sol, rowClues, colClues, seed: `${seed}:${n}`, difficulty: res.passes };
     }
   }
-  return null;
+  return best;
 }
 
 // A guaranteed line-solvable fallback (horizontal stripes) — every row clue alone forces its row,
@@ -140,12 +145,15 @@ function fallback(width, height) {
   return { width, height, solution: sol, rowClues, colClues, seed: "fallback", difficulty: 1, isFallback: true };
 }
 
-// Deterministically make a uniquely-solvable puzzle of the given size. Walks descending densities
-// (sparser puzzles are more often line-solvable, especially at larger sizes) so it reliably finds
-// one; falls back to stripes only as a last resort. Same seed → same puzzle.
-export function makePuzzle(seed, { width = 5, height = 5 } = {}) {
+// Deterministically make a uniquely-solvable puzzle. Walks descending densities (sparser puzzles are
+// more often line-solvable, especially at larger sizes) so it reliably finds one. `hard` (corruption
+// level) makes it sample more line-solvable candidates and keep the hardest — qualitatively tougher
+// snapshots, not just bigger ones. Falls back to stripes only as a last resort. Same (seed,hard) →
+// same puzzle.
+export function makePuzzle(seed, { width = 5, height = 5, hard = 0 } = {}) {
+  const want = 1 + Math.min(8, Math.max(0, hard)) * 5;
   for (const density of [0.55, 0.5, 0.45, 0.4, 0.35, 0.3]) {
-    const p = attempt(`${seed}:d${Math.round(density * 100)}`, width, height, density, 250);
+    const p = attempt(`${seed}:d${Math.round(density * 100)}`, width, height, density, 300, want);
     if (p) return p;
   }
   return fallback(width, height);

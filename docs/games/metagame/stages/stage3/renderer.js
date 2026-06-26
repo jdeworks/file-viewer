@@ -2,7 +2,7 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { applyPrefetch, createBoard, encodeMarks, firstHintCell, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
+import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
 
 const MOVE = {
@@ -98,7 +98,8 @@ export function renderStage3(ctx) {
   function onSolved() {
     const size = board.puzzle.width;
     const mult = 1 + 0.25 * upgradeLevel(state, "throughput"); // Throughput upgrade
-    const reward = Math.round((size * size + 5) * mult);
+    const corrBonus = 1 + 0.12 * corruptionForRun(state.run);  // harder snapshots pay more
+    const reward = Math.round((size * size + 5) * mult * corrBonus);
     state.registers += reward;
     state.run.solvedCount += 1;
     state.run.index += 1;
@@ -116,7 +117,7 @@ export function renderStage3(ctx) {
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = sizeForRun(state.run, state.shopUpgrades);
-    setText(fields.size, `${size}×${size}`);
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}`);
     const pr = progress(board.puzzle, board.marks);
     setText(fields.objective, board.solved
       ? "snapshot restored — drawing the next…"
