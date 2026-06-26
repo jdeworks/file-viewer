@@ -255,6 +255,22 @@ export async function run(ctx) {
   if (/Reading|Sensor|LabSensor/i.test(dartText)) pass('sample.dart: classes listed'); else fail('dart classes: ' + dartText.slice(0, 300));
   if (/Status/i.test(dartText)) pass('sample.dart: enum listed'); else fail('dart enum: ' + dartText.slice(0, 300));
   if (/ReadingExtension/i.test(dartText)) pass('sample.dart: extension listed'); else fail('dart extension: ' + dartText.slice(0, 300));
+  const dartMemberText = await page.$$eval('#previewHost .dart-section', (sections) => {
+    const section = sections.find((el) => /Methods & Functions/.test(el.textContent || ''));
+    return section ? section.textContent : '';
+  });
+  if (/readings|returns Stream<Reading>|ctor|formatted|main/i.test(dartMemberText)) pass('sample.dart: methods, getters, constructors, and returns shown'); else fail('dart members: ' + dartMemberText.slice(0, 600));
+  if (!/print\(reading\.formatted\)/.test(dartMemberText)) pass('sample.dart: body calls are not listed as declarations'); else fail('dart body call listed: ' + dartMemberText.slice(0, 800));
+  const dartAsyncHint = await page.$eval('#previewHost .dart-doc .dart-tag-async', (e) => e.title);
+  if (/asynchronous|Future|stream/i.test(dartAsyncHint)) pass('sample.dart: async hover help present'); else fail('dart async hint: ' + dartAsyncHint);
+  const dartSourceOpen = await page.$eval('#previewHost .dart-doc .kf-source-details', (e) => e.open);
+  if (!dartSourceOpen) pass('sample.dart: source starts collapsed'); else fail('dart source should start collapsed');
+  await page.click('#previewHost .dart-doc .kf-source-link');
+  const dartJump = await page.$eval('#previewHost .dart-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (dartJump.open && dartJump.highlighted) pass('sample.dart: item click opens and highlights source'); else fail('dart source jump: ' + JSON.stringify(dartJump));
 
   // ── sample.groovy viewer (Groovy) ──
   await openExample('sample.groovy');
