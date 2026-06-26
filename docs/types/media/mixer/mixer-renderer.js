@@ -48,7 +48,7 @@ export function renderMixerShell(root, snapshot, viewportInput = {}, options = {
   timeline.style.width = `${Math.max(layout.width, layout.viewport.width)}px`;
   timeline.style.height = `${layout.height}px`;
   timeline.append(renderRuler(snapshot, layout));
-  timeline.append(renderLaneStack(snapshot, layout));
+  timeline.append(renderLaneStack(snapshot, layout, options));
   timeline.append(renderPlayhead(layout));
   body.append(timeline);
 
@@ -80,7 +80,7 @@ function renderRuler(snapshot, layout) {
   return ruler;
 }
 
-function renderLaneStack(snapshot, layout) {
+function renderLaneStack(snapshot, layout, options = {}) {
   const stack = el('div', 'mmx-lanes');
   for (const laneRect of layout.laneRects) {
     const lane = snapshot.lanes.find((item) => item.id === laneRect.laneId);
@@ -118,6 +118,7 @@ function renderLaneStack(snapshot, layout) {
       children.unshift(canvas);
     }
     if (element?.capabilities?.hasVideo || element?.capabilities?.hasImage) {
+      children.unshift(renderThumbnailStrip(element, options.visualThumbnails));
       children.unshift(renderVisualBadge(element));
     }
     const block = el('button', 'mmx-element', children);
@@ -200,7 +201,60 @@ function renderElementInspectorFields(element) {
 function renderVisualBadge(element) {
   const badge = el('span', 'mmx-element-visual', [element.capabilities?.hasVideo ? 'Video frame' : 'Image frame']);
   badge.dataset.opacity = String(element.visual?.opacity ?? 1);
+  if (element.capabilities?.needsFfmpegForPreview) badge.dataset.needsProxy = 'true';
   return badge;
+}
+
+function renderThumbnailStrip(element, thumbnails) {
+  const strip = el('span', 'mmx-thumb-strip');
+  const frames = thumbnailFramesFor(thumbnails, element);
+  strip.dataset.elementId = element.id;
+  strip.dataset.thumbCount = String(frames.length);
+  if (element.capabilities?.needsFfmpegForPreview) {
+    strip.dataset.needsProxy = 'true';
+    strip.append(el('span', 'mmx-thumb-proxy', ['Proxy required']));
+    return strip;
+  }
+  if (!frames.length) {
+    strip.append(el('span', 'mmx-thumb-pending', ['Thumbnails pending']));
+    return strip;
+  }
+  for (const frame of frames) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'mmx-thumb';
+    canvas.width = 48;
+    canvas.height = 28;
+    canvas.dataset.sampledMs = String(Math.round(frame.sampledMs || 0));
+    drawThumbnail(canvas, frame.source);
+    strip.append(canvas);
+  }
+  return strip;
+}
+
+function thumbnailFramesFor(thumbnails, element) {
+  if (!thumbnails) return [];
+  const frames = typeof thumbnails.get === 'function'
+    ? thumbnails.get(element.id) || thumbnails.get(element.assetId)
+    : thumbnails[element.id] || thumbnails[element.assetId];
+  return Array.isArray(frames) ? frames.filter((frame) => frame?.source) : [];
+}
+
+function drawThumbnail(canvas, source) {
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  if (source) drawContainedThumbnail(ctx, source, 0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+  ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+}
+
+function drawContainedThumbnail(ctx, source, x, y, width, height) {
+  const sourceWidth = source.naturalWidth || source.videoWidth || source.width || width;
+  const sourceHeight = source.naturalHeight || source.videoHeight || source.height || height;
+  const scale = Math.min(width / sourceWidth, height / sourceHeight);
+  const drawW = sourceWidth * scale;
+  const drawH = sourceHeight * scale;
+  ctx.drawImage(source, x + (width - drawW) / 2, y + (height - drawH) / 2, drawW, drawH);
 }
 
 function inspectorNumber(labelText, field, element, value, attrs = {}) {

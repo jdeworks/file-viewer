@@ -376,7 +376,20 @@ export async function run(ctx) {
     dataTransfer.items.add(file);
     el.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer }));
     el.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer }));
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    await new Promise((resolve) => {
+      const started = performance.now();
+      const tick = () => {
+        const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
+        const project = root?.__mediaMixerMulti?.getProject?.();
+        const asset = project?.assets?.find((item) => item.name === 'dropped-video.webm');
+        const element = project?.elements?.find((item) => item.assetId === asset?.id);
+        const frameSources = Number(root?.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0);
+        const thumbCount = Number(root?.querySelector(`.mmx-thumb-strip[data-element-id="${element?.id}"]`)?.dataset.thumbCount || 0);
+        if ((frameSources > 0 && thumbCount > 0) || performance.now() - started > 3000) resolve();
+        else setTimeout(tick, 50);
+      };
+      tick();
+    });
     const root = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
     const project = root.__mediaMixerMulti.getProject();
     const asset = project.assets.find((item) => item.name === 'dropped-video.webm');
@@ -388,10 +401,11 @@ export async function run(ctx) {
       width: asset?.media?.videoWidth || 0,
       height: asset?.media?.videoHeight || 0,
       frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
+      thumbCount: Number(root.querySelector(`.mmx-thumb-strip[data-element-id="${element?.id}"]`)?.dataset.thumbCount || 0),
     };
   });
-  if (droppedVideo.hasVideo && droppedVideo.nativePreview && droppedVideo.durationMs > 0 && droppedVideo.width > 0 && droppedVideo.height > 0 && droppedVideo.frameSources >= 2)
-    pass('modular audio mix: browser-playable dropped video samples a seek-frame preview source');
+  if (droppedVideo.hasVideo && droppedVideo.nativePreview && droppedVideo.durationMs > 0 && droppedVideo.width > 0 && droppedVideo.height > 0 && droppedVideo.frameSources >= 2 && droppedVideo.thumbCount > 0)
+    pass('modular audio mix: browser-playable dropped video samples frame preview and thumbnail strip');
   else fail('modular audio mix dropped video preview mismatch: ' + JSON.stringify(droppedVideo));
 
   const unsupportedVideo = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
@@ -411,10 +425,11 @@ export async function run(ctx) {
       status: asset?.status,
       warning: root.querySelector('.mmx-frame-preview-warning')?.textContent || '',
       capabilityNote: root.querySelector('.mx-capability-note')?.textContent || '',
+      proxyThumb: root.querySelector(`.mmx-thumb-strip[data-element-id="${element?.id}"]`)?.dataset.needsProxy || '',
       metadataStatus: root.dataset.lastVisualMetadata,
     };
   });
-  if (unsupportedVideo.hasVideo && unsupportedVideo.needsProxy && unsupportedVideo.status === 'needs-proxy' && /ffmpeg|proxy|conversion|Transcoding/i.test(`${unsupportedVideo.warning} ${unsupportedVideo.capabilityNote}`))
+  if (unsupportedVideo.hasVideo && unsupportedVideo.needsProxy && unsupportedVideo.status === 'needs-proxy' && unsupportedVideo.proxyThumb === 'true' && /ffmpeg|proxy|conversion|Transcoding/i.test(`${unsupportedVideo.warning} ${unsupportedVideo.capabilityNote}`))
     pass('modular audio mix: unsupported dropped video shows conversion/proxy warning without ffmpeg load');
   else fail('modular audio mix unsupported video warning mismatch: ' + JSON.stringify(unsupportedVideo));
 }

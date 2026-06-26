@@ -89,6 +89,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       minZoom: 0.02,
       maxZoom: 0.8,
       visualFrames: visualRuntime.frames,
+      visualThumbnails: visualRuntime.thumbnails,
     });
     visualRuntime.update(project, viewport.cursorMs);
     decorateShell();

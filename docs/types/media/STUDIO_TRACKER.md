@@ -298,10 +298,12 @@ Stage 5 video/image elements and seek-frame preview has started:
   duration/dimensions, and unsupported video keeps the `needs-proxy` state so
   the preview/capability notes continue to explain the ffmpeg/proxy requirement
   without loading ffmpeg.
-- Added `mixer-visual-runtime.js`, a runtime-only frame cache that owns object
-  URLs and hidden video samplers. The seek-frame preview now draws decoded image
-  sources and sparse browser-playable video frame samples when available, while
-  project settings export remains config-only and strips frame/thumbnail caches.
+- Added `mixer-visual-runtime.js`, a runtime-only frame/thumbnail cache that
+  owns object URLs and hidden video samplers. The seek-frame preview now draws
+  decoded image sources and sparse browser-playable video frame samples when
+  available, while visual clips render sparse thumbnail strips from the same
+  runtime-only cache. Project settings export remains config-only and strips
+  frame/thumbnail caches.
 - Opened video files now enter the shared modular mixer model through
   `mixer-video-source.js` in Timeline mode. Browser-playable sources such as
   `Sample.webm` mount as a one-lane video/audio source project with ruler,
@@ -311,9 +313,10 @@ Stage 5 video/image elements and seek-frame preview has started:
   smoke coverage until the modular timeline fully replaces it.
 - Focused smoke coverage now proves the dropped SVG image records 64x40
   metadata in the project model, paints the actual image color into the
-  seek-frame canvas, samples a dropped browser-playable WebM frame source, and
-  shows a conversion/proxy warning for unsupported dropped AVI while ffmpeg
-  remains unloaded.
+  seek-frame canvas, samples a dropped browser-playable WebM frame source,
+  renders sparse runtime thumbnails for browser-playable video, and shows a
+  conversion/proxy warning plus proxy-required thumbnail strip state for
+  unsupported dropped AVI while ffmpeg remains unloaded.
 - Validation passed for this slice:
   - `node --check docs/types/media/mixer/mixer-visual-preview.js docs/types/media/mixer/mixer-renderer.js docs/types/media/mixer/mixer-ui.js docs/types/media/mixer/mixer-audio-multi-helpers.js tests/areas/media-studio-mixer-shell.mjs`
   - `node --check docs/types/media/mixer/mixer-media-drop.js docs/types/media/mixer/mixer-audio-multi.js tests/areas/media-studio-mixer-audio-listen.mjs`

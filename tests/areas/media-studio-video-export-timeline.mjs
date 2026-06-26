@@ -100,8 +100,9 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       hasZoom: !!root.querySelector('.mmx-zoom'),
       hasPreview: !!root.querySelector('.mmx-frame-preview'),
       hasVisual: !!root.querySelector('.mmx-element-visual'),
+      thumbCount: Number(root.querySelector('.mmx-thumb-strip')?.dataset.thumbCount || 0),
       hasTransform: !!root.querySelector('.mmx-inspector-visual-opacity'),
-      hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache/i.test(settings || ''),
+      hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(settings || ''),
       hasVideo: !!element?.capabilities?.hasVideo,
       hasAudio: !!element?.capabilities?.hasAudio,
       width: asset?.media?.videoWidth || 0,
@@ -127,6 +128,12 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     (node) => Number(node.dataset.frameSources || 0));
   if (sourceFrameCount > 0) pass('P6: modular video source samples the current seek-frame preview');
   else fail('modular video source frame sources: ' + sourceFrameCount);
+  await page.waitForFunction((sel) => Number(document.querySelector(sel)?.dataset.thumbCount || 0) > 0,
+    tlModeSel + ' .mmx-video-source .mmx-thumb-strip', { timeout: 12000 });
+  const sourceThumbCount = await page.$eval(tlModeSel + ' .mmx-video-source .mmx-thumb-strip',
+    (node) => Number(node.dataset.thumbCount || 0));
+  if (sourceThumbCount > 0) pass('P6: modular video source renders sparse runtime thumbnails');
+  else fail('modular video source thumbnail count: ' + sourceThumbCount);
   const tlToggle = await page.evaluateHandle((sel) =>
     [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
   const tlToggleExists = await tlToggle.evaluate((e) => !!e);

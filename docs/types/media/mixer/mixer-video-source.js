@@ -124,6 +124,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       minZoom: 0.02,
       maxZoom: 0.8,
       visualFrames: visualRuntime.frames,
+      visualThumbnails: visualRuntime.thumbnails,
     });
     visualRuntime.update(project, viewport.cursorMs);
     decorate();
