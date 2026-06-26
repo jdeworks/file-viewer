@@ -84,6 +84,27 @@ export async function run(ctx) {
   if (/section|Section/i.test(mstText)) pass('sample.mustache: sections listed'); else fail('mustache sections: ' + mstText.slice(0, 300));
   if (/partial|Partial/i.test(mstText)) pass('sample.mustache: partials listed'); else fail('mustache partials: ' + mstText.slice(0, 300));
   if (/title|headline|description/i.test(mstText)) pass('sample.mustache: variables listed'); else fail('mustache variables: ' + mstText.slice(0, 300));
+  if (/external dependency|root title|unescaped/i.test(mstText)) pass('sample.mustache: partial dependencies and variable groups shown'); else fail('mustache details: ' + mstText.slice(0, 800));
+  const mstPartialHint = await page.$eval('#previewHost .mst-doc .mst-tag-partial', (e) => e.title);
+  if (/Includes another template|render host/i.test(mstPartialHint)) pass('sample.mustache: partial hover help present'); else fail('mustache partial hint: ' + mstPartialHint);
+  const mstSourceOpen = await page.$eval('#previewHost .mst-doc .kf-source-details', (e) => e.open);
+  if (!mstSourceOpen) pass('sample.mustache: source starts collapsed'); else fail('mustache source should start collapsed');
+  await page.click('#previewHost .mst-doc .kf-source-link');
+  const mstJump = await page.$eval('#previewHost .mst-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (mstJump.open && mstJump.highlighted) pass('sample.mustache: item click opens and highlights source'); else fail('mustache source jump: ' + JSON.stringify(mstJump));
+  const mstBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/mustache-template/renderer.js');
+    const rendered = mod.render({ text: '{{#items}}\n{{name}}\n{{/wrong}}\n{{#open}}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/Template Diagnostics|mismatch|unclosed section/i.test(mstBad.text + mstBad.issues)) pass('sample.mustache: malformed section diagnostics shown'); else fail('mustache diagnostics: ' + JSON.stringify(mstBad).slice(0, 500));
 
   // ── sample.sparql viewer (SPARQL Query) ──
   await openExample('sample.sparql');
