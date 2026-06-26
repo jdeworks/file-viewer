@@ -571,3 +571,26 @@
 .mmx-video-transition-readout {
   min-inline-size: 138px;
 }
+
+.mmx-video-edit-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.mmx-video-trim-in,
+.mmx-video-trim-out,
+.mmx-video-fade-in,
+.mmx-video-fade-out {
+  inline-size: 66px;
+  min-height: 28px;
+}
+
+.mmx-video-edit-apply {
+  min-height: 28px;
+}
+
+.mmx-video-edit-readout {
+  min-inline-size: 160px;
+}

@@ -203,10 +203,12 @@ an explicit "Detailed legacy timeline" disclosure. Music-bed and second-media
 intake now live on the modular video-source mixer as additional shared-model
 lanes with config-only export provenance. Selected visual transition controls
 also now live on the modular Timeline toolbar and write dissolve/wipe-left
-records directly into shared project state. The next retirement work is moving
-any remaining trim/fade action behavior that only exists in the legacy helper
-onto the shared modular surface, then removing the compatibility surface
-entirely.
+records directly into shared project state. Selected clip trim/fade controls
+also now live on the modular Timeline toolbar and write source in/out plus
+audio/visual fade state into the shared model. The next retirement work is
+auditing the remaining legacy Timeline helper for any behavior that is still not
+represented by the shared modular surface, then removing the compatibility
+surface entirely.
 
 ### R0a-old — Auto-Audiobook-Grade Default Audio Lane
 

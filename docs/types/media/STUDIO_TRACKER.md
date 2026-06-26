@@ -473,6 +473,10 @@ Stage 7 project settings import/export UI has started:
   to the selected or most recent visual element, records the source/target
   transition in shared project state, and refreshes final-export provenance with
   the matching wipe overlay graph without serializing media bytes.
+- Added a direct modular Timeline trim/fade workflow for selected clips. The
+  video-source mixer toolbar now applies source in/out trims plus matching
+  audio and visual fades through the shared project model, refreshes final
+  video export provenance, and keeps trim/fade proof config-only.
 - Focused smoke coverage in `tests/areas/media-studio-mixer-audio-listen.mjs`
   proves the Mix settings UI imports config-only state, reports matched/missing
   media, exposes all three required reapply choices, applies the ask-per-
@@ -491,9 +495,9 @@ Stage 7 project settings import/export UI has started:
 - Stage 7 remaining work: expand filter coverage for additional
   transition/effect controls as those controls become user-facing, and continue
   hardening real browser ffmpeg renders against long/complex compositions.
-- Stage 8 remaining work: continue moving any remaining trim/fade action
-  behavior that only exists in legacy helpers onto the shared modular surface,
-  then remove compatibility-only legacy surfaces once equivalent workflows are
+- Stage 8 remaining work: audit the remaining legacy Timeline helper for
+  behavior that is not yet represented by the shared modular surface, then
+  remove compatibility-only legacy surfaces once equivalent workflows are
   directly covered.
 
 ### A1 — Auto-Audiobook-Grade Default Audio Lane

@@ -325,6 +325,59 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     && !modularSecondVideoTransition.hasBytes)
     pass('P6: modular Timeline transition export provenance includes wipe overlay graph without media bytes');
   else fail('modular Timeline transition export provenance: ' + JSON.stringify(modularSecondVideoTransition));
+  const modularTrimFade = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const selectedId = root.__mediaMixerVideoSource.getProject().selection?.primary?.id;
+    root.querySelector('.mmx-video-trim-in').value = '0.05';
+    root.querySelector('.mmx-video-trim-in').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-trim-out').value = '0.75';
+    root.querySelector('.mmx-video-trim-out').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-fade-in').value = '0.12';
+    root.querySelector('.mmx-video-fade-in').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-fade-out').value = '0.18';
+    root.querySelector('.mmx-video-fade-out').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-edit-apply')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const project = root.__mediaMixerVideoSource.getProject();
+    const edited = project.elements.find((element) => element.id === selectedId);
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    const visualItem = plan?.provenance?.visualItems?.find((item) => item.elementId === selectedId);
+    const audioItem = plan?.provenance?.audioItems?.find((item) => item.elementId === selectedId);
+    return {
+      selectedId,
+      editedId: edited?.id || '',
+      sourceInMs: Math.round(edited?.timeline?.sourceInMs || 0),
+      sourceOutMs: Math.round(edited?.timeline?.sourceOutMs || 0),
+      durationMs: Math.round(edited?.timeline?.durationMs || 0),
+      audioFadeInMs: edited?.audio?.fadeInMs || 0,
+      audioFadeOutMs: edited?.audio?.fadeOutMs || 0,
+      visualFadeInMs: edited?.visual?.fadeInMs || 0,
+      visualFadeOutMs: edited?.visual?.fadeOutMs || 0,
+      datasetTarget: root.dataset.lastEditTarget || '',
+      datasetTrimIn: root.dataset.lastTrimInMs || '',
+      datasetTrimOut: root.dataset.lastTrimOutMs || '',
+      visualItem: !!visualItem,
+      audioItem: !!audioItem,
+      visualProvenanceFadeIn: visualItem?.visual?.fadeInMs || 0,
+      audioProvenanceFadeIn: audioItem?.fadeInMs || 0,
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (modularTrimFade.editedId === modularTrimFade.selectedId
+    && modularTrimFade.sourceInMs === 50 && modularTrimFade.sourceOutMs === 750
+    && modularTrimFade.durationMs === 700)
+    pass('P6: modular Timeline selected clip edit applies source in/out trim state');
+  else fail('modular Timeline trim edit state: ' + JSON.stringify(modularTrimFade));
+  if (modularTrimFade.audioFadeInMs === 120 && modularTrimFade.audioFadeOutMs === 180
+    && modularTrimFade.visualFadeInMs === 120 && modularTrimFade.visualFadeOutMs === 180
+    && modularTrimFade.datasetTarget === modularTrimFade.selectedId)
+    pass('P6: modular Timeline selected clip edit applies audio and visual fades');
+  else fail('modular Timeline fade edit state: ' + JSON.stringify(modularTrimFade));
+  if (modularTrimFade.visualItem && modularTrimFade.audioItem
+    && modularTrimFade.visualProvenanceFadeIn === 120
+    && modularTrimFade.audioProvenanceFadeIn === 120
+    && !modularTrimFade.hasBytes)
+    pass('P6: modular Timeline trim/fade export provenance is config-only');
+  else fail('modular Timeline trim/fade provenance: ' + JSON.stringify(modularTrimFade));
   const modularTimelineGrammar = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
     let project = root.__mediaMixerVideoSource?.getProject?.();
     const sourceVisual = project?.elements?.find((item) => item.capabilities?.hasVideo || item.capabilities?.hasImage);

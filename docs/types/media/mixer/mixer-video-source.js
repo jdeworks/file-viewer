@@ -7,6 +7,7 @@ import {
   renderVideoMixWithFfmpeg,
   selectTarget,
   setElementTransition,
+  trimElement,
   updateAsset,
   updateElement,
 } from './index.js';
@@ -228,6 +229,10 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       applyToolbarTransition();
       return;
     }
+    if (button.matches('.mmx-video-edit-apply')) {
+      applyToolbarEdit();
+      return;
+    }
     if (button.matches('.mmx-video-render-run')) renderFinalExport();
   }
 
@@ -242,6 +247,10 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     }
     if (target?.matches?.('.mmx-video-transition-kind, .mmx-video-transition-duration')) {
       syncTransitionReadout();
+      return;
+    }
+    if (target?.matches?.('.mmx-video-trim-in, .mmx-video-trim-out, .mmx-video-fade-in, .mmx-video-fade-out')) {
+      syncEditReadout();
     }
   }
 
@@ -374,8 +383,35 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     transitionReadout.className = 'mmx-video-transition-readout';
     transitionReadout.textContent = transitionSummary(project);
     transition.append(transitionText, kind, duration, apply, transitionReadout);
-    wrap.append(text, music, transition);
+    const edit = document.createElement('div');
+    edit.className = 'mmx-video-edit-tools';
+    const editText = document.createElement('span');
+    editText.textContent = 'Selected clip edit';
+    const trimIn = editNumberInput('mmx-video-trim-in', 'Trim in seconds', '0', 0.01);
+    const trimOut = editNumberInput('mmx-video-trim-out', 'Trim out seconds', '', 0.01);
+    const fadeIn = editNumberInput('mmx-video-fade-in', 'Fade in seconds', '0', 0.05);
+    const fadeOut = editNumberInput('mmx-video-fade-out', 'Fade out seconds', '0', 0.05);
+    const editApply = document.createElement('button');
+    editApply.type = 'button';
+    editApply.className = 'mmx-video-edit-apply';
+    editApply.textContent = 'Apply edit';
+    const editReadout = document.createElement('span');
+    editReadout.className = 'mmx-video-edit-readout';
+    editReadout.textContent = editSummary(project);
+    edit.append(editText, trimIn, trimOut, fadeIn, fadeOut, editApply, editReadout);
+    wrap.append(text, music, transition, edit);
     return wrap;
+  }
+
+  function editNumberInput(className, label, value, step) {
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = className;
+    input.min = '0';
+    input.step = String(step);
+    input.value = value;
+    input.setAttribute('aria-label', label);
+    return input;
   }
 
   function applyToolbarTransition() {
@@ -401,6 +437,52 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   function syncTransitionReadout() {
     const readout = root.querySelector('.mmx-video-transition-readout');
     if (readout) readout.textContent = transitionSummary(project);
+  }
+
+  function applyToolbarEdit() {
+    const target = selectedEditableElement(project) || project.elements[0];
+    if (!target) return;
+    const sourceInMs = secondsInput('.mmx-video-trim-in', target.timeline?.sourceInMs || 0);
+    const sourceOutFallback = target.timeline?.sourceOutMs || target.timeline?.rawDurationMs || target.timeline?.durationMs || sourceInMs;
+    const sourceOutMs = secondsInput('.mmx-video-trim-out', sourceOutFallback);
+    const fadeInMs = secondsInput('.mmx-video-fade-in', target.audio?.fadeInMs || target.visual?.fadeInMs || 0);
+    const fadeOutMs = secondsInput('.mmx-video-fade-out', target.audio?.fadeOutMs || target.visual?.fadeOutMs || 0);
+    project = trimElement(project, target.id, { sourceInMs, sourceOutMs });
+    project = updateElement(project, target.id, (element) => ({
+      ...element,
+      audio: {
+        ...element.audio,
+        fadeInMs,
+        fadeOutMs,
+      },
+      visual: {
+        ...element.visual,
+        fadeInMs: isVisualElement(element) ? fadeInMs : element.visual?.fadeInMs,
+        fadeOutMs: isVisualElement(element) ? fadeOutMs : element.visual?.fadeOutMs,
+      },
+    }));
+    project = selectTarget(project, { type: 'element', id: target.id }, [{ type: 'element', id: target.id }]);
+    root.dataset.lastEditTarget = target.id;
+    root.dataset.lastTrimInMs = String(sourceInMs);
+    root.dataset.lastTrimOutMs = String(sourceOutMs);
+    root.dataset.lastFadeInMs = String(fadeInMs);
+    root.dataset.lastFadeOutMs = String(fadeOutMs);
+    lastExportPlan = buildExportPlan();
+    root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
+    render();
+  }
+
+  function syncEditReadout() {
+    const readout = root.querySelector('.mmx-video-edit-readout');
+    if (readout) readout.textContent = editSummary(project);
+  }
+
+  function secondsInput(selector, fallbackMs) {
+    const raw = root.querySelector(selector)?.value;
+    if (raw === '') return Math.max(0, Math.round(Number(fallbackMs) || 0));
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return Math.max(0, Math.round(Number(fallbackMs) || 0));
+    return Math.max(0, Math.round(value * 1000));
   }
 
   async function renderFinalExport() {
@@ -553,6 +635,11 @@ function selectedVisualElement(project) {
   return isVisualElement(selected) ? selected : null;
 }
 
+function selectedEditableElement(project) {
+  const selectedId = project.selection?.primary?.type === 'element' ? project.selection.primary.id : null;
+  return selectedId ? project.elements.find((element) => element.id === selectedId) || null : null;
+}
+
 function latestVisualElement(project) {
   return (project.elements || [])
     .filter(isVisualElement)
@@ -580,6 +667,20 @@ function transitionSummary(project) {
   return `${target.type || 'visual'}: ${transition.kind || 'dissolve'} ${Math.round(transition.durationMs || 0)} ms`;
 }
 
+function editSummary(project) {
+  const target = selectedEditableElement(project) || project.elements?.[0];
+  if (!target) return 'No clip selected';
+  const sourceIn = Math.round(Number(target.timeline?.sourceInMs) || 0);
+  const sourceOut = Math.round(Number(target.timeline?.sourceOutMs) || 0);
+  const fadeIn = Math.round(Number(target.audio?.fadeInMs || target.visual?.fadeInMs) || 0);
+  const fadeOut = Math.round(Number(target.audio?.fadeOutMs || target.visual?.fadeOutMs) || 0);
+  return `${target.type || 'clip'}: ${msSeconds(sourceIn)}-${msSeconds(sourceOut)}s · fades ${msSeconds(fadeIn)}/${msSeconds(fadeOut)}s`;
+}
+
 function isVisualElement(element) {
   return !!(element?.capabilities?.hasVideo || element?.capabilities?.hasImage);
+}
+
+function msSeconds(ms) {
+  return String(Math.round((Number(ms) || 0) / 10) / 100);
 }
