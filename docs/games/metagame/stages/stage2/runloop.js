@@ -5,9 +5,10 @@
 import { buildFloor, attachGrid } from "./engine.js";
 import { rollEntity, runHeat } from "./data.js";
 import { CIPHER_PATH, BTS_PATH } from "./messages.js";
+import { FINAL_FLOOR } from "./acts.js";
 
-// Floors per run before the boss (the descent length).
-export const MAX_FLOOR = 5;
+// Floors per run before the boss (the descent length) — the deepest act cap (3 acts × 3 floors).
+export const MAX_FLOOR = FINAL_FLOOR;
 
 // The active opt-in run modifiers (C3 Heat), passed into buildFloor as mods.run.
 function runMods(state) { return (state.meta && state.meta.runMods) || {}; }

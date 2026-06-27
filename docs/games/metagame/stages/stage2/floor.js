@@ -9,6 +9,7 @@ import { placeHazards, hazardIndex } from "./hazards.js";
 import { placeTraps, trapIndex } from "./traps.js";
 import { placeConsumables } from "./consumables.js";
 import { rollAffix } from "./affixes.js";
+import { isGuardianFloor, isOverflowFloor } from "./acts.js";
 
 // Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
 // grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
@@ -154,9 +155,9 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
     else if (d.kind === "potion" && !run.no_potions) potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
-  // B6 floor guardian on band floors (3, 5, 7, 9…): a beefy, mechanic-bearing foe posted by the
-  // stairs, so the descent is punctuated by a real spike you must get past.
-  if (floorNum >= 3 && floorNum % 2 === 1) {
+  // Act-cap floor guardian (floors 3, 6, 9 — see acts.js): a beefy, mechanic-bearing foe posted by
+  // the stairs, so each act ENDS in a real spike you must get past before the next biome (or boss).
+  if (isGuardianFloor(floorNum)) {
     const g = makeGuardian(rng, floorNum, monsters.length);
     const spot = adjacentOpen(grid, exit) || take();
     if (spot) { g.x = spot.x; g.y = spot.y; g.home = { x: spot.x, y: spot.y }; monsters.push(g); }

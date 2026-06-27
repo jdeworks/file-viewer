@@ -1305,6 +1305,18 @@ function useConsumable(world, player, type, events) {
   return true;
 }
 
+// ../../docs/games/metagame/stages/stage2/acts.js
+var ACTS = [
+  { id: 1, name: "The Warrens", from: 1, to: 3, verb: "combat" },
+  { id: 2, name: "Cisterns & Emberworks", from: 4, to: 6, verb: "hazard" },
+  { id: 3, name: "The Overflow", from: 7, to: 9, verb: "darkness" }
+];
+var ACT_CAP_FLOORS = ACTS.map((a) => a.to);
+var FINAL_FLOOR = ACTS[ACTS.length - 1].to;
+function isGuardianFloor(floor) {
+  return ACT_CAP_FLOORS.includes(floor);
+}
+
 // ../../docs/games/metagame/stages/stage2/floor.js
 var GROWTH = 1.35;
 function floorDims(runSeed, floorNum) {
@@ -1437,7 +1449,7 @@ function buildFloor(runSeed, floorNum, mods = {}) {
     else if (d.kind === "potion" && !run.no_potions) potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
-  if (floorNum >= 3 && floorNum % 2 === 1) {
+  if (isGuardianFloor(floorNum)) {
     const g = makeGuardian(rng, floorNum, monsters.length);
     const spot = adjacentOpen(grid, exit) || take();
     if (spot) {
@@ -1804,8 +1816,8 @@ function revealHidden(world, player, h, events) {
 // ../../docs/games/metagame/stages/stage2/biome.js
 var BIOMES = [
   { id: "warrens", name: "The Warrens", maxFloor: 3 },
-  { id: "cisterns", name: "Flooded Cisterns", maxFloor: 6 },
-  { id: "emberworks", name: "Emberworks", maxFloor: 9 },
+  { id: "cisterns", name: "Flooded Cisterns", maxFloor: 5 },
+  { id: "emberworks", name: "Emberworks", maxFloor: 6 },
   { id: "overflow", name: "The Overflow", maxFloor: Infinity }
 ];
 function biomeForFloor(floor) {
@@ -2287,7 +2299,7 @@ function escapeChar(ch) {
 }
 
 // ../../docs/games/metagame/stages/stage2/runloop.js
-var MAX_FLOOR = 5;
+var MAX_FLOOR = FINAL_FLOOR;
 function runMods(state) {
   return state.meta && state.meta.runMods || {};
 }
