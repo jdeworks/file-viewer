@@ -27,6 +27,11 @@ export const MIME = {
   webm: 'video/webm',
   gif: 'image/gif',
   webp: 'image/webp',
+  mov: 'video/quicktime',
+  mkv: 'video/x-matroska',
+  avi: 'video/x-msvideo',
+  m4v: 'video/mp4',
+  ogv: 'video/ogg',
 };
 
 function round2(value) {
@@ -37,19 +42,35 @@ function round4(value) {
   return Number(value).toFixed(4);
 }
 
-function buildTrimPlan(params, inputName, base) {
-  const { start, end, precise } = params;
-  if (precise) {
+// Map an output-format choice ('source' | 'mp4' | 'webm' | …) against the source extension to the
+// target container + whether the streams can be copied. Copy keeps the source codecs (fast,
+// lossless) and is only valid when the target container matches the source; a different container —
+// or a "precise" frame-accurate cut — forces a re-encode to that container's default codecs.
+function resolveTrimContainer(format, srcExt, precise) {
+  const src = (srcExt || 'mp4').toLowerCase();
+  const want = (!format || format === 'source') ? src : String(format).toLowerCase();
+  const reencode = !!precise || want !== src;
+  const encodeArgs = want === 'webm'
+    ? ['-c:v', 'libvpx-vp9', '-crf', '33', '-b:v', '0', '-c:a', 'libopus']
+    : ['-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac'];
+  return { ext: want, reencode, encodeArgs };
+}
+
+function buildTrimPlan(params, inputName, base, srcExt) {
+  const { start, end, precise, format } = params;
+  const c = resolveTrimContainer(format, srcExt, precise);
+  const out = 'out.' + c.ext;
+  if (c.reencode) {
     return {
-      outputName: 'out.mp4',
+      outputName: out,
       outBase: base + '_trim',
-      args: ['-i', inputName, '-ss', start, '-to', end, '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', 'out.mp4'],
+      args: ['-i', inputName, '-ss', start, '-to', end, ...c.encodeArgs, out],
     };
   }
   return {
-    outputName: 'out.mp4',
+    outputName: out,
     outBase: base + '_trim',
-    args: ['-ss', start, '-to', end, '-i', inputName, '-c', 'copy', 'out.mp4'],
+    args: ['-ss', start, '-to', end, '-i', inputName, '-c', 'copy', out],
   };
 }
 
@@ -178,7 +199,7 @@ export function buildOperationPlan(opId, params, context) {
 
   switch (opId) {
     case 'trim':
-      return buildTrimPlan(params, inputName, base);
+      return buildTrimPlan(params, inputName, base, srcExt);
 
     case 'audio':
       return buildVideoExportPlan(params, inputName, base);

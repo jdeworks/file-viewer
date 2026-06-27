@@ -20,7 +20,7 @@ import { ensureAudioListenStyles } from './mixer-audio-listen.js';
 import { createClipLane } from './audio-clip-lane.js';
 import { buildSeekFramePreview, renderSeekFramePreview } from './mixer-visual-preview.js';
 import {
-  buildClipView,
+  buildLaneClips,
   buildThumbnailStrip,
   firstElementForLane,
   hasVisualElements,
@@ -146,11 +146,11 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   };
 
   function makeLaneCallbacks(laneId) {
-    const ge = () => firstElementForLane(project, laneId);
+    const ge = (clipId) => project.elements.find((e) => e.id === clipId && e.laneId === laneId) || firstElementForLane(project, laneId);
     return {
-      onMove(ds) { const e = ge(); if (!e) return; project = moveElement(project, e.id, Math.max(0, (e.timeline.startMs || 0) + ds * 1000)); render(); },
-      onTrim(side, ds) {
-        const e = ge(); if (!e) return;
+      onMove(ds, _v, clipId) { const e = ge(clipId); if (!e) return; project = moveElement(project, e.id, Math.max(0, (e.timeline.startMs || 0) + ds * 1000)); render(); },
+      onTrim(side, ds, _v, clipId) {
+        const e = ge(clipId); if (!e) return;
         const raw = e.timeline.rawDurationMs || e.timeline.durationMs || 0;
         const ins = e.timeline.sourceInMs || 0; const outs = e.timeline.sourceOutMs || raw;
         project = trimElement(project, e.id, side === 'in'
@@ -158,8 +158,8 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
           : { sourceInMs: ins, sourceOutMs: clamp(outs + ds * 1000, ins + 50, raw) });
         render();
       },
-      onFade(side, ds) {
-        const e = ge(); if (!e) return;
+      onFade(side, ds, _v, clipId) {
+        const e = ge(clipId); if (!e) return;
         const field = side === 'in' ? 'fadeInMs' : 'fadeOutMs';
         const sign = side === 'in' ? 1 : -1;
         project = updateElement(project, e.id, (el) => ({ ...el, audio: { ...el.audio, [field]: Math.max(0, (el.audio?.[field] || 0) + sign * ds * 1000) } }));
@@ -167,7 +167,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       },
       onSeek(sec) { setCursorMs(sec * 1000, { syncMedia: true }); render(); },
       onScroll(px) { viewport = { ...viewport, scrollLeft: px }; syncScroll(px); },
-      onSelect() { const e = ge(); if (e) project = selectTarget(project, { type: 'element', id: e.id }, [{ type: 'element', id: e.id }]); render(); },
+      onSelect(clipId) { const e = ge(clipId); if (e) project = selectTarget(project, { type: 'element', id: e.id }, [{ type: 'element', id: e.id }]); render(); },
     };
   }
 
@@ -180,13 +180,6 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
         const isVis = !!(el?.capabilities?.hasVideo || el?.capabilities?.hasImage);
         const ln = createClipLane({ label: lm.label || lm.role || 'Lane', kind: lm.role || '', interactive: !isVis, callbacks: makeLaneCallbacks(lm.id) });
         ln.setSurface(root); ln.el.dataset.laneId = lm.id;
-        if (isVis && el) {
-          const badge = document.createElement('span'); badge.className = 'mmx-element-visual';
-          badge.textContent = el.capabilities?.hasVideo ? 'Video frame' : 'Image frame';
-          badge.dataset.opacity = String(el.visual?.opacity ?? 1);
-          if (el.capabilities?.needsFfmpegForPreview) badge.dataset.needsProxy = 'true';
-          ln.clip.append(badge);
-        }
         lanesContainer.append(ln.el); clipLanes.set(lm.id, ln);
       }
       const ln = clipLanes.get(lm.id); if (ln) lanesContainer.append(ln.el);
@@ -199,14 +192,21 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (zoomRange) zoomRange.value = String(viewport.pxPerMs);
     reconcileLanes();
     for (const [laneId, ln] of clipLanes) {
-      const clipView = buildClipView(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
+      const clipView = buildLaneClips(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
       if (clipView) ln.update(clipView);
       const el = firstElementForLane(project, laneId);
       if (el?.capabilities?.hasVideo || el?.capabilities?.hasImage) {
         ln.canvasWrap.querySelector('.mmx-thumb-strip')?.remove();
         ln.canvasWrap.append(buildThumbnailStrip(el, visualRuntime.thumbnails));
-        const badge = ln.el.querySelector('.mmx-element-visual');
-        if (badge) badge.dataset.opacity = String(el.visual?.opacity ?? 1);
+        // Badge lives on the first clip block (clips reconcile each update, so recreate it here).
+        ln.el.querySelector('.mmx-element-visual')?.remove();
+        if (ln.clip) {
+          const badge = Object.assign(document.createElement('span'), { className: 'mmx-element-visual' });
+          badge.textContent = el.capabilities?.hasVideo ? 'Video frame' : 'Image frame';
+          badge.dataset.opacity = String(el.visual?.opacity ?? 1);
+          if (el.capabilities?.needsFfmpegForPreview) badge.dataset.needsProxy = 'true';
+          ln.clip.append(badge);
+        }
       }
     }
     syncScroll(viewport.scrollLeft);
