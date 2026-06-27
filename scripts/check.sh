@@ -206,6 +206,7 @@ FULL_UNIT_TESTS=(
   tests/known-red-lang.test.mjs
   tests/known-reason-lang.test.mjs
   tests/known-scala-lang.test.mjs
+  tests/known-rescript-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
