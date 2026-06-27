@@ -575,6 +575,90 @@ export async function run(ctx) {
   // Help affordance now lives in the metagame header next to SFX.
   const helpInHeader = await page.$eval('.mg-v3-head-actions .mg-help-btn', (el) => !el.hidden).catch(() => false);
   if (helpInHeader) pass('Stage 1 help button appears in the header next to SFX'); else fail('Stage 1 header help button missing/hidden');
+
+  // ── Stage 1 prestige loop + boss, driven deterministically via window.__fvStage1 (no real-time wait) ──
+  await page.waitForFunction(() => !!window.__fvStage1, null, { timeout: 8000 });
+  // Each prestige unlocks ONE post-prestige mechanic, in order.
+  const mechProgress = await page.evaluate(() => {
+    const out = [];
+    for (let i = 1; i <= 5; i++) { window.__fvStage1.prestige(); out.push(window.__fvStage1.mechanics()); }
+    return out;
+  });
+  if (mechProgress[0].includes('pipeline') && mechProgress[1].includes('flux') && mechProgress[2].includes('entropy')
+      && mechProgress[3].includes('echoes') && mechProgress[4].includes('resonance') && mechProgress[4].length === 5)
+    pass('Stage 1 prestige depth unlocks pipeline→flux→entropy→echoes→resonance');
+  else fail('Stage 1 mechanic unlock order wrong: ' + JSON.stringify(mechProgress));
+  const cores = await page.evaluate(() => window.__fvStage1.state().cores);
+  if (cores >= 5) pass('Stage 1 prestige grants persistent Cores (' + cores + ')'); else fail('Stage 1 cores after 5 prestiges: ' + cores);
+
+  // Pipeline: wire the Signal Booster and confirm it auto-routes Bit Boxes via tick-count alone.
+  const pipe = await page.evaluate(() => {
+    window.__fvStage1.grind();
+    const s = window.__fvStage1.state();
+    s.pipelines = { 's1-boost': true };
+    const before = s.owned['s1-box'] || 0;
+    window.__fvStage1.tick(120);   // > one 5 s booster cycle (50 ticks)
+    return { before, after: window.__fvStage1.state().owned['s1-box'] || 0 };
+  });
+  if (pipe.after > pipe.before) pass('Stage 1 Pipeline auto-routes builder output (boxes ' + pipe.before + '→' + pipe.after + ')');
+  else fail('Stage 1 Pipeline did not produce: ' + JSON.stringify(pipe));
+
+  // Flux: the burst meter charges per tick and auto-fires a boost at 100%.
+  const flux = await page.evaluate(() => {
+    const s = window.__fvStage1.state();
+    s.flux = { meter: 0, boostMult: 1, boostTicks: 0 };
+    window.__fvStage1.tick(60);
+    const meter = window.__fvStage1.state().flux.meter;
+    window.__fvStage1.tick(120);
+    const f = window.__fvStage1.state().flux;
+    return { meter, boostTicks: f.boostTicks, boostMult: f.boostMult };
+  });
+  if (flux.meter > 0 && flux.boostTicks > 0 && flux.boostMult === 3) pass('Stage 1 Flux meter charges and fires a ×3 boost at 100%');
+  else fail('Stage 1 Flux did not charge/fire: ' + JSON.stringify(flux));
+
+  // Entropy: an unmanaged, unwired tier loses a unit on the minute boundary.
+  const entropy = await page.evaluate(() => {
+    const s = window.__fvStage1.state();
+    s.owned['s1-box'] = 10; s.pipelines = {}; s.managers = {};
+    s.ticks = 599;   // next tick → 600 (one game-minute) triggers decay
+    window.__fvStage1.tick(1);
+    return window.__fvStage1.state().owned['s1-box'];
+  });
+  if (entropy === 9) pass('Stage 1 Entropy decays an unprotected tier (10→9)'); else fail('Stage 1 Entropy decay wrong: ' + entropy);
+
+  // Echoes: a corrupted glyph spawns on cadence and resolves on click.
+  const echo = await page.evaluate(() => {
+    const s = window.__fvStage1.state();
+    s.echo = { active: false, spawnTick: 0, expireTick: 0, lastTick: (s.ticks || 0) - 1300 };
+    window.__fvStage1.tick(1);
+    const active = window.__fvStage1.state().echo.active;
+    return { active, cleared: window.__fvStage1.clickEcho() };
+  });
+  if (echo.active && echo.cleared) pass('Stage 1 Defrag Echo spawns and resolves on click'); else fail('Stage 1 Echo flow wrong: ' + JSON.stringify(echo));
+
+  // Resonance: hitting the hidden box:booster ratio is discovered.
+  const reso = await page.evaluate(() => {
+    const s = window.__fvStage1.state();
+    s.owned['s1-boost'] = 1; s.owned['s1-box'] = 3;   // ratio 3 → within the 2–4 band
+    window.__fvStage1.tick(1);
+    return Boolean((window.__fvStage1.state().resonanceFound || {})['box-boost']);
+  });
+  if (reso) pass('Stage 1 Resonance discovered at the box:booster sweet spot'); else fail('Stage 1 Resonance not discovered');
+
+  // Boss gate is real, and the boss is UNWINNABLE while the cheat is active (un-cheat is load-bearing).
+  const gate = await page.evaluate(() => {
+    const s = window.__fvStage1.state();
+    s.owned = {}; s.bits = { m: 0, e: 0 };
+    const before = window.__fvStage1.fightBoss();
+    window.__fvStage1.grind();
+    const after = window.__fvStage1.fightBoss({ tapsPerSec: 12 });
+    return { before, after };
+  });
+  if (gate.before.gated) pass('Stage 1 boss gated until all tiers owned + bits ≥ ticket'); else fail('Stage 1 boss not gated from start: ' + JSON.stringify(gate.before));
+  if (!gate.after.gated && gate.after.cheatActive && !gate.after.won)
+    pass('Stage 1 boss is unwinnable while the cheat is active');
+  else fail('Stage 1 boss should lose while cheating: ' + JSON.stringify(gate.after));
+
   await page.click('.games-close');
 
   await page.evaluate(async () => {
@@ -592,24 +676,42 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   pass('Stage 1 raw edit sets canonical 1.cheat_disabled action');
 
+  // Re-open Stage 1 (cheat now disabled via the REAL raw-edit) and win the boss through the same
+  // deterministic scoring model — a fair fight is winnable, recorded through the orchestrator.
+  await page.evaluate(() => { window.__fv.games.open(); });
+  await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
+  await page.click('.games-card[data-game="metagame"]');
+  await page.waitForSelector('.mg-s1', { timeout: 8000 });
+  await page.waitForFunction(() => !!window.__fvStage1, null, { timeout: 8000 });
+  const bossWin = await page.evaluate(() => { window.__fvStage1.grind(); return window.__fvStage1.fightBoss({ tapsPerSec: 12 }); });
+  if (bossWin.won && bossWin.cheatActive === false) pass('Stage 1 boss won after the raw-edit un-cheat (fair fight)');
+  else fail('Stage 1 boss not won after un-cheat: ' + JSON.stringify(bossWin));
+  const s1Defeated = await page.evaluate(() => { try { return (JSON.parse(localStorage.getItem('fv:games:metagame:v3')).defeated || []).includes(1); } catch { return false; } });
+  if (s1Defeated) pass('Stage 1 victory recorded through the orchestrator (defeated includes 1)'); else fail('Stage 1 defeat not recorded by orchestrator');
+  await page.click('.games-close');
+
   await page.evaluate(() => {
     const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
     save.currentStage = 2;
     save.unlockedStages = [1, 2];
     save.defeated = [1];
-    // The cipher.txt + challenge-boss actions only surface once the final floor is reached
-    // (boss.reached); preset it so the boss flow is exercisable without walking all floors.
-    save.stageState = save.stageState || {};
-    save.stageState[2] = { run: { boss: { reached: true } } };
     localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save));
     window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.stage2-glyph-dungeon', { timeout: 8000 });
-  await page.click('[data-action="boss"]');
-  const locked = await page.$eval('[data-field="bossStatus"]', (el) => el.textContent);
-  if (/LOCKED/.test(locked)) pass('Stage 2 boss starts locked before search action'); else fail('Stage 2 lock status: ' + locked);
+  await page.waitForFunction(() => !!window.__fvStage2, null, { timeout: 8000 });
+
+  // Descend the full body — all three acts (Warrens / Cisterns & Emberworks / The Overflow) — to the
+  // boss via the deterministic body solver (no real-time roguelite play). Confirms the boss sits at
+  // the END of the 9-floor body and is reachable only after the descent (MAX_FLOOR=9).
+  const body = await page.evaluate(() => window.__fvStage2.bodySolver());
+  if (body.reached && body.floor >= 9) pass('Stage 2 body: descended all 3 acts to the floor-9 boss'); else fail('Stage 2 body solver: ' + JSON.stringify(body));
+
+  // The boss is gated: attempting it before the cipher.txt search un-cheat must stay LOCKED.
+  const lockedPre = await page.evaluate(() => { window.__fvStage2.bossSolver(); return window.__fvStage2.lockState().unlocked; });
+  if (lockedPre === false) pass('Stage 2 boss starts locked before search action'); else fail('Stage 2 boss not locked pre-search');
 
   await page.evaluate(async () => {
     await window.__fv.searchViewerFile('/docs/examples/metagame/stage2/cipher.txt', 'PASSAGE');
@@ -620,10 +722,10 @@ export async function run(ctx) {
       return Boolean(save.actions?.['2.search_passage'] && save.achievements?.['stage2.search_passage']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.waitForFunction(() => /UNLOCKED/.test(document.querySelector('[data-field="bossStatus"]')?.textContent || ''), null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__fvStage2 && window.__fvStage2.lockState().unlocked, null, { timeout: 5000 });
   pass('Stage 2 search action unlocks boss and achievement');
 
-  await page.click('[data-action="boss"]');
+  await page.evaluate(() => window.__fvStage2.bossSolver());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));

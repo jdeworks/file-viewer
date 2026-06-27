@@ -490,9 +490,12 @@ var MONSTERS = [
   { id: "spitter", glyph: "y", name: "syntax spitter", hp: 18, atk: 7, xp: 6, drop: 3, minFloor: 4, ranged: true },
   { id: "exploder", glyph: "x", name: "segfault", hp: 16, atk: 6, xp: 5, drop: 3, minFloor: 4, explode: true },
   { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 },
-  { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true }
+  { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
+  // Overflow act (darkness) foes — see overflow.js for their behaviour.
+  { id: "lighteater", glyph: "e", name: "light eater", hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
+  { id: "mirror", glyph: "M", name: "mirror", hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
 ];
-var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush"];
+var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush", "lighteater", "mirror"];
 var ELITE_PREFIXES = [
   { key: "armored", name: "armored", hpMult: 1.8, atkMult: 1.1 },
   { key: "venomous", name: "venomous", hpMult: 1.3, atkMult: 1.3, venom: true },
@@ -671,6 +674,58 @@ function skipsTurn(ent) {
     return ent._slowPhase;
   }
   return false;
+}
+
+// ../../docs/games/metagame/stages/stage2/darkness.js
+function lightRadius(floor) {
+  if (floor <= 3) return null;
+  if (floor <= 6) return { rx: 13, ry: 7 };
+  if (floor <= 9) return { rx: 9, ry: 5 };
+  return { rx: 7, ry: 4 };
+}
+var OVERFLOW_FLOOR = 7;
+function isDarkAct(floor) {
+  return floor >= OVERFLOW_FLOOR;
+}
+var DARK_RADIUS = { rx: 6, ry: 3 };
+var TORCH_RADIUS = { rx: 15, ry: 8 };
+var TORCH_STEPS = 28;
+var TORCH_AGGRO = 4;
+function effectiveLight(world) {
+  if (isDarkAct(world.floor)) return torchLit(world) ? TORCH_RADIUS : DARK_RADIUS;
+  return lightRadius(world.floor);
+}
+function torchLit(world) {
+  return Number(world && world.torch) > 0;
+}
+function torchSightBonus(world) {
+  return isDarkAct(world.floor) && torchLit(world) ? TORCH_AGGRO : 0;
+}
+
+// ../../docs/games/metagame/stages/stage2/overflow.js
+var GROW_CAP = 10;
+var GROW_HP = 5;
+var GROW_ATK = 1;
+function lightEaterTick(world, m, events) {
+  const feeding = isDarkAct(world.floor) && !torchLit(world);
+  if (feeding) {
+    if ((m._grow || 0) < GROW_CAP) {
+      m._grow = (m._grow || 0) + 1;
+      m.maxHp += GROW_HP;
+      m.hp += GROW_HP;
+      m.atk += GROW_ATK;
+      if (m._grow === GROW_CAP && events && events.log) events.log.push(`${m.name} has gorged on the dark.`);
+    }
+  } else if ((m._grow || 0) > 0) {
+    m._grow -= 1;
+    m.maxHp = Math.max(1, m.maxHp - GROW_HP);
+    m.hp = Math.min(m.hp, m.maxHp);
+    m.atk = Math.max(2, m.atk - GROW_ATK);
+  }
+}
+function mirrorTick(m, player) {
+  const copied = Math.round(Number(player.atk || 0) * 0.85);
+  if (copied > m.atk) m.atk = copied;
 }
 
 // ../../docs/games/metagame/stages/stage2/monsters.js
@@ -882,6 +937,7 @@ function allyTurn(world, m, occupied, events) {
 function monsterTurn(world, player, events, filter) {
   const px = world.pos.x;
   const py = world.pos.y;
+  const torchAggro = torchSightBonus(world);
   const occupied = /* @__PURE__ */ new Set();
   for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
   for (const m of world.monsters) {
@@ -905,8 +961,10 @@ function monsterTurn(world, player, events, filter) {
       }
     }
     if (skipsTurn(m)) continue;
+    if (m.lighteater) lightEaterTick(world, m, events);
+    if (m.mirror) mirrorTick(m, player);
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
-    const sight = m.sight || 5;
+    const sight = (m.sight || 5) + torchAggro;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
     if (m.ambush && m.hidden) {
       if (dist <= 2) {
@@ -1223,16 +1281,20 @@ function tickFire(world, player, events) {
 var CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
   firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
-  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" }
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" },
+  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" }
 };
-var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze"];
+var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch"];
 function placeConsumables(rng, floor, roomN, takeCell) {
   const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
+  const pool = ["blink", "firebolt", "freeze"];
+  if (floor >= 5) pool.push("torch");
+  if (floor >= 7) pool.push("torch", "torch");
   const out = [];
   for (let i = 0; i < count; i += 1) {
     const c = takeCell();
     if (!c) break;
-    out.push({ x: c.x, y: c.y, type: rng.pick(CONSUMABLE_KEYS), taken: false });
+    out.push({ x: c.x, y: c.y, type: rng.pick(pool), taken: false });
   }
   return out;
 }
@@ -1297,12 +1359,27 @@ function useConsumable(world, player, type, events) {
       }
     }
     events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+  } else if (type === "torch") {
+    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS);
+    events.log.push("you strike a torch — the dark peels back, but something stirs toward the light.");
   } else {
     return false;
   }
   inv[type] -= 1;
   events.used = type;
   return true;
+}
+
+// ../../docs/games/metagame/stages/stage2/acts.js
+var ACTS = [
+  { id: 1, name: "The Warrens", from: 1, to: 3, verb: "combat" },
+  { id: 2, name: "Cisterns & Emberworks", from: 4, to: 6, verb: "hazard" },
+  { id: 3, name: "The Overflow", from: 7, to: 9, verb: "darkness" }
+];
+var ACT_CAP_FLOORS = ACTS.map((a) => a.to);
+var FINAL_FLOOR = ACTS[ACTS.length - 1].to;
+function isGuardianFloor(floor) {
+  return ACT_CAP_FLOORS.includes(floor);
 }
 
 // ../../docs/games/metagame/stages/stage2/floor.js
@@ -1437,7 +1514,7 @@ function buildFloor(runSeed, floorNum, mods = {}) {
     else if (d.kind === "potion" && !run.no_potions) potions.push({ x: d.x, y: d.y, taken: false });
     else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
   }
-  if (floorNum >= 3 && floorNum % 2 === 1) {
+  if (isGuardianFloor(floorNum)) {
     const g = makeGuardian(rng, floorNum, monsters.length);
     const spot = adjacentOpen(grid, exit) || take();
     if (spot) {
@@ -1641,6 +1718,10 @@ function step(world, player, dir) {
   world.pos = { x: nx, y: ny };
   events.moved = true;
   world.stepCount = (world.stepCount || 0) + 1;
+  if (world.torch > 0) {
+    world.torch -= 1;
+    if (world.torch === 0) events.log.push("your torch gutters out. the dark closes in.");
+  }
   const hz = world.hazardAt && world.hazardAt(nx, ny);
   const burntSpore = hz === "spores" && Array.isArray(world.burned) && world.burned.includes(ny * world.width + nx);
   if (hz && !burntSpore) {
@@ -1804,8 +1885,8 @@ function revealHidden(world, player, h, events) {
 // ../../docs/games/metagame/stages/stage2/biome.js
 var BIOMES = [
   { id: "warrens", name: "The Warrens", maxFloor: 3 },
-  { id: "cisterns", name: "Flooded Cisterns", maxFloor: 6 },
-  { id: "emberworks", name: "Emberworks", maxFloor: 9 },
+  { id: "cisterns", name: "Flooded Cisterns", maxFloor: 5 },
+  { id: "emberworks", name: "Emberworks", maxFloor: 6 },
   { id: "overflow", name: "The Overflow", maxFloor: Infinity }
 ];
 function biomeForFloor(floor) {
@@ -1945,14 +2026,8 @@ var CELL_CLASS = {
 };
 var HEAVY_FOES = /* @__PURE__ */ new Set(["L", "O"]);
 var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-function lightRadius(floor) {
-  if (floor <= 3) return null;
-  if (floor <= 6) return { rx: 13, ry: 7 };
-  if (floor <= 9) return { rx: 9, ry: 5 };
-  return { rx: 7, ry: 4 };
-}
 function lit(world, x, y) {
-  const L = lightRadius(world.floor);
+  const L = effectiveLight(world);
   return !L || Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry;
 }
 function hpBar(cur, max, width) {
@@ -1988,6 +2063,9 @@ function createView(screenEl) {
   sprites.append(playerEl);
   const mobEls = /* @__PURE__ */ new Map();
   const itemEls = /* @__PURE__ */ new Map();
+  const ghostMem = /* @__PURE__ */ new Map();
+  const ghostEls = /* @__PURE__ */ new Map();
+  let lastFloor = null;
   function measure() {
     const r = ruler.getBoundingClientRect();
     if (r.width > 0) chW = r.width / 10;
@@ -2013,10 +2091,16 @@ function createView(screenEl) {
     sprites.replaceChildren();
     mobEls.clear();
     itemEls.clear();
+    ghostEls.clear();
+    ghostMem.clear();
     map.innerHTML = colorize(lines);
   }
   function paintExplore(world) {
     lastWorld = world;
+    if (world.floor !== lastFloor) {
+      lastFloor = world.floor;
+      clearGhosts();
+    }
     sprites.append(playerEl);
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
@@ -2025,7 +2109,7 @@ function createView(screenEl) {
     reconcileSprites(world);
   }
   function terrainText(world) {
-    const L = lightRadius(world.floor);
+    const L = effectiveLight(world);
     const px = world.pos.x;
     const py = world.pos.y;
     const rows = [];
@@ -2083,12 +2167,22 @@ function createView(screenEl) {
   }
   function reconcileSprites(world, mobMs) {
     pos(playerEl, world.pos.x, world.pos.y);
+    const dark = isDarkAct(world.floor);
     const live = /* @__PURE__ */ new Set();
     world.monsters.forEach((m, i) => {
-      if (!m.alive || !inView(m.x, m.y) || !lit(world, m.x, m.y)) {
+      if (!m.alive) {
         dropMob(i);
+        dropGhost(i);
+        ghostMem.delete(i);
         return;
       }
+      if (!inView(m.x, m.y) || !lit(world, m.x, m.y)) {
+        dropMob(i);
+        if (dark && ghostMem.has(i)) showGhost(i);
+        else dropGhost(i);
+        return;
+      }
+      dropGhost(i);
       live.add(i);
       let s = mobEls.get(i);
       let fresh = false;
@@ -2117,8 +2211,39 @@ function createView(screenEl) {
         s.hp.hidden = true;
       }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
+      if (dark) ghostMem.set(i, { x: m.x, y: m.y, glyph });
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
+  }
+  function showGhost(i) {
+    const mem = ghostMem.get(i);
+    if (!mem || !inView(mem.x, mem.y)) {
+      dropGhost(i);
+      return;
+    }
+    let el = ghostEls.get(i);
+    if (!el) {
+      el = makeSprite(mem.glyph, "s2-c-foe");
+      el.classList.add("s2-ghost");
+      el.style.opacity = "0.3";
+      el.style.filter = "grayscale(0.7)";
+      ghostEls.set(i, el);
+      sprites.append(el);
+    }
+    if (el.textContent !== mem.glyph) el.textContent = mem.glyph;
+    pos(el, mem.x, mem.y);
+  }
+  function dropGhost(i) {
+    const el = ghostEls.get(i);
+    if (el) {
+      el.remove();
+      ghostEls.delete(i);
+    }
+  }
+  function clearGhosts() {
+    for (const el of ghostEls.values()) el.remove();
+    ghostEls.clear();
+    ghostMem.clear();
   }
   function tickMonsters(world) {
     reconcileSprites(world, 200);
@@ -2287,7 +2412,7 @@ function escapeChar(ch) {
 }
 
 // ../../docs/games/metagame/stages/stage2/runloop.js
-var MAX_FLOOR = 5;
+var MAX_FLOOR = FINAL_FLOOR;
 function runMods(state) {
   return state.meta && state.meta.runMods || {};
 }
@@ -2492,7 +2617,9 @@ function renderStage2({
     setText(fields.hint, lock.hint);
     const biome = biomeForFloor(state.run.floor);
     if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
-    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+    const w = state.run.world;
+    const darkNote = !state.run.boss.reached && isDarkAct(state.run.floor) ? w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them" : "";
+    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {
@@ -2626,7 +2753,7 @@ function renderStage2({
     if (!root.isConnected) return;
     const tag = event.target && event.target.tagName || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
-    if (event.key >= "1" && event.key <= "3") {
+    if (event.key >= "1" && event.key <= String(CONSUMABLE_KEYS.length)) {
       const type = CONSUMABLE_KEYS[Number(event.key) - 1];
       if (type) {
         event.preventDefault();
@@ -2673,6 +2800,16 @@ function renderStage2({
   });
   repaint();
   startMonsterClocks();
+  window.__fvStage2 = {
+    state: () => state,
+    dev,
+    move,
+    step: move,
+    bodySolver,
+    descendToBoss: bodySolver,
+    lockState: () => getBossLockState({ actions, state }),
+    bossSolver: challengeBoss
+  };
   function dev(id) {
     const e = state.run.entity;
     if (id === "heal") e.hp = e.maxHp;
@@ -2701,9 +2838,16 @@ function renderStage2({
       if (flashTimer) clearTimeout(flashTimer);
       stopMonsterClocks();
       view.destroy();
+      if (window.__fvStage2) delete window.__fvStage2;
       root.remove();
     }
   };
+  function bodySolver() {
+    let guard = 0;
+    while (!state.run.boss.reached && guard++ < 64) descend(state);
+    persistAndPaint();
+    return { floor: state.run.floor, reached: state.run.boss.reached };
+  }
   function tickBucket(bucket) {
     if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
     const world = state.run.world;

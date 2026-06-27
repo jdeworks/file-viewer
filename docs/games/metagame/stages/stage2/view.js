@@ -12,6 +12,10 @@ import { HAZARD_GLYPH, HAZARD_CLASS } from "./hazards.js";
 import { TRAP_GLYPH, TRAP_CLASS } from "./traps.js";
 import { CONSUMABLES } from "./consumables.js";
 import { FIRE_GLYPH } from "./fire.js";
+import { lightRadius, effectiveLight, isDarkAct } from "./darkness.js";
+
+// Re-exported so callers (and the unit test) keep importing the terrain-fog baseline from view.js.
+export { lightRadius };
 
 // Fixed viewport in cells. Deeper floors are far bigger (see engine.buildFloor) so only this
 // chunk is ever visible — the rest has to be explored.
@@ -34,17 +38,8 @@ const HEAVY_FOES = new Set(["L", "O"]);
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-// Darkness / FOV (C4): deeper floors shrink how far the player can SEE (rendering only — monster AI
-// keeps its own LOS sight). Returns null for the shallow floors (full camera), else a per-axis
-// radius (ry < rx because monospace cells are ~2× taller than wide, so this reads as a circle).
-export function lightRadius(floor) {
-  if (floor <= 3) return null;
-  if (floor <= 6) return { rx: 13, ry: 7 };
-  if (floor <= 9) return { rx: 9, ry: 5 };
-  return { rx: 7, ry: 4 };
-}
 function lit(world, x, y) {
-  const L = lightRadius(world.floor);
+  const L = effectiveLight(world);
   return !L || (Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry);
 }
 
@@ -87,6 +82,9 @@ export function createView(screenEl) {
   sprites.append(playerEl);
   const mobEls = new Map(); // foe index -> { el, glyph, hp }
   const itemEls = new Map(); // item id ("exit"/"w0"/"g1"/"p2") -> sprite element
+  const ghostMem = new Map(); // Overflow act: foe index -> { x, y, glyph } LAST-SEEN tile
+  const ghostEls = new Map(); // foe index -> the dim "ghost" sprite currently shown at last-seen
+  let lastFloor = null;       // clears the ghost memory whenever we descend to a new floor
 
   function measure() {
     const r = ruler.getBoundingClientRect();
@@ -120,6 +118,8 @@ export function createView(screenEl) {
     sprites.replaceChildren();
     mobEls.clear();
     itemEls.clear();
+    ghostEls.clear();
+    ghostMem.clear();
     map.innerHTML = colorize(lines);
   }
 
@@ -129,6 +129,7 @@ export function createView(screenEl) {
   // sprite. Collision is on world.grid in the engine, never the DOM, so the terrain needs no markup.
   function paintExplore(world) {
     lastWorld = world;
+    if (world.floor !== lastFloor) { lastFloor = world.floor; clearGhosts(); } // a new floor forgets the dark
     sprites.append(playerEl);
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
@@ -138,7 +139,7 @@ export function createView(screenEl) {
   }
 
   function terrainText(world) {
-    const L = lightRadius(world.floor);
+    const L = effectiveLight(world);
     const px = world.pos.x;
     const py = world.pos.y;
     const rows = [];
@@ -186,9 +187,18 @@ export function createView(screenEl) {
   // clocks); newly-appeared sprites always snap so they don't fly in from the origin.
   function reconcileSprites(world, mobMs) {
     pos(playerEl, world.pos.x, world.pos.y);
+    const dark = isDarkAct(world.floor);
     const live = new Set();
     world.monsters.forEach((m, i) => {
-      if (!m.alive || !inView(m.x, m.y) || !lit(world, m.x, m.y)) { dropMob(i); return; }
+      if (!m.alive) { dropMob(i); dropGhost(i); ghostMem.delete(i); return; }
+      if (!inView(m.x, m.y) || !lit(world, m.x, m.y)) {
+        dropMob(i);
+        // Beyond the torchlight in the Overflow act, a foe leaves a dim ghost at the last tile we
+        // saw it on — spatial memory becomes the skill. Elsewhere it simply vanishes from view.
+        if (dark && ghostMem.has(i)) showGhost(i); else dropGhost(i);
+        return;
+      }
+      dropGhost(i); // re-sighted — the real sprite supersedes any ghost
       live.add(i);
       let s = mobEls.get(i);
       let fresh = false;
@@ -207,8 +217,37 @@ export function createView(screenEl) {
         if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) { renderHpBar(s.hp, m.hp, m.maxHp, 5); s.lastHp = m.hp; s.lastMaxHp = m.maxHp; }
       } else if (!s.hp.hidden) { s.hp.hidden = true; }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
+      if (dark) ghostMem.set(i, { x: m.x, y: m.y, glyph }); // remember where it was last lit
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
+  }
+
+  // Last-seen ghost: a faded echo at the remembered tile, dropped once it scrolls off-camera.
+  function showGhost(i) {
+    const mem = ghostMem.get(i);
+    if (!mem || !inView(mem.x, mem.y)) { dropGhost(i); return; }
+    let el = ghostEls.get(i);
+    if (!el) {
+      el = makeSprite(mem.glyph, "s2-c-foe");
+      el.classList.add("s2-ghost");
+      el.style.opacity = "0.3";
+      el.style.filter = "grayscale(0.7)";
+      ghostEls.set(i, el);
+      sprites.append(el);
+    }
+    if (el.textContent !== mem.glyph) el.textContent = mem.glyph;
+    pos(el, mem.x, mem.y);
+  }
+
+  function dropGhost(i) {
+    const el = ghostEls.get(i);
+    if (el) { el.remove(); ghostEls.delete(i); }
+  }
+
+  function clearGhosts() {
+    for (const el of ghostEls.values()) el.remove();
+    ghostEls.clear();
+    ghostMem.clear();
   }
 
   // Sprite-only refresh after a real-time monster clock fires (terrain/camera are unchanged).

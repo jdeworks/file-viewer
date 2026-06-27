@@ -10,6 +10,8 @@ import { DIRS, DIR_LIST } from "./dirs.js";
 import { tickStatuses, skipsTurn, applyStatus } from "./status.js";
 import { spawnMonster } from "./data.js";
 import { makeRng } from "./rng.js";
+import { torchSightBonus } from "./darkness.js";
+import { lightEaterTick, mirrorTick } from "./overflow.js";
 
 const SUMMON_CAP = 90; // hard ceiling on live monsters so a summoner can't runaway-spawn
 const RANGED_COOLDOWN = 2;
@@ -217,6 +219,7 @@ function allyTurn(world, m, occupied, events) {
 export function monsterTurn(world, player, events, filter) {
   const px = world.pos.x;
   const py = world.pos.y;
+  const torchAggro = torchSightBonus(world); // a burning torch in the dark draws foes from farther
   const occupied = new Set();
   for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
 
@@ -240,8 +243,12 @@ export function monsterTurn(world, player, events, filter) {
     }
     if (skipsTurn(m)) continue; // stunned / frozen / slowed-off-beat
 
+    // Overflow-act foes mutate before acting: the light eater feeds on darkness; the mirror copies @.
+    if (m.lighteater) lightEaterTick(world, m, events);
+    if (m.mirror) mirrorTick(m, player);
+
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
-    const sight = m.sight || 5;
+    const sight = (m.sight || 5) + torchAggro;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
 
     // Ambusher: disguised as a wall until @ steps within 2, then springs and chases.

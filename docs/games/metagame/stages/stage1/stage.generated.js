@@ -937,10 +937,69 @@ try {
   console.error("[bignum] TEST FAILED:", e.message);
 }
 
-// ../../docs/games/metagame/stages/stage1/boss1.js
+// ../../docs/games/metagame/stages/stage1/boss-sim.js
 var FIGHT_MS = 2e4;
-var SHADOW_WEIGHT = 1.1;
 var BURST_MS = 800;
+function fightParams(cheatActive) {
+  return cheatActive ? { shadow: 1.12, floorWeight: 1, floorMs: (r) => Math.min(500, r * 0.95), burstCount: 4, burstWeight: 1.5 } : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1 };
+}
+function makeBurstSchedule(seed, cheatActive) {
+  let s = seed % 1e3 + 2654435769;
+  function rand() {
+    s |= 0;
+    s = s + 2654435769 | 0;
+    let t = Math.imul(s ^ s >>> 16, 569420461);
+    t = Math.imul(t ^ t >>> 15, 1935289751);
+    return ((t ^ t >>> 15) >>> 0) / 4294967296;
+  }
+  const N = cheatActive ? rand() < 0.5 ? 3 : 4 : rand() < 0.5 ? 2 : 3;
+  const bursts = [];
+  for (let i = 0; i < N; i++) {
+    let start, tries = 0;
+    do {
+      start = Math.floor(rand() * (FIGHT_MS - 2e3)) + 1e3;
+      tries++;
+    } while (tries < 20 && bursts.some((b) => Math.abs(b.start - start) < BURST_MS));
+    bursts.push({ start, end: start + BURST_MS, fired: 0 });
+  }
+  return bursts.sort((a, b) => a.start - b.start);
+}
+function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
+  const p = fightParams(cheatActive);
+  const bursts = makeBurstSchedule(seed, cheatActive);
+  const tapInterval = 1e3 / Math.max(1e-3, tapsPerSec);
+  let userScore = 0, bossAcc = 0, lastFloor = 0, nextTapAt = 0;
+  let tapTimes = [];
+  for (let now = 0; now <= FIGHT_MS; now += 100) {
+    while (nextTapAt <= now && nextTapAt <= FIGHT_MS) {
+      userScore += 1;
+      const elapsed = nextTapAt;
+      const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
+      bossAcc += inBurst && cheatActive ? 1.5 : p.shadow;
+      tapTimes.push(nextTapAt);
+      tapTimes = tapTimes.filter((t) => nextTapAt - t < 3e3);
+      nextTapAt += tapInterval;
+    }
+    const userRateMs = tapTimes.length > 1 ? (tapTimes[tapTimes.length - 1] - tapTimes[0]) / (tapTimes.length - 1) : 999;
+    if (now - lastFloor >= p.floorMs(userRateMs)) {
+      bossAcc += p.floorWeight;
+      lastFloor = now;
+    }
+    for (const b of bursts) {
+      if (now >= b.start && now < b.end) {
+        const want = Math.min(p.burstCount, Math.floor((now - b.start) / (BURST_MS / p.burstCount)) + 1);
+        while (b.fired < want) {
+          bossAcc += p.burstWeight;
+          b.fired++;
+        }
+      }
+    }
+  }
+  const bossScore = Math.floor(bossAcc);
+  return { won: userScore > bossScore, userScore, bossScore, cheatActive };
+}
+
+// ../../docs/games/metagame/stages/stage1/boss1.js
 var DEFAULT_TICKET = { m: 1, e: 9 };
 var TAUNTS = {
   // Shown in the LOBBY (before/after a fight) — intimidation, not the during-fight jabs.
@@ -1007,28 +1066,6 @@ function readCheat(actions) {
     return !actions.hasAction(1, "cheat_disabled");
   }
   return true;
-}
-function makeBurstSchedule(cheatActive) {
-  const seed = Date.now() % 1e3;
-  let s = seed + 2654435769;
-  function rand() {
-    s |= 0;
-    s = s + 2654435769 | 0;
-    let t = Math.imul(s ^ s >>> 16, 569420461);
-    t = Math.imul(t ^ t >>> 15, 1935289751);
-    return ((t ^ t >>> 15) >>> 0) / 4294967296;
-  }
-  const N = cheatActive ? rand() < 0.5 ? 3 : 4 : rand() < 0.5 ? 2 : 3;
-  const bursts = [];
-  for (let i = 0; i < N; i++) {
-    let start, tries = 0;
-    do {
-      start = Math.floor(rand() * (FIGHT_MS - 2e3)) + 1e3;
-      tries++;
-    } while (tries < 20 && bursts.some((b) => Math.abs(b.start - start) < BURST_MS));
-    bursts.push({ start, end: start + BURST_MS, fired: 0 });
-  }
-  return bursts.sort((a, b) => a.start - b.start);
 }
 var STYLE_ID = "mg-defrag-style";
 function injectStyle() {
@@ -1196,7 +1233,8 @@ function mountDefragmenter(arena, opts = {}) {
   }
   function startFight() {
     const cheatActive = readCheat(actions);
-    const bursts = makeBurstSchedule(cheatActive);
+    const p = fightParams(cheatActive);
+    const bursts = makeBurstSchedule(Date.now(), cheatActive);
     let userScore = 0, bossScore = 0, bossAcc = 0;
     let tapTimes = [];
     let lastFloorTick = 0;
@@ -1231,7 +1269,7 @@ function mountDefragmenter(arena, opts = {}) {
       const elapsed = now - fightStart;
       const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
       if (inBurst && cheatActive) bossAcc += 1.5;
-      else bossAcc += SHADOW_WEIGHT;
+      else bossAcc += p.shadow;
       bossScore = Math.floor(bossAcc);
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t < 3e3);
@@ -1244,9 +1282,9 @@ function mountDefragmenter(arena, opts = {}) {
       const remaining = Math.max(0, FIGHT_MS - elapsed);
       timerEl.textContent = (remaining / 1e3).toFixed(1) + "s";
       const userRateMs = tapTimes.length > 1 ? (tapTimes[tapTimes.length - 1] - tapTimes[0]) / (tapTimes.length - 1) : 999;
-      const bossFloorMs = Math.min(500, userRateMs * 0.95);
+      const bossFloorMs = p.floorMs(userRateMs);
       if (now - lastFloorTick >= bossFloorMs) {
-        bossAcc += 1;
+        bossAcc += p.floorWeight;
         bossScore = Math.floor(bossAcc);
         lastFloorTick = now;
       }
@@ -1264,8 +1302,8 @@ function mountDefragmenter(arena, opts = {}) {
         activeBurstKey = key;
       }
       if (burst) {
-        const autoCount = cheatActive ? 4 : 2;
-        const autoWeight = cheatActive ? 1.5 : 1;
+        const autoCount = p.burstCount;
+        const autoWeight = p.burstWeight;
         const want = Math.min(autoCount, Math.floor((elapsed - burst.start) / (BURST_MS / autoCount)) + 1);
         while (burst.fired < want) {
           bossAcc += autoWeight;
@@ -3034,27 +3072,629 @@ function createManagersController({ panelsEl, state, cfg, tiers, save, paintStat
   return { renderPanel, paint, runAutoFire };
 }
 
-// ../../docs/games/metagame/stages/stage1/s1reset.js
-function renderResetPanel({ panelsEl, state, cfg, save, renderAll }) {
-  const gain = pullGain(state.totalBits);
-  const newTotal = globalPull(state) * gain;
-  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">Reset Stage 1?</div><p class="mg-reset-line">You will gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Gravitational Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + '</strong>).</p><p class="mg-reset-line">All bits, buildings, and managers will be lost.</p><p class="mg-reset-line mg-reset-keep">Achievements and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Reset</button><button class="mg-reset-cancel" type="button">Cancel</button></div></div></div>';
-  panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset({ state, cfg, save, renderAll }));
-  panelsEl.querySelector(".mg-reset-cancel").addEventListener("click", () => renderResetPanel({ panelsEl, state, cfg, save, renderAll }));
+// ../../docs/games/metagame/stages/stage1/s1cores.js
+var CORE_UPGRADES = [
+  {
+    id: "core-yield",
+    icon: "📈",
+    name: "Overclock",
+    max: 10,
+    cost: (l) => 1 + l,
+    desc: "+10% to ALL bit income per level",
+    effect: (l) => ({ incomeMult: 1 + 0.1 * l })
+  },
+  {
+    id: "core-startmult",
+    icon: "✖",
+    name: "Warm Cache",
+    max: 25,
+    cost: (l) => 1 + l,
+    desc: "Start each run with +N Multiplier levels",
+    effect: (l) => ({ start: { "s1-mult": l } })
+  },
+  {
+    id: "core-startbox",
+    icon: "🧰",
+    name: "Cached Boxes",
+    max: 10,
+    cost: (l) => 2 + 2 * l,
+    desc: "Start each run with +N Bit Boxes",
+    effect: (l) => ({ start: { "s1-box": l } })
+  },
+  {
+    id: "core-automult",
+    icon: "🤖",
+    name: "Auto-Tapper",
+    max: 1,
+    cost: () => 3,
+    desc: "Auto-buys the Multiplier whenever you can afford it",
+    effect: () => ({ autoMult: true })
+  }
+];
+function coreLevel(state, id) {
+  return (state.coreUpgrades || {})[id] || 0;
 }
-function doReset({ state, cfg, save, renderAll }) {
+function coreCostOf(up, level) {
+  return up.cost(level);
+}
+function canBuyCore(state, id) {
+  const up = CORE_UPGRADES.find((u) => u.id === id);
+  if (!up) return false;
+  const lvl = coreLevel(state, id);
+  return lvl < up.max && (state.cores || 0) >= coreCostOf(up, lvl);
+}
+function buyCore(state, id) {
+  if (!canBuyCore(state, id)) return false;
+  const up = CORE_UPGRADES.find((u) => u.id === id);
+  const lvl = coreLevel(state, id);
+  state.cores = (state.cores || 0) - coreCostOf(up, lvl);
+  state.coreUpgrades = state.coreUpgrades || {};
+  state.coreUpgrades[id] = lvl + 1;
+  return true;
+}
+function coreEffects(state) {
+  const eff = { incomeMult: 1, start: {}, autoMult: false };
+  for (const up of CORE_UPGRADES) {
+    const lvl = coreLevel(state, up.id);
+    if (lvl <= 0) continue;
+    const e = up.effect(lvl);
+    if (e.incomeMult) eff.incomeMult *= e.incomeMult;
+    if (e.autoMult) eff.autoMult = true;
+    if (e.start) for (const k in e.start) eff.start[k] = (eff.start[k] || 0) + e.start[k];
+  }
+  return eff;
+}
+function coreIncomeMult(state) {
+  return coreEffects(state).incomeMult;
+}
+function coreAutoMult(state) {
+  return coreEffects(state).autoMult;
+}
+function applyCoreStartState(state) {
+  const start = coreEffects(state).start;
+  state.owned = state.owned || {};
+  for (const k in start) if (start[k] > 0) state.owned[k] = (state.owned[k] || 0) + start[k];
+}
+
+// ../../docs/games/metagame/stages/stage1/s1prestige.js
+var MECHANICS = [
+  {
+    id: "pipeline",
+    depth: 1,
+    icon: "🔌",
+    name: "Pipeline",
+    blurb: "Wire a builder so it auto-runs — for an ongoing upkeep cost."
+  },
+  {
+    id: "flux",
+    depth: 2,
+    icon: "⚡",
+    name: "Flux",
+    blurb: "A burst meter charges; ride it to 100% for ×3 income, or cash early for ×1.5."
+  },
+  {
+    id: "entropy",
+    depth: 3,
+    icon: "🜂",
+    name: "Entropy",
+    blurb: "Unmanaged tiers decay 1 unit/min (floor 1). Choose what to let rot."
+  },
+  {
+    id: "echoes",
+    depth: 4,
+    icon: "👾",
+    name: "Defrag Echoes",
+    blurb: "A corrupted glyph spawns; click it in time or lose 20% of your bits."
+  },
+  {
+    id: "resonance",
+    depth: 5,
+    icon: "🎚",
+    name: "Resonance",
+    blurb: "Hidden tier-ratio sweet spots grant a big bonus. Discover them."
+  }
+];
+function prestigeDepth(state) {
+  return Math.max(0, state.prestigeCount || 0);
+}
+function mechanicUnlocked(state, id) {
+  const m = MECHANICS.find((x) => x.id === id);
+  return Boolean(m && prestigeDepth(state) >= m.depth);
+}
+function unlockedMechanics(state) {
+  return MECHANICS.filter((m) => prestigeDepth(state) >= m.depth);
+}
+function nextMechanic(state) {
+  const nextDepth = prestigeDepth(state) + 1;
+  return MECHANICS.find((m) => m.depth === nextDepth) || null;
+}
+function coreGain(totalBitsAtReset) {
+  const n = toNumber(totalBitsAtReset);
+  const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
+  return Math.max(1, 1 + Math.floor(Math.log10(ratio)));
+}
+function doPrestige(state) {
   const gain = pullGain(state.totalBits);
+  const cores = coreGain(state.totalBits);
   state.pullFactors = [...state.pullFactors || [], gain];
+  state.cores = (state.cores || 0) + cores;
+  state.prestigeCount = (state.prestigeCount || 0) + 1;
   state.bits = ZERO;
   state.totalBits = ZERO;
   state.owned = {};
   state.timedStates = {};
   state.managers = {};
+  state.pipelines = {};
+  state.pipelineProgress = {};
+  state.flux = { meter: 0, boostMult: 1, boostTicks: 0 };
+  state.echo = { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 };
+  state.ticks = 0;
+  applyCoreStartState(state);
+  return { gain, cores };
+}
+
+// ../../docs/games/metagame/stages/stage1/s1pipeline.js
+var PIPE_UPKEEP_COEFF = 0.02;
+var TICKS_PER_SEC = 10;
+function wirableTiers(cfg) {
+  return (cfg.tiers || []).filter((t) => t.type === "timed" && t.produces);
+}
+function isWired(state, tierId) {
+  return Boolean((state.pipelines || {})[tierId]);
+}
+function togglePipeline(state, tierId) {
+  state.pipelines = state.pipelines || {};
+  if (state.pipelines[tierId]) delete state.pipelines[tierId];
+  else state.pipelines[tierId] = true;
+  return Boolean(state.pipelines[tierId]);
+}
+function pipelineUpkeepOf(state, cfg, tierId) {
+  if (!isWired(state, tierId)) return 0;
+  const t = (cfg.tiers || []).find((x) => x.id === tierId);
+  const owned = (state.owned || {})[tierId] || 0;
+  if (!t || owned <= 0) return 0;
+  return PIPE_UPKEEP_COEFF * toNumber(t.base) * owned;
+}
+function tickPipelines(state, cfg) {
+  state.pipelineProgress = state.pipelineProgress || {};
+  let produced = false;
+  for (const t of wirableTiers(cfg)) {
+    if (!isWired(state, t.id)) continue;
+    const owned = (state.owned || {})[t.id] || 0;
+    if (owned <= 0) continue;
+    const upkeepTick = fromNumber(pipelineUpkeepOf(state, cfg, t.id) / TICKS_PER_SEC);
+    if (!gte(state.bits, upkeepTick)) continue;
+    state.bits = sub(state.bits, upkeepTick);
+    const cycleTicks = Math.max(1, Math.round((t.duration_ms || 4e3) / 100));
+    const next = (state.pipelineProgress[t.id] || 0) + 1;
+    if (next >= cycleTicks) {
+      state.pipelineProgress[t.id] = 0;
+      const prod = timedProduction(state, cfg, t.id);
+      if (prod && prod.amount > 0) {
+        state.owned[prod.targetId] = (state.owned[prod.targetId] || 0) + prod.amount;
+        produced = true;
+      }
+    } else {
+      state.pipelineProgress[t.id] = next;
+    }
+  }
+  return produced;
+}
+
+// ../../docs/games/metagame/stages/stage1/s1flux.js
+var FLUX_CHARGE_PER_TICK = 0.8;
+var FLUX_BOOST_TICKS = 100;
+var RIDE_MULT = 3;
+var CASH_MULT = 1.5;
+function fluxState(state) {
+  if (!state.flux || typeof state.flux !== "object") state.flux = { meter: 0, boostMult: 1, boostTicks: 0 };
+  return state.flux;
+}
+function fluxMult(state) {
+  const f = fluxState(state);
+  return f.boostTicks > 0 ? f.boostMult : 1;
+}
+function fluxMeter(state) {
+  return fluxState(state).meter;
+}
+function fluxBoostTicks(state) {
+  return fluxState(state).boostTicks;
+}
+function fluxCanCash(state) {
+  const f = fluxState(state);
+  return f.boostTicks <= 0 && f.meter > 0 && f.meter < 100;
+}
+function cashFlux(state) {
+  const f = fluxState(state);
+  if (!fluxCanCash(state)) return false;
+  f.boostMult = CASH_MULT;
+  f.boostTicks = FLUX_BOOST_TICKS;
+  f.meter = 0;
+  return true;
+}
+function tickFlux(state) {
+  const f = fluxState(state);
+  if (f.boostTicks > 0) {
+    f.boostTicks -= 1;
+    if (f.boostTicks <= 0) f.boostMult = 1;
+    return;
+  }
+  f.meter = Math.min(100, f.meter + FLUX_CHARGE_PER_TICK);
+  if (f.meter >= 100) {
+    f.boostMult = RIDE_MULT;
+    f.boostTicks = FLUX_BOOST_TICKS;
+    f.meter = 0;
+  }
+}
+
+// ../../docs/games/metagame/stages/stage1/s1resonance.js
+var RESONANCE_BANDS = [
+  {
+    id: "box-boost",
+    hi: "s1-box",
+    lo: "s1-boost",
+    min: 2,
+    max: 4,
+    bonus: 0.3,
+    hint: "Bit Boxes per Signal Booster"
+  },
+  {
+    id: "boost-cluster",
+    hi: "s1-boost",
+    lo: "s1-cluster",
+    min: 2,
+    max: 4,
+    bonus: 0.25,
+    hint: "Signal Boosters per Core Cluster"
+  },
+  {
+    id: "cluster-array",
+    hi: "s1-cluster",
+    lo: "s1-array",
+    min: 2,
+    max: 4,
+    bonus: 0.2,
+    hint: "Core Clusters per Processing Array"
+  }
+];
+function bandActive(state, band) {
+  const owned = state.owned || {};
+  const hi = owned[band.hi] || 0;
+  const lo = owned[band.lo] || 0;
+  if (lo < 1 || hi < 1) return false;
+  const ratio = hi / lo;
+  return ratio >= band.min && ratio <= band.max;
+}
+function activeBands(state) {
+  return RESONANCE_BANDS.filter((b) => bandActive(state, b));
+}
+function resonanceMult(state) {
+  let m = 1;
+  for (const b of RESONANCE_BANDS) if (bandActive(state, b)) m *= 1 + b.bonus;
+  return m;
+}
+function tickResonance(state) {
+  state.resonanceFound = state.resonanceFound || {};
+  let found = false;
+  for (const b of RESONANCE_BANDS) {
+    if (bandActive(state, b) && !state.resonanceFound[b.id]) {
+      state.resonanceFound[b.id] = true;
+      found = true;
+    }
+  }
+  return found;
+}
+
+// ../../docs/games/metagame/stages/stage1/s1reset.js
+var STYLE_ID2 = "mg-s1-prestige-style";
+function injectStyle2() {
+  if (typeof document === "undefined" || document.getElementById(STYLE_ID2)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID2;
+  el.textContent = `
+.mg-reset-balance { font:600 14px/1.2 ui-monospace,monospace; color:var(--accent); margin:4px 0 10px; }
+.mg-reset-next { color:var(--accent); font-size:12px; }
+.mg-core-shop,.mg-mech-roster { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-core-shop-title,.mg-mech-title { font-size:11px; letter-spacing:2px; color:var(--fg-2); margin-bottom:8px; text-transform:uppercase; }
+.mg-core-card { display:grid; grid-template-columns:1fr auto; gap:2px 10px; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); }
+.mg-core-head { font-weight:600; } .mg-core-head small { color:var(--fg-2); font-weight:400; }
+.mg-core-desc { grid-column:1; font-size:12px; color:var(--fg-2); }
+.mg-core-buy { grid-row:1/3; grid-column:2; background:var(--accent); color:var(--accent-fg); border:0; border-radius:7px; padding:7px 12px; cursor:pointer; font:600 13px ui-monospace,monospace; }
+.mg-core-buy.mg-buy-locked { opacity:.45; pointer-events:none; }
+.mg-core-max { grid-row:1/3; grid-column:2; color:#3fb950; font-weight:700; font-size:12px; }
+.mg-mech-row { display:grid; grid-template-columns:auto 1fr; gap:2px 8px; padding:6px 0; opacity:.45; }
+.mg-mech-row.mg-mech-on { opacity:1; }
+.mg-mech-icon { grid-row:1/3; font-size:18px; } .mg-mech-name { font-weight:600; } .mg-mech-name small { color:var(--fg-2); font-weight:400; }
+.mg-mech-blurb { grid-column:2; font-size:12px; color:var(--fg-2); }
+.mg-pipe-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-pipe-row { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); opacity:.7; }
+.mg-pipe-row.mg-pipe-on { opacity:1; }
+.mg-pipe-name small { color:var(--fg-2); }
+.mg-pipe-upkeep { font:600 12px ui-monospace,monospace; color:#e0742f; }
+.mg-pipe-toggle { background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:5px 12px; cursor:pointer; font-size:12px; }
+.mg-pipe-row.mg-pipe-on .mg-pipe-toggle { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+.mg-flux-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-flux-meter { height:14px; border-radius:7px; background:var(--border); overflow:hidden; margin-bottom:6px; }
+.mg-flux-fill { height:100%; width:0%; background:var(--accent); transition:width .12s linear; }
+.mg-flux-fill.mg-flux-boosting { background:#e0742f; }
+.mg-flux-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.mg-flux-status { font:600 12px ui-monospace,monospace; color:var(--fg-2); }
+.mg-flux-cash { background:var(--accent); color:var(--accent-fg); border:0; border-radius:7px; padding:6px 14px; cursor:pointer; font:600 12px ui-monospace,monospace; }
+.mg-flux-cash.mg-buy-locked { opacity:.45; pointer-events:none; }
+.mg-res-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-res-row { display:grid; grid-template-columns:auto 1fr; gap:8px; padding:5px 0; font-size:12px; color:var(--fg-2); }
+.mg-res-row.mg-res-on { color:#3fb950; font-weight:600; }
+`;
+  document.head.appendChild(el);
+}
+function renderResetPanel(opts) {
+  const { panelsEl, state } = opts;
+  injectStyle2();
+  const gain = pullGain(state.totalBits);
+  const newTotal = globalPull(state) * gain;
+  const cores = coreGain(state.totalBits);
+  const next = nextMechanic(state);
+  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + fluxHtml(state) + resonanceHtml(state) + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
+  panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset(opts));
+  panelsEl.querySelector(".mg-reset-cancel").addEventListener("click", () => renderResetPanel(opts));
+  panelsEl.querySelectorAll(".mg-core-buy").forEach((b) => b.addEventListener("click", () => {
+    if (buyCore(state, b.dataset.id)) {
+      opts.save(state);
+      renderResetPanel(opts);
+    }
+  }));
+  panelsEl.querySelectorAll(".mg-pipe-toggle").forEach((b) => b.addEventListener("click", () => {
+    togglePipeline(state, b.dataset.id);
+    opts.save(state);
+    renderResetPanel(opts);
+  }));
+  const cashBtn = panelsEl.querySelector(".mg-flux-cash");
+  if (cashBtn) cashBtn.addEventListener("click", () => {
+    if (cashFlux(state)) {
+      opts.save(state);
+      paintResetPanel(panelsEl, state);
+    }
+  });
+}
+function resonanceHtml(state) {
+  if (!mechanicUnlocked(state, "resonance")) return "";
+  const active = new Set(activeBands(state).map((b) => b.id));
+  const found = state.resonanceFound || {};
+  const rows = RESONANCE_BANDS.map((b) => {
+    const isFound = found[b.id];
+    const isOn = active.has(b.id);
+    const label = isFound ? escapeHtml(b.hint) + " " + b.min + "–" + b.max + " → +" + Math.round(b.bonus * 100) + "%" : "??? — find the ratio";
+    return '<div class="mg-res-row' + (isOn ? " mg-res-on" : "") + '"><span>' + (isOn ? "🎚" : isFound ? "·" : "🔒") + "</span><span>" + label + "</span></div>";
+  }).join("");
+  return '<div class="mg-res-shop"><div class="mg-core-shop-title">🎚 Resonance — tier-ratio sweet spots</div>' + rows + "</div>";
+}
+function fluxHtml(state) {
+  if (!mechanicUnlocked(state, "flux")) return "";
+  return '<div class="mg-flux-shop"><div class="mg-core-shop-title">⚡ Flux — burst meter</div><div class="mg-flux-meter"><div class="mg-flux-fill"></div></div><div class="mg-flux-row"><span class="mg-flux-status"></span><button class="mg-flux-cash" type="button">Cash now ×1.5</button></div></div>';
+}
+function paintResetPanel(panelsEl, state) {
+  const fill = panelsEl.querySelector(".mg-flux-fill");
+  if (fill) {
+    const boosting = fluxBoostTicks(state) > 0;
+    fill.style.width = (boosting ? 100 : fluxMeter(state)) + "%";
+    fill.classList.toggle("mg-flux-boosting", boosting);
+    const status = panelsEl.querySelector(".mg-flux-status");
+    if (status) status.textContent = boosting ? "🔥 ×" + fluxMult(state).toFixed(1) + " active (" + (fluxBoostTicks(state) / 10).toFixed(1) + "s)" : Math.floor(fluxMeter(state)) + "% — fills to ×3, or cash now";
+    const cashBtn = panelsEl.querySelector(".mg-flux-cash");
+    if (cashBtn) cashBtn.classList.toggle("mg-buy-locked", !fluxCanCash(state));
+  }
+}
+function pipelineHtml(opts) {
+  const { state, cfg } = opts;
+  if (!mechanicUnlocked(state, "pipeline")) return "";
+  const rows = wirableTiers(cfg).map((t) => {
+    const owned = (state.owned || {})[t.id] || 0;
+    const wired = isWired(state, t.id);
+    const upkeep = pipelineUpkeepOf(state, cfg, t.id);
+    return '<div class="mg-pipe-row' + (wired ? " mg-pipe-on" : "") + '"><span class="mg-pipe-name">' + escapeHtml(t.icon + " " + t.name) + " <small>×" + owned + '</small></span><span class="mg-pipe-upkeep">' + (wired ? toDisplay(fromNumber(upkeep)) + "/s" : "") + '</span><button class="mg-pipe-toggle" type="button" data-id="' + t.id + '">' + (wired ? "Unwire" : "Wire") + "</button></div>";
+  }).join("");
+  return '<div class="mg-pipe-shop"><div class="mg-core-shop-title">🔌 Pipeline — auto-run builders (upkeep)</div>' + rows + "</div>";
+}
+function coreShopHtml(state) {
+  const rows = CORE_UPGRADES.map((up) => {
+    const lvl = coreLevel(state, up.id);
+    const maxed = lvl >= up.max;
+    const cost = coreCostOf(up, lvl);
+    const can = canBuyCore(state, up.id);
+    const btn = maxed ? '<span class="mg-core-max">MAX</span>' : '<button class="mg-core-buy' + (can ? "" : " mg-buy-locked") + '" type="button" data-id="' + up.id + '">' + cost + " ⬡</button>";
+    return '<div class="mg-core-card"><span class="mg-core-head">' + escapeHtml(up.icon) + " " + escapeHtml(up.name) + " <small>Lv " + lvl + (up.max > 1 ? "/" + up.max : "") + '</small></span><span class="mg-core-desc">' + escapeHtml(up.desc) + "</span>" + btn + "</div>";
+  }).join("");
+  return '<div class="mg-core-shop"><div class="mg-core-shop-title">⬡ Cores — permanent upgrades</div>' + rows + "</div>";
+}
+function mechanicsRosterHtml(state) {
+  const depth = prestigeDepth(state);
+  const rows = MECHANICS.map((m) => {
+    const on = depth >= m.depth;
+    return '<div class="mg-mech-row' + (on ? " mg-mech-on" : "") + '"><span class="mg-mech-icon">' + escapeHtml(m.icon) + '</span><span class="mg-mech-name">' + escapeHtml(m.name) + (on ? "" : " <small>(prestige " + m.depth + ")</small>") + '</span><span class="mg-mech-blurb">' + escapeHtml(m.blurb) + "</span></div>";
+  }).join("");
+  return '<div class="mg-mech-roster"><div class="mg-mech-title">Post-prestige mechanics</div>' + rows + "</div>";
+}
+function doReset(opts) {
+  const { state, cfg, save, renderAll } = opts;
+  doPrestige(state);
   state.runStartedAt = Date.now();
   save(state);
   checkMessages("prestige", state, bellLoad());
   checkAchievements(state, cfg, bellLoad());
   renderAll();
+}
+
+// ../../docs/games/metagame/stages/stage1/s1entropy.js
+var ENTROPY_PERIOD = 600;
+function decayableTiers(cfg) {
+  return (cfg.tiers || []).filter((t) => t.type === "timed");
+}
+function isProtected(state, cfg, tierId) {
+  if ((state.pipelines || {})[tierId]) return true;
+  const mgr = (cfg.managers || []).find((m) => m.manages === tierId);
+  if (!mgr) return false;
+  const ms = (state.managers || {})[mgr.id];
+  return Boolean(ms && ms.level >= 1 && !ms.paused);
+}
+function tickEntropy(state, cfg) {
+  if ((state.ticks || 0) % ENTROPY_PERIOD !== 0) return false;
+  let decayed = false;
+  state.owned = state.owned || {};
+  for (const t of decayableTiers(cfg)) {
+    const owned = state.owned[t.id] || 0;
+    if (owned > 1 && !isProtected(state, cfg, t.id)) {
+      state.owned[t.id] = owned - 1;
+      decayed = true;
+    }
+  }
+  return decayed;
+}
+
+// ../../docs/games/metagame/stages/stage1/s1echoes.js
+var ECHO_INTERVAL = 1200;
+var ECHO_TTL = 900;
+var MISS_PENALTY = 0.8;
+var REWARD_SECONDS = 60;
+function echoState(state) {
+  if (!state.echo || typeof state.echo !== "object") state.echo = { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 };
+  return state.echo;
+}
+function echoActive(state) {
+  return Boolean(echoState(state).active);
+}
+function echoTimeLeft(state) {
+  const e = echoState(state);
+  return e.active ? Math.max(0, e.expireTick - (state.ticks || 0)) : 0;
+}
+function clickEcho(state, cfg) {
+  const e = echoState(state);
+  if (!e.active) return false;
+  e.active = false;
+  e.lastTick = state.ticks || 0;
+  const reward = fromNumber(passiveRate(state, cfg) * REWARD_SECONDS);
+  state.bits = add(state.bits, reward);
+  state.totalBits = add(state.totalBits, reward);
+  return true;
+}
+function tickEcho(state) {
+  const e = echoState(state);
+  const now = state.ticks || 0;
+  if (e.active) {
+    if (now >= e.expireTick) {
+      e.active = false;
+      e.lastTick = now;
+      state.bits = mulScalar(state.bits, MISS_PENALTY);
+      return { spawned: false, expired: true };
+    }
+    return { spawned: false, expired: false };
+  }
+  if (now - (e.lastTick || 0) >= ECHO_INTERVAL) {
+    e.active = true;
+    e.spawnTick = now;
+    e.expireTick = now + ECHO_TTL;
+    return { spawned: true, expired: false };
+  }
+  return { spawned: false, expired: false };
+}
+
+// ../../docs/games/metagame/stages/stage1/s1mechanics.js
+function incomeMult(state) {
+  let m = coreIncomeMult(state);
+  if (mechanicUnlocked(state, "flux")) m *= fluxMult(state);
+  if (mechanicUnlocked(state, "resonance")) m *= resonanceMult(state);
+  return m;
+}
+function tickMechanics(state, cfg) {
+  state.ticks = (state.ticks || 0) + 1;
+  let producedUnits = false;
+  if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
+  if (mechanicUnlocked(state, "flux")) tickFlux(state);
+  if (mechanicUnlocked(state, "entropy")) producedUnits = tickEntropy(state, cfg) || producedUnits;
+  let echo = null;
+  if (mechanicUnlocked(state, "echoes")) echo = tickEcho(state, cfg);
+  if (mechanicUnlocked(state, "resonance")) tickResonance(state);
+  return { producedUnits, echo };
+}
+
+// ../../docs/games/metagame/stages/stage1/s1debug.js
+function installStage1Debug(api) {
+  if (typeof window === "undefined") return { destroy() {
+  } };
+  const { state, cfg, save } = api;
+  const cheatDisabled = () => Boolean(api.actions && typeof api.actions.hasAction === "function" && api.actions.hasAction(1, "cheat_disabled"));
+  function fightBoss(opts = {}) {
+    if (!api.canFightBoss()) {
+      return { gated: true, allTiers: api.allSubStagesOwned(), reason: "boss locked — need all tiers owned and bits ≥ ticket" };
+    }
+    const cheatActive = !cheatDisabled();
+    const result = simulateFight({ cheatActive, tapsPerSec: opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 });
+    if (result.won) {
+      state.defeated = Array.isArray(state.defeated) ? state.defeated : [];
+      if (!state.defeated.includes(1)) state.defeated.push(1);
+      save(state);
+      if (typeof api.onStageComplete === "function") api.onStageComplete({ stage: 1, defeated: true });
+    }
+    return result;
+  }
+  window.__fvStage1 = {
+    state: () => state,
+    // Run the real 100 ms logic tick n times (advances the tick-count-driven prestige mechanics).
+    tick(n = 1) {
+      for (let i = 0; i < n; i++) api.tick();
+    },
+    // Simulate n Compute taps through the real economy.
+    addBits(n = 1) {
+      for (let i = 0; i < n; i++) api.addBits();
+    },
+    // Fast-forward the run to a boss-ready state: every tier owned ≥1, bits = ticket, totalBits high
+    // enough that a prestige is allowed. Does NOT defeat the boss — only makes the gate satisfiable.
+    grind() {
+      state.owned = state.owned || {};
+      for (const t of cfg.tiers || []) state.owned[t.id] = Math.max(1, state.owned[t.id] || 0);
+      state.tabsUnlocked = true;
+      if (cfg.bossTicket) state.bits = { ...cfg.bossTicket };
+      state.totalBits = fromNumber(1e18);
+      save(state);
+      api.renderAll();
+    },
+    canFightBoss: () => api.canFightBoss(),
+    allTiersOwned: () => api.allSubStagesOwned(),
+    cheatDisabled,
+    // Test convenience: toggle the cheat action directly (the smoke prefers the REAL raw-edit path).
+    setCheat(disabled) {
+      if (!api.actions) return false;
+      if (disabled && typeof api.actions.setAction === "function") {
+        api.actions.setAction(1, "cheat_disabled", { source: "debug-hook" });
+        return true;
+      }
+      if (!disabled && typeof api.actions.clearAction === "function") {
+        api.actions.clearAction(1, "cheat_disabled");
+        return true;
+      }
+      return false;
+    },
+    prestige() {
+      const r = doPrestige(state);
+      state.runStartedAt = Date.now();
+      save(state);
+      api.renderAll();
+      return { ...r, depth: state.prestigeCount };
+    },
+    mechanics: () => unlockedMechanics(state).map((m) => m.id),
+    clickEcho() {
+      const ok = clickEcho(state, cfg);
+      if (ok) {
+        save(state);
+        if (api.updateEcho) api.updateEcho();
+      }
+      return ok;
+    },
+    bossSolver: (opts) => simulateFight({ cheatActive: !cheatDisabled(), tapsPerSec: opts && opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 }),
+    fightBoss
+  };
+  return { destroy() {
+    if (window.__fvStage1) delete window.__fvStage1;
+  } };
 }
 
 // ../../docs/games/metagame/stages/stage1/stage1.js
@@ -3099,10 +3739,12 @@ function renderStage1(ctx2) {
     bits: () => true,
     managers: () => (state.owned["s1-box"] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    reset: () => gte(state.totalBits, RESET_THRESHOLD)
+    // Visible once a prestige is affordable OR after any prestige (so the Cores shop / mechanic
+    // roster stays reachable while totalBits is rebuilding toward the next reset).
+    reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1
   };
-  const TAB_LABELS = { bits: "🧮 Bits", managers: "🛠 Managers", achievements: "🏆 Achievements", reset: "🌀 Reset" };
-  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
+  const TAB_LABELS = { bits: "🧮 Bits", managers: "🛠 Managers", achievements: "🏆 Achievements", reset: "🌀 Prestige" };
+  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
   const $ = (s) => host.querySelector(s);
   const tap = $(".mg-s1-tap");
   const computeBtn = $(".mg-s1-btn");
@@ -3113,6 +3755,25 @@ function renderStage1(ctx2) {
   const scoreValEl = $(".mg-s1-score-val");
   const gravEl = $(".mg-s1-grav");
   const helpEl = $(".mg-s1-help");
+  const echoEl = $(".mg-s1-echo");
+  injectEchoStyle();
+  function updateEcho() {
+    if (!echoEl) return;
+    const active = echoActive(state);
+    setHidden(echoEl, !active);
+    if (active) {
+      const tEl = echoEl.querySelector(".mg-s1-echo-t");
+      if (tEl) tEl.textContent = (echoTimeLeft(state) / 10).toFixed(0) + "s";
+    }
+  }
+  if (echoEl) echoEl.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (clickEcho(state, cfg)) {
+      save(state);
+      updateEcho();
+      updateHud();
+    }
+  });
   const HELP_SECTIONS = [
     ["👆 Tap", "Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level."],
     ["🧰 Bit Box", "Tap it to run a timed cycle that pays out bits. Your main income."],
@@ -3240,6 +3901,7 @@ function renderStage1(ctx2) {
     renderTabs();
     renderPanel();
     updateHud();
+    updateEcho();
     if (!state.tabsUnlocked) reveal();
   }
   function checkTabUnlock() {
@@ -3309,9 +3971,14 @@ function renderStage1(ctx2) {
     if (!host.isConnected || !grid.isConnected) {
       clearInterval(renderStage1._tickId);
       renderStage1._tickId = null;
+      if (renderStage1._debug) {
+        renderStage1._debug.destroy();
+        renderStage1._debug = null;
+      }
       return;
     }
-    const passive = mulScalar(fromNumber(passiveRate(state, cfg)), 1 / 10);
+    const incMult = incomeMult(state, cfg);
+    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
     state.bits = add(state.bits, passive);
     state.totalBits = add(state.totalBits, passive);
     state.bits = sub(state.bits, mulScalar(fromNumber(managerCostPerSec(state, cfg)), 1 / 10));
@@ -3332,7 +3999,7 @@ function renderStage1(ctx2) {
             builtUnits = true;
           }
         } else {
-          const payout = timedPayout(state, cfg, t.id);
+          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
           state.bits = add(state.bits, payout);
           state.totalBits = add(state.totalBits, payout);
         }
@@ -3349,6 +4016,24 @@ function renderStage1(ctx2) {
       }
     }
     managersController.runAutoFire();
+    const mech = tickMechanics(state, cfg);
+    if (mech.producedUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === "bits") {
+        paintShop();
+        paintTimed();
+      }
+    }
+    if (mech.echo) updateEcho();
+    if (coreAutoMult(state) && multTier) {
+      const lvl = state.owned[multTier.id] || 0;
+      const cost = totalCost(multTier, lvl, 1);
+      if (gte(state.bits, cost)) {
+        state.bits = sub(state.bits, cost);
+        state.owned[multTier.id] = lvl + 1;
+        state.totalBought = (state.totalBought || 0) + 1;
+      }
+    }
     reveal();
     checkTabUnlock();
     updateHud();
@@ -3358,6 +4043,7 @@ function renderStage1(ctx2) {
         paintTimed();
         paintStats();
       } else if (activeTab === "managers") managersController.paint();
+      else if (activeTab === "reset") paintResetPanel(panelsEl, state);
     }
     if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
     if (++tickAcc >= 10) {
@@ -3368,7 +4054,35 @@ function renderStage1(ctx2) {
   renderStage1._tickId = setInterval(tick, 100);
   renderAll();
   attachChrome(host);
+  if (renderStage1._debug && typeof renderStage1._debug.destroy === "function") renderStage1._debug.destroy();
+  renderStage1._debug = installStage1Debug({
+    state,
+    cfg,
+    save,
+    renderAll,
+    tick,
+    addBits,
+    canFightBoss,
+    allSubStagesOwned,
+    actions: ctx2.actions,
+    onStageComplete: ctx2.onStageComplete,
+    updateEcho
+  });
   return { toggleHelp };
+}
+var ECHO_STYLE_ID = "mg-s1-echo-style";
+function injectEchoStyle() {
+  if (typeof document === "undefined" || document.getElementById(ECHO_STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = ECHO_STYLE_ID;
+  el.textContent = `
+.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
+  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
+  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
+.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
+@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
+`;
+  document.head.appendChild(el);
 }
 
 // ../../docs/games/metagame/stages/stage1/boss.js
@@ -3418,7 +4132,26 @@ function defaultState(context = {}) {
     runStartedAt: now,
     introStages: [],
     claimed: {},
-    tabsUnlocked: false
+    tabsUnlocked: false,
+    // ── Prestige meta-progression (post-prestige mechanics + Cores) ──────────────────────────────
+    prestigeCount: 0,
+    // depth: how many prestiges performed → which mechanics are unlocked
+    cores: 0,
+    // permanent cross-run meta-currency (earned on prestige)
+    coreUpgrades: {},
+    // { upgradeId: level } — persist across prestige
+    ticks: 0,
+    // deterministic game-tick counter (drives the post-prestige mechanics)
+    pipelines: {},
+    // { tierId: true } — wired builders (auto-run for upkeep)
+    pipelineProgress: {},
+    // { tierId: ticksAccumulated } — per-pipeline cycle progress
+    flux: { meter: 0, boostMult: 1, boostTicks: 0 },
+    // burst-meter mechanic
+    echo: { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 },
+    // defrag-echo attention mechanic
+    resonanceFound: {}
+    // { bandId: true } — discovered tier-ratio resonances
   };
 }
 function normalizeState(state, context = {}) {
@@ -3442,6 +4175,15 @@ function normalizeState(state, context = {}) {
   target.introStages = Array.isArray(target.introStages) ? target.introStages : [];
   target.claimed = target.claimed && typeof target.claimed === "object" ? target.claimed : {};
   target.tabsUnlocked = Boolean(target.tabsUnlocked);
+  target.prestigeCount = Number.isFinite(target.prestigeCount) ? target.prestigeCount : 0;
+  target.cores = Number.isFinite(target.cores) ? target.cores : 0;
+  target.coreUpgrades = target.coreUpgrades && typeof target.coreUpgrades === "object" ? target.coreUpgrades : {};
+  target.ticks = Number.isFinite(target.ticks) ? target.ticks : 0;
+  target.pipelines = target.pipelines && typeof target.pipelines === "object" ? target.pipelines : {};
+  target.pipelineProgress = target.pipelineProgress && typeof target.pipelineProgress === "object" ? target.pipelineProgress : {};
+  target.flux = target.flux && typeof target.flux === "object" ? { meter: +target.flux.meter || 0, boostMult: +target.flux.boostMult || 1, boostTicks: +target.flux.boostTicks || 0 } : { meter: 0, boostMult: 1, boostTicks: 0 };
+  target.echo = target.echo && typeof target.echo === "object" ? { active: Boolean(target.echo.active), spawnTick: +target.echo.spawnTick || 0, expireTick: +target.echo.expireTick || 0, lastTick: +target.echo.lastTick || 0 } : { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 };
+  target.resonanceFound = target.resonanceFound && typeof target.resonanceFound === "object" ? target.resonanceFound : {};
   if (target.owned["s1-cursor"]) {
     target.owned["s1-mult"] = (target.owned["s1-mult"] || 0) + target.owned["s1-cursor"];
     delete target.owned["s1-cursor"];
@@ -3604,6 +4346,8 @@ function mountStage(ctx2 = {}) {
       sfxEnabled: ctx2.sfxEnabled,
       stage: () => stageConfig,
       onExit: ctx2.onExit,
+      actions: ctx2.actions,
+      onStageComplete: ctx2.onStageComplete,
       onBoss: () => {
         s1ctl = null;
         host.innerHTML = '<div class="mg-wrap mg-stage1-boss-host"></div>';

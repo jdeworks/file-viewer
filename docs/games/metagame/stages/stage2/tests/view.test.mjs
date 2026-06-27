@@ -40,5 +40,15 @@ ok(lightRadius(1) === null && lightRadius(3) === null, "floors 1-3 have no darkn
 ok(lightRadius(5).rx === 13 && lightRadius(8).rx === 9 && lightRadius(11).rx === 7, "sight radius shrinks with depth");
 ok(lightRadius(11).ry < lightRadius(11).rx, "vertical radius is tighter (cells are taller than wide)");
 
+// Overflow act (floors 7-9) — the darkness verb. effectiveLight collapses to a tight ring with no
+// torch and floods wide once a torch burns; a torch only draws foes (sight bonus) inside the dark act.
+import { effectiveLight, isDarkAct, DARK_RADIUS, TORCH_RADIUS, torchSightBonus, TORCH_AGGRO } from "../darkness.js";
+ok(!isDarkAct(6) && isDarkAct(7) && isDarkAct(9), "the Overflow (darkness) act begins at floor 7");
+ok(effectiveLight({ floor: 7 }).rx === DARK_RADIUS.rx, "Overflow with no torch uses the tight dark ring");
+ok(effectiveLight({ floor: 7, torch: 5 }).rx === TORCH_RADIUS.rx, "a burning torch floods a wide ring in the dark");
+ok(effectiveLight({ floor: 5 }).rx === lightRadius(5).rx, "outside the Overflow, light is just the depth fog");
+ok(torchSightBonus({ floor: 7, torch: 5 }) === TORCH_AGGRO && torchSightBonus({ floor: 7 }) === 0, "torch glare boosts foe sight only while lit");
+ok(torchSightBonus({ floor: 4, torch: 5 }) === 0, "a torch on a lit floor does nothing to foe sight");
+
 console.log(failed ? `\nSTAGE 2 VIEW FAILED (${failed})` : "\nSTAGE 2 VIEW PASSED");
 if (failed) process.exit(1);
