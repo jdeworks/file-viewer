@@ -3436,6 +3436,53 @@ function tickEntropy(state, cfg) {
   return decayed;
 }
 
+// ../../docs/games/metagame/stages/stage1/s1echoes.js
+var ECHO_INTERVAL = 1200;
+var ECHO_TTL = 900;
+var MISS_PENALTY = 0.8;
+var REWARD_SECONDS = 60;
+function echoState(state) {
+  if (!state.echo || typeof state.echo !== "object") state.echo = { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 };
+  return state.echo;
+}
+function echoActive(state) {
+  return Boolean(echoState(state).active);
+}
+function echoTimeLeft(state) {
+  const e = echoState(state);
+  return e.active ? Math.max(0, e.expireTick - (state.ticks || 0)) : 0;
+}
+function clickEcho(state, cfg) {
+  const e = echoState(state);
+  if (!e.active) return false;
+  e.active = false;
+  e.lastTick = state.ticks || 0;
+  const reward = fromNumber(passiveRate(state, cfg) * REWARD_SECONDS);
+  state.bits = add(state.bits, reward);
+  state.totalBits = add(state.totalBits, reward);
+  return true;
+}
+function tickEcho(state) {
+  const e = echoState(state);
+  const now = state.ticks || 0;
+  if (e.active) {
+    if (now >= e.expireTick) {
+      e.active = false;
+      e.lastTick = now;
+      state.bits = mulScalar(state.bits, MISS_PENALTY);
+      return { spawned: false, expired: true };
+    }
+    return { spawned: false, expired: false };
+  }
+  if (now - (e.lastTick || 0) >= ECHO_INTERVAL) {
+    e.active = true;
+    e.spawnTick = now;
+    e.expireTick = now + ECHO_TTL;
+    return { spawned: true, expired: false };
+  }
+  return { spawned: false, expired: false };
+}
+
 // ../../docs/games/metagame/stages/stage1/s1mechanics.js
 function incomeMult(state) {
   let m = coreIncomeMult(state);
@@ -3448,7 +3495,9 @@ function tickMechanics(state, cfg) {
   if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
   if (mechanicUnlocked(state, "flux")) tickFlux(state);
   if (mechanicUnlocked(state, "entropy")) producedUnits = tickEntropy(state, cfg) || producedUnits;
-  return { producedUnits };
+  let echo = null;
+  if (mechanicUnlocked(state, "echoes")) echo = tickEcho(state, cfg);
+  return { producedUnits, echo };
 }
 
 // ../../docs/games/metagame/stages/stage1/stage1.js
@@ -3498,7 +3547,7 @@ function renderStage1(ctx2) {
     reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1
   };
   const TAB_LABELS = { bits: "🧮 Bits", managers: "🛠 Managers", achievements: "🏆 Achievements", reset: "🌀 Prestige" };
-  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
+  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
   const $ = (s) => host.querySelector(s);
   const tap = $(".mg-s1-tap");
   const computeBtn = $(".mg-s1-btn");
@@ -3509,6 +3558,25 @@ function renderStage1(ctx2) {
   const scoreValEl = $(".mg-s1-score-val");
   const gravEl = $(".mg-s1-grav");
   const helpEl = $(".mg-s1-help");
+  const echoEl = $(".mg-s1-echo");
+  injectEchoStyle();
+  function updateEcho() {
+    if (!echoEl) return;
+    const active = echoActive(state);
+    setHidden(echoEl, !active);
+    if (active) {
+      const tEl = echoEl.querySelector(".mg-s1-echo-t");
+      if (tEl) tEl.textContent = (echoTimeLeft(state) / 10).toFixed(0) + "s";
+    }
+  }
+  if (echoEl) echoEl.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (clickEcho(state, cfg)) {
+      save(state);
+      updateEcho();
+      updateHud();
+    }
+  });
   const HELP_SECTIONS = [
     ["👆 Tap", "Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level."],
     ["🧰 Bit Box", "Tap it to run a timed cycle that pays out bits. Your main income."],
@@ -3636,6 +3704,7 @@ function renderStage1(ctx2) {
     renderTabs();
     renderPanel();
     updateHud();
+    updateEcho();
     if (!state.tabsUnlocked) reveal();
   }
   function checkTabUnlock() {
@@ -3754,6 +3823,7 @@ function renderStage1(ctx2) {
         paintTimed();
       }
     }
+    if (mech.echo) updateEcho();
     if (coreAutoMult(state) && multTier) {
       const lvl = state.owned[multTier.id] || 0;
       const cost = totalCost(multTier, lvl, 1);
@@ -3784,6 +3854,20 @@ function renderStage1(ctx2) {
   renderAll();
   attachChrome(host);
   return { toggleHelp };
+}
+var ECHO_STYLE_ID = "mg-s1-echo-style";
+function injectEchoStyle() {
+  if (typeof document === "undefined" || document.getElementById(ECHO_STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = ECHO_STYLE_ID;
+  el.textContent = `
+.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
+  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
+  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
+.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
+@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
+`;
+  document.head.appendChild(el);
 }
 
 // ../../docs/games/metagame/stages/stage1/boss.js

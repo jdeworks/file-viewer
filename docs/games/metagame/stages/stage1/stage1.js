@@ -21,6 +21,7 @@ import { createManagersController } from './s1managers.js';
 import { renderResetPanel as renderS1ResetPanel, paintResetPanel as paintS1ResetPanel } from './s1reset.js';
 import { tickMechanics, incomeMult } from './s1mechanics.js';
 import { coreAutoMult } from './s1cores.js';
+import { echoActive, echoTimeLeft, clickEcho } from './s1echoes.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
 
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
@@ -91,6 +92,7 @@ export function renderStage1(ctx) {
     + '  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span>'
     + '</div>'
     + '<div class="mg-s1-help" hidden></div>'
+    + '<button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button>'
     + '<div class="mg-s1-top">'
     + '  <div class="mg-s1-tap" aria-label="tap to compute"></div>'
     + '  <div class="mg-s1-stage">'
@@ -112,6 +114,24 @@ export function renderStage1(ctx) {
   const scoreValEl = $('.mg-s1-score-val');
   const gravEl = $('.mg-s1-grav');
   const helpEl = $('.mg-s1-help');
+  const echoEl = $('.mg-s1-echo');
+
+  // ── Defrag Echo glyph (prestige mechanic #4) — a clickable attention target. Shows only while an
+  // echo is active; clicking it banks a reward, ignoring it eventually costs 20% of your bits. ──
+  injectEchoStyle();
+  function updateEcho() {
+    if (!echoEl) return;
+    const active = echoActive(state);
+    setHidden(echoEl, !active);
+    if (active) {
+      const tEl = echoEl.querySelector('.mg-s1-echo-t');
+      if (tEl) tEl.textContent = (echoTimeLeft(state) / 10).toFixed(0) + 's';
+    }
+  }
+  if (echoEl) echoEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (clickEcho(state, cfg)) { save(state); updateEcho(); updateHud(); }
+  });
 
   // ── Score HUD + helper buttons (progressive disclosure) ──────────────────────
   // Score counter appears at 400 total bits collected; the help affordance appears once the
@@ -264,6 +284,7 @@ export function renderStage1(ctx) {
     renderTabs();
     renderPanel();
     updateHud();
+    updateEcho();
     if (!state.tabsUnlocked) reveal();
   }
 
@@ -393,6 +414,7 @@ export function renderStage1(ctx) {
       renderTabs();
       if (activeTab === 'bits') { paintShop(); paintTimed(); }
     }
+    if (mech.echo) updateEcho();
     // 3d. Auto-Tapper Cores upgrade: buy a Multiplier whenever affordable.
     if (coreAutoMult(state) && multTier) {
       const lvl = state.owned[multTier.id] || 0;
@@ -428,6 +450,21 @@ export function renderStage1(ctx) {
 
   // Expose the help toggle so the orchestrator can wire it to the header help button.
   return { toggleHelp };
+}
+
+const ECHO_STYLE_ID = 'mg-s1-echo-style';
+function injectEchoStyle() {
+  if (typeof document === 'undefined' || document.getElementById(ECHO_STYLE_ID)) return;
+  const el = document.createElement('style');
+  el.id = ECHO_STYLE_ID;
+  el.textContent = `
+.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
+  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
+  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
+.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
+@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
+`;
+  document.head.appendChild(el);
 }
 
 export const STAGE1 = { GRID_CELLS, GRID_COLS, GRID_ROWS };
