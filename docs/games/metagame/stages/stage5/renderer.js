@@ -115,13 +115,14 @@ export function renderStage5(ctx) {
   function paintArena(view) {
     fields.arena.textContent = renderTrackGrid({
       table: view.table, tick: view.tick, lane: view.lane, lookAhead: view.lookAhead,
-      wrap: view.archetype === 'circuit', rivals: view.rivals || [],
+      wrap: view.archetype === 'circuit', rivals: view.rivals || [], channel: view.channel || 'lo',
     });
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
     const pct = Math.round((view.progress || 0) * 100);
+    const fork = view.hasFork ? ` · ${view.channel === 'hi' ? 'HI' : 'LO'}${view.inFork ? '◆' : ''}` : '';
     fields.race.textContent = view.archetype === 'circuit'
-      ? `${view.archetype} · lap ${view.lap}/${view.laps}`
-      : `${view.archetype} · ${pct}%`;
+      ? `${view.archetype} · lap ${view.lap}/${view.laps}${fork}`
+      : `${view.archetype} · ${pct}%${fork}`;
     fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : '—';
   }
 
@@ -196,7 +197,7 @@ export function renderStage5(ctx) {
 
   const onKey = (event) => {
     if (mode !== 'playing' || !loop) return;
-    if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
       loop.handleKey(event.key);
     }

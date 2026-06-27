@@ -41,7 +41,7 @@ export function placePowerups(table, rng, round = {}) {
   for (let t = 0; t < table.length; t += 1) {
     if (t % spacing !== 0) continue;
     const row = table[t];
-    if (!row || row.beatOpen === false) continue;
+    if (!row || row.beatOpen === false || row.fork) continue; // fork spans own their own sub-channel rows
     const open = [0, 1, 2].filter((l) => row.lanes[l] === null);
     if (!open.length || !rng.chance(chance)) continue;
     const lane = rng.pick(open);

@@ -9,6 +9,7 @@ export const roundLogLines = [
   'boost gates open on the beat. take the throughput, not just the safe line.',
   'the channel splits and re-merges. hold your route through the noise.',
   'a recording of your last clean lap rides beside you. beat the clock — and yourself.',
+  'the channel forks again and again — commit HI for the gates, LO to stay alive, then merge.',
   'jammer signal collapses into silence. the channel is yours.',
 ];
 
@@ -29,4 +30,5 @@ export const GLYPH_LEGEND = [
   ['E', 'EMP (set a rival back)'],
   ['P', 'par ghost (the clock to beat)'],
   ['G', 'your prior-best ghost'],
+  ['↑↓', 'commit HI / LO route at a fork'],
 ];

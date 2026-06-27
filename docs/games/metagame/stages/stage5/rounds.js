@@ -60,15 +60,23 @@ export const ROUNDS = [
     archetype: 'time-trial', tickCount: 900,  trackLength: 900,
     parPace: 0.9, rivals: 2, hasPowerups: true,
     powerupPool: ['overclock', 'overclock', 'repair', 'cache'] },
+  // ── Act V — FORK RELAY (the channel splits repeatedly: commit HI for gates or LO for safety) ──────
+  { id: 8, label: 'FORK RELAY',         tickMs: 135, beatWindowTicks: 1,
+    glyphs: ['░', '▓', '>>'],   burstPattern: [1, 0, 1, 0],
+    counterPhaseShift: null, hasFork: true,  hasGates: true,
+    archetype: 'fork',     tickCount: 1400, trackLength: 1400,
+    forkSpan: 44, forkGap: 130, forkFirst: 70,
+    rivals: 3, hasPowerups: true, powerupPool: ['shield', 'overclock', 'repair', 'cache'] },
   // ── BOSS — Jammer Pursuit (all verbs at once; NO powerups — the calibration un-cheat is the gate) ─
-  { id: 8, label: 'BOSS',               tickMs: 120, beatWindowTicks: 1,
+  { id: 9, label: 'BOSS',               tickMs: 120, beatWindowTicks: 1,
     glyphs: ['░', '▒', '▓', '>>'], burstPattern: [1, 1, 0, 1, 0],
     counterPhaseShift: 4,    hasFork: true,  hasGates: true,
     archetype: 'boss',     tickCount: 1100, trackLength: 1100,
+    forkSpan: 36, forkGap: 200, forkFirst: 90,
     rivals: 2, hasPowerups: false },
 ];
 
-export const FINAL_ROUND_ID = 8;
+export const FINAL_ROUND_ID = 9;
 export const ROUND_COUNT = ROUNDS.length;
 
 export function roundByIdx(idx) {

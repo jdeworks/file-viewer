@@ -1,7 +1,7 @@
 // economy.js — Stage 5 Signal Racer: packet rewards per round. Pure; makes a clean run (high on-beat
 // accuracy + surviving integrity + collected boost gates) pay more, so replay/shop has a point.
 
-const BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 100 };
+const BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 95, 9: 100 };
 
 export function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, upgrades = {}, multiplier = 1 }) {
   const base = BASE_PACKETS[roundId] ?? 30;

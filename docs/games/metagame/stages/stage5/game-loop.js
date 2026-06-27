@@ -15,6 +15,7 @@ import { buildRivals, finishPosition, positionMultiplier } from './rivals.js';
 import { makeRng } from './rng.js';
 import { placePowerups, isPowerup, powerupType, durationTicks, POWERUPS } from './powerups.js';
 import { makeParGhost, ghostFromRecording, createRecorder, medalFor } from './ghost.js';
+import { applyForks, resolveRow } from './fork.js';
 
 const LOOK_AHEAD = 8;
 const BASE_SPEED = 1;
@@ -27,6 +28,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
   const table = buildObstacleTable(seed, round);
+  if (round.hasFork) applyForks(table, makeRng(`${seed}:fork:${round.id}`), round);
   if (round.hasPowerups) placePowerups(table, makeRng(`${seed}:pu:${round.id}`), round);
   const tuning = applyUpgrades(state.shop || {});
   const boss = roundOverride ? Boolean(round.boss) : isBossRound(roundIdx);
@@ -59,12 +61,31 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   run.lap = 1;
   run.distance = 0;
   run.position = rivals.length + 1;
+  run.channel = 'lo';
+  run.forkRoutes = 0;
 
   let tick = 0;
   let done = false;
   let outcome = null;
+  let channel = 'lo';  // committed sub-channel for fork spans: 'hi' (gates, risk) | 'lo' (safe)
 
   function rowAt(t) { return table[race.rowIndex(t, table.length)]; }
+  // The row a reader should actually use this tick — the committed sub-channel inside a fork span.
+  function activeRow(t) { return resolveRow(rowAt(t), channel); }
+  function inForkSpan(t) { const r = rowAt(t); return Boolean(r && r.fork); }
+  // Route is LOCKED once you're past the split's entry row — you commit at the fork, ride to the merge.
+  function routeLocked(t) { const r = rowAt(t); return Boolean(r && r.fork && !r.forkEntry); }
+
+  // Commit the route for the next split (preset before it, or lock it in on the entry row). Ignored
+  // mid-span — the "commit at the fork, then ride it to the merge" decision the routing layer is about.
+  function setChannel(next) {
+    if (done || routeLocked(tick)) return;
+    const target = next === 'hi' ? 'hi' : 'lo';
+    if (target === channel) return;
+    channel = target;
+    run.channel = channel;
+    paint();
+  }
 
   // Live rival positions for the renderer: glyph + lane + how many rows ahead of the player they are.
   // Time-trial ghosts (par + prior-best) are overlaid the same way, so the renderer needs no new path.
@@ -127,6 +148,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       suppressionActive, lookAhead: LOOK_AHEAD, race, lap: race.lap(), laps: race.laps,
       progress: race.progress(), archetype: race.archetype, rivals: rivalView(),
       position: run.position, fieldSize: rivals.length + 1,
+      channel, inFork: inForkSpan(tick), hasFork: Boolean(round.hasFork),
     });
   }
 
@@ -149,11 +171,14 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   function handleKey(key) {
     if (key === 'ArrowLeft') setLane(run.lane - 1);
     else if (key === 'ArrowRight') setLane(run.lane + 1);
+    else if (key === 'ArrowUp') setChannel('hi');
+    else if (key === 'ArrowDown') setChannel('lo');
   }
 
   function step() {
     if (done) return outcome;
-    const row = rowAt(tick);
+    const row = activeRow(tick);
+    if (rowAt(tick)?.forkEntry) run.forkRoutes += 1; // tally each split committed to
     if (row) {
       const glyph = row.lanes[run.lane];
       const shielded = row.counterPhaseLane === run.lane || tick < buffs.shieldUntil;
@@ -220,14 +245,27 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     });
   }
 
-  // Optimal lane for the current tick. Used by autoSolve (the test hook) — never an in-game affordance.
+  // Optimal lane for the current tick (resolves the committed sub-channel). Used by autoSolve.
   function bestLane(atTick) {
-    return optimalLane(rowAt(atTick), run.lane);
+    return optimalLane(activeRow(atTick), run.lane);
+  }
+
+  // The bot commits to HI at a split when HI offers a boost gate within the span (harvest the
+  // throughput), else LO (safe) — both are always survivable thanks to the escape invariant.
+  function bestChannelForSplit(startTick) {
+    const r = rowAt(startTick);
+    const span = r && r.fork ? (Number(round.forkSpan) || 36) : 0;
+    for (let i = 0; i < span; i += 1) {
+      const row = rowAt(startTick + i);
+      if (row && row.forkHi && row.forkHi.includes('>>')) return 'hi';
+    }
+    return 'lo';
   }
 
   function autoSolve(limit = maxTicks + 32) {
     let guard = 0;
     while (!done && guard < limit) {
+      if (rowAt(tick)?.forkEntry) setChannel(bestChannelForSplit(tick));
       run.lane = bestLane(tick);
       step();
       guard += 1;
@@ -241,7 +279,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     get done() { return done; },
     get outcome() { return outcome; },
     get position() { return run.position; },
-    handleKey, step, autoSolve, paint, rivalView,
+    get channel() { return channel; },
+    handleKey, setChannel, step, autoSolve, paint, rivalView,
   };
 }
 

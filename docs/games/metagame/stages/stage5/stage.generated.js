@@ -174,7 +174,7 @@ function makeRng(seed) {
 
 // ../../docs/games/metagame/stages/stage5/track.js
 var LANES = 3;
-var DENSITY = { 1: 0.4, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.44, 8: 0.5 };
+var DENSITY = { 1: 0.4, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.44, 8: 0.4, 9: 0.5 };
 function buildObstacleTable(seed, roundDef) {
   const rng = makeRng(`${seed}:${roundDef.id}`);
   const count = Number(roundDef.tickCount) || 100;
@@ -346,9 +346,30 @@ var ROUNDS = [
     hasPowerups: true,
     powerupPool: ["overclock", "overclock", "repair", "cache"]
   },
-  // ── BOSS — Jammer Pursuit (all verbs at once; NO powerups — the calibration un-cheat is the gate) ─
+  // ── Act V — FORK RELAY (the channel splits repeatedly: commit HI for gates or LO for safety) ──────
   {
     id: 8,
+    label: "FORK RELAY",
+    tickMs: 135,
+    beatWindowTicks: 1,
+    glyphs: ["░", "▓", ">>"],
+    burstPattern: [1, 0, 1, 0],
+    counterPhaseShift: null,
+    hasFork: true,
+    hasGates: true,
+    archetype: "fork",
+    tickCount: 1400,
+    trackLength: 1400,
+    forkSpan: 44,
+    forkGap: 130,
+    forkFirst: 70,
+    rivals: 3,
+    hasPowerups: true,
+    powerupPool: ["shield", "overclock", "repair", "cache"]
+  },
+  // ── BOSS — Jammer Pursuit (all verbs at once; NO powerups — the calibration un-cheat is the gate) ─
+  {
+    id: 9,
     label: "BOSS",
     tickMs: 120,
     beatWindowTicks: 1,
@@ -360,11 +381,14 @@ var ROUNDS = [
     archetype: "boss",
     tickCount: 1100,
     trackLength: 1100,
+    forkSpan: 36,
+    forkGap: 200,
+    forkFirst: 90,
     rivals: 2,
     hasPowerups: false
   }
 ];
-var FINAL_ROUND_ID = 8;
+var FINAL_ROUND_ID = 9;
 var ROUND_COUNT = ROUNDS.length;
 function roundByIdx(idx) {
   return ROUNDS[Math.max(0, Math.min(ROUNDS.length - 1, Number(idx) || 0))];
@@ -398,7 +422,7 @@ function buyUpgrade(state, id) {
 }
 
 // ../../docs/games/metagame/stages/stage5/economy.js
-var BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 100 };
+var BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 95, 9: 100 };
 function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, upgrades = {}, multiplier = 1 }) {
   const base = BASE_PACKETS[roundId] ?? 30;
   const accuracy = Math.floor(clamp01(onBeatPct) * 20);
@@ -566,7 +590,7 @@ function placePowerups(table, rng, round = {}) {
   for (let t = 0; t < table.length; t += 1) {
     if (t % spacing !== 0) continue;
     const row = table[t];
-    if (!row || row.beatOpen === false) continue;
+    if (!row || row.beatOpen === false || row.fork) continue;
     const open = [0, 1, 2].filter((l) => row.lanes[l] === null);
     if (!open.length || !rng.chance(chance)) continue;
     const lane = rng.pick(open);
@@ -633,6 +657,57 @@ function medalFor(finishTick, parTick) {
   return "bronze";
 }
 
+// ../../docs/games/metagame/stages/stage5/fork.js
+var LANES2 = 3;
+var HI_DENSITY = 0.55;
+var LO_DENSITY = 0.3;
+function buildLanes(rng, density, glyphs, beatOpen, withGates) {
+  const lanes = [null, null, null];
+  let blocked = 0;
+  for (let l = 0; l < LANES2; l += 1) {
+    if (rng.chance(density)) {
+      lanes[l] = rng.pick(glyphs);
+      blocked += 1;
+    }
+  }
+  if (blocked >= LANES2) lanes[rng.int(0, LANES2 - 1)] = null;
+  if (withGates && beatOpen && rng.chance(0.5)) {
+    const open = [0, 1, 2].filter((l) => lanes[l] === null);
+    if (open.length) lanes[rng.pick(open)] = ">>";
+  }
+  return lanes;
+}
+function applyForks(table, rng, round = {}) {
+  const span = Math.max(8, Number(round.forkSpan) || 36);
+  const gap = Math.max(span + 8, Number(round.forkGap) || 150);
+  const first = Math.max(24, Number(round.forkFirst) || 60);
+  const hiGlyphs = ["░", "▓"];
+  const loGlyphs = ["░"];
+  const entries = [];
+  for (let start = first; start + span < table.length - 8; start += gap) {
+    entries.push(start);
+    for (let i = 0; i < span; i += 1) {
+      const t = start + i;
+      const row = table[t];
+      if (!row) continue;
+      const beatOpen = row.beatOpen !== false;
+      const forkHi = buildLanes(rng, HI_DENSITY, hiGlyphs, beatOpen, true);
+      const forkLo = buildLanes(rng, LO_DENSITY, loGlyphs, beatOpen, false);
+      row.fork = true;
+      row.forkEntry = i === 0;
+      row.forkHi = forkHi;
+      row.forkLo = forkLo;
+      row.lanes = forkLo.slice();
+    }
+  }
+  return entries;
+}
+function resolveRow(row, channel) {
+  if (!row || !row.fork) return row;
+  const lanes = channel === "hi" ? row.forkHi : row.forkLo;
+  return { ...row, lanes: lanes || row.lanes };
+}
+
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var LOOK_AHEAD = 8;
 var BASE_SPEED = 1;
@@ -644,6 +719,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
   const table = buildObstacleTable(seed, round);
+  if (round.hasFork) applyForks(table, makeRng(`${seed}:fork:${round.id}`), round);
   if (round.hasPowerups) placePowerups(table, makeRng(`${seed}:pu:${round.id}`), round);
   const tuning = applyUpgrades(state.shop || {});
   const boss = roundOverride ? Boolean(round.boss) : isBossRound(roundIdx);
@@ -671,11 +747,33 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   run.lap = 1;
   run.distance = 0;
   run.position = rivals.length + 1;
+  run.channel = "lo";
+  run.forkRoutes = 0;
   let tick = 0;
   let done = false;
   let outcome = null;
+  let channel = "lo";
   function rowAt(t) {
     return table[race.rowIndex(t, table.length)];
+  }
+  function activeRow(t) {
+    return resolveRow(rowAt(t), channel);
+  }
+  function inForkSpan(t) {
+    const r = rowAt(t);
+    return Boolean(r && r.fork);
+  }
+  function routeLocked(t) {
+    const r = rowAt(t);
+    return Boolean(r && r.fork && !r.forkEntry);
+  }
+  function setChannel(next) {
+    if (done || routeLocked(tick)) return;
+    const target = next === "hi" ? "hi" : "lo";
+    if (target === channel) return;
+    channel = target;
+    run.channel = channel;
+    paint();
   }
   function rivalView() {
     const view = rivals.map((r, i) => ({
@@ -744,7 +842,10 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       archetype: race.archetype,
       rivals: rivalView(),
       position: run.position,
-      fieldSize: rivals.length + 1
+      fieldSize: rivals.length + 1,
+      channel,
+      inFork: inForkSpan(tick),
+      hasFork: Boolean(round.hasFork)
     });
   }
   function damageFor(glyph) {
@@ -764,10 +865,13 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   function handleKey(key) {
     if (key === "ArrowLeft") setLane(run.lane - 1);
     else if (key === "ArrowRight") setLane(run.lane + 1);
+    else if (key === "ArrowUp") setChannel("hi");
+    else if (key === "ArrowDown") setChannel("lo");
   }
   function step() {
     if (done) return outcome;
-    const row = rowAt(tick);
+    const row = activeRow(tick);
+    if (rowAt(tick)?.forkEntry) run.forkRoutes += 1;
     if (row) {
       const glyph = row.lanes[run.lane];
       const shielded = row.counterPhaseLane === run.lane || tick < buffs.shieldUntil;
@@ -848,11 +952,21 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     });
   }
   function bestLane(atTick) {
-    return optimalLane(rowAt(atTick), run.lane);
+    return optimalLane(activeRow(atTick), run.lane);
+  }
+  function bestChannelForSplit(startTick) {
+    const r = rowAt(startTick);
+    const span = r && r.fork ? Number(round.forkSpan) || 36 : 0;
+    for (let i = 0; i < span; i += 1) {
+      const row = rowAt(startTick + i);
+      if (row && row.forkHi && row.forkHi.includes(">>")) return "hi";
+    }
+    return "lo";
   }
   function autoSolve(limit = maxTicks + 32) {
     let guard = 0;
     while (!done && guard < limit) {
+      if (rowAt(tick)?.forkEntry) setChannel(bestChannelForSplit(tick));
       run.lane = bestLane(tick);
       step();
       guard += 1;
@@ -878,7 +992,11 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     get position() {
       return run.position;
     },
+    get channel() {
+      return channel;
+    },
     handleKey,
+    setChannel,
     step,
     autoSolve,
     paint,
@@ -950,11 +1068,16 @@ var CELL = {
   P: "(P)",
   G: "(G)"
 };
-function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [] }) {
+function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [], channel = "lo" }) {
   const rows = [];
-  const at = (t) => {
+  const raw = (t) => {
     if (wrap && table.length) return table[(t % table.length + table.length) % table.length];
     return table[t];
+  };
+  const at = (t) => {
+    const r = raw(t);
+    if (!r || !r.fork) return r;
+    return { ...r, lanes: (channel === "hi" ? r.forkHi : r.forkLo) || r.lanes };
   };
   const here = at(tick) || { counterPhaseLane: null, beatOpen: true };
   const rivalAt = /* @__PURE__ */ new Map();
@@ -988,6 +1111,7 @@ var roundLogLines = [
   "boost gates open on the beat. take the throughput, not just the safe line.",
   "the channel splits and re-merges. hold your route through the noise.",
   "a recording of your last clean lap rides beside you. beat the clock — and yourself.",
+  "the channel forks again and again — commit HI for the gates, LO to stay alive, then merge.",
   "jammer signal collapses into silence. the channel is yours."
 ];
 function roundLogLine(roundIdx) {
@@ -1005,7 +1129,8 @@ var GLYPH_LEGEND = [
   ["+", "repair   $ packet-cache"],
   ["E", "EMP (set a rival back)"],
   ["P", "par ghost (the clock to beat)"],
-  ["G", "your prior-best ghost"]
+  ["G", "your prior-best ghost"],
+  ["↑↓", "commit HI / LO route at a fork"]
 ];
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
@@ -1111,11 +1236,13 @@ function renderStage5(ctx) {
       lane: view.lane,
       lookAhead: view.lookAhead,
       wrap: view.archetype === "circuit",
-      rivals: view.rivals || []
+      rivals: view.rivals || [],
+      channel: view.channel || "lo"
     });
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
     const pct = Math.round((view.progress || 0) * 100);
-    fields.race.textContent = view.archetype === "circuit" ? `${view.archetype} · lap ${view.lap}/${view.laps}` : `${view.archetype} · ${pct}%`;
+    const fork = view.hasFork ? ` · ${view.channel === "hi" ? "HI" : "LO"}${view.inFork ? "◆" : ""}` : "";
+    fields.race.textContent = view.archetype === "circuit" ? `${view.archetype} · lap ${view.lap}/${view.laps}${fork}` : `${view.archetype} · ${pct}%${fork}`;
     fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : "—";
   }
   function repaint() {
@@ -1190,7 +1317,7 @@ function renderStage5(ctx) {
   });
   const onKey = (event) => {
     if (mode !== "playing" || !loop) return;
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
       event.preventDefault();
       loop.handleKey(event.key);
     }
