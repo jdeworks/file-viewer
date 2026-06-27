@@ -1,0 +1,8 @@
+MEMORY — before / after
+
+[before] block_A: present
+[before] block_B: present
+[after]  block_A: present
+[after]  block_B: [missing]
+
+Loss is visible only against a previous state.

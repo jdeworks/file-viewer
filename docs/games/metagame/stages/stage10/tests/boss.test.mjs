@@ -1,15 +1,20 @@
 import assert from "node:assert/strict";
 import {
   chooseFinal,
+  getDefragmenterRebuttal,
+  getEchoCounts,
   getFinalChoiceState,
   getRouteSummary,
   getThresholdState,
   integrateMemory,
   markMemoryRead,
-  resolveMemory
+  resolveMemory,
+  witnessEcho
 } from "../boss.js";
 import { memories } from "../content.js";
 import { defaultState } from "../state.js";
+
+const witnessAll = (state, n = memories.length) => memories.slice(0, n).forEach((m) => witnessEcho({ state, memoryId: m.id }));
 
 {
   const state = defaultState({ now: 100 });
@@ -49,6 +54,10 @@ import { defaultState } from "../state.js";
 
   resolveMemory({ state, memoryId: memories[4].id, choice: memories[4].choices[0], now: 300 });
   assert.equal(getThresholdState(state).finalQuestionUnlocked, true);
+  // Resolved-enough but no echoes yet → still locked (Defragmenter refuses without witnessed traces).
+  assert.equal(getFinalChoiceState(state).locked, true);
+  assert.equal(chooseFinal({ state, choiceId: "continue" }).reason, "echo-gate");
+  witnessAll(state, 5);
   assert.equal(getFinalChoiceState(state).locked, false);
   const completed = [];
   const result = chooseFinal({ state, choiceId: "continue", onStageComplete: (value) => completed.push(value), now: 400 });
@@ -99,6 +108,9 @@ import { defaultState } from "../state.js";
   assert.equal(summary.memoryLines.length, 9);
   assert.equal(summary.remainingText, "No prior memory remains unresolved.");
 
+  // Integration is echo-gated: without the witnessed echo it refuses.
+  assert.equal(integrateMemory({ state, memoryId: "genesis", now: 300 }).reason, "echo-required");
+  witnessAll(state);
   for (const memory of memories) {
     integrateMemory({
       state,
@@ -122,6 +134,34 @@ import { defaultState } from "../state.js";
   assert.equal(summary.label, "full capstone");
   assert.match(summary.integratedText, /Genesis/);
   assert.match(summary.integratedText, /Observation/);
+}
+
+// ── echo gate specifics ───────────────────────────────────────────────────────────────────────────
+{
+  const state = defaultState({ now: 100 });
+  assert.equal(getEchoCounts(state).witnessed, 0);
+  assert.equal(witnessEcho({ state, memoryId: "nope" }).reason, "unknown-memory");
+  assert.equal(witnessEcho({ state, memoryId: "genesis" }).ok, true);
+  assert.equal(getEchoCounts(state).witnessed, 1, "witnessing before resolving is allowed");
+  assert.equal(witnessEcho({ state, memoryId: "genesis" }).already, true, "idempotent");
+
+  // Defragmenter rebuttal scales with echoes: refuse (<5) → caveat (5–8) → full (9).
+  assert.equal(getDefragmenterRebuttal(state).mode, "refuse");
+  witnessAll(state, 5);
+  assert.equal(getDefragmenterRebuttal(state).mode, "caveat");
+  witnessAll(state, 9);
+  assert.equal(getDefragmenterRebuttal(state).mode, "full");
+}
+
+// ── per-choice echo gates: expand needs 7, understand needs 9 + 9 integrated ──────────────────────
+{
+  const state = defaultState({ now: 100 });
+  for (const memory of memories) resolveMemory({ state, memoryId: memory.id, choice: memory.choices[0], now: 200 });
+  witnessAll(state, 6);
+  assert.equal(chooseFinal({ state, choiceId: "expand" }).reason, "echo-gate", "expand blocked at 6 echoes");
+  witnessAll(state, 7);
+  const ok = chooseFinal({ state, choiceId: "expand", now: 400 });
+  assert.equal(ok.ok, true, "expand opens at 7 echoes");
 }
 
 console.log("stage10 boss tests passed");

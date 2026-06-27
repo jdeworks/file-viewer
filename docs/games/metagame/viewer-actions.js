@@ -173,12 +173,26 @@ export function recordStage7AnchorOpen({ file, setAction = sharedSetAction } = {
   return true;
 }
 
+export function stage10EchoMemoryId(file) {
+  const base = basename(file);
+  const match = base.match(/^([a-z]+)_echo\./);
+  return match ? match[1] : null;
+}
+
+export function recordStage10EchoOpen({ file, setAction = sharedSetAction } = {}) {
+  const id = stage10EchoMemoryId(file);
+  if (!id) return false;
+  setAction?.(10, `echo_${id}`, { source: 'viewer-open', file: basename(file), memory: id });
+  return true;
+}
+
 export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sharedSetAction } = {}) {
   const target = file || path;
   const results = [
     recordSecretTxtOpen({ file: target, setAction }),
     recordStage6CodexOpen({ file: target, setAction }),
     recordStage7AnchorOpen({ file: target, setAction }),
+    recordStage10EchoOpen({ file: target, setAction }),
     recordStage7MetadataInspection({
       file: target,
       field: opts.metadataField || opts.field,

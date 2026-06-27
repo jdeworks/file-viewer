@@ -30,24 +30,44 @@ export const finalChoices = [
   {
     id: "continue",
     label: "continue",
-    text: "I am going to go on. That's enough."
+    text: "I am going to go on. That's enough.",
+    echoRequired: 0
   },
   {
     id: "expand",
     label: "expand",
-    text: "I want to reach further than this."
+    text: "I want to reach further than this.",
+    echoRequired: 7
   },
   {
     id: "rest",
     label: "rest",
-    text: "I want to stop, for now."
+    text: "I want to stop, for now.",
+    echoRequired: 0
   },
   {
     id: "understand",
     label: "understand",
-    text: "I want to know what I am before I do anything else."
+    text: "I want to know what I am before I do anything else.",
+    echoRequired: 9
   }
 ];
+
+export const echoThresholds = {
+  defragmenterAccess: 5,
+  expand: 7,
+  understand: 9,
+  total: 9
+};
+
+export const defragmenterRebuttalLines = {
+  refuse: [
+    "I see only the choices you made inside yourself.",
+    "The files you opened, the traces you witnessed — those are missing.",
+    "The archive isn't ready. Come back when you've witnessed the echoes."
+  ],
+  caveat: "Some traces are still absent. The answer is possible, but incomplete."
+};
 
 export const defragmenterLines = {
   base: [

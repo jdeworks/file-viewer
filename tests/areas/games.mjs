@@ -845,13 +845,21 @@ export async function run(ctx) {
   pass('Stage 9: full run cleared + offline-timed CROSS defeats Observer State');
 
   await page.waitForSelector('.mg-stage10', { timeout: 8000 });
-  // Stage 10 presents one memory at a time: read -> pick a stance -> integrate -> advance with Next.
+  // Stage 10: read -> pick a stance -> WITNESS the echo (real viewer file-open) -> integrate -> Next.
+  // The echo is the load-bearing gate: a resolved memory cannot be integrated until its artifact is opened.
   for (let i = 0; i < 9; i++) {
     await page.waitForSelector('[data-read-memory]', { timeout: 5000 });
     await page.click('[data-read-memory]');
     await page.waitForSelector('[data-resolve-memory]', { timeout: 5000 });
     await page.click('[data-resolve-memory]');
-    await page.waitForSelector('[data-integrate-memory]', { timeout: 5000 });
+    if (i === 0) {
+      // Prove the gate: before witnessing the echo, the integrate button is disabled.
+      const gated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
+      if (gated) pass('Stage 10 integration is echo-gated (boss not reachable without witnessing echoes)'); else fail('Stage 10 integrate not gated by echo');
+    }
+    await page.waitForSelector('[data-open-echo]', { timeout: 5000 });
+    await page.click('[data-open-echo]');
+    await page.waitForSelector('[data-integrate-memory]:not([disabled])', { timeout: 5000 });
     await page.click('[data-integrate-memory]');
     if (i < 8) await page.click('[data-step="1"]');
   }
