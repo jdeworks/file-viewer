@@ -859,6 +859,67 @@ function pushLog4(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
+// ../../docs/games/metagame/stages/stage8/prestige.js
+var CORE_PER_STATES = 400;
+var MULT_PER_CORE = 0.08;
+function prestigeMultFor(cores) {
+  return 1 + MULT_PER_CORE * Math.max(0, Math.floor(Number(cores) || 0));
+}
+function coresPreview(state) {
+  const fromStates = Math.floor(Number(state.totalStatesEarned || 0) / CORE_PER_STATES);
+  const fromStorms = Number(state.stormsSurvived || 0);
+  return Math.max(0, fromStates + fromStorms);
+}
+function prestigeAvailable(state) {
+  if (!state.meta || !state.meta.firstClearComplete) return { ok: false, reason: "not-cleared" };
+  const cores = coresPreview(state);
+  if (cores < 1) return { ok: false, reason: "too-shallow", cores };
+  return { ok: true, cores };
+}
+function microstateCollapse(state) {
+  const avail = prestigeAvailable(state);
+  if (!avail.ok) return { ok: false, reason: avail.reason };
+  const meta = state.meta || {};
+  const totalCores = Number(meta.cores || 0) + avail.cores;
+  const collapseLevel = Number(meta.collapseLevel || 0) + 1;
+  resetField(state, { cores: totalCores, collapseLevel });
+  return { ok: true, coresAwarded: avail.cores, totalCores, collapseLevel, mult: state.prestigeMult };
+}
+function resetField(state, carry) {
+  const cores = Math.max(0, Math.floor(Number(carry.cores) || 0));
+  state.cycle = 1;
+  state.act = 1;
+  state.onlineSectors = ["core"];
+  state.stormsSurvived = 0;
+  state.pendingStorm = null;
+  state.activeStorm = null;
+  state.nodes = freshSectorNodes("core");
+  state.states = 0;
+  state.totalStatesEarned = 0;
+  state.salvageTotal = 0;
+  state.scrap = 0;
+  state.insight = 0;
+  state.insightRate = 0;
+  state.heat = 0;
+  state.heatRate = 0;
+  state.entropy = 0;
+  state.repairUnits = 6;
+  state.repairAllocations = {};
+  state.stabilized = {};
+  state.highLoad = {};
+  state.stabilizers = 0;
+  state.debris = [];
+  state.archive = [];
+  state.selectedDebrisId = "";
+  state.pendingEvent = null;
+  state.activeEvent = null;
+  state.warningCheckpoint = null;
+  state.boss = { reached: false, defeated: false, attempts: 0, lockHintStep: 0, firstFailureRewound: false, burn: null };
+  state.meta = { ...state.meta || {}, cores, collapseLevel: carry.collapseLevel };
+  state.prestigeMult = prestigeMultFor(cores);
+  state.log = [`microstate collapse ${carry.collapseLevel}. ${cores} Cores banked — income ×${state.prestigeMult.toFixed(2)}.`];
+}
+
 // ../../docs/games/metagame/stages/stage8/state.js
 var STATE_VERSION = 3;
 function freshNodes() {
@@ -885,6 +946,7 @@ function defaultState() {
     tech: {},
     structures: {},
     manualArchiveDone: false,
+    prestigeMult: 1,
     ...defaultTechBonuses(),
     ...defaultStructureBonuses(),
     selectedDebrisId: "",
@@ -914,7 +976,9 @@ function defaultState() {
     },
     meta: {
       firstClearComplete: false,
-      btsAvailable: false
+      btsAvailable: false,
+      cores: 0,
+      collapseLevel: 0
     }
   };
 }
@@ -922,6 +986,10 @@ function normalizeState(state) {
   const incoming = state && typeof state === "object" ? state : {};
   if (Number(incoming.version) !== STATE_VERSION) {
     const fresh2 = defaultState();
+    const inMeta = incoming.meta && typeof incoming.meta === "object" ? incoming.meta : {};
+    fresh2.meta.cores = Math.max(0, num(inMeta.cores, 0));
+    fresh2.meta.collapseLevel = Math.max(0, num(inMeta.collapseLevel, 0));
+    fresh2.prestigeMult = prestigeMultFor(fresh2.meta.cores);
     if (incoming.boss && incoming.boss.defeated) {
       fresh2.boss = { ...fresh2.boss, defeated: true, reached: true };
       fresh2.meta = { ...fresh2.meta, firstClearComplete: true, btsAvailable: true };
@@ -976,6 +1044,9 @@ function normalizeState(state) {
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...target.boss && typeof target.boss === "object" ? target.boss : {} };
   target.meta = { ...fresh.meta, ...target.meta && typeof target.meta === "object" ? target.meta : {} };
+  target.meta.cores = Math.max(0, num(target.meta.cores, 0));
+  target.meta.collapseLevel = Math.max(0, num(target.meta.collapseLevel, 0));
+  target.prestigeMult = prestigeMultFor(target.meta.cores);
   return target;
 }
 function snapshotRun(state) {
@@ -1290,6 +1361,7 @@ function ensureRuntime(state) {
   if (!Number.isFinite(state.heat)) state.heat = 0;
   if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
   if (!Number.isFinite(state.cascadeStressMult)) state.cascadeStressMult = 1;
+  if (!Number.isFinite(state.prestigeMult)) state.prestigeMult = 1;
   for (const k of ["repairEfficiencyBonus", "decayReduction", "coreRegen", "thermalThresholdBonus", "debrisDecayBonus", "scrapMult"]) {
     if (!Number.isFinite(state[k])) state[k] = k === "scrapMult" ? 1 : 0;
   }
@@ -1375,10 +1447,11 @@ function advanceCycle(state, rng) {
     } else failedCount += 1;
   }
   const entropySink = Math.floor(state.cycle / 3);
-  result.income = Math.max(0, Math.round(active + degraded - entropySink));
+  const prestigeMult = Math.max(1, Number(state.prestigeMult || 1));
+  result.income = Math.max(0, Math.round((active + degraded - entropySink) * prestigeMult));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  const insight = insightIncome(state, status);
+  const insight = insightIncome(state, status) * prestigeMult;
   earnInsight(state, insight);
   state.insightRate = insight;
   result.insight = insight;
@@ -1478,6 +1551,7 @@ function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   if (fields.insight) fields.insight.textContent = String(Math.floor(state.insight || 0));
   if (fields.insightRate) fields.insightRate.textContent = rate(state.insightRate);
   fields.salvage.textContent = String(state.salvageTotal);
+  paintPrestige(fields, root, state);
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
@@ -1500,6 +1574,24 @@ function rate(v) {
   const n = Math.round((Number(v) || 0) * 10) / 10;
   if (!n) return "";
   return n > 0 ? `(+${n})` : `(${n})`;
+}
+function paintPrestige(fields, root, state) {
+  const cores = Number(state.meta?.cores || 0);
+  const mult = Number(state.prestigeMult || 1);
+  const cleared = Boolean(state.meta?.firstClearComplete);
+  if (fields.coresWrap) fields.coresWrap.hidden = !cleared;
+  if (cleared && fields.cores) fields.cores.textContent = String(cores);
+  if (cleared && fields.prestigeMult) fields.prestigeMult.textContent = mult > 1 ? `(×${mult.toFixed(2)})` : "";
+  const btn = root.querySelector('[data-action="collapse"]');
+  if (!btn) return;
+  if (cleared) {
+    const preview = Math.floor(Number(state.totalStatesEarned || 0) / 400) + Number(state.stormsSurvived || 0);
+    btn.hidden = false;
+    btn.disabled = preview < 1;
+    btn.textContent = `collapse to Microstate (+${preview} Cores)`;
+  } else {
+    btn.hidden = true;
+  }
 }
 function paintStorm(root, state, storm) {
   const btn = root.querySelector('[data-action="storm"]');
@@ -1650,6 +1742,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <span>scrap <b data-field="scrap"></b></span>
       <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
+      <span data-field="coresWrap" hidden>cores <b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i></span>
     </header>
     <div class="s8-layout">
       <div class="s8-map" aria-label="node status"></div>
@@ -1685,6 +1778,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
+      <button type="button" data-action="collapse" hidden>collapse to Microstate</button>
     </div>
   `;
   host.replaceChildren(root);
@@ -1749,6 +1843,9 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       actions?.setAction?.(8, "external_debris_imported", { source: "external-import" });
     }
     if (button.dataset.action === "boss") challengeBoss();
+    if (button.dataset.action === "collapse") {
+      if (microstateCollapse(state).ok && run?.reset) run.reset();
+    }
     if (button.dataset.action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
@@ -1770,6 +1867,13 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     structureStatus: () => structureStatus(state),
     buildStructure(id) {
       const r = buildStructure(state, id);
+      persistAndPaint();
+      return r;
+    },
+    prestigeState: () => ({ available: prestigeAvailable(state), cores: state.meta.cores || 0, mult: state.prestigeMult || 1, preview: coresPreview(state) }),
+    collapse() {
+      const r = microstateCollapse(state);
+      if (r.ok && run?.reset) run.reset();
       persistAndPaint();
       return r;
     },

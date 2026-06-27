@@ -23,6 +23,7 @@ export function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   if (fields.insight) fields.insight.textContent = String(Math.floor(state.insight || 0));
   if (fields.insightRate) fields.insightRate.textContent = rate(state.insightRate);
   fields.salvage.textContent = String(state.salvageTotal);
+  paintPrestige(fields, root, state);
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated
     ? "defeated. BTS trace available."
@@ -50,6 +51,26 @@ function rate(v) {
   const n = Math.round((Number(v) || 0) * 10) / 10;
   if (!n) return "";
   return n > 0 ? `(+${n})` : `(${n})`;
+}
+
+// Microstate prestige: show Cores + multiplier and the collapse button once the field is cleared.
+function paintPrestige(fields, root, state) {
+  const cores = Number(state.meta?.cores || 0);
+  const mult = Number(state.prestigeMult || 1);
+  const cleared = Boolean(state.meta?.firstClearComplete);
+  if (fields.coresWrap) fields.coresWrap.hidden = !cleared;
+  if (cleared && fields.cores) fields.cores.textContent = String(cores);
+  if (cleared && fields.prestigeMult) fields.prestigeMult.textContent = mult > 1 ? `(×${mult.toFixed(2)})` : "";
+  const btn = root.querySelector('[data-action="collapse"]');
+  if (!btn) return;
+  if (cleared) {
+    const preview = Math.floor(Number(state.totalStatesEarned || 0) / 400) + Number(state.stormsSurvived || 0);
+    btn.hidden = false;
+    btn.disabled = preview < 1;
+    btn.textContent = `collapse to Microstate (+${preview} Cores)`;
+  } else {
+    btn.hidden = true;
+  }
 }
 
 // Show/hide the brace button and announce the active or available Cascade Storm in the telegraph row.

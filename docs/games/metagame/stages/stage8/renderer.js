@@ -10,6 +10,7 @@ import { driveToGate } from "./solver.js";
 import { stormAvailable, braceStorm } from "./storms.js";
 import { buyTech, techStatus } from "./tech.js";
 import { buildStructure, structureStatus } from "./structures.js";
+import { microstateCollapse, prestigeAvailable, coresPreview } from "./prestige.js";
 import { paintStage8 } from "./paint.js";
 import { paintTech, paintStructures } from "./techpanel.js";
 import { snapshotRun } from "./state.js";
@@ -34,6 +35,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <span>scrap <b data-field="scrap"></b></span>
       <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
+      <span data-field="coresWrap" hidden>cores <b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i></span>
     </header>
     <div class="s8-layout">
       <div class="s8-map" aria-label="node status"></div>
@@ -69,6 +71,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
+      <button type="button" data-action="collapse" hidden>collapse to Microstate</button>
     </div>
   `;
   host.replaceChildren(root);
@@ -128,6 +131,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       actions?.setAction?.(8, "external_debris_imported", { source: "external-import" });
     }
     if (button.dataset.action === "boss") challengeBoss();
+    if (button.dataset.action === "collapse") { if (microstateCollapse(state).ok && run?.reset) run.reset(); }
     if (button.dataset.action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
@@ -150,6 +154,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     buyTech(id) { const r = buyTech(state, id); persistAndPaint(); return r; },
     structureStatus: () => structureStatus(state),
     buildStructure(id) { const r = buildStructure(state, id); persistAndPaint(); return r; },
+    prestigeState: () => ({ available: prestigeAvailable(state), cores: state.meta.cores || 0, mult: state.prestigeMult || 1, preview: coresPreview(state) }),
+    collapse() { const r = microstateCollapse(state); if (r.ok && run?.reset) run.reset(); persistAndPaint(); return r; },
     brace() {
       const r = braceStorm(state);
       persistAndPaint();

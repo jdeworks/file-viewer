@@ -1169,6 +1169,16 @@ export async function run(ctx) {
   // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
   const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
   if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);
+  // Microstate prestige: once cleared, collapsing the field banks depth-scaled Cores and applies a
+  // permanent income multiplier on the fresh run (optional replay depth on top of the clear).
+  const s8Prestige = await page.evaluate(() => {
+    if (!window.__fvStage8) return { skipped: true };
+    const avail = window.__fvStage8.prestigeState();
+    const r = window.__fvStage8.collapse();
+    const after = window.__fvStage8.prestigeState();
+    return { available: avail.available.ok, preview: avail.preview, collapsed: r.ok, cores: after.cores, mult: after.mult };
+  });
+  if (s8Prestige.skipped || (s8Prestige.collapsed && s8Prestige.cores >= 3 && s8Prestige.mult > 1)) pass('Stage 8 Microstate prestige: collapse banks Cores + a permanent income multiplier'); else fail(`Stage 8 prestige failed: ${JSON.stringify(s8Prestige)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));

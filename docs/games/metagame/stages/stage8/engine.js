@@ -39,6 +39,7 @@ function ensureRuntime(state) {
   if (!Number.isFinite(state.heat)) state.heat = 0;
   if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
   if (!Number.isFinite(state.cascadeStressMult)) state.cascadeStressMult = 1;
+  if (!Number.isFinite(state.prestigeMult)) state.prestigeMult = 1;
   for (const k of ["repairEfficiencyBonus", "decayReduction", "coreRegen", "thermalThresholdBonus", "debrisDecayBonus", "scrapMult"]) {
     if (!Number.isFinite(state[k])) state[k] = k === "scrapMult" ? 1 : 0;
   }
@@ -134,11 +135,12 @@ export function advanceCycle(state, rng) {
     else failedCount += 1;
   }
   const entropySink = Math.floor(state.cycle / 3);
-  result.income = Math.max(0, Math.round(active + degraded - entropySink));
+  const prestigeMult = Math.max(1, Number(state.prestigeMult || 1)); // Microstate prestige bonus
+  result.income = Math.max(0, Math.round((active + degraded - entropySink) * prestigeMult));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  // 8a. Insight income (research output of online Core/Production nodes).
-  const insight = insightIncome(state, status);
+  // 8a. Insight income (research output of online Core/Production nodes), also prestige-scaled.
+  const insight = insightIncome(state, status) * prestigeMult;
   earnInsight(state, insight);
   state.insightRate = insight;
   result.insight = insight;

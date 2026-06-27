@@ -2,6 +2,7 @@ import { NODES, NODE_BY_ID, freshSectorNodes } from "./nodes.js";
 import { bellMessages } from "./messages.js";
 import { defaultTechBonuses, recomputeTechBonuses } from "./tech.js";
 import { defaultStructureBonuses, recomputeStructureBonuses } from "./structures.js";
+import { prestigeMultFor } from "./prestige.js";
 
 // state.js — Stage 8 Entropy Field survival sim state.
 //
@@ -40,6 +41,7 @@ export function defaultState() {
     tech: {},
     structures: {},
     manualArchiveDone: false,
+    prestigeMult: 1,
     ...defaultTechBonuses(),
     ...defaultStructureBonuses(),
     selectedDebrisId: "",
@@ -69,7 +71,9 @@ export function defaultState() {
     },
     meta: {
       firstClearComplete: false,
-      btsAvailable: false
+      btsAvailable: false,
+      cores: 0,
+      collapseLevel: 0
     }
   };
 }
@@ -81,6 +85,11 @@ export function normalizeState(state) {
   const incoming = state && typeof state === "object" ? state : {};
   if (Number(incoming.version) !== STATE_VERSION) {
     const fresh = defaultState();
+    // permanent prestige progress survives a version bump (Cores are meta-progression)
+    const inMeta = incoming.meta && typeof incoming.meta === "object" ? incoming.meta : {};
+    fresh.meta.cores = Math.max(0, num(inMeta.cores, 0));
+    fresh.meta.collapseLevel = Math.max(0, num(inMeta.collapseLevel, 0));
+    fresh.prestigeMult = prestigeMultFor(fresh.meta.cores);
     if (incoming.boss && incoming.boss.defeated) {
       fresh.boss = { ...fresh.boss, defeated: true, reached: true };
       fresh.meta = { ...fresh.meta, firstClearComplete: true, btsAvailable: true };
@@ -141,6 +150,9 @@ export function normalizeState(state) {
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...(target.boss && typeof target.boss === "object" ? target.boss : {}) };
   target.meta = { ...fresh.meta, ...(target.meta && typeof target.meta === "object" ? target.meta : {}) };
+  target.meta.cores = Math.max(0, num(target.meta.cores, 0));
+  target.meta.collapseLevel = Math.max(0, num(target.meta.collapseLevel, 0));
+  target.prestigeMult = prestigeMultFor(target.meta.cores);
   return target;
 }
 
