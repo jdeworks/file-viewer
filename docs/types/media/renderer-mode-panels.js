@@ -166,10 +166,11 @@ export async function mountAudioModePanels({
     stickyModes: ['listen', 'export'],
     onRegisterController,
     onReleaseController,
-    // Compare and Mix bring their own bespoke waveform lanes, so the always-on Listen scrub
-    // surface is hidden for them (they replace it); other modes keep it as the scrub context.
+    // The Listen waveform surface belongs to Listen mode only. Every other mode (Tune/QC/Export/
+    // Compare/Mix) brings its own content, so we hide the Listen surface for them — otherwise it
+    // sits on top and the mode's own controls (e.g. Tune's EQ) look like "nothing changed".
     onModeChange: (id) => {
-      if (listenSurfaceEl) listenSurfaceEl.hidden = (id === 'compare' || id === 'mix');
+      if (listenSurfaceEl) listenSurfaceEl.hidden = (id !== 'listen');
     },
   });
 
