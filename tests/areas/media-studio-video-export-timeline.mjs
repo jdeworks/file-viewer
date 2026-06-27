@@ -510,4 +510,30 @@ export async function runVideoExportAndTimelineChecks(ctx) {
   if (tlArgs.trimClamped.start < tlArgs.trimClamped.end && tlArgs.trimClamped.end === 10)
     pass('P6: pure trim clamp keeps in/out from crossing within duration');
   else fail('trim clamp: ' + JSON.stringify(tlArgs.trimClamped));
+
+  // PURE: trim output container honors source/target format (no ffmpeg load).
+  const trimPlans = await page.evaluate(async () => {
+    const m = await import('./types/media/transcoder-ops.js');
+    const ctx = (srcExt) => ({ inputName: 'input.' + srcExt, base: 'clip', srcExt });
+    const src = m.buildOperationPlan('trim', { start: '00:00:01', end: '00:00:05', format: 'source' }, ctx('webm'));
+    const toMp4 = m.buildOperationPlan('trim', { start: '00:00:01', end: '00:00:05', format: 'mp4' }, ctx('webm'));
+    const precise = m.buildOperationPlan('trim', { start: '00:00:01', end: '00:00:05', format: 'source', precise: true }, ctx('webm'));
+    return {
+      srcOut: src.outputName, srcCopy: src.args.includes('-c') && src.args.includes('copy'),
+      mp4Out: toMp4.outputName, mp4Reenc: toMp4.args.includes('libx264'),
+      preciseOut: precise.outputName, preciseReenc: precise.args.includes('libvpx-vp9'),
+    };
+  });
+  // Same-as-source on a webm → out.webm via stream copy (no re-encode).
+  if (trimPlans.srcOut === 'out.webm' && trimPlans.srcCopy)
+    pass('P6: trim keeps the source container (webm → out.webm, stream copy)');
+  else fail('trim source container: ' + JSON.stringify(trimPlans));
+  // Explicit mp4 on a webm source → out.mp4 with a real re-encode (not a broken copy).
+  if (trimPlans.mp4Out === 'out.mp4' && trimPlans.mp4Reenc)
+    pass('P6: trim format override re-encodes to the chosen container (webm → mp4)');
+  else fail('trim mp4 override: ' + JSON.stringify(trimPlans));
+  // Precise cut keeps the source container but re-encodes (frame-accurate).
+  if (trimPlans.preciseOut === 'out.webm' && trimPlans.preciseReenc)
+    pass('P6: precise trim re-encodes within the source container');
+  else fail('trim precise: ' + JSON.stringify(trimPlans));
 }

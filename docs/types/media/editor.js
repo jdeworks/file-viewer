@@ -13,47 +13,9 @@ import {
   ADVANCED_SINGLE_OPS, MULTI_FILE_OPS, MULTI_FILE_OP_IDS,
   buildAdvancedInputsFor, collectAdvancedParams, buildSecondaryDropZone,
 } from './editor-advanced.js';
-
-// Format seconds → HH:MM:SS
-function fmtTime(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
-  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-}
-function toTrimTime(sec) {
-  if (!Number.isFinite(sec) || sec < 0) return null;
-  return fmtTime(sec);
-}
-
-// Validate and normalise an HH:MM:SS string; returns null on bad input.
-function parseTimestamp(s) {
-  const m = (s || '').trim().match(/^(\d{2}):(\d{2}):(\d{2})$/);
-  if (!m) return null;
-  return m[1] + ':' + m[2] + ':' + m[3];
-}
-function parseTrimInputText(s) {
-  const m = (s || '').trim().match(/^(\d+):(\d{2}):(\d{2})$/);
-  if (!m) return null;
-  return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
-}
-
-function makeInput(placeholder, cls) {
-  const el = document.createElement('input');
-  el.type = 'text';
-  el.placeholder = placeholder;
-  el.className = cls || 'media-ed-ts';
-  el.pattern = '[0-9]{2}:[0-9]{2}:[0-9]{2}';
-  return el;
-}
-
-function makeBtn(text, cls) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.textContent = text;
-  b.className = cls || 'media-ed-btn';
-  return b;
-}
+import {
+  fmtTime, toTrimTime, parseTimestamp, parseTrimInputText, makeInput, makeBtn,
+} from './editor-helpers.js';
 
 const OPERATIONS = [
   { id: 'trim',        label: 'Trim' },
@@ -95,7 +57,17 @@ function buildInputsFor(opId, mediaEl) {
     const endGroup = document.createElement('div');
     endGroup.className = 'media-ed-ts-group';
     endGroup.append(document.createTextNode('End '), endIn, useEnd);
-    wrap.append(startGroup, endGroup, preciseLabel);
+    const fmtGroup = document.createElement('div');
+    fmtGroup.className = 'media-ed-radio-row';
+    const fmtSel = document.createElement('select');
+    fmtSel.className = 'media-ed-trim-format';
+    [['source', 'Same as source'], ['mp4', 'MP4'], ['webm', 'WebM']].forEach(([value, label]) => {
+      const opt = document.createElement('option');
+      opt.value = value; opt.textContent = label;
+      fmtSel.append(opt);
+    });
+    fmtGroup.append(document.createTextNode('Output '), fmtSel);
+    wrap.append(startGroup, endGroup, fmtGroup, preciseLabel);
     wrap.dataset.op = 'trim';
     return wrap;
   }
@@ -196,7 +168,8 @@ function collectParams(ctxEl) {
   if (op === 'trim') {
     const inputs = ctxEl.querySelectorAll('input[type="text"]');
     const precise = ctxEl.querySelector('input[name="precise"]');
-    return { start: inputs[0]?.value || '', end: inputs[1]?.value || '', precise: precise?.checked || false };
+    const format = ctxEl.querySelector('.media-ed-trim-format');
+    return { start: inputs[0]?.value || '', end: inputs[1]?.value || '', precise: precise?.checked || false, format: format?.value || 'source' };
   }
   if (op === 'audio') {
     const checked = ctxEl.querySelector('input[name="audio-fmt"]:checked');
@@ -416,9 +389,16 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
 
     // Validate timestamp inputs
     if (currentOp === 'trim') {
-      const start = parseTimestamp(params.start);
-      const end   = parseTimestamp(params.end);
-      if (!start || !end) { showError('Enter valid timestamps (HH:MM:SS) for start and end.'); return; }
+      // One-sided trim is allowed: an empty start means "from the beginning" and an empty end means
+      // "to the end of the media". At least one bound must be given, and any value typed must parse.
+      const hasStart = (params.start || '').trim() !== '';
+      const hasEnd = (params.end || '').trim() !== '';
+      if (!hasStart && !hasEnd) { showError('Enter a start, an end, or both (HH:MM:SS) to trim.'); return; }
+      const start = hasStart ? parseTimestamp(params.start) : '00:00:00';
+      const end = hasEnd ? parseTimestamp(params.end) : toTrimTime(Math.ceil(mediaEl?.duration || 0));
+      if (hasStart && !start) { showError('Enter a valid start timestamp (HH:MM:SS).'); return; }
+      if (hasEnd && !end) { showError('Enter a valid end timestamp (HH:MM:SS).'); return; }
+      if (!end) { showError('Enter an end timestamp (HH:MM:SS) — the media duration is unknown.'); return; }
       params.start = start; params.end = end;
     }
     if (currentOp === 'screenshot') {
