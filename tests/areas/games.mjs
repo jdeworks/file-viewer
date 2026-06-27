@@ -732,6 +732,13 @@ export async function run(ctx) {
     pass('Stage 2 glyph rune (♦) collects without error and survives a save round-trip');
   else fail('Stage 2 rune pickup/save regression: ' + JSON.stringify(runePickup));
 
+  // Element matrix + Overflow content wired through the real engine: freezing a foe then striking it
+  // SHATTERS (frost interaction), and a null phantom (the new dark-act foe) is pinned by torchlight.
+  const elemProbe = await page.evaluate(() => window.__fvStage2.elementProbe());
+  if (elemProbe.shatter && elemProbe.phantomPinned)
+    pass('Stage 2 element matrix: freeze→shatter combo + phantom pinned by torchlight');
+  else fail('Stage 2 element/Overflow probe: ' + JSON.stringify(elemProbe));
+
   // Descend the full body — all three acts (Warrens / Cisterns & Emberworks / The Overflow) — to the
   // boss via the deterministic body solver (no real-time roguelite play). Confirms the boss sits at
   // the END of the 9-floor body and is reachable only after the descent (MAX_FLOOR=9).

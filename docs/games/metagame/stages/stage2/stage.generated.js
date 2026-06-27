@@ -2932,8 +2932,22 @@ function renderStage2({
     bodySolver,
     descendToBoss: bodySolver,
     lockState: () => getBossLockState({ actions, state }),
-    bossSolver: challengeBoss
+    bossSolver: challengeBoss,
+    elementProbe
   };
+  function elementProbe() {
+    const grid = ["#####", "#...#", "#####"];
+    const sw = { floor: 5, width: 5, grid, pos: { x: 1, y: 1 }, exit: { x: 9, y: 9 }, monsters: [{ alive: true, x: 2, y: 1, hp: 300, maxHp: 300, atk: 5, name: "frost foe", glyph: "f", statuses: {} }], weapons: [], glyphs: [], potions: [], hidden: [], seed: "probe" };
+    applyElement(sw.monsters[0], "frost");
+    const player = { atk: 12, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: {} };
+    const hpBefore = sw.monsters[0].hp;
+    const ev = step(sw, player, "right");
+    const shatter = ev.shattered === true && hpBefore - sw.monsters[0].hp > 12;
+    const pw = { floor: 8, width: 5, grid, pos: { x: 1, y: 1 }, monsters: [{ alive: true, x: 3, y: 1, hp: 30, maxHp: 30, atk: 7, name: "null phantom", glyph: "ψ", phantom: true, statuses: {}, bucket: 0, dir: "left", sight: 5, chasing: false, faction: 0 }], torch: 12 };
+    monsterTurn(pw, { hp: 999, def: 0, statuses: {}, atk: 5 }, { log: [], damageTaken: 0, died: false }, () => true);
+    const phantomPinned = Boolean(pw.monsters[0].statuses && pw.monsters[0].statuses.slow);
+    return { shatter, phantomPinned };
+  }
   function dev(id) {
     const e = state.run.entity;
     if (id === "heal") e.hp = e.maxHp;
