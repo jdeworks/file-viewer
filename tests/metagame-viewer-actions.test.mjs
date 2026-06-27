@@ -4,6 +4,7 @@ import {
   recordMetagameViewerOpen,
   recordStage1RawEdit,
   recordStage2SearchResult,
+  recordStage4BlueprintOpen,
   recordStage5MediaPlayback,
   recordStage6CodexOpen,
   recordStage7AnchorOpen,
@@ -81,6 +82,25 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   ok(!recordStage5MediaPlayback({ file: 'other.mp3', continuousMs: 14000, setAction }), 'Stage 5 recorder rejects wrong file');
   ok(!recordStage5MediaPlayback({ file: 'transmission_hum.mp3', continuousMs: 14000, seeking: true, setAction }), 'Stage 5 recorder rejects seeking playback');
   ok(calls.length === 1, 'Stage 5 recorder: no extra calls for rejected playback');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordStage4BlueprintOpen({ file: '/docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json', setAction }), 'Stage 4 blueprint open recorder returns true for deep path');
+  ok(calls.length === 1, 'Stage 4 recorder: setAction called once');
+  ok(calls[0][0] === 4 && calls[0][1] === 'recursion_blueprint_read', 'Stage 4 recorder: action id set');
+  ok(calls[0][2].source === 'viewer-open' && calls[0][2].file === 'recursion_points.json', 'Stage 4 recorder: payload set');
+  ok(recordStage4BlueprintOpen({ file: 'recursion_points.json', setAction }), 'Stage 4 recorder accepts bare basename');
+  ok(!recordStage4BlueprintOpen({ file: 'waves.json', setAction }), 'Stage 4 recorder rejects wrong file');
+  ok(calls.length === 2, 'Stage 4 recorder: no extra calls for wrong file');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordMetagameViewerOpen({ path: '/docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json', opts: {}, setAction }), 'Viewer-open aggregate records Stage 4 blueprint');
+  ok(calls.length === 1 && calls[0][0] === 4 && calls[0][1] === 'recursion_blueprint_read', 'Viewer-open aggregate: Stage 4 action id set');
 }
 
 {

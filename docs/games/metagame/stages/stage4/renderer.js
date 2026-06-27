@@ -8,17 +8,16 @@ import { buildPath, waveGroupDepth } from './lsystem.js';
 import { boardText } from './board.js';
 import { startWave as engineStartWave, tick, waveComplete } from './engine.js';
 import {
-  applyRecursionBlueprintOpen, fightInfiniteLoop, getBossLockState, getTowerCoverage, placeTower, pushLog,
+  fightInfiniteLoop, getBossLockState, getTowerCoverage, placeTower, pushLog,
 } from './boss.js';
 import { TOWER_TYPES } from './towers.js';
 import { FINAL_WAVE } from './waves.js';
-import { recursionBlueprintContent } from './content.js';
 import { BTS_PATH, RECURSION_BLUEPRINT_PATH } from './messages.js';
 
 const PLACEABLE = ['pulse_node', 'scatter_array', 'null_spike', 'attractor_field'];
 
 export function renderStage4(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, actions, bts, viewer, save, onStageComplete } = ctx;
   const root = document.createElement('section');
   root.className = 'stage4-fractal-bastion';
   root.innerHTML = `
@@ -152,8 +151,10 @@ export function renderStage4(ctx) {
       case 'start-wave': startWaveAction(); break;
       case 'confront': confront(); break;
       case 'blueprint':
-        applyRecursionBlueprintOpen({ state, actions, achievements, bell, path: RECURSION_BLUEPRINT_PATH });
-        viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { text: recursionBlueprintContent(state), mime: 'application/json', source: 'stage4' });
+        // NO in-game bypass: opening the REAL static file fires 4.recursion_blueprint_read via
+        // openViewerFile → recordMetagameViewerOpen (basename recursion_points.json). This button is
+        // only a navigation hint to that file; it never sets the action itself.
+        viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { mime: 'application/json', source: 'stage4' });
         break;
       case 'bts': bts?.open?.(4); break;
       default: return;

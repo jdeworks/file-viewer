@@ -493,7 +493,7 @@ function pushLog2(state, line) {
 // ../../docs/games/metagame/stages/stage4/renderer.js
 var PLACEABLE = ["pulse_node", "scatter_array", "null_spike", "attractor_field"];
 function renderStage4(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, actions, bts, viewer, save, onStageComplete } = ctx;
   const root = document.createElement("section");
   root.className = "stage4-fractal-bastion";
   root.innerHTML = `
@@ -645,8 +645,7 @@ function renderStage4(ctx) {
         confront();
         break;
       case "blueprint":
-        applyRecursionBlueprintOpen({ state, actions, achievements, bell, path: RECURSION_BLUEPRINT_PATH });
-        viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { text: recursionBlueprintContent(state), mime: "application/json", source: "stage4" });
+        viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { mime: "application/json", source: "stage4" });
         break;
       case "bts":
         bts?.open?.(4);

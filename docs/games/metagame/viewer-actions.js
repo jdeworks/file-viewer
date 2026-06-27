@@ -9,6 +9,7 @@ const STAGE5_FILE = 'transmission_hum.mp3';
 const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
 const STAGE3_ASCII_FILE = 'entity_f_verification.png';
+const STAGE4_BLUEPRINT_FILE = 'recursion_points.json';
 const STAGE7_FILE = 'entity_f_verification.png';
 const STAGE7_ANCHOR_FILE = 'entity_anchor_0043.txt';
 
@@ -128,6 +129,22 @@ export function recordStage5MediaPlayback({ file, continuousMs, active = true, s
   return true;
 }
 
+export function isStage4BlueprintFile(file) {
+  return basename(file) === STAGE4_BLUEPRINT_FILE;
+}
+
+// Stage 4 un-cheat: the load-bearing action is fired by ACTUALLY OPENING the tier-3 blueprint file in
+// the viewer (a real file-open through openViewerFile → recordMetagameViewerOpen), never by an in-game
+// button. Until this fires, The Infinite Loop folds all damage away (see boss.js total-armor gate).
+export function recordStage4BlueprintOpen({ file, setAction = sharedSetAction } = {}) {
+  if (!isStage4BlueprintFile(file)) return false;
+  setAction?.(4, 'recursion_blueprint_read', {
+    source: 'viewer-open',
+    file: STAGE4_BLUEPRINT_FILE,
+  });
+  return true;
+}
+
 export function isStage6CodexFile(file) {
   return basename(file) === STAGE6_FILE;
 }
@@ -190,6 +207,7 @@ export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sh
   const target = file || path;
   const results = [
     recordSecretTxtOpen({ file: target, setAction }),
+    recordStage4BlueprintOpen({ file: target, setAction }),
     recordStage6CodexOpen({ file: target, setAction }),
     recordStage7AnchorOpen({ file: target, setAction }),
     recordStage10EchoOpen({ file: target, setAction }),
