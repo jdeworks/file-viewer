@@ -16,170 +16,195 @@ const CSS = `
 .elm-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .elm-list li:last-child{border-bottom:none;}
 .elm-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#e3f5ff;color:#1293d8;font-weight:700;flex-shrink:0;}
-.elm-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
-.elm-kw{color:#7c3aed;font-weight:600;}
-.elm-str{color:#0a6640;}
-.elm-comment{color:#6e7781;font-style:italic;}
-.elm-type{color:#0369a1;font-weight:600;}
-.elm-num{color:#b45309;}
+.elm-tag-alias{background:#fef9c3;color:#854d0e;}
+.elm-tag-custom{background:#ede9fe;color:#7c3aed;}
+.elm-tag-func{background:#dbeafe;color:#1d4ed8;}
+.elm-tag-port{background:#ffe4e6;color:#9f1239;}
+.elm-tag-import{background:#dcfce7;color:#166534;}
+.elm-name{font-weight:600;}
+.elm-type{color:#0369a1;}
+.elm-arrow{color:#9f1239;}
+.elm-ret{color:#1d4ed8;font-weight:600;}
+.elm-field{color:#0e7490;}
+.elm-variant{color:#7c3aed;font-weight:600;}
+.elm-mod{font-family:ui-monospace,monospace;font-size:13px;color:#1293d8;font-weight:700;}
 `;
 
-const ELM_KEYWORDS = new Set([
+const KEYWORDS = new Set([
   'module', 'exposing', 'import', 'as', 'type', 'alias', 'let', 'in',
-  'if', 'then', 'else', 'case', 'of', 'port', 'where', 'True', 'False',
+  'if', 'then', 'else', 'case', 'of', 'port', 'where', 'effect',
 ]);
 
-function analyzeElm(text) {
-  const lines = text.split(/\r?\n/);
-
-  // Module name and exposing
-  let moduleName = null;
-  let exposing = [];
-  const modM = text.match(/^module\s+([\w.]+)\s+exposing\s+\(([^)]+)\)/m);
-  if (modM) {
-    moduleName = modM[1];
-    exposing = modM[2].split(',').map((s) => s.trim()).filter(Boolean);
-  } else {
-    const modM2 = text.match(/^module\s+([\w.]+)/m);
-    if (modM2) moduleName = modM2[1];
+// Remove Elm comments: nested {- -} block comments and -- line comments (quote-aware).
+function stripComments(text) {
+  let out = '';
+  const s = String(text || '');
+  let i = 0, depth = 0, inStr = false;
+  while (i < s.length) {
+    const two = s.slice(i, i + 2);
+    if (depth > 0) {
+      if (two === '{-') { depth++; i += 2; continue; }
+      if (two === '-}') { depth--; i += 2; continue; }
+      if (s[i] === '\n') out += '\n';
+      i++; continue;
+    }
+    if (!inStr && two === '{-') { depth++; i += 2; continue; }
+    if (!inStr && two === '--') { while (i < s.length && s[i] !== '\n') i++; continue; }
+    if (s[i] === '"' && s[i - 1] !== '\\') inStr = !inStr;
+    out += s[i]; i++;
   }
+  return out;
+}
 
-  // Imports
-  const imports = [];
-  const importRe = /^import\s+([\w.]+)(?:\s+as\s+(\w+))?(?:\s+exposing\s+\(([^)]+)\))?/gm;
-  let m;
-  while ((m = importRe.exec(text)) !== null) {
-    imports.push({
-      name: m[1],
-      alias: m[2] || null,
-      exposing: m[3] ? m[3].split(',').map((s) => s.trim()).filter(Boolean) : [],
-    });
+// Split a string on a separator string, respecting (), {}, [] nesting (separator ignored when nested).
+function splitTopLevel(str, sep) {
+  const out = [];
+  let depth = 0, buf = '';
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (c === '(' || c === '{' || c === '[') depth++;
+    else if (c === ')' || c === '}' || c === ']') depth = Math.max(0, depth - 1);
+    if (depth === 0 && str.startsWith(sep, i)) { out.push(buf); buf = ''; i += sep.length - 1; continue; }
+    buf += c;
   }
+  out.push(buf);
+  return out.map((s) => s.trim()).filter((s) => s.length);
+}
 
-  // Type aliases
-  const typeAliases = [];
-  const aliasRe = /^type\s+alias\s+(\w+)/gm;
-  while ((m = aliasRe.exec(text)) !== null) {
-    if (!typeAliases.includes(m[1])) typeAliases.push(m[1]);
+// Group source into top-level blocks: a non-blank column-0 line starts a block; indented lines
+// (continuations of records, signatures, variant lists) attach to it. Returns flattened strings.
+function topLevelBlocks(text) {
+  const blocks = [];
+  let cur = null;
+  for (const raw of text.split(/\r?\n/)) {
+    if (!raw.trim()) continue;
+    if (/^\s/.test(raw)) { if (cur !== null) cur += ' ' + raw.trim(); continue; }
+    if (cur !== null) blocks.push(cur);
+    cur = raw.trim();
   }
+  if (cur !== null) blocks.push(cur);
+  return blocks.map((b) => b.replace(/\s+/g, ' ').trim());
+}
 
-  // Union types (type without alias)
-  const unionTypes = [];
-  const unionRe = /^type\s+(?!alias)(\w+)/gm;
-  while ((m = unionRe.exec(text)) !== null) {
-    const name = m[1];
-    // Count variants: lines starting with | after the type declaration
-    const afterIdx = m.index + m[0].length;
-    const block = text.slice(afterIdx, afterIdx + 400);
-    const variantCount = (block.match(/^\s+\|/gm) || []).length;
-    if (!unionTypes.find((t) => t.name === name)) {
-      unionTypes.push({ name, variantCount });
+// Parse a record body "{ a : T, b : U }" into typed fields. Returns [] if not a record.
+function recordFields(body) {
+  const m = body.match(/\{([\s\S]*)\}/);
+  if (!m) return [];
+  return splitTopLevel(m[1], ',').map((f) => {
+    const fm = f.match(/^([\w']+)\s*:\s*([\s\S]+)$/);
+    return fm ? { name: fm[1], type: fm[2].trim() } : null;
+  }).filter(Boolean);
+}
+
+// Parse a type signature "A -> B -> Ret" → { params:[A,B], returns:Ret }.
+function parseSignature(sig) {
+  const segs = splitTopLevel(sig, '->');
+  if (segs.length === 0) return { params: [], returns: sig.trim() };
+  return { params: segs.slice(0, -1), returns: segs[segs.length - 1] };
+}
+
+// Parse into structured facts. Exported (pure, no DOM) for unit testing.
+export function analyzeElm(text) {
+  const src = stripComments(text);
+  const blocks = topLevelBlocks(src);
+
+  let moduleName = null, exposing = [], portModule = false;
+  const imports = [], functions = [], aliases = [], customTypes = [], ports = [];
+  const fnNames = new Set();
+
+  for (const block of blocks) {
+    let m;
+
+    // module / port module / effect module
+    if ((m = block.match(/^(?:(port|effect)\s+)?module\s+([\w.]+)(?:\s+exposing\s+\(([\s\S]*?)\))?/))) {
+      moduleName = m[2];
+      if (m[1] === 'port') portModule = true;
+      if (m[3] != null) exposing = m[3] === '..' ? ['..'] : splitTopLevel(m[3], ',');
+      continue;
+    }
+
+    // import X[ as A][ exposing (...)]
+    if ((m = block.match(/^import\s+([\w.]+)(?:\s+as\s+([\w.]+))?(?:\s+exposing\s+\(([\s\S]*?)\))?$/))) {
+      imports.push({
+        name: m[1],
+        alias: m[2] || null,
+        exposing: m[3] != null ? (m[3] === '..' ? ['..'] : splitTopLevel(m[3], ',')) : [],
+      });
+      continue;
+    }
+
+    // type alias Name [vars] = body
+    if ((m = block.match(/^type\s+alias\s+([\w']+)([\w\s']*?)=\s*([\s\S]+)$/))) {
+      const body = m[3].trim();
+      const fields = recordFields(body);
+      aliases.push({ name: m[1], fields, aliasType: fields.length ? null : body });
+      continue;
+    }
+
+    // type Name [vars] = Variant [args] | Variant [args] | ...
+    if ((m = block.match(/^type\s+([\w']+)([\w\s']*?)=\s*([\s\S]+)$/))) {
+      const variants = splitTopLevel(m[3], '|').map((v) => {
+        const parts = v.trim().split(/\s+/);
+        return { name: parts[0], args: parts.slice(1).join(' ') };
+      }).filter((v) => v.name);
+      customTypes.push({ name: m[1], variants });
+      continue;
+    }
+
+    // port name : Signature  (declared in a port module)
+    if ((m = block.match(/^port\s+([a-z_][\w']*)\s*:\s*([\s\S]+)$/))) {
+      const sig = m[2].trim();
+      ports.push({ name: m[1], signature: sig, ...parseSignature(sig) });
+      continue;
+    }
+
+    // top-level function type annotation: name : Type -> ... -> Ret
+    if ((m = block.match(/^([a-z_][\w']*)\s*:\s*([\s\S]+)$/))) {
+      const name = m[1];
+      if (KEYWORDS.has(name) || fnNames.has(name)) continue;
+      const sig = m[2].trim();
+      fnNames.add(name);
+      functions.push({ name, signature: sig, ...parseSignature(sig) });
     }
   }
 
-  // Function signatures: lines matching "name : Type"
-  const funcSigs = [];
-  const sigRe = /^([a-z_][a-zA-Z0-9_]*)\s*:/gm;
-  while ((m = sigRe.exec(text)) !== null) {
-    const name = m[1];
-    if (name !== 'port' && !funcSigs.find((f) => f.name === name)) {
-      // Grab type annotation (rest of line)
-      const lineEnd = text.indexOf('\n', m.index);
-      const sig = text.slice(m.index + name.length + 1, lineEnd > -1 ? lineEnd : undefined).trim();
-      funcSigs.push({ name, sig });
-    }
-    if (funcSigs.length >= 10) break;
-  }
-
-  // TEA architecture type
   let teaType = null;
-  if (/Browser\.application\b/.test(text)) teaType = 'Browser.application';
-  else if (/Browser\.document\b/.test(text)) teaType = 'Browser.document';
-  else if (/Browser\.element\b/.test(text)) teaType = 'Browser.element';
-  else if (/Browser\.sandbox\b/.test(text)) teaType = 'Browser.sandbox';
+  if (/Browser\.application\b/.test(src)) teaType = 'Browser.application';
+  else if (/Browser\.document\b/.test(src)) teaType = 'Browser.document';
+  else if (/Browser\.element\b/.test(src)) teaType = 'Browser.element';
+  else if (/Browser\.sandbox\b/.test(src)) teaType = 'Browser.sandbox';
 
-  // Port usage
-  const portCount = (text.match(/^port\s+/gm) || []).length;
-
-  return { moduleName, exposing, imports, typeAliases, unionTypes, funcSigs, teaType, portCount };
+  return { module: moduleName, exposing, portModule, imports, functions, aliases, customTypes, ports, teaType };
 }
 
-function highlightElm(text) {
-  return text.split(/\r?\n/).map((line) => highlightElmLine(line)).join('\n');
-}
-
-function highlightElmLine(line) {
-  // -- line comments
-  const dashIdx = line.indexOf('--');
-  let code = line;
-  let commentSuffix = '';
-  if (dashIdx !== -1) {
-    const before = line.slice(0, dashIdx);
-    const quoteCount = (before.match(/"/g) || []).length;
-    if (quoteCount % 2 === 0) {
-      code = line.slice(0, dashIdx);
-      commentSuffix = '<span class="elm-comment">' + esc(line.slice(dashIdx)) + '</span>';
-    }
-  }
-
-  let escaped = esc(code);
-  // String literals
-  escaped = escaped.replace(/(&quot;[^&]*&quot;)/g, '<span class="elm-str">$1</span>');
-  // Numbers
-  escaped = escaped.replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="elm-num">$1</span>');
-  // Type names (uppercase)
-  escaped = escaped.replace(/\b([A-Z][a-zA-Z0-9_]*)/g, '<span class="elm-type">$1</span>');
-  // Keywords
-  escaped = escaped.replace(
-    new RegExp(`\\b(${[...ELM_KEYWORDS].join('|')})\\b`, 'g'),
-    '<span class="elm-kw">$1</span>',
-  );
-  return escaped + commentSuffix;
-}
-
-function makeSection(title, items, tagFn, subFn) {
-  if (!items || items.length === 0) return null;
+// --- DOM helpers ---
+function makeSection(host, title) {
   const sec = document.createElement('div');
   sec.className = 'elm-section';
   const hd = document.createElement('div');
   hd.className = 'elm-section-hd';
   hd.textContent = title;
   sec.appendChild(hd);
-  const ul = document.createElement('ul');
-  ul.className = 'elm-list';
-  for (const item of items) {
-    const li = document.createElement('li');
-    if (tagFn) {
-      const tag = document.createElement('span');
-      tag.className = 'elm-tag';
-      tag.textContent = tagFn(item);
-      li.appendChild(tag);
-    }
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = typeof item === 'string' ? item : (item.name || String(item));
-    li.appendChild(nameSpan);
-    if (subFn) {
-      const sub = subFn(item);
-      if (sub) {
-        const subSpan = document.createElement('span');
-        subSpan.style.cssText = 'color:var(--fg-2,#888);font-size:11px;';
-        subSpan.textContent = sub;
-        li.appendChild(subSpan);
-      }
-    }
-    ul.appendChild(li);
-  }
-  sec.appendChild(ul);
+  host.appendChild(sec);
   return sec;
 }
+function makeList(sec) { const ul = document.createElement('ul'); ul.className = 'elm-list'; sec.appendChild(ul); return ul; }
+function row(ul, html) { const li = document.createElement('li'); li.innerHTML = html; ul.appendChild(li); }
+function tag(cls, t) { return `<span class="elm-tag ${cls}">${esc(t)}</span>`; }
 
-export function render(intake) {
+function signatureHtml(params, returns) {
+  const ps = params.map((p) => `<span class="elm-type">${esc(p)}</span>`);
+  const ret = `<span class="elm-ret">${esc(returns)}</span>`;
+  return [...ps, ret].join(' <span class="elm-arrow">→</span> ');
+}
+
+export async function render(intake) {
   const text = intake.text || '';
   const info = analyzeElm(text);
+  const { module: moduleName, exposing, imports, functions, aliases, customTypes, ports, teaType, portModule } = info;
 
   const host = document.createElement('div');
   host.className = 'elm-doc';
-
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
@@ -187,104 +212,91 @@ export function render(intake) {
   const title = document.createElement('div');
   title.className = 'elm-title';
   let titleHtml = '<span class="elm-badge">Elm</span>';
-  if (info.teaType) titleHtml += `<span class="elm-tea-badge">${esc(info.teaType)}</span>`;
-  if (info.moduleName) titleHtml += ` <span style="font-size:13px;font-weight:400;">${esc(info.moduleName)}</span>`;
+  if (moduleName) titleHtml += `<span class="elm-mod">${esc(moduleName)}</span>`;
+  if (portModule) titleHtml += '<span class="elm-tea-badge">port module</span>';
+  if (teaType) titleHtml += `<span class="elm-tea-badge">${esc(teaType)}</span>`;
   title.innerHTML = titleHtml;
   host.appendChild(title);
 
   const sub = document.createElement('div');
   sub.className = 'elm-sub';
-  const parts = [];
-  if (info.imports.length) parts.push(`${info.imports.length} import${info.imports.length !== 1 ? 's' : ''}`);
-  if (info.typeAliases.length) parts.push(`${info.typeAliases.length} type alias${info.typeAliases.length !== 1 ? 'es' : ''}`);
-  if (info.unionTypes.length) parts.push(`${info.unionTypes.length} union type${info.unionTypes.length !== 1 ? 's' : ''}`);
-  if (info.funcSigs.length) parts.push(`${info.funcSigs.length} function${info.funcSigs.length !== 1 ? 's' : ''}`);
-  if (info.portCount) parts.push(`${info.portCount} port${info.portCount !== 1 ? 's' : ''}`);
-  sub.textContent = parts.join(' · ') || 'No declarations found';
+  sub.textContent = [
+    imports.length && `${imports.length} import${imports.length !== 1 ? 's' : ''}`,
+    aliases.length && `${aliases.length} alias${aliases.length !== 1 ? 'es' : ''}`,
+    customTypes.length && `${customTypes.length} custom type${customTypes.length !== 1 ? 's' : ''}`,
+    functions.length && `${functions.length} function${functions.length !== 1 ? 's' : ''}`,
+    ports.length && `${ports.length} port${ports.length !== 1 ? 's' : ''}`,
+  ].filter(Boolean).join(' · ') || 'No declarations found';
   host.appendChild(sub);
 
   const cards = document.createElement('div');
   cards.className = 'elm-cards';
   for (const { value, label } of [
-    { value: info.imports.length, label: 'Imports' },
-    { value: info.typeAliases.length, label: 'Type aliases' },
-    { value: info.unionTypes.length, label: 'Union types' },
-    { value: info.funcSigs.length, label: 'Functions' },
-    { value: info.portCount, label: 'Ports' },
+    { value: imports.length, label: 'Imports' },
+    { value: aliases.length, label: 'Type aliases' },
+    { value: customTypes.length, label: 'Custom types' },
+    { value: functions.length, label: 'Functions' },
+    { value: ports.length, label: 'Ports' },
   ]) {
     const card = document.createElement('div');
     card.className = 'elm-card';
-    const strong = document.createElement('strong');
-    strong.textContent = value;
-    const span = document.createElement('span');
-    span.textContent = label;
-    card.appendChild(strong);
-    card.appendChild(span);
-    cards.appendChild(card);
+    const s = document.createElement('strong'); s.textContent = value;
+    const sp = document.createElement('span'); sp.textContent = label;
+    card.appendChild(s); card.appendChild(sp); cards.appendChild(card);
   }
   host.appendChild(cards);
 
-  // Module exposing
-  if (info.moduleName) {
-    const modSec = document.createElement('div');
-    modSec.className = 'elm-section';
-    const modHd = document.createElement('div');
-    modHd.className = 'elm-section-hd';
-    modHd.textContent = 'Module';
-    modSec.appendChild(modHd);
-    const modBody = document.createElement('div');
-    modBody.style.cssText = 'padding:8px 14px;font-family:ui-monospace,monospace;font-size:13px;';
-    let modText = info.moduleName;
-    if (info.exposing.length) modText += ` exposing (${info.exposing.join(', ')})`;
-    modBody.textContent = modText;
-    modSec.appendChild(modBody);
-    host.appendChild(modSec);
+  if (moduleName && exposing.length) {
+    const ul = makeList(makeSection(host, 'Module Exposes'));
+    for (const e of exposing) row(ul, `<span class="elm-name">${esc(e)}</span>`);
   }
 
-  const importsEl = makeSection(
-    'Imports',
-    info.imports,
-    null,
-    (i) => {
-      const parts = [];
-      if (i.alias) parts.push(`as ${i.alias}`);
-      if (i.exposing.length) parts.push(`exposing (${i.exposing.join(', ')})`);
-      return parts.join(' ') || null;
-    },
-  );
-  if (importsEl) host.appendChild(importsEl);
+  if (imports.length) {
+    const ul = makeList(makeSection(host, `Imports (${imports.length})`));
+    for (const i of imports) {
+      const bits = [tag('elm-tag-import', 'import'), `<span class="elm-name">${esc(i.name)}</span>`];
+      if (i.alias) bits.push(`<span class="elm-arrow">as</span> <span class="elm-type">${esc(i.alias)}</span>`);
+      if (i.exposing.length) bits.push(`<span style="color:var(--fg-2,#888);">exposing (${esc(i.exposing.join(', '))})</span>`);
+      row(ul, bits.join(' '));
+    }
+  }
 
-  const aliasesEl = makeSection('Type Aliases', info.typeAliases);
-  if (aliasesEl) host.appendChild(aliasesEl);
+  if (aliases.length) {
+    const ul = makeList(makeSection(host, `Type Aliases (${aliases.length})`));
+    for (const a of aliases) {
+      if (a.fields.length) {
+        const fields = a.fields.map((f) => `<span class="elm-field">${esc(f.name)}</span> : <span class="elm-type">${esc(f.type)}</span>`).join(', ');
+        row(ul, `${tag('elm-tag-alias', 'alias')} <span class="elm-name">${esc(a.name)}</span> = { ${fields} }`);
+      } else {
+        row(ul, `${tag('elm-tag-alias', 'alias')} <span class="elm-name">${esc(a.name)}</span> = <span class="elm-type">${esc(a.aliasType || '')}</span>`);
+      }
+    }
+  }
 
-  const unionsEl = makeSection(
-    'Union Types',
-    info.unionTypes,
-    null,
-    (t) => t.variantCount > 0 ? `${t.variantCount} variant${t.variantCount !== 1 ? 's' : ''}` : null,
-  );
-  if (unionsEl) host.appendChild(unionsEl);
+  if (customTypes.length) {
+    const ul = makeList(makeSection(host, `Custom Types (${customTypes.length})`));
+    for (const t of customTypes) {
+      const variants = t.variants.map((v) => {
+        const args = v.args ? ` <span class="elm-type">${esc(v.args)}</span>` : '';
+        return `<span class="elm-variant">${esc(v.name)}</span>${args}`;
+      }).join(' <span class="elm-arrow">|</span> ');
+      row(ul, `${tag('elm-tag-custom', 'type')} <span class="elm-name">${esc(t.name)}</span> = ${variants}`);
+    }
+  }
 
-  const funcsEl = makeSection(
-    'Functions',
-    info.funcSigs,
-    null,
-    (f) => f.sig ? `: ${f.sig}` : null,
-  );
-  if (funcsEl) host.appendChild(funcsEl);
+  if (functions.length) {
+    const ul = makeList(makeSection(host, `Functions (${functions.length})`));
+    for (const f of functions) {
+      row(ul, `${tag('elm-tag-func', 'fn')} <span class="elm-name">${esc(f.name)}</span> : ${signatureHtml(f.params, f.returns)}`);
+    }
+  }
 
-  // Source
-  const srcSec = document.createElement('div');
-  srcSec.className = 'elm-section';
-  const srcHd = document.createElement('div');
-  srcHd.className = 'elm-section-hd';
-  srcHd.textContent = 'Source';
-  srcSec.appendChild(srcHd);
-  const pre = document.createElement('pre');
-  pre.className = 'elm-pre';
-  pre.innerHTML = highlightElm(text);
-  srcSec.appendChild(pre);
-  host.appendChild(srcSec);
+  if (ports.length) {
+    const ul = makeList(makeSection(host, `Ports (${ports.length})`));
+    for (const p of ports) {
+      row(ul, `${tag('elm-tag-port', 'port')} <span class="elm-name">${esc(p.name)}</span> : ${signatureHtml(p.params, p.returns)}`);
+    }
+  }
 
   return { parentNode: host };
 }
