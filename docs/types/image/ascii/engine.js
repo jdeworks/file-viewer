@@ -169,11 +169,18 @@ export function createAsciiEngine(initialOptions) {
     return result;
   }
 
-  // rAF-coalesced convert; multiple scheduleUpdate() in one frame run once.
+  // rAF-coalesced + CONFLATED convert. The convert is async (worker), so while one is in
+  // flight, extra requests (e.g. dragging the Detail slider) must NOT each queue a job —
+  // they just mark that another refresh is needed, and exactly ONE more runs with the
+  // latest options when the current one finishes. Intermediate values are dropped.
+  let again = false;
   function scheduleUpdate() {
-    if (pending) return;
+    if (pending) { again = true; return; }
     pending = true;
-    requestAnimationFrame(() => { pending = false; convertNow(renderMode); });
+    requestAnimationFrame(async () => {
+      try { do { again = false; await convertNow(renderMode); } while (again); }
+      finally { pending = false; }
+    });
   }
 
   return {
