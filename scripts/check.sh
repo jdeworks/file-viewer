@@ -209,6 +209,7 @@ FULL_UNIT_TESTS=(
   tests/known-rescript-lang.test.mjs
   tests/known-ruby-lang.test.mjs
   tests/known-scheme-lang.test.mjs
+  tests/known-sed-script.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
