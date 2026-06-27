@@ -287,13 +287,10 @@ export function analyzeD(text) {
       }
 
       // module-level constants: immutable/const/shared Type NAME = value
-      if (atTop && !top) {
-        const constM = trimmed.match(/^(?:static\s+|__gshared\s+)?(?:immutable|const|shared)\b\s+(.+?)\s*=\s*([^;]+);/);
-        if (constM) {
-          const lhs = constM[1].trim().split(/\s+/);
-          const cname = lhs.pop();
-          if (/^[A-Za-z_]\w*$/.test(cname)) { constants.push({ name: cname, type: lhs.join(' ') || 'const', value: constM[2].trim() }); break handle; }
-        }
+      const constM = (atTop && !top) && trimmed.match(/^(?:static\s+|__gshared\s+)?(?:immutable|const|shared)\b\s+(.+?)\s*=\s*([^;]+);/);
+      if (constM) {
+        const lhs = constM[1].trim().split(/\s+/), cname = lhs.pop();
+        if (/^[A-Za-z_]\w*$/.test(cname)) { constants.push({ name: cname, type: lhs.join(' ') || 'const', value: constM[2].trim() }); break handle; }
       }
 
       // functions / methods
@@ -347,7 +344,7 @@ function highlightD(text) {
       }
       if (line[i] === '"') {
         let j = i + 1; while (j < line.length && line[j] !== '"') { if (line[j] === '\\') j++; j++; }
-        j++; out += '<span class="d-str">' + esc(line.slice(i, j)) + '</span>'; i = j; continue;
+        out += '<span class="d-str">' + esc(line.slice(i, j + 1)) + '</span>'; i = j + 1; continue;
       }
       if (/[0-9]/.test(line[i])) {
         let j = i; while (j < line.length && /[0-9a-fA-F._xXbBoOuUlLfF]/.test(line[j])) j++;
@@ -355,9 +352,8 @@ function highlightD(text) {
       }
       if (/[A-Za-z_]/.test(line[i])) {
         let j = i; while (j < line.length && /\w/.test(line[j])) j++;
-        const word = line.slice(i, j);
-        out += D_KEYWORDS.has(word) ? '<span class="d-kw">' + esc(word) + '</span>' : esc(word);
-        i = j; continue;
+        const w = line.slice(i, j);
+        out += D_KEYWORDS.has(w) ? '<span class="d-kw">' + esc(w) + '</span>' : esc(w); i = j; continue;
       }
       out += esc(line[i]); i++;
     }
@@ -381,9 +377,8 @@ function subHd(sec, text) { const d = document.createElement('div'); d.className
 function paramsHtml(params) {
   return params.map((p) => p.type ? `<span class="d-type">${esc(p.type)}</span> ${esc(p.name)}` : esc(p.name)).join(', ');
 }
-function attrsHtml(attrs) { return (attrs || []).map((a) => tag('d-tag-attr', a)).join(' '); }
 function fnHtml(f) {
-  const a = f.attrs && f.attrs.length ? attrsHtml(f.attrs) + ' ' : '';
+  const a = f.attrs && f.attrs.length ? f.attrs.map((x) => tag('d-tag-attr', x)).join(' ') + ' ' : '';
   const t = f.tparams != null ? `(${esc(f.tparams)})` : '';
   const ret = f.returns ? `<span class="d-ret">${esc(f.returns)}</span> ` : '';
   return `${a}${ret}<span class="d-name">${esc(f.name)}</span>${t}(${paramsHtml(f.params)})`;
@@ -399,8 +394,7 @@ export function render(intake) {
   const host = document.createElement('div');
   host.className = 'd-doc';
   const styleEl = document.createElement('style');
-  styleEl.textContent = CSS;
-  host.appendChild(styleEl);
+  styleEl.textContent = CSS; host.appendChild(styleEl);
 
   const title = document.createElement('div');
   title.className = 'd-title';
