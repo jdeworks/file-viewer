@@ -61,9 +61,8 @@ export function drawListenWaveform(canvas, surface, opts = {}) {
   const inIdx = Math.floor(clamp01(opts.sourceInFrac) * total);
   const outIdx = Math.max(inIdx + 1, Math.ceil(clamp01(opts.sourceOutFrac ?? 1) * total));
   const slice = outIdx - inIdx;
-  let maxPeak = 0;
-  for (let i = inIdx; i < outIdx; i += 1) if (peaks[i] > maxPeak) maxPeak = peaks[i];
-  const norm = maxPeak > 0 ? 1 / maxPeak : 1;
+  // Peaks are absolute amplitude (0..1). Draw the ACTUAL level — do NOT normalize each clip to its
+  // own max, which made every file (quiet or loud) fill the full lane height.
 
   const cursorX = (Number(opts.cursorTimelineSec) || 0) * pxPerSec;
   const fadeInPx = Math.max(0, (Number(opts.fadeInSec) || 0) * pxPerSec);
@@ -71,7 +70,7 @@ export function drawListenWaveform(canvas, surface, opts = {}) {
 
   const barW = clipW / slice;
   for (let i = 0; i < slice; i += 1) {
-    const peak = peaks[inIdx + i] * norm;
+    const peak = peaks[inIdx + i];
     const x = clipX + i * barW;
     let amp = peak;
     // Fade envelopes shape the bar height (matches export filter shape).

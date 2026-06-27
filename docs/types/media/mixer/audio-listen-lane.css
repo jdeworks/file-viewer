@@ -207,6 +207,22 @@
 .al-lane-controls .al-mini { font-size: 10px; color: var(--al-text-muted); }
 .al-overlay-canvas { display: block; width: 100%; height: 220px; background: var(--al-bg); }
 
+/* Compare view: give the control row + overlay breathing room inside the bespoke surface. */
+.mmx-compare-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 4px 2px; }
+.mmx-compare-controls label { display: inline-flex; align-items: center; gap: 5px; }
+.mmx-compare-controls select,
+.mmx-compare-controls input[type="number"] {
+  height: 26px; padding: 0 6px; border: 1px solid var(--al-border); border-radius: 6px;
+  background: var(--al-input); color: var(--al-text); font: inherit;
+}
+.mmx-compare-view { height: 26px; padding: 0 12px; border: 1px solid var(--al-border); border-radius: 6px; background: var(--al-bg); color: var(--al-text-secondary); cursor: pointer; }
+.mmx-compare-view[aria-pressed="true"] { background: var(--al-primary); border-color: var(--al-primary); color: var(--al-primary-text); }
+.mmx-compare-overlay { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.mmx-compare-overlay-canvas { width: 100%; height: auto; border: 1px solid var(--al-border); border-radius: 6px; }
+.mmx-compare-opacity-field { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--al-text-muted); }
+.mmx-compare-opacity-field input[type="range"] { flex: 1 1 auto; max-width: 220px; accent-color: var(--al-primary); }
+.mmx-compare-analysis { padding: 10px 12px; border-top: 1px solid var(--al-border); }
+
 /* Red seek cursor line + time bubble. */
 .al-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--al-wave-cursor); pointer-events: none; }
 .al-cursor-bubble {

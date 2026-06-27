@@ -322,8 +322,28 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     canvas.dataset.compareA = project.compare?.a?.elementId || '';
     canvas.dataset.compareB = project.compare?.b?.elementId || '';
     canvas.dataset.kind = overlayKind(project);
-    drawCompareOverlay(canvas, project, visualRuntime.frames);
-    node.append(heading, canvas, renderOverlayStatus(canvas, overlap));
+    drawCompareOverlay(canvas, project, visualRuntime.frames, project.compare?.overlayOpacity ?? 0.5);
+    // B-layer opacity: drag to fade B over A and see where they differ. Its input only redraws the
+    // canvas (no full render), so the slider survives the drag.
+    const opWrap = document.createElement('label');
+    opWrap.className = 'mmx-compare-opacity-field';
+    const opSpan = document.createElement('span');
+    const opacity = document.createElement('input');
+    opacity.type = 'range';
+    opacity.className = 'mmx-compare-opacity';
+    opacity.min = '0';
+    opacity.max = '1';
+    opacity.step = '0.05';
+    opacity.value = String(project.compare?.overlayOpacity ?? 0.5);
+    opSpan.textContent = `B opacity ${Math.round((project.compare?.overlayOpacity ?? 0.5) * 100)}%`;
+    opacity.addEventListener('input', () => {
+      const v = Number(opacity.value);
+      project = { ...project, compare: { ...project.compare, overlayOpacity: v } };
+      opSpan.textContent = `B opacity ${Math.round(v * 100)}%`;
+      drawCompareOverlay(canvas, project, visualRuntime.frames, v);
+    });
+    opWrap.append(opSpan, opacity);
+    node.append(heading, opWrap, canvas, renderOverlayStatus(canvas, overlap));
     return node;
   }
 
