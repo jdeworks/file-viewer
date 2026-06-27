@@ -35,6 +35,7 @@ export function createAsciiEngine(initialOptions) {
   let source = null;          // last image/canvas/video drawn from
   let pending = false;
   let onResult = null;
+  let lastConvertMs = 0;      // duration of the last ASCII conversion (drives the busy badge)
 
   function intrinsicSize(src) {
     if (src instanceof HTMLVideoElement) return [src.videoWidth, src.videoHeight];
@@ -112,7 +113,9 @@ export function createAsciiEngine(initialOptions) {
     if (!source || !sourceCanvas.width) return null;
     if (dirty.processedImage) { processImage(); dirty.processedImage = false; dirty.ascii = true; }
     if (dirty.ascii) {
+      const t0 = performance.now();
       result = imageToAscii(processedCanvas, sourceCanvas, options, scratch);
+      lastConvertMs = performance.now() - t0;
       dirty.ascii = false; dirty.render = true;
     }
     if (dirty.render && onResult) { onResult(result); dirty.render = false; }
@@ -129,6 +132,7 @@ export function createAsciiEngine(initialOptions) {
   return {
     options,
     get result() { return result; },
+    get lastConvertMs() { return lastConvertMs; },
     get processedCanvas() { return processedCanvas; },
     get sourceCanvas() { return sourceCanvas; },
     setSource, grabFrame, setOptions, markDirty, update, scheduleUpdate,

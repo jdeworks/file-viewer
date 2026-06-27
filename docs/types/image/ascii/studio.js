@@ -72,6 +72,7 @@ export function mountAsciiStudio(host, opts = {}) {
           <button class="asx-eye asx-eye-proc" title="Show processed">${EYE}</button>
         </div>
         <pre class="asx-out"></pre>
+        <div class="asx-busy" hidden aria-live="polite">⏳ Converting…</div>
         <figure class="asx-peek" hidden><figcaption></figcaption><canvas></canvas></figure>
       </div>
       <div class="asx-panel"></div>
@@ -87,7 +88,21 @@ export function mountAsciiStudio(host, opts = {}) {
   const peekCaption = peek.querySelector('figcaption');
 
   const engine = createAsciiEngine();
-  engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); });
+  // Busy badge for slow (phone) conversions: the convert is synchronous, so we can't keep
+  // the UI live during it, but we surface that work is happening (and yield a frame so the
+  // badge paints first). Gated on the last convert's duration so fast machines never flash it.
+  const busyEl = q('.asx-busy');
+  const setBusy = (on) => { if (busyEl) busyEl.hidden = !on; };
+  // Show the badge, let it paint, then run the (blocking) convert.
+  const reconvert = () => {
+    if (engine.lastConvertMs > 80) { setBusy(true); requestAnimationFrame(() => engine.scheduleUpdate()); }
+    else engine.scheduleUpdate();
+  };
+  const regrabBusy = () => {
+    if (engine.lastConvertMs > 80) { setBusy(true); requestAnimationFrame(() => engine.regrab()); }
+    else engine.regrab();
+  };
+  engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); setBusy(false); });
 
   // ── fit-to-width + display zoom ── more columns = more detail at the SAME
   // on-screen size; zoom magnifies; space density adds CSS letter-spacing.
@@ -163,7 +178,7 @@ export function mountAsciiStudio(host, opts = {}) {
     }
     if (displayOnly) { applyDisplay(); return; }
     engine.markDirty(...dirty);
-    engine.scheduleUpdate();
+    reconvert();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
 
@@ -184,10 +199,10 @@ export function mountAsciiStudio(host, opts = {}) {
     downloadPng(baseName + '.png', c);
   });
   // Geometric transforms — re-draw the source then reconvert (works on image + video).
-  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; engine.regrab(); });
-  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; engine.regrab(); });
-  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; engine.regrab(); });
-  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; engine.regrab(); });
+  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; regrabBusy(); });
+  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; regrabBusy(); });
+  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; regrabBusy(); });
+  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; regrabBusy(); });
   q('.asx-reset-filters').addEventListener('click', () => resetKeys(FILTER_KEYS));
   q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
   function resetKeys(keys) {

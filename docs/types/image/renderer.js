@@ -186,25 +186,35 @@ export async function render(intake, ctx = {}) {
   // app's export menu still exists; this is the in-editor shortcut users expect to find.
   const downloadBtn = canEdit ? host.querySelector('.imgv-download') : null;
   downloadBtn?.addEventListener('click', async () => {
+    if (downloadBtn.dataset.busy) return;                 // ignore re-taps while encoding
     const mt = (exportFmt?.value || '') || core.getExportMime() || mime;
-    let canvas;
-    if (overlayActive()) { canvas = advController.flattenToCanvas(); }
-    else {
-      const base = await core.loadBase();
-      canvas = document.createElement('canvas');
-      canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
-      const g = canvas.getContext('2d');
-      if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-      g.drawImage(base, 0, 0);
+    // Encoding a large image can take a moment on a phone — show a busy state and yield a
+    // frame so it paints before the work, then restore the button no matter what.
+    const label = downloadBtn.textContent;
+    downloadBtn.dataset.busy = '1'; downloadBtn.disabled = true; downloadBtn.textContent = '⏳ Saving…';
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      let canvas;
+      if (overlayActive()) { canvas = advController.flattenToCanvas(); }
+      else {
+        const base = await core.loadBase();
+        canvas = document.createElement('canvas');
+        canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
+        const g = canvas.getContext('2d');
+        if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+        g.drawImage(base, 0, 0);
+      }
+      const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
+      if (!blob) return;
+      const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif' })[mt] || ((intake.filename || '').split('.').pop() || 'png');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (intake.filename || 'image').replace(/\.[^.]+$/, '') + '.' + ext;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } finally {
+      downloadBtn.disabled = false; downloadBtn.textContent = label; delete downloadBtn.dataset.busy;
     }
-    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
-    if (!blob) return;
-    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif' })[mt] || ((intake.filename || '').split('.').pop() || 'png');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (intake.filename || 'image').replace(/\.[^.]+$/, '') + '.' + ext;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
   // Interactive tools (text placement, crop, BG pick) register here so the pan

@@ -5068,30 +5068,42 @@ async function render(intake, ctx = {}) {
   }
   const downloadBtn = canEdit ? host.querySelector(".imgv-download") : null;
   downloadBtn?.addEventListener("click", async () => {
+    if (downloadBtn.dataset.busy) return;
     const mt = exportFmt?.value || "" || core.getExportMime() || mime;
-    let canvas;
-    if (overlayActive()) {
-      canvas = advController.flattenToCanvas();
-    } else {
-      const base = await core.loadBase();
-      canvas = document.createElement("canvas");
-      canvas.width = base.naturalWidth || img.naturalWidth;
-      canvas.height = base.naturalHeight || img.naturalHeight;
-      const g = canvas.getContext("2d");
-      if (mt === "image/jpeg") {
-        g.fillStyle = "#fff";
-        g.fillRect(0, 0, canvas.width, canvas.height);
+    const label = downloadBtn.textContent;
+    downloadBtn.dataset.busy = "1";
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = "⏳ Saving…";
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      let canvas;
+      if (overlayActive()) {
+        canvas = advController.flattenToCanvas();
+      } else {
+        const base = await core.loadBase();
+        canvas = document.createElement("canvas");
+        canvas.width = base.naturalWidth || img.naturalWidth;
+        canvas.height = base.naturalHeight || img.naturalHeight;
+        const g = canvas.getContext("2d");
+        if (mt === "image/jpeg") {
+          g.fillStyle = "#fff";
+          g.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        g.drawImage(base, 0, 0);
       }
-      g.drawImage(base, 0, 0);
+      const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === "image/jpeg" ? 0.92 : void 0));
+      if (!blob) return;
+      const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/avif": "avif" }[mt] || ((intake.filename || "").split(".").pop() || "png");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = (intake.filename || "image").replace(/\.[^.]+$/, "") + "." + ext;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
+    } finally {
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = label;
+      delete downloadBtn.dataset.busy;
     }
-    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === "image/jpeg" ? 0.92 : void 0));
-    if (!blob) return;
-    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/avif": "avif" }[mt] || ((intake.filename || "").split(".").pop() || "png");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = (intake.filename || "image").replace(/\.[^.]+$/, "") + "." + ext;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
   });
   const editTools = [];
   const viewCtl = createView({
