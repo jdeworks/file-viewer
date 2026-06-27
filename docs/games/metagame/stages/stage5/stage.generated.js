@@ -473,11 +473,11 @@ function buyUpgrade(state, id) {
 
 // ../../docs/games/metagame/stages/stage5/economy.js
 var BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 95, 9: 100 };
-function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, gateValue = 5, upgrades, multiplier = 1 }) {
+function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, gateValue = 5, multiplier = 1 }) {
   const base = BASE_PACKETS[roundId] ?? 30;
   const accuracy = Math.floor(clamp01(onBeatPct) * 20);
   const survival = Math.floor(Math.max(0, integrityRemaining) * 0.3);
-  const gv = upgrades && upgrades.signalAmplifier ? 8 : Number(gateValue) || 5;
+  const gv = Number(gateValue) || 5;
   const gates = Math.max(0, gatesCollected) * gv;
   const subtotal = base + accuracy + survival + gates;
   const mult = Number.isFinite(Number(multiplier)) && multiplier > 0 ? Number(multiplier) : 1;
@@ -932,7 +932,9 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       fieldSize: rivals.length + 1,
       channel,
       inFork: inForkSpan(tick),
-      hasFork: Boolean(round.hasFork)
+      hasFork: Boolean(round.hasFork),
+      beatOpen: Boolean(activeRow(tick)?.beatOpen)
+      // drives the beat-pulse glow (matches the '*' marker)
     });
   }
   function damageFor(glyph) {
@@ -1107,6 +1109,7 @@ function createEngine({ onTick, getTickMs }) {
     if (last === null) last = ts;
     acc += Math.max(0, ts - last);
     last = ts;
+    acc = Math.min(acc, 8 * getTickMs());
     let guard = 0;
     while (acc >= getTickMs() && guard < 8) {
       acc -= getTickMs();
@@ -1202,6 +1205,20 @@ var roundLogLines = [
 function roundLogLine(roundIdx) {
   return roundLogLines[Math.max(0, Math.min(roundLogLines.length - 1, Number(roundIdx) || 0))];
 }
+var roundIntros = [
+  "this round: slide off the static — any clear lane survives.",
+  "this round: switch on the beat gap, not against the burst.",
+  "this round: read the looping pattern ahead and hold a clear line.",
+  "this round: the ~ shield lane phases through noise — ride it.",
+  "this round: grab >> boost gates on the beat for extra packets.",
+  "this round: the channel splits — pick a route and hold it to the merge.",
+  "this round: beat the par ghost (P) to the line — survival alone is not a clear.",
+  "this round: forks come fast — commit ↑HI for gates or ↓LO to stay alive.",
+  "this round: the jammer races every verb at once. only a calibrated counter-wave wins."
+];
+function roundIntro(roundIdx) {
+  return roundIntros[Math.max(0, Math.min(roundIntros.length - 1, Number(roundIdx) || 0))];
+}
 var GLYPH_LEGEND = [
   ["░", "static (−2)"],
   ["▒", "pulse (−2, off-beat hurts)"],
@@ -1211,12 +1228,93 @@ var GLYPH_LEGEND = [
   ["o", "rival racer (bump = −integrity)"],
   ["U", "shield buff"],
   ["O", "overclock (speed burst)"],
-  ["+", "repair   $ packet-cache"],
+  ["+", "repair (+12 hull)"],
+  ["$", "packet cache (+15p)"],
   ["E", "EMP (set a rival back)"],
   ["P", "par ghost (the clock to beat)"],
   ["G", "your prior-best ghost"],
   ["↑↓", "commit HI / LO route at a fork"]
 ];
+
+// ../../docs/games/metagame/stages/stage5/calibration.js
+function isTransmissionHum(path) {
+  const normalized = String(path || "").replace(/\\/g, "/");
+  return normalized === TRANSMISSION_HUM_PATH || normalized.endsWith("/stage5/transmission_hum.mp3");
+}
+function calibrationProgressStr(state) {
+  const calibration = state && state.calibration || {};
+  if (calibration.calibrated) return "LOCKED-IN";
+  const loopMs = Number(calibration.loopMs) || LOOP_DURATION_MS;
+  const ms = Math.max(0, Math.min(loopMs, Number(calibration.continuousMs) || 0));
+  const total = Math.max(1, Math.round(loopMs / 1e3));
+  if (ms <= 0) return "uncalibrated";
+  return `uncalibrated (${Math.floor(ms / 1e3)} / ${total}s)`;
+}
+function applyCalibrationTick({
+  state,
+  actions,
+  achievements,
+  bell,
+  file,
+  deltaMs,
+  active,
+  seeking = false
+}) {
+  const calibration = state.calibration;
+  calibration.lastFile = file || calibration.lastFile;
+  if (!isTransmissionHum(file) || !active || seeking) {
+    if (!calibration.calibrated) calibration.continuousMs = 0;
+    return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: true };
+  }
+  calibration.continuousMs = Math.min(
+    Number(calibration.loopMs || LOOP_DURATION_MS),
+    Number(calibration.continuousMs || 0) + Math.max(0, Number(deltaMs) || 0)
+  );
+  if (!calibration.calibrated && calibration.continuousMs >= Number(calibration.loopMs || LOOP_DURATION_MS)) {
+    calibration.calibrated = true;
+    actions?.setAction?.(5, ACTION_NAME, {
+      source: "audio-player",
+      file: "transmission_hum.mp3",
+      durationMs: Number(calibration.loopMs || LOOP_DURATION_MS),
+      loopCompleted: true
+    });
+    achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
+      stage: 5,
+      title: ACHIEVEMENT_TEXT,
+      action: "5.counter_wave_calibrated"
+    });
+    notifyBell(bell, "stage5.counter_wave_calibrated", bellMessages.unlock);
+    pushLog2(state, bellMessages.unlock);
+  }
+  return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: false };
+}
+function runCalibrationTimeline({ state, actions, achievements, bell, file, samples }) {
+  let previousAt = null;
+  let result = { calibrated: false, continuousMs: state.calibration.continuousMs, reset: false };
+  for (const sample of samples) {
+    const at = Number(sample.atMs);
+    const deltaMs = previousAt === null ? 0 : Math.max(0, at - previousAt);
+    previousAt = at;
+    result = applyCalibrationTick({
+      state,
+      actions,
+      achievements,
+      bell,
+      file,
+      deltaMs,
+      active: Boolean(sample.active),
+      seeking: Boolean(sample.seeking)
+    });
+  }
+  return result;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
+}
+function notifyBell(bell, id, text) {
+  if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 5 });
+  else if (bell && typeof bell.push === "function") bell.push({ id, stage: 5, text });
+}
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
 import { createAscension } from "../../shared/ascension.js";
@@ -1312,77 +1410,6 @@ function ascensionPanelEls({ ascension, defeated = false, playing = false, mods 
     buttons.push(btn);
   }
   return [head, ...buttons];
-}
-
-// ../../docs/games/metagame/stages/stage5/calibration.js
-function isTransmissionHum(path) {
-  const normalized = String(path || "").replace(/\\/g, "/");
-  return normalized === TRANSMISSION_HUM_PATH || normalized.endsWith("/stage5/transmission_hum.mp3");
-}
-function applyCalibrationTick({
-  state,
-  actions,
-  achievements,
-  bell,
-  file,
-  deltaMs,
-  active,
-  seeking = false
-}) {
-  const calibration = state.calibration;
-  calibration.lastFile = file || calibration.lastFile;
-  if (!isTransmissionHum(file) || !active || seeking) {
-    if (!calibration.calibrated) calibration.continuousMs = 0;
-    return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: true };
-  }
-  calibration.continuousMs = Math.min(
-    Number(calibration.loopMs || LOOP_DURATION_MS),
-    Number(calibration.continuousMs || 0) + Math.max(0, Number(deltaMs) || 0)
-  );
-  if (!calibration.calibrated && calibration.continuousMs >= Number(calibration.loopMs || LOOP_DURATION_MS)) {
-    calibration.calibrated = true;
-    actions?.setAction?.(5, ACTION_NAME, {
-      source: "audio-player",
-      file: "transmission_hum.mp3",
-      durationMs: Number(calibration.loopMs || LOOP_DURATION_MS),
-      loopCompleted: true
-    });
-    achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
-      stage: 5,
-      title: ACHIEVEMENT_TEXT,
-      action: "5.counter_wave_calibrated"
-    });
-    notifyBell(bell, "stage5.counter_wave_calibrated", bellMessages.unlock);
-    pushLog2(state, bellMessages.unlock);
-  }
-  return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: false };
-}
-function runCalibrationTimeline({ state, actions, achievements, bell, file, samples }) {
-  let previousAt = null;
-  let result = { calibrated: false, continuousMs: state.calibration.continuousMs, reset: false };
-  for (const sample of samples) {
-    const at = Number(sample.atMs);
-    const deltaMs = previousAt === null ? 0 : Math.max(0, at - previousAt);
-    previousAt = at;
-    result = applyCalibrationTick({
-      state,
-      actions,
-      achievements,
-      bell,
-      file,
-      deltaMs,
-      active: Boolean(sample.active),
-      seeking: Boolean(sample.seeking)
-    });
-  }
-  return result;
-}
-function pushLog2(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
-}
-function notifyBell(bell, id, text) {
-  if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 5 });
-  else if (bell && typeof bell.push === "function") bell.push({ id, stage: 5, text });
 }
 
 // ../../docs/games/metagame/stages/stage5/debug-hook.js
@@ -1495,6 +1522,7 @@ function renderStage5(ctx) {
     if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX) return;
     const round = roundByIdx(roundIdx);
     const prevGhost = state.timeTrial?.[round.id] || null;
+    pushLog3(roundIntro(roundIdx));
     loop = createGameLoop({
       state,
       seed: state.calibration.seed,
@@ -1539,8 +1567,12 @@ function renderStage5(ctx) {
           completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
         }
       }
+    } else if (round.id === FINAL_ROUND_ID) {
+      pushLog3("the jammer held the throttle down. the counter-wave is not calibrated.");
+    } else if (round.archetype === "time-trial") {
+      pushLog3("the par ghost had the channel — run faster next time.");
     } else {
-      pushLog3(round.id === FINAL_ROUND_ID ? "the jammer held the throttle down. the counter-wave is not calibrated." : "signal integrity collapsed. recalibrate and run it again.");
+      pushLog3("signal integrity collapsed. recalibrate and run it again.");
     }
     persistAndPaint();
   }
@@ -1555,6 +1587,7 @@ function renderStage5(ctx) {
       rivals: view.rivals || [],
       channel: view.channel || "lo"
     });
+    fields.arena.classList.toggle("s5-beat-open", Boolean(view.beatOpen));
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
     const pct = Math.round((view.progress || 0) * 100);
     const fork = view.hasFork ? ` · ${view.channel === "hi" ? "HI" : "LO"}${view.inFork ? "◆" : ""}` : "";
@@ -1566,13 +1599,17 @@ function renderStage5(ctx) {
     const idx = Number(state.run.roundIdx || 0);
     const r = roundByIdx(idx);
     fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
-    if (mode !== "playing") {
+    const playing = mode === "playing";
+    fields.raceBox.hidden = !playing;
+    fields.posBox.hidden = !playing;
+    if (!playing) {
       fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
       fields.race.textContent = r.archetype || "sprint";
       fields.position.textContent = "—";
+      fields.arena.classList.remove("s5-beat-open");
     }
     fields.packets.textContent = String(state.packets);
-    fields.calib.textContent = lock.unlocked ? "LOCKED-IN" : "uncalibrated";
+    fields.calib.textContent = lock.unlocked ? "LOCKED-IN" : calibrationProgressStr(state);
     fields.bossState.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.jammerSuppression} / ${lock.unlocked ? "beatable" : "suppression dominant"}`;
     fields.hint.textContent = lock.hint;
     renderRoundButtons();
@@ -1787,11 +1824,13 @@ function ensureStyles() {
 }
 export {
   applyCalibrationTick,
+  calibrationProgressStr,
   defaultState2 as defaultState,
   getBossLockState,
   hasCounterWave,
   mountStage,
   raceTheJammer,
+  roundIntro,
   roundLogLine,
   runCalibrationTimeline,
   stageMeta

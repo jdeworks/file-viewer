@@ -40,5 +40,6 @@ export {
 export {
   applyCalibrationTick,
   runCalibrationTimeline,
+  calibrationProgressStr,
 } from './calibration.js';
-export { roundLogLine } from './content.js';
+export { roundLogLine, roundIntro } from './content.js';

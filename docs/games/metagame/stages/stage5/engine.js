@@ -16,6 +16,9 @@ export function createEngine({ onTick, getTickMs }) {
     if (last === null) last = ts;
     acc += Math.max(0, ts - last);
     last = ts;
+    // Backpressure cap: if a backgrounded tab left us > 8 ticks behind, clamp the accumulator instead
+    // of silently dropping the excess inside the guarded loop — explicit, and consistent with guard<8.
+    acc = Math.min(acc, 8 * getTickMs());
     let guard = 0;
     while (acc >= getTickMs() && guard < 8) {
       acc -= getTickMs();

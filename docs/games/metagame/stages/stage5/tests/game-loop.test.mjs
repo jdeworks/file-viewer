@@ -31,6 +31,20 @@ for (let roundIdx = 0; roundIdx < BOSS_IDX; roundIdx += 1) {
   assert.ok(['gold', 'silver', 'bronze'].includes(rec.medal), 'a medal was awarded');
 }
 
+// ── paint payload exposes beatOpen so the renderer can drive the beat-pulse glow ───────────────────
+{
+  const state = defaultState();
+  // Round 2 has a burstPattern, so beatOpen genuinely toggles across ticks (not always-open).
+  const seen = new Set();
+  const loop = createGameLoop({
+    state, seed: 's5', roundIdx: 1, calibrated: false,
+    onPaint: (view) => seen.add(view.beatOpen),
+  });
+  loop.paint();
+  for (let i = 0; i < 12 && !loop.done; i += 1) loop.step();
+  assert.ok(seen.has(true) && seen.has(false), 'beatOpen toggles in the paint payload over a burst cycle');
+}
+
 // ── packets are awarded on clear ─────────────────────────────────────────────────────────────────
 {
   const state = defaultState();

@@ -12,6 +12,20 @@ export function isTransmissionHum(path) {
   return normalized === TRANSMISSION_HUM_PATH || normalized.endsWith('/stage5/transmission_hum.mp3');
 }
 
+// Pure HUD string for the counter-wave calibration meter. Reads the real calibration state so the
+// player can watch the counter-wave fill toward the loop threshold that unlocks the boss. Returns
+// 'LOCKED-IN' once calibrated, 'uncalibrated (Ns / Ts)' while a continuous listen is accumulating,
+// or a bare 'uncalibrated' before any progress. Deterministic — no timers, no wall clock.
+export function calibrationProgressStr(state) {
+  const calibration = (state && state.calibration) || {};
+  if (calibration.calibrated) return 'LOCKED-IN';
+  const loopMs = Number(calibration.loopMs) || LOOP_DURATION_MS;
+  const ms = Math.max(0, Math.min(loopMs, Number(calibration.continuousMs) || 0));
+  const total = Math.max(1, Math.round(loopMs / 1000));
+  if (ms <= 0) return 'uncalibrated';
+  return `uncalibrated (${Math.floor(ms / 1000)} / ${total}s)`;
+}
+
 export function applyCalibrationTick({
   state,
   actions,

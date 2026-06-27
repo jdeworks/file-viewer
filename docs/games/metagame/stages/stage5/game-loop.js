@@ -156,6 +156,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       progress: race.progress(), archetype: race.archetype, rivals: rivalView(),
       position: run.position, fieldSize: rivals.length + 1,
       channel, inFork: inForkSpan(tick), hasFork: Boolean(round.hasFork),
+      beatOpen: Boolean(activeRow(tick)?.beatOpen), // drives the beat-pulse glow (matches the '*' marker)
     });
   }
 
