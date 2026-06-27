@@ -351,6 +351,175 @@ function waveComposition(waveNum, seed) {
   return { enemies: [{ type: "recursion", count: 6 + n * 3 }], leftFraction: null };
 }
 
+// ../../docs/games/metagame/stages/stage4/maps.js
+var MAPS = [
+  {
+    id: "outer-shell",
+    name: "Outer Shell",
+    glyph: "◇",
+    theme: "the thin perimeter where the recursion first leaks in",
+    waveCount: 5,
+    depth: 1,
+    startCycles: 240,
+    startIntegrity: 100,
+    subBosses: { 5: "shell-warden" }
+  },
+  {
+    id: "recursion-halls",
+    name: "Recursion Halls",
+    glyph: "◆",
+    theme: "corridors that repeat the corridor you just left",
+    waveCount: 10,
+    depth: 1,
+    startCycles: 280,
+    startIntegrity: 100,
+    subBosses: { 5: "echo-sentinel", 10: "hall-keeper" }
+  },
+  {
+    id: "fractal-atrium",
+    name: "Fractal Atrium",
+    glyph: "✦",
+    theme: "an open court that folds back on itself at the edges",
+    waveCount: 20,
+    depth: 2,
+    startCycles: 340,
+    startIntegrity: 110,
+    subBosses: { 10: "mirror-prefect", 20: "atrium-regent" }
+  },
+  {
+    id: "depth-cascade",
+    name: "Depth Cascade",
+    glyph: "❈",
+    theme: "a stairwell that descends faster than you climb it",
+    waveCount: 45,
+    depth: 2,
+    startCycles: 420,
+    startIntegrity: 120,
+    subBosses: { 15: "cascade-anchor", 30: "descent-marshal", 45: "cascade-sovereign" }
+  },
+  {
+    id: "infinite-approach",
+    name: "Infinite Approach",
+    glyph: "∞",
+    theme: "the last span before the loop — it never quite arrives",
+    waveCount: 70,
+    depth: 3,
+    startCycles: 520,
+    startIntegrity: 140,
+    subBosses: { 20: "approach-vanguard", 40: "event-horizon", 60: "penultimate-knot", 70: "final-bastion" }
+  }
+];
+var MAP_COUNT = MAPS.length;
+function mapByIndex(index) {
+  const i = Math.max(0, Math.min(MAP_COUNT - 1, Math.trunc(Number(index)) || 0));
+  return MAPS[i];
+}
+function subBossIdForWave(mapIndex, waveNum) {
+  const map = mapByIndex(mapIndex);
+  return map.subBosses?.[Math.trunc(Number(waveNum)) || 0] || null;
+}
+
+// ../../docs/games/metagame/stages/stage4/wavegen.js
+var UNLOCKS = [
+  ["recursion"],
+  ["recursion", "pattern_crawler"],
+  ["recursion", "pattern_crawler", "null_packet"],
+  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host"],
+  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host", "depth_crawler"]
+];
+function mapEnemyPool(mapIndex) {
+  const i = Math.max(0, Math.min(UNLOCKS.length - 1, Math.trunc(Number(mapIndex)) || 0));
+  return UNLOCKS[i];
+}
+function mapWaveComposition(mapIndex, waveNum) {
+  const map = mapByIndex(mapIndex);
+  const w = Math.max(1, Math.trunc(Number(waveNum)) || 1);
+  const subBoss = subBossIdForWave(mapIndex, w);
+  const pool = mapEnemyPool(mapIndex);
+  const ramp = 5 + Math.floor(w * (1.1 + 0.15 * mapIndex)) + mapIndex * 2;
+  const budget = subBoss ? Math.max(4, Math.round(ramp * 0.55)) : ramp;
+  const weights = pool.map((type) => typeWeight(type, w, map.waveCount, mapIndex));
+  const total = weights.reduce((s, x) => s + x, 0) || 1;
+  const enemies = [];
+  let assigned = 0;
+  pool.forEach((type, idx) => {
+    const heavyDiv = type === "fractal_host" ? 6 : type === "depth_crawler" ? 10 : 1;
+    let count = Math.round(budget * weights[idx] / total / heavyDiv);
+    if (idx === pool.length - 1) count = Math.max(count, 0);
+    if (count > 0) {
+      enemies.push({ type, count });
+      assigned += count;
+    }
+  });
+  if (!subBoss && assigned === 0) enemies.push({ type: "recursion", count: Math.max(3, Math.round(budget / 2)) });
+  const comp = { enemies, subBoss: subBoss || null, leftFraction: null };
+  if (subBoss) comp.note = "a guardian holds the line";
+  return comp;
+}
+function typeWeight(type, w, waveCount, mapIndex) {
+  const p = Math.min(1, w / Math.max(1, waveCount));
+  switch (type) {
+    case "recursion":
+      return 6 - 3 * p;
+    // always present, fades a bit late
+    case "pattern_crawler":
+      return 1 + 4 * p;
+    // ramps up
+    case "null_packet":
+      return 1 + 3 * p;
+    case "resonance_ghost":
+      return p > 0.25 ? 1 + 3 * p : 0.2;
+    case "fractal_host":
+      return p > 0.4 ? 1 + 2 * p : 0.1;
+    case "depth_crawler":
+      return p > 0.6 ? 1 + 2 * p : 0.05;
+    default:
+      return 1;
+  }
+}
+
+// ../../docs/games/metagame/stages/stage4/subboss.js
+var SUB_BOSSES = {
+  // Map 0
+  "shell-warden": { name: "Shell Warden", glyph: "Ω", hp: 600, speed: 0.7, armor: 0.2, reward: 80, drain: 20, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE (spawn copies) at half integrity" },
+  // Map 1
+  "echo-sentinel": { name: "Echo Sentinel", glyph: "Ψ", hp: 800, speed: 0.9, armor: 0.1, reward: 90, drain: 20, trigger: 0.5, ability: "haste", telegraph: "will HASTE itself when wounded" },
+  "hall-keeper": { name: "Hall Keeper", glyph: "Φ", hp: 1200, speed: 0.7, armor: 0.3, reward: 120, drain: 25, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  // Map 2
+  "mirror-prefect": { name: "Mirror Prefect", glyph: "Δ", hp: 1800, speed: 0.8, armor: 0.2, reward: 150, drain: 25, trigger: 0.5, ability: "shield", telegraph: "will raise a SHIELD (armor surge) when wounded" },
+  "atrium-regent": { name: "Atrium Regent", glyph: "Θ", hp: 2600, speed: 0.7, armor: 0.3, reward: 200, drain: 30, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  // Map 3
+  "cascade-anchor": { name: "Cascade Anchor", glyph: "Λ", hp: 3e3, speed: 0.7, armor: 0.3, reward: 220, drain: 30, trigger: 0.5, ability: "shield", telegraph: "will raise a SHIELD when wounded" },
+  "descent-marshal": { name: "Descent Marshal", glyph: "Ξ", hp: 4200, speed: 0.8, armor: 0.25, reward: 280, drain: 35, trigger: 0.5, ability: "haste", telegraph: "will HASTE when wounded" },
+  "cascade-sovereign": { name: "Cascade Sovereign", glyph: "Σ", hp: 5600, speed: 0.7, armor: 0.35, reward: 360, drain: 40, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  // Map 4
+  "approach-vanguard": { name: "Approach Vanguard", glyph: "Π", hp: 6e3, speed: 0.8, armor: 0.3, reward: 380, drain: 40, trigger: 0.5, ability: "shield", telegraph: "will raise a SHIELD when wounded" },
+  "event-horizon": { name: "Event Horizon", glyph: "◉", hp: 8e3, speed: 0.7, armor: 0.35, reward: 460, drain: 45, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  "penultimate-knot": { name: "Penultimate Knot", glyph: "╬", hp: 1e4, speed: 0.7, armor: 0.4, reward: 560, drain: 50, trigger: 0.5, ability: "haste", telegraph: "will HASTE when wounded" },
+  "final-bastion": { name: "Final Bastion", glyph: "█", hp: 14e3, speed: 0.6, armor: 0.4, reward: 720, drain: 60, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" }
+};
+function subBossDef(id) {
+  return SUB_BOSSES[id] || null;
+}
+function spawnSubBoss(id, idCounter) {
+  const def = SUB_BOSSES[id];
+  if (!def) return null;
+  return {
+    id: `sb${idCounter}`,
+    type: "subboss",
+    subBoss: id,
+    hp: def.hp,
+    maxHp: def.hp,
+    x: 0,
+    y: 0,
+    pathIndex: 0,
+    speed: def.speed,
+    armor: def.armor,
+    slowImmune: false,
+    abilityFired: false
+  };
+}
+
 // ../../docs/games/metagame/stages/stage4/upgrades.js
 function applyExtractorIncome(state) {
   let income = 0;
@@ -363,10 +532,18 @@ function applyExtractorIncome(state) {
 }
 
 // ../../docs/games/metagame/stages/stage4/engine.js
+function enemyDef(enemy) {
+  if (enemy?.subBoss) {
+    const sb = subBossDef(enemy.subBoss);
+    if (sb) return { glyph: sb.glyph, reward: sb.reward, integrityDrain: sb.drain };
+  }
+  return ENEMY_TYPES[enemy?.type] || ENEMY_TYPES.recursion;
+}
 function startWave(state, waveNum, pathTiles) {
-  const comp = waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  const comp = state.campaign ? mapWaveComposition(state.campaign.mapIndex || 0, waveNum) : waveComposition(waveNum, state.recursion?.pointSetId || "x");
   const queue = [];
   for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) queue.push(grp.type);
+  if (comp.subBoss) queue.push(`subboss:${comp.subBoss}`);
   state.waveNumber = waveNum;
   state.waveActive = true;
   state.waveFailed = false;
@@ -376,6 +553,10 @@ function startWave(state, waveNum, pathTiles) {
   state.combatClockMs = 0;
   state.enemyNextId = 1;
   for (const t of state.towers) t.lastFiredMs = -Infinity;
+  if (comp.subBoss) {
+    const sb = subBossDef(comp.subBoss);
+    if (sb) pushLog2(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+  }
   return state;
 }
 function tick(state, deltaMs, pathTiles) {
@@ -390,7 +571,7 @@ function tick(state, deltaMs, pathTiles) {
   return state;
 }
 function resolveDeath(state, enemy, pathTiles) {
-  const def = ENEMY_TYPES[enemy.type] || ENEMY_TYPES.recursion;
+  const def = enemyDef(enemy);
   state.cycles = (state.cycles || 0) + (def.reward || 0);
   if (def.spawnsOnDeath) {
     for (let i = 0; i < def.spawnsOnDeath.count; i++) {
@@ -415,7 +596,8 @@ function spawnDueEnemies(state, dt, pathTiles) {
   while ((state.spawnQueue?.length || 0) > 0 && state.spawnTimerMs >= SPAWN_INTERVAL_MS) {
     state.spawnTimerMs -= SPAWN_INTERVAL_MS;
     const type = state.spawnQueue.shift();
-    const e = spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    const e = String(type).startsWith("subboss:") ? spawnSubBoss(type.slice("subboss:".length), state.enemyNextId++) : spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    if (!e) continue;
     placeOnPath(e, pathTiles);
     state.enemies.push(e);
   }
@@ -427,7 +609,7 @@ function moveEnemies(state, dt, pathTiles, exitIndex) {
     const eff = e.speed * (slowed ? 0.5 : 1);
     e.pathIndex += eff * (dt / 1e3);
     if (e.pathIndex >= exitIndex) {
-      const def = ENEMY_TYPES[e.type] || ENEMY_TYPES.recursion;
+      const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
       if (state.integrity <= 0) state.waveFailed = true;
       pushLog2(state, `${def.glyph} reached the core.`);
@@ -453,11 +635,32 @@ function fireTowers(state, pathTiles) {
   }
 }
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
-  let dmg = def.damage * bonus;
+  let dmg = def.damage * bonus * (state.damageMult || 1);
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2;
   if (!def.ignoresArmor) dmg *= 1 - (enemy.armor || 0);
   enemy.hp -= dmg;
+  if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
+}
+function maybeFireSubBossAbility(state, enemy, pathTiles) {
+  const sb = subBossDef(enemy.subBoss);
+  if (!sb || enemy.hp > enemy.maxHp * sb.trigger) return;
+  enemy.abilityFired = true;
+  if (sb.ability === "recurse") {
+    for (let i = 0; i < 3; i++) {
+      const child = spawnEnemy("recursion", state.recursion?.pointSetId || "x", state.enemyNextId++);
+      child.pathIndex = Math.max(0, enemy.pathIndex - (i + 1));
+      placeOnPath(child, pathTiles);
+      state.enemies.push(child);
+    }
+    pushLog2(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
+  } else if (sb.ability === "haste") {
+    enemy.speed *= 1.6;
+    pushLog2(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
+  } else if (sb.ability === "shield") {
+    enemy.armor = Math.min(0.9, (enemy.armor || 0) + 0.3);
+    pushLog2(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
+  }
 }
 function reap(state, pathTiles) {
   const survivors = [];
@@ -513,6 +716,35 @@ function pushLog2(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
+// ../../docs/games/metagame/stages/stage4/run4.js
+function createCampaign() {
+  return {
+    status: "map-select",
+    // map-select | combat | armory | boss | won
+    mapIndex: 0,
+    // the active map while in combat / armory
+    clearedMaps: [],
+    // indices of cleared maps
+    glory: 0,
+    armory: {}
+    // { upgradeId: level }
+  };
+}
+function ensureCampaign(state) {
+  const fresh = createCampaign();
+  const c = state.campaign && typeof state.campaign === "object" ? state.campaign : {};
+  c.status = ["map-select", "combat", "armory", "boss", "won"].includes(c.status) ? c.status : "map-select";
+  c.mapIndex = clampIndex(c.mapIndex);
+  c.clearedMaps = Array.isArray(c.clearedMaps) ? [...new Set(c.clearedMaps.map(clampIndex))].filter((i) => i >= 0).sort((a, b) => a - b) : [];
+  c.glory = Number.isFinite(c.glory) ? Math.max(0, c.glory) : 0;
+  c.armory = c.armory && typeof c.armory === "object" ? c.armory : {};
+  state.campaign = c;
+  return c;
+}
+function clampIndex(i) {
+  return Math.max(0, Math.min(MAP_COUNT - 1, Math.trunc(Number(i)) || 0));
+}
+
 // ../../docs/games/metagame/stages/stage4/state.js
 function defaultState(context = {}) {
   const seed = stageSeed(context);
@@ -523,11 +755,17 @@ function defaultState(context = {}) {
     // Full-TD fields (engine.js reads/writes these; see stage4 buildplan A3). Enemies are ephemeral
     // (regenerated per wave, never persisted). towerNextId replaces any Math.random id generation.
     integrity: 100,
+    maxIntegrity: 100,
+    // per-map cap (set by run4.resetCombatForMap; integrity regen never exceeds it)
+    damageMult: 1,
+    // Armory "Overclocked Emitters" multiplier (applied by engine.applyDamage)
     waveGroup: 1,
     waveActive: false,
     waveNumber: 1,
     enemies: [],
     towerNextId: 1,
+    // The 5-map campaign state machine (run4.js): status, mapIndex, clearedMaps, glory, armory.
+    campaign: createCampaign(),
     recursion: {
       pointSetId: `fractal-${seed}`,
       points: generateRecursionPoints(seed)
@@ -550,6 +788,8 @@ function normalizeState(state, context = {}) {
   target.cycles = Number.isFinite(target.cycles) ? target.cycles : fresh.cycles;
   target.wave = Number.isFinite(target.wave) ? target.wave : fresh.wave;
   target.integrity = Number.isFinite(target.integrity) ? target.integrity : fresh.integrity;
+  target.maxIntegrity = Number.isFinite(target.maxIntegrity) ? target.maxIntegrity : fresh.maxIntegrity;
+  target.damageMult = Number.isFinite(target.damageMult) ? target.damageMult : fresh.damageMult;
   target.waveGroup = Number.isFinite(target.waveGroup) ? target.waveGroup : fresh.waveGroup;
   target.waveActive = Boolean(target.waveActive);
   target.waveNumber = Number.isFinite(target.waveNumber) ? target.waveNumber : fresh.waveNumber;
@@ -560,6 +800,7 @@ function normalizeState(state, context = {}) {
   target.recursion.points = normalizePoints(target.recursion.points, fresh.recursion.points);
   target.towers = Array.isArray(target.towers) ? target.towers.map(normalizeTower).filter(Boolean) : [];
   target.boss = mergePlain(fresh.boss, target.boss);
+  ensureCampaign(target);
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;
 }
