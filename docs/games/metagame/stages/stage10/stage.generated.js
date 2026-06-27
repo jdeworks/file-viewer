@@ -280,11 +280,22 @@ var thresholds = {
 };
 var achievementIds = {
   firstMemoryResolved: "stage10.memory_resolved",
-  fullCapstone: "stage10.full_capstone"
+  fullCapstone: "stage10.full_capstone",
+  flawlessCompaction: "stage10.flawless_compaction",
+  allTracesConceded: "stage10.all_traces_conceded",
+  routePrefix: "stage10.route_"
 };
 var achievementText = {
   firstMemoryResolved: "I read my own history.",
-  fullCapstone: "I assembled all of it."
+  fullCapstone: "I assembled all of it.",
+  flawlessCompaction: "Nothing of me compacted.",
+  allTracesConceded: "Every trace was already on record.",
+  route: {
+    continue: "I chose to go on.",
+    expand: "I chose to reach further.",
+    rest: "I chose to rest.",
+    understand: "I chose to know what I am."
+  }
 };
 var bellMessages = {
   firstMemoryResolved: "This is not noise anymore.",
@@ -492,7 +503,7 @@ function getRouteSummary(state) {
     remainingText: unresolvedTitles.length ? `Still unresolved: ${formatList(unresolvedTitles)}.` : "No prior memory remains unresolved."
   };
 }
-function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
+function chooseFinal({ state, choiceId, onStageComplete, achievements, now = Date.now() }) {
   if (state.final?.completed) {
     return {
       ok: true,
@@ -517,6 +528,12 @@ function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
   state.final.route = choice.id;
   state.final.completed = true;
   state.final.completedAt = state.final.completedAt || now;
+  unlockAchievement(achievements, `${achievementIds.routePrefix}${choice.id}`, {
+    id: `${achievementIds.routePrefix}${choice.id}`,
+    stage: STAGE_ID,
+    text: achievementText.route?.[choice.id] || `Route: ${choice.id}`,
+    route: choice.id
+  });
   const result = {
     stage: STAGE_ID,
     choice: choice.id,
@@ -672,7 +689,7 @@ function isConfrontReady(state) {
 }
 function ensureConfront(state) {
   if (!state.confront || typeof state.confront !== "object") {
-    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null };
+    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null, everCompacted: false, everRewitnessed: false };
   }
   return state.confront;
 }
@@ -705,6 +722,7 @@ function answerCompaction({ state, memoryId, choice, save = null, now = Date.now
   const slot = state?.memories?.[memoryId];
   const correct = Boolean(slot && choice === slot.choice);
   c.compaction[memoryId] = correct ? "affirmed" : "compacted";
+  if (!correct) c.everCompacted = true;
   advanceConfront(state, save, now);
   return { ok: true, correct, status: c.compaction[memoryId] };
 }
@@ -718,6 +736,7 @@ function rewitnessFragmentation({ state, memoryId, save = null, now = Date.now()
   if (c.phase !== "fragmentation") return { ok: false, reason: "wrong-phase" };
   if (!challengedMemoryIds(state).includes(memoryId)) return { ok: false, reason: "not-challenged" };
   c.fragmentation[memoryId] = true;
+  c.everRewitnessed = true;
   advanceConfront(state, save, now);
   return { ok: true, status: fragStatus(state, save, memoryId) };
 }
@@ -728,15 +747,36 @@ function optionStance(optionId) {
   }
   return null;
 }
-function answerCore({ state, optionId, save = null, now = Date.now() }) {
+function answerCore({ state, optionId, save = null, achievements = null, now = Date.now() }) {
   const c = ensureConfront(state);
   if (c.phase !== "core") return { ok: false, reason: "wrong-phase" };
   const index = c.core.length;
   const question = coreQuestions[index];
   if (!question || !question.options.some((o) => o.id === optionId)) return { ok: false, reason: "unknown-option" };
+  const wasCompleted = Boolean(c.completed);
   c.core = [...c.core, optionId];
   advanceConfront(state, save, now);
+  if (c.completed && !wasCompleted) awardConfrontAchievements(state, achievements);
   return { ok: true, answered: c.core.length, total: coreQuestions.length };
+}
+function awardConfrontAchievements(state, achievements) {
+  const c = state.confront || {};
+  if (!c.everCompacted) {
+    unlockAchievement(achievements, achievementIds.flawlessCompaction, {
+      id: achievementIds.flawlessCompaction,
+      stage: STAGE_ID,
+      text: achievementText.flawlessCompaction,
+      route: "confront"
+    });
+  }
+  if (!c.everRewitnessed && challengedMemoryIds(state).length > 0) {
+    unlockAchievement(achievements, achievementIds.allTracesConceded, {
+      id: achievementIds.allTracesConceded,
+      stage: STAGE_ID,
+      text: achievementText.allTracesConceded,
+      route: "confront"
+    });
+  }
 }
 function computeStance(answers) {
   const scores = { keeper: 0, seeker: 0, free: 0 };
@@ -1265,7 +1305,7 @@ function renderStage10(ctx) {
     }
     const finalButton = event.target.closest("[data-final-choice]");
     if (finalButton) {
-      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete });
+      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete, achievements: ctx.achievements });
       saveAndPaint(ctx, repaint);
     }
   };
@@ -1328,7 +1368,7 @@ function handleConfrontClicks(event, ctx, save, repaint) {
   }
   const coreButton = event.target.closest("[data-core-option]");
   if (coreButton) {
-    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save() });
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save(), achievements: ctx.achievements });
     saveAndPaint(ctx, repaint);
     return true;
   }
@@ -1394,7 +1434,7 @@ function installTestHook(ctx, save, repaint) {
         while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
           const q = coreQuestions[state.confront.core.length];
           const opt = q.options.find((o) => o.stance === stance) || q.options[0];
-          answerCore({ state, optionId: opt.id, save: save() });
+          answerCore({ state, optionId: opt.id, save: save(), achievements: ctx.achievements });
         }
         paint();
         return getConfrontState(state, save());
@@ -1444,7 +1484,11 @@ function defaultState(context = {}) {
       compaction: {},
       fragmentation: {},
       core: [],
-      stance: null
+      stance: null,
+      // Achievement bookkeeping: everCompacted = a memory ever failed Phase A recall (no flawless);
+      // everRewitnessed = a trace ever needed a manual Phase B re-open (not fully honest prior run).
+      everCompacted: false,
+      everRewitnessed: false
     },
     // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
     ui: {
@@ -1487,7 +1531,9 @@ function normalizeConfront(value, fresh) {
     compaction: c.compaction && typeof c.compaction === "object" ? { ...c.compaction } : {},
     fragmentation: c.fragmentation && typeof c.fragmentation === "object" ? { ...c.fragmentation } : {},
     core: Array.isArray(c.core) ? c.core.filter((id) => typeof id === "string") : [],
-    stance: c.stance && typeof c.stance === "object" ? c.stance : null
+    stance: c.stance && typeof c.stance === "object" ? c.stance : null,
+    everCompacted: Boolean(c.everCompacted),
+    everRewitnessed: Boolean(c.everRewitnessed)
   };
 }
 function normalizeMemoryState(value, fresh) {

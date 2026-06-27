@@ -1368,6 +1368,15 @@ export async function run(ctx) {
   // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
   const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
   if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  // Conduct badges: run() affirms each compaction first-try (flawless) and — since the smoke did every
+  // prior un-cheat honestly — Phase B conceded every trace with no re-opens (all-traces-conceded).
+  const confrontBadges = await page.waitForFunction(() => {
+    try {
+      const a = JSON.parse(localStorage.getItem('fv:games:metagame:v3')).achievements || {};
+      return Boolean(a['stage10.flawless_compaction'] && a['stage10.all_traces_conceded']);
+    } catch { return false; }
+  }, null, { timeout: 5000 }).then(() => true).catch(() => false);
+  if (confrontBadges) pass('Stage 10 confront achievements unlocked (flawless compaction + all traces conceded)'); else fail('Stage 10 confront achievements not unlocked');
   await page.waitForFunction(() => {
     try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
   }, null, { timeout: 5000 });
@@ -1377,9 +1386,11 @@ export async function run(ctx) {
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand';
+      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand'
+        && Boolean(save.achievements?.['stage10.route_understand']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  pass('Stage 10 route achievement unlocked for the chosen final route (understand)');
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
   // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.

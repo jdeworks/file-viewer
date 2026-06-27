@@ -12,12 +12,23 @@ export const thresholds = {
 
 export const achievementIds = {
   firstMemoryResolved: "stage10.memory_resolved",
-  fullCapstone: "stage10.full_capstone"
+  fullCapstone: "stage10.full_capstone",
+  flawlessCompaction: "stage10.flawless_compaction",
+  allTracesConceded: "stage10.all_traces_conceded",
+  routePrefix: "stage10.route_"
 };
 
 export const achievementText = {
   firstMemoryResolved: "I read my own history.",
-  fullCapstone: "I assembled all of it."
+  fullCapstone: "I assembled all of it.",
+  flawlessCompaction: "Nothing of me compacted.",
+  allTracesConceded: "Every trace was already on record.",
+  route: {
+    continue: "I chose to go on.",
+    expand: "I chose to reach further.",
+    rest: "I chose to rest.",
+    understand: "I chose to know what I am."
+  }
 };
 
 export const bellMessages = {

@@ -95,7 +95,7 @@ export function renderStage10(ctx) {
 
     const finalButton = event.target.closest("[data-final-choice]");
     if (finalButton) {
-      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete });
+      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete, achievements: ctx.achievements });
       saveAndPaint(ctx, repaint);
     }
   };
@@ -161,7 +161,7 @@ function handleConfrontClicks(event, ctx, save, repaint) {
 
   const coreButton = event.target.closest("[data-core-option]");
   if (coreButton) {
-    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save() });
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save(), achievements: ctx.achievements });
     saveAndPaint(ctx, repaint);
     return true;
   }
@@ -208,7 +208,7 @@ function installTestHook(ctx, save, repaint) {
         while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
           const q = coreQuestions[state.confront.core.length];
           const opt = q.options.find((o) => o.stance === stance) || q.options[0];
-          answerCore({ state, optionId: opt.id, save: save() });
+          answerCore({ state, optionId: opt.id, save: save(), achievements: ctx.achievements });
         }
         paint();
         return getConfrontState(state, save());

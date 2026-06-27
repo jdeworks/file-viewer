@@ -192,7 +192,7 @@ export function getRouteSummary(state) {
   };
 }
 
-export function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
+export function chooseFinal({ state, choiceId, onStageComplete, achievements, now = Date.now() }) {
   if (state.final?.completed) {
     return {
       ok: true,
@@ -220,6 +220,12 @@ export function chooseFinal({ state, choiceId, onStageComplete, now = Date.now()
   state.final.route = choice.id;
   state.final.completed = true;
   state.final.completedAt = state.final.completedAt || now;
+  unlockAchievement(achievements, `${achievementIds.routePrefix}${choice.id}`, {
+    id: `${achievementIds.routePrefix}${choice.id}`,
+    stage: STAGE_ID,
+    text: achievementText.route?.[choice.id] || `Route: ${choice.id}`,
+    route: choice.id
+  });
   const result = {
     stage: STAGE_ID,
     choice: choice.id,
@@ -267,7 +273,7 @@ function notifyBell(bell, text, id) {
   else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: STAGE_ID });
 }
 
-function unlockAchievement(achievements, id, detail) {
+export function unlockAchievement(achievements, id, detail) {
   if (achievements && typeof achievements.unlockAchievement === "function") achievements.unlockAchievement(id, detail);
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
 }

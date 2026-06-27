@@ -5,8 +5,9 @@
 // not touch the integration gate. The boss is never self-unlocked: confront is only "ready" after
 // the full memory body + ≥5 echoes (the same gate the final question already used).
 import { memories, memoryById } from "./content.js";
-import { getThresholdState } from "./boss.js";
+import { getThresholdState, unlockAchievement } from "./boss.js";
 import { uncheatForMemory } from "./crossstage.js";
+import { achievementIds, achievementText, STAGE_ID } from "./messages.js";
 import { coreQuestions, concedeLines, confrontLines, stanceProfiles, STANCE_KEYS } from "./content-confront.js";
 
 const RESOLVED = new Set(["resolved", "integrated"]);
@@ -24,7 +25,7 @@ export function isConfrontReady(state) {
 
 function ensureConfront(state) {
   if (!state.confront || typeof state.confront !== "object") {
-    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null };
+    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null, everCompacted: false, everRewitnessed: false };
   }
   return state.confront;
 }
@@ -68,6 +69,7 @@ export function answerCompaction({ state, memoryId, choice, save = null, now = D
   const slot = state?.memories?.[memoryId];
   const correct = Boolean(slot && choice === slot.choice);
   c.compaction[memoryId] = correct ? "affirmed" : "compacted";
+  if (!correct) c.everCompacted = true; // a single mis-recall forfeits the flawless-compaction badge
   advanceConfront(state, save, now);
   return { ok: true, correct, status: c.compaction[memoryId] };
 }
@@ -87,6 +89,7 @@ export function rewitnessFragmentation({ state, memoryId, save = null, now = Dat
   if (c.phase !== "fragmentation") return { ok: false, reason: "wrong-phase" };
   if (!challengedMemoryIds(state).includes(memoryId)) return { ok: false, reason: "not-challenged" };
   c.fragmentation[memoryId] = true; // TRANSIENT — confront-only, does not alter slot.echoWitnessed
+  c.everRewitnessed = true; // a manual re-open means the prior run wasn't fully on record
   advanceConfront(state, save, now);
   return { ok: true, status: fragStatus(state, save, memoryId) };
 }
@@ -101,15 +104,33 @@ function optionStance(optionId) {
   return null;
 }
 
-export function answerCore({ state, optionId, save = null, now = Date.now() }) {
+export function answerCore({ state, optionId, save = null, achievements = null, now = Date.now() }) {
   const c = ensureConfront(state);
   if (c.phase !== "core") return { ok: false, reason: "wrong-phase" };
   const index = c.core.length;
   const question = coreQuestions[index];
   if (!question || !question.options.some((o) => o.id === optionId)) return { ok: false, reason: "unknown-option" };
+  const wasCompleted = Boolean(c.completed);
   c.core = [...c.core, optionId];
   advanceConfront(state, save, now);
+  if (c.completed && !wasCompleted) awardConfrontAchievements(state, achievements);
   return { ok: true, answered: c.core.length, total: coreQuestions.length };
+}
+
+// On winning the confrontation, award the conduct badges earned across the three phases. Idempotent
+// (the achievements store ignores re-unlocks); only fires on the completion transition.
+function awardConfrontAchievements(state, achievements) {
+  const c = state.confront || {};
+  if (!c.everCompacted) {
+    unlockAchievement(achievements, achievementIds.flawlessCompaction, {
+      id: achievementIds.flawlessCompaction, stage: STAGE_ID, text: achievementText.flawlessCompaction, route: "confront"
+    });
+  }
+  if (!c.everRewitnessed && challengedMemoryIds(state).length > 0) {
+    unlockAchievement(achievements, achievementIds.allTracesConceded, {
+      id: achievementIds.allTracesConceded, stage: STAGE_ID, text: achievementText.allTracesConceded, route: "confront"
+    });
+  }
 }
 
 function computeStance(answers) {
