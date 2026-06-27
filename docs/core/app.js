@@ -30,6 +30,7 @@ import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } f
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
 import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot } from './sidebar-roots.js';
+import { installGlobalScreensaver } from './global-screensaver.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -416,6 +417,7 @@ function init() {
   initSessionTree({ loadIntake });
   initSidebarRoots({ loadIntake });
   initViewerOpen({ loadIntake });
+  installGlobalScreensaver();   // app-wide idle screensaver (suppressed during media/games/fullscreen)
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
   initFolder({

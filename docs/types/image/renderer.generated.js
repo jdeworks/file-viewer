@@ -5256,12 +5256,7 @@ async function render(intake, ctx = {}) {
         asciiOut.textContent = "ASCII studio failed to load: " + (e.message || e);
         asciiBtn.disabled = false;
       }
-      import("./ascii-screensaver.js").then(({ installScreensaver }) => {
-        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode && !asciiStudio?.isCameraActive?.());
-        host._ss.start();
-      });
     } else {
-      host._ss?.stop();
       asciiStudio?.stopCamera?.();
       advController?.relayout();
     }
@@ -5460,7 +5455,6 @@ async function render(intake, ctx = {}) {
     URL.revokeObjectURL(url);
     core.revoke();
     bgTool.teardown();
-    host._ss?.stop();
   } };
 }
 export {

@@ -328,15 +328,9 @@ export async function render(intake, ctx = {}) {
         asciiOut.textContent = 'ASCII studio failed to load: ' + (e.message || e);
         asciiBtn.disabled = false;
       }
-      // 30s-idle boot-screen easter egg (unchanged).
-      import('./ascii-screensaver.js').then(({ installScreensaver }) => {
-        // Don't let the idle screensaver overlay the live camera (the feed has no
-        // pointer/key activity to reset the idle timer, so it would always fire).
-        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode && !asciiStudio?.isCameraActive?.());
-        host._ss.start();
-      });
+      // The idle boot-screen screensaver is now app-wide (docs/core/global-screensaver.js),
+      // not ASCII-only — nothing to install here.
     } else {
-      host._ss?.stop();
       asciiStudio?.stopCamera?.();   // leaving ASCII view → release the webcam
       advController?.relayout();      // the stage was hidden with .imgv-stage — re-register it to the image
     }
@@ -537,5 +531,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { barRO?.disconnect(); advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { barRO?.disconnect(); advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); } };
 }

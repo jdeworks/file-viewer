@@ -1079,6 +1079,23 @@ export async function run(ctx) {
   ]).catch(() => [null]);
   if (dlDirect && /\.png$/.test(dlDirect.suggestedFilename())) pass('in-editor Download button saves the current image in the chosen format'); else fail('editor download: ' + (dlDirect && dlDirect.suggestedFilename()));
 
+  // ── App-wide screensaver ── installed globally at startup; the test seam force()s it
+  // without waiting 5 min, dismiss() clears it, and a visible games overlay suppresses it.
+  const ss = await page.evaluate(() => {
+    const s = window.__fvScreensaver;
+    if (!s) return { present: false };
+    s.force();
+    const activeAfterForce = s.isActive() && !!document.querySelector('.fv-ss-overlay');
+    s.dismiss();
+    const goneAfterDismiss = !s.isActive() && !document.querySelector('.fv-ss-overlay');
+    const g = document.createElement('div'); g.className = 'games-overlay'; document.body.appendChild(g);
+    const suppressedByGame = s.suppressed();
+    const forcedWhileSuppressed = s.force();   // returns !!overlay → false when suppressed
+    g.remove(); if (s.isActive()) s.dismiss();
+    return { present: true, activeAfterForce, goneAfterDismiss, suppressedByGame, forcedWhileSuppressed };
+  });
+  if (ss.present && ss.activeAfterForce && ss.goneAfterDismiss && ss.suppressedByGame && !ss.forcedWhileSuppressed) pass('global screensaver: arms/dismisses + suppressed while a game overlay is open'); else fail('screensaver: ' + JSON.stringify(ss));
+
   // ── ASCII Studio ── the ASCII button lazy-mounts the self-contained studio,
   // which converts the image to glyphs and exposes the control panel.
   await page.click('#previewHost .imgv-ascii-btn');

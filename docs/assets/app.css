@@ -1018,3 +1018,13 @@ body.fv-dragging .intake::after {
   border: 3px solid var(--bg-3); border-top-color: var(--accent); animation: boot-spin .8s linear infinite; }
 @keyframes boot-spin { to { transform: rotate(360deg); } }
 .reduce-motion .boot-spinner-ring { animation: none; }
+
+/* App-wide idle screensaver (docs/core/global-screensaver.js). Full-viewport retro
+   terminal overlay; fades in, any input dismisses it. */
+.fv-ss-overlay { position: fixed; inset: 0; z-index: 9000; display: flex; align-items: center;
+  justify-content: center; background: #000; cursor: pointer; opacity: 0;
+  transition: opacity 1s ease; }
+.fv-ss-overlay.fv-ss-on { opacity: 1; }
+.fv-ss-pre { margin: 0; font: 16px/1.35 ui-monospace, "DejaVu Sans Mono", "Courier New", monospace;
+  color: #5f6; text-shadow: 0 0 6px rgba(85,255,100,.5); white-space: pre; }
+.reduce-motion .fv-ss-overlay { transition: none; }
