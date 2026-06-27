@@ -200,6 +200,11 @@ FULL_UNIT_TESTS=(
   tests/known-pascal-lang.test.mjs
   tests/known-perl-lang.test.mjs
   tests/known-prolog-lang.test.mjs
+  tests/known-purescript-lang.test.mjs
+  tests/known-r-lang.test.mjs
+  tests/known-racket-lang.test.mjs
+  tests/known-red-lang.test.mjs
+  tests/known-reason-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
