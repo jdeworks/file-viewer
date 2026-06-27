@@ -6,11 +6,11 @@
 // they are NOT inlined here. index.js's loadRenderer imports THIS file.
 
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
 import { loadTemplate, fill } from "../../core/template.js";
 
-// ../../docs/types/image/imglib.js
+// docs/types/image/imglib.js
 var EXT_MIME = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -43,10 +43,10 @@ function dimensions(url) {
   });
 }
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
 
-// ../../docs/types/image/edit-els.js
+// docs/types/image/edit-els.js
 function queryEls(host, canEdit) {
   const q = (sel) => host.querySelector(sel);
   const qe = (sel) => canEdit ? host.querySelector(sel) : null;
@@ -145,7 +145,7 @@ function queryEls(host, canEdit) {
   };
 }
 
-// ../../docs/types/image/view-controller.js
+// docs/types/image/view-controller.js
 function createView(ctx) {
   const { host, img, zoomLabel } = ctx;
   let natural = 0, fit = true, zoom = 1;
@@ -301,7 +301,7 @@ function createView(ctx) {
   };
 }
 
-// ../../docs/types/image/fill.js
+// docs/types/image/fill.js
 function hexToRgba(hex) {
   const h = (hex || "#ff0000").replace("#", "");
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
@@ -444,7 +444,7 @@ function bgFloodFill(srcData, w, h, sx, sy, tol) {
   return dst;
 }
 
-// ../../docs/types/image/draw-overlay.js
+// docs/types/image/draw-overlay.js
 function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
@@ -814,7 +814,7 @@ function createDrawTools(ctx) {
   };
 }
 
-// ../../docs/types/image/editor-core.js
+// docs/types/image/editor-core.js
 var CANVAS_ENCODABLE = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
 function createEditCore({ img, url, mime, ctx, els }) {
   const { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator } = els;
@@ -933,7 +933,7 @@ function createEditCore({ img, url, mime, ctx, els }) {
   };
 }
 
-// ../../docs/types/image/levels.js
+// docs/types/image/levels.js
 function buildLevelsLUT(black = 0, white = 255, gamma = 1) {
   black = Math.max(0, Math.min(254, black | 0));
   white = Math.max(black + 1, Math.min(255, white | 0));
@@ -955,7 +955,7 @@ function applyLevels(data, lut) {
   }
 }
 
-// ../../docs/types/image/edit-filters.js
+// docs/types/image/edit-filters.js
 function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
@@ -1091,7 +1091,7 @@ function mountFilters({ img, mime, core, els }) {
   presetInvert?.addEventListener("click", () => applyPreset("invert(1)"));
 }
 
-// ../../docs/types/image/curves.js
+// docs/types/image/curves.js
 function normalizePoints(points) {
   const clamp = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
   const pts = (points || []).map((p) => ({ x: clamp(p.x), y: clamp(p.y) })).sort((a, b) => a.x - b.x);
@@ -1163,7 +1163,7 @@ function applyChannelLUTs(data, luts) {
   }
 }
 
-// ../../docs/types/image/edit-curves.js
+// docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
   const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
@@ -1359,7 +1359,7 @@ function mountCurves({ img, mime, core, els }) {
   } };
 }
 
-// ../../docs/types/image/convolve.js
+// docs/types/image/convolve.js
 var GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1].map((v) => v / 16);
 var IDENT = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 function buildKernel(type, strength) {
@@ -1398,7 +1398,7 @@ function applyConvolution(data, w, h, kernel) {
   return out;
 }
 
-// ../../docs/types/image/edit-convolve.js
+// docs/types/image/edit-convolve.js
 function mountConvolve({ img, mime, core, els }) {
   const { convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel } = els;
   if (!convolveBtn || !convolvePanel) return { teardown() {
@@ -1476,7 +1476,7 @@ function mountConvolve({ img, mime, core, els }) {
   } };
 }
 
-// ../../docs/types/image/edit-text.js
+// docs/types/image/edit-text.js
 function mountTextTool({ host, img, mime, core, els }) {
   const { editInput, editSize, editColor, editFont, editApply } = els;
   let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
@@ -1621,7 +1621,7 @@ function mountTextTool({ host, img, mime, core, els }) {
   return { isActive: () => !!textDragDiv, exitPlaceMode };
 }
 
-// ../../docs/types/image/geometry-affine.js
+// docs/types/image/geometry-affine.js
 function affineForGeometry(type, w, h, p = {}) {
   switch (type) {
     case "rotateCW":
@@ -1649,7 +1649,7 @@ function affineForGeometry(type, w, h, p = {}) {
   }
 }
 
-// ../../docs/types/image/edit-geometry.js
+// docs/types/image/edit-geometry.js
 function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   const {
     rotLBtn,
@@ -1957,7 +1957,7 @@ function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   return { isActive: () => cropMode };
 }
 
-// ../../docs/types/image/edit-bg.js
+// docs/types/image/edit-bg.js
 function mountBg({ img, url, core, els }) {
   const { bgBtn, bgTol, bgOk, bgX, exportFmt } = els;
   const bgTolWrap = bgTol && (bgTol.closest(".imgv-bg-tol-wrap") || bgTol);
@@ -2056,7 +2056,7 @@ function mountBg({ img, url, core, els }) {
   } };
 }
 
-// ../../docs/types/image/edit-undo-key.js
+// docs/types/image/edit-undo-key.js
 var active = null;
 var installed = false;
 function isTextEntry(t) {
@@ -2092,7 +2092,7 @@ function registerUndoKeys(editor) {
   };
 }
 
-// ../../docs/types/image/edit-tabs.js
+// docs/types/image/edit-tabs.js
 var STYLE_ID = "imgv-tabs-css";
 var CSS = `
 .imgv-tabs{flex-basis:100%;display:flex;flex-wrap:wrap;gap:2px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px;}
@@ -2175,7 +2175,7 @@ function mountTabs(host) {
   return { showTab };
 }
 
-// ../../docs/types/image/edit-select.js
+// docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {
@@ -2194,6 +2194,8 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   let ov = null, octx = null;
   let dragging = false, dragStart = null, lassoPts = null;
   let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;
+  let frame = null, edgeIdx = null;
+  let antsRAF = 0, antsPhase = 0, antsLast = 0;
   function ensureOverlay() {
     if (ov) return;
     stage.style.position = "relative";
@@ -2425,19 +2427,60 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     ov.width = mw;
     ov.height = mh;
     syncOverlay();
-    const out = octx.createImageData(mw, mh);
-    const d = out.data;
+    frame = octx.createImageData(mw, mh);
+    const d = frame.data;
+    const edges = [];
     for (let p = 0; p < mw * mh; p++) {
       if (!mask[p]) continue;
       const x = p % mw, y = p / mw | 0;
       const edge = x === 0 || y === 0 || x === mw - 1 || y === mh - 1 || !mask[p - 1] || !mask[p + 1] || !mask[p - mw] || !mask[p + mw];
+      if (edge) {
+        edges.push(p);
+        continue;
+      }
       const i = p << 2;
       d[i] = 0;
       d[i + 1] = 132;
       d[i + 2] = 255;
-      d[i + 3] = edge ? 235 : 48;
+      d[i + 3] = 48;
     }
-    octx.putImageData(out, 0, 0);
+    edgeIdx = Int32Array.from(edges);
+    paintAnts();
+    startAnts();
+  }
+  function paintAnts() {
+    if (!frame || !edgeIdx || !octx) return;
+    const d = frame.data, ph = antsPhase | 0;
+    for (let k = 0; k < edgeIdx.length; k++) {
+      const p = edgeIdx[k];
+      const v = (p % mw + (p / mw | 0) + ph & 7) < 4 ? 0 : 255;
+      const i = p << 2;
+      d[i] = v;
+      d[i + 1] = v;
+      d[i + 2] = v;
+      d[i + 3] = 255;
+    }
+    octx.putImageData(frame, 0, 0);
+  }
+  function startAnts() {
+    stopAnts();
+    const step = (t) => {
+      if (!mask) {
+        antsRAF = 0;
+        return;
+      }
+      if (!dragging && !moving && t - antsLast > 80) {
+        antsPhase = antsPhase + 1 & 7;
+        antsLast = t;
+        paintAnts();
+      }
+      antsRAF = requestAnimationFrame(step);
+    };
+    antsRAF = requestAnimationFrame(step);
+  }
+  function stopAnts() {
+    if (antsRAF) cancelAnimationFrame(antsRAF);
+    antsRAF = 0;
   }
   function setMode(m) {
     mode = m;
@@ -2457,8 +2500,11 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     setMode(on ? "wand" : null);
   }
   function clear() {
+    stopAnts();
     mask = null;
     mw = mh = 0;
+    frame = null;
+    edgeIdx = null;
     if (octx) octx.clearRect(0, 0, ov.width, ov.height);
     if (deselectBtn) deselectBtn.hidden = true;
   }
@@ -2503,18 +2549,21 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     clear,
     syncOverlay,
     teardown() {
+      stopAnts();
       ov?.remove();
       ov = null;
       octx = null;
       mask = null;
+      frame = null;
+      edgeIdx = null;
     }
   };
 }
 
-// ../../docs/types/image/adv-edit.js
+// docs/types/image/adv-edit.js
 import { loadGlobal, vendor } from "../../core/script-loader.js";
 
-// ../../docs/types/image/adv-edit-actions.js
+// docs/types/image/adv-edit-actions.js
 function isTypingTarget(target) {
   if (!target) return false;
   if (target.isContentEditable || target.tagName === "TEXTAREA") return true;
@@ -2670,7 +2719,7 @@ function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, dele
   };
 }
 
-// ../../docs/types/image/adv-edit-controls.js
+// docs/types/image/adv-edit-controls.js
 function installObjectActions(ctx) {
   const { getSelected, select, snap, tr, layer, Konva, cloneNode: cloneNode2, placeObject, wireObject, isGroup, stageW, stageH, refreshLayers, syncToolbar, markDirty } = ctx;
   function deleteSelection() {
@@ -2960,7 +3009,7 @@ function installShapeControls(ctx) {
   $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
 }
 
-// ../../docs/types/image/adv-edit-layers.js
+// docs/types/image/adv-edit-layers.js
 function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, select, snap, markDirty, cloneNode: cloneNode2, placeObject, labelName, stageW, stageH }) {
   const panel = document.createElement("div");
   panel.className = "imgv-adv-layers";
@@ -3086,7 +3135,7 @@ function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, se
   return { panel, refresh, destroy: () => panel.remove() };
 }
 
-// ../../docs/types/image/adv-edit-precision.js
+// docs/types/image/adv-edit-precision.js
 function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, markDirty, refreshLayers, stageW, stageH }) {
   const layer = new Konva.Layer({ listening: false });
   layer.name("precision");
@@ -3221,7 +3270,7 @@ function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, ma
   };
 }
 
-// ../../docs/types/image/adv-edit-points.js
+// docs/types/image/adv-edit-points.js
 function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refreshLayers }) {
   const layer = new Konva.Layer({ listening: true });
   layer.name("point-edit");
@@ -3302,7 +3351,7 @@ function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refresh
   };
 }
 
-// ../../docs/types/image/adv-edit-text.js
+// docs/types/image/adv-edit-text.js
 function syncTextControls($, label, { multi = false, textNodeOf, tagNodeOf, rgbToHex: rgbToHex2 }) {
   const t = textNodeOf(label), tag = tagNodeOf(label);
   const style = t.fontStyle?.() || "";
@@ -3420,7 +3469,7 @@ function installTextControls({ $, selectedLabels, textNodeOf, tagNodeOf, layer, 
   });
 }
 
-// ../../docs/types/image/adv-edit-toolbar.js
+// docs/types/image/adv-edit-toolbar.js
 var DEFAULTS = {
   text: "Text",
   fontFamily: "system-ui, sans-serif",
@@ -3507,7 +3556,7 @@ function advToolbarHtml() {
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
 
-// ../../docs/types/image/ocr-ui.js
+// docs/types/image/ocr-ui.js
 var OCR = "../../core/ocr/index.js";
 var consented = false;
 function ocrConsent(host, approxMB) {
@@ -3670,7 +3719,7 @@ function injectOcrStyle() {
   document.head.appendChild(s);
 }
 
-// ../../docs/types/image/adv-edit.js
+// docs/types/image/adv-edit.js
 var konvaPromise = null;
 function loadKonva() {
   if (!konvaPromise) konvaPromise = loadGlobal(vendor("konva/konva.min.js"), "Konva");
@@ -4183,7 +4232,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
 }
 
-// ../../docs/types/image/gif-decode.js
+// docs/types/image/gif-decode.js
 var mod = null;
 async function loadGifuct() {
   if (!mod) mod = await import("../../vendor/gifuct/gifuct.esm.js");
@@ -4258,7 +4307,7 @@ async function frameToPngBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 
-// ../../docs/types/image/gif-anim.js
+// docs/types/image/gif-anim.js
 function mountGifPlayer({ host, bytes, openBlob }) {
   host.innerHTML = "";
   const root = document.createElement("div");
@@ -4426,7 +4475,7 @@ function injectStyle2() {
   document.head.appendChild(s);
 }
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);

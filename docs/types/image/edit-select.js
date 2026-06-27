@@ -20,6 +20,8 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   let ov = null, octx = null;
   let dragging = false, dragStart = null, lassoPts = null;   // rubber-band / freehand drag
   let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;   // move-selection drag
+  let frame = null, edgeIdx = null;             // cached overlay buffer + its boundary pixels
+  let antsRAF = 0, antsPhase = 0, antsLast = 0; // marching-ants animation state
 
   function ensureOverlay() {
     if (ov) return;
@@ -210,23 +212,52 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     if (deselectBtn) deselectBtn.hidden = false;
   }
 
-  // Translucent tint over the selected region + a solid 1px boundary outline.
+  // Translucent tint over the selected region + an animated "marching ants" boundary.
+  // The interior tint is baked once into `frame`; the boundary pixels (cached in
+  // `edgeIdx`) are recoloured each animation tick so the dotted outline crawls — works
+  // for ANY mask shape (wand/rect/ellipse/lasso), unlike a dashed-path stroke.
   function render() {
     ov.width = mw; ov.height = mh;            // resets + clears
     syncOverlay();
-    const out = octx.createImageData(mw, mh);
-    const d = out.data;
+    frame = octx.createImageData(mw, mh);
+    const d = frame.data;
+    const edges = [];
     for (let p = 0; p < mw * mh; p++) {
       if (!mask[p]) continue;
       const x = p % mw, y = (p / mw) | 0;
       const edge = x === 0 || y === 0 || x === mw - 1 || y === mh - 1
         || !mask[p - 1] || !mask[p + 1] || !mask[p - mw] || !mask[p + mw];
+      if (edge) { edges.push(p); continue; }   // boundary painted by the ants pass
       const i = p << 2;
-      d[i] = 0; d[i + 1] = 132; d[i + 2] = 255;
-      d[i + 3] = edge ? 235 : 48;
+      d[i] = 0; d[i + 1] = 132; d[i + 2] = 255; d[i + 3] = 48;
     }
-    octx.putImageData(out, 0, 0);
+    edgeIdx = Int32Array.from(edges);
+    paintAnts();        // synchronous first paint (tests + no-flash); then animate
+    startAnts();
   }
+
+  // Recolour the boundary pixels with a phase-shifted black/white dash pattern.
+  function paintAnts() {
+    if (!frame || !edgeIdx || !octx) return;
+    const d = frame.data, ph = antsPhase | 0;
+    for (let k = 0; k < edgeIdx.length; k++) {
+      const p = edgeIdx[k];
+      const v = (((p % mw) + ((p / mw) | 0) + ph) & 7) < 4 ? 0 : 255;   // 4 on / 4 off, diagonal
+      const i = p << 2;
+      d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
+    }
+    octx.putImageData(frame, 0, 0);
+  }
+  function startAnts() {
+    stopAnts();
+    const step = (t) => {
+      if (!mask) { antsRAF = 0; return; }
+      if (!dragging && !moving && t - antsLast > 80) { antsPhase = (antsPhase + 1) & 7; antsLast = t; paintAnts(); }
+      antsRAF = requestAnimationFrame(step);
+    };
+    antsRAF = requestAnimationFrame(step);
+  }
+  function stopAnts() { if (antsRAF) cancelAnimationFrame(antsRAF); antsRAF = 0; }
 
   function setMode(m) {
     mode = m;
@@ -247,7 +278,8 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   function setActive(on) { setMode(on ? 'wand' : null); }
 
   function clear() {
-    mask = null; mw = mh = 0;
+    stopAnts();
+    mask = null; mw = mh = 0; frame = null; edgeIdx = null;
     if (octx) octx.clearRect(0, 0, ov.width, ov.height);
     if (deselectBtn) deselectBtn.hidden = true;
   }
@@ -295,6 +327,6 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     setActive, setMode, toggle: () => setMode(mode ? null : 'wand'),
     clipFillInPlace, clipCanvas, invert,
     clear, syncOverlay,
-    teardown() { ov?.remove(); ov = null; octx = null; mask = null; },
+    teardown() { stopAnts(); ov?.remove(); ov = null; octx = null; mask = null; frame = null; edgeIdx = null; },
   };
 }
