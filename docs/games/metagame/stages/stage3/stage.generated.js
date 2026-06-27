@@ -692,6 +692,39 @@ function volatileStatus(board) {
   return { total: board.volatile.size, locked: board.locked.size, atRisk, window: board.decayWindow };
 }
 
+// ../../docs/games/metagame/stages/stage3/s3decay.js
+var DECAY_AT = 4;
+var PER_MOVE = 1;
+var PER_WRONG = 5;
+function needOf(puzzle) {
+  let need = 0;
+  for (const row of puzzle.solution) for (const v of row) if (v) need += 1;
+  return need;
+}
+function decayThreshold(puzzle) {
+  return needOf(puzzle) * 2 + puzzle.width * 6;
+}
+function decayPenalty(puzzle) {
+  return Math.round((puzzle.width * puzzle.width + 12) * 0.5);
+}
+function createDecay(puzzle, corruption) {
+  const active = Number(corruption || 0) >= DECAY_AT;
+  return { active, meter: 0, threshold: decayThreshold(puzzle), penalty: decayPenalty(puzzle) };
+}
+function pressureMove(decay) {
+  if (decay && decay.active) decay.meter += PER_MOVE;
+}
+function pressureWrong(decay) {
+  if (decay && decay.active) decay.meter += PER_WRONG;
+}
+function decayFailed(decay) {
+  return Boolean(decay && decay.active && decay.meter >= decay.threshold);
+}
+function decayRatio(decay) {
+  if (!decay || !decay.active || !decay.threshold) return 0;
+  return Math.max(0, Math.min(1, decay.meter / decay.threshold));
+}
+
 // ../../docs/games/metagame/stages/stage3/renderer.js
 var MOVE = {
   ArrowUp: [0, -1],
@@ -788,6 +821,7 @@ function renderStage3(ctx) {
       state.run.marks = encodeMarks(board.marks);
     }
     initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    board.decay = createDecay(puzzle, corruptionForRun(state.run));
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => {
       board.cursor = { x, y };
       applyCell(x, y, mark);
@@ -798,19 +832,35 @@ function renderStage3(ctx) {
   function applyCell(x, y, mark) {
     if (board.solved) return;
     const reverted = tickVolatile(board, isSolved);
-    if (setCell(board, x, y, mark)) board.mistakes = (board.mistakes || 0) + 1;
+    const wrong = setCell(board, x, y, mark);
+    if (wrong) board.mistakes = (board.mistakes || 0) + 1;
     if (!mark && board.marks[y][x] === FILLED) noteFill(board, x, y);
+    pressureMove(board.decay);
+    if (wrong) pressureWrong(board.decay);
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
     if (reverted.length) {
       grid.flashWrong(reverted);
       pushLog(state, `${reverted.length} volatile cell${reverted.length === 1 ? "" : "s"} decayed — lock fills with l.`);
     }
+    if (!board.solved && decayFailed(board.decay)) {
+      failSnapshot();
+      return;
+    }
     if (board.solved) onSolved();
     else {
       save?.();
       paintHud();
     }
+  }
+  function failSnapshot() {
+    const penalty = board.decay.penalty;
+    state.registers = Math.max(0, Number(state.registers || 0) - penalty);
+    state.run.marks = null;
+    pushLog(state, `memory destabilized — snapshot collapsed. -${penalty} registers. restoring a fresh copy.`);
+    save?.();
+    loadBoard();
+    paintHud();
   }
   function lockUnderCursor() {
     if (!board.volatile || board.solved) return;
@@ -854,7 +904,8 @@ function renderStage3(ctx) {
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
-    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}.`);
+    const decayNote = board.decay?.active ? ` · instability ${Math.round(decayRatio(board.decay) * 100)}%` : "";
+    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
