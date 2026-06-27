@@ -2,10 +2,16 @@
 // Pure data: the puzzle (regenerated from the run seed, never stored), the player's marks, a cursor,
 // and solved-state. Marks persist in the save as compact row strings; the puzzle does not.
 
-import { makePuzzle, FILLED, EMPTY, UNKNOWN } from "./nonogram.js";
+import { makePuzzle, FILLED, COLOR_B, EMPTY, UNKNOWN } from "./nonogram.js";
+import { makeTwoColorPuzzle, TWOCOLOR_AT } from "./s3twocolor.js";
 
-const CH = { [FILLED]: "#", [EMPTY]: "x", [UNKNOWN]: "." };
-const FROM_CH = { "#": FILLED, x: EMPTY, ".": UNKNOWN };
+const CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
+const FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
+
+// The fill colour a cell carries (0 = none): both solution values (0/1/2) and player marks map
+// through this, so every check below is colour-aware AND backward-compatible with mono puzzles
+// (whose solutions only ever use 0/1).
+export const fillColor = (v) => (v === FILLED ? FILLED : v === COLOR_B ? COLOR_B : EMPTY);
 
 // The TIGHTENED body: corruption peaks at 8 (the boss gate) after BODY_SOLVES snapshots, and grid
 // size reaches 12 over the same span — so the pre-boss run is a focused ~13-solve climb (≈40-55 min
@@ -30,7 +36,10 @@ export function corruptionForRun(run) {
 
 export function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruptionForRun(run) });
+  const corruption = corruptionForRun(run);
+  // Two-colour snapshots take over once corruption hits TWOCOLOR_AT (the second-colour tier).
+  if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
+  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
 }
 
 // Prefetch Cache: pre-fill the first `count` solution cells (deterministic order) so a snapshot
@@ -40,7 +49,8 @@ export function applyPrefetch(board, count) {
   let done = 0;
   for (let y = 0; y < board.puzzle.height && done < count; y += 1) {
     for (let x = 0; x < board.puzzle.width && done < count; x += 1) {
-      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) { board.marks[y][x] = FILLED; done += 1; }
+      const sol = board.puzzle.solution[y][x];
+      if (sol !== EMPTY && board.marks[y][x] !== sol) { board.marks[y][x] = sol; done += 1; }
     }
   }
   board.solved = isSolved(board.puzzle, board.marks);
@@ -67,25 +77,28 @@ export function createBoard(puzzle, savedMarks) {
   return { puzzle, marks, cursor: { x: 0, y: 0 }, solved: isSolved(puzzle, marks) };
 }
 
-// Solved === the set of FILLED marks equals the solution's filled set (empty-marks are just aids).
+// Solved === every cell's fill COLOUR matches the solution's (empty-marks are just aids). Colour-aware
+// so it covers mono (colour A only) and two-colour snapshots alike.
 export function isSolved(puzzle, marks) {
   for (let y = 0; y < puzzle.height; y += 1) {
     for (let x = 0; x < puzzle.width; x += 1) {
-      if ((puzzle.solution[y][x] === FILLED) !== (marks[y][x] === FILLED)) return false;
+      if (fillColor(puzzle.solution[y][x]) !== fillColor(marks[y][x])) return false;
     }
   }
   return true;
 }
 
-// Toggle a cell. `mark` true = the empty-mark (✕ aid), false = a fill (#). Toggling the same value
-// clears the cell. Recomputes solved. Returns whether a WRONG fill was just placed (for integrity).
-export function setCell(board, x, y, mark) {
+// Toggle a cell. `mark` true = the empty-mark (✕ aid), false = a fill of `color` (default colour A).
+// Toggling the same value clears the cell. Recomputes solved. Returns whether a WRONG fill (a fill
+// whose colour ≠ the solution's colour, including a fill on an empty cell) was just placed.
+export function setCell(board, x, y, mark, color = FILLED) {
   if (board.solved) return false;
   const cur = board.marks[y][x];
-  const target = mark ? EMPTY : FILLED;
+  const target = mark ? EMPTY : color;
   board.marks[y][x] = cur === target ? UNKNOWN : target;
   board.solved = isSolved(board.puzzle, board.marks);
-  const wrong = !mark && board.marks[y][x] === FILLED && board.puzzle.solution[y][x] !== FILLED;
+  const placed = fillColor(board.marks[y][x]);
+  const wrong = !mark && placed !== EMPTY && placed !== fillColor(board.puzzle.solution[y][x]);
   return wrong;
 }
 
@@ -98,41 +111,44 @@ export function moveCursor(board, dx, dy) {
 // solution's — i.e. that line is correct. Used to cross out satisfied clues.
 export function lineDone(puzzle, marks, kind, i) {
   if (kind === "row") {
-    for (let x = 0; x < puzzle.width; x += 1) if ((puzzle.solution[i][x] === FILLED) !== (marks[i][x] === FILLED)) return false;
+    for (let x = 0; x < puzzle.width; x += 1) if (fillColor(puzzle.solution[i][x]) !== fillColor(marks[i][x])) return false;
     return true;
   }
-  for (let y = 0; y < puzzle.height; y += 1) if ((puzzle.solution[y][i] === FILLED) !== (marks[y][i] === FILLED)) return false;
+  for (let y = 0; y < puzzle.height; y += 1) if (fillColor(puzzle.solution[y][i]) !== fillColor(marks[y][i])) return false;
   return true;
 }
 
-// First solution cell not yet filled (Oracle hint reveals it). Null when nothing's left to reveal.
+// First solution cell not yet correctly coloured (Oracle hint reveals it, with its colour). Null when
+// nothing's left to reveal.
 export function firstHintCell(board) {
   for (let y = 0; y < board.puzzle.height; y += 1) {
     for (let x = 0; x < board.puzzle.width; x += 1) {
-      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) return { x, y };
+      const sol = board.puzzle.solution[y][x];
+      if (sol !== EMPTY && fillColor(board.marks[y][x]) !== sol) return { x, y, color: sol };
     }
   }
   return null;
 }
 
-// Cells the player filled that the solution leaves empty (Parity check flags these).
+// Cells the player filled with the WRONG colour (incl. a fill where the solution is empty). Parity flags these.
 export function wrongCells(board) {
   const out = [];
   for (let y = 0; y < board.puzzle.height; y += 1) {
     for (let x = 0; x < board.puzzle.width; x += 1) {
-      if (board.marks[y][x] === FILLED && board.puzzle.solution[y][x] !== FILLED) out.push({ x, y });
+      const placed = fillColor(board.marks[y][x]);
+      if (placed !== EMPTY && placed !== fillColor(board.puzzle.solution[y][x])) out.push({ x, y });
     }
   }
   return out;
 }
 
-// Count of correctly-filled vs total filled-in-solution — drives a progress readout.
+// Count of correctly-coloured vs total filled-in-solution — drives a progress readout.
 export function progress(puzzle, marks) {
   let need = 0;
   let have = 0;
   for (let y = 0; y < puzzle.height; y += 1) {
     for (let x = 0; x < puzzle.width; x += 1) {
-      if (puzzle.solution[y][x] === FILLED) { need += 1; if (marks[y][x] === FILLED) have += 1; }
+      if (puzzle.solution[y][x] !== EMPTY) { need += 1; if (fillColor(marks[y][x]) === puzzle.solution[y][x]) have += 1; }
     }
   }
   return { have, need };

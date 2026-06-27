@@ -81,6 +81,10 @@
 
 .s3-cell.s3-blank { color: #d3d6d1; }
 .s3-cell.s3-fill { background: var(--s3-fg); color: #fffdf7; }
+/* Two-colour: colour B is a distinct teal fill; its clues are tinted to match (A clues stay dark). */
+.s3-cell.s3-fill-b { background: #2e7d8a; color: #f3fbfd; }
+.s3-clue.s3-clue-b { color: #1f6f7d; font-weight: 700; }
+.s3-clue.s3-clue-a { color: var(--s3-fg); font-weight: 700; }
 .s3-cell.s3-mark { color: #c06a5a; }
 .s3-cell.s3-cursor { outline: 2px solid #e08a2e; outline-offset: -2px; position: relative; z-index: 1; }
 .s3-cell.s3-wrong { animation: s3-wrong 1.4s ease-out; }

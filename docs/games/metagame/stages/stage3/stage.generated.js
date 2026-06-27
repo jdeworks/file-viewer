@@ -169,6 +169,7 @@ function makeRng(seed) {
 var UNKNOWN = -1;
 var EMPTY = 0;
 var FILLED = 1;
+var COLOR_B = 2;
 function runLengths(line) {
   const out = [];
   let run = 0;
@@ -310,9 +311,169 @@ function makePuzzle(seed, { width = 5, height = 5, hard = 0 } = {}) {
   return fallback(width, height);
 }
 
+// ../../docs/games/metagame/stages/stage3/s3twocolor.js
+var TWOCOLOR_AT = 6;
+var TWOCOLOR_MAX = 9;
+function colorRuns(line) {
+  const out = [];
+  let len = 0;
+  let col = 0;
+  for (const v of line) {
+    if (v === EMPTY) {
+      if (len) out.push({ len, color: col });
+      len = 0;
+      col = 0;
+    } else if (v === col) {
+      len += 1;
+    } else {
+      if (len) out.push({ len, color: col });
+      col = v;
+      len = 1;
+    }
+  }
+  if (len) out.push({ len, color: col });
+  return out;
+}
+function minSpan(clues, ci) {
+  let need = clues[ci].len;
+  for (let k = ci + 1; k < clues.length; k += 1) {
+    need += (clues[k].color === clues[k - 1].color ? 1 : 0) + clues[k].len;
+  }
+  return need;
+}
+var ARR_CACHE2 = /* @__PURE__ */ new Map();
+function colorArrangements(n, clues) {
+  const key2 = n + ":" + clues.map((c) => c.len + "." + c.color).join(",");
+  const hit = ARR_CACHE2.get(key2);
+  if (hit) return hit;
+  const out = [];
+  function rec(pos, ci, acc) {
+    if (ci === clues.length) {
+      out.push(acc.slice());
+      return;
+    }
+    const { len, color } = clues[ci];
+    const need = minSpan(clues, ci);
+    for (let s = pos; s + need <= n; s += 1) {
+      const next = acc.slice();
+      for (let i = s; i < s + len; i += 1) next[i] = color;
+      const gap = ci + 1 < clues.length && clues[ci + 1].color === color ? 1 : 0;
+      rec(s + len + gap, ci + 1, next);
+    }
+  }
+  rec(0, 0, new Int8Array(n));
+  ARR_CACHE2.set(key2, out);
+  return out;
+}
+function colorLineSolve(cells, clues) {
+  const n = cells.length;
+  const arrs = colorArrangements(n, clues);
+  const poss = Array.from({ length: n }, () => /* @__PURE__ */ new Set());
+  let any = false;
+  for (const arr of arrs) {
+    let okc = true;
+    for (let i = 0; i < n; i += 1) {
+      if (cells[i] !== UNKNOWN && cells[i] !== arr[i]) {
+        okc = false;
+        break;
+      }
+    }
+    if (!okc) continue;
+    any = true;
+    for (let i = 0; i < n; i += 1) poss[i].add(arr[i]);
+  }
+  if (!any) return null;
+  const out = cells.slice();
+  let changed = false;
+  for (let i = 0; i < n; i += 1) {
+    if (poss[i].size === 1) {
+      const v = [...poss[i]][0];
+      if (out[i] !== v) {
+        out[i] = v;
+        changed = true;
+      }
+    }
+  }
+  return { out, changed };
+}
+function colorSolve(rowClues, colClues) {
+  const H = rowClues.length;
+  const W = colClues.length;
+  const grid = Array.from({ length: H }, () => new Array(W).fill(UNKNOWN));
+  let changed = true;
+  let passes = 0;
+  while (changed) {
+    changed = false;
+    passes += 1;
+    if (passes > 2e3) break;
+    for (let r = 0; r < H; r += 1) {
+      const res = colorLineSolve(grid[r], rowClues[r]);
+      if (!res) return null;
+      if (res.changed) {
+        grid[r] = res.out;
+        changed = true;
+      }
+    }
+    for (let c = 0; c < W; c += 1) {
+      const col = grid.map((row) => row[c]);
+      const res = colorLineSolve(col, colClues[c]);
+      if (!res) return null;
+      if (res.changed) {
+        for (let r = 0; r < H; r += 1) grid[r][c] = res.out[r];
+        changed = true;
+      }
+    }
+  }
+  const solved = grid.every((row) => row.every((v) => v !== UNKNOWN));
+  return { grid, solved, passes };
+}
+function cluesOf2(sol, width) {
+  const rowClues = sol.map(colorRuns);
+  const colClues = [];
+  for (let c = 0; c < width; c += 1) colClues.push(colorRuns(sol.map((row) => row[c])));
+  return { rowClues, colClues };
+}
+function fallback2(width, height) {
+  const sol = Array.from({ length: height }, (_, r) => new Array(width).fill(r % 2 === 0 ? FILLED : COLOR_B));
+  const { rowClues, colClues } = cluesOf2(sol, width);
+  return { width, height, solution: sol, rowClues, colClues, seed: "tc-fallback", difficulty: 1, twoColor: true, isFallback: true };
+}
+function attempt2(seed, width, height, density, maxTries) {
+  for (let n = 0; n < maxTries; n += 1) {
+    const rng = makeRng(`${seed}:${n}`);
+    const sol = Array.from({ length: height }, () => Array.from({ length: width }, () => {
+      if (rng.float() >= density) return EMPTY;
+      return rng.float() < 0.5 ? FILLED : COLOR_B;
+    }));
+    let filled = 0;
+    let hasA = false;
+    let hasB = false;
+    for (const row of sol) for (const v of row) {
+      if (v) filled += 1;
+      if (v === FILLED) hasA = true;
+      if (v === COLOR_B) hasB = true;
+    }
+    if (!hasA || !hasB || filled < Math.round(width * height * 0.2)) continue;
+    const { rowClues, colClues } = cluesOf2(sol, width);
+    const res = colorSolve(rowClues, colClues);
+    if (res && res.solved) return { width, height, solution: sol, rowClues, colClues, seed: `${seed}:${n}`, difficulty: res.passes, twoColor: true };
+  }
+  return null;
+}
+function makeTwoColorPuzzle(seed, { width = 7, height = 7 } = {}) {
+  const w = Math.min(TWOCOLOR_MAX, width);
+  const h = Math.min(TWOCOLOR_MAX, height);
+  for (const density of [0.6, 0.55, 0.5, 0.45, 0.4]) {
+    const p = attempt2(`${seed}:d${Math.round(density * 100)}`, w, h, density, 240);
+    if (p) return p;
+  }
+  return fallback2(w, h);
+}
+
 // ../../docs/games/metagame/stages/stage3/board.js
-var CH = { [FILLED]: "#", [EMPTY]: "x", [UNKNOWN]: "." };
-var FROM_CH = { "#": FILLED, x: EMPTY, ".": UNKNOWN };
+var CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
+var FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
+var fillColor = (v) => v === FILLED ? FILLED : v === COLOR_B ? COLOR_B : EMPTY;
 var BODY_SOLVES = 13;
 function sizeForRun(run, shop) {
   const cap = 12 + Number((shop || {}).overclock || 0);
@@ -324,15 +485,18 @@ function corruptionForRun(run) {
 }
 function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruptionForRun(run) });
+  const corruption = corruptionForRun(run);
+  if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
+  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
 }
 function applyPrefetch(board, count) {
   if (!count) return board;
   let done = 0;
   for (let y = 0; y < board.puzzle.height && done < count; y += 1) {
     for (let x = 0; x < board.puzzle.width && done < count; x += 1) {
-      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) {
-        board.marks[y][x] = FILLED;
+      const sol = board.puzzle.solution[y][x];
+      if (sol !== EMPTY && board.marks[y][x] !== sol) {
+        board.marks[y][x] = sol;
         done += 1;
       }
     }
@@ -360,18 +524,19 @@ function createBoard(puzzle, savedMarks) {
 function isSolved(puzzle, marks) {
   for (let y = 0; y < puzzle.height; y += 1) {
     for (let x = 0; x < puzzle.width; x += 1) {
-      if (puzzle.solution[y][x] === FILLED !== (marks[y][x] === FILLED)) return false;
+      if (fillColor(puzzle.solution[y][x]) !== fillColor(marks[y][x])) return false;
     }
   }
   return true;
 }
-function setCell(board, x, y, mark) {
+function setCell(board, x, y, mark, color = FILLED) {
   if (board.solved) return false;
   const cur = board.marks[y][x];
-  const target = mark ? EMPTY : FILLED;
+  const target = mark ? EMPTY : color;
   board.marks[y][x] = cur === target ? UNKNOWN : target;
   board.solved = isSolved(board.puzzle, board.marks);
-  const wrong = !mark && board.marks[y][x] === FILLED && board.puzzle.solution[y][x] !== FILLED;
+  const placed = fillColor(board.marks[y][x]);
+  const wrong = !mark && placed !== EMPTY && placed !== fillColor(board.puzzle.solution[y][x]);
   return wrong;
 }
 function moveCursor(board, dx, dy) {
@@ -380,16 +545,17 @@ function moveCursor(board, dx, dy) {
 }
 function lineDone(puzzle, marks, kind, i) {
   if (kind === "row") {
-    for (let x = 0; x < puzzle.width; x += 1) if (puzzle.solution[i][x] === FILLED !== (marks[i][x] === FILLED)) return false;
+    for (let x = 0; x < puzzle.width; x += 1) if (fillColor(puzzle.solution[i][x]) !== fillColor(marks[i][x])) return false;
     return true;
   }
-  for (let y = 0; y < puzzle.height; y += 1) if (puzzle.solution[y][i] === FILLED !== (marks[y][i] === FILLED)) return false;
+  for (let y = 0; y < puzzle.height; y += 1) if (fillColor(puzzle.solution[y][i]) !== fillColor(marks[y][i])) return false;
   return true;
 }
 function firstHintCell(board) {
   for (let y = 0; y < board.puzzle.height; y += 1) {
     for (let x = 0; x < board.puzzle.width; x += 1) {
-      if (board.puzzle.solution[y][x] === FILLED && board.marks[y][x] !== FILLED) return { x, y };
+      const sol = board.puzzle.solution[y][x];
+      if (sol !== EMPTY && fillColor(board.marks[y][x]) !== sol) return { x, y, color: sol };
     }
   }
   return null;
@@ -398,7 +564,8 @@ function wrongCells(board) {
   const out = [];
   for (let y = 0; y < board.puzzle.height; y += 1) {
     for (let x = 0; x < board.puzzle.width; x += 1) {
-      if (board.marks[y][x] === FILLED && board.puzzle.solution[y][x] !== FILLED) out.push({ x, y });
+      const placed = fillColor(board.marks[y][x]);
+      if (placed !== EMPTY && placed !== fillColor(board.puzzle.solution[y][x])) out.push({ x, y });
     }
   }
   return out;
@@ -408,9 +575,9 @@ function progress(puzzle, marks) {
   let have = 0;
   for (let y = 0; y < puzzle.height; y += 1) {
     for (let x = 0; x < puzzle.width; x += 1) {
-      if (puzzle.solution[y][x] === FILLED) {
+      if (puzzle.solution[y][x] !== EMPTY) {
         need += 1;
-        if (marks[y][x] === FILLED) have += 1;
+        if (fillColor(marks[y][x]) === puzzle.solution[y][x]) have += 1;
       }
     }
   }
@@ -418,9 +585,11 @@ function progress(puzzle, marks) {
 }
 
 // ../../docs/games/metagame/stages/stage3/grid.js
-var GLYPH = { [FILLED]: "#", [EMPTY]: "✕", [UNKNOWN]: "·" };
-var CLASS = { [FILLED]: "s3-fill", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
-var marksFilled = (marks, x, y) => marks[y][x] === FILLED;
+var GLYPH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "✕", [UNKNOWN]: "·" };
+var CLASS = { [FILLED]: "s3-fill", [COLOR_B]: "s3-fill-b", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
+var marksFilled = (marks, x, y) => marks[y][x] === FILLED || marks[y][x] === COLOR_B;
+var clueLen = (c) => typeof c === "object" ? c.len : c;
+var clueColor = (c) => typeof c === "object" ? c.color : 0;
 function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
   const rowDisp = rowClues.map((c) => c.length ? c : [0]);
@@ -436,19 +605,24 @@ function buildGrid(puzzle, handlers) {
     el.style.gridRow = String(row);
     wrap.append(el);
   };
-  const colClueEls = colDisp.map(() => []);
-  colDisp.forEach((clues, c) => clues.forEach((n, k) => {
+  const clueEl = (n) => {
     const el = document.createElement("span");
     el.className = "s3-clue";
-    el.textContent = String(n);
+    el.textContent = String(clueLen(n));
+    const col = clueColor(n);
+    if (col === FILLED) el.classList.add("s3-clue-a");
+    else if (col === COLOR_B) el.classList.add("s3-clue-b");
+    return el;
+  };
+  const colClueEls = colDisp.map(() => []);
+  colDisp.forEach((clues, c) => clues.forEach((n, k) => {
+    const el = clueEl(n);
     place(el, maxRow + c + 1, maxCol - clues.length + k + 1);
     colClueEls[c].push(el);
   }));
   const rowClueEls = rowDisp.map(() => []);
   rowDisp.forEach((clues, r) => clues.forEach((n, k) => {
-    const el = document.createElement("span");
-    el.className = "s3-clue";
-    el.textContent = String(n);
+    const el = clueEl(n);
     place(el, maxRow - clues.length + k + 1, maxCol + r + 1);
     rowClueEls[r].push(el);
   }));
@@ -621,6 +795,7 @@ function installStage3Hook(api) {
 // ../../docs/games/metagame/stages/stage3/s3volatile.js
 var VOLATILE_AT = 2;
 var key = (x, y) => `${x},${y}`;
+var isFill = (v) => v !== UNKNOWN && v !== EMPTY;
 function decayWindow(corruption) {
   return Math.max(3, 8 - Number(corruption || 0));
 }
@@ -633,7 +808,7 @@ function initVolatile(board, corruption, seed) {
   const filledCells = [];
   for (let y = 0; y < board.puzzle.height; y += 1) {
     for (let x = 0; x < board.puzzle.width; x += 1) {
-      if (board.puzzle.solution[y][x] === FILLED) filledCells.push(key(x, y));
+      if (board.puzzle.solution[y][x] !== EMPTY) filledCells.push(key(x, y));
     }
   }
   const n = volatileCount(corruption, filledCells.length);
@@ -646,7 +821,7 @@ function initVolatile(board, corruption, seed) {
   board.decayWindow = decayWindow(corruption);
   for (const k of board.volatile) {
     const [x, y] = k.split(",").map(Number);
-    if (board.marks[y][x] === FILLED) board.locked.add(k);
+    if (isFill(board.marks[y][x])) board.locked.add(k);
   }
   return board;
 }
@@ -659,7 +834,7 @@ function lockCell(board, x, y) {
   if (!board.volatile) return false;
   const k = key(x, y);
   if (!board.volatile.has(k) || board.locked.has(k)) return false;
-  if (board.marks[y][x] !== FILLED) return false;
+  if (!isFill(board.marks[y][x])) return false;
   board.locked.add(k);
   board.volFilledAt.delete(k);
   return true;
@@ -675,7 +850,7 @@ function tickVolatile(board, isSolvedFn) {
     }
     if (board.ticks - at >= board.decayWindow) {
       const [x, y] = k.split(",").map(Number);
-      if (board.marks[y][x] === FILLED) {
+      if (isFill(board.marks[y][x])) {
         board.marks[y][x] = UNKNOWN;
         reverted.push({ x, y });
       }
@@ -764,7 +939,7 @@ function renderStage3(ctx) {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space fill · x mark · l lock volatile · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
@@ -822,19 +997,19 @@ function renderStage3(ctx) {
     }
     initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
-    grid = buildGrid(puzzle, { onCell: (x, y, mark) => {
+    grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => {
       board.cursor = { x, y };
-      applyCell(x, y, mark);
+      applyCell(x, y, mark, colorB ? COLOR_B : FILLED);
     } });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
   }
-  function applyCell(x, y, mark) {
+  function applyCell(x, y, mark, color = FILLED) {
     if (board.solved) return;
     const reverted = tickVolatile(board, isSolved);
-    const wrong = setCell(board, x, y, mark);
+    const wrong = setCell(board, x, y, mark, color);
     if (wrong) board.mistakes = (board.mistakes || 0) + 1;
-    if (!mark && board.marks[y][x] === FILLED) noteFill(board, x, y);
+    if (!mark && board.marks[y][x] !== UNKNOWN) noteFill(board, x, y);
     pressureMove(board.decay);
     if (wrong) pressureWrong(board.decay);
     state.run.marks = encodeMarks(board.marks);
@@ -899,8 +1074,9 @@ function renderStage3(ctx) {
     setText(fields.registers, state.registers);
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
-    const size = sizeForRun(state.run, state.shopUpgrades);
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)} · ${rating(board.puzzle.difficulty)}`);
+    const size = board.puzzle.width;
+    const mode = board.puzzle.twoColor ? " · 2-colour" : "";
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
@@ -938,9 +1114,9 @@ function renderStage3(ctx) {
     const cell = firstHintCell(board);
     if (!cell) return;
     board.hintsUsed = (board.hintsUsed || 0) + 1;
-    board.cursor = { ...cell };
+    board.cursor = { x: cell.x, y: cell.y };
     pushLog(state, "oracle reveals a cell.");
-    applyCell(cell.x, cell.y, false);
+    applyCell(cell.x, cell.y, false, cell.color || FILLED);
   }
   function useCheck() {
     if (board.solved || (board.checksUsed || 0) >= upgradeLevel(state, "parity")) return;
@@ -981,9 +1157,14 @@ function renderStage3(ctx) {
       grid.update(board);
       return;
     }
-    if (event.key === " " || event.key === "f" || event.key === "F") {
+    if (event.key === " " || event.key === "f" || event.key === "F" || event.key === "1") {
       event.preventDefault();
-      applyCell(board.cursor.x, board.cursor.y, false);
+      applyCell(board.cursor.x, board.cursor.y, false, FILLED);
+      return;
+    }
+    if (event.key === "g" || event.key === "G" || event.key === "2") {
+      event.preventDefault();
+      applyCell(board.cursor.x, board.cursor.y, false, COLOR_B);
       return;
     }
     if (event.key === "x" || event.key === "X") {
@@ -1025,7 +1206,8 @@ function renderStage3(ctx) {
     if (!board || board.solved) return false;
     for (let y = 0; y < board.puzzle.height; y += 1) {
       for (let x = 0; x < board.puzzle.width; x += 1) {
-        board.marks[y][x] = board.puzzle.solution[y][x] === FILLED ? FILLED : UNKNOWN;
+        const sol = board.puzzle.solution[y][x];
+        board.marks[y][x] = sol ? sol : UNKNOWN;
       }
     }
     board.solved = isSolved(board.puzzle, board.marks);

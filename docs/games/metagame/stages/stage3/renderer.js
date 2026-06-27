@@ -2,8 +2,8 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
-import { FILLED, UNKNOWN } from "./nonogram.js";
+import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, wrongCells } from "./board.js";
+import { FILLED, COLOR_B, UNKNOWN } from "./nonogram.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
 import { installStage3Hook } from "./s3debug.js";
 import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
@@ -38,7 +38,7 @@ export function renderStage3(ctx) {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space fill · x mark · l lock volatile · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
@@ -95,17 +95,17 @@ export function renderStage3(ctx) {
     initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
     // Decay clock (corruption ≥ 4): per-snapshot pressure meter — cross it and this snapshot fails.
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
-    grid = buildGrid(puzzle, { onCell: (x, y, mark) => { board.cursor = { x, y }; applyCell(x, y, mark); } });
+    grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => { board.cursor = { x, y }; applyCell(x, y, mark, colorB ? COLOR_B : FILLED); } });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
   }
 
-  function applyCell(x, y, mark) {
+  function applyCell(x, y, mark, color = FILLED) {
     if (board.solved) return;
     const reverted = tickVolatile(board, isSolved); // advance the move clock; decay overdue volatiles
-    const wrong = setCell(board, x, y, mark);
+    const wrong = setCell(board, x, y, mark, color);
     if (wrong) board.mistakes = (board.mistakes || 0) + 1; // a wrong fill
-    if (!mark && board.marks[y][x] === FILLED) noteFill(board, x, y); // start this cell's decay timer
+    if (!mark && board.marks[y][x] !== UNKNOWN) noteFill(board, x, y); // start this cell's decay timer
     pressureMove(board.decay);
     if (wrong) pressureWrong(board.decay);
     state.run.marks = encodeMarks(board.marks);
@@ -167,8 +167,9 @@ export function renderStage3(ctx) {
     setText(fields.registers, state.registers);
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
-    const size = sizeForRun(state.run, state.shopUpgrades);
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)} · ${rating(board.puzzle.difficulty)}`);
+    const size = board.puzzle.width;
+    const mode = board.puzzle.twoColor ? " · 2-colour" : "";
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
@@ -199,9 +200,9 @@ export function renderStage3(ctx) {
     const cell = firstHintCell(board);
     if (!cell) return;
     board.hintsUsed = (board.hintsUsed || 0) + 1;
-    board.cursor = { ...cell };
+    board.cursor = { x: cell.x, y: cell.y };
     pushLog(state, "oracle reveals a cell.");
-    applyCell(cell.x, cell.y, false);
+    applyCell(cell.x, cell.y, false, cell.color || FILLED);
   }
 
   // Parity check: flag any wrong fills (cells you filled that should be empty), costing one check.
@@ -235,7 +236,8 @@ export function renderStage3(ctx) {
       grid.update(board);
       return;
     }
-    if (event.key === " " || event.key === "f" || event.key === "F") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false); return; }
+    if (event.key === " " || event.key === "f" || event.key === "F" || event.key === "1") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false, FILLED); return; }
+    if (event.key === "g" || event.key === "G" || event.key === "2") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false, COLOR_B); return; }
     if (event.key === "x" || event.key === "X") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, true); return; }
     if (event.key === "l" || event.key === "L") { event.preventDefault(); lockUnderCursor(); }
   };
@@ -265,7 +267,8 @@ export function renderStage3(ctx) {
     if (!board || board.solved) return false;
     for (let y = 0; y < board.puzzle.height; y += 1) {
       for (let x = 0; x < board.puzzle.width; x += 1) {
-        board.marks[y][x] = board.puzzle.solution[y][x] === FILLED ? FILLED : UNKNOWN;
+        const sol = board.puzzle.solution[y][x]; // 0 / 1 (A) / 2 (B)
+        board.marks[y][x] = sol ? sol : UNKNOWN;
       }
     }
     board.solved = isSolved(board.puzzle, board.marks);

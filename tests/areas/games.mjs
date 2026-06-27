@@ -755,6 +755,14 @@ export async function run(ctx) {
   const s3Body = await page.evaluate(() => window.__fvStage3.bodySolver());
   if (s3Body.reached && s3Body.corruption >= 8) pass('Stage 3 body: solved snapshots to peak corruption 8 (' + s3Body.solved + ' solves)');
   else fail('Stage 3 body solver: ' + JSON.stringify(s3Body));
+  // The deep tiers are live: the corruption-8 snapshot now on screen is a two-colour nonogram (the
+  // body solver fast-forwarded through volatile cells + the decay clock + two-colour to get here).
+  const s3Tiers = await page.evaluate(() => ({
+    bClues: document.querySelectorAll('.s3-clue.s3-clue-b').length,
+    mode: document.querySelector('[data-field="size"]').textContent,
+  }));
+  if (s3Tiers.bClues > 0 && /2-colour/.test(s3Tiers.mode)) pass('Stage 3 two-colour snapshot renders colour-B clues at peak corruption');
+  else fail('Stage 3 two-colour tier not rendered: ' + JSON.stringify(s3Tiers));
   // Body done but key not yet restored → still LOCKED.
   const s3MidLock = await page.evaluate(() => window.__fvStage3.state().boss.unlocked);
   if (!s3MidLock) pass('Stage 3 boss stays locked after the body until the diff un-cheat'); else fail('Stage 3 boss unlocked without the diff');

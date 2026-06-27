@@ -8,11 +8,12 @@
 // board is ALWAYS solvable (lock every volatile cell as you fill it), so uniqueness is preserved.
 
 import { makeRng } from "./rng.js";
-import { FILLED, UNKNOWN } from "./nonogram.js";
+import { EMPTY, UNKNOWN } from "./nonogram.js";
 
 export const VOLATILE_AT = 2; // corruption level at which volatile cells appear
 
 const key = (x, y) => `${x},${y}`;
+const isFill = (v) => v !== UNKNOWN && v !== EMPTY; // a filled cell of either colour
 
 // How many moves a freshly-filled volatile cell survives before decaying — tighter as corruption
 // rises (8 - corruption, floored at 3): c2 → 6 moves, c8 → 3 moves.
@@ -34,7 +35,7 @@ export function initVolatile(board, corruption, seed) {
   const filledCells = [];
   for (let y = 0; y < board.puzzle.height; y += 1) {
     for (let x = 0; x < board.puzzle.width; x += 1) {
-      if (board.puzzle.solution[y][x] === FILLED) filledCells.push(key(x, y));
+      if (board.puzzle.solution[y][x] !== EMPTY) filledCells.push(key(x, y));
     }
   }
   const n = volatileCount(corruption, filledCells.length);
@@ -48,7 +49,7 @@ export function initVolatile(board, corruption, seed) {
   // Any volatile cell already filled (e.g. by Prefetch) is locked for free so prefetch can't decay.
   for (const k of board.volatile) {
     const [x, y] = k.split(",").map(Number);
-    if (board.marks[y][x] === FILLED) board.locked.add(k);
+    if (isFill(board.marks[y][x])) board.locked.add(k);
   }
   return board;
 }
@@ -65,7 +66,7 @@ export function lockCell(board, x, y) {
   if (!board.volatile) return false;
   const k = key(x, y);
   if (!board.volatile.has(k) || board.locked.has(k)) return false;
-  if (board.marks[y][x] !== FILLED) return false;
+  if (!isFill(board.marks[y][x])) return false;
   board.locked.add(k);
   board.volFilledAt.delete(k);
   return true;
@@ -81,7 +82,7 @@ export function tickVolatile(board, isSolvedFn) {
     if (board.locked.has(k)) { board.volFilledAt.delete(k); continue; }
     if (board.ticks - at >= board.decayWindow) {
       const [x, y] = k.split(",").map(Number);
-      if (board.marks[y][x] === FILLED) { board.marks[y][x] = UNKNOWN; reverted.push({ x, y }); }
+      if (isFill(board.marks[y][x])) { board.marks[y][x] = UNKNOWN; reverted.push({ x, y }); }
       board.volFilledAt.delete(k);
     }
   }
