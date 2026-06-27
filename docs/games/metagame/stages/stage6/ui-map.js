@@ -127,8 +127,10 @@ export function mapView(run) {
 
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
+  const keyCount = run.keys?.length || 0;
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
     <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
+    <span title="true-ending keys (untouchable elite · skip a reward · sacrificial rest)">keys ${"⚷".repeat(keyCount)}${keyCount}/3</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
@@ -174,9 +176,12 @@ export function deathView(state, run) {
 export function wonView(state, run) {
   const el = document.createElement("div");
   el.className = "s6db-end s6db-end--won";
+  const trueEnding = Boolean(run?.trueEnding);
   el.innerHTML = `
-    <h2>The connection accepted a shared rule</h2>
-    <p>Six acts negotiated. The archive lets you pass.</p>
+    <h2>${trueEnding ? "The Kernel of Refusal yields" : "The connection accepted a shared rule"}</h2>
+    <p>${trueEnding
+      ? "Three keys turned in the lock. Past the accepted handshake, the kernel that refused everything finally answers. This is the true ending."
+      : "Six acts negotiated. The archive lets you pass."}</p>
     <dl class="s6db-meta-grid">
       <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>

@@ -16,6 +16,7 @@
 
 import { makeTrackedRng } from "./combat-rng.js";
 import { rewireBossCombat } from "./boss-combat.js";
+import { rewireSuperboss } from "./superboss.js";
 
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -58,7 +59,10 @@ export function snapshotCombat(combat) {
     pending: clone(combat.pending || []),
     boss: combat.bossPhase
       ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 }
-      : null
+      : null,
+    // The key-gated superboss only needs its phase index persisted; its per-phase HP/script are
+    // already in the cloned enemy. The advancePhase closure is rebuilt on restore via rewireSuperboss.
+    superboss: combat.superPhase != null ? { phase: combat.superPhase } : null
   };
 }
 
@@ -107,6 +111,10 @@ export function restoreCombat(snapshot, { relics = [] } = {}) {
     combat.bossHpMult = s.boss.hpMult || 1;
     combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
+  }
+  if (s.superboss) {
+    combat.superPhase = s.superboss.phase || 0;
+    rewireSuperboss(combat);
   }
   return combat;
 }

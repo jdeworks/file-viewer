@@ -6,6 +6,7 @@
 // defeat the boss with the deck built across acts 1–3.
 
 import { createCombat, playCard, endTurn, makeRng, applyPotionEffect } from "./combat.js";
+import { cardById } from "./cards.js";
 import { instantiateEnemy } from "./enemies.js";
 import { relicsFor } from "./relics.js";
 import { potionById } from "./potions.js";
@@ -19,6 +20,8 @@ import {
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
 import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
+import { SUPERBOSS_ID, wireSuperboss } from "./superboss.js";
+import { installStage6TestHook, removeStage6TestHook } from "./testhook.js";
 import { snapshotCombat, restoreCombat } from "./combat-persist.js";
 import { createRun as createRunState } from "../../shared/run-state.js";
 import { createAscension } from "../../shared/ascension.js";
@@ -69,46 +72,17 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   root.addEventListener("click", handleClick);
   route();
 
-  // TEST/DEBUG hook (not a player affordance, not a hub button): seat a run directly at the
-  // act-4 boss so the smoke harness can reach the negotiation in one hop instead of 19 fights.
-  // It only fast-forwards position — it does NOT bypass the ch9 un-cheat or the real-deck fight.
-  window.__fvStage6 = {
-    // TEST/DEBUG: start a run in a given mode ("standard"|"daily"|"custom"). Returns the run seed +
-    // mode so a test can assert that the same date/custom key reproduces the same seed.
-    beginRun(opts) {
-      beginRun(opts || {});
-      commit();
-      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
-    },
-    // TEST/DEBUG: pin the daily-seed clock so a daily run is reproducible in the harness.
-    setDailyKey(key) { dailyKeyOverride = key ? String(key) : null; },
-    // TEST/DEBUG: the current run's self-competition score (or the meta high-water marks).
-    score() { return { run: state.run ? runScore(state.run) : 0, best: state.meta.bestScore || 0, last: state.meta.lastScore || 0, lastMode: state.meta.lastMode || null }; },
-    jumpToBoss(deck) {
-      if (!state.run) beginRun();
-      seatAtFinalBoss(state.run, deck);
-      state.ui.screen = "run";
-      if (combatRun) combatRun.reset(); // ensure a fresh boss fight, never a resumed snapshot
-      combat = null;
-      commit();
-      return state.run.currentNodeId;
-    },
-    // TEST/DEBUG: drive the in-run boss fight with a correct handshake strategy using the REAL
-    // engine + acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
-    autoNegotiate(maxTurns = 80) {
-      const run = state.run;
-      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
-      if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
-      runAutoNegotiate(combat, maxTurns);
-      const enemyHp = combat.enemy?.hp;
-      const result = combat.result;
-      if (combat.over) finishCombat(run);
-      commit();
-      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
-    }
-  };
+  // TEST/DEBUG hook (not a player affordance, not a hub button). It only fast-forwards position +
+  // replays correct play through the REAL engine — it never bypasses the ch9 un-cheat. Extracted to
+  // testhook.js; it closes over the mutable `combat` via accessors.
+  installStage6TestHook({
+    state, combatRun, runScore, seatAtFinalBoss, runAutoNegotiate,
+    playCard, endTurn, cardById, beginRun, commit, makeCombat, finishCombat,
+    getCombat: () => combat, setCombat: (c) => { combat = c; },
+    setDailyKeyOverride: (v) => { dailyKeyOverride = v; }
+  });
 
-  return { repaint: route, destroy() { if (combatRun) combatRun.destroy(); if (window.__fvStage6) delete window.__fvStage6; root.remove(); } };
+  return { repaint: route, destroy() { if (combatRun) combatRun.destroy(); removeStage6TestHook(); root.remove(); } };
 
   // ── routing ──────────────────────────────────────────────────────────────────────────────────
   function route() {
@@ -117,8 +91,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     // run.status === "boss" case below) — there is no standalone hub-reachable boss screen.
     if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState(), ascInfo())); }
     switch (run.status) {
-      // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
-      case "combat": case "boss": return mountCombat(run);
+      // Every boss — including the act-6 finale and the key-gated superboss — is a real-deck fight.
+      case "combat": case "boss": case "superboss": return mountCombat(run);
       case "reward": combat = null; return mount(rewardView(run));
       case "boss-reward": combat = null; return mount(bossRewardView(run));
       case "rest": combat = null; return mount(restView(run));
@@ -183,10 +157,14 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every
     // Signal deals 0 (the load-bearing un-cheat); reading the codex rebuilds this combat unlocked.
     if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
+    // The key-gated superboss: a multi-phase real-deck fight (no lock, no un-cheat — pure bonus).
+    else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
     return c;
   }
 
   function finishCombat(run) {
+    // The key-gated superboss resolves on its own path (it has no map node).
+    if (run.status === "superboss" || run.atSuperboss) return finishSuperboss(run);
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
     const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
@@ -201,7 +179,10 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (run.status === "dead" || run.status === "won") recordScore(run);
   }
 
-  // The act-4 boss fell to the real deck: mark the codex gate answered and complete the stage.
+  // The act-6 boss fell to the real deck: mark the codex gate answered. With all 3 keys the run
+  // diverts to the hidden superboss FIRST — stage completion is deferred to finishSuperboss (which
+  // completes the stage on win OR loss, so the superboss is never a progression trap — the gate was
+  // the negotiation, already passed here).
   function finalBossDefeated(run) {
     state.boss.defeated = true;
     state.boss.reached = true;
@@ -210,6 +191,22 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     // Record the ascension clear at the rule level this run actually played under (unlocks the next rung).
     if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    if (run.status === "superboss") return; // defer completion until the true-ending fight resolves
+    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+
+  // Resolve the key-gated superboss (true ending). The negotiation gate was already satisfied, so
+  // the stage completes either way; a win additionally flags the true ending. Pure bonus combat.
+  function finishSuperboss(run) {
+    const win = combat.result === "win";
+    if (combatRun) combatRun.reset();
+    run.hp = Math.max(0, combat.player.hp);
+    combat = null;
+    run.atSuperboss = false;
+    run.superbossCleared = true;
+    if (win && run.hp > 0) { run.status = "won"; run.trueEnding = true; }
+    else run.status = "dead"; // fell to the kernel — but the connection had already accepted you
+    recordScore(run);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
 

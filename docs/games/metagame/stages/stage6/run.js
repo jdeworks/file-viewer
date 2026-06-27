@@ -12,6 +12,7 @@ import { upgradeIdFor } from "./card-upgrades.js";
 import { baseRunConfig, foldAscension, activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
 import { rollRelic, rollRelics, relicById } from "./relics.js";
 import { rollPotion, POTION_DROP_CHANCE } from "./potions.js";
+import { SUPERBOSS_ID } from "./superboss.js";
 // Belt operations live in potions.js; re-export so the renderer/tests keep importing from run.js.
 export { POTION_SLOTS, POTION_COST, addPotion, usePotion, takePotion, buyPotion } from "./potions.js";
 
@@ -73,6 +74,10 @@ export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0
     deck: [...STARTING_DECK],
     relics: [],
     potions: [], // the 2-slot consumable belt (potions.js); persisted with the run
+    keys: [],    // true-ending keys earned this run (3 ⇒ the hidden superboss opens after the boss)
+    atSuperboss: false,   // true while fighting the key-gated superboss
+    superbossCleared: false,
+    trueEnding: false,
     hp: maxHp,
     maxHp,
     handshakes,
@@ -101,6 +106,30 @@ export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0
   return run;
 }
 
+// True-ending keys. Earned at most once each per run; collecting all 3 opens the hidden superboss
+// after the act-6 negotiation. Each rewards a deliberate sacrifice (a roguelike "challenge run"):
+//   untouchable — defeat an ELITE taking ≤ KEY_ELITE_MAX_DMG damage in that fight.
+//   ascetic     — SKIP a card reward at a node (deck-thinning discipline).
+//   sacrifice   — spend a REST on neither heal nor upgrade (thin a card instead).
+export const KEY_UNTOUCHABLE = "untouchable";
+export const KEY_ASCETIC = "ascetic";
+export const KEY_SACRIFICE = "sacrifice";
+export const KEYS_FOR_SUPERBOSS = 3;
+const KEY_ELITE_MAX_DMG = 5;
+
+// Award a key once (deduped). Returns true if newly awarded.
+export function awardKey(run, id) {
+  if (!run) return false;
+  if (!Array.isArray(run.keys)) run.keys = [];
+  if (run.keys.includes(id)) return false;
+  run.keys.push(id);
+  return true;
+}
+
+export function hasAllKeys(run) {
+  return (run?.keys?.length || 0) >= KEYS_FOR_SUPERBOSS;
+}
+
 // Nodes the player may move to next: act start nodes, or the current node's forward edges.
 export function availableNodes(run) {
   const act = run.map.acts[run.act - 1];
@@ -122,6 +151,7 @@ export function moveTo(run, nodeId) {
 // `rng` is REQUIRED — a seeded rng (e.g. `makeRng(hashSeed(seed, nodeId))`). No `Math.random`
 // fallback: which enemy a node spawns must be deterministic from the run seed.
 export function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
+  if (run.atSuperboss) return SUPERBOSS_ID; // the key-gated true-ending fight (synthetic node)
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
   if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : (ACT_BOSSES[run.act] || "kernel-panic");
@@ -130,6 +160,7 @@ export function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run
 
 // Called by the UI once a combat resolves. win=false => the run ends (death restart).
 export function resolveCombat(run, { win, hpRemaining }) {
+  const hpBefore = run.hp; // captured before applying the fight's outcome (for the untouchable key)
   const node = nodeById(run.map, run.currentNodeId);
   if (typeof hpRemaining === "number") run.hp = Math.max(0, hpRemaining);
   if (!win || run.hp <= 0) {
@@ -145,6 +176,8 @@ export function resolveCombat(run, { win, hpRemaining }) {
   if (node.type === "elite") {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
+    // Untouchable key: cleared this elite taking ≤ KEY_ELITE_MAX_DMG damage.
+    if (hpBefore - run.hp <= KEY_ELITE_MAX_DMG) awardKey(run, KEY_UNTOUCHABLE);
   }
   // ~40% of cleared fights also drop a potion to grab (deterministic per node).
   const potionId = rollRewardPotion(run, node.id);
@@ -157,7 +190,7 @@ export function resolveCombat(run, { win, hpRemaining }) {
 export function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
-  else run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0)); // skip keeps the deck thin and pays a little (ascension can zero it)
+  else { run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0)); awardKey(run, KEY_ASCETIC); } // skip keeps the deck thin, pays a little, and earns the ascetic key
   run.pendingReward = null;
   run.status = "map";
   return { ok: true, skipped: !cardId };
@@ -172,8 +205,10 @@ export function rest(run, choice, payload) {
   else if (choice === "upgrade") {
     const r = upgradeDeckCard(run, Number(payload));
     if (!r.ok) return r; // not spent
+  } else if (choice === "remove") {
+    awardKey(run, KEY_SACRIFICE); // a rest spent on neither heal nor upgrade earns the sacrifice key
   }
-  // "remove" (deck thinning) handled by removeCard below; either way the site is spent.
+  // "remove" (deck thinning) is performed by removeCard before this call; either way the site is spent.
   run.clearedIds.push(node.id);
   run.status = "map";
   return { ok: true, hp: run.hp };
@@ -270,6 +305,15 @@ const BOSS_RELIC_CHOICES = 3;
 
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
+    // True ending: the negotiation is won. With all 3 keys, a hidden superboss opens AFTER it (pure
+    // extra combat — NO second un-cheat). It's reached via a synthetic node id; enemyForCurrentNode
+    // returns the superboss while run.atSuperboss is set.
+    if (hasAllKeys(run) && !run.superbossCleared && !run.atSuperboss) {
+      run.atSuperboss = true;
+      run.currentNodeId = `${run.currentNodeId}:superboss`;
+      run.status = "superboss";
+      return { ok: true, status: "superboss" };
+    }
     run.status = "won";
     return { ok: true, status: "won" };
   }

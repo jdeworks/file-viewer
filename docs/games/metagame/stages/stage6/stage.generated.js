@@ -1830,6 +1830,22 @@ var ENEMIES = {
       { label: "Reset — Attack 6, twice", attack: 6, hits: 2 },
       { label: "Silence — Block 10 + Attack 7", block: 10, attack: 7 }
     ]
+  },
+  // The key-gated TRUE-ENDING superboss (superboss.js owns its phase HP/scripts). This base def is a
+  // placeholder; wireSuperboss overrides hp + script per phase. Tier "boss" so it skips enemy mults.
+  "the-kernel-of-refusal": {
+    id: "the-kernel-of-refusal",
+    name: "The Kernel of Refusal",
+    tier: "boss",
+    hp: 50,
+    hpPerAct: 0,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Ordered strike", attack: 6 },
+      { label: "Deferred packet", attack: 8 },
+      { label: "Reorder buffer", block: 8 }
+    ]
   }
 };
 function instantiateEnemy(id, act = 1) {
@@ -2673,6 +2689,54 @@ function foldAscension(baseConfig, level) {
   return acc;
 }
 
+// ../../docs/games/metagame/stages/stage6/superboss.js
+var SUPERBOSS_ID = "the-kernel-of-refusal";
+var SUPERBOSS_PHASE_HP = [50, 55, 60];
+var SUPERBOSS_PHASE_SCRIPTS = [
+  // Phase 1 — SEQUENCE / DELAY: ordered pressure with a guard turn.
+  [
+    { label: "Ordered strike", attack: 6 },
+    { label: "Deferred packet", attack: 8 },
+    { label: "Reorder buffer", block: 8 }
+  ],
+  // Phase 2 — THROUGHPUT / CORRUPTION: punishes a wide turn, then steady attrition.
+  [
+    { label: "Congestion", congest: 2 },
+    { label: "Overflow", attack: 8 },
+    { label: "Corruption tick", attack: 6 }
+  ],
+  // Phase 3 — CHAIN / HANDSHAKE: reflects your turn, then the final refusal.
+  [
+    { label: "Reflection", mirror: 2 },
+    { label: "Recursion strike", attack: 7 },
+    { label: "The final refusal", attack: 9 }
+  ]
+];
+function wireSuperboss(combat) {
+  combat.superPhase = 0;
+  combat.enemy.hp = SUPERBOSS_PHASE_HP[0];
+  combat.enemy.maxHp = SUPERBOSS_PHASE_HP[0];
+  combat.enemy.armor = 0;
+  combat.enemy.script = SUPERBOSS_PHASE_SCRIPTS[0].map((i) => ({ ...i }));
+  combat.enemy.intentIndex = 0;
+  rewireSuperboss(combat);
+  return combat;
+}
+function rewireSuperboss(combat) {
+  combat.advancePhase = (c) => {
+    const next = (c.superPhase || 0) + 1;
+    if (next >= SUPERBOSS_PHASE_HP.length) return false;
+    c.superPhase = next;
+    c.enemy.hp = SUPERBOSS_PHASE_HP[next];
+    c.enemy.maxHp = SUPERBOSS_PHASE_HP[next];
+    c.enemy.script = SUPERBOSS_PHASE_SCRIPTS[next].map((i) => ({ ...i }));
+    c.enemy.intentIndex = 0;
+    c.log = [...c.log || [], `The kernel reshapes — phase ${next + 1}.`].slice(-10);
+    return true;
+  };
+  return combat;
+}
+
 // ../../docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
@@ -2718,6 +2782,12 @@ function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, daily
     relics: [],
     potions: [],
     // the 2-slot consumable belt (potions.js); persisted with the run
+    keys: [],
+    // true-ending keys earned this run (3 ⇒ the hidden superboss opens after the boss)
+    atSuperboss: false,
+    // true while fighting the key-gated superboss
+    superbossCleared: false,
+    trueEnding: false,
     hp: maxHp,
     maxHp,
     handshakes,
@@ -2743,6 +2813,21 @@ function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, daily
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
   return run;
 }
+var KEY_UNTOUCHABLE = "untouchable";
+var KEY_ASCETIC = "ascetic";
+var KEY_SACRIFICE = "sacrifice";
+var KEYS_FOR_SUPERBOSS = 3;
+var KEY_ELITE_MAX_DMG = 5;
+function awardKey(run, id) {
+  if (!run) return false;
+  if (!Array.isArray(run.keys)) run.keys = [];
+  if (run.keys.includes(id)) return false;
+  run.keys.push(id);
+  return true;
+}
+function hasAllKeys(run) {
+  return (run?.keys?.length || 0) >= KEYS_FOR_SUPERBOSS;
+}
 function availableNodes(run) {
   const act = run.map.acts[run.act - 1];
   if (!run.currentNodeId) return act.startIds.map((id) => nodeById(run.map, id));
@@ -2759,12 +2844,14 @@ function moveTo(run, nodeId2) {
   return { ok: true, node };
 }
 function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
+  if (run.atSuperboss) return SUPERBOSS_ID;
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
   if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
   return enemyForNode(node, run.act, rng);
 }
 function resolveCombat(run, { win, hpRemaining }) {
+  const hpBefore = run.hp;
   const node = nodeById(run.map, run.currentNodeId);
   if (typeof hpRemaining === "number") run.hp = Math.max(0, hpRemaining);
   if (!win || run.hp <= 0) {
@@ -2778,6 +2865,7 @@ function resolveCombat(run, { win, hpRemaining }) {
   if (node.type === "elite") {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
+    if (hpBefore - run.hp <= KEY_ELITE_MAX_DMG) awardKey(run, KEY_UNTOUCHABLE);
   }
   const potionId = rollRewardPotion(run, node.id);
   if (potionId) reward.potion = potionId;
@@ -2788,7 +2876,10 @@ function resolveCombat(run, { win, hpRemaining }) {
 function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
-  else run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0));
+  else {
+    run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0));
+    awardKey(run, KEY_ASCETIC);
+  }
   run.pendingReward = null;
   run.status = "map";
   return { ok: true, skipped: !cardId };
@@ -2800,6 +2891,8 @@ function rest(run, choice, payload) {
   else if (choice === "upgrade") {
     const r = upgradeDeckCard(run, Number(payload));
     if (!r.ok) return r;
+  } else if (choice === "remove") {
+    awardKey(run, KEY_SACRIFICE);
   }
   run.clearedIds.push(node.id);
   run.status = "map";
@@ -2873,6 +2966,12 @@ function seatAtFinalBoss(run, deck) {
 var BOSS_RELIC_CHOICES = 3;
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
+    if (hasAllKeys(run) && !run.superbossCleared && !run.atSuperboss) {
+      run.atSuperboss = true;
+      run.currentNodeId = `${run.currentNodeId}:superboss`;
+      run.status = "superboss";
+      return { ok: true, status: "superboss" };
+    }
     run.status = "won";
     return { ok: true, status: "won" };
   }
@@ -3257,6 +3356,119 @@ function playFirstMatch(combat, pred) {
   return false;
 }
 
+// ../../docs/games/metagame/stages/stage6/testhook.js
+function installStage6TestHook(api) {
+  const {
+    state,
+    combatRun,
+    runScore: runScore2,
+    seatAtFinalBoss: seatAtFinalBoss2,
+    runAutoNegotiate,
+    playCard: playCard2,
+    endTurn: endTurn2,
+    cardById: cardById2,
+    beginRun,
+    commit,
+    makeCombat,
+    finishCombat,
+    getCombat,
+    setCombat,
+    setDailyKeyOverride
+  } = api;
+  window.__fvStage6 = {
+    // Start a run in a given mode ("standard"|"daily"|"custom"); returns the derived seed + mode so a
+    // test can assert that the same date/custom key reproduces the same run.
+    beginRun(opts) {
+      beginRun(opts || {});
+      commit();
+      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+    },
+    // Pin the daily-seed clock so a daily run is reproducible in the harness.
+    setDailyKey(key) {
+      setDailyKeyOverride(key ? String(key) : null);
+    },
+    // The current run's self-competition score, plus the meta high-water marks.
+    score() {
+      return {
+        run: state.run ? runScore2(state.run) : 0,
+        best: state.meta.bestScore || 0,
+        last: state.meta.lastScore || 0,
+        lastMode: state.meta.lastMode || null
+      };
+    },
+    // Grant the true-ending keys on the current run (a real run earns them via the
+    // untouchable/ascetic/sacrifice challenges). Returns the key count.
+    grantKeys(n = 3) {
+      if (!state.run) {
+        beginRun();
+        commit();
+      }
+      state.run.keys = ["untouchable", "ascetic", "sacrifice"].slice(0, Math.max(0, Math.min(3, n)));
+      commit();
+      return state.run.keys.length;
+    },
+    // Drive the key-gated superboss to its end with the REAL deck (play all affordable cards each
+    // turn). Not a bypass — it uses the normal engine. Returns the outcome.
+    autoSuperboss(maxTurns = 120) {
+      const run = state.run;
+      if (!run || run.status !== "superboss") return { ok: false, reason: "not-at-superboss" };
+      let combat = getCombat();
+      if (!combat || combat.nodeId !== run.currentNodeId) {
+        combat = makeCombat(run);
+        setCombat(combat);
+      }
+      let turns = 0;
+      while (!combat.over && turns++ < maxTurns) {
+        let guard = 0;
+        while (guard++ < 30 && !combat.over) {
+          const idx = combat.hand.findIndex((id) => {
+            const c = cardById2(id);
+            return c && c.cost <= combat.player.energy;
+          });
+          if (idx < 0) break;
+          playCard2(combat, idx);
+        }
+        if (combat.over) break;
+        endTurn2(combat);
+      }
+      const result = combat.result ?? null;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, status: state.run?.status, trueEnding: Boolean(state.run?.trueEnding), keys: run.keys?.length || 0 };
+    },
+    // Seat a run directly at the act-6 boss so the harness reaches the negotiation in one hop.
+    jumpToBoss(deck) {
+      if (!state.run) beginRun();
+      seatAtFinalBoss2(state.run, deck);
+      state.ui.screen = "run";
+      if (combatRun) combatRun.reset();
+      setCombat(null);
+      commit();
+      return state.run.currentNodeId;
+    },
+    // Drive the in-run boss fight with a correct handshake strategy using the REAL engine +
+    // acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    autoNegotiate(maxTurns = 80) {
+      const run = state.run;
+      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
+      let combat = getCombat();
+      if (!combat || combat.nodeId !== run.currentNodeId) {
+        combat = makeCombat(run);
+        setCombat(combat);
+      }
+      runAutoNegotiate(combat, maxTurns);
+      const enemyHp = combat.enemy?.hp;
+      const result = combat.result;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
+    }
+  };
+}
+function removeStage6TestHook() {
+  if (window.__fvStage6) delete window.__fvStage6;
+}
+
 // ../../docs/games/metagame/stages/stage6/combat-persist.js
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -3294,7 +3506,10 @@ function snapshotCombat(combat) {
     exhaust: [...combat.exhaust || []],
     jammed: [...combat.jammed || []],
     pending: clone(combat.pending || []),
-    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 } : null
+    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 } : null,
+    // The key-gated superboss only needs its phase index persisted; its per-phase HP/script are
+    // already in the cloned enemy. The advancePhase closure is rebuilt on restore via rewireSuperboss.
+    superboss: combat.superPhase != null ? { phase: combat.superPhase } : null
   };
 }
 function restoreCombat(snapshot, { relics = [] } = {}) {
@@ -3339,6 +3554,10 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     combat.bossHpMult = s.boss.hpMult || 1;
     combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
+  }
+  if (s.superboss) {
+    combat.superPhase = s.superboss.phase || 0;
+    rewireSuperboss(combat);
   }
   return combat;
 }
@@ -3631,8 +3850,10 @@ function mapView(run) {
   el.appendChild(grid);
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
+  const keyCount = run.keys?.length || 0;
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
     <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
+    <span title="true-ending keys (untouchable elite · skip a reward · sacrificial rest)">keys ${"⚷".repeat(keyCount)}${keyCount}/3</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
@@ -3674,9 +3895,10 @@ function deathView(state, run) {
 function wonView(state, run) {
   const el = document.createElement("div");
   el.className = "s6db-end s6db-end--won";
+  const trueEnding = Boolean(run?.trueEnding);
   el.innerHTML = `
-    <h2>The connection accepted a shared rule</h2>
-    <p>Six acts negotiated. The archive lets you pass.</p>
+    <h2>${trueEnding ? "The Kernel of Refusal yields" : "The connection accepted a shared rule"}</h2>
+    <p>${trueEnding ? "Three keys turned in the lock. Past the accepted handshake, the kernel that refused everything finally answers. This is the true ending." : "Six acts negotiated. The archive lets you pass."}</p>
     <dl class="s6db-meta-grid">
       <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>
@@ -3973,48 +4195,30 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   };
   root.addEventListener("click", handleClick);
   route();
-  window.__fvStage6 = {
-    // TEST/DEBUG: start a run in a given mode ("standard"|"daily"|"custom"). Returns the run seed +
-    // mode so a test can assert that the same date/custom key reproduces the same seed.
-    beginRun(opts) {
-      beginRun(opts || {});
-      commit();
-      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+  installStage6TestHook({
+    state,
+    combatRun,
+    runScore,
+    seatAtFinalBoss,
+    runAutoNegotiate: autoNegotiate,
+    playCard,
+    endTurn,
+    cardById,
+    beginRun,
+    commit,
+    makeCombat,
+    finishCombat,
+    getCombat: () => combat,
+    setCombat: (c) => {
+      combat = c;
     },
-    // TEST/DEBUG: pin the daily-seed clock so a daily run is reproducible in the harness.
-    setDailyKey(key) {
-      dailyKeyOverride = key ? String(key) : null;
-    },
-    // TEST/DEBUG: the current run's self-competition score (or the meta high-water marks).
-    score() {
-      return { run: state.run ? runScore(state.run) : 0, best: state.meta.bestScore || 0, last: state.meta.lastScore || 0, lastMode: state.meta.lastMode || null };
-    },
-    jumpToBoss(deck) {
-      if (!state.run) beginRun();
-      seatAtFinalBoss(state.run, deck);
-      state.ui.screen = "run";
-      if (combatRun) combatRun.reset();
-      combat = null;
-      commit();
-      return state.run.currentNodeId;
-    },
-    // TEST/DEBUG: drive the in-run boss fight with a correct handshake strategy using the REAL
-    // engine + acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
-    autoNegotiate(maxTurns = 80) {
-      const run = state.run;
-      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
-      if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
-      autoNegotiate(combat, maxTurns);
-      const enemyHp = combat.enemy?.hp;
-      const result = combat.result;
-      if (combat.over) finishCombat(run);
-      commit();
-      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
+    setDailyKeyOverride: (v) => {
+      dailyKeyOverride = v;
     }
-  };
+  });
   return { repaint: route, destroy() {
     if (combatRun) combatRun.destroy();
-    if (window.__fvStage6) delete window.__fvStage6;
+    removeStage6TestHook();
     root.remove();
   } };
   function route() {
@@ -4024,9 +4228,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       return mount(hubView(state, lockState(), ascInfo()));
     }
     switch (run.status) {
-      // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
+      // Every boss — including the act-6 finale and the key-gated superboss — is a real-deck fight.
       case "combat":
       case "boss":
+      case "superboss":
         return mountCombat(run);
       case "reward":
         combat = null;
@@ -4099,9 +4304,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     });
     c.nodeId = run.currentNodeId;
     if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
+    else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
     return c;
   }
   function finishCombat(run) {
+    if (run.status === "superboss" || run.atSuperboss) return finishSuperboss(run);
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
     const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
@@ -4120,6 +4327,21 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
     if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    if (run.status === "superboss") return;
+    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+  function finishSuperboss(run) {
+    const win = combat.result === "win";
+    if (combatRun) combatRun.reset();
+    run.hp = Math.max(0, combat.player.hp);
+    combat = null;
+    run.atSuperboss = false;
+    run.superbossCleared = true;
+    if (win && run.hp > 0) {
+      run.status = "won";
+      run.trueEnding = true;
+    } else run.status = "dead";
+    recordScore(run);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
   function doPrestige() {

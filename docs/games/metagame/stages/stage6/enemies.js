@@ -264,6 +264,19 @@ export const ENEMIES = {
       { label: "Reset — Attack 6, twice", attack: 6, hits: 2 },
       { label: "Silence — Block 10 + Attack 7", block: 10, attack: 7 }
     ]
+  },
+  // The key-gated TRUE-ENDING superboss (superboss.js owns its phase HP/scripts). This base def is a
+  // placeholder; wireSuperboss overrides hp + script per phase. Tier "boss" so it skips enemy mults.
+  "the-kernel-of-refusal": {
+    id: "the-kernel-of-refusal",
+    name: "The Kernel of Refusal",
+    tier: "boss",
+    hp: 50, hpPerAct: 0, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Ordered strike", attack: 6 },
+      { label: "Deferred packet", attack: 8 },
+      { label: "Reorder buffer", block: 8 }
+    ]
   }
 };
 

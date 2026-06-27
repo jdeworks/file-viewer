@@ -986,6 +986,11 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fvStage6.jumpToBoss(
     ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
   ));
+  // Phase I — grant the 3 true-ending keys on this run so the negotiation opens the hidden superboss
+  // (a real run earns them by playing the untouchable/ascetic/sacrifice challenges; this is the
+  // deterministic test path). The superboss is PURE bonus combat — it adds no second un-cheat.
+  const s6keys = await page.evaluate(() => window.__fvStage6.grantKeys(3));
+  if (s6keys === 3) pass('Stage 6 true-ending keys granted (untouchable / ascetic / sacrifice)'); else fail(`Stage 6 keys not granted: ${s6keys}`);
   // It is a real combat (data-play hand), not the retired 3-button puzzle.
   await page.waitForSelector('.s6db-combat .s6db-boss-banner.is-locked', { timeout: 4000 });
   pass('Stage 6 boss is a real-deck fight reached only through a run');
@@ -1004,15 +1009,22 @@ export async function run(ctx) {
       return Boolean(save.actions?.['6.protocol_ch9_read'] && save.achievements?.['stage6.protocol_ch9_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  // With ch9 read the negotiation is unlocked: clear the fight with the real deck (correct handshake).
-  await page.evaluate(() => window.__fvStage6.autoNegotiate());
+  // With ch9 read the negotiation is unlocked: win it with the real deck. With 3 keys, this does NOT
+  // immediately clear the stage — it diverts to the hidden superboss (stage completion is deferred).
+  const s6neg = await page.evaluate(() => window.__fvStage6.autoNegotiate());
+  if (s6neg.bossDefeated && !s6neg.won) pass('Stage 6 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 6 negotiation/diversion wrong: ${JSON.stringify(s6neg)}`);
+  // The superboss is a real-deck multi-phase fight (The Kernel of Refusal), no lock / no un-cheat.
+  await page.waitForSelector('.s6db-combat', { timeout: 4000 });
+  // Drive the superboss to its end with the real deck → the TRUE ending, which now clears the stage.
+  const s6super = await page.evaluate(() => window.__fvStage6.autoSuperboss());
+  if (s6super.ok && s6super.status === 'won' && s6super.trueEnding) pass('Stage 6 key-gated superboss defeated → true ending'); else fail(`Stage 6 superboss not won: ${JSON.stringify(s6super)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(6) && save.unlockedStages?.includes(7);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 6 codex gate clears Protocol Codex via the real-deck negotiation');
+  pass('Stage 6 cleared via real-deck negotiation + key-gated true-ending superboss');
 
   await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
   // The thin-gate bypass is gone: no in-game "inspect GPSInfo" button, and the investigation hook exists.
