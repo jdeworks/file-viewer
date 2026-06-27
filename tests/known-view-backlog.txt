@@ -7,8 +7,6 @@
 elixir-lang
 elm-lang
 elvish-script
-fsharp-lang
-gnuplot-script
 haskell-lang
 idris-lang
 ink-script

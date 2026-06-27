@@ -181,6 +181,8 @@ FULL_UNIT_TESTS=(
   tests/known-forth-lang.test.mjs
   tests/known-eiffel-lang.test.mjs
   tests/known-grain-lang.test.mjs
+  tests/known-gnuplot-script.test.mjs
+  tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
