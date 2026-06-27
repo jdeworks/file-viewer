@@ -5,13 +5,15 @@
 // stage-clear gate is unchanged: read the codex (epub) — without it every Signal deals 0 — then
 // defeat the boss with the deck built across acts 1–3.
 
-import { createCombat, playCard, endTurn, makeRng } from "./combat.js";
+import { createCombat, playCard, endTurn, makeRng, applyPotionEffect } from "./combat.js";
 import { instantiateEnemy } from "./enemies.js";
 import { relicsFor, relicById } from "./relics.js";
+import { potionById } from "./potions.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard, buyRemoval, buyUpgrade, buyRelic, awardRelic,
+  takeReward, takePotion, usePotion, buyPotion, rest, removeCard, closeNode,
+  buyCard, buyRemoval, buyUpgrade, buyRelic, awardRelic,
   prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
@@ -215,7 +217,17 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
     if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); return true; }
+    const potion = event.target.closest("[data-potion]");
+    if (potion && combat && !combat.over && run) {
+      const used = usePotion(run, Number(potion.dataset.potion));
+      if (used.ok) { applyPotionEffect(combat, potionById(used.id)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); }
+      return true;
+    }
     if (!run) return false;
+    const takePot = event.target.closest("[data-take-potion]");
+    if (takePot) { takePotion(run, takePot.dataset.takePotion === "" ? undefined : Number(takePot.dataset.takePotion)); return true; }
+    const buyPot = event.target.closest("[data-buy-potion]");
+    if (buyPot) { buyPotion(run, buyPot.dataset.buyPotion, Number(buyPot.dataset.price)); return true; }
     const node = event.target.closest("[data-node]");
     if (node) { moveTo(run, node.dataset.node); return true; }
     const take = event.target.closest("[data-take]");

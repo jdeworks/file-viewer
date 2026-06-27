@@ -140,6 +140,16 @@ export function endTurn(combat) {
   return combat;
 }
 
+// ── Consumables (potions) ─────────────────────────────────────────────────────────────────────────
+// Apply a potion's declarative effect to the live fight through the card ctx, then re-check for a
+// kill (a damage potion can win the fight). The belt itself is managed in run.js. No RNG.
+export function applyPotionEffect(combat, potion) {
+  if (combat.over || !potion || typeof potion.effect !== "function") return false;
+  potion.effect(makeCtx(combat, null));
+  checkEnemyDead(combat);
+  return true;
+}
+
 // ── Death checks ────────────────────────────────────────────────────────────────────────────────
 
 export function checkEnemyDead(combat) {

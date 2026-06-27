@@ -162,6 +162,16 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-jammed-label { font-weight: 700; }
 .s6db-card--jammed { display: inline-block; padding: 2px 6px; margin: 0 4px; border: 1px dashed #8b2020; border-radius: 4px; opacity: 0.7; }
 
+/* The potion belt (combat) + drop/shop offers. */
+.s6db-potions { margin: 6px 0; font-size: 0.82rem; }
+.s6db-potions-label { font-weight: 700; color: #6a4fb0; margin-right: 4px; }
+.s6db-potion { padding: 3px 8px; margin: 0 4px 4px 0; border: 1px solid #6a4fb0; border-radius: 6px; background: #f3effb; color: #3a2a66; cursor: pointer; font: inherit; }
+.s6db-potion:hover:not(:disabled) { background: #e7ddf7; }
+.s6db-potion:disabled { opacity: 0.5; cursor: default; }
+.s6db-potion--shop { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px; max-width: 180px; }
+.s6db-potion-offer { margin: 10px 0; padding: 8px 10px; border: 1px dashed #6a4fb0; border-radius: 8px; background: #f7f4fd; }
+.s6db-shop-potions { margin-top: 10px; }
+
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }

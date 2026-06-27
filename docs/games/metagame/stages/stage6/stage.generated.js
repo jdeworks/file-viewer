@@ -758,6 +758,20 @@ function makeCtx(combat, card) {
     gainEnergy: (n) => {
       combat.player.energy += n;
     },
+    // Restore HP (capped at max). Used by potions (Hotfix) and onKill heal relics. No RNG.
+    heal: (n) => {
+      combat.player.hp = Math.min(combat.player.maxHp, combat.player.hp + Math.max(0, Math.round(n)));
+    },
+    // Return the last card played this fight from the discard back to hand (Rollback potion).
+    returnLastPlayed: () => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return false;
+      const i = combat.discard.lastIndexOf(id);
+      if (i < 0) return false;
+      combat.discard.splice(i, 1);
+      combat.hand.push(id);
+      return true;
+    },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
     // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
@@ -1063,6 +1077,12 @@ function endTurn(combat) {
     combat.jamPending = false;
   }
   return combat;
+}
+function applyPotionEffect(combat, potion) {
+  if (combat.over || !potion || typeof potion.effect !== "function") return false;
+  potion.effect(makeCtx(combat, null));
+  checkEnemyDead(combat);
+  return true;
 }
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
@@ -1437,6 +1457,117 @@ function rollRelic(seed, owned = []) {
   return pool[Math.floor(rng() * pool.length)].id;
 }
 
+// ../../docs/games/metagame/stages/stage6/potions.js
+var POTIONS = [
+  {
+    id: "hotfix",
+    name: "Hotfix",
+    rarity: "common",
+    text: "Heal 12 HP.",
+    effect: (ctx) => ctx.heal(12)
+  },
+  {
+    id: "burst-buffer",
+    name: "Burst Buffer",
+    rarity: "common",
+    text: "Gain 2 energy this turn.",
+    effect: (ctx) => ctx.gainEnergy(2)
+  },
+  {
+    id: "smoke-test",
+    name: "Smoke Test",
+    rarity: "common",
+    text: "Gain 15 block.",
+    effect: (ctx) => ctx.block(15)
+  },
+  {
+    id: "fuzzer",
+    name: "Fuzzer",
+    rarity: "uncommon",
+    text: "Apply 3 Vulnerable to the enemy.",
+    effect: (ctx) => ctx.applyEnemy("vulnerable", 3)
+  },
+  {
+    id: "snapshot",
+    name: "Snapshot",
+    rarity: "uncommon",
+    text: "Draw 3 cards.",
+    effect: (ctx) => ctx.draw(3)
+  },
+  {
+    id: "rollback",
+    name: "Rollback",
+    rarity: "uncommon",
+    text: "Return the last card you played to your hand.",
+    effect: (ctx) => ctx.returnLastPlayed()
+  },
+  {
+    id: "core-dump-vial",
+    name: "Core Dump Vial",
+    rarity: "rare",
+    text: "Deal 25 to the enemy and apply 2 Weak.",
+    effect: (ctx) => {
+      ctx.deal(25);
+      ctx.applyEnemy("weak", 2);
+    }
+  }
+];
+var BY_ID3 = new Map(POTIONS.map((p) => [p.id, p]));
+function potionById(id) {
+  return BY_ID3.get(id) || null;
+}
+var POTION_SLOTS = 2;
+var POTION_COST = 35;
+var POTION_DROP_CHANCE = 0.4;
+function addPotion(run, potionId, replaceIndex) {
+  if (!run.potions) run.potions = [];
+  if (!potionById(potionId)) return { ok: false, reason: "unknown" };
+  if (run.potions.length < POTION_SLOTS) {
+    run.potions.push(potionId);
+    return { ok: true };
+  }
+  if (Number.isInteger(replaceIndex) && replaceIndex >= 0 && replaceIndex < run.potions.length) {
+    const replaced = run.potions[replaceIndex];
+    run.potions[replaceIndex] = potionId;
+    return { ok: true, replaced };
+  }
+  return { ok: false, full: true };
+}
+function usePotion(run, index) {
+  if (!run.potions || index < 0 || index >= run.potions.length) return { ok: false };
+  const [id] = run.potions.splice(index, 1);
+  return { ok: true, id };
+}
+function takePotion(run, replaceIndex) {
+  const id = run.pendingReward?.potion;
+  if (!id) return { ok: false, reason: "none" };
+  const r = addPotion(run, id, replaceIndex);
+  if (r.ok) run.pendingReward.potion = null;
+  return r;
+}
+function buyPotion(run, potionId, cost = POTION_COST, replaceIndex) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const r = addPotion(run, potionId, replaceIndex);
+  if (!r.ok) return { ...r, cost };
+  run.handshakes -= cost;
+  return { ok: true, cost, replaced: r.replaced };
+}
+var RARITY_WEIGHT = { common: 4, uncommon: 2, rare: 1 };
+function rollPotion(seed) {
+  let h = (Number(seed) || 1) >>> 0;
+  h = h + 1831565813 | 0;
+  let t = Math.imul(h ^ h >>> 15, 1 | h);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  const r = ((t ^ t >>> 14) >>> 0) / 4294967296;
+  const total = POTIONS.reduce((sum, p) => sum + (RARITY_WEIGHT[p.rarity] || 1), 0);
+  let pick = r * total;
+  for (const p of POTIONS) {
+    pick -= RARITY_WEIGHT[p.rarity] || 1;
+    if (pick < 0) return p.id;
+  }
+  return POTIONS[POTIONS.length - 1].id;
+}
+
 // ../../docs/games/metagame/stages/stage6/mapgen.js
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
@@ -1751,6 +1882,8 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     clearedIds: [],
     deck: [...STARTING_DECK],
     relics: [],
+    potions: [],
+    // the 2-slot consumable belt (potions.js); persisted with the run
     hp: maxHp,
     maxHp,
     handshakes,
@@ -1806,6 +1939,8 @@ function resolveCombat(run, { win, hpRemaining }) {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
   }
+  const potionId = rollRewardPotion(run, node.id);
+  if (potionId) reward.potion = potionId;
   run.pendingReward = reward;
   run.status = "reward";
   return { ok: true, status: "reward" };
@@ -1914,6 +2049,11 @@ function grantRelic(run, key) {
   const id = rollRelic(hashSeed(run.seed, `${key}:relic`), run.relics);
   if (id) run.relics.push(id);
   return id;
+}
+function rollRewardPotion(run, nodeId2) {
+  const gate = makeRng(hashSeed(run.seed, `${nodeId2}:potion-drop`))();
+  if (gate >= POTION_DROP_CHANCE) return null;
+  return rollPotion(hashSeed(run.seed, `${nodeId2}:potion-pick`));
 }
 function rollRewardCards(run, nodeId2) {
   const rng = makeRng(hashSeed(run.seed, nodeId2));
@@ -2129,6 +2269,7 @@ function combatView(combat, run) {
       ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
     ${jammedRow(combat)}
+    ${potionBelt(run)}
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
       <button type="button" data-action="end-turn">end turn ▸</button>
@@ -2200,6 +2341,15 @@ function enemyPanel(enemy, intent, combat) {
       </div>
       ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+function potionBelt(run) {
+  const potions = run?.potions || [];
+  if (!potions.length) return "";
+  const chips = potions.map((id, i) => {
+    const p = potionById(id);
+    return `<button type="button" class="s6db-potion" data-potion="${i}" title="${esc(p?.text || "")}">⚗ ${esc(p?.name || id)}</button>`;
+  }).join("");
+  return `<div class="s6db-potions" aria-label="potion belt"><span class="s6db-potions-label">BELT:</span> ${chips}</div>`;
 }
 function jammedRow(combat) {
   if (!combat.jammed || !combat.jammed.length) return "";
@@ -2401,11 +2551,36 @@ function rewardView(run) {
   row.className = "s6db-card-row";
   row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
   el.appendChild(row);
+  const potionId = run.pendingReward?.potion;
+  if (potionId) el.appendChild(potionOffer(run, potionId));
   el.insertAdjacentHTML(
     "beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-take="skip" class="s6db-ghost">skip</button></div>`
   );
   return el;
+}
+function potionOffer(run, potionId) {
+  const p = potionById(potionId);
+  const wrap = document.createElement("div");
+  wrap.className = "s6db-potion-offer";
+  const belt = run.potions || [];
+  if (belt.length < POTION_SLOTS) {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}</p>
+      <button type="button" data-take-potion="">grab potion ⚗</button>`;
+  } else {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}. Belt full — replace one:</p>`;
+    const actions = document.createElement("div");
+    actions.className = "s6db-hub-actions";
+    actions.replaceChildren(...belt.map((id, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.takePotion = String(i);
+      b.textContent = `replace ${potionById(id)?.name || id}`;
+      return b;
+    }));
+    wrap.appendChild(actions);
+  }
+  return wrap;
 }
 function restView(run) {
   const el = document.createElement("div");
@@ -2482,6 +2657,26 @@ function shopView(run) {
     }));
     el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
   }
+  const potionOffers = shopPotionOffers(run);
+  const beltFull = (run.potions || []).length >= POTION_SLOTS;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-potions"><h3>Consumables — ${POTION_COST} ✋ each${beltFull ? " <small>(belt full)</small>" : ""}</h3></div>`
+  );
+  const potRow = document.createElement("div");
+  potRow.className = "s6db-card-row";
+  potRow.replaceChildren(...potionOffers.map((id) => {
+    const p = potionById(id);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "s6db-potion s6db-potion--shop";
+    b.dataset.buyPotion = id;
+    b.dataset.price = String(POTION_COST);
+    b.disabled = beltFull || run.handshakes < POTION_COST;
+    b.innerHTML = `<strong>⚗ ${esc3(p?.name || id)}</strong><small class="s6db-card-text">${esc3(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
+    return b;
+  }));
+  el.querySelector(".s6db-shop-potions").appendChild(potRow);
   const relicAffordable = run.handshakes >= RELIC_COST;
   el.insertAdjacentHTML(
     "beforeend",
@@ -2516,6 +2711,15 @@ function shopOffers(run) {
     const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
     const card = cardById(id);
     out.push({ id, price: PRICE[card?.rarity] || 30 });
+  }
+  return out;
+}
+function shopPotionOffers(run) {
+  const out = [];
+  let salt = 0;
+  while (out.length < 2 && salt < 24) {
+    const id = rollPotion(strHash(`${run.seed}:${run.currentNodeId}:potion:${salt++}`));
+    if (!out.includes(id)) out.push(id);
   }
   return out;
 }
@@ -2732,7 +2936,27 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       else checkpointCombat(combat, run);
       return true;
     }
+    const potion = event.target.closest("[data-potion]");
+    if (potion && combat && !combat.over && run) {
+      const used = usePotion(run, Number(potion.dataset.potion));
+      if (used.ok) {
+        applyPotionEffect(combat, potionById(used.id));
+        if (combat.over) finishCombat(run);
+        else checkpointCombat(combat, run);
+      }
+      return true;
+    }
     if (!run) return false;
+    const takePot = event.target.closest("[data-take-potion]");
+    if (takePot) {
+      takePotion(run, takePot.dataset.takePotion === "" ? void 0 : Number(takePot.dataset.takePotion));
+      return true;
+    }
+    const buyPot = event.target.closest("[data-buy-potion]");
+    if (buyPot) {
+      buyPotion(run, buyPot.dataset.buyPotion, Number(buyPot.dataset.price));
+      return true;
+    }
     const node = event.target.closest("[data-node]");
     if (node) {
       moveTo(run, node.dataset.node);

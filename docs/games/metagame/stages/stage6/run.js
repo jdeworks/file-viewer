@@ -11,6 +11,9 @@ import { STARTING_DECK, REWARD_POOL } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
 import { applyModifiers } from "./modifiers.js";
 import { rollRelic, relicById } from "./relics.js";
+import { rollPotion, POTION_DROP_CHANCE } from "./potions.js";
+// Belt operations live in potions.js; re-export so the renderer/tests keep importing from run.js.
+export { POTION_SLOTS, POTION_COST, addPotion, usePotion, takePotion, buyPotion } from "./potions.js";
 
 export const PLAYER_MAX_HP = 60;
 const REST_HEAL_FRACTION = 0.30;
@@ -42,6 +45,7 @@ export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     clearedIds: [],
     deck: [...STARTING_DECK],
     relics: [],
+    potions: [], // the 2-slot consumable belt (potions.js); persisted with the run
     hp: maxHp,
     maxHp,
     handshakes,
@@ -108,6 +112,9 @@ export function resolveCombat(run, { win, hpRemaining }) {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
   }
+  // ~40% of cleared fights also drop a potion to grab (deterministic per node).
+  const potionId = rollRewardPotion(run, node.id);
+  if (potionId) reward.potion = potionId;
   run.pendingReward = reward;
   run.status = "reward";
   return { ok: true, status: "reward" };
@@ -248,6 +255,13 @@ function grantRelic(run, key) {
   const id = rollRelic(hashSeed(run.seed, `${key}:relic`), run.relics);
   if (id) run.relics.push(id);
   return id;
+}
+
+// Deterministic per-node potion drop: ~40% chance, then a rarity-weighted pick. null = no drop.
+function rollRewardPotion(run, nodeId) {
+  const gate = makeRng(hashSeed(run.seed, `${nodeId}:potion-drop`))();
+  if (gate >= POTION_DROP_CHANCE) return null;
+  return rollPotion(hashSeed(run.seed, `${nodeId}:potion-pick`));
 }
 
 function rollRewardCards(run, nodeId) {
