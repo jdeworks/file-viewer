@@ -161,6 +161,9 @@ export const ENEMIES = {
     id: "the-refused-connection",
     name: "The Refused Connection",
     tier: "boss",
+    // A connection, not a process — it cannot be CORRUPTED, so a corruption build can't sidestep the
+    // handshake; damage must come through accepted Signals. Reinforces the negotiation un-cheat.
+    immuneCorruption: true,
     hp: 60, hpPerAct: 0, armor: 0, armorPerAct: 0,
     script: [
       { label: "Backpressure — Attack 8", attack: 8 },
@@ -179,6 +182,7 @@ export function instantiateEnemy(id, act = 1) {
     id: def.id,
     name: def.name,
     tier: def.tier,
+    immuneCorruption: Boolean(def.immuneCorruption),
     hp: def.hp + def.hpPerAct * scale,
     armor: def.armor + def.armorPerAct * scale,
     script: def.script.map((intent) => ({ ...intent }))

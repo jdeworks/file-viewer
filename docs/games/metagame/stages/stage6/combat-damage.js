@@ -13,7 +13,9 @@ export function dealToEnemy(combat, baseAmount) {
   amount = Math.max(0, amount - combat.enemy.armor);
   const absorbed = Math.min(combat.enemy.block, amount);
   combat.enemy.block -= absorbed;
-  combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
+  const landed = amount - absorbed;
+  combat.enemy.hp = Math.max(0, combat.enemy.hp - landed);
+  if (landed > 0) combat.enemy.unhurt = false; // the player damaged it this cycle (Stack Overflow fortify)
 }
 
 export function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {

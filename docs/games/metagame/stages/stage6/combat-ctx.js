@@ -18,11 +18,12 @@ export function makeCtx(combat, card) {
   return {
     combat,
     card,
-    // Boss negotiation (optional): a Signal-type card whose handshake is unmet deals 0 —
-    // "PROTOCOL MISMATCH". Protocol/Layer cards always resolve. See boss-combat.js.
+    // Boss negotiation (optional): the acceptance hook gates ALL damage to the boss (any archetype).
+    // While ch9 is unread it deals 0 ("PROTOCOL MISMATCH" — the airtight un-cheat); while unlocked it
+    // lands only when this turn's handshake demand is met. Non-damage effects always resolve.
     deal: (n) => {
-      if (combat.acceptance && card && card.type === "Signal" && !combat.acceptance(combat, card)) {
-        log(combat, "PROTOCOL MISMATCH — signal refused.");
+      if (combat.acceptance && !combat.acceptance(combat, card)) {
+        log(combat, "PROTOCOL MISMATCH — refused.");
         return;
       }
       dealToEnemy(combat, n);
@@ -48,7 +49,7 @@ export function makeCtx(combat, card) {
     // e.g. from Memory Leak). It ticks for damage at the enemy's turn start, then decays (see
     // combat-damage.tickCorruption). consumeCorruption removes & returns the stacks (Garbage Collect),
     // halveCorruption keeps half (Core Dump), boostCorruption raises this combat's apply bonus by 1.
-    applyCorruption: (n) => addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0)),
+    applyCorruption: (n) => { if (combat.enemy.immuneCorruption) return; addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0)); },
     consumeCorruption: () => { const c = combat.enemy.statuses.corruption || 0; delete combat.enemy.statuses.corruption; return c; },
     halveCorruption: () => {
       const c = combat.enemy.statuses.corruption || 0;
@@ -101,7 +102,9 @@ export function makeCtx(combat, card) {
 export function relicCtx(combat, card) {
   return {
     combat, card,
-    deal: (n) => dealToEnemy(combat, n),
+    // Relic damage is gated by the same boss acceptance hook (e.g. Checksum Offload can't chip a
+    // ch9-locked boss — closes a latent un-cheat hole).
+    deal: (n) => { if (combat.acceptance && !combat.acceptance(combat, card)) return; dealToEnemy(combat, n); },
     block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => { combat.player.energy += n; },

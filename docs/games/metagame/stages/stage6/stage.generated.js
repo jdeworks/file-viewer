@@ -738,7 +738,9 @@ function dealToEnemy(combat, baseAmount) {
   amount = Math.max(0, amount - combat.enemy.armor);
   const absorbed = Math.min(combat.enemy.block, amount);
   combat.enemy.block -= absorbed;
-  combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
+  const landed = amount - absorbed;
+  combat.enemy.hp = Math.max(0, combat.enemy.hp - landed);
+  if (landed > 0) combat.enemy.unhurt = false;
 }
 function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {
   let amount = Math.max(0, Math.round(baseAmount));
@@ -785,11 +787,12 @@ function makeCtx(combat, card) {
   return {
     combat,
     card,
-    // Boss negotiation (optional): a Signal-type card whose handshake is unmet deals 0 —
-    // "PROTOCOL MISMATCH". Protocol/Layer cards always resolve. See boss-combat.js.
+    // Boss negotiation (optional): the acceptance hook gates ALL damage to the boss (any archetype).
+    // While ch9 is unread it deals 0 ("PROTOCOL MISMATCH" — the airtight un-cheat); while unlocked it
+    // lands only when this turn's handshake demand is met. Non-damage effects always resolve.
     deal: (n) => {
-      if (combat.acceptance && card && card.type === "Signal" && !combat.acceptance(combat, card)) {
-        log(combat, "PROTOCOL MISMATCH — signal refused.");
+      if (combat.acceptance && !combat.acceptance(combat, card)) {
+        log(combat, "PROTOCOL MISMATCH — refused.");
         return;
       }
       dealToEnemy(combat, n);
@@ -821,7 +824,10 @@ function makeCtx(combat, card) {
     // e.g. from Memory Leak). It ticks for damage at the enemy's turn start, then decays (see
     // combat-damage.tickCorruption). consumeCorruption removes & returns the stacks (Garbage Collect),
     // halveCorruption keeps half (Core Dump), boostCorruption raises this combat's apply bonus by 1.
-    applyCorruption: (n) => addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0)),
+    applyCorruption: (n) => {
+      if (combat.enemy.immuneCorruption) return;
+      addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0));
+    },
     consumeCorruption: () => {
       const c = combat.enemy.statuses.corruption || 0;
       delete combat.enemy.statuses.corruption;
@@ -909,7 +915,12 @@ function relicCtx(combat, card) {
   return {
     combat,
     card,
-    deal: (n) => dealToEnemy(combat, n),
+    // Relic damage is gated by the same boss acceptance hook (e.g. Checksum Offload can't chip a
+    // ch9-locked boss — closes a latent un-cheat hole).
+    deal: (n) => {
+      if (combat.acceptance && !combat.acceptance(combat, card)) return;
+      dealToEnemy(combat, n);
+    },
     block: (n) => {
       combat.player.block += Math.max(0, Math.round(n));
     },
@@ -981,6 +992,7 @@ function enemyTurn(combat) {
   }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
+  enemy.unhurt = true;
   checkPlayerDead(combat);
 }
 function resolveIntent(combat, intent) {
@@ -991,6 +1003,13 @@ function resolveIntent(combat, intent) {
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
+  if (intent.cleanse) {
+    delete enemy.statuses.corruption;
+    delete enemy.statuses.weak;
+    delete enemy.statuses.vulnerable;
+    log(combat, `${enemy.name} cleansed itself.`);
+  }
+  if (intent.fortify && enemy.unhurt) enemy.armor += intent.fortify;
   if (intent.congest) dealToPlayer(combat, intent.congest * (combat.energySpentThisTurn || 0));
   if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
@@ -1072,7 +1091,11 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
       statuses: {},
       script: enemy.script,
       intentIndex: 0,
-      skipNext: false
+      skipNext: false,
+      immuneCorruption: Boolean(enemy.immuneCorruption),
+      // CORRUPTION-immune (the boss)
+      unhurt: true
+      // true while the player hasn't damaged it since its last turn (Stack Overflow fortify)
     },
     draw: shuffle(deck, rng),
     hand: [],
@@ -1361,6 +1384,9 @@ var ENEMIES = {
     id: "the-refused-connection",
     name: "The Refused Connection",
     tier: "boss",
+    // A connection, not a process — it cannot be CORRUPTED, so a corruption build can't sidestep the
+    // handshake; damage must come through accepted Signals. Reinforces the negotiation un-cheat.
+    immuneCorruption: true,
     hp: 60,
     hpPerAct: 0,
     armor: 0,
@@ -1381,6 +1407,7 @@ function instantiateEnemy(id, act = 1) {
     id: def.id,
     name: def.name,
     tier: def.tier,
+    immuneCorruption: Boolean(def.immuneCorruption),
     hp: def.hp + def.hpPerAct * scale,
     armor: def.armor + def.armorPerAct * scale,
     script: def.script.map((intent) => ({ ...intent }))
@@ -2503,9 +2530,6 @@ function applyEventChoice(run, eventId, choiceId) {
 var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
 var DEMAND_LEAD_SYN = "lead-syn";
 var DEMAND_ACK_FIRST = "ack-first";
-function isSignalCard(card) {
-  return card?.type === "Signal";
-}
 function baseId2(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
@@ -2522,7 +2546,6 @@ function demandMet(combat) {
   return currentDemand(combat) === DEMAND_LEAD_SYN ? baseId2(combat.playedIdsThisTurn[0]) === "SYN" : ackPlayed(combat);
 }
 function accepts(combat, card) {
-  if (!isSignalCard(card)) return true;
   if (combat.bossLocked) return false;
   return demandMet(combat);
 }

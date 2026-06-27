@@ -36,6 +36,7 @@ export function enemyTurn(combat) {
   if (lost > 0) { combat.lastDamageTaken = lost; runHook(combat, "onDamageTaken"); }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
+  enemy.unhurt = true; // reset for the upcoming player turn (Stack Overflow fortify checks this)
   checkPlayerDead(combat);
 }
 
@@ -48,6 +49,15 @@ export function resolveIntent(combat, intent) {
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
+  // CORRUPTION (Act 5): Heisenbug cleanses its own debuffs (incl. corruption) — punishes slow DoT.
+  if (intent.cleanse) {
+    delete enemy.statuses.corruption;
+    delete enemy.statuses.weak;
+    delete enemy.statuses.vulnerable;
+    log(combat, `${enemy.name} cleansed itself.`);
+  }
+  // CORRUPTION (Act 5): Stack Overflow fortifies — gains armor if the player did not damage it.
+  if (intent.fortify && enemy.unhurt) enemy.armor += intent.fortify;
   // THROUGHPUT: a congestion punisher deals damage scaling with the energy you spent last turn.
   if (intent.congest) dealToPlayer(combat, intent.congest * (combat.energySpentThisTurn || 0));
   // Man-in-the-Middle: reflect the player's just-finished turn — damage scales with cards played.

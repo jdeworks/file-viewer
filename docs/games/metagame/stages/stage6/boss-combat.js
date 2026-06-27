@@ -54,10 +54,12 @@ function demandMet(combat) {
     : ackPlayed(combat);
 }
 
-// acceptance(combat, card) — consulted by the engine only for Signal cards.
-// Returns false ⇒ that Signal deals 0 ("PROTOCOL MISMATCH").
+// acceptance(combat, card) — consulted by the engine before ANY damage lands on the boss (ctx.deal /
+// relicCtx.deal), regardless of the card's archetype. While ch9 is unread (locked) nothing lands —
+// the un-cheat, airtight against Signal/Daemon/Recursion/relic damage alike. While unlocked, damage
+// lands only when this turn's handshake demand is satisfied. Non-damage effects (block, strength,
+// corruption-apply, draw) always resolve — so a deck still satisfies the handshake with real cards.
 export function accepts(combat, card) {
-  if (!isSignalCard(card)) return true;          // Protocol/Layer always resolve
   if (combat.bossLocked) return false;           // ch9 unread ⇒ permanent mismatch (B3)
   return demandMet(combat);
 }

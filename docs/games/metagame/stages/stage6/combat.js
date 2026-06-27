@@ -52,7 +52,9 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [], conge
       statuses: {},
       script: enemy.script,
       intentIndex: 0,
-      skipNext: false
+      skipNext: false,
+      immuneCorruption: Boolean(enemy.immuneCorruption), // CORRUPTION-immune (the boss)
+      unhurt: true // true while the player hasn't damaged it since its last turn (Stack Overflow fortify)
     },
     draw: shuffle(deck, rng),
     hand: [],
