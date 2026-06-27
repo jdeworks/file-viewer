@@ -1143,6 +1143,30 @@ export async function run(ctx) {
   const preFont = await page.$eval('#previewHost .asx-out', (el) => el.style.fontFamily || getComputedStyle(el).fontFamily);
   await page.evaluate(() => { const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]'); if (el) { el.value = 'Uniform'; el.dispatchEvent(new Event('input', { bubbles: true })); } });
   if (fonts.includes('Uniform') && fonts.includes('System') && fonts.includes('Courier') && /Courier/.test(preFont)) pass('ASCII font: selectable (Uniform default) + restyles the output'); else fail('ascii font select: ' + JSON.stringify({ fonts, preFont }));
+  // Fit-to-screen at zoom 1: the art always fits the stage (no H or V scrollbar) and re-fits
+  // when columns / space density / font change. Only zoom>1 is allowed to overflow + scroll.
+  const setCtl = (key, value) => page.evaluate(({ key, value }) => {
+    const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
+    if (el) { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, { key, value });
+  const stageFits = () => page.waitForFunction(() => {
+    const s = document.querySelector('#previewHost .asx-stage');
+    return !!s && s.scrollWidth <= s.clientWidth + 1 && s.scrollHeight <= s.clientHeight + 1;
+  }, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await setCtl('columns', 300);     // densest detail
+  await setCtl('spaceDensity', 3);  // widest spacing
+  let fitOk = await stageFits();
+  for (const f of ['System', 'Courier', 'Uniform']) { await setCtl('fontName', f); fitOk = fitOk && await stageFits(); }
+  // Zoom past the fit → the stage becomes scrollable (detail inspection).
+  await setCtl('zoom', 4);
+  const zoomScrolls = await page.waitForFunction(() => {
+    const s = document.querySelector('#previewHost .asx-stage');
+    return !!s && (s.scrollWidth > s.clientWidth + 2 || s.scrollHeight > s.clientHeight + 2);
+  }, null, { timeout: 4000 }).then(() => true).catch(() => false);
+  // Back to zoom 1 (+ restore defaults) → fits again.
+  await setCtl('zoom', 1); await setCtl('spaceDensity', 1); await setCtl('columns', 100);
+  const refit = await stageFits();
+  if (fitOk && zoomScrolls && refit) pass('ASCII fit-to-screen: no scrollbar at zoom 1 across columns/density/font; zoom>1 scrolls'); else fail('ascii fit-to-screen: ' + JSON.stringify({ fitOk, zoomScrolls, refit }));
   // Convert file → ASCII: feed a tiny 2-frame GIF and assert it converts (frame-by-frame
   // via the engine worker) + encodes a downloadable ASCII GIF.
   const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];

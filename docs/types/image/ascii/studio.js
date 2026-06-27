@@ -110,24 +110,32 @@ export function mountAsciiStudio(host, opts = {}) {
   };
   engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); setBusy(false); });
 
-  // ── fit-to-width + display zoom ── more columns = more detail at the SAME
-  // on-screen size; zoom magnifies; space density adds CSS letter-spacing.
+  // ── fit-to-screen + display zoom ── the art is sized to fit the WHOLE stage
+  // (both axes) at zoom 1, so changing columns/font/aspect/space-density/padding never
+  // leaves a scrollbar — it just re-fits. Zoom is the ONLY control that scales past the
+  // fit (magnifying for detail, where scrollbars are expected and fine).
   function applyDisplay() {
     const sd = engine.options.spaceDensity || 1;
     const r = engine.result;
     if (!r) return;
     // Frame padding shows as a coloured border around the art (matches the PNG/HTML
-    // export's transparentFrame); also keep it out of the fit-width calculation.
+    // export's transparentFrame); also keep it out of the fit calculation.
     const pad = 8 + (engine.options.transparentFrame || 0);
     pre.style.padding = pad + 'px';
     const fam = fontFamily(engine.options);
-    const avail = Math.max(40, pre.clientWidth - pad * 2 - 1);   // -1: never round UP into a scrollbar
-    // Measure the REAL monospace advance for the active font (DejaVu ≈ 0.602, not 0.6) so
-    // the fit doesn't overshoot and trigger a horizontal scrollbar.
-    const fs = (avail / (r.columns * advanceRatio(fam) * sd)) * (engine.options.zoom || 1);
+    // Fit against the SCROLL CONTAINER (stage), not the <pre> — the pre's own width is
+    // content-driven (white-space:pre) so it can't be the fit reference. -1: never round
+    // UP into a scrollbar. Measure the REAL monospace advance (DejaVu ≈ 0.602, not 0.6).
+    const adv = advanceRatio(fam);
+    const availW = Math.max(40, stage.clientWidth - pad * 2 - 1);
+    const availH = Math.max(40, stage.clientHeight - pad * 2 - 1);
+    const fsW = availW / (r.columns * adv * sd);
+    const fsH = availH / r.rows;          // line-height: 1 → each row is exactly one font-size tall
+    const fit = Math.min(fsW, fsH);       // the zoom-1 "fit to screen" size — no H or V scrollbar
+    const fs = fit * (engine.options.zoom || 1);
     pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
     pre.style.fontFamily = fam;
-    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * advanceRatio(fam)).toFixed(3) + 'em' : '';
+    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * adv).toFixed(3) + 'em' : '';
   }
   // Advance width (em) of a monospace glyph in the given family — measured, not assumed.
   // Re-measured each call so it picks up the real font once it finishes loading.
