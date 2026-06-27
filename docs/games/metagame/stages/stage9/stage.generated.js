@@ -119,45 +119,297 @@ function inZone(a, zone) {
   return s <= e ? x >= s && x <= e : x >= s || x <= e;
 }
 
-// ../../docs/games/metagame/stages/stage9/game.js
-var BOSS_LEVEL = 18;
-var BANDS = {
-  1: { baseSpeed: 30, speedVar: 0, tolerance: 40, display: "open" },
-  2: { baseSpeed: 45, speedVar: 10, tolerance: 32, display: "open" },
-  3: { baseSpeed: 60, speedVar: 15, tolerance: 26, display: "dual" },
-  4: { baseSpeed: 75, speedVar: 20, tolerance: 22, display: "ghosts" },
-  5: { baseSpeed: 90, speedVar: 25, tolerance: 18, display: "hidden" },
-  6: { baseSpeed: 45, speedVar: 0, tolerance: 15, display: "dark", darkZone: { start: 300, end: 60 } }
-};
-function bandForLevel(level) {
-  return Math.max(1, Math.min(6, Math.ceil((Number(level) || 1) / 3)));
+// ../../docs/games/metagame/stages/stage9/rings.js
+var RING_W2 = 25;
+var RING_H2 = 13;
+function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
+  const { gapWidth = 22, darkZone = null } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W2 - 1) / 2;
+  const cy = (RING_H2 - 1) / 2;
+  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "─", "│", darkZone);
+  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "=", "‖", darkZone);
+  return gridToString(grid);
 }
-function levelConfig(level) {
-  const band = bandForLevel(level);
-  return { level: Number(level) || 1, band, ...BANDS[band], isBoss: Number(level) === BOSS_LEVEL };
+function renderMultiGap(gapAngles = [], opts = {}) {
+  const { gapWidth = 20, darkZone = null } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W2 - 1) / 2;
+  const cy = (RING_H2 - 1) / 2;
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, cx, cy, a);
+    if (offGrid(x, y)) continue;
+    let ch = ringChar2(a);
+    for (const g of gapAngles) if (inArc2(a, g, gapWidth)) ch = " ";
+    if (darkZone && inZone2(a, darkZone)) ch = "█";
+    grid[y][x] = ch;
+  }
+  return gridToString(grid);
 }
-function rotSpeedFor(seed, level) {
-  const cfg = levelConfig(level);
-  return cfg.baseSpeed + makeRng(`${seed}s`).float() * cfg.speedVar;
+function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, hChar, vChar, darkZone) {
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, rx, ry, a);
+    if (offGrid(x, y)) continue;
+    let ch = inArc2(a, 0, 60) || inArc2(a, 180, 60) ? hChar : inArc2(a, 90, 60) || inArc2(a, 270, 60) ? vChar : "+";
+    if (inArc2(a, gapAngle, gapWidth)) ch = " ";
+    if (darkZone && inZone2(a, darkZone)) ch = "█";
+    grid[y][x] = ch;
+  }
 }
-function crossAttempt({ seed, elapsedMs, level }) {
-  const cfg = levelConfig(level);
-  const speed = rotSpeedFor(seed, level);
-  const angle = ringAngle(seed, elapsedMs, speed);
-  const distance = angularDist2(angle, 0);
-  return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance, level };
+function project(cx, cy, rx, ry, a) {
+  const rad = (a - 90) * Math.PI / 180;
+  return { x: Math.round(cx + rx * Math.cos(rad)), y: Math.round(cy + ry * Math.sin(rad)) };
 }
-function solveElapsed(seed, level) {
-  const speed = rotSpeedFor(seed, level);
-  const base = ringAngle(seed, 0, speed);
-  const need = ((360 - base) % 360 + 360) % 360;
-  return Math.round(need / speed * 1e3);
+function blankGrid() {
+  return Array.from({ length: RING_H2 }, () => Array(RING_W2).fill(" "));
 }
-function sublevelSeed(level) {
-  return (Number(level) || 1) * 31 + 7;
+function gridToString(grid) {
+  return grid.map((row) => row.join("")).join("\n");
+}
+function offGrid(x, y) {
+  return y < 0 || y >= RING_H2 || x < 0 || x >= RING_W2;
+}
+function ringChar2(a) {
+  if (inArc2(a, 0, 60) || inArc2(a, 180, 60)) return "─";
+  if (inArc2(a, 90, 60) || inArc2(a, 270, 60)) return "│";
+  return "+";
+}
+function mod3602(a) {
+  return (a % 360 + 360) % 360;
 }
 function angularDist2(a, b) {
   return Math.abs(((a - b) % 360 + 540) % 360 - 180);
+}
+function inArc2(a, center, width) {
+  return angularDist2(a, center) <= width / 2;
+}
+function inZone2(a, zone) {
+  const x = mod3602(a);
+  const s = mod3602(zone.start);
+  const e = mod3602(zone.end);
+  return s <= e ? x >= s && x <= e : x >= s || x <= e;
+}
+
+// ../../docs/games/metagame/stages/stage9/modes.js
+var TWO_PI = Math.PI * 2;
+function mod3603(a) {
+  return (a % 360 + 360) % 360;
+}
+function angularDist3(a, b) {
+  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
+}
+function ringSpeed(cfg, seed) {
+  return (cfg.speed || 30) + makeRng(`${seed}s`).float() * (cfg.speedVar || 0);
+}
+function scanSolve(angleAt, tol, { maxMs = 4e4, step = 4 } = {}) {
+  let bestT = 0;
+  let bestD = Infinity;
+  for (let t = 0; t <= maxMs; t += step) {
+    const d = angularDist3(angleAt(t), 0);
+    if (d <= tol / 2) return t;
+    if (d < bestD) {
+      bestD = d;
+      bestT = t;
+    }
+  }
+  return bestT;
+}
+var simple = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    const speed = ringSpeed(cfg, seed);
+    const base = ringAngle(seed, 0, speed);
+    return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), {
+      gapWidth: cfg.tolerance,
+      hidden: cfg.display === "hidden",
+      darkZone: cfg.darkZone || null
+    });
+  }
+};
+function oscParams(cfg, seed) {
+  const r = makeRng(`${seed}o`);
+  return { base: r.float() * 360, phase: r.float() * TWO_PI, b: cfg.oscBase || 35, amp: Math.min(cfg.oscAmp || 18, (cfg.oscBase || 35) - 5), Tp: (cfg.oscPeriod || 4e3) / 1e3 };
+}
+var oscillating = {
+  angleAt(cfg, seed, ms) {
+    const { base, phase, b, amp, Tp } = oscParams(cfg, seed);
+    const t = ms / 1e3;
+    const integral = b * t - amp * Tp / TWO_PI * (Math.cos(TWO_PI * t / Tp + phase) - Math.cos(phase));
+    return mod3603(base + integral);
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance);
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function revSegments(cfg, seed) {
+  const r = makeRng(`${seed}r`);
+  const speed = ringSpeed(cfg, seed);
+  const segs = [];
+  let dir = 1;
+  for (let i = 0; i < 10; i++) {
+    const sweepDeg = dir > 0 ? 360 * 1.3 : 150;
+    const dur = sweepDeg / speed * (0.8 + r.float() * 0.4) * 1e3;
+    segs.push({ dir, dur, speed });
+    dir *= -1;
+  }
+  return { base: r.float() * 360, segs };
+}
+var reversing = {
+  angleAt(cfg, seed, ms) {
+    const { base, segs } = revSegments(cfg, seed);
+    let angle = base;
+    let left = ms;
+    for (const s of segs) {
+      const span = Math.min(left, s.dur);
+      angle += s.dir * s.speed * span / 1e3;
+      left -= span;
+      if (left <= 0) break;
+    }
+    return mod3603(angle);
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance, { maxMs: 6e4 });
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function dualParams(cfg, seed) {
+  const r = makeRng(`${seed}d`);
+  const si = cfg.speedInner || 45;
+  const so = cfg.speedOuter || 30;
+  const tAlign = 1500 + Math.floor(r.float() * 4e3);
+  return { si, so, tAlign, bi: mod3603(-si * tAlign / 1e3), bo: mod3603(-so * tAlign / 1e3) };
+}
+var dual = {
+  anglesAt(cfg, seed, ms) {
+    const { si, so, bi, bo } = dualParams(cfg, seed);
+    return { inner: mod3603(bi + si * ms / 1e3), outer: mod3603(bo + so * ms / 1e3) };
+  },
+  evaluate(cfg, seed, ms) {
+    const { inner, outer } = this.anglesAt(cfg, seed, ms);
+    const di = angularDist3(inner, 0);
+    const dou = angularDist3(outer, 0);
+    const distance = Math.max(di, dou);
+    return { hit: di <= cfg.tolerance / 2 && dou <= cfg.tolerance / 2, distance, inner, outer, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return dualParams(cfg, seed).tAlign;
+  },
+  render(cfg, seed, ms) {
+    const { inner, outer } = this.anglesAt(cfg, seed, ms);
+    return renderConcentric(inner, outer, { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function multiParams(cfg, seed) {
+  const r = makeRng(`${seed}m`);
+  const count = Math.max(2, cfg.gaps || 3);
+  const speed = ringSpeed(cfg, seed);
+  const base = r.float() * 360;
+  const realIdx = r.int(0, count - 1);
+  const step = 360 / count;
+  return { count, speed, base, realIdx, step };
+}
+var multigap = {
+  gapsAt(cfg, seed, ms) {
+    const { count, speed, base, step } = multiParams(cfg, seed);
+    return Array.from({ length: count }, (_, i) => mod3603(base + i * step + speed * ms / 1e3));
+  },
+  realAngle(cfg, seed, ms) {
+    const { speed, base, realIdx, step } = multiParams(cfg, seed);
+    return mod3603(base + realIdx * step + speed * ms / 1e3);
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.realAngle(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, distance, angle, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    const { speed, base, realIdx, step } = multiParams(cfg, seed);
+    const start = mod3603(base + realIdx * step);
+    return Math.round(((360 - start) % 360 + 360) % 360 / speed * 1e3);
+  },
+  render(cfg, seed, ms) {
+    return renderMultiGap(this.gapsAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+var MODES = { simple, oscillating, reversing, dual, multigap };
+function getMode(name) {
+  return MODES[name] || simple;
+}
+
+// ../../docs/games/metagame/stages/stage9/movements.js
+var BOSS_LEVEL = 10;
+var MOVEMENTS = [
+  { id: 1, name: "Signal", verb: "watch & time", levels: [1, 2] },
+  { id: 2, name: "Drift", verb: "read a changing speed", levels: [3, 4] },
+  { id: 3, name: "Interference", verb: "hold two rhythms", levels: [5, 6] },
+  { id: 4, name: "Reversal", verb: "track the flips (offline)", levels: [7] },
+  { id: 5, name: "Decoys", verb: "pick the real gap (offline)", levels: [8] },
+  { id: 6, name: "Collapse", verb: "infer the occluded gap (offline)", levels: [9] },
+  { id: 7, name: "Observer", verb: "the full effect (offline)", levels: [10] }
+];
+var LEVEL_TABLE = {
+  1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
+  2: { mode: "simple", speed: 40, speedVar: 8, tolerance: 36, display: "open" },
+  3: { mode: "oscillating", oscBase: 36, oscAmp: 16, oscPeriod: 4200, tolerance: 34, display: "open" },
+  4: { mode: "oscillating", oscBase: 46, oscAmp: 24, oscPeriod: 3400, tolerance: 30, display: "open" },
+  5: { mode: "dual", speedInner: 44, speedOuter: 30, tolerance: 32, display: "dual" },
+  6: { mode: "dual", speedInner: 56, speedOuter: 36, tolerance: 28, display: "dual" },
+  7: { mode: "reversing", speed: 62, speedVar: 10, tolerance: 26, display: "open", onlineUnstable: true },
+  8: { mode: "multigap", speed: 52, speedVar: 8, gaps: 3, tolerance: 24, display: "open", onlineUnstable: true },
+  9: { mode: "multigap", speed: 60, speedVar: 10, gaps: 4, tolerance: 20, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true },
+  10: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
+};
+function movementForLevel(level) {
+  const lvl = Number(level) || 1;
+  return MOVEMENTS.find((m) => m.levels.includes(lvl)) || MOVEMENTS[0];
+}
+function levelConfig(level) {
+  const lvl = Math.max(1, Math.min(BOSS_LEVEL, Number(level) || 1));
+  const base = LEVEL_TABLE[lvl] || LEVEL_TABLE[1];
+  const movement = movementForLevel(lvl);
+  return { ...base, level: lvl, movement: movement.id, movementName: movement.name, isBoss: lvl === BOSS_LEVEL };
+}
+
+// ../../docs/games/metagame/stages/stage9/game.js
+function crossAttempt({ seed, elapsedMs, level }) {
+  const cfg = levelConfig(level);
+  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
+}
+function solveMoment(seed, level) {
+  const cfg = levelConfig(level);
+  return getMode(cfg.mode).solveMoment(cfg, seed);
+}
+function renderLevel(seed, level, elapsedMs) {
+  const cfg = levelConfig(level);
+  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0);
+}
+function sublevelSeed(level) {
+  return (Number(level) || 1) * 31 + 7;
 }
 
 // ../../docs/games/metagame/stages/stage9/boss.js
@@ -302,7 +554,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     <header class="s9-hud">
       <strong>OBSERVER STATE</strong>
       <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
-      <span>band <b data-field="band"></b></span>
+      <span>movement <b data-field="movement"></b></span>
       <span>clarity <b data-field="clarity"></b></span>
       <span>seed <b data-field="seed"></b></span>
     </header>
@@ -354,7 +606,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       state.currentLevel = Math.min(BOSS_LEVEL, state.currentLevel + 1);
       elapsedMs = 0;
       bossSeed = null;
-      if (state.currentLevel >= BOSS_LEVEL) pushLog2("level 18: THE OBSERVER EFFECT. the gap will not hold still while live.");
+      if (state.currentLevel >= BOSS_LEVEL) pushLog2(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
     } else {
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
@@ -406,14 +658,14 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     solveSublevels() {
       let guard = 0;
       while (state.currentLevel < BOSS_LEVEL && guard++ < 64) {
-        this.crossAt(solveElapsed(sublevelSeed(state.currentLevel), state.currentLevel));
+        this.crossAt(solveMoment(sublevelSeed(state.currentLevel), state.currentLevel));
       }
       return state.currentLevel;
     },
     solveOffline() {
       this.solveSublevels();
       reobserve();
-      this.crossAt(solveElapsed(FIXED_OFFLINE_SEED, BOSS_LEVEL));
+      this.crossAt(solveMoment(FIXED_OFFLINE_SEED, BOSS_LEVEL));
       return Boolean(state.boss.defeated);
     }
   };
@@ -437,22 +689,13 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     state.log = [...state.log || [], line].slice(-6);
   }
   function paintArena() {
-    const seed = activeSeed();
-    const cfg = levelConfig(state.currentLevel);
-    const speed = rotSpeedFor(seed, state.currentLevel);
-    const angle = ringAngle(seed, elapsedMs, speed);
-    const display = cfg.display;
-    fields.arena.textContent = renderRing(angle, {
-      gapWidth: cfg.tolerance,
-      hidden: display === "hidden",
-      darkZone: cfg.darkZone || null
-    });
+    fields.arena.textContent = renderLevel(activeSeed(), state.currentLevel, elapsedMs);
   }
   function repaint() {
     const lock = getBossLockState({ actions, state });
-    const cfg = levelConfig(state.currentLevel);
+    const movement = movementForLevel(state.currentLevel);
     fields.level.textContent = String(state.currentLevel);
-    fields.band.textContent = `${cfg.band} (${cfg.display})`;
+    fields.movement.textContent = `${movement.name} — ${movement.verb}`;
     fields.clarity.textContent = String(state.clarity);
     fields.seed.textContent = state.currentLevel >= BOSS_LEVEL ? lock.seedMode === "fixed-cache" ? "0 (fixed)" : "random" : "stable";
     paintArena();
@@ -492,12 +735,12 @@ function once(fn) {
 // ../../docs/games/metagame/stages/stage9/state.js
 function defaultState() {
   return {
-    version: 1,
+    version: 2,
     notesRead: false,
     offlineControlVisible: false,
     offlineMode: false,
-    clarity: 84,
-    currentLevel: 12,
+    clarity: 0,
+    currentLevel: 1,
     lockedSeedSamples: [],
     log: [
       "one observer. it sees everything. there is a gap. the gap moves.",
@@ -520,12 +763,14 @@ function defaultState() {
 function normalizeState(state) {
   const fresh = defaultState();
   const target = state && typeof state === "object" ? state : {};
-  target.version = 1;
+  const staleV1 = Number(target.version) === 1;
+  target.version = 2;
   target.notesRead = Boolean(target.notesRead);
   target.offlineControlVisible = Boolean(target.offlineControlVisible);
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
-  target.currentLevel = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
+  const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
+  target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...target.boss && typeof target.boss === "object" ? target.boss : {} };

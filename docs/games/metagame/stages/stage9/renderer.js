@@ -9,11 +9,11 @@ import {
   BOSS_LEVEL,
   crossAttempt,
   levelConfig,
-  rotSpeedFor,
-  solveElapsed,
+  movementForLevel,
+  renderLevel,
+  solveMoment,
   sublevelSeed
 } from "./game.js";
-import { ringAngle, renderRing } from "./ring.js";
 import { serviceWorkerNotesText } from "./content.js";
 import { btsSummary, BTS_PATH, FIXED_OFFLINE_SEED, NOTES_PATH } from "./messages.js";
 import { startLoop } from "./loop.js";
@@ -27,7 +27,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     <header class="s9-hud">
       <strong>OBSERVER STATE</strong>
       <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
-      <span>band <b data-field="band"></b></span>
+      <span>movement <b data-field="movement"></b></span>
       <span>clarity <b data-field="clarity"></b></span>
       <span>seed <b data-field="seed"></b></span>
     </header>
@@ -86,7 +86,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
       state.currentLevel = Math.min(BOSS_LEVEL, state.currentLevel + 1);
       elapsedMs = 0;
       bossSeed = null;
-      if (state.currentLevel >= BOSS_LEVEL) pushLog("level 18: THE OBSERVER EFFECT. the gap will not hold still while live.");
+      if (state.currentLevel >= BOSS_LEVEL) pushLog(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
     } else {
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
@@ -133,14 +133,14 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     solveSublevels() {
       let guard = 0;
       while (state.currentLevel < BOSS_LEVEL && guard++ < 64) {
-        this.crossAt(solveElapsed(sublevelSeed(state.currentLevel), state.currentLevel));
+        this.crossAt(solveMoment(sublevelSeed(state.currentLevel), state.currentLevel));
       }
       return state.currentLevel;
     },
     solveOffline() {
       this.solveSublevels();
       reobserve();
-      this.crossAt(solveElapsed(FIXED_OFFLINE_SEED, BOSS_LEVEL));
+      this.crossAt(solveMoment(FIXED_OFFLINE_SEED, BOSS_LEVEL));
       return Boolean(state.boss.defeated);
     }
   };
@@ -168,23 +168,14 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
   }
 
   function paintArena() {
-    const seed = activeSeed();
-    const cfg = levelConfig(state.currentLevel);
-    const speed = rotSpeedFor(seed, state.currentLevel);
-    const angle = ringAngle(seed, elapsedMs, speed);
-    const display = cfg.display;
-    fields.arena.textContent = renderRing(angle, {
-      gapWidth: cfg.tolerance,
-      hidden: display === "hidden",
-      darkZone: cfg.darkZone || null
-    });
+    fields.arena.textContent = renderLevel(activeSeed(), state.currentLevel, elapsedMs);
   }
 
   function repaint() {
     const lock = getBossLockState({ actions, state });
-    const cfg = levelConfig(state.currentLevel);
+    const movement = movementForLevel(state.currentLevel);
     fields.level.textContent = String(state.currentLevel);
-    fields.band.textContent = `${cfg.band} (${cfg.display})`;
+    fields.movement.textContent = `${movement.name} — ${movement.verb}`;
     fields.clarity.textContent = String(state.clarity);
     fields.seed.textContent = state.currentLevel >= BOSS_LEVEL ? (lock.seedMode === "fixed-cache" ? "0 (fixed)" : "random") : "stable";
     paintArena();

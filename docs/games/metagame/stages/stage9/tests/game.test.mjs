@@ -1,43 +1,53 @@
-// game.test.mjs — Stage 9: band configs + CROSS evaluation.
+// game.test.mjs — Stage 9: the movement/level table + the mode-dispatching CROSS evaluation.
 import assert from "node:assert/strict";
-import { levelConfig, bandForLevel, crossAttempt, rotSpeedFor, BOSS_LEVEL } from "../game.js";
+import {
+  levelConfig, crossAttempt, solveMoment, rotSpeedFor, renderLevel,
+  movementForLevel, LEVELS, BOSS_LEVEL
+} from "../game.js";
 
-// ── band mapping + escalation ─────────────────────────────────────────────────────────────────────
-assert.equal(bandForLevel(1), 1, "level 1 → band 1");
-assert.equal(bandForLevel(3), 1, "level 3 → band 1");
-assert.equal(bandForLevel(4), 2, "level 4 → band 2");
-assert.equal(bandForLevel(18), 6, "level 18 → band 6");
-assert.equal(levelConfig(18).isBoss, true, "level 18 is the boss");
-assert.ok(levelConfig(7).baseSpeed > levelConfig(1).baseSpeed, "later bands rotate faster");
-assert.ok(levelConfig(5).tolerance < levelConfig(1).tolerance, "later bands are tighter");
-assert.equal(levelConfig(7).display, "dual"); // band 3 = levels 7–9
-assert.ok(levelConfig(18).darkZone, "the boss band has a dark zone");
+// ── movement structure: 10 levels, boss last, learnable front / onlineUnstable back third ──────────
+assert.equal(LEVELS, 10, "ten levels");
+assert.equal(BOSS_LEVEL, 10, "boss is the last level");
+assert.equal(levelConfig(10).isBoss, true, "level 10 is the boss");
+assert.equal(levelConfig(1).onlineUnstable || false, false, "level 1 learnable online");
+assert.equal(levelConfig(6).onlineUnstable || false, false, "level 6 learnable online");
+assert.equal(levelConfig(7).onlineUnstable, true, "back third (7) is onlineUnstable");
+assert.equal(levelConfig(9).onlineUnstable, true, "back third (9) is onlineUnstable");
+assert.equal(levelConfig(10).onlineUnstable, true, "boss is onlineUnstable");
+assert.equal(movementForLevel(1).name, "Signal");
+assert.equal(movementForLevel(10).name, "Observer");
 
-// ── crossAttempt: a full rotation has both hit and miss windows; deterministic ─────────────────────
+// ── each movement introduces a distinct mode (bands are now load-bearing) ──────────────────────────
+assert.equal(levelConfig(1).mode, "simple");
+assert.equal(levelConfig(3).mode, "oscillating");
+assert.equal(levelConfig(5).mode, "dual");
+assert.equal(levelConfig(7).mode, "reversing");
+assert.equal(levelConfig(8).mode, "multigap");
+
+// ── tolerance tightens toward the boss ──────────────────────────────────────────────────────────────
+assert.ok(levelConfig(10).tolerance < levelConfig(1).tolerance, "the boss is tighter than level 1");
+assert.ok(levelConfig(6).tolerance < levelConfig(2).tolerance, "tolerance tightens with depth");
+
+// ── crossAttempt dispatches per mode + is deterministic; each level's solveMoment is a real hit ─────
+for (let level = 1; level <= BOSS_LEVEL; level += 1) {
+  const seed = level * 13 + 1;
+  const t = solveMoment(seed, level);
+  assert.equal(crossAttempt({ seed, elapsedMs: t, level }).hit, true, `level ${level}: solveMoment hits`);
+  const a = crossAttempt({ seed, elapsedMs: 1234, level });
+  const b = crossAttempt({ seed, elapsedMs: 1234, level });
+  assert.deepEqual(a, b, `level ${level}: crossAttempt deterministic`);
+  assert.ok(renderLevel(seed, level, t).length > 8, `level ${level}: renders`);
+}
+
+// ── a full rotation on a single-ring level has both hit and miss windows ─────────────────────────────
 {
   let hits = 0; let misses = 0;
-  for (let t = 0; t <= 13000; t += 50) {
-    const r = crossAttempt({ seed: 0, elapsedMs: t, level: 1 });
-    if (r.hit) hits += 1; else misses += 1;
+  for (let ms = 0; ms <= 13000; ms += 50) {
+    if (crossAttempt({ seed: 0, elapsedMs: ms, level: 1 }).hit) hits += 1; else misses += 1;
   }
-  assert.ok(hits > 0, "there is a window where CROSS lands");
-  assert.ok(misses > 0, "and a window where it misses");
-  const a = crossAttempt({ seed: 0, elapsedMs: 1234, level: 1 });
-  const b = crossAttempt({ seed: 0, elapsedMs: 1234, level: 1 });
-  assert.deepEqual(a, b, "crossAttempt is deterministic");
+  assert.ok(hits > 0 && misses > 0, "level 1 has both a hit window and a miss window");
 }
 
-// ── tighter tolerance at the boss ⇒ a narrower hit window than band 1 ───────────────────────────────
-{
-  const countHits = (level) => {
-    let n = 0;
-    for (let t = 0; t <= 13000; t += 25) if (crossAttempt({ seed: 0, elapsedMs: t, level }).hit) n += 1;
-    return n;
-  };
-  assert.ok(countHits(BOSS_LEVEL) < countHits(1), "the boss hit window is narrower than band 1");
-}
-
-// ── speed variance is seeded (deterministic per seed) ──────────────────────────────────────────────
-assert.equal(rotSpeedFor(0, 4), rotSpeedFor(0, 4), "rotSpeed deterministic per seed/level");
+assert.equal(rotSpeedFor(0, 7), rotSpeedFor(0, 7), "rotSpeed deterministic per seed/level");
 
 console.log("stage9 game tests passed");

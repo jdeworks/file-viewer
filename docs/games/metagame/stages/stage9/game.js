@@ -1,70 +1,45 @@
-// game.js — Stage 9 Observer State: band configs + the CROSS evaluation (pure, no DOM/timers).
-// The arena's gap rotates; pressing CROSS succeeds only when the gap is within tolerance of the top
-// (0deg) at press time. The engine evaluates the real angle identically in every band — later bands
-// only change speed/tolerance and DISPLAY (dual/hidden/dark zone), never the underlying check. This
-// is why the boss (level 18) is impossible online (Math.random reseeds the base angle each OBSERVE)
-// but learnable offline (seed 0 → fixed base angle).
+// game.js — Stage 9 Observer State: thin facade over the mode registry + level table (no DOM/timers).
+// The CROSS evaluation and the learnable "perfect moment" both DISPATCH on the level's mode, so each
+// movement is a genuinely different win condition (single ring / oscillating speed / two concentric
+// rings that must BOTH align / phantom-decoy gap / reversing direction), not a cosmetic skin.
+//
+// Online-vs-offline un-cheat: the back-third levels (movements.js `onlineUnstable`) and the boss reseed
+// while the connection is live, so they are only beatable after Offline Mode fixes the cached seed.
+// Motion is always a pure function of (seed, elapsedMs).
 
-import { ringAngle } from "./ring.js";
-import { makeRng } from "./rng.js";
+import { getMode, ringSpeed } from "./modes.js";
+import { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, MOVEMENTS } from "./movements.js";
 
-export const LEVELS = 18;
-export const BOSS_LEVEL = 18;
+export { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, MOVEMENTS };
 
-// Six bands of three levels. Each gets faster + tighter; later bands restrict the DISPLAY only.
-const BANDS = {
-  1: { baseSpeed: 30, speedVar: 0,  tolerance: 40, display: "open" },
-  2: { baseSpeed: 45, speedVar: 10, tolerance: 32, display: "open" },
-  3: { baseSpeed: 60, speedVar: 15, tolerance: 26, display: "dual" },
-  4: { baseSpeed: 75, speedVar: 20, tolerance: 22, display: "ghosts" },
-  5: { baseSpeed: 90, speedVar: 25, tolerance: 18, display: "hidden" },
-  6: { baseSpeed: 45, speedVar: 0,  tolerance: 15, display: "dark", darkZone: { start: 300, end: 60 } }
-};
-
-export function bandForLevel(level) {
-  return Math.max(1, Math.min(6, Math.ceil((Number(level) || 1) / 3)));
-}
-
-// Full config for a level: its band tuning + flags. Deterministic.
-export function levelConfig(level) {
-  const band = bandForLevel(level);
-  return { level: Number(level) || 1, band, ...BANDS[band], isBoss: Number(level) === BOSS_LEVEL };
-}
-
-// Rotation speed for a (seed, level): band base + a seeded per-attempt variance. Online the seed
-// changes each OBSERVE, so the speed (and base angle) shift — you can't build on prior observation.
-export function rotSpeedFor(seed, level) {
-  const cfg = levelConfig(level);
-  return cfg.baseSpeed + makeRng(`${seed}s`).float() * cfg.speedVar;
-}
-
-// Evaluate a CROSS press. Returns { hit, angle, distance, tolerance } — hit when the gap is within
-// the band tolerance of the top (0deg). The dark/hidden display does not change this evaluation.
+// Evaluate a CROSS press for (seed, level, elapsedMs). Dispatches to the level's mode.
 export function crossAttempt({ seed, elapsedMs, level }) {
   const cfg = levelConfig(level);
-  const speed = rotSpeedFor(seed, level);
-  const angle = ringAngle(seed, elapsedMs, speed);
-  const distance = angularDist(angle, 0);
-  return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance, level };
+  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
 }
 
-// The earliest elapsed (ms) at which a (seed, level) gap first reaches the top (0deg) — i.e. the
-// perfect CROSS moment. With a FIXED seed this is learnable by watching; with an online (random)
-// seed it changes every OBSERVE. Used by the boss un-cheat and by the sublevel test driver.
-export function solveElapsed(seed, level) {
-  const speed = rotSpeedFor(seed, level);
-  const base = ringAngle(seed, 0, speed);
-  const need = ((360 - base) % 360 + 360) % 360;
-  return Math.round(need / speed * 1000);
+// The earliest elapsed (ms) at which (seed, level) is a perfect CROSS — learnable by watching when the
+// seed is fixed (offline). Dispatches per mode. Used by the boss un-cheat and the smoke driver.
+export function solveMoment(seed, level) {
+  const cfg = levelConfig(level);
+  return getMode(cfg.mode).solveMoment(cfg, seed);
 }
 
-// Deterministic seed for a non-boss level so its rotation is stable (learnable) within the level,
-// online or off — only the BOSS reseeds per OBSERVE. Keeps sublevels fair while the boss stays the
-// gated, un-cheat-only fight.
+// Back-compat alias (older call sites / tests used solveElapsed).
+export const solveElapsed = solveMoment;
+
+// Render the arena for (seed, level, elapsedMs) — dispatches to the mode's renderer.
+export function renderLevel(seed, level, elapsedMs) {
+  const cfg = levelConfig(level);
+  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0);
+}
+
+// Single-ring rotation speed for a (seed, level) — kept for the HUD / simple-mode display.
+export function rotSpeedFor(seed, level) {
+  return ringSpeed(levelConfig(level), seed);
+}
+
+// Deterministic per-level seed so a learnable (non-onlineUnstable) level is stable online or off.
 export function sublevelSeed(level) {
   return (Number(level) || 1) * 31 + 7;
-}
-
-function angularDist(a, b) {
-  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
 }
