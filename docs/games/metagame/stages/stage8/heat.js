@@ -61,15 +61,18 @@ export function computeHeatDelta(state, statusOf, isOnline) {
   return { gen: round1(gen), vent: round1(vent), delta: round1(gen - vent) };
 }
 
-// Extra per-node health loss when the field is hot. 0 below the threshold; climbs to ~+2.7 at cap.
-export function thermalDecayBonus(heat) {
-  const over = Math.max(0, Number(heat || 0) - THERMAL_THRESHOLD);
-  return over / (HEAT_CAP - THERMAL_THRESHOLD) * 3;
+// Extra per-node health loss when the field is hot. 0 below the threshold; climbs to ~+3 at cap. The
+// threshold is raised by the Thermal Throttle tech (engine passes the effective value).
+export function thermalDecayBonus(heat, threshold = THERMAL_THRESHOLD) {
+  const t = Math.min(HEAT_CAP - 1, Number(threshold) || THERMAL_THRESHOLD);
+  const over = Math.max(0, Number(heat || 0) - t);
+  return over / (HEAT_CAP - t) * 3;
 }
 
 // Heat's contribution to the entropy readout (over-threshold heat reads as instability).
-export function thermalEntropy(heat) {
-  return Math.max(0, Number(heat || 0) - THERMAL_THRESHOLD) / 2;
+export function thermalEntropy(heat, threshold = THERMAL_THRESHOLD) {
+  const t = Number(threshold) || THERMAL_THRESHOLD;
+  return Math.max(0, Number(heat || 0) - t) / 2;
 }
 
 export function clampHeat(v) {

@@ -8,7 +8,9 @@ import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messa
 import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
 import { driveToGate } from "./solver.js";
 import { stormAvailable, braceStorm } from "./storms.js";
+import { buyTech, techStatus } from "./tech.js";
 import { paintStage8 } from "./paint.js";
+import { paintTech } from "./techpanel.js";
 import { snapshotRun } from "./state.js";
 import { makeRng } from "./rng.js";
 
@@ -50,6 +52,10 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
+    <details class="s8-tech-panel">
+      <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
+      <div class="s8-tech" data-field="tech"></div>
+    </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>
@@ -102,6 +108,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   root.addEventListener("click", (event) => {
     const repair = event.target.closest("button[data-repair]");
     if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
+    const tech = event.target.closest("button[data-tech]");
+    if (tech) { buyTech(state, tech.dataset.tech); persistAndPaint(); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
@@ -131,6 +139,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       persistAndPaint();
     },
     stormState: () => ({ available: stormAvailable(state), active: state.activeStorm, survived: state.stormsSurvived || 0, act: state.act || 1 }),
+    techStatus: () => techStatus(state),
+    buyTech(id) { const r = buyTech(state, id); persistAndPaint(); return r; },
     brace() {
       const r = braceStorm(state);
       persistAndPaint();
@@ -187,6 +197,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       els: { fields, map, log, root },
       onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
     });
+    paintTech(fields.tech, state);
   }
 
   function persistAndPaint() {

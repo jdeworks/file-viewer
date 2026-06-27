@@ -1141,6 +1141,16 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   const s8Unlocked = await page.evaluate(() => window.__fvStage8.lockState().unlocked);
   if (s8Unlocked) pass('Stage 8 fully gated after the archive un-cheat (all four gates met)'); else fail('Stage 8 still locked after archiving');
+  // Tech tree: Insight (from research nodes + storms) + Scrap (from the archives just made) buys tech.
+  // Cold Storage automation stays gated behind the MANUAL archive un-cheat (load-bearing preserved).
+  const s8Tech = await page.evaluate(() => {
+    const before = window.__fvStage8.state();
+    const buy = window.__fvStage8.buyTech('rep1');
+    const s = window.__fvStage8.state();
+    const sal3 = window.__fvStage8.techStatus().find((t) => t.id === 'sal3');
+    return { hadResources: before.insight >= 18 && before.scrap >= 12, bought: buy.ok, bonus: s.repairBudgetBonus, manualArchiveDone: s.manualArchiveDone, coldGated: sal3.reason !== 'needs-archive' };
+  });
+  if (s8Tech.bought && s8Tech.bonus === 3) pass('Stage 8 tech tree: Insight+Scrap buys a tech and applies its effect'); else fail(`Stage 8 tech buy failed: ${JSON.stringify(s8Tech)}`);
   // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
   const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
   if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);

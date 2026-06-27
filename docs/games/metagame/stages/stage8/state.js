@@ -1,5 +1,6 @@
 import { NODES, NODE_BY_ID, freshSectorNodes } from "./nodes.js";
 import { bellMessages } from "./messages.js";
+import { defaultTechBonuses, recomputeTechBonuses } from "./tech.js";
 
 // state.js — Stage 8 Entropy Field survival sim state.
 //
@@ -35,6 +36,9 @@ export function defaultState() {
     insight: 0,
     insightTotal: 0,
     insightRate: 0,
+    tech: {},
+    manualArchiveDone: false,
+    ...defaultTechBonuses(),
     selectedDebrisId: "",
     externalImportBonusCycles: 0,
     stabilizers: 0,
@@ -110,6 +114,9 @@ export function normalizeState(state) {
   target.insight = Math.max(0, num(target.insight, 0));
   target.insightTotal = Math.max(0, num(target.insightTotal, 0));
   target.insightRate = num(target.insightRate, 0);
+  target.tech = plain(target.tech);
+  target.manualArchiveDone = Boolean(target.manualArchiveDone);
+  recomputeTechBonuses(target); // rebuild bonus fields from the purchased set (source of truth)
   target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
   target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
   target.stabilizers = Math.max(0, num(target.stabilizers, 0));
@@ -151,6 +158,8 @@ export function snapshotRun(state) {
     insight: state.insight || 0,
     insightTotal: state.insightTotal || 0,
     insightRate: state.insightRate || 0,
+    tech: { ...(state.tech || {}) },
+    manualArchiveDone: Boolean(state.manualArchiveDone),
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
     stabilizers: state.stabilizers || 0,

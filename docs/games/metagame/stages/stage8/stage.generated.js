@@ -388,8 +388,9 @@ function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
-  const scrap = scrapYield(debris);
+  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1)));
   earnScrap(state, scrap);
+  state.manualArchiveDone = true;
   state.selectedDebrisId = state.debris[0]?.id || "";
   pushLog2(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
   const firstArchive = !hasSalvageArchived(actions);
@@ -524,6 +525,226 @@ function unlockAchievement(achievements, id, detail) {
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
 }
 
+// ../../docs/games/metagame/stages/stage8/tech.js
+var TECHS = [
+  // ── REPAIR branch ────────────────────────────────────────────────────────────────────────────────
+  {
+    id: "rep1",
+    branch: "repair",
+    label: "Repair Drones Mk I",
+    desc: "+3 repair units / cycle.",
+    insight: 18,
+    scrap: 12,
+    requires: null,
+    apply: (b) => {
+      b.repairBudgetBonus += 3;
+    }
+  },
+  {
+    id: "rep2",
+    branch: "repair",
+    label: "Efficient Welds",
+    desc: "+2 health restored per repair unit.",
+    insight: 40,
+    scrap: 30,
+    requires: "rep1",
+    apply: (b) => {
+      b.repairEfficiencyBonus += 2;
+    }
+  },
+  {
+    id: "rep3",
+    branch: "repair",
+    label: "Auto-Repair Drone",
+    desc: "Automation: repairs the weakest spine node each cycle.",
+    insight: 85,
+    scrap: 60,
+    requires: "rep2",
+    apply: (b) => {
+      b.autoRepair = true;
+    }
+  },
+  // ── THERMAL branch ───────────────────────────────────────────────────────────────────────────────
+  {
+    id: "thm1",
+    branch: "thermal",
+    label: "Heat Sinks",
+    desc: "+5 passive heat venting / cycle.",
+    insight: 18,
+    scrap: 12,
+    requires: null,
+    apply: (b) => {
+      b.heatVentBonus += 5;
+    }
+  },
+  {
+    id: "thm2",
+    branch: "thermal",
+    label: "Thermal Throttle",
+    desc: "+12 heat before it amplifies decay.",
+    insight: 40,
+    scrap: 28,
+    requires: "thm1",
+    apply: (b) => {
+      b.thermalThresholdBonus += 12;
+    }
+  },
+  {
+    id: "thm3",
+    branch: "thermal",
+    label: "Cryo Loop",
+    desc: "+8 more passive heat venting / cycle.",
+    insight: 80,
+    scrap: 55,
+    requires: "thm2",
+    apply: (b) => {
+      b.heatVentBonus += 8;
+    }
+  },
+  // ── SALVAGE branch ───────────────────────────────────────────────────────────────────────────────
+  {
+    id: "sal1",
+    branch: "salvage",
+    label: "Refinery Optics",
+    desc: "+50% Scrap from archived debris.",
+    insight: 20,
+    scrap: 10,
+    requires: null,
+    apply: (b) => {
+      b.scrapMult += 0.5;
+    }
+  },
+  {
+    id: "sal2",
+    branch: "salvage",
+    label: "Deep Salvage",
+    desc: "Debris survives +1 cycle before decaying.",
+    insight: 42,
+    scrap: 30,
+    requires: "sal1",
+    apply: (b) => {
+      b.debrisDecayBonus += 1;
+    }
+  },
+  {
+    id: "sal3",
+    branch: "salvage",
+    label: "Cold Storage",
+    desc: "Automation: auto-archives a debris file each cycle (after you have archived by hand).",
+    insight: 95,
+    scrap: 80,
+    requires: "sal2",
+    needsManualArchive: true,
+    apply: (b) => {
+      b.coldStorage = true;
+    }
+  },
+  // ── TOPOLOGY branch ──────────────────────────────────────────────────────────────────────────────
+  {
+    id: "top1",
+    branch: "topology",
+    label: "Reinforced Relays",
+    desc: "-1 base decay on every node.",
+    insight: 22,
+    scrap: 14,
+    requires: null,
+    apply: (b) => {
+      b.decayReduction += 1;
+    }
+  },
+  {
+    id: "top2",
+    branch: "topology",
+    label: "Load Balancer",
+    desc: "Cascade stress propagates at half strength.",
+    insight: 45,
+    scrap: 32,
+    requires: "top1",
+    apply: (b) => {
+      b.cascadeStressMult = Math.min(b.cascadeStressMult, 0.5);
+    }
+  },
+  {
+    id: "top3",
+    branch: "topology",
+    label: "Redundant Cores",
+    desc: "Core anchors regenerate +3 health / cycle.",
+    insight: 90,
+    scrap: 65,
+    requires: "top2",
+    apply: (b) => {
+      b.coreRegen += 3;
+    }
+  }
+];
+var TECH_BY_ID = new Map(TECHS.map((t) => [t.id, t]));
+function defaultTechBonuses() {
+  return {
+    repairBudgetBonus: 0,
+    repairEfficiencyBonus: 0,
+    heatVentBonus: 0,
+    thermalThresholdBonus: 0,
+    decayReduction: 0,
+    cascadeStressMult: 1,
+    coreRegen: 0,
+    scrapMult: 1,
+    debrisDecayBonus: 0,
+    autoRepair: false,
+    coldStorage: false
+  };
+}
+function isPurchased(state, id) {
+  return Boolean(state.tech && state.tech[id]);
+}
+function buyBlockReason(state, id) {
+  const tech = TECH_BY_ID.get(id);
+  if (!tech) return "unknown";
+  if (isPurchased(state, id)) return "owned";
+  if (tech.requires && !isPurchased(state, tech.requires)) return "requires";
+  if (tech.needsManualArchive && !state.manualArchiveDone) return "needs-archive";
+  if (Number(state.insight || 0) < tech.insight) return "insight";
+  if (Number(state.scrap || 0) < tech.scrap) return "scrap";
+  return null;
+}
+function canBuyTech(state, id) {
+  return buyBlockReason(state, id) === null;
+}
+function buyTech(state, id) {
+  const reason = buyBlockReason(state, id);
+  if (reason) return { ok: false, reason };
+  const tech = TECH_BY_ID.get(id);
+  if (!state.tech || typeof state.tech !== "object") state.tech = {};
+  state.insight = Number(state.insight || 0) - tech.insight;
+  state.scrap = Number(state.scrap || 0) - tech.scrap;
+  state.tech[id] = true;
+  recomputeTechBonuses(state);
+  pushLog3(state, `tech: ${tech.label} online.`);
+  return { ok: true };
+}
+function recomputeTechBonuses(state) {
+  const b = defaultTechBonuses();
+  for (const tech of TECHS) if (isPurchased(state, tech.id)) tech.apply(b);
+  Object.assign(state, b);
+  return b;
+}
+function techStatus(state) {
+  return TECHS.map((t) => ({
+    id: t.id,
+    branch: t.branch,
+    label: t.label,
+    desc: t.desc,
+    insight: t.insight,
+    scrap: t.scrap,
+    requires: t.requires,
+    owned: isPurchased(state, t.id),
+    reason: buyBlockReason(state, t.id),
+    canBuy: canBuyTech(state, t.id)
+  }));
+}
+function pushLog3(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+
 // ../../docs/games/metagame/stages/stage8/state.js
 var STATE_VERSION = 3;
 function freshNodes() {
@@ -547,6 +768,9 @@ function defaultState() {
     insight: 0,
     insightTotal: 0,
     insightRate: 0,
+    tech: {},
+    manualArchiveDone: false,
+    ...defaultTechBonuses(),
     selectedDebrisId: "",
     externalImportBonusCycles: 0,
     stabilizers: 0,
@@ -612,6 +836,9 @@ function normalizeState(state) {
   target.insight = Math.max(0, num(target.insight, 0));
   target.insightTotal = Math.max(0, num(target.insightTotal, 0));
   target.insightRate = num(target.insightRate, 0);
+  target.tech = plain(target.tech);
+  target.manualArchiveDone = Boolean(target.manualArchiveDone);
+  recomputeTechBonuses(target);
   target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
   target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
   target.stabilizers = Math.max(0, num(target.stabilizers, 0));
@@ -651,6 +878,8 @@ function snapshotRun(state) {
     insight: state.insight || 0,
     insightTotal: state.insightTotal || 0,
     insightRate: state.insightRate || 0,
+    tech: { ...state.tech || {} },
+    manualArchiveDone: Boolean(state.manualArchiveDone),
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
     stabilizers: state.stabilizers || 0,
@@ -797,7 +1026,7 @@ var EVENTS = [
   }
 ];
 var EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
-function pushLog3(state, line) {
+function pushLog4(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 function resolveEvent(state, rng) {
@@ -809,7 +1038,7 @@ function resolveEvent(state, rng) {
   if (!ev) return null;
   const detail = ev.apply(state, rng) || {};
   state.activeEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), ...detail };
-  pushLog3(state, `${ev.label}: ${detail.note || "resolved"}.`);
+  pushLog4(state, `${ev.label}: ${detail.note || "resolved"}.`);
   return state.activeEvent;
 }
 function telegraphNext(state, rng) {
@@ -818,7 +1047,7 @@ function telegraphNext(state, rng) {
   const ev = rng.pick(EVENTS);
   state.pendingEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), telegraph: ev.telegraph };
   state.eventSeq = Number(state.eventSeq || 0) + 1;
-  pushLog3(state, `telegraph — next cycle: ${ev.telegraph}`);
+  pushLog4(state, `telegraph — next cycle: ${ev.telegraph}`);
   return state.pendingEvent;
 }
 
@@ -861,12 +1090,14 @@ function computeHeatDelta(state, statusOf, isOnline) {
   const vent = BASE_VENT + ventFromStructures(state) + ventFromCoolantNodes(state, statusOf, isOnline);
   return { gen: round1(gen), vent: round1(vent), delta: round1(gen - vent) };
 }
-function thermalDecayBonus(heat) {
-  const over = Math.max(0, Number(heat || 0) - THERMAL_THRESHOLD);
-  return over / (HEAT_CAP - THERMAL_THRESHOLD) * 3;
+function thermalDecayBonus(heat, threshold = THERMAL_THRESHOLD) {
+  const t = Math.min(HEAT_CAP - 1, Number(threshold) || THERMAL_THRESHOLD);
+  const over = Math.max(0, Number(heat || 0) - t);
+  return over / (HEAT_CAP - t) * 3;
 }
-function thermalEntropy(heat) {
-  return Math.max(0, Number(heat || 0) - THERMAL_THRESHOLD) / 2;
+function thermalEntropy(heat, threshold = THERMAL_THRESHOLD) {
+  const t = Number(threshold) || THERMAL_THRESHOLD;
+  return Math.max(0, Number(heat || 0) - t) / 2;
 }
 function clampHeat(v) {
   return Math.max(0, Math.min(HEAT_CAP, Number(v) || 0));
@@ -896,6 +1127,10 @@ function ensureRuntime(state) {
   if (!Number.isFinite(state.stabilizers)) state.stabilizers = 0;
   if (!Number.isFinite(state.heat)) state.heat = 0;
   if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
+  if (!Number.isFinite(state.cascadeStressMult)) state.cascadeStressMult = 1;
+  for (const k of ["repairEfficiencyBonus", "decayReduction", "coreRegen", "thermalThresholdBonus", "debrisDecayBonus", "scrapMult"]) {
+    if (!Number.isFinite(state[k])) state[k] = k === "scrapMult" ? 1 : 0;
+  }
   for (const n of state.nodes) if (!Number.isFinite(n.cascadeStress)) n.cascadeStress = 0;
 }
 var clamp3 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -910,38 +1145,48 @@ function advanceCycle(state, rng) {
     state.stabilized[id] -= 1;
     if (state.stabilized[id] <= 0) delete state.stabilized[id];
   }
-  const thermalBonus = thermalDecayBonus(state.heat);
+  const threshold = THERMAL_THRESHOLD + (state.thermalThresholdBonus || 0);
+  const thermalBonus = thermalDecayBonus(state.heat, threshold);
+  const decayReduction = Math.max(0, Number(state.decayReduction || 0));
   for (const n of state.nodes) {
     if (state.stabilized[n.id]) continue;
     const def = nodeById(n.id) || {};
     const highLoad = Boolean(state.highLoad[n.id]) && def.supportsHighLoad;
-    const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1) + thermalBonus;
+    const baseDecay = Math.max(0, (def.baseDecayPct || 0) - decayReduction);
+    const loss = (baseDecay + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1) + thermalBonus;
     n.health = clamp3(n.health - loss, 0, 100);
   }
+  const efficiency = REPAIR_EFFICIENCY + Math.max(0, Number(state.repairEfficiencyBonus || 0));
   for (const [id, units] of Object.entries(state.repairAllocations)) {
     const n = node2(state, id);
-    if (n) n.health = clamp3(n.health + units * REPAIR_EFFICIENCY, 0, 100);
+    if (n) n.health = clamp3(n.health + units * efficiency, 0, 100);
   }
   state.repairAllocations = {};
+  const coreRegen = Math.max(0, Number(state.coreRegen || 0));
+  if (coreRegen) for (const n of state.nodes) {
+    const def = nodeById(n.id) || {};
+    if (def.noCascade && n.health > 0) n.health = clamp3(n.health + coreRegen, 0, 100);
+  }
   for (const n of state.nodes) {
     if (status(n.health) === "failed" && priorStatus.get(n.id) !== "failed") {
       const def = nodeById(n.id) || { tier: 1 };
       const [lo, hi] = DEBRIS_VALUE[def.tier] || DEBRIS_VALUE[1];
-      const debris = createDebris({ node: n.id, cycle: state.cycle, tier: def.tier, value: rng.int(lo, hi), decay: 2 });
+      const debris = createDebris({ node: n.id, cycle: state.cycle, tier: def.tier, value: rng.int(lo, hi), decay: 2 + Math.max(0, Number(state.debrisDecayBonus || 0)) });
       state.debris.push(debris);
       result.newDebris.push(debris);
       result.newlyFailed.push(n.id);
-      pushLog4(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
+      pushLog5(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
     }
   }
   for (const n of state.nodes) n.cascadeStress = 0;
+  const cascadeStep = Number.isFinite(state.cascadeStressMult) ? state.cascadeStressMult : 1;
   for (const n of state.nodes) {
     if (status(n.health) !== "failed") continue;
     for (const downstream of ADJACENCY.get(n.id) || []) {
       const ddef = nodeById(downstream) || {};
       if (ddef.noCascade) continue;
       const d = node2(state, downstream);
-      if (d) d.cascadeStress += 1;
+      if (d) d.cascadeStress += cascadeStep;
     }
   }
   const kept = [];
@@ -949,7 +1194,7 @@ function advanceCycle(state, rng) {
     item.decay -= 1;
     if (item.decay <= 0) {
       result.expiredDebris.push(item);
-      pushLog4(state, `${item.id} decayed. States lost permanently.`);
+      pushLog5(state, `${item.id} decayed. States lost permanently.`);
     } else kept.push(item);
   }
   state.debris = kept;
@@ -979,7 +1224,7 @@ function advanceCycle(state, rng) {
   state.heatRate = heat.delta;
   result.heat = state.heat;
   result.heatRate = heat.delta;
-  result.entropy = clamp3(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
+  result.entropy = clamp3(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat, threshold), 0, 100);
   state.entropy = result.entropy;
   state.repairUnits = repairBudget(state);
   state.cycle = (state.cycle || 0) + 1;
@@ -1005,7 +1250,7 @@ function buildStabilizer(state, cost) {
   state.stabilizers = (state.stabilizers || 0) + 1;
   return { ok: true, stabilizers: state.stabilizers };
 }
-function pushLog4(state, line) {
+function pushLog5(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
@@ -1167,6 +1412,41 @@ function debrisChip(item, onSelectDebris) {
   return debris;
 }
 
+// ../../docs/games/metagame/stages/stage8/techpanel.js
+var BRANCH_LABEL = { repair: "REPAIR", thermal: "THERMAL", salvage: "SALVAGE", topology: "TOPOLOGY" };
+var REASON_HINT = {
+  requires: "needs prerequisite",
+  "needs-archive": "archive by hand first",
+  insight: "more Insight",
+  scrap: "more Scrap"
+};
+function paintTech(el, state) {
+  if (!el) return;
+  const techs = techStatus(state);
+  const branches = ["repair", "thermal", "salvage", "topology"];
+  el.replaceChildren(...branches.map((branch) => {
+    const col = document.createElement("div");
+    col.className = "s8-tech-branch";
+    const head = document.createElement("h4");
+    head.textContent = BRANCH_LABEL[branch] || branch;
+    col.append(head);
+    for (const t of techs.filter((x) => x.branch === branch)) col.append(techRow(t));
+    return col;
+  }));
+}
+function techRow(t) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "s8-tech-item";
+  btn.dataset.tech = t.id;
+  if (t.owned) btn.classList.add("is-owned");
+  btn.disabled = t.owned || !t.canBuy;
+  const status2 = t.owned ? "✓ owned" : `${t.insight}◈ ${t.scrap}⛭`;
+  const blocked = !t.owned && !t.canBuy && t.reason ? ` · ${REASON_HINT[t.reason] || t.reason}` : "";
+  btn.innerHTML = `<span class="s8-tech-name">${t.label}</span><span class="s8-tech-cost">${status2}${blocked}</span><span class="s8-tech-desc">${t.desc}</span>`;
+  return btn;
+}
+
 // ../../docs/games/metagame/stages/stage8/renderer.js
 var REPAIR_STEP2 = 2;
 function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, run, onStageComplete }) {
@@ -1205,6 +1485,10 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
+    <details class="s8-tech-panel">
+      <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
+      <div class="s8-tech" data-field="tech"></div>
+    </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>
@@ -1254,6 +1538,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       persistAndPaint();
       return;
     }
+    const tech = event.target.closest("button[data-tech]");
+    if (tech) {
+      buyTech(state, tech.dataset.tech);
+      persistAndPaint();
+      return;
+    }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
@@ -1277,6 +1567,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       persistAndPaint();
     },
     stormState: () => ({ available: stormAvailable(state), active: state.activeStorm, survived: state.stormsSurvived || 0, act: state.act || 1 }),
+    techStatus: () => techStatus(state),
+    buyTech(id) {
+      const r = buyTech(state, id);
+      persistAndPaint();
+      return r;
+    },
     brace() {
       const r = braceStorm(state);
       persistAndPaint();
@@ -1330,6 +1626,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
         repaint();
       }
     });
+    paintTech(fields.tech, state);
   }
   function persistAndPaint() {
     if (run && typeof run.checkpoint === "function" && !state.boss.defeated) {

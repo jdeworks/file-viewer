@@ -101,6 +101,40 @@
   max-height: 200px;
 }
 
+.s8-rate { color: #8b9ba8; font-style: normal; font-size: 12px; }
+
+/* Tech-tree panel */
+.s8-tech-panel {
+  margin: 12px 0;
+  border: 1px solid #4a4a4a;
+  background: #171615;
+  padding: 8px 12px;
+}
+.s8-tech-panel > summary { cursor: pointer; font-weight: 700; color: #b6ad9c; }
+.s8-tech {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.s8-tech-branch h4 { margin: 0 0 6px; color: #9fe1cb; font-size: 12px; letter-spacing: 0.08em; }
+.s8-tech-item {
+  display: block;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  text-align: left;
+  color: inherit;
+  background: #20201d;
+  border: 1px solid #4a4a4a;
+  cursor: pointer;
+}
+.s8-tech-item:disabled { cursor: default; opacity: 0.55; }
+.s8-tech-item.is-owned { border-color: #5c7a3e; opacity: 0.85; }
+.s8-tech-name { display: block; font-weight: 700; }
+.s8-tech-cost { display: block; color: #d8a657; font-size: 12px; }
+.s8-tech-desc { display: block; color: #b6ad9c; font-size: 12px; }
+
 .s8-log {
   min-height: 7em;
   padding-left: 24px;

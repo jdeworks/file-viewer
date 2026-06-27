@@ -5,7 +5,7 @@
 import { nodeById, ADJACENCY } from "./nodes.js";
 import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
-import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat } from "./heat.js";
+import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat, THERMAL_THRESHOLD } from "./heat.js";
 import { insightIncome, earnInsight } from "./resources.js";
 import { tickStorm } from "./storms.js";
 
@@ -35,6 +35,10 @@ function ensureRuntime(state) {
   if (!Number.isFinite(state.stabilizers)) state.stabilizers = 0;
   if (!Number.isFinite(state.heat)) state.heat = 0;
   if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
+  if (!Number.isFinite(state.cascadeStressMult)) state.cascadeStressMult = 1;
+  for (const k of ["repairEfficiencyBonus", "decayReduction", "coreRegen", "thermalThresholdBonus", "debrisDecayBonus", "scrapMult"]) {
+    if (!Number.isFinite(state[k])) state[k] = k === "scrapMult" ? 1 : 0;
+  }
   for (const n of state.nodes) if (!Number.isFinite(n.cascadeStress)) n.cascadeStress = 0;
 }
 
@@ -57,27 +61,38 @@ export function advanceCycle(state, rng) {
     state.stabilized[id] -= 1;
     if (state.stabilized[id] <= 0) delete state.stabilized[id];
   }
-  // 2. decay (skip stabilized). Heat carried in from last cycle amplifies decay above the threshold.
-  const thermalBonus = thermalDecayBonus(state.heat);
+  // 2. decay (skip stabilized). Heat carried in from last cycle amplifies decay above the (tech-raised)
+  // threshold; Reinforced Relays (decayReduction) lowers each node's base decay.
+  const threshold = THERMAL_THRESHOLD + (state.thermalThresholdBonus || 0);
+  const thermalBonus = thermalDecayBonus(state.heat, threshold);
+  const decayReduction = Math.max(0, Number(state.decayReduction || 0));
   for (const n of state.nodes) {
     if (state.stabilized[n.id]) continue;
     const def = nodeById(n.id) || {};
     const highLoad = Boolean(state.highLoad[n.id]) && def.supportsHighLoad;
-    const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1.0) + thermalBonus;
+    const baseDecay = Math.max(0, (def.baseDecayPct || 0) - decayReduction);
+    const loss = (baseDecay + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1.0) + thermalBonus;
     n.health = clamp(n.health - loss, 0, 100);
   }
-  // 3. repair allocations
+  // 3. repair allocations (Efficient Welds raises restored health per unit)
+  const efficiency = REPAIR_EFFICIENCY + Math.max(0, Number(state.repairEfficiencyBonus || 0));
   for (const [id, units] of Object.entries(state.repairAllocations)) {
     const n = node(state, id);
-    if (n) n.health = clamp(n.health + units * REPAIR_EFFICIENCY, 0, 100);
+    if (n) n.health = clamp(n.health + units * efficiency, 0, 100);
   }
   state.repairAllocations = {};
+  // 3b. Redundant Cores: core anchors regenerate each cycle.
+  const coreRegen = Math.max(0, Number(state.coreRegen || 0));
+  if (coreRegen) for (const n of state.nodes) {
+    const def = nodeById(n.id) || {};
+    if (def.noCascade && n.health > 0) n.health = clamp(n.health + coreRegen, 0, 100);
+  }
   // 4/5. status transition + debris on newly-failed nodes
   for (const n of state.nodes) {
     if (status(n.health) === "failed" && priorStatus.get(n.id) !== "failed") {
       const def = nodeById(n.id) || { tier: 1 };
       const [lo, hi] = DEBRIS_VALUE[def.tier] || DEBRIS_VALUE[1];
-      const debris = createDebris({ node: n.id, cycle: state.cycle, tier: def.tier, value: rng.int(lo, hi), decay: 2 });
+      const debris = createDebris({ node: n.id, cycle: state.cycle, tier: def.tier, value: rng.int(lo, hi), decay: 2 + Math.max(0, Number(state.debrisDecayBonus || 0)) });
       state.debris.push(debris);
       result.newDebris.push(debris);
       result.newlyFailed.push(n.id);
@@ -86,13 +101,14 @@ export function advanceCycle(state, rng) {
   }
   // 6. recompute cascade stress for NEXT cycle: a failed node stresses its downstream neighbours
   for (const n of state.nodes) n.cascadeStress = 0;
+  const cascadeStep = Number.isFinite(state.cascadeStressMult) ? state.cascadeStressMult : 1; // Load Balancer
   for (const n of state.nodes) {
     if (status(n.health) !== "failed") continue;
     for (const downstream of ADJACENCY.get(n.id) || []) {
       const ddef = nodeById(downstream) || {};
       if (ddef.noCascade) continue; // core anchors never take cascade stress (recovery anchor)
       const d = node(state, downstream);
-      if (d) d.cascadeStress += 1;
+      if (d) d.cascadeStress += cascadeStep;
     }
   }
   // 7. expire debris
@@ -128,7 +144,7 @@ export function advanceCycle(state, rng) {
   result.heat = state.heat;
   result.heatRate = heat.delta;
   // 9. entropy % (failed/degrading nodes + the thermal contribution of an over-hot field)
-  result.entropy = clamp(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
+  result.entropy = clamp(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat, threshold), 0, 100);
   state.entropy = result.entropy;
   // 10/11. reset budget (scales with the network) + advance the cycle
   state.repairUnits = repairBudget(state);
