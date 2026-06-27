@@ -78,6 +78,12 @@ export const RELICS = [
     text: "Cursed. Your congestion window cap is +1, but a wide turn shrinks it by 2.",
     hooks: { onCombatStart: (ctx) => { ctx.combat.windowCap = (ctx.combat.windowCap || 5) + 1; ctx.combat.windowDecay = 2; } }
   },
+  // ── Act 5 PRESENTATION · CORRUPTION: a build-definer — every corruption stack ticks twice ──────────
+  {
+    id: "entropy-pool", name: "Entropy Pool", rarity: "rare",
+    text: "Corruption on the enemy ticks twice each turn.",
+    hooks: { onCombatStart: (ctx) => { ctx.combat.corruptionDouble = true; } }
+  },
   // ── Phase G: relics built on the new combat hooks (onTurnEnd/onKill/onDamageTaken/onExhaust/onShuffle) ─
   {
     // Rewards leaving energy on the table — turtle decks turn the leftover into armor.

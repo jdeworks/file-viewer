@@ -415,4 +415,52 @@ function congestionCombat(seed = 11) {
   assert.equal(c.player.hp, playerHp0, "a corruption kill means the enemy never attacked");
 }
 
+// ── H · Daemon Swarm: corruption application + payoff cards ─────────────────────────────────────────
+function daemonCombat(hand, { seed = 5, hp = 60, enemy = "corrupt-packet", relics = [] } = {}) {
+  const c = createCombat({ deck: hand, player: { hp, maxHp: hp }, enemy: instantiateEnemy(enemy, 1), seed, relics });
+  c.hand = [...hand]; c.player.energy = 9;
+  return c;
+}
+{
+  const c = daemonCombat(["FORK_BOMB", "ZOMBIE_PROCESS"]);
+  playCard(c, 0);
+  assert.equal(c.enemy.statuses.corruption, 4, "FORK_BOMB applies 4 corruption");
+  playCard(c, 0); // ZOMBIE_PROCESS: +3, and +3 more because already corrupted
+  assert.equal(c.enemy.statuses.corruption, 4 + 6, "ZOMBIE_PROCESS adds extra when already corrupted");
+}
+{
+  const c = daemonCombat(["MEMORY_LEAK", "FORK_BOMB"]);
+  playCard(c, 0); // boost +1, then apply 2 (→ 3)
+  assert.equal(c.enemy.statuses.corruption, 3, "MEMORY_LEAK applies 2 + its own +1 = 3");
+  playCard(c, 0); // FORK_BOMB: 4 + 1 boost = 5
+  assert.equal(c.enemy.statuses.corruption, 3 + 5, "Memory Leak boosts later corruption by 1");
+}
+{
+  const c = daemonCombat(["CORE_DUMP"]); c.enemy.statuses.corruption = 10;
+  const hp0 = c.enemy.hp;
+  playCard(c, 0);
+  assert.equal(c.enemy.hp, hp0 - 10, "CORE_DUMP deals damage = corruption");
+  assert.equal(c.enemy.statuses.corruption, 5, "CORE_DUMP halves the stack");
+}
+{
+  const c = daemonCombat(["GARBAGE_COLLECT"]); c.enemy.statuses.corruption = 12;
+  const hp0 = c.enemy.hp;
+  playCard(c, 0);
+  assert.equal(c.enemy.hp, hp0 - 12, "GARBAGE_COLLECT deals all corruption instantly");
+  assert.ok(!c.enemy.statuses.corruption, "GARBAGE_COLLECT consumes the whole stack");
+}
+{
+  const c = daemonCombat(["CASCADE_FAILURE"]); c.enemy.statuses.corruption = 5;
+  playCard(c, 0);
+  assert.equal(c.enemy.statuses.corruption, 10, "CASCADE_FAILURE doubles the corruption");
+}
+{
+  // Entropy Pool relic: corruption ticks twice at the enemy turn.
+  const c = daemonCombat(["FORK_BOMB"], { hp: 300, relics: relicsFor(["entropy-pool"]) });
+  c.enemy.hp = 400; c.enemy.statuses.corruption = 5;
+  const hp0 = c.enemy.hp;
+  endTurn(c);
+  assert.equal(c.enemy.hp, hp0 - 10, "Entropy Pool doubles the tick (5×2)");
+}
+
 console.log("stage6 combat engine tests passed");

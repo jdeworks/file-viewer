@@ -647,6 +647,110 @@ var LAYER_CARDS = [
   }
 ];
 
+// ../../docs/games/metagame/stages/stage6/cards-daemon.js
+var DAEMON_CARDS = [
+  {
+    id: "FORK_BOMB",
+    type: "Daemon",
+    cost: 1,
+    rarity: "common",
+    text: "Apply 4 Corruption.",
+    effect: (ctx) => ctx.applyCorruption(4)
+  },
+  {
+    id: "DAEMON_SPAWN",
+    type: "Daemon",
+    cost: 0,
+    rarity: "common",
+    text: "Apply 2 Corruption.",
+    effect: (ctx) => ctx.applyCorruption(2)
+  },
+  {
+    id: "ROT",
+    type: "Daemon",
+    cost: 1,
+    rarity: "common",
+    text: "Apply 2 Corruption. Apply 1 Weak to the enemy.",
+    effect: (ctx) => {
+      ctx.applyCorruption(2);
+      ctx.applyEnemy("weak", 1);
+    }
+  },
+  {
+    id: "ZOMBIE_PROCESS",
+    type: "Daemon",
+    cost: 1,
+    rarity: "common",
+    text: "Apply 3 Corruption. If the enemy is already corrupted, apply 3 more.",
+    effect: (ctx) => {
+      const had = ctx.enemyCorruption > 0;
+      ctx.applyCorruption(3);
+      if (had) ctx.applyCorruption(3);
+    }
+  },
+  {
+    id: "MEMORY_LEAK",
+    type: "Daemon",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Corruption you apply is increased by 1 for the rest of combat. Apply 2 Corruption.",
+    effect: (ctx) => {
+      ctx.boostCorruption(1);
+      ctx.applyCorruption(2);
+    }
+  },
+  {
+    id: "ENTROPY_WAVE",
+    type: "Daemon",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Apply 3 Corruption. Draw 1.",
+    effect: (ctx) => {
+      ctx.applyCorruption(3);
+      ctx.draw(1);
+    }
+  },
+  {
+    id: "SEGFAULT_SPILL",
+    type: "Daemon",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 4. Apply 2 Corruption.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      ctx.applyCorruption(2);
+    }
+  },
+  {
+    id: "CORE_DUMP",
+    type: "Daemon",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal damage equal to the enemy's Corruption, then halve it.",
+    effect: (ctx) => {
+      ctx.deal(ctx.enemyCorruption);
+      ctx.halveCorruption();
+    }
+  },
+  {
+    id: "CASCADE_FAILURE",
+    type: "Daemon",
+    cost: 2,
+    rarity: "rare",
+    text: "Apply Corruption equal to the enemy's current Corruption (double it).",
+    effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption)
+  },
+  {
+    id: "GARBAGE_COLLECT",
+    type: "Daemon",
+    cost: 2,
+    rarity: "rare",
+    exhaust: true,
+    text: "Consume all Corruption on the enemy and deal that much damage instantly. Exhaust.",
+    effect: (ctx) => ctx.deal(ctx.consumeCorruption())
+  }
+];
+
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
@@ -684,7 +788,7 @@ function hashSeed(seed, key) {
 }
 
 // ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 function cardById(id) {
   return BY_ID.get(id) || null;
@@ -1539,6 +1643,16 @@ var RELICS = [
       ctx.combat.windowDecay = 2;
     } }
   },
+  // ── Act 5 PRESENTATION · CORRUPTION: a build-definer — every corruption stack ticks twice ──────────
+  {
+    id: "entropy-pool",
+    name: "Entropy Pool",
+    rarity: "rare",
+    text: "Corruption on the enemy ticks twice each turn.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.corruptionDouble = true;
+    } }
+  },
   // ── Phase G: relics built on the new combat hooks (onTurnEnd/onKill/onDamageTaken/onExhaust/onShuffle) ─
   {
     // Rewards leaving energy on the table — turtle decks turn the leftover into armor.
@@ -1981,7 +2095,34 @@ var SPECS = {
   DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => {
     ctx.defrag();
     ctx.draw(2);
-  } }
+  } },
+  // H · Act 5 CORRUPTION (Daemon Swarm)
+  FORK_BOMB: { text: "Apply 6 Corruption.", effect: (ctx) => ctx.applyCorruption(6) },
+  DAEMON_SPAWN: { text: "Apply 3 Corruption.", effect: (ctx) => ctx.applyCorruption(3) },
+  ROT: { text: "Apply 3 Corruption. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.applyCorruption(3);
+    ctx.applyEnemy("weak", 1);
+  } },
+  ZOMBIE_PROCESS: { text: "Apply 4 Corruption. If the enemy is already corrupted, apply 4 more.", effect: (ctx) => {
+    const had = ctx.enemyCorruption > 0;
+    ctx.applyCorruption(4);
+    if (had) ctx.applyCorruption(4);
+  } },
+  MEMORY_LEAK: { text: "Corruption you apply is increased by 1. Apply 3 Corruption.", effect: (ctx) => {
+    ctx.boostCorruption(1);
+    ctx.applyCorruption(3);
+  } },
+  ENTROPY_WAVE: { text: "Apply 4 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(4);
+    ctx.draw(1);
+  } },
+  SEGFAULT_SPILL: { text: "Deal 6. Apply 3 Corruption.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.applyCorruption(3);
+  } },
+  CORE_DUMP: { text: "Deal damage equal to the enemy's Corruption (keep the stack).", effect: (ctx) => ctx.deal(ctx.enemyCorruption) },
+  CASCADE_FAILURE: { text: "Apply Corruption equal to the enemy's Corruption + 2.", effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption + 2) },
+  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) }
 };
 function isUpgradedId(id) {
   return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);

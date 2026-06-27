@@ -13,9 +13,10 @@
 import { SIGNAL_CARDS } from "./cards-signal.js";
 import { PROTOCOL_CARDS } from "./cards-protocol.js";
 import { LAYER_CARDS } from "./cards-layer.js";
+import { DAEMON_CARDS } from "./cards-daemon.js";
 import { makeRng } from "./combat-rng.js";
 
-export const CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
+export const CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS];
 
 const BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 

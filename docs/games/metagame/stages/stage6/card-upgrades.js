@@ -59,7 +59,18 @@ const SPECS = {
   // D3 THROUGHPUT
   BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
   BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => { ctx.block(11); ctx.noWindowShrink(); } },
-  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => { ctx.defrag(); ctx.draw(2); } }
+  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => { ctx.defrag(); ctx.draw(2); } },
+  // H · Act 5 CORRUPTION (Daemon Swarm)
+  FORK_BOMB: { text: "Apply 6 Corruption.", effect: (ctx) => ctx.applyCorruption(6) },
+  DAEMON_SPAWN: { text: "Apply 3 Corruption.", effect: (ctx) => ctx.applyCorruption(3) },
+  ROT: { text: "Apply 3 Corruption. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.applyCorruption(3); ctx.applyEnemy("weak", 1); } },
+  ZOMBIE_PROCESS: { text: "Apply 4 Corruption. If the enemy is already corrupted, apply 4 more.", effect: (ctx) => { const had = ctx.enemyCorruption > 0; ctx.applyCorruption(4); if (had) ctx.applyCorruption(4); } },
+  MEMORY_LEAK: { text: "Corruption you apply is increased by 1. Apply 3 Corruption.", effect: (ctx) => { ctx.boostCorruption(1); ctx.applyCorruption(3); } },
+  ENTROPY_WAVE: { text: "Apply 4 Corruption. Draw 1.", effect: (ctx) => { ctx.applyCorruption(4); ctx.draw(1); } },
+  SEGFAULT_SPILL: { text: "Deal 6. Apply 3 Corruption.", effect: (ctx) => { ctx.deal(6); ctx.applyCorruption(3); } },
+  CORE_DUMP: { text: "Deal damage equal to the enemy's Corruption (keep the stack).", effect: (ctx) => ctx.deal(ctx.enemyCorruption) },
+  CASCADE_FAILURE: { text: "Apply Corruption equal to the enemy's Corruption + 2.", effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption + 2) },
+  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) }
 };
 
 export function isUpgradedId(id) {
