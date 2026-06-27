@@ -183,6 +183,11 @@ FULL_UNIT_TESTS=(
   tests/known-grain-lang.test.mjs
   tests/known-gnuplot-script.test.mjs
   tests/known-elm-lang.test.mjs
+  tests/known-elixir-lang.test.mjs
+  tests/known-elvish-script.test.mjs
+  tests/known-ink-script.test.mjs
+  tests/known-haskell-lang.test.mjs
+  tests/known-idris-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )

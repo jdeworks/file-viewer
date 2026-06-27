@@ -17,60 +17,96 @@ const CSS = `
 .elv-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#ede9fe;color:#6d28d9;font-weight:700;}
 .elv-tag-use{background:#e0f2fe;color:#0369a1;}
 .elv-tag-var{background:#fef3c7;color:#92400e;}
-.elv-tag-ext{background:#dcfce7;color:#166534;}
+.elv-tag-set{background:#fee2e2;color:#b91c1c;}
+.elv-tag-edit{background:#dcfce7;color:#166534;}
+.elv-name{font-weight:600;}
+.elv-args{color:var(--fg-2,#64748b);}
+.elv-arg{color:#0e7490;}
+.elv-arg-opt{color:#9333ea;}
+.elv-arg-rest{color:#b45309;}
+.elv-default{color:var(--fg-2,#94a3b8);}
 .elv-pill{display:inline-block;font-size:11px;padding:1px 7px;border-radius:8px;background:var(--bg-2,#f1f5f9);border:1px solid var(--border,#cbd5e1);font-family:ui-monospace,monospace;margin:2px 2px;}
 .elv-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
 `;
 
-function analyzeElvish(text) {
-  const lines = text.split(/\r?\n/);
+// Strip Elvish `#` line comments (whole-line and trailing), conservatively leaving a `#` that sits
+// inside a double-quoted string on the same line untouched (so URLs / fragments survive).
+function stripComments(text) {
+  return String(text || '').split(/\r?\n/).map((line) => {
+    let inStr = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') inStr = !inStr;
+      else if (ch === '#' && !inStr) {
+        // A comment starts the line or follows whitespace (not mid-token like a$#).
+        if (i === 0 || /\s/.test(line[i - 1])) return line.slice(0, i);
+      }
+    }
+    return line;
+  }).join('\n');
+}
+
+// Parse a lambda arg list (the text between `{|` and `|`) into typed args.
+// `name` → positional, `@rest` → rest, `&opt=default` → option.
+function parseArgs(argStr) {
+  return String(argStr || '').trim().split(/\s+/).filter(Boolean).map((a) => {
+    if (a.startsWith('&')) {
+      const eq = a.indexOf('=');
+      const name = eq >= 0 ? a.slice(1, eq) : a.slice(1);
+      return { name, kind: 'option', default: eq >= 0 ? a.slice(eq + 1) : '' };
+    }
+    if (a.startsWith('@')) return { name: a.slice(1), kind: 'rest' };
+    return { name: a, kind: 'positional' };
+  });
+}
+
+// Parse into structured facts. Exported (pure, DOM-free) for unit testing.
+export function analyzeElvish(text) {
+  const src = stripComments(text);
   const uses = [];
-  const fns = [];
+  const functions = [];
   const vars = [];
   const sets = [];
-  const externalCmds = new Set();
-  let ifCount = 0;
-  let forCount = 0;
-  let whileCount = 0;
 
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
+  // use modules (incl. github.com/... paths)
+  let m;
+  const useRe = /^[ \t]*use\s+(\S+)/gm;
+  while ((m = useRe.exec(src))) uses.push(m[1]);
 
-    // use module
-    const useM = trimmed.match(/^use\s+(\S+)/);
-    if (useM) { uses.push(useM[1]); continue; }
+  // fn definitions — capture the lambda arg list inside `{| ... |}` (or none for `fn name { }`).
+  const fnRe = /\bfn\s+([^\s{]+)\s*\{(?:\|([^|]*)\|)?/g;
+  while ((m = fnRe.exec(src))) {
+    functions.push({ name: m[1], args: m[2] != null ? parseArgs(m[2]) : [] });
+  }
 
-    // fn definition: fn name { or fn name [params] {
-    const fnM = trimmed.match(/^fn\s+(\S+)(?:\s+\[([^\]]*)\])?/);
-    if (fnM) {
-      const params = fnM[2] ? fnM[2].trim().split(/\s+/).filter(Boolean) : [];
-      fns.push({ name: fnM[1], params });
-      continue;
-    }
-
-    // var declaration
-    const varM = trimmed.match(/^var\s+([\w-]+)/);
-    if (varM) { vars.push(varM[1]); continue; }
-
-    // set assignment
-    const setM = trimmed.match(/^set\s+([\w:-]+)/);
-    if (setM) { sets.push(setM[1]); continue; }
-
-    // Control flow
-    if (/^\s*if\s/.test(line)) ifCount++;
-    if (/^\s*for\s/.test(line)) forCount++;
-    if (/^\s*while\s/.test(line)) whileCount++;
-
-    // External commands (lines starting with a bare word that isn't a keyword)
-    const extM = trimmed.match(/^([a-z][a-z0-9_-]*)\s/);
-    if (extM) {
-      const kw = new Set(['fn', 'var', 'set', 'use', 'if', 'elif', 'else', 'for', 'while', 'try', 'catch', 'finally', 'return', 'break', 'continue', 'del', 'and', 'or', 'not', 'nop', 'put', 'echo', 'print', 'pprint', 'fail', 'source', 'eval', 'peach', 'each', 'all', 'take', 'drop', 'count', 'keys', 'has-key', 'has-value', 'str', 'num', 'float64', 'int', 'bool', 'list', 'map', 'ns', 'make-map', 'from-json', 'to-json', 'from-lines', 'to-lines', 'slurp', 'splits', 'joins', 'order']);
-      if (!kw.has(extM[1])) externalCmds.add(extM[1]);
+  // var declarations — `var a`, `var x = ...`, `var a b = ...` (multiple names share one `var`).
+  const varRe = /^[ \t]*var\s+([^=\r\n]+?)\s*(?==|$)/gm;
+  while ((m = varRe.exec(src))) {
+    for (const name of m[1].trim().split(/\s+/).filter(Boolean)) {
+      vars.push({ name, kind: 'var' });
     }
   }
 
-  return { uses, fns, vars, sets, externalCmds: [...externalCmds], ifCount, forCount, whileCount };
+  // set assignments — `set name = ...`, `set a b = ...`; flag `edit:` (binding/prompt) targets.
+  const setRe = /^[ \t]*set\s+([^=\r\n]+?)\s*(?==|$)/gm;
+  while ((m = setRe.exec(src))) {
+    for (const name of m[1].trim().split(/\s+/).filter(Boolean)) {
+      sets.push({ name, edit: name.startsWith('edit:') });
+    }
+  }
+
+  const editBindings = sets.filter((s) => s.edit).map((s) => s.name);
+
+  // control flow tallies
+  const count = (re) => (src.match(re) || []).length;
+  const control = {
+    if: count(/(^|[\s;{(])if\s/g),
+    for: count(/(^|[\s;{(])for\s/g),
+    while: count(/(^|[\s;{(])while\s/g),
+    try: count(/(^|[\s;{(])try[\s{]/g),
+  };
+
+  return { uses, functions, vars, sets, editBindings, control };
 }
 
 function makeSection(host, title) {
@@ -83,186 +119,108 @@ function makeSection(host, title) {
   host.appendChild(sec);
   return sec;
 }
+function makeList(sec) { const ul = document.createElement('ul'); ul.className = 'elv-list'; sec.appendChild(ul); return ul; }
+function row(ul, html) { const li = document.createElement('li'); li.innerHTML = html; ul.appendChild(li); }
+function tag(cls, t) { return `<span class="elv-tag ${cls}">${esc(t)}</span>`; }
 
-function makeList(sec) {
-  const ul = document.createElement('ul');
-  ul.className = 'elv-list';
-  sec.appendChild(ul);
-  return ul;
+function argsHtml(args) {
+  if (!args.length) return '';
+  const inner = args.map((a) => {
+    if (a.kind === 'option') {
+      const def = a.default ? `<span class="elv-default">=${esc(a.default)}</span>` : '';
+      return `<span class="elv-arg-opt">&amp;${esc(a.name)}</span>${def}`;
+    }
+    if (a.kind === 'rest') return `<span class="elv-arg-rest">@${esc(a.name)}</span>`;
+    return `<span class="elv-arg">${esc(a.name)}</span>`;
+  }).join(' ');
+  return ` <span class="elv-args">{|${inner}|}</span>`;
 }
 
 export function render(intake) {
   const text = intake.text || '';
   const name = (intake.name || intake.filename || '').split('/').pop();
-  const { uses, fns, vars, sets, externalCmds, ifCount, forCount, whileCount } = analyzeElvish(text);
+  const { uses, functions, vars, sets, editBindings, control } = analyzeElvish(text);
 
   const host = document.createElement('div');
   host.className = 'elv-doc';
-
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
 
-  // Title
   const title = document.createElement('div');
   title.className = 'elv-title';
   title.innerHTML = `<span class="elv-badge">Elvish Script</span>${esc(name)}`;
   host.appendChild(title);
 
-  // Sub
+  const blocks = control.if + control.for + control.while + control.try;
   const sub = document.createElement('div');
   sub.className = 'elv-sub';
-  const parts = [];
-  if (uses.length) parts.push(`${uses.length} module${uses.length !== 1 ? 's' : ''}`);
-  parts.push(`${fns.length} fn${fns.length !== 1 ? 's' : ''}`);
-  if (vars.length) parts.push(`${vars.length} var${vars.length !== 1 ? 's' : ''}`);
-  const blocks = ifCount + forCount + whileCount;
-  if (blocks) parts.push(`${blocks} control block${blocks !== 1 ? 's' : ''}`);
-  sub.textContent = parts.join(' · ');
+  sub.textContent = [
+    uses.length && `${uses.length} module${uses.length !== 1 ? 's' : ''}`,
+    `${functions.length} fn${functions.length !== 1 ? 's' : ''}`,
+    vars.length && `${vars.length} var${vars.length !== 1 ? 's' : ''}`,
+    editBindings.length && `${editBindings.length} edit binding${editBindings.length !== 1 ? 's' : ''}`,
+    blocks && `${blocks} control block${blocks !== 1 ? 's' : ''}`,
+  ].filter(Boolean).join(' · ');
   host.appendChild(sub);
 
-  // Cards
   const cards = document.createElement('div');
   cards.className = 'elv-cards';
   for (const { value, label } of [
     { value: uses.length, label: 'Modules' },
-    { value: fns.length, label: 'Functions' },
+    { value: functions.length, label: 'Functions' },
     { value: vars.length, label: 'Variables' },
     { value: sets.length, label: 'set calls' },
   ]) {
     const card = document.createElement('div');
     card.className = 'elv-card';
-    const strong = document.createElement('strong');
-    strong.textContent = value;
-    const span = document.createElement('span');
-    span.textContent = label;
-    card.appendChild(strong);
-    card.appendChild(span);
-    cards.appendChild(card);
+    const s = document.createElement('strong'); s.textContent = value;
+    const sp = document.createElement('span'); sp.textContent = label;
+    card.appendChild(s); card.appendChild(sp); cards.appendChild(card);
   }
   host.appendChild(cards);
 
-  // use modules
-  if (uses.length > 0) {
-    const sec = makeSection(host, `Modules (${uses.length})`);
-    const ul = makeList(sec);
-    for (const mod of uses) {
-      const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'elv-tag elv-tag-use';
-      tag.textContent = 'use';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + mod));
-      ul.appendChild(li);
-    }
+  if (uses.length) {
+    const ul = makeList(makeSection(host, `Modules (${uses.length})`));
+    for (const mod of uses) row(ul, `${tag('elv-tag-use', 'use')} <span class="elv-name">${esc(mod)}</span>`);
   }
 
-  // fn definitions
-  if (fns.length > 0) {
-    const sec = makeSection(host, `Functions (${fns.length})`);
-    const ul = makeList(sec);
-    for (const { name: fname, params } of fns) {
-      const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'elv-tag';
-      tag.textContent = 'fn';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + fname));
-      if (params.length > 0) {
-        const paramSpan = document.createElement('span');
-        paramSpan.style.color = 'var(--fg-2,#888)';
-        paramSpan.style.fontSize = '11px';
-        paramSpan.textContent = '[' + params.join(' ') + ']';
-        li.appendChild(paramSpan);
-      }
-      ul.appendChild(li);
-    }
+  if (functions.length) {
+    const ul = makeList(makeSection(host, `Functions (${functions.length})`));
+    for (const f of functions) row(ul, `${tag('elv-tag', 'fn')} <span class="elv-name">${esc(f.name)}</span>${argsHtml(f.args)}`);
   }
 
-  // var declarations
-  if (vars.length > 0) {
-    const MAX = 8;
-    const sec = makeSection(host, `Variables (${vars.length})`);
-    const ul = makeList(sec);
-    for (const v of vars.slice(0, MAX)) {
-      const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'elv-tag elv-tag-var';
-      tag.textContent = 'var';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + v));
-      ul.appendChild(li);
-    }
-    if (vars.length > MAX) {
-      const li = document.createElement('li');
-      li.textContent = `… and ${vars.length - MAX} more`;
-      li.style.color = 'var(--fg-2,#888)';
-      ul.appendChild(li);
-    }
-  }
-
-  // set assignments
-  if (sets.length > 0) {
-    const MAX = 8;
-    const sec = makeSection(host, `Set Assignments (${sets.length})`);
-    const ul = makeList(sec);
-    for (const s of sets.slice(0, MAX)) {
-      const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = 'elv-tag';
-      tag.textContent = 'set';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + s));
-      ul.appendChild(li);
-    }
-    if (sets.length > MAX) {
-      const li = document.createElement('li');
-      li.textContent = `… and ${sets.length - MAX} more`;
-      li.style.color = 'var(--fg-2,#888)';
-      ul.appendChild(li);
-    }
-  }
-
-  // External commands
-  if (externalCmds.length > 0) {
+  if (vars.length) {
     const MAX = 12;
-    const sec = makeSection(host, `External Commands (${externalCmds.length})`);
-    const wrapper = document.createElement('div');
-    wrapper.style.padding = '10px 14px';
-    for (const cmd of externalCmds.slice(0, MAX)) {
-      const pill = document.createElement('span');
-      pill.className = 'elv-pill';
-      pill.textContent = cmd;
-      wrapper.appendChild(pill);
-    }
-    if (externalCmds.length > MAX) {
-      const more = document.createElement('span');
-      more.style.cssText = 'font-size:11px;color:var(--fg-2,#888);margin-left:4px;';
-      more.textContent = `+${externalCmds.length - MAX} more`;
-      wrapper.appendChild(more);
-    }
-    sec.appendChild(wrapper);
+    const ul = makeList(makeSection(host, `Variables (${vars.length})`));
+    for (const v of vars.slice(0, MAX)) row(ul, `${tag('elv-tag-var', 'var')} <span class="elv-name">${esc(v.name)}</span>`);
+    if (vars.length > MAX) row(ul, `<span style="color:var(--fg-2,#888)">… and ${vars.length - MAX} more</span>`);
   }
 
-  // Control flow summary
-  const ctrlParts = [];
-  if (ifCount) ctrlParts.push(`if ×${ifCount}`);
-  if (forCount) ctrlParts.push(`for ×${forCount}`);
-  if (whileCount) ctrlParts.push(`while ×${whileCount}`);
-  if (ctrlParts.length > 0) {
+  if (sets.length) {
+    const MAX = 12;
+    const ul = makeList(makeSection(host, `Set Assignments (${sets.length})`));
+    for (const s of sets.slice(0, MAX)) {
+      const t = s.edit ? tag('elv-tag-edit', 'edit:') : tag('elv-tag-set', 'set');
+      row(ul, `${t} <span class="elv-name">${esc(s.name)}</span>`);
+    }
+    if (sets.length > MAX) row(ul, `<span style="color:var(--fg-2,#888)">… and ${sets.length - MAX} more</span>`);
+  }
+
+  const ctrl = [
+    control.if && `if ×${control.if}`,
+    control.for && `for ×${control.for}`,
+    control.while && `while ×${control.while}`,
+    control.try && `try ×${control.try}`,
+  ].filter(Boolean);
+  if (ctrl.length) {
     const sec = makeSection(host, 'Control Flow');
-    const wrapper = document.createElement('div');
-    wrapper.style.padding = '10px 14px';
-    for (const p of ctrlParts) {
-      const pill = document.createElement('span');
-      pill.className = 'elv-pill';
-      pill.textContent = p;
-      wrapper.appendChild(pill);
-    }
-    sec.appendChild(wrapper);
+    const wrap = document.createElement('div');
+    wrap.style.padding = '10px 14px';
+    for (const p of ctrl) { const pill = document.createElement('span'); pill.className = 'elv-pill'; pill.textContent = p; wrap.appendChild(pill); }
+    sec.appendChild(wrap);
   }
 
-  // Source
   const srcSec = makeSection(host, 'Source');
   const pre = document.createElement('pre');
   pre.className = 'elv-pre';
