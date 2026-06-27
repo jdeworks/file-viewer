@@ -154,11 +154,13 @@ export function mount(host, { onExit } = {}) {
     const nav = host.querySelector('.mg-v3-stages');
     nav.replaceChildren(...listStageMetas().filter((meta) => saveData.unlockedStages.includes(meta.id)).map((meta) => {
       const defeated = saveData.defeated.includes(meta.id);
+      // Stage 10's "rest" final route leaves the entity dormant — surface a "(resting)" hub state.
+      const resting = meta.id === 10 && defeated && saveData.stageState?.[meta.id]?.final?.route === 'rest';
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = 'mg-v3-stage';
+      button.className = `mg-v3-stage${resting ? ' is-resting' : ''}`;
       button.dataset.stage = String(meta.id);
-      button.textContent = `${meta.id}. ${meta.name}${defeated ? ' *' : ''}`;
+      button.textContent = `${meta.id}. ${meta.name}${defeated ? ' *' : ''}${resting ? ' (resting)' : ''}`;
       button.addEventListener('click', () => selectStage(meta.id));
       nav.appendChild(button);
       return button;
