@@ -2,8 +2,10 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
+import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
+import { FILLED, UNKNOWN } from "./nonogram.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
+import { installStage3Hook } from "./s3debug.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -112,6 +114,8 @@ export function renderStage3(ctx) {
     state.run.solvedCount += 1;
     state.run.index += 1;
     state.run.marks = null;
+    // Boss gate (boss-never-from-start): corruption peaking at 8 is reached ONLY here, through play.
+    if (corruptionForRun(state.run) >= 8) state.boss.corruption8Reached = true;
     pushLog(state, `snapshot restored. +${reward} registers.`);
     if (state.run.solvedCount % RETAIN_EVERY === 0) { state.retained += 1; pushLog(state, "a fragment crystallized. +1 retained."); }
     // Achievements (#18).
@@ -216,9 +220,41 @@ export function renderStage3(ctx) {
     paintHud();
   });
 
+  // ── Deterministic test/debug surface (window.__fvStage3) ──────────────────────────────────────
+  // solveCurrent fills the current snapshot to its solution via the SAME onSolved path a player hits
+  // (so registers/solvedCount/corruption all advance), then draws the next. Returns false when there
+  // is nothing to solve.
+  function solveCurrent() {
+    if (!board || board.solved) return false;
+    for (let y = 0; y < board.puzzle.height; y += 1) {
+      for (let x = 0; x < board.puzzle.width; x += 1) {
+        board.marks[y][x] = board.puzzle.solution[y][x] === FILLED ? FILLED : UNKNOWN;
+      }
+    }
+    board.solved = isSolved(board.puzzle, board.marks);
+    state.run.marks = encodeMarks(board.marks);
+    grid.update(board);
+    if (board.solved) onSolved();
+    return true;
+  }
+  function tryRestoreKey(key) {
+    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key });
+    save?.();
+    paintHud();
+    return result;
+  }
+  function bossSolver() {
+    const won = defeatMemoryLeak(state);
+    if (won) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
+    save?.();
+    paintHud();
+    return won;
+  }
+  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver });
+
   return {
     repaint: paintHud,
-    destroy() { window.removeEventListener("keydown", onKey); root.remove(); }
+    destroy() { window.removeEventListener("keydown", onKey); uninstallHook(); root.remove(); }
   };
 }
 

@@ -18,6 +18,7 @@ var bellMessages = {
   unlock: "the difference restored the missing key.",
   defeated: "the leak stopped widening."
 };
+var bodyHint = "the leak is still spreading. keep restoring snapshots until corruption peaks (8).";
 var lockedHintLadder = [
   "the grid remembers less every time you ask it.",
   "two memory logs disagree. the disagreement matters.",
@@ -64,22 +65,33 @@ function diffKeyFromState(state) {
 function hasDiffKeyRestored(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(3, ACTION_NAME));
 }
+function bodyComplete(state) {
+  return Boolean(state?.boss?.corruption8Reached);
+}
 function getBossLockState({ actions, state }) {
-  const unlocked = hasDiffKeyRestored(actions) || Boolean(state?.boss?.unlocked);
+  const keyRestored = hasDiffKeyRestored(actions) || Boolean(state?.boss?.unlocked);
+  const bodyReady = bodyComplete(state);
+  const unlocked = keyRestored && bodyReady;
   const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
   return {
     unlocked,
+    bodyReady,
+    keyRestored,
     defeated: Boolean(state?.boss?.defeated),
     corruptionRate: unlocked ? "normal" : "accelerated",
     columnClues: unlocked ? "restored" : "missing",
     defeatPossible: unlocked,
-    hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
+    hint: !bodyReady ? bodyHint : keyRestored ? bellMessages.unlock : lockedHintLadder[hintIndex]
   };
 }
 function tryRestoreDiffKey({ state, actions, achievements, bell, input }) {
   const expected = diffKeyFromState(state);
   const normalized = String(input || "").trim();
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+  if (!bodyComplete(state)) {
+    pushLog(state, bodyHint);
+    return { ok: false, locked: true, expected };
+  }
   if (normalized !== expected) {
     state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
     pushLog(state, "wrong restoration key. the leak keeps the columns hidden.");
@@ -102,7 +114,7 @@ function tryRestoreDiffKey({ state, actions, achievements, bell, input }) {
   return { ok: true, expected };
 }
 function defeatMemoryLeak(state) {
-  if (!state.boss.unlocked || state.boss.defeated) return false;
+  if (!state.boss.unlocked || !bodyComplete(state) || state.boss.defeated) return false;
   state.boss.defeated = true;
   state.registers += 120;
   state.retained = Math.max(state.retained, 1);
@@ -565,6 +577,32 @@ function buildShopPanel({ state, save, onClose }) {
   return { el: box };
 }
 
+// ../../docs/games/metagame/stages/stage3/s3debug.js
+function installStage3Hook(api) {
+  window.__fvStage3 = {
+    state: () => api.state,
+    solveCurrent: () => api.solveCurrent(),
+    bodySolver: () => {
+      let guard = 0;
+      while (!api.state.boss.corruption8Reached && guard < 300) {
+        guard += 1;
+        if (!api.solveCurrent()) break;
+      }
+      return {
+        reached: Boolean(api.state.boss.corruption8Reached),
+        corruption: corruptionForRun(api.state.run),
+        solved: api.state.run.solvedCount
+      };
+    },
+    deriveKey: () => diffKeyFromState(api.state),
+    tryRestoreKey: (key) => api.tryRestoreKey(key),
+    bossSolver: () => api.bossSolver()
+  };
+  return () => {
+    if (window.__fvStage3) delete window.__fvStage3;
+  };
+}
+
 // ../../docs/games/metagame/stages/stage3/renderer.js
 var MOVE = {
   ArrowUp: [0, -1],
@@ -687,6 +725,7 @@ function renderStage3(ctx) {
     state.run.solvedCount += 1;
     state.run.index += 1;
     state.run.marks = null;
+    if (corruptionForRun(state.run) >= 8) state.boss.corruption8Reached = true;
     pushLog(state, `snapshot restored. +${reward} registers.`);
     if (state.run.solvedCount % RETAIN_EVERY === 0) {
       state.retained += 1;
@@ -820,10 +859,38 @@ function renderStage3(ctx) {
     save?.();
     paintHud();
   });
+  function solveCurrent() {
+    if (!board || board.solved) return false;
+    for (let y = 0; y < board.puzzle.height; y += 1) {
+      for (let x = 0; x < board.puzzle.width; x += 1) {
+        board.marks[y][x] = board.puzzle.solution[y][x] === FILLED ? FILLED : UNKNOWN;
+      }
+    }
+    board.solved = isSolved(board.puzzle, board.marks);
+    state.run.marks = encodeMarks(board.marks);
+    grid.update(board);
+    if (board.solved) onSolved();
+    return true;
+  }
+  function tryRestoreKey(key) {
+    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key });
+    save?.();
+    paintHud();
+    return result;
+  }
+  function bossSolver() {
+    const won = defeatMemoryLeak(state);
+    if (won) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
+    save?.();
+    paintHud();
+    return won;
+  }
+  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver });
   return {
     repaint: paintHud,
     destroy() {
       window.removeEventListener("keydown", onKey);
+      uninstallHook();
       root.remove();
     }
   };
@@ -861,7 +928,7 @@ function freshFrom(meta) {
     runCount,
     run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
     memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, key: pieces2.join("") },
-    boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false },
+    boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
   };
 }
