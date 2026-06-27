@@ -5,6 +5,7 @@ import {
   achievementIds,
   achievementText,
   bellMessages,
+  defragmenterConductLines,
   defragmenterLines,
   defragmenterRebuttalLines,
   echoThresholds,
@@ -33,8 +34,24 @@ export function getDefragmenterRebuttal(state) {
   const echoCount = getEchoCounts(state).witnessed;
   if (echoCount < echoThresholds.defragmenterAccess) return { mode: "refuse", lines: [...defragmenterRebuttalLines.refuse], echoCount };
   const lines = getDefragmenterResponse(getThresholdState(state));
-  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat], echoCount };
-  return { mode: "full", lines, echoCount };
+  const conduct = confrontConductLines(state); // post-confront reflection (empty until it's won)
+  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat, ...conduct], echoCount };
+  return { mode: "full", lines: [...lines, ...conduct], echoCount };
+}
+
+// Once the three-phase confrontation is won, the Defragmenter reflects on HOW it went: at most one
+// conduct line (flawless / re-anchored / nearly-compacted, most-honest first) + one stance line.
+// Pure + deterministic — reads only the completed confront flags. Empty before the fight is won.
+function confrontConductLines(state) {
+  const c = state?.confront;
+  if (!c || !c.completed) return [];
+  const out = [];
+  if (!c.everCompacted && !c.everRewitnessed) out.push(defragmenterConductLines.clean);
+  else if (c.everRewitnessed) out.push(defragmenterConductLines.rewitnessed);
+  else out.push(defragmenterConductLines.compacted);
+  const stanceLine = c.stance && defragmenterConductLines.stance[c.stance.dominant];
+  if (stanceLine) out.push(stanceLine);
+  return out;
 }
 
 export function getMemoryCounts(state) {

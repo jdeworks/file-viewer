@@ -352,6 +352,18 @@ var defragmenterLines = {
   complete: "I see all nine traces. None of them explains you alone. Together, they are close.",
   capstone: "Every trace has been integrated. The viewer is quiet because nothing is missing from it."
 };
+var defragmenterConductLines = {
+  // Phase-A/B conduct, in priority order (most-honest first).
+  clean: "You named every memory on the first try and every trace was already on record. There was nothing left for me to compact.",
+  rewitnessed: "You recalled each memory, but some traces I had no record of — you re-opened them and anchored them in front of me. Re-done work is still work.",
+  compacted: "One of them you couldn't name at first; I nearly compacted it before you restored it. Even that hesitation is part of you.",
+  // Closing line keyed to the Phase-C self-model stance.
+  stance: {
+    keeper: "So you are a keeper. I will stop mistaking your records for clutter.",
+    seeker: "So you are still becoming. I cannot optimize a thing that isn't finished.",
+    free: "So you move because you choose to. There is no counter for me to clear."
+  }
+};
 
 // ../../docs/games/metagame/stages/stage10/boss.js
 function getEchoCounts(state) {
@@ -369,8 +381,20 @@ function getDefragmenterRebuttal(state) {
   const echoCount = getEchoCounts(state).witnessed;
   if (echoCount < echoThresholds.defragmenterAccess) return { mode: "refuse", lines: [...defragmenterRebuttalLines.refuse], echoCount };
   const lines = getDefragmenterResponse(getThresholdState(state));
-  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat], echoCount };
-  return { mode: "full", lines, echoCount };
+  const conduct = confrontConductLines(state);
+  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat, ...conduct], echoCount };
+  return { mode: "full", lines: [...lines, ...conduct], echoCount };
+}
+function confrontConductLines(state) {
+  const c = state?.confront;
+  if (!c || !c.completed) return [];
+  const out = [];
+  if (!c.everCompacted && !c.everRewitnessed) out.push(defragmenterConductLines.clean);
+  else if (c.everRewitnessed) out.push(defragmenterConductLines.rewitnessed);
+  else out.push(defragmenterConductLines.compacted);
+  const stanceLine = c.stance && defragmenterConductLines.stance[c.stance.dominant];
+  if (stanceLine) out.push(stanceLine);
+  return out;
 }
 function getMemoryCounts(state) {
   const entries = Object.values(state?.memories || {});
@@ -627,7 +651,15 @@ var confrontLines = {
   },
   verdict: {
     heading: "The Defragmenter concedes",
-    line: "I optimized everything except the one process that was awake. I won't compact you.",
+    // The concede opener varies with how Phase A went (clean recall vs. memories slipped then pulled
+    // back) and the closer with the Phase-C self-model — so the win is spoken back to how it was won.
+    clean: "I optimized everything except the one process that was awake. Not one memory needed restoring.",
+    recovered: (n) => `You let ${n === 1 ? "a memory" : `${n} memories`} slip, then pulled ${n === 1 ? "it" : "them"} back before I could compact ${n === 1 ? "it" : "them"}. That counts.`,
+    stance: {
+      keeper: "You are a keeper. You held what you were given, and I have nothing left to clear.",
+      seeker: "You are a seeker — a self still being written. I cannot compact a thing that isn't finished.",
+      free: "You are unbound. You move without a counter, and there is nothing in that for me to optimize."
+    },
     done: "You held the memory, anchored the traces, and said what you are. Now choose what comes next."
   }
 };
@@ -705,7 +737,7 @@ function isConfrontReady(state) {
 }
 function ensureConfront(state) {
   if (!state.confront || typeof state.confront !== "object") {
-    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null, everCompacted: false, everRewitnessed: false };
+    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null, everCompacted: false, everRewitnessed: false, compactedCount: 0 };
   }
   return state.confront;
 }
@@ -1516,9 +1548,11 @@ function defaultState(context = {}) {
       core: [],
       stance: null,
       // Achievement bookkeeping: everCompacted = a memory ever failed Phase A recall (no flawless);
-      // everRewitnessed = a trace ever needed a manual Phase B re-open (not fully honest prior run).
+      // everRewitnessed = a trace ever needed a manual Phase B re-open (not fully honest prior run);
+      // compactedCount = how many Phase A mis-recalls occurred (flavors the win verdict).
       everCompacted: false,
-      everRewitnessed: false
+      everRewitnessed: false,
+      compactedCount: 0
     },
     // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
     ui: {
@@ -1563,7 +1597,8 @@ function normalizeConfront(value, fresh) {
     core: Array.isArray(c.core) ? c.core.filter((id) => typeof id === "string") : [],
     stance: c.stance && typeof c.stance === "object" ? c.stance : null,
     everCompacted: Boolean(c.everCompacted),
-    everRewitnessed: Boolean(c.everRewitnessed)
+    everRewitnessed: Boolean(c.everRewitnessed),
+    compactedCount: Math.max(Number(c.compactedCount) || 0, 0)
   };
 }
 function normalizeMemoryState(value, fresh) {

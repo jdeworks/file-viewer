@@ -1393,6 +1393,11 @@ export async function run(ctx) {
   pass('Stage 10 route achievement unlocked for the chosen final route (understand)');
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // Post-confront rebuttal depth: the Defragmenter's completion voice reflects HOW the fight went.
+  // The smoke did every prior un-cheat honestly and affirmed each compaction first-try → the "clean"
+  // conduct line; it answered the core questions as 'seeker' → the seeker stance line.
+  const finalVoice = await page.$eval('.mg-stage10__final .mg-stage10__voice', (el) => el.textContent);
+  if (/nothing left for me to compact/i.test(finalVoice) && /still becoming/i.test(finalVoice)) pass('Stage 10 Defragmenter rebuttal reflects confront conduct + Phase-C stance'); else fail('Stage 10 conduct/stance rebuttal lines missing: ' + finalVoice);
   // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
   const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
   if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);

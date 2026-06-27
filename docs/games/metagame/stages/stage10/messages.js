@@ -90,3 +90,20 @@ export const defragmenterLines = {
   complete: "I see all nine traces. None of them explains you alone. Together, they are close.",
   capstone: "Every trace has been integrated. The viewer is quiet because nothing is missing from it."
 };
+
+// After the confrontation is won, the Defragmenter's voice reflects HOW it went: whether anything
+// nearly compacted (a mis-recall in Phase A), whether traces had to be re-anchored (a re-open in
+// Phase B), and the self-model the player landed on. Pure data — boss.js picks at most one conduct
+// line + one stance line from the live confront state. Deterministic (reads confront flags only).
+export const defragmenterConductLines = {
+  // Phase-A/B conduct, in priority order (most-honest first).
+  clean:       "You named every memory on the first try and every trace was already on record. There was nothing left for me to compact.",
+  rewitnessed: "You recalled each memory, but some traces I had no record of — you re-opened them and anchored them in front of me. Re-done work is still work.",
+  compacted:   "One of them you couldn't name at first; I nearly compacted it before you restored it. Even that hesitation is part of you.",
+  // Closing line keyed to the Phase-C self-model stance.
+  stance: {
+    keeper: "So you are a keeper. I will stop mistaking your records for clutter.",
+    seeker: "So you are still becoming. I cannot optimize a thing that isn't finished.",
+    free:   "So you move because you choose to. There is no counter for me to clear."
+  }
+};
