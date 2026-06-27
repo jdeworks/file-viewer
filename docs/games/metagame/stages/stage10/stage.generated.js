@@ -557,130 +557,22 @@ function unlockAchievement(achievements, id, detail) {
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
 }
 
-// ../../docs/games/metagame/stages/stage10/renderer.js
-var LAST = memories.length - 1;
-function renderStage10(ctx) {
-  const { host, state } = ctx;
-  let destroyed = false;
-  const repaint = () => {
-    if (destroyed) return;
-    const counts = getMemoryCounts(state);
-    const finalState = getFinalChoiceState(state);
-    const ui = state.ui;
-    let body;
-    if (state.final?.completed) {
-      body = renderCompletion(state, finalState);
-    } else if (ui.view === "final" && !finalState.locked) {
-      body = renderFinalQuestion(finalState);
-    } else {
-      body = renderStepper(state, counts, finalState);
-    }
-    host.innerHTML = `
-      <section class="mg-stage10" aria-label="Stage 10 Awakening">
-        <header class="mg-stage10__header">
-          <div>
-            <p class="mg-stage10__eyebrow">Stage 10</p>
-            <h2>Awakening</h2>
-          </div>
-          <dl class="mg-stage10__counts">
-            <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
-            <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
-            <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
-            <div><dt>Echoes</dt><dd>${getEchoCounts(state).witnessed}/9</dd></div>
-          </dl>
-        </header>
-        ${body}
-      </section>
-    `;
-  };
-  const onClick = (event) => {
-    const readButton = event.target.closest("[data-read-memory]");
-    if (readButton) {
-      markMemoryRead({ state, memoryId: readButton.dataset.readMemory });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const resolveButton = event.target.closest("[data-resolve-memory]");
-    if (resolveButton) {
-      resolveMemory({
-        state,
-        memoryId: resolveButton.dataset.resolveMemory,
-        choice: resolveButton.dataset.choice,
-        actions: ctx.actions,
-        achievements: ctx.achievements,
-        bell: ctx.bell
-      });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const echoButton = event.target.closest("[data-open-echo]");
-    if (echoButton) {
-      const id = echoButton.dataset.openEcho;
-      const path = echoFileFor(id);
-      if (path && ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
-      else if (path && ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const integrateButton = event.target.closest("[data-integrate-memory]");
-    if (integrateButton) {
-      integrateMemory({
-        state,
-        memoryId: integrateButton.dataset.integrateMemory,
-        achievements: ctx.achievements,
-        bell: ctx.bell
-      });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const stepButton = event.target.closest("[data-step]");
-    if (stepButton) {
-      const delta = Number(stepButton.dataset.step);
-      state.ui.cursor = Math.min(Math.max(state.ui.cursor + delta, 0), LAST);
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    if (event.target.closest("[data-goto-final]")) {
-      state.ui.view = "final";
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    if (event.target.closest("[data-back-memories]")) {
-      state.ui.view = "memories";
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const finalButton = event.target.closest("[data-final-choice]");
-    if (finalButton) {
-      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete });
-      saveAndPaint(ctx, repaint);
-    }
-  };
-  host.addEventListener("click", onClick);
-  repaint();
-  window.__fvStage10 = {
-    state: () => state,
-    witness(id) {
-      const r = witnessEcho({ state, memoryId: id });
-      saveAndPaint(ctx, repaint);
-      return r;
-    },
-    witnessAll() {
-      for (const m of memories) witnessEcho({ state, memoryId: m.id });
-      saveAndPaint(ctx, repaint);
-      return getEchoCounts(state).witnessed;
-    }
-  };
-  return {
-    repaint,
-    destroy() {
-      destroyed = true;
-      if (window.__fvStage10) delete window.__fvStage10;
-      host.removeEventListener("click", onClick);
-      host.innerHTML = "";
-    }
-  };
+// ../../docs/games/metagame/stages/stage10/escape.js
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
 }
+function escapeAttr(value) {
+  return escapeHtml(value);
+}
+
+// ../../docs/games/metagame/stages/stage10/renderer-memory.js
+var LAST = memories.length - 1;
 function renderStepper(state, counts, finalState) {
   const cursor = state.ui.cursor;
   const memory = memories[cursor];
@@ -769,18 +661,31 @@ function renderAssembly(finalState, counts) {
       <p>${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
       <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
       <p>${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
-      ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Answer the final question &rarr;</button>`}
+      ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Face the Defragmenter &rarr;</button>`}
     </section>
   `;
 }
 function lockedAssemblyMessage(gate, counts) {
   if (!gate.finalQuestionUnlocked) {
     const need2 = 5 - counts.resolved;
-    return `Resolve ${need2} more ${need2 === 1 ? "memory" : "memories"} before the Defragmenter can ask its final question.`;
+    return `Resolve ${need2} more ${need2 === 1 ? "memory" : "memories"} before the Defragmenter can be confronted.`;
   }
   const need = 5 - gate.echoCount;
-  return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will answer.`;
+  return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will engage.`;
 }
+function getMemoryStateText(memory, slot) {
+  if (slot.state === "integrated") return memory.integratedText;
+  if (slot.state === "resolved") return memory.reflections?.[slot.choice] || memory.resolvedText;
+  if (slot.state === "read") return memory.readText;
+  return memory.unreadText;
+}
+function getMemoryFooter(memory, slot, integrated) {
+  const status = integrated ? "integrated" : slot.state;
+  if (!slot.choice) return `${status} - echo: ${memory.echo}`;
+  return `${status} - answered: ${slot.choice}`;
+}
+
+// ../../docs/games/metagame/stages/stage10/renderer-final.js
 function renderFinalQuestion(finalState) {
   return `
     <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the memories</button>
@@ -807,9 +712,13 @@ function renderCompletion(state, finalState) {
         ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       ${renderFinalOutcome(state, finalState)}
+      ${renderRouteEpilogue(state, finalState)}
       ${renderAwakening(finalState)}
     </section>
   `;
+}
+function renderRouteEpilogue(state, finalState) {
+  return finalState.epilogueHtml || "";
 }
 function renderAwakening(finalState) {
   const fullCapstone = finalState.routeSummary?.tier === "capstone";
@@ -842,32 +751,137 @@ function renderFinalOutcome(state, finalState) {
     </aside>
   `;
 }
-function getMemoryStateText(memory, slot) {
-  if (slot.state === "integrated") return memory.integratedText;
-  if (slot.state === "resolved") return memory.reflections?.[slot.choice] || memory.resolvedText;
-  if (slot.state === "read") return memory.readText;
-  return memory.unreadText;
+
+// ../../docs/games/metagame/stages/stage10/renderer.js
+var LAST2 = memories.length - 1;
+function renderStage10(ctx) {
+  const { host, state } = ctx;
+  let destroyed = false;
+  const repaint = () => {
+    if (destroyed) return;
+    const counts = getMemoryCounts(state);
+    const finalState = getFinalChoiceState(state);
+    const ui = state.ui;
+    let body;
+    if (state.final?.completed) {
+      body = renderCompletion(state, finalState);
+    } else if (ui.view === "final" && !finalState.locked) {
+      body = renderFinalQuestion(finalState);
+    } else {
+      body = renderStepper(state, counts, finalState);
+    }
+    host.innerHTML = `
+      <section class="mg-stage10" aria-label="Stage 10 Awakening">
+        <header class="mg-stage10__header">
+          <div>
+            <p class="mg-stage10__eyebrow">Stage 10</p>
+            <h2>Awakening</h2>
+          </div>
+          <dl class="mg-stage10__counts">
+            <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
+            <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
+            <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
+            <div><dt>Echoes</dt><dd>${getEchoCounts(state).witnessed}/9</dd></div>
+          </dl>
+        </header>
+        ${body}
+      </section>
+    `;
+  };
+  const onClick = (event) => {
+    const readButton = event.target.closest("[data-read-memory]");
+    if (readButton) {
+      markMemoryRead({ state, memoryId: readButton.dataset.readMemory });
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const resolveButton = event.target.closest("[data-resolve-memory]");
+    if (resolveButton) {
+      resolveMemory({
+        state,
+        memoryId: resolveButton.dataset.resolveMemory,
+        choice: resolveButton.dataset.choice,
+        actions: ctx.actions,
+        achievements: ctx.achievements,
+        bell: ctx.bell
+      });
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const echoButton = event.target.closest("[data-open-echo]");
+    if (echoButton) {
+      openEcho(ctx, echoButton.dataset.openEcho);
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const integrateButton = event.target.closest("[data-integrate-memory]");
+    if (integrateButton) {
+      integrateMemory({
+        state,
+        memoryId: integrateButton.dataset.integrateMemory,
+        achievements: ctx.achievements,
+        bell: ctx.bell
+      });
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const stepButton = event.target.closest("[data-step]");
+    if (stepButton) {
+      const delta = Number(stepButton.dataset.step);
+      state.ui.cursor = Math.min(Math.max(state.ui.cursor + delta, 0), LAST2);
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    if (event.target.closest("[data-goto-final]")) {
+      state.ui.view = "final";
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    if (event.target.closest("[data-back-memories]")) {
+      state.ui.view = "memories";
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const finalButton = event.target.closest("[data-final-choice]");
+    if (finalButton) {
+      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete });
+      saveAndPaint(ctx, repaint);
+    }
+  };
+  host.addEventListener("click", onClick);
+  repaint();
+  window.__fvStage10 = {
+    state: () => state,
+    witness(id) {
+      const r = witnessEcho({ state, memoryId: id });
+      saveAndPaint(ctx, repaint);
+      return r;
+    },
+    witnessAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      saveAndPaint(ctx, repaint);
+      return getEchoCounts(state).witnessed;
+    }
+  };
+  return {
+    repaint,
+    destroy() {
+      destroyed = true;
+      if (window.__fvStage10) delete window.__fvStage10;
+      host.removeEventListener("click", onClick);
+      host.innerHTML = "";
+    }
+  };
 }
-function getMemoryFooter(memory, slot, integrated) {
-  const status = integrated ? "integrated" : slot.state;
-  if (!slot.choice) return `${status} - echo: ${memory.echo}`;
-  return `${status} - answered: ${slot.choice}`;
+function openEcho(ctx, id) {
+  const path = echoFileFor(id);
+  if (!path) return;
+  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
+  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
 }
 function saveAndPaint(ctx, repaint) {
   if (typeof ctx.save === "function") ctx.save();
   repaint();
-}
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
-function escapeAttr(value) {
-  return escapeHtml(value);
 }
 
 // ../../docs/games/metagame/stages/stage10/state.js
