@@ -7,9 +7,13 @@
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function createGifSink() {
+// `transparent` keeps the alpha channel: quantize to an rgba4444 palette + write each
+// frame with a transparent index and dispose:2 (restore to background) so transparent
+// regions stay transparent and frames don't composite in the player.
+export async function createGifSink({ transparent = false } = {}) {
   const { GIFEncoder, quantize, applyPalette } = await import('../../../vendor/gifenc/gifenc.esm.js');
   const gif = GIFEncoder();
+  const fmt = transparent ? 'rgba4444' : 'rgb565';
   let w = 0, h = 0, ctx = null;
   return {
     addFrame(canvas, delayMs) {
@@ -21,9 +25,11 @@ export async function createGifSink() {
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(canvas, 0, 0, w, h);
       const { data } = ctx.getImageData(0, 0, w, h);
-      const palette = quantize(data, 256);
-      const index = applyPalette(data, palette);
-      gif.writeFrame(index, w, h, { palette, delay: Math.max(20, Math.round(delayMs || 100)) });
+      const palette = quantize(data, 256, { format: fmt, oneBitAlpha: transparent });
+      const index = applyPalette(data, palette, fmt);
+      const opts = { palette, delay: Math.max(20, Math.round(delayMs || 100)) };
+      if (transparent) { opts.transparent = true; opts.dispose = 2; }
+      gif.writeFrame(index, w, h, opts);
     },
     finish() { gif.finish(); return new Blob([gif.bytes()], { type: 'image/gif' }); },
   };

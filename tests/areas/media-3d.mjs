@@ -1094,6 +1094,13 @@ export async function run(ctx) {
   const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];
   await page.click('#previewHost .asx-convert');
   await page.waitForSelector('#previewHost .asx-conv-input', { timeout: 8000 }).catch(() => {});
+  // The converter opens to a chooser panel (Choose file… + URL field) and must NOT auto-start
+  // decoding (no file dialog forced open) — the status still invites a choice.
+  const convPanel = await page.evaluate(() => {
+    const p = document.querySelector('#previewHost .asx-conv');
+    return { pick: !!p?.querySelector('.asx-conv-pick'), url: !!p?.querySelector('.asx-conv-url-input'), idle: /choose/i.test(p?.querySelector('.asx-conv-status')?.textContent || '') };
+  });
+  if (convPanel.pick && convPanel.url && convPanel.idle) pass('ASCII converter: opens to a chooser (file + URL), no auto-start'); else fail('converter chooser: ' + JSON.stringify(convPanel));
   await page.setInputFiles('#previewHost .asx-conv-input', { name: 'anim.gif', mimeType: 'image/gif', buffer: Buffer.from(CGIF) }).catch(() => {});
   const convReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
   const [convDl] = await Promise.all([

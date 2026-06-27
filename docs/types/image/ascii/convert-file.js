@@ -19,7 +19,11 @@ function injectStyle() {
     .asx-conv-body { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
     .asx-conv-status { margin: 0; font: 12px ui-monospace, monospace; color: #9ab; min-height: 1.2em; }
     .asx-conv-prog { width: 100%; height: 10px; }
-    .asx-conv-preview { width: 100%; max-height: 220px; object-fit: contain; background: #000; border-radius: 4px; image-rendering: auto; }
+    /* Checkerboard so a transparent-bg ASCII preview reads as transparent — matching the output GIF. */
+    .asx-conv-preview { width: 100%; max-height: 220px; object-fit: contain; border-radius: 4px; image-rendering: auto;
+      background-color: #1a1a1a;
+      background-image: linear-gradient(45deg,#333 25%,transparent 25%),linear-gradient(-45deg,#333 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#333 75%),linear-gradient(-45deg,transparent 75%,#333 75%);
+      background-size: 16px 16px; background-position: 0 0,0 8px,8px -8px,-8px 0; }
     .asx-conv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .asx-conv-actions button { cursor: pointer; }
     .asx-conv-url { display: flex; gap: 6px; }
@@ -98,7 +102,8 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
       : isWebp ? imageDecoderFrames(bytes, 'image/webp', { signal })
       : isApng ? imageDecoderFrames(bytes, 'image/png', { signal })
       : videoFrameStream(file, { fps, signal });
-    const sink = imageSeq ? await createGifSink() : createWebmSink({ fps });
+    // GIF preserves a transparent ASCII background (WebM has no alpha).
+    const sink = imageSeq ? await createGifSink({ transparent: !!options.transparentBackground }) : createWebmSink({ fps });
     const name = `${baseName}-ascii.${imageSeq ? 'gif' : 'webm'}`;
     const mime = imageSeq ? 'image/gif' : 'video/webm';
     const conv = document.createElement('canvas');     // reused: rendered ASCII frame → sink
@@ -178,6 +183,6 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
   urlGo.addEventListener('click', goUrl);
   urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') goUrl(); });
   cancelBtn.addEventListener('click', () => aborter?.abort());
-  input.click();   // open the picker immediately
+  // Do NOT auto-open the file dialog — the user chooses Choose file… or the URL field.
   return { destroy() { aborter?.abort(); float.destroy(); panel.remove(); } };
 }
