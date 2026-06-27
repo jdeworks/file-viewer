@@ -983,6 +983,7 @@ body.fv-dragging .intake::after {
   letter-spacing: 0;
   user-select: none;
   cursor: help;
+  pointer-events: none;   /* decorative marker — never intercept clicks on content beneath it (e.g. bottom-right controls like the GIF "Split frames" button) */
 }
 .construction-badge::after {
   content: attr(data-hover);

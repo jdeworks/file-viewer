@@ -84,6 +84,18 @@ cp node_modules/qrcodejs2-fixes/qrcode.js "$VENDOR/qrcodejs/qrcode.js"
 mkdir -p "$VENDOR/abcjs"
 cp node_modules/abcjs/dist/abcjs-basic-min.js "$VENDOR/abcjs/abcjs-basic-min.js"
 
+# --- tesseract.js (OCR, WASM, ~11 MB). UMD lib + worker + self-contained core (SIMD + non-SIMD
+# fallback; each .wasm.js embeds its wasm as base64, so no separate .wasm fetch) + English LSTM
+# traineddata (gzipped, best_int — matches the default LSTM_ONLY engine). Loaded ONLY when the OCR
+# feature is invoked. Marked heavy (gen-asset-manifest FORCE_HEAVY) so the cache modal leaves it
+# unchecked. Shared engine: docs/core/ocr/.
+mkdir -p "$VENDOR/tesseract"
+cp node_modules/tesseract.js/dist/tesseract.min.js                        "$VENDOR/tesseract/tesseract.min.js"
+cp node_modules/tesseract.js/dist/worker.min.js                           "$VENDOR/tesseract/worker.min.js"
+cp node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js        "$VENDOR/tesseract/tesseract-core-simd-lstm.wasm.js"
+cp node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js             "$VENDOR/tesseract/tesseract-core-lstm.wasm.js"
+cp node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz  "$VENDOR/tesseract/eng.traineddata.gz"
+
 # Record pinned versions for provenance.
 node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
 
