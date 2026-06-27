@@ -194,6 +194,7 @@ FULL_UNIT_TESTS=(
   tests/known-lua-lang.test.mjs
   tests/known-livescript-lang.test.mjs
   tests/known-nushell-script.test.mjs
+  tests/known-nim-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
