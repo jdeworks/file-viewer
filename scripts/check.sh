@@ -205,6 +205,16 @@ FULL_UNIT_TESTS=(
   tests/known-racket-lang.test.mjs
   tests/known-red-lang.test.mjs
   tests/known-reason-lang.test.mjs
+  tests/known-scala-lang.test.mjs
+  tests/known-rescript-lang.test.mjs
+  tests/known-ruby-lang.test.mjs
+  tests/known-scheme-lang.test.mjs
+  tests/known-sed-script.test.mjs
+  tests/known-sml-lang.test.mjs
+  tests/known-squirrel-lang.test.mjs
+  tests/known-swift-lang.test.mjs
+  tests/known-tcl-lang.test.mjs
+  tests/known-vala-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
