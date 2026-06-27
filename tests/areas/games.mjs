@@ -703,6 +703,35 @@ export async function run(ctx) {
   await page.waitForSelector('.stage2-glyph-dungeon', { timeout: 8000 });
   await page.waitForFunction(() => !!window.__fvStage2, null, { timeout: 8000 });
 
+  // Regression: collecting a glyph rune (the pink ♦ consumable) must (a) not throw and (b) survive a
+  // save round-trip. The entity inventory was once a legacy ["minor_parse_potion"] ARRAY, so a rune
+  // banked as inv[type]++ became a non-index property the JSON serialiser silently DROPPED — the
+  // "picked-up diamond vanishes / breaks the rune bar" bug. inventory must be a plain type→count object.
+  const runePickup = await page.evaluate(() => {
+    const st = window.__fvStage2.state();
+    const e = st.run.entity;
+    const invIsObject = e.inventory && typeof e.inventory === 'object' && !Array.isArray(e.inventory);
+    const w = st.run.world;
+    let placed = false;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = w.pos.x + dx, ny = w.pos.y + dy;
+      if (w.grid[ny] && w.grid[ny][nx] === '.') {
+        w.monsters = (w.monsters || []).filter((m) => !(m.x === nx && m.y === ny));
+        (w.consumables = w.consumables || []).push({ x: nx, y: ny, type: 'blink', taken: false });
+        const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
+        window.__fvStage2.move(dir);
+        placed = true;
+        break;
+      }
+    }
+    const live = Number((e.inventory || {}).blink || 0);
+    const survivesSave = Number((JSON.parse(JSON.stringify(e.inventory || {})).blink) || 0); // JSON-drop check
+    return { invIsObject, placed, live, survivesSave };
+  });
+  if (runePickup.invIsObject && runePickup.placed && runePickup.live === 1 && runePickup.survivesSave === 1)
+    pass('Stage 2 glyph rune (♦) collects without error and survives a save round-trip');
+  else fail('Stage 2 rune pickup/save regression: ' + JSON.stringify(runePickup));
+
   // Descend the full body — all three acts (Warrens / Cisterns & Emberworks / The Overflow) — to the
   // boss via the deterministic body solver (no real-time roguelite play). Confirms the boss sits at
   // the END of the 9-floor body and is reachable only after the descent (MAX_FLOOR=9).
