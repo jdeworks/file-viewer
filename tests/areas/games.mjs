@@ -749,13 +749,30 @@ export async function run(ctx) {
   pass('Stage 6 codex gate clears Protocol Codex via the real-deck negotiation');
 
   await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
-  await page.click('[data-action="photo"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.png' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
+  // The thin-gate bypass is gone: no in-game "inspect GPSInfo" button, and the investigation hook exists.
+  const s7Start = await page.evaluate(() => ({
+    noBypass: !document.querySelector('[data-action="gps"]'),
+    wired: Boolean(window.__fvStage7),
+    substage: window.__fvStage7.state().substage,
+    noCommit: !document.querySelector('[data-commit]'),
+  }));
+  if (s7Start.noBypass && s7Start.wired && s7Start.substage === 1 && s7Start.noCommit) pass('Stage 7 is a real 5-stage investigation: no GPS bypass, boss gated from start'); else fail('Stage 7 bypass present or boss reachable from start');
+  // Work the investigation (SS1 scan → SS2 dup → SS3 timeline) up to the reference chase.
+  const s7AfterDeduction = await page.evaluate(() => window.__fvStage7.solveInvestigation());
+  if (s7AfterDeduction === 4) pass('Stage 7 SS1–SS3 deductions advance to the reference chase'); else fail(`Stage 7 stalled at substage ${s7AfterDeduction}`);
+  // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the credential chain.
+  await page.click('[data-action="open-anchor"]');
+  await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
+  pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and reaches the boss');
+  // The metadata sidecar still carries the decisive GPS contradiction.
   const entitySidecar = await page.evaluate(async () => {
     const response = await fetch('examples/metagame/stage7/entity_metadata.json');
     return response.ok ? response.json() : null;
   });
-  if (entitySidecar?.decisiveField === 'GPSInfo' && /outside known layers/.test(entitySidecar?.entities?.F?.GPSInfo || '')) pass('Stage 7 opens real Entity F image with metadata sidecar evidence'); else fail('Stage 7 metadata sidecar missing contradiction');
+  if (entitySidecar?.decisiveField === 'GPSInfo' && /outside known layers/.test(entitySidecar?.entities?.F?.GPSInfo || '')) pass('Stage 7 boss evidence: Entity F GPS is outside known layers'); else fail('Stage 7 metadata sidecar missing contradiction');
+  // SS5 Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
+  await page.click('[data-action="photo"]');
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.png' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
@@ -769,7 +786,7 @@ export async function run(ctx) {
       return save.defeated?.includes(7) && save.unlockedStages?.includes(8);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 7 EXIF contradiction unlocks and clears Identity Arbiter');
+  pass('Stage 7: full investigation + EXIF un-cheat clears Identity Arbiter');
 
   await page.waitForSelector('.stage8-entropy-field', { timeout: 8000 });
   // The survival sim is wired: node health bars render from the 14-node state + an Advance Cycle

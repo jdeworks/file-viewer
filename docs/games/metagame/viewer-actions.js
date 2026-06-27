@@ -10,6 +10,7 @@ const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
 const STAGE3_ASCII_FILE = 'entity_f_verification.png';
 const STAGE7_FILE = 'entity_f_verification.png';
+const STAGE7_ANCHOR_FILE = 'entity_anchor_0043.txt';
 
 const FALSY_CHEAT_VALUES = new Set(['false', '0', 'no', 'off', '']);
 const TRUTHY_CHEAT_VALUES = new Set(['true', '1', 'yes', 'on']);
@@ -158,11 +159,26 @@ export function recordStage7MetadataInspection({ file, field, entity = 'F', setA
   return true;
 }
 
+export function isStage7AnchorFile(file) {
+  return basename(file) === STAGE7_ANCHOR_FILE;
+}
+
+export function recordStage7AnchorOpen({ file, setAction = sharedSetAction } = {}) {
+  if (!isStage7AnchorFile(file)) return false;
+  setAction?.(7, 'anchor_chain_examined', {
+    source: 'viewer-open',
+    file: STAGE7_ANCHOR_FILE,
+    anchor: 'ENTITY_ANCHOR_0043',
+  });
+  return true;
+}
+
 export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sharedSetAction } = {}) {
   const target = file || path;
   const results = [
     recordSecretTxtOpen({ file: target, setAction }),
     recordStage6CodexOpen({ file: target, setAction }),
+    recordStage7AnchorOpen({ file: target, setAction }),
     recordStage7MetadataInspection({
       file: target,
       field: opts.metadataField || opts.field,

@@ -6,6 +6,7 @@ import {
   recordStage2SearchResult,
   recordStage5MediaPlayback,
   recordStage6CodexOpen,
+  recordStage7AnchorOpen,
   recordStage7MetadataInspection,
   shouldSetStage1CheatDisabled,
 } from '../docs/games/metagame/viewer-actions.js';
@@ -103,6 +104,15 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.png', field: 'DateTimeOriginal', entity: 'F', setAction }), 'Stage 7 recorder rejects non-contradictory metadata');
   ok(!recordStage7MetadataInspection({ file: 'entity_a_verification.png', field: 'GPSInfo', entity: 'A', setAction }), 'Stage 7 recorder rejects wrong entity/file');
   ok(calls.length === 1, 'Stage 7 recorder: no extra calls for rejected metadata');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordStage7AnchorOpen({ file: 'entity_anchor_0043.txt', setAction }), 'Stage 7 anchor recorder returns true');
+  ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'anchor_chain_examined', 'Stage 7 anchor recorder: action id set');
+  ok(!recordStage7AnchorOpen({ file: 'something_else.txt', setAction }), 'Stage 7 anchor recorder rejects other files');
+  ok(calls.length === 1, 'Stage 7 anchor recorder: no extra calls for wrong file');
 }
 
 {
