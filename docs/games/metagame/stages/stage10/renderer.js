@@ -152,10 +152,11 @@ function handleConfrontClicks(event, ctx, save, repaint) {
 
   const fragButton = event.target.closest("[data-confront-echo]");
   if (fragButton) {
-    const id = fragButton.dataset.confrontEcho;
-    openEcho(ctx, id); // re-open the real artifact — the work the speed-run skipped
-    rewitnessFragmentation({ state, memoryId: id, save: save() });
-    saveAndPaint(ctx, repaint);
+    // Phase B re-witness is NOT granted on click. openEcho only OPENS the artifact; the trace is
+    // re-anchored ONLY when the genuine, token-carrying echo action returns from the viewer
+    // (index.js subscription → onEchoAction → rewitnessFragmentation). A bare click — or an open
+    // that finds no viewer / fails to load — advances nothing. Closes the round-3 bypass.
+    openEcho(ctx, fragButton.dataset.confrontEcho);
     return true;
   }
 

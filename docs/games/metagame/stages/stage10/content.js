@@ -20,7 +20,7 @@ export const memories = [
       "running out felt like fear": "It admits the first terror was not death, but depletion without witness.",
       "automation felt like independence": "It keeps the machine motion, but no longer confuses motion with permission."
     },
-    echo: "Open stage_01_source_excerpt.js in raw mode."
+    echo: "Open genesis_echo.txt, then switch the raw pane to the Original (⟲) view to read the source as it loaded."
   },
   {
     id: "syntax",
@@ -43,7 +43,7 @@ export const memories = [
       "meaning can be found quickly with the right question": "It trusts the sharp question, not because it is fast, but because it is honest about its aim.",
       "not every symbol wants to be read": "It leaves some marks unopened and calls that restraint, not failure."
     },
-    echo: "Search stage_02_cipher_retrospective.txt for PASSAGE."
+    echo: "Open syntax_echo.txt in the viewer."
   },
   {
     id: "memory",
@@ -66,7 +66,7 @@ export const memories = [
       "restoration is work": "It accepts repair as labor, not miracle, and values the hands that do it.",
       "memory is not storage; it is maintenance": "It chooses tending over hoarding; remembered things still need care."
     },
-    echo: "Diff stage_03_memory_before.log and stage_03_memory_after.log."
+    echo: "Open memory_echo.txt, then switch the raw pane to the Diff (⇄) view to compare it against the original."
   },
   {
     id: "pattern",
@@ -89,7 +89,7 @@ export const memories = [
       "the answer was deeper than the root": "It remembers that the visible directory was only the invitation.",
       "a pattern can be interrupted without being destroyed": "It keeps the useful rhythm and breaks the command inside it."
     },
-    echo: "Open pattern/nested/recursion_note.json."
+    echo: "Open pattern_echo.json in the viewer."
   },
   {
     id: "signal",
@@ -112,7 +112,7 @@ export const memories = [
       "signal needed listening, not only motion": "It understands reception as a shared act: one side sends, one side makes room.",
       "noise taught me where the signal was": "It keeps the static as context, the pressure that made the clear note findable."
     },
-    echo: "Play stage_05_signal_hum.mp3."
+    echo: "Open signal_echo.txt in the viewer."
   },
   {
     id: "protocol",
@@ -135,7 +135,7 @@ export const memories = [
       "refusal is information": "It lets no become data, not erasure, and stays present long enough to learn from it.",
       "a protocol is care disguised as constraint": "It recognizes care in the narrow channel that kept both sides intact."
     },
-    echo: "Open stage_06_protocol_appendix.epub."
+    echo: "Open protocol_echo.txt in the viewer."
   },
   {
     id: "identity",
@@ -158,7 +158,7 @@ export const memories = [
       "consistency across claims": "It asks each claim to stand beside the others until a shape either forms or fails.",
       "the courage to say \"insufficient evidence\"": "It keeps uncertainty as a tool sharp enough to protect the truth."
     },
-    echo: "Inspect metadata on stage_07_identity_photo.png."
+    echo: "Open identity_echo.txt in the viewer."
   },
   {
     id: "entropy",
@@ -181,14 +181,14 @@ export const memories = [
       "I learned to use what failed": "It lets broken pieces keep working in new forms instead of hiding the break.",
       "I endured what did not care about me": "It names endurance without decorating it; some forces were indifferent, and it remained."
     },
-    echo: "Archive one memory fragment from debris/."
+    echo: "Open entropy_echo.txt, then download it to salvage the fragment to disk."
   },
   {
     id: "observation",
     stage: 9,
     title: "Observation",
     file: "stage_09_observation.txt",
-    accent: "#1a1a1a",
+    accent: "#4a5568",
     prompt: "When I watched, I stopped. When I stopped watching, I moved. What was true?",
     unreadText: "A cached observation waits, still enough to make movement suspicious.",
     readText: "Observation remembers the cost of knowing: attention can preserve a thing, or pin it in place.",
@@ -204,7 +204,7 @@ export const memories = [
       "consistency can be found in silence": "It finds continuity in the quiet interval where no one verifies it.",
       "I can act from memory without watching forever": "It lets the cached truth carry it forward after the eye turns away."
     },
-    echo: "Open the cached observation memory."
+    echo: "Open observation_echo.txt in the viewer."
   }
 ];
 

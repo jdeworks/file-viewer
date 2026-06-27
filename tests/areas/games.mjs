@@ -1353,8 +1353,13 @@ export async function run(ctx) {
   });
   if (!spoofWitnessed) pass('Stage 10 echo witness is token-gated (a spoofed action without the real token is rejected)');
   else fail('Stage 10 echo witnessed from a spoofed action without the real token');
-  // Stage 10: read -> pick a stance -> WITNESS the echo (real viewer file-open) -> integrate -> Next.
-  // The echo is the load-bearing gate: a resolved memory cannot be integrated until its artifact is opened.
+  // Stage 10: read -> pick a stance -> WITNESS the echo -> integrate -> Next. The echo is the
+  // load-bearing gate: a resolved memory cannot be integrated until its echo is witnessed. Most
+  // echoes witness on a plain viewer-open, but three pay off a DISTINCT real viewer feature the
+  // player learned earlier — genesis = raw Original view, memory = Diff view, entropy = download —
+  // and DO NOT witness on a bare open: the player must perform the verb. This loop performs whatever
+  // verb the echo button declares (data-echo-verb), proving the real-feature gates end to end.
+  let realVerbGates = 0;
   for (let i = 0; i < 9; i++) {
     await page.waitForSelector('[data-read-memory]', { timeout: 5000 });
     await page.click('[data-read-memory]');
@@ -1366,11 +1371,29 @@ export async function run(ctx) {
       if (gated) pass('Stage 10 integration is echo-gated (boss not reachable without witnessing echoes)'); else fail('Stage 10 integrate not gated by echo');
     }
     await page.waitForSelector('[data-open-echo]', { timeout: 5000 });
+    const { memoryId, verb, mode } = await page.$eval('[data-open-echo]', (el) => ({
+      memoryId: el.dataset.openEcho, verb: el.dataset.echoVerb || 'open', mode: el.dataset.echoMode || '',
+    }));
     await page.click('[data-open-echo]');
+    if (verb !== 'open') {
+      realVerbGates += 1;
+      // A bare open must NOT witness a real-verb echo — integrate stays disabled until the verb runs.
+      const stillGated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
+      if (!stillGated) fail(`Stage 10 ${memoryId} echo witnessed on a bare open (real-feature gate bypassed)`);
+      // Wait for the echo artifact to actually load in the viewer, then perform the real feature.
+      await page.waitForFunction((mid) => {
+        const fn = window.__fv && window.__fv.state;
+        return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.rawview);
+      }, memoryId, { timeout: 8000 });
+      if (verb === 'rawmode' || verb === 'diff') await page.evaluate((m) => window.__fv.setRawMode(m), mode || 'diff');
+      else if (verb === 'download') await page.evaluate(() => window.__fv.downloadCurrent());
+    }
     await page.waitForSelector('[data-integrate-memory]:not([disabled])', { timeout: 5000 });
     await page.click('[data-integrate-memory]');
     if (i < 8) await page.click('[data-step="1"]');
   }
+  if (realVerbGates >= 3) pass(`Stage 10 echoes include ${realVerbGates} DISTINCT real-feature gates (raw Original, Diff, download)`);
+  else fail(`Stage 10 expected >=3 real-feature echo gates, drove ${realVerbGates}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));

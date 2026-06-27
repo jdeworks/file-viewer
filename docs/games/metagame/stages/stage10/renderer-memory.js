@@ -1,4 +1,5 @@
 import { memories } from "./content.js";
+import { echoVerb } from "./echo-verbs.js";
 import { escapeHtml, escapeAttr } from "./escape.js";
 
 const LAST = memories.length - 1;
@@ -82,15 +83,22 @@ function renderMemoryActions(memory, slot, resolved, integrated) {
   return `<p class="mg-stage10__settled">This memory is part of you now.</p>`;
 }
 
-// The echo: a real artifact to open in the viewer. Witnessing it is required before a resolved memory
-// can be integrated — the load-bearing gate that ties the finale to actual app use.
+// The echo: a real artifact + a DISTINCT real app action that witnesses it (echo-verbs.js). Witnessing
+// is required before a resolved memory can be integrated — the load-bearing gate tying the finale to
+// genuine app use, paying off the viewer skills learned across stages 1–9. Plain-open echoes show no
+// verb chip; real-feature echoes (raw-mode / diff / download) show the verb the player must perform.
 function renderEcho(memory, slot) {
   const witnessed = slot.echoWitnessed === true;
+  const spec = echoVerb(memory.id);
+  const verbChip = spec.verb === "open"
+    ? ""
+    : `<span class="mg-stage10__echo-verb">${escapeHtml(spec.label || spec.verb)}</span>`;
   return `
     <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
-      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo"}</span>
+      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo — pending"}</span>
+      ${witnessed ? "" : verbChip}
       <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
-      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}">Open echo in viewer &rarr;</button>`}
+      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}" data-echo-verb="${escapeAttr(spec.verb)}" data-echo-mode="${escapeAttr(spec.mode || "")}">Open echo in viewer &rarr;</button>`}
     </div>
   `;
 }

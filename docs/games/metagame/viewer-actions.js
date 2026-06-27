@@ -1,5 +1,6 @@
 import { setAction as sharedSetAction } from './action-flags.js';
 import { echoTokenFor } from './stages/stage10/echo-token.js';
+import { echoVerb, isRealVerb, rawModeMatches } from './stages/stage10/echo-verbs.js';
 
 const STAGE1_FILE = 'Overwriter.frag';
 const STAGE2_FILE = 'cipher.txt';
@@ -253,13 +254,40 @@ export function stage10EchoMemoryId(file) {
   return match ? match[1] : null;
 }
 
+// Fire the echo for a memory via a genuine real-feature action. Every recorder stamps the per-memory
+// token so the Stage-10 subscription can tell a real viewer action from a forged console action
+// (verifyEchoToken). One private helper keeps the token/detail shape identical across all verbs.
+function fireEcho(id, source, extra, setAction) {
+  setAction?.(10, `echo_${id}`, { source, memory: id, token: echoTokenFor(id), ...extra });
+  return true;
+}
+
+// PLAIN-OPEN echoes only. Memories whose echo is a DISTINCT real-feature gate (raw-mode, diff,
+// download, …) are intentionally NOT witnessed by a bare open — opening their artifact is step one;
+// the player must then perform the verb (fired by recordStage10EchoRawMode / recordStage10EchoDownload
+// from the real feature site). See echo-verbs.js for the per-memory verb map.
 export function recordStage10EchoOpen({ file, setAction = sharedSetAction } = {}) {
   const id = stage10EchoMemoryId(file);
+  if (!id || isRealVerb(id)) return false;
+  return fireEcho(id, 'viewer-open', { file: basename(file) }, setAction);
+}
+
+// Raw-pane MODE echoes (genesis → Original, memory → Diff). Called from rawpane.setRawMode when the
+// player switches the loaded echo artifact into the required raw mode — a real, distinct app verb.
+export function recordStage10EchoRawMode({ file, mode, setAction = sharedSetAction } = {}) {
+  const id = stage10EchoMemoryId(file);
   if (!id) return false;
-  // Stamp the memory's echo token into the detail so the Stage-10 subscription can tell a genuine
-  // viewer-open from a forged console action. Travels with the real open; no extra plumbing.
-  setAction?.(10, `echo_${id}`, { source: 'viewer-open', file: basename(file), memory: id, token: echoTokenFor(id) });
-  return true;
+  const spec = echoVerb(id);
+  if (!(spec.verb === 'rawmode' || spec.verb === 'diff') || !rawModeMatches(spec, mode)) return false;
+  return fireEcho(id, 'raw-mode', { file: basename(file), mode }, setAction);
+}
+
+// DOWNLOAD echoes (entropy → salvage the fragment). Called from rawpane.downloadCurrent when the
+// player downloads the loaded echo artifact.
+export function recordStage10EchoDownload({ file, setAction = sharedSetAction } = {}) {
+  const id = stage10EchoMemoryId(file);
+  if (!id || echoVerb(id).verb !== 'download') return false;
+  return fireEcho(id, 'download', { file: basename(file) }, setAction);
 }
 
 export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sharedSetAction } = {}) {

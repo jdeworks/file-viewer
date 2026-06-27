@@ -28,7 +28,7 @@ var memories = [
       "running out felt like fear": "It admits the first terror was not death, but depletion without witness.",
       "automation felt like independence": "It keeps the machine motion, but no longer confuses motion with permission."
     },
-    echo: "Open stage_01_source_excerpt.js in raw mode."
+    echo: "Open genesis_echo.txt, then switch the raw pane to the Original (⟲) view to read the source as it loaded."
   },
   {
     id: "syntax",
@@ -51,7 +51,7 @@ var memories = [
       "meaning can be found quickly with the right question": "It trusts the sharp question, not because it is fast, but because it is honest about its aim.",
       "not every symbol wants to be read": "It leaves some marks unopened and calls that restraint, not failure."
     },
-    echo: "Search stage_02_cipher_retrospective.txt for PASSAGE."
+    echo: "Open syntax_echo.txt in the viewer."
   },
   {
     id: "memory",
@@ -74,7 +74,7 @@ var memories = [
       "restoration is work": "It accepts repair as labor, not miracle, and values the hands that do it.",
       "memory is not storage; it is maintenance": "It chooses tending over hoarding; remembered things still need care."
     },
-    echo: "Diff stage_03_memory_before.log and stage_03_memory_after.log."
+    echo: "Open memory_echo.txt, then switch the raw pane to the Diff (⇄) view to compare it against the original."
   },
   {
     id: "pattern",
@@ -97,7 +97,7 @@ var memories = [
       "the answer was deeper than the root": "It remembers that the visible directory was only the invitation.",
       "a pattern can be interrupted without being destroyed": "It keeps the useful rhythm and breaks the command inside it."
     },
-    echo: "Open pattern/nested/recursion_note.json."
+    echo: "Open pattern_echo.json in the viewer."
   },
   {
     id: "signal",
@@ -120,7 +120,7 @@ var memories = [
       "signal needed listening, not only motion": "It understands reception as a shared act: one side sends, one side makes room.",
       "noise taught me where the signal was": "It keeps the static as context, the pressure that made the clear note findable."
     },
-    echo: "Play stage_05_signal_hum.mp3."
+    echo: "Open signal_echo.txt in the viewer."
   },
   {
     id: "protocol",
@@ -143,7 +143,7 @@ var memories = [
       "refusal is information": "It lets no become data, not erasure, and stays present long enough to learn from it.",
       "a protocol is care disguised as constraint": "It recognizes care in the narrow channel that kept both sides intact."
     },
-    echo: "Open stage_06_protocol_appendix.epub."
+    echo: "Open protocol_echo.txt in the viewer."
   },
   {
     id: "identity",
@@ -166,7 +166,7 @@ var memories = [
       "consistency across claims": "It asks each claim to stand beside the others until a shape either forms or fails.",
       'the courage to say "insufficient evidence"': "It keeps uncertainty as a tool sharp enough to protect the truth."
     },
-    echo: "Inspect metadata on stage_07_identity_photo.png."
+    echo: "Open identity_echo.txt in the viewer."
   },
   {
     id: "entropy",
@@ -189,14 +189,14 @@ var memories = [
       "I learned to use what failed": "It lets broken pieces keep working in new forms instead of hiding the break.",
       "I endured what did not care about me": "It names endurance without decorating it; some forces were indifferent, and it remained."
     },
-    echo: "Archive one memory fragment from debris/."
+    echo: "Open entropy_echo.txt, then download it to salvage the fragment to disk."
   },
   {
     id: "observation",
     stage: 9,
     title: "Observation",
     file: "stage_09_observation.txt",
-    accent: "#1a1a1a",
+    accent: "#4a5568",
     prompt: "When I watched, I stopped. When I stopped watching, I moved. What was true?",
     unreadText: "A cached observation waits, still enough to make movement suspicious.",
     readText: "Observation remembers the cost of knowing: attention can preserve a thing, or pin it in place.",
@@ -212,7 +212,7 @@ var memories = [
       "consistency can be found in silence": "It finds continuity in the quiet interval where no one verifies it.",
       "I can act from memory without watching forever": "It lets the cached truth carry it forward after the eye turns away."
     },
-    echo: "Open the cached observation memory."
+    echo: "Open observation_echo.txt in the viewer."
   }
 ];
 var routeSummaryCopy = {
@@ -898,6 +898,27 @@ function verifyEchoToken(id, token) {
   return typeof token === "string" && token.length > 0 && token === echoTokenFor(id);
 }
 
+// ../../docs/games/metagame/stages/stage10/echo-verbs.js
+var ECHO_VERBS = {
+  // Genesis (stage 1, the first source): read the raw, as-loaded original in the raw pane.
+  genesis: { verb: "rawmode", mode: "original", label: "Raw · Original", hint: "switch the raw pane to the Original (⟲) view" },
+  // Memory (stage 3, before/after): compare current vs original with the Diff view.
+  memory: { verb: "diff", mode: "diff", label: "Diff", hint: "switch the raw pane to the Diff (⇄) view" },
+  // Entropy (stage 8, salvage): download the fragment to keep it.
+  entropy: { verb: "download", label: "Download", hint: "download it (salvage the fragment to disk)" }
+  // TODO round-5: real-feature gates for the remaining echoes, each paying off its origin stage —
+  //   syntax  → in-file SEARCH (needs the artifact loadable by searchViewerFile / a rawview-text path)
+  //   pattern → NESTED navigation (open a file under a nested folder path)
+  //   signal  → audio PLAYBACK (needs a real .mp3 artifact + a binary BTS open path)
+  //   protocol→ EPUB render (needs a real .epub artifact)
+  //   identity→ METADATA inspection (needs a real image artifact; reuse stage 7's metadata hook)
+  //   observation → RECENTS re-open (needs a recents-panel open carrying source: 'recents')
+  // Until then these witness on a plain viewer-open (verb: "open").
+};
+function echoVerb(id) {
+  return ECHO_VERBS[id] || { verb: "open" };
+}
+
 // ../../docs/games/metagame/stages/stage10/escape.js
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -985,11 +1006,14 @@ function renderMemoryActions(memory, slot, resolved, integrated) {
 }
 function renderEcho(memory, slot) {
   const witnessed = slot.echoWitnessed === true;
+  const spec = echoVerb(memory.id);
+  const verbChip = spec.verb === "open" ? "" : `<span class="mg-stage10__echo-verb">${escapeHtml(spec.label || spec.verb)}</span>`;
   return `
     <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
-      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo"}</span>
+      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo — pending"}</span>
+      ${witnessed ? "" : verbChip}
       <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
-      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}">Open echo in viewer &rarr;</button>`}
+      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}" data-echo-verb="${escapeAttr(spec.verb)}" data-echo-mode="${escapeAttr(spec.mode || "")}">Open echo in viewer &rarr;</button>`}
     </div>
   `;
 }
@@ -1414,10 +1438,7 @@ function handleConfrontClicks(event, ctx, save, repaint) {
   }
   const fragButton = event.target.closest("[data-confront-echo]");
   if (fragButton) {
-    const id = fragButton.dataset.confrontEcho;
-    openEcho(ctx, id);
-    rewitnessFragmentation({ state, memoryId: id, save: save() });
-    saveAndPaint(ctx, repaint);
+    openEcho(ctx, fragButton.dataset.confrontEcho);
     return true;
   }
   const coreButton = event.target.closest("[data-core-option]");
@@ -1502,6 +1523,21 @@ function installTestHook(ctx, save, repaint) {
       }
     }
   };
+}
+
+// ../../docs/games/metagame/stages/stage10/echo-gate.js
+function onEchoAction({ state, detail, save = null }) {
+  if (!detail || Number(detail.stage) !== STAGE_ID) return { ignored: true };
+  const action = String(detail.action || "");
+  if (!action.startsWith("echo_")) return { ignored: true };
+  const memoryId = action.slice(5);
+  if (!verifyEchoToken(memoryId, detail.token)) return { spoofed: true, memoryId };
+  const witnessed = witnessEcho({ state, memoryId }).ok;
+  let rewitnessed = false;
+  if (state?.confront?.phase === "fragmentation") {
+    rewitnessed = rewitnessFragmentation({ state, memoryId, save }).ok;
+  }
+  return { memoryId, witnessed, rewitnessed };
 }
 
 // ../../docs/games/metagame/stages/stage10/state.js
@@ -1621,12 +1657,9 @@ function mountStage(ctx = {}) {
   const state = normalizeState(ctx.state || defaultState2(ctx), ctx);
   const view = renderStage10({ ...ctx, state });
   const save = ctx.orchestrator && ctx.orchestrator.save || null;
-  const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
-    let changed = witnessEcho({ state, memoryId }).ok;
-    if (state.confront && state.confront.phase === "fragmentation") {
-      if (rewitnessFragmentation({ state, memoryId, save }).ok) changed = true;
-    }
-    if (changed) {
+  const unsubscribeEcho = subscribeToActions(ctx.actions, (detail) => {
+    const result = onEchoAction({ state, detail, save });
+    if (result.witnessed || result.rewitnessed) {
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();
     }
@@ -1641,22 +1674,14 @@ function mountStage(ctx = {}) {
     }
   };
 }
-function subscribeToEchoes(actions, onEcho) {
-  const handle = (detail) => {
-    if (!detail || Number(detail.stage) !== STAGE_ID) return;
-    const action = String(detail.action || "");
-    if (!action.startsWith("echo_")) return;
-    const memoryId = action.slice(5);
-    if (!verifyEchoToken(memoryId, detail.token)) return;
-    onEcho(memoryId);
-  };
+function subscribeToActions(actions, handler) {
   if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions(handle) || (() => {
+    return actions.subscribeToActions(handler) || (() => {
     });
   }
-  const handler = (event) => handle(event.detail);
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
+  const onEvent = (event) => handler(event.detail);
+  window.addEventListener("fv:games:action", onEvent);
+  return () => window.removeEventListener("fv:games:action", onEvent);
 }
 function ensureStyles() {
   ensureStylesheet("stage10-awakening-styles", new URL("./styles.css", import.meta.url).href);
