@@ -238,6 +238,15 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const burner = { hp: 50, maxHp: 50, atk: 10, affix: "burning" };
   applyHitAffix(w, burner, target, 10, { log: [] });
   ok(hasStatus(target, "burn"), "burning affix sets burn on the struck foe");
+  // Element-matrix affixes: frost chills (sets up a shatter), acid corrodes (brittle).
+  const froster = { hp: 50, maxHp: 50, atk: 10, affix: "frost" };
+  const frostFoe = foe({ x: 2, y: 1, hp: 40 });
+  applyHitAffix(w, froster, frostFoe, 10, { log: [] });
+  ok(hasStatus(frostFoe, "frozen"), "frost affix chills the struck foe (sets up a shatter)");
+  const corroder = { hp: 50, maxHp: 50, atk: 10, affix: "acid" };
+  const acidFoe = foe({ x: 2, y: 1, hp: 40 });
+  applyHitAffix(w, corroder, acidFoe, 10, { log: [] });
+  ok(hasStatus(acidFoe, "corroded"), "acid affix corrodes the struck foe (brittle)");
 }
 
 // ── C5 faction infighting: idle rivals trade blows; same camp doesn't ────────────────────────────

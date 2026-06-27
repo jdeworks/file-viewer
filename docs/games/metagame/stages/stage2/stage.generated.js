@@ -1209,8 +1209,8 @@ function makeBlinkRng(world, trap) {
 }
 
 // ../../docs/games/metagame/stages/stage2/affixes.js
-var WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double"];
-var LABEL2 = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike" };
+var WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double", "frost", "acid"];
+var LABEL2 = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike", frost: "frost", acid: "corroding" };
 function rollAffix(rng, floor) {
   const chance = Math.min(0.6, 0.12 + floor * 0.05);
   return rng.float() < chance ? rng.pick(WEAPON_AFFIXES) : null;
@@ -1229,6 +1229,10 @@ function applyHitAffix(world, player, foe, dmg, events) {
     player.hp = Math.min(player.maxHp, player.hp + Math.max(1, Math.round(dmg * 0.2)));
   } else if (a === "burning") {
     applyStatus(foe, "burn", 3, 2);
+  } else if (a === "frost") {
+    if (foe.hp > 0) applyStatus(foe, "frozen", 2, 1);
+  } else if (a === "acid") {
+    if (foe.hp > 0) applyStatus(foe, "corroded", 4, 1);
   } else if (a === "knockback" && foe.hp > 0) {
     const tx = foe.x + Math.sign(foe.x - world.pos.x);
     const ty = foe.y + Math.sign(foe.y - world.pos.y);
