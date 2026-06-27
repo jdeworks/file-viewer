@@ -4,237 +4,280 @@ const CSS = `
 .chpl-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .chpl-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#16a34a;color:#fff;vertical-align:middle;margin-right:8px;}
 .chpl-title{font-size:18px;font-weight:700;margin:0 0 4px;}
+.chpl-mod{font-family:ui-monospace,monospace;font-size:15px;color:#15803d;font-weight:700;}
 .chpl-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
-.chpl-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.chpl-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:110px;}
+.chpl-cards{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.chpl-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:90px;}
 .chpl-card strong{display:block;font-size:1.2rem;font-weight:700;}
 .chpl-card span{font-size:.8rem;color:var(--fg-2,#5a6678);}
-.chpl-section{margin:16px 0;}
-.chpl-section h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
-.chpl-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;}
-.chpl-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:5px 10px;border-bottom:2px solid var(--border,#e0e0e0);background:var(--bg,#fff);}
-.chpl-table td{padding:5px 10px;border-bottom:1px solid var(--border,#eaecf0);vertical-align:top;font-family:ui-monospace,monospace;font-size:12px;}
-.chpl-table tr:last-child td{border-bottom:none;}
-.chpl-pre{background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#e0e0e0);border-radius:8px;padding:14px;overflow:auto;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;margin-top:16px;white-space:pre-wrap;word-break:break-word;}
-.chpl-kw{color:#1d4ed8;font-weight:700;}
-.chpl-parallel{color:#7c3aed;font-weight:600;}
-.chpl-str{color:#b91c1c;}
-.chpl-num{color:#059669;}
-.chpl-comment{color:#888;font-style:italic;}
+.chpl-section{margin:0 0 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden;}
+.chpl-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0);}
+.chpl-list{margin:0;padding:0;list-style:none;}
+.chpl-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
+.chpl-list li:last-child{border-bottom:none;}
+.chpl-tag{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:700;}
+.chpl-tag-use{background:#dcfce7;color:#166534;}
+.chpl-tag-import{background:#cffafe;color:#0e7490;}
+.chpl-tag-proc{background:#ede9fe;color:#7c3aed;}
+.chpl-tag-iter{background:#fae8ff;color:#a21caf;}
+.chpl-tag-record{background:#fef9c3;color:#854d0e;}
+.chpl-tag-class{background:#ffe4e6;color:#9f1239;}
+.chpl-tag-field{background:#e0f2fe;color:#0369a1;}
+.chpl-tag-config{background:#dbeafe;color:#1d4ed8;}
+.chpl-tag-par{background:#f3e8ff;color:#7e22ce;}
+.chpl-name{font-weight:600;}
+.chpl-type{color:#0e7490;}
+.chpl-intent{color:#9f1239;font-style:italic;}
+.chpl-ret{color:#1d4ed8;}
+.chpl-val{color:#9333ea;}
+.chpl-parent{color:var(--fg-2,#777);}
+.chpl-field-row{padding-left:30px !important;}
 `;
 
-const CHAPEL_KWS = [
-  'module', 'proc', 'iter', 'class', 'record', 'union', 'enum',
-  'var', 'const', 'param', 'type', 'config',
-  'if', 'else', 'while', 'do', 'for', 'select', 'when', 'otherwise',
-  'return', 'yield', 'break', 'continue',
-  'new', 'delete', 'owned', 'shared', 'borrowed', 'unmanaged',
-  'sync', 'single', 'atomic', 'serial',
-  'begin', 'cobegin', 'coforall', 'forall', 'on', 'local',
-  'use', 'import', 'require',
-  'inline', 'export', 'extern', 'override', 'throws', 'try', 'catch', 'throw',
-  'nil', 'true', 'false',
-  'int', 'uint', 'real', 'imag', 'complex', 'bool', 'string', 'bytes',
-  'domain', 'range', 'locale', 'nothing', 'void',
-];
-
-const PARALLEL_KWS = ['coforall', 'forall', 'cobegin', 'on', 'begin', 'sync', 'atomic'];
-
-function parseChapel(text) {
-  const lines = (text || '').split(/\r?\n/);
-  const procs = [];
-  const configVars = [];
-  const modules = [];
-  let coforallCount = 0;
-  let forallCount = 0;
-
-  for (const line of lines) {
-    const t = line.trim();
-    if (t.startsWith('//') || t.startsWith('/*')) continue;
-
-    const modMatch = t.match(/^module\s+(\w+)/);
-    if (modMatch && !modules.includes(modMatch[1])) modules.push(modMatch[1]);
-
-    const procMatch = t.match(/^(?:inline\s+|override\s+|private\s+|public\s+)?(?:export\s+)?proc\s+(\S+)\s*[\(<]/);
-    if (procMatch) procs.push(procMatch[1]);
-
-    const iterMatch = t.match(/^(?:inline\s+)?iter\s+(\S+)\s*[\(<]/);
-    if (iterMatch) procs.push(`${iterMatch[1]} (iter)`);
-
-    const configMatch = t.match(/^config\s+(?:const|var|param)\s+(\w+)/);
-    if (configMatch) {
-      const valueMatch = t.match(/=\s*(.+?)\s*;?\s*$/);
-      configVars.push({ name: configMatch[1], value: valueMatch ? valueMatch[1] : '' });
-    }
-
-    if (/\bcoforall\b/.test(t)) coforallCount++;
-    if (/\bforall\b/.test(t)) forallCount++;
-  }
-
-  return { procs, configVars, modules, coforallCount, forallCount };
+// Strip Chapel comments (line `//` and block `/* */`) so structural scans don't trip on prose.
+function stripComments(src) {
+  return String(src || '').replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/[^\n]*/g, '');
 }
 
-function highlightChapelLine(line) {
-  if (!line) return '';
-  let out = esc(line);
-  // Strings
-  out = out.replace(/(&quot;(?:[^&]|&(?!quot;))*?&quot;)/g, '<span class="chpl-str">$1</span>');
-  // Numbers
-  out = out.replace(/\b(\d+(?:\.\d+)?(?:e[+-]?\d+)?)\b/g, '<span class="chpl-num">$1</span>');
-  // Parallel keywords (highlight first, more specific)
-  for (const kw of PARALLEL_KWS) {
-    const re = new RegExp(`(?<![\\w])(${kw})(?![\\w])`, 'g');
-    out = out.replace(re, `<span class="chpl-parallel">$1</span>`);
+// Split `s` on `sep` at bracket depth 0 (so commas/colons inside (), [], {} stay grouped).
+function splitTop(s, sep) {
+  const out = [];
+  let depth = 0, buf = '';
+  for (const ch of s) {
+    if (ch === '(' || ch === '[' || ch === '{') depth++;
+    else if (ch === ')' || ch === ']' || ch === '}') depth = Math.max(0, depth - 1);
+    if (ch === sep && depth === 0) { out.push(buf); buf = ''; } else buf += ch;
   }
-  // Regular keywords (longest first)
-  const sorted = CHAPEL_KWS.filter((k) => !PARALLEL_KWS.includes(k)).sort((a, b) => b.length - a.length);
-  for (const kw of sorted) {
-    const re = new RegExp(`(?<![\\w])(${kw})(?![\\w])`, 'g');
-    out = out.replace(re, '<span class="chpl-kw">$1</span>');
+  out.push(buf);
+  return out;
+}
+
+// "in arr: [] int = expr" -> { name, type, intent }. Type may be empty (generic/inferred).
+function parseParams(raw) {
+  if (!raw.trim()) return [];
+  return splitTop(raw, ',').map((g) => g.trim()).filter(Boolean).map((g) => {
+    const decl = splitTop(g, '=')[0].trim();              // drop default value
+    const colon = splitTop(decl, ':');
+    const head = colon[0].trim();
+    const type = colon.length > 1 ? colon.slice(1).join(':').trim() : '';
+    const hm = head.match(/^(?:(const\s+ref|const\s+in|const|ref|in|out|inout|param|type)\s+)?([\w$]+)$/);
+    return { name: hm ? hm[2] : head, type, intent: hm && hm[1] ? hm[1].replace(/\s+/g, ' ') : '' };
+  });
+}
+
+// Pull every `proc`/`iter` SIGNATURE (typed params + return type) out of comment-stripped source.
+// Paren-aware so a param list spread over multiple lines still collapses into one callable.
+function extractCallables(src, keyword) {
+  const out = [];
+  const re = new RegExp(`(?<![\\w.])${keyword}\\b`, 'g');
+  let m;
+  while ((m = re.exec(src))) {
+    let i = re.lastIndex;
+    while (i < src.length && /\s/.test(src[i])) i++;
+    let name = '';
+    if (src[i] === '"') {                                  // operator overload e.g. proc "+"(...)
+      let j = i + 1; while (j < src.length && src[j] !== '"') j++; name = src.slice(i, j + 1); i = j + 1;
+    } else {
+      const start = i; while (i < src.length && /[\w.$]/.test(src[i])) i++; name = src.slice(start, i);
+    }
+    if (!name) continue;
+    while (i < src.length && /\s/.test(src[i])) i++;
+    let params = [];
+    if (src[i] === '(') {                                  // capture matching () paren-aware
+      let depth = 0, j = i;
+      for (; j < src.length; j++) { const c = src[j]; if (c === '(') depth++; else if (c === ')') { depth--; if (depth === 0) { j++; break; } } }
+      params = parseParams(src.slice(i + 1, j - 1));
+      i = j;
+    }
+    let returns = '';
+    const rm = src.slice(i).match(/^\s*(?:(?:const\s+ref|const|ref|param|type)\s+)?:\s*([^{\n;]+?)\s*(?=\bwhere\b|\bthrows\b|\blifetime\b|\{|;|\n|$)/);
+    if (rm) returns = rm[1].trim();
+    out.push({ name, params, returns });
   }
   return out;
 }
 
-function highlightChapel(text) {
-  const lines = text.split(/\r?\n/);
-  const result = [];
-  let inBlockComment = false;
+// First module/use path token from a comma segment (drops `only`/`except`/`as` clauses).
+function modToken(seg) { const t = seg.trim().match(/^[\w.]+/); return t ? t[0] : seg.trim(); }
 
-  for (const line of lines) {
-    if (inBlockComment) {
-      const endIdx = line.indexOf('*/');
-      if (endIdx >= 0) {
-        result.push(`<span class="chpl-comment">${esc(line.slice(0, endIdx + 2))}</span>` + highlightChapelLine(line.slice(endIdx + 2)));
-        inBlockComment = false;
-      } else {
-        result.push(`<span class="chpl-comment">${esc(line)}</span>`);
-      }
-      continue;
-    }
+// Parse Chapel source into structured facts. Exported (pure, DOM-free) for unit testing.
+export function analyzeChapel(text) {
+  const src = stripComments(text);
+  const lines = src.split(/\r?\n/);
 
-    const blockStart = line.indexOf('/*');
-    if (blockStart >= 0) {
-      const blockEnd = line.indexOf('*/', blockStart + 2);
-      if (blockEnd >= 0) {
-        result.push(highlightChapelLine(line.slice(0, blockStart)) + `<span class="chpl-comment">${esc(line.slice(blockStart, blockEnd + 2))}</span>` + highlightChapelLine(line.slice(blockEnd + 2)));
-      } else {
-        result.push(highlightChapelLine(line.slice(0, blockStart)) + `<span class="chpl-comment">${esc(line.slice(blockStart))}</span>`);
-        inBlockComment = true;
-      }
-      continue;
+  const modules = [], uses = [], imports = [], configs = [], records = [];
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (!t) continue;
+    let m;
+    if ((m = t.match(/\bmodule\s+(\w+)/)) && !modules.includes(m[1])) modules.push(m[1]);
+    if ((m = t.match(/^public\s+use\s+(.+?);?\s*$/)) || (m = t.match(/^use\s+(.+?);?\s*$/))) {
+      for (const seg of splitTop(m[1], ',')) { const n = modToken(seg); if (n) uses.push(n); }
     }
-
-    const lcIdx = line.indexOf('//');
-    if (lcIdx >= 0) {
-      result.push(highlightChapelLine(line.slice(0, lcIdx)) + `<span class="chpl-comment">${esc(line.slice(lcIdx))}</span>`);
-      continue;
+    if ((m = t.match(/^public\s+import\s+(.+?);?\s*$/)) || (m = t.match(/^import\s+(.+?);?\s*$/))) {
+      for (const seg of splitTop(m[1], ',')) { const n = modToken(seg); if (n) imports.push(n); }
     }
-    result.push(highlightChapelLine(line));
+    if ((m = t.match(/^config\s+(const|var|param)\s+(\w+)\s*(?::\s*([^=;]+?))?\s*(?:=\s*([^;]+?))?\s*;?\s*$/))) {
+      configs.push({ kind: m[1], name: m[2], type: (m[3] || '').trim(), value: (m[4] || '').trim() });
+    }
   }
-  return result.join('\n');
+
+  // Records & classes with their declared fields — brace-tracked so we only read direct members
+  // (fields living at the body's own depth), never locals inside a method.
+  let depth = 0;
+  const stack = [];
+  for (const raw of lines) {
+    const t = raw.trim();
+    const lineDepth = depth;
+    let isHeader = false;
+    const hm = t.match(/^(?:extern\s+)?(record|class)\s+(\w+)\s*(?::\s*([\w., ]+?))?\s*\{/);
+    if (hm) {
+      const rec = { kind: hm[1], name: hm[2], parent: (hm[3] || '').trim().replace(/\s+/g, ' '), fields: [], bodyDepth: lineDepth + 1 };
+      records.push(rec); stack.push(rec); isHeader = true;
+    }
+    const top = stack[stack.length - 1];
+    if (top && !isHeader && lineDepth === top.bodyDepth) {
+      const fm = t.match(/^(var|const|param)\s+(\w+)\s*:\s*([^=;{]+?)\s*(?:=\s*[^;]+)?\s*;?\s*$/);
+      if (fm) top.fields.push({ keyword: fm[1], name: fm[2], type: fm[3].trim() });
+    }
+    for (const ch of raw) { if (ch === '{') depth++; else if (ch === '}') depth = Math.max(0, depth - 1); }
+    while (stack.length && depth < stack[stack.length - 1].bodyDepth) stack.pop();
+  }
+
+  const procs = extractCallables(src, 'proc');
+  const iters = extractCallables(src, 'iter');
+
+  const count = (kw) => (src.match(new RegExp(`(?<![\\w.])${kw}\\b`, 'g')) || []).length;
+  const parallelConstructs = {
+    forall: count('forall'), coforall: count('coforall'),
+    begin: count('begin'), cobegin: count('cobegin'),
+    sync: count('sync'), atomic: count('atomic'), on: count('on'),
+  };
+  parallelConstructs.total = Object.values(parallelConstructs).reduce((a, b) => a + b, 0);
+
+  return { modules, uses, imports, procs, iters, records, configs, parallelConstructs };
 }
 
-export function render(intake) {
-  const { procs, configVars, modules, coforallCount, forallCount } = parseChapel(intake.text || '');
+function makeSection(host, title) {
+  const sec = document.createElement('div');
+  sec.className = 'chpl-section';
+  const hd = document.createElement('div');
+  hd.className = 'chpl-section-hd';
+  hd.textContent = title;
+  sec.appendChild(hd);
+  host.appendChild(sec);
+  return sec;
+}
+function makeList(sec) { const ul = document.createElement('ul'); ul.className = 'chpl-list'; sec.appendChild(ul); return ul; }
+function tag(cls, t) { return `<span class="chpl-tag ${cls}">${esc(t)}</span>`; }
+function row(ul, html, cls) { const li = document.createElement('li'); if (cls) li.className = cls; li.innerHTML = html; ul.appendChild(li); }
+function paramsHtml(params) {
+  return params.map((p) => {
+    const intent = p.intent ? `<span class="chpl-intent">${esc(p.intent)}</span> ` : '';
+    const type = p.type ? `: <span class="chpl-type">${esc(p.type)}</span>` : '';
+    return `${intent}<span class="chpl-name">${esc(p.name)}</span>${type}`;
+  }).join(', ');
+}
+function callableRow(ul, c, tagCls, tagText) {
+  const ret = c.returns ? ` : <span class="chpl-ret">${esc(c.returns)}</span>` : '';
+  row(ul, `${tag(tagCls, tagText)} <span class="chpl-name">${esc(c.name)}</span>(${paramsHtml(c.params)})${ret}`);
+}
+
+export async function render(intake) {
+  const text = intake.text || '';
+  const preview = text.slice(0, 4000);
+  if (!/\bproc\b/.test(preview) && !/\bmodule\b/.test(preview) && !/\bconfig\b/.test(preview) && !/\bforall\b/.test(preview)) return null;
+
+  const { modules, uses, imports, procs, iters, records, configs, parallelConstructs } = analyzeChapel(text);
 
   const host = document.createElement('div');
   host.className = 'chpl-doc';
-
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
 
-  const moduleName = modules[0] || '';
   const title = document.createElement('div');
   title.className = 'chpl-title';
-  title.innerHTML = `<span class="chpl-badge">Chapel</span>${moduleName ? esc(moduleName) : 'Source File'}`;
+  const badge = document.createElement('span');
+  badge.className = 'chpl-badge';
+  badge.textContent = 'Chapel';
+  title.appendChild(badge);
+  if (modules[0]) { const n = document.createElement('span'); n.className = 'chpl-mod'; n.textContent = modules[0]; title.appendChild(n); }
+  else title.appendChild(document.createTextNode('Source File'));
   host.appendChild(title);
-
-  const parallelTotal = coforallCount + forallCount;
-  const parts = [];
-  if (modules.length) parts.push(`module ${modules[0]}`);
-  parts.push(`${procs.length} proc${procs.length !== 1 ? 's' : ''}`);
-  if (configVars.length) parts.push(`${configVars.length} config var${configVars.length !== 1 ? 's' : ''}`);
-  if (parallelTotal) parts.push(`${parallelTotal} parallel construct${parallelTotal !== 1 ? 's' : ''}`);
 
   const sub = document.createElement('div');
   sub.className = 'chpl-sub';
-  sub.textContent = parts.join(' · ');
+  sub.textContent = [
+    modules.length && `${modules.length} module${modules.length !== 1 ? 's' : ''}`,
+    procs.length && `${procs.length} proc${procs.length !== 1 ? 's' : ''}`,
+    iters.length && `${iters.length} iterator${iters.length !== 1 ? 's' : ''}`,
+    records.length && `${records.length} type${records.length !== 1 ? 's' : ''}`,
+    parallelConstructs.total && `${parallelConstructs.total} parallel construct${parallelConstructs.total !== 1 ? 's' : ''}`,
+  ].filter(Boolean).join(' · ');
   host.appendChild(sub);
 
-  // Summary cards
-  const summary = document.createElement('div');
-  summary.className = 'chpl-summary';
-  const cards = [
+  const cards = document.createElement('div');
+  cards.className = 'chpl-cards';
+  for (const { value, label } of [
+    { value: uses.length + imports.length, label: 'Uses' },
     { value: procs.length, label: 'Procs' },
-    { value: configVars.length, label: 'Config vars' },
-    { value: coforallCount, label: 'coforall' },
-    { value: forallCount, label: 'forall' },
-  ];
-  for (const { value, label } of cards) {
+    { value: iters.length, label: 'Iterators' },
+    { value: records.length, label: 'Types' },
+    { value: configs.length, label: 'Configs' },
+    { value: parallelConstructs.total, label: 'Parallel' },
+  ]) {
     const card = document.createElement('div');
     card.className = 'chpl-card';
-    const strong = document.createElement('strong');
-    strong.textContent = value;
-    const span = document.createElement('span');
-    span.textContent = label;
-    card.appendChild(strong);
-    card.appendChild(span);
-    summary.appendChild(card);
+    const s = document.createElement('strong'); s.textContent = value;
+    const sp = document.createElement('span'); sp.textContent = label;
+    card.appendChild(s); card.appendChild(sp); cards.appendChild(card);
   }
-  host.appendChild(summary);
+  host.appendChild(cards);
 
-  // Procs table
-  if (procs.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'chpl-section';
-    const h3 = document.createElement('h3');
-    h3.textContent = 'Procedures';
-    sec.appendChild(h3);
-    const table = document.createElement('table');
-    table.className = 'chpl-table';
-    const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>Name</th></tr>';
-    table.appendChild(thead);
-    const tbody = document.createElement('tbody');
-    for (const name of procs.slice(0, 40)) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(name)}</td>`;
-      tbody.appendChild(tr);
+  if (uses.length || imports.length) {
+    const ul = makeList(makeSection(host, `Uses & Imports (${uses.length + imports.length})`));
+    for (const u of uses) row(ul, `${tag('chpl-tag-use', 'use')} <span class="chpl-name">${esc(u)}</span>`);
+    for (const im of imports) row(ul, `${tag('chpl-tag-import', 'import')} <span class="chpl-name">${esc(im)}</span>`);
+  }
+
+  if (configs.length) {
+    const ul = makeList(makeSection(host, `Config Declarations (${configs.length})`));
+    for (const c of configs) {
+      const type = c.type ? ` : <span class="chpl-type">${esc(c.type)}</span>` : '';
+      const val = c.value ? ` = <span class="chpl-val">${esc(c.value)}</span>` : '';
+      row(ul, `${tag('chpl-tag-config', 'config ' + c.kind)} <span class="chpl-name">${esc(c.name)}</span>${type}${val}`);
     }
-    table.appendChild(tbody);
-    sec.appendChild(table);
-    host.appendChild(sec);
   }
 
-  // Config vars table
-  if (configVars.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'chpl-section';
-    const h3 = document.createElement('h3');
-    h3.textContent = 'Config Variables';
-    sec.appendChild(h3);
-    const table = document.createElement('table');
-    table.className = 'chpl-table';
-    const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>Name</th><th>Default</th></tr>';
-    table.appendChild(thead);
-    const tbody = document.createElement('tbody');
-    for (const { name, value } of configVars.slice(0, 30)) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(name)}</td><td>${esc(value) || '<span style="color:var(--fg-2,#aaa)">—</span>'}</td>`;
-      tbody.appendChild(tr);
+  if (records.length) {
+    const ul = makeList(makeSection(host, `Records & Classes (${records.length})`));
+    for (const r of records) {
+      const parent = r.parent ? ` <span class="chpl-parent">: ${esc(r.parent)}</span>` : '';
+      row(ul, `${tag(r.kind === 'class' ? 'chpl-tag-class' : 'chpl-tag-record', r.kind)} <span class="chpl-name">${esc(r.name)}</span>${parent}`);
+      for (const f of r.fields) {
+        row(ul, `${tag('chpl-tag-field', f.keyword)} <span class="chpl-name">${esc(f.name)}</span> : <span class="chpl-type">${esc(f.type)}</span>`, 'chpl-field-row');
+      }
     }
-    table.appendChild(tbody);
-    sec.appendChild(table);
-    host.appendChild(sec);
   }
 
-  // Syntax-highlighted source
-  const pre = document.createElement('pre');
-  pre.className = 'chpl-pre';
-  pre.innerHTML = highlightChapel(intake.text || '');
-  host.appendChild(pre);
+  if (procs.length) {
+    const ul = makeList(makeSection(host, `Procedures (${procs.length})`));
+    for (const p of procs) callableRow(ul, p, 'chpl-tag-proc', 'proc');
+  }
+
+  if (iters.length) {
+    const ul = makeList(makeSection(host, `Iterators (${iters.length})`));
+    for (const it of iters) callableRow(ul, it, 'chpl-tag-iter', 'iter');
+  }
+
+  if (parallelConstructs.total) {
+    const ul = makeList(makeSection(host, 'Parallel Constructs'));
+    for (const [name, n] of Object.entries(parallelConstructs)) {
+      if (name === 'total' || !n) continue;
+      row(ul, `${tag('chpl-tag-par', name)} <span class="chpl-val">${n}</span> occurrence${n !== 1 ? 's' : ''}`);
+    }
+  }
 
   return { parentNode: host };
 }

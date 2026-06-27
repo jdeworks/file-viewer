@@ -165,6 +165,7 @@ FULL_UNIT_TESTS=(
   tests/known-ada-lang.test.mjs
   tests/known-agda-lang.test.mjs
   tests/known-asm-lang.test.mjs
+  tests/known-carbon-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
