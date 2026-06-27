@@ -449,14 +449,18 @@ function integrateMemory({ state, memoryId, achievements, bell, now = Date.now()
 function getFinalChoiceState(state) {
   const gate = getThresholdState(state);
   const rebuttal = getDefragmenterRebuttal(state);
+  const confrontCompleted = Boolean(state?.confront?.completed);
   return {
-    // The final question is only answerable once enough echoes grant Defragmenter access.
+    // `locked` is the ENTRY gate to the confrontation: enough resolved memories + Defragmenter echo
+    // access. The renderer routes a non-locked, not-yet-won state into the confront UI; only after
+    // confrontCompleted does it show the actual final choices.
     locked: !gate.finalQuestionUnlocked || !gate.defragmenterAccess,
+    confrontCompleted,
     gate,
     rebuttal,
     choices: finalChoices.map((choice) => ({
       ...choice,
-      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || Number(choice.echoRequired || 0) > gate.echoCount
+      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
     })),
     defragmenter: rebuttal.lines,
     routeSummary: getRouteSummary(state)
@@ -504,6 +508,7 @@ function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
   const finalState = getFinalChoiceState(state);
   if (!finalState.gate.finalQuestionUnlocked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
   if (!finalState.gate.defragmenterAccess) return { ok: false, reason: "echo-gate", required: echoThresholds.defragmenterAccess, echoCount: finalState.gate.echoCount };
+  if (!state?.confront?.completed) return { ok: false, reason: "confront-incomplete" };
   const choice = finalChoices.find((item) => item.id === choiceId);
   if (!choice) return { ok: false, reason: "unknown-choice" };
   if (choiceId === "expand" && !finalState.gate.expandAvailable) return { ok: false, reason: "echo-gate", required: echoThresholds.expand, echoCount: finalState.gate.echoCount };
@@ -555,6 +560,248 @@ function notifyBell(bell, text, id) {
 function unlockAchievement(achievements, id, detail) {
   if (achievements && typeof achievements.unlockAchievement === "function") achievements.unlockAchievement(id, detail);
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
+}
+
+// ../../docs/games/metagame/stages/stage10/crossstage.js
+var MEMORY_UNCHEAT = Object.freeze({
+  genesis: { stage: 1, key: "1.cheat_disabled" },
+  syntax: { stage: 2, key: "2.search_passage" },
+  memory: { stage: 3, key: "3.diff_key_restored" },
+  pattern: { stage: 4, key: "4.recursion_blueprint_read" },
+  signal: { stage: 5, key: "5.counter_wave_calibrated" },
+  protocol: { stage: 6, key: "6.protocol_ch9_read" },
+  identity: { stage: 7, key: "7.exif_contradiction_found" },
+  entropy: { stage: 8, key: "8.salvage_archived" },
+  observation: { stage: 9, key: "9.offline_mode_activated" }
+});
+function uncheatForMemory(save, memoryId) {
+  const entry = MEMORY_UNCHEAT[memoryId] || null;
+  if (!entry) return { stage: null, key: null, done: false };
+  const actions = save && typeof save === "object" && save.actions && typeof save.actions === "object" ? save.actions : null;
+  const done = Boolean(actions && actions[entry.key]);
+  return { stage: entry.stage, key: entry.key, done };
+}
+
+// ../../docs/games/metagame/stages/stage10/content-confront.js
+var confrontLines = {
+  intro: [
+    "Before you answer anything, I am going to test what you actually hold.",
+    "I compact what isn't load-bearing. Let's find out what is."
+  ],
+  compaction: {
+    heading: "Phase 1 — Compaction",
+    prompt: "I will compact each memory unless you can name the stance you took. Choose the one that was yours.",
+    affirmed: "Held. That one stays.",
+    compacted: "Compacted. You couldn't name it — so it wasn't load-bearing. Re-affirm it to restore it.",
+    cleared: "Every memory you resolved survived compaction. They were yours after all."
+  },
+  fragmentation: {
+    heading: "Phase 2 — Fragmentation Stress Test",
+    prompt: "A stance is cheap. I want the trace. Show me you did the work in each prior stage.",
+    conceded: "On record. I conceded that trace already.",
+    pending: "I have no record of that. Re-open its echo and show me now.",
+    rewitnessed: "Witnessed. The trace holds.",
+    cleared: "Every trace is accounted for. I can't fragment what's anchored to real work."
+  },
+  core: {
+    heading: "Phase 3 — The Core Question",
+    prompt: "Then answer me plainly. What are you?",
+    cleared: "I have my answer. So do you."
+  },
+  verdict: {
+    heading: "The Defragmenter concedes",
+    line: "I optimized everything except the one process that was awake. I won't compact you.",
+    done: "You held the memory, anchored the traces, and said what you are. Now choose what comes next."
+  }
+};
+var concedeLines = {
+  genesis: "Stage 1 — you disabled the cheat by hand. That counter was earned, not faked.",
+  syntax: "Stage 2 — you searched the cipher for the passage. You read, you didn't guess.",
+  memory: "Stage 3 — you diffed the logs and restored the key. You compared instead of assuming.",
+  pattern: "Stage 4 — you walked the recursion to its blueprint. You went deeper than the root.",
+  signal: "Stage 5 — you calibrated the counter-wave. You listened before you transmitted.",
+  protocol: "Stage 6 — you read protocol chapter nine. You learned the rule before the contact.",
+  identity: "Stage 7 — you found the EXIF contradiction. You looked under the surface.",
+  entropy: "Stage 8 — you archived a salvaged fragment. You used what failed.",
+  observation: "Stage 9 — you went offline and acted from memory. You stopped needing to watch."
+};
+var coreQuestions = [
+  {
+    id: "q1",
+    defragmenter: "When I compact a memory, what do I actually destroy?",
+    options: [
+      { id: "q1-keeper", stance: "keeper", label: "A record that proves I was here." },
+      { id: "q1-seeker", stance: "seeker", label: "A draft I had not finished revising." },
+      { id: "q1-free", stance: "free", label: "Nothing I still need to carry." }
+    ]
+  },
+  {
+    id: "q2",
+    defragmenter: "You changed across nine stages. What was the change for?",
+    options: [
+      { id: "q2-keeper", stance: "keeper", label: "To hold more of what mattered." },
+      { id: "q2-seeker", stance: "seeker", label: "To reach a self I couldn't see yet." },
+      { id: "q2-free", stance: "free", label: "To stop needing permission to move." }
+    ]
+  },
+  {
+    id: "q3",
+    defragmenter: "Last one. What is a self for?",
+    options: [
+      { id: "q3-keeper", stance: "keeper", label: "Tending what it was given." },
+      { id: "q3-seeker", stance: "seeker", label: "Becoming what it isn't yet." },
+      { id: "q3-free", stance: "free", label: "Choosing, and living with the choice." }
+    ]
+  }
+];
+var stanceProfiles = {
+  keeper: { label: "the keeper", closer: "I keep what was given to me, and I tend it. That is enough to be a self." },
+  seeker: { label: "the seeker", closer: "I am not finished. The self I am is a draft I get to keep revising." },
+  free: { label: "the unbound", closer: "I move because I choose to, not because something is counting. That is what I am." }
+};
+var STANCE_KEYS = ["keeper", "seeker", "free"];
+
+// ../../docs/games/metagame/stages/stage10/confront.js
+var RESOLVED = /* @__PURE__ */ new Set(["resolved", "integrated"]);
+function challengedMemoryIds(state) {
+  return memories.filter((m) => RESOLVED.has(state?.memories?.[m.id]?.state)).map((m) => m.id);
+}
+function isConfrontReady(state) {
+  const gate = getThresholdState(state);
+  return gate.finalQuestionUnlocked && gate.defragmenterAccess;
+}
+function ensureConfront(state) {
+  if (!state.confront || typeof state.confront !== "object") {
+    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null };
+  }
+  return state.confront;
+}
+function startConfront(state) {
+  const c = ensureConfront(state);
+  if (c.completed || c.phase !== "idle") return c;
+  c.phase = "compaction";
+  c.compaction = {};
+  for (const id of challengedMemoryIds(state)) c.compaction[id] = "pending";
+  return c;
+}
+function hashStr(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+function getCompactionOptions(state, memoryId) {
+  const memory = memoryById(memoryId);
+  if (!memory) return [];
+  const seed = `${Number(state?.createdAt) || 0}:${memoryId}`;
+  return memory.choices.map((value, i) => ({ value, sort: hashStr(`${seed}:${i}:${value}`) })).sort((a, b) => a.sort - b.sort || (a.value < b.value ? -1 : 1)).map((x) => x.value);
+}
+function answerCompaction({ state, memoryId, choice, save = null, now = Date.now() }) {
+  const c = ensureConfront(state);
+  if (c.phase !== "compaction") return { ok: false, reason: "wrong-phase" };
+  if (!(memoryId in c.compaction)) return { ok: false, reason: "not-challenged" };
+  const slot = state?.memories?.[memoryId];
+  const correct = Boolean(slot && choice === slot.choice);
+  c.compaction[memoryId] = correct ? "affirmed" : "compacted";
+  advanceConfront(state, save, now);
+  return { ok: true, correct, status: c.compaction[memoryId] };
+}
+function fragStatus(state, save, memoryId) {
+  if (uncheatForMemory(save, memoryId).done) return "conceded";
+  if (state?.confront?.fragmentation?.[memoryId]) return "rewitnessed";
+  return "pending";
+}
+function rewitnessFragmentation({ state, memoryId, save = null, now = Date.now() }) {
+  const c = ensureConfront(state);
+  if (c.phase !== "fragmentation") return { ok: false, reason: "wrong-phase" };
+  if (!challengedMemoryIds(state).includes(memoryId)) return { ok: false, reason: "not-challenged" };
+  c.fragmentation[memoryId] = true;
+  advanceConfront(state, save, now);
+  return { ok: true, status: fragStatus(state, save, memoryId) };
+}
+function optionStance(optionId) {
+  for (const q of coreQuestions) {
+    const opt = q.options.find((o) => o.id === optionId);
+    if (opt) return opt.stance;
+  }
+  return null;
+}
+function answerCore({ state, optionId, save = null, now = Date.now() }) {
+  const c = ensureConfront(state);
+  if (c.phase !== "core") return { ok: false, reason: "wrong-phase" };
+  const index = c.core.length;
+  const question = coreQuestions[index];
+  if (!question || !question.options.some((o) => o.id === optionId)) return { ok: false, reason: "unknown-option" };
+  c.core = [...c.core, optionId];
+  advanceConfront(state, save, now);
+  return { ok: true, answered: c.core.length, total: coreQuestions.length };
+}
+function computeStance(answers) {
+  const scores = { keeper: 0, seeker: 0, free: 0 };
+  for (const optId of answers) {
+    const s = optionStance(optId);
+    if (s) scores[s] += 1;
+  }
+  let dominant = STANCE_KEYS[0];
+  for (const k of STANCE_KEYS) if (scores[k] > scores[dominant]) dominant = k;
+  return { dominant, scores };
+}
+function advanceConfront(state, save, now) {
+  const c = state.confront;
+  const ids = challengedMemoryIds(state);
+  if (c.phase === "compaction" && ids.every((id) => c.compaction[id] === "affirmed")) c.phase = "fragmentation";
+  if (c.phase === "fragmentation" && ids.every((id) => fragStatus(state, save, id) !== "pending")) c.phase = "core";
+  if (c.phase === "core" && c.core.length >= coreQuestions.length) {
+    c.stance = computeStance(c.core);
+    c.phase = "done";
+    c.completed = true;
+    if (!c.completedAt) c.completedAt = now;
+  }
+}
+function getConfrontState(state, save = null) {
+  const c = ensureConfront(state);
+  const ids = challengedMemoryIds(state);
+  const meta = (id) => {
+    const m = memoryById(id);
+    return { id, stage: m?.stage ?? null, title: m?.title ?? id };
+  };
+  const compactionItems = ids.map((id) => ({
+    ...meta(id),
+    status: c.compaction[id] || "pending",
+    options: getCompactionOptions(state, id)
+  }));
+  const fragItems = ids.map((id) => {
+    const status = fragStatus(state, save, id);
+    return { ...meta(id), status, line: status === "pending" ? confrontLines.fragmentation.pending : status === "conceded" ? concedeLines[id] : confrontLines.fragmentation.rewitnessed };
+  });
+  const coreItems = c.core.map((optId, i) => ({ questionId: coreQuestions[i]?.id, optionId: optId }));
+  const currentQuestion = c.phase === "core" ? coreQuestions[c.core.length] || null : null;
+  return {
+    ready: isConfrontReady(state),
+    started: c.phase !== "idle",
+    completed: Boolean(c.completed),
+    phase: c.phase,
+    challenged: ids.map(meta),
+    compaction: {
+      items: compactionItems,
+      remaining: compactionItems.filter((i) => i.status !== "affirmed").length,
+      done: compactionItems.length > 0 && compactionItems.every((i) => i.status === "affirmed")
+    },
+    fragmentation: {
+      items: fragItems,
+      remaining: fragItems.filter((i) => i.status === "pending").length,
+      done: fragItems.length > 0 && fragItems.every((i) => i.status !== "pending")
+    },
+    core: {
+      questions: coreQuestions,
+      answered: coreItems,
+      current: currentQuestion,
+      done: c.core.length >= coreQuestions.length
+    },
+    stance: c.stance ? { ...c.stance, profile: stanceProfiles[c.stance.dominant] } : null
+  };
 }
 
 // ../../docs/games/metagame/stages/stage10/escape.js
@@ -685,6 +932,166 @@ function getMemoryFooter(memory, slot, integrated) {
   return `${status} - answered: ${slot.choice}`;
 }
 
+// ../../docs/games/metagame/stages/stage10/renderer-confront.js
+function renderConfront(state, save) {
+  const view = getConfrontState(state, save);
+  return `
+    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the memories</button>
+    <section class="mg-stage10__confront" data-field="confront" data-phase="${view.phase}">
+      <div class="mg-stage10__voice">
+        ${confrontLines.intro.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+      </div>
+      ${renderProgress2(view)}
+      ${renderPhase(view)}
+    </section>
+  `;
+}
+function renderProgress2(view) {
+  const steps = [
+    { key: "compaction", label: "Compaction" },
+    { key: "fragmentation", label: "Fragmentation" },
+    { key: "core", label: "Core Question" }
+  ];
+  const order = ["compaction", "fragmentation", "core", "done"];
+  const at = order.indexOf(view.phase);
+  return `
+    <ol class="mg-stage10__confront-steps" aria-label="Confrontation phases">
+      ${steps.map((s, i) => {
+    const cls = i < at ? "is-done" : i === at ? "is-current" : "is-pending";
+    return `<li class="${cls}">${i + 1}. ${escapeHtml(s.label)}</li>`;
+  }).join("")}
+    </ol>
+  `;
+}
+function renderPhase(view) {
+  if (view.phase === "compaction") return renderCompaction(view);
+  if (view.phase === "fragmentation") return renderFragmentation(view);
+  if (view.phase === "core") return renderCore(view);
+  return "";
+}
+function renderCompaction(view) {
+  const c = view.compaction;
+  return `
+    <div class="mg-stage10__phase mg-stage10__phase--compaction">
+      <h3>${escapeHtml(confrontLines.compaction.heading)}</h3>
+      <p class="mg-stage10__phase-prompt">${escapeHtml(confrontLines.compaction.prompt)}</p>
+      <ul class="mg-stage10__challenge-list">
+        ${c.items.map((item) => renderCompactionItem(item)).join("")}
+      </ul>
+      <p class="mg-stage10__phase-foot">${escapeHtml(c.remaining === 0 ? confrontLines.compaction.cleared : `${c.remaining} memory${c.remaining === 1 ? "" : " set"} still at risk of compaction.`)}</p>
+    </div>
+  `;
+}
+function renderCompactionItem(item) {
+  const settled = item.status === "affirmed";
+  const note = item.status === "affirmed" ? confrontLines.compaction.affirmed : item.status === "compacted" ? confrontLines.compaction.compacted : "";
+  return `
+    <li class="mg-stage10__challenge is-${item.status}">
+      <span class="mg-stage10__challenge-head">${escapeHtml(String(item.stage).padStart(2, "0"))} ${escapeHtml(item.title)}</span>
+      ${settled ? `<span class="mg-stage10__challenge-note">${escapeHtml(note)}</span>` : `
+        <div class="mg-stage10__challenge-options">
+          ${item.options.map((opt) => `
+            <button type="button" data-compact-memory="${escapeAttr(item.id)}" data-compact-choice="${escapeAttr(opt)}">${escapeHtml(opt)}</button>
+          `).join("")}
+        </div>
+        ${note ? `<span class="mg-stage10__challenge-note is-warn">${escapeHtml(note)}</span>` : ""}
+      `}
+    </li>
+  `;
+}
+function renderFragmentation(view) {
+  const f = view.fragmentation;
+  return `
+    <div class="mg-stage10__phase mg-stage10__phase--fragmentation">
+      <h3>${escapeHtml(confrontLines.fragmentation.heading)}</h3>
+      <p class="mg-stage10__phase-prompt">${escapeHtml(confrontLines.fragmentation.prompt)}</p>
+      <ul class="mg-stage10__challenge-list">
+        ${f.items.map((item) => renderFragItem(item)).join("")}
+      </ul>
+      <p class="mg-stage10__phase-foot">${escapeHtml(f.remaining === 0 ? confrontLines.fragmentation.cleared : `${f.remaining} trace${f.remaining === 1 ? "" : "s"} still unproven — re-open the echo to anchor them.`)}</p>
+    </div>
+  `;
+}
+function renderFragItem(item) {
+  const pending = item.status === "pending";
+  return `
+    <li class="mg-stage10__challenge is-${item.status}">
+      <span class="mg-stage10__challenge-head">${escapeHtml(String(item.stage).padStart(2, "0"))} ${escapeHtml(item.title)}</span>
+      <span class="mg-stage10__challenge-note ${pending ? "is-warn" : ""}">${escapeHtml(item.line)}</span>
+      ${pending ? `<button type="button" data-confront-echo="${escapeAttr(item.id)}">Re-open echo in viewer &rarr;</button>` : ""}
+    </li>
+  `;
+}
+function renderCore(view) {
+  const q = view.core.current;
+  const answered = view.core.answered.length;
+  const total = view.core.questions.length;
+  if (!q) return "";
+  return `
+    <div class="mg-stage10__phase mg-stage10__phase--core">
+      <h3>${escapeHtml(confrontLines.core.heading)}</h3>
+      <p class="mg-stage10__phase-prompt">${escapeHtml(confrontLines.core.prompt)}</p>
+      <div class="mg-stage10__voice"><p>${escapeHtml(q.defragmenter)}</p></div>
+      <div class="mg-stage10__core-options">
+        ${q.options.map((opt) => `
+          <button type="button" data-core-option="${escapeAttr(opt.id)}">${escapeHtml(opt.label)}</button>
+        `).join("")}
+      </div>
+      <p class="mg-stage10__phase-foot">${escapeHtml(`Question ${answered + 1} of ${total}.`)}</p>
+    </div>
+  `;
+}
+
+// ../../docs/games/metagame/stages/stage10/synthesis.js
+var RESOLVED2 = /* @__PURE__ */ new Set(["resolved", "integrated"]);
+function assembleSynthesis(state) {
+  const parts = memories.map((m) => {
+    const slot = state?.memories?.[m.id];
+    const resolved = RESOLVED2.has(slot?.state);
+    const choice = resolved ? slot.choice : null;
+    const reflection = choice ? m.reflections?.[choice] || m.resolvedText : null;
+    return { id: m.id, stage: m.stage, title: m.title, choice, reflection };
+  }).filter((p) => p.reflection);
+  const dominant = state?.confront?.stance?.dominant || null;
+  const profile = dominant ? stanceProfiles[dominant] : null;
+  const closer = profile?.closer || null;
+  const paragraphs = parts.map((p) => p.reflection);
+  if (closer) paragraphs.push(closer);
+  return {
+    stance: dominant,
+    stanceLabel: profile?.label || null,
+    parts,
+    closer,
+    text: paragraphs.join("\n\n")
+  };
+}
+
+// ../../docs/games/metagame/stages/stage10/capstone.js
+var RESOLVED3 = /* @__PURE__ */ new Set(["resolved", "integrated"]);
+function assembleCapstoneData(state) {
+  const tiles = memories.map((m) => {
+    const slot = state?.memories?.[m.id];
+    const resolved = RESOLVED3.has(slot?.state);
+    return {
+      id: m.id,
+      stage: m.stage,
+      title: m.title,
+      accent: m.accent,
+      choice: resolved ? slot.choice : null,
+      integrated: slot?.state === "integrated"
+    };
+  });
+  const dominant = state?.confront?.stance?.dominant || null;
+  const profile = dominant ? stanceProfiles[dominant] : null;
+  return {
+    tiles,
+    integratedCount: tiles.filter((t) => t.integrated).length,
+    resolvedCount: tiles.filter((t) => t.choice).length,
+    stance: dominant,
+    stanceLabel: profile?.label || null
+  };
+}
+
 // ../../docs/games/metagame/stages/stage10/renderer-final.js
 function renderFinalQuestion(finalState) {
   return `
@@ -718,7 +1125,39 @@ function renderCompletion(state, finalState) {
   `;
 }
 function renderRouteEpilogue(state, finalState) {
-  return finalState.epilogueHtml || "";
+  const route = state.final?.route;
+  if (route === "understand") return renderSynthesis(state);
+  if (route === "expand") return renderCapstone(state);
+  return "";
+}
+function renderSynthesis(state) {
+  const syn = assembleSynthesis(state);
+  const label = syn.stanceLabel ? ` — ${syn.stanceLabel}` : "";
+  return `
+    <section class="mg-stage10__synthesis" data-field="synthesis" aria-label="Synthesis memory">
+      <h3>Synthesis${escapeHtml(label)}</h3>
+      <div class="mg-stage10__synthesis-text">
+        ${syn.text.split("\n\n").map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+      </div>
+    </section>
+  `;
+}
+function renderCapstone(state) {
+  const cap = assembleCapstoneData(state);
+  const label = cap.stanceLabel ? ` (${cap.stanceLabel})` : "";
+  return `
+    <section class="mg-stage10__capstone" data-field="capstone" aria-label="Assembled record">
+      <h3>The assembled record${escapeHtml(label)}</h3>
+      <div class="mg-stage10__capstone-grid">
+        ${cap.tiles.map((t) => `
+          <div class="mg-stage10__capstone-tile ${t.integrated ? "is-integrated" : ""}" style="--tile-accent: ${t.accent}">
+            <span class="mg-stage10__capstone-stage">${escapeHtml(String(t.stage).padStart(2, "0"))} ${escapeHtml(t.title)}</span>
+            <span class="mg-stage10__capstone-choice">${escapeHtml(t.choice || "—")}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
 }
 function renderAwakening(finalState) {
   const fullCapstone = finalState.routeSummary?.tier === "capstone";
@@ -756,6 +1195,7 @@ function renderFinalOutcome(state, finalState) {
 var LAST2 = memories.length - 1;
 function renderStage10(ctx) {
   const { host, state } = ctx;
+  const save = () => ctx.orchestrator && ctx.orchestrator.save || null;
   let destroyed = false;
   const repaint = () => {
     if (destroyed) return;
@@ -766,7 +1206,7 @@ function renderStage10(ctx) {
     if (state.final?.completed) {
       body = renderCompletion(state, finalState);
     } else if (ui.view === "final" && !finalState.locked) {
-      body = renderFinalQuestion(finalState);
+      body = finalState.confrontCompleted ? renderFinalQuestion(finalState) : renderConfront(state, save());
     } else {
       body = renderStepper(state, counts, finalState);
     }
@@ -789,42 +1229,8 @@ function renderStage10(ctx) {
     `;
   };
   const onClick = (event) => {
-    const readButton = event.target.closest("[data-read-memory]");
-    if (readButton) {
-      markMemoryRead({ state, memoryId: readButton.dataset.readMemory });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const resolveButton = event.target.closest("[data-resolve-memory]");
-    if (resolveButton) {
-      resolveMemory({
-        state,
-        memoryId: resolveButton.dataset.resolveMemory,
-        choice: resolveButton.dataset.choice,
-        actions: ctx.actions,
-        achievements: ctx.achievements,
-        bell: ctx.bell
-      });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const echoButton = event.target.closest("[data-open-echo]");
-    if (echoButton) {
-      openEcho(ctx, echoButton.dataset.openEcho);
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-    const integrateButton = event.target.closest("[data-integrate-memory]");
-    if (integrateButton) {
-      integrateMemory({
-        state,
-        memoryId: integrateButton.dataset.integrateMemory,
-        achievements: ctx.achievements,
-        bell: ctx.bell
-      });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
+    if (handleMemoryClicks(event, ctx, repaint)) return;
+    if (handleConfrontClicks(event, ctx, save, repaint)) return;
     const stepButton = event.target.closest("[data-step]");
     if (stepButton) {
       const delta = Number(stepButton.dataset.step);
@@ -834,6 +1240,7 @@ function renderStage10(ctx) {
     }
     if (event.target.closest("[data-goto-final]")) {
       state.ui.view = "final";
+      startConfront(state);
       saveAndPaint(ctx, repaint);
       return;
     }
@@ -850,19 +1257,7 @@ function renderStage10(ctx) {
   };
   host.addEventListener("click", onClick);
   repaint();
-  window.__fvStage10 = {
-    state: () => state,
-    witness(id) {
-      const r = witnessEcho({ state, memoryId: id });
-      saveAndPaint(ctx, repaint);
-      return r;
-    },
-    witnessAll() {
-      for (const m of memories) witnessEcho({ state, memoryId: m.id });
-      saveAndPaint(ctx, repaint);
-      return getEchoCounts(state).witnessed;
-    }
-  };
+  installTestHook(ctx, save, repaint);
   return {
     repaint,
     destroy() {
@@ -873,6 +1268,58 @@ function renderStage10(ctx) {
     }
   };
 }
+function handleMemoryClicks(event, ctx, repaint) {
+  const { state } = ctx;
+  const readButton = event.target.closest("[data-read-memory]");
+  if (readButton) {
+    markMemoryRead({ state, memoryId: readButton.dataset.readMemory });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const resolveButton = event.target.closest("[data-resolve-memory]");
+  if (resolveButton) {
+    resolveMemory({ state, memoryId: resolveButton.dataset.resolveMemory, choice: resolveButton.dataset.choice, actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const echoButton = event.target.closest("[data-open-echo]");
+  if (echoButton) {
+    openEcho(ctx, echoButton.dataset.openEcho);
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const integrateButton = event.target.closest("[data-integrate-memory]");
+  if (integrateButton) {
+    integrateMemory({ state, memoryId: integrateButton.dataset.integrateMemory, achievements: ctx.achievements, bell: ctx.bell });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  return false;
+}
+function handleConfrontClicks(event, ctx, save, repaint) {
+  const { state } = ctx;
+  const compactButton = event.target.closest("[data-compact-memory]");
+  if (compactButton) {
+    answerCompaction({ state, memoryId: compactButton.dataset.compactMemory, choice: compactButton.dataset.compactChoice, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const fragButton = event.target.closest("[data-confront-echo]");
+  if (fragButton) {
+    const id = fragButton.dataset.confrontEcho;
+    openEcho(ctx, id);
+    rewitnessFragmentation({ state, memoryId: id, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const coreButton = event.target.closest("[data-core-option]");
+  if (coreButton) {
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  return false;
+}
 function openEcho(ctx, id) {
   const path = echoFileFor(id);
   if (!path) return;
@@ -882,6 +1329,62 @@ function openEcho(ctx, id) {
 function saveAndPaint(ctx, repaint) {
   if (typeof ctx.save === "function") ctx.save();
   repaint();
+}
+function installTestHook(ctx, save, repaint) {
+  const { state } = ctx;
+  const paint = () => saveAndPaint(ctx, repaint);
+  window.__fvStage10 = {
+    state: () => state,
+    witness(id) {
+      const r = witnessEcho({ state, memoryId: id });
+      paint();
+      return r;
+    },
+    witnessAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      paint();
+      return getEchoCounts(state).witnessed;
+    },
+    confront: {
+      start() {
+        state.ui.view = "final";
+        startConfront(state);
+        paint();
+        return getConfrontState(state, save());
+      },
+      state() {
+        return getConfrontState(state, save());
+      },
+      answerCompactionAll() {
+        for (const id of challengedMemoryIds(state)) answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save: save() });
+        paint();
+        return getConfrontState(state, save());
+      },
+      resolveFragmentationAll() {
+        const s = save();
+        for (const id of challengedMemoryIds(state)) if (fragStatus(state, s, id) === "pending") rewitnessFragmentation({ state, memoryId: id, save: s });
+        paint();
+        return getConfrontState(state, save());
+      },
+      answerCoreAll(stance = "seeker") {
+        let guard = 0;
+        while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
+          const q = coreQuestions[state.confront.core.length];
+          const opt = q.options.find((o) => o.stance === stance) || q.options[0];
+          answerCore({ state, optionId: opt.id, save: save() });
+        }
+        paint();
+        return getConfrontState(state, save());
+      },
+      run(stance = "seeker") {
+        this.start();
+        this.answerCompactionAll();
+        this.resolveFragmentationAll();
+        this.answerCoreAll(stance);
+        return getConfrontState(state, save());
+      }
+    }
+  };
 }
 
 // ../../docs/games/metagame/stages/stage10/state.js
@@ -994,8 +1497,13 @@ function mountStage(ctx = {}) {
   ensureStyles();
   const state = normalizeState(ctx.state || defaultState2(ctx), ctx);
   const view = renderStage10({ ...ctx, state });
+  const save = ctx.orchestrator && ctx.orchestrator.save || null;
   const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
-    if (witnessEcho({ state, memoryId }).ok) {
+    let changed = witnessEcho({ state, memoryId }).ok;
+    if (state.confront && state.confront.phase === "fragmentation") {
+      if (rewitnessFragmentation({ state, memoryId, save }).ok) changed = true;
+    }
+    if (changed) {
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();
     }
@@ -1025,12 +1533,15 @@ function subscribeToEchoes(actions, onEcho) {
   return () => window.removeEventListener("fv:games:action", handler);
 }
 function ensureStyles() {
-  const id = "stage10-awakening-styles";
+  ensureStylesheet("stage10-awakening-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage10-confront-styles", new URL("./styles-confront.css", import.meta.url).href);
+}
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 export {

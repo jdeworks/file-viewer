@@ -11,10 +11,28 @@ import {
   resolveMemory,
   witnessEcho
 } from "../boss.js";
+import {
+  answerCompaction,
+  answerCore,
+  challengedMemoryIds,
+  fragStatus,
+  rewitnessFragmentation,
+  startConfront
+} from "../confront.js";
+import { coreQuestions } from "../content-confront.js";
 import { memories } from "../content.js";
 import { defaultState } from "../state.js";
 
 const witnessAll = (state, n = memories.length) => memories.slice(0, n).forEach((m) => witnessEcho({ state, memoryId: m.id }));
+
+// Drive the three-phase confrontation to completion the same way a player's clicks would (no save →
+// no prior un-cheats on record → every trace re-witnessed in Phase B). Required before chooseFinal.
+function completeConfront(state, save = null) {
+  startConfront(state);
+  for (const id of challengedMemoryIds(state)) answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save });
+  for (const id of challengedMemoryIds(state)) if (fragStatus(state, save, id) === "pending") rewitnessFragmentation({ state, memoryId: id, save });
+  for (const q of coreQuestions) answerCore({ state, optionId: q.options[0].id, save });
+}
 
 {
   const state = defaultState({ now: 100 });
@@ -58,7 +76,11 @@ const witnessAll = (state, n = memories.length) => memories.slice(0, n).forEach(
   assert.equal(getFinalChoiceState(state).locked, true);
   assert.equal(chooseFinal({ state, choiceId: "continue" }).reason, "echo-gate");
   witnessAll(state, 5);
-  assert.equal(getFinalChoiceState(state).locked, false);
+  assert.equal(getFinalChoiceState(state).locked, false, "entry gate cleared at 5 resolved + 5 echoes");
+  // Boss never self-unlocks: the final choice is gated behind the three-phase confrontation.
+  assert.equal(chooseFinal({ state, choiceId: "continue" }).reason, "confront-incomplete");
+  completeConfront(state);
+  assert.equal(getFinalChoiceState(state).confrontCompleted, true);
   const completed = [];
   const result = chooseFinal({ state, choiceId: "continue", onStageComplete: (value) => completed.push(value), now: 400 });
   assert.equal(result.ok, true);
@@ -125,6 +147,7 @@ const witnessAll = (state, n = memories.length) => memories.slice(0, n).forEach(
   assert.equal(achievements.length, 1);
   assert.equal(achievements[0][0], "stage10.full_capstone");
 
+  completeConfront(state);
   const completed = chooseFinal({ state, choiceId: "understand", now: 500 });
   assert.equal(completed.ok, true);
   assert.equal(completed.result.memoryRouteComplete, true);
@@ -158,6 +181,7 @@ const witnessAll = (state, n = memories.length) => memories.slice(0, n).forEach(
   const state = defaultState({ now: 100 });
   for (const memory of memories) resolveMemory({ state, memoryId: memory.id, choice: memory.choices[0], now: 200 });
   witnessAll(state, 6);
+  completeConfront(state);
   assert.equal(chooseFinal({ state, choiceId: "expand" }).reason, "echo-gate", "expand blocked at 6 echoes");
   witnessAll(state, 7);
   const ok = chooseFinal({ state, choiceId: "expand", now: 400 });

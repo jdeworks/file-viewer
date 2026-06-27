@@ -1135,20 +1135,37 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
   await page.click('[data-goto-final]');
-  await page.waitForSelector('[data-final-choice="continue"]', { timeout: 5000 });
-  await page.click('[data-final-choice="continue"]');
+  // The boss is now a REAL three-phase confrontation. The final choice is NOT exposed until the
+  // confrontation is won (boss never self-unlocks).
+  await page.waitForSelector('[data-field="confront"]', { timeout: 5000 });
+  const choiceLeaked = await page.$('[data-final-choice]');
+  if (!choiceLeaked) pass('Stage 10 final choice is gated behind the confrontation'); else fail('Stage 10 final choice exposed before the confrontation was won');
+  // Drive it deterministically through the same engine functions a player's clicks call: affirm each
+  // compaction with the recorded stance (Phase A), anchor each fragmentation trace — prior un-cheats
+  // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
+  const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
+  if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  await page.waitForFunction(() => {
+    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
+  }, null, { timeout: 5000 });
+  // Now the final question is reachable. Choose "understand" → the woven Synthesis epilogue.
+  await page.waitForSelector('[data-final-choice="understand"]:not([disabled])', { timeout: 5000 });
+  await page.click('[data-final-choice="understand"]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed;
+      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand';
     } catch { return false; }
   }, null, { timeout: 5000 });
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
+  const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
+  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);
   // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
   const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
   if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 10 renders the awakening ending (capstone)'); else fail('Stage 10 awakening ending unexpected: ' + awakening);
-  pass('Stage 10 resolves, integrates all memories, and completes Awakening');
+  pass('Stage 10 resolves, integrates all memories, wins the confrontation, and completes Awakening');
   await page.click('.games-close');
 
   const btsOk = await page.evaluate(async () => {

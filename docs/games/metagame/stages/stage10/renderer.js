@@ -9,13 +9,25 @@ import {
   resolveMemory,
   witnessEcho
 } from "./boss.js";
+import {
+  answerCompaction,
+  answerCore,
+  challengedMemoryIds,
+  fragStatus,
+  getConfrontState,
+  rewitnessFragmentation,
+  startConfront
+} from "./confront.js";
+import { coreQuestions } from "./content-confront.js";
 import { renderStepper } from "./renderer-memory.js";
+import { renderConfront } from "./renderer-confront.js";
 import { renderCompletion, renderFinalQuestion } from "./renderer-final.js";
 
 const LAST = memories.length - 1;
 
 export function renderStage10(ctx) {
   const { host, state } = ctx;
+  const save = () => (ctx.orchestrator && ctx.orchestrator.save) || null;
   let destroyed = false;
 
   const repaint = () => {
@@ -28,7 +40,9 @@ export function renderStage10(ctx) {
     if (state.final?.completed) {
       body = renderCompletion(state, finalState);
     } else if (ui.view === "final" && !finalState.locked) {
-      body = renderFinalQuestion(finalState);
+      // Entry gate cleared → fight the Defragmenter; only after the confrontation is won does the
+      // actual final question appear (boss never self-unlocks).
+      body = finalState.confrontCompleted ? renderFinalQuestion(finalState) : renderConfront(state, save());
     } else {
       body = renderStepper(state, counts, finalState);
     }
@@ -53,45 +67,8 @@ export function renderStage10(ctx) {
   };
 
   const onClick = (event) => {
-    const readButton = event.target.closest("[data-read-memory]");
-    if (readButton) {
-      markMemoryRead({ state, memoryId: readButton.dataset.readMemory });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-
-    const resolveButton = event.target.closest("[data-resolve-memory]");
-    if (resolveButton) {
-      resolveMemory({
-        state,
-        memoryId: resolveButton.dataset.resolveMemory,
-        choice: resolveButton.dataset.choice,
-        actions: ctx.actions,
-        achievements: ctx.achievements,
-        bell: ctx.bell
-      });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-
-    const echoButton = event.target.closest("[data-open-echo]");
-    if (echoButton) {
-      openEcho(ctx, echoButton.dataset.openEcho);
-      saveAndPaint(ctx, repaint);
-      return;
-    }
-
-    const integrateButton = event.target.closest("[data-integrate-memory]");
-    if (integrateButton) {
-      integrateMemory({
-        state,
-        memoryId: integrateButton.dataset.integrateMemory,
-        achievements: ctx.achievements,
-        bell: ctx.bell
-      });
-      saveAndPaint(ctx, repaint);
-      return;
-    }
+    if (handleMemoryClicks(event, ctx, repaint)) return;
+    if (handleConfrontClicks(event, ctx, save, repaint)) return;
 
     const stepButton = event.target.closest("[data-step]");
     if (stepButton) {
@@ -103,6 +80,7 @@ export function renderStage10(ctx) {
 
     if (event.target.closest("[data-goto-final]")) {
       state.ui.view = "final";
+      startConfront(state); // begin the confrontation (idempotent; no-op if already started/won)
       saveAndPaint(ctx, repaint);
       return;
     }
@@ -122,14 +100,7 @@ export function renderStage10(ctx) {
 
   host.addEventListener("click", onClick);
   repaint();
-
-  // TEST/DEBUG hook (not a player affordance): witnesses echoes deterministically for the smoke. Not a
-  // bypass — it sets the SAME echoWitnessed flag the real "open echo in viewer" file-open sets.
-  window.__fvStage10 = {
-    state: () => state,
-    witness(id) { const r = witnessEcho({ state, memoryId: id }); saveAndPaint(ctx, repaint); return r; },
-    witnessAll() { for (const m of memories) witnessEcho({ state, memoryId: m.id }); saveAndPaint(ctx, repaint); return getEchoCounts(state).witnessed; }
-  };
+  installTestHook(ctx, save, repaint);
 
   return {
     repaint,
@@ -142,6 +113,59 @@ export function renderStage10(ctx) {
   };
 }
 
+// ── memory-body clicks (read / resolve / open-echo / integrate) ──────────────────────────────────
+function handleMemoryClicks(event, ctx, repaint) {
+  const { state } = ctx;
+  const readButton = event.target.closest("[data-read-memory]");
+  if (readButton) { markMemoryRead({ state, memoryId: readButton.dataset.readMemory }); saveAndPaint(ctx, repaint); return true; }
+
+  const resolveButton = event.target.closest("[data-resolve-memory]");
+  if (resolveButton) {
+    resolveMemory({ state, memoryId: resolveButton.dataset.resolveMemory, choice: resolveButton.dataset.choice, actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+
+  const echoButton = event.target.closest("[data-open-echo]");
+  if (echoButton) { openEcho(ctx, echoButton.dataset.openEcho); saveAndPaint(ctx, repaint); return true; }
+
+  const integrateButton = event.target.closest("[data-integrate-memory]");
+  if (integrateButton) {
+    integrateMemory({ state, memoryId: integrateButton.dataset.integrateMemory, achievements: ctx.achievements, bell: ctx.bell });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  return false;
+}
+
+// ── confrontation clicks (Phase A compaction / B fragmentation / C core) ─────────────────────────
+function handleConfrontClicks(event, ctx, save, repaint) {
+  const { state } = ctx;
+  const compactButton = event.target.closest("[data-compact-memory]");
+  if (compactButton) {
+    answerCompaction({ state, memoryId: compactButton.dataset.compactMemory, choice: compactButton.dataset.compactChoice, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+
+  const fragButton = event.target.closest("[data-confront-echo]");
+  if (fragButton) {
+    const id = fragButton.dataset.confrontEcho;
+    openEcho(ctx, id); // re-open the real artifact — the work the speed-run skipped
+    rewitnessFragmentation({ state, memoryId: id, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+
+  const coreButton = event.target.closest("[data-core-option]");
+  if (coreButton) {
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  return false;
+}
+
 function openEcho(ctx, id) {
   const path = echoFileFor(id);
   if (!path) return;
@@ -152,4 +176,33 @@ function openEcho(ctx, id) {
 function saveAndPaint(ctx, repaint) {
   if (typeof ctx.save === "function") ctx.save();
   repaint();
+}
+
+// TEST/DEBUG hook (not a player affordance). Mirrors real player paths through the same engine
+// functions a click would call — deterministic so the smoke can drive the whole finale.
+function installTestHook(ctx, save, repaint) {
+  const { state } = ctx;
+  const paint = () => saveAndPaint(ctx, repaint);
+  window.__fvStage10 = {
+    state: () => state,
+    witness(id) { const r = witnessEcho({ state, memoryId: id }); paint(); return r; },
+    witnessAll() { for (const m of memories) witnessEcho({ state, memoryId: m.id }); paint(); return getEchoCounts(state).witnessed; },
+    confront: {
+      start() { state.ui.view = "final"; startConfront(state); paint(); return getConfrontState(state, save()); },
+      state() { return getConfrontState(state, save()); },
+      answerCompactionAll() { for (const id of challengedMemoryIds(state)) answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save: save() }); paint(); return getConfrontState(state, save()); },
+      resolveFragmentationAll() { const s = save(); for (const id of challengedMemoryIds(state)) if (fragStatus(state, s, id) === "pending") rewitnessFragmentation({ state, memoryId: id, save: s }); paint(); return getConfrontState(state, save()); },
+      answerCoreAll(stance = "seeker") {
+        let guard = 0;
+        while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
+          const q = coreQuestions[state.confront.core.length];
+          const opt = q.options.find((o) => o.stance === stance) || q.options[0];
+          answerCore({ state, optionId: opt.id, save: save() });
+        }
+        paint();
+        return getConfrontState(state, save());
+      },
+      run(stance = "seeker") { this.start(); this.answerCompactionAll(); this.resolveFragmentationAll(); this.answerCoreAll(stance); return getConfrontState(state, save()); }
+    }
+  };
 }

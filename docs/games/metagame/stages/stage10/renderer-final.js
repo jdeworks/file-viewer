@@ -1,4 +1,6 @@
 import { awakeningText } from "./content.js";
+import { assembleSynthesis } from "./synthesis.js";
+import { assembleCapstoneData } from "./capstone.js";
 import { escapeHtml } from "./escape.js";
 
 // ── Final question + completion ────────────────────────────────────────────────────────────────
@@ -37,10 +39,44 @@ export function renderCompletion(state, finalState) {
   `;
 }
 
-// Route-specific epilogue panels (understand → synthesis, expand → capstone). Default routes show
-// nothing extra. Overridden by index.js wiring through finalState.epilogue when present.
+// Route-specific epilogue panels with real weight: understand → woven Synthesis memory (+ stance
+// closer), expand → personalized capstone grid of all nine stages/choices. continue/rest get none.
 function renderRouteEpilogue(state, finalState) {
-  return finalState.epilogueHtml || "";
+  const route = state.final?.route;
+  if (route === "understand") return renderSynthesis(state);
+  if (route === "expand") return renderCapstone(state);
+  return "";
+}
+
+function renderSynthesis(state) {
+  const syn = assembleSynthesis(state);
+  const label = syn.stanceLabel ? ` — ${syn.stanceLabel}` : "";
+  return `
+    <section class="mg-stage10__synthesis" data-field="synthesis" aria-label="Synthesis memory">
+      <h3>Synthesis${escapeHtml(label)}</h3>
+      <div class="mg-stage10__synthesis-text">
+        ${syn.text.split("\n\n").map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderCapstone(state) {
+  const cap = assembleCapstoneData(state);
+  const label = cap.stanceLabel ? ` (${cap.stanceLabel})` : "";
+  return `
+    <section class="mg-stage10__capstone" data-field="capstone" aria-label="Assembled record">
+      <h3>The assembled record${escapeHtml(label)}</h3>
+      <div class="mg-stage10__capstone-grid">
+        ${cap.tiles.map((t) => `
+          <div class="mg-stage10__capstone-tile ${t.integrated ? "is-integrated" : ""}" style="--tile-accent: ${t.accent}">
+            <span class="mg-stage10__capstone-stage">${escapeHtml(String(t.stage).padStart(2, "0"))} ${escapeHtml(t.title)}</span>
+            <span class="mg-stage10__capstone-choice">${escapeHtml(t.choice || "—")}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
 }
 
 // The ending narration — the awakening itself, in the first person. Capstone routes get the extra

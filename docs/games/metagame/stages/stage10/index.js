@@ -1,5 +1,6 @@
 import { renderStage10 } from "./renderer.js";
 import { witnessEcho } from "./boss.js";
+import { rewitnessFragmentation } from "./confront.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
 import { BTS_PATH, REQUIRED_ACTION, STAGE_ID } from "./messages.js";
 
@@ -24,9 +25,16 @@ export function mountStage(ctx = {}) {
   const view = renderStage10({ ...ctx, state });
 
   // Echo witnessing: opening an awakening artifact in the real viewer fires echo_<memoryId>
-  // (viewer-actions.js) → witness that memory's echo (the load-bearing integration gate).
+  // (viewer-actions.js) → witness that memory's echo (the load-bearing integration gate). The SAME
+  // real file-open, when it happens during the confrontation's Phase B, anchors that memory's
+  // fragmentation trace (transient — never lowers the canonical echoWitnessed).
+  const save = (ctx.orchestrator && ctx.orchestrator.save) || null;
   const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
-    if (witnessEcho({ state, memoryId }).ok) {
+    let changed = witnessEcho({ state, memoryId }).ok;
+    if (state.confront && state.confront.phase === "fragmentation") {
+      if (rewitnessFragmentation({ state, memoryId, save }).ok) changed = true;
+    }
+    if (changed) {
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();
     }
@@ -56,12 +64,16 @@ function subscribeToEchoes(actions, onEcho) {
 }
 
 function ensureStyles() {
-  const id = "stage10-awakening-styles";
+  ensureStylesheet("stage10-awakening-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage10-confront-styles", new URL("./styles-confront.css", import.meta.url).href);
+}
+
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 
