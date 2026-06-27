@@ -44,6 +44,19 @@ export function makeCtx(combat, card) {
     },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
+    // CORRUPTION (Act 5 · DoT): apply `n` corruption to the enemy (+ this combat's corruption bonus,
+    // e.g. from Memory Leak). It ticks for damage at the enemy's turn start, then decays (see
+    // combat-damage.tickCorruption). consumeCorruption removes & returns the stacks (Garbage Collect),
+    // halveCorruption keeps half (Core Dump), boostCorruption raises this combat's apply bonus by 1.
+    applyCorruption: (n) => addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0)),
+    consumeCorruption: () => { const c = combat.enemy.statuses.corruption || 0; delete combat.enemy.statuses.corruption; return c; },
+    halveCorruption: () => {
+      const c = combat.enemy.statuses.corruption || 0;
+      const half = Math.floor(c / 2);
+      if (half > 0) combat.enemy.statuses.corruption = half; else delete combat.enemy.statuses.corruption;
+    },
+    boostCorruption: (n = 1) => { combat.corruptionBonus = (combat.corruptionBonus || 0) + n; },
+    get enemyCorruption() { return combat.enemy.statuses.corruption || 0; },
     // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
     // start of a future player turn. The op is a plain object (not a closure) so the pending queue is
     // serializable — a reload resumes the same delayed packets. combat-modes.applyOp interprets it.

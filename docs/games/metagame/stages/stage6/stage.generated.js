@@ -756,6 +756,15 @@ function addStatus(entity, status, value) {
   entity.statuses[status] = (entity.statuses[status] || 0) + value;
   if (entity.statuses[status] <= 0) delete entity.statuses[status];
 }
+function tickCorruption(combat) {
+  const enemy = combat.enemy;
+  const stacks = enemy.statuses.corruption || 0;
+  if (stacks <= 0) return;
+  const ticks = combat.corruptionDouble ? 2 : 1;
+  enemy.hp = Math.max(0, enemy.hp - stacks * ticks);
+  enemy.statuses.corruption = stacks - 1;
+  if (enemy.statuses.corruption <= 0) delete enemy.statuses.corruption;
+}
 var DURATION_STATUSES = /* @__PURE__ */ new Set(["vulnerable", "weak"]);
 function tickStatuses(entity) {
   for (const key of Object.keys(entity.statuses)) {
@@ -808,6 +817,28 @@ function makeCtx(combat, card) {
     },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
+    // CORRUPTION (Act 5 · DoT): apply `n` corruption to the enemy (+ this combat's corruption bonus,
+    // e.g. from Memory Leak). It ticks for damage at the enemy's turn start, then decays (see
+    // combat-damage.tickCorruption). consumeCorruption removes & returns the stacks (Garbage Collect),
+    // halveCorruption keeps half (Core Dump), boostCorruption raises this combat's apply bonus by 1.
+    applyCorruption: (n) => addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0)),
+    consumeCorruption: () => {
+      const c = combat.enemy.statuses.corruption || 0;
+      delete combat.enemy.statuses.corruption;
+      return c;
+    },
+    halveCorruption: () => {
+      const c = combat.enemy.statuses.corruption || 0;
+      const half = Math.floor(c / 2);
+      if (half > 0) combat.enemy.statuses.corruption = half;
+      else delete combat.enemy.statuses.corruption;
+    },
+    boostCorruption: (n = 1) => {
+      combat.corruptionBonus = (combat.corruptionBonus || 0) + n;
+    },
+    get enemyCorruption() {
+      return combat.enemy.statuses.corruption || 0;
+    },
     // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
     // start of a future player turn. The op is a plain object (not a closure) so the pending queue is
     // serializable — a reload resumes the same delayed packets. combat-modes.applyOp interprets it.
@@ -930,6 +961,9 @@ function currentIntent(combat) {
 function enemyTurn(combat) {
   const enemy = combat.enemy;
   enemy.block = 0;
+  tickCorruption(combat);
+  checkEnemyDead(combat);
+  if (combat.over) return;
   const intent = currentIntent(combat);
   const hpBefore = combat.player.hp;
   if (enemy.skipNext) {
@@ -2562,6 +2596,8 @@ function snapshotCombat(combat) {
     firstCardDiscount: combat.firstCardDiscount || 0,
     delaySpeedup: Boolean(combat.delaySpeedup),
     delayUsed: Boolean(combat.delayUsed),
+    corruptionBonus: combat.corruptionBonus || 0,
+    corruptionDouble: Boolean(combat.corruptionDouble),
     turn: combat.turn,
     cardsPlayedThisTurn: combat.cardsPlayedThisTurn || 0,
     energySpentThisTurn: combat.energySpentThisTurn || 0,
@@ -2596,6 +2632,8 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     firstCardDiscount: s.firstCardDiscount || 0,
     delaySpeedup: Boolean(s.delaySpeedup),
     delayUsed: Boolean(s.delayUsed),
+    corruptionBonus: s.corruptionBonus || 0,
+    corruptionDouble: Boolean(s.corruptionDouble),
     player: clone(s.player),
     enemy: clone(s.enemy),
     draw: [...s.draw || []],

@@ -4,8 +4,8 @@
 // telegraphed and deterministic. enemyTurn runs one enemy action then ticks its statuses and checks
 // for player death; resolveIntent applies the chosen intent (attack/block/ramp/congest/mirror/…).
 
-import { dealToPlayer, addStatus, tickStatuses, log } from "./combat-damage.js";
-import { checkPlayerDead } from "./combat.js";
+import { dealToPlayer, addStatus, tickStatuses, tickCorruption, log } from "./combat-damage.js";
+import { checkPlayerDead, checkEnemyDead } from "./combat.js";
 import { runHook } from "./combat-ctx.js";
 
 export function currentIntent(combat) {
@@ -16,6 +16,10 @@ export function currentIntent(combat) {
 export function enemyTurn(combat) {
   const enemy = combat.enemy;
   enemy.block = 0;
+  // CORRUPTION (Act 5): the DoT ticks at the enemy's turn start before it acts — it can kill outright.
+  tickCorruption(combat);
+  checkEnemyDead(combat);
+  if (combat.over) return;
   const intent = currentIntent(combat);
   const hpBefore = combat.player.hp;
   if (enemy.skipNext) {

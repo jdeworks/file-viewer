@@ -382,4 +382,37 @@ function congestionCombat(seed = 11) {
   }
 }
 
+// ── H · Act 5 CORRUPTION (DoT): ticks at the enemy turn start, decays by 1, ignores armor ──────────
+{
+  const c = bigEnemyCombat(STARTING_DECK);
+  c.enemy.armor = 5; // corruption ignores armor (it's a leak, not an attack)
+  c.enemy.statuses.corruption = 5;
+  const hp0 = c.enemy.hp;
+  endTurn(c); // enemy turn ticks corruption first
+  assert.equal(c.enemy.hp, hp0 - 5, "corruption dealt 5 (armor ignored)");
+  assert.equal(c.enemy.statuses.corruption, 4, "corruption decayed by 1");
+  endTurn(c);
+  assert.equal(c.enemy.hp, hp0 - 5 - 4, "next tick dealt 4");
+  assert.equal(c.enemy.statuses.corruption, 3, "corruption decayed again");
+}
+{
+  // Entropy Pool relic: corruption ticks TWICE (combat.corruptionDouble).
+  const c = bigEnemyCombat(STARTING_DECK);
+  c.corruptionDouble = true;
+  c.enemy.statuses.corruption = 6;
+  const hp0 = c.enemy.hp;
+  endTurn(c);
+  assert.equal(c.enemy.hp, hp0 - 12, "doubled corruption dealt 6×2");
+  assert.equal(c.enemy.statuses.corruption, 5, "still decays by 1 after the double tick");
+}
+{
+  // Corruption can kill outright before the enemy acts (no counter-damage to the player).
+  const c = bigEnemyCombat(STARTING_DECK);
+  c.enemy.hp = 4; c.enemy.statuses.corruption = 9;
+  const playerHp0 = c.player.hp;
+  endTurn(c);
+  assert.ok(c.over && c.result === "win", "corruption killed the enemy at its turn start");
+  assert.equal(c.player.hp, playerHp0, "a corruption kill means the enemy never attacked");
+}
+
 console.log("stage6 combat engine tests passed");
