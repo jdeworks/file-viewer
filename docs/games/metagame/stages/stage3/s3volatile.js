@@ -8,7 +8,7 @@
 // board is ALWAYS solvable (lock every volatile cell as you fill it), so uniqueness is preserved.
 
 import { makeRng } from "./rng.js";
-import { EMPTY, UNKNOWN } from "./nonogram.js";
+import { EMPTY, FILLED, UNKNOWN, lineSolve } from "./nonogram.js";
 
 export const VOLATILE_AT = 2; // corruption level at which volatile cells appear
 
@@ -28,7 +28,32 @@ function volatileCount(corruption, filled) {
   return Math.max(0, Math.min(filled - 1, want));
 }
 
-// Initialise volatile tracking on a board. Picks a seeded subset of the solution's FILLED cells.
+// Cells the line-solver forces FILLED in a SINGLE sweep (rows then columns) from a blank grid — the
+// "you already know this" cells (e.g. a clue spanning a whole row). Marking one volatile is an
+// arbitrary tax, not a deduction challenge, so we prefer to skip them. Mono puzzles only (two-colour
+// uses a different solver and is left untouched). Returns a Set of "x,y".
+export function pass1Forced(puzzle) {
+  const forced = new Set();
+  if (!puzzle || puzzle.twoColor || !Array.isArray(puzzle.rowClues)) return forced;
+  const H = puzzle.height;
+  const W = puzzle.width;
+  const grid = Array.from({ length: H }, () => new Array(W).fill(UNKNOWN));
+  for (let r = 0; r < H; r += 1) {
+    const res = lineSolve(grid[r], puzzle.rowClues[r]);
+    if (res && res.changed) grid[r] = res.out;
+  }
+  for (let c = 0; c < W; c += 1) {
+    const col = grid.map((row) => row[c]);
+    const res = lineSolve(col, puzzle.colClues[c]);
+    if (res && res.changed) for (let r = 0; r < H; r += 1) grid[r][c] = res.out[r];
+  }
+  for (let y = 0; y < H; y += 1) for (let x = 0; x < W; x += 1) if (grid[y][x] === FILLED) forced.add(key(x, y));
+  return forced;
+}
+
+// Initialise volatile tracking on a board. Picks a seeded subset of the solution's FILLED cells,
+// PREFERRING cells the line-solver doesn't trivially force in its first sweep (so volatility lands on
+// deduction-interesting positions). Falls back to the full filled set if too few remain.
 // No-op (returns the board unchanged, no .volatile field) below VOLATILE_AT.
 export function initVolatile(board, corruption, seed) {
   if (Number(corruption || 0) < VOLATILE_AT) return board;
@@ -40,7 +65,10 @@ export function initVolatile(board, corruption, seed) {
   }
   const n = volatileCount(corruption, filledCells.length);
   if (n <= 0) return board;
-  const picked = makeRng(`s3-volatile:${seed}`).shuffle(filledCells).slice(0, n);
+  const forced = pass1Forced(board.puzzle);
+  const interesting = filledCells.filter((k) => !forced.has(k));
+  const candidates = interesting.length >= n ? interesting : filledCells;
+  const picked = makeRng(`s3-volatile:${seed}`).shuffle(candidates).slice(0, n);
   board.volatile = new Set(picked);
   board.locked = new Set();
   board.volFilledAt = new Map();

@@ -10,6 +10,7 @@ import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "
 import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } from "./s3decay.js";
 import { aliasedTotal } from "./s3aliased.js";
 import { boonBonus, buildDraftPanel, draftOffer, draftPending, ensureRunBoons, pickBoon } from "./s3boons.js";
+import { announceTiers } from "./s3tiers.js";
 import { buildStage3Shell } from "./view.js";
 
 const MOVE = {
@@ -44,8 +45,9 @@ export function renderStage3(ctx) {
   }
 
   ensureRunBoons(state);
-  // Effective per-snapshot aid counts = permanent shop level + this run's drafted boons.
-  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle");
+  // Effective per-snapshot aid counts = permanent shop level + this run's drafted boons (+ the
+  // retained-fragment Engram Bank, which adds Oracle hints — the sink for the fragment currency).
+  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle") + upgradeLevel(state, "engram");
   const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
 
   loadBoard();
@@ -55,6 +57,9 @@ export function renderStage3(ctx) {
   // snapshot (no saved marks) gets the Prefetch Cache pre-fills.
   function loadBoard() {
     const fresh = !state.run.marks;
+    // Tier-arrival messaging: announce any mechanic whose corruption threshold this snapshot first
+    // reaches (fires once per run, deterministically) so the new rule lands with context.
+    announceTiers(state, corruptionForRun(state.run));
     const puzzle = puzzleForRun(state.run, state.shopUpgrades);
     board = createBoard(puzzle, state.run.marks);
     board.hintsUsed = 0;
