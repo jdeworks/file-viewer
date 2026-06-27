@@ -922,6 +922,31 @@ export async function run(ctx) {
   const hubHasConfront = await page.$('.s6db-hub [data-action="confront"]');
   if (hubHasConfront) throw new Error('Stage 6 hub still exposes the confront bypass');
   pass('Stage 6 Protocol Codex opens on the deck-builder hub (no boss bypass)');
+  // Phase I — daily/custom seed determinism (the seed is hashed ONCE at run creation, never live
+  // entropy) + the self-competition score. The same date/custom key reproduces the same run seed.
+  const s6seed = await page.evaluate(() => {
+    window.__fvStage6.setDailyKey('2026-01-15');
+    const d1 = window.__fvStage6.beginRun({ mode: 'daily' });
+    const d2 = window.__fvStage6.beginRun({ mode: 'daily' });
+    const c1 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'codex' });
+    const c2 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'codex' });
+    const c3 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'other' });
+    const score = window.__fvStage6.score().run;
+    return {
+      dailyStable: d1.seed === d2.seed && d1.mode === 'daily' && d1.dailyKey === '2026-01-15',
+      customStable: c1.seed === c2.seed && c1.mode === 'custom' && c1.dailyKey === 'codex',
+      customDistinct: c1.seed !== c3.seed,
+      scorePositive: score > 0,
+    };
+  });
+  if (s6seed.dailyStable && s6seed.customStable && s6seed.customDistinct && s6seed.scorePositive) {
+    pass('Stage 6 daily/custom seed is deterministic (same key ⇒ same run) and run score is scored');
+  } else {
+    fail(`Stage 6 seed/score wrong: ${JSON.stringify(s6seed)}`);
+  }
+  // Return to the hub for the rest of the flow (the seed checks left a run active).
+  await page.click('.s6db-map [data-action="abandon"]');
+  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
   // A run is the game body; verify the act-map loop is live.
   await page.click('.s6db-hub [data-action="begin-run"]');
   await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });

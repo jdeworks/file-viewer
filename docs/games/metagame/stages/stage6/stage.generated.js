@@ -2687,6 +2687,13 @@ var PRESTIGE_HP_PER_VERSION = 5;
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
+function runScore(run) {
+  if (!run) return 0;
+  const won = run.status === "won";
+  const actsCleared = won ? FINAL_BOSS_ACT : Math.max(0, (run.act || 1) - 1);
+  const base = Math.max(0, run.handshakes || 0) + actsCleared * 50 + Math.max(0, run.hp || 0);
+  return Math.round(base * (1 + (run.ascension || 0) / 10));
+}
 function effectiveAscension(version = 0, ascension = 0) {
   return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
 }
@@ -3545,8 +3552,10 @@ function hubView(state, lock, asc = null) {
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
+      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
       <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
     </dl>
+    ${seedModes(hasRun)}
     <div class="s6db-hub-actions">
       ${hasRun ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>` : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
@@ -3562,6 +3571,16 @@ function hubView(state, lock, asc = null) {
     <p class="s6db-hint">${esc2(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
+}
+function seedModes(hasRun) {
+  if (hasRun) return "";
+  return `<div class="s6db-seed-modes">
+      <button type="button" data-action="daily-run" class="s6db-ghost">daily seed ▸</button>
+      <span class="s6db-seed-entry">
+        <input type="text" class="s6db-seed-input" maxlength="40" placeholder="custom seed…" aria-label="custom seed" />
+        <button type="button" data-action="custom-run" class="s6db-ghost">seeded run ▸</button>
+      </span>
+    </div>`;
 }
 function ascensionPicker(asc, hasRun) {
   if (!asc || hasRun) {
@@ -3642,25 +3661,42 @@ function deathView(state, run) {
     <p>The stack collapsed in act ${run?.act ?? 1}. Your handshakes settle into the bank.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Reached</dt><dd>act ${run?.act ?? 1}</dd></div>
+      <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Banked total</dt><dd>${state.meta.banked}</dd></div>
     </dl>
+    ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
       <button type="button" data-action="new-run">try again ▸</button>
       <button type="button" data-action="abandon" class="s6db-ghost">back to hub</button>
     </div>`;
   return el;
 }
-function wonView(state) {
+function wonView(state, run) {
   const el = document.createElement("div");
   el.className = "s6db-end s6db-end--won";
   el.innerHTML = `
     <h2>The connection accepted a shared rule</h2>
-    <p>Four acts negotiated. The archive lets you pass.</p>
+    <p>Six acts negotiated. The archive lets you pass.</p>
+    <dl class="s6db-meta-grid">
+      <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
+      <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>
+    </dl>
+    ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
       <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>
     </div>`;
   return el;
+}
+function scoreLine(state, run) {
+  const best = state.meta.bestScore || 0;
+  const parts = [`<span>Best: <strong>${best}</strong></span>`];
+  if (run?.dailyKey) {
+    const seedBest = state.meta.dailyBest && state.meta.dailyBest[run.dailyKey] || 0;
+    const label = run.mode === "daily" ? "daily" : "seed";
+    parts.push(`<span>${esc2(label)} <code>${esc2(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
+  }
+  return `<p class="s6db-score-line">${parts.join(" · ")}</p>`;
 }
 function esc2(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
@@ -3925,6 +3961,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   const ascension = orchestrator?.save ? createAscension({ save: orchestrator.save, stageId: 6, modifiers: ASCENSION_MODS }) : null;
   const ascInfo = () => ascension ? { level: ascension.level(), maxUnlocked: ascension.maxUnlocked(), maxCleared: ascension.maxCleared(), maxLevel: ascension.maxLevel, floor: state.meta.protocolVersion || 0 } : null;
   let combat = null;
+  let dailyKeyOverride = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -3937,6 +3974,21 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   root.addEventListener("click", handleClick);
   route();
   window.__fvStage6 = {
+    // TEST/DEBUG: start a run in a given mode ("standard"|"daily"|"custom"). Returns the run seed +
+    // mode so a test can assert that the same date/custom key reproduces the same seed.
+    beginRun(opts) {
+      beginRun(opts || {});
+      commit();
+      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+    },
+    // TEST/DEBUG: pin the daily-seed clock so a daily run is reproducible in the harness.
+    setDailyKey(key) {
+      dailyKeyOverride = key ? String(key) : null;
+    },
+    // TEST/DEBUG: the current run's self-competition score (or the meta high-water marks).
+    score() {
+      return { run: state.run ? runScore(state.run) : 0, best: state.meta.bestScore || 0, last: state.meta.lastScore || 0, lastMode: state.meta.lastMode || null };
+    },
     jumpToBoss(deck) {
       if (!state.run) beginRun();
       seatAtFinalBoss(state.run, deck);
@@ -4059,6 +4111,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
     if (win && isFinalBoss) finalBossDefeated(run);
+    if (run.status === "dead" || run.status === "won") recordScore(run);
   }
   function finalBossDefeated(run) {
     state.boss.defeated = true;
@@ -4075,18 +4128,50 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     state.meta.banked -= cost;
     state.meta.protocolVersion = (state.meta.protocolVersion || 0) + 1;
   }
-  function beginRun() {
+  function beginRun({ mode = "standard", seedText = null } = {}) {
     state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
-    const seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+    let seed, dailyKey = null;
+    if (mode === "daily") {
+      dailyKey = currentDailyKey();
+      seed = strHash2(`daily:${dailyKey}`);
+    } else if (mode === "custom" && String(seedText || "").trim()) {
+      dailyKey = String(seedText).trim().slice(0, 40);
+      seed = strHash2(`custom:${dailyKey}`);
+    } else {
+      mode = "standard";
+      seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+    }
     state.run = createRun({
       seed,
       version: state.meta.protocolVersion || 0,
       handshakes: 0,
-      ascension: ascension ? ascension.level() : 0
+      ascension: ascension ? ascension.level() : 0,
+      mode,
+      dailyKey
     });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset();
     combat = null;
+  }
+  function currentDailyKey() {
+    if (dailyKeyOverride) return dailyKeyOverride;
+    try {
+      return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    } catch {
+      return "1970-01-01";
+    }
+  }
+  function recordScore(run) {
+    if (!run) return;
+    const score = runScore(run);
+    state.meta.lastScore = score;
+    state.meta.lastMode = run.mode || "standard";
+    state.meta.lastSeedKey = run.dailyKey || null;
+    if (score > (state.meta.bestScore || 0)) state.meta.bestScore = score;
+    if (run.dailyKey) {
+      if (!state.meta.dailyBest || typeof state.meta.dailyBest !== "object") state.meta.dailyBest = {};
+      if (score > (state.meta.dailyBest[run.dailyKey] || 0)) state.meta.dailyBest[run.dailyKey] = score;
+    }
   }
   function resolveEvent(run, choiceId) {
     const event = eventForNode(run);
@@ -4200,6 +4285,16 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       case "new-run":
         beginRun();
         return true;
+      case "daily-run":
+        beginRun({ mode: "daily" });
+        return true;
+      case "custom-run": {
+        const input = root.querySelector(".s6db-seed-input");
+        const seedText = input ? input.value : "";
+        if (!String(seedText || "").trim()) return false;
+        beginRun({ mode: "custom", seedText });
+        return true;
+      }
       case "continue-run":
         state.ui.screen = "run";
         return true;
@@ -4282,7 +4377,15 @@ function defaultState() {
       runsStarted: 0,
       runsCleared: 0,
       bestAct: 0,
-      firstClearComplete: false
+      firstClearComplete: false,
+      // Self-competition run scoring (local-only): a run's score = handshakes + acts cleared + HP,
+      // bonused by ascension. bestScore is the all-time high; dailyBest maps a daily/custom seed key
+      // to its best score so a player can chase their own seed.
+      bestScore: 0,
+      lastScore: 0,
+      lastMode: null,
+      lastSeedKey: null,
+      dailyBest: {}
     },
     handshakes: 0,
     // legacy mirror the boss reward writes to

@@ -15,7 +15,7 @@ import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
   takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
   buyCard, buyRemoval, buyUpgrade, buyRelic,
-  prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss
+  prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss, runScore
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
 import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
@@ -58,6 +58,9 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     : null;
 
   let combat = null; // live engine instance; its full state is checkpointed into combatRun
+  // Daily-seed clock: read ONCE per run at creation (a SEED, never consulted inside the combat loop,
+  // so it honors the no-live-entropy rule). Overridable for deterministic tests via the test hook.
+  let dailyKeyOverride = null;
   const completeOnce = once((result) => { if (typeof onStageComplete === "function") onStageComplete(result); });
   const lockState = () => getBossLockState({ actions, state });
   const mount = (node) => screen.replaceChildren(node);
@@ -70,6 +73,17 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   // act-4 boss so the smoke harness can reach the negotiation in one hop instead of 19 fights.
   // It only fast-forwards position — it does NOT bypass the ch9 un-cheat or the real-deck fight.
   window.__fvStage6 = {
+    // TEST/DEBUG: start a run in a given mode ("standard"|"daily"|"custom"). Returns the run seed +
+    // mode so a test can assert that the same date/custom key reproduces the same seed.
+    beginRun(opts) {
+      beginRun(opts || {});
+      commit();
+      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+    },
+    // TEST/DEBUG: pin the daily-seed clock so a daily run is reproducible in the harness.
+    setDailyKey(key) { dailyKeyOverride = key ? String(key) : null; },
+    // TEST/DEBUG: the current run's self-competition score (or the meta high-water marks).
+    score() { return { run: state.run ? runScore(state.run) : 0, best: state.meta.bestScore || 0, last: state.meta.lastScore || 0, lastMode: state.meta.lastMode || null }; },
     jumpToBoss(deck) {
       if (!state.run) beginRun();
       seatAtFinalBoss(state.run, deck);
@@ -183,6 +197,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
     if (win && isFinalBoss) finalBossDefeated(run);
+    // A run that just resolved (death, or the final-boss win) banks its self-competition score.
+    if (run.status === "dead" || run.status === "won") recordScore(run);
   }
 
   // The act-4 boss fell to the real deck: mark the codex gate answered and complete the stage.
@@ -205,18 +221,52 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   }
 
   // ── run lifecycle ────────────────────────────────────────────────────────────────────────────
-  function beginRun() {
+  function beginRun({ mode = "standard", seedText = null } = {}) {
     state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
-    const seed = 1000 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+    let seed, dailyKey = null;
+    if (mode === "daily") {
+      dailyKey = currentDailyKey();
+      seed = strHash(`daily:${dailyKey}`); // deterministic from the date — same day = same run
+    } else if (mode === "custom" && String(seedText || "").trim()) {
+      dailyKey = String(seedText).trim().slice(0, 40);
+      seed = strHash(`custom:${dailyKey}`); // deterministic from the typed seed
+    } else {
+      mode = "standard";
+      seed = 1000 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+    }
     state.run = createRun({
       seed,
       version: state.meta.protocolVersion || 0,
       handshakes: 0,
-      ascension: ascension ? ascension.level() : 0
+      ascension: ascension ? ascension.level() : 0,
+      mode,
+      dailyKey
     });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
     combat = null;
+  }
+
+  // The daily seed key (YYYY-MM-DD). Read ONCE at run creation (a seed, not loop entropy); tests may
+  // pin it via window.__fvStage6.setDailyKey to keep the seeded run reproducible.
+  function currentDailyKey() {
+    if (dailyKeyOverride) return dailyKeyOverride;
+    try { return new Date().toISOString().slice(0, 10); } catch { return "1970-01-01"; }
+  }
+
+  // Record a finished run's self-competition score into meta (all-time best + per-seed best). Local
+  // only; no off-origin. Called when a run resolves to dead/won.
+  function recordScore(run) {
+    if (!run) return;
+    const score = runScore(run);
+    state.meta.lastScore = score;
+    state.meta.lastMode = run.mode || "standard";
+    state.meta.lastSeedKey = run.dailyKey || null;
+    if (score > (state.meta.bestScore || 0)) state.meta.bestScore = score;
+    if (run.dailyKey) {
+      if (!state.meta.dailyBest || typeof state.meta.dailyBest !== "object") state.meta.dailyBest = {};
+      if (score > (state.meta.dailyBest[run.dailyKey] || 0)) state.meta.dailyBest[run.dailyKey] = score;
+    }
   }
 
   // Resolve the player's choice for this node's (deterministically selected) event, then return to
@@ -283,6 +333,14 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function runAction(action, run) {
     switch (action) {
       case "begin-run": case "new-run": beginRun(); return true;
+      case "daily-run": beginRun({ mode: "daily" }); return true;
+      case "custom-run": {
+        const input = root.querySelector(".s6db-seed-input");
+        const seedText = input ? input.value : "";
+        if (!String(seedText || "").trim()) return false; // no seed typed → ignore
+        beginRun({ mode: "custom", seedText });
+        return true;
+      }
       case "continue-run": state.ui.screen = "run"; return true;
       case "abandon": if (combatRun) combatRun.reset(); state.run = null; combat = null; state.ui.screen = "hub"; return true;
       case "prestige": doPrestige(); return true;

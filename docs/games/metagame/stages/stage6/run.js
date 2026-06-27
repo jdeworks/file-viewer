@@ -35,6 +35,17 @@ export function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
 
+// runScore(run) — a simple, deterministic self-competition score for a finished run (local-only):
+//   handshakes earned + (acts fully cleared × 50) + HP remaining, all bonused ×(1 + ascension/10).
+// A won run counts all FINAL_BOSS_ACT acts; a death counts the acts before the one it died in.
+export function runScore(run) {
+  if (!run) return 0;
+  const won = run.status === "won";
+  const actsCleared = won ? FINAL_BOSS_ACT : Math.max(0, (run.act || 1) - 1);
+  const base = Math.max(0, run.handshakes || 0) + actsCleared * 50 + Math.max(0, run.hp || 0);
+  return Math.round(base * (1 + (run.ascension || 0) / 10));
+}
+
 // effectiveAscension(version, ascension) — the rule level a run actually plays under. Prestige acts
 // as a FLOOR (its historical "one harder rule per version", now drawn from the same ladder) and the
 // explicit ascension picker can push beyond it. The max (never the sum) is what makes the prestige

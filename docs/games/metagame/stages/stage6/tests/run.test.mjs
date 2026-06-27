@@ -17,6 +17,7 @@ import {
   seatAtFinalBoss,
   takeReward,
   takeBossRelic,
+  runScore,
   upgradeDeckCard,
   RELIC_COST,
   UPGRADE_COST,
@@ -422,6 +423,30 @@ function findNode(run, pred) {
   assert.ok(skip.ok && skip.relic === null, "skip grants no relic");
   assert.equal(run2.relics.length, before2, "no relic added on skip");
   assert.equal(run2.act, 2, "skip still advances the act");
+}
+
+// ── runScore: deterministic self-competition score ─────────────────────────────────────────────────
+{
+  const run = createRun({ seed: 5, version: 0, ascension: 0 });
+  run.handshakes = 100; run.hp = 40; run.act = 3; run.status = "dead";
+  // death in act 3 => 2 acts cleared; 100 + 2*50 + 40 = 240, ×1 (ascension 0).
+  assert.equal(runScore(run), 240, "death score = handshakes + clearedActs*50 + hp");
+
+  run.status = "won";
+  // won => all 6 acts; 100 + 6*50 + 40 = 440.
+  assert.equal(runScore(run), 440, "won score counts all acts");
+
+  // Ascension bonus: same run at ascension 10 doubles the score (×(1+10/10)).
+  const hard = createRun({ seed: 5, version: 0, ascension: 10 });
+  hard.handshakes = 100; hard.hp = 40; hard.act = 3; hard.status = "won";
+  assert.equal(runScore(hard), 880, "ascension 10 doubles the score");
+
+  // Custom-seed determinism: same seed/version/ascension ⇒ identical map.
+  const a = createRun({ seed: 12345, mode: "custom", dailyKey: "abc" });
+  const b = createRun({ seed: 12345, mode: "custom", dailyKey: "abc" });
+  assert.equal(a.map.acts[0].layers.length, b.map.acts[0].layers.length, "same seed ⇒ same map shape");
+  assert.equal(a.mode, "custom", "mode recorded on the run");
+  assert.equal(a.dailyKey, "abc", "seed key recorded on the run");
 }
 
 function reaches(run, fromId, targetId) {

@@ -49,6 +49,13 @@
 .s6db-asc-cell.is-selected { background: #8b2020; border-color: #8b2020; color: #fbf6ec; font-weight: 700; }
 .s6db-asc-cell.is-floor:not(.is-selected) { background: #d8c7a3; }
 .s6db-asc-cell.is-locked { opacity: 0.4; cursor: default; }
+
+/* Seeded run modes (daily / custom) + run-end score line */
+.s6db-seed-modes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 10px; }
+.s6db-seed-entry { display: inline-flex; gap: 6px; align-items: center; }
+.s6db-seed-input { padding: 4px 8px; font: inherit; font-size: 0.85rem; border: 1px solid #c9b48f; border-radius: 5px; background: #fbf6ec; color: #3b2a1c; }
+.s6db-score-line { margin: 8px 0; color: #6b513a; font-size: 0.86rem; }
+.s6db-score-line code { background: #efe5d2; padding: 1px 5px; border-radius: 4px; }
 .s6db-hub-title { margin: 0 0 4px; }
 .s6db-hub-sub { max-width: 60ch; color: #3b2a1c; }
 
