@@ -405,7 +405,9 @@ export async function run(ctx) {
   await openTab('common');
   await page.click('#previewHost .imgv-select');                  // leave wand
   await page.click('#previewHost .imgv-deselect');                // clear the mask
-  // Selection MOVE — box-select a region, then drag it to a new spot (one PNG commit).
+  // Selection MOVE is a FLOATING selection (Paint-style): dragging the pixels does NOT
+  // commit and KEEPS the selection; it stamps a single PNG commit only when you leave
+  // the Move tool (or deselect).
   await page.click('#previewHost .imgv-marquee');                 // box-select mode
   const mvBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
   await page.mouse.move(mvBox.x + mvBox.w * 0.25, mvBox.y + mvBox.h * 0.25);
@@ -420,10 +422,16 @@ export async function run(ctx) {
   await page.mouse.down();
   await page.mouse.move(mvBox.x + mvBox.w * 0.62, mvBox.y + mvBox.h * 0.5, { steps: 4 });
   await page.mouse.up();
+  // After the drop: still floating + selected, and NOTHING committed yet.
+  const floatState = await page.evaluate((before) => ({
+    deselectShown: !document.querySelector('#previewHost .imgv-deselect').hidden,
+    uncommitted: (document.querySelector('#previewHost .imgv-img')?.src || '') === before,
+  }), moveBefore);
+  await page.click('#previewHost .imgv-sel-move');                // leave move mode → STAMP
   const moveCommitted = await waitNewSrc(moveBefore);
-  if (moveCommitted) pass('selection move: drag the selected pixels commits a new image'); else fail('selection move did not commit');
-  await page.click('#previewHost .imgv-sel-move');                // leave move mode
+  if (floatState.deselectShown && floatState.uncommitted && moveCommitted) pass('selection move: floats + stays selected on drop, stamps one commit on leaving Move'); else fail('selection float/stamp: ' + JSON.stringify({ floatState, moveCommitted }));
   await openTab('common');
+  await page.click('#previewHost .imgv-deselect');                // clear selection for later steps
   // Rotate 90° CW also swaps width/height — a strong correctness check.
   await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));

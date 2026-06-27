@@ -1,27 +1,37 @@
-// Pixel selection — build a MASK two ways: the magic WAND (click a region; reuses
-// fill.js computeRegionMask with the shared tolerance/mode/perceptual options) or a
-// rectangular MARQUEE (drag a box). While a selection is active the pixel tools
-// (pencil / eraser / fill) only "take" inside it — the renderer clips their output to
-// the mask via clipToBase. The selection shows as a translucent tint + boundary
-// outline on its own overlay canvas over the image.
+// Pixel selection — build a MASK (magic WAND, rectangle / ellipse MARQUEE, or LASSO)
+// and operate on it. While a selection is active the pixel tools (pencil / eraser /
+// fill) only "take" inside it (the renderer clips via clipToBase). The selection draws
+// as a translucent tint + an animated "marching ants" boundary on its own overlay
+// canvas over the image.
+//
+// MOVE is a FLOATING selection (Paint-style): the first move lifts the masked pixels
+// off the base (leaving a transparent hole) into a floating piece that stays selected
+// and can be repositioned any number of times (drag, or arrow keys via nudge()). It
+// only commits ("stamps") when you deselect or switch away from the Move tool — one
+// PNG commit, not one per nudge. The mask follows the piece so you can keep working
+// (e.g. recolour) at the new location after the stamp.
 //
 // The mask is kept at NATURAL resolution (matching the edit canvases); the overlay
-// canvas is natural-res and CSS-scaled to the displayed image box, like the draw
-// overlay. A dimension-changing geometry op invalidates it (renderer calls clear()).
+// canvas is natural-res and CSS-scaled to the displayed image box. A dimension-changing
+// geometry op invalidates it (renderer calls clear()).
 import { computeRegionMask, clipToBase } from './fill.js';
+import { rectMask, ellipseMask, lassoMask, translateMask } from './edit-select-masks.js';
 
 export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, nudge() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
   let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso' | 'move'
   let mask = null, mw = 0, mh = 0;   // current selection mask (natural res) + its dims
   let ov = null, octx = null;
   let dragging = false, dragStart = null, lassoPts = null;   // rubber-band / freehand drag
-  let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;   // move-selection drag
-  let frame = null, edgeIdx = null;             // cached overlay buffer + its boundary pixels
-  let antsRAF = 0, antsPhase = 0, antsLast = 0; // marching-ants animation state
+  let moving = false, moveStart = null, moveBaseDx = 0, moveBaseDy = 0;   // move-drag bookkeeping
+  // Floating selection: the lifted pixels (pieceCanvas) over the holed base (holedCanvas),
+  // offset by (floatDx,floatDy) from baseMask's original position.
+  let floating = false, holedCanvas = null, pieceCanvas = null, baseMask = null, floatDx = 0, floatDy = 0;
+  let selCanvas = null, selCtx = null, selBuf = null, edgeIdx = null;   // offscreen tint+ants buffer
+  let antsRAF = 0, antsPhase = 0, antsLast = 0;                          // marching-ants animation state
 
   function ensureOverlay() {
     if (ov) return;
@@ -51,7 +61,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
   }
   function onMove(e) {
-    if (moving) { e.preventDefault(); previewMove(ptToCanvas(e)); return; }
+    if (moving) { e.preventDefault(); dragFloat(ptToCanvas(e)); return; }
     if (!dragging) return;
     e.preventDefault();
     const pt = ptToCanvas(e);
@@ -59,21 +69,20 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     else drawRubberBand(dragStart, pt, mode);
   }
   function onUp(e) {
-    if (moving) { dropMove(ptToCanvas(e)); return; }
+    if (moving) { moving = false; return; }   // drop: stay FLOATING + selected (no commit)
     if (!dragging) return;
     dragging = false;
     const pt = ptToCanvas(e);
-    if (mode === 'marquee') setMask(rectMask(dragStart, pt));
-    else if (mode === 'ellipse') setMask(ellipseMask(dragStart, pt));
-    else if (mode === 'lasso') { const pts = lassoPts; lassoPts = null; setMask(lassoMask(pts)); }
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    if (mode === 'marquee') setMask(rectMask(dragStart, pt, w, h));
+    else if (mode === 'ellipse') setMask(ellipseMask(dragStart, pt, w, h));
+    else if (mode === 'lasso') { const pts = lassoPts; lassoPts = null; setMask(lassoMask(pts, w, h)); }
   }
 
-  // ── Move the selected pixels ── lift the masked region off the base (leaving a
-  // transparent hole), float it on the overlay following the cursor, and on drop
-  // commit base-with-hole + the piece at its new offset (one PNG commit).
-  function startMove(e) {
-    if (!mask) return;
-    e.preventDefault();
+  // ── Floating move ──────────────────────────────────────────────────────────
+  // Lift the masked pixels off the base into pieceCanvas, punching a transparent
+  // hole into a copy of the base (holedCanvas). Records baseMask = the hole position.
+  function liftFloat() {
     const bc = document.createElement('canvas'); bc.width = mw; bc.height = mh;
     const bg = bc.getContext('2d', { willReadFrequently: true });
     bg.drawImage(img, 0, 0, mw, mh);
@@ -90,27 +99,50 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     }
     pg.putImageData(pieceId, 0, 0);
     bg.putImageData(baseId, 0, 0);
-    holedCanvas = bc;
+    holedCanvas = bc; baseMask = mask.slice();
+    floating = true; floatDx = 0; floatDy = 0;
+  }
+  function startMove(e) {
+    if (!mask) return;
+    e.preventDefault();
+    if (!floating) liftFloat();
     moving = true; moveStart = ptToCanvas(e);
+    moveBaseDx = floatDx; moveBaseDy = floatDy;
     try { ov.setPointerCapture(e.pointerId); } catch { /* not all pointers capture */ }
-    previewMove(moveStart);
+    buildSelBuf(); paintAnts();   // show the lifted state immediately
   }
-  function previewMove(pt) {
-    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
-    octx.clearRect(0, 0, ov.width, ov.height);
-    octx.drawImage(holedCanvas, 0, 0);          // the overlay (z-index 4) covers the <img> with the live preview
-    octx.drawImage(pieceCanvas, dx, dy);
+  function dragFloat(pt) { setFloatOffset(moveBaseDx + (pt.x - moveStart.x), moveBaseDy + (pt.y - moveStart.y)); }
+  // Reposition the float; translate the mask so the ants + future tools track the piece.
+  function setFloatOffset(dx, dy) {
+    floatDx = dx; floatDy = dy;
+    mask = translateMask(baseMask, mw, mh, floatDx, floatDy);
+    buildSelBuf(); paintAnts();
   }
-  async function dropMove(pt) {
-    moving = false;
-    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
+  // Bake the float into the image (one PNG commit). Leaves the mask at the new spot.
+  function stampFloat() {
+    if (!floating) return;
     const out = document.createElement('canvas'); out.width = mw; out.height = mh;
     const og = out.getContext('2d');
     og.drawImage(holedCanvas, 0, 0);
-    og.drawImage(pieceCanvas, dx, dy);
-    holedCanvas = pieceCanvas = null;
-    await onCommit?.(out);    // renderer: pushUndo + commit a PNG (keeps the transparent hole)
-    clear();                  // the selection is consumed by the move
+    og.drawImage(pieceCanvas, floatDx, floatDy);
+    floating = false; holedCanvas = pieceCanvas = null; baseMask = null; floatDx = floatDy = 0;
+    compose();
+    onCommit?.(out);   // renderer: pushUndo + commit a PNG (keeps the transparent hole)
+  }
+
+  // Public nudge (arrow keys): move the floating PIXELS, or — outlineOnly — just the
+  // selection outline over the image (pixels untouched), so you can reframe then colour.
+  function nudge(dx, dy, outlineOnly) {
+    if (!mask) return;
+    if (outlineOnly) {
+      if (floating) stampFloat();   // settle any float before sliding the outline
+      baseMask = baseMask || mask;
+      mask = translateMask(mask, mw, mh, dx, dy);
+      buildSelBuf(); paintAnts();
+      return;
+    }
+    if (!floating) liftFloat();
+    setFloatOffset(floatDx + dx, floatDy + dy);
   }
 
   // Live rubber-band (rect or ellipse) drawn on the natural-res overlay.
@@ -143,40 +175,6 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     mask = res.m; mw = res.w; mh = res.h;
     render();
     if (deselectBtn) deselectBtn.hidden = false;
-  }
-
-  // Rectangle mask (fast loop). Ellipse/lasso rasterize a canvas path instead.
-  function rectMask(a, b) {
-    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
-    const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
-    if (x1 - x0 < 2 || y1 - y0 < 2) return null;
-    const m = new Uint8Array(w * h);
-    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
-    return { m, w, h };
-  }
-  // Rasterize a filled path to a mask (alpha > half = inside). Shared by ellipse + lasso.
-  function maskFromPath(draw) {
-    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    g.fillStyle = '#fff'; g.beginPath();
-    draw(g);
-    g.fill();
-    const d = g.getImageData(0, 0, w, h).data;
-    const m = new Uint8Array(w * h);
-    let any = false;
-    for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) { m[p] = 1; any = true; }
-    return any ? { m, w, h } : null;
-  }
-  function ellipseMask(a, b) {
-    const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
-    if (rx < 1 || ry < 1) return null;
-    return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2));
-  }
-  function lassoMask(pts) {
-    if (!pts || pts.length < 3) return null;
-    return maskFromPath((g) => { pts.forEach((q, i) => (i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y))); g.closePath(); });
   }
 
   // Cover exactly the displayed <img> box so click coords map 1:1 to image pixels.
@@ -212,15 +210,24 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     if (deselectBtn) deselectBtn.hidden = false;
   }
 
-  // Translucent tint over the selected region + an animated "marching ants" boundary.
-  // The interior tint is baked once into `frame`; the boundary pixels (cached in
-  // `edgeIdx`) are recoloured each animation tick so the dotted outline crawls — works
-  // for ANY mask shape (wand/rect/ellipse/lasso), unlike a dashed-path stroke.
+  // ── Overlay rendering ── tint + marching ants are drawn into an offscreen selCanvas
+  // so compose() can layer them OVER the floating piece (drawImage blends; putImageData
+  // would not). The interior tint is built once per mask shape; the boundary pixels
+  // (edgeIdx) are recoloured each tick so the dotted outline crawls.
   function render() {
     ov.width = mw; ov.height = mh;            // resets + clears
     syncOverlay();
-    frame = octx.createImageData(mw, mh);
-    const d = frame.data;
+    selCanvas = document.createElement('canvas'); selCanvas.width = mw; selCanvas.height = mh;
+    selCtx = selCanvas.getContext('2d');
+    selBuf = selCtx.createImageData(mw, mh);
+    buildSelBuf();
+    paintAnts();        // synchronous first paint (tests + no-flash); then animate
+    startAnts();
+  }
+  // Fill selBuf with the translucent interior tint and collect the boundary pixels.
+  function buildSelBuf() {
+    if (!selBuf) return;
+    const d = selBuf.data; d.fill(0);
     const edges = [];
     for (let p = 0; p < mw * mh; p++) {
       if (!mask[p]) continue;
@@ -232,21 +239,26 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
       d[i] = 0; d[i + 1] = 132; d[i + 2] = 255; d[i + 3] = 48;
     }
     edgeIdx = Int32Array.from(edges);
-    paintAnts();        // synchronous first paint (tests + no-flash); then animate
-    startAnts();
   }
-
-  // Recolour the boundary pixels with a phase-shifted black/white dash pattern.
+  // Recolour the boundary with a phase-shifted black/white dash pattern, then compose.
   function paintAnts() {
-    if (!frame || !edgeIdx || !octx) return;
-    const d = frame.data, ph = antsPhase | 0;
+    if (!selBuf || !edgeIdx || !selCtx) return;
+    const d = selBuf.data, ph = antsPhase | 0;
     for (let k = 0; k < edgeIdx.length; k++) {
       const p = edgeIdx[k];
       const v = (((p % mw) + ((p / mw) | 0) + ph) & 7) < 4 ? 0 : 255;   // 4 on / 4 off, diagonal
       const i = p << 2;
       d[i] = v; d[i + 1] = v; d[i + 2] = v; d[i + 3] = 255;
     }
-    octx.putImageData(frame, 0, 0);
+    selCtx.putImageData(selBuf, 0, 0);
+    compose();
+  }
+  // Paint the overlay: the holed base + floating piece (when moving), then the selection.
+  function compose() {
+    if (!octx) return;
+    octx.clearRect(0, 0, ov.width, ov.height);
+    if (floating && holedCanvas) { octx.drawImage(holedCanvas, 0, 0); octx.drawImage(pieceCanvas, floatDx, floatDy); }
+    if (selCanvas) octx.drawImage(selCanvas, 0, 0);
   }
   function startAnts() {
     stopAnts();
@@ -260,6 +272,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   function stopAnts() { if (antsRAF) cancelAnimationFrame(antsRAF); antsRAF = 0; }
 
   function setMode(m) {
+    if (floating && m !== 'move') stampFloat();   // settle the float when leaving Move
     mode = m;
     // Only create the overlay when actually entering a select mode — NOT on a passive
     // deactivate (e.g. when a draw tool turns selection off). Creating it eagerly would
@@ -277,18 +290,25 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   // Renderer compat: a draw tool turning selection off calls setActive(false).
   function setActive(on) { setMode(on ? 'wand' : null); }
 
+  // Clear the selection WITHOUT committing (geometry invalidation / internal). Any
+  // in-flight float is discarded (it was never baked into the image).
   function clear() {
     stopAnts();
-    mask = null; mw = mh = 0; frame = null; edgeIdx = null;
+    mask = null; mw = mh = 0; selBuf = null; edgeIdx = null; selCanvas = null; selCtx = null;
+    floating = false; holedCanvas = pieceCanvas = null; baseMask = null; floatDx = floatDy = 0;
     if (octx) octx.clearRect(0, 0, ov.width, ov.height);
     if (deselectBtn) deselectBtn.hidden = true;
   }
+  // Deselect button: bake a pending float first, then drop the selection.
+  function deselect() { if (floating) stampFloat(); clear(); }
 
   // Invert the current selection (select the complement). No-op without a mask.
   function invert() {
     if (!mask) return;
+    if (floating) stampFloat();
     for (let p = 0; p < mask.length; p++) mask[p] = mask[p] ? 0 : 1;
-    render();
+    baseMask = null;
+    buildSelBuf(); paintAnts();
   }
 
   // Clip a fill result (ImageData byte arrays) to the selection: `editedData` keeps
@@ -318,15 +338,15 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   ellipseBtn?.addEventListener('click', () => setMode(mode === 'ellipse' ? null : 'ellipse'));
   lassoBtn?.addEventListener('click', () => setMode(mode === 'lasso' ? null : 'lasso'));
   moveBtn?.addEventListener('click', () => setMode(mode === 'move' ? null : 'move'));
-  deselectBtn?.addEventListener('click', clear);
+  deselectBtn?.addEventListener('click', deselect);
 
   return {
     isActive: () => mode !== null,
     hasSelection: () => !!mask,
     getMask: () => (mask ? { data: mask, w: mw, h: mh } : null),
     setActive, setMode, toggle: () => setMode(mode ? null : 'wand'),
-    clipFillInPlace, clipCanvas, invert,
+    clipFillInPlace, clipCanvas, invert, nudge,
     clear, syncOverlay,
-    teardown() { stopAnts(); ov?.remove(); ov = null; octx = null; mask = null; frame = null; edgeIdx = null; },
+    teardown() { stopAnts(); ov?.remove(); ov = null; octx = null; mask = null; selBuf = null; edgeIdx = null; selCanvas = null; selCtx = null; holedCanvas = pieceCanvas = baseMask = null; },
   };
 }

@@ -2175,12 +2175,66 @@ function mountTabs(host) {
   return { showTab };
 }
 
+// docs/types/image/edit-select-masks.js
+function rectMask(a, b, w, h) {
+  const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
+  const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
+  if (x1 - x0 < 2 || y1 - y0 < 2) return null;
+  const m = new Uint8Array(w * h);
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
+  return { m, w, h };
+}
+function maskFromPath(draw, w, h) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.fillStyle = "#fff";
+  g.beginPath();
+  draw(g);
+  g.fill();
+  const d = g.getImageData(0, 0, w, h).data;
+  const m = new Uint8Array(w * h);
+  let any = false;
+  for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) {
+    m[p] = 1;
+    any = true;
+  }
+  return any ? { m, w, h } : null;
+}
+function ellipseMask(a, b, w, h) {
+  const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
+  if (rx < 1 || ry < 1) return null;
+  return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2), w, h);
+}
+function lassoMask(pts, w, h) {
+  if (!pts || pts.length < 3) return null;
+  return maskFromPath((g) => {
+    pts.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y));
+    g.closePath();
+  }, w, h);
+}
+function translateMask(src, w, h, dx, dy) {
+  const out = new Uint8Array(w * h);
+  if (!dx && !dy) {
+    out.set(src);
+    return out;
+  }
+  for (let p = 0; p < src.length; p++) {
+    if (!src[p]) continue;
+    const x = p % w + dx, y = (p / w | 0) + dy;
+    if (x >= 0 && x < w && y >= 0 && y < h) out[y * w + x] = 1;
+  }
+  return out;
+}
+
 // docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {
   }, async clipCanvas() {
   }, invert() {
+  }, nudge() {
   }, toggle() {
   }, setActive() {
   }, setMode() {
@@ -2193,8 +2247,9 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   let mask = null, mw = 0, mh = 0;
   let ov = null, octx = null;
   let dragging = false, dragStart = null, lassoPts = null;
-  let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;
-  let frame = null, edgeIdx = null;
+  let moving = false, moveStart = null, moveBaseDx = 0, moveBaseDy = 0;
+  let floating = false, holedCanvas = null, pieceCanvas = null, baseMask = null, floatDx = 0, floatDy = 0;
+  let selCanvas = null, selCtx = null, selBuf = null, edgeIdx = null;
   let antsRAF = 0, antsPhase = 0, antsLast = 0;
   function ensureOverlay() {
     if (ov) return;
@@ -2236,7 +2291,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   function onMove(e) {
     if (moving) {
       e.preventDefault();
-      previewMove(ptToCanvas(e));
+      dragFloat(ptToCanvas(e));
       return;
     }
     if (!dragging) return;
@@ -2249,23 +2304,22 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   }
   function onUp(e) {
     if (moving) {
-      dropMove(ptToCanvas(e));
+      moving = false;
       return;
     }
     if (!dragging) return;
     dragging = false;
     const pt = ptToCanvas(e);
-    if (mode === "marquee") setMask(rectMask(dragStart, pt));
-    else if (mode === "ellipse") setMask(ellipseMask(dragStart, pt));
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    if (mode === "marquee") setMask(rectMask(dragStart, pt, w, h));
+    else if (mode === "ellipse") setMask(ellipseMask(dragStart, pt, w, h));
     else if (mode === "lasso") {
       const pts = lassoPts;
       lassoPts = null;
-      setMask(lassoMask(pts));
+      setMask(lassoMask(pts, w, h));
     }
   }
-  function startMove(e) {
-    if (!mask) return;
-    e.preventDefault();
+  function liftFloat() {
     const bc = document.createElement("canvas");
     bc.width = mw;
     bc.height = mh;
@@ -2289,32 +2343,63 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     pg.putImageData(pieceId, 0, 0);
     bg.putImageData(baseId, 0, 0);
     holedCanvas = bc;
+    baseMask = mask.slice();
+    floating = true;
+    floatDx = 0;
+    floatDy = 0;
+  }
+  function startMove(e) {
+    if (!mask) return;
+    e.preventDefault();
+    if (!floating) liftFloat();
     moving = true;
     moveStart = ptToCanvas(e);
+    moveBaseDx = floatDx;
+    moveBaseDy = floatDy;
     try {
       ov.setPointerCapture(e.pointerId);
     } catch {
     }
-    previewMove(moveStart);
+    buildSelBuf();
+    paintAnts();
   }
-  function previewMove(pt) {
-    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
-    octx.clearRect(0, 0, ov.width, ov.height);
-    octx.drawImage(holedCanvas, 0, 0);
-    octx.drawImage(pieceCanvas, dx, dy);
+  function dragFloat(pt) {
+    setFloatOffset(moveBaseDx + (pt.x - moveStart.x), moveBaseDy + (pt.y - moveStart.y));
   }
-  async function dropMove(pt) {
-    moving = false;
-    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
+  function setFloatOffset(dx, dy) {
+    floatDx = dx;
+    floatDy = dy;
+    mask = translateMask(baseMask, mw, mh, floatDx, floatDy);
+    buildSelBuf();
+    paintAnts();
+  }
+  function stampFloat() {
+    if (!floating) return;
     const out = document.createElement("canvas");
     out.width = mw;
     out.height = mh;
     const og = out.getContext("2d");
     og.drawImage(holedCanvas, 0, 0);
-    og.drawImage(pieceCanvas, dx, dy);
+    og.drawImage(pieceCanvas, floatDx, floatDy);
+    floating = false;
     holedCanvas = pieceCanvas = null;
-    await onCommit?.(out);
-    clear();
+    baseMask = null;
+    floatDx = floatDy = 0;
+    compose();
+    onCommit?.(out);
+  }
+  function nudge(dx, dy, outlineOnly) {
+    if (!mask) return;
+    if (outlineOnly) {
+      if (floating) stampFloat();
+      baseMask = baseMask || mask;
+      mask = translateMask(mask, mw, mh, dx, dy);
+      buildSelBuf();
+      paintAnts();
+      return;
+    }
+    if (!floating) liftFloat();
+    setFloatOffset(floatDx + dx, floatDy + dy);
   }
   function drawRubberBand(a, b, kind) {
     octx.clearRect(0, 0, ov.width, ov.height);
@@ -2348,46 +2433,6 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     mh = res.h;
     render2();
     if (deselectBtn) deselectBtn.hidden = false;
-  }
-  function rectMask(a, b) {
-    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
-    const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
-    if (x1 - x0 < 2 || y1 - y0 < 2) return null;
-    const m = new Uint8Array(w * h);
-    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
-    return { m, w, h };
-  }
-  function maskFromPath(draw) {
-    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    const g = c.getContext("2d", { willReadFrequently: true });
-    g.fillStyle = "#fff";
-    g.beginPath();
-    draw(g);
-    g.fill();
-    const d = g.getImageData(0, 0, w, h).data;
-    const m = new Uint8Array(w * h);
-    let any = false;
-    for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) {
-      m[p] = 1;
-      any = true;
-    }
-    return any ? { m, w, h } : null;
-  }
-  function ellipseMask(a, b) {
-    const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
-    if (rx < 1 || ry < 1) return null;
-    return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2));
-  }
-  function lassoMask(pts) {
-    if (!pts || pts.length < 3) return null;
-    return maskFromPath((g) => {
-      pts.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y));
-      g.closePath();
-    });
   }
   function syncOverlay() {
     if (!ov) return;
@@ -2427,8 +2472,19 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     ov.width = mw;
     ov.height = mh;
     syncOverlay();
-    frame = octx.createImageData(mw, mh);
-    const d = frame.data;
+    selCanvas = document.createElement("canvas");
+    selCanvas.width = mw;
+    selCanvas.height = mh;
+    selCtx = selCanvas.getContext("2d");
+    selBuf = selCtx.createImageData(mw, mh);
+    buildSelBuf();
+    paintAnts();
+    startAnts();
+  }
+  function buildSelBuf() {
+    if (!selBuf) return;
+    const d = selBuf.data;
+    d.fill(0);
     const edges = [];
     for (let p = 0; p < mw * mh; p++) {
       if (!mask[p]) continue;
@@ -2445,12 +2501,10 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
       d[i + 3] = 48;
     }
     edgeIdx = Int32Array.from(edges);
-    paintAnts();
-    startAnts();
   }
   function paintAnts() {
-    if (!frame || !edgeIdx || !octx) return;
-    const d = frame.data, ph = antsPhase | 0;
+    if (!selBuf || !edgeIdx || !selCtx) return;
+    const d = selBuf.data, ph = antsPhase | 0;
     for (let k = 0; k < edgeIdx.length; k++) {
       const p = edgeIdx[k];
       const v = (p % mw + (p / mw | 0) + ph & 7) < 4 ? 0 : 255;
@@ -2460,7 +2514,17 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
       d[i + 2] = v;
       d[i + 3] = 255;
     }
-    octx.putImageData(frame, 0, 0);
+    selCtx.putImageData(selBuf, 0, 0);
+    compose();
+  }
+  function compose() {
+    if (!octx) return;
+    octx.clearRect(0, 0, ov.width, ov.height);
+    if (floating && holedCanvas) {
+      octx.drawImage(holedCanvas, 0, 0);
+      octx.drawImage(pieceCanvas, floatDx, floatDy);
+    }
+    if (selCanvas) octx.drawImage(selCanvas, 0, 0);
   }
   function startAnts() {
     stopAnts();
@@ -2483,6 +2547,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     antsRAF = 0;
   }
   function setMode(m) {
+    if (floating && m !== "move") stampFloat();
     mode = m;
     if (m) ensureOverlay();
     selectBtn.classList.toggle("active", m === "wand");
@@ -2503,15 +2568,28 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     stopAnts();
     mask = null;
     mw = mh = 0;
-    frame = null;
+    selBuf = null;
     edgeIdx = null;
+    selCanvas = null;
+    selCtx = null;
+    floating = false;
+    holedCanvas = pieceCanvas = null;
+    baseMask = null;
+    floatDx = floatDy = 0;
     if (octx) octx.clearRect(0, 0, ov.width, ov.height);
     if (deselectBtn) deselectBtn.hidden = true;
   }
+  function deselect() {
+    if (floating) stampFloat();
+    clear();
+  }
   function invert() {
     if (!mask) return;
+    if (floating) stampFloat();
     for (let p = 0; p < mask.length; p++) mask[p] = mask[p] ? 0 : 1;
-    render2();
+    baseMask = null;
+    buildSelBuf();
+    paintAnts();
   }
   function clipFillInPlace(editedData, beforeData) {
     if (!mask || editedData.length !== mask.length << 2) return;
@@ -2535,7 +2613,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   ellipseBtn?.addEventListener("click", () => setMode(mode === "ellipse" ? null : "ellipse"));
   lassoBtn?.addEventListener("click", () => setMode(mode === "lasso" ? null : "lasso"));
   moveBtn?.addEventListener("click", () => setMode(mode === "move" ? null : "move"));
-  deselectBtn?.addEventListener("click", clear);
+  deselectBtn?.addEventListener("click", deselect);
   return {
     isActive: () => mode !== null,
     hasSelection: () => !!mask,
@@ -2546,6 +2624,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     clipFillInPlace,
     clipCanvas,
     invert,
+    nudge,
     clear,
     syncOverlay,
     teardown() {
@@ -2554,8 +2633,11 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
       ov = null;
       octx = null;
       mask = null;
-      frame = null;
+      selBuf = null;
       edgeIdx = null;
+      selCanvas = null;
+      selCtx = null;
+      holedCanvas = pieceCanvas = baseMask = null;
     }
   };
 }
