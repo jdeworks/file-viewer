@@ -68,6 +68,7 @@ export function normalizeState(state, context = {}) {
 export function snapshotWave(state) {
   return {
     waveNumber: state.waveNumber,
+    wavePeak: Number.isFinite(state.wavePeak) ? state.wavePeak : state.waveNumber,
     waveActive: Boolean(state.waveActive),
     waveFailed: Boolean(state.waveFailed),
     integrity: state.integrity,
@@ -84,6 +85,7 @@ export function snapshotWave(state) {
 export function restoreWave(state, snap) {
   if (!snap || typeof snap !== 'object') return state;
   if (Number.isFinite(snap.waveNumber)) state.waveNumber = snap.waveNumber;
+  state.wavePeak = Number.isFinite(snap.wavePeak) ? snap.wavePeak : state.waveNumber;
   state.waveActive = Boolean(snap.waveActive);
   state.waveFailed = Boolean(snap.waveFailed);
   if (Number.isFinite(snap.integrity)) state.integrity = snap.integrity;

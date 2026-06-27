@@ -46,6 +46,21 @@ export function startWave(state, waveNum, pathTiles) {
   return state;
 }
 
+// Append another wave's enemies onto the IN-FLIGHT spawn queue (the "call wave early" mechanic): the
+// next wave's trash + guardian pour in on top of the current one. Does not reset combat state.
+export function queueWave(state, waveNum) {
+  const comp = state.campaign
+    ? mapWaveComposition(state.campaign.mapIndex || 0, waveNum)
+    : waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) state.spawnQueue.push(grp.type);
+  if (comp.subBoss) {
+    state.spawnQueue.push(`subboss:${comp.subBoss}`);
+    const sb = subBossDef(comp.subBoss);
+    if (sb) pushLog(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+  }
+  return state;
+}
+
 export function tick(state, deltaMs, pathTiles) {
   if (!state.waveActive || !Array.isArray(pathTiles) || pathTiles.length < 2) return state;
   const dt = Math.max(0, Number(deltaMs) || 0);
