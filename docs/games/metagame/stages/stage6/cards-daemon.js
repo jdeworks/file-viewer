@@ -58,5 +58,9 @@ export const DAEMON_CARDS = [
     id: "GARBAGE_COLLECT", type: "Daemon", cost: 2, rarity: "rare", exhaust: true,
     text: "Consume all Corruption on the enemy and deal that much damage instantly. Exhaust.",
     effect: (ctx) => ctx.deal(ctx.consumeCorruption())
-  }
+  },
+  // ── H · additional commons (pool depth — cheap corruption filler) ───────────────────────────────────
+  { id: "TAINT", type: "Daemon", cost: 1, rarity: "common", text: "Deal 2. Apply 2 Corruption.", effect: (ctx) => { ctx.deal(2); ctx.applyCorruption(2); } },
+  { id: "NULL_DEREF", type: "Daemon", cost: 1, rarity: "common", text: "Deal 5. If the enemy is corrupted, deal 3 more.", effect: (ctx) => { ctx.deal(5); if (ctx.enemyCorruption > 0) ctx.deal(3); } },
+  { id: "SPORE", type: "Daemon", cost: 0, rarity: "common", text: "Apply 1 Corruption. Draw 1.", effect: (ctx) => { ctx.applyCorruption(1); ctx.draw(1); } }
 ];

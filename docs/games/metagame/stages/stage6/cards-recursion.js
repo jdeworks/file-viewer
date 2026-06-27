@@ -52,5 +52,8 @@ export const RECURSION_CARDS = [
     id: "RECURSE", type: "Recursion", cost: 0, rarity: "rare", exhaust: true, xcost: true,
     text: "X-cost: spend all energy, then replay the last card you played that many times. Exhaust.",
     effect: (ctx) => ctx.replayLast(1, ctx.xValue)
-  }
+  },
+  // ── H · additional commons (pool depth — cheap chain filler) ────────────────────────────────────────
+  { id: "TRACE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 5. If the previous card was a Recursion card, gain 3 block.", effect: (ctx) => { ctx.deal(5); if (ctx.lastPlayedType === "Recursion") ctx.block(3); } },
+  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
 ];

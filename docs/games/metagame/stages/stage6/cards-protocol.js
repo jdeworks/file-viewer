@@ -85,5 +85,11 @@ export const PROTOCOL_CARDS = [
     id: "DEFRAG", type: "Protocol", cost: 1, rarity: "uncommon",
     text: "Return all jammed cards (Packet Loss) to your hand. Draw 1.",
     effect: (ctx) => { ctx.defrag(); ctx.draw(1); }
-  }
+  },
+  // ── H · additional commons (pool depth — reliable block filler) ─────────────────────────────────────
+  { id: "ACKNOWLEDGE", type: "Protocol", cost: 1, rarity: "common", text: "Gain 9 block.", effect: (ctx) => ctx.block(9) },
+  { id: "PADDING", type: "Protocol", cost: 0, rarity: "common", text: "Gain 4 block.", effect: (ctx) => ctx.block(4) },
+  { id: "PARITY", type: "Protocol", cost: 1, rarity: "common", text: "Gain 5 block. Draw 1.", effect: (ctx) => { ctx.block(5); ctx.draw(1); } },
+  { id: "HEARTBEAT", type: "Protocol", cost: 2, rarity: "common", text: "Gain 11 block.", effect: (ctx) => ctx.block(11) },
+  { id: "SLOW_START", type: "Protocol", cost: 1, rarity: "common", text: "Gain 6 block. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.block(6); ctx.applyEnemy("weak", 1); } }
 ];

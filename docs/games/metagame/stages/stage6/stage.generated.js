@@ -397,7 +397,20 @@ var SIGNAL_CARDS = [
     rarity: "rare",
     text: "Deal 18 in 2 turns.",
     effect: (ctx) => ctx.queue(2, { deal: 18 })
-  }
+  },
+  // ── H · additional commons (pool depth — early decks need reliable filler) ──────────────────────────
+  { id: "BIT_FLIP", type: "Signal", cost: 0, rarity: "common", text: "Deal 4.", effect: (ctx) => ctx.deal(4) },
+  { id: "PING", type: "Signal", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) },
+  { id: "ICMP", type: "Signal", cost: 1, rarity: "common", text: "Deal 5. Gain 3 block.", effect: (ctx) => {
+    ctx.deal(5);
+    ctx.block(3);
+  } },
+  { id: "TEARDOWN", type: "Signal", cost: 2, rarity: "common", text: "Deal 11.", effect: (ctx) => ctx.deal(11) },
+  { id: "DATAGRAM", type: "Signal", cost: 1, rarity: "common", text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
+  { id: "BROADCAST", type: "Signal", cost: 2, rarity: "common", text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.applyEnemy("weak", 1);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/cards-protocol.js
@@ -562,7 +575,19 @@ var PROTOCOL_CARDS = [
       ctx.defrag();
       ctx.draw(1);
     }
-  }
+  },
+  // ── H · additional commons (pool depth — reliable block filler) ─────────────────────────────────────
+  { id: "ACKNOWLEDGE", type: "Protocol", cost: 1, rarity: "common", text: "Gain 9 block.", effect: (ctx) => ctx.block(9) },
+  { id: "PADDING", type: "Protocol", cost: 0, rarity: "common", text: "Gain 4 block.", effect: (ctx) => ctx.block(4) },
+  { id: "PARITY", type: "Protocol", cost: 1, rarity: "common", text: "Gain 5 block. Draw 1.", effect: (ctx) => {
+    ctx.block(5);
+    ctx.draw(1);
+  } },
+  { id: "HEARTBEAT", type: "Protocol", cost: 2, rarity: "common", text: "Gain 11 block.", effect: (ctx) => ctx.block(11) },
+  { id: "SLOW_START", type: "Protocol", cost: 1, rarity: "common", text: "Gain 6 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.applyEnemy("weak", 1);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/cards-layer.js
@@ -644,7 +669,18 @@ var LAYER_CARDS = [
     rarity: "rare",
     text: "Widen your congestion window by 1 (gain 1 energy now).",
     effect: (ctx) => ctx.widenWindow(1)
-  }
+  },
+  // ── H · additional commons (pool depth — light power/defense filler) ─────────────────────────────────
+  { id: "SHIM", type: "Layer", cost: 1, rarity: "common", text: "Gain 1 Strength.", effect: (ctx) => ctx.applySelf("strength", 1) },
+  { id: "ROTATE", type: "Layer", cost: 1, rarity: "common", text: "Gain 4 block. Draw 1.", effect: (ctx) => {
+    ctx.block(4);
+    ctx.draw(1);
+  } },
+  { id: "XOR_PAD", type: "Layer", cost: 1, rarity: "common", text: "Gain 5 block.", effect: (ctx) => ctx.block(5) },
+  { id: "NONCE", type: "Layer", cost: 0, rarity: "common", text: "Gain 3 block. Draw 1.", effect: (ctx) => {
+    ctx.block(3);
+    ctx.draw(1);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/cards-daemon.js
@@ -748,7 +784,20 @@ var DAEMON_CARDS = [
     exhaust: true,
     text: "Consume all Corruption on the enemy and deal that much damage instantly. Exhaust.",
     effect: (ctx) => ctx.deal(ctx.consumeCorruption())
-  }
+  },
+  // ── H · additional commons (pool depth — cheap corruption filler) ───────────────────────────────────
+  { id: "TAINT", type: "Daemon", cost: 1, rarity: "common", text: "Deal 2. Apply 2 Corruption.", effect: (ctx) => {
+    ctx.deal(2);
+    ctx.applyCorruption(2);
+  } },
+  { id: "NULL_DEREF", type: "Daemon", cost: 1, rarity: "common", text: "Deal 5. If the enemy is corrupted, deal 3 more.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.enemyCorruption > 0) ctx.deal(3);
+  } },
+  { id: "SPORE", type: "Daemon", cost: 0, rarity: "common", text: "Apply 1 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(1);
+    ctx.draw(1);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/cards-recursion.js
@@ -841,7 +890,13 @@ var RECURSION_CARDS = [
     xcost: true,
     text: "X-cost: spend all energy, then replay the last card you played that many times. Exhaust.",
     effect: (ctx) => ctx.replayLast(1, ctx.xValue)
-  }
+  },
+  // ── H · additional commons (pool depth — cheap chain filler) ────────────────────────────────────────
+  { id: "TRACE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 5. If the previous card was a Recursion card, gain 3 block.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.lastPlayedType === "Recursion") ctx.block(3);
+  } },
+  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
 ];
 
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
@@ -2444,7 +2499,58 @@ var SPECS = {
     ctx.echoNextTurn();
   } },
   FIXED_POINT: { cost: 1, text: "Replay the last card you played twice. (cost 1)", effect: (ctx) => ctx.replayLast(1, 2) },
-  RECURSE: { exhaust: false, text: "X-cost: spend all energy, then replay the last card that many times.", effect: (ctx) => ctx.replayLast(1, ctx.xValue) }
+  RECURSE: { exhaust: false, text: "X-cost: spend all energy, then replay the last card that many times.", effect: (ctx) => ctx.replayLast(1, ctx.xValue) },
+  // H · pool-depth commons
+  BIT_FLIP: { text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
+  PING: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) },
+  ICMP: { text: "Deal 7. Gain 4 block.", effect: (ctx) => {
+    ctx.deal(7);
+    ctx.block(4);
+  } },
+  TEARDOWN: { text: "Deal 15.", effect: (ctx) => ctx.deal(15) },
+  DATAGRAM: { text: "Deal 9.", effect: (ctx) => ctx.deal(9) },
+  BROADCAST: { text: "Deal 8. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.deal(8);
+    ctx.applyEnemy("weak", 1);
+  } },
+  ACKNOWLEDGE: { text: "Gain 12 block.", effect: (ctx) => ctx.block(12) },
+  PADDING: { text: "Gain 6 block.", effect: (ctx) => ctx.block(6) },
+  PARITY: { text: "Gain 7 block. Draw 1.", effect: (ctx) => {
+    ctx.block(7);
+    ctx.draw(1);
+  } },
+  HEARTBEAT: { text: "Gain 15 block.", effect: (ctx) => ctx.block(15) },
+  SLOW_START: { text: "Gain 8 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(8);
+    ctx.applyEnemy("weak", 1);
+  } },
+  SHIM: { cost: 0, text: "Gain 1 Strength. (cost 0)", effect: (ctx) => ctx.applySelf("strength", 1) },
+  ROTATE: { text: "Gain 6 block. Draw 1.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.draw(1);
+  } },
+  XOR_PAD: { text: "Gain 8 block.", effect: (ctx) => ctx.block(8) },
+  NONCE: { text: "Gain 5 block. Draw 1.", effect: (ctx) => {
+    ctx.block(5);
+    ctx.draw(1);
+  } },
+  TAINT: { text: "Deal 3. Apply 3 Corruption.", effect: (ctx) => {
+    ctx.deal(3);
+    ctx.applyCorruption(3);
+  } },
+  NULL_DEREF: { text: "Deal 7. If the enemy is corrupted, deal 4 more.", effect: (ctx) => {
+    ctx.deal(7);
+    if (ctx.enemyCorruption > 0) ctx.deal(4);
+  } },
+  SPORE: { text: "Apply 2 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(2);
+    ctx.draw(1);
+  } },
+  TRACE: { text: "Deal 7. If the previous card was a Recursion card, gain 4 block.", effect: (ctx) => {
+    ctx.deal(7);
+    if (ctx.lastPlayedType === "Recursion") ctx.block(4);
+  } },
+  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) }
 };
 function isUpgradedId(id) {
   return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);

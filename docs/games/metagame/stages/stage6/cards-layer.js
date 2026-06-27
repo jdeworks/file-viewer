@@ -43,5 +43,10 @@ export const LAYER_CARDS = [
     id: "BANDWIDTH", type: "Layer", cost: 1, rarity: "rare",
     text: "Widen your congestion window by 1 (gain 1 energy now).",
     effect: (ctx) => ctx.widenWindow(1)
-  }
+  },
+  // ── H · additional commons (pool depth — light power/defense filler) ─────────────────────────────────
+  { id: "SHIM", type: "Layer", cost: 1, rarity: "common", text: "Gain 1 Strength.", effect: (ctx) => ctx.applySelf("strength", 1) },
+  { id: "ROTATE", type: "Layer", cost: 1, rarity: "common", text: "Gain 4 block. Draw 1.", effect: (ctx) => { ctx.block(4); ctx.draw(1); } },
+  { id: "XOR_PAD", type: "Layer", cost: 1, rarity: "common", text: "Gain 5 block.", effect: (ctx) => ctx.block(5) },
+  { id: "NONCE", type: "Layer", cost: 0, rarity: "common", text: "Gain 3 block. Draw 1.", effect: (ctx) => { ctx.block(3); ctx.draw(1); } }
 ];
