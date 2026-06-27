@@ -53,6 +53,25 @@ export function movementForLevel(level) {
   return MOVEMENTS.find((m) => m.levels.includes(lvl)) || MOVEMENTS[0];
 }
 
+// One-line, per-archetype briefing of the actual win condition (pure). Shown in the hint field so a
+// new verb (e.g. the Cadence chain at level 7 or the Surveillance eye at level 11) is announced before
+// the player guesses wrong — addresses the unmarked difficulty spikes. Chain/gap counts are inlined.
+const MODE_HINTS = {
+  simple: "watch the gap; CROSS when it faces the top (12 o'clock).",
+  oscillating: "the rotation speed breathes in and out — CROSS as the gap reaches the top.",
+  ghostecho: "faint ghosts mark your last two presses — read how early/late you were and correct.",
+  dual: "two rings now — CROSS only when BOTH gaps face the top at the same instant.",
+  stealth: "an eye sweeps the ring — CROSS only when the gap is up AND the eye is looking away.",
+  reversing: "the ring keeps flipping direction — track the flips and CROSS at the top.",
+  darkzone: "a blackout hides the top — extrapolate from the speed when the gap arrives there."
+};
+export function modeHint(cfg) {
+  if (!cfg) return MODE_HINTS.simple;
+  if (cfg.mode === "rhythm") return `hold the beat — land ${Math.max(2, cfg.chain || 3)} crosses in a row; one miss resets the chain.`;
+  if (cfg.mode === "multigap") return `${Math.max(2, cfg.gaps || 3)} gaps look identical — only one is real. find it run by run.`;
+  return MODE_HINTS[cfg.mode] || MODE_HINTS.simple;
+}
+
 // Full, deterministic config for a level: its tuning + derived flags.
 export function levelConfig(level) {
   const lvl = Math.max(1, Math.min(BOSS_LEVEL, Number(level) || 1));

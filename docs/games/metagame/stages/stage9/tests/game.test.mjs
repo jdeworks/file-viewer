@@ -1,8 +1,8 @@
 // game.test.mjs — Stage 9: the movement/level table + the mode-dispatching CROSS evaluation.
 import assert from "node:assert/strict";
 import {
-  levelConfig, crossAttempt, solveMoment, rotSpeedFor, renderLevel,
-  movementForLevel, LEVELS, BOSS_LEVEL
+  levelConfig, crossAttempt, crossOutcome, solveMoment, rotSpeedFor, renderLevel,
+  movementForLevel, modeHint, LEVELS, BOSS_LEVEL
 } from "../game.js";
 
 // ── movement structure: 16 levels, boss last, learnable front / onlineUnstable back third ──────────
@@ -57,5 +57,30 @@ for (let level = 1; level <= BOSS_LEVEL; level += 1) {
 }
 
 assert.equal(rotSpeedFor(0, 7), rotSpeedFor(0, 7), "rotSpeed deterministic per seed/level");
+
+// ── crossOutcome: drives the arena hit/miss flash (pure classification of a CROSS result) ────────────
+assert.equal(crossOutcome(null), "miss", "no result is a miss");
+assert.equal(crossOutcome({ hit: false, distance: 40, tolerance: 30 }), "miss", "a non-hit is a miss");
+assert.equal(crossOutcome({ hit: true, distance: 2, tolerance: 30 }), "perfect", "inner quarter is perfect");
+assert.equal(crossOutcome({ hit: true, distance: 7.5, tolerance: 30 }), "perfect", "exactly tol/4 is perfect");
+assert.equal(crossOutcome({ hit: true, distance: 12, tolerance: 30 }), "hit", "outer half is an ordinary hit");
+assert.equal(crossOutcome({ hit: true, distance: 0, tolerance: 0 }), "hit", "missing tolerance never crashes");
+// Every real solveMoment is a successful press, so it flashes positive ("perfect" or "hit"), never "miss".
+for (let level = 1; level <= BOSS_LEVEL; level += 1) {
+  const seed = level * 13 + 1;
+  const sol = solveMoment(seed, level);
+  const t = Array.isArray(sol) ? sol[0] : sol;
+  assert.notEqual(crossOutcome(crossAttempt({ seed, elapsedMs: t, level })), "miss", `level ${level}: solve never flashes miss`);
+}
+
+// ── modeHint: each archetype announces its actual verb (onboarding for the unmarked spikes) ───────────
+assert.match(modeHint(levelConfig(1)), /CROSS when it faces the top/, "simple hint");
+assert.match(modeHint(levelConfig(7)), /3 crosses in a row/, "rhythm hint names the chain length");
+assert.match(modeHint(levelConfig(8)), /4 crosses in a row/, "rhythm chain length is per-level");
+assert.match(modeHint(levelConfig(9)), /BOTH gaps/, "dual hint");
+assert.match(modeHint(levelConfig(11)), /eye/, "stealth hint names the eye");
+assert.match(modeHint(levelConfig(13)), /3 gaps/, "multigap hint names the gap count");
+assert.match(modeHint(levelConfig(15)), /blackout/i, "darkzone hint names the blackout");
+assert.equal(typeof modeHint(undefined), "string", "modeHint never throws on missing cfg");
 
 console.log("stage9 game tests passed");

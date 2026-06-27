@@ -499,6 +499,21 @@ function movementForLevel(level) {
   const lvl = Number(level) || 1;
   return MOVEMENTS.find((m) => m.levels.includes(lvl)) || MOVEMENTS[0];
 }
+var MODE_HINTS = {
+  simple: "watch the gap; CROSS when it faces the top (12 o'clock).",
+  oscillating: "the rotation speed breathes in and out — CROSS as the gap reaches the top.",
+  ghostecho: "faint ghosts mark your last two presses — read how early/late you were and correct.",
+  dual: "two rings now — CROSS only when BOTH gaps face the top at the same instant.",
+  stealth: "an eye sweeps the ring — CROSS only when the gap is up AND the eye is looking away.",
+  reversing: "the ring keeps flipping direction — track the flips and CROSS at the top.",
+  darkzone: "a blackout hides the top — extrapolate from the speed when the gap arrives there."
+};
+function modeHint(cfg) {
+  if (!cfg) return MODE_HINTS.simple;
+  if (cfg.mode === "rhythm") return `hold the beat — land ${Math.max(2, cfg.chain || 3)} crosses in a row; one miss resets the chain.`;
+  if (cfg.mode === "multigap") return `${Math.max(2, cfg.gaps || 3)} gaps look identical — only one is real. find it run by run.`;
+  return MODE_HINTS[cfg.mode] || MODE_HINTS.simple;
+}
 function levelConfig(level) {
   const lvl = Math.max(1, Math.min(BOSS_LEVEL, Number(level) || 1));
   const base = LEVEL_TABLE[lvl] || LEVEL_TABLE[1];
@@ -507,6 +522,11 @@ function levelConfig(level) {
 }
 
 // ../../docs/games/metagame/stages/stage9/game.js
+function crossOutcome(result) {
+  if (!result || !result.hit) return "miss";
+  const tol = Number(result.tolerance) || 0;
+  return tol > 0 && Number(result.distance) <= tol / 4 ? "perfect" : "hit";
+}
 function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
   let cfg = levelConfig(level);
   if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
@@ -807,6 +827,9 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const log = root.querySelector(".s9-log");
+  const hud = root.querySelector(".s9-hud");
+  const FLASH_CLASSES = ["s9-arena--perfect", "s9-arena--hit", "s9-arena--miss"];
+  let flashTimer = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -851,7 +874,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       liveSeed = getBossSeed({ state, actions });
       state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
       pushLog2("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
-      return;
+      return "miss";
     }
     const seed = activeSeed();
     const toleranceMult = consumeStabilizer(state);
@@ -869,30 +892,44 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
         } else {
           pushLog2(`on beat (${rhythmChain}/${need}). hold the cadence.`);
         }
-      } else {
-        rhythmChain = 0;
-        state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-        pushLog2(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+        return crossOutcome(result);
       }
-      return;
+      rhythmChain = 0;
+      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      pushLog2(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      return "miss";
     }
     if (result.hit) {
       state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
       pushLog2(`level ${level} crossed (gap at top). advancing.`);
       advanceFrom(level);
-    } else {
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-      pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+      return crossOutcome(result);
     }
+    state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+    pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+    return "miss";
   }
   function challengeBoss() {
     const result = recordObserverBossAttempt({ state, actions, elapsedMs });
     if (result.defeated) completeOnce({ stage: 9, defeated: true, btsPath: BTS_PATH });
+    return result.hit ? "perfect" : "miss";
   }
   function doCross() {
     if (state.boss.defeated) return;
-    if (state.currentLevel >= BOSS_LEVEL) challengeBoss();
-    else crossSublevel();
+    const outcome = state.currentLevel >= BOSS_LEVEL ? challengeBoss() : crossSublevel();
+    flashArena(outcome);
+  }
+  function flashArena(outcome) {
+    if (!outcome) return;
+    const el = fields.arena;
+    el.classList.remove(...FLASH_CLASSES);
+    void el.offsetWidth;
+    el.classList.add(`s9-arena--${outcome}`);
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      el.classList.remove(...FLASH_CLASSES);
+      flashTimer = null;
+    }, 360);
   }
   root.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
@@ -958,6 +995,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     repaint,
     destroy() {
       loop.stop();
+      if (flashTimer) clearTimeout(flashTimer);
       uninstallHook();
       root.remove();
     }
@@ -991,13 +1029,14 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const cfg = levelConfig(state.currentLevel);
     const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
     fields.seed.textContent = unstable ? lock.unlocked ? "0 (fixed cache)" : "live-random" : "stable";
+    hud.classList.toggle("s9-hud--unstable", unstable && !lock.unlocked);
     paintTach(cfg);
     paintAids();
     paintArena();
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
     else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
-    fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : "watch the gap; CROSS when it faces the top (12 o'clock).";
+    fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : modeHint(cfg);
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-5).map((line) => {

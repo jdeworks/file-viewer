@@ -7,17 +7,3 @@ export const serviceWorkerNotesText = [
   "",
   "Activate Offline Mode (Stage 9) after reading this note."
 ].join("\n");
-
-export function bossDiagram(lock) {
-  return [
-    "        EXIT",
-    "         |",
-    lock.unlocked ? "    fixed gap: learnable" : "    live gap: random",
-    "      \\  |  /",
-    "       \\ | /",
-    "   ----- O -----",
-    "       / | \\",
-    "      /  |  \\",
-    "        START"
-  ].join("\n");
-}
