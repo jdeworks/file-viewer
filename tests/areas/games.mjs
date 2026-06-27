@@ -671,23 +671,38 @@ export async function run(ctx) {
   pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage at the final wave');
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
+  // The thin-gate bypass is gone: there is no "simulate full loop" calibrate button.
+  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 7);
+  if (s5NoBypass) pass('Stage 5 is a real racer: 7 rounds + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
+  // The Jammer is gated behind the full run: from a fresh start the boss round is locked.
+  const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="6"]')?.disabled }));
+  if (s5Gate.cleared === 0 && s5Gate.bossLocked) pass('Stage 5 boss is locked until the run is cleared'); else fail('Stage 5 boss reachable from start');
+  // Play the six real rounds to reach the jammer.
+  const s5Cleared = await page.evaluate(() => window.__fvStage5.solveRun());
+  if (s5Cleared === 6) pass('Stage 5 run cleared: rounds 1–6 played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/6 rounds`);
+  // Load-bearing un-cheat: the jammer is unwinnable WITHOUT the calibrated counter-wave.
+  const s5Uncal = await page.evaluate(() => ({ outcome: window.__fvStage5.solveBoss(), defeated: window.__fvStage5.state().boss.defeated }));
+  if (s5Uncal.outcome === 'fail' && !s5Uncal.defeated) pass('Stage 5 jammer is unwinnable without calibration (load-bearing un-cheat)'); else fail('Stage 5 boss beatable without calibration');
+  // Open transmission_hum.mp3 (the real un-cheat is 14s of continuous playback in the media viewer).
   await page.click('[data-action="audio"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'transmission_hum.mp3' && window.__fv.state.type.id === 'media', null, { timeout: 5000 });
-  await page.click('[data-action="calibrate"]');
+  // Calibrate via the genuine counter-wave timeline (sets the same action the media-playback un-cheat does).
+  await page.evaluate(() => window.__fvStage5.calibrate());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return Boolean(save.actions?.['5.counter_wave_calibrated'] && save.achievements?.['stage5.counter_wave_calibrated']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.click('[data-action="boss"]');
+  // Now the cleared run + calibrated counter-wave defeats The Jammer.
+  await page.evaluate(() => window.__fvStage5.solveBoss());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(5) && save.unlockedStages?.includes(6);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 5 calibration action unlocks and clears Signal Racer');
+  pass('Stage 5: full run + calibrated counter-wave defeats Signal Racer');
 
   await page.waitForSelector('.stage6-protocol-codex', { timeout: 8000 });
   // The deck-builder hub is the entry point: the ONLY way to the boss is a full run (no bypass).

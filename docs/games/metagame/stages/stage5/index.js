@@ -41,4 +41,4 @@ export {
   applyCalibrationTick,
   runCalibrationTimeline,
 } from './calibration.js';
-export { raceHudModel, waveSamples } from './content.js';
+export { roundLogLine } from './content.js';

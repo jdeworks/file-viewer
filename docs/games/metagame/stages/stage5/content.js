@@ -1,27 +1,24 @@
-export function raceHudModel({ state, calibrated }) {
-  return {
-    position: `P${state.race.position}`,
-    lap: `${state.race.lap}/${state.race.totalLaps}`,
-    time: formatRaceTime(state.race.timeMs),
-    integrity: `${state.race.integrity}%`,
-    boost: '|'.repeat(state.race.boostSegments),
-    packets: state.packets,
-    jammerWave: waveSamples(state.race.timeMs, 0),
-    counterWave: calibrated ? waveSamples(state.race.timeMs, Math.PI) : [],
-  };
+// content.js — Stage 5 Signal Racer: narrative + presentation helpers (pure). One signal-warfare log
+// line per round, plus the glyph legend shown in the HUD. No game state lives here.
+
+export const roundLogLines = [
+  'signal corridor acquired. static interference at standard density.',
+  'the interference pulses. move on the gaps, not against them.',
+  'dense blocks ahead — choose which hit to take, not whether.',
+  'a shield lane drifts through the noise. ride it.',
+  'boost gates open on the beat. take the throughput, not just the safe line.',
+  'the channel splits and re-merges. hold your route through the noise.',
+  'jammer signal collapses into silence. the channel is yours.',
+];
+
+export function roundLogLine(roundIdx) {
+  return roundLogLines[Math.max(0, Math.min(roundLogLines.length - 1, Number(roundIdx) || 0))];
 }
 
-export function waveSamples(timeMs, phase = 0, count = 16) {
-  return Array.from({ length: count }, (_, index) => {
-    const t = (timeMs / 1000) + index * 0.25;
-    return Number(Math.sin(t * Math.PI * 2 / 3.5 + phase).toFixed(3));
-  });
-}
-
-export function formatRaceTime(ms) {
-  const total = Math.max(0, Math.trunc(Number(ms) || 0));
-  const minutes = Math.floor(total / 60000);
-  const seconds = Math.floor((total % 60000) / 1000);
-  const tenths = Math.floor((total % 1000) / 100);
-  return `${minutes}:${String(seconds).padStart(2, '0')}.${tenths}`;
-}
+export const GLYPH_LEGEND = [
+  ['░', 'static (−2)'],
+  ['▒', 'pulse (−2, off-beat hurts)'],
+  ['▓', 'dense block (−5)'],
+  ['>>', 'boost gate (+packets)'],
+  ['~', 'shield lane (phase through)'],
+];

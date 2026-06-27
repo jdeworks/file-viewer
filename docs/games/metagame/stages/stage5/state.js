@@ -7,16 +7,6 @@ export function defaultState(context = {}) {
   return {
     version: 1,
     packets: 125,
-    race: {
-      circuit: 'championship',
-      lap: 3,
-      totalLaps: 5,
-      timeMs: 42300,
-      integrity: 87,
-      boostSegments: 3,
-      position: 2,
-      jammerOffsetMs: -900,
-    },
     calibration: {
       seed: `signal-${seed}`,
       loopMs: LOOP_DURATION_MS,
@@ -54,7 +44,6 @@ export function normalizeState(state, context = {}) {
   const target = state && typeof state === 'object' ? state : {};
   target.version = 1;
   target.packets = Number.isFinite(target.packets) ? target.packets : fresh.packets;
-  target.race = mergePlain(fresh.race, target.race);
   target.calibration = mergePlain(fresh.calibration, target.calibration);
   target.calibration.loopMs = Number(target.calibration.loopMs) || fresh.calibration.loopMs;
   target.calibration.continuousMs = Math.max(0, Number(target.calibration.continuousMs) || 0);

@@ -28,8 +28,7 @@ export function raceTheJammer({ state, actions }) {
     return { defeated: false, locked: true };
   }
   state.boss.defeated = true;
-  state.race.position = 1;
-  state.race.jammerOffsetMs = 1200;
+  if (state.run) state.run.roundComplete = true;
   state.packets += 100;
   pushLog(state, bellMessages.defeated);
   return { defeated: true, locked: false };
