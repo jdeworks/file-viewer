@@ -5,6 +5,7 @@ export const ACHIEVEMENT_TEXT = 'I found the difference.';
 export const BTS_PATH = '/docs/bts/memory_grid.bts';
 export const MEMORY_V1_PATH = '/docs/examples/metagame/stage3/memory_v1.log';
 export const MEMORY_V2_PATH = '/docs/examples/metagame/stage3/memory_v2.log';
+export const MEMORY_V3_PATH = '/docs/examples/metagame/stage3/memory_v3.log';
 
 export const bellMessages = {
   start: 'a memory is not a file until it survives being changed.',
@@ -18,7 +19,7 @@ export const bodyHint = 'the leak is still spreading. keep restoring snapshots u
 
 export const lockedHintLadder = [
   'the grid remembers less every time you ask it.',
-  'two memory logs disagree. the disagreement matters.',
-  'compare memory_v1.log and memory_v2.log. read the changed hunks in order.',
-  'enter the restoration key formed by the diff pieces before fighting The Memory Leak.',
+  'THREE snapshots disagree. one chunk corrupts between each pair.',
+  'diff v1↔v2: the chunk lost there is the FIRST key piece. diff v2↔v3: the chunk lost there is the SECOND. the chunk still intact in v3 is the THIRD.',
+  'compare memory_v1.log, memory_v2.log and memory_v3.log — read the three chunks in corruption order, then enter the restoration key.',
 ];

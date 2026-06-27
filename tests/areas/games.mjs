@@ -796,20 +796,36 @@ export async function run(ctx) {
   const s3MidLock = await page.evaluate(() => window.__fvStage3.state().boss.unlocked);
   if (!s3MidLock) pass('Stage 3 boss stays locked after the body until the diff un-cheat'); else fail('Stage 3 boss unlocked without the diff');
 
-  // Boss un-cheat: the SEED-DERIVED restoration key lives only in the diff of the two memory logs.
-  // (Opening a generated file prompts the discard guard — accepted via the dialog handler above.)
-  await page.click('[data-action="v1"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'memory_v1.log', null, { timeout: 5000 });
-  const v1Text = await page.evaluate(() => window.__fv.state.intake.text);
-  const chunks = [...v1Text.matchAll(/restoration chunk (\S+)/g)].map((m) => m[1]);
-  if (chunks.length === 3 && chunks.every((c) => c && c !== '[missing]')) pass('Stage 3 memory_v1.log carries the run restoration chunks'); else fail('Stage 3 v1 chunks: ' + JSON.stringify(chunks));
-  // v2 (corrupted) has those chunks stripped — confirm the diff is real.
-  await page.click('[data-action="v2"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'memory_v2.log', null, { timeout: 5000 });
-  const v2Text = await page.evaluate(() => window.__fv.state.intake.text);
-  if (/\[missing\]/.test(v2Text) && !chunks.some((c) => v2Text.includes(c))) pass('Stage 3 memory_v2.log shows the chunks as [missing] (the diff)'); else fail('Stage 3 v2 should hide the chunks');
+  // Boss un-cheat: the SEED-DERIVED restoration key lives only in a THREE-WAY diff of the memory logs.
+  // Each chunk corrupts on a fixed schedule — pieces[0] lost v1→v2, pieces[1] lost v2→v3, pieces[2]
+  // survives in v3 — and display order is seed-shuffled, so reading one log top-to-bottom is the wrong
+  // order. We must compare all three. (Opening a generated file prompts the discard guard, auto-accepted.)
+  const sectorsOf = (text) => {
+    const out = {};
+    for (const m of text.matchAll(/sector (\d+): restoration chunk (\S+)/g)) out[m[1]] = m[2];
+    return out;
+  };
+  const readLog = async (action, filename) => {
+    await page.click(`[data-action="${action}"]`);
+    await page.waitForFunction((f) => window.__fv.state.intake?.filename === f, filename, { timeout: 5000 });
+    return page.evaluate(() => window.__fv.state.intake.text);
+  };
+  const s1 = sectorsOf(await readLog('v1', 'memory_v1.log'));
+  const s2 = sectorsOf(await readLog('v2', 'memory_v2.log'));
+  const s3 = sectorsOf(await readLog('v3', 'memory_v3.log'));
+  const intact = (m) => Object.values(m).filter((v) => v !== '[missing]');
+  if (intact(s1).length === 3 && intact(s2).length === 2 && intact(s3).length === 1)
+    pass('Stage 3 three-way diff: v1 has 3 chunks, v2 lost one, v3 lost two'); else fail('Stage 3 3-log corruption schedule: ' + JSON.stringify({ s1, s2, s3 }));
+  // Reconstruct the key by the corruption-order rule (the 3-way diff skill) and confirm it matches the
+  // seed-derived key — proving the diff is load-bearing, not bypassed.
+  const lostV1V2 = Object.keys(s1).find((sec) => s1[sec] !== '[missing]' && s2[sec] === '[missing]');
+  const lostV2V3 = Object.keys(s2).find((sec) => s2[sec] !== '[missing]' && s3[sec] === '[missing]');
+  const survivor = Object.keys(s3).find((sec) => s3[sec] !== '[missing]');
+  const recovered = (s1[lostV1V2] || '') + (s2[lostV2V3] || '') + (s3[survivor] || '');
+  const derived = await page.evaluate(() => window.__fvStage3.deriveKey());
+  if (recovered.length === 9 && recovered === derived) pass('Stage 3 3-way diff (corruption order) reconstructs the restoration key'); else fail('Stage 3 3-way reconstruction: ' + JSON.stringify({ recovered, derived }));
   await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
-  await page.fill('.s3-key', chunks.join(''));
+  await page.fill('.s3-key', recovered);
   await page.click('[data-action="restore"]');
   await page.waitForFunction(() => {
     try {

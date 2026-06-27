@@ -1,6 +1,6 @@
 import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "./boss.js";
-import { memoryV1Text, memoryV2Text } from "./content.js";
-import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
+import { memoryV1Text, memoryV2Text, memoryV3Text } from "./content.js";
+import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH, MEMORY_V3_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
 import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, wrongCells } from "./board.js";
 import { FILLED, COLOR_B, UNKNOWN } from "./nonogram.js";
@@ -47,6 +47,7 @@ export function renderStage3(ctx) {
           <div class="s3-controls">
             <button type="button" data-action="v1">open memory_v1.log</button>
             <button type="button" data-action="v2">open memory_v2.log</button>
+            <button type="button" data-action="v3">open memory_v3.log</button>
             <button type="button" data-action="restore">restore key</button>
             <button type="button" data-action="boss">solve leak</button>
             <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
@@ -252,6 +253,7 @@ export function renderStage3(ctx) {
     if (action === "check") { useCheck(); return; }
     if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
     if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
+    if (action === "v3") viewer?.openFile?.(MEMORY_V3_PATH, { text: memoryV3Text(state), source: "stage3" });
     if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });
     if (action === "boss" && defeatMemoryLeak(state)) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
     if (action === "bts") bts?.open?.(3);

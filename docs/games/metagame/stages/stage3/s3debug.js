@@ -7,7 +7,7 @@
 //     state(),               // live save state
 //     solveCurrent(),        // solve the current snapshot (advances solvedCount/corruption)
 //     bodySolver(),          // play snapshots until corruption peaks at 8 → { reached, corruption, solved }
-//     deriveKey(),           // the seed-derived restoration key (what the v1/v2 diff reveals)
+//     deriveKey(),           // the seed-derived restoration key (what the v1/v2/v3 3-way diff reveals)
 //     tryRestoreKey(key),    // attempt the boss un-cheat with a key
 //     bossSolver(),          // defeat The Memory Leak once unlocked → bool
 //   };
