@@ -6,6 +6,7 @@
 import { ENEMY_TYPES, spawnEnemy } from "./enemies.js";
 import { TOWER_TYPES } from "./towers.js";
 import { resolveDamage } from "./damage.js";
+import { applyStatus, tickStatus, statusSpeedFactor, effectiveArmor, damageTakenMult, applyOnHit } from "./status.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
 import { mapWaveComposition } from "./wavegen.js";
 import { spawnSubBoss, subBossDef } from "./subboss.js";
@@ -69,6 +70,8 @@ export function tick(state, deltaMs, pathTiles) {
   state.combatClockMs = (state.combatClockMs || 0) + dt;
 
   spawnDueEnemies(state, dt, pathTiles);
+  applyFields(state);                  // attractor / slow fields stamp a slow status on enemies in range
+  statusPass(state, dt);               // decay effects + apply burn DoT (before movement/combat)
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
   reap(state, pathTiles);
@@ -116,11 +119,26 @@ function spawnDueEnemies(state, dt, pathTiles) {
   }
 }
 
+// Slow/attractor fields stamp a slow STATUS each tick (generalized from the old hard-coded attractor
+// check) so field slows compose with on-hit chill/freeze through one statusSpeedFactor.
+function applyFields(state) {
+  for (const t of state.towers) {
+    const def = TOWER_TYPES[t.type];
+    if (!def?.slow) continue;
+    for (const e of state.enemies) {
+      if (dist(t, e) <= def.range) applyStatus(e, 'slow', { factor: 1 - def.slow, ms: 250 });
+    }
+  }
+}
+
+function statusPass(state, dt) {
+  for (const e of state.enemies) tickStatus(state, e, dt);
+}
+
 function moveEnemies(state, dt, pathTiles, exitIndex) {
   const survivors = [];
   for (const e of state.enemies) {
-    const slowed = !e.slowImmune && inAttractorField(state, e, pathTiles);
-    const eff = e.speed * (slowed ? 0.5 : 1);
+    const eff = e.speed * statusSpeedFactor(e);
     e.pathIndex += eff * (dt / 1000);
     if (e.pathIndex >= exitIndex) {
       const def = enemyDef(e);
@@ -154,10 +172,13 @@ function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   let dmg = def.damage * bonus * (state.damageMult || 1); // Armory "Overclocked Emitters" scales all damage
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2; // depth-3 fold-back tiles deal double
+  dmg *= damageTakenMult(enemy); // `mark` status raises damage taken
   // Damage-type resolution (kinetic↓armor, thermal/arc/null bypass armor, arc +vs shield, null ignores
-  // shield, pure ignores resist). `ignoresArmor` is the legacy flag → null type for back-compat.
+  // shield, pure ignores resist). `ignoresArmor` is the legacy flag → null type for back-compat. Armor
+  // is the SHRED-adjusted live armor so the shred support tower actually opens enemies up.
   const type = def.damageType || (def.ignoresArmor ? 'null' : 'kinetic');
-  resolveDamage(enemy, dmg, type, { armor: enemy.armor });
+  resolveDamage(enemy, dmg, type, { armor: effectiveArmor(enemy) });
+  applyOnHit(enemy, def); // chill / burn / shred / stun the tower attaches on hit
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }
 
@@ -190,14 +211,6 @@ function reap(state, pathTiles) {
     else survivors.push(e);
   }
   state.enemies = survivors;
-}
-
-function inAttractorField(state, enemy, pathTiles) {
-  for (const t of state.towers) {
-    const def = TOWER_TYPES[t.type];
-    if (def?.slow && dist(t, enemy) <= def.range) return true;
-  }
-  return false;
 }
 
 function hubsCovering(state, tower) {

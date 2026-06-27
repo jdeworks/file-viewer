@@ -327,6 +327,97 @@ function clampResist(v) {
   return n > 1 ? 1 : n;
 }
 
+// ../../docs/games/metagame/stages/stage4/status.js
+var FREEZE_THRESHOLD = 100;
+var MOVEMENT_EFFECTS = /* @__PURE__ */ new Set(["slow", "chill", "freeze"]);
+function applyStatus(enemy, kind, payload = {}) {
+  if (!enemy) return false;
+  if (enemy.slowImmune && MOVEMENT_EFFECTS.has(kind)) return false;
+  const s = enemy.status || (enemy.status = {});
+  const ms = Math.max(0, Number(payload.ms) || 0);
+  switch (kind) {
+    case "slow": {
+      const factor = clamp012(payload.factor != null ? payload.factor : 0.5);
+      const cur = s.slow;
+      s.slow = { factor: cur ? Math.min(cur.factor, factor) : factor, ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "chill": {
+      const cur = s.chill || { stacks: 0, ms: 0 };
+      cur.stacks += Math.max(0, Number(payload.stacks) || 0);
+      cur.ms = Math.max(cur.ms, ms);
+      s.chill = cur;
+      if (cur.stacks >= FREEZE_THRESHOLD) {
+        delete s.chill;
+        applyStatus(enemy, "freeze", { ms: Math.max(ms, 1200) });
+      }
+      return true;
+    }
+    case "freeze":
+    case "stun": {
+      const cur = s[kind];
+      s[kind] = { ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "burn": {
+      const dps = Math.max(0, Number(payload.dps) || 0);
+      const cur = s.burn;
+      s.burn = { dps: Math.max(cur?.dps || 0, dps), ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "shred": {
+      const armor = clamp012(payload.armor || 0);
+      const cur = s.shred;
+      s.shred = { armor: Math.max(cur?.armor || 0, armor), ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "mark": {
+      const bonus = Math.max(0, Number(payload.bonus) || 0);
+      const cur = s.mark;
+      s.mark = { bonus: Math.max(cur?.bonus || 0, bonus), ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+function tickStatus(state, enemy, dt) {
+  const s = enemy?.status;
+  if (!s) return;
+  const ms = Math.max(0, Number(dt) || 0);
+  if (s.burn) resolveDamage(enemy, s.burn.dps * (ms / 1e3), "thermal");
+  for (const key of Object.keys(s)) {
+    s[key].ms -= ms;
+    if (s[key].ms <= 0) delete s[key];
+  }
+}
+function statusSpeedFactor(enemy) {
+  const s = enemy?.status;
+  if (!s) return 1;
+  if (s.freeze || s.stun) return 0;
+  let factor = 1;
+  if (s.slow) factor *= s.slow.factor;
+  if (s.chill) factor *= 1 - 0.4 * Math.min(1, s.chill.stacks / FREEZE_THRESHOLD);
+  return factor;
+}
+function effectiveArmor(enemy) {
+  const base = enemy?.armor || 0;
+  const shred = enemy?.status?.shred?.armor || 0;
+  return Math.max(0, base - shred);
+}
+function damageTakenMult(enemy) {
+  return 1 + (enemy?.status?.mark?.bonus || 0);
+}
+function applyOnHit(enemy, def) {
+  const onHit = def?.onHit;
+  if (!Array.isArray(onHit)) return;
+  for (const eff of onHit) if (eff && eff.kind) applyStatus(enemy, eff.kind, eff);
+}
+function clamp012(v) {
+  const n = Number(v) || 0;
+  return n < 0 ? 0 : n > 1 ? 1 : n;
+}
+
 // ../../docs/games/metagame/stages/stage4/waves.js
 var SPAWN_INTERVAL_MS = 700;
 var WAVES = {
@@ -602,6 +693,8 @@ function tick(state, deltaMs, pathTiles) {
   const exitIndex = pathTiles.length - 1;
   state.combatClockMs = (state.combatClockMs || 0) + dt;
   spawnDueEnemies(state, dt, pathTiles);
+  applyFields(state);
+  statusPass(state, dt);
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
   reap(state, pathTiles);
@@ -639,11 +732,22 @@ function spawnDueEnemies(state, dt, pathTiles) {
     state.enemies.push(e);
   }
 }
+function applyFields(state) {
+  for (const t of state.towers) {
+    const def = TOWER_TYPES[t.type];
+    if (!def?.slow) continue;
+    for (const e of state.enemies) {
+      if (dist(t, e) <= def.range) applyStatus(e, "slow", { factor: 1 - def.slow, ms: 250 });
+    }
+  }
+}
+function statusPass(state, dt) {
+  for (const e of state.enemies) tickStatus(state, e, dt);
+}
 function moveEnemies(state, dt, pathTiles, exitIndex) {
   const survivors = [];
   for (const e of state.enemies) {
-    const slowed = !e.slowImmune && inAttractorField(state, e, pathTiles);
-    const eff = e.speed * (slowed ? 0.5 : 1);
+    const eff = e.speed * statusSpeedFactor(e);
     e.pathIndex += eff * (dt / 1e3);
     if (e.pathIndex >= exitIndex) {
       const def = enemyDef(e);
@@ -675,8 +779,10 @@ function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   let dmg = def.damage * bonus * (state.damageMult || 1);
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2;
+  dmg *= damageTakenMult(enemy);
   const type = def.damageType || (def.ignoresArmor ? "null" : "kinetic");
-  resolveDamage(enemy, dmg, type, { armor: enemy.armor });
+  resolveDamage(enemy, dmg, type, { armor: effectiveArmor(enemy) });
+  applyOnHit(enemy, def);
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }
 function maybeFireSubBossAbility(state, enemy, pathTiles) {
@@ -706,13 +812,6 @@ function reap(state, pathTiles) {
     else survivors.push(e);
   }
   state.enemies = survivors;
-}
-function inAttractorField(state, enemy, pathTiles) {
-  for (const t of state.towers) {
-    const def = TOWER_TYPES[t.type];
-    if (def?.slow && dist(t, enemy) <= def.range) return true;
-  }
-  return false;
 }
 function hubsCovering(state, tower) {
   let n = 0;
