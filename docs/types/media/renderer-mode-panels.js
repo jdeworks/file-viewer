@@ -300,8 +300,8 @@ export async function mountVideoModePanels({
     return null;
   });
   registerMode('compare', 'Compare', async (panel) => {
-    const { mountModularCompare } = await import('./mixer/mixer-compare.js');
-    return mountModularCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
+    panel.append(createNote('Video compare is coming soon — it depends on the timeline frame model.'));
+    return null;
   });
 
   if (watchMode) {

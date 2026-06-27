@@ -9,7 +9,7 @@ import {
   renderVideoMixWithFfmpeg,
   runVideoProxyRender,
   selectTarget,
-  setElementTransition,
+  setElementTransition, splitElement,
   trimElement,
   updateElement,
 } from './index.js';
@@ -87,6 +87,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: fitZoom(root, project) };
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
     if (action.type === 'capture-keyframe') project = captureElementKeyframe(project, action.elementId, viewport.cursorMs);
+    if (action.type === 'split') project = splitElement(project, action.elementId || selectedEditableElement(project)?.id || project.elements[0]?.id, viewport.cursorMs);
     if (action.type === 'update-element') project = updateProjectElementField(project, action);
     render();
   };
@@ -213,7 +214,8 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     root.querySelectorAll('.mmx-frame-preview').forEach((n) => n.remove());
     if (hasVisualElements(project)) {
       const snap = createMixerSnapshot(project);
-      renderSeekFramePreview(root, buildSeekFramePreview(snap, viewport.cursorMs, { frames: visualRuntime.frames, thumbnails: visualRuntime.thumbnails }));
+      const previewPanel = renderSeekFramePreview(root, buildSeekFramePreview(snap, viewport.cursorMs, { frames: visualRuntime.frames, thumbnails: visualRuntime.thumbnails }));
+      lanesContainer.before(previewPanel);
     }
     // Extract inspector from a throwaway renderMixerShell call; replaces/appends it to root.
     const tmp = document.createElement('div');

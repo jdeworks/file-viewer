@@ -121,24 +121,21 @@ export function buildLaneControlsEl(laneModel, element) {
   solo.dataset.laneId = laneModel.id;
   solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
   const gain = laneRange('mmx-mix-lane-gain', laneModel.id, laneModel.audio?.gain ?? 1, 0, 2, 0.01, 'Lane gain');
-  const fadeIn = laneRange('mmx-mix-fade-in', laneModel.id, element?.audio?.fadeInMs ?? 0, 0, 5000, 10, 'Fade in');
-  const fadeOut = laneRange('mmx-mix-fade-out', laneModel.id, element?.audio?.fadeOutMs ?? 0, 0, 5000, 10, 'Fade out');
-  controls.append(mute, solo, gain, fadeIn, fadeOut);
+  const editBtn = createButton('⚙', 'Edit lane settings', 'mmx-mix-lane-edit al-btn');
+  editBtn.dataset.laneId = laneModel.id;
+  controls.append(mute, solo, gain, editBtn);
   return controls;
 }
 
-// Sync per-lane control values and aria states on each render.
+// Sync per-lane gutter control values and aria states on each render.
+// Fade-in/out are in the per-lane modal (updated via updateLaneModalValues) so not synced here.
 export function updateLaneControlsState(laneEl, laneModel, element) {
   const mute = laneEl.querySelector('.mmx-mix-mute');
   const solo = laneEl.querySelector('.mmx-mix-solo');
   const gain = laneEl.querySelector('.mmx-mix-lane-gain');
-  const fadeIn = laneEl.querySelector('.mmx-mix-fade-in');
-  const fadeOut = laneEl.querySelector('.mmx-mix-fade-out');
   if (mute) mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
   if (solo) solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
   if (gain) gain.value = String(laneModel.audio?.gain ?? 1);
-  if (fadeIn) fadeIn.value = String(element?.audio?.fadeInMs ?? 0);
-  if (fadeOut) fadeOut.value = String(element?.audio?.fadeOutMs ?? 0);
 }
 
 // Build a thumbnail strip for a visual element (mirrors renderThumbnailStrip in mixer-renderer).

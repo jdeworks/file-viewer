@@ -66,6 +66,32 @@ export async function runAudioMixerAndPlaylist(ctx) {
     const hasRuler = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-mix-ruler');
     if (hasRuler) pass('audio mixer: time ruler present above lanes');
     else fail('audio mixer: time ruler missing');
+    // ── Per-lane Edit modal: open it, check EQ + Dynamics buttons, expand EQ ──
+    const laneEditBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-edit');
+    if (laneEditBtn) {
+      await laneEditBtn.click();
+      const modalState = await page.evaluate(() => {
+        const modal = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden])');
+        if (!modal) return { open: false };
+        return { open: true, hasEq: !!modal.querySelector('.mmx-mix-lane-eq-btn'), hasDyn: !!modal.querySelector('.mmx-mix-lane-dyn-btn') };
+      });
+      if (modalState.open && modalState.hasEq && modalState.hasDyn)
+        pass('audio mixer: lane Edit button opens modal with EQ + Dynamics buttons');
+      else fail('mixer lane modal: ' + JSON.stringify(modalState));
+      await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden]) .mmx-mix-lane-eq-btn');
+      const eqBands = await page.$$eval(
+        '#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-eq-section:not([hidden]) .mmx-mix-lane-eq-band-gain',
+        (els) => els.length,
+      );
+      if (eqBands === 9) pass('audio mixer: EQ toggle reveals 9 band sliders');
+      else fail('mixer EQ band count: ' + eqBands);
+      await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden]) .mmx-mix-lane-modal-close');
+      const stillOpen = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden])');
+      if (!stillOpen) pass('audio mixer: modal closes via close button');
+      else fail('mixer modal still visible after close button click');
+    } else {
+      pass('audio mixer: Edit button check skipped (no lane present yet)');
+    }
     // Clicking a lane selects it and shows the selection panel with Start + Gain fields.
     const firstTrackCanvas = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-track .al-canvas-wrap');
     if (firstTrackCanvas) {

@@ -61,6 +61,7 @@ import {
   updateLaneControlsState,
   updateMixRuler,
 } from './mixer-audio-multi-ui.js';
+import { buildLaneEditorModal, updateLaneModalValues } from './mixer-audio-multi-eq.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -108,6 +109,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   const inspector = document.createElement('aside');
   inspector.className = 'mmx-inspector';
   const clipLanes = new Map();
+  const laneModals = new Map();
   const selPanel = buildSelectionPanel({
     getProject: () => project, setProject: (p) => { project = p; }, getClipLanes: () => clipLanes, getViewport: () => viewport,
   });
@@ -157,7 +159,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
 
   function reconcileLanes() {
     const laneIds = new Set(project.lanes.map((l) => l.id));
-    for (const [id, lane] of clipLanes) if (!laneIds.has(id)) { lane.el.remove(); clipLanes.delete(id); }
+    for (const [id, lane] of clipLanes) if (!laneIds.has(id)) { lane.el.remove(); clipLanes.delete(id); laneModals.get(id)?.remove(); laneModals.delete(id); }
     for (const lm of project.lanes) {
       if (!clipLanes.has(lm.id)) {
         const el = firstElementForLane(project, lm.id);
@@ -168,6 +170,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
         lane.el.querySelector('.al-track-label').append(buildLaneControlsEl(lm, el));
         lanesContainer.append(lane.el);
         clipLanes.set(lm.id, lane);
+        const modal = buildLaneEditorModal(lm, el, { getProject: () => project, setProject: (p) => { project = p; }, clipLanes, getViewport: () => viewport });
+        root.append(modal); laneModals.set(lm.id, modal);
       }
       const lane = clipLanes.get(lm.id);
       if (lane) lanesContainer.append(lane.el);
@@ -189,6 +193,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       const clipView = buildClipView(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
       if (clipView) lane.update(clipView);
       updateLaneControlsState(lane.el, laneModel, element);
+      updateLaneModalValues(laneModals.get(laneId), laneModel, element);
       if (element?.capabilities?.hasVideo || element?.capabilities?.hasImage) {
         lane.canvasWrap.querySelector('.mmx-thumb-strip')?.remove();
         lane.canvasWrap.append(buildThumbnailStrip(element, visualRuntime.thumbnails));
@@ -214,11 +219,9 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     const target = event.target;
     if (!target?.matches) return;
     if (target.matches('.mmx-mix-lane-gain')) {
-      project = updateLane(project, target.dataset.laneId, (lane) => ({
-        ...lane,
-        audio: { ...lane.audio, gain: clamp(Number(target.value), 0, 2) },
-      }));
-      render();
+      const lid = target.dataset.laneId;
+      project = updateLane(project, lid, (lane) => ({ ...lane, audio: { ...lane.audio, gain: clamp(Number(target.value), 0, 2) } }));
+      const cl = clipLanes.get(lid); if (cl) cl.update(buildClipView(project, lid, viewport.cursorMs, viewport.pxPerMs * 1000));
     }
     if (target.matches('.mmx-mix-master-slider')) {
       project = updateMaster(project, (master) => ({
@@ -226,17 +229,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
         audio: { ...master.audio, gain: clamp(Number(target.value), 0, 2) },
       }));
       render();
-    }
-    if (target.matches('.mmx-mix-fade-in, .mmx-mix-fade-out')) {
-      const field = target.matches('.mmx-mix-fade-in') ? 'fadeInMs' : 'fadeOutMs';
-      const elementId = firstElementForLane(project, target.dataset.laneId)?.id;
-      if (elementId) {
-        project = updateElement(project, elementId, (element) => ({
-          ...element,
-          audio: { ...element.audio, [field]: Math.max(0, Number(target.value) || 0) },
-        }));
-        render();
-      }
     }
     if (target.dataset?.action === 'update-element') {
       project = updateProjectElementField(project, {
@@ -260,6 +252,12 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       project = addGeneratedLane(project, 'room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
       render(); return;
     }
+    if (button.matches('.mmx-mix-lane-edit')) {
+      const lid = button.dataset.laneId;
+      for (const [id, m] of laneModals) if (id !== lid) m.hidden = true;
+      const m = laneModals.get(lid); if (m) m.hidden = !m.hidden; return;
+    }
+    if (button.matches('.mmx-mix-lane-modal-close')) { const m = button.closest('.mmx-mix-lane-modal'); if (m) m.hidden = true; return; }
     if (button.matches('.mmx-mix-mute, .mmx-mix-solo')) {
       const field = button.matches('.mmx-mix-mute') ? 'muted' : 'solo';
       project = updateLane(project, button.dataset.laneId, (lane) => ({ ...lane, [field]: !lane[field] }));
