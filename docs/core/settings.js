@@ -2,6 +2,7 @@
 // and descriptor-driven UI. Hidden fields never render. Presets are explicit per-type
 // (declared in index.js settings.presets) — no directory listing needed.
 import { descriptorsFor, applyMonacoOptions, GLOBAL_KEYS, CATEGORY_ORDER, CATEGORY_LABEL, CATEGORY_OPEN } from './settings-schema.js';
+import { HEAVY_PACKAGES, mountHeavyReload, unmountHeavyReload } from './heavy-packages.js';
 
 const SETTINGS_VERSION = 1;
 const typeKey = (id) => 'fv:settings:type:' + id;
@@ -234,6 +235,15 @@ export function renderSettings(container, model, { onChange, toast }) {
         info.appendChild(l);
         if (d.hint) { const h = document.createElement('div'); h.className = 'set-hint'; h.textContent = d.hint; info.appendChild(h); }
         row.append(info, control(d, id)); det.appendChild(row);
+        // Heavy opt-in packages: enabling kicks off an eager download + a reload-to-apply button
+        // that stays disabled until the download finishes.
+        if (d.type === 'bool' && HEAVY_PACKAGES[d.key]) {
+          const chk = row.querySelector('input[type="checkbox"]');
+          chk.addEventListener('change', () => {
+            if (chk.checked) mountHeavyReload(row, d.key);
+            else unmountHeavyReload(row);
+          });
+        }
       }
       groupsHost.appendChild(det);
     }
