@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { defaultState } from "../state.js";
 import { makeRng } from "../rng.js";
-import { advanceCycle, applyRepair, applyStabilizer, toggleHighLoad, BASE_REPAIR_UNITS_PER_CYCLE } from "../engine.js";
+import { advanceCycle, applyRepair, applyStabilizer, buildStabilizer, toggleHighLoad, BASE_REPAIR_UNITS_PER_CYCLE } from "../engine.js";
 
 function mkState() {
   const s = defaultState();
@@ -61,6 +61,17 @@ const get = (s, id) => s.nodes.find((n) => n.id === id);
   assert.equal(get(s, "C1").health, 100, "stabilized node did not decay");
   assert.equal(toggleHighLoad(s, "C1").ok, false, "core cannot go high-load");
   assert.equal(toggleHighLoad(s, "P1").ok, true, "production can go high-load");
+}
+
+// ── buildStabilizer: spends banked States, validated against the balance ───────────────────────────
+{
+  const s = mkState();
+  s.states = 100;
+  assert.equal(buildStabilizer(s, 40).ok, true, "affordable stabilizer built");
+  assert.equal(s.states, 60, "States spent");
+  assert.equal(s.stabilizers, 1, "stabilizer banked");
+  assert.equal(buildStabilizer(s, 999).ok, false, "unaffordable stabilizer rejected");
+  assert.equal(s.stabilizers, 1, "no stabilizer on a failed build");
 }
 
 console.log("stage8 engine tests passed");

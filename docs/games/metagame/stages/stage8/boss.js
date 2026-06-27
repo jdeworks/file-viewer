@@ -3,9 +3,15 @@ import {
   ACHIEVEMENT_TEXT,
   ACTION_NAME,
   SALVAGE_REQUIRED,
+  STATES_REQUIRED,
+  MIN_CYCLE,
+  BURN_CYCLES,
   bellMessages,
+  gateHint,
   lockedHintLadder
 } from "./messages.js";
+import { simulateHeatDeath } from "./burn.js";
+import { makeRng } from "./rng.js";
 
 export function hasSalvageArchived(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
@@ -85,33 +91,63 @@ export function applyExternalDebrisImport({ state, actions }) {
   }
 }
 
+// Heat Death is TRIPLE-gated (closes the old two-click bypass): it unlocks only when ALL hold —
+//   1. the load-bearing drag-drop archive ACTION (8.salvage_archived) has fired,
+//   2. a salvage floor of archived debris value is banked,
+//   3. cumulative earned States reach the reserve threshold (the burn drains everything), and
+//   4. the field has survived a minimum number of cycles.
+// A fresh field / two-click attempt fails gates 2–4 outright, so it returns LOCKED.
 export function getBossLockState({ actions, state }) {
   const actionReady = hasSalvageArchived(actions);
-  const enoughSalvage = Number(state.salvageTotal || 0) >= SALVAGE_REQUIRED;
-  const unlocked = actionReady && enoughSalvage;
-  const hintIndex = Math.min(Math.max(Number(state.boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  return {
+  const salvageTotal = Number(state.salvageTotal || 0);
+  const totalEarned = Number(state.totalStatesEarned || 0);
+  const cycle = Number(state.cycle || 0);
+  const enoughSalvage = salvageTotal >= SALVAGE_REQUIRED;
+  const enoughStates = totalEarned >= STATES_REQUIRED;
+  const enoughCycles = cycle >= MIN_CYCLE;
+  const unlocked = actionReady && enoughSalvage && enoughStates && enoughCycles;
+  const lock = {
     unlocked,
     defeated: Boolean(state.boss.defeated),
     actionReady,
     enoughSalvage,
-    salvageTotal: Number(state.salvageTotal || 0),
+    enoughStates,
+    enoughCycles,
+    salvageTotal,
     salvageRequired: SALVAGE_REQUIRED,
+    totalEarned,
+    statesRequired: STATES_REQUIRED,
+    cycle,
+    minCycle: MIN_CYCLE,
     defeatPossible: unlocked,
-    burnCycles: unlocked ? 10 : 0,
-    hint: unlocked ? "archived States are sufficient. Heat Death can be waited out." : lockedHintLadder[hintIndex]
+    burnCycles: BURN_CYCLES
   };
+  lock.hint = gateHint(lock);
+  return lock;
 }
 
-export function recordHeatDeathAttempt({ state, actions }) {
+// Challenge Heat Death. If locked → failure (rewind). If unlocked → run the real escalating burn:
+// surviving it (banked States outlast ~10 escalating drain cycles, Stabilizers pausing the worst)
+// defeats it; failing the burn rewinds to the warning checkpoint. `rng` is a seeded bundle from the
+// caller (run.seed-derived) so the burn replays identically across reloads.
+export function recordHeatDeathAttempt({ state, actions, rng }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
-  if (!lock.unlocked) return recordHeatDeathFailure(state, lock);
+  if (!lock.unlocked) return { ...recordHeatDeathFailure(state, lock), locked: true };
+
+  const burn = simulateHeatDeath(state, rng || makeRng("8:burn"));
+  state.boss.burn = burn;
+  if (!burn.survived) {
+    pushLog(state, `Heat Death overran reserves at burn cycle ${burn.failedAt}.`);
+    return { ...recordHeatDeathFailure(state, lock), burn, locked: false };
+  }
+  state.states = Math.max(0, Math.round(burn.remainingStates));
+  state.stabilizers = burn.stabilizersLeft;
   state.boss.defeated = true;
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
   pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, btsAvailable: true };
+  return { defeated: true, unlocked: true, btsAvailable: true, burn };
 }
 
 export function recordHeatDeathFailure(state, lock = null) {

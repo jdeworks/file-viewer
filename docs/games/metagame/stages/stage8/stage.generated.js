@@ -12,6 +12,10 @@ var ACHIEVEMENT_ID = "stage8.salvage_archived";
 var ACHIEVEMENT_TEXT = "I sorted the wreckage.";
 var BTS_PATH = "/docs/bts/entropy_field.bts";
 var SALVAGE_REQUIRED = 72;
+var STATES_REQUIRED = 300;
+var MIN_CYCLE = 8;
+var BURN_CYCLES = 10;
+var STABILIZER_COST = 40;
 var bellMessages = {
   start: "something is degrading. I noticed too late to stop it.",
   debris: "there was something left in the wreckage. it won't last long.",
@@ -26,11 +30,83 @@ var lockedHintLadder = [
   "the States from failed nodes cool into .sav debris in /entropy/debris/.",
   "move that debris into /entropy/active_archive/ — the Archive button or drag/drop — and bank enough before Heat Death."
 ];
+function gateHint(lock) {
+  if (!lock.actionReady) return "move a .sav from /entropy/debris/ into /entropy/active_archive/ — that is the lesson.";
+  if (!lock.enoughSalvage) return `archive more wreckage: salvage ${lock.salvageTotal}/${lock.salvageRequired}.`;
+  if (!lock.enoughCycles) return `survive longer: cycle ${lock.cycle}/${lock.minCycle} before Heat Death will commit.`;
+  if (!lock.enoughStates) return `bank deeper reserves: ${lock.totalEarned}/${lock.statesRequired} States earned. the burn drains everything.`;
+  return "the reserves are deep enough. Heat Death can be endured.";
+}
 var btsSummary = [
   "Stage 8 uses internal drag and drop because OS file dragging behaves differently across browsers, touch devices, and assistive technology.",
   "The critical lesson is still the file action: a generated .sav moves from debris into an active archive before decay.",
   "External import can exist as a bonus, but Heat Death is balanced around the internal archive path and its accessible fallback."
 ];
+
+// ../../docs/games/metagame/stages/stage8/burn.js
+function baseDrain(i) {
+  return 12 + i * 3;
+}
+function simulateHeatDeath(state, rng) {
+  let states = Math.max(0, Number(state.states || 0));
+  let stabilizers = Math.max(0, Number(state.stabilizers || 0));
+  const trace = [];
+  for (let i = 0; i < BURN_CYCLES; i += 1) {
+    let drain = baseDrain(i) + (rng && typeof rng.int === "function" ? rng.int(0, 4) : 2);
+    let paused = false;
+    if (stabilizers > 0 && drain > states) {
+      stabilizers -= 1;
+      paused = true;
+      drain = Math.floor(drain / 2);
+    }
+    states -= drain;
+    trace.push({ cycle: i + 1, drain, paused, remaining: states });
+    if (states < 0) {
+      return { survived: false, failedAt: i + 1, trace, remainingStates: states, stabilizersLeft: stabilizers };
+    }
+  }
+  return { survived: true, trace, remainingStates: states, stabilizersLeft: stabilizers };
+}
+
+// ../../docs/games/metagame/stages/stage8/rng.js
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i += 1) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h << 13 | h >>> 19;
+  }
+  return () => {
+    h = Math.imul(h ^ h >>> 16, 2246822507);
+    h = Math.imul(h ^ h >>> 13, 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+function mulberry32(a) {
+  return () => {
+    a |= 0;
+    a = a + 1831565813 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function makeRng(seed) {
+  const next = mulberry32(xmur3(String(seed))());
+  const float = () => next();
+  const int = (lo, hi) => lo + Math.floor(next() * (hi - lo + 1));
+  const pick = (arr) => arr[Math.floor(next() * arr.length)];
+  const chance = (p) => next() < p;
+  const shuffle = (arr) => {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(next() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+  return { float, int, pick, chance, shuffle };
+}
 
 // ../../docs/games/metagame/stages/stage8/boss.js
 function hasSalvageArchived(actions) {
@@ -96,30 +172,49 @@ function archiveSelectedDebris({ state, actions, achievements, bell, source = "a
 }
 function getBossLockState({ actions, state }) {
   const actionReady = hasSalvageArchived(actions);
-  const enoughSalvage = Number(state.salvageTotal || 0) >= SALVAGE_REQUIRED;
-  const unlocked = actionReady && enoughSalvage;
-  const hintIndex = Math.min(Math.max(Number(state.boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
-  return {
+  const salvageTotal = Number(state.salvageTotal || 0);
+  const totalEarned = Number(state.totalStatesEarned || 0);
+  const cycle = Number(state.cycle || 0);
+  const enoughSalvage = salvageTotal >= SALVAGE_REQUIRED;
+  const enoughStates = totalEarned >= STATES_REQUIRED;
+  const enoughCycles = cycle >= MIN_CYCLE;
+  const unlocked = actionReady && enoughSalvage && enoughStates && enoughCycles;
+  const lock = {
     unlocked,
     defeated: Boolean(state.boss.defeated),
     actionReady,
     enoughSalvage,
-    salvageTotal: Number(state.salvageTotal || 0),
+    enoughStates,
+    enoughCycles,
+    salvageTotal,
     salvageRequired: SALVAGE_REQUIRED,
+    totalEarned,
+    statesRequired: STATES_REQUIRED,
+    cycle,
+    minCycle: MIN_CYCLE,
     defeatPossible: unlocked,
-    burnCycles: unlocked ? 10 : 0,
-    hint: unlocked ? "archived States are sufficient. Heat Death can be waited out." : lockedHintLadder[hintIndex]
+    burnCycles: BURN_CYCLES
   };
+  lock.hint = gateHint(lock);
+  return lock;
 }
-function recordHeatDeathAttempt({ state, actions }) {
+function recordHeatDeathAttempt({ state, actions, rng }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
-  if (!lock.unlocked) return recordHeatDeathFailure(state, lock);
+  if (!lock.unlocked) return { ...recordHeatDeathFailure(state, lock), locked: true };
+  const burn = simulateHeatDeath(state, rng || makeRng("8:burn"));
+  state.boss.burn = burn;
+  if (!burn.survived) {
+    pushLog(state, `Heat Death overran reserves at burn cycle ${burn.failedAt}.`);
+    return { ...recordHeatDeathFailure(state, lock), burn, locked: false };
+  }
+  state.states = Math.max(0, Math.round(burn.remainingStates));
+  state.stabilizers = burn.stabilizersLeft;
   state.boss.defeated = true;
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
   pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, btsAvailable: true };
+  return { defeated: true, unlocked: true, btsAvailable: true, burn };
 }
 function recordHeatDeathFailure(state, lock = null) {
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
@@ -232,36 +327,40 @@ var ADJACENCY = (() => {
 })();
 
 // ../../docs/games/metagame/stages/stage8/state.js
+var STATE_VERSION = 2;
 function freshNodes() {
-  return NODES.map((n) => ({ id: n.id, health: 100 }));
+  return NODES.map((n) => ({ id: n.id, health: 100, cascadeStress: 0 }));
 }
 function defaultState() {
   return {
-    version: 1,
-    cycle: 14,
+    version: STATE_VERSION,
+    cycle: 1,
     nodes: freshNodes(),
-    states: 164,
-    totalStatesEarned: 460,
+    states: 0,
+    totalStatesEarned: 0,
     salvageTotal: 0,
-    selectedDebrisId: "node_p1_cycle14.sav",
+    selectedDebrisId: "",
     externalImportBonusCycles: 0,
-    debris: [
-      createDebris({ node: "p1", cycle: 14, tier: 1, value: 24, decay: 2 }),
-      createDebris({ node: "m2", cycle: 13, tier: 2, value: 48, decay: 1 }),
-      createDebris({ node: "f1", cycle: 12, tier: 4, value: 64, decay: 1 })
-    ],
+    stabilizers: 0,
+    repairUnits: 6,
+    repairAllocations: {},
+    stabilized: {},
+    highLoad: {},
+    entropy: 0,
+    debris: [],
     archive: [],
+    pendingEvent: null,
+    activeEvent: null,
+    eventSeq: 0,
     warningCheckpoint: null,
-    log: [
-      "node P1 failed. debris file created in /entropy/debris/.",
-      "there was something left in the wreckage. it won't last long."
-    ],
+    log: [bellMessages.start],
     boss: {
       reached: false,
       defeated: false,
       attempts: 0,
       lockHintStep: 0,
-      firstFailureRewound: false
+      firstFailureRewound: false,
+      burn: null
     },
     meta: {
       firstClearComplete: false,
@@ -270,19 +369,41 @@ function defaultState() {
   };
 }
 function normalizeState(state) {
+  const incoming = state && typeof state === "object" ? state : {};
+  if (Number(incoming.version) !== STATE_VERSION) {
+    const fresh2 = defaultState();
+    if (incoming.boss && incoming.boss.defeated) {
+      fresh2.boss = { ...fresh2.boss, defeated: true, reached: true };
+      fresh2.meta = { ...fresh2.meta, firstClearComplete: true, btsAvailable: true };
+    }
+    return fresh2;
+  }
   const fresh = defaultState();
-  const target = state && typeof state === "object" ? state : {};
-  target.version = 1;
-  target.cycle = Number.isFinite(Number(target.cycle)) ? Number(target.cycle) : fresh.cycle;
-  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length ? target.nodes.map((n, i) => ({ id: n?.id || fresh.nodes[i].id, health: clampHealth(n?.health) })) : fresh.nodes;
-  target.states = Number.isFinite(Number(target.states)) ? Number(target.states) : fresh.states;
-  target.totalStatesEarned = Number.isFinite(Number(target.totalStatesEarned)) ? Number(target.totalStatesEarned) : fresh.totalStatesEarned;
-  target.salvageTotal = Number.isFinite(Number(target.salvageTotal)) ? Number(target.salvageTotal) : fresh.salvageTotal;
-  target.selectedDebrisId = target.selectedDebrisId || fresh.selectedDebrisId;
-  target.externalImportBonusCycles = Number(target.externalImportBonusCycles || 0);
-  target.debris = Array.isArray(target.debris) ? target.debris : fresh.debris;
-  target.archive = Array.isArray(target.archive) ? target.archive : fresh.archive;
-  target.warningCheckpoint = target.warningCheckpoint || fresh.warningCheckpoint;
+  const target = incoming;
+  target.version = STATE_VERSION;
+  target.cycle = posInt(target.cycle, fresh.cycle);
+  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length ? target.nodes.map((n, i) => ({
+    id: n?.id || fresh.nodes[i].id,
+    health: clampHealth(n?.health),
+    cascadeStress: Number.isFinite(Number(n?.cascadeStress)) ? Number(n.cascadeStress) : 0
+  })) : fresh.nodes;
+  target.states = num(target.states, fresh.states);
+  target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
+  target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
+  target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
+  target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
+  target.stabilizers = Math.max(0, num(target.stabilizers, 0));
+  target.repairUnits = num(target.repairUnits, fresh.repairUnits);
+  target.repairAllocations = plain(target.repairAllocations);
+  target.stabilized = plain(target.stabilized);
+  target.highLoad = plain(target.highLoad);
+  target.entropy = num(target.entropy, 0);
+  target.debris = Array.isArray(target.debris) ? target.debris : [];
+  target.archive = Array.isArray(target.archive) ? target.archive : [];
+  target.pendingEvent = target.pendingEvent && typeof target.pendingEvent === "object" ? target.pendingEvent : null;
+  target.activeEvent = target.activeEvent && typeof target.activeEvent === "object" ? target.activeEvent : null;
+  target.eventSeq = num(target.eventSeq, 0);
+  target.warningCheckpoint = target.warningCheckpoint || null;
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...target.boss && typeof target.boss === "object" ? target.boss : {} };
   target.meta = { ...fresh.meta, ...target.meta && typeof target.meta === "object" ? target.meta : {} };
@@ -292,6 +413,17 @@ function clampHealth(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return 100;
   return Math.max(0, Math.min(100, n));
+}
+function num(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+function posInt(v, fallback) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 1 ? Math.trunc(n) : fallback;
+}
+function plain(v) {
+  return v && typeof v === "object" && !Array.isArray(v) ? v : {};
 }
 function createDebris({ node: node3, cycle, tier, value, decay = 2 }) {
   const id = `node_${node3}_cycle${cycle}.sav`;
@@ -405,52 +537,46 @@ function applyRepair(state, nodeId, units) {
   state.repairAllocations[nodeId] = (state.repairAllocations[nodeId] || 0) + u;
   return { ok: true, remaining: state.repairUnits };
 }
+function buildStabilizer(state, cost) {
+  ensureRuntime(state);
+  const c = Math.trunc(Number(cost) || 0);
+  if (c <= 0) return { ok: false, reason: "cost" };
+  if ((state.states || 0) < c) return { ok: false, reason: "states" };
+  state.states -= c;
+  state.stabilizers = (state.stabilizers || 0) + 1;
+  return { ok: true, stabilizers: state.stabilizers };
+}
 function pushLog2(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
-// ../../docs/games/metagame/stages/stage8/rng.js
-function xmur3(str) {
-  let h = 1779033703 ^ str.length;
-  for (let i = 0; i < str.length; i += 1) {
-    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-    h = h << 13 | h >>> 19;
+// ../../docs/games/metagame/stages/stage8/solver.js
+var REPAIR_STEP = 2;
+function salvageableValue(state) {
+  return (state.debris || []).reduce((sum, d) => sum + Number(d.value || 0), 0);
+}
+function bodyGateMet(state) {
+  return Number(state.cycle || 0) >= MIN_CYCLE && Number(state.totalStatesEarned || 0) >= STATES_REQUIRED && salvageableValue(state) >= SALVAGE_REQUIRED;
+}
+function repairSpine(state) {
+  const spine = state.nodes.filter((n) => !String(n.id).startsWith("F"));
+  for (const n of [...spine].sort((a, b) => a.health - b.health)) {
+    if ((state.repairUnits || 0) <= 0) break;
+    if (n.health >= 100) continue;
+    applyRepair(state, n.id, Math.min(REPAIR_STEP, state.repairUnits));
   }
-  return () => {
-    h = Math.imul(h ^ h >>> 16, 2246822507);
-    h = Math.imul(h ^ h >>> 13, 3266489909);
-    h ^= h >>> 16;
-    return h >>> 0;
-  };
 }
-function mulberry32(a) {
-  return () => {
-    a |= 0;
-    a = a + 1831565813 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function makeRng(seed) {
-  const next = mulberry32(xmur3(String(seed))());
-  const float = () => next();
-  const int = (lo, hi) => lo + Math.floor(next() * (hi - lo + 1));
-  const pick = (arr) => arr[Math.floor(next() * arr.length)];
-  const chance = (p) => next() < p;
-  const shuffle = (arr) => {
-    const out = arr.slice();
-    for (let i = out.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(next() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  };
-  return { float, int, pick, chance, shuffle };
+function driveToGate(state, makeCycleRng, { maxCycles = 60 } = {}) {
+  for (let i = 0; i < maxCycles; i += 1) {
+    if (bodyGateMet(state)) break;
+    repairSpine(state);
+    advanceCycle(state, makeCycleRng(state.cycle));
+  }
+  return state;
 }
 
 // ../../docs/games/metagame/stages/stage8/renderer.js
-var REPAIR_STEP = 2;
+var REPAIR_STEP2 = 2;
 function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
@@ -461,6 +587,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
       <span>repair <b data-field="repairUnits"></b></span>
+      <span>stabilizers <b data-field="stabilizers"></b></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
     </header>
     <div class="s8-layout">
@@ -478,10 +605,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <strong>THE HEAT DEATH</strong>
       <div data-field="boss"></div>
       <div data-field="hint"></div>
+      <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>
+      <button type="button" data-action="stabilizer">build stabilizer (${STABILIZER_COST} States)</button>
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
@@ -521,13 +650,14 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
   root.addEventListener("click", (event) => {
     const repair = event.target.closest("button[data-repair]");
     if (repair) {
-      applyRepair(state, repair.dataset.repair, REPAIR_STEP);
+      applyRepair(state, repair.dataset.repair, REPAIR_STEP2);
       persistAndPaint();
       return;
     }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
-    if (button.dataset.action === "advance") advanceCycle(state, makeRng(`8:${state.cycle}`));
+    if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
+    if (button.dataset.action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
     if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
     if (button.dataset.action === "external") {
       state.externalImportBonusCycles = 3;
@@ -540,9 +670,23 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
   repaint();
   window.__fvStage8 = {
     state: () => state,
+    lockState: () => getBossLockState({ actions, state }),
     advance(cycles = 1) {
-      for (let i = 0; i < cycles; i++) advanceCycle(state, makeRng(`8:${state.cycle}`));
+      for (let i = 0; i < cycles; i += 1) advanceCycle(state, cycleRng(state.cycle));
       persistAndPaint();
+    },
+    bodySolver() {
+      driveToGate(state, cycleRng);
+      persistAndPaint();
+      return getBossLockState({ actions, state });
+    },
+    bossSolver() {
+      const result = challengeBoss();
+      return {
+        defeated: Boolean(state.boss.defeated),
+        locked: Boolean(result?.locked),
+        burn: result?.burn || null
+      };
     }
   };
   return {
@@ -552,22 +696,41 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       root.remove();
     }
   };
+  function cycleRng(cycle) {
+    return makeRng(`8:cyc:${cycle}`);
+  }
   function challengeBoss() {
-    const result = recordHeatDeathAttempt({ state, actions });
+    const result = recordHeatDeathAttempt({ state, actions, rng: makeRng(`8:burn:${state.cycle}`) });
+    persistAndPaint();
     if (result.defeated) {
       completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     }
+    return result;
   }
   function repaint() {
+    if (!state.debris.some((d) => d.id === state.selectedDebrisId)) {
+      state.selectedDebrisId = state.debris[0]?.id || "";
+    }
     const lock = getBossLockState({ actions, state });
     fields.cycle.textContent = String(state.cycle);
     fields.states.textContent = String(state.states);
     fields.entropy.textContent = String(state.entropy || 0);
     fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
+    fields.stabilizers.textContent = String(state.stabilizers || 0);
     fields.salvage.textContent = String(state.salvageTotal);
     fields.tree.textContent = entropyTreeText(state);
-    fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / archived action ${lock.actionReady ? "yes" : "no"}`;
+    fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${lock.actionReady ? "✓" : "✗"} · salvage ${lock.enoughSalvage ? "✓" : "✗"} · cycles ${lock.enoughCycles ? "✓" : "✗"} · reserves ${lock.enoughStates ? "✓" : "✗"}`;
     fields.hint.textContent = lock.hint;
+    if (state.boss.burn && Array.isArray(state.boss.burn.trace) && state.boss.burn.trace.length) {
+      fields.burn.hidden = false;
+      const b = state.boss.burn;
+      fields.burn.textContent = [
+        b.survived ? `HEAT DEATH ENDURED · ${b.remainingStates} States remain` : `HEAT DEATH OVERRAN at burn cycle ${b.failedAt}`,
+        ...b.trace.map((t) => `  burn ${t.cycle}: -${t.drain}${t.paused ? " (stabilizer)" : ""} → ${t.remaining}`)
+      ].join("\n");
+    } else {
+      fields.burn.hidden = true;
+    }
     fields.debrisSelect.replaceChildren(...state.debris.map((item) => {
       const option = document.createElement("option");
       option.value = item.id;

@@ -825,23 +825,54 @@ export async function run(ctx) {
   await page.waitForSelector('.stage8-entropy-field [data-action="advance"]', { timeout: 4000 });
   const s8Wired = await page.evaluate(() => Boolean(window.__fvStage8) && window.__fvStage8.state().nodes.length === 14);
   if (s8Wired) pass('Stage 8 survival sim wired: 14 node health bars + Advance Cycle + engine hook'); else fail('Stage 8 sim not wired');
-  // Un-cheat (unchanged): archive salvaged debris to reach the threshold, then challenge Heat Death.
+  // The field boots FRESH at cycle 1 — no pre-seeded debris/States stub (the old bypass substrate).
+  const s8Fresh = await page.evaluate(() => {
+    const s = window.__fvStage8.state();
+    return s.cycle === 1 && s.debris.length === 0 && s.states === 0 && s.totalStatesEarned === 0;
+  });
+  if (s8Fresh) pass('Stage 8 boots fresh at cycle 1 (no pre-seeded debris/States)'); else fail('Stage 8 booted a pre-seeded stub');
+  // BYPASS CLOSED: the old "archive twice → Heat Death → win" path. On a fresh field there is nothing
+  // to archive, and challenging Heat Death returns LOCKED — it must NOT defeat the boss.
   await page.click('[data-action="archive"]');
   await page.click('[data-action="archive"]');
+  await page.click('[data-action="boss"]');
+  const s8BypassFailed = await page.evaluate(() => {
+    const lock = window.__fvStage8.lockState();
+    const s = window.__fvStage8.state();
+    let save = null;
+    try { save = JSON.parse(localStorage.getItem('fv:games:metagame:v3')); } catch {}
+    return !lock.unlocked && !s.boss.defeated && !(save?.defeated?.includes(8));
+  });
+  if (s8BypassFailed) pass('Stage 8 BYPASS CLOSED: fresh two-click Heat Death attempt is locked, not a win'); else fail('Stage 8 two-click bypass still wins');
+  // Drive the REAL survival sim to the boss gate (repair the spine, let the frontier shed .sav debris).
+  // bodySolver only fast-forwards the real engine — it does NOT archive or touch the boss.
+  const s8Gate = await page.evaluate(() => window.__fvStage8.bodySolver());
+  if (s8Gate.enoughCycles && s8Gate.enoughStates && !s8Gate.actionReady && !s8Gate.unlocked) pass('Stage 8 body gate reached (cycles + reserves), boss still locked pending the un-cheat'); else fail(`Stage 8 body gate not reached: ${JSON.stringify(s8Gate)}`);
+  // Un-cheat (load-bearing): archive .sav debris from /entropy/debris/ into /entropy/active_archive/
+  // via the real renderer until the salvage floor is met. This fires 8.salvage_archived.
+  for (let i = 0; i < 8; i += 1) {
+    const lock = await page.evaluate(() => window.__fvStage8.lockState());
+    if (lock.enoughSalvage && lock.actionReady) break;
+    await page.click('[data-action="archive"]');
+  }
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return Boolean(save.actions?.['8.salvage_archived'] && save.achievements?.['stage8.salvage_archived']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.click('[data-action="boss"]');
+  const s8Unlocked = await page.evaluate(() => window.__fvStage8.lockState().unlocked);
+  if (s8Unlocked) pass('Stage 8 fully gated after the archive un-cheat (all four gates met)'); else fail('Stage 8 still locked after archiving');
+  // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
+  const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
+  if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(8) && save.unlockedStages?.includes(9);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 8 salvage action unlocks and clears Entropy Field');
+  pass('Stage 8: real survival run + archive un-cheat + endured burn clears Entropy Field');
 
   await page.waitForSelector('.stage9-observer-state', { timeout: 8000 });
   // The timing game is wired: a live rotating ASCII ring renders + OBSERVE/CROSS controls exist.

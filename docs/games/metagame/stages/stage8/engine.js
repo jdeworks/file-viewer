@@ -125,6 +125,17 @@ export function applyStabilizer(state, nodeId) {
   return { ok: true };
 }
 
+// Spend banked States to build one Stabilizer (a burn-cycle pause for Heat Death). Pure + validated.
+export function buildStabilizer(state, cost) {
+  ensureRuntime(state);
+  const c = Math.trunc(Number(cost) || 0);
+  if (c <= 0) return { ok: false, reason: "cost" };
+  if ((state.states || 0) < c) return { ok: false, reason: "states" };
+  state.states -= c;
+  state.stabilizers = (state.stabilizers || 0) + 1;
+  return { ok: true, stabilizers: state.stabilizers };
+}
+
 // Toggle a node into high-load (1.5× output is the renderer's concern; engine applies 1.5× decay).
 export function toggleHighLoad(state, nodeId) {
   ensureRuntime(state);
