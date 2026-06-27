@@ -176,18 +176,31 @@ export function shopView(run) {
   return el;
 }
 
-export function eventView(run) {
+// Render the (deterministically selected) event for this node. `event` comes from events.eventForNode;
+// each meaningful choice is a [data-event="<choiceId>"] button, plus a ghost "walk past" (to-map).
+export function eventView(run, event) {
   const el = document.createElement("div");
   el.className = "s6db-event";
   el.innerHTML = `
-    <h2>A Defragmenter idles in the corridor</h2>
-    <p>It offers to tidy your passage — or to optimize you, which it does not define.</p>
-    <div class="s6db-hub-actions">
-      <button type="button" data-event="scan">accept payment — +12 handshakes ▸</button>
-      <button type="button" data-event="defrag">let it optimize you — heal 30% HP ▸</button>
-      <button type="button" data-event="rewrite">let it rewrite a protocol — +relic, −8 HP ▸</button>
-      <button type="button" data-action="to-map" class="s6db-ghost">walk past</button>
-    </div>`;
+    <h2>${esc(event?.title || "An anomaly idles in the corridor")}</h2>
+    <p>${esc(event?.text || "")}</p>
+    ${run.notice ? `<p class="s6db-hint">${esc(run.notice)}</p>` : ""}`;
+  const actions = document.createElement("div");
+  actions.className = "s6db-hub-actions";
+  const buttons = (event?.choices || []).map((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.event = c.id;
+    b.textContent = `${c.label} ▸`;
+    return b;
+  });
+  const leave = document.createElement("button");
+  leave.type = "button";
+  leave.className = "s6db-ghost";
+  leave.dataset.action = "to-map";
+  leave.textContent = "walk past";
+  actions.replaceChildren(...buttons, leave);
+  el.appendChild(actions);
   return el;
 }
 

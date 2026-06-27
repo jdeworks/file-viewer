@@ -7,13 +7,14 @@
 
 import { createCombat, playCard, endTurn, makeRng, applyPotionEffect } from "./combat.js";
 import { instantiateEnemy } from "./enemies.js";
-import { relicsFor, relicById } from "./relics.js";
+import { relicsFor } from "./relics.js";
 import { potionById } from "./potions.js";
+import { eventForNode, applyEventChoice } from "./events.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
   takeReward, takePotion, usePotion, buyPotion, rest, removeCard, closeNode,
-  buyCard, buyRemoval, buyUpgrade, buyRelic, awardRelic,
+  buyCard, buyRemoval, buyUpgrade, buyRelic,
   prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
@@ -95,7 +96,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       case "reward": combat = null; return mount(rewardView(run));
       case "rest": combat = null; return mount(restView(run));
       case "shop": combat = null; return mount(shopView(run));
-      case "event": combat = null; return mount(eventView(run));
+      case "event": combat = null; return mount(eventView(run, eventForNode(run)));
       case "dead": combat = null; return mount(deathView(state, run));
       case "won": combat = null; return mount(wonView(state, run));
       case "map":
@@ -193,15 +194,13 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     combat = null;
   }
 
-  function resolveEvent(run, key) {
-    if (key === "scan") run.handshakes += 12;
-    else if (key === "defrag") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * 0.30));
-    else if (key === "rewrite") {
-      run.hp = Math.max(1, run.hp - 8);
-      const id = awardRelic(run, `event-${run.currentNodeId}`);
-      run.notice = id ? `Relic acquired — ${relicById(id)?.name || id}` : "no protocol left to rewrite";
-    }
+  // Resolve the player's choice for this node's (deterministically selected) event, then return to
+  // the map. The notice is surfaced on the next screen.
+  function resolveEvent(run, choiceId) {
+    const event = eventForNode(run);
+    const { notice } = applyEventChoice(run, event.id, choiceId);
     closeNode(run);
+    if (notice) run.notice = notice;
   }
 
   // ── click delegation ─────────────────────────────────────────────────────────────────────────
