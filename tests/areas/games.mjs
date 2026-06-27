@@ -1065,6 +1065,9 @@ export async function run(ctx) {
   await page.click('[data-action="open-anchor"]');
   await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
   pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and opens Case 2 (Duplicate Roster)');
+  // Continuity: closing Case 1 carries its four deductions onto the board as established facts.
+  const s7Carried = await page.evaluate(() => window.__fvStage7.state().board.established.filter((f) => f.id.startsWith('case1:')).length);
+  if (s7Carried === 4) pass('Stage 7 continuity: Case-1 deductions carried onto the board as established facts'); else fail(`Stage 7 Case-1 continuity missing (${s7Carried}/4)`);
   // Case 2 is load-bearing: the rule-of-three triad cannot be completed until the route table is
   // actually opened in the viewer (the decisive fact card only exists after a real file-open).
   const s7Premature = await page.evaluate(() => window.__fvStage7.solveCase2());

@@ -3,6 +3,7 @@
 // so the run must be worked through before any commit (honors boss-never-from-start). No DOM/timers.
 
 import { entityFields, entityFEventLog, SCAN_ENTITIES } from "./content.js";
+import { establishFact } from "./evidence-board.js";
 
 export const SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
 export const FINAL_SUBSTAGE = 7;
@@ -69,8 +70,23 @@ export function markChainBroken({ state }) {
   state.addresses = Number(state.addresses || 0) + 15;
   pushLog(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
   pushLog(state, "A second roster claims the name. Open the system files and name the duplicate.");
+  carryCase1Facts(state);
   advance(state, SUBSTAGE.ACCUSE);
   return { ok: true, complete: true };
+}
+
+// Continuity: when Case 1 closes (the chain breaks) its four deductions are promoted onto the evidence
+// board as persistent ESTABLISHED facts, so the later cases read as one continuous case file. Idempotent.
+export function carryCase1Facts(state) {
+  if (state.evidence.case1Carried) return;
+  const facts = [
+    { id: "case1:scan", label: "B/C/D/E each carried one contradicted credential — eliminated in the scan." },
+    { id: "case1:dup", label: "Entity F's GPSInfo diverges from Entity A — a tampered dossier field." },
+    { id: "case1:timeline", label: "Entity F's log holds an impossible ACTIVE/DORMANT collision at cycle 0043." },
+    { id: "case1:chain", label: "Entity F's chain cites the decommissioned ENTITY_ANCHOR_0043 — chain invalid." }
+  ];
+  for (const f of facts) establishFact(state, f);
+  state.evidence.case1Carried = true;
 }
 
 function advance(state, to) {

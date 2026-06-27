@@ -440,71 +440,6 @@ var metadataArtifact = {
   }
 };
 
-// ../../docs/games/metagame/stages/stage7/substages.js
-var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
-function flagField({ state, entityId, fieldId }) {
-  const field = (entityFields[entityId] || []).find((f) => f.id === fieldId);
-  if (!field) return { ok: false, reason: "unknown" };
-  if (!field.wrong) {
-    state.evidence.wrongFlagCount = Number(state.evidence.wrongFlagCount || 0) + 1;
-    pushLog2(state, "insufficient evidence — cross-check the ambient facts.");
-    return { ok: false, reason: "not-contradiction" };
-  }
-  if (state.evidence.flags[entityId]) return { ok: true, already: true };
-  state.evidence.flags[entityId] = fieldId;
-  state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
-  state.addresses = Number(state.addresses || 0) + 10;
-  pushLog2(state, `Entity ${entityId}: ${field.reason}`);
-  const complete = SCAN_ENTITIES.every((e) => state.evidence.flags[e]);
-  if (complete) {
-    if (Number(state.evidence.wrongFlagCount || 0) === 0) {
-      state.addresses += 25;
-      pushLog2(state, "clean scan. +25 precision bonus.");
-    }
-    advance(state, SUBSTAGE.DUP);
-  }
-  return { ok: true, complete };
-}
-function diffField({ state, fieldName }) {
-  if (fieldName !== "GPSInfo") {
-    pushLog2(state, "this field matches across both dossiers.");
-    return { ok: false };
-  }
-  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
-  state.evidence.dupTestComplete = true;
-  state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, "Entity F's GPSInfo diverges from Entity A. Not yet decisive — the case continues.");
-  advance(state, SUBSTAGE.TIMELINE);
-  return { ok: true, complete: true };
-}
-function markImpossible({ state, evId }) {
-  const ev = entityFEventLog.find((e) => e.id === evId);
-  if (!ev || !ev.impossible) {
-    pushLog2(state, "this entry is plausible. keep looking.");
-    return { ok: false };
-  }
-  state.evidence.timelineContradictionCycle = ev.cycle;
-  state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, ev.reason);
-  advance(state, SUBSTAGE.CHAIN);
-  return { ok: true, complete: true };
-}
-function markChainBroken({ state }) {
-  if (state.evidence.chainBroken) return { ok: true, already: true };
-  state.evidence.chainBroken = true;
-  state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
-  pushLog2(state, "A second roster claims the name. Open the system files and name the duplicate.");
-  advance(state, SUBSTAGE.ACCUSE);
-  return { ok: true, complete: true };
-}
-function advance(state, to) {
-  if (Number(state.substage || 1) < to) state.substage = to;
-}
-function pushLog2(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
-}
-
 // ../../docs/games/metagame/stages/stage7/evidence-board.js
 function ensureBoard(state) {
   if (!state.board || typeof state.board !== "object") {
@@ -578,6 +513,83 @@ function establishFact(state, { id, label, cards = [] }) {
     }
   }
   return fact;
+}
+
+// ../../docs/games/metagame/stages/stage7/substages.js
+var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
+function flagField({ state, entityId, fieldId }) {
+  const field = (entityFields[entityId] || []).find((f) => f.id === fieldId);
+  if (!field) return { ok: false, reason: "unknown" };
+  if (!field.wrong) {
+    state.evidence.wrongFlagCount = Number(state.evidence.wrongFlagCount || 0) + 1;
+    pushLog2(state, "insufficient evidence — cross-check the ambient facts.");
+    return { ok: false, reason: "not-contradiction" };
+  }
+  if (state.evidence.flags[entityId]) return { ok: true, already: true };
+  state.evidence.flags[entityId] = fieldId;
+  state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
+  state.addresses = Number(state.addresses || 0) + 10;
+  pushLog2(state, `Entity ${entityId}: ${field.reason}`);
+  const complete = SCAN_ENTITIES.every((e) => state.evidence.flags[e]);
+  if (complete) {
+    if (Number(state.evidence.wrongFlagCount || 0) === 0) {
+      state.addresses += 25;
+      pushLog2(state, "clean scan. +25 precision bonus.");
+    }
+    advance(state, SUBSTAGE.DUP);
+  }
+  return { ok: true, complete };
+}
+function diffField({ state, fieldName }) {
+  if (fieldName !== "GPSInfo") {
+    pushLog2(state, "this field matches across both dossiers.");
+    return { ok: false };
+  }
+  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
+  state.evidence.dupTestComplete = true;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, "Entity F's GPSInfo diverges from Entity A. Not yet decisive — the case continues.");
+  advance(state, SUBSTAGE.TIMELINE);
+  return { ok: true, complete: true };
+}
+function markImpossible({ state, evId }) {
+  const ev = entityFEventLog.find((e) => e.id === evId);
+  if (!ev || !ev.impossible) {
+    pushLog2(state, "this entry is plausible. keep looking.");
+    return { ok: false };
+  }
+  state.evidence.timelineContradictionCycle = ev.cycle;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, ev.reason);
+  advance(state, SUBSTAGE.CHAIN);
+  return { ok: true, complete: true };
+}
+function markChainBroken({ state }) {
+  if (state.evidence.chainBroken) return { ok: true, already: true };
+  state.evidence.chainBroken = true;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
+  pushLog2(state, "A second roster claims the name. Open the system files and name the duplicate.");
+  carryCase1Facts(state);
+  advance(state, SUBSTAGE.ACCUSE);
+  return { ok: true, complete: true };
+}
+function carryCase1Facts(state) {
+  if (state.evidence.case1Carried) return;
+  const facts = [
+    { id: "case1:scan", label: "B/C/D/E each carried one contradicted credential — eliminated in the scan." },
+    { id: "case1:dup", label: "Entity F's GPSInfo diverges from Entity A — a tampered dossier field." },
+    { id: "case1:timeline", label: "Entity F's log holds an impossible ACTIVE/DORMANT collision at cycle 0043." },
+    { id: "case1:chain", label: "Entity F's chain cites the decommissioned ENTITY_ANCHOR_0043 — chain invalid." }
+  ];
+  for (const f of facts) establishFact(state, f);
+  state.evidence.case1Carried = true;
+}
+function advance(state, to) {
+  if (Number(state.substage || 1) < to) state.substage = to;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
 }
 
 // ../../docs/games/metagame/stages/stage7/accusation.js
