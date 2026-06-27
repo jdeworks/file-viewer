@@ -27,7 +27,6 @@ import {
   probeDroppedVisualMetadata,
 } from './mixer-media-drop.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
-import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 import { downloadBlob } from './mixer-audio-multi-helpers.js';
 import { renderVideoExportPlanPanel } from './mixer-video-export-ui.js';
@@ -35,17 +34,21 @@ import { renderVideoProxyPlanPanel } from './mixer-video-proxy-ui.js';
 import {
   SOURCE_ASSET_ID,
   buildVideoProject,
-  currentMusicBedGain,
-  editSummary,
   isVisualElement,
   latestVisualElement,
   mergeVideoMetadata,
   previousVisualElement,
   selectedEditableElement,
   selectedVisualElement,
-  transitionSummary,
   updateMusicBedGain,
 } from './mixer-video-source-helpers.js';
+import {
+  fitZoom,
+  renderSecondMediaControls,
+  secondsInput,
+  syncEditReadout,
+  syncTransitionReadout,
+} from './mixer-video-source-ui.js';
 
 export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
@@ -82,7 +85,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
     if (action.type === 'zoom-relative') viewport = { ...viewport, pxPerMs: clampZoom(viewport.pxPerMs * action.factor) };
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
-    if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: fitZoom() };
+    if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: fitZoom(root, project) };
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
     if (action.type === 'capture-keyframe') project = captureElementKeyframe(project, action.elementId, viewport.cursorMs);
     if (action.type === 'update-element') project = updateProjectElementField(project, action);
@@ -231,7 +234,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       toolbar.append(button);
     }
     if (toolbar && !toolbar.querySelector('.mmx-video-second-drop')) {
-      toolbar.append(renderSecondMediaControls());
+      toolbar.append(renderSecondMediaControls(project));
     }
     const inspector = root.querySelector('.mmx-inspector');
     if (inspector) {
@@ -275,11 +278,11 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       return;
     }
     if (target?.matches?.('.mmx-video-transition-kind, .mmx-video-transition-duration')) {
-      syncTransitionReadout();
+      syncTransitionReadout(root, project);
       return;
     }
     if (target?.matches?.('.mmx-video-trim-in, .mmx-video-trim-out, .mmx-video-fade-in, .mmx-video-fade-out')) {
-      syncEditReadout();
+      syncEditReadout(root, project);
     }
   }
 
@@ -366,90 +369,6 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     });
   }
 
-  function renderSecondMediaControls() {
-    const wrap = document.createElement('div');
-    wrap.className = 'mmx-video-second-drop';
-    const text = document.createElement('span');
-    text.textContent = 'Drop second video, image overlay, or music bed';
-    const music = document.createElement('label');
-    music.className = 'mmx-video-music-bed-wrap';
-    const musicText = document.createElement('span');
-    musicText.textContent = 'Music bed';
-    const slider = document.createElement('input');
-    slider.type = 'range';
-    slider.className = 'mmx-video-music-bed';
-    slider.min = '0';
-    slider.max = '1';
-    slider.step = '0.05';
-    slider.value = String(currentMusicBedGain(project));
-    slider.setAttribute('aria-label', 'Music bed level under original video audio');
-    slider.title = 'Music bed level; original video audio stays unchanged';
-    const readout = document.createElement('span');
-    readout.className = 'mmx-video-music-bed-readout';
-    readout.textContent = `${Math.round(Number(slider.value) * 100)}% under video audio`;
-    music.append(musicText, slider, readout);
-    const transition = document.createElement('div');
-    transition.className = 'mmx-video-transition-tools';
-    const transitionText = document.createElement('span');
-    transitionText.textContent = 'Selected visual transition';
-    const kind = document.createElement('select');
-    kind.className = 'mmx-video-transition-kind';
-    kind.setAttribute('aria-label', 'Selected visual transition kind');
-    [
-      ['dissolve', 'Dissolve'],
-      ['wipe-left', 'Wipe left'],
-    ].forEach(([value, label]) => {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      kind.append(option);
-    });
-    const duration = document.createElement('input');
-    duration.type = 'number';
-    duration.className = 'mmx-video-transition-duration';
-    duration.min = '0';
-    duration.step = '0.05';
-    duration.value = '0.4';
-    duration.setAttribute('aria-label', 'Selected visual transition duration in seconds');
-    const apply = document.createElement('button');
-    apply.type = 'button';
-    apply.className = 'mmx-video-transition-apply';
-    apply.textContent = 'Apply';
-    const transitionReadout = document.createElement('span');
-    transitionReadout.className = 'mmx-video-transition-readout';
-    transitionReadout.textContent = transitionSummary(project);
-    transition.append(transitionText, kind, duration, apply, transitionReadout);
-    const edit = document.createElement('div');
-    edit.className = 'mmx-video-edit-tools';
-    const editText = document.createElement('span');
-    editText.textContent = 'Selected clip edit';
-    const trimIn = editNumberInput('mmx-video-trim-in', 'Trim in seconds', '0', 0.01);
-    const trimOut = editNumberInput('mmx-video-trim-out', 'Trim out seconds', '', 0.01);
-    const fadeIn = editNumberInput('mmx-video-fade-in', 'Fade in seconds', '0', 0.05);
-    const fadeOut = editNumberInput('mmx-video-fade-out', 'Fade out seconds', '0', 0.05);
-    const editApply = document.createElement('button');
-    editApply.type = 'button';
-    editApply.className = 'mmx-video-edit-apply';
-    editApply.textContent = 'Apply edit';
-    const editReadout = document.createElement('span');
-    editReadout.className = 'mmx-video-edit-readout';
-    editReadout.textContent = editSummary(project);
-    edit.append(editText, trimIn, trimOut, fadeIn, fadeOut, editApply, editReadout);
-    wrap.append(text, music, transition, edit);
-    return wrap;
-  }
-
-  function editNumberInput(className, label, value, step) {
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.className = className;
-    input.min = '0';
-    input.step = String(step);
-    input.value = value;
-    input.setAttribute('aria-label', label);
-    return input;
-  }
-
   function applyToolbarTransition() {
     const target = selectedVisualElement(project) || latestVisualElement(project);
     if (!target) return;
@@ -470,19 +389,14 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     render();
   }
 
-  function syncTransitionReadout() {
-    const readout = root.querySelector('.mmx-video-transition-readout');
-    if (readout) readout.textContent = transitionSummary(project);
-  }
-
   function applyToolbarEdit() {
     const target = selectedEditableElement(project) || project.elements[0];
     if (!target) return;
-    const sourceInMs = secondsInput('.mmx-video-trim-in', target.timeline?.sourceInMs || 0);
+    const sourceInMs = secondsInput(root, '.mmx-video-trim-in', target.timeline?.sourceInMs || 0);
     const sourceOutFallback = target.timeline?.sourceOutMs || target.timeline?.rawDurationMs || target.timeline?.durationMs || sourceInMs;
-    const sourceOutMs = secondsInput('.mmx-video-trim-out', sourceOutFallback);
-    const fadeInMs = secondsInput('.mmx-video-fade-in', target.audio?.fadeInMs || target.visual?.fadeInMs || 0);
-    const fadeOutMs = secondsInput('.mmx-video-fade-out', target.audio?.fadeOutMs || target.visual?.fadeOutMs || 0);
+    const sourceOutMs = secondsInput(root, '.mmx-video-trim-out', sourceOutFallback);
+    const fadeInMs = secondsInput(root, '.mmx-video-fade-in', target.audio?.fadeInMs || target.visual?.fadeInMs || 0);
+    const fadeOutMs = secondsInput(root, '.mmx-video-fade-out', target.audio?.fadeOutMs || target.visual?.fadeOutMs || 0);
     project = trimElement(project, target.id, { sourceInMs, sourceOutMs });
     project = updateElement(project, target.id, (element) => ({
       ...element,
@@ -506,19 +420,6 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     lastExportPlan = buildExportPlan();
     root.dataset.lastVideoExportPlan = JSON.stringify(lastExportPlan.provenance);
     render();
-  }
-
-  function syncEditReadout() {
-    const readout = root.querySelector('.mmx-video-edit-readout');
-    if (readout) readout.textContent = editSummary(project);
-  }
-
-  function secondsInput(selector, fallbackMs) {
-    const raw = root.querySelector(selector)?.value;
-    if (raw === '') return Math.max(0, Math.round(Number(fallbackMs) || 0));
-    const value = Number(raw);
-    if (!Number.isFinite(value)) return Math.max(0, Math.round(Number(fallbackMs) || 0));
-    return Math.max(0, Math.round(value * 1000));
   }
 
   async function renderFinalExport() {
@@ -569,11 +470,5 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
       },
       render,
     });
-  }
-
-  function fitZoom() {
-    const width = Math.max(240, root.clientWidth - MIXER_LAYOUT.gutterWidth);
-    const duration = Math.max(1000, project.project.durationMs || 1000);
-    return clamp(width / duration, 0.02, 0.8);
   }
 }

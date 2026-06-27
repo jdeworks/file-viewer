@@ -128,6 +128,12 @@ export function ensureMixerStyles() {
   link.href = new URL('./mixer-styles.css', import.meta.url).href;
   link.dataset.mediaMixerStyles = 'true';
   document.head.append(link);
+  if (document.querySelector('link[data-media-mixer-styles-panels]')) return;
+  const linkPanels = document.createElement('link');
+  linkPanels.rel = 'stylesheet';
+  linkPanels.href = new URL('./mixer-styles-panels.css', import.meta.url).href;
+  linkPanels.dataset.mediaMixerStylesPanels = 'true';
+  document.head.append(linkPanels);
 }
 
 function clampZoom(value) {
