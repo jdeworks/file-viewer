@@ -490,9 +490,12 @@ var MONSTERS = [
   { id: "spitter", glyph: "y", name: "syntax spitter", hp: 18, atk: 7, xp: 6, drop: 3, minFloor: 4, ranged: true },
   { id: "exploder", glyph: "x", name: "segfault", hp: 16, atk: 6, xp: 5, drop: 3, minFloor: 4, explode: true },
   { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 },
-  { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true }
+  { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
+  // Overflow act (darkness) foes — see overflow.js for their behaviour.
+  { id: "lighteater", glyph: "e", name: "light eater", hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
+  { id: "mirror", glyph: "M", name: "mirror", hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
 ];
-var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush"];
+var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush", "lighteater", "mirror"];
 var ELITE_PREFIXES = [
   { key: "armored", name: "armored", hpMult: 1.8, atkMult: 1.1 },
   { key: "venomous", name: "venomous", hpMult: 1.3, atkMult: 1.3, venom: true },
@@ -697,6 +700,32 @@ function torchLit(world) {
 }
 function torchSightBonus(world) {
   return isDarkAct(world.floor) && torchLit(world) ? TORCH_AGGRO : 0;
+}
+
+// ../../docs/games/metagame/stages/stage2/overflow.js
+var GROW_CAP = 10;
+var GROW_HP = 5;
+var GROW_ATK = 1;
+function lightEaterTick(world, m, events) {
+  const feeding = isDarkAct(world.floor) && !torchLit(world);
+  if (feeding) {
+    if ((m._grow || 0) < GROW_CAP) {
+      m._grow = (m._grow || 0) + 1;
+      m.maxHp += GROW_HP;
+      m.hp += GROW_HP;
+      m.atk += GROW_ATK;
+      if (m._grow === GROW_CAP && events && events.log) events.log.push(`${m.name} has gorged on the dark.`);
+    }
+  } else if ((m._grow || 0) > 0) {
+    m._grow -= 1;
+    m.maxHp = Math.max(1, m.maxHp - GROW_HP);
+    m.hp = Math.min(m.hp, m.maxHp);
+    m.atk = Math.max(2, m.atk - GROW_ATK);
+  }
+}
+function mirrorTick(m, player) {
+  const copied = Math.round(Number(player.atk || 0) * 0.85);
+  if (copied > m.atk) m.atk = copied;
 }
 
 // ../../docs/games/metagame/stages/stage2/monsters.js
@@ -932,6 +961,8 @@ function monsterTurn(world, player, events, filter) {
       }
     }
     if (skipsTurn(m)) continue;
+    if (m.lighteater) lightEaterTick(world, m, events);
+    if (m.mirror) mirrorTick(m, player);
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
     const sight = (m.sight || 5) + torchAggro;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
