@@ -19,6 +19,9 @@ import {
   mediaForKind,
   refreshCompareTargets,
   renderAnalysisPanel,
+  renderCompareBInput,
+  renderCompareNormalizeToggle,
+  renderCompareOverlap,
   renderOverlayStatus,
   secondsString,
   targetFromElement,
@@ -62,6 +65,9 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     filename: `${kind}-compare.mixer.json`,
   });
 
+  let _scrollSyncing = false;
+  const syncScroll = (px) => { if (_scrollSyncing) return; _scrollSyncing = true; laneA.setScroll(px); laneB.setScroll(px); _scrollSyncing = false; };
+
   // Shared lane factory — A and B have the same interaction shape
   function makeLane(side) {
     return createClipLane({
@@ -80,6 +86,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
           render();
         },
         onSeek(sec) { viewport = { ...viewport, cursorMs: sec * 1000 }; render(); },
+        onScroll(px) { viewport = { ...viewport, scrollLeft: px }; syncScroll(px); },
         onSelect() {},
       },
     });
@@ -103,7 +110,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
     if (action.type === 'zoom-relative') viewport = { ...viewport, pxPerMs: clampZoom(viewport.pxPerMs * action.factor) };
     if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
-    if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: 0.06 };
+    if (action.type === 'fit') { const tl = computeTimelineSec(); viewport = { ...viewport, scrollLeft: 0, pxPerMs: Math.max(120, (root.clientWidth||960)-96) / Math.max(1, tl*1000) }; }
     if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
     if (action.type === 'capture-keyframe') project = captureElementKeyframe(project, action.elementId, viewport.cursorMs);
     if (action.type === 'update-element') {
@@ -114,15 +121,12 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
   };
 
   const onClick = (event) => {
-    const button = event.target?.closest?.('.mmx-compare-view');
-    if (button && root.contains(button)) {
-      project = { ...project, compare: { ...project.compare, view: button.dataset.view || 'stacked' } };
-      render();
-      return;
-    }
-    const analyzeButton = event.target?.closest?.('.mmx-compare-analyze');
-    if (!analyzeButton || !root.contains(analyzeButton)) return;
-    runCompareAnalysis();
+    const btn = event.target?.closest?.('button,.mmx-compare-view');
+    if (!btn || !root.contains(btn)) return;
+    if (btn.matches('.mmx-compare-view')) { project = { ...project, compare: { ...project.compare, view: btn.dataset.view || 'stacked' } }; render(); return; }
+    if (btn.matches('.mmx-compare-zoom-in')) { dispatch({ type: 'zoom-relative', factor: 1.5 }); return; }
+    if (btn.matches('.mmx-compare-zoom-out')) { dispatch({ type: 'zoom-relative', factor: 1/1.5 }); return; }
+    if (btn.matches('.mmx-compare-fit')) { dispatch({ type: 'fit' }); return; }
   };
   const onInput = (event) => {
     const input = event.target;
@@ -242,8 +246,10 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
       controls.append(btn);
     }
     controls.append(renderTargetControls('a'), renderTargetControls('b'));
-    if (kind === 'audio') controls.append(renderNormalizeToggle());
-    controls.append(renderBInput(), renderAnalyzeButton(), renderOverlap());
+    if (kind === 'audio') controls.append(renderCompareNormalizeToggle(project));
+    const zg = document.createElement('span'); zg.className = 'al-zoom';
+    [['−','mmx-compare-zoom-out'],['Fit','mmx-compare-fit'],['+','mmx-compare-zoom-in']].forEach(([t,c]) => { const b=document.createElement('button'); b.type='button'; b.className=`al-btn ${c}`; b.textContent=t; zg.append(b); });
+    controls.append(renderCompareBInput(kind), renderAnalyzeButton(), renderCompareOverlap(computeCompareOverlap(project)), zg);
     toolbarEl.replaceChildren(controls);
 
     // Stacked lanes vs overlay
@@ -255,8 +261,10 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
       lanesContainer.hidden = false;
       const tl = computeTimelineSec();
       const cursorSec = viewport.cursorMs / 1000;
-      laneA.update(buildClipView('a', tl, cursorSec));
-      laneB.update(buildClipView('b', tl, cursorSec));
+      const pxs = viewport.pxPerMs * 1000;
+      laneA.update(buildClipView('a', tl, cursorSec, pxs));
+      laneB.update(buildClipView('b', tl, cursorSec, pxs));
+      syncScroll(viewport.scrollLeft);
     }
 
     root.querySelector('.mmx-compare-analysis')?.remove();
@@ -277,7 +285,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     return Math.max(endA, endB, 1);
   }
 
-  function buildClipView(side, timelineSec, cursorSec) {
+  function buildClipView(side, timelineSec, cursorSec, pxPerSec = 0) {
     const target = project.compare?.[side] || {};
     const element = project.elements.find((e) => e.id === target.elementId);
     const durationMs = element?.timeline?.durationMs || 1000;
@@ -295,15 +303,8 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
       fadeOutSec: (element?.audio?.fadeOutMs || 0) / 1000,
       summary: element?.analysis?.waveformSummary || null,
       selected: false,
+      pxPerSec,
     };
-  }
-
-  function renderOverlap() {
-    const overlap = computeCompareOverlap(project);
-    const node = document.createElement('span');
-    node.className = 'mmx-compare-overlap';
-    node.textContent = `Overlap ${(overlap.overlap.durationMs / 1000).toFixed(2)}s`;
-    return node;
   }
 
   function renderOverlay() {
@@ -322,32 +323,29 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
     canvas.dataset.compareA = project.compare?.a?.elementId || '';
     canvas.dataset.compareB = project.compare?.b?.elementId || '';
     canvas.dataset.kind = overlayKind(project);
-    drawCompareOverlay(canvas, project, visualRuntime.frames);
-    node.append(heading, canvas, renderOverlayStatus(canvas, overlap));
+    drawCompareOverlay(canvas, project, visualRuntime.frames, project.compare?.overlayOpacity ?? 0.5);
+    // B-layer opacity: drag to fade B over A and see where they differ. Its input only redraws the
+    // canvas (no full render), so the slider survives the drag.
+    const opWrap = document.createElement('label');
+    opWrap.className = 'mmx-compare-opacity-field';
+    const opSpan = document.createElement('span');
+    const opacity = document.createElement('input');
+    opacity.type = 'range';
+    opacity.className = 'mmx-compare-opacity';
+    opacity.min = '0';
+    opacity.max = '1';
+    opacity.step = '0.05';
+    opacity.value = String(project.compare?.overlayOpacity ?? 0.5);
+    opSpan.textContent = `B opacity ${Math.round((project.compare?.overlayOpacity ?? 0.5) * 100)}%`;
+    opacity.addEventListener('input', () => {
+      const v = Number(opacity.value);
+      project = { ...project, compare: { ...project.compare, overlayOpacity: v } };
+      opSpan.textContent = `B opacity ${Math.round(v * 100)}%`;
+      drawCompareOverlay(canvas, project, visualRuntime.frames, v);
+    });
+    opWrap.append(opSpan, opacity);
+    node.append(heading, opWrap, canvas, renderOverlayStatus(canvas, overlap));
     return node;
-  }
-
-  function renderBInput() {
-    const wrap = document.createElement('label');
-    wrap.className = 'mmx-compare-b-drop';
-    wrap.textContent = 'B file';
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.className = 'mmx-compare-b-input';
-    input.accept = kind === 'video' ? 'video/*,image/*,audio/*' : 'audio/*,video/*,image/*';
-    wrap.append(input);
-    return wrap;
-  }
-
-  function renderNormalizeToggle() {
-    const wrap = document.createElement('label');
-    wrap.className = 'mmx-compare-normalize';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.className = 'mmx-compare-normalize-input';
-    input.checked = !!project.compare?.normalizeAudio;
-    wrap.append(input, `Normalize ${input.checked ? 'on' : 'off'}`);
-    return wrap;
   }
 
   function renderTargetControls(side) {

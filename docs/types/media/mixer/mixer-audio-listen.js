@@ -106,7 +106,8 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   function contentWidth() {
     const avail = Math.max(120, (canvasWrap.clientWidth || timeline.clientWidth - 96 || 700));
     if (pxPerSec <= 0) return avail; // fit
-    return Math.max(avail, Math.round(timelineSec() * pxPerSec));
+    // May be wider than the viewport (zoom in → scroll) or narrower (zoom out past fit).
+    return Math.max(40, Math.round(timelineSec() * pxPerSec));
   }
 
   function renderWaveform() {
@@ -187,21 +188,23 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
         h('span', 'al-inspector-sub', {}, intake?.filename || 'Audio'),
       ]),
       h('div', 'al-grid', {}, [
-        numberField('Start (s)', 'al-f-start', startSec(), (v) => { project = moveElement(project, el.id, v * 1000); syncAll(); }),
-        numberField('In (s)', 'al-f-in', inSec, (v) => { project = trimElement(project, el.id, { sourceInMs: v * 1000 }); emitRegion(); syncAll(); }),
-        numberField('Out (s)', 'al-f-out', outSec, (v) => { project = trimElement(project, el.id, { sourceOutMs: v * 1000 }); emitRegion(); syncAll(); }),
+        // These fire on every drag/keypress, so they update the canvas/clip only (renderWaveform) —
+        // NOT renderInspector, which would replace the very input being dragged and kill the drag.
+        numberField('Start (s)', 'al-f-start', startSec(), (v) => { project = moveElement(project, el.id, v * 1000); renderWaveform(); }),
+        numberField('In (s)', 'al-f-in', inSec, (v) => { project = trimElement(project, el.id, { sourceInMs: v * 1000 }); emitRegion(); renderWaveform(); }),
+        numberField('Out (s)', 'al-f-out', outSec, (v) => { project = trimElement(project, el.id, { sourceOutMs: v * 1000 }); emitRegion(); renderWaveform(); }),
       ]),
       h('div', 'al-sliders', {}, [
         sliderField('Gain', 'al-f-gain', 0, 2, 0.01, el?.audio?.gain ?? 1, (v) => {
           project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, gain: v } }));
-          mediaEl.volume = clamp(v, 0, 1);
-          syncAll();
+          applyLiveVolume();
+          renderWaveform();
         }, (v) => `${Math.round(v * 100)}%`),
         sliderField('Fade in', 'al-f-fade-in', 0, 5000, 50, el?.audio?.fadeInMs ?? 0, (v) => {
-          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeInMs: v } })); syncAll();
+          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeInMs: v } })); renderWaveform();
         }, (v) => `${(v / 1000).toFixed(1)}s`),
         sliderField('Fade out', 'al-f-fade-out', 0, 5000, 50, el?.audio?.fadeOutMs ?? 0, (v) => {
-          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeOutMs: v } })); syncAll();
+          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeOutMs: v } })); renderWaveform();
         }, (v) => `${(v / 1000).toFixed(1)}s`),
         roomToneField(!!el?.audio?.roomTone, (on) => {
           project = updateElement(project, el.id, (it) => ({
@@ -324,8 +327,25 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   const onLoaded = () => { project = mergeDuration(project, mediaDuration(mediaEl) * 1000); syncAll(); };
   const onMedia = () => { updateCursor(); };
   mediaEl.addEventListener('loadedmetadata', onLoaded);
-  ['play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((ev) => mediaEl.addEventListener(ev, onMedia));
+  // Note: no 'volumechange' here — we drive mediaEl.volume ourselves via applyLiveVolume().
+  ['play', 'pause', 'seeked', 'ended'].forEach((ev) => mediaEl.addEventListener(ev, onMedia));
   window.addEventListener('resize', renderWaveform);
+
+  // Apply the element gain + fade-in/out envelope to the LIVE native-audio output so the user
+  // actually hears the fades (not just sees them). Driven every frame from the rAF loop.
+  function applyLiveVolume() {
+    const el = firstElement();
+    const gain = el?.audio?.gain ?? 1;
+    const t = Number(mediaEl.currentTime) || 0;
+    const inSec = clipInSec();
+    const outSec = clipOutSec();
+    const fadeInSec = (el?.audio?.fadeInMs || 0) / 1000;
+    const fadeOutSec = (el?.audio?.fadeOutMs || 0) / 1000;
+    let env = 1;
+    if (fadeInSec > 0 && t > inSec && t < inSec + fadeInSec) env = Math.min(env, (t - inSec) / fadeInSec);
+    if (fadeOutSec > 0 && t < outSec && t > outSec - fadeOutSec) env = Math.min(env, (outSec - t) / fadeOutSec);
+    mediaEl.volume = clamp(gain * env, 0, 1);
+  }
 
   decodeSummary(intake).then((summary) => {
     if (destroyed) return;
@@ -343,6 +363,7 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
 
   function loop() {
     if (destroyed) return;
+    applyLiveVolume();
     if (!mediaEl.paused) renderWaveform(); else updateCursor();
     rafId = requestAnimationFrame(loop);
   }

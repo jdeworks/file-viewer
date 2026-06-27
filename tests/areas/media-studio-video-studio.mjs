@@ -4,7 +4,6 @@ import {
   assertVideoTopViewport,
   reloadExampleAtViewport,
 } from './media-studio-helpers.mjs';
-import { exerciseCompare } from './media-studio-compare.mjs';
 
 export async function runVideoStudioChecks(ctx) {
   const { page, openExample, pass, fail } = ctx;
@@ -52,19 +51,22 @@ export async function runVideoStudioChecks(ctx) {
   }
   await openExample('Sample.webm');
   await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
-  await exerciseCompare(ctx, 'video');
-  const videoCompareGrammar = await page.$eval('#previewHost .media-mode-panel[data-mode="compare"] .mmx-compare-source', (root) => ({
-    overlapText: root.querySelector('.mmx-compare-overlap')?.textContent || '',
-    overlay: !!root.querySelector('.mmx-compare-overlay'),
-    offsetDeltaMs: root.querySelector('.mmx-compare-overlay')?.dataset.offsetDeltaMs || '',
-    view: root.dataset.compareView || '',
-  }));
-  if (/Overlap/i.test(videoCompareGrammar.overlapText) && videoCompareGrammar.view === 'overlay' && videoCompareGrammar.overlay)
-    pass('video Compare has equivalent overlay/offset grammar');
-  else fail('video compare grammar state: ' + JSON.stringify(videoCompareGrammar));
+  // Video compare is disabled (coming soon) — tab must show a note, not the full compare surface.
+  const absentBeforeCompare = await page.$('#previewHost .mmx-compare-source');
+  if (!absentBeforeCompare) pass('video Compare: compare surface absent before tab click');
+  else fail('video Compare: compare surface should not mount before tab click');
+  await page.click('#previewHost .media-mode-tab[data-mode="compare"]');
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="compare"]:not([hidden])', { timeout: 5000 });
+  const compareNote = await page.$eval(
+    '#previewHost .media-mode-panel[data-mode="compare"] .media-ed-note',
+    (el) => el?.textContent || '',
+  ).catch(() => '');
+  if (/coming soon/i.test(compareNote)) pass('video Compare: coming-soon note present');
+  else fail('video Compare: coming-soon note missing: ' + compareNote.slice(0, 80));
+  const compareSource = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .mmx-compare-source');
+  if (!compareSource) pass('video Compare: modular compare surface not mounted (disabled)');
+  else fail('video Compare: modular compare surface should not mount');
   await page.click('#previewHost .media-mode-tab[data-mode="watch"]');
-  const videoCompareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .mmx-compare-source');
-  if (!videoCompareUnmounted) pass('video Compare tears down when leaving mode'); else fail('video Compare stayed mounted after leaving mode');
 
   // ── Video studio ── Adjust now uses an intent-first look card plus raw advanced
   // sliders, and a dedicated movie-audio Spectrum & EQ sub-surface.

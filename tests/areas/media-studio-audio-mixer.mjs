@@ -62,11 +62,63 @@ export async function runAudioMixerAndPlaylist(ctx) {
     if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
       pass('audio mixer: per-lane gain/mute/solo + fade handles present');
     else fail('mixer lane controls after open: ' + JSON.stringify(laneCtrls));
+    // Time ruler above the lane stack.
+    const hasRuler = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-mix-ruler');
+    if (hasRuler) pass('audio mixer: time ruler present above lanes');
+    else fail('audio mixer: time ruler missing');
+    // ── Per-lane Edit modal: open it, check EQ + Dynamics buttons, expand EQ ──
+    const laneEditBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-edit');
+    if (laneEditBtn) {
+      await laneEditBtn.click();
+      const modalState = await page.evaluate(() => {
+        const modal = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden])');
+        if (!modal) return { open: false };
+        return { open: true, hasEq: !!modal.querySelector('.mmx-mix-lane-eq-btn'), hasDyn: !!modal.querySelector('.mmx-mix-lane-dyn-btn') };
+      });
+      if (modalState.open && modalState.hasEq && modalState.hasDyn)
+        pass('audio mixer: lane Edit button opens modal with EQ + Dynamics buttons');
+      else fail('mixer lane modal: ' + JSON.stringify(modalState));
+      await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden]) .mmx-mix-lane-eq-btn');
+      const eqBands = await page.$$eval(
+        '#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-eq-section:not([hidden]) .mmx-mix-lane-eq-band-gain',
+        (els) => els.length,
+      );
+      if (eqBands === 9) pass('audio mixer: EQ toggle reveals 9 band sliders');
+      else fail('mixer EQ band count: ' + eqBands);
+      await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden]) .mmx-mix-lane-modal-close');
+      const stillOpen = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-modal:not([hidden])');
+      if (!stillOpen) pass('audio mixer: modal closes via close button');
+      else fail('mixer modal still visible after close button click');
+    } else {
+      pass('audio mixer: Edit button check skipped (no lane present yet)');
+    }
+    // Clicking a lane selects it and shows the selection panel with Start + Gain fields.
+    const firstTrackCanvas = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-track .al-canvas-wrap');
+    if (firstTrackCanvas) {
+      await firstTrackCanvas.click();
+      const selPanelFields = await page.evaluate(() => {
+        const p = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .al-selection-panel');
+        return { panel: !!p, start: !!p?.querySelector('.al-f-start'), gain: !!p?.querySelector('input[type="range"]') };
+      });
+      if (selPanelFields.panel && selPanelFields.start && selPanelFields.gain)
+        pass('audio mixer: selection panel shows Start + Gain after lane click');
+      else fail('audio mixer: selection panel incomplete: ' + JSON.stringify(selPanelFields));
+    } else {
+      pass('audio mixer: no track canvas yet (selection panel check skipped)');
+    }
     // Add a generator lane → a second lane appears (≥2 clips).
     await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-add-tone');
     await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .al-track').length >= 2, null, { timeout: 6000 });
     const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-track', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
+    // Zoom: zooming in widens the lane canvas; Fit resets it. (10× zoom guarantees content overflows any viewport.)
+    const w0 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
+    for (let i = 0; i < 10; i++) await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-zoom-in');
+    const w1 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
+    if (w1 > w0) pass('audio mixer: zoom-in widens canvas (' + w0 + ' → ' + w1 + 'px)'); else fail('zoom-in had no effect: ' + w0 + ' → ' + w1);
+    await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fit');
+    const w2 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
+    if (w2 < w1) pass('audio mixer: Fit resets canvas width (' + w1 + ' → ' + w2 + 'px)'); else fail('Fit had no effect: ' + w1 + ' → ' + w2);
     // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
     const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-download');
     await assertMixViewport(ctx, 'desktop');
