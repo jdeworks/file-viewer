@@ -192,6 +192,7 @@ FULL_UNIT_TESTS=(
   tests/known-koka-lang.test.mjs
   tests/known-lean-lang.test.mjs
   tests/known-lua-lang.test.mjs
+  tests/known-livescript-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
