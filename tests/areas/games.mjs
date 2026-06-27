@@ -1074,11 +1074,20 @@ export async function run(ctx) {
   await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
   const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[─│+]/.test(document.querySelector('.s9-arena')?.textContent || ''));
   if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
-  // The boss is gated behind the run: the player starts on a sublevel, not at the Observer.
+  // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
   const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
-  if (s9StartLevel < 18) pass('Stage 9 starts on a sublevel (boss gated behind the full run)'); else fail('Stage 9 started at the boss');
-  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the boss
-  // seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
+  if (s9StartLevel === 1) pass('Stage 9 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 9 started at level ${s9StartLevel}`);
+  // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
+  // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
+  const s9Stall = await page.evaluate(() => {
+    const reached = window.__fvStage9.solveStableBody();
+    return { reached, unstable: !!window.__fvStage9.config(reached).onlineUnstable, boss: window.__fvStage9.config(reached).isBoss };
+  });
+  if (s9Stall.reached > 1 && s9Stall.unstable && !s9Stall.boss)
+    pass('Stage 9 online run clears the learnable front, then stalls at the onlineUnstable back third');
+  else fail(`Stage 9 online run did not stall at the back third: ${JSON.stringify(s9Stall)}`);
+  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
+  // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
   await page.click('[data-action="offline"]');
