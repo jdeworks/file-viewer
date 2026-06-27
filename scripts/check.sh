@@ -168,6 +168,7 @@ FULL_UNIT_TESTS=(
   tests/known-carbon-lang.test.mjs
   tests/known-chapel-lang.test.mjs
   tests/known-awk-script.test.mjs
+  tests/known-cobol-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
