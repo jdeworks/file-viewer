@@ -9,7 +9,7 @@ import { floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
 import { detonate } from "./monsters.js";
 import { applyStatus, tickStatuses } from "./status.js";
-import { enterHazard } from "./hazards.js";
+import { enterHazard, playerIceSlide } from "./hazards.js";
 import { springTrap } from "./traps.js";
 import { rollAffix, affixLabel, affixDamage, applyHitAffix, WEAPON_AFFIXES } from "./affixes.js";
 import { elementStrike } from "./elements.js";
@@ -125,8 +125,8 @@ export function step(world, player, dir) {
   const move = DIRS[dir];
   const events = { moved: false, log: [], damageTaken: 0, killed: false, pickup: null, descend: false, died: false };
   if (!move) return events;
-  const nx = world.pos.x + move.dx;
-  const ny = world.pos.y + move.dy;
+  let nx = world.pos.x + move.dx;
+  let ny = world.pos.y + move.dy;
   if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
   if (world.grid[ny][nx] === "#") {
     // Bumping the secret door of an unopened hidden room triggers its reveal (then stay put).
@@ -176,6 +176,10 @@ export function step(world, player, dir) {
   events.moved = true;
   world.stepCount = (world.stepCount || 0) + 1; // drives A4 lingering pressure
   if (world.torch > 0) { world.torch -= 1; if (world.torch === 0) events.log.push("your torch gutters out. the dark closes in."); } // C4 Overflow darkness
+  // E1 ice slide — if @ landed on ice, glide one more cell in the heading; a chasm at the end is
+  // resolved by the hazard pass below (the player falls), a wall/foe stops @. nx/ny track the rest cell.
+  ({ x: nx, y: ny } = playerIceSlide(world, nx, ny, move.dx, move.dy, events));
+  world.pos = { x: nx, y: ny };
 
   // Hazard on-enter (A2): lava burns, spores poison, spikes bleed, a chasm drops you a floor.
   // A spore tile that fire already consumed (C1) is spent — no poison.

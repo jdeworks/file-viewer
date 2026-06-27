@@ -86,7 +86,16 @@ export function useConsumable(world, player, type, events) {
     for (const m of world.monsters) {
       if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 5) { applyStatus(m, "frozen", 4, 1); if (m.ambush) m.hidden = false; n += 1; }
     }
-    events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+    // E1 combo: the freeze rune also glazes nearby `wet` cells into `ice`. hazardIndex stores live
+    // object refs, so flipping h.type is reflected immediately — no index rebuild. A creature that
+    // later steps onto that ice slides a cell in its heading (into a chasm = instant kill).
+    let iced = 0;
+    if (Array.isArray(world.hazards)) {
+      for (const h of world.hazards) {
+        if (h.type === "wet" && Math.abs(h.x - world.pos.x) + Math.abs(h.y - world.pos.y) <= 5) { h.type = "ice"; iced += 1; }
+      }
+    }
+    events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place${iced ? `; ${iced} wet cell${iced === 1 ? "" : "s"} glazed to ice` : ""}.`);
   } else if (type === "acid") {
     // Acid strip (element matrix): corrode every nearby foe so the NEXT hit lands amplified — the
     // combo enabler (acid → firebolt / shatter for a burst). Fizzles WITHOUT spending if none in reach.

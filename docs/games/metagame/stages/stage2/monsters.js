@@ -12,6 +12,7 @@ import { spawnMonster } from "./data.js";
 import { makeRng } from "./rng.js";
 import { torchSightBonus } from "./darkness.js";
 import { lightEaterTick, mirrorTick, phantomTick } from "./overflow.js";
+import { iceSlide } from "./hazards.js";
 
 const SUMMON_CAP = 90; // hard ceiling on live monsters so a summoner can't runaway-spawn
 const RANGED_COOLDOWN = 2;
@@ -60,6 +61,26 @@ function monsterBite(m, player, events) {
   if (player.hp <= 0) events.died = true;
   if (events.log) events.log.push(`${m.name} bites for ${dmg}.`);
   return dmg;
+}
+
+// E1 — a monster that just stepped onto ice glides one more cell in the heading it was moving. Over a
+// chasm it dies (the headline combo: freeze a wet cell into ice next to a chasm, then a chaser slides
+// in); into a wall it's stunned 2 turns; onto a free cell it slides on; a blocked cell stops it on the
+// ice. `from{X,Y}` is the cell it came from (gives the slide direction). Deterministic positional logic.
+function slideMonster(world, m, fromX, fromY, occupied, events) {
+  if (!world.hazardAt || world.hazardAt(m.x, m.y) !== "ice") return;
+  const sl = iceSlide(world, m.x, m.y, m.x - fromX, m.y - fromY);
+  if (sl.wall) { applyStatus(m, "stun", 2, 1); if (events.log) events.log.push(`${m.name} skids on the ice and slams into the wall!`); return; }
+  if (sl.chasm) {
+    occupied.delete(m.y * world.width + m.x);
+    m.alive = false; m.hp = 0;
+    if (events.log) events.log.push(`${m.name} skids across the ice into the chasm!`);
+    return;
+  }
+  if (occupied.has(sl.y * world.width + sl.x) || (sl.x === world.pos.x && sl.y === world.pos.y)) return; // blocked — stops on the ice
+  occupied.delete(m.y * world.width + m.x);
+  m.x = sl.x; m.y = sl.y;
+  occupied.add(m.y * world.width + m.x);
 }
 
 // Greedy chase: close the larger axis first, fall back to the other; never onto @ (that's a bite).
@@ -317,9 +338,12 @@ export function monsterTurn(world, player, events, filter) {
     const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied))
       : (m.chasing = false, patrolStep(world, m, occupied));
     if (target) {
+      const fromX = m.x;
+      const fromY = m.y;
       occupied.delete(m.y * world.width + m.x);
       m.x = target.x; m.y = target.y; if (target.dir) m.dir = target.dir;
       occupied.add(m.y * world.width + m.x);
+      slideMonster(world, m, fromX, fromY, occupied, events); // E1 ice slide
     }
   }
 }

@@ -4,7 +4,7 @@ import { monsterTurn, detonate, hasLOS, pressureSpawn } from "../monsters.js";
 import { buildFloor, step, exitDistanceField, stepToExit } from "../engine.js";
 import { spawnMonster, rollEntity } from "../data.js";
 import { TORCH_STEPS } from "../darkness.js";
-import { enterHazard, hazardIndex } from "../hazards.js";
+import { enterHazard, hazardIndex, iceSlide } from "../hazards.js";
 import { springTrap } from "../traps.js";
 import { useConsumable } from "../consumables.js";
 import { affixDamage, applyHitAffix } from "../affixes.js";
@@ -453,6 +453,86 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   ok(g6 && g6.explode && g6.split, "act-II guardian is a hazard spike (explodes + splits)");
   const g9 = buildFloor("guard-esc", 9).monsters.find((m) => m.guardian);
   ok(g9 && g9.lighteater && g9.phantom, "act-III guardian is darkness-aware (feeds on dark + no ghost)");
+}
+
+// ── E1 ice patches: wet→ice glaze, slide direction, slide-into-chasm kill, player slide ──────────
+function playerEnt() {
+  return { hp: 50, def: 0, atk: 5, statuses: {}, inventory: {}, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: {} };
+}
+
+// iceSlide helper — pure positional outcome (wall slam / chasm kill / open glide).
+{
+  const w = arena(12);
+  w.hazards = [{ x: 6, y: 1, type: "chasm" }];
+  w.hazardAt = hazardIndex(w);
+  ok(iceSlide(w, 5, 1, 1, 0).chasm === true, "iceSlide over a chasm reports a kill");
+  const glide = iceSlide(w, 8, 1, 1, 0);
+  ok(glide.x === 9 && !glide.chasm && !glide.wall, "iceSlide onto open floor glides one cell on");
+  ok(iceSlide(w, 10, 1, 1, 0).wall === true, "iceSlide into a wall reports a slam");
+}
+
+// Freeze rune glazes a nearby wet cell into ice; the live hazard index reflects the mutation.
+{
+  const w = arena(12); // floor 5 (Act II)
+  w.hazards = [{ x: 6, y: 1, type: "wet" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 5, y: 1 };
+  const p = playerEnt(); p.inventory.freeze = 1;
+  ok(useConsumable(w, p, "freeze", { log: [], damageTaken: 0, died: false }), "freeze rune is spent");
+  ok(w.hazards[0].type === "ice", "freeze rune glazes a nearby wet cell into ice");
+  ok(w.hazardAt(6, 1) === "ice", "hazard index reflects the live wet→ice mutation (no rebuild)");
+}
+
+// A monster that steps onto ice slides one extra cell — into a chasm it dies.
+{
+  const w = arena(12);
+  w.hazards = [{ x: 5, y: 1, type: "ice" }, { x: 6, y: 1, type: "chasm" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 8, y: 1 }; // player to the right, so the foe greedily steps right onto the ice
+  const m = foe({ x: 4, y: 1, sight: 10, chasing: true });
+  w.monsters = [m];
+  monsterTurn(w, { hp: 100, def: 0, atk: 5, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(!m.alive, "a foe that slides off ice into a chasm is killed");
+}
+
+// A monster that steps onto ice with open floor beyond slides one cell (not stuck on the ice).
+{
+  const w = arena(12);
+  w.hazards = [{ x: 5, y: 1, type: "ice" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 8, y: 1 };
+  const m = foe({ x: 4, y: 1, sight: 10, chasing: true });
+  w.monsters = [m];
+  monsterTurn(w, { hp: 100, def: 0, atk: 5, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(m.alive && m.x === 6, "a foe slides one extra cell past the ice in its heading");
+}
+
+// The player also slides on ice — and falls if the slide ends over a chasm.
+{
+  const w = arena(12);
+  w.exit = { x: 0, y: 0 };
+  w.hazards = [{ x: 6, y: 1, type: "ice" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 5, y: 1 };
+  const ev = step(w, playerEnt(), "right");
+  ok(w.pos.x === 7 && ev.slid, "@ stepping onto ice slides one extra cell");
+}
+{
+  const w = arena(12);
+  w.exit = { x: 0, y: 0 };
+  w.hazards = [{ x: 6, y: 1, type: "ice" }, { x: 7, y: 1, type: "chasm" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 5, y: 1 };
+  const ev = step(w, playerEnt(), "right");
+  ok(ev.descend === true, "@ sliding off ice into a chasm falls to the next floor");
+}
+
+// E1 is an Act-II (floors 4-6) terrain feature: those floors get wet cells, others do not.
+{
+  const wetA = buildFloor("ice-floor", 5).hazards.some((h) => h.type === "wet");
+  const wetI = buildFloor("ice-floor", 1).hazards.some((h) => h.type === "wet");
+  ok(wetA, "Cisterns/Act-II floors scatter wet cells");
+  ok(!wetI, "Act-I floors have no wet cells");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

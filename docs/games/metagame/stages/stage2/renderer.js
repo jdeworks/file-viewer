@@ -58,6 +58,14 @@ export function renderStage2({
             <span class="s2-c-exit">&gt;</span> stairs
             <span class="s2-c-lava">≈</span> lava
             <span class="s2-c-spikes">^</span> spikes
+            <span class="s2-c-chasm">:</span> chasm
+            <span class="s2-c-ice">~</span> water/ice
+          </div>
+          <div class="s2-legend-row">
+            <span class="s2-c-consum">†</span> torch
+            <span class="s2-c-chasm">○</span> rift
+            <span class="s2-c-foe">?</span> ghost
+            <span class="s2-c-foe">e</span><span class="s2-c-foe2">M</span><span class="s2-c-foe2">ψ</span> dark foes
           </div>
         </div>
       </div>
