@@ -5,38 +5,46 @@ import {
   movementForLevel, LEVELS, BOSS_LEVEL
 } from "../game.js";
 
-// ── movement structure: 10 levels, boss last, learnable front / onlineUnstable back third ──────────
-assert.equal(LEVELS, 10, "ten levels");
-assert.equal(BOSS_LEVEL, 10, "boss is the last level");
-assert.equal(levelConfig(10).isBoss, true, "level 10 is the boss");
+// ── movement structure: 16 levels, boss last, learnable front / onlineUnstable back third ──────────
+assert.equal(LEVELS, 16, "sixteen levels");
+assert.equal(BOSS_LEVEL, 16, "boss is the last level");
+assert.equal(levelConfig(16).isBoss, true, "level 16 is the boss");
 assert.equal(levelConfig(1).onlineUnstable || false, false, "level 1 learnable online");
-assert.equal(levelConfig(6).onlineUnstable || false, false, "level 6 learnable online");
-assert.equal(levelConfig(7).onlineUnstable, true, "back third (7) is onlineUnstable");
-assert.equal(levelConfig(9).onlineUnstable, true, "back third (9) is onlineUnstable");
-assert.equal(levelConfig(10).onlineUnstable, true, "boss is onlineUnstable");
+assert.equal(levelConfig(11).onlineUnstable || false, false, "level 11 (Surveillance) learnable online");
+assert.equal(levelConfig(12).onlineUnstable, true, "back third (12) is onlineUnstable");
+assert.equal(levelConfig(15).onlineUnstable, true, "back third (15) is onlineUnstable");
+assert.equal(levelConfig(16).onlineUnstable, true, "boss is onlineUnstable");
 assert.equal(movementForLevel(1).name, "Signal");
-assert.equal(movementForLevel(10).name, "Observer");
+assert.equal(movementForLevel(16).name, "Observer");
 
-// ── each movement introduces a distinct mode (bands are now load-bearing) ──────────────────────────
+// ── each movement introduces a distinct mode (bands are load-bearing, incl. the round-2 archetypes) ──
 assert.equal(levelConfig(1).mode, "simple");
 assert.equal(levelConfig(3).mode, "oscillating");
-assert.equal(levelConfig(5).mode, "dual");
-assert.equal(levelConfig(7).mode, "reversing");
-assert.equal(levelConfig(8).mode, "multigap");
+assert.equal(levelConfig(5).mode, "ghostecho");
+assert.equal(levelConfig(7).mode, "rhythm");
+assert.equal(levelConfig(9).mode, "dual");
+assert.equal(levelConfig(11).mode, "stealth");
+assert.equal(levelConfig(12).mode, "reversing");
+assert.equal(levelConfig(13).mode, "multigap");
+assert.equal(levelConfig(15).mode, "darkzone");
 
 // ── tolerance tightens toward the boss ──────────────────────────────────────────────────────────────
-assert.ok(levelConfig(10).tolerance < levelConfig(1).tolerance, "the boss is tighter than level 1");
+assert.ok(levelConfig(16).tolerance < levelConfig(1).tolerance, "the boss is tighter than level 1");
 assert.ok(levelConfig(6).tolerance < levelConfig(2).tolerance, "tolerance tightens with depth");
 
 // ── crossAttempt dispatches per mode + is deterministic; each level's solveMoment is a real hit ─────
+// (rhythm's solveMoment returns the press-time ARRAY — every beat must be a genuine hit.)
 for (let level = 1; level <= BOSS_LEVEL; level += 1) {
   const seed = level * 13 + 1;
-  const t = solveMoment(seed, level);
-  assert.equal(crossAttempt({ seed, elapsedMs: t, level }).hit, true, `level ${level}: solveMoment hits`);
+  const sol = solveMoment(seed, level);
+  const moments = Array.isArray(sol) ? sol : [sol];
+  for (const t of moments) {
+    assert.equal(crossAttempt({ seed, elapsedMs: t, level }).hit, true, `level ${level}: solveMoment hits`);
+  }
   const a = crossAttempt({ seed, elapsedMs: 1234, level });
   const b = crossAttempt({ seed, elapsedMs: 1234, level });
   assert.deepEqual(a, b, `level ${level}: crossAttempt deterministic`);
-  assert.ok(renderLevel(seed, level, t).length > 8, `level ${level}: renders`);
+  assert.ok(renderLevel(seed, level, moments[0]).length > 8, `level ${level}: renders`);
 }
 
 // ── a full rotation on a single-ring level has both hit and miss windows ─────────────────────────────

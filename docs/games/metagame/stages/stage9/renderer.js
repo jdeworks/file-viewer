@@ -64,6 +64,8 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
   // accumulated time and the smoke can drive any level by passing an explicit elapsedMs via the hook.
   let elapsedMs = 0;
   let liveSeed = null; // random seed for onlineUnstable levels/boss (resampled on each OBSERVE)
+  let rhythmChain = 0; // consecutive on-beat crosses for the current Cadence level (reset on miss)
+  let attempts = [];   // recent {ms, hit} presses on the current level — drives ghostecho feedback
 
   function offlineUnlocked() {
     return hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
@@ -84,10 +86,21 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
 
   function reobserve() {
     elapsedMs = 0;
+    rhythmChain = 0;
+    attempts = [];
     const cfg = levelConfig(state.currentLevel);
     if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
       liveSeed = getBossSeed({ state, actions });
     }
+  }
+
+  function advanceFrom(level) {
+    state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
+    elapsedMs = 0;
+    liveSeed = null;
+    rhythmChain = 0;
+    attempts = [];
+    if (state.currentLevel >= BOSS_LEVEL) pushLog(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
   }
 
   function crossSublevel() {
@@ -103,13 +116,33 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     }
     const seed = activeSeed();
     const result = crossAttempt({ seed, elapsedMs, level });
+    if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
+
+    // Cadence (rhythm): land N consecutive on-beat crosses; a miss resets the chain. The clock keeps
+    // running between presses (no elapsed reset) so the next beat is reachable; only a full chain advances.
+    if (cfg.mode === "rhythm") {
+      const need = Math.max(2, cfg.chain || 3);
+      if (result.hit) {
+        rhythmChain += 1;
+        if (rhythmChain >= need) {
+          state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
+          pushLog(`cadence held — ${need} crosses on the beat. advancing.`);
+          advanceFrom(level);
+        } else {
+          pushLog(`on beat (${rhythmChain}/${need}). hold the cadence.`);
+        }
+      } else {
+        rhythmChain = 0;
+        state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+        pushLog(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      }
+      return;
+    }
+
     if (result.hit) {
       state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
       pushLog(`level ${level} crossed (gap at top). advancing.`);
-      state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
-      elapsedMs = 0;
-      liveSeed = null;
-      if (state.currentLevel >= BOSS_LEVEL) pushLog(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
+      advanceFrom(level);
     } else {
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
@@ -155,8 +188,14 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     state: () => state,
     config: (level) => levelConfig(level ?? state.currentLevel),
     crossAt(ms) { elapsedMs = Number(ms) || 0; doCross(); persistAndPaint(); },
-    // CROSS the current level at its perfect moment for the seed it actually uses right now.
-    solveLevel() { this.crossAt(solveMoment(activeSeed(), state.currentLevel)); return state.currentLevel; },
+    // CROSS the current level at its perfect moment(s) for the seed it actually uses right now. Most
+    // modes return a single ms; rhythm returns the press-time ARRAY (one per beat) — press each in turn,
+    // which drives the real chain to completion (each press is a genuine timed CROSS, not a bypass).
+    solveLevel() {
+      const sol = solveMoment(activeSeed(), state.currentLevel);
+      for (const t of (Array.isArray(sol) ? sol : [sol])) this.crossAt(t);
+      return state.currentLevel;
+    },
     // Clear the learnable front movements. Online this STALLS at the first onlineUnstable level
     // (its gap reseeds on every commit) — proving the back third demands the offline un-cheat.
     solveStableBody() {
@@ -205,7 +244,15 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
   }
 
   function paintArena() {
-    fields.arena.textContent = renderLevel(activeSeed(), state.currentLevel, elapsedMs);
+    const seed = activeSeed();
+    const level = state.currentLevel;
+    const ctx = {};
+    // Echo (ghostecho): draw the last two presses as faint ghost rings so the player reads their own
+    // error (how many degrees early/late) and corrects. Ghosts are presentation only — pure f(seed,ms).
+    if (levelConfig(level).mode === "ghostecho") {
+      ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
+    }
+    fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
   }
 
   function repaint() {

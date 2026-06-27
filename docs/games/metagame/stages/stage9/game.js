@@ -28,10 +28,11 @@ export function solveMoment(seed, level) {
 // Back-compat alias (older call sites / tests used solveElapsed).
 export const solveElapsed = solveMoment;
 
-// Render the arena for (seed, level, elapsedMs) — dispatches to the mode's renderer.
-export function renderLevel(seed, level, elapsedMs) {
+// Render the arena for (seed, level, elapsedMs) — dispatches to the mode's renderer. ctx carries optional
+// per-frame extras (e.g. ghostecho's attempt ghosts) that don't affect motion (pure presentation).
+export function renderLevel(seed, level, elapsedMs, ctx = {}) {
   const cfg = levelConfig(level);
-  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0);
+  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
 }
 
 // Single-ring rotation speed for a (seed, level) — kept for the HUD / simple-mode display.

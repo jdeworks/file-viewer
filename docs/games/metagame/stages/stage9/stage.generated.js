@@ -464,27 +464,36 @@ function getMode(name) {
 }
 
 // ../../docs/games/metagame/stages/stage9/movements.js
-var BOSS_LEVEL = 10;
+var BOSS_LEVEL = 16;
 var MOVEMENTS = [
   { id: 1, name: "Signal", verb: "watch & time", levels: [1, 2] },
   { id: 2, name: "Drift", verb: "read a changing speed", levels: [3, 4] },
-  { id: 3, name: "Interference", verb: "hold two rhythms", levels: [5, 6] },
-  { id: 4, name: "Reversal", verb: "track the flips (offline)", levels: [7] },
-  { id: 5, name: "Decoys", verb: "pick the real gap (offline)", levels: [8] },
-  { id: 6, name: "Collapse", verb: "infer the occluded gap (offline)", levels: [9] },
-  { id: 7, name: "Observer", verb: "the full effect (offline)", levels: [10] }
+  { id: 3, name: "Echo", verb: "read your own error", levels: [5, 6] },
+  { id: 4, name: "Cadence", verb: "hold the beat", levels: [7, 8] },
+  { id: 5, name: "Interference", verb: "hold two rhythms", levels: [9, 10] },
+  { id: 6, name: "Surveillance", verb: "wait for the blind window", levels: [11] },
+  { id: 7, name: "Reversal", verb: "track the flips (offline)", levels: [12] },
+  { id: 8, name: "Decoys", verb: "pick the real gap (offline)", levels: [13, 14] },
+  { id: 9, name: "Blackout", verb: "extrapolate the occluded gap (offline)", levels: [15] },
+  { id: 10, name: "Observer", verb: "the full effect (offline)", levels: [16] }
 ];
 var LEVEL_TABLE = {
   1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
   2: { mode: "simple", speed: 40, speedVar: 8, tolerance: 36, display: "open" },
   3: { mode: "oscillating", oscBase: 36, oscAmp: 16, oscPeriod: 4200, tolerance: 34, display: "open" },
   4: { mode: "oscillating", oscBase: 46, oscAmp: 24, oscPeriod: 3400, tolerance: 30, display: "open" },
-  5: { mode: "dual", speedInner: 44, speedOuter: 30, tolerance: 32, display: "dual" },
-  6: { mode: "dual", speedInner: 56, speedOuter: 36, tolerance: 28, display: "dual" },
-  7: { mode: "reversing", speed: 62, speedVar: 10, tolerance: 26, display: "open", onlineUnstable: true },
-  8: { mode: "multigap", speed: 52, speedVar: 8, gaps: 3, tolerance: 24, display: "open", onlineUnstable: true },
-  9: { mode: "multigap", speed: 60, speedVar: 10, gaps: 4, tolerance: 20, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true },
-  10: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
+  5: { mode: "ghostecho", speed: 34, speedVar: 0, tolerance: 28, display: "open" },
+  6: { mode: "ghostecho", speed: 42, speedVar: 6, tolerance: 24, display: "open" },
+  7: { mode: "rhythm", speed: 34, speedVar: 0, chain: 3, tolerance: 30, display: "open" },
+  8: { mode: "rhythm", speed: 44, speedVar: 0, chain: 4, tolerance: 26, display: "open" },
+  9: { mode: "dual", speedInner: 44, speedOuter: 30, tolerance: 32, display: "dual" },
+  10: { mode: "dual", speedInner: 56, speedOuter: 36, tolerance: 28, display: "dual" },
+  11: { mode: "stealth", speed: 40, speedVar: 6, eyeSpeed: 24, blind: 64, tolerance: 26, display: "open" },
+  12: { mode: "reversing", speed: 62, speedVar: 10, tolerance: 26, display: "open", onlineUnstable: true },
+  13: { mode: "multigap", speed: 52, speedVar: 8, gaps: 3, tolerance: 24, display: "open", onlineUnstable: true },
+  14: { mode: "multigap", speed: 60, speedVar: 10, gaps: 4, tolerance: 20, display: "open", onlineUnstable: true },
+  15: { mode: "darkzone", speed: 50, speedVar: 8, tolerance: 22, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  16: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
 };
 function movementForLevel(level) {
   const lvl = Number(level) || 1;
@@ -506,9 +515,9 @@ function solveMoment(seed, level) {
   const cfg = levelConfig(level);
   return getMode(cfg.mode).solveMoment(cfg, seed);
 }
-function renderLevel(seed, level, elapsedMs) {
+function renderLevel(seed, level, elapsedMs, ctx = {}) {
   const cfg = levelConfig(level);
-  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0);
+  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
 }
 function sublevelSeed(level) {
   return (Number(level) || 1) * 31 + 7;
@@ -710,6 +719,8 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   });
   let elapsedMs = 0;
   let liveSeed = null;
+  let rhythmChain = 0;
+  let attempts = [];
   function offlineUnlocked() {
     return hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
   }
@@ -724,10 +735,20 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   }
   function reobserve() {
     elapsedMs = 0;
+    rhythmChain = 0;
+    attempts = [];
     const cfg = levelConfig(state.currentLevel);
     if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
       liveSeed = getBossSeed({ state, actions });
     }
+  }
+  function advanceFrom(level) {
+    state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
+    elapsedMs = 0;
+    liveSeed = null;
+    rhythmChain = 0;
+    attempts = [];
+    if (state.currentLevel >= BOSS_LEVEL) pushLog2(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
   }
   function crossSublevel() {
     const level = state.currentLevel;
@@ -741,13 +762,29 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     }
     const seed = activeSeed();
     const result = crossAttempt({ seed, elapsedMs, level });
+    if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
+    if (cfg.mode === "rhythm") {
+      const need = Math.max(2, cfg.chain || 3);
+      if (result.hit) {
+        rhythmChain += 1;
+        if (rhythmChain >= need) {
+          state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
+          pushLog2(`cadence held — ${need} crosses on the beat. advancing.`);
+          advanceFrom(level);
+        } else {
+          pushLog2(`on beat (${rhythmChain}/${need}). hold the cadence.`);
+        }
+      } else {
+        rhythmChain = 0;
+        state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+        pushLog2(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      }
+      return;
+    }
     if (result.hit) {
       state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
       pushLog2(`level ${level} crossed (gap at top). advancing.`);
-      state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
-      elapsedMs = 0;
-      liveSeed = null;
-      if (state.currentLevel >= BOSS_LEVEL) pushLog2(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
+      advanceFrom(level);
     } else {
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
@@ -797,9 +834,12 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       doCross();
       persistAndPaint();
     },
-    // CROSS the current level at its perfect moment for the seed it actually uses right now.
+    // CROSS the current level at its perfect moment(s) for the seed it actually uses right now. Most
+    // modes return a single ms; rhythm returns the press-time ARRAY (one per beat) — press each in turn,
+    // which drives the real chain to completion (each press is a genuine timed CROSS, not a bypass).
     solveLevel() {
-      this.crossAt(solveMoment(activeSeed(), state.currentLevel));
+      const sol = solveMoment(activeSeed(), state.currentLevel);
+      for (const t of Array.isArray(sol) ? sol : [sol]) this.crossAt(t);
       return state.currentLevel;
     },
     // Clear the learnable front movements. Online this STALLS at the first onlineUnstable level
@@ -846,7 +886,13 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     state.log = [...state.log || [], line].slice(-6);
   }
   function paintArena() {
-    fields.arena.textContent = renderLevel(activeSeed(), state.currentLevel, elapsedMs);
+    const seed = activeSeed();
+    const level = state.currentLevel;
+    const ctx = {};
+    if (levelConfig(level).mode === "ghostecho") {
+      ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
+    }
+    fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
   }
   function repaint() {
     const lock = getBossLockState({ actions, state });
