@@ -197,6 +197,7 @@ FULL_UNIT_TESTS=(
   tests/known-nim-lang.test.mjs
   tests/known-objc-lang.test.mjs
   tests/known-ocaml-lang.test.mjs
+  tests/known-pascal-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
