@@ -277,7 +277,15 @@ export async function run(ctx) {
     count: document.querySelectorAll('#previewHost .imgv-tab').length,
     active: document.querySelector('#previewHost .imgv-tab.active')?.dataset.tab,
   }));
-  if (tabState.count === 6 && tabState.active === 'common') pass('editor toolbar grouped into 6 tabs, Common active'); else fail('tabs: ' + JSON.stringify(tabState));
+  if (tabState.count === 7 && tabState.active === 'common') pass('editor toolbar grouped into 7 tabs, Common active'); else fail('tabs: ' + JSON.stringify(tabState));
+  // Help tab renders the Markdown guide (editor-guide.md → markdown-it → DOMPurify), offline.
+  await openTab('help');
+  const helpRendered = await page.waitForFunction(() => {
+    const h = document.querySelector('#previewHost .imgv-tabpanel[data-tab="help"] .imgv-help');
+    return !!h && /Image editor guide/i.test(h.textContent || '') && !!h.querySelector('h2');
+  }, null, { timeout: 15000 }).then(() => true).catch(() => false);
+  if (helpRendered) pass('Help tab renders the Markdown guide to HTML (offline)'); else fail('Help tab did not render the guide');
+  await openTab('common');
   // The main action buttons (text input + Add, Pencil/Fill, rotate/flip, Crop,
   // Resize, Expand, Filters, BG, Compare) all live in the Common tab — each also
   // appears (linked) in its own tab, which additionally holds the fine-tuning.

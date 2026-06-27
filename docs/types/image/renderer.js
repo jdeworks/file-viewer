@@ -18,6 +18,7 @@ import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
+import { mountHelpTab } from './help-tab.js';
 import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
@@ -164,7 +165,7 @@ export async function render(intake, ctx = {}) {
   };
   // Group the editing controls into tabs (Common / Draw / Text / Adjust / Size /
   // Background) so the toolbar isn't a wall of buttons; non-active tabs hint once.
-  if (canEdit) mountTabs(host);
+  if (canEdit) { mountTabs(host); mountHelpTab(host); }
 
   // Interactive tools (text placement, crop, BG pick) register here so the pan
   // logic stands down while a tool owns the pointer; each exposes isActive().
