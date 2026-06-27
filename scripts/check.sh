@@ -161,6 +161,7 @@ FULL_UNIT_TESTS=(
   tests/metadata-normalize.test.mjs
   tests/metadata-owned.test.mjs
   tests/ocr.test.mjs
+  tests/arduino-sketch.test.mjs
 )
 
 IMAGE_UNIT_TESTS=(
