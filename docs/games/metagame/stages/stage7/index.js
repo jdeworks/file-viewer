@@ -5,8 +5,15 @@ import {
 } from "./boss.js";
 import { renderStage7 } from "./renderer.js";
 import { markChainBroken } from "./substages.js";
+import { ensureCase2, mintSourceFact } from "./accusation.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
-import { ACTION_NAME, ANCHOR_ACTION, BTS_PATH, REQUIRED_ACTION } from "./messages.js";
+import {
+  ACTION_NAME,
+  ANCHOR_ACTION,
+  BTS_PATH,
+  CASE2_SOURCE_ACTIONS,
+  REQUIRED_ACTION
+} from "./messages.js";
 
 export const stageMeta = {
   id: 7,
@@ -37,12 +44,29 @@ export function mountStage(ctx) {
   });
 
   // SS4 Reference Chase: opening the decommissioned anchor record (a real viewer file-open) breaks
-  // Entity F's credential chain and advances to the boss.
+  // Entity F's credential chain and opens Case 2 (the Duplicate Roster accusation).
   const unsubscribeAnchor = subscribeToActionName(ctx.actions, ANCHOR_ACTION, () => {
     markChainBroken({ state });
     if (typeof ctx.save === "function") ctx.save();
     if (view && typeof view.repaint === "function") view.repaint();
   });
+
+  // Case 2 evidence un-cheats: opening each system file in the real viewer mints its fact card. Seed
+  // any fact cards whose action already fired (return-from-viewer / reload), then keep listening.
+  if (Number(state.substage || 1) >= 5) ensureCase2(state);
+  for (const action of CASE2_SOURCE_ACTIONS) {
+    if (ctx.actions && typeof ctx.actions.hasAction === "function" && ctx.actions.hasAction(7, action)) {
+      mintSourceFact(state, action);
+    }
+  }
+  const unsubscribeSources = CASE2_SOURCE_ACTIONS.map((action) =>
+    subscribeToActionName(ctx.actions, action, () => {
+      ensureCase2(state);
+      mintSourceFact(state, action);
+      if (typeof ctx.save === "function") ctx.save();
+      if (view && typeof view.repaint === "function") view.repaint();
+    })
+  );
 
   view = renderStage7({ ...ctx, state });
 
@@ -51,6 +75,7 @@ export function mountStage(ctx) {
     destroy() {
       unsubscribe();
       unsubscribeAnchor();
+      for (const off of unsubscribeSources) off();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };

@@ -9,7 +9,9 @@ import {
   recordStage6CodexOpen,
   recordStage7AnchorOpen,
   recordStage7MetadataInspection,
+  recordStage7SourceOpen,
   shouldSetStage1CheatDisabled,
+  stage7SourceAction,
 } from '../docs/games/metagame/viewer-actions.js';
 import { detect as detectMarkdown } from '../docs/types/markdown/detect.js';
 
@@ -133,6 +135,30 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'anchor_chain_examined', 'Stage 7 anchor recorder: action id set');
   ok(!recordStage7AnchorOpen({ file: 'something_else.txt', setAction }), 'Stage 7 anchor recorder rejects other files');
   ok(calls.length === 1, 'Stage 7 anchor recorder: no extra calls for wrong file');
+}
+
+{
+  // Stage 7 Case 2 source-file recorders (load-bearing evidence un-cheats).
+  ok(stage7SourceAction('route_table.csv') === 'route_table_examined', 'Stage 7 source: route table mapped');
+  ok(stage7SourceAction('/docs/examples/metagame/stage7/system_spec.json') === 'spec_examined', 'Stage 7 source: spec mapped by path');
+  ok(stage7SourceAction('access_log.csv') === 'access_log_examined', 'Stage 7 source: access log mapped');
+  ok(stage7SourceAction('comms_transcript.txt') === 'comms_examined', 'Stage 7 source: comms mapped');
+  ok(stage7SourceAction('unrelated.csv') === null, 'Stage 7 source: unrelated file unmapped');
+
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordStage7SourceOpen({ file: 'route_table.csv', setAction }), 'Stage 7 source recorder returns true for route table');
+  ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'route_table_examined', 'Stage 7 source recorder: route action id set');
+  ok(calls[0][2].source === 'viewer-open' && calls[0][2].file === 'route_table.csv', 'Stage 7 source recorder: payload set');
+  ok(!recordStage7SourceOpen({ file: 'entity_metadata.json', setAction }), 'Stage 7 source recorder rejects non-source files');
+  ok(calls.length === 1, 'Stage 7 source recorder: no extra calls for wrong file');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordMetagameViewerOpen({ path: '/docs/examples/metagame/stage7/route_table.csv', opts: {}, setAction }), 'Viewer-open aggregate records Stage 7 source file');
+  ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'route_table_examined', 'Viewer-open aggregate: Stage 7 source action id set');
 }
 
 {

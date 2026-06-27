@@ -15,12 +15,20 @@ var ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.
 var ENTITY_METADATA_SIDECAR_PATH = "/docs/examples/metagame/stage7/entity_metadata.json";
 var ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
 var ANCHOR_ACTION = "anchor_chain_examined";
+var CASE2_SOURCE_PATHS = {
+  spec_examined: "/docs/examples/metagame/stage7/system_spec.json",
+  route_table_examined: "/docs/examples/metagame/stage7/route_table.csv",
+  access_log_examined: "/docs/examples/metagame/stage7/access_log.csv",
+  comms_examined: "/docs/examples/metagame/stage7/comms_transcript.txt"
+};
+var CASE2_SOURCE_ACTIONS = Object.keys(CASE2_SOURCE_PATHS);
 var substageHints = {
   1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
   2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
   3: "Audit Entity F's activity log. One entry is logically impossible.",
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
-  5: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
+  6: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
 };
 var bellMessages = {
   start: "something presented itself. I had to decide.",
@@ -100,7 +108,7 @@ function inspectContradictoryExif({ state, actions, achievements, bell, field = 
 }
 function commitIdentity({ state, entity }) {
   const selected = String(entity || "").trim().toUpperCase();
-  if (Number(state.substage || 1) < 5) return { ok: false, reason: "not-yet-boss" };
+  if (Number(state.substage || 1) < 6) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
   if (!state.boss.unlocked) {
@@ -232,6 +240,81 @@ var entityFEventLog = [
   { cycle: "0046", event: "WATCHDOG", id: "ev9" },
   { cycle: "0047", event: "BOOT", id: "ev10" }
 ];
+var CASE2 = {
+  roster: ["G", "H", "J", "K"],
+  impostor: "K",
+  // Dossier fields shown on the board as clue cards once Case 2 begins.
+  fields: {
+    G: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "route", label: "Route", value: "R-0102 (active)" }
+    ],
+    H: [
+      // Red herring: TIER-3-LEGACY LOOKS anomalous but system_spec confirms -LEGACY is a valid tier-3.
+      { id: "tier", label: "Credential Tier", value: "TIER-3-LEGACY" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
+      { id: "route", label: "Route", value: "R-0110 (active)" }
+    ],
+    J: [
+      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-2" },
+      { id: "route", label: "Route", value: "R-0118 (active)" }
+    ],
+    K: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      // The decisive lie: claims an ACTIVE route the route table proves was closed at cycle 0044.
+      { id: "route", label: "Route", value: "R-0091 (active)", suspect: true }
+    ]
+  },
+  // The unique correct triad: K's "active route R-0091" claim is refuted by the route_table fact.
+  triad: { entity: "K", fieldId: "route", factId: "fact:route" },
+  // For authoring/clarity (not used by the matcher): H's tier looks wrong but fact:spec exonerates it.
+  redHerring: { entity: "H", fieldId: "tier", factId: "fact:spec" }
+};
+var CASE2_SOURCES = [
+  {
+    action: "spec_examined",
+    file: "system_spec.json",
+    card: {
+      id: "fact:spec",
+      kind: "fact",
+      caseId: 2,
+      label: "Spec: valid tiers TIER-1..3 (incl. -LEGACY); layers {0,1,2}; one active route/entity."
+    }
+  },
+  {
+    action: "route_table_examined",
+    file: "route_table.csv",
+    card: {
+      id: "fact:route",
+      kind: "fact",
+      caseId: 2,
+      label: "Route table: R-0091 = INACTIVE (closed cycle 0044)."
+    }
+  },
+  {
+    action: "access_log_examined",
+    file: "access_log.csv",
+    card: {
+      id: "fact:activity",
+      kind: "fact",
+      caseId: 2,
+      label: "Access log: G/H/J/K all last-seen cycle 0047."
+    }
+  },
+  {
+    action: "comms_examined",
+    file: "comms_transcript.txt",
+    card: {
+      id: "fact:comms",
+      kind: "fact",
+      caseId: 2,
+      label: "Comms: the real holder answers the cycle-0047 challenge; the duplicate stalls."
+    }
+  }
+];
 var metadataArtifact = {
   format: "stage7-image-metadata-sidecar",
   note: "The current app image metadata reader extracts EXIF from JPEG APP1 but not PNG text chunks. Stage 7 therefore uses real same-origin PNG fixtures plus this local sidecar for the authored EXIF-style evidence.",
@@ -244,7 +327,7 @@ var metadataArtifact = {
 };
 
 // ../../docs/games/metagame/stages/stage7/substages.js
-var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, BOSS: 5 };
+var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, BOSS: 6 };
 function flagField({ state, entityId, fieldId }) {
   const field = (entityFields[entityId] || []).find((f) => f.id === fieldId);
   if (!field) return { ok: false, reason: "unknown" };
@@ -297,7 +380,8 @@ function markChainBroken({ state }) {
   state.evidence.chainBroken = true;
   state.addresses = Number(state.addresses || 0) + 15;
   pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
-  advance(state, SUBSTAGE.BOSS);
+  pushLog2(state, "A second roster claims the name. Open the system files and name the duplicate.");
+  advance(state, SUBSTAGE.ACCUSE);
   return { ok: true, complete: true };
 }
 function advance(state, to) {
@@ -307,13 +391,252 @@ function pushLog2(state, line) {
   state.log = [...state.log || [], line].slice(-8);
 }
 
+// ../../docs/games/metagame/stages/stage7/evidence-board.js
+function ensureBoard(state) {
+  if (!state.board || typeof state.board !== "object") {
+    state.board = { cards: [], links: [], established: [] };
+  }
+  const b = state.board;
+  if (!Array.isArray(b.cards)) b.cards = [];
+  if (!Array.isArray(b.links)) b.links = [];
+  if (!Array.isArray(b.established)) b.established = [];
+  return b;
+}
+function mintCard(state, card) {
+  const board = ensureBoard(state);
+  if (!card || !card.id) return null;
+  const existing = board.cards.find((c) => c.id === card.id);
+  if (existing) return existing;
+  const full = { kind: "clue", caseId: 1, pinned: false, ...card };
+  board.cards.push(full);
+  return full;
+}
+function getCard(state, id) {
+  return ensureBoard(state).cards.find((c) => c.id === id) || null;
+}
+function cardsForCase(state, caseId) {
+  return ensureBoard(state).cards.filter((c) => Number(c.caseId) === Number(caseId));
+}
+function setPinned(state, id, pinned) {
+  const card = getCard(state, id);
+  if (!card) return null;
+  card.pinned = Boolean(pinned);
+  return card;
+}
+function togglePin(state, id) {
+  const card = getCard(state, id);
+  if (!card) return null;
+  card.pinned = !card.pinned;
+  return card;
+}
+function pinnedCards(state) {
+  return ensureBoard(state).cards.filter((c) => c.pinned);
+}
+function linkKey(a, b) {
+  return [a, b].sort().join("\0");
+}
+function hasLink(state, a, b) {
+  const key = linkKey(a, b);
+  return ensureBoard(state).links.some((l) => linkKey(l.from, l.to) === key);
+}
+function drawLink(state, fromId, toId) {
+  const board = ensureBoard(state);
+  if (!fromId || !toId || fromId === toId) return { ok: false, reason: "invalid" };
+  const from = getCard(state, fromId);
+  const to = getCard(state, toId);
+  if (!from || !to) return { ok: false, reason: "missing" };
+  if (!from.pinned || !to.pinned) return { ok: false, reason: "unpinned" };
+  if (hasLink(state, fromId, toId)) return { ok: true, already: true };
+  board.links.push({ from: fromId, to: toId });
+  return { ok: true };
+}
+function isEstablished(state, id) {
+  return ensureBoard(state).established.some((f) => f.id === id);
+}
+function establishFact(state, { id, label, cards = [] }) {
+  const board = ensureBoard(state);
+  if (!id || isEstablished(state, id)) return board.established.find((f) => f.id === id) || null;
+  const fact = { id, label: label || id, cards: [...cards] };
+  board.established.push(fact);
+  for (let i = 0; i < cards.length - 1; i += 1) {
+    if (!hasLink(state, cards[i], cards[i + 1])) {
+      board.links.push({ from: cards[i], to: cards[i + 1], established: true });
+    }
+  }
+  return fact;
+}
+
+// ../../docs/games/metagame/stages/stage7/accusation.js
+var ACCUSE_PENALTY = 10;
+var ACCUSE_REWARD = 40;
+var case2HintLadder = [
+  "Six dossiers became four. One of G/H/J/K wears a name it cannot hold.",
+  "A clean dossier is not proof. Open the system files — a claim only breaks against a source fact.",
+  "One looks wrong but checks out; one looks clean but cannot be. Compare each ROUTE against the route table.",
+  "An entity claiming an ACTIVE route the route table closed is the duplicate. Pin entity + route + the route-table fact."
+];
+function sourceCardForAction(actionName) {
+  const source = CASE2_SOURCES.find((s) => s.action === actionName);
+  return source ? source.card : null;
+}
+function mintSourceFact(state, actionName) {
+  const card = sourceCardForAction(actionName);
+  if (!card) return null;
+  return mintCard(state, card);
+}
+function ensureCase2(state) {
+  ensureBoard(state);
+  if (state.evidence.case2Seeded) return;
+  for (const id of CASE2.roster) {
+    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: 2, entity: id, label: `Entity ${id}` });
+    for (const f of CASE2.fields[id]) {
+      mintCard(state, {
+        id: `field:${id}:${f.id}`,
+        kind: "field",
+        caseId: 2,
+        entity: id,
+        fieldId: f.id,
+        label: `${id} · ${f.label}: ${f.value}`
+      });
+    }
+  }
+  state.evidence.case2Seeded = true;
+}
+function case2Hint(state) {
+  const step = Math.min(Math.max(Number(state?.evidence?.case2HintStep || 0), 0), case2HintLadder.length - 1);
+  return case2HintLadder[step];
+}
+function pinnedTriad(state) {
+  const pinned = pinnedCards(state).filter((c) => Number(c.caseId) === 2);
+  const entities = pinned.filter((c) => c.kind === "entity");
+  const fields = pinned.filter((c) => c.kind === "field");
+  const facts = pinned.filter((c) => c.kind === "fact");
+  if (entities.length !== 1 || fields.length !== 1 || facts.length !== 1) return null;
+  return { entityId: entities[0].entity, fieldId: fields[0].fieldId, factId: facts[0].id };
+}
+function accuseFromBoard(state) {
+  const triad = pinnedTriad(state);
+  if (!triad) return { ok: false, reason: "incomplete", silent: true };
+  return attemptAccusation(state, triad);
+}
+function attemptAccusation(state, { entityId, fieldId, factId } = {}) {
+  ensureBoard(state);
+  if (!entityId || !fieldId || !factId) return { ok: false, reason: "incomplete", silent: true };
+  const entityCard = getCard(state, `entity:${entityId}`);
+  const fieldCard = getCard(state, `field:${entityId}:${fieldId}`);
+  const factCard = getCard(state, factId);
+  if (!entityCard || !fieldCard || !factCard) return { ok: false, reason: "missing-card", silent: true };
+  if (!entityCard.pinned || !fieldCard.pinned || !factCard.pinned) return { ok: false, reason: "unpinned", silent: true };
+  const t = CASE2.triad;
+  const correct = entityId === t.entity && fieldId === t.fieldId && factId === t.factId;
+  if (!correct) {
+    state.evidence.case2Attempts = Number(state.evidence.case2Attempts || 0) + 1;
+    state.evidence.case2HintStep = Math.min(Number(state.evidence.case2HintStep || 0) + 1, case2HintLadder.length - 1);
+    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
+    pushLog3(state, "The triad does not hold. Re-examine the evidence.");
+    return { ok: false, reason: "incorrect" };
+  }
+  setPinned(state, entityCard.id, true);
+  drawLink(state, entityCard.id, fieldCard.id);
+  drawLink(state, fieldCard.id, factCard.id);
+  establishFact(state, {
+    id: `triad:${entityId}`,
+    label: `Entity ${entityId} is the duplicate — an active-route claim the route table refutes.`,
+    cards: [entityCard.id, fieldCard.id, factCard.id]
+  });
+  state.evidence.case2Solved = true;
+  state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
+  state.addresses = Number(state.addresses || 0) + ACCUSE_REWARD;
+  pushLog3(state, `Entity ${entityId}'s active-route claim is refuted by the route table. The duplicate is named.`);
+  if (Number(state.substage || 1) < SUBSTAGE.BOSS) state.substage = SUBSTAGE.BOSS;
+  return { ok: true, solved: true };
+}
+function pushLog3(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
+}
+
+// ../../docs/games/metagame/stages/stage7/board-render.js
+var KIND_GROUPS = [
+  ["entity", "Dossiers"],
+  ["field", "Claims"],
+  ["fact", "Source facts (open the files)"]
+];
+function renderAccusation(state) {
+  const wrap = el("div", "s7-board");
+  const header = el("p", "s7-board-header");
+  header.textContent = "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.";
+  wrap.append(header);
+  const hint = el("p", "s7-hint");
+  hint.textContent = case2Hint(state);
+  wrap.append(hint);
+  const sources = el("div", "s7-sources");
+  for (const s of CASE2_SOURCES) {
+    const b = button({ "data-action": "open-source", "data-source": s.action });
+    const opened = cardsForCase(state, 2).some((c) => c.id === s.card.id);
+    b.textContent = `${opened ? "✓ " : "open "}${s.file}`;
+    if (opened) b.classList.add("is-opened");
+    sources.append(b);
+  }
+  wrap.append(sources);
+  const board = el("div", "s7-board-grid");
+  for (const [kind, label] of KIND_GROUPS) {
+    const col = el("section", "s7-board-col");
+    col.innerHTML = `<h4>${label}</h4>`;
+    const cards = cardsForCase(state, 2).filter((c) => c.kind === kind);
+    if (!cards.length) {
+      const empty = el("p", "s7-board-empty");
+      empty.textContent = kind === "fact" ? "No facts yet — open the system files." : "—";
+      col.append(empty);
+    }
+    for (const c of cards) {
+      const b = button({ "data-pin": c.id });
+      if (c.pinned) b.classList.add("is-pinned");
+      b.textContent = (c.pinned ? "📌 " : "") + c.label;
+      col.append(b);
+    }
+    board.append(col);
+  }
+  wrap.append(board);
+  const triad = pinnedTriad(state);
+  const accuseRow = el("div", "s7-accuse-row");
+  const accuse = button({ "data-accuse": "1" });
+  accuse.disabled = !triad;
+  accuse.textContent = triad ? `Accuse ${triad.entityId} (${triad.fieldId})` : "Pin one dossier, one claim, one fact";
+  accuseRow.append(accuse);
+  wrap.append(accuseRow);
+  const established = (state.board?.established || []).filter((f) => f.id.startsWith("triad:"));
+  if (established.length) {
+    const facts = el("ul", "s7-established");
+    facts.innerHTML = `<h4>Established</h4>`;
+    for (const f of established) {
+      const li = document.createElement("li");
+      li.textContent = f.label;
+      facts.append(li);
+    }
+    wrap.append(facts);
+  }
+  return wrap;
+}
+function button(dataset) {
+  const b = document.createElement("button");
+  b.type = "button";
+  for (const [k, v] of Object.entries(dataset)) b.setAttribute(k, v);
+  return b;
+}
+function el(tag, className) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  return node;
+}
+
 // ../../docs/games/metagame/stages/stage7/renderer.js
 var SUBSTAGE_LABEL = {
-  1: "1/5 CREDENTIAL SCAN",
-  2: "2/5 DUPLICATE TEST",
-  3: "3/5 TIMELINE AUDIT",
-  4: "4/5 REFERENCE CHASE",
-  5: "5/5 EXIF ARBITER (BOSS)"
+  1: "1/6 CREDENTIAL SCAN",
+  2: "2/6 DUPLICATE TEST",
+  3: "3/6 TIMELINE AUDIT",
+  4: "4/6 REFERENCE CHASE",
+  5: "5/6 DUPLICATE ROSTER",
+  6: "6/6 EXIF ARBITER (BOSS)"
 };
 function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -332,20 +655,23 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     </div>
   `;
   host.replaceChildren(root);
-  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el2) => [el2.dataset.field, el2]));
+  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el3) => [el3.dataset.field, el3]));
   const main = root.querySelector(".s7-main");
   const log = root.querySelector(".s7-log");
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
   root.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-action], button[data-flag], button[data-diff], button[data-ev], button[data-commit]");
-    if (!button) return;
-    const d = button.dataset;
+    const button2 = event.target.closest("button[data-action], button[data-flag], button[data-diff], button[data-ev], button[data-commit], button[data-pin], button[data-accuse]");
+    if (!button2) return;
+    const d = button2.dataset;
     if (d.flag) flagField({ state, entityId: d.entity, fieldId: d.flag });
     else if (d.diff) diffField({ state, fieldName: d.diff });
     else if (d.ev) markImpossible({ state, evId: d.ev });
+    else if (d.pin) togglePin(state, d.pin);
+    else if (d.accuse) accuseFromBoard(state);
     else if (d.commit) commitBoss(d.commit);
+    else if (d.action === "open-source") openSource(d.source);
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
     else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
     else if (d.action === "bts") openBts({ bts, viewer });
@@ -360,6 +686,20 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
       markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
       persistAndPaint();
       return state.substage;
+    },
+    // Case 2: pins the correct triad and accuses. The route fact only exists after a REAL
+    // route_table.csv open, so this returns ok:false until the file is opened (load-bearing).
+    solveCase2() {
+      ensureCase2(state);
+      const ids = ["entity:K", "field:K:route", "fact:route"];
+      if (!ids.every((id) => getCard(state, id))) {
+        persistAndPaint();
+        return { ok: false, reason: "route-fact-not-opened", substage: state.substage };
+      }
+      for (const id of ids) setPinned(state, id, true);
+      const result = accuseFromBoard(state);
+      persistAndPaint();
+      return { ...result, substage: state.substage };
     }
   };
   return {
@@ -395,15 +735,23 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     if (state.substage === SUBSTAGE.DUP) return main.replaceChildren(renderDup());
     if (state.substage === SUBSTAGE.TIMELINE) return main.replaceChildren(renderTimeline());
     if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
+    if (state.substage === SUBSTAGE.ACCUSE) {
+      ensureCase2(state);
+      return main.replaceChildren(renderAccusation(state));
+    }
     return main.replaceChildren(renderBoss(lock));
   }
+  function openSource(action) {
+    const path = CASE2_SOURCE_PATHS[action];
+    if (path) openInViewer(path, { source: "stage7" });
+  }
   function renderScan() {
-    const wrap = el("div", "s7-ss1");
-    const facts = el("aside", "s7-ambient-facts");
+    const wrap = el2("div", "s7-ss1");
+    const facts = el2("aside", "s7-ambient-facts");
     facts.innerHTML = `<h3>Ambient facts</h3><ul>${ambientFacts.map((f) => `<li>${f}</li>`).join("")}</ul>`;
-    const cards = el("div", "s7-cards");
+    const cards = el2("div", "s7-cards");
     for (const id of SCAN_ENTITIES) {
-      const card = el("article", "s7-card");
+      const card = el2("article", "s7-card");
       if (state.evidence.flags[id]) card.classList.add("is-flagged");
       card.innerHTML = `<strong>Entity ${id}</strong>`;
       for (const f of entityFields[id]) {
@@ -421,11 +769,11 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     return wrap;
   }
   function renderDup() {
-    const wrap = el("div", "s7-ss2");
-    const panel = el("div", "s7-duptest-panel");
-    const colA = el("div", "s7-duptest-col");
+    const wrap = el2("div", "s7-ss2");
+    const panel = el2("div", "s7-duptest-panel");
+    const colA = el2("div", "s7-duptest-col");
     colA.innerHTML = `<h3>Entity A</h3>${metadataRows.A.map(([f, v]) => `<div class="s7-row"><span>${f}</span><em>${v}</em></div>`).join("")}`;
-    const colF = el("div", "s7-duptest-col");
+    const colF = el2("div", "s7-duptest-col");
     colF.innerHTML = `<h3>Entity F</h3>`;
     for (const [f, v] of metadataRows.F) {
       const b = document.createElement("button");
@@ -435,15 +783,15 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
       colF.append(b);
     }
     panel.append(colA, colF);
-    const note = el("p", "s7-duptest-hint");
+    const note = el2("p", "s7-duptest-hint");
     note.textContent = "DIFF DOSSIERS — identify the tampered field on Entity F.";
     wrap.append(panel, note);
     return wrap;
   }
   function renderTimeline() {
-    const wrap = el("div", "s7-ss3");
+    const wrap = el2("div", "s7-ss3");
     wrap.innerHTML = `<p class="s7-audit-header">TIMELINE AUDIT — Entity F activity log. Mark the impossible entry.</p>`;
-    const list = el("ol", "s7-timeline");
+    const list = el2("ol", "s7-timeline");
     for (const ev of entityFEventLog) {
       const li = document.createElement("li");
       li.innerHTML = `<span>cycle ${ev.cycle}</span><span>${ev.event}</span>`;
@@ -458,7 +806,7 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     return wrap;
   }
   function renderChain() {
-    const wrap = el("div", "s7-ss4");
+    const wrap = el2("div", "s7-ss4");
     wrap.innerHTML = `
       <article class="s7-dossier-chain">
         <h3>Entity F — Credential Chain</h3>
@@ -471,21 +819,21 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     return wrap;
   }
   function renderBoss(lock) {
-    const wrap = el("div", "s7-ss5");
-    const header = el("header", "s7-boss-header");
+    const wrap = el2("div", "s7-ss5");
+    const header = el2("header", "s7-boss-header");
     header.textContent = "IDENTITY REQUIRES PRIMARY SOURCE VERIFICATION";
     wrap.append(header);
-    const intro = el("p");
+    const intro = el2("p");
     intro.textContent = "Entity F presents a verification image. Inspect its embedded metadata.";
     wrap.append(intro);
-    const controls = el("div", "s7-controls");
+    const controls = el2("div", "s7-controls");
     controls.innerHTML = `<button type="button" data-action="photo">open Entity F photo</button>`;
     wrap.append(controls);
     if (lock.unlocked) {
-      const verdict = el("div", "s7-verdict");
+      const verdict = el2("div", "s7-verdict");
       verdict.innerHTML = `<p>Entity F's image GPS is outside every known entity layer. F is eliminated.</p>
         <p>Commit to the real credential holder.</p>`;
-      const row = el("div", "s7-commit-row");
+      const row = el2("div", "s7-commit-row");
       for (const c of candidates) {
         const b = document.createElement("button");
         b.type = "button";
@@ -497,7 +845,7 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
       verdict.append(row);
       wrap.append(verdict);
     } else {
-      const waiting = el("p", "s7-hint");
+      const waiting = el2("p", "s7-hint");
       waiting.textContent = lock.hint;
       wrap.append(waiting);
     }
@@ -518,7 +866,7 @@ function buildEntityFPhotoOpenOptions() {
     metadataRows: metadataRows.F.map(([field, value]) => ({ field, value }))
   };
 }
-function el(tag, className) {
+function el2(tag, className) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   return node;
@@ -541,13 +889,13 @@ function once(fn) {
 // ../../docs/games/metagame/stages/stage7/state.js
 function defaultState() {
   return {
-    version: 2,
+    version: 3,
     addresses: 0,
     substage: 1,
-    // 1 scan · 2 dup · 3 timeline · 4 chain · 5 boss
+    // 1 scan · 2 dup · 3 timeline · 4 chain · 5 accuse(case2) · 6 boss
     evidence: {
       eliminated: [],
-      // populated incrementally as entities are flagged
+      // populated incrementally as entities are flagged / accused
       contradicted: [],
       selectedEntity: null,
       flags: {},
@@ -556,9 +904,20 @@ function defaultState() {
       dupTestComplete: false,
       timelineContradictionCycle: null,
       chainBroken: false,
-      partialContra: []
+      partialContra: [],
       // e.g. ["F.GPSInfo"]
+      // Case 2 (Duplicate Roster) — the rule-of-three accusation.
+      case2Seeded: false,
+      // entity/field clue cards minted onto the board
+      case2Solved: false,
+      // the correct triad confirmed
+      case2Attempts: 0,
+      // complete-but-wrong accusations
+      case2HintStep: 0
+      // accusation hint ladder
     },
+    // Evidence board / detective notebook — initialised once here (the lazy per-stage seed).
+    board: { cards: [], links: [], established: [] },
     boss: {
       reached: false,
       unlocked: false,
@@ -578,9 +937,9 @@ function defaultState() {
 function normalizeState(state) {
   const fresh = defaultState();
   const incoming = state && typeof state === "object" ? state : {};
-  if (Number(incoming.version) < 2) return fresh;
+  if (Number(incoming.version) < 3) return fresh;
   const target = incoming;
-  target.version = 2;
+  target.version = 3;
   target.addresses = Number.isFinite(Number(target.addresses)) ? Number(target.addresses) : fresh.addresses;
   target.substage = clampSubstage(target.substage, fresh.substage);
   target.evidence = mergePlain(fresh.evidence, target.evidence);
@@ -589,13 +948,21 @@ function normalizeState(state) {
   target.evidence.flags = target.evidence.flags && typeof target.evidence.flags === "object" ? target.evidence.flags : {};
   target.evidence.partialContra = Array.isArray(target.evidence.partialContra) ? target.evidence.partialContra : [];
   target.boss = mergePlain(fresh.boss, target.boss);
+  target.board = normalizeBoard(fresh.board, target.board);
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.meta = mergePlain(fresh.meta, target.meta);
   return target;
 }
+function normalizeBoard(base, override) {
+  const b = mergePlain(base, override);
+  b.cards = Array.isArray(b.cards) ? b.cards : [];
+  b.links = Array.isArray(b.links) ? b.links : [];
+  b.established = Array.isArray(b.established) ? b.established : [];
+  return b;
+}
 function clampSubstage(value, fallback) {
   const n = Number(value);
-  return Number.isFinite(n) && n >= 1 && n <= 5 ? Math.floor(n) : fallback;
+  return Number.isFinite(n) && n >= 1 && n <= 6 ? Math.floor(n) : fallback;
 }
 function mergePlain(base, override) {
   return { ...base, ...override && typeof override === "object" ? override : {} };
@@ -629,6 +996,20 @@ function mountStage(ctx) {
     if (typeof ctx.save === "function") ctx.save();
     if (view && typeof view.repaint === "function") view.repaint();
   });
+  if (Number(state.substage || 1) >= 5) ensureCase2(state);
+  for (const action of CASE2_SOURCE_ACTIONS) {
+    if (ctx.actions && typeof ctx.actions.hasAction === "function" && ctx.actions.hasAction(7, action)) {
+      mintSourceFact(state, action);
+    }
+  }
+  const unsubscribeSources = CASE2_SOURCE_ACTIONS.map(
+    (action) => subscribeToActionName(ctx.actions, action, () => {
+      ensureCase2(state);
+      mintSourceFact(state, action);
+      if (typeof ctx.save === "function") ctx.save();
+      if (view && typeof view.repaint === "function") view.repaint();
+    })
+  );
   view = renderStage7({ ...ctx, state });
   return {
     repaint() {
@@ -637,6 +1018,7 @@ function mountStage(ctx) {
     destroy() {
       unsubscribe();
       unsubscribeAnchor();
+      for (const off of unsubscribeSources) off();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
