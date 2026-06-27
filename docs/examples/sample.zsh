@@ -7,6 +7,22 @@ autoload -U add-zsh-hook
 # Completion init
 compinit -d ~/.zcompdump
 
+# Shell options
+setopt AUTO_CD EXTENDED_GLOB
+setopt HIST_IGNORE_DUPS SHARE_HISTORY
+unsetopt BEEP
+
+# Exports
+export EDITOR=nvim
+export LANG=en_US.UTF-8
+export PATH="$HOME/bin:$PATH"
+
+# Aliases
+alias ll='ls -lah'
+alias gs='git status'
+alias gp="git push origin"
+alias -g G='| grep'
+
 # Zstyle completion settings
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
@@ -42,6 +58,19 @@ function deploy() {
 
     echo "Deploying to $env..."
     rsync -av ./dist/ "user@server:/var/www/$env/"
+}
+
+# POSIX-form function (no `function` keyword)
+backup() {
+    local src=$1
+    local dest=${2:-/tmp/backup}
+    typeset -i count=0
+    cp -r "$src" "$dest" && (( count++ ))
+    print "backed up $@"
+}
+
+reload() {
+    source ~/.zshrc
 }
 
 # ZLE widget

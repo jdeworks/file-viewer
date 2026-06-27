@@ -154,7 +154,7 @@ export function mountAsciiStudio(host, opts = {}) {
   settingsBtn.addEventListener('click', () => setSettingsOpen(!host.classList.contains('asx-settings-open')));
   checkWidth();   // set initial open/narrow state from the actual studio width
 
-  const floatingPanel = makeFloatingPanel(panel, { title: 'ASCII settings' });
+  const floatingPanel = makeFloatingPanel(panel, { title: 'ASCII settings', onClose: () => setSettingsOpen(false) });
   const controls = buildControls(floatingPanel.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     // Background colour has no effect when the BG is transparent — disable it.

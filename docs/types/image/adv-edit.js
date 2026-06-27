@@ -6,7 +6,6 @@ import { mountAdvPrecision } from './adv-edit-precision.js';
 import { mountAdvPointEditor } from './adv-edit-points.js';
 import { installTextControls, syncTextControls } from './adv-edit-text.js';
 import { DEFAULTS, advToolbarHtml } from './adv-edit-toolbar.js';
-import { openImageOcrPanel } from './ocr-ui.js';
 
 let konvaPromise = null;
 export function loadKonva() {
@@ -14,7 +13,7 @@ export function loadKonva() {
   return konvaPromise;
 }
 
-export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
+export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector('.imgv-stage');
   let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
@@ -194,6 +193,21 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
   const isLabel = (n) => n && n.getClassName && n.getClassName() === 'Label';
 
+  // Add a pasted image as a free, transformable pane (move/rotate/resize via the
+  // Transformer). `source` is a canvas/image at NATURAL pixels; size it into stage
+  // coords (k = stage px per natural px) and fit within the stage, then place centered.
+  function addImage(source) {
+    if (!source || !source.width) return null;
+    snap();
+    const k = naturalW ? stageW / naturalW : 1;
+    let w = source.width * k, h = source.height * k;
+    const fit = Math.min(1, (stageW * 0.9) / w, (stageH * 0.9) / h);
+    w = Math.max(1, w * fit); h = Math.max(1, h * fit);
+    const node = new Konva.Image({ image: source, x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h, draggable: true });
+    placeObject(node);
+    return node;
+  }
+
   function editLabelText(label) {
     const text = textNodeOf(label);
     if (!text) return;
@@ -252,9 +266,16 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     stageW: () => stageW, stageH: () => stageH, refreshLayers: () => refreshLayers(), syncToolbar, markDirty,
   });
   installShapeControls({
-    $, tb, addText, addShape, openImageOcrPanel, stageHost, flattenToCanvas, deleteSelection, groupSelection, ungroupSelection,
+    $, tb, addText, addShape, deleteSelection, groupSelection, ungroupSelection,
     pointEdit, precision, getSelected: () => selected, primary, isLabel, textNodeOf, layer, markDirty, snap, tr,
     refreshLayers: () => refreshLayers(), syncToolbar,
+  });
+  // Merge to image: bake the whole overlay onto the base pixels (one commit), then clear
+  // the now-redundant vector objects so the user continues in normal pixel Edit.
+  tb.querySelector('.imgv-adv-flatten')?.addEventListener('click', async () => {
+    if (objects().length === 0) return;
+    await onFlatten?.(flattenToCanvas());
+    clear();
   });
   syncToolbar();
   const uninstallKeys = installAdvKeys({
@@ -363,6 +384,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
 
   return {
     addText,
+    addImage,
     isEmpty: () => objects().length === 0,
     objectCount: () => objects().length,
     setInteractive(on) {

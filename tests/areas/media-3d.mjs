@@ -278,6 +278,17 @@ export async function run(ctx) {
     active: document.querySelector('#previewHost .imgv-tab.active')?.dataset.tab,
   }));
   if (tabState.count === 6 && tabState.active === 'common') pass('editor toolbar grouped into 6 tabs, Common active'); else fail('tabs: ' + JSON.stringify(tabState));
+  // Help button opens a floating modal that renders the Markdown guide (markdown-it →
+  // DOMPurify), offline; closing it leaves the toolbar/layout untouched.
+  await page.click('#previewHost .imgv-help-btn');
+  const helpRendered = await page.waitForFunction(() => {
+    const m = document.querySelector('.imgv-help-modal:not([hidden]) .imgv-help');
+    return !!m && /Image editor guide/i.test(m.textContent || '') && !!m.querySelector('h2');
+  }, null, { timeout: 15000 }).then(() => true).catch(() => false);
+  await page.click('.imgv-help-close').catch(() => {});
+  const helpClosed = await page.$eval('.imgv-help-modal', (el) => el.hidden).catch(() => false);
+  if (helpRendered && helpClosed) pass('Help modal renders the guide to HTML (offline) and closes'); else fail('Help modal: ' + JSON.stringify({ helpRendered, helpClosed }));
+  await openTab('common');
   // The main action buttons (text input + Add, Pencil/Fill, rotate/flip, Crop,
   // Resize, Expand, Filters, BG, Compare) all live in the Common tab — each also
   // appears (linked) in its own tab, which additionally holds the fine-tuning.
@@ -405,7 +416,9 @@ export async function run(ctx) {
   await openTab('common');
   await page.click('#previewHost .imgv-select');                  // leave wand
   await page.click('#previewHost .imgv-deselect');                // clear the mask
-  // Selection MOVE — box-select a region, then drag it to a new spot (one PNG commit).
+  // Selection MOVE is a FLOATING selection (Paint-style): dragging the pixels does NOT
+  // commit and KEEPS the selection; it stamps a single PNG commit only when you leave
+  // the Move tool (or deselect).
   await page.click('#previewHost .imgv-marquee');                 // box-select mode
   const mvBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
   await page.mouse.move(mvBox.x + mvBox.w * 0.25, mvBox.y + mvBox.h * 0.25);
@@ -420,10 +433,36 @@ export async function run(ctx) {
   await page.mouse.down();
   await page.mouse.move(mvBox.x + mvBox.w * 0.62, mvBox.y + mvBox.h * 0.5, { steps: 4 });
   await page.mouse.up();
+  // After the drop: still floating + selected, and NOTHING committed yet.
+  const floatState = await page.evaluate((before) => ({
+    deselectShown: !document.querySelector('#previewHost .imgv-deselect').hidden,
+    uncommitted: (document.querySelector('#previewHost .imgv-img')?.src || '') === before,
+  }), moveBefore);
+  await page.click('#previewHost .imgv-sel-move');                // leave move mode → STAMP
   const moveCommitted = await waitNewSrc(moveBefore);
-  if (moveCommitted) pass('selection move: drag the selected pixels commits a new image'); else fail('selection move did not commit');
-  await page.click('#previewHost .imgv-sel-move');                // leave move mode
+  if (floatState.deselectShown && floatState.uncommitted && moveCommitted) pass('selection move: floats + stays selected on drop, stamps one commit on leaving Move'); else fail('selection float/stamp: ' + JSON.stringify({ floatState, moveCommitted }));
   await openTab('common');
+  await page.click('#previewHost .imgv-deselect');                // clear selection for later steps
+  // Arrow-key nudge — a live selection moves with the arrow keys (Paint-style), stays
+  // selected (floats), and stamps a single commit on deselect.
+  await page.click('#previewHost .imgv-marquee');                 // box-select mode
+  const nBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(nBox.x + nBox.w * 0.3, nBox.y + nBox.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(nBox.x + nBox.w * 0.6, nBox.y + nBox.h * 0.6, { steps: 4 });
+  await page.mouse.up();
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select (mask stays)
+  const nudgeBefore = await imgSrcNow();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  const nudgeState = await page.evaluate((before) => ({
+    stillSelected: !document.querySelector('#previewHost .imgv-deselect').hidden,
+    uncommitted: (document.querySelector('#previewHost .imgv-img')?.src || '') === before,
+  }), nudgeBefore);
+  await page.click('#previewHost .imgv-deselect');                // bake the nudged float
+  const nudgeCommitted = await waitNewSrc(nudgeBefore);
+  if (nudgeState.stillSelected && nudgeState.uncommitted && nudgeCommitted) pass('selection: arrow keys nudge the float (stays selected), stamp on deselect'); else fail('arrow nudge: ' + JSON.stringify({ nudgeState, nudgeCommitted }));
   // Rotate 90° CW also swaps width/height — a strong correctness check.
   await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));
@@ -438,6 +477,23 @@ export async function run(ctx) {
   // Filters: the ⚙ button lives in Common and jumps to the Adjust tab (data-go-tab)
   // where the sliders are; raise brightness, Apply → bakes a new blob.
   await openTab('common');
+  await page.click('#previewHost .imgv-filters-btn');
+  // A filter slider is a LIVE preview until Apply: the Apply button flashes (pending) and
+  // switching tabs reverts the un-applied preview (CSS filter cleared, slider reset).
+  await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-f-contrast'); s.value = '160'; s.dispatchEvent(new Event('input', { bubbles: true })); });
+  const pendingState = await page.evaluate(() => ({
+    flashing: document.querySelector('#previewHost .imgv-f-apply').classList.contains('imgv-flash-apply'),
+    previewed: document.querySelector('#previewHost .imgv-img').style.filter.includes('contrast(160%)'),
+  }));
+  await openTab('draw');   // navigate away → discard the un-applied preview
+  const reverted = await page.evaluate(() => ({
+    filter: document.querySelector('#previewHost .imgv-img').style.filter,
+    contrast: document.querySelector('#previewHost .imgv-f-contrast').value,
+    flashing: document.querySelector('#previewHost .imgv-f-apply').classList.contains('imgv-flash-apply'),
+  }));
+  if (pendingState.flashing && pendingState.previewed && reverted.filter === '' && reverted.contrast === '100' && !reverted.flashing) pass('filters: live preview flashes Apply + reverts when you switch tabs (not yet baked)'); else fail('filter preview UX: ' + JSON.stringify({ pendingState, reverted }));
+  await openTab('common');
+  await page.evaluate(() => { const p = document.querySelector('#previewHost .imgv-filters-panel'); if (p) p.hidden = true; });   // closed → next click re-opens
   await page.click('#previewHost .imgv-filters-btn');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-f-brightness'); s.value = '150'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   const filterBefore = await imgSrcNow();
@@ -632,9 +688,9 @@ export async function run(ctx) {
   if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
   const modeRow = await page.evaluate(() => {
     const boxes = [...document.querySelectorAll('#previewHost .imgv-mode-col button:not([hidden])')].map((b) => b.getBoundingClientRect());
-    return { count: boxes.length, sameRow: boxes.length === 3 && Math.max(...boxes.map((b) => b.top)) - Math.min(...boxes.map((b) => b.top)) < 6 };
+    return { count: boxes.length, sameRow: boxes.length === 4 && Math.max(...boxes.map((b) => b.top)) - Math.min(...boxes.map((b) => b.top)) < 6 };
   });
-  if (modeRow.count === 3 && modeRow.sameRow) pass('image mode buttons ASCII/Edit/Adv sit on one row'); else fail('mode buttons: ' + JSON.stringify(modeRow));
+  if (modeRow.count === 4 && modeRow.sameRow) pass('image mode buttons ASCII/Edit/Adv/OCR sit on one row'); else fail('mode buttons: ' + JSON.stringify(modeRow));
   // Resize in PERCENT: the ⊡ button lives in Common and jumps to the Size tab where
   // the W/H panel lives; 50% should halve the natural width.
   await openTab('common');
@@ -685,6 +741,29 @@ export async function run(ctx) {
     toolsShown: getComputedStyle(document.querySelector('#previewHost .imgv-edit-tools')).display !== 'none',
   }));
   if (cmpRestored.gone && cmpRestored.imgShown && cmpRestored.toolsShown) pass('compare closes + restores image interaction'); else fail('compare close: ' + JSON.stringify(cmpRestored));
+  // ── Copy / paste ── Ctrl+C grabs the selected pixels; Ctrl+V drops them into Adv Edit
+  // as a free, transformable pane (a Konva.Image object). Clean up after so the Adv Edit
+  // test below starts from an empty overlay.
+  await openTab('common');
+  await page.click('#previewHost .imgv-marquee');                 // box-select mode
+  const cpBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(cpBox.x + cpBox.w * 0.3, cpBox.y + cpBox.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(cpBox.x + cpBox.w * 0.6, cpBox.y + cpBox.h * 0.6, { steps: 4 });
+  await page.mouse.up();
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select (mask stays)
+  await page.keyboard.press('Control+c');                         // copy → internal clipboard
+  await page.click('#previewHost .imgv-deselect');                // clear the on-screen selection (clipboard persists)
+  await page.keyboard.press('Control+v');                         // paste → Adv Edit image pane
+  const pasted = await page.waitForFunction(() => {
+    const bar = document.querySelector('#previewHost .imgv-adv-bar');
+    const advShown = bar && getComputedStyle(bar).display !== 'none';
+    const names = [...document.querySelectorAll('#previewHost .imgv-adv-layers span[title="Double-click to rename"]')].map((s) => s.textContent);
+    return advShown && names.includes('Image');
+  }, null, { timeout: 15000 }).then(() => true).catch(() => false);
+  if (pasted) pass('copy/paste: Ctrl+C + Ctrl+V drops the selection into Adv Edit as a transformable image pane'); else fail('copy/paste did not create an Adv Edit image pane');
+  await page.click('#previewHost .imgv-adv-del');                 // remove the pasted pane (it's selected)
+  await page.click('#previewHost .imgv-adv-btn');                 // leave Adv → clean slate for the Adv Edit test
   // ── Adv Edit (vector layers) ── lazy-loads Konva and overlays re-editable TEXT
   // objects (bg colour + opacity, multiple); leaving flattens onto the pixel base.
   await page.click('#previewHost .imgv-adv-btn');
@@ -695,13 +774,13 @@ export async function run(ctx) {
     konva: !!window.Konva,
   }));
   if (advUp.stage && advUp.toolbar && advUp.konva) pass('Adv Edit: Konva lazy-loads + stage/toolbar mount'); else fail('adv mount: ' + JSON.stringify(advUp));
-  // ── OCR (Extract text) ── the toolbar exposes an "Extract text (OCR)" button; clicking it shows the
-  // one-time ~11 MB download consent gate BEFORE any heavy load (we cancel here, so no wasm is fetched).
-  const ocrBtnShown = await page.$eval('#previewHost .imgv-adv-ocr', (el) => getComputedStyle(el).display !== 'none').catch(() => false);
-  await page.click('#previewHost .imgv-adv-ocr');
+  // ── OCR (Extract text) ── a top-level OCR button (next to Edit/Adv) shows the one-time
+  // ~11 MB download consent gate BEFORE any heavy load (we cancel here, so no wasm is fetched).
+  const ocrBtnShown = await page.$eval('#previewHost .imgv-ocr-btn', (el) => !el.hidden && getComputedStyle(el).display !== 'none').catch(() => false);
+  await page.click('#previewHost .imgv-ocr-btn');
   const ocrConsentShown = await page.waitForSelector('.imgv-ocr-backdrop', { timeout: 4000 }).then(() => true).catch(() => false);
   await page.click('.imgv-ocr-cancel').catch(() => {});
-  if (ocrBtnShown && ocrConsentShown) pass('Adv Edit: Extract text (OCR) button shows the download consent gate'); else fail('OCR button/gate: ' + JSON.stringify({ ocrBtnShown, ocrConsentShown }));
+  if (ocrBtnShown && ocrConsentShown) pass('OCR: top-level button shows the download consent gate'); else fail('OCR button/gate: ' + JSON.stringify({ ocrBtnShown, ocrConsentShown }));
   await page.fill('#previewHost .imgv-adv-text', 'Layer A');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-adv-bgop'); s.value = '60'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#previewHost .imgv-adv-add');   // a second text object
@@ -973,6 +1052,11 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .imgv-adv-layers > div', { timeout: 5000 }).catch(() => {});
   const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 4 rows (2 text + poly + star)
   if (afterGeom === 5) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
+  // Merge to image: flatten bakes the overlay onto the base pixels and clears the objects.
+  await page.click('#previewHost .imgv-adv-flatten');
+  const flattened = await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers span[title="Double-click to rename"]').length === 0, null, { timeout: 6000 }).then(() => true).catch(() => false);
+  const flatDirty = await page.evaluate(() => !!window.__fv.state.binaryEdit?.dirty);
+  if (flattened && flatDirty) pass('Adv Edit: Merge to image bakes the overlay + clears the objects (stays dirty)'); else fail('adv flatten: ' + JSON.stringify({ flattened, flatDirty }));
   await page.click('#previewHost .imgv-adv-btn');                   // leave Adv again for the export/ASCII steps
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');
@@ -984,6 +1068,16 @@ export async function run(ctx) {
     page.click('#exportMenu .export-item:has-text("Download as WebP")'),
   ]);
   if (/\.webp$/.test(imgDownload.suggestedFilename())) pass('image converted + downloaded (' + imgDownload.suggestedFilename() + ')'); else fail('image download name: ' + imgDownload.suggestedFilename());
+  // In-editor Download button (next to the format picker) saves the current image directly.
+  const editShown = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none').catch(() => false);
+  if (!editShown) await page.click('#previewHost .imgv-tools-btn');   // re-enter pixel Edit so the toolbar shows
+  await openTab('common');
+  await page.selectOption('#previewHost .imgv-export-fmt', 'image/png').catch(() => {});
+  const [dlDirect] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .imgv-download'),
+  ]).catch(() => [null]);
+  if (dlDirect && /\.png$/.test(dlDirect.suggestedFilename())) pass('in-editor Download button saves the current image in the chosen format'); else fail('editor download: ' + (dlDirect && dlDirect.suggestedFilename()));
 
   // ── ASCII Studio ── the ASCII button lazy-mounts the self-contained studio,
   // which converts the image to glyphs and exposes the control panel.
@@ -1023,6 +1117,11 @@ export async function run(ctx) {
   await page.click('#previewHost .asx-settings-btn');   // restore
   const panelBack = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
   if (panelVisInit && panelHidden && panelBack) pass('ASCII settings drawer toggles open/closed'); else fail('settings toggle: ' + JSON.stringify({ panelVisInit, panelHidden, panelBack }));
+  // The panel head's ✕ also closes it (reachable on touch where the toolbar toggle may be off-screen).
+  await page.click('#previewHost .asx-float-close');
+  const closedByX = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .asx-settings-btn');   // reopen for later steps
+  if (closedByX) pass('ASCII settings panel ✕ button closes it'); else fail('settings ✕ close did not work');
   // Frame padding visibly pads the <pre> preview (was a no-op before — only the canvas honoured it).
   const padBefore = await page.$eval('#previewHost .asx-out', (el) => parseFloat(getComputedStyle(el).paddingLeft));
   await page.evaluate(() => { const i = document.querySelector('#previewHost .asx-panel input[data-key="transparentFrame"]'); i.value = 40; i.dispatchEvent(new Event('input', { bubbles: true })); });

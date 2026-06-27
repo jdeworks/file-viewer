@@ -81,6 +81,6 @@ export function advToolbarHtml() {
     <button class="imgv-adv-dist" data-axis="x" title="Distribute horizontally">DH</button>
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
     <span class="imgv-sep"></span>
-    <button class="imgv-adv-ocr" title="Extract text from the image with OCR">Extract text (OCR)</button>
+    <button class="imgv-adv-flatten" title="Merge all objects into the image (bake to pixels), then continue in normal Edit">⤵ Merge to image</button>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
