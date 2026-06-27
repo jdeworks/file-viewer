@@ -160,6 +160,7 @@ FULL_UNIT_TESTS=(
   tests/type-info.test.mjs
   tests/metadata-normalize.test.mjs
   tests/metadata-owned.test.mjs
+  tests/ocr.test.mjs
 )
 
 IMAGE_UNIT_TESTS=(

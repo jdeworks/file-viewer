@@ -76,7 +76,7 @@ for (const f of kept) {
 const HEAVY_BYTES = 1.5 * 1024 * 1024;   // bundles over this are large optional downloads
 // Bundles always treated as heavy/opt-in regardless of size (lazy-loaded only when
 // the feature is used, so they should NOT be precached by default).
-const FORCE_HEAVY = new Set(['vendor:jxl']);
+const FORCE_HEAVY = new Set(['vendor:jxl', 'vendor:tesseract']);
 // Essential bundles are NEVER heavy: 'core' is the app shell (index.html + core/ + assets/ + the
 // bundled type-detection registry) — it must always be precached for offline-first to work, so it is
 // not an optional download even though detection bundling has pushed it past HEAVY_BYTES (~1.58 MB).

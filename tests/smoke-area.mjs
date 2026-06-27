@@ -30,6 +30,7 @@ const AREAS = {
   'examples-catalog':  () => import('./areas/examples-catalog.mjs'),
   'binary-types':      () => import('./areas/binary-types.mjs'),
   'known-files':       () => import('./areas/known-files.mjs'),
+  'ocr':               () => import('./areas/ocr.mjs'),   // heavy wasm; on-demand only (not in smoke.mjs core gate)
 };
 
 const args = process.argv.slice(2);
