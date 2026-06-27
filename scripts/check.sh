@@ -201,6 +201,7 @@ FULL_UNIT_TESTS=(
   tests/known-perl-lang.test.mjs
   tests/known-prolog-lang.test.mjs
   tests/known-purescript-lang.test.mjs
+  tests/known-r-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
