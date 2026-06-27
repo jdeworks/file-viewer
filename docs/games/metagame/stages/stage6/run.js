@@ -7,7 +7,7 @@
 
 import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
 import { makeRng, hashSeed } from "./combat.js";
-import { STARTING_DECK, REWARD_POOL } from "./cards.js";
+import { STARTING_DECK, REWARD_POOL, draftRewardCards } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
 import { applyModifiers } from "./modifiers.js";
 import { rollRelic, rollRelics, relicById } from "./relics.js";
@@ -283,14 +283,9 @@ function rollRewardPotion(run, nodeId) {
   return rollPotion(hashSeed(run.seed, `${nodeId}:potion-pick`));
 }
 
+// Reward-card draft: rarity-weighted + act-scaled (cards.draftRewardCards), seeded per node.
 function rollRewardCards(run, nodeId) {
-  const rng = makeRng(hashSeed(run.seed, nodeId));
-  const pool = [...REWARD_POOL];
-  const picks = [];
-  while (picks.length < REWARD_CHOICES && pool.length) {
-    picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
-  }
-  return picks;
+  return draftRewardCards(hashSeed(run.seed, nodeId), run.act, REWARD_CHOICES);
 }
 
 function screenForNode(node) {

@@ -647,18 +647,6 @@ var LAYER_CARDS = [
   }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
-var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
-function cardById(id) {
-  return BY_ID.get(id) || null;
-}
-function registerCard(card) {
-  if (card && card.id) BY_ID.set(card.id, card);
-}
-var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
-var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
-
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
@@ -693,6 +681,52 @@ function hashSeed(seed, key) {
   let h = (Number(seed) || 1) >>> 0;
   for (const ch of String(key)) h = Math.imul(h, 31) + ch.charCodeAt(0) >>> 0;
   return h || 1;
+}
+
+// ../../docs/games/metagame/stages/stage6/cards.js
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
+var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
+function cardById(id) {
+  return BY_ID.get(id) || null;
+}
+function registerCard(card) {
+  if (card && card.id) BY_ID.set(card.id, card);
+}
+var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
+var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
+var RARITY_WEIGHT_BY_ACT = {
+  1: { common: 70, uncommon: 25, rare: 5 },
+  2: { common: 50, uncommon: 35, rare: 15 },
+  3: { common: 35, uncommon: 40, rare: 25 },
+  4: { common: 20, uncommon: 40, rare: 40 }
+};
+function draftRewardCards(seed, act, count = 3) {
+  const rng = makeRng(seed);
+  const weights = RARITY_WEIGHT_BY_ACT[Math.min(4, Math.max(1, Number(act) || 1))];
+  const tierCount = {};
+  for (const id of REWARD_POOL) {
+    const r = cardById(id)?.rarity || "common";
+    tierCount[r] = (tierCount[r] || 0) + 1;
+  }
+  const pool = REWARD_POOL.map((id) => {
+    const r = cardById(id)?.rarity || "common";
+    return { id, w: (weights[r] ?? weights.common) / (tierCount[r] || 1) };
+  });
+  const picks = [];
+  while (picks.length < count && pool.length) {
+    const total = pool.reduce((sum, c) => sum + c.w, 0);
+    let r = rng() * total;
+    let idx = pool.length - 1;
+    for (let i = 0; i < pool.length; i++) {
+      r -= pool[i].w;
+      if (r < 0) {
+        idx = i;
+        break;
+      }
+    }
+    picks.push(pool.splice(idx, 1)[0].id);
+  }
+  return picks;
 }
 
 // ../../docs/games/metagame/stages/stage6/combat-damage.js
@@ -2080,13 +2114,7 @@ function rollRewardPotion(run, nodeId2) {
   return rollPotion(hashSeed(run.seed, `${nodeId2}:potion-pick`));
 }
 function rollRewardCards(run, nodeId2) {
-  const rng = makeRng(hashSeed(run.seed, nodeId2));
-  const pool = [...REWARD_POOL];
-  const picks = [];
-  while (picks.length < REWARD_CHOICES && pool.length) {
-    picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
-  }
-  return picks;
+  return draftRewardCards(hashSeed(run.seed, nodeId2), run.act, REWARD_CHOICES);
 }
 function screenForNode(node) {
   if (node.type === "combat" || node.type === "elite") return "combat";
