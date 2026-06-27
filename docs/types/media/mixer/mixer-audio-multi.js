@@ -48,7 +48,7 @@ import { reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 import {
   addGeneratedLane,
-  buildClipView,
+  buildLaneClips,
   buildLaneControlsEl,
   buildMixToolbar,
   buildSelectionPanel,
@@ -132,11 +132,12 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   const syncScroll = (px, srcId) => { if (_scrollSyncing) return; _scrollSyncing = true; for (const [id, ln] of clipLanes) if (srcId == null || id !== srcId) ln.setScroll(px); rulerEl.scrollLeft = px; _scrollSyncing = false; };
 
   function makeLaneCallbacks(laneId) {
-    const ge = () => firstElementForLane(project, laneId);
+    // Resolve the dragged clip by id; fall back to the lane's first element (legacy single-clip).
+    const ge = (clipId) => project.elements.find((e) => e.id === clipId && e.laneId === laneId) || firstElementForLane(project, laneId);
     return {
-      onMove(ds) { const e = ge(); if (!e) return; project = moveElement(project, e.id, Math.max(0, (e.timeline.startMs || 0) + ds * 1000)); render(); },
-      onTrim(side, ds) {
-        const e = ge(); if (!e) return;
+      onMove(ds, _v, clipId) { const e = ge(clipId); if (!e) return; project = moveElement(project, e.id, Math.max(0, (e.timeline.startMs || 0) + ds * 1000)); render(); },
+      onTrim(side, ds, _v, clipId) {
+        const e = ge(clipId); if (!e) return;
         const raw = e.timeline.rawDurationMs || e.timeline.durationMs || 0;
         const ins = e.timeline.sourceInMs || 0; const outs = e.timeline.sourceOutMs || raw;
         project = trimElement(project, e.id, side === 'in'
@@ -144,15 +145,15 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
           : { sourceInMs: ins, sourceOutMs: clamp(outs + ds * 1000, ins + 50, raw) });
         render();
       },
-      onFade(side, ds) {
-        const e = ge(); if (!e) return;
+      onFade(side, ds, _v, clipId) {
+        const e = ge(clipId); if (!e) return;
         const field = side === 'in' ? 'fadeInMs' : 'fadeOutMs';
         const sign = side === 'in' ? 1 : -1;
         project = updateElement(project, e.id, (el) => ({ ...el, audio: { ...el.audio, [field]: Math.max(0, (el.audio?.[field] || 0) + sign * ds * 1000) } }));
         render();
       },
       onSeek(sec) { setCursorMs(sec * 1000); render(); },
-      onSelect() { const e = ge(); if (e) project = selectTarget(project, { type: 'element', id: e.id }, [{ type: 'element', id: e.id }]); render(); },
+      onSelect(clipId) { const e = ge(clipId); if (e) project = selectTarget(project, { type: 'element', id: e.id }, [{ type: 'element', id: e.id }]); render(); },
       onScroll(px) { viewport = { ...viewport, scrollLeft: px }; syncScroll(px, laneId); },
     };
   }
@@ -190,7 +191,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       const laneModel = project.lanes.find((l) => l.id === laneId);
       if (!laneModel) continue;
       const element = firstElementForLane(project, laneId);
-      const clipView = buildClipView(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
+      const clipView = buildLaneClips(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
       if (clipView) lane.update(clipView);
       updateLaneControlsState(lane.el, laneModel, element);
       updateLaneModalValues(laneModals.get(laneId), laneModel, element);
@@ -221,7 +222,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (target.matches('.mmx-mix-lane-gain')) {
       const lid = target.dataset.laneId;
       project = updateLane(project, lid, (lane) => ({ ...lane, audio: { ...lane.audio, gain: clamp(Number(target.value), 0, 2) } }));
-      const cl = clipLanes.get(lid); if (cl) cl.update(buildClipView(project, lid, viewport.cursorMs, viewport.pxPerMs * 1000));
+      const cl = clipLanes.get(lid); if (cl) cl.update(buildLaneClips(project, lid, viewport.cursorMs, viewport.pxPerMs * 1000));
     }
     if (target.matches('.mmx-mix-master-slider')) {
       project = updateMaster(project, (master) => ({

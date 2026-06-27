@@ -10,50 +10,10 @@
 
 import { cancelFfmpeg, formatFfmpegError, loadFfmpeg, runOperation } from './transcoder.js';
 import {
-  ADVANCED_SINGLE_OPS, MULTI_FILE_OPS, MULTI_FILE_OP_IDS,
-  buildAdvancedInputsFor, collectAdvancedParams, buildSecondaryDropZone,
+  ADVANCED_SINGLE_OPS, MULTI_FILE_OPS, MULTI_FILE_OP_IDS, buildSecondaryDropZone,
 } from './editor-advanced.js';
-
-// Format seconds → HH:MM:SS
-function fmtTime(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
-  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-}
-function toTrimTime(sec) {
-  if (!Number.isFinite(sec) || sec < 0) return null;
-  return fmtTime(sec);
-}
-
-// Validate and normalise an HH:MM:SS string; returns null on bad input.
-function parseTimestamp(s) {
-  const m = (s || '').trim().match(/^(\d{2}):(\d{2}):(\d{2})$/);
-  if (!m) return null;
-  return m[1] + ':' + m[2] + ':' + m[3];
-}
-function parseTrimInputText(s) {
-  const m = (s || '').trim().match(/^(\d+):(\d{2}):(\d{2})$/);
-  if (!m) return null;
-  return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
-}
-
-function makeInput(placeholder, cls) {
-  const el = document.createElement('input');
-  el.type = 'text';
-  el.placeholder = placeholder;
-  el.className = cls || 'media-ed-ts';
-  el.pattern = '[0-9]{2}:[0-9]{2}:[0-9]{2}';
-  return el;
-}
-
-function makeBtn(text, cls) {
-  const b = document.createElement('button');
-  b.type = 'button';
-  b.textContent = text;
-  b.className = cls || 'media-ed-btn';
-  return b;
-}
+import { toTrimTime, parseTimestamp, parseTrimInputText, makeBtn } from './editor-helpers.js';
+import { buildInputsFor, collectParams } from './editor-inputs.js';
 
 const OPERATIONS = [
   { id: 'trim',        label: 'Trim' },
@@ -70,158 +30,6 @@ const OPERATIONS = [
   ...MULTI_FILE_OPS,
 ];
 
-// Build contextual inputs for each operation. Returns a DOM element (or null if none needed).
-// `mediaEl` is the <video>/<audio> element (for "use current position" buttons).
-function buildInputsFor(opId, mediaEl) {
-  const wrap = document.createElement('div');
-  wrap.className = 'media-ed-ctx';
-
-  if (opId === 'trim') {
-    const startIn = makeInput('HH:MM:SS');
-    const endIn   = makeInput('HH:MM:SS');
-    const useStart = makeBtn('Use current', 'media-ed-use-pos');
-    const useEnd   = makeBtn('Use current', 'media-ed-use-pos');
-    useStart.addEventListener('click', () => { if (mediaEl) startIn.value = fmtTime(mediaEl.currentTime); });
-    useEnd.addEventListener('click',   () => { if (mediaEl) endIn.value   = fmtTime(mediaEl.currentTime); });
-    const preciseLabel = document.createElement('label');
-    preciseLabel.className = 'media-ed-precise';
-    const preciseChk = document.createElement('input');
-    preciseChk.type = 'checkbox';
-    preciseChk.name = 'precise';
-    preciseLabel.append(preciseChk, document.createTextNode(' Precise (re-encode, slower)'));
-    const startGroup = document.createElement('div');
-    startGroup.className = 'media-ed-ts-group';
-    startGroup.append(document.createTextNode('Start '), startIn, useStart);
-    const endGroup = document.createElement('div');
-    endGroup.className = 'media-ed-ts-group';
-    endGroup.append(document.createTextNode('End '), endIn, useEnd);
-    wrap.append(startGroup, endGroup, preciseLabel);
-    wrap.dataset.op = 'trim';
-    return wrap;
-  }
-
-  if (opId === 'audio') {
-    const mp3Label = document.createElement('label');
-    const mp3Radio = document.createElement('input');
-    mp3Radio.type = 'radio'; mp3Radio.name = 'audio-fmt'; mp3Radio.value = 'mp3'; mp3Radio.checked = true;
-    mp3Label.append(mp3Radio, document.createTextNode(' MP3'));
-    const oggLabel = document.createElement('label');
-    const oggRadio = document.createElement('input');
-    oggRadio.type = 'radio'; oggRadio.name = 'audio-fmt'; oggRadio.value = 'ogg';
-    oggLabel.append(oggRadio, document.createTextNode(' OGG'));
-    const row = document.createElement('div');
-    row.className = 'media-ed-radio-row';
-    row.append(document.createTextNode('Format: '), mp3Label, oggLabel);
-    wrap.append(row);
-    wrap.dataset.op = 'audio';
-    return wrap;
-  }
-
-  if (opId === 'screenshot') {
-    const tsIn = makeInput('HH:MM:SS');
-    const usePos = makeBtn('Use current', 'media-ed-use-pos');
-    usePos.addEventListener('click', () => { if (mediaEl) tsIn.value = fmtTime(mediaEl.currentTime); });
-    const row = document.createElement('div');
-    row.className = 'media-ed-ts-group';
-    row.append(document.createTextNode('Timestamp '), tsIn, usePos);
-    wrap.append(row);
-    wrap.dataset.op = 'screenshot';
-    return wrap;
-  }
-
-  if (opId === 'downscale') {
-    const resolutions = [['1280:720', '720p'], ['854:480', '480p'], ['640:360', '360p']];
-    const row = document.createElement('div');
-    row.className = 'media-ed-radio-row';
-    row.append(document.createTextNode('Resolution: '));
-    resolutions.forEach(([val, label], i) => {
-      const lbl = document.createElement('label');
-      const radio = document.createElement('input');
-      radio.type = 'radio'; radio.name = 'res'; radio.value = val;
-      if (i === 0) radio.checked = true;
-      lbl.append(radio, document.createTextNode(' ' + label));
-      row.append(lbl);
-    });
-    wrap.append(row);
-    wrap.dataset.op = 'downscale';
-    return wrap;
-  }
-
-  if (opId === 'volume') {
-    const slider = document.createElement('input');
-    slider.type = 'range'; slider.min = '0.1'; slider.max = '3'; slider.step = '0.1'; slider.value = '1';
-    slider.className = 'media-ed-vol-slider';
-    const valDisplay = document.createElement('span');
-    valDisplay.className = 'media-ed-vol-val';
-    valDisplay.textContent = '1.0x';
-    slider.addEventListener('input', () => { valDisplay.textContent = parseFloat(slider.value).toFixed(1) + 'x'; });
-    const row = document.createElement('div');
-    row.className = 'media-ed-radio-row';
-    row.append(document.createTextNode('Volume: '), slider, valDisplay);
-    wrap.append(row);
-    wrap.dataset.op = 'volume';
-    return wrap;
-  }
-
-  if (opId === 'speed') {
-    const row = document.createElement('div');
-    row.className = 'media-ed-radio-row';
-    row.append(document.createTextNode('Speed: '));
-    [['0.5', '0.5x'], ['2', '2x']].forEach(([val, label], i) => {
-      const lbl = document.createElement('label');
-      const radio = document.createElement('input');
-      radio.type = 'radio'; radio.name = 'speed'; radio.value = val;
-      if (i === 0) radio.checked = true;
-      lbl.append(radio, document.createTextNode(' ' + label));
-      row.append(lbl);
-    });
-    wrap.append(row);
-    wrap.dataset.op = 'speed';
-    return wrap;
-  }
-
-  // mute, webm: no contextual inputs
-  // Phase 3 single-file ops (gif, webp need timestamp inputs; rest need nothing)
-  // Multi-file ops: handled via secondary drop zone in buildEditorPanel
-  if (!MULTI_FILE_OP_IDS.has(opId)) {
-    return buildAdvancedInputsFor(opId, mediaEl);
-  }
-  return null;
-}
-
-// Gather operation params from the contextual inputs element.
-function collectParams(ctxEl) {
-  if (!ctxEl) return {};
-  const op = ctxEl.dataset.op;
-  if (op === 'trim') {
-    const inputs = ctxEl.querySelectorAll('input[type="text"]');
-    const precise = ctxEl.querySelector('input[name="precise"]');
-    return { start: inputs[0]?.value || '', end: inputs[1]?.value || '', precise: precise?.checked || false };
-  }
-  if (op === 'audio') {
-    const checked = ctxEl.querySelector('input[name="audio-fmt"]:checked');
-    return { format: checked?.value || 'mp3' };
-  }
-  if (op === 'screenshot') {
-    const ts = ctxEl.querySelector('input[type="text"]');
-    return { ts: ts?.value || '' };
-  }
-  if (op === 'downscale') {
-    const checked = ctxEl.querySelector('input[name="res"]:checked');
-    return { res: checked?.value || '1280:720' };
-  }
-  if (op === 'volume') {
-    const slider = ctxEl.querySelector('input[type="range"]');
-    return { level: slider?.value || '1' };
-  }
-  if (op === 'speed') {
-    const checked = ctxEl.querySelector('input[name="speed"]:checked');
-    return { rate: checked?.value || '0.5' };
-  }
-  // Phase 3 advanced ops (gif, webp have timestamp inputs)
-  return collectAdvancedParams(ctxEl);
-}
-
 // Build and return the full editor panel element. `mediaEl` is the native <video>/<audio>.
 // `intake` is the file descriptor from the renderer. `onNewUrl` is called with (blobUrl, filename)
 // after a successful operation so the caller can update the player.
@@ -231,6 +39,11 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
   let currentCtx = null;
   let ffInstance = null;   // held so we can call exit() on cancel
   const blobUrls = [];     // all blob URLs created here — revoked by revoke()
+  // Additive editing: ops run against `workingIntake`, which starts as the original file but can be
+  // swapped to a previous result so changes stack (trim → convert → …) without ever touching the
+  // original on disk. chainDepth counts how many edits are baked into the current working input.
+  let workingIntake = intake;
+  let chainDepth = 0;
 
   // Root container
   const panel = document.createElement('div');
@@ -240,6 +53,27 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
   const header = document.createElement('div');
   header.className = 'media-ed-header';
   header.textContent = 'Media Editor';
+
+  // Working-source bar — shown only when ops are chained onto a previous result.
+  const sourceBar = document.createElement('div');
+  sourceBar.className = 'media-ed-source';
+  sourceBar.hidden = true;
+  const sourceLabel = document.createElement('span');
+  sourceLabel.className = 'media-ed-source-name';
+  const resetBtn = makeBtn('Reset to original', 'media-ed-source-reset');
+  resetBtn.addEventListener('click', () => { setWorkingIntake(intake, 0); });
+  sourceBar.append(sourceLabel, resetBtn);
+
+  function setWorkingIntake(next, depth) {
+    workingIntake = next;
+    chainDepth = depth;
+    if (depth > 0) {
+      sourceLabel.textContent = `Chained: ${next.filename} · ${depth} edit${depth > 1 ? 's' : ''} applied (original untouched)`;
+      sourceBar.hidden = false;
+    } else {
+      sourceBar.hidden = true;
+    }
+  }
 
   // Operation buttons grid
   const opGrid = document.createElement('div');
@@ -298,7 +132,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
   resultArea.className = 'media-ed-result';
   resultArea.hidden = true;
 
-  panel.append(header, opGrid, ctxArea, secondaryArea, divider, actionRow, progressArea, resultArea);
+  panel.append(header, sourceBar, opGrid, ctxArea, secondaryArea, divider, actionRow, progressArea, resultArea);
 
   function selectOp(id) {
     currentOp = id;
@@ -367,7 +201,7 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
     if (endVal) inputs[1].value = endVal;
   }
 
-  function showResult(url, filename, sizeBytes) {
+  function showResult(url, filename, sizeBytes, { chainable = false } = {}) {
     const sizeMB = (sizeBytes / 1048576).toFixed(1);
     resultArea.innerHTML = '';
     const msg = document.createElement('span');
@@ -379,6 +213,19 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
     dlLink.className = 'media-tx-download';
     dlLink.textContent = 'Download ' + filename;
     resultArea.append(msg, dlLink);
+    // Additive editing: feed this result back in as the working input so the next op stacks on it.
+    if (chainable) {
+      const chainBtn = makeBtn('Continue editing this result →', 'media-ed-chain');
+      chainBtn.addEventListener('click', async () => {
+        chainBtn.disabled = true;
+        try {
+          const blob = await (await fetch(url)).blob();
+          setWorkingIntake({ file: blob, filename }, chainDepth + 1);
+          if (currentOp) selectOp(currentOp); // fresh op state on the new working source
+        } catch { showError('Could not load the result to continue editing.'); }
+      });
+      resultArea.append(chainBtn);
+    }
     resultArea.hidden = false;
   }
 
@@ -416,9 +263,16 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
 
     // Validate timestamp inputs
     if (currentOp === 'trim') {
-      const start = parseTimestamp(params.start);
-      const end   = parseTimestamp(params.end);
-      if (!start || !end) { showError('Enter valid timestamps (HH:MM:SS) for start and end.'); return; }
+      // One-sided trim is allowed: an empty start means "from the beginning" and an empty end means
+      // "to the end of the media". At least one bound must be given, and any value typed must parse.
+      const hasStart = (params.start || '').trim() !== '';
+      const hasEnd = (params.end || '').trim() !== '';
+      if (!hasStart && !hasEnd) { showError('Enter a start, an end, or both (HH:MM:SS) to trim.'); return; }
+      const start = hasStart ? parseTimestamp(params.start) : '00:00:00';
+      const end = hasEnd ? parseTimestamp(params.end) : toTrimTime(Math.ceil(mediaEl?.duration || 0));
+      if (hasStart && !start) { showError('Enter a valid start timestamp (HH:MM:SS).'); return; }
+      if (hasEnd && !end) { showError('Enter a valid end timestamp (HH:MM:SS).'); return; }
+      if (!end) { showError('Enter an end timestamp (HH:MM:SS) — the media duration is unknown.'); return; }
       params.start = start; params.end = end;
     }
     if (currentOp === 'screenshot') {
@@ -454,14 +308,15 @@ export function buildEditorPanel(intake, mediaEl, onNewUrl) {
       ffInstance = ff;
       progressMsg.textContent = 'Encoding…';
 
-      const { url, filename, bytes } = await runOperation(ff, currentOp, params, intake);
+      const { url, filename, bytes } = await runOperation(ff, currentOp, params, workingIntake);
       blobUrls.push(url);
 
-      // For ops that produce playable media, offer to play the result
+      // For ops that produce playable media, offer to play the result AND chain further edits onto it.
       const nonPlayable = new Set(['screenshot', 'thumbstrip', 'gif', 'webp']);
-      if (!nonPlayable.has(currentOp)) onNewUrl(url);
+      const playable = !nonPlayable.has(currentOp);
+      if (playable) onNewUrl(url);
 
-      showResult(url, filename, bytes);
+      showResult(url, filename, bytes, { chainable: playable });
     } catch (err) {
       showErrorWithDetail(formatFfmpegError(err));
     } finally {

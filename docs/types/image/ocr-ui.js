@@ -7,12 +7,14 @@
 // renderer bundle keeps it as a lazy external chunk. Zero off-origin (vendored).
 
 const OCR = '../../core/ocr/index.js';
-let consented = false;   // process-wide: ask once per page session
+const CONSENT_KEY = 'imgv-ocr-consent';
+let consented = false;   // process-wide: ask once, then remembered across reloads
+const remembered = () => { try { return localStorage.getItem(CONSENT_KEY) === '1'; } catch { return false; } };
 
 // One-time opt-in confirming the heavy download (mirrors ruffle/renderer.js's gate).
-// Resolves true once the user accepts; subsequent calls resolve immediately.
+// Once accepted it's remembered (localStorage) so later runs/reloads don't re-ask.
 function ocrConsent(host, approxMB) {
-  if (consented) return Promise.resolve(true);
+  if (consented || remembered()) { consented = true; return Promise.resolve(true); }
   injectOcrStyle();
   return new Promise((resolve) => {
     const back = document.createElement('div');
@@ -29,7 +31,7 @@ function ocrConsent(host, approxMB) {
         </div>
       </div>`;
     (host.ownerDocument?.body || document.body).appendChild(back);
-    const done = (ok) => { back.remove(); if (ok) consented = true; resolve(ok); };
+    const done = (ok) => { back.remove(); if (ok) { consented = true; try { localStorage.setItem(CONSENT_KEY, '1'); } catch { /* private mode */ } } resolve(ok); };
     back.querySelector('.imgv-ocr-go').addEventListener('click', () => done(true));
     back.querySelector('.imgv-ocr-cancel').addEventListener('click', () => done(false));
     back.addEventListener('click', (e) => { if (e.target === back) done(false); });

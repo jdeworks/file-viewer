@@ -13,6 +13,8 @@ export function createMixerAudioPlayback({
   let master = null;
   let nodes = [];
   let gains = [];
+  let laneNodes = [];          // per-lane dynamics compressor + makeup gain nodes
+  let laneChains = new Map();  // laneId -> compressor input node (only for lanes with dynamics)
   let rafId = 0;
   let endTimer = 0;
   let playing = false;
@@ -80,7 +82,7 @@ export function createMixerAudioPlayback({
       }
       const gain = ctx.createGain();
       source.node.connect(gain);
-      gain.connect(master);
+      gain.connect(getLaneInput(item.lane));
       gains.push(gain);
       nodes.push(source.node);
       applyGainEnvelope(gain, item, source.gain);
@@ -91,6 +93,29 @@ export function createMixerAudioPlayback({
         decodedCount: state.decodedCount + (source.decoded ? 1 : 0),
       });
     }
+  }
+
+  // Per-lane Dynamics: when a lane has `audio.dynamics`, route all its elements through a shared
+  // DynamicsCompressorNode (threshold/ratio) plus a makeup-gain node, then into master. Lanes
+  // without dynamics connect straight to master (unchanged graph). Built lazily, once per lane/play.
+  function getLaneInput(lane) {
+    const dyn = lane?.audio?.dynamics;
+    if (!dyn || !ctx) return master;
+    const existing = laneChains.get(lane.id);
+    if (existing) return existing;
+    const comp = ctx.createDynamicsCompressor();
+    try {
+      comp.threshold.value = clampNum(dyn.thresholdDb, -100, 0, -18);
+      comp.ratio.value = clampNum(dyn.ratio, 1, 20, 4);
+      // Default knee/attack/release give a transparent, musical compressor.
+    } catch { /* read-only AudioParam in some engines */ }
+    const makeup = ctx.createGain();
+    makeup.gain.value = Math.pow(10, clampNum(dyn.makeupDb, 0, 24, 0) / 20);
+    comp.connect(makeup);
+    makeup.connect(master);
+    laneChains.set(lane.id, comp);
+    laneNodes.push(comp, makeup);
+    return comp;
   }
 
   async function createSource(item, project) {
@@ -202,9 +227,14 @@ export function createMixerAudioPlayback({
     for (const gain of gains) {
       try { gain.disconnect?.(); } catch {}
     }
+    for (const node of laneNodes) {
+      try { node.disconnect?.(); } catch {}
+    }
     try { master?.disconnect?.(); } catch {}
     nodes = [];
     gains = [];
+    laneNodes = [];
+    laneChains = new Map();
     master = null;
     playing = false;
     if (resetCursor) setCursorMs?.(0);
@@ -283,4 +313,10 @@ function clampGain(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(4, n));
+}
+
+function clampNum(value, lo, hi, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(lo, Math.min(hi, n));
 }

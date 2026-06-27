@@ -6,14 +6,30 @@
 import { ENEMY_TYPES, spawnEnemy } from "./enemies.js";
 import { TOWER_TYPES } from "./towers.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
+import { mapWaveComposition } from "./wavegen.js";
+import { spawnSubBoss, subBossDef } from "./subboss.js";
 import { applyExtractorIncome } from "./upgrades.js";
 
-// Populate the spawn queue for a wave and reset per-wave combat state. `pathTiles` is unused here
-// (kept for symmetry with tick/resolveDeath) — spawning reads positions in tick.
+// Resolve a live enemy's definition — ENEMY_TYPES for trash, a synthesized def for a sub-boss.
+function enemyDef(enemy) {
+  if (enemy?.subBoss) {
+    const sb = subBossDef(enemy.subBoss);
+    if (sb) return { glyph: sb.glyph, reward: sb.reward, integrityDrain: sb.drain };
+  }
+  return ENEMY_TYPES[enemy?.type] || ENEMY_TYPES.recursion;
+}
+
+// Populate the spawn queue for a wave and reset per-wave combat state. The composition comes from the
+// active campaign map (wavegen.js) when state.campaign exists; otherwise it falls back to the legacy
+// single-map table (waves.js) so older tests / save shapes keep working. A sub-boss (if any) is queued
+// LAST as a sentinel `subboss:<id>` so the guardian enters after its escort. `pathTiles` is unused here.
 export function startWave(state, waveNum, pathTiles) {
-  const comp = waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  const comp = state.campaign
+    ? mapWaveComposition(state.campaign.mapIndex || 0, waveNum)
+    : waveComposition(waveNum, state.recursion?.pointSetId || "x");
   const queue = [];
   for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) queue.push(grp.type);
+  if (comp.subBoss) queue.push(`subboss:${comp.subBoss}`);
   state.waveNumber = waveNum;
   state.waveActive = true;
   state.waveFailed = false;
@@ -23,6 +39,25 @@ export function startWave(state, waveNum, pathTiles) {
   state.combatClockMs = 0;
   state.enemyNextId = 1;
   for (const t of state.towers) t.lastFiredMs = -Infinity;
+  if (comp.subBoss) {
+    const sb = subBossDef(comp.subBoss);
+    if (sb) pushLog(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+  }
+  return state;
+}
+
+// Append another wave's enemies onto the IN-FLIGHT spawn queue (the "call wave early" mechanic): the
+// next wave's trash + guardian pour in on top of the current one. Does not reset combat state.
+export function queueWave(state, waveNum) {
+  const comp = state.campaign
+    ? mapWaveComposition(state.campaign.mapIndex || 0, waveNum)
+    : waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) state.spawnQueue.push(grp.type);
+  if (comp.subBoss) {
+    state.spawnQueue.push(`subboss:${comp.subBoss}`);
+    const sb = subBossDef(comp.subBoss);
+    if (sb) pushLog(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+  }
   return state;
 }
 
@@ -41,7 +76,7 @@ export function tick(state, deltaMs, pathTiles) {
 
 // On-death effects: award Cycles, fractal-host split, log. Returns the Cycles earned.
 export function resolveDeath(state, enemy, pathTiles) {
-  const def = ENEMY_TYPES[enemy.type] || ENEMY_TYPES.recursion;
+  const def = enemyDef(enemy);
   state.cycles = (state.cycles || 0) + (def.reward || 0);
   if (def.spawnsOnDeath) {
     for (let i = 0; i < def.spawnsOnDeath.count; i++) {
@@ -71,7 +106,10 @@ function spawnDueEnemies(state, dt, pathTiles) {
   while ((state.spawnQueue?.length || 0) > 0 && state.spawnTimerMs >= SPAWN_INTERVAL_MS) {
     state.spawnTimerMs -= SPAWN_INTERVAL_MS;
     const type = state.spawnQueue.shift();
-    const e = spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    const e = String(type).startsWith('subboss:')
+      ? spawnSubBoss(type.slice('subboss:'.length), state.enemyNextId++)
+      : spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    if (!e) continue;
     placeOnPath(e, pathTiles);
     state.enemies.push(e);
   }
@@ -84,7 +122,7 @@ function moveEnemies(state, dt, pathTiles, exitIndex) {
     const eff = e.speed * (slowed ? 0.5 : 1);
     e.pathIndex += eff * (dt / 1000);
     if (e.pathIndex >= exitIndex) {
-      const def = ENEMY_TYPES[e.type] || ENEMY_TYPES.recursion;
+      const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
       if (state.integrity <= 0) state.waveFailed = true;
       pushLog(state, `${def.glyph} reached the core.`);
@@ -112,11 +150,34 @@ function fireTowers(state, pathTiles) {
 }
 
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
-  let dmg = def.damage * bonus;
+  let dmg = def.damage * bonus * (state.damageMult || 1); // Armory "Overclocked Emitters" scales all damage
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2; // depth-3 fold-back tiles deal double
   if (!def.ignoresArmor) dmg *= 1 - (enemy.armor || 0);
   enemy.hp -= dmg;
+  if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
+}
+
+// A sub-boss fires its single telegraphed ability ONCE when it first drops below its trigger fraction.
+function maybeFireSubBossAbility(state, enemy, pathTiles) {
+  const sb = subBossDef(enemy.subBoss);
+  if (!sb || enemy.hp > enemy.maxHp * sb.trigger) return;
+  enemy.abilityFired = true;
+  if (sb.ability === 'recurse') {
+    for (let i = 0; i < 3; i++) {
+      const child = spawnEnemy('recursion', state.recursion?.pointSetId || 'x', state.enemyNextId++);
+      child.pathIndex = Math.max(0, enemy.pathIndex - (i + 1));
+      placeOnPath(child, pathTiles);
+      state.enemies.push(child);
+    }
+    pushLog(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
+  } else if (sb.ability === 'haste') {
+    enemy.speed *= 1.6;
+    pushLog(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
+  } else if (sb.ability === 'shield') {
+    enemy.armor = Math.min(0.9, (enemy.armor || 0) + 0.3);
+    pushLog(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
+  }
 }
 
 function reap(state, pathTiles) {

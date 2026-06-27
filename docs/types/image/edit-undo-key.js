@@ -1,6 +1,7 @@
-// Global Ctrl+Z / Ctrl+Y router for the image editor.
+// Global keyboard router for the image editor: Ctrl+Z / Ctrl+Y undo/redo, plus
+// arrow-key nudging of a live pixel selection (routed to the editor's onArrow).
 //
-// One document-level keydown listener (installed once) routes undo/redo to the
+// One document-level keydown listener (installed once) routes keys to the
 // most-recently-active image editor. The shortcut therefore fires no matter where
 // focus sits *within* that editor — its range sliders, colour pickers, number
 // fields and toolbar buttons all count. The previous per-instance handler bailed
@@ -22,13 +23,22 @@ function isTextEntry(t) {
   return false;
 }
 
+const ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+
 function onKey(e) {
   if (!active || !active.host.isConnected) return;
   if (active.isEnabled && !active.isEnabled()) return;     // e.g. ASCII mode is showing
+  if (isTextEntry(e.target)) return;                       // let text fields keep arrows + native undo
+  // Arrow-key nudge for an active pixel selection (Shift = move just the outline). The
+  // editor returns truthy only when it actually consumed the key (a selection exists).
+  const arrow = ARROWS[e.key];
+  if (arrow && active.onArrow && active.onArrow(arrow[0], arrow[1], e.shiftKey)) { e.preventDefault(); return; }
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
+  // Copy/paste the pixel selection (copy → internal+OS clipboard; paste → a free pane).
+  if (k === 'c' && active.onCopy) { if (active.onCopy()) e.preventDefault(); return; }
+  if (k === 'v' && active.onPaste) { active.onPaste(); e.preventDefault(); return; }
   if (k !== 'z' && k !== 'y') return;
-  if (isTextEntry(e.target)) return;
   e.preventDefault();
   if (k === 'y' || (k === 'z' && e.shiftKey)) active.doRedo();
   else active.doUndo();

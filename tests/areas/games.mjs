@@ -799,29 +799,40 @@ export async function run(ctx) {
   pass('Stage 3 defeat unlocks Stage 4 through v3 orchestrator');
 
   await page.waitForSelector('.stage4-fractal-bastion', { timeout: 8000 });
-  // Boss is not start-reachable: the confront button is hidden until the final wave.
-  const s4ConfrontEarly = await page.$('.stage4-fractal-bastion [data-action="confront"]:not([hidden])');
-  if (s4ConfrontEarly) throw new Error('Stage 4 boss reachable before the final wave');
-  await page.waitForSelector('.stage4-fractal-bastion [data-action="start-wave"]', { timeout: 4000 });
-  // The tower-defense actually runs: start wave 1 and advance it to completion (deterministic hook).
-  await page.evaluate(() => { window.__fvStage4.startWave(); window.__fvStage4.advance(30000); });
-  const s4Wave = await page.evaluate(() => window.__fvStage4.state().waveNumber);
-  if (s4Wave >= 2) pass('Stage 4 tower-defense runs: wave 1 resolves and advances'); else fail('Stage 4 wave did not advance: ' + s4Wave);
-  // Load-bearing un-cheat is REAL: BEFORE the blueprint file is opened, the boss is unwinnable even at
-  // the final wave with full recursion-point coverage (it folds all damage away).
+  // Stage 4 is a 5-map campaign. It opens on map-select; the boss is NOT start-reachable — the
+  // confront-the-loop button is disabled until ALL FIVE maps are cleared (stronger than the old gate).
+  const s4Start = await page.evaluate(() => ({
+    status: window.__fvStage4.status(),
+    maps: window.__fvStage4.state().campaign.clearedMaps.length,
+    bossLocked: document.querySelector('.stage4-mapselect [data-action="boss"]')?.disabled === true,
+    bossUnlocked: window.__fvStage4.bossUnlocked(),
+    rows: document.querySelectorAll('.stage4-mapselect .s4-maprow').length,
+  }));
+  if (s4Start.status === 'map-select' && s4Start.rows === 5 && s4Start.maps === 0 && s4Start.bossLocked && !s4Start.bossUnlocked) pass('Stage 4 campaign: 5-map select, boss gated behind all maps (no start bypass)'); else fail('Stage 4 campaign gate wrong: ' + JSON.stringify(s4Start));
+  // A real map actually plays: enter map 1, start its first wave, advance it to completion.
+  const s4Map = await page.evaluate(() => {
+    window.__fvStage4.selectMap(0);
+    window.__fvStage4.startWave();
+    window.__fvStage4.advance(40000);
+    return { status: window.__fvStage4.status(), wave: window.__fvStage4.state().waveNumber };
+  });
+  if (s4Map.status === 'combat' && s4Map.wave >= 2) pass('Stage 4 tower-defense runs: map 1 wave 1 resolves and advances'); else fail('Stage 4 map did not play: ' + JSON.stringify(s4Map));
+  // Debug-seat the boss (smoke shortcut for clearing 150 waves; NOT a player affordance). The boss is
+  // load-bearing-gated by the REAL blueprint un-cheat: BEFORE the file is opened it folds all damage
+  // away even with full recursion-point coverage.
   const s4Locked = await page.evaluate(() => {
-    window.__fvStage4.setWave(31);
+    window.__fvStage4.seatAtBoss();
     for (const p of window.__fvStage4.state().recursion.points) window.__fvStage4.place(p.x, p.y, 'pulse_node');
     const hpBefore = window.__fvStage4.state().boss.hp;
     window.__fvStage4.confront();
     const s = window.__fvStage4.state();
-    return { defeated: s.boss.defeated, hpUnchanged: s.boss.hp === hpBefore };
+    return { status: s.campaign.status, defeated: s.boss.defeated, hpUnchanged: s.boss.hp === hpBefore };
   });
-  if (!s4Locked.defeated && s4Locked.hpUnchanged) pass('Stage 4 boss is unwinnable before the blueprint file is opened (total-armor while locked)'); else fail('Stage 4 boss took damage / was defeated before the un-cheat');
+  if (s4Locked.status === 'boss' && !s4Locked.defeated && s4Locked.hpUnchanged) pass('Stage 4 boss is unwinnable before the blueprint file is opened (total-armor while locked)'); else fail('Stage 4 boss took damage / was defeated before the un-cheat: ' + JSON.stringify(s4Locked));
   // Un-cheat = a REAL file-open: click the navigation hint, which opens the static blueprint file in the
   // viewer. The action 4.recursion_blueprint_read is fired by openViewerFile → recordMetagameViewerOpen
   // (NOT by an in-game button), and the achievement auto-unlocks from the action.
-  await page.click('[data-action="blueprint"]');
+  await page.click('.stage4-combat [data-action="blueprint"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'recursion_points.json', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
@@ -831,16 +842,15 @@ export async function run(ctx) {
         && save.achievements?.['stage4.recursion_blueprint_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  // Now at the final wave with coverage already placed, the confront button is available and wins.
-  await page.waitForSelector('.stage4-fractal-bastion [data-action="confront"]:not([hidden])', { timeout: 4000 });
-  await page.click('[data-action="confront"]');
+  // Now in the boss arena with coverage placed + the blueprint read, the confront lands and wins.
+  await page.evaluate(() => window.__fvStage4.confront());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(4) && save.unlockedStages?.includes(5);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage at the final wave');
+  pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage after all maps cleared');
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
   // The thin-gate bypass is gone: there is no "simulate full loop" calibrate button.
@@ -1074,11 +1084,20 @@ export async function run(ctx) {
   await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
   const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[─│+]/.test(document.querySelector('.s9-arena')?.textContent || ''));
   if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
-  // The boss is gated behind the run: the player starts on a sublevel, not at the Observer.
+  // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
   const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
-  if (s9StartLevel < 18) pass('Stage 9 starts on a sublevel (boss gated behind the full run)'); else fail('Stage 9 started at the boss');
-  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the boss
-  // seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
+  if (s9StartLevel === 1) pass('Stage 9 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 9 started at level ${s9StartLevel}`);
+  // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
+  // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
+  const s9Stall = await page.evaluate(() => {
+    const reached = window.__fvStage9.solveStableBody();
+    return { reached, unstable: !!window.__fvStage9.config(reached).onlineUnstable, boss: window.__fvStage9.config(reached).isBoss };
+  });
+  if (s9Stall.reached > 1 && s9Stall.unstable && !s9Stall.boss)
+    pass('Stage 9 online run clears the learnable front, then stalls at the onlineUnstable back third');
+  else fail(`Stage 9 online run did not stall at the back third: ${JSON.stringify(s9Stall)}`);
+  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
+  // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
   await page.click('[data-action="offline"]');
@@ -1126,20 +1145,37 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
   await page.click('[data-goto-final]');
-  await page.waitForSelector('[data-final-choice="continue"]', { timeout: 5000 });
-  await page.click('[data-final-choice="continue"]');
+  // The boss is now a REAL three-phase confrontation. The final choice is NOT exposed until the
+  // confrontation is won (boss never self-unlocks).
+  await page.waitForSelector('[data-field="confront"]', { timeout: 5000 });
+  const choiceLeaked = await page.$('[data-final-choice]');
+  if (!choiceLeaked) pass('Stage 10 final choice is gated behind the confrontation'); else fail('Stage 10 final choice exposed before the confrontation was won');
+  // Drive it deterministically through the same engine functions a player's clicks call: affirm each
+  // compaction with the recorded stance (Phase A), anchor each fragmentation trace — prior un-cheats
+  // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
+  const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
+  if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  await page.waitForFunction(() => {
+    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
+  }, null, { timeout: 5000 });
+  // Now the final question is reachable. Choose "understand" → the woven Synthesis epilogue.
+  await page.waitForSelector('[data-final-choice="understand"]:not([disabled])', { timeout: 5000 });
+  await page.click('[data-final-choice="understand"]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed;
+      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand';
     } catch { return false; }
   }, null, { timeout: 5000 });
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
+  const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
+  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);
   // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
   const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
   if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 10 renders the awakening ending (capstone)'); else fail('Stage 10 awakening ending unexpected: ' + awakening);
-  pass('Stage 10 resolves, integrates all memories, and completes Awakening');
+  pass('Stage 10 resolves, integrates all memories, wins the confrontation, and completes Awakening');
   await page.click('.games-close');
 
   const btsOk = await page.evaluate(async () => {

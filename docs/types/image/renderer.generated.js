@@ -7,7 +7,7 @@
 
 
 // ../../docs/types/image/renderer.js
-import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
+import { loadGlobal as loadGlobal3, vendor as vendor3 } from "../../core/script-loader.js";
 import { loadTemplate, fill } from "../../core/template.js";
 
 // ../../docs/types/image/imglib.js
@@ -185,6 +185,12 @@ function createView(ctx) {
     panX = 0;
     panY = 0;
   }
+  function fitView() {
+    fit = true;
+    zoom = 1;
+    resetView();
+    apply();
+  }
   function setNatural(n) {
     natural = n;
     apply();
@@ -293,6 +299,7 @@ function createView(ctx) {
     apply,
     applyPan,
     resetView,
+    fitView,
     zoomAt,
     setNatural,
     teardown() {
@@ -960,17 +967,31 @@ function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
   const { presetGrey, presetSepia, presetInvert } = els;
+  injectFilterStyle();
+  let pending = false;
+  const setPending = (on) => {
+    pending = on;
+    fApplyBtn?.classList.toggle("imgv-flash-apply", on);
+  };
+  function clearPreview() {
+    if (fBrightness) fBrightness.value = "100";
+    if (fContrast) fContrast.value = "100";
+    if (fSaturation) fSaturation.value = "100";
+    if (fHue) fHue.value = "0";
+    img.style.filter = "";
+    setPending(false);
+  }
   filtersBtn?.addEventListener("click", () => {
-    if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden;
+    if (!filtersPanel) return;
+    if (!filtersPanel.hidden && pending) clearPreview();
+    filtersPanel.hidden = !filtersPanel.hidden;
   });
   const filterString = () => `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%) hue-rotate(${fHue?.value || 0}deg)`;
   const updateFilterPreview = () => {
     img.style.filter = filterString();
+    setPending(true);
   };
-  fBrightness?.addEventListener("input", updateFilterPreview);
-  fContrast?.addEventListener("input", updateFilterPreview);
-  fSaturation?.addEventListener("input", updateFilterPreview);
-  fHue?.addEventListener("input", updateFilterPreview);
+  [fBrightness, fContrast, fSaturation, fHue].forEach((s) => s?.addEventListener("input", updateFilterPreview));
   fApplyBtn?.addEventListener("click", async () => {
     const filter = filterString();
     img.style.filter = "";
@@ -988,14 +1009,12 @@ function mountFilters({ img, mime, core, els }) {
     g.filter = "none";
     core.pushUndo();
     await core.commitCanvas(canvas);
+    clearPreview();
   });
-  fResetBtn?.addEventListener("click", () => {
-    if (fBrightness) fBrightness.value = "100";
-    if (fContrast) fContrast.value = "100";
-    if (fSaturation) fSaturation.value = "100";
-    if (fHue) fHue.value = "0";
-    img.style.filter = "";
-  });
+  fResetBtn?.addEventListener("click", clearPreview);
+  filtersBtn?.closest(".imgv-bar")?.querySelectorAll(".imgv-tab").forEach((t) => t.addEventListener("click", () => {
+    if (pending) clearPreview();
+  }));
   let lvSrc = null, lvW = 0, lvH = 0, lvOpenSrc = null, lvPrevUrl = null, lvRaf = 0;
   function lvProcessed() {
     const lut = buildLevelsLUT(+lvBlack.value, +lvWhite.value, +lvGamma.value / 100);
@@ -1032,6 +1051,7 @@ function mountFilters({ img, mime, core, els }) {
   }
   levelsBtn?.addEventListener("click", async () => {
     if (!levelsPanel) return;
+    if (pending) clearPreview();
     if (!levelsPanel.hidden) {
       lvClose(false);
       levelsBtn.classList.remove("active");
@@ -1071,6 +1091,7 @@ function mountFilters({ img, mime, core, els }) {
     levelsBtn?.classList.remove("active");
   });
   async function applyPreset(filter) {
+    if (pending) clearPreview();
     const base = await core.loadBase();
     const canvas = document.createElement("canvas");
     canvas.width = base.naturalWidth;
@@ -1089,6 +1110,16 @@ function mountFilters({ img, mime, core, els }) {
   presetGrey?.addEventListener("click", () => applyPreset("grayscale(1)"));
   presetSepia?.addEventListener("click", () => applyPreset("sepia(1)"));
   presetInvert?.addEventListener("click", () => applyPreset("invert(1)"));
+}
+function injectFilterStyle() {
+  if (document.getElementById("imgv-filters-css")) return;
+  const st = document.createElement("style");
+  st.id = "imgv-filters-css";
+  st.textContent = `
+    .imgv-f-apply.imgv-flash-apply{animation:imgv-apply-flash .85s ease-in-out infinite;}
+    @keyframes imgv-apply-flash{0%,100%{box-shadow:0 0 0 0 transparent;}50%{box-shadow:0 0 0 3px var(--accent,#4a8fff);background:var(--accent,#4a8fff);color:#fff;}}
+    @media (prefers-reduced-motion:reduce){.imgv-f-apply.imgv-flash-apply{animation:none;outline:2px solid var(--accent,#4a8fff);}}`;
+  document.head.appendChild(st);
 }
 
 // ../../docs/types/image/curves.js
@@ -2065,13 +2096,28 @@ function isTextEntry(t) {
   if (t.tagName === "INPUT") return /^(|text|search|url|email|tel|password)$/i.test(t.type || "");
   return false;
 }
+var ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 function onKey(e) {
   if (!active || !active.host.isConnected) return;
   if (active.isEnabled && !active.isEnabled()) return;
+  if (isTextEntry(e.target)) return;
+  const arrow = ARROWS[e.key];
+  if (arrow && active.onArrow && active.onArrow(arrow[0], arrow[1], e.shiftKey)) {
+    e.preventDefault();
+    return;
+  }
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
+  if (k === "c" && active.onCopy) {
+    if (active.onCopy()) e.preventDefault();
+    return;
+  }
+  if (k === "v" && active.onPaste) {
+    active.onPaste();
+    e.preventDefault();
+    return;
+  }
   if (k !== "z" && k !== "y") return;
-  if (isTextEntry(e.target)) return;
   e.preventDefault();
   if (k === "y" || k === "z" && e.shiftKey) active.doRedo();
   else active.doUndo();
@@ -2175,12 +2221,387 @@ function mountTabs(host) {
   return { showTab };
 }
 
+// ../../docs/types/image/help-tab.js
+import { loadGlobal, vendor } from "../../core/script-loader.js";
+var GUIDE_URL = new URL("./editor-guide.md", import.meta.url);
+var cssInjected = false;
+function injectStyle2() {
+  if (cssInjected) return;
+  cssInjected = true;
+  const s = document.createElement("style");
+  s.id = "imgv-help-css";
+  s.textContent = `
+    .imgv-help-btn{font-size:12px;padding:3px 11px;border:1px solid transparent;background:transparent;color:var(--fg);opacity:.62;border-radius:6px 6px 0 0;cursor:pointer;}
+    .imgv-help-btn:hover{opacity:1;background:var(--bg);}
+    .imgv-help-modal{position:fixed;z-index:60;top:12vh;left:50%;transform:translateX(-50%);width:min(620px,92vw);height:min(70vh,640px);
+      display:flex;flex-direction:column;background:var(--bg-2,#252525);color:var(--fg,#ddd);border:1px solid var(--border,#444);
+      border-radius:8px;box-shadow:0 10px 40px #0008;resize:both;overflow:hidden;min-width:280px;min-height:160px;font-family:var(--font-ui,sans-serif);}
+    .imgv-help-modal[hidden]{display:none;}
+    .imgv-help-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border,#444);cursor:move;user-select:none;background:var(--bg,#1e1e1e);}
+    .imgv-help-bar strong{flex:1;font-size:13px;}
+    .imgv-help-close{border:none;background:transparent;color:inherit;font-size:15px;cursor:pointer;line-height:1;}
+    .imgv-help{flex:1;overflow:auto;padding:6px 16px 14px;line-height:1.55;font-size:13px;}
+    .imgv-help h1{font-size:1.5em;margin:.2em 0 .4em;}
+    .imgv-help h2{font-size:1.2em;margin:1.1em 0 .4em;border-bottom:1px solid var(--border);padding-bottom:3px;}
+    .imgv-help h3{font-size:1.02em;margin:.9em 0 .3em;}
+    .imgv-help p,.imgv-help ul,.imgv-help ol{margin:.4em 0;}
+    .imgv-help ul,.imgv-help ol{padding-left:1.4em;}
+    .imgv-help li{margin:.15em 0;}
+    .imgv-help code{font-family:monospace;background:#0002;padding:.05em .35em;border-radius:4px;font-size:.92em;}
+    .imgv-help blockquote{margin:.5em 0;padding:.2em .9em;border-left:3px solid var(--accent);opacity:.85;}
+    .imgv-help a{color:var(--accent);}`;
+  document.head.appendChild(s);
+}
+function mountHelpTab(host) {
+  const btn = host.querySelector(".imgv-help-btn");
+  if (!btn) return;
+  injectStyle2();
+  let modal = null, body = null, rendered = false;
+  function build() {
+    modal = document.createElement("div");
+    modal.className = "imgv-help-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="imgv-help-bar"><strong>Image editor guide</strong><button class="imgv-help-close" title="Close">✕</button></div>
+      <div class="imgv-help">Loading guide…</div>`;
+    (host.ownerDocument?.body || document.body).appendChild(modal);
+    body = modal.querySelector(".imgv-help");
+    modal.querySelector(".imgv-help-close").addEventListener("click", () => {
+      modal.hidden = true;
+    });
+    makeDraggable(modal, modal.querySelector(".imgv-help-bar"));
+  }
+  async function renderOnce() {
+    if (rendered) return;
+    rendered = true;
+    try {
+      const [res, markdownit, DOMPurify] = await Promise.all([
+        fetch(GUIDE_URL),
+        loadGlobal(vendor("markdown-it/markdown-it.min.js"), "markdownit"),
+        loadGlobal(vendor("dompurify/purify.min.js"), "DOMPurify")
+      ]);
+      const md = markdownit({ html: false, linkify: true, typographer: true });
+      body.innerHTML = DOMPurify.sanitize(md.render(await res.text()));
+    } catch (e) {
+      rendered = false;
+      body.textContent = "Could not load the guide: " + (e && e.message || e);
+    }
+  }
+  btn.addEventListener("click", () => {
+    if (!modal) build();
+    modal.hidden = !modal.hidden;
+    if (!modal.hidden) renderOnce();
+  });
+}
+function makeDraggable(modal, handle) {
+  handle.style.touchAction = "none";
+  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
+  handle.addEventListener("pointerdown", (e) => {
+    if (e.target.closest(".imgv-help-close")) return;
+    dragging = true;
+    const r = modal.getBoundingClientRect();
+    modal.style.transform = "none";
+    modal.style.left = r.left + "px";
+    modal.style.top = r.top + "px";
+    sx = e.clientX;
+    sy = e.clientY;
+    ox = r.left;
+    oy = r.top;
+    e.preventDefault();
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  });
+  function onMove(e) {
+    if (!dragging) return;
+    modal.style.left = Math.max(0, ox + e.clientX - sx) + "px";
+    modal.style.top = Math.max(0, oy + e.clientY - sy) + "px";
+  }
+  function onUp() {
+    dragging = false;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+  }
+}
+
+// ../../docs/types/image/pixel-clipboard.js
+var clip = null;
+function setClip(canvas) {
+  clip = canvas;
+}
+function getClip() {
+  return clip;
+}
+async function copyToSystem(canvas) {
+  try {
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    if (blob && navigator.clipboard?.write && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    }
+  } catch {
+  }
+}
+async function readFromSystem() {
+  try {
+    if (!navigator.clipboard?.read) return null;
+    for (const item of await navigator.clipboard.read()) {
+      const type = item.types.find((t) => t.startsWith("image/"));
+      if (type) return await blobToCanvas(await item.getType(type));
+    }
+  } catch {
+  }
+  return null;
+}
+async function blobToCanvas(blob) {
+  const bmp = await createImageBitmap(blob);
+  const c = document.createElement("canvas");
+  c.width = bmp.width;
+  c.height = bmp.height;
+  c.getContext("2d").drawImage(bmp, 0, 0);
+  return c;
+}
+
+// ../../docs/types/image/ocr-ui.js
+var OCR = "../../core/ocr/index.js";
+var CONSENT_KEY = "imgv-ocr-consent";
+var consented = false;
+var remembered = () => {
+  try {
+    return localStorage.getItem(CONSENT_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+function ocrConsent(host, approxMB) {
+  if (consented || remembered()) {
+    consented = true;
+    return Promise.resolve(true);
+  }
+  injectOcrStyle();
+  return new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "imgv-ocr-backdrop";
+    back.innerHTML = `
+      <div class="imgv-ocr-dialog" role="dialog" aria-modal="true">
+        <div class="imgv-ocr-h"><span style="font-size:20px">&#9888;</span> Extract text (OCR)</div>
+        <p class="imgv-ocr-p">Text recognition runs fully offline in your browser, but the first
+        run downloads the OCR engine (~${approxMB} MB: the recognizer + English language data).
+        It is cached afterwards. Continue?</p>
+        <div class="imgv-ocr-btns">
+          <button class="imgv-ocr-go">Download &amp; run OCR</button>
+          <button class="imgv-ocr-cancel">Cancel</button>
+        </div>
+      </div>`;
+    (host.ownerDocument?.body || document.body).appendChild(back);
+    const done = (ok) => {
+      back.remove();
+      if (ok) {
+        consented = true;
+        try {
+          localStorage.setItem(CONSENT_KEY, "1");
+        } catch {
+        }
+      }
+      resolve(ok);
+    };
+    back.querySelector(".imgv-ocr-go").addEventListener("click", () => done(true));
+    back.querySelector(".imgv-ocr-cancel").addEventListener("click", () => done(false));
+    back.addEventListener("click", (e) => {
+      if (e.target === back) done(false);
+    });
+  });
+}
+function makePanel(host, title) {
+  injectOcrStyle();
+  host.querySelector(".imgv-ocr-panel")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "imgv-ocr-panel";
+  panel.innerHTML = `
+    <div class="imgv-ocr-bar">
+      <strong class="imgv-ocr-title">${title}</strong>
+      <span class="imgv-ocr-status" aria-live="polite"></span>
+      <button class="imgv-ocr-x" title="Close">✕</button>
+    </div>
+    <div class="imgv-ocr-controls"></div>
+    <div class="imgv-ocr-body"></div>`;
+  host.appendChild(panel);
+  panel.querySelector(".imgv-ocr-x").addEventListener("click", () => panel.remove());
+  return {
+    panel,
+    status: panel.querySelector(".imgv-ocr-status"),
+    controls: panel.querySelector(".imgv-ocr-controls"),
+    body: panel.querySelector(".imgv-ocr-body")
+  };
+}
+async function openImageOcrPanel({ host, getCanvas }) {
+  if (!await ocrConsent(host, 11)) return;
+  const { status, controls, body } = makePanel(host, "Extract text (OCR)");
+  controls.innerHTML = `
+    <label class="imgv-ocr-chk"><input type="checkbox" class="imgv-ocr-digits"> Digits only</label>`;
+  const digits = controls.querySelector(".imgv-ocr-digits");
+  async function run() {
+    status.textContent = "Recognizing…";
+    body.innerHTML = "";
+    digits.disabled = true;
+    let result;
+    try {
+      const { recognize } = await import(OCR);
+      result = await recognize(getCanvas(), { digits: digits.checked });
+    } catch (e) {
+      status.textContent = "OCR failed";
+      body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
+      digits.disabled = false;
+      return;
+    }
+    const text = result.text || "";
+    status.textContent = text ? `${Math.round(result.confidence || 0)}% confidence` : "No text found";
+    body.innerHTML = `
+      <textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>
+      <div class="imgv-ocr-acts">
+        <button class="imgv-ocr-copy">Copy</button>
+        <button class="imgv-ocr-dl">Download .txt</button>
+      </div>`;
+    body.querySelector(".imgv-ocr-out").value = text;
+    body.querySelector(".imgv-ocr-copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Copied";
+      } catch {
+      }
+    });
+    body.querySelector(".imgv-ocr-dl").addEventListener("click", async () => {
+      const { download } = await import(OCR);
+      download("extracted-text.txt", text, "text/plain");
+    });
+    digits.disabled = false;
+  }
+  digits.addEventListener("change", run);
+  run();
+}
+async function openGifOcrPanel({ host, getFrames }) {
+  const frames = getFrames();
+  if (!frames || !frames.length) return;
+  if (!await ocrConsent(host, 11)) return;
+  const { status, controls, body } = makePanel(host, "GIF transcript (OCR)");
+  const sources = [];
+  let t = 0;
+  for (const f of frames) {
+    sources.push({ time: t, source: f.canvas });
+    t += Math.max(0, f.delayMs || 0) / 1e3;
+  }
+  status.textContent = "Recognizing…";
+  let cues;
+  try {
+    const { ocrFrames } = await import(OCR);
+    cues = await ocrFrames(sources, { onProgress: ({ index, total }) => {
+      status.textContent = `Recognizing… frame ${index + 1}/${total}`;
+    } });
+  } catch (e) {
+    status.textContent = "OCR failed";
+    body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
+    return;
+  }
+  const { FORMATS, toText, download } = await import(OCR);
+  status.textContent = cues.length ? `${cues.length} cue${cues.length === 1 ? "" : "s"}` : "No text found";
+  const opts = Object.entries(FORMATS).map(([k, f]) => `<option value="${k}">${f.label}</option>`).join("");
+  controls.innerHTML = `
+    <label class="imgv-ocr-chk">Format <select class="imgv-ocr-fmt">${opts}</select></label>
+    <button class="imgv-ocr-dl">Download</button>`;
+  body.innerHTML = `<textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>`;
+  const out = body.querySelector(".imgv-ocr-out");
+  out.value = toText(cues);
+  controls.querySelector(".imgv-ocr-dl").addEventListener("click", () => {
+    const fmt = FORMATS[controls.querySelector(".imgv-ocr-fmt").value];
+    download("gif-transcript." + fmt.ext, fmt.fn(cues), fmt.mime);
+  });
+}
+function injectOcrStyle() {
+  if (document.getElementById("imgv-ocr-style")) return;
+  const s = document.createElement("style");
+  s.id = "imgv-ocr-style";
+  s.textContent = `
+    .imgv-ocr-backdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:#0008; }
+    .imgv-ocr-dialog { max-width:460px; margin:16px; padding:20px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); font-family:var(--font-ui,sans-serif); }
+    .imgv-ocr-h { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; margin-bottom:10px; }
+    .imgv-ocr-p { margin:0 0 16px; font-size:13px; line-height:1.6; opacity:.85; }
+    .imgv-ocr-btns { display:flex; gap:10px; flex-wrap:wrap; }
+    .imgv-ocr-go { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; background:var(--accent,#4a8fff); color:#fff; font-size:13px; }
+    .imgv-ocr-cancel { padding:8px 16px; border-radius:5px; cursor:pointer; background:transparent; border:1px solid var(--border,#444); color:var(--fg,#ccc); font-size:13px; }
+    .imgv-ocr-panel { position:absolute; top:8px; right:8px; z-index:12; width:min(320px,calc(100% - 16px)); display:flex; flex-direction:column; gap:6px; padding:8px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); box-shadow:0 4px 16px #0006; font-family:var(--font-ui,sans-serif); font-size:12px; }
+    .imgv-ocr-bar { display:flex; align-items:center; gap:8px; }
+    .imgv-ocr-title { flex:0 0 auto; }
+    .imgv-ocr-status { flex:1; opacity:.75; font-variant-numeric:tabular-nums; }
+    .imgv-ocr-x { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; }
+    .imgv-ocr-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .imgv-ocr-chk { display:inline-flex; align-items:center; gap:4px; }
+    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; }
+    .imgv-ocr-acts { display:flex; gap:8px; margin-top:6px; }
+    .imgv-ocr-panel button { cursor:pointer; }
+    .imgv-ocr-err { color:#f88; }`;
+  document.head.appendChild(s);
+}
+
+// ../../docs/types/image/edit-select-masks.js
+function rectMask(a, b, w, h) {
+  const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
+  const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
+  if (x1 - x0 < 2 || y1 - y0 < 2) return null;
+  const m = new Uint8Array(w * h);
+  for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
+  return { m, w, h };
+}
+function maskFromPath(draw, w, h) {
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.fillStyle = "#fff";
+  g.beginPath();
+  draw(g);
+  g.fill();
+  const d = g.getImageData(0, 0, w, h).data;
+  const m = new Uint8Array(w * h);
+  let any = false;
+  for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) {
+    m[p] = 1;
+    any = true;
+  }
+  return any ? { m, w, h } : null;
+}
+function ellipseMask(a, b, w, h) {
+  const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
+  if (rx < 1 || ry < 1) return null;
+  return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2), w, h);
+}
+function lassoMask(pts, w, h) {
+  if (!pts || pts.length < 3) return null;
+  return maskFromPath((g) => {
+    pts.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y));
+    g.closePath();
+  }, w, h);
+}
+function translateMask(src, w, h, dx, dy) {
+  const out = new Uint8Array(w * h);
+  if (!dx && !dy) {
+    out.set(src);
+    return out;
+  }
+  for (let p = 0; p < src.length; p++) {
+    if (!src[p]) continue;
+    const x = p % w + dx, y = (p / w | 0) + dy;
+    if (x >= 0 && x < w && y >= 0 && y < h) out[y * w + x] = 1;
+  }
+  return out;
+}
+
 // ../../docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, copySelection: () => null, clipFillInPlace() {
   }, async clipCanvas() {
   }, invert() {
+  }, nudge() {
   }, toggle() {
   }, setActive() {
   }, setMode() {
@@ -2193,7 +2614,10 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   let mask = null, mw = 0, mh = 0;
   let ov = null, octx = null;
   let dragging = false, dragStart = null, lassoPts = null;
-  let moving = false, moveStart = null, holedCanvas = null, pieceCanvas = null;
+  let moving = false, moveStart = null, moveBaseDx = 0, moveBaseDy = 0;
+  let floating = false, holedCanvas = null, pieceCanvas = null, baseMask = null, floatDx = 0, floatDy = 0;
+  let selCanvas = null, selCtx = null, selBuf = null, edgeIdx = null;
+  let antsRAF = 0, antsPhase = 0, antsLast = 0;
   function ensureOverlay() {
     if (ov) return;
     stage.style.position = "relative";
@@ -2234,7 +2658,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   function onMove(e) {
     if (moving) {
       e.preventDefault();
-      previewMove(ptToCanvas(e));
+      dragFloat(ptToCanvas(e));
       return;
     }
     if (!dragging) return;
@@ -2247,23 +2671,22 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   }
   function onUp(e) {
     if (moving) {
-      dropMove(ptToCanvas(e));
+      moving = false;
       return;
     }
     if (!dragging) return;
     dragging = false;
     const pt = ptToCanvas(e);
-    if (mode === "marquee") setMask(rectMask(dragStart, pt));
-    else if (mode === "ellipse") setMask(ellipseMask(dragStart, pt));
+    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
+    if (mode === "marquee") setMask(rectMask(dragStart, pt, w, h));
+    else if (mode === "ellipse") setMask(ellipseMask(dragStart, pt, w, h));
     else if (mode === "lasso") {
       const pts = lassoPts;
       lassoPts = null;
-      setMask(lassoMask(pts));
+      setMask(lassoMask(pts, w, h));
     }
   }
-  function startMove(e) {
-    if (!mask) return;
-    e.preventDefault();
+  function liftFloat() {
     const bc = document.createElement("canvas");
     bc.width = mw;
     bc.height = mh;
@@ -2287,32 +2710,63 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     pg.putImageData(pieceId, 0, 0);
     bg.putImageData(baseId, 0, 0);
     holedCanvas = bc;
+    baseMask = mask.slice();
+    floating = true;
+    floatDx = 0;
+    floatDy = 0;
+  }
+  function startMove(e) {
+    if (!mask) return;
+    e.preventDefault();
+    if (!floating) liftFloat();
     moving = true;
     moveStart = ptToCanvas(e);
+    moveBaseDx = floatDx;
+    moveBaseDy = floatDy;
     try {
       ov.setPointerCapture(e.pointerId);
     } catch {
     }
-    previewMove(moveStart);
+    buildSelBuf();
+    paintAnts();
   }
-  function previewMove(pt) {
-    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
-    octx.clearRect(0, 0, ov.width, ov.height);
-    octx.drawImage(holedCanvas, 0, 0);
-    octx.drawImage(pieceCanvas, dx, dy);
+  function dragFloat(pt) {
+    setFloatOffset(moveBaseDx + (pt.x - moveStart.x), moveBaseDy + (pt.y - moveStart.y));
   }
-  async function dropMove(pt) {
-    moving = false;
-    const dx = pt.x - moveStart.x, dy = pt.y - moveStart.y;
+  function setFloatOffset(dx, dy) {
+    floatDx = dx;
+    floatDy = dy;
+    mask = translateMask(baseMask, mw, mh, floatDx, floatDy);
+    buildSelBuf();
+    paintAnts();
+  }
+  function stampFloat() {
+    if (!floating) return;
     const out = document.createElement("canvas");
     out.width = mw;
     out.height = mh;
     const og = out.getContext("2d");
     og.drawImage(holedCanvas, 0, 0);
-    og.drawImage(pieceCanvas, dx, dy);
+    og.drawImage(pieceCanvas, floatDx, floatDy);
+    floating = false;
     holedCanvas = pieceCanvas = null;
-    await onCommit?.(out);
-    clear();
+    baseMask = null;
+    floatDx = floatDy = 0;
+    compose();
+    onCommit?.(out);
+  }
+  function nudge(dx, dy, outlineOnly) {
+    if (!mask) return;
+    if (outlineOnly) {
+      if (floating) stampFloat();
+      baseMask = baseMask || mask;
+      mask = translateMask(mask, mw, mh, dx, dy);
+      buildSelBuf();
+      paintAnts();
+      return;
+    }
+    if (!floating) liftFloat();
+    setFloatOffset(floatDx + dx, floatDy + dy);
   }
   function drawRubberBand(a, b, kind) {
     octx.clearRect(0, 0, ov.width, ov.height);
@@ -2341,51 +2795,12 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
       octx.clearRect(0, 0, ov.width, ov.height);
       return;
     }
+    if (floating) stampFloat();
     mask = res.m;
     mw = res.w;
     mh = res.h;
     render2();
     if (deselectBtn) deselectBtn.hidden = false;
-  }
-  function rectMask(a, b) {
-    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
-    const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
-    if (x1 - x0 < 2 || y1 - y0 < 2) return null;
-    const m = new Uint8Array(w * h);
-    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) m[y * w + x] = 1;
-    return { m, w, h };
-  }
-  function maskFromPath(draw) {
-    const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const c = document.createElement("canvas");
-    c.width = w;
-    c.height = h;
-    const g = c.getContext("2d", { willReadFrequently: true });
-    g.fillStyle = "#fff";
-    g.beginPath();
-    draw(g);
-    g.fill();
-    const d = g.getImageData(0, 0, w, h).data;
-    const m = new Uint8Array(w * h);
-    let any = false;
-    for (let p = 0; p < w * h; p++) if (d[(p << 2) + 3] > 127) {
-      m[p] = 1;
-      any = true;
-    }
-    return any ? { m, w, h } : null;
-  }
-  function ellipseMask(a, b) {
-    const rx = Math.abs(b.x - a.x) / 2, ry = Math.abs(b.y - a.y) / 2;
-    if (rx < 1 || ry < 1) return null;
-    return maskFromPath((g) => g.ellipse((a.x + b.x) / 2, (a.y + b.y) / 2, rx, ry, 0, 0, Math.PI * 2));
-  }
-  function lassoMask(pts) {
-    if (!pts || pts.length < 3) return null;
-    return maskFromPath((g) => {
-      pts.forEach((q, i) => i ? g.lineTo(q.x, q.y) : g.moveTo(q.x, q.y));
-      g.closePath();
-    });
   }
   function syncOverlay() {
     if (!ov) return;
@@ -2400,6 +2815,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     return { x: Math.round((e.clientX - r.left) * sx), y: Math.round((e.clientY - r.top) * sy) };
   }
   function pickAt(e) {
+    if (floating) stampFloat();
     const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
     const c = document.createElement("canvas");
     c.width = w;
@@ -2425,21 +2841,82 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     ov.width = mw;
     ov.height = mh;
     syncOverlay();
-    const out = octx.createImageData(mw, mh);
-    const d = out.data;
+    selCanvas = document.createElement("canvas");
+    selCanvas.width = mw;
+    selCanvas.height = mh;
+    selCtx = selCanvas.getContext("2d");
+    selBuf = selCtx.createImageData(mw, mh);
+    buildSelBuf();
+    paintAnts();
+    startAnts();
+  }
+  function buildSelBuf() {
+    if (!selBuf) return;
+    const d = selBuf.data;
+    d.fill(0);
+    const edges = [];
     for (let p = 0; p < mw * mh; p++) {
       if (!mask[p]) continue;
       const x = p % mw, y = p / mw | 0;
       const edge = x === 0 || y === 0 || x === mw - 1 || y === mh - 1 || !mask[p - 1] || !mask[p + 1] || !mask[p - mw] || !mask[p + mw];
+      if (edge) {
+        edges.push(p);
+        continue;
+      }
       const i = p << 2;
       d[i] = 0;
       d[i + 1] = 132;
       d[i + 2] = 255;
-      d[i + 3] = edge ? 235 : 48;
+      d[i + 3] = 48;
     }
-    octx.putImageData(out, 0, 0);
+    edgeIdx = Int32Array.from(edges);
+  }
+  function paintAnts() {
+    if (!selBuf || !edgeIdx || !selCtx) return;
+    const d = selBuf.data, ph = antsPhase | 0;
+    for (let k = 0; k < edgeIdx.length; k++) {
+      const p = edgeIdx[k];
+      const v = (p % mw + (p / mw | 0) + ph & 7) < 4 ? 0 : 255;
+      const i = p << 2;
+      d[i] = v;
+      d[i + 1] = v;
+      d[i + 2] = v;
+      d[i + 3] = 255;
+    }
+    selCtx.putImageData(selBuf, 0, 0);
+    compose();
+  }
+  function compose() {
+    if (!octx) return;
+    octx.clearRect(0, 0, ov.width, ov.height);
+    if (floating && holedCanvas) {
+      octx.drawImage(holedCanvas, 0, 0);
+      octx.drawImage(pieceCanvas, floatDx, floatDy);
+    }
+    if (selCanvas) octx.drawImage(selCanvas, 0, 0);
+  }
+  function startAnts() {
+    stopAnts();
+    const step = (t) => {
+      if (!mask) {
+        antsRAF = 0;
+        return;
+      }
+      if (!dragging && !moving && t - antsLast > 80) {
+        antsPhase = antsPhase + 1 & 7;
+        antsLast = t;
+        paintAnts();
+      }
+      antsRAF = requestAnimationFrame(step);
+    };
+    antsRAF = requestAnimationFrame(step);
+  }
+  function stopAnts() {
+    if (antsRAF) cancelAnimationFrame(antsRAF);
+    antsRAF = 0;
   }
   function setMode(m) {
+    if (floating && m !== "move") stampFloat();
     mode = m;
     if (m) ensureOverlay();
     selectBtn.classList.toggle("active", m === "wand");
@@ -2457,15 +2934,70 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     setMode(on ? "wand" : null);
   }
   function clear() {
+    stopAnts();
     mask = null;
     mw = mh = 0;
+    selBuf = null;
+    edgeIdx = null;
+    selCanvas = null;
+    selCtx = null;
+    floating = false;
+    holedCanvas = pieceCanvas = null;
+    baseMask = null;
+    floatDx = floatDy = 0;
     if (octx) octx.clearRect(0, 0, ov.width, ov.height);
     if (deselectBtn) deselectBtn.hidden = true;
   }
+  function deselect() {
+    if (floating) stampFloat();
+    clear();
+  }
+  function copySelection() {
+    if (!mask) return null;
+    let x0 = mw, y0 = mh, x1 = -1, y1 = -1;
+    for (let p = 0; p < mask.length; p++) {
+      if (!mask[p]) continue;
+      const x = p % mw, y = p / mw | 0;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+    if (x1 < x0) return null;
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+    const sc = document.createElement("canvas");
+    sc.width = mw;
+    sc.height = mh;
+    const sg = sc.getContext("2d", { willReadFrequently: true });
+    if (floating && holedCanvas) {
+      sg.drawImage(holedCanvas, 0, 0);
+      sg.drawImage(pieceCanvas, floatDx, floatDy);
+    } else sg.drawImage(img, 0, 0, mw, mh);
+    const sid = sg.getImageData(0, 0, mw, mh).data;
+    const out = document.createElement("canvas");
+    out.width = bw;
+    out.height = bh;
+    const og = out.getContext("2d");
+    const oid = og.createImageData(bw, bh);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const sp = (y + y0) * mw + (x + x0);
+      if (!mask[sp]) continue;
+      const si = sp << 2, oi = y * bw + x << 2;
+      oid.data[oi] = sid[si];
+      oid.data[oi + 1] = sid[si + 1];
+      oid.data[oi + 2] = sid[si + 2];
+      oid.data[oi + 3] = sid[si + 3];
+    }
+    og.putImageData(oid, 0, 0);
+    return out;
+  }
   function invert() {
     if (!mask) return;
+    if (floating) stampFloat();
     for (let p = 0; p < mask.length; p++) mask[p] = mask[p] ? 0 : 1;
-    render2();
+    baseMask = null;
+    buildSelBuf();
+    paintAnts();
   }
   function clipFillInPlace(editedData, beforeData) {
     if (!mask || editedData.length !== mask.length << 2) return;
@@ -2489,7 +3021,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   ellipseBtn?.addEventListener("click", () => setMode(mode === "ellipse" ? null : "ellipse"));
   lassoBtn?.addEventListener("click", () => setMode(mode === "lasso" ? null : "lasso"));
   moveBtn?.addEventListener("click", () => setMode(mode === "move" ? null : "move"));
-  deselectBtn?.addEventListener("click", clear);
+  deselectBtn?.addEventListener("click", deselect);
   return {
     isActive: () => mode !== null,
     hasSelection: () => !!mask,
@@ -2500,19 +3032,27 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     clipFillInPlace,
     clipCanvas,
     invert,
+    nudge,
+    copySelection,
     clear,
     syncOverlay,
     teardown() {
+      stopAnts();
       ov?.remove();
       ov = null;
       octx = null;
       mask = null;
+      selBuf = null;
+      edgeIdx = null;
+      selCanvas = null;
+      selCtx = null;
+      holedCanvas = pieceCanvas = baseMask = null;
     }
   };
 }
 
 // ../../docs/types/image/adv-edit.js
-import { loadGlobal, vendor } from "../../core/script-loader.js";
+import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
 
 // ../../docs/types/image/adv-edit-actions.js
 function isTypingTarget(target) {
@@ -2570,7 +3110,7 @@ function nodeName(node, isLabel, textNodeOf) {
     if (t && t.trim()) return t.trim().slice(0, 18);
   }
   if (node?.getClassName?.() === "Group") return `Group (${node.getChildren?.().length || 0})`;
-  return { Rect: "Rectangle", Circle: "Circle", Ellipse: "Ellipse", Ring: "Ring", Wedge: "Wedge", Arc: "Arc", Line: "Line", Arrow: "Arrow", RegularPolygon: "Polygon", Star: "Star", Label: "Text" }[node?.getClassName?.()] || "Layer";
+  return { Rect: "Rectangle", Circle: "Circle", Ellipse: "Ellipse", Ring: "Ring", Wedge: "Wedge", Arc: "Arc", Line: "Line", Arrow: "Arrow", RegularPolygon: "Polygon", Star: "Star", Label: "Text", Image: "Image" }[node?.getClassName?.()] || "Layer";
 }
 function readSize(node) {
   const cls = node?.getClassName?.();
@@ -2584,7 +3124,15 @@ function readSize(node) {
     const r = node.getClientRect({ skipShadow: true });
     return { w: Math.round(r.width), h: Math.round(r.height) };
   }
-  if (typeof node?.width === "function" && typeof node?.height === "function") return { w: Math.round(node.width()), h: Math.round(node.height()) };
+  try {
+    if (typeof node?.width === "function" && typeof node?.height === "function") return { w: Math.round(node.width()), h: Math.round(node.height()) };
+  } catch {
+  }
+  try {
+    const r = node?.getClientRect?.({ skipShadow: true });
+    if (r) return { w: Math.round(r.width), h: Math.round(r.height) };
+  } catch {
+  }
   return { w: 0, h: 0 };
 }
 function writeSize(node, w, h) {
@@ -2746,9 +3294,6 @@ function installShapeControls(ctx) {
     tb,
     addText,
     addShape,
-    openImageOcrPanel: openImageOcrPanel2,
-    stageHost,
-    flattenToCanvas,
     deleteSelection,
     groupSelection,
     ungroupSelection,
@@ -2767,7 +3312,6 @@ function installShapeControls(ctx) {
   } = ctx;
   const sel = () => getSelected();
   $(".imgv-adv-add").addEventListener("click", addText);
-  $(".imgv-adv-ocr").addEventListener("click", () => openImageOcrPanel2({ host: stageHost, getCanvas: () => flattenToCanvas() }));
   $(".imgv-adv-rect").addEventListener("click", () => addShape("rect"));
   $(".imgv-adv-ellipse").addEventListener("click", () => addShape("ellipse"));
   $(".imgv-adv-line").addEventListener("click", () => addShape("line"));
@@ -3503,180 +4047,17 @@ function advToolbarHtml() {
     <button class="imgv-adv-dist" data-axis="x" title="Distribute horizontally">DH</button>
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
     <span class="imgv-sep"></span>
-    <button class="imgv-adv-ocr" title="Extract text from the image with OCR">Extract text (OCR)</button>
+    <button class="imgv-adv-flatten" title="Merge all objects into the image (bake to pixels), then continue in normal Edit">⤵ Merge to image</button>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
-}
-
-// ../../docs/types/image/ocr-ui.js
-var OCR = "../../core/ocr/index.js";
-var consented = false;
-function ocrConsent(host, approxMB) {
-  if (consented) return Promise.resolve(true);
-  injectOcrStyle();
-  return new Promise((resolve) => {
-    const back = document.createElement("div");
-    back.className = "imgv-ocr-backdrop";
-    back.innerHTML = `
-      <div class="imgv-ocr-dialog" role="dialog" aria-modal="true">
-        <div class="imgv-ocr-h"><span style="font-size:20px">&#9888;</span> Extract text (OCR)</div>
-        <p class="imgv-ocr-p">Text recognition runs fully offline in your browser, but the first
-        run downloads the OCR engine (~${approxMB} MB: the recognizer + English language data).
-        It is cached afterwards. Continue?</p>
-        <div class="imgv-ocr-btns">
-          <button class="imgv-ocr-go">Download &amp; run OCR</button>
-          <button class="imgv-ocr-cancel">Cancel</button>
-        </div>
-      </div>`;
-    (host.ownerDocument?.body || document.body).appendChild(back);
-    const done = (ok) => {
-      back.remove();
-      if (ok) consented = true;
-      resolve(ok);
-    };
-    back.querySelector(".imgv-ocr-go").addEventListener("click", () => done(true));
-    back.querySelector(".imgv-ocr-cancel").addEventListener("click", () => done(false));
-    back.addEventListener("click", (e) => {
-      if (e.target === back) done(false);
-    });
-  });
-}
-function makePanel(host, title) {
-  injectOcrStyle();
-  host.querySelector(".imgv-ocr-panel")?.remove();
-  const panel = document.createElement("div");
-  panel.className = "imgv-ocr-panel";
-  panel.innerHTML = `
-    <div class="imgv-ocr-bar">
-      <strong class="imgv-ocr-title">${title}</strong>
-      <span class="imgv-ocr-status" aria-live="polite"></span>
-      <button class="imgv-ocr-x" title="Close">✕</button>
-    </div>
-    <div class="imgv-ocr-controls"></div>
-    <div class="imgv-ocr-body"></div>`;
-  host.appendChild(panel);
-  panel.querySelector(".imgv-ocr-x").addEventListener("click", () => panel.remove());
-  return {
-    panel,
-    status: panel.querySelector(".imgv-ocr-status"),
-    controls: panel.querySelector(".imgv-ocr-controls"),
-    body: panel.querySelector(".imgv-ocr-body")
-  };
-}
-async function openImageOcrPanel({ host, getCanvas }) {
-  if (!await ocrConsent(host, 11)) return;
-  const { status, controls, body } = makePanel(host, "Extract text (OCR)");
-  controls.innerHTML = `
-    <label class="imgv-ocr-chk"><input type="checkbox" class="imgv-ocr-digits"> Digits only</label>`;
-  const digits = controls.querySelector(".imgv-ocr-digits");
-  async function run() {
-    status.textContent = "Recognizing…";
-    body.innerHTML = "";
-    digits.disabled = true;
-    let result;
-    try {
-      const { recognize } = await import(OCR);
-      result = await recognize(getCanvas(), { digits: digits.checked });
-    } catch (e) {
-      status.textContent = "OCR failed";
-      body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
-      digits.disabled = false;
-      return;
-    }
-    const text = result.text || "";
-    status.textContent = text ? `${Math.round(result.confidence || 0)}% confidence` : "No text found";
-    body.innerHTML = `
-      <textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>
-      <div class="imgv-ocr-acts">
-        <button class="imgv-ocr-copy">Copy</button>
-        <button class="imgv-ocr-dl">Download .txt</button>
-      </div>`;
-    body.querySelector(".imgv-ocr-out").value = text;
-    body.querySelector(".imgv-ocr-copy").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(text);
-        status.textContent = "Copied";
-      } catch {
-      }
-    });
-    body.querySelector(".imgv-ocr-dl").addEventListener("click", async () => {
-      const { download } = await import(OCR);
-      download("extracted-text.txt", text, "text/plain");
-    });
-    digits.disabled = false;
-  }
-  digits.addEventListener("change", run);
-  run();
-}
-async function openGifOcrPanel({ host, getFrames }) {
-  const frames = getFrames();
-  if (!frames || !frames.length) return;
-  if (!await ocrConsent(host, 11)) return;
-  const { status, controls, body } = makePanel(host, "GIF transcript (OCR)");
-  const sources = [];
-  let t = 0;
-  for (const f of frames) {
-    sources.push({ time: t, source: f.canvas });
-    t += Math.max(0, f.delayMs || 0) / 1e3;
-  }
-  status.textContent = "Recognizing…";
-  let cues;
-  try {
-    const { ocrFrames } = await import(OCR);
-    cues = await ocrFrames(sources, { onProgress: ({ index, total }) => {
-      status.textContent = `Recognizing… frame ${index + 1}/${total}`;
-    } });
-  } catch (e) {
-    status.textContent = "OCR failed";
-    body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
-    return;
-  }
-  const { FORMATS, toText, download } = await import(OCR);
-  status.textContent = cues.length ? `${cues.length} cue${cues.length === 1 ? "" : "s"}` : "No text found";
-  const opts = Object.entries(FORMATS).map(([k, f]) => `<option value="${k}">${f.label}</option>`).join("");
-  controls.innerHTML = `
-    <label class="imgv-ocr-chk">Format <select class="imgv-ocr-fmt">${opts}</select></label>
-    <button class="imgv-ocr-dl">Download</button>`;
-  body.innerHTML = `<textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>`;
-  const out = body.querySelector(".imgv-ocr-out");
-  out.value = toText(cues);
-  controls.querySelector(".imgv-ocr-dl").addEventListener("click", () => {
-    const fmt = FORMATS[controls.querySelector(".imgv-ocr-fmt").value];
-    download("gif-transcript." + fmt.ext, fmt.fn(cues), fmt.mime);
-  });
-}
-function injectOcrStyle() {
-  if (document.getElementById("imgv-ocr-style")) return;
-  const s = document.createElement("style");
-  s.id = "imgv-ocr-style";
-  s.textContent = `
-    .imgv-ocr-backdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:#0008; }
-    .imgv-ocr-dialog { max-width:460px; margin:16px; padding:20px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); font-family:var(--font-ui,sans-serif); }
-    .imgv-ocr-h { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; margin-bottom:10px; }
-    .imgv-ocr-p { margin:0 0 16px; font-size:13px; line-height:1.6; opacity:.85; }
-    .imgv-ocr-btns { display:flex; gap:10px; flex-wrap:wrap; }
-    .imgv-ocr-go { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; background:var(--accent,#4a8fff); color:#fff; font-size:13px; }
-    .imgv-ocr-cancel { padding:8px 16px; border-radius:5px; cursor:pointer; background:transparent; border:1px solid var(--border,#444); color:var(--fg,#ccc); font-size:13px; }
-    .imgv-ocr-panel { position:absolute; top:8px; right:8px; z-index:12; width:min(320px,calc(100% - 16px)); display:flex; flex-direction:column; gap:6px; padding:8px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); box-shadow:0 4px 16px #0006; font-family:var(--font-ui,sans-serif); font-size:12px; }
-    .imgv-ocr-bar { display:flex; align-items:center; gap:8px; }
-    .imgv-ocr-title { flex:0 0 auto; }
-    .imgv-ocr-status { flex:1; opacity:.75; font-variant-numeric:tabular-nums; }
-    .imgv-ocr-x { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; }
-    .imgv-ocr-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .imgv-ocr-chk { display:inline-flex; align-items:center; gap:4px; }
-    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; }
-    .imgv-ocr-acts { display:flex; gap:8px; margin-top:6px; }
-    .imgv-ocr-panel button { cursor:pointer; }
-    .imgv-ocr-err { color:#f88; }`;
-  document.head.appendChild(s);
 }
 
 // ../../docs/types/image/adv-edit.js
 var konvaPromise = null;
 function loadKonva() {
-  if (!konvaPromise) konvaPromise = loadGlobal(vendor("konva/konva.min.js"), "Konva");
+  if (!konvaPromise) konvaPromise = loadGlobal2(vendor2("konva/konva.min.js"), "Konva");
   return konvaPromise;
 }
-async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
+async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector(".imgv-stage");
   let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
@@ -3902,6 +4283,18 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     placeObject(label);
   }
   const isLabel = (n) => n && n.getClassName && n.getClassName() === "Label";
+  function addImage(source) {
+    if (!source || !source.width) return null;
+    snap();
+    const k = naturalW ? stageW / naturalW : 1;
+    let w = source.width * k, h = source.height * k;
+    const fit = Math.min(1, stageW * 0.9 / w, stageH * 0.9 / h);
+    w = Math.max(1, w * fit);
+    h = Math.max(1, h * fit);
+    const node = new Konva.Image({ image: source, x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h, draggable: true });
+    placeObject(node);
+    return node;
+  }
   function editLabelText(label) {
     const text = textNodeOf(label);
     if (!text) return;
@@ -4000,9 +4393,6 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     tb,
     addText,
     addShape,
-    openImageOcrPanel,
-    stageHost,
-    flattenToCanvas,
     deleteSelection,
     groupSelection,
     ungroupSelection,
@@ -4018,6 +4408,11 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     tr,
     refreshLayers: () => refreshLayers(),
     syncToolbar
+  });
+  tb.querySelector(".imgv-adv-flatten")?.addEventListener("click", async () => {
+    if (objects().length === 0) return;
+    await onFlatten?.(flattenToCanvas());
+    clear();
   });
   syncToolbar();
   const uninstallKeys = installAdvKeys({
@@ -4129,6 +4524,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
   return {
     addText,
+    addImage,
     isEmpty: () => objects().length === 0,
     objectCount: () => objects().length,
     setInteractive(on) {
@@ -4275,7 +4671,7 @@ function mountGifPlayer({ host, bytes, openBlob }) {
     </div>
     <div class="gifv-frames" hidden></div>`;
   host.appendChild(root);
-  injectStyle2();
+  injectStyle3();
   const canvas = root.querySelector(".gifv-canvas");
   const cx = canvas.getContext("2d");
   const playBtn = root.querySelector(".gifv-play");
@@ -4403,7 +4799,7 @@ function mountGifPlayer({ host, bytes, openBlob }) {
     }
   };
 }
-function injectStyle2() {
+function injectStyle3() {
   if (document.getElementById("gifv-style")) return;
   const s = document.createElement("style");
   s.id = "gifv-style";
@@ -4432,7 +4828,7 @@ var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
 async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
-    const DOMPurify = await loadGlobal2(vendor2("dompurify/purify.min.js"), "DOMPurify");
+    const DOMPurify = await loadGlobal3(vendor3("dompurify/purify.min.js"), "DOMPurify");
     DOMPurify.removed = [];
     const clean = DOMPurify.sanitize(intake.text || "", { USE_PROFILES: { svg: true, svgFilters: true } });
     return { bodyHtml: '<div class="img-doc">' + clean + "</div>", hadUnsafe: DOMPurify.removed.length > 0 };
@@ -4653,7 +5049,50 @@ async function render(intake, ctx = {}) {
     expandApplyBtn,
     expandCancelBtn
   };
-  if (canEdit) mountTabs(host);
+  if (canEdit) {
+    mountTabs(host);
+    mountHelpTab(host);
+  }
+  const ocrCanvas = () => {
+    if (overlayActive()) return advController.flattenToCanvas();
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth || 1;
+    c.height = img.naturalHeight || 1;
+    c.getContext("2d").drawImage(img, 0, 0);
+    return c;
+  };
+  const ocrBtn = host.querySelector(".imgv-ocr-btn");
+  if (ocrBtn) {
+    ocrBtn.hidden = false;
+    ocrBtn.addEventListener("click", () => openImageOcrPanel({ host: host.querySelector(".imgv-stage"), getCanvas: ocrCanvas }));
+  }
+  const downloadBtn = canEdit ? host.querySelector(".imgv-download") : null;
+  downloadBtn?.addEventListener("click", async () => {
+    const mt = exportFmt?.value || "" || core.getExportMime() || mime;
+    let canvas;
+    if (overlayActive()) {
+      canvas = advController.flattenToCanvas();
+    } else {
+      const base = await core.loadBase();
+      canvas = document.createElement("canvas");
+      canvas.width = base.naturalWidth || img.naturalWidth;
+      canvas.height = base.naturalHeight || img.naturalHeight;
+      const g = canvas.getContext("2d");
+      if (mt === "image/jpeg") {
+        g.fillStyle = "#fff";
+        g.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      g.drawImage(base, 0, 0);
+    }
+    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === "image/jpeg" ? 0.92 : void 0));
+    if (!blob) return;
+    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/avif": "avif" }[mt] || ((intake.filename || "").split(".").pop() || "png");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (intake.filename || "image").replace(/\.[^.]+$/, "") + "." + ext;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
+  });
   const editTools = [];
   const viewCtl = createView({
     host,
@@ -4780,33 +5219,44 @@ async function render(intake, ctx = {}) {
     });
   }
   const advBtn = canEdit ? host.querySelector(".imgv-adv-btn") : null;
-  if (advBtn) {
-    advBtn.hidden = false;
-    advBtn.addEventListener("click", async () => {
-      if (advActive) {
-        leaveAdv();
-        return;
-      }
-      host.querySelector(".imgv-bar").classList.add("imgv-tools-collapsed");
-      toolsBtn?.classList.remove("active");
-      advBtn.disabled = true;
-      try {
-        if (!advController) {
-          advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => {
+  async function enterAdv({ seedText = true } = {}) {
+    if (!advBtn || advActive) return;
+    host.querySelector(".imgv-bar").classList.add("imgv-tools-collapsed");
+    toolsBtn?.classList.remove("active");
+    advBtn.disabled = true;
+    try {
+      if (!advController) {
+        advController = await mountAdvEdit({
+          host,
+          img,
+          pushUndo: core.pushUndo,
+          onDirty: () => {
             host.querySelector(".imgv-dirty-indicator")?.removeAttribute("hidden");
             emitBinaryEdit();
-          } });
-          core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
-        }
-        advActive = true;
-        advController.setInteractive(true);
-        if (advController.isEmpty()) advController.rebaseline();
-        advBtn.classList.add("active");
-        if (advController.objectCount() === 0) advController.addText();
-      } catch (e) {
-        advBtn.title = "Advanced editing failed: " + (e.message || e);
+          },
+          onFlatten: async (canvas) => {
+            core.pushUndo();
+            await core.commitCanvas(canvas);
+          }
+          // bake overlay → base pixels
+        });
+        core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
       }
-      advBtn.disabled = false;
+      advActive = true;
+      advController.setInteractive(true);
+      if (advController.isEmpty()) advController.rebaseline();
+      advBtn.classList.add("active");
+      if (seedText && advController.objectCount() === 0) advController.addText();
+    } catch (e) {
+      advBtn.title = "Advanced editing failed: " + (e.message || e);
+    }
+    advBtn.disabled = false;
+  }
+  if (advBtn) {
+    advBtn.hidden = false;
+    advBtn.addEventListener("click", () => {
+      if (advActive) leaveAdv();
+      else enterAdv();
     });
   }
   function leaveAdv() {
@@ -4824,7 +5274,15 @@ async function render(intake, ctx = {}) {
     if (advActive) leaveAdv();
     advController?.clear();
     core.reset();
+    selection?.clear();
+    viewCtl.fitView();
   });
+  let barRO = null;
+  const barEl = host.querySelector(".imgv-bar");
+  if (barEl && typeof ResizeObserver === "function") {
+    barRO = new ResizeObserver(() => apply());
+    barRO.observe(barEl);
+  }
   const geometryTool = mountGeometry({ host, img, url, mime, core, view, els, onGeometry });
   editTools.push(geometryTool);
   selection = mountSelection({
@@ -4897,12 +5355,41 @@ async function render(intake, ctx = {}) {
     applyPan,
     els: { pencilBtn, eraserBtn, fillBtn, cloneBtn, healBtn, fillTol, fillTolV, fillMode, fillPercep, fillFeather, fillOpts, drawColorPicker, drawSizePicker, undoBtn, redoBtn }
   });
-  const unregisterUndoKeys = canEdit ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo }) : null;
+  const unregisterUndoKeys = canEdit ? registerUndoKeys({
+    host,
+    isEnabled: () => !asciiMode,
+    doUndo: core.doUndo,
+    doRedo: core.doRedo,
+    // Arrow keys nudge a live pixel selection (Shift = move just the outline); the
+    // adv (vector) editor has its own arrow handling, so defer while it's active.
+    onArrow: (dx, dy, shift) => {
+      if (advActive || !selection?.hasSelection()) return false;
+      selection.nudge(dx, dy, shift);
+      return true;
+    },
+    // Ctrl+C copies the selected pixels (internal + best-effort OS clipboard); Ctrl+V
+    // drops them into Adv Edit as a free move/rotate/resize pane (also accepts an
+    // external image from the OS clipboard when nothing was copied internally).
+    onCopy: () => {
+      const cv = selection?.copySelection?.();
+      if (!cv) return false;
+      setClip(cv);
+      copyToSystem(cv);
+      return true;
+    },
+    onPaste: async () => {
+      const cv = getClip() || await readFromSystem();
+      if (!cv) return;
+      await enterAdv({ seedText: false });
+      advController?.addImage(cv);
+    }
+  }) : null;
   const bgTool = mountBg({ img, url, core, els });
   editTools.push(bgTool);
   const bgChecker = canEdit ? host.querySelector(".imgv-bg-checker") : null;
   bgChecker?.addEventListener("change", () => img.classList.toggle("imgv-checker", bgChecker.checked));
   return { parentNode: host, revoke: () => {
+    barRO?.disconnect();
     advController?.destroy();
     selection?.teardown();
     unregisterUndoKeys?.();
