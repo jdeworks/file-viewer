@@ -61,10 +61,20 @@ export async function decodeSummary(intake) {
   const ac = new AudioContext();
   try {
     const buffer = await ac.decodeAudioData(bytes.slice(0));
-    return computeWaveformSummary(buffer);
+    return plainSummary(computeWaveformSummary(buffer));
   } finally {
     ac.close().catch(() => {});
   }
+}
+
+// computeWaveformSummary returns Float32Arrays. When a summary is stored on the shared project
+// model it gets JSON-cloned (cloneProject), which turns a Float32Array into a plain object with no
+// `.length` — so any surface reading it back from the model (Mix/Compare) draws zero bars. Convert
+// the typed arrays to plain arrays up front so they survive the clone.
+function plainSummary(summary) {
+  if (!summary) return summary;
+  const toArr = (v) => (v && typeof v.length === 'number' ? Array.from(v) : v);
+  return { ...summary, min: toArr(summary.min), max: toArr(summary.max), rms: toArr(summary.rms), peak: toArr(summary.peak) };
 }
 
 export function buildProject(mediaEl, intake) {

@@ -17,7 +17,7 @@
   --al-primary-text: #ffffff;
   --al-danger: #dc2626;
   --al-wave: #0369a1;
-  --al-wave-unplayed: rgba(100, 116, 139, 0.35);
+  --al-wave-unplayed: rgba(51, 65, 85, 0.62);
   --al-wave-cursor: #dc2626;
   --al-wave-trimmed: rgba(100, 116, 139, 0.12);
   --al-clip-bg: rgba(3, 105, 161, 0.08);
@@ -47,7 +47,7 @@
   --al-primary-text: #0f172a;
   --al-danger: #f87171;
   --al-wave: #38bdf8;
-  --al-wave-unplayed: rgba(148, 163, 184, 0.3);
+  --al-wave-unplayed: rgba(148, 163, 184, 0.6);
   --al-wave-cursor: #f87171;
   --al-wave-trimmed: rgba(148, 163, 184, 0.1);
   --al-clip-bg: rgba(56, 189, 248, 0.1);
