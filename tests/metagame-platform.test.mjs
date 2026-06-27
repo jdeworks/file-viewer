@@ -83,22 +83,23 @@ function validStageModule(id = 2) {
 
 {
   const save = createFreshSave(1000);
-  ok(isValidSave(save), 'save: fresh v4 validates');
-  ok(save.version === 4 && save.unlockedStages.join(',') === '1', 'save: fresh v4 starts at stage 1');
-  ok(Object.keys(save.stageState).length === 10 && save.stageState[10], 'save: fresh v4 creates all stageState slots');
-  ok(save.runs && Object.keys(save.runs).length === 0, 'save: fresh v4 has an empty run-counter map');
+  ok(isValidSave(save), 'save: fresh v5 validates');
+  ok(save.version === 5 && save.unlockedStages.join(',') === '1', 'save: fresh v5 starts at stage 1');
+  ok(Object.keys(save.stageState).length === 10 && save.stageState[10], 'save: fresh v5 creates all stageState slots');
+  ok(save.runs && Object.keys(save.runs).length === 0, 'save: fresh v5 has an empty run-counter map');
+  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'save: fresh v5 seeds the ascension summary');
 }
 
 {
   const storage = new MemoryStorage({ [SAVE_KEY]: '{bad json' });
   const save = loadSave({ storage, timestamp: 2000 });
-  ok(isValidSave(save), 'save: malformed storage becomes fresh v4');
+  ok(isValidSave(save), 'save: malformed storage becomes fresh v5');
   ok(JSON.parse(storage.getItem(SAVE_KEY)).version === SAVE_VERSION, 'save: malformed replacement is persisted');
 }
 
 {
-  // A valid v3 save with real player data MIGRATES forward to v4 with all prior data intact and a
-  // freshly-defaulted `runs` map — it must NOT be discarded/reset.
+  // A valid v3 save with real player data MIGRATES forward to v5 with all prior data intact and the
+  // freshly-defaulted additive fields (`runs`, the ascension summary) — it must NOT be discarded/reset.
   const v3 = {
     version: 3,
     currentStage: 6,
@@ -113,25 +114,52 @@ function validStageModule(id = 2) {
   };
   const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v3) });
   const save = loadSave({ storage, timestamp: 3000 });
-  ok(isValidSave(save) && save.version === 4, 'save: a valid v3 save migrates forward to v4');
+  ok(isValidSave(save) && save.version === 5, 'save: a valid v3 save migrates forward to v5');
   ok(save.defeated.join(',') === '1,2' && save.unlockedStages.join(',') === '1,2,3', 'migrate: defeated/unlocked preserved');
   ok(save.achievements['stage1.cheat_disabled'] && save.actions['2.search_passage'].detail.value === 'PASSAGE', 'migrate: achievements/actions preserved');
   ok(save.stageState[3].progress === 7 && save.stageState[6].run.hp === 42, 'migrate: per-stage progress preserved');
   ok(save.global.loopCount === 3 && save.global.createdAt === 111, 'migrate: global data preserved (not reset to fresh)');
-  ok(save.runs && Object.keys(save.runs).length === 0, 'migrate: v3->v4 backfills an empty runs map');
-  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 4, 'migrate: the upgraded save is persisted back');
+  ok(save.runs && Object.keys(save.runs).length === 0, 'migrate: v3->v5 backfills an empty runs map');
+  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v3->v5 backfills the ascension summary');
+  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 5, 'migrate: the upgraded save is persisted back');
+}
+
+{
+  // A valid v4 save MIGRATES forward to v5: the 4->5 step backfills the ascension summary and
+  // preserves all existing data, including any global fields the player already had.
+  const v4 = {
+    version: 4,
+    currentStage: 2,
+    defeated: [1],
+    unlockedStages: [1, 2],
+    achievements: {},
+    actions: {},
+    bell: { seen: [], log: [] },
+    bts: { opened: {} },
+    runs: { 1: 3 },
+    stageState: { 1: { economy: { balance: 88 } }, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {}, 8: {}, 9: {}, 10: {} },
+    global: { loopCount: 1, crashCourseUnlocked: true, createdAt: 5, updatedAt: 6 },
+  };
+  const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v4) });
+  const save = loadSave({ storage, timestamp: 4200 });
+  ok(isValidSave(save) && save.version === 5, 'save: a valid v4 save migrates forward to v5');
+  ok(save.runs[1] === 3 && save.stageState[1].economy.balance === 88, 'migrate: v4 runs/stage substate preserved');
+  ok(save.global.loopCount === 1 && save.global.crashCourseUnlocked === true && save.global.createdAt === 5, 'migrate: v4 global data preserved');
+  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v4->v5 backfills the ascension summary');
+  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 5, 'migrate: the upgraded v4 save is persisted back');
 }
 
 {
   // Legacy/degenerate older versions are shape-upgraded (backfilled), not discarded.
   const up = migrateSave({ version: 1, defeated: [4], stageState: { 4: { kept: true } } }, 500);
-  ok(up && up.version === 4, 'migrate: v1 walks the full ladder to v4');
+  ok(up && up.version === 5, 'migrate: v1 walks the full ladder to v5');
   ok(up.defeated.join(',') === '4' && up.stageState[4].kept === true, 'migrate: v1 player data survives the ladder');
   ok(Object.keys(up.stageState).length === 10, 'migrate: v1 upgrade fills all 10 stage slots');
+  ok(up.global.maxAscension === 0 && Object.keys(up.global.ascensionCleared).length === 0, 'migrate: v1 ladder ends with the ascension summary');
   // Truly-unmigratable inputs return null so the caller falls back to fresh.
   ok(migrateSave(null) === null && migrateSave({ noVersion: true }) === null, 'migrate: corrupt/versionless inputs return null');
   ok(migrateSave({ version: 999 }) === null, 'migrate: a future version is not down-migrated');
-  ok(migrateSave({ ...createFreshSave(1), version: 4 }) !== null, 'migrate: a current-version save passes through');
+  ok(migrateSave({ ...createFreshSave(1), version: 5 }) !== null, 'migrate: a current-version save passes through');
 }
 
 {

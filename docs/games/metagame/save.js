@@ -2,7 +2,7 @@
 // though the in-save schema is now v4 — old saves were written under this key, and migrating them
 // forward (rather than orphaning them by changing the key) is the whole point of the ladder below.
 export const SAVE_KEY = 'fv:games:metagame:v3';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const STAGE_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
 function nowMs() {
@@ -68,6 +68,14 @@ export function createFreshSave(timestamp = nowMs()) {
       fullCapstoneComplete: false,
       memorySignature: null,
       completionId: null,
+      // Cross-stage ASCENSION completion summary (see shared/ascension.js). Lives in `global` — a
+      // top-level container — so the future hub/meta-goal can read it WITHOUT visiting each stage
+      // (per-stage ascension state lives in stageState[id], which metagame.js lazy-seeds only on
+      // mount, so an unvisited stage's substate is not a safe home for the cross-stage summary).
+      // maxAscension     — single highest ascension level cleared across ALL stages (completionist).
+      // ascensionCleared — map stageId -> highest ascension level cleared for that stage.
+      maxAscension: 0,
+      ascensionCleared: {},
       createdAt: timestamp,
       updatedAt: timestamp,
     },
@@ -133,6 +141,17 @@ const MIGRATIONS = {
   3: (value) => {
     if (!plainObject(value.runs)) value.runs = {};
     value.version = 4;
+    return value;
+  },
+  // 4->5: introduce the cross-stage ASCENSION completion summary in `global` (see shared/ascension.js).
+  // Additive only — backfill the two fields if absent, preserve all existing global/player data.
+  4: (value) => {
+    if (!plainObject(value.global)) value.global = {};
+    if (typeof value.global.maxAscension !== 'number' || !Number.isFinite(value.global.maxAscension)) {
+      value.global.maxAscension = 0;
+    }
+    if (!plainObject(value.global.ascensionCleared)) value.global.ascensionCleared = {};
+    value.version = 5;
     return value;
   },
 };
