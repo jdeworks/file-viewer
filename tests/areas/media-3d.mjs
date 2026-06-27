@@ -1430,8 +1430,9 @@ export async function run(ctx) {
     page.click('#previewHost .gifv-dl-gif'),
   ]).catch(() => [null]);
   if (gifDl && /\.gif$/.test(gifDl.suggestedFilename())) pass('GIF player: plain Download saves the GIF (' + gifDl.suggestedFilename() + ')'); else fail('gif download: ' + (gifDl && gifDl.suggestedFilename()));
-  // Split mounts the frames NESTED under a folder named after the GIF, each with a real
-  // byte size. Assert the folder node (anim.gif) + frame entries + a non-zero size show.
+  // Split makes the GIF's own sidebar row ACT LIKE a folder without becoming one: the row
+  // stays a clickable FILE (opens the running GIF) and gains an expand arrow revealing the
+  // frame PNGs nested under it, each with a real byte size.
   await page.click('#previewHost .gifv-split');
   const framesInSidebar = await page.waitForFunction(() => {
     const t = document.querySelector('#ftBody')?.textContent || '';
@@ -1439,6 +1440,18 @@ export async function run(ctx) {
     return /anim\.gif/.test(t) && /frame-001\.png/.test(t) && /frame-002\.png/.test(t) && sized;
   }, null, { timeout: 10000 }).then(() => true).catch(() => false);
   if (framesInSidebar) pass('GIF Split: frames nested under the gif folder with real sizes'); else fail('gif split sidebar: ' + JSON.stringify(await page.$eval('#ftBody', (e) => e.textContent.slice(0, 200)).catch(() => 'no #ftBody')));
+  // The gif row is a FILE (not a folder) but carries an expand arrow → file-with-children.
+  const gifRowIsExpandableFile = await page.evaluate(() => {
+    const row = [...document.querySelectorAll('#ftBody .ft-row')].find((r) => r.querySelector('.ft-name')?.textContent === 'anim.gif');
+    return !!row && row.classList.contains('ft-file') && !row.classList.contains('ft-folder') && !!row.querySelector('.ft-arrow');
+  });
+  if (gifRowIsExpandableFile) pass('GIF Split: gif row stays a clickable file with an expand arrow (acts as a folder, not one)'); else fail('gif row not a file-with-children');
+  // Clicking a frame opens that frame image; clicking the gif row re-opens the running player.
+  await page.evaluate(() => [...document.querySelectorAll('#ftBody .ft-row')].find((r) => r.querySelector('.ft-name')?.textContent === 'frame-001.png')?.click());
+  const frameOpened = await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).then(() => true).catch(() => false);
+  await page.evaluate(() => [...document.querySelectorAll('#ftBody .ft-row')].find((r) => r.querySelector('.ft-name')?.textContent === 'anim.gif')?.click());
+  const gifReopened = await page.waitForSelector('#previewHost .gifv-root', { timeout: 10000 }).then(() => true).catch(() => false);
+  if (frameOpened && gifReopened) pass('GIF Split: a frame opens as an image; the gif row re-opens the running GIF'); else fail('gif split open: ' + JSON.stringify({ frameOpened, gifReopened }));
   // Download all → a ZIP of the frames.
   const [gifZip] = await Promise.all([
     page.waitForEvent('download', { timeout: 8000 }),
