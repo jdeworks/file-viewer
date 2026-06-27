@@ -180,6 +180,7 @@ FULL_UNIT_TESTS=(
   tests/known-fish-script.test.mjs
   tests/known-forth-lang.test.mjs
   tests/known-eiffel-lang.test.mjs
+  tests/known-grain-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 

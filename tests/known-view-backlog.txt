@@ -9,7 +9,6 @@ elm-lang
 elvish-script
 fsharp-lang
 gnuplot-script
-grain-lang
 haskell-lang
 idris-lang
 ink-script
