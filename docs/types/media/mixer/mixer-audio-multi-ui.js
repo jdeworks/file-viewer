@@ -81,7 +81,8 @@ export function addGeneratedLane(project, kind, label, roomTone) {
 // --- Bespoke clip-lane helpers (used by mountModularAudioMixer) ---
 
 // Build the flat "clip view" that createClipLane.update() expects.
-export function buildClipView(project, laneId, cursorMs) {
+// pxPerSec: pass viewport.pxPerMs * 1000 so the lane can stretch its canvas to the zoom level.
+export function buildClipView(project, laneId, cursorMs, pxPerSec = 0) {
   const element = firstElementForLane(project, laneId);
   if (!element) return null;
   const durationMs = Math.max(1000, project.project?.durationMs || 1000);
@@ -101,6 +102,7 @@ export function buildClipView(project, laneId, cursorMs) {
     fadeOutSec: (element.audio?.fadeOutMs || 0) / 1000,
     summary: element.analysis?.waveformSummary || null,
     selected: project.selection?.primary?.id === element.id,
+    pxPerSec,
   };
 }
 
@@ -210,6 +212,9 @@ export function buildMixToolbar() {
   const videoPlanBtn = mk('Plan video export', 'Plan ffmpeg-gated video export', 'mmx-mix-video-export-plan mmx-video-export-plan');
   videoPlanBtn.hidden = true;
   const dropZone = Object.assign(document.createElement('span'), { className: 'mmx-mix-drop-zone', textContent: 'Drop audio, image, or video to add lane' });
+  const zoomGroup = document.createElement('span');
+  zoomGroup.className = 'al-zoom';
+  zoomGroup.append(mk('−', 'Zoom out', 'al-btn mmx-mix-zoom-out'), mk('Fit', 'Fit timeline', 'al-btn mmx-mix-fit'), mk('+', 'Zoom in', 'al-btn mmx-mix-zoom-in'));
   const controls = document.createElement('div');
   controls.className = 'mmx-mix-controls';
   controls.append(
@@ -223,7 +228,7 @@ export function buildMixToolbar() {
   );
   const toolbar = document.createElement('div');
   toolbar.className = 'al-toolbar mmx-toolbar';
-  toolbar.append(Object.assign(document.createElement('span'), { className: 'al-title mmx-title', textContent: 'Mix' }), controls);
+  toolbar.append(Object.assign(document.createElement('span'), { className: 'al-title mmx-title', textContent: 'Mix' }), zoomGroup, controls);
   return { toolbar, masterSlider, videoPlanBtn };
 }
 
@@ -309,18 +314,23 @@ function niceStep(seconds) {
   return 600;
 }
 
-export function updateMixRuler(rulerEl, project, viewport) {
+export function updateMixRuler(rulerEl, project, viewport, scrollLeft = 0) {
   const timelineSec = Math.max(0.001, (project.project.durationMs || 1000) / 1000);
-  const width = Math.max(120, (viewport.width || 960) - 96);
-  const stepSec = niceStep((80 * timelineSec) / Math.max(1, width));
+  const pxPerSec = (viewport.pxPerMs || 0) * 1000;
+  const fitWidth = Math.max(120, (viewport.width || 960) - 96);
+  // contentWidth: match the lane canvas width at current zoom.
+  const contentWidth = Math.max(fitWidth, timelineSec * pxPerSec);
+  const stepSec = niceStep((80 * timelineSec) / Math.max(1, contentWidth));
   rulerEl.replaceChildren();
   for (let t = 0; t <= timelineSec + 0.0001; t += stepSec) {
     const tick = document.createElement('div');
     tick.className = 'al-ruler-tick';
-    tick.style.left = `${96 + (t / timelineSec) * width}px`;
+    tick.style.left = `${96 + (t / timelineSec) * contentWidth}px`;
     tick.textContent = fmtTime(t);
     rulerEl.append(tick);
   }
+  // Sync ruler scroll with lanes so tick marks stay aligned with the waveform.
+  rulerEl.scrollLeft = scrollLeft;
 }
 
 // --- Selection panel (persistent; input handlers do NOT call render()) ---

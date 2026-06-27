@@ -156,6 +156,8 @@
 .al-track-kind { font-size: 10px; color: var(--al-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
 .al-canvas-wrap { position: relative; flex: 1 1 auto; overflow: hidden; cursor: pointer; touch-action: none; }
+/* al-zoomable: added by createClipLane when pxPerSec > 0 so the zoomed canvas can scroll. */
+.al-canvas-wrap.al-zoomable { overflow-x: auto; }
 .al-canvas { display: block; width: 100%; height: 100%; }
 
 /* Draggable clip object overlaid on the canvas (transparent body, the waveform shows through). */

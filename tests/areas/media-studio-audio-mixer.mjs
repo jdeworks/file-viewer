@@ -85,6 +85,14 @@ export async function runAudioMixerAndPlaylist(ctx) {
     await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .al-track').length >= 2, null, { timeout: 6000 });
     const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-track', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
+    // Zoom: zooming in widens the lane canvas; Fit resets it. (10× zoom guarantees content overflows any viewport.)
+    const w0 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
+    for (let i = 0; i < 10; i++) await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-zoom-in');
+    const w1 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
+    if (w1 > w0) pass('audio mixer: zoom-in widens canvas (' + w0 + ' → ' + w1 + 'px)'); else fail('zoom-in had no effect: ' + w0 + ' → ' + w1);
+    await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fit');
+    const w2 = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .al-canvas', (c) => parseInt(c.style.width, 10) || c.clientWidth);
+    if (w2 < w1) pass('audio mixer: Fit resets canvas width (' + w1 + ' → ' + w2 + 'px)'); else fail('Fit had no effect: ' + w1 + ' → ' + w2);
     // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
     const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-download');
     await assertMixViewport(ctx, 'desktop');

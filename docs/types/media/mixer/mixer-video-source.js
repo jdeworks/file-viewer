@@ -103,6 +103,8 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
   lanesContainer.className = 'al-lanes';
   root.append(toolbar, lanesContainer);
   const clipLanes = new Map();
+  let _scrollSyncing = false;
+  const syncScroll = (px) => { if (_scrollSyncing) return; _scrollSyncing = true; for (const [, ln] of clipLanes) ln.setScroll(px); _scrollSyncing = false; };
 
   root.addEventListener('click', onClick, true); root.addEventListener('input', onInput);
   root.addEventListener('dragover', onDragOver); root.addEventListener('dragleave', onDragLeave);
@@ -163,6 +165,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
         render();
       },
       onSeek(sec) { setCursorMs(sec * 1000, { syncMedia: true }); render(); },
+      onScroll(px) { viewport = { ...viewport, scrollLeft: px }; syncScroll(px); },
       onSelect() { const e = ge(); if (e) project = selectTarget(project, { type: 'element', id: e.id }, [{ type: 'element', id: e.id }]); render(); },
     };
   }
@@ -195,7 +198,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
     if (zoomRange) zoomRange.value = String(viewport.pxPerMs);
     reconcileLanes();
     for (const [laneId, ln] of clipLanes) {
-      const clipView = buildClipView(project, laneId, viewport.cursorMs);
+      const clipView = buildClipView(project, laneId, viewport.cursorMs, viewport.pxPerMs * 1000);
       if (clipView) ln.update(clipView);
       const el = firstElementForLane(project, laneId);
       if (el?.capabilities?.hasVideo || el?.capabilities?.hasImage) {
@@ -205,6 +208,7 @@ export function mountModularVideoSourceMixer(panel, intake, mediaEl = null, opti
         if (badge) badge.dataset.opacity = String(el.visual?.opacity ?? 1);
       }
     }
+    syncScroll(viewport.scrollLeft);
     visualRuntime.update(project, viewport.cursorMs);
     root.querySelectorAll('.mmx-frame-preview').forEach((n) => n.remove());
     if (hasVisualElements(project)) {
