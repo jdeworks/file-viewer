@@ -5,7 +5,7 @@ import { globalPull, pullGain } from './s1economy.js';
 import { fromNumber, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { doPrestige, coreGain, MECHANICS, prestigeDepth, nextMechanic, mechanicUnlocked } from './s1prestige.js';
+import { doPrestige, coreGainFor, MECHANICS, prestigeDepth, nextMechanic, mechanicUnlocked } from './s1prestige.js';
 import { CORE_UPGRADES, coreLevel, coreCostOf, canBuyCore, buyCore } from './s1cores.js';
 import { wirableTiers, isWired, togglePipeline, pipelineUpkeepOf } from './s1pipeline.js';
 import { fluxMeter, fluxBoostTicks, fluxMult, fluxCanCash, cashFlux } from './s1flux.js';
@@ -58,7 +58,7 @@ export function renderResetPanel(opts) {
   injectStyle();
   const gain = pullGain(state.totalBits);
   const newTotal = globalPull(state) * gain;
-  const cores = coreGain(state.totalBits);
+  const cores = coreGainFor(state);
   const next = nextMechanic(state);
   panelsEl.innerHTML =
     '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel">'

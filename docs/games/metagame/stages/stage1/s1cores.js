@@ -6,6 +6,12 @@ export const CORE_UPGRADES = [
   { id: 'core-yield',     icon: '📈', name: 'Overclock',    max: 10, cost: (l) => 1 + l,
     desc: '+10% to ALL bit income per level',
     effect: (l) => ({ incomeMult: 1 + 0.10 * l }) },
+  { id: 'core-compound',  icon: '🔁', name: 'Recursion Core', max: 15, cost: (l) => 2 + 2 * l,
+    desc: '+12% COMPOUNDING income per level — a deep, long-haul investment',
+    effect: (l) => ({ incomeMult: Math.pow(1.12, l) }) },
+  { id: 'core-dividend',  icon: '⬡', name: 'Core Dividend', max: 5,  cost: (l) => 5 + 5 * l,
+    desc: '+1 ⬡ Core per prestige per level — spend Cores to earn more Cores',
+    effect: (l) => ({ coreBonus: l }) },
   { id: 'core-startmult', icon: '✖', name: 'Warm Cache',   max: 25, cost: (l) => 1 + l,
     desc: 'Start each run with +N Multiplier levels',
     effect: (l) => ({ start: { 's1-mult': l } }) },
@@ -40,13 +46,14 @@ export function buyCore(state, id) {
 
 // Aggregate effects across all owned core upgrades.
 export function coreEffects(state) {
-  const eff = { incomeMult: 1, start: {}, autoMult: false };
+  const eff = { incomeMult: 1, start: {}, autoMult: false, coreBonus: 0 };
   for (const up of CORE_UPGRADES) {
     const lvl = coreLevel(state, up.id);
     if (lvl <= 0) continue;
     const e = up.effect(lvl);
     if (e.incomeMult) eff.incomeMult *= e.incomeMult;
     if (e.autoMult) eff.autoMult = true;
+    if (e.coreBonus) eff.coreBonus += e.coreBonus;
     if (e.start) for (const k in e.start) eff.start[k] = (eff.start[k] || 0) + e.start[k];
   }
   return eff;
@@ -55,6 +62,9 @@ export function coreEffects(state) {
 export function coreIncomeMult(state) { return coreEffects(state).incomeMult; }
 
 export function coreAutoMult(state) { return coreEffects(state).autoMult; }
+
+// Extra Cores granted per prestige from the Core Dividend upgrade (the meta-loop sink).
+export function coreGainBonus(state) { return coreEffects(state).coreBonus; }
 
 // Seed a fresh post-prestige run with the starting tiers the player has bought (called by doPrestige).
 export function applyCoreStartState(state) {

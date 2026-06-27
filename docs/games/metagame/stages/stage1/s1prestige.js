@@ -7,7 +7,7 @@
 
 import { ZERO, toNumber } from './bignum.js';
 import { pullGain, RESET_UNLOCK_BITS } from './s1economy.js';
-import { applyCoreStartState } from './s1cores.js';
+import { applyCoreStartState, coreGainBonus } from './s1cores.js';
 
 export const MECHANICS = [
   { id: 'pipeline',  depth: 1, icon: '🔌', name: 'Pipeline',
@@ -42,10 +42,17 @@ export function nextMechanic(state) {
 }
 
 // Cores granted by a prestige: 1 at the unlock point, +1 per extra order of magnitude of totalBits.
+// (The Core Dividend upgrade adds a flat per-prestige bonus on top — see doPrestige.)
 export function coreGain(totalBitsAtReset) {
   const n = toNumber(totalBitsAtReset);
   const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
   return Math.max(1, 1 + Math.floor(Math.log10(ratio)));
+}
+
+// Total Cores a prestige NOW would grant the given state (base scaling + Core Dividend bonus). Used
+// by the reset panel's preview so the player sees their dividend pay off.
+export function coreGainFor(state) {
+  return coreGain(state.totalBits) + coreGainBonus(state);
 }
 
 // Perform a prestige: bank the pull factor + cores, bump depth, wipe the run, and re-seed starting
@@ -53,7 +60,7 @@ export function coreGain(totalBitsAtReset) {
 // runStartedAt and fires bell/achievements/render.
 export function doPrestige(state) {
   const gain = pullGain(state.totalBits);
-  const cores = coreGain(state.totalBits);
+  const cores = coreGain(state.totalBits) + coreGainBonus(state);
   state.pullFactors = [...(state.pullFactors || []), gain];
   state.cores = (state.cores || 0) + cores;
   state.prestigeCount = (state.prestigeCount || 0) + 1;

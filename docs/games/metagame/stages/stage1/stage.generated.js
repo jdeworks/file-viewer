@@ -3064,6 +3064,24 @@ var CORE_UPGRADES = [
     effect: (l) => ({ incomeMult: 1 + 0.1 * l })
   },
   {
+    id: "core-compound",
+    icon: "🔁",
+    name: "Recursion Core",
+    max: 15,
+    cost: (l) => 2 + 2 * l,
+    desc: "+12% COMPOUNDING income per level — a deep, long-haul investment",
+    effect: (l) => ({ incomeMult: Math.pow(1.12, l) })
+  },
+  {
+    id: "core-dividend",
+    icon: "⬡",
+    name: "Core Dividend",
+    max: 5,
+    cost: (l) => 5 + 5 * l,
+    desc: "+1 ⬡ Core per prestige per level — spend Cores to earn more Cores",
+    effect: (l) => ({ coreBonus: l })
+  },
+  {
     id: "core-startmult",
     icon: "✖",
     name: "Warm Cache",
@@ -3113,13 +3131,14 @@ function buyCore(state, id) {
   return true;
 }
 function coreEffects(state) {
-  const eff = { incomeMult: 1, start: {}, autoMult: false };
+  const eff = { incomeMult: 1, start: {}, autoMult: false, coreBonus: 0 };
   for (const up of CORE_UPGRADES) {
     const lvl = coreLevel(state, up.id);
     if (lvl <= 0) continue;
     const e = up.effect(lvl);
     if (e.incomeMult) eff.incomeMult *= e.incomeMult;
     if (e.autoMult) eff.autoMult = true;
+    if (e.coreBonus) eff.coreBonus += e.coreBonus;
     if (e.start) for (const k in e.start) eff.start[k] = (eff.start[k] || 0) + e.start[k];
   }
   return eff;
@@ -3129,6 +3148,9 @@ function coreIncomeMult(state) {
 }
 function coreAutoMult(state) {
   return coreEffects(state).autoMult;
+}
+function coreGainBonus(state) {
+  return coreEffects(state).coreBonus;
 }
 function applyCoreStartState(state) {
   const start = coreEffects(state).start;
@@ -3193,9 +3215,12 @@ function coreGain(totalBitsAtReset) {
   const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
   return Math.max(1, 1 + Math.floor(Math.log10(ratio)));
 }
+function coreGainFor(state) {
+  return coreGain(state.totalBits) + coreGainBonus(state);
+}
 function doPrestige(state) {
   const gain = pullGain(state.totalBits);
-  const cores = coreGain(state.totalBits);
+  const cores = coreGain(state.totalBits) + coreGainBonus(state);
   state.pullFactors = [...state.pullFactors || [], gain];
   state.cores = (state.cores || 0) + cores;
   state.prestigeCount = (state.prestigeCount || 0) + 1;
@@ -3412,7 +3437,7 @@ function renderResetPanel(opts) {
   injectStyle2();
   const gain = pullGain(state.totalBits);
   const newTotal = globalPull(state) * gain;
-  const cores = coreGain(state.totalBits);
+  const cores = coreGainFor(state);
   const next = nextMechanic(state);
   panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + fluxHtml(state) + resonanceHtml(state) + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
   panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset(opts));

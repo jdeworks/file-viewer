@@ -108,4 +108,16 @@ const { simulateFight } = await import('../../../docs/games/metagame/stages/stag
   }
 }
 
+{
+  // Core Dividend: spending Cores grants extra Cores per prestige (the meta-loop sink), on
+  // top of the base scaling. Recursion Core compounds income multiplicatively.
+  const s = defaultState({ now: 1 }); s.cores = 99;
+  buyCore(s, 'core-dividend'); buyCore(s, 'core-dividend');   // level 2 -> +2 Cores per prestige
+  const before = s.cores;
+  doPrestige(s);   // totalBits 0 -> base coreGain 1, + dividend 2 = 3
+  assert.equal(s.cores - before, 3, 'Core Dividend adds +2 on top of the base +1 Core per prestige');
+  const r = defaultState({ now: 1 }); r.cores = 99;
+  buyCore(r, 'core-compound'); buyCore(r, 'core-compound');
+  assert.ok(Math.abs(coreEffects(r).incomeMult - Math.pow(1.12, 2)) < 1e-9, 'Recursion Core compounds income (1.12^2)');
+}
 console.log('stage1 canonical tests passed');
