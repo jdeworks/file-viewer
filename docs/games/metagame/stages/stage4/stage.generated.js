@@ -63,6 +63,11 @@ var TOWER_TYPES = {
   cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25, role: "economy — pays Cycles every wave clear" }
 };
 var TARGET_MODES = ["first", "last", "closest", "strongest", "weakest"];
+var TOWER_ABILITIES = {
+  emp_burst: { label: "EMP Burst", radius: 5, stunMs: 2e3, cooldownMs: 3e4 },
+  null_wave: { label: "Null Wave", stripMs: 5e3, cooldownMs: 6e4 },
+  overcharge: { label: "Overcharge", multiplier: 3, durationMs: 3e3, cooldownMs: 45e3 }
+};
 
 // ../../docs/games/metagame/stages/stage4/boss.js
 function hasRecursionBlueprint(actions) {
@@ -418,6 +423,65 @@ function clamp012(v) {
   return n < 0 ? 0 : n > 1 ? 1 : n;
 }
 
+// ../../docs/games/metagame/stages/stage4/forks.js
+function forkAbility(tower) {
+  return forkDef(tower)?.ability || null;
+}
+function forkDef() {
+  return null;
+}
+
+// ../../docs/games/metagame/stages/stage4/abilities.js
+function abilityForTower(tower) {
+  const def = TOWER_TYPES[tower?.type];
+  if (!def) return null;
+  return forkAbility(tower) || def.ability || null;
+}
+function overchargeMult(tower, now) {
+  return (tower?.overchargeUntilMs || 0) > now ? tower.overchargeMultiplier || 1 : 1;
+}
+function fireAbilities(state, dist2) {
+  const now = state.combatClockMs || 0;
+  for (const tower of state.towers || []) {
+    if ((tower.level || 1) < 3) continue;
+    const abilityId = abilityForTower(tower);
+    const ability = TOWER_ABILITIES[abilityId];
+    if (!ability) continue;
+    if (now < (tower.abilityNextMs || 0)) continue;
+    const def = TOWER_TYPES[tower.type] || {};
+    const cast = castAbility(state, tower, abilityId, ability, def, now, dist2);
+    if (cast) tower.abilityNextMs = now + ability.cooldownMs;
+  }
+}
+function castAbility(state, tower, id, ability, def, now, dist2) {
+  if (id === "emp_burst") {
+    const hit = (state.enemies || []).filter((e) => dist2(tower, e) <= ability.radius);
+    if (!hit.length) return false;
+    for (const e of hit) applyStatus(e, "stun", { ms: ability.stunMs });
+    pushLog2(state, `${def.glyph || "[?]"} EMP Burst — ${hit.length} stunned.`);
+    return true;
+  }
+  if (id === "null_wave") {
+    const hit = (state.enemies || []).filter((e) => dist2(tower, e) <= (def.range || 0) && (e.armor || 0) > 0);
+    if (!hit.length) return false;
+    for (const e of hit) applyStatus(e, "shred", { armor: 1, ms: ability.stripMs });
+    pushLog2(state, `${def.glyph || "[?]"} Null Wave — armor stripped from ${hit.length}.`);
+    return true;
+  }
+  if (id === "overcharge") {
+    const inRange = (state.enemies || []).some((e) => dist2(tower, e) <= (def.range || 0));
+    if (!inRange) return false;
+    tower.overchargeUntilMs = now + ability.durationMs;
+    tower.overchargeMultiplier = ability.multiplier;
+    pushLog2(state, `${def.glyph || "[?]"} Overcharge — damage ×${ability.multiplier}.`);
+    return true;
+  }
+  return false;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+
 // ../../docs/games/metagame/stages/stage4/waves.js
 var SPAWN_INTERVAL_MS = 700;
 var WAVES = {
@@ -670,10 +734,13 @@ function startWave(state, waveNum, pathTiles) {
   state.spawnTimerMs = SPAWN_INTERVAL_MS;
   state.combatClockMs = 0;
   state.enemyNextId = 1;
-  for (const t of state.towers) t.lastFiredMs = -Infinity;
+  for (const t of state.towers) {
+    t.lastFiredMs = -Infinity;
+    t.abilityNextMs = 0;
+  }
   if (comp.subBoss) {
     const sb = subBossDef(comp.subBoss);
-    if (sb) pushLog2(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+    if (sb) pushLog3(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
   }
   return state;
 }
@@ -683,7 +750,7 @@ function queueWave(state, waveNum) {
   if (comp.subBoss) {
     state.spawnQueue.push(`subboss:${comp.subBoss}`);
     const sb = subBossDef(comp.subBoss);
-    if (sb) pushLog2(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+    if (sb) pushLog3(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
   }
   return state;
 }
@@ -697,6 +764,7 @@ function tick(state, deltaMs, pathTiles) {
   statusPass(state, dt);
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
+  fireAbilities(state, dist);
   reap(state, pathTiles);
   return state;
 }
@@ -710,7 +778,7 @@ function resolveDeath(state, enemy, pathTiles) {
       placeOnPath(child, pathTiles);
       state.enemies.push(child);
     }
-    pushLog2(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
+    pushLog3(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
   }
   return def.reward || 0;
 }
@@ -753,7 +821,7 @@ function moveEnemies(state, dt, pathTiles, exitIndex) {
       const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
       if (state.integrity <= 0) state.waveFailed = true;
-      pushLog2(state, `${def.glyph} reached the core.`);
+      pushLog3(state, `${def.glyph} reached the core.`);
       continue;
     }
     placeOnPath(e, pathTiles);
@@ -777,6 +845,7 @@ function fireTowers(state, pathTiles) {
 }
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   let dmg = def.damage * bonus * (state.damageMult || 1);
+  dmg *= overchargeMult(tower, state.combatClockMs || 0);
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2;
   dmg *= damageTakenMult(enemy);
@@ -796,13 +865,13 @@ function maybeFireSubBossAbility(state, enemy, pathTiles) {
       placeOnPath(child, pathTiles);
       state.enemies.push(child);
     }
-    pushLog2(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
+    pushLog3(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
   } else if (sb.ability === "haste") {
     enemy.speed *= 1.6;
-    pushLog2(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
+    pushLog3(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
   } else if (sb.ability === "shield") {
     enemy.armor = Math.min(0.9, (enemy.armor || 0) + 0.3);
-    pushLog2(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
+    pushLog3(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
   }
 }
 function reap(state, pathTiles) {
@@ -848,7 +917,7 @@ function placeOnPath(enemy, pathTiles) {
 function dist(a, b) {
   return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
 }
-function pushLog2(state, line) {
+function pushLog3(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 

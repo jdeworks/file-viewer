@@ -7,6 +7,7 @@ import { ENEMY_TYPES, spawnEnemy } from "./enemies.js";
 import { TOWER_TYPES } from "./towers.js";
 import { resolveDamage } from "./damage.js";
 import { applyStatus, tickStatus, statusSpeedFactor, effectiveArmor, damageTakenMult, applyOnHit } from "./status.js";
+import { fireAbilities, overchargeMult } from "./abilities.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
 import { mapWaveComposition } from "./wavegen.js";
 import { spawnSubBoss, subBossDef } from "./subboss.js";
@@ -40,7 +41,7 @@ export function startWave(state, waveNum, pathTiles) {
   state.spawnTimerMs = SPAWN_INTERVAL_MS; // first enemy enters on the first tick
   state.combatClockMs = 0;
   state.enemyNextId = 1;
-  for (const t of state.towers) t.lastFiredMs = -Infinity;
+  for (const t of state.towers) { t.lastFiredMs = -Infinity; t.abilityNextMs = 0; } // ults ready each wave
   if (comp.subBoss) {
     const sb = subBossDef(comp.subBoss);
     if (sb) pushLog(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
@@ -74,6 +75,7 @@ export function tick(state, deltaMs, pathTiles) {
   statusPass(state, dt);               // decay effects + apply burn DoT (before movement/combat)
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
+  fireAbilities(state, dist); // L3 towers auto-cast their ability (EMP / null-wave / overcharge)
   reap(state, pathTiles);
   return state;
 }
@@ -170,6 +172,7 @@ function fireTowers(state, pathTiles) {
 
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   let dmg = def.damage * bonus * (state.damageMult || 1); // Armory "Overclocked Emitters" scales all damage
+  dmg *= overchargeMult(tower, state.combatClockMs || 0); // L3 overcharge ability self-buff
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2; // depth-3 fold-back tiles deal double
   dmg *= damageTakenMult(enemy); // `mark` status raises damage taken
