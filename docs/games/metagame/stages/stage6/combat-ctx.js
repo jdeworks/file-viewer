@@ -92,6 +92,7 @@ export function relicCtx(combat, card) {
     block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => { combat.player.energy += n; },
+    heal: (n) => { combat.player.hp = Math.min(combat.player.maxHp, combat.player.hp + Math.max(0, Math.round(n))); },
     applySelf: (status, n) => addStatus(combat.player, status, n),
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
   };
