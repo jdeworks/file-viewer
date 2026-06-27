@@ -967,17 +967,31 @@ function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
   const { presetGrey, presetSepia, presetInvert } = els;
+  injectFilterStyle();
+  let pending = false;
+  const setPending = (on) => {
+    pending = on;
+    fApplyBtn?.classList.toggle("imgv-flash-apply", on);
+  };
+  function clearPreview() {
+    if (fBrightness) fBrightness.value = "100";
+    if (fContrast) fContrast.value = "100";
+    if (fSaturation) fSaturation.value = "100";
+    if (fHue) fHue.value = "0";
+    img.style.filter = "";
+    setPending(false);
+  }
   filtersBtn?.addEventListener("click", () => {
-    if (filtersPanel) filtersPanel.hidden = !filtersPanel.hidden;
+    if (!filtersPanel) return;
+    if (!filtersPanel.hidden && pending) clearPreview();
+    filtersPanel.hidden = !filtersPanel.hidden;
   });
   const filterString = () => `brightness(${fBrightness.value}%) contrast(${fContrast.value}%) saturate(${fSaturation.value}%) hue-rotate(${fHue?.value || 0}deg)`;
   const updateFilterPreview = () => {
     img.style.filter = filterString();
+    setPending(true);
   };
-  fBrightness?.addEventListener("input", updateFilterPreview);
-  fContrast?.addEventListener("input", updateFilterPreview);
-  fSaturation?.addEventListener("input", updateFilterPreview);
-  fHue?.addEventListener("input", updateFilterPreview);
+  [fBrightness, fContrast, fSaturation, fHue].forEach((s) => s?.addEventListener("input", updateFilterPreview));
   fApplyBtn?.addEventListener("click", async () => {
     const filter = filterString();
     img.style.filter = "";
@@ -995,14 +1009,12 @@ function mountFilters({ img, mime, core, els }) {
     g.filter = "none";
     core.pushUndo();
     await core.commitCanvas(canvas);
+    clearPreview();
   });
-  fResetBtn?.addEventListener("click", () => {
-    if (fBrightness) fBrightness.value = "100";
-    if (fContrast) fContrast.value = "100";
-    if (fSaturation) fSaturation.value = "100";
-    if (fHue) fHue.value = "0";
-    img.style.filter = "";
-  });
+  fResetBtn?.addEventListener("click", clearPreview);
+  filtersBtn?.closest(".imgv-bar")?.querySelectorAll(".imgv-tab").forEach((t) => t.addEventListener("click", () => {
+    if (pending) clearPreview();
+  }));
   let lvSrc = null, lvW = 0, lvH = 0, lvOpenSrc = null, lvPrevUrl = null, lvRaf = 0;
   function lvProcessed() {
     const lut = buildLevelsLUT(+lvBlack.value, +lvWhite.value, +lvGamma.value / 100);
@@ -1039,6 +1051,7 @@ function mountFilters({ img, mime, core, els }) {
   }
   levelsBtn?.addEventListener("click", async () => {
     if (!levelsPanel) return;
+    if (pending) clearPreview();
     if (!levelsPanel.hidden) {
       lvClose(false);
       levelsBtn.classList.remove("active");
@@ -1078,6 +1091,7 @@ function mountFilters({ img, mime, core, els }) {
     levelsBtn?.classList.remove("active");
   });
   async function applyPreset(filter) {
+    if (pending) clearPreview();
     const base = await core.loadBase();
     const canvas = document.createElement("canvas");
     canvas.width = base.naturalWidth;
@@ -1096,6 +1110,16 @@ function mountFilters({ img, mime, core, els }) {
   presetGrey?.addEventListener("click", () => applyPreset("grayscale(1)"));
   presetSepia?.addEventListener("click", () => applyPreset("sepia(1)"));
   presetInvert?.addEventListener("click", () => applyPreset("invert(1)"));
+}
+function injectFilterStyle() {
+  if (document.getElementById("imgv-filters-css")) return;
+  const st = document.createElement("style");
+  st.id = "imgv-filters-css";
+  st.textContent = `
+    .imgv-f-apply.imgv-flash-apply{animation:imgv-apply-flash .85s ease-in-out infinite;}
+    @keyframes imgv-apply-flash{0%,100%{box-shadow:0 0 0 0 transparent;}50%{box-shadow:0 0 0 3px var(--accent,#4a8fff);background:var(--accent,#4a8fff);color:#fff;}}
+    @media (prefers-reduced-motion:reduce){.imgv-f-apply.imgv-flash-apply{animation:none;outline:2px solid var(--accent,#4a8fff);}}`;
+  document.head.appendChild(st);
 }
 
 // ../../docs/types/image/curves.js
@@ -2337,9 +2361,20 @@ async function blobToCanvas(blob) {
 
 // ../../docs/types/image/ocr-ui.js
 var OCR = "../../core/ocr/index.js";
+var CONSENT_KEY = "imgv-ocr-consent";
 var consented = false;
+var remembered = () => {
+  try {
+    return localStorage.getItem(CONSENT_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
 function ocrConsent(host, approxMB) {
-  if (consented) return Promise.resolve(true);
+  if (consented || remembered()) {
+    consented = true;
+    return Promise.resolve(true);
+  }
   injectOcrStyle();
   return new Promise((resolve) => {
     const back = document.createElement("div");
@@ -2358,7 +2393,13 @@ function ocrConsent(host, approxMB) {
     (host.ownerDocument?.body || document.body).appendChild(back);
     const done = (ok) => {
       back.remove();
-      if (ok) consented = true;
+      if (ok) {
+        consented = true;
+        try {
+          localStorage.setItem(CONSENT_KEY, "1");
+        } catch {
+        }
+      }
       resolve(ok);
     };
     back.querySelector(".imgv-ocr-go").addEventListener("click", () => done(true));

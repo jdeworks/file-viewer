@@ -478,6 +478,23 @@ export async function run(ctx) {
   // where the sliders are; raise brightness, Apply → bakes a new blob.
   await openTab('common');
   await page.click('#previewHost .imgv-filters-btn');
+  // A filter slider is a LIVE preview until Apply: the Apply button flashes (pending) and
+  // switching tabs reverts the un-applied preview (CSS filter cleared, slider reset).
+  await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-f-contrast'); s.value = '160'; s.dispatchEvent(new Event('input', { bubbles: true })); });
+  const pendingState = await page.evaluate(() => ({
+    flashing: document.querySelector('#previewHost .imgv-f-apply').classList.contains('imgv-flash-apply'),
+    previewed: document.querySelector('#previewHost .imgv-img').style.filter.includes('contrast(160%)'),
+  }));
+  await openTab('draw');   // navigate away → discard the un-applied preview
+  const reverted = await page.evaluate(() => ({
+    filter: document.querySelector('#previewHost .imgv-img').style.filter,
+    contrast: document.querySelector('#previewHost .imgv-f-contrast').value,
+    flashing: document.querySelector('#previewHost .imgv-f-apply').classList.contains('imgv-flash-apply'),
+  }));
+  if (pendingState.flashing && pendingState.previewed && reverted.filter === '' && reverted.contrast === '100' && !reverted.flashing) pass('filters: live preview flashes Apply + reverts when you switch tabs (not yet baked)'); else fail('filter preview UX: ' + JSON.stringify({ pendingState, reverted }));
+  await openTab('common');
+  await page.evaluate(() => { const p = document.querySelector('#previewHost .imgv-filters-panel'); if (p) p.hidden = true; });   // closed → next click re-opens
+  await page.click('#previewHost .imgv-filters-btn');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-f-brightness'); s.value = '150'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   const filterBefore = await imgSrcNow();
   await page.click('#previewHost .imgv-f-apply');
