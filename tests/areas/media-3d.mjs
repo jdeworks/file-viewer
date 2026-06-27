@@ -1428,8 +1428,8 @@ export async function run(ctx) {
 
   // ── ASCII sampling on SPARSE / TRANSPARENT sources ── thin strokes over transparency used
   // to speckle into "black spots" as Columns rose (point/box samplers + a hard alpha cutoff).
-  // The default is now coverage-correct 'average', so raising Columns must PRESERVE detail, and
-  // the new "Fill enclosed gaps" toggle fills only interior holes (real background stays clear).
+  // The coverage-aware tone now makes the default 'downscale' preserve detail as Columns rise,
+  // and the new "Fill enclosed gaps" toggle fills only interior holes (real background stays clear).
   await page.goto(origin, { waitUntil: 'load' });
   // A sparse transparent fixture: thin opaque diagonal strokes on a 256² transparent canvas.
   const sparsePng = await page.evaluate(async () => {
@@ -1444,7 +1444,7 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).catch(() => {});
   await page.click('#previewHost .imgv-ascii-btn');
   await page.waitForSelector('#previewHost .asx-root .asx-out', { timeout: 15000 });
-  // Default sampling method must be the robust 'average'.
+  // Default sampling method is the fast 'downscale' (the coverage-aware tone makes it hold up).
   const defSampling = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="samplingMethod"]', (el) => el.value).catch(() => null);
   const setAsx = (key, value) => page.evaluate(({ key, value }) => {
     const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
@@ -1470,7 +1470,7 @@ export async function run(ctx) {
   // Detail preserved: the higher-column output keeps a comparable amount of ink (doesn't collapse
   // to mostly-spaces the way point sampling did). Allow a band; the key is it does NOT crater.
   const detailPreserved = r100 > 0.04 && r180 > 0.6 * r100;
-  if (defSampling === 'average' && detailPreserved) pass('ASCII sampling: default is coverage-correct average; raising Columns preserves detail on sparse art (' + r100.toFixed(2) + '→' + r180.toFixed(2) + ')');
+  if (defSampling === 'downscale' && detailPreserved) pass('ASCII sampling: default downscale + coverage-aware tone preserves detail on sparse art as Columns rise (' + r100.toFixed(2) + '→' + r180.toFixed(2) + ')');
   else fail('ascii sparse sampling: ' + JSON.stringify({ defSampling, r100, r180 }));
   // Fill enclosed gaps: load an opaque RING (transparent centre + transparent outside). With the
   // toggle ON the enclosed centre fills; the true (corner) background stays a transparent space.
