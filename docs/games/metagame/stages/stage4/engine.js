@@ -5,6 +5,7 @@
 
 import { ENEMY_TYPES, spawnEnemy } from "./enemies.js";
 import { TOWER_TYPES } from "./towers.js";
+import { resolveDamage } from "./damage.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
 import { mapWaveComposition } from "./wavegen.js";
 import { spawnSubBoss, subBossDef } from "./subboss.js";
@@ -153,8 +154,10 @@ function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   let dmg = def.damage * bonus * (state.damageMult || 1); // Armory "Overclocked Emitters" scales all damage
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2; // depth-3 fold-back tiles deal double
-  if (!def.ignoresArmor) dmg *= 1 - (enemy.armor || 0);
-  enemy.hp -= dmg;
+  // Damage-type resolution (kinetic↓armor, thermal/arc/null bypass armor, arc +vs shield, null ignores
+  // shield, pure ignores resist). `ignoresArmor` is the legacy flag → null type for back-compat.
+  const type = def.damageType || (def.ignoresArmor ? 'null' : 'kinetic');
+  resolveDamage(enemy, dmg, type, { armor: enemy.armor });
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }
 

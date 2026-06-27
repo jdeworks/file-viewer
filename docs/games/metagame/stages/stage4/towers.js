@@ -2,12 +2,12 @@
 // engine.js reads TOWER_TYPES for range/fire/damage; renderer reads cost/glyph for the shop.
 
 export const TOWER_TYPES = {
-  pulse_node:      { glyph: "[P]", cost: 80,  range: 3, fireRate: 1.0, damage: 20, ability: "emp_burst" },
-  scatter_array:   { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, aoe: 2, ability: "overcharge" },
-  null_spike:      { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, ignoresArmor: true, ability: "null_wave" },
-  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0,   damage: 0,  slow: 0.5 },
-  resonance_hub:   { glyph: "[H]", cost: 250, range: 5, fireRate: 0,   damage: 0,  adjacencyBonus: 0.3 },
-  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0,   damage: 0,  incomePerWave: 25 }
+  pulse_node:      { glyph: "[P]", cost: 80,  range: 3, fireRate: 1.0, damage: 20, damageType: "kinetic", role: "baseline single-target — cheap kinetic DPS, weak vs armor", ability: "emp_burst" },
+  scatter_array:   { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, damageType: "kinetic", aoe: 2, role: "kinetic splash — clears swarms, falls off vs armor/shields", ability: "overcharge" },
+  null_spike:      { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, damageType: "null", ignoresArmor: true, role: "null cannon — ignores armor AND shields, slow cadence", ability: "null_wave" },
+  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0,   damage: 0,  slow: 0.5, role: "support — slows everything in range (the original slow field)" },
+  resonance_hub:   { glyph: "[H]", cost: 250, range: 5, fireRate: 0,   damage: 0,  adjacencyBonus: 0.3, role: "support — +30% damage to each adjacent tower" },
+  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0,   damage: 0,  incomePerWave: 25, role: "economy — pays Cycles every wave clear" }
 };
 
 // Per-tower targeting priority. The engine's selectTarget() reads tower.targetMode; players cycle it
