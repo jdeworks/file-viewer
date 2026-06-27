@@ -132,14 +132,15 @@ export function createAsciiEngine(initialOptions) {
   // Convert the current source frame. 'bitmap' returns a DRAWABLE (ImageBitmap or canvas)
   // for canvas consumers (webcam, file converter); 'cells' updates `result` for the <pre>.
   // Always refreshes lastConvertMs + fires onResult; falls back to sync on any worker error.
-  async function convertNow(want = renderMode) {
-    if (!source || !sourceCanvas.width) return null;
+  // Convert an already-created source ImageBitmap (transferred to the worker). Exposed so
+  // the file converter can PIPELINE: post the next frame's job (synchronously, before its
+  // first await) so the worker converts it WHILE the main thread encodes the current frame.
+  async function convertBitmap(bitmap, want = renderMode) {
     if (useWorker) {
       try {
         ensureWorker();
         if (worker) {
           const id = ++jobId;
-          const bitmap = await createImageBitmap(sourceCanvas);
           const reply = await postJob({ id, bitmap, options: { ...options }, want }, [bitmap]);
           if (reply.error) throw new Error(reply.error);
           lastConvertMs = reply.ms;
@@ -148,6 +149,20 @@ export function createAsciiEngine(initialOptions) {
           return reply.bitmap;
         }
       } catch { useWorker = false; }
+    }
+    // Sync fallback: draw the bitmap back into sourceCanvas and run the normal pipeline.
+    if (sourceCanvas.width !== bitmap.width || sourceCanvas.height !== bitmap.height) { sourceCanvas.width = bitmap.width; sourceCanvas.height = bitmap.height; }
+    sourceCanvas.getContext('2d', { willReadFrequently: true }).drawImage(bitmap, 0, 0); bitmap.close?.();
+    markDirty('processedImage'); update();
+    if (want === 'bitmap') { if (!syncOut) syncOut = makeCanvas(); renderAsciiToCanvas(result, syncOut, options); return syncOut; }
+    return result;
+  }
+
+  async function convertNow(want = renderMode) {
+    if (!source || !sourceCanvas.width) return null;
+    if (useWorker) {
+      try { ensureWorker(); if (worker) return await convertBitmap(await createImageBitmap(sourceCanvas), want); }
+      catch { useWorker = false; }
     }
     update();   // synchronous fallback (also fires onResult internally for 'cells')
     if (want === 'bitmap') { if (!syncOut) syncOut = makeCanvas(); renderAsciiToCanvas(result, syncOut, options); return syncOut; }
@@ -170,6 +185,7 @@ export function createAsciiEngine(initialOptions) {
     setSource, grabFrame, setOptions, markDirty, update, scheduleUpdate,
     setRenderMode(m) { renderMode = m; },
     convertFrame: (want) => convertNow(want),          // async; returns drawable ('bitmap') or result ('cells')
+    convertBitmap,                                      // async; pipeline a pre-made source bitmap (file converter)
     // Re-draw the source (e.g. after a rotate/flip change) then schedule a convert.
     regrab() { if (grabFrame()) { markDirty('processedImage'); scheduleUpdate(); } },
     onResult(fn) { onResult = fn; },

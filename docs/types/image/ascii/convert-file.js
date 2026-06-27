@@ -84,25 +84,39 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     const mime = isGif ? 'image/gif' : 'video/webm';
     const conv = document.createElement('canvas');     // reused: rendered ASCII frame → sink
     const cctx = conv.getContext('2d');
+    const it = source;
+    // Kick off one frame's conversion: snapshot the source as a bitmap (so the next seek
+    // can't overwrite it) and POST it to the worker. Returns the in-flight result promise.
+    const start = async (meta) => {
+      engine.setSource(meta.canvas);
+      const bmp = await createImageBitmap(engine.sourceCanvas);
+      return { resultP: engine.convertBitmap(bmp, 'bitmap'), delayMs: meta.delayMs, index: meta.index, total: meta.total };
+    };
     try {
       let count = 0, lastPreview = 0;
       if (!isGif) status.textContent = 'Recording in real time…';
-      for await (const frame of source) {
+      const first = await it.next();
+      if (first.done) throw new Error('no frames decoded');
+      let cur = await start(first.value);
+      while (cur) {
         if (signal.aborted) throw new DOMException('aborted', 'AbortError');
-        engine.setSource(frame.canvas);
-        const drawable = await engine.convertFrame('bitmap');   // off the main thread (worker)
+        // Prefetch the NEXT frame's conversion BEFORE encoding the current one, so the
+        // worker converts it concurrently with this (blocking GIF quantize / WebM record).
+        const nxt = await it.next();
+        const next = nxt.done ? null : await start(nxt.value);
+        const drawable = await cur.resultP;
         if (conv.width !== drawable.width || conv.height !== drawable.height) { conv.width = drawable.width; conv.height = drawable.height; }
         cctx.clearRect(0, 0, conv.width, conv.height);
         cctx.drawImage(drawable, 0, 0);
         drawable.close?.();
-        await sink.addFrame(conv, frame.delayMs);
+        await sink.addFrame(conv, cur.delayMs);   // worker converts `next` during this
         count++;
-        if (frame.total) prog.value = Math.min(0.99, (frame.index + 1) / frame.total);
-        status.textContent = `Converting frame ${frame.index + 1}${frame.total ? '/' + frame.total : ''}…`;
+        if (cur.total) prog.value = Math.min(0.99, (cur.index + 1) / cur.total);
+        status.textContent = `Converting frame ${cur.index + 1}${cur.total ? '/' + cur.total : ''}…`;
         const t = performance.now();
         if (t - lastPreview > 500) { lastPreview = t; showPreview(conv); }
+        cur = next;
       }
-      if (!count) throw new Error('no frames decoded');
       status.textContent = 'Encoding…';
       const blob = await sink.finish();
       engine.terminate();
@@ -112,6 +126,7 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
       dlBtn.onclick = () => download(blob, name);
       studioBtn.onclick = () => onAddToStudio?.(blob, name, mime);
     } catch (err) {
+      try { await it.return?.(); } catch { /* close the frame stream → revoke its blob URL */ }
       try { await sink.finish?.(); } catch { /* discard partial */ }
       engine.terminate();
       status.textContent = err && err.name === 'AbortError' ? 'Cancelled.' : 'Failed: ' + ((err && err.message) || err);
