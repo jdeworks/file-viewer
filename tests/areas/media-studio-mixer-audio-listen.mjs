@@ -220,6 +220,35 @@ export async function run(ctx) {
     pass('modular audio mix: WebAudio scheduled playback advances cursor and stops cleanly');
   else fail('modular audio mix playback mismatch: ' + JSON.stringify(mixPlayback));
 
+  // Per-lane Dynamics: configuring a compressor on the source lane must route its audio through the
+  // compressor + makeup gain without breaking the schedule (cursor still advances, audio scheduled).
+  const dynPlayback = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', async (el) => {
+    const api = el.__mediaMixerMulti;
+    const laneId = api.getProject().lanes[0].id;
+    const modal = el.querySelector(`.mmx-mix-lane-modal[data-lane-id="${laneId}"]`);
+    const set = (cls, value) => {
+      const inp = modal?.querySelector(cls);
+      if (!inp) return;
+      inp.value = String(value);
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    set('.mmx-mix-lane-dyn-thresholdDb', -30);
+    set('.mmx-mix-lane-dyn-ratio', 8);
+    set('.mmx-mix-lane-dyn-makeupDb', 6);
+    const dyn = api.getProject().lanes[0]?.audio?.dynamics || null;
+    const before = Number(el.dataset.cursorMs || 0);
+    el.querySelector('.mmx-mix-play').click();
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    const playingState = api.getPlaybackState();
+    const during = Number(el.dataset.cursorMs || 0);
+    el.querySelector('.mmx-mix-stop').click();
+    return { dyn, before, during, scheduled: playingState.scheduledCount, lastError: playingState.lastError };
+  });
+  if (dynPlayback.dyn && dynPlayback.dyn.ratio === 8 && dynPlayback.dyn.thresholdDb === -30
+    && dynPlayback.scheduled > 0 && dynPlayback.during > dynPlayback.before && !dynPlayback.lastError)
+    pass('modular audio mix: per-lane Dynamics compressor wires into playback without breaking the graph');
+  else fail('modular audio mix dynamics playback mismatch: ' + JSON.stringify(dynPlayback));
+
   const mixLaneEdit = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const gain = el.querySelector('.mmx-mix-lane-gain');
     gain.value = '0.42';

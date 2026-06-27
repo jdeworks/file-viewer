@@ -157,7 +157,7 @@ function buildEqSection(laneModel, { getProject, setProject, laneId }) {
 function buildDynamicsSection(laneModel, { getProject, setProject, laneId }) {
   const section = document.createElement('div');
   section.className = 'mmx-mix-lane-dynamics-section';
-  section.append(mkSpan('Dynamics (config only — playback wiring deferred)', 'mmx-mix-lane-modal-section-title'));
+  section.append(mkSpan('Dynamics (compressor — affects mix playback)', 'mmx-mix-lane-modal-section-title'));
   const dynamics = laneModel.audio?.dynamics || DEFAULT_DYNAMICS;
   const fields = [
     { key: 'thresholdDb', label: 'Threshold', min: -60, max: 0, step: 0.5, fmt: (v) => `${v.toFixed(1)}dB` },
