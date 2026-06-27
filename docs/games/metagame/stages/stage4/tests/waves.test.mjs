@@ -10,12 +10,21 @@ assert.ok(waveEnemyCount(5, "x") >= 18, "wave 5 has at least 18 enemies");
 const counts = [1, 2, 3, 4, 5].map((w) => waveEnemyCount(w, "x"));
 for (let i = 1; i < counts.length; i++) assert.ok(counts[i] > counts[i - 1], `wave ${i + 1} is bigger than wave ${i}`);
 
-// Unauthored waves fall back deterministically (no crash) and keep growing.
+// Unauthored waves (15+ — only 1–10 are authored) fall back deterministically and keep growing.
 {
-  const a = waveComposition(9, "x");
-  const b = waveComposition(9, "x");
+  const a = waveComposition(15, "x");
+  const b = waveComposition(15, "x");
   assert.deepEqual(a, b, "fallback wave is deterministic");
-  assert.ok(waveEnemyCount(9, "x") > waveEnemyCount(5, "x"), "fallback waves keep scaling");
+  assert.ok(waveEnemyCount(15, "x") > waveEnemyCount(5, "x"), "fallback waves keep scaling");
+}
+
+// Waves 6–10 (MATCH) introduce the fast/armored enemy types.
+{
+  const types = (w) => waveComposition(w, "x").enemies.map((e) => e.type);
+  assert.ok(types(6).includes("pattern_crawler"), "wave 6 introduces pattern crawlers");
+  assert.ok(types(8).includes("null_packet"), "wave 8 introduces null packets");
+  assert.ok(types(10).includes("pattern_crawler") && types(10).includes("null_packet"), "wave 10 mixes both");
+  assert.ok(waveEnemyCount(10, "x") >= waveEnemyCount(6, "x"), "later MATCH waves are not smaller");
 }
 
 assert.equal(FINAL_WAVE, 31, "the boss is wave 31");

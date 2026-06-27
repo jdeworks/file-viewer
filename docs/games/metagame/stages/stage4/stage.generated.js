@@ -300,7 +300,14 @@ var WAVES = {
   2: { enemies: [{ type: "recursion", count: 9 }] },
   3: { enemies: [{ type: "recursion", count: 12 }] },
   4: { enemies: [{ type: "recursion", count: 15 }] },
-  5: { enemies: [{ type: "recursion", count: 18 }], note: "cover the corner tiles" }
+  5: { enemies: [{ type: "recursion", count: 18 }], note: "cover the corner tiles" },
+  // Waves 6–10 (MATCH): fast pattern-crawlers expose sparse coverage; armored null-packets blunt
+  // low-damage towers. The enemy types already exist (enemies.js) — this is composition only.
+  6: { enemies: [{ type: "recursion", count: 8 }, { type: "pattern_crawler", count: 4 }], note: "pattern crawlers sprint through gaps" },
+  7: { enemies: [{ type: "recursion", count: 6 }, { type: "pattern_crawler", count: 8 }] },
+  8: { enemies: [{ type: "recursion", count: 10 }, { type: "null_packet", count: 4 }], note: "null packets are armored" },
+  9: { enemies: [{ type: "recursion", count: 8 }, { type: "null_packet", count: 6 }, { type: "pattern_crawler", count: 2 }] },
+  10: { enemies: [{ type: "recursion", count: 6 }, { type: "null_packet", count: 6 }, { type: "pattern_crawler", count: 6 }] }
 };
 function waveComposition(waveNum, seed) {
   const n = Math.max(1, Math.trunc(Number(waveNum)) || 1);
