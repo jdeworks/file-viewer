@@ -135,14 +135,20 @@ export function integrateMemory({ state, memoryId, achievements, bell, now = Dat
 export function getFinalChoiceState(state) {
   const gate = getThresholdState(state);
   const rebuttal = getDefragmenterRebuttal(state);
+  // The final question is only reachable once the three-phase confrontation is won. confront state
+  // is read directly (no import) to avoid a boss.js ⇄ confront.js cycle.
+  const confrontCompleted = Boolean(state?.confront?.completed);
   return {
-    // The final question is only answerable once enough echoes grant Defragmenter access.
+    // `locked` is the ENTRY gate to the confrontation: enough resolved memories + Defragmenter echo
+    // access. The renderer routes a non-locked, not-yet-won state into the confront UI; only after
+    // confrontCompleted does it show the actual final choices.
     locked: !gate.finalQuestionUnlocked || !gate.defragmenterAccess,
+    confrontCompleted,
     gate,
     rebuttal,
     choices: finalChoices.map((choice) => ({
       ...choice,
-      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || Number(choice.echoRequired || 0) > gate.echoCount
+      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
     })),
     defragmenter: rebuttal.lines,
     routeSummary: getRouteSummary(state)
@@ -202,6 +208,9 @@ export function chooseFinal({ state, choiceId, onStageComplete, now = Date.now()
   const finalState = getFinalChoiceState(state);
   if (!finalState.gate.finalQuestionUnlocked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
   if (!finalState.gate.defragmenterAccess) return { ok: false, reason: "echo-gate", required: echoThresholds.defragmenterAccess, echoCount: finalState.gate.echoCount };
+  // Boss-never-self-unlocks: the final choice is only valid after the three-phase confrontation is
+  // won. Re-read live so even a console chooseFinal cannot skip the fight.
+  if (!state?.confront?.completed) return { ok: false, reason: "confront-incomplete" };
   const choice = finalChoices.find((item) => item.id === choiceId);
   if (!choice) return { ok: false, reason: "unknown-choice" };
   // chooseFinal re-reads echo state live — even a console call can't skip the per-choice echo gate.

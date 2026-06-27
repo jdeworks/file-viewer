@@ -75,6 +75,63 @@ export const entityFEventLog = [
   { cycle: "0047", event: "BOOT", id: "ev10" }
 ];
 
+// ── Case 2 (Duplicate Roster): a SECOND name-collision, gated AFTER Entity F's chain breaks and
+// BEFORE the EXIF boss. A fresh roster (G/H/J/K) claims CORE_ENTITY_001. One is the impostor; one is
+// a RED HERRING whose anomaly is exonerated by a source fact. The decisive fact is only learnable by
+// OPENING a real same-origin file in the viewer (route_table.csv), so the rule-of-three triad cannot
+// be completed without a genuine file-open. ────────────────────────────────────────────────────────
+export const CASE2 = {
+  roster: ["G", "H", "J", "K"],
+  impostor: "K",
+  // Dossier fields shown on the board as clue cards once Case 2 begins.
+  fields: {
+    G: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "route", label: "Route", value: "R-0102 (active)" }
+    ],
+    H: [
+      // Red herring: TIER-3-LEGACY LOOKS anomalous but system_spec confirms -LEGACY is a valid tier-3.
+      { id: "tier", label: "Credential Tier", value: "TIER-3-LEGACY" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
+      { id: "route", label: "Route", value: "R-0110 (active)" }
+    ],
+    J: [
+      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-2" },
+      { id: "route", label: "Route", value: "R-0118 (active)" }
+    ],
+    K: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      // The decisive lie: claims an ACTIVE route the route table proves was closed at cycle 0044.
+      { id: "route", label: "Route", value: "R-0091 (active)", suspect: true }
+    ]
+  },
+  // The unique correct triad: K's "active route R-0091" claim is refuted by the route_table fact.
+  triad: { entity: "K", fieldId: "route", factId: "fact:route" },
+  // For authoring/clarity (not used by the matcher): H's tier looks wrong but fact:spec exonerates it.
+  redHerring: { entity: "H", fieldId: "tier", factId: "fact:spec" }
+};
+
+// Source files the player OPENS in the real viewer; each open mints one fact card on the board. Only
+// fact:route is load-bearing for the correct triad — the others are present so the player must reason
+// WHICH fact actually refutes a claim (fact:spec exonerates the red herring, so accusing H is silent).
+export const CASE2_SOURCES = [
+  { action: "spec_examined", file: "system_spec.json",
+    card: { id: "fact:spec", kind: "fact", caseId: 2,
+      label: "Spec: valid tiers TIER-1..3 (incl. -LEGACY); layers {0,1,2}; one active route/entity." } },
+  { action: "route_table_examined", file: "route_table.csv",
+    card: { id: "fact:route", kind: "fact", caseId: 2,
+      label: "Route table: R-0091 = INACTIVE (closed cycle 0044)." } },
+  { action: "access_log_examined", file: "access_log.csv",
+    card: { id: "fact:activity", kind: "fact", caseId: 2,
+      label: "Access log: G/H/J/K all last-seen cycle 0047." } },
+  { action: "comms_examined", file: "comms_transcript.txt",
+    card: { id: "fact:comms", kind: "fact", caseId: 2,
+      label: "Comms: the real holder answers the cycle-0047 challenge; the duplicate stalls." } }
+];
+
 export const metadataArtifact = {
   format: "stage7-image-metadata-sidecar",
   note: "The current app image metadata reader extracts EXIF from JPEG APP1 but not PNG text chunks. Stage 7 therefore uses real same-origin PNG fixtures plus this local sidecar for the authored EXIF-style evidence.",

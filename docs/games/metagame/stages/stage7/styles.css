@@ -149,7 +149,92 @@ button {
   padding: 12px;
 }
 
-/* SS5 — boss */
+/* SS5 — Case 2 evidence board / accusation */
+.s7-board {
+  display: grid;
+  gap: 12px;
+}
+
+.s7-board-header {
+  font-weight: 700;
+}
+
+.s7-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.s7-sources button,
+.s7-board-col button,
+.s7-accuse-row button {
+  border: 1px solid #2c4770;
+  border-radius: 6px;
+  background: #fff8e8;
+  color: #1a1a1a;
+  cursor: pointer;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.s7-sources button.is-opened {
+  background: #2c4770;
+  color: #fff8e8;
+}
+
+.s7-board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.s7-board-col {
+  border: 1px solid #9d8f74;
+  border-radius: 6px;
+  background: #ede3cc;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.s7-board-col h4,
+.s7-established h4 {
+  margin: 0 0 4px;
+}
+
+.s7-board-col button.is-pinned {
+  border-color: #8b1a1a;
+  box-shadow: inset 0 0 0 2px #8b1a1a;
+}
+
+.s7-board-empty {
+  margin: 0;
+  font-style: italic;
+  color: #6a4a12;
+}
+
+.s7-accuse-row button {
+  background: #8b1a1a;
+  color: #fff8e8;
+  font-weight: 700;
+}
+
+.s7-accuse-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.s7-established {
+  list-style: none;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid #2c4770;
+  border-radius: 6px;
+  background: #ede3cc;
+}
+
+/* SS6 — boss */
 .s7-boss-header {
   background: #8b1a1a;
   color: #fff8e8;

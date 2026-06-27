@@ -18,6 +18,9 @@ import { mountGeometry } from './edit-geometry.js';
 import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
+import { mountHelpTab } from './help-tab.js';
+import { setClip, getClip, copyToSystem, readFromSystem } from './pixel-clipboard.js';
+import { openImageOcrPanel } from './ocr-ui.js';
 import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
@@ -164,7 +167,45 @@ export async function render(intake, ctx = {}) {
   };
   // Group the editing controls into tabs (Common / Draw / Text / Adjust / Size /
   // Background) so the toolbar isn't a wall of buttons; non-active tabs hint once.
-  if (canEdit) mountTabs(host);
+  if (canEdit) { mountTabs(host); mountHelpTab(host); }
+
+  // OCR is its own top-level action (next to Edit/Adv) — works on any image, whether or
+  // not the editor is open. Reads a canvas of what's currently shown (flattened overlay
+  // if Adv objects exist, else the displayed image).
+  const ocrCanvas = () => {
+    if (overlayActive()) return advController.flattenToCanvas();
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth || 1; c.height = img.naturalHeight || 1;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return c;
+  };
+  const ocrBtn = host.querySelector('.imgv-ocr-btn');
+  if (ocrBtn) { ocrBtn.hidden = false; ocrBtn.addEventListener('click', () => openImageOcrPanel({ host: host.querySelector('.imgv-stage'), getCanvas: ocrCanvas })); }
+
+  // Download the current image in the selected format (next to the format picker). The
+  // app's export menu still exists; this is the in-editor shortcut users expect to find.
+  const downloadBtn = canEdit ? host.querySelector('.imgv-download') : null;
+  downloadBtn?.addEventListener('click', async () => {
+    const mt = (exportFmt?.value || '') || core.getExportMime() || mime;
+    let canvas;
+    if (overlayActive()) { canvas = advController.flattenToCanvas(); }
+    else {
+      const base = await core.loadBase();
+      canvas = document.createElement('canvas');
+      canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
+      const g = canvas.getContext('2d');
+      if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+      g.drawImage(base, 0, 0);
+    }
+    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
+    if (!blob) return;
+    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif' })[mt] || ((intake.filename || '').split('.').pop() || 'png');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (intake.filename || 'image').replace(/\.[^.]+$/, '') + '.' + ext;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
 
   // Interactive tools (text placement, crop, BG pick) register here so the pan
   // logic stands down while a tool owns the pointer; each exposes isActive().
@@ -318,31 +359,37 @@ export async function render(intake, ctx = {}) {
   // (emitBinaryEdit/ASCII). A geometry op transforms the objects by the same matrix
   // (onGeometry → advController.applyGeometry) instead of baking. See ADV_EDIT.md.
   const advBtn = canEdit ? host.querySelector('.imgv-adv-btn') : null;
+  // Enter Adv Edit (mount on first use). seedText adds a starter text label only when
+  // the user opens Adv directly — paste passes false so it just drops the pasted pane.
+  async function enterAdv({ seedText = true } = {}) {
+    if (!advBtn || advActive) return;
+    host.querySelector('.imgv-bar').classList.add('imgv-tools-collapsed');   // mutually exclusive with pixel Edit
+    toolsBtn?.classList.remove('active');
+    advBtn.disabled = true;
+    try {
+      if (!advController) {
+        advController = await mountAdvEdit({
+          host, img, pushUndo: core.pushUndo,
+          onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); },
+          onFlatten: async (canvas) => { core.pushUndo(); await core.commitCanvas(canvas); },   // bake overlay → base pixels
+        });
+        // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
+        // pixel + vector. Each entry now also carries the overlay JSON snapshot.
+        core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
+      }
+      advActive = true;
+      advController.setInteractive(true);
+      // Re-align the (empty) stage to the current base — picks up any geometry done
+      // while the overlay was away. Only safe with no objects (it resets the frame).
+      if (advController.isEmpty()) advController.rebaseline();
+      advBtn.classList.add('active');
+      if (seedText && advController.objectCount() === 0) advController.addText();   // start with one editable label
+    } catch (e) { advBtn.title = 'Advanced editing failed: ' + (e.message || e); }
+    advBtn.disabled = false;
+  }
   if (advBtn) {
     advBtn.hidden = false;
-    advBtn.addEventListener('click', async () => {
-      if (advActive) { leaveAdv(); return; }   // leave = non-interactive, overlay STAYS
-      // Enter Adv: leave the pixel Edit toolbar (mutually exclusive modes).
-      host.querySelector('.imgv-bar').classList.add('imgv-tools-collapsed');
-      toolsBtn?.classList.remove('active');
-      advBtn.disabled = true;
-      try {
-        if (!advController) {
-          advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
-          // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
-          // pixel + vector. Each entry now also carries the overlay JSON snapshot.
-          core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
-        }
-        advActive = true;
-        advController.setInteractive(true);
-        // Re-align the (empty) stage to the current base — picks up any geometry done
-        // while the overlay was away. Only safe with no objects (it resets the frame).
-        if (advController.isEmpty()) advController.rebaseline();
-        advBtn.classList.add('active');
-        if (advController.objectCount() === 0) advController.addText();   // start with one editable label
-      } catch (e) { advBtn.title = 'Advanced editing failed: ' + (e.message || e); }
-      advBtn.disabled = false;
-    });
+    advBtn.addEventListener('click', () => { if (advActive) leaveAdv(); else enterAdv(); });   // leave = non-interactive, overlay STAYS
   }
   function leaveAdv() { advActive = false; advController?.setInteractive(false); advBtn?.classList.remove('active'); }
   // Geometry ops (rotate/flip/crop/resize/expand) report their natural-space affine here;
@@ -358,7 +405,19 @@ export async function render(intake, ctx = {}) {
     if (advActive) leaveAdv();
     advController?.clear();   // Reset clears the vector overlay too (ADV_EDIT.md)
     core.reset();             // …and core.reset() has the final say on dirty/onBinaryEdit
+    selection?.clear();       // drop any selection mask (its overlay would otherwise dangle)
+    viewCtl.fitView();        // realign the image to fit so overlays aren't left displaced
   });
+
+  // The toolbar grows/shrinks as modes change (Edit ↔ Adv, tab switches), which moves the
+  // image within the stage. Re-align every overlay (view + draw + selection + vector) on any
+  // bar resize so selections/objects never drift out of register with the pixels they mark.
+  let barRO = null;
+  const barEl = host.querySelector('.imgv-bar');
+  if (barEl && typeof ResizeObserver === 'function') {
+    barRO = new ResizeObserver(() => apply());   // apply() syncs draw/selection overlays + (via applyPan) the vector overlay
+    barRO.observe(barEl);
+  }
 
   // Geometry — rotate / flip / crop / resize (edit-geometry.js). Crop registers
   // in editTools so panning stands down during a crop drag.
@@ -445,7 +504,17 @@ export async function render(intake, ctx = {}) {
   // one and not in ASCII mode — including when focus is on a slider/colour/number
   // control inside the toolbar. Text fields keep their native undo.
   const unregisterUndoKeys = canEdit
-    ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo })
+    ? registerUndoKeys({
+      host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo,
+      // Arrow keys nudge a live pixel selection (Shift = move just the outline); the
+      // adv (vector) editor has its own arrow handling, so defer while it's active.
+      onArrow: (dx, dy, shift) => { if (advActive || !selection?.hasSelection()) return false; selection.nudge(dx, dy, shift); return true; },
+      // Ctrl+C copies the selected pixels (internal + best-effort OS clipboard); Ctrl+V
+      // drops them into Adv Edit as a free move/rotate/resize pane (also accepts an
+      // external image from the OS clipboard when nothing was copied internally).
+      onCopy: () => { const cv = selection?.copySelection?.(); if (!cv) return false; setClip(cv); copyToSystem(cv); return true; },
+      onPaste: async () => { const cv = getClip() || await readFromSystem(); if (!cv) return; await enterAdv({ seedText: false }); advController?.addImage(cv); },
+    })
     : null;
 
   // Background removal — sample a colour, flood to transparent, commit as PNG
@@ -458,5 +527,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { barRO?.disconnect(); advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }

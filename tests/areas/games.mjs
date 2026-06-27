@@ -957,22 +957,34 @@ export async function run(ctx) {
     wired: Boolean(window.__fvStage7),
     substage: window.__fvStage7.state().substage,
     noCommit: !document.querySelector('[data-commit]'),
+    noAccuse: !document.querySelector('[data-accuse]'),
   }));
-  if (s7Start.noBypass && s7Start.wired && s7Start.substage === 1 && s7Start.noCommit) pass('Stage 7 is a real 5-stage investigation: no GPS bypass, boss gated from start'); else fail('Stage 7 bypass present or boss reachable from start');
-  // Work the investigation (SS1 scan → SS2 dup → SS3 timeline) up to the reference chase.
+  if (s7Start.noBypass && s7Start.wired && s7Start.substage === 1 && s7Start.noCommit && s7Start.noAccuse) pass('Stage 7 is a real 6-stage investigation: no GPS bypass, accusation+boss gated from start'); else fail('Stage 7 bypass present or boss/accusation reachable from start');
+  // Work Case 1 (SS1 scan → SS2 dup → SS3 timeline) up to the reference chase.
   const s7AfterDeduction = await page.evaluate(() => window.__fvStage7.solveInvestigation());
   if (s7AfterDeduction === 4) pass('Stage 7 SS1–SS3 deductions advance to the reference chase'); else fail(`Stage 7 stalled at substage ${s7AfterDeduction}`);
-  // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the credential chain.
+  // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the chain → Case 2.
   await page.click('[data-action="open-anchor"]');
   await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
-  pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and reaches the boss');
+  pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and opens Case 2 (Duplicate Roster)');
+  // Case 2 is load-bearing: the rule-of-three triad cannot be completed until the route table is
+  // actually opened in the viewer (the decisive fact card only exists after a real file-open).
+  const s7Premature = await page.evaluate(() => window.__fvStage7.solveCase2());
+  if (s7Premature.ok === false && s7Premature.substage === 5) pass('Stage 7 Case 2: accusation impossible before opening the route table (load-bearing)'); else fail('Stage 7 Case 2 solvable without the real file-open');
+  // Open the real route table → mints the fact:route evidence card.
+  await page.click('[data-action="open-source"][data-source="route_table_examined"]');
+  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:route')), null, { timeout: 5000 });
+  pass('Stage 7 Case 2: opening route_table.csv mints the decisive fact card on the evidence board');
+  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and reaches the boss.
+  const s7Case2 = await page.evaluate(() => window.__fvStage7.solveCase2());
+  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and reaches the EXIF boss'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
   // The metadata sidecar still carries the decisive GPS contradiction.
   const entitySidecar = await page.evaluate(async () => {
     const response = await fetch('examples/metagame/stage7/entity_metadata.json');
     return response.ok ? response.json() : null;
   });
   if (entitySidecar?.decisiveField === 'GPSInfo' && /outside known layers/.test(entitySidecar?.entities?.F?.GPSInfo || '')) pass('Stage 7 boss evidence: Entity F GPS is outside known layers'); else fail('Stage 7 metadata sidecar missing contradiction');
-  // SS5 Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
+  // Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
   await page.click('[data-action="photo"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.png' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
   await page.waitForFunction(() => {
@@ -1062,11 +1074,20 @@ export async function run(ctx) {
   await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
   const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[─│+]/.test(document.querySelector('.s9-arena')?.textContent || ''));
   if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
-  // The boss is gated behind the run: the player starts on a sublevel, not at the Observer.
+  // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
   const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
-  if (s9StartLevel < 18) pass('Stage 9 starts on a sublevel (boss gated behind the full run)'); else fail('Stage 9 started at the boss');
-  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the boss
-  // seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
+  if (s9StartLevel === 1) pass('Stage 9 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 9 started at level ${s9StartLevel}`);
+  // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
+  // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
+  const s9Stall = await page.evaluate(() => {
+    const reached = window.__fvStage9.solveStableBody();
+    return { reached, unstable: !!window.__fvStage9.config(reached).onlineUnstable, boss: window.__fvStage9.config(reached).isBoss };
+  });
+  if (s9Stall.reached > 1 && s9Stall.unstable && !s9Stall.boss)
+    pass('Stage 9 online run clears the learnable front, then stalls at the onlineUnstable back third');
+  else fail(`Stage 9 online run did not stall at the back third: ${JSON.stringify(s9Stall)}`);
+  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
+  // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
   await page.click('[data-action="offline"]');
@@ -1114,20 +1135,37 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
   await page.click('[data-goto-final]');
-  await page.waitForSelector('[data-final-choice="continue"]', { timeout: 5000 });
-  await page.click('[data-final-choice="continue"]');
+  // The boss is now a REAL three-phase confrontation. The final choice is NOT exposed until the
+  // confrontation is won (boss never self-unlocks).
+  await page.waitForSelector('[data-field="confront"]', { timeout: 5000 });
+  const choiceLeaked = await page.$('[data-final-choice]');
+  if (!choiceLeaked) pass('Stage 10 final choice is gated behind the confrontation'); else fail('Stage 10 final choice exposed before the confrontation was won');
+  // Drive it deterministically through the same engine functions a player's clicks call: affirm each
+  // compaction with the recorded stance (Phase A), anchor each fragmentation trace — prior un-cheats
+  // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
+  const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
+  if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  await page.waitForFunction(() => {
+    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
+  }, null, { timeout: 5000 });
+  // Now the final question is reachable. Choose "understand" → the woven Synthesis epilogue.
+  await page.waitForSelector('[data-final-choice="understand"]:not([disabled])', { timeout: 5000 });
+  await page.click('[data-final-choice="understand"]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed;
+      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand';
     } catch { return false; }
   }, null, { timeout: 5000 });
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
+  const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
+  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);
   // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
   const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
   if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 10 renders the awakening ending (capstone)'); else fail('Stage 10 awakening ending unexpected: ' + awakening);
-  pass('Stage 10 resolves, integrates all memories, and completes Awakening');
+  pass('Stage 10 resolves, integrates all memories, wins the confrontation, and completes Awakening');
   await page.click('.games-close');
 
   const btsOk = await page.evaluate(async () => {

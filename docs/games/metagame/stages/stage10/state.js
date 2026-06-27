@@ -22,6 +22,19 @@ export function defaultState(context = {}) {
       completedAt: null,
       route: null
     },
+    // The three-phase Defragmenter confrontation (Phase A compaction / B fragmentation / C core).
+    // phase: idle | compaction | fragmentation | core | done. compaction[id]: pending|affirmed|
+    // compacted. fragmentation[id]: TRANSIENT true once re-witnessed in the fight (never lowers the
+    // canonical slot.echoWitnessed). core: ordered Phase-C option ids. stance: computed self-model.
+    confront: {
+      phase: "idle",
+      completed: false,
+      completedAt: null,
+      compaction: {},
+      fragmentation: {},
+      core: [],
+      stance: null
+    },
     // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
     ui: {
       cursor: 0,
@@ -45,6 +58,7 @@ export function normalizeState(state, context = {}) {
     target.memories[memory.id] = normalizeMemoryState(target.memories[memory.id], fresh.memories[memory.id]);
   }
   target.final = { ...fresh.final, ...(target.final && typeof target.final === "object" ? target.final : {}) };
+  target.confront = normalizeConfront(target.confront, fresh.confront);
   const ui = target.ui && typeof target.ui === "object" ? target.ui : {};
   target.ui = {
     cursor: Math.min(Math.max(Number(ui.cursor) || 0, 0), memories.length - 1),
@@ -52,6 +66,20 @@ export function normalizeState(state, context = {}) {
   };
   target.meta = { ...fresh.meta, ...(target.meta && typeof target.meta === "object" ? target.meta : {}) };
   return target;
+}
+
+function normalizeConfront(value, fresh) {
+  const c = value && typeof value === "object" ? value : {};
+  const validPhases = new Set(["idle", "compaction", "fragmentation", "core", "done"]);
+  return {
+    phase: validPhases.has(c.phase) ? c.phase : fresh.phase,
+    completed: Boolean(c.completed),
+    completedAt: typeof c.completedAt === "number" ? c.completedAt : null,
+    compaction: c.compaction && typeof c.compaction === "object" ? { ...c.compaction } : {},
+    fragmentation: c.fragmentation && typeof c.fragmentation === "object" ? { ...c.fragmentation } : {},
+    core: Array.isArray(c.core) ? c.core.filter((id) => typeof id === "string") : [],
+    stance: c.stance && typeof c.stance === "object" ? c.stance : null
+  };
 }
 
 function normalizeMemoryState(value, fresh) {

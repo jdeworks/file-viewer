@@ -200,6 +200,27 @@ FULL_UNIT_TESTS=(
   tests/known-pascal-lang.test.mjs
   tests/known-perl-lang.test.mjs
   tests/known-prolog-lang.test.mjs
+  tests/known-purescript-lang.test.mjs
+  tests/known-r-lang.test.mjs
+  tests/known-racket-lang.test.mjs
+  tests/known-red-lang.test.mjs
+  tests/known-reason-lang.test.mjs
+  tests/known-scala-lang.test.mjs
+  tests/known-rescript-lang.test.mjs
+  tests/known-ruby-lang.test.mjs
+  tests/known-scheme-lang.test.mjs
+  tests/known-sed-script.test.mjs
+  tests/known-sml-lang.test.mjs
+  tests/known-squirrel-lang.test.mjs
+  tests/known-swift-lang.test.mjs
+  tests/known-tcl-lang.test.mjs
+  tests/known-vala-lang.test.mjs
+  tests/known-vhdl-lang.test.mjs
+  tests/known-verilog.test.mjs
+  tests/known-wolfram-lang.test.mjs
+  tests/known-wren-lang.test.mjs
+  tests/known-zig-lang.test.mjs
+  tests/known-zsh-script.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )

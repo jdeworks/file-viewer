@@ -77,15 +77,13 @@ export function installObjectActions(ctx) {
 // Wire every toolbar button + property input onto the current selection.
 export function installShapeControls(ctx) {
   const {
-    $, tb, addText, addShape, openImageOcrPanel, stageHost, flattenToCanvas,
+    $, tb, addText, addShape,
     deleteSelection, groupSelection, ungroupSelection, pointEdit, precision,
     getSelected, primary, isLabel, textNodeOf, layer, markDirty, snap, tr, refreshLayers, syncToolbar,
   } = ctx;
   const sel = () => getSelected();
 
   $('.imgv-adv-add').addEventListener('click', addText);
-  // OCR reads a flattened canvas of the current image (heavy engine lazy-loads on click, behind a consent gate).
-  $('.imgv-adv-ocr').addEventListener('click', () => openImageOcrPanel({ host: stageHost, getCanvas: () => flattenToCanvas() }));
   $('.imgv-adv-rect').addEventListener('click', () => addShape('rect'));
   $('.imgv-adv-ellipse').addEventListener('click', () => addShape('ellipse'));
   $('.imgv-adv-line').addEventListener('click', () => addShape('line'));

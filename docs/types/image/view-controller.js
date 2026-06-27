@@ -35,6 +35,9 @@ export function createView(ctx) {
     applyPan();
   }
   function resetView() { panX = 0; panY = 0; }
+  // Back to the default framing (fit, no zoom, no pan) — used by editor Reset so the
+  // image realigns with its overlays instead of staying where it was panned/zoomed.
+  function fitView() { fit = true; zoom = 1; resetView(); apply(); }
   function setNatural(n) { natural = n; apply(); }
 
   host.querySelector('.imgv-fit').addEventListener('click', () => { fit = true; resetView(); apply(); });
@@ -108,6 +111,7 @@ export function createView(ctx) {
     apply,
     applyPan,
     resetView,
+    fitView,
     zoomAt,
     setNatural,
     teardown() { document.removeEventListener('keydown', onZoomKey); },

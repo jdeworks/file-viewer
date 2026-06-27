@@ -21,4 +21,9 @@ export const GLYPH_LEGEND = [
   ['▓', 'dense block (−5)'],
   ['>>', 'boost gate (+packets)'],
   ['~', 'shield lane (phase through)'],
+  ['o', 'rival racer (bump = −integrity)'],
+  ['U', 'shield buff'],
+  ['O', 'overclock (speed burst)'],
+  ['+', 'repair   $ packet-cache'],
+  ['E', 'EMP (set a rival back)'],
 ];
