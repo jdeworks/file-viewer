@@ -467,6 +467,27 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     pass('P6: legacy video timeline is removed from Timeline mode');
   else fail('legacy timeline default state: ' + JSON.stringify(modularTimelineGrammar));
 
+  // Cut/split the source clip at the playhead → the lane must render BOTH segments as separate
+  // positioned blocks (multi-clip-per-lane rendering). Done last so the extra element can't
+  // pollute the shared-state assertions above.
+  const afterCut = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    const surface = root.__mediaMixerVideoSource;
+    const before = root.querySelectorAll('.al-track .al-clip').length;
+    const el = surface.getProject().elements[0];
+    const mid = Math.round((el.timeline.durationMs || 1000) / 2);
+    surface.dispatch({ type: 'seek', cursorMs: mid });
+    surface.dispatch({ type: 'split', elementId: el.id });
+    return {
+      before,
+      elements: Number(root.dataset.elementCount),
+      clipCount: root.querySelectorAll('.al-track .al-clip').length,
+    };
+  });
+  // Every element renders exactly one positioned block, and Cut adds exactly one more.
+  if (afterCut.clipCount === afterCut.before + 1 && afterCut.clipCount === afterCut.elements)
+    pass('P6: Cut splits the source clip into a new visible timeline block');
+  else fail('cut did not produce a new visible clip: ' + JSON.stringify(afterCut));
+
   // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
   const tlArgs = await page.evaluate(async () => {
     const m = await import('./types/media/video-filters.js');

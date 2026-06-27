@@ -1,6 +1,6 @@
 import { createDefaultEq } from './mixer-eq-schema.js';
 import { updateLane, updateElement } from './mixer-model.js';
-import { buildClipView, firstElementForLane } from './mixer-audio-multi-ui.js';
+import { buildLaneClips, firstElementForLane } from './mixer-audio-multi-ui.js';
 import { clamp } from './mixer-audio-listen-helpers.js';
 
 const DEFAULT_DYNAMICS = { thresholdDb: -18, ratio: 4, makeupDb: 3 };
@@ -12,7 +12,7 @@ export function buildLaneEditorModal(laneModel, element, { getProject, setProjec
   const refreshClip = () => {
     const p = getProject(); const v = getViewport();
     const cl = clipLanes.get(laneId);
-    if (cl) cl.update(buildClipView(p, laneId, v.cursorMs, v.pxPerMs * 1000));
+    if (cl) cl.update(buildLaneClips(p, laneId, v.cursorMs, v.pxPerMs * 1000));
   };
 
   const modal = document.createElement('div');
