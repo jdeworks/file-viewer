@@ -29,6 +29,7 @@ export function mountGifPlayer({ host, bytes, name, openBlob }) {
       <input class="gifv-scrub" type="range" min="0" max="0" value="0" step="1" disabled />
       <span class="gifv-count">…</span>
       <label class="gifv-loop"><input class="gifv-loop-chk" type="checkbox" checked /> loop</label>
+      <button class="gifv-dl-gif" title="Download this GIF">⬇ Download</button>
       <button class="gifv-split" title="Show the frames as a folder in the sidebar" disabled>✂ Split frames</button>
       <button class="gifv-dl-all" title="Download all frames as a ZIP" disabled>⬇ Download all</button>
       <button class="gifv-ocr" title="Extract text from every frame into a timestamped transcript" disabled>Extract text (OCR)</button>
@@ -87,6 +88,13 @@ export function mountGifPlayer({ host, bytes, name, openBlob }) {
   playBtn.addEventListener('click', () => setPlaying(!playing));
   scrub.addEventListener('input', () => { setPlaying(false); show(Number(scrub.value)); });
   loopChk.addEventListener('change', () => { if (loopChk.checked && !playing) setPlaying(true); });
+  // Plain download of the GIF itself (the player bar otherwise only had Split / Download-all).
+  root.querySelector('.gifv-dl-gif').addEventListener('click', () => {
+    const blob = new Blob([bytes], { type: 'image/gif' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = name || `${baseName}.gif`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
   splitBtn.addEventListener('click', () => splitFrames());
   dlAllBtn.addEventListener('click', () => downloadAll());
   // OCR each decoded frame into a timestamped transcript (heavy engine lazy-loads on click, behind a consent gate).
@@ -119,38 +127,59 @@ export function mountGifPlayer({ host, bytes, name, openBlob }) {
     else { playBtn.textContent = '▶'; count.textContent = `1/1`; }
   })();
 
-  // ── Split: mount the frames as a READ-ONLY folder in the left sidebar, so each frame
-  // is a persistent, selectable entry (click → opens that frame as its own image). Reuses
-  // the app's archive-tree machinery via window.__fv.mountFramesFolder. Falls back to the
-  // inline thumbnail list when that hook isn't available (e.g. the standalone tool).
+  // PNG blobs are encoded once (on first Split / Download-all) and reused for the sidebar
+  // entry SIZES, opening a frame, and the zip — so frames aren't re-encoded repeatedly.
+  let frameBlobs = null;
+  async function ensureFrameBlobs(onProgress) {
+    if (frameBlobs) return frameBlobs;
+    const out = [];
+    for (let i = 0; i < frames.length; i++) {
+      if (destroyed) return out;
+      out.push(await frameToPngBlob(frames[i].canvas));
+      onProgress?.(i + 1, frames.length);
+    }
+    frameBlobs = out;
+    return frameBlobs;
+  }
+
+  // ── Split: mount the frames as a READ-ONLY folder in the left sidebar — nested UNDER a
+  // folder named after the GIF (paths "<gif>/frame-NNN.png"), each a persistent, selectable
+  // entry with a real size (click → opens that frame as its own image). Reuses the app's
+  // archive-tree machinery via window.__fv.mountFramesFolder; falls back to the inline
+  // thumbnail list when that hook isn't available (e.g. the standalone tool).
   let splitting = false;
   async function splitFrames() {
     if (splitting || !frames.length) return;
     const mount = window.__fv?.mountFramesFolder;
     if (typeof mount !== 'function') { return splitFramesInline(); }
     splitting = true; splitBtn.disabled = true;
-    const archive = { rootName: baseName, entries: frames.map((_, i) => ({ name: frameName(i), dir: false })) };
-    const openEntry = async (path) => {
-      const i = frames.findIndex((_, n) => frameName(n) === path);
-      if (i < 0) return null;
-      const blob = await frameToPngBlob(frames[i].canvas);
-      return intakeFromFile(new File([blob], frameName(i), { type: 'image/png' }));
-    };
-    try { mount(archive, openEntry); } finally { splitting = false; splitBtn.disabled = false; }
+    const orig = splitBtn.textContent;
+    try {
+      const blobs = await ensureFrameBlobs((d, t) => { splitBtn.textContent = `✂ Encoding ${d}/${t}…`; });
+      if (destroyed) return;
+      const folder = name || `${baseName}.gif`;
+      const entryPath = (i) => `${folder}/${frameName(i)}`;
+      const archive = { rootName: folder, entries: frames.map((_, i) => ({ name: entryPath(i), size: blobs[i].size })) };
+      const openEntry = async (path) => {
+        const i = frames.findIndex((_, n) => entryPath(n) === path);
+        if (i < 0) return null;
+        const blob = blobs[i] || await frameToPngBlob(frames[i].canvas);
+        return intakeFromFile(new File([blob], frameName(i), { type: 'image/png' }));
+      };
+      mount(archive, openEntry);
+    } finally { splitting = false; splitBtn.disabled = false; splitBtn.textContent = orig; }
   }
 
-  // Download every frame as a single ZIP (lazy JSZip).
+  // Download every frame as a single ZIP (lazy JSZip; reuses the encoded blobs).
   async function downloadAll() {
     if (!frames.length) return;
     dlAllBtn.disabled = true;
     const prev = dlAllBtn.textContent; dlAllBtn.textContent = '⏳ Zipping…';
     try {
-      const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+      const [JSZip, blobs] = await Promise.all([loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip'), ensureFrameBlobs()]);
+      if (destroyed) return;
       const zip = new JSZip();
-      for (let i = 0; i < frames.length; i++) {
-        if (destroyed) return;
-        zip.file(frameName(i), await frameToPngBlob(frames[i].canvas));
-      }
+      blobs.forEach((b, i) => zip.file(frameName(i), b));
       const blob = await zip.generateAsync({ type: 'blob' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `${baseName}-frames.zip`; a.click();

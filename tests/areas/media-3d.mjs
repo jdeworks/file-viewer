@@ -1424,15 +1424,21 @@ export async function run(ctx) {
   await page.waitForFunction(() => { const b = document.querySelector('#previewHost .gifv-play'); return b && !b.disabled; }, null, { timeout: 8000 }).catch(() => {});
   const gifAnimated = await page.evaluate(() => !document.querySelector('#previewHost .gifv-play')?.disabled);
   if (gifPlayer && gifAnimated) pass('animated GIF mounts the player (play/pause enabled for multi-frame)'); else fail('gif player: ' + JSON.stringify({ gifPlayer, gifAnimated }));
-  // Split now mounts the frames as a READ-ONLY folder in the left sidebar (archive-tree),
-  // each frame a selectable entry. Assert the sidebar shows the frame entries.
+  // Plain Download button saves the GIF itself.
+  const [gifDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .gifv-dl-gif'),
+  ]).catch(() => [null]);
+  if (gifDl && /\.gif$/.test(gifDl.suggestedFilename())) pass('GIF player: plain Download saves the GIF (' + gifDl.suggestedFilename() + ')'); else fail('gif download: ' + (gifDl && gifDl.suggestedFilename()));
+  // Split mounts the frames NESTED under a folder named after the GIF, each with a real
+  // byte size. Assert the folder node (anim.gif) + frame entries + a non-zero size show.
   await page.click('#previewHost .gifv-split');
   const framesInSidebar = await page.waitForFunction(() => {
-    const names = [...document.querySelectorAll('#ftBody')].length
-      ? document.querySelector('#ftBody')?.textContent || '' : '';
-    return /frame-001\.png/.test(names) && /frame-002\.png/.test(names);
+    const t = document.querySelector('#ftBody')?.textContent || '';
+    const sized = [...document.querySelectorAll('#ftBody .ft-size')].some((s) => /\d/.test(s.textContent) && !/^0\s*B/.test(s.textContent.trim()));
+    return /anim\.gif/.test(t) && /frame-001\.png/.test(t) && /frame-002\.png/.test(t) && sized;
   }, null, { timeout: 10000 }).then(() => true).catch(() => false);
-  if (framesInSidebar) pass('GIF Split mounts frames as a sidebar folder (frame-001/002 entries)'); else fail('gif split sidebar: ' + JSON.stringify(await page.$eval('#ftBody', (e) => e.textContent.slice(0, 200)).catch(() => 'no #ftBody')));
+  if (framesInSidebar) pass('GIF Split: frames nested under the gif folder with real sizes'); else fail('gif split sidebar: ' + JSON.stringify(await page.$eval('#ftBody', (e) => e.textContent.slice(0, 200)).catch(() => 'no #ftBody')));
   // Download all → a ZIP of the frames.
   const [gifZip] = await Promise.all([
     page.waitForEvent('download', { timeout: 8000 }),
