@@ -1102,6 +1102,28 @@ export async function run(ctx) {
   ]).catch(() => [null]);
   if (convReady && convDl && /\.gif$/.test(convDl.suggestedFilename())) pass('ASCII converter: GIF → ASCII GIF converts (worker) + downloads'); else fail('ascii converter: ' + JSON.stringify({ convReady, dl: convDl && convDl.suggestedFilename() }));
   await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
+  // WebP support via the native ImageDecoder path: generate a real WebP in-page, feed it,
+  // and assert it decodes + converts to a downloadable ASCII GIF (skips if no ImageDecoder).
+  const webpBuf = await page.evaluate(async () => {
+    if (typeof ImageDecoder === 'undefined') return null;
+    const c = document.createElement('canvas'); c.width = 6; c.height = 6;
+    const g = c.getContext('2d'); g.fillStyle = '#3cf'; g.fillRect(0, 0, 6, 6); g.fillStyle = '#000'; g.fillRect(1, 1, 2, 2);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/webp'));
+    return blob && blob.type === 'image/webp' ? Array.from(new Uint8Array(await blob.arrayBuffer())) : null;
+  });
+  if (!webpBuf) { pass('ASCII converter: WebP path skipped (no ImageDecoder / WebP encode in this browser)'); }
+  else {
+    await page.click('#previewHost .asx-convert');
+    await page.waitForSelector('#previewHost .asx-conv-input', { timeout: 8000 }).catch(() => {});
+    await page.setInputFiles('#previewHost .asx-conv-input', { name: 'still.webp', mimeType: 'image/webp', buffer: Buffer.from(webpBuf) }).catch(() => {});
+    const wpReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
+    const [wpDl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 8000 }),
+      page.click('#previewHost .asx-conv-dl'),
+    ]).catch(() => [null]);
+    if (wpReady && wpDl && /\.gif$/.test(wpDl.suggestedFilename())) pass('ASCII converter: WebP → ASCII GIF converts via ImageDecoder + downloads'); else fail('ascii webp converter: ' + JSON.stringify({ wpReady, dl: wpDl && wpDl.suggestedFilename() }));
+    await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
+  }
   // In ASCII mode the image bar is fully hidden; the studio bar carries the 🖼 Image back-button.
   const asciiNav = await page.evaluate(() => ({
     imgBarHidden: getComputedStyle(document.querySelector('#previewHost .imgv-bar')).display === 'none',

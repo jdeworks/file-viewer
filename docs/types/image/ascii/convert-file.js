@@ -4,7 +4,7 @@
 // add it back into the studio. Lazy-loaded from studio.js on demand.
 import { makeFloatingPanel } from './floating-panel.js';
 import { createAsciiEngine } from './engine.js';
-import { gifFrames, videoFrameStream } from './video-frames.js';
+import { gifFrames, imageDecoderFrames, videoFrameStream } from './video-frames.js';
 import { createGifSink, createWebmSink } from './encode.js';
 
 let cssDone = false;
@@ -21,7 +21,12 @@ function injectStyle() {
     .asx-conv-prog { width: 100%; height: 10px; }
     .asx-conv-preview { width: 100%; max-height: 220px; object-fit: contain; background: #000; border-radius: 4px; image-rendering: auto; }
     .asx-conv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .asx-conv-actions button { cursor: pointer; }`;
+    .asx-conv-actions button { cursor: pointer; }
+    .asx-conv-url { display: flex; gap: 6px; }
+    .asx-conv-url-input { flex: 1; min-width: 0; font: 12px ui-monospace, monospace; padding: 3px 6px;
+      background: #000; color: #cde; border: 1px solid #2a2a2a; border-radius: 4px; }
+    .asx-conv-url-go { cursor: pointer; }
+    .asx-conv-warn { margin: 0; font: 10px ui-monospace, monospace; color: #c97; opacity: .85; }`;
   document.head.appendChild(s);
 }
 
@@ -48,14 +53,20 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
         <button class="asx-conv-dl" hidden>⬇ Download</button>
         <button class="asx-conv-studio" hidden>Add to studio</button>
       </div>
+      <div class="asx-conv-url">
+        <input class="asx-conv-url-input" type="url" placeholder="…or paste a GIF / WebP / video URL">
+        <button class="asx-conv-url-go">Load URL</button>
+      </div>
+      <p class="asx-conv-warn">URL loading fetches from another site (off-origin) and only works if that site permits it.</p>
     </div>
-    <input class="asx-conv-input" type="file" accept="image/gif,video/*" hidden>`;
+    <input class="asx-conv-input" type="file" accept="image/gif,image/webp,image/apng,video/*" hidden>`;
   host.appendChild(panel);
 
   const q = (s) => panel.querySelector(s);
   const status = q('.asx-conv-status'), prog = q('.asx-conv-prog'), preview = q('.asx-conv-preview');
   const pick = q('.asx-conv-pick'), cancelBtn = q('.asx-conv-cancel');
   const dlBtn = q('.asx-conv-dl'), studioBtn = q('.asx-conv-studio'), input = q('.asx-conv-input');
+  const urlInput = q('.asx-conv-url-input'), urlGo = q('.asx-conv-url-go');
   let aborter = null;
   const float = makeFloatingPanel(panel, { title: 'Convert file → ASCII', onClose: () => { aborter?.abort(); float.destroy(); panel.remove(); } });
 
@@ -66,22 +77,30 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     preview.getContext('2d').drawImage(canvas, 0, 0, preview.width, preview.height);
   }
 
-  async function run(file) {
-    aborter = new AbortController();
-    const signal = aborter.signal;
+  async function run(file, ab = new AbortController()) {
+    aborter = ab;
+    const signal = ab.signal;
     pick.hidden = true; cancelBtn.hidden = false; prog.hidden = false; preview.hidden = false;
     dlBtn.hidden = true; studioBtn.hidden = true;
     const fps = 12;
     const engine = createAsciiEngine(options);
     engine.setRenderMode('bitmap');
-    // Stream decode → convert → encode → release, one frame at a time (flat memory, any
-    // length). gif-in → GIF (delays preserved); video-in → WebM (real-time MediaRecorder).
-    const isGif = /gif/i.test(file.type) || /\.gif$/i.test(file.name);
-    const source = isGif ? gifFrames(new Uint8Array(await file.arrayBuffer()), { signal })
+    // Pick a decoder by type. GIF + animated-image (WebP/APNG) are image sequences → GIF
+    // out (delays preserved); video → WebM out (real-time MediaRecorder). Stream decode →
+    // convert → encode → release, one frame at a time (flat memory, any length).
+    const lower = (file.name || '').toLowerCase(), type = file.type || '';
+    const isGif = /gif/.test(type) || lower.endsWith('.gif');
+    const isWebp = /webp/.test(type) || lower.endsWith('.webp');
+    const isApng = /apng/.test(type) || lower.endsWith('.apng');
+    const imageSeq = isGif || isWebp || isApng;
+    const bytes = imageSeq ? new Uint8Array(await file.arrayBuffer()) : null;
+    const source = isGif ? gifFrames(bytes, { signal })
+      : isWebp ? imageDecoderFrames(bytes, 'image/webp', { signal })
+      : isApng ? imageDecoderFrames(bytes, 'image/png', { signal })
       : videoFrameStream(file, { fps, signal });
-    const sink = isGif ? await createGifSink() : createWebmSink({ fps });
-    const name = `${baseName}-ascii.${isGif ? 'gif' : 'webm'}`;
-    const mime = isGif ? 'image/gif' : 'video/webm';
+    const sink = imageSeq ? await createGifSink() : createWebmSink({ fps });
+    const name = `${baseName}-ascii.${imageSeq ? 'gif' : 'webm'}`;
+    const mime = imageSeq ? 'image/gif' : 'video/webm';
     const conv = document.createElement('canvas');     // reused: rendered ASCII frame → sink
     const cctx = conv.getContext('2d');
     const it = source;
@@ -94,7 +113,7 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     };
     try {
       let count = 0, lastPreview = 0;
-      if (!isGif) status.textContent = 'Recording in real time…';
+      if (!imageSeq) status.textContent = 'Recording in real time…';
       const first = await it.next();
       if (first.done) throw new Error('no frames decoded');
       let cur = await start(first.value);
@@ -134,8 +153,30 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     }
   }
 
+  // Fetch a remote file then convert it. OFF-ORIGIN by nature (opt-in, warned in the UI);
+  // works only where the host sends permissive CORS headers — fails clearly otherwise.
+  async function loadUrl(url) {
+    const ab = new AbortController(); aborter = ab;
+    pick.hidden = true; cancelBtn.hidden = false; prog.hidden = true;
+    status.textContent = 'Fetching URL…';
+    try {
+      const res = await fetch(url, { signal: ab.signal, mode: 'cors' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const blob = await res.blob();
+      const name = decodeURIComponent((url.split('/').pop() || 'remote').split('?')[0]) || 'remote';
+      await run(new File([blob], name, { type: blob.type }), ab);
+    } catch (err) {
+      status.textContent = err && err.name === 'AbortError' ? 'Cancelled.'
+        : 'Could not load URL (the site may block off-origin access): ' + ((err && err.message) || err);
+      cancelBtn.hidden = true; pick.hidden = false;
+    }
+  }
+
   pick.addEventListener('click', () => input.click());
   input.addEventListener('change', () => { const f = input.files?.[0]; if (f) run(f); });
+  const goUrl = () => { const u = urlInput.value.trim(); if (u) loadUrl(u); };
+  urlGo.addEventListener('click', goUrl);
+  urlInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') goUrl(); });
   cancelBtn.addEventListener('click', () => aborter?.abort());
   input.click();   // open the picker immediately
   return { destroy() { aborter?.abort(); float.destroy(); panel.remove(); } };

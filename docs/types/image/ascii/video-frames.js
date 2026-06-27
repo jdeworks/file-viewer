@@ -15,6 +15,30 @@ export async function* gifFrames(bytes, { signal } = {}) {
   }
 }
 
+// Async-iterate frames of an animated image (WebP / APNG) via the browser-native
+// WebCodecs ImageDecoder — offline, no vendored lib. Static images yield one frame.
+// `duration` is microseconds → delayMs. Draws into ONE reused canvas (consumed per step).
+export async function* imageDecoderFrames(bytes, type, { signal } = {}) {
+  if (typeof ImageDecoder === 'undefined') throw new Error('This browser cannot decode animated ' + (type.split('/')[1] || 'images').toUpperCase() + ' (needs WebCodecs ImageDecoder).');
+  const dec = new ImageDecoder({ data: bytes, type });
+  await dec.tracks.ready;
+  const total = dec.tracks.selectedTrack?.frameCount || 1;
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  try {
+    for (let i = 0; i < total; i++) {
+      if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
+      const { image } = await dec.decode({ frameIndex: i });
+      if (c.width !== image.displayWidth || c.height !== image.displayHeight) { c.width = image.displayWidth; c.height = image.displayHeight; }
+      ctx.clearRect(0, 0, c.width, c.height);
+      ctx.drawImage(image, 0, 0);
+      const delayMs = Math.max(20, Math.round((image.duration || 100000) / 1000));
+      image.close();
+      yield { canvas: c, delayMs, index: i, total };
+    }
+  } finally { dec.close?.(); }
+}
+
 // Stream a video as frames at `fps`. `maxWidth` caps the decode size (the engine works
 // at ≤1024 anyway, so full-res decode just wastes memory). No frame-count cap.
 export async function* videoFrameStream(file, { fps = 12, maxWidth = 1280, signal } = {}) {
