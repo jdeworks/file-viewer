@@ -49,6 +49,8 @@ export function mountStage(ctx = {}) {
       sfxEnabled: ctx.sfxEnabled,
       stage: () => stageConfig,
       onExit: ctx.onExit,
+      actions: ctx.actions,
+      onStageComplete: ctx.onStageComplete,
       onBoss: () => {
         s1ctl = null;   // help has no panel during the boss fight
         host.innerHTML = '<div class="mg-wrap mg-stage1-boss-host"></div>';

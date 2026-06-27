@@ -14,10 +14,8 @@
 // the boss degrades gracefully (no-op bell/save) when they are absent.
 
 import { toDisplay, gte, sub, mulScalar } from './bignum.js';
+import { FIGHT_MS, BURST_MS, makeBurstSchedule, fightParams } from './boss-sim.js';
 
-const FIGHT_MS = 20000;
-const SHADOW_WEIGHT = 1.10;
-const BURST_MS = 800;
 const DEFAULT_TICKET = { m: 1, e: 9 };   // fallback if the stage config has no bossTicket
 
 const TAUNTS = {
@@ -83,29 +81,6 @@ function readCheat(actions) {
     return !actions.hasAction(1, 'cheat_disabled');
   }
   return true;
-}
-
-// Deterministic-within-a-fight, varied-per-attempt burst schedule (§10B.4).
-function makeBurstSchedule(cheatActive) {
-  const seed = Date.now() % 1000;
-  let s = seed + 0x9e3779b9;
-  function rand() {
-    s |= 0; s = s + 0x9e3779b9 | 0;
-    let t = Math.imul(s ^ s >>> 16, 0x21f0aaad);
-    t = Math.imul(t ^ t >>> 15, 0x735a2d97);
-    return ((t ^ t >>> 15) >>> 0) / 4294967296;
-  }
-  const N = cheatActive ? (rand() < 0.5 ? 3 : 4) : (rand() < 0.5 ? 2 : 3);
-  const bursts = [];
-  for (let i = 0; i < N; i++) {
-    let start, tries = 0;
-    do {
-      start = Math.floor(rand() * (FIGHT_MS - 2000)) + 1000;
-      tries++;
-    } while (tries < 20 && bursts.some((b) => Math.abs(b.start - start) < BURST_MS));
-    bursts.push({ start, end: start + BURST_MS, fired: 0 });
-  }
-  return bursts.sort((a, b) => a.start - b.start);
 }
 
 const STYLE_ID = 'mg-defrag-style';
@@ -273,7 +248,8 @@ export function mountDefragmenter(arena, opts = {}) {
   // ── FIGHT ──────────────────────────────────────────────────────────────────────────────────
   function startFight() {
     const cheatActive = readCheat(actions);              // §10A.5 — locked once, here.
-    const bursts = makeBurstSchedule(cheatActive);
+    const p = fightParams(cheatActive);                  // shadow/floor/burst params (un-cheat-aware).
+    const bursts = makeBurstSchedule(Date.now(), cheatActive);
     let userScore = 0, bossScore = 0, bossAcc = 0;
     let tapTimes = [];
     let lastFloorTick = 0;
@@ -324,7 +300,7 @@ export function mountDefragmenter(arena, opts = {}) {
       const now = Date.now();
       const elapsed = now - fightStart;
       const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
-      if (inBurst && cheatActive) bossAcc += 1.5; else bossAcc += SHADOW_WEIGHT;
+      if (inBurst && cheatActive) bossAcc += 1.5; else bossAcc += p.shadow;
       bossScore = Math.floor(bossAcc);
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t < 3000);
@@ -343,9 +319,9 @@ export function mountDefragmenter(arena, opts = {}) {
       const userRateMs = tapTimes.length > 1
         ? (tapTimes[tapTimes.length - 1] - tapTimes[0]) / (tapTimes.length - 1)
         : 999;
-      const bossFloorMs = Math.min(500, userRateMs * 0.95);
+      const bossFloorMs = p.floorMs(userRateMs);
       if (now - lastFloorTick >= bossFloorMs) {
-        bossAcc += 1.0;
+        bossAcc += p.floorWeight;
         bossScore = Math.floor(bossAcc);
         lastFloorTick = now;
       }
@@ -367,8 +343,8 @@ export function mountDefragmenter(arena, opts = {}) {
       }
       if (burst) {
         // Evenly spaced auto-fires across the 800 ms window.
-        const autoCount = cheatActive ? 4 : 2;
-        const autoWeight = cheatActive ? 1.5 : 1.0;
+        const autoCount = p.burstCount;
+        const autoWeight = p.burstWeight;
         const want = Math.min(autoCount, Math.floor((elapsed - burst.start) / (BURST_MS / autoCount)) + 1);
         while (burst.fired < want) {
           bossAcc += autoWeight;

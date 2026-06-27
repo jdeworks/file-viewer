@@ -937,10 +937,69 @@ try {
   console.error("[bignum] TEST FAILED:", e.message);
 }
 
-// ../../docs/games/metagame/stages/stage1/boss1.js
+// ../../docs/games/metagame/stages/stage1/boss-sim.js
 var FIGHT_MS = 2e4;
-var SHADOW_WEIGHT = 1.1;
 var BURST_MS = 800;
+function fightParams(cheatActive) {
+  return cheatActive ? { shadow: 1.12, floorWeight: 1, floorMs: (r) => Math.min(500, r * 0.95), burstCount: 4, burstWeight: 1.5 } : { shadow: 0.62, floorWeight: 0.3, floorMs: (r) => Math.max(320, r * 1.5), burstCount: 2, burstWeight: 1 };
+}
+function makeBurstSchedule(seed, cheatActive) {
+  let s = seed % 1e3 + 2654435769;
+  function rand() {
+    s |= 0;
+    s = s + 2654435769 | 0;
+    let t = Math.imul(s ^ s >>> 16, 569420461);
+    t = Math.imul(t ^ t >>> 15, 1935289751);
+    return ((t ^ t >>> 15) >>> 0) / 4294967296;
+  }
+  const N = cheatActive ? rand() < 0.5 ? 3 : 4 : rand() < 0.5 ? 2 : 3;
+  const bursts = [];
+  for (let i = 0; i < N; i++) {
+    let start, tries = 0;
+    do {
+      start = Math.floor(rand() * (FIGHT_MS - 2e3)) + 1e3;
+      tries++;
+    } while (tries < 20 && bursts.some((b) => Math.abs(b.start - start) < BURST_MS));
+    bursts.push({ start, end: start + BURST_MS, fired: 0 });
+  }
+  return bursts.sort((a, b) => a.start - b.start);
+}
+function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
+  const p = fightParams(cheatActive);
+  const bursts = makeBurstSchedule(seed, cheatActive);
+  const tapInterval = 1e3 / Math.max(1e-3, tapsPerSec);
+  let userScore = 0, bossAcc = 0, lastFloor = 0, nextTapAt = 0;
+  let tapTimes = [];
+  for (let now = 0; now <= FIGHT_MS; now += 100) {
+    while (nextTapAt <= now && nextTapAt <= FIGHT_MS) {
+      userScore += 1;
+      const elapsed = nextTapAt;
+      const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
+      bossAcc += inBurst && cheatActive ? 1.5 : p.shadow;
+      tapTimes.push(nextTapAt);
+      tapTimes = tapTimes.filter((t) => nextTapAt - t < 3e3);
+      nextTapAt += tapInterval;
+    }
+    const userRateMs = tapTimes.length > 1 ? (tapTimes[tapTimes.length - 1] - tapTimes[0]) / (tapTimes.length - 1) : 999;
+    if (now - lastFloor >= p.floorMs(userRateMs)) {
+      bossAcc += p.floorWeight;
+      lastFloor = now;
+    }
+    for (const b of bursts) {
+      if (now >= b.start && now < b.end) {
+        const want = Math.min(p.burstCount, Math.floor((now - b.start) / (BURST_MS / p.burstCount)) + 1);
+        while (b.fired < want) {
+          bossAcc += p.burstWeight;
+          b.fired++;
+        }
+      }
+    }
+  }
+  const bossScore = Math.floor(bossAcc);
+  return { won: userScore > bossScore, userScore, bossScore, cheatActive };
+}
+
+// ../../docs/games/metagame/stages/stage1/boss1.js
 var DEFAULT_TICKET = { m: 1, e: 9 };
 var TAUNTS = {
   // Shown in the LOBBY (before/after a fight) — intimidation, not the during-fight jabs.
@@ -1007,28 +1066,6 @@ function readCheat(actions) {
     return !actions.hasAction(1, "cheat_disabled");
   }
   return true;
-}
-function makeBurstSchedule(cheatActive) {
-  const seed = Date.now() % 1e3;
-  let s = seed + 2654435769;
-  function rand() {
-    s |= 0;
-    s = s + 2654435769 | 0;
-    let t = Math.imul(s ^ s >>> 16, 569420461);
-    t = Math.imul(t ^ t >>> 15, 1935289751);
-    return ((t ^ t >>> 15) >>> 0) / 4294967296;
-  }
-  const N = cheatActive ? rand() < 0.5 ? 3 : 4 : rand() < 0.5 ? 2 : 3;
-  const bursts = [];
-  for (let i = 0; i < N; i++) {
-    let start, tries = 0;
-    do {
-      start = Math.floor(rand() * (FIGHT_MS - 2e3)) + 1e3;
-      tries++;
-    } while (tries < 20 && bursts.some((b) => Math.abs(b.start - start) < BURST_MS));
-    bursts.push({ start, end: start + BURST_MS, fired: 0 });
-  }
-  return bursts.sort((a, b) => a.start - b.start);
 }
 var STYLE_ID = "mg-defrag-style";
 function injectStyle() {
@@ -1196,7 +1233,8 @@ function mountDefragmenter(arena, opts = {}) {
   }
   function startFight() {
     const cheatActive = readCheat(actions);
-    const bursts = makeBurstSchedule(cheatActive);
+    const p = fightParams(cheatActive);
+    const bursts = makeBurstSchedule(Date.now(), cheatActive);
     let userScore = 0, bossScore = 0, bossAcc = 0;
     let tapTimes = [];
     let lastFloorTick = 0;
@@ -1231,7 +1269,7 @@ function mountDefragmenter(arena, opts = {}) {
       const elapsed = now - fightStart;
       const inBurst = bursts.some((b) => elapsed >= b.start && elapsed < b.end);
       if (inBurst && cheatActive) bossAcc += 1.5;
-      else bossAcc += SHADOW_WEIGHT;
+      else bossAcc += p.shadow;
       bossScore = Math.floor(bossAcc);
       tapTimes.push(now);
       tapTimes = tapTimes.filter((t) => now - t < 3e3);
@@ -1244,9 +1282,9 @@ function mountDefragmenter(arena, opts = {}) {
       const remaining = Math.max(0, FIGHT_MS - elapsed);
       timerEl.textContent = (remaining / 1e3).toFixed(1) + "s";
       const userRateMs = tapTimes.length > 1 ? (tapTimes[tapTimes.length - 1] - tapTimes[0]) / (tapTimes.length - 1) : 999;
-      const bossFloorMs = Math.min(500, userRateMs * 0.95);
+      const bossFloorMs = p.floorMs(userRateMs);
       if (now - lastFloorTick >= bossFloorMs) {
-        bossAcc += 1;
+        bossAcc += p.floorWeight;
         bossScore = Math.floor(bossAcc);
         lastFloorTick = now;
       }
@@ -1264,8 +1302,8 @@ function mountDefragmenter(arena, opts = {}) {
         activeBurstKey = key;
       }
       if (burst) {
-        const autoCount = cheatActive ? 4 : 2;
-        const autoWeight = cheatActive ? 1.5 : 1;
+        const autoCount = p.burstCount;
+        const autoWeight = p.burstWeight;
         const want = Math.min(autoCount, Math.floor((elapsed - burst.start) / (BURST_MS / autoCount)) + 1);
         while (burst.fired < want) {
           bossAcc += autoWeight;
@@ -3163,6 +3201,9 @@ function mechanicUnlocked(state, id) {
   const m = MECHANICS.find((x) => x.id === id);
   return Boolean(m && prestigeDepth(state) >= m.depth);
 }
+function unlockedMechanics(state) {
+  return MECHANICS.filter((m) => prestigeDepth(state) >= m.depth);
+}
 function nextMechanic(state) {
   const nextDepth = prestigeDepth(state) + 1;
   return MECHANICS.find((m) => m.depth === nextDepth) || null;
@@ -3575,6 +3616,87 @@ function tickMechanics(state, cfg) {
   return { producedUnits, echo };
 }
 
+// ../../docs/games/metagame/stages/stage1/s1debug.js
+function installStage1Debug(api) {
+  if (typeof window === "undefined") return { destroy() {
+  } };
+  const { state, cfg, save } = api;
+  const cheatDisabled = () => Boolean(api.actions && typeof api.actions.hasAction === "function" && api.actions.hasAction(1, "cheat_disabled"));
+  function fightBoss(opts = {}) {
+    if (!api.canFightBoss()) {
+      return { gated: true, allTiers: api.allSubStagesOwned(), reason: "boss locked — need all tiers owned and bits ≥ ticket" };
+    }
+    const cheatActive = !cheatDisabled();
+    const result = simulateFight({ cheatActive, tapsPerSec: opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 });
+    if (result.won) {
+      state.defeated = Array.isArray(state.defeated) ? state.defeated : [];
+      if (!state.defeated.includes(1)) state.defeated.push(1);
+      save(state);
+      if (typeof api.onStageComplete === "function") api.onStageComplete({ stage: 1, defeated: true });
+    }
+    return result;
+  }
+  window.__fvStage1 = {
+    state: () => state,
+    // Run the real 100 ms logic tick n times (advances the tick-count-driven prestige mechanics).
+    tick(n = 1) {
+      for (let i = 0; i < n; i++) api.tick();
+    },
+    // Simulate n Compute taps through the real economy.
+    addBits(n = 1) {
+      for (let i = 0; i < n; i++) api.addBits();
+    },
+    // Fast-forward the run to a boss-ready state: every tier owned ≥1, bits = ticket, totalBits high
+    // enough that a prestige is allowed. Does NOT defeat the boss — only makes the gate satisfiable.
+    grind() {
+      state.owned = state.owned || {};
+      for (const t of cfg.tiers || []) state.owned[t.id] = Math.max(1, state.owned[t.id] || 0);
+      state.tabsUnlocked = true;
+      if (cfg.bossTicket) state.bits = { ...cfg.bossTicket };
+      state.totalBits = fromNumber(1e18);
+      save(state);
+      api.renderAll();
+    },
+    canFightBoss: () => api.canFightBoss(),
+    allTiersOwned: () => api.allSubStagesOwned(),
+    cheatDisabled,
+    // Test convenience: toggle the cheat action directly (the smoke prefers the REAL raw-edit path).
+    setCheat(disabled) {
+      if (!api.actions) return false;
+      if (disabled && typeof api.actions.setAction === "function") {
+        api.actions.setAction(1, "cheat_disabled", { source: "debug-hook" });
+        return true;
+      }
+      if (!disabled && typeof api.actions.clearAction === "function") {
+        api.actions.clearAction(1, "cheat_disabled");
+        return true;
+      }
+      return false;
+    },
+    prestige() {
+      const r = doPrestige(state);
+      state.runStartedAt = Date.now();
+      save(state);
+      api.renderAll();
+      return { ...r, depth: state.prestigeCount };
+    },
+    mechanics: () => unlockedMechanics(state).map((m) => m.id),
+    clickEcho() {
+      const ok = clickEcho(state, cfg);
+      if (ok) {
+        save(state);
+        if (api.updateEcho) api.updateEcho();
+      }
+      return ok;
+    },
+    bossSolver: (opts) => simulateFight({ cheatActive: !cheatDisabled(), tapsPerSec: opts && opts.tapsPerSec || 12, seed: (state.ticks || 0) + 1 }),
+    fightBoss
+  };
+  return { destroy() {
+    if (window.__fvStage1) delete window.__fvStage1;
+  } };
+}
+
 // ../../docs/games/metagame/stages/stage1/stage1.js
 var GRID_COLS = 20;
 var GRID_ROWS = 5;
@@ -3849,6 +3971,10 @@ function renderStage1(ctx2) {
     if (!host.isConnected || !grid.isConnected) {
       clearInterval(renderStage1._tickId);
       renderStage1._tickId = null;
+      if (renderStage1._debug) {
+        renderStage1._debug.destroy();
+        renderStage1._debug = null;
+      }
       return;
     }
     const incMult = incomeMult(state, cfg);
@@ -3928,6 +4054,20 @@ function renderStage1(ctx2) {
   renderStage1._tickId = setInterval(tick, 100);
   renderAll();
   attachChrome(host);
+  if (renderStage1._debug && typeof renderStage1._debug.destroy === "function") renderStage1._debug.destroy();
+  renderStage1._debug = installStage1Debug({
+    state,
+    cfg,
+    save,
+    renderAll,
+    tick,
+    addBits,
+    canFightBoss,
+    allSubStagesOwned,
+    actions: ctx2.actions,
+    onStageComplete: ctx2.onStageComplete,
+    updateEcho
+  });
   return { toggleHelp };
 }
 var ECHO_STYLE_ID = "mg-s1-echo-style";
@@ -4206,6 +4346,8 @@ function mountStage(ctx2 = {}) {
       sfxEnabled: ctx2.sfxEnabled,
       stage: () => stageConfig,
       onExit: ctx2.onExit,
+      actions: ctx2.actions,
+      onStageComplete: ctx2.onStageComplete,
       onBoss: () => {
         s1ctl = null;
         host.innerHTML = '<div class="mg-wrap mg-stage1-boss-host"></div>';

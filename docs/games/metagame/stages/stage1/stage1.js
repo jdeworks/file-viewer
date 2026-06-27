@@ -22,6 +22,7 @@ import { renderResetPanel as renderS1ResetPanel, paintResetPanel as paintS1Reset
 import { tickMechanics, incomeMult } from './s1mechanics.js';
 import { coreAutoMult } from './s1cores.js';
 import { echoActive, echoTimeLeft, clickEcho } from './s1echoes.js';
+import { installStage1Debug } from './s1debug.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
 
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
@@ -363,7 +364,9 @@ export function renderStage1(ctx) {
     // Self-terminate if our DOM was torn down (orchestrator switched to boss/another stage) — the
     // orchestrator's clearTransient() doesn't know about this interval, so we stop ourselves.
     if (!host.isConnected || !grid.isConnected) {
-      clearInterval(renderStage1._tickId); renderStage1._tickId = null; return;
+      clearInterval(renderStage1._tickId); renderStage1._tickId = null;
+      if (renderStage1._debug) { renderStage1._debug.destroy(); renderStage1._debug = null; }
+      return;
     }
     // 1. Passive accrual (scaled by the post-prestige income multiplier: Cores yield × Flux × Resonance).
     const incMult = incomeMult(state, cfg);
@@ -447,6 +450,15 @@ export function renderStage1(ctx) {
 
   renderAll();
   attachChrome(host);
+
+  // TEST/DEBUG hook (window.__fvStage1) — drives the headless smoke without real-time waiting. Does
+  // NOT bypass the boss gate or the load-bearing un-cheat (see s1debug.js).
+  if (renderStage1._debug && typeof renderStage1._debug.destroy === 'function') renderStage1._debug.destroy();
+  renderStage1._debug = installStage1Debug({
+    state, cfg, save, renderAll, tick, addBits,
+    canFightBoss, allSubStagesOwned,
+    actions: ctx.actions, onStageComplete: ctx.onStageComplete, updateEcho,
+  });
 
   // Expose the help toggle so the orchestrator can wire it to the header help button.
   return { toggleHelp };
