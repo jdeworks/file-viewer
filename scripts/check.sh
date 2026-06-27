@@ -163,6 +163,24 @@ FULL_UNIT_TESTS=(
   tests/ocr.test.mjs
   tests/arduino-sketch.test.mjs
   tests/known-ada-lang.test.mjs
+  tests/known-agda-lang.test.mjs
+  tests/known-asm-lang.test.mjs
+  tests/known-carbon-lang.test.mjs
+  tests/known-chapel-lang.test.mjs
+  tests/known-awk-script.test.mjs
+  tests/known-cobol-lang.test.mjs
+  tests/known-coffeescript-lang.test.mjs
+  tests/known-clojure-lang.test.mjs
+  tests/known-coq-lang.test.mjs
+  tests/known-crystal-lang.test.mjs
+  tests/known-cue-lang.test.mjs
+  tests/known-factor-lang.test.mjs
+  tests/known-fennel-lang.test.mjs
+  tests/known-d-lang.test.mjs
+  tests/known-fish-script.test.mjs
+  tests/known-forth-lang.test.mjs
+  tests/known-eiffel-lang.test.mjs
+  tests/known-alloy-lang.test.mjs
 )
 
 IMAGE_UNIT_TESTS=(
