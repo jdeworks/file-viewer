@@ -74,15 +74,15 @@ export async function assertAudioTopViewport({ page, pass, fail }, label) {
 }
 
 export async function assertMixViewport({ page, pass, fail }, label) {
-  const geometry = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', (el) => {
+  const geometry = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const host = document.querySelector('#previewHost');
     const hostRect = host?.getBoundingClientRect();
     const wrapRect = el.getBoundingClientRect();
-    const ruler = el.querySelector('.mx-ruler');
-    const playhead = el.querySelector('.mx-playhead');
-    const lanes = el.querySelector('.mx-lanes');
-    const timeline = el.querySelector('.mx-timeline');
-    const context = el.querySelector('.mx-context');
+    const ruler = el.querySelector('.mmx-ruler');
+    const playhead = el.querySelector('.mmx-playhead');
+    const lanes = el.querySelector('.mmx-lanes');
+    const timeline = el.querySelector('.mmx-body');
+    const context = el.querySelector('.mmx-mix-context');
     if (!hostRect || !ruler || !playhead || !lanes || !timeline || !context) return null;
     const docEl = document.documentElement;
     const rulerRect = ruler.getBoundingClientRect();
@@ -170,47 +170,4 @@ export async function assertVideoTopViewport({ page, pass, fail }, label) {
   if (geometry.overflowX === 0 && geometry.workspaceLeft >= geometry.hostLeft - 1 && geometry.workspaceRight <= geometry.hostRight + 1)
     pass('video first-viewport has no horizontal overflow (' + label + ')');
   else fail('video first-viewport overflow/width issue (' + label + '): ' + JSON.stringify(geometry));
-}
-
-export async function assertTimelineViewport({ page, pass, fail }, tlModeSel, label) {
-  const geometry = await page.$eval(tlModeSel + ' .tl-wrap', (root) => {
-    const host = document.querySelector('#previewHost');
-    const hostRect = host?.getBoundingClientRect();
-    const wrapRect = root.getBoundingClientRect();
-    const timeline = root.querySelector('.tl-timeline');
-    const ruler = root.querySelector('.tl-ruler');
-    const playhead = root.querySelector('.tl-playhead');
-    const ctx = root.querySelector('.tl-context');
-    const lanes = root.querySelector('.tl-lane-view');
-    if (!hostRect || !timeline || !ruler || !playhead || !ctx || !lanes) return null;
-    const docEl = document.documentElement;
-    return {
-      wrapLeft: Math.round(wrapRect.left),
-      wrapRight: Math.round(wrapRect.right),
-      hostLeft: Math.round(hostRect.left),
-      hostRight: Math.round(hostRect.right),
-      overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
-      rulerVisible: ruler.getBoundingClientRect().width > 0 && ruler.getBoundingClientRect().height > 0,
-      playheadVisible: playhead.getBoundingClientRect().width > 0 && playhead.getBoundingClientRect().height > 0,
-      contextVisible: ctx.getBoundingClientRect().height > 0 && getComputedStyle(ctx).display !== 'none',
-      lanesScrollable: lanes.scrollWidth > Math.round(lanes.clientWidth),
-      timelineScrollable: timeline.scrollWidth > Math.round(timeline.clientWidth),
-      activeViewportW: window.innerWidth,
-    };
-  });
-  if (!geometry) return fail('video timeline geometry unavailable (' + label + ')');
-  if (geometry.rulerVisible && geometry.playheadVisible && geometry.contextVisible)
-    pass('P6: timeline grammar visible in timeline mode (' + label + ')');
-  else fail('timeline grammar visibility (' + label + '): ' + JSON.stringify({
-    rulerVisible: geometry?.rulerVisible,
-    playheadVisible: geometry?.playheadVisible,
-    contextVisible: geometry?.contextVisible,
-  }));
-  if (geometry.timelineScrollable) pass('P6: timeline can scroll horizontally when dense (' + label + ')');
-  if (geometry.overflowX === 0)
-    pass('P6: timeline mode has no horizontal page overflow (' + label + ')');
-  else fail('timeline mode horizontal overflow issue (' + label + '): ' + geometry.overflowX);
-  if (geometry.wrapLeft >= geometry.hostLeft - 1 && geometry.wrapRight <= geometry.hostRight + 1)
-    pass('P6: timeline workspace fits host width (' + label + ')');
-  else fail('timeline workspace width issue (' + label + '): ' + JSON.stringify(geometry));
 }

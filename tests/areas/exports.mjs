@@ -17,7 +17,7 @@ export async function run(ctx) {
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .yaml-preview', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const yamlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));
@@ -44,7 +44,7 @@ export async function run(ctx) {
 
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .toml-preview', { timeout: 30000 });
   await page.click('#exportBtn');
   await page.waitForSelector('#exportMenu:not([hidden]) .export-item', { timeout: 5000 });
   const tomlExports = await page.$$eval('#exportMenu .export-item', (els) => els.map((e) => e.textContent));

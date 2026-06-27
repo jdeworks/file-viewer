@@ -321,6 +321,11 @@ export async function run(ctx) {
   await page.click('.games-card[data-game="sokoban"]');
   await page.waitForSelector('.sokoban-canvas', { timeout: 8000 });
   pass('Sokoban launches');
+  // Lazy loader: the canvas mounts immediately but level/solution data loads async — wait for it.
+  await page.waitForFunction(() => {
+    const w = document.querySelector('.sokoban-wrap');
+    return w?.__sokoban?.state().loaded && typeof w.__sokoban.solution() === 'string';
+  }, { timeout: 8000 });
   const sk0 = await page.$eval('.sokoban-wrap', (w) => ({ ...w.__sokoban.state(),
     v1: w.__sokoban.solveValueAt(1), v3: w.__sokoban.solveValueAt(3) }));
   if (sk0.score === 0 && sk0.solved === 0 && sk0.levelIndex === 0 && sk0.boxes === 1 && sk0.onGoal === 0
@@ -354,22 +359,47 @@ export async function run(ctx) {
     hasPicker: !!w.querySelector('.sokoban-set'), count: w.__sokoban.state().setCount,
     options: [...w.querySelectorAll('.sokoban-set option')].map((o) => o.value),
   }));
-  if (skSets.hasPicker && skSets.count === 9 && ['microban2', 'microban4', 'minicosmos', 'picokosmos', 'yoshio'].every((id) => skSets.options.includes(id)))
-    pass('Sokoban: set picker lists all ' + skSets.count + ' sets');
+  if (skSets.hasPicker && skSets.count === 12 && ['microban2', 'yoshio', 'sasquatch', 'sasquatch2', 'unsolved'].every((id) => skSets.options.includes(id)))
+    pass('Sokoban: set picker lists all ' + skSets.count + ' sets (incl. Sasquatch + unsolved)');
   else fail('Sokoban picker: ' + JSON.stringify(skSets));
-  const skSwitch = await page.$eval('.sokoban-wrap', (w) => {
-    const sel = w.querySelector('.sokoban-set');
-    sel.value = 'microban2'; sel.dispatchEvent(new Event('change'));
+  // Switching is async (lazy load) — await chooseSet + whenReady so the new set's solution is loaded.
+  const skSwitch = await page.$eval('.sokoban-wrap', async (w) => {
+    await w.__sokoban.chooseSet('microban2');
+    await w.__sokoban.whenReady();
     const st = w.__sokoban.state();
     const plan = w.__sokoban.solution();
     const out = { setId: st.setId, total: st.total, levelIndex: st.levelIndex, solved: st.solved, score: st.score,
       hasSol: typeof plan === 'string' && plan.length > 0 };
-    sel.value = 'microban'; sel.dispatchEvent(new Event('change'));   // restore default so persisted state stays microban
+    await w.__sokoban.chooseSet('microban');                 // restore default so persisted state stays microban
+    await w.__sokoban.whenReady();
     return out;
   });
   if (skSwitch.setId === 'microban2' && skSwitch.total === 135 && skSwitch.levelIndex === 0 && skSwitch.solved === 0 && skSwitch.score === 0 && skSwitch.hasSol)
     pass('Sokoban: choosing Microban II switches set (135 levels, fresh start, stored solution)');
   else fail('Sokoban set switch: ' + JSON.stringify(skSwitch));
+  // Level selector: jump to an arbitrary level (free navigation, no score reset).
+  const skJump = await page.$eval('.sokoban-wrap', (w) => {
+    const opts = w.querySelectorAll('.sokoban-level option').length;
+    w.__sokoban.chooseLevel(7);
+    const st = w.__sokoban.state();
+    return { opts, levelIndex: st.levelIndex, selVal: w.querySelector('.sokoban-level').value };
+  });
+  if (skJump.opts === 156 && skJump.levelIndex === 7 && skJump.selVal === '7')
+    pass('Sokoban: level selector jumps to an arbitrary level (' + skJump.opts + ' options)');
+  else fail('Sokoban level jump: ' + JSON.stringify(skJump));
+  // Unsolved Challenges batch: loads + renders, but has no stored solution (Solve degrades gracefully).
+  const skUnsolved = await page.$eval('.sokoban-wrap', async (w) => {
+    await w.__sokoban.chooseSet('unsolved');
+    await w.__sokoban.whenReady();
+    const st = w.__sokoban.state();
+    const out = { setId: st.setId, total: st.total, boxes: st.boxes, sol: w.__sokoban.solution() };
+    await w.__sokoban.chooseSet('microban');                 // restore default
+    await w.__sokoban.whenReady();
+    return out;
+  });
+  if (skUnsolved.setId === 'unsolved' && skUnsolved.total === 48 && skUnsolved.boxes >= 1 && !skUnsolved.sol)
+    pass('Sokoban: Unsolved Challenges batch loads + renders with no stored solution');
+  else fail('Sokoban unsolved batch: ' + JSON.stringify(skUnsolved));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 

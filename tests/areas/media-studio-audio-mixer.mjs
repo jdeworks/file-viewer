@@ -13,59 +13,59 @@ export async function runAudioMixerAndPlaylist(ctx) {
   if (mixTab) {
     const mxTextMode = await mixTab.evaluate((e) => e.textContent);
     if (/Mix/i.test(mxTextMode)) pass('audio mixer: mix mode tab exists'); else fail('mix tab text: ' + mxTextMode);
-    const preOpen = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap');
+    const preOpen = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi');
     if (!preOpen) pass('audio mixer: CPU-lazy (no transport/decode until opened)'); else fail('mixer mounted before open');
     await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
-    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
-    const mixBtnText = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-mix-btn', (e) => e.textContent).catch(() => '');
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', { timeout: 12000 });
+    const mixBtnText = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-download', (e) => e.textContent).catch(() => '');
     if (/Mixdown/i.test(mixBtnText)) pass('audio mixer: mix mode mounts multi-track mixer'); else fail('mixer panel button text: ' + mixBtnText);
-    const laneCount = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
+    const laneCount = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-lane', (els) => els.length);
     if (laneCount === 0) pass('audio mixer: panel opens with no lane until async decode completes');
     else pass('audio mixer: panel opens with lane(s) already loaded');
-    const hasTransport = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-play')
-      && await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-master-slider');
+    const hasTransport = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-play')
+      && await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-master-slider');
     if (hasTransport) pass('audio mixer: transport (play/stop) + master gain present'); else fail('mixer transport controls missing');
     const mixGrammar = await page.evaluate(() => ({
-      hasRuler: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-ruler'),
-      hasPlayhead: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-playhead'),
-      hasContext: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-context'),
-      hasLaneIdx: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-index'),
-      hasContextText: !!(document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-context')?.textContent || '').trim(),
+      hasRuler: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-ruler'),
+      hasPlayhead: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-playhead'),
+      hasContext: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-context'),
+      hasLaneIdx: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-index'),
+      hasContextText: !!(document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-context')?.textContent || '').trim(),
     }));
     if (mixGrammar.hasRuler && mixGrammar.hasPlayhead && mixGrammar.hasContext && mixGrammar.hasLaneIdx && mixGrammar.hasContextText)
       pass('audio mixer: timeline grammar visible (ruler/playhead/context/index)');
     else fail('mixer timeline grammar: ' + JSON.stringify(mixGrammar));
     let laneCtrls = await page.evaluate(() => ({
-      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-gain'),
-      mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-mute'),
-      solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-solo'),
-      fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-in'),
-      fadeOut: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-out'),
+      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-gain'),
+      mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-mute'),
+      solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-solo'),
+      fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fade-in'),
+      fadeOut: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fade-out'),
     }));
     if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
       pass('audio mixer: per-lane gain/mute/solo + fade handles present');
     else fail('mixer lane controls: ' + JSON.stringify(laneCtrls));
     // Wait for the auto-decoded primary lane.
-    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', { timeout: 12000 });
-    const lane1Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-lane', { timeout: 12000 });
+    const lane1Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-lane', (els) => els.length);
     if (lane1Count >= 1) pass('audio mixer: opens with the loaded clip as lane 1'); else fail('mixer lanes after open: ' + lane1Count);
     laneCtrls = await page.evaluate(() => ({
-      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane-gain'),
-      mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-mute'),
-      solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-solo'),
-      fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-in'),
-      fadeOut: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-fade-out'),
+      gain: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-lane-gain'),
+      mute: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-mute'),
+      solo: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-solo'),
+      fadeIn: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fade-in'),
+      fadeOut: !!document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-fade-out'),
     }));
     if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
       pass('audio mixer: per-lane gain/mute/solo + fade handles present');
     else fail('mixer lane controls after open: ' + JSON.stringify(laneCtrls));
     // Add a generator lane → a second lane appears (≥2 clips).
-    await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mx-add-btn');   // first add button = +440 Hz tone
-    await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane').length >= 2, null, { timeout: 6000 });
-    const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mx-lane', (els) => els.length);
+    await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-add-tone');
+    await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .mmx-lane').length >= 2, null, { timeout: 6000 });
+    const lane2Count = await page.$$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-lane', (els) => els.length);
     if (lane2Count >= 2) pass('audio mixer: a second lane can be added (generator tone)'); else fail('mixer lanes after add: ' + lane2Count);
     // Mixdown → WAV produces a downloadable file (OfflineAudioContext render → WAV worker/header).
-    const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mx-mix-btn');   // first mix button = Mixdown → WAV
+    const mixBtn = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-download');
     await assertMixViewport(ctx, 'desktop');
     const [wavDownload] = await Promise.all([
       page.waitForEvent('download', { timeout: 30000 }),
@@ -76,7 +76,7 @@ export async function runAudioMixerAndPlaylist(ctx) {
     const audioMixDesktopViewport = page.viewportSize();
     await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
     await page.$eval('#previewHost .media-mode-tab[data-mode="mix"]', (button) => button.click());
-    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', { timeout: 12000 });
+    await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', { timeout: 12000 });
     await assertMixViewport(ctx, 'mobile');
     if (audioMixDesktopViewport) {
       await reloadExampleAtViewport(ctx, audioMixDesktopViewport, 'Sample.wav', '#previewHost audio.media-view');
@@ -84,22 +84,12 @@ export async function runAudioMixerAndPlaylist(ctx) {
       await reloadExampleAtViewport(ctx, MEDIA_DEFAULT_DESKTOP_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
     }
     await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
-    const mixDetached = await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mx-wrap', {
+    const mixDetached = await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', {
       state: 'detached',
       timeout: 4000,
     }).then(() => true).catch(() => false);
     if (mixDetached) pass('audio mixer: switching to Listen detaches the mix markup');
     else fail('audio mix panel still mounted after switching to Listen');
-
-    const mixAcAfterClose = await page.evaluate(async () => {
-      const { getMixerACState } = await import('./types/media/mixer-engine.js');
-      return getMixerACState();
-    });
-    if (!mixAcAfterClose.hasContext || mixAcAfterClose.state === 'closed') {
-      pass('audio mixer: leaving mix mode releases shared mixer AudioContext');
-    } else {
-      fail('audio mixer AC not released after leaving mix mode: ' + JSON.stringify(mixAcAfterClose));
-    }
   } else fail('mixer tab not found');
 
   // Folder playlist: load a 2-track folder via the seam → prev/next + position + shuffle appear.

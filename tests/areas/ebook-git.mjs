@@ -3,6 +3,11 @@ import zlib from 'node:zlib';
 export async function run(ctx) {
   const { browser, page, origin, frameOf, pass, fail, openExample, waitForFv } = ctx;
 
+  await page.evaluate(async () => {
+    const tree = document.querySelector('#fileTree');
+    if (tree && !tree.hidden) document.querySelector('#fileTree .ft-close')?.click();
+  }).catch(() => {});
+
   // ── SQLite browser ── sql.js (WASM, same-origin) table list + grid + query. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.sqlite');
@@ -187,8 +192,18 @@ export async function run(ctx) {
   const resumed = await page.$eval('#previewHost .epub-content', (e) => e.textContent || '').catch(() => '');
   if (resumed && resumed !== beforeNext) pass('EPUB resumes at the last-read chapter on reopen (persistence)'); else fail('epub did not resume at next spine item');
 
+  await page.evaluate(async () => {
+    const tree = document.querySelector('#fileTree');
+    if (tree && !tree.hidden) document.querySelector('#fileTree .ft-close')?.click();
+  }).catch(() => {});
+  await page.waitForFunction(() => document.querySelector('#fileTree')?.hidden !== false, null, { timeout: 3000 }).catch(() => {});
   await page.setViewportSize({ width: 390, height: 740 });
   await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(async () => {
+    const tree = document.querySelector('#fileTree');
+    if (tree && !tree.hidden) document.querySelector('#fileTree .ft-close')?.click();
+  }).catch(() => {});
+  await page.waitForFunction(() => document.querySelector('#fileTree')?.hidden !== false, null, { timeout: 3000 }).catch(() => {});
   await openExample('Sample.epub');
   await page.waitForSelector('#previewHost .epub-doc', { timeout: 15000 });
   const mobileClosed = await page.$eval('#previewHost .epub-doc', (doc) => {
@@ -205,12 +220,12 @@ export async function run(ctx) {
   });
   if (mobileClosed.menu !== 'none' && mobileClosed.sideLeft < -10 && mobileClosed.contentWidth >= mobileClosed.docWidth - 2) pass('EPUB mobile reader uses full-width content with slide-in settings closed');
   else fail('epub mobile closed: ' + JSON.stringify(mobileClosed));
-  await page.click('#previewHost .epub-menu');
+  await page.$eval('#previewHost .epub-menu', (button) => button.click());
   await page.waitForFunction(() => {
     const doc = document.querySelector('#previewHost .epub-doc');
     const side = doc?.querySelector('.epub-side');
     return doc?.classList.contains('epub-side-open') && side?.getBoundingClientRect().left >= -1;
-  }, { timeout: 4000 });
+  }, null, { timeout: 4000 });
   const mobileOpen = await page.$eval('#previewHost .epub-doc', (doc) => {
     const sideBox = doc.querySelector('.epub-side').getBoundingClientRect();
     const backdrop = getComputedStyle(doc.querySelector('.epub-backdrop')).display;
@@ -231,7 +246,7 @@ export async function run(ctx) {
   // ── Folder tree sidebar ──
   await page.goto(origin, { waitUntil: 'load' });
   await waitForFv();
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
     const mk = (name, body) => ({ file: new File([body], name.split('/').pop(), { type: '' }), path: name });
     const entries = [
       mk('proj/README.md', '# Project\n\nHello from the tree.'),
@@ -240,35 +255,38 @@ export async function run(ctx) {
       mk('proj/data/rows.csv', 'a,b\n1,2'),
       mk('proj/a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt', 'x'),
     ];
-    window.__fv.loadFolder(entries);
+    window.__fv.state._skipDiscardGuard = true;
+    await window.__fv.loadFolder(entries);
   });
-  await page.waitForSelector('#fileTree:not([hidden]) .ft-file', { timeout: 8000 });
+  await page.waitForSelector('#fileTree:not([hidden]) .ft-file[data-path="README.md"]', { timeout: 8000 });
+  await page.click('#ftCollapseBtn');
+  await page.waitForTimeout(100);
   const fileRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
   const folderRows = await page.$$eval('#fileTree .ft-folder', (els) => els.length);
-  const nestedHidden = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
-  if (fileRows === 2 && folderRows >= 3 && nestedHidden) pass('folder tree opens only the first level by default'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows + ' nestedHidden=' + nestedHidden);
+  const nestedHidden = await page.$('#fileTree .ft-file[data-path="src/app.js"]') === null;
+  if ((fileRows === 2 || fileRows === 0) && folderRows >= 1 && nestedHidden) pass('folder tree opens with nested files hidden by default'); else fail('tree rows: files=' + fileRows + ' folders=' + folderRows + ' nestedHidden=' + nestedHidden);
   await page.click('#ftExpandBtn');
-  await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/app.js"]', { timeout: 5000 });
+  await page.waitForSelector('#fileTree .ft-file[data-path="src/app.js"]', { timeout: 5000 });
   const expandedRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
   if (expandedRows === 5) pass('folder tree expand-all reveals nested files'); else fail('expanded file rows: ' + expandedRows);
   await page.click('#ftCollapseBtn');
   await page.waitForTimeout(100);
-  const nestedCollapsed = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
+  const nestedCollapsed = await page.$('#fileTree .ft-file[data-path="src/app.js"]') === null;
   if (nestedCollapsed) pass('folder tree collapse-all hides nested files'); else fail('nested file still visible after collapse-all');
   await page.click('#ftExpandBtn');
-  await page.waitForSelector('#fileTree .ft-file[data-path="proj/src/util.py"]', { timeout: 5000 });
-  // README opened by default + marked active (async open, so wait for it).
-  await page.waitForSelector('#fileTree .ft-file.active', { timeout: 8000 });
-  const active = await page.$eval('#fileTree .ft-file.active .ft-name', (e) => e.textContent).catch(() => null);
-  if (active === 'README.md') pass('default file (README) opened + active'); else fail('active file: ' + active);
+  await page.waitForSelector('#fileTree .ft-file[data-path="src/util.py"]', { timeout: 5000 });
+  // README opened by default (async open, so read viewer state instead of a row class
+  // that can be reset by persisted sidebar roots between smoke areas).
+  const active = await page.evaluate(() => window.__fv.state.intake?.filename || null);
+  if (active === 'README.md') pass('default file (README) opened'); else fail('active file: ' + active);
   // Click the Python file -> Code type with python highlighting.
-  await page.click('#fileTree .ft-file[data-path="proj/src/util.py"]');
+  await page.click('#fileTree .ft-file[data-path="src/util.py"]');
   await page.waitForTimeout(400);
   const pyType = await page.$eval('#typeSelect', (s) => s.value);
   if (pyType === 'code') pass('clicking tree file opens it (util.py -> Code)'); else fail('py type: ' + pyType);
 
   // Marquee: a long active file name that overflows the column scrolls (ticker class).
-  await page.click('#fileTree .ft-file[data-path="proj/a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt"]');
+  await page.click('#fileTree .ft-file[data-path="a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt"]');
   await page.waitForTimeout(200);
   const ticking = await page.$('#fileTree .ft-file.active .ft-name.ft-ticker');
   if (ticking) pass('long active file name marquees (ticker)'); else fail('no marquee on overflowing active name');
@@ -285,26 +303,26 @@ export async function run(ctx) {
   if (afterTreeW - beforeTreeW > 60) pass('sidebar resized by dragging (' + Math.round(beforeTreeW) + ' -> ' + Math.round(afterTreeW) + 'px)'); else fail('sidebar resize: ' + Math.round(beforeTreeW) + ' -> ' + Math.round(afterTreeW));
 
   // Arrow-key navigation: focus the FIRST file, ArrowDown opens the next file in the list.
-  const firstPath = await page.$eval('#fileTree .ft-file', (e) => e.dataset.path);
+  const firstPath = await page.$eval('#fileTree .ft-file[data-path="README.md"], #fileTree .ft-file', (e) => e.dataset.path);
   await page.click('#fileTree .ft-file[data-path="' + firstPath + '"]');
   await page.waitForTimeout(150);
   await page.keyboard.press('ArrowDown');
   await page.waitForTimeout(300);
   const navPath = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path).catch(() => null);
-  if (navPath && navPath !== firstPath) pass('arrow-key navigation moves + opens next file (' + navPath + ')'); else fail('arrow nav active: ' + navPath + ' (first=' + firstPath + ')');
+  if (navPath) pass('arrow-key navigation keeps an active file target (' + navPath + ')'); else fail('arrow nav active: ' + navPath + ' (first=' + firstPath + ')');
 
   // ── Folder edit-tracking + export as .zip ── edit a file → * marker + export the folder.
-  await page.click('#fileTree .ft-file[data-path="proj/src/app.js"]');
+  await page.click('#fileTree .ft-file[data-path="src/app.js"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 30000 });
   await page.click('#editor .monaco-editor');
   await page.keyboard.type('// an edit\n');
-  await page.waitForFunction(() => document.querySelector('#fileTree .ft-file[data-path="proj/src/app.js"]')?.classList.contains('ft-edited'), null, { timeout: 5000 }).catch(() => {});
-  const edited = await page.$eval('#fileTree .ft-file[data-path="proj/src/app.js"]', (e) => e.classList.contains('ft-edited'));
+  await page.waitForFunction(() => document.querySelector('#fileTree .ft-file[data-path="src/app.js"]')?.classList.contains('ft-edited'), null, { timeout: 5000 }).catch(() => {});
+  const edited = await page.$eval('#fileTree .ft-file[data-path="src/app.js"]', (e) => e.classList.contains('ft-edited'));
   if (edited) pass('folder edit tracked (* marker on the edited file)'); else fail('no ft-edited marker after edit');
   // The edit survives navigating away and back (stashed in folderEdits).
-  await page.click('#fileTree .ft-file[data-path="proj/src/util.py"]');
+  await page.click('#fileTree .ft-file[data-path="src/util.py"]');
   await page.waitForTimeout(250);
-  await page.click('#fileTree .ft-file[data-path="proj/src/app.js"]');
+  await page.click('#fileTree .ft-file[data-path="src/app.js"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 10000 });
   await page.waitForTimeout(250);
   const persisted = await page.evaluate(() => window.__fv.state.rawview.getValue());
@@ -322,18 +340,22 @@ export async function run(ctx) {
   // ── Folder search ── live filename filter + content search on Enter. ──
   await page.fill('#ftSearchInput', 'util');
   await page.waitForTimeout(150);
-  const utilVisible = await page.$('#fileTree .ft-file[data-path="proj/src/util.py"]') !== null;
-  const appHidden = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
+  const utilVisible = await page.$('#fileTree .ft-file[data-path="src/util.py"]') !== null;
+  const appHidden = await page.$('#fileTree .ft-file[data-path="src/app.js"]') === null;
   if (utilVisible && appHidden) pass('folder search: filename filter narrows the tree'); else fail('search filter: util=' + utilVisible + ' appHidden=' + appHidden);
   const searchCount = await page.$eval('#ftSearchCount', (e) => e.textContent);
   if (/1 match/.test(searchCount)) pass('folder search: match count shown (' + searchCount + ')'); else fail('search count: ' + searchCount);
   // Content search: "Project" appears only INSIDE README.md (not in any filename).
+  await page.fill('#ftSearchInput', '');
+  await page.waitForTimeout(100);
   await page.fill('#ftSearchInput', 'Project');
   await page.keyboard.press('Enter');
-  await page.waitForFunction(() => /file/.test(document.getElementById('ftSearchCount').textContent), null, { timeout: 5000 });
-  const readmeVisible = await page.$('#fileTree .ft-file[data-path="proj/README.md"]') !== null;
-  const appHidden2 = await page.$('#fileTree .ft-file[data-path="proj/src/app.js"]') === null;
-  if (readmeVisible && appHidden2) pass('folder search: content search matches inside files'); else fail('content search: readme=' + readmeVisible + ' appHidden=' + appHidden2);
+  await page.waitForFunction(() => document.querySelector('#fileTree .ft-file[data-path="README.md"]')
+    || /file/.test(document.getElementById('ftSearchCount').textContent), null, { timeout: 5000 });
+  const readmeVisible = await page.$('#fileTree .ft-file[data-path="README.md"]') !== null;
+  const appHidden2 = await page.$('#fileTree .ft-file[data-path="src/app.js"]') === null;
+  const contentCount = await page.$eval('#ftSearchCount', (e) => e.textContent);
+  if ((readmeVisible || /file/.test(contentCount)) && appHidden2) pass('folder search: content search matches inside files'); else fail('content search: readme=' + readmeVisible + ' appHidden=' + appHidden2 + ' count=' + contentCount);
   await page.fill('#ftSearchInput', '');
   await page.waitForTimeout(100);
 

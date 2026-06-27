@@ -1,0 +1,453 @@
+import { MIXER_LIMITS, MIXER_PROJECT_SCHEMA, MIXER_PROJECT_VERSION, clampNumber, nowIso } from './mixer-config.js';
+import { createDefaultEq, createDefaultMaster, normalizeEq } from './mixer-eq-schema.js';
+import {
+  recomputeDuration,
+  touch,
+  resolveCompareTarget,
+  normalizeCompareTarget,
+  descriptor,
+  normalizeCapabilities,
+  normalizeElementEffects,
+  keyframeValuesFor,
+  safeKeyPath,
+  normalizeTransition,
+  normalizeVisualCrop,
+  existingTransition,
+  findPreviousVisualElement,
+  laneRoleForAsset,
+  typeForCapabilities,
+  defaultDurationForCaps,
+  labelForRole,
+  colorForRole,
+  finiteNumber,
+  positiveNumber,
+  makeId,
+  clone,
+} from './mixer-model-helpers.js';
+
+export const LANE_DESCRIPTORS = Object.freeze({
+  source: descriptor('source', { audio: true, video: true, image: true }, ['timing', 'audio', 'visual', 'eq']),
+  audio: descriptor('audio', { audio: true, video: false, image: false }, ['timing', 'audio', 'eq']),
+  video: descriptor('video', { audio: true, video: true, image: false }, ['timing', 'audio', 'visual']),
+  image: descriptor('image', { audio: false, video: false, image: true }, ['timing', 'visual']),
+  music: descriptor('music', { audio: true, video: false, image: false }, ['timing', 'audio', 'eq']),
+  sfx: descriptor('sfx', { audio: true, video: false, image: false }, ['timing', 'audio']),
+  'room-tone': {
+    ...descriptor('room-tone', { audio: true, video: false, image: false }, ['timing', 'audio']),
+    derived: true,
+    derivesFrom: ['source', 'audio'],
+  },
+  generated: descriptor('generated', { audio: true, video: true, image: true }, ['timing', 'audio', 'visual']),
+  compare: descriptor('compare', { audio: true, video: true, image: true }, ['timing', 'compare']),
+});
+
+export function createProject({ id, name = 'Untitled media mix', fps, sampleRate, channels, background } = {}) {
+  const ts = nowIso();
+  return {
+    schema: MIXER_PROJECT_SCHEMA,
+    version: MIXER_PROJECT_VERSION,
+    createdAt: ts,
+    updatedAt: ts,
+    project: {
+      id: id || makeId('project'),
+      name,
+      durationMs: 0,
+      fps: positiveNumber(fps, MIXER_LIMITS.defaultFps),
+      sampleRate: positiveNumber(sampleRate, MIXER_LIMITS.defaultSampleRate),
+      channels: positiveNumber(channels, MIXER_LIMITS.defaultChannels),
+      background: background || '#000000',
+    },
+    assets: [],
+    lanes: [],
+    elements: [],
+    effects: [],
+    transitions: [],
+    markers: [],
+    selection: { primary: null, items: [], range: null },
+    compare: { a: null, b: null, view: 'stacked', overlayOpacity: 0.5, normalizeAudio: false, analysisRange: null },
+    master: createDefaultMaster({ video: { fps, background } }),
+    requiredCapabilities: [],
+    optionalCapabilities: [],
+    lastKnownCapabilities: {},
+  };
+}
+
+export function createAsset(metadata = {}) {
+  const capabilities = normalizeCapabilities(metadata.capabilities || metadata);
+  return {
+    id: metadata.id || makeId('asset'),
+    kind: metadata.kind || 'file',
+    name: metadata.name || 'Untitled asset',
+    mime: metadata.mime || metadata.type || '',
+    size: finiteNumber(metadata.size, 0),
+    lastModified: metadata.lastModified ?? null,
+    hash: metadata.hash || null,
+    capabilities,
+    media: {
+      durationMs: positiveNumber(metadata.media?.durationMs ?? metadata.durationMs, 0),
+      audioSampleRate: positiveNumber(metadata.media?.audioSampleRate ?? metadata.audioSampleRate, 0),
+      audioChannels: positiveNumber(metadata.media?.audioChannels ?? metadata.audioChannels, 0),
+      videoWidth: positiveNumber(metadata.media?.videoWidth ?? metadata.videoWidth, 0),
+      videoHeight: positiveNumber(metadata.media?.videoHeight ?? metadata.videoHeight, 0),
+      frameRate: positiveNumber(metadata.media?.frameRate ?? metadata.frameRate, 0),
+    },
+    status: metadata.status || 'available',
+  };
+}
+
+export function createLane(input = {}) {
+  const role = input.role || 'source';
+  return {
+    id: input.id || makeId('lane'),
+    label: input.label || labelForRole(role),
+    role,
+    order: finiteNumber(input.order, 0),
+    height: positiveNumber(input.height, LANE_DESCRIPTORS[role]?.defaultHeight || 88),
+    locked: !!input.locked,
+    collapsed: !!input.collapsed,
+    muted: !!input.muted,
+    solo: !!input.solo,
+    visible: input.visible ?? true,
+    color: input.color || colorForRole(role),
+    audio: {
+      gain: finiteNumber(input.audio?.gain, 1),
+      pan: finiteNumber(input.audio?.pan, 0),
+      eq: normalizeEq(input.audio?.eq),
+      sends: Array.isArray(input.audio?.sends) ? clone(input.audio.sends) : [],
+    },
+    video: {
+      opacity: clampNumber(input.video?.opacity, 0, 1, 1),
+      blendMode: input.video?.blendMode || 'normal',
+    },
+  };
+}
+
+export function createElement(input = {}) {
+  const caps = normalizeCapabilities(input.capabilities || input);
+  const rawDuration = positiveNumber(input.timeline?.rawDurationMs ?? input.rawDurationMs ?? input.durationMs, 0);
+  const duration = positiveNumber(input.timeline?.durationMs ?? input.durationMs, rawDuration || defaultDurationForCaps(caps));
+  const sourceIn = Math.max(0, finiteNumber(input.timeline?.sourceInMs ?? input.sourceInMs, 0));
+  const sourceOut = positiveNumber(input.timeline?.sourceOutMs ?? input.sourceOutMs, rawDuration || sourceIn + duration);
+  const type = input.type || typeForCapabilities(caps);
+  const id = input.id || makeId('element');
+  return {
+    id,
+    laneId: input.laneId || null,
+    assetId: input.assetId || null,
+    type,
+    capabilities: caps,
+    timeline: {
+      startMs: Math.max(0, finiteNumber(input.timeline?.startMs ?? input.startMs, 0)),
+      durationMs: duration,
+      rawDurationMs: rawDuration,
+      placementDurationMs: positiveNumber(input.timeline?.placementDurationMs ?? input.placementDurationMs, duration),
+      sourceInMs: sourceIn,
+      sourceOutMs: Math.max(sourceIn, sourceOut),
+      speed: positiveNumber(input.timeline?.speed ?? input.speed, 1),
+      reversed: !!(input.timeline?.reversed ?? input.reversed),
+    },
+    audio: {
+      gain: finiteNumber(input.audio?.gain, 1),
+      pan: finiteNumber(input.audio?.pan, 0),
+      fadeInMs: Math.max(0, finiteNumber(input.audio?.fadeInMs, 0)),
+      fadeOutMs: Math.max(0, finiteNumber(input.audio?.fadeOutMs, 0)),
+      roomTone: input.audio?.roomTone || null,
+      eq: normalizeEq(input.audio?.eq),
+    },
+    visual: {
+      x: finiteNumber(input.visual?.x, 0),
+      y: finiteNumber(input.visual?.y, 0),
+      scaleX: finiteNumber(input.visual?.scaleX, 1),
+      scaleY: finiteNumber(input.visual?.scaleY, 1),
+      rotation: finiteNumber(input.visual?.rotation, 0),
+      opacity: clampNumber(input.visual?.opacity, 0, 1, 1),
+      fadeInMs: Math.max(0, finiteNumber(input.visual?.fadeInMs, 0)),
+      fadeOutMs: Math.max(0, finiteNumber(input.visual?.fadeOutMs, 0)),
+      crop: normalizeVisualCrop(input.visual?.crop),
+      anchor: input.visual?.anchor || 'center',
+    },
+    analysis: clone(input.analysis || {}),
+    keyframes: Array.isArray(input.keyframes) ? clone(input.keyframes) : [],
+    effects: normalizeElementEffects(input.effects, id),
+  };
+}
+
+export function createGeneratedElement(input = {}) {
+  return createElement({
+    ...input,
+    assetId: input.assetId || null,
+    type: 'generated',
+    capabilities: {
+      hasAudio: input.kind !== 'color-matte',
+      hasVideo: input.kind === 'color-matte',
+      hasImage: input.kind === 'color-matte',
+    },
+    audio: {
+      ...input.audio,
+      roomTone: input.audio?.roomTone || {
+        kind: input.kind || 'pink-noise',
+        levelDb: finiteNumber(input.levelDb, -45),
+      },
+    },
+  });
+}
+
+export function createProjectFromAssetMetadata(metadata = {}, options = {}) {
+  const asset = createAsset(metadata);
+  const project = createProject({
+    name: options.name || asset.name,
+    fps: asset.media.frameRate || options.fps,
+    sampleRate: asset.media.audioSampleRate || options.sampleRate,
+    channels: asset.media.audioChannels || options.channels,
+  });
+  const lane = createLane({
+    role: laneRoleForAsset(asset),
+    label: options.laneLabel || 'Source',
+    order: 0,
+  });
+  const element = createElement({
+    laneId: lane.id,
+    assetId: asset.id,
+    capabilities: asset.capabilities,
+    type: typeForCapabilities(asset.capabilities),
+    durationMs: asset.media.durationMs || defaultDurationForCaps(asset.capabilities),
+    rawDurationMs: asset.media.durationMs || 0,
+  });
+  return addElement(addLane(addAsset(project, asset), lane), element);
+}
+
+export function addAsset(project, assetInput) {
+  const next = cloneProject(project);
+  next.assets.push(createAsset(assetInput));
+  return touch(next);
+}
+
+export function updateAsset(project, assetId, updater) {
+  const next = cloneProject(project);
+  next.assets = next.assets.map((asset) => (asset.id === assetId
+    ? createAsset(typeof updater === 'function' ? updater(clone(asset)) : { ...asset, ...updater })
+    : asset));
+  return touch(recomputeDuration(next));
+}
+export function addLane(project, laneInput) {
+  const next = cloneProject(project);
+  next.lanes.push(createLane({ ...laneInput, order: laneInput.order ?? next.lanes.length }));
+  next.lanes.sort((a, b) => a.order - b.order);
+  return touch(next);
+}
+export function addElement(project, elementInput) {
+  const next = cloneProject(project);
+  next.elements.push(createElement(elementInput));
+  return touch(recomputeDuration(next));
+}
+export function updateElement(project, elementId, updater) {
+  const next = cloneProject(project);
+  next.elements = next.elements.map((element) => {
+    if (element.id !== elementId) return element;
+    return createElement(typeof updater === 'function' ? updater(clone(element)) : { ...element, ...updater });
+  });
+  return touch(recomputeDuration(next));
+}
+export function updateLane(project, laneId, updater) {
+  const next = cloneProject(project);
+  next.lanes = next.lanes.map((lane) => {
+    if (lane.id !== laneId) return lane;
+    return createLane(typeof updater === 'function' ? updater(clone(lane)) : { ...lane, ...updater });
+  }).sort((a, b) => a.order - b.order);
+  return touch(recomputeDuration(next));
+}
+
+export function updateMaster(project, updater) {
+  const next = cloneProject(project);
+  next.master = createDefaultMaster(typeof updater === 'function' ? updater(clone(next.master)) : { ...next.master, ...updater });
+  return touch(recomputeDuration(next));
+}
+
+export function setElementTransition(project, elementId, patch = {}) {
+  const element = project.elements.find((item) => item.id === elementId);
+  if (!element) return cloneProject(project);
+  const next = cloneProject(project);
+  const durationMs = Math.max(0, finiteNumber(patch.durationMs, existingTransition(next, elementId)?.durationMs || 0));
+  const kind = patch.kind || existingTransition(next, elementId)?.kind || 'dissolve';
+  next.transitions = next.transitions.filter((transition) => transition.toElementId !== elementId);
+  if (durationMs > 0) {
+    next.transitions.push(normalizeTransition({
+      id: patch.id || existingTransition(project, elementId)?.id || `transition-${elementId}-in`,
+      kind,
+      enabled: patch.enabled !== false,
+      fromElementId: patch.fromElementId ?? findPreviousVisualElement(project, element)?.id ?? null,
+      toElementId: elementId,
+      durationMs,
+      offsetMs: finiteNumber(patch.offsetMs, 0),
+      params: patch.params || existingTransition(project, elementId)?.params || {},
+    }));
+  }
+  return touch(recomputeDuration(next));
+}
+
+export function moveElement(project, elementId, startMs, laneId) {
+  return updateElement(project, elementId, (element) => ({
+    ...element,
+    laneId: laneId || element.laneId,
+    timeline: {
+      ...element.timeline,
+      startMs: Math.max(0, finiteNumber(startMs, element.timeline.startMs)),
+    },
+  }));
+}
+
+export function trimElement(project, elementId, { sourceInMs, sourceOutMs, startMs } = {}) {
+  return updateElement(project, elementId, (element) => {
+    const rawDuration = positiveNumber(element.timeline.rawDurationMs, element.timeline.durationMs);
+    const sourceIn = Math.max(0, Math.min(rawDuration, finiteNumber(sourceInMs, element.timeline.sourceInMs)));
+    const sourceOut = Math.max(sourceIn, Math.min(rawDuration || Infinity, finiteNumber(sourceOutMs, element.timeline.sourceOutMs)));
+    const duration = Math.max(0, (sourceOut - sourceIn) / positiveNumber(element.timeline.speed, 1));
+    return {
+      ...element,
+      timeline: {
+        ...element.timeline,
+        startMs: startMs == null ? element.timeline.startMs : Math.max(0, finiteNumber(startMs, element.timeline.startMs)),
+        sourceInMs: sourceIn,
+        sourceOutMs: sourceOut,
+        durationMs: duration,
+        placementDurationMs: duration,
+      },
+    };
+  });
+}
+
+export function setElementPlacementDuration(project, elementId, placementDurationMs) {
+  return updateElement(project, elementId, (element) => ({
+    ...element,
+    timeline: {
+      ...element.timeline,
+      placementDurationMs: Math.max(0, finiteNumber(placementDurationMs, element.timeline.placementDurationMs)),
+    },
+  }));
+}
+
+export function captureElementKeyframe(project, elementId, timeMs, options = {}) {
+  const element = project.elements.find((item) => item.id === elementId);
+  if (!element) return cloneProject(project);
+  const values = keyframeValuesFor(element, options.paths);
+  if (!values.length) return cloneProject(project);
+  const t = Math.max(0, Math.round(finiteNumber(timeMs, 0)));
+  return updateElement(project, elementId, (current) => {
+    const next = (current.keyframes || [])
+      .filter((keyframe) => !(Math.round(finiteNumber(keyframe.timeMs, 0)) === t
+        && values.some((value) => value.path === keyframe.path)));
+    for (const value of values) {
+      next.push({
+        id: `keyframe-${current.id}-${safeKeyPath(value.path)}-${t}`,
+        targetId: current.id,
+        path: value.path,
+        timeMs: t,
+        value: clone(value.value),
+        interpolation: options.interpolation || 'linear',
+      });
+    }
+    next.sort((a, b) => (a.timeMs - b.timeMs) || String(a.path).localeCompare(String(b.path)));
+    return { ...current, keyframes: next };
+  });
+}
+
+export function splitElement(project, elementId, splitAtMs) {
+  const element = project.elements.find((item) => item.id === elementId);
+  if (!element) return cloneProject(project);
+  const splitAt = finiteNumber(splitAtMs, element.timeline.startMs);
+  const local = splitAt - element.timeline.startMs;
+  if (local <= 0 || local >= element.timeline.durationMs) return cloneProject(project);
+  const speed = positiveNumber(element.timeline.speed, 1);
+  const leftSourceOut = element.timeline.sourceInMs + local * speed;
+  const rightSourceIn = leftSourceOut;
+  const left = createElement({
+    ...element,
+    id: element.id,
+    timeline: {
+      ...element.timeline,
+      sourceOutMs: leftSourceOut,
+      durationMs: local,
+      placementDurationMs: local,
+    },
+  });
+  const rightDuration = element.timeline.durationMs - local;
+  const right = createElement({
+    ...element,
+    id: makeId('element'),
+    timeline: {
+      ...element.timeline,
+      startMs: splitAt,
+      sourceInMs: rightSourceIn,
+      durationMs: rightDuration,
+      placementDurationMs: rightDuration,
+    },
+  });
+  const next = cloneProject(project);
+  next.elements = next.elements.flatMap((item) => (item.id === elementId ? [left, right] : [item]));
+  return touch(recomputeDuration(next));
+}
+
+export function selectTarget(project, target, items = []) {
+  const next = cloneProject(project);
+  next.selection = { ...next.selection, primary: target || null, items: clone(items) };
+  return touch(next);
+}
+
+export function setCompareTarget(project, side, target) {
+  if (side !== 'a' && side !== 'b') throw new Error('Compare side must be "a" or "b".');
+  const next = cloneProject(project);
+  next.compare = { ...next.compare, [side]: normalizeCompareTarget(target) };
+  return touch(next);
+}
+
+export function computeCompareOverlap(project, compare = project.compare) {
+  const a = resolveCompareTarget(project, compare?.a);
+  const b = resolveCompareTarget(project, compare?.b);
+  if (!a || !b) return { hasOverlap: false, overlap: { startMs: 0, endMs: 0, durationMs: 0 }, a, b };
+  const aStart = a.rangeStartMs + a.offsetMs;
+  const aEnd = a.rangeEndMs + a.offsetMs;
+  const bStart = b.rangeStartMs + b.offsetMs;
+  const bEnd = b.rangeEndMs + b.offsetMs;
+  const startMs = Math.max(aStart, bStart);
+  const endMs = Math.min(aEnd, bEnd);
+  const durationMs = Math.max(0, endMs - startMs);
+  return {
+    hasOverlap: durationMs > 0,
+    overlap: { startMs, endMs: durationMs > 0 ? endMs : startMs, durationMs },
+    a,
+    b,
+    offsetDeltaMs: b.offsetMs - a.offsetMs,
+  };
+}
+
+export function cloneProject(project) {
+  return normalizeProject(project);
+}
+
+export function normalizeProject(project = {}) {
+  const base = createProject(project.project || {});
+  const next = {
+    ...base,
+    ...clone(project),
+    schema: MIXER_PROJECT_SCHEMA,
+    version: MIXER_PROJECT_VERSION,
+    project: { ...base.project, ...(project.project || {}) },
+    assets: Array.isArray(project.assets) ? project.assets.map(createAsset) : [],
+    lanes: Array.isArray(project.lanes) ? project.lanes.map(createLane) : [],
+    elements: Array.isArray(project.elements) ? project.elements.map(createElement) : [],
+    effects: Array.isArray(project.effects) ? clone(project.effects) : [],
+    transitions: Array.isArray(project.transitions) ? project.transitions.map(normalizeTransition) : [],
+    markers: Array.isArray(project.markers) ? clone(project.markers) : [],
+    selection: project.selection || base.selection,
+    compare: { ...base.compare, ...(project.compare || {}) },
+    master: createDefaultMaster(project.master || {}),
+    requiredCapabilities: Array.isArray(project.requiredCapabilities) ? clone(project.requiredCapabilities) : [],
+    optionalCapabilities: Array.isArray(project.optionalCapabilities) ? clone(project.optionalCapabilities) : [],
+    lastKnownCapabilities: clone(project.lastKnownCapabilities || {}),
+  };
+  return recomputeDuration(next);
+}
+
+export function getLaneDescriptor(role) {
+  return LANE_DESCRIPTORS[role] || LANE_DESCRIPTORS.source;
+}

@@ -44,9 +44,207 @@ Reference alignment:
 
 ## Remaining Work
 
-### R0a — Auto-Audiobook-Grade Default Audio Lane
+### R0a — Modular Media Mixer Foundation
 
-Status: open.
+Status: Stage 5 video/image seek-frame preview started.
+
+The next media-studio foundation is a modular, capability-gated media
+mixer/editor, not a narrow replacement of the current audio Listen lane. The
+approved source package is
+`docs/types/media/modular-mixer-research/`, starting with
+`00-scope-and-decisions.md`.
+
+The target module should support reduced and expanded contexts from the same
+model:
+
+- MP3/WAV opens as one audio-capable source element on one lane.
+- Mix expands the same project into multiple lanes.
+- Compare constrains the same model to two selected objects/ranges.
+- Video files become timeline elements with `hasVideo` and possibly `hasAudio`.
+- Dragged images become visual timeline elements.
+- Project settings import/export stores config, file identity, and edit
+  decisions without embedding media bytes by default.
+- Optional functionality is capability/config gated: available now, available
+  after opt-in, or unsupported in the current browser/session.
+- ffmpeg remains opt-in and lazy; disabled ffmpeg should produce coherent
+  reduced UI with notes about what opt-in unlocks, not broken panels.
+
+Implementation should follow:
+
+- `modular-mixer-research/08-acceptance-and-test-strategy.md`
+- `modular-mixer-research/09-build-runbook.md`
+- `modular-mixer-research/10-review-checklist.md`
+
+The current file-viewer Mix, Compare, and video Timeline implementations remain
+prototype coverage only. Do not evolve them as the final architecture.
+
+Stage 1 implementation added `docs/types/media/mixer/` pure modules and unit
+tests for model/timing, capability gating, config-only project settings
+import/export, relink/reapply state, hashing, and EQ schema.
+
+Stage 2 implementation added the modular renderer shell, hit-testing,
+interaction dispatch, context-menu item model, mount helper, and CSS. It is
+validated by `tests/media-mixer-hit-test.test.mjs` and
+`tests/areas/media-studio-mixer-shell.mjs`. The shared renderer now also draws
+audio waveform summaries inside audio-capable element blocks and exposes
+selected-element inspector controls for timing, gain, and fades that update the
+shared project model.
+
+Stage 3 is in progress. Default MP3/WAV Listen is routed through
+`mixer/mixer-audio-listen.js`, creating a shared mixer project for the open
+audio source, adding config-only settings JSON roundtrip coverage, and proving
+transport, zoom/pan, capability-note, and direct source-region dragging behavior
+in focused smoke coverage. It reports waveform analysis status and hands
+available bounded waveform summaries into the shared project element while
+stripping runtime analysis from config-only project export. The visible Listen
+lane now renders directly from the shared renderer/interaction surface; legacy
+Listen class names remain only as compatibility aliases for surrounding tests
+and panels while the new mixer contract is expanded.
+
+Stage 4 has started. Audio `Mix` now routes to
+`mixer/mixer-audio-multi.js`, a shared-model multi-lane controller rendered
+through the modular mixer shell. It starts from the open file as lane 1 and can
+add generated tone, pink-noise/room-tone lanes, or dropped audio-file lanes,
+with lane gain/mute/solo, element fades, track EQ schema, master EQ schema,
+capability notes, and config-only settings export all backed by the mixer
+project model. Active Mix controls, lanes, video-source wrappers, and smoke
+coverage now use direct `.mmx-*` modular contracts instead of the retired
+`.mx-*` prototype aliases. A Narratu-style decoded-audio cache module now
+provides explicit byte budgets, LRU eviction, per-project release, and
+processed cache keys that include the relevant lane,
+element, room-tone, EQ, placement, and master-bus settings; Mix exposes those
+runtime cache stats without serializing cache state into settings JSON.
+WebAudio Mix preview now schedules from the same shared timeline state, using
+cursor offsets, trims, mute/solo, lane gain, element gain/fades, master gain,
+generated tone, and pink-noise/room-tone elements, with file assets decoded
+lazily through the runtime cache. Browser WAV mixdown now derives export
+provenance from that same shared schedule state, including assets, offsets,
+trims, fades, gains, EQ preset ids, room tone, render path, scheduled/skipped
+counts, and warnings without serializing media bytes. Stage 4 audio is complete
+for the accepted browser-feasible scope; the next foundation stage is video/image
+elements and seek-frame preview.
+
+Stage 5 has started with a shared seek-frame preview slice. The modular mixer
+now derives active image/video-capable elements at the current cursor from the
+same project snapshot as the timeline, renders a bounded orientation canvas, and
+exposes selected-element visual transform controls for position, scale,
+rotation, and opacity. This preview is deliberately lighter than realtime video
+playback; it gives enough frame-context grammar to place images/video elements
+while preserving client-side memory constraints. The first visual intake slice
+also classifies dropped audio/image/video files through a reusable helper, so Mix
+can create visual shared-model lanes without serializing media bytes. Dropped
+visual files now perform bounded native metadata probing: image dimensions and
+browser video duration/dimensions can update the shared model, while unsupported
+video keeps a coherent `needs-proxy`/Media Transcoding warning. A runtime-only
+visual frame cache now draws decoded image sources and sparse browser-playable
+video samples into the seek-frame preview without serializing frame data. Opened
+browser-playable video now also mounts a one-lane modular source mixer in
+Timeline mode, so the same shared model drives the ruler, zoom, red playhead,
+selection, visual transforms, sparse runtime thumbnail strips, config-only
+settings export, and sampled seek-frame preview before the older
+trim/transition timeline is opened. The modular surfaces now also expose an
+ffmpeg-gated preview proxy path: unsupported assets get config-only proxy
+provenance and concrete MP4 conversion args, disabled ffmpeg shows an opt-in
+panel, and enabled ffmpeg can lazily create runtime-only browser-playable
+proxies without embedding media bytes in project settings. Remaining Stage 5
+work is broadening proxy/conversion hardening for more formats, replacing any
+remaining old video timeline assumptions with modular multi-lane editing, and
+then Compare on top of the same selected-object model.
+
+Stage 6 has started with an additive modular Compare surface for audio and
+video. It builds a two-lane shared mixer project from the opened media, stores
+A/B targets in `project.compare`, computes overlap through the mixer model, and
+exposes stacked/overlay controls with config-only settings export. The modular
+surface can now browse or drop a B media file, add it as a project asset,
+retarget the existing B lane/element, and refresh `project.compare.b` while
+keeping file bytes runtime-only. Overlay mode now paints shared-coordinate A/B
+waveform or visual preview canvases from the modular project instead of a
+placeholder. The modular surface also has an explicit selected-overlap analysis
+hook and result panel for audio waveform deltas, shifted-overlap timing, RMS/
+peak difference details, visual frame-source coverage, bounded frame-difference
+metrics when runtime frames are available, and transform deltas. Audio/video
+Compare no longer depends on the old Compare UI for detailed readouts.
+
+Stage 7 has started with a reusable project settings UI helper. Multi-lane Mix,
+opened video source, and modular Compare now have toolbar controls for
+config-only settings export/import and an import reapply panel with the required
+`Apply to all elements`, `Ask per element`, and `Do not change media objects`
+choices. The UI uses the pure `importProjectSettings()`/`applyRelinkChoice()`
+path and runtime local-asset evidence, so media bytes remain outside the
+exported project. Missing imported media can now be relinked from the same
+settings panel by browsing or dropping local files; the file objects stay in the
+runtime map while the project receives only matched identity/config metadata.
+The modular video source now also exposes a pure final-video export plan with
+ffmpeg opt-in gating and config-only provenance for assets, timeline items,
+transforms, trims, fades, master settings, warnings, and render path. The next
+Stage 7 slice broadened that same planner into multi-lane Mix projects whenever
+image/video elements are present, including image-only visual compositions that
+still require final video rendering. The planner now emits concrete multi-input
+ffmpeg filter graphs for background, layered visual transforms/overlays, audio
+trim/delay/fades/gain, and master mix gain while keeping disabled-ffmpeg states
+config-only. The opened video source and multi-lane Mix now bridge that plan to
+lazy ffmpeg execution through the same opt-in state: enabled-but-unloaded users
+can render from the export panel, while disabled ffmpeg still shows reduced
+capability affordances. The plan also records a browser ffmpeg input-byte budget
+and blocks over-budget runnable args before full media reads. Per-layer visual
+fade-in/fade-out controls are now part of the shared inspector/model and export
+as ffmpeg alpha fades. First-pass `video-filter` effects are also normalized on
+elements, edited from the shared inspector, and exported as ffmpeg brightness,
+contrast, saturation, grayscale, and blur filters. Incoming visual transition
+records now live in the shared project model, can be edited from the selected
+visual-element inspector, and export as dissolve alpha fades or wipe-left
+overlay expressions with config-only provenance. Normalized source crop
+rectangles now also flow through the shared inspector, seek-frame preview, and
+ffmpeg export chain. Visual filter coverage now also includes hue rotation,
+invert, and sepia in the same shared inspector/model/preview/export path. The
+shared inspector can now capture selected visual transform/crop/filter state as
+config-only keyframes at the current cursor, and those keyframes survive project
+settings export/import. The seek-frame preview now evaluates those visual
+transform, crop, and filter keyframes at the current cursor, so orientation
+frames reflect the animated path instead of only the selected clip's current
+static values. Final video export planning now carries the same keyframe model
+into ffmpeg planning for keyframed overlay positions, records keyframes in
+config-only provenance, and counts them in browser render-complexity budgets.
+The next work is expanding animated export coverage beyond position paths and
+continuing to harden long or complex client-side renders.
+
+Stage 8 has started for Compare. Audio and video Compare now mount only the
+modular shared-model surface as the default/final UI; the old `compare-ui*`
+DOM helpers and lazy legacy disclosure have been removed. Timeline mode now
+follows the same retirement pattern: it opens on the modular video-source mixer
+by default, and the old `timeline.js` surface has been removed. Music-bed and second-media
+intake now live on the modular video-source mixer as additional shared-model
+lanes with config-only export provenance. Selected visual transition controls
+also now live on the modular Timeline toolbar and write dissolve/wipe-left
+records directly into shared project state. Selected clip trim/fade controls
+also now live on the modular Timeline toolbar and write source in/out plus
+audio/visual fade state into the shared model. The modular surface owns
+second-media lanes, music-bed lanes, transitions, trim/fade state, visual
+preview, settings import/export, and final export planning, while source-project
+helpers and toolbar summaries have been split into `mixer-video-source-helpers.js`
+to keep the modular Timeline mount maintainable. Shared preview-proxy
+runtime/application logic now lives in `mixer-video-proxy-runtime.js`, so audio
+Mix and video Timeline use the same ffmpeg opt-in/progress/error behavior and
+config-safe proxy asset updates. Final video export planning also now has
+browser-side duration and composition-complexity budgets, with config-only
+provenance fields that explain why long or dense renders are withheld before
+ffmpeg starts. The final video export status panel now lives in a shared module
+used by audio Mix and video Timeline, so opt-in and hard-blocked states present
+the same way. Timeline mode now mounts only the
+modular video-source mixer; the old `timeline.js` compatibility DOM helper and
+`.tl-*` stylesheet block have been removed while pure ffmpeg arg-builder
+coverage remains in `video-filters.js`. Audio and video Compare now also mount
+only `mixer/mixer-compare.js`; the old `compare-ui*` DOM helpers, lazy legacy
+disclosure, and `.media-compare*` stylesheet block have been removed while pure
+compare math/audio helpers remain for active modular checks and export tests.
+The old root-level Mix prototype files have also been removed; active Mix now
+runs through `mixer/mixer-audio-multi.js`, with broad smoke coverage moved to
+direct `.mmx-*` modular contracts.
+
+### R0a-old — Auto-Audiobook-Grade Default Audio Lane
+
+Status: superseded as the primary direction by the modular mixer foundation
+above.
 
 The current audio `Listen` surface is a custom transport over a hidden decode element, but it
 is not yet the target default MP3 workflow. Do not build this redesign on the current
@@ -80,6 +278,9 @@ Reference alignment:
 - `auto-audiobook/src/utils/mixer-playback.ts`: scheduled playback from cursor with
   per-region gain/fade.
 - `auto-audiobook/src/engine/audio-processor.ts`: fade/early-stop/pink-noise semantics.
+
+This section remains useful as audio-specific input for the one-lane MP3/WAV
+slice of the modular mixer.
 
 ### R0 — Roadmap Hygiene And Code Shape
 

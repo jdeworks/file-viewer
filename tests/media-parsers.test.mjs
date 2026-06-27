@@ -38,6 +38,19 @@ import {
 } from '../docs/types/media/compare-audio.js';
 import { buildMuxMusicArgs, buildVideoExportFilterChain } from '../docs/types/media/video-filters.js';
 import {
+  addAsset,
+  addElement,
+  addLane,
+  buildVideoMixExportPlan,
+  buildVideoProxyPlan,
+  createElement,
+  createLane,
+  createProjectFromAssetMetadata,
+  renderVideoMixWithFfmpeg,
+  renderVideoProxiesWithFfmpeg,
+  setElementTransition,
+} from '../docs/types/media/mixer/index.js';
+import {
   classifyFfmpegError,
   cancelFfmpeg,
   formatFfmpegError,
@@ -330,6 +343,184 @@ function ctocFrame({ id = 'toc', children = [], title = 'Contents', flags = 0x03
   assert.equal(args.includes('-c'), false, 'subtitle burn: does not stream-copy all streams');
   assert.equal(args[args.indexOf('-c:a') + 1], 'aac', 'subtitle burn: encodes MP4-compatible AAC audio');
   assert.equal(args.at(-1), 'out.mp4', 'subtitle burn: writes requested MP4 output');
+
+  let mixProject = createProjectFromAssetMetadata({
+    id: 'asset-video-a',
+    name: 'main.webm',
+    mime: 'video/webm',
+    size: 300,
+    capabilities: { hasAudio: true, hasVideo: true },
+    media: { durationMs: 2000, videoWidth: 640, videoHeight: 360, frameRate: 24 },
+  }, { name: 'Layered video export', fps: 24 });
+  mixProject = {
+    ...mixProject,
+    project: { ...mixProject.project, durationMs: 2500, background: '#112233' },
+    master: { ...mixProject.master, audio: { ...mixProject.master.audio, gain: 0.8 }, video: { ...mixProject.master.video, width: 640, height: 360 } },
+    elements: mixProject.elements.map((element) => ({
+      ...element,
+      timeline: { ...element.timeline, startMs: 500, sourceInMs: 200, durationMs: 1000, placementDurationMs: 1000 },
+      audio: { ...element.audio, gain: 0.7, fadeInMs: 100, fadeOutMs: 200 },
+      visual: { ...element.visual, x: 10, y: -5, scaleX: 1.25, scaleY: 1.1, rotation: 90, opacity: 0.5, fadeInMs: 100, fadeOutMs: 300, crop: { x: 0.1, y: 0.2, width: 0.8, height: 0.7 } },
+      keyframes: [
+        { path: 'visual.x', timeMs: 500, value: 10 },
+        { path: 'visual.x', timeMs: 1500, value: 50 },
+        { path: 'visual.y', timeMs: 500, value: -5 },
+        { path: 'visual.y', timeMs: 1500, value: 15 },
+        { path: 'visual.opacity', timeMs: 500, value: 0.5 },
+        { path: 'visual.opacity', timeMs: 1500, value: 0.9 },
+      ],
+      effects: [{
+        id: 'effect-video-filter-a',
+        kind: 'video-filter',
+        enabled: true,
+        params: { brightness: 0.12, contrast: 1.2, saturation: 0.8, hue: 30, grayscale: 1, invert: 1, sepia: 0.5, blur: 2.5 },
+      }],
+    })),
+  };
+  mixProject = addAsset(mixProject, {
+    id: 'asset-image-b',
+    name: 'overlay.png',
+    mime: 'image/png',
+    size: 200,
+    capabilities: { hasImage: true },
+    media: { durationMs: 0, videoWidth: 320, videoHeight: 180 },
+  });
+  const imageLane = createLane({ id: 'lane-image-b', role: 'image', label: 'Overlay', order: 2 });
+  mixProject = addLane(mixProject, imageLane);
+  mixProject = addElement(mixProject, createElement({
+    id: 'element-image-b',
+    laneId: imageLane.id,
+    assetId: 'asset-image-b',
+    type: 'image',
+    capabilities: { hasImage: true },
+    startMs: 750,
+    durationMs: 1500,
+    placementDurationMs: 1500,
+    visual: { x: -20, y: 12, scaleX: 0.8, scaleY: 0.8, rotation: 0, opacity: 1 },
+  }));
+  mixProject = setElementTransition(mixProject, 'element-image-b', { durationMs: 250, kind: 'wipe-left' });
+  const gatedPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: false, ffmpegLoaded: false });
+  assert.equal(gatedPlan.canRender, false, 'modular video mix export: ffmpeg-disabled plan cannot render');
+  assert.equal(gatedPlan.args.length, 0, 'modular video mix export: ffmpeg-disabled plan has no runnable args');
+  const renderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, outputName: 'render.mp4' });
+  const filterGraph = renderPlan.provenance.filterGraph;
+  assert.equal(renderPlan.canRender, true, 'modular video mix export: loaded ffmpeg can render');
+  assert.equal(renderPlan.args.includes('-filter_complex'), true, 'modular video mix export: emits filter_complex');
+  assert.equal(renderPlan.args[renderPlan.args.indexOf('-map') + 1], '[vbase2]', 'modular video mix export: maps composed video output');
+  assert.equal(renderPlan.args.includes('[aout]'), true, 'modular video mix export: maps mixed audio output');
+  assert.deepEqual(renderPlan.provenance.inputs[1].args, ['-loop', '1', '-t', '2.25', '-i', 'overlay.png'], 'modular video mix export: loops image inputs for full composition duration');
+  assert.ok(filterGraph.includes('color=c=0x112233:s=640x360:r=24:d=2.25[vbase0]'), 'modular video mix export: starts with configured background canvas');
+  assert.ok(filterGraph.includes('[0:v]trim=start=0.2:duration=1,setpts=PTS-STARTPTS,crop=iw*0.8:ih*0.7:iw*0.1:ih*0.2,scale=iw*1.25:ih*1.1,rotate=1.5708'), 'modular video mix export: applies trim, crop, scale, and rotation to visual input');
+  assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: applies visual opacity');
+  assert.ok(filterGraph.includes('fade=t=in:st=0:d=0.1:alpha=1,fade=t=out:st=0.7:d=0.3:alpha=1'), 'modular video mix export: applies visual alpha fades');
+  assert.ok(filterGraph.includes('eq=brightness=0.12:contrast=1.2:saturation=0.8,hue=h=30,hue=s=0,negate,colorchannelmixer=0.6965:0.3845:0.0945:0:0.1745:0.843:0.084:0:0.136:0.267:0.5655:0:0:0:0:1,boxblur=2.5:1'), 'modular video mix export: applies video filter effects');
+  assert.ok(filterGraph.includes("overlay=x=if(lt(t\\,0.5)\\,(W-w)/2+10\\,if(lt(t\\,1.5)\\,(W-w)/2+(10+40*((t-0.5)/1))\\,(W-w)/2+50)):y=if(lt(t\\,0.5)\\,(H-h)/2-5\\,if(lt(t\\,1.5)\\,(H-h)/2+(-5+20*((t-0.5)/1))\\,(H-h)/2+15)):enable='between(t,0.5,1.5)'"), 'modular video mix export: overlays first visual with keyframed position expressions');
+  assert.ok(filterGraph.includes('colorchannelmixer=aa=0.5'), 'modular video mix export: samples visual opacity keyframe at clip start for static filter path');
+  assert.ok(filterGraph.includes('[1:v]trim=start=0:duration=1.5,setpts=PTS-STARTPTS,scale=iw*0.8:ih*0.8'), 'modular video mix export: includes second visual layer');
+  assert.ok(filterGraph.includes("overlay=x=if(lt(t\\,1)\\,-w+((W-w)/2-20+w)*((t-0.75)/0.25)\\,(W-w)/2-20):y=(H-h)/2+12:enable='between(t,0.75,2.25)'"), 'modular video mix export: applies wipe-left visual transition expression');
+  assert.equal(renderPlan.provenance.transitions[0].kind, 'wipe-left', 'modular video mix export: records transition kind in provenance');
+  assert.equal(renderPlan.provenance.transitions[0].durationMs, 250, 'modular video mix export: records transition duration in provenance');
+  assert.equal(renderPlan.provenance.visualItems[0].keyframes.length, 6, 'modular video mix export: records config-only keyframes in provenance');
+  assert.equal(renderPlan.provenance.renderBudget.keyframeCount, 6, 'modular video mix export: render budget counts keyframes');
+  assert.ok(filterGraph.includes('[0:a]atrim=start=0.2:duration=1,asetpts=PTS-STARTPTS,adelay=500:all=1,afade=t=in:st=0:d=0.1,afade=t=out:st=0.8:d=0.2,volume=0.7'), 'modular video mix export: applies audio trim, delay, fades, and gain');
+  assert.ok(filterGraph.includes('[a0]amix=inputs=1:duration=longest:dropout_transition=0,volume=0.8[aout]'), 'modular video mix export: applies master audio gain after mix');
+  assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache/i.test(JSON.stringify(renderPlan)), false, 'modular video mix export: plan remains config-only');
+  const overBudgetPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxInputBytes: 400 });
+  assert.equal(overBudgetPlan.canRender, false, 'modular video mix export: over-budget browser ffmpeg plan cannot render');
+  assert.equal(overBudgetPlan.args.length, 0, 'modular video mix export: over-budget plan has no runnable args');
+  assert.equal(overBudgetPlan.provenance.renderBudget.totalInputBytes, 500, 'modular video mix export: render budget sums unique input bytes');
+  assert.equal(overBudgetPlan.provenance.renderBudget.overBudget, true, 'modular video mix export: render budget records over-budget state');
+  assert.match(overBudgetPlan.warnings.join(' '), /browser ffmpeg limit/, 'modular video mix export: over-budget plan explains browser ffmpeg limit');
+  const longRenderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxRenderDurationMs: 2000 });
+  assert.equal(longRenderPlan.canRender, false, 'modular video mix export: long browser ffmpeg plan cannot render');
+  assert.equal(longRenderPlan.args.length, 0, 'modular video mix export: long render plan has no runnable args');
+  assert.equal(longRenderPlan.provenance.renderBudget.durationOverBudget, true, 'modular video mix export: duration budget records over-budget state');
+  assert.match(longRenderPlan.warnings.join(' '), /safe render limit/, 'modular video mix export: long render plan explains safe render limit');
+  const complexRenderPlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxCompositionItems: 3 });
+  assert.equal(complexRenderPlan.canRender, false, 'modular video mix export: complex browser ffmpeg plan cannot render');
+  assert.equal(complexRenderPlan.provenance.renderBudget.compositionItems, 11, 'modular video mix export: complexity budget counts visual, audio, effects, transitions, and keyframes');
+  assert.equal(complexRenderPlan.provenance.renderBudget.complexityOverBudget, true, 'modular video mix export: complexity budget records over-budget state');
+  assert.match(complexRenderPlan.warnings.join(' '), /safe complexity limit/, 'modular video mix export: complex render plan explains safe complexity limit');
+  const fakeFs = new Map();
+  const fakeFfmpeg = {
+    ran: null,
+    FS(op, name, data) {
+      if (op === 'writeFile') {
+        fakeFs.set(name, data);
+        return undefined;
+      }
+      if (op === 'readFile') return Uint8Array.from([1, 2, 3, 4]);
+      if (op === 'unlink') {
+        fakeFs.delete(name);
+        return undefined;
+      }
+      throw new Error(`Unexpected FS op: ${op}`);
+    },
+    async run(...args) {
+      this.ran = args;
+    },
+  };
+  const renderedMix = await renderVideoMixWithFfmpeg(fakeFfmpeg, renderPlan, new Map([
+    ['asset-video-a', new File([Uint8Array.from([9, 8, 7])], 'main.webm', { type: 'video/webm' })],
+    ['asset-image-b', new File([Uint8Array.from([6, 5])], 'overlay.png', { type: 'image/png' })],
+  ]));
+  assert.deepEqual(fakeFfmpeg.ran, renderPlan.args, 'modular video mix export: runtime executes planned args exactly');
+  assert.equal(renderedMix.filename, 'Layered-video-export.mp4', 'modular video mix export: runtime returns planned filename');
+  assert.equal(renderedMix.blob.type, 'video/mp4', 'modular video mix export: runtime returns an MP4 blob');
+  assert.equal(renderedMix.bytes, 4, 'modular video mix export: runtime reports output byte count');
+  assert.equal(fakeFs.size, 0, 'modular video mix export: runtime cleans MEMFS inputs and output');
+  const tightRuntimePlan = buildVideoMixExportPlan(mixProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxInputBytes: 1000 });
+  await assert.rejects(
+    () => renderVideoMixWithFfmpeg(fakeFfmpeg, tightRuntimePlan, new Map([
+      ['asset-video-a', new File(['x'.repeat(800)], 'main.webm', { type: 'video/webm' })],
+      ['asset-image-b', new File(['y'.repeat(300)], 'overlay.png', { type: 'image/png' })],
+    ])),
+    /browser ffmpeg limit/,
+    'modular video mix export: runtime rechecks relinked local file sizes before MEMFS writes',
+  );
+  await assert.rejects(
+    () => renderVideoMixWithFfmpeg(fakeFfmpeg, renderPlan, new Map([['asset-video-a', new File(['x'], 'main.webm')]])),
+    /Missing local media for overlay\.png/,
+    'modular video mix export: runtime requires local handles for every planned input',
+  );
+
+  let proxyProject = addAsset(mixProject, {
+    id: 'asset-proxy-video',
+    name: 'needs-proxy.avi',
+    mime: 'video/x-msvideo',
+    size: 120,
+    status: 'needs-proxy',
+    capabilities: { hasAudio: true, hasVideo: true, needsFfmpegForPreview: true },
+    media: { durationMs: 1000, videoWidth: 320, videoHeight: 180 },
+  });
+  const proxyDisabled = buildVideoProxyPlan(proxyProject, { ffmpegEnabled: false, ffmpegLoaded: false });
+  assert.equal(proxyDisabled.canRender, false, 'modular video proxy: disabled ffmpeg cannot render proxy');
+  assert.equal(proxyDisabled.items.length, 0, 'modular video proxy: disabled plan has no runnable items');
+  assert.match(proxyDisabled.warnings.join(' '), /Media Transcoding/, 'modular video proxy: disabled plan explains opt-in');
+  const proxyPlan = buildVideoProxyPlan(proxyProject, { ffmpegEnabled: true, ffmpegLoaded: true });
+  assert.equal(proxyPlan.canRender, true, 'modular video proxy: loaded ffmpeg can render proxy');
+  assert.equal(proxyPlan.provenance.renderPath, 'ffmpeg-video-proxy', 'modular video proxy: records proxy render path');
+  assert.deepEqual(proxyPlan.items[0].args.slice(0, 2), ['-i', 'needs-proxy.avi'], 'modular video proxy: args read the original asset');
+  assert.equal(proxyPlan.items[0].args.includes('-movflags'), true, 'modular video proxy: args create browser-streamable mp4');
+  assert.equal(/blob:|data:|objectURL|frameCache|thumbnailCache|mediaBytes/i.test(JSON.stringify(proxyPlan)), false, 'modular video proxy: plan remains config-only');
+  const proxyOverBudget = buildVideoProxyPlan(proxyProject, { ffmpegEnabled: true, ffmpegLoaded: true, maxInputBytes: 80 });
+  assert.equal(proxyOverBudget.canRender, false, 'modular video proxy: over-budget proxy plan cannot render');
+  assert.equal(proxyOverBudget.provenance.renderBudget.overBudget, true, 'modular video proxy: records over-budget state');
+  fakeFs.clear();
+  fakeFfmpeg.ran = null;
+  const renderedProxy = await renderVideoProxiesWithFfmpeg(fakeFfmpeg, proxyPlan, new Map([
+    ['asset-proxy-video', new File([Uint8Array.from([1, 2, 3, 4])], 'needs-proxy.avi', { type: 'video/x-msvideo' })],
+  ]));
+  assert.deepEqual(fakeFfmpeg.ran, proxyPlan.items[0].args, 'modular video proxy: runtime executes planned args exactly');
+  assert.equal(renderedProxy.proxies[0].filename, 'needs-proxy.proxy.mp4', 'modular video proxy: runtime returns proxy filename');
+  assert.equal(renderedProxy.proxies[0].blob.type, 'video/mp4', 'modular video proxy: runtime returns MP4 proxy blob');
+  assert.equal(renderedProxy.proxies[0].bytes, 4, 'modular video proxy: runtime reports proxy byte count');
+  assert.equal(fakeFs.size, 0, 'modular video proxy: runtime cleans MEMFS input and output');
+  await assert.rejects(
+    () => renderVideoProxiesWithFfmpeg(fakeFfmpeg, proxyPlan, new Map()),
+    /Missing local media for needs-proxy\.avi/,
+    'modular video proxy: runtime requires local source media',
+  );
 
   assert.equal(parseTimestamp('0:00:02.500'), 2.5, 'timestamp: minute-only HH:SS variant');
   assert.equal(parseTimestamp('01:02:03,004'), 3723.004, 'timestamp: comma ms variant');

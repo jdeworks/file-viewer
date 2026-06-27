@@ -3,14 +3,21 @@
 // WITH a stored solution, a REPLAY confirms the move string actually solves it — a broken solution
 // fails the build. A set's `solutions` array may be shorter than its `levels` (missing/empty entries
 // are "pending" — the Solve demo shows a notice); each set declares a `maxPending` budget (default 2)
-// so a regression that silently drops solutions still fails.
+// so a regression that silently drops solutions still fails. sets.js is now metadata-only with lazy
+// loaders, so we await loadLevels()/loadSolutions(); we also assert each set's hard-coded `count`
+// matches its real LEVELS length (drift guard for the picker that renders from `count`).
 import { SETS } from '../docs/games/sokoban/sets.js';
 import { parseLevel, replay } from '../docs/games/sokoban/solve.js';
 
 let fails = 0;
 for (const set of SETS) {
-  const { levels, solutions = [], maxPending = 2 } = set;
+  const { maxPending = 2, count } = set;
+  const levels = await set.loadLevels();
+  const solutions = (await set.loadSolutions().catch(() => [])) || [];
   let solved = 0, pending = 0, bad = 0;
+  if (count !== levels.length) {
+    console.error(set.id + ': declared count ' + count + ' != actual levels ' + levels.length); bad++;
+  }
   if (solutions.length > levels.length) {
     console.error(set.id + ': solutions length ' + solutions.length + ' > levels ' + levels.length); bad++;
   }

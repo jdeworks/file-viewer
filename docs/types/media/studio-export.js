@@ -219,25 +219,23 @@ export function buildExportPanel(intake, mediaEl, kind, options = {}) {
   const chapterBtn = chapterControls?.button || null;
   if (chapterControls?.el) panel.appendChild(chapterControls.el);
 
-  // Cross-clip transitions are now WIRED (P6 video timeline / P5 audio mixer). This line is
-  // no longer a "coming" stub — it points the user at the panel that does the cross-clip work.
-  // (For video: dissolve/xfade + mux-music live in the Video timeline; for audio: the
-  // multi-track mixer crossfades clips on its lanes.)
+  // Cross-clip transitions are now wired through the modular Timeline/Mix surfaces.
   const stub = document.createElement('p');
   stub.className = 'media-export-stub media-ed-note';
   if (kind === 'video') {
-    stub.append(document.createTextNode('Dissolve / crossfade (xfade) between two clips lives in the '));
+    stub.append(document.createTextNode('Dissolve / crossfade (xfade) between two clips lives in the modular '));
     const lnk = document.createElement('button');
     lnk.type = 'button';
     lnk.className = 'media-tl-open';
-    lnk.textContent = 'Video timeline';
+    lnk.textContent = 'Timeline';
     lnk.addEventListener('click', () => {
-      const wrap = panel.closest('.media-doc')?.querySelector('.media-tl-panel');
-      const toggle = wrap?.previousElementSibling;
-      if (toggle && wrap?.hidden) toggle.click();
-      wrap?.scrollIntoView({ behavior: 'smooth' });
+      const doc = panel.closest('.media-doc');
+      const tab = doc?.querySelector('.media-mode-tab[data-mode="timeline"]');
+      tab?.click();
+      doc?.querySelector('.media-mode-panel[data-mode="timeline"] .mmx-video-source')
+        ?.scrollIntoView({ behavior: 'smooth' });
     });
-    stub.append(lnk, document.createTextNode(' (below) — drop a second clip there to bake it.'));
+    stub.append(lnk, document.createTextNode(' — add a second clip there to bake it.'));
   } else {
     stub.textContent = 'Crossfade (acrossfade) between two clips lives in the Multi-track mixer — add a second lane there to crossfade.';
   }

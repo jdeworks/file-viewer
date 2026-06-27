@@ -40,7 +40,7 @@ export async function runAudioTuneAndDynamics(ctx) {
 
   await exerciseCompare(ctx, 'audio');
   await page.click('#previewHost .media-mode-tab[data-mode="listen"]');
-  const compareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .media-compare');
+  const compareUnmounted = await page.$('#previewHost .media-mode-panel[data-mode="compare"] .mmx-compare-source');
   if (!compareUnmounted) pass('audio Compare tears down when leaving mode'); else fail('audio Compare stayed mounted after leaving mode');
 
   await page.click('#previewHost .media-mode-tab[data-mode="tune"]');

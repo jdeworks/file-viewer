@@ -12,7 +12,7 @@ export async function run(ctx) {
   await (async function walk(dir) {
     for (const name of await readdir(dir)) {
       const full = join(dir, name);
-      if ((await stat(full)).isDirectory()) await walk(full);
+      if ((await stat(full)).isDirectory()) { if (name.startsWith('_')) continue; await walk(full); }  // skip _-prefixed scratch dirs (e.g. _held) — matches gen-asset-manifest.mjs
       else { const p = relative(ROOT, full).split('\\').join('/'); if (!exclude.has(p)) onDisk.push(p); }
     }
   })(ROOT);
@@ -23,7 +23,9 @@ export async function run(ctx) {
   if (!missing.length && !extra.length) pass('asset-manifest covers every file (' + manifest.assets.length + ') — offline precache complete');
   else fail('asset-manifest stale (run node scripts/gen-asset-manifest.mjs). missing=' + missing.join(',') + ' extra=' + extra.join(','));
   // Bundles: every asset belongs to exactly one bundle, each bundle has a size, and the big libs
-  // are flagged heavy (so the cache-download modal can leave them unchecked by default).
+  // are flagged heavy (so the cache-download modal can leave them unchecked by default). The core
+  // app shell must NEVER be heavy regardless of size — it is essential for offline-first and always
+  // precached (it bundles type-detection, so it is ~1.58 MB; see NEVER_HEAVY in gen-asset-manifest.mjs).
   const bundles = manifest.bundles || [];
   const bundleFiles = bundles.flatMap((b) => b.files);
   const allCovered = bundleFiles.length === manifest.assets.length && new Set(bundleFiles).size === manifest.assets.length;

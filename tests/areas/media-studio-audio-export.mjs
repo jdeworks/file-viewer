@@ -41,13 +41,18 @@ export async function runAudioExportAndPresetChecks(ctx) {
   else fail('audio editor trim button missing with ffmpeg on');
 
   // Waveform drag selection pre-fills existing Trim HH:MM:SS inputs.
-  const waveRect = await page.$eval('#previewHost .media-waveform-surface canvas.media-wv-canvas', (canvas) => {
+  await page.$eval('#previewHost .media-waveform-surface', (surface) => {
+    surface.scrollIntoView({ block: 'center', inline: 'nearest' });
+  });
+  const waveRect = await page.$eval('#previewHost .media-waveform-surface', (surface) => {
+    const canvas = surface.querySelector('canvas.media-wv-canvas');
     const r = canvas.getBoundingClientRect();
-    return { x: r.x, y: r.y, w: r.width, h: r.height };
+    const sr = surface.getBoundingClientRect();
+    return { x: r.x, y: sr.y, w: r.width, h: sr.height };
   });
   const trimStartX = waveRect.x + waveRect.w * 0.2;
   const trimEndX = waveRect.x + waveRect.w * 0.6;
-  const trimY = waveRect.y + waveRect.h * 0.5;
+  const trimY = waveRect.y + waveRect.h - 12;
   await page.mouse.move(trimStartX, trimY);
   await page.mouse.down();
   await page.mouse.move(trimEndX, trimY);
