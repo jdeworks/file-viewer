@@ -10,6 +10,9 @@
 //     deriveKey(),           // the seed-derived restoration key (what the v1/v2/v3 3-way diff reveals)
 //     tryRestoreKey(key),    // attempt the boss un-cheat with a key
 //     bossSolver(),          // defeat The Memory Leak once unlocked → bool
+//     draftPending(),        // is a per-run boon draft available? → bool
+//     draftOffer(),          // the current 3-boon offer (ids)
+//     draft(id?),            // pick a boon (default = first offered) → bool
 //   };
 import { diffKeyFromState } from './content.js';
 import { corruptionForRun } from './board.js';
@@ -38,6 +41,9 @@ export function installStage3Hook(api) {
     deriveKey: () => diffKeyFromState(api.state),
     tryRestoreKey: (key) => api.tryRestoreKey(key),
     bossSolver: () => api.bossSolver(),
+    draftPending: () => (typeof api.draftPending === 'function' ? api.draftPending() : false),
+    draftOffer: () => (typeof api.draftOffer === 'function' ? api.draftOffer() : []),
+    draft: (id) => (typeof api.draft === 'function' ? api.draft(id) : false),
   };
   return () => { if (window.__fvStage3) delete window.__fvStage3; };
 }

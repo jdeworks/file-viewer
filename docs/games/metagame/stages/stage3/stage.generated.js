@@ -876,7 +876,10 @@ function installStage3Hook(api) {
     },
     deriveKey: () => diffKeyFromState(api.state),
     tryRestoreKey: (key2) => api.tryRestoreKey(key2),
-    bossSolver: () => api.bossSolver()
+    bossSolver: () => api.bossSolver(),
+    draftPending: () => typeof api.draftPending === "function" ? api.draftPending() : false,
+    draftOffer: () => typeof api.draftOffer === "function" ? api.draftOffer() : [],
+    draft: (id) => typeof api.draft === "function" ? api.draft(id) : false
   };
   return () => {
     if (window.__fvStage3) delete window.__fvStage3;
@@ -991,24 +994,83 @@ function decayRatio(decay) {
   return Math.max(0, Math.min(1, decay.meter / decay.threshold));
 }
 
-// ../../docs/games/metagame/stages/stage3/renderer.js
-var MOVE = {
-  ArrowUp: [0, -1],
-  ArrowDown: [0, 1],
-  ArrowLeft: [-1, 0],
-  ArrowRight: [1, 0],
-  w: [0, -1],
-  s: [0, 1],
-  a: [-1, 0],
-  d: [1, 0],
-  W: [0, -1],
-  S: [0, 1],
-  A: [-1, 0],
-  D: [1, 0]
-};
-var RETAIN_EVERY = 4;
-function renderStage3(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+// ../../docs/games/metagame/stages/stage3/s3boons.js
+var DRAFT_AT = [0, 5, 10];
+var BOONS = [
+  { id: "cache", label: "Cache Primer", desc: "+2 cells pre-filled each snapshot (this run)", effect: { prefetch: 2 } },
+  { id: "oracle_echo", label: "Oracle Echo", desc: "+1 hint per snapshot (this run)", effect: { oracle: 1 } },
+  { id: "parity_echo", label: "Parity Echo", desc: "+1 integrity check per snapshot (this run)", effect: { parity: 1 } },
+  { id: "overread", label: "Overclocked Read", desc: "+50% registers per solve (this run)", effect: { throughput: 2 } },
+  { id: "stabilizer", label: "Stabilizer Field", desc: "volatile cells survive +2 moves (this run)", effect: { volatile: 2 } },
+  { id: "pressure_valve", label: "Pressure Valve", desc: "+40% instability headroom (this run)", effect: { decayPct: 0.4 } }
+];
+var BY_ID = new Map(BOONS.map((b) => [b.id, b]));
+function ensureRunBoons(state) {
+  if (!state || !state.run) return;
+  if (!Array.isArray(state.run.boons)) state.run.boons = [];
+  if (!Number.isFinite(state.run.draftsTaken)) state.run.draftsTaken = 0;
+}
+function milestonesReached(state) {
+  const solved = Number(state.run.solvedCount || 0);
+  return DRAFT_AT.filter((m) => solved >= m).length;
+}
+function draftPending(state) {
+  ensureRunBoons(state);
+  return state.run.draftsTaken < milestonesReached(state);
+}
+function draftOffer(state) {
+  ensureRunBoons(state);
+  const taken = new Set(state.run.boons);
+  const pool = BOONS.filter((b) => !taken.has(b.id));
+  if (!pool.length) return [];
+  const rng = makeRng(`${state.run.seed}:draft:${state.run.draftsTaken}`);
+  return rng.shuffle(pool).slice(0, Math.min(3, pool.length));
+}
+function pickBoon(state, id) {
+  ensureRunBoons(state);
+  if (!draftPending(state)) return false;
+  if (!BY_ID.has(id) || state.run.boons.includes(id)) return false;
+  if (!draftOffer(state).some((b) => b.id === id)) return false;
+  state.run.boons.push(id);
+  state.run.draftsTaken += 1;
+  return true;
+}
+function boonBonus(state, key2) {
+  if (!state || !state.run || !Array.isArray(state.run.boons)) return 0;
+  let total = 0;
+  for (const id of state.run.boons) {
+    const b = BY_ID.get(id);
+    if (b && b.effect && typeof b.effect[key2] === "number") total += b.effect[key2];
+  }
+  return total;
+}
+function buildDraftPanel({ state, save, onClose }) {
+  const box = document.createElement("div");
+  box.className = "s3-shop s3-draft";
+  const offer = draftOffer(state);
+  const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
+  box.innerHTML = `
+    <div class="s3-shop-head">BOON DRAFT
+      <span class="s3-shop-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</span>
+      <button type="button" data-draft="close" class="s3-shop-x" aria-label="close">&#10005;</button>
+    </div>
+    <div class="s3-shop-note">run-scoped boons — they apply to this run's snapshots only.</div>
+    ${offer.map((b) => `<div class="s3-shop-row">
+      <div><strong>${b.label}</strong><div class="s3-shop-desc">${b.desc}</div></div>
+      <button type="button" data-pick="${b.id}">draft</button>
+    </div>`).join("")}`;
+  box.querySelectorAll("[data-pick]").forEach((btn) => btn.addEventListener("click", () => {
+    if (pickBoon(state, btn.dataset.pick)) {
+      save?.();
+      onClose?.();
+    }
+  }));
+  box.querySelector('[data-draft="close"]').addEventListener("click", () => onClose?.());
+  return { el: box };
+}
+
+// ../../docs/games/metagame/stages/stage3/view.js
+function buildStage3Shell() {
   const root = document.createElement("section");
   root.className = "stage3-memory-grid";
   root.innerHTML = `
@@ -1025,6 +1087,7 @@ function renderStage3(ctx) {
         <div class="s3-grid-host"></div>
         <div class="s3-toolbar">
           <button type="button" data-action="shop">defrag shop</button>
+          <button type="button" data-action="draft" data-field="draftBtn" hidden></button>
           <button type="button" data-action="hint" data-field="hintBtn" hidden></button>
           <button type="button" data-action="check" data-field="checkBtn" hidden></button>
         </div>
@@ -1049,6 +1112,28 @@ function renderStage3(ctx) {
     </div>
     <ol class="s3-log"></ol>
   `;
+  return root;
+}
+
+// ../../docs/games/metagame/stages/stage3/renderer.js
+var MOVE = {
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  w: [0, -1],
+  s: [0, 1],
+  a: [-1, 0],
+  d: [1, 0],
+  W: [0, -1],
+  S: [0, 1],
+  A: [-1, 0],
+  D: [1, 0]
+};
+var RETAIN_EVERY = 4;
+function renderStage3(ctx) {
+  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const root = buildStage3Shell();
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const log = root.querySelector(".s3-log");
@@ -1074,6 +1159,9 @@ function renderStage3(ctx) {
     achievements?.unlockAchievement?.(`stage3.${id}`, { stage: 3, title });
     pushLog(state, `achievement — ${title}`);
   }
+  ensureRunBoons(state);
+  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle");
+  const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
   loadBoard();
   paintHud();
   function loadBoard() {
@@ -1083,12 +1171,15 @@ function renderStage3(ctx) {
     board.hintsUsed = 0;
     board.checksUsed = 0;
     board.mistakes = 0;
-    if (fresh && upgradeLevel(state, "prefetch")) {
-      applyPrefetch(board, upgradeLevel(state, "prefetch"));
+    const prefetch = upgradeLevel(state, "prefetch") + boonBonus(state, "prefetch");
+    if (fresh && prefetch) {
+      applyPrefetch(board, prefetch);
       state.run.marks = encodeMarks(board.marks);
     }
     initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    if (board.volatile) board.decayWindow += boonBonus(state, "volatile");
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
+    if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
     grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => {
       board.cursor = { x, y };
       applyCell(x, y, mark, colorB ? COLOR_B : FILLED);
@@ -1139,7 +1230,7 @@ function renderStage3(ctx) {
   }
   function onSolved() {
     const size = board.puzzle.width;
-    const mult = 1 + 0.25 * upgradeLevel(state, "throughput");
+    const mult = 1 + 0.25 * (upgradeLevel(state, "throughput") + boonBonus(state, "throughput"));
     const corrBonus = 1 + 0.18 * corruptionForRun(state.run);
     const reward = Math.round((size * size + 12) * mult * corrBonus);
     state.registers += reward;
@@ -1180,8 +1271,8 @@ function renderStage3(ctx) {
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
-    const oracle = upgradeLevel(state, "oracle");
-    const parity = upgradeLevel(state, "parity");
+    const oracle = oracleCap();
+    const parity = parityCap();
     setHidden(fields.hintBtn, oracle <= 0);
     setHidden(fields.checkBtn, parity <= 0);
     if (oracle > 0) {
@@ -1194,6 +1285,10 @@ function renderStage3(ctx) {
       setText(fields.checkBtn, `check (${left})`);
       fields.checkBtn.disabled = left <= 0 || board.solved;
     }
+    const pending = draftPending(state);
+    setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
+    setText(fields.draftBtn, pending ? "boon draft •" : "boons");
+    fields.draftBtn.classList.toggle("s3-pending", pending);
     const sig = state.log.slice(-6).join("\n");
     if (sig !== lastLog) {
       lastLog = sig;
@@ -1205,7 +1300,7 @@ function renderStage3(ctx) {
     }
   }
   function useHint() {
-    if (board.solved || (board.hintsUsed || 0) >= upgradeLevel(state, "oracle")) return;
+    if (board.solved || (board.hintsUsed || 0) >= oracleCap()) return;
     const cell = firstHintCell(board);
     if (!cell) return;
     board.hintsUsed = (board.hintsUsed || 0) + 1;
@@ -1214,7 +1309,7 @@ function renderStage3(ctx) {
     applyCell(cell.x, cell.y, false, cell.color || FILLED);
   }
   function useCheck() {
-    if (board.solved || (board.checksUsed || 0) >= upgradeLevel(state, "parity")) return;
+    if (board.solved || (board.checksUsed || 0) >= parityCap()) return;
     board.checksUsed = (board.checksUsed || 0) + 1;
     const wrong = wrongCells(board);
     if (wrong.length) {
@@ -1232,6 +1327,23 @@ function renderStage3(ctx) {
       return;
     }
     const panel = buildShopPanel({ state, save, onClose: () => {
+      if (overlay) {
+        overlay.remove();
+        overlay = null;
+      }
+      paintHud();
+    } });
+    overlay = panel.el;
+    root.querySelector(".s3-grid-col").appendChild(panel.el);
+  }
+  function toggleDraft() {
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+      paintHud();
+      return;
+    }
+    const panel = buildDraftPanel({ state, save, onClose: () => {
       if (overlay) {
         overlay.remove();
         overlay = null;
@@ -1281,6 +1393,10 @@ function renderStage3(ctx) {
       toggleShop();
       return;
     }
+    if (action === "draft") {
+      toggleDraft();
+      return;
+    }
     if (action === "hint") {
       useHint();
       return;
@@ -1325,7 +1441,25 @@ function renderStage3(ctx) {
     paintHud();
     return won;
   }
-  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver, aliasedNow: () => aliasedTotal(board?.puzzle) });
+  function draft(id) {
+    const offer = draftOffer(state).map((b) => b.id);
+    const ok = pickBoon(state, id != null ? id : offer[0]);
+    if (ok) {
+      save?.();
+      paintHud();
+    }
+    return ok;
+  }
+  const uninstallHook = installStage3Hook({
+    state,
+    solveCurrent,
+    tryRestoreKey,
+    bossSolver,
+    aliasedNow: () => aliasedTotal(board?.puzzle),
+    draftPending: () => draftPending(state),
+    draftOffer: () => draftOffer(state).map((b) => b.id),
+    draft
+  });
   return {
     repaint: paintHud,
     destroy() {
@@ -1378,7 +1512,7 @@ function freshFrom(meta) {
     retained: Number(meta.retained || 0),
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0 },
     memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, slots: slots2, key: pieces2.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]

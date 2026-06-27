@@ -9,6 +9,8 @@ import { installStage3Hook } from "./s3debug.js";
 import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
 import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } from "./s3decay.js";
 import { aliasedTotal } from "./s3aliased.js";
+import { boonBonus, buildDraftPanel, draftOffer, draftPending, ensureRunBoons, pickBoon } from "./s3boons.js";
+import { buildStage3Shell } from "./view.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -18,46 +20,7 @@ const RETAIN_EVERY = 4; // snapshots cleared per retained fragment
 
 export function renderStage3(ctx) {
   const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
-  const root = document.createElement("section");
-  root.className = "stage3-memory-grid";
-  root.innerHTML = `
-    <header class="s3-hud">
-      <strong>MEMORY GRID</strong>
-      <span>REGISTERS <span data-field="registers"></span></span>
-      <span>RETAINED <span data-field="retained"></span></span>
-      <span>SNAPSHOT <span data-field="snap"></span></span>
-      <span data-field="size"></span>
-    </header>
-    <div class="s3-objective" data-field="objective"></div>
-    <div class="s3-play">
-      <div class="s3-grid-col">
-        <div class="s3-grid-host"></div>
-        <div class="s3-toolbar">
-          <button type="button" data-action="shop">defrag shop</button>
-          <button type="button" data-action="hint" data-field="hintBtn" hidden></button>
-          <button type="button" data-action="check" data-field="checkBtn" hidden></button>
-        </div>
-      </div>
-      <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
-        <section class="s3-boss">
-          <div class="s3-boss-title">THE MEMORY LEAK</div>
-          <div data-field="bossStatus"></div>
-          <div class="s3-hint" data-field="hint"></div>
-          <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
-          <div class="s3-controls">
-            <button type="button" data-action="v1">open memory_v1.log</button>
-            <button type="button" data-action="v2">open memory_v2.log</button>
-            <button type="button" data-action="v3">open memory_v3.log</button>
-            <button type="button" data-action="restore">restore key</button>
-            <button type="button" data-action="boss">solve leak</button>
-            <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
-          </div>
-        </section>
-      </aside>
-    </div>
-    <ol class="s3-log"></ol>
-  `;
+  const root = buildStage3Shell();
   host.replaceChildren(root);
 
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
@@ -80,6 +43,11 @@ export function renderStage3(ctx) {
     pushLog(state, `achievement — ${title}`);
   }
 
+  ensureRunBoons(state);
+  // Effective per-snapshot aid counts = permanent shop level + this run's drafted boons.
+  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle");
+  const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
+
   loadBoard();
   paintHud();
 
@@ -92,11 +60,16 @@ export function renderStage3(ctx) {
     board.hintsUsed = 0;
     board.checksUsed = 0;
     board.mistakes = 0;
-    if (fresh && upgradeLevel(state, "prefetch")) { applyPrefetch(board, upgradeLevel(state, "prefetch")); state.run.marks = encodeMarks(board.marks); }
+    const prefetch = upgradeLevel(state, "prefetch") + boonBonus(state, "prefetch");
+    if (fresh && prefetch) { applyPrefetch(board, prefetch); state.run.marks = encodeMarks(board.marks); }
     // Volatile cells (corruption ≥ 2): a seeded subset of fills decays after a few moves unless locked.
     initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    // Stabilizer Field boon: volatile fills survive a few extra moves this run.
+    if (board.volatile) board.decayWindow += boonBonus(state, "volatile");
     // Decay clock (corruption ≥ 4): per-snapshot pressure meter — cross it and this snapshot fails.
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
+    // Pressure Valve boon: extra instability headroom this run.
+    if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
     grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => { board.cursor = { x, y }; applyCell(x, y, mark, colorB ? COLOR_B : FILLED); } });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
@@ -140,7 +113,7 @@ export function renderStage3(ctx) {
   // few clears, then draw the next, deeper snapshot.
   function onSolved() {
     const size = board.puzzle.width;
-    const mult = 1 + 0.25 * upgradeLevel(state, "throughput"); // Throughput upgrade
+    const mult = 1 + 0.25 * (upgradeLevel(state, "throughput") + boonBonus(state, "throughput")); // Throughput upgrade + boons
     const corrBonus = 1 + 0.18 * corruptionForRun(state.run);  // harder/deeper snapshots pay more
     // Rebalanced for the tightened ~13-solve body: a higher flat base keeps the Defrag shop reachable
     // in a shorter run, and the steeper corruption bonus rewards the climb to the boss gate.
@@ -185,13 +158,18 @@ export function renderStage3(ctx) {
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
-    // Oracle / Parity assist buttons (shown once the upgrade is owned; count = remaining this snapshot).
-    const oracle = upgradeLevel(state, "oracle");
-    const parity = upgradeLevel(state, "parity");
+    // Oracle / Parity assist buttons (shown once owned; count = shop level + boons, remaining this snapshot).
+    const oracle = oracleCap();
+    const parity = parityCap();
     setHidden(fields.hintBtn, oracle <= 0);
     setHidden(fields.checkBtn, parity <= 0);
     if (oracle > 0) { const left = oracle - (board.hintsUsed || 0); setText(fields.hintBtn, `hint (${left})`); fields.hintBtn.disabled = left <= 0 || board.solved; }
     if (parity > 0) { const left = parity - (board.checksUsed || 0); setText(fields.checkBtn, `check (${left})`); fields.checkBtn.disabled = left <= 0 || board.solved; }
+    // Boon draft button — highlighted while a pick is pending.
+    const pending = draftPending(state);
+    setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
+    setText(fields.draftBtn, pending ? "boon draft •" : "boons");
+    fields.draftBtn.classList.toggle("s3-pending", pending);
     const sig = state.log.slice(-6).join("\n");
     if (sig !== lastLog) {
       lastLog = sig;
@@ -201,7 +179,7 @@ export function renderStage3(ctx) {
 
   // Oracle hint: reveal one correct cell, costing one of this snapshot's hints.
   function useHint() {
-    if (board.solved || (board.hintsUsed || 0) >= upgradeLevel(state, "oracle")) return;
+    if (board.solved || (board.hintsUsed || 0) >= oracleCap()) return;
     const cell = firstHintCell(board);
     if (!cell) return;
     board.hintsUsed = (board.hintsUsed || 0) + 1;
@@ -212,7 +190,7 @@ export function renderStage3(ctx) {
 
   // Parity check: flag any wrong fills (cells you filled that should be empty), costing one check.
   function useCheck() {
-    if (board.solved || (board.checksUsed || 0) >= upgradeLevel(state, "parity")) return;
+    if (board.solved || (board.checksUsed || 0) >= parityCap()) return;
     board.checksUsed = (board.checksUsed || 0) + 1;
     const wrong = wrongCells(board);
     if (wrong.length) { grid.flashWrong(wrong); pushLog(state, `parity check: ${wrong.length} wrong cell${wrong.length === 1 ? "" : "s"} flagged.`); }
@@ -226,6 +204,15 @@ export function renderStage3(ctx) {
   function toggleShop() {
     if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
     const panel = buildShopPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
+    overlay = panel.el;
+    root.querySelector(".s3-grid-col").appendChild(panel.el);
+  }
+
+  // Boon draft overlay — drafting a run-scoped boon spends nothing; it just commits a build choice and
+  // closes. Applies to the NEXT snapshot drawn (the current board is not retroactively changed).
+  function toggleDraft() {
+    if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
+    const panel = buildDraftPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
     overlay = panel.el;
     root.querySelector(".s3-grid-col").appendChild(panel.el);
   }
@@ -253,6 +240,7 @@ export function renderStage3(ctx) {
     if (!button) return;
     const action = button.dataset.action;
     if (action === "shop") { toggleShop(); return; }
+    if (action === "draft") { toggleDraft(); return; }
     if (action === "hint") { useHint(); return; }
     if (action === "check") { useCheck(); return; }
     if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
@@ -296,7 +284,19 @@ export function renderStage3(ctx) {
     paintHud();
     return won;
   }
-  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver, aliasedNow: () => aliasedTotal(board?.puzzle) });
+  function draft(id) {
+    const offer = draftOffer(state).map((b) => b.id);
+    const ok = pickBoon(state, id != null ? id : offer[0]);
+    if (ok) { save?.(); paintHud(); }
+    return ok;
+  }
+  const uninstallHook = installStage3Hook({
+    state, solveCurrent, tryRestoreKey, bossSolver,
+    aliasedNow: () => aliasedTotal(board?.puzzle),
+    draftPending: () => draftPending(state),
+    draftOffer: () => draftOffer(state).map((b) => b.id),
+    draft,
+  });
 
   return {
     repaint: paintHud,

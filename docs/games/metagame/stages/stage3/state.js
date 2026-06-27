@@ -46,7 +46,7 @@ function freshFrom(meta) {
     retained: Number(meta.retained || 0),
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0 },
     memoryPair: { runId: `mem-${runCount}`, pieces, slots, key: pieces.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
