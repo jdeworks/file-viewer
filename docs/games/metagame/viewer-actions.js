@@ -12,6 +12,15 @@ const STAGE3_ASCII_FILE = 'entity_f_verification.png';
 const STAGE4_BLUEPRINT_FILE = 'recursion_points.json';
 const STAGE7_FILE = 'entity_f_verification.png';
 const STAGE7_ANCHOR_FILE = 'entity_anchor_0043.txt';
+// Case 2 (Duplicate Roster) source files — opening each in the real viewer mints one evidence-board
+// fact card. fact:route (route_table.csv) is load-bearing: the rule-of-three triad cannot complete
+// without it, so the second case can only be solved by a genuine file-open.
+const STAGE7_SOURCE_FILES = [
+  ['system_spec.json', 'spec_examined'],
+  ['route_table.csv', 'route_table_examined'],
+  ['access_log.csv', 'access_log_examined'],
+  ['comms_transcript.txt', 'comms_examined'],
+];
 
 const FALSY_CHEAT_VALUES = new Set(['false', '0', 'no', 'off', '']);
 const TRUTHY_CHEAT_VALUES = new Set(['true', '1', 'yes', 'on']);
@@ -190,6 +199,19 @@ export function recordStage7AnchorOpen({ file, setAction = sharedSetAction } = {
   return true;
 }
 
+export function stage7SourceAction(file) {
+  const base = basename(file);
+  const match = STAGE7_SOURCE_FILES.find(([name]) => name === base);
+  return match ? match[1] : null;
+}
+
+export function recordStage7SourceOpen({ file, setAction = sharedSetAction } = {}) {
+  const action = stage7SourceAction(file);
+  if (!action) return false;
+  setAction?.(7, action, { source: 'viewer-open', file: basename(file) });
+  return true;
+}
+
 export function stage10EchoMemoryId(file) {
   const base = basename(file);
   const match = base.match(/^([a-z]+)_echo\./);
@@ -210,6 +232,7 @@ export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sh
     recordStage4BlueprintOpen({ file: target, setAction }),
     recordStage6CodexOpen({ file: target, setAction }),
     recordStage7AnchorOpen({ file: target, setAction }),
+    recordStage7SourceOpen({ file: target, setAction }),
     recordStage10EchoOpen({ file: target, setAction }),
     recordStage7MetadataInspection({
       file: target,

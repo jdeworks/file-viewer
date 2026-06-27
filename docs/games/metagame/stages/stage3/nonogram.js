@@ -9,6 +9,7 @@ import { makeRng } from "./rng.js";
 export const UNKNOWN = -1;
 export const EMPTY = 0;
 export const FILLED = 1;
+export const COLOR_B = 2; // second fill colour for two-colour snapshots (see s3twocolor.js)
 
 // Clue list for a line: the lengths of consecutive filled runs ([] = an empty line).
 export function runLengths(line) {

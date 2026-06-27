@@ -6,6 +6,7 @@
 
 import { dealToPlayer, addStatus, tickStatuses, log } from "./combat-damage.js";
 import { checkPlayerDead } from "./combat.js";
+import { runHook } from "./combat-ctx.js";
 
 export function currentIntent(combat) {
   const script = combat.enemy.script;
@@ -16,6 +17,7 @@ export function enemyTurn(combat) {
   const enemy = combat.enemy;
   enemy.block = 0;
   const intent = currentIntent(combat);
+  const hpBefore = combat.player.hp;
   if (enemy.skipNext) {
     enemy.skipNext = false;
     enemy.rttStacks = 0; // DELAY: interrupting a Round-Trip Timer resets its growing hit
@@ -24,6 +26,10 @@ export function enemyTurn(combat) {
     resolveIntent(combat, intent);
     enemy.rttStacks = (enemy.rttStacks || 0) + 1; // uninterrupted turns ramp the RTT hit
   }
+  // Relics that react to incoming damage (onDamageTaken) fire when the enemy's action actually cost
+  // HP this turn; the amount lost is exposed as combat.lastDamageTaken. Inert by default.
+  const lost = hpBefore - combat.player.hp;
+  if (lost > 0) { combat.lastDamageTaken = lost; runHook(combat, "onDamageTaken"); }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
   checkPlayerDead(combat);

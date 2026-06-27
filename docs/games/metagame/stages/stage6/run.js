@@ -7,10 +7,13 @@
 
 import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
 import { makeRng, hashSeed } from "./combat.js";
-import { STARTING_DECK, REWARD_POOL } from "./cards.js";
+import { STARTING_DECK, REWARD_POOL, draftRewardCards } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
 import { applyModifiers } from "./modifiers.js";
-import { rollRelic, relicById } from "./relics.js";
+import { rollRelic, rollRelics, relicById } from "./relics.js";
+import { rollPotion, POTION_DROP_CHANCE } from "./potions.js";
+// Belt operations live in potions.js; re-export so the renderer/tests keep importing from run.js.
+export { POTION_SLOTS, POTION_COST, addPotion, usePotion, takePotion, buyPotion } from "./potions.js";
 
 export const PLAYER_MAX_HP = 60;
 const REST_HEAL_FRACTION = 0.30;
@@ -42,6 +45,7 @@ export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     clearedIds: [],
     deck: [...STARTING_DECK],
     relics: [],
+    potions: [], // the 2-slot consumable belt (potions.js); persisted with the run
     hp: maxHp,
     maxHp,
     handshakes,
@@ -108,6 +112,9 @@ export function resolveCombat(run, { win, hpRemaining }) {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
   }
+  // ~40% of cleared fights also drop a potion to grab (deterministic per node).
+  const potionId = rollRewardPotion(run, node.id);
+  if (potionId) reward.potion = potionId;
   run.pendingReward = reward;
   run.status = "reward";
   return { ok: true, status: "reward" };
@@ -225,17 +232,36 @@ export function seatAtFinalBoss(run, deck) {
 
 // ── internals ────────────────────────────────────────────────────────────────────────────────────
 
+const BOSS_RELIC_CHOICES = 3;
+
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
     run.status = "won";
     return { ok: true, status: "won" };
   }
+  // Offer a 1-of-3 relic choice (deterministic, owned-deduped) instead of a forced grant — big replay
+  // variance. Advancing to the next act is DEFERRED until the player picks (takeBossRelic).
+  const offered = rollRelics(hashSeed(run.seed, `boss-clear-act${run.act}:relics`), run.relics, BOSS_RELIC_CHOICES);
+  run.pendingReward = { relics: offered };
+  run.status = "boss-reward";
+  return { ok: true, status: "boss-reward", offered };
+}
+
+// Pick one of the boss-relic choices (or skip with a null id), then advance to the next act's map.
+export function takeBossRelic(run, relicId) {
+  if (run.status !== "boss-reward") return { ok: false, reason: "no-reward" };
+  const offered = run.pendingReward?.relics || [];
+  let granted = null;
+  if (relicId && offered.includes(relicId) && !run.relics.includes(relicId)) {
+    run.relics.push(relicId);
+    granted = relicId;
+  }
+  run.pendingReward = null;
   run.act += 1;
   run.currentNodeId = null;
-  const relicId = grantRelic(run, `boss-clear-act${run.act}`);
-  if (relicId) run.notice = `Relic acquired — ${relicById(relicId)?.name || relicId}`;
   run.status = "map";
-  return { ok: true, status: "map", advancedToAct: run.act, relic: relicId };
+  if (granted) run.notice = `Relic acquired — ${relicById(granted)?.name || granted}`;
+  return { ok: true, advancedToAct: run.act, relic: granted };
 }
 
 // Public relic grant for events (Defragmenter rewrite). Returns the granted relic id, or null.
@@ -250,14 +276,16 @@ function grantRelic(run, key) {
   return id;
 }
 
+// Deterministic per-node potion drop: ~40% chance, then a rarity-weighted pick. null = no drop.
+function rollRewardPotion(run, nodeId) {
+  const gate = makeRng(hashSeed(run.seed, `${nodeId}:potion-drop`))();
+  if (gate >= POTION_DROP_CHANCE) return null;
+  return rollPotion(hashSeed(run.seed, `${nodeId}:potion-pick`));
+}
+
+// Reward-card draft: rarity-weighted + act-scaled (cards.draftRewardCards), seeded per node.
 function rollRewardCards(run, nodeId) {
-  const rng = makeRng(hashSeed(run.seed, nodeId));
-  const pool = [...REWARD_POOL];
-  const picks = [];
-  while (picks.length < REWARD_CHOICES && pool.length) {
-    picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
-  }
-  return picks;
+  return draftRewardCards(hashSeed(run.seed, nodeId), run.act, REWARD_CHOICES);
 }
 
 function screenForNode(node) {

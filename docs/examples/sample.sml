@@ -1,9 +1,20 @@
+(* sample.sml — Standard ML feature showcase *)
 structure Main = struct
-  val x = 42
+  open List
+
+  val x : int = 42
   val greeting = "Hello, World!"
+
+  datatype color = Red | Green | Blue
+  datatype 'a tree = Leaf | Node of 'a * 'a tree * 'a tree
+
+  type point = int * int
+  type 'a stack = 'a list
 
   fun greet name =
     "Hello, " ^ name ^ "!"
+
+  fun add (x: int) (y: int) : int = x + y
 
   fun factorial 0 = 1
     | factorial n = n * factorial (n - 1)

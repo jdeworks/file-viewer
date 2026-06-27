@@ -34,6 +34,25 @@ class Dog is Animal {
   tricks { _tricks }
 }
 
+class Vector is Sequence {
+  construct new(x, y) {
+    _x = x
+    _y = y
+  }
+
+  x { _x }
+  y { _y }
+  x=(value) { _x = value }
+
+  +(other) { Vector.new(_x + other.x, _y + other.y) }
+  ==(other) { _x == other.x && _y == other.y }
+  [index] { index == 0 ? _x : _y }
+
+  static zero { Vector.new(0, 0) }
+
+  toString { "(%(_x), %(_y))" }
+}
+
 var PI = Math.pi
 var greeting = "Hello, Wren!"
 

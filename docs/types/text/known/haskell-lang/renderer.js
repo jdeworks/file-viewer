@@ -5,241 +5,325 @@ const CSS = `
 .hs-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#5c4a8a;color:#fff;vertical-align:middle;margin-right:8px;}
 .hs-lhs-badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;background:#ede9fe;color:#5c4a8a;vertical-align:middle;margin-left:6px;}
 .hs-title{font-size:18px;font-weight:700;margin:0 0 4px;}
+.hs-mod{font-family:ui-monospace,monospace;font-size:13px;color:#5c4a8a;font-weight:700;}
 .hs-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
 .hs-cards{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.hs-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:110px;}
+.hs-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:96px;}
 .hs-card strong{display:block;font-size:1.2rem;font-weight:700;}
 .hs-card span{font-size:.8rem;color:var(--fg-2,#5a6678);}
 .hs-section{margin:0 0 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden;}
 .hs-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0);}
 .hs-list{margin:0;padding:0;list-style:none;}
-.hs-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;}
+.hs-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .hs-list li:last-child{border-bottom:none;}
 .hs-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#ede9fe;color:#5c4a8a;font-weight:700;}
-.hs-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
-.hs-kw{color:#7c3aed;font-weight:600;}
-.hs-str{color:#0a6640;}
-.hs-comment{color:#6e7781;font-style:italic;}
-.hs-type{color:#0369a1;font-weight:600;}
-.hs-lhs-code{color:var(--fg,#24292f);}
-.hs-lhs-prose{color:#6e7781;}
-.hs-guard{color:#b45309;font-weight:600;}
+.hs-tag-import{background:#dcfce7;color:#166534;}
+.hs-tag-qual{background:#dbeafe;color:#1d4ed8;}
+.hs-tag-data{background:#fef9c3;color:#854d0e;}
+.hs-tag-newtype{background:#fde68a;color:#92400e;}
+.hs-tag-alias{background:#e0f2fe;color:#0369a1;}
+.hs-tag-class{background:#ede9fe;color:#7c3aed;}
+.hs-tag-inst{background:#fce7f3;color:#9d174d;}
+.hs-tag-func{background:#dbeafe;color:#1d4ed8;}
+.hs-name{font-weight:600;}
+.hs-type{color:#0e7490;}
+.hs-ctx{color:#9f1239;font-style:italic;}
+.hs-arrow{color:#7c3aed;font-weight:600;}
+.hs-ret{color:#1d4ed8;font-weight:600;}
+.hs-con{color:#854d0e;font-weight:600;}
+.hs-field{color:#0e7490;}
+.hs-sub2{color:var(--fg-2,#5a6678);}
 `;
 
-const HS_KEYWORDS = new Set(['module', 'where', 'import', 'qualified', 'as', 'hiding', 'data', 'type', 'newtype', 'class', 'instance', 'deriving', 'do', 'let', 'in', 'if', 'then', 'else', 'case', 'of', 'infixl', 'infixr', 'infix', 'forall', 'family']);
-
-function analyzeHaskell(text, isLhs) {
-  const lines = text.split(/\r?\n/);
-
-  // For LHS, code lines are prefixed with '>'
-  const codeLines = isLhs ? lines.filter((l) => l.startsWith('> ')).map((l) => l.slice(2)) : lines;
-  const codeText = codeLines.join('\n');
-
-  // Module name
-  let moduleName = null;
-  const moduleM = codeText.match(/^module\s+([\w.]+)/m);
-  if (moduleM) moduleName = moduleM[1];
-
-  // Imports: group qualified vs regular
-  const imports = { qualified: [], regular: [] };
-  const importRe = /^import\s+(qualified\s+)?([A-Z][\w.]*)/gm;
-  let m;
-  while ((m = importRe.exec(codeText)) !== null) {
-    const isQualified = Boolean(m[1]);
-    const modName = m[2];
-    if (isQualified) {
-      if (!imports.qualified.includes(modName)) imports.qualified.push(modName);
-    } else {
-      if (!imports.regular.includes(modName)) imports.regular.push(modName);
-    }
+// Split a string on a top-level separator (sep ignored inside (), [], {}). Returns trimmed parts.
+function splitTop(s, sep) {
+  const out = []; let depth = 0, buf = '';
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '(' || c === '[' || c === '{') depth++;
+    else if (c === ')' || c === ']' || c === '}') depth = Math.max(0, depth - 1);
+    if (depth === 0 && s.startsWith(sep, i)) { out.push(buf); buf = ''; i += sep.length - 1; continue; }
+    buf += c;
   }
-
-  // Data types (data, newtype, type)
-  const dataTypes = [];
-  const dataRe = /^(?:data|newtype|type)\s+([A-Z]\w*)/gm;
-  while ((m = dataRe.exec(codeText)) !== null) {
-    const entry = { name: m[1], kind: codeText.slice(m.index, m.index + 7).trim().split(' ')[0] };
-    if (!dataTypes.find((d) => d.name === entry.name)) dataTypes.push(entry);
-  }
-
-  // Type classes
-  const typeClasses = [];
-  const classRe = /^class\s+(?:.*?)([A-Z]\w*(?:\s+\w+)*)\s+where/gm;
-  while ((m = classRe.exec(codeText)) !== null) {
-    // Extract just the class name (last uppercased word before 'where')
-    const parts = m[1].trim().split(/\s+/);
-    const name = parts[parts.length - 1];
-    if (!typeClasses.includes(name)) typeClasses.push(name);
-  }
-
-  // Instances
-  const instances = [];
-  const instanceRe = /^instance\s+([\s\S]*?)\s+where/gm;
-  while ((m = instanceRe.exec(codeText)) !== null) {
-    const sig = m[1].trim().replace(/\s+/g, ' ');
-    if (!instances.includes(sig)) instances.push(sig);
-  }
-
-  // Top-level function signatures: lines matching /^[a-z][a-zA-Z0-9_']* ::/
-  const funcSigs = [];
-  const sigRe = /^([a-z_][a-zA-Z0-9_']*)\s*::/gm;
-  while ((m = sigRe.exec(codeText)) !== null) {
-    if (!funcSigs.includes(m[1])) funcSigs.push(m[1]);
-    if (funcSigs.length >= 10) break;
-  }
-
-  return { moduleName, imports, dataTypes, typeClasses, instances, funcSigs };
+  out.push(buf);
+  return out.map((x) => x.trim());
 }
 
-function highlightHaskell(text, isLhs) {
+// Strip line comments (`--` to EOL when at start or after whitespace) from one source line.
+function stripLineComment(line) { return line.replace(/(^|\s)--.*$/, '$1'); }
+
+// Group source into top-level declaration blocks. A block begins at a column-0 (non-indented) line;
+// indented / blank lines fold into the current block (Haskell layout-significant continuations).
+function toBlocks(codeText) {
+  const lines = codeText.split(/\r?\n/);
+  const out = []; let cur = null;
+  for (const raw of lines) {
+    const line = stripLineComment(raw);
+    if (!line.trim()) { if (cur) cur.lines.push(line); continue; }
+    if (/^\S/.test(line)) { if (cur) out.push(cur); cur = { lines: [line] }; }
+    else if (cur) cur.lines.push(line);
+  }
+  if (cur) out.push(cur);
+  return out.map((b) => ({
+    lines: b.lines,
+    first: b.lines[0].trim(),
+    joined: b.lines.join(' ').replace(/\s+/g, ' ').trim(),
+  }));
+}
+
+// Parse a type signature body into { context, parts, returns } (parts split on top-level `->`).
+function parseSig(sig) {
+  const ctxParts = splitTop(sig, '=>');
+  let context = null, body = sig;
+  if (ctxParts.length > 1) { context = ctxParts.slice(0, -1).join(' => '); body = ctxParts[ctxParts.length - 1]; }
+  const parts = splitTop(body, '->').filter(Boolean);
+  return { signature: sig.trim(), context, parts, returns: parts.length ? parts[parts.length - 1] : '' };
+}
+
+// Parse a data/newtype RHS into constructor records { name, fields:[...] } (split on top-level `|`).
+function parseConstructors(rhs) {
+  rhs = rhs.replace(/\bderiving\b[\s\S]*$/, '').trim();
+  if (!rhs) return [];
+  return splitTop(rhs, '|').filter(Boolean).map((c) => {
+    c = c.trim();
+    const name = (c.match(/^([A-Z][\w']*)/) || [])[1] || c.split(/\s+/)[0] || c;
+    const fields = [];
+    const rec = c.match(/\{([\s\S]*)\}/);
+    if (rec) for (const f of splitTop(rec[1], ',')) { const fm = f.match(/^([\w']+)\s*::/); if (fm) fields.push(fm[1]); }
+    return { name, fields };
+  });
+}
+
+// Extract `name :: Type` method signatures from the indented body lines of a class block.
+function parseMethods(blockLines) {
+  const methods = [];
+  for (const raw of blockLines.slice(1)) {
+    const line = stripLineComment(raw).trim();
+    const m = line.match(/^((?:[a-z_][\w']*|\([^)]+\))(?:\s*,\s*[a-z_][\w']*)*)\s*::\s*(.+)$/);
+    if (!m) continue;
+    for (const nm of m[1].split(',').map((x) => x.trim())) {
+      if (!methods.find((x) => x.name === nm)) methods.push({ name: nm, ...parseSig(m[2]) });
+    }
+  }
+  return methods;
+}
+
+// Pure, DOM-free structural parser. Exported for unit testing.
+export function analyzeHaskell(text, isLhs = false) {
+  let src = String(text || '').replace(/\{-[\s\S]*?-\}/g, ' ');
   if (isLhs) {
-    // Literate Haskell: prose vs code lines
-    return text.split(/\r?\n/).map((line) => {
-      if (line.startsWith('> ')) {
-        return '<span class="hs-lhs-code">&gt; ' + highlightHsLine(line.slice(2)) + '</span>';
+    src = src.split(/\r?\n/).filter((l) => l.startsWith('> ') || l.startsWith('>\t')).map((l) => l.slice(2)).join('\n');
+  }
+
+  const result = {
+    module: null, exports: [], imports: [], functions: [],
+    dataTypes: [], newtypes: [], classes: [], instances: [], typeAliases: [],
+  };
+  const sigByName = new Map();
+  const equationNames = [];
+
+  for (const b of toBlocks(src)) {
+    const j = b.joined;
+    let m;
+
+    // module declaration + export list
+    if ((m = j.match(/^module\s+([\w.]+)/))) {
+      result.module = m[1];
+      const ex = j.match(/\(([\s\S]*)\)\s*where/);
+      if (ex) result.exports = splitTop(ex[1], ',').filter(Boolean);
+      continue;
+    }
+
+    // import (regular | qualified, with optional alias + import/hiding list)
+    if ((m = j.match(/^import\s+(qualified\s+)?([A-Z][\w.]*)/))) {
+      const qualified = Boolean(m[1]);
+      const alias = (j.match(/\bas\s+([A-Z][\w.]*)/) || [])[1] || null;
+      const hiding = /\bhiding\b/.test(j);
+      const list = j.match(/\(([\s\S]*)\)/);
+      const items = list ? splitTop(list[1], ',').filter(Boolean) : [];
+      result.imports.push({ module: m[2], qualified, alias, hiding, items });
+      continue;
+    }
+
+    // data / newtype / type
+    if ((m = j.match(/^(data|newtype|type)\s+([A-Z][\w']*)/))) {
+      const kind = m[1], name = m[2];
+      const head = j.replace(/^(data|newtype|type)\s+/, '');
+      const eq = splitTop(head, '=');
+      const params = eq[0].replace(/^[A-Z][\w']*/, '').trim();
+      const rhs = eq.length > 1 ? eq.slice(1).join(' = ') : '';
+      if (kind === 'type') {
+        result.typeAliases.push({ name, params, definition: rhs.trim() });
+      } else if (kind === 'newtype') {
+        result.newtypes.push({ name, params, constructors: parseConstructors(rhs) });
+      } else {
+        result.dataTypes.push({ name, params, constructors: parseConstructors(rhs) });
       }
-      return '<span class="hs-lhs-prose">' + esc(line) + '</span>';
-    }).join('\n');
-  }
-  return text.split(/\r?\n/).map((line) => highlightHsLine(line)).join('\n');
-}
+      continue;
+    }
 
-function highlightHsLine(line) {
-  // Single-line comments
-  const commentIdx = line.indexOf('--');
-  let code = line;
-  let commentSuffix = '';
-  if (commentIdx !== -1) {
-    // Make sure it's not inside a string
-    const before = line.slice(0, commentIdx);
-    const quoteCount = (before.match(/"/g) || []).length;
-    if (quoteCount % 2 === 0) {
-      code = line.slice(0, commentIdx);
-      commentSuffix = '<span class="hs-comment">' + esc(line.slice(commentIdx)) + '</span>';
+    // type class
+    if ((m = j.match(/^class\s+(?:(.+?)\s*=>\s*)?([A-Z][\w']*)((?:\s+[\w']+)*)/))) {
+      result.classes.push({ name: m[2], context: (m[1] || '').trim() || null, params: (m[3] || '').trim(), methods: parseMethods(b.lines) });
+      continue;
+    }
+
+    // instance
+    if ((m = j.match(/^instance\s+(?:(.+?)\s*=>\s*)?([\s\S]+?)\s+where/)) || (m = j.match(/^instance\s+(?:(.+?)\s*=>\s*)?([\s\S]+)$/))) {
+      result.instances.push({ head: m[2].replace(/\s+where$/, '').trim(), context: (m[1] || '').trim() || null });
+      continue;
+    }
+
+    // top-level type signature: `name :: Type` (name lowercase ident or operator in parens)
+    if ((m = b.first.match(/^((?:[a-z_][\w']*|\([^)]+\)))\s*::\s*(.+)$/))) {
+      const sigBody = (splitTop(j, '::')[1] || m[2]).trim();
+      if (!sigByName.has(m[1])) sigByName.set(m[1], { name: m[1], ...parseSig(sigBody) });
+      continue;
+    }
+
+    // top-level equation: `name args = ...` or guarded — record name (may be sig-less function)
+    if ((m = b.first.match(/^([a-z_][\w']*)\b/)) && /(^|\s)=(\s|$)|^\s*\|/.test(j.replace(/^[a-z_][\w']*/, ''))) {
+      equationNames.push(m[1]);
     }
   }
-  let result = esc(code)
-    // String literals
-    .replace(/(&quot;[^&]*&quot;)/g, '<span class="hs-str">$1</span>')
-    // Type names (uppercase identifiers)
-    .replace(/\b([A-Z][a-zA-Z0-9_']*)/g, '<span class="hs-type">$1</span>')
-    // Keywords
-    .replace(new RegExp(`\\b(${[...HS_KEYWORDS].join('|')})\\b`, 'g'), '<span class="hs-kw">$1</span>')
-    // Guards
-    .replace(/(\|(?!=))/g, '<span class="hs-guard">$1</span>');
-  return result + commentSuffix;
-}
 
-function makeSection(title, items, tagFn) {
-  if (!items || items.length === 0) return null;
-  const sec = document.createElement('div');
-  sec.className = 'hs-section';
-  const hd = document.createElement('div');
-  hd.className = 'hs-section-hd';
-  hd.textContent = title;
-  sec.appendChild(hd);
-  const ul = document.createElement('ul');
-  ul.className = 'hs-list';
-  for (const item of items) {
-    const li = document.createElement('li');
-    if (tagFn) {
-      const tag = document.createElement('span');
-      tag.className = 'hs-tag';
-      tag.textContent = tagFn(item);
-      li.appendChild(tag);
-    }
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = typeof item === 'string' ? item : (item.name || item);
-    li.appendChild(nameSpan);
-    ul.appendChild(li);
+  // Functions: every signature, plus equation-only definitions (no signature) with signature=null.
+  for (const f of sigByName.values()) result.functions.push(f);
+  const have = new Set(result.functions.map((f) => f.name));
+  for (const n of equationNames) {
+    if (!have.has(n)) { have.add(n); result.functions.push({ name: n, signature: null, context: null, parts: [], returns: '' }); }
   }
-  sec.appendChild(ul);
-  return sec;
+
+  return result;
 }
 
-export function render(intake) {
+function makeSection(host, title) {
+  const sec = document.createElement('div'); sec.className = 'hs-section';
+  const hd = document.createElement('div'); hd.className = 'hs-section-hd'; hd.textContent = title;
+  sec.appendChild(hd); host.appendChild(sec);
+  const ul = document.createElement('ul'); ul.className = 'hs-list'; sec.appendChild(ul);
+  return ul;
+}
+function tag(cls, t) { return `<span class="hs-tag ${cls}">${esc(t)}</span>`; }
+function row(ul, html) { const li = document.createElement('li'); li.innerHTML = html; ul.appendChild(li); }
+
+function sigHtml(f) {
+  if (!f.signature) return '';
+  const ctx = f.context ? `<span class="hs-ctx">${esc(f.context)}</span> &rArr; ` : '';
+  const parts = f.parts.map((p, i) => {
+    const cls = i === f.parts.length - 1 ? 'hs-ret' : 'hs-type';
+    return `<span class="${cls}">${esc(p)}</span>`;
+  });
+  return ` :: ${ctx}${parts.join(' <span class="hs-arrow">&rarr;</span> ')}`;
+}
+function consHtml(constructors) {
+  return constructors.map((c) => {
+    const fields = c.fields && c.fields.length ? ` { <span class="hs-field">${c.fields.map(esc).join(', ')}</span> }` : '';
+    return `<span class="hs-con">${esc(c.name)}</span>${fields}`;
+  }).join(' <span class="hs-sub2">|</span> ');
+}
+
+export async function render(intake) {
   const text = intake.text || '';
   const name = (intake.name || intake.filename || '').toLowerCase();
   const isLhs = name.endsWith('.lhs');
-  const info = analyzeHaskell(text, isLhs);
+
+  const preview = text.slice(0, 4000);
+  if (!/\bmodule\s+[A-Z]/.test(preview) && !/\bimport\s+/.test(preview)
+    && !/\bdata\s+[A-Z]/.test(preview) && !/::/.test(preview)) return null;
+
+  const a = analyzeHaskell(text, isLhs);
 
   const host = document.createElement('div');
   host.className = 'hs-doc';
+  const styleEl = document.createElement('style'); styleEl.textContent = CSS; host.appendChild(styleEl);
 
-  const styleEl = document.createElement('style');
-  styleEl.textContent = CSS;
-  host.appendChild(styleEl);
-
-  const title = document.createElement('div');
-  title.className = 'hs-title';
+  const title = document.createElement('div'); title.className = 'hs-title';
   let titleHtml = '<span class="hs-badge">Haskell</span>';
   if (isLhs) titleHtml += '<span class="hs-lhs-badge">Literate Haskell</span>';
-  if (info.moduleName) titleHtml += `<span style="font-size:13px;font-weight:400;margin-left:8px;">${esc(info.moduleName)}</span>`;
-  title.innerHTML = titleHtml;
-  host.appendChild(title);
+  if (a.module) titleHtml += `<span class="hs-mod">${esc(a.module)}</span>`;
+  title.innerHTML = titleHtml; host.appendChild(title);
 
-  const totalImports = info.imports.qualified.length + info.imports.regular.length;
-  const sub = document.createElement('div');
-  sub.className = 'hs-sub';
-  sub.textContent = `${totalImports} import${totalImports !== 1 ? 's' : ''} · ${info.dataTypes.length} type${info.dataTypes.length !== 1 ? 's' : ''} · ${info.typeClasses.length} class${info.typeClasses.length !== 1 ? 'es' : ''} · ${info.instances.length} instance${info.instances.length !== 1 ? 's' : ''} · ${info.funcSigs.length} function${info.funcSigs.length !== 1 ? 's' : ''}`;
+  const sub = document.createElement('div'); sub.className = 'hs-sub';
+  sub.textContent = [
+    a.imports.length && `${a.imports.length} import${a.imports.length !== 1 ? 's' : ''}`,
+    a.dataTypes.length && `${a.dataTypes.length} data`,
+    a.classes.length && `${a.classes.length} class${a.classes.length !== 1 ? 'es' : ''}`,
+    a.instances.length && `${a.instances.length} instance${a.instances.length !== 1 ? 's' : ''}`,
+    a.functions.length && `${a.functions.length} function${a.functions.length !== 1 ? 's' : ''}`,
+  ].filter(Boolean).join(' · ');
   host.appendChild(sub);
 
-  // Summary cards
-  const cards = document.createElement('div');
-  cards.className = 'hs-cards';
+  const cards = document.createElement('div'); cards.className = 'hs-cards';
   for (const { value, label } of [
-    { value: totalImports, label: 'Imports' },
-    { value: info.dataTypes.length, label: 'Types' },
-    { value: info.typeClasses.length, label: 'Classes' },
-    { value: info.instances.length, label: 'Instances' },
-    { value: info.funcSigs.length, label: 'Functions' },
+    { value: a.imports.length, label: 'Imports' },
+    { value: a.dataTypes.length + a.newtypes.length, label: 'Data Types' },
+    { value: a.typeAliases.length, label: 'Aliases' },
+    { value: a.classes.length, label: 'Classes' },
+    { value: a.instances.length, label: 'Instances' },
+    { value: a.functions.length, label: 'Functions' },
   ]) {
-    const card = document.createElement('div');
-    card.className = 'hs-card';
-    const strong = document.createElement('strong');
-    strong.textContent = value;
-    const span = document.createElement('span');
-    span.textContent = label;
-    card.appendChild(strong);
-    card.appendChild(span);
-    cards.appendChild(card);
+    const card = document.createElement('div'); card.className = 'hs-card';
+    const s = document.createElement('strong'); s.textContent = value;
+    const sp = document.createElement('span'); sp.textContent = label;
+    card.appendChild(s); card.appendChild(sp); cards.appendChild(card);
   }
   host.appendChild(cards);
 
-  // Imports section (split qualified vs regular)
-  if (totalImports > 0) {
-    const allImports = [
-      ...info.imports.qualified.map((n) => ({ name: n, kind: 'qualified' })),
-      ...info.imports.regular.map((n) => ({ name: n, kind: 'import' })),
-    ];
-    const importsEl = makeSection('Imports', allImports, (i) => i.kind);
-    if (importsEl) host.appendChild(importsEl);
+  if (a.exports.length) {
+    const ul = makeSection(host, `Exports (${a.exports.length})`);
+    for (const e of a.exports) row(ul, `<span class="hs-name">${esc(e)}</span>`);
   }
-
-  const typesEl = makeSection('Data Types', info.dataTypes, (d) => d.kind);
-  if (typesEl) host.appendChild(typesEl);
-
-  const classesEl = makeSection('Type Classes', info.typeClasses);
-  if (classesEl) host.appendChild(classesEl);
-
-  const instancesEl = makeSection('Instances', info.instances);
-  if (instancesEl) host.appendChild(instancesEl);
-
-  const funcsEl = makeSection('Top-level Functions', info.funcSigs);
-  if (funcsEl) host.appendChild(funcsEl);
-
-  // Source
-  const srcSec = document.createElement('div');
-  srcSec.className = 'hs-section';
-  const srcHd = document.createElement('div');
-  srcHd.className = 'hs-section-hd';
-  srcHd.textContent = 'Source';
-  srcSec.appendChild(srcHd);
-  const pre = document.createElement('pre');
-  pre.className = 'hs-pre';
-  pre.innerHTML = highlightHaskell(text, isLhs);
-  srcSec.appendChild(pre);
-  host.appendChild(srcSec);
+  if (a.imports.length) {
+    const ul = makeSection(host, `Imports (${a.imports.length})`);
+    for (const im of a.imports) {
+      const t = tag(im.qualified ? 'hs-tag-qual' : 'hs-tag-import', im.qualified ? 'qualified' : 'import');
+      const alias = im.alias ? ` <span class="hs-sub2">as</span> <span class="hs-name">${esc(im.alias)}</span>` : '';
+      const items = im.items.length ? ` <span class="hs-sub2">(${im.hiding ? 'hiding ' : ''}${esc(im.items.join(', '))})</span>` : '';
+      row(ul, `${t} <span class="hs-name">${esc(im.module)}</span>${alias}${items}`);
+    }
+  }
+  if (a.dataTypes.length) {
+    const ul = makeSection(host, `Data Types (${a.dataTypes.length})`);
+    for (const d of a.dataTypes) {
+      row(ul, `${tag('hs-tag-data', 'data')} <span class="hs-name">${esc(d.name)}${d.params ? ' ' + esc(d.params) : ''}</span> = ${consHtml(d.constructors)}`);
+    }
+  }
+  if (a.newtypes.length) {
+    const ul = makeSection(host, `Newtypes (${a.newtypes.length})`);
+    for (const d of a.newtypes) {
+      row(ul, `${tag('hs-tag-newtype', 'newtype')} <span class="hs-name">${esc(d.name)}${d.params ? ' ' + esc(d.params) : ''}</span> = ${consHtml(d.constructors)}`);
+    }
+  }
+  if (a.typeAliases.length) {
+    const ul = makeSection(host, `Type Aliases (${a.typeAliases.length})`);
+    for (const t of a.typeAliases) {
+      row(ul, `${tag('hs-tag-alias', 'type')} <span class="hs-name">${esc(t.name)}${t.params ? ' ' + esc(t.params) : ''}</span> = <span class="hs-type">${esc(t.definition)}</span>`);
+    }
+  }
+  if (a.classes.length) {
+    const ul = makeSection(host, `Type Classes (${a.classes.length})`);
+    for (const c of a.classes) {
+      const ctx = c.context ? `<span class="hs-ctx">${esc(c.context)}</span> &rArr; ` : '';
+      row(ul, `${tag('hs-tag-class', 'class')} ${ctx}<span class="hs-name">${esc(c.name)}${c.params ? ' ' + esc(c.params) : ''}</span> <span class="hs-sub2">where</span>`);
+      for (const meth of c.methods) {
+        row(ul, `<span style="padding-left:18px">&bull; <span class="hs-name">${esc(meth.name)}</span>${sigHtml(meth)}</span>`);
+      }
+    }
+  }
+  if (a.instances.length) {
+    const ul = makeSection(host, `Instances (${a.instances.length})`);
+    for (const ins of a.instances) {
+      const ctx = ins.context ? `<span class="hs-ctx">${esc(ins.context)}</span> &rArr; ` : '';
+      row(ul, `${tag('hs-tag-inst', 'instance')} ${ctx}<span class="hs-name">${esc(ins.head)}</span>`);
+    }
+  }
+  if (a.functions.length) {
+    const ul = makeSection(host, `Functions (${a.functions.length})`);
+    for (const f of a.functions) {
+      row(ul, `${tag('hs-tag-func', 'fn')} <span class="hs-name">${esc(f.name)}</span>${sigHtml(f)}`);
+    }
+  }
 
   return { parentNode: host };
 }

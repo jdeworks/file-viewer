@@ -27,12 +27,19 @@ module counter (
 
 endmodule
 
-// Simple 2-to-1 multiplexer
+// Simple 2-to-1 multiplexer (gate-level, internal signals)
 module mux2to1 (
     input  wire a,
     input  wire b,
     input  wire sel,
     output wire y
 );
-    assign y = sel ? b : a;
+    wire nsel;
+    wire sel_a;
+    wire sel_b;
+
+    assign nsel  = ~sel;
+    assign sel_a = a & nsel;
+    assign sel_b = b & sel;
+    assign y     = sel_a | sel_b;
 endmodule

@@ -63,7 +63,7 @@ import { defaultState } from "../state.js";
   const hit = markChainBroken({ state });
   assert.equal(hit.complete, true);
   assert.equal(state.evidence.chainBroken, true);
-  assert.equal(state.substage, SUBSTAGE.BOSS, "breaking the chain reaches the boss");
+  assert.equal(state.substage, SUBSTAGE.ACCUSE, "breaking the chain opens Case 2 (the accusation)");
   assert.equal(markChainBroken({ state }).already, true, "idempotent");
 }
 

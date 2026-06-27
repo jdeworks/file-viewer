@@ -6,22 +6,29 @@
 import { applyStatus } from "./status.js";
 import { hasLOS, isOpen } from "./monsters.js";
 import { igniteCell } from "./fire.js";
+import { TORCH_STEPS } from "./darkness.js";
 
 export const CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
   firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
-  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" }
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" },
+  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" }
 };
-export const CONSUMABLE_KEYS = ["blink", "firebolt", "freeze"];
+export const CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch"];
 
 // Scatter a few consumables on reachable floor cells (more, better deeper). Seeded via buildFloor.
+// Torches only enter the loot pool from late Act II (floor 5+) and dominate it in the Overflow act
+// (floor 7+) so you can stock up for the darkness — they're useless on the lit shallow floors.
 export function placeConsumables(rng, floor, roomN, takeCell) {
   const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
+  const pool = ["blink", "firebolt", "freeze"];
+  if (floor >= 5) pool.push("torch");
+  if (floor >= 7) pool.push("torch", "torch");
   const out = [];
   for (let i = 0; i < count; i += 1) {
     const c = takeCell();
     if (!c) break;
-    out.push({ x: c.x, y: c.y, type: rng.pick(CONSUMABLE_KEYS), taken: false });
+    out.push({ x: c.x, y: c.y, type: rng.pick(pool), taken: false });
   }
   return out;
 }
@@ -77,6 +84,11 @@ export function useConsumable(world, player, type, events) {
       if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 5) { applyStatus(m, "frozen", 4, 1); if (m.ambush) m.hidden = false; n += 1; }
     }
     events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+  } else if (type === "torch") {
+    // Light vs stealth: floods a wide radius for a stretch of steps, but the glare wakes foes from
+    // much farther (darkness.torchSightBonus reads world.torch). Re-lighting tops the timer up.
+    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS);
+    events.log.push("you strike a torch — the dark peels back, but something stirs toward the light.");
   } else {
     return false;
   }

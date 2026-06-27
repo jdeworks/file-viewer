@@ -8,6 +8,7 @@
 import { cardById } from "./cards.js";
 import { currentIntent } from "./combat.js";
 import { currentDemand } from "./boss-combat.js";
+import { potionById } from "./potions.js";
 
 const STATUS_LABEL = {
   strength: "STR", vulnerable: "VULN", weak: "WEAK"
@@ -48,6 +49,7 @@ export function combatView(combat, run) {
       ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
     ${jammedRow(combat)}
+    ${potionBelt(run)}
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
       <button type="button" data-action="end-turn">end turn ▸</button>
@@ -132,6 +134,17 @@ function enemyPanel(enemy, intent, combat) {
       </div>
       ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+
+// The potion belt: click a potion to consume it during combat ([data-potion="<beltIndex>"]).
+function potionBelt(run) {
+  const potions = run?.potions || [];
+  if (!potions.length) return "";
+  const chips = potions.map((id, i) => {
+    const p = potionById(id);
+    return `<button type="button" class="s6db-potion" data-potion="${i}" title="${esc(p?.text || "")}">⚗ ${esc(p?.name || id)}</button>`;
+  }).join("");
+  return `<div class="s6db-potions" aria-label="potion belt"><span class="s6db-potions-label">BELT:</span> ${chips}</div>`;
 }
 
 // THROUGHPUT: show Packet-Loss jammed cards (unplayable this turn; Defrag returns them).

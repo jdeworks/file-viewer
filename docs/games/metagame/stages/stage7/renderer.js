@@ -5,6 +5,9 @@ import {
   flagField,
   markImpossible
 } from "./substages.js";
+import { accuseFromBoard, ensureCase2 } from "./accusation.js";
+import { getCard, setPinned, togglePin } from "./evidence-board.js";
+import { renderAccusation } from "./board-render.js";
 import {
   ambientFacts,
   candidates,
@@ -16,6 +19,7 @@ import {
 } from "./content.js";
 import {
   BTS_PATH,
+  CASE2_SOURCE_PATHS,
   ENTITY_ANCHOR_PATH,
   ENTITY_F_IMAGE_PATH,
   ENTITY_METADATA_SIDECAR_PATH,
@@ -23,11 +27,12 @@ import {
 } from "./messages.js";
 
 const SUBSTAGE_LABEL = {
-  1: "1/5 CREDENTIAL SCAN",
-  2: "2/5 DUPLICATE TEST",
-  3: "3/5 TIMELINE AUDIT",
-  4: "4/5 REFERENCE CHASE",
-  5: "5/5 EXIF ARBITER (BOSS)"
+  1: "1/6 CREDENTIAL SCAN",
+  2: "2/6 DUPLICATE TEST",
+  3: "3/6 TIMELINE AUDIT",
+  4: "4/6 REFERENCE CHASE",
+  5: "5/6 DUPLICATE ROSTER",
+  6: "6/6 EXIF ARBITER (BOSS)"
 };
 
 export function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
@@ -54,13 +59,16 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
   const completeOnce = once((result) => { if (typeof onStageComplete === "function") onStageComplete(result); });
 
   root.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-action], button[data-flag], button[data-diff], button[data-ev], button[data-commit]");
+    const button = event.target.closest("button[data-action], button[data-flag], button[data-diff], button[data-ev], button[data-commit], button[data-pin], button[data-accuse]");
     if (!button) return;
     const d = button.dataset;
     if (d.flag) flagField({ state, entityId: d.entity, fieldId: d.flag });
     else if (d.diff) diffField({ state, fieldName: d.diff });
     else if (d.ev) markImpossible({ state, evId: d.ev });
+    else if (d.pin) togglePin(state, d.pin);
+    else if (d.accuse) accuseFromBoard(state);
     else if (d.commit) commitBoss(d.commit);
+    else if (d.action === "open-source") openSource(d.source);
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
     else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
     else if (d.action === "bts") openBts({ bts, viewer });
@@ -69,9 +77,7 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
 
   repaint();
 
-  // TEST/DEBUG hook (not a player affordance): drives the investigation deterministically for the
-  // smoke. SS4 (anchor) and SS5 (photo) still require the REAL viewer file-opens — this only fast-
-  // forwards the in-game deductions SS1–SS3.
+  // TEST/DEBUG hook: fast-forwards in-game deductions; real viewer file-opens still gate progress.
   window.__fvStage7 = {
     state: () => state,
     solveInvestigation() {
@@ -80,6 +86,20 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
       markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
       persistAndPaint();
       return state.substage;
+    },
+    // Case 2: pins the correct triad and accuses. The route fact only exists after a REAL
+    // route_table.csv open, so this returns ok:false until the file is opened (load-bearing).
+    solveCase2() {
+      ensureCase2(state);
+      const ids = ["entity:K", "field:K:route", "fact:route"];
+      if (!ids.every((id) => getCard(state, id))) {
+        persistAndPaint();
+        return { ok: false, reason: "route-fact-not-opened", substage: state.substage };
+      }
+      for (const id of ids) setPinned(state, id, true);
+      const result = accuseFromBoard(state);
+      persistAndPaint();
+      return { ...result, substage: state.substage };
     }
   };
 
@@ -100,7 +120,6 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     if (viewer && typeof viewer.openFile === "function") viewer.openFile(path, opts);
     else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(path, opts);
   }
-
   function repaint() {
     const lock = getBossLockState({ actions, state });
     fields.substage.textContent = SUBSTAGE_LABEL[state.substage] || String(state.substage);
@@ -120,7 +139,13 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     if (state.substage === SUBSTAGE.DUP) return main.replaceChildren(renderDup());
     if (state.substage === SUBSTAGE.TIMELINE) return main.replaceChildren(renderTimeline());
     if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
+    if (state.substage === SUBSTAGE.ACCUSE) { ensureCase2(state); return main.replaceChildren(renderAccusation(state)); }
     return main.replaceChildren(renderBoss(lock));
+  }
+
+  function openSource(action) {
+    const path = CASE2_SOURCE_PATHS[action];
+    if (path) openInViewer(path, { source: "stage7" });
   }
 
   function renderScan() {
@@ -240,8 +265,7 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
   }
 }
 
-// Kept stable for artifact.test + the load-bearing un-cheat: opening this image with these opts fires
-// recordStage7MetadataInspection (viewer-actions.js) → the exif-contradiction action. No in-game bypass.
+// Load-bearing un-cheat: opening this image with these opts fires recordStage7MetadataInspection.
 export function buildEntityFPhotoOpenOptions() {
   return {
     mime: "image/png",

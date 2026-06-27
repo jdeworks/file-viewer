@@ -4,17 +4,19 @@ export function overlayKind(project) {
     : 'audio';
 }
 
-export function drawCompareOverlay(canvas, project, frames) {
+export function drawCompareOverlay(canvas, project, frames, opacity) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+  // The B layer's alpha is user-controllable so you can fade B in/out over A to see where they differ.
+  const bAlpha = Math.max(0, Math.min(1, Number(opacity ?? project.compare?.overlayOpacity ?? 0.5)));
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#111827';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.strokeStyle = 'rgba(255,255,255,0.22)';
   ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
   const [a, b] = compareElements(project);
-  if (overlayKind(project) === 'visual') drawVisualOverlay(ctx, canvas, a, b, frames);
-  else drawAudioOverlay(ctx, canvas, a, b);
+  if (overlayKind(project) === 'visual') drawVisualOverlay(ctx, canvas, a, b, frames, bAlpha);
+  else drawAudioOverlay(ctx, canvas, a, b, bAlpha);
   canvas.dataset.variedPixels = String(countVariedPixels(ctx, canvas));
 }
 
@@ -25,9 +27,9 @@ function compareElements(project) {
   });
 }
 
-function drawAudioOverlay(ctx, canvas, a, b) {
+function drawAudioOverlay(ctx, canvas, a, b, bAlpha = 0.58) {
   drawWave(ctx, canvas, a?.analysis?.waveformSummary, '#4c78a8', 0.72);
-  drawWave(ctx, canvas, b?.analysis?.waveformSummary, '#e5534b', 0.58);
+  drawWave(ctx, canvas, b?.analysis?.waveformSummary, '#e5534b', bAlpha);
   ctx.fillStyle = 'rgba(255,255,255,0.82)';
   ctx.font = '12px sans-serif';
   ctx.fillText('A', 10, 18);
@@ -56,9 +58,9 @@ function drawWave(ctx, canvas, summary, color, alpha) {
   ctx.restore();
 }
 
-function drawVisualOverlay(ctx, canvas, a, b, frames) {
+function drawVisualOverlay(ctx, canvas, a, b, frames, bAlpha = 0.54) {
   drawVisual(ctx, canvas, a, frames, '#4c78a8', 0.72, 'A', -canvas.width * 0.08);
-  drawVisual(ctx, canvas, b, frames, '#e5534b', 0.54, 'B', canvas.width * 0.08);
+  drawVisual(ctx, canvas, b, frames, '#e5534b', bAlpha, 'B', canvas.width * 0.08);
 }
 
 function drawVisual(ctx, canvas, element, frames, color, alpha, labelText, offsetX) {

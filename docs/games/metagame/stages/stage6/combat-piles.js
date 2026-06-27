@@ -5,6 +5,7 @@
 // Packet Loss: an oversize turn sets one freshly-drawn card aside (unplayable) for exactly one turn.
 
 import { shuffle } from "./combat-rng.js";
+import { runHook } from "./combat-ctx.js";
 
 export function drawCards(combat, n) {
   for (let i = 0; i < n; i++) {
@@ -12,6 +13,9 @@ export function drawCards(combat, n) {
       if (combat.discard.length === 0) return;
       combat.draw = shuffle(combat.discard, combat.rng);
       combat.discard = [];
+      // Relics that fire when the discard recycles into a fresh draw pile (onShuffle). Inert by
+      // default; a relic may e.g. gain block each reshuffle. Deterministic (shuffle is seeded).
+      runHook(combat, "onShuffle");
     }
     combat.hand.push(combat.draw.shift());
   }

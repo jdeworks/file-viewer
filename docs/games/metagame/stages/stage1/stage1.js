@@ -18,7 +18,11 @@ import { fromNumber, add, sub, mulScalar, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements, checkMilestones } from './s1achievements.js';
 import { createManagersController } from './s1managers.js';
-import { renderResetPanel as renderS1ResetPanel } from './s1reset.js';
+import { renderResetPanel as renderS1ResetPanel, paintResetPanel as paintS1ResetPanel } from './s1reset.js';
+import { tickMechanics, incomeMult } from './s1mechanics.js';
+import { coreAutoMult } from './s1cores.js';
+import { echoActive, echoTimeLeft, clickEcho } from './s1echoes.js';
+import { installStage1Debug } from './s1debug.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
 
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
@@ -76,9 +80,11 @@ export function renderStage1(ctx) {
     bits: () => true,
     managers: () => (state.owned['s1-box'] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    reset: () => gte(state.totalBits, RESET_THRESHOLD),
+    // Visible once a prestige is affordable OR after any prestige (so the Cores shop / mechanic
+    // roster stays reachable while totalBits is rebuilding toward the next reset).
+    reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1,
   };
-  const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Reset' };
+  const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Prestige' };
 
   host.innerHTML =
     '<div class="mg-wrap mg-s1">'
@@ -87,6 +93,7 @@ export function renderStage1(ctx) {
     + '  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span>'
     + '</div>'
     + '<div class="mg-s1-help" hidden></div>'
+    + '<button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button>'
     + '<div class="mg-s1-top">'
     + '  <div class="mg-s1-tap" aria-label="tap to compute"></div>'
     + '  <div class="mg-s1-stage">'
@@ -108,6 +115,24 @@ export function renderStage1(ctx) {
   const scoreValEl = $('.mg-s1-score-val');
   const gravEl = $('.mg-s1-grav');
   const helpEl = $('.mg-s1-help');
+  const echoEl = $('.mg-s1-echo');
+
+  // ── Defrag Echo glyph (prestige mechanic #4) — a clickable attention target. Shows only while an
+  // echo is active; clicking it banks a reward, ignoring it eventually costs 20% of your bits. ──
+  injectEchoStyle();
+  function updateEcho() {
+    if (!echoEl) return;
+    const active = echoActive(state);
+    setHidden(echoEl, !active);
+    if (active) {
+      const tEl = echoEl.querySelector('.mg-s1-echo-t');
+      if (tEl) tEl.textContent = (echoTimeLeft(state) / 10).toFixed(0) + 's';
+    }
+  }
+  if (echoEl) echoEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (clickEcho(state, cfg)) { save(state); updateEcho(); updateHud(); }
+  });
 
   // ── Score HUD + helper buttons (progressive disclosure) ──────────────────────
   // Score counter appears at 400 total bits collected; the help affordance appears once the
@@ -260,6 +285,7 @@ export function renderStage1(ctx) {
     renderTabs();
     renderPanel();
     updateHud();
+    updateEcho();
     if (!state.tabsUnlocked) reveal();
   }
 
@@ -338,10 +364,13 @@ export function renderStage1(ctx) {
     // Self-terminate if our DOM was torn down (orchestrator switched to boss/another stage) — the
     // orchestrator's clearTransient() doesn't know about this interval, so we stop ourselves.
     if (!host.isConnected || !grid.isConnected) {
-      clearInterval(renderStage1._tickId); renderStage1._tickId = null; return;
+      clearInterval(renderStage1._tickId); renderStage1._tickId = null;
+      if (renderStage1._debug) { renderStage1._debug.destroy(); renderStage1._debug = null; }
+      return;
     }
-    // 1. Passive accrual.
-    const passive = mulScalar(fromNumber(passiveRate(state, cfg)), 1 / 10);
+    // 1. Passive accrual (scaled by the post-prestige income multiplier: Cores yield × Flux × Resonance).
+    const incMult = incomeMult(state, cfg);
+    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
     state.bits = add(state.bits, passive);
     state.totalBits = add(state.totalBits, passive);
     // 2. Manager cost drain (0 until WP-S1-10, but still call it).
@@ -364,7 +393,7 @@ export function renderStage1(ctx) {
             builtUnits = true;
           }
         } else {
-          const payout = timedPayout(state, cfg, t.id);
+          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
           state.bits = add(state.bits, payout);
           state.totalBits = add(state.totalBits, payout);
         }
@@ -382,6 +411,23 @@ export function renderStage1(ctx) {
     }
     // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
     managersController.runAutoFire();
+    // 3c. Post-prestige mechanics (pipeline/flux/entropy/echoes/resonance) — deterministic, tick-driven.
+    const mech = tickMechanics(state, cfg);
+    if (mech.producedUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === 'bits') { paintShop(); paintTimed(); }
+    }
+    if (mech.echo) updateEcho();
+    // 3d. Auto-Tapper Cores upgrade: buy a Multiplier whenever affordable.
+    if (coreAutoMult(state) && multTier) {
+      const lvl = state.owned[multTier.id] || 0;
+      const cost = totalCost(multTier, lvl, 1);
+      if (gte(state.bits, cost)) {
+        state.bits = sub(state.bits, cost);
+        state.owned[multTier.id] = lvl + 1;
+        state.totalBought = (state.totalBought || 0) + 1;
+      }
+    }
     // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
     reveal();
     // 4b. Tab unlock check (passive rate could push bits to 250 without a tap).
@@ -392,6 +438,7 @@ export function renderStage1(ctx) {
     if (state.tabsUnlocked) {
       if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
       else if (activeTab === 'managers') managersController.paint();
+      else if (activeTab === 'reset') paintS1ResetPanel(panelsEl, state);
     }
     // A newly-unlocked achievement may reveal the Achievements tab — refresh the tab bar so it
     // appears immediately (returns true only on the rare unlock tick).
@@ -404,8 +451,32 @@ export function renderStage1(ctx) {
   renderAll();
   attachChrome(host);
 
+  // TEST/DEBUG hook (window.__fvStage1) — drives the headless smoke without real-time waiting. Does
+  // NOT bypass the boss gate or the load-bearing un-cheat (see s1debug.js).
+  if (renderStage1._debug && typeof renderStage1._debug.destroy === 'function') renderStage1._debug.destroy();
+  renderStage1._debug = installStage1Debug({
+    state, cfg, save, renderAll, tick, addBits,
+    canFightBoss, allSubStagesOwned,
+    actions: ctx.actions, onStageComplete: ctx.onStageComplete, updateEcho,
+  });
+
   // Expose the help toggle so the orchestrator can wire it to the header help button.
   return { toggleHelp };
+}
+
+const ECHO_STYLE_ID = 'mg-s1-echo-style';
+function injectEchoStyle() {
+  if (typeof document === 'undefined' || document.getElementById(ECHO_STYLE_ID)) return;
+  const el = document.createElement('style');
+  el.id = ECHO_STYLE_ID;
+  el.textContent = `
+.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
+  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
+  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
+.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
+@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
+`;
+  document.head.appendChild(el);
 }
 
 export const STAGE1 = { GRID_CELLS, GRID_COLS, GRID_ROWS };

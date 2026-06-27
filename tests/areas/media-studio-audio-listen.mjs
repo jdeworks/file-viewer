@@ -62,9 +62,8 @@ export async function runAudioListenAndChapters(ctx) {
   const hasFileHandle = await page.evaluate(() => !!window.__fv.state.intake.file);
   if (hasFileHandle) pass('media keeps the File handle (streams off disk, no full read into memory)'); else fail('no File handle on media intake');
 
-  // Sleep timer control present (long-form listening).
-  const sleepOpts = await page.$$eval('#previewHost .media-sleep select option', (els) => els.map((e) => e.textContent));
-  if (sleepOpts.includes('Off') && sleepOpts.includes('30 min')) pass('audio: sleep timer control present (Off … 60 min)'); else fail('sleep options: ' + sleepOpts.join(','));
+  // Sleep timer is temporarily hidden during the studio-fidelity work (re-enable later), so its
+  // presence is not asserted for now.
 
   // P7: speed presets (0.5–2×) — present on audio, and clicking sets playbackRate live.
   const audioSpeeds = await page.$$eval('#previewHost .media-extras .media-speed-btn', (els) => els.map((e) => e.dataset.rate));
