@@ -12,9 +12,22 @@ const processed = new OffscreenCanvas(1, 1);
 const scratch = new OffscreenCanvas(1, 1);
 const outCanvas = new OffscreenCanvas(1, 1);
 
-self.onmessage = (e) => {
+// A worker's OffscreenCanvas has its OWN font set — the document's @font-face isn't visible
+// here — so load the vendored mono into self.fonts, else braille/block glyphs render as tofu
+// in the worker-rendered ('bitmap') output (webcam + file converter).
+const fontReady = (async () => {
+  try {
+    const url = new URL('../../../vendor/fonts/dejavu-sans-mono.woff2', import.meta.url).href;
+    const f = new FontFace('FV ASCII Mono', `url(${url}) format('woff2')`);
+    await f.load();
+    self.fonts.add(f);
+  } catch { /* fallback metrics; the per-glyph fit still prevents overflow */ }
+})();
+
+self.onmessage = async (e) => {
   const { id, bitmap, options, want } = e.data;
   try {
+    if (want === 'bitmap') await fontReady;   // ensure the mono font before measuring/drawing glyphs
     if (srcCanvas.width !== bitmap.width || srcCanvas.height !== bitmap.height) {
       srcCanvas.width = bitmap.width; srcCanvas.height = bitmap.height;
     }

@@ -14,10 +14,17 @@
 /* ASCII result stage — fills the space; the art auto-fits its width. */
 .asx-stage { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: auto;
   border: 1px solid #2a2a2a; border-radius: 6px; background: #000; }
+/* Vendored DejaVu Sans Mono — uniform-width braille + block glyphs so those gradients
+   don't distort the fixed-cell ASCII grid (the system mono stack lacks them). */
+@font-face {
+  font-family: "FV ASCII Mono";
+  src: url("../../../vendor/fonts/dejavu-sans-mono.woff2") format("woff2");
+  font-display: swap;
+}
 .asx-out {
   --ascii-font-size: 10px;
   margin: 0; min-height: 100%; padding: 12px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: "FV ASCII Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: var(--ascii-font-size); line-height: 1; white-space: pre; color: #fff; background: #000;
 }
 
@@ -63,6 +70,7 @@
    image-studio panel and the camera settings overlay (same .asx-ctl class). */
 .asx-ctl { display: grid; grid-template-columns: minmax(60px, 38%) 1fr; align-items: center;
   gap: 1px 6px; margin: 3px 0; font-size: 12px; min-width: 0; }
+.asx-ctl[hidden] { display: none; }   /* needed: the grid rule above out-specifies the default [hidden] */
 .asx-ctl-name { color: #cfcfcf; }
 .asx-ctl-row { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .asx-ctl-input { flex: 1; min-width: 0; }

@@ -7,7 +7,9 @@
 
 import { escapeHtml } from './charsets.js';
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+// "FV ASCII Mono" (vendored DejaVu Sans Mono) first — it has uniform-width braille + block
+// glyphs, so those ramps don't distort; the system stack is the fallback.
+const MONO = '"FV ASCII Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 
 // The colour a cell's glyph should use, honouring colorMode + glyphColorMode.
 // null → render as plain (uncoloured) text.
@@ -53,10 +55,26 @@ export function renderAsciiToPre(result, pre, o) {
 
 // Draw to a canvas. charWidth is measured from the monospace font so columns
 // line up. Returns the canvas (sized to fit).
+const wCache = new Map();   // glyph → advance width at the current font (cleared when the font changes)
+let wCacheFont = '';
+
+// Ensure the vendored ASCII mono font is loaded before a CANVAS render measures glyphs
+// (the <pre> path reflows itself via font-display). Memoised; resolves even on failure.
+let fontReady = null;
+export function ensureAsciiFont() {
+  if (fontReady) return fontReady;
+  fontReady = (async () => {
+    try { if (document.fonts?.load) { await document.fonts.load('16px "FV ASCII Mono"'); wCache.clear(); } } catch { /* fallback metrics */ }
+  })();
+  return fontReady;
+}
+
 export function renderAsciiToCanvas(result, canvas, o) {
   const fontSize = o.fontSize;
   const ctx = canvas.getContext('2d');
-  ctx.font = `${fontSize}px ${MONO}`;
+  const fontStr = `${fontSize}px ${MONO}`;
+  ctx.font = fontStr;
+  if (fontStr !== wCacheFont) { wCache.clear(); wCacheFont = fontStr; }   // measureText depends on the font
   const charW = (ctx.measureText('M').width || fontSize * 0.6) * Math.max(1, Math.round(o.spaceDensity));
   const lineH = Math.round(fontSize * 1.0);
   const frame = o.transparentFrame || 0;
@@ -72,6 +90,10 @@ export function renderAsciiToCanvas(result, canvas, o) {
 
   ctx.font = `${fontSize}px ${MONO}`;
   ctx.textBaseline = 'top';
+  // Safety net: if a glyph is wider than one cell (e.g. a font substitution), scale it
+  // horizontally to fit so it never overflows into the next cell. Widths are cached per
+  // char so this stays O(unique glyphs) even across thousands of webcam cells.
+  const widthOf = (ch) => { let w = wCache.get(ch); if (w === undefined) { w = ctx.measureText(ch).width; wCache.set(ch, w); } return w; };
   for (let y = 0; y < result.rows; y++) {
     const row = result.cells[y];
     for (let x = 0; x < result.columns; x++) {
@@ -79,7 +101,16 @@ export function renderAsciiToCanvas(result, canvas, o) {
       if (cell.ch === ' ') continue;
       const col = o.colorMode ? glyphColor(cell, o) : '#fff';
       ctx.fillStyle = col || '#fff';
-      ctx.fillText(cell.ch, frame + x * charW, frame + y * lineH);
+      const gw = widthOf(cell.ch);
+      if (gw > charW + 0.5) {
+        ctx.save();
+        ctx.translate(frame + x * charW, frame + y * lineH);
+        ctx.scale(charW / gw, 1);
+        ctx.fillText(cell.ch, 0, 0);
+        ctx.restore();
+      } else {
+        ctx.fillText(cell.ch, frame + x * charW + (charW - gw) / 2, frame + y * lineH);   // center narrow glyphs in the cell
+      }
     }
   }
   return canvas;

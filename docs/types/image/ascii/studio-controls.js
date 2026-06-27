@@ -147,3 +147,12 @@ export function buildControls(host, options, onChange) {
   }
   return { setValue, inputs };
 }
+
+// Colour source + glyph colour only matter when colour glyphs are on — hide their rows
+// when colorMode is off. Shared by the studio + webcam.
+export function syncColorControls(controls, colorOn) {
+  for (const key of ['colorSource', 'glyphColorMode']) {
+    const row = controls?.inputs?.[key]?.closest('.asx-ctl');
+    if (row) row.hidden = !colorOn;
+  }
+}

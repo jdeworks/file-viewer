@@ -16,9 +16,10 @@ export const GRADIENTS = {
   blackWhite: '█ ',
   blocks: '█▉▊▋▌▍▎▏ ',
   codePage437: '█▓▒░■□▪▫',
-  mathSymbols: '∑∏∆Ωλ+=-:. ',
-  arrows: '↟↥↗↑→↘↓↙←↖· ',
 };
+// NOTE: 'arrows' (↑→…) and 'mathSymbols' (∑∏∆Ω) were removed — those glyphs are wider
+// than one monospace cell in any font, so they distorted the fixed-cell grid. Block +
+// braille ramps stay uniform thanks to the vendored "FV ASCII Mono" font (see render.js).
 
 // 'braille' is not a 1:1 ramp — it is a 2×4 sub-cell dot encoding handled in
 // convert.js. We expose the name so UIs can list it alongside the gradients.

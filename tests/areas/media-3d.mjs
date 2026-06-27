@@ -1105,6 +1105,21 @@ export async function run(ctx) {
   const restored = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="columns"]', (el) => Number(el.value));
   const presetStored = await page.evaluate(() => { try { return !!JSON.parse(localStorage.getItem('fv:ascii:presets') || '{}')['smoke-preset']; } catch { return false; } });
   if (lastSaved === 60 && presetStored && restored === 60) pass('ASCII presets: last-used persists + named preset saves/loads (columns round-trips)'); else fail('ascii presets: ' + JSON.stringify({ lastSaved, presetStored, restored }));
+  // Gradient list: the non-uniform-width ramps (arrows, mathSymbols) are gone; braille + blocks stay
+  // (now uniform via the vendored mono font).
+  const grads = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="gradientName"]', (el) => [...el.options].map((o) => o.value));
+  if (!grads.includes('arrows') && !grads.includes('mathSymbols') && grads.includes('braille') && grads.includes('blocks')) pass('ASCII gradients: arrows/math dropped, braille + blocks kept'); else fail('ascii gradients: ' + JSON.stringify(grads));
+  // Output options reduce: turning Colour glyphs (colorMode) OFF hides Colour source + Glyph colour.
+  const setColorMode = (on) => page.evaluate((v) => {
+    const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="colorMode"]');
+    if (el) { el.checked = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, on);
+  const rowHidden = (key) => page.$eval(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`, (el) => el.closest('.asx-ctl').hidden);
+  await setColorMode(false);
+  const hiddenOff = (await rowHidden('colorSource')) && (await rowHidden('glyphColorMode'));
+  await setColorMode(true);
+  const shownOn = !(await rowHidden('colorSource')) && !(await rowHidden('glyphColorMode'));
+  if (hiddenOff && shownOn) pass('ASCII output: Colour source + Glyph colour hide when Colour glyphs is off'); else fail('ascii colorMode visibility: ' + JSON.stringify({ hiddenOff, shownOn }));
   // Convert file → ASCII: feed a tiny 2-frame GIF and assert it converts (frame-by-frame
   // via the engine worker) + encodes a downloadable ASCII GIF.
   const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];

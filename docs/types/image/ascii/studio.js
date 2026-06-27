@@ -6,9 +6,9 @@
 // previews behind eye toggles, and a collapsible control panel.
 
 import { createAsciiEngine } from './engine.js';
-import { buildControls } from './studio-controls.js';
+import { buildControls, syncColorControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
-import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont } from './render.js';
 import { makeFloatingPanel } from './floating-panel.js';
 import { loadLast, saveLast } from './presets.js';
 import { wirePresetUi } from './preset-ui.js';
@@ -185,12 +185,14 @@ export function mountAsciiStudio(host, opts = {}) {
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) {
       controls.inputs.backgroundColor.disabled = !!value;
     }
+    if (key === 'colorMode') syncColorControls(controls, value);   // colour off → hide source + glyph-colour
     rememberSoon();
     if (displayOnly) { applyDisplay(); return; }
     engine.markDirty(...dirty);
     reconvert();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
+  syncColorControls(controls, engine.options.colorMode);   // initial state
 
   // ── toolbar wiring ──
   q('.asx-perf').addEventListener('change', (e) => {
@@ -213,12 +215,14 @@ export function mountAsciiStudio(host, opts = {}) {
   q('.asx-copy-html').addEventListener('click', () => engine.result && copyHtml(pre.innerHTML));
   q('.asx-dl-txt').addEventListener('click', () => engine.result && downloadText(baseName + '.txt', engine.result.text));
   q('.asx-dl-html').addEventListener('click', () => engine.result && downloadHtml(baseName + '.html', engine.result, engine.options));
-  q('.asx-dl-png').addEventListener('click', () => {
+  q('.asx-dl-png').addEventListener('click', async () => {
     if (!engine.result) return;
+    await ensureAsciiFont();   // main-thread canvas needs the mono font for braille/blocks
     const c = document.createElement('canvas');
     engine.renderToCanvas(c);
     downloadPng(baseName + '.png', c);
   });
+  ensureAsciiFont();   // warm the font so the first <pre> + export aren't on a fallback
   // Geometric transforms — re-draw the source then reconvert (works on image + video).
   q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; regrabBusy(); });
   q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; regrabBusy(); });

@@ -9,9 +9,9 @@
 // current frame. Adds pause + fullscreen.
 
 import { createAsciiEngine } from './engine.js';
-import { buildControls } from './studio-controls.js';
+import { buildControls, syncColorControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
-import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont } from './render.js';
 import { makeFloatingPanel } from './floating-panel.js';
 import { loadLast, saveLast } from './presets.js';
 import { wirePresetUi } from './preset-ui.js';
@@ -165,6 +165,7 @@ export function mountAsciiWebcam(host, opts = {}) {
     } catch (e) { stats.textContent = 'Camera access denied: ' + (e.message || e); return; }
     video.srcObject = stream;
     await video.play();
+    await ensureAsciiFont();   // canvas measureText needs the mono font ready
     engine.setSource(video);
     running = true; paused = false;
     const sb = q('.cam-start'); sb.textContent = '⏹ Stop'; sb.classList.remove('cam-flash');
@@ -185,12 +186,14 @@ export function mountAsciiWebcam(host, opts = {}) {
   const controls = buildControls(floatingSettings.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) controls.inputs.backgroundColor.disabled = !!value;
+    if (key === 'colorMode') syncColorControls(controls, value);
     rememberSoon();
     if (displayOnly) { if (key === 'zoom') applyFit(); else if (!running || paused) renderOnce(); return; }
     engine.markDirty(...dirty);
     if (!running || paused) renderOnce();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
+  syncColorControls(controls, engine.options.colorMode);   // initial state
   // Named user presets (shared wiring with the studio).
   wirePresetUi({ sel: q('.cam-preset'), saveBtn: q('.cam-preset-save'), delBtn: q('.cam-preset-del'), controls, getOptions: () => ({ ...engine.options }) });
   // Keep the feed fitted to the stage as it resizes (responsive / fullscreen).
