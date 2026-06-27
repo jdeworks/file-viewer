@@ -4,6 +4,7 @@ import { exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.
 import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
+import { isDarkAct } from "./darkness.js";
 import { useConsumable, CONSUMABLE_KEYS, CONSUMABLES } from "./consumables.js";
 import { tickFire } from "./fire.js";
 import { buildShopPanel } from "./shop.js";
@@ -130,9 +131,13 @@ export function renderStage2({
     setText(fields.hint, lock.hint);
     const biome = biomeForFloor(state.run.floor);
     if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
+    const w = state.run.world;
+    const darkNote = !state.run.boss.reached && isDarkAct(state.run.floor)
+      ? (w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them")
+      : "";
     setText(fields.objective, state.run.boss.reached
       ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
-      : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+      : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {
@@ -276,7 +281,7 @@ export function renderStage2({
     if (!root.isConnected) return;
     const tag = (event.target && event.target.tagName) || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
-    if (event.key >= "1" && event.key <= "3") {
+    if (event.key >= "1" && event.key <= String(CONSUMABLE_KEYS.length)) {
       const type = CONSUMABLE_KEYS[Number(event.key) - 1];
       if (type) { event.preventDefault(); useItem(type); }
       return;

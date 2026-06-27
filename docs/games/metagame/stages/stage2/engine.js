@@ -169,6 +169,7 @@ export function step(world, player, dir) {
   world.pos = { x: nx, y: ny };
   events.moved = true;
   world.stepCount = (world.stepCount || 0) + 1; // drives A4 lingering pressure
+  if (world.torch > 0) { world.torch -= 1; if (world.torch === 0) events.log.push("your torch gutters out. the dark closes in."); } // C4 Overflow darkness
 
   // Hazard on-enter (A2): lava burns, spores poison, spikes bleed, a chasm drops you a floor.
   // A spore tile that fire already consumed (C1) is spent — no poison.
