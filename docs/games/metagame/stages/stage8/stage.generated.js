@@ -261,19 +261,6 @@ function unlockAchievement(achievements, id, detail) {
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
 }
 
-// ../../docs/games/metagame/stages/stage8/content.js
-function entropyTreeText(state) {
-  const debris = state.debris.map((item) => `    ${item.id} (${item.decay} cycles, ${item.value} States)`);
-  const archive = state.archive.map((item) => `    ${item.id} (${item.value} States)`);
-  return [
-    "/entropy/",
-    "  active_archive/",
-    ...archive.length ? archive : ["    (empty)"],
-    "  debris/",
-    ...debris.length ? debris : ["    (empty)"]
-  ].join("\n");
-}
-
 // ../../docs/games/metagame/stages/stage8/nodes.js
 var TIER = {
   1: { baseDecayPct: 2, baseOutput: 12, degradedOutput: 6, supportsHighLoad: false, debrisTier: 1 },
@@ -575,6 +562,87 @@ function driveToGate(state, makeCycleRng, { maxCycles = 60 } = {}) {
   return state;
 }
 
+// ../../docs/games/metagame/stages/stage8/content.js
+function entropyTreeText(state) {
+  const debris = state.debris.map((item) => `    ${item.id} (${item.decay} cycles, ${item.value} States)`);
+  const archive = state.archive.map((item) => `    ${item.id} (${item.value} States)`);
+  return [
+    "/entropy/",
+    "  active_archive/",
+    ...archive.length ? archive : ["    (empty)"],
+    "  debris/",
+    ...debris.length ? debris : ["    (empty)"]
+  ].join("\n");
+}
+
+// ../../docs/games/metagame/stages/stage8/paint.js
+function paintStage8({ state, lock, els, onSelectDebris }) {
+  const { fields, map, log, root } = els;
+  fields.cycle.textContent = String(state.cycle);
+  fields.states.textContent = String(state.states);
+  fields.entropy.textContent = String(state.entropy || 0);
+  fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
+  fields.stabilizers.textContent = String(state.stabilizers || 0);
+  fields.salvage.textContent = String(state.salvageTotal);
+  fields.tree.textContent = entropyTreeText(state);
+  fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
+  fields.hint.textContent = lock.hint;
+  paintBurn(fields.burn, state.boss.burn);
+  paintDebrisSelect(fields.debrisSelect, state);
+  map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
+  log.replaceChildren(...state.log.slice(-5).map((line) => {
+    const li = document.createElement("li");
+    li.textContent = line;
+    return li;
+  }));
+  root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
+}
+function tick(ok) {
+  return ok ? "✓" : "✗";
+}
+function paintBurn(el, burn) {
+  if (!el) return;
+  if (burn && Array.isArray(burn.trace) && burn.trace.length) {
+    el.hidden = false;
+    el.textContent = [
+      burn.survived ? `HEAT DEATH ENDURED · ${burn.remainingStates} States remain` : `HEAT DEATH OVERRAN at burn cycle ${burn.failedAt}`,
+      ...burn.trace.map((t) => `  burn ${t.cycle}: -${t.drain}${t.paused ? " (stabilizer)" : ""} → ${t.remaining}`)
+    ].join("\n");
+  } else {
+    el.hidden = true;
+  }
+}
+function paintDebrisSelect(select, state) {
+  select.replaceChildren(...state.debris.map((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = `${item.id} (${item.value})`;
+    option.selected = item.id === state.selectedDebrisId;
+    return option;
+  }));
+}
+function nodeCard(n) {
+  const def = nodeById(n.id) || {};
+  const s = status(n.health);
+  const item = document.createElement("div");
+  item.className = `s8-node is-${s}`;
+  const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
+  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>
+    ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
+    <button type="button" data-repair="${n.id}">repair</button>`;
+  return item;
+}
+function debrisChip(item, onSelectDebris) {
+  const debris = document.createElement("button");
+  debris.type = "button";
+  debris.className = "s8-debris";
+  debris.draggable = true;
+  debris.dataset.debrisId = item.id;
+  debris.textContent = item.id;
+  debris.addEventListener("click", () => onSelectDebris(item.id));
+  return debris;
+}
+
 // ../../docs/games/metagame/stages/stage8/renderer.js
 var REPAIR_STEP2 = 2;
 function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
@@ -712,61 +780,15 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       state.selectedDebrisId = state.debris[0]?.id || "";
     }
     const lock = getBossLockState({ actions, state });
-    fields.cycle.textContent = String(state.cycle);
-    fields.states.textContent = String(state.states);
-    fields.entropy.textContent = String(state.entropy || 0);
-    fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
-    fields.stabilizers.textContent = String(state.stabilizers || 0);
-    fields.salvage.textContent = String(state.salvageTotal);
-    fields.tree.textContent = entropyTreeText(state);
-    fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${lock.actionReady ? "✓" : "✗"} · salvage ${lock.enoughSalvage ? "✓" : "✗"} · cycles ${lock.enoughCycles ? "✓" : "✗"} · reserves ${lock.enoughStates ? "✓" : "✗"}`;
-    fields.hint.textContent = lock.hint;
-    if (state.boss.burn && Array.isArray(state.boss.burn.trace) && state.boss.burn.trace.length) {
-      fields.burn.hidden = false;
-      const b = state.boss.burn;
-      fields.burn.textContent = [
-        b.survived ? `HEAT DEATH ENDURED · ${b.remainingStates} States remain` : `HEAT DEATH OVERRAN at burn cycle ${b.failedAt}`,
-        ...b.trace.map((t) => `  burn ${t.cycle}: -${t.drain}${t.paused ? " (stabilizer)" : ""} → ${t.remaining}`)
-      ].join("\n");
-    } else {
-      fields.burn.hidden = true;
-    }
-    fields.debrisSelect.replaceChildren(...state.debris.map((item) => {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = `${item.id} (${item.value})`;
-      option.selected = item.id === state.selectedDebrisId;
-      return option;
-    }));
-    map.replaceChildren(...state.nodes.map((n) => {
-      const def = nodeById(n.id) || {};
-      const s = status(n.health);
-      const item = document.createElement("div");
-      item.className = `s8-node is-${s}`;
-      const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
-      item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>
-        ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
-        <button type="button" data-repair="${n.id}">repair</button>`;
-      return item;
-    }), ...state.debris.map((item) => {
-      const debris = document.createElement("button");
-      debris.type = "button";
-      debris.className = "s8-debris";
-      debris.draggable = true;
-      debris.dataset.debrisId = item.id;
-      debris.textContent = item.id;
-      debris.addEventListener("click", () => {
-        state.selectedDebrisId = item.id;
+    paintStage8({
+      state,
+      lock,
+      els: { fields, map, log, root },
+      onSelectDebris: (id) => {
+        state.selectedDebrisId = id;
         repaint();
-      });
-      return debris;
-    }));
-    log.replaceChildren(...state.log.slice(-5).map((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      return li;
-    }));
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
+      }
+    });
   }
   function persistAndPaint() {
     if (typeof save === "function") save();

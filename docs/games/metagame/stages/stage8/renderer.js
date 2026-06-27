@@ -5,10 +5,9 @@ import {
   recordHeatDeathAttempt
 } from "./boss.js";
 import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messages.js";
-import { entropyTreeText } from "./content.js";
-import { advanceCycle, applyRepair, buildStabilizer, status as nodeStatus } from "./engine.js";
+import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
 import { driveToGate } from "./solver.js";
-import { nodeById } from "./nodes.js";
+import { paintStage8 } from "./paint.js";
 import { makeRng } from "./rng.js";
 
 const REPAIR_STEP = 2; // repair units spent per click
@@ -160,63 +159,12 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       state.selectedDebrisId = state.debris[0]?.id || "";
     }
     const lock = getBossLockState({ actions, state });
-    fields.cycle.textContent = String(state.cycle);
-    fields.states.textContent = String(state.states);
-    fields.entropy.textContent = String(state.entropy || 0);
-    fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
-    fields.stabilizers.textContent = String(state.stabilizers || 0);
-    fields.salvage.textContent = String(state.salvageTotal);
-    fields.tree.textContent = entropyTreeText(state);
-    fields.boss.textContent = state.boss.defeated
-      ? "defeated. BTS trace available."
-      : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${lock.actionReady ? "✓" : "✗"} · salvage ${lock.enoughSalvage ? "✓" : "✗"} · cycles ${lock.enoughCycles ? "✓" : "✗"} · reserves ${lock.enoughStates ? "✓" : "✗"}`;
-    fields.hint.textContent = lock.hint;
-    if (state.boss.burn && Array.isArray(state.boss.burn.trace) && state.boss.burn.trace.length) {
-      fields.burn.hidden = false;
-      const b = state.boss.burn;
-      fields.burn.textContent = [
-        b.survived ? `HEAT DEATH ENDURED · ${b.remainingStates} States remain` : `HEAT DEATH OVERRAN at burn cycle ${b.failedAt}`,
-        ...b.trace.map((t) => `  burn ${t.cycle}: -${t.drain}${t.paused ? " (stabilizer)" : ""} → ${t.remaining}`)
-      ].join("\n");
-    } else {
-      fields.burn.hidden = true;
-    }
-    fields.debrisSelect.replaceChildren(...state.debris.map((item) => {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = `${item.id} (${item.value})`;
-      option.selected = item.id === state.selectedDebrisId;
-      return option;
-    }));
-    map.replaceChildren(...state.nodes.map((n) => {
-      const def = nodeById(n.id) || {};
-      const s = nodeStatus(n.health);
-      const item = document.createElement("div");
-      item.className = `s8-node is-${s}`;
-      const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
-      item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>
-        ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
-        <button type="button" data-repair="${n.id}">repair</button>`;
-      return item;
-    }), ...state.debris.map((item) => {
-      const debris = document.createElement("button");
-      debris.type = "button";
-      debris.className = "s8-debris";
-      debris.draggable = true;
-      debris.dataset.debrisId = item.id;
-      debris.textContent = item.id;
-      debris.addEventListener("click", () => {
-        state.selectedDebrisId = item.id;
-        repaint();
-      });
-      return debris;
-    }));
-    log.replaceChildren(...state.log.slice(-5).map((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      return li;
-    }));
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
+    paintStage8({
+      state,
+      lock,
+      els: { fields, map, log, root },
+      onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
+    });
   }
 
   function persistAndPaint() {
