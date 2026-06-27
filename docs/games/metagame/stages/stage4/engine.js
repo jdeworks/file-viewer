@@ -1,0 +1,164 @@
+// engine.js — Stage 4 Fractal Bastion: the tower-defense tick loop (no DOM). Deterministic — all
+// timing is driven by the deltaMs the caller passes (rAF in the renderer, fixed steps in tests).
+// Moves enemies along the L-system path, fires towers, drains integrity, handles fractal-host splits
+// and recurve double-damage. RNG is never used here.
+
+import { ENEMY_TYPES, spawnEnemy } from "./enemies.js";
+import { TOWER_TYPES } from "./towers.js";
+import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
+import { applyExtractorIncome } from "./upgrades.js";
+
+// Populate the spawn queue for a wave and reset per-wave combat state. `pathTiles` is unused here
+// (kept for symmetry with tick/resolveDeath) — spawning reads positions in tick.
+export function startWave(state, waveNum, pathTiles) {
+  const comp = waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  const queue = [];
+  for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) queue.push(grp.type);
+  state.waveNumber = waveNum;
+  state.waveActive = true;
+  state.waveFailed = false;
+  state.enemies = [];
+  state.spawnQueue = queue;
+  state.spawnTimerMs = SPAWN_INTERVAL_MS; // first enemy enters on the first tick
+  state.combatClockMs = 0;
+  state.enemyNextId = 1;
+  for (const t of state.towers) t.lastFiredMs = -Infinity;
+  return state;
+}
+
+export function tick(state, deltaMs, pathTiles) {
+  if (!state.waveActive || !Array.isArray(pathTiles) || pathTiles.length < 2) return state;
+  const dt = Math.max(0, Number(deltaMs) || 0);
+  const exitIndex = pathTiles.length - 1;
+  state.combatClockMs = (state.combatClockMs || 0) + dt;
+
+  spawnDueEnemies(state, dt, pathTiles);
+  moveEnemies(state, dt, pathTiles, exitIndex);
+  fireTowers(state, pathTiles);
+  reap(state, pathTiles);
+  return state;
+}
+
+// On-death effects: award Cycles, fractal-host split, log. Returns the Cycles earned.
+export function resolveDeath(state, enemy, pathTiles) {
+  const def = ENEMY_TYPES[enemy.type] || ENEMY_TYPES.recursion;
+  state.cycles = (state.cycles || 0) + (def.reward || 0);
+  if (def.spawnsOnDeath) {
+    for (let i = 0; i < def.spawnsOnDeath.count; i++) {
+      const child = spawnEnemy(def.spawnsOnDeath.type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+      child.pathIndex = enemy.pathIndex;
+      placeOnPath(child, pathTiles);
+      state.enemies.push(child);
+    }
+    pushLog(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
+  }
+  return def.reward || 0;
+}
+
+// True (once) when the wave's spawns are exhausted and no enemies remain — awards extractor income.
+export function waveComplete(state) {
+  if (!state.waveActive) return false;
+  if ((state.spawnQueue?.length || 0) > 0 || state.enemies.length > 0) return false;
+  state.waveActive = false;
+  applyExtractorIncome(state); // cycle-extractor towers pay out on wave clear
+  return true;
+}
+
+// ── internals ────────────────────────────────────────────────────────────────────────────────────
+
+function spawnDueEnemies(state, dt, pathTiles) {
+  state.spawnTimerMs = (state.spawnTimerMs || 0) + dt;
+  while ((state.spawnQueue?.length || 0) > 0 && state.spawnTimerMs >= SPAWN_INTERVAL_MS) {
+    state.spawnTimerMs -= SPAWN_INTERVAL_MS;
+    const type = state.spawnQueue.shift();
+    const e = spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    placeOnPath(e, pathTiles);
+    state.enemies.push(e);
+  }
+}
+
+function moveEnemies(state, dt, pathTiles, exitIndex) {
+  const survivors = [];
+  for (const e of state.enemies) {
+    const slowed = !e.slowImmune && inAttractorField(state, e, pathTiles);
+    const eff = e.speed * (slowed ? 0.5 : 1);
+    e.pathIndex += eff * (dt / 1000);
+    if (e.pathIndex >= exitIndex) {
+      const def = ENEMY_TYPES[e.type] || ENEMY_TYPES.recursion;
+      state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
+      if (state.integrity <= 0) state.waveFailed = true;
+      pushLog(state, `${def.glyph} reached the core.`);
+      continue; // enemy exits (removed)
+    }
+    placeOnPath(e, pathTiles);
+    survivors.push(e);
+  }
+  state.enemies = survivors;
+}
+
+function fireTowers(state, pathTiles) {
+  const now = state.combatClockMs;
+  for (const tower of state.towers) {
+    const def = TOWER_TYPES[tower.type];
+    if (!def || !def.fireRate || !def.damage) continue; // support towers don't fire
+    if (now - (tower.lastFiredMs ?? -Infinity) < 1000 / def.fireRate) continue;
+    const inRange = state.enemies.filter((e) => dist(tower, e) <= def.range);
+    if (!inRange.length) continue;
+    tower.lastFiredMs = now;
+    const bonus = 1 + 0.3 * hubsCovering(state, tower);
+    const targets = def.aoe ? inRange : [leader(inRange)];
+    for (const e of targets) applyDamage(state, tower, def, e, bonus, pathTiles);
+  }
+}
+
+function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
+  let dmg = def.damage * bonus;
+  const tile = pathTiles[Math.floor(enemy.pathIndex)];
+  if (tile?.recurve) dmg *= 2; // depth-3 fold-back tiles deal double
+  if (!def.ignoresArmor) dmg *= 1 - (enemy.armor || 0);
+  enemy.hp -= dmg;
+}
+
+function reap(state, pathTiles) {
+  const survivors = [];
+  for (const e of state.enemies) {
+    if (e.hp <= 0) resolveDeath(state, e, pathTiles);
+    else survivors.push(e);
+  }
+  state.enemies = survivors;
+}
+
+function inAttractorField(state, enemy, pathTiles) {
+  for (const t of state.towers) {
+    const def = TOWER_TYPES[t.type];
+    if (def?.slow && dist(t, enemy) <= def.range) return true;
+  }
+  return false;
+}
+
+function hubsCovering(state, tower) {
+  let n = 0;
+  for (const t of state.towers) {
+    if (t === tower) continue;
+    const def = TOWER_TYPES[t.type];
+    if (def?.adjacencyBonus && dist(t, tower) <= def.range) n += 1;
+  }
+  return n;
+}
+
+function leader(enemies) {
+  return enemies.reduce((best, e) => (e.pathIndex > best.pathIndex ? e : best), enemies[0]);
+}
+
+function placeOnPath(enemy, pathTiles) {
+  const tile = pathTiles[Math.min(pathTiles.length - 1, Math.max(0, Math.floor(enemy.pathIndex)))];
+  if (tile) { enemy.x = tile.x; enemy.y = tile.y; }
+}
+
+function dist(a, b) {
+  return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
+}
+
+function pushLog(state, line) {
+  state.log = [...(state.log || []), line].slice(-12);
+}

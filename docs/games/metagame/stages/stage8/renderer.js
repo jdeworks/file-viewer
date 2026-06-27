@@ -4,10 +4,16 @@ import {
   handleDebrisDrop,
   recordHeatDeathAttempt
 } from "./boss.js";
-import { btsSummary, BTS_PATH, SALVAGE_REQUIRED } from "./messages.js";
-import { entropyTreeText, nodeRows } from "./content.js";
+import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messages.js";
+import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
+import { driveToGate } from "./solver.js";
+import { paintStage8 } from "./paint.js";
+import { snapshotRun } from "./state.js";
+import { makeRng } from "./rng.js";
 
-export function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
+const REPAIR_STEP = 2; // repair units spent per click
+
+export function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, run, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
   root.innerHTML = `
@@ -15,6 +21,9 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <strong>ENTROPY FIELD</strong>
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
+      <span>entropy <b data-field="entropy"></b>%</span>
+      <span>repair <b data-field="repairUnits"></b></span>
+      <span>stabilizers <b data-field="stabilizers"></b></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
     </header>
     <div class="s8-layout">
@@ -32,9 +41,13 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <strong>THE HEAT DEATH</strong>
       <div data-field="boss"></div>
       <div data-field="hint"></div>
+      <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
+    <div data-field="telegraph" class="s8-telegraph" hidden></div>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
+      <button type="button" data-action="advance">advance cycle ▸</button>
+      <button type="button" data-action="stabilizer">build stabilizer (${STABILIZER_COST} States)</button>
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
@@ -49,6 +62,9 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
+  // Run-seed base for all deterministic rng (cycle decay + burn). The retrofit seeds it from the
+  // run-state run identity so the same run replays identically across reloads.
+  const seedBase = run?.seed || "8";
 
   dropTarget.addEventListener("dragover", (event) => event.preventDefault());
   dropTarget.addEventListener("drop", (event) => {
@@ -77,8 +93,12 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   });
 
   root.addEventListener("click", (event) => {
+    const repair = event.target.closest("button[data-repair]");
+    if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
+    if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
+    if (button.dataset.action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
     if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
     if (button.dataset.action === "external") {
       state.externalImportBonusCycles = 3;
@@ -91,62 +111,75 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
 
   repaint();
 
+  // TEST/DEBUG hook (not a player affordance): deterministic fast-forward solvers for the smoke.
+  // Neither bypasses the gate — bodySolver only plays the REAL engine forward (repair the spine, let
+  // the frontier shed debris) to the body gate; bossSolver runs the REAL triple-gated burn. A fresh
+  // field / two-click attempt still returns locked.
+  window.__fvStage8 = {
+    state: () => state,
+    lockState: () => getBossLockState({ actions, state }),
+    advance(cycles = 1) {
+      for (let i = 0; i < cycles; i += 1) advanceCycle(state, cycleRng(state.cycle));
+      persistAndPaint();
+    },
+    bodySolver() {
+      driveToGate(state, cycleRng);
+      persistAndPaint();
+      return getBossLockState({ actions, state });
+    },
+    bossSolver() {
+      const result = challengeBoss();
+      return {
+        defeated: Boolean(state.boss.defeated),
+        locked: Boolean(result?.locked),
+        burn: result?.burn || null
+      };
+    }
+  };
+
   return {
     repaint,
     destroy() {
+      if (window.__fvStage8) delete window.__fvStage8;
       root.remove();
     }
   };
 
+  // Deterministic per-cycle rng, reseeded from the run seed: `${run.seed}:cyc:${cycle}` (so the SAME
+  // run replays identically across reloads, and a fresh run after reset() gets a new seed base).
+  function cycleRng(cycle) {
+    return makeRng(`${seedBase}:cyc:${cycle}`);
+  }
+
   function challengeBoss() {
-    const result = recordHeatDeathAttempt({ state, actions });
+    const result = recordHeatDeathAttempt({ state, actions, rng: makeRng(`${seedBase}:burn:${state.cycle}`) });
+    persistAndPaint();
     if (result.defeated) {
+      if (run && typeof run.reset === "function") run.reset(); // run resolved → clear the resume slot
       completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     }
+    return result;
   }
 
   function repaint() {
+    if (!state.debris.some((d) => d.id === state.selectedDebrisId)) {
+      state.selectedDebrisId = state.debris[0]?.id || "";
+    }
     const lock = getBossLockState({ actions, state });
-    fields.cycle.textContent = String(state.cycle);
-    fields.states.textContent = String(state.states);
-    fields.salvage.textContent = String(state.salvageTotal);
-    fields.tree.textContent = entropyTreeText(state);
-    fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / archived action ${lock.actionReady ? "yes" : "no"}`;
-    fields.hint.textContent = lock.hint;
-    fields.debrisSelect.replaceChildren(...state.debris.map((item) => {
-      const option = document.createElement("option");
-      option.value = item.id;
-      option.textContent = `${item.id} (${item.value})`;
-      option.selected = item.id === state.selectedDebrisId;
-      return option;
-    }));
-    map.replaceChildren(...nodeRows.map((node) => {
-      const item = document.createElement("div");
-      item.className = `s8-node is-${node.state}`;
-      item.textContent = `${node.id} ${node.name} ${node.state} +${node.output}`;
-      return item;
-    }), ...state.debris.map((item) => {
-      const debris = document.createElement("button");
-      debris.type = "button";
-      debris.className = "s8-debris";
-      debris.draggable = true;
-      debris.dataset.debrisId = item.id;
-      debris.textContent = item.id;
-      debris.addEventListener("click", () => {
-        state.selectedDebrisId = item.id;
-        repaint();
-      });
-      return debris;
-    }));
-    log.replaceChildren(...state.log.slice(-5).map((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      return li;
-    }));
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
+    paintStage8({
+      state,
+      lock,
+      els: { fields, map, log, root },
+      onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
+    });
   }
 
   function persistAndPaint() {
+    // Checkpoint the live sim into the run-state resume slot (tagged with the run identity) BEFORE the
+    // save() call serializes the save object, so a reload resumes this exact mid-run position.
+    if (run && typeof run.checkpoint === "function" && !state.boss.defeated) {
+      run.checkpoint({ ...snapshotRun(state), runTag: run.seed });
+    }
     if (typeof save === "function") save();
     repaint();
   }

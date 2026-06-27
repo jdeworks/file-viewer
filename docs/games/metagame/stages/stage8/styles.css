@@ -45,6 +45,23 @@
 .s8-node.is-degrading { border-color: #8b7355; }
 .s8-node.is-failed { border-color: #7a3b2e; }
 
+/* Node health bar in the survival map. */
+.s8-node-id { font-weight: 700; }
+.s8-node-name { color: #b6ad9c; }
+.s8-node-bar {
+  display: inline-block;
+  width: 90px;
+  height: 9px;
+  margin: 0 6px;
+  vertical-align: middle;
+  background: #2c2a26;
+  border: 1px solid #4a4a4a;
+}
+.s8-node-bar > span { display: block; height: 100%; background: #5dcaa5; }
+.s8-node.is-degrading .s8-node-bar > span { background: #d8a657; }
+.s8-node.is-failed .s8-node-bar > span { background: #c8553b; }
+.s8-node [data-repair] { float: right; cursor: pointer; background: #20201d; color: inherit; border: 1px solid #4a4a4a; }
+
 .s8-debris {
   border-style: dashed;
   border-color: #8b7355;
@@ -62,6 +79,26 @@
 .s8-files pre {
   overflow: auto;
   max-height: 220px;
+}
+
+.s8-telegraph {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 1px solid #8b7355;
+  background: #20201d;
+}
+.s8-telegraph[data-tone="bad"] { border-color: #c8553b; color: #e0a08e; }
+.s8-telegraph[data-tone="good"] { border-color: #5c7a3e; color: #b6d39a; }
+
+.s8-burn {
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px solid #c8553b;
+  background: #1a1310;
+  color: #e0a08e;
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 200px;
 }
 
 .s8-log {

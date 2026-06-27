@@ -54,6 +54,19 @@ export const ENEMIES = {
       { label: "Data race — Attack 26", attack: 26 }
     ]
   },
+  // Appears act 2+: a Round-Trip Timer whose retransmit storm GROWS each uninterrupted round —
+  // interrupt it (skipEnemyNext, e.g. RST) to reset the ramp. Telegraphed two steps ahead in the UI.
+  "round-trip-timer": {
+    id: "round-trip-timer",
+    name: "Round-Trip Timer",
+    tier: "standard",
+    hp: 52, hpPerAct: 18, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Measuring RTT — block 8", block: 8 },
+      { label: "Probe — Attack 6", attack: 6 },
+      { label: "Retransmit storm — Attack 8 (+6 each uninterrupted round)", attack: 8, ramp: 6 }
+    ]
+  },
   // Appears act 3+: armored bruiser, long fights, sustained pressure.
   "packet-storm": {
     id: "packet-storm",
@@ -64,6 +77,18 @@ export const ENEMIES = {
       { label: "Attack 14", attack: 14 },
       { label: "Block 12 + Attack 10", block: 12, attack: 10 },
       { label: "Flood — Attack 7, three times", attack: 7, hits: 3 }
+    ]
+  },
+  // Appears act 3: punishes WIDE turns — its Collapse deals damage scaling with the energy you spent.
+  "congestion-collapse": {
+    id: "congestion-collapse",
+    name: "Congestion Collapse",
+    tier: "standard",
+    hp: 58, hpPerAct: 16, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Buffer — Block 10", block: 10 },
+      { label: "Collapse — 3 × energy you spent", congest: 3 },
+      { label: "Attack 12", attack: 12 }
     ]
   },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
@@ -127,6 +152,21 @@ export const ENEMIES = {
       { label: "Block 26", block: 26 },
       { label: "Attack 16 + Vulnerable", attack: 16, applyPlayer: { status: "vulnerable", value: 1 } },
       { label: "Deadlock — Attack 32", attack: 32 }
+    ]
+  },
+  // ── The act-4 finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
+  // HP here is the PHASE-1 pool; phase advance refills to BOSS_PHASE_HP[2]/[3]. Pressure is modest —
+  // the challenge is satisfying the handshake (lead SYN / play ACK), not a raw damage race.
+  "the-refused-connection": {
+    id: "the-refused-connection",
+    name: "The Refused Connection",
+    tier: "boss",
+    hp: 60, hpPerAct: 0, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Backpressure — Attack 8", attack: 8 },
+      { label: "Re-handshake — Block 12", block: 12 },
+      { label: "Reset — Attack 6, twice", attack: 6, hits: 2 },
+      { label: "Silence — Block 10 + Attack 7", block: 10, attack: 7 }
     ]
   }
 };

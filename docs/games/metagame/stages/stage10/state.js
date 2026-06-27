@@ -12,7 +12,8 @@ export function defaultState(context = {}) {
         readAt: null,
         resolvedAt: null,
         integratedAt: null,
-        choice: null
+        choice: null,
+        echoWitnessed: false
       }
     ])),
     final: {
@@ -60,6 +61,7 @@ function normalizeMemoryState(value, fresh) {
     ...fresh,
     ...memory,
     state: validStates.has(memory.state) ? memory.state : fresh.state,
-    choice: typeof memory.choice === "string" ? memory.choice : null
+    choice: typeof memory.choice === "string" ? memory.choice : null,
+    echoWitnessed: Boolean(memory.echoWitnessed)
   };
 }

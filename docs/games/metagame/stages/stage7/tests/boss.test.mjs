@@ -17,7 +17,9 @@ const unlockedActions = { hasAction: (stage, action) => stage === 7 && action ==
   assert.equal(lock.unlocked, false);
   assert.equal(lock.informationState, "A/F unresolved");
   assert.equal(lock.defeatPossible, false);
-  assert.equal(commitIdentity({ state, entity: "A" }).reason, "locked");
+  assert.equal(commitIdentity({ state, entity: "A" }).reason, "not-yet-boss", "no commit before the boss substage");
+  state.substage = 5;
+  assert.equal(commitIdentity({ state, entity: "A" }).reason, "locked", "at the boss but exif not yet inspected");
   assert.equal(state.boss.defeated, false);
 }
 
@@ -81,6 +83,7 @@ const unlockedActions = { hasAction: (stage, action) => stage === 7 && action ==
 
 {
   const state = defaultState();
+  state.substage = 5;
   state.boss.unlocked = true;
   state.evidence.contradicted = ["F"];
   const wrong = commitIdentity({ state, entity: "F" });

@@ -1,0 +1,41 @@
+// rounds.js — Stage 5 Signal Racer: the single source of truth for per-round config. Each round adds
+// one new verb (avoid → time it → read ahead → counter-phase → boost gates → split channel → boss).
+// burstPattern: per-tick-in-cycle flags where 1 = burst (lane-switch is off-beat) and 0 = beat-open.
+// glyphs: which obstacle glyphs that round draws. counterPhaseShift: ticks between shield-lane shifts.
+
+export const GLYPH_DAMAGE = { '░': 2, '▒': 2, '▓': 5 };
+
+export const ROUNDS = [
+  { id: 1, label: 'AVOID',              tickMs: 180, beatWindowTicks: null,
+    glyphs: ['░'],              burstPattern: null,
+    counterPhaseShift: null, hasFork: false, hasGates: false, tickCount: 100 },
+  { id: 2, label: 'TIME IT',            tickMs: 160, beatWindowTicks: 2,
+    glyphs: ['▒'],              burstPattern: [1, 1, 1, 0, 0],
+    counterPhaseShift: null, hasFork: false, hasGates: false, tickCount: 120 },
+  { id: 3, label: 'READ AHEAD',         tickMs: 140, beatWindowTicks: 1,
+    glyphs: ['░', '▓'],         burstPattern: [1, 0, 1, 1],
+    counterPhaseShift: null, hasFork: false, hasGates: false, tickCount: 120 },
+  { id: 4, label: 'COUNTER-PHASE LANE', tickMs: 140, beatWindowTicks: 1,
+    glyphs: ['░', '▒'],         burstPattern: [1, 1, 0, 0],
+    counterPhaseShift: 8,    hasFork: false, hasGates: false, tickCount: 130 },
+  { id: 5, label: 'BOOST GATES',        tickMs: 130, beatWindowTicks: 1,
+    glyphs: ['░', '>>'],        burstPattern: [1, 0, 1, 0],
+    counterPhaseShift: 8,    hasFork: false, hasGates: true,  tickCount: 140 },
+  { id: 6, label: 'SPLIT CHANNEL',      tickMs: 130, beatWindowTicks: 1,
+    glyphs: ['░', '▓', '>>'],   burstPattern: [1, 0, 1, 0],
+    counterPhaseShift: 8,    hasFork: true,  hasGates: true,  tickCount: 160 },
+  { id: 7, label: 'BOSS',               tickMs: 120, beatWindowTicks: 1,
+    glyphs: ['░', '▒', '▓', '>>'], burstPattern: [1, 1, 0, 1, 0],
+    counterPhaseShift: 4,    hasFork: true,  hasGates: true,  tickCount: 200 },
+];
+
+export const FINAL_ROUND_ID = 7;
+export const ROUND_COUNT = ROUNDS.length;
+
+export function roundByIdx(idx) {
+  return ROUNDS[Math.max(0, Math.min(ROUNDS.length - 1, Number(idx) || 0))];
+}
+
+export function isBossRound(roundIdx) {
+  return roundByIdx(roundIdx).id === FINAL_ROUND_ID;
+}

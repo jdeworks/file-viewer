@@ -10,7 +10,7 @@
 .s7-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 8px 14px;
   align-items: center;
 }
 
@@ -19,71 +19,150 @@
   border-bottom: 2px solid #c0392b;
 }
 
-.s7-board {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 10px;
+.s7-main {
   margin: 16px 0;
 }
 
-.s7-candidate,
-.s7-evidence,
-.s7-meta button {
-  border: 1px solid #9d8f74;
-  border-radius: 6px;
-  background: #ede3cc;
+.s7-hint {
+  color: #6a4a12;
+  font-style: italic;
 }
 
-.s7-candidate {
-  min-height: 132px;
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  padding: 10px;
+button {
+  font: inherit;
 }
 
-.s7-candidate.is-contradicted {
-  border-color: #8b1a1a;
-  box-shadow: inset 0 0 0 2px #8b1a1a;
-}
-
-.s7-candidate.is-selected {
-  border-color: #2c4770;
-}
-
-.s7-candidate button,
+.s7-card button,
+.s7-duptest-col button,
+.s7-timeline button,
+.s7-dossier-chain button,
 .s7-controls button,
-.s7-meta button {
+.s7-commit-row button {
   border: 1px solid #2c4770;
   border-radius: 6px;
   background: #2c4770;
   color: #fff8e8;
+  cursor: pointer;
   padding: 8px 10px;
 }
 
-.s7-evidence {
+.s7-card button:disabled,
+.s7-commit-row button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* SS1 — credential scan */
+.s7-ss1 {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 360px);
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   gap: 14px;
+}
+
+.s7-ambient-facts {
+  border: 1px solid #9d8f74;
+  border-radius: 6px;
+  background: #ede3cc;
+  padding: 10px;
+}
+
+.s7-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.s7-card {
+  border: 1px solid #9d8f74;
+  border-radius: 6px;
+  background: #ede3cc;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.s7-card.is-flagged {
+  border-color: #8b1a1a;
+  box-shadow: inset 0 0 0 2px #8b1a1a;
+}
+
+.s7-card button,
+.s7-duptest-col button {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  background: #fff8e8;
+  color: #1a1a1a;
+}
+
+/* SS2 — duplicate test */
+.s7-duptest-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.s7-duptest-col {
+  border: 1px solid #9d8f74;
+  border-radius: 6px;
+  background: #ede3cc;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+}
+
+.s7-row {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #fff8e8;
+  border-radius: 6px;
+}
+
+/* SS3 — timeline audit */
+.s7-timeline {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.s7-timeline li {
+  display: grid;
+  grid-template-columns: 8em 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 8px;
+  background: #ede3cc;
+  border-radius: 4px;
+}
+
+/* SS4 — reference chase */
+.s7-dossier-chain {
+  border: 1px solid #9d8f74;
+  border-radius: 6px;
+  background: #ede3cc;
   padding: 12px;
 }
 
-.s7-status {
-  color: #8b1a1a;
+/* SS5 — boss */
+.s7-boss-header {
+  background: #8b1a1a;
+  color: #fff8e8;
+  padding: 8px 10px;
+  border-radius: 6px;
   font-weight: 700;
 }
 
-.s7-meta {
-  display: grid;
+.s7-commit-row {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-}
-
-.s7-meta button {
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  color: #1a1a1a;
-  background: #fff8e8;
+  margin-top: 8px;
 }
 
 .s7-log {
@@ -96,7 +175,8 @@
 }
 
 @media (max-width: 720px) {
-  .s7-evidence {
+  .s7-ss1,
+  .s7-duptest-panel {
     grid-template-columns: 1fr;
   }
 }

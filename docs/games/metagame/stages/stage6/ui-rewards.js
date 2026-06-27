@@ -2,13 +2,19 @@
 // Pure views; renderer delegates clicks:
 //   [data-take="<cardId>"|"skip"]      pick a reward card / skip
 //   [data-rest="heal"]                 rest: restore HP
+//   [data-upgrade="<deckIndex>"]       rest: upgrade a card in place
 //   [data-remove="<deckIndex>"]        rest: thin a card from the deck
 //   [data-buy="<cardId>"]              shop: buy a card (price in data-price)
+//   [data-buy-remove="<deckIndex>"]    shop: buy a deck removal (escalating price)
+//   [data-buy-upgrade="<deckIndex>"]   shop: buy an in-place card upgrade (price in data-price)
+//   [data-buy-relic="1"]               shop: buy a relic (price in data-price)
 //   [data-action="to-map"]             leave shop/event back to the map
 //   [data-event="<key>"]               resolve an event choice
 
 import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
+import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
+import { removalCost, UPGRADE_COST, RELIC_COST } from "./run.js";
 import { makeRng } from "./combat.js";
 import { relicById } from "./relics.js";
 
@@ -37,11 +43,25 @@ export function restView(run) {
   const heal = Math.round(run.maxHp * 0.30);
   el.innerHTML = `
     <h2>Keepalive</h2>
-    <p>A quiet socket. Recover ${heal} HP, or thin your deck by removing one card.</p>
+    <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
     <div class="s6db-hub-actions">
       <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
     </div>
+    <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
     <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
+
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  const up = el.querySelector(".s6db-rest-upgrade");
+  if (upgradeable.length) {
+    const upList = document.createElement("div");
+    upList.className = "s6db-card-row";
+    // Show the UPGRADED face so the player sees what they get; data-upgrade carries the deck index.
+    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
+    up.appendChild(upList);
+  } else {
+    up.insertAdjacentHTML("beforeend", `<p class="s6db-hint">Every card is already upgraded.</p>`);
+  }
+
   const thin = el.querySelector(".s6db-rest-thin");
   const list = document.createElement("div");
   list.className = "s6db-card-row";
@@ -65,6 +85,44 @@ export function shopView(run) {
     return chip;
   }));
   el.appendChild(row);
+
+  // Removal sink: deck-thinning is the strongest action, so it costs more each time you buy it.
+  const cost = removalCost(run);
+  const affordable = run.handshakes >= cost && run.deck.length > 1;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s6db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`);
+  const purge = el.querySelector(".s6db-shop-remove");
+  const purgeRow = document.createElement("div");
+  purgeRow.className = "s6db-card-row";
+  purgeRow.replaceChildren(...run.deck.map((id, i) => {
+    const chip = cardOption(id, "buy-remove", String(i));
+    chip.disabled = !affordable;
+    return chip;
+  }));
+  purge.appendChild(purgeRow);
+
+  // Upgrade sink: pay handshakes to sharpen a card (flat price; shows the upgraded face).
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  if (upgradeable.length) {
+    el.insertAdjacentHTML("beforeend",
+      `<div class="s6db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`);
+    const upRow = document.createElement("div");
+    upRow.className = "s6db-card-row";
+    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
+      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      chip.dataset.price = String(UPGRADE_COST);
+      chip.disabled = run.handshakes < UPGRADE_COST;
+      return chip;
+    }));
+    el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
+  }
+
+  // Relic sink: buy a relic if any remain in the pool.
+  const relicAffordable = run.handshakes >= RELIC_COST;
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s6db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
+       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`);
+
   el.insertAdjacentHTML("beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`);
   return el;
