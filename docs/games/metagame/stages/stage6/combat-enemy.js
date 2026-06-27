@@ -44,8 +44,10 @@ export function resolveIntent(combat, intent) {
   const enemy = combat.enemy;
   if (intent.block) enemy.block += intent.block;
   if (intent.attack) {
-    const hits = intent.hits || 1;
-    // DELAY: a `ramp` intent grows by the number of uninterrupted enemy turns (Round-Trip Timer).
+    // CHAIN (Act 6): a `rampHits` intent repeats once more for each uninterrupted enemy turn
+    // (Infinite Loop / Segfault) — interrupt it (skipEnemyNext) to reset the loop.
+    const hits = (intent.hits || 1) + (intent.rampHits ? (enemy.rttStacks || 0) : 0);
+    // DELAY: a `ramp` intent grows its DAMAGE by the number of uninterrupted enemy turns (Round-Trip Timer).
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }

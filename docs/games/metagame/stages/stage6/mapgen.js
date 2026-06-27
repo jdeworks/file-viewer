@@ -15,9 +15,15 @@ const STANDARD_POOLS = {
   3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
   4: ["null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
   // Act 5 PRESENTATION · CORRUPTION: cleansers + corruption-flavoured bruisers reward burst-DoT play.
-  5: ["packet-storm", "race-condition", "heisenbug", "daemon-process"]
+  5: ["packet-storm", "race-condition", "heisenbug", "daemon-process"],
+  // Act 6 APPLICATION · CHAIN: looping/echoing strikers reward interrupt timing + replay payoffs.
+  6: ["heisenbug", "infinite-loop", "recursive-call", "packet-storm"]
 };
-const ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
+// Elite pools are act-aware so a late-act elite (Segfault) never shows up in the opening acts.
+const ELITE_POOLS = {
+  default: ["expired-certificate", "man-in-the-middle"],
+  6: ["man-in-the-middle", "segfault"]
+};
 const CONTENT_LAYERS = 6; // + 1 boss layer => ~15 nodes/act
 
 export function generateAct(act, seed) {
@@ -120,7 +126,10 @@ function nodeId(act, layer, col) {
 // `Math.random` fallback: enemy picks must be replayable from the run seed (no live entropy).
 export function enemyForNode(node, act = 1, rng) {
   if (typeof rng !== "function") throw new TypeError("enemyForNode requires a seeded rng");
-  if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
-  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
+  if (node.type === "elite") {
+    const elites = ELITE_POOLS[act] || ELITE_POOLS.default;
+    return elites[Math.floor(rng() * elites.length)];
+  }
+  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[6];
   return pool[Math.floor(rng() * pool.length)];
 }

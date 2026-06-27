@@ -7,6 +7,7 @@ import { createCombat, playCard, endTurn } from "../combat.js";
 import { makeCtx } from "../combat-ctx.js";
 import { registerCard } from "../cards.js";
 import { instantiateEnemy } from "../enemies.js";
+import { relicsFor } from "../relics.js";
 
 function big(hand, { seed = 5, hp = 400 } = {}) {
   const c = createCombat({ deck: hand, player: { hp: 200, maxHp: 200 }, enemy: instantiateEnemy("corrupt-packet", 1), seed });
@@ -80,6 +81,58 @@ registerCard({ id: "TEST_LOOP", type: "Recursion", cost: 0, rarity: "common", te
   makeCtx(c, null).replayLast();  // reaching the next line proves it terminated under the depth cap
   assert.ok(true, "nested self-echo terminated under MAX_ECHO_DEPTH");
   assert.ok(c.chainThisTurn <= 8, "bounded number of replays");
+}
+
+// ── Recursion archetype: STACK_FRAME escalates only after another Recursion card ────────────────────
+{
+  const c = big(["LOOPBACK", "STACK_FRAME"]); // both Recursion
+  const hp0 = c.enemy.hp;
+  playCard(c, 0); // LOOPBACK deals 3
+  playCard(c, 0); // STACK_FRAME deals 6, +6 because the previous card was Recursion
+  assert.equal(c.enemy.hp, hp0 - 3 - 12, "STACK_FRAME escalates after a Recursion card");
+}
+{
+  const c = big(["SYN", "STACK_FRAME"]); // SYN is a Signal
+  const hp0 = c.enemy.hp;
+  playCard(c, 0); // SYN 8
+  playCard(c, 0); // STACK_FRAME 6 only (previous card was not Recursion)
+  assert.equal(c.enemy.hp, hp0 - 8 - 6, "STACK_FRAME does not escalate after a non-Recursion card");
+}
+// ── RECURSE (X-cost) replays the last card once per energy spent; FIXED_POINT replays twice ──────────
+{
+  const c = big(["SYN", "RECURSE"]);
+  c.player.energy = 3;
+  const hp0 = c.enemy.hp;
+  playCard(c, 0); // SYN deals 8 (energy → 2)
+  playCard(c, 0); // RECURSE spends 2 → replays SYN ×2 → 16
+  assert.equal(c.enemy.hp, hp0 - 8 - 16, "RECURSE replays the last card once per energy spent");
+}
+{
+  const c = big(["SYN", "FIXED_POINT"]);
+  c.player.energy = 5;
+  const hp0 = c.enemy.hp;
+  playCard(c, 0); // SYN 8
+  playCard(c, 0); // FIXED_POINT replays SYN twice → 16
+  assert.equal(c.enemy.hp, hp0 - 8 - 16, "FIXED_POINT replays twice");
+}
+// ── JIT Compiler relic: the first 3-chain turn refunds 1 energy ──────────────────────────────────────
+{
+  const c = createCombat({ deck: ["SYN", "RECURSE"], player: { hp: 200, maxHp: 200 }, enemy: instantiateEnemy("corrupt-packet", 1), seed: 5, relics: relicsFor(["jit-compiler"]) });
+  c.enemy.hp = 400;
+  c.hand = ["SYN", "RECURSE"]; c.player.energy = 4;
+  playCard(c, 0); // SYN (energy → 3)
+  playCard(c, 0); // RECURSE spends 3 → 3 replays → 3-chain → JIT refunds 1
+  assert.equal(c.chainThisTurn, 3, "three replays this turn");
+  assert.equal(c.player.energy, 1, "JIT Compiler refunded 1 energy on the 3-chain turn");
+}
+// ── Act 6 enemy: Infinite Loop's attack grows each uninterrupted turn (rampHits) ────────────────────
+{
+  const c = createCombat({ deck: ["SEGMENT", "SEGMENT", "SEGMENT", "SEGMENT", "SEGMENT"], player: { hp: 500, maxHp: 500 }, enemy: instantiateEnemy("infinite-loop", 1), seed: 5 });
+  let p = c.player.hp; endTurn(c); const d1 = p - c.player.hp; // intent 0: 1 hit
+  endTurn(c); // intent 1 (block)
+  endTurn(c); // intent 2 (attack)
+  p = c.player.hp; endTurn(c); const d4 = p - c.player.hp; // intent 0 again: more hits
+  assert.ok(d4 > d1, `Infinite Loop's attack grows each uninterrupted turn (${d1} → ${d4})`);
 }
 
 console.log("stage6 combat-chain tests passed");

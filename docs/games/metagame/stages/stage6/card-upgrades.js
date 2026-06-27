@@ -70,7 +70,17 @@ const SPECS = {
   SEGFAULT_SPILL: { text: "Deal 6. Apply 3 Corruption.", effect: (ctx) => { ctx.deal(6); ctx.applyCorruption(3); } },
   CORE_DUMP: { text: "Deal damage equal to the enemy's Corruption (keep the stack).", effect: (ctx) => ctx.deal(ctx.enemyCorruption) },
   CASCADE_FAILURE: { text: "Apply Corruption equal to the enemy's Corruption + 2.", effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption + 2) },
-  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) }
+  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) },
+  // H · Act 6 CHAIN (Recursion)
+  STACK_FRAME: { text: "Deal 9. If the previous card was a Recursion card, deal 9 more.", effect: (ctx) => { ctx.deal(9); if (ctx.lastPlayedType === "Recursion") ctx.deal(9); } },
+  LOOPBACK: { text: "Deal 4. If the previous card was a Recursion card, draw 1.", effect: (ctx) => { ctx.deal(4); if (ctx.lastPlayedType === "Recursion") ctx.draw(1); } },
+  ITERATE: { text: "Deal 5. Deal 5 more for each card replayed this turn.", effect: (ctx) => ctx.deal(5 + 5 * ctx.chainCount) },
+  YIELD: { text: "Gain 8 block. If the previous card was a Recursion card, gain 6 more block.", effect: (ctx) => { ctx.block(8); if (ctx.lastPlayedType === "Recursion") ctx.block(6); } },
+  TAIL_CALL: { text: "Replay the last card you played at three-quarters value.", effect: (ctx) => ctx.replayLast(0.75) },
+  TRAMPOLINE: { text: "Deal 10. Replay the last card you played at half value.", effect: (ctx) => { ctx.deal(10); ctx.replayLast(0.5); } },
+  CALLBACK: { text: "Deal 7. Replay the last card at the start of your next turn.", effect: (ctx) => { ctx.deal(7); ctx.echoNextTurn(); } },
+  FIXED_POINT: { cost: 1, text: "Replay the last card you played twice. (cost 1)", effect: (ctx) => ctx.replayLast(1, 2) },
+  RECURSE: { exhaust: false, text: "X-cost: spend all energy, then replay the last card that many times.", effect: (ctx) => ctx.replayLast(1, ctx.xValue) }
 };
 
 export function isUpgradedId(id) {

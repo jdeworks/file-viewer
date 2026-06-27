@@ -122,6 +122,7 @@ export function makeCtx(combat, card) {
       return true;
     },
     get chainCount() { return combat.chainThisTurn || 0; },
+    get xValue() { return combat.xValue || 0; }, // CHAIN: energy spent by the current X-cost card (RECURSE)
     get lastPlayedId() { return combat.lastCardPlayed ?? null; },
     get lastPlayedType() { const id = combat.lastCardPlayed; const c = id != null ? cardById(id) : null; return c ? c.type : null; },
     // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.

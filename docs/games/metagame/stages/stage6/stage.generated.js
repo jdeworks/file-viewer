@@ -751,6 +751,99 @@ var DAEMON_CARDS = [
   }
 ];
 
+// ../../docs/games/metagame/stages/stage6/cards-recursion.js
+var RECURSION_CARDS = [
+  {
+    id: "STACK_FRAME",
+    type: "Recursion",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 6. If the previous card was a Recursion card, deal 6 more.",
+    effect: (ctx) => {
+      ctx.deal(6);
+      if (ctx.lastPlayedType === "Recursion") ctx.deal(6);
+    }
+  },
+  {
+    id: "LOOPBACK",
+    type: "Recursion",
+    cost: 0,
+    rarity: "common",
+    text: "Deal 3. If the previous card was a Recursion card, draw 1.",
+    effect: (ctx) => {
+      ctx.deal(3);
+      if (ctx.lastPlayedType === "Recursion") ctx.draw(1);
+    }
+  },
+  {
+    id: "ITERATE",
+    type: "Recursion",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 4. Deal 4 more for each card replayed this turn.",
+    effect: (ctx) => ctx.deal(4 + 4 * ctx.chainCount)
+  },
+  {
+    id: "YIELD",
+    type: "Recursion",
+    cost: 1,
+    rarity: "common",
+    text: "Gain 6 block. If the previous card was a Recursion card, gain 4 more block.",
+    effect: (ctx) => {
+      ctx.block(6);
+      if (ctx.lastPlayedType === "Recursion") ctx.block(4);
+    }
+  },
+  {
+    id: "TAIL_CALL",
+    type: "Recursion",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Replay the last card you played at half value.",
+    effect: (ctx) => ctx.replayLast(0.5)
+  },
+  {
+    id: "TRAMPOLINE",
+    type: "Recursion",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Deal 8. Replay the last card you played at half value.",
+    effect: (ctx) => {
+      ctx.deal(8);
+      ctx.replayLast(0.5);
+    }
+  },
+  {
+    id: "CALLBACK",
+    type: "Recursion",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 5. Replay the last card you played at the start of your next turn.",
+    effect: (ctx) => {
+      ctx.deal(5);
+      ctx.echoNextTurn();
+    }
+  },
+  {
+    id: "FIXED_POINT",
+    type: "Recursion",
+    cost: 2,
+    rarity: "rare",
+    text: "Replay the last card you played twice.",
+    effect: (ctx) => ctx.replayLast(1, 2)
+  },
+  {
+    id: "RECURSE",
+    type: "Recursion",
+    cost: 0,
+    rarity: "rare",
+    exhaust: true,
+    xcost: true,
+    text: "X-cost: spend all energy, then replay the last card you played that many times. Exhaust.",
+    effect: (ctx) => ctx.replayLast(1, ctx.xValue)
+  }
+];
+
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
@@ -788,7 +881,7 @@ function hashSeed(seed, key) {
 }
 
 // ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS];
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 function cardById(id) {
   return BY_ID.get(id) || null;
@@ -1024,6 +1117,10 @@ function makeCtx(combat, card) {
     get chainCount() {
       return combat.chainThisTurn || 0;
     },
+    get xValue() {
+      return combat.xValue || 0;
+    },
+    // CHAIN: energy spent by the current X-cost card (RECURSE)
     get lastPlayedId() {
       return combat.lastCardPlayed ?? null;
     },
@@ -1147,7 +1244,7 @@ function resolveIntent(combat, intent) {
   const enemy = combat.enemy;
   if (intent.block) enemy.block += intent.block;
   if (intent.attack) {
-    const hits = intent.hits || 1;
+    const hits = (intent.hits || 1) + (intent.rampHits ? enemy.rttStacks || 0 : 0);
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
@@ -1288,7 +1385,11 @@ function playCard(combat, handIndex) {
   const card = cardById(cardId);
   if (!card) return { ok: false, reason: "unknown-card" };
   const isFirst = combat.cardsPlayedThisTurn === 0;
-  const cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
+  let cost;
+  if (card.xcost) {
+    cost = combat.player.energy;
+    combat.xValue = cost;
+  } else cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
   if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
   combat.player.energy -= cost;
   combat.energySpentThisTurn += cost;
@@ -1491,6 +1592,37 @@ var ENEMIES = {
       { label: "Fork — Attack 6, twice + Vulnerable", attack: 6, hits: 2, applyPlayer: { status: "vulnerable", value: 1 } }
     ]
   },
+  // Appears act 6+ (CHAIN): its attack repeats one more time each UNINTERRUPTED turn — interrupt it
+  // (RST / skipEnemyNext) to reset the loop, or it spirals out of control.
+  "infinite-loop": {
+    id: "infinite-loop",
+    name: "Infinite Loop",
+    tier: "standard",
+    hp: 60,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Iterate — Attack 5 (+1 hit each uninterrupted turn)", attack: 5, rampHits: true },
+      { label: "Branch — Block 10", block: 10 },
+      { label: "Continue — Attack 9", attack: 9 }
+    ]
+  },
+  // Appears act 6+: a chain-flavoured striker that punishes wide turns.
+  "recursive-call": {
+    id: "recursive-call",
+    name: "Recursive Call",
+    tier: "standard",
+    hp: 62,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Call — Attack 8, twice", attack: 8, hits: 2 },
+      { label: "Return — Attack 12 + Vulnerable", attack: 12, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Echo your traffic — 5 × cards played", mirror: 5 }
+    ]
+  },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
   "expired-certificate": {
     // Stalls behind heavy block, then expires for a large UNBLOCKABLE hit — race it or heal.
@@ -1520,6 +1652,23 @@ var ENEMIES = {
       { label: "Intercept — attack 9", attack: 9 },
       { label: "Mirror your traffic — 6 × cards played", mirror: 6 },
       { label: "Inject — attack 7, twice", attack: 7, hits: 2 }
+    ]
+  },
+  // Act 6 elite (CHAIN): a recursion-themed mini-boss whose stack-trace attack repeats +1 each
+  // uninterrupted turn (rampHits) and which echoes wide turns — a serious spike before the finale.
+  "segfault": {
+    id: "segfault",
+    name: "Segfault",
+    tier: "elite",
+    hp: 96,
+    hpPerAct: 20,
+    armor: 2,
+    armorPerAct: 2,
+    script: [
+      { label: "Null deref — Attack 12", attack: 12 },
+      { label: "Stack trace — Attack 6 (+1 hit each uninterrupted turn)", attack: 6, rampHits: true },
+      { label: "Echo your traffic — 5 × cards played", mirror: 5 },
+      { label: "Core dumped — Attack 10, twice", attack: 10, hits: 2 }
     ]
   },
   // ── Per-act mini-bosses (fixed HP; carry their act's combat finale) ───────────────────────────────
@@ -1758,6 +1907,19 @@ var RELICS = [
       ctx.combat.corruptionDouble = true;
     } }
   },
+  // ── Act 6 APPLICATION · CHAIN: a build-definer — the first big-chain turn refunds energy ────────────
+  {
+    id: "jit-compiler",
+    name: "JIT Compiler",
+    rarity: "rare",
+    text: "The first turn you replay 3+ cards, gain 1 energy.",
+    hooks: { onCardPlay: (ctx) => {
+      if ((ctx.combat.chainThisTurn || 0) >= 3 && !ctx.combat.jitUsed) {
+        ctx.combat.jitUsed = true;
+        ctx.gainEnergy(1);
+      }
+    } }
+  },
   // ── Phase G: relics built on the new combat hooks (onTurnEnd/onKill/onDamageTaken/onExhaust/onShuffle) ─
   {
     // Rewards leaving energy on the table — turtle decks turn the leftover into armor.
@@ -1980,9 +2142,14 @@ var STANDARD_POOLS = {
   3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
   4: ["null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
   // Act 5 PRESENTATION · CORRUPTION: cleansers + corruption-flavoured bruisers reward burst-DoT play.
-  5: ["packet-storm", "race-condition", "heisenbug", "daemon-process"]
+  5: ["packet-storm", "race-condition", "heisenbug", "daemon-process"],
+  // Act 6 APPLICATION · CHAIN: looping/echoing strikers reward interrupt timing + replay payoffs.
+  6: ["heisenbug", "infinite-loop", "recursive-call", "packet-storm"]
 };
-var ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
+var ELITE_POOLS = {
+  default: ["expired-certificate", "man-in-the-middle"],
+  6: ["man-in-the-middle", "segfault"]
+};
 var CONTENT_LAYERS = 6;
 function generateAct(act, seed) {
   const rng = makeRng((Number(seed) || 1) * 100 + act);
@@ -2060,8 +2227,11 @@ function nodeId(act, layer, col) {
 }
 function enemyForNode(node, act = 1, rng) {
   if (typeof rng !== "function") throw new TypeError("enemyForNode requires a seeded rng");
-  if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
-  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
+  if (node.type === "elite") {
+    const elites = ELITE_POOLS[act] || ELITE_POOLS.default;
+    return elites[Math.floor(rng() * elites.length)];
+  }
+  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[6];
   return pool[Math.floor(rng() * pool.length)];
 }
 
@@ -2229,7 +2399,32 @@ var SPECS = {
   } },
   CORE_DUMP: { text: "Deal damage equal to the enemy's Corruption (keep the stack).", effect: (ctx) => ctx.deal(ctx.enemyCorruption) },
   CASCADE_FAILURE: { text: "Apply Corruption equal to the enemy's Corruption + 2.", effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption + 2) },
-  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) }
+  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) },
+  // H · Act 6 CHAIN (Recursion)
+  STACK_FRAME: { text: "Deal 9. If the previous card was a Recursion card, deal 9 more.", effect: (ctx) => {
+    ctx.deal(9);
+    if (ctx.lastPlayedType === "Recursion") ctx.deal(9);
+  } },
+  LOOPBACK: { text: "Deal 4. If the previous card was a Recursion card, draw 1.", effect: (ctx) => {
+    ctx.deal(4);
+    if (ctx.lastPlayedType === "Recursion") ctx.draw(1);
+  } },
+  ITERATE: { text: "Deal 5. Deal 5 more for each card replayed this turn.", effect: (ctx) => ctx.deal(5 + 5 * ctx.chainCount) },
+  YIELD: { text: "Gain 8 block. If the previous card was a Recursion card, gain 6 more block.", effect: (ctx) => {
+    ctx.block(8);
+    if (ctx.lastPlayedType === "Recursion") ctx.block(6);
+  } },
+  TAIL_CALL: { text: "Replay the last card you played at three-quarters value.", effect: (ctx) => ctx.replayLast(0.75) },
+  TRAMPOLINE: { text: "Deal 10. Replay the last card you played at half value.", effect: (ctx) => {
+    ctx.deal(10);
+    ctx.replayLast(0.5);
+  } },
+  CALLBACK: { text: "Deal 7. Replay the last card at the start of your next turn.", effect: (ctx) => {
+    ctx.deal(7);
+    ctx.echoNextTurn();
+  } },
+  FIXED_POINT: { cost: 1, text: "Replay the last card you played twice. (cost 1)", effect: (ctx) => ctx.replayLast(1, 2) },
+  RECURSE: { exhaust: false, text: "X-cost: spend all energy, then replay the last card that many times.", effect: (ctx) => ctx.replayLast(1, ctx.xValue) }
 };
 function isUpgradedId(id) {
   return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);

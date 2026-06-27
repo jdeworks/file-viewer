@@ -116,6 +116,31 @@ export const ENEMIES = {
       { label: "Fork — Attack 6, twice + Vulnerable", attack: 6, hits: 2, applyPlayer: { status: "vulnerable", value: 1 } }
     ]
   },
+  // Appears act 6+ (CHAIN): its attack repeats one more time each UNINTERRUPTED turn — interrupt it
+  // (RST / skipEnemyNext) to reset the loop, or it spirals out of control.
+  "infinite-loop": {
+    id: "infinite-loop",
+    name: "Infinite Loop",
+    tier: "standard",
+    hp: 60, hpPerAct: 18, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Iterate — Attack 5 (+1 hit each uninterrupted turn)", attack: 5, rampHits: true },
+      { label: "Branch — Block 10", block: 10 },
+      { label: "Continue — Attack 9", attack: 9 }
+    ]
+  },
+  // Appears act 6+: a chain-flavoured striker that punishes wide turns.
+  "recursive-call": {
+    id: "recursive-call",
+    name: "Recursive Call",
+    tier: "standard",
+    hp: 62, hpPerAct: 18, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Call — Attack 8, twice", attack: 8, hits: 2 },
+      { label: "Return — Attack 12 + Vulnerable", attack: 12, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Echo your traffic — 5 × cards played", mirror: 5 }
+    ]
+  },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
   "expired-certificate": {
     // Stalls behind heavy block, then expires for a large UNBLOCKABLE hit — race it or heal.
@@ -139,6 +164,20 @@ export const ENEMIES = {
       { label: "Intercept — attack 9", attack: 9 },
       { label: "Mirror your traffic — 6 × cards played", mirror: 6 },
       { label: "Inject — attack 7, twice", attack: 7, hits: 2 }
+    ]
+  },
+  // Act 6 elite (CHAIN): a recursion-themed mini-boss whose stack-trace attack repeats +1 each
+  // uninterrupted turn (rampHits) and which echoes wide turns — a serious spike before the finale.
+  "segfault": {
+    id: "segfault",
+    name: "Segfault",
+    tier: "elite",
+    hp: 96, hpPerAct: 20, armor: 2, armorPerAct: 2,
+    script: [
+      { label: "Null deref — Attack 12", attack: 12 },
+      { label: "Stack trace — Attack 6 (+1 hit each uninterrupted turn)", attack: 6, rampHits: true },
+      { label: "Echo your traffic — 5 × cards played", mirror: 5 },
+      { label: "Core dumped — Attack 10, twice", attack: 10, hits: 2 }
     ]
   },
   // ── Per-act mini-bosses (fixed HP; carry their act's combat finale) ───────────────────────────────

@@ -89,7 +89,11 @@ export function playCard(combat, handIndex) {
   if (!card) return { ok: false, reason: "unknown-card" };
   // SEQUENCE: the first card played each turn may be discounted (Root Certificate relic).
   const isFirst = combat.cardsPlayedThisTurn === 0;
-  const cost = Math.max(0, card.cost - (isFirst ? (combat.firstCardDiscount || 0) : 0));
+  // CHAIN: an X-cost card (RECURSE) spends ALL remaining energy; ctx.xValue exposes how much, so it
+  // can replay that many times. The discount does not apply to an X-cost card (it always drains the bar).
+  let cost;
+  if (card.xcost) { cost = combat.player.energy; combat.xValue = cost; }
+  else cost = Math.max(0, card.cost - (isFirst ? (combat.firstCardDiscount || 0) : 0));
   if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
 
   combat.player.energy -= cost;
