@@ -76,7 +76,22 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ### A0 — Modular Media Mixer Source Of Truth
 
-Status: Stages 1–8 implemented; lane finalized for merge readiness (2026-06-27).
+Status: Stages 1–8 implemented; audio Listen REBUILT as a direct auto-audiobook port (2026-06-27).
+
+Audio Listen rebuild (2026-06-27, commit a3f25857) — addresses user feedback that the redesign
+kept landing on the OLD look (see memory media-mixer-port-failure):
+- Root cause was adapter-over-port: the Listen surface built the generic `renderMixerShell` then
+  aliased it back to the old `media-lane-*`/`media-wv-*` DOM, so it never replaced the visual
+  language and the waveform was a blank box.
+- Replaced with a bespoke surface: `audio-listen-lane.css` (ported design tokens, light+dark),
+  `audio-listen-waveform.js` (real canvas peaks), and a rewritten `mixer-audio-listen.js` (own
+  toolbar/ruler/track/cursor/inspector, click-to-seek, drag-to-trim, chapter markers, SURFACED
+  playback errors). Verified by screenshots (sample.mp3/.wav draw real waveforms) + check.sh --fast.
+- Confirmed bugs fixed: frame-preview-on-mp3 (gated to visual elements), swallowed play() errors,
+  and the vacuous playback smoke assertion (now asserts real currentTime progress via a trusted click).
+- NOT yet merged to dev — kept on worktree-media for user visual review/iteration.
+- Remaining: the same port treatment for Mix/Compare (still generic mmx-shell), dark-theme visual
+  pass, and richer selection-panel parity with auto-audiobook.
 
 Finalization pass (2026-06-27):
 
