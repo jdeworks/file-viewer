@@ -3106,6 +3106,12 @@ function coreEffects(state) {
   }
   return eff;
 }
+function coreIncomeMult(state) {
+  return coreEffects(state).incomeMult;
+}
+function coreAutoMult(state) {
+  return coreEffects(state).autoMult;
+}
 function applyCoreStartState(state) {
   const start = coreEffects(state).start;
   state.owned = state.owned || {};
@@ -3153,6 +3159,10 @@ var MECHANICS = [
 function prestigeDepth(state) {
   return Math.max(0, state.prestigeCount || 0);
 }
+function mechanicUnlocked(state, id) {
+  const m = MECHANICS.find((x) => x.id === id);
+  return Boolean(m && prestigeDepth(state) >= m.depth);
+}
 function nextMechanic(state) {
   const nextDepth = prestigeDepth(state) + 1;
   return MECHANICS.find((m) => m.depth === nextDepth) || null;
@@ -3182,6 +3192,54 @@ function doPrestige(state) {
   return { gain, cores };
 }
 
+// ../../docs/games/metagame/stages/stage1/s1pipeline.js
+var PIPE_UPKEEP_COEFF = 0.02;
+var TICKS_PER_SEC = 10;
+function wirableTiers(cfg) {
+  return (cfg.tiers || []).filter((t) => t.type === "timed" && t.produces);
+}
+function isWired(state, tierId) {
+  return Boolean((state.pipelines || {})[tierId]);
+}
+function togglePipeline(state, tierId) {
+  state.pipelines = state.pipelines || {};
+  if (state.pipelines[tierId]) delete state.pipelines[tierId];
+  else state.pipelines[tierId] = true;
+  return Boolean(state.pipelines[tierId]);
+}
+function pipelineUpkeepOf(state, cfg, tierId) {
+  if (!isWired(state, tierId)) return 0;
+  const t = (cfg.tiers || []).find((x) => x.id === tierId);
+  const owned = (state.owned || {})[tierId] || 0;
+  if (!t || owned <= 0) return 0;
+  return PIPE_UPKEEP_COEFF * toNumber(t.base) * owned;
+}
+function tickPipelines(state, cfg) {
+  state.pipelineProgress = state.pipelineProgress || {};
+  let produced = false;
+  for (const t of wirableTiers(cfg)) {
+    if (!isWired(state, t.id)) continue;
+    const owned = (state.owned || {})[t.id] || 0;
+    if (owned <= 0) continue;
+    const upkeepTick = fromNumber(pipelineUpkeepOf(state, cfg, t.id) / TICKS_PER_SEC);
+    if (!gte(state.bits, upkeepTick)) continue;
+    state.bits = sub(state.bits, upkeepTick);
+    const cycleTicks = Math.max(1, Math.round((t.duration_ms || 4e3) / 100));
+    const next = (state.pipelineProgress[t.id] || 0) + 1;
+    if (next >= cycleTicks) {
+      state.pipelineProgress[t.id] = 0;
+      const prod = timedProduction(state, cfg, t.id);
+      if (prod && prod.amount > 0) {
+        state.owned[prod.targetId] = (state.owned[prod.targetId] || 0) + prod.amount;
+        produced = true;
+      }
+    } else {
+      state.pipelineProgress[t.id] = next;
+    }
+  }
+  return produced;
+}
+
 // ../../docs/games/metagame/stages/stage1/s1reset.js
 var STYLE_ID2 = "mg-s1-prestige-style";
 function injectStyle2() {
@@ -3203,6 +3261,13 @@ function injectStyle2() {
 .mg-mech-row.mg-mech-on { opacity:1; }
 .mg-mech-icon { grid-row:1/3; font-size:18px; } .mg-mech-name { font-weight:600; } .mg-mech-name small { color:var(--fg-2); font-weight:400; }
 .mg-mech-blurb { grid-column:2; font-size:12px; color:var(--fg-2); }
+.mg-pipe-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-pipe-row { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); opacity:.7; }
+.mg-pipe-row.mg-pipe-on { opacity:1; }
+.mg-pipe-name small { color:var(--fg-2); }
+.mg-pipe-upkeep { font:600 12px ui-monospace,monospace; color:#e0742f; }
+.mg-pipe-toggle { background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:5px 12px; cursor:pointer; font-size:12px; }
+.mg-pipe-row.mg-pipe-on .mg-pipe-toggle { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
 `;
   document.head.appendChild(el);
 }
@@ -3213,7 +3278,7 @@ function renderResetPanel(opts) {
   const newTotal = globalPull(state) * gain;
   const cores = coreGain(state.totalBits);
   const next = nextMechanic(state);
-  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
+  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
   panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset(opts));
   panelsEl.querySelector(".mg-reset-cancel").addEventListener("click", () => renderResetPanel(opts));
   panelsEl.querySelectorAll(".mg-core-buy").forEach((b) => b.addEventListener("click", () => {
@@ -3222,6 +3287,22 @@ function renderResetPanel(opts) {
       renderResetPanel(opts);
     }
   }));
+  panelsEl.querySelectorAll(".mg-pipe-toggle").forEach((b) => b.addEventListener("click", () => {
+    togglePipeline(state, b.dataset.id);
+    opts.save(state);
+    renderResetPanel(opts);
+  }));
+}
+function pipelineHtml(opts) {
+  const { state, cfg } = opts;
+  if (!mechanicUnlocked(state, "pipeline")) return "";
+  const rows = wirableTiers(cfg).map((t) => {
+    const owned = (state.owned || {})[t.id] || 0;
+    const wired = isWired(state, t.id);
+    const upkeep = pipelineUpkeepOf(state, cfg, t.id);
+    return '<div class="mg-pipe-row' + (wired ? " mg-pipe-on" : "") + '"><span class="mg-pipe-name">' + escapeHtml(t.icon + " " + t.name) + " <small>×" + owned + '</small></span><span class="mg-pipe-upkeep">' + (wired ? toDisplay(fromNumber(upkeep)) + "/s" : "") + '</span><button class="mg-pipe-toggle" type="button" data-id="' + t.id + '">' + (wired ? "Unwire" : "Wire") + "</button></div>";
+  }).join("");
+  return '<div class="mg-pipe-shop"><div class="mg-core-shop-title">🔌 Pipeline — auto-run builders (upkeep)</div>' + rows + "</div>";
 }
 function coreShopHtml(state) {
   const rows = CORE_UPGRADES.map((up) => {
@@ -3250,6 +3331,17 @@ function doReset(opts) {
   checkMessages("prestige", state, bellLoad());
   checkAchievements(state, cfg, bellLoad());
   renderAll();
+}
+
+// ../../docs/games/metagame/stages/stage1/s1mechanics.js
+function incomeMult(state) {
+  return coreIncomeMult(state);
+}
+function tickMechanics(state, cfg) {
+  state.ticks = (state.ticks || 0) + 1;
+  let producedUnits = false;
+  if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
+  return { producedUnits };
 }
 
 // ../../docs/games/metagame/stages/stage1/stage1.js
@@ -3508,7 +3600,8 @@ function renderStage1(ctx2) {
       renderStage1._tickId = null;
       return;
     }
-    const passive = mulScalar(fromNumber(passiveRate(state, cfg)), 1 / 10);
+    const incMult = incomeMult(state, cfg);
+    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
     state.bits = add(state.bits, passive);
     state.totalBits = add(state.totalBits, passive);
     state.bits = sub(state.bits, mulScalar(fromNumber(managerCostPerSec(state, cfg)), 1 / 10));
@@ -3529,7 +3622,7 @@ function renderStage1(ctx2) {
             builtUnits = true;
           }
         } else {
-          const payout = timedPayout(state, cfg, t.id);
+          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
           state.bits = add(state.bits, payout);
           state.totalBits = add(state.totalBits, payout);
         }
@@ -3546,6 +3639,23 @@ function renderStage1(ctx2) {
       }
     }
     managersController.runAutoFire();
+    const mech = tickMechanics(state, cfg);
+    if (mech.producedUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === "bits") {
+        paintShop();
+        paintTimed();
+      }
+    }
+    if (coreAutoMult(state) && multTier) {
+      const lvl = state.owned[multTier.id] || 0;
+      const cost = totalCost(multTier, lvl, 1);
+      if (gte(state.bits, cost)) {
+        state.bits = sub(state.bits, cost);
+        state.owned[multTier.id] = lvl + 1;
+        state.totalBought = (state.totalBought || 0) + 1;
+      }
+    }
     reveal();
     checkTabUnlock();
     updateHud();

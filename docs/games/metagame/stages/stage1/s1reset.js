@@ -5,8 +5,9 @@ import { globalPull, pullGain } from './s1economy.js';
 import { fromNumber, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements } from './s1achievements.js';
-import { doPrestige, coreGain, MECHANICS, prestigeDepth, nextMechanic } from './s1prestige.js';
+import { doPrestige, coreGain, MECHANICS, prestigeDepth, nextMechanic, mechanicUnlocked } from './s1prestige.js';
 import { CORE_UPGRADES, coreLevel, coreCostOf, canBuyCore, buyCore } from './s1cores.js';
+import { wirableTiers, isWired, togglePipeline, pipelineUpkeepOf } from './s1pipeline.js';
 
 const STYLE_ID = 'mg-s1-prestige-style';
 function injectStyle() {
@@ -28,6 +29,13 @@ function injectStyle() {
 .mg-mech-row.mg-mech-on { opacity:1; }
 .mg-mech-icon { grid-row:1/3; font-size:18px; } .mg-mech-name { font-weight:600; } .mg-mech-name small { color:var(--fg-2); font-weight:400; }
 .mg-mech-blurb { grid-column:2; font-size:12px; color:var(--fg-2); }
+.mg-pipe-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-pipe-row { display:grid; grid-template-columns:1fr auto auto; gap:10px; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); opacity:.7; }
+.mg-pipe-row.mg-pipe-on { opacity:1; }
+.mg-pipe-name small { color:var(--fg-2); }
+.mg-pipe-upkeep { font:600 12px ui-monospace,monospace; color:#e0742f; }
+.mg-pipe-toggle { background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:5px 12px; cursor:pointer; font-size:12px; }
+.mg-pipe-row.mg-pipe-on .mg-pipe-toggle { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
 `;
   document.head.appendChild(el);
 }
@@ -52,6 +60,7 @@ export function renderResetPanel(opts) {
     + '<button class="mg-reset-go" type="button">Prestige</button>'
     + '<button class="mg-reset-cancel" type="button">Cancel</button>'
     + '</div>'
+    + pipelineHtml(opts)
     + coreShopHtml(state)
     + mechanicsRosterHtml(state)
     + '</div></div>';
@@ -60,6 +69,25 @@ export function renderResetPanel(opts) {
   panelsEl.querySelectorAll('.mg-core-buy').forEach((b) => b.addEventListener('click', () => {
     if (buyCore(state, b.dataset.id)) { opts.save(state); renderResetPanel(opts); }
   }));
+  panelsEl.querySelectorAll('.mg-pipe-toggle').forEach((b) => b.addEventListener('click', () => {
+    togglePipeline(state, b.dataset.id); opts.save(state); renderResetPanel(opts);
+  }));
+}
+
+function pipelineHtml(opts) {
+  const { state, cfg } = opts;
+  if (!mechanicUnlocked(state, 'pipeline')) return '';
+  const rows = wirableTiers(cfg).map((t) => {
+    const owned = (state.owned || {})[t.id] || 0;
+    const wired = isWired(state, t.id);
+    const upkeep = pipelineUpkeepOf(state, cfg, t.id);
+    return '<div class="mg-pipe-row' + (wired ? ' mg-pipe-on' : '') + '">'
+      + '<span class="mg-pipe-name">' + escapeHtml(t.icon + ' ' + t.name) + ' <small>×' + owned + '</small></span>'
+      + '<span class="mg-pipe-upkeep">' + (wired ? toDisplay(fromNumber(upkeep)) + '/s' : '') + '</span>'
+      + '<button class="mg-pipe-toggle" type="button" data-id="' + t.id + '">' + (wired ? 'Unwire' : 'Wire') + '</button>'
+      + '</div>';
+  }).join('');
+  return '<div class="mg-pipe-shop"><div class="mg-core-shop-title">🔌 Pipeline — auto-run builders (upkeep)</div>' + rows + '</div>';
 }
 
 function coreShopHtml(state) {

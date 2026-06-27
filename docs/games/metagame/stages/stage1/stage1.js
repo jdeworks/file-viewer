@@ -19,6 +19,8 @@ import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements, checkMilestones } from './s1achievements.js';
 import { createManagersController } from './s1managers.js';
 import { renderResetPanel as renderS1ResetPanel } from './s1reset.js';
+import { tickMechanics, incomeMult } from './s1mechanics.js';
+import { coreAutoMult } from './s1cores.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
 
 const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
@@ -342,8 +344,9 @@ export function renderStage1(ctx) {
     if (!host.isConnected || !grid.isConnected) {
       clearInterval(renderStage1._tickId); renderStage1._tickId = null; return;
     }
-    // 1. Passive accrual.
-    const passive = mulScalar(fromNumber(passiveRate(state, cfg)), 1 / 10);
+    // 1. Passive accrual (scaled by the post-prestige income multiplier: Cores yield × Flux × Resonance).
+    const incMult = incomeMult(state, cfg);
+    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
     state.bits = add(state.bits, passive);
     state.totalBits = add(state.totalBits, passive);
     // 2. Manager cost drain (0 until WP-S1-10, but still call it).
@@ -366,7 +369,7 @@ export function renderStage1(ctx) {
             builtUnits = true;
           }
         } else {
-          const payout = timedPayout(state, cfg, t.id);
+          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
           state.bits = add(state.bits, payout);
           state.totalBits = add(state.totalBits, payout);
         }
@@ -384,6 +387,22 @@ export function renderStage1(ctx) {
     }
     // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
     managersController.runAutoFire();
+    // 3c. Post-prestige mechanics (pipeline/flux/entropy/echoes/resonance) — deterministic, tick-driven.
+    const mech = tickMechanics(state, cfg);
+    if (mech.producedUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === 'bits') { paintShop(); paintTimed(); }
+    }
+    // 3d. Auto-Tapper Cores upgrade: buy a Multiplier whenever affordable.
+    if (coreAutoMult(state) && multTier) {
+      const lvl = state.owned[multTier.id] || 0;
+      const cost = totalCost(multTier, lvl, 1);
+      if (gte(state.bits, cost)) {
+        state.bits = sub(state.bits, cost);
+        state.owned[multTier.id] = lvl + 1;
+        state.totalBought = (state.totalBought || 0) + 1;
+      }
+    }
     // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
     reveal();
     // 4b. Tab unlock check (passive rate could push bits to 250 without a tap).
