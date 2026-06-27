@@ -14,6 +14,16 @@ import { checkEnemyDead } from "./combat.js";
 export const WINDOW_CAP = 5;
 export const WINDOW_FLOOR = 2;
 
+// The act in which the congestion window first opens (THROUGHPUT verb's debut).
+export const CONGESTION_ACT = 3;
+
+// Whether a fight in the given act runs on the dynamic congestion window. It opens in act 3 and
+// PERSISTS for every act after — the stage's design principle is "carry all prior verbs forward", so
+// THROUGHPUT cards (BANDWIDTH/BACKOFF/DEFRAG) and the OVERCLOCK_BUS relic stay live in acts 3–6.
+export function congestionForAct(act) {
+  return Number(act) >= CONGESTION_ACT;
+}
+
 // Set the next turn's energy. In congestion mode the window shrinks after a WIDE turn (you spent the
 // whole window) and regrows toward the cap after a restrained turn (slow-start). Fully deterministic.
 export function applyTurnEnergy(combat) {

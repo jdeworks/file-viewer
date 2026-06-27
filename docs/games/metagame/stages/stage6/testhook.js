@@ -48,6 +48,7 @@ export function installStage6TestHook(api) {
       if (!run || run.status !== "superboss") return { ok: false, reason: "not-at-superboss" };
       let combat = getCombat();
       if (!combat || combat.nodeId !== run.currentNodeId) { combat = makeCombat(run); setCombat(combat); }
+      const startHp = combat.player.hp; // observability: HP entering the true-ending fight
       let turns = 0;
       while (!combat.over && turns++ < maxTurns) {
         let guard = 0;
@@ -62,7 +63,7 @@ export function installStage6TestHook(api) {
       const result = combat.result ?? null;
       if (combat.over) finishCombat(run);
       commit();
-      return { ok: true, result, status: state.run?.status, trueEnding: Boolean(state.run?.trueEnding), keys: run.keys?.length || 0 };
+      return { ok: true, result, status: state.run?.status, trueEnding: Boolean(state.run?.trueEnding), keys: run.keys?.length || 0, startHp, endHp: combat.player.hp, turns };
     },
     // Seat a run directly at the act-6 boss so the harness reaches the negotiation in one hop.
     jumpToBoss(deck) {

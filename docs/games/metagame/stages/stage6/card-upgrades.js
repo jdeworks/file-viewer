@@ -33,7 +33,7 @@ const SPECS = {
   TCP_STACK: { cost: 1, text: "Gain 2 Strength. (cost 1)", effect: (ctx) => ctx.applySelf("strength", 2) },
   // C5b additions
   SCAN: { text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.deal(6); ctx.applyEnemy("weak", 1); } },
-  JITTER: { text: "Deal 6. (cost 0)", effect: (ctx) => ctx.deal(6) },
+  JITTER: { text: "Deal 6. If a card was replayed this turn, deal 6 more.", effect: (ctx) => { ctx.deal(6); if (ctx.chainCount > 0) ctx.deal(6); } },
   PIPELINE: { text: "Deal 5. If you've played 2+ cards this turn, deal 5 more.", effect: (ctx) => { ctx.deal(5); if (ctx.cardsPlayed >= 2) ctx.deal(5); } },
   SPOOF: { text: "Apply 2 Vulnerable to the enemy. Draw 1.", effect: (ctx) => { ctx.applyEnemy("vulnerable", 2); ctx.draw(1); } },
   DDOS: { text: "Deal 8 for each card played this turn. Exhaust.", effect: (ctx) => ctx.deal(8 * ctx.cardsPlayed) },

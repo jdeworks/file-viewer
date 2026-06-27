@@ -75,10 +75,6 @@ function ensureStyles() {
 
 export {
   applyProtocolChapter9Unlock,
-  defeatRefusedConnection,
-  endProtocolTurn,
   getBossLockState,
-  playProtocolCard,
-  recordLockedBossAttempt,
-  startProtocolTurn
+  recordLockedBossAttempt
 } from "./boss.js";

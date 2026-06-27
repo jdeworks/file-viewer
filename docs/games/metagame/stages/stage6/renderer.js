@@ -5,7 +5,7 @@
 // stage-clear gate is unchanged: read the codex (epub) — without it every Signal deals 0 — then
 // defeat the boss with the deck built across acts 1–3.
 
-import { createCombat, playCard, endTurn, makeRng, applyPotionEffect } from "./combat.js";
+import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct } from "./combat.js";
 import { cardById } from "./cards.js";
 import { instantiateEnemy } from "./enemies.js";
 import { relicsFor } from "./relics.js";
@@ -150,7 +150,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       enemy,
       seed: strHash(`${run.seed}:${run.currentNodeId}:combat`),
       relics: relicsFor(run.relics),
-      congestion: run.act === 3, // THROUGHPUT: Act 3 fights run on the dynamic congestion window
+      congestion: congestionForAct(run.act), // THROUGHPUT: window opens in act 3 and persists for acts 3-6 (carry verbs forward)
       windowCap: 5 + (run.windowCapMod || 0) // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
@@ -368,12 +368,6 @@ function openBts({ bts, viewer }) {
   else if (bts && typeof bts.openBts === "function") bts.openBts(6);
   else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
   else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-
-function strHash(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return h || 1;
 }
 
 function once(fn) {

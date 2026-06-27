@@ -5,7 +5,8 @@ import {
   dealToEnemy,
   drawCards,
   endTurn,
-  playCard
+  playCard,
+  congestionForAct
 } from "../combat.js";
 import { STARTING_DECK, cardById } from "../cards.js";
 import { instantiateEnemy } from "../enemies.js";
@@ -384,6 +385,36 @@ function congestionCombat(seed = 11) {
     assert.equal(again.result, c.result, `${enemyId}: same seed ⇒ same outcome`);
     assert.equal(again.turn, c.turn, `${enemyId}: same seed ⇒ same length`);
   }
+}
+
+// ── D3c THROUGHPUT persistence: the congestion window opens in act 3 and stays on for acts 3–6 ──────
+// Regression guard for the round-4 fix (renderer used `run.act === 3`, killing BANDWIDTH/BACKOFF/
+// DEFRAG and OVERCLOCK_BUS for acts 4–6). The renderer derives makeCombat's `congestion` flag from
+// this predicate, so guarding it here keeps the verb live through the back half of the run.
+{
+  assert.equal(congestionForAct(1), false, "act 1 has no congestion window");
+  assert.equal(congestionForAct(2), false, "act 2 has no congestion window");
+  assert.equal(congestionForAct(3), true, "act 3 opens the congestion window");
+  assert.equal(congestionForAct(4), true, "act 4 keeps the congestion window (carry verbs forward)");
+  assert.equal(congestionForAct(5), true, "act 5 keeps the congestion window");
+  assert.equal(congestionForAct(6), true, "act 6 keeps the congestion window");
+}
+
+// ── JITTER (vs BIT_FLIP) chain synergy: deals 4, +4 more if a card was replayed this turn ───────────
+// Differentiates JITTER (uncommon) from BIT_FLIP (common stat-stick) — it pays off in CHAIN decks.
+{
+  const c = congestionCombat(51);
+  c.enemy.armor = 0;
+  // No replay this turn ⇒ JITTER deals 4 only.
+  c.hand = ["JITTER"]; c.player.energy = 3; c.chainThisTurn = 0;
+  const hp0 = c.enemy.hp;
+  playCard(c, 0);
+  assert.equal(hp0 - c.enemy.hp, 4, "JITTER deals 4 with no replay this turn");
+  // A replay happened this turn ⇒ JITTER deals 4 + 4.
+  c.hand = ["JITTER"]; c.player.energy = 3; c.chainThisTurn = 1;
+  const hp1 = c.enemy.hp;
+  playCard(c, 0);
+  assert.equal(hp1 - c.enemy.hp, 8, "JITTER deals 4 + 4 when a card was replayed this turn");
 }
 
 console.log("stage6 combat engine tests passed");

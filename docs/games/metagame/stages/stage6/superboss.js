@@ -14,6 +14,10 @@
 export const SUPERBOSS_ID = "the-kernel-of-refusal";
 
 // Per-phase HP pools (index 0..2). Overkill is lost when a phase falls.
+// NOTE (round-4): the negotiation boss is 200 base, so on paper this true-ending fight (165) is the
+// lighter pool — but it is reached with a REAL act-6 deck, the no-handshake fight plays faster, and
+// the smoke fixture (a 10-card starter deck) enters at ~15 HP with no headroom to chew a bigger pool.
+// Raising it requires a healthier/representative smoke deck first (a cross-lane test-fixture change).
 export const SUPERBOSS_PHASE_HP = [50, 55, 60];
 
 // Each phase's looping intent script (telegraphed one step ahead like every enemy).
@@ -42,6 +46,11 @@ export const SUPERBOSS_PHASE_SCRIPTS = [
 // phase-0 pool/script and attaches the phase-advance closure. NOT locked (no handshake / un-cheat).
 export function wireSuperboss(combat) {
   combat.superPhase = 0;
+  // The superboss is a synthetic bonus node (not a normal act-6 fight) with bespoke phase scripts that
+  // were authored and balanced under FLAT energy. It keeps flat energy regardless of the act-3+
+  // congestion window so its tuned difficulty is unchanged. (Normal act 3-6 fights + the act-6
+  // negotiation boss DO carry the congestion window forward — see renderer makeCombat / congestionForAct.)
+  combat.congestion = false;
   combat.enemy.hp = SUPERBOSS_PHASE_HP[0];
   combat.enemy.maxHp = SUPERBOSS_PHASE_HP[0];
   combat.enemy.armor = 0;

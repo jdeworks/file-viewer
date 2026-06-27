@@ -45,3 +45,13 @@ export function hashSeed(seed, key) {
   for (const ch of String(key)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
   return h || 1;
 }
+
+// FNV-1a 32-bit hash of a single string. This is the canonical sub-seed derivation for per-node
+// fights (enemy pick, combat shuffle, shop/potion rolls) and seed-mode keys — renderer.js, run.js and
+// ui-rewards.js all route through this one function so the live game and the tests agree exactly.
+export function strHash(str) {
+  let h = 2166136261 >>> 0;
+  const s = String(str);
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return h || 1;
+}

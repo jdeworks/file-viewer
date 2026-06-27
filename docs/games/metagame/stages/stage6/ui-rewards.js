@@ -15,7 +15,7 @@ import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
 import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
 import { removalCost, UPGRADE_COST, RELIC_COST, POTION_COST, POTION_SLOTS } from "./run.js";
-import { makeRng } from "./combat.js";
+import { makeRng, strHash } from "./combat.js";
 import { relicById } from "./relics.js";
 import { potionById, rollPotion } from "./potions.js";
 
@@ -264,12 +264,6 @@ function cardOption(id, attr, value) {
     <span class="s6db-card-type">${esc(card?.type || "")}</span>
     <small class="s6db-card-text">${esc(card?.text || "")}</small>`;
   return button;
-}
-
-function strHash(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-  return h || 1;
 }
 
 function esc(value) {
