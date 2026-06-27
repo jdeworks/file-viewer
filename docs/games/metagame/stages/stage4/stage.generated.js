@@ -307,7 +307,32 @@ var WAVES = {
   7: { enemies: [{ type: "recursion", count: 6 }, { type: "pattern_crawler", count: 8 }] },
   8: { enemies: [{ type: "recursion", count: 10 }, { type: "null_packet", count: 4 }], note: "null packets are armored" },
   9: { enemies: [{ type: "recursion", count: 8 }, { type: "null_packet", count: 6 }, { type: "pattern_crawler", count: 2 }] },
-  10: { enemies: [{ type: "recursion", count: 6 }, { type: "null_packet", count: 6 }, { type: "pattern_crawler", count: 6 }] }
+  10: { enemies: [{ type: "recursion", count: 6 }, { type: "null_packet", count: 6 }, { type: "pattern_crawler", count: 6 }] },
+  // Waves 11–15 (PORTFOLIO): fractal hosts split on death — punish thin coverage.
+  11: { enemies: [{ type: "recursion", count: 10 }, { type: "fractal_host", count: 1 }], note: "fractal hosts split when they fall" },
+  12: { enemies: [{ type: "recursion", count: 8 }, { type: "pattern_crawler", count: 4 }, { type: "fractal_host", count: 1 }] },
+  13: { enemies: [{ type: "recursion", count: 8 }, { type: "null_packet", count: 4 }, { type: "fractal_host", count: 2 }] },
+  14: { enemies: [{ type: "recursion", count: 6 }, { type: "pattern_crawler", count: 6 }, { type: "fractal_host", count: 2 }] },
+  15: { enemies: [{ type: "recursion", count: 6 }, { type: "null_packet", count: 6 }, { type: "fractal_host", count: 3 }] },
+  // Waves 16–20 (REPAIR): resonance ghosts are slow-immune; wave 20 fields three depth-crawler elites.
+  16: { enemies: [{ type: "recursion", count: 8 }, { type: "resonance_ghost", count: 4 }], note: "ghosts ignore the attractor field" },
+  17: { enemies: [{ type: "recursion", count: 6 }, { type: "resonance_ghost", count: 6 }, { type: "pattern_crawler", count: 4 }] },
+  18: { enemies: [{ type: "recursion", count: 6 }, { type: "null_packet", count: 6 }, { type: "resonance_ghost", count: 4 }] },
+  19: { enemies: [{ type: "recursion", count: 8 }, { type: "resonance_ghost", count: 6 }, { type: "fractal_host", count: 2 }] },
+  20: { enemies: [{ type: "recursion", count: 6 }, { type: "depth_crawler", count: 3 }], note: "three depth-crawler elites" },
+  // Waves 21–30 (ANTICIPATE): everything mixed and scaling; wave 25 fields all six types.
+  21: { enemies: [{ type: "recursion", count: 8 }, { type: "pattern_crawler", count: 6 }, { type: "null_packet", count: 4 }] },
+  22: { enemies: [{ type: "resonance_ghost", count: 8 }, { type: "fractal_host", count: 3 }] },
+  23: { enemies: [{ type: "null_packet", count: 8 }, { type: "pattern_crawler", count: 6 }, { type: "depth_crawler", count: 1 }] },
+  24: { enemies: [{ type: "recursion", count: 10 }, { type: "resonance_ghost", count: 6 }, { type: "fractal_host", count: 3 }] },
+  25: { enemies: [{ type: "recursion", count: 6 }, { type: "pattern_crawler", count: 6 }, { type: "null_packet", count: 6 }, { type: "resonance_ghost", count: 6 }, { type: "fractal_host", count: 3 }, { type: "depth_crawler", count: 1 }], note: "every protocol at once" },
+  26: { enemies: [{ type: "null_packet", count: 10 }, { type: "depth_crawler", count: 2 }] },
+  27: { enemies: [{ type: "resonance_ghost", count: 10 }, { type: "fractal_host", count: 4 }] },
+  28: { enemies: [{ type: "pattern_crawler", count: 12 }, { type: "null_packet", count: 8 }] },
+  29: { enemies: [{ type: "recursion", count: 10 }, { type: "resonance_ghost", count: 8 }, { type: "depth_crawler", count: 2 }] },
+  30: { enemies: [{ type: "depth_crawler", count: 3 }, { type: "fractal_host", count: 4 }, { type: "null_packet", count: 8 }], note: "the bastion's last stand before the loop" },
+  // Wave 31 = The Infinite Loop. Not a spawn wave — fought via the confront path (boss.js).
+  31: { isBoss: true, enemies: [] }
 };
 function waveComposition(waveNum, seed) {
   const n = Math.max(1, Math.trunc(Number(waveNum)) || 1);
