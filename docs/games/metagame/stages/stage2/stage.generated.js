@@ -1897,6 +1897,7 @@ function biomeForFloor(floor) {
 function buildShopPanel({ state, save, onClose }) {
   const box = document.createElement("div");
   box.className = "s2-shop";
+  let tab = "buy";
   function rowHtml(up) {
     const lvl = Number((state.meta.shopUpgrades || {})[up.id] || 0);
     const maxed = lvl >= up.max;
@@ -1925,20 +1926,27 @@ function buildShopPanel({ state, save, onClose }) {
   function paint() {
     const banked = Number(state.meta.glyphsBanked || 0);
     const heat = runHeat(state.meta.runMods || {});
+    const onBuy = tab === "buy";
+    const headExtra = onBuy ? `<span class="s2-shop-bank"><span class="s2-c-glyph">${banked}</span> banked</span>` : `<span class="s2-shop-bank">×${heat.toFixed(2)} glyphs</span>`;
+    const note = onBuy ? "applies when your next run begins (after death / retreat). only banked glyphs spend." : "tougher runs bank more glyphs. takes effect next run.";
+    const list = onBuy ? SHOP_UPGRADES.map(rowHtml).join("") : RUN_MODS.map(modHtml).join("");
     box.innerHTML = `
       <div class="s2-shop-head">GLYPH SHOP
-        <span class="s2-shop-bank"><span class="s2-c-glyph">${banked}</span> banked</span>
+        ${headExtra}
         <button type="button" data-shop="close" class="s2-shop-x" aria-label="close shop">&#10005;</button>
       </div>
-      <div class="s2-shop-note">applies when your next run begins (after death / retreat). only banked glyphs spend.</div>
-      <div class="s2-shop-list">${SHOP_UPGRADES.map(rowHtml).join("")}</div>
-      <div class="s2-shop-head" style="margin-top:10px">HEAT — opt-in difficulty
-        <span class="s2-shop-bank">×${heat.toFixed(2)} glyphs</span>
+      <div class="s2-shop-tabs" role="tablist">
+        <button type="button" data-tab="buy" class="s2-shop-tab${onBuy ? " s2-tab-on" : ""}" role="tab" aria-selected="${onBuy}">Buy</button>
+        <button type="button" data-tab="heat" class="s2-shop-tab${onBuy ? "" : " s2-tab-on"}" role="tab" aria-selected="${!onBuy}">Heat</button>
       </div>
-      <div class="s2-shop-note">tougher runs bank more glyphs. takes effect next run.</div>
-      <div class="s2-shop-list">${RUN_MODS.map(modHtml).join("")}</div>`;
+      <div class="s2-shop-note">${note}</div>
+      <div class="s2-shop-list">${list}</div>`;
     box.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
     box.querySelectorAll("[data-mod]").forEach((b) => b.addEventListener("click", () => toggleMod(b.dataset.mod)));
+    box.querySelectorAll("[data-tab]").forEach((b) => b.addEventListener("click", () => {
+      tab = b.dataset.tab;
+      paint();
+    }));
     box.querySelector('[data-shop="close"]').addEventListener("click", () => onClose());
   }
   function toggleMod(id) {

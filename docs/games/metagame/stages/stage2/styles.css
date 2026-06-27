@@ -278,13 +278,8 @@
   max-width: 100%;
 }
 
-/* Two fixed rows so the legend never overruns the board width (it grew past one line when the
-   darkness act added hazards/runes). Each row wraps internally only as a last resort. */
-.s2-legend-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
-}
+/* Two fixed rows so the legend never overruns the board width; each wraps internally only if forced. */
+.s2-legend-row { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 
 .s2-legend span { font-weight: 700; }
 
@@ -351,14 +346,25 @@
   border: 1px solid #ffc46f;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
   left: 50%;
+  max-height: 90%;
   max-width: 94%;
+  overflow: auto;
   padding: 12px 14px;
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
   width: 320px;
-  z-index: 30;
+  z-index: 50; /* above the stage heading / HUD / bell (20) so the panel is never clipped under them */
 }
+
+/* Buy / Heat tabs — split the shop so the panel stays short (it overran the stage heading once the
+   Heat modifiers stacked under the upgrades). */
+.s2-shop-tabs { display: flex; gap: 6px; margin-top: 10px; }
+.s2-shop-tab {
+  background: #1a130b; border: 1px solid var(--s2-border); color: var(--s2-dim);
+  cursor: pointer; flex: 1; font: inherit; font-weight: 700; padding: 5px 0;
+}
+.s2-shop-tab.s2-tab-on { background: #2a1d0e; border-color: #ffc46f; color: var(--s2-fg); }
 
 .s2-shop-head {
   align-items: center;
