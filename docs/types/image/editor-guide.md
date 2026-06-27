@@ -2,10 +2,7 @@
 
 A quick reference for the editor's tools — what each does and the gotchas worth knowing.
 Everything runs **offline in your browser**; nothing is uploaded. Edits stay in memory until
-you **Download** (or **Save**, where available) — closing the tab discards unsaved work.
-
-> Tip: this guide is just a Markdown file (`editor-guide.md`) rendered to HTML — extend it
-> freely.
+you **Download** — closing the tab discards unsaved work.
 
 ## Modes at a glance
 
@@ -93,16 +90,15 @@ those pixels around.
 
 ## Extract text (OCR)
 
-- In Adv Edit, **Extract text (OCR)** reads text from the current image. A one-time **~11 MB**
-  recognizer downloads on first use (then cached, fully offline). "Digits only" tunes it for
-  numbers. Copy or download the result as `.txt`.
+- The **OCR** button (in the top toolbar, next to **Edit** / **Adv**) reads text from the current
+  image. A one-time **~11 MB** recognizer downloads on first use (then cached, fully offline).
+  "Digits only" tunes it for numbers. Copy or download the result as `.txt`.
 - Animated **GIFs**: the player's **Extract text (OCR)** turns each frame into a timestamped
   transcript you can download as `.srt` / `.vtt` / `.txt` / `.json`.
 
 ## Saving your work
 
-- **Download** is always available and writes the current edited image. The button is **never**
-  removed.
-- Export format (PNG / JPEG / WebP / AVIF) is chosen in the toolbar. PNG/WebP keep transparency;
-  JPEG flattens it onto white.
-- Gotcha: edits live **only in this tab** until you download. There's no autosave.
+- In the editor toolbar (**Common** tab), pick a format and press **⬇ Download** to save the
+  current image. Leave the format as **Original format** to keep the source type, or choose
+  **PNG / JPEG / WebP / AVIF**. PNG/WebP keep transparency; JPEG flattens it onto white.
+- Edits live **only in this tab** until you download — there's no autosave.

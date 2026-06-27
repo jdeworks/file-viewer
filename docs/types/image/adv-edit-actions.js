@@ -68,7 +68,12 @@ export function readSize(node) {
   if (cls === 'RegularPolygon') return { w: Math.round(node.radius() * 2), h: Math.round(node.radius() * 2) };
   if (cls === 'Star') return { w: Math.round(node.outerRadius() * 2), h: Math.round(node.outerRadius() * 2) };
   if (cls === 'Group') { const r = node.getClientRect({ skipShadow: true }); return { w: Math.round(r.width), h: Math.round(r.height) }; }
-  if (typeof node?.width === 'function' && typeof node?.height === 'function') return { w: Math.round(node.width()), h: Math.round(node.height()) };
+  // Generic width/height; a Label measures its child Text, which can throw mid-update —
+  // fall back to the rendered bounding box rather than crashing syncToolbar.
+  try {
+    if (typeof node?.width === 'function' && typeof node?.height === 'function') return { w: Math.round(node.width()), h: Math.round(node.height()) };
+  } catch { /* fall through to client rect */ }
+  try { const r = node?.getClientRect?.({ skipShadow: true }); if (r) return { w: Math.round(r.width), h: Math.round(r.height) }; } catch { /* ignore */ }
   return { w: 0, h: 0 };
 }
 

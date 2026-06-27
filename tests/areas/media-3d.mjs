@@ -668,9 +668,9 @@ export async function run(ctx) {
   if (toolsVisInit && toolsHidden) pass('image editing tools collapse behind the 🛠 toggle'); else fail('tools toggle: ' + JSON.stringify({ toolsVisInit, toolsHidden }));
   const modeRow = await page.evaluate(() => {
     const boxes = [...document.querySelectorAll('#previewHost .imgv-mode-col button:not([hidden])')].map((b) => b.getBoundingClientRect());
-    return { count: boxes.length, sameRow: boxes.length === 3 && Math.max(...boxes.map((b) => b.top)) - Math.min(...boxes.map((b) => b.top)) < 6 };
+    return { count: boxes.length, sameRow: boxes.length === 4 && Math.max(...boxes.map((b) => b.top)) - Math.min(...boxes.map((b) => b.top)) < 6 };
   });
-  if (modeRow.count === 3 && modeRow.sameRow) pass('image mode buttons ASCII/Edit/Adv sit on one row'); else fail('mode buttons: ' + JSON.stringify(modeRow));
+  if (modeRow.count === 4 && modeRow.sameRow) pass('image mode buttons ASCII/Edit/Adv/OCR sit on one row'); else fail('mode buttons: ' + JSON.stringify(modeRow));
   // Resize in PERCENT: the ⊡ button lives in Common and jumps to the Size tab where
   // the W/H panel lives; 50% should halve the natural width.
   await openTab('common');
@@ -754,13 +754,13 @@ export async function run(ctx) {
     konva: !!window.Konva,
   }));
   if (advUp.stage && advUp.toolbar && advUp.konva) pass('Adv Edit: Konva lazy-loads + stage/toolbar mount'); else fail('adv mount: ' + JSON.stringify(advUp));
-  // ── OCR (Extract text) ── the toolbar exposes an "Extract text (OCR)" button; clicking it shows the
-  // one-time ~11 MB download consent gate BEFORE any heavy load (we cancel here, so no wasm is fetched).
-  const ocrBtnShown = await page.$eval('#previewHost .imgv-adv-ocr', (el) => getComputedStyle(el).display !== 'none').catch(() => false);
-  await page.click('#previewHost .imgv-adv-ocr');
+  // ── OCR (Extract text) ── a top-level OCR button (next to Edit/Adv) shows the one-time
+  // ~11 MB download consent gate BEFORE any heavy load (we cancel here, so no wasm is fetched).
+  const ocrBtnShown = await page.$eval('#previewHost .imgv-ocr-btn', (el) => !el.hidden && getComputedStyle(el).display !== 'none').catch(() => false);
+  await page.click('#previewHost .imgv-ocr-btn');
   const ocrConsentShown = await page.waitForSelector('.imgv-ocr-backdrop', { timeout: 4000 }).then(() => true).catch(() => false);
   await page.click('.imgv-ocr-cancel').catch(() => {});
-  if (ocrBtnShown && ocrConsentShown) pass('Adv Edit: Extract text (OCR) button shows the download consent gate'); else fail('OCR button/gate: ' + JSON.stringify({ ocrBtnShown, ocrConsentShown }));
+  if (ocrBtnShown && ocrConsentShown) pass('OCR: top-level button shows the download consent gate'); else fail('OCR button/gate: ' + JSON.stringify({ ocrBtnShown, ocrConsentShown }));
   await page.fill('#previewHost .imgv-adv-text', 'Layer A');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-adv-bgop'); s.value = '60'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#previewHost .imgv-adv-add');   // a second text object
@@ -1043,6 +1043,16 @@ export async function run(ctx) {
     page.click('#exportMenu .export-item:has-text("Download as WebP")'),
   ]);
   if (/\.webp$/.test(imgDownload.suggestedFilename())) pass('image converted + downloaded (' + imgDownload.suggestedFilename() + ')'); else fail('image download name: ' + imgDownload.suggestedFilename());
+  // In-editor Download button (next to the format picker) saves the current image directly.
+  const editShown = await page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none').catch(() => false);
+  if (!editShown) await page.click('#previewHost .imgv-tools-btn');   // re-enter pixel Edit so the toolbar shows
+  await openTab('common');
+  await page.selectOption('#previewHost .imgv-export-fmt', 'image/png').catch(() => {});
+  const [dlDirect] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .imgv-download'),
+  ]).catch(() => [null]);
+  if (dlDirect && /\.png$/.test(dlDirect.suggestedFilename())) pass('in-editor Download button saves the current image in the chosen format'); else fail('editor download: ' + (dlDirect && dlDirect.suggestedFilename()));
 
   // ── ASCII Studio ── the ASCII button lazy-mounts the self-contained studio,
   // which converts the image to glyphs and exposes the control panel.

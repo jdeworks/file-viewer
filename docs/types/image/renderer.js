@@ -20,6 +20,7 @@ import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
 import { mountHelpTab } from './help-tab.js';
 import { setClip, getClip, copyToSystem, readFromSystem } from './pixel-clipboard.js';
+import { openImageOcrPanel } from './ocr-ui.js';
 import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
@@ -167,6 +168,44 @@ export async function render(intake, ctx = {}) {
   // Group the editing controls into tabs (Common / Draw / Text / Adjust / Size /
   // Background) so the toolbar isn't a wall of buttons; non-active tabs hint once.
   if (canEdit) { mountTabs(host); mountHelpTab(host); }
+
+  // OCR is its own top-level action (next to Edit/Adv) — works on any image, whether or
+  // not the editor is open. Reads a canvas of what's currently shown (flattened overlay
+  // if Adv objects exist, else the displayed image).
+  const ocrCanvas = () => {
+    if (overlayActive()) return advController.flattenToCanvas();
+    const c = document.createElement('canvas');
+    c.width = img.naturalWidth || 1; c.height = img.naturalHeight || 1;
+    c.getContext('2d').drawImage(img, 0, 0);
+    return c;
+  };
+  const ocrBtn = host.querySelector('.imgv-ocr-btn');
+  if (ocrBtn) { ocrBtn.hidden = false; ocrBtn.addEventListener('click', () => openImageOcrPanel({ host: host.querySelector('.imgv-stage'), getCanvas: ocrCanvas })); }
+
+  // Download the current image in the selected format (next to the format picker). The
+  // app's export menu still exists; this is the in-editor shortcut users expect to find.
+  const downloadBtn = canEdit ? host.querySelector('.imgv-download') : null;
+  downloadBtn?.addEventListener('click', async () => {
+    const mt = (exportFmt?.value || '') || core.getExportMime() || mime;
+    let canvas;
+    if (overlayActive()) { canvas = advController.flattenToCanvas(); }
+    else {
+      const base = await core.loadBase();
+      canvas = document.createElement('canvas');
+      canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
+      const g = canvas.getContext('2d');
+      if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+      g.drawImage(base, 0, 0);
+    }
+    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
+    if (!blob) return;
+    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif' })[mt] || ((intake.filename || '').split('.').pop() || 'png');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (intake.filename || 'image').replace(/\.[^.]+$/, '') + '.' + ext;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
 
   // Interactive tools (text placement, crop, BG pick) register here so the pan
   // logic stands down while a tool owns the pointer; each exposes isActive().

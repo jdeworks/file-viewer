@@ -6,11 +6,11 @@
 // they are NOT inlined here. index.js's loadRenderer imports THIS file.
 
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 import { loadGlobal as loadGlobal3, vendor as vendor3 } from "../../core/script-loader.js";
 import { loadTemplate, fill } from "../../core/template.js";
 
-// ../../docs/types/image/imglib.js
+// docs/types/image/imglib.js
 var EXT_MIME = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -43,10 +43,10 @@ function dimensions(url) {
   });
 }
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
 
-// ../../docs/types/image/edit-els.js
+// docs/types/image/edit-els.js
 function queryEls(host, canEdit) {
   const q = (sel) => host.querySelector(sel);
   const qe = (sel) => canEdit ? host.querySelector(sel) : null;
@@ -145,7 +145,7 @@ function queryEls(host, canEdit) {
   };
 }
 
-// ../../docs/types/image/view-controller.js
+// docs/types/image/view-controller.js
 function createView(ctx) {
   const { host, img, zoomLabel } = ctx;
   let natural = 0, fit = true, zoom = 1;
@@ -301,7 +301,7 @@ function createView(ctx) {
   };
 }
 
-// ../../docs/types/image/fill.js
+// docs/types/image/fill.js
 function hexToRgba(hex) {
   const h = (hex || "#ff0000").replace("#", "");
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
@@ -444,7 +444,7 @@ function bgFloodFill(srcData, w, h, sx, sy, tol) {
   return dst;
 }
 
-// ../../docs/types/image/draw-overlay.js
+// docs/types/image/draw-overlay.js
 function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
@@ -814,7 +814,7 @@ function createDrawTools(ctx) {
   };
 }
 
-// ../../docs/types/image/editor-core.js
+// docs/types/image/editor-core.js
 var CANVAS_ENCODABLE = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
 function createEditCore({ img, url, mime, ctx, els }) {
   const { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator } = els;
@@ -933,7 +933,7 @@ function createEditCore({ img, url, mime, ctx, els }) {
   };
 }
 
-// ../../docs/types/image/levels.js
+// docs/types/image/levels.js
 function buildLevelsLUT(black = 0, white = 255, gamma = 1) {
   black = Math.max(0, Math.min(254, black | 0));
   white = Math.max(black + 1, Math.min(255, white | 0));
@@ -955,7 +955,7 @@ function applyLevels(data, lut) {
   }
 }
 
-// ../../docs/types/image/edit-filters.js
+// docs/types/image/edit-filters.js
 function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
@@ -1091,7 +1091,7 @@ function mountFilters({ img, mime, core, els }) {
   presetInvert?.addEventListener("click", () => applyPreset("invert(1)"));
 }
 
-// ../../docs/types/image/curves.js
+// docs/types/image/curves.js
 function normalizePoints(points) {
   const clamp = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
   const pts = (points || []).map((p) => ({ x: clamp(p.x), y: clamp(p.y) })).sort((a, b) => a.x - b.x);
@@ -1163,7 +1163,7 @@ function applyChannelLUTs(data, luts) {
   }
 }
 
-// ../../docs/types/image/edit-curves.js
+// docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
   const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
@@ -1359,7 +1359,7 @@ function mountCurves({ img, mime, core, els }) {
   } };
 }
 
-// ../../docs/types/image/convolve.js
+// docs/types/image/convolve.js
 var GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1].map((v) => v / 16);
 var IDENT = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 function buildKernel(type, strength) {
@@ -1398,7 +1398,7 @@ function applyConvolution(data, w, h, kernel) {
   return out;
 }
 
-// ../../docs/types/image/edit-convolve.js
+// docs/types/image/edit-convolve.js
 function mountConvolve({ img, mime, core, els }) {
   const { convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel } = els;
   if (!convolveBtn || !convolvePanel) return { teardown() {
@@ -1476,7 +1476,7 @@ function mountConvolve({ img, mime, core, els }) {
   } };
 }
 
-// ../../docs/types/image/edit-text.js
+// docs/types/image/edit-text.js
 function mountTextTool({ host, img, mime, core, els }) {
   const { editInput, editSize, editColor, editFont, editApply } = els;
   let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
@@ -1621,7 +1621,7 @@ function mountTextTool({ host, img, mime, core, els }) {
   return { isActive: () => !!textDragDiv, exitPlaceMode };
 }
 
-// ../../docs/types/image/geometry-affine.js
+// docs/types/image/geometry-affine.js
 function affineForGeometry(type, w, h, p = {}) {
   switch (type) {
     case "rotateCW":
@@ -1649,7 +1649,7 @@ function affineForGeometry(type, w, h, p = {}) {
   }
 }
 
-// ../../docs/types/image/edit-geometry.js
+// docs/types/image/edit-geometry.js
 function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   const {
     rotLBtn,
@@ -1957,7 +1957,7 @@ function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   return { isActive: () => cropMode };
 }
 
-// ../../docs/types/image/edit-bg.js
+// docs/types/image/edit-bg.js
 function mountBg({ img, url, core, els }) {
   const { bgBtn, bgTol, bgOk, bgX, exportFmt } = els;
   const bgTolWrap = bgTol && (bgTol.closest(".imgv-bg-tol-wrap") || bgTol);
@@ -2056,7 +2056,7 @@ function mountBg({ img, url, core, els }) {
   } };
 }
 
-// ../../docs/types/image/edit-undo-key.js
+// docs/types/image/edit-undo-key.js
 var active = null;
 var installed = false;
 function isTextEntry(t) {
@@ -2107,7 +2107,7 @@ function registerUndoKeys(editor) {
   };
 }
 
-// ../../docs/types/image/edit-tabs.js
+// docs/types/image/edit-tabs.js
 var STYLE_ID = "imgv-tabs-css";
 var CSS = `
 .imgv-tabs{flex-basis:100%;display:flex;flex-wrap:wrap;gap:2px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px;}
@@ -2190,7 +2190,7 @@ function mountTabs(host) {
   return { showTab };
 }
 
-// ../../docs/types/image/help-tab.js
+// docs/types/image/help-tab.js
 import { loadGlobal, vendor } from "../../core/script-loader.js";
 var GUIDE_URL = new URL("./editor-guide.md", import.meta.url);
 var cssInjected = false;
@@ -2245,7 +2245,7 @@ function mountHelpTab(host) {
   if (tab.classList.contains("active")) renderOnce();
 }
 
-// ../../docs/types/image/pixel-clipboard.js
+// docs/types/image/pixel-clipboard.js
 var clip = null;
 function setClip(canvas) {
   clip = canvas;
@@ -2282,7 +2282,170 @@ async function blobToCanvas(blob) {
   return c;
 }
 
-// ../../docs/types/image/edit-select-masks.js
+// docs/types/image/ocr-ui.js
+var OCR = "../../core/ocr/index.js";
+var consented = false;
+function ocrConsent(host, approxMB) {
+  if (consented) return Promise.resolve(true);
+  injectOcrStyle();
+  return new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "imgv-ocr-backdrop";
+    back.innerHTML = `
+      <div class="imgv-ocr-dialog" role="dialog" aria-modal="true">
+        <div class="imgv-ocr-h"><span style="font-size:20px">&#9888;</span> Extract text (OCR)</div>
+        <p class="imgv-ocr-p">Text recognition runs fully offline in your browser, but the first
+        run downloads the OCR engine (~${approxMB} MB: the recognizer + English language data).
+        It is cached afterwards. Continue?</p>
+        <div class="imgv-ocr-btns">
+          <button class="imgv-ocr-go">Download &amp; run OCR</button>
+          <button class="imgv-ocr-cancel">Cancel</button>
+        </div>
+      </div>`;
+    (host.ownerDocument?.body || document.body).appendChild(back);
+    const done = (ok) => {
+      back.remove();
+      if (ok) consented = true;
+      resolve(ok);
+    };
+    back.querySelector(".imgv-ocr-go").addEventListener("click", () => done(true));
+    back.querySelector(".imgv-ocr-cancel").addEventListener("click", () => done(false));
+    back.addEventListener("click", (e) => {
+      if (e.target === back) done(false);
+    });
+  });
+}
+function makePanel(host, title) {
+  injectOcrStyle();
+  host.querySelector(".imgv-ocr-panel")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "imgv-ocr-panel";
+  panel.innerHTML = `
+    <div class="imgv-ocr-bar">
+      <strong class="imgv-ocr-title">${title}</strong>
+      <span class="imgv-ocr-status" aria-live="polite"></span>
+      <button class="imgv-ocr-x" title="Close">✕</button>
+    </div>
+    <div class="imgv-ocr-controls"></div>
+    <div class="imgv-ocr-body"></div>`;
+  host.appendChild(panel);
+  panel.querySelector(".imgv-ocr-x").addEventListener("click", () => panel.remove());
+  return {
+    panel,
+    status: panel.querySelector(".imgv-ocr-status"),
+    controls: panel.querySelector(".imgv-ocr-controls"),
+    body: panel.querySelector(".imgv-ocr-body")
+  };
+}
+async function openImageOcrPanel({ host, getCanvas }) {
+  if (!await ocrConsent(host, 11)) return;
+  const { status, controls, body } = makePanel(host, "Extract text (OCR)");
+  controls.innerHTML = `
+    <label class="imgv-ocr-chk"><input type="checkbox" class="imgv-ocr-digits"> Digits only</label>`;
+  const digits = controls.querySelector(".imgv-ocr-digits");
+  async function run() {
+    status.textContent = "Recognizing…";
+    body.innerHTML = "";
+    digits.disabled = true;
+    let result;
+    try {
+      const { recognize } = await import(OCR);
+      result = await recognize(getCanvas(), { digits: digits.checked });
+    } catch (e) {
+      status.textContent = "OCR failed";
+      body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
+      digits.disabled = false;
+      return;
+    }
+    const text = result.text || "";
+    status.textContent = text ? `${Math.round(result.confidence || 0)}% confidence` : "No text found";
+    body.innerHTML = `
+      <textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>
+      <div class="imgv-ocr-acts">
+        <button class="imgv-ocr-copy">Copy</button>
+        <button class="imgv-ocr-dl">Download .txt</button>
+      </div>`;
+    body.querySelector(".imgv-ocr-out").value = text;
+    body.querySelector(".imgv-ocr-copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Copied";
+      } catch {
+      }
+    });
+    body.querySelector(".imgv-ocr-dl").addEventListener("click", async () => {
+      const { download } = await import(OCR);
+      download("extracted-text.txt", text, "text/plain");
+    });
+    digits.disabled = false;
+  }
+  digits.addEventListener("change", run);
+  run();
+}
+async function openGifOcrPanel({ host, getFrames }) {
+  const frames = getFrames();
+  if (!frames || !frames.length) return;
+  if (!await ocrConsent(host, 11)) return;
+  const { status, controls, body } = makePanel(host, "GIF transcript (OCR)");
+  const sources = [];
+  let t = 0;
+  for (const f of frames) {
+    sources.push({ time: t, source: f.canvas });
+    t += Math.max(0, f.delayMs || 0) / 1e3;
+  }
+  status.textContent = "Recognizing…";
+  let cues;
+  try {
+    const { ocrFrames } = await import(OCR);
+    cues = await ocrFrames(sources, { onProgress: ({ index, total }) => {
+      status.textContent = `Recognizing… frame ${index + 1}/${total}`;
+    } });
+  } catch (e) {
+    status.textContent = "OCR failed";
+    body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
+    return;
+  }
+  const { FORMATS, toText, download } = await import(OCR);
+  status.textContent = cues.length ? `${cues.length} cue${cues.length === 1 ? "" : "s"}` : "No text found";
+  const opts = Object.entries(FORMATS).map(([k, f]) => `<option value="${k}">${f.label}</option>`).join("");
+  controls.innerHTML = `
+    <label class="imgv-ocr-chk">Format <select class="imgv-ocr-fmt">${opts}</select></label>
+    <button class="imgv-ocr-dl">Download</button>`;
+  body.innerHTML = `<textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>`;
+  const out = body.querySelector(".imgv-ocr-out");
+  out.value = toText(cues);
+  controls.querySelector(".imgv-ocr-dl").addEventListener("click", () => {
+    const fmt = FORMATS[controls.querySelector(".imgv-ocr-fmt").value];
+    download("gif-transcript." + fmt.ext, fmt.fn(cues), fmt.mime);
+  });
+}
+function injectOcrStyle() {
+  if (document.getElementById("imgv-ocr-style")) return;
+  const s = document.createElement("style");
+  s.id = "imgv-ocr-style";
+  s.textContent = `
+    .imgv-ocr-backdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:#0008; }
+    .imgv-ocr-dialog { max-width:460px; margin:16px; padding:20px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); font-family:var(--font-ui,sans-serif); }
+    .imgv-ocr-h { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; margin-bottom:10px; }
+    .imgv-ocr-p { margin:0 0 16px; font-size:13px; line-height:1.6; opacity:.85; }
+    .imgv-ocr-btns { display:flex; gap:10px; flex-wrap:wrap; }
+    .imgv-ocr-go { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; background:var(--accent,#4a8fff); color:#fff; font-size:13px; }
+    .imgv-ocr-cancel { padding:8px 16px; border-radius:5px; cursor:pointer; background:transparent; border:1px solid var(--border,#444); color:var(--fg,#ccc); font-size:13px; }
+    .imgv-ocr-panel { position:absolute; top:8px; right:8px; z-index:12; width:min(320px,calc(100% - 16px)); display:flex; flex-direction:column; gap:6px; padding:8px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); box-shadow:0 4px 16px #0006; font-family:var(--font-ui,sans-serif); font-size:12px; }
+    .imgv-ocr-bar { display:flex; align-items:center; gap:8px; }
+    .imgv-ocr-title { flex:0 0 auto; }
+    .imgv-ocr-status { flex:1; opacity:.75; font-variant-numeric:tabular-nums; }
+    .imgv-ocr-x { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; }
+    .imgv-ocr-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .imgv-ocr-chk { display:inline-flex; align-items:center; gap:4px; }
+    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; }
+    .imgv-ocr-acts { display:flex; gap:8px; margin-top:6px; }
+    .imgv-ocr-panel button { cursor:pointer; }
+    .imgv-ocr-err { color:#f88; }`;
+  document.head.appendChild(s);
+}
+
+// docs/types/image/edit-select-masks.js
 function rectMask(a, b, w, h) {
   const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
   const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
@@ -2335,7 +2498,7 @@ function translateMask(src, w, h, dx, dy) {
   return out;
 }
 
-// ../../docs/types/image/edit-select.js
+// docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, copySelection: () => null, clipFillInPlace() {
@@ -2791,10 +2954,10 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   };
 }
 
-// ../../docs/types/image/adv-edit.js
+// docs/types/image/adv-edit.js
 import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
 
-// ../../docs/types/image/adv-edit-actions.js
+// docs/types/image/adv-edit-actions.js
 function isTypingTarget(target) {
   if (!target) return false;
   if (target.isContentEditable || target.tagName === "TEXTAREA") return true;
@@ -2864,7 +3027,15 @@ function readSize(node) {
     const r = node.getClientRect({ skipShadow: true });
     return { w: Math.round(r.width), h: Math.round(r.height) };
   }
-  if (typeof node?.width === "function" && typeof node?.height === "function") return { w: Math.round(node.width()), h: Math.round(node.height()) };
+  try {
+    if (typeof node?.width === "function" && typeof node?.height === "function") return { w: Math.round(node.width()), h: Math.round(node.height()) };
+  } catch {
+  }
+  try {
+    const r = node?.getClientRect?.({ skipShadow: true });
+    if (r) return { w: Math.round(r.width), h: Math.round(r.height) };
+  } catch {
+  }
   return { w: 0, h: 0 };
 }
 function writeSize(node, w, h) {
@@ -2950,7 +3121,7 @@ function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, dele
   };
 }
 
-// ../../docs/types/image/adv-edit-controls.js
+// docs/types/image/adv-edit-controls.js
 function installObjectActions(ctx) {
   const { getSelected, select, snap, tr, layer, Konva, cloneNode: cloneNode2, placeObject, wireObject, isGroup, stageW, stageH, refreshLayers, syncToolbar, markDirty } = ctx;
   function deleteSelection() {
@@ -3026,9 +3197,6 @@ function installShapeControls(ctx) {
     tb,
     addText,
     addShape,
-    openImageOcrPanel: openImageOcrPanel2,
-    stageHost,
-    flattenToCanvas,
     deleteSelection,
     groupSelection,
     ungroupSelection,
@@ -3047,7 +3215,6 @@ function installShapeControls(ctx) {
   } = ctx;
   const sel = () => getSelected();
   $(".imgv-adv-add").addEventListener("click", addText);
-  $(".imgv-adv-ocr").addEventListener("click", () => openImageOcrPanel2({ host: stageHost, getCanvas: () => flattenToCanvas() }));
   $(".imgv-adv-rect").addEventListener("click", () => addShape("rect"));
   $(".imgv-adv-ellipse").addEventListener("click", () => addShape("ellipse"));
   $(".imgv-adv-line").addEventListener("click", () => addShape("line"));
@@ -3240,7 +3407,7 @@ function installShapeControls(ctx) {
   $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
 }
 
-// ../../docs/types/image/adv-edit-layers.js
+// docs/types/image/adv-edit-layers.js
 function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, select, snap, markDirty, cloneNode: cloneNode2, placeObject, labelName, stageW, stageH }) {
   const panel = document.createElement("div");
   panel.className = "imgv-adv-layers";
@@ -3366,7 +3533,7 @@ function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, se
   return { panel, refresh, destroy: () => panel.remove() };
 }
 
-// ../../docs/types/image/adv-edit-precision.js
+// docs/types/image/adv-edit-precision.js
 function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, markDirty, refreshLayers, stageW, stageH }) {
   const layer = new Konva.Layer({ listening: false });
   layer.name("precision");
@@ -3501,7 +3668,7 @@ function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, ma
   };
 }
 
-// ../../docs/types/image/adv-edit-points.js
+// docs/types/image/adv-edit-points.js
 function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refreshLayers }) {
   const layer = new Konva.Layer({ listening: true });
   layer.name("point-edit");
@@ -3582,7 +3749,7 @@ function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refresh
   };
 }
 
-// ../../docs/types/image/adv-edit-text.js
+// docs/types/image/adv-edit-text.js
 function syncTextControls($, label, { multi = false, textNodeOf, tagNodeOf, rgbToHex: rgbToHex2 }) {
   const t = textNodeOf(label), tag = tagNodeOf(label);
   const style = t.fontStyle?.() || "";
@@ -3700,7 +3867,7 @@ function installTextControls({ $, selectedLabels, textNodeOf, tagNodeOf, layer, 
   });
 }
 
-// ../../docs/types/image/adv-edit-toolbar.js
+// docs/types/image/adv-edit-toolbar.js
 var DEFAULTS = {
   text: "Text",
   fontFamily: "system-ui, sans-serif",
@@ -3782,175 +3949,10 @@ function advToolbarHtml() {
     <button class="imgv-adv-align" data-align="bottom" title="Align bottom">B</button>
     <button class="imgv-adv-dist" data-axis="x" title="Distribute horizontally">DH</button>
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
-    <span class="imgv-sep"></span>
-    <button class="imgv-adv-ocr" title="Extract text from the image with OCR">Extract text (OCR)</button>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
 
-// ../../docs/types/image/ocr-ui.js
-var OCR = "../../core/ocr/index.js";
-var consented = false;
-function ocrConsent(host, approxMB) {
-  if (consented) return Promise.resolve(true);
-  injectOcrStyle();
-  return new Promise((resolve) => {
-    const back = document.createElement("div");
-    back.className = "imgv-ocr-backdrop";
-    back.innerHTML = `
-      <div class="imgv-ocr-dialog" role="dialog" aria-modal="true">
-        <div class="imgv-ocr-h"><span style="font-size:20px">&#9888;</span> Extract text (OCR)</div>
-        <p class="imgv-ocr-p">Text recognition runs fully offline in your browser, but the first
-        run downloads the OCR engine (~${approxMB} MB: the recognizer + English language data).
-        It is cached afterwards. Continue?</p>
-        <div class="imgv-ocr-btns">
-          <button class="imgv-ocr-go">Download &amp; run OCR</button>
-          <button class="imgv-ocr-cancel">Cancel</button>
-        </div>
-      </div>`;
-    (host.ownerDocument?.body || document.body).appendChild(back);
-    const done = (ok) => {
-      back.remove();
-      if (ok) consented = true;
-      resolve(ok);
-    };
-    back.querySelector(".imgv-ocr-go").addEventListener("click", () => done(true));
-    back.querySelector(".imgv-ocr-cancel").addEventListener("click", () => done(false));
-    back.addEventListener("click", (e) => {
-      if (e.target === back) done(false);
-    });
-  });
-}
-function makePanel(host, title) {
-  injectOcrStyle();
-  host.querySelector(".imgv-ocr-panel")?.remove();
-  const panel = document.createElement("div");
-  panel.className = "imgv-ocr-panel";
-  panel.innerHTML = `
-    <div class="imgv-ocr-bar">
-      <strong class="imgv-ocr-title">${title}</strong>
-      <span class="imgv-ocr-status" aria-live="polite"></span>
-      <button class="imgv-ocr-x" title="Close">✕</button>
-    </div>
-    <div class="imgv-ocr-controls"></div>
-    <div class="imgv-ocr-body"></div>`;
-  host.appendChild(panel);
-  panel.querySelector(".imgv-ocr-x").addEventListener("click", () => panel.remove());
-  return {
-    panel,
-    status: panel.querySelector(".imgv-ocr-status"),
-    controls: panel.querySelector(".imgv-ocr-controls"),
-    body: panel.querySelector(".imgv-ocr-body")
-  };
-}
-async function openImageOcrPanel({ host, getCanvas }) {
-  if (!await ocrConsent(host, 11)) return;
-  const { status, controls, body } = makePanel(host, "Extract text (OCR)");
-  controls.innerHTML = `
-    <label class="imgv-ocr-chk"><input type="checkbox" class="imgv-ocr-digits"> Digits only</label>`;
-  const digits = controls.querySelector(".imgv-ocr-digits");
-  async function run() {
-    status.textContent = "Recognizing…";
-    body.innerHTML = "";
-    digits.disabled = true;
-    let result;
-    try {
-      const { recognize } = await import(OCR);
-      result = await recognize(getCanvas(), { digits: digits.checked });
-    } catch (e) {
-      status.textContent = "OCR failed";
-      body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
-      digits.disabled = false;
-      return;
-    }
-    const text = result.text || "";
-    status.textContent = text ? `${Math.round(result.confidence || 0)}% confidence` : "No text found";
-    body.innerHTML = `
-      <textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>
-      <div class="imgv-ocr-acts">
-        <button class="imgv-ocr-copy">Copy</button>
-        <button class="imgv-ocr-dl">Download .txt</button>
-      </div>`;
-    body.querySelector(".imgv-ocr-out").value = text;
-    body.querySelector(".imgv-ocr-copy").addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(text);
-        status.textContent = "Copied";
-      } catch {
-      }
-    });
-    body.querySelector(".imgv-ocr-dl").addEventListener("click", async () => {
-      const { download } = await import(OCR);
-      download("extracted-text.txt", text, "text/plain");
-    });
-    digits.disabled = false;
-  }
-  digits.addEventListener("change", run);
-  run();
-}
-async function openGifOcrPanel({ host, getFrames }) {
-  const frames = getFrames();
-  if (!frames || !frames.length) return;
-  if (!await ocrConsent(host, 11)) return;
-  const { status, controls, body } = makePanel(host, "GIF transcript (OCR)");
-  const sources = [];
-  let t = 0;
-  for (const f of frames) {
-    sources.push({ time: t, source: f.canvas });
-    t += Math.max(0, f.delayMs || 0) / 1e3;
-  }
-  status.textContent = "Recognizing…";
-  let cues;
-  try {
-    const { ocrFrames } = await import(OCR);
-    cues = await ocrFrames(sources, { onProgress: ({ index, total }) => {
-      status.textContent = `Recognizing… frame ${index + 1}/${total}`;
-    } });
-  } catch (e) {
-    status.textContent = "OCR failed";
-    body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
-    return;
-  }
-  const { FORMATS, toText, download } = await import(OCR);
-  status.textContent = cues.length ? `${cues.length} cue${cues.length === 1 ? "" : "s"}` : "No text found";
-  const opts = Object.entries(FORMATS).map(([k, f]) => `<option value="${k}">${f.label}</option>`).join("");
-  controls.innerHTML = `
-    <label class="imgv-ocr-chk">Format <select class="imgv-ocr-fmt">${opts}</select></label>
-    <button class="imgv-ocr-dl">Download</button>`;
-  body.innerHTML = `<textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>`;
-  const out = body.querySelector(".imgv-ocr-out");
-  out.value = toText(cues);
-  controls.querySelector(".imgv-ocr-dl").addEventListener("click", () => {
-    const fmt = FORMATS[controls.querySelector(".imgv-ocr-fmt").value];
-    download("gif-transcript." + fmt.ext, fmt.fn(cues), fmt.mime);
-  });
-}
-function injectOcrStyle() {
-  if (document.getElementById("imgv-ocr-style")) return;
-  const s = document.createElement("style");
-  s.id = "imgv-ocr-style";
-  s.textContent = `
-    .imgv-ocr-backdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:#0008; }
-    .imgv-ocr-dialog { max-width:460px; margin:16px; padding:20px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); font-family:var(--font-ui,sans-serif); }
-    .imgv-ocr-h { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; margin-bottom:10px; }
-    .imgv-ocr-p { margin:0 0 16px; font-size:13px; line-height:1.6; opacity:.85; }
-    .imgv-ocr-btns { display:flex; gap:10px; flex-wrap:wrap; }
-    .imgv-ocr-go { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; background:var(--accent,#4a8fff); color:#fff; font-size:13px; }
-    .imgv-ocr-cancel { padding:8px 16px; border-radius:5px; cursor:pointer; background:transparent; border:1px solid var(--border,#444); color:var(--fg,#ccc); font-size:13px; }
-    .imgv-ocr-panel { position:absolute; top:8px; right:8px; z-index:12; width:min(320px,calc(100% - 16px)); display:flex; flex-direction:column; gap:6px; padding:8px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); box-shadow:0 4px 16px #0006; font-family:var(--font-ui,sans-serif); font-size:12px; }
-    .imgv-ocr-bar { display:flex; align-items:center; gap:8px; }
-    .imgv-ocr-title { flex:0 0 auto; }
-    .imgv-ocr-status { flex:1; opacity:.75; font-variant-numeric:tabular-nums; }
-    .imgv-ocr-x { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; }
-    .imgv-ocr-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .imgv-ocr-chk { display:inline-flex; align-items:center; gap:4px; }
-    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; }
-    .imgv-ocr-acts { display:flex; gap:8px; margin-top:6px; }
-    .imgv-ocr-panel button { cursor:pointer; }
-    .imgv-ocr-err { color:#f88; }`;
-  document.head.appendChild(s);
-}
-
-// ../../docs/types/image/adv-edit.js
+// docs/types/image/adv-edit.js
 var konvaPromise = null;
 function loadKonva() {
   if (!konvaPromise) konvaPromise = loadGlobal2(vendor2("konva/konva.min.js"), "Konva");
@@ -4292,9 +4294,6 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     tb,
     addText,
     addShape,
-    openImageOcrPanel,
-    stageHost,
-    flattenToCanvas,
     deleteSelection,
     groupSelection,
     ungroupSelection,
@@ -4476,7 +4475,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
 }
 
-// ../../docs/types/image/gif-decode.js
+// docs/types/image/gif-decode.js
 var mod = null;
 async function loadGifuct() {
   if (!mod) mod = await import("../../vendor/gifuct/gifuct.esm.js");
@@ -4551,7 +4550,7 @@ async function frameToPngBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 
-// ../../docs/types/image/gif-anim.js
+// docs/types/image/gif-anim.js
 function mountGifPlayer({ host, bytes, openBlob }) {
   host.innerHTML = "";
   const root = document.createElement("div");
@@ -4719,7 +4718,7 @@ function injectStyle3() {
   document.head.appendChild(s);
 }
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
@@ -4950,6 +4949,46 @@ async function render(intake, ctx = {}) {
     mountTabs(host);
     mountHelpTab(host);
   }
+  const ocrCanvas = () => {
+    if (overlayActive()) return advController.flattenToCanvas();
+    const c = document.createElement("canvas");
+    c.width = img.naturalWidth || 1;
+    c.height = img.naturalHeight || 1;
+    c.getContext("2d").drawImage(img, 0, 0);
+    return c;
+  };
+  const ocrBtn = host.querySelector(".imgv-ocr-btn");
+  if (ocrBtn) {
+    ocrBtn.hidden = false;
+    ocrBtn.addEventListener("click", () => openImageOcrPanel({ host: host.querySelector(".imgv-stage"), getCanvas: ocrCanvas }));
+  }
+  const downloadBtn = canEdit ? host.querySelector(".imgv-download") : null;
+  downloadBtn?.addEventListener("click", async () => {
+    const mt = exportFmt?.value || "" || core.getExportMime() || mime;
+    let canvas;
+    if (overlayActive()) {
+      canvas = advController.flattenToCanvas();
+    } else {
+      const base = await core.loadBase();
+      canvas = document.createElement("canvas");
+      canvas.width = base.naturalWidth || img.naturalWidth;
+      canvas.height = base.naturalHeight || img.naturalHeight;
+      const g = canvas.getContext("2d");
+      if (mt === "image/jpeg") {
+        g.fillStyle = "#fff";
+        g.fillRect(0, 0, canvas.width, canvas.height);
+      }
+      g.drawImage(base, 0, 0);
+    }
+    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === "image/jpeg" ? 0.92 : void 0));
+    if (!blob) return;
+    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/avif": "avif" }[mt] || ((intake.filename || "").split(".").pop() || "png");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (intake.filename || "image").replace(/\.[^.]+$/, "") + "." + ext;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1e3);
+  });
   const editTools = [];
   const viewCtl = createView({
     host,

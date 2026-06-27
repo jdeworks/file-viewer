@@ -6,7 +6,6 @@ import { mountAdvPrecision } from './adv-edit-precision.js';
 import { mountAdvPointEditor } from './adv-edit-points.js';
 import { installTextControls, syncTextControls } from './adv-edit-text.js';
 import { DEFAULTS, advToolbarHtml } from './adv-edit-toolbar.js';
-import { openImageOcrPanel } from './ocr-ui.js';
 
 let konvaPromise = null;
 export function loadKonva() {
@@ -267,7 +266,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     stageW: () => stageW, stageH: () => stageH, refreshLayers: () => refreshLayers(), syncToolbar, markDirty,
   });
   installShapeControls({
-    $, tb, addText, addShape, openImageOcrPanel, stageHost, flattenToCanvas, deleteSelection, groupSelection, ungroupSelection,
+    $, tb, addText, addShape, deleteSelection, groupSelection, ungroupSelection,
     pointEdit, precision, getSelected: () => selected, primary, isLabel, textNodeOf, layer, markDirty, snap, tr,
     refreshLayers: () => refreshLayers(), syncToolbar,
   });
