@@ -6,7 +6,6 @@
 # Check remaining: node tests/check-known-backlog.mjs
 haskell-lang
 idris-lang
-ink-script
 janet-lang
 koka-lang
 lean-lang
