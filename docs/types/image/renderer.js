@@ -57,7 +57,7 @@ export async function render(intake, ctx = {}) {
       if (decoded.frames.length > 1) {
         const gifHost = document.createElement('div');
         gifHost.className = 'imgv-doc';
-        const player = mountGifPlayer({ host: gifHost, bytes: intake.bytes, openBlob: window.__fv?.openBlobFile?.bind(window.__fv) });
+        const player = mountGifPlayer({ host: gifHost, bytes: intake.bytes, name: intake.filename, openBlob: window.__fv?.openBlobFile?.bind(window.__fv) });
         return { parentNode: gifHost, revoke: () => player.destroy() };
       }
     } catch { /* fall through to the static raster path */ }

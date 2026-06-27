@@ -5,16 +5,20 @@
 // gifuct bundle) is lazy-imported only when a GIF actually animates or is split, so
 // the editor's first paint pays nothing.
 //
-// mountGifPlayer({ host, bytes, openBlob }) -> { destroy() }
+// mountGifPlayer({ host, bytes, name, openBlob }) -> { destroy() }
 //   host     — element to render the player into (its content is replaced).
 //   bytes    — the GIF's Uint8Array.
+//   name     — the GIF's filename (used as the sidebar frames-folder label).
 //   openBlob — optional (blob, name, {mime}) => Promise; the host wires this to
 //              window.__fv.openBlobFile so a split frame opens as its own image.
 
 import { decodeGifFrames, frameToPngBlob } from './gif-decode.js';
 import { openGifOcrPanel } from './ocr-ui.js';
+import { loadGlobal, vendor } from '../../core/script-loader.js';
+import { intakeFromFile } from '../../core/intake.js';
 
-export function mountGifPlayer({ host, bytes, openBlob }) {
+export function mountGifPlayer({ host, bytes, name, openBlob }) {
+  const baseName = (name || 'animation.gif').replace(/\.[^.]+$/, '');
   host.innerHTML = '';
   const root = document.createElement('div');
   root.className = 'gifv-root';
@@ -25,7 +29,8 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
       <input class="gifv-scrub" type="range" min="0" max="0" value="0" step="1" disabled />
       <span class="gifv-count">…</span>
       <label class="gifv-loop"><input class="gifv-loop-chk" type="checkbox" checked /> loop</label>
-      <button class="gifv-split" title="Decompose into individual PNG frames" disabled>✂ Split frames</button>
+      <button class="gifv-split" title="Show the frames as a folder in the sidebar" disabled>✂ Split frames</button>
+      <button class="gifv-dl-all" title="Download all frames as a ZIP" disabled>⬇ Download all</button>
       <button class="gifv-ocr" title="Extract text from every frame into a timestamped transcript" disabled>Extract text (OCR)</button>
     </div>
     <div class="gifv-frames" hidden></div>`;
@@ -39,8 +44,10 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
   const count = root.querySelector('.gifv-count');
   const loopChk = root.querySelector('.gifv-loop-chk');
   const splitBtn = root.querySelector('.gifv-split');
+  const dlAllBtn = root.querySelector('.gifv-dl-all');
   const ocrBtn = root.querySelector('.gifv-ocr');
   const framesBox = root.querySelector('.gifv-frames');
+  const frameName = (i) => `frame-${String(i + 1).padStart(3, '0')}.png`;
 
   let frames = [];          // [{ canvas, delayMs }]
   let idx = 0;              // current frame index
@@ -81,6 +88,7 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
   scrub.addEventListener('input', () => { setPlaying(false); show(Number(scrub.value)); });
   loopChk.addEventListener('change', () => { if (loopChk.checked && !playing) setPlaying(true); });
   splitBtn.addEventListener('click', () => splitFrames());
+  dlAllBtn.addEventListener('click', () => downloadAll());
   // OCR each decoded frame into a timestamped transcript (heavy engine lazy-loads on click, behind a consent gate).
   ocrBtn.addEventListener('click', () => openGifOcrPanel({ host: root, getFrames: () => frames }));
 
@@ -105,55 +113,72 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
     playBtn.disabled = !animated;
     scrub.disabled = !animated;
     splitBtn.disabled = frames.length < 1;
+    dlAllBtn.disabled = frames.length < 1;
     ocrBtn.disabled = frames.length < 1;
     if (animated) setPlaying(true);
     else { playBtn.textContent = '▶'; count.textContent = `1/1`; }
   })();
 
-  // ── Split: each frame → a PNG blob, listed with Download + Open-as-image ──────
+  // ── Split: mount the frames as a READ-ONLY folder in the left sidebar, so each frame
+  // is a persistent, selectable entry (click → opens that frame as its own image). Reuses
+  // the app's archive-tree machinery via window.__fv.mountFramesFolder. Falls back to the
+  // inline thumbnail list when that hook isn't available (e.g. the standalone tool).
   let splitting = false;
   async function splitFrames() {
     if (splitting || !frames.length) return;
-    splitting = true;
-    splitBtn.disabled = true;
+    const mount = window.__fv?.mountFramesFolder;
+    if (typeof mount !== 'function') { return splitFramesInline(); }
+    splitting = true; splitBtn.disabled = true;
+    const archive = { rootName: baseName, entries: frames.map((_, i) => ({ name: frameName(i), dir: false })) };
+    const openEntry = async (path) => {
+      const i = frames.findIndex((_, n) => frameName(n) === path);
+      if (i < 0) return null;
+      const blob = await frameToPngBlob(frames[i].canvas);
+      return intakeFromFile(new File([blob], frameName(i), { type: 'image/png' }));
+    };
+    try { mount(archive, openEntry); } finally { splitting = false; splitBtn.disabled = false; }
+  }
+
+  // Download every frame as a single ZIP (lazy JSZip).
+  async function downloadAll() {
+    if (!frames.length) return;
+    dlAllBtn.disabled = true;
+    const prev = dlAllBtn.textContent; dlAllBtn.textContent = '⏳ Zipping…';
+    try {
+      const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+      const zip = new JSZip();
+      for (let i = 0; i < frames.length; i++) {
+        if (destroyed) return;
+        zip.file(frameName(i), await frameToPngBlob(frames[i].canvas));
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${baseName}-frames.zip`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } finally { dlAllBtn.disabled = false; dlAllBtn.textContent = prev; }
+  }
+
+  // Fallback: the old inline thumbnail list (Download + Open per row) when there's no sidebar.
+  async function splitFramesInline() {
+    splitting = true; splitBtn.disabled = true;
     framesBox.hidden = false;
     framesBox.innerHTML = '<span class="gifv-frames-h">Frames</span>';
     for (let i = 0; i < frames.length; i++) {
       const blob = await frameToPngBlob(frames[i].canvas);
       if (destroyed) return;
-      framesBox.appendChild(buildFrameRow(i, blob));
+      const url = URL.createObjectURL(blob);
+      const row = document.createElement('div'); row.className = 'gifv-frame';
+      const thumb = document.createElement('img'); thumb.className = 'gifv-thumb'; thumb.src = url; thumb.alt = frameName(i);
+      const label = document.createElement('span'); label.className = 'gifv-frame-n'; label.textContent = frameName(i);
+      const dl = document.createElement('a'); dl.className = 'gifv-dl'; dl.href = url; dl.download = frameName(i); dl.textContent = '⬇ Download';
+      const open = document.createElement('button'); open.className = 'gifv-open'; open.textContent = '↗ Open';
+      open.disabled = typeof openBlob !== 'function';
+      open.addEventListener('click', () => openBlob(blob, frameName(i), { mime: 'image/png' }));
+      row.append(thumb, label, dl, open);
+      objectUrls.push(url);
+      framesBox.appendChild(row);
     }
-    splitting = false;
-    splitBtn.disabled = false;
-  }
-
-  // One frame row: a thumbnail + Download (object-URL anchor) + Open (re-enters the
-  // viewer as a standalone PNG so the frame can be edited on its own).
-  function buildFrameRow(i, blob) {
-    const name = `frame-${String(i + 1).padStart(3, '0')}.png`;
-    const url = URL.createObjectURL(blob);
-    const row = document.createElement('div');
-    row.className = 'gifv-frame';
-    const thumb = document.createElement('img');
-    thumb.className = 'gifv-thumb';
-    thumb.src = url;
-    thumb.alt = name;
-    const label = document.createElement('span');
-    label.className = 'gifv-frame-n';
-    label.textContent = name;
-    const dl = document.createElement('a');
-    dl.className = 'gifv-dl';
-    dl.href = url;
-    dl.download = name;
-    dl.textContent = '⬇ Download';
-    const open = document.createElement('button');
-    open.className = 'gifv-open';
-    open.textContent = '↗ Open';
-    open.disabled = typeof openBlob !== 'function';
-    open.addEventListener('click', () => openBlob(blob, name, { mime: 'image/png' }));
-    row.append(thumb, label, dl, open);
-    objectUrls.push(url);
-    return row;
+    splitting = false; splitBtn.disabled = false;
   }
 
   const objectUrls = [];

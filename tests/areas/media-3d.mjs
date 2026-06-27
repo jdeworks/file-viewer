@@ -1386,10 +1386,21 @@ export async function run(ctx) {
   await page.waitForFunction(() => { const b = document.querySelector('#previewHost .gifv-play'); return b && !b.disabled; }, null, { timeout: 8000 }).catch(() => {});
   const gifAnimated = await page.evaluate(() => !document.querySelector('#previewHost .gifv-play')?.disabled);
   if (gifPlayer && gifAnimated) pass('animated GIF mounts the player (play/pause enabled for multi-frame)'); else fail('gif player: ' + JSON.stringify({ gifPlayer, gifAnimated }));
+  // Split now mounts the frames as a READ-ONLY folder in the left sidebar (archive-tree),
+  // each frame a selectable entry. Assert the sidebar shows the frame entries.
   await page.click('#previewHost .gifv-split');
-  const gifFrames = await page.waitForFunction(() => document.querySelectorAll('#previewHost .gifv-frame').length >= 2, null, { timeout: 8000 }).then(() => true).catch(() => false);
-  const splitRows = await page.$$eval('#previewHost .gifv-frame', (els) => els.length);
-  if (gifFrames && splitRows === 2) pass('GIF Split decomposes into per-frame images (' + splitRows + ' frames)'); else fail('gif split: rows=' + splitRows);
+  const framesInSidebar = await page.waitForFunction(() => {
+    const names = [...document.querySelectorAll('#ftBody')].length
+      ? document.querySelector('#ftBody')?.textContent || '' : '';
+    return /frame-001\.png/.test(names) && /frame-002\.png/.test(names);
+  }, null, { timeout: 10000 }).then(() => true).catch(() => false);
+  if (framesInSidebar) pass('GIF Split mounts frames as a sidebar folder (frame-001/002 entries)'); else fail('gif split sidebar: ' + JSON.stringify(await page.$eval('#ftBody', (e) => e.textContent.slice(0, 200)).catch(() => 'no #ftBody')));
+  // Download all → a ZIP of the frames.
+  const [gifZip] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .gifv-dl-all'),
+  ]).catch(() => [null]);
+  if (gifZip && /\.zip$/.test(gifZip.suggestedFilename())) pass('GIF Download all → ZIP (' + gifZip.suggestedFilename() + ')'); else fail('gif download all: ' + (gifZip && gifZip.suggestedFilename()));
 
   // ── JPEG XL ── browsers can't decode JXL; the renderer decodes it via a lazy
   // wasm decoder into a canvas. The decoded image shows (note clears, img visible

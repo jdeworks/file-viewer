@@ -597,6 +597,9 @@ function init() {
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
     openViewerFile, openFile: openViewerFile, openExampleFile, openExampleByLabel, openBlobFile, searchViewerFile,
+    // Mount a READ-ONLY virtual folder in the sidebar (e.g. a GIF's split frames). Reuses the
+    // archive-tree machinery with archiveIntake=null → no repack/delete; loadIntake is app-internal.
+    mountFramesFolder: (archive, openEntry) => mountArchiveTree(archive, openEntry, loadIntake, null),
     persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };

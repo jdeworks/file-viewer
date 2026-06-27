@@ -40,6 +40,7 @@ const outfile = resolve(imageDir, 'renderer.generated.js');
 const ALLOWED_EXTERNAL = new Set([
   '../../core/script-loader.js',
   '../../core/template.js',
+  '../../core/intake.js',                 // gif-anim → blob→intake for the split-frames sidebar folder
   '../../games/metagame/viewer-actions.js',
 ]);
 
