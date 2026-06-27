@@ -2,6 +2,7 @@ import { renderStage10 } from "./renderer.js";
 import { witnessEcho } from "./boss.js";
 import { rewitnessFragmentation } from "./confront.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
+import { verifyEchoToken } from "./echo-token.js";
 import { BTS_PATH, REQUIRED_ACTION, STAGE_ID } from "./messages.js";
 
 export const stageMeta = {
@@ -53,7 +54,12 @@ function subscribeToEchoes(actions, onEcho) {
   const handle = (detail) => {
     if (!detail || Number(detail.stage) !== STAGE_ID) return;
     const action = String(detail.action || "");
-    if (action.startsWith("echo_")) onEcho(action.slice(5));
+    if (!action.startsWith("echo_")) return;
+    const memoryId = action.slice(5);
+    // Anti-spoof: only a genuine viewer-open carries the matching per-memory token. A forged console
+    // action (no/wrong token) is ignored — it can witness nothing.
+    if (!verifyEchoToken(memoryId, detail.token)) return;
+    onEcho(memoryId);
   };
   if (actions && typeof actions.subscribeToActions === "function") {
     return actions.subscribeToActions(handle) || (() => {});

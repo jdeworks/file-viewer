@@ -1,4 +1,5 @@
 import { setAction as sharedSetAction } from './action-flags.js';
+import { echoTokenFor } from './stages/stage10/echo-token.js';
 
 const STAGE1_FILE = 'Overwriter.frag';
 const STAGE2_FILE = 'cipher.txt';
@@ -252,7 +253,9 @@ export function stage10EchoMemoryId(file) {
 export function recordStage10EchoOpen({ file, setAction = sharedSetAction } = {}) {
   const id = stage10EchoMemoryId(file);
   if (!id) return false;
-  setAction?.(10, `echo_${id}`, { source: 'viewer-open', file: basename(file), memory: id });
+  // Stamp the memory's echo token into the detail so the Stage-10 subscription can tell a genuine
+  // viewer-open from a forged console action. Travels with the real open; no extra plumbing.
+  setAction?.(10, `echo_${id}`, { source: 'viewer-open', file: basename(file), memory: id, token: echoTokenFor(id) });
   return true;
 }
 

@@ -1322,6 +1322,16 @@ export async function run(ctx) {
   pass('Stage 9: full run cleared + offline-timed CROSS defeats Observer State');
 
   await page.waitForSelector('.mg-stage10', { timeout: 8000 });
+  // Anti-spoof: the echo witness is token-gated. A forged action with no/wrong token must witness
+  // nothing; only a genuine viewer-open (which carries the per-memory token) does. Prove the negative
+  // here (the positive is proven by the real opens below clearing the stage).
+  const spoofWitnessed = await page.evaluate(() => {
+    const bad = window.__fvStage10.spoofEcho('genesis', 'bogus-token');
+    const none = window.__fvStage10.spoofEcho('genesis');
+    return bad || none || window.__fvStage10.state().memories.genesis.echoWitnessed === true;
+  });
+  if (!spoofWitnessed) pass('Stage 10 echo witness is token-gated (a spoofed action without the real token is rejected)');
+  else fail('Stage 10 echo witnessed from a spoofed action without the real token');
   // Stage 10: read -> pick a stance -> WITNESS the echo (real viewer file-open) -> integrate -> Next.
   // The echo is the load-bearing gate: a resolved memory cannot be integrated until its artifact is opened.
   for (let i = 0; i < 9; i++) {

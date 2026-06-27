@@ -804,6 +804,20 @@ function getConfrontState(state, save = null) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage10/echo-token.js
+function echoTokenFor(id) {
+  const key = `stage10-echo:${String(id)}`;
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return `e${(h >>> 0).toString(36)}`;
+}
+function verifyEchoToken(id, token) {
+  return typeof token === "string" && token.length > 0 && token === echoTokenFor(id);
+}
+
 // ../../docs/games/metagame/stages/stage10/escape.js
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -1335,6 +1349,15 @@ function installTestHook(ctx, save, repaint) {
   const paint = () => saveAndPaint(ctx, repaint);
   window.__fvStage10 = {
     state: () => state,
+    echoToken: (id) => echoTokenFor(id),
+    // Drive the REAL action subscription (the actual token gate in index.js) with an arbitrary token —
+    // a wrong/absent token must witness nothing; the real per-memory token must witness.
+    spoofEcho(id, token) {
+      if (ctx.actions && typeof ctx.actions.setAction === "function") {
+        ctx.actions.setAction(STAGE_ID, `echo_${id}`, token === void 0 ? { source: "spoof" } : { source: "spoof", token });
+      }
+      return state.memories?.[id]?.echoWitnessed === true;
+    },
     witness(id) {
       const r = witnessEcho({ state, memoryId: id });
       paint();
@@ -1522,7 +1545,10 @@ function subscribeToEchoes(actions, onEcho) {
   const handle = (detail) => {
     if (!detail || Number(detail.stage) !== STAGE_ID) return;
     const action = String(detail.action || "");
-    if (action.startsWith("echo_")) onEcho(action.slice(5));
+    if (!action.startsWith("echo_")) return;
+    const memoryId = action.slice(5);
+    if (!verifyEchoToken(memoryId, detail.token)) return;
+    onEcho(memoryId);
   };
   if (actions && typeof actions.subscribeToActions === "function") {
     return actions.subscribeToActions(handle) || (() => {

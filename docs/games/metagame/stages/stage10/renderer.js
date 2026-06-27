@@ -19,6 +19,8 @@ import {
   startConfront
 } from "./confront.js";
 import { coreQuestions } from "./content-confront.js";
+import { echoTokenFor } from "./echo-token.js";
+import { STAGE_ID } from "./messages.js";
 import { renderStepper } from "./renderer-memory.js";
 import { renderConfront } from "./renderer-confront.js";
 import { renderCompletion, renderFinalQuestion } from "./renderer-final.js";
@@ -185,6 +187,15 @@ function installTestHook(ctx, save, repaint) {
   const paint = () => saveAndPaint(ctx, repaint);
   window.__fvStage10 = {
     state: () => state,
+    echoToken: (id) => echoTokenFor(id),
+    // Drive the REAL action subscription (the actual token gate in index.js) with an arbitrary token —
+    // a wrong/absent token must witness nothing; the real per-memory token must witness.
+    spoofEcho(id, token) {
+      if (ctx.actions && typeof ctx.actions.setAction === "function") {
+        ctx.actions.setAction(STAGE_ID, `echo_${id}`, token === undefined ? { source: "spoof" } : { source: "spoof", token });
+      }
+      return state.memories?.[id]?.echoWitnessed === true;
+    },
     witness(id) { const r = witnessEcho({ state, memoryId: id }); paint(); return r; },
     witnessAll() { for (const m of memories) witnessEcho({ state, memoryId: m.id }); paint(); return getEchoCounts(state).witnessed; },
     confront: {
