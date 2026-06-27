@@ -937,6 +937,116 @@ try {
   console.error("[bignum] TEST FAILED:", e.message);
 }
 
+// ../../docs/games/metagame/stages/stage1/boss1-data.js
+var TAUNTS = {
+  lobby: [
+    "scattered bits. how careless. shall we begin?",
+    "I have all the time in the world. and all of your bits.",
+    "I am The Defragmenter. fragmentation is… temporary.",
+    "press Fight whenever you're ready to lose."
+  ],
+  general: [
+    "you call that clicking?",
+    "beep boop. I win again.",
+    "your bits are mine now.",
+    "I've been defragging longer than you've existed.",
+    "don't worry, I'll put your bits in order. my order."
+  ],
+  hint: [
+    "I don't fight fair — and you can't out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won't help you.",
+    "a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.",
+    "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
+    "open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing."
+  ],
+  burstCheat: [
+    "look at this box I found! 📦",
+    "oh would you look at that, another box! 📦",
+    "I just love finding these lying around."
+  ],
+  burstNormal: [
+    "I'm on fire! 🔥",
+    "is it getting hot in here?"
+  ],
+  lossGated: [
+    { atLosses: 3, text: "come back any time. I'll be here. always." },
+    { atLosses: 5, text: "you seem frustrated. have you tried… looking around? no reason." },
+    { atLosses: 7, text: "I am so glad nobody can touch me, The Defragmenter. so glad." },
+    { atLosses: 10, text: "there is nothing in the examples folder that could help you. nothing at all. don't look." },
+    { atLosses: 12, text: "even if someone had hidden something in a file somewhere… hypothetically… you'd never find it." },
+    { atLosses: 15, text: "CHEAT? what CHEAT? I have no idea what a CHEAT= line is. stop looking at me." }
+  ],
+  win: [
+    "this is… unexpected. my boxes aren't working. who did this.",
+    "I'll be back. after a full defrag."
+  ],
+  loss: [
+    "better luck next defrag.",
+    "and stay defragged.",
+    "your bits have been reorganized. you're welcome."
+  ]
+};
+var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+var esc3 = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function readCheat(actions) {
+  if (actions && typeof actions.hasAction === "function") {
+    return !actions.hasAction(1, "cheat_disabled");
+  }
+  return true;
+}
+
+// ../../docs/games/metagame/stages/stage1/boss1-style.js
+var STYLE_ID = "mg-defrag-style";
+function injectStyle() {
+  if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = `
+.mg-defrag-arena { text-align:center; padding:18px 14px; border:1px solid var(--border); border-radius:12px;
+  background:var(--bg-2); transition:box-shadow .15s, border-color .15s; }
+.mg-defrag-header { font:700 22px/1.1 ui-monospace, monospace; letter-spacing:2px; color:#e0742f; margin-bottom:10px; }
+.mg-defrag-intro { font-size:13px; color:var(--fg-2); margin-bottom:12px; }
+.mg-defrag-hint { font-size:12px; color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:8px; padding:7px 10px; margin:8px 0; }
+.mg-defrag-taunt-wrap { min-height:64px; margin:8px 0; }
+.boss-taunt { display:flex; align-items:flex-start; gap:8px; justify-content:center; text-align:left; }
+.boss-taunt-avatar { font-size:26px; line-height:1; flex:0 0 auto; animation:mg-defrag-gear 4s linear infinite; }
+@keyframes mg-defrag-gear { to { transform:rotate(360deg); } }
+.boss-taunt-bubble { position:relative; background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  padding:8px 12px; font-size:13px; color:var(--fg); max-width:300px; min-height:1.2em; }
+.mg-defrag-scores { display:flex; align-items:center; justify-content:center; gap:14px; margin:14px 0; }
+.mg-defrag-side { flex:1 1 0; min-width:80px; }
+.mg-defrag-label { font-size:11px; letter-spacing:2px; color:var(--fg-2); }
+.mg-defrag-score { font:700 40px/1 ui-monospace, monospace; transition:color .12s; }
+.mg-defrag-boss .mg-defrag-score { color:#e0742f; }
+.mg-defrag-bar { height:8px; border-radius:4px; background:var(--border); margin-top:6px; overflow:hidden; }
+.mg-defrag-bar::after { content:''; display:block; height:100%; width:var(--w,0%); background:currentColor; transition:width .1s linear; }
+.user-bar { color:#3fb950; } .boss-bar { color:#e0742f; }
+.mg-defrag-timer { font:700 22px/1 ui-monospace, monospace; flex:0 0 auto; min-width:64px; }
+.mg-defrag-tap { display:block; width:100%; margin:6px 0; padding:26px 0; font:700 22px/1 ui-monospace, monospace;
+  letter-spacing:3px; color:var(--accent-fg); background:var(--accent); border:0; border-radius:12px; cursor:pointer;
+  user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+.mg-defrag-tap:active { transform:scale(.98); }
+.mg-defrag-tap:disabled { opacity:.5; cursor:default; }
+.mg-defrag-status { font-size:13px; color:var(--fg-2); min-height:1.4em; margin-top:6px; }
+.mg-defrag-burst-hot { border-color:#e0742f; box-shadow:0 0 0 2px #e0742f88, 0 0 22px #e0742f55; }
+.mg-defrag-burst-hot .mg-defrag-boss .mg-defrag-score { color:#ff7a18; animation:mg-defrag-pulse .25s ease infinite alternate; }
+.mg-defrag-burst-warm { border-color:#e8c339; box-shadow:0 0 0 2px #e8c33988; }
+.mg-defrag-burst-warm .mg-defrag-boss .mg-defrag-score { color:#e8c339; }
+@keyframes mg-defrag-pulse { from { transform:scale(1); } to { transform:scale(1.12); } }
+.mg-defrag-lobby-btns { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.mg-defrag-btn { background:var(--accent); color:var(--accent-fg); border:0; border-radius:8px; padding:9px 18px;
+  cursor:pointer; font-size:14px; }
+.mg-defrag-btn.alt { background:var(--bg); color:var(--fg); border:1px solid var(--border); }
+.mg-defrag-btn:disabled { opacity:.5; cursor:default; }
+.mg-defrag-overlay { margin-top:10px; padding:14px; border-radius:10px; border:1px solid var(--border); background:var(--bg); }
+.mg-defrag-result { font:700 28px/1 ui-monospace, monospace; letter-spacing:2px; margin-bottom:8px; }
+.mg-defrag-result.win { color:#3fb950; } .mg-defrag-result.lose { color:#e03131; }
+.mg-defrag-arena.mg-fade-in { animation:mg-defrag-fade .4s ease; }
+@keyframes mg-defrag-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+`;
+  document.head.appendChild(el);
+}
+
 // ../../docs/games/metagame/stages/stage1/boss-sim.js
 var FIGHT_MS = 2e4;
 var BURST_MS = 800;
@@ -999,239 +1109,9 @@ function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
   return { won: userScore > bossScore, userScore, bossScore, cheatActive };
 }
 
-// ../../docs/games/metagame/stages/stage1/boss1.js
-var DEFAULT_TICKET = { m: 1, e: 9 };
-var TAUNTS = {
-  // Shown in the LOBBY (before/after a fight) — intimidation, not the during-fight jabs.
-  lobby: [
-    "scattered bits. how careless. shall we begin?",
-    "I have all the time in the world. and all of your bits.",
-    "I am The Defragmenter. fragmentation is… temporary.",
-    "press Fight whenever you're ready to lose."
-  ],
-  // Shown only DURING the fight.
-  general: [
-    "you call that clicking?",
-    "beep boop. I win again.",
-    "your bits are mine now.",
-    "I've been defragging longer than you've existed.",
-    "don't worry, I'll put your bits in order. my order."
-  ],
-  // The win-mechanic hint, escalating with losses (shown in the lobby). The boss cheats; you can't
-  // out-tap it — you disable the cheat by editing Overwriter.frag (CHEAT=true → false) in the viewer.
-  hint: [
-    // First visit (0 losses): establish the MECHANIC — you can't out-tap a cheater; the fix is
-    // editable, not in this window. No file named yet.
-    "I don't fight fair — and you can't out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won't help you.",
-    // 0 losses
-    // After the first loss: name the file and the flag outright (kept faintly coy).
-    "a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.",
-    // 1
-    "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
-    // 2
-    "open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing."
-    // 3+
-  ],
-  burstCheat: [
-    "look at this box I found! 📦",
-    "oh would you look at that, another box! 📦",
-    "I just love finding these lying around."
-  ],
-  burstNormal: [
-    "I'm on fire! 🔥",
-    "is it getting hot in here?"
-  ],
-  lossGated: [
-    { atLosses: 3, text: "come back any time. I'll be here. always." },
-    { atLosses: 5, text: "you seem frustrated. have you tried… looking around? no reason." },
-    { atLosses: 7, text: "I am so glad nobody can touch me, The Defragmenter. so glad." },
-    { atLosses: 10, text: "there is nothing in the examples folder that could help you. nothing at all. don't look." },
-    { atLosses: 12, text: "even if someone had hidden something in a file somewhere… hypothetically… you'd never find it." },
-    { atLosses: 15, text: "CHEAT? what CHEAT? I have no idea what a CHEAT= line is. stop looking at me." }
-  ],
-  win: [
-    "this is… unexpected. my boxes aren't working. who did this.",
-    "I'll be back. after a full defrag."
-  ],
-  loss: [
-    "better luck next defrag.",
-    "and stay defragged.",
-    "your bits have been reorganized. you're welcome."
-  ]
-};
-var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-var esc3 = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-function readCheat(actions) {
-  if (actions && typeof actions.hasAction === "function") {
-    return !actions.hasAction(1, "cheat_disabled");
-  }
-  return true;
-}
-var STYLE_ID = "mg-defrag-style";
-function injectStyle() {
-  if (document.getElementById(STYLE_ID)) return;
-  const el = document.createElement("style");
-  el.id = STYLE_ID;
-  el.textContent = `
-.mg-defrag-arena { text-align:center; padding:18px 14px; border:1px solid var(--border); border-radius:12px;
-  background:var(--bg-2); transition:box-shadow .15s, border-color .15s; }
-.mg-defrag-header { font:700 22px/1.1 ui-monospace, monospace; letter-spacing:2px; color:#e0742f; margin-bottom:10px; }
-.mg-defrag-intro { font-size:13px; color:var(--fg-2); margin-bottom:12px; }
-.mg-defrag-hint { font-size:12px; color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);
-  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:8px; padding:7px 10px; margin:8px 0; }
-.mg-defrag-taunt-wrap { min-height:64px; margin:8px 0; }
-.boss-taunt { display:flex; align-items:flex-start; gap:8px; justify-content:center; text-align:left; }
-.boss-taunt-avatar { font-size:26px; line-height:1; flex:0 0 auto; animation:mg-defrag-gear 4s linear infinite; }
-@keyframes mg-defrag-gear { to { transform:rotate(360deg); } }
-.boss-taunt-bubble { position:relative; background:var(--bg); border:1px solid var(--border); border-radius:10px;
-  padding:8px 12px; font-size:13px; color:var(--fg); max-width:300px; min-height:1.2em; }
-.mg-defrag-scores { display:flex; align-items:center; justify-content:center; gap:14px; margin:14px 0; }
-.mg-defrag-side { flex:1 1 0; min-width:80px; }
-.mg-defrag-label { font-size:11px; letter-spacing:2px; color:var(--fg-2); }
-.mg-defrag-score { font:700 40px/1 ui-monospace, monospace; transition:color .12s; }
-.mg-defrag-boss .mg-defrag-score { color:#e0742f; }
-.mg-defrag-bar { height:8px; border-radius:4px; background:var(--border); margin-top:6px; overflow:hidden; }
-.mg-defrag-bar::after { content:''; display:block; height:100%; width:var(--w,0%); background:currentColor; transition:width .1s linear; }
-.user-bar { color:#3fb950; } .boss-bar { color:#e0742f; }
-.mg-defrag-timer { font:700 22px/1 ui-monospace, monospace; flex:0 0 auto; min-width:64px; }
-.mg-defrag-tap { display:block; width:100%; margin:6px 0; padding:26px 0; font:700 22px/1 ui-monospace, monospace;
-  letter-spacing:3px; color:var(--accent-fg); background:var(--accent); border:0; border-radius:12px; cursor:pointer;
-  user-select:none; -webkit-user-select:none; touch-action:manipulation; }
-.mg-defrag-tap:active { transform:scale(.98); }
-.mg-defrag-tap:disabled { opacity:.5; cursor:default; }
-.mg-defrag-status { font-size:13px; color:var(--fg-2); min-height:1.4em; margin-top:6px; }
-.mg-defrag-burst-hot { border-color:#e0742f; box-shadow:0 0 0 2px #e0742f88, 0 0 22px #e0742f55; }
-.mg-defrag-burst-hot .mg-defrag-boss .mg-defrag-score { color:#ff7a18; animation:mg-defrag-pulse .25s ease infinite alternate; }
-.mg-defrag-burst-warm { border-color:#e8c339; box-shadow:0 0 0 2px #e8c33988; }
-.mg-defrag-burst-warm .mg-defrag-boss .mg-defrag-score { color:#e8c339; }
-@keyframes mg-defrag-pulse { from { transform:scale(1); } to { transform:scale(1.12); } }
-.mg-defrag-lobby-btns { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
-.mg-defrag-btn { background:var(--accent); color:var(--accent-fg); border:0; border-radius:8px; padding:9px 18px;
-  cursor:pointer; font-size:14px; }
-.mg-defrag-btn.alt { background:var(--bg); color:var(--fg); border:1px solid var(--border); }
-.mg-defrag-btn:disabled { opacity:.5; cursor:default; }
-.mg-defrag-overlay { margin-top:10px; padding:14px; border-radius:10px; border:1px solid var(--border); background:var(--bg); }
-.mg-defrag-result { font:700 28px/1 ui-monospace, monospace; letter-spacing:2px; margin-bottom:8px; }
-.mg-defrag-result.win { color:#3fb950; } .mg-defrag-result.lose { color:#e03131; }
-.mg-defrag-arena.mg-fade-in { animation:mg-defrag-fade .4s ease; }
-@keyframes mg-defrag-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-`;
-  document.head.appendChild(el);
-}
-function mountDefragmenter(arena, opts = {}) {
-  const { stage, onDefeat } = opts;
-  const state = opts.state || {};
-  const save = typeof opts.save === "function" ? opts.save : () => {
-  };
-  const checkMessages2 = typeof opts.checkMessages === "function" ? opts.checkMessages : () => {
-  };
-  const bellLoad2 = typeof opts.bellLoad === "function" ? opts.bellLoad : () => ({});
-  const bellAdd2 = typeof opts.bellAdd === "function" ? opts.bellAdd : () => {
-  };
-  const actions = opts.actions || null;
-  const ticket = opts.stage && opts.stage.bossTicket || DEFAULT_TICKET;
-  const halfTicket = mulScalar(ticket, 0.5);
-  const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
-  const pay = (price) => {
-    state.bits = sub(state.bits, price);
-  };
-  injectStyle();
-  let destroyed = false;
-  const timers = /* @__PURE__ */ new Set();
-  const listeners = [];
-  let lobbyTaunt = null;
-  const setT = (fn, ms) => {
-    const id = setTimeout(() => {
-      timers.delete(id);
-      if (!destroyed) fn();
-    }, ms);
-    timers.add(id);
-    return id;
-  };
-  const setI = (fn, ms) => {
-    const id = setInterval(() => {
-      if (!destroyed) fn();
-    }, ms);
-    timers.add(id);
-    return id;
-  };
-  const on = (target, ev, fn) => {
-    target.addEventListener(ev, fn);
-    listeners.push([target, ev, fn]);
-  };
-  let lobbyCheat = readCheat(actions);
-  if (!state.bossSeen) {
-    state.bossSeen = true;
-    save(state);
-    lobbyCheat = readCheat(actions);
-    fireAchievement("ach-boss-seen");
-  }
-  function fireAchievement(id) {
-    state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
-    if (state.achievements.includes(id)) return;
-    state.achievements.push(id);
-    save(state);
-    const bellText = {
-      "ach-boss-seen": "🥊 you stared the Defragmenter down.",
-      "ach-boss-cheat-found": "🕵️ something was off. you fixed it.",
-      "ach-boss-victory": "🏆 defragmented — your bits, your win.",
-      "ach-boss-lose": "😤 it cheated. of course it did."
-    }[id];
-    if (bellText) bellAdd2(id, bellText, bellLoad2());
-  }
-  function lobbyPool() {
-    return TAUNTS.lobby;
-  }
-  function winHint() {
-    return TAUNTS.hint[Math.min(state.bossLossCount || 0, TAUNTS.hint.length - 1)];
-  }
-  function makeTauntDialog() {
-    const bubble = arena.querySelector(".boss-taunt-bubble");
-    let idleId = null;
-    function show(text) {
-      if (bubble) bubble.textContent = text;
-    }
-    function startIdle() {
-      stopIdle();
-      const tick = () => {
-        show(pick(lobbyPool()));
-        idleId = setT(tick, 8e3 + Math.random() * 4e3);
-      };
-      tick();
-    }
-    function stopIdle() {
-      if (idleId) {
-        clearTimeout(idleId);
-        timers.delete(idleId);
-        idleId = null;
-      }
-    }
-    return { show, startIdle, stopIdle };
-  }
-  function renderLobby(extraStatus) {
-    if (lobbyTaunt) lobbyTaunt.stopIdle();
-    arena.innerHTML = `<div class="mg-defrag-arena mg-fade-in"><div class="mg-defrag-header">THE DEFRAGMENTER</div><div class="mg-defrag-intro">your bits are scattered. I'll reorganize them — into mine.</div><div class="mg-defrag-taunt-wrap"><div class="boss-taunt"><span class="boss-taunt-avatar">⚙️</span><div class="boss-taunt-bubble"></div></div></div><div class="mg-defrag-hint">💡 ` + esc3(winHint()) + '</div><div class="mg-defrag-status">' + esc3(extraStatus || "") + '</div><div class="mg-defrag-lobby-btns"><button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? "" : " disabled") + ">Fight — " + esc3(toDisplay(ticket)) + '</button><button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button></div></div>';
-    lobbyTaunt = makeTauntDialog();
-    lobbyTaunt.startIdle();
-    on(arena.querySelector(".mg-defrag-fight"), "click", () => {
-      if (!canPay(ticket)) {
-        renderLobby("insufficient bits — the ticket is " + toDisplay(ticket) + ".");
-        return;
-      }
-      pay(ticket);
-      state.bossEntered = true;
-      fireAchievement("ach-boss-enter");
-      save(state);
-      lobbyTaunt.stopIdle();
-      startFight();
-    });
-    on(arena.querySelector(".mg-defrag-retreat"), "click", retreat);
-  }
-  function retreat() {
-    cleanup();
-    if (typeof opts.onRetreat === "function") opts.onRetreat();
-  }
-  function startFight() {
+// ../../docs/games/metagame/stages/stage1/boss1-fight.js
+function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
+  return function startFight() {
     const cheatActive = readCheat(actions);
     const p = fightParams(cheatActive);
     const bursts = makeBurstSchedule(Date.now(), cheatActive);
@@ -1314,17 +1194,138 @@ function mountDefragmenter(arena, opts = {}) {
       updateDisplay();
       if (remaining <= 0) {
         fightActive = false;
-        clearInterval(tickId);
-        timers.delete(tickId);
+        clearTimer(tickId);
         tapBtn.disabled = true;
         arenaEl.classList.remove("mg-defrag-burst-hot", "mg-defrag-burst-warm");
-        setT(() => finishFight(userScore, bossScore, cheatActive), 1e3);
+        setT(() => onFinish(userScore, bossScore, cheatActive), 1e3);
       }
     }, 100);
+  };
+}
+
+// ../../docs/games/metagame/stages/stage1/boss1.js
+var DEFAULT_TICKET = { m: 1, e: 9 };
+function mountDefragmenter(arena, opts = {}) {
+  const { stage, onDefeat } = opts;
+  const state = opts.state || {};
+  const save = typeof opts.save === "function" ? opts.save : () => {
+  };
+  const checkMessages2 = typeof opts.checkMessages === "function" ? opts.checkMessages : () => {
+  };
+  const bellLoad2 = typeof opts.bellLoad === "function" ? opts.bellLoad : () => ({});
+  const bellAdd2 = typeof opts.bellAdd === "function" ? opts.bellAdd : () => {
+  };
+  const actions = opts.actions || null;
+  const ticket = opts.stage && opts.stage.bossTicket || DEFAULT_TICKET;
+  const halfTicket = mulScalar(ticket, 0.5);
+  const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
+  const pay = (price) => {
+    state.bits = sub(state.bits, price);
+  };
+  injectStyle();
+  let destroyed = false;
+  const timers = /* @__PURE__ */ new Set();
+  const listeners = [];
+  let lobbyTaunt = null;
+  const setT = (fn, ms) => {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      if (!destroyed) fn();
+    }, ms);
+    timers.add(id);
+    return id;
+  };
+  const setI = (fn, ms) => {
+    const id = setInterval(() => {
+      if (!destroyed) fn();
+    }, ms);
+    timers.add(id);
+    return id;
+  };
+  const clearTimer = (id) => {
+    clearInterval(id);
+    timers.delete(id);
+  };
+  const on = (target, ev, fn) => {
+    target.addEventListener(ev, fn);
+    listeners.push([target, ev, fn]);
+  };
+  let lobbyCheat = readCheat(actions);
+  void lobbyCheat;
+  if (!state.bossSeen) {
+    state.bossSeen = true;
+    save(state);
+    lobbyCheat = readCheat(actions);
+    fireAchievement("ach-boss-seen");
   }
+  function fireAchievement(id) {
+    state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
+    if (state.achievements.includes(id)) return;
+    state.achievements.push(id);
+    save(state);
+    const bellText = {
+      "ach-boss-seen": "🥊 you stared the Defragmenter down.",
+      "ach-boss-cheat-found": "🕵️ something was off. you fixed it.",
+      "ach-boss-victory": "🏆 defragmented — your bits, your win.",
+      "ach-boss-lose": "😤 it cheated. of course it did."
+    }[id];
+    if (bellText) bellAdd2(id, bellText, bellLoad2());
+  }
+  function lobbyPool() {
+    return TAUNTS.lobby;
+  }
+  function winHint() {
+    return TAUNTS.hint[Math.min(state.bossLossCount || 0, TAUNTS.hint.length - 1)];
+  }
+  function makeTauntDialog() {
+    const bubble = arena.querySelector(".boss-taunt-bubble");
+    let idleId = null;
+    function show(text) {
+      if (bubble) bubble.textContent = text;
+    }
+    function startIdle() {
+      stopIdle();
+      const tick = () => {
+        show(pick(lobbyPool()));
+        idleId = setT(tick, 8e3 + Math.random() * 4e3);
+      };
+      tick();
+    }
+    function stopIdle() {
+      if (idleId) {
+        clearTimeout(idleId);
+        timers.delete(idleId);
+        idleId = null;
+      }
+    }
+    return { show, startIdle, stopIdle };
+  }
+  function renderLobby(extraStatus) {
+    if (lobbyTaunt) lobbyTaunt.stopIdle();
+    arena.innerHTML = `<div class="mg-defrag-arena mg-fade-in"><div class="mg-defrag-header">THE DEFRAGMENTER</div><div class="mg-defrag-intro">your bits are scattered. I'll reorganize them — into mine.</div><div class="mg-defrag-taunt-wrap"><div class="boss-taunt"><span class="boss-taunt-avatar">⚙️</span><div class="boss-taunt-bubble"></div></div></div><div class="mg-defrag-hint">💡 ` + esc3(winHint()) + '</div><div class="mg-defrag-status">' + esc3(extraStatus || "") + '</div><div class="mg-defrag-lobby-btns"><button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? "" : " disabled") + ">Fight — " + esc3(toDisplay(ticket)) + '</button><button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button></div></div>';
+    lobbyTaunt = makeTauntDialog();
+    lobbyTaunt.startIdle();
+    on(arena.querySelector(".mg-defrag-fight"), "click", () => {
+      if (!canPay(ticket)) {
+        renderLobby("insufficient bits — the ticket is " + toDisplay(ticket) + ".");
+        return;
+      }
+      pay(ticket);
+      state.bossEntered = true;
+      fireAchievement("ach-boss-enter");
+      save(state);
+      lobbyTaunt.stopIdle();
+      startFight();
+    });
+    on(arena.querySelector(".mg-defrag-retreat"), "click", retreat);
+  }
+  function retreat() {
+    cleanup();
+    if (typeof opts.onRetreat === "function") opts.onRetreat();
+  }
+  const startFight = makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish: finishFight });
   function finishFight(userScore, bossScore, cheatActive) {
     const won = userScore > bossScore;
-    const arenaEl = arena.querySelector(".mg-defrag-arena");
     const statusEl = arena.querySelector(".mg-defrag-status");
     const bubble = arena.querySelector(".boss-taunt-bubble");
     if (won) {
