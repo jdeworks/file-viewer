@@ -189,6 +189,7 @@ FULL_UNIT_TESTS=(
   tests/known-haskell-lang.test.mjs
   tests/known-idris-lang.test.mjs
   tests/known-janet-lang.test.mjs
+  tests/known-koka-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
