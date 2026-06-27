@@ -114,11 +114,23 @@ export function createLane(input = {}) {
       pan: finiteNumber(input.audio?.pan, 0),
       eq: normalizeEq(input.audio?.eq),
       sends: Array.isArray(input.audio?.sends) ? clone(input.audio.sends) : [],
+      dynamics: normalizeLaneDynamics(input.audio?.dynamics),
     },
     video: {
       opacity: clampNumber(input.video?.opacity, 0, 1, 1),
       blendMode: input.video?.blendMode || 'normal',
     },
+  };
+}
+
+// Per-lane compressor config. Null when unset (so playback leaves the lane uncompressed). Kept as
+// plain numbers so it survives the JSON project clone.
+function normalizeLaneDynamics(d) {
+  if (!d) return null;
+  return {
+    thresholdDb: finiteNumber(d.thresholdDb, -18),
+    ratio: finiteNumber(d.ratio, 4),
+    makeupDb: finiteNumber(d.makeupDb, 3),
   };
 }
 
