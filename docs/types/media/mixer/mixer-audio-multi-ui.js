@@ -12,6 +12,7 @@ import {
   selectTarget,
   summarizeReducedCapabilities,
 } from './index.js';
+import { moveElement, trimElement, updateElement } from './mixer-model.js';
 import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import { laneRange } from './mixer-audio-multi-helpers.js';
 import { reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
@@ -299,3 +300,181 @@ export function reflectState(root, project, viewport, { waveformSummary, lastVid
   root.dataset.decodedCacheBudgetBytes = String(decodedAudioCache.stats().budgetBytes);
   reflectMultiPlaybackState(root, playback.getState());
 }
+
+// --- Time ruler (above the lane stack, aligned with canvas area) ---
+
+function niceStep(seconds) {
+  const steps = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
+  for (const s of steps) if (seconds <= s) return s;
+  return 600;
+}
+
+export function updateMixRuler(rulerEl, project, viewport) {
+  const timelineSec = Math.max(0.001, (project.project.durationMs || 1000) / 1000);
+  const width = Math.max(120, (viewport.width || 960) - 96);
+  const stepSec = niceStep((80 * timelineSec) / Math.max(1, width));
+  rulerEl.replaceChildren();
+  for (let t = 0; t <= timelineSec + 0.0001; t += stepSec) {
+    const tick = document.createElement('div');
+    tick.className = 'al-ruler-tick';
+    tick.style.left = `${96 + (t / timelineSec) * width}px`;
+    tick.textContent = fmtTime(t);
+    rulerEl.append(tick);
+  }
+}
+
+// --- Selection panel (persistent; input handlers do NOT call render()) ---
+
+export function buildSelectionPanel({ getProject, setProject, getClipLanes, getViewport }) {
+  const panelEl = document.createElement('div');
+  panelEl.className = 'al-selection-panel';
+  const hint = document.createElement('p');
+  hint.className = 'al-selection-hint';
+  hint.textContent = 'Select a clip to edit its timing, gain and fades';
+  panelEl.append(hint);
+
+  let currentElementId = null;
+  let refs = null; // live input refs for value-only refresh (no DOM rebuild during drag)
+
+  function elData(elem) {
+    const startMs = elem.timeline.startMs || 0;
+    const si = elem.timeline.sourceInMs || 0;
+    const raw = elem.timeline.rawDurationMs || elem.timeline.durationMs || 0;
+    const so = elem.timeline.sourceOutMs || raw;
+    return { startMs, si, so, lenMs: Math.max(0, so - si) };
+  }
+
+  function refreshLane(p, elementId) {
+    const elem = p.elements.find((e) => e.id === elementId);
+    if (!elem) return;
+    const lane = getClipLanes().get(elem.laneId);
+    if (lane) lane.update(buildClipView(p, elem.laneId, getViewport().cursorMs));
+  }
+
+  function rebuildPanel(element) {
+    panelEl.replaceChildren();
+    const head = document.createElement('div');
+    head.className = 'al-inspector-head';
+    const titleEl = document.createElement('span');
+    titleEl.className = 'al-inspector-title'; titleEl.textContent = 'Clip';
+    const subEl = document.createElement('span');
+    subEl.className = 'al-inspector-sub'; subEl.textContent = element.type || 'audio';
+    head.append(titleEl, subEl);
+
+    const elementId = element.id;
+    const { startMs, si, lenMs } = elData(element);
+
+    const startInp = mkNumInp('al-f-start', startMs / 1000);
+    const endInp = mkNumInp('al-f-end', (startMs + lenMs) / 1000);
+    const durSpan = document.createElement('span');
+    durSpan.className = 'al-selection-dur'; durSpan.textContent = fmtTime(lenMs / 1000);
+
+    startInp.addEventListener('input', () => {
+      const v = Number(startInp.value);
+      if (!Number.isFinite(v)) return;
+      let p = getProject();
+      p = moveElement(p, elementId, Math.max(0, v * 1000));
+      setProject(p);
+      const el2 = p.elements.find((e) => e.id === elementId);
+      if (el2) { const d = elData(el2); endInp.value = String(r2((d.startMs + d.lenMs) / 1000)); durSpan.textContent = fmtTime(d.lenMs / 1000); }
+      refreshLane(p, elementId);
+    });
+
+    endInp.addEventListener('input', () => {
+      const v = Number(endInp.value);
+      if (!Number.isFinite(v)) return;
+      let p = getProject();
+      const el2 = p.elements.find((e) => e.id === elementId);
+      if (!el2) return;
+      const { startMs: sm, si: s2 } = elData(el2);
+      p = trimElement(p, elementId, { sourceInMs: s2, sourceOutMs: s2 + Math.max(50, v * 1000 - sm) });
+      setProject(p);
+      const el3 = p.elements.find((e) => e.id === elementId);
+      if (el3) durSpan.textContent = fmtTime(elData(el3).lenMs / 1000);
+      refreshLane(p, elementId);
+    });
+
+    const numGrid = document.createElement('div');
+    numGrid.className = 'al-grid';
+    numGrid.append(mkFld('Start (s)', startInp), mkFld('End (s)', endInp), mkFld('Duration', durSpan));
+
+    const gainS = mkSliderPair('Gain', 0, 2, 0.01, element.audio?.gain ?? 1, (v) => `${Math.round(v * 100)}%`);
+    const fiS = mkSliderPair('Fade in', 0, 5000, 50, element.audio?.fadeInMs ?? 0, (v) => `${(v / 1000).toFixed(1)}s`);
+    const foS = mkSliderPair('Fade out', 0, 5000, 50, element.audio?.fadeOutMs ?? 0, (v) => `${(v / 1000).toFixed(1)}s`);
+
+    gainS.input.addEventListener('input', () => {
+      const v = Number(gainS.input.value);
+      gainS.label.textContent = `Gain (${Math.round(v * 100)}%)`;
+      let p = getProject();
+      p = updateElement(p, elementId, (e) => ({ ...e, audio: { ...e.audio, gain: v } }));
+      setProject(p); refreshLane(p, elementId);
+    });
+    fiS.input.addEventListener('input', () => {
+      const v = Number(fiS.input.value);
+      fiS.label.textContent = `Fade in (${(v / 1000).toFixed(1)}s)`;
+      let p = getProject();
+      p = updateElement(p, elementId, (e) => ({ ...e, audio: { ...e.audio, fadeInMs: v } }));
+      setProject(p); refreshLane(p, elementId);
+    });
+    foS.input.addEventListener('input', () => {
+      const v = Number(foS.input.value);
+      foS.label.textContent = `Fade out (${(v / 1000).toFixed(1)}s)`;
+      let p = getProject();
+      p = updateElement(p, elementId, (e) => ({ ...e, audio: { ...e.audio, fadeOutMs: v } }));
+      setProject(p); refreshLane(p, elementId);
+    });
+
+    const sliders = document.createElement('div');
+    sliders.className = 'al-sliders';
+    sliders.append(gainS.el, fiS.el, foS.el);
+    panelEl.append(head, numGrid, sliders);
+    refs = { startInp, endInp, durSpan, gainS, fiS, foS };
+  }
+
+  function refreshValues(element) {
+    if (!refs) return;
+    const { startMs, lenMs } = elData(element);
+    const { startInp, endInp, durSpan, gainS, fiS, foS } = refs;
+    if (document.activeElement !== startInp) startInp.value = String(r2(startMs / 1000));
+    if (document.activeElement !== endInp) endInp.value = String(r2((startMs + lenMs) / 1000));
+    durSpan.textContent = fmtTime(lenMs / 1000);
+    if (document.activeElement !== gainS.input) gainS.input.value = String(element.audio?.gain ?? 1);
+    if (document.activeElement !== fiS.input) fiS.input.value = String(element.audio?.fadeInMs ?? 0);
+    if (document.activeElement !== foS.input) foS.input.value = String(element.audio?.fadeOutMs ?? 0);
+  }
+
+  return {
+    el: panelEl,
+    update(project) {
+      const element = selectedElementInfo(project);
+      if (!element) {
+        if (currentElementId !== null) { currentElementId = null; refs = null; panelEl.replaceChildren(hint); }
+        return;
+      }
+      if (element.id !== currentElementId) { currentElementId = element.id; rebuildPanel(element); }
+      else refreshValues(element);
+    },
+  };
+}
+
+function mkNumInp(cls, value) {
+  const inp = document.createElement('input');
+  Object.assign(inp, { type: 'number', className: cls, step: '0.01', value: String(r2(value)) });
+  return inp;
+}
+function mkFld(label, child) {
+  const w = document.createElement('label');
+  w.className = 'al-field';
+  const s = document.createElement('span'); s.textContent = label;
+  w.append(s, child); return w;
+}
+function mkSliderPair(label, min, max, step, value, fmt) {
+  const sp = document.createElement('span');
+  sp.textContent = `${label} (${fmt(value)})`;
+  const inp = document.createElement('input');
+  Object.assign(inp, { type: 'range', min: String(min), max: String(max), step: String(step), value: String(value) });
+  const el = document.createElement('div');
+  el.className = 'al-slider'; el.append(sp, inp);
+  return { label: sp, input: inp, el };
+}
+function r2(n) { return Math.round((Number(n) || 0) * 100) / 100; }

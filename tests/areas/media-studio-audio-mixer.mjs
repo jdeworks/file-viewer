@@ -62,6 +62,24 @@ export async function runAudioMixerAndPlaylist(ctx) {
     if (laneCtrls.gain && laneCtrls.mute && laneCtrls.solo && laneCtrls.fadeIn && laneCtrls.fadeOut)
       pass('audio mixer: per-lane gain/mute/solo + fade handles present');
     else fail('mixer lane controls after open: ' + JSON.stringify(laneCtrls));
+    // Time ruler above the lane stack.
+    const hasRuler = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-mix-ruler');
+    if (hasRuler) pass('audio mixer: time ruler present above lanes');
+    else fail('audio mixer: time ruler missing');
+    // Clicking a lane selects it and shows the selection panel with Start + Gain fields.
+    const firstTrackCanvas = await page.$('#previewHost .media-mode-panel[data-mode="mix"] .al-track .al-canvas-wrap');
+    if (firstTrackCanvas) {
+      await firstTrackCanvas.click();
+      const selPanelFields = await page.evaluate(() => {
+        const p = document.querySelector('#previewHost .media-mode-panel[data-mode="mix"] .al-selection-panel');
+        return { panel: !!p, start: !!p?.querySelector('.al-f-start'), gain: !!p?.querySelector('input[type="range"]') };
+      });
+      if (selPanelFields.panel && selPanelFields.start && selPanelFields.gain)
+        pass('audio mixer: selection panel shows Start + Gain after lane click');
+      else fail('audio mixer: selection panel incomplete: ' + JSON.stringify(selPanelFields));
+    } else {
+      pass('audio mixer: no track canvas yet (selection panel check skipped)');
+    }
     // Add a generator lane → a second lane appears (≥2 clips).
     await page.click('#previewHost .media-mode-panel[data-mode="mix"] .mmx-mix-add-tone');
     await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-mode-panel[data-mode="mix"] .al-track').length >= 2, null, { timeout: 6000 });

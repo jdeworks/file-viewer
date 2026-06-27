@@ -51,6 +51,7 @@ import {
   buildClipView,
   buildLaneControlsEl,
   buildMixToolbar,
+  buildSelectionPanel,
   buildThumbnailStrip,
   decorateInspector,
   firstElementForLane,
@@ -58,6 +59,7 @@ import {
   hasVisualElements,
   reflectState,
   updateLaneControlsState,
+  updateMixRuler,
 } from './mixer-audio-multi-ui.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
@@ -106,12 +108,17 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   });
 
   const { toolbar, masterSlider, videoPlanBtn } = buildMixToolbar();
+  const rulerEl = Object.assign(document.createElement('div'), { className: 'al-mix-ruler' });
   const lanesContainer = document.createElement('div');
   lanesContainer.className = 'al-lanes';
   const inspector = document.createElement('aside');
   inspector.className = 'mmx-inspector';
-  root.append(toolbar, lanesContainer, inspector);
   const clipLanes = new Map();
+  const selPanel = buildSelectionPanel({
+    getProject: () => project, setProject: (p) => { project = p; },
+    getClipLanes: () => clipLanes, getViewport: () => viewport,
+  });
+  root.append(toolbar, rulerEl, lanesContainer, selPanel.el, inspector);
 
   const dispatch = (action) => {
     if (action.type === 'seek') setCursorMs(action.cursorMs);
@@ -173,6 +180,8 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (destroyed) return;
     viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
     reconcileLanes();
+    updateMixRuler(rulerEl, project, viewport);
+    selPanel.update(project);
     masterSlider.value = String(project.master?.audio?.gain ?? 1);
     videoPlanBtn.hidden = !hasVisualElements(project);
     for (const [laneId, lane] of clipLanes) {
