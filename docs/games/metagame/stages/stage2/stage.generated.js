@@ -537,6 +537,10 @@ var SHOP_UPGRADES = [
   { id: "greed", name: "Glyph Magnet", desc: "+25% glyphs", max: 4, apply: (s, n) => {
     s.glyphMult = 1 + 0.25 * n;
   } },
+  { id: "torchcraft", name: "Torchbearer", desc: "+12 torch steps & start each run with a torch (per level)", max: 4, apply: (s, n) => {
+    s.torchSteps = 12 * n;
+    s.startTorches = n;
+  } },
   { id: "compass", name: "Stairwell Sense", desc: "reveals the way to the stairs (HUD compass)", max: 1, apply: () => {
   } }
 ];
@@ -549,8 +553,8 @@ var HEAT_PER_MOD = 0.25;
 function runHeat(runMods2 = {}) {
   return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods2[m.id]).length;
 }
-var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1e3 };
-var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
+var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, compass: 1e3 };
+var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, compass: 1 };
 function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
 }
@@ -564,6 +568,7 @@ function rollEntity(shopUpgrades = {}) {
     if (n > 0) up.apply(stats, n);
   }
   stats.hp = stats.maxHp;
+  if (stats.startTorches > 0) stats.inventory.torch = Number(stats.startTorches);
   return stats;
 }
 function spawnMonster(rng, floor, index) {
@@ -1445,7 +1450,7 @@ function useConsumable(world, player, type, events) {
     }
     events.log.push(`acid flask — ${n} foe${n === 1 ? "" : "s"} corroded; their integrity strips away.`);
   } else if (type === "torch") {
-    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS);
+    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS + Number(player.torchSteps || 0));
     events.log.push("you strike a torch — the dark peels back, but something stirs toward the light.");
   } else {
     return false;
@@ -1463,6 +1468,9 @@ var ACTS = [
 ];
 var ACT_CAP_FLOORS = ACTS.map((a) => a.to);
 var FINAL_FLOOR = ACTS[ACTS.length - 1].to;
+function actForFloor(floor) {
+  return ACTS.find((a) => floor >= a.from && floor <= a.to) || ACTS[ACTS.length - 1];
+}
 function isGuardianFloor(floor) {
   return ACT_CAP_FLOORS.includes(floor);
 }
@@ -1623,7 +1631,6 @@ function makeGuardian(rng, floor, idx) {
   g.maxHp = g.hp;
   g.atk = Math.round(g.atk * 1.5);
   g.glyph = "Ω";
-  g.name = "floor guardian";
   g.guardian = true;
   g.elite = true;
   g.drop += 6;
@@ -1635,12 +1642,24 @@ function makeGuardian(rng, floor, idx) {
   g.hidden = false;
   g.explode = false;
   g.venom = false;
-  if (rng.pick(["summon", "split"]) === "summon") {
-    g.summon = true;
-    g.split = false;
-  } else {
-    g.summon = false;
+  g.summon = false;
+  g.split = false;
+  g.lighteater = false;
+  g.mirror = false;
+  g.phantom = false;
+  const verb = actForFloor(floor).verb;
+  if (verb === "hazard") {
+    g.explode = true;
     g.split = true;
+    g.name = "ember guardian";
+  } else if (verb === "darkness") {
+    g.lighteater = true;
+    g.phantom = true;
+    g.name = "overflow guardian";
+  } else {
+    if (rng.pick(["summon", "split"]) === "summon") g.summon = true;
+    else g.split = true;
+    g.name = "warren guardian";
   }
   return g;
 }

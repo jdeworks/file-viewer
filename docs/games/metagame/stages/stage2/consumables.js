@@ -98,8 +98,9 @@ export function useConsumable(world, player, type, events) {
     events.log.push(`acid flask — ${n} foe${n === 1 ? "" : "s"} corroded; their integrity strips away.`);
   } else if (type === "torch") {
     // Light vs stealth: floods a wide radius for a stretch of steps, but the glare wakes foes from
-    // much farther (darkness.torchSightBonus reads world.torch). Re-lighting tops the timer up.
-    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS);
+    // much farther (darkness.torchSightBonus reads world.torch). Re-lighting tops the timer up. The
+    // Torchbearer shop upgrade (player.torchSteps) extends how long each torch burns.
+    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS + Number(player.torchSteps || 0));
     events.log.push("you strike a torch — the dark peels back, but something stirs toward the light.");
   } else {
     return false;

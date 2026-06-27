@@ -62,6 +62,7 @@ export const SHOP_UPGRADES = [
   { id: 'guard', name: 'Hardened Types', desc: '+1 starting DEF', max: 6, apply: (s, n) => { s.def += n; } },
   { id: 'def_level', name: 'Tempered Types', desc: '+1 DEF per level', max: 4, apply: (s, n) => { s.defPerLevel = n; } },
   { id: 'greed', name: 'Glyph Magnet', desc: '+25% glyphs', max: 4, apply: (s, n) => { s.glyphMult = 1 + 0.25 * n; } },
+  { id: 'torchcraft', name: 'Torchbearer', desc: '+12 torch steps & start each run with a torch (per level)', max: 4, apply: (s, n) => { s.torchSteps = 12 * n; s.startTorches = n; } },
   { id: 'compass', name: 'Stairwell Sense', desc: 'reveals the way to the stairs (HUD compass)', max: 1, apply: () => {} }
 ];
 
@@ -77,8 +78,8 @@ export function runHeat(runMods = {}) {
   return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods[m.id]).length;
 }
 
-const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1000 };
-const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
+const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, compass: 1000 };
+const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, compass: 1 };
 
 export function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
@@ -98,6 +99,8 @@ export function rollEntity(shopUpgrades = {}) {
     if (n > 0) up.apply(stats, n);
   }
   stats.hp = stats.maxHp;
+  // Torchbearer: stock the run inventory with starting torches so you enter the Overflow act lit.
+  if (stats.startTorches > 0) stats.inventory.torch = Number(stats.startTorches);
   return stats;
 }
 

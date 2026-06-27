@@ -2,7 +2,8 @@
 import { applyStatus, tickStatuses, hasStatus, skipsTurn } from "../status.js";
 import { monsterTurn, detonate, hasLOS, pressureSpawn } from "../monsters.js";
 import { buildFloor, step, exitDistanceField, stepToExit } from "../engine.js";
-import { spawnMonster } from "../data.js";
+import { spawnMonster, rollEntity } from "../data.js";
+import { TORCH_STEPS } from "../darkness.js";
 import { enterHazard, hazardIndex } from "../hazards.js";
 import { springTrap } from "../traps.js";
 import { useConsumable } from "../consumables.js";
@@ -420,6 +421,29 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   let deepRift = false;
   for (let s = 0; s < 8 && !deepRift; s += 1) if (buildFloor("rift-deep" + s, 8).hazards.some((h) => h.type === "rift")) deepRift = true;
   ok(deepRift, "void rifts appear in the Overflow act");
+}
+
+// ── Torch economy: Torchbearer upgrade + extended torch duration ─────────────────────────────────
+{
+  const base = rollEntity({});
+  ok(!(base.inventory && base.inventory.torch), "no starting torch without the Torchbearer upgrade");
+  const e = rollEntity({ torchcraft: 2 });
+  ok(e.inventory.torch === 2 && e.torchSteps === 24, "Torchbearer stocks starting torches + extends torch steps");
+  // The extended duration actually applies when a torch is struck.
+  const w = arena(); w.floor = 7;
+  const player = { hp: 50, def: 0, statuses: {}, torchSteps: 12, inventory: { torch: 1 } };
+  useConsumable(w, player, "torch", { log: [], damageTaken: 0, died: false });
+  ok(w.torch === TORCH_STEPS + 12, "Torchbearer makes each struck torch burn longer");
+}
+
+// ── Act-escalating guardians (combat → hazard → darkness) ────────────────────────────────────────
+{
+  const g3 = buildFloor("guard-esc", 3).monsters.find((m) => m.guardian);
+  ok(g3 && (g3.summon || g3.split) && !g3.lighteater, "act-I guardian is a combat spike (summon/split)");
+  const g6 = buildFloor("guard-esc", 6).monsters.find((m) => m.guardian);
+  ok(g6 && g6.explode && g6.split, "act-II guardian is a hazard spike (explodes + splits)");
+  const g9 = buildFloor("guard-esc", 9).monsters.find((m) => m.guardian);
+  ok(g9 && g9.lighteater && g9.phantom, "act-III guardian is darkness-aware (feeds on dark + no ghost)");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

@@ -9,7 +9,7 @@ import { placeHazards, hazardIndex } from "./hazards.js";
 import { placeTraps, trapIndex } from "./traps.js";
 import { placeConsumables } from "./consumables.js";
 import { rollAffix } from "./affixes.js";
-import { isGuardianFloor, isOverflowFloor } from "./acts.js";
+import { isGuardianFloor, isOverflowFloor, actForFloor } from "./acts.js";
 
 // Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
 // grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
@@ -173,17 +173,30 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
   return world;
 }
 
-// B6 guardian: take a roster spawn, beef it up (3× HP, 1.5× ATK), mark it, and give it ONE scripted
-// mechanic — summon (forks minions, handled in monsterTurn) or split (spawns shards on death, below).
+// Act guardian: take a roster spawn, beef it up (3× HP, 1.5× ATK), mark it, and give it a scripted
+// mechanic that ESCALATES with the act's verb so each act-cap is a distinct spike (combat → hazard →
+// darkness):
+//   Act I  (floor 3, combat)   — summon (forks minions) or split (shards on death).
+//   Act II (floor 6, hazard)   — a segfault titan: explodes on death AND splits (the hazard spike).
+//   Act III(floor 9, darkness) — feeds on the dark (lighteater) AND leaves no ghost (phantom): you
+//                                must TORCH it to starve + pin it, paying the glare's aggro cost.
 function makeGuardian(rng, floor, idx) {
   const g = spawnMonster(rng, floor, idx);
   g.hp = Math.round(g.maxHp * 3); g.maxHp = g.hp;
   g.atk = Math.round(g.atk * 1.5);
-  g.glyph = "Ω"; g.name = "floor guardian"; g.guardian = true; g.elite = true;
+  g.glyph = "Ω"; g.guardian = true; g.elite = true;
   g.drop += 6; g.xp += 12; g.sight = 9; g.chasing = false;
   g.ranged = false; g.ambush = false; g.hidden = false; g.explode = false; g.venom = false;
-  if (rng.pick(["summon", "split"]) === "summon") { g.summon = true; g.split = false; }
-  else { g.summon = false; g.split = true; }
+  g.summon = false; g.split = false; g.lighteater = false; g.mirror = false; g.phantom = false;
+  const verb = actForFloor(floor).verb;
+  if (verb === "hazard") {
+    g.explode = true; g.split = true; g.name = "ember guardian";
+  } else if (verb === "darkness") {
+    g.lighteater = true; g.phantom = true; g.name = "overflow guardian";
+  } else {
+    if (rng.pick(["summon", "split"]) === "summon") g.summon = true; else g.split = true;
+    g.name = "warren guardian";
+  }
   return g;
 }
 
