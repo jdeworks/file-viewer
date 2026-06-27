@@ -12,6 +12,7 @@ import {
   establishFact,
   getCard,
   mintCard,
+  pinnedCards,
   setPinned
 } from "./evidence-board.js";
 import { SUBSTAGE } from "./substages.js";
@@ -59,6 +60,24 @@ export function ensureCase2(state) {
 export function case2Hint(state) {
   const step = Math.min(Math.max(Number(state?.evidence?.case2HintStep || 0), 0), case2HintLadder.length - 1);
   return case2HintLadder[step];
+}
+
+// The triad is built BY PINNING: exactly one entity card + one field card + one fact card pinned.
+// Anything else is an incomplete selection (the accusation stays silent on it).
+export function pinnedTriad(state) {
+  const pinned = pinnedCards(state).filter((c) => Number(c.caseId) === 2);
+  const entities = pinned.filter((c) => c.kind === "entity");
+  const fields = pinned.filter((c) => c.kind === "field");
+  const facts = pinned.filter((c) => c.kind === "fact");
+  if (entities.length !== 1 || fields.length !== 1 || facts.length !== 1) return null;
+  return { entityId: entities[0].entity, fieldId: fields[0].fieldId, factId: facts[0].id };
+}
+
+// Accuse using whatever the player has pinned (the board-driven entry point used by the UI).
+export function accuseFromBoard(state) {
+  const triad = pinnedTriad(state);
+  if (!triad) return { ok: false, reason: "incomplete", silent: true };
+  return attemptAccusation(state, triad);
 }
 
 export function attemptAccusation(state, { entityId, fieldId, factId } = {}) {

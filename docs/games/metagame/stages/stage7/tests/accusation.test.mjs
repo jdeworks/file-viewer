@@ -57,7 +57,7 @@ function freshAtAccuse() {
   assert.equal(state.evidence.case2HintStep, 1, "wrong commit advances the hint ladder");
   assert.ok(state.addresses < start, "wrong commit costs a small penalty");
   assert.notEqual(state.substage, SUBSTAGE.BOSS, "wrong commit does not reach the boss");
-  assert.equal(state.evidence.case2Solved, undefined, "progress not wiped, case not solved");
+  assert.notEqual(state.evidence.case2Solved, true, "progress not wiped, case not solved");
 }
 
 // ── the COMPLETE CORRECT triad confirms, establishes the fact, and reaches the boss ──────────────

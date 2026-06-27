@@ -9,12 +9,22 @@ export const ENTITY_METADATA_SIDECAR_PATH = "/docs/examples/metagame/stage7/enti
 export const ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
 export const ANCHOR_ACTION = "anchor_chain_examined";
 
+// Case 2 (Duplicate Roster) source files — opened in the real viewer to mint evidence-board facts.
+export const CASE2_SOURCE_PATHS = {
+  spec_examined: "/docs/examples/metagame/stage7/system_spec.json",
+  route_table_examined: "/docs/examples/metagame/stage7/route_table.csv",
+  access_log_examined: "/docs/examples/metagame/stage7/access_log.csv",
+  comms_examined: "/docs/examples/metagame/stage7/comms_transcript.txt"
+};
+export const CASE2_SOURCE_ACTIONS = Object.keys(CASE2_SOURCE_PATHS);
+
 export const substageHints = {
   1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
   2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
   3: "Audit Entity F's activity log. One entry is logically impossible.",
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
-  5: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
+  6: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
 };
 
 export const bellMessages = {

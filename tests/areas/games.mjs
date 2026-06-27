@@ -957,22 +957,34 @@ export async function run(ctx) {
     wired: Boolean(window.__fvStage7),
     substage: window.__fvStage7.state().substage,
     noCommit: !document.querySelector('[data-commit]'),
+    noAccuse: !document.querySelector('[data-accuse]'),
   }));
-  if (s7Start.noBypass && s7Start.wired && s7Start.substage === 1 && s7Start.noCommit) pass('Stage 7 is a real 5-stage investigation: no GPS bypass, boss gated from start'); else fail('Stage 7 bypass present or boss reachable from start');
-  // Work the investigation (SS1 scan → SS2 dup → SS3 timeline) up to the reference chase.
+  if (s7Start.noBypass && s7Start.wired && s7Start.substage === 1 && s7Start.noCommit && s7Start.noAccuse) pass('Stage 7 is a real 6-stage investigation: no GPS bypass, accusation+boss gated from start'); else fail('Stage 7 bypass present or boss/accusation reachable from start');
+  // Work Case 1 (SS1 scan → SS2 dup → SS3 timeline) up to the reference chase.
   const s7AfterDeduction = await page.evaluate(() => window.__fvStage7.solveInvestigation());
   if (s7AfterDeduction === 4) pass('Stage 7 SS1–SS3 deductions advance to the reference chase'); else fail(`Stage 7 stalled at substage ${s7AfterDeduction}`);
-  // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the credential chain.
+  // SS4 Reference Chase: opening the real decommissioned-anchor exhibit breaks the chain → Case 2.
   await page.click('[data-action="open-anchor"]');
   await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
-  pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and reaches the boss');
+  pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and opens Case 2 (Duplicate Roster)');
+  // Case 2 is load-bearing: the rule-of-three triad cannot be completed until the route table is
+  // actually opened in the viewer (the decisive fact card only exists after a real file-open).
+  const s7Premature = await page.evaluate(() => window.__fvStage7.solveCase2());
+  if (s7Premature.ok === false && s7Premature.substage === 5) pass('Stage 7 Case 2: accusation impossible before opening the route table (load-bearing)'); else fail('Stage 7 Case 2 solvable without the real file-open');
+  // Open the real route table → mints the fact:route evidence card.
+  await page.click('[data-action="open-source"][data-source="route_table_examined"]');
+  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:route')), null, { timeout: 5000 });
+  pass('Stage 7 Case 2: opening route_table.csv mints the decisive fact card on the evidence board');
+  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and reaches the boss.
+  const s7Case2 = await page.evaluate(() => window.__fvStage7.solveCase2());
+  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and reaches the EXIF boss'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
   // The metadata sidecar still carries the decisive GPS contradiction.
   const entitySidecar = await page.evaluate(async () => {
     const response = await fetch('examples/metagame/stage7/entity_metadata.json');
     return response.ok ? response.json() : null;
   });
   if (entitySidecar?.decisiveField === 'GPSInfo' && /outside known layers/.test(entitySidecar?.entities?.F?.GPSInfo || '')) pass('Stage 7 boss evidence: Entity F GPS is outside known layers'); else fail('Stage 7 metadata sidecar missing contradiction');
-  // SS5 Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
+  // Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
   await page.click('[data-action="photo"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.png' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
   await page.waitForFunction(() => {

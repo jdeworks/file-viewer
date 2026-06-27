@@ -4,8 +4,8 @@
 
 import { entityFields, entityFEventLog, SCAN_ENTITIES } from "./content.js";
 
-export const SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, BOSS: 5 };
-export const FINAL_SUBSTAGE = 5;
+export const SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, BOSS: 6 };
+export const FINAL_SUBSTAGE = 6;
 
 // SS1 — Credential Scan: flag the one wrong field on each impostor (B/C/D/E).
 export function flagField({ state, entityId, fieldId }) {
@@ -62,12 +62,14 @@ export function markImpossible({ state, evId }) {
 
 // SS4 — Reference Chase: opening the decommissioned anchor record breaks F's credential chain. This is
 // triggered by a REAL viewer file-open (wired through viewer-actions/index), not an in-game shortcut.
+// Breaking the chain closes Case 1 and opens Case 2 (the Duplicate Roster accusation), not the boss.
 export function markChainBroken({ state }) {
   if (state.evidence.chainBroken) return { ok: true, already: true };
   state.evidence.chainBroken = true;
   state.addresses = Number(state.addresses || 0) + 15;
   pushLog(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
-  advance(state, SUBSTAGE.BOSS);
+  pushLog(state, "A second roster claims the name. Open the system files and name the duplicate.");
+  advance(state, SUBSTAGE.ACCUSE);
   return { ok: true, complete: true };
 }
 
