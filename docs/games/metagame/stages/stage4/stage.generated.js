@@ -53,6 +53,17 @@ function isRecursionBlueprintPath(path) {
   return normalized === RECURSION_BLUEPRINT_PATH || normalized.endsWith("/stage4/towers/upgrades/tier3_blueprints/recursion_points.json");
 }
 
+// ../../docs/games/metagame/stages/stage4/towers.js
+var TOWER_TYPES = {
+  pulse_node: { glyph: "[P]", cost: 80, range: 3, fireRate: 1, damage: 20, ability: "emp_burst" },
+  scatter_array: { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, aoe: 2, ability: "overcharge" },
+  null_spike: { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, ignoresArmor: true, ability: "null_wave" },
+  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0, damage: 0, slow: 0.5 },
+  resonance_hub: { glyph: "[H]", cost: 250, range: 5, fireRate: 0, damage: 0, adjacencyBonus: 0.3 },
+  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25 }
+};
+var TARGET_MODES = ["first", "last", "closest", "strongest", "weakest"];
+
 // ../../docs/games/metagame/stages/stage4/boss.js
 function hasRecursionBlueprint(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(4, ACTION_NAME));
@@ -90,14 +101,15 @@ function applyRecursionBlueprintOpen({ state, actions, achievements, bell, path 
   pushLog(state, bellMessages.unlock);
   return true;
 }
-function placeTower(state, { x, y, type = "pulse_node" }) {
+function placeTower(state, { x, y, type = "pulse_node", targetMode = "first" }) {
   const cost = type === "scatter_array" ? 150 : 80;
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: "cycles" };
   const tower = {
     id: `tower-${state.towers.length + 1}`,
     type,
     x: Math.trunc(Number(x)),
-    y: Math.trunc(Number(y))
+    y: Math.trunc(Number(y)),
+    targetMode: TARGET_MODES.includes(targetMode) ? targetMode : "first"
   };
   if (!Number.isFinite(tower.x) || !Number.isFinite(tower.y)) return { ok: false, reason: "position" };
   state.cycles -= cost;
@@ -105,6 +117,14 @@ function placeTower(state, { x, y, type = "pulse_node" }) {
   const coverage = getTowerCoverage(state);
   pushLog(state, `${type} placed at ${tower.x},${tower.y}. ${coverage.covered.length}/${coverage.total} recursion points covered.`);
   return { ok: true, tower, coverage };
+}
+function cycleTowerTarget(state, id) {
+  const tower = (state?.towers || []).find((t) => t.id === id);
+  if (!tower) return null;
+  const i = TARGET_MODES.indexOf(tower.targetMode || "first");
+  tower.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length];
+  pushLog(state, `${tower.type} now targets ${tower.targetMode.toUpperCase()}.`);
+  return tower.targetMode;
 }
 function getTowerCoverage(state) {
   const points = state?.recursion?.points || [];
@@ -282,16 +302,6 @@ function spawnEnemy(type, seed, idCounter) {
   };
 }
 
-// ../../docs/games/metagame/stages/stage4/towers.js
-var TOWER_TYPES = {
-  pulse_node: { glyph: "[P]", cost: 80, range: 3, fireRate: 1, damage: 20, ability: "emp_burst" },
-  scatter_array: { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, aoe: 2, ability: "overcharge" },
-  null_spike: { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, ignoresArmor: true, ability: "null_wave" },
-  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0, damage: 0, slow: 0.5 },
-  resonance_hub: { glyph: "[H]", cost: 250, range: 5, fireRate: 0, damage: 0, adjacencyBonus: 0.3 },
-  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25 }
-};
-
 // ../../docs/games/metagame/stages/stage4/waves.js
 var SPAWN_INTERVAL_MS = 1500;
 var FINAL_WAVE = 31;
@@ -438,7 +448,7 @@ function fireTowers(state, pathTiles) {
     if (!inRange.length) continue;
     tower.lastFiredMs = now;
     const bonus = 1 + 0.3 * hubsCovering(state, tower);
-    const targets = def.aoe ? inRange : [leader(inRange)];
+    const targets = def.aoe ? inRange : [selectTarget(inRange, tower)];
     for (const e of targets) applyDamage(state, tower, def, e, bonus, pathTiles);
   }
 }
@@ -473,8 +483,21 @@ function hubsCovering(state, tower) {
   }
   return n;
 }
-function leader(enemies) {
-  return enemies.reduce((best, e) => e.pathIndex > best.pathIndex ? e : best, enemies[0]);
+var TARGET_COMPARATORS = {
+  first: (a, b) => a.pathIndex > b.pathIndex,
+  last: (a, b) => a.pathIndex < b.pathIndex,
+  strongest: (a, b) => a.hp > b.hp || a.hp === b.hp && a.pathIndex > b.pathIndex,
+  weakest: (a, b) => a.hp < b.hp || a.hp === b.hp && a.pathIndex > b.pathIndex,
+  closest: (a, b, tower) => {
+    const da = dist(tower, a);
+    const db = dist(tower, b);
+    return da < db || da === db && a.pathIndex > b.pathIndex;
+  }
+};
+function selectTarget(enemies, tower) {
+  if (!Array.isArray(enemies) || !enemies.length) return null;
+  const cmp = TARGET_COMPARATORS[tower?.targetMode] || TARGET_COMPARATORS.first;
+  return enemies.reduce((best, e) => cmp(e, best, tower) ? e : best, enemies[0]);
 }
 function placeOnPath(enemy, pathTiles) {
   const tile = pathTiles[Math.min(pathTiles.length - 1, Math.max(0, Math.floor(enemy.pathIndex)))];
@@ -606,6 +629,7 @@ function normalizeTower(tower) {
     x,
     y,
     level: clampInt(tower.level || 1, 1, 3),
+    targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : "first",
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed)
   };
@@ -655,6 +679,7 @@ function renderStage4(ctx) {
         <div data-field="bossStatus"></div>
         <div class="s4-hint" data-field="hint"></div>
         <div class="s4-shop" data-field="shop"></div>
+        <div class="s4-roster" data-field="roster"></div>
       </section>
     </div>
     <ol class="s4-log"></ol>
@@ -700,6 +725,7 @@ function renderStage4(ctx) {
     fields.bossStatus.textContent = `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / hp ${state.boss.hp}`;
     fields.hint.textContent = lock.hint;
     fields.shop.replaceChildren(...shopRows());
+    fields.roster.replaceChildren(...rosterRows());
     board.textContent = boardText(state, path.tiles);
     root.querySelector('[data-action="start-wave"]').hidden = atBoss || state.boss.defeated;
     root.querySelector('[data-action="confront"]').hidden = !atBoss;
@@ -717,6 +743,17 @@ function renderStage4(ctx) {
       btn.dataset.tower = type;
       btn.className = type === selected ? "is-selected" : "";
       btn.textContent = `${TOWER_TYPES[type].glyph} ${type} (${TOWER_TYPES[type].cost})`;
+      return btn;
+    });
+  }
+  function rosterRows() {
+    return (state.towers || []).map((tower) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.towerId = tower.id;
+      const def = TOWER_TYPES[tower.type] || {};
+      const aoe = def.aoe ? " (aoe)" : "";
+      btn.textContent = `${def.glyph || "[?]"} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}${aoe}`;
       return btn;
     });
   }
@@ -795,6 +832,13 @@ function renderStage4(ctx) {
     return r;
   }
   root.addEventListener("click", (event) => {
+    const rosterBtn = event.target.closest("button[data-tower-id]");
+    if (rosterBtn) {
+      cycleTowerTarget(state, rosterBtn.dataset.towerId);
+      repaint();
+      save?.();
+      return;
+    }
     const towerBtn = event.target.closest("button[data-tower]");
     if (towerBtn) {
       selected = towerBtn.dataset.tower;
@@ -857,6 +901,11 @@ function renderStage4(ctx) {
       repaint();
     },
     place,
+    cycleTarget(id) {
+      const m = cycleTowerTarget(state, id);
+      repaint();
+      return m;
+    },
     confront
   };
   const onHide = () => {

@@ -10,6 +10,10 @@ export const TOWER_TYPES = {
   cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0,   damage: 0,  incomePerWave: 25 }
 };
 
+// Per-tower targeting priority. The engine's selectTarget() reads tower.targetMode; players cycle it
+// from the roster. 'first' (furthest-along) is the default and matches the legacy single-target rule.
+export const TARGET_MODES = ['first', 'last', 'closest', 'strongest', 'weakest'];
+
 // Level-3 active abilities (unlocked at max level). Engine/abilities.js consume these.
 export const TOWER_ABILITIES = {
   emp_burst:  { label: "EMP Burst",  radius: 5, stunMs: 2000, cooldownMs: 30000 },

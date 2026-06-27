@@ -106,7 +106,7 @@ function fireTowers(state, pathTiles) {
     if (!inRange.length) continue;
     tower.lastFiredMs = now;
     const bonus = 1 + 0.3 * hubsCovering(state, tower);
-    const targets = def.aoe ? inRange : [leader(inRange)];
+    const targets = def.aoe ? inRange : [selectTarget(inRange, tower)];
     for (const e of targets) applyDamage(state, tower, def, e, bonus, pathTiles);
   }
 }
@@ -146,8 +146,25 @@ function hubsCovering(state, tower) {
   return n;
 }
 
-function leader(enemies) {
-  return enemies.reduce((best, e) => (e.pathIndex > best.pathIndex ? e : best), enemies[0]);
+// Per-tower targeting modes. Each comparator returns true when candidate `a` is a BETTER target than
+// the current best `b`; all ties break by furthest-along (highest pathIndex) so selection is fully
+// deterministic regardless of enemy array order. `first` reproduces the old leader() behaviour.
+const TARGET_COMPARATORS = {
+  first: (a, b) => a.pathIndex > b.pathIndex,
+  last: (a, b) => a.pathIndex < b.pathIndex,
+  strongest: (a, b) => a.hp > b.hp || (a.hp === b.hp && a.pathIndex > b.pathIndex),
+  weakest: (a, b) => a.hp < b.hp || (a.hp === b.hp && a.pathIndex > b.pathIndex),
+  closest: (a, b, tower) => {
+    const da = dist(tower, a);
+    const db = dist(tower, b);
+    return da < db || (da === db && a.pathIndex > b.pathIndex);
+  },
+};
+
+export function selectTarget(enemies, tower) {
+  if (!Array.isArray(enemies) || !enemies.length) return null;
+  const cmp = TARGET_COMPARATORS[tower?.targetMode] || TARGET_COMPARATORS.first;
+  return enemies.reduce((best, e) => (cmp(e, best, tower) ? e : best), enemies[0]);
 }
 
 function placeOnPath(enemy, pathTiles) {

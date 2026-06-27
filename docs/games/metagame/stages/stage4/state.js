@@ -1,3 +1,5 @@
+import { TARGET_MODES } from './towers.js';
+
 export function defaultState(context = {}) {
   const seed = stageSeed(context);
   return {
@@ -127,6 +129,7 @@ function normalizeTower(tower) {
     x,
     y,
     level: clampInt(tower.level || 1, 1, 3),
+    targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : 'first',
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed),
   };
