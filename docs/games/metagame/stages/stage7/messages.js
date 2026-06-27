@@ -18,13 +18,29 @@ export const CASE2_SOURCE_PATHS = {
 };
 export const CASE2_SOURCE_ACTIONS = Object.keys(CASE2_SOURCE_PATHS);
 
+// Case 3 (Quorum Ghost) source files — opened in the real viewer to mint evidence-board facts; the
+// decisive fact is SEARCH-gated (session_ledger.csv), not open-gated.
+export const CASE3_SOURCE_PATHS = {
+  quorum_spec_examined: "/docs/examples/metagame/stage7/quorum_spec.json",
+  audit_examined: "/docs/examples/metagame/stage7/audit_trail.txt",
+  handshake_examined: "/docs/examples/metagame/stage7/handshake_log.csv",
+  ledger_examined: "/docs/examples/metagame/stage7/session_ledger.csv"
+};
+export const CASE3_SOURCE_ACTIONS = Object.keys(CASE3_SOURCE_PATHS);
+
+// The Case 3 search un-cheat: searching this file for this query in the real viewer mints fact:session.
+export const CASE3_SEARCH_ACTION = "session_revoked_found";
+export const CASE3_SEARCH_PATH = "/docs/examples/metagame/stage7/session_ledger.csv";
+export const CASE3_SEARCH_QUERY = "S-7741";
+
 export const substageHints = {
   1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
   2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
   3: "Audit Entity F's activity log. One entry is logically impossible.",
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
   5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
-  6: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
+  7: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
 };
 
 export const bellMessages = {

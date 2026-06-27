@@ -22,13 +22,21 @@ var CASE2_SOURCE_PATHS = {
   comms_examined: "/docs/examples/metagame/stage7/comms_transcript.txt"
 };
 var CASE2_SOURCE_ACTIONS = Object.keys(CASE2_SOURCE_PATHS);
+var CASE3_SOURCE_PATHS = {
+  quorum_spec_examined: "/docs/examples/metagame/stage7/quorum_spec.json",
+  audit_examined: "/docs/examples/metagame/stage7/audit_trail.txt",
+  handshake_examined: "/docs/examples/metagame/stage7/handshake_log.csv",
+  ledger_examined: "/docs/examples/metagame/stage7/session_ledger.csv"
+};
+var CASE3_SOURCE_ACTIONS = Object.keys(CASE3_SOURCE_PATHS);
 var substageHints = {
   1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
   2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
   3: "Audit Entity F's activity log. One entry is logically impossible.",
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
   5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
-  6: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
+  7: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
 };
 var bellMessages = {
   start: "something presented itself. I had to decide.",
@@ -241,6 +249,10 @@ var entityFEventLog = [
   { cycle: "0047", event: "BOOT", id: "ev10" }
 ];
 var CASE2 = {
+  id: 2,
+  name: "DUPLICATE ROSTER",
+  nextSubstage: 6,
+  // correct accusation → Case 3 (the Quorum Ghost), then the boss
   roster: ["G", "H", "J", "K"],
   impostor: "K",
   // Dossier fields shown on the board as clue cards once Case 2 begins.

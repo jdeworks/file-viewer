@@ -81,6 +81,9 @@ export const entityFEventLog = [
 // OPENING a real same-origin file in the viewer (route_table.csv), so the rule-of-three triad cannot
 // be completed without a genuine file-open. ────────────────────────────────────────────────────────
 export const CASE2 = {
+  id: 2,
+  name: "DUPLICATE ROSTER",
+  nextSubstage: 6, // correct accusation → Case 3 (the Quorum Ghost), then the boss
   roster: ["G", "H", "J", "K"],
   impostor: "K",
   // Dossier fields shown on the board as clue cards once Case 2 begins.
@@ -131,6 +134,86 @@ export const CASE2_SOURCES = [
     card: { id: "fact:comms", kind: "fact", caseId: 2,
       label: "Comms: the real holder answers the cycle-0047 challenge; the duplicate stalls." } }
 ];
+
+// ── Case 3 (Quorum Ghost): CORE_ENTITY_002. A LARGER roster (L/M/N/P/Q) claims one name. One is the
+// duplicate; TWO are red herrings whose anomalies are EXONERATED by DIFFERENT source files (so several
+// real file-opens become load-bearing, not just one). The decisive deduction is gated behind a real
+// SEARCH of a .csv in the viewer (find the revoked-session line), not a mere open. ───────────────────
+export const CASE3 = {
+  id: 3,
+  name: "QUORUM GHOST",
+  roster: ["L", "M", "N", "P", "Q"],
+  impostor: "N",
+  nextSubstage: 7, // correct accusation → the EXIF boss (substage 7)
+  fields: {
+    L: [
+      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
+      { id: "session", label: "Session", value: "S-7702 (active)" }
+    ],
+    M: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "session", label: "Session", value: "S-7715 (active)" }
+    ],
+    N: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      // The decisive lie: claims an ACTIVE session the ledger proves was REVOKED at cycle 0045.
+      { id: "session", label: "Session", value: "S-7741 (active)", suspect: true }
+    ],
+    P: [
+      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      // Red herring #1: LAYER-3 LOOKS out-of-spec, but audit_trail.txt records a sanctioned elevation.
+      { id: "layer", label: "Layer Tag", value: "LAYER-3" },
+      { id: "session", label: "Session", value: "S-7720 (active)" }
+    ],
+    Q: [
+      // Red herring #2: TIER-0-ROOT LOOKS anomalous, but quorum_spec.json lists it as a valid tier.
+      { id: "tier", label: "Credential Tier", value: "TIER-0-ROOT" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
+      { id: "session", label: "Session", value: "S-7708 (active)" }
+    ]
+  },
+  // The unique correct triad: N's "active session S-7741" is refuted by the searched ledger fact.
+  triad: { entity: "N", fieldId: "session", factId: "fact:session" },
+  // Authoring notes (not used by the matcher): each red herring is cleared by a DIFFERENT file.
+  redHerrings: [
+    { entity: "Q", fieldId: "tier", factId: "fact:qspec" },
+    { entity: "P", fieldId: "layer", factId: "fact:audit" }
+  ]
+};
+
+// Case 3 OPEN-minted fact cards (open each file in the viewer). None of these completes the correct
+// triad — fact:qspec and fact:audit EXONERATE the two red herrings, fact:handshake corroborates, and
+// fact:ledgerhint just points the player at the SEARCH. The decisive fact is fact:session (search-only).
+export const CASE3_SOURCES = [
+  { action: "quorum_spec_examined", file: "quorum_spec.json",
+    card: { id: "fact:qspec", kind: "fact", caseId: 3,
+      label: "Spec: valid tiers TIER-0-ROOT..TIER-3; layers {0,1,2}; one active session/entity." } },
+  { action: "audit_examined", file: "audit_trail.txt",
+    card: { id: "fact:audit", kind: "fact", caseId: 3,
+      label: "Audit: P holds a SANCTIONED temporary LAYER-3 elevation (cycle 0046)." } },
+  { action: "handshake_examined", file: "handshake_log.csv",
+    card: { id: "fact:handshake", kind: "fact", caseId: 3,
+      label: "Handshake log: L/M/N/P/Q all completed the cycle-0047 handshake." } },
+  { action: "ledger_examined", file: "session_ledger.csv",
+    card: { id: "fact:ledgerhint", kind: "fact", caseId: 3,
+      label: "Ledger lists session tokens — SEARCH it for a claimed token to learn its true status." } }
+];
+
+// The Case 3 SEARCH un-cheat: the decisive fact card is minted ONLY by SEARCHING session_ledger.csv in
+// the real viewer for the claimed token (the line proving S-7741 is REVOKED). Opening the file is NOT
+// enough — the triad cannot complete without a genuine search.
+export const CASE3_SEARCH = {
+  action: "session_revoked_found",
+  file: "session_ledger.csv",
+  query: "S-7741",
+  card: { id: "fact:session", kind: "fact", caseId: 3,
+    label: "Ledger search: token S-7741 = REVOKED (cycle 0045). N's 'active' claim is false." }
+};
+
+export const CASES = { 2: CASE2, 3: CASE3 };
 
 export const metadataArtifact = {
   format: "stage7-image-metadata-sidecar",
