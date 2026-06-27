@@ -895,11 +895,13 @@ var RARITY_WEIGHT_BY_ACT = {
   1: { common: 70, uncommon: 25, rare: 5 },
   2: { common: 50, uncommon: 35, rare: 15 },
   3: { common: 35, uncommon: 40, rare: 25 },
-  4: { common: 20, uncommon: 40, rare: 40 }
+  4: { common: 20, uncommon: 40, rare: 40 },
+  5: { common: 12, uncommon: 38, rare: 50 },
+  6: { common: 8, uncommon: 32, rare: 60 }
 };
 function draftRewardCards(seed, act, count = 3) {
   const rng = makeRng(seed);
-  const weights = RARITY_WEIGHT_BY_ACT[Math.min(4, Math.max(1, Number(act) || 1))];
+  const weights = RARITY_WEIGHT_BY_ACT[Math.min(6, Math.max(1, Number(act) || 1))];
   const tierCount = {};
   for (const id of REWARD_POOL) {
     const r = cardById(id)?.rarity || "common";
@@ -1718,6 +1720,24 @@ var ENEMIES = {
       { label: "Deadlock — Attack 32", attack: 32 }
     ]
   },
+  // Act 4 mini-boss (SESSION): a session-hijacker that strips your defenses (Vulnerable) and punishes
+  // with a big reset hit — the finale of the SESSION act now that the negotiation moved to act 6.
+  "session-hijack": {
+    id: "session-hijack",
+    name: "Session Hijack",
+    tier: "boss",
+    hp: 290,
+    hpPerAct: 0,
+    armor: 4,
+    armorPerAct: 0,
+    script: [
+      { label: "Intercept — Attack 16", attack: 16 },
+      { label: "Forge token — Attack 8 + Vulnerable", attack: 8, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Replay session — Attack 7, three times", attack: 7, hits: 3 },
+      { label: "Hijack — Block 18 + Attack 14", block: 18, attack: 14 },
+      { label: "Reset — Attack 30", attack: 30 }
+    ]
+  },
   // Act 5 mini-boss (CORRUPTION): gains armor on any turn you DON'T damage it (fortify) — so a pure
   // corruption-DoT turn (no direct hits) lets it wall up. Forces you to mix burst with the DoT.
   "stack-overflow": {
@@ -2494,8 +2514,8 @@ var HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
 var SKIP_REWARD = 5;
 var REMOVAL_BASE = 25;
 var REMOVAL_STEP = 25;
-var FINAL_BOSS_ACT = 4;
-var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
+var FINAL_BOSS_ACT = 6;
+var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock", 4: "session-hijack", 5: "stack-overflow" };
 var PRESTIGE_HP_PER_VERSION = 5;
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
@@ -3332,7 +3352,7 @@ function hubView(state, lock) {
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend four acts, and earn the right to be acknowledged.</p>
+      and protocols, descend six acts, and earn the right to be acknowledged.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>

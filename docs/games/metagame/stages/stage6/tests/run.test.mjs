@@ -29,8 +29,8 @@ import { STARTING_DECK } from "../cards.js";
 
 // ── mapgen: structure + full connectivity ────────────────────────────────────────────────────────
 {
-  const run = generateRun(42, 4);
-  assert.equal(run.acts.length, 4, "four acts");
+  const run = generateRun(42, FINAL_BOSS_ACT);
+  assert.equal(run.acts.length, FINAL_BOSS_ACT, "six acts");
   for (const act of run.acts) {
     const boss = act.layers.at(-1);
     assert.equal(boss.length, 1, "one boss node per act");
@@ -99,30 +99,43 @@ import { STARTING_DECK } from "../cards.js";
   assert.equal(buyCard(run, "FLOOD", 75).ok, false, "cannot afford a second");
 }
 
-// ── run: full traversal clears all 3 acts and wins ──────────────────────────────────────────────
-{
-  const run = createRun({ seed: 7 });
+// Drive a seeded run greedily (always the first option) to its end. Returns the run + a step count.
+// Deterministic by construction: same seed ⇒ identical map/enemies/rewards ⇒ identical traversal.
+function autoRun(seed) {
+  const run = createRun({ seed });
   let guard = 0;
-  while (run.status !== "won" && guard++ < 2000) {
-    if (run.status === "map") {
-      const opts = availableNodes(run);
-      moveTo(run, opts[0].id);
-    } else if (run.status === "combat" || run.status === "boss") {
-      resolveCombat(run, { win: true, hpRemaining: run.hp });
-    } else if (run.status === "reward") {
-      takeReward(run, run.pendingReward.cards[0]);
-    } else if (run.status === "boss-reward") {
-      takeBossRelic(run, run.pendingReward.relics[0] || null);
-    } else if (run.status === "rest") {
-      rest(run, "heal");
-    } else if (run.status === "shop" || run.status === "event") {
-      closeNode(run);
-    } else {
-      break;
-    }
+  while (run.status !== "won" && run.status !== "dead" && guard++ < 4000) {
+    if (run.status === "map") moveTo(run, availableNodes(run)[0].id);
+    else if (run.status === "combat" || run.status === "boss") resolveCombat(run, { win: true, hpRemaining: run.hp });
+    else if (run.status === "reward") takeReward(run, run.pendingReward.cards[0]);
+    else if (run.status === "boss-reward") takeBossRelic(run, run.pendingReward.relics[0] || null);
+    else if (run.status === "rest") rest(run, "heal");
+    else if (run.status === "shop" || run.status === "event") closeNode(run);
+    else break;
   }
-  assert.equal(run.status, "won", "a clean run clears all four acts");
-  assert.equal(run.act, 4, "ended in act 4");
+  return { run, steps: guard };
+}
+
+// ── H · full 6-act traversal TERMINATES and ends in a win at the final act ─────────────────────────
+{
+  const { run, steps } = autoRun(7);
+  assert.equal(run.status, "won", "a clean run clears all six acts");
+  assert.equal(run.act, FINAL_BOSS_ACT, "ended in the final act (6)");
+  assert.ok(steps < 4000, "the run terminated well within the guard (no infinite loop)");
+  assert.equal(run.map.acts.length, FINAL_BOSS_ACT, "the run map has six acts");
+}
+
+// ── H · a full 6-act run is DETERMINISTIC from its seed ────────────────────────────────────────────
+{
+  for (const seed of [3, 7, 42]) {
+    const a = autoRun(seed);
+    const b = autoRun(seed);
+    assert.equal(a.run.status, "won", `seed ${seed}: terminates in a win`);
+    assert.equal(a.steps, b.steps, `seed ${seed}: same seed ⇒ same number of steps`);
+    assert.deepEqual(a.run.clearedIds, b.run.clearedIds, `seed ${seed}: same nodes cleared in the same order`);
+    assert.deepEqual(a.run.deck, b.run.deck, `seed ${seed}: same final deck`);
+    assert.deepEqual(a.run.relics, b.run.relics, `seed ${seed}: same relics`);
+  }
 }
 
 // ── run: elites and act bosses award relics (deduped, deterministic) ─────────────────────────────
@@ -179,7 +192,7 @@ import { STARTING_DECK } from "../cards.js";
   }
 }
 
-// ── A2: seatAtFinalBoss lands a run at the act-4 boss node (test/debug helper) ────────────────────
+// ── A2: seatAtFinalBoss lands a run at the final-act boss node (test/debug helper) ────────────────
 {
   const run = createRun({ seed: 3 });
   assert.equal(run.act, 1, "fresh run starts in act 1");
@@ -189,7 +202,7 @@ import { STARTING_DECK } from "../cards.js";
   assert.equal(run.currentNodeId, bossId, "current node is the returned boss id");
   const node = nodeById(run.map, run.currentNodeId);
   assert.equal(node.type, "boss", "the seated node is the boss node");
-  assert.equal(enemyForCurrentNode(run, makeRng(1)), "the-refused-connection", "act-4 boss is The Refused Connection");
+  assert.equal(enemyForCurrentNode(run, makeRng(1)), "the-refused-connection", "final-act boss is The Refused Connection");
   // Optional deck swap is honoured and isolated (copy, not alias).
   const known = ["SYN", "ACK", "Signal"];
   seatAtFinalBoss(run, known);
@@ -198,7 +211,7 @@ import { STARTING_DECK } from "../cards.js";
   assert.deepEqual(known, ["SYN", "ACK", "Signal"], "deck swap copies, does not alias");
 }
 
-// ── B1: The Refused Connection is ONLY the act-4 boss (acts 1–3 are other mini-bosses) ────────────
+// ── B1: The Refused Connection is ONLY the final-act boss (acts 1–5 are other mini-bosses) ─────────
 {
   const run = createRun({ seed: 9 });
   for (let act = 1; act <= FINAL_BOSS_ACT; act++) {
@@ -207,7 +220,7 @@ import { STARTING_DECK } from "../cards.js";
     run.currentNodeId = bossNode.id;
     const enemy = enemyForCurrentNode(run, makeRng(act));
     if (act === FINAL_BOSS_ACT) {
-      assert.equal(enemy, "the-refused-connection", "act 4 boss IS The Refused Connection");
+      assert.equal(enemy, "the-refused-connection", "the final-act boss IS The Refused Connection");
     } else {
       assert.notEqual(enemy, "the-refused-connection", `act ${act} boss is a different mini-boss`);
     }

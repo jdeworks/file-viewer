@@ -218,6 +218,21 @@ export const ENEMIES = {
       { label: "Deadlock — Attack 32", attack: 32 }
     ]
   },
+  // Act 4 mini-boss (SESSION): a session-hijacker that strips your defenses (Vulnerable) and punishes
+  // with a big reset hit — the finale of the SESSION act now that the negotiation moved to act 6.
+  "session-hijack": {
+    id: "session-hijack",
+    name: "Session Hijack",
+    tier: "boss",
+    hp: 290, hpPerAct: 0, armor: 4, armorPerAct: 0,
+    script: [
+      { label: "Intercept — Attack 16", attack: 16 },
+      { label: "Forge token — Attack 8 + Vulnerable", attack: 8, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Replay session — Attack 7, three times", attack: 7, hits: 3 },
+      { label: "Hijack — Block 18 + Attack 14", block: 18, attack: 14 },
+      { label: "Reset — Attack 30", attack: 30 }
+    ]
+  },
   // Act 5 mini-boss (CORRUPTION): gains armor on any turn you DON'T damage it (fortify) — so a pure
   // corruption-DoT turn (no direct hits) lets it wall up. Forces you to mix burst with the DoT.
   "stack-overflow": {

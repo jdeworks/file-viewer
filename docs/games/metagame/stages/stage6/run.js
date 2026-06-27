@@ -24,9 +24,10 @@ const SKIP_REWARD = 5;
 // Deck removal is the strongest shop action, so its price ESCALATES per purchase within a run.
 const REMOVAL_BASE = 25;
 const REMOVAL_STEP = 25;
-export const FINAL_BOSS_ACT = 4;
-// Per-act combat mini-bosses; the final act is the codex-gated negotiation (handled in the UI).
-const ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
+export const FINAL_BOSS_ACT = 6;
+// Per-act combat mini-bosses (acts 1–5); the final act (6) is the codex-gated negotiation, The
+// Refused Connection. Acts 5–6 add the CORRUPTION + CHAIN verbs (Stack Overflow / the act-6 pools).
+const ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock", 4: "session-hijack", 5: "stack-overflow" };
 const PRESTIGE_HP_PER_VERSION = 5;
 
 // Banked-handshake cost to advance from the given Protocol Version to the next.

@@ -37,12 +37,14 @@ export const REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map
 export const STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
 
 // Card-reward rarity weights per act: commons dominate early, rares swell late. The act scaling is
-// what keeps early decks consistent and late drafts exciting. (Acts past 4 clamp to act 4.)
+// what keeps early decks consistent and late drafts exciting. (Acts past 6 clamp to act 6.)
 const RARITY_WEIGHT_BY_ACT = {
   1: { common: 70, uncommon: 25, rare: 5 },
   2: { common: 50, uncommon: 35, rare: 15 },
   3: { common: 35, uncommon: 40, rare: 25 },
-  4: { common: 20, uncommon: 40, rare: 40 }
+  4: { common: 20, uncommon: 40, rare: 40 },
+  5: { common: 12, uncommon: 38, rare: 50 },
+  6: { common: 8, uncommon: 32, rare: 60 }
 };
 
 // Draft `count` DISTINCT reward cards, weighted by rarity and scaled by act. Deterministic: the same
@@ -51,7 +53,7 @@ const RARITY_WEIGHT_BY_ACT = {
 // the offer's rarity mix follows the weights regardless of how many cards each tier holds.
 export function draftRewardCards(seed, act, count = 3) {
   const rng = makeRng(seed);
-  const weights = RARITY_WEIGHT_BY_ACT[Math.min(4, Math.max(1, Number(act) || 1))];
+  const weights = RARITY_WEIGHT_BY_ACT[Math.min(6, Math.max(1, Number(act) || 1))];
   const tierCount = {};
   for (const id of REWARD_POOL) { const r = cardById(id)?.rarity || "common"; tierCount[r] = (tierCount[r] || 0) + 1; }
   const pool = REWARD_POOL.map((id) => {
