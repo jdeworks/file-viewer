@@ -721,6 +721,29 @@ export async function run(ctx) {
     toolsShown: getComputedStyle(document.querySelector('#previewHost .imgv-edit-tools')).display !== 'none',
   }));
   if (cmpRestored.gone && cmpRestored.imgShown && cmpRestored.toolsShown) pass('compare closes + restores image interaction'); else fail('compare close: ' + JSON.stringify(cmpRestored));
+  // ── Copy / paste ── Ctrl+C grabs the selected pixels; Ctrl+V drops them into Adv Edit
+  // as a free, transformable pane (a Konva.Image object). Clean up after so the Adv Edit
+  // test below starts from an empty overlay.
+  await openTab('common');
+  await page.click('#previewHost .imgv-marquee');                 // box-select mode
+  const cpBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(cpBox.x + cpBox.w * 0.3, cpBox.y + cpBox.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(cpBox.x + cpBox.w * 0.6, cpBox.y + cpBox.h * 0.6, { steps: 4 });
+  await page.mouse.up();
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select (mask stays)
+  await page.keyboard.press('Control+c');                         // copy → internal clipboard
+  await page.click('#previewHost .imgv-deselect');                // clear the on-screen selection (clipboard persists)
+  await page.keyboard.press('Control+v');                         // paste → Adv Edit image pane
+  const pasted = await page.waitForFunction(() => {
+    const bar = document.querySelector('#previewHost .imgv-adv-bar');
+    const advShown = bar && getComputedStyle(bar).display !== 'none';
+    const names = [...document.querySelectorAll('#previewHost .imgv-adv-layers span[title="Double-click to rename"]')].map((s) => s.textContent);
+    return advShown && names.includes('Image');
+  }, null, { timeout: 15000 }).then(() => true).catch(() => false);
+  if (pasted) pass('copy/paste: Ctrl+C + Ctrl+V drops the selection into Adv Edit as a transformable image pane'); else fail('copy/paste did not create an Adv Edit image pane');
+  await page.click('#previewHost .imgv-adv-del');                 // remove the pasted pane (it's selected)
+  await page.click('#previewHost .imgv-adv-btn');                 // leave Adv → clean slate for the Adv Edit test
   // ── Adv Edit (vector layers) ── lazy-loads Konva and overlays re-editable TEXT
   // objects (bg colour + opacity, multiple); leaving flattens onto the pixel base.
   await page.click('#previewHost .imgv-adv-btn');

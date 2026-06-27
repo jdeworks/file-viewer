@@ -6,11 +6,11 @@
 // they are NOT inlined here. index.js's loadRenderer imports THIS file.
 
 
-// docs/types/image/renderer.js
+// ../../docs/types/image/renderer.js
 import { loadGlobal as loadGlobal3, vendor as vendor3 } from "../../core/script-loader.js";
 import { loadTemplate, fill } from "../../core/template.js";
 
-// docs/types/image/imglib.js
+// ../../docs/types/image/imglib.js
 var EXT_MIME = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -43,10 +43,10 @@ function dimensions(url) {
   });
 }
 
-// docs/types/image/renderer.js
+// ../../docs/types/image/renderer.js
 import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
 
-// docs/types/image/edit-els.js
+// ../../docs/types/image/edit-els.js
 function queryEls(host, canEdit) {
   const q = (sel) => host.querySelector(sel);
   const qe = (sel) => canEdit ? host.querySelector(sel) : null;
@@ -145,7 +145,7 @@ function queryEls(host, canEdit) {
   };
 }
 
-// docs/types/image/view-controller.js
+// ../../docs/types/image/view-controller.js
 function createView(ctx) {
   const { host, img, zoomLabel } = ctx;
   let natural = 0, fit = true, zoom = 1;
@@ -301,7 +301,7 @@ function createView(ctx) {
   };
 }
 
-// docs/types/image/fill.js
+// ../../docs/types/image/fill.js
 function hexToRgba(hex) {
   const h = (hex || "#ff0000").replace("#", "");
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
@@ -444,7 +444,7 @@ function bgFloodFill(srcData, w, h, sx, sy, tol) {
   return dst;
 }
 
-// docs/types/image/draw-overlay.js
+// ../../docs/types/image/draw-overlay.js
 function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
@@ -814,7 +814,7 @@ function createDrawTools(ctx) {
   };
 }
 
-// docs/types/image/editor-core.js
+// ../../docs/types/image/editor-core.js
 var CANVAS_ENCODABLE = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
 function createEditCore({ img, url, mime, ctx, els }) {
   const { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator } = els;
@@ -933,7 +933,7 @@ function createEditCore({ img, url, mime, ctx, els }) {
   };
 }
 
-// docs/types/image/levels.js
+// ../../docs/types/image/levels.js
 function buildLevelsLUT(black = 0, white = 255, gamma = 1) {
   black = Math.max(0, Math.min(254, black | 0));
   white = Math.max(black + 1, Math.min(255, white | 0));
@@ -955,7 +955,7 @@ function applyLevels(data, lut) {
   }
 }
 
-// docs/types/image/edit-filters.js
+// ../../docs/types/image/edit-filters.js
 function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
@@ -1091,7 +1091,7 @@ function mountFilters({ img, mime, core, els }) {
   presetInvert?.addEventListener("click", () => applyPreset("invert(1)"));
 }
 
-// docs/types/image/curves.js
+// ../../docs/types/image/curves.js
 function normalizePoints(points) {
   const clamp = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
   const pts = (points || []).map((p) => ({ x: clamp(p.x), y: clamp(p.y) })).sort((a, b) => a.x - b.x);
@@ -1163,7 +1163,7 @@ function applyChannelLUTs(data, luts) {
   }
 }
 
-// docs/types/image/edit-curves.js
+// ../../docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
   const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
@@ -1359,7 +1359,7 @@ function mountCurves({ img, mime, core, els }) {
   } };
 }
 
-// docs/types/image/convolve.js
+// ../../docs/types/image/convolve.js
 var GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1].map((v) => v / 16);
 var IDENT = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 function buildKernel(type, strength) {
@@ -1398,7 +1398,7 @@ function applyConvolution(data, w, h, kernel) {
   return out;
 }
 
-// docs/types/image/edit-convolve.js
+// ../../docs/types/image/edit-convolve.js
 function mountConvolve({ img, mime, core, els }) {
   const { convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel } = els;
   if (!convolveBtn || !convolvePanel) return { teardown() {
@@ -1476,7 +1476,7 @@ function mountConvolve({ img, mime, core, els }) {
   } };
 }
 
-// docs/types/image/edit-text.js
+// ../../docs/types/image/edit-text.js
 function mountTextTool({ host, img, mime, core, els }) {
   const { editInput, editSize, editColor, editFont, editApply } = els;
   let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
@@ -1621,7 +1621,7 @@ function mountTextTool({ host, img, mime, core, els }) {
   return { isActive: () => !!textDragDiv, exitPlaceMode };
 }
 
-// docs/types/image/geometry-affine.js
+// ../../docs/types/image/geometry-affine.js
 function affineForGeometry(type, w, h, p = {}) {
   switch (type) {
     case "rotateCW":
@@ -1649,7 +1649,7 @@ function affineForGeometry(type, w, h, p = {}) {
   }
 }
 
-// docs/types/image/edit-geometry.js
+// ../../docs/types/image/edit-geometry.js
 function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   const {
     rotLBtn,
@@ -1957,7 +1957,7 @@ function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   return { isActive: () => cropMode };
 }
 
-// docs/types/image/edit-bg.js
+// ../../docs/types/image/edit-bg.js
 function mountBg({ img, url, core, els }) {
   const { bgBtn, bgTol, bgOk, bgX, exportFmt } = els;
   const bgTolWrap = bgTol && (bgTol.closest(".imgv-bg-tol-wrap") || bgTol);
@@ -2056,7 +2056,7 @@ function mountBg({ img, url, core, els }) {
   } };
 }
 
-// docs/types/image/edit-undo-key.js
+// ../../docs/types/image/edit-undo-key.js
 var active = null;
 var installed = false;
 function isTextEntry(t) {
@@ -2077,6 +2077,15 @@ function onKey(e) {
   }
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
+  if (k === "c" && active.onCopy) {
+    if (active.onCopy()) e.preventDefault();
+    return;
+  }
+  if (k === "v" && active.onPaste) {
+    active.onPaste();
+    e.preventDefault();
+    return;
+  }
   if (k !== "z" && k !== "y") return;
   e.preventDefault();
   if (k === "y" || k === "z" && e.shiftKey) active.doRedo();
@@ -2098,7 +2107,7 @@ function registerUndoKeys(editor) {
   };
 }
 
-// docs/types/image/edit-tabs.js
+// ../../docs/types/image/edit-tabs.js
 var STYLE_ID = "imgv-tabs-css";
 var CSS = `
 .imgv-tabs{flex-basis:100%;display:flex;flex-wrap:wrap;gap:2px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px;}
@@ -2181,7 +2190,7 @@ function mountTabs(host) {
   return { showTab };
 }
 
-// docs/types/image/help-tab.js
+// ../../docs/types/image/help-tab.js
 import { loadGlobal, vendor } from "../../core/script-loader.js";
 var GUIDE_URL = new URL("./editor-guide.md", import.meta.url);
 var cssInjected = false;
@@ -2236,7 +2245,44 @@ function mountHelpTab(host) {
   if (tab.classList.contains("active")) renderOnce();
 }
 
-// docs/types/image/edit-select-masks.js
+// ../../docs/types/image/pixel-clipboard.js
+var clip = null;
+function setClip(canvas) {
+  clip = canvas;
+}
+function getClip() {
+  return clip;
+}
+async function copyToSystem(canvas) {
+  try {
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/png"));
+    if (blob && navigator.clipboard?.write && window.ClipboardItem) {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    }
+  } catch {
+  }
+}
+async function readFromSystem() {
+  try {
+    if (!navigator.clipboard?.read) return null;
+    for (const item of await navigator.clipboard.read()) {
+      const type = item.types.find((t) => t.startsWith("image/"));
+      if (type) return await blobToCanvas(await item.getType(type));
+    }
+  } catch {
+  }
+  return null;
+}
+async function blobToCanvas(blob) {
+  const bmp = await createImageBitmap(blob);
+  const c = document.createElement("canvas");
+  c.width = bmp.width;
+  c.height = bmp.height;
+  c.getContext("2d").drawImage(bmp, 0, 0);
+  return c;
+}
+
+// ../../docs/types/image/edit-select-masks.js
 function rectMask(a, b, w, h) {
   const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
   const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
@@ -2289,10 +2335,10 @@ function translateMask(src, w, h, dx, dy) {
   return out;
 }
 
-// docs/types/image/edit-select.js
+// ../../docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, copySelection: () => null, clipFillInPlace() {
   }, async clipCanvas() {
   }, invert() {
   }, nudge() {
@@ -2646,6 +2692,45 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     if (floating) stampFloat();
     clear();
   }
+  function copySelection() {
+    if (!mask) return null;
+    let x0 = mw, y0 = mh, x1 = -1, y1 = -1;
+    for (let p = 0; p < mask.length; p++) {
+      if (!mask[p]) continue;
+      const x = p % mw, y = p / mw | 0;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (y < y0) y0 = y;
+      if (y > y1) y1 = y;
+    }
+    if (x1 < x0) return null;
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+    const sc = document.createElement("canvas");
+    sc.width = mw;
+    sc.height = mh;
+    const sg = sc.getContext("2d", { willReadFrequently: true });
+    if (floating && holedCanvas) {
+      sg.drawImage(holedCanvas, 0, 0);
+      sg.drawImage(pieceCanvas, floatDx, floatDy);
+    } else sg.drawImage(img, 0, 0, mw, mh);
+    const sid = sg.getImageData(0, 0, mw, mh).data;
+    const out = document.createElement("canvas");
+    out.width = bw;
+    out.height = bh;
+    const og = out.getContext("2d");
+    const oid = og.createImageData(bw, bh);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const sp = (y + y0) * mw + (x + x0);
+      if (!mask[sp]) continue;
+      const si = sp << 2, oi = y * bw + x << 2;
+      oid.data[oi] = sid[si];
+      oid.data[oi + 1] = sid[si + 1];
+      oid.data[oi + 2] = sid[si + 2];
+      oid.data[oi + 3] = sid[si + 3];
+    }
+    og.putImageData(oid, 0, 0);
+    return out;
+  }
   function invert() {
     if (!mask) return;
     if (floating) stampFloat();
@@ -2688,6 +2773,7 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
     clipCanvas,
     invert,
     nudge,
+    copySelection,
     clear,
     syncOverlay,
     teardown() {
@@ -2705,10 +2791,10 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   };
 }
 
-// docs/types/image/adv-edit.js
+// ../../docs/types/image/adv-edit.js
 import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
 
-// docs/types/image/adv-edit-actions.js
+// ../../docs/types/image/adv-edit-actions.js
 function isTypingTarget(target) {
   if (!target) return false;
   if (target.isContentEditable || target.tagName === "TEXTAREA") return true;
@@ -2764,7 +2850,7 @@ function nodeName(node, isLabel, textNodeOf) {
     if (t && t.trim()) return t.trim().slice(0, 18);
   }
   if (node?.getClassName?.() === "Group") return `Group (${node.getChildren?.().length || 0})`;
-  return { Rect: "Rectangle", Circle: "Circle", Ellipse: "Ellipse", Ring: "Ring", Wedge: "Wedge", Arc: "Arc", Line: "Line", Arrow: "Arrow", RegularPolygon: "Polygon", Star: "Star", Label: "Text" }[node?.getClassName?.()] || "Layer";
+  return { Rect: "Rectangle", Circle: "Circle", Ellipse: "Ellipse", Ring: "Ring", Wedge: "Wedge", Arc: "Arc", Line: "Line", Arrow: "Arrow", RegularPolygon: "Polygon", Star: "Star", Label: "Text", Image: "Image" }[node?.getClassName?.()] || "Layer";
 }
 function readSize(node) {
   const cls = node?.getClassName?.();
@@ -2864,7 +2950,7 @@ function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, dele
   };
 }
 
-// docs/types/image/adv-edit-controls.js
+// ../../docs/types/image/adv-edit-controls.js
 function installObjectActions(ctx) {
   const { getSelected, select, snap, tr, layer, Konva, cloneNode: cloneNode2, placeObject, wireObject, isGroup, stageW, stageH, refreshLayers, syncToolbar, markDirty } = ctx;
   function deleteSelection() {
@@ -3154,7 +3240,7 @@ function installShapeControls(ctx) {
   $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
 }
 
-// docs/types/image/adv-edit-layers.js
+// ../../docs/types/image/adv-edit-layers.js
 function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, select, snap, markDirty, cloneNode: cloneNode2, placeObject, labelName, stageW, stageH }) {
   const panel = document.createElement("div");
   panel.className = "imgv-adv-layers";
@@ -3280,7 +3366,7 @@ function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, se
   return { panel, refresh, destroy: () => panel.remove() };
 }
 
-// docs/types/image/adv-edit-precision.js
+// ../../docs/types/image/adv-edit-precision.js
 function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, markDirty, refreshLayers, stageW, stageH }) {
   const layer = new Konva.Layer({ listening: false });
   layer.name("precision");
@@ -3415,7 +3501,7 @@ function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, ma
   };
 }
 
-// docs/types/image/adv-edit-points.js
+// ../../docs/types/image/adv-edit-points.js
 function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refreshLayers }) {
   const layer = new Konva.Layer({ listening: true });
   layer.name("point-edit");
@@ -3496,7 +3582,7 @@ function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refresh
   };
 }
 
-// docs/types/image/adv-edit-text.js
+// ../../docs/types/image/adv-edit-text.js
 function syncTextControls($, label, { multi = false, textNodeOf, tagNodeOf, rgbToHex: rgbToHex2 }) {
   const t = textNodeOf(label), tag = tagNodeOf(label);
   const style = t.fontStyle?.() || "";
@@ -3614,7 +3700,7 @@ function installTextControls({ $, selectedLabels, textNodeOf, tagNodeOf, layer, 
   });
 }
 
-// docs/types/image/adv-edit-toolbar.js
+// ../../docs/types/image/adv-edit-toolbar.js
 var DEFAULTS = {
   text: "Text",
   fontFamily: "system-ui, sans-serif",
@@ -3701,7 +3787,7 @@ function advToolbarHtml() {
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
 
-// docs/types/image/ocr-ui.js
+// ../../docs/types/image/ocr-ui.js
 var OCR = "../../core/ocr/index.js";
 var consented = false;
 function ocrConsent(host, approxMB) {
@@ -3864,7 +3950,7 @@ function injectOcrStyle() {
   document.head.appendChild(s);
 }
 
-// docs/types/image/adv-edit.js
+// ../../docs/types/image/adv-edit.js
 var konvaPromise = null;
 function loadKonva() {
   if (!konvaPromise) konvaPromise = loadGlobal2(vendor2("konva/konva.min.js"), "Konva");
@@ -4096,6 +4182,18 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     placeObject(label);
   }
   const isLabel = (n) => n && n.getClassName && n.getClassName() === "Label";
+  function addImage(source) {
+    if (!source || !source.width) return null;
+    snap();
+    const k = naturalW ? stageW / naturalW : 1;
+    let w = source.width * k, h = source.height * k;
+    const fit = Math.min(1, stageW * 0.9 / w, stageH * 0.9 / h);
+    w = Math.max(1, w * fit);
+    h = Math.max(1, h * fit);
+    const node = new Konva.Image({ image: source, x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h, draggable: true });
+    placeObject(node);
+    return node;
+  }
   function editLabelText(label) {
     const text = textNodeOf(label);
     if (!text) return;
@@ -4323,6 +4421,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
   return {
     addText,
+    addImage,
     isEmpty: () => objects().length === 0,
     objectCount: () => objects().length,
     setInteractive(on) {
@@ -4377,7 +4476,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
 }
 
-// docs/types/image/gif-decode.js
+// ../../docs/types/image/gif-decode.js
 var mod = null;
 async function loadGifuct() {
   if (!mod) mod = await import("../../vendor/gifuct/gifuct.esm.js");
@@ -4452,7 +4551,7 @@ async function frameToPngBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 
-// docs/types/image/gif-anim.js
+// ../../docs/types/image/gif-anim.js
 function mountGifPlayer({ host, bytes, openBlob }) {
   host.innerHTML = "";
   const root = document.createElement("div");
@@ -4620,7 +4719,7 @@ function injectStyle3() {
   document.head.appendChild(s);
 }
 
-// docs/types/image/renderer.js
+// ../../docs/types/image/renderer.js
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
@@ -4977,33 +5076,34 @@ async function render(intake, ctx = {}) {
     });
   }
   const advBtn = canEdit ? host.querySelector(".imgv-adv-btn") : null;
+  async function enterAdv({ seedText = true } = {}) {
+    if (!advBtn || advActive) return;
+    host.querySelector(".imgv-bar").classList.add("imgv-tools-collapsed");
+    toolsBtn?.classList.remove("active");
+    advBtn.disabled = true;
+    try {
+      if (!advController) {
+        advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => {
+          host.querySelector(".imgv-dirty-indicator")?.removeAttribute("hidden");
+          emitBinaryEdit();
+        } });
+        core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
+      }
+      advActive = true;
+      advController.setInteractive(true);
+      if (advController.isEmpty()) advController.rebaseline();
+      advBtn.classList.add("active");
+      if (seedText && advController.objectCount() === 0) advController.addText();
+    } catch (e) {
+      advBtn.title = "Advanced editing failed: " + (e.message || e);
+    }
+    advBtn.disabled = false;
+  }
   if (advBtn) {
     advBtn.hidden = false;
-    advBtn.addEventListener("click", async () => {
-      if (advActive) {
-        leaveAdv();
-        return;
-      }
-      host.querySelector(".imgv-bar").classList.add("imgv-tools-collapsed");
-      toolsBtn?.classList.remove("active");
-      advBtn.disabled = true;
-      try {
-        if (!advController) {
-          advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => {
-            host.querySelector(".imgv-dirty-indicator")?.removeAttribute("hidden");
-            emitBinaryEdit();
-          } });
-          core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
-        }
-        advActive = true;
-        advController.setInteractive(true);
-        if (advController.isEmpty()) advController.rebaseline();
-        advBtn.classList.add("active");
-        if (advController.objectCount() === 0) advController.addText();
-      } catch (e) {
-        advBtn.title = "Advanced editing failed: " + (e.message || e);
-      }
-      advBtn.disabled = false;
+    advBtn.addEventListener("click", () => {
+      if (advActive) leaveAdv();
+      else enterAdv();
     });
   }
   function leaveAdv() {
@@ -5105,6 +5205,22 @@ async function render(intake, ctx = {}) {
       if (advActive || !selection?.hasSelection()) return false;
       selection.nudge(dx, dy, shift);
       return true;
+    },
+    // Ctrl+C copies the selected pixels (internal + best-effort OS clipboard); Ctrl+V
+    // drops them into Adv Edit as a free move/rotate/resize pane (also accepts an
+    // external image from the OS clipboard when nothing was copied internally).
+    onCopy: () => {
+      const cv = selection?.copySelection?.();
+      if (!cv) return false;
+      setClip(cv);
+      copyToSystem(cv);
+      return true;
+    },
+    onPaste: async () => {
+      const cv = getClip() || await readFromSystem();
+      if (!cv) return;
+      await enterAdv({ seedText: false });
+      advController?.addImage(cv);
     }
   }) : null;
   const bgTool = mountBg({ img, url, core, els });

@@ -35,6 +35,9 @@ function onKey(e) {
   if (arrow && active.onArrow && active.onArrow(arrow[0], arrow[1], e.shiftKey)) { e.preventDefault(); return; }
   if (!(e.ctrlKey || e.metaKey)) return;
   const k = e.key.toLowerCase();
+  // Copy/paste the pixel selection (copy → internal+OS clipboard; paste → a free pane).
+  if (k === 'c' && active.onCopy) { if (active.onCopy()) e.preventDefault(); return; }
+  if (k === 'v' && active.onPaste) { active.onPaste(); e.preventDefault(); return; }
   if (k !== 'z' && k !== 'y') return;
   e.preventDefault();
   if (k === 'y' || (k === 'z' && e.shiftKey)) active.doRedo();

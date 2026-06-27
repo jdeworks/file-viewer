@@ -56,7 +56,7 @@ export function nodeName(node, isLabel, textNodeOf) {
     if (t && t.trim()) return t.trim().slice(0, 18);
   }
   if (node?.getClassName?.() === 'Group') return `Group (${node.getChildren?.().length || 0})`;
-  return ({ Rect: 'Rectangle', Circle: 'Circle', Ellipse: 'Ellipse', Ring: 'Ring', Wedge: 'Wedge', Arc: 'Arc', Line: 'Line', Arrow: 'Arrow', RegularPolygon: 'Polygon', Star: 'Star', Label: 'Text' })[node?.getClassName?.()] || 'Layer';
+  return ({ Rect: 'Rectangle', Circle: 'Circle', Ellipse: 'Ellipse', Ring: 'Ring', Wedge: 'Wedge', Arc: 'Arc', Line: 'Line', Arrow: 'Arrow', RegularPolygon: 'Polygon', Star: 'Star', Label: 'Text', Image: 'Image' })[node?.getClassName?.()] || 'Layer';
 }
 
 export function readSize(node) {

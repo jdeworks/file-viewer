@@ -42,12 +42,24 @@ those pixels around.
 - **Arrow keys** — nudge the selected pixels 1px. **Shift + arrows** move just the *outline*
   (pixels stay put), so you can reframe the selection over a new area and then recolour it.
 
+### Copy & paste
+
+- **Ctrl+C** copies the selected pixels (tightly cropped to the mask, transparent outside it).
+- **Ctrl+V** drops them into **Adv Edit** as a **free pane** — a floating image object you can
+  **move, rotate, and resize** with the corner/rotation handles, independent of the base image.
+  Paste again to stamp more copies; it bakes onto the image when you flatten/export.
+- Copy also writes to your **system clipboard** (best effort), so you can paste the cut-out into
+  another app — and pasting when nothing was copied here will pull an **image from the OS
+  clipboard** instead.
+
 ### Selection gotchas
 
 - A **resize / crop / rotate** changes the image dimensions and therefore **clears** the selection
   — make your selection *after* those geometry edits.
 - Move leaves a **transparent hole** where the pixels were lifted from (it's a cut-and-place, not a
-  copy). To keep the originals, use **Copy/Paste** instead (see below).
+  copy). To keep the originals, use **Copy/Paste** instead.
+- A pasted pane lands in **Adv Edit** (vector overlay), not as raw pixels — it stays re-editable
+  until you export, then flattens onto the image.
 - Arrow nudges are **1px at native resolution** — on a large image that can look tiny on screen.
 
 ## Drawing tools

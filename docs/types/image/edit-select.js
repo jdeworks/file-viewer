@@ -19,7 +19,7 @@ import { rectMask, ellipseMask, lassoMask, translateMask } from './edit-select-m
 
 export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
-  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, nudge() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
+  if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, copySelection: () => null, clipFillInPlace() {}, async clipCanvas() {}, invert() {}, nudge() {}, toggle() {}, setActive() {}, setMode() {}, clear() {}, syncOverlay() {}, teardown() {} };
 
   const stage = host.querySelector('.imgv-stage');
   let mode = null;                   // null | 'wand' | 'marquee' | 'ellipse' | 'lasso' | 'move'
@@ -304,6 +304,37 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   // Deselect button: bake a pending float first, then drop the selection.
   function deselect() { if (floating) stampFloat(); clear(); }
 
+  // Copy the selected pixels to a tight, masked canvas (transparent outside the mask),
+  // cropped to the selection's bounding box. Reads the live floating piece if mid-move,
+  // else the committed image. Returns null when there's no selection. Non-destructive.
+  function copySelection() {
+    if (!mask) return null;
+    let x0 = mw, y0 = mh, x1 = -1, y1 = -1;
+    for (let p = 0; p < mask.length; p++) {
+      if (!mask[p]) continue;
+      const x = p % mw, y = (p / mw) | 0;
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+    }
+    if (x1 < x0) return null;
+    const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+    const sc = document.createElement('canvas'); sc.width = mw; sc.height = mh;
+    const sg = sc.getContext('2d', { willReadFrequently: true });
+    if (floating && holedCanvas) { sg.drawImage(holedCanvas, 0, 0); sg.drawImage(pieceCanvas, floatDx, floatDy); }
+    else sg.drawImage(img, 0, 0, mw, mh);
+    const sid = sg.getImageData(0, 0, mw, mh).data;
+    const out = document.createElement('canvas'); out.width = bw; out.height = bh;
+    const og = out.getContext('2d');
+    const oid = og.createImageData(bw, bh);
+    for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+      const sp = (y + y0) * mw + (x + x0);
+      if (!mask[sp]) continue;
+      const si = sp << 2, oi = (y * bw + x) << 2;
+      oid.data[oi] = sid[si]; oid.data[oi + 1] = sid[si + 1]; oid.data[oi + 2] = sid[si + 2]; oid.data[oi + 3] = sid[si + 3];
+    }
+    og.putImageData(oid, 0, 0);
+    return out;
+  }
+
   // Invert the current selection (select the complement). No-op without a mask.
   function invert() {
     if (!mask) return;
@@ -347,7 +378,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
     hasSelection: () => !!mask,
     getMask: () => (mask ? { data: mask, w: mw, h: mh } : null),
     setActive, setMode, toggle: () => setMode(mode ? null : 'wand'),
-    clipFillInPlace, clipCanvas, invert, nudge,
+    clipFillInPlace, clipCanvas, invert, nudge, copySelection,
     clear, syncOverlay,
     teardown() { stopAnts(); ov?.remove(); ov = null; octx = null; mask = null; selBuf = null; edgeIdx = null; selCanvas = null; selCtx = null; holedCanvas = pieceCanvas = baseMask = null; },
   };

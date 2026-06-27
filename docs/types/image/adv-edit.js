@@ -194,6 +194,21 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   }
   const isLabel = (n) => n && n.getClassName && n.getClassName() === 'Label';
 
+  // Add a pasted image as a free, transformable pane (move/rotate/resize via the
+  // Transformer). `source` is a canvas/image at NATURAL pixels; size it into stage
+  // coords (k = stage px per natural px) and fit within the stage, then place centered.
+  function addImage(source) {
+    if (!source || !source.width) return null;
+    snap();
+    const k = naturalW ? stageW / naturalW : 1;
+    let w = source.width * k, h = source.height * k;
+    const fit = Math.min(1, (stageW * 0.9) / w, (stageH * 0.9) / h);
+    w = Math.max(1, w * fit); h = Math.max(1, h * fit);
+    const node = new Konva.Image({ image: source, x: stageW / 2 - w / 2, y: stageH / 2 - h / 2, width: w, height: h, draggable: true });
+    placeObject(node);
+    return node;
+  }
+
   function editLabelText(label) {
     const text = textNodeOf(label);
     if (!text) return;
@@ -363,6 +378,7 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
 
   return {
     addText,
+    addImage,
     isEmpty: () => objects().length === 0,
     objectCount: () => objects().length,
     setInteractive(on) {

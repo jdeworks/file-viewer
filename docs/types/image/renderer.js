@@ -19,6 +19,7 @@ import { mountBg } from './edit-bg.js';
 import { registerUndoKeys } from './edit-undo-key.js';
 import { mountTabs } from './edit-tabs.js';
 import { mountHelpTab } from './help-tab.js';
+import { setClip, getClip, copyToSystem, readFromSystem } from './pixel-clipboard.js';
 import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
@@ -319,31 +320,33 @@ export async function render(intake, ctx = {}) {
   // (emitBinaryEdit/ASCII). A geometry op transforms the objects by the same matrix
   // (onGeometry → advController.applyGeometry) instead of baking. See ADV_EDIT.md.
   const advBtn = canEdit ? host.querySelector('.imgv-adv-btn') : null;
+  // Enter Adv Edit (mount on first use). seedText adds a starter text label only when
+  // the user opens Adv directly — paste passes false so it just drops the pasted pane.
+  async function enterAdv({ seedText = true } = {}) {
+    if (!advBtn || advActive) return;
+    host.querySelector('.imgv-bar').classList.add('imgv-tools-collapsed');   // mutually exclusive with pixel Edit
+    toolsBtn?.classList.remove('active');
+    advBtn.disabled = true;
+    try {
+      if (!advController) {
+        advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
+        // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
+        // pixel + vector. Each entry now also carries the overlay JSON snapshot.
+        core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
+      }
+      advActive = true;
+      advController.setInteractive(true);
+      // Re-align the (empty) stage to the current base — picks up any geometry done
+      // while the overlay was away. Only safe with no objects (it resets the frame).
+      if (advController.isEmpty()) advController.rebaseline();
+      advBtn.classList.add('active');
+      if (seedText && advController.objectCount() === 0) advController.addText();   // start with one editable label
+    } catch (e) { advBtn.title = 'Advanced editing failed: ' + (e.message || e); }
+    advBtn.disabled = false;
+  }
   if (advBtn) {
     advBtn.hidden = false;
-    advBtn.addEventListener('click', async () => {
-      if (advActive) { leaveAdv(); return; }   // leave = non-interactive, overlay STAYS
-      // Enter Adv: leave the pixel Edit toolbar (mutually exclusive modes).
-      host.querySelector('.imgv-bar').classList.add('imgv-tools-collapsed');
-      toolsBtn?.classList.remove('active');
-      advBtn.disabled = true;
-      try {
-        if (!advController) {
-          advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
-          // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
-          // pixel + vector. Each entry now also carries the overlay JSON snapshot.
-          core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
-        }
-        advActive = true;
-        advController.setInteractive(true);
-        // Re-align the (empty) stage to the current base — picks up any geometry done
-        // while the overlay was away. Only safe with no objects (it resets the frame).
-        if (advController.isEmpty()) advController.rebaseline();
-        advBtn.classList.add('active');
-        if (advController.objectCount() === 0) advController.addText();   // start with one editable label
-      } catch (e) { advBtn.title = 'Advanced editing failed: ' + (e.message || e); }
-      advBtn.disabled = false;
-    });
+    advBtn.addEventListener('click', () => { if (advActive) leaveAdv(); else enterAdv(); });   // leave = non-interactive, overlay STAYS
   }
   function leaveAdv() { advActive = false; advController?.setInteractive(false); advBtn?.classList.remove('active'); }
   // Geometry ops (rotate/flip/crop/resize/expand) report their natural-space affine here;
@@ -451,6 +454,11 @@ export async function render(intake, ctx = {}) {
       // Arrow keys nudge a live pixel selection (Shift = move just the outline); the
       // adv (vector) editor has its own arrow handling, so defer while it's active.
       onArrow: (dx, dy, shift) => { if (advActive || !selection?.hasSelection()) return false; selection.nudge(dx, dy, shift); return true; },
+      // Ctrl+C copies the selected pixels (internal + best-effort OS clipboard); Ctrl+V
+      // drops them into Adv Edit as a free move/rotate/resize pane (also accepts an
+      // external image from the OS clipboard when nothing was copied internally).
+      onCopy: () => { const cv = selection?.copySelection?.(); if (!cv) return false; setClip(cv); copyToSystem(cv); return true; },
+      onPaste: async () => { const cv = getClip() || await readFromSystem(); if (!cv) return; await enterAdv({ seedText: false }); advController?.addImage(cv); },
     })
     : null;
 
