@@ -84,7 +84,7 @@ export function activateSidebarRoot(root, { skipCapture = false } = {}) {
   $('ftRoot').textContent = root.label;
   $('ftRoot').title = root.title || root.label;
   $('repoBtn').hidden = !root.git;
-  $('ftExportBtn').hidden = root.kind === 'file' || !!root.git || (root.kind === 'archive' && !root.archiveIntake);
+  $('ftExportBtn').hidden = root.kind === 'file' || !!root.git || !!root.readOnly || (root.kind === 'archive' && !root.archiveIntake);
   $('ftExportBtn').title = root.kind === 'archive'
     ? 'Download archive with your edits applied'
     : 'Download folder with your edits applied';
@@ -104,6 +104,20 @@ function displayEntries() {
         sidebarRootId: root.id,
         sidebarInnerPath: entry.path,
         sidebarRoot: root.kind === 'file',
+      });
+    }
+    // File-with-children: a 'file' root (a split GIF) that ALSO exposes child frames.
+    // The self entry above stays clickable (opens the running GIF); each child below
+    // is a frame PNG opened lazily via root.getChildIntake. buildTree() collapses the
+    // matching label segment so the children render UNDER the (still-openable) file row.
+    for (const child of root.childEntries || []) {
+      out.push({
+        name: child.name,
+        file: { name: child.name.split('/').pop() || child.name, size: Number(child.size) || 0 },
+        path: root.label + '/' + child.name,
+        sidebarRootId: root.id,
+        sidebarInnerPath: child.name,
+        sidebarChild: true,
       });
     }
   }
@@ -144,6 +158,18 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
       const root = roots().find((item) => item.id === node.sidebarRootId);
       if (!root || !loadIntake) return;
       activateSidebarRoot(root);
+      // A child frame of a file-with-children root (split GIF): open the frame PNG via the
+      // provider, but leave the root a 'file' so its own row keeps opening the running GIF.
+      if (node.sidebarChild && root.getChildIntake) {
+        const intake = await root.getChildIntake(node.sidebarInnerPath);
+        if (intake) {
+          state._skipDiscardGuard = true;
+          state._skipSidebarRoot = true;
+          await loadIntake(intake);
+        }
+        renderSidebarRoots(root, node.sidebarInnerPath);
+        return;
+      }
       const innerPath = node.sidebarInnerPath || node.path.slice(root.label.length + 1);
       const entry = (root.treeEntries || []).find((item) => item.path === innerPath);
       if (!entry) return;
@@ -175,7 +201,17 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
     initialOpenDepth: Infinity,
   });
   const activePath = activeInnerPath || active.currentFolderPath || (active.treeEntries || [])[0]?.path;
-  if (activePath) state.treeApi.setActive(active.kind === 'file' ? active.label : active.label + '/' + activePath);
+  if (activePath) {
+    let full;
+    if (active.kind === 'file') {
+      // A split-GIF child frame highlights at label/<frame>; the GIF itself at label.
+      const isChild = (active.childEntries || []).some((c) => c.name === activePath);
+      full = isChild ? active.label + '/' + activePath : active.label;
+    } else {
+      full = active.label + '/' + activePath;
+    }
+    state.treeApi.setActive(full);
+  }
   for (const root of list) {
     for (const [path, text] of root.folderEdits || []) {
       if (text == null) continue;
@@ -208,6 +244,21 @@ export function addFileRoot(intake) {
   };
   roots().push(root);
   renderSidebarRoots(root, label, { skipCapture: true });
+}
+
+// Make the ACTIVE single-file root (an open GIF) ACT LIKE a folder WITHOUT ceasing to be a
+// file: its own sidebar row stays clickable (opens the running GIF) and gains an expand
+// arrow that reveals `entries` ({ name, size }) — the frame PNGs — underneath it, each opened
+// lazily via getIntake(innerPath). No new sidebar item, no folder-export. Returns false if the
+// active root isn't a standalone file (e.g. it's inside a real folder/archive) so the caller
+// can fall back. Used by the GIF viewer's "Split frames".
+export function expandActiveFileRootToFolder({ entries, getIntake }) {
+  const root = roots().find((item) => item.id === state.activeSidebarRootId);
+  if (!root || root.kind !== 'file' || !entries?.length || !loadIntake) return false;
+  root.childEntries = entries.map((e) => ({ name: e.name, size: Number(e.size) || 0 }));
+  root.getChildIntake = (innerPath) => getIntake(innerPath);
+  renderSidebarRoots(root, null, { skipCapture: true });
+  return true;
 }
 
 export function addFolderRoot({ label, entries, git = false, openNode = null, alreadyCaptured = false }) {

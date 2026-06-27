@@ -36,9 +36,14 @@ export function defaultOptions() {
     customRamp: '',
     invertRamp: false,
     dithering: 'none',
-    samplingMethod: 'downscale',
+    // 'average' = full-res, coverage-correct area sampling. The robust default for stills/line-art
+    // (point/box samplers speckle on sparse or transparent sources). Webcam pins 'downscale' for
+    // live perf (see webcam.js). Options: downscale | nearest | center | average | median.
+    samplingMethod: 'average',
+    fillGaps: false,    // fill INTERIOR transparent holes from neighbours; real background stays clear
 
     // colour / output styling
+    fontName: 'Uniform', // 'Uniform' (vendored, uniform blocks) | 'System' | 'Courier'
     colorMode: true,
     colorSource: 'processed', // 'processed' | 'original'
     glyphColorMode: 'colored', // 'colored' | 'white' | 'grayscale'

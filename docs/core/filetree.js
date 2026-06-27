@@ -58,10 +58,13 @@ export function buildTree(entries) {
       const last = i === parts.length - 1;
       const name = parts[i];
       if (last) {
-        node.children.set(name, { ...e, name, dir: false, file: e.file, path: e.path, originalPath: e.originalPath || e.path });
+        const ex = node.children.get(name);   // preserve children if this name already has some (file-with-children)
+        node.children.set(name, { ...e, name, dir: false, file: e.file, path: e.path, originalPath: e.originalPath || e.path, children: ex && ex.children ? ex.children : undefined });
       } else {
-        if (!node.children.has(name)) node.children.set(name, { name, dir: true, children: new Map() });
-        node = node.children.get(name);
+        let child = node.children.get(name);
+        if (!child) { child = { name, dir: true, children: new Map() }; node.children.set(name, child); }
+        else if (!child.children) child.children = new Map();   // a leaf gains children → render as a file you can expand
+        node = child;
       }
     }
   }
@@ -76,10 +79,12 @@ function sortedChildren(node) {
 const ROW_H = 28;
 const OVERSCAN = 8;
 
-// Collect folder paths in the tree (for pre-populating openFolders).
+// Collect folder paths in the tree (for pre-populating openFolders). Also covers
+// file-with-children nodes (e.g. a split GIF) so they default to expanded and stay
+// expanded across re-renders — they carry a `children` Map like a folder does.
 function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
   for (const c of sortedChildren(node)) {
-    if (c.dir) {
+    if (c.children && c.children.size) {
       const fp = prefix ? prefix + '/' + c.name : c.name;
       if (depth <= maxDepth) out.add(fp);
       collectFolderPaths(c, fp, out, depth + 1, maxDepth);
@@ -121,9 +126,11 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
             walk(c, depth + 1, fp);
           }
         } else {
+          const kids = c.children && c.children.size;   // a file that also has children (e.g. a split GIF)
           if (!filterFn || filterFn(c.path)) {
-            items.push({ node: c, depth: filterFn ? 0 : depth, isFolder: false, folderPath: '' });
+            items.push({ node: c, depth: filterFn ? 0 : depth, isFolder: false, folderPath: kids ? fp : '', expandable: !!kids });
           }
+          if (kids && !filterFn && openFolders.has(fp)) walk(c, depth + 1, fp);
         }
       }
     }
@@ -229,7 +236,11 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
       row.draggable = true;
       const id = quickType(item.node.name);
       const typeIcon = TYPE_ICON[id] || '▫';
-      row.innerHTML = '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
+      // A file that ALSO has children (e.g. a split GIF) gets an expand arrow: clicking the
+      // arrow toggles its children, clicking the rest of the row opens the file itself.
+      const isOpen = item.expandable && openFolders.has(item.folderPath);
+      row.innerHTML = (item.expandable ? '<span class="ft-arrow">' + (isOpen ? '▾' : '▸') + '</span>' : '')
+        + '<span class="ft-dot" style="background:' + dotColor(id) + '"></span>'
         + '<span class="ft-icon ft-icon-type" title="' + id + '">' + typeIcon + '</span>'
         + '<span class="ft-name">' + escapeHtml(item.node.name) + '</span>'
         + (movedPaths.has(item.node.path) ? '<span class="ft-move-dest">→ ' + escapeHtml(movedPaths.get(item.node.path)) + '</span>' : '')
@@ -238,6 +249,14 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
       if (editedPaths.has(item.node.path)) row.classList.add('ft-edited');
       if (movedPaths.has(item.node.path)) row.classList.add('ft-moved');
       if (state.sessionTree) row.classList.add('ft-session');
+      if (item.expandable) {
+        row.querySelector('.ft-arrow').addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (openFolders.has(item.folderPath)) openFolders.delete(item.folderPath);
+          else openFolders.add(item.folderPath);
+          buildFlat();
+        });
+      }
       row.addEventListener('click', () => { setActive(item.node.path); onOpen(item.node); });
       appendRowActions(row, { path: item.node.path, isFolder: false, name: item.node.name, root: item.node.sidebarRoot || item.depth === 0 });
       row.addEventListener('dragstart', (e) => {

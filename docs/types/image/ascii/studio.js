@@ -6,10 +6,12 @@
 // previews behind eye toggles, and a collapsible control panel.
 
 import { createAsciiEngine } from './engine.js';
-import { buildControls } from './studio-controls.js';
+import { buildControls, syncColorControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
-import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont, fontFamily } from './render.js';
 import { makeFloatingPanel } from './floating-panel.js';
+import { loadLast, saveLast } from './presets.js';
+import { wirePresetUi } from './preset-ui.js';
 
 let styleInjected = false;
 function injectStyle() {
@@ -51,8 +53,12 @@ export function mountAsciiStudio(host, opts = {}) {
       ${opts.onBack ? BTN('asx-back', '🖼 Image', 'Back to the image') : ''}
       ${BTN('asx-settings-btn', '⚙ Settings', 'Show / hide the settings panel')}
       ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
+      ${BTN('asx-convert', '🎞 Convert file', 'Convert a GIF or video file to ASCII')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
         <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
+      <select class="asx-preset" title="Load a saved settings preset"><option value="">Preset…</option></select>
+      ${BTN('asx-preset-save', '💾', 'Save current settings as a preset')}
+      ${BTN('asx-preset-del', '🗑', 'Delete the selected preset')}
       ${BTN('asx-copy', 'Copy text', 'Copy plain ASCII')}
       ${BTN('asx-copy-html', 'Copy HTML', 'Copy coloured HTML')}
       ${BTN('asx-dl-txt', '↓ TXT', 'Download .txt')}
@@ -72,6 +78,7 @@ export function mountAsciiStudio(host, opts = {}) {
           <button class="asx-eye asx-eye-proc" title="Show processed">${EYE}</button>
         </div>
         <pre class="asx-out"></pre>
+        <div class="asx-busy" hidden aria-live="polite">⏳ Converting…</div>
         <figure class="asx-peek" hidden><figcaption></figcaption><canvas></canvas></figure>
       </div>
       <div class="asx-panel"></div>
@@ -86,24 +93,57 @@ export function mountAsciiStudio(host, opts = {}) {
   const peekCanvas = peek.querySelector('canvas');
   const peekCaption = peek.querySelector('figcaption');
 
-  const engine = createAsciiEngine();
-  engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); });
+  const engine = createAsciiEngine(loadLast() || undefined);   // seed from last-used settings (persists + carries to webcam)
+  // Busy badge for slow (phone) conversions: the convert is synchronous, so we can't keep
+  // the UI live during it, but we surface that work is happening (and yield a frame so the
+  // badge paints first). Gated on the last convert's duration so fast machines never flash it.
+  const busyEl = q('.asx-busy');
+  const setBusy = (on) => { if (busyEl) busyEl.hidden = !on; };
+  // Show the badge, let it paint, then run the (blocking) convert.
+  const reconvert = () => {
+    if (engine.lastConvertMs > 80) { setBusy(true); requestAnimationFrame(() => engine.scheduleUpdate()); }
+    else engine.scheduleUpdate();
+  };
+  const regrabBusy = () => {
+    if (engine.lastConvertMs > 80) { setBusy(true); requestAnimationFrame(() => engine.regrab()); }
+    else engine.regrab();
+  };
+  engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); setBusy(false); });
 
-  // ── fit-to-width + display zoom ── more columns = more detail at the SAME
-  // on-screen size; zoom magnifies; space density adds CSS letter-spacing.
+  // ── fit-to-screen + display zoom ── the art is sized to fit the WHOLE stage
+  // (both axes) at zoom 1, so changing columns/font/aspect/space-density/padding never
+  // leaves a scrollbar — it just re-fits. Zoom is the ONLY control that scales past the
+  // fit (magnifying for detail, where scrollbars are expected and fine).
   function applyDisplay() {
     const sd = engine.options.spaceDensity || 1;
     const r = engine.result;
     if (!r) return;
     // Frame padding shows as a coloured border around the art (matches the PNG/HTML
-    // export's transparentFrame); also keep it out of the fit-width calculation.
+    // export's transparentFrame); also keep it out of the fit calculation.
     const pad = 8 + (engine.options.transparentFrame || 0);
     pre.style.padding = pad + 'px';
-    const avail = Math.max(40, pre.clientWidth - pad * 2);
-    // monospace advance ≈ 0.6em; include letter-spacing so the fit stays exact.
-    const fs = (avail / (r.columns * 0.6 * sd)) * (engine.options.zoom || 1);
+    const fam = fontFamily(engine.options);
+    // Fit against the SCROLL CONTAINER (stage), not the <pre> — the pre's own width is
+    // content-driven (white-space:pre) so it can't be the fit reference. -1: never round
+    // UP into a scrollbar. Measure the REAL monospace advance (DejaVu ≈ 0.602, not 0.6).
+    const adv = advanceRatio(fam);
+    const availW = Math.max(40, stage.clientWidth - pad * 2 - 1);
+    const availH = Math.max(40, stage.clientHeight - pad * 2 - 1);
+    const fsW = availW / (r.columns * adv * sd);
+    const fsH = availH / r.rows;          // line-height: 1 → each row is exactly one font-size tall
+    const fit = Math.min(fsW, fsH);       // the zoom-1 "fit to screen" size — no H or V scrollbar
+    const fs = fit * (engine.options.zoom || 1);
     pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
-    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * 0.6).toFixed(3) + 'em' : '';
+    pre.style.fontFamily = fam;
+    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * adv).toFixed(3) + 'em' : '';
+  }
+  // Advance width (em) of a monospace glyph in the given family — measured, not assumed.
+  // Re-measured each call so it picks up the real font once it finishes loading.
+  let advCtx = null;
+  function advanceRatio(family) {
+    if (!advCtx) advCtx = document.createElement('canvas').getContext('2d');
+    advCtx.font = `100px ${family}`;
+    return (advCtx.measureText('M').width || 60) / 100;
   }
   // Collapse decisions are based on the STUDIO's own width, not the viewport —
   // the file-viewer preview pane can be narrow while the window is wide, so a
@@ -155,17 +195,23 @@ export function mountAsciiStudio(host, opts = {}) {
   checkWidth();   // set initial open/narrow state from the actual studio width
 
   const floatingPanel = makeFloatingPanel(panel, { title: 'ASCII settings', onClose: () => setSettingsOpen(false) });
+  // Debounced persist of the current settings as "last used" (shared with webcam + across sessions).
+  let saveTimer = 0;
+  const rememberSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveLast({ ...engine.options }), 400); };
   const controls = buildControls(floatingPanel.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     // Background colour has no effect when the BG is transparent — disable it.
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) {
       controls.inputs.backgroundColor.disabled = !!value;
     }
+    if (key === 'colorMode') syncColorControls(controls, value);   // colour off → hide source + glyph-colour
+    rememberSoon();
     if (displayOnly) { applyDisplay(); return; }
     engine.markDirty(...dirty);
-    engine.scheduleUpdate();
+    reconvert();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
+  syncColorControls(controls, engine.options.colorMode);   // initial state
 
   // ── toolbar wiring ──
   q('.asx-perf').addEventListener('change', (e) => {
@@ -173,21 +219,36 @@ export function mountAsciiStudio(host, opts = {}) {
     if (!preset) return;
     Object.entries(preset).forEach(([k, v]) => controls.setValue(k, v));
   });
+  // Named user presets (shared wiring with the webcam): select + Save + Delete.
+  wirePresetUi({ sel: q('.asx-preset'), saveBtn: q('.asx-preset-save'), delBtn: q('.asx-preset-del'), controls, getOptions: () => ({ ...engine.options }) });
+  // Convert a GIF/video file to ASCII (lazy module). Carries the studio's current
+  // settings; "Add to studio" re-opens the result through the app's intake.
+  q('.asx-convert').addEventListener('click', async () => {
+    const { openConverter } = await import('./convert-file.js');
+    openConverter({
+      host, baseName, options: { ...engine.options },
+      onAddToStudio: window.__fv?.openBlobFile ? (blob, name, mime) => window.__fv.openBlobFile(blob, name, { mime }) : null,
+    });
+  });
   q('.asx-copy').addEventListener('click', () => engine.result && copyText(engine.result.text));
   q('.asx-copy-html').addEventListener('click', () => engine.result && copyHtml(pre.innerHTML));
   q('.asx-dl-txt').addEventListener('click', () => engine.result && downloadText(baseName + '.txt', engine.result.text));
   q('.asx-dl-html').addEventListener('click', () => engine.result && downloadHtml(baseName + '.html', engine.result, engine.options));
-  q('.asx-dl-png').addEventListener('click', () => {
+  q('.asx-dl-png').addEventListener('click', async () => {
     if (!engine.result) return;
+    await ensureAsciiFont();   // main-thread canvas needs the mono font for the block ramps
     const c = document.createElement('canvas');
     engine.renderToCanvas(c);
     downloadPng(baseName + '.png', c);
   });
+  // Warm the font, then re-fit: the first <pre> lays out with a fallback (advance ≈0.6);
+  // once DejaVu (≈0.602) swaps in it's slightly wider, so re-run the fit to avoid a scrollbar.
+  ensureAsciiFont().then(() => applyDisplay());
   // Geometric transforms — re-draw the source then reconvert (works on image + video).
-  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; engine.regrab(); });
-  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; engine.regrab(); });
-  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; engine.regrab(); });
-  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; engine.regrab(); });
+  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; regrabBusy(); });
+  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; regrabBusy(); });
+  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; regrabBusy(); });
+  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; regrabBusy(); });
   q('.asx-reset-filters').addEventListener('click', () => resetKeys(FILTER_KEYS));
   q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
   function resetKeys(keys) {

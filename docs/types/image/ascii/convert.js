@@ -6,9 +6,10 @@
 // built at RENDER time (render.js) from the cells, so colour/glyph-colour
 // styling can change without a reconvert.
 
-import { resolveRamp, luminanceToChar, luminance709, brailleChar, clamp } from './charsets.js';
+import { resolveRamp, luminanceToChar, luminance709, clamp } from './charsets.js';
 import { gridFromCanvas } from './sample.js';
 import { ditherLuminance } from './dither.js';
+import { fillEnclosedGaps } from './gap-fill.js';
 
 const ALPHA_CUTOFF = 16; // below this a cell renders as a transparent space
 
@@ -38,9 +39,6 @@ export function imageToAscii(processed, original, o, scratch) {
   const rows = computeRows(columns, processed.width, processed.height, o.fontAspect);
   const ramp = resolveRamp(o.gradientName, o.customRamp);
   const colorSrc = (o.colorSource === 'original' && original) ? original : processed;
-  const braille = o.gradientName === 'braille' && !o.customRamp;
-
-  if (braille) return brailleResult(processed, colorSrc, columns, rows, o, scratch);
 
   // Luminance comes from the processed image; colour from the chosen source.
   const lumGridData = gridFromCanvas(processed, columns, rows, o.samplingMethod, scratch);
@@ -64,42 +62,20 @@ export function imageToAscii(processed, original, o, scratch) {
       // Glyph + transparency are driven ONLY by the processed image, so switching
       // the colour source never changes the symbols/shape — only the RGB colour.
       const pa = lumGridData[i + 3];
-      const ch = pa < ALPHA_CUTOFF ? ' ' : luminanceToChar(L, ramp, o.invertRamp);
+      // Coverage-aware tone: fade the glyph toward the ramp's empty (light) end as the cell's
+      // alpha coverage drops, so partial coverage anti-aliases smoothly instead of flipping
+      // between a full glyph and a space (the "black spots" on sparse/transparent art). Opaque
+      // cells (coverage=1) are unchanged. A near-empty cell stays a clean transparent space.
+      const cov = pa / 255;
+      const Leff = L * cov + 255 * (1 - cov);
+      const ch = pa < ALPHA_CUTOFF ? ' ' : luminanceToChar(Leff, ramp, o.invertRamp);
       rowCells.push({ ch, r: colorData[i], g: colorData[i + 1], b: colorData[i + 2], a: pa, luminance: L });
     }
     cells.push(rowCells);
   }
+  // Optional: fill INTERIOR transparent holes (enclosed by content) from their neighbours,
+  // leaving the genuine border-connected transparent background untouched. Off by default.
+  if (o.fillGaps) fillEnclosedGaps(cells, columns, rows, ramp, o.invertRamp, ALPHA_CUTOFF);
   const getText = lazyText(cells);
   return { columns, rows, cells, get text() { return getText(); }, gap: '', braille: false };
-}
-
-// Braille: 2 sub-cols × 4 sub-rows per glyph cell drive the dot pattern; colour
-// is sampled once per glyph cell.
-function brailleResult(processed, colorSrc, columns, rows, o, scratch) {
-  const fine = gridFromCanvas(processed, columns * 2, rows * 4, o.samplingMethod, scratch);
-  const fineLum = (x, y) => {
-    const i = (y * columns * 2 + x) * 4;
-    return luminance709(fine[i], fine[i + 1], fine[i + 2]);
-  };
-  const colorData = gridFromCanvas(colorSrc, columns, rows, o.samplingMethod, scratch);
-  const cells = [];
-  for (let y = 0; y < rows; y++) {
-    const rowCells = [];
-    for (let x = 0; x < columns; x++) {
-      const cell = [];
-      for (let dr = 0; dr < 4; dr++) {
-        cell.push([fineLum(x * 2, y * 4 + dr), fineLum(x * 2 + 1, y * 4 + dr)]);
-      }
-      const ch = o.invertRamp
-        ? brailleChar(cell.map((p) => p.map((v) => 255 - v)))
-        : brailleChar(cell);
-      const i = (y * columns + x) * 4;
-      // grayscale uses overall cell luminance (avg of the 8 sub-samples)
-      const L = cell.reduce((s, p) => s + p[0] + p[1], 0) / 8;
-      rowCells.push({ ch, r: colorData[i], g: colorData[i + 1], b: colorData[i + 2], a: colorData[i + 3], luminance: L });
-    }
-    cells.push(rowCells);
-  }
-  const getText = lazyText(cells);
-  return { columns, rows, cells, get text() { return getText(); }, gap: '', braille: true };
 }

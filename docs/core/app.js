@@ -29,7 +29,8 @@ import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompa
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
-import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot } from './sidebar-roots.js';
+import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder } from './sidebar-roots.js';
+import { installGlobalScreensaver } from './global-screensaver.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -421,6 +422,7 @@ function init() {
   initSessionTree({ loadIntake });
   initSidebarRoots({ loadIntake });
   initViewerOpen({ loadIntake });
+  installGlobalScreensaver();   // app-wide idle screensaver (suppressed during media/games/fullscreen)
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
   // gets these via init — no circular import).
   initFolder({
@@ -602,6 +604,9 @@ function init() {
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
     openViewerFile, openFile: openViewerFile, openExampleFile, openExampleByLabel, openBlobFile, searchViewerFile,
+    // Expand the active single-file root (e.g. an open GIF) into an in-place folder of
+    // entries (e.g. its split frames) — the same sidebar item gains the frames underneath.
+    expandFileRootToFolder: (opts) => expandActiveFileRootToFolder(opts),
     persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };

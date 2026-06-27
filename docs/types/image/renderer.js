@@ -57,7 +57,7 @@ export async function render(intake, ctx = {}) {
       if (decoded.frames.length > 1) {
         const gifHost = document.createElement('div');
         gifHost.className = 'imgv-doc';
-        const player = mountGifPlayer({ host: gifHost, bytes: intake.bytes, openBlob: window.__fv?.openBlobFile?.bind(window.__fv) });
+        const player = mountGifPlayer({ host: gifHost, bytes: intake.bytes, name: intake.filename, openBlob: window.__fv?.openBlobFile?.bind(window.__fv) });
         return { parentNode: gifHost, revoke: () => player.destroy() };
       }
     } catch { /* fall through to the static raster path */ }
@@ -186,25 +186,35 @@ export async function render(intake, ctx = {}) {
   // app's export menu still exists; this is the in-editor shortcut users expect to find.
   const downloadBtn = canEdit ? host.querySelector('.imgv-download') : null;
   downloadBtn?.addEventListener('click', async () => {
+    if (downloadBtn.dataset.busy) return;                 // ignore re-taps while encoding
     const mt = (exportFmt?.value || '') || core.getExportMime() || mime;
-    let canvas;
-    if (overlayActive()) { canvas = advController.flattenToCanvas(); }
-    else {
-      const base = await core.loadBase();
-      canvas = document.createElement('canvas');
-      canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
-      const g = canvas.getContext('2d');
-      if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
-      g.drawImage(base, 0, 0);
+    // Encoding a large image can take a moment on a phone — show a busy state and yield a
+    // frame so it paints before the work, then restore the button no matter what.
+    const label = downloadBtn.textContent;
+    downloadBtn.dataset.busy = '1'; downloadBtn.disabled = true; downloadBtn.textContent = '⏳ Saving…';
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    try {
+      let canvas;
+      if (overlayActive()) { canvas = advController.flattenToCanvas(); }
+      else {
+        const base = await core.loadBase();
+        canvas = document.createElement('canvas');
+        canvas.width = base.naturalWidth || img.naturalWidth; canvas.height = base.naturalHeight || img.naturalHeight;
+        const g = canvas.getContext('2d');
+        if (mt === 'image/jpeg') { g.fillStyle = '#fff'; g.fillRect(0, 0, canvas.width, canvas.height); }
+        g.drawImage(base, 0, 0);
+      }
+      const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
+      if (!blob) return;
+      const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif' })[mt] || ((intake.filename || '').split('.').pop() || 'png');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (intake.filename || 'image').replace(/\.[^.]+$/, '') + '.' + ext;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    } finally {
+      downloadBtn.disabled = false; downloadBtn.textContent = label; delete downloadBtn.dataset.busy;
     }
-    const blob = await new Promise((r) => canvas.toBlob(r, mt, mt === 'image/jpeg' ? 0.92 : undefined));
-    if (!blob) return;
-    const ext = ({ 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/avif': 'avif' })[mt] || ((intake.filename || '').split('.').pop() || 'png');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (intake.filename || 'image').replace(/\.[^.]+$/, '') + '.' + ext;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   });
 
   // Interactive tools (text placement, crop, BG pick) register here so the pan
@@ -318,15 +328,9 @@ export async function render(intake, ctx = {}) {
         asciiOut.textContent = 'ASCII studio failed to load: ' + (e.message || e);
         asciiBtn.disabled = false;
       }
-      // 30s-idle boot-screen easter egg (unchanged).
-      import('./ascii-screensaver.js').then(({ installScreensaver }) => {
-        // Don't let the idle screensaver overlay the live camera (the feed has no
-        // pointer/key activity to reset the idle timer, so it would always fire).
-        if (!host._ss) host._ss = installScreensaver(host, () => asciiMode && !asciiStudio?.isCameraActive?.());
-        host._ss.start();
-      });
+      // The idle boot-screen screensaver is now app-wide (docs/core/global-screensaver.js),
+      // not ASCII-only — nothing to install here.
     } else {
-      host._ss?.stop();
       asciiStudio?.stopCamera?.();   // leaving ASCII view → release the webcam
       advController?.relayout();      // the stage was hidden with .imgv-stage — re-register it to the image
     }
@@ -527,5 +531,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { barRO?.disconnect(); advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { barRO?.disconnect(); advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); } };
 }

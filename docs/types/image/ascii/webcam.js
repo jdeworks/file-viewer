@@ -9,18 +9,21 @@
 // current frame. Adds pause + fullscreen.
 
 import { createAsciiEngine } from './engine.js';
-import { buildControls } from './studio-controls.js';
+import { buildControls, syncColorControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
-import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
+import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont } from './render.js';
 import { makeFloatingPanel } from './floating-panel.js';
+import { loadLast, saveLast } from './presets.js';
+import { wirePresetUi } from './preset-ui.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : 0);
 const BTN = (cls, label, title) => `<button class="asx-btn ${cls}" title="${title}">${label}</button>`;
 const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>';
 
 export function mountAsciiWebcam(host, opts = {}) {
-  // Inherit image-mode settings; webcam prefers the fast sampler by default.
-  const startOpts = { ...(opts.initialOptions || {}), samplingMethod: 'downscale' };
+  // Inherit image-mode settings (or last-used when opened standalone); webcam prefers the
+  // fast sampler by default.
+  const startOpts = { ...(loadLast() || {}), ...(opts.initialOptions || {}), samplingMethod: 'downscale' };
   host.innerHTML = `
     <div class="asx-cam">
       <div class="asx-bar">
@@ -41,6 +44,9 @@ export function mountAsciiWebcam(host, opts = {}) {
         ${BTN('cam-gear', '⚙ Settings', 'Show all settings')}
         <select class="asx-perf cam-perf" title="Performance preset"><option value="">Preset…</option>
           <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
+        <select class="asx-preset cam-preset" title="Load a saved settings preset"><option value="">Preset…</option></select>
+        ${BTN('cam-preset-save', '💾', 'Save current settings as a preset')}
+        ${BTN('cam-preset-del', '🗑', 'Delete the selected preset')}
         ${BTN('cam-copy', 'Copy', 'Copy current frame as text')}
         ${BTN('cam-txt', '↓ TXT', 'Download current frame .txt')}
         ${BTN('cam-html', '↓ HTML', 'Download current frame .html')}
@@ -118,21 +124,30 @@ export function mountAsciiWebcam(host, opts = {}) {
     peekCanvas.getContext('2d').drawImage(src, 0, 0, peekCanvas.width, peekCanvas.height);
   }
 
-  let lastCW = 0, lastCH = 0;
-  function renderFrame() {
+  let lastCW = 0, lastCH = 0, inFlight = false;
+  // Convert off the main thread (engine worker) and draw the returned bitmap. The
+  // in-flight guard drops frames rather than queueing when the worker can't keep up.
+  async function renderFrame() {
+    if (inFlight) return;
+    inFlight = true;
     const t0 = now();
     engine.grabFrame();
-    engine.update();
-    engine.renderToCanvas(out);
-    if (out.width !== lastCW || out.height !== lastCH) { lastCW = out.width; lastCH = out.height; applyFit(); }
-    if (eyeOn) paintOrig();
-    const ms = now() - t0;
-    frames++;
-    const elapsed = now() - fpsClock;
-    if (elapsed >= 500) {
-      stats.textContent = `${Math.round(frames * 1000 / elapsed)} fps · ${ms.toFixed(1)} ms · ${engine.result?.columns || 0}×${engine.result?.rows || 0}`;
-      frames = 0; fpsClock = now();
-    }
+    try {
+      const drawable = await engine.convertFrame('bitmap');
+      if (!running || !drawable) return;
+      if (out.width !== drawable.width || out.height !== drawable.height) { out.width = drawable.width; out.height = drawable.height; }
+      out.getContext('2d').drawImage(drawable, 0, 0);
+      drawable.close?.();
+      if (out.width !== lastCW || out.height !== lastCH) { lastCW = out.width; lastCH = out.height; applyFit(); }
+      if (eyeOn) paintOrig();
+      const ms = now() - t0;
+      frames++;
+      const elapsed = now() - fpsClock;
+      if (elapsed >= 500) {
+        stats.textContent = `${Math.round(frames * 1000 / elapsed)} fps · ${ms.toFixed(1)} ms · ${out.width}×${out.height}`;
+        frames = 0; fpsClock = now();
+      }
+    } finally { inFlight = false; }
   }
   function loopRVFC() { if (!running) return; if (!paused) renderFrame(); video.requestVideoFrameCallback(loopRVFC); }
   function loopRAF(ts) { if (!running) return; if (!paused && ts - last >= minInterval) { last = ts; renderFrame(); } requestAnimationFrame(loopRAF); }
@@ -150,6 +165,7 @@ export function mountAsciiWebcam(host, opts = {}) {
     } catch (e) { stats.textContent = 'Camera access denied: ' + (e.message || e); return; }
     video.srcObject = stream;
     await video.play();
+    await ensureAsciiFont();   // canvas measureText needs the mono font ready
     engine.setSource(video);
     running = true; paused = false;
     const sb = q('.cam-start'); sb.textContent = '⏹ Stop'; sb.classList.remove('cam-flash');
@@ -165,14 +181,21 @@ export function mountAsciiWebcam(host, opts = {}) {
 
   // ── controls (full panel, shown on demand) ──
   const floatingSettings = makeFloatingPanel(settings, { title: 'Camera ASCII settings' });
+  let saveTimer = 0;
+  const rememberSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveLast({ ...engine.options }), 400); };
   const controls = buildControls(floatingSettings.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) controls.inputs.backgroundColor.disabled = !!value;
+    if (key === 'colorMode') syncColorControls(controls, value);
+    rememberSoon();
     if (displayOnly) { if (key === 'zoom') applyFit(); else if (!running || paused) renderOnce(); return; }
     engine.markDirty(...dirty);
     if (!running || paused) renderOnce();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
+  syncColorControls(controls, engine.options.colorMode);   // initial state
+  // Named user presets (shared wiring with the studio).
+  wirePresetUi({ sel: q('.cam-preset'), saveBtn: q('.cam-preset-save'), delBtn: q('.cam-preset-del'), controls, getOptions: () => ({ ...engine.options }) });
   // Keep the feed fitted to the stage as it resizes (responsive / fullscreen).
   const ro = new ResizeObserver(() => applyFit());
   ro.observe(stage);

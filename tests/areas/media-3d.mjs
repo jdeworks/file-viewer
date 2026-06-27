@@ -1079,6 +1079,23 @@ export async function run(ctx) {
   ]).catch(() => [null]);
   if (dlDirect && /\.png$/.test(dlDirect.suggestedFilename())) pass('in-editor Download button saves the current image in the chosen format'); else fail('editor download: ' + (dlDirect && dlDirect.suggestedFilename()));
 
+  // ── App-wide screensaver ── installed globally at startup; the test seam force()s it
+  // without waiting 5 min, dismiss() clears it, and a visible games overlay suppresses it.
+  const ss = await page.evaluate(() => {
+    const s = window.__fvScreensaver;
+    if (!s) return { present: false };
+    s.force();
+    const activeAfterForce = s.isActive() && !!document.querySelector('.fv-ss-overlay');
+    s.dismiss();
+    const goneAfterDismiss = !s.isActive() && !document.querySelector('.fv-ss-overlay');
+    const g = document.createElement('div'); g.className = 'games-overlay'; document.body.appendChild(g);
+    const suppressedByGame = s.suppressed();
+    const forcedWhileSuppressed = s.force();   // returns !!overlay → false when suppressed
+    g.remove(); if (s.isActive()) s.dismiss();
+    return { present: true, activeAfterForce, goneAfterDismiss, suppressedByGame, forcedWhileSuppressed };
+  });
+  if (ss.present && ss.activeAfterForce && ss.goneAfterDismiss && ss.suppressedByGame && !ss.forcedWhileSuppressed) pass('global screensaver: arms/dismisses + suppressed while a game overlay is open'); else fail('screensaver: ' + JSON.stringify(ss));
+
   // ── ASCII Studio ── the ASCII button lazy-mounts the self-contained studio,
   // which converts the image to glyphs and exposes the control panel.
   await page.click('#previewHost .imgv-ascii-btn');
@@ -1089,6 +1106,125 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Presets + remember-last-used: change a control → it persists to fv:ascii:last; Save a named
+  // preset, change again, then load the preset → the value round-trips.
+  const setCol = (v) => page.evaluate((val) => {
+    const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="columns"]');
+    if (el) { el.value = String(val); el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, v);
+  await setCol(60);
+  await page.waitForFunction(() => { try { return (JSON.parse(localStorage.getItem('fv:ascii:last') || '{}').columns) === 60; } catch { return false; } }, null, { timeout: 3000 }).catch(() => {});
+  const lastSaved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('fv:ascii:last') || '{}').columns; } catch { return null; } });
+  page.once('dialog', (d) => d.accept('smoke-preset'));   // the Save prompt
+  await page.click('#previewHost .asx-preset-save');
+  await setCol(120);                                       // change away from the saved value
+  await page.selectOption('#previewHost .asx-preset', 'smoke-preset');   // load it back
+  const restored = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="columns"]', (el) => Number(el.value));
+  const presetStored = await page.evaluate(() => { try { return !!JSON.parse(localStorage.getItem('fv:ascii:presets') || '{}')['smoke-preset']; } catch { return false; } });
+  if (lastSaved === 60 && presetStored && restored === 60) pass('ASCII presets: last-used persists + named preset saves/loads (columns round-trips)'); else fail('ascii presets: ' + JSON.stringify({ lastSaved, presetStored, restored }));
+  // Gradient list: the non-uniform-width ramps (arrows, mathSymbols) are gone; braille + blocks stay
+  // (now uniform via the vendored mono font).
+  const grads = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="gradientName"]', (el) => [...el.options].map((o) => o.value));
+  if (!grads.includes('arrows') && !grads.includes('mathSymbols') && !grads.includes('braille') && grads.includes('blocks')) pass('ASCII gradients: arrows/math/braille dropped, blocks kept'); else fail('ascii gradients: ' + JSON.stringify(grads));
+  // Output options reduce: turning Colour glyphs (colorMode) OFF hides Colour source + Glyph colour.
+  const setColorMode = (on) => page.evaluate((v) => {
+    const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="colorMode"]');
+    if (el) { el.checked = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, on);
+  const rowHidden = (key) => page.$eval(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`, (el) => el.closest('.asx-ctl').hidden);
+  await setColorMode(false);
+  const hiddenOff = (await rowHidden('colorSource')) && (await rowHidden('glyphColorMode'));
+  await setColorMode(true);
+  const shownOn = !(await rowHidden('colorSource')) && !(await rowHidden('glyphColorMode'));
+  if (hiddenOff && shownOn) pass('ASCII output: Colour source + Glyph colour hide when Colour glyphs is off'); else fail('ascii colorMode visibility: ' + JSON.stringify({ hiddenOff, shownOn }));
+  // Font is selectable (defaults to the uniform vendored font); changing it restyles the <pre>.
+  const fonts = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]', (el) => [...el.options].map((o) => o.value)).catch(() => []);
+  await page.evaluate(() => { const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]'); if (el) { el.value = 'Courier'; el.dispatchEvent(new Event('input', { bubbles: true })); } });
+  const preFont = await page.$eval('#previewHost .asx-out', (el) => el.style.fontFamily || getComputedStyle(el).fontFamily);
+  await page.evaluate(() => { const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]'); if (el) { el.value = 'Uniform'; el.dispatchEvent(new Event('input', { bubbles: true })); } });
+  if (fonts.includes('Uniform') && fonts.includes('System') && fonts.includes('Courier') && /Courier/.test(preFont)) pass('ASCII font: selectable (Uniform default) + restyles the output'); else fail('ascii font select: ' + JSON.stringify({ fonts, preFont }));
+  // Fit-to-screen at zoom 1: the art always fits the stage (no H or V scrollbar) and re-fits
+  // when columns / space density / font change. Only zoom>1 is allowed to overflow + scroll.
+  const setCtl = (key, value) => page.evaluate(({ key, value }) => {
+    const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
+    if (el) { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, { key, value });
+  const stageFits = () => page.waitForFunction(() => {
+    const s = document.querySelector('#previewHost .asx-stage');
+    return !!s && s.scrollWidth <= s.clientWidth + 1 && s.scrollHeight <= s.clientHeight + 1;
+  }, null, { timeout: 8000 }).then(() => true).catch(() => false);
+  await setCtl('columns', 300);     // densest detail
+  await setCtl('spaceDensity', 3);  // widest spacing
+  let fitOk = await stageFits();
+  for (const f of ['System', 'Courier', 'Uniform']) { await setCtl('fontName', f); fitOk = fitOk && await stageFits(); }
+  // Zoom past the fit → the stage becomes scrollable (detail inspection).
+  await setCtl('zoom', 4);
+  const zoomScrolls = await page.waitForFunction(() => {
+    const s = document.querySelector('#previewHost .asx-stage');
+    return !!s && (s.scrollWidth > s.clientWidth + 2 || s.scrollHeight > s.clientHeight + 2);
+  }, null, { timeout: 4000 }).then(() => true).catch(() => false);
+  // Back to zoom 1 (+ restore defaults) → fits again.
+  await setCtl('zoom', 1); await setCtl('spaceDensity', 1); await setCtl('columns', 100);
+  const refit = await stageFits();
+  if (fitOk && zoomScrolls && refit) pass('ASCII fit-to-screen: no scrollbar at zoom 1 across columns/density/font; zoom>1 scrolls'); else fail('ascii fit-to-screen: ' + JSON.stringify({ fitOk, zoomScrolls, refit }));
+  // Convert file → ASCII: feed a tiny 2-frame GIF and assert it converts (frame-by-frame
+  // via the engine worker) + encodes a downloadable ASCII GIF.
+  const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];
+  await page.click('#previewHost .asx-convert');
+  await page.waitForSelector('#previewHost .asx-conv-input', { timeout: 8000 }).catch(() => {});
+  // The converter opens to a chooser panel (Choose file… + URL field) and must NOT auto-start
+  // decoding (no file dialog forced open) — the status still invites a choice.
+  const convPanel = await page.evaluate(() => {
+    const p = document.querySelector('#previewHost .asx-conv');
+    return { pick: !!p?.querySelector('.asx-conv-pick'), url: !!p?.querySelector('.asx-conv-url-input'), idle: /choose/i.test(p?.querySelector('.asx-conv-status')?.textContent || '') };
+  });
+  if (convPanel.pick && convPanel.url && convPanel.idle) pass('ASCII converter: opens to a chooser (file + URL), no auto-start'); else fail('converter chooser: ' + JSON.stringify(convPanel));
+  await page.setInputFiles('#previewHost .asx-conv-input', { name: 'anim.gif', mimeType: 'image/gif', buffer: Buffer.from(CGIF) }).catch(() => {});
+  const convReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
+  const [convDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .asx-conv-dl'),
+  ]).catch(() => [null]);
+  if (convReady && convDl && /\.gif$/.test(convDl.suggestedFilename())) pass('ASCII converter: GIF → ASCII GIF converts (worker) + downloads'); else fail('ascii converter: ' + JSON.stringify({ convReady, dl: convDl && convDl.suggestedFilename() }));
+  await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
+  // Regression: converting a TRANSPARENT frame after an opaque one must not retain the
+  // previous frame (the worker/engine reuses a source canvas → it must be cleared).
+  const noAccum = await page.evaluate(async () => {
+    const { createAsciiEngine } = await import('/types/image/ascii/engine.js');
+    const eng = createAsciiEngine({ columns: 8 });
+    const mk = (draw) => { const c = document.createElement('canvas'); c.width = 16; c.height = 16; draw(c.getContext('2d')); return c; };
+    eng.setSource(mk((g) => { g.fillStyle = '#fff'; g.fillRect(0, 0, 16, 16); g.fillStyle = '#000'; g.fillRect(0, 0, 8, 16); }));   // opaque frame 1 (high contrast → glyphs)
+    await eng.convertBitmap(await createImageBitmap(eng.sourceCanvas), 'cells');
+    const f1 = eng.result.text;
+    eng.setSource(mk((g) => g.clearRect(0, 0, 16, 16)));                              // fully transparent frame 2
+    await eng.convertBitmap(await createImageBitmap(eng.sourceCanvas), 'cells');
+    const f2 = eng.result.text;
+    eng.terminate?.();
+    return { f1HasGlyph: /\S/.test(f1), f2Blank: !/\S/.test(f2) };
+  });
+  if (noAccum.f1HasGlyph && noAccum.f2Blank) pass('ASCII engine: transparent frame does not retain the previous frame (canvas cleared)'); else fail('ascii frame accumulation: ' + JSON.stringify(noAccum));
+  // WebP support via the native ImageDecoder path: generate a real WebP in-page, feed it,
+  // and assert it decodes + converts to a downloadable ASCII GIF (skips if no ImageDecoder).
+  const webpBuf = await page.evaluate(async () => {
+    if (typeof ImageDecoder === 'undefined') return null;
+    const c = document.createElement('canvas'); c.width = 6; c.height = 6;
+    const g = c.getContext('2d'); g.fillStyle = '#3cf'; g.fillRect(0, 0, 6, 6); g.fillStyle = '#000'; g.fillRect(1, 1, 2, 2);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/webp'));
+    return blob && blob.type === 'image/webp' ? Array.from(new Uint8Array(await blob.arrayBuffer())) : null;
+  });
+  if (!webpBuf) { pass('ASCII converter: WebP path skipped (no ImageDecoder / WebP encode in this browser)'); }
+  else {
+    await page.click('#previewHost .asx-convert');
+    await page.waitForSelector('#previewHost .asx-conv-input', { timeout: 8000 }).catch(() => {});
+    await page.setInputFiles('#previewHost .asx-conv-input', { name: 'still.webp', mimeType: 'image/webp', buffer: Buffer.from(webpBuf) }).catch(() => {});
+    const wpReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
+    const [wpDl] = await Promise.all([
+      page.waitForEvent('download', { timeout: 8000 }),
+      page.click('#previewHost .asx-conv-dl'),
+    ]).catch(() => [null]);
+    if (wpReady && wpDl && /\.gif$/.test(wpDl.suggestedFilename())) pass('ASCII converter: WebP → ASCII GIF converts via ImageDecoder + downloads'); else fail('ascii webp converter: ' + JSON.stringify({ wpReady, dl: wpDl && wpDl.suggestedFilename() }));
+    await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
+  }
   // In ASCII mode the image bar is fully hidden; the studio bar carries the 🖼 Image back-button.
   const asciiNav = await page.evaluate(() => ({
     imgBarHidden: getComputedStyle(document.querySelector('#previewHost .imgv-bar')).display === 'none',
@@ -1290,6 +1426,81 @@ export async function run(ctx) {
   if (openedWebm !== false && mediaDownload.name === 'webcam-recording.webm' && /^blob:/.test(mediaDownload.href)) pass('video studio exposes direct download for opened webcam recording');
   else fail('media download: ' + JSON.stringify({ openedWebm, mediaDownload }));
 
+  // ── ASCII sampling on SPARSE / TRANSPARENT sources ── thin strokes over transparency used
+  // to speckle into "black spots" as Columns rose (point/box samplers + a hard alpha cutoff).
+  // The default is now coverage-correct 'average', so raising Columns must PRESERVE detail, and
+  // the new "Fill enclosed gaps" toggle fills only interior holes (real background stays clear).
+  await page.goto(origin, { waitUntil: 'load' });
+  // A sparse transparent fixture: thin opaque diagonal strokes on a 256² transparent canvas.
+  const sparsePng = await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const x = c.getContext('2d');
+    x.strokeStyle = '#808080'; x.lineWidth = 1;   // mid-grey → maps to a real glyph (not white→space)
+    for (let i = -256; i < 256; i += 12) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 256, 256); x.stroke(); }
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    return [...new Uint8Array(await blob.arrayBuffer())];
+  });
+  await page.evaluate((arr) => window.__fv.openBlobFile(new Blob([new Uint8Array(arr)], { type: 'image/png' }), 'sparse.png', { mime: 'image/png' }), sparsePng);
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).catch(() => {});
+  await page.click('#previewHost .imgv-ascii-btn');
+  await page.waitForSelector('#previewHost .asx-root .asx-out', { timeout: 15000 });
+  // Default sampling method must be the robust 'average'.
+  const defSampling = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="samplingMethod"]', (el) => el.value).catch(() => null);
+  const setAsx = (key, value) => page.evaluate(({ key, value }) => {
+    const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
+    if (el) { el.value = String(value); el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, { key, value });
+  const setAsxCheck = (key, on) => page.evaluate(({ key, on }) => {
+    const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
+    if (el) { el.checked = on; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, { key, on });
+  // Non-space ratio of the rendered <pre> at a given column count (settles via the worker).
+  const nonSpaceRatio = async (cols) => {
+    await setAsx('columns', cols);
+    await page.waitForTimeout(400);
+    return page.$eval('#previewHost .asx-out', (el) => {
+      const t = el.textContent.replace(/\n/g, '');
+      if (!t.length) return 0;
+      let nb = 0; for (const ch of t) if (ch !== ' ') nb++;
+      return nb / t.length;
+    });
+  };
+  const r100 = await nonSpaceRatio(100);
+  const r180 = await nonSpaceRatio(180);
+  // Detail preserved: the higher-column output keeps a comparable amount of ink (doesn't collapse
+  // to mostly-spaces the way point sampling did). Allow a band; the key is it does NOT crater.
+  const detailPreserved = r100 > 0.04 && r180 > 0.6 * r100;
+  if (defSampling === 'average' && detailPreserved) pass('ASCII sampling: default is coverage-correct average; raising Columns preserves detail on sparse art (' + r100.toFixed(2) + '→' + r180.toFixed(2) + ')');
+  else fail('ascii sparse sampling: ' + JSON.stringify({ defSampling, r100, r180 }));
+  // Fill enclosed gaps: load an opaque RING (transparent centre + transparent outside). With the
+  // toggle ON the enclosed centre fills; the true (corner) background stays a transparent space.
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const x = c.getContext('2d');
+    x.strokeStyle = '#808080'; x.lineWidth = 12; x.strokeRect(30, 30, 68, 68);   // opaque grey ring only
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    window.__fv.openBlobFile(new Blob([buf], { type: 'image/png' }), 'ring.png', { mime: 'image/png' });
+  });
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).catch(() => {});
+  await page.click('#previewHost .imgv-ascii-btn');
+  await page.waitForSelector('#previewHost .asx-root .asx-out', { timeout: 15000 });
+  await setAsx('columns', 80);
+  await page.waitForTimeout(400);
+  // Probe the centre cell (interior hole) + a corner (true background).
+  const probe = () => page.$eval('#previewHost .asx-out', (el) => {
+    const lines = el.textContent.split('\n').filter((l) => l.length);
+    const mid = lines[Math.floor(lines.length / 2)] || '';
+    return { center: mid[Math.floor(mid.length / 2)] || '', corner: (lines[0] || '')[0] || '' };
+  });
+  const gapsOff = await probe();
+  await setAsxCheck('fillGaps', true);
+  await page.waitForTimeout(500);
+  const gapsOn = await probe();
+  // OFF: interior is a transparent space. ON: interior fills (non-space). Corner stays background.
+  const fillOk = gapsOff.center === ' ' && gapsOn.center !== ' ' && gapsOn.corner === ' ';
+  if (fillOk) pass('ASCII fill enclosed gaps: interior hole fills on toggle, real background stays transparent'); else fail('ascii fill gaps: ' + JSON.stringify({ gapsOff, gapsOn }));
+
   // ── AVIF parity ── AVIF must expose the SAME editor toolbar as PNG/JPEG/WebP
   // (canEdit), not just fit/zoom + ASCII. Regression guard for EDITABLE_MIME.
   await page.goto(origin, { waitUntil: 'load' });
@@ -1312,10 +1523,40 @@ export async function run(ctx) {
   await page.waitForFunction(() => { const b = document.querySelector('#previewHost .gifv-play'); return b && !b.disabled; }, null, { timeout: 8000 }).catch(() => {});
   const gifAnimated = await page.evaluate(() => !document.querySelector('#previewHost .gifv-play')?.disabled);
   if (gifPlayer && gifAnimated) pass('animated GIF mounts the player (play/pause enabled for multi-frame)'); else fail('gif player: ' + JSON.stringify({ gifPlayer, gifAnimated }));
+  // Plain Download button saves the GIF itself.
+  const [gifDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .gifv-dl-gif'),
+  ]).catch(() => [null]);
+  if (gifDl && /\.gif$/.test(gifDl.suggestedFilename())) pass('GIF player: plain Download saves the GIF (' + gifDl.suggestedFilename() + ')'); else fail('gif download: ' + (gifDl && gifDl.suggestedFilename()));
+  // Split makes the GIF's own sidebar row ACT LIKE a folder without becoming one: the row
+  // stays a clickable FILE (opens the running GIF) and gains an expand arrow revealing the
+  // frame PNGs nested under it, each with a real byte size.
   await page.click('#previewHost .gifv-split');
-  const gifFrames = await page.waitForFunction(() => document.querySelectorAll('#previewHost .gifv-frame').length >= 2, null, { timeout: 8000 }).then(() => true).catch(() => false);
-  const splitRows = await page.$$eval('#previewHost .gifv-frame', (els) => els.length);
-  if (gifFrames && splitRows === 2) pass('GIF Split decomposes into per-frame images (' + splitRows + ' frames)'); else fail('gif split: rows=' + splitRows);
+  const framesInSidebar = await page.waitForFunction(() => {
+    const t = document.querySelector('#ftBody')?.textContent || '';
+    const sized = [...document.querySelectorAll('#ftBody .ft-size')].some((s) => /\d/.test(s.textContent) && !/^0\s*B/.test(s.textContent.trim()));
+    return /anim\.gif/.test(t) && /frame-001\.png/.test(t) && /frame-002\.png/.test(t) && sized;
+  }, null, { timeout: 10000 }).then(() => true).catch(() => false);
+  if (framesInSidebar) pass('GIF Split: frames nested under the gif folder with real sizes'); else fail('gif split sidebar: ' + JSON.stringify(await page.$eval('#ftBody', (e) => e.textContent.slice(0, 200)).catch(() => 'no #ftBody')));
+  // The gif row is a FILE (not a folder) but carries an expand arrow → file-with-children.
+  const gifRowIsExpandableFile = await page.evaluate(() => {
+    const row = [...document.querySelectorAll('#ftBody .ft-row')].find((r) => r.querySelector('.ft-name')?.textContent === 'anim.gif');
+    return !!row && row.classList.contains('ft-file') && !row.classList.contains('ft-folder') && !!row.querySelector('.ft-arrow');
+  });
+  if (gifRowIsExpandableFile) pass('GIF Split: gif row stays a clickable file with an expand arrow (acts as a folder, not one)'); else fail('gif row not a file-with-children');
+  // Clicking a frame opens that frame image; clicking the gif row re-opens the running player.
+  await page.evaluate(() => [...document.querySelectorAll('#ftBody .ft-row')].find((r) => r.querySelector('.ft-name')?.textContent === 'frame-001.png')?.click());
+  const frameOpened = await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).then(() => true).catch(() => false);
+  await page.evaluate(() => [...document.querySelectorAll('#ftBody .ft-row')].find((r) => r.querySelector('.ft-name')?.textContent === 'anim.gif')?.click());
+  const gifReopened = await page.waitForSelector('#previewHost .gifv-root', { timeout: 10000 }).then(() => true).catch(() => false);
+  if (frameOpened && gifReopened) pass('GIF Split: a frame opens as an image; the gif row re-opens the running GIF'); else fail('gif split open: ' + JSON.stringify({ frameOpened, gifReopened }));
+  // Download all → a ZIP of the frames.
+  const [gifZip] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .gifv-dl-all'),
+  ]).catch(() => [null]);
+  if (gifZip && /\.zip$/.test(gifZip.suggestedFilename())) pass('GIF Download all → ZIP (' + gifZip.suggestedFilename() + ')'); else fail('gif download all: ' + (gifZip && gifZip.suggestedFilename()));
 
   // ── JPEG XL ── browsers can't decode JXL; the renderer decodes it via a lazy
   // wasm decoder into a canvas. The decoded image shows (note clears, img visible
