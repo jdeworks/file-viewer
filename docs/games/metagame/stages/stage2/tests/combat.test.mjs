@@ -285,5 +285,29 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   ok(w2.fires.length === 0, "fire never spreads across bare floor (no fuel)");
 }
 
+// ── Overflow-act monsters (darkness) ──────────────────────────────────────────────────────────
+{
+  // Light eater FEEDS in true darkness (Overflow act, torch off) and STARVES once a torch burns.
+  const w = arena(); w.floor = 7; // Overflow act
+  w.monsters = [foe({ id: "lighteater", lighteater: true, x: 8, y: 1, hp: 26, maxHp: 26, atk: 7 })];
+  const m = w.monsters[0];
+  const player = { hp: 999, def: 0, statuses: {}, atk: 5 };
+  for (let t = 0; t < 4; t += 1) monsterTurn(w, player, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(m.atk > 7 && m.maxHp > 26, "light eater grows in the dark (gains ATK + max HP)");
+  const grownAtk = m.atk;
+  w.torch = 20; // strike a torch — the glare starves it
+  for (let t = 0; t < 3; t += 1) monsterTurn(w, player, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(m.atk < grownAtk, "torchlight withers the light eater back down");
+}
+{
+  // Mirror copies the player's ATK (85%), so out-statting your own damage feeds it.
+  const w = arena(); w.floor = 7;
+  w.monsters = [foe({ id: "mirror", mirror: true, x: 8, y: 1, hp: 34, maxHp: 34, atk: 6 })];
+  const m = w.monsters[0];
+  const player = { hp: 999, def: 0, statuses: {}, atk: 40 };
+  monsterTurn(w, player, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(m.atk === Math.round(40 * 0.85), "mirror copies 85% of the player's ATK");
+}
+
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");
 if (failed) process.exit(1);

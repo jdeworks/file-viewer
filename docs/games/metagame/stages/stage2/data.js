@@ -18,11 +18,14 @@ export const MONSTERS = [
   { id: 'spitter', glyph: 'y', name: 'syntax spitter', hp: 18, atk: 7, xp: 6, drop: 3, minFloor: 4, ranged: true },
   { id: 'exploder', glyph: 'x', name: 'segfault', hp: 16, atk: 6, xp: 5, drop: 3, minFloor: 4, explode: true },
   { id: 'overflow', glyph: 'O', name: 'stack overflow', hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 },
-  { id: 'summoner', glyph: 'u', name: 'fork bomb', hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true }
+  { id: 'summoner', glyph: 'u', name: 'fork bomb', hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
+  // Overflow act (darkness) foes — see overflow.js for their behaviour.
+  { id: 'lighteater', glyph: 'e', name: 'light eater', hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
+  { id: 'mirror', glyph: 'M', name: 'mirror', hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
 ];
 
 // Behaviour flags copied verbatim from the roster entry onto a spawned monster.
-const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush'];
+const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror'];
 
 // Elites (A3): a marked, prefixed, beefed-up variant. Chance + strength rise with depth. They get a
 // guaranteed cache on death (engine.dropElite). One random prefix shapes the bonus.

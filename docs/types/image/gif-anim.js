@@ -12,6 +12,7 @@
 //              window.__fv.openBlobFile so a split frame opens as its own image.
 
 import { decodeGifFrames, frameToPngBlob } from './gif-decode.js';
+import { openGifOcrPanel } from './ocr-ui.js';
 
 export function mountGifPlayer({ host, bytes, openBlob }) {
   host.innerHTML = '';
@@ -25,6 +26,7 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
       <span class="gifv-count">…</span>
       <label class="gifv-loop"><input class="gifv-loop-chk" type="checkbox" checked /> loop</label>
       <button class="gifv-split" title="Decompose into individual PNG frames" disabled>✂ Split frames</button>
+      <button class="gifv-ocr" title="Extract text from every frame into a timestamped transcript" disabled>Extract text (OCR)</button>
     </div>
     <div class="gifv-frames" hidden></div>`;
   host.appendChild(root);
@@ -37,6 +39,7 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
   const count = root.querySelector('.gifv-count');
   const loopChk = root.querySelector('.gifv-loop-chk');
   const splitBtn = root.querySelector('.gifv-split');
+  const ocrBtn = root.querySelector('.gifv-ocr');
   const framesBox = root.querySelector('.gifv-frames');
 
   let frames = [];          // [{ canvas, delayMs }]
@@ -78,6 +81,8 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
   scrub.addEventListener('input', () => { setPlaying(false); show(Number(scrub.value)); });
   loopChk.addEventListener('change', () => { if (loopChk.checked && !playing) setPlaying(true); });
   splitBtn.addEventListener('click', () => splitFrames());
+  // OCR each decoded frame into a timestamped transcript (heavy engine lazy-loads on click, behind a consent gate).
+  ocrBtn.addEventListener('click', () => openGifOcrPanel({ host: root, getFrames: () => frames }));
 
   // ── Decode + start ──────────────────────────────────────────────────────────
   (async () => {
@@ -100,6 +105,7 @@ export function mountGifPlayer({ host, bytes, openBlob }) {
     playBtn.disabled = !animated;
     scrub.disabled = !animated;
     splitBtn.disabled = frames.length < 1;
+    ocrBtn.disabled = frames.length < 1;
     if (animated) setPlaying(true);
     else { playBtn.textContent = '▶'; count.textContent = `1/1`; }
   })();
@@ -168,7 +174,7 @@ function injectStyle() {
   const s = document.createElement('style');
   s.id = 'gifv-style';
   s.textContent = `
-    .gifv-root { display:flex; flex-direction:column; gap:.5rem; height:100%; min-height:0; }
+    .gifv-root { position:relative; display:flex; flex-direction:column; gap:.5rem; height:100%; min-height:0; }
     .gifv-stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:auto; background:#0000000d; }
     .gifv-canvas { max-width:100%; max-height:100%; image-rendering:auto; }
     .gifv-bar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.25rem .25rem; }

@@ -13,8 +13,20 @@ const lockedActions = { hasAction: () => false, setAction() {} };
   const state = defaultState({ now: 1234 });
   const lock = getBossLockState({ actions: lockedActions, state });
   assert.equal(lock.unlocked, false);
+  assert.equal(lock.bodyReady, false);
   assert.equal(lock.columnClues, 'missing');
   assert.equal(lock.defeatPossible, false);
+}
+
+{
+  // Boss-never-from-start: the diff key is REFUSED until the body is played to corruption 8, and even
+  // a correct key cannot unlock the boss before then.
+  const state = defaultState({ now: 1234 });
+  const early = tryRestoreDiffKey({ state, actions: lockedActions, input: diffKeyFromState(state) });
+  assert.equal(early.ok, false);
+  assert.equal(early.locked, true);
+  assert.equal(state.boss.unlocked, false);
+  assert.equal(defeatMemoryLeak(state), false, 'cannot defeat the boss before the body is complete');
 }
 
 {
@@ -33,6 +45,7 @@ const lockedActions = { hasAction: () => false, setAction() {} };
 
 {
   const state = defaultState({ now: 1234 });
+  state.boss.corruption8Reached = true; // body played to peak corruption
   const actions = [];
   const result = tryRestoreDiffKey({
     state,
@@ -49,6 +62,7 @@ const lockedActions = { hasAction: () => false, setAction() {} };
 
 {
   const state = defaultState({ now: 1234 });
+  state.boss.corruption8Reached = true;
   const result = tryRestoreDiffKey({ state, actions: lockedActions, input: 'wrong' });
   assert.equal(result.ok, false);
   assert.equal(state.boss.unlocked, false);

@@ -4,6 +4,7 @@ import { exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.
 import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
+import { isDarkAct } from "./darkness.js";
 import { useConsumable, CONSUMABLE_KEYS, CONSUMABLES } from "./consumables.js";
 import { tickFire } from "./fire.js";
 import { buildShopPanel } from "./shop.js";
@@ -130,9 +131,13 @@ export function renderStage2({
     setText(fields.hint, lock.hint);
     const biome = biomeForFloor(state.run.floor);
     if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
+    const w = state.run.world;
+    const darkNote = !state.run.boss.reached && isDarkAct(state.run.floor)
+      ? (w && w.torch > 0 ? ` — torch lit (${w.torch} steps)` : " — DARK: foes hide beyond your light; ghosts mark where you last saw them")
+      : "";
     setText(fields.objective, state.run.boss.reached
       ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
-      : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+      : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.${darkNote}`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {
@@ -276,7 +281,7 @@ export function renderStage2({
     if (!root.isConnected) return;
     const tag = (event.target && event.target.tagName) || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
-    if (event.key >= "1" && event.key <= "3") {
+    if (event.key >= "1" && event.key <= String(CONSUMABLE_KEYS.length)) {
       const type = CONSUMABLE_KEYS[Number(event.key) - 1];
       if (type) { event.preventDefault(); useItem(type); }
       return;
@@ -308,6 +313,21 @@ export function renderStage2({
   repaint();
   startMonsterClocks();
 
+  // TEST/DEBUG hook (window.__fvStage2) — drives the headless smoke deterministically (no real-time
+  // play): descend the three acts to the boss, then clear it AFTER the real cipher.txt search un-cheat.
+  // Not a player affordance and NOT a bypass — bossSolver still needs the search action to have
+  // unlocked the gate (challengeBoss records a locked attempt otherwise).
+  window.__fvStage2 = {
+    state: () => state,
+    dev,
+    move,
+    step: move,
+    bodySolver,
+    descendToBoss: bodySolver,
+    lockState: () => getBossLockState({ actions, state }),
+    bossSolver: challengeBoss
+  };
+
   // Dev-menu cheats for this stage (see index.js stageMeta.devControls). Map = the full-map overlay.
   function dev(id) {
     const e = state.run.entity;
@@ -329,9 +349,19 @@ export function renderStage2({
       if (flashTimer) clearTimeout(flashTimer);
       stopMonsterClocks();
       view.destroy();
+      if (window.__fvStage2) delete window.__fvStage2;
       root.remove();
     }
   };
+
+  // Fast-forward the BODY: descend every floor of all three acts until the boss syntax is reached
+  // (descend() sets boss.reached at MAX_FLOOR). Deterministic — pure floor lifecycle, no clocks.
+  function bodySolver() {
+    let guard = 0;
+    while (!state.run.boss.reached && guard++ < 64) descend(state);
+    persistAndPaint();
+    return { floor: state.run.floor, reached: state.run.boss.reached };
+  }
 
   // Five shared real-time clocks (0.4–0.8s); each ticks one bucket of monsters so they advance
   // without the player. A monster's bucket is fixed at generation. Paused while a panel is open

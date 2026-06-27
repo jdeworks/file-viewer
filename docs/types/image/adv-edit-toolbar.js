@@ -80,5 +80,7 @@ export function advToolbarHtml() {
     <button class="imgv-adv-align" data-align="bottom" title="Align bottom">B</button>
     <button class="imgv-adv-dist" data-axis="x" title="Distribute horizontally">DH</button>
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
+    <span class="imgv-sep"></span>
+    <button class="imgv-adv-ocr" title="Extract text from the image with OCR">Extract text (OCR)</button>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }

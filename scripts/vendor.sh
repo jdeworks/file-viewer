@@ -2,14 +2,22 @@
 # Vendors runtime libs from node_modules into docs/vendor/.
 # Runtime serves docs/vendor/ ONLY — no third-party CDN at runtime (trust requirement).
 # Re-run after bumping versions in package.json + npm install.
+#
+# ⚠️ This is NOT a full rebuild of docs/vendor/. It manages ONLY the per-lib subdirs in MANAGED below.
+# ~18 other libs (gifuct, jxl, ruffle, v86, emulatorjs, 3dmol, konva, tiptap, utif, libheif, easymde,
+# djvu, snappyjs, cfb, …) were vendored MANUALLY and live in docs/vendor/ — this script must never
+# touch them. So it cleans only its OWN subdirs (no blanket `rm -rf docs/vendor`), and MERGES version
+# provenance into the hand-curated VERSIONS.json rather than overwriting it. Running this on a clean
+# tree must produce NO deletions of tracked files.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VENDOR=docs/vendor
-rm -rf "$VENDOR"
-mkdir -p "$VENDOR/monaco" "$VENDOR/pdfjs" "$VENDOR/dompurify" "$VENDOR/markdown-it" \
-         "$VENDOR/papaparse" "$VENDOR/xlsx" "$VENDOR/mammoth" \
-         "$VENDOR/jszip" "$VENDOR/chartjs" "$VENDOR/pptxviewjs" "$VENDOR/libarchive"
+# Subdirs this script owns. Each is wiped + recreated before its copy block (per-lib clean drops stale
+# files), leaving manually-vendored dirs/loose files elsewhere in docs/vendor/ untouched.
+MANAGED=(monaco pdfjs dompurify html2canvas markdown-it papaparse xlsx mammoth js-yaml jszip chartjs \
+         pptxviewjs sql.js pdf-lib libarchive ffmpeg ag-psd qrcodejs abcjs tesseract)
+for d in "${MANAGED[@]}"; do rm -rf "${VENDOR:?}/$d"; mkdir -p "$VENDOR/$d"; done
 
 # --- Monaco (AMD dist). Drop locale bundles (English is built-in) to save weight. ---
 cp -r node_modules/monaco-editor/min/vs "$VENDOR/monaco/vs"
@@ -96,8 +104,11 @@ cp node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js        "$VEND
 cp node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js             "$VENDOR/tesseract/tesseract-core-lstm.wasm.js"
 cp node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz  "$VENDOR/tesseract/eng.traineddata.gz"
 
-# Record pinned versions for provenance.
-node -e "const p=require('./package.json').devDependencies; require('fs').writeFileSync('$VENDOR/VERSIONS.json', JSON.stringify(p,null,2)+'\n')"
+# Record pinned versions for provenance. VERSIONS.json is hand-curated (it also lists manually-vendored
+# libs that aren't devDeps, e.g. 3dmol/ruffle/v86/emulatorjs). MERGE: refresh the version of every key
+# already present from package.json devDeps (^/~ stripped); never drop manual entries, never add
+# unlisted devDeps. New vendored libs are added to VERSIONS.json by hand once.
+node -e "const fs=require('fs');const dev=require('./package.json').devDependencies||{};const f='$VENDOR/VERSIONS.json';let cur={};try{cur=JSON.parse(fs.readFileSync(f,'utf8'))}catch{};const out=Object.keys(cur).length?cur:{...dev};for(const k of Object.keys(out))if(dev[k])out[k]=String(dev[k]).replace(/^[\^~]/,'');fs.writeFileSync(f,JSON.stringify(out,null,2)+'\n')"
 
 echo "Vendored into $VENDOR:"
 du -sh "$VENDOR"/* 2>/dev/null || true
