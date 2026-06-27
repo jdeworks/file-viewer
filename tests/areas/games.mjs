@@ -902,14 +902,14 @@ export async function run(ctx) {
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
   // The thin-gate bypass is gone: there is no "simulate full loop" calibrate button.
-  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 7);
-  if (s5NoBypass) pass('Stage 5 is a real racer: 7 rounds + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
-  // The Jammer is gated behind the full run: from a fresh start the boss round is locked.
-  const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="6"]')?.disabled }));
+  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 8);
+  if (s5NoBypass) pass('Stage 5 is a real racer: 8 rounds (incl. time-trial) + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
+  // The Jammer is gated behind the full run: from a fresh start the boss round (last) is locked.
+  const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="7"]')?.disabled }));
   if (s5Gate.cleared === 0 && s5Gate.bossLocked) pass('Stage 5 boss is locked until the run is cleared'); else fail('Stage 5 boss reachable from start');
-  // Play the six real rounds to reach the jammer.
+  // Play the seven real body rounds (incl. the time-trial) to reach the jammer.
   const s5Cleared = await page.evaluate(() => window.__fvStage5.solveRun());
-  if (s5Cleared === 6) pass('Stage 5 run cleared: rounds 1–6 played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/6 rounds`);
+  if (s5Cleared === 7) pass('Stage 5 run cleared: rounds 1–7 (incl. time-trial) played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/7 rounds`);
   // Load-bearing un-cheat: the jammer is unwinnable WITHOUT the calibrated counter-wave.
   const s5Uncal = await page.evaluate(() => ({ outcome: window.__fvStage5.solveBoss(), defeated: window.__fvStage5.state().boss.defeated }));
   if (s5Uncal.outcome === 'fail' && !s5Uncal.defeated) pass('Stage 5 jammer is unwinnable without calibration (load-bearing un-cheat)'); else fail('Stage 5 boss beatable without calibration');

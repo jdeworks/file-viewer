@@ -14,6 +14,7 @@ import { createRaceState } from './race-state.js';
 import { buildRivals, finishPosition, positionMultiplier } from './rivals.js';
 import { makeRng } from './rng.js';
 import { placePowerups, isPowerup, powerupType, durationTicks, POWERUPS } from './powerups.js';
+import { makeParGhost, ghostFromRecording, createRecorder, medalFor } from './ghost.js';
 
 const LOOK_AHEAD = 8;
 const BASE_SPEED = 1;
@@ -22,7 +23,7 @@ const BUMP_DAMAGE = 1;       // sharing a lane with a rival chips a little integ
 const BUMP_SLOW = 0.5;       // …and bleeds race speed for that tick.
 const BUMP_COOLDOWN = 10;    // ticks before the same rival can bump again
 
-export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride }) {
+export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
   const table = buildObstacleTable(seed, round);
@@ -33,6 +34,14 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   const race = createRaceState(round);
   const maxTicks = race.raceLength + 16;
   const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength });
+
+  // Time-trial: a beat-the-clock PAR ghost (the gate) + an optional translucent REPLAY ghost of the
+  // player's prior-best run. Both are deterministic transcripts/pacers — no live RNG. The player
+  // records THIS run tick-by-tick so a clean finish can be banked as the next replay ghost.
+  const isTimeTrial = race.archetype === 'time-trial';
+  const parGhost = isTimeTrial ? makeParGhost(race.raceLength, round.parPace) : null;
+  const replayGhost = isTimeTrial ? ghostFromRecording(prevGhost, 'G') : null;
+  const recorder = isTimeTrial ? createRecorder() : null;
   const bumpReady = rivals.map(() => 0);     // tick when each rival may bump again
   const rivalDrag = rivals.map(() => 0);     // EMP distance setback (live standing/render)
   const rivalLate = rivals.map(() => 0);     // EMP finish-tick penalty (final standing)
@@ -58,12 +67,18 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   function rowAt(t) { return table[race.rowIndex(t, table.length)]; }
 
   // Live rival positions for the renderer: glyph + lane + how many rows ahead of the player they are.
+  // Time-trial ghosts (par + prior-best) are overlaid the same way, so the renderer needs no new path.
   function rivalView() {
-    return rivals.map((r, i) => ({
+    const view = rivals.map((r, i) => ({
       glyph: r.glyph,
       lane: r.laneAt(tick),
       ahead: Math.round(effDist(i) - race.distance),
     }));
+    for (const g of [parGhost, replayGhost]) {
+      if (!g) continue;
+      view.push({ glyph: g.glyph, lane: g.laneAt(tick), ahead: Math.round(g.distAt(tick) - race.distance), ghost: true });
+    }
+    return view;
   }
 
   // Share-lane bumps: a rival on the player's row + lane (cooldown-gated) costs integrity + speed.
@@ -150,6 +165,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     const slow = resolveBumps();
     if (run.integrity <= 0) { run.integrity = 0; finish('fail'); return outcome; }
     race.advance(Math.max(0, speedFor() - slow));
+    recorder?.sample(run.lane, race.distance); // transcript for the next replay ghost (index = this tick)
     run.distance = race.distance;
     run.lap = race.lap();
     run.position = 1 + rivals.filter((_, i) => effDist(i) > race.distance).length; // live standing
@@ -167,11 +183,24 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   function finish(result) {
     if (done) return;
     done = true;
-    outcome = result;
-    run.roundComplete = result === 'clear';
+    // Time-trial gate: a "clear" only counts if you crossed the line BEFORE the par ghost (beat the
+    // clock). Missing par demotes the run to a fail — the beat-the-clock teeth, fully deterministic.
+    let res = result;
+    let medal = null;
+    let ghostRecording = null;
+    if (isTimeTrial) {
+      if (res === 'clear' && (!race.finished() || tick > parGhost.finishTick)) res = 'fail';
+      if (res === 'clear') {
+        medal = medalFor(tick, parGhost.finishTick);
+        ghostRecording = recorder.finalize(tick);
+        run.medal = medal;
+      }
+    }
+    outcome = res;
+    run.roundComplete = res === 'clear';
     let packets = 0;
     let position = run.position;
-    if (result === 'clear') {
+    if (res === 'clear') {
       // Effective finish ticks fold in any EMP penalties applied during the race.
       const effRivals = rivals.map((r, i) => ({ finishTick: r.finishTick + rivalLate[i] }));
       position = effRivals.length ? finishPosition(effRivals, tick) : 1;
@@ -184,7 +213,11 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       });
       state.packets = Number(state.packets || 0) + packets;
     }
-    onEnd?.({ result, round, roundIdx, integrity: run.integrity, packets, gates: run.gatesThisRound, position, fieldSize: rivals.length + 1 });
+    onEnd?.({
+      result: res, round, roundIdx, integrity: run.integrity, packets,
+      gates: run.gatesThisRound, position, fieldSize: rivals.length + 1,
+      finishTick: tick, parTick: parGhost ? parGhost.finishTick : null, medal, ghostRecording,
+    });
   }
 
   // Optimal lane for the current tick. Used by autoSolve (the test hook) — never an in-game affordance.

@@ -6,6 +6,8 @@ const CELL = {
   empty: ' · ', '░': ' ░ ', '▒': ' ▒ ', '▓': ' ▓ ', '>>': '>> ',
   // powerup pickups (placed by powerups.js into clear lanes)
   U: ' U ', O: ' O ', E: ' E ', '+': ' + ', $: ' $ ',
+  // time-trial ghosts (overlaid like rivals, drawn faint with parentheses)
+  P: '(P)', G: '(G)',
 };
 
 export function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [] }) {

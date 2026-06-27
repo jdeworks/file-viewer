@@ -9,7 +9,7 @@ import { makeRng } from './rng.js';
 const LANES = 3;
 
 // Per-round obstacle density (chance a given lane is blocked on a given tick). Escalates by round id.
-const DENSITY = { 1: 0.40, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.50 };
+const DENSITY = { 1: 0.40, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.44, 8: 0.50 };
 
 export function buildObstacleTable(seed, roundDef) {
   const rng = makeRng(`${seed}:${roundDef.id}`);

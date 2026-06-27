@@ -69,8 +69,11 @@ export function renderStage5(ctx) {
     const roundIdx = Math.max(0, Math.min(BOSS_IDX, Number(idx) || 0));
     if (roundIdx > unlockedRounds()) return;                 // gated: clear the prior rounds first
     if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX) return; // boss only after the run
+    const round = roundByIdx(roundIdx);
+    const prevGhost = state.timeTrial?.[round.id] || null;
     loop = createGameLoop({
       state, seed: state.calibration.seed, roundIdx, calibrated: calibrated(),
+      prevGhost,
       onPaint: paintArena,
       onEnd: handleEnd,
     });
@@ -81,12 +84,20 @@ export function renderStage5(ctx) {
     repaint();
   }
 
-  function handleEnd({ result, round, roundIdx, packets }) {
+  function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording }) {
     engine?.stop();
     engine = null;
     mode = 'result';
     if (result === 'clear') {
-      pushLog(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : ''));
+      const medalNote = medal ? ` [${medal} · ${finishTick} vs par ${parTick}]` : '';
+      pushLog(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : '') + medalNote);
+      // Bank a time-trial run as the next replay ghost only if it beats the stored best time.
+      if (ghostRecording) {
+        const prev = state.timeTrial?.[round.id] || null;
+        if (!prev || Number(ghostRecording.tick) < Number(prev.tick)) {
+          state.timeTrial = { ...(state.timeTrial || {}), [round.id]: ghostRecording };
+        }
+      }
       if (!isBossRound(roundIdx)) {
         state.run.clearedRounds = Math.max(Number(state.run.clearedRounds || 0), roundIdx + 1);
       } else {

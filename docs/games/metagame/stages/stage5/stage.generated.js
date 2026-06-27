@@ -174,7 +174,7 @@ function makeRng(seed) {
 
 // ../../docs/games/metagame/stages/stage5/track.js
 var LANES = 3;
-var DENSITY = { 1: 0.4, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.5 };
+var DENSITY = { 1: 0.4, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.44, 8: 0.5 };
 function buildObstacleTable(seed, roundDef) {
   const rng = makeRng(`${seed}:${roundDef.id}`);
   const count = Number(roundDef.tickCount) || 100;
@@ -327,9 +327,28 @@ var ROUNDS = [
     hasPowerups: true,
     powerupPool: ["shield", "overclock", "repair", "cache", "emp"]
   },
-  // ── BOSS — Jammer Pursuit (all verbs at once; NO powerups — the calibration un-cheat is the gate) ─
+  // ── Act IV — TIME TRIAL (race the par clock + a translucent ghost of your own prior-best run) ─────
   {
     id: 7,
+    label: "TIME TRIAL",
+    tickMs: 140,
+    beatWindowTicks: 1,
+    glyphs: ["░", "▒"],
+    burstPattern: [1, 0, 1, 0],
+    counterPhaseShift: null,
+    hasFork: false,
+    hasGates: true,
+    archetype: "time-trial",
+    tickCount: 900,
+    trackLength: 900,
+    parPace: 0.9,
+    rivals: 2,
+    hasPowerups: true,
+    powerupPool: ["overclock", "overclock", "repair", "cache"]
+  },
+  // ── BOSS — Jammer Pursuit (all verbs at once; NO powerups — the calibration un-cheat is the gate) ─
+  {
+    id: 8,
     label: "BOSS",
     tickMs: 120,
     beatWindowTicks: 1,
@@ -345,7 +364,7 @@ var ROUNDS = [
     hasPowerups: false
   }
 ];
-var FINAL_ROUND_ID = 7;
+var FINAL_ROUND_ID = 8;
 var ROUND_COUNT = ROUNDS.length;
 function roundByIdx(idx) {
   return ROUNDS[Math.max(0, Math.min(ROUNDS.length - 1, Number(idx) || 0))];
@@ -379,7 +398,7 @@ function buyUpgrade(state, id) {
 }
 
 // ../../docs/games/metagame/stages/stage5/economy.js
-var BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 100 };
+var BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 100 };
 function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, upgrades = {}, multiplier = 1 }) {
   const base = BASE_PACKETS[roundId] ?? 30;
   const accuracy = Math.floor(clamp01(onBeatPct) * 20);
@@ -562,6 +581,58 @@ function durationTicks(type, getTickMs) {
   return Math.max(1, Math.ceil(def.durationMs / ms));
 }
 
+// ../../docs/games/metagame/stages/stage5/ghost.js
+function clampLane2(l) {
+  return Math.max(0, Math.min(2, Number(l) || 0));
+}
+function makeParGhost(raceLength, pace = 0.9) {
+  const len = Math.max(1, Number(raceLength) || 1);
+  const p = Math.max(0.05, Number(pace) || 0.9);
+  const finishTick = Math.ceil(len / p);
+  return {
+    kind: "par",
+    glyph: "P",
+    finishTick,
+    laneAt: () => 1,
+    distAt: (t) => Math.min(len, Math.max(0, Number(t) || 0) * p)
+  };
+}
+function ghostFromRecording(rec, glyph = "G") {
+  if (!rec || typeof rec !== "object") return null;
+  const lanes = String(rec.lanes || "");
+  const dist = Array.isArray(rec.dist) ? rec.dist : [];
+  const last = Math.max(0, Math.max(lanes.length, dist.length) - 1);
+  const finishTick = Number.isFinite(Number(rec.tick)) ? Number(rec.tick) : last;
+  return {
+    kind: "replay",
+    glyph,
+    finishTick,
+    laneAt: (t) => clampLane2(Number(lanes[Math.min(Math.max(0, t | 0), last)]) || 0),
+    distAt: (t) => Number(dist[Math.min(Math.max(0, t | 0), last)]) || 0
+  };
+}
+function createRecorder() {
+  const lanes = [];
+  const dist = [];
+  return {
+    sample(lane, distance) {
+      lanes.push(clampLane2(lane));
+      dist.push(Math.round(Math.max(0, Number(distance) || 0)));
+    },
+    finalize(finishTick) {
+      return { tick: Number(finishTick) || lanes.length, lanes: lanes.join(""), dist };
+    }
+  };
+}
+function medalFor(finishTick, parTick) {
+  const f = Number(finishTick);
+  const par = Number(parTick);
+  if (!Number.isFinite(f) || !Number.isFinite(par) || par <= 0) return "bronze";
+  if (f <= par * 0.85) return "gold";
+  if (f <= par) return "silver";
+  return "bronze";
+}
+
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var LOOK_AHEAD = 8;
 var BASE_SPEED = 1;
@@ -569,7 +640,7 @@ var OVERCLOCK_SPEED = 1.6;
 var BUMP_DAMAGE = 1;
 var BUMP_SLOW = 0.5;
 var BUMP_COOLDOWN = 10;
-function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride }) {
+function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
   const table = buildObstacleTable(seed, round);
@@ -580,13 +651,17 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   const race = createRaceState(round);
   const maxTicks = race.raceLength + 16;
   const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength });
+  const isTimeTrial = race.archetype === "time-trial";
+  const parGhost = isTimeTrial ? makeParGhost(race.raceLength, round.parPace) : null;
+  const replayGhost = isTimeTrial ? ghostFromRecording(prevGhost, "G") : null;
+  const recorder = isTimeTrial ? createRecorder() : null;
   const bumpReady = rivals.map(() => 0);
   const rivalDrag = rivals.map(() => 0);
   const rivalLate = rivals.map(() => 0);
   const buffs = { shieldUntil: -1, overclockUntil: -1 };
   const effDist = (i) => Math.max(0, rivals[i].distAt(tick) - rivalDrag[i]);
   const run = state.run;
-  run.lane = clampLane2(run.lane);
+  run.lane = clampLane3(run.lane);
   run.roundIdx = roundIdx;
   run.roundComplete = false;
   run.integrity = 100;
@@ -603,11 +678,16 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     return table[race.rowIndex(t, table.length)];
   }
   function rivalView() {
-    return rivals.map((r, i) => ({
+    const view = rivals.map((r, i) => ({
       glyph: r.glyph,
       lane: r.laneAt(tick),
       ahead: Math.round(effDist(i) - race.distance)
     }));
+    for (const g of [parGhost, replayGhost]) {
+      if (!g) continue;
+      view.push({ glyph: g.glyph, lane: g.laneAt(tick), ahead: Math.round(g.distAt(tick) - race.distance), ghost: true });
+    }
+    return view;
   }
   function resolveBumps() {
     let slow = 0;
@@ -672,7 +752,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     return suppressionActive && glyph === "▓" ? base * 2 : base;
   }
   function setLane(next) {
-    const target = clampLane2(next);
+    const target = clampLane3(next);
     if (done || target === run.lane) return;
     run.totalSwitches += 1;
     const row = rowAt(tick);
@@ -703,6 +783,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       return outcome;
     }
     race.advance(Math.max(0, speedFor() - slow));
+    recorder?.sample(run.lane, race.distance);
     run.distance = race.distance;
     run.lap = race.lap();
     run.position = 1 + rivals.filter((_, i) => effDist(i) > race.distance).length;
@@ -720,11 +801,22 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   function finish(result) {
     if (done) return;
     done = true;
-    outcome = result;
-    run.roundComplete = result === "clear";
+    let res = result;
+    let medal = null;
+    let ghostRecording = null;
+    if (isTimeTrial) {
+      if (res === "clear" && (!race.finished() || tick > parGhost.finishTick)) res = "fail";
+      if (res === "clear") {
+        medal = medalFor(tick, parGhost.finishTick);
+        ghostRecording = recorder.finalize(tick);
+        run.medal = medal;
+      }
+    }
+    outcome = res;
+    run.roundComplete = res === "clear";
     let packets = 0;
     let position = run.position;
-    if (result === "clear") {
+    if (res === "clear") {
       const effRivals = rivals.map((r, i) => ({ finishTick: r.finishTick + rivalLate[i] }));
       position = effRivals.length ? finishPosition(effRivals, tick) : 1;
       run.position = position;
@@ -740,7 +832,20 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       });
       state.packets = Number(state.packets || 0) + packets;
     }
-    onEnd?.({ result, round, roundIdx, integrity: run.integrity, packets, gates: run.gatesThisRound, position, fieldSize: rivals.length + 1 });
+    onEnd?.({
+      result: res,
+      round,
+      roundIdx,
+      integrity: run.integrity,
+      packets,
+      gates: run.gatesThisRound,
+      position,
+      fieldSize: rivals.length + 1,
+      finishTick: tick,
+      parTick: parGhost ? parGhost.finishTick : null,
+      medal,
+      ghostRecording
+    });
   }
   function bestLane(atTick) {
     return optimalLane(rowAt(atTick), run.lane);
@@ -780,7 +885,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     rivalView
   };
 }
-function clampLane2(lane) {
+function clampLane3(lane) {
   return Math.max(0, Math.min(2, Number(lane) || 0));
 }
 
@@ -840,7 +945,10 @@ var CELL = {
   O: " O ",
   E: " E ",
   "+": " + ",
-  $: " $ "
+  $: " $ ",
+  // time-trial ghosts (overlaid like rivals, drawn faint with parentheses)
+  P: "(P)",
+  G: "(G)"
 };
 function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [] }) {
   const rows = [];
@@ -879,6 +987,7 @@ var roundLogLines = [
   "a shield lane drifts through the noise. ride it.",
   "boost gates open on the beat. take the throughput, not just the safe line.",
   "the channel splits and re-merges. hold your route through the noise.",
+  "a recording of your last clean lap rides beside you. beat the clock — and yourself.",
   "jammer signal collapses into silence. the channel is yours."
 ];
 function roundLogLine(roundIdx) {
@@ -894,7 +1003,9 @@ var GLYPH_LEGEND = [
   ["U", "shield buff"],
   ["O", "overclock (speed burst)"],
   ["+", "repair   $ packet-cache"],
-  ["E", "EMP (set a rival back)"]
+  ["E", "EMP (set a rival back)"],
+  ["P", "par ghost (the clock to beat)"],
+  ["G", "your prior-best ghost"]
 ];
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
@@ -952,11 +1063,14 @@ function renderStage5(ctx) {
     const roundIdx = Math.max(0, Math.min(BOSS_IDX, Number(idx) || 0));
     if (roundIdx > unlockedRounds()) return;
     if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX) return;
+    const round = roundByIdx(roundIdx);
+    const prevGhost = state.timeTrial?.[round.id] || null;
     loop = createGameLoop({
       state,
       seed: state.calibration.seed,
       roundIdx,
       calibrated: calibrated(),
+      prevGhost,
       onPaint: paintArena,
       onEnd: handleEnd
     });
@@ -966,12 +1080,19 @@ function renderStage5(ctx) {
     loop.paint();
     repaint();
   }
-  function handleEnd({ result, round, roundIdx, packets }) {
+  function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording }) {
     engine?.stop();
     engine = null;
     mode = "result";
     if (result === "clear") {
-      pushLog3(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : ""));
+      const medalNote = medal ? ` [${medal} · ${finishTick} vs par ${parTick}]` : "";
+      pushLog3(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : "") + medalNote);
+      if (ghostRecording) {
+        const prev = state.timeTrial?.[round.id] || null;
+        if (!prev || Number(ghostRecording.tick) < Number(prev.tick)) {
+          state.timeTrial = { ...state.timeTrial || {}, [round.id]: ghostRecording };
+        }
+      }
       if (!isBossRound(roundIdx)) {
         state.run.clearedRounds = Math.max(Number(state.run.clearedRounds || 0), roundIdx + 1);
       } else {
@@ -1165,6 +1286,8 @@ function defaultState(context = {}) {
       spectrumAnalyzer: false,
       signalAmplifier: false
     },
+    // time-trial: prior-best ghost transcripts keyed by round id { [id]: { tick, lanes, dist } }.
+    timeTrial: {},
     log: ["signal racer mounted.", "the jammer is already in the racing line."]
   };
 }
@@ -1181,6 +1304,7 @@ function normalizeState(state, context = {}) {
   target.run = mergePlain(fresh.run, target.run);
   target.run.integrity = Number.isFinite(Number(target.run.integrity)) ? Number(target.run.integrity) : fresh.run.integrity;
   target.shop = mergePlain(fresh.shop, target.shop);
+  target.timeTrial = target.timeTrial && typeof target.timeTrial === "object" ? target.timeTrial : {};
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;
 }

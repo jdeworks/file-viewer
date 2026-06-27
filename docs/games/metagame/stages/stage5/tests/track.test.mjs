@@ -62,7 +62,7 @@ for (const round of ROUNDS) {
 
 // ── rounds helpers ────────────────────────────────────────────────────────────────────────────
 assert.equal(roundByIdx(0).id, 1);
-assert.equal(isBossRound(6), true, 'idx 6 is the boss round');
+assert.equal(isBossRound(ROUNDS.length - 1), true, 'last idx is the boss round');
 assert.equal(isBossRound(0), false);
 
 console.log('stage5 track tests passed');
