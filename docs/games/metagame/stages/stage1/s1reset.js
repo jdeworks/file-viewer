@@ -9,6 +9,7 @@ import { doPrestige, coreGain, MECHANICS, prestigeDepth, nextMechanic, mechanicU
 import { CORE_UPGRADES, coreLevel, coreCostOf, canBuyCore, buyCore } from './s1cores.js';
 import { wirableTiers, isWired, togglePipeline, pipelineUpkeepOf } from './s1pipeline.js';
 import { fluxMeter, fluxBoostTicks, fluxMult, fluxCanCash, cashFlux } from './s1flux.js';
+import { RESONANCE_BANDS, activeBands } from './s1resonance.js';
 
 const STYLE_ID = 'mg-s1-prestige-style';
 function injectStyle() {
@@ -45,6 +46,9 @@ function injectStyle() {
 .mg-flux-status { font:600 12px ui-monospace,monospace; color:var(--fg-2); }
 .mg-flux-cash { background:var(--accent); color:var(--accent-fg); border:0; border-radius:7px; padding:6px 14px; cursor:pointer; font:600 12px ui-monospace,monospace; }
 .mg-flux-cash.mg-buy-locked { opacity:.45; pointer-events:none; }
+.mg-res-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-res-row { display:grid; grid-template-columns:auto 1fr; gap:8px; padding:5px 0; font-size:12px; color:var(--fg-2); }
+.mg-res-row.mg-res-on { color:#3fb950; font-weight:600; }
 `;
   document.head.appendChild(el);
 }
@@ -70,6 +74,7 @@ export function renderResetPanel(opts) {
     + '<button class="mg-reset-cancel" type="button">Cancel</button>'
     + '</div>'
     + fluxHtml(state)
+    + resonanceHtml(state)
     + pipelineHtml(opts)
     + coreShopHtml(state)
     + mechanicsRosterHtml(state)
@@ -84,6 +89,19 @@ export function renderResetPanel(opts) {
   }));
   const cashBtn = panelsEl.querySelector('.mg-flux-cash');
   if (cashBtn) cashBtn.addEventListener('click', () => { if (cashFlux(state)) { opts.save(state); paintResetPanel(panelsEl, state); } });
+}
+
+function resonanceHtml(state) {
+  if (!mechanicUnlocked(state, 'resonance')) return '';
+  const active = new Set(activeBands(state).map((b) => b.id));
+  const found = state.resonanceFound || {};
+  const rows = RESONANCE_BANDS.map((b) => {
+    const isFound = found[b.id];
+    const isOn = active.has(b.id);
+    const label = isFound ? escapeHtml(b.hint) + ' ' + b.min + '–' + b.max + ' → +' + Math.round(b.bonus * 100) + '%' : '??? — find the ratio';
+    return '<div class="mg-res-row' + (isOn ? ' mg-res-on' : '') + '"><span>' + (isOn ? '🎚' : isFound ? '·' : '🔒') + '</span><span>' + label + '</span></div>';
+  }).join('');
+  return '<div class="mg-res-shop"><div class="mg-core-shop-title">🎚 Resonance — tier-ratio sweet spots</div>' + rows + '</div>';
 }
 
 function fluxHtml(state) {

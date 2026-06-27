@@ -3286,6 +3286,64 @@ function tickFlux(state) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage1/s1resonance.js
+var RESONANCE_BANDS = [
+  {
+    id: "box-boost",
+    hi: "s1-box",
+    lo: "s1-boost",
+    min: 2,
+    max: 4,
+    bonus: 0.3,
+    hint: "Bit Boxes per Signal Booster"
+  },
+  {
+    id: "boost-cluster",
+    hi: "s1-boost",
+    lo: "s1-cluster",
+    min: 2,
+    max: 4,
+    bonus: 0.25,
+    hint: "Signal Boosters per Core Cluster"
+  },
+  {
+    id: "cluster-array",
+    hi: "s1-cluster",
+    lo: "s1-array",
+    min: 2,
+    max: 4,
+    bonus: 0.2,
+    hint: "Core Clusters per Processing Array"
+  }
+];
+function bandActive(state, band) {
+  const owned = state.owned || {};
+  const hi = owned[band.hi] || 0;
+  const lo = owned[band.lo] || 0;
+  if (lo < 1 || hi < 1) return false;
+  const ratio = hi / lo;
+  return ratio >= band.min && ratio <= band.max;
+}
+function activeBands(state) {
+  return RESONANCE_BANDS.filter((b) => bandActive(state, b));
+}
+function resonanceMult(state) {
+  let m = 1;
+  for (const b of RESONANCE_BANDS) if (bandActive(state, b)) m *= 1 + b.bonus;
+  return m;
+}
+function tickResonance(state) {
+  state.resonanceFound = state.resonanceFound || {};
+  let found = false;
+  for (const b of RESONANCE_BANDS) {
+    if (bandActive(state, b) && !state.resonanceFound[b.id]) {
+      state.resonanceFound[b.id] = true;
+      found = true;
+    }
+  }
+  return found;
+}
+
 // ../../docs/games/metagame/stages/stage1/s1reset.js
 var STYLE_ID2 = "mg-s1-prestige-style";
 function injectStyle2() {
@@ -3322,6 +3380,9 @@ function injectStyle2() {
 .mg-flux-status { font:600 12px ui-monospace,monospace; color:var(--fg-2); }
 .mg-flux-cash { background:var(--accent); color:var(--accent-fg); border:0; border-radius:7px; padding:6px 14px; cursor:pointer; font:600 12px ui-monospace,monospace; }
 .mg-flux-cash.mg-buy-locked { opacity:.45; pointer-events:none; }
+.mg-res-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-res-row { display:grid; grid-template-columns:auto 1fr; gap:8px; padding:5px 0; font-size:12px; color:var(--fg-2); }
+.mg-res-row.mg-res-on { color:#3fb950; font-weight:600; }
 `;
   document.head.appendChild(el);
 }
@@ -3332,7 +3393,7 @@ function renderResetPanel(opts) {
   const newTotal = globalPull(state) * gain;
   const cores = coreGain(state.totalBits);
   const next = nextMechanic(state);
-  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + fluxHtml(state) + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
+  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + fluxHtml(state) + resonanceHtml(state) + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
   panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset(opts));
   panelsEl.querySelector(".mg-reset-cancel").addEventListener("click", () => renderResetPanel(opts));
   panelsEl.querySelectorAll(".mg-core-buy").forEach((b) => b.addEventListener("click", () => {
@@ -3353,6 +3414,18 @@ function renderResetPanel(opts) {
       paintResetPanel(panelsEl, state);
     }
   });
+}
+function resonanceHtml(state) {
+  if (!mechanicUnlocked(state, "resonance")) return "";
+  const active = new Set(activeBands(state).map((b) => b.id));
+  const found = state.resonanceFound || {};
+  const rows = RESONANCE_BANDS.map((b) => {
+    const isFound = found[b.id];
+    const isOn = active.has(b.id);
+    const label = isFound ? escapeHtml(b.hint) + " " + b.min + "–" + b.max + " → +" + Math.round(b.bonus * 100) + "%" : "??? — find the ratio";
+    return '<div class="mg-res-row' + (isOn ? " mg-res-on" : "") + '"><span>' + (isOn ? "🎚" : isFound ? "·" : "🔒") + "</span><span>" + label + "</span></div>";
+  }).join("");
+  return '<div class="mg-res-shop"><div class="mg-core-shop-title">🎚 Resonance — tier-ratio sweet spots</div>' + rows + "</div>";
 }
 function fluxHtml(state) {
   if (!mechanicUnlocked(state, "flux")) return "";
@@ -3487,6 +3560,7 @@ function tickEcho(state) {
 function incomeMult(state) {
   let m = coreIncomeMult(state);
   if (mechanicUnlocked(state, "flux")) m *= fluxMult(state);
+  if (mechanicUnlocked(state, "resonance")) m *= resonanceMult(state);
   return m;
 }
 function tickMechanics(state, cfg) {
@@ -3497,6 +3571,7 @@ function tickMechanics(state, cfg) {
   if (mechanicUnlocked(state, "entropy")) producedUnits = tickEntropy(state, cfg) || producedUnits;
   let echo = null;
   if (mechanicUnlocked(state, "echoes")) echo = tickEcho(state, cfg);
+  if (mechanicUnlocked(state, "resonance")) tickResonance(state);
   return { producedUnits, echo };
 }
 
