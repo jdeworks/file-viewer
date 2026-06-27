@@ -284,7 +284,14 @@ var ENEMY_CHAR = {
   null_packet: "=",
   resonance_ghost: "%",
   fractal_host: "@",
-  depth_crawler: "#"
+  depth_crawler: "#",
+  swarm_bit: ",",
+  armored_loop: "8",
+  shield_drone: "O",
+  healer_node: "+",
+  regenerator: "q",
+  flicker_ghost: '"',
+  burrower: "u"
 };
 function boardText(state, pathTiles, width = 40, height = 40) {
   const grid = Array.from({ length: height }, () => Array.from({ length: width }, () => EMPTY));
@@ -314,16 +321,32 @@ function pathGlyph(prev, here, next) {
 
 // ../../docs/games/metagame/stages/stage4/enemies.js
 var ENEMY_TYPES = {
+  // ── original six ──────────────────────────────────────────────────────────────────────────────
   recursion: { glyph: "[ ]", hp: 50, speed: 1, armor: 0, reward: 8, integrityDrain: 5 },
   pattern_crawler: { glyph: "/\\", hp: 30, speed: 2, armor: 0, reward: 6, integrityDrain: 4, fast: true },
   null_packet: { glyph: "<>", hp: 60, speed: 1, armor: 0.5, reward: 10, integrityDrain: 6 },
   resonance_ghost: { glyph: "<>", hp: 40, speed: 1.5, armor: 0, reward: 9, integrityDrain: 5, slowImmune: true },
   fractal_host: { glyph: "[[ ]]", hp: 120, speed: 0.8, armor: 0, reward: 16, integrityDrain: 8, spawnsOnDeath: { type: "recursion", count: 2 } },
-  depth_crawler: { glyph: "[##]", hp: 200, speed: 1.2, armor: 0.3, reward: 24, integrityDrain: 10, elite: true }
+  depth_crawler: { glyph: "[##]", hp: 200, speed: 1.2, armor: 0.3, reward: 24, integrityDrain: 10, elite: true },
+  // ── expanded roster (depth pass): each leans on the damage-type / status / behavior systems ────
+  // Tiny + fast, arrives in big counts — punishes single-target; answered by aoe/chain/freeze.
+  swarm_bit: { glyph: "·", hp: 14, speed: 2.4, armor: 0, reward: 3, integrityDrain: 2, fast: true, swarm: true },
+  // Heavy armor + kinetic RESISTANCE — kinetic bounces; answered by thermal/null/arc or shred.
+  armored_loop: { glyph: "[#]", hp: 160, speed: 0.9, armor: 0.5, resist: { kinetic: 0.4 }, reward: 20, integrityDrain: 10 },
+  // Carries a SHIELD pool soaked before hp — answered by arc (+50% vs shields) or null (bypass).
+  shield_drone: { glyph: "(o)", hp: 70, speed: 1.1, armor: 0, shield: 140, reward: 16, integrityDrain: 7 },
+  // Heals nearby enemies each tick (behaviors.js) — focus it down first or the line never falls.
+  healer_node: { glyph: "<+>", hp: 110, speed: 0.8, armor: 0.1, reward: 18, integrityDrain: 7, heal: { amount: 22, radius: 5 } },
+  // Self-regenerates HP — out-DPS it or apply BURN (thermal DoT beats regen); else it walls forever.
+  regenerator: { glyph: "{~}", hp: 140, speed: 1, armor: 0.1, reward: 18, integrityDrain: 8, regen: 18 },
+  // Phases out (untargetable) on a deterministic cadence; slow-immune + arc-resistant.
+  flicker_ghost: { glyph: "<·>", hp: 80, speed: 1.4, armor: 0, slowImmune: true, resist: { arc: 0.3 }, reward: 14, integrityDrain: 6, flicker: { onMs: 1400, offMs: 900 } },
+  // Burrows on a cadence → high armor while down (kinetic useless then); strike when it surfaces.
+  burrower: { glyph: "vvv", hp: 130, speed: 1.2, armor: 0.1, reward: 16, integrityDrain: 8, burrow: { upMs: 1500, downMs: 1200, armor: 0.6 } }
 };
 function spawnEnemy(type, seed, idCounter) {
   const def = ENEMY_TYPES[type] || ENEMY_TYPES.recursion;
-  return {
+  const enemy = {
     id: `e${idCounter}`,
     type: ENEMY_TYPES[type] ? type : "recursion",
     hp: def.hp,
@@ -335,6 +358,12 @@ function spawnEnemy(type, seed, idCounter) {
     armor: def.armor,
     slowImmune: Boolean(def.slowImmune)
   };
+  if (def.resist) enemy.resist = { ...def.resist };
+  if (def.shield) {
+    enemy.shield = def.shield;
+    enemy.shieldMax = def.shield;
+  }
+  return enemy;
 }
 
 // ../../docs/games/metagame/stages/stage4/damage.js
@@ -560,7 +589,7 @@ function abilityForTower(tower) {
 function overchargeMult(tower, now) {
   return (tower?.overchargeUntilMs || 0) > now ? tower.overchargeMultiplier || 1 : 1;
 }
-function fireAbilities(state, dist2) {
+function fireAbilities(state, dist3) {
   const now = state.combatClockMs || 0;
   for (const tower of state.towers || []) {
     if ((tower.level || 1) < 3) continue;
@@ -569,27 +598,27 @@ function fireAbilities(state, dist2) {
     if (!ability) continue;
     if (now < (tower.abilityNextMs || 0)) continue;
     const def = TOWER_TYPES[tower.type] || {};
-    const cast = castAbility(state, tower, abilityId, ability, def, now, dist2);
+    const cast = castAbility(state, tower, abilityId, ability, def, now, dist3);
     if (cast) tower.abilityNextMs = now + ability.cooldownMs;
   }
 }
-function castAbility(state, tower, id, ability, def, now, dist2) {
+function castAbility(state, tower, id, ability, def, now, dist3) {
   if (id === "emp_burst") {
-    const hit = (state.enemies || []).filter((e) => dist2(tower, e) <= ability.radius);
+    const hit = (state.enemies || []).filter((e) => dist3(tower, e) <= ability.radius);
     if (!hit.length) return false;
     for (const e of hit) applyStatus(e, "stun", { ms: ability.stunMs });
     pushLog2(state, `${def.glyph || "[?]"} EMP Burst — ${hit.length} stunned.`);
     return true;
   }
   if (id === "null_wave") {
-    const hit = (state.enemies || []).filter((e) => dist2(tower, e) <= (def.range || 0) && (e.armor || 0) > 0);
+    const hit = (state.enemies || []).filter((e) => dist3(tower, e) <= (def.range || 0) && (e.armor || 0) > 0);
     if (!hit.length) return false;
     for (const e of hit) applyStatus(e, "shred", { armor: 1, ms: ability.stripMs });
     pushLog2(state, `${def.glyph || "[?]"} Null Wave — armor stripped from ${hit.length}.`);
     return true;
   }
   if (id === "overcharge") {
-    const inRange = (state.enemies || []).some((e) => dist2(tower, e) <= (def.range || 0));
+    const inRange = (state.enemies || []).some((e) => dist3(tower, e) <= (def.range || 0));
     if (!inRange) return false;
     tower.overchargeUntilMs = now + ability.durationMs;
     tower.overchargeMultiplier = ability.multiplier;
@@ -600,6 +629,43 @@ function castAbility(state, tower, id, ability, def, now, dist2) {
 }
 function pushLog2(state, line) {
   state.log = [...state.log || [], line].slice(-12);
+}
+
+// ../../docs/games/metagame/stages/stage4/behaviors.js
+var defOf = (e) => ENEMY_TYPES[e?.type] || {};
+function behaviorPass(state, dt) {
+  const secs = (Number(dt) || 0) / 1e3;
+  if (secs <= 0) return;
+  const enemies = state.enemies || [];
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
+    const d = defOf(e);
+    if (d.regen) e.hp = Math.min(e.maxHp, e.hp + d.regen * secs);
+  }
+  for (const healer of enemies) {
+    const d = defOf(healer);
+    if (!d.heal || healer.hp <= 0) continue;
+    for (const e of enemies) {
+      if (e === healer || e.hp <= 0) continue;
+      if (dist(healer, e) <= d.heal.radius) e.hp = Math.min(e.maxHp, e.hp + d.heal.amount * secs);
+    }
+  }
+}
+function isTargetable(enemy, now) {
+  const f = defOf(enemy).flicker;
+  if (!f) return true;
+  const period = f.onMs + f.offMs;
+  return period <= 0 ? true : now % period < f.onMs;
+}
+function burrowArmor(enemy, now) {
+  const b = defOf(enemy).burrow;
+  if (!b) return 0;
+  const period = b.upMs + b.downMs;
+  if (period <= 0) return 0;
+  return now % period >= b.upMs ? b.armor : 0;
+}
+function dist(a, b) {
+  return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
 }
 
 // ../../docs/games/metagame/stages/stage4/waves.js
@@ -722,12 +788,23 @@ function subBossIdForWave(mapIndex, waveNum) {
 }
 
 // ../../docs/games/metagame/stages/stage4/wavegen.js
+var COUNT_DIV = {
+  swarm_bit: 0.4,
+  fractal_host: 6,
+  depth_crawler: 10,
+  armored_loop: 3,
+  shield_drone: 2.5,
+  healer_node: 6,
+  regenerator: 3,
+  flicker_ghost: 2.5,
+  burrower: 3
+};
 var UNLOCKS = [
   ["recursion"],
-  ["recursion", "pattern_crawler"],
-  ["recursion", "pattern_crawler", "null_packet"],
-  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host"],
-  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host", "depth_crawler"]
+  ["recursion", "pattern_crawler", "swarm_bit"],
+  ["recursion", "pattern_crawler", "null_packet", "swarm_bit", "armored_loop", "shield_drone"],
+  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host", "swarm_bit", "armored_loop", "shield_drone", "healer_node", "regenerator"],
+  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host", "depth_crawler", "swarm_bit", "armored_loop", "shield_drone", "healer_node", "regenerator", "flicker_ghost", "burrower"]
 ];
 function mapEnemyPool(mapIndex) {
   const i = Math.max(0, Math.min(UNLOCKS.length - 1, Math.trunc(Number(mapIndex)) || 0));
@@ -745,7 +822,7 @@ function mapWaveComposition(mapIndex, waveNum) {
   const enemies = [];
   let assigned = 0;
   pool.forEach((type, idx) => {
-    const heavyDiv = type === "fractal_host" ? 6 : type === "depth_crawler" ? 10 : 1;
+    const heavyDiv = COUNT_DIV[type] || 1;
     let count = Math.round(budget * weights[idx] / total / heavyDiv);
     if (idx === pool.length - 1) count = Math.max(count, 0);
     if (count > 0) {
@@ -775,6 +852,22 @@ function typeWeight(type, w, waveCount, mapIndex) {
       return p > 0.4 ? 1 + 2 * p : 0.1;
     case "depth_crawler":
       return p > 0.6 ? 1 + 2 * p : 0.05;
+    // expanded roster — each phases in as a wave progresses
+    case "swarm_bit":
+      return 2 + 4 * p;
+    // cheap filler, always plentiful
+    case "armored_loop":
+      return p > 0.3 ? 1 + 2 * p : 0.1;
+    case "shield_drone":
+      return p > 0.3 ? 1 + 2 * p : 0.1;
+    case "healer_node":
+      return p > 0.4 ? 0.6 + p : 0.05;
+    case "regenerator":
+      return p > 0.4 ? 1 + 1.5 * p : 0.05;
+    case "flicker_ghost":
+      return p > 0.5 ? 1 + 2 * p : 0.05;
+    case "burrower":
+      return p > 0.5 ? 1 + 1.5 * p : 0.05;
     default:
       return 1;
   }
@@ -893,9 +986,10 @@ function tick(state, deltaMs, pathTiles) {
   spawnDueEnemies(state, dt, pathTiles);
   applyFields(state, dt);
   statusPass(state, dt);
+  behaviorPass(state, dt);
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
-  fireAbilities(state, dist);
+  fireAbilities(state, dist2);
   reap(state, pathTiles);
   return state;
 }
@@ -940,7 +1034,7 @@ function applyFields(state, dt) {
     const slow = towerStat(t, "slow");
     const pull = towerStat(t, "pull");
     for (const e of state.enemies) {
-      if (dist(t, e) > range) continue;
+      if (dist2(t, e) > range) continue;
       if (slow) applyStatus(e, "slow", { factor: Math.max(0, 1 - slow), ms: 250 });
       if (pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - pull * back);
     }
@@ -974,7 +1068,7 @@ function fireTowers(state, pathTiles) {
     const fireRate = towerStat(tower, "fireRate") || def.fireRate;
     if (now - (tower.lastFiredMs ?? -Infinity) < 1e3 / fireRate) continue;
     const range = towerStat(tower, "range");
-    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= range);
+    const candidates = state.enemies.filter((e) => isTargetable(e, now) && (def.global || dist2(tower, e) <= range));
     if (!candidates.length) continue;
     tower.lastFiredMs = now;
     const bonus = 1 + hubsCovering(state, tower);
@@ -985,12 +1079,12 @@ function fireTowers(state, pathTiles) {
 function pickTargets(state, tower, eff, candidates) {
   if (eff.global && eff.aoe) {
     const focus = selectTarget(candidates, tower);
-    return state.enemies.filter((e) => dist(e, focus) <= eff.aoe);
+    return state.enemies.filter((e) => dist2(e, focus) <= eff.aoe);
   }
   if (eff.aoe) return candidates;
   if (eff.chain) {
     const focus = selectTarget(candidates, tower);
-    return [...candidates].sort((a, b) => dist(focus, a) - dist(focus, b) || b.pathIndex - a.pathIndex).slice(0, eff.chain);
+    return [...candidates].sort((a, b) => dist2(focus, a) - dist2(focus, b) || b.pathIndex - a.pathIndex).slice(0, eff.chain);
   }
   return [selectTarget(candidates, tower)];
 }
@@ -1001,7 +1095,8 @@ function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   if (tile?.recurve) dmg *= 2;
   dmg *= damageTakenMult(enemy);
   const type = def.damageType || (def.ignoresArmor ? "null" : "kinetic");
-  resolveDamage(enemy, dmg, type, { armor: effectiveArmor(enemy) });
+  const armor = Math.min(0.95, effectiveArmor(enemy) + burrowArmor(enemy, state.combatClockMs || 0));
+  resolveDamage(enemy, dmg, type, { armor });
   applyOnHit(enemy, { onHit: effectiveOnHit(tower, def) });
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }
@@ -1038,7 +1133,7 @@ function hubsCovering(state, tower) {
   for (const t of state.towers) {
     if (t === tower) continue;
     const def = TOWER_TYPES[t.type];
-    if (def?.adjacencyBonus && dist(t, tower) <= towerStat(t, "range")) bonus += towerStat(t, "adjacencyBonus");
+    if (def?.adjacencyBonus && dist2(t, tower) <= towerStat(t, "range")) bonus += towerStat(t, "adjacencyBonus");
   }
   return bonus;
 }
@@ -1048,8 +1143,8 @@ var TARGET_COMPARATORS = {
   strongest: (a, b) => a.hp > b.hp || a.hp === b.hp && a.pathIndex > b.pathIndex,
   weakest: (a, b) => a.hp < b.hp || a.hp === b.hp && a.pathIndex > b.pathIndex,
   closest: (a, b, tower) => {
-    const da = dist(tower, a);
-    const db = dist(tower, b);
+    const da = dist2(tower, a);
+    const db = dist2(tower, b);
     return da < db || da === db && a.pathIndex > b.pathIndex;
   }
 };
@@ -1065,7 +1160,7 @@ function placeOnPath(enemy, pathTiles) {
     enemy.y = tile.y;
   }
 }
-function dist(a, b) {
+function dist2(a, b) {
   return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
 }
 function pushLog3(state, line) {

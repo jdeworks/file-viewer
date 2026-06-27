@@ -12,7 +12,9 @@ const TOWER_CHAR = {
 };
 const ENEMY_CHAR = {
   recursion: "o", pattern_crawler: "x", null_packet: "=",
-  resonance_ghost: "%", fractal_host: "@", depth_crawler: "#"
+  resonance_ghost: "%", fractal_host: "@", depth_crawler: "#",
+  swarm_bit: ",", armored_loop: "8", shield_drone: "O", healer_node: "+",
+  regenerator: "q", flicker_ghost: '"', burrower: "u"
 };
 
 export function boardText(state, pathTiles, width = 40, height = 40) {

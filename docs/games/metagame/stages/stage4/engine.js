@@ -9,6 +9,7 @@ import { resolveDamage } from "./damage.js";
 import { applyStatus, tickStatus, statusSpeedFactor, effectiveArmor, damageTakenMult, applyOnHit } from "./status.js";
 import { fireAbilities, overchargeMult } from "./abilities.js";
 import { towerStat, effectiveOnHit } from "./forks.js";
+import { behaviorPass, isTargetable, burrowArmor } from "./behaviors.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
 import { mapWaveComposition } from "./wavegen.js";
 import { spawnSubBoss, subBossDef } from "./subboss.js";
@@ -74,6 +75,7 @@ export function tick(state, deltaMs, pathTiles) {
   spawnDueEnemies(state, dt, pathTiles);
   applyFields(state, dt);              // slow / gravity fields stamp a slow status + pull enemies back
   statusPass(state, dt);               // decay effects + apply burn DoT (before movement/combat)
+  behaviorPass(state, dt);             // healer auras + self-regen (burn DoT counters regen)
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
   fireAbilities(state, dist); // L3 towers auto-cast their ability (EMP / null-wave / overcharge)
@@ -171,8 +173,9 @@ function fireTowers(state, pathTiles) {
     const fireRate = towerStat(tower, 'fireRate') || def.fireRate; // tier-3 fork may scale cadence
     if (now - (tower.lastFiredMs ?? -Infinity) < 1000 / fireRate) continue;
     const range = towerStat(tower, 'range');
-    // A global tower (glyph_mortar) reaches anywhere; everyone else is range-limited.
-    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= range);
+    // A global tower (glyph_mortar) reaches anywhere; everyone else is range-limited. Phased-out
+    // flicker_ghosts are untargetable this tick (isTargetable) and excluded from every tower's pool.
+    const candidates = state.enemies.filter((e) => isTargetable(e, now) && (def.global || dist(tower, e) <= range));
     if (!candidates.length) continue;
     tower.lastFiredMs = now;
     const bonus = 1 + hubsCovering(state, tower); // sum of adjacent hubs' (fork-scaled) buffs
@@ -211,7 +214,8 @@ function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   // shield, pure ignores resist). `ignoresArmor` is the legacy flag → null type for back-compat. Armor
   // is the SHRED-adjusted live armor so the shred support tower actually opens enemies up.
   const type = def.damageType || (def.ignoresArmor ? 'null' : 'kinetic');
-  resolveDamage(enemy, dmg, type, { armor: effectiveArmor(enemy) });
+  const armor = Math.min(0.95, effectiveArmor(enemy) + burrowArmor(enemy, state.combatClockMs || 0)); // burrowers armor up while down
+  resolveDamage(enemy, dmg, type, { armor });
   applyOnHit(enemy, { onHit: effectiveOnHit(tower, def) }); // chill / burn / shred (fork may override)
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }

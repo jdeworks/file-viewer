@@ -11,13 +11,21 @@
 
 import { mapByIndex, subBossIdForWave } from './maps.js';
 
-// Which enemy types are available on a given map (cumulative).
+// Per-type count divisor used when distributing a wave's budget. >1 = field fewer (expensive/tanky);
+// <1 = field more (cheap swarm). Anything not listed defaults to 1.
+const COUNT_DIV = {
+  swarm_bit: 0.4, fractal_host: 6, depth_crawler: 10, armored_loop: 3, shield_drone: 2.5,
+  healer_node: 6, regenerator: 3, flicker_ghost: 2.5, burrower: 3,
+};
+
+// Which enemy types are available on a given map (cumulative). The expanded roster phases the new
+// threat archetypes in by map so each teaches one MATCH: swarm → armor/shield → heal/regen → phase/burrow.
 const UNLOCKS = [
   ['recursion'],
-  ['recursion', 'pattern_crawler'],
-  ['recursion', 'pattern_crawler', 'null_packet'],
-  ['recursion', 'pattern_crawler', 'null_packet', 'resonance_ghost', 'fractal_host'],
-  ['recursion', 'pattern_crawler', 'null_packet', 'resonance_ghost', 'fractal_host', 'depth_crawler'],
+  ['recursion', 'pattern_crawler', 'swarm_bit'],
+  ['recursion', 'pattern_crawler', 'null_packet', 'swarm_bit', 'armored_loop', 'shield_drone'],
+  ['recursion', 'pattern_crawler', 'null_packet', 'resonance_ghost', 'fractal_host', 'swarm_bit', 'armored_loop', 'shield_drone', 'healer_node', 'regenerator'],
+  ['recursion', 'pattern_crawler', 'null_packet', 'resonance_ghost', 'fractal_host', 'depth_crawler', 'swarm_bit', 'armored_loop', 'shield_drone', 'healer_node', 'regenerator', 'flicker_ghost', 'burrower'],
 ];
 
 export function mapEnemyPool(mapIndex) {
@@ -45,8 +53,8 @@ export function mapWaveComposition(mapIndex, waveNum) {
   const enemies = [];
   let assigned = 0;
   pool.forEach((type, idx) => {
-    // Fractal hosts / depth crawlers are expensive — divide their share so we don't field a swarm.
-    const heavyDiv = type === 'fractal_host' ? 6 : type === 'depth_crawler' ? 10 : 1;
+    // Per-type count divisor: heavies field FEWER (div>1); swarm_bit fields MORE (div<1).
+    const heavyDiv = COUNT_DIV[type] || 1;
     let count = Math.round((budget * weights[idx]) / total / heavyDiv);
     if (idx === pool.length - 1) count = Math.max(count, 0);
     if (count > 0) { enemies.push({ type, count }); assigned += count; }
@@ -77,6 +85,14 @@ function typeWeight(type, w, waveCount, mapIndex) {
     case 'resonance_ghost': return p > 0.25 ? 1 + 3 * p : 0.2;
     case 'fractal_host':    return p > 0.4 ? 1 + 2 * p : 0.1;
     case 'depth_crawler':   return p > 0.6 ? 1 + 2 * p : 0.05;
+    // expanded roster — each phases in as a wave progresses
+    case 'swarm_bit':       return 2 + 4 * p;             // cheap filler, always plentiful
+    case 'armored_loop':    return p > 0.3 ? 1 + 2 * p : 0.1;
+    case 'shield_drone':    return p > 0.3 ? 1 + 2 * p : 0.1;
+    case 'healer_node':     return p > 0.4 ? 0.6 + p : 0.05;
+    case 'regenerator':     return p > 0.4 ? 1 + 1.5 * p : 0.05;
+    case 'flicker_ghost':   return p > 0.5 ? 1 + 2 * p : 0.05;
+    case 'burrower':        return p > 0.5 ? 1 + 1.5 * p : 0.05;
     default:                return 1;
   }
 }
