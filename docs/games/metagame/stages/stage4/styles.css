@@ -123,6 +123,12 @@
   color: var(--s4-cyan);
 }
 
+.s4-roster-row .s4-sell-btn {
+  margin-left: auto;
+  border-color: var(--s4-amber, #d08b2f);
+  color: var(--s4-amber, #d08b2f);
+}
+
 .s4-fork-tag {
   font-size: 10px;
   color: var(--s4-cyan);

@@ -22,6 +22,15 @@ export function waveGroupDepth(waveNum) {
   return 3;
 }
 
+// Path depth for a given wave ON A MAP: the wave-group depth, capped at the map's maximum depth. This
+// is what drives the per-wave-group RESHAPE — on a depth-2 map the path folds from depth 1 (waves 1–10)
+// to depth 2 (wave 11+); on a depth-3 map it folds 1→2→3 at waves 11 and 21. Depth-1 maps never reshape
+// (onboarding stays stable). Pure + deterministic — same (mapDepth, wave) ⇒ same depth, every run.
+export function mapPathDepth(mapDepth, waveNum) {
+  const cap = Math.max(1, Math.min(3, Math.trunc(Number(mapDepth)) || 1));
+  return Math.min(cap, waveGroupDepth(waveNum));
+}
+
 // Build the deterministic path for a given depth. Returns:
 //   { tiles: [{x,y,branch}], entry, exit, recurveTiles: Set<"x,y"> }
 export function buildPath(seed, depth = 1) {

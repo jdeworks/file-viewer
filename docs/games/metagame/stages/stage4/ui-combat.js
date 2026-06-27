@@ -6,15 +6,16 @@
 // Pacing: tight spawn cadence (waves.js) + fast-forward 1×/2×/3× + call-wave-early bonus; the player
 // calls each wave (no forced inter-wave gap). Campaign transitions are delegated to the controller.
 
-import { buildPath } from './lsystem.js';
+import { buildPath, mapPathDepth } from './lsystem.js';
 import { boardText } from './board.js';
 import { startWave as engineStartWave, tick, waveComplete, queueWave } from './engine.js';
 import { cycleTowerTarget, getBossLockState, placeTower, pushLog, fightInfiniteLoop } from './boss.js';
-import { TOWER_TYPES, towerUpgradeCost } from './towers.js';
-import { upgradeTower } from './upgrades.js';
-import { chooseFork, forksFor, forkDef } from './forks.js';
+import { upgradeTower, sellTower } from './upgrades.js';
+import { chooseFork } from './forks.js';
 import { snapshotWave } from './state.js';
 import { mapByIndex, mapPathSeed } from './maps.js';
+import { refundTowersOnPath, preWaveHint } from './combat-helpers.js';
+import { shopRows, rosterRows } from './combat-rows.js';
 
 const PLACEABLE = [
   'pulse_node', 'scatter_array', 'null_spike', 'attractor_field',
@@ -68,8 +69,27 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   let raf = null;
   let lastPersistMs = -Infinity;
   let alive = true;
-  let path = buildPath(isBoss ? (state.recursion?.pointSetId || 'x') : mapPathSeed(state.recursion?.pointSetId, mapIndex), isBoss ? 3 : map.depth);
+  // Depth-aware L-system path (lsystem.mapPathDepth): it folds deeper per wave group. `pathDepth` tracks
+  // which depth `path` was built at so the reshape rebuilds only on a group change. Boss = fixed depth 3.
+  const pathSeed = isBoss ? (state.recursion?.pointSetId || 'x') : mapPathSeed(state.recursion?.pointSetId, mapIndex);
+  let pathDepth = isBoss ? 3 : mapPathDepth(map.depth, state.waveNumber || 1);
+  let path = buildPath(pathSeed, pathDepth);
   if (!Number.isFinite(state.wavePeak)) state.wavePeak = state.waveNumber || 1;
+
+  // Per-wave-group RESHAPE: on a group crossing the path folds deeper. Towers never move (research) — any
+  // caught ON the new road are refunded (full invested) + the fold is telegraphed so it reads as
+  // ANTICIPATE, not a gotcha. Idempotent (no-op when depth unchanged); deterministic (seeded, no clock).
+  function maybeReshape() {
+    if (isBoss) return false;
+    const want = mapPathDepth(map.depth, state.waveNumber || 1);
+    if (want === pathDepth) return false;
+    pathDepth = want;
+    path = buildPath(pathSeed, pathDepth);
+    const { count } = refundTowersOnPath(state, path.tiles);
+    pushLog(state, `⟲ the recursion folds — the path reshapes to depth ${pathDepth}.`
+      + (count ? ` ${count} tower(s) caught on the new route were refunded.` : ''));
+    return true;
+  }
 
   // ── persistence ──────────────────────────────────────────────────────────
   function checkpointWave(overrides) { controller.checkpointWave?.({ ...snapshotWave(state), ...overrides }); }
@@ -84,9 +104,12 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     fields.progress.textContent = isBoss
       ? `${lock.coveredPoints}/${lock.totalPoints}`
       : `${Math.min(state.waveNumber || 1, map.waveCount)}/${map.waveCount}`;
-    fields.hint.textContent = isBoss ? lock.hint : (state.waveActive ? 'hold the line — call the next wave early for bonus cycles' : 'place towers, then start the wave');
-    fields.shop.replaceChildren(...shopRows());
-    fields.roster.replaceChildren(...rosterRows());
+    fields.hint.textContent = isBoss ? lock.hint
+      : (state.waveActive
+        ? 'hold the line — call the next wave early for bonus cycles'
+        : preWaveHint(mapIndex, state.waveNumber || 1));
+    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected }));
+    fields.roster.replaceChildren(...rosterRows(state));
     board.textContent = boardText(state, path.tiles);
     if (!isBoss) {
       root.querySelector('[data-action="call-early"]').hidden = !state.waveActive || (state.wavePeak || 1) >= map.waveCount;
@@ -95,50 +118,10 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     logEl.replaceChildren(...(state.log || []).slice(-6).map((line) => { const li = document.createElement('li'); li.textContent = line; return li; }));
   }
 
-  function shopRows() {
-    return PLACEABLE.map((type) => {
-      const btn = document.createElement('button');
-      btn.type = 'button'; btn.dataset.tower = type;
-      btn.className = type === selected ? 'is-selected' : '';
-      btn.textContent = `${TOWER_TYPES[type].glyph} ${type} (${TOWER_TYPES[type].cost})`;
-      return btn;
-    });
-  }
-  function rosterRows() {
-    return (state.towers || []).map((tower) => {
-      const wrap = document.createElement('div');
-      wrap.className = 's4-roster-row';
-      const def = TOWER_TYPES[tower.type] || {};
-      const level = tower.level || 1;
-      const tgt = document.createElement('button');
-      tgt.type = 'button'; tgt.dataset.towerId = tower.id;
-      tgt.textContent = `${def.glyph || '[?]'} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || 'first').toUpperCase()}`;
-      wrap.append(tgt);
-      if (level < 3) {
-        const up = document.createElement('button');
-        up.type = 'button'; up.dataset.upgradeId = tower.id;
-        up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
-        wrap.append(up);
-      } else if (!tower.fork && forksFor(tower.type).length) {
-        for (const f of forksFor(tower.type)) {
-          const fb = document.createElement('button');
-          fb.type = 'button'; fb.className = 's4-fork-btn'; fb.dataset.forkId = tower.id; fb.dataset.forkChoice = f.id;
-          fb.textContent = `⑂ ${f.label}`; fb.title = f.desc;
-          wrap.append(fb);
-        }
-      } else if (tower.fork) {
-        const tag = document.createElement('span');
-        tag.className = 's4-fork-tag';
-        tag.textContent = `⑂ ${forkDef(tower)?.label || tower.fork}`;
-        wrap.append(tag);
-      }
-      return wrap;
-    });
-  }
-
   // ── wave loop (map mode) ─────────────────────────────────────────────────
   function startWaveAction() {
     if (isBoss || state.waveActive || (state.waveNumber || 1) > map.waveCount) return;
+    maybeReshape(); // safety: ensure the path matches this wave's group (also covers debug wave jumps)
     engineStartWave(state, state.waveNumber, path.tiles);
     state.wavePeak = state.waveNumber;
     lastPersistMs = -Infinity;
@@ -190,6 +173,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       const cleared = creditWaves();
       endWaveSnapshot(); controller.persist?.();
       if (cleared) { stopLoop(); controller.rerender(); return true; }
+      maybeReshape(); // the wave counter just advanced — fold the path now so the player sees it next
       repaint();
       return true;
     }
@@ -225,6 +209,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   }
   function cycleTarget(id) { const m = cycleTowerTarget(state, id); repaint(); controller.persist?.(); return m; }
   function upgrade(id) { const r = upgradeTower(state, id); repaint(); controller.persist?.(); return r; }
+  function sell(id) { const r = sellTower(state, id); repaint(); controller.persist?.(); return r; }
   function pickFork(id, forkId) { const r = chooseFork(state, id, forkId); repaint(); controller.persist?.(); return r; }
   function setWave(n) { state.waveNumber = Math.max(1, Math.trunc(n) || 1); state.wavePeak = state.waveNumber; repaint(); }
 
@@ -232,6 +217,8 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   root.addEventListener('click', (event) => {
     const upBtn = event.target.closest('button[data-upgrade-id]');
     if (upBtn) { upgrade(upBtn.dataset.upgradeId); return; }
+    const sellBtn = event.target.closest('button[data-sell-id]');
+    if (sellBtn) { sell(sellBtn.dataset.sellId); return; }
     const forkBtn = event.target.closest('button[data-fork-id]');
     if (forkBtn) { pickFork(forkBtn.dataset.forkId, forkBtn.dataset.forkChoice); return; }
     const rosterBtn = event.target.closest('button[data-tower-id]');
@@ -278,7 +265,8 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
         while (t < ms && state.waveActive) { tick(state, dt * speed, path.tiles); checkpointWave(); if (settleWave()) break; t += dt; }
         if (alive) repaint();
       },
-      startWave: startWaveAction, callEarly, setSpeed, place, cycleTarget, upgrade, pickFork, setWave, confront,
+      startWave: startWaveAction, callEarly, setSpeed, place, cycleTarget, upgrade, sell, pickFork, setWave, confront,
+      reshape: maybeReshape, pathInfo: () => ({ depth: pathDepth, tiles: path.tiles }), // reshape test hooks
     },
   };
 }
