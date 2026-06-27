@@ -78,39 +78,35 @@ export async function assertMixViewport({ page, pass, fail }, label) {
     const host = document.querySelector('#previewHost');
     const hostRect = host?.getBoundingClientRect();
     const wrapRect = el.getBoundingClientRect();
-    const ruler = el.querySelector('.mmx-ruler');
-    const playhead = el.querySelector('.mmx-playhead');
-    const lanes = el.querySelector('.mmx-lanes');
-    const timeline = el.querySelector('.mmx-body');
+    const lanes = el.querySelector('.al-lanes');
+    const canvas = el.querySelector('.al-track .al-canvas');
+    const cursor = el.querySelector('.al-track .al-cursor');
     const context = el.querySelector('.mmx-mix-context');
-    if (!hostRect || !ruler || !playhead || !lanes || !timeline || !context) return null;
+    if (!hostRect || !lanes || !canvas || !context) return null;
     const docEl = document.documentElement;
-    const rulerRect = ruler.getBoundingClientRect();
-    const playheadRect = playhead.getBoundingClientRect();
+    const canvasRect = canvas.getBoundingClientRect();
     return {
       wrapLeft: Math.round(wrapRect.left),
       wrapRight: Math.round(wrapRect.right),
       hostLeft: Math.round(hostRect.left),
       hostRight: Math.round(hostRect.right),
       overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
-      rulerVisible: rulerRect.height > 0 && rulerRect.width > 0,
-      playheadVisible: playheadRect.height > 0 && playheadRect.width > 0,
+      waveformVisible: canvasRect.height > 0 && canvasRect.width > 0,
+      cursorPresent: !!cursor,
       lanesVisible: lanes.getBoundingClientRect().height > 0,
-      timelineScroll: timeline.scrollWidth > Math.round(timeline.clientWidth),
-      contextVisible: getComputedStyle(context).display !== 'none' && context.textContent.includes('Context'),
+      contextVisible: getComputedStyle(context).display !== 'none' && context.textContent.trim().length > 0,
       activeViewportW: window.innerWidth,
     };
   });
   if (!geometry) return fail('audio mixer geometry unavailable (' + label + ')');
-  if (geometry.rulerVisible && geometry.playheadVisible && geometry.lanesVisible && geometry.contextVisible)
-    pass('audio mixer: timeline grammar visible in mix panel (' + label + ')');
+  if (geometry.waveformVisible && geometry.cursorPresent && geometry.lanesVisible && geometry.contextVisible)
+    pass('audio mixer: bespoke lane grammar visible in mix panel (' + label + ')');
   else fail('audio mixer geometry visibility (' + label + '): ' + JSON.stringify({
-    rulerVisible: geometry?.rulerVisible,
-    playheadVisible: geometry?.playheadVisible,
+    waveformVisible: geometry?.waveformVisible,
+    cursorPresent: geometry?.cursorPresent,
     lanesVisible: geometry?.lanesVisible,
     contextVisible: geometry?.contextVisible,
   }));
-  if (geometry.timelineScroll) pass('audio mixer: timeline is horizontally scrollable when needed');
   if (geometry.overflowX === 0) pass('audio mixer: no horizontal overflow in mix (' + label + ')');
   else fail('audio mixer: horizontal overflow while in mix (' + label + '): ' + geometry.overflowX);
   if (geometry.wrapLeft >= geometry.hostLeft - 1 && geometry.wrapRight <= geometry.hostRight + 1)

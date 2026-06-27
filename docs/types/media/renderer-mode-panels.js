@@ -156,6 +156,7 @@ export async function mountAudioModePanels({
   trackListEl,
   enableFfmpeg,
   exportPanel,
+  listenSurfaceEl,
   onRegisterController,
   onReleaseController,
 }) {
@@ -165,6 +166,11 @@ export async function mountAudioModePanels({
     stickyModes: ['listen', 'export'],
     onRegisterController,
     onReleaseController,
+    // Compare and Mix bring their own bespoke waveform lanes, so the always-on Listen scrub
+    // surface is hidden for them (they replace it); other modes keep it as the scrub context.
+    onModeChange: (id) => {
+      if (listenSurfaceEl) listenSurfaceEl.hidden = (id === 'compare' || id === 'mix');
+    },
   });
 
   const { registerMode, setMode } = states;

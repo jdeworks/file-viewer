@@ -107,6 +107,10 @@ export function buildClipView(project, laneId, cursorMs) {
 export function buildLaneControlsEl(laneModel, element) {
   const controls = document.createElement('div');
   controls.className = 'al-lane-controls mmx-mix-lane-controls';
+  const index = document.createElement('span');
+  index.className = 'mmx-mix-lane-index al-mini';
+  index.textContent = String((laneModel.order ?? 0) + 1);
+  controls.append(index);
   const mute = createButton('M', 'Mute lane', 'mmx-mix-mute');
   mute.dataset.laneId = laneModel.id;
   mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
@@ -223,33 +227,6 @@ export function buildMixToolbar() {
 }
 
 // --- DOM decoration helpers ---
-
-export function decorateLanes(root, project) {
-  const lanes = [...root.querySelectorAll('.mmx-lane')];
-  lanes.forEach((laneNode, index) => {
-    laneNode.classList.add('mmx-mix-lane');
-    const lane = project.lanes.find((item) => item.id === laneNode.dataset.laneId);
-    const header = laneNode.querySelector('.mmx-lane-header');
-    if (!header || !lane) return;
-    const indexNode = document.createElement('span');
-    indexNode.className = 'mmx-mix-lane-index';
-    indexNode.textContent = String(index + 1);
-    const controls = document.createElement('div');
-    controls.className = 'mmx-mix-lane-controls';
-    const mute = createButton('M', 'Mute lane', 'mmx-mix-mute');
-    mute.dataset.laneId = lane.id;
-    mute.setAttribute('aria-pressed', lane.muted ? 'true' : 'false');
-    const solo = createButton('S', 'Solo lane', 'mmx-mix-solo');
-    solo.dataset.laneId = lane.id;
-    solo.setAttribute('aria-pressed', lane.solo ? 'true' : 'false');
-    const gain = laneRange('mmx-mix-lane-gain', lane.id, lane.audio?.gain ?? 1, 0, 2, 0.01, 'Lane gain');
-    const fadeIn = laneRange('mmx-mix-fade-in', lane.id, firstElementForLane(project, lane.id)?.audio?.fadeInMs ?? 0, 0, 5000, 10, 'Fade in');
-    const fadeOut = laneRange('mmx-mix-fade-out', lane.id, firstElementForLane(project, lane.id)?.audio?.fadeOutMs ?? 0, 0, 5000, 10, 'Fade out');
-    controls.append(mute, solo, gain, fadeIn, fadeOut);
-    header.prepend(indexNode);
-    header.append(controls);
-  });
-}
 
 export function decorateInspector(root, project, runtime, { lastProxyPlan, lastVideoExportPlan, buildProxyPlan, buildVideoExportPlan }) {
   const inspector = root.querySelector('.mmx-inspector');
