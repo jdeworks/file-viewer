@@ -175,6 +175,7 @@ FULL_UNIT_TESTS=(
   tests/known-crystal-lang.test.mjs
   tests/known-cue-lang.test.mjs
   tests/known-factor-lang.test.mjs
+  tests/known-fennel-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
