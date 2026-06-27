@@ -277,14 +277,17 @@ export async function run(ctx) {
     count: document.querySelectorAll('#previewHost .imgv-tab').length,
     active: document.querySelector('#previewHost .imgv-tab.active')?.dataset.tab,
   }));
-  if (tabState.count === 7 && tabState.active === 'common') pass('editor toolbar grouped into 7 tabs, Common active'); else fail('tabs: ' + JSON.stringify(tabState));
-  // Help tab renders the Markdown guide (editor-guide.md → markdown-it → DOMPurify), offline.
-  await openTab('help');
+  if (tabState.count === 6 && tabState.active === 'common') pass('editor toolbar grouped into 6 tabs, Common active'); else fail('tabs: ' + JSON.stringify(tabState));
+  // Help button opens a floating modal that renders the Markdown guide (markdown-it →
+  // DOMPurify), offline; closing it leaves the toolbar/layout untouched.
+  await page.click('#previewHost .imgv-help-btn');
   const helpRendered = await page.waitForFunction(() => {
-    const h = document.querySelector('#previewHost .imgv-tabpanel[data-tab="help"] .imgv-help');
-    return !!h && /Image editor guide/i.test(h.textContent || '') && !!h.querySelector('h2');
+    const m = document.querySelector('.imgv-help-modal:not([hidden]) .imgv-help');
+    return !!m && /Image editor guide/i.test(m.textContent || '') && !!m.querySelector('h2');
   }, null, { timeout: 15000 }).then(() => true).catch(() => false);
-  if (helpRendered) pass('Help tab renders the Markdown guide to HTML (offline)'); else fail('Help tab did not render the guide');
+  await page.click('.imgv-help-close').catch(() => {});
+  const helpClosed = await page.$eval('.imgv-help-modal', (el) => el.hidden).catch(() => false);
+  if (helpRendered && helpClosed) pass('Help modal renders the guide to HTML (offline) and closes'); else fail('Help modal: ' + JSON.stringify({ helpRendered, helpClosed }));
   await openTab('common');
   // The main action buttons (text input + Add, Pencil/Fill, rotate/flip, Crop,
   // Resize, Expand, Filters, BG, Compare) all live in the Common tab — each also

@@ -6,11 +6,11 @@
 // they are NOT inlined here. index.js's loadRenderer imports THIS file.
 
 
-// docs/types/image/renderer.js
+// ../../docs/types/image/renderer.js
 import { loadGlobal as loadGlobal3, vendor as vendor3 } from "../../core/script-loader.js";
 import { loadTemplate, fill } from "../../core/template.js";
 
-// docs/types/image/imglib.js
+// ../../docs/types/image/imglib.js
 var EXT_MIME = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -43,10 +43,10 @@ function dimensions(url) {
   });
 }
 
-// docs/types/image/renderer.js
+// ../../docs/types/image/renderer.js
 import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
 
-// docs/types/image/edit-els.js
+// ../../docs/types/image/edit-els.js
 function queryEls(host, canEdit) {
   const q = (sel) => host.querySelector(sel);
   const qe = (sel) => canEdit ? host.querySelector(sel) : null;
@@ -145,7 +145,7 @@ function queryEls(host, canEdit) {
   };
 }
 
-// docs/types/image/view-controller.js
+// ../../docs/types/image/view-controller.js
 function createView(ctx) {
   const { host, img, zoomLabel } = ctx;
   let natural = 0, fit = true, zoom = 1;
@@ -308,7 +308,7 @@ function createView(ctx) {
   };
 }
 
-// docs/types/image/fill.js
+// ../../docs/types/image/fill.js
 function hexToRgba(hex) {
   const h = (hex || "#ff0000").replace("#", "");
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
@@ -451,7 +451,7 @@ function bgFloodFill(srcData, w, h, sx, sy, tol) {
   return dst;
 }
 
-// docs/types/image/draw-overlay.js
+// ../../docs/types/image/draw-overlay.js
 function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
@@ -821,7 +821,7 @@ function createDrawTools(ctx) {
   };
 }
 
-// docs/types/image/editor-core.js
+// ../../docs/types/image/editor-core.js
 var CANVAS_ENCODABLE = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
 function createEditCore({ img, url, mime, ctx, els }) {
   const { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator } = els;
@@ -940,7 +940,7 @@ function createEditCore({ img, url, mime, ctx, els }) {
   };
 }
 
-// docs/types/image/levels.js
+// ../../docs/types/image/levels.js
 function buildLevelsLUT(black = 0, white = 255, gamma = 1) {
   black = Math.max(0, Math.min(254, black | 0));
   white = Math.max(black + 1, Math.min(255, white | 0));
@@ -962,7 +962,7 @@ function applyLevels(data, lut) {
   }
 }
 
-// docs/types/image/edit-filters.js
+// ../../docs/types/image/edit-filters.js
 function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
@@ -1098,7 +1098,7 @@ function mountFilters({ img, mime, core, els }) {
   presetInvert?.addEventListener("click", () => applyPreset("invert(1)"));
 }
 
-// docs/types/image/curves.js
+// ../../docs/types/image/curves.js
 function normalizePoints(points) {
   const clamp = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
   const pts = (points || []).map((p) => ({ x: clamp(p.x), y: clamp(p.y) })).sort((a, b) => a.x - b.x);
@@ -1170,7 +1170,7 @@ function applyChannelLUTs(data, luts) {
   }
 }
 
-// docs/types/image/edit-curves.js
+// ../../docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
   const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
@@ -1366,7 +1366,7 @@ function mountCurves({ img, mime, core, els }) {
   } };
 }
 
-// docs/types/image/convolve.js
+// ../../docs/types/image/convolve.js
 var GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1].map((v) => v / 16);
 var IDENT = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 function buildKernel(type, strength) {
@@ -1405,7 +1405,7 @@ function applyConvolution(data, w, h, kernel) {
   return out;
 }
 
-// docs/types/image/edit-convolve.js
+// ../../docs/types/image/edit-convolve.js
 function mountConvolve({ img, mime, core, els }) {
   const { convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel } = els;
   if (!convolveBtn || !convolvePanel) return { teardown() {
@@ -1483,7 +1483,7 @@ function mountConvolve({ img, mime, core, els }) {
   } };
 }
 
-// docs/types/image/edit-text.js
+// ../../docs/types/image/edit-text.js
 function mountTextTool({ host, img, mime, core, els }) {
   const { editInput, editSize, editColor, editFont, editApply } = els;
   let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
@@ -1628,7 +1628,7 @@ function mountTextTool({ host, img, mime, core, els }) {
   return { isActive: () => !!textDragDiv, exitPlaceMode };
 }
 
-// docs/types/image/geometry-affine.js
+// ../../docs/types/image/geometry-affine.js
 function affineForGeometry(type, w, h, p = {}) {
   switch (type) {
     case "rotateCW":
@@ -1656,7 +1656,7 @@ function affineForGeometry(type, w, h, p = {}) {
   }
 }
 
-// docs/types/image/edit-geometry.js
+// ../../docs/types/image/edit-geometry.js
 function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   const {
     rotLBtn,
@@ -1964,7 +1964,7 @@ function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   return { isActive: () => cropMode };
 }
 
-// docs/types/image/edit-bg.js
+// ../../docs/types/image/edit-bg.js
 function mountBg({ img, url, core, els }) {
   const { bgBtn, bgTol, bgOk, bgX, exportFmt } = els;
   const bgTolWrap = bgTol && (bgTol.closest(".imgv-bg-tol-wrap") || bgTol);
@@ -2063,7 +2063,7 @@ function mountBg({ img, url, core, els }) {
   } };
 }
 
-// docs/types/image/edit-undo-key.js
+// ../../docs/types/image/edit-undo-key.js
 var active = null;
 var installed = false;
 function isTextEntry(t) {
@@ -2114,7 +2114,7 @@ function registerUndoKeys(editor) {
   };
 }
 
-// docs/types/image/edit-tabs.js
+// ../../docs/types/image/edit-tabs.js
 var STYLE_ID = "imgv-tabs-css";
 var CSS = `
 .imgv-tabs{flex-basis:100%;display:flex;flex-wrap:wrap;gap:2px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px;}
@@ -2197,7 +2197,7 @@ function mountTabs(host) {
   return { showTab };
 }
 
-// docs/types/image/help-tab.js
+// ../../docs/types/image/help-tab.js
 import { loadGlobal, vendor } from "../../core/script-loader.js";
 var GUIDE_URL = new URL("./editor-guide.md", import.meta.url);
 var cssInjected = false;
@@ -2207,52 +2207,98 @@ function injectStyle2() {
   const s = document.createElement("style");
   s.id = "imgv-help-css";
   s.textContent = `
-    .imgv-help{flex-basis:100%;max-height:min(60vh,560px);overflow:auto;padding:4px 14px 12px;
-      line-height:1.55;font-size:13px;color:var(--fg);}
+    .imgv-help-btn{font-size:12px;padding:3px 11px;border:1px solid transparent;background:transparent;color:var(--fg);opacity:.62;border-radius:6px 6px 0 0;cursor:pointer;}
+    .imgv-help-btn:hover{opacity:1;background:var(--bg);}
+    .imgv-help-modal{position:fixed;z-index:60;top:12vh;left:50%;transform:translateX(-50%);width:min(620px,92vw);height:min(70vh,640px);
+      display:flex;flex-direction:column;background:var(--bg-2,#252525);color:var(--fg,#ddd);border:1px solid var(--border,#444);
+      border-radius:8px;box-shadow:0 10px 40px #0008;resize:both;overflow:hidden;min-width:280px;min-height:160px;font-family:var(--font-ui,sans-serif);}
+    .imgv-help-modal[hidden]{display:none;}
+    .imgv-help-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--border,#444);cursor:move;user-select:none;background:var(--bg,#1e1e1e);}
+    .imgv-help-bar strong{flex:1;font-size:13px;}
+    .imgv-help-close{border:none;background:transparent;color:inherit;font-size:15px;cursor:pointer;line-height:1;}
+    .imgv-help{flex:1;overflow:auto;padding:6px 16px 14px;line-height:1.55;font-size:13px;}
     .imgv-help h1{font-size:1.5em;margin:.2em 0 .4em;}
     .imgv-help h2{font-size:1.2em;margin:1.1em 0 .4em;border-bottom:1px solid var(--border);padding-bottom:3px;}
     .imgv-help h3{font-size:1.02em;margin:.9em 0 .3em;}
     .imgv-help p,.imgv-help ul,.imgv-help ol{margin:.4em 0;}
     .imgv-help ul,.imgv-help ol{padding-left:1.4em;}
     .imgv-help li{margin:.15em 0;}
-    .imgv-help code{font-family:monospace;background:var(--bg-2,#0001);padding:.05em .35em;border-radius:4px;font-size:.92em;}
+    .imgv-help code{font-family:monospace;background:#0002;padding:.05em .35em;border-radius:4px;font-size:.92em;}
     .imgv-help blockquote{margin:.5em 0;padding:.2em .9em;border-left:3px solid var(--accent);opacity:.85;}
-    .imgv-help a{color:var(--accent);}
-    .imgv-help .imgv-help-status{opacity:.7;}`;
+    .imgv-help a{color:var(--accent);}`;
   document.head.appendChild(s);
 }
 function mountHelpTab(host) {
-  const panel = host.querySelector('.imgv-tabpanel[data-tab="help"]');
-  const tab = host.querySelector('.imgv-tab[data-tab="help"]');
-  if (!panel || !tab) return;
+  const btn = host.querySelector(".imgv-help-btn");
+  if (!btn) return;
   injectStyle2();
-  const box = document.createElement("div");
-  box.className = "imgv-help";
-  box.innerHTML = '<p class="imgv-help-status">Loading guide…</p>';
-  panel.appendChild(box);
-  let started = false;
+  let modal = null, body = null, rendered = false;
+  function build() {
+    modal = document.createElement("div");
+    modal.className = "imgv-help-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="imgv-help-bar"><strong>Image editor guide</strong><button class="imgv-help-close" title="Close">✕</button></div>
+      <div class="imgv-help">Loading guide…</div>`;
+    (host.ownerDocument?.body || document.body).appendChild(modal);
+    body = modal.querySelector(".imgv-help");
+    modal.querySelector(".imgv-help-close").addEventListener("click", () => {
+      modal.hidden = true;
+    });
+    makeDraggable(modal, modal.querySelector(".imgv-help-bar"));
+  }
   async function renderOnce() {
-    if (started) return;
-    started = true;
+    if (rendered) return;
+    rendered = true;
     try {
       const [res, markdownit, DOMPurify] = await Promise.all([
         fetch(GUIDE_URL),
         loadGlobal(vendor("markdown-it/markdown-it.min.js"), "markdownit"),
         loadGlobal(vendor("dompurify/purify.min.js"), "DOMPurify")
       ]);
-      const src = await res.text();
       const md = markdownit({ html: false, linkify: true, typographer: true });
-      box.innerHTML = DOMPurify.sanitize(md.render(src));
+      body.innerHTML = DOMPurify.sanitize(md.render(await res.text()));
     } catch (e) {
-      started = false;
-      box.innerHTML = `<p class="imgv-help-status">Could not load the guide: ${e && e.message || e}</p>`;
+      rendered = false;
+      body.textContent = "Could not load the guide: " + (e && e.message || e);
     }
   }
-  tab.addEventListener("click", renderOnce);
-  if (tab.classList.contains("active")) renderOnce();
+  btn.addEventListener("click", () => {
+    if (!modal) build();
+    modal.hidden = !modal.hidden;
+    if (!modal.hidden) renderOnce();
+  });
+}
+function makeDraggable(modal, handle) {
+  let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
+  handle.addEventListener("mousedown", (e) => {
+    if (e.target.closest(".imgv-help-close")) return;
+    dragging = true;
+    const r = modal.getBoundingClientRect();
+    modal.style.transform = "none";
+    modal.style.left = r.left + "px";
+    modal.style.top = r.top + "px";
+    sx = e.clientX;
+    sy = e.clientY;
+    ox = r.left;
+    oy = r.top;
+    e.preventDefault();
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  });
+  function onMove(e) {
+    if (!dragging) return;
+    modal.style.left = Math.max(0, ox + e.clientX - sx) + "px";
+    modal.style.top = Math.max(0, oy + e.clientY - sy) + "px";
+  }
+  function onUp() {
+    dragging = false;
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseup", onUp);
+  }
 }
 
-// docs/types/image/pixel-clipboard.js
+// ../../docs/types/image/pixel-clipboard.js
 var clip = null;
 function setClip(canvas) {
   clip = canvas;
@@ -2289,7 +2335,7 @@ async function blobToCanvas(blob) {
   return c;
 }
 
-// docs/types/image/ocr-ui.js
+// ../../docs/types/image/ocr-ui.js
 var OCR = "../../core/ocr/index.js";
 var consented = false;
 function ocrConsent(host, approxMB) {
@@ -2452,7 +2498,7 @@ function injectOcrStyle() {
   document.head.appendChild(s);
 }
 
-// docs/types/image/edit-select-masks.js
+// ../../docs/types/image/edit-select-masks.js
 function rectMask(a, b, w, h) {
   const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
   const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
@@ -2505,7 +2551,7 @@ function translateMask(src, w, h, dx, dy) {
   return out;
 }
 
-// docs/types/image/edit-select.js
+// ../../docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, copySelection: () => null, clipFillInPlace() {
@@ -2961,10 +3007,10 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   };
 }
 
-// docs/types/image/adv-edit.js
+// ../../docs/types/image/adv-edit.js
 import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
 
-// docs/types/image/adv-edit-actions.js
+// ../../docs/types/image/adv-edit-actions.js
 function isTypingTarget(target) {
   if (!target) return false;
   if (target.isContentEditable || target.tagName === "TEXTAREA") return true;
@@ -3128,7 +3174,7 @@ function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, dele
   };
 }
 
-// docs/types/image/adv-edit-controls.js
+// ../../docs/types/image/adv-edit-controls.js
 function installObjectActions(ctx) {
   const { getSelected, select, snap, tr, layer, Konva, cloneNode: cloneNode2, placeObject, wireObject, isGroup, stageW, stageH, refreshLayers, syncToolbar, markDirty } = ctx;
   function deleteSelection() {
@@ -3414,7 +3460,7 @@ function installShapeControls(ctx) {
   $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
 }
 
-// docs/types/image/adv-edit-layers.js
+// ../../docs/types/image/adv-edit-layers.js
 function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, select, snap, markDirty, cloneNode: cloneNode2, placeObject, labelName, stageW, stageH }) {
   const panel = document.createElement("div");
   panel.className = "imgv-adv-layers";
@@ -3540,7 +3586,7 @@ function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, se
   return { panel, refresh, destroy: () => panel.remove() };
 }
 
-// docs/types/image/adv-edit-precision.js
+// ../../docs/types/image/adv-edit-precision.js
 function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, markDirty, refreshLayers, stageW, stageH }) {
   const layer = new Konva.Layer({ listening: false });
   layer.name("precision");
@@ -3675,7 +3721,7 @@ function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, ma
   };
 }
 
-// docs/types/image/adv-edit-points.js
+// ../../docs/types/image/adv-edit-points.js
 function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refreshLayers }) {
   const layer = new Konva.Layer({ listening: true });
   layer.name("point-edit");
@@ -3756,7 +3802,7 @@ function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refresh
   };
 }
 
-// docs/types/image/adv-edit-text.js
+// ../../docs/types/image/adv-edit-text.js
 function syncTextControls($, label, { multi = false, textNodeOf, tagNodeOf, rgbToHex: rgbToHex2 }) {
   const t = textNodeOf(label), tag = tagNodeOf(label);
   const style = t.fontStyle?.() || "";
@@ -3874,7 +3920,7 @@ function installTextControls({ $, selectedLabels, textNodeOf, tagNodeOf, layer, 
   });
 }
 
-// docs/types/image/adv-edit-toolbar.js
+// ../../docs/types/image/adv-edit-toolbar.js
 var DEFAULTS = {
   text: "Text",
   fontFamily: "system-ui, sans-serif",
@@ -3961,7 +4007,7 @@ function advToolbarHtml() {
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
 
-// docs/types/image/adv-edit.js
+// ../../docs/types/image/adv-edit.js
 var konvaPromise = null;
 function loadKonva() {
   if (!konvaPromise) konvaPromise = loadGlobal2(vendor2("konva/konva.min.js"), "Konva");
@@ -4489,7 +4535,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   }
 }
 
-// docs/types/image/gif-decode.js
+// ../../docs/types/image/gif-decode.js
 var mod = null;
 async function loadGifuct() {
   if (!mod) mod = await import("../../vendor/gifuct/gifuct.esm.js");
@@ -4564,7 +4610,7 @@ async function frameToPngBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 
-// docs/types/image/gif-anim.js
+// ../../docs/types/image/gif-anim.js
 function mountGifPlayer({ host, bytes, openBlob }) {
   host.innerHTML = "";
   const root = document.createElement("div");
@@ -4732,7 +4778,7 @@ function injectStyle3() {
   document.head.appendChild(s);
 }
 
-// docs/types/image/renderer.js
+// ../../docs/types/image/renderer.js
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
