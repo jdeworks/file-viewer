@@ -49,6 +49,27 @@
   color: #dffbf4;
 }
 
+.s9-aids {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.s9-aids strong {
+  font-size: 12px;
+  color: #5dcaa5;
+}
+
+.s9-aids button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.s9-aids button.s9-aid-owned {
+  border-color: #5dcaa5;
+  color: #5dcaa5;
+}
+
 .s9-log {
   min-height: 7em;
   padding-left: 24px;

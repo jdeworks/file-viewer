@@ -1227,6 +1227,18 @@ export async function run(ctx) {
   if (s9Stall.reached > 1 && s9Stall.unstable && !s9Stall.boss)
     pass('Stage 9 online run clears the learnable front, then stalls at the onlineUnstable back third');
   else fail(`Stage 9 online run did not stall at the back third: ${JSON.stringify(s9Stall)}`);
+  // Clarity SPEND: clearing the front banked clarity; a Tachometer is buyable online, but the
+  // Single-Frame peek is OFFLINE-ONLY so it can never bypass the un-cheat (still online here ⇒ rejected).
+  const s9Spend = await page.evaluate(() => {
+    const before = window.__fvStage9.aids().clarity;
+    const tach = window.__fvStage9.buyAid('tachometer');
+    const after = window.__fvStage9.aids();
+    const peekOnline = window.__fvStage9.buyAid('peek');
+    return { before, tachOk: tach.ok, owned: after.tachometer, spent: before - after.clarity, peekReason: peekOnline.reason };
+  });
+  if (s9Spend.tachOk && s9Spend.owned && s9Spend.spent > 0 && s9Spend.peekReason === 'offline-only')
+    pass('Stage 9 clarity spend: Tachometer bought online; Single-Frame peek refused while live (offline-only)');
+  else fail(`Stage 9 clarity spend wrong: ${JSON.stringify(s9Spend)}`);
   // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
   // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
@@ -1238,6 +1250,11 @@ export async function run(ctx) {
       return Boolean(save.actions?.['9.offline_mode_activated'] && save.achievements?.['stage9.offline_mode_activated']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  // Now offline, the Single-Frame peek becomes buyable (there's a fixed seed to reveal) — the aid only
+  // ever exists once the un-cheat is active, so it deepens play without weakening the gate.
+  const s9Peek = await page.evaluate(() => window.__fvStage9.buyAid('peek').ok);
+  if (s9Peek) pass('Stage 9 Single-Frame peek buyable once offline (aid gated by the un-cheat, not a bypass)');
+  else fail('Stage 9 peek not buyable offline');
   // Drive the real run: clear every sublevel by CROSSing on its solve timing, then cross the boss
   // on the learned offline timing. (Not a bypass — each level is a genuine timed CROSS.)
   await page.evaluate(() => window.__fvStage9.solveOffline());

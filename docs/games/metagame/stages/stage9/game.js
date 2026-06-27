@@ -12,9 +12,12 @@ import { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, MOVEMENTS } from "./
 
 export { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, MOVEMENTS };
 
-// Evaluate a CROSS press for (seed, level, elapsedMs). Dispatches to the level's mode.
-export function crossAttempt({ seed, elapsedMs, level }) {
-  const cfg = levelConfig(level);
+// Evaluate a CROSS press for (seed, level, elapsedMs). Dispatches to the level's mode. toleranceMult
+// (>1) widens the win window for one press — used by the optional Stabilizer Lens aid; it never changes
+// the gap MOTION (still pure f(seed,elapsedMs)) and is irrelevant to the offline un-cheat.
+export function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
+  let cfg = levelConfig(level);
+  if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
   return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
 }
 

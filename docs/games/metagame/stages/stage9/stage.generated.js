@@ -507,8 +507,9 @@ function levelConfig(level) {
 }
 
 // ../../docs/games/metagame/stages/stage9/game.js
-function crossAttempt({ seed, elapsedMs, level }) {
-  const cfg = levelConfig(level);
+function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
+  let cfg = levelConfig(level);
+  if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
   return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
 }
 function solveMoment(seed, level) {
@@ -678,6 +679,92 @@ function startLoop(onFrame) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage9/aids.js
+var AIDS = [
+  { id: "stabilizer", label: "Stabilizer Lens", cost: 20, desc: "+60% tolerance on your next CROSS (one charge)." },
+  { id: "tachometer", label: "Tachometer", cost: 30, desc: "permanent numeric readout: gap angle + speed." },
+  { id: "peek", label: "Single-Frame", cost: 15, desc: "offline only: reveal the gap's angle right now." }
+];
+var STABILIZER_TOLERANCE_MULT = 1.6;
+function aidById(id) {
+  return AIDS.find((a) => a.id === id) || null;
+}
+function defaultAids() {
+  return { stabilizer: 0, tachometer: false };
+}
+function normalizeAids(aids) {
+  const t = aids && typeof aids === "object" ? aids : {};
+  const stabilizer = Number.isFinite(Number(t.stabilizer)) ? Math.max(0, Math.floor(Number(t.stabilizer))) : 0;
+  return { stabilizer, tachometer: Boolean(t.tachometer) };
+}
+function buyAid(state, id, { offline = false } = {}) {
+  const aid = aidById(id);
+  if (!aid) return { ok: false, reason: "unknown" };
+  state.aids = normalizeAids(state.aids);
+  if (id === "peek" && !offline) return { ok: false, reason: "offline-only", aid };
+  if (id === "tachometer" && state.aids.tachometer) return { ok: false, reason: "owned", aid };
+  const clarity = Number(state.clarity || 0);
+  if (clarity < aid.cost) return { ok: false, reason: "insufficient", aid };
+  state.clarity = clarity - aid.cost;
+  if (id === "stabilizer") state.aids.stabilizer += 1;
+  if (id === "tachometer") state.aids.tachometer = true;
+  return { ok: true, aid };
+}
+function consumeStabilizer(state) {
+  state.aids = normalizeAids(state.aids);
+  if (state.aids.stabilizer > 0) {
+    state.aids.stabilizer -= 1;
+    return STABILIZER_TOLERANCE_MULT;
+  }
+  return 1;
+}
+
+// ../../docs/games/metagame/stages/stage9/testhook.js
+function installTestHook(api) {
+  const hook = {
+    state: () => api.state,
+    config: (level) => levelConfig(level ?? api.state.currentLevel),
+    aids: () => ({ clarity: api.state.clarity, ...api.getAids() }),
+    buyAid: (id) => api.buyAid(id),
+    crossAt(ms) {
+      api.crossAt(Number(ms) || 0);
+    },
+    // CROSS the current level at its perfect moment(s) for the seed it actually uses right now.
+    solveLevel() {
+      const sol = solveMoment(api.activeSeed(), api.state.currentLevel);
+      for (const t of Array.isArray(sol) ? sol : [sol]) api.crossAt(t);
+      return api.state.currentLevel;
+    },
+    // Clear the learnable front. Online this STALLS at the first onlineUnstable level (its gap reseeds
+    // on every commit) — proving the back third demands the offline un-cheat.
+    solveStableBody() {
+      let guard = 0;
+      while (api.state.currentLevel < BOSS_LEVEL && !levelConfig(api.state.currentLevel).onlineUnstable && guard++ < 96) {
+        const before = api.state.currentLevel;
+        this.solveLevel();
+        if (api.state.currentLevel === before) break;
+      }
+      return api.state.currentLevel;
+    },
+    // Full run to defeat (assumes Offline Mode already activated by the player/smoke).
+    solveOffline() {
+      let guard = 0;
+      while (api.state.currentLevel < BOSS_LEVEL && guard++ < 96) {
+        const before = api.state.currentLevel;
+        this.solveLevel();
+        if (api.state.currentLevel === before) break;
+      }
+      api.reobserve();
+      api.crossAt(solveMoment(FIXED_OFFLINE_SEED, BOSS_LEVEL));
+      return Boolean(api.state.boss.defeated);
+    }
+  };
+  window.__fvStage9 = hook;
+  return () => {
+    if (window.__fvStage9 === hook) delete window.__fvStage9;
+  };
+}
+
 // ../../docs/games/metagame/stages/stage9/renderer.js
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -688,6 +775,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
       <span>movement <b data-field="movement"></b></span>
       <span>clarity <b data-field="clarity"></b></span>
+      <span data-field="tachWrap" hidden>tach <b data-field="tach"></b></span>
       <span>seed <b data-field="seed"></b></span>
     </header>
     <div class="s9-layout">
@@ -695,6 +783,11 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       <aside class="s9-side">
         <button type="button" data-action="observe">OBSERVE (reset rotation)</button>
         <button type="button" data-action="cross">CROSS</button>
+        <hr>
+        <div class="s9-aids">
+          <strong>calibration (spend clarity)</strong>
+          ${AIDS.map((a) => `<button type="button" data-action="aid" data-aid="${a.id}" title="${a.desc}">${a.label} (${a.cost})</button>`).join("")}
+        </div>
         <hr>
         <button type="button" data-action="notes">open service-worker-notes.txt</button>
         <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
@@ -761,7 +854,9 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       return;
     }
     const seed = activeSeed();
-    const result = crossAttempt({ seed, elapsedMs, level });
+    const toleranceMult = consumeStabilizer(state);
+    if (toleranceMult > 1) pushLog2("stabilizer lens engaged (+tolerance for this cross).");
+    const result = crossAttempt({ seed, elapsedMs, level, toleranceMult });
     if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
     if (cfg.mode === "rhythm") {
       const need = Math.max(2, cfg.chain || 3);
@@ -809,6 +904,9 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       case "cross":
         doCross();
         break;
+      case "aid":
+        buyAidAction(button.dataset.aid);
+        break;
       case "notes":
         openNotes();
         break;
@@ -821,56 +919,46 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     }
     persistAndPaint();
   });
+  function buyAidAction(id) {
+    const offline = offlineUnlocked();
+    const res = buyAid(state, id, { offline });
+    if (!res.ok) {
+      const why = { "offline-only": "single-frame only works in Offline Mode (online the seed reseeds).", insufficient: "not enough clarity.", owned: "already owned." }[res.reason] || "cannot buy that.";
+      pushLog2(why);
+      return res;
+    }
+    if (id === "stabilizer") pushLog2("stabilizer lens armed: your next CROSS gets a wider window.");
+    if (id === "tachometer") pushLog2("tachometer online: numeric gap readout enabled.");
+    if (id === "peek") doPeek();
+    return res;
+  }
+  function doPeek() {
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const ang = Number.isFinite(r.angle) ? `gap at ${Math.round(r.angle)}deg` : "two gaps to align";
+    pushLog2(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
+  }
   const loop = startLoop((dt) => {
     if (!state.boss.defeated) elapsedMs += dt;
     paintArena();
   });
   repaint();
-  window.__fvStage9 = {
-    state: () => state,
-    config: (level) => levelConfig(level ?? state.currentLevel),
+  const uninstallHook = installTestHook({
+    state,
+    activeSeed,
+    reobserve,
+    getAids: () => ({ ...state.aids }),
+    buyAid: (id) => buyAidAction(id),
     crossAt(ms) {
       elapsedMs = Number(ms) || 0;
       doCross();
       persistAndPaint();
-    },
-    // CROSS the current level at its perfect moment(s) for the seed it actually uses right now. Most
-    // modes return a single ms; rhythm returns the press-time ARRAY (one per beat) — press each in turn,
-    // which drives the real chain to completion (each press is a genuine timed CROSS, not a bypass).
-    solveLevel() {
-      const sol = solveMoment(activeSeed(), state.currentLevel);
-      for (const t of Array.isArray(sol) ? sol : [sol]) this.crossAt(t);
-      return state.currentLevel;
-    },
-    // Clear the learnable front movements. Online this STALLS at the first onlineUnstable level
-    // (its gap reseeds on every commit) — proving the back third demands the offline un-cheat.
-    solveStableBody() {
-      let guard = 0;
-      while (state.currentLevel < BOSS_LEVEL && !levelConfig(state.currentLevel).onlineUnstable && guard++ < 64) {
-        const before = state.currentLevel;
-        this.solveLevel();
-        if (state.currentLevel === before) break;
-      }
-      return state.currentLevel;
-    },
-    // Full run to defeat (assumes Offline Mode already activated by the player/smoke).
-    solveOffline() {
-      let guard = 0;
-      while (state.currentLevel < BOSS_LEVEL && guard++ < 64) {
-        const before = state.currentLevel;
-        this.solveLevel();
-        if (state.currentLevel === before) break;
-      }
-      reobserve();
-      this.crossAt(solveMoment(FIXED_OFFLINE_SEED, BOSS_LEVEL));
-      return Boolean(state.boss.defeated);
     }
-  };
+  });
   return {
     repaint,
     destroy() {
       loop.stop();
-      if (window.__fvStage9) delete window.__fvStage9;
+      uninstallHook();
       root.remove();
     }
   };
@@ -903,6 +991,8 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const cfg = levelConfig(state.currentLevel);
     const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
     fields.seed.textContent = unstable ? lock.unlocked ? "0 (fixed cache)" : "live-random" : "stable";
+    paintTach(cfg);
+    paintAids();
     paintArena();
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
@@ -915,6 +1005,25 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       li.textContent = line;
       return li;
     }));
+  }
+  function paintTach(cfg) {
+    const owned = Boolean(state.aids && state.aids.tachometer);
+    fields.tachWrap.hidden = !owned;
+    if (!owned) return;
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const ang = Number.isFinite(r.angle) ? `${Math.round(r.angle)}deg` : `${Math.round(r.distance)}deg off`;
+    fields.tach.textContent = `${ang} @ ${Math.round(cfg.speed || cfg.speedInner || cfg.oscBase || 0)}deg/s`;
+  }
+  function paintAids() {
+    const offline = offlineUnlocked();
+    for (const aid of AIDS) {
+      const btn = root.querySelector(`[data-aid="${aid.id}"]`);
+      if (!btn) continue;
+      const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
+      const peekLocked = aid.id === "peek" && !offline;
+      btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
+      btn.classList.toggle("s9-aid-owned", Boolean(ownedTach));
+    }
   }
   function persistAndPaint() {
     if (typeof save === "function") save();
@@ -945,6 +1054,7 @@ function defaultState() {
     offlineControlVisible: false,
     offlineMode: false,
     clarity: 0,
+    aids: defaultAids(),
     currentLevel: 1,
     lockedSeedSamples: [],
     log: [
@@ -974,6 +1084,7 @@ function normalizeState(state) {
   target.offlineControlVisible = Boolean(target.offlineControlVisible);
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
+  target.aids = normalizeAids(target.aids);
   const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
   target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;

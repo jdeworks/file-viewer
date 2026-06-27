@@ -1,4 +1,5 @@
 import { BOSS_LEVEL } from "./movements.js";
+import { defaultAids, normalizeAids } from "./aids.js";
 
 export function defaultState() {
   return {
@@ -7,6 +8,7 @@ export function defaultState() {
     offlineControlVisible: false,
     offlineMode: false,
     clarity: 0,
+    aids: defaultAids(),
     currentLevel: 1,
     lockedSeedSamples: [],
     log: [
@@ -39,6 +41,7 @@ export function normalizeState(state) {
   target.offlineControlVisible = Boolean(target.offlineControlVisible);
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
+  target.aids = normalizeAids(target.aids);
   const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
   target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;
