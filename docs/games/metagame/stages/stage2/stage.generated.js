@@ -2535,13 +2535,19 @@ function renderStage2({
       <div class="s2-stage">
         <div class="s2-screen"></div>
         <div class="s2-legend">
-          <span class="s2-c-player">@</span> you
-          <span class="s2-c-foe">s</span> foe
-          <span class="s2-c-item">/</span> weapon
-          <span class="s2-c-potion">!</span> potion
-          <span class="s2-c-glyph">%</span> glyph
-          <span class="s2-c-exit">&gt;</span> stairs
-          <span class="s2-c-lava">≈</span> hazard
+          <div class="s2-legend-row">
+            <span class="s2-c-player">@</span> you
+            <span class="s2-c-foe">s</span> foe
+            <span class="s2-c-item">/</span> weapon
+            <span class="s2-c-potion">!</span> potion
+            <span class="s2-c-glyph">%</span> glyph
+            <span class="s2-c-consum">♦</span> rune
+          </div>
+          <div class="s2-legend-row">
+            <span class="s2-c-exit">&gt;</span> stairs
+            <span class="s2-c-lava">≈</span> lava
+            <span class="s2-c-spikes">^</span> spikes
+          </div>
         </div>
       </div>
       <div class="s2-controls">

@@ -272,8 +272,17 @@
 .s2-legend {
   color: var(--s2-dim);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   font-size: 0.85em;
+  gap: 2px;
+  max-width: 100%;
+}
+
+/* Two fixed rows so the legend never overruns the board width (it grew past one line when the
+   darkness act added hazards/runes). Each row wraps internally only as a last resort. */
+.s2-legend-row {
+  display: flex;
+  flex-wrap: wrap;
   gap: 4px 12px;
 }
 
