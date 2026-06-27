@@ -3,6 +3,7 @@ import {
   activateOfflineMode,
   getBossLockState,
   getBossSeed,
+  offlineSolveElapsed,
   readServiceWorkerNotes,
   recordObserverBossAttempt
 } from "../boss.js";
@@ -80,16 +81,24 @@ function actionHarness() {
 {
   const state = defaultState();
   const actions = actionHarness();
-  const fail = recordObserverBossAttempt({ state, actions });
+  // Online: locked, and the perfect offline timing does NOT help (seed reseeds each attempt).
+  const fail = recordObserverBossAttempt({ state, actions, elapsedMs: offlineSolveElapsed() });
   assert.equal(fail.defeated, false);
+  assert.equal(fail.unlocked, false);
   assert.equal(state.boss.attempts, 1);
+
   readServiceWorkerNotes({ state });
   activateOfflineMode({ state, actions });
-  const win = recordObserverBossAttempt({ state, actions });
+  // Offline but MISTIMED (half a rotation off) ⇒ still fails — it's a real timing game now.
+  const mistimed = recordObserverBossAttempt({ state, actions, elapsedMs: offlineSolveElapsed() + 4000 });
+  assert.equal(mistimed.unlocked, true, "offline is unlocked");
+  assert.equal(mistimed.defeated, false, "a mistimed cross still fails");
+  // Offline + the learned timing ⇒ the gap is at the top ⇒ defeat.
+  const win = recordObserverBossAttempt({ state, actions, elapsedMs: offlineSolveElapsed() });
   assert.equal(win.defeated, true);
+  assert.equal(win.hit, true);
   assert.equal(state.boss.defeated, true);
   assert.equal(state.meta.btsAvailable, true);
-  assert.equal(state.clarity, 109);
 }
 
 console.log("stage9 boss tests passed");

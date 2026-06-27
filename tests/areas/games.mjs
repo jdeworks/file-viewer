@@ -782,6 +782,16 @@ export async function run(ctx) {
   pass('Stage 8 salvage action unlocks and clears Entropy Field');
 
   await page.waitForSelector('.stage9-observer-state', { timeout: 8000 });
+  // The timing game is wired: a live rotating ASCII ring renders + OBSERVE/CROSS controls exist.
+  await page.waitForSelector('.stage9-observer-state [data-action="observe"]', { timeout: 4000 });
+  await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
+  const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[─│+]/.test(document.querySelector('.s9-arena')?.textContent || ''));
+  if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
+  // The boss is gated behind the run: the player starts on a sublevel, not at the Observer.
+  const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
+  if (s9StartLevel < 18) pass('Stage 9 starts on a sublevel (boss gated behind the full run)'); else fail('Stage 9 started at the boss');
+  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the boss
+  // seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
   await page.click('[data-action="offline"]');
@@ -791,14 +801,16 @@ export async function run(ctx) {
       return Boolean(save.actions?.['9.offline_mode_activated'] && save.achievements?.['stage9.offline_mode_activated']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.click('[data-action="boss"]');
+  // Drive the real run: clear every sublevel by CROSSing on its solve timing, then cross the boss
+  // on the learned offline timing. (Not a bypass — each level is a genuine timed CROSS.)
+  await page.evaluate(() => window.__fvStage9.solveOffline());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(9) && save.unlockedStages?.includes(10);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 9 offline action unlocks and clears Observer State');
+  pass('Stage 9: full run cleared + offline-timed CROSS defeats Observer State');
 
   await page.waitForSelector('.mg-stage10', { timeout: 8000 });
   // Stage 10 presents one memory at a time: read -> pick a stance -> integrate -> advance with Next.

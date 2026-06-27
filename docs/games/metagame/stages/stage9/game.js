@@ -48,6 +48,23 @@ export function crossAttempt({ seed, elapsedMs, level }) {
   return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance, level };
 }
 
+// The earliest elapsed (ms) at which a (seed, level) gap first reaches the top (0deg) — i.e. the
+// perfect CROSS moment. With a FIXED seed this is learnable by watching; with an online (random)
+// seed it changes every OBSERVE. Used by the boss un-cheat and by the sublevel test driver.
+export function solveElapsed(seed, level) {
+  const speed = rotSpeedFor(seed, level);
+  const base = ringAngle(seed, 0, speed);
+  const need = ((360 - base) % 360 + 360) % 360;
+  return Math.round(need / speed * 1000);
+}
+
+// Deterministic seed for a non-boss level so its rotation is stable (learnable) within the level,
+// online or off — only the BOSS reseeds per OBSERVE. Keeps sublevels fair while the boss stays the
+// gated, un-cheat-only fight.
+export function sublevelSeed(level) {
+  return (Number(level) || 1) * 31 + 7;
+}
+
 function angularDist(a, b) {
   return Math.abs(((a - b) % 360 + 540) % 360 - 180);
 }
