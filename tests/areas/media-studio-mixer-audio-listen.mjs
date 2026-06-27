@@ -167,15 +167,15 @@ export async function run(ctx) {
   else fail('modular audio mix mounted before Mix mode opened');
 
   await page.click('#previewHost .media-mode-tab[data-mode="mix"]');
-  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi.mmx-shell', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi.al-surface', { timeout: 12000 });
   const mixInitial = await page.$eval('#previewHost .media-mode-panel[data-mode="mix"] .mmx-audio-multi', (el) => {
     const project = el.__mediaMixerMulti.getProject();
     return {
       context: el.dataset.mixerContext,
       lanes: project.lanes.length,
       elements: project.elements.length,
-      hasSharedLanes: !!el.querySelector('.mmx-lanes'),
-      hasWaveform: !!el.querySelector('.mmx-element-waveform'),
+      hasSharedLanes: !!el.querySelector('.al-lanes'),
+      hasWaveform: !!el.querySelector('.al-canvas'),
       selectedElement: project.selection.primary?.type === 'element',
       masterEqBands: project.master.audio.eq.bands.length,
       trackEqBands: project.lanes[0].audio.eq.bands.length,
@@ -304,7 +304,7 @@ export async function run(ctx) {
       height: asset?.media?.videoHeight,
       metadataStatus: root.dataset.lastVisualMetadata,
       datasetDropped: root.dataset.hasDroppedVisual,
-      visualBadge: !!root.querySelector('.mmx-element-visual'),
+      visualBadge: !!root.querySelector('.al-track'),
       framePreviewActive: Number(root.querySelector('.mmx-frame-preview')?.dataset.activeVisuals || 0),
       frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
       centerPixel: Array.from(pixel.slice(0, 3)),

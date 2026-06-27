@@ -198,6 +198,15 @@
 .al-fadeknob-in { left: 0; }
 .al-fadeknob-out { right: 0; margin-left: 0; margin-right: -5px; }
 
+/* Multi-lane (Compare / Mix) reuse of the lane primitive. */
+.al-clip.is-selected { border-color: var(--al-wave-cursor); border-width: 2px; }
+.al-clip--readonly { cursor: default; }
+.al-lanes { display: flex; flex-direction: column; }
+.al-lanes .al-track { border-bottom: 1px solid var(--al-border); }
+.al-lane-controls { display: flex; align-items: center; gap: 6px; padding: 4px 0 0; flex-wrap: wrap; }
+.al-lane-controls .al-mini { font-size: 10px; color: var(--al-text-muted); }
+.al-overlay-canvas { display: block; width: 100%; height: 220px; background: var(--al-bg); }
+
 /* Red seek cursor line + time bubble. */
 .al-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--al-wave-cursor); pointer-events: none; }
 .al-cursor-bubble {
