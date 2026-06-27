@@ -334,6 +334,8 @@ function defaultState() {
     stabilized: {},
     highLoad: {},
     entropy: 0,
+    heat: 0,
+    heatRate: 0,
     debris: [],
     archive: [],
     pendingEvent: null,
@@ -385,6 +387,8 @@ function normalizeState(state) {
   target.stabilized = plain(target.stabilized);
   target.highLoad = plain(target.highLoad);
   target.entropy = num(target.entropy, 0);
+  target.heat = Math.max(0, Math.min(100, num(target.heat, 0)));
+  target.heatRate = num(target.heatRate, 0);
   target.debris = Array.isArray(target.debris) ? target.debris : [];
   target.archive = Array.isArray(target.archive) ? target.archive : [];
   target.pendingEvent = target.pendingEvent && typeof target.pendingEvent === "object" ? target.pendingEvent : null;
@@ -412,6 +416,8 @@ function snapshotRun(state) {
     stabilized: { ...state.stabilized || {} },
     highLoad: { ...state.highLoad || {} },
     entropy: state.entropy || 0,
+    heat: state.heat || 0,
+    heatRate: state.heatRate || 0,
     debris: (state.debris || []).map((d) => ({ ...d })),
     archive: (state.archive || []).map((a) => ({ ...a })),
     pendingEvent: state.pendingEvent ? { ...state.pendingEvent } : null,
@@ -573,6 +579,47 @@ function telegraphNext(state, rng) {
   return state.pendingEvent;
 }
 
+// ../../docs/games/metagame/stages/stage8/heat.js
+var HEAT_CAP = 100;
+var THERMAL_THRESHOLD = 55;
+var BASE_VENT = 9;
+var TIER_HEAT = { 1: 1, 2: 1.5, 3: 2.5, 4: 3.5 };
+function ventFromStructures(state) {
+  return Math.max(0, Number(state.heatVentBonus || 0));
+}
+function heatGeneration(state, statusOf, isOnline = () => true) {
+  let gen = 0;
+  for (const n of state.nodes) {
+    if (!isOnline(n)) continue;
+    const s = statusOf(n.health);
+    if (s === "failed") continue;
+    const def = nodeById(n.id) || {};
+    let h = TIER_HEAT[def.tier] || 1;
+    if (state.highLoad && state.highLoad[n.id] && def.supportsHighLoad) h *= 2;
+    if (s === "degrading") h *= 0.5;
+    gen += h;
+  }
+  return gen;
+}
+function computeHeatDelta(state, statusOf, isOnline) {
+  const gen = heatGeneration(state, statusOf, isOnline);
+  const vent = BASE_VENT + ventFromStructures(state);
+  return { gen: round1(gen), vent: round1(vent), delta: round1(gen - vent) };
+}
+function thermalDecayBonus(heat) {
+  const over = Math.max(0, Number(heat || 0) - THERMAL_THRESHOLD);
+  return over / (HEAT_CAP - THERMAL_THRESHOLD) * 3;
+}
+function thermalEntropy(heat) {
+  return Math.max(0, Number(heat || 0) - THERMAL_THRESHOLD) / 2;
+}
+function clampHeat(v) {
+  return Math.max(0, Math.min(HEAT_CAP, Number(v) || 0));
+}
+function round1(v) {
+  return Math.round(v * 10) / 10;
+}
+
 // ../../docs/games/metagame/stages/stage8/engine.js
 var REPAIR_EFFICIENCY = 3;
 var BASE_REPAIR_UNITS_PER_CYCLE = 6;
@@ -587,6 +634,8 @@ function ensureRuntime(state) {
   if (!state.highLoad || typeof state.highLoad !== "object") state.highLoad = {};
   if (!Number.isFinite(state.repairUnits)) state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
   if (!Number.isFinite(state.stabilizers)) state.stabilizers = 0;
+  if (!Number.isFinite(state.heat)) state.heat = 0;
+  if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
   for (const n of state.nodes) if (!Number.isFinite(n.cascadeStress)) n.cascadeStress = 0;
 }
 var clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -600,11 +649,12 @@ function advanceCycle(state, rng) {
     state.stabilized[id] -= 1;
     if (state.stabilized[id] <= 0) delete state.stabilized[id];
   }
+  const thermalBonus = thermalDecayBonus(state.heat);
   for (const n of state.nodes) {
     if (state.stabilized[n.id]) continue;
     const def = nodeById(n.id) || {};
     const highLoad = Boolean(state.highLoad[n.id]) && def.supportsHighLoad;
-    const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1);
+    const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1) + thermalBonus;
     n.health = clamp2(n.health - loss, 0, 100);
   }
   for (const [id, units] of Object.entries(state.repairAllocations)) {
@@ -657,7 +707,12 @@ function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round(active + degraded - entropySink));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  result.entropy = clamp2(failedCount * 10 + degradingCount * 4, 0, 100);
+  const heat = computeHeatDelta(state, status);
+  state.heat = clampHeat(state.heat + heat.delta);
+  state.heatRate = heat.delta;
+  result.heat = state.heat;
+  result.heatRate = heat.delta;
+  result.entropy = clamp2(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
   state.entropy = result.entropy;
   state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
   state.cycle = (state.cycle || 0) + 1;
@@ -730,7 +785,9 @@ function paintStage8({ state, lock, els, onSelectDebris }) {
   const { fields, map, log, root } = els;
   fields.cycle.textContent = String(state.cycle);
   fields.states.textContent = String(state.states);
-  fields.entropy.textContent = String(state.entropy || 0);
+  fields.entropy.textContent = String(Math.round(state.entropy || 0));
+  if (fields.heat) fields.heat.textContent = `${Math.round(state.heat || 0)}/100`;
+  if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
   fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
   fields.stabilizers.textContent = String(state.stabilizers || 0);
   fields.salvage.textContent = String(state.salvageTotal);
@@ -750,6 +807,11 @@ function paintStage8({ state, lock, els, onSelectDebris }) {
 }
 function tick(ok) {
   return ok ? "✓" : "✗";
+}
+function rate(v) {
+  const n = Math.round((Number(v) || 0) * 10) / 10;
+  if (!n) return "";
+  return n > 0 ? `(+${n})` : `(${n})`;
 }
 function paintTelegraph(el, state) {
   if (!el) return;
@@ -816,6 +878,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
+      <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>

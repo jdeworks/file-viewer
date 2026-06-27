@@ -5,6 +5,7 @@
 import { nodeById, ADJACENCY } from "./nodes.js";
 import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
+import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat } from "./heat.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
 export const BASE_REPAIR_UNITS_PER_CYCLE = 6;  // repair budget granted each cycle
@@ -22,6 +23,8 @@ function ensureRuntime(state) {
   if (!state.highLoad || typeof state.highLoad !== "object") state.highLoad = {};
   if (!Number.isFinite(state.repairUnits)) state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
   if (!Number.isFinite(state.stabilizers)) state.stabilizers = 0;
+  if (!Number.isFinite(state.heat)) state.heat = 0;
+  if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
   for (const n of state.nodes) if (!Number.isFinite(n.cascadeStress)) n.cascadeStress = 0;
 }
 
@@ -41,12 +44,13 @@ export function advanceCycle(state, rng) {
     state.stabilized[id] -= 1;
     if (state.stabilized[id] <= 0) delete state.stabilized[id];
   }
-  // 2. decay (skip stabilized)
+  // 2. decay (skip stabilized). Heat carried in from last cycle amplifies decay above the threshold.
+  const thermalBonus = thermalDecayBonus(state.heat);
   for (const n of state.nodes) {
     if (state.stabilized[n.id]) continue;
     const def = nodeById(n.id) || {};
     const highLoad = Boolean(state.highLoad[n.id]) && def.supportsHighLoad;
-    const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1.0);
+    const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1.0) + thermalBonus;
     n.health = clamp(n.health - loss, 0, 100);
   }
   // 3. repair allocations
@@ -97,8 +101,14 @@ export function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round(active + degraded - entropySink));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  // 9. entropy %
-  result.entropy = clamp(failedCount * 10 + degradingCount * 4, 0, 100);
+  // 8b. recompute Heat from the post-decay/post-repair node statuses (generation − venting).
+  const heat = computeHeatDelta(state, status);
+  state.heat = clampHeat(state.heat + heat.delta);
+  state.heatRate = heat.delta;
+  result.heat = state.heat;
+  result.heatRate = heat.delta;
+  // 9. entropy % (failed/degrading nodes + the thermal contribution of an over-hot field)
+  result.entropy = clamp(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
   state.entropy = result.entropy;
   // 10/11. reset budget + advance the cycle
   state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;

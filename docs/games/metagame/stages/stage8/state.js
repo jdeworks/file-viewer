@@ -32,6 +32,8 @@ export function defaultState() {
     stabilized: {},
     highLoad: {},
     entropy: 0,
+    heat: 0,
+    heatRate: 0,
     debris: [],
     archive: [],
     pendingEvent: null,
@@ -89,6 +91,8 @@ export function normalizeState(state) {
   target.stabilized = plain(target.stabilized);
   target.highLoad = plain(target.highLoad);
   target.entropy = num(target.entropy, 0);
+  target.heat = Math.max(0, Math.min(100, num(target.heat, 0)));
+  target.heatRate = num(target.heatRate, 0);
   target.debris = Array.isArray(target.debris) ? target.debris : [];
   target.archive = Array.isArray(target.archive) ? target.archive : [];
   target.pendingEvent = target.pendingEvent && typeof target.pendingEvent === "object" ? target.pendingEvent : null;
@@ -118,6 +122,8 @@ export function snapshotRun(state) {
     stabilized: { ...(state.stabilized || {}) },
     highLoad: { ...(state.highLoad || {}) },
     entropy: state.entropy || 0,
+    heat: state.heat || 0,
+    heatRate: state.heatRate || 0,
     debris: (state.debris || []).map((d) => ({ ...d })),
     archive: (state.archive || []).map((a) => ({ ...a })),
     pendingEvent: state.pendingEvent ? { ...state.pendingEvent } : null,

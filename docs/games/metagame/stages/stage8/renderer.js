@@ -22,6 +22,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
+      <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>

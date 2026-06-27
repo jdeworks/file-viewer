@@ -12,7 +12,9 @@ export function paintStage8({ state, lock, els, onSelectDebris }) {
   const { fields, map, log, root } = els;
   fields.cycle.textContent = String(state.cycle);
   fields.states.textContent = String(state.states);
-  fields.entropy.textContent = String(state.entropy || 0);
+  fields.entropy.textContent = String(Math.round(state.entropy || 0));
+  if (fields.heat) fields.heat.textContent = `${Math.round(state.heat || 0)}/100`;
+  if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
   fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
   fields.stabilizers.textContent = String(state.stabilizers || 0);
   fields.salvage.textContent = String(state.salvageTotal);
@@ -35,6 +37,13 @@ export function paintStage8({ state, lock, els, onSelectDebris }) {
 
 function tick(ok) {
   return ok ? "✓" : "✗";
+}
+
+// Format a per-cycle rate for the HUD (signed; blank at zero).
+function rate(v) {
+  const n = Math.round((Number(v) || 0) * 10) / 10;
+  if (!n) return "";
+  return n > 0 ? `(+${n})` : `(${n})`;
 }
 
 function paintTelegraph(el, state) {
