@@ -6,7 +6,7 @@
 // the counter-wave is NOT calibrated, so an un-calibrated boss run mathematically runs out of integrity.
 // The actual defeat is ALSO gated by raceTheJammer/hasCounterWave in the renderer — double-locked.
 
-import { buildObstacleTable, isBlock, isGate, optimalLane } from './track.js';
+import { buildObstacleTable, isBlock, isGate } from './track.js';
 import { roundByIdx, isBossRound, GLYPH_DAMAGE } from './rounds.js';
 import { applyUpgrades } from './shop.js';
 import { calcRoundPackets } from './economy.js';
@@ -16,12 +16,13 @@ import { makeRng } from './rng.js';
 import { placePowerups, isPowerup, powerupType, durationTicks, POWERUPS } from './powerups.js';
 import { makeParGhost, ghostFromRecording, createRecorder, medalFor } from './ghost.js';
 import { applyForks, resolveRow } from './fork.js';
+import { autoSolve, replayResume } from './drive.js';
 
 const BUMP_COOLDOWN = 10;    // ticks before the same rival can bump again
 // Look-ahead / speeds / bump costs all come from the vehicle-shop tuning now (applyUpgrades), so a
 // kitted-out racer reads further, runs faster, and shrugs off bumps. See shop.js BASE_TUNING.
 
-export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {} }) {
+export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {}, resume = null }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
   // Ascension knobs (default = neutral): more hazards, faster rivals, tighter hull, sharper static.
@@ -70,6 +71,9 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   let done = false;
   let outcome = null;
   let channel = 'lo';  // committed sub-channel for fork spans: 'hi' (gates, risk) | 'lo' (safe)
+  let replaying = false; // true while fast-forwarding a resumed run (suppress paint)
+  const pathLanes = []; // per-tick lane transcript (for deterministic resume)
+  const pathChan = [];  // per-tick channel transcript ('h' | 'l')
 
   function rowAt(t) { return table[race.rowIndex(t, table.length)]; }
   // The row a reader should actually use this tick — the committed sub-channel inside a fork span.
@@ -145,6 +149,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   }
 
   function paint() {
+    if (replaying) return; // a resumed run is fast-forwarded silently to the checkpoint tick
     onPaint?.({
       table, tick, lane: run.lane, round, integrity: run.integrity, gates: run.gatesThisRound,
       suppressionActive, lookAhead: tuning.lookAhead, race, lap: race.lap(), laps: race.laps,
@@ -192,6 +197,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     const slow = resolveBumps();
     if (run.integrity <= 0) { run.integrity = 0; finish('fail'); return outcome; }
     race.advance(Math.max(0, speedFor() - slow));
+    pathLanes.push(run.lane);                 // input transcript (index = this tick) for resume
+    pathChan.push(channel === 'hi' ? 'h' : 'l');
     recorder?.sample(run.lane, race.distance); // transcript for the next replay ghost (index = this tick)
     run.distance = race.distance;
     run.lap = race.lap();
@@ -247,43 +254,33 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     });
   }
 
-  // Optimal lane for the current tick (resolves the committed sub-channel). Used by autoSolve.
-  function bestLane(atTick) {
-    return optimalLane(activeRow(atTick), run.lane);
+  // A storable snapshot of the run so far: the round + the per-tick input transcript. Replaying it
+  // deterministically rebuilds the EXACT state at `tick` — the resume contract, no per-field drift.
+  function path() {
+    return { roundIdx, tick, lanes: pathLanes.join(''), channels: pathChan.join('') };
   }
 
-  // The bot commits to HI at a split when HI offers a boost gate within the span (harvest the
-  // throughput), else LO (safe) — both are always survivable thanks to the escape invariant.
-  function bestChannelForSplit(startTick) {
-    const r = rowAt(startTick);
-    const span = r && r.fork ? (Number(round.forkSpan) || 36) : 0;
-    for (let i = 0; i < span; i += 1) {
-      const row = rowAt(startTick + i);
-      if (row && row.forkHi && row.forkHi.includes('>>')) return 'hi';
-    }
-    return 'lo';
-  }
-
-  function autoSolve(limit = maxTicks + 32) {
-    let guard = 0;
-    while (!done && guard < limit) {
-      if (rowAt(tick)?.forkEntry) setChannel(bestChannelForSplit(tick));
-      run.lane = bestLane(tick);
-      step();
-      guard += 1;
-    }
-    return outcome;
-  }
-
-  return {
-    round, table, isBoss: boss, suppressionActive, race, rivals,
+  // The driver surface drive.js (autoSolve / replayResume) operates on. Internal accessors live here;
+  // the player only ever touches handleKey.
+  const api = {
+    round, table, isBoss: boss, suppressionActive, race, rivals, maxTicks,
     get tick() { return tick; },
     get done() { return done; },
     get outcome() { return outcome; },
     get position() { return run.position; },
     get channel() { return channel; },
-    handleKey, setChannel, step, autoSolve, paint, rivalView,
+    get lane() { return run.lane; },
+    rawRowAt: rowAt,
+    activeRowAt: activeRow,
+    commitLane(l) { run.lane = clampLane(l); },
+    setReplaying(b) { replaying = Boolean(b); },
+    handleKey, setChannel, step, paint, rivalView, path,
+    autoSolve: (limit) => autoSolve(api, limit),
   };
+
+  if (resume) replayResume(api, resume); // fast-forward a resumed run to its checkpoint, then live
+
+  return api;
 }
 
 function clampLane(lane) {

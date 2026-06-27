@@ -61,77 +61,6 @@ function pushLog(state, line) {
   state.log = [...state.log || [], line].slice(-8);
 }
 
-// ../../docs/games/metagame/stages/stage5/calibration.js
-function isTransmissionHum(path) {
-  const normalized = String(path || "").replace(/\\/g, "/");
-  return normalized === TRANSMISSION_HUM_PATH || normalized.endsWith("/stage5/transmission_hum.mp3");
-}
-function applyCalibrationTick({
-  state,
-  actions,
-  achievements,
-  bell,
-  file,
-  deltaMs,
-  active,
-  seeking = false
-}) {
-  const calibration = state.calibration;
-  calibration.lastFile = file || calibration.lastFile;
-  if (!isTransmissionHum(file) || !active || seeking) {
-    if (!calibration.calibrated) calibration.continuousMs = 0;
-    return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: true };
-  }
-  calibration.continuousMs = Math.min(
-    Number(calibration.loopMs || LOOP_DURATION_MS),
-    Number(calibration.continuousMs || 0) + Math.max(0, Number(deltaMs) || 0)
-  );
-  if (!calibration.calibrated && calibration.continuousMs >= Number(calibration.loopMs || LOOP_DURATION_MS)) {
-    calibration.calibrated = true;
-    actions?.setAction?.(5, ACTION_NAME, {
-      source: "audio-player",
-      file: "transmission_hum.mp3",
-      durationMs: Number(calibration.loopMs || LOOP_DURATION_MS),
-      loopCompleted: true
-    });
-    achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
-      stage: 5,
-      title: ACHIEVEMENT_TEXT,
-      action: "5.counter_wave_calibrated"
-    });
-    notifyBell(bell, "stage5.counter_wave_calibrated", bellMessages.unlock);
-    pushLog2(state, bellMessages.unlock);
-  }
-  return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: false };
-}
-function runCalibrationTimeline({ state, actions, achievements, bell, file, samples }) {
-  let previousAt = null;
-  let result = { calibrated: false, continuousMs: state.calibration.continuousMs, reset: false };
-  for (const sample of samples) {
-    const at = Number(sample.atMs);
-    const deltaMs = previousAt === null ? 0 : Math.max(0, at - previousAt);
-    previousAt = at;
-    result = applyCalibrationTick({
-      state,
-      actions,
-      achievements,
-      bell,
-      file,
-      deltaMs,
-      active: Boolean(sample.active),
-      seeking: Boolean(sample.seeking)
-    });
-  }
-  return result;
-}
-function pushLog2(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
-}
-function notifyBell(bell, id, text) {
-  if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 5 });
-  else if (bell && typeof bell.push === "function") bell.push({ id, stage: 5, text });
-}
-
 // ../../docs/games/metagame/stages/stage5/rng.js
 function xmur3(str) {
   let h = 1779033703 ^ str.length;
@@ -829,9 +758,43 @@ function resolveRow(row, channel) {
   return { ...row, lanes: lanes || row.lanes };
 }
 
+// ../../docs/games/metagame/stages/stage5/drive.js
+function bestChannelForSplit(loop, startTick) {
+  const r = loop.rawRowAt(startTick);
+  const span = r && r.fork ? Number(loop.round.forkSpan) || 36 : 0;
+  for (let i = 0; i < span; i += 1) {
+    const row = loop.rawRowAt(startTick + i);
+    if (row && row.forkHi && row.forkHi.includes(">>")) return "hi";
+  }
+  return "lo";
+}
+function autoSolve(loop, limit = loop.maxTicks + 32) {
+  let guard = 0;
+  while (!loop.done && guard < limit) {
+    if (loop.rawRowAt(loop.tick)?.forkEntry) loop.setChannel(bestChannelForSplit(loop, loop.tick));
+    loop.commitLane(optimalLane(loop.activeRowAt(loop.tick), loop.lane));
+    loop.step();
+    guard += 1;
+  }
+  return loop.outcome;
+}
+function replayResume(loop, resume) {
+  if (!resume || typeof resume.lanes !== "string") return;
+  const L = resume.lanes;
+  const C = typeof resume.channels === "string" ? resume.channels : "";
+  const upto = Math.min(Number(resume.tick) || L.length, L.length, loop.maxTicks);
+  loop.setReplaying(true);
+  for (let t = 0; t < upto && !loop.done; t += 1) {
+    if (loop.rawRowAt(loop.tick)?.forkEntry) loop.setChannel(C[t] === "h" ? "hi" : "lo");
+    loop.commitLane(Number(L[t]) || 0);
+    loop.step();
+  }
+  loop.setReplaying(false);
+}
+
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var BUMP_COOLDOWN = 10;
-function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {} }) {
+function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {}, resume = null }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
   const m = mods && typeof mods === "object" ? mods : {};
@@ -873,6 +836,9 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   let done = false;
   let outcome = null;
   let channel = "lo";
+  let replaying = false;
+  const pathLanes = [];
+  const pathChan = [];
   function rowAt(t) {
     return table[race.rowIndex(t, table.length)];
   }
@@ -946,6 +912,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     } else if (type === "emp") empNearestRival();
   }
   function paint() {
+    if (replaying) return;
     onPaint?.({
       table,
       tick,
@@ -1007,6 +974,8 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       return outcome;
     }
     race.advance(Math.max(0, speedFor() - slow));
+    pathLanes.push(run.lane);
+    pathChan.push(channel === "hi" ? "h" : "l");
     recorder?.sample(run.lane, race.distance);
     run.distance = race.distance;
     run.lap = race.lap();
@@ -1071,35 +1040,17 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       ghostRecording
     });
   }
-  function bestLane(atTick) {
-    return optimalLane(activeRow(atTick), run.lane);
+  function path() {
+    return { roundIdx, tick, lanes: pathLanes.join(""), channels: pathChan.join("") };
   }
-  function bestChannelForSplit(startTick) {
-    const r = rowAt(startTick);
-    const span = r && r.fork ? Number(round.forkSpan) || 36 : 0;
-    for (let i = 0; i < span; i += 1) {
-      const row = rowAt(startTick + i);
-      if (row && row.forkHi && row.forkHi.includes(">>")) return "hi";
-    }
-    return "lo";
-  }
-  function autoSolve(limit = maxTicks + 32) {
-    let guard = 0;
-    while (!done && guard < limit) {
-      if (rowAt(tick)?.forkEntry) setChannel(bestChannelForSplit(tick));
-      run.lane = bestLane(tick);
-      step();
-      guard += 1;
-    }
-    return outcome;
-  }
-  return {
+  const api = {
     round,
     table,
     isBoss: boss,
     suppressionActive,
     race,
     rivals,
+    maxTicks,
     get tick() {
       return tick;
     },
@@ -1115,13 +1066,27 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     get channel() {
       return channel;
     },
+    get lane() {
+      return run.lane;
+    },
+    rawRowAt: rowAt,
+    activeRowAt: activeRow,
+    commitLane(l) {
+      run.lane = clampLane3(l);
+    },
+    setReplaying(b) {
+      replaying = Boolean(b);
+    },
     handleKey,
     setChannel,
     step,
-    autoSolve,
     paint,
-    rivalView
+    rivalView,
+    path,
+    autoSolve: (limit) => autoSolve(api, limit)
   };
+  if (resume) replayResume(api, resume);
+  return api;
 }
 function clampLane3(lane) {
   return Math.max(0, Math.min(2, Number(lane) || 0));
@@ -1255,6 +1220,7 @@ var GLYPH_LEGEND = [
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
 import { createAscension } from "../../shared/ascension.js";
+import { createRun } from "../../shared/run-state.js";
 
 // ../../docs/games/metagame/stages/stage5/ascension-mods.js
 var BASE_ASCENSION_CONFIG = {
@@ -1348,12 +1314,124 @@ function ascensionPanelEls({ ascension, defeated = false, playing = false, mods 
   return [head, ...buttons];
 }
 
+// ../../docs/games/metagame/stages/stage5/calibration.js
+function isTransmissionHum(path) {
+  const normalized = String(path || "").replace(/\\/g, "/");
+  return normalized === TRANSMISSION_HUM_PATH || normalized.endsWith("/stage5/transmission_hum.mp3");
+}
+function applyCalibrationTick({
+  state,
+  actions,
+  achievements,
+  bell,
+  file,
+  deltaMs,
+  active,
+  seeking = false
+}) {
+  const calibration = state.calibration;
+  calibration.lastFile = file || calibration.lastFile;
+  if (!isTransmissionHum(file) || !active || seeking) {
+    if (!calibration.calibrated) calibration.continuousMs = 0;
+    return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: true };
+  }
+  calibration.continuousMs = Math.min(
+    Number(calibration.loopMs || LOOP_DURATION_MS),
+    Number(calibration.continuousMs || 0) + Math.max(0, Number(deltaMs) || 0)
+  );
+  if (!calibration.calibrated && calibration.continuousMs >= Number(calibration.loopMs || LOOP_DURATION_MS)) {
+    calibration.calibrated = true;
+    actions?.setAction?.(5, ACTION_NAME, {
+      source: "audio-player",
+      file: "transmission_hum.mp3",
+      durationMs: Number(calibration.loopMs || LOOP_DURATION_MS),
+      loopCompleted: true
+    });
+    achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
+      stage: 5,
+      title: ACHIEVEMENT_TEXT,
+      action: "5.counter_wave_calibrated"
+    });
+    notifyBell(bell, "stage5.counter_wave_calibrated", bellMessages.unlock);
+    pushLog2(state, bellMessages.unlock);
+  }
+  return { calibrated: calibration.calibrated, continuousMs: calibration.continuousMs, reset: false };
+}
+function runCalibrationTimeline({ state, actions, achievements, bell, file, samples }) {
+  let previousAt = null;
+  let result = { calibrated: false, continuousMs: state.calibration.continuousMs, reset: false };
+  for (const sample of samples) {
+    const at = Number(sample.atMs);
+    const deltaMs = previousAt === null ? 0 : Math.max(0, at - previousAt);
+    previousAt = at;
+    result = applyCalibrationTick({
+      state,
+      actions,
+      achievements,
+      bell,
+      file,
+      deltaMs,
+      active: Boolean(sample.active),
+      seeking: Boolean(sample.seeking)
+    });
+  }
+  return result;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
+}
+function notifyBell(bell, id, text) {
+  if (bell && typeof bell.showBell === "function") bell.showBell(id, text, { stage: 5 });
+  else if (bell && typeof bell.push === "function") bell.push({ id, stage: 5, text });
+}
+
+// ../../docs/games/metagame/stages/stage5/debug-hook.js
+function installDebugHook(h) {
+  window.__fvStage5 = {
+    state: () => h.state,
+    startRound: h.startRound,
+    solveRound() {
+      const loop = h.getLoop();
+      if (loop && h.getMode() === "playing") return loop.autoSolve();
+      return null;
+    },
+    solveRun() {
+      for (let i = 0; i < h.bossIdx; i += 1) {
+        h.startRound(i);
+        const loop = h.getLoop();
+        if (loop && h.getMode() === "playing") loop.autoSolve();
+      }
+      return Number(h.state.run.clearedRounds || 0);
+    },
+    calibrate() {
+      const samples = Array.from({ length: 16 }, (_, i) => ({ atMs: i * 1e3, active: true, seeking: false }));
+      runCalibrationTimeline({ state: h.state, actions: h.actions, achievements: h.achievements, bell: h.bell, file: TRANSMISSION_HUM_PATH, samples });
+      h.persistAndPaint();
+      return h.calibrated();
+    },
+    solveBoss() {
+      h.startRound(h.bossIdx);
+      const loop = h.getLoop();
+      if (loop && h.getMode() === "playing") return loop.autoSolve();
+      return null;
+    },
+    ascension: () => ({ ...h.ascension.state(), mods: h.ascensionMods() }),
+    setAscension(n) {
+      h.ascension.setLevel(n);
+      h.persistAndPaint();
+      return h.ascension.level();
+    },
+    raceCheckpoint: () => h.raceRun.restore()
+  };
+}
+
 // ../../docs/games/metagame/stages/stage5/renderer.js
 var BOSS_IDX = ROUNDS.length - 1;
 function renderStage5(ctx) {
   const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
   const ascension = createAscension({ save: orchestrator?.save || null, stageId: 5, modifiers: ASCENSION_MODS });
   const ascensionMods = () => ascension.applyModifiers(BASE_ASCENSION_CONFIG, ascension.level());
+  const raceRun = createRun({ save: orchestrator?.save || null, stageId: 5, slot: "race", debounceMs: 400 });
   const root = document.createElement("section");
   root.className = "stage5-signal-racer";
   root.tabIndex = 0;
@@ -1383,6 +1461,7 @@ function renderStage5(ctx) {
     </section>
     <ol class="s5-log"></ol>
     <div class="s5-controls">
+      <button type="button" data-action="resume" hidden>resume race</button>
       <button type="button" data-action="audio">open transmission_hum.mp3</button>
       <button type="button" data-action="bts" hidden>open signal_racer.bts</button>
     </div>
@@ -1401,7 +1480,15 @@ function renderStage5(ctx) {
   function unlockedRounds() {
     return Math.min(BOSS_IDX, Number(state.run.clearedRounds || 0));
   }
-  function startRound(idx) {
+  function pendingResume() {
+    const ck = raceRun.restore();
+    if (!ck || typeof ck.lanes !== "string" || !ck.lanes.length) return null;
+    if (ck.ascLevel !== ascension.level() || ck.seed !== state.calibration.seed) return null;
+    const idx = Number(ck.roundIdx);
+    if (!(idx >= 0) || idx > unlockedRounds() || isBossRound(idx)) return null;
+    return { ...ck, roundIdx: idx };
+  }
+  function startRound(idx, opts = {}) {
     if (mode === "playing") return;
     const roundIdx = Math.max(0, Math.min(BOSS_IDX, Number(idx) || 0));
     if (roundIdx > unlockedRounds()) return;
@@ -1415,6 +1502,7 @@ function renderStage5(ctx) {
       calibrated: calibrated(),
       prevGhost,
       mods: ascensionMods(),
+      resume: opts.resume || null,
       onPaint: paintArena,
       onEnd: handleEnd
     });
@@ -1424,10 +1512,15 @@ function renderStage5(ctx) {
     loop.paint();
     repaint();
   }
+  function checkpointRace(view) {
+    if (!loop || view.tick % 24 !== 0) return;
+    raceRun.checkpoint({ ...loop.path(), ascLevel: ascension.level(), seed: state.calibration.seed });
+  }
   function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording }) {
     engine?.stop();
     engine = null;
     mode = "result";
+    raceRun.reset();
     if (result === "clear") {
       const medalNote = medal ? ` [${medal} · ${finishTick} vs par ${parTick}]` : "";
       pushLog3(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : "") + medalNote);
@@ -1452,6 +1545,7 @@ function renderStage5(ctx) {
     persistAndPaint();
   }
   function paintArena(view) {
+    checkpointRace(view);
     fields.arena.textContent = renderTrackGrid({
       table: view.table,
       tick: view.tick,
@@ -1485,6 +1579,10 @@ function renderStage5(ctx) {
     renderShop();
     renderAscension();
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
+    const resumeBtn = root.querySelector('[data-action="resume"]');
+    const ck = mode === "playing" ? null : pendingResume();
+    resumeBtn.hidden = !ck;
+    if (ck) resumeBtn.textContent = `resume race (round ${roundByIdx(ck.roundIdx).id}, lap-saved)`;
     log.replaceChildren(...state.log.slice(-6).map((line) => {
       const li = document.createElement("li");
       li.textContent = line;
@@ -1537,6 +1635,13 @@ function renderStage5(ctx) {
     }
     const action = event.target.closest("button[data-action]");
     if (!action) return;
+    if (action.dataset.action === "resume") {
+      const ck = pendingResume();
+      if (ck) {
+        startRound(ck.roundIdx, { resume: ck });
+        return;
+      }
+    }
     if (action.dataset.action === "audio") {
       viewer?.openFile?.(TRANSMISSION_HUM_PATH, { mime: "audio/mpeg", source: "stage5" });
     }
@@ -1552,42 +1657,26 @@ function renderStage5(ctx) {
   };
   root.addEventListener("keydown", onKey);
   repaint();
-  window.__fvStage5 = {
-    state: () => state,
+  installDebugHook({
+    state,
     startRound,
-    solveRound() {
-      if (loop && mode === "playing") return loop.autoSolve();
-      return null;
-    },
-    solveRun() {
-      for (let i = 0; i < BOSS_IDX; i += 1) {
-        startRound(i);
-        if (loop && mode === "playing") loop.autoSolve();
-      }
-      return Number(state.run.clearedRounds || 0);
-    },
-    calibrate() {
-      const samples = Array.from({ length: 16 }, (_, i) => ({ atMs: i * 1e3, active: true, seeking: false }));
-      runCalibrationTimeline({ state, actions, achievements, bell, file: TRANSMISSION_HUM_PATH, samples });
-      persistAndPaint();
-      return calibrated();
-    },
-    solveBoss() {
-      startRound(BOSS_IDX);
-      if (loop && mode === "playing") return loop.autoSolve();
-      return null;
-    },
-    ascension: () => ({ ...ascension.state(), mods: ascensionMods() }),
-    setAscension(n) {
-      ascension.setLevel(n);
-      persistAndPaint();
-      return ascension.level();
-    }
-  };
+    getLoop: () => loop,
+    getMode: () => mode,
+    bossIdx: BOSS_IDX,
+    actions,
+    achievements,
+    bell,
+    persistAndPaint,
+    calibrated,
+    ascension,
+    ascensionMods,
+    raceRun
+  });
   return {
     repaint,
     destroy() {
       engine?.stop();
+      raceRun.destroy();
       if (window.__fvStage5) delete window.__fvStage5;
       root.removeEventListener("keydown", onKey);
       root.remove();
