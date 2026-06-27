@@ -736,8 +736,37 @@ export async function run(ctx) {
 
   await page.click('.mg-v3-stage[data-stage="3"]');
   await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
+  await page.waitForFunction(() => !!window.__fvStage3, null, { timeout: 8000 });
   const s3Locked = await page.$eval('[data-field="bossStatus"]', (el) => el.textContent);
   if (/LOCKED/.test(s3Locked) && /missing/.test(s3Locked)) pass('Stage 3 boss starts locked with missing column clues'); else fail('Stage 3 initial status: ' + s3Locked);
+
+  // Boss-never-from-start: a fresh run has NOT reached corruption 8, so the boss is unreachable even
+  // if the player already knows the key. Restoring it now must be REFUSED (no unlock, no defeat).
+  const s3Bypass = await page.evaluate(() => {
+    const key = window.__fvStage3.deriveKey();
+    const restore = window.__fvStage3.tryRestoreKey(key);
+    return { reached: window.__fvStage3.state().boss.corruption8Reached, restoreOk: restore.ok, restoreLocked: restore.locked, defeated: window.__fvStage3.bossSolver() };
+  });
+  if (!s3Bypass.reached && !s3Bypass.restoreOk && s3Bypass.restoreLocked && !s3Bypass.defeated)
+    pass('Stage 3 boss is unreachable from start (key refused before corruption 8)');
+  else fail('Stage 3 boss bypassable from start: ' + JSON.stringify(s3Bypass));
+
+  // Play the BODY: solve snapshots until corruption peaks at 8 (deterministic, no real-time play).
+  const s3Body = await page.evaluate(() => window.__fvStage3.bodySolver());
+  if (s3Body.reached && s3Body.corruption >= 8) pass('Stage 3 body: solved snapshots to peak corruption 8 (' + s3Body.solved + ' solves)');
+  else fail('Stage 3 body solver: ' + JSON.stringify(s3Body));
+  // The deep tiers are live: the corruption-8 snapshot now on screen is a two-colour nonogram (the
+  // body solver fast-forwarded through volatile cells + the decay clock + two-colour to get here).
+  const s3Tiers = await page.evaluate(() => ({
+    bClues: document.querySelectorAll('.s3-clue.s3-clue-b').length,
+    mode: document.querySelector('[data-field="size"]').textContent,
+  }));
+  if (s3Tiers.bClues > 0 && /2-colour/.test(s3Tiers.mode)) pass('Stage 3 two-colour snapshot renders colour-B clues at peak corruption');
+  else fail('Stage 3 two-colour tier not rendered: ' + JSON.stringify(s3Tiers));
+  // Body done but key not yet restored → still LOCKED.
+  const s3MidLock = await page.evaluate(() => window.__fvStage3.state().boss.unlocked);
+  if (!s3MidLock) pass('Stage 3 boss stays locked after the body until the diff un-cheat'); else fail('Stage 3 boss unlocked without the diff');
+
   // Boss un-cheat: the SEED-DERIVED restoration key lives only in the diff of the two memory logs.
   // (Opening a generated file prompts the discard guard — accepted via the dialog handler above.)
   await page.click('[data-action="v1"]');

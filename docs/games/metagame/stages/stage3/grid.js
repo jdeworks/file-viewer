@@ -3,11 +3,15 @@
 // marks empty (✕). Returns { el, update(board) }. Updates are GUARDED — only changed cells / cursor /
 // clues touch the DOM (the Bit-Foundry per-tick CPU lesson), so a keypress never rerenders the grid.
 
-import { FILLED, EMPTY, UNKNOWN } from "./nonogram.js";
+import { FILLED, COLOR_B, EMPTY, UNKNOWN } from "./nonogram.js";
 import { lineDone } from "./board.js";
 
-const GLYPH = { [FILLED]: "#", [EMPTY]: "✕", [UNKNOWN]: "·" };
-const CLASS = { [FILLED]: "s3-fill", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
+const GLYPH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "✕", [UNKNOWN]: "·" };
+const CLASS = { [FILLED]: "s3-fill", [COLOR_B]: "s3-fill-b", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
+const marksFilled = (marks, x, y) => marks[y][x] === FILLED || marks[y][x] === COLOR_B;
+// Clues are numbers (mono) or { len, color } (two-colour) — read both uniformly.
+const clueLen = (c) => (typeof c === "object" ? c.len : c);
+const clueColor = (c) => (typeof c === "object" ? c.color : 0);
 
 export function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
@@ -23,20 +27,26 @@ export function buildGrid(puzzle, handlers) {
 
   const place = (el, col, row) => { el.style.gridColumn = String(col); el.style.gridRow = String(row); wrap.append(el); };
 
-  const colClueEls = colDisp.map(() => []);
-  colDisp.forEach((clues, c) => clues.forEach((n, k) => {
+  const clueEl = (n) => {
     const el = document.createElement("span");
     el.className = "s3-clue";
-    el.textContent = String(n);
+    el.textContent = String(clueLen(n));
+    const col = clueColor(n);
+    if (col === FILLED) el.classList.add("s3-clue-a");
+    else if (col === COLOR_B) el.classList.add("s3-clue-b");
+    return el;
+  };
+
+  const colClueEls = colDisp.map(() => []);
+  colDisp.forEach((clues, c) => clues.forEach((n, k) => {
+    const el = clueEl(n);
     place(el, maxRow + c + 1, maxCol - clues.length + k + 1); // bottom-aligned
     colClueEls[c].push(el);
   }));
 
   const rowClueEls = rowDisp.map(() => []);
   rowDisp.forEach((clues, r) => clues.forEach((n, k) => {
-    const el = document.createElement("span");
-    el.className = "s3-clue";
-    el.textContent = String(n);
+    const el = clueEl(n);
     place(el, maxRow - clues.length + k + 1, maxCol + r + 1); // right-aligned
     rowClueEls[r].push(el);
   }));
@@ -87,6 +97,21 @@ export function buildGrid(puzzle, handlers) {
     for (let c = 0; c < width; c += 1) {
       const d = lineDone(puzzle, marks, "col", c);
       if (d !== doneCol[c]) { doneCol[c] = d; colClueEls[c].forEach((e) => e.classList.toggle("s3-done", d)); }
+    }
+    decorateVolatile(board);
+  }
+
+  // Re-assert volatile/locked decoration each update (idempotent) — the state loop above rebuilds a
+  // changed cell's className, so these extra classes must be toggled after it (like the cursor class).
+  function decorateVolatile(board) {
+    if (!board.volatile) return;
+    for (const k of board.volatile) {
+      const [x, y] = k.split(",").map(Number);
+      const el = cells[y][x].el;
+      const filled = marksFilled(board.marks, x, y);
+      const locked = board.locked && board.locked.has(k);
+      el.classList.toggle("s3-locked", filled && locked);
+      el.classList.toggle("s3-volatile", filled && !locked);
     }
   }
 

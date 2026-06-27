@@ -2,8 +2,12 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
+import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, wrongCells } from "./board.js";
+import { FILLED, COLOR_B, UNKNOWN } from "./nonogram.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
+import { installStage3Hook } from "./s3debug.js";
+import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
+import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } from "./s3decay.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -34,7 +38,7 @@ export function renderStage3(ctx) {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space fill · x mark · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
@@ -87,18 +91,47 @@ export function renderStage3(ctx) {
     board.checksUsed = 0;
     board.mistakes = 0;
     if (fresh && upgradeLevel(state, "prefetch")) { applyPrefetch(board, upgradeLevel(state, "prefetch")); state.run.marks = encodeMarks(board.marks); }
-    grid = buildGrid(puzzle, { onCell: (x, y, mark) => { board.cursor = { x, y }; applyCell(x, y, mark); } });
+    // Volatile cells (corruption ≥ 2): a seeded subset of fills decays after a few moves unless locked.
+    initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    // Decay clock (corruption ≥ 4): per-snapshot pressure meter — cross it and this snapshot fails.
+    board.decay = createDecay(puzzle, corruptionForRun(state.run));
+    grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => { board.cursor = { x, y }; applyCell(x, y, mark, colorB ? COLOR_B : FILLED); } });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
   }
 
-  function applyCell(x, y, mark) {
+  function applyCell(x, y, mark, color = FILLED) {
     if (board.solved) return;
-    if (setCell(board, x, y, mark)) board.mistakes = (board.mistakes || 0) + 1; // a wrong fill
+    const reverted = tickVolatile(board, isSolved); // advance the move clock; decay overdue volatiles
+    const wrong = setCell(board, x, y, mark, color);
+    if (wrong) board.mistakes = (board.mistakes || 0) + 1; // a wrong fill
+    if (!mark && board.marks[y][x] !== UNKNOWN) noteFill(board, x, y); // start this cell's decay timer
+    pressureMove(board.decay);
+    if (wrong) pressureWrong(board.decay);
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
+    if (reverted.length) { grid.flashWrong(reverted); pushLog(state, `${reverted.length} volatile cell${reverted.length === 1 ? "" : "s"} decayed — lock fills with l.`); }
+    if (!board.solved && decayFailed(board.decay)) { failSnapshot(); return; }
     if (board.solved) onSolved();
     else { save?.(); paintHud(); }
+  }
+
+  // The decay clock crossed the threshold: this snapshot collapses. Wipe its marks to retry the SAME
+  // snapshot (the run continues), charge a Register penalty, and redraw.
+  function failSnapshot() {
+    const penalty = board.decay.penalty;
+    state.registers = Math.max(0, Number(state.registers || 0) - penalty);
+    state.run.marks = null;
+    pushLog(state, `memory destabilized — snapshot collapsed. -${penalty} registers. restoring a fresh copy.`);
+    save?.();
+    loadBoard();
+    paintHud();
+  }
+
+  // Lock the volatile cell under the cursor so it stops decaying (the working-memory verb).
+  function lockUnderCursor() {
+    if (!board.volatile || board.solved) return;
+    if (lockCell(board, board.cursor.x, board.cursor.y)) { grid.update(board); save?.(); paintHud(); }
   }
 
   // A solved snapshot: bank registers (size² + a small no-mistake-ish base), retain a fragment every
@@ -106,12 +139,16 @@ export function renderStage3(ctx) {
   function onSolved() {
     const size = board.puzzle.width;
     const mult = 1 + 0.25 * upgradeLevel(state, "throughput"); // Throughput upgrade
-    const corrBonus = 1 + 0.12 * corruptionForRun(state.run);  // harder snapshots pay more
-    const reward = Math.round((size * size + 5) * mult * corrBonus);
+    const corrBonus = 1 + 0.18 * corruptionForRun(state.run);  // harder/deeper snapshots pay more
+    // Rebalanced for the tightened ~13-solve body: a higher flat base keeps the Defrag shop reachable
+    // in a shorter run, and the steeper corruption bonus rewards the climb to the boss gate.
+    const reward = Math.round((size * size + 12) * mult * corrBonus);
     state.registers += reward;
     state.run.solvedCount += 1;
     state.run.index += 1;
     state.run.marks = null;
+    // Boss gate (boss-never-from-start): corruption peaking at 8 is reached ONLY here, through play.
+    if (corruptionForRun(state.run) >= 8) state.boss.corruption8Reached = true;
     pushLog(state, `snapshot restored. +${reward} registers.`);
     if (state.run.solvedCount % RETAIN_EVERY === 0) { state.retained += 1; pushLog(state, "a fragment crystallized. +1 retained."); }
     // Achievements (#18).
@@ -130,12 +167,16 @@ export function renderStage3(ctx) {
     setText(fields.registers, state.registers);
     setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
-    const size = sizeForRun(state.run, state.shopUpgrades);
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)} · ${rating(board.puzzle.difficulty)}`);
+    const size = board.puzzle.width;
+    const mode = board.puzzle.twoColor ? " · 2-colour" : "";
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
+    const vol = volatileStatus(board);
+    const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
+    const decayNote = board.decay?.active ? ` · instability ${Math.round(decayRatio(board.decay) * 100)}%` : "";
     setText(fields.objective, board.solved
       ? "snapshot restored — drawing the next…"
-      : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit. clear snapshots to retain fragments.`);
+      : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
@@ -159,9 +200,9 @@ export function renderStage3(ctx) {
     const cell = firstHintCell(board);
     if (!cell) return;
     board.hintsUsed = (board.hintsUsed || 0) + 1;
-    board.cursor = { ...cell };
+    board.cursor = { x: cell.x, y: cell.y };
     pushLog(state, "oracle reveals a cell.");
-    applyCell(cell.x, cell.y, false);
+    applyCell(cell.x, cell.y, false, cell.color || FILLED);
   }
 
   // Parity check: flag any wrong fills (cells you filled that should be empty), costing one check.
@@ -195,8 +236,10 @@ export function renderStage3(ctx) {
       grid.update(board);
       return;
     }
-    if (event.key === " " || event.key === "f" || event.key === "F") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false); return; }
-    if (event.key === "x" || event.key === "X") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, true); }
+    if (event.key === " " || event.key === "f" || event.key === "F" || event.key === "1") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false, FILLED); return; }
+    if (event.key === "g" || event.key === "G" || event.key === "2") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false, COLOR_B); return; }
+    if (event.key === "x" || event.key === "X") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, true); return; }
+    if (event.key === "l" || event.key === "L") { event.preventDefault(); lockUnderCursor(); }
   };
   window.addEventListener("keydown", onKey);
 
@@ -216,9 +259,42 @@ export function renderStage3(ctx) {
     paintHud();
   });
 
+  // ── Deterministic test/debug surface (window.__fvStage3) ──────────────────────────────────────
+  // solveCurrent fills the current snapshot to its solution via the SAME onSolved path a player hits
+  // (so registers/solvedCount/corruption all advance), then draws the next. Returns false when there
+  // is nothing to solve.
+  function solveCurrent() {
+    if (!board || board.solved) return false;
+    for (let y = 0; y < board.puzzle.height; y += 1) {
+      for (let x = 0; x < board.puzzle.width; x += 1) {
+        const sol = board.puzzle.solution[y][x]; // 0 / 1 (A) / 2 (B)
+        board.marks[y][x] = sol ? sol : UNKNOWN;
+      }
+    }
+    board.solved = isSolved(board.puzzle, board.marks);
+    state.run.marks = encodeMarks(board.marks);
+    grid.update(board);
+    if (board.solved) onSolved();
+    return true;
+  }
+  function tryRestoreKey(key) {
+    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key });
+    save?.();
+    paintHud();
+    return result;
+  }
+  function bossSolver() {
+    const won = defeatMemoryLeak(state);
+    if (won) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
+    save?.();
+    paintHud();
+    return won;
+  }
+  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver });
+
   return {
     repaint: paintHud,
-    destroy() { window.removeEventListener("keydown", onKey); root.remove(); }
+    destroy() { window.removeEventListener("keydown", onKey); uninstallHook(); root.remove(); }
   };
 }
 

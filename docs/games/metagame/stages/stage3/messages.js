@@ -12,6 +12,10 @@ export const bellMessages = {
   defeated: 'the leak stopped widening.',
 };
 
+// Shown while the BODY is incomplete (corruption has not yet peaked at 8). The boss is unreachable —
+// no diff key is even accepted — until the run has been played to maximum corruption.
+export const bodyHint = 'the leak is still spreading. keep restoring snapshots until corruption peaks (8).';
+
 export const lockedHintLadder = [
   'the grid remembers less every time you ask it.',
   'two memory logs disagree. the disagreement matters.',
