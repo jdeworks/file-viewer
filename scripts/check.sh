@@ -173,6 +173,7 @@ FULL_UNIT_TESTS=(
   tests/known-clojure-lang.test.mjs
   tests/known-coq-lang.test.mjs
   tests/known-crystal-lang.test.mjs
+  tests/known-cue-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
