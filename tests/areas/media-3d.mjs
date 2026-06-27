@@ -1125,7 +1125,7 @@ export async function run(ctx) {
   // Gradient list: the non-uniform-width ramps (arrows, mathSymbols) are gone; braille + blocks stay
   // (now uniform via the vendored mono font).
   const grads = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="gradientName"]', (el) => [...el.options].map((o) => o.value));
-  if (!grads.includes('arrows') && !grads.includes('mathSymbols') && grads.includes('braille') && grads.includes('blocks')) pass('ASCII gradients: arrows/math dropped, braille + blocks kept'); else fail('ascii gradients: ' + JSON.stringify(grads));
+  if (!grads.includes('arrows') && !grads.includes('mathSymbols') && !grads.includes('braille') && grads.includes('blocks')) pass('ASCII gradients: arrows/math/braille dropped, blocks kept'); else fail('ascii gradients: ' + JSON.stringify(grads));
   // Output options reduce: turning Colour glyphs (colorMode) OFF hides Colour source + Glyph colour.
   const setColorMode = (on) => page.evaluate((v) => {
     const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="colorMode"]');

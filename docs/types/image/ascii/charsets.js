@@ -17,13 +17,9 @@ export const GRADIENTS = {
   blocks: '█▉▊▋▌▍▎▏ ',
   codePage437: '█▓▒░■□▪▫',
 };
-// NOTE: 'arrows' (↑→…) and 'mathSymbols' (∑∏∆Ω) were removed — those glyphs are wider
-// than one monospace cell in any font, so they distorted the fixed-cell grid. Block +
-// braille ramps stay uniform thanks to the vendored "FV ASCII Mono" font (see render.js).
-
-// 'braille' is not a 1:1 ramp — it is a 2×4 sub-cell dot encoding handled in
-// convert.js. We expose the name so UIs can list it alongside the gradients.
-export const BRAILLE = 'braille';
+// NOTE: 'arrows' (↑→…), 'mathSymbols' (∑∏∆Ω) and 'braille' were removed — arrows/math are
+// wider than one monospace cell in any font, and braille rendering proved too font-flaky.
+// Block ramps stay uniform thanks to the vendored "FV ASCII Mono" font (see render.js).
 
 // Resolve the active ramp into an array of glyphs. A non-empty custom ramp wins.
 export function resolveRamp(gradientName, customRamp) {
@@ -38,19 +34,6 @@ export function luminanceToChar(luminance, ramp, invertRamp) {
   let idx = Math.round(n * (ramp.length - 1));
   if (invertRamp) idx = ramp.length - 1 - idx;
   return ramp[clamp(idx, 0, ramp.length - 1)];
-}
-
-// Braille 2×4 cell → U+2800 dot bitmask. Dots are set for DARK sub-pixels.
-// Unicode dot bit layout: col0 → bits 0,1,2,6 ; col1 → bits 3,4,5,7.
-const BRAILLE_BITS = [[0, 3], [1, 4], [2, 5], [6, 7]]; // row → [col0_bit, col1_bit]
-export function brailleChar(lum2x4, threshold = 128) {
-  let code = 0x2800;
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 2; c++) {
-      if (lum2x4[r][c] < threshold) code |= (1 << BRAILLE_BITS[r][c]);
-    }
-  }
-  return String.fromCodePoint(code);
 }
 
 export function escapeHtml(value) {

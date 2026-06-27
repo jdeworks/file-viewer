@@ -228,7 +228,7 @@ export function mountAsciiStudio(host, opts = {}) {
   q('.asx-dl-html').addEventListener('click', () => engine.result && downloadHtml(baseName + '.html', engine.result, engine.options));
   q('.asx-dl-png').addEventListener('click', async () => {
     if (!engine.result) return;
-    await ensureAsciiFont();   // main-thread canvas needs the mono font for braille/blocks
+    await ensureAsciiFont();   // main-thread canvas needs the mono font for the block ramps
     const c = document.createElement('canvas');
     engine.renderToCanvas(c);
     downloadPng(baseName + '.png', c);

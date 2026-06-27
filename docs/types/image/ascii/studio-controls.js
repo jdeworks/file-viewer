@@ -17,7 +17,7 @@ const GROUPS = [
     { key: 'fontAspect', label: 'Font aspect', kind: 'range', min: 0.3, max: 1, step: 0.05, dirty: ['ascii'] },
   ]],
   ['Characters', true, [
-    { key: 'gradientName', label: 'Gradient', kind: 'select', options: [...Object.keys(GRADIENTS), 'braille'], dirty: ['ascii'] },
+    { key: 'gradientName', label: 'Gradient', kind: 'select', options: [...Object.keys(GRADIENTS)], dirty: ['ascii'] },
     { key: 'customRamp', label: 'Custom ramp (dark→light)', kind: 'text', dirty: ['ascii'] },
     { key: 'invertRamp', label: 'Invert ramp', kind: 'checkbox', dirty: ['ascii'] },
   ]],

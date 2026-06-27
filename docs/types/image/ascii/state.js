@@ -39,7 +39,7 @@ export function defaultOptions() {
     samplingMethod: 'downscale',
 
     // colour / output styling
-    fontName: 'Uniform', // 'Uniform' (vendored, uniform braille/blocks) | 'System' | 'Courier'
+    fontName: 'Uniform', // 'Uniform' (vendored, uniform blocks) | 'System' | 'Courier'
     colorMode: true,
     colorSource: 'processed', // 'processed' | 'original'
     glyphColorMode: 'colored', // 'colored' | 'white' | 'grayscale'

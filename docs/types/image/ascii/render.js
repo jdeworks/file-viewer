@@ -8,8 +8,8 @@
 import { escapeHtml } from './charsets.js';
 
 // Selectable output fonts. "Uniform" (vendored DejaVu Sans Mono) is the default — it has
-// uniform-width braille + block glyphs so those ramps don't distort. The others let users
-// experiment; they may distort the block/braille ramps if the system font lacks those glyphs.
+// uniform-width block glyphs so those ramps don't distort. The others let users
+// experiment; they may distort the block ramps if the system font lacks those glyphs.
 export const FONTS = {
   Uniform: '"FV ASCII Mono", ui-monospace, monospace',
   System: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',

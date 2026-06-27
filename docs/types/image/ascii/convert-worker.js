@@ -13,7 +13,7 @@ const scratch = new OffscreenCanvas(1, 1);
 const outCanvas = new OffscreenCanvas(1, 1);
 
 // A worker's OffscreenCanvas has its OWN font set — the document's @font-face isn't visible
-// here — so load the vendored mono into self.fonts, else braille/block glyphs render as tofu
+// here — so load the vendored mono into self.fonts, else block glyphs render as tofu
 // in the worker-rendered ('bitmap') output (webcam + file converter).
 const fontReady = (async () => {
   try {
