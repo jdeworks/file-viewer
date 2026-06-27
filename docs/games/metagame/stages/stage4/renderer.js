@@ -12,12 +12,14 @@ import {
 } from './boss.js';
 import { TOWER_TYPES } from './towers.js';
 import { FINAL_WAVE } from './waves.js';
+import { snapshotWave } from './state.js';
 import { BTS_PATH, RECURSION_BLUEPRINT_PATH } from './messages.js';
 
 const PLACEABLE = ['pulse_node', 'scatter_array', 'null_spike', 'attractor_field'];
+const PERSIST_THROTTLE_MS = 1000; // mid-wave localStorage writes are throttled (the rAF loop is 60fps)
 
 export function renderStage4(ctx) {
-  const { host, state, actions, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
   const root = document.createElement('section');
   root.className = 'stage4-fractal-bastion';
   root.innerHTML = `
@@ -54,9 +56,30 @@ export function renderStage4(ctx) {
   let selected = 'pulse_node';
   let path = rebuildPath();
   let raf = null;
+  let lastPersistMs = -Infinity;
 
   function rebuildPath() {
     return buildPath(state.recursion?.pointSetId || 'x', waveGroupDepth(state.waveNumber || 1));
+  }
+
+  // Snapshot the in-flight wave into the run-state slot (in-memory, every tick — cheap). `save?.()`
+  // (throttled / on hide / on settle) is what flushes that snapshot to localStorage for reload-resume.
+  function checkpointWave(overrides) {
+    if (run && typeof run.checkpoint === 'function') {
+      run.checkpoint({ ...snapshotWave(state), ...overrides, runTag: run.seed });
+    }
+  }
+
+  // When a wave ends, mark the snapshot non-resumable (waveActive:false) and flush it so a reload does
+  // not re-resume (and re-clear) a wave that is already over.
+  function endWaveSnapshot() {
+    checkpointWave({ waveActive: false });
+    if (run && typeof run.flush === 'function') run.flush();
+  }
+
+  function persistNow() {
+    if (run && typeof run.flush === 'function') run.flush();
+    save?.();
   }
 
   function repaint() {
@@ -95,6 +118,9 @@ export function renderStage4(ctx) {
     if (state.waveActive || state.boss.defeated || (state.waveNumber || 1) >= FINAL_WAVE) return;
     path = rebuildPath();
     engineStartWave(state, state.waveNumber, path.tiles);
+    lastPersistMs = -Infinity;
+    checkpointWave();
+    persistNow(); // persist the freshly-started wave so an immediate reload resumes it
     runLoop();
   }
 
@@ -105,7 +131,9 @@ export function renderStage4(ctx) {
       const dt = last == null ? 16 : Math.min(100, ts - last);
       last = ts;
       tick(state, dt, path.tiles);
+      checkpointWave();
       if (settleWave()) { raf = null; return; }
+      if ((state.combatClockMs || 0) - lastPersistMs >= PERSIST_THROTTLE_MS) { lastPersistMs = state.combatClockMs; save?.(); }
       repaint();
       raf = requestAnimationFrame(step);
     };
@@ -116,8 +144,8 @@ export function renderStage4(ctx) {
 
   // Returns true (and stops the loop) when the wave ends (cleared or failed).
   function settleWave() {
-    if (state.waveFailed) { stopLoop(); pushLog(state, 'integrity collapsed — the bastion folds.'); repaint(); save?.(); return true; }
-    if (waveComplete(state)) { onWaveCleared(); repaint(); save?.(); return true; }
+    if (state.waveFailed) { stopLoop(); pushLog(state, 'integrity collapsed — the bastion folds.'); endWaveSnapshot(); repaint(); save?.(); return true; }
+    if (waveComplete(state)) { onWaveCleared(); endWaveSnapshot(); repaint(); save?.(); return true; }
     return false;
   }
 
@@ -131,7 +159,10 @@ export function renderStage4(ctx) {
   function confront() {
     if ((state.waveNumber || 1) < FINAL_WAVE) return;
     const result = fightInfiniteLoop({ state, actions });
-    if (result.defeated) completeOnce({ stage: 4, defeated: true, btsPath: BTS_PATH });
+    if (result.defeated) {
+      if (run && typeof run.reset === 'function') run.reset(); // stage cleared → drop the resume slot
+      completeOnce({ stage: 4, defeated: true, btsPath: BTS_PATH });
+    }
   }
 
   function place(x, y, type) {
@@ -183,7 +214,7 @@ export function renderStage4(ctx) {
     // Advance the active wave synchronously (no rAF) for deterministic headless testing.
     advance(ms = 20000, dt = 100) {
       let t = 0;
-      while (t < ms && state.waveActive) { tick(state, dt, path.tiles); if (settleWave()) break; t += dt; }
+      while (t < ms && state.waveActive) { tick(state, dt, path.tiles); checkpointWave(); if (settleWave()) break; t += dt; }
       repaint();
     },
     setWave(n) { state.waveNumber = Math.max(1, Math.trunc(n) || 1); path = rebuildPath(); repaint(); },
@@ -191,8 +222,29 @@ export function renderStage4(ctx) {
     confront,
   };
 
+  // Persist the in-flight wave to localStorage when the tab is hidden / unloaded so a reload resumes
+  // the exact wave (the rAF loop only saves on a throttle / wave end).
+  const onHide = () => { if (typeof document === 'undefined' || document.visibilityState === 'hidden') persistNow(); };
+  if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onHide);
+  if (typeof window !== 'undefined') window.addEventListener('pagehide', persistNow);
+
+  // Resume a mid-flight wave restored by mountStage (state.waveActive true on entry).
+  if (state.waveActive && !state.boss.defeated && (state.waveNumber || 1) < FINAL_WAVE) {
+    path = rebuildPath();
+    runLoop();
+  }
+
   repaint();
-  return { repaint, destroy() { stopLoop(); if (window.__fvStage4) delete window.__fvStage4; root.remove(); } };
+  return {
+    repaint,
+    destroy() {
+      stopLoop();
+      if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onHide);
+      if (typeof window !== 'undefined') window.removeEventListener('pagehide', persistNow);
+      if (window.__fvStage4) delete window.__fvStage4;
+      root.remove();
+    },
+  };
 }
 
 function once(fn) {
