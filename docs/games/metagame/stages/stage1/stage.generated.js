@@ -3410,6 +3410,32 @@ function doReset(opts) {
   renderAll();
 }
 
+// ../../docs/games/metagame/stages/stage1/s1entropy.js
+var ENTROPY_PERIOD = 600;
+function decayableTiers(cfg) {
+  return (cfg.tiers || []).filter((t) => t.type === "timed");
+}
+function isProtected(state, cfg, tierId) {
+  if ((state.pipelines || {})[tierId]) return true;
+  const mgr = (cfg.managers || []).find((m) => m.manages === tierId);
+  if (!mgr) return false;
+  const ms = (state.managers || {})[mgr.id];
+  return Boolean(ms && ms.level >= 1 && !ms.paused);
+}
+function tickEntropy(state, cfg) {
+  if ((state.ticks || 0) % ENTROPY_PERIOD !== 0) return false;
+  let decayed = false;
+  state.owned = state.owned || {};
+  for (const t of decayableTiers(cfg)) {
+    const owned = state.owned[t.id] || 0;
+    if (owned > 1 && !isProtected(state, cfg, t.id)) {
+      state.owned[t.id] = owned - 1;
+      decayed = true;
+    }
+  }
+  return decayed;
+}
+
 // ../../docs/games/metagame/stages/stage1/s1mechanics.js
 function incomeMult(state) {
   let m = coreIncomeMult(state);
@@ -3421,6 +3447,7 @@ function tickMechanics(state, cfg) {
   let producedUnits = false;
   if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
   if (mechanicUnlocked(state, "flux")) tickFlux(state);
+  if (mechanicUnlocked(state, "entropy")) producedUnits = tickEntropy(state, cfg) || producedUnits;
   return { producedUnits };
 }
 
