@@ -396,6 +396,38 @@ function normalizeState(state) {
   target.meta = { ...fresh.meta, ...target.meta && typeof target.meta === "object" ? target.meta : {} };
   return target;
 }
+function snapshotRun(state) {
+  return {
+    version: STATE_VERSION,
+    cycle: state.cycle,
+    nodes: (state.nodes || []).map((n) => ({ id: n.id, health: n.health, cascadeStress: n.cascadeStress || 0 })),
+    states: state.states,
+    totalStatesEarned: state.totalStatesEarned,
+    salvageTotal: state.salvageTotal,
+    selectedDebrisId: state.selectedDebrisId,
+    externalImportBonusCycles: state.externalImportBonusCycles || 0,
+    stabilizers: state.stabilizers || 0,
+    repairUnits: state.repairUnits,
+    repairAllocations: { ...state.repairAllocations || {} },
+    stabilized: { ...state.stabilized || {} },
+    highLoad: { ...state.highLoad || {} },
+    entropy: state.entropy || 0,
+    debris: (state.debris || []).map((d) => ({ ...d })),
+    archive: (state.archive || []).map((a) => ({ ...a })),
+    pendingEvent: state.pendingEvent ? { ...state.pendingEvent } : null,
+    activeEvent: state.activeEvent ? { ...state.activeEvent } : null,
+    eventSeq: state.eventSeq || 0,
+    warningCheckpoint: state.warningCheckpoint || null,
+    log: [...state.log || []],
+    boss: { ...state.boss },
+    meta: { ...state.meta }
+  };
+}
+function restoreRun(state, snap) {
+  const norm = normalizeState({ ...snap || {}, version: STATE_VERSION });
+  Object.assign(state, norm);
+  return state;
+}
 function clampHealth(v) {
   const n = Number(v);
   if (!Number.isFinite(n)) return 100;
@@ -645,7 +677,7 @@ function debrisChip(item, onSelectDebris) {
 
 // ../../docs/games/metagame/stages/stage8/renderer.js
 var REPAIR_STEP2 = 2;
-function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
+function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, run, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
   root.innerHTML = `
@@ -692,6 +724,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
+  const seedBase = run?.seed || "8";
   dropTarget.addEventListener("dragover", (event) => event.preventDefault());
   dropTarget.addEventListener("drop", (event) => {
     event.preventDefault();
@@ -765,12 +798,13 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     }
   };
   function cycleRng(cycle) {
-    return makeRng(`8:cyc:${cycle}`);
+    return makeRng(`${seedBase}:cyc:${cycle}`);
   }
   function challengeBoss() {
-    const result = recordHeatDeathAttempt({ state, actions, rng: makeRng(`8:burn:${state.cycle}`) });
+    const result = recordHeatDeathAttempt({ state, actions, rng: makeRng(`${seedBase}:burn:${state.cycle}`) });
     persistAndPaint();
     if (result.defeated) {
+      if (run && typeof run.reset === "function") run.reset();
       completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     }
     return result;
@@ -791,6 +825,9 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     });
   }
   function persistAndPaint() {
+    if (run && typeof run.checkpoint === "function" && !state.boss.defeated) {
+      run.checkpoint({ ...snapshotRun(state), runTag: run.seed });
+    }
     if (typeof save === "function") save();
     repaint();
   }
@@ -812,6 +849,7 @@ function once(fn) {
 }
 
 // ../../docs/games/metagame/stages/stage8/index.js
+import { createRun } from "../../shared/run-state.js";
 var stageMeta = {
   id: 8,
   slug: "entropy-field",
@@ -824,14 +862,26 @@ function defaultState2(context) {
 }
 function mountStage(ctx) {
   const state = normalizeState(ctx.state);
+  const saveData = ctx.orchestrator?.save;
+  if (saveData && saveData.stageState && typeof saveData.stageState === "object") {
+    saveData.stageState[8] = state;
+  }
   ensureStyles();
+  const run = saveData ? createRun({ save: saveData, stageId: 8, slot: "runsim", debounceMs: 0 }) : null;
+  if (run) {
+    const snap = run.restore();
+    if (snap && snap.runTag === run.seed && !snap.boss?.defeated) {
+      restoreRun(state, snap);
+    }
+  }
   const unsubscribe = subscribeToSalvage(ctx.actions, () => {
     if (typeof ctx.save === "function") ctx.save();
   });
-  const view = renderStage8({ ...ctx, state });
+  const view = renderStage8({ ...ctx, state, run });
   return {
     destroy() {
       unsubscribe();
+      if (run && typeof run.destroy === "function") run.destroy();
       if (view && typeof view.destroy === "function") view.destroy();
     },
     repaint: view.repaint

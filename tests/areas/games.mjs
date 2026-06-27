@@ -848,6 +848,16 @@ export async function run(ctx) {
   // bodySolver only fast-forwards the real engine — it does NOT archive or touch the boss.
   const s8Gate = await page.evaluate(() => window.__fvStage8.bodySolver());
   if (s8Gate.enoughCycles && s8Gate.enoughStates && !s8Gate.actionReady && !s8Gate.unlocked) pass('Stage 8 body gate reached (cycles + reserves), boss still locked pending the un-cheat'); else fail(`Stage 8 body gate not reached: ${JSON.stringify(s8Gate)}`);
+  // Run-state retrofit: the in-progress sim is checkpointed into the "runsim" slot (tagged with the
+  // run identity), so a reload resumes this exact mid-run position instead of re-seeding.
+  const s8Resume = await page.evaluate(() => {
+    try {
+      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+      const snap = save?.stageState?.[8]?.runsim;
+      return Boolean(snap) && snap.runTag === '8:0' && snap.cycle === window.__fvStage8.state().cycle;
+    } catch { return false; }
+  });
+  if (s8Resume) pass('Stage 8 run is checkpointed to the "runsim" slot (reload resumes the same run)'); else fail('Stage 8 run-state snapshot not persisted');
   // Un-cheat (load-bearing): archive .sav debris from /entropy/debris/ into /entropy/active_archive/
   // via the real renderer until the salvage floor is met. This fires 8.salvage_archived.
   for (let i = 0; i < 8; i += 1) {

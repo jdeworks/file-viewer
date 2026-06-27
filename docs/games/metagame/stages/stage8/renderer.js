@@ -8,11 +8,12 @@ import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messa
 import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
 import { driveToGate } from "./solver.js";
 import { paintStage8 } from "./paint.js";
+import { snapshotRun } from "./state.js";
 import { makeRng } from "./rng.js";
 
 const REPAIR_STEP = 2; // repair units spent per click
 
-export function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
+export function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, run, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
   root.innerHTML = `
@@ -60,6 +61,9 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
+  // Run-seed base for all deterministic rng (cycle decay + burn). The retrofit seeds it from the
+  // run-state run identity so the same run replays identically across reloads.
+  const seedBase = run?.seed || "8";
 
   dropTarget.addEventListener("dragover", (event) => event.preventDefault());
   dropTarget.addEventListener("drop", (event) => {
@@ -140,15 +144,17 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     }
   };
 
-  // Deterministic per-cycle rng. (The run-state retrofit swaps the seed base to the run seed.)
+  // Deterministic per-cycle rng, reseeded from the run seed: `${run.seed}:cyc:${cycle}` (so the SAME
+  // run replays identically across reloads, and a fresh run after reset() gets a new seed base).
   function cycleRng(cycle) {
-    return makeRng(`8:cyc:${cycle}`);
+    return makeRng(`${seedBase}:cyc:${cycle}`);
   }
 
   function challengeBoss() {
-    const result = recordHeatDeathAttempt({ state, actions, rng: makeRng(`8:burn:${state.cycle}`) });
+    const result = recordHeatDeathAttempt({ state, actions, rng: makeRng(`${seedBase}:burn:${state.cycle}`) });
     persistAndPaint();
     if (result.defeated) {
+      if (run && typeof run.reset === "function") run.reset(); // run resolved → clear the resume slot
       completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     }
     return result;
@@ -168,6 +174,11 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   }
 
   function persistAndPaint() {
+    // Checkpoint the live sim into the run-state resume slot (tagged with the run identity) BEFORE the
+    // save() call serializes the save object, so a reload resumes this exact mid-run position.
+    if (run && typeof run.checkpoint === "function" && !state.boss.defeated) {
+      run.checkpoint({ ...snapshotRun(state), runTag: run.seed });
+    }
     if (typeof save === "function") save();
     repaint();
   }
