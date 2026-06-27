@@ -175,11 +175,11 @@ function makeRng(seed) {
 // ../../docs/games/metagame/stages/stage5/track.js
 var LANES = 3;
 var DENSITY = { 1: 0.4, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.44, 8: 0.4, 9: 0.5 };
-function buildObstacleTable(seed, roundDef) {
+function buildObstacleTable(seed, roundDef, densityBonus = 0) {
   const rng = makeRng(`${seed}:${roundDef.id}`);
   const count = Number(roundDef.tickCount) || 100;
   const obstacleGlyphs = (roundDef.glyphs || ["░"]).filter((g) => g !== ">>");
-  const density = DENSITY[roundDef.id] ?? 0.45;
+  const density = Math.min(0.7, (DENSITY[roundDef.id] ?? 0.45) + Math.max(0, Number(densityBonus) || 0));
   const burst = Array.isArray(roundDef.burstPattern) ? roundDef.burstPattern : null;
   const shift = Number(roundDef.counterPhaseShift) || 0;
   const table = [];
@@ -625,7 +625,7 @@ function rollSkill(rng) {
     aggression: rng.float()
   };
 }
-function buildGhost({ rng, skill, table, raceLength, tickCap }) {
+function buildGhost({ rng, skill, table, raceLength, tickCap, speedMult = 1 }) {
   const len = Math.max(1, table.length);
   const lane = [];
   const distance = [];
@@ -643,7 +643,7 @@ function buildGhost({ rng, skill, table, raceLength, tickCap }) {
     }
     cur = clampLane(cur);
     lane.push(cur);
-    let speed = skill.topSpeed;
+    let speed = skill.topSpeed * speedMult;
     const glyph = row ? row.lanes[cur] : null;
     if (isBlock(glyph)) speed *= 0.5;
     if (isGate(glyph)) speed *= 1 + 0.2 * skill.aggression;
@@ -653,13 +653,13 @@ function buildGhost({ rng, skill, table, raceLength, tickCap }) {
   }
   return { lane, distance, finishTick, skill };
 }
-function buildRivals({ seed, round, table, raceLength }) {
+function buildRivals({ seed, round, table, raceLength, speedMult = 1 }) {
   const count = Math.max(0, Number(round.rivals) || 0);
   const tickCap = Math.ceil(raceLength / 0.4) + 64;
   const rivals = [];
   for (let i = 0; i < count; i += 1) {
     const rng = makeRng(`${seed}:rival:${round.id}:${i}`);
-    const ghost = buildGhost({ rng, skill: rollSkill(rng), table, raceLength, tickCap });
+    const ghost = buildGhost({ rng, skill: rollSkill(rng), table, raceLength, tickCap, speedMult });
     const last = tickCap - 1;
     rivals.push({
       id: i,
@@ -831,18 +831,21 @@ function resolveRow(row, channel) {
 
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var BUMP_COOLDOWN = 10;
-function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost }) {
+function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {} }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
-  const table = buildObstacleTable(seed, round);
+  const m = mods && typeof mods === "object" ? mods : {};
+  const table = buildObstacleTable(seed, round, m.densityBonus || 0);
   if (round.hasFork) applyForks(table, makeRng(`${seed}:fork:${round.id}`), round);
   if (round.hasPowerups) placePowerups(table, makeRng(`${seed}:pu:${round.id}`), round);
   const tuning = applyUpgrades(state.shop || {});
+  tuning.maxIntegrity = Math.max(20, Math.round(tuning.maxIntegrity * (Number(m.integrityMult) || 1)));
+  tuning.noiseDamage += Math.max(0, Number(m.noiseDamageBonus) || 0);
   const boss = roundOverride ? Boolean(round.boss) : isBossRound(roundIdx);
   const suppressionActive = boss && !calibrated;
   const race = createRaceState(round);
   const maxTicks = race.raceLength + 16;
-  const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength });
+  const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength, speedMult: Number(m.rivalSpeedMult) || 1 });
   const isTimeTrial = race.archetype === "time-trial";
   const parGhost = isTimeTrial ? makeParGhost(race.raceLength, round.parPace) : null;
   const replayGhost = isTimeTrial ? ghostFromRecording(prevGhost, "G") : null;
@@ -1251,9 +1254,106 @@ var GLYPH_LEGEND = [
 ];
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
+import { createAscension } from "../../shared/ascension.js";
+
+// ../../docs/games/metagame/stages/stage5/ascension-mods.js
+var BASE_ASCENSION_CONFIG = {
+  rivalSpeedMult: 1,
+  // ×rival top speed (faster ghosts)
+  integrityMult: 1,
+  // ×starting hull cap (less room for mistakes)
+  densityBonus: 0,
+  // +obstacle density per lane (more hazards)
+  noiseDamageBonus: 0
+  // +static hit damage
+};
+var ASCENSION_MODS = [
+  {
+    level: 1,
+    id: "fasterField",
+    label: "A1 · Faster Field",
+    desc: "The rival field runs noticeably quicker.",
+    apply: (c) => {
+      c.rivalSpeedMult *= 1.07;
+      return c;
+    }
+  },
+  {
+    level: 2,
+    id: "hairlineHull",
+    label: "A2 · Hairline Hull",
+    desc: "Less integrity to spend on mistakes (−15% hull).",
+    apply: (c) => {
+      c.integrityMult *= 0.85;
+      return c;
+    }
+  },
+  {
+    level: 3,
+    id: "denserNoise",
+    label: "A3 · Denser Noise",
+    desc: "More static crowds every lane.",
+    apply: (c) => {
+      c.densityBonus += 0.06;
+      return c;
+    }
+  },
+  {
+    level: 4,
+    id: "sharpStatic",
+    label: "A4 · Sharp Static",
+    desc: "Static bites harder (+1 damage per ░).",
+    apply: (c) => {
+      c.noiseDamageBonus += 1;
+      return c;
+    }
+  }
+];
+
+// ../../docs/games/metagame/stages/stage5/panels.js
+function shopButtonEls({ shop = {}, packets = 0, playing = false }) {
+  return UPGRADES.map((u) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.buy = u.id;
+    const level = levelOf(shop, u.id);
+    const max = maxLevelOf(u.id);
+    const maxed = isMaxed(shop, u.id);
+    const cost = costOf(shop, u.id);
+    btn.disabled = maxed || playing || Number(packets) < cost;
+    btn.title = u.desc;
+    btn.textContent = maxed ? `${u.label} ${level}/${max} ✓` : `${u.label} ${level}/${max} (${cost}p)`;
+    return btn;
+  });
+}
+function ascensionPanelEls({ ascension, defeated = false, playing = false, mods = [] }) {
+  const unlocked = ascension.maxUnlocked();
+  if (!defeated || unlocked <= 0 || ascension.maxLevel <= 0) return [];
+  const head = document.createElement("div");
+  head.className = "s5-asc-head";
+  head.textContent = `ASCENSION (cleared A${ascension.maxCleared()})`;
+  const sel = ascension.level();
+  const buttons = [];
+  for (let lvl = 0; lvl <= unlocked; lvl += 1) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.ascend = String(lvl);
+    btn.disabled = playing;
+    btn.textContent = `A${lvl}${sel === lvl ? " ✓" : ""}`;
+    const mod = mods.find((m) => m.level === lvl);
+    if (mod) btn.title = `${mod.label} — ${mod.desc}`;
+    if (sel === lvl) btn.classList.add("s5-asc-active");
+    buttons.push(btn);
+  }
+  return [head, ...buttons];
+}
+
+// ../../docs/games/metagame/stages/stage5/renderer.js
 var BOSS_IDX = ROUNDS.length - 1;
 function renderStage5(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
+  const ascension = createAscension({ save: orchestrator?.save || null, stageId: 5, modifiers: ASCENSION_MODS });
+  const ascensionMods = () => ascension.applyModifiers(BASE_ASCENSION_CONFIG, ascension.level());
   const root = document.createElement("section");
   root.className = "stage5-signal-racer";
   root.tabIndex = 0;
@@ -1272,6 +1372,7 @@ function renderStage5(ctx) {
       <aside class="s5-side">
         <div class="s5-rounds" data-field="rounds"></div>
         <div class="s5-shop" data-field="shop"></div>
+        <div class="s5-ascension" data-field="ascension"></div>
         <pre class="s5-legend" data-field="legend"></pre>
       </aside>
     </div>
@@ -1313,6 +1414,7 @@ function renderStage5(ctx) {
       roundIdx,
       calibrated: calibrated(),
       prevGhost,
+      mods: ascensionMods(),
       onPaint: paintArena,
       onEnd: handleEnd
     });
@@ -1339,7 +1441,10 @@ function renderStage5(ctx) {
         state.run.clearedRounds = Math.max(Number(state.run.clearedRounds || 0), roundIdx + 1);
       } else {
         const r = raceTheJammer({ state, actions });
-        if (r.defeated) completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
+        if (r.defeated) {
+          ascension.recordClear(ascension.level());
+          completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
+        }
       }
     } else {
       pushLog3(round.id === FINAL_ROUND_ID ? "the jammer held the throttle down. the counter-wave is not calibrated." : "signal integrity collapsed. recalibrate and run it again.");
@@ -1378,6 +1483,7 @@ function renderStage5(ctx) {
     fields.hint.textContent = lock.hint;
     renderRoundButtons();
     renderShop();
+    renderAscension();
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-6).map((line) => {
       const li = document.createElement("li");
@@ -1401,19 +1507,14 @@ function renderStage5(ctx) {
     }));
   }
   function renderShop() {
-    const shop = state.shop || {};
-    fields.shop.replaceChildren(...UPGRADES.map((u) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.buy = u.id;
-      const level = levelOf(shop, u.id);
-      const max = maxLevelOf(u.id);
-      const maxed = isMaxed(shop, u.id);
-      const cost = costOf(shop, u.id);
-      btn.disabled = maxed || mode === "playing" || Number(state.packets) < cost;
-      btn.title = u.desc;
-      btn.textContent = maxed ? `${u.label} ${level}/${max} ✓` : `${u.label} ${level}/${max} (${cost}p)`;
-      return btn;
+    fields.shop.replaceChildren(...shopButtonEls({ shop: state.shop || {}, packets: state.packets, playing: mode === "playing" }));
+  }
+  function renderAscension() {
+    fields.ascension.replaceChildren(...ascensionPanelEls({
+      ascension,
+      defeated: state.boss.defeated,
+      playing: mode === "playing",
+      mods: ASCENSION_MODS
     }));
   }
   root.addEventListener("click", (event) => {
@@ -1425,6 +1526,12 @@ function renderStage5(ctx) {
     const buyBtn = event.target.closest("button[data-buy]");
     if (buyBtn) {
       buyUpgrade(state, buyBtn.dataset.buy);
+      persistAndPaint();
+      return;
+    }
+    const ascBtn = event.target.closest("button[data-ascend]");
+    if (ascBtn) {
+      ascension.setLevel(Number(ascBtn.dataset.ascend));
       persistAndPaint();
       return;
     }
@@ -1469,6 +1576,12 @@ function renderStage5(ctx) {
       startRound(BOSS_IDX);
       if (loop && mode === "playing") return loop.autoSolve();
       return null;
+    },
+    ascension: () => ({ ...ascension.state(), mods: ascensionMods() }),
+    setAscension(n) {
+      ascension.setLevel(n);
+      persistAndPaint();
+      return ascension.level();
     }
   };
   return {

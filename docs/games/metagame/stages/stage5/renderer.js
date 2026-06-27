@@ -4,14 +4,22 @@ import { createGameLoop } from './game-loop.js';
 import { createEngine } from './engine.js';
 import { renderTrackGrid } from './render-track.js';
 import { ROUNDS, roundByIdx, isBossRound, FINAL_ROUND_ID } from './rounds.js';
-import { UPGRADES, buyUpgrade, levelOf, maxLevelOf, costOf, isMaxed } from './shop.js';
+import { buyUpgrade } from './shop.js';
 import { roundLogLine, GLYPH_LEGEND } from './content.js';
 import { BTS_PATH, TRANSMISSION_HUM_PATH } from './messages.js';
+import { createAscension } from '../../shared/ascension.js';
+import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from './ascension-mods.js';
+import { shopButtonEls, ascensionPanelEls } from './panels.js';
 
 const BOSS_IDX = ROUNDS.length - 1;
 
 export function renderStage5(ctx) {
-  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
+  const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
+  // Opt-in difficulty ladder (shared). Per-stage selection lives in state.ascension; cleared
+  // high-water + the cross-stage summary live in orchestrator.save.global. Degrades to base if the
+  // full save isn't threaded (e.g. a bare unit harness).
+  const ascension = createAscension({ save: orchestrator?.save || null, stageId: 5, modifiers: ASCENSION_MODS });
+  const ascensionMods = () => ascension.applyModifiers(BASE_ASCENSION_CONFIG, ascension.level());
   const root = document.createElement('section');
   root.className = 'stage5-signal-racer';
   root.tabIndex = 0;
@@ -30,6 +38,7 @@ export function renderStage5(ctx) {
       <aside class="s5-side">
         <div class="s5-rounds" data-field="rounds"></div>
         <div class="s5-shop" data-field="shop"></div>
+        <div class="s5-ascension" data-field="ascension"></div>
         <pre class="s5-legend" data-field="legend"></pre>
       </aside>
     </div>
@@ -73,7 +82,7 @@ export function renderStage5(ctx) {
     const prevGhost = state.timeTrial?.[round.id] || null;
     loop = createGameLoop({
       state, seed: state.calibration.seed, roundIdx, calibrated: calibrated(),
-      prevGhost,
+      prevGhost, mods: ascensionMods(),
       onPaint: paintArena,
       onEnd: handleEnd,
     });
@@ -102,7 +111,10 @@ export function renderStage5(ctx) {
         state.run.clearedRounds = Math.max(Number(state.run.clearedRounds || 0), roundIdx + 1);
       } else {
         const r = raceTheJammer({ state, actions });
-        if (r.defeated) completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
+        if (r.defeated) {
+          ascension.recordClear(ascension.level()); // bank the stage clear at this ascension level
+          completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
+        }
       }
     } else {
       pushLog(round.id === FINAL_ROUND_ID
@@ -144,6 +156,7 @@ export function renderStage5(ctx) {
     fields.hint.textContent = lock.hint;
     renderRoundButtons();
     renderShop();
+    renderAscension();
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-6).map((line) => {
       const li = document.createElement('li');
@@ -169,21 +182,13 @@ export function renderStage5(ctx) {
   }
 
   function renderShop() {
-    const shop = state.shop || {};
-    fields.shop.replaceChildren(...UPGRADES.map((u) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.dataset.buy = u.id;
-      const level = levelOf(shop, u.id);
-      const max = maxLevelOf(u.id);
-      const maxed = isMaxed(shop, u.id);
-      const cost = costOf(shop, u.id);
-      btn.disabled = maxed || mode === 'playing' || Number(state.packets) < cost;
-      btn.title = u.desc;
-      btn.textContent = maxed
-        ? `${u.label} ${level}/${max} ✓`
-        : `${u.label} ${level}/${max} (${cost}p)`;
-      return btn;
+    fields.shop.replaceChildren(...shopButtonEls({ shop: state.shop || {}, packets: state.packets, playing: mode === 'playing' }));
+  }
+
+  // Ascension ladder — opt-in replay depth, only once the stage has been beaten at least once.
+  function renderAscension() {
+    fields.ascension.replaceChildren(...ascensionPanelEls({
+      ascension, defeated: state.boss.defeated, playing: mode === 'playing', mods: ASCENSION_MODS,
     }));
   }
 
@@ -192,6 +197,8 @@ export function renderStage5(ctx) {
     if (startBtn) { startRound(Number(startBtn.dataset.startRound)); return; }
     const buyBtn = event.target.closest('button[data-buy]');
     if (buyBtn) { buyUpgrade(state, buyBtn.dataset.buy); persistAndPaint(); return; }
+    const ascBtn = event.target.closest('button[data-ascend]');
+    if (ascBtn) { ascension.setLevel(Number(ascBtn.dataset.ascend)); persistAndPaint(); return; }
     const action = event.target.closest('button[data-action]');
     if (!action) return;
     if (action.dataset.action === 'audio') {
@@ -230,6 +237,8 @@ export function renderStage5(ctx) {
       return calibrated();
     },
     solveBoss() { startRound(BOSS_IDX); if (loop && mode === 'playing') return loop.autoSolve(); return null; },
+    ascension: () => ({ ...ascension.state(), mods: ascensionMods() }),
+    setAscension(n) { ascension.setLevel(n); persistAndPaint(); return ascension.level(); },
   };
 
   return {

@@ -21,18 +21,22 @@ const BUMP_COOLDOWN = 10;    // ticks before the same rival can bump again
 // Look-ahead / speeds / bump costs all come from the vehicle-shop tuning now (applyUpgrades), so a
 // kitted-out racer reads further, runs faster, and shrugs off bumps. See shop.js BASE_TUNING.
 
-export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost }) {
+export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost, mods = {} }) {
   const round = roundOverride || roundByIdx(roundIdx);
   const tickMs = getTickMs || (() => round.tickMs);
-  const table = buildObstacleTable(seed, round);
+  // Ascension knobs (default = neutral): more hazards, faster rivals, tighter hull, sharper static.
+  const m = mods && typeof mods === 'object' ? mods : {};
+  const table = buildObstacleTable(seed, round, m.densityBonus || 0);
   if (round.hasFork) applyForks(table, makeRng(`${seed}:fork:${round.id}`), round);
   if (round.hasPowerups) placePowerups(table, makeRng(`${seed}:pu:${round.id}`), round);
   const tuning = applyUpgrades(state.shop || {});
+  tuning.maxIntegrity = Math.max(20, Math.round(tuning.maxIntegrity * (Number(m.integrityMult) || 1)));
+  tuning.noiseDamage += Math.max(0, Number(m.noiseDamageBonus) || 0);
   const boss = roundOverride ? Boolean(round.boss) : isBossRound(roundIdx);
   const suppressionActive = boss && !calibrated;
   const race = createRaceState(round);
   const maxTicks = race.raceLength + 16;
-  const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength });
+  const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength, speedMult: Number(m.rivalSpeedMult) || 1 });
 
   // Time-trial: a beat-the-clock PAR ghost (the gate) + an optional translucent REPLAY ghost of the
   // player's prior-best run. Both are deterministic transcripts/pacers — no live RNG. The player

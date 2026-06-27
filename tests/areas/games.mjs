@@ -904,6 +904,9 @@ export async function run(ctx) {
   // The thin-gate bypass is gone: there is no "simulate full loop" calibrate button.
   const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 9);
   if (s5NoBypass) pass('Stage 5 is a real racer: 9 rounds (incl. time-trial + fork relay) + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
+  // Ascension ladder is wired (shared/ascension.js): 4 cumulative difficulty rungs available for replay.
+  const s5Asc = await page.evaluate(() => window.__fvStage5.ascension());
+  if (s5Asc.maxLevel === 4) pass('Stage 5 ascension ladder wired: 4 rungs (opt-in replay depth)'); else fail(`Stage 5 ascension maxLevel ${s5Asc.maxLevel}`);
   // The Jammer is gated behind the full run: from a fresh start the boss round (last) is locked.
   const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="8"]')?.disabled }));
   if (s5Gate.cleared === 0 && s5Gate.bossLocked) pass('Stage 5 boss is locked until the run is cleared'); else fail('Stage 5 boss reachable from start');
