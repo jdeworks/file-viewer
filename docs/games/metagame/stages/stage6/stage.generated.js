@@ -695,27 +695,6 @@ function hashSeed(seed, key) {
   return h || 1;
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-piles.js
-function drawCards(combat, n) {
-  for (let i = 0; i < n; i++) {
-    if (combat.draw.length === 0) {
-      if (combat.discard.length === 0) return;
-      combat.draw = shuffle(combat.discard, combat.rng);
-      combat.discard = [];
-    }
-    combat.hand.push(combat.draw.shift());
-  }
-}
-function jamOne(combat) {
-  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
-}
-function releaseJam(combat) {
-  if (combat.jammed.length) {
-    combat.discard.push(...combat.jammed);
-    combat.jammed = [];
-  }
-}
-
 // ../../docs/games/metagame/stages/stage6/combat-damage.js
 function dealToEnemy(combat, baseAmount) {
   let amount = Math.max(0, Math.round(baseAmount));
@@ -870,6 +849,28 @@ function runHook(combat, name, card = null) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage6/combat-piles.js
+function drawCards(combat, n) {
+  for (let i = 0; i < n; i++) {
+    if (combat.draw.length === 0) {
+      if (combat.discard.length === 0) return;
+      combat.draw = shuffle(combat.discard, combat.rng);
+      combat.discard = [];
+      runHook(combat, "onShuffle");
+    }
+    combat.hand.push(combat.draw.shift());
+  }
+}
+function jamOne(combat) {
+  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
+}
+function releaseJam(combat) {
+  if (combat.jammed.length) {
+    combat.discard.push(...combat.jammed);
+    combat.jammed = [];
+  }
+}
+
 // ../../docs/games/metagame/stages/stage6/combat-enemy.js
 function currentIntent(combat) {
   const script = combat.enemy.script;
@@ -879,6 +880,7 @@ function enemyTurn(combat) {
   const enemy = combat.enemy;
   enemy.block = 0;
   const intent = currentIntent(combat);
+  const hpBefore = combat.player.hp;
   if (enemy.skipNext) {
     enemy.skipNext = false;
     enemy.rttStacks = 0;
@@ -886,6 +888,11 @@ function enemyTurn(combat) {
   } else {
     resolveIntent(combat, intent);
     enemy.rttStacks = (enemy.rttStacks || 0) + 1;
+  }
+  const lost = hpBefore - combat.player.hp;
+  if (lost > 0) {
+    combat.lastDamageTaken = lost;
+    runHook(combat, "onDamageTaken");
   }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
@@ -1022,8 +1029,10 @@ function playCard(combat, handIndex) {
   combat.playedIdsThisTurn.push(card.id);
   card.effect(makeCtx(combat, card));
   combat.lastCardPlayed = card.id;
-  if (card.exhaust) combat.exhaust.push(card.id);
-  else combat.discard.push(card.id);
+  if (card.exhaust) {
+    combat.exhaust.push(card.id);
+    runHook(combat, "onExhaust", card);
+  } else combat.discard.push(card.id);
   runHook(combat, "onCardPlay", card);
   checkEnemyDead(combat);
   return { ok: true, card: card.id };
@@ -1031,6 +1040,8 @@ function playCard(combat, handIndex) {
 function endTurn(combat) {
   if (combat.over) return combat;
   if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
+  if (combat.over) return combat;
+  runHook(combat, "onTurnEnd");
   if (combat.over) return combat;
   combat.discard.push(...combat.hand);
   combat.hand = [];
@@ -1055,6 +1066,7 @@ function endTurn(combat) {
 }
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
+    runHook(combat, "onKill");
     if (typeof combat.advancePhase === "function" && combat.advancePhase(combat)) return;
     combat.over = true;
     combat.result = "win";

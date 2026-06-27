@@ -98,7 +98,7 @@ export function playCard(combat, handIndex) {
   card.effect(makeCtx(combat, card));
 
   combat.lastCardPlayed = card.id;
-  if (card.exhaust) combat.exhaust.push(card.id);
+  if (card.exhaust) { combat.exhaust.push(card.id); runHook(combat, "onExhaust", card); }
   else combat.discard.push(card.id);
 
   runHook(combat, "onCardPlay", card);
@@ -112,6 +112,10 @@ export function endTurn(combat) {
   if (combat.over) return combat;
   // Boss negotiation (optional): end-of-turn protocol response (e.g. phase-3 ongoing damage).
   if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
+  if (combat.over) return combat;
+  // Relics that act at the end of your turn (onTurnEnd) fire before the hand is discarded and the
+  // enemy acts — so e.g. a Nagle Buffer can convert leftover hand into block. Inert by default.
+  runHook(combat, "onTurnEnd");
   if (combat.over) return combat;
   // Discard the hand.
   combat.discard.push(...combat.hand);
@@ -140,6 +144,9 @@ export function endTurn(combat) {
 
 export function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
+    // Relics that trigger on an enemy death (onKill) fire here — once per defeated foe/boss phase.
+    // Inert by default; a relic may e.g. heal the player. Fires before the phase-advance / win check.
+    runHook(combat, "onKill");
     // Boss negotiation (optional): a multi-phase boss refills to its next phase instead of dying.
     if (typeof combat.advancePhase === "function" && combat.advancePhase(combat)) return;
     combat.over = true;
