@@ -51,6 +51,7 @@ export function mountAsciiStudio(host, opts = {}) {
       ${opts.onBack ? BTN('asx-back', '🖼 Image', 'Back to the image') : ''}
       ${BTN('asx-settings-btn', '⚙ Settings', 'Show / hide the settings panel')}
       ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
+      ${BTN('asx-convert', '🎞 Convert file', 'Convert a GIF or video file to ASCII')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
         <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
       ${BTN('asx-copy', 'Copy text', 'Copy plain ASCII')}
@@ -187,6 +188,15 @@ export function mountAsciiStudio(host, opts = {}) {
     const preset = PERFORMANCE_PRESETS[e.target.value];
     if (!preset) return;
     Object.entries(preset).forEach(([k, v]) => controls.setValue(k, v));
+  });
+  // Convert a GIF/video file to ASCII (lazy module). Carries the studio's current
+  // settings; "Add to studio" re-opens the result through the app's intake.
+  q('.asx-convert').addEventListener('click', async () => {
+    const { openConverter } = await import('./convert-file.js');
+    openConverter({
+      host, baseName, options: { ...engine.options },
+      onAddToStudio: window.__fv?.openBlobFile ? (blob, name, mime) => window.__fv.openBlobFile(blob, name, { mime }) : null,
+    });
   });
   q('.asx-copy').addEventListener('click', () => engine.result && copyText(engine.result.text));
   q('.asx-copy-html').addEventListener('click', () => engine.result && copyHtml(pre.innerHTML));

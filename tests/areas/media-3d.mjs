@@ -1089,6 +1089,19 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Convert file → ASCII: feed a tiny 2-frame GIF and assert it converts (frame-by-frame
+  // via the engine worker) + encodes a downloadable ASCII GIF.
+  const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];
+  await page.click('#previewHost .asx-convert');
+  await page.waitForSelector('#previewHost .asx-conv-input', { timeout: 8000 }).catch(() => {});
+  await page.setInputFiles('#previewHost .asx-conv-input', { name: 'anim.gif', mimeType: 'image/gif', buffer: Buffer.from(CGIF) }).catch(() => {});
+  const convReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
+  const [convDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .asx-conv-dl'),
+  ]).catch(() => [null]);
+  if (convReady && convDl && /\.gif$/.test(convDl.suggestedFilename())) pass('ASCII converter: GIF → ASCII GIF converts (worker) + downloads'); else fail('ascii converter: ' + JSON.stringify({ convReady, dl: convDl && convDl.suggestedFilename() }));
+  await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
   // In ASCII mode the image bar is fully hidden; the studio bar carries the 🖼 Image back-button.
   const asciiNav = await page.evaluate(() => ({
     imgBarHidden: getComputedStyle(document.querySelector('#previewHost .imgv-bar')).display === 'none',
