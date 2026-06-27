@@ -1131,21 +1131,42 @@ export async function run(ctx) {
   const s7Case3 = await page.evaluate(() => window.__fvStage7.solveCase3());
   if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the ghost and reaches the EXIF boss'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
 
-  // The metadata sidecar still carries the decisive GPS contradiction.
-  const entitySidecar = await page.evaluate(async () => {
-    const response = await fetch('examples/metagame/stage7/entity_metadata.json');
-    return response.ok ? response.json() : null;
+  // The GPS contradiction now lives in the REAL JPEG's EXIF (52.3N, 4.8E), parsed by the app's own
+  // exif reader — no staged sidecar. Confirm the image parser surfaces it.
+  const gpsExif = await page.evaluate(async () => {
+    const res = await fetch('examples/metagame/stage7/entity_f_verification.jpg');
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const { parseExif } = await import('/types/image/exif.js');
+    return parseExif(bytes);
   });
-  if (entitySidecar?.decisiveField === 'GPSInfo' && /outside known layers/.test(entitySidecar?.entities?.F?.GPSInfo || '')) pass('Stage 7 boss evidence: Entity F GPS is outside known layers'); else fail('Stage 7 metadata sidecar missing contradiction');
-  // Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
+  if (gpsExif && Math.abs(gpsExif.gpsLat - 52.3) < 0.05 && Math.abs(gpsExif.gpsLon - 4.8) < 0.05) pass('Stage 7 boss evidence: Entity F JPEG EXIF GPS is outside known layers'); else fail(`Stage 7 JPEG EXIF GPS missing contradiction (${JSON.stringify(gpsExif)})`);
+  // Boss un-cheat (load-bearing, NOT bypassable): opening Entity F's photo is necessary but NOT
+  // sufficient. The action fires ONLY when the player navigates to the Metadata pane and the GPS row
+  // renders. First open the photo…
   await page.click('[data-action="photo"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.png' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.jpg' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
+  // …and prove that merely opening it did NOT unlock the boss.
+  const firedOnOpen = await page.evaluate(() => {
+    try {
+      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+      return Boolean(save.actions?.['7.exif_contradiction_found']);
+    } catch { return false; }
+  });
+  if (firedOnOpen === false) pass('Stage 7 boss: opening the photo does NOT unlock the boss (open is not enough)'); else fail('Stage 7 boss unlocked on file-open — un-cheat is bypassable');
+  // Now navigate to the Metadata pane (the real metaBtn handler builds it the same way) — extracting
+  // the EXIF renders the GPS row, which fires the contradiction from the metadata renderer.
+  await page.evaluate(async () => {
+    const m = await import('/core/meta-drawer.js');
+    await m.buildMetadata();
+  });
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return Boolean(save.actions?.['7.exif_contradiction_found'] && save.achievements?.['stage7.exif_contradiction_found']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  pass('Stage 7 boss: inspecting the Metadata pane (GPS row) unlocks the boss');
   await page.click('button[data-commit="A"]');
   await page.waitForFunction(() => {
     try {

@@ -121,11 +121,12 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
 {
   const calls = [];
   const setAction = (...args) => calls.push(args);
-  ok(recordStage7MetadataInspection({ file: 'entity_f_verification.png', field: 'GPSInfo', entity: 'F', setAction }), 'Stage 7 metadata recorder returns true');
+  ok(recordStage7MetadataInspection({ file: 'entity_f_verification.jpg', field: 'GPSInfo', entity: 'F', setAction }), 'Stage 7 metadata recorder returns true');
   ok(calls.length === 1, 'Stage 7 recorder: setAction called once');
   ok(calls[0][0] === 7 && calls[0][1] === 'exif_contradiction_found', 'Stage 7 recorder: action id set');
   ok(calls[0][2].source === 'viewer-metadata' && calls[0][2].field === 'GPSInfo', 'Stage 7 recorder: payload set');
-  ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.png', field: 'DateTimeOriginal', entity: 'F', setAction }), 'Stage 7 recorder rejects non-contradictory metadata');
+  ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.jpg', field: 'DateTimeOriginal', entity: 'F', setAction }), 'Stage 7 recorder rejects non-contradictory metadata');
+  ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.png', field: 'GPSInfo', entity: 'F', setAction }), 'Stage 7 recorder rejects the old PNG stub');
   ok(!recordStage7MetadataInspection({ file: 'entity_a_verification.png', field: 'GPSInfo', entity: 'A', setAction }), 'Stage 7 recorder rejects wrong entity/file');
   ok(calls.length === 1, 'Stage 7 recorder: no extra calls for rejected metadata');
 }
@@ -196,8 +197,11 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   const calls = [];
   const setAction = (...args) => calls.push(args);
   ok(recordMetagameViewerOpen({ path: 'protocols_of_the_entity.epub', opts: {}, setAction }), 'Viewer-open aggregate records Stage 6');
-  ok(recordMetagameViewerOpen({ path: 'entity_f_verification.png', opts: { metadataField: 'GPSInfo', entity: 'F' }, setAction }), 'Viewer-open aggregate records Stage 7 metadata');
-  ok(calls.length === 2, 'Viewer-open aggregate records two canonical actions');
+  // Stage 7's EXIF contradiction is NO LONGER fired at file-open. Opening Entity F's photo (even with
+  // the old-style metadata opts) must record nothing — the boss un-cheat fires only from the metadata
+  // renderer when the player navigates to the GPS row (see metadata.js / uncheat.test.mjs).
+  ok(!recordMetagameViewerOpen({ path: 'entity_f_verification.jpg', opts: { metadataField: 'GPSInfo', entity: 'F' }, setAction }), 'Viewer-open aggregate does NOT fire Stage 7 exif at open');
+  ok(calls.length === 1, 'Viewer-open aggregate: only Stage 6 fired (Stage 7 is metadata-gated)');
 }
 
 {

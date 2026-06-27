@@ -61,7 +61,7 @@ export function inspectContradictoryExif({ state, actions, achievements, bell, f
   }
   actions?.setAction?.(7, ACTION_NAME, {
     source: "image-metadata",
-    file: "entity_f_verification.png",
+    file: "entity_f_verification.jpg",
     field: "GPSInfo",
     entity: "F"
   });
@@ -85,7 +85,11 @@ export function commitIdentity({ state, entity }) {
 
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (selected !== "A") {
-    pushLog(state, `${selected || "unknown"} is not the real credential holder.`);
+    if (selected === "F") {
+      pushLog(state, "Entity F is already contradicted — the GPS places it outside every known layer. Commit to the entity that survives all five investigations.");
+    } else {
+      pushLog(state, `${selected || "unknown"} is not the real credential holder.`);
+    }
     return { ok: false, reason: "wrong-entity" };
   }
 

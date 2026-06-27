@@ -11,8 +11,7 @@ var REQUIRED_ACTION = "7.exif_contradiction_found";
 var ACHIEVEMENT_ID = "stage7.exif_contradiction_found";
 var ACHIEVEMENT_TEXT = "I looked beyond the surface of the image.";
 var BTS_PATH = "/docs/bts/identity_arbiter.bts";
-var ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.png";
-var ENTITY_METADATA_SIDECAR_PATH = "/docs/examples/metagame/stage7/entity_metadata.json";
+var ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.jpg";
 var ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
 var ANCHOR_ACTION = "anchor_chain_examined";
 var CASE2_SOURCE_PATHS = {
@@ -39,7 +38,7 @@ var substageHints = {
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
   5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
   6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
-  7: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  7: "Open Entity F's photo, then open its Metadata pane and read the GPS row — the image knows where it was. Then commit to the real holder."
 };
 var bellMessages = {
   start: "something presented itself. I had to decide.",
@@ -110,7 +109,7 @@ function inspectContradictoryExif({ state, actions, achievements, bell, field = 
   }
   actions?.setAction?.(7, ACTION_NAME, {
     source: "image-metadata",
-    file: "entity_f_verification.png",
+    file: "entity_f_verification.jpg",
     field: "GPSInfo",
     entity: "F"
   });
@@ -128,7 +127,11 @@ function commitIdentity({ state, entity }) {
   }
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (selected !== "A") {
-    pushLog(state, `${selected || "unknown"} is not the real credential holder.`);
+    if (selected === "F") {
+      pushLog(state, "Entity F is already contradicted — the GPS places it outside every known layer. Commit to the entity that survives all five investigations.");
+    } else {
+      pushLog(state, `${selected || "unknown"} is not the real credential holder.`);
+    }
     return { ok: false, reason: "wrong-entity" };
   }
   state.boss.defeated = true;
@@ -742,7 +745,7 @@ function renderAccusation(state, caseId = 2) {
   for (const s of SOURCES_FOR_CASE[cid] || []) {
     const b = button({ "data-action": "open-source", "data-source": s.action });
     const opened = cardsForCase(state, cid).some((c) => c.id === s.card.id);
-    b.textContent = `${opened ? "✓ " : "open "}${s.file}`;
+    b.textContent = `${opened ? "[done] " : "open "}${s.file}`;
     if (opened) b.classList.add("is-opened");
     sources.append(b);
   }
@@ -750,7 +753,7 @@ function renderAccusation(state, caseId = 2) {
     const searched = cardsForCase(state, 3).some((c) => c.id === CASE3_SEARCH.card.id);
     const sb = button({ "data-action": "search-source", "data-source": CASE3_SEARCH.action });
     sb.classList.add("s7-search-btn");
-    sb.textContent = `${searched ? "✓ " : "🔍 "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
+    sb.textContent = `${searched ? "[done] " : "[search] "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
     if (searched) sb.classList.add("is-opened");
     sources.append(sb);
   }
@@ -768,7 +771,7 @@ function renderAccusation(state, caseId = 2) {
     for (const c of cards) {
       const b = button({ "data-pin": c.id });
       if (c.pinned) b.classList.add("is-pinned");
-      b.textContent = (c.pinned ? "📌 " : "") + c.label;
+      b.textContent = (c.pinned ? "[pinned] " : "") + c.label;
       col.append(b);
     }
     board.append(col);
@@ -1059,14 +1062,7 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
   }
 }
 function buildEntityFPhotoOpenOptions() {
-  return {
-    mime: "image/png",
-    source: "stage7",
-    metadataField: metadataArtifact.decisiveField,
-    entity: metadataArtifact.decisiveEntity,
-    metadataSidecar: ENTITY_METADATA_SIDECAR_PATH,
-    metadataRows: metadataRows.F.map(([field, value]) => ({ field, value }))
-  };
+  return { mime: "image/jpeg", source: "stage7", entity: "F" };
 }
 function el2(tag, className) {
   const node = document.createElement(tag);

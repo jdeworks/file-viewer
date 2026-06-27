@@ -11,7 +11,7 @@ const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
 const STAGE3_ASCII_FILE = 'entity_f_verification.png';
 const STAGE4_BLUEPRINT_FILE = 'recursion_points.json';
-const STAGE7_FILE = 'entity_f_verification.png';
+const STAGE7_FILE = 'entity_f_verification.jpg';
 const STAGE7_ANCHOR_FILE = 'entity_anchor_0043.txt';
 // Case 2 (Duplicate Roster) source files — opening each in the real viewer mints one evidence-board
 // fact card. fact:route (route_table.csv) is load-bearing: the rule-of-three triad cannot complete
@@ -187,6 +187,9 @@ export function shouldSetStage7ExifContradiction({ file, field, entity } = {}) {
     && String(entity || 'F').toUpperCase() === 'F';
 }
 
+// Stage 7 boss un-cheat. NOT fired at file-open — it is called from the image metadata renderer
+// (docs/types/image/metadata.js) only when the GPS row actually renders in the metadata pane, i.e.
+// when the player navigates there and reads Entity F's embedded EXIF. Self-gates on the fixture.
 export function recordStage7MetadataInspection({ file, field, entity = 'F', setAction = sharedSetAction } = {}) {
   if (!shouldSetStage7ExifContradiction({ file, field, entity })) return false;
   setAction?.(7, 'exif_contradiction_found', {
@@ -268,12 +271,9 @@ export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sh
     recordStage7AnchorOpen({ file: target, setAction }),
     recordStage7SourceOpen({ file: target, setAction }),
     recordStage10EchoOpen({ file: target, setAction }),
-    recordStage7MetadataInspection({
-      file: target,
-      field: opts.metadataField || opts.field,
-      entity: opts.entity || 'F',
-      setAction,
-    }),
+    // NOTE: Stage 7's EXIF contradiction is deliberately NOT recorded here. It fires only from the
+    // image metadata renderer (docs/types/image/metadata.js → recordStage7MetadataInspection) when
+    // the player navigates to the metadata pane and the GPS row renders — never on file-open.
   ];
   return results.some(Boolean);
 }

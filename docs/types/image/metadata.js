@@ -1,6 +1,7 @@
 import { dataUrl, mimeFor, isSvg } from './imglib.js';
 import { parseExif } from './exif.js';
 import { parseImageContainer } from './byte-metadata.js';
+import { recordStage7MetadataInspection } from '../../games/metagame/viewer-actions.js';
 
 export async function extract(intake) {
   const rows = [{ label: 'Format', value: isSvg(intake) ? 'SVG (vector)' : mimeFor(intake) }];
@@ -16,7 +17,23 @@ export async function extract(intake) {
       add('Taken', ex.dateTimeOriginal || ex.dateTime);
       add('Orientation', ex.orientation);
       if (ex.pixelX && ex.pixelY) add('EXIF size', ex.pixelX + ' × ' + ex.pixelY + ' px');
+      if (ex.gpsLat != null && ex.gpsLon != null) {
+        const lat = ex.gpsLat.toFixed(1) + '°' + (ex.gpsLatRef || 'N');
+        const lon = ex.gpsLon.toFixed(1) + '°' + (ex.gpsLonRef || 'E');
+        rows.push({ label: 'GPS', value: lat + ', ' + lon });
+        maybeFireStage7GpsEvent(intake);
+      }
     }
   }
   return rows;
+}
+
+// Stage-7 boss un-cheat: the GPS row only renders here, inside the real metadata pane, when the
+// player actually navigates to it. Firing from this render path (not from file-open) is the whole
+// point — it makes inspecting the embedded EXIF a genuine, non-bypassable act. The helper self-gates
+// on the Entity-F fixture filename, so any other geotagged photo is unaffected.
+function maybeFireStage7GpsEvent(intake) {
+  try {
+    recordStage7MetadataInspection({ file: intake && intake.filename, field: 'GPSInfo', entity: 'F' });
+  } catch {}
 }
