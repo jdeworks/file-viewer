@@ -475,10 +475,10 @@ export async function run(ctx) {
   });
   if (bellInHeader) pass('Defragmenter bell control sits in header before Back to arcade'); else fail('Defragmenter bell control is not in header next to Back to arcade');
   const freshSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')));
-  if (freshSave?.version === 3 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
-    pass('Defragmenter initializes fresh v3 save with Stage 1');
+  if (freshSave?.version === 4 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
+    pass('Defragmenter initializes fresh v4 save with Stage 1');
   } else {
-    fail('Defragmenter v3 save invalid: ' + JSON.stringify(freshSave));
+    fail('Defragmenter v4 save invalid: ' + JSON.stringify(freshSave));
   }
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
