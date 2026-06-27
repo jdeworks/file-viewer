@@ -481,22 +481,72 @@ function positionMultiplier(position, fieldSize) {
   return Number((0.6 + 0.4 * Math.max(0, Math.min(1, frac))).toFixed(3));
 }
 
+// ../../docs/games/metagame/stages/stage5/powerups.js
+var POWERUPS = {
+  shield: { glyph: "U", label: "shield", kind: "buff", durationMs: 2600 },
+  overclock: { glyph: "O", label: "overclock", kind: "buff", durationMs: 2200 },
+  emp: { glyph: "E", label: "EMP", kind: "instant", drag: 9, finishTicks: 12 },
+  repair: { glyph: "+", label: "repair", kind: "instant", amount: 12 },
+  cache: { glyph: "$", label: "packet-cache", kind: "instant", amount: 15 }
+};
+var GLYPH_TO_TYPE = Object.fromEntries(Object.entries(POWERUPS).map(([t, d]) => [d.glyph, t]));
+var POWERUP_GLYPHS = Object.values(POWERUPS).map((p) => p.glyph);
+var DEFAULT_POOL = ["shield", "overclock", "repair", "cache", "emp"];
+function isPowerup(glyph) {
+  return Boolean(GLYPH_TO_TYPE[glyph]);
+}
+function powerupType(glyph) {
+  return GLYPH_TO_TYPE[glyph] || null;
+}
+function poolFor(round) {
+  const pool = round && Array.isArray(round.powerupPool) ? round.powerupPool.filter((t) => POWERUPS[t]) : null;
+  return pool && pool.length ? pool : DEFAULT_POOL;
+}
+function placePowerups(table, rng, round = {}) {
+  const pool = poolFor(round);
+  const spacing = Math.max(4, Number(round.powerupSpacing) || 14);
+  const chance = Number.isFinite(Number(round.powerupChance)) ? Number(round.powerupChance) : 0.7;
+  for (let t = 0; t < table.length; t += 1) {
+    if (t % spacing !== 0) continue;
+    const row = table[t];
+    if (!row || row.beatOpen === false) continue;
+    const open = [0, 1, 2].filter((l) => row.lanes[l] === null);
+    if (!open.length || !rng.chance(chance)) continue;
+    const lane = rng.pick(open);
+    row.lanes[lane] = POWERUPS[rng.pick(pool)].glyph;
+  }
+  return table;
+}
+function durationTicks(type, getTickMs) {
+  const def = POWERUPS[type];
+  if (!def || !def.durationMs) return 0;
+  const ms = Math.max(1, Number(getTickMs && getTickMs()) || 130);
+  return Math.max(1, Math.ceil(def.durationMs / ms));
+}
+
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var LOOK_AHEAD = 8;
 var BASE_SPEED = 1;
+var OVERCLOCK_SPEED = 1.6;
 var BUMP_DAMAGE = 1;
 var BUMP_SLOW = 0.5;
 var BUMP_COOLDOWN = 10;
-function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
-  const round = roundByIdx(roundIdx);
+function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride }) {
+  const round = roundOverride || roundByIdx(roundIdx);
+  const tickMs = getTickMs || (() => round.tickMs);
   const table = buildObstacleTable(seed, round);
+  if (round.hasPowerups) placePowerups(table, makeRng(`${seed}:pu:${round.id}`), round);
   const tuning = applyUpgrades(state.shop || {});
-  const boss = isBossRound(roundIdx);
+  const boss = roundOverride ? Boolean(round.boss) : isBossRound(roundIdx);
   const suppressionActive = boss && !calibrated;
   const race = createRaceState(round);
   const maxTicks = race.raceLength + 16;
   const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength });
   const bumpReady = rivals.map(() => 0);
+  const rivalDrag = rivals.map(() => 0);
+  const rivalLate = rivals.map(() => 0);
+  const buffs = { shieldUntil: -1, overclockUntil: -1 };
+  const effDist = (i) => Math.max(0, rivals[i].distAt(tick) - rivalDrag[i]);
   const run = state.run;
   run.lane = clampLane2(run.lane);
   run.roundIdx = roundIdx;
@@ -515,23 +565,49 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
     return table[race.rowIndex(t, table.length)];
   }
   function rivalView() {
-    return rivals.map((r) => ({
+    return rivals.map((r, i) => ({
       glyph: r.glyph,
       lane: r.laneAt(tick),
-      ahead: Math.round(r.distAt(tick) - race.distance)
+      ahead: Math.round(effDist(i) - race.distance)
     }));
   }
   function resolveBumps() {
     let slow = 0;
     rivals.forEach((r, i) => {
       if (tick < bumpReady[i]) return;
-      if (Math.round(r.distAt(tick) - race.distance) !== 0) return;
+      if (Math.round(effDist(i) - race.distance) !== 0) return;
       if (r.laneAt(tick) !== run.lane) return;
       run.integrity -= BUMP_DAMAGE;
       bumpReady[i] = tick + BUMP_COOLDOWN;
       slow = BUMP_SLOW;
     });
     return slow;
+  }
+  function empNearestRival() {
+    let best = -1;
+    let bestGap = Infinity;
+    rivals.forEach((r, i) => {
+      const gap = effDist(i) - race.distance;
+      if (gap > 0 && gap < bestGap) {
+        bestGap = gap;
+        best = i;
+      }
+    });
+    if (best >= 0) {
+      rivalDrag[best] += POWERUPS.emp.drag;
+      rivalLate[best] += POWERUPS.emp.finishTicks;
+    }
+  }
+  function collectPowerup(type) {
+    run.powerupsCollected = Number(run.powerupsCollected || 0) + 1;
+    if (type === "shield") buffs.shieldUntil = tick + durationTicks("shield", tickMs);
+    else if (type === "overclock") buffs.overclockUntil = tick + durationTicks("overclock", tickMs);
+    else if (type === "repair") run.integrity = Math.min(100, run.integrity + POWERUPS.repair.amount);
+    else if (type === "cache") {
+      const p = POWERUPS.cache.amount;
+      state.packets = Number(state.packets || 0) + p;
+      run.cachePackets = Number(run.cachePackets || 0) + p;
+    } else if (type === "emp") empNearestRival();
   }
   function paint() {
     onPaint?.({
@@ -576,9 +652,10 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
     const row = rowAt(tick);
     if (row) {
       const glyph = row.lanes[run.lane];
-      const shielded = row.counterPhaseLane === run.lane;
+      const shielded = row.counterPhaseLane === run.lane || tick < buffs.shieldUntil;
       if (isBlock(glyph) && !shielded) run.integrity -= damageFor(glyph);
-      if (isGate(glyph)) run.gatesThisRound += 1;
+      else if (isGate(glyph)) run.gatesThisRound += 1;
+      else if (isPowerup(glyph)) collectPowerup(powerupType(glyph));
     }
     if (suppressionActive) run.integrity -= 1;
     const slow = resolveBumps();
@@ -587,10 +664,10 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
       finish("fail");
       return outcome;
     }
-    race.advance(speedFor() - slow);
+    race.advance(Math.max(0, speedFor() - slow));
     run.distance = race.distance;
     run.lap = race.lap();
-    run.position = 1 + rivals.filter((r) => r.distAt(tick) > race.distance).length;
+    run.position = 1 + rivals.filter((_, i) => effDist(i) > race.distance).length;
     tick += 1;
     if (race.finished() || tick >= maxTicks) {
       finish("clear");
@@ -600,7 +677,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
     return null;
   }
   function speedFor() {
-    return BASE_SPEED;
+    return tick < buffs.overclockUntil ? OVERCLOCK_SPEED : BASE_SPEED;
   }
   function finish(result) {
     if (done) return;
@@ -610,7 +687,8 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
     let packets = 0;
     let position = run.position;
     if (result === "clear") {
-      position = rivals.length ? finishPosition(rivals, tick) : 1;
+      const effRivals = rivals.map((r, i) => ({ finishTick: r.finishTick + rivalLate[i] }));
+      position = effRivals.length ? finishPosition(effRivals, tick) : 1;
       run.position = position;
       const onBeatPct = run.totalSwitches > 0 ? run.onBeatCount / run.totalSwitches : 1;
       const multiplier = positionMultiplier(position, rivals.length + 1);
@@ -713,7 +791,19 @@ function createEngine({ onTick, getTickMs }) {
 }
 
 // ../../docs/games/metagame/stages/stage5/render-track.js
-var CELL = { empty: " · ", "░": " ░ ", "▒": " ▒ ", "▓": " ▓ ", ">>": ">> " };
+var CELL = {
+  empty: " · ",
+  "░": " ░ ",
+  "▒": " ▒ ",
+  "▓": " ▓ ",
+  ">>": ">> ",
+  // powerup pickups (placed by powerups.js into clear lanes)
+  U: " U ",
+  O: " O ",
+  E: " E ",
+  "+": " + ",
+  $: " $ "
+};
 function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [] }) {
   const rows = [];
   const at = (t) => {

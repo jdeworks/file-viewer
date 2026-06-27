@@ -2,7 +2,11 @@
 // look-ahead window (far rows on top, the player's current row at the bottom) plus a player row and a
 // counter-phase header. No game logic, no timers — given a table + position it returns a string.
 
-const CELL = { empty: ' · ', '░': ' ░ ', '▒': ' ▒ ', '▓': ' ▓ ', '>>': '>> ' };
+const CELL = {
+  empty: ' · ', '░': ' ░ ', '▒': ' ▒ ', '▓': ' ▓ ', '>>': '>> ',
+  // powerup pickups (placed by powerups.js into clear lanes)
+  U: ' U ', O: ' O ', E: ' E ', '+': ' + ', $: ' $ ',
+};
 
 export function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [] }) {
   const rows = [];
