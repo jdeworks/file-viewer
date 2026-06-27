@@ -18,7 +18,8 @@ function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, Number(n) || 0)); }
 
 // opts: { label, kind, height, color, interactive (default true), callbacks }
 // callbacks: { onMove(deltaSec, view), onTrim(side, deltaSec, view), onFade(side, deltaSec, view),
-//              onSeek(sec), onSelect() }
+//              onSeek(sec), onSelect(), onScroll(px) }
+// clip view: may include pxPerSec (pixels per second) to enable zoomed / scrollable rendering.
 export function createClipLane(opts = {}) {
   const cbs = opts.callbacks || {};
   const interactive = opts.interactive !== false;
@@ -49,8 +50,20 @@ export function createClipLane(opts = {}) {
   function update(next) {
     view = next || view;
     if (!view) return;
-    const width = canvas.clientWidth || canvasWrap.clientWidth || 600;
+    const wrapW = canvasWrap.clientWidth || 600;
+    const pxPerSec = view.pxPerSec || 0;
     const tl = Math.max(0.001, view.timelineSec);
+    // contentWidth: when pxPerSec is set, size the canvas to the content. It may be WIDER than the
+    // wrap (zoom in → scroll) or NARROWER (zoom out past fit → empty space to the right). Only a
+    // small absolute floor so it can never collapse to nothing.
+    const contentWidth = pxPerSec > 0 ? Math.max(40, tl * pxPerSec) : wrapW;
+    if (pxPerSec > 0) {
+      canvas.style.width = `${contentWidth}px`;
+      canvasWrap.classList.add('al-zoomable');
+    } else {
+      canvas.style.width = '';
+      canvasWrap.classList.remove('al-zoomable');
+    }
     drawListenWaveform(canvas, surfaceEl, {
       summary: view.summary,
       timelineSec: tl,
@@ -62,20 +75,23 @@ export function createClipLane(opts = {}) {
       fadeInSec: view.fadeInSec || 0,
       fadeOutSec: view.fadeOutSec || 0,
     });
-    const clipX = (view.startSec / tl) * width;
-    const clipW = Math.max(6, (view.lenSec / tl) * width);
+    const clipX = (view.startSec / tl) * contentWidth;
+    const clipW = Math.max(6, (view.lenSec / tl) * contentWidth);
     clip.style.left = `${clipX}px`;
     clip.style.width = `${clipW}px`;
     if (view.selected) clip.classList.add('is-selected'); else clip.classList.remove('is-selected');
     if (interactive) {
-      fadeKnobIn.style.left = `${Math.min(clipW, ((view.fadeInSec || 0) / tl) * width)}px`;
-      fadeKnobOut.style.right = `${Math.min(clipW, ((view.fadeOutSec || 0) / tl) * width)}px`;
+      fadeKnobIn.style.left = `${Math.min(clipW, ((view.fadeInSec || 0) / tl) * contentWidth)}px`;
+      fadeKnobOut.style.right = `${Math.min(clipW, ((view.fadeOutSec || 0) / tl) * contentWidth)}px`;
     }
-    const cx = ((view.cursorSec ?? 0) / tl) * width;
+    const cx = ((view.cursorSec ?? 0) / tl) * contentWidth;
     cursorLine.style.left = `${cx}px`;
     const bubble = cursorLine.querySelector('.al-cursor-bubble');
     if (bubble && view.cursorLabel != null) bubble.textContent = view.cursorLabel;
   }
+
+  // Scroll sync: notify the surface when the user scrolls this lane so it can keep all lanes aligned.
+  canvasWrap.addEventListener('scroll', () => { cbs.onScroll?.(canvasWrap.scrollLeft); });
 
   if (interactive) {
     const xToSec = (clientX) => {
@@ -109,5 +125,9 @@ export function createClipLane(opts = {}) {
     });
   }
 
-  return { el: row, canvas, canvasWrap, clip, update, setSurface };
+  return {
+    el: row, canvas, canvasWrap, clip, update, setSurface,
+    // setScroll: programmatic scroll-sync so the surface can keep all lanes + ruler aligned.
+    setScroll: (px) => { canvasWrap.scrollLeft = px; },
+  };
 }

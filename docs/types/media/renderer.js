@@ -306,9 +306,11 @@ export async function render(intake, ctx = {}) {
   }
 
   if (info.kind === 'audio') {
-    if (coverEl) audioWorkspace.querySelector('.media-workspace-head')?.prepend(coverEl);
+    const head = audioWorkspace.querySelector('.media-workspace-head');
+    if (coverEl) head?.prepend(coverEl);
+    // Playback speed presets belong at the top with the transport, not buried at the bottom.
+    if (head) head.append(extras.extras); else audioListenMode?.panel.append(extras.extras);
     if (audioListenMode) {
-      audioListenMode.panel.append(extras.extras);
       if (chapterSourceEl) audioListenMode.panel.append(chapterSourceEl);
       if (chapterList) audioListenMode.panel.append(chapterList);
     }

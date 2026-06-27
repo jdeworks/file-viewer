@@ -161,3 +161,38 @@ function appendTimingRow(list, labelText, valueMs) {
   value.textContent = `${((valueMs || 0) / 1000).toFixed(2)}s`;
   list.append(term, value);
 }
+
+// ── Toolbar building blocks (shared between render() calls in mountModularCompare) ──
+
+// File input for replacing the B source.
+export function renderCompareBInput(kind) {
+  const wrap = document.createElement('label');
+  wrap.className = 'mmx-compare-b-drop';
+  wrap.textContent = 'B file';
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.className = 'mmx-compare-b-input';
+  input.accept = kind === 'video' ? 'video/*,image/*,audio/*' : 'audio/*,video/*,image/*';
+  wrap.append(input);
+  return wrap;
+}
+
+// Normalize toggle (audio-only).
+export function renderCompareNormalizeToggle(project) {
+  const wrap = document.createElement('label');
+  wrap.className = 'mmx-compare-normalize';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.className = 'mmx-compare-normalize-input';
+  input.checked = !!project.compare?.normalizeAudio;
+  wrap.append(input, `Normalize ${input.checked ? 'on' : 'off'}`);
+  return wrap;
+}
+
+// Overlap summary badge (pass pre-computed overlap to avoid re-importing computeCompareOverlap).
+export function renderCompareOverlap(overlap) {
+  const node = document.createElement('span');
+  node.className = 'mmx-compare-overlap';
+  node.textContent = `Overlap ${(overlap.overlap.durationMs / 1000).toFixed(2)}s`;
+  return node;
+}

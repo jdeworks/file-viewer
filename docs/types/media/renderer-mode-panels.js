@@ -166,8 +166,9 @@ export async function mountAudioModePanels({
     stickyModes: ['listen', 'export'],
     onRegisterController,
     onReleaseController,
-    // Compare and Mix bring their own bespoke waveform lanes, so the always-on Listen scrub
-    // surface is hidden for them (they replace it); other modes keep it as the scrub context.
+    // Only Compare and Mix bring their OWN bespoke waveform lanes, so the always-on Listen scrub
+    // surface is hidden for them (they replace it). Tune/QC/Export keep it as the waveform context
+    // for EQ/analysis/export.
     onModeChange: (id) => {
       if (listenSurfaceEl) listenSurfaceEl.hidden = (id === 'compare' || id === 'mix');
     },
@@ -284,6 +285,10 @@ export async function mountVideoModePanels({
   });
 
   registerMode('export', 'Export', async (panel) => {
+    // OCR → subtitles uses the offline OCR engine (not ffmpeg), so it is available regardless of
+    // the Media Transcoding opt-in. The heavy tesseract bundle still loads lazily, only on Run.
+    const { buildOcrSubtitlesControl } = await import('./ocr-subtitles.js');
+    panel.append(buildOcrSubtitlesControl(mediaElement, intake).el);
     if (!enableFfmpeg || !exportPanel) {
       panel.append(buildFfNotEnabledHint(
         'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock video export and fades.',
@@ -295,8 +300,8 @@ export async function mountVideoModePanels({
     return null;
   });
   registerMode('compare', 'Compare', async (panel) => {
-    const { mountModularCompare } = await import('./mixer/mixer-compare.js');
-    return mountModularCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
+    panel.append(createNote('Video compare is coming soon — it depends on the timeline frame model.'));
+    return null;
   });
 
   if (watchMode) {

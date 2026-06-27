@@ -125,6 +125,8 @@ export function buildVideoSourceToolbar(pxPerMs = 0.06) {
   zoomRange.type = 'range'; zoomRange.className = 'mmx-zoom'; zoomRange.dataset.action = 'zoom';
   zoomRange.min = '0.02'; zoomRange.max = '0.8'; zoomRange.step = '0.001';
   zoomRange.value = String(pxPerMs); zoomRange.setAttribute('aria-label', 'Zoom');
-  toolbar.append(title, mk('−', 'zoom-out', 'Zoom out'), zoomRange, mk('+', 'zoom-in', 'Zoom in'), mk('Fit', 'fit', 'Fit timeline'));
+  const cut = mk('✂ Cut', 'split', 'Cut the selected clip at the playhead');
+  cut.className = 'mmx-tl-cut';
+  toolbar.append(title, mk('−', 'zoom-out', 'Zoom out'), zoomRange, mk('+', 'zoom-in', 'Zoom in'), mk('Fit', 'fit', 'Fit timeline'), cut);
   return { toolbar, zoomRange };
 }

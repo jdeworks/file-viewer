@@ -188,6 +188,18 @@ FULL_UNIT_TESTS=(
   tests/known-ink-script.test.mjs
   tests/known-haskell-lang.test.mjs
   tests/known-idris-lang.test.mjs
+  tests/known-janet-lang.test.mjs
+  tests/known-koka-lang.test.mjs
+  tests/known-lean-lang.test.mjs
+  tests/known-lua-lang.test.mjs
+  tests/known-livescript-lang.test.mjs
+  tests/known-nushell-script.test.mjs
+  tests/known-nim-lang.test.mjs
+  tests/known-objc-lang.test.mjs
+  tests/known-ocaml-lang.test.mjs
+  tests/known-pascal-lang.test.mjs
+  tests/known-perl-lang.test.mjs
+  tests/known-prolog-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
