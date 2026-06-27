@@ -76,7 +76,34 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ### A0 — Modular Media Mixer Source Of Truth
 
-Status: Stage 5 video/image seek-frame preview started.
+Status: Stages 1–8 implemented; lane finalized for merge readiness (2026-06-27).
+
+Finalization pass (2026-06-27):
+
+- Recovered the lane from a detached-HEAD state: created/pushed the
+  `worktree-media` branch at the work tip so the 59+ mixer commits are no longer
+  loose. Branch tracks `origin/worktree-media`.
+- Stage 8 prototype retirement confirmed complete: legacy `timeline.js`,
+  `compare-ui*`, root `mixer-ui*`/`mixer-draw`/`mixer-engine` are deleted, no
+  dangling imports remain, and active surfaces use `.mmx-*` modular contracts.
+- LOC split: every media-owned source file is now under the 500-line hard cap.
+  Behaviour-preserving extractions (public APIs unchanged):
+  - `mixer-model.js` 619→453 (+`mixer-model-helpers.js`)
+  - `mixer-video-export.js` 651→338 (+`mixer-video-export-helpers.js`)
+  - `mixer-audio-multi.js` 602→476 (+`mixer-audio-multi-ui.js`)
+  - `mixer-compare.js` 593→450 (+`mixer-compare-ui.js`)
+  - `mixer-video-source.js` 579→474 (+`mixer-video-source-ui.js`)
+  - `mixer-styles.css` 611→278 (+`mixer-styles-panels.css`, dual-injected)
+- Validation: media unit tests, `media-studio` / `media-studio-mixer-shell` /
+  `media-studio-mixer-audio-listen` smoke, and `./scripts/check.sh --fast` all
+  green (after one unrelated flaky click-interception retry). Regenerated
+  `asset-manifest.json` + `sw.js` for the new files and committed them.
+- Merge readiness: lane is 62 commits ahead of `origin/dev`; `origin/dev` is
+  ~138 commits ahead of the lane, so the merge-in of `origin/dev` is a real
+  integration step (not just the auto-resolved manifest/sw.js conflict). Awaiting
+  user go-ahead before merging to dev.
+
+Prior status: Stage 5 video/image seek-frame preview started.
 
 The active design target has moved from a narrow audio-only lane redesign to a
 general modular media mixer/editor. Use
