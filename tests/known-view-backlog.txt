@@ -1,0 +1,67 @@
+# Known-view enhancement backlog — language/code viewers that MISSED the Jun-2026 enhance pass.
+# One viewer id per line (dir under docs/types/*/known/<id>/). The self-paced loop drains this:
+# enhance the viewer's parser+render to capture real structure (typed langs -> typed signatures;
+# dynamic langs -> param names/arity + real constructs), add a node unit test, then DELETE its
+# line here and commit. Empty (no id lines) = done; loop stops. Bar = arduino-sketch / solidity-lang.
+# Check remaining: node tests/check-known-backlog.mjs
+ada-lang
+agda-lang
+alloy-lang
+asm-lang
+awk-script
+carbon-lang
+chapel-lang
+clojure-lang
+cobol-lang
+coffeescript-lang
+coq-lang
+crystal-lang
+cue-lang
+d-lang
+eiffel-lang
+elixir-lang
+elm-lang
+elvish-script
+factor-lang
+fennel-lang
+fish-script
+forth-lang
+fsharp-lang
+gnuplot-script
+grain-lang
+haskell-lang
+idris-lang
+ink-script
+janet-lang
+koka-lang
+lean-lang
+livescript-lang
+lua-lang
+nim-lang
+nushell-script
+objc-lang
+ocaml-lang
+pascal-lang
+perl-lang
+prolog-lang
+purescript-lang
+r-lang
+racket-lang
+reason-lang
+red-lang
+rescript-lang
+ruby-lang
+scala-lang
+scheme-lang
+sed-script
+sml-lang
+squirrel-lang
+swift-lang
+tcl-lang
+vala-lang
+verilog
+vhdl-lang
+wolfram-lang
+wren-lang
+zig-lang
+zsh-script
