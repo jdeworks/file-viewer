@@ -43,6 +43,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <div data-field="hint"></div>
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
+    <div data-field="telegraph" class="s8-telegraph" hidden></div>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>

@@ -4,6 +4,7 @@
 
 import { nodeById, ADJACENCY } from "./nodes.js";
 import { createDebris } from "./state.js";
+import { resolveEvent, telegraphNext } from "./events.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
 export const BASE_REPAIR_UNITS_PER_CYCLE = 6;  // repair budget granted each cycle
@@ -30,7 +31,9 @@ const node = (state, id) => state.nodes.find((n) => n.id === id);
 // Advance one cycle. Mutates state in place; returns a summary. `rng` is a makeRng bundle.
 export function advanceCycle(state, rng) {
   ensureRuntime(state);
-  const result = { income: 0, newDebris: [], expiredDebris: [], newlyFailed: [], entropy: 0 };
+  const result = { income: 0, newDebris: [], expiredDebris: [], newlyFailed: [], entropy: 0, event: null };
+  // 0. resolve any telegraphed crisis event from last cycle (direct effects, before decay).
+  result.event = resolveEvent(state, rng);
   const priorStatus = new Map(state.nodes.map((n) => [n.id, status(n.health)]));
 
   // 1. tick down stabilizers
@@ -100,6 +103,8 @@ export function advanceCycle(state, rng) {
   // 10/11. reset budget + advance the cycle
   state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
   state.cycle = (state.cycle || 0) + 1;
+  // 12. telegraph next cycle's crisis (shown one cycle ahead).
+  result.pendingEvent = telegraphNext(state, rng);
   return result;
 }
 

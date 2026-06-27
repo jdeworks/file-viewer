@@ -21,6 +21,7 @@ export function paintStage8({ state, lock, els, onSelectDebris }) {
     ? "defeated. BTS trace available."
     : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
+  paintTelegraph(fields.telegraph, state);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
   map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
@@ -34,6 +35,18 @@ export function paintStage8({ state, lock, els, onSelectDebris }) {
 
 function tick(ok) {
   return ok ? "✓" : "✗";
+}
+
+function paintTelegraph(el, state) {
+  if (!el) return;
+  const pending = state.pendingEvent;
+  if (pending) {
+    el.hidden = false;
+    el.dataset.tone = pending.bad ? "bad" : "good";
+    el.textContent = `⚠ incoming — ${pending.telegraph}`;
+  } else {
+    el.hidden = true;
+  }
 }
 
 function paintBurn(el, burn) {

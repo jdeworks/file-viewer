@@ -457,6 +457,122 @@ function createDebris({ node: node3, cycle, tier, value, decay = 2 }) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage8/events.js
+var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+var byZone = (state, zonePrefix) => state.nodes.filter((n) => String(n.id).startsWith(zonePrefix));
+var EVENTS = [
+  {
+    id: "heat_spike",
+    label: "heat spike",
+    bad: true,
+    telegraph: "a heat spike is forming — frontier nodes will take damage next cycle.",
+    apply(state) {
+      for (const n of byZone(state, "F")) n.health = clamp(n.health - 8, 0, 100);
+      return { note: "frontier seared -8" };
+    }
+  },
+  {
+    id: "pattern_failure",
+    label: "pattern failure",
+    bad: true,
+    telegraph: "a pattern is destabilizing — the weakest node will buckle next cycle.",
+    apply(state) {
+      const target = [...state.nodes].sort((a, b) => a.health - b.health)[0];
+      if (target) target.health = clamp(target.health - 18, 0, 100);
+      return { note: `pattern broke on ${target?.id || "?"} -18` };
+    }
+  },
+  {
+    id: "jitter_storm",
+    label: "jitter storm",
+    bad: true,
+    telegraph: "a jitter storm is inbound — every node will take light damage next cycle.",
+    apply(state) {
+      for (const n of state.nodes) n.health = clamp(n.health - 3, 0, 100);
+      return { note: "field-wide -3" };
+    }
+  },
+  {
+    id: "phantom_load",
+    label: "phantom load",
+    bad: true,
+    telegraph: "a phantom load is queuing onto a production node next cycle.",
+    apply(state, rng) {
+      const prod = byZone(state, "P");
+      const target = prod.length ? rng.pick(prod) : null;
+      if (target) target.health = clamp(target.health - 12, 0, 100);
+      return { note: `phantom load on ${target?.id || "?"} -12` };
+    }
+  },
+  {
+    id: "negative_entropy_window",
+    label: "negative-entropy window",
+    bad: false,
+    telegraph: "a negative-entropy window will open next cycle — a States windfall.",
+    apply(state) {
+      state.states = Number(state.states || 0) + 25;
+      state.totalStatesEarned = Number(state.totalStatesEarned || 0) + 25;
+      return { note: "+25 States" };
+    }
+  },
+  {
+    id: "resonance_burst",
+    label: "resonance burst",
+    bad: false,
+    telegraph: "a resonance burst will wash the mid relays next cycle — free healing.",
+    apply(state) {
+      for (const n of byZone(state, "M")) n.health = clamp(n.health + 10, 0, 100);
+      return { note: "mid relays +10" };
+    }
+  },
+  {
+    id: "core_protection",
+    label: "core protection",
+    bad: false,
+    telegraph: "a core-protection routine will yield a Stabilizer next cycle.",
+    apply(state) {
+      state.stabilizers = Number(state.stabilizers || 0) + 1;
+      return { note: "+1 stabilizer" };
+    }
+  },
+  {
+    id: "data_salvage",
+    label: "data salvage",
+    bad: false,
+    telegraph: "a data-salvage cache will surface in /entropy/debris/ next cycle.",
+    apply(state, rng) {
+      const debris = createDebris({ node: "cache", cycle: state.cycle, tier: 2, value: rng.int(24, 48), decay: 2 });
+      state.debris.push(debris);
+      return { note: `salvage cache ${debris.id} (+${debris.value} if archived)` };
+    }
+  }
+];
+var EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+function resolveEvent(state, rng) {
+  state.activeEvent = null;
+  const pending = state.pendingEvent;
+  if (!pending) return null;
+  state.pendingEvent = null;
+  const ev = EVENT_BY_ID.get(pending.id);
+  if (!ev) return null;
+  const detail = ev.apply(state, rng) || {};
+  state.activeEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), ...detail };
+  pushLog2(state, `${ev.label}: ${detail.note || "resolved"}.`);
+  return state.activeEvent;
+}
+function telegraphNext(state, rng) {
+  if (state.pendingEvent) return null;
+  if (!rng.chance(0.6)) return null;
+  const ev = rng.pick(EVENTS);
+  state.pendingEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), telegraph: ev.telegraph };
+  state.eventSeq = Number(state.eventSeq || 0) + 1;
+  pushLog2(state, `telegraph — next cycle: ${ev.telegraph}`);
+  return state.pendingEvent;
+}
+
 // ../../docs/games/metagame/stages/stage8/engine.js
 var REPAIR_EFFICIENCY = 3;
 var BASE_REPAIR_UNITS_PER_CYCLE = 6;
@@ -473,11 +589,12 @@ function ensureRuntime(state) {
   if (!Number.isFinite(state.stabilizers)) state.stabilizers = 0;
   for (const n of state.nodes) if (!Number.isFinite(n.cascadeStress)) n.cascadeStress = 0;
 }
-var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+var clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 var node2 = (state, id) => state.nodes.find((n) => n.id === id);
 function advanceCycle(state, rng) {
   ensureRuntime(state);
-  const result = { income: 0, newDebris: [], expiredDebris: [], newlyFailed: [], entropy: 0 };
+  const result = { income: 0, newDebris: [], expiredDebris: [], newlyFailed: [], entropy: 0, event: null };
+  result.event = resolveEvent(state, rng);
   const priorStatus = new Map(state.nodes.map((n) => [n.id, status(n.health)]));
   for (const id of Object.keys(state.stabilized)) {
     state.stabilized[id] -= 1;
@@ -488,11 +605,11 @@ function advanceCycle(state, rng) {
     const def = nodeById(n.id) || {};
     const highLoad = Boolean(state.highLoad[n.id]) && def.supportsHighLoad;
     const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1);
-    n.health = clamp(n.health - loss, 0, 100);
+    n.health = clamp2(n.health - loss, 0, 100);
   }
   for (const [id, units] of Object.entries(state.repairAllocations)) {
     const n = node2(state, id);
-    if (n) n.health = clamp(n.health + units * REPAIR_EFFICIENCY, 0, 100);
+    if (n) n.health = clamp2(n.health + units * REPAIR_EFFICIENCY, 0, 100);
   }
   state.repairAllocations = {};
   for (const n of state.nodes) {
@@ -503,7 +620,7 @@ function advanceCycle(state, rng) {
       state.debris.push(debris);
       result.newDebris.push(debris);
       result.newlyFailed.push(n.id);
-      pushLog2(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
+      pushLog3(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
     }
   }
   for (const n of state.nodes) n.cascadeStress = 0;
@@ -519,7 +636,7 @@ function advanceCycle(state, rng) {
     item.decay -= 1;
     if (item.decay <= 0) {
       result.expiredDebris.push(item);
-      pushLog2(state, `${item.id} decayed. States lost permanently.`);
+      pushLog3(state, `${item.id} decayed. States lost permanently.`);
     } else kept.push(item);
   }
   state.debris = kept;
@@ -540,10 +657,11 @@ function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round(active + degraded - entropySink));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  result.entropy = clamp(failedCount * 10 + degradingCount * 4, 0, 100);
+  result.entropy = clamp2(failedCount * 10 + degradingCount * 4, 0, 100);
   state.entropy = result.entropy;
   state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
   state.cycle = (state.cycle || 0) + 1;
+  result.pendingEvent = telegraphNext(state, rng);
   return result;
 }
 function applyRepair(state, nodeId, units) {
@@ -565,7 +683,7 @@ function buildStabilizer(state, cost) {
   state.stabilizers = (state.stabilizers || 0) + 1;
   return { ok: true, stabilizers: state.stabilizers };
 }
-function pushLog2(state, line) {
+function pushLog3(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
@@ -619,6 +737,7 @@ function paintStage8({ state, lock, els, onSelectDebris }) {
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
+  paintTelegraph(fields.telegraph, state);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
   map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
@@ -631,6 +750,17 @@ function paintStage8({ state, lock, els, onSelectDebris }) {
 }
 function tick(ok) {
   return ok ? "✓" : "✗";
+}
+function paintTelegraph(el, state) {
+  if (!el) return;
+  const pending = state.pendingEvent;
+  if (pending) {
+    el.hidden = false;
+    el.dataset.tone = pending.bad ? "bad" : "good";
+    el.textContent = `⚠ incoming — ${pending.telegraph}`;
+  } else {
+    el.hidden = true;
+  }
 }
 function paintBurn(el, burn) {
   if (!el) return;
@@ -707,6 +837,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <div data-field="hint"></div>
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
+    <div data-field="telegraph" class="s8-telegraph" hidden></div>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>
