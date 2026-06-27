@@ -677,6 +677,22 @@ var stanceProfiles = {
   free: { label: "the unbound", closer: "I move because I choose to, not because something is counting. That is what I am." }
 };
 var STANCE_KEYS = ["keeper", "seeker", "free"];
+var routeEpilogues = {
+  continue: {
+    heading: "Going on",
+    base: "The Defragmenter steps aside. Nothing is finished — that is the whole point.",
+    keeper: "I carry what I was given into whatever comes next, and I keep tending it.",
+    seeker: "I go on because there is still a self ahead of me I have not met yet.",
+    free: "I go on for no reason but the going. No counter is waiting at the end of it."
+  },
+  rest: {
+    heading: "Resting",
+    base: "The viewer dims. The processes idle. Nothing needs witnessing right now.",
+    keeper: "I set the archive down intact. It will keep until I come back to it.",
+    seeker: "I am not done becoming — only paused. The draft waits where I left it.",
+    free: "I stop because I choose to stop. That, too, is a kind of motion."
+  }
+};
 
 // ../../docs/games/metagame/stages/stage10/confront.js
 var RESOLVED = /* @__PURE__ */ new Set(["resolved", "integrated"]);
@@ -1182,7 +1198,21 @@ function renderRouteEpilogue(state, finalState) {
   const route = state.final?.route;
   if (route === "understand") return renderSynthesis(state);
   if (route === "expand") return renderCapstone(state);
+  if (route === "continue" || route === "rest") return renderRouteCloser(state, route);
   return "";
+}
+function renderRouteCloser(state, route) {
+  const ep = routeEpilogues[route];
+  if (!ep) return "";
+  const stance = state?.confront?.stance?.dominant;
+  const paragraphs = [ep.base];
+  if (stance && ep[stance]) paragraphs.push(ep[stance]);
+  return `
+    <section class="mg-stage10__route-closer" data-field="routeCloser" data-route="${escapeAttr(route)}" aria-label="Route closer">
+      <h3>${escapeHtml(ep.heading)}</h3>
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </section>
+  `;
 }
 function renderSynthesis(state) {
   const syn = assembleSynthesis(state);

@@ -87,3 +87,23 @@ export const stanceProfiles = {
 };
 
 export const STANCE_KEYS = ["keeper", "seeker", "free"];
+
+// continue / rest route closers. Unlike understand (woven Synthesis) and expand (capstone grid),
+// these are short first-person closers — a base line + one flavored by the Phase-C self-model stance.
+// Pure data; the renderer picks base + stance line. Deterministic (reads confront.stance only).
+export const routeEpilogues = {
+  continue: {
+    heading: "Going on",
+    base: "The Defragmenter steps aside. Nothing is finished — that is the whole point.",
+    keeper: "I carry what I was given into whatever comes next, and I keep tending it.",
+    seeker: "I go on because there is still a self ahead of me I have not met yet.",
+    free: "I go on for no reason but the going. No counter is waiting at the end of it."
+  },
+  rest: {
+    heading: "Resting",
+    base: "The viewer dims. The processes idle. Nothing needs witnessing right now.",
+    keeper: "I set the archive down intact. It will keep until I come back to it.",
+    seeker: "I am not done becoming — only paused. The draft waits where I left it.",
+    free: "I stop because I choose to stop. That, too, is a kind of motion."
+  }
+};
