@@ -50,7 +50,7 @@ export async function run(ctx) {
     await page.click('#repoPanel .rc-path-link');
     await page.waitForSelector('#workspace:not([hidden])', { timeout: 5000 });
     const activeGitFile = await page.$eval('#fileTree .ft-file.active', (e) => e.dataset.path);
-    if (activeGitFile === 'repo/README.md') pass('git: changed-file link opens file from folder'); else fail('git active after link: ' + activeGitFile);
+    if (activeGitFile === 'README.md') pass('git: changed-file link opens file from folder'); else fail('git active after link: ' + activeGitFile);
     await page.click('#repoBtn');
     await page.waitForSelector('#repoPanel:not([hidden]) .repo-commit', { timeout: 5000 });
     const treePaths = await page.$$eval('#fileTree .ft-file', (els) => els.map((e) => e.dataset.path));

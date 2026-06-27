@@ -1,12 +1,5 @@
-import {
-  MEDIA_DEFAULT_DESKTOP_VIEWPORT,
-  MEDIA_MOBILE_VIEWPORT,
-  assertTimelineViewport,
-  reloadExampleAtViewport,
-} from './media-studio-helpers.mjs';
-
 export async function runVideoExportAndTimelineChecks(ctx) {
-  const { browser, page, origin, pass, fail, openExample } = ctx;
+  const { page, pass, fail, openExample } = ctx;
 
   // ── P3: video fade — the export panel on a video reads "video" and renders fade-to-black.
   await page.evaluate(() => window.__fv.openExampleByLabel('Sample.avi'));
@@ -78,166 +71,401 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     pass('R5: pure webvideo -vf builder composes transform/look/scale without ffmpeg');
   else fail('video export vf builder: ' + JSON.stringify(exportVf));
 
-  // ── P6: Video timeline (2-lane) + transitions + visual trim ───────────────────
-  // Built for video when ffmpeg is enabled; CPU-lazy (no timeline DOM until opened).
+  // ── P6: Video timeline (modular source lane + config-only export coverage) ────
+  // Use browser-playable video here so the modular seek-frame preview can sample.
+  await openExample('Sample.webm');
+  await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
   const tlModeSel = '#previewHost .media-mode-panel[data-mode="timeline"]';
   await page.$eval('#previewHost .media-mode-tab[data-mode="timeline"]', (button) => button.click());
   await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
-  const tlToggle = await page.evaluateHandle((sel) =>
-    [...document.querySelectorAll(sel + ' .media-wv-toggle')].find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
-  const tlToggleExists = await tlToggle.evaluate((e) => !!e);
-  if (tlToggleExists) {
-    pass('P6: video timeline toggle button present');
-    const preTl = await page.$(tlModeSel + ' .tl-wrap');
-    if (!preTl) pass('P6: video timeline CPU-lazy (no DOM until opened)'); else fail('timeline mounted before open');
-    await tlToggle.evaluate((button) => button.click());
-    await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-
-    // 2 lanes: video lane (clip A) + second/music lane.
-    const lanes = await page.$$eval(tlModeSel + ' .tl-lane', (els) => els.length);
-    if (lanes === 2) pass('P6: timeline mounts 2 lanes (video + second/music)'); else fail('timeline lanes: ' + lanes);
-    const tlHeader = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      const title = root.querySelector('.tl-head-title');
-      const status = root.querySelector('.tl-head-status');
-      const context = root.querySelector('.tl-context');
-      const ruler = root.querySelector('.tl-ruler');
-      const playhead = root.querySelector('.tl-playhead');
-      const lanesWrap = root.querySelector('.tl-lane-view');
-      return {
-        title: title?.textContent?.trim() || '',
-        statusText: status?.textContent?.trim() || '',
-        contextText: context?.textContent?.trim() || '',
-        ruler: !!ruler,
-        playhead: !!playhead,
-        lanesWrap: !!lanesWrap,
-        viewportStatus: root.getBoundingClientRect()?.width > 0,
-      };
-    }, tlModeSel);
-    if (tlHeader && /Timeline/.test(tlHeader.title)) pass('P6: timeline intent/workspace header title present'); else fail('timeline header: ' + JSON.stringify(tlHeader));
-    if (/Trim:/.test(tlHeader.statusText)) pass('P6: timeline header status includes trim status');
-    else fail('timeline header status: ' + (tlHeader?.statusText || ''));
-    if (tlHeader?.contextText) pass('P6: timeline workspace context present');
-    else fail('timeline header context: ' + JSON.stringify(tlHeader));
-    if (tlHeader?.ruler && tlHeader?.playhead && tlHeader?.lanesWrap) pass('P6: timeline grammar includes ruler + playhead + lanes');
-    else fail('timeline grammar: ' + JSON.stringify(tlHeader));
-    if (tlHeader?.viewportStatus) pass('P6: timeline workspace has positive viewport width');
-    else fail('timeline workspace geometry: ' + JSON.stringify(tlHeader));
-    // Thumbnail strip with a load-on-demand button + trim handles (in/out).
-    const tlBits = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      return {
-        strip: !!root.querySelector('.tl-strip'),
-        thumbBtn: !!root.querySelector('.tl-thumb-btn'),
-        handleIn: !!root.querySelector('.tl-handle-in'),
-        handleOut: !!root.querySelector('.tl-handle-out'),
-        drop: !!root.querySelector('.tl-lane--b .media-ed-drop-zone'),
-      };
-    }, tlModeSel);
-    if (!tlBits) fail('P6: cannot find timeline mode panel root');
-    if (tlBits.strip && tlBits.thumbBtn) pass('P6: thumbnail strip + on-demand thumbnail button present'); else fail('thumb strip: ' + JSON.stringify(tlBits));
-    if (tlBits.handleIn && tlBits.handleOut) pass('P6: visual trim handles (in/out) present'); else fail('trim handles: ' + JSON.stringify(tlBits));
-    if (tlBits.drop) pass('P6: second-clip / music drop zone present'); else fail('timeline drop zone missing');
-    const tlGroups = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      const actionGroups = [...root.querySelectorAll('.tl-action-group')].map((g) => ({
-        buttons: [...g.querySelectorAll('button')].map((b) => b.className),
-      }));
-      const trim = root.querySelector('.tl-lane--video .tl-trim-label');
-      return {
-        groups: actionGroups,
-        trimLabel: trim?.textContent || '',
-      };
-    }, tlModeSel);
-    if (tlGroups && tlGroups.groups.length === 2) {
-      const single = tlGroups.groups[0]?.buttons || [];
-      const dual = tlGroups.groups[1]?.buttons || [];
-      if (single.includes('tl-act tl-act-trim') && single.includes('tl-act tl-act-fade')
-        && dual.includes('tl-act tl-act-xfade') && dual.includes('tl-act tl-act-across') && dual.includes('tl-act tl-act-mux'))
-        pass('P6: action groups separate single-clip and two-clip actions');
-      else fail('timeline action grouping: ' + JSON.stringify(tlGroups.groups));
-    } else {
-      fail('timeline action groups: ' + JSON.stringify(tlGroups));
+  await page.waitForSelector(tlModeSel + ' .mmx-video-source .mmx-element-visual', { timeout: 12000 });
+  const modularVideoSource = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    const project = root.__mediaMixerVideoSource?.getProject?.();
+    const asset = project?.assets?.find((item) => item.id === 'asset-video-source');
+    const element = project?.elements?.find((item) => item.assetId === asset?.id);
+    const settings = root.__mediaMixerVideoSource?.exportSettings?.();
+    return {
+      lanes: root.dataset.laneCount,
+      elements: root.dataset.elementCount,
+      frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
+      hasRuler: !!root.querySelector('.mmx-ruler'),
+      hasPlayhead: !!root.querySelector('.mmx-playhead'),
+      hasZoom: !!root.querySelector('.mmx-zoom'),
+      hasPreview: !!root.querySelector('.mmx-frame-preview'),
+      hasVisual: !!root.querySelector('.mmx-element-visual'),
+      thumbCount: Number(root.querySelector('.mmx-thumb-strip')?.dataset.thumbCount || 0),
+      hasTransform: !!root.querySelector('.mmx-inspector-visual-opacity'),
+      hasSettingsExport: !!root.querySelector('.mmx-settings-download'),
+      hasSettingsImport: !!root.querySelector('.mmx-settings-import'),
+      hasVideoExportPlan: !!root.querySelector('.mmx-video-export-plan'),
+      hasRenderButton: !!root.querySelector('.mmx-video-render-run'),
+      renderDisabled: !!root.querySelector('.mmx-video-render-run')?.disabled,
+      exportStatus: root.querySelector('.mmx-video-export-status')?.dataset.status || '',
+      exportCanRender: root.querySelector('.mmx-video-export-status')?.dataset.canRender || '',
+      exportCanAttempt: root.querySelector('.mmx-video-export-status')?.dataset.canAttemptRender || '',
+      exportHardBlocked: root.querySelector('.mmx-video-export-status')?.dataset.hardBlocked || '',
+      exportNote: root.querySelector('.mmx-video-export-note')?.textContent || '',
+      hasMediaBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(settings || ''),
+      hasVideo: !!element?.capabilities?.hasVideo,
+      hasAudio: !!element?.capabilities?.hasAudio,
+      width: asset?.media?.videoWidth || 0,
+      durationMs: element?.timeline?.durationMs || 0,
+    };
+  });
+  if (modularVideoSource.lanes === '1' && modularVideoSource.elements === '1'
+    && modularVideoSource.hasRuler && modularVideoSource.hasPlayhead && modularVideoSource.hasZoom)
+    pass('P6: opened video timeline mounts the modular source mixer lane');
+  else fail('modular video source lane: ' + JSON.stringify(modularVideoSource));
+  if (modularVideoSource.hasPreview && modularVideoSource.hasVisual && modularVideoSource.hasTransform)
+    pass('P6: modular video source exposes frame preview and visual transform controls');
+  else fail('modular video source visual controls: ' + JSON.stringify(modularVideoSource));
+  if (modularVideoSource.hasVideo && modularVideoSource.hasAudio
+    && modularVideoSource.width > 0 && modularVideoSource.durationMs > 0)
+    pass('P6: modular video source project captures opened media metadata');
+  else fail('modular video source metadata: ' + JSON.stringify(modularVideoSource));
+  if (!modularVideoSource.hasMediaBytes) pass('P6: modular video source settings export remains config-only');
+  else fail('modular video settings export leaked media data');
+  if (modularVideoSource.hasSettingsExport && modularVideoSource.hasSettingsImport)
+    pass('P6: modular video source exposes project settings import/export controls');
+  else fail('modular video source settings controls: ' + JSON.stringify(modularVideoSource));
+  if (modularVideoSource.hasVideoExportPlan && modularVideoSource.hasRenderButton
+    && !modularVideoSource.renderDisabled && modularVideoSource.exportStatus === 'opt-in'
+    && modularVideoSource.exportCanRender === 'false'
+    && modularVideoSource.exportCanAttempt === 'true'
+    && modularVideoSource.exportHardBlocked === 'false'
+    && /Media Transcoding/i.test(modularVideoSource.exportNote))
+    pass('P6: modular video source shows ffmpeg-gated final export plan');
+  else fail('modular video source export plan state: ' + JSON.stringify(modularVideoSource));
+  const sourceExportPlan = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    root.querySelector('.mmx-video-export-plan')?.click();
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    return {
+      status: plan?.status || '',
+      canRender: !!plan?.canRender,
+      requiresFfmpeg: !!plan?.requiresFfmpeg,
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      audioItems: plan?.provenance?.audioItems?.length || 0,
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (sourceExportPlan.status === 'opt-in' && !sourceExportPlan.canRender
+    && sourceExportPlan.requiresFfmpeg && sourceExportPlan.visualItems >= 1
+    && sourceExportPlan.audioItems >= 1 && !sourceExportPlan.hasBytes)
+    pass('P6: modular video source final export provenance is config-only');
+  else fail('modular video source export provenance: ' + JSON.stringify(sourceExportPlan));
+  const sourceSettingsImport = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const json = root.__mediaMixerVideoSource.exportSettings();
+    const imported = root.__mediaMixerVideoSource.importSettings(json);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-relink-choice[data-choice="do-not-change-media"]')?.click();
+    return {
+      matches: imported.relink.matches.length,
+      missing: imported.relink.missing.length,
+      modal: !!root.querySelector('.mmx-relink-modal'),
+      choice: root.dataset.lastRelinkChoice || '',
+      hasBytes: /objectURL|blob:|data:|waveformSummary|frameCache|thumbnailCache/i.test(json),
+    };
+  });
+  if (sourceSettingsImport.matches >= 1 && sourceSettingsImport.missing === 0
+    && sourceSettingsImport.modal && sourceSettingsImport.choice === 'do-not-change-media'
+    && !sourceSettingsImport.hasBytes)
+    pass('P6: modular video source imports config-only settings with reapply choices');
+  else fail('modular video source settings import: ' + JSON.stringify(sourceSettingsImport));
+  const sourceMissingRelink = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const originalJson = root.__mediaMixerVideoSource.exportSettings();
+    const settings = JSON.parse(originalJson);
+    const missingAssetId = 'asset-imported-missing-video';
+    settings.assets[0].id = missingAssetId;
+    settings.assets[0].name = 'sample-relinked.mp4';
+    settings.assets[0].size = 5;
+    settings.assets[0].lastModified = 12345;
+    settings.assets[0].mime = 'video/mp4';
+    settings.assets[0].hash = null;
+    settings.elements[0].assetId = missingAssetId;
+    const imported = root.__mediaMixerVideoSource.importSettings(JSON.stringify(settings), []);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const beforeMissing = imported.relink.missing.length;
+    const hasBrowse = !!root.querySelector('.mmx-relink-file');
+    const file = new File([new Uint8Array(5)], 'sample-relinked.mp4', { type: 'video/mp4', lastModified: 12345 });
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    const dragEvent = new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer });
+    const dropEvent = new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer });
+    root.dispatchEvent(dragEvent);
+    const dropPrevented = !root.dispatchEvent(dropEvent);
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    const relinked = root.__mediaMixerVideoSource.getLastSettingsImport();
+    root.querySelector('.mmx-relink-choice[data-choice="apply-all"]')?.click();
+    const asset = root.__mediaMixerVideoSource.getProject().assets[0];
+    const result = {
+      beforeMissing,
+      afterMissing: relinked.relink.missing.length,
+      matches: relinked.relink.matches.length,
+      dropped: Number(root.dataset.lastRelinkDropped || 0),
+      hasBrowse,
+      dropPrevented,
+      choice: root.dataset.lastRelinkChoice || '',
+      applied: Number(root.dataset.lastRelinkApplied || 0),
+      status: asset?.status || '',
+      name: asset?.name || '',
+    };
+    root.__mediaMixerVideoSource.importSettings(originalJson);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-relink-choice[data-choice="do-not-change-media"]')?.click();
+    return {
+      ...result,
+      restoredName: root.__mediaMixerVideoSource.getProject().assets[0]?.name || '',
+    };
+  });
+  if (sourceMissingRelink.beforeMissing === 1 && sourceMissingRelink.afterMissing === 0
+    && sourceMissingRelink.matches === 1 && sourceMissingRelink.dropped === 1
+    && sourceMissingRelink.hasBrowse && sourceMissingRelink.dropPrevented
+    && sourceMissingRelink.choice === 'apply-all'
+    && sourceMissingRelink.applied === 1 && sourceMissingRelink.status === 'available'
+    && sourceMissingRelink.name === 'sample-relinked.mp4')
+    pass('P6: modular video source relinks missing imported media from local file');
+  else fail('modular video source missing-media relink: ' + JSON.stringify(sourceMissingRelink));
+  await page.waitForFunction((sel) => Number(document.querySelector(sel)?.dataset.frameSources || 0) > 0,
+    tlModeSel + ' .mmx-video-source .mmx-frame-preview', { timeout: 12000 });
+  const sourceFrameCount = await page.$eval(tlModeSel + ' .mmx-video-source .mmx-frame-preview',
+    (node) => Number(node.dataset.frameSources || 0));
+  if (sourceFrameCount > 0) pass('P6: modular video source samples the current seek-frame preview');
+  else fail('modular video source frame sources: ' + sourceFrameCount);
+  await page.waitForFunction((sel) => Number(document.querySelector(sel)?.dataset.thumbCount || 0) > 0,
+    tlModeSel + ' .mmx-video-source .mmx-thumb-strip', { timeout: 12000 });
+  const sourceThumbCount = await page.$eval(tlModeSel + ' .mmx-video-source .mmx-thumb-strip',
+    (node) => Number(node.dataset.thumbCount || 0));
+  if (sourceThumbCount > 0) pass('P6: modular video source renders sparse runtime thumbnails');
+  else fail('modular video source thumbnail count: ' + sourceThumbCount);
+  const modularMusicBed = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const file = new File([new Uint8Array(512)], 'music-bed.mp3', { type: 'audio/mpeg', lastModified: 123 });
+    const added = root.__mediaMixerVideoSource.addMediaFile(file, { startMs: 250 });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const slider = root.querySelector('.mmx-video-music-bed');
+    const beforeValue = slider?.value || '';
+    slider.value = '0.6';
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    root.querySelector('.mmx-video-export-plan')?.click();
+    const project = root.__mediaMixerVideoSource.getProject();
+    const music = project.elements.find((element) => element.assetId === added?.assetId);
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    return {
+      addedKind: added?.kind || '',
+      lanes: project.lanes.length,
+      elements: project.elements.length,
+      selectedId: project.selection?.primary?.id || '',
+      musicId: music?.id || '',
+      startMs: Math.round(music?.timeline?.startMs || 0),
+      beforeValue,
+      gain: music?.audio?.gain,
+      lastMusicBed: root.dataset.lastMusicBed || '',
+      dropControl: !!root.querySelector('.mmx-video-second-drop'),
+      musicControl: !!root.querySelector('.mmx-video-music-bed'),
+      audioItems: plan?.provenance?.audioItems?.length || 0,
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      hasMediaBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (modularMusicBed.addedKind === 'audio' && modularMusicBed.lanes >= 2
+    && modularMusicBed.elements >= 2 && modularMusicBed.selectedId === modularMusicBed.musicId
+    && modularMusicBed.startMs === 250)
+    pass('P6: modular Timeline adds a second music-bed lane from local media');
+  else fail('modular Timeline music-bed add: ' + JSON.stringify(modularMusicBed));
+  if (modularMusicBed.dropControl && modularMusicBed.musicControl
+    && modularMusicBed.beforeValue === '0.35' && modularMusicBed.gain === 0.6
+    && /music-bed\.mp3/.test(modularMusicBed.lastMusicBed))
+    pass('R5: modular Timeline exposes music-bed ducking and updates shared gain state');
+  else fail('modular Timeline music-bed gain: ' + JSON.stringify(modularMusicBed));
+  if (modularMusicBed.audioItems >= 2 && modularMusicBed.visualItems >= 1 && !modularMusicBed.hasMediaBytes)
+    pass('P6: modular Timeline final export provenance includes source audio plus music bed without media bytes');
+  else fail('modular Timeline music-bed export provenance: ' + JSON.stringify(modularMusicBed));
+  const modularSecondVideoTransition = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const file = new File([new Uint8Array(768)], 'second-clip.webm', { type: 'video/webm', lastModified: 456 });
+    const added = root.__mediaMixerVideoSource.addMediaFile(file, { startMs: 400 });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const kind = root.querySelector('.mmx-video-transition-kind');
+    const duration = root.querySelector('.mmx-video-transition-duration');
+    kind.value = 'wipe-left';
+    kind.dispatchEvent(new Event('input', { bubbles: true }));
+    duration.value = '0.45';
+    duration.dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-transition-apply')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const project = root.__mediaMixerVideoSource.getProject();
+    const addedElement = project.elements.find((element) => element.assetId === added?.assetId);
+    const transition = project.transitions.find((item) => item.toElementId === addedElement?.id);
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    return {
+      addedKind: added?.kind || '',
+      selectedId: project.selection?.primary?.id || '',
+      addedElementId: addedElement?.id || '',
+      visualItems: plan?.provenance?.visualItems?.length || 0,
+      transitions: plan?.provenance?.transitions?.length || 0,
+      transitionKind: transition?.kind || '',
+      transitionMs: transition?.durationMs || 0,
+      transitionFrom: transition?.fromElementId || '',
+      transitionTo: transition?.toElementId || '',
+      datasetTarget: root.dataset.lastTransitionTarget || '',
+      datasetKind: root.dataset.lastTransitionKind || '',
+      filterGraph: plan?.provenance?.filterGraph || '',
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (modularSecondVideoTransition.addedKind === 'video'
+    && modularSecondVideoTransition.selectedId === modularSecondVideoTransition.addedElementId
+    && modularSecondVideoTransition.transitionTo === modularSecondVideoTransition.addedElementId)
+    pass('P6: modular Timeline applies transition workflow to the selected second visual lane');
+  else fail('modular Timeline second-video transition target: ' + JSON.stringify(modularSecondVideoTransition));
+  if (modularSecondVideoTransition.transitionKind === 'wipe-left'
+    && modularSecondVideoTransition.transitionMs === 450
+    && modularSecondVideoTransition.datasetTarget === modularSecondVideoTransition.addedElementId
+    && modularSecondVideoTransition.datasetKind === 'wipe-left')
+    pass('P6: modular Timeline stores selected visual transition kind and duration');
+  else fail('modular Timeline selected transition state: ' + JSON.stringify(modularSecondVideoTransition));
+  if (modularSecondVideoTransition.visualItems >= 2
+    && modularSecondVideoTransition.transitions >= 1
+    && /if\(lt\(t\\,/.test(modularSecondVideoTransition.filterGraph)
+    && !modularSecondVideoTransition.hasBytes)
+    pass('P6: modular Timeline transition export provenance includes wipe overlay graph without media bytes');
+  else fail('modular Timeline transition export provenance: ' + JSON.stringify(modularSecondVideoTransition));
+  const modularTrimFade = await page.$eval(tlModeSel + ' .mmx-video-source', async (root) => {
+    const selectedId = root.__mediaMixerVideoSource.getProject().selection?.primary?.id;
+    root.querySelector('.mmx-video-trim-in').value = '0.05';
+    root.querySelector('.mmx-video-trim-in').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-trim-out').value = '0.75';
+    root.querySelector('.mmx-video-trim-out').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-fade-in').value = '0.12';
+    root.querySelector('.mmx-video-fade-in').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-fade-out').value = '0.18';
+    root.querySelector('.mmx-video-fade-out').dispatchEvent(new Event('input', { bubbles: true }));
+    root.querySelector('.mmx-video-edit-apply')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const project = root.__mediaMixerVideoSource.getProject();
+    const edited = project.elements.find((element) => element.id === selectedId);
+    const plan = root.__mediaMixerVideoSource.getLastExportPlan();
+    const visualItem = plan?.provenance?.visualItems?.find((item) => item.elementId === selectedId);
+    const audioItem = plan?.provenance?.audioItems?.find((item) => item.elementId === selectedId);
+    return {
+      selectedId,
+      editedId: edited?.id || '',
+      sourceInMs: Math.round(edited?.timeline?.sourceInMs || 0),
+      sourceOutMs: Math.round(edited?.timeline?.sourceOutMs || 0),
+      durationMs: Math.round(edited?.timeline?.durationMs || 0),
+      audioFadeInMs: edited?.audio?.fadeInMs || 0,
+      audioFadeOutMs: edited?.audio?.fadeOutMs || 0,
+      visualFadeInMs: edited?.visual?.fadeInMs || 0,
+      visualFadeOutMs: edited?.visual?.fadeOutMs || 0,
+      datasetTarget: root.dataset.lastEditTarget || '',
+      datasetTrimIn: root.dataset.lastTrimInMs || '',
+      datasetTrimOut: root.dataset.lastTrimOutMs || '',
+      visualItem: !!visualItem,
+      audioItem: !!audioItem,
+      visualProvenanceFadeIn: visualItem?.visual?.fadeInMs || 0,
+      audioProvenanceFadeIn: audioItem?.fadeInMs || 0,
+      hasBytes: /objectURL|blob:|data:|mediaBytes|frameCache|thumbnailCache/i.test(JSON.stringify(plan || {})),
+    };
+  });
+  if (modularTrimFade.editedId === modularTrimFade.selectedId
+    && modularTrimFade.sourceInMs === 50 && modularTrimFade.sourceOutMs === 750
+    && modularTrimFade.durationMs === 700)
+    pass('P6: modular Timeline selected clip edit applies source in/out trim state');
+  else fail('modular Timeline trim edit state: ' + JSON.stringify(modularTrimFade));
+  if (modularTrimFade.audioFadeInMs === 120 && modularTrimFade.audioFadeOutMs === 180
+    && modularTrimFade.visualFadeInMs === 120 && modularTrimFade.visualFadeOutMs === 180
+    && modularTrimFade.datasetTarget === modularTrimFade.selectedId)
+    pass('P6: modular Timeline selected clip edit applies audio and visual fades');
+  else fail('modular Timeline fade edit state: ' + JSON.stringify(modularTrimFade));
+  if (modularTrimFade.visualItem && modularTrimFade.audioItem
+    && modularTrimFade.visualProvenanceFadeIn === 120
+    && modularTrimFade.audioProvenanceFadeIn === 120
+    && !modularTrimFade.hasBytes)
+    pass('P6: modular Timeline trim/fade export provenance is config-only');
+  else fail('modular Timeline trim/fade provenance: ' + JSON.stringify(modularTrimFade));
+  const modularTimelineGrammar = await page.$eval(tlModeSel + ' .mmx-video-source', (root) => {
+    let project = root.__mediaMixerVideoSource?.getProject?.();
+    const sourceVisual = project?.elements?.find((item) => item.capabilities?.hasVideo || item.capabilities?.hasImage);
+    if (sourceVisual) {
+      root.__mediaMixerVideoSource?.dispatch?.({
+        type: 'select',
+        target: { type: 'element', id: sourceVisual.id },
+      });
+      project = root.__mediaMixerVideoSource?.getProject?.();
     }
-    if (tlGroups?.trimLabel && /Trim:/.test(tlGroups.trimLabel)) pass('P6: trim label present in timeline lane');
-    else fail('timeline trim label: ' + JSON.stringify(tlGroups));
-    // Transition controls: dissolve/xfade selector + length + the four action buttons.
-    const transOpts = await page.$$eval(tlModeSel + ' .tl-trans-sel option', (els) => els.map((e) => e.value));
-    if (transOpts.includes('fade') && transOpts.includes('fadeblack') && transOpts.includes('wipeleft')) pass('P6: transition selector offers fade/fadeblack/wipe'); else fail('transition opts: ' + transOpts.join(','));
-    const musicBed = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      const gain = root?.querySelector('.tl-music-gain');
-      const readout = root?.querySelector('.tl-music-readout');
-      if (!gain || !readout) return null;
-      const before = { value: gain.value, readout: readout.textContent || '', title: gain.title || '' };
-      gain.value = '0.6';
-      gain.dispatchEvent(new Event('input', { bubbles: true }));
-      return {
-        before,
-        after: { value: gain.value, readout: readout.textContent || '' },
-      };
-    }, tlModeSel);
-    if (musicBed && musicBed.before.value === '0.35' && /35% under video audio/.test(musicBed.before.readout))
-      pass('R5: music-bed ducking control defaults to 35% under video audio');
-    else fail('music-bed default: ' + JSON.stringify(musicBed));
-    if (musicBed && musicBed.after.value === '0.6' && /60% under video audio/.test(musicBed.after.readout))
-      pass('R5: music-bed ducking control updates readout when changed');
-    else fail('music-bed changed: ' + JSON.stringify(musicBed));
-    if (musicBed && /original video audio stays unchanged/i.test(musicBed.before.title))
-      pass('R5: music-bed control states original video audio is unchanged');
-    else fail('music-bed title: ' + JSON.stringify(musicBed));
-    const acts = await page.evaluate((sel) => {
-      const root = document.querySelector(sel);
-      if (!root) return null;
-      return {
-        trim: !!root.querySelector('.tl-act-trim'),
-        fade: !!root.querySelector('.tl-act-fade'),
-        xfade: !!root.querySelector('.tl-act-xfade'),
-        across: !!root.querySelector('.tl-act-across'),
-        mux: !!root.querySelector('.tl-act-mux'),
-      };
-    }, tlModeSel);
-    if (acts && acts.trim && acts.fade && acts.xfade && acts.across && acts.mux)
-      pass('P6: trim + fade/xfade/acrossfade/mux action buttons present'); else fail('timeline actions: ' + JSON.stringify(acts));
-    const trimBtnText = await page.$eval(tlModeSel + ' .tl-act-trim', (e) => e.textContent);
-    if (trimBtnText.includes('Trim selected range')) pass('P6: trim action has visible label'); else fail('trim button text: ' + trimBtnText);
-    // Cross-clip actions disabled until a second clip is dropped.
-    const xfadeDisabled = await page.$eval(tlModeSel + ' .tl-act-xfade', (e) => e.disabled);
-    if (xfadeDisabled) pass('P6: dissolve disabled until a 2nd clip is added'); else fail('xfade not gated on 2nd clip');
-    await assertTimelineViewport(ctx, tlModeSel, 'desktop');
-
-    const tlViewDesktop = page.viewportSize();
-    await reloadExampleAtViewport(ctx, MEDIA_MOBILE_VIEWPORT, 'Sample.avi', '#previewHost video.media-view');
-    await page.$eval('#previewHost .media-mode-tab[data-mode="timeline"]', (button) => button.click());
-    await page.waitForSelector(tlModeSel + ':not([hidden])', { timeout: 5000 });
-    const mobileToggle = await page.evaluateHandle((sel) =>
-      [...document.querySelectorAll(sel + ' .media-wv-toggle')]
-        .find((b) => /Video timeline/.test(b.textContent)) || null, tlModeSel);
-    const mobileToggleExists = await mobileToggle.evaluate((e) => !!e);
-    if (mobileToggleExists) {
-      await mobileToggle.evaluate((button) => button.click());
-      await page.waitForSelector(tlModeSel + ' .tl-wrap', { timeout: 12000 });
-      await assertTimelineViewport(ctx, tlModeSel, 'mobile');
-      await mobileToggle.evaluate((button) => button.click());
-      await page.waitForSelector(tlModeSel + ' .tl-wrap', { state: 'detached', timeout: 4000 });
-    } else {
-      fail('P6 mobile: video timeline toggle not found after viewport change');
-    }
-    if (tlViewDesktop) {
-      await page.setViewportSize(tlViewDesktop);
-    } else {
-      await page.setViewportSize(MEDIA_DEFAULT_DESKTOP_VIEWPORT);
-    }
-    await page.goto(origin, { waitUntil: 'load' });
-    await openExample('Sample.avi');
-    await page.waitForSelector('#previewHost video.media-view', { timeout: 12000 });
-    pass('P6: video timeline panel collapses + tears down');
-  } else {
-    fail('P6 video timeline toggle not found');
-  }
+    const selected = project?.selection?.primary?.id || '';
+    const element = project?.elements?.find((item) => item.id === selected) || project?.elements?.[0];
+    const setField = (selector, value) => {
+      const input = root.querySelector(selector);
+      if (!input) return false;
+      input.value = value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return true;
+    };
+    setField('.mmx-inspector-gain', '0.64');
+    setField('.mmx-inspector-start', '0.25');
+    setField('.mmx-inspector-source-in', '0.1');
+    setField('.mmx-inspector-source-out', '1.2');
+    setField('.mmx-inspector-fade-in', '125');
+    setField('.mmx-inspector-fade-out', '175');
+    setField('.mmx-inspector-transition-in', '250');
+    setField('.mmx-inspector-transition-kind', 'wipe-left');
+    setField('.mmx-inspector-visual-x', '11');
+    setField('.mmx-inspector-visual-opacity', '0.72');
+    const updatedProject = root.__mediaMixerVideoSource?.getProject?.();
+    const updated = updatedProject?.elements?.find((item) => item.id === element?.id);
+    const transition = updatedProject?.transitions?.find((item) => item.toElementId === element?.id);
+    const body = root.querySelector('.mmx-body');
+    const timeline = root.querySelector('.mmx-timeline');
+    const host = document.querySelector('#previewHost');
+    const hostRect = host?.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    const docEl = document.documentElement;
+    return {
+      ruler: !!root.querySelector('.mmx-ruler'),
+      playhead: !!root.querySelector('.mmx-playhead'),
+      lanes: root.querySelectorAll('.mmx-lane').length,
+      elements: root.querySelectorAll('.mmx-element').length,
+      timelineScrollable: timeline.scrollWidth >= Math.round(body.clientWidth),
+      overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
+      fitsHost: rootRect.left >= hostRect.left - 1 && rootRect.right <= hostRect.right + 1,
+      rootWidth: Math.round(rootRect.width),
+      bodyWidth: Math.round(body.getBoundingClientRect().width),
+      selected,
+      startMs: Math.round(updated?.timeline?.startMs || 0),
+      sourceInMs: Math.round(updated?.timeline?.sourceInMs || 0),
+      sourceOutMs: Math.round(updated?.timeline?.sourceOutMs || 0),
+      gain: updated?.audio?.gain,
+      fadeInMs: updated?.audio?.fadeInMs,
+      fadeOutMs: updated?.audio?.fadeOutMs,
+      transitionMs: transition?.durationMs || 0,
+      transitionKind: transition?.kind || '',
+      visualX: updated?.visual?.x,
+      visualOpacity: updated?.visual?.opacity,
+      legacyMounted: !!root.closest('[data-mode="timeline"]')?.querySelector('.tl-wrap'),
+      legacyToggle: !!root.closest('[data-mode="timeline"]')?.querySelector('.media-legacy-timeline-wrap'),
+    };
+  });
+  if (modularTimelineGrammar.ruler && modularTimelineGrammar.playhead
+    && modularTimelineGrammar.lanes >= 1 && modularTimelineGrammar.elements >= 1)
+    pass('P6: modular Timeline grammar includes ruler, playhead, lanes, and source element');
+  else fail('modular Timeline grammar: ' + JSON.stringify(modularTimelineGrammar));
+  if (modularTimelineGrammar.bodyWidth > 0 && modularTimelineGrammar.fitsHost
+    && modularTimelineGrammar.overflowX === 0)
+    pass('P6: modular Timeline fits the media studio viewport without page overflow');
+  else fail('modular Timeline viewport: ' + JSON.stringify(modularTimelineGrammar));
+  if (modularTimelineGrammar.startMs === 250 && modularTimelineGrammar.sourceInMs === 100
+    && modularTimelineGrammar.sourceOutMs >= 1000 && modularTimelineGrammar.sourceOutMs <= 1200
+    && modularTimelineGrammar.gain === 0.64
+    && modularTimelineGrammar.fadeInMs === 125 && modularTimelineGrammar.fadeOutMs === 175)
+    pass('P6: modular Timeline inspector updates timing, clamped trim, gain, and fades');
+  else fail('modular Timeline inspector state: ' + JSON.stringify(modularTimelineGrammar));
+  if (modularTimelineGrammar.transitionMs === 250 && modularTimelineGrammar.transitionKind === 'wipe-left'
+    && modularTimelineGrammar.visualX === 11 && modularTimelineGrammar.visualOpacity === 0.72)
+    pass('P6: modular Timeline inspector updates visual transform and incoming transition state');
+  else fail('modular Timeline visual state: ' + JSON.stringify(modularTimelineGrammar));
+  if (!modularTimelineGrammar.legacyMounted && !modularTimelineGrammar.legacyToggle)
+    pass('P6: legacy video timeline is removed from Timeline mode');
+  else fail('legacy timeline default state: ' + JSON.stringify(modularTimelineGrammar));
 
   // PURE arg-builder unit checks (no ffmpeg load): xfade offset math + acrossfade/mux args.
   const tlArgs = await page.evaluate(async () => {

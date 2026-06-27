@@ -192,12 +192,18 @@ export async function openRepoView({ auto = false, walkLimit } = {}) {
     if (!state.repoHandle) state.repoHandle = await openRepo(state.repoEntries);
     if (token !== _repoViewToken || (auto && state.currentFolderPath)) return;
     if (!state.repoHandle) { panel.innerHTML = '<p class="repo-hint">Not a git repository.</p>'; return; }
+    const resolveRepoFile = (path) => {
+      const entries = state.treeEntries || [];
+      const root = state.repoHandle?.repoRoot || '';
+      const normalized = root && path?.startsWith(root + '/') ? path.slice(root.length + 1) : path;
+      return entries.find((entry) => entry.path === path || entry.path === normalized || entry.originalPath === path);
+    };
     await renderRepoView(panel, state.repoHandle, {
-      canOpenFile: (path) => state.treeEntries?.some((entry) => entry.path === path),
+      canOpenFile: (path) => !!resolveRepoFile(path),
       openFile: async (path) => {
-        const entry = state.treeEntries?.find((item) => item.path === path);
+        const entry = resolveRepoFile(path);
         if (!entry) { toast('File is not available in this folder'); return; }
-        state.treeApi?.setActive?.(path);
+        state.treeApi?.setActive?.(entry.path);
         await openTreeFile({ file: entry.file, path: entry.path });
       },
       walkLimit,

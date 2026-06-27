@@ -186,12 +186,12 @@ export async function mountAudioModePanels({
     return null;
   });
   registerMode('compare', 'Compare', async (panel) => {
-    const { mountMediaCompare } = await import('./compare-ui.js');
-    return mountMediaCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
+    const { mountModularCompare } = await import('./mixer/mixer-compare.js');
+    return mountModularCompare(panel, intake, mediaElement, 'audio', { enableFfmpeg });
   });
   registerMode('mix', 'Mix', async (panel) => {
-    const { mountMixer } = await import('./mixer-ui.js');
-    return mountMixer(panel, intake);
+    const { mountModularAudioMixer } = await import('./mixer/mixer-audio-multi.js');
+    return mountModularAudioMixer(panel, intake, mediaElement, { enableFfmpeg });
   });
 
   const audioListenMode = states.states.get('listen');
@@ -217,7 +217,6 @@ export async function mountVideoModePanels({
   exportPanel,
   onRegisterController,
   onReleaseController,
-  onTranscodedSource,
 }) {
   const states = createWorkspaceModes({
     tabWrap: modeTabs,
@@ -245,22 +244,15 @@ export async function mountVideoModePanels({
     return null;
   });
   registerMode('timeline', 'Timeline', async (panel) => {
+    const { mountModularVideoSourceMixer } = await import('./mixer/mixer-video-source.js');
+    const mixerController = mountModularVideoSourceMixer(panel, intake, mediaElement, { enableFfmpeg });
     if (!enableFfmpeg) {
       panel.append(buildFfNotEnabledHint(
-        'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock the timeline tools.',
+        'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock conversion, proxy generation, and final video render.',
       ));
-      return null;
+      return mixerController;
     }
-    const timelineToggle = makeTogglePanel({
-      label: 'Video timeline',
-      panelClass: 'media-tl-panel',
-      mount: async (innerPanel) => {
-        const { mountTimeline } = await import('./timeline.js');
-        return mountTimeline(innerPanel, intake, mediaElement, onTranscodedSource);
-      },
-    });
-    panel.append(timelineToggle.wrap);
-    return timelineToggle;
+    return mixerController;
   });
 
   let subtitleController = null;
@@ -290,8 +282,8 @@ export async function mountVideoModePanels({
     return null;
   });
   registerMode('compare', 'Compare', async (panel) => {
-    const { mountMediaCompare } = await import('./compare-ui.js');
-    return mountMediaCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
+    const { mountModularCompare } = await import('./mixer/mixer-compare.js');
+    return mountModularCompare(panel, intake, mediaElement, 'video', { enableFfmpeg });
   });
 
   if (watchMode) {
