@@ -1117,6 +1117,11 @@ export async function run(ctx) {
   await page.click('#previewHost .asx-settings-btn');   // restore
   const panelBack = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display !== 'none');
   if (panelVisInit && panelHidden && panelBack) pass('ASCII settings drawer toggles open/closed'); else fail('settings toggle: ' + JSON.stringify({ panelVisInit, panelHidden, panelBack }));
+  // The panel head's ✕ also closes it (reachable on touch where the toolbar toggle may be off-screen).
+  await page.click('#previewHost .asx-float-close');
+  const closedByX = await page.$eval('#previewHost .asx-panel', (el) => getComputedStyle(el).display === 'none');
+  await page.click('#previewHost .asx-settings-btn');   // reopen for later steps
+  if (closedByX) pass('ASCII settings panel ✕ button closes it'); else fail('settings ✕ close did not work');
   // Frame padding visibly pads the <pre> preview (was a no-op before — only the canvas honoured it).
   const padBefore = await page.$eval('#previewHost .asx-out', (el) => parseFloat(getComputedStyle(el).paddingLeft));
   await page.evaluate(() => { const i = document.querySelector('#previewHost .asx-panel input[data-key="transparentFrame"]'); i.value = 40; i.dispatchEvent(new Event('input', { bubbles: true })); });
