@@ -1,44 +1,40 @@
 // Stage 1 — Bit Foundry. The bespoke "pixel reveal" onboarding mechanic sits on top; below it a
-// full tabbed idle-clicker (shop, timed buttons, achievements; managers + prestige stubbed for
-// WP-S1-10). The commentary BELL (top-right) narrates every stage. Split out of metagame.js to
-// keep that orchestrator under the LOC cap.
+// full tabbed idle-clicker (shop, timed builders, achievements, managers, prestige). The commentary
+// BELL (top-right) narrates every stage. This file is the orchestrator: it wires the reveal, tabs,
+// economy controllers, and the tick loop together. The heavy sub-systems live in siblings:
+//   s1layout.js  — static markup + grid constants + the Defrag-Echo glyph stylesheet
+//   s1hud.js     — score / Gravitational-Pull chip + the help panel
+//   s1reveal.js  — the phase-1 pixel-reveal grid
+//   s1tick.js    — the 100 ms game tick (accrual, builders, managers, mechanics, save)
 //
 // Reveal: tapping the top area adds bits (×clickPower); current bits fill a 100-square grid toward
 // the current Multiplier price. When full the button is interactive; buying Multiplier restarts the
-// reveal. The tabs below host the real BigNum economy (shop / timed / stats / achievements).
+// reveal. The tabs below host the real BigNum economy (shop / timed / stats / achievements / reset).
 
 import { clickTick } from './sounds.js';
-import { renderAchievementsPanel as renderS1AchPanel } from './s1achpanel.js';
 import { createShopController } from './s1shop.js';
-import {
-  netRate, passiveRate, managerCostPerSec, clickPower as economyClickPower,
-  timedPayout, timedProduction, totalCost, globalPull,
-} from './s1economy.js';
-import { fromNumber, add, sub, mulScalar, gte, toDisplay } from './bignum.js';
-import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
+import { clickPower as economyClickPower, totalCost } from './s1economy.js';
+import { fromNumber, add, sub, gte } from './bignum.js';
+import { bellLoad, checkMessages } from './s1bell.js';
 import { checkAchievements, checkMilestones } from './s1achievements.js';
 import { createManagersController } from './s1managers.js';
-import { renderResetPanel as renderS1ResetPanel, paintResetPanel as paintS1ResetPanel } from './s1reset.js';
-import { tickMechanics, incomeMult } from './s1mechanics.js';
-import { coreAutoMult } from './s1cores.js';
+import { renderResetPanel as renderS1ResetPanel } from './s1reset.js';
+import { renderAchievementsPanel as renderS1AchPanel } from './s1achpanel.js';
 import { echoActive, echoTimeLeft, clickEcho } from './s1echoes.js';
 import { installStage1Debug } from './s1debug.js';
-import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
-
-const GRID_COLS = 20, GRID_ROWS = 5, GRID_CELLS = GRID_COLS * GRID_ROWS;   // 20×5 = 100
-
-/* ─────────────────────────────────────────────────────────────────────────────
-   Stage 1 render: pixel-reveal top section + a tabbed idle clicker below it. The "Bits" tab
-   (shop + timed builders + stats) is owned by s1shop.js; this file orchestrates the reveal,
-   tabs, tick loop, score/help HUD, and economy plumbing.
-   ───────────────────────────────────────────────────────────────────────────── */
+import { setHidden, bigToNum } from './s1dom.js';
+import { GRID_CELLS, GRID_COLS, GRID_ROWS, stage1Markup, injectEchoStyle } from './s1layout.js';
+import { createHud } from './s1hud.js';
+import { createReveal } from './s1reveal.js';
+import { createTickLoop } from './s1tick.js';
 
 export function renderStage1(ctx) {
   const { host, state, save, stage, onExit, attachChrome, bell } = ctx;
+  void onExit;
   const sfxOn = () => (typeof ctx.sfxEnabled === 'function' ? ctx.sfxEnabled() : true);
   const cfg = stage();   // Stage 1 config from stages.js
 
-  // ── State normalization on mount (legacy plain numbers → BigNum until WP-S1-12 lands) ──
+  // ── State normalization on mount (legacy plain numbers → BigNum) ──
   if (typeof state.bits === 'number') state.bits = fromNumber(state.bits);
   if (typeof state.totalBits === 'number') state.totalBits = fromNumber(state.totalBits || 0);
   if (state.totalBits == null) state.totalBits = fromNumber(0);
@@ -73,37 +69,17 @@ export function renderStage1(ctx) {
     return allSubStagesOwned() && cfg.bossTicket && gte(state.bits, cfg.bossTicket);
   }
 
-  // Prestige unlocks once total bits ever earned reaches "ab" (10^18) — the point where a reset
-  // yields a meaningful Gravitational Pull gain — independent of (and well before) the boss ticket.
+  // Prestige unlocks once total bits ever earned reaches "ab" (10^18).
   const RESET_THRESHOLD = { m: 1, e: 18 };   // "1.00ab"
   const tabVisible = {
     bits: () => true,
     managers: () => (state.owned['s1-box'] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    // Visible once a prestige is affordable OR after any prestige (so the Cores shop / mechanic
-    // roster stays reachable while totalBits is rebuilding toward the next reset).
     reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1,
   };
   const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Prestige' };
 
-  host.innerHTML =
-    '<div class="mg-wrap mg-s1">'
-    + '<div class="mg-s1-hud" hidden>'
-    + '  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>'
-    + '  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span>'
-    + '</div>'
-    + '<div class="mg-s1-help" hidden></div>'
-    + '<button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button>'
-    + '<div class="mg-s1-top">'
-    + '  <div class="mg-s1-tap" aria-label="tap to compute"></div>'
-    + '  <div class="mg-s1-stage">'
-    + '    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + ' ' + multTier.name : 'Compute') + '</button>'
-    + '    <div class="mg-s1-grid" aria-hidden="true"></div>'
-    + '  </div>'
-    + '</div>'
-    + '<div class="mg-s1-tabs" role="tablist"></div>'
-    + '<div class="mg-s1-panels"></div>'
-    + '</div>';
+  host.innerHTML = stage1Markup(multTier);
 
   const $ = (s) => host.querySelector(s);
   const tap = $('.mg-s1-tap');
@@ -117,8 +93,7 @@ export function renderStage1(ctx) {
   const helpEl = $('.mg-s1-help');
   const echoEl = $('.mg-s1-echo');
 
-  // ── Defrag Echo glyph (prestige mechanic #4) — a clickable attention target. Shows only while an
-  // echo is active; clicking it banks a reward, ignoring it eventually costs 20% of your bits. ──
+  // ── Defrag Echo glyph (prestige mechanic #4) — clickable attention target ──
   injectEchoStyle();
   function updateEcho() {
     if (!echoEl) return;
@@ -134,84 +109,13 @@ export function renderStage1(ctx) {
     if (clickEcho(state, cfg)) { save(state); updateEcho(); updateHud(); }
   });
 
-  // ── Score HUD + helper buttons (progressive disclosure) ──────────────────────
-  // Score counter appears at 400 total bits collected; the help affordance appears once the
-  // player has banked 1000 bits at once (sticky), so the explanations arrive when they're useful.
-  const HELP_SECTIONS = [
-    ['👆 Tap', 'Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level.'],
-    ['🧰 Bit Box', 'Tap it to run a timed cycle that pays out bits. Your main income.'],
-    ['📡 Signal Booster', 'Each cycle BUILDS Bit Boxes for you (and boosts their payout). It makes machines, not bits.'],
-    ['🧊 Core Cluster', 'Each cycle BUILDS Signal Boosters — a machine that builds the machine that builds boxes.'],
-    ['🛠 Managers', 'Hire one to auto-run a builder for a per-second bit cost. Watch the net rate stays positive.'],
-    ['🌀 Reset', 'Once your total reaches ~1ab bits you may reset for a permanent ×pull multiplier on everything.'],
-  ];
-  function renderHelp() {
-    setHtml(helpEl, '<div class="mg-s1-help-title">How the Foundry works</div>'
-      + HELP_SECTIONS.map(([h, b]) =>
-        '<div class="mg-s1-help-row"><strong>' + escapeHtml(h) + '</strong><span>' + escapeHtml(b) + '</span></div>').join(''));
-  }
-  // The help affordance now lives in the metagame header (next to SFX); this toggles the panel.
-  function toggleHelp() {
-    const open = helpEl.hidden;
-    if (open) renderHelp();
-    setHidden(helpEl, !open);
-  }
-  let lastScoreAt = 0;
-  function updateHud() {
-    // Once unlocked the score stays visible — the 'score-unlock' milestone persists across a prestige
-    // reset (which zeroes totalBits), so gate on it rather than the live total. The score chip is an
-    // absolute top-right overlay (see games.css), so revealing it never reflows the play area.
-    const scoreOn = (state.milestones || []).includes('score-unlock') || bigToNum(state.totalBits) >= 400;
-    setHidden(hudEl, !scoreOn);
-    if (!scoreOn) return;
-    // Gravitational Pull chip — shown once a prestige has earned pull (×>1); guarded so it only
-    // writes when the value changes.
-    const grav = globalPull(state);
-    if (grav > 1.0001) { setText(gravEl, '🌀 ×' + toDisplay(fromNumber(grav))); setHidden(gravEl, false); }
-    else setHidden(gravEl, true);
-    // Bits score is recomputed at most every 0.25s (the 100ms tick would otherwise rewrite it 10×/s).
-    const now = Date.now();
-    if (now - lastScoreAt >= 250) {
-      lastScoreAt = now;
-      setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum(state.bits)))));
-    }
-  }
+  // ── Score HUD + help panel (s1hud.js) ──
+  const { updateHud, toggleHelp } = createHud({ hudEl, scoreValEl, gravEl, helpEl, state });
 
-  // ── Pixel-reveal grid (column-major fill order) ────────────────────────────
-  const cells = [];
-  for (let i = 0; i < GRID_CELLS; i++) {
-    const c = Math.floor(i / GRID_ROWS), r = i % GRID_ROWS;
-    const cell = document.createElement('div');
-    cell.className = 'mg-s1-cell';
-    cell.style.gridColumn = (c + 1);
-    cell.style.gridRow = (r + 1);
-    cell.dataset.i = String(i);
-    grid.appendChild(cell);
-    cells.push(cell);
-  }
+  // ── Pixel-reveal grid (s1reveal.js) ──
+  const { reveal } = createReveal({ host, grid, computeBtn, state, multTier });
 
-  function reveal() {
-    if (state.tabsUnlocked) return;   // phase 2: no pixel reveal
-    const wrapper = host.querySelector('.mg-wrap.mg-s1');
-    if (wrapper) wrapper.classList.toggle('mg-s1-empty', bigToNum(state.bits) <= 0 && bigToNum(state.totalBits) <= 0);
-    const bits = bigToNum(state.bits);
-    const owned = state.owned['s1-mult'] || 0;
-    const cost = multTier ? totalCost(multTier, owned, 1) : fromNumber(GRID_CELLS);
-    const target = Math.max(1, bigToNum(cost));
-    const progress = Math.max(0, Math.min(1, bits / target));
-    const n = bits <= 0 ? 0 : Math.min(GRID_CELLS, Math.max(1, Math.floor(GRID_CELLS * progress)));
-    for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle('mg-s1-on', i < n);
-    const done = progress >= 1;
-    computeBtn.style.opacity = done ? '' : String(progress);
-    computeBtn.classList.toggle('mg-s1-ready', done);
-    grid.classList.toggle('mg-s1-clear', done);
-    // Tap stays active at all times — clicking outside the button still adds bits even when ready.
-  }
-
-  // ── Tab framework ──────────────────────────────────────────────────────────
-  // Dirty-checked: the tab bar is only rebuilt when the set of visible tabs or the active tab
-  // changes. Without this it was recreated on every builder completion (i.e. ~every tick once
-  // managers auto-fire), churning the DOM + listeners and breaking devtools inspection.
+  // ── Tab framework (dirty-checked: rebuilt only when the visible set / active tab changes) ──
   let tabsSig = null;
   function renderTabs() {
     const visible = Object.keys(TAB_LABELS).filter((id) => tabVisible[id]());
@@ -244,9 +148,7 @@ export function renderStage1(ctx) {
   const paintTimed = () => shop.paintTimed();
   const paintStats = () => shop.paintStats();
 
-  // After a buy: reveal newly-unlocked rows/tabs by repainting in place rather than rebuilding the
-  // panel's innerHTML — keeps the Bits-tab scroll position put. (Full renderAll is only needed for
-  // the one-time phase-1 → phase-2 transition.)
+  // After a buy: reveal newly-unlocked rows/tabs by repainting in place (keeps Bits-tab scroll put).
   function afterBuy() {
     if (!state.tabsUnlocked) { renderAll(); return; }
     renderTabs();
@@ -255,7 +157,6 @@ export function renderStage1(ctx) {
     updateHud();
   }
 
-  // ── Achievements tab (rendered by s1achpanel.js — locked + unlocked, with multipliers) ──
   function renderAchievementsPanel() {
     renderS1AchPanel({ panelsEl, state });
   }
@@ -276,7 +177,6 @@ export function renderStage1(ctx) {
 
   // Full re-render of the dynamic UI (tabs + active panel + reveal). Used after a buy.
   function renderAll() {
-    // Toggle phase: phase 1 = no tabs (pixel reveal only); phase 2 = tabs, no pixel button.
     const wrapper = host.querySelector('.mg-wrap.mg-s1');
     if (wrapper) {
       wrapper.classList.toggle('mg-s1-phase1', !state.tabsUnlocked);
@@ -289,7 +189,7 @@ export function renderStage1(ctx) {
     if (!state.tabsUnlocked) reveal();
   }
 
-  // ── Tab unlock: fires once when current bits reaches 150. Toggles phase -> tab layout appears. ──
+  // ── Tab unlock: fires once when current bits reaches 150. Toggles phase → tab layout appears. ──
   function checkTabUnlock() {
     if (state.tabsUnlocked) return;
     if (bigToNum(state.bits) >= 150) {
@@ -316,9 +216,7 @@ export function renderStage1(ctx) {
     checkMessages('bit-earn', state, bs, bell);
     checkAchievements(state, cfg, bs);
     reveal();
-    // A tap only changes the bit count — refresh affordability + the score HUD. Timed fill-bars and
-    // stats don't change on a tap, so the 100ms tick keeps those current instead of repainting them
-    // on every tap. Keeps fast tapping cheap (less layout/paint per click).
+    // A tap only changes the bit count — refresh affordability + the score HUD.
     if (state.tabsUnlocked && activeTab === 'bits') paintShop();
     checkTabUnlock();
     updateHud();
@@ -342,8 +240,7 @@ export function renderStage1(ctx) {
     renderAll();
   }
 
-  // ── Tap area: full-screen click handler. Clicking the revealed button = purchase;
-  //    clicking anywhere else (including pixels over the button) = addBits. ──
+  // ── Tap area: full-screen click handler. Revealed button = purchase; anywhere else = addBits. ──
   tap.addEventListener('pointerdown', (e) => {
     if (computeBtn.classList.contains('mg-s1-ready')) {
       const r = computeBtn.getBoundingClientRect();
@@ -354,105 +251,26 @@ export function renderStage1(ctx) {
     }
     addBits();
   });
-  // Keyboard / accessibility: space/enter on the button calls doPurchase directly.
   computeBtn.addEventListener('click', (e) => { e.stopPropagation(); doPurchase(); });
 
   // ── Game tick loop (§5.5) — single 100ms interval; cleared on re-render. ──
   if (renderStage1._tickId) { clearInterval(renderStage1._tickId); renderStage1._tickId = null; }
-  let tickAcc = 0;
-  function tick() {
-    // Self-terminate if our DOM was torn down (orchestrator switched to boss/another stage) — the
-    // orchestrator's clearTransient() doesn't know about this interval, so we stop ourselves.
-    if (!host.isConnected || !grid.isConnected) {
+  const { tick } = createTickLoop({
+    host, grid, state, cfg, bell, save, timedTiers, multTier, panelsEl,
+    managersController, getActiveTab: () => activeTab,
+    reveal, checkTabUnlock, updateHud, updateEcho, renderTabs,
+    paintShop, paintTimed, paintStats,
+    onTeardown: () => {
       clearInterval(renderStage1._tickId); renderStage1._tickId = null;
       if (renderStage1._debug) { renderStage1._debug.destroy(); renderStage1._debug = null; }
-      return;
-    }
-    // 1. Passive accrual (scaled by the post-prestige income multiplier: Cores yield × Flux × Resonance).
-    const incMult = incomeMult(state, cfg);
-    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
-    state.bits = add(state.bits, passive);
-    state.totalBits = add(state.totalBits, passive);
-    // 2. Manager cost drain (0 until WP-S1-10, but still call it).
-    state.bits = sub(state.bits, mulScalar(fromNumber(managerCostPerSec(state, cfg)), 1 / 10));
-    // 2b. Track net-negative streak for the ach-net-neg achievement.
-    const rate = netRate(state, cfg);
-    if (rate < 0) { if (!state._netNegSince) state._netNegSince = Date.now(); }
-    else state._netNegSince = 0;
-    // 3. Timed completions. Builder tiers assemble units of the tier below; others pay bits.
-    let timedDone = false;
-    let builtUnits = false;
-    for (const t of timedTiers) {
-      const ts = state.timedStates[t.id];
-      if (!ts || !ts.active) continue;
-      if (Date.now() - ts.startedAt >= (ts.duration_ms || t.duration_ms)) {
-        if (t.produces) {
-          const prod = timedProduction(state, cfg, t.id);
-          if (prod && prod.amount > 0) {
-            state.owned[prod.targetId] = (state.owned[prod.targetId] || 0) + prod.amount;
-            builtUnits = true;
-          }
-        } else {
-          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
-          state.bits = add(state.bits, payout);
-          state.totalBits = add(state.totalBits, payout);
-        }
-        ts.active = false;
-        timedDone = true;
-      }
-    }
-    if (timedDone) checkMessages('bit-earn', state, bellLoad(), bell);
-    // A built unit bumps owned counts (shop labels/payouts) and can unlock a tier row or tab.
-    // The rows already exist in the DOM, so paintShop/paintTimed reveal them; renderTabs catches a
-    // freshly-unlocked tab. No full panel rebuild → running timer bars don't flicker.
-    if (builtUnits && state.tabsUnlocked) {
-      renderTabs();
-      if (activeTab === 'bits') { paintShop(); paintTimed(); }
-    }
-    // 3b. Manager auto-fire + shutdown rule (§5.6/§6.3).
-    managersController.runAutoFire();
-    // 3c. Post-prestige mechanics (pipeline/flux/entropy/echoes/resonance) — deterministic, tick-driven.
-    const mech = tickMechanics(state, cfg);
-    if (mech.producedUnits && state.tabsUnlocked) {
-      renderTabs();
-      if (activeTab === 'bits') { paintShop(); paintTimed(); }
-    }
-    if (mech.echo) updateEcho();
-    // 3d. Auto-Tapper Cores upgrade: buy a Multiplier whenever affordable.
-    if (coreAutoMult(state) && multTier) {
-      const lvl = state.owned[multTier.id] || 0;
-      const cost = totalCost(multTier, lvl, 1);
-      if (gte(state.bits, cost)) {
-        state.bits = sub(state.bits, cost);
-        state.owned[multTier.id] = lvl + 1;
-        state.totalBought = (state.totalBought || 0) + 1;
-      }
-    }
-    // 4. Reveal (phase 1 only; reveal() no-ops when tabsUnlocked).
-    reveal();
-    // 4b. Tab unlock check (passive rate could push bits to 250 without a tap).
-    checkTabUnlock();
-    // 4c. Score HUD / helper unlock + live bit count (guarded, so a steady state writes nothing).
-    updateHud();
-    // 5. Partial re-render of the live tab (phase 2 only — tabs are hidden in phase 1).
-    if (state.tabsUnlocked) {
-      if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
-      else if (activeTab === 'managers') managersController.paint();
-      else if (activeTab === 'reset') paintS1ResetPanel(panelsEl, state);
-    }
-    // A newly-unlocked achievement may reveal the Achievements tab — refresh the tab bar so it
-    // appears immediately (returns true only on the rare unlock tick).
-    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
-    // 6. Periodic save.
-    if (++tickAcc >= 10) { tickAcc = 0; save(state); }
-  }
+    },
+  });
   renderStage1._tickId = setInterval(tick, 100);
 
   renderAll();
   attachChrome(host);
 
-  // TEST/DEBUG hook (window.__fvStage1) — drives the headless smoke without real-time waiting. Does
-  // NOT bypass the boss gate or the load-bearing un-cheat (see s1debug.js).
+  // TEST/DEBUG hook (window.__fvStage1) — drives the headless smoke without real-time waiting.
   if (renderStage1._debug && typeof renderStage1._debug.destroy === 'function') renderStage1._debug.destroy();
   renderStage1._debug = installStage1Debug({
     state, cfg, save, renderAll, tick, addBits,
@@ -462,21 +280,6 @@ export function renderStage1(ctx) {
 
   // Expose the help toggle so the orchestrator can wire it to the header help button.
   return { toggleHelp };
-}
-
-const ECHO_STYLE_ID = 'mg-s1-echo-style';
-function injectEchoStyle() {
-  if (typeof document === 'undefined' || document.getElementById(ECHO_STYLE_ID)) return;
-  const el = document.createElement('style');
-  el.id = ECHO_STYLE_ID;
-  el.textContent = `
-.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
-  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
-  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
-.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
-@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
-`;
-  document.head.appendChild(el);
 }
 
 export const STAGE1 = { GRID_CELLS, GRID_COLS, GRID_ROWS };
