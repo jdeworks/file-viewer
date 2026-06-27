@@ -230,6 +230,13 @@ export async function mountVideoModePanels({
     stickyModes: ['watch', 'export'],
     onRegisterController,
     onReleaseController,
+    // Timeline and Compare bring their own bespoke lanes (with a composed seek-frame preview),
+    // so the always-on video preview is hidden for them — they replace it. Adjust/Subtitles keep
+    // it (their effects/overlays render on the live video).
+    onModeChange: (id) => {
+      const surface = host?.querySelector('.media-video-surface');
+      if (surface) surface.hidden = (id === 'timeline' || id === 'compare');
+    },
   });
 
   const ffmpegBlockedMsg = 'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock this feature.';
