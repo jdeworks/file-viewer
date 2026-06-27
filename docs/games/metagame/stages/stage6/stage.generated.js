@@ -659,14 +659,7 @@ function registerCard(card) {
 var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
 var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
 
-// ../../docs/games/metagame/stages/stage6/combat.js
-var HAND_SIZE = 5;
-var START_ENERGY = 3;
-var WINDOW_CAP = 5;
-var WINDOW_FLOOR = 2;
-function baseId(id) {
-  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
-}
+// ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
   return function rng() {
@@ -685,109 +678,75 @@ function shuffle(list, rng) {
   }
   return out;
 }
-function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
-  const rng = makeRng(seed);
-  const combat = {
-    rng,
-    relics,
-    congestion,
-    // THROUGHPUT: when true, energy is a dynamic congestion window
-    window: START_ENERGY,
-    // current window size (== maxEnergy while in congestion mode)
-    windowCap: Math.max(START_ENERGY, windowCap),
-    windowDecay: 1,
-    // how much a wide turn shrinks the window (relics can worsen this)
-    player: {
-      hp: player.hp,
-      maxHp: player.maxHp,
-      block: 0,
-      energy: START_ENERGY,
-      maxEnergy: START_ENERGY,
-      statuses: {}
-    },
-    enemy: {
-      id: enemy.id,
-      name: enemy.name,
-      hp: enemy.hp,
-      maxHp: enemy.hp,
-      block: 0,
-      armor: Number(enemy.armor || 0),
-      statuses: {},
-      script: enemy.script,
-      intentIndex: 0,
-      skipNext: false
-    },
-    draw: shuffle(deck, rng),
-    hand: [],
-    discard: [],
-    exhaust: [],
-    pending: [],
-    // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
-    jammed: [],
-    // THROUGHPUT (Act 3): cards set aside (Packet Loss) — unplayable until released/Defrag'd
-    turn: 1,
-    cardsPlayedThisTurn: 0,
-    firstCardDiscount: 0,
-    // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
-    energySpentThisTurn: 0,
-    playedIdsThisTurn: [],
-    lastCardPlayed: null,
-    over: false,
-    result: null,
-    log: []
-  };
-  drawCards(combat, HAND_SIZE);
-  runHook(combat, "onCombatStart");
-  runHook(combat, "onPlayerTurnStart");
-  return combat;
+function hashSeed(seed, key) {
+  let h = (Number(seed) || 1) >>> 0;
+  for (const ch of String(key)) h = Math.imul(h, 31) + ch.charCodeAt(0) >>> 0;
+  return h || 1;
 }
-function runHook(combat, name, card = null) {
-  for (const relic of combat.relics) {
-    const fn = relic.hooks?.[name];
-    if (typeof fn === "function") fn(relicCtx(combat, card));
+
+// ../../docs/games/metagame/stages/stage6/combat-piles.js
+function drawCards(combat, n) {
+  for (let i = 0; i < n; i++) {
+    if (combat.draw.length === 0) {
+      if (combat.discard.length === 0) return;
+      combat.draw = shuffle(combat.discard, combat.rng);
+      combat.discard = [];
+    }
+    combat.hand.push(combat.draw.shift());
   }
 }
-function relicCtx(combat, card) {
-  return {
-    combat,
-    card,
-    deal: (n) => dealToEnemy(combat, n),
-    block: (n) => {
-      combat.player.block += Math.max(0, Math.round(n));
-    },
-    draw: (n) => drawCards(combat, n),
-    gainEnergy: (n) => {
-      combat.player.energy += n;
-    },
-    applySelf: (status, n) => addStatus(combat.player, status, n),
-    applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
-  };
+function jamOne(combat) {
+  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
 }
-function currentIntent(combat) {
-  const script = combat.enemy.script;
-  return script[combat.enemy.intentIndex % script.length];
+function releaseJam(combat) {
+  if (combat.jammed.length) {
+    combat.discard.push(...combat.jammed);
+    combat.jammed = [];
+  }
 }
-function playCard(combat, handIndex) {
-  if (combat.over) return { ok: false, reason: "over" };
-  const cardId = combat.hand[handIndex];
-  if (cardId == null) return { ok: false, reason: "no-card" };
-  const card = cardById(cardId);
-  if (!card) return { ok: false, reason: "unknown-card" };
-  const isFirst = combat.cardsPlayedThisTurn === 0;
-  const cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
-  if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
-  combat.player.energy -= cost;
-  combat.energySpentThisTurn += cost;
-  combat.cardsPlayedThisTurn += 1;
-  combat.hand.splice(handIndex, 1);
-  combat.playedIdsThisTurn.push(card.id);
-  card.effect(makeCtx(combat, card));
-  combat.lastCardPlayed = card.id;
-  if (card.exhaust) combat.exhaust.push(card.id);
-  else combat.discard.push(card.id);
-  runHook(combat, "onCardPlay", card);
-  checkEnemyDead(combat);
-  return { ok: true, card: card.id };
+
+// ../../docs/games/metagame/stages/stage6/combat-damage.js
+function dealToEnemy(combat, baseAmount) {
+  let amount = Math.max(0, Math.round(baseAmount));
+  if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
+  if (combat.player.statuses.weak) amount = Math.floor(amount * 0.75);
+  if (combat.enemy.statuses.vulnerable) amount = Math.floor(amount * 1.5);
+  amount = Math.max(0, amount - combat.enemy.armor);
+  const absorbed = Math.min(combat.enemy.block, amount);
+  combat.enemy.block -= absorbed;
+  combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
+}
+function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {
+  let amount = Math.max(0, Math.round(baseAmount));
+  if (combat.enemy.statuses.weak) amount = Math.floor(amount * 0.75);
+  if (combat.player.statuses.vulnerable) amount = Math.floor(amount * 1.5);
+  if (pierce) {
+    combat.player.hp = Math.max(0, combat.player.hp - amount);
+    return;
+  }
+  const absorbed = Math.min(combat.player.block, amount);
+  combat.player.block -= absorbed;
+  combat.player.hp = Math.max(0, combat.player.hp - (amount - absorbed));
+}
+function addStatus(entity, status, value) {
+  entity.statuses[status] = (entity.statuses[status] || 0) + value;
+  if (entity.statuses[status] <= 0) delete entity.statuses[status];
+}
+var DURATION_STATUSES = /* @__PURE__ */ new Set(["vulnerable", "weak"]);
+function tickStatuses(entity) {
+  for (const key of Object.keys(entity.statuses)) {
+    if (!DURATION_STATUSES.has(key)) continue;
+    entity.statuses[key] -= 1;
+    if (entity.statuses[key] <= 0) delete entity.statuses[key];
+  }
+}
+function log(combat, line) {
+  combat.log = [...combat.log, line].slice(-10);
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-ctx.js
+function baseId(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
 function makeCtx(combat, card) {
   return {
@@ -875,66 +834,33 @@ function makeCtx(combat, card) {
     }
   };
 }
-function endTurn(combat) {
-  if (combat.over) return combat;
-  if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
-  if (combat.over) return combat;
-  combat.discard.push(...combat.hand);
-  combat.hand = [];
-  enemyTurn(combat);
-  if (combat.over) return combat;
-  combat.turn += 1;
-  combat.player.block = 0;
-  applyTurnEnergy(combat);
-  combat.cardsPlayedThisTurn = 0;
-  combat.energySpentThisTurn = 0;
-  combat.playedIdsThisTurn = [];
-  tickStatuses(combat.player);
-  releaseJam(combat);
-  drawCards(combat, HAND_SIZE);
-  runHook(combat, "onPlayerTurnStart");
-  resolvePending(combat);
-  if (combat.jamPending) {
-    jamOne(combat);
-    combat.jamPending = false;
-  }
-  return combat;
+function relicCtx(combat, card) {
+  return {
+    combat,
+    card,
+    deal: (n) => dealToEnemy(combat, n),
+    block: (n) => {
+      combat.player.block += Math.max(0, Math.round(n));
+    },
+    draw: (n) => drawCards(combat, n),
+    gainEnergy: (n) => {
+      combat.player.energy += n;
+    },
+    applySelf: (status, n) => addStatus(combat.player, status, n),
+    applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
+  };
 }
-function jamOne(combat) {
-  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
-}
-function releaseJam(combat) {
-  if (combat.jammed.length) {
-    combat.discard.push(...combat.jammed);
-    combat.jammed = [];
+function runHook(combat, name, card = null) {
+  for (const relic of combat.relics) {
+    const fn = relic.hooks?.[name];
+    if (typeof fn === "function") fn(relicCtx(combat, card));
   }
 }
-function applyTurnEnergy(combat) {
-  if (!combat.congestion) {
-    combat.player.energy = combat.player.maxEnergy;
-    return;
-  }
-  combat.jamPending = combat.cardsPlayedThisTurn >= 4;
-  const wide = combat.energySpentThisTurn >= combat.window;
-  if (combat.noShrinkNextTurn) {
-    combat.noShrinkNextTurn = false;
-  } else if (wide) {
-    combat.window = Math.max(WINDOW_FLOOR, combat.window - (combat.windowDecay || 1));
-  } else {
-    combat.window = Math.min(combat.windowCap || WINDOW_CAP, combat.window + 1);
-  }
-  combat.player.maxEnergy = combat.window;
-  combat.player.energy = combat.window;
-}
-function resolvePending(combat) {
-  if (!combat.pending || !combat.pending.length) return;
-  const due = combat.pending.filter((p) => p.turn <= combat.turn);
-  combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
-  for (const p of due) {
-    if (combat.over) break;
-    p.fn(makeCtx(combat, null));
-    checkEnemyDead(combat);
-  }
+
+// ../../docs/games/metagame/stages/stage6/combat-enemy.js
+function currentIntent(combat) {
+  const script = combat.enemy.script;
+  return script[combat.enemy.intentIndex % script.length];
 }
 function enemyTurn(combat) {
   const enemy = combat.enemy;
@@ -965,49 +891,143 @@ function resolveIntent(combat, intent) {
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
   if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
 }
-function dealToEnemy(combat, baseAmount) {
-  let amount = Math.max(0, Math.round(baseAmount));
-  if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
-  if (combat.player.statuses.weak) amount = Math.floor(amount * 0.75);
-  if (combat.enemy.statuses.vulnerable) amount = Math.floor(amount * 1.5);
-  amount = Math.max(0, amount - combat.enemy.armor);
-  const absorbed = Math.min(combat.enemy.block, amount);
-  combat.enemy.block -= absorbed;
-  combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
-}
-function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {
-  let amount = Math.max(0, Math.round(baseAmount));
-  if (combat.enemy.statuses.weak) amount = Math.floor(amount * 0.75);
-  if (combat.player.statuses.vulnerable) amount = Math.floor(amount * 1.5);
-  if (pierce) {
-    combat.player.hp = Math.max(0, combat.player.hp - amount);
+
+// ../../docs/games/metagame/stages/stage6/combat-modes.js
+var WINDOW_CAP = 5;
+var WINDOW_FLOOR = 2;
+function applyTurnEnergy(combat) {
+  if (!combat.congestion) {
+    combat.player.energy = combat.player.maxEnergy;
     return;
   }
-  const absorbed = Math.min(combat.player.block, amount);
-  combat.player.block -= absorbed;
-  combat.player.hp = Math.max(0, combat.player.hp - (amount - absorbed));
+  combat.jamPending = combat.cardsPlayedThisTurn >= 4;
+  const wide = combat.energySpentThisTurn >= combat.window;
+  if (combat.noShrinkNextTurn) {
+    combat.noShrinkNextTurn = false;
+  } else if (wide) {
+    combat.window = Math.max(WINDOW_FLOOR, combat.window - (combat.windowDecay || 1));
+  } else {
+    combat.window = Math.min(combat.windowCap || WINDOW_CAP, combat.window + 1);
+  }
+  combat.player.maxEnergy = combat.window;
+  combat.player.energy = combat.window;
 }
-function addStatus(entity, status, value) {
-  entity.statuses[status] = (entity.statuses[status] || 0) + value;
-  if (entity.statuses[status] <= 0) delete entity.statuses[status];
-}
-var DURATION_STATUSES = /* @__PURE__ */ new Set(["vulnerable", "weak"]);
-function tickStatuses(entity) {
-  for (const key of Object.keys(entity.statuses)) {
-    if (!DURATION_STATUSES.has(key)) continue;
-    entity.statuses[key] -= 1;
-    if (entity.statuses[key] <= 0) delete entity.statuses[key];
+function resolvePending(combat) {
+  if (!combat.pending || !combat.pending.length) return;
+  const due = combat.pending.filter((p) => p.turn <= combat.turn);
+  combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
+  for (const p of due) {
+    if (combat.over) break;
+    p.fn(makeCtx(combat, null));
+    checkEnemyDead(combat);
   }
 }
-function drawCards(combat, n) {
-  for (let i = 0; i < n; i++) {
-    if (combat.draw.length === 0) {
-      if (combat.discard.length === 0) return;
-      combat.draw = shuffle(combat.discard, combat.rng);
-      combat.discard = [];
-    }
-    combat.hand.push(combat.draw.shift());
+
+// ../../docs/games/metagame/stages/stage6/combat.js
+var HAND_SIZE = 5;
+var START_ENERGY = 3;
+function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
+  const rng = makeRng(seed);
+  const combat = {
+    rng,
+    relics,
+    congestion,
+    // THROUGHPUT: when true, energy is a dynamic congestion window
+    window: START_ENERGY,
+    // current window size (== maxEnergy while in congestion mode)
+    windowCap: Math.max(START_ENERGY, windowCap),
+    windowDecay: 1,
+    // how much a wide turn shrinks the window (relics can worsen this)
+    player: {
+      hp: player.hp,
+      maxHp: player.maxHp,
+      block: 0,
+      energy: START_ENERGY,
+      maxEnergy: START_ENERGY,
+      statuses: {}
+    },
+    enemy: {
+      id: enemy.id,
+      name: enemy.name,
+      hp: enemy.hp,
+      maxHp: enemy.hp,
+      block: 0,
+      armor: Number(enemy.armor || 0),
+      statuses: {},
+      script: enemy.script,
+      intentIndex: 0,
+      skipNext: false
+    },
+    draw: shuffle(deck, rng),
+    hand: [],
+    discard: [],
+    exhaust: [],
+    pending: [],
+    // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
+    jammed: [],
+    // THROUGHPUT (Act 3): cards set aside (Packet Loss) — unplayable until released/Defrag'd
+    turn: 1,
+    cardsPlayedThisTurn: 0,
+    firstCardDiscount: 0,
+    // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
+    energySpentThisTurn: 0,
+    playedIdsThisTurn: [],
+    lastCardPlayed: null,
+    over: false,
+    result: null,
+    log: []
+  };
+  drawCards(combat, HAND_SIZE);
+  runHook(combat, "onCombatStart");
+  runHook(combat, "onPlayerTurnStart");
+  return combat;
+}
+function playCard(combat, handIndex) {
+  if (combat.over) return { ok: false, reason: "over" };
+  const cardId = combat.hand[handIndex];
+  if (cardId == null) return { ok: false, reason: "no-card" };
+  const card = cardById(cardId);
+  if (!card) return { ok: false, reason: "unknown-card" };
+  const isFirst = combat.cardsPlayedThisTurn === 0;
+  const cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
+  if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
+  combat.player.energy -= cost;
+  combat.energySpentThisTurn += cost;
+  combat.cardsPlayedThisTurn += 1;
+  combat.hand.splice(handIndex, 1);
+  combat.playedIdsThisTurn.push(card.id);
+  card.effect(makeCtx(combat, card));
+  combat.lastCardPlayed = card.id;
+  if (card.exhaust) combat.exhaust.push(card.id);
+  else combat.discard.push(card.id);
+  runHook(combat, "onCardPlay", card);
+  checkEnemyDead(combat);
+  return { ok: true, card: card.id };
+}
+function endTurn(combat) {
+  if (combat.over) return combat;
+  if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
+  if (combat.over) return combat;
+  combat.discard.push(...combat.hand);
+  combat.hand = [];
+  enemyTurn(combat);
+  if (combat.over) return combat;
+  combat.turn += 1;
+  combat.player.block = 0;
+  applyTurnEnergy(combat);
+  combat.cardsPlayedThisTurn = 0;
+  combat.energySpentThisTurn = 0;
+  combat.playedIdsThisTurn = [];
+  tickStatuses(combat.player);
+  releaseJam(combat);
+  drawCards(combat, HAND_SIZE);
+  runHook(combat, "onPlayerTurnStart");
+  resolvePending(combat);
+  if (combat.jamPending) {
+    jamOne(combat);
+    combat.jamPending = false;
   }
+  return combat;
 }
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
@@ -1021,9 +1041,6 @@ function checkPlayerDead(combat) {
     combat.over = true;
     combat.result = "lose";
   }
-}
-function log(combat, line) {
-  combat.log = [...combat.log, line].slice(-10);
 }
 
 // ../../docs/games/metagame/stages/stage6/enemies.js
@@ -1875,11 +1892,6 @@ function screenForNode(node) {
   if (node.type === "combat" || node.type === "elite") return "combat";
   if (node.type === "boss") return "boss";
   return node.type;
-}
-function hashSeed(seed, nodeId2) {
-  let h = (Number(seed) || 1) >>> 0;
-  for (const ch of String(nodeId2)) h = Math.imul(h, 31) + ch.charCodeAt(0) >>> 0;
-  return h || 1;
 }
 
 // ../../docs/games/metagame/stages/stage6/boss-combat.js

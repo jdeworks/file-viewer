@@ -6,7 +6,7 @@
 // prestige version) is held by the caller across runs.
 
 import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
-import { makeRng } from "./combat.js";
+import { makeRng, hashSeed } from "./combat.js";
 import { STARTING_DECK, REWARD_POOL } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
 import { applyModifiers } from "./modifiers.js";
@@ -264,10 +264,4 @@ function screenForNode(node) {
   if (node.type === "combat" || node.type === "elite") return "combat";
   if (node.type === "boss") return "boss";
   return node.type; // rest | shop | event
-}
-
-function hashSeed(seed, nodeId) {
-  let h = (Number(seed) || 1) >>> 0;
-  for (const ch of String(nodeId)) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
-  return h || 1;
 }
