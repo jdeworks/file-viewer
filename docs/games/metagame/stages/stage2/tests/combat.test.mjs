@@ -9,6 +9,7 @@ import { useConsumable } from "../consumables.js";
 import { affixDamage, applyHitAffix } from "../affixes.js";
 import { runHeat } from "../data.js";
 import { igniteCell, tickFire } from "../fire.js";
+import { interact, elementStrike, applyElement, gasExplosion, BRITTLE_MULT, SHATTER_BONUS } from "../elements.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -307,6 +308,76 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const player = { hp: 999, def: 0, statuses: {}, atk: 40 };
   monsterTurn(w, player, { log: [], damageTaken: 0, died: false }, () => true);
   ok(m.atk === Math.round(40 * 0.85), "mirror copies 85% of the player's ATK");
+}
+
+// ── Element interaction matrix (elements.js) ─────────────────────────────────────────────────────
+{
+  // The matrix is symmetric and only defines the real combos.
+  ok(interact("fire", "gas") === "explode" && interact("gas", "fire") === "explode", "fire+gas → explode (order-independent)");
+  ok(interact("fire", "frost") === "melt", "fire+frost → melt");
+  ok(interact("acid", "frost") === "brittle", "acid+frost → brittle");
+  ok(interact("fire", "fire") === null && interact("frost", "bogus") === null, "no interaction for same/unknown elements");
+}
+{
+  // elementStrike: corroded foe is brittle (×1.4); frozen foe shatters (+60%); both stack higher.
+  const plain = elementStrike({ statuses: {} }, 100);
+  ok(plain.total === 100 && !plain.shattered, "a clean foe takes the raw hit");
+  const corroded = { statuses: {} }; applyElement(corroded, "acid");
+  ok(elementStrike(corroded, 100).total === Math.round(100 * BRITTLE_MULT), "acid → corroded foe takes amplified (brittle) damage");
+  const frozen = { statuses: {} }; applyElement(frozen, "frost");
+  const fr = elementStrike(frozen, 100);
+  ok(fr.total === 100 + Math.round(100 * SHATTER_BONUS) && fr.shattered, "frost → frozen foe SHATTERS for bonus damage");
+  ok(!frozen.statuses.frozen, "shatter consumes (thaws) the frozen status");
+  const both = { statuses: {} }; applyElement(both, "acid"); applyElement(both, "frost");
+  const bb = elementStrike(both, 100);
+  ok(bb.total > Math.round(100 * BRITTLE_MULT) + Math.round(100 * SHATTER_BONUS) - 1 && bb.shattered, "acid+frost is the deadliest strike (brittle + bigger shatter)");
+}
+{
+  // fire+gas explosion: igniting a spore cell next to a foe bursts it for AoE damage.
+  const grid = ["########", "#......#", "########"];
+  const w = { floor: 6, width: 8, grid, pos: { x: 7, y: 1 }, monsters: [foe({ x: 4, y: 1, hp: 8, name: "near" })], hazards: [] };
+  for (let x = 2; x <= 5; x += 1) w.hazards.push({ x, y: 1, type: "spores" });
+  w.hazardAt = hazardIndex(w);
+  igniteCell(w, 2, 1);
+  const ev = { log: [], damageTaken: 0, died: false };
+  for (let t = 0; t < 8; t += 1) tickFire(w, { hp: 100, maxHp: 100, statuses: {} }, ev);
+  ok(ev.gasExplode > 0, "fire reaching gas detonates the spore cloud (fire+gas → explode)");
+  ok(!w.monsters[0].alive, "the gas explosion kills an adjacent foe");
+}
+{
+  // Direct gasExplosion: player adjacent takes the burst, foes in radius 1 hurt.
+  const w = { floor: 5, width: 8, monsters: [foe({ x: 3, y: 1, hp: 5 })], pos: { x: 3, y: 1 } };
+  const player = { hp: 50, def: 0, statuses: {} };
+  const ev = { log: [], damageTaken: 0, died: false };
+  gasExplosion(w, 3, 1, player, ev);
+  ok(player.hp < 50 && ev.damageTaken > 0 && !w.monsters[0].alive, "gasExplosion blasts the player + a co-located foe");
+}
+{
+  // Acid consumable corrodes nearby foes; then a bump-attack lands amplified (engine integration).
+  const w = buildFloor("acid-seed", 4);
+  const target = w.monsters[0];
+  target.alive = true; target.hp = 200; target.maxHp = 200; target.statuses = {};
+  target.x = w.pos.x + 1; target.y = w.pos.y;
+  w.grid[target.y] = w.grid[target.y].slice(0, target.x) + "." + w.grid[target.y].slice(target.x + 1);
+  const player = { atk: 10, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: { acid: 1 } };
+  ok(useConsumable(w, player, "acid", { log: [], damageTaken: 0, died: false }) && hasStatus(target, "corroded"), "acid flask corrodes a nearby foe and is spent");
+  const hpBefore = target.hp;
+  step(w, player, "right"); // bump the corroded foe — brittle amplifies the hit
+  ok(hpBefore - target.hp === Math.round(10 * BRITTLE_MULT), "a corroded foe takes amplified bump-attack damage");
+}
+{
+  // Freeze → shatter through the engine: freeze a foe, then a bump-attack shatters it.
+  const w = buildFloor("shatter-seed", 4);
+  const target = w.monsters[0];
+  target.alive = true; target.hp = 200; target.maxHp = 200; target.statuses = {};
+  target.x = w.pos.x + 1; target.y = w.pos.y;
+  w.grid[target.y] = w.grid[target.y].slice(0, target.x) + "." + w.grid[target.y].slice(target.x + 1);
+  const player = { atk: 10, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: { freeze: 1 } };
+  useConsumable(w, player, "freeze", { log: [], damageTaken: 0, died: false });
+  ok(hasStatus(target, "frozen"), "freeze rune freezes the adjacent foe");
+  const hpBefore = target.hp;
+  const ev = step(w, player, "right");
+  ok(ev.shattered && hpBefore - target.hp > 10, "bumping a frozen foe SHATTERS it for bonus damage");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

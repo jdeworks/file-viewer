@@ -30,7 +30,7 @@ export function hasStatus(ent, type) {
 export function clearStatuses(ent) { if (ent) ent.statuses = {}; }
 
 // Compact HUD/sprite suffix of the active effects, e.g. "☣2 ♨3" — empty when clean.
-const ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄" };
+const ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄", corroded: "≀" };
 export function statusSummary(ent) {
   if (!ent || !ent.statuses) return "";
   return Object.keys(ent.statuses)

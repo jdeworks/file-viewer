@@ -6,15 +6,17 @@
 import { applyStatus } from "./status.js";
 import { hasLOS, isOpen } from "./monsters.js";
 import { igniteCell } from "./fire.js";
+import { applyElement, ELEMENTS } from "./elements.js";
 import { TORCH_STEPS } from "./darkness.js";
 
 export const CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
   firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
-  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" },
-  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" }
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you — then SHATTER them" },
+  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" },
+  acid: { glyph: ELEMENTS.acid.glyph, name: "acid flask", desc: "corrode nearby foes — they take amplified damage" }
 };
-export const CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch"];
+export const CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch", "acid"];
 
 // Scatter a few consumables on reachable floor cells (more, better deeper). Seeded via buildFloor.
 // Torches only enter the loot pool from late Act II (floor 5+) and dominate it in the Overflow act
@@ -22,6 +24,7 @@ export const CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch"];
 export function placeConsumables(rng, floor, roomN, takeCell) {
   const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
   const pool = ["blink", "firebolt", "freeze"];
+  if (floor >= 4) pool.push("acid"); // acid enters once foes get tanky enough for the brittle combo to matter
   if (floor >= 5) pool.push("torch");
   if (floor >= 7) pool.push("torch", "torch");
   const out = [];
@@ -84,6 +87,15 @@ export function useConsumable(world, player, type, events) {
       if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 5) { applyStatus(m, "frozen", 4, 1); if (m.ambush) m.hidden = false; n += 1; }
     }
     events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+  } else if (type === "acid") {
+    // Acid strip (element matrix): corrode every nearby foe so the NEXT hit lands amplified — the
+    // combo enabler (acid → firebolt / shatter for a burst). Fizzles WITHOUT spending if none in reach.
+    let n = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 4) { applyElement(m, "acid"); n += 1; }
+    }
+    if (!n) { events.log.push("the acid flask hisses on empty stone — no foe to corrode."); return false; }
+    events.log.push(`acid flask — ${n} foe${n === 1 ? "" : "s"} corroded; their integrity strips away.`);
   } else if (type === "torch") {
     // Light vs stealth: floods a wide radius for a stretch of steps, but the glare wakes foes from
     // much farther (darkness.torchSightBonus reads world.torch). Re-lighting tops the timer up.

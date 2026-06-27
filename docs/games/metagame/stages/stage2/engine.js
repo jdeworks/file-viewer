@@ -12,6 +12,7 @@ import { applyStatus, tickStatuses } from "./status.js";
 import { enterHazard } from "./hazards.js";
 import { springTrap } from "./traps.js";
 import { rollAffix, affixLabel, affixDamage, applyHitAffix, WEAPON_AFFIXES } from "./affixes.js";
+import { elementStrike } from "./elements.js";
 import { DIRS, DIR_LIST } from "./dirs.js";
 
 export { DIRS };
@@ -139,8 +140,13 @@ export function step(world, player, dir) {
   if (foe) {
     // Record the clash so the renderer can lunge @ and foe toward each other (view.js).
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    const dmg = affixDamage(player);            // double-strike swings harder (C2)
+    const raw = affixDamage(player);            // double-strike swings harder (C2)
+    // Element matrix: a corroded foe is brittle (acid strip → amplified damage); a frozen foe
+    // SHATTERS for bonus damage and is thawed. elementStrike folds both combos into one number.
+    const strike = elementStrike(foe, raw);
+    const dmg = strike.total;
     foe.hp -= dmg;
+    if (strike.shattered) { events.shattered = true; events.log.push(`${foe.name} SHATTERS for ${dmg}!`); }
     applyHitAffix(world, player, foe, dmg, events); // vampiric / burning / knockback / cleave
     if (foe.hp <= 0) {
       foe.alive = false;

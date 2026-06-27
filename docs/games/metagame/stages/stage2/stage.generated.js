@@ -633,7 +633,7 @@ function applyStatus(ent, type, turns, power = 1) {
 function hasStatus(ent, type) {
   return Boolean(ent && ent.statuses && ent.statuses[type] && ent.statuses[type].turns > 0);
 }
-var ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄" };
+var ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄", corroded: "≀" };
 function statusSummary(ent) {
   if (!ent || !ent.statuses) return "";
   return Object.keys(ent.statuses).filter((t) => ent.statuses[t] && ent.statuses[t].turns > 0).map((t) => `${ICON[t] || "•"}${ent.statuses[t].turns}`).join(" ");
@@ -1225,8 +1225,59 @@ function applyHitAffix(world, player, foe, dmg, events) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage2/elements.js
+var ELEMENTS = {
+  fire: { id: "fire", status: "burn", turns: 3, power: 2, glyph: "▴", cls: "s2-c-fire" },
+  frost: { id: "frost", status: "frozen", turns: 4, power: 1, glyph: "❄", cls: "s2-c-frost" },
+  acid: { id: "acid", status: "corroded", turns: 5, power: 1, glyph: "≀", cls: "s2-c-acid" },
+  gas: { id: "gas", status: "poison", turns: 4, power: 1, glyph: "*", cls: "s2-c-spores" }
+};
+var BRITTLE_MULT = 1.4;
+var SHATTER_BONUS = 0.6;
+var BRITTLE_SHATTER_BONUS = 1;
+function applyElement(ent, elementId) {
+  const el = ELEMENTS[elementId];
+  if (!el) return false;
+  applyStatus(ent, el.status, el.turns, el.power);
+  return true;
+}
+function has(ent, type) {
+  return Boolean(ent && ent.statuses && ent.statuses[type] && ent.statuses[type].turns > 0);
+}
+function elementStrike(foe, dmg) {
+  let total = dmg;
+  let shattered = false;
+  const corroded = has(foe, "corroded");
+  if (corroded) total = Math.round(total * BRITTLE_MULT);
+  if (has(foe, "frozen")) {
+    const bonus = corroded ? BRITTLE_SHATTER_BONUS : SHATTER_BONUS;
+    total += Math.round(dmg * bonus);
+    delete foe.statuses.frozen;
+    shattered = true;
+  }
+  return { total, shattered };
+}
+function gasExplosion(world, x, y, player, events) {
+  const power = 3 + (world.floor || 1);
+  for (const m of world.monsters) {
+    if (m.alive && Math.abs(m.x - x) + Math.abs(m.y - y) <= 1) {
+      m.hp -= power;
+      if (m.hp <= 0) m.alive = false;
+    }
+  }
+  if (player && typeof player.hp === "number" && Math.abs(world.pos.x - x) + Math.abs(world.pos.y - y) <= 1) {
+    player.hp = Math.max(0, player.hp - power);
+    if (events) {
+      events.damageTaken = (events.damageTaken || 0) + power;
+      if (events.log) events.log.push(`the spore cloud detonates for ${power}!`);
+      if (player.hp <= 0) events.died = true;
+    }
+  }
+  if (events) events.gasExplode = (events.gasExplode || 0) + 1;
+}
+
 // ../../docs/games/metagame/stages/stage2/fire.js
-var FIRE_GLYPH = "▴";
+var FIRE_GLYPH = ELEMENTS.fire.glyph;
 var FIRE_LIFE = 5;
 var MAX_FIRES = 400;
 function burnedSet(world) {
@@ -1248,16 +1299,17 @@ function tickFire(world, player, events) {
   const next = [];
   const fresh = [];
   for (const f of world.fires) {
+    const F = ELEMENTS.fire;
     if (world.pos.x === f.x && world.pos.y === f.y) {
       player.hp = Math.max(0, player.hp - dmg);
       events.damageTaken = (events.damageTaken || 0) + dmg;
-      applyStatus(player, "burn", 3, 2);
+      applyStatus(player, F.status, F.turns, F.power);
       if (player.hp <= 0) events.died = true;
     }
     for (const m of world.monsters) {
       if (m.alive && m.x === f.x && m.y === f.y) {
         m.hp -= dmg;
-        applyStatus(m, "burn", 3, 2);
+        applyStatus(m, F.status, F.turns, F.power);
         if (m.hp <= 0) m.alive = false;
       }
     }
@@ -1268,6 +1320,7 @@ function tickFire(world, player, events) {
       if (world.hazardAt && world.hazardAt(nx, ny) === "spores" && !burned.includes(idx) && !fresh.some((g) => g.x === nx && g.y === ny)) {
         fresh.push({ x: nx, y: ny, life: FIRE_LIFE });
         burned.push(idx);
+        gasExplosion(world, nx, ny, player, events);
       }
     }
     f.life -= 1;
@@ -1281,13 +1334,15 @@ function tickFire(world, player, events) {
 var CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
   firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
-  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" },
-  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" }
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you — then SHATTER them" },
+  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" },
+  acid: { glyph: ELEMENTS.acid.glyph, name: "acid flask", desc: "corrode nearby foes — they take amplified damage" }
 };
-var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch"];
+var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch", "acid"];
 function placeConsumables(rng, floor, roomN, takeCell) {
   const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
   const pool = ["blink", "firebolt", "freeze"];
+  if (floor >= 4) pool.push("acid");
   if (floor >= 5) pool.push("torch");
   if (floor >= 7) pool.push("torch", "torch");
   const out = [];
@@ -1359,6 +1414,19 @@ function useConsumable(world, player, type, events) {
       }
     }
     events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+  } else if (type === "acid") {
+    let n = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 4) {
+        applyElement(m, "acid");
+        n += 1;
+      }
+    }
+    if (!n) {
+      events.log.push("the acid flask hisses on empty stone — no foe to corrode.");
+      return false;
+    }
+    events.log.push(`acid flask — ${n} foe${n === 1 ? "" : "s"} corroded; their integrity strips away.`);
   } else if (type === "torch") {
     world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS);
     events.log.push("you strike a torch — the dark peels back, but something stirs toward the light.");
@@ -1685,8 +1753,14 @@ function step(world, player, dir) {
   const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
   if (foe) {
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    const dmg = affixDamage(player);
+    const raw = affixDamage(player);
+    const strike = elementStrike(foe, raw);
+    const dmg = strike.total;
     foe.hp -= dmg;
+    if (strike.shattered) {
+      events.shattered = true;
+      events.log.push(`${foe.name} SHATTERS for ${dmg}!`);
+    }
     applyHitAffix(world, player, foe, dmg, events);
     if (foe.hp <= 0) {
       foe.alive = false;
