@@ -4,6 +4,7 @@
 // these, so determinism isn't required (anything they change is saved with the world).
 
 import { isDarkAct, torchLit } from "./darkness.js";
+import { applyStatus } from "./status.js";
 
 const GROW_CAP = 10;       // light-eater: max stacks (so it can't runaway-scale forever)
 const GROW_HP = 5;         // +maxHp per stack while feeding on the dark
@@ -35,4 +36,12 @@ export function lightEaterTick(world, m, events) {
 export function mirrorTick(m, player) {
   const copied = Math.round(Number(player.atk || 0) * 0.85);
   if (copied > m.atk) m.atk = copied;
+}
+
+// Phantom (glyph 'ψ'): the pure stealth foe. It leaves NO last-seen ghost (view.js skips ghostMem for
+// m.phantom), so once it slips out of your light you can't track where it went — only its blink-in
+// matters. In TRUE darkness it hunts at full speed; striking a TORCH pins it (the glare slows it), so
+// the light↔stealth tradeoff cuts the other way too: lighting up exposes AND cripples the phantom.
+export function phantomTick(world, m) {
+  if (isDarkAct(world.floor) && torchLit(world)) applyStatus(m, "slow", 2, 1);
 }

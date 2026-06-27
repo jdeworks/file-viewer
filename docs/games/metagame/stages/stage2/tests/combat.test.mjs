@@ -10,6 +10,7 @@ import { affixDamage, applyHitAffix } from "../affixes.js";
 import { runHeat } from "../data.js";
 import { igniteCell, tickFire } from "../fire.js";
 import { interact, elementStrike, applyElement, gasExplosion, BRITTLE_MULT, SHATTER_BONUS } from "../elements.js";
+import { phantomTick } from "../overflow.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -378,6 +379,47 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const hpBefore = target.hp;
   const ev = step(w, player, "right");
   ok(ev.shattered && hpBefore - target.hp > 10, "bumping a frozen foe SHATTERS it for bonus damage");
+}
+
+// ── Overflow content: phantom foe + void rift hazard ─────────────────────────────────────────────
+{
+  // The phantom only joins the spawn pool in the deep Overflow act (floor 8+) and carries its flag.
+  const shallow = makeRng("phantom-shallow");
+  let earlyPhantom = false;
+  for (let i = 0; i < 300; i += 1) if (spawnMonster(shallow, 6, i).phantom) earlyPhantom = true;
+  ok(!earlyPhantom, "no phantom spawns before the deep Overflow (floor 8)");
+  const deep = makeRng("phantom-deep");
+  let phantoms = 0;
+  for (let i = 0; i < 400; i += 1) if (spawnMonster(deep, 9, i).phantom) phantoms += 1;
+  ok(phantoms > 0, "phantom spawns in the deep Overflow act");
+}
+{
+  // Torchlight pins the phantom (slowed); true darkness leaves it free.
+  const dark = arena(); dark.floor = 8; dark.torch = 0;
+  const m1 = foe({ phantom: true, x: 5, y: 1, statuses: {} });
+  phantomTick(dark, m1);
+  ok(!hasStatus(m1, "slow"), "a phantom in true darkness is not slowed");
+  const lit = arena(); lit.floor = 8; lit.torch = 12;
+  const m2 = foe({ phantom: true, x: 5, y: 1, statuses: {} });
+  phantomTick(lit, m2);
+  ok(hasStatus(m2, "slow"), "torchlight pins the phantom (slowed)");
+}
+{
+  // Void rift: snuffs the torch, deals shadow damage, and slows the player.
+  const w = arena(); w.floor = 8; w.torch = 20;
+  const player = { hp: 100, def: 0, statuses: {} };
+  const ev = { log: [], damageTaken: 0, died: false };
+  enterHazard(w, player, "rift", ev);
+  ok(w.torch === 0 && ev.riftSnuff === true, "a void rift swallows a lit torch");
+  ok(player.hp < 100 && hasStatus(player, "slow"), "a void rift deals shadow damage and slows you");
+}
+{
+  // The rift only enters the hazard pool in the Overflow act (floor 7+).
+  const shallow = buildFloor("rift-shallow", 4);
+  ok(!shallow.hazards.some((h) => h.type === "rift"), "no rift hazard on mid-act floors");
+  let deepRift = false;
+  for (let s = 0; s < 8 && !deepRift; s += 1) if (buildFloor("rift-deep" + s, 8).hazards.some((h) => h.type === "rift")) deepRift = true;
+  ok(deepRift, "void rifts appear in the Overflow act");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

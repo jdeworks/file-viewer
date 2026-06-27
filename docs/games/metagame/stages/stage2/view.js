@@ -217,7 +217,9 @@ export function createView(screenEl) {
         if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) { renderHpBar(s.hp, m.hp, m.maxHp, 5); s.lastHp = m.hp; s.lastMaxHp = m.maxHp; }
       } else if (!s.hp.hidden) { s.hp.hidden = true; }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
-      if (dark) ghostMem.set(i, { x: m.x, y: m.y, glyph }); // remember where it was last lit
+      // Remember where it was last lit so a ghost can be drawn when it leaves the torchlight — EXCEPT
+      // phantoms, which leave no trace (untrackable; the dark-act stealth foe).
+      if (dark && !m.phantom) ghostMem.set(i, { x: m.x, y: m.y, glyph });
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
   }
@@ -350,7 +352,7 @@ export function createView(screenEl) {
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
     if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
-    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0", rift: "#3a2a55" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
     if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
     if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2); // dev: traps (dim=armed)

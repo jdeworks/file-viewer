@@ -5,16 +5,18 @@
 
 import { applyStatus } from "./status.js";
 
-export const HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":" };
-export const HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm" };
+export const HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":", rift: "○" };
+// rift reuses the chasm colour (a dim void-blue) so no new CSS is needed (styles.css is at the cap).
+export const HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm", rift: "s2-c-chasm" };
 
 // Available hazard types + density by floor band (the escalation arc: mild spikes early, lava/chasm
-// deep). density multiplies the base count.
+// deep). The Overflow act (floor 7+) adds the darkness-only `rift` — a void that snuffs your torch.
+// density multiplies the base count.
 function hazardPlan(floor) {
   if (floor <= 2) return { types: ["spikes"], density: 0.35 };
   if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
   if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
-  return { types: ["lava", "spores", "chasm", "spikes"], density: 1.7 };
+  return { types: ["lava", "spores", "chasm", "spikes", "rift"], density: 1.7 };
 }
 
 // Scatter hazards on reachable floor cells handed out by buildFloor's `takeCell` (which already
@@ -66,5 +68,19 @@ export function enterHazard(world, player, hz, events) {
     events.descend = true;
     events.fell = true;
     events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
+  } else if (hz === "rift") {
+    // Void rift (Overflow act): SNUFFS your torch and leaves you reeling in the dark — shadow damage
+    // plus a stumble (slow). Darkness navigation becomes load-bearing: a careless step kills your light.
+    const dmg = 3 + world.floor;
+    const hadTorch = Number(world.torch) > 0;
+    world.torch = 0;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "slow", 3, 1);
+    events.riftSnuff = hadTorch;
+    events.log.push(hadTorch
+      ? `a void rift! your torch is swallowed — ${dmg} shadow damage, and you stumble blind.`
+      : `a void rift! ${dmg} shadow damage drags at you — you stumble in the dark.`);
+    if (player.hp <= 0) events.died = true;
   }
 }

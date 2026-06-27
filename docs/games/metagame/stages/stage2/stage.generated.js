@@ -493,9 +493,12 @@ var MONSTERS = [
   { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
   // Overflow act (darkness) foes — see overflow.js for their behaviour.
   { id: "lighteater", glyph: "e", name: "light eater", hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
-  { id: "mirror", glyph: "M", name: "mirror", hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
+  { id: "mirror", glyph: "M", name: "mirror", hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true },
+  // Phantom: leaves NO last-seen ghost (untrackable in the dark, view.js) and full speed in true
+  // darkness, but torchlight pins it (phantomTick slows it). The pure stealth-vs-light foe.
+  { id: "phantom", glyph: "ψ", name: "null phantom", hp: 28, atk: 9, xp: 9, drop: 4, minFloor: 8, fast: true, phantom: true }
 ];
-var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush", "lighteater", "mirror"];
+var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush", "lighteater", "mirror", "phantom"];
 var ELITE_PREFIXES = [
   { key: "armored", name: "armored", hpMult: 1.8, atkMult: 1.1 },
   { key: "venomous", name: "venomous", hpMult: 1.3, atkMult: 1.3, venom: true },
@@ -726,6 +729,9 @@ function lightEaterTick(world, m, events) {
 function mirrorTick(m, player) {
   const copied = Math.round(Number(player.atk || 0) * 0.85);
   if (copied > m.atk) m.atk = copied;
+}
+function phantomTick(world, m) {
+  if (isDarkAct(world.floor) && torchLit(world)) applyStatus(m, "slow", 2, 1);
 }
 
 // ../../docs/games/metagame/stages/stage2/monsters.js
@@ -963,6 +969,7 @@ function monsterTurn(world, player, events, filter) {
     if (skipsTurn(m)) continue;
     if (m.lighteater) lightEaterTick(world, m, events);
     if (m.mirror) mirrorTick(m, player);
+    if (m.phantom) phantomTick(world, m);
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
     const sight = (m.sight || 5) + torchAggro;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
@@ -1045,13 +1052,13 @@ function monsterTurn(world, player, events, filter) {
 }
 
 // ../../docs/games/metagame/stages/stage2/hazards.js
-var HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":" };
-var HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm" };
+var HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":", rift: "○" };
+var HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm", rift: "s2-c-chasm" };
 function hazardPlan(floor) {
   if (floor <= 2) return { types: ["spikes"], density: 0.35 };
   if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
   if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
-  return { types: ["lava", "spores", "chasm", "spikes"], density: 1.7 };
+  return { types: ["lava", "spores", "chasm", "spikes", "rift"], density: 1.7 };
 }
 function placeHazards(rng, floor, roomN, takeCell) {
   const plan = hazardPlan(floor);
@@ -1098,6 +1105,16 @@ function enterHazard(world, player, hz, events) {
     events.descend = true;
     events.fell = true;
     events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
+  } else if (hz === "rift") {
+    const dmg = 3 + world.floor;
+    const hadTorch = Number(world.torch) > 0;
+    world.torch = 0;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "slow", 3, 1);
+    events.riftSnuff = hadTorch;
+    events.log.push(hadTorch ? `a void rift! your torch is swallowed — ${dmg} shadow damage, and you stumble blind.` : `a void rift! ${dmg} shadow damage drags at you — you stumble in the dark.`);
+    if (player.hp <= 0) events.died = true;
   }
 }
 
@@ -2293,7 +2310,7 @@ function createView(screenEl) {
         s.hp.hidden = true;
       }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
-      if (dark) ghostMem.set(i, { x: m.x, y: m.y, glyph });
+      if (dark && !m.phantom) ghostMem.set(i, { x: m.x, y: m.y, glyph });
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
   }
@@ -2436,7 +2453,7 @@ function createView(screenEl) {
     if (world.hidden) {
       for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     }
-    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0", rift: "#3a2a55" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
     if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
     if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2);

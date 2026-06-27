@@ -21,11 +21,14 @@ export const MONSTERS = [
   { id: 'summoner', glyph: 'u', name: 'fork bomb', hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
   // Overflow act (darkness) foes — see overflow.js for their behaviour.
   { id: 'lighteater', glyph: 'e', name: 'light eater', hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
-  { id: 'mirror', glyph: 'M', name: 'mirror', hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
+  { id: 'mirror', glyph: 'M', name: 'mirror', hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true },
+  // Phantom: leaves NO last-seen ghost (untrackable in the dark, view.js) and full speed in true
+  // darkness, but torchlight pins it (phantomTick slows it). The pure stealth-vs-light foe.
+  { id: 'phantom', glyph: 'ψ', name: 'null phantom', hp: 28, atk: 9, xp: 9, drop: 4, minFloor: 8, fast: true, phantom: true }
 ];
 
 // Behaviour flags copied verbatim from the roster entry onto a spawned monster.
-const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror'];
+const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror', 'phantom'];
 
 // Elites (A3): a marked, prefixed, beefed-up variant. Chance + strength rise with depth. They get a
 // guaranteed cache on death (engine.dropElite). One random prefix shapes the bonus.

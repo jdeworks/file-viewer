@@ -11,7 +11,7 @@ import { tickStatuses, skipsTurn, applyStatus } from "./status.js";
 import { spawnMonster } from "./data.js";
 import { makeRng } from "./rng.js";
 import { torchSightBonus } from "./darkness.js";
-import { lightEaterTick, mirrorTick } from "./overflow.js";
+import { lightEaterTick, mirrorTick, phantomTick } from "./overflow.js";
 
 const SUMMON_CAP = 90; // hard ceiling on live monsters so a summoner can't runaway-spawn
 const RANGED_COOLDOWN = 2;
@@ -243,9 +243,11 @@ export function monsterTurn(world, player, events, filter) {
     }
     if (skipsTurn(m)) continue; // stunned / frozen / slowed-off-beat
 
-    // Overflow-act foes mutate before acting: the light eater feeds on darkness; the mirror copies @.
+    // Overflow-act foes mutate before acting: the light eater feeds on darkness; the mirror copies @;
+    // the phantom is pinned (slowed) while a torch burns.
     if (m.lighteater) lightEaterTick(world, m, events);
     if (m.mirror) mirrorTick(m, player);
+    if (m.phantom) phantomTick(world, m);
 
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
     const sight = (m.sight || 5) + torchAggro;
