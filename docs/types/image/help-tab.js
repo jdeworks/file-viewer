@@ -78,24 +78,27 @@ export function mountHelpTab(host) {
   });
 }
 
-// Drag the modal by its title bar (skips the close button). Switches from the
-// centering transform to absolute left/top on first drag so it stays put.
+// Drag the modal by its title bar (skips the close button). POINTER events so it works
+// on touch as well as a mouse. Switches from the centering transform to absolute
+// left/top on first drag so it stays put.
 function makeDraggable(modal, handle) {
+  handle.style.touchAction = 'none';   // a touch-drag on the bar must not scroll the page
   let sx = 0, sy = 0, ox = 0, oy = 0, dragging = false;
-  handle.addEventListener('mousedown', (e) => {
+  handle.addEventListener('pointerdown', (e) => {
     if (e.target.closest('.imgv-help-close')) return;
     dragging = true;
     const r = modal.getBoundingClientRect();
     modal.style.transform = 'none'; modal.style.left = r.left + 'px'; modal.style.top = r.top + 'px';
     sx = e.clientX; sy = e.clientY; ox = r.left; oy = r.top;
     e.preventDefault();
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   });
   function onMove(e) {
     if (!dragging) return;
     modal.style.left = Math.max(0, ox + e.clientX - sx) + 'px';
     modal.style.top = Math.max(0, oy + e.clientY - sy) + 'px';
   }
-  function onUp() { dragging = false; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }
+  function onUp() { dragging = false; window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onUp); }
 }
