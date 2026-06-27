@@ -213,6 +213,7 @@ FULL_UNIT_TESTS=(
   tests/known-sml-lang.test.mjs
   tests/known-squirrel-lang.test.mjs
   tests/known-swift-lang.test.mjs
+  tests/known-tcl-lang.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )

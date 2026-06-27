@@ -4,7 +4,6 @@
 # dynamic langs -> param names/arity + real constructs), add a node unit test, then DELETE its
 # line here and commit. Empty (no id lines) = done; loop stops. Bar = arduino-sketch / solidity-lang.
 # Check remaining: node tests/check-known-backlog.mjs
-tcl-lang
 vala-lang
 verilog
 vhdl-lang
