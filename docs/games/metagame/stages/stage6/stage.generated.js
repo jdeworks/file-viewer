@@ -101,14 +101,14 @@ function playProtocolCard({ state, card }) {
     pushLog(state, phaseAckLine(boss.phase));
     return { ok: true, reason: "ack", damage: 0, phase: boss.phase };
   }
-  let damage = 0;
+  let damage2 = 0;
   if (normalized === "Signal" || normalized === "SYN") {
-    damage = acceptedSignalDamage({ phase: boss.phase, card: normalized, turn });
-    if (damage === 0) pushLog(state, combatLines.mismatch);
-    else applyBossDamage(state, damage);
+    damage2 = acceptedSignalDamage({ phase: boss.phase, card: normalized, turn });
+    if (damage2 === 0) pushLog(state, combatLines.mismatch);
+    else applyBossDamage(state, damage2);
   }
   boss.turn = turn;
-  return { ok: damage > 0, reason: damage > 0 ? "accepted" : "mismatch", damage, phase: boss.phase };
+  return { ok: damage2 > 0, reason: damage2 > 0 ? "accepted" : "mismatch", damage: damage2, phase: boss.phase };
 }
 function endProtocolTurn(state) {
   const boss = state.boss;
@@ -647,18 +647,6 @@ var LAYER_CARDS = [
   }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
-var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
-function cardById(id) {
-  return BY_ID.get(id) || null;
-}
-function registerCard(card) {
-  if (card && card.id) BY_ID.set(card.id, card);
-}
-var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
-var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
-
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
@@ -695,25 +683,50 @@ function hashSeed(seed, key) {
   return h || 1;
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-piles.js
-function drawCards(combat, n) {
-  for (let i = 0; i < n; i++) {
-    if (combat.draw.length === 0) {
-      if (combat.discard.length === 0) return;
-      combat.draw = shuffle(combat.discard, combat.rng);
-      combat.discard = [];
+// ../../docs/games/metagame/stages/stage6/cards.js
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
+var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
+function cardById(id) {
+  return BY_ID.get(id) || null;
+}
+function registerCard(card) {
+  if (card && card.id) BY_ID.set(card.id, card);
+}
+var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
+var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
+var RARITY_WEIGHT_BY_ACT = {
+  1: { common: 70, uncommon: 25, rare: 5 },
+  2: { common: 50, uncommon: 35, rare: 15 },
+  3: { common: 35, uncommon: 40, rare: 25 },
+  4: { common: 20, uncommon: 40, rare: 40 }
+};
+function draftRewardCards(seed, act, count = 3) {
+  const rng = makeRng(seed);
+  const weights = RARITY_WEIGHT_BY_ACT[Math.min(4, Math.max(1, Number(act) || 1))];
+  const tierCount = {};
+  for (const id of REWARD_POOL) {
+    const r = cardById(id)?.rarity || "common";
+    tierCount[r] = (tierCount[r] || 0) + 1;
+  }
+  const pool = REWARD_POOL.map((id) => {
+    const r = cardById(id)?.rarity || "common";
+    return { id, w: (weights[r] ?? weights.common) / (tierCount[r] || 1) };
+  });
+  const picks = [];
+  while (picks.length < count && pool.length) {
+    const total = pool.reduce((sum, c) => sum + c.w, 0);
+    let r = rng() * total;
+    let idx = pool.length - 1;
+    for (let i = 0; i < pool.length; i++) {
+      r -= pool[i].w;
+      if (r < 0) {
+        idx = i;
+        break;
+      }
     }
-    combat.hand.push(combat.draw.shift());
+    picks.push(pool.splice(idx, 1)[0].id);
   }
-}
-function jamOne(combat) {
-  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
-}
-function releaseJam(combat) {
-  if (combat.jammed.length) {
-    combat.discard.push(...combat.jammed);
-    combat.jammed = [];
-  }
+  return picks;
 }
 
 // ../../docs/games/metagame/stages/stage6/combat-damage.js
@@ -778,6 +791,20 @@ function makeCtx(combat, card) {
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => {
       combat.player.energy += n;
+    },
+    // Restore HP (capped at max). Used by potions (Hotfix) and onKill heal relics. No RNG.
+    heal: (n) => {
+      combat.player.hp = Math.min(combat.player.maxHp, combat.player.hp + Math.max(0, Math.round(n)));
+    },
+    // Return the last card played this fight from the discard back to hand (Rollback potion).
+    returnLastPlayed: () => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return false;
+      const i = combat.discard.lastIndexOf(id);
+      if (i < 0) return false;
+      combat.discard.splice(i, 1);
+      combat.hand.push(id);
+      return true;
     },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
@@ -859,6 +886,9 @@ function relicCtx(combat, card) {
     gainEnergy: (n) => {
       combat.player.energy += n;
     },
+    heal: (n) => {
+      combat.player.hp = Math.min(combat.player.maxHp, combat.player.hp + Math.max(0, Math.round(n)));
+    },
     applySelf: (status, n) => addStatus(combat.player, status, n),
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
   };
@@ -867,6 +897,28 @@ function runHook(combat, name, card = null) {
   for (const relic of combat.relics) {
     const fn = relic.hooks?.[name];
     if (typeof fn === "function") fn(relicCtx(combat, card));
+  }
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-piles.js
+function drawCards(combat, n) {
+  for (let i = 0; i < n; i++) {
+    if (combat.draw.length === 0) {
+      if (combat.discard.length === 0) return;
+      combat.draw = shuffle(combat.discard, combat.rng);
+      combat.discard = [];
+      runHook(combat, "onShuffle");
+    }
+    combat.hand.push(combat.draw.shift());
+  }
+}
+function jamOne(combat) {
+  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
+}
+function releaseJam(combat) {
+  if (combat.jammed.length) {
+    combat.discard.push(...combat.jammed);
+    combat.jammed = [];
   }
 }
 
@@ -879,6 +931,7 @@ function enemyTurn(combat) {
   const enemy = combat.enemy;
   enemy.block = 0;
   const intent = currentIntent(combat);
+  const hpBefore = combat.player.hp;
   if (enemy.skipNext) {
     enemy.skipNext = false;
     enemy.rttStacks = 0;
@@ -886,6 +939,11 @@ function enemyTurn(combat) {
   } else {
     resolveIntent(combat, intent);
     enemy.rttStacks = (enemy.rttStacks || 0) + 1;
+  }
+  const lost = hpBefore - combat.player.hp;
+  if (lost > 0) {
+    combat.lastDamageTaken = lost;
+    runHook(combat, "onDamageTaken");
   }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
@@ -1022,8 +1080,10 @@ function playCard(combat, handIndex) {
   combat.playedIdsThisTurn.push(card.id);
   card.effect(makeCtx(combat, card));
   combat.lastCardPlayed = card.id;
-  if (card.exhaust) combat.exhaust.push(card.id);
-  else combat.discard.push(card.id);
+  if (card.exhaust) {
+    combat.exhaust.push(card.id);
+    runHook(combat, "onExhaust", card);
+  } else combat.discard.push(card.id);
   runHook(combat, "onCardPlay", card);
   checkEnemyDead(combat);
   return { ok: true, card: card.id };
@@ -1031,6 +1091,8 @@ function playCard(combat, handIndex) {
 function endTurn(combat) {
   if (combat.over) return combat;
   if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
+  if (combat.over) return combat;
+  runHook(combat, "onTurnEnd");
   if (combat.over) return combat;
   combat.discard.push(...combat.hand);
   combat.hand = [];
@@ -1053,8 +1115,15 @@ function endTurn(combat) {
   }
   return combat;
 }
+function applyPotionEffect(combat, potion) {
+  if (combat.over || !potion || typeof potion.effect !== "function") return false;
+  potion.effect(makeCtx(combat, null));
+  checkEnemyDead(combat);
+  return true;
+}
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
+    runHook(combat, "onKill");
     if (typeof combat.advancePhase === "function" && combat.advancePhase(combat)) return;
     combat.over = true;
     combat.result = "win";
@@ -1408,6 +1477,84 @@ var RELICS = [
       ctx.combat.windowCap = (ctx.combat.windowCap || 5) + 1;
       ctx.combat.windowDecay = 2;
     } }
+  },
+  // ── Phase G: relics built on the new combat hooks (onTurnEnd/onKill/onDamageTaken/onExhaust/onShuffle) ─
+  {
+    // Rewards leaving energy on the table — turtle decks turn the leftover into armor.
+    id: "nagle-buffer",
+    name: "Nagle Buffer",
+    rarity: "uncommon",
+    text: "At the end of your turn, gain block equal to your unspent energy.",
+    hooks: { onTurnEnd: (ctx) => ctx.block(ctx.combat.player.energy || 0) }
+  },
+  {
+    // A defensive failsafe: never end an exposed turn for free.
+    id: "keepalive-probe",
+    name: "Keepalive Probe",
+    rarity: "common",
+    text: "At the end of your turn, if you have no block, gain 4 block.",
+    hooks: { onTurnEnd: (ctx) => {
+      if (!ctx.combat.player.block) ctx.block(4);
+    } }
+  },
+  {
+    // Sustain between fights: each kill tops you up, so a long run is survivable.
+    id: "reaper-thread",
+    name: "Reaper Thread",
+    rarity: "uncommon",
+    text: "Whenever you defeat an enemy, heal 6 HP.",
+    hooks: { onKill: (ctx) => ctx.heal(6) }
+  },
+  {
+    // Getting hit hardens you — the first blow each fight turns pain into lasting power. (Block from a
+    // damage-reaction would be wiped at your next turn, so this grants persistent Strength instead.)
+    id: "exception-handler",
+    name: "Exception Handler",
+    rarity: "uncommon",
+    text: "The first time you take damage each combat, gain 2 Strength.",
+    hooks: { onDamageTaken: (ctx) => {
+      if (!ctx.combat.exceptionHandled) {
+        ctx.combat.exceptionHandled = true;
+        ctx.applySelf("strength", 2);
+      }
+    } }
+  },
+  {
+    // A big hit triggers a counter-debuff — turns a heavy enemy turn into your opening.
+    id: "watchdog-timer",
+    name: "Watchdog Timer",
+    rarity: "rare",
+    text: "The first time you take 10+ damage each combat, apply 2 Weak to the enemy.",
+    hooks: { onDamageTaken: (ctx) => {
+      if ((ctx.combat.lastDamageTaken || 0) >= 10 && !ctx.combat.watchdogUsed) {
+        ctx.combat.watchdogUsed = true;
+        ctx.applyEnemy("weak", 2);
+      }
+    } }
+  },
+  {
+    // Build-definer for exhaust decks: every burned card sharpens you.
+    id: "coredump-collector",
+    name: "Coredump Collector",
+    rarity: "rare",
+    text: "Whenever a card is Exhausted, gain 1 Strength.",
+    hooks: { onExhaust: (ctx) => ctx.applySelf("strength", 1) }
+  },
+  {
+    // Rewards deck cycling — every reshuffle banks armor (great in long, lean-deck fights).
+    id: "write-back-cache",
+    name: "Write-Back Cache",
+    rarity: "uncommon",
+    text: "Whenever your discard reshuffles into your draw pile, gain 4 block.",
+    hooks: { onShuffle: (ctx) => ctx.block(4) }
+  },
+  {
+    // Tempo on cycle — a thin deck reshuffles often, refunding energy.
+    id: "reset-vector",
+    name: "Reset Vector",
+    rarity: "rare",
+    text: "Whenever you reshuffle your deck, gain 1 energy.",
+    hooks: { onShuffle: (ctx) => ctx.gainEnergy(1) }
   }
 ];
 var BY_ID2 = new Map(RELICS.map((relic) => [relic.id, relic]));
@@ -1423,6 +1570,127 @@ function rollRelic(seed, owned = []) {
   if (!pool.length) return null;
   const rng = makeRng(seed);
   return pool[Math.floor(rng() * pool.length)].id;
+}
+function rollRelics(seed, owned = [], count = 3) {
+  const ownedSet = new Set(owned);
+  const pool = RELICS.filter((relic) => !ownedSet.has(relic.id));
+  const rng = makeRng(seed);
+  const out = [];
+  while (out.length < count && pool.length) {
+    out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0].id);
+  }
+  return out;
+}
+
+// ../../docs/games/metagame/stages/stage6/potions.js
+var POTIONS = [
+  {
+    id: "hotfix",
+    name: "Hotfix",
+    rarity: "common",
+    text: "Heal 12 HP.",
+    effect: (ctx) => ctx.heal(12)
+  },
+  {
+    id: "burst-buffer",
+    name: "Burst Buffer",
+    rarity: "common",
+    text: "Gain 2 energy this turn.",
+    effect: (ctx) => ctx.gainEnergy(2)
+  },
+  {
+    id: "smoke-test",
+    name: "Smoke Test",
+    rarity: "common",
+    text: "Gain 15 block.",
+    effect: (ctx) => ctx.block(15)
+  },
+  {
+    id: "fuzzer",
+    name: "Fuzzer",
+    rarity: "uncommon",
+    text: "Apply 3 Vulnerable to the enemy.",
+    effect: (ctx) => ctx.applyEnemy("vulnerable", 3)
+  },
+  {
+    id: "snapshot",
+    name: "Snapshot",
+    rarity: "uncommon",
+    text: "Draw 3 cards.",
+    effect: (ctx) => ctx.draw(3)
+  },
+  {
+    id: "rollback",
+    name: "Rollback",
+    rarity: "uncommon",
+    text: "Return the last card you played to your hand.",
+    effect: (ctx) => ctx.returnLastPlayed()
+  },
+  {
+    id: "core-dump-vial",
+    name: "Core Dump Vial",
+    rarity: "rare",
+    text: "Deal 25 to the enemy and apply 2 Weak.",
+    effect: (ctx) => {
+      ctx.deal(25);
+      ctx.applyEnemy("weak", 2);
+    }
+  }
+];
+var BY_ID3 = new Map(POTIONS.map((p) => [p.id, p]));
+function potionById(id) {
+  return BY_ID3.get(id) || null;
+}
+var POTION_SLOTS = 2;
+var POTION_COST = 35;
+var POTION_DROP_CHANCE = 0.4;
+function addPotion(run, potionId, replaceIndex) {
+  if (!run.potions) run.potions = [];
+  if (!potionById(potionId)) return { ok: false, reason: "unknown" };
+  if (run.potions.length < POTION_SLOTS) {
+    run.potions.push(potionId);
+    return { ok: true };
+  }
+  if (Number.isInteger(replaceIndex) && replaceIndex >= 0 && replaceIndex < run.potions.length) {
+    const replaced = run.potions[replaceIndex];
+    run.potions[replaceIndex] = potionId;
+    return { ok: true, replaced };
+  }
+  return { ok: false, full: true };
+}
+function usePotion(run, index) {
+  if (!run.potions || index < 0 || index >= run.potions.length) return { ok: false };
+  const [id] = run.potions.splice(index, 1);
+  return { ok: true, id };
+}
+function takePotion(run, replaceIndex) {
+  const id = run.pendingReward?.potion;
+  if (!id) return { ok: false, reason: "none" };
+  const r = addPotion(run, id, replaceIndex);
+  if (r.ok) run.pendingReward.potion = null;
+  return r;
+}
+function buyPotion(run, potionId, cost = POTION_COST, replaceIndex) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const r = addPotion(run, potionId, replaceIndex);
+  if (!r.ok) return { ...r, cost };
+  run.handshakes -= cost;
+  return { ok: true, cost, replaced: r.replaced };
+}
+var RARITY_WEIGHT = { common: 4, uncommon: 2, rare: 1 };
+function rollPotion(seed) {
+  let h = (Number(seed) || 1) >>> 0;
+  h = h + 1831565813 | 0;
+  let t = Math.imul(h ^ h >>> 15, 1 | h);
+  t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  const r = ((t ^ t >>> 14) >>> 0) / 4294967296;
+  const total = POTIONS.reduce((sum, p) => sum + (RARITY_WEIGHT[p.rarity] || 1), 0);
+  let pick = r * total;
+  for (const p of POTIONS) {
+    pick -= RARITY_WEIGHT[p.rarity] || 1;
+    if (pick < 0) return p.id;
+  }
+  return POTIONS[POTIONS.length - 1].id;
 }
 
 // ../../docs/games/metagame/stages/stage6/mapgen.js
@@ -1739,6 +2007,8 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     clearedIds: [],
     deck: [...STARTING_DECK],
     relics: [],
+    potions: [],
+    // the 2-slot consumable belt (potions.js); persisted with the run
     hp: maxHp,
     maxHp,
     handshakes,
@@ -1794,6 +2064,8 @@ function resolveCombat(run, { win, hpRemaining }) {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
   }
+  const potionId = rollRewardPotion(run, node.id);
+  if (potionId) reward.potion = potionId;
   run.pendingReward = reward;
   run.status = "reward";
   return { ok: true, status: "reward" };
@@ -1883,17 +2155,31 @@ function seatAtFinalBoss(run, deck) {
   if (Array.isArray(deck)) run.deck = [...deck];
   return bossNode.id;
 }
+var BOSS_RELIC_CHOICES = 3;
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
     run.status = "won";
     return { ok: true, status: "won" };
   }
+  const offered = rollRelics(hashSeed(run.seed, `boss-clear-act${run.act}:relics`), run.relics, BOSS_RELIC_CHOICES);
+  run.pendingReward = { relics: offered };
+  run.status = "boss-reward";
+  return { ok: true, status: "boss-reward", offered };
+}
+function takeBossRelic(run, relicId) {
+  if (run.status !== "boss-reward") return { ok: false, reason: "no-reward" };
+  const offered = run.pendingReward?.relics || [];
+  let granted = null;
+  if (relicId && offered.includes(relicId) && !run.relics.includes(relicId)) {
+    run.relics.push(relicId);
+    granted = relicId;
+  }
+  run.pendingReward = null;
   run.act += 1;
   run.currentNodeId = null;
-  const relicId = grantRelic(run, `boss-clear-act${run.act}`);
-  if (relicId) run.notice = `Relic acquired — ${relicById(relicId)?.name || relicId}`;
   run.status = "map";
-  return { ok: true, status: "map", advancedToAct: run.act, relic: relicId };
+  if (granted) run.notice = `Relic acquired — ${relicById(granted)?.name || granted}`;
+  return { ok: true, advancedToAct: run.act, relic: granted };
 }
 function awardRelic(run, key = "event") {
   return grantRelic(run, key);
@@ -1903,19 +2189,280 @@ function grantRelic(run, key) {
   if (id) run.relics.push(id);
   return id;
 }
+function rollRewardPotion(run, nodeId2) {
+  const gate = makeRng(hashSeed(run.seed, `${nodeId2}:potion-drop`))();
+  if (gate >= POTION_DROP_CHANCE) return null;
+  return rollPotion(hashSeed(run.seed, `${nodeId2}:potion-pick`));
+}
 function rollRewardCards(run, nodeId2) {
-  const rng = makeRng(hashSeed(run.seed, nodeId2));
-  const pool = [...REWARD_POOL];
-  const picks = [];
-  while (picks.length < REWARD_CHOICES && pool.length) {
-    picks.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
-  }
-  return picks;
+  return draftRewardCards(hashSeed(run.seed, nodeId2), run.act, REWARD_CHOICES);
 }
 function screenForNode(node) {
   if (node.type === "combat" || node.type === "elite") return "combat";
   if (node.type === "boss") return "boss";
   return node.type;
+}
+
+// ../../docs/games/metagame/stages/stage6/events.js
+var RARE_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "rare");
+var COMMON_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "common");
+function damage(run, n) {
+  run.hp = Math.max(1, run.hp - n);
+}
+function heal(run, n) {
+  run.hp = Math.min(run.maxHp, run.hp + n);
+}
+function relicNotice(run, key) {
+  const id = awardRelic(run, key);
+  const name = id ? cardById(id)?.name || id : null;
+  return id ? `Relic acquired — ${name || id}.` : "No protocol left to acquire.";
+}
+function potionNotice(run, rng, key) {
+  const id = rollPotion(hashSeed(run.seed, `${run.currentNodeId}:${key}`));
+  const r = addPotion(run, id);
+  return r.ok ? `Potion stowed — ${id}.` : `Potion ${id} found, but the belt is full.`;
+}
+function randomDeckIndex(run, rng, key, filter) {
+  const idxs = run.deck.map((id, i) => i).filter((i) => filter ? filter(run.deck[i]) : true);
+  if (!idxs.length) return -1;
+  return idxs[rng.int(idxs.length, key)];
+}
+var EVENTS = [
+  {
+    id: "defragmenter",
+    weight: 2,
+    title: "A Defragmenter idles in the corridor",
+    text: "It offers to tidy your passage — or to optimize you, which it does not define.",
+    choices: [
+      { id: "scan", label: "accept payment — +12 handshakes", apply: (run) => {
+        run.handshakes += 12;
+        return "+12 handshakes.";
+      } },
+      { id: "defrag", label: "let it optimize you — heal 30% HP", apply: (run) => {
+        heal(run, Math.round(run.maxHp * 0.3));
+        return "Defragmented — HP restored.";
+      } },
+      { id: "rewrite", label: "let it rewrite a protocol — +relic, −8 HP", apply: (run) => {
+        damage(run, 8);
+        return relicNotice(run, "defrag-rewrite");
+      } }
+    ]
+  },
+  {
+    id: "orphaned-socket",
+    weight: 2,
+    title: "An orphaned socket dangles open",
+    text: "Unclaimed handshakes still trickle from it, but reaching in stings.",
+    choices: [
+      { id: "claim", label: "claim the trickle — +18 handshakes, −5 HP", apply: (run) => {
+        run.handshakes += 18;
+        damage(run, 5);
+        return "+18 handshakes (−5 HP).";
+      } }
+    ]
+  },
+  {
+    id: "deprecated-api",
+    weight: 2,
+    title: "A deprecated API still answers",
+    text: "It will rewrite one of your protocols into something it remembers — you don't get to choose what.",
+    choices: [
+      { id: "transform", label: "transform a random card", apply: (run, rng) => {
+        const i = randomDeckIndex(run, rng, "i");
+        if (i < 0) return "Nothing to transform.";
+        const was = run.deck[i];
+        run.deck[i] = rng.pick(REWARD_POOL, "card");
+        return `${was} → ${run.deck[i]}.`;
+      } }
+    ]
+  },
+  {
+    id: "cron-job",
+    weight: 2,
+    title: "A cron job is mid-cycle",
+    text: "Wait for the maintenance window and ride its housekeeping.",
+    choices: [
+      { id: "wait", label: "wait it out — heal 15% HP, +10 handshakes", apply: (run) => {
+        heal(run, Math.round(run.maxHp * 0.15));
+        run.handshakes += 10;
+        return "Maintenance complete (+heal, +10).";
+      } }
+    ]
+  },
+  {
+    id: "honeypot",
+    weight: (act) => act + 1,
+    acts: [2, 3, 4],
+    title: "A honeypot glitters with rare protocols",
+    text: "Tempting bait — take the prize and the bite both.",
+    choices: [
+      { id: "take", label: "take the bait — free rare card + relic, −8 HP", apply: (run, rng) => {
+        const card = rng.pick(RARE_POOL.length ? RARE_POOL : REWARD_POOL, "card");
+        run.deck.push(card);
+        damage(run, 8);
+        return `${card} taken. ${relicNotice(run, "honeypot")}`;
+      } }
+    ]
+  },
+  {
+    id: "kernel-module",
+    weight: 2,
+    title: "A kernel module exposes its source",
+    text: "Recompile one of your protocols sharper — it costs blood to patch live.",
+    choices: [
+      { id: "patch", label: "recompile a card — upgrade one, −8 HP", apply: (run, rng) => {
+        const i = randomDeckIndex(run, rng, "i", (id) => canUpgrade(id));
+        if (i < 0) return "Nothing left to upgrade.";
+        const r = upgradeDeckCard(run, i);
+        if (!r.ok) return "Nothing left to upgrade.";
+        damage(run, 8);
+        return `Upgraded to ${r.id} (−8 HP).`;
+      } }
+    ]
+  },
+  {
+    id: "mirror-port",
+    weight: 1,
+    acts: [1, 2, 3],
+    title: "A mirror port reflects your traffic",
+    text: "It can echo one of your protocols into a duplicate.",
+    choices: [
+      { id: "duplicate", label: "duplicate a random card", apply: (run, rng) => {
+        const i = randomDeckIndex(run, rng, "i");
+        if (i < 0) return "Nothing to duplicate.";
+        run.deck.push(run.deck[i]);
+        return `Duplicated ${run.deck[i]}.`;
+      } }
+    ]
+  },
+  {
+    id: "garbage-collector",
+    weight: 2,
+    title: "A garbage collector sweeps through",
+    text: "It will reap one dead protocol from your deck, free of charge.",
+    choices: [
+      { id: "collect", label: "let it reap a random card", apply: (run, rng) => {
+        if (run.deck.length <= 1) return "Deck too thin to reap.";
+        const i = randomDeckIndex(run, rng, "i");
+        const was = run.deck[i];
+        removeCard(run, i);
+        return `Reaped ${was}.`;
+      } }
+    ]
+  },
+  {
+    id: "buffer-bloat",
+    weight: 2,
+    acts: [1, 2],
+    title: "Buffer bloat swells your queues",
+    text: "Bigger buffers, at the price of banked handshakes.",
+    choices: [
+      { id: "expand", label: "expand buffers — +12 max HP, −15 handshakes", apply: (run) => {
+        run.maxHp += 12;
+        run.hp += 12;
+        run.handshakes = Math.max(0, run.handshakes - 15);
+        return "+12 max HP (−15 handshakes).";
+      } }
+    ]
+  },
+  {
+    id: "memory-pool",
+    weight: 2,
+    title: "A memory pool holds a loose vial",
+    text: "Someone left a consumable cooling in the cache.",
+    choices: [
+      { id: "take", label: "take the potion", apply: (run, rng) => potionNotice(run, rng, "memory-pool") }
+    ]
+  },
+  {
+    id: "checksum-mismatch",
+    weight: 2,
+    title: "A checksum mismatch flickers",
+    text: "Force a recompute and gamble — it resolves to treasure or to harm.",
+    choices: [
+      { id: "gamble", label: "force a recompute (50/50)", apply: (run, rng) => {
+        if (rng.float("g") < 0.5) return `Checksum cleared. ${relicNotice(run, "checksum")}`;
+        damage(run, 10);
+        return "Checksum corrupt — −10 HP.";
+      } }
+    ]
+  },
+  {
+    id: "stale-cache",
+    weight: 2,
+    title: "A stale cache lingers",
+    text: "Purge it: drop one protocol and reclaim its storage as handshakes.",
+    choices: [
+      { id: "purge", label: "purge — remove a random card, +12 handshakes", apply: (run, rng) => {
+        run.handshakes += 12;
+        if (run.deck.length <= 1) return "+12 handshakes (deck too thin to purge).";
+        const i = randomDeckIndex(run, rng, "i");
+        const was = run.deck[i];
+        removeCard(run, i);
+        return `Purged ${was}, +12 handshakes.`;
+      } }
+    ]
+  },
+  {
+    id: "packet-sniffer",
+    weight: 2,
+    title: "A packet sniffer logs the wire",
+    text: "Read the capture for coin, or splice in a fresh protocol.",
+    choices: [
+      { id: "read", label: "read the capture — +handshakes by deck size", apply: (run) => {
+        const g = 2 * run.deck.length;
+        run.handshakes += g;
+        return `+${g} handshakes.`;
+      } },
+      { id: "splice", label: "splice a fresh card", apply: (run, rng) => {
+        const c = rng.pick(COMMON_POOL.length ? COMMON_POOL : REWARD_POOL, "c");
+        run.deck.push(c);
+        return `Spliced ${c}.`;
+      } }
+    ]
+  },
+  {
+    id: "daemon-offering",
+    weight: 1,
+    title: "A daemon waits for an offering",
+    text: "Feed it vitality and it leaves a relic in trade.",
+    choices: [
+      { id: "offer", label: "sacrifice 12 HP for a relic", apply: (run) => {
+        damage(run, 12);
+        return relicNotice(run, "daemon");
+      } }
+    ]
+  }
+];
+var BY_ID4 = new Map(EVENTS.map((e) => [e.id, e]));
+function eventById(id) {
+  return BY_ID4.get(id) || null;
+}
+function weightFor(event, act) {
+  if (event.acts && !event.acts.includes(act)) return 0;
+  return typeof event.weight === "function" ? event.weight(act) : event.weight ?? 1;
+}
+function eventForNode(run, nodeId2 = run.currentNodeId) {
+  const pool = EVENTS.filter((e) => weightFor(e, run.act) > 0);
+  if (!pool.length) return EVENTS[0];
+  const total = pool.reduce((s, e) => s + weightFor(e, run.act), 0);
+  let r = makeRng(hashSeed(run.seed, `${nodeId2}:event-pick`))() * total;
+  for (const e of pool) {
+    r -= weightFor(e, run.act);
+    if (r < 0) return e;
+  }
+  return pool[pool.length - 1];
+}
+function makeEventRng(run, eventId) {
+  const base = (key) => makeRng(hashSeed(run.seed, `${run.currentNodeId}:${eventId}:${key}`))();
+  return { float: base, int: (n, key) => Math.floor(base(key) * n), pick: (list, key) => list[Math.floor(base(key) * list.length)] };
+}
+function applyEventChoice(run, eventId, choiceId) {
+  const event = eventById(eventId);
+  const choice = event?.choices.find((c) => c.id === choiceId);
+  if (!choice) return { ok: false, notice: null };
+  const notice = choice.apply(run, makeEventRng(run, eventId)) || null;
+  return { ok: true, notice };
 }
 
 // ../../docs/games/metagame/stages/stage6/boss-combat.js
@@ -2117,6 +2664,7 @@ function combatView(combat, run) {
       ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
     ${jammedRow(combat)}
+    ${potionBelt(run)}
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
       <button type="button" data-action="end-turn">end turn ▸</button>
@@ -2188,6 +2736,15 @@ function enemyPanel(enemy, intent, combat) {
       </div>
       ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+function potionBelt(run) {
+  const potions = run?.potions || [];
+  if (!potions.length) return "";
+  const chips = potions.map((id, i) => {
+    const p = potionById(id);
+    return `<button type="button" class="s6db-potion" data-potion="${i}" title="${esc(p?.text || "")}">⚗ ${esc(p?.name || id)}</button>`;
+  }).join("");
+  return `<div class="s6db-potions" aria-label="potion belt"><span class="s6db-potions-label">BELT:</span> ${chips}</div>`;
 }
 function jammedRow(combat) {
   if (!combat.jammed || !combat.jammed.length) return "";
@@ -2389,21 +2946,69 @@ function rewardView(run) {
   row.className = "s6db-card-row";
   row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
   el.appendChild(row);
+  const potionId = run.pendingReward?.potion;
+  if (potionId) el.appendChild(potionOffer(run, potionId));
   el.insertAdjacentHTML(
     "beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-take="skip" class="s6db-ghost">skip</button></div>`
   );
   return el;
 }
+function potionOffer(run, potionId) {
+  const p = potionById(potionId);
+  const wrap = document.createElement("div");
+  wrap.className = "s6db-potion-offer";
+  const belt = run.potions || [];
+  if (belt.length < POTION_SLOTS) {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}</p>
+      <button type="button" data-take-potion="">grab potion ⚗</button>`;
+  } else {
+    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}. Belt full — replace one:</p>`;
+    const actions = document.createElement("div");
+    actions.className = "s6db-hub-actions";
+    actions.replaceChildren(...belt.map((id, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.takePotion = String(i);
+      b.textContent = `replace ${potionById(id)?.name || id}`;
+      return b;
+    }));
+    wrap.appendChild(actions);
+  }
+  return wrap;
+}
+function bossRewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-reward s6db-boss-reward";
+  const offered = (run.pendingReward?.relics || []).map(relicById).filter(Boolean);
+  el.innerHTML = `<h2>Protocol negotiated</h2>
+    <p>${offered.length ? "Claim one relic to carry into the next act." : "No new relics remain."}</p>`;
+  const row = document.createElement("div");
+  row.className = "s6db-card-row";
+  row.replaceChildren(...offered.map((relic) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
+    b.dataset.bossRelic = relic.id;
+    b.innerHTML = `<strong>⬢ ${esc3(relic.name)}</strong><small class="s6db-card-text">${esc3(relic.text)}</small>`;
+    return b;
+  }));
+  el.appendChild(row);
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-hub-actions"><button type="button" data-boss-relic="skip" class="s6db-ghost">${offered.length ? "skip relic ▸" : "continue ▸"}</button></div>`
+  );
+  return el;
+}
 function restView(run) {
   const el = document.createElement("div");
   el.className = "s6db-rest";
-  const heal = Math.round(run.maxHp * 0.3);
+  const heal2 = Math.round(run.maxHp * 0.3);
   el.innerHTML = `
     <h2>Keepalive</h2>
-    <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
+    <p>A quiet socket. Choose ONE: recover ${heal2} HP, upgrade a card, or thin your deck.</p>
     <div class="s6db-hub-actions">
-      <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
+      <button type="button" data-rest="heal">rest — heal ${heal2} HP ▸</button>
     </div>
     <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
     <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
@@ -2470,6 +3075,26 @@ function shopView(run) {
     }));
     el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
   }
+  const potionOffers = shopPotionOffers(run);
+  const beltFull = (run.potions || []).length >= POTION_SLOTS;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-potions"><h3>Consumables — ${POTION_COST} ✋ each${beltFull ? " <small>(belt full)</small>" : ""}</h3></div>`
+  );
+  const potRow = document.createElement("div");
+  potRow.className = "s6db-card-row";
+  potRow.replaceChildren(...potionOffers.map((id) => {
+    const p = potionById(id);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "s6db-potion s6db-potion--shop";
+    b.dataset.buyPotion = id;
+    b.dataset.price = String(POTION_COST);
+    b.disabled = beltFull || run.handshakes < POTION_COST;
+    b.innerHTML = `<strong>⚗ ${esc3(p?.name || id)}</strong><small class="s6db-card-text">${esc3(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
+    return b;
+  }));
+  el.querySelector(".s6db-shop-potions").appendChild(potRow);
   const relicAffordable = run.handshakes >= RELIC_COST;
   el.insertAdjacentHTML(
     "beforeend",
@@ -2482,18 +3107,29 @@ function shopView(run) {
   );
   return el;
 }
-function eventView(run) {
+function eventView(run, event) {
   const el = document.createElement("div");
   el.className = "s6db-event";
   el.innerHTML = `
-    <h2>A Defragmenter idles in the corridor</h2>
-    <p>It offers to tidy your passage — or to optimize you, which it does not define.</p>
-    <div class="s6db-hub-actions">
-      <button type="button" data-event="scan">accept payment — +12 handshakes ▸</button>
-      <button type="button" data-event="defrag">let it optimize you — heal 30% HP ▸</button>
-      <button type="button" data-event="rewrite">let it rewrite a protocol — +relic, −8 HP ▸</button>
-      <button type="button" data-action="to-map" class="s6db-ghost">walk past</button>
-    </div>`;
+    <h2>${esc3(event?.title || "An anomaly idles in the corridor")}</h2>
+    <p>${esc3(event?.text || "")}</p>
+    ${run.notice ? `<p class="s6db-hint">${esc3(run.notice)}</p>` : ""}`;
+  const actions = document.createElement("div");
+  actions.className = "s6db-hub-actions";
+  const buttons = (event?.choices || []).map((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.event = c.id;
+    b.textContent = `${c.label} ▸`;
+    return b;
+  });
+  const leave = document.createElement("button");
+  leave.type = "button";
+  leave.className = "s6db-ghost";
+  leave.dataset.action = "to-map";
+  leave.textContent = "walk past";
+  actions.replaceChildren(...buttons, leave);
+  el.appendChild(actions);
   return el;
 }
 function shopOffers(run) {
@@ -2504,6 +3140,15 @@ function shopOffers(run) {
     const id = pool.splice(Math.floor(rng() * pool.length), 1)[0];
     const card = cardById(id);
     out.push({ id, price: PRICE[card?.rarity] || 30 });
+  }
+  return out;
+}
+function shopPotionOffers(run) {
+  const out = [];
+  let salt = 0;
+  while (out.length < 2 && salt < 24) {
+    const id = rollPotion(strHash(`${run.seed}:${run.currentNodeId}:potion:${salt++}`));
+    if (!out.includes(id)) out.push(id);
   }
   return out;
 }
@@ -2598,6 +3243,9 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       case "reward":
         combat = null;
         return mount(rewardView(run));
+      case "boss-reward":
+        combat = null;
+        return mount(bossRewardView(run));
       case "rest":
         combat = null;
         return mount(restView(run));
@@ -2606,7 +3254,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         return mount(shopView(run));
       case "event":
         combat = null;
-        return mount(eventView(run));
+        return mount(eventView(run, eventForNode(run)));
       case "dead":
         combat = null;
         return mount(deathView(state, run));
@@ -2694,15 +3342,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (combatRun) combatRun.reset();
     combat = null;
   }
-  function resolveEvent(run, key) {
-    if (key === "scan") run.handshakes += 12;
-    else if (key === "defrag") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * 0.3));
-    else if (key === "rewrite") {
-      run.hp = Math.max(1, run.hp - 8);
-      const id = awardRelic(run, `event-${run.currentNodeId}`);
-      run.notice = id ? `Relic acquired — ${relicById(id)?.name || id}` : "no protocol left to rewrite";
-    }
+  function resolveEvent(run, choiceId) {
+    const event = eventForNode(run);
+    const { notice } = applyEventChoice(run, event.id, choiceId);
     closeNode(run);
+    if (notice) run.notice = notice;
   }
   function handleClick(event) {
     const run = state.run;
@@ -2720,7 +3364,27 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       else checkpointCombat(combat, run);
       return true;
     }
+    const potion = event.target.closest("[data-potion]");
+    if (potion && combat && !combat.over && run) {
+      const used = usePotion(run, Number(potion.dataset.potion));
+      if (used.ok) {
+        applyPotionEffect(combat, potionById(used.id));
+        if (combat.over) finishCombat(run);
+        else checkpointCombat(combat, run);
+      }
+      return true;
+    }
     if (!run) return false;
+    const takePot = event.target.closest("[data-take-potion]");
+    if (takePot) {
+      takePotion(run, takePot.dataset.takePotion === "" ? void 0 : Number(takePot.dataset.takePotion));
+      return true;
+    }
+    const buyPot = event.target.closest("[data-buy-potion]");
+    if (buyPot) {
+      buyPotion(run, buyPot.dataset.buyPotion, Number(buyPot.dataset.price));
+      return true;
+    }
     const node = event.target.closest("[data-node]");
     if (node) {
       moveTo(run, node.dataset.node);
@@ -2729,6 +3393,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const take = event.target.closest("[data-take]");
     if (take) {
       takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take);
+      return true;
+    }
+    const bossRelic = event.target.closest("[data-boss-relic]");
+    if (bossRelic) {
+      takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic);
       return true;
     }
     const remove = event.target.closest("[data-remove]");

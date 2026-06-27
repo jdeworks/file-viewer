@@ -5,13 +5,16 @@
 // stage-clear gate is unchanged: read the codex (epub) — without it every Signal deals 0 — then
 // defeat the boss with the deck built across acts 1–3.
 
-import { createCombat, playCard, endTurn, makeRng } from "./combat.js";
+import { createCombat, playCard, endTurn, makeRng, applyPotionEffect } from "./combat.js";
 import { instantiateEnemy } from "./enemies.js";
-import { relicsFor, relicById } from "./relics.js";
+import { relicsFor } from "./relics.js";
+import { potionById } from "./potions.js";
+import { eventForNode, applyEventChoice } from "./events.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, rest, removeCard, closeNode, buyCard, buyRemoval, buyUpgrade, buyRelic, awardRelic,
+  takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
+  buyCard, buyRemoval, buyUpgrade, buyRelic,
   prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
@@ -20,7 +23,7 @@ import { snapshotCombat, restoreCombat } from "./combat-persist.js";
 import { createRun as createRunState } from "../../shared/run-state.js";
 import { combatView } from "./ui-combat.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
-import { rewardView, restView, shopView, eventView } from "./ui-rewards.js";
+import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
 import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
@@ -91,9 +94,10 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
       case "combat": case "boss": return mountCombat(run);
       case "reward": combat = null; return mount(rewardView(run));
+      case "boss-reward": combat = null; return mount(bossRewardView(run));
       case "rest": combat = null; return mount(restView(run));
       case "shop": combat = null; return mount(shopView(run));
-      case "event": combat = null; return mount(eventView(run));
+      case "event": combat = null; return mount(eventView(run, eventForNode(run)));
       case "dead": combat = null; return mount(deathView(state, run));
       case "won": combat = null; return mount(wonView(state, run));
       case "map":
@@ -191,15 +195,13 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     combat = null;
   }
 
-  function resolveEvent(run, key) {
-    if (key === "scan") run.handshakes += 12;
-    else if (key === "defrag") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * 0.30));
-    else if (key === "rewrite") {
-      run.hp = Math.max(1, run.hp - 8);
-      const id = awardRelic(run, `event-${run.currentNodeId}`);
-      run.notice = id ? `Relic acquired — ${relicById(id)?.name || id}` : "no protocol left to rewrite";
-    }
+  // Resolve the player's choice for this node's (deterministically selected) event, then return to
+  // the map. The notice is surfaced on the next screen.
+  function resolveEvent(run, choiceId) {
+    const event = eventForNode(run);
+    const { notice } = applyEventChoice(run, event.id, choiceId);
     closeNode(run);
+    if (notice) run.notice = notice;
   }
 
   // ── click delegation ─────────────────────────────────────────────────────────────────────────
@@ -215,11 +217,23 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
     if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); return true; }
+    const potion = event.target.closest("[data-potion]");
+    if (potion && combat && !combat.over && run) {
+      const used = usePotion(run, Number(potion.dataset.potion));
+      if (used.ok) { applyPotionEffect(combat, potionById(used.id)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); }
+      return true;
+    }
     if (!run) return false;
+    const takePot = event.target.closest("[data-take-potion]");
+    if (takePot) { takePotion(run, takePot.dataset.takePotion === "" ? undefined : Number(takePot.dataset.takePotion)); return true; }
+    const buyPot = event.target.closest("[data-buy-potion]");
+    if (buyPot) { buyPotion(run, buyPot.dataset.buyPotion, Number(buyPot.dataset.price)); return true; }
     const node = event.target.closest("[data-node]");
     if (node) { moveTo(run, node.dataset.node); return true; }
     const take = event.target.closest("[data-take]");
     if (take) { takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take); return true; }
+    const bossRelic = event.target.closest("[data-boss-relic]");
+    if (bossRelic) { takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic); return true; }
     const remove = event.target.closest("[data-remove]");
     if (remove) { removeCard(run, Number(remove.dataset.remove)); rest(run, "remove"); return true; }
     const upgrade = event.target.closest("[data-upgrade]");

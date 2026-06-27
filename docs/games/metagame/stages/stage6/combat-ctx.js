@@ -30,6 +30,18 @@ export function makeCtx(combat, card) {
     block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => { combat.player.energy += n; },
+    // Restore HP (capped at max). Used by potions (Hotfix) and onKill heal relics. No RNG.
+    heal: (n) => { combat.player.hp = Math.min(combat.player.maxHp, combat.player.hp + Math.max(0, Math.round(n))); },
+    // Return the last card played this fight from the discard back to hand (Rollback potion).
+    returnLastPlayed: () => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return false;
+      const i = combat.discard.lastIndexOf(id);
+      if (i < 0) return false;
+      combat.discard.splice(i, 1);
+      combat.hand.push(id);
+      return true;
+    },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
     // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
@@ -80,6 +92,7 @@ export function relicCtx(combat, card) {
     block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => { combat.player.energy += n; },
+    heal: (n) => { combat.player.hp = Math.min(combat.player.maxHp, combat.player.hp + Math.max(0, Math.round(n))); },
     applySelf: (status, n) => addStatus(combat.player, status, n),
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
   };
