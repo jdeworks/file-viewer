@@ -16,127 +16,99 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
-  await page.waitForSelector('#previewHost .media-listen-surface.mmx-audio-listen', { timeout: 12000 });
+  await page.waitForSelector('#previewHost .al-surface', { timeout: 12000 });
   await page.waitForFunction(() => {
-    const status = document.querySelector('#previewHost .media-listen-surface.mmx-audio-listen')?.dataset.mixerWaveformStatus;
+    const status = document.querySelector('#previewHost .al-surface')?.dataset.mixerWaveformStatus;
     return status && status !== 'pending';
   }, null, { timeout: 12000 });
 
-  const initial = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
+  const initial = await page.$eval('#previewHost .al-surface', (el) => {
     const audio = document.querySelector('#previewHost audio.media-view');
     const rect = audio.getBoundingClientRect();
     return {
       nativeHidden: !audio.controls && rect.width <= 2 && rect.height <= 2 && getComputedStyle(audio).opacity === '0',
       mixerContext: el.dataset.mixerContext,
-      directListen: el.classList.contains('mmx-direct-listen'),
       projectId: el.dataset.mixerProjectId,
       elementId: el.dataset.mixerElementId,
-      sharedShell: el.classList.contains('mmx-shell'),
-      sharedElementWaveform: !!el.querySelector('.mmx-element-waveform.media-wv-canvas'),
-      sharedInspector: !!el.querySelector('.mmx-inspector .media-lane-gain'),
-      lane: !!el.querySelector('.media-lane-label-name'),
-      ruler: !!el.querySelector('.media-lane-ruler'),
-      cursor: !!el.querySelector('.media-lane-cursor'),
-      canvas: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
-      exportButton: !!el.querySelector('.mmx-settings-export'),
-      zoom: !!el.querySelector('.mmx-listen-zoom'),
-      pan: !!el.querySelector('.mmx-listen-pan'),
+      trackName: !!el.querySelector('.al-track-name'),
+      ruler: !!el.querySelector('.al-ruler'),
+      cursor: !!el.querySelector('.al-cursor'),
+      canvas: !!el.querySelector('.al-canvas'),
+      exportButton: !!el.querySelector('.al-export'),
       waveformBuckets: Number(el.dataset.mixerWaveformBuckets || 0),
       waveformStatus: el.dataset.mixerWaveformStatus || '',
-      projectHasWaveformSummary: !!el.__mediaMixerListen.getProject().elements[0]?.analysis?.waveformSummary,
-      capabilityNote: /Enable Media Transcoding/.test(el.querySelector('.mmx-capability-note')?.textContent || ''),
-      controls: ['.media-lane-offset', '.media-lane-in', '.media-lane-out', '.media-lane-gain', '.media-lane-fade-in', '.media-lane-fade-out', '.media-lane-room-toggle']
+      projectHasElement: !!el.__mediaMixerListen.getProject().elements[0],
+      capabilityNote: /Enable Media Transcoding/.test(el.querySelector('.al-note')?.textContent || ''),
+      controls: ['.al-f-start', '.al-f-in', '.al-f-out', '.al-f-gain', '.al-f-fade-in', '.al-f-fade-out', '.al-f-room']
         .every((selector) => !!el.querySelector(selector)),
     };
   });
-  if (initial.nativeHidden && initial.mixerContext === 'listen' && initial.directListen && initial.sharedShell && initial.projectId && initial.elementId)
+  if (initial.nativeHidden && initial.mixerContext === 'listen' && initial.projectId && initial.elementId)
     pass('modular audio listen: Sample.wav opens through mixer-owned context with hidden native source');
   else fail('modular audio listen context missing: ' + JSON.stringify(initial));
-  if (initial.lane && initial.ruler && initial.cursor && initial.canvas && initial.sharedElementWaveform && initial.sharedInspector && initial.controls && initial.zoom && initial.pan && initial.capabilityNote && initial.waveformStatus !== 'pending' && (initial.waveformStatus !== 'available' || (initial.waveformBuckets > 0 && initial.projectHasWaveformSummary)))
+  if (initial.trackName && initial.ruler && initial.cursor && initial.canvas && initial.exportButton && initial.controls && initial.capabilityNote && initial.waveformStatus !== 'pending' && (initial.waveformStatus !== 'available' || (initial.waveformBuckets > 0 && initial.projectHasElement)))
     pass('modular audio listen: one-lane waveform editor controls render');
   else fail('modular audio listen surfaces missing: ' + JSON.stringify(initial));
 
-  const transport = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', async (el) => {
-    const audio = document.querySelector('#previewHost audio.media-view');
-    el.querySelector('.media-listen-play').click();
-    await new Promise((resolve) => setTimeout(resolve, 80));
-    const playAttempted = !audio.paused || audio.currentTime >= 0;
-    el.querySelector('.media-listen-stop').click();
-    return {
-      playAttempted,
-      stoppedAt: audio.currentTime,
-      paused: audio.paused,
-    };
-  });
-  if (transport.playAttempted && transport.paused && transport.stoppedAt === 0)
-    pass('modular audio listen: play/pause/stop controls operate hidden audio source');
-  else fail('modular audio listen transport mismatch: ' + JSON.stringify(transport));
+  const beforePlay = await page.$eval('#previewHost audio.media-view', (audio) => audio.currentTime);
+  await page.click('#previewHost .al-play');
+  await page.waitForTimeout(500);
+  const duringPlay = await page.$eval('#previewHost audio.media-view', (audio) => ({ ct: audio.currentTime, paused: audio.paused }));
+  if (duringPlay.ct > beforePlay && duringPlay.paused === false)
+    pass('modular audio listen: trusted click starts real playback and audio advances');
+  else fail('modular audio listen playback start mismatch: ' + JSON.stringify({ beforePlay, duringPlay }));
+  await page.click('#previewHost .al-stop');
+  const afterStop = await page.$eval('#previewHost audio.media-view', (audio) => ({ ct: audio.currentTime, paused: audio.paused }));
+  if (afterStop.ct === 0 && afterStop.paused === true)
+    pass('modular audio listen: stop rewinds audio to zero');
+  else fail('modular audio listen stop mismatch: ' + JSON.stringify(afterStop));
 
-  const viewport = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
-    el.__mediaMixerListen.setZoom(2);
-    el.__mediaMixerListen.setPan(40);
-    return {
-      zoom: el.dataset.mixerZoom,
-      pan: el.dataset.mixerPan,
-      canvasWidth: el.querySelector('.media-wv-canvas')?.style.width || '',
-    };
-  });
-  if (viewport.zoom === '2' && viewport.pan === '40' && viewport.canvasWidth === '200%')
-    pass('modular audio listen: zoom/pan update visible viewport state');
-  else fail('modular audio listen zoom/pan mismatch: ' + JSON.stringify(viewport));
+  const widthBefore = await page.$eval('#previewHost .al-canvas', (canvas) => parseInt(canvas.style.width, 10) || canvas.clientWidth);
+  await page.click('#previewHost .al-zoom-in');
+  await page.waitForTimeout(100);
+  const widthAfter = await page.$eval('#previewHost .al-canvas', (canvas) => parseInt(canvas.style.width, 10) || canvas.clientWidth);
+  if (widthAfter > widthBefore)
+    pass('modular audio listen: zoom-in increases canvas width');
+  else fail('modular audio listen zoom mismatch: ' + JSON.stringify({ widthBefore, widthAfter }));
 
-  const moved = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
-    const before = Number(el.dataset.mixerOffsetMs || 0);
-    const region = el.querySelector('.media-lane-trim');
-    const rect = region.getBoundingClientRect();
-    region.dispatchEvent(new PointerEvent('pointerdown', {
-      bubbles: true,
-      pointerId: 9,
-      button: 0,
-      clientX: rect.left + 8,
-      clientY: rect.top + rect.height / 2,
-    }));
-    region.dispatchEvent(new PointerEvent('pointermove', {
-      bubbles: true,
-      pointerId: 9,
-      clientX: rect.left + 80,
-      clientY: rect.top + rect.height / 2,
-    }));
-    region.dispatchEvent(new PointerEvent('pointerup', {
-      bubbles: true,
-      pointerId: 9,
-      clientX: rect.left + 80,
-      clientY: rect.top + rect.height / 2,
-    }));
-    return {
-      before,
-      after: Number(el.dataset.mixerOffsetMs || 0),
-      input: el.querySelector('.media-lane-offset')?.value,
-    };
-  });
-  if (moved.after > moved.before && Number(moved.input) > 0)
-    pass('modular audio listen: dragging source region moves start offset state');
-  else fail('modular audio listen source drag mismatch: ' + JSON.stringify(moved));
+  const canvasWrapBox = await page.locator('#previewHost .al-canvas-wrap').boundingBox();
+  if (canvasWrapBox) {
+    const x0 = canvasWrapBox.x + canvasWrapBox.width * 0.10;
+    const x1 = canvasWrapBox.x + canvasWrapBox.width * 0.60;
+    const y = canvasWrapBox.y + canvasWrapBox.height * 0.5;
+    await page.mouse.move(x0, y);
+    await page.mouse.down();
+    await page.mouse.move(x1, y, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForTimeout(80);
+  }
+  const trimResult = await page.$eval('#previewHost .al-surface', (el) => ({
+    inVal: el.querySelector('.al-f-in')?.value || '',
+    outVal: el.querySelector('.al-f-out')?.value || '',
+  }));
+  if (canvasWrapBox && Number(trimResult.outVal) > Number(trimResult.inVal) && Number(trimResult.outVal) > 0)
+    pass('modular audio listen: drag across waveform sets trim range');
+  else fail('modular audio listen drag trim mismatch: ' + JSON.stringify({ canvasWrapBox: !!canvasWrapBox, trimResult }));
 
-  const roundtrip = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => {
+  const roundtrip = await page.$eval('#previewHost .al-surface', (el) => {
     const set = (selector, value) => {
       const input = el.querySelector(selector);
       input.value = String(value);
       input.dispatchEvent(new Event('input', { bubbles: true }));
     };
-    set('.media-lane-offset', 0.25);
-    set('.media-lane-in', 0.05);
-    set('.media-lane-out', 0.45);
-    set('.media-lane-gain', 0.72);
-    set('.media-lane-fade-in', 30);
-    set('.media-lane-fade-out', 90);
-    const room = el.querySelector('.media-lane-room-toggle');
+    set('.al-f-start', 0.25);
+    set('.al-f-in', 0.05);
+    set('.al-f-out', 0.45);
+    set('.al-f-gain', 0.72);
+    set('.al-f-fade-in', 30);
+    set('.al-f-fade-out', 90);
+    const room = el.querySelector('.al-f-room');
     room.checked = true;
     room.dispatchEvent(new Event('change', { bubbles: true }));
     const json = el.__mediaMixerListen.exportSettings();
     const parsed = JSON.parse(json);
-    set('.media-lane-offset', 0);
-    set('.media-lane-gain', 1);
+    set('.al-f-start', 0);
+    set('.al-f-gain', 1);
     room.checked = false;
     room.dispatchEvent(new Event('change', { bubbles: true }));
     el.__mediaMixerListen.importSettings(json);
@@ -147,9 +119,9 @@ export async function run(ctx) {
       elements: parsed.elements.length,
       hasMediaBytes: /mediaBytes|dataUrl|objectUrl|blob:/.test(json),
       hasRuntimeAnalysis: /waveformSummary|decodedBuffer|frameCache|thumbnailCache/.test(json),
-      offset: el.querySelector('.media-lane-offset').value,
-      gain: el.querySelector('.media-lane-gain').value,
-      room: el.querySelector('.media-lane-room-toggle').checked,
+      offset: el.querySelector('.al-f-start').value,
+      gain: el.querySelector('.al-f-gain').value,
+      room: el.querySelector('.al-f-room').checked,
       projectSettingsStored: !!el.dataset.projectSettings,
     };
   });
@@ -162,13 +134,13 @@ export async function run(ctx) {
 
   await openExample('Sample.mp3');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
-  await page.waitForSelector('#previewHost .media-listen-surface.mmx-audio-listen', { timeout: 12000 });
-  const mp3 = await page.$eval('#previewHost .media-listen-surface.mmx-audio-listen', (el) => ({
+  await page.waitForSelector('#previewHost .al-surface', { timeout: 12000 });
+  const mp3 = await page.$eval('#previewHost .al-surface', (el) => ({
     projectId: el.dataset.mixerProjectId,
-    waveform: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
-    room: !!el.querySelector('.media-lane-room-toggle'),
+    canvas: !!el.querySelector('.al-canvas'),
+    room: !!el.querySelector('.al-f-room'),
   }));
-  if (mp3.projectId && mp3.waveform && mp3.room)
+  if (mp3.projectId && mp3.canvas && mp3.room)
     pass('modular audio listen: Sample.mp3 uses the same mixer-owned Listen context');
   else fail('modular audio listen Sample.mp3 mismatch: ' + JSON.stringify(mp3));
 

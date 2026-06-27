@@ -32,7 +32,7 @@ export async function assertAudioTopViewport({ page, pass, fail }, label) {
     const media = host.querySelector('.media-audio-surface .media-listen-surface');
     const title = host.querySelector('.media-workspace-title');
     const time = host.querySelector('.media-workspace-time');
-    const waveform = host.querySelector('.media-waveform-surface');
+    const waveform = host.querySelector('.al-canvas-wrap');
     if (!workspace || !modeTabs || !media || !title || !time || !waveform) return null;
     const hostRect = host.getBoundingClientRect();
     const workspaceRect = workspace.getBoundingClientRect();
