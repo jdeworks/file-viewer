@@ -19,6 +19,8 @@ export function renderStage5(ctx) {
     <header class="s5-hud">
       <strong>SIGNAL RACER</strong>
       <span>ROUND <span data-field="round"></span></span>
+      <span data-field="raceBox">RACE <span data-field="race"></span></span>
+      <span data-field="posBox">POS <span data-field="position"></span></span>
       <span>INTEGRITY <span data-field="integrity"></span></span>
       <span>PACKETS <span data-field="packets"></span></span>
       <span>CALIBRATION <span data-field="calib"></span></span>
@@ -105,13 +107,23 @@ export function renderStage5(ctx) {
       wrap: view.archetype === 'circuit', rivals: view.rivals || [],
     });
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
+    const pct = Math.round((view.progress || 0) * 100);
+    fields.race.textContent = view.archetype === 'circuit'
+      ? `${view.archetype} · lap ${view.lap}/${view.laps}`
+      : `${view.archetype} · ${pct}%`;
+    fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : '—';
   }
 
   function repaint() {
     const lock = getBossLockState({ actions, state });
     const idx = Number(state.run.roundIdx || 0);
-    fields.round.textContent = `${roundByIdx(idx).id}/${FINAL_ROUND_ID} ${roundByIdx(idx).label}`;
-    if (mode !== 'playing') fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
+    const r = roundByIdx(idx);
+    fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
+    if (mode !== 'playing') {
+      fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
+      fields.race.textContent = r.archetype || 'sprint';
+      fields.position.textContent = '—';
+    }
     fields.packets.textContent = String(state.packets);
     fields.calib.textContent = lock.unlocked ? 'LOCKED-IN' : 'uncalibrated';
     fields.bossState.textContent = state.boss.defeated

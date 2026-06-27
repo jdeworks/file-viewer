@@ -222,17 +222,23 @@ function optimalLane(row, currentLane) {
 // ../../docs/games/metagame/stages/stage5/rounds.js
 var GLYPH_DAMAGE = { "░": 2, "▒": 2, "▓": 5 };
 var ROUNDS = [
+  // ── Act I — SPRINTS (point-to-point single tracks; learn to move, then to time it) ───────────────
   {
     id: 1,
     label: "AVOID",
-    tickMs: 180,
+    tickMs: 170,
     beatWindowTicks: null,
     glyphs: ["░"],
     burstPattern: null,
     counterPhaseShift: null,
     hasFork: false,
     hasGates: false,
-    tickCount: 100
+    archetype: "sprint",
+    tickCount: 900,
+    trackLength: 900,
+    rivals: 2,
+    hasPowerups: true,
+    powerupPool: ["repair", "cache"]
   },
   {
     id: 2,
@@ -244,56 +250,84 @@ var ROUNDS = [
     counterPhaseShift: null,
     hasFork: false,
     hasGates: false,
-    tickCount: 120
+    archetype: "sprint",
+    tickCount: 1e3,
+    trackLength: 1e3,
+    rivals: 2,
+    hasPowerups: true,
+    powerupPool: ["repair", "cache", "overclock"]
   },
+  // ── Act II — CIRCUITS (one looping lap raced N times; read the pattern, hold the shield lane) ────
   {
     id: 3,
     label: "READ AHEAD",
-    tickMs: 140,
+    tickMs: 150,
     beatWindowTicks: 1,
     glyphs: ["░", "▓"],
     burstPattern: [1, 0, 1, 1],
     counterPhaseShift: null,
     hasFork: false,
     hasGates: false,
-    tickCount: 120
+    archetype: "circuit",
+    tickCount: 220,
+    laps: 5,
+    rivals: 3,
+    hasPowerups: true,
+    powerupPool: ["repair", "shield", "overclock"]
   },
   {
     id: 4,
     label: "COUNTER-PHASE LANE",
-    tickMs: 140,
+    tickMs: 150,
     beatWindowTicks: 1,
     glyphs: ["░", "▒"],
     burstPattern: [1, 1, 0, 0],
     counterPhaseShift: 8,
     hasFork: false,
     hasGates: false,
-    tickCount: 130
+    archetype: "circuit",
+    tickCount: 240,
+    laps: 5,
+    rivals: 3,
+    hasPowerups: true,
+    powerupPool: ["repair", "shield", "emp"]
   },
+  // ── Act III — GAUNTLETS (long survival tracks; harvest gates, commit at the fork) ───────────────
   {
     id: 5,
     label: "BOOST GATES",
-    tickMs: 130,
+    tickMs: 140,
     beatWindowTicks: 1,
     glyphs: ["░", ">>"],
     burstPattern: [1, 0, 1, 0],
     counterPhaseShift: 8,
     hasFork: false,
     hasGates: true,
-    tickCount: 140
+    archetype: "gauntlet",
+    tickCount: 1300,
+    trackLength: 1300,
+    rivals: 3,
+    hasPowerups: true,
+    powerupPool: ["shield", "overclock", "cache", "emp"]
   },
   {
     id: 6,
     label: "SPLIT CHANNEL",
-    tickMs: 130,
+    tickMs: 135,
     beatWindowTicks: 1,
     glyphs: ["░", "▓", ">>"],
     burstPattern: [1, 0, 1, 0],
     counterPhaseShift: 8,
     hasFork: true,
     hasGates: true,
-    tickCount: 160
+    archetype: "gauntlet",
+    tickCount: 1500,
+    trackLength: 1500,
+    rivals: 3,
+    hasPowerups: true,
+    powerupPool: ["shield", "overclock", "repair", "cache", "emp"]
   },
+  // ── BOSS — Jammer Pursuit (all verbs at once; NO powerups — the calibration un-cheat is the gate) ─
   {
     id: 7,
     label: "BOSS",
@@ -304,7 +338,11 @@ var ROUNDS = [
     counterPhaseShift: 4,
     hasFork: true,
     hasGates: true,
-    tickCount: 200
+    archetype: "boss",
+    tickCount: 1100,
+    trackLength: 1100,
+    rivals: 2,
+    hasPowerups: false
   }
 ];
 var FINAL_ROUND_ID = 7;
@@ -453,7 +491,7 @@ function buildGhost({ rng, skill, table, raceLength, tickCap }) {
 }
 function buildRivals({ seed, round, table, raceLength }) {
   const count = Math.max(0, Number(round.rivals) || 0);
-  const tickCap = Math.ceil(raceLength / 0.9) + 32;
+  const tickCap = Math.ceil(raceLength / 0.4) + 64;
   const rivals = [];
   for (let i = 0; i < count; i += 1) {
     const rng = makeRng(`${seed}:rival:${round.id}:${i}`);
@@ -851,7 +889,12 @@ var GLYPH_LEGEND = [
   ["▒", "pulse (−2, off-beat hurts)"],
   ["▓", "dense block (−5)"],
   [">>", "boost gate (+packets)"],
-  ["~", "shield lane (phase through)"]
+  ["~", "shield lane (phase through)"],
+  ["o", "rival racer (bump = −integrity)"],
+  ["U", "shield buff"],
+  ["O", "overclock (speed burst)"],
+  ["+", "repair   $ packet-cache"],
+  ["E", "EMP (set a rival back)"]
 ];
 
 // ../../docs/games/metagame/stages/stage5/renderer.js
@@ -865,6 +908,8 @@ function renderStage5(ctx) {
     <header class="s5-hud">
       <strong>SIGNAL RACER</strong>
       <span>ROUND <span data-field="round"></span></span>
+      <span data-field="raceBox">RACE <span data-field="race"></span></span>
+      <span data-field="posBox">POS <span data-field="position"></span></span>
       <span>INTEGRITY <span data-field="integrity"></span></span>
       <span>PACKETS <span data-field="packets"></span></span>
       <span>CALIBRATION <span data-field="calib"></span></span>
@@ -948,12 +993,20 @@ function renderStage5(ctx) {
       rivals: view.rivals || []
     });
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
+    const pct = Math.round((view.progress || 0) * 100);
+    fields.race.textContent = view.archetype === "circuit" ? `${view.archetype} · lap ${view.lap}/${view.laps}` : `${view.archetype} · ${pct}%`;
+    fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : "—";
   }
   function repaint() {
     const lock = getBossLockState({ actions, state });
     const idx = Number(state.run.roundIdx || 0);
-    fields.round.textContent = `${roundByIdx(idx).id}/${FINAL_ROUND_ID} ${roundByIdx(idx).label}`;
-    if (mode !== "playing") fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
+    const r = roundByIdx(idx);
+    fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
+    if (mode !== "playing") {
+      fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
+      fields.race.textContent = r.archetype || "sprint";
+      fields.position.textContent = "—";
+    }
     fields.packets.textContent = String(state.packets);
     fields.calib.textContent = lock.unlocked ? "LOCKED-IN" : "uncalibrated";
     fields.bossState.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.jammerSuppression} / ${lock.unlocked ? "beatable" : "suppression dominant"}`;

@@ -67,7 +67,9 @@ function buildGhost({ rng, skill, table, raceLength, tickCap }) {
 
 export function buildRivals({ seed, round, table, raceLength }) {
   const count = Math.max(0, Number(round.rivals) || 0);
-  const tickCap = Math.ceil(raceLength / 0.9) + 32; // enough for the slowest rival to finish
+  // Worst-case rival speed is topSpeed(min 0.9) × block-slow(0.5) = 0.45/tick; pad generously so a
+  // rival that eats a lot of noise is still guaranteed to cross the line before the precompute ends.
+  const tickCap = Math.ceil(raceLength / 0.4) + 64;
   const rivals = [];
   for (let i = 0; i < count; i += 1) {
     const rng = makeRng(`${seed}:rival:${round.id}:${i}`);
