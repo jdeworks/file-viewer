@@ -30,11 +30,10 @@ export function defaultState(context = {}) {
       gatesThisRound: 0,
       clearedRounds: 0,    // how many non-boss rounds finished (boss gated behind this)
     },
-    shop: {
-      noiseFilter: false,
-      spectrumAnalyzer: false,
-      signalAmplifier: false,
-    },
+    // vehicle shop: per-part rank levels { [partId]: level }. Empty = a stock racer.
+    shop: {},
+    // time-trial: prior-best ghost transcripts keyed by round id { [id]: { tick, lanes, dist } }.
+    timeTrial: {},
     log: ['signal racer mounted.', 'the jammer is already in the racing line.'],
   };
 }
@@ -52,6 +51,7 @@ export function normalizeState(state, context = {}) {
   target.run = mergePlain(fresh.run, target.run);
   target.run.integrity = Number.isFinite(Number(target.run.integrity)) ? Number(target.run.integrity) : fresh.run.integrity;
   target.shop = mergePlain(fresh.shop, target.shop);
+  target.timeTrial = (target.timeTrial && typeof target.timeTrial === 'object') ? target.timeTrial : {};
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;
 }

@@ -24,8 +24,11 @@ export function defaultState() {
           ring: null,
           amulet: null
         },
-        inventory: ["minor_parse_potion"],
-        hotbar: ["minor_parse_potion", null, null, null]
+        // Run consumables (blink/firebolt/freeze/torch) banked by type → count. MUST be a plain
+        // object: consumables.js / engine.js / rollEntity all key it as inv[type]++. It was once a
+        // legacy ["minor_parse_potion"] array, which silently DROPPED rune counts on save (a non-index
+        // property on an array doesn't JSON-serialise) — the "picked-up rune vanishes" bug.
+        inventory: {}
       },
       identifiedItems: {},
       combatLog: [
@@ -63,6 +66,10 @@ export function normalizeState(state) {
   target.run = mergePlain(fresh.run, target.run);
   target.run.entity = mergePlain(fresh.run.entity, target.run.entity);
   target.run.entity.equipment = mergePlain(fresh.run.entity.equipment, target.run.entity.equipment);
+  // Coerce a legacy / corrupt inventory (old array form, or anything non-object) back to a plain
+  // type→count object so rune pickups serialise correctly.
+  const inv = target.run.entity.inventory;
+  if (!inv || typeof inv !== "object" || Array.isArray(inv)) target.run.entity.inventory = {};
   target.run.boss = mergePlain(fresh.run.boss, target.run.boss);
   target.meta = mergePlain(fresh.meta, target.meta);
   return target;

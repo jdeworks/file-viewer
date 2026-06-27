@@ -119,45 +119,409 @@ function inZone(a, zone) {
   return s <= e ? x >= s && x <= e : x >= s || x <= e;
 }
 
-// ../../docs/games/metagame/stages/stage9/game.js
-var BOSS_LEVEL = 18;
-var BANDS = {
-  1: { baseSpeed: 30, speedVar: 0, tolerance: 40, display: "open" },
-  2: { baseSpeed: 45, speedVar: 10, tolerance: 32, display: "open" },
-  3: { baseSpeed: 60, speedVar: 15, tolerance: 26, display: "dual" },
-  4: { baseSpeed: 75, speedVar: 20, tolerance: 22, display: "ghosts" },
-  5: { baseSpeed: 90, speedVar: 25, tolerance: 18, display: "hidden" },
-  6: { baseSpeed: 45, speedVar: 0, tolerance: 15, display: "dark", darkZone: { start: 300, end: 60 } }
-};
-function bandForLevel(level) {
-  return Math.max(1, Math.min(6, Math.ceil((Number(level) || 1) / 3)));
+// ../../docs/games/metagame/stages/stage9/rings.js
+var RING_W2 = 25;
+var RING_H2 = 13;
+function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
+  const { gapWidth = 22, darkZone = null } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W2 - 1) / 2;
+  const cy = (RING_H2 - 1) / 2;
+  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "─", "│", darkZone);
+  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "=", "‖", darkZone);
+  return gridToString(grid);
 }
-function levelConfig(level) {
-  const band = bandForLevel(level);
-  return { level: Number(level) || 1, band, ...BANDS[band], isBoss: Number(level) === BOSS_LEVEL };
+function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
+  const { gapWidth = 20, blind = 60 } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W2 - 1) / 2;
+  const cy = (RING_H2 - 1) / 2;
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, cx, cy, a);
+    if (offGrid(x, y)) continue;
+    const inGap = inArc2(a, gapAngleDeg, gapWidth);
+    let ch = inGap ? " " : ringChar2(a);
+    if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "▒" : "▓";
+    grid[y][x] = ch;
+  }
+  const ep = project(cx, cy, cx, cy, eyeAngleDeg);
+  if (!offGrid(ep.x, ep.y)) grid[ep.y][ep.x] = "@";
+  return gridToString(grid);
 }
-function rotSpeedFor(seed, level) {
-  const cfg = levelConfig(level);
-  return cfg.baseSpeed + makeRng(`${seed}s`).float() * cfg.speedVar;
+function renderMultiGap(gapAngles = [], opts = {}) {
+  const { gapWidth = 20, darkZone = null } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W2 - 1) / 2;
+  const cy = (RING_H2 - 1) / 2;
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, cx, cy, a);
+    if (offGrid(x, y)) continue;
+    let ch = ringChar2(a);
+    for (const g of gapAngles) if (inArc2(a, g, gapWidth)) ch = " ";
+    if (darkZone && inZone2(a, darkZone)) ch = "█";
+    grid[y][x] = ch;
+  }
+  return gridToString(grid);
 }
-function crossAttempt({ seed, elapsedMs, level }) {
-  const cfg = levelConfig(level);
-  const speed = rotSpeedFor(seed, level);
-  const angle = ringAngle(seed, elapsedMs, speed);
-  const distance = angularDist2(angle, 0);
-  return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance, level };
+function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, hChar, vChar, darkZone) {
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, rx, ry, a);
+    if (offGrid(x, y)) continue;
+    let ch = inArc2(a, 0, 60) || inArc2(a, 180, 60) ? hChar : inArc2(a, 90, 60) || inArc2(a, 270, 60) ? vChar : "+";
+    if (inArc2(a, gapAngle, gapWidth)) ch = " ";
+    if (darkZone && inZone2(a, darkZone)) ch = "█";
+    grid[y][x] = ch;
+  }
 }
-function solveElapsed(seed, level) {
-  const speed = rotSpeedFor(seed, level);
-  const base = ringAngle(seed, 0, speed);
-  const need = ((360 - base) % 360 + 360) % 360;
-  return Math.round(need / speed * 1e3);
+function project(cx, cy, rx, ry, a) {
+  const rad = (a - 90) * Math.PI / 180;
+  return { x: Math.round(cx + rx * Math.cos(rad)), y: Math.round(cy + ry * Math.sin(rad)) };
 }
-function sublevelSeed(level) {
-  return (Number(level) || 1) * 31 + 7;
+function blankGrid() {
+  return Array.from({ length: RING_H2 }, () => Array(RING_W2).fill(" "));
+}
+function gridToString(grid) {
+  return grid.map((row) => row.join("")).join("\n");
+}
+function offGrid(x, y) {
+  return y < 0 || y >= RING_H2 || x < 0 || x >= RING_W2;
+}
+function ringChar2(a) {
+  if (inArc2(a, 0, 60) || inArc2(a, 180, 60)) return "─";
+  if (inArc2(a, 90, 60) || inArc2(a, 270, 60)) return "│";
+  return "+";
+}
+function mod3602(a) {
+  return (a % 360 + 360) % 360;
 }
 function angularDist2(a, b) {
   return Math.abs(((a - b) % 360 + 540) % 360 - 180);
+}
+function inArc2(a, center, width) {
+  return angularDist2(a, center) <= width / 2;
+}
+function inZone2(a, zone) {
+  const x = mod3602(a);
+  const s = mod3602(zone.start);
+  const e = mod3602(zone.end);
+  return s <= e ? x >= s && x <= e : x >= s || x <= e;
+}
+
+// ../../docs/games/metagame/stages/stage9/modes.js
+var TWO_PI = Math.PI * 2;
+function mod3603(a) {
+  return (a % 360 + 360) % 360;
+}
+function angularDist3(a, b) {
+  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
+}
+function ringSpeed(cfg, seed) {
+  return (cfg.speed || 30) + makeRng(`${seed}s`).float() * (cfg.speedVar || 0);
+}
+function scanSolve(angleAt, tol, { maxMs = 4e4, step = 4 } = {}) {
+  let bestT = 0;
+  let bestD = Infinity;
+  for (let t = 0; t <= maxMs; t += step) {
+    const d = angularDist3(angleAt(t), 0);
+    if (d <= tol / 2) return t;
+    if (d < bestD) {
+      bestD = d;
+      bestT = t;
+    }
+  }
+  return bestT;
+}
+var simple = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    const speed = ringSpeed(cfg, seed);
+    const base = ringAngle(seed, 0, speed);
+    return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), {
+      gapWidth: cfg.tolerance,
+      hidden: cfg.display === "hidden",
+      darkZone: cfg.darkZone || null
+    });
+  }
+};
+function oscParams(cfg, seed) {
+  const r = makeRng(`${seed}o`);
+  return { base: r.float() * 360, phase: r.float() * TWO_PI, b: cfg.oscBase || 35, amp: Math.min(cfg.oscAmp || 18, (cfg.oscBase || 35) - 5), Tp: (cfg.oscPeriod || 4e3) / 1e3 };
+}
+var oscillating = {
+  angleAt(cfg, seed, ms) {
+    const { base, phase, b, amp, Tp } = oscParams(cfg, seed);
+    const t = ms / 1e3;
+    const integral = b * t - amp * Tp / TWO_PI * (Math.cos(TWO_PI * t / Tp + phase) - Math.cos(phase));
+    return mod3603(base + integral);
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance);
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function revSegments(cfg, seed) {
+  const r = makeRng(`${seed}r`);
+  const speed = ringSpeed(cfg, seed);
+  const segs = [];
+  let dir = 1;
+  for (let i = 0; i < 10; i++) {
+    const sweepDeg = dir > 0 ? 360 * 1.3 : 150;
+    const dur = sweepDeg / speed * (0.8 + r.float() * 0.4) * 1e3;
+    segs.push({ dir, dur, speed });
+    dir *= -1;
+  }
+  return { base: r.float() * 360, segs };
+}
+var reversing = {
+  angleAt(cfg, seed, ms) {
+    const { base, segs } = revSegments(cfg, seed);
+    let angle = base;
+    let left = ms;
+    for (const s of segs) {
+      const span = Math.min(left, s.dur);
+      angle += s.dir * s.speed * span / 1e3;
+      left -= span;
+      if (left <= 0) break;
+    }
+    return mod3603(angle);
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance, { maxMs: 6e4 });
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function dualParams(cfg, seed) {
+  const r = makeRng(`${seed}d`);
+  const si = cfg.speedInner || 45;
+  const so = cfg.speedOuter || 30;
+  const tAlign = 1500 + Math.floor(r.float() * 4e3);
+  return { si, so, tAlign, bi: mod3603(-si * tAlign / 1e3), bo: mod3603(-so * tAlign / 1e3) };
+}
+var dual = {
+  anglesAt(cfg, seed, ms) {
+    const { si, so, bi, bo } = dualParams(cfg, seed);
+    return { inner: mod3603(bi + si * ms / 1e3), outer: mod3603(bo + so * ms / 1e3) };
+  },
+  evaluate(cfg, seed, ms) {
+    const { inner, outer } = this.anglesAt(cfg, seed, ms);
+    const di = angularDist3(inner, 0);
+    const dou = angularDist3(outer, 0);
+    const distance = Math.max(di, dou);
+    return { hit: di <= cfg.tolerance / 2 && dou <= cfg.tolerance / 2, distance, inner, outer, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return dualParams(cfg, seed).tAlign;
+  },
+  render(cfg, seed, ms) {
+    const { inner, outer } = this.anglesAt(cfg, seed, ms);
+    return renderConcentric(inner, outer, { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function multiParams(cfg, seed) {
+  const r = makeRng(`${seed}m`);
+  const count = Math.max(2, cfg.gaps || 3);
+  const speed = ringSpeed(cfg, seed);
+  const base = r.float() * 360;
+  const realIdx = r.int(0, count - 1);
+  const step = 360 / count;
+  return { count, speed, base, realIdx, step };
+}
+var multigap = {
+  gapsAt(cfg, seed, ms) {
+    const { count, speed, base, step } = multiParams(cfg, seed);
+    return Array.from({ length: count }, (_, i) => mod3603(base + i * step + speed * ms / 1e3));
+  },
+  realAngle(cfg, seed, ms) {
+    const { speed, base, realIdx, step } = multiParams(cfg, seed);
+    return mod3603(base + realIdx * step + speed * ms / 1e3);
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.realAngle(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, distance, angle, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    const { speed, base, realIdx, step } = multiParams(cfg, seed);
+    const start = mod3603(base + realIdx * step);
+    return Math.round(((360 - start) % 360 + 360) % 360 / speed * 1e3);
+  },
+  render(cfg, seed, ms) {
+    return renderMultiGap(this.gapsAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
+  }
+};
+function simpleSolve(cfg, seed) {
+  const speed = ringSpeed(cfg, seed);
+  const base = ringAngle(seed, 0, speed);
+  return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
+}
+var ghostecho = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return simpleSolve(cfg, seed);
+  },
+  render(cfg, seed, ms, ctx = {}) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, ghosts: ctx.ghosts || [] });
+  }
+};
+function rhythmParams(cfg, seed) {
+  const speed = ringSpeed(cfg, seed);
+  const period = 36e4 / speed;
+  return { speed, period, base: simpleSolve(cfg, seed), chain: Math.max(2, cfg.chain || 3) };
+}
+var rhythm = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  // Press-time array: the gap faces the top on every beat; chain N of them in a row to clear.
+  solveMoment(cfg, seed) {
+    const { period, base, chain } = rhythmParams(cfg, seed);
+    return Array.from({ length: chain }, (_, k) => Math.round(base + k * period));
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance });
+  }
+};
+function stealthParams(cfg, seed) {
+  return { speed: ringSpeed(cfg, seed), eyeSpeed: cfg.eyeSpeed || 22, blind: cfg.blind || 60 };
+}
+var stealth = {
+  gapAngle(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  eyeAngle(cfg, seed, ms) {
+    return ringAngle(`${seed}eye`, ms, stealthParams(cfg, seed).eyeSpeed);
+  },
+  evaluate(cfg, seed, ms) {
+    const gap = this.gapAngle(cfg, seed, ms);
+    const eye = this.eyeAngle(cfg, seed, ms);
+    const distance = angularDist3(gap, 0);
+    const watched = angularDist3(eye, 0) <= (cfg.blind || 60) / 2;
+    return { hit: distance <= cfg.tolerance / 2 && !watched, distance, gap, eye, watched, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    for (let t = 0; t <= 6e4; t += 4) if (this.evaluate(cfg, seed, t).hit) return t;
+    return 0;
+  },
+  render(cfg, seed, ms) {
+    return renderStealth(this.gapAngle(cfg, seed, ms), this.eyeAngle(cfg, seed, ms), { gapWidth: cfg.tolerance, blind: cfg.blind || 60 });
+  }
+};
+var darkzone = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return simpleSolve(cfg, seed);
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || { start: 320, end: 40 } });
+  }
+};
+var MODES = { simple, oscillating, reversing, dual, multigap, ghostecho, rhythm, stealth, darkzone };
+function getMode(name) {
+  return MODES[name] || simple;
+}
+
+// ../../docs/games/metagame/stages/stage9/movements.js
+var BOSS_LEVEL = 16;
+var MOVEMENTS = [
+  { id: 1, name: "Signal", verb: "watch & time", levels: [1, 2] },
+  { id: 2, name: "Drift", verb: "read a changing speed", levels: [3, 4] },
+  { id: 3, name: "Echo", verb: "read your own error", levels: [5, 6] },
+  { id: 4, name: "Cadence", verb: "hold the beat", levels: [7, 8] },
+  { id: 5, name: "Interference", verb: "hold two rhythms", levels: [9, 10] },
+  { id: 6, name: "Surveillance", verb: "wait for the blind window", levels: [11] },
+  { id: 7, name: "Reversal", verb: "track the flips (offline)", levels: [12] },
+  { id: 8, name: "Decoys", verb: "pick the real gap (offline)", levels: [13, 14] },
+  { id: 9, name: "Blackout", verb: "extrapolate the occluded gap (offline)", levels: [15] },
+  { id: 10, name: "Observer", verb: "the full effect (offline)", levels: [16] }
+];
+var LEVEL_TABLE = {
+  1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
+  2: { mode: "simple", speed: 40, speedVar: 8, tolerance: 36, display: "open" },
+  3: { mode: "oscillating", oscBase: 36, oscAmp: 16, oscPeriod: 4200, tolerance: 34, display: "open" },
+  4: { mode: "oscillating", oscBase: 46, oscAmp: 24, oscPeriod: 3400, tolerance: 30, display: "open" },
+  5: { mode: "ghostecho", speed: 34, speedVar: 0, tolerance: 28, display: "open" },
+  6: { mode: "ghostecho", speed: 42, speedVar: 6, tolerance: 24, display: "open" },
+  7: { mode: "rhythm", speed: 34, speedVar: 0, chain: 3, tolerance: 30, display: "open" },
+  8: { mode: "rhythm", speed: 44, speedVar: 0, chain: 4, tolerance: 26, display: "open" },
+  9: { mode: "dual", speedInner: 44, speedOuter: 30, tolerance: 32, display: "dual" },
+  10: { mode: "dual", speedInner: 56, speedOuter: 36, tolerance: 28, display: "dual" },
+  11: { mode: "stealth", speed: 40, speedVar: 6, eyeSpeed: 24, blind: 64, tolerance: 26, display: "open" },
+  12: { mode: "reversing", speed: 62, speedVar: 10, tolerance: 26, display: "open", onlineUnstable: true },
+  13: { mode: "multigap", speed: 52, speedVar: 8, gaps: 3, tolerance: 24, display: "open", onlineUnstable: true },
+  14: { mode: "multigap", speed: 60, speedVar: 10, gaps: 4, tolerance: 20, display: "open", onlineUnstable: true },
+  15: { mode: "darkzone", speed: 50, speedVar: 8, tolerance: 22, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  16: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
+};
+function movementForLevel(level) {
+  const lvl = Number(level) || 1;
+  return MOVEMENTS.find((m) => m.levels.includes(lvl)) || MOVEMENTS[0];
+}
+function levelConfig(level) {
+  const lvl = Math.max(1, Math.min(BOSS_LEVEL, Number(level) || 1));
+  const base = LEVEL_TABLE[lvl] || LEVEL_TABLE[1];
+  const movement = movementForLevel(lvl);
+  return { ...base, level: lvl, movement: movement.id, movementName: movement.name, isBoss: lvl === BOSS_LEVEL };
+}
+
+// ../../docs/games/metagame/stages/stage9/game.js
+function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
+  let cfg = levelConfig(level);
+  if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
+  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
+}
+function solveMoment(seed, level) {
+  const cfg = levelConfig(level);
+  return getMode(cfg.mode).solveMoment(cfg, seed);
+}
+function renderLevel(seed, level, elapsedMs, ctx = {}) {
+  const cfg = levelConfig(level);
+  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
+}
+function sublevelSeed(level) {
+  return (Number(level) || 1) * 31 + 7;
 }
 
 // ../../docs/games/metagame/stages/stage9/boss.js
@@ -281,20 +645,127 @@ var serviceWorkerNotesText = [
 ].join("\n");
 
 // ../../docs/games/metagame/stages/stage9/loop.js
-function startLoop(onTick, intervalMs = 100) {
-  const id = setInterval(() => {
+function startLoop(onFrame) {
+  const now = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+  const hasRAF = typeof requestAnimationFrame === "function";
+  let last = now();
+  let stopped = false;
+  let handle = null;
+  function frame() {
+    if (stopped) return;
+    const t = now();
+    let dt = t - last;
+    last = t;
+    if (!(dt >= 0)) dt = 0;
+    if (dt > 100) dt = 100;
     try {
-      onTick();
+      onFrame(dt);
     } catch {
     }
-  }, intervalMs);
-  return { stop() {
-    clearInterval(id);
-  } };
+    schedule();
+  }
+  function schedule() {
+    if (stopped) return;
+    handle = hasRAF ? requestAnimationFrame(frame) : setTimeout(frame, 16);
+  }
+  schedule();
+  return {
+    stop() {
+      stopped = true;
+      if (handle == null) return;
+      if (hasRAF) cancelAnimationFrame(handle);
+      else clearTimeout(handle);
+    }
+  };
+}
+
+// ../../docs/games/metagame/stages/stage9/aids.js
+var AIDS = [
+  { id: "stabilizer", label: "Stabilizer Lens", cost: 20, desc: "+60% tolerance on your next CROSS (one charge)." },
+  { id: "tachometer", label: "Tachometer", cost: 30, desc: "permanent numeric readout: gap angle + speed." },
+  { id: "peek", label: "Single-Frame", cost: 15, desc: "offline only: reveal the gap's angle right now." }
+];
+var STABILIZER_TOLERANCE_MULT = 1.6;
+function aidById(id) {
+  return AIDS.find((a) => a.id === id) || null;
+}
+function defaultAids() {
+  return { stabilizer: 0, tachometer: false };
+}
+function normalizeAids(aids) {
+  const t = aids && typeof aids === "object" ? aids : {};
+  const stabilizer = Number.isFinite(Number(t.stabilizer)) ? Math.max(0, Math.floor(Number(t.stabilizer))) : 0;
+  return { stabilizer, tachometer: Boolean(t.tachometer) };
+}
+function buyAid(state, id, { offline = false } = {}) {
+  const aid = aidById(id);
+  if (!aid) return { ok: false, reason: "unknown" };
+  state.aids = normalizeAids(state.aids);
+  if (id === "peek" && !offline) return { ok: false, reason: "offline-only", aid };
+  if (id === "tachometer" && state.aids.tachometer) return { ok: false, reason: "owned", aid };
+  const clarity = Number(state.clarity || 0);
+  if (clarity < aid.cost) return { ok: false, reason: "insufficient", aid };
+  state.clarity = clarity - aid.cost;
+  if (id === "stabilizer") state.aids.stabilizer += 1;
+  if (id === "tachometer") state.aids.tachometer = true;
+  return { ok: true, aid };
+}
+function consumeStabilizer(state) {
+  state.aids = normalizeAids(state.aids);
+  if (state.aids.stabilizer > 0) {
+    state.aids.stabilizer -= 1;
+    return STABILIZER_TOLERANCE_MULT;
+  }
+  return 1;
+}
+
+// ../../docs/games/metagame/stages/stage9/testhook.js
+function installTestHook(api) {
+  const hook = {
+    state: () => api.state,
+    config: (level) => levelConfig(level ?? api.state.currentLevel),
+    aids: () => ({ clarity: api.state.clarity, ...api.getAids() }),
+    buyAid: (id) => api.buyAid(id),
+    crossAt(ms) {
+      api.crossAt(Number(ms) || 0);
+    },
+    // CROSS the current level at its perfect moment(s) for the seed it actually uses right now.
+    solveLevel() {
+      const sol = solveMoment(api.activeSeed(), api.state.currentLevel);
+      for (const t of Array.isArray(sol) ? sol : [sol]) api.crossAt(t);
+      return api.state.currentLevel;
+    },
+    // Clear the learnable front. Online this STALLS at the first onlineUnstable level (its gap reseeds
+    // on every commit) — proving the back third demands the offline un-cheat.
+    solveStableBody() {
+      let guard = 0;
+      while (api.state.currentLevel < BOSS_LEVEL && !levelConfig(api.state.currentLevel).onlineUnstable && guard++ < 96) {
+        const before = api.state.currentLevel;
+        this.solveLevel();
+        if (api.state.currentLevel === before) break;
+      }
+      return api.state.currentLevel;
+    },
+    // Full run to defeat (assumes Offline Mode already activated by the player/smoke).
+    solveOffline() {
+      let guard = 0;
+      while (api.state.currentLevel < BOSS_LEVEL && guard++ < 96) {
+        const before = api.state.currentLevel;
+        this.solveLevel();
+        if (api.state.currentLevel === before) break;
+      }
+      api.reobserve();
+      api.crossAt(solveMoment(FIXED_OFFLINE_SEED, BOSS_LEVEL));
+      return Boolean(api.state.boss.defeated);
+    }
+  };
+  window.__fvStage9 = hook;
+  return () => {
+    if (window.__fvStage9 === hook) delete window.__fvStage9;
+  };
 }
 
 // ../../docs/games/metagame/stages/stage9/renderer.js
-var TICK_MS = 100;
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage9-observer-state";
@@ -302,8 +773,9 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     <header class="s9-hud">
       <strong>OBSERVER STATE</strong>
       <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
-      <span>band <b data-field="band"></b></span>
+      <span>movement <b data-field="movement"></b></span>
       <span>clarity <b data-field="clarity"></b></span>
+      <span data-field="tachWrap" hidden>tach <b data-field="tach"></b></span>
       <span>seed <b data-field="seed"></b></span>
     </header>
     <div class="s9-layout">
@@ -311,6 +783,11 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       <aside class="s9-side">
         <button type="button" data-action="observe">OBSERVE (reset rotation)</button>
         <button type="button" data-action="cross">CROSS</button>
+        <hr>
+        <div class="s9-aids">
+          <strong>calibration (spend clarity)</strong>
+          ${AIDS.map((a) => `<button type="button" data-action="aid" data-aid="${a.id}" title="${a.desc}">${a.label} (${a.cost})</button>`).join("")}
+        </div>
         <hr>
         <button type="button" data-action="notes">open service-worker-notes.txt</button>
         <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
@@ -334,27 +811,75 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
   let elapsedMs = 0;
-  let bossSeed = null;
+  let liveSeed = null;
+  let rhythmChain = 0;
+  let attempts = [];
+  function offlineUnlocked() {
+    return hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
+  }
   function activeSeed() {
-    if (state.currentLevel >= BOSS_LEVEL) {
-      if (bossSeed === null) bossSeed = getBossSeed({ state, actions });
-      return bossSeed;
+    const cfg = levelConfig(state.currentLevel);
+    if (cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) {
+      if (offlineUnlocked()) return FIXED_OFFLINE_SEED;
+      if (liveSeed === null) liveSeed = getBossSeed({ state, actions });
+      return liveSeed;
     }
     return sublevelSeed(state.currentLevel);
   }
   function reobserve() {
     elapsedMs = 0;
-    if (state.currentLevel >= BOSS_LEVEL) bossSeed = getBossSeed({ state, actions });
+    rhythmChain = 0;
+    attempts = [];
+    const cfg = levelConfig(state.currentLevel);
+    if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
+      liveSeed = getBossSeed({ state, actions });
+    }
+  }
+  function advanceFrom(level) {
+    state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
+    elapsedMs = 0;
+    liveSeed = null;
+    rhythmChain = 0;
+    attempts = [];
+    if (state.currentLevel >= BOSS_LEVEL) pushLog2(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
   }
   function crossSublevel() {
-    const seed = sublevelSeed(state.currentLevel);
-    const result = crossAttempt({ seed, elapsedMs, level: state.currentLevel });
+    const level = state.currentLevel;
+    const cfg = levelConfig(level);
+    if (cfg.onlineUnstable && !offlineUnlocked()) {
+      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      liveSeed = getBossSeed({ state, actions });
+      state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
+      pushLog2("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
+      return;
+    }
+    const seed = activeSeed();
+    const toleranceMult = consumeStabilizer(state);
+    if (toleranceMult > 1) pushLog2("stabilizer lens engaged (+tolerance for this cross).");
+    const result = crossAttempt({ seed, elapsedMs, level, toleranceMult });
+    if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
+    if (cfg.mode === "rhythm") {
+      const need = Math.max(2, cfg.chain || 3);
+      if (result.hit) {
+        rhythmChain += 1;
+        if (rhythmChain >= need) {
+          state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
+          pushLog2(`cadence held — ${need} crosses on the beat. advancing.`);
+          advanceFrom(level);
+        } else {
+          pushLog2(`on beat (${rhythmChain}/${need}). hold the cadence.`);
+        }
+      } else {
+        rhythmChain = 0;
+        state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+        pushLog2(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      }
+      return;
+    }
     if (result.hit) {
-      pushLog2(`level ${state.currentLevel} crossed (gap at top). advancing.`);
-      state.currentLevel = Math.min(BOSS_LEVEL, state.currentLevel + 1);
-      elapsedMs = 0;
-      bossSeed = null;
-      if (state.currentLevel >= BOSS_LEVEL) pushLog2("level 18: THE OBSERVER EFFECT. the gap will not hold still while live.");
+      state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
+      pushLog2(`level ${level} crossed (gap at top). advancing.`);
+      advanceFrom(level);
     } else {
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
@@ -379,6 +904,9 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       case "cross":
         doCross();
         break;
+      case "aid":
+        buyAidAction(button.dataset.aid);
+        break;
       case "notes":
         openNotes();
         break;
@@ -391,37 +919,46 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     }
     persistAndPaint();
   });
-  const loop = startLoop(() => {
-    if (!state.boss.defeated) elapsedMs += TICK_MS;
+  function buyAidAction(id) {
+    const offline = offlineUnlocked();
+    const res = buyAid(state, id, { offline });
+    if (!res.ok) {
+      const why = { "offline-only": "single-frame only works in Offline Mode (online the seed reseeds).", insufficient: "not enough clarity.", owned: "already owned." }[res.reason] || "cannot buy that.";
+      pushLog2(why);
+      return res;
+    }
+    if (id === "stabilizer") pushLog2("stabilizer lens armed: your next CROSS gets a wider window.");
+    if (id === "tachometer") pushLog2("tachometer online: numeric gap readout enabled.");
+    if (id === "peek") doPeek();
+    return res;
+  }
+  function doPeek() {
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const ang = Number.isFinite(r.angle) ? `gap at ${Math.round(r.angle)}deg` : "two gaps to align";
+    pushLog2(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
+  }
+  const loop = startLoop((dt) => {
+    if (!state.boss.defeated) elapsedMs += dt;
     paintArena();
-  }, TICK_MS);
+  });
   repaint();
-  window.__fvStage9 = {
-    state: () => state,
+  const uninstallHook = installTestHook({
+    state,
+    activeSeed,
+    reobserve,
+    getAids: () => ({ ...state.aids }),
+    buyAid: (id) => buyAidAction(id),
     crossAt(ms) {
       elapsedMs = Number(ms) || 0;
       doCross();
       persistAndPaint();
-    },
-    solveSublevels() {
-      let guard = 0;
-      while (state.currentLevel < BOSS_LEVEL && guard++ < 64) {
-        this.crossAt(solveElapsed(sublevelSeed(state.currentLevel), state.currentLevel));
-      }
-      return state.currentLevel;
-    },
-    solveOffline() {
-      this.solveSublevels();
-      reobserve();
-      this.crossAt(solveElapsed(FIXED_OFFLINE_SEED, BOSS_LEVEL));
-      return Boolean(state.boss.defeated);
     }
-  };
+  });
   return {
     repaint,
     destroy() {
       loop.stop();
-      if (window.__fvStage9) delete window.__fvStage9;
+      uninstallHook();
       root.remove();
     }
   };
@@ -438,28 +975,29 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   }
   function paintArena() {
     const seed = activeSeed();
-    const cfg = levelConfig(state.currentLevel);
-    const speed = rotSpeedFor(seed, state.currentLevel);
-    const angle = ringAngle(seed, elapsedMs, speed);
-    const display = cfg.display;
-    fields.arena.textContent = renderRing(angle, {
-      gapWidth: cfg.tolerance,
-      hidden: display === "hidden",
-      darkZone: cfg.darkZone || null
-    });
+    const level = state.currentLevel;
+    const ctx = {};
+    if (levelConfig(level).mode === "ghostecho") {
+      ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
+    }
+    fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
   }
   function repaint() {
     const lock = getBossLockState({ actions, state });
-    const cfg = levelConfig(state.currentLevel);
+    const movement = movementForLevel(state.currentLevel);
     fields.level.textContent = String(state.currentLevel);
-    fields.band.textContent = `${cfg.band} (${cfg.display})`;
+    fields.movement.textContent = `${movement.name} — ${movement.verb}`;
     fields.clarity.textContent = String(state.clarity);
-    fields.seed.textContent = state.currentLevel >= BOSS_LEVEL ? lock.seedMode === "fixed-cache" ? "0 (fixed)" : "random" : "stable";
+    const cfg = levelConfig(state.currentLevel);
+    const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
+    fields.seed.textContent = unstable ? lock.unlocked ? "0 (fixed cache)" : "live-random" : "stable";
+    paintTach(cfg);
+    paintAids();
     paintArena();
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
     else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
-    fields.hint.textContent = state.currentLevel >= BOSS_LEVEL ? lock.hint : "watch the gap; CROSS when it faces the top (12 o'clock).";
+    fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : "watch the gap; CROSS when it faces the top (12 o'clock).";
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-5).map((line) => {
@@ -467,6 +1005,25 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       li.textContent = line;
       return li;
     }));
+  }
+  function paintTach(cfg) {
+    const owned = Boolean(state.aids && state.aids.tachometer);
+    fields.tachWrap.hidden = !owned;
+    if (!owned) return;
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const ang = Number.isFinite(r.angle) ? `${Math.round(r.angle)}deg` : `${Math.round(r.distance)}deg off`;
+    fields.tach.textContent = `${ang} @ ${Math.round(cfg.speed || cfg.speedInner || cfg.oscBase || 0)}deg/s`;
+  }
+  function paintAids() {
+    const offline = offlineUnlocked();
+    for (const aid of AIDS) {
+      const btn = root.querySelector(`[data-aid="${aid.id}"]`);
+      if (!btn) continue;
+      const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
+      const peekLocked = aid.id === "peek" && !offline;
+      btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
+      btn.classList.toggle("s9-aid-owned", Boolean(ownedTach));
+    }
   }
   function persistAndPaint() {
     if (typeof save === "function") save();
@@ -492,12 +1049,13 @@ function once(fn) {
 // ../../docs/games/metagame/stages/stage9/state.js
 function defaultState() {
   return {
-    version: 1,
+    version: 2,
     notesRead: false,
     offlineControlVisible: false,
     offlineMode: false,
-    clarity: 84,
-    currentLevel: 12,
+    clarity: 0,
+    aids: defaultAids(),
+    currentLevel: 1,
     lockedSeedSamples: [],
     log: [
       "one observer. it sees everything. there is a gap. the gap moves.",
@@ -520,12 +1078,15 @@ function defaultState() {
 function normalizeState(state) {
   const fresh = defaultState();
   const target = state && typeof state === "object" ? state : {};
-  target.version = 1;
+  const staleV1 = Number(target.version) === 1;
+  target.version = 2;
   target.notesRead = Boolean(target.notesRead);
   target.offlineControlVisible = Boolean(target.offlineControlVisible);
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
-  target.currentLevel = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
+  target.aids = normalizeAids(target.aids);
+  const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
+  target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...target.boss && typeof target.boss === "object" ? target.boss : {} };

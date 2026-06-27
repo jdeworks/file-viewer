@@ -59,7 +59,49 @@ const SPECS = {
   // D3 THROUGHPUT
   BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
   BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => { ctx.block(11); ctx.noWindowShrink(); } },
-  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => { ctx.defrag(); ctx.draw(2); } }
+  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => { ctx.defrag(); ctx.draw(2); } },
+  // H · Act 5 CORRUPTION (Daemon Swarm)
+  FORK_BOMB: { text: "Apply 6 Corruption.", effect: (ctx) => ctx.applyCorruption(6) },
+  DAEMON_SPAWN: { text: "Apply 3 Corruption.", effect: (ctx) => ctx.applyCorruption(3) },
+  ROT: { text: "Apply 3 Corruption. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.applyCorruption(3); ctx.applyEnemy("weak", 1); } },
+  ZOMBIE_PROCESS: { text: "Apply 4 Corruption. If the enemy is already corrupted, apply 4 more.", effect: (ctx) => { const had = ctx.enemyCorruption > 0; ctx.applyCorruption(4); if (had) ctx.applyCorruption(4); } },
+  MEMORY_LEAK: { text: "Corruption you apply is increased by 1. Apply 3 Corruption.", effect: (ctx) => { ctx.boostCorruption(1); ctx.applyCorruption(3); } },
+  ENTROPY_WAVE: { text: "Apply 4 Corruption. Draw 1.", effect: (ctx) => { ctx.applyCorruption(4); ctx.draw(1); } },
+  SEGFAULT_SPILL: { text: "Deal 6. Apply 3 Corruption.", effect: (ctx) => { ctx.deal(6); ctx.applyCorruption(3); } },
+  CORE_DUMP: { text: "Deal damage equal to the enemy's Corruption (keep the stack).", effect: (ctx) => ctx.deal(ctx.enemyCorruption) },
+  CASCADE_FAILURE: { text: "Apply Corruption equal to the enemy's Corruption + 2.", effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption + 2) },
+  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) },
+  // H · Act 6 CHAIN (Recursion)
+  STACK_FRAME: { text: "Deal 9. If the previous card was a Recursion card, deal 9 more.", effect: (ctx) => { ctx.deal(9); if (ctx.lastPlayedType === "Recursion") ctx.deal(9); } },
+  LOOPBACK: { text: "Deal 4. If the previous card was a Recursion card, draw 1.", effect: (ctx) => { ctx.deal(4); if (ctx.lastPlayedType === "Recursion") ctx.draw(1); } },
+  ITERATE: { text: "Deal 5. Deal 5 more for each card replayed this turn.", effect: (ctx) => ctx.deal(5 + 5 * ctx.chainCount) },
+  YIELD: { text: "Gain 8 block. If the previous card was a Recursion card, gain 6 more block.", effect: (ctx) => { ctx.block(8); if (ctx.lastPlayedType === "Recursion") ctx.block(6); } },
+  TAIL_CALL: { text: "Replay the last card you played at three-quarters value.", effect: (ctx) => ctx.replayLast(0.75) },
+  TRAMPOLINE: { text: "Deal 10. Replay the last card you played at half value.", effect: (ctx) => { ctx.deal(10); ctx.replayLast(0.5); } },
+  CALLBACK: { text: "Deal 7. Replay the last card at the start of your next turn.", effect: (ctx) => { ctx.deal(7); ctx.echoNextTurn(); } },
+  FIXED_POINT: { cost: 1, text: "Replay the last card you played twice. (cost 1)", effect: (ctx) => ctx.replayLast(1, 2) },
+  RECURSE: { exhaust: false, text: "X-cost: spend all energy, then replay the last card that many times.", effect: (ctx) => ctx.replayLast(1, ctx.xValue) },
+  // H · pool-depth commons
+  BIT_FLIP: { text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
+  PING: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) },
+  ICMP: { text: "Deal 7. Gain 4 block.", effect: (ctx) => { ctx.deal(7); ctx.block(4); } },
+  TEARDOWN: { text: "Deal 15.", effect: (ctx) => ctx.deal(15) },
+  DATAGRAM: { text: "Deal 9.", effect: (ctx) => ctx.deal(9) },
+  BROADCAST: { text: "Deal 8. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.deal(8); ctx.applyEnemy("weak", 1); } },
+  ACKNOWLEDGE: { text: "Gain 12 block.", effect: (ctx) => ctx.block(12) },
+  PADDING: { text: "Gain 6 block.", effect: (ctx) => ctx.block(6) },
+  PARITY: { text: "Gain 7 block. Draw 1.", effect: (ctx) => { ctx.block(7); ctx.draw(1); } },
+  HEARTBEAT: { text: "Gain 15 block.", effect: (ctx) => ctx.block(15) },
+  SLOW_START: { text: "Gain 8 block. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.block(8); ctx.applyEnemy("weak", 1); } },
+  SHIM: { cost: 0, text: "Gain 1 Strength. (cost 0)", effect: (ctx) => ctx.applySelf("strength", 1) },
+  ROTATE: { text: "Gain 6 block. Draw 1.", effect: (ctx) => { ctx.block(6); ctx.draw(1); } },
+  XOR_PAD: { text: "Gain 8 block.", effect: (ctx) => ctx.block(8) },
+  NONCE: { text: "Gain 5 block. Draw 1.", effect: (ctx) => { ctx.block(5); ctx.draw(1); } },
+  TAINT: { text: "Deal 3. Apply 3 Corruption.", effect: (ctx) => { ctx.deal(3); ctx.applyCorruption(3); } },
+  NULL_DEREF: { text: "Deal 7. If the enemy is corrupted, deal 4 more.", effect: (ctx) => { ctx.deal(7); if (ctx.enemyCorruption > 0) ctx.deal(4); } },
+  SPORE: { text: "Apply 2 Corruption. Draw 1.", effect: (ctx) => { ctx.applyCorruption(2); ctx.draw(1); } },
+  TRACE: { text: "Deal 7. If the previous card was a Recursion card, gain 4 block.", effect: (ctx) => { ctx.deal(7); if (ctx.lastPlayedType === "Recursion") ctx.block(4); } },
+  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) }
 };
 
 export function isUpgradedId(id) {

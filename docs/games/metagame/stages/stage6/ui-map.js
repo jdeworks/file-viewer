@@ -5,14 +5,14 @@
 // NOTE: there is deliberately NO "confront" button — The Refused Connection is reachable ONLY
 // as the act-4 boss node of a full run (see renderer route). The run is mandatory.
 
-import { availableNodes, prestigeCost } from "./run.js";
-import { MODIFIERS } from "./modifiers.js";
+import { availableNodes, prestigeCost, runScore } from "./run.js";
+import { activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
 
 const NODE_ICON = {
   combat: "⚔", elite: "☠", rest: "♨", shop: "⛁", event: "❓", boss: "☣"
 };
 
-export function hubView(state, lock) {
+export function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
@@ -20,13 +20,15 @@ export function hubView(state, lock) {
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend four acts, and earn the right to be acknowledged.</p>
+      and protocols, descend six acts, and earn the right to be acknowledged.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
+      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
       <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
     </dl>
+    ${seedModes(hasRun)}
     <div class="s6db-hub-actions">
       ${hasRun
         ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
@@ -39,8 +41,8 @@ export function hubView(state, lock) {
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
-      ${activeModifiers(m.protocolVersion)}
     </div>
+    ${ascensionPicker(asc, hasRun)}
     <p class="s6db-hint">${esc(lock.unlocked
       ? "Chapter 9 is read. The connection can be negotiated."
       : "The connection refuses everything you send. The codex explains why.")}</p>
@@ -48,12 +50,54 @@ export function hubView(state, lock) {
   return el;
 }
 
-// Show the stacked prestige rule-modifiers active at the current Protocol Version.
-function activeModifiers(version) {
-  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+// Seeded run modes: a DAILY run (seed from today's date — everyone's same-day run is identical) and
+// a CUSTOM-seed run (type any string → a reproducible run) for self-competition. Hidden while a run
+// is active (starting a seeded run would discard it). Buttons: [data-action="daily-run"|"custom-run"].
+function seedModes(hasRun) {
+  if (hasRun) return "";
+  return `<div class="s6db-seed-modes">
+      <button type="button" data-action="daily-run" class="s6db-ghost">daily seed ▸</button>
+      <span class="s6db-seed-entry">
+        <input type="text" class="s6db-seed-input" maxlength="40" placeholder="custom seed…" aria-label="custom seed" />
+        <button type="button" data-action="custom-run" class="s6db-ghost">seeded run ▸</button>
+      </span>
+    </div>`;
+}
+
+// The ascension difficulty picker: choose the rule-rung (0..maxUnlocked) for the NEXT run, and show
+// the rules in force at the EFFECTIVE level = max(selected, prestige floor). Hidden once a run is
+// active (you can't re-pick mid-run) and when the ladder isn't wired (no save). Buttons are
+// [data-ascension="<n>"]; the renderer's handler calls ascension.setLevel.
+function ascensionPicker(asc, hasRun) {
+  if (!asc || hasRun) {
+    // Mid-run: still surface the rules in force so the player sees why the run is harder.
+    return asc ? activeRules(Math.max(asc.level, asc.floor || 0)) : "";
+  }
+  const maxPick = Math.max(asc.maxUnlocked, asc.floor || 0);
+  const cells = [];
+  for (let n = 0; n <= asc.maxLevel; n++) {
+    const locked = n > maxPick;
+    const sel = n === asc.level ? " is-selected" : "";
+    const floorPinned = n <= (asc.floor || 0) ? " is-floor" : "";
+    cells.push(locked
+      ? `<span class="s6db-asc-cell is-locked" aria-disabled="true">${n}</span>`
+      : `<button type="button" class="s6db-asc-cell${sel}${floorPinned}" data-ascension="${n}">${n}</button>`);
+  }
+  const effective = Math.max(asc.level, asc.floor || 0);
+  return `<div class="s6db-ascension">
+      <div class="s6db-asc-head"><strong>Ascension</strong>
+        <span>difficulty ${asc.level} · cleared ${asc.maxCleared}/${MAX_ASCENSION}${asc.floor ? ` · prestige floor ${asc.floor}` : ""}</span></div>
+      <div class="s6db-asc-track" aria-label="ascension level picker">${cells.join("")}</div>
+      ${activeRules(effective)}
+    </div>`;
+}
+
+// Show the stacked ascension rules active at the given effective level.
+function activeRules(level) {
+  const active = activeAscensionMods(level);
   if (!active.length) return "";
   return `<ul class="s6db-modifiers" aria-label="active rules">${active
-    .map((mod) => `<li>⚠ ${esc(mod.text)}</li>`).join("")}</ul>`;
+    .map((mod) => `<li>⚠ <strong>${esc(mod.label)}</strong> — ${esc(mod.desc)}</li>`).join("")}</ul>`;
 }
 
 export function mapView(run) {
@@ -83,8 +127,10 @@ export function mapView(run) {
 
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
+  const keyCount = run.keys?.length || 0;
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
     <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
+    <span title="true-ending keys (untouchable elite · skip a reward · sacrificial rest)">keys ${"⚷".repeat(keyCount)}${keyCount}/3</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
@@ -116,8 +162,10 @@ export function deathView(state, run) {
     <p>The stack collapsed in act ${run?.act ?? 1}. Your handshakes settle into the bank.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Reached</dt><dd>act ${run?.act ?? 1}</dd></div>
+      <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Banked total</dt><dd>${state.meta.banked}</dd></div>
     </dl>
+    ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
       <button type="button" data-action="new-run">try again ▸</button>
       <button type="button" data-action="abandon" class="s6db-ghost">back to hub</button>
@@ -125,17 +173,38 @@ export function deathView(state, run) {
   return el;
 }
 
-export function wonView(state) {
+export function wonView(state, run) {
   const el = document.createElement("div");
   el.className = "s6db-end s6db-end--won";
+  const trueEnding = Boolean(run?.trueEnding);
   el.innerHTML = `
-    <h2>The connection accepted a shared rule</h2>
-    <p>Four acts negotiated. The archive lets you pass.</p>
+    <h2>${trueEnding ? "The Kernel of Refusal yields" : "The connection accepted a shared rule"}</h2>
+    <p>${trueEnding
+      ? "Three keys turned in the lock. Past the accepted handshake, the kernel that refused everything finally answers. This is the true ending."
+      : "Six acts negotiated. The archive lets you pass."}</p>
+    <dl class="s6db-meta-grid">
+      <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
+      <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>
+    </dl>
+    ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
       <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>
     </div>`;
   return el;
+}
+
+// A small "best / seed" line for the end screens: shows the all-time best and, for a seeded run,
+// the seed key + its best score (self-competition).
+function scoreLine(state, run) {
+  const best = state.meta.bestScore || 0;
+  const parts = [`<span>Best: <strong>${best}</strong></span>`];
+  if (run?.dailyKey) {
+    const seedBest = (state.meta.dailyBest && state.meta.dailyBest[run.dailyKey]) || 0;
+    const label = run.mode === "daily" ? "daily" : "seed";
+    parts.push(`<span>${esc(label)} <code>${esc(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
+  }
+  return `<p class="s6db-score-line">${parts.join(" · ")}</p>`;
 }
 
 function esc(value) {

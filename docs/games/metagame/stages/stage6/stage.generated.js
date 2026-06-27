@@ -397,7 +397,20 @@ var SIGNAL_CARDS = [
     rarity: "rare",
     text: "Deal 18 in 2 turns.",
     effect: (ctx) => ctx.queue(2, { deal: 18 })
-  }
+  },
+  // ── H · additional commons (pool depth — early decks need reliable filler) ──────────────────────────
+  { id: "BIT_FLIP", type: "Signal", cost: 0, rarity: "common", text: "Deal 4.", effect: (ctx) => ctx.deal(4) },
+  { id: "PING", type: "Signal", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) },
+  { id: "ICMP", type: "Signal", cost: 1, rarity: "common", text: "Deal 5. Gain 3 block.", effect: (ctx) => {
+    ctx.deal(5);
+    ctx.block(3);
+  } },
+  { id: "TEARDOWN", type: "Signal", cost: 2, rarity: "common", text: "Deal 11.", effect: (ctx) => ctx.deal(11) },
+  { id: "DATAGRAM", type: "Signal", cost: 1, rarity: "common", text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
+  { id: "BROADCAST", type: "Signal", cost: 2, rarity: "common", text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.applyEnemy("weak", 1);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/cards-protocol.js
@@ -562,7 +575,19 @@ var PROTOCOL_CARDS = [
       ctx.defrag();
       ctx.draw(1);
     }
-  }
+  },
+  // ── H · additional commons (pool depth — reliable block filler) ─────────────────────────────────────
+  { id: "ACKNOWLEDGE", type: "Protocol", cost: 1, rarity: "common", text: "Gain 9 block.", effect: (ctx) => ctx.block(9) },
+  { id: "PADDING", type: "Protocol", cost: 0, rarity: "common", text: "Gain 4 block.", effect: (ctx) => ctx.block(4) },
+  { id: "PARITY", type: "Protocol", cost: 1, rarity: "common", text: "Gain 5 block. Draw 1.", effect: (ctx) => {
+    ctx.block(5);
+    ctx.draw(1);
+  } },
+  { id: "HEARTBEAT", type: "Protocol", cost: 2, rarity: "common", text: "Gain 11 block.", effect: (ctx) => ctx.block(11) },
+  { id: "SLOW_START", type: "Protocol", cost: 1, rarity: "common", text: "Gain 6 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.applyEnemy("weak", 1);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/cards-layer.js
@@ -644,7 +669,234 @@ var LAYER_CARDS = [
     rarity: "rare",
     text: "Widen your congestion window by 1 (gain 1 energy now).",
     effect: (ctx) => ctx.widenWindow(1)
-  }
+  },
+  // ── H · additional commons (pool depth — light power/defense filler) ─────────────────────────────────
+  { id: "SHIM", type: "Layer", cost: 1, rarity: "common", text: "Gain 1 Strength.", effect: (ctx) => ctx.applySelf("strength", 1) },
+  { id: "ROTATE", type: "Layer", cost: 1, rarity: "common", text: "Gain 4 block. Draw 1.", effect: (ctx) => {
+    ctx.block(4);
+    ctx.draw(1);
+  } },
+  { id: "XOR_PAD", type: "Layer", cost: 1, rarity: "common", text: "Gain 5 block.", effect: (ctx) => ctx.block(5) },
+  { id: "NONCE", type: "Layer", cost: 0, rarity: "common", text: "Gain 3 block. Draw 1.", effect: (ctx) => {
+    ctx.block(3);
+    ctx.draw(1);
+  } }
+];
+
+// ../../docs/games/metagame/stages/stage6/cards-daemon.js
+var DAEMON_CARDS = [
+  {
+    id: "FORK_BOMB",
+    type: "Daemon",
+    cost: 1,
+    rarity: "common",
+    text: "Apply 4 Corruption.",
+    effect: (ctx) => ctx.applyCorruption(4)
+  },
+  {
+    id: "DAEMON_SPAWN",
+    type: "Daemon",
+    cost: 0,
+    rarity: "common",
+    text: "Apply 2 Corruption.",
+    effect: (ctx) => ctx.applyCorruption(2)
+  },
+  {
+    id: "ROT",
+    type: "Daemon",
+    cost: 1,
+    rarity: "common",
+    text: "Apply 2 Corruption. Apply 1 Weak to the enemy.",
+    effect: (ctx) => {
+      ctx.applyCorruption(2);
+      ctx.applyEnemy("weak", 1);
+    }
+  },
+  {
+    id: "ZOMBIE_PROCESS",
+    type: "Daemon",
+    cost: 1,
+    rarity: "common",
+    text: "Apply 3 Corruption. If the enemy is already corrupted, apply 3 more.",
+    effect: (ctx) => {
+      const had = ctx.enemyCorruption > 0;
+      ctx.applyCorruption(3);
+      if (had) ctx.applyCorruption(3);
+    }
+  },
+  {
+    id: "MEMORY_LEAK",
+    type: "Daemon",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Corruption you apply is increased by 1 for the rest of combat. Apply 2 Corruption.",
+    effect: (ctx) => {
+      ctx.boostCorruption(1);
+      ctx.applyCorruption(2);
+    }
+  },
+  {
+    id: "ENTROPY_WAVE",
+    type: "Daemon",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Apply 3 Corruption. Draw 1.",
+    effect: (ctx) => {
+      ctx.applyCorruption(3);
+      ctx.draw(1);
+    }
+  },
+  {
+    id: "SEGFAULT_SPILL",
+    type: "Daemon",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 4. Apply 2 Corruption.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      ctx.applyCorruption(2);
+    }
+  },
+  {
+    id: "CORE_DUMP",
+    type: "Daemon",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal damage equal to the enemy's Corruption, then halve it.",
+    effect: (ctx) => {
+      ctx.deal(ctx.enemyCorruption);
+      ctx.halveCorruption();
+    }
+  },
+  {
+    id: "CASCADE_FAILURE",
+    type: "Daemon",
+    cost: 2,
+    rarity: "rare",
+    text: "Apply Corruption equal to the enemy's current Corruption (double it).",
+    effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption)
+  },
+  {
+    id: "GARBAGE_COLLECT",
+    type: "Daemon",
+    cost: 2,
+    rarity: "rare",
+    exhaust: true,
+    text: "Consume all Corruption on the enemy and deal that much damage instantly. Exhaust.",
+    effect: (ctx) => ctx.deal(ctx.consumeCorruption())
+  },
+  // ── H · additional commons (pool depth — cheap corruption filler) ───────────────────────────────────
+  { id: "TAINT", type: "Daemon", cost: 1, rarity: "common", text: "Deal 2. Apply 2 Corruption.", effect: (ctx) => {
+    ctx.deal(2);
+    ctx.applyCorruption(2);
+  } },
+  { id: "NULL_DEREF", type: "Daemon", cost: 1, rarity: "common", text: "Deal 5. If the enemy is corrupted, deal 3 more.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.enemyCorruption > 0) ctx.deal(3);
+  } },
+  { id: "SPORE", type: "Daemon", cost: 0, rarity: "common", text: "Apply 1 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(1);
+    ctx.draw(1);
+  } }
+];
+
+// ../../docs/games/metagame/stages/stage6/cards-recursion.js
+var RECURSION_CARDS = [
+  {
+    id: "STACK_FRAME",
+    type: "Recursion",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 6. If the previous card was a Recursion card, deal 6 more.",
+    effect: (ctx) => {
+      ctx.deal(6);
+      if (ctx.lastPlayedType === "Recursion") ctx.deal(6);
+    }
+  },
+  {
+    id: "LOOPBACK",
+    type: "Recursion",
+    cost: 0,
+    rarity: "common",
+    text: "Deal 3. If the previous card was a Recursion card, draw 1.",
+    effect: (ctx) => {
+      ctx.deal(3);
+      if (ctx.lastPlayedType === "Recursion") ctx.draw(1);
+    }
+  },
+  {
+    id: "ITERATE",
+    type: "Recursion",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 4. Deal 4 more for each card replayed this turn.",
+    effect: (ctx) => ctx.deal(4 + 4 * ctx.chainCount)
+  },
+  {
+    id: "YIELD",
+    type: "Recursion",
+    cost: 1,
+    rarity: "common",
+    text: "Gain 6 block. If the previous card was a Recursion card, gain 4 more block.",
+    effect: (ctx) => {
+      ctx.block(6);
+      if (ctx.lastPlayedType === "Recursion") ctx.block(4);
+    }
+  },
+  {
+    id: "TAIL_CALL",
+    type: "Recursion",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Replay the last card you played at half value.",
+    effect: (ctx) => ctx.replayLast(0.5)
+  },
+  {
+    id: "TRAMPOLINE",
+    type: "Recursion",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Deal 8. Replay the last card you played at half value.",
+    effect: (ctx) => {
+      ctx.deal(8);
+      ctx.replayLast(0.5);
+    }
+  },
+  {
+    id: "CALLBACK",
+    type: "Recursion",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 5. Replay the last card you played at the start of your next turn.",
+    effect: (ctx) => {
+      ctx.deal(5);
+      ctx.echoNextTurn();
+    }
+  },
+  {
+    id: "FIXED_POINT",
+    type: "Recursion",
+    cost: 2,
+    rarity: "rare",
+    text: "Replay the last card you played twice.",
+    effect: (ctx) => ctx.replayLast(1, 2)
+  },
+  {
+    id: "RECURSE",
+    type: "Recursion",
+    cost: 0,
+    rarity: "rare",
+    exhaust: true,
+    xcost: true,
+    text: "X-cost: spend all energy, then replay the last card you played that many times. Exhaust.",
+    effect: (ctx) => ctx.replayLast(1, ctx.xValue)
+  },
+  // ── H · additional commons (pool depth — cheap chain filler) ────────────────────────────────────────
+  { id: "TRACE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 5. If the previous card was a Recursion card, gain 3 block.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.lastPlayedType === "Recursion") ctx.block(3);
+  } },
+  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
 ];
 
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
@@ -684,7 +936,7 @@ function hashSeed(seed, key) {
 }
 
 // ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 function cardById(id) {
   return BY_ID.get(id) || null;
@@ -698,11 +950,13 @@ var RARITY_WEIGHT_BY_ACT = {
   1: { common: 70, uncommon: 25, rare: 5 },
   2: { common: 50, uncommon: 35, rare: 15 },
   3: { common: 35, uncommon: 40, rare: 25 },
-  4: { common: 20, uncommon: 40, rare: 40 }
+  4: { common: 20, uncommon: 40, rare: 40 },
+  5: { common: 12, uncommon: 38, rare: 50 },
+  6: { common: 8, uncommon: 32, rare: 60 }
 };
 function draftRewardCards(seed, act, count = 3) {
   const rng = makeRng(seed);
-  const weights = RARITY_WEIGHT_BY_ACT[Math.min(4, Math.max(1, Number(act) || 1))];
+  const weights = RARITY_WEIGHT_BY_ACT[Math.min(6, Math.max(1, Number(act) || 1))];
   const tierCount = {};
   for (const id of REWARD_POOL) {
     const r = cardById(id)?.rarity || "common";
@@ -738,7 +992,9 @@ function dealToEnemy(combat, baseAmount) {
   amount = Math.max(0, amount - combat.enemy.armor);
   const absorbed = Math.min(combat.enemy.block, amount);
   combat.enemy.block -= absorbed;
-  combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
+  const landed = amount - absorbed;
+  combat.enemy.hp = Math.max(0, combat.enemy.hp - landed);
+  if (landed > 0) combat.enemy.unhurt = false;
 }
 function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {
   let amount = Math.max(0, Math.round(baseAmount));
@@ -756,6 +1012,15 @@ function addStatus(entity, status, value) {
   entity.statuses[status] = (entity.statuses[status] || 0) + value;
   if (entity.statuses[status] <= 0) delete entity.statuses[status];
 }
+function tickCorruption(combat) {
+  const enemy = combat.enemy;
+  const stacks = enemy.statuses.corruption || 0;
+  if (stacks <= 0) return;
+  const ticks = combat.corruptionDouble ? 2 : 1;
+  enemy.hp = Math.max(0, enemy.hp - stacks * ticks);
+  enemy.statuses.corruption = stacks - 1;
+  if (enemy.statuses.corruption <= 0) delete enemy.statuses.corruption;
+}
 var DURATION_STATUSES = /* @__PURE__ */ new Set(["vulnerable", "weak"]);
 function tickStatuses(entity) {
   for (const key of Object.keys(entity.statuses)) {
@@ -769,6 +1034,7 @@ function log(combat, line) {
 }
 
 // ../../docs/games/metagame/stages/stage6/combat-ctx.js
+var MAX_ECHO_DEPTH = 4;
 function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
@@ -776,17 +1042,18 @@ function makeCtx(combat, card) {
   return {
     combat,
     card,
-    // Boss negotiation (optional): a Signal-type card whose handshake is unmet deals 0 —
-    // "PROTOCOL MISMATCH". Protocol/Layer cards always resolve. See boss-combat.js.
+    // Boss negotiation (optional): the acceptance hook gates ALL damage to the boss (any archetype).
+    // While ch9 is unread it deals 0 ("PROTOCOL MISMATCH" — the airtight un-cheat); while unlocked it
+    // lands only when this turn's handshake demand is met. Non-damage effects always resolve.
     deal: (n) => {
-      if (combat.acceptance && card && card.type === "Signal" && !combat.acceptance(combat, card)) {
-        log(combat, "PROTOCOL MISMATCH — signal refused.");
+      if (combat.acceptance && !combat.acceptance(combat, card)) {
+        log(combat, "PROTOCOL MISMATCH — refused.");
         return;
       }
-      dealToEnemy(combat, n);
+      dealToEnemy(combat, n * (combat.echoScale ?? 1));
     },
     block: (n) => {
-      combat.player.block += Math.max(0, Math.round(n));
+      combat.player.block += Math.max(0, Math.round(n * (combat.echoScale ?? 1)));
     },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => {
@@ -808,6 +1075,31 @@ function makeCtx(combat, card) {
     },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
+    // CORRUPTION (Act 5 · DoT): apply `n` corruption to the enemy (+ this combat's corruption bonus,
+    // e.g. from Memory Leak). It ticks for damage at the enemy's turn start, then decays (see
+    // combat-damage.tickCorruption). consumeCorruption removes & returns the stacks (Garbage Collect),
+    // halveCorruption keeps half (Core Dump), boostCorruption raises this combat's apply bonus by 1.
+    applyCorruption: (n) => {
+      if (combat.enemy.immuneCorruption) return;
+      addStatus(combat.enemy, "corruption", Math.max(0, Math.round(n)) + (combat.corruptionBonus || 0));
+    },
+    consumeCorruption: () => {
+      const c = combat.enemy.statuses.corruption || 0;
+      delete combat.enemy.statuses.corruption;
+      return c;
+    },
+    halveCorruption: () => {
+      const c = combat.enemy.statuses.corruption || 0;
+      const half = Math.floor(c / 2);
+      if (half > 0) combat.enemy.statuses.corruption = half;
+      else delete combat.enemy.statuses.corruption;
+    },
+    boostCorruption: (n = 1) => {
+      combat.corruptionBonus = (combat.corruptionBonus || 0) + n;
+    },
+    get enemyCorruption() {
+      return combat.enemy.statuses.corruption || 0;
+    },
     // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
     // start of a future player turn. The op is a plain object (not a closure) so the pending queue is
     // serializable — a reload resumes the same delayed packets. combat-modes.applyOp interprets it.
@@ -847,6 +1139,53 @@ function makeCtx(combat, card) {
     skipEnemyNext: () => {
       combat.enemy.skipNext = true;
     },
+    // CHAIN (Act 6 · APPLICATION LAYER, verb COPY/ECHO): re-run the LAST card played this fight `times`
+    // times, optionally at `scale` value (deal/block multiply by it — TAIL_CALL uses 0.5). Returns the
+    // number of replays performed. Depth-capped (MAX_ECHO_DEPTH) so a self-referential echo terminates.
+    // Note: during playCard, lastCardPlayed is still the PREVIOUS card while the current card resolves,
+    // so a replay card echoes the card before it (never itself).
+    replayLast: (scale = 1, times = 1) => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return 0;
+      const repl = cardById(id);
+      if (!repl || (combat.echoDepth || 0) >= MAX_ECHO_DEPTH) return 0;
+      const n = Math.max(1, Math.floor(times) || 1);
+      let count = 0;
+      for (let i = 0; i < n && !combat.over; i++) {
+        const prevScale = combat.echoScale;
+        combat.echoDepth = (combat.echoDepth || 0) + 1;
+        combat.echoScale = scale;
+        repl.effect(makeCtx(combat, repl));
+        combat.echoScale = prevScale;
+        combat.echoDepth -= 1;
+        combat.chainThisTurn = (combat.chainThisTurn || 0) + 1;
+        count++;
+      }
+      return count;
+    },
+    // CHAIN: schedule a replay of the last card played to land at a future player turn (CALLBACK —
+    // fuses with the DELAY verb). Captures the id now; resolves via combat-modes.applyOp's {replay}.
+    echoNextTurn: (turnsAhead = 1) => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return false;
+      combat.pending.push({ turn: combat.turn + Math.max(1, Math.floor(turnsAhead) || 1), op: { replay: id } });
+      return true;
+    },
+    get chainCount() {
+      return combat.chainThisTurn || 0;
+    },
+    get xValue() {
+      return combat.xValue || 0;
+    },
+    // CHAIN: energy spent by the current X-cost card (RECURSE)
+    get lastPlayedId() {
+      return combat.lastCardPlayed ?? null;
+    },
+    get lastPlayedType() {
+      const id = combat.lastCardPlayed;
+      const c = id != null ? cardById(id) : null;
+      return c ? c.type : null;
+    },
     // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
     playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
     // SEQUENCE: true while resolving the FIRST card played this turn (the counter is bumped before
@@ -878,7 +1217,12 @@ function relicCtx(combat, card) {
   return {
     combat,
     card,
-    deal: (n) => dealToEnemy(combat, n),
+    // Relic damage is gated by the same boss acceptance hook (e.g. Checksum Offload can't chip a
+    // ch9-locked boss — closes a latent un-cheat hole).
+    deal: (n) => {
+      if (combat.acceptance && !combat.acceptance(combat, card)) return;
+      dealToEnemy(combat, n);
+    },
     block: (n) => {
       combat.player.block += Math.max(0, Math.round(n));
     },
@@ -930,6 +1274,9 @@ function currentIntent(combat) {
 function enemyTurn(combat) {
   const enemy = combat.enemy;
   enemy.block = 0;
+  tickCorruption(combat);
+  checkEnemyDead(combat);
+  if (combat.over) return;
   const intent = currentIntent(combat);
   const hpBefore = combat.player.hp;
   if (enemy.skipNext) {
@@ -947,16 +1294,24 @@ function enemyTurn(combat) {
   }
   enemy.intentIndex += 1;
   tickStatuses(enemy);
+  enemy.unhurt = true;
   checkPlayerDead(combat);
 }
 function resolveIntent(combat, intent) {
   const enemy = combat.enemy;
   if (intent.block) enemy.block += intent.block;
   if (intent.attack) {
-    const hits = intent.hits || 1;
+    const hits = (intent.hits || 1) + (intent.rampHits ? enemy.rttStacks || 0 : 0);
     const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
     for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
   }
+  if (intent.cleanse) {
+    delete enemy.statuses.corruption;
+    delete enemy.statuses.weak;
+    delete enemy.statuses.vulnerable;
+    log(combat, `${enemy.name} cleansed itself.`);
+  }
+  if (intent.fortify && enemy.unhurt) enemy.armor += intent.fortify;
   if (intent.congest) dealToPlayer(combat, intent.congest * (combat.energySpentThisTurn || 0));
   if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
   if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
@@ -991,6 +1346,16 @@ function applyOp(ctx, op) {
   if (op.gainEnergy != null) ctx.gainEnergy(op.gainEnergy);
   if (op.applyEnemy) ctx.applyEnemy(op.applyEnemy.status, op.applyEnemy.value);
   if (op.applySelf) ctx.applySelf(op.applySelf.status, op.applySelf.value);
+  if (op.replay) {
+    const combat = ctx.combat;
+    const card = cardById(op.replay);
+    if (card && (combat.echoDepth || 0) < MAX_ECHO_DEPTH) {
+      combat.echoDepth = (combat.echoDepth || 0) + 1;
+      card.effect(makeCtx(combat, card));
+      combat.echoDepth -= 1;
+      combat.chainThisTurn = (combat.chainThisTurn || 0) + 1;
+    }
+  }
 }
 function resolvePending(combat) {
   if (!combat.pending || !combat.pending.length) return;
@@ -1038,7 +1403,11 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
       statuses: {},
       script: enemy.script,
       intentIndex: 0,
-      skipNext: false
+      skipNext: false,
+      immuneCorruption: Boolean(enemy.immuneCorruption),
+      // CORRUPTION-immune (the boss)
+      unhurt: true
+      // true while the player hasn't damaged it since its last turn (Stack Overflow fortify)
     },
     draw: shuffle(deck, rng),
     hand: [],
@@ -1053,6 +1422,8 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
     firstCardDiscount: 0,
     // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
     energySpentThisTurn: 0,
+    chainThisTurn: 0,
+    // CHAIN (Act 6): number of card-replays/echoes this turn (resets each turn)
     playedIdsThisTurn: [],
     lastCardPlayed: null,
     over: false,
@@ -1071,7 +1442,11 @@ function playCard(combat, handIndex) {
   const card = cardById(cardId);
   if (!card) return { ok: false, reason: "unknown-card" };
   const isFirst = combat.cardsPlayedThisTurn === 0;
-  const cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
+  let cost;
+  if (card.xcost) {
+    cost = combat.player.energy;
+    combat.xValue = cost;
+  } else cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
   if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
   combat.player.energy -= cost;
   combat.energySpentThisTurn += cost;
@@ -1103,6 +1478,7 @@ function endTurn(combat) {
   applyTurnEnergy(combat);
   combat.cardsPlayedThisTurn = 0;
   combat.energySpentThisTurn = 0;
+  combat.chainThisTurn = 0;
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
   releaseJam(combat);
@@ -1242,6 +1618,68 @@ var ENEMIES = {
       { label: "Attack 12", attack: 12 }
     ]
   },
+  // Appears act 5+ (CORRUPTION): cleanses its OWN debuffs (incl. corruption) every 3rd turn —
+  // punishes a slow DoT plan, so you must burst the stack (Core Dump / Garbage Collect) before it wipes.
+  "heisenbug": {
+    id: "heisenbug",
+    name: "Heisenbug",
+    tier: "standard",
+    hp: 56,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Attack 12", attack: 12 },
+      { label: "Attack 8 + Weak", attack: 8, applyPlayer: { status: "weak", value: 1 } },
+      { label: "Observe — cleanse itself, Attack 8", cleanse: true, attack: 8 }
+    ]
+  },
+  // Appears act 5+: a corruption-flavoured bruiser that forks into multi-hits.
+  "daemon-process": {
+    id: "daemon-process",
+    name: "Daemon Process",
+    tier: "standard",
+    hp: 58,
+    hpPerAct: 16,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Spawn — Block 8", block: 8 },
+      { label: "Attack 15", attack: 15 },
+      { label: "Fork — Attack 6, twice + Vulnerable", attack: 6, hits: 2, applyPlayer: { status: "vulnerable", value: 1 } }
+    ]
+  },
+  // Appears act 6+ (CHAIN): its attack repeats one more time each UNINTERRUPTED turn — interrupt it
+  // (RST / skipEnemyNext) to reset the loop, or it spirals out of control.
+  "infinite-loop": {
+    id: "infinite-loop",
+    name: "Infinite Loop",
+    tier: "standard",
+    hp: 60,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Iterate — Attack 5 (+1 hit each uninterrupted turn)", attack: 5, rampHits: true },
+      { label: "Branch — Block 10", block: 10 },
+      { label: "Continue — Attack 9", attack: 9 }
+    ]
+  },
+  // Appears act 6+: a chain-flavoured striker that punishes wide turns.
+  "recursive-call": {
+    id: "recursive-call",
+    name: "Recursive Call",
+    tier: "standard",
+    hp: 62,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Call — Attack 8, twice", attack: 8, hits: 2 },
+      { label: "Return — Attack 12 + Vulnerable", attack: 12, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Echo your traffic — 5 × cards played", mirror: 5 }
+    ]
+  },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
   "expired-certificate": {
     // Stalls behind heavy block, then expires for a large UNBLOCKABLE hit — race it or heal.
@@ -1271,6 +1709,23 @@ var ENEMIES = {
       { label: "Intercept — attack 9", attack: 9 },
       { label: "Mirror your traffic — 6 × cards played", mirror: 6 },
       { label: "Inject — attack 7, twice", attack: 7, hits: 2 }
+    ]
+  },
+  // Act 6 elite (CHAIN): a recursion-themed mini-boss whose stack-trace attack repeats +1 each
+  // uninterrupted turn (rampHits) and which echoes wide turns — a serious spike before the finale.
+  "segfault": {
+    id: "segfault",
+    name: "Segfault",
+    tier: "elite",
+    hp: 96,
+    hpPerAct: 20,
+    armor: 2,
+    armorPerAct: 2,
+    script: [
+      { label: "Null deref — Attack 12", attack: 12 },
+      { label: "Stack trace — Attack 6 (+1 hit each uninterrupted turn)", attack: 6, rampHits: true },
+      { label: "Echo your traffic — 5 × cards played", mirror: 5 },
+      { label: "Core dumped — Attack 10, twice", attack: 10, hits: 2 }
     ]
   },
   // ── Per-act mini-bosses (fixed HP; carry their act's combat finale) ───────────────────────────────
@@ -1320,13 +1775,51 @@ var ENEMIES = {
       { label: "Deadlock — Attack 32", attack: 32 }
     ]
   },
-  // ── The act-4 finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
+  // Act 4 mini-boss (SESSION): a session-hijacker that strips your defenses (Vulnerable) and punishes
+  // with a big reset hit — the finale of the SESSION act now that the negotiation moved to act 6.
+  "session-hijack": {
+    id: "session-hijack",
+    name: "Session Hijack",
+    tier: "boss",
+    hp: 290,
+    hpPerAct: 0,
+    armor: 4,
+    armorPerAct: 0,
+    script: [
+      { label: "Intercept — Attack 16", attack: 16 },
+      { label: "Forge token — Attack 8 + Vulnerable", attack: 8, applyPlayer: { status: "vulnerable", value: 1 } },
+      { label: "Replay session — Attack 7, three times", attack: 7, hits: 3 },
+      { label: "Hijack — Block 18 + Attack 14", block: 18, attack: 14 },
+      { label: "Reset — Attack 30", attack: 30 }
+    ]
+  },
+  // Act 5 mini-boss (CORRUPTION): gains armor on any turn you DON'T damage it (fortify) — so a pure
+  // corruption-DoT turn (no direct hits) lets it wall up. Forces you to mix burst with the DoT.
+  "stack-overflow": {
+    id: "stack-overflow",
+    name: "Stack Overflow",
+    tier: "boss",
+    hp: 320,
+    hpPerAct: 0,
+    armor: 4,
+    armorPerAct: 0,
+    script: [
+      { label: "Recurse — Attack 14", attack: 14 },
+      { label: "Reinforce — +6 armor if you didn't hit it, Block 8", fortify: 6, block: 8 },
+      { label: "Attack 10, twice", attack: 10, hits: 2 },
+      { label: "Overflow — Attack 28", attack: 28 }
+    ]
+  },
+  // ── The final-act finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
   // HP here is the PHASE-1 pool; phase advance refills to BOSS_PHASE_HP[2]/[3]. Pressure is modest —
   // the challenge is satisfying the handshake (lead SYN / play ACK), not a raw damage race.
   "the-refused-connection": {
     id: "the-refused-connection",
     name: "The Refused Connection",
     tier: "boss",
+    // A connection, not a process — it cannot be CORRUPTED, so a corruption build can't sidestep the
+    // handshake; damage must come through accepted Signals. Reinforces the negotiation un-cheat.
+    immuneCorruption: true,
     hp: 60,
     hpPerAct: 0,
     armor: 0,
@@ -1336,6 +1829,22 @@ var ENEMIES = {
       { label: "Re-handshake — Block 12", block: 12 },
       { label: "Reset — Attack 6, twice", attack: 6, hits: 2 },
       { label: "Silence — Block 10 + Attack 7", block: 10, attack: 7 }
+    ]
+  },
+  // The key-gated TRUE-ENDING superboss (superboss.js owns its phase HP/scripts). This base def is a
+  // placeholder; wireSuperboss overrides hp + script per phase. Tier "boss" so it skips enemy mults.
+  "the-kernel-of-refusal": {
+    id: "the-kernel-of-refusal",
+    name: "The Kernel of Refusal",
+    tier: "boss",
+    hp: 50,
+    hpPerAct: 0,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Ordered strike", attack: 6 },
+      { label: "Deferred packet", attack: 8 },
+      { label: "Reorder buffer", block: 8 }
     ]
   }
 };
@@ -1347,6 +1856,7 @@ function instantiateEnemy(id, act = 1) {
     id: def.id,
     name: def.name,
     tier: def.tier,
+    immuneCorruption: Boolean(def.immuneCorruption),
     hp: def.hp + def.hpPerAct * scale,
     armor: def.armor + def.armorPerAct * scale,
     script: def.script.map((intent) => ({ ...intent }))
@@ -1476,6 +1986,29 @@ var RELICS = [
     hooks: { onCombatStart: (ctx) => {
       ctx.combat.windowCap = (ctx.combat.windowCap || 5) + 1;
       ctx.combat.windowDecay = 2;
+    } }
+  },
+  // ── Act 5 PRESENTATION · CORRUPTION: a build-definer — every corruption stack ticks twice ──────────
+  {
+    id: "entropy-pool",
+    name: "Entropy Pool",
+    rarity: "rare",
+    text: "Corruption on the enemy ticks twice each turn.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.corruptionDouble = true;
+    } }
+  },
+  // ── Act 6 APPLICATION · CHAIN: a build-definer — the first big-chain turn refunds energy ────────────
+  {
+    id: "jit-compiler",
+    name: "JIT Compiler",
+    rarity: "rare",
+    text: "The first turn you replay 3+ cards, gain 1 energy.",
+    hooks: { onCardPlay: (ctx) => {
+      if ((ctx.combat.chainThisTurn || 0) >= 3 && !ctx.combat.jitUsed) {
+        ctx.combat.jitUsed = true;
+        ctx.gainEnergy(1);
+      }
     } }
   },
   // ── Phase G: relics built on the new combat hooks (onTurnEnd/onKill/onDamageTaken/onExhaust/onShuffle) ─
@@ -1698,9 +2231,16 @@ var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
   2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
   3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
-  4: ["null-pointer", "race-condition", "packet-storm"]
+  4: ["null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
+  // Act 5 PRESENTATION · CORRUPTION: cleansers + corruption-flavoured bruisers reward burst-DoT play.
+  5: ["packet-storm", "race-condition", "heisenbug", "daemon-process"],
+  // Act 6 APPLICATION · CHAIN: looping/echoing strikers reward interrupt timing + replay payoffs.
+  6: ["heisenbug", "infinite-loop", "recursive-call", "packet-storm"]
 };
-var ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
+var ELITE_POOLS = {
+  default: ["expired-certificate", "man-in-the-middle"],
+  6: ["man-in-the-middle", "segfault"]
+};
 var CONTENT_LAYERS = 6;
 function generateAct(act, seed) {
   const rng = makeRng((Number(seed) || 1) * 100 + act);
@@ -1778,8 +2318,11 @@ function nodeId(act, layer, col) {
 }
 function enemyForNode(node, act = 1, rng) {
   if (typeof rng !== "function") throw new TypeError("enemyForNode requires a seeded rng");
-  if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
-  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
+  if (node.type === "elite") {
+    const elites = ELITE_POOLS[act] || ELITE_POOLS.default;
+    return elites[Math.floor(rng() * elites.length)];
+  }
+  const pool = STANDARD_POOLS[act] || STANDARD_POOLS[6];
   return pool[Math.floor(rng() * pool.length)];
 }
 
@@ -1920,7 +2463,110 @@ var SPECS = {
   DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => {
     ctx.defrag();
     ctx.draw(2);
-  } }
+  } },
+  // H · Act 5 CORRUPTION (Daemon Swarm)
+  FORK_BOMB: { text: "Apply 6 Corruption.", effect: (ctx) => ctx.applyCorruption(6) },
+  DAEMON_SPAWN: { text: "Apply 3 Corruption.", effect: (ctx) => ctx.applyCorruption(3) },
+  ROT: { text: "Apply 3 Corruption. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.applyCorruption(3);
+    ctx.applyEnemy("weak", 1);
+  } },
+  ZOMBIE_PROCESS: { text: "Apply 4 Corruption. If the enemy is already corrupted, apply 4 more.", effect: (ctx) => {
+    const had = ctx.enemyCorruption > 0;
+    ctx.applyCorruption(4);
+    if (had) ctx.applyCorruption(4);
+  } },
+  MEMORY_LEAK: { text: "Corruption you apply is increased by 1. Apply 3 Corruption.", effect: (ctx) => {
+    ctx.boostCorruption(1);
+    ctx.applyCorruption(3);
+  } },
+  ENTROPY_WAVE: { text: "Apply 4 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(4);
+    ctx.draw(1);
+  } },
+  SEGFAULT_SPILL: { text: "Deal 6. Apply 3 Corruption.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.applyCorruption(3);
+  } },
+  CORE_DUMP: { text: "Deal damage equal to the enemy's Corruption (keep the stack).", effect: (ctx) => ctx.deal(ctx.enemyCorruption) },
+  CASCADE_FAILURE: { text: "Apply Corruption equal to the enemy's Corruption + 2.", effect: (ctx) => ctx.applyCorruption(ctx.enemyCorruption + 2) },
+  GARBAGE_COLLECT: { exhaust: false, text: "Consume all Corruption and deal that much damage instantly.", effect: (ctx) => ctx.deal(ctx.consumeCorruption()) },
+  // H · Act 6 CHAIN (Recursion)
+  STACK_FRAME: { text: "Deal 9. If the previous card was a Recursion card, deal 9 more.", effect: (ctx) => {
+    ctx.deal(9);
+    if (ctx.lastPlayedType === "Recursion") ctx.deal(9);
+  } },
+  LOOPBACK: { text: "Deal 4. If the previous card was a Recursion card, draw 1.", effect: (ctx) => {
+    ctx.deal(4);
+    if (ctx.lastPlayedType === "Recursion") ctx.draw(1);
+  } },
+  ITERATE: { text: "Deal 5. Deal 5 more for each card replayed this turn.", effect: (ctx) => ctx.deal(5 + 5 * ctx.chainCount) },
+  YIELD: { text: "Gain 8 block. If the previous card was a Recursion card, gain 6 more block.", effect: (ctx) => {
+    ctx.block(8);
+    if (ctx.lastPlayedType === "Recursion") ctx.block(6);
+  } },
+  TAIL_CALL: { text: "Replay the last card you played at three-quarters value.", effect: (ctx) => ctx.replayLast(0.75) },
+  TRAMPOLINE: { text: "Deal 10. Replay the last card you played at half value.", effect: (ctx) => {
+    ctx.deal(10);
+    ctx.replayLast(0.5);
+  } },
+  CALLBACK: { text: "Deal 7. Replay the last card at the start of your next turn.", effect: (ctx) => {
+    ctx.deal(7);
+    ctx.echoNextTurn();
+  } },
+  FIXED_POINT: { cost: 1, text: "Replay the last card you played twice. (cost 1)", effect: (ctx) => ctx.replayLast(1, 2) },
+  RECURSE: { exhaust: false, text: "X-cost: spend all energy, then replay the last card that many times.", effect: (ctx) => ctx.replayLast(1, ctx.xValue) },
+  // H · pool-depth commons
+  BIT_FLIP: { text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
+  PING: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) },
+  ICMP: { text: "Deal 7. Gain 4 block.", effect: (ctx) => {
+    ctx.deal(7);
+    ctx.block(4);
+  } },
+  TEARDOWN: { text: "Deal 15.", effect: (ctx) => ctx.deal(15) },
+  DATAGRAM: { text: "Deal 9.", effect: (ctx) => ctx.deal(9) },
+  BROADCAST: { text: "Deal 8. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.deal(8);
+    ctx.applyEnemy("weak", 1);
+  } },
+  ACKNOWLEDGE: { text: "Gain 12 block.", effect: (ctx) => ctx.block(12) },
+  PADDING: { text: "Gain 6 block.", effect: (ctx) => ctx.block(6) },
+  PARITY: { text: "Gain 7 block. Draw 1.", effect: (ctx) => {
+    ctx.block(7);
+    ctx.draw(1);
+  } },
+  HEARTBEAT: { text: "Gain 15 block.", effect: (ctx) => ctx.block(15) },
+  SLOW_START: { text: "Gain 8 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(8);
+    ctx.applyEnemy("weak", 1);
+  } },
+  SHIM: { cost: 0, text: "Gain 1 Strength. (cost 0)", effect: (ctx) => ctx.applySelf("strength", 1) },
+  ROTATE: { text: "Gain 6 block. Draw 1.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.draw(1);
+  } },
+  XOR_PAD: { text: "Gain 8 block.", effect: (ctx) => ctx.block(8) },
+  NONCE: { text: "Gain 5 block. Draw 1.", effect: (ctx) => {
+    ctx.block(5);
+    ctx.draw(1);
+  } },
+  TAINT: { text: "Deal 3. Apply 3 Corruption.", effect: (ctx) => {
+    ctx.deal(3);
+    ctx.applyCorruption(3);
+  } },
+  NULL_DEREF: { text: "Deal 7. If the enemy is corrupted, deal 4 more.", effect: (ctx) => {
+    ctx.deal(7);
+    if (ctx.enemyCorruption > 0) ctx.deal(4);
+  } },
+  SPORE: { text: "Apply 2 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(2);
+    ctx.draw(1);
+  } },
+  TRACE: { text: "Deal 7. If the previous card was a Recursion card, gain 4 block.", effect: (ctx) => {
+    ctx.deal(7);
+    if (ctx.lastPlayedType === "Recursion") ctx.block(4);
+  } },
+  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) }
 };
 function isUpgradedId(id) {
   return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);
@@ -1937,49 +2583,158 @@ var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
-// ../../docs/games/metagame/stages/stage6/modifiers.js
-var MODIFIERS = [
-  {
-    id: "lean-rewards",
-    text: "Lean economy — handshake rewards are reduced by 25%.",
-    apply: (r) => {
-      r.handshakeMult = (r.handshakeMult ?? 1) * 0.75;
-    }
-  },
-  {
-    id: "stingy-rest",
-    text: "Stingy rests — rest sites heal 10% less.",
-    apply: (r) => {
-      r.restHealMod = (r.restHealMod ?? 0) - 0.1;
-    }
-  },
-  {
-    id: "tight-window",
-    text: "Tight windows — the Act-3 congestion cap is 1 lower.",
-    apply: (r) => {
-      r.windowCapMod = (r.windowCapMod ?? 0) - 1;
-    }
-  },
-  {
-    id: "meaner-elites",
-    text: "Meaner elites — elites gain +24 HP.",
-    apply: (r) => {
-      r.eliteHpBonus = (r.eliteHpBonus ?? 0) + 24;
-    }
-  },
-  {
-    id: "tougher-boss",
-    text: "Tougher negotiation — The Refused Connection has +30% phase HP.",
-    apply: (r) => {
-      r.bossHpMult = (r.bossHpMult ?? 1) * 1.3;
-    }
-  }
+// ../../docs/games/metagame/stages/stage6/ascension-mods.js
+function baseRunConfig() {
+  return {
+    handshakeMult: 1,
+    // run.js resolveCombat: combat handshake reward multiplier
+    restHealMod: 0,
+    // run.js rest: added to the 0.30 heal fraction
+    windowCapMod: 0,
+    // renderer makeCombat: Act-3 congestion window cap delta
+    eliteHpBonus: 0,
+    // renderer makeCombat: flat HP added to elite enemies
+    bossHpMult: 1,
+    // boss-combat: per-phase HP multiplier for The Refused Connection
+    enemyHpMult: 1,
+    // renderer makeCombat: HP multiplier for NON-boss enemies
+    enemyArmorBonus: 0,
+    // renderer makeCombat: flat armor added to NON-boss enemies
+    startHpMod: 0,
+    // run.js createRun: delta to the run's STARTING hp (not maxHp)
+    skipRewardMod: 0,
+    // run.js takeReward: delta to the skip-a-card handshake payout
+    removalCostMod: 0,
+    // run.js removalCost: delta to the base deck-removal price
+    rewardChoicesMod: 0,
+    // run.js reward draft: delta to the number of cards offered
+    bossExtraPhase: false
+    // boss-combat: The Refused Connection gains a 4th mutating phase
+  };
+}
+var ASCENSION_MODS = [
+  { level: 1, id: "lean-rewards", label: "Lean economy", desc: "Handshake rewards reduced by 25%.", apply: (c) => {
+    c.handshakeMult *= 0.75;
+    return c;
+  } },
+  { level: 2, id: "stingy-rest", label: "Stingy rests", desc: "Rest sites heal 10% less.", apply: (c) => {
+    c.restHealMod -= 0.1;
+    return c;
+  } },
+  { level: 3, id: "tight-window", label: "Tight windows", desc: "The Act-3 congestion cap is 1 lower.", apply: (c) => {
+    c.windowCapMod -= 1;
+    return c;
+  } },
+  { level: 4, id: "meaner-elites", label: "Meaner elites", desc: "Elites gain +24 HP.", apply: (c) => {
+    c.eliteHpBonus += 24;
+    return c;
+  } },
+  { level: 5, id: "tougher-boss", label: "Tougher boss", desc: "The Refused Connection has +30% phase HP.", apply: (c) => {
+    c.bossHpMult *= 1.3;
+    return c;
+  } },
+  { level: 6, id: "hardened-foes", label: "Hardened foes", desc: "All non-boss enemies have +15% HP.", apply: (c) => {
+    c.enemyHpMult *= 1.15;
+    return c;
+  } },
+  { level: 7, id: "attrition", label: "Attrition", desc: "Each run starts at 8 HP below maximum.", apply: (c) => {
+    c.startHpMod -= 8;
+    return c;
+  } },
+  { level: 8, id: "thankless", label: "Thankless thinning", desc: "Skipping a reward card pays nothing.", apply: (c) => {
+    c.skipRewardMod -= 5;
+    return c;
+  } },
+  { level: 9, id: "costly-removal", label: "Costly removal", desc: "Deck removal costs 20 more handshakes.", apply: (c) => {
+    c.removalCostMod += 20;
+    return c;
+  } },
+  { level: 10, id: "fewer-options", label: "Fewer options", desc: "Reward drafts offer one fewer card.", apply: (c) => {
+    c.rewardChoicesMod -= 1;
+    return c;
+  } },
+  { level: 11, id: "armored-foes", label: "Armored foes", desc: "All non-boss enemies gain +3 armor.", apply: (c) => {
+    c.enemyArmorBonus += 3;
+    return c;
+  } },
+  { level: 12, id: "austere", label: "Austere economy", desc: "Handshake rewards reduced a further 20%.", apply: (c) => {
+    c.handshakeMult *= 0.8;
+    return c;
+  } },
+  { level: 13, id: "brutal-elites", label: "Brutal elites", desc: "Elites gain a further +30 HP.", apply: (c) => {
+    c.eliteHpBonus += 30;
+    return c;
+  } },
+  { level: 14, id: "boss-overclock", label: "Boss overclock", desc: "The Refused Connection gains a further +25% phase HP.", apply: (c) => {
+    c.bossHpMult *= 1.25;
+    return c;
+  } },
+  { level: 15, id: "endurance", label: "Endurance test", desc: "The Refused Connection gains a fourth mutating phase.", apply: (c) => {
+    c.bossExtraPhase = true;
+    return c;
+  } }
 ];
-function applyModifiers(run, version) {
-  const n = Math.max(0, Math.min(Number(version) || 0, MODIFIERS.length));
-  run.modifiers = MODIFIERS.slice(0, n).map((m) => m.id);
-  for (let i = 0; i < n; i++) MODIFIERS[i].apply(run);
-  return run;
+var MAX_ASCENSION = ASCENSION_MODS.length;
+function activeAscensionMods(level) {
+  const cap = Math.max(0, Math.floor(Number(level) || 0));
+  return ASCENSION_MODS.filter((m) => m.level <= cap);
+}
+function foldAscension(baseConfig, level) {
+  let acc = { ...baseConfig || baseRunConfig() };
+  for (const def of activeAscensionMods(level)) {
+    if (typeof def.apply !== "function") continue;
+    const next = def.apply(acc, def);
+    if (next !== void 0) acc = next;
+  }
+  return acc;
+}
+
+// ../../docs/games/metagame/stages/stage6/superboss.js
+var SUPERBOSS_ID = "the-kernel-of-refusal";
+var SUPERBOSS_PHASE_HP = [50, 55, 60];
+var SUPERBOSS_PHASE_SCRIPTS = [
+  // Phase 1 — SEQUENCE / DELAY: ordered pressure with a guard turn.
+  [
+    { label: "Ordered strike", attack: 6 },
+    { label: "Deferred packet", attack: 8 },
+    { label: "Reorder buffer", block: 8 }
+  ],
+  // Phase 2 — THROUGHPUT / CORRUPTION: punishes a wide turn, then steady attrition.
+  [
+    { label: "Congestion", congest: 2 },
+    { label: "Overflow", attack: 8 },
+    { label: "Corruption tick", attack: 6 }
+  ],
+  // Phase 3 — CHAIN / HANDSHAKE: reflects your turn, then the final refusal.
+  [
+    { label: "Reflection", mirror: 2 },
+    { label: "Recursion strike", attack: 7 },
+    { label: "The final refusal", attack: 9 }
+  ]
+];
+function wireSuperboss(combat) {
+  combat.superPhase = 0;
+  combat.enemy.hp = SUPERBOSS_PHASE_HP[0];
+  combat.enemy.maxHp = SUPERBOSS_PHASE_HP[0];
+  combat.enemy.armor = 0;
+  combat.enemy.script = SUPERBOSS_PHASE_SCRIPTS[0].map((i) => ({ ...i }));
+  combat.enemy.intentIndex = 0;
+  rewireSuperboss(combat);
+  return combat;
+}
+function rewireSuperboss(combat) {
+  combat.advancePhase = (c) => {
+    const next = (c.superPhase || 0) + 1;
+    if (next >= SUPERBOSS_PHASE_HP.length) return false;
+    c.superPhase = next;
+    c.enemy.hp = SUPERBOSS_PHASE_HP[next];
+    c.enemy.maxHp = SUPERBOSS_PHASE_HP[next];
+    c.enemy.script = SUPERBOSS_PHASE_SCRIPTS[next].map((i) => ({ ...i }));
+    c.enemy.intentIndex = 0;
+    c.log = [...c.log || [], `The kernel reshapes — phase ${next + 1}.`].slice(-10);
+    return true;
+  };
+  return combat;
 }
 
 // ../../docs/games/metagame/stages/stage6/run.js
@@ -1990,17 +2745,35 @@ var HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
 var SKIP_REWARD = 5;
 var REMOVAL_BASE = 25;
 var REMOVAL_STEP = 25;
-var FINAL_BOSS_ACT = 4;
-var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
+var FINAL_BOSS_ACT = 6;
+var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock", 4: "session-hijack", 5: "stack-overflow" };
 var PRESTIGE_HP_PER_VERSION = 5;
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
-function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
+function runScore(run) {
+  if (!run) return 0;
+  const won = run.status === "won";
+  const actsCleared = won ? FINAL_BOSS_ACT : Math.max(0, (run.act || 1) - 1);
+  const base = Math.max(0, run.handshakes || 0) + actsCleared * 50 + Math.max(0, run.hp || 0);
+  return Math.round(base * (1 + (run.ascension || 0) / 10));
+}
+function effectiveAscension(version = 0, ascension = 0) {
+  return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
+}
+function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard" } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
+  const ascensionLevel = effectiveAscension(version, ascension);
+  const cfg = foldAscension(baseRunConfig(), ascensionLevel);
   const run = {
     seed,
     version,
+    ascension: ascensionLevel,
+    // the effective rule level this run was built at (for recordClear)
+    mode,
+    // "standard" | "daily" | "custom" (for the run-end score / labelling)
+    dailyKey,
+    // the date/custom string the seed was derived from, or null
     map: generateRun(seed, FINAL_BOSS_ACT),
     act: 1,
     currentNodeId: null,
@@ -2009,6 +2782,12 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     relics: [],
     potions: [],
     // the 2-slot consumable belt (potions.js); persisted with the run
+    keys: [],
+    // true-ending keys earned this run (3 ⇒ the hidden superboss opens after the boss)
+    atSuperboss: false,
+    // true while fighting the key-gated superboss
+    superbossCleared: false,
+    trueEnding: false,
     hp: maxHp,
     maxHp,
     handshakes,
@@ -2016,17 +2795,38 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     status: "map",
     pendingReward: null,
     notice: null,
-    // Prestige rule-modifier knobs (defaults = no modifier); applyModifiers tunes them by version.
-    handshakeMult: 1,
-    restHealMod: 0,
-    windowCapMod: 0,
-    eliteHpBonus: 0,
-    bossHpMult: 1,
-    modifiers: []
+    // Ascension rule-modifier knobs (defaults = no modifier); foldAscension tuned them above.
+    handshakeMult: cfg.handshakeMult,
+    restHealMod: cfg.restHealMod,
+    windowCapMod: cfg.windowCapMod,
+    eliteHpBonus: cfg.eliteHpBonus,
+    bossHpMult: cfg.bossHpMult,
+    enemyHpMult: cfg.enemyHpMult,
+    enemyArmorBonus: cfg.enemyArmorBonus,
+    skipRewardMod: cfg.skipRewardMod,
+    removalCostMod: cfg.removalCostMod,
+    rewardChoicesMod: cfg.rewardChoicesMod,
+    bossExtraPhase: cfg.bossExtraPhase,
+    modifiers: activeAscensionMods(ascensionLevel).map((m) => m.id)
   };
+  run.hp = Math.max(1, maxHp + (cfg.startHpMod || 0));
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
-  applyModifiers(run, version);
   return run;
+}
+var KEY_UNTOUCHABLE = "untouchable";
+var KEY_ASCETIC = "ascetic";
+var KEY_SACRIFICE = "sacrifice";
+var KEYS_FOR_SUPERBOSS = 3;
+var KEY_ELITE_MAX_DMG = 5;
+function awardKey(run, id) {
+  if (!run) return false;
+  if (!Array.isArray(run.keys)) run.keys = [];
+  if (run.keys.includes(id)) return false;
+  run.keys.push(id);
+  return true;
+}
+function hasAllKeys(run) {
+  return (run?.keys?.length || 0) >= KEYS_FOR_SUPERBOSS;
 }
 function availableNodes(run) {
   const act = run.map.acts[run.act - 1];
@@ -2044,12 +2844,14 @@ function moveTo(run, nodeId2) {
   return { ok: true, node };
 }
 function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
+  if (run.atSuperboss) return SUPERBOSS_ID;
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
   if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
   return enemyForNode(node, run.act, rng);
 }
 function resolveCombat(run, { win, hpRemaining }) {
+  const hpBefore = run.hp;
   const node = nodeById(run.map, run.currentNodeId);
   if (typeof hpRemaining === "number") run.hp = Math.max(0, hpRemaining);
   if (!win || run.hp <= 0) {
@@ -2063,6 +2865,7 @@ function resolveCombat(run, { win, hpRemaining }) {
   if (node.type === "elite") {
     const relicId = grantRelic(run, node.id);
     if (relicId) reward.relic = relicId;
+    if (hpBefore - run.hp <= KEY_ELITE_MAX_DMG) awardKey(run, KEY_UNTOUCHABLE);
   }
   const potionId = rollRewardPotion(run, node.id);
   if (potionId) reward.potion = potionId;
@@ -2073,7 +2876,10 @@ function resolveCombat(run, { win, hpRemaining }) {
 function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
-  else run.handshakes += SKIP_REWARD;
+  else {
+    run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0));
+    awardKey(run, KEY_ASCETIC);
+  }
   run.pendingReward = null;
   run.status = "map";
   return { ok: true, skipped: !cardId };
@@ -2085,6 +2891,8 @@ function rest(run, choice, payload) {
   else if (choice === "upgrade") {
     const r = upgradeDeckCard(run, Number(payload));
     if (!r.ok) return r;
+  } else if (choice === "remove") {
+    awardKey(run, KEY_SACRIFICE);
   }
   run.clearedIds.push(node.id);
   run.status = "map";
@@ -2117,7 +2925,7 @@ function buyCard(run, cardId, cost) {
   return { ok: true };
 }
 function removalCost(run) {
-  return REMOVAL_BASE + REMOVAL_STEP * (run.removalsPurchased || 0);
+  return REMOVAL_BASE + Math.max(0, run?.removalCostMod || 0) + REMOVAL_STEP * (run.removalsPurchased || 0);
 }
 function buyRemoval(run, index) {
   const cost = removalCost(run);
@@ -2158,6 +2966,12 @@ function seatAtFinalBoss(run, deck) {
 var BOSS_RELIC_CHOICES = 3;
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
+    if (hasAllKeys(run) && !run.superbossCleared && !run.atSuperboss) {
+      run.atSuperboss = true;
+      run.currentNodeId = `${run.currentNodeId}:superboss`;
+      run.status = "superboss";
+      return { ok: true, status: "superboss" };
+    }
     run.status = "won";
     return { ok: true, status: "won" };
   }
@@ -2195,7 +3009,8 @@ function rollRewardPotion(run, nodeId2) {
   return rollPotion(hashSeed(run.seed, `${nodeId2}:potion-pick`));
 }
 function rollRewardCards(run, nodeId2) {
-  return draftRewardCards(hashSeed(run.seed, nodeId2), run.act, REWARD_CHOICES);
+  const choices = Math.max(1, REWARD_CHOICES + (run.rewardChoicesMod || 0));
+  return draftRewardCards(hashSeed(run.seed, nodeId2), run.act, choices);
 }
 function screenForNode(node) {
   if (node.type === "combat" || node.type === "elite") return "combat";
@@ -2466,12 +3281,9 @@ function applyEventChoice(run, eventId, choiceId) {
 }
 
 // ../../docs/games/metagame/stages/stage6/boss-combat.js
-var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
+var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60, 4: 60 };
 var DEMAND_LEAD_SYN = "lead-syn";
 var DEMAND_ACK_FIRST = "ack-first";
-function isSignalCard(card) {
-  return card?.type === "Signal";
-}
 function baseId2(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
@@ -2488,17 +3300,17 @@ function demandMet(combat) {
   return currentDemand(combat) === DEMAND_LEAD_SYN ? baseId2(combat.playedIdsThisTurn[0]) === "SYN" : ackPlayed(combat);
 }
 function accepts(combat, card) {
-  if (!isSignalCard(card)) return true;
   if (combat.bossLocked) return false;
   return demandMet(combat);
 }
 function phaseHp(phase, hpMult) {
   return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
 }
-function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
+function wireBossCombat(combat, { locked = false, hpMult = 1, extraPhase = false } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
   combat.bossHpMult = hpMult;
+  combat.bossMaxPhase = extraPhase ? 4 : 3;
   combat.enemy.hp = phaseHp(1, hpMult);
   combat.enemy.maxHp = phaseHp(1, hpMult);
   rewireBossCombat(combat);
@@ -2508,7 +3320,7 @@ function rewireBossCombat(combat) {
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;
-    if (phase >= 3) return false;
+    if (phase >= (c.bossMaxPhase || 3)) return false;
     c.bossPhase = phase + 1;
     c.enemy.hp = phaseHp(c.bossPhase, c.bossHpMult);
     c.enemy.maxHp = phaseHp(c.bossPhase, c.bossHpMult);
@@ -2544,6 +3356,119 @@ function playFirstMatch(combat, pred) {
   return false;
 }
 
+// ../../docs/games/metagame/stages/stage6/testhook.js
+function installStage6TestHook(api) {
+  const {
+    state,
+    combatRun,
+    runScore: runScore2,
+    seatAtFinalBoss: seatAtFinalBoss2,
+    runAutoNegotiate,
+    playCard: playCard2,
+    endTurn: endTurn2,
+    cardById: cardById2,
+    beginRun,
+    commit,
+    makeCombat,
+    finishCombat,
+    getCombat,
+    setCombat,
+    setDailyKeyOverride
+  } = api;
+  window.__fvStage6 = {
+    // Start a run in a given mode ("standard"|"daily"|"custom"); returns the derived seed + mode so a
+    // test can assert that the same date/custom key reproduces the same run.
+    beginRun(opts) {
+      beginRun(opts || {});
+      commit();
+      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+    },
+    // Pin the daily-seed clock so a daily run is reproducible in the harness.
+    setDailyKey(key) {
+      setDailyKeyOverride(key ? String(key) : null);
+    },
+    // The current run's self-competition score, plus the meta high-water marks.
+    score() {
+      return {
+        run: state.run ? runScore2(state.run) : 0,
+        best: state.meta.bestScore || 0,
+        last: state.meta.lastScore || 0,
+        lastMode: state.meta.lastMode || null
+      };
+    },
+    // Grant the true-ending keys on the current run (a real run earns them via the
+    // untouchable/ascetic/sacrifice challenges). Returns the key count.
+    grantKeys(n = 3) {
+      if (!state.run) {
+        beginRun();
+        commit();
+      }
+      state.run.keys = ["untouchable", "ascetic", "sacrifice"].slice(0, Math.max(0, Math.min(3, n)));
+      commit();
+      return state.run.keys.length;
+    },
+    // Drive the key-gated superboss to its end with the REAL deck (play all affordable cards each
+    // turn). Not a bypass — it uses the normal engine. Returns the outcome.
+    autoSuperboss(maxTurns = 120) {
+      const run = state.run;
+      if (!run || run.status !== "superboss") return { ok: false, reason: "not-at-superboss" };
+      let combat = getCombat();
+      if (!combat || combat.nodeId !== run.currentNodeId) {
+        combat = makeCombat(run);
+        setCombat(combat);
+      }
+      let turns = 0;
+      while (!combat.over && turns++ < maxTurns) {
+        let guard = 0;
+        while (guard++ < 30 && !combat.over) {
+          const idx = combat.hand.findIndex((id) => {
+            const c = cardById2(id);
+            return c && c.cost <= combat.player.energy;
+          });
+          if (idx < 0) break;
+          playCard2(combat, idx);
+        }
+        if (combat.over) break;
+        endTurn2(combat);
+      }
+      const result = combat.result ?? null;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, status: state.run?.status, trueEnding: Boolean(state.run?.trueEnding), keys: run.keys?.length || 0 };
+    },
+    // Seat a run directly at the act-6 boss so the harness reaches the negotiation in one hop.
+    jumpToBoss(deck) {
+      if (!state.run) beginRun();
+      seatAtFinalBoss2(state.run, deck);
+      state.ui.screen = "run";
+      if (combatRun) combatRun.reset();
+      setCombat(null);
+      commit();
+      return state.run.currentNodeId;
+    },
+    // Drive the in-run boss fight with a correct handshake strategy using the REAL engine +
+    // acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    autoNegotiate(maxTurns = 80) {
+      const run = state.run;
+      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
+      let combat = getCombat();
+      if (!combat || combat.nodeId !== run.currentNodeId) {
+        combat = makeCombat(run);
+        setCombat(combat);
+      }
+      runAutoNegotiate(combat, maxTurns);
+      const enemyHp = combat.enemy?.hp;
+      const result = combat.result;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
+    }
+  };
+}
+function removeStage6TestHook() {
+  if (window.__fvStage6) delete window.__fvStage6;
+}
+
 // ../../docs/games/metagame/stages/stage6/combat-persist.js
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -2562,9 +3487,12 @@ function snapshotCombat(combat) {
     firstCardDiscount: combat.firstCardDiscount || 0,
     delaySpeedup: Boolean(combat.delaySpeedup),
     delayUsed: Boolean(combat.delayUsed),
+    corruptionBonus: combat.corruptionBonus || 0,
+    corruptionDouble: Boolean(combat.corruptionDouble),
     turn: combat.turn,
     cardsPlayedThisTurn: combat.cardsPlayedThisTurn || 0,
     energySpentThisTurn: combat.energySpentThisTurn || 0,
+    chainThisTurn: combat.chainThisTurn || 0,
     playedIdsThisTurn: [...combat.playedIdsThisTurn || []],
     lastCardPlayed: combat.lastCardPlayed ?? null,
     over: Boolean(combat.over),
@@ -2578,7 +3506,10 @@ function snapshotCombat(combat) {
     exhaust: [...combat.exhaust || []],
     jammed: [...combat.jammed || []],
     pending: clone(combat.pending || []),
-    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1 } : null
+    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 } : null,
+    // The key-gated superboss only needs its phase index persisted; its per-phase HP/script are
+    // already in the cloned enemy. The advancePhase closure is rebuilt on restore via rewireSuperboss.
+    superboss: combat.superPhase != null ? { phase: combat.superPhase } : null
   };
 }
 function restoreCombat(snapshot, { relics = [] } = {}) {
@@ -2596,6 +3527,8 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     firstCardDiscount: s.firstCardDiscount || 0,
     delaySpeedup: Boolean(s.delaySpeedup),
     delayUsed: Boolean(s.delayUsed),
+    corruptionBonus: s.corruptionBonus || 0,
+    corruptionDouble: Boolean(s.corruptionDouble),
     player: clone(s.player),
     enemy: clone(s.enemy),
     draw: [...s.draw || []],
@@ -2607,6 +3540,7 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     turn: s.turn,
     cardsPlayedThisTurn: s.cardsPlayedThisTurn || 0,
     energySpentThisTurn: s.energySpentThisTurn || 0,
+    chainThisTurn: s.chainThisTurn || 0,
     playedIdsThisTurn: [...s.playedIdsThisTurn || []],
     lastCardPlayed: s.lastCardPlayed ?? null,
     over: Boolean(s.over),
@@ -2618,13 +3552,19 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     combat.bossPhase = s.boss.phase;
     combat.bossLocked = Boolean(s.boss.locked);
     combat.bossHpMult = s.boss.hpMult || 1;
+    combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
+  }
+  if (s.superboss) {
+    combat.superPhase = s.superboss.phase || 0;
+    rewireSuperboss(combat);
   }
   return combat;
 }
 
 // ../../docs/games/metagame/stages/stage6/renderer.js
 import { createRun as createRunState } from "../../shared/run-state.js";
+import { createAscension } from "../../shared/ascension.js";
 
 // ../../docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = {
@@ -2818,7 +3758,7 @@ var NODE_ICON = {
   event: "❓",
   boss: "☣"
 };
-function hubView(state, lock) {
+function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
@@ -2826,13 +3766,15 @@ function hubView(state, lock) {
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend four acts, and earn the right to be acknowledged.</p>
+      and protocols, descend six acts, and earn the right to be acknowledged.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
       <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
       <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
+      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
       <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
     </dl>
+    ${seedModes(hasRun)}
     <div class="s6db-hub-actions">
       ${hasRun ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>` : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
@@ -2843,16 +3785,46 @@ function hubView(state, lock) {
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
-      ${activeModifiers(m.protocolVersion)}
     </div>
+    ${ascensionPicker(asc, hasRun)}
     <p class="s6db-hint">${esc2(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
 }
-function activeModifiers(version) {
-  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+function seedModes(hasRun) {
+  if (hasRun) return "";
+  return `<div class="s6db-seed-modes">
+      <button type="button" data-action="daily-run" class="s6db-ghost">daily seed ▸</button>
+      <span class="s6db-seed-entry">
+        <input type="text" class="s6db-seed-input" maxlength="40" placeholder="custom seed…" aria-label="custom seed" />
+        <button type="button" data-action="custom-run" class="s6db-ghost">seeded run ▸</button>
+      </span>
+    </div>`;
+}
+function ascensionPicker(asc, hasRun) {
+  if (!asc || hasRun) {
+    return asc ? activeRules(Math.max(asc.level, asc.floor || 0)) : "";
+  }
+  const maxPick = Math.max(asc.maxUnlocked, asc.floor || 0);
+  const cells = [];
+  for (let n = 0; n <= asc.maxLevel; n++) {
+    const locked = n > maxPick;
+    const sel = n === asc.level ? " is-selected" : "";
+    const floorPinned = n <= (asc.floor || 0) ? " is-floor" : "";
+    cells.push(locked ? `<span class="s6db-asc-cell is-locked" aria-disabled="true">${n}</span>` : `<button type="button" class="s6db-asc-cell${sel}${floorPinned}" data-ascension="${n}">${n}</button>`);
+  }
+  const effective = Math.max(asc.level, asc.floor || 0);
+  return `<div class="s6db-ascension">
+      <div class="s6db-asc-head"><strong>Ascension</strong>
+        <span>difficulty ${asc.level} · cleared ${asc.maxCleared}/${MAX_ASCENSION}${asc.floor ? ` · prestige floor ${asc.floor}` : ""}</span></div>
+      <div class="s6db-asc-track" aria-label="ascension level picker">${cells.join("")}</div>
+      ${activeRules(effective)}
+    </div>`;
+}
+function activeRules(level) {
+  const active = activeAscensionMods(level);
   if (!active.length) return "";
-  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ ${esc2(mod.text)}</li>`).join("")}</ul>`;
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc2(mod.label)}</strong> — ${esc2(mod.desc)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -2878,8 +3850,10 @@ function mapView(run) {
   el.appendChild(grid);
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
+  const keyCount = run.keys?.length || 0;
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
     <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
+    <span title="true-ending keys (untouchable elite · skip a reward · sacrificial rest)">keys ${"⚷".repeat(keyCount)}${keyCount}/3</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
@@ -2908,25 +3882,43 @@ function deathView(state, run) {
     <p>The stack collapsed in act ${run?.act ?? 1}. Your handshakes settle into the bank.</p>
     <dl class="s6db-meta-grid">
       <div><dt>Reached</dt><dd>act ${run?.act ?? 1}</dd></div>
+      <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
       <div><dt>Banked total</dt><dd>${state.meta.banked}</dd></div>
     </dl>
+    ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
       <button type="button" data-action="new-run">try again ▸</button>
       <button type="button" data-action="abandon" class="s6db-ghost">back to hub</button>
     </div>`;
   return el;
 }
-function wonView(state) {
+function wonView(state, run) {
   const el = document.createElement("div");
   el.className = "s6db-end s6db-end--won";
+  const trueEnding = Boolean(run?.trueEnding);
   el.innerHTML = `
-    <h2>The connection accepted a shared rule</h2>
-    <p>Four acts negotiated. The archive lets you pass.</p>
+    <h2>${trueEnding ? "The Kernel of Refusal yields" : "The connection accepted a shared rule"}</h2>
+    <p>${trueEnding ? "Three keys turned in the lock. Past the accepted handshake, the kernel that refused everything finally answers. This is the true ending." : "Six acts negotiated. The archive lets you pass."}</p>
+    <dl class="s6db-meta-grid">
+      <div><dt>Score</dt><dd>${run ? runScore(run) : 0}</dd></div>
+      <div><dt>Ascension</dt><dd>${run?.ascension || 0}</dd></div>
+    </dl>
+    ${scoreLine(state, run)}
     <div class="s6db-hub-actions">
       <button type="button" data-action="bts">open trace.bts</button>
       <button type="button" data-action="new-run">run again ▸</button>
     </div>`;
   return el;
+}
+function scoreLine(state, run) {
+  const best = state.meta.bestScore || 0;
+  const parts = [`<span>Best: <strong>${best}</strong></span>`];
+  if (run?.dailyKey) {
+    const seedBest = state.meta.dailyBest && state.meta.dailyBest[run.dailyKey] || 0;
+    const label = run.mode === "daily" ? "daily" : "seed";
+    parts.push(`<span>${esc2(label)} <code>${esc2(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
+  }
+  return `<p class="s6db-score-line">${parts.join(" · ")}</p>`;
 }
 function esc2(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
@@ -3188,7 +4180,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   host.replaceChildren(root);
   const screen = root.querySelector("[data-screen]");
   const combatRun = orchestrator?.save ? createRunState({ save: orchestrator.save, stageId: 6, slot: "combat", debounceMs: 0 }) : null;
+  const ascension = orchestrator?.save ? createAscension({ save: orchestrator.save, stageId: 6, modifiers: ASCENSION_MODS }) : null;
+  const ascInfo = () => ascension ? { level: ascension.level(), maxUnlocked: ascension.maxUnlocked(), maxCleared: ascension.maxCleared(), maxLevel: ascension.maxLevel, floor: state.meta.protocolVersion || 0 } : null;
   let combat = null;
+  let dailyKeyOverride = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -3200,45 +4195,43 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   };
   root.addEventListener("click", handleClick);
   route();
-  window.__fvStage6 = {
-    jumpToBoss(deck) {
-      if (!state.run) beginRun();
-      seatAtFinalBoss(state.run, deck);
-      state.ui.screen = "run";
-      if (combatRun) combatRun.reset();
-      combat = null;
-      commit();
-      return state.run.currentNodeId;
+  installStage6TestHook({
+    state,
+    combatRun,
+    runScore,
+    seatAtFinalBoss,
+    runAutoNegotiate: autoNegotiate,
+    playCard,
+    endTurn,
+    cardById,
+    beginRun,
+    commit,
+    makeCombat,
+    finishCombat,
+    getCombat: () => combat,
+    setCombat: (c) => {
+      combat = c;
     },
-    // TEST/DEBUG: drive the in-run boss fight with a correct handshake strategy using the REAL
-    // engine + acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
-    autoNegotiate(maxTurns = 80) {
-      const run = state.run;
-      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
-      if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
-      autoNegotiate(combat, maxTurns);
-      const enemyHp = combat.enemy?.hp;
-      const result = combat.result;
-      if (combat.over) finishCombat(run);
-      commit();
-      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
+    setDailyKeyOverride: (v) => {
+      dailyKeyOverride = v;
     }
-  };
+  });
   return { repaint: route, destroy() {
     if (combatRun) combatRun.destroy();
-    if (window.__fvStage6) delete window.__fvStage6;
+    removeStage6TestHook();
     root.remove();
   } };
   function route() {
     const run = state.run;
     if (state.ui.screen !== "run" || !run) {
       combat = null;
-      return mount(hubView(state, lockState()));
+      return mount(hubView(state, lockState(), ascInfo()));
     }
     switch (run.status) {
-      // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
+      // Every boss — including the act-6 finale and the key-gated superboss — is a real-deck fight.
       case "combat":
       case "boss":
+      case "superboss":
         return mountCombat(run);
       case "reward":
         combat = null;
@@ -3293,6 +4286,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   function makeCombat(run) {
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
+    if (enemy.tier !== "boss") {
+      if (run.enemyHpMult && run.enemyHpMult !== 1) enemy.hp = Math.round(enemy.hp * run.enemyHpMult);
+      if (run.enemyArmorBonus) enemy.armor = Number(enemy.armor || 0) + run.enemyArmorBonus;
+    }
     if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
     const c = createCombat({
       deck: run.deck,
@@ -3306,10 +4303,12 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1 });
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
+    else if (enemyId === SUPERBOSS_ID) wireSuperboss(c);
     return c;
   }
   function finishCombat(run) {
+    if (run.status === "superboss" || run.atSuperboss) return finishSuperboss(run);
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
     const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
@@ -3319,13 +4318,30 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
     if (win && isFinalBoss) finalBossDefeated(run);
+    if (run.status === "dead" || run.status === "won") recordScore(run);
   }
   function finalBossDefeated(run) {
     state.boss.defeated = true;
     state.boss.reached = true;
     state.meta.firstClearComplete = true;
     state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    if (run.status === "superboss") return;
+    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+  function finishSuperboss(run) {
+    const win = combat.result === "win";
+    if (combatRun) combatRun.reset();
+    run.hp = Math.max(0, combat.player.hp);
+    combat = null;
+    run.atSuperboss = false;
+    run.superbossCleared = true;
+    if (win && run.hp > 0) {
+      run.status = "won";
+      run.trueEnding = true;
+    } else run.status = "dead";
+    recordScore(run);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
   function doPrestige() {
@@ -3334,13 +4350,50 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     state.meta.banked -= cost;
     state.meta.protocolVersion = (state.meta.protocolVersion || 0) + 1;
   }
-  function beginRun() {
+  function beginRun({ mode = "standard", seedText = null } = {}) {
     state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
-    const seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
-    state.run = createRun({ seed, version: state.meta.protocolVersion || 0, handshakes: 0 });
+    let seed, dailyKey = null;
+    if (mode === "daily") {
+      dailyKey = currentDailyKey();
+      seed = strHash2(`daily:${dailyKey}`);
+    } else if (mode === "custom" && String(seedText || "").trim()) {
+      dailyKey = String(seedText).trim().slice(0, 40);
+      seed = strHash2(`custom:${dailyKey}`);
+    } else {
+      mode = "standard";
+      seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
+    }
+    state.run = createRun({
+      seed,
+      version: state.meta.protocolVersion || 0,
+      handshakes: 0,
+      ascension: ascension ? ascension.level() : 0,
+      mode,
+      dailyKey
+    });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset();
     combat = null;
+  }
+  function currentDailyKey() {
+    if (dailyKeyOverride) return dailyKeyOverride;
+    try {
+      return (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+    } catch {
+      return "1970-01-01";
+    }
+  }
+  function recordScore(run) {
+    if (!run) return;
+    const score = runScore(run);
+    state.meta.lastScore = score;
+    state.meta.lastMode = run.mode || "standard";
+    state.meta.lastSeedKey = run.dailyKey || null;
+    if (score > (state.meta.bestScore || 0)) state.meta.bestScore = score;
+    if (run.dailyKey) {
+      if (!state.meta.dailyBest || typeof state.meta.dailyBest !== "object") state.meta.dailyBest = {};
+      if (score > (state.meta.dailyBest[run.dailyKey] || 0)) state.meta.dailyBest[run.dailyKey] = score;
+    }
   }
   function resolveEvent(run, choiceId) {
     const event = eventForNode(run);
@@ -3362,6 +4415,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       playCard(combat, Number(play.dataset.play));
       if (combat.over) finishCombat(run);
       else checkpointCombat(combat, run);
+      return true;
+    }
+    const ascBtn = event.target.closest("[data-ascension]");
+    if (ascBtn) {
+      if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension));
       return true;
     }
     const potion = event.target.closest("[data-potion]");
@@ -3449,6 +4507,16 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       case "new-run":
         beginRun();
         return true;
+      case "daily-run":
+        beginRun({ mode: "daily" });
+        return true;
+      case "custom-run": {
+        const input = root.querySelector(".s6db-seed-input");
+        const seedText = input ? input.value : "";
+        if (!String(seedText || "").trim()) return false;
+        beginRun({ mode: "custom", seedText });
+        return true;
+      }
       case "continue-run":
         state.ui.screen = "run";
         return true;
@@ -3531,7 +4599,15 @@ function defaultState() {
       runsStarted: 0,
       runsCleared: 0,
       bestAct: 0,
-      firstClearComplete: false
+      firstClearComplete: false,
+      // Self-competition run scoring (local-only): a run's score = handshakes + acts cleared + HP,
+      // bonused by ascension. bestScore is the all-time high; dailyBest maps a daily/custom seed key
+      // to its best score so a player can chase their own seed.
+      bestScore: 0,
+      lastScore: 0,
+      lastMode: null,
+      lastSeedKey: null,
+      dailyBest: {}
     },
     handshakes: 0,
     // legacy mirror the boss reward writes to

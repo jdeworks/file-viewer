@@ -8,9 +8,13 @@ assert.equal(calcRoundPackets({ roundId: 1, onBeatPct: 1, integrityRemaining: 10
 // Survival only: base 30 + 0 + floor(10*0.3)=3 = 33.
 assert.equal(calcRoundPackets({ roundId: 1, onBeatPct: 0, integrityRemaining: 10, gatesCollected: 0 }), 33);
 
-// Gates pay 5 by default, 8 with the Signal Amplifier upgrade.
+// Gates pay 5 by default, 8 with the legacy Signal Amplifier boolean, or any explicit gateValue.
 assert.equal(calcRoundPackets({ roundId: 1, onBeatPct: 0, integrityRemaining: 0, gatesCollected: 4 }), 30 + 20);
 assert.equal(calcRoundPackets({ roundId: 1, onBeatPct: 0, integrityRemaining: 0, gatesCollected: 4, upgrades: { signalAmplifier: true } }), 30 + 32);
+assert.equal(calcRoundPackets({ roundId: 1, onBeatPct: 0, integrityRemaining: 0, gatesCollected: 4, gateValue: 9 }), 30 + 36);
+
+// packetMult folds in via the multiplier (Signal Amp): a 1.16× run rounds up.
+assert.equal(calcRoundPackets({ roundId: 1, onBeatPct: 1, integrityRemaining: 100, gatesCollected: 0, multiplier: 1.16 }), Math.round(80 * 1.16));
 
 // Minimum floor: even a failed-feeling round pays something.
 assert.ok(calcRoundPackets({ roundId: 1, onBeatPct: 0, integrityRemaining: 0, gatesCollected: 0 }) >= 10);

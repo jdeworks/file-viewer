@@ -2,6 +2,7 @@ import {
   activateOfflineMode,
   getBossLockState,
   getBossSeed,
+  hasOfflineModeActivated,
   readServiceWorkerNotes,
   recordObserverBossAttempt
 } from "./boss.js";
@@ -9,16 +10,15 @@ import {
   BOSS_LEVEL,
   crossAttempt,
   levelConfig,
-  rotSpeedFor,
-  solveElapsed,
+  movementForLevel,
+  renderLevel,
   sublevelSeed
 } from "./game.js";
-import { ringAngle, renderRing } from "./ring.js";
 import { serviceWorkerNotesText } from "./content.js";
 import { btsSummary, BTS_PATH, FIXED_OFFLINE_SEED, NOTES_PATH } from "./messages.js";
 import { startLoop } from "./loop.js";
-
-const TICK_MS = 100;
+import { AIDS, buyAid, consumeStabilizer } from "./aids.js";
+import { installTestHook } from "./testhook.js";
 
 export function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -27,8 +27,9 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     <header class="s9-hud">
       <strong>OBSERVER STATE</strong>
       <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
-      <span>band <b data-field="band"></b></span>
+      <span>movement <b data-field="movement"></b></span>
       <span>clarity <b data-field="clarity"></b></span>
+      <span data-field="tachWrap" hidden>tach <b data-field="tach"></b></span>
       <span>seed <b data-field="seed"></b></span>
     </header>
     <div class="s9-layout">
@@ -36,6 +37,11 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
       <aside class="s9-side">
         <button type="button" data-action="observe">OBSERVE (reset rotation)</button>
         <button type="button" data-action="cross">CROSS</button>
+        <hr>
+        <div class="s9-aids">
+          <strong>calibration (spend clarity)</strong>
+          ${AIDS.map((a) => `<button type="button" data-action="aid" data-aid="${a.id}" title="${a.desc}">${a.label} (${a.cost})</button>`).join("")}
+        </div>
         <hr>
         <button type="button" data-action="notes">open service-worker-notes.txt</button>
         <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
@@ -60,33 +66,92 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
 
-  // Local timing state. elapsedMs accrues from the animation ticks (NOT Date.now) so the rotation
-  // is deterministic given the tick count and the smoke can drive it with explicit elapsedMs.
+  // Local timing state. elapsedMs accumulates per-frame deltas (rAF), giving fine CROSS resolution.
+  // The gap angle is a pure function of (seed, elapsedMs), so rotation is deterministic for a given
+  // accumulated time and the smoke can drive any level by passing an explicit elapsedMs via the hook.
   let elapsedMs = 0;
-  let bossSeed = null; // set on OBSERVE while at the boss level (online → random, offline → 0)
+  let liveSeed = null; // random seed for onlineUnstable levels/boss (resampled on each OBSERVE)
+  let rhythmChain = 0; // consecutive on-beat crosses for the current Cadence level (reset on miss)
+  let attempts = [];   // recent {ms, hit} presses on the current level — drives ghostecho feedback
 
+  function offlineUnlocked() {
+    return hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
+  }
+
+  // The seed actually driving a level: stable per-level when learnable online; for the onlineUnstable
+  // back third + boss it is the FIXED cached seed once offline, else a live-random seed that jumps on
+  // every OBSERVE (so no timing learned online survives — the un-cheat is load-bearing for ALL of them).
   function activeSeed() {
-    if (state.currentLevel >= BOSS_LEVEL) {
-      if (bossSeed === null) bossSeed = getBossSeed({ state, actions });
-      return bossSeed;
+    const cfg = levelConfig(state.currentLevel);
+    if (cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) {
+      if (offlineUnlocked()) return FIXED_OFFLINE_SEED;
+      if (liveSeed === null) liveSeed = getBossSeed({ state, actions });
+      return liveSeed;
     }
     return sublevelSeed(state.currentLevel);
   }
 
   function reobserve() {
     elapsedMs = 0;
-    if (state.currentLevel >= BOSS_LEVEL) bossSeed = getBossSeed({ state, actions });
+    rhythmChain = 0;
+    attempts = [];
+    const cfg = levelConfig(state.currentLevel);
+    if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
+      liveSeed = getBossSeed({ state, actions });
+    }
+  }
+
+  function advanceFrom(level) {
+    state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
+    elapsedMs = 0;
+    liveSeed = null;
+    rhythmChain = 0;
+    attempts = [];
+    if (state.currentLevel >= BOSS_LEVEL) pushLog(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
   }
 
   function crossSublevel() {
-    const seed = sublevelSeed(state.currentLevel);
-    const result = crossAttempt({ seed, elapsedMs, level: state.currentLevel });
+    const level = state.currentLevel;
+    const cfg = levelConfig(level);
+    // Online-unstable level while still online: the gap reseeds — no press can land (go offline).
+    if (cfg.onlineUnstable && !offlineUnlocked()) {
+      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      liveSeed = getBossSeed({ state, actions });
+      state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
+      pushLog("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
+      return;
+    }
+    const seed = activeSeed();
+    const toleranceMult = consumeStabilizer(state); // armed Stabilizer Lens widens this one press
+    if (toleranceMult > 1) pushLog("stabilizer lens engaged (+tolerance for this cross).");
+    const result = crossAttempt({ seed, elapsedMs, level, toleranceMult });
+    if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
+
+    // Cadence (rhythm): land N consecutive on-beat crosses; a miss resets the chain. The clock keeps
+    // running between presses (no elapsed reset) so the next beat is reachable; only a full chain advances.
+    if (cfg.mode === "rhythm") {
+      const need = Math.max(2, cfg.chain || 3);
+      if (result.hit) {
+        rhythmChain += 1;
+        if (rhythmChain >= need) {
+          state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
+          pushLog(`cadence held — ${need} crosses on the beat. advancing.`);
+          advanceFrom(level);
+        } else {
+          pushLog(`on beat (${rhythmChain}/${need}). hold the cadence.`);
+        }
+      } else {
+        rhythmChain = 0;
+        state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+        pushLog(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      }
+      return;
+    }
+
     if (result.hit) {
-      pushLog(`level ${state.currentLevel} crossed (gap at top). advancing.`);
-      state.currentLevel = Math.min(BOSS_LEVEL, state.currentLevel + 1);
-      elapsedMs = 0;
-      bossSeed = null;
-      if (state.currentLevel >= BOSS_LEVEL) pushLog("level 18: THE OBSERVER EFFECT. the gap will not hold still while live.");
+      state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
+      pushLog(`level ${level} crossed (gap at top). advancing.`);
+      advanceFrom(level);
     } else {
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
@@ -110,6 +175,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     switch (button.dataset.action) {
       case "observe": reobserve(); break;
       case "cross": doCross(); break;
+      case "aid": buyAidAction(button.dataset.aid); break;
       case "notes": openNotes(); break;
       case "offline": activateOfflineMode({ state, actions, achievements, bell }); break;
       case "bts": openBts({ bts, viewer }); break;
@@ -117,39 +183,52 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     persistAndPaint();
   });
 
-  const loop = startLoop(() => {
-    if (!state.boss.defeated) elapsedMs += TICK_MS;
+  // Spend clarity on a calibration aid. The Single-Frame peek is offline-only (it reveals nothing while
+  // the seed is live), so it can never bypass the un-cheat. Returns the buyAid result for the smoke.
+  function buyAidAction(id) {
+    const offline = offlineUnlocked();
+    const res = buyAid(state, id, { offline });
+    if (!res.ok) {
+      const why = { "offline-only": "single-frame only works in Offline Mode (online the seed reseeds).", insufficient: "not enough clarity.", owned: "already owned." }[res.reason] || "cannot buy that.";
+      pushLog(why);
+      return res;
+    }
+    if (id === "stabilizer") pushLog("stabilizer lens armed: your next CROSS gets a wider window.");
+    if (id === "tachometer") pushLog("tachometer online: numeric gap readout enabled.");
+    if (id === "peek") doPeek();
+    return res;
+  }
+
+  // Offline-only one-frame reveal: report how far the gap is from the top right now (real numeric peek).
+  function doPeek() {
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const ang = Number.isFinite(r.angle) ? `gap at ${Math.round(r.angle)}deg` : "two gaps to align";
+    pushLog(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
+  }
+
+  const loop = startLoop((dt) => {
+    if (!state.boss.defeated) elapsedMs += dt;
     paintArena();
-  }, TICK_MS);
+  });
 
   repaint();
 
-  // TEST/DEBUG hook (not a player affordance): drives the timing game deterministically for the
-  // smoke. It does NOT bypass anything — solveSublevels CROSSes each real level at its solve moment,
-  // and the boss still needs the offline un-cheat (online attempts reseed and fail).
-  window.__fvStage9 = {
-    state: () => state,
-    crossAt(ms) { elapsedMs = Number(ms) || 0; doCross(); persistAndPaint(); },
-    solveSublevels() {
-      let guard = 0;
-      while (state.currentLevel < BOSS_LEVEL && guard++ < 64) {
-        this.crossAt(solveElapsed(sublevelSeed(state.currentLevel), state.currentLevel));
-      }
-      return state.currentLevel;
-    },
-    solveOffline() {
-      this.solveSublevels();
-      reobserve();
-      this.crossAt(solveElapsed(FIXED_OFFLINE_SEED, BOSS_LEVEL));
-      return Boolean(state.boss.defeated);
-    }
-  };
+  // Install the deterministic smoke/debug hook (window.__fvStage9). See testhook.js — it never bypasses
+  // anything; it drives the real CROSS engine at each level's real solve moment.
+  const uninstallHook = installTestHook({
+    state,
+    activeSeed,
+    reobserve,
+    getAids: () => ({ ...state.aids }),
+    buyAid: (id) => buyAidAction(id),
+    crossAt(ms) { elapsedMs = Number(ms) || 0; doCross(); persistAndPaint(); }
+  });
 
   return {
     repaint,
     destroy() {
       loop.stop();
-      if (window.__fvStage9) delete window.__fvStage9;
+      uninstallHook();
       root.remove();
     }
   };
@@ -169,29 +248,34 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
 
   function paintArena() {
     const seed = activeSeed();
-    const cfg = levelConfig(state.currentLevel);
-    const speed = rotSpeedFor(seed, state.currentLevel);
-    const angle = ringAngle(seed, elapsedMs, speed);
-    const display = cfg.display;
-    fields.arena.textContent = renderRing(angle, {
-      gapWidth: cfg.tolerance,
-      hidden: display === "hidden",
-      darkZone: cfg.darkZone || null
-    });
+    const level = state.currentLevel;
+    const ctx = {};
+    // Echo (ghostecho): draw the last two presses as faint ghost rings so the player reads their own
+    // error (how many degrees early/late) and corrects. Ghosts are presentation only — pure f(seed,ms).
+    if (levelConfig(level).mode === "ghostecho") {
+      ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
+    }
+    fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
   }
 
   function repaint() {
     const lock = getBossLockState({ actions, state });
-    const cfg = levelConfig(state.currentLevel);
+    const movement = movementForLevel(state.currentLevel);
     fields.level.textContent = String(state.currentLevel);
-    fields.band.textContent = `${cfg.band} (${cfg.display})`;
+    fields.movement.textContent = `${movement.name} — ${movement.verb}`;
     fields.clarity.textContent = String(state.clarity);
-    fields.seed.textContent = state.currentLevel >= BOSS_LEVEL ? (lock.seedMode === "fixed-cache" ? "0 (fixed)" : "random") : "stable";
+    const cfg = levelConfig(state.currentLevel);
+    const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
+    fields.seed.textContent = unstable ? (lock.unlocked ? "0 (fixed cache)" : "live-random") : "stable";
+    paintTach(cfg);
+    paintAids();
     paintArena();
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
     else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
-    fields.hint.textContent = state.currentLevel >= BOSS_LEVEL ? lock.hint : "watch the gap; CROSS when it faces the top (12 o'clock).";
+    fields.hint.textContent = unstable && !lock.unlocked
+      ? lock.hint
+      : "watch the gap; CROSS when it faces the top (12 o'clock).";
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-5).map((line) => {
@@ -199,6 +283,29 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
       li.textContent = line;
       return li;
     }));
+  }
+
+  // Tachometer (owned aid): live numeric gap angle + rotation speed in the HUD.
+  function paintTach(cfg) {
+    const owned = Boolean(state.aids && state.aids.tachometer);
+    fields.tachWrap.hidden = !owned;
+    if (!owned) return;
+    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
+    const ang = Number.isFinite(r.angle) ? `${Math.round(r.angle)}deg` : `${Math.round(r.distance)}deg off`;
+    fields.tach.textContent = `${ang} @ ${Math.round(cfg.speed || cfg.speedInner || cfg.oscBase || 0)}deg/s`;
+  }
+
+  // Disable each aid the player can't currently buy (cost / owned / offline-only), with the reason.
+  function paintAids() {
+    const offline = offlineUnlocked();
+    for (const aid of AIDS) {
+      const btn = root.querySelector(`[data-aid="${aid.id}"]`);
+      if (!btn) continue;
+      const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
+      const peekLocked = aid.id === "peek" && !offline;
+      btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
+      btn.classList.toggle("s9-aid-owned", Boolean(ownedTach));
+    }
   }
 
   function persistAndPaint() {

@@ -19,7 +19,8 @@ import { playCard, endTurn } from "./combat.js";
 import { cardById } from "./cards.js";
 
 // Per-phase HP pools (mirror boss.js PHASE_HP). Each phase is a fresh pool; overkill is lost.
-export const BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
+// Phase 4 only exists at the top ascension rung (endurance); it reuses phase 3's pool + mutating demand.
+export const BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60, 4: 60 };
 
 export const DEMAND_LEAD_SYN = "lead-syn";
 export const DEMAND_ACK_FIRST = "ack-first";
@@ -54,10 +55,12 @@ function demandMet(combat) {
     : ackPlayed(combat);
 }
 
-// acceptance(combat, card) — consulted by the engine only for Signal cards.
-// Returns false ⇒ that Signal deals 0 ("PROTOCOL MISMATCH").
+// acceptance(combat, card) — consulted by the engine before ANY damage lands on the boss (ctx.deal /
+// relicCtx.deal), regardless of the card's archetype. While ch9 is unread (locked) nothing lands —
+// the un-cheat, airtight against Signal/Daemon/Recursion/relic damage alike. While unlocked, damage
+// lands only when this turn's handshake demand is satisfied. Non-damage effects (block, strength,
+// corruption-apply, draw) always resolve — so a deck still satisfies the handshake with real cards.
 export function accepts(combat, card) {
-  if (!isSignalCard(card)) return true;          // Protocol/Layer always resolve
   if (combat.bossLocked) return false;           // ch9 unread ⇒ permanent mismatch (B3)
   return demandMet(combat);
 }
@@ -70,10 +73,11 @@ function phaseHp(phase, hpMult) {
 // Wire the negotiation onto a freshly-created combat whose enemy is the-refused-connection.
 // `locked` (ch9 unread) makes every Signal a mismatch ⇒ the fight is unwinnable (B3).
 // `hpMult` scales each phase's HP pool (prestige tougher-boss modifier).
-export function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
+export function wireBossCombat(combat, { locked = false, hpMult = 1, extraPhase = false } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
   combat.bossHpMult = hpMult;
+  combat.bossMaxPhase = extraPhase ? 4 : 3; // endurance ascension adds a 4th mutating phase
   combat.enemy.hp = phaseHp(1, hpMult);
   combat.enemy.maxHp = phaseHp(1, hpMult);
   rewireBossCombat(combat);
@@ -88,7 +92,7 @@ export function rewireBossCombat(combat) {
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;
-    if (phase >= 3) return false;
+    if (phase >= (c.bossMaxPhase || 3)) return false;
     c.bossPhase = phase + 1;
     c.enemy.hp = phaseHp(c.bossPhase, c.bossHpMult);
     c.enemy.maxHp = phaseHp(c.bossPhase, c.bossHpMult);

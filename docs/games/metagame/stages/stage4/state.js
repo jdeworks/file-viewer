@@ -1,4 +1,5 @@
 import { TARGET_MODES } from './towers.js';
+import { createCampaign, ensureCampaign } from './run4.js';
 
 export function defaultState(context = {}) {
   const seed = stageSeed(context);
@@ -9,11 +10,15 @@ export function defaultState(context = {}) {
     // Full-TD fields (engine.js reads/writes these; see stage4 buildplan A3). Enemies are ephemeral
     // (regenerated per wave, never persisted). towerNextId replaces any Math.random id generation.
     integrity: 100,
+    maxIntegrity: 100,   // per-map cap (set by run4.resetCombatForMap; integrity regen never exceeds it)
+    damageMult: 1,       // Armory "Overclocked Emitters" multiplier (applied by engine.applyDamage)
     waveGroup: 1,
     waveActive: false,
     waveNumber: 1,
     enemies: [],
     towerNextId: 1,
+    // The 5-map campaign state machine (run4.js): status, mapIndex, clearedMaps, glory, armory.
+    campaign: createCampaign(),
     recursion: {
       pointSetId: `fractal-${seed}`,
       points: generateRecursionPoints(seed),
@@ -38,6 +43,8 @@ export function normalizeState(state, context = {}) {
   target.wave = Number.isFinite(target.wave) ? target.wave : fresh.wave;
   // Full-TD fields, preserved across saves (enemies are never persisted — always reset to []).
   target.integrity = Number.isFinite(target.integrity) ? target.integrity : fresh.integrity;
+  target.maxIntegrity = Number.isFinite(target.maxIntegrity) ? target.maxIntegrity : fresh.maxIntegrity;
+  target.damageMult = Number.isFinite(target.damageMult) ? target.damageMult : fresh.damageMult;
   target.waveGroup = Number.isFinite(target.waveGroup) ? target.waveGroup : fresh.waveGroup;
   target.waveActive = Boolean(target.waveActive);
   target.waveNumber = Number.isFinite(target.waveNumber) ? target.waveNumber : fresh.waveNumber;
@@ -48,6 +55,7 @@ export function normalizeState(state, context = {}) {
   target.recursion.points = normalizePoints(target.recursion.points, fresh.recursion.points);
   target.towers = Array.isArray(target.towers) ? target.towers.map(normalizeTower).filter(Boolean) : [];
   target.boss = mergePlain(fresh.boss, target.boss);
+  ensureCampaign(target); // normalize the campaign state machine (status/mapIndex/clearedMaps/glory/armory)
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;
 }
@@ -60,6 +68,7 @@ export function normalizeState(state, context = {}) {
 export function snapshotWave(state) {
   return {
     waveNumber: state.waveNumber,
+    wavePeak: Number.isFinite(state.wavePeak) ? state.wavePeak : state.waveNumber,
     waveActive: Boolean(state.waveActive),
     waveFailed: Boolean(state.waveFailed),
     integrity: state.integrity,
@@ -76,6 +85,7 @@ export function snapshotWave(state) {
 export function restoreWave(state, snap) {
   if (!snap || typeof snap !== 'object') return state;
   if (Number.isFinite(snap.waveNumber)) state.waveNumber = snap.waveNumber;
+  state.wavePeak = Number.isFinite(snap.wavePeak) ? snap.wavePeak : state.waveNumber;
   state.waveActive = Boolean(snap.waveActive);
   state.waveFailed = Boolean(snap.waveFailed);
   if (Number.isFinite(snap.integrity)) state.integrity = snap.integrity;
@@ -130,6 +140,7 @@ function normalizeTower(tower) {
     y,
     level: clampInt(tower.level || 1, 1, 3),
     targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : 'first',
+    fork: tower.fork ? String(tower.fork) : null, // chosen tier-3 fork (irrevocable; persisted)
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed),
   };

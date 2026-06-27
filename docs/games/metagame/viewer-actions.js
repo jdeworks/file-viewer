@@ -20,7 +20,19 @@ const STAGE7_SOURCE_FILES = [
   ['route_table.csv', 'route_table_examined'],
   ['access_log.csv', 'access_log_examined'],
   ['comms_transcript.txt', 'comms_examined'],
+  // Case 3 (Quorum Ghost) open-minted facts. session_ledger opens to a hint card; its DECISIVE fact is
+  // search-gated below (recordStage7Search), so opening the ledger is not enough to solve Case 3.
+  ['quorum_spec.json', 'quorum_spec_examined'],
+  ['audit_trail.txt', 'audit_examined'],
+  ['handshake_log.csv', 'handshake_examined'],
+  ['session_ledger.csv', 'ledger_examined'],
 ];
+
+// Case 3 SEARCH un-cheat: the decisive deduction requires SEARCHING session_ledger.csv (not just
+// opening it) for the claimed token; the matching line proves the session is REVOKED.
+const STAGE7_SEARCH_FILE = 'session_ledger.csv';
+const STAGE7_SEARCH_QUERY = 'S-7741';
+const STAGE7_SEARCH_TOKEN = 'REVOKED';
 
 const FALSY_CHEAT_VALUES = new Set(['false', '0', 'no', 'off', '']);
 const TRUTHY_CHEAT_VALUES = new Set(['true', '1', 'yes', 'on']);
@@ -209,6 +221,25 @@ export function recordStage7SourceOpen({ file, setAction = sharedSetAction } = {
   const action = stage7SourceAction(file);
   if (!action) return false;
   setAction?.(7, action, { source: 'viewer-open', file: basename(file) });
+  return true;
+}
+
+export function isStage7SessionSearch({ file, query, result, match } = {}) {
+  return basename(file) === STAGE7_SEARCH_FILE
+    && String(query || '').toUpperCase().includes(STAGE7_SEARCH_QUERY)
+    && extractSearchResultText(result ?? match).toUpperCase().includes(STAGE7_SEARCH_TOKEN);
+}
+
+// Load-bearing SEARCH un-cheat for Case 3: fires only when the player actually searches the session
+// ledger for the claimed token AND the matched line proves it REVOKED. A bare open does not qualify.
+export function recordStage7Search({ file, query, result, match, setAction = sharedSetAction } = {}) {
+  if (!isStage7SessionSearch({ file, query, result, match })) return false;
+  setAction?.(7, 'session_revoked_found', {
+    source: 'search',
+    file: STAGE7_SEARCH_FILE,
+    value: STAGE7_SEARCH_QUERY,
+    result: extractSearchResultText(result ?? match),
+  });
   return true;
 }
 

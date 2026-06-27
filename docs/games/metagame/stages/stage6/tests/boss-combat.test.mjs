@@ -1,7 +1,9 @@
 // boss-combat.test.mjs — The Refused Connection fought with the REAL deck (acceptance hook).
 import assert from "node:assert/strict";
 import { createCombat, playCard, endTurn } from "../combat.js";
+import { makeCtx } from "../combat-ctx.js";
 import { instantiateEnemy } from "../enemies.js";
+import { relicsFor } from "../relics.js";
 import { wireBossCombat, autoNegotiate, currentDemand, BOSS_PHASE_HP } from "../boss-combat.js";
 
 function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {}) {
@@ -145,6 +147,32 @@ function bossCombat({ deck = ["SYN"], hp = 300, seed = 1, locked = false } = {})
   assert.equal(c.bossPhase, 1, "locked: never advances past phase 1");
   assert.equal(c.enemy.hp, BOSS_PHASE_HP[1], "locked: boss takes 0 — all Signals refused");
   assert.ok(!(c.over && c.result === "win"), "locked: cannot win the fight");
+}
+
+// ── H · hardened un-cheat: NON-Signal / relic / corruption damage cannot touch a locked boss ───────
+{
+  // Checksum Offload (a relic that deals on Protocol play) cannot chip a ch9-locked boss.
+  const c = createCombat({
+    deck: ["ACK"], player: { hp: 300, maxHp: 300 },
+    enemy: instantiateEnemy("the-refused-connection", 4), seed: 1,
+    relics: relicsFor(["checksum-offload"])
+  });
+  wireBossCombat(c, { locked: true });
+  const before = c.enemy.hp;
+  c.hand = ["ACK"]; c.player.energy = 3;
+  playCard(c, 0); // Protocol play → checksum-offload tries to deal 3 → refused while locked
+  assert.equal(c.enemy.hp, before, "locked: relic damage is refused too (airtight un-cheat)");
+}
+{
+  // The boss is immune to CORRUPTION — a corruption build can't sidestep the handshake.
+  const c = bossCombat({ locked: false });
+  assert.ok(c.enemy.immuneCorruption, "the boss carries corruption immunity");
+  const before = c.enemy.hp;
+  const ctx = makeCtx(c, null);
+  ctx.applyCorruption(8);
+  assert.equal(c.enemy.statuses.corruption || 0, 0, "corruption never applies to the boss");
+  endTurn(c); // even after an enemy turn, no DoT damage
+  assert.ok(c.enemy.hp >= before - 0, "boss takes no corruption damage");
 }
 
 console.log("stage6 boss-combat tests passed");

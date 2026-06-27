@@ -5,15 +5,20 @@ import {
 } from "./boss.js";
 import { renderStage7 } from "./renderer.js";
 import { markChainBroken } from "./substages.js";
-import { ensureCase2, mintSourceFact } from "./accusation.js";
+import { ensureCase2, ensureCase3, mintSourceFact } from "./accusation.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
 import {
   ACTION_NAME,
   ANCHOR_ACTION,
   BTS_PATH,
   CASE2_SOURCE_ACTIONS,
+  CASE3_SOURCE_ACTIONS,
+  CASE3_SEARCH_ACTION,
   REQUIRED_ACTION
 } from "./messages.js";
+
+// All Case-2 + Case-3 evidence actions (opens + the Case-3 search) that mint a board fact card.
+const ALL_SOURCE_ACTIONS = [...CASE2_SOURCE_ACTIONS, ...CASE3_SOURCE_ACTIONS, CASE3_SEARCH_ACTION];
 
 export const stageMeta = {
   id: 7,
@@ -51,17 +56,20 @@ export function mountStage(ctx) {
     if (view && typeof view.repaint === "function") view.repaint();
   });
 
-  // Case 2 evidence un-cheats: opening each system file in the real viewer mints its fact card. Seed
-  // any fact cards whose action already fired (return-from-viewer / reload), then keep listening.
+  // Case 2/3 evidence un-cheats: opening (or, for Case 3, SEARCHING) each system file in the real
+  // viewer mints its fact card. Seed the case boards + any fact cards whose action already fired
+  // (return-from-viewer / reload), then keep listening.
   if (Number(state.substage || 1) >= 5) ensureCase2(state);
-  for (const action of CASE2_SOURCE_ACTIONS) {
+  if (Number(state.substage || 1) >= 6) ensureCase3(state);
+  for (const action of ALL_SOURCE_ACTIONS) {
     if (ctx.actions && typeof ctx.actions.hasAction === "function" && ctx.actions.hasAction(7, action)) {
       mintSourceFact(state, action);
     }
   }
-  const unsubscribeSources = CASE2_SOURCE_ACTIONS.map((action) =>
+  const unsubscribeSources = ALL_SOURCE_ACTIONS.map((action) =>
     subscribeToActionName(ctx.actions, action, () => {
       ensureCase2(state);
+      if (Number(state.substage || 1) >= 6) ensureCase3(state);
       mintSourceFact(state, action);
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();

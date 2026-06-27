@@ -703,6 +703,35 @@ export async function run(ctx) {
   await page.waitForSelector('.stage2-glyph-dungeon', { timeout: 8000 });
   await page.waitForFunction(() => !!window.__fvStage2, null, { timeout: 8000 });
 
+  // Regression: collecting a glyph rune (the pink ♦ consumable) must (a) not throw and (b) survive a
+  // save round-trip. The entity inventory was once a legacy ["minor_parse_potion"] ARRAY, so a rune
+  // banked as inv[type]++ became a non-index property the JSON serialiser silently DROPPED — the
+  // "picked-up diamond vanishes / breaks the rune bar" bug. inventory must be a plain type→count object.
+  const runePickup = await page.evaluate(() => {
+    const st = window.__fvStage2.state();
+    const e = st.run.entity;
+    const invIsObject = e.inventory && typeof e.inventory === 'object' && !Array.isArray(e.inventory);
+    const w = st.run.world;
+    let placed = false;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = w.pos.x + dx, ny = w.pos.y + dy;
+      if (w.grid[ny] && w.grid[ny][nx] === '.') {
+        w.monsters = (w.monsters || []).filter((m) => !(m.x === nx && m.y === ny));
+        (w.consumables = w.consumables || []).push({ x: nx, y: ny, type: 'blink', taken: false });
+        const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
+        window.__fvStage2.move(dir);
+        placed = true;
+        break;
+      }
+    }
+    const live = Number((e.inventory || {}).blink || 0);
+    const survivesSave = Number((JSON.parse(JSON.stringify(e.inventory || {})).blink) || 0); // JSON-drop check
+    return { invIsObject, placed, live, survivesSave };
+  });
+  if (runePickup.invIsObject && runePickup.placed && runePickup.live === 1 && runePickup.survivesSave === 1)
+    pass('Stage 2 glyph rune (♦) collects without error and survives a save round-trip');
+  else fail('Stage 2 rune pickup/save regression: ' + JSON.stringify(runePickup));
+
   // Descend the full body — all three acts (Warrens / Cisterns & Emberworks / The Overflow) — to the
   // boss via the deterministic body solver (no real-time roguelite play). Confirms the boss sits at
   // the END of the 9-floor body and is reachable only after the descent (MAX_FLOOR=9).
@@ -799,29 +828,59 @@ export async function run(ctx) {
   pass('Stage 3 defeat unlocks Stage 4 through v3 orchestrator');
 
   await page.waitForSelector('.stage4-fractal-bastion', { timeout: 8000 });
-  // Boss is not start-reachable: the confront button is hidden until the final wave.
-  const s4ConfrontEarly = await page.$('.stage4-fractal-bastion [data-action="confront"]:not([hidden])');
-  if (s4ConfrontEarly) throw new Error('Stage 4 boss reachable before the final wave');
-  await page.waitForSelector('.stage4-fractal-bastion [data-action="start-wave"]', { timeout: 4000 });
-  // The tower-defense actually runs: start wave 1 and advance it to completion (deterministic hook).
-  await page.evaluate(() => { window.__fvStage4.startWave(); window.__fvStage4.advance(30000); });
-  const s4Wave = await page.evaluate(() => window.__fvStage4.state().waveNumber);
-  if (s4Wave >= 2) pass('Stage 4 tower-defense runs: wave 1 resolves and advances'); else fail('Stage 4 wave did not advance: ' + s4Wave);
-  // Load-bearing un-cheat is REAL: BEFORE the blueprint file is opened, the boss is unwinnable even at
-  // the final wave with full recursion-point coverage (it folds all damage away).
+  // Stage 4 is a 5-map campaign. It opens on map-select; the boss is NOT start-reachable — the
+  // confront-the-loop button is disabled until ALL FIVE maps are cleared (stronger than the old gate).
+  const s4Start = await page.evaluate(() => ({
+    status: window.__fvStage4.status(),
+    maps: window.__fvStage4.state().campaign.clearedMaps.length,
+    bossLocked: document.querySelector('.stage4-mapselect [data-action="boss"]')?.disabled === true,
+    bossUnlocked: window.__fvStage4.bossUnlocked(),
+    rows: document.querySelectorAll('.stage4-mapselect .s4-maprow').length,
+  }));
+  if (s4Start.status === 'map-select' && s4Start.rows === 5 && s4Start.maps === 0 && s4Start.bossLocked && !s4Start.bossUnlocked) pass('Stage 4 campaign: 5-map select, boss gated behind all maps (no start bypass)'); else fail('Stage 4 campaign gate wrong: ' + JSON.stringify(s4Start));
+  // A real map actually plays: enter map 1, start its first wave, advance it to completion.
+  const s4Map = await page.evaluate(() => {
+    window.__fvStage4.selectMap(0);
+    window.__fvStage4.startWave();
+    window.__fvStage4.advance(40000);
+    return { status: window.__fvStage4.status(), wave: window.__fvStage4.state().waveNumber };
+  });
+  if (s4Map.status === 'combat' && s4Map.wave >= 2) pass('Stage 4 tower-defense runs: map 1 wave 1 resolves and advances'); else fail('Stage 4 map did not play: ' + JSON.stringify(s4Map));
+  // TD DEPTH PASS: a new damage-type tower builds, upgrades to L3, and forks (tier-3 branching), and a
+  // status tower applies an effect on hit in the live engine. Exercises damage types + status + roster.
+  const s4Depth = await page.evaluate(() => {
+    const h = window.__fvStage4;
+    h.state().cycles = 6000; // afford the upgrades/forks in this smoke
+    const p = h.place(10, 10, 'pulse_node');
+    const id = p.tower.id;
+    h.upgrade(id); h.upgrade(id);              // L1 → L2 → L3
+    const forkRes = h.pickFork(id, 'emp_lance'); // irrevocable tier-3 fork
+    const t = h.state().towers.find((x) => x.id === id);
+    const builtThermal = h.place(12, 12, 'thermal_loop').ok; // a new damage-type (thermal/burn) tower
+    // Drive one short wave so the status layer runs, then look for any applied status effect.
+    h.setWave(1); h.startWave(); h.advance(8000);
+    const anyStatus = h.state().enemies.some((e) => e.status && Object.keys(e.status).length);
+    return { level: t.level, fork: t.fork, forkOk: forkRes.ok, builtThermal, anyStatus, enemies: h.state().enemies.length };
+  });
+  if (s4Depth.level === 3 && s4Depth.fork === 'emp_lance' && s4Depth.forkOk && s4Depth.builtThermal) pass('Stage 4 depth: new tower builds + upgrades to L3 + picks an irrevocable tier-3 fork'); else fail('Stage 4 tier-3 fork path broken: ' + JSON.stringify(s4Depth));
+  // Reset the campaign back to a clean map-select so the boss-gate assertions below are unaffected.
+  await page.evaluate(() => { const h = window.__fvStage4; const st = h.state(); st.towers = []; st.enemies = []; st.waveActive = false; h.leaveArmory?.(); });
+  // Debug-seat the boss (smoke shortcut for clearing 150 waves; NOT a player affordance). The boss is
+  // load-bearing-gated by the REAL blueprint un-cheat: BEFORE the file is opened it folds all damage
+  // away even with full recursion-point coverage.
   const s4Locked = await page.evaluate(() => {
-    window.__fvStage4.setWave(31);
+    window.__fvStage4.seatAtBoss();
     for (const p of window.__fvStage4.state().recursion.points) window.__fvStage4.place(p.x, p.y, 'pulse_node');
     const hpBefore = window.__fvStage4.state().boss.hp;
     window.__fvStage4.confront();
     const s = window.__fvStage4.state();
-    return { defeated: s.boss.defeated, hpUnchanged: s.boss.hp === hpBefore };
+    return { status: s.campaign.status, defeated: s.boss.defeated, hpUnchanged: s.boss.hp === hpBefore };
   });
-  if (!s4Locked.defeated && s4Locked.hpUnchanged) pass('Stage 4 boss is unwinnable before the blueprint file is opened (total-armor while locked)'); else fail('Stage 4 boss took damage / was defeated before the un-cheat');
+  if (s4Locked.status === 'boss' && !s4Locked.defeated && s4Locked.hpUnchanged) pass('Stage 4 boss is unwinnable before the blueprint file is opened (total-armor while locked)'); else fail('Stage 4 boss took damage / was defeated before the un-cheat: ' + JSON.stringify(s4Locked));
   // Un-cheat = a REAL file-open: click the navigation hint, which opens the static blueprint file in the
   // viewer. The action 4.recursion_blueprint_read is fired by openViewerFile → recordMetagameViewerOpen
   // (NOT by an in-game button), and the achievement auto-unlocks from the action.
-  await page.click('[data-action="blueprint"]');
+  await page.click('.stage4-combat [data-action="blueprint"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'recursion_points.json', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
@@ -831,27 +890,29 @@ export async function run(ctx) {
         && save.achievements?.['stage4.recursion_blueprint_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  // Now at the final wave with coverage already placed, the confront button is available and wins.
-  await page.waitForSelector('.stage4-fractal-bastion [data-action="confront"]:not([hidden])', { timeout: 4000 });
-  await page.click('[data-action="confront"]');
+  // Now in the boss arena with coverage placed + the blueprint read, the confront lands and wins.
+  await page.evaluate(() => window.__fvStage4.confront());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(4) && save.unlockedStages?.includes(5);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage at the final wave');
+  pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage after all maps cleared');
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
   // The thin-gate bypass is gone: there is no "simulate full loop" calibrate button.
-  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 7);
-  if (s5NoBypass) pass('Stage 5 is a real racer: 7 rounds + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
-  // The Jammer is gated behind the full run: from a fresh start the boss round is locked.
-  const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="6"]')?.disabled }));
+  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 9);
+  if (s5NoBypass) pass('Stage 5 is a real racer: 9 rounds (incl. time-trial + fork relay) + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
+  // Ascension ladder is wired (shared/ascension.js): 4 cumulative difficulty rungs available for replay.
+  const s5Asc = await page.evaluate(() => window.__fvStage5.ascension());
+  if (s5Asc.maxLevel === 4) pass('Stage 5 ascension ladder wired: 4 rungs (opt-in replay depth)'); else fail(`Stage 5 ascension maxLevel ${s5Asc.maxLevel}`);
+  // The Jammer is gated behind the full run: from a fresh start the boss round (last) is locked.
+  const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="8"]')?.disabled }));
   if (s5Gate.cleared === 0 && s5Gate.bossLocked) pass('Stage 5 boss is locked until the run is cleared'); else fail('Stage 5 boss reachable from start');
-  // Play the six real rounds to reach the jammer.
+  // Play the eight real body rounds (incl. the time-trial + fork relay) to reach the jammer.
   const s5Cleared = await page.evaluate(() => window.__fvStage5.solveRun());
-  if (s5Cleared === 6) pass('Stage 5 run cleared: rounds 1–6 played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/6 rounds`);
+  if (s5Cleared === 8) pass('Stage 5 run cleared: rounds 1–8 (incl. time-trial + fork relay) played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/8 rounds`);
   // Load-bearing un-cheat: the jammer is unwinnable WITHOUT the calibrated counter-wave.
   const s5Uncal = await page.evaluate(() => ({ outcome: window.__fvStage5.solveBoss(), defeated: window.__fvStage5.state().boss.defeated }));
   if (s5Uncal.outcome === 'fail' && !s5Uncal.defeated) pass('Stage 5 jammer is unwinnable without calibration (load-bearing un-cheat)'); else fail('Stage 5 boss beatable without calibration');
@@ -883,6 +944,31 @@ export async function run(ctx) {
   const hubHasConfront = await page.$('.s6db-hub [data-action="confront"]');
   if (hubHasConfront) throw new Error('Stage 6 hub still exposes the confront bypass');
   pass('Stage 6 Protocol Codex opens on the deck-builder hub (no boss bypass)');
+  // Phase I — daily/custom seed determinism (the seed is hashed ONCE at run creation, never live
+  // entropy) + the self-competition score. The same date/custom key reproduces the same run seed.
+  const s6seed = await page.evaluate(() => {
+    window.__fvStage6.setDailyKey('2026-01-15');
+    const d1 = window.__fvStage6.beginRun({ mode: 'daily' });
+    const d2 = window.__fvStage6.beginRun({ mode: 'daily' });
+    const c1 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'codex' });
+    const c2 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'codex' });
+    const c3 = window.__fvStage6.beginRun({ mode: 'custom', seedText: 'other' });
+    const score = window.__fvStage6.score().run;
+    return {
+      dailyStable: d1.seed === d2.seed && d1.mode === 'daily' && d1.dailyKey === '2026-01-15',
+      customStable: c1.seed === c2.seed && c1.mode === 'custom' && c1.dailyKey === 'codex',
+      customDistinct: c1.seed !== c3.seed,
+      scorePositive: score > 0,
+    };
+  });
+  if (s6seed.dailyStable && s6seed.customStable && s6seed.customDistinct && s6seed.scorePositive) {
+    pass('Stage 6 daily/custom seed is deterministic (same key ⇒ same run) and run score is scored');
+  } else {
+    fail(`Stage 6 seed/score wrong: ${JSON.stringify(s6seed)}`);
+  }
+  // Return to the hub for the rest of the flow (the seed checks left a run active).
+  await page.click('.s6db-map [data-action="abandon"]');
+  await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
   // A run is the game body; verify the act-map loop is live.
   await page.click('.s6db-hub [data-action="begin-run"]');
   await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });
@@ -922,6 +1008,11 @@ export async function run(ctx) {
   await page.evaluate(() => window.__fvStage6.jumpToBoss(
     ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
   ));
+  // Phase I — grant the 3 true-ending keys on this run so the negotiation opens the hidden superboss
+  // (a real run earns them by playing the untouchable/ascetic/sacrifice challenges; this is the
+  // deterministic test path). The superboss is PURE bonus combat — it adds no second un-cheat.
+  const s6keys = await page.evaluate(() => window.__fvStage6.grantKeys(3));
+  if (s6keys === 3) pass('Stage 6 true-ending keys granted (untouchable / ascetic / sacrifice)'); else fail(`Stage 6 keys not granted: ${s6keys}`);
   // It is a real combat (data-play hand), not the retired 3-button puzzle.
   await page.waitForSelector('.s6db-combat .s6db-boss-banner.is-locked', { timeout: 4000 });
   pass('Stage 6 boss is a real-deck fight reached only through a run');
@@ -940,15 +1031,22 @@ export async function run(ctx) {
       return Boolean(save.actions?.['6.protocol_ch9_read'] && save.achievements?.['stage6.protocol_ch9_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  // With ch9 read the negotiation is unlocked: clear the fight with the real deck (correct handshake).
-  await page.evaluate(() => window.__fvStage6.autoNegotiate());
+  // With ch9 read the negotiation is unlocked: win it with the real deck. With 3 keys, this does NOT
+  // immediately clear the stage — it diverts to the hidden superboss (stage completion is deferred).
+  const s6neg = await page.evaluate(() => window.__fvStage6.autoNegotiate());
+  if (s6neg.bossDefeated && !s6neg.won) pass('Stage 6 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 6 negotiation/diversion wrong: ${JSON.stringify(s6neg)}`);
+  // The superboss is a real-deck multi-phase fight (The Kernel of Refusal), no lock / no un-cheat.
+  await page.waitForSelector('.s6db-combat', { timeout: 4000 });
+  // Drive the superboss to its end with the real deck → the TRUE ending, which now clears the stage.
+  const s6super = await page.evaluate(() => window.__fvStage6.autoSuperboss());
+  if (s6super.ok && s6super.status === 'won' && s6super.trueEnding) pass('Stage 6 key-gated superboss defeated → true ending'); else fail(`Stage 6 superboss not won: ${JSON.stringify(s6super)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(6) && save.unlockedStages?.includes(7);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 6 codex gate clears Protocol Codex via the real-deck negotiation');
+  pass('Stage 6 cleared via real-deck negotiation + key-gated true-ending superboss');
 
   await page.waitForSelector('.stage7-identity-arbiter', { timeout: 8000 });
   // The thin-gate bypass is gone: no in-game "inspect GPSInfo" button, and the investigation hook exists.
@@ -967,6 +1065,9 @@ export async function run(ctx) {
   await page.click('[data-action="open-anchor"]');
   await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 });
   pass('Stage 7 SS4: opening the anchor exhibit breaks the chain and opens Case 2 (Duplicate Roster)');
+  // Continuity: closing Case 1 carries its four deductions onto the board as established facts.
+  const s7Carried = await page.evaluate(() => window.__fvStage7.state().board.established.filter((f) => f.id.startsWith('case1:')).length);
+  if (s7Carried === 4) pass('Stage 7 continuity: Case-1 deductions carried onto the board as established facts'); else fail(`Stage 7 Case-1 continuity missing (${s7Carried}/4)`);
   // Case 2 is load-bearing: the rule-of-three triad cannot be completed until the route table is
   // actually opened in the viewer (the decisive fact card only exists after a real file-open).
   const s7Premature = await page.evaluate(() => window.__fvStage7.solveCase2());
@@ -975,9 +1076,24 @@ export async function run(ctx) {
   await page.click('[data-action="open-source"][data-source="route_table_examined"]');
   await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:route')), null, { timeout: 5000 });
   pass('Stage 7 Case 2: opening route_table.csv mints the decisive fact card on the evidence board');
-  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and reaches the boss.
+  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and opens Case 3.
   const s7Case2 = await page.evaluate(() => window.__fvStage7.solveCase2());
-  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and reaches the EXIF boss'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
+  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and opens Case 3 (Quorum Ghost)'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
+
+  // Case 3 (Quorum Ghost): a larger roster with a SEARCH-gated decisive fact. The triad cannot complete
+  // by merely OPENING the ledger — it must be SEARCHED for the claimed token.
+  await page.waitForSelector('[data-accuse="3"]', { timeout: 5000 });
+  await page.click('[data-action="open-source"][data-source="ledger_examined"]');
+  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:ledgerhint')), null, { timeout: 5000 });
+  const s7Case3Pre = await page.evaluate(() => window.__fvStage7.solveCase3());
+  if (s7Case3Pre.ok === false && s7Case3Pre.substage === 6) pass('Stage 7 Case 3: accusation impossible after only OPENING the ledger (search is load-bearing)'); else fail('Stage 7 Case 3 solvable without a real search');
+  // Run the REAL viewer search of the session ledger → mints the decisive fact:session card.
+  await page.evaluate(async () => { await window.__fv.searchViewerFile('/docs/examples/metagame/stage7/session_ledger.csv', 'S-7741'); });
+  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:session')), null, { timeout: 5000 });
+  pass('Stage 7 Case 3: SEARCHING session_ledger.csv mints the decisive fact card');
+  const s7Case3 = await page.evaluate(() => window.__fvStage7.solveCase3());
+  if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the ghost and reaches the EXIF boss'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
+
   // The metadata sidecar still carries the decisive GPS contradiction.
   const entitySidecar = await page.evaluate(async () => {
     const response = await fetch('examples/metagame/stage7/entity_metadata.json');
@@ -1028,10 +1144,18 @@ export async function run(ctx) {
     return !lock.unlocked && !s.boss.defeated && !(save?.defeated?.includes(8));
   });
   if (s8BypassFailed) pass('Stage 8 BYPASS CLOSED: fresh two-click Heat Death attempt is locked, not a win'); else fail('Stage 8 two-click bypass still wins');
-  // Drive the REAL survival sim to the boss gate (repair the spine, let the frontier shed .sav debris).
-  // bodySolver only fast-forwards the real engine — it does NOT archive or touch the boss.
+  // Drive the REAL multi-act survival sim to the boss gate (repair the spine, BRACE + weather each
+  // Cascade Storm so the network grows core→α→β→γ, let the frontier shed .sav debris). bodySolver
+  // only fast-forwards the real engine — it does NOT archive or touch the Heat Death boss.
   const s8Gate = await page.evaluate(() => window.__fvStage8.bodySolver());
   if (s8Gate.enoughCycles && s8Gate.enoughStates && !s8Gate.actionReady && !s8Gate.unlocked) pass('Stage 8 body gate reached (cycles + reserves), boss still locked pending the un-cheat'); else fail(`Stage 8 body gate not reached: ${JSON.stringify(s8Gate)}`);
+  // 3-act escalation: surviving the three Cascade Storms grew the network 14→34 and the boss now
+  // requires all three storms (boss-never-from-start, stronger than the prior gate).
+  const s8Acts = await page.evaluate(() => {
+    const s = window.__fvStage8.state();
+    return { storms: s.stormsSurvived, nodes: s.nodes.length, sectors: s.onlineSectors.length, act: s.act, enoughStorms: window.__fvStage8.lockState().enoughStorms };
+  });
+  if (s8Acts.storms === 3 && s8Acts.nodes === 34 && s8Acts.sectors === 4 && s8Acts.enoughStorms) pass('Stage 8 three Cascade Storms survived: network grew core→α→β→γ (14→34), storm gate met'); else fail(`Stage 8 storm/act progression wrong: ${JSON.stringify(s8Acts)}`);
   // Run-state retrofit: the in-progress sim is checkpointed into the "runsim" slot (tagged with the
   // run identity), so a reload resumes this exact mid-run position instead of re-seeding.
   const s8Resume = await page.evaluate(() => {
@@ -1057,9 +1181,44 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   const s8Unlocked = await page.evaluate(() => window.__fvStage8.lockState().unlocked);
   if (s8Unlocked) pass('Stage 8 fully gated after the archive un-cheat (all four gates met)'); else fail('Stage 8 still locked after archiving');
+  // Archive the remaining debris from the grown network to bank Scrap for the economy below.
+  for (let i = 0; i < 16; i += 1) {
+    const has = await page.evaluate(() => window.__fvStage8.state().debris.length > 0);
+    if (!has) break;
+    await page.click('[data-action="archive"]');
+  }
+  // Tech tree: Insight (from research nodes + storms) + Scrap (from the archives just made) buys tech.
+  // Cold Storage automation stays gated behind the MANUAL archive un-cheat (load-bearing preserved).
+  const s8Tech = await page.evaluate(() => {
+    const before = window.__fvStage8.state();
+    const buy = window.__fvStage8.buyTech('rep1');
+    const s = window.__fvStage8.state();
+    const sal3 = window.__fvStage8.techStatus().find((t) => t.id === 'sal3');
+    return { hadResources: before.insight >= 18 && before.scrap >= 12, bought: buy.ok, bonus: s.repairBudgetBonus, manualArchiveDone: s.manualArchiveDone, coldGated: sal3.reason !== 'needs-archive' };
+  });
+  if (s8Tech.bought && s8Tech.bonus === 3) pass('Stage 8 tech tree: Insight+Scrap buys a tech and applies its effect'); else fail(`Stage 8 tech buy failed: ${JSON.stringify(s8Tech)}`);
+  // Structures: Scrap builds a Heat Sink (folds into venting); Cold Storage automation stays gated
+  // behind the manual archive un-cheat (cannot even be BUILT without it).
+  const s8Struct = await page.evaluate(() => {
+    const r = window.__fvStage8.buildStructure('heatSink');
+    const s = window.__fvStage8.state();
+    const cold = window.__fvStage8.structureStatus().find((x) => x.id === 'coldStorage');
+    return { built: r.ok, reason: r.reason, scrap: Math.floor(s.scrap), vent: s.structHeatVent, coldNeedsTech: cold.reason };
+  });
+  if (s8Struct.built && s8Struct.vent === 4) pass('Stage 8 structures: Scrap builds a Heat Sink that folds into venting'); else fail(`Stage 8 structure build failed: ${JSON.stringify(s8Struct)}`);
   // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
   const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
   if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);
+  // Microstate prestige: once cleared, collapsing the field banks depth-scaled Cores and applies a
+  // permanent income multiplier on the fresh run (optional replay depth on top of the clear).
+  const s8Prestige = await page.evaluate(() => {
+    if (!window.__fvStage8) return { skipped: true };
+    const avail = window.__fvStage8.prestigeState();
+    const r = window.__fvStage8.collapse();
+    const after = window.__fvStage8.prestigeState();
+    return { available: avail.available.ok, preview: avail.preview, collapsed: r.ok, cores: after.cores, mult: after.mult };
+  });
+  if (s8Prestige.skipped || (s8Prestige.collapsed && s8Prestige.cores >= 3 && s8Prestige.mult > 1)) pass('Stage 8 Microstate prestige: collapse banks Cores + a permanent income multiplier'); else fail(`Stage 8 prestige failed: ${JSON.stringify(s8Prestige)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
@@ -1074,11 +1233,32 @@ export async function run(ctx) {
   await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
   const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[─│+]/.test(document.querySelector('.s9-arena')?.textContent || ''));
   if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
-  // The boss is gated behind the run: the player starts on a sublevel, not at the Observer.
+  // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
   const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
-  if (s9StartLevel < 18) pass('Stage 9 starts on a sublevel (boss gated behind the full run)'); else fail('Stage 9 started at the boss');
-  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the boss
-  // seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
+  if (s9StartLevel === 1) pass('Stage 9 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 9 started at level ${s9StartLevel}`);
+  // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
+  // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
+  const s9Stall = await page.evaluate(() => {
+    const reached = window.__fvStage9.solveStableBody();
+    return { reached, unstable: !!window.__fvStage9.config(reached).onlineUnstable, boss: window.__fvStage9.config(reached).isBoss };
+  });
+  if (s9Stall.reached > 1 && s9Stall.unstable && !s9Stall.boss)
+    pass('Stage 9 online run clears the learnable front, then stalls at the onlineUnstable back third');
+  else fail(`Stage 9 online run did not stall at the back third: ${JSON.stringify(s9Stall)}`);
+  // Clarity SPEND: clearing the front banked clarity; a Tachometer is buyable online, but the
+  // Single-Frame peek is OFFLINE-ONLY so it can never bypass the un-cheat (still online here ⇒ rejected).
+  const s9Spend = await page.evaluate(() => {
+    const before = window.__fvStage9.aids().clarity;
+    const tach = window.__fvStage9.buyAid('tachometer');
+    const after = window.__fvStage9.aids();
+    const peekOnline = window.__fvStage9.buyAid('peek');
+    return { before, tachOk: tach.ok, owned: after.tachometer, spent: before - after.clarity, peekReason: peekOnline.reason };
+  });
+  if (s9Spend.tachOk && s9Spend.owned && s9Spend.spent > 0 && s9Spend.peekReason === 'offline-only')
+    pass('Stage 9 clarity spend: Tachometer bought online; Single-Frame peek refused while live (offline-only)');
+  else fail(`Stage 9 clarity spend wrong: ${JSON.stringify(s9Spend)}`);
+  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
+  // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
   await page.click('[data-action="offline"]');
@@ -1088,6 +1268,11 @@ export async function run(ctx) {
       return Boolean(save.actions?.['9.offline_mode_activated'] && save.achievements?.['stage9.offline_mode_activated']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  // Now offline, the Single-Frame peek becomes buyable (there's a fixed seed to reveal) — the aid only
+  // ever exists once the un-cheat is active, so it deepens play without weakening the gate.
+  const s9Peek = await page.evaluate(() => window.__fvStage9.buyAid('peek').ok);
+  if (s9Peek) pass('Stage 9 Single-Frame peek buyable once offline (aid gated by the un-cheat, not a bypass)');
+  else fail('Stage 9 peek not buyable offline');
   // Drive the real run: clear every sublevel by CROSSing on its solve timing, then cross the boss
   // on the learned offline timing. (Not a bypass — each level is a genuine timed CROSS.)
   await page.evaluate(() => window.__fvStage9.solveOffline());
@@ -1126,20 +1311,37 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
   await page.click('[data-goto-final]');
-  await page.waitForSelector('[data-final-choice="continue"]', { timeout: 5000 });
-  await page.click('[data-final-choice="continue"]');
+  // The boss is now a REAL three-phase confrontation. The final choice is NOT exposed until the
+  // confrontation is won (boss never self-unlocks).
+  await page.waitForSelector('[data-field="confront"]', { timeout: 5000 });
+  const choiceLeaked = await page.$('[data-final-choice]');
+  if (!choiceLeaked) pass('Stage 10 final choice is gated behind the confrontation'); else fail('Stage 10 final choice exposed before the confrontation was won');
+  // Drive it deterministically through the same engine functions a player's clicks call: affirm each
+  // compaction with the recorded stance (Phase A), anchor each fragmentation trace — prior un-cheats
+  // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
+  const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
+  if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  await page.waitForFunction(() => {
+    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
+  }, null, { timeout: 5000 });
+  // Now the final question is reachable. Choose "understand" → the woven Synthesis epilogue.
+  await page.waitForSelector('[data-final-choice="understand"]:not([disabled])', { timeout: 5000 });
+  await page.click('[data-final-choice="understand"]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed;
+      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand';
     } catch { return false; }
   }, null, { timeout: 5000 });
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
+  const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
+  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);
   // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
   const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
   if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 10 renders the awakening ending (capstone)'); else fail('Stage 10 awakening ending unexpected: ' + awakening);
-  pass('Stage 10 resolves, integrates all memories, and completes Awakening');
+  pass('Stage 10 resolves, integrates all memories, wins the confrontation, and completes Awakening');
   await page.click('.games-close');
 
   const btsOk = await page.evaluate(async () => {

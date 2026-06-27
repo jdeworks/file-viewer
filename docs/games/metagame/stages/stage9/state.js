@@ -1,11 +1,15 @@
+import { BOSS_LEVEL } from "./movements.js";
+import { defaultAids, normalizeAids } from "./aids.js";
+
 export function defaultState() {
   return {
-    version: 1,
+    version: 2,
     notesRead: false,
     offlineControlVisible: false,
     offlineMode: false,
-    clarity: 84,
-    currentLevel: 12,
+    clarity: 0,
+    aids: defaultAids(),
+    currentLevel: 1,
     lockedSeedSamples: [],
     log: [
       "one observer. it sees everything. there is a gap. the gap moves.",
@@ -29,12 +33,17 @@ export function defaultState() {
 export function normalizeState(state) {
   const fresh = defaultState();
   const target = state && typeof state === "object" ? state : {};
-  target.version = 1;
+  // v1 saves used an 18-level/6-band layout (currentLevel up to 18). The stage is now a 10-level
+  // movement structure — clamp any stale level into range so an old save can't land "past the boss".
+  const staleV1 = Number(target.version) === 1;
+  target.version = 2;
   target.notesRead = Boolean(target.notesRead);
   target.offlineControlVisible = Boolean(target.offlineControlVisible);
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
-  target.currentLevel = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
+  target.aids = normalizeAids(target.aids);
+  const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
+  target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...(target.boss && typeof target.boss === "object" ? target.boss : {}) };

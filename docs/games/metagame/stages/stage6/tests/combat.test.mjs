@@ -368,15 +368,19 @@ function congestionCombat(seed = 11) {
     }
     return c;
   }
-  // A deck spanning every archetype + every new verb (sequence/delay/throughput cards).
+  // A deck spanning every archetype + every new verb (sequence/delay/throughput/corruption/chain).
   const deck = ["SYN", "ACK", "PREAMBLE", "FINALIZE", "WINDOWED_SEND", "RETRANSMIT", "DELAYED_ACK",
-    "BANDWIDTH", "BACKOFF", "DEFRAG", "PRIORITY_PACKET", "FLOOD", "CIPHER_LAYER", "SEGMENT"];
+    "BANDWIDTH", "BACKOFF", "DEFRAG", "PRIORITY_PACKET", "FLOOD", "CIPHER_LAYER", "SEGMENT",
+    "FORK_BOMB", "CORE_DUMP", "GARBAGE_COLLECT", "STACK_FRAME", "TAIL_CALL", "RECURSE", "CALLBACK"];
+  // Includes the Act-5/6 enemies (cleanser, fortifier, looping ramp, recursion elite) to prove the
+  // CORRUPTION + CHAIN verbs never loop forever and stay deterministic.
   const enemies = ["corrupt-packet", "round-trip-timer", "congestion-collapse", "man-in-the-middle",
-    "expired-certificate", "kernel-panic", "deadlock"];
+    "expired-certificate", "kernel-panic", "deadlock", "heisenbug", "daemon-process", "stack-overflow",
+    "infinite-loop", "recursive-call", "segfault", "session-hijack"];
   for (const enemyId of enemies) {
-    const c = autoBattle(deck, enemyId, 3, 7, true);
+    const c = autoBattle(deck, enemyId, 5, 7, false);
     assert.ok(c.over, `${enemyId}: real combat terminates (no infinite loop) within the turn cap`);
-    const again = autoBattle(deck, enemyId, 3, 7, true);
+    const again = autoBattle(deck, enemyId, 5, 7, false);
     assert.equal(again.result, c.result, `${enemyId}: same seed ⇒ same outcome`);
     assert.equal(again.turn, c.turn, `${enemyId}: same seed ⇒ same length`);
   }

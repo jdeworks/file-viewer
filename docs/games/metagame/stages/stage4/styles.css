@@ -111,6 +111,25 @@
   color: var(--s4-cyan);
 }
 
+.s4-roster-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+
+.s4-roster-row .s4-fork-btn {
+  border-color: var(--s4-cyan);
+  color: var(--s4-cyan);
+}
+
+.s4-fork-tag {
+  font-size: 10px;
+  color: var(--s4-cyan);
+  opacity: 0.85;
+  padding: 0 4px;
+}
+
 .s4-log {
   margin: 0 0 0 18px;
 }
@@ -123,8 +142,107 @@
   padding: 6px 9px;
 }
 
+.s4-leave {
+  margin-left: auto;
+}
+
+/* ── campaign map-select + Armory ───────────────────────────────────────── */
+.s4-maplist,
+.s4-armorylist {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+
+.s4-maprow,
+.s4-armoryrow {
+  align-items: center;
+  background: #111118;
+  border: 1px solid var(--s4-line);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 28px 150px 80px 1fr 80px auto;
+  padding: 7px 9px;
+}
+
+.s4-armoryrow {
+  grid-template-columns: 1fr 1.4fr auto;
+}
+
+.s4-maprow.is-locked {
+  color: #5a5a72;
+  opacity: 0.65;
+}
+
+.s4-maprow.is-cleared .s4-mapstatus {
+  color: var(--s4-cyan);
+}
+
+.s4-maprow.is-open .s4-mapstatus {
+  color: var(--s4-yellow);
+}
+
+.s4-mapglyph {
+  color: var(--s4-magenta);
+  font-size: 16px;
+}
+
+.s4-mapname,
+.s4-armoryname {
+  color: var(--s4-fg);
+  font-weight: 700;
+}
+
+.s4-maptheme {
+  color: #8a8aa6;
+  font-size: 12px;
+}
+
+.s4-mapstatus {
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.s4-maprow button,
+.s4-armoryrow button {
+  background: #1a1a30;
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.s4-maprow button:disabled,
+.s4-armoryrow button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.s4-armorydesc {
+  color: #8a8aa6;
+  font-size: 12px;
+}
+
+.s4-armoryname em {
+  color: var(--s4-yellow);
+  font-size: 11px;
+  font-style: normal;
+}
+
 @media (max-width: 760px) {
   .s4-layout {
     grid-template-columns: 1fr;
+  }
+
+  .s4-maprow {
+    grid-template-columns: 24px 1fr auto;
+  }
+
+  .s4-maprow .s4-mapwaves,
+  .s4-maprow .s4-maptheme,
+  .s4-maprow .s4-mapstatus {
+    display: none;
   }
 }

@@ -343,6 +343,11 @@ function onSettingsChange(model, changedKey) {
     persistGlobalKey('reduceMotion', model.values.reduceMotion);
     applyReduceMotion(model.values.reduceMotion);
   }
+  // Heavy opt-in packages persist immediately (don't wait for "Save as global default") so the
+  // eager download + "Reload to apply" flow actually sticks across the reload.
+  if (changedKey === 'enableFfmpeg' || changedKey === 'enableArchiveWasm' || changedKey === 'enableEmulators') {
+    persistGlobalKey(changedKey, model.values[changedKey]);
+  }
   if (!state.type?.capabilities.preview) return;
   if (changedKey === 'previewMaxWidth' || changedKey === 'previewWidthMode') applyLayout();   // resize the split pane too
   const cat = model.descriptors.find((d) => d.key === changedKey)?.category;

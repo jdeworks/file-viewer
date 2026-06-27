@@ -1,5 +1,8 @@
-import { NODES } from "./nodes.js";
+import { NODES, NODE_BY_ID, freshSectorNodes } from "./nodes.js";
 import { bellMessages } from "./messages.js";
+import { defaultTechBonuses, recomputeTechBonuses } from "./tech.js";
+import { defaultStructureBonuses, recomputeStructureBonuses } from "./structures.js";
+import { prestigeMultFor } from "./prestige.js";
 
 // state.js — Stage 8 Entropy Field survival sim state.
 //
@@ -10,20 +13,37 @@ import { bellMessages } from "./messages.js";
 // completed clear so a returning winner is never reset into a new fight. snapshotRun/restoreRun are
 // pure (de)serializers used by the run-state retrofit to resume an in-progress sim across reloads.
 
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
+// The field boots with ONLY the core sector online (14 nodes). alpha/beta/gamma append on storm wins.
 export function freshNodes() {
-  return NODES.map((n) => ({ id: n.id, health: 100, cascadeStress: 0 }));
+  return freshSectorNodes("core");
 }
 
 export function defaultState() {
   return {
     version: STATE_VERSION,
     cycle: 1,
+    act: 1,
+    onlineSectors: ["core"],
+    stormsSurvived: 0,
+    pendingStorm: null,
+    activeStorm: null,
     nodes: freshNodes(),
     states: 0,
     totalStatesEarned: 0,
     salvageTotal: 0,
+    scrap: 0,
+    scrapTotal: 0,
+    insight: 0,
+    insightTotal: 0,
+    insightRate: 0,
+    tech: {},
+    structures: {},
+    manualArchiveDone: false,
+    prestigeMult: 1,
+    ...defaultTechBonuses(),
+    ...defaultStructureBonuses(),
     selectedDebrisId: "",
     externalImportBonusCycles: 0,
     stabilizers: 0,
@@ -32,6 +52,8 @@ export function defaultState() {
     stabilized: {},
     highLoad: {},
     entropy: 0,
+    heat: 0,
+    heatRate: 0,
     debris: [],
     archive: [],
     pendingEvent: null,
@@ -49,7 +71,9 @@ export function defaultState() {
     },
     meta: {
       firstClearComplete: false,
-      btsAvailable: false
+      btsAvailable: false,
+      cores: 0,
+      collapseLevel: 0
     }
   };
 }
@@ -61,6 +85,11 @@ export function normalizeState(state) {
   const incoming = state && typeof state === "object" ? state : {};
   if (Number(incoming.version) !== STATE_VERSION) {
     const fresh = defaultState();
+    // permanent prestige progress survives a version bump (Cores are meta-progression)
+    const inMeta = incoming.meta && typeof incoming.meta === "object" ? incoming.meta : {};
+    fresh.meta.cores = Math.max(0, num(inMeta.cores, 0));
+    fresh.meta.collapseLevel = Math.max(0, num(inMeta.collapseLevel, 0));
+    fresh.prestigeMult = prestigeMultFor(fresh.meta.cores);
     if (incoming.boss && incoming.boss.defeated) {
       fresh.boss = { ...fresh.boss, defeated: true, reached: true };
       fresh.meta = { ...fresh.meta, firstClearComplete: true, btsAvailable: true };
@@ -71,16 +100,37 @@ export function normalizeState(state) {
   const target = incoming;
   target.version = STATE_VERSION;
   target.cycle = posInt(target.cycle, fresh.cycle);
-  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length
-    ? target.nodes.map((n, i) => ({
-        id: n?.id || fresh.nodes[i].id,
-        health: clampHealth(n?.health),
-        cascadeStress: Number.isFinite(Number(n?.cascadeStress)) ? Number(n.cascadeStress) : 0
+  // Node array is now variable-length (the network grows across acts): keep every entry whose id is a
+  // known node; fall back to the fresh core sector only if nothing valid survived.
+  const validNodes = Array.isArray(target.nodes)
+    ? target.nodes.filter((n) => n && NODE_BY_ID.has(n.id)).map((n) => ({
+        id: n.id,
+        health: clampHealth(n.health),
+        cascadeStress: Number.isFinite(Number(n.cascadeStress)) ? Number(n.cascadeStress) : 0
       }))
-    : fresh.nodes;
+    : [];
+  target.nodes = validNodes.length ? validNodes : fresh.nodes;
+  target.act = posInt(target.act, fresh.act);
+  target.onlineSectors = Array.isArray(target.onlineSectors) && target.onlineSectors.length
+    ? target.onlineSectors.filter((s) => typeof s === "string")
+    : fresh.onlineSectors;
+  if (!target.onlineSectors.includes("core")) target.onlineSectors.unshift("core");
+  target.stormsSurvived = Math.max(0, num(target.stormsSurvived, 0));
+  target.pendingStorm = target.pendingStorm && typeof target.pendingStorm === "object" ? target.pendingStorm : null;
+  target.activeStorm = target.activeStorm && typeof target.activeStorm === "object" ? target.activeStorm : null;
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
+  target.scrap = Math.max(0, num(target.scrap, 0));
+  target.scrapTotal = Math.max(0, num(target.scrapTotal, 0));
+  target.insight = Math.max(0, num(target.insight, 0));
+  target.insightTotal = Math.max(0, num(target.insightTotal, 0));
+  target.insightRate = num(target.insightRate, 0);
+  target.tech = plain(target.tech);
+  target.structures = plain(target.structures);
+  target.manualArchiveDone = Boolean(target.manualArchiveDone);
+  recomputeTechBonuses(target);      // rebuild tech bonus fields from the purchased set (source of truth)
+  recomputeStructureBonuses(target); // rebuild struct bonus fields from the built set
   target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
   target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
   target.stabilizers = Math.max(0, num(target.stabilizers, 0));
@@ -89,6 +139,8 @@ export function normalizeState(state) {
   target.stabilized = plain(target.stabilized);
   target.highLoad = plain(target.highLoad);
   target.entropy = num(target.entropy, 0);
+  target.heat = Math.max(0, Math.min(100, num(target.heat, 0)));
+  target.heatRate = num(target.heatRate, 0);
   target.debris = Array.isArray(target.debris) ? target.debris : [];
   target.archive = Array.isArray(target.archive) ? target.archive : [];
   target.pendingEvent = target.pendingEvent && typeof target.pendingEvent === "object" ? target.pendingEvent : null;
@@ -98,6 +150,9 @@ export function normalizeState(state) {
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.boss = { ...fresh.boss, ...(target.boss && typeof target.boss === "object" ? target.boss : {}) };
   target.meta = { ...fresh.meta, ...(target.meta && typeof target.meta === "object" ? target.meta : {}) };
+  target.meta.cores = Math.max(0, num(target.meta.cores, 0));
+  target.meta.collapseLevel = Math.max(0, num(target.meta.collapseLevel, 0));
+  target.prestigeMult = prestigeMultFor(target.meta.cores);
   return target;
 }
 
@@ -106,10 +161,23 @@ export function snapshotRun(state) {
   return {
     version: STATE_VERSION,
     cycle: state.cycle,
+    act: state.act || 1,
+    onlineSectors: [...(state.onlineSectors || ["core"])],
+    stormsSurvived: state.stormsSurvived || 0,
+    pendingStorm: state.pendingStorm ? { ...state.pendingStorm } : null,
+    activeStorm: state.activeStorm ? { ...state.activeStorm } : null,
     nodes: (state.nodes || []).map((n) => ({ id: n.id, health: n.health, cascadeStress: n.cascadeStress || 0 })),
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,
     salvageTotal: state.salvageTotal,
+    scrap: state.scrap || 0,
+    scrapTotal: state.scrapTotal || 0,
+    insight: state.insight || 0,
+    insightTotal: state.insightTotal || 0,
+    insightRate: state.insightRate || 0,
+    tech: { ...(state.tech || {}) },
+    structures: { ...(state.structures || {}) },
+    manualArchiveDone: Boolean(state.manualArchiveDone),
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
     stabilizers: state.stabilizers || 0,
@@ -118,6 +186,8 @@ export function snapshotRun(state) {
     stabilized: { ...(state.stabilized || {}) },
     highLoad: { ...(state.highLoad || {}) },
     entropy: state.entropy || 0,
+    heat: state.heat || 0,
+    heatRate: state.heatRate || 0,
     debris: (state.debris || []).map((d) => ({ ...d })),
     archive: (state.archive || []).map((a) => ({ ...a })),
     pendingEvent: state.pendingEvent ? { ...state.pendingEvent } : null,

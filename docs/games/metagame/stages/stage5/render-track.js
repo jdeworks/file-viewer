@@ -6,13 +6,21 @@ const CELL = {
   empty: ' · ', '░': ' ░ ', '▒': ' ▒ ', '▓': ' ▓ ', '>>': '>> ',
   // powerup pickups (placed by powerups.js into clear lanes)
   U: ' U ', O: ' O ', E: ' E ', '+': ' + ', $: ' $ ',
+  // time-trial ghosts (overlaid like rivals, drawn faint with parentheses)
+  P: '(P)', G: '(G)',
 };
 
-export function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [] }) {
+export function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [], channel = 'lo' }) {
   const rows = [];
-  const at = (t) => {
+  const raw = (t) => {
     if (wrap && table.length) return table[((t % table.length) + table.length) % table.length];
     return table[t];
+  };
+  // Inside a fork span, draw the committed sub-channel's lanes (HI gates/▓ or LO safe ░).
+  const at = (t) => {
+    const r = raw(t);
+    if (!r || !r.fork) return r;
+    return { ...r, lanes: (channel === 'hi' ? r.forkHi : r.forkLo) || r.lanes };
   };
   const here = at(tick) || { counterPhaseLane: null, beatOpen: true };
 

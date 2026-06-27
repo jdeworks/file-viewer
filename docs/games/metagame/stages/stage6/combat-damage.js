@@ -13,7 +13,9 @@ export function dealToEnemy(combat, baseAmount) {
   amount = Math.max(0, amount - combat.enemy.armor);
   const absorbed = Math.min(combat.enemy.block, amount);
   combat.enemy.block -= absorbed;
-  combat.enemy.hp = Math.max(0, combat.enemy.hp - (amount - absorbed));
+  const landed = amount - absorbed;
+  combat.enemy.hp = Math.max(0, combat.enemy.hp - landed);
+  if (landed > 0) combat.enemy.unhurt = false; // the player damaged it this cycle (Stack Overflow fortify)
 }
 
 export function dealToPlayer(combat, baseAmount, { pierce = false } = {}) {
@@ -34,7 +36,22 @@ export function addStatus(entity, status, value) {
   if (entity.statuses[status] <= 0) delete entity.statuses[status];
 }
 
+// CORRUPTION (Act 5 · PRESENTATION LAYER, verb DAMAGE-OVER-TIME): a poison-analogue stack carried by
+// the enemy. At the enemy's turn start it deals damage equal to its current stacks (ignoring armor and
+// block — it's a leak, not an attack), then decays by 1. A relic (Entropy Pool) makes it tick TWICE.
+// Fully deterministic; no RNG. Inert until a card/relic applies the `corruption` status to the enemy.
+export function tickCorruption(combat) {
+  const enemy = combat.enemy;
+  const stacks = enemy.statuses.corruption || 0;
+  if (stacks <= 0) return;
+  const ticks = combat.corruptionDouble ? 2 : 1;
+  enemy.hp = Math.max(0, enemy.hp - stacks * ticks);
+  enemy.statuses.corruption = stacks - 1;
+  if (enemy.statuses.corruption <= 0) delete enemy.statuses.corruption;
+}
+
 // Only duration statuses count down at the owner's turn start; powers (e.g. strength) persist.
+// Corruption is NOT here — it has its own damage-dealing decay (tickCorruption) at the enemy turn.
 export const DURATION_STATUSES = new Set(["vulnerable", "weak"]);
 
 export function tickStatuses(entity) {

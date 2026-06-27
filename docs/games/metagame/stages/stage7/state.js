@@ -2,9 +2,9 @@ import { bellMessages } from "./messages.js";
 
 export function defaultState() {
   return {
-    version: 3,
+    version: 4,
     addresses: 0,
-    substage: 1,                  // 1 scan · 2 dup · 3 timeline · 4 chain · 5 accuse(case2) · 6 boss
+    substage: 1,                  // 1 scan·2 dup·3 timeline·4 chain·5 case2·6 case3·7 boss
     evidence: {
       eliminated: [],             // populated incrementally as entities are flagged / accused
       contradicted: [],
@@ -19,7 +19,13 @@ export function defaultState() {
       case2Seeded: false,         // entity/field clue cards minted onto the board
       case2Solved: false,         // the correct triad confirmed
       case2Attempts: 0,           // complete-but-wrong accusations
-      case2HintStep: 0            // accusation hint ladder
+      case2HintStep: 0,           // accusation hint ladder
+      // Case 3 (Quorum Ghost) — a larger roster + a SEARCH-gated decisive fact.
+      case3Seeded: false,
+      case3Solved: false,
+      case3Attempts: 0,
+      case3HintStep: 0,
+      case1Carried: false         // Case-1 deductions promoted onto the board as established facts
     },
     // Evidence board / detective notebook — initialised once here (the lazy per-stage seed).
     board: { cards: [], links: [], established: [] },
@@ -43,11 +49,11 @@ export function defaultState() {
 export function normalizeState(state) {
   const fresh = defaultState();
   const incoming = state && typeof state === "object" ? state : {};
-  // Pre-Case-2 saves (version < 3) used a 5-substage shape where 5 meant BOSS; the substage numbers
-  // are now incompatible (5 = accusation, 6 = boss). Don't migrate — reset clean.
-  if (Number(incoming.version) < 3) return fresh;
+  // Pre-Case-3 saves (version < 4) used a 6-substage shape where 6 meant BOSS; the substage numbers
+  // are now incompatible (6 = Case 3 accusation, 7 = boss). Don't migrate — reset clean.
+  if (Number(incoming.version) < 4) return fresh;
   const target = incoming;
-  target.version = 3;
+  target.version = 4;
   target.addresses = Number.isFinite(Number(target.addresses)) ? Number(target.addresses) : fresh.addresses;
   target.substage = clampSubstage(target.substage, fresh.substage);
   target.evidence = mergePlain(fresh.evidence, target.evidence);
@@ -72,7 +78,7 @@ function normalizeBoard(base, override) {
 
 function clampSubstage(value, fallback) {
   const n = Number(value);
-  return Number.isFinite(n) && n >= 1 && n <= 6 ? Math.floor(n) : fallback;
+  return Number.isFinite(n) && n >= 1 && n <= 7 ? Math.floor(n) : fallback;
 }
 
 function mergePlain(base, override) {

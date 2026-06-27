@@ -110,5 +110,12 @@ export const SIGNAL_CARDS = [
     id: "RETRANSMIT", type: "Signal", cost: 2, rarity: "rare",
     text: "Deal 18 in 2 turns.",
     effect: (ctx) => ctx.queue(2, { deal: 18 })
-  }
+  },
+  // ── H · additional commons (pool depth — early decks need reliable filler) ──────────────────────────
+  { id: "BIT_FLIP", type: "Signal", cost: 0, rarity: "common", text: "Deal 4.", effect: (ctx) => ctx.deal(4) },
+  { id: "PING", type: "Signal", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) },
+  { id: "ICMP", type: "Signal", cost: 1, rarity: "common", text: "Deal 5. Gain 3 block.", effect: (ctx) => { ctx.deal(5); ctx.block(3); } },
+  { id: "TEARDOWN", type: "Signal", cost: 2, rarity: "common", text: "Deal 11.", effect: (ctx) => ctx.deal(11) },
+  { id: "DATAGRAM", type: "Signal", cost: 1, rarity: "common", text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
+  { id: "BROADCAST", type: "Signal", cost: 2, rarity: "common", text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.deal(6); ctx.applyEnemy("weak", 1); } }
 ];

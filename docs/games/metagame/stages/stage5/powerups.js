@@ -41,7 +41,7 @@ export function placePowerups(table, rng, round = {}) {
   for (let t = 0; t < table.length; t += 1) {
     if (t % spacing !== 0) continue;
     const row = table[t];
-    if (!row || row.beatOpen === false) continue;
+    if (!row || row.beatOpen === false || row.fork) continue; // fork spans own their own sub-channel rows
     const open = [0, 1, 2].filter((l) => row.lanes[l] === null);
     if (!open.length || !rng.chance(chance)) continue;
     const lane = rng.pick(open);
@@ -51,9 +51,10 @@ export function placePowerups(table, rng, round = {}) {
 }
 
 // Buff duration in ticks, derived from the live engine cadence so wall-time is cadence-independent.
-export function durationTicks(type, getTickMs) {
+// bonusMs (e.g. the vehicle shop's Cooling rank) extends the effect's wall-time before conversion.
+export function durationTicks(type, getTickMs, bonusMs = 0) {
   const def = POWERUPS[type];
   if (!def || !def.durationMs) return 0;
   const ms = Math.max(1, Number(getTickMs && getTickMs()) || 130);
-  return Math.max(1, Math.ceil(def.durationMs / ms));
+  return Math.max(1, Math.ceil((def.durationMs + Math.max(0, Number(bonusMs) || 0)) / ms));
 }

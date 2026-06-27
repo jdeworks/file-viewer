@@ -2,9 +2,12 @@
 // engine.js calls waveComposition to populate the spawn queue. Waves 1–5 (PLACE verb) for now;
 // later increments extend this toward wave 31 (the boss). Pure/deterministic from (waveNum, seed).
 
-export const SPAWN_INTERVAL_MS = 1500; // one enemy every 1.5s
-export const WAVE_GAP_MS = 5000;       // pause between waves
-export const FINAL_WAVE = 31;
+// Pacing: a tighter spawn cadence (~0.7s) so long campaign maps don't drag — combined with the
+// fast-forward (1×/2×/3×) and player-driven wave starts in the renderer, forced time comes from the
+// waves themselves, not dead air between them.
+export const SPAWN_INTERVAL_MS = 700;  // one enemy every ~0.7s
+export const WAVE_GAP_MS = 0;          // no forced gap — the player calls each wave
+export const FINAL_WAVE = 31;          // legacy single-map boss marker (campaign uses run4.js gating)
 
 // Authored waves. Each: { enemies: [{type, count}], leftFraction: null|number, note? }.
 const WAVES = {

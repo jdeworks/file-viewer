@@ -186,7 +186,7 @@ export function renderCompanionSettings(container) {
 
   const panel = document.createElement('details');
   panel.className = 'set-group companion-panel';
-  panel.open = true;
+  panel.open = false;   // collapsed by default — the panel grew large; opt-in to expand
 
   const summary = document.createElement('summary');
   summary.innerHTML = `Companion <span class="companion-status-dot ${isCompanionAvailable() ? 'connected' : ''}">${isCompanionAvailable() ? '● connected' : '○ not found'}</span>`;

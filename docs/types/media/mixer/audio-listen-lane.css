@@ -23,6 +23,7 @@
   --al-wave-trimmed: rgba(100, 116, 139, 0.12);
   --al-clip-bg: rgba(100, 116, 139, 0.10);
   --al-wave-fade: rgba(220, 38, 38, 0.22);
+  --al-clip-divider: rgba(15, 23, 42, 0.45);
 
   display: flex;
   flex-direction: column;
@@ -53,6 +54,7 @@
   --al-wave-trimmed: rgba(148, 163, 184, 0.1);
   --al-clip-bg: rgba(148, 163, 184, 0.10);
   --al-wave-fade: rgba(248, 113, 113, 0.25);
+  --al-clip-divider: rgba(226, 232, 240, 0.5);
 }
 
 /* Toolbar: transport on the left, zoom + time on the right. */

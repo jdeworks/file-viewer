@@ -12,6 +12,8 @@ import {
 } from "./messages.js";
 import { simulateHeatDeath } from "./burn.js";
 import { makeRng } from "./rng.js";
+import { scrapYield, earnScrap } from "./resources.js";
+import { TOTAL_STORMS } from "./storms.js";
 
 export function hasSalvageArchived(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
@@ -38,8 +40,11 @@ export function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
+  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
+  earnScrap(state, scrap);
+  state.manualArchiveDone = true; // the manual un-cheat has fired — gates the Cold Storage automation
   state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog(state, `archived ${debris.id}. +${debris.value} States.`);
+  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
 
   const firstArchive = !hasSalvageArchived(actions);
   if (actions && typeof actions.setAction === "function") {
@@ -105,7 +110,9 @@ export function getBossLockState({ actions, state }) {
   const enoughSalvage = salvageTotal >= SALVAGE_REQUIRED;
   const enoughStates = totalEarned >= STATES_REQUIRED;
   const enoughCycles = cycle >= MIN_CYCLE;
-  const unlocked = actionReady && enoughSalvage && enoughStates && enoughCycles;
+  const stormsSurvived = Number(state.stormsSurvived || 0);
+  const enoughStorms = stormsSurvived >= TOTAL_STORMS;
+  const unlocked = enoughStorms && actionReady && enoughSalvage && enoughStates && enoughCycles;
   const lock = {
     unlocked,
     defeated: Boolean(state.boss.defeated),
@@ -113,6 +120,9 @@ export function getBossLockState({ actions, state }) {
     enoughSalvage,
     enoughStates,
     enoughCycles,
+    enoughStorms,
+    stormsSurvived,
+    stormsRequired: TOTAL_STORMS,
     salvageTotal,
     salvageRequired: SALVAGE_REQUIRED,
     totalEarned,

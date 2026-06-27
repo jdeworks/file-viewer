@@ -16,6 +16,7 @@
 
 import { makeTrackedRng } from "./combat-rng.js";
 import { rewireBossCombat } from "./boss-combat.js";
+import { rewireSuperboss } from "./superboss.js";
 
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
@@ -37,9 +38,12 @@ export function snapshotCombat(combat) {
     firstCardDiscount: combat.firstCardDiscount || 0,
     delaySpeedup: Boolean(combat.delaySpeedup),
     delayUsed: Boolean(combat.delayUsed),
+    corruptionBonus: combat.corruptionBonus || 0,
+    corruptionDouble: Boolean(combat.corruptionDouble),
     turn: combat.turn,
     cardsPlayedThisTurn: combat.cardsPlayedThisTurn || 0,
     energySpentThisTurn: combat.energySpentThisTurn || 0,
+    chainThisTurn: combat.chainThisTurn || 0,
     playedIdsThisTurn: [...(combat.playedIdsThisTurn || [])],
     lastCardPlayed: combat.lastCardPlayed ?? null,
     over: Boolean(combat.over),
@@ -54,8 +58,11 @@ export function snapshotCombat(combat) {
     jammed: [...(combat.jammed || [])],
     pending: clone(combat.pending || []),
     boss: combat.bossPhase
-      ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1 }
-      : null
+      ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 }
+      : null,
+    // The key-gated superboss only needs its phase index persisted; its per-phase HP/script are
+    // already in the cloned enemy. The advancePhase closure is rebuilt on restore via rewireSuperboss.
+    superboss: combat.superPhase != null ? { phase: combat.superPhase } : null
   };
 }
 
@@ -77,6 +84,8 @@ export function restoreCombat(snapshot, { relics = [] } = {}) {
     firstCardDiscount: s.firstCardDiscount || 0,
     delaySpeedup: Boolean(s.delaySpeedup),
     delayUsed: Boolean(s.delayUsed),
+    corruptionBonus: s.corruptionBonus || 0,
+    corruptionDouble: Boolean(s.corruptionDouble),
     player: clone(s.player),
     enemy: clone(s.enemy),
     draw: [...(s.draw || [])],
@@ -88,6 +97,7 @@ export function restoreCombat(snapshot, { relics = [] } = {}) {
     turn: s.turn,
     cardsPlayedThisTurn: s.cardsPlayedThisTurn || 0,
     energySpentThisTurn: s.energySpentThisTurn || 0,
+    chainThisTurn: s.chainThisTurn || 0,
     playedIdsThisTurn: [...(s.playedIdsThisTurn || [])],
     lastCardPlayed: s.lastCardPlayed ?? null,
     over: Boolean(s.over),
@@ -99,7 +109,12 @@ export function restoreCombat(snapshot, { relics = [] } = {}) {
     combat.bossPhase = s.boss.phase;
     combat.bossLocked = Boolean(s.boss.locked);
     combat.bossHpMult = s.boss.hpMult || 1;
+    combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
+  }
+  if (s.superboss) {
+    combat.superPhase = s.superboss.phase || 0;
+    rewireSuperboss(combat);
   }
   return combat;
 }

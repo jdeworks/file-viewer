@@ -52,7 +52,9 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [], conge
       statuses: {},
       script: enemy.script,
       intentIndex: 0,
-      skipNext: false
+      skipNext: false,
+      immuneCorruption: Boolean(enemy.immuneCorruption), // CORRUPTION-immune (the boss)
+      unhurt: true // true while the player hasn't damaged it since its last turn (Stack Overflow fortify)
     },
     draw: shuffle(deck, rng),
     hand: [],
@@ -64,6 +66,7 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [], conge
     cardsPlayedThisTurn: 0,
     firstCardDiscount: 0, // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
     energySpentThisTurn: 0,
+    chainThisTurn: 0, // CHAIN (Act 6): number of card-replays/echoes this turn (resets each turn)
     playedIdsThisTurn: [],
     lastCardPlayed: null,
     over: false,
@@ -86,7 +89,11 @@ export function playCard(combat, handIndex) {
   if (!card) return { ok: false, reason: "unknown-card" };
   // SEQUENCE: the first card played each turn may be discounted (Root Certificate relic).
   const isFirst = combat.cardsPlayedThisTurn === 0;
-  const cost = Math.max(0, card.cost - (isFirst ? (combat.firstCardDiscount || 0) : 0));
+  // CHAIN: an X-cost card (RECURSE) spends ALL remaining energy; ctx.xValue exposes how much, so it
+  // can replay that many times. The discount does not apply to an X-cost card (it always drains the bar).
+  let cost;
+  if (card.xcost) { cost = combat.player.energy; combat.xValue = cost; }
+  else cost = Math.max(0, card.cost - (isFirst ? (combat.firstCardDiscount || 0) : 0));
   if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
 
   combat.player.energy -= cost;
@@ -130,6 +137,7 @@ export function endTurn(combat) {
   applyTurnEnergy(combat); // flat refill, or recompute the congestion window from this turn's spend
   combat.cardsPlayedThisTurn = 0;
   combat.energySpentThisTurn = 0;
+  combat.chainThisTurn = 0; // CHAIN: reset the per-turn replay counter
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
   releaseJam(combat); // Packet Loss from last turn cycles back into the deck before the new draw

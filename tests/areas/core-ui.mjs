@@ -432,6 +432,12 @@ export async function run(ctx) {
   if (companionOrder.hasSigningDisclosure) pass('companion download panel discloses unsigned-binary / AV false-positive risk');
   else fail('companion download panel missing unsigned/AV disclosure: ' + JSON.stringify(companionOrder));
 
+  // Companion panel is collapsed by default (it grew large) — content is in the DOM but not open.
+  const companionClosed = await page.$eval('#settingsBody .companion-panel', (el) => el.tagName === 'DETAILS' && !el.open).catch(() => null);
+  if (companionClosed === true) pass('companion panel collapsed by default');
+  else if (companionClosed === null) pass('companion panel not present (mobile/desktop variance) — skipped');
+  else fail('companion panel should be closed by default');
+
   // Switch preset to Compact -> preview re-renders at 680px max width.
   const presetSel = await page.$('#settingsBody select.set-preset');
   await presetSel.selectOption('compact');
@@ -489,6 +495,24 @@ export async function run(ctx) {
   await page.waitForTimeout(80);
   const rmOff = await page.evaluate(() => !document.documentElement.classList.contains('reduce-motion'));
   if (rmOff) pass('reduce-motion toggle clears the root class'); else fail('reduce-motion did not clear');
+
+  // Heavy opt-in package: enabling one mounts a "Reload to apply" affordance under the row.
+  // Use Emulators — it has nothing to pre-download, so the reload button is enabled immediately
+  // (ffmpeg/archive would start a multi-MB fetch we don't want in smoke).
+  const emuToggle = await page.$('#set-enableEmulators');
+  if (emuToggle) {
+    await page.click('label[for="set-enableEmulators"]');
+    await page.waitForSelector('#settingsBody .set-row .heavy-dl .heavy-dl-reload', { timeout: 3000 });
+    const reloadState = await page.$eval('#settingsBody .heavy-dl .heavy-dl-reload', (b) => ({ text: b.textContent, disabled: b.disabled }));
+    if (/reload/i.test(reloadState.text) && reloadState.disabled === false) pass('heavy package enable shows an enabled reload-to-apply button (no-download case)');
+    else fail('heavy reload button state: ' + JSON.stringify(reloadState));
+    await page.click('label[for="set-enableEmulators"]');   // restore: untoggle
+    await page.waitForTimeout(80);
+    const gone = await page.$('#settingsBody .heavy-dl');
+    if (!gone) pass('disabling a heavy package removes the reload affordance'); else fail('heavy-dl affordance lingered after untoggle');
+  } else {
+    fail('enableEmulators toggle not found for heavy-package test');
+  }
 
   await page.click('#settingsDrawer [data-close]');
 

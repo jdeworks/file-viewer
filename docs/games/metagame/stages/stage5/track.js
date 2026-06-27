@@ -9,13 +9,15 @@ import { makeRng } from './rng.js';
 const LANES = 3;
 
 // Per-round obstacle density (chance a given lane is blocked on a given tick). Escalates by round id.
-const DENSITY = { 1: 0.40, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.50 };
+const DENSITY = { 1: 0.40, 2: 0.42, 3: 0.45, 4: 0.45, 5: 0.45, 6: 0.48, 7: 0.44, 8: 0.40, 9: 0.50 };
 
-export function buildObstacleTable(seed, roundDef) {
+export function buildObstacleTable(seed, roundDef, densityBonus = 0) {
   const rng = makeRng(`${seed}:${roundDef.id}`);
   const count = Number(roundDef.tickCount) || 100;
   const obstacleGlyphs = (roundDef.glyphs || ['░']).filter((g) => g !== '>>');
-  const density = DENSITY[roundDef.id] ?? 0.45;
+  // densityBonus is the ascension knob (more hazards). Capped so a lane is never near-guaranteed
+  // blocked; the "always an escape" invariant below still holds regardless.
+  const density = Math.min(0.7, (DENSITY[roundDef.id] ?? 0.45) + Math.max(0, Number(densityBonus) || 0));
   const burst = Array.isArray(roundDef.burstPattern) ? roundDef.burstPattern : null;
   const shift = Number(roundDef.counterPhaseShift) || 0;
 

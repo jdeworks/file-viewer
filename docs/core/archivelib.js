@@ -22,6 +22,10 @@ async function loadLib() {
   return mod;
 }
 
+// Eager-load the WASM module without opening a file — used by the Advanced-settings opt-in
+// to pre-download libarchive the moment the user enables archive support.
+export async function preloadArchiveLib() { await loadLib(); }
+
 // Extensions that belong to this handler (not zip — zip stays with JSZip).
 const ARCHIVE_EXTS = new Set(['7z', 'rar', 'tar', 'tgz', 'tar.gz', 'tar.bz2', 'tar.xz', 'tar.zst']);
 

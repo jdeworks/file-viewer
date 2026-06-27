@@ -22,13 +22,24 @@ var CASE2_SOURCE_PATHS = {
   comms_examined: "/docs/examples/metagame/stage7/comms_transcript.txt"
 };
 var CASE2_SOURCE_ACTIONS = Object.keys(CASE2_SOURCE_PATHS);
+var CASE3_SOURCE_PATHS = {
+  quorum_spec_examined: "/docs/examples/metagame/stage7/quorum_spec.json",
+  audit_examined: "/docs/examples/metagame/stage7/audit_trail.txt",
+  handshake_examined: "/docs/examples/metagame/stage7/handshake_log.csv",
+  ledger_examined: "/docs/examples/metagame/stage7/session_ledger.csv"
+};
+var CASE3_SOURCE_ACTIONS = Object.keys(CASE3_SOURCE_PATHS);
+var CASE3_SEARCH_ACTION = "session_revoked_found";
+var CASE3_SEARCH_PATH = "/docs/examples/metagame/stage7/session_ledger.csv";
+var CASE3_SEARCH_QUERY = "S-7741";
 var substageHints = {
   1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
   2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
   3: "Audit Entity F's activity log. One entry is logically impossible.",
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
   5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
-  6: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
+  7: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
 };
 var bellMessages = {
   start: "something presented itself. I had to decide.",
@@ -108,7 +119,7 @@ function inspectContradictoryExif({ state, actions, achievements, bell, field = 
 }
 function commitIdentity({ state, entity }) {
   const selected = String(entity || "").trim().toUpperCase();
-  if (Number(state.substage || 1) < 6) return { ok: false, reason: "not-yet-boss" };
+  if (Number(state.substage || 1) < 7) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
   if (!state.boss.unlocked) {
@@ -241,6 +252,10 @@ var entityFEventLog = [
   { cycle: "0047", event: "BOOT", id: "ev10" }
 ];
 var CASE2 = {
+  id: 2,
+  name: "DUPLICATE ROSTER",
+  nextSubstage: 6,
+  // correct accusation → Case 3 (the Quorum Ghost), then the boss
   roster: ["G", "H", "J", "K"],
   impostor: "K",
   // Dossier fields shown on the board as clue cards once Case 2 begins.
@@ -315,6 +330,105 @@ var CASE2_SOURCES = [
     }
   }
 ];
+var CASE3 = {
+  id: 3,
+  name: "QUORUM GHOST",
+  roster: ["L", "M", "N", "P", "Q"],
+  impostor: "N",
+  nextSubstage: 7,
+  // correct accusation → the EXIF boss (substage 7)
+  fields: {
+    L: [
+      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
+      { id: "session", label: "Session", value: "S-7702 (active)" }
+    ],
+    M: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      { id: "session", label: "Session", value: "S-7715 (active)" }
+    ],
+    N: [
+      { id: "tier", label: "Credential Tier", value: "TIER-2" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-1" },
+      // The decisive lie: claims an ACTIVE session the ledger proves was REVOKED at cycle 0045.
+      { id: "session", label: "Session", value: "S-7741 (active)", suspect: true }
+    ],
+    P: [
+      { id: "tier", label: "Credential Tier", value: "TIER-1" },
+      // Red herring #1: LAYER-3 LOOKS out-of-spec, but audit_trail.txt records a sanctioned elevation.
+      { id: "layer", label: "Layer Tag", value: "LAYER-3" },
+      { id: "session", label: "Session", value: "S-7720 (active)" }
+    ],
+    Q: [
+      // Red herring #2: TIER-0-ROOT LOOKS anomalous, but quorum_spec.json lists it as a valid tier.
+      { id: "tier", label: "Credential Tier", value: "TIER-0-ROOT" },
+      { id: "layer", label: "Layer Tag", value: "LAYER-0" },
+      { id: "session", label: "Session", value: "S-7708 (active)" }
+    ]
+  },
+  // The unique correct triad: N's "active session S-7741" is refuted by the searched ledger fact.
+  triad: { entity: "N", fieldId: "session", factId: "fact:session" },
+  // Authoring notes (not used by the matcher): each red herring is cleared by a DIFFERENT file.
+  redHerrings: [
+    { entity: "Q", fieldId: "tier", factId: "fact:qspec" },
+    { entity: "P", fieldId: "layer", factId: "fact:audit" }
+  ]
+};
+var CASE3_SOURCES = [
+  {
+    action: "quorum_spec_examined",
+    file: "quorum_spec.json",
+    card: {
+      id: "fact:qspec",
+      kind: "fact",
+      caseId: 3,
+      label: "Spec: valid tiers TIER-0-ROOT..TIER-3; layers {0,1,2}; one active session/entity."
+    }
+  },
+  {
+    action: "audit_examined",
+    file: "audit_trail.txt",
+    card: {
+      id: "fact:audit",
+      kind: "fact",
+      caseId: 3,
+      label: "Audit: P holds a SANCTIONED temporary LAYER-3 elevation (cycle 0046)."
+    }
+  },
+  {
+    action: "handshake_examined",
+    file: "handshake_log.csv",
+    card: {
+      id: "fact:handshake",
+      kind: "fact",
+      caseId: 3,
+      label: "Handshake log: L/M/N/P/Q all completed the cycle-0047 handshake."
+    }
+  },
+  {
+    action: "ledger_examined",
+    file: "session_ledger.csv",
+    card: {
+      id: "fact:ledgerhint",
+      kind: "fact",
+      caseId: 3,
+      label: "Ledger lists session tokens — SEARCH it for a claimed token to learn its true status."
+    }
+  }
+];
+var CASE3_SEARCH = {
+  action: "session_revoked_found",
+  file: "session_ledger.csv",
+  query: "S-7741",
+  card: {
+    id: "fact:session",
+    kind: "fact",
+    caseId: 3,
+    label: "Ledger search: token S-7741 = REVOKED (cycle 0045). N's 'active' claim is false."
+  }
+};
+var CASES = { 2: CASE2, 3: CASE3 };
 var metadataArtifact = {
   format: "stage7-image-metadata-sidecar",
   note: "The current app image metadata reader extracts EXIF from JPEG APP1 but not PNG text chunks. Stage 7 therefore uses real same-origin PNG fixtures plus this local sidecar for the authored EXIF-style evidence.",
@@ -325,71 +439,6 @@ var metadataArtifact = {
     F: Object.fromEntries(metadataRows.F)
   }
 };
-
-// ../../docs/games/metagame/stages/stage7/substages.js
-var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, BOSS: 6 };
-function flagField({ state, entityId, fieldId }) {
-  const field = (entityFields[entityId] || []).find((f) => f.id === fieldId);
-  if (!field) return { ok: false, reason: "unknown" };
-  if (!field.wrong) {
-    state.evidence.wrongFlagCount = Number(state.evidence.wrongFlagCount || 0) + 1;
-    pushLog2(state, "insufficient evidence — cross-check the ambient facts.");
-    return { ok: false, reason: "not-contradiction" };
-  }
-  if (state.evidence.flags[entityId]) return { ok: true, already: true };
-  state.evidence.flags[entityId] = fieldId;
-  state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
-  state.addresses = Number(state.addresses || 0) + 10;
-  pushLog2(state, `Entity ${entityId}: ${field.reason}`);
-  const complete = SCAN_ENTITIES.every((e) => state.evidence.flags[e]);
-  if (complete) {
-    if (Number(state.evidence.wrongFlagCount || 0) === 0) {
-      state.addresses += 25;
-      pushLog2(state, "clean scan. +25 precision bonus.");
-    }
-    advance(state, SUBSTAGE.DUP);
-  }
-  return { ok: true, complete };
-}
-function diffField({ state, fieldName }) {
-  if (fieldName !== "GPSInfo") {
-    pushLog2(state, "this field matches across both dossiers.");
-    return { ok: false };
-  }
-  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
-  state.evidence.dupTestComplete = true;
-  state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, "Entity F's GPSInfo diverges from Entity A. Not yet decisive — the case continues.");
-  advance(state, SUBSTAGE.TIMELINE);
-  return { ok: true, complete: true };
-}
-function markImpossible({ state, evId }) {
-  const ev = entityFEventLog.find((e) => e.id === evId);
-  if (!ev || !ev.impossible) {
-    pushLog2(state, "this entry is plausible. keep looking.");
-    return { ok: false };
-  }
-  state.evidence.timelineContradictionCycle = ev.cycle;
-  state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, ev.reason);
-  advance(state, SUBSTAGE.CHAIN);
-  return { ok: true, complete: true };
-}
-function markChainBroken({ state }) {
-  if (state.evidence.chainBroken) return { ok: true, already: true };
-  state.evidence.chainBroken = true;
-  state.addresses = Number(state.addresses || 0) + 15;
-  pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
-  pushLog2(state, "A second roster claims the name. Open the system files and name the duplicate.");
-  advance(state, SUBSTAGE.ACCUSE);
-  return { ok: true, complete: true };
-}
-function advance(state, to) {
-  if (Number(state.substage || 1) < to) state.substage = to;
-}
-function pushLog2(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
-}
 
 // ../../docs/games/metagame/stages/stage7/evidence-board.js
 function ensureBoard(state) {
@@ -466,17 +515,108 @@ function establishFact(state, { id, label, cards = [] }) {
   return fact;
 }
 
+// ../../docs/games/metagame/stages/stage7/substages.js
+var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
+function flagField({ state, entityId, fieldId }) {
+  const field = (entityFields[entityId] || []).find((f) => f.id === fieldId);
+  if (!field) return { ok: false, reason: "unknown" };
+  if (!field.wrong) {
+    state.evidence.wrongFlagCount = Number(state.evidence.wrongFlagCount || 0) + 1;
+    pushLog2(state, "insufficient evidence — cross-check the ambient facts.");
+    return { ok: false, reason: "not-contradiction" };
+  }
+  if (state.evidence.flags[entityId]) return { ok: true, already: true };
+  state.evidence.flags[entityId] = fieldId;
+  state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
+  state.addresses = Number(state.addresses || 0) + 10;
+  pushLog2(state, `Entity ${entityId}: ${field.reason}`);
+  const complete = SCAN_ENTITIES.every((e) => state.evidence.flags[e]);
+  if (complete) {
+    if (Number(state.evidence.wrongFlagCount || 0) === 0) {
+      state.addresses += 25;
+      pushLog2(state, "clean scan. +25 precision bonus.");
+    }
+    advance(state, SUBSTAGE.DUP);
+  }
+  return { ok: true, complete };
+}
+function diffField({ state, fieldName }) {
+  if (fieldName !== "GPSInfo") {
+    pushLog2(state, "this field matches across both dossiers.");
+    return { ok: false };
+  }
+  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
+  state.evidence.dupTestComplete = true;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, "Entity F's GPSInfo diverges from Entity A. Not yet decisive — the case continues.");
+  advance(state, SUBSTAGE.TIMELINE);
+  return { ok: true, complete: true };
+}
+function markImpossible({ state, evId }) {
+  const ev = entityFEventLog.find((e) => e.id === evId);
+  if (!ev || !ev.impossible) {
+    pushLog2(state, "this entry is plausible. keep looking.");
+    return { ok: false };
+  }
+  state.evidence.timelineContradictionCycle = ev.cycle;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, ev.reason);
+  advance(state, SUBSTAGE.CHAIN);
+  return { ok: true, complete: true };
+}
+function markChainBroken({ state }) {
+  if (state.evidence.chainBroken) return { ok: true, already: true };
+  state.evidence.chainBroken = true;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
+  pushLog2(state, "A second roster claims the name. Open the system files and name the duplicate.");
+  carryCase1Facts(state);
+  advance(state, SUBSTAGE.ACCUSE);
+  return { ok: true, complete: true };
+}
+function carryCase1Facts(state) {
+  if (state.evidence.case1Carried) return;
+  const facts = [
+    { id: "case1:scan", label: "B/C/D/E each carried one contradicted credential — eliminated in the scan." },
+    { id: "case1:dup", label: "Entity F's GPSInfo diverges from Entity A — a tampered dossier field." },
+    { id: "case1:timeline", label: "Entity F's log holds an impossible ACTIVE/DORMANT collision at cycle 0043." },
+    { id: "case1:chain", label: "Entity F's chain cites the decommissioned ENTITY_ANCHOR_0043 — chain invalid." }
+  ];
+  for (const f of facts) establishFact(state, f);
+  state.evidence.case1Carried = true;
+}
+function advance(state, to) {
+  if (Number(state.substage || 1) < to) state.substage = to;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
+}
+
 // ../../docs/games/metagame/stages/stage7/accusation.js
 var ACCUSE_PENALTY = 10;
-var ACCUSE_REWARD = 40;
-var case2HintLadder = [
-  "Six dossiers became four. One of G/H/J/K wears a name it cannot hold.",
-  "A clean dossier is not proof. Open the system files — a claim only breaks against a source fact.",
-  "One looks wrong but checks out; one looks clean but cannot be. Compare each ROUTE against the route table.",
-  "An entity claiming an ACTIVE route the route table closed is the duplicate. Pin entity + route + the route-table fact."
-];
+var ACCUSE_REWARD = { 2: 40, 3: 60 };
+var ALL_SOURCE_CARDS = [...CASE2_SOURCES, ...CASE3_SOURCES, CASE3_SEARCH];
+var HINT_LADDERS = {
+  2: [
+    "Six dossiers became four. One of G/H/J/K wears a name it cannot hold.",
+    "A clean dossier is not proof. Open the system files — a claim only breaks against a source fact.",
+    "One looks wrong but checks out; one looks clean but cannot be. Compare each ROUTE against the route table.",
+    "An entity claiming an ACTIVE route the route table closed is the duplicate. Pin entity + route + the route-table fact."
+  ],
+  3: [
+    "Five claim CORE_ENTITY_002. Two anomalies are decoys — each is cleared by a DIFFERENT file.",
+    "Open quorum_spec.json and audit_trail.txt: a 'wrong' tier and a 'wrong' layer are both sanctioned.",
+    "The real lie hides in a session token. Opening the ledger is not enough — SEARCH it for the claimed token.",
+    "Search session_ledger.csv for the token N claims active; it is REVOKED. Pin entity + session + the ledger fact."
+  ]
+};
+var case2HintLadder = HINT_LADDERS[2];
+var case3HintLadder = HINT_LADDERS[3];
+function caseOf(caseId) {
+  return CASES[Number(caseId)] || CASE2;
+}
 function sourceCardForAction(actionName) {
-  const source = CASE2_SOURCES.find((s) => s.action === actionName);
+  const source = ALL_SOURCE_CARDS.find((s) => s.action === actionName);
   return source ? source.card : null;
 }
 function mintSourceFact(state, actionName) {
@@ -484,54 +624,66 @@ function mintSourceFact(state, actionName) {
   if (!card) return null;
   return mintCard(state, card);
 }
-function ensureCase2(state) {
+function ensureCaseBoard(state, caseCfg) {
   ensureBoard(state);
-  if (state.evidence.case2Seeded) return;
-  for (const id of CASE2.roster) {
-    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: 2, entity: id, label: `Entity ${id}` });
-    for (const f of CASE2.fields[id]) {
+  const seededKey = `case${caseCfg.id}Seeded`;
+  if (state.evidence[seededKey]) return;
+  for (const id of caseCfg.roster) {
+    mintCard(state, { id: `entity:${id}`, kind: "entity", caseId: caseCfg.id, entity: id, label: `Entity ${id}` });
+    for (const f of caseCfg.fields[id]) {
       mintCard(state, {
         id: `field:${id}:${f.id}`,
         kind: "field",
-        caseId: 2,
+        caseId: caseCfg.id,
         entity: id,
         fieldId: f.id,
         label: `${id} · ${f.label}: ${f.value}`
       });
     }
   }
-  state.evidence.case2Seeded = true;
+  state.evidence[seededKey] = true;
 }
-function case2Hint(state) {
-  const step = Math.min(Math.max(Number(state?.evidence?.case2HintStep || 0), 0), case2HintLadder.length - 1);
-  return case2HintLadder[step];
+function ensureCase2(state) {
+  return ensureCaseBoard(state, CASE2);
 }
-function pinnedTriad(state) {
-  const pinned = pinnedCards(state).filter((c) => Number(c.caseId) === 2);
+function ensureCase3(state) {
+  return ensureCaseBoard(state, CASE3);
+}
+function caseHint(state, caseId = 2) {
+  const ladder = HINT_LADDERS[Number(caseId)] || HINT_LADDERS[2];
+  const step = Math.min(Math.max(Number(state?.evidence?.[`case${caseId}HintStep`] || 0), 0), ladder.length - 1);
+  return ladder[step];
+}
+function pinnedTriad(state, caseId = 2) {
+  const pinned = pinnedCards(state).filter((c) => Number(c.caseId) === Number(caseId));
   const entities = pinned.filter((c) => c.kind === "entity");
   const fields = pinned.filter((c) => c.kind === "field");
   const facts = pinned.filter((c) => c.kind === "fact");
   if (entities.length !== 1 || fields.length !== 1 || facts.length !== 1) return null;
   return { entityId: entities[0].entity, fieldId: fields[0].fieldId, factId: facts[0].id };
 }
-function accuseFromBoard(state) {
-  const triad = pinnedTriad(state);
+function accuseFromBoard(state, caseId = 2) {
+  const triad = pinnedTriad(state, caseId);
   if (!triad) return { ok: false, reason: "incomplete", silent: true };
-  return attemptAccusation(state, triad);
+  return attemptAccusationForCase(state, caseId, triad);
 }
-function attemptAccusation(state, { entityId, fieldId, factId } = {}) {
+function attemptAccusationForCase(state, caseId, { entityId, fieldId, factId } = {}) {
   ensureBoard(state);
+  const caseCfg = caseOf(caseId);
   if (!entityId || !fieldId || !factId) return { ok: false, reason: "incomplete", silent: true };
   const entityCard = getCard(state, `entity:${entityId}`);
   const fieldCard = getCard(state, `field:${entityId}:${fieldId}`);
   const factCard = getCard(state, factId);
   if (!entityCard || !fieldCard || !factCard) return { ok: false, reason: "missing-card", silent: true };
   if (!entityCard.pinned || !fieldCard.pinned || !factCard.pinned) return { ok: false, reason: "unpinned", silent: true };
-  const t = CASE2.triad;
+  const t = caseCfg.triad;
   const correct = entityId === t.entity && fieldId === t.fieldId && factId === t.factId;
+  const attemptsKey = `case${caseCfg.id}Attempts`;
+  const hintKey = `case${caseCfg.id}HintStep`;
+  const ladder = HINT_LADDERS[caseCfg.id] || HINT_LADDERS[2];
   if (!correct) {
-    state.evidence.case2Attempts = Number(state.evidence.case2Attempts || 0) + 1;
-    state.evidence.case2HintStep = Math.min(Number(state.evidence.case2HintStep || 0) + 1, case2HintLadder.length - 1);
+    state.evidence[attemptsKey] = Number(state.evidence[attemptsKey] || 0) + 1;
+    state.evidence[hintKey] = Math.min(Number(state.evidence[hintKey] || 0) + 1, ladder.length - 1);
     state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
     pushLog3(state, "The triad does not hold. Re-examine the evidence.");
     return { ok: false, reason: "incorrect" };
@@ -541,14 +693,14 @@ function attemptAccusation(state, { entityId, fieldId, factId } = {}) {
   drawLink(state, fieldCard.id, factCard.id);
   establishFact(state, {
     id: `triad:${entityId}`,
-    label: `Entity ${entityId} is the duplicate — an active-route claim the route table refutes.`,
+    label: caseCfg.id === 3 ? `Entity ${entityId} is the duplicate — an active-session claim the ledger reports revoked.` : `Entity ${entityId} is the duplicate — an active-route claim the route table refutes.`,
     cards: [entityCard.id, fieldCard.id, factCard.id]
   });
-  state.evidence.case2Solved = true;
+  state.evidence[`case${caseCfg.id}Solved`] = true;
   state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
-  state.addresses = Number(state.addresses || 0) + ACCUSE_REWARD;
-  pushLog3(state, `Entity ${entityId}'s active-route claim is refuted by the route table. The duplicate is named.`);
-  if (Number(state.substage || 1) < SUBSTAGE.BOSS) state.substage = SUBSTAGE.BOSS;
+  state.addresses = Number(state.addresses || 0) + (ACCUSE_REWARD[caseCfg.id] || 40);
+  pushLog3(state, caseCfg.id === 3 ? `Entity ${entityId}'s active-session claim is refuted by the ledger search. The ghost is named.` : `Entity ${entityId}'s active-route claim is refuted by the route table. The duplicate is named.`);
+  if (Number(state.substage || 1) < caseCfg.nextSubstage) state.substage = caseCfg.nextSubstage;
   return { ok: true, solved: true };
 }
 function pushLog3(state, line) {
@@ -559,33 +711,58 @@ function pushLog3(state, line) {
 var KIND_GROUPS = [
   ["entity", "Dossiers"],
   ["field", "Claims"],
-  ["fact", "Source facts (open the files)"]
+  ["fact", "Source facts (open / search the files)"]
 ];
-function renderAccusation(state) {
+var SOURCES_FOR_CASE = { 2: CASE2_SOURCES, 3: CASE3_SOURCES };
+var HEADERS = {
+  2: "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.",
+  3: "CASE 3 — QUORUM GHOST. Two anomalies are decoys (different files clear them). SEARCH the ledger to expose the real lie."
+};
+function renderAccusation(state, caseId = 2) {
+  const cid = Number(caseId);
   const wrap = el("div", "s7-board");
   const header = el("p", "s7-board-header");
-  header.textContent = "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.";
+  header.textContent = HEADERS[cid] || HEADERS[2];
   wrap.append(header);
   const hint = el("p", "s7-hint");
-  hint.textContent = case2Hint(state);
+  hint.textContent = caseHint(state, cid);
   wrap.append(hint);
+  const carried = (state.board?.established || []).filter((f) => f.id.startsWith("case1:"));
+  if (carried.length) {
+    const c = el("ul", "s7-established s7-carried");
+    c.innerHTML = `<h4>Case file — established earlier</h4>`;
+    for (const f of carried) {
+      const li = document.createElement("li");
+      li.textContent = f.label;
+      c.append(li);
+    }
+    wrap.append(c);
+  }
   const sources = el("div", "s7-sources");
-  for (const s of CASE2_SOURCES) {
+  for (const s of SOURCES_FOR_CASE[cid] || []) {
     const b = button({ "data-action": "open-source", "data-source": s.action });
-    const opened = cardsForCase(state, 2).some((c) => c.id === s.card.id);
+    const opened = cardsForCase(state, cid).some((c) => c.id === s.card.id);
     b.textContent = `${opened ? "✓ " : "open "}${s.file}`;
     if (opened) b.classList.add("is-opened");
     sources.append(b);
+  }
+  if (cid === 3) {
+    const searched = cardsForCase(state, 3).some((c) => c.id === CASE3_SEARCH.card.id);
+    const sb = button({ "data-action": "search-source", "data-source": CASE3_SEARCH.action });
+    sb.classList.add("s7-search-btn");
+    sb.textContent = `${searched ? "✓ " : "🔍 "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
+    if (searched) sb.classList.add("is-opened");
+    sources.append(sb);
   }
   wrap.append(sources);
   const board = el("div", "s7-board-grid");
   for (const [kind, label] of KIND_GROUPS) {
     const col = el("section", "s7-board-col");
     col.innerHTML = `<h4>${label}</h4>`;
-    const cards = cardsForCase(state, 2).filter((c) => c.kind === kind);
+    const cards = cardsForCase(state, cid).filter((c) => c.kind === kind);
     if (!cards.length) {
       const empty = el("p", "s7-board-empty");
-      empty.textContent = kind === "fact" ? "No facts yet — open the system files." : "—";
+      empty.textContent = kind === "fact" ? "No facts yet — open / search the system files." : "—";
       col.append(empty);
     }
     for (const c of cards) {
@@ -597,9 +774,9 @@ function renderAccusation(state) {
     board.append(col);
   }
   wrap.append(board);
-  const triad = pinnedTriad(state);
+  const triad = pinnedTriad(state, cid);
   const accuseRow = el("div", "s7-accuse-row");
-  const accuse = button({ "data-accuse": "1" });
+  const accuse = button({ "data-accuse": String(cid) });
   accuse.disabled = !triad;
   accuse.textContent = triad ? `Accuse ${triad.entityId} (${triad.fieldId})` : "Pin one dossier, one claim, one fact";
   accuseRow.append(accuse);
@@ -629,14 +806,50 @@ function el(tag, className) {
   return node;
 }
 
+// ../../docs/games/metagame/stages/stage7/test-hook.js
+function installStage7Hook({ state, persistAndPaint }) {
+  window.__fvStage7 = {
+    state: () => state,
+    solveInvestigation() {
+      for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: entityFields[id].find((f) => f.wrong).id });
+      diffField({ state, fieldName: "GPSInfo" });
+      markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
+      persistAndPaint();
+      return state.substage;
+    },
+    solveCase2() {
+      return solveCase(state, persistAndPaint, 2, ensureCase2, ["entity:K", "field:K:route", "fact:route"], "route-fact-not-opened");
+    },
+    solveCase3() {
+      return solveCase(state, persistAndPaint, 3, ensureCase3, ["entity:N", "field:N:session", "fact:session"], "session-fact-not-searched");
+    }
+  };
+}
+function solveCase(state, persistAndPaint, caseId, ensureCase, ids, gatedReason) {
+  ensureCase(state);
+  if (!ids.every((id) => getCard(state, id))) {
+    persistAndPaint();
+    return { ok: false, reason: gatedReason, substage: state.substage };
+  }
+  for (const id of ids) setPinned(state, id, true);
+  const result = accuseFromBoard(state, caseId);
+  persistAndPaint();
+  return { ...result, substage: state.substage };
+}
+function removeStage7Hook() {
+  if (window.__fvStage7) delete window.__fvStage7;
+}
+
 // ../../docs/games/metagame/stages/stage7/renderer.js
+var SOURCE_PATHS = { ...CASE2_SOURCE_PATHS, ...CASE3_SOURCE_PATHS };
 var SUBSTAGE_LABEL = {
-  1: "1/6 CREDENTIAL SCAN",
-  2: "2/6 DUPLICATE TEST",
-  3: "3/6 TIMELINE AUDIT",
-  4: "4/6 REFERENCE CHASE",
-  5: "5/6 DUPLICATE ROSTER",
-  6: "6/6 EXIF ARBITER (BOSS)"
+  1: "1/7 CREDENTIAL SCAN",
+  2: "2/7 DUPLICATE TEST",
+  3: "3/7 TIMELINE AUDIT",
+  4: "4/7 REFERENCE CHASE",
+  5: "5/7 DUPLICATE ROSTER",
+  6: "6/7 QUORUM GHOST",
+  7: "7/7 EXIF ARBITER (BOSS)"
 };
 function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -669,43 +882,21 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     else if (d.diff) diffField({ state, fieldName: d.diff });
     else if (d.ev) markImpossible({ state, evId: d.ev });
     else if (d.pin) togglePin(state, d.pin);
-    else if (d.accuse) accuseFromBoard(state);
+    else if (d.accuse) accuseFromBoard(state, Number(d.accuse));
     else if (d.commit) commitBoss(d.commit);
     else if (d.action === "open-source") openSource(d.source);
+    else if (d.action === "search-source") searchSource();
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
     else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
     else if (d.action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
   repaint();
-  window.__fvStage7 = {
-    state: () => state,
-    solveInvestigation() {
-      for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: entityFields[id].find((f) => f.wrong).id });
-      diffField({ state, fieldName: "GPSInfo" });
-      markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
-      persistAndPaint();
-      return state.substage;
-    },
-    // Case 2: pins the correct triad and accuses. The route fact only exists after a REAL
-    // route_table.csv open, so this returns ok:false until the file is opened (load-bearing).
-    solveCase2() {
-      ensureCase2(state);
-      const ids = ["entity:K", "field:K:route", "fact:route"];
-      if (!ids.every((id) => getCard(state, id))) {
-        persistAndPaint();
-        return { ok: false, reason: "route-fact-not-opened", substage: state.substage };
-      }
-      for (const id of ids) setPinned(state, id, true);
-      const result = accuseFromBoard(state);
-      persistAndPaint();
-      return { ...result, substage: state.substage };
-    }
-  };
+  installStage7Hook({ state, persistAndPaint });
   return {
     repaint,
     destroy() {
-      if (window.__fvStage7) delete window.__fvStage7;
+      removeStage7Hook();
       root.remove();
     }
   };
@@ -737,13 +928,24 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
     if (state.substage === SUBSTAGE.ACCUSE) {
       ensureCase2(state);
-      return main.replaceChildren(renderAccusation(state));
+      return main.replaceChildren(renderAccusation(state, 2));
+    }
+    if (state.substage === SUBSTAGE.ACCUSE3) {
+      ensureCase3(state);
+      return main.replaceChildren(renderAccusation(state, 3));
     }
     return main.replaceChildren(renderBoss(lock));
   }
   function openSource(action) {
-    const path = CASE2_SOURCE_PATHS[action];
+    const path = SOURCE_PATHS[action];
     if (path) openInViewer(path, { source: "stage7" });
+  }
+  function searchSource() {
+    if (viewer && typeof viewer.searchViewerFile === "function") {
+      viewer.searchViewerFile(CASE3_SEARCH_PATH, CASE3_SEARCH_QUERY, { source: "stage7" });
+    } else if (viewer && typeof viewer.searchFile === "function") {
+      viewer.searchFile(CASE3_SEARCH_PATH, CASE3_SEARCH_QUERY, { source: "stage7" });
+    }
   }
   function renderScan() {
     const wrap = el2("div", "s7-ss1");
@@ -889,10 +1091,10 @@ function once(fn) {
 // ../../docs/games/metagame/stages/stage7/state.js
 function defaultState() {
   return {
-    version: 3,
+    version: 4,
     addresses: 0,
     substage: 1,
-    // 1 scan · 2 dup · 3 timeline · 4 chain · 5 accuse(case2) · 6 boss
+    // 1 scan·2 dup·3 timeline·4 chain·5 case2·6 case3·7 boss
     evidence: {
       eliminated: [],
       // populated incrementally as entities are flagged / accused
@@ -913,8 +1115,15 @@ function defaultState() {
       // the correct triad confirmed
       case2Attempts: 0,
       // complete-but-wrong accusations
-      case2HintStep: 0
+      case2HintStep: 0,
       // accusation hint ladder
+      // Case 3 (Quorum Ghost) — a larger roster + a SEARCH-gated decisive fact.
+      case3Seeded: false,
+      case3Solved: false,
+      case3Attempts: 0,
+      case3HintStep: 0,
+      case1Carried: false
+      // Case-1 deductions promoted onto the board as established facts
     },
     // Evidence board / detective notebook — initialised once here (the lazy per-stage seed).
     board: { cards: [], links: [], established: [] },
@@ -937,9 +1146,9 @@ function defaultState() {
 function normalizeState(state) {
   const fresh = defaultState();
   const incoming = state && typeof state === "object" ? state : {};
-  if (Number(incoming.version) < 3) return fresh;
+  if (Number(incoming.version) < 4) return fresh;
   const target = incoming;
-  target.version = 3;
+  target.version = 4;
   target.addresses = Number.isFinite(Number(target.addresses)) ? Number(target.addresses) : fresh.addresses;
   target.substage = clampSubstage(target.substage, fresh.substage);
   target.evidence = mergePlain(fresh.evidence, target.evidence);
@@ -962,13 +1171,14 @@ function normalizeBoard(base, override) {
 }
 function clampSubstage(value, fallback) {
   const n = Number(value);
-  return Number.isFinite(n) && n >= 1 && n <= 6 ? Math.floor(n) : fallback;
+  return Number.isFinite(n) && n >= 1 && n <= 7 ? Math.floor(n) : fallback;
 }
 function mergePlain(base, override) {
   return { ...base, ...override && typeof override === "object" ? override : {} };
 }
 
 // ../../docs/games/metagame/stages/stage7/index.js
+var ALL_SOURCE_ACTIONS = [...CASE2_SOURCE_ACTIONS, ...CASE3_SOURCE_ACTIONS, CASE3_SEARCH_ACTION];
 var stageMeta = {
   id: 7,
   slug: "identity-arbiter",
@@ -997,14 +1207,16 @@ function mountStage(ctx) {
     if (view && typeof view.repaint === "function") view.repaint();
   });
   if (Number(state.substage || 1) >= 5) ensureCase2(state);
-  for (const action of CASE2_SOURCE_ACTIONS) {
+  if (Number(state.substage || 1) >= 6) ensureCase3(state);
+  for (const action of ALL_SOURCE_ACTIONS) {
     if (ctx.actions && typeof ctx.actions.hasAction === "function" && ctx.actions.hasAction(7, action)) {
       mintSourceFact(state, action);
     }
   }
-  const unsubscribeSources = CASE2_SOURCE_ACTIONS.map(
+  const unsubscribeSources = ALL_SOURCE_ACTIONS.map(
     (action) => subscribeToActionName(ctx.actions, action, () => {
       ensureCase2(state);
+      if (Number(state.substage || 1) >= 6) ensureCase3(state);
       mintSourceFact(state, action);
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();

@@ -7,7 +7,12 @@ import {
 import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messages.js";
 import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
 import { driveToGate } from "./solver.js";
+import { stormAvailable, braceStorm } from "./storms.js";
+import { buyTech, techStatus } from "./tech.js";
+import { buildStructure, structureStatus } from "./structures.js";
+import { microstateCollapse, prestigeAvailable, coresPreview } from "./prestige.js";
 import { paintStage8 } from "./paint.js";
+import { paintTech, paintStructures } from "./techpanel.js";
 import { snapshotRun } from "./state.js";
 import { makeRng } from "./rng.js";
 
@@ -19,12 +24,18 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   root.innerHTML = `
     <header class="s8-hud">
       <strong>ENTROPY FIELD</strong>
+      <span>act <b data-field="act"></b>/3</span>
+      <span>storms <b data-field="storms"></b>/3</span>
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
+      <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
+      <span>scrap <b data-field="scrap"></b></span>
+      <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
+      <span data-field="coresWrap" hidden>cores <b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i></span>
     </header>
     <div class="s8-layout">
       <div class="s8-map" aria-label="node status"></div>
@@ -44,13 +55,23 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
+    <details class="s8-tech-panel">
+      <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
+      <div class="s8-tech" data-field="tech"></div>
+    </details>
+    <details class="s8-tech-panel">
+      <summary>STRUCTURES — build with Scrap ⛭</summary>
+      <div class="s8-tech" data-field="struct"></div>
+    </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>
+      <button type="button" data-action="storm" hidden>brace for Cascade Storm</button>
       <button type="button" data-action="stabilizer">build stabilizer (${STABILIZER_COST} States)</button>
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
+      <button type="button" data-action="collapse" hidden>collapse to Microstate</button>
     </div>
   `;
   host.replaceChildren(root);
@@ -95,9 +116,14 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   root.addEventListener("click", (event) => {
     const repair = event.target.closest("button[data-repair]");
     if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
+    const tech = event.target.closest("button[data-tech]");
+    if (tech) { buyTech(state, tech.dataset.tech); persistAndPaint(); return; }
+    const struct = event.target.closest("button[data-struct]");
+    if (struct) { buildStructure(state, struct.dataset.struct); persistAndPaint(); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
+    if (button.dataset.action === "storm") braceStorm(state);
     if (button.dataset.action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
     if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
     if (button.dataset.action === "external") {
@@ -105,6 +131,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       actions?.setAction?.(8, "external_debris_imported", { source: "external-import" });
     }
     if (button.dataset.action === "boss") challengeBoss();
+    if (button.dataset.action === "collapse") { if (microstateCollapse(state).ok && run?.reset) run.reset(); }
     if (button.dataset.action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
@@ -121,6 +148,18 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     advance(cycles = 1) {
       for (let i = 0; i < cycles; i += 1) advanceCycle(state, cycleRng(state.cycle));
       persistAndPaint();
+    },
+    stormState: () => ({ available: stormAvailable(state), active: state.activeStorm, survived: state.stormsSurvived || 0, act: state.act || 1 }),
+    techStatus: () => techStatus(state),
+    buyTech(id) { const r = buyTech(state, id); persistAndPaint(); return r; },
+    structureStatus: () => structureStatus(state),
+    buildStructure(id) { const r = buildStructure(state, id); persistAndPaint(); return r; },
+    prestigeState: () => ({ available: prestigeAvailable(state), cores: state.meta.cores || 0, mult: state.prestigeMult || 1, preview: coresPreview(state) }),
+    collapse() { const r = microstateCollapse(state); if (r.ok && run?.reset) run.reset(); persistAndPaint(); return r; },
+    brace() {
+      const r = braceStorm(state);
+      persistAndPaint();
+      return r;
     },
     bodySolver() {
       driveToGate(state, cycleRng);
@@ -169,9 +208,12 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     paintStage8({
       state,
       lock,
+      storm: stormAvailable(state),
       els: { fields, map, log, root },
       onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
     });
+    paintTech(fields.tech, state);
+    paintStructures(fields.struct, state);
   }
 
   function persistAndPaint() {

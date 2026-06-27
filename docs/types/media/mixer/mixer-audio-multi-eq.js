@@ -1,6 +1,6 @@
 import { createDefaultEq } from './mixer-eq-schema.js';
 import { updateLane, updateElement } from './mixer-model.js';
-import { buildClipView, firstElementForLane } from './mixer-audio-multi-ui.js';
+import { buildLaneClips, firstElementForLane } from './mixer-audio-multi-ui.js';
 import { clamp } from './mixer-audio-listen-helpers.js';
 
 const DEFAULT_DYNAMICS = { thresholdDb: -18, ratio: 4, makeupDb: 3 };
@@ -12,7 +12,7 @@ export function buildLaneEditorModal(laneModel, element, { getProject, setProjec
   const refreshClip = () => {
     const p = getProject(); const v = getViewport();
     const cl = clipLanes.get(laneId);
-    if (cl) cl.update(buildClipView(p, laneId, v.cursorMs, v.pxPerMs * 1000));
+    if (cl) cl.update(buildLaneClips(p, laneId, v.cursorMs, v.pxPerMs * 1000));
   };
 
   const modal = document.createElement('div');
@@ -157,7 +157,7 @@ function buildEqSection(laneModel, { getProject, setProject, laneId }) {
 function buildDynamicsSection(laneModel, { getProject, setProject, laneId }) {
   const section = document.createElement('div');
   section.className = 'mmx-mix-lane-dynamics-section';
-  section.append(mkSpan('Dynamics (config only — playback wiring deferred)', 'mmx-mix-lane-modal-section-title'));
+  section.append(mkSpan('Dynamics (compressor — affects mix playback)', 'mmx-mix-lane-modal-section-title'));
   const dynamics = laneModel.audio?.dynamics || DEFAULT_DYNAMICS;
   const fields = [
     { key: 'thresholdDb', label: 'Threshold', min: -60, max: 0, step: 0.5, fmt: (v) => `${v.toFixed(1)}dB` },

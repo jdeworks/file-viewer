@@ -1,14 +1,19 @@
 // state.test.mjs — Stage 8: fresh cycle-1 boot, forward migration, and snapshot/restore round-trip.
 import assert from "node:assert/strict";
 import { defaultState, normalizeState, snapshotRun, restoreRun, freshNodes, STATE_VERSION, createDebris } from "../state.js";
-import { NODES } from "../nodes.js";
+import { nodesForSector } from "../nodes.js";
+
+const CORE_COUNT = nodesForSector("core").length; // 14 — the network starts at the core sector
 
 // defaultState boots FRESH: cycle 1, full health, no pre-seeded debris/States (no boss bypass stub).
 {
   const s = defaultState();
   assert.equal(s.version, STATE_VERSION);
   assert.equal(s.cycle, 1, "boots at cycle 1");
-  assert.equal(s.nodes.length, NODES.length, "one health entry per node");
+  assert.equal(s.nodes.length, CORE_COUNT, "boots with the core sector only (14 nodes)");
+  assert.deepEqual(s.onlineSectors, ["core"], "only the core sector is online at boot");
+  assert.equal(s.act, 1, "starts in act 1");
+  assert.equal(s.stormsSurvived, 0, "no storms survived yet");
   assert.ok(s.nodes.every((n) => n.health === 100), "all nodes start at full health");
   assert.equal(s.states, 0, "no pre-seeded States");
   assert.equal(s.totalStatesEarned, 0, "no pre-seeded earnings");
@@ -38,7 +43,10 @@ import { NODES } from "../nodes.js";
   const damaged = normalizeState({ version: STATE_VERSION, nodes: freshNodes().map((n, i) => ({ id: n.id, health: i === 0 ? 250 : -5 })) });
   assert.equal(damaged.nodes[0].health, 100, "over-100 health clamped");
   assert.equal(damaged.nodes[1].health, 0, "negative health clamped");
-  assert.equal(normalizeState({ version: STATE_VERSION, nodes: [{ id: "C1", health: 50 }] }).nodes.length, NODES.length, "wrong-length array rebuilt");
+  // Variable-length now (network grows): valid node ids are preserved as-is...
+  assert.equal(normalizeState({ version: STATE_VERSION, nodes: [{ id: "C1", health: 50 }, { id: "M5", health: 80 }] }).nodes.length, 2, "valid (grown) node array preserved");
+  // ...an all-invalid array rebuilds to the fresh core sector.
+  assert.equal(normalizeState({ version: STATE_VERSION, nodes: [{ id: "ZZ", health: 9 }] }).nodes.length, CORE_COUNT, "all-invalid array rebuilt to core sector");
 }
 
 // snapshotRun → restoreRun is a faithful round-trip of the in-progress sim.

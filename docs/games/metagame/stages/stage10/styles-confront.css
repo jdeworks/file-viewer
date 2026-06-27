@@ -1,0 +1,164 @@
+/* Stage 10 — three-phase Defragmenter confrontation + route epilogues (synthesis / capstone). */
+
+.mg-stage10__confront {
+  display: grid;
+  gap: 18px;
+}
+
+.mg-stage10__confront-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mg-stage10__confront-steps li {
+  border: 1px solid rgba(26, 26, 26, 0.25);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  opacity: 0.55;
+  padding: 4px 12px;
+}
+
+.mg-stage10__confront-steps li.is-current {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  color: #fff;
+  opacity: 1;
+}
+
+.mg-stage10__confront-steps li.is-done {
+  border-color: #35d07f;
+  color: #1e7a48;
+  opacity: 1;
+}
+
+.mg-stage10__phase {
+  border: 1px solid rgba(26, 26, 26, 0.18);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.mg-stage10__phase h3 {
+  margin: 0;
+}
+
+.mg-stage10__phase-prompt {
+  margin: 0;
+  opacity: 0.85;
+}
+
+.mg-stage10__phase-foot {
+  font-size: 0.85rem;
+  margin: 0;
+  opacity: 0.7;
+}
+
+.mg-stage10__challenge-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.mg-stage10__challenge {
+  border: 1px solid rgba(26, 26, 26, 0.14);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.mg-stage10__challenge.is-affirmed,
+.mg-stage10__challenge.is-conceded,
+.mg-stage10__challenge.is-rewitnessed {
+  border-color: #35d07f;
+}
+
+.mg-stage10__challenge.is-compacted {
+  border-color: #c85a3e;
+  opacity: 0.7;
+}
+
+.mg-stage10__challenge-head {
+  font-weight: 600;
+}
+
+.mg-stage10__challenge-note {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.mg-stage10__challenge-note.is-warn {
+  color: #b5462c;
+  opacity: 1;
+}
+
+.mg-stage10__challenge-options,
+.mg-stage10__core-options {
+  display: grid;
+  gap: 8px;
+}
+
+.mg-stage10__core-options button,
+.mg-stage10__challenge-options button {
+  text-align: left;
+  width: 100%;
+}
+
+/* ── Synthesis (understand route) ── */
+.mg-stage10__synthesis {
+  border-top: 2px solid #1a1a1a;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.mg-stage10__synthesis-text p {
+  margin: 0 0 10px;
+}
+
+/* ── Capstone grid (expand route) ── */
+.mg-stage10__capstone {
+  margin-top: 18px;
+}
+
+.mg-stage10__capstone-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.mg-stage10__capstone-tile {
+  border: 1px solid rgba(26, 26, 26, 0.14);
+  border-left: 4px solid var(--tile-accent, #1a1a1a);
+  border-radius: 8px;
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+}
+
+.mg-stage10__capstone-tile.is-integrated {
+  background: rgba(53, 208, 127, 0.08);
+}
+
+.mg-stage10__capstone-stage {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.mg-stage10__capstone-choice {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+  .mg-stage10__capstone-grid {
+    grid-template-columns: 1fr;
+  }
+}

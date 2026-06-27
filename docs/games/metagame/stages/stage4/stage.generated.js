@@ -55,14 +55,44 @@ function isRecursionBlueprintPath(path) {
 
 // ../../docs/games/metagame/stages/stage4/towers.js
 var TOWER_TYPES = {
-  pulse_node: { glyph: "[P]", cost: 80, range: 3, fireRate: 1, damage: 20, ability: "emp_burst" },
-  scatter_array: { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, aoe: 2, ability: "overcharge" },
-  null_spike: { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, ignoresArmor: true, ability: "null_wave" },
-  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0, damage: 0, slow: 0.5 },
-  resonance_hub: { glyph: "[H]", cost: 250, range: 5, fireRate: 0, damage: 0, adjacencyBonus: 0.3 },
-  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25 }
+  // ── original six ──────────────────────────────────────────────────────────────────────────────
+  pulse_node: { glyph: "[P]", cost: 80, range: 3, fireRate: 1, damage: 20, damageType: "kinetic", role: "baseline single-target — cheap kinetic DPS, weak vs armor", ability: "emp_burst" },
+  scatter_array: { glyph: "[S]", cost: 150, range: 2, fireRate: 0.8, damage: 12, damageType: "kinetic", aoe: 2, role: "kinetic splash — clears swarms, falls off vs armor/shields", ability: "overcharge" },
+  null_spike: { glyph: "[N]", cost: 200, range: 4, fireRate: 0.5, damage: 40, damageType: "null", ignoresArmor: true, role: "null cannon — ignores armor AND shields, slow cadence", ability: "null_wave" },
+  attractor_field: { glyph: "[A]", cost: 120, range: 3, fireRate: 0, damage: 0, slow: 0.5, role: "support — slows everything in range (the original slow field)" },
+  resonance_hub: { glyph: "[H]", cost: 250, range: 5, fireRate: 0, damage: 0, adjacencyBonus: 0.3, role: "support — +30% damage to each adjacent tower" },
+  cycle_extractor: { glyph: "[E]", cost: 250, range: 0, fireRate: 0, damage: 0, incomePerWave: 25, role: "economy — pays Cycles every wave clear" },
+  // ── expanded roster (depth pass): each has a clear role + synergy ──────────────────────────────
+  // Crowd-control: stacks chill that ramps to a FULL FREEZE; arc chip damage also bleeds shields.
+  frost_lattice: { glyph: "[F]", cost: 140, range: 3, fireRate: 1.2, damage: 8, damageType: "arc", onHit: [{ kind: "chill", stacks: 22, ms: 1600 }], role: "control — chill→freeze; pairs with high-burst single-target", ability: "emp_burst" },
+  // Sustained thermal DoT: low hit, big burn — answers armor (thermal bypasses it) + fat HP pools.
+  thermal_loop: { glyph: "[T]", cost: 160, range: 3, fireRate: 1, damage: 6, damageType: "thermal", onHit: [{ kind: "burn", dps: 14, ms: 2500 }], role: "anti-armor DoT — burn melts armored/tanky lines", ability: "overcharge" },
+  // Arc chain: hits the 3 nearest enemies to its focus — the shield/swarm answer.
+  chain_resonator: { glyph: "[C]", cost: 190, range: 4, fireRate: 0.9, damage: 16, damageType: "arc", chain: 3, role: "arc chain (3 targets) — shreds shields + clustered swarms", ability: "emp_burst" },
+  // Anti-elite sniper: one huge null hit on the strongest target, long range, very slow cadence.
+  long_recursor: { glyph: "[L]", cost: 260, range: 7, fireRate: 0.35, damage: 130, damageType: "null", defaultTarget: "strongest", role: "anti-elite sniper — one big null hit, ignores armor/shield", ability: "overcharge" },
+  // Mortar: targets ANYWHERE on the board (range-independent) and splashes around its focus.
+  glyph_mortar: { glyph: "[M]", cost: 220, range: 99, fireRate: 0.5, damage: 26, damageType: "thermal", aoe: 3, global: true, role: "global mortar — splash anywhere; reaches leaks the front missed", ability: "overcharge" },
+  // Shred support: tiny damage, but strips armor so kinetic towers cut deep (MATCH enabler).
+  shatter_drill: { glyph: "[D]", cost: 150, range: 3, fireRate: 1.5, damage: 4, damageType: "kinetic", onHit: [{ kind: "shred", armor: 0.25, ms: 2200 }], role: "support — shred armor so kinetic towers land full damage", ability: "null_wave" },
+  // Gravity field: slows hard AND pulls enemies back along the path → clusters them for AoE/chain.
+  gravity_well: { glyph: "[G]", cost: 200, range: 3, fireRate: 0, damage: 0, slow: 0.4, pull: 0.6, role: "support — slow + pull-back; clusters for scatter/mortar/chain" },
+  // Economy v2: scaling per-wave income that grows as the campaign deepens (data-set later).
+  bank_node: { glyph: "[B]", cost: 300, range: 0, fireRate: 0, damage: 0, incomePerWave: 40, role: "economy v2 — bigger per-wave payout than the extractor" }
 };
 var TARGET_MODES = ["first", "last", "closest", "strongest", "weakest"];
+var TOWER_ABILITIES = {
+  emp_burst: { label: "EMP Burst", radius: 5, stunMs: 2e3, cooldownMs: 3e4 },
+  null_wave: { label: "Null Wave", stripMs: 5e3, cooldownMs: 6e4 },
+  overcharge: { label: "Overcharge", multiplier: 3, durationMs: 3e3, cooldownMs: 45e3 }
+};
+function towerUpgradeCost(type, fromLevel) {
+  const def = TOWER_TYPES[type];
+  if (!def) return Infinity;
+  if (fromLevel === 1) return def.cost * 2;
+  if (fromLevel === 2) return def.cost * 4;
+  return Infinity;
+}
 
 // ../../docs/games/metagame/stages/stage4/boss.js
 function hasRecursionBlueprint(actions) {
@@ -101,15 +131,18 @@ function applyRecursionBlueprintOpen({ state, actions, achievements, bell, path 
   pushLog(state, bellMessages.unlock);
   return true;
 }
-function placeTower(state, { x, y, type = "pulse_node", targetMode = "first" }) {
-  const cost = type === "scatter_array" ? 150 : 80;
+function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
+  const def = TOWER_TYPES[type];
+  if (!def) return { ok: false, reason: "type" };
+  const cost = def.cost || 0;
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: "cycles" };
+  const mode = targetMode || def.defaultTarget || "first";
   const tower = {
     id: `tower-${state.towers.length + 1}`,
     type,
     x: Math.trunc(Number(x)),
     y: Math.trunc(Number(y)),
-    targetMode: TARGET_MODES.includes(targetMode) ? targetMode : "first"
+    targetMode: TARGET_MODES.includes(mode) ? mode : "first"
   };
   if (!Number.isFinite(tower.x) || !Number.isFinite(tower.y)) return { ok: false, reason: "position" };
   state.cycles -= cost;
@@ -177,12 +210,6 @@ var LO = MARGIN;
 var HI = GRID - 1 - MARGIN;
 var AXIOM = "F";
 var RULE = "F+F-F-F+F";
-function waveGroupDepth(waveNum) {
-  const n = Number(waveNum) || 1;
-  if (n <= 10) return 1;
-  if (n <= 20) return 2;
-  return 3;
-}
 function buildPath(seed, depth = 1) {
   const d = Math.max(1, Math.min(3, Math.trunc(Number(depth)) || 1));
   const instructions = expand(d);
@@ -241,7 +268,15 @@ var TOWER_CHAR = {
   null_spike: "N",
   attractor_field: "A",
   resonance_hub: "H",
-  cycle_extractor: "E"
+  cycle_extractor: "E",
+  frost_lattice: "F",
+  thermal_loop: "T",
+  chain_resonator: "C",
+  long_recursor: "L",
+  glyph_mortar: "M",
+  shatter_drill: "D",
+  gravity_well: "G",
+  bank_node: "B"
 };
 var ENEMY_CHAR = {
   recursion: "o",
@@ -249,7 +284,14 @@ var ENEMY_CHAR = {
   null_packet: "=",
   resonance_ghost: "%",
   fractal_host: "@",
-  depth_crawler: "#"
+  depth_crawler: "#",
+  swarm_bit: ",",
+  armored_loop: "8",
+  shield_drone: "O",
+  healer_node: "+",
+  regenerator: "q",
+  flicker_ghost: '"',
+  burrower: "u"
 };
 function boardText(state, pathTiles, width = 40, height = 40) {
   const grid = Array.from({ length: height }, () => Array.from({ length: width }, () => EMPTY));
@@ -279,16 +321,32 @@ function pathGlyph(prev, here, next) {
 
 // ../../docs/games/metagame/stages/stage4/enemies.js
 var ENEMY_TYPES = {
+  // ── original six ──────────────────────────────────────────────────────────────────────────────
   recursion: { glyph: "[ ]", hp: 50, speed: 1, armor: 0, reward: 8, integrityDrain: 5 },
   pattern_crawler: { glyph: "/\\", hp: 30, speed: 2, armor: 0, reward: 6, integrityDrain: 4, fast: true },
   null_packet: { glyph: "<>", hp: 60, speed: 1, armor: 0.5, reward: 10, integrityDrain: 6 },
   resonance_ghost: { glyph: "<>", hp: 40, speed: 1.5, armor: 0, reward: 9, integrityDrain: 5, slowImmune: true },
   fractal_host: { glyph: "[[ ]]", hp: 120, speed: 0.8, armor: 0, reward: 16, integrityDrain: 8, spawnsOnDeath: { type: "recursion", count: 2 } },
-  depth_crawler: { glyph: "[##]", hp: 200, speed: 1.2, armor: 0.3, reward: 24, integrityDrain: 10, elite: true }
+  depth_crawler: { glyph: "[##]", hp: 200, speed: 1.2, armor: 0.3, reward: 24, integrityDrain: 10, elite: true },
+  // ── expanded roster (depth pass): each leans on the damage-type / status / behavior systems ────
+  // Tiny + fast, arrives in big counts — punishes single-target; answered by aoe/chain/freeze.
+  swarm_bit: { glyph: "·", hp: 14, speed: 2.4, armor: 0, reward: 3, integrityDrain: 2, fast: true, swarm: true },
+  // Heavy armor + kinetic RESISTANCE — kinetic bounces; answered by thermal/null/arc or shred.
+  armored_loop: { glyph: "[#]", hp: 160, speed: 0.9, armor: 0.5, resist: { kinetic: 0.4 }, reward: 20, integrityDrain: 10 },
+  // Carries a SHIELD pool soaked before hp — answered by arc (+50% vs shields) or null (bypass).
+  shield_drone: { glyph: "(o)", hp: 70, speed: 1.1, armor: 0, shield: 140, reward: 16, integrityDrain: 7 },
+  // Heals nearby enemies each tick (behaviors.js) — focus it down first or the line never falls.
+  healer_node: { glyph: "<+>", hp: 110, speed: 0.8, armor: 0.1, reward: 18, integrityDrain: 7, heal: { amount: 22, radius: 5 } },
+  // Self-regenerates HP — out-DPS it or apply BURN (thermal DoT beats regen); else it walls forever.
+  regenerator: { glyph: "{~}", hp: 140, speed: 1, armor: 0.1, reward: 18, integrityDrain: 8, regen: 18 },
+  // Phases out (untargetable) on a deterministic cadence; slow-immune + arc-resistant.
+  flicker_ghost: { glyph: "<·>", hp: 80, speed: 1.4, armor: 0, slowImmune: true, resist: { arc: 0.3 }, reward: 14, integrityDrain: 6, flicker: { onMs: 1400, offMs: 900 } },
+  // Burrows on a cadence → high armor while down (kinetic useless then); strike when it surfaces.
+  burrower: { glyph: "vvv", hp: 130, speed: 1.2, armor: 0.1, reward: 16, integrityDrain: 8, burrow: { upMs: 1500, downMs: 1200, armor: 0.6 } }
 };
 function spawnEnemy(type, seed, idCounter) {
   const def = ENEMY_TYPES[type] || ENEMY_TYPES.recursion;
-  return {
+  const enemy = {
     id: `e${idCounter}`,
     type: ENEMY_TYPES[type] ? type : "recursion",
     hp: def.hp,
@@ -300,11 +358,318 @@ function spawnEnemy(type, seed, idCounter) {
     armor: def.armor,
     slowImmune: Boolean(def.slowImmune)
   };
+  if (def.resist) enemy.resist = { ...def.resist };
+  if (def.shield) {
+    enemy.shield = def.shield;
+    enemy.shieldMax = def.shield;
+  }
+  return enemy;
+}
+
+// ../../docs/games/metagame/stages/stage4/damage.js
+var DAMAGE_TYPES = ["kinetic", "thermal", "arc", "null", "pure"];
+function resolveDamage(enemy, amount, type = "kinetic", opts = {}) {
+  let dmg = Math.max(0, Number(amount) || 0);
+  if (!enemy || dmg <= 0) return { hp: 0, shield: 0 };
+  const dtype = DAMAGE_TYPES.includes(type) ? type : "kinetic";
+  if (dtype !== "pure" && enemy.resist) dmg *= 1 - clampResist(enemy.resist[dtype]);
+  if (dtype === "kinetic") {
+    const armor = opts.armor != null ? Number(opts.armor) : enemy.armor || 0;
+    dmg *= 1 - clamp01(armor);
+  }
+  let shieldHit = 0;
+  if (dtype !== "null" && (enemy.shield || 0) > 0 && dmg > 0) {
+    const mult = dtype === "arc" ? 1.5 : 1;
+    const effective = dmg * mult;
+    shieldHit = Math.min(enemy.shield, effective);
+    enemy.shield = Math.max(0, enemy.shield - shieldHit);
+    dmg = (effective - shieldHit) / mult;
+  }
+  enemy.hp -= dmg;
+  return { hp: dmg, shield: shieldHit };
+}
+function clamp01(v) {
+  const n = Number(v) || 0;
+  return n < 0 ? 0 : n > 1 ? 1 : n;
+}
+function clampResist(v) {
+  const n = Number(v) || 0;
+  return n > 1 ? 1 : n;
+}
+
+// ../../docs/games/metagame/stages/stage4/status.js
+var FREEZE_THRESHOLD = 100;
+var MOVEMENT_EFFECTS = /* @__PURE__ */ new Set(["slow", "chill", "freeze"]);
+function applyStatus(enemy, kind, payload = {}) {
+  if (!enemy) return false;
+  if (enemy.slowImmune && MOVEMENT_EFFECTS.has(kind)) return false;
+  const s = enemy.status || (enemy.status = {});
+  const ms = Math.max(0, Number(payload.ms) || 0);
+  switch (kind) {
+    case "slow": {
+      const factor = clamp012(payload.factor != null ? payload.factor : 0.5);
+      const cur = s.slow;
+      s.slow = { factor: cur ? Math.min(cur.factor, factor) : factor, ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "chill": {
+      const cur = s.chill || { stacks: 0, ms: 0 };
+      cur.stacks += Math.max(0, Number(payload.stacks) || 0);
+      cur.ms = Math.max(cur.ms, ms);
+      s.chill = cur;
+      if (cur.stacks >= FREEZE_THRESHOLD) {
+        delete s.chill;
+        applyStatus(enemy, "freeze", { ms: Math.max(ms, 1200) });
+      }
+      return true;
+    }
+    case "freeze":
+    case "stun": {
+      const cur = s[kind];
+      s[kind] = { ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "burn": {
+      const dps = Math.max(0, Number(payload.dps) || 0);
+      const cur = s.burn;
+      s.burn = { dps: Math.max(cur?.dps || 0, dps), ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "shred": {
+      const armor = clamp012(payload.armor || 0);
+      const cur = s.shred;
+      s.shred = { armor: Math.max(cur?.armor || 0, armor), ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    case "mark": {
+      const bonus = Math.max(0, Number(payload.bonus) || 0);
+      const cur = s.mark;
+      s.mark = { bonus: Math.max(cur?.bonus || 0, bonus), ms: Math.max(cur?.ms || 0, ms) };
+      return true;
+    }
+    default:
+      return false;
+  }
+}
+function tickStatus(state, enemy, dt) {
+  const s = enemy?.status;
+  if (!s) return;
+  const ms = Math.max(0, Number(dt) || 0);
+  if (s.burn) resolveDamage(enemy, s.burn.dps * (ms / 1e3), "thermal");
+  for (const key of Object.keys(s)) {
+    s[key].ms -= ms;
+    if (s[key].ms <= 0) delete s[key];
+  }
+}
+function statusSpeedFactor(enemy) {
+  const s = enemy?.status;
+  if (!s) return 1;
+  if (s.freeze || s.stun) return 0;
+  let factor = 1;
+  if (s.slow) factor *= s.slow.factor;
+  if (s.chill) factor *= 1 - 0.4 * Math.min(1, s.chill.stacks / FREEZE_THRESHOLD);
+  return factor;
+}
+function effectiveArmor(enemy) {
+  const base = enemy?.armor || 0;
+  const shred = enemy?.status?.shred?.armor || 0;
+  return Math.max(0, base - shred);
+}
+function damageTakenMult(enemy) {
+  return 1 + (enemy?.status?.mark?.bonus || 0);
+}
+function applyOnHit(enemy, def) {
+  const onHit = def?.onHit;
+  if (!Array.isArray(onHit)) return;
+  for (const eff of onHit) if (eff && eff.kind) applyStatus(enemy, eff.kind, eff);
+}
+function clamp012(v) {
+  const n = Number(v) || 0;
+  return n < 0 ? 0 : n > 1 ? 1 : n;
+}
+
+// ../../docs/games/metagame/stages/stage4/forks.js
+var FORKS = {
+  pulse_node: [
+    { id: "emp_lance", label: "EMP Lance", desc: "×2 damage; EMP-stun ult", ability: "emp_burst", mods: { damage: 2 } },
+    { id: "pulse_storm", label: "Pulse Storm", desc: "×1.8 fire rate, +range; overcharge ult", ability: "overcharge", mods: { fireRate: 1.8, range: 1.4 } }
+  ],
+  scatter_array: [
+    { id: "shrapnel_array", label: "Shrapnel Array", desc: "×1.6 damage, wider splash", ability: "overcharge", mods: { damage: 1.6, aoe: 1.5 } },
+    { id: "nova_array", label: "Nova Array", desc: "+damage; EMP-stun the whole splash", ability: "emp_burst", mods: { damage: 1.3, range: 1.3 } }
+  ],
+  null_spike: [
+    { id: "void_lance", label: "Void Lance", desc: "×2 null damage", ability: "null_wave", mods: { damage: 2 } },
+    { id: "null_battery", label: "Null Battery", desc: "×2.2 fire rate", ability: "overcharge", mods: { fireRate: 2.2 } }
+  ],
+  frost_lattice: [
+    { id: "deep_freeze", label: "Deep Freeze", desc: "Chill ramps to freeze far faster", ability: "emp_burst", onHit: [{ kind: "chill", stacks: 42, ms: 1800 }] },
+    { id: "glacier_field", label: "Glacier Field", desc: "Wide range; chill + hard slow", ability: "emp_burst", mods: { range: 1.6 }, onHit: [{ kind: "chill", stacks: 16, ms: 1600 }, { kind: "slow", factor: 0.5, ms: 1400 }] }
+  ],
+  thermal_loop: [
+    { id: "pyre_loop", label: "Pyre Loop", desc: "Much hotter, longer burn", ability: "overcharge", onHit: [{ kind: "burn", dps: 30, ms: 3e3 }] },
+    { id: "plasma_loop", label: "Plasma Loop", desc: "×1.8 hit damage + burn", ability: "overcharge", mods: { damage: 1.8 }, onHit: [{ kind: "burn", dps: 12, ms: 2200 }] }
+  ],
+  chain_resonator: [
+    { id: "arc_cascade", label: "Arc Cascade", desc: "Chains to 5 targets", ability: "emp_burst", mods: { chain: 5 / 3 } },
+    { id: "tesla_coil", label: "Tesla Coil", desc: "×1.7 damage, +range", ability: "overcharge", mods: { damage: 1.7, range: 1.4 } }
+  ],
+  long_recursor: [
+    { id: "siege_recursor", label: "Siege Recursor", desc: "×1.8 damage (anti-boss)", ability: "overcharge", mods: { damage: 1.8 } },
+    { id: "rapid_recursor", label: "Rapid Recursor", desc: "×2.5 fire rate", ability: "overcharge", mods: { fireRate: 2.5 } }
+  ],
+  glyph_mortar: [
+    { id: "cluster_mortar", label: "Cluster Mortar", desc: "Bigger splash, +fire rate", ability: "overcharge", mods: { aoe: 1.6, fireRate: 1.5 } },
+    { id: "incendiary_mortar", label: "Incendiary Mortar", desc: "Shells leave a burn", ability: "overcharge", mods: { damage: 1.3 }, onHit: [{ kind: "burn", dps: 16, ms: 2500 }] }
+  ],
+  shatter_drill: [
+    { id: "rend_drill", label: "Rend Drill", desc: "Strips armor to the bone", ability: "null_wave", onHit: [{ kind: "shred", armor: 0.5, ms: 2600 }] },
+    { id: "mark_drill", label: "Mark Drill", desc: "Shred + mark for +damage taken", ability: "null_wave", onHit: [{ kind: "shred", armor: 0.25, ms: 2200 }, { kind: "mark", bonus: 0.3, ms: 2200 }] }
+  ],
+  attractor_field: [
+    { id: "tar_field", label: "Tar Field", desc: "Near-total slow", mods: { slow: 1.6 } },
+    { id: "wide_field", label: "Wide Field", desc: "Much larger slow radius", mods: { range: 1.8 } }
+  ],
+  gravity_well: [
+    { id: "singularity", label: "Singularity", desc: "Stronger pull (tight cluster)", mods: { pull: 2 } },
+    { id: "event_field", label: "Event Field", desc: "Wider slow + pull radius", mods: { range: 1.8 } }
+  ],
+  resonance_hub: [
+    { id: "overdrive_hub", label: "Overdrive Hub", desc: "Bigger adjacency buff", mods: { adjacencyBonus: 1.8 } },
+    { id: "grid_hub", label: "Grid Hub", desc: "Buffs a much larger area", mods: { range: 1.6 } }
+  ],
+  cycle_extractor: [
+    { id: "turbo_extractor", label: "Turbo Extractor", desc: "×1.8 per-wave income", mods: { incomePerWave: 1.8 } },
+    { id: "burst_extractor", label: "Burst Extractor", desc: "×1.4 income, smaller footprint", mods: { incomePerWave: 1.4 } }
+  ],
+  bank_node: [
+    { id: "reserve_bank", label: "Reserve Bank", desc: "×1.8 per-wave income", mods: { incomePerWave: 1.8 } },
+    { id: "fast_bank", label: "Fast Bank", desc: "×1.5 income", mods: { incomePerWave: 1.5 } }
+  ]
+};
+function forksFor(type) {
+  return FORKS[type] || [];
+}
+function forkDef(tower) {
+  if (!tower?.fork) return null;
+  return (FORKS[tower.type] || []).find((f) => f.id === tower.fork) || null;
+}
+function forkAbility(tower) {
+  return forkDef(tower)?.ability || null;
+}
+function forkStatMult(tower, key) {
+  const m = forkDef(tower)?.mods?.[key];
+  return Number.isFinite(m) ? m : 1;
+}
+function towerStat(tower, key) {
+  const base = Number(TOWER_TYPES[tower?.type]?.[key]) || 0;
+  return base * forkStatMult(tower, key);
+}
+function effectiveOnHit(tower, def) {
+  return forkDef(tower)?.onHit || def?.onHit || null;
+}
+function chooseFork(state, towerId, forkId) {
+  const tower = (state?.towers || []).find((t) => t.id === towerId);
+  if (!tower) return { ok: false, reason: "not-found" };
+  if ((tower.level || 1) < 3) return { ok: false, reason: "not-l3" };
+  if (tower.fork) return { ok: false, reason: "already-forked" };
+  const fork = (FORKS[tower.type] || []).find((f) => f.id === forkId);
+  if (!fork) return { ok: false, reason: "invalid-fork" };
+  tower.fork = fork.id;
+  state.log = [...state.log || [], `${tower.type} forked → ${fork.label}.`].slice(-12);
+  return { ok: true, fork: fork.id };
+}
+
+// ../../docs/games/metagame/stages/stage4/abilities.js
+function abilityForTower(tower) {
+  const def = TOWER_TYPES[tower?.type];
+  if (!def) return null;
+  return forkAbility(tower) || def.ability || null;
+}
+function overchargeMult(tower, now) {
+  return (tower?.overchargeUntilMs || 0) > now ? tower.overchargeMultiplier || 1 : 1;
+}
+function fireAbilities(state, dist3) {
+  const now = state.combatClockMs || 0;
+  for (const tower of state.towers || []) {
+    if ((tower.level || 1) < 3) continue;
+    const abilityId = abilityForTower(tower);
+    const ability = TOWER_ABILITIES[abilityId];
+    if (!ability) continue;
+    if (now < (tower.abilityNextMs || 0)) continue;
+    const def = TOWER_TYPES[tower.type] || {};
+    const cast = castAbility(state, tower, abilityId, ability, def, now, dist3);
+    if (cast) tower.abilityNextMs = now + ability.cooldownMs;
+  }
+}
+function castAbility(state, tower, id, ability, def, now, dist3) {
+  if (id === "emp_burst") {
+    const hit = (state.enemies || []).filter((e) => dist3(tower, e) <= ability.radius);
+    if (!hit.length) return false;
+    for (const e of hit) applyStatus(e, "stun", { ms: ability.stunMs });
+    pushLog2(state, `${def.glyph || "[?]"} EMP Burst — ${hit.length} stunned.`);
+    return true;
+  }
+  if (id === "null_wave") {
+    const hit = (state.enemies || []).filter((e) => dist3(tower, e) <= (def.range || 0) && (e.armor || 0) > 0);
+    if (!hit.length) return false;
+    for (const e of hit) applyStatus(e, "shred", { armor: 1, ms: ability.stripMs });
+    pushLog2(state, `${def.glyph || "[?]"} Null Wave — armor stripped from ${hit.length}.`);
+    return true;
+  }
+  if (id === "overcharge") {
+    const inRange = (state.enemies || []).some((e) => dist3(tower, e) <= (def.range || 0));
+    if (!inRange) return false;
+    tower.overchargeUntilMs = now + ability.durationMs;
+    tower.overchargeMultiplier = ability.multiplier;
+    pushLog2(state, `${def.glyph || "[?]"} Overcharge — damage ×${ability.multiplier}.`);
+    return true;
+  }
+  return false;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+
+// ../../docs/games/metagame/stages/stage4/behaviors.js
+var defOf = (e) => ENEMY_TYPES[e?.type] || {};
+function behaviorPass(state, dt) {
+  const secs = (Number(dt) || 0) / 1e3;
+  if (secs <= 0) return;
+  const enemies = state.enemies || [];
+  for (const e of enemies) {
+    if (e.hp <= 0) continue;
+    const d = defOf(e);
+    if (d.regen) e.hp = Math.min(e.maxHp, e.hp + d.regen * secs);
+  }
+  for (const healer of enemies) {
+    const d = defOf(healer);
+    if (!d.heal || healer.hp <= 0) continue;
+    for (const e of enemies) {
+      if (e === healer || e.hp <= 0) continue;
+      if (dist(healer, e) <= d.heal.radius) e.hp = Math.min(e.maxHp, e.hp + d.heal.amount * secs);
+    }
+  }
+}
+function isTargetable(enemy, now) {
+  const f = defOf(enemy).flicker;
+  if (!f) return true;
+  const period = f.onMs + f.offMs;
+  return period <= 0 ? true : now % period < f.onMs;
+}
+function burrowArmor(enemy, now) {
+  const b = defOf(enemy).burrow;
+  if (!b) return 0;
+  const period = b.upMs + b.downMs;
+  if (period <= 0) return 0;
+  return now % period >= b.upMs ? b.armor : 0;
+}
+function dist(a, b) {
+  return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
 }
 
 // ../../docs/games/metagame/stages/stage4/waves.js
-var SPAWN_INTERVAL_MS = 1500;
-var FINAL_WAVE = 31;
+var SPAWN_INTERVAL_MS = 700;
 var WAVES = {
   1: { enemies: [{ type: "recursion", count: 6 }] },
   2: { enemies: [{ type: "recursion", count: 9 }] },
@@ -351,22 +716,240 @@ function waveComposition(waveNum, seed) {
   return { enemies: [{ type: "recursion", count: 6 + n * 3 }], leftFraction: null };
 }
 
+// ../../docs/games/metagame/stages/stage4/maps.js
+var MAPS = [
+  {
+    id: "outer-shell",
+    name: "Outer Shell",
+    glyph: "◇",
+    theme: "the thin perimeter where the recursion first leaks in",
+    waveCount: 5,
+    depth: 1,
+    startCycles: 240,
+    startIntegrity: 100,
+    subBosses: { 5: "shell-warden" }
+  },
+  {
+    id: "recursion-halls",
+    name: "Recursion Halls",
+    glyph: "◆",
+    theme: "corridors that repeat the corridor you just left",
+    waveCount: 10,
+    depth: 1,
+    startCycles: 280,
+    startIntegrity: 100,
+    subBosses: { 5: "echo-sentinel", 10: "hall-keeper" }
+  },
+  {
+    id: "fractal-atrium",
+    name: "Fractal Atrium",
+    glyph: "✦",
+    theme: "an open court that folds back on itself at the edges",
+    waveCount: 20,
+    depth: 2,
+    startCycles: 340,
+    startIntegrity: 110,
+    subBosses: { 10: "mirror-prefect", 20: "atrium-regent" }
+  },
+  {
+    id: "depth-cascade",
+    name: "Depth Cascade",
+    glyph: "❈",
+    theme: "a stairwell that descends faster than you climb it",
+    waveCount: 45,
+    depth: 2,
+    startCycles: 420,
+    startIntegrity: 120,
+    subBosses: { 15: "cascade-anchor", 30: "descent-marshal", 45: "cascade-sovereign" }
+  },
+  {
+    id: "infinite-approach",
+    name: "Infinite Approach",
+    glyph: "∞",
+    theme: "the last span before the loop — it never quite arrives",
+    waveCount: 70,
+    depth: 3,
+    startCycles: 520,
+    startIntegrity: 140,
+    subBosses: { 20: "approach-vanguard", 40: "event-horizon", 60: "penultimate-knot", 70: "final-bastion" }
+  }
+];
+var MAP_COUNT = MAPS.length;
+function mapByIndex(index) {
+  const i = Math.max(0, Math.min(MAP_COUNT - 1, Math.trunc(Number(index)) || 0));
+  return MAPS[i];
+}
+function mapPathSeed(pointSetId, mapIndex) {
+  return `${pointSetId || "x"}-m${Math.max(0, Math.trunc(Number(mapIndex)) || 0)}`;
+}
+function subBossIdForWave(mapIndex, waveNum) {
+  const map = mapByIndex(mapIndex);
+  return map.subBosses?.[Math.trunc(Number(waveNum)) || 0] || null;
+}
+
+// ../../docs/games/metagame/stages/stage4/wavegen.js
+var COUNT_DIV = {
+  swarm_bit: 0.4,
+  fractal_host: 6,
+  depth_crawler: 10,
+  armored_loop: 3,
+  shield_drone: 2.5,
+  healer_node: 6,
+  regenerator: 3,
+  flicker_ghost: 2.5,
+  burrower: 3
+};
+var UNLOCKS = [
+  ["recursion"],
+  ["recursion", "pattern_crawler", "swarm_bit"],
+  ["recursion", "pattern_crawler", "null_packet", "swarm_bit", "armored_loop", "shield_drone"],
+  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host", "swarm_bit", "armored_loop", "shield_drone", "healer_node", "regenerator"],
+  ["recursion", "pattern_crawler", "null_packet", "resonance_ghost", "fractal_host", "depth_crawler", "swarm_bit", "armored_loop", "shield_drone", "healer_node", "regenerator", "flicker_ghost", "burrower"]
+];
+function mapEnemyPool(mapIndex) {
+  const i = Math.max(0, Math.min(UNLOCKS.length - 1, Math.trunc(Number(mapIndex)) || 0));
+  return UNLOCKS[i];
+}
+function mapWaveComposition(mapIndex, waveNum) {
+  const map = mapByIndex(mapIndex);
+  const w = Math.max(1, Math.trunc(Number(waveNum)) || 1);
+  const subBoss = subBossIdForWave(mapIndex, w);
+  const pool = mapEnemyPool(mapIndex);
+  const ramp = 5 + Math.floor(w * (1.1 + 0.15 * mapIndex)) + mapIndex * 2;
+  const budget = subBoss ? Math.max(4, Math.round(ramp * 0.55)) : ramp;
+  const weights = pool.map((type) => typeWeight(type, w, map.waveCount, mapIndex));
+  const total = weights.reduce((s, x) => s + x, 0) || 1;
+  const enemies = [];
+  let assigned = 0;
+  pool.forEach((type, idx) => {
+    const heavyDiv = COUNT_DIV[type] || 1;
+    let count = Math.round(budget * weights[idx] / total / heavyDiv);
+    if (idx === pool.length - 1) count = Math.max(count, 0);
+    if (count > 0) {
+      enemies.push({ type, count });
+      assigned += count;
+    }
+  });
+  if (!subBoss && assigned === 0) enemies.push({ type: "recursion", count: Math.max(3, Math.round(budget / 2)) });
+  const comp = { enemies, subBoss: subBoss || null, leftFraction: null };
+  if (subBoss) comp.note = "a guardian holds the line";
+  return comp;
+}
+function typeWeight(type, w, waveCount, mapIndex) {
+  const p = Math.min(1, w / Math.max(1, waveCount));
+  switch (type) {
+    case "recursion":
+      return 6 - 3 * p;
+    // always present, fades a bit late
+    case "pattern_crawler":
+      return 1 + 4 * p;
+    // ramps up
+    case "null_packet":
+      return 1 + 3 * p;
+    case "resonance_ghost":
+      return p > 0.25 ? 1 + 3 * p : 0.2;
+    case "fractal_host":
+      return p > 0.4 ? 1 + 2 * p : 0.1;
+    case "depth_crawler":
+      return p > 0.6 ? 1 + 2 * p : 0.05;
+    // expanded roster — each phases in as a wave progresses
+    case "swarm_bit":
+      return 2 + 4 * p;
+    // cheap filler, always plentiful
+    case "armored_loop":
+      return p > 0.3 ? 1 + 2 * p : 0.1;
+    case "shield_drone":
+      return p > 0.3 ? 1 + 2 * p : 0.1;
+    case "healer_node":
+      return p > 0.4 ? 0.6 + p : 0.05;
+    case "regenerator":
+      return p > 0.4 ? 1 + 1.5 * p : 0.05;
+    case "flicker_ghost":
+      return p > 0.5 ? 1 + 2 * p : 0.05;
+    case "burrower":
+      return p > 0.5 ? 1 + 1.5 * p : 0.05;
+    default:
+      return 1;
+  }
+}
+
+// ../../docs/games/metagame/stages/stage4/subboss.js
+var SUB_BOSSES = {
+  // Map 0
+  "shell-warden": { name: "Shell Warden", glyph: "Ω", hp: 600, speed: 0.7, armor: 0.2, reward: 80, drain: 20, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE (spawn copies) at half integrity" },
+  // Map 1
+  "echo-sentinel": { name: "Echo Sentinel", glyph: "Ψ", hp: 800, speed: 0.9, armor: 0.1, reward: 90, drain: 20, trigger: 0.5, ability: "haste", telegraph: "will HASTE itself when wounded" },
+  "hall-keeper": { name: "Hall Keeper", glyph: "Φ", hp: 1200, speed: 0.7, armor: 0.3, reward: 120, drain: 25, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  // Map 2
+  "mirror-prefect": { name: "Mirror Prefect", glyph: "Δ", hp: 1800, speed: 0.8, armor: 0.2, reward: 150, drain: 25, trigger: 0.5, ability: "shield", telegraph: "will raise a SHIELD (armor surge) when wounded" },
+  "atrium-regent": { name: "Atrium Regent", glyph: "Θ", hp: 2600, speed: 0.7, armor: 0.3, reward: 200, drain: 30, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  // Map 3
+  "cascade-anchor": { name: "Cascade Anchor", glyph: "Λ", hp: 3e3, speed: 0.7, armor: 0.3, reward: 220, drain: 30, trigger: 0.5, ability: "shield", telegraph: "will raise a SHIELD when wounded" },
+  "descent-marshal": { name: "Descent Marshal", glyph: "Ξ", hp: 4200, speed: 0.8, armor: 0.25, reward: 280, drain: 35, trigger: 0.5, ability: "haste", telegraph: "will HASTE when wounded" },
+  "cascade-sovereign": { name: "Cascade Sovereign", glyph: "Σ", hp: 5600, speed: 0.7, armor: 0.35, reward: 360, drain: 40, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  // Map 4
+  "approach-vanguard": { name: "Approach Vanguard", glyph: "Π", hp: 6e3, speed: 0.8, armor: 0.3, reward: 380, drain: 40, trigger: 0.5, ability: "shield", telegraph: "will raise a SHIELD when wounded" },
+  "event-horizon": { name: "Event Horizon", glyph: "◉", hp: 8e3, speed: 0.7, armor: 0.35, reward: 460, drain: 45, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" },
+  "penultimate-knot": { name: "Penultimate Knot", glyph: "╬", hp: 1e4, speed: 0.7, armor: 0.4, reward: 560, drain: 50, trigger: 0.5, ability: "haste", telegraph: "will HASTE when wounded" },
+  "final-bastion": { name: "Final Bastion", glyph: "█", hp: 14e3, speed: 0.6, armor: 0.4, reward: 720, drain: 60, trigger: 0.5, ability: "recurse", telegraph: "will RECURSE at half integrity" }
+};
+function subBossDef(id) {
+  return SUB_BOSSES[id] || null;
+}
+function spawnSubBoss(id, idCounter) {
+  const def = SUB_BOSSES[id];
+  if (!def) return null;
+  return {
+    id: `sb${idCounter}`,
+    type: "subboss",
+    subBoss: id,
+    hp: def.hp,
+    maxHp: def.hp,
+    x: 0,
+    y: 0,
+    pathIndex: 0,
+    speed: def.speed,
+    armor: def.armor,
+    slowImmune: false,
+    abilityFired: false
+  };
+}
+
 // ../../docs/games/metagame/stages/stage4/upgrades.js
+function upgradeTower(state, towerId) {
+  const tower = (state.towers || []).find((t) => t.id === towerId);
+  if (!tower) return { ok: false, reason: "not-found" };
+  const level = tower.level || 1;
+  if (level >= 3) return { ok: false, reason: "max-level" };
+  const cost = towerUpgradeCost(tower.type, level);
+  if ((state.cycles || 0) < cost) return { ok: false, reason: "poor", cost };
+  state.cycles -= cost;
+  tower.level = level + 1;
+  return { ok: true, level: tower.level, cost };
+}
 function applyExtractorIncome(state) {
   let income = 0;
   for (const tower of state.towers || []) {
     const def = TOWER_TYPES[tower.type];
-    if (def?.incomePerWave) income += def.incomePerWave;
+    if (def?.incomePerWave) income += towerStat(tower, "incomePerWave");
   }
   state.cycles = (state.cycles || 0) + income;
   return income;
 }
 
 // ../../docs/games/metagame/stages/stage4/engine.js
+function enemyDef(enemy) {
+  if (enemy?.subBoss) {
+    const sb = subBossDef(enemy.subBoss);
+    if (sb) return { glyph: sb.glyph, reward: sb.reward, integrityDrain: sb.drain };
+  }
+  return ENEMY_TYPES[enemy?.type] || ENEMY_TYPES.recursion;
+}
 function startWave(state, waveNum, pathTiles) {
-  const comp = waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  const comp = state.campaign ? mapWaveComposition(state.campaign.mapIndex || 0, waveNum) : waveComposition(waveNum, state.recursion?.pointSetId || "x");
   const queue = [];
   for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) queue.push(grp.type);
+  if (comp.subBoss) queue.push(`subboss:${comp.subBoss}`);
   state.waveNumber = waveNum;
   state.waveActive = true;
   state.waveFailed = false;
@@ -375,7 +958,24 @@ function startWave(state, waveNum, pathTiles) {
   state.spawnTimerMs = SPAWN_INTERVAL_MS;
   state.combatClockMs = 0;
   state.enemyNextId = 1;
-  for (const t of state.towers) t.lastFiredMs = -Infinity;
+  for (const t of state.towers) {
+    t.lastFiredMs = -Infinity;
+    t.abilityNextMs = 0;
+  }
+  if (comp.subBoss) {
+    const sb = subBossDef(comp.subBoss);
+    if (sb) pushLog3(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+  }
+  return state;
+}
+function queueWave(state, waveNum) {
+  const comp = state.campaign ? mapWaveComposition(state.campaign.mapIndex || 0, waveNum) : waveComposition(waveNum, state.recursion?.pointSetId || "x");
+  for (const grp of comp.enemies) for (let i = 0; i < grp.count; i++) state.spawnQueue.push(grp.type);
+  if (comp.subBoss) {
+    state.spawnQueue.push(`subboss:${comp.subBoss}`);
+    const sb = subBossDef(comp.subBoss);
+    if (sb) pushLog3(state, `${sb.glyph} ${sb.name} approaches — it ${sb.telegraph}.`);
+  }
   return state;
 }
 function tick(state, deltaMs, pathTiles) {
@@ -384,13 +984,17 @@ function tick(state, deltaMs, pathTiles) {
   const exitIndex = pathTiles.length - 1;
   state.combatClockMs = (state.combatClockMs || 0) + dt;
   spawnDueEnemies(state, dt, pathTiles);
+  applyFields(state, dt);
+  statusPass(state, dt);
+  behaviorPass(state, dt);
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
+  fireAbilities(state, dist2);
   reap(state, pathTiles);
   return state;
 }
 function resolveDeath(state, enemy, pathTiles) {
-  const def = ENEMY_TYPES[enemy.type] || ENEMY_TYPES.recursion;
+  const def = enemyDef(enemy);
   state.cycles = (state.cycles || 0) + (def.reward || 0);
   if (def.spawnsOnDeath) {
     for (let i = 0; i < def.spawnsOnDeath.count; i++) {
@@ -399,7 +1003,7 @@ function resolveDeath(state, enemy, pathTiles) {
       placeOnPath(child, pathTiles);
       state.enemies.push(child);
     }
-    pushLog2(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
+    pushLog3(state, `${def.glyph} fractures into ${def.spawnsOnDeath.count}.`);
   }
   return def.reward || 0;
 }
@@ -415,22 +1019,40 @@ function spawnDueEnemies(state, dt, pathTiles) {
   while ((state.spawnQueue?.length || 0) > 0 && state.spawnTimerMs >= SPAWN_INTERVAL_MS) {
     state.spawnTimerMs -= SPAWN_INTERVAL_MS;
     const type = state.spawnQueue.shift();
-    const e = spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    const e = String(type).startsWith("subboss:") ? spawnSubBoss(type.slice("subboss:".length), state.enemyNextId++) : spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    if (!e) continue;
     placeOnPath(e, pathTiles);
     state.enemies.push(e);
   }
 }
+function applyFields(state, dt) {
+  const back = (Number(dt) || 0) / 1e3;
+  for (const t of state.towers) {
+    const def = TOWER_TYPES[t.type];
+    if (!def?.slow && !def?.pull) continue;
+    const range = towerStat(t, "range");
+    const slow = towerStat(t, "slow");
+    const pull = towerStat(t, "pull");
+    for (const e of state.enemies) {
+      if (dist2(t, e) > range) continue;
+      if (slow) applyStatus(e, "slow", { factor: Math.max(0, 1 - slow), ms: 250 });
+      if (pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - pull * back);
+    }
+  }
+}
+function statusPass(state, dt) {
+  for (const e of state.enemies) tickStatus(state, e, dt);
+}
 function moveEnemies(state, dt, pathTiles, exitIndex) {
   const survivors = [];
   for (const e of state.enemies) {
-    const slowed = !e.slowImmune && inAttractorField(state, e, pathTiles);
-    const eff = e.speed * (slowed ? 0.5 : 1);
+    const eff = e.speed * statusSpeedFactor(e);
     e.pathIndex += eff * (dt / 1e3);
     if (e.pathIndex >= exitIndex) {
-      const def = ENEMY_TYPES[e.type] || ENEMY_TYPES.recursion;
+      const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
       if (state.integrity <= 0) state.waveFailed = true;
-      pushLog2(state, `${def.glyph} reached the core.`);
+      pushLog3(state, `${def.glyph} reached the core.`);
       continue;
     }
     placeOnPath(e, pathTiles);
@@ -443,21 +1065,60 @@ function fireTowers(state, pathTiles) {
   for (const tower of state.towers) {
     const def = TOWER_TYPES[tower.type];
     if (!def || !def.fireRate || !def.damage) continue;
-    if (now - (tower.lastFiredMs ?? -Infinity) < 1e3 / def.fireRate) continue;
-    const inRange = state.enemies.filter((e) => dist(tower, e) <= def.range);
-    if (!inRange.length) continue;
+    const fireRate = towerStat(tower, "fireRate") || def.fireRate;
+    if (now - (tower.lastFiredMs ?? -Infinity) < 1e3 / fireRate) continue;
+    const range = towerStat(tower, "range");
+    const candidates = state.enemies.filter((e) => isTargetable(e, now) && (def.global || dist2(tower, e) <= range));
+    if (!candidates.length) continue;
     tower.lastFiredMs = now;
-    const bonus = 1 + 0.3 * hubsCovering(state, tower);
-    const targets = def.aoe ? inRange : [selectTarget(inRange, tower)];
-    for (const e of targets) applyDamage(state, tower, def, e, bonus, pathTiles);
+    const bonus = 1 + hubsCovering(state, tower);
+    const eff = { aoe: towerStat(tower, "aoe"), chain: Math.round(towerStat(tower, "chain")), global: def.global };
+    for (const e of pickTargets(state, tower, eff, candidates)) applyDamage(state, tower, def, e, bonus, pathTiles);
   }
 }
+function pickTargets(state, tower, eff, candidates) {
+  if (eff.global && eff.aoe) {
+    const focus = selectTarget(candidates, tower);
+    return state.enemies.filter((e) => dist2(e, focus) <= eff.aoe);
+  }
+  if (eff.aoe) return candidates;
+  if (eff.chain) {
+    const focus = selectTarget(candidates, tower);
+    return [...candidates].sort((a, b) => dist2(focus, a) - dist2(focus, b) || b.pathIndex - a.pathIndex).slice(0, eff.chain);
+  }
+  return [selectTarget(candidates, tower)];
+}
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
-  let dmg = def.damage * bonus;
+  let dmg = towerStat(tower, "damage") * bonus * (state.damageMult || 1);
+  dmg *= overchargeMult(tower, state.combatClockMs || 0);
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2;
-  if (!def.ignoresArmor) dmg *= 1 - (enemy.armor || 0);
-  enemy.hp -= dmg;
+  dmg *= damageTakenMult(enemy);
+  const type = def.damageType || (def.ignoresArmor ? "null" : "kinetic");
+  const armor = Math.min(0.95, effectiveArmor(enemy) + burrowArmor(enemy, state.combatClockMs || 0));
+  resolveDamage(enemy, dmg, type, { armor });
+  applyOnHit(enemy, { onHit: effectiveOnHit(tower, def) });
+  if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
+}
+function maybeFireSubBossAbility(state, enemy, pathTiles) {
+  const sb = subBossDef(enemy.subBoss);
+  if (!sb || enemy.hp > enemy.maxHp * sb.trigger) return;
+  enemy.abilityFired = true;
+  if (sb.ability === "recurse") {
+    for (let i = 0; i < 3; i++) {
+      const child = spawnEnemy("recursion", state.recursion?.pointSetId || "x", state.enemyNextId++);
+      child.pathIndex = Math.max(0, enemy.pathIndex - (i + 1));
+      placeOnPath(child, pathTiles);
+      state.enemies.push(child);
+    }
+    pushLog3(state, `${sb.glyph} ${sb.name} RECURSES — copies pour out.`);
+  } else if (sb.ability === "haste") {
+    enemy.speed *= 1.6;
+    pushLog3(state, `${sb.glyph} ${sb.name} HASTES — it surges forward.`);
+  } else if (sb.ability === "shield") {
+    enemy.armor = Math.min(0.9, (enemy.armor || 0) + 0.3);
+    pushLog3(state, `${sb.glyph} ${sb.name} raises a SHIELD.`);
+  }
 }
 function reap(state, pathTiles) {
   const survivors = [];
@@ -467,21 +1128,14 @@ function reap(state, pathTiles) {
   }
   state.enemies = survivors;
 }
-function inAttractorField(state, enemy, pathTiles) {
-  for (const t of state.towers) {
-    const def = TOWER_TYPES[t.type];
-    if (def?.slow && dist(t, enemy) <= def.range) return true;
-  }
-  return false;
-}
 function hubsCovering(state, tower) {
-  let n = 0;
+  let bonus = 0;
   for (const t of state.towers) {
     if (t === tower) continue;
     const def = TOWER_TYPES[t.type];
-    if (def?.adjacencyBonus && dist(t, tower) <= def.range) n += 1;
+    if (def?.adjacencyBonus && dist2(t, tower) <= towerStat(t, "range")) bonus += towerStat(t, "adjacencyBonus");
   }
-  return n;
+  return bonus;
 }
 var TARGET_COMPARATORS = {
   first: (a, b) => a.pathIndex > b.pathIndex,
@@ -489,8 +1143,8 @@ var TARGET_COMPARATORS = {
   strongest: (a, b) => a.hp > b.hp || a.hp === b.hp && a.pathIndex > b.pathIndex,
   weakest: (a, b) => a.hp < b.hp || a.hp === b.hp && a.pathIndex > b.pathIndex,
   closest: (a, b, tower) => {
-    const da = dist(tower, a);
-    const db = dist(tower, b);
+    const da = dist2(tower, a);
+    const db = dist2(tower, b);
     return da < db || da === db && a.pathIndex > b.pathIndex;
   }
 };
@@ -506,11 +1160,194 @@ function placeOnPath(enemy, pathTiles) {
     enemy.y = tile.y;
   }
 }
-function dist(a, b) {
+function dist2(a, b) {
   return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));
 }
-function pushLog2(state, line) {
+function pushLog3(state, line) {
   state.log = [...state.log || [], line].slice(-12);
+}
+
+// ../../docs/games/metagame/stages/stage4/armory.js
+var ARMORY_UPGRADES = [
+  { id: "reinforced-core", label: "Reinforced Core", desc: "+25 starting integrity per level", baseCost: 30, costScale: 1.6, maxLevel: 4 },
+  { id: "capital-reserves", label: "Capital Reserves", desc: "+60 starting cycles per level", baseCost: 30, costScale: 1.6, maxLevel: 4 },
+  { id: "overclocked-emitters", label: "Overclocked Emitters", desc: "+8% tower damage per level", baseCost: 40, costScale: 1.8, maxLevel: 5 },
+  { id: "glory-dividend", label: "Glory Dividend", desc: "+1 Glory per wave cleared", baseCost: 50, costScale: 2, maxLevel: 3 }
+];
+function armoryUpgradeById(id) {
+  return ARMORY_UPGRADES.find((u) => u.id === id) || null;
+}
+function armoryLevel(campaign, id) {
+  return Math.max(0, Math.trunc(Number(campaign?.armory?.[id]) || 0));
+}
+function armoryCost(campaign, id) {
+  const def = armoryUpgradeById(id);
+  if (!def) return Infinity;
+  const lvl = armoryLevel(campaign, id);
+  if (lvl >= def.maxLevel) return Infinity;
+  return Math.floor(def.baseCost * Math.pow(def.costScale, lvl));
+}
+function canBuyArmory(campaign, id) {
+  const cost = armoryCost(campaign, id);
+  return Number.isFinite(cost) && Number(campaign?.glory || 0) >= cost;
+}
+function buyArmory(campaign, id) {
+  const def = armoryUpgradeById(id);
+  if (!def) return { ok: false, reason: "unknown" };
+  const lvl = armoryLevel(campaign, id);
+  if (lvl >= def.maxLevel) return { ok: false, reason: "maxed" };
+  const cost = armoryCost(campaign, id);
+  if (Number(campaign.glory || 0) < cost) return { ok: false, reason: "poor", cost };
+  campaign.glory = Number(campaign.glory || 0) - cost;
+  if (!campaign.armory || typeof campaign.armory !== "object") campaign.armory = {};
+  campaign.armory[id] = lvl + 1;
+  return { ok: true, level: lvl + 1, cost };
+}
+function armoryEffects(campaign) {
+  return {
+    integrityBonus: armoryLevel(campaign, "reinforced-core") * 25,
+    cyclesBonus: armoryLevel(campaign, "capital-reserves") * 60,
+    damageMult: 1 + armoryLevel(campaign, "overclocked-emitters") * 0.08,
+    gloryPerWaveBonus: armoryLevel(campaign, "glory-dividend")
+  };
+}
+
+// ../../docs/games/metagame/stages/stage4/run4.js
+var GLORY_PER_WAVE_BASE = 2;
+var GLORY_MAP_CLEAR_BASE = 12;
+var WAVE_REGEN = 8;
+var BOSS_ARENA_CYCLES = 600;
+function createCampaign() {
+  return {
+    status: "map-select",
+    // map-select | combat | armory | boss | won
+    mapIndex: 0,
+    // the active map while in combat / armory
+    clearedMaps: [],
+    // indices of cleared maps
+    glory: 0,
+    armory: {}
+    // { upgradeId: level }
+  };
+}
+function ensureCampaign(state) {
+  const fresh = createCampaign();
+  const c = state.campaign && typeof state.campaign === "object" ? state.campaign : {};
+  c.status = ["map-select", "combat", "armory", "boss", "won"].includes(c.status) ? c.status : "map-select";
+  c.mapIndex = clampIndex(c.mapIndex);
+  c.clearedMaps = Array.isArray(c.clearedMaps) ? [...new Set(c.clearedMaps.map(clampIndex))].filter((i) => i >= 0).sort((a, b) => a - b) : [];
+  c.glory = Number.isFinite(c.glory) ? Math.max(0, c.glory) : 0;
+  c.armory = c.armory && typeof c.armory === "object" ? c.armory : {};
+  state.campaign = c;
+  return c;
+}
+function mapUnlocked(state, i) {
+  const idx = clampIndex(i);
+  if (idx === 0) return true;
+  return (state.campaign?.clearedMaps || []).includes(idx - 1);
+}
+function mapCleared(state, i) {
+  return (state.campaign?.clearedMaps || []).includes(clampIndex(i));
+}
+function allMapsCleared(state) {
+  const cleared = state.campaign?.clearedMaps || [];
+  return MAPS.every((_, i) => cleared.includes(i));
+}
+function bossUnlocked(state) {
+  return allMapsCleared(state) && !state.boss?.defeated;
+}
+function selectMap(state, i) {
+  const idx = clampIndex(i);
+  if (!mapUnlocked(state, idx)) return { ok: false, reason: "locked" };
+  const c = ensureCampaign(state);
+  c.mapIndex = idx;
+  c.status = "combat";
+  resetCombatForMap(state, idx);
+  return { ok: true, mapIndex: idx };
+}
+function resetCombatForMap(state, i) {
+  const idx = clampIndex(i);
+  const map = mapByIndex(idx);
+  const fx = armoryEffects(state.campaign);
+  state.cycles = map.startCycles + fx.cyclesBonus;
+  state.integrity = map.startIntegrity + fx.integrityBonus;
+  state.maxIntegrity = map.startIntegrity + fx.integrityBonus;
+  state.damageMult = fx.damageMult;
+  state.waveNumber = 1;
+  state.waveActive = false;
+  state.waveFailed = false;
+  state.towers = [];
+  state.enemies = [];
+  state.spawnQueue = [];
+  return state;
+}
+function recordWaveCleared(state) {
+  const c = ensureCampaign(state);
+  const idx = c.mapIndex;
+  const map = mapByIndex(idx);
+  const fx = armoryEffects(c);
+  const gloryGain = GLORY_PER_WAVE_BASE + idx + fx.gloryPerWaveBonus;
+  c.glory = Number(c.glory || 0) + gloryGain;
+  state.integrity = Math.min(state.maxIntegrity || map.startIntegrity, (state.integrity || 0) + WAVE_REGEN);
+  const wasFinal = (state.waveNumber || 1) >= map.waveCount;
+  if (wasFinal) {
+    const mapGlory = markMapCleared(state, idx);
+    return { gloryGain, mapCleared: true, mapGlory };
+  }
+  state.waveNumber = (state.waveNumber || 1) + 1;
+  return { gloryGain, mapCleared: false };
+}
+function markMapCleared(state, idx) {
+  const c = ensureCampaign(state);
+  if (!c.clearedMaps.includes(idx)) c.clearedMaps.push(idx);
+  c.clearedMaps.sort((a, b) => a - b);
+  const mapGlory = GLORY_MAP_CLEAR_BASE * (idx + 1);
+  c.glory = Number(c.glory || 0) + mapGlory;
+  state.waveActive = false;
+  c.status = "armory";
+  return mapGlory;
+}
+function leaveArmory(state) {
+  ensureCampaign(state).status = "map-select";
+  return { ok: true };
+}
+function enterBoss(state) {
+  if (!bossUnlocked(state)) return { ok: false, reason: "locked" };
+  const c = ensureCampaign(state);
+  c.status = "boss";
+  resetBossArena(state);
+  return { ok: true };
+}
+function resetBossArena(state) {
+  const fx = armoryEffects(state.campaign);
+  state.cycles = BOSS_ARENA_CYCLES + fx.cyclesBonus;
+  state.integrity = 100 + fx.integrityBonus;
+  state.maxIntegrity = 100 + fx.integrityBonus;
+  state.damageMult = fx.damageMult;
+  state.waveNumber = 1;
+  state.waveActive = false;
+  state.towers = [];
+  state.enemies = [];
+  return state;
+}
+function winCampaign(state) {
+  ensureCampaign(state).status = "won";
+  return { ok: true };
+}
+function seatAtBoss(state) {
+  const c = ensureCampaign(state);
+  c.clearedMaps = MAPS.map((_, i) => i);
+  return enterBoss(state);
+}
+function debugClearMap(state) {
+  const c = ensureCampaign(state);
+  return { ok: true, mapGlory: markMapCleared(state, c.mapIndex) };
+}
+function campaignProgress(state) {
+  return { cleared: (state.campaign?.clearedMaps || []).length, total: MAP_COUNT };
+}
+function clampIndex(i) {
+  return Math.max(0, Math.min(MAP_COUNT - 1, Math.trunc(Number(i)) || 0));
 }
 
 // ../../docs/games/metagame/stages/stage4/state.js
@@ -523,11 +1360,17 @@ function defaultState(context = {}) {
     // Full-TD fields (engine.js reads/writes these; see stage4 buildplan A3). Enemies are ephemeral
     // (regenerated per wave, never persisted). towerNextId replaces any Math.random id generation.
     integrity: 100,
+    maxIntegrity: 100,
+    // per-map cap (set by run4.resetCombatForMap; integrity regen never exceeds it)
+    damageMult: 1,
+    // Armory "Overclocked Emitters" multiplier (applied by engine.applyDamage)
     waveGroup: 1,
     waveActive: false,
     waveNumber: 1,
     enemies: [],
     towerNextId: 1,
+    // The 5-map campaign state machine (run4.js): status, mapIndex, clearedMaps, glory, armory.
+    campaign: createCampaign(),
     recursion: {
       pointSetId: `fractal-${seed}`,
       points: generateRecursionPoints(seed)
@@ -550,6 +1393,8 @@ function normalizeState(state, context = {}) {
   target.cycles = Number.isFinite(target.cycles) ? target.cycles : fresh.cycles;
   target.wave = Number.isFinite(target.wave) ? target.wave : fresh.wave;
   target.integrity = Number.isFinite(target.integrity) ? target.integrity : fresh.integrity;
+  target.maxIntegrity = Number.isFinite(target.maxIntegrity) ? target.maxIntegrity : fresh.maxIntegrity;
+  target.damageMult = Number.isFinite(target.damageMult) ? target.damageMult : fresh.damageMult;
   target.waveGroup = Number.isFinite(target.waveGroup) ? target.waveGroup : fresh.waveGroup;
   target.waveActive = Boolean(target.waveActive);
   target.waveNumber = Number.isFinite(target.waveNumber) ? target.waveNumber : fresh.waveNumber;
@@ -560,12 +1405,14 @@ function normalizeState(state, context = {}) {
   target.recursion.points = normalizePoints(target.recursion.points, fresh.recursion.points);
   target.towers = Array.isArray(target.towers) ? target.towers.map(normalizeTower).filter(Boolean) : [];
   target.boss = mergePlain(fresh.boss, target.boss);
+  ensureCampaign(target);
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;
 }
 function snapshotWave(state) {
   return {
     waveNumber: state.waveNumber,
+    wavePeak: Number.isFinite(state.wavePeak) ? state.wavePeak : state.waveNumber,
     waveActive: Boolean(state.waveActive),
     waveFailed: Boolean(state.waveFailed),
     integrity: state.integrity,
@@ -580,6 +1427,7 @@ function snapshotWave(state) {
 function restoreWave(state, snap) {
   if (!snap || typeof snap !== "object") return state;
   if (Number.isFinite(snap.waveNumber)) state.waveNumber = snap.waveNumber;
+  state.wavePeak = Number.isFinite(snap.wavePeak) ? snap.wavePeak : state.waveNumber;
   state.waveActive = Boolean(snap.waveActive);
   state.waveFailed = Boolean(snap.waveFailed);
   if (Number.isFinite(snap.integrity)) state.integrity = snap.integrity;
@@ -630,6 +1478,8 @@ function normalizeTower(tower) {
     y,
     level: clampInt(tower.level || 1, 1, 3),
     targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : "first",
+    fork: tower.fork ? String(tower.fork) : null,
+    // chosen tier-3 fork (irrevocable; persisted)
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed)
   };
@@ -657,26 +1507,43 @@ function mergePlain(base, override) {
   return { ...base, ...override && typeof override === "object" ? override : {} };
 }
 
-// ../../docs/games/metagame/stages/stage4/renderer.js
-var PLACEABLE = ["pulse_node", "scatter_array", "null_spike", "attractor_field"];
+// ../../docs/games/metagame/stages/stage4/ui-combat.js
+var PLACEABLE = [
+  "pulse_node",
+  "scatter_array",
+  "null_spike",
+  "attractor_field",
+  "frost_lattice",
+  "thermal_loop",
+  "chain_resonator",
+  "long_recursor",
+  "glyph_mortar",
+  "shatter_drill",
+  "gravity_well",
+  "resonance_hub",
+  "cycle_extractor",
+  "bank_node"
+];
 var PERSIST_THROTTLE_MS = 1e3;
-function renderStage4(ctx) {
-  const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
+var CALL_EARLY_BONUS = 20;
+var SPEEDS = [1, 2, 3];
+function mountCombat({ host, state, controller, mode = "map" }) {
+  const isBoss = mode === "boss";
+  const mapIndex = state.campaign?.mapIndex ?? 0;
+  const map = mapByIndex(mapIndex);
   const root = document.createElement("section");
-  root.className = "stage4-fractal-bastion";
+  root.className = "stage4-combat";
   root.innerHTML = `
     <header class="s4-hud">
-      <strong>FRACTAL BASTION</strong>
+      <strong>${isBoss ? "THE INFINITE LOOP" : `${map.glyph} ${map.name.toUpperCase()}`}</strong>
       <span>CYCLES <span data-field="cycles"></span></span>
       <span>INTEGRITY <span data-field="integrity"></span></span>
-      <span>WAVE <span data-field="wave"></span></span>
-      <span>POINTS <span data-field="coverage"></span></span>
+      <span>${isBoss ? "POINTS" : "WAVE"} <span data-field="progress"></span></span>
+      <button type="button" data-action="leave" class="s4-leave">${isBoss ? "retreat" : "← maps"}</button>
     </header>
     <div class="s4-layout">
       <pre class="s4-board" aria-label="fractal bastion board"></pre>
       <section class="s4-panel">
-        <div class="s4-boss-title">THE INFINITE LOOP</div>
-        <div data-field="bossStatus"></div>
         <div class="s4-hint" data-field="hint"></div>
         <div class="s4-shop" data-field="shop"></div>
         <div class="s4-roster" data-field="roster"></div>
@@ -684,53 +1551,46 @@ function renderStage4(ctx) {
     </div>
     <ol class="s4-log"></ol>
     <div class="s4-controls">
-      <button type="button" data-action="start-wave">start wave</button>
-      <button type="button" data-action="confront" hidden>confront The Infinite Loop</button>
+      ${isBoss ? "" : `
+        <button type="button" data-action="start-wave">start wave</button>
+        <button type="button" data-action="call-early" hidden>call next wave (+${CALL_EARLY_BONUS})</button>
+        <button type="button" data-action="speed">speed 1×</button>`}
+      ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ""}
       <button type="button" data-action="blueprint">open recursion_points.json</button>
-      <button type="button" data-action="bts" hidden>open fractal_bastion.bts</button>
     </div>
   `;
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const log = root.querySelector(".s4-log");
+  const logEl = root.querySelector(".s4-log");
   const board = root.querySelector(".s4-board");
-  const completeOnce = once((result) => onStageComplete?.(result));
   let selected = "pulse_node";
-  let path = rebuildPath();
+  let speed = 1;
   let raf = null;
   let lastPersistMs = -Infinity;
-  function rebuildPath() {
-    return buildPath(state.recursion?.pointSetId || "x", waveGroupDepth(state.waveNumber || 1));
-  }
+  let alive = true;
+  let path = buildPath(isBoss ? state.recursion?.pointSetId || "x" : mapPathSeed(state.recursion?.pointSetId, mapIndex), isBoss ? 3 : map.depth);
+  if (!Number.isFinite(state.wavePeak)) state.wavePeak = state.waveNumber || 1;
   function checkpointWave(overrides) {
-    if (run && typeof run.checkpoint === "function") {
-      run.checkpoint({ ...snapshotWave(state), ...overrides, runTag: run.seed });
-    }
+    controller.checkpointWave?.({ ...snapshotWave(state), ...overrides });
   }
   function endWaveSnapshot() {
-    checkpointWave({ waveActive: false });
-    if (run && typeof run.flush === "function") run.flush();
-  }
-  function persistNow() {
-    if (run && typeof run.flush === "function") run.flush();
-    save?.();
+    controller.endWaveSnapshot?.();
   }
   function repaint() {
-    const lock = getBossLockState({ actions, state });
-    const atBoss = (state.waveNumber || 1) >= FINAL_WAVE && !state.boss.defeated;
+    if (!alive) return;
+    const lock = getBossLockState({ actions: controller.actions, state });
     fields.cycles.textContent = String(state.cycles);
-    fields.integrity.textContent = String(state.integrity);
-    fields.wave.textContent = `${Math.min(state.waveNumber || 1, FINAL_WAVE)}/${FINAL_WAVE}`;
-    fields.coverage.textContent = `${lock.coveredPoints}/${lock.totalPoints}`;
-    fields.bossStatus.textContent = `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / hp ${state.boss.hp}`;
-    fields.hint.textContent = lock.hint;
+    fields.integrity.textContent = `${state.integrity}/${state.maxIntegrity || state.integrity}`;
+    fields.progress.textContent = isBoss ? `${lock.coveredPoints}/${lock.totalPoints}` : `${Math.min(state.waveNumber || 1, map.waveCount)}/${map.waveCount}`;
+    fields.hint.textContent = isBoss ? lock.hint : state.waveActive ? "hold the line — call the next wave early for bonus cycles" : "place towers, then start the wave";
     fields.shop.replaceChildren(...shopRows());
     fields.roster.replaceChildren(...rosterRows());
     board.textContent = boardText(state, path.tiles);
-    root.querySelector('[data-action="start-wave"]').hidden = atBoss || state.boss.defeated;
-    root.querySelector('[data-action="confront"]').hidden = !atBoss;
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
-    log.replaceChildren(...(state.log || []).slice(-6).map((line) => {
+    if (!isBoss) {
+      root.querySelector('[data-action="call-early"]').hidden = !state.waveActive || (state.wavePeak || 1) >= map.waveCount;
+      root.querySelector('[data-action="speed"]').textContent = `speed ${speed}×`;
+    }
+    logEl.replaceChildren(...(state.log || []).slice(-6).map((line) => {
       const li = document.createElement("li");
       li.textContent = line;
       return li;
@@ -748,29 +1608,69 @@ function renderStage4(ctx) {
   }
   function rosterRows() {
     return (state.towers || []).map((tower) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.towerId = tower.id;
+      const wrap = document.createElement("div");
+      wrap.className = "s4-roster-row";
       const def = TOWER_TYPES[tower.type] || {};
-      const aoe = def.aoe ? " (aoe)" : "";
-      btn.textContent = `${def.glyph || "[?]"} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}${aoe}`;
-      return btn;
+      const level = tower.level || 1;
+      const tgt = document.createElement("button");
+      tgt.type = "button";
+      tgt.dataset.towerId = tower.id;
+      tgt.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}`;
+      wrap.append(tgt);
+      if (level < 3) {
+        const up = document.createElement("button");
+        up.type = "button";
+        up.dataset.upgradeId = tower.id;
+        up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
+        wrap.append(up);
+      } else if (!tower.fork && forksFor(tower.type).length) {
+        for (const f of forksFor(tower.type)) {
+          const fb = document.createElement("button");
+          fb.type = "button";
+          fb.className = "s4-fork-btn";
+          fb.dataset.forkId = tower.id;
+          fb.dataset.forkChoice = f.id;
+          fb.textContent = `⑂ ${f.label}`;
+          fb.title = f.desc;
+          wrap.append(fb);
+        }
+      } else if (tower.fork) {
+        const tag = document.createElement("span");
+        tag.className = "s4-fork-tag";
+        tag.textContent = `⑂ ${forkDef(tower)?.label || tower.fork}`;
+        wrap.append(tag);
+      }
+      return wrap;
     });
   }
   function startWaveAction() {
-    if (state.waveActive || state.boss.defeated || (state.waveNumber || 1) >= FINAL_WAVE) return;
-    path = rebuildPath();
+    if (isBoss || state.waveActive || (state.waveNumber || 1) > map.waveCount) return;
     startWave(state, state.waveNumber, path.tiles);
+    state.wavePeak = state.waveNumber;
     lastPersistMs = -Infinity;
     checkpointWave();
-    persistNow();
+    controller.persist?.();
     runLoop();
+  }
+  function callEarly() {
+    if (isBoss || !state.waveActive || (state.wavePeak || 1) >= map.waveCount) return;
+    state.wavePeak = (state.wavePeak || state.waveNumber) + 1;
+    queueWave(state, state.wavePeak);
+    state.cycles = (state.cycles || 0) + CALL_EARLY_BONUS;
+    pushLog(state, `wave ${state.wavePeak} called early (+${CALL_EARLY_BONUS} cycles).`);
+    checkpointWave();
+    repaint();
+  }
+  function setSpeed(n) {
+    speed = SPEEDS.includes(Number(n)) ? Number(n) : SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length];
+    repaint();
+    return speed;
   }
   function runLoop() {
     stopLoop();
     let last = null;
-    const step = (ts) => {
-      const dt = last == null ? 16 : Math.min(100, ts - last);
+    const stepFn = (ts) => {
+      const dt = (last == null ? 16 : Math.min(100, ts - last)) * speed;
       last = ts;
       tick(state, dt, path.tiles);
       checkpointWave();
@@ -780,12 +1680,12 @@ function renderStage4(ctx) {
       }
       if ((state.combatClockMs || 0) - lastPersistMs >= PERSIST_THROTTLE_MS) {
         lastPersistMs = state.combatClockMs;
-        save?.();
+        controller.persist?.();
       }
       repaint();
-      raf = requestAnimationFrame(step);
+      raf = requestAnimationFrame(stepFn);
     };
-    raf = requestAnimationFrame(step);
+    raf = requestAnimationFrame(stepFn);
   }
   function stopLoop() {
     if (raf != null) {
@@ -798,45 +1698,89 @@ function renderStage4(ctx) {
       stopLoop();
       pushLog(state, "integrity collapsed — the bastion folds.");
       endWaveSnapshot();
+      controller.onWaveFailed?.();
       repaint();
-      save?.();
+      controller.persist?.();
       return true;
     }
     if (waveComplete(state)) {
-      onWaveCleared();
+      const cleared = creditWaves();
       endWaveSnapshot();
+      controller.persist?.();
+      if (cleared) {
+        stopLoop();
+        controller.rerender();
+        return true;
+      }
       repaint();
-      save?.();
       return true;
     }
     return false;
   }
-  function onWaveCleared() {
-    const prevDepth = waveGroupDepth(state.waveNumber);
-    state.waveNumber = (state.waveNumber || 1) + 1;
-    state.integrity = Math.min(100, (state.integrity || 0) + 10);
-    if (waveGroupDepth(state.waveNumber) !== prevDepth) path = rebuildPath();
+  function creditWaves() {
+    const target = Math.max(state.wavePeak || state.waveNumber, state.waveNumber);
+    let cleared = false;
+    while ((state.waveNumber || 1) <= target && !cleared) {
+      const r = controller.recordWaveCleared();
+      if (r.mapCleared) cleared = true;
+    }
+    if (!cleared) state.wavePeak = state.waveNumber;
+    return cleared;
   }
   function confront() {
-    if ((state.waveNumber || 1) < FINAL_WAVE) return;
-    const result = fightInfiniteLoop({ state, actions });
+    if (!isBoss) return null;
+    const result = fightInfiniteLoop({ state, actions: controller.actions });
     if (result.defeated) {
-      if (run && typeof run.reset === "function") run.reset();
-      completeOnce({ stage: 4, defeated: true, btsPath: BTS_PATH });
+      controller.onBossWin();
+      return result;
     }
+    repaint();
+    controller.persist?.();
+    return result;
   }
   function place(x, y, type) {
     const r = placeTower(state, { x, y, type: type || selected });
     repaint();
-    save?.();
+    controller.persist?.();
     return r;
   }
+  function cycleTarget(id) {
+    const m = cycleTowerTarget(state, id);
+    repaint();
+    controller.persist?.();
+    return m;
+  }
+  function upgrade(id) {
+    const r = upgradeTower(state, id);
+    repaint();
+    controller.persist?.();
+    return r;
+  }
+  function pickFork(id, forkId) {
+    const r = chooseFork(state, id, forkId);
+    repaint();
+    controller.persist?.();
+    return r;
+  }
+  function setWave(n) {
+    state.waveNumber = Math.max(1, Math.trunc(n) || 1);
+    state.wavePeak = state.waveNumber;
+    repaint();
+  }
   root.addEventListener("click", (event) => {
+    const upBtn = event.target.closest("button[data-upgrade-id]");
+    if (upBtn) {
+      upgrade(upBtn.dataset.upgradeId);
+      return;
+    }
+    const forkBtn = event.target.closest("button[data-fork-id]");
+    if (forkBtn) {
+      pickFork(forkBtn.dataset.forkId, forkBtn.dataset.forkChoice);
+      return;
+    }
     const rosterBtn = event.target.closest("button[data-tower-id]");
     if (rosterBtn) {
-      cycleTowerTarget(state, rosterBtn.dataset.towerId);
-      repaint();
-      save?.();
+      cycleTarget(rosterBtn.dataset.towerId);
       return;
     }
     const towerBtn = event.target.closest("button[data-tower]");
@@ -856,20 +1800,25 @@ function renderStage4(ctx) {
       case "start-wave":
         startWaveAction();
         break;
+      case "call-early":
+        callEarly();
+        break;
+      case "speed":
+        setSpeed();
+        break;
       case "confront":
         confront();
         break;
-      case "blueprint":
-        viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { mime: "application/json", source: "stage4" });
+      case "leave":
+        stopLoop();
+        controller.leaveCombat?.();
         break;
-      case "bts":
-        bts?.open?.(4);
+      case "blueprint":
+        controller.openBlueprint?.();
         break;
       default:
-        return;
+        break;
     }
-    save?.();
-    repaint();
   });
   function boardCell(event) {
     if (!event.target.closest(".s4-board")) return null;
@@ -881,53 +1830,295 @@ function renderStage4(ctx) {
     if (x < 0 || y < 0 || x >= cols || y >= rows) return null;
     return { x, y };
   }
-  window.__fvStage4 = {
-    state: () => state,
-    startWave: startWaveAction,
-    // Advance the active wave synchronously (no rAF) for deterministic headless testing.
-    advance(ms = 2e4, dt = 100) {
-      let t = 0;
-      while (t < ms && state.waveActive) {
-        tick(state, dt, path.tiles);
-        checkpointWave();
-        if (settleWave()) break;
-        t += dt;
-      }
-      repaint();
+  if (!isBoss && state.waveActive && (state.waveNumber || 1) <= map.waveCount) runLoop();
+  repaint();
+  return {
+    repaint,
+    destroy() {
+      alive = false;
+      stopLoop();
+      root.remove();
     },
-    setWave(n) {
-      state.waveNumber = Math.max(1, Math.trunc(n) || 1);
-      path = rebuildPath();
-      repaint();
-    },
-    place,
-    cycleTarget(id) {
-      const m = cycleTowerTarget(state, id);
-      repaint();
-      return m;
-    },
-    confront
+    hook: {
+      // Synchronous wave runner for the headless smoke (no rAF).
+      advance(ms = 3e4, dt = 100) {
+        let t = 0;
+        while (t < ms && state.waveActive) {
+          tick(state, dt * speed, path.tiles);
+          checkpointWave();
+          if (settleWave()) break;
+          t += dt;
+        }
+        if (alive) repaint();
+      },
+      startWave: startWaveAction,
+      callEarly,
+      setSpeed,
+      place,
+      cycleTarget,
+      upgrade,
+      pickFork,
+      setWave,
+      confront
+    }
   };
+}
+
+// ../../docs/games/metagame/stages/stage4/ui-campaign.js
+function renderMapSelect(host, controller) {
+  const state = controller.state;
+  const root = document.createElement("section");
+  root.className = "stage4-mapselect";
+  const won = state.campaign.status === "won" || state.boss?.defeated;
+  function repaint() {
+    const prog = campaignProgress(state);
+    const bossReady = bossUnlocked(state);
+    root.innerHTML = `
+      <header class="s4-hud"><strong>FRACTAL BASTION — CAMPAIGN</strong>
+        <span>GLORY ${state.campaign.glory}</span>
+        <span>MAPS ${prog.cleared}/${prog.total}</span>
+      </header>
+      <p class="s4-hint">${won ? "The Infinite Loop has stopped. The bastion holds." : "Clear each map to unlock the next. The Infinite Loop opens only when all five are held."}</p>
+      <ol class="s4-maplist">
+        ${MAPS.map((m, i) => mapRow(m, i)).join("")}
+      </ol>
+      <div class="s4-controls">
+        <button type="button" data-action="boss" ${bossReady ? "" : "disabled"}>${won ? "The Infinite Loop (cleared)" : "confront The Infinite Loop"}</button>
+        ${won ? '<button type="button" data-action="bts">open fractal_bastion.bts</button>' : ""}
+      </div>`;
+  }
+  function mapRow(m, i) {
+    const unlocked = mapUnlocked(state, i);
+    const cleared = mapCleared(state, i);
+    const status = cleared ? "CLEARED" : unlocked ? "OPEN" : "LOCKED";
+    return `<li class="s4-maprow ${cleared ? "is-cleared" : unlocked ? "is-open" : "is-locked"}">
+      <span class="s4-mapglyph">${m.glyph}</span>
+      <span class="s4-mapname">${m.name}</span>
+      <span class="s4-mapwaves">${m.waveCount} waves</span>
+      <span class="s4-maptheme">${m.theme}</span>
+      <span class="s4-mapstatus">${status}</span>
+      <button type="button" data-select="${i}" ${unlocked ? "" : "disabled"}>${cleared ? "replay" : "enter"}</button>
+    </li>`;
+  }
+  root.addEventListener("click", (event) => {
+    const sel = event.target.closest("button[data-select]");
+    if (sel) {
+      controller.selectMap(Number(sel.dataset.select));
+      return;
+    }
+    const action = event.target.closest("button[data-action]");
+    if (!action) return;
+    if (action.dataset.action === "boss" && allMapsCleared(state)) controller.enterBoss();
+    else if (action.dataset.action === "bts") controller.openBts();
+  });
+  repaint();
+  host.replaceChildren(root);
+  return { repaint, destroy() {
+    root.remove();
+  } };
+}
+function renderArmory(host, controller) {
+  const state = controller.state;
+  const root = document.createElement("section");
+  root.className = "stage4-armory";
+  function repaint() {
+    root.innerHTML = `
+      <header class="s4-hud"><strong>⚙ THE ARMORY</strong><span>GLORY ${state.campaign.glory}</span></header>
+      <p class="s4-hint">Map cleared. Spend Glory on permanent campaign upgrades, then advance.</p>
+      <ol class="s4-armorylist">${ARMORY_UPGRADES.map((u) => armoryRow(u)).join("")}</ol>
+      <div class="s4-controls"><button type="button" data-action="continue">continue →</button></div>`;
+  }
+  function armoryRow(u) {
+    const lvl = armoryLevel(state.campaign, u.id);
+    const cost = armoryCost(state.campaign, u.id);
+    const maxed = lvl >= u.maxLevel;
+    const afford = canBuyArmory(state.campaign, u.id);
+    return `<li class="s4-armoryrow">
+      <span class="s4-armoryname">${u.label} <em>Lv ${lvl}/${u.maxLevel}</em></span>
+      <span class="s4-armorydesc">${u.desc}</span>
+      <button type="button" data-buy="${u.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAX" : `buy (${cost})`}</button>
+    </li>`;
+  }
+  root.addEventListener("click", (event) => {
+    const buy = event.target.closest("button[data-buy]");
+    if (buy) {
+      const r = controller.buyArmory(buy.dataset.buy);
+      if (r?.ok) repaint();
+      return;
+    }
+    if (event.target.closest('button[data-action="continue"]')) controller.leaveArmory();
+  });
+  repaint();
+  host.replaceChildren(root);
+  return { repaint, destroy() {
+    root.remove();
+  } };
+}
+
+// ../../docs/games/metagame/stages/stage4/renderer.js
+function renderStage4(ctx) {
+  const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
+  ensureCampaign(state);
+  ensureStyles();
+  const root = document.createElement("section");
+  root.className = "stage4-fractal-bastion";
+  root.innerHTML = '<div class="s4-screen" data-screen></div>';
+  host.replaceChildren(root);
+  const screen = root.querySelector("[data-screen]");
+  const completeOnce = once((result) => onStageComplete?.(result));
+  let active = null;
+  function persistNow() {
+    run?.flush?.();
+    save?.();
+  }
+  function checkpointWave(snap) {
+    if (run?.checkpoint) run.checkpoint({ ...snap, runTag: run.seed });
+  }
+  function endWaveSnapshot() {
+    checkpointWave({ ...snapshotWave(state), waveActive: false });
+    run?.flush?.();
+  }
+  const controller = {
+    state,
+    actions,
+    persist: persistNow,
+    checkpointWave,
+    endWaveSnapshot,
+    openBlueprint() {
+      viewer?.openFile?.(RECURSION_BLUEPRINT_PATH, { mime: "application/json", source: "stage4" });
+    },
+    openBts() {
+      bts?.open?.(4);
+    },
+    selectMap(i) {
+      const r = selectMap(state, i);
+      if (r.ok) {
+        persistNow();
+        render();
+      }
+      return r;
+    },
+    recordWaveCleared() {
+      const r = recordWaveCleared(state);
+      save?.();
+      return r;
+    },
+    leaveArmory() {
+      leaveArmory(state);
+      save?.();
+      render();
+    },
+    leaveCombat() {
+      ensureCampaign(state).status = "map-select";
+      persistNow();
+      render();
+    },
+    buyArmory(id) {
+      const r = buyArmory(state.campaign, id);
+      if (r.ok) {
+        save?.();
+        active?.repaint?.();
+      }
+      return r;
+    },
+    enterBoss() {
+      const r = enterBoss(state);
+      if (r.ok) {
+        run?.reset?.();
+        persistNow();
+        render();
+      }
+      return r;
+    },
+    onBossWin() {
+      winCampaign(state);
+      run?.reset?.();
+      persistNow();
+      render();
+      completeOnce({ stage: 4, defeated: true, btsPath: BTS_PATH });
+    },
+    onWaveFailed() {
+    },
+    rerender() {
+      render();
+    },
+    // debug-only (smoke); never a player affordance
+    seatAtBoss() {
+      seatAtBoss(state);
+      persistNow();
+      render();
+    },
+    debugClearMap() {
+      debugClearMap(state);
+      save?.();
+      render();
+    }
+  };
+  function destroyActive() {
+    if (active?.destroy) active.destroy();
+    active = null;
+  }
+  function render() {
+    destroyActive();
+    const status = state.campaign.status;
+    if (status === "combat") active = mountCombat({ host: screen, state, controller, mode: "map" });
+    else if (status === "boss") active = mountCombat({ host: screen, state, controller, mode: "boss" });
+    else if (status === "armory") active = renderArmory(screen, controller);
+    else active = renderMapSelect(screen, controller);
+    refreshHook();
+  }
+  if (state.campaign.status === "combat" && run) {
+    const snap = run.restore();
+    if (snap && snap.runTag === run.seed && snap.waveActive && !state.boss?.defeated) restoreWave(state, snap);
+  }
+  function refreshHook() {
+    window.__fvStage4 = {
+      state: () => state,
+      status: () => state.campaign.status,
+      selectMap: (i) => controller.selectMap(i),
+      startWave: () => active?.hook?.startWave?.(),
+      advance: (ms, dt) => active?.hook?.advance?.(ms, dt),
+      callEarly: () => active?.hook?.callEarly?.(),
+      setSpeed: (n) => active?.hook?.setSpeed?.(n),
+      place: (x, y, t) => active?.hook?.place?.(x, y, t),
+      setWave: (n) => active?.hook?.setWave?.(n),
+      cycleTarget: (id) => active?.hook?.cycleTarget?.(id),
+      upgrade: (id) => active?.hook?.upgrade?.(id),
+      pickFork: (id, forkId) => active?.hook?.pickFork?.(id, forkId),
+      confront: () => active?.hook?.confront?.(),
+      buyArmory: (id) => controller.buyArmory(id),
+      leaveArmory: () => controller.leaveArmory(),
+      enterBoss: () => controller.enterBoss(),
+      seatAtBoss: () => controller.seatAtBoss(),
+      debugClearMap: () => controller.debugClearMap(),
+      bossUnlocked: () => bossUnlocked(state)
+    };
+  }
   const onHide = () => {
     if (typeof document === "undefined" || document.visibilityState === "hidden") persistNow();
   };
   if (typeof document !== "undefined") document.addEventListener("visibilitychange", onHide);
   if (typeof window !== "undefined") window.addEventListener("pagehide", persistNow);
-  if (state.waveActive && !state.boss.defeated && (state.waveNumber || 1) < FINAL_WAVE) {
-    path = rebuildPath();
-    runLoop();
-  }
-  repaint();
+  render();
   return {
-    repaint,
+    repaint: () => active?.repaint?.(),
     destroy() {
-      stopLoop();
+      destroyActive();
       if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onHide);
       if (typeof window !== "undefined") window.removeEventListener("pagehide", persistNow);
       if (window.__fvStage4) delete window.__fvStage4;
       root.remove();
     }
   };
+}
+function ensureStyles() {
+  const id = "stage4-fractal-bastion-styles";
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = new URL("./styles.css", import.meta.url).href;
+  document.head.append(link);
 }
 function once(fn) {
   let called = false;
@@ -952,17 +2143,10 @@ function defaultState2(context) {
 }
 function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
-  ensureStyles();
+  ensureStyles2();
   if (hasRecursionBlueprint(ctx.actions)) state.log = [...state.log, "recursion blueprint already read."].slice(-8);
   const saveData = ctx.orchestrator?.save;
   const run = saveData ? createRun({ save: saveData, stageId: 4, slot: "runwave", debounceMs: 0 }) : null;
-  if (run) {
-    const snap = run.restore();
-    if (snap && snap.runTag === run.seed && snap.waveActive && !state.boss?.defeated) {
-      restoreWave(state, snap);
-      state.log = [...state.log, "wave resumed mid-flight."].slice(-8);
-    }
-  }
   const view = renderStage4({ ...ctx, state, run });
   return {
     repaint: view.repaint,
@@ -972,7 +2156,7 @@ function mountStage(ctx) {
     }
   };
 }
-function ensureStyles() {
+function ensureStyles2() {
   const id = "stage4-fractal-bastion-styles";
   if (document.getElementById(id)) return;
   const link = document.createElement("link");

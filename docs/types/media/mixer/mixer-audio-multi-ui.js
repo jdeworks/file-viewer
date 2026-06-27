@@ -80,29 +80,36 @@ export function addGeneratedLane(project, kind, label, roomTone) {
 
 // --- Bespoke clip-lane helpers (used by mountModularAudioMixer) ---
 
-// Build the flat "clip view" that createClipLane.update() expects.
-// pxPerSec: pass viewport.pxPerMs * 1000 so the lane can stretch its canvas to the zoom level.
-export function buildClipView(project, laneId, cursorMs, pxPerSec = 0) {
-  const element = firstElementForLane(project, laneId);
-  if (!element) return null;
+// Build the multi-clip lane view createClipLane.update() expects: ALL elements on the lane become
+// positioned clips (so a Cut/split shows both segments). Top-level fields are lane-wide; per-clip
+// fields live in `clips`.
+export function buildLaneClips(project, laneId, cursorMs, pxPerSec = 0) {
+  const elements = (project.elements || []).filter((element) => element.laneId === laneId);
+  if (!elements.length) return null;
   const durationMs = Math.max(1000, project.project?.durationMs || 1000);
-  const rawDur = element.timeline.rawDurationMs || element.timeline.durationMs || durationMs;
-  const inMs = element.timeline.sourceInMs || 0;
-  const outMs = element.timeline.sourceOutMs || rawDur;
-  const lenMs = Math.max(1, outMs - inMs);
+  const clips = elements.map((element) => {
+    const rawDur = element.timeline.rawDurationMs || element.timeline.durationMs || durationMs;
+    const inMs = element.timeline.sourceInMs || 0;
+    const outMs = element.timeline.sourceOutMs || rawDur;
+    const lenMs = Math.max(1, outMs - inMs);
+    return {
+      id: element.id,
+      startSec: (element.timeline.startMs || 0) / 1000,
+      lenSec: lenMs / 1000,
+      sourceInFrac: inMs / Math.max(1, rawDur),
+      sourceOutFrac: outMs / Math.max(1, rawDur),
+      fadeInSec: (element.audio?.fadeInMs || 0) / 1000,
+      fadeOutSec: (element.audio?.fadeOutMs || 0) / 1000,
+      summary: element.analysis?.waveformSummary || null,
+      selected: project.selection?.primary?.id === element.id,
+    };
+  });
   return {
     timelineSec: durationMs / 1000,
-    startSec: (element.timeline.startMs || 0) / 1000,
-    lenSec: lenMs / 1000,
-    sourceInFrac: inMs / Math.max(1, rawDur),
-    sourceOutFrac: outMs / Math.max(1, rawDur),
     cursorSec: (cursorMs || 0) / 1000,
     cursorLabel: fmtTime((cursorMs || 0) / 1000),
-    fadeInSec: (element.audio?.fadeInMs || 0) / 1000,
-    fadeOutSec: (element.audio?.fadeOutMs || 0) / 1000,
-    summary: element.analysis?.waveformSummary || null,
-    selected: project.selection?.primary?.id === element.id,
     pxPerSec,
+    clips,
   };
 }
 
@@ -355,7 +362,7 @@ export function buildSelectionPanel({ getProject, setProject, getClipLanes, getV
     const elem = p.elements.find((e) => e.id === elementId);
     if (!elem) return;
     const lane = getClipLanes().get(elem.laneId);
-    if (lane) lane.update(buildClipView(p, elem.laneId, getViewport().cursorMs));
+    if (lane) lane.update(buildLaneClips(p, elem.laneId, getViewport().cursorMs, getViewport().pxPerMs * 1000));
   }
 
   function rebuildPanel(element) {

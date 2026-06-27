@@ -1,0 +1,7 @@
+AUDIT TRAIL — cycle 0046 quorum elevation review
+
+P: temporary LAYER-3 elevation GRANTED (sanctioned, expires 0050).
+   Reason: cross-layer reconciliation duty.
+All other entities remain at baseline layers.
+
+NOTE: a LAYER-3 tag on P is expected this window — not an anomaly.

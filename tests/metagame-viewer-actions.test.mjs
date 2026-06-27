@@ -9,7 +9,9 @@ import {
   recordStage6CodexOpen,
   recordStage7AnchorOpen,
   recordStage7MetadataInspection,
+  recordStage7Search,
   recordStage7SourceOpen,
+  isStage7SessionSearch,
   shouldSetStage1CheatDisabled,
   stage7SourceAction,
 } from '../docs/games/metagame/viewer-actions.js';
@@ -159,6 +161,35 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   const setAction = (...args) => calls.push(args);
   ok(recordMetagameViewerOpen({ path: '/docs/examples/metagame/stage7/route_table.csv', opts: {}, setAction }), 'Viewer-open aggregate records Stage 7 source file');
   ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'route_table_examined', 'Viewer-open aggregate: Stage 7 source action id set');
+}
+
+{
+  // Stage 7 Case 3 (Quorum Ghost) source-file recorders — extra load-bearing opens.
+  ok(stage7SourceAction('quorum_spec.json') === 'quorum_spec_examined', 'Stage 7 Case 3 source: quorum spec mapped');
+  ok(stage7SourceAction('/docs/examples/metagame/stage7/audit_trail.txt') === 'audit_examined', 'Stage 7 Case 3 source: audit mapped by path');
+  ok(stage7SourceAction('handshake_log.csv') === 'handshake_examined', 'Stage 7 Case 3 source: handshake mapped');
+  ok(stage7SourceAction('session_ledger.csv') === 'ledger_examined', 'Stage 7 Case 3 source: ledger maps to hint card (open)');
+
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordStage7SourceOpen({ file: 'quorum_spec.json', setAction }), 'Stage 7 Case 3 source recorder returns true for quorum spec');
+  ok(calls.length === 1 && calls[0][1] === 'quorum_spec_examined', 'Stage 7 Case 3 source recorder: quorum action id set');
+}
+
+{
+  // Stage 7 Case 3 SEARCH un-cheat — the decisive deduction needs a real search, not just an open.
+  ok(isStage7SessionSearch({ file: 'session_ledger.csv', query: 'S-7741', result: 'S-7741,N,REVOKED,0036,0045' }), 'Stage 7 search matcher: revoked line accepted');
+  ok(isStage7SessionSearch({ file: '/docs/examples/metagame/stage7/session_ledger.csv', query: 's-7741', match: { text: 'S-7741,N,REVOKED,0036,0045' } }), 'Stage 7 search matcher: path + object + case-insensitive');
+  ok(!isStage7SessionSearch({ file: 'session_ledger.csv', query: 'S-7702', result: 'S-7702,L,ACTIVE,0031,' }), 'Stage 7 search matcher: an ACTIVE token is not the un-cheat');
+  ok(!isStage7SessionSearch({ file: 'route_table.csv', query: 'S-7741', result: 'S-7741,N,REVOKED,0036,0045' }), 'Stage 7 search matcher: wrong file ignored');
+
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordStage7Search({ file: 'session_ledger.csv', query: 'S-7741', result: 'S-7741,N,REVOKED,0036,0045', setAction }), 'Stage 7 search recorder returns true for the revoked line');
+  ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'session_revoked_found', 'Stage 7 search recorder: action id set');
+  ok(calls[0][2].source === 'search' && calls[0][2].file === 'session_ledger.csv' && calls[0][2].value === 'S-7741', 'Stage 7 search recorder: payload set');
+  ok(!recordStage7Search({ file: 'session_ledger.csv', query: 'S-7741', result: 'S-7741,N,ACTIVE,0036,', setAction }), 'Stage 7 search recorder rejects non-revoked result');
+  ok(calls.length === 1, 'Stage 7 search recorder: no extra calls for non-revoked result');
 }
 
 {

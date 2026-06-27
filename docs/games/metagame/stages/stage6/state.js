@@ -19,7 +19,15 @@ export function defaultState() {
       runsStarted: 0,
       runsCleared: 0,
       bestAct: 0,
-      firstClearComplete: false
+      firstClearComplete: false,
+      // Self-competition run scoring (local-only): a run's score = handshakes + acts cleared + HP,
+      // bonused by ascension. bestScore is the all-time high; dailyBest maps a daily/custom seed key
+      // to its best score so a player can chase their own seed.
+      bestScore: 0,
+      lastScore: 0,
+      lastMode: null,
+      lastSeedKey: null,
+      dailyBest: {}
     },
     handshakes: 0,          // legacy mirror the boss reward writes to
     boss: {

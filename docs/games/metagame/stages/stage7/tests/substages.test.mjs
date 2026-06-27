@@ -65,6 +65,10 @@ import { defaultState } from "../state.js";
   assert.equal(state.evidence.chainBroken, true);
   assert.equal(state.substage, SUBSTAGE.ACCUSE, "breaking the chain opens Case 2 (the accusation)");
   assert.equal(markChainBroken({ state }).already, true, "idempotent");
+  // Continuity: closing Case 1 promotes its four deductions onto the board as established facts.
+  const case1 = state.board.established.filter((f) => f.id.startsWith("case1:"));
+  assert.equal(case1.length, 4, "all four Case-1 deductions carried onto the board");
+  assert.equal(state.evidence.case1Carried, true);
 }
 
 console.log("stage7 substages tests passed");

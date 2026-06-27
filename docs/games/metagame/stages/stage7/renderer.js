@@ -5,9 +5,10 @@ import {
   flagField,
   markImpossible
 } from "./substages.js";
-import { accuseFromBoard, ensureCase2 } from "./accusation.js";
-import { getCard, setPinned, togglePin } from "./evidence-board.js";
+import { accuseFromBoard, ensureCase2, ensureCase3 } from "./accusation.js";
+import { togglePin } from "./evidence-board.js";
 import { renderAccusation } from "./board-render.js";
+import { installStage7Hook, removeStage7Hook } from "./test-hook.js";
 import {
   ambientFacts,
   candidates,
@@ -20,19 +21,25 @@ import {
 import {
   BTS_PATH,
   CASE2_SOURCE_PATHS,
+  CASE3_SOURCE_PATHS,
+  CASE3_SEARCH_PATH,
+  CASE3_SEARCH_QUERY,
   ENTITY_ANCHOR_PATH,
   ENTITY_F_IMAGE_PATH,
   ENTITY_METADATA_SIDECAR_PATH,
   substageHints
 } from "./messages.js";
 
+const SOURCE_PATHS = { ...CASE2_SOURCE_PATHS, ...CASE3_SOURCE_PATHS };
+
 const SUBSTAGE_LABEL = {
-  1: "1/6 CREDENTIAL SCAN",
-  2: "2/6 DUPLICATE TEST",
-  3: "3/6 TIMELINE AUDIT",
-  4: "4/6 REFERENCE CHASE",
-  5: "5/6 DUPLICATE ROSTER",
-  6: "6/6 EXIF ARBITER (BOSS)"
+  1: "1/7 CREDENTIAL SCAN",
+  2: "2/7 DUPLICATE TEST",
+  3: "3/7 TIMELINE AUDIT",
+  4: "4/7 REFERENCE CHASE",
+  5: "5/7 DUPLICATE ROSTER",
+  6: "6/7 QUORUM GHOST",
+  7: "7/7 EXIF ARBITER (BOSS)"
 };
 
 export function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
@@ -66,9 +73,10 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     else if (d.diff) diffField({ state, fieldName: d.diff });
     else if (d.ev) markImpossible({ state, evId: d.ev });
     else if (d.pin) togglePin(state, d.pin);
-    else if (d.accuse) accuseFromBoard(state);
+    else if (d.accuse) accuseFromBoard(state, Number(d.accuse));
     else if (d.commit) commitBoss(d.commit);
     else if (d.action === "open-source") openSource(d.source);
+    else if (d.action === "search-source") searchSource();
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
     else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
     else if (d.action === "bts") openBts({ bts, viewer });
@@ -77,36 +85,15 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
 
   repaint();
 
-  // TEST/DEBUG hook: fast-forwards in-game deductions; real viewer file-opens still gate progress.
-  window.__fvStage7 = {
-    state: () => state,
-    solveInvestigation() {
-      for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: entityFields[id].find((f) => f.wrong).id });
-      diffField({ state, fieldName: "GPSInfo" });
-      markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
-      persistAndPaint();
-      return state.substage;
-    },
-    // Case 2: pins the correct triad and accuses. The route fact only exists after a REAL
-    // route_table.csv open, so this returns ok:false until the file is opened (load-bearing).
-    solveCase2() {
-      ensureCase2(state);
-      const ids = ["entity:K", "field:K:route", "fact:route"];
-      if (!ids.every((id) => getCard(state, id))) {
-        persistAndPaint();
-        return { ok: false, reason: "route-fact-not-opened", substage: state.substage };
-      }
-      for (const id of ids) setPinned(state, id, true);
-      const result = accuseFromBoard(state);
-      persistAndPaint();
-      return { ...result, substage: state.substage };
-    }
-  };
+  // TEST/DEBUG hook (split into test-hook.js): fast-forwards in-game deductions; real viewer
+  // file-opens / searches still gate progress (Case 2 needs the route table opened; Case 3 the ledger
+  // searched).
+  installStage7Hook({ state, persistAndPaint });
 
   return {
     repaint,
     destroy() {
-      if (window.__fvStage7) delete window.__fvStage7;
+      removeStage7Hook();
       root.remove();
     }
   };
@@ -139,13 +126,24 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
     if (state.substage === SUBSTAGE.DUP) return main.replaceChildren(renderDup());
     if (state.substage === SUBSTAGE.TIMELINE) return main.replaceChildren(renderTimeline());
     if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
-    if (state.substage === SUBSTAGE.ACCUSE) { ensureCase2(state); return main.replaceChildren(renderAccusation(state)); }
+    if (state.substage === SUBSTAGE.ACCUSE) { ensureCase2(state); return main.replaceChildren(renderAccusation(state, 2)); }
+    if (state.substage === SUBSTAGE.ACCUSE3) { ensureCase3(state); return main.replaceChildren(renderAccusation(state, 3)); }
     return main.replaceChildren(renderBoss(lock));
   }
 
   function openSource(action) {
-    const path = CASE2_SOURCE_PATHS[action];
+    const path = SOURCE_PATHS[action];
     if (path) openInViewer(path, { source: "stage7" });
+  }
+
+  // Case 3 SEARCH un-cheat: run a REAL viewer search of the session ledger. The decisive fact card is
+  // minted via recordStage7Search → action 7.session_revoked_found → index.js subscription, never here.
+  function searchSource() {
+    if (viewer && typeof viewer.searchViewerFile === "function") {
+      viewer.searchViewerFile(CASE3_SEARCH_PATH, CASE3_SEARCH_QUERY, { source: "stage7" });
+    } else if (viewer && typeof viewer.searchFile === "function") {
+      viewer.searchFile(CASE3_SEARCH_PATH, CASE3_SEARCH_QUERY, { source: "stage7" });
+    }
   }
 
   function renderScan() {

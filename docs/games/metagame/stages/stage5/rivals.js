@@ -33,7 +33,7 @@ function rollSkill(rng) {
 
 // Build one ghost: walk the (looping) table, choosing a lane each decision window and accumulating
 // distance until raceLength. Slows on a block, speeds up through a boost gate (scaled by aggression).
-function buildGhost({ rng, skill, table, raceLength, tickCap }) {
+function buildGhost({ rng, skill, table, raceLength, tickCap, speedMult = 1 }) {
   const len = Math.max(1, table.length);
   const lane = [];
   const distance = [];
@@ -53,7 +53,7 @@ function buildGhost({ rng, skill, table, raceLength, tickCap }) {
     cur = clampLane(cur);
     lane.push(cur);
 
-    let speed = skill.topSpeed;
+    let speed = skill.topSpeed * speedMult; // ascension "faster field" scales the whole rival field
     const glyph = row ? row.lanes[cur] : null;
     if (isBlock(glyph)) speed *= 0.5;                       // ate noise — drops off the pace
     if (isGate(glyph)) speed *= 1 + 0.2 * skill.aggression; // hunts the boost line
@@ -65,7 +65,7 @@ function buildGhost({ rng, skill, table, raceLength, tickCap }) {
   return { lane, distance, finishTick, skill };
 }
 
-export function buildRivals({ seed, round, table, raceLength }) {
+export function buildRivals({ seed, round, table, raceLength, speedMult = 1 }) {
   const count = Math.max(0, Number(round.rivals) || 0);
   // Worst-case rival speed is topSpeed(min 0.9) × block-slow(0.5) = 0.45/tick; pad generously so a
   // rival that eats a lot of noise is still guaranteed to cross the line before the precompute ends.
@@ -73,7 +73,7 @@ export function buildRivals({ seed, round, table, raceLength }) {
   const rivals = [];
   for (let i = 0; i < count; i += 1) {
     const rng = makeRng(`${seed}:rival:${round.id}:${i}`);
-    const ghost = buildGhost({ rng, skill: rollSkill(rng), table, raceLength, tickCap });
+    const ghost = buildGhost({ rng, skill: rollSkill(rng), table, raceLength, tickCap, speedMult });
     const last = tickCap - 1;
     rivals.push({
       id: i,
