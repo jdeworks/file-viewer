@@ -7,7 +7,7 @@ import {
   RECURSION_BLUEPRINT_PATH,
 } from './messages.js';
 import { isRecursionBlueprintPath } from './content.js';
-import { TARGET_MODES } from './towers.js';
+import { TARGET_MODES, TOWER_TYPES } from './towers.js';
 
 export function hasRecursionBlueprint(actions) {
   return Boolean(actions && typeof actions.hasAction === 'function' && actions.hasAction(4, ACTION_NAME));
@@ -49,15 +49,18 @@ export function applyRecursionBlueprintOpen({ state, actions, achievements, bell
   return true;
 }
 
-export function placeTower(state, { x, y, type = 'pulse_node', targetMode = 'first' }) {
-  const cost = type === 'scatter_array' ? 150 : 80;
+export function placeTower(state, { x, y, type = 'pulse_node', targetMode }) {
+  const def = TOWER_TYPES[type];
+  if (!def) return { ok: false, reason: 'type' };
+  const cost = def.cost || 0; // was hard-coded to scatter/80 — now reads the real per-tower cost
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: 'cycles' };
+  const mode = targetMode || def.defaultTarget || 'first';
   const tower = {
     id: `tower-${state.towers.length + 1}`,
     type,
     x: Math.trunc(Number(x)),
     y: Math.trunc(Number(y)),
-    targetMode: TARGET_MODES.includes(targetMode) ? targetMode : 'first',
+    targetMode: TARGET_MODES.includes(mode) ? mode : 'first',
   };
   if (!Number.isFinite(tower.x) || !Number.isFinite(tower.y)) return { ok: false, reason: 'position' };
   state.cycles -= cost;

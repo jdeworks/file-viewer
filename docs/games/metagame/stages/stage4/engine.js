@@ -71,7 +71,7 @@ export function tick(state, deltaMs, pathTiles) {
   state.combatClockMs = (state.combatClockMs || 0) + dt;
 
   spawnDueEnemies(state, dt, pathTiles);
-  applyFields(state);                  // attractor / slow fields stamp a slow status on enemies in range
+  applyFields(state, dt);              // slow / gravity fields stamp a slow status + pull enemies back
   statusPass(state, dt);               // decay effects + apply burn DoT (before movement/combat)
   moveEnemies(state, dt, pathTiles, exitIndex);
   fireTowers(state, pathTiles);
@@ -121,14 +121,18 @@ function spawnDueEnemies(state, dt, pathTiles) {
   }
 }
 
-// Slow/attractor fields stamp a slow STATUS each tick (generalized from the old hard-coded attractor
-// check) so field slows compose with on-hit chill/freeze through one statusSpeedFactor.
-function applyFields(state) {
+// Slow/gravity fields stamp a slow STATUS each tick (generalized from the old hard-coded attractor
+// check) so field slows compose with on-hit chill/freeze through one statusSpeedFactor. A gravity_well
+// (def.pull) also drags enemies BACK along the path → clustering them for splash/chain towers.
+function applyFields(state, dt) {
+  const back = (Number(dt) || 0) / 1000;
   for (const t of state.towers) {
     const def = TOWER_TYPES[t.type];
-    if (!def?.slow) continue;
+    if (!def?.slow && !def?.pull) continue;
     for (const e of state.enemies) {
-      if (dist(t, e) <= def.range) applyStatus(e, 'slow', { factor: 1 - def.slow, ms: 250 });
+      if (dist(t, e) > def.range) continue;
+      if (def.slow) applyStatus(e, 'slow', { factor: 1 - def.slow, ms: 250 });
+      if (def.pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - def.pull * back);
     }
   }
 }
@@ -161,13 +165,33 @@ function fireTowers(state, pathTiles) {
     const def = TOWER_TYPES[tower.type];
     if (!def || !def.fireRate || !def.damage) continue; // support towers don't fire
     if (now - (tower.lastFiredMs ?? -Infinity) < 1000 / def.fireRate) continue;
-    const inRange = state.enemies.filter((e) => dist(tower, e) <= def.range);
-    if (!inRange.length) continue;
+    // A global tower (glyph_mortar) reaches anywhere; everyone else is range-limited.
+    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= def.range);
+    if (!candidates.length) continue;
     tower.lastFiredMs = now;
     const bonus = 1 + 0.3 * hubsCovering(state, tower);
-    const targets = def.aoe ? inRange : [selectTarget(inRange, tower)];
-    for (const e of targets) applyDamage(state, tower, def, e, bonus, pathTiles);
+    for (const e of pickTargets(state, tower, def, candidates)) applyDamage(state, tower, def, e, bonus, pathTiles);
   }
+}
+
+// Which enemies a tower hits this shot:
+//   global+aoe (mortar) → a focus picked anywhere, then everyone within its aoe radius of that focus
+//   aoe (scatter)       → everything in range
+//   chain (resonator)   → the `chain` nearest enemies to the focus (deterministic tie-break)
+//   else                → the single selectTarget pick
+function pickTargets(state, tower, def, candidates) {
+  if (def.global && def.aoe) {
+    const focus = selectTarget(candidates, tower);
+    return state.enemies.filter((e) => dist(e, focus) <= def.aoe);
+  }
+  if (def.aoe) return candidates;
+  if (def.chain) {
+    const focus = selectTarget(candidates, tower);
+    return [...candidates]
+      .sort((a, b) => dist(focus, a) - dist(focus, b) || b.pathIndex - a.pathIndex)
+      .slice(0, def.chain);
+  }
+  return [selectTarget(candidates, tower)];
 }
 
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {

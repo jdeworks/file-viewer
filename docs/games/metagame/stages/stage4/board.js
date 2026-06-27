@@ -6,7 +6,9 @@ const EMPTY = ".";
 
 const TOWER_CHAR = {
   pulse_node: "P", scatter_array: "S", null_spike: "N",
-  attractor_field: "A", resonance_hub: "H", cycle_extractor: "E"
+  attractor_field: "A", resonance_hub: "H", cycle_extractor: "E",
+  frost_lattice: "F", thermal_loop: "T", chain_resonator: "C", long_recursor: "L",
+  glyph_mortar: "M", shatter_drill: "D", gravity_well: "G", bank_node: "B"
 };
 const ENEMY_CHAR = {
   recursion: "o", pattern_crawler: "x", null_packet: "=",

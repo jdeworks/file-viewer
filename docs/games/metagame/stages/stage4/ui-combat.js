@@ -14,7 +14,11 @@ import { TOWER_TYPES } from './towers.js';
 import { snapshotWave } from './state.js';
 import { mapByIndex, mapPathSeed } from './maps.js';
 
-const PLACEABLE = ['pulse_node', 'scatter_array', 'null_spike', 'attractor_field'];
+const PLACEABLE = [
+  'pulse_node', 'scatter_array', 'null_spike', 'attractor_field',
+  'frost_lattice', 'thermal_loop', 'chain_resonator', 'long_recursor',
+  'glyph_mortar', 'shatter_drill', 'gravity_well', 'resonance_hub', 'cycle_extractor', 'bank_node',
+];
 const PERSIST_THROTTLE_MS = 1000;
 const CALL_EARLY_BONUS = 20;
 const SPEEDS = [1, 2, 3];
