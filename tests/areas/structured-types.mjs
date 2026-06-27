@@ -67,7 +67,7 @@ export async function run(ctx) {
   // Verify toolbar is hidden for non-JSON files
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .yaml-preview', { timeout: 30000 });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const jsonToolsHiddenForYaml = await page.$eval('#jsonTools', (el) => el.hidden);
@@ -92,6 +92,28 @@ export async function run(ctx) {
   const jsoncMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Parse mode\s*JSONC recovery/.test(jsoncMeta)) pass('JSON metadata reports JSONC recovery mode');
   else fail('jsonc meta: ' + jsoncMeta.replace(/\s+/g, ' ').slice(0, 180));
+
+  await page.evaluate(() => window.__fv.openViewerFile('secrets.json', {
+    text: JSON.stringify({
+      name: 'app',
+      apiKey: 'abcdefghijklmnopqrstuvwxyz123456',
+      nested: { password: 'plain-text-secret' },
+    }, null, 2),
+  }));
+  await page.waitForSelector('#previewHost .json-qp .kf-issues', { timeout: 8000 });
+  const jsonSecret = await page.$eval('#previewHost .json-qp', (el) => ({
+    text: el.textContent,
+    html: el.innerHTML,
+    sourceOpen: el.querySelector('.kf-source-details')?.open || false,
+  }));
+  if (/JSON Structure Review|secret|\[configured\]/i.test(jsonSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(jsonSecret.text + jsonSecret.html) && !jsonSecret.sourceOpen) pass('JSON secret-like values are warned and redacted');
+  else fail('json secret redaction: ' + JSON.stringify({ ...jsonSecret, html: jsonSecret.html.slice(0, 300), text: jsonSecret.text.slice(0, 300) }));
+  await page.$eval('#previewHost .json-qp .kf-source-link[data-source-line]', (e) => e.click());
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#previewHost .json-qp');
+    return root?.querySelector('.kf-source-details')?.open && root.querySelector('.kf-source-hit');
+  }, null, { timeout: 3000 });
+  pass('JSON secret review links open redacted source');
 
   // ── HAR ── JSON-shaped HTTP archive gets a waterfall, filters, sortable request table.
   await page.goto(origin, { waitUntil: 'load' });
@@ -162,20 +184,42 @@ export async function run(ctx) {
   // ── YAML ── parse with js-yaml, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.yaml');
-  const yframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const yf = await frameOf('iframe.fv-preview-frame');
-  await yf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .yaml-preview .json-tree .j-key', { timeout: 30000 });
   const yType = await page.$eval('#typeSelect', (s) => s.value);
   if (yType === 'yaml') pass('.yaml detected as YAML'); else fail('yaml type: ' + yType);
-  const yKeys = await yf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  const yKeys = await page.$$eval('#previewHost .yaml-preview .json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (yKeys.includes('mobileFirst') && yKeys.includes('trust')) pass('YAML rendered as tree (' + yKeys.length + ' keys)'); else fail('yaml keys: ' + yKeys.join(','));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const yamlMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Mappings\s*\d+/.test(yamlMeta) && /Sequences\s*\d+/.test(yamlMeta)) pass('YAML metadata includes mapping/sequence counts'); else fail('yaml meta: ' + yamlMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
-  const yBool = await yf.$$eval('.json-tree .j-bool', (els) => els.length);
+  const yBool = await page.$$eval('#previewHost .yaml-preview .json-tree .j-bool', (els) => els.length);
   if (yBool > 0) pass('YAML scalar types preserved (booleans rendered)'); else fail('no yaml booleans');
+  const yamlPreviewText = await page.$eval('#previewHost .yaml-preview', (el) => el.textContent);
+  if (/trust\.server|server\.hosts/.test(yamlPreviewText)) pass('YAML path breadcrumbs shown'); else fail('yaml path text: ' + yamlPreviewText.replace(/\s+/g, ' ').slice(0, 300));
+  const yamlQpPresent = await page.$('#previewHost .yaml-qp .qp-panel .qp-input');
+  if (yamlQpPresent) pass('YAML query panel rendered'); else fail('yaml query panel missing');
+  await page.fill('#previewHost .yaml-qp .qp-input', '$..mobileFirst');
+  await page.click('#previewHost .yaml-qp .qp-btn');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .yaml-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const yamlMatches = await page.$$eval('#previewHost .yaml-tree .qp-match', (els) => els.length);
+  if (yamlMatches > 0) pass('YAML query panel highlights JSONPath-style matches (' + yamlMatches + ')'); else fail('yaml query no matches');
+  const yamlSourceCollapsed = await page.$eval('#previewHost .yaml-preview .kf-source-details', (el) => !el.open);
+  if (yamlSourceCollapsed) pass('YAML redacted source starts collapsed'); else fail('yaml source unexpectedly open');
+  const yamlSourceLine = await page.$eval('#previewHost .yaml-preview .yaml-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .yaml-preview .kf-source-details');
+    return details?.open && document.getElementById(`yaml-line-${line}`);
+  }, yamlSourceLine, { timeout: 3000 });
+  pass('YAML source links open source');
+  await page.evaluate(() => window.__fv.openViewerFile('secrets.yaml', {
+    text: 'name: app\npassword: plain-text-secret\nnested:\n  apiKey: abcdefghijklmnopqrstuvwxyz123456\n',
+  }));
+  await page.waitForSelector('#previewHost .yaml-preview .kf-issues', { timeout: 8000 });
+  const yamlSecretText = await page.$eval('#previewHost .yaml-preview', (el) => el.textContent);
+  const yamlSecretHtml = await page.$eval('#previewHost .yaml-preview', (el) => el.innerHTML);
+  if (/YAML Structure Review|secret|\[configured\]/i.test(yamlSecretText) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(yamlSecretHtml)) pass('YAML secret-like values are warned and redacted'); else fail('yaml secret redaction: ' + yamlSecretText.replace(/\s+/g, ' ').slice(0, 400));
   const yamlHasEditor = await page.$('#editor .monaco-editor');
   if (yamlHasEditor) pass('YAML has raw editor (editable text)'); else fail('YAML missing raw editor');
 
@@ -210,17 +254,51 @@ export async function run(ctx) {
   // ── TOML ── hand-rolled parser, render as a collapsible tree (reuses JSON tree styling).
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  const tframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const tf = await frameOf('iframe.fv-preview-frame');
-  await tf.waitForSelector('.json-tree .j-key', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .toml-preview .json-tree .j-key', { timeout: 30000 });
   const tType = await page.$eval('#typeSelect', (s) => s.value);
   if (tType === 'toml') pass('.toml detected as TOML'); else fail('toml type: ' + tType);
-  const tKeys = await tf.$$eval('.json-tree .j-key', (els) => els.map((e) => e.textContent));
+  const tKeys = await page.$$eval('#previewHost .toml-preview .json-tree .j-key', (els) => els.map((e) => e.textContent));
   if (tKeys.includes('trust') && tKeys.includes('types')) pass('TOML tables rendered as tree (' + tKeys.length + ' keys)'); else fail('toml keys: ' + tKeys.join(','));
   // Array-of-tables [[types]] -> an array with 2 entries; booleans preserved.
-  const tBool = await tf.$$eval('.json-tree .j-bool', (els) => els.length);
-  const tNum = await tf.$$eval('.json-tree .j-num', (els) => els.length);
+  const tBool = await page.$$eval('#previewHost .toml-preview .json-tree .j-bool', (els) => els.length);
+  const tNum = await page.$$eval('#previewHost .toml-preview .json-tree .j-num', (els) => els.length);
   if (tBool >= 4 && tNum >= 2) pass('TOML scalar types preserved (booleans + numbers)'); else fail('toml scalars: bool=' + tBool + ' num=' + tNum);
+  const tomlPathText = await page.$eval('#previewHost .toml-preview', (el) => el.textContent);
+  if (/trust\.server|types\.0\.id/.test(tomlPathText)) pass('TOML path breadcrumbs shown'); else fail('toml path text: ' + tomlPathText.replace(/\s+/g, ' ').slice(0, 300));
+  const tomlQpPresent = await page.$('#previewHost .toml-qp .qp-panel .qp-input');
+  if (tomlQpPresent) pass('TOML query panel rendered'); else fail('toml query panel missing');
+  await page.fill('#previewHost .toml-qp .qp-input', 'id');
+  await page.click('#previewHost .toml-qp .qp-btn');
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .toml-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
+  const tomlMatches = await page.$$eval('#previewHost .toml-tree .qp-match', (els) => els.length);
+  if (tomlMatches > 0) pass('TOML query panel highlights JSONPath-style matches (' + tomlMatches + ')'); else fail('toml query no matches');
+  const tomlSourceCollapsed = await page.$eval('#previewHost .toml-preview .kf-source-details', (el) => !el.open);
+  if (tomlSourceCollapsed) pass('TOML source starts collapsed'); else fail('toml source unexpectedly open');
+  const tomlSourceLine = await page.$eval('#previewHost .toml-preview .toml-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .toml-preview .kf-source-details');
+    return details?.open && document.getElementById(`toml-line-${line}`);
+  }, tomlSourceLine, { timeout: 3000 });
+  pass('TOML source links open source');
+
+  await page.evaluate(() => window.__fv.openViewerFile('duplicate.toml', {
+    text: 'title = "first"\ntitle = "second"\n[tool]\nname = "one"\nname = "two"\n',
+  }));
+  await page.waitForSelector('#previewHost .toml-preview .kf-issues', { timeout: 8000 });
+  const tomlDupText = await page.$eval('#previewHost .toml-preview', (el) => el.textContent);
+  if (/TOML Structure Review|duplicate key|title|tool\.name/i.test(tomlDupText)) pass('TOML duplicate key diagnostics shown'); else fail('toml duplicate diagnostics: ' + tomlDupText.replace(/\s+/g, ' ').slice(0, 400));
+
+  await page.evaluate(() => window.__fv.openViewerFile('secrets.toml', {
+    text: 'name = "app"\napi_key = "abcdefghijklmnopqrstuvwxyz123456"\n[auth]\npassword = "plain-text-secret"\n',
+  }));
+  await page.waitForSelector('#previewHost .toml-preview .kf-issues', { timeout: 8000 });
+  const tomlSecret = await page.$eval('#previewHost .toml-preview', (el) => ({
+    text: el.textContent,
+    html: el.innerHTML,
+    sourceOpen: el.querySelector('.kf-source-details')?.open || false,
+  }));
+  if (/TOML Structure Review|secret|\[configured\]/i.test(tomlSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(tomlSecret.text + tomlSecret.html) && !tomlSecret.sourceOpen) pass('TOML secret-like values are warned and redacted');
+  else fail('toml secret redaction: ' + JSON.stringify({ ...tomlSecret, html: tomlSecret.html.slice(0, 300), text: tomlSecret.text.slice(0, 300) }));
 
   // ── TOML toolbar ── Validate button appears for TOML files in raw view.
   await page.click('#viewMode button[data-mode="raw"]');
@@ -248,7 +326,7 @@ export async function run(ctx) {
   // Re-use the already-open Sample.toml page (now at raw view); navigate back to it.
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.toml');
-  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  await page.waitForSelector('#previewHost .toml-preview', { timeout: 30000 });
   await page.click('#viewMode button[data-mode="raw"]');
   await page.waitForSelector('#editor .monaco-editor', { timeout: 8000 });
   const tomlFormBtnEl = await page.$('#tomlFormBtn');
@@ -332,14 +410,20 @@ export async function run(ctx) {
   // ── INI / .env ── key-value tables grouped by section. ──
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Sample.ini');
-  const iniframe = await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
-  const inif = await frameOf('iframe.fv-preview-frame');
-  await inif.waitForSelector('.kv-table', { timeout: 8000 });
+  await page.waitForSelector('#previewHost .ini-preview .kv-table', { timeout: 30000 });
   const iniType = await page.$eval('#typeSelect', (s) => s.value);
   if (iniType === 'ini') pass('.ini detected as Config (INI/env)'); else fail('ini type: ' + iniType);
-  const iniSecs = await inif.$$eval('.kv-section h3', (els) => els.map((e) => e.textContent));
-  const iniKeys = await inif.$$eval('.kv-key', (els) => els.map((e) => e.textContent));
+  const iniSecs = await page.$$eval('#previewHost .ini-preview .kv-section h3', (els) => els.map((e) => e.textContent));
+  const iniKeys = await page.$$eval('#previewHost .ini-preview .kv-key', (els) => els.map((e) => e.textContent));
   if (iniSecs.some((s) => /server/.test(s)) && iniKeys.includes('port')) pass('INI rendered as sectioned key-value tables'); else fail('ini secs=' + iniSecs.join(',') + ' keys=' + iniKeys.join(','));
+  const iniSourceCollapsed = await page.$eval('#previewHost .ini-preview .kf-source-details', (el) => !el.open);
+  if (iniSourceCollapsed) pass('INI redacted source starts collapsed'); else fail('ini source unexpectedly open');
+  await page.$eval('#previewHost .ini-preview .kf-source-link[data-source-line]', (e) => e.click());
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#previewHost .ini-preview');
+    return root?.querySelector('.kf-source-details')?.open && root.querySelector('.kf-source-hit');
+  }, null, { timeout: 3000 });
+  pass('INI key links open redacted source');
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const iniMeta = await page.$eval('#metaBody', (e) => e.textContent);
@@ -371,6 +455,19 @@ export async function run(ctx) {
   if (/EDITED_BY_SMOKE/.test(iniEditedText)) pass('INI form edit flushes back into the editable text'); else fail('ini form edit not flushed: ' + iniEditedText.slice(0, 120));
 
   await page.goto(origin, { waitUntil: 'load' });
+  await page.evaluate(async () => window.__fv.openViewerFile('secrets.ini', {
+    text: '[auth]\npassword = plain-text-secret\napi_key = abcdefghijklmnopqrstuvwxyz123456\n[server]\nhost = 127.0.0.1\n',
+  }));
+  await page.waitForFunction(() => document.querySelector('#previewHost .ini-preview .kf-issues'), null, { timeout: 8000 });
+  const iniSecret = await page.$eval('#previewHost .ini-preview', (el) => ({
+    text: el.textContent,
+    html: el.innerHTML,
+    sourceOpen: el.querySelector('.kf-source-details')?.open || false,
+  }));
+  if (/INI Structure Review|secret|\[configured\]/i.test(iniSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(iniSecret.text + iniSecret.html) && !iniSecret.sourceOpen) pass('INI secret-like values are warned and redacted');
+  else fail('ini secret redaction: ' + JSON.stringify({ ...iniSecret, html: iniSecret.html.slice(0, 300), text: iniSecret.text.slice(0, 300) }));
+
+  await page.goto(origin, { waitUntil: 'load' });
   await openExample('sample.env (environment variables)');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
   const envMode = await page.$eval('#panes', (e) => e.dataset.mode || '');
@@ -378,7 +475,17 @@ export async function run(ctx) {
   const envf = await frameOf('iframe.fv-preview-frame');
   await envf.waitForSelector('.env-secret-val', { timeout: 8000 });
   const envText = await envf.$eval('body', (e) => e.textContent);
-  if (/sensitive \(redacted\)/i.test(envText) && !/(super_secret_password_123|sk_test_|whsec_)/.test(envText)) pass('.env preview redacts sensitive values by default'); else fail('env preview leaked or missed redaction: ' + envText.replace(/\s+/g, ' ').slice(0, 160));
+  const envHtml = await envf.$eval('body', (e) => e.innerHTML);
+  if (/sensitive \(redacted\)/i.test(envText) && /masked because/i.test(envText) && !/(super_secret_password_123|sk_test_|whsec_|REDACTED_PASSWORD)/.test(envText + envHtml)) pass('.env preview redacts sensitive values and DOM attributes'); else fail('env preview leaked or missed redaction: ' + envText.replace(/\s+/g, ' ').slice(0, 180));
+  const envSourceCollapsed = await envf.$eval('.env-source-details', (e) => !e.open && /Redacted source/.test(e.querySelector('summary')?.textContent || ''));
+  if (envSourceCollapsed) pass('.env redacted source is collapsed with a source summary'); else fail('env redacted source was not collapsed');
+  await envf.click('.env-line-btn');
+  await envf.waitForFunction(() => document.querySelector('.env-source-details')?.open, null, { timeout: 3000 });
+  const envLineLinked = await envf.$eval('.env-source-details', (e) => {
+    const firstLine = e.querySelector('#env-src-1');
+    return e.open && !!firstLine && getComputedStyle(firstLine.querySelector('.env-src-code')).whiteSpace === 'pre-wrap';
+  });
+  if (envLineLinked) pass('.env line numbers open the wrapped redacted source view'); else fail('env source line link did not open wrapped source');
   const envCentered = await envf.$eval('.env-doc', (e) => {
     const body = document.body.getBoundingClientRect();
     const doc = e.getBoundingClientRect();
@@ -540,6 +647,15 @@ export async function run(ctx) {
   const kubeTxt = await page.textContent('#previewHost .kc-root');
   if (kubeTxt.includes('prod-cluster') || kubeTxt.includes('dev-cluster')) pass('kubeconfig cluster names shown'); else fail('kube clusters: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
   if (kubeTxt.includes('prod-admin') || kubeTxt.includes('developer')) pass('kubeconfig users shown'); else fail('kube users: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 200));
+  const kubeHtml = await page.$eval('#previewHost .kc-root', (e) => e.innerHTML);
+  if (/Kubeconfig Review|TLS skip|embedded credential|current context/i.test(kubeTxt)) pass('kubeconfig review warnings shown'); else fail('kube review: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 240));
+  if (/Redacted source/i.test(kubeTxt) && !/example-token-payload|UFJJVkFURSBLRVk/.test(kubeTxt + kubeHtml)) pass('kubeconfig redacted source does not leak token/key data'); else fail('kube source leaked: ' + kubeTxt.replace(/\s+/g, ' ').slice(0, 240));
+  const kubeSourceCollapsed = await page.$eval('#previewHost .kc-root .kf-source-details', (e) => !e.open);
+  if (kubeSourceCollapsed) pass('kubeconfig redacted source is collapsed'); else fail('kube source unexpectedly expanded');
+  await page.click('#previewHost .kc-root [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .kc-root .kf-source-details')?.open, null, { timeout: 3000 });
+  const kubeSourceOpened = await page.$eval('#previewHost .kc-root .kf-source-details', (e) => e.open && !!e.querySelector('#kc-line-1'));
+  if (kubeSourceOpened) pass('kubeconfig source links open source preview'); else fail('kube source link did not open preview');
 
   // ── Patch / unified diff ── colorized add/remove/hunk lines. ──
   await page.goto(origin, { waitUntil: 'load' });

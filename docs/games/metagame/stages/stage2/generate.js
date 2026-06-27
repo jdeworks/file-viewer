@@ -6,6 +6,8 @@
 // of wall), and corridors are short, sensible links between neighbours rather than long L-runs
 // across the whole map. Fully seeded so a floor regenerates identically from `${runSeed}:${floor}`.
 
+import { decorateRoom } from "./structures.js";
+
 function carveRoom(grid, room) {
   for (let y = room.y; y < room.y + room.h; y += 1) {
     for (let x = room.x; x < room.x + room.w; x += 1) grid[y][x] = '.';
@@ -58,22 +60,8 @@ function splitNode(node, rng, minLeaf) {
   splitNode(node.right, rng, minLeaf);
 }
 
-// Scatter isolated wall pylons inside a room so big rooms aren't empty boxes. Confined to a 2-tile
-// interior margin, so the room's perimeter stays open and the room is always navigable.
-function addPylons(grid, room, rng) {
-  if (room.w < 9 || room.h < 9) return;
-  const count = Math.floor((room.w * room.h) / 50);
-  for (let i = 0; i < count; i += 1) {
-    const pw = rng.chance(0.4) ? 2 : 1;
-    const ph = rng.chance(0.4) ? 2 : 1;
-    const px = rng.int(room.x + 2, room.x + room.w - 2 - pw);
-    const py = rng.int(room.y + 2, room.y + room.h - 2 - ph);
-    for (let yy = py; yy < py + ph; yy += 1) for (let xx = px; xx < px + pw; xx += 1) grid[yy][xx] = '#';
-  }
-}
-
 // Carve a room in every leaf (filling ~70–95% of the partition), then connect sibling subtrees.
-function carveAndConnect(node, grid, rng, rooms, minRoom) {
+function carveAndConnect(node, grid, rng, rooms, minRoom, decor) {
   if (!node.left) {
     const maxW = Math.max(minRoom, node.w - 2);
     const maxH = Math.max(minRoom, node.h - 2);
@@ -83,61 +71,68 @@ function carveAndConnect(node, grid, rng, rooms, minRoom) {
     const ry = node.y + 1 + rng.int(0, Math.max(0, node.h - rh - 2));
     const room = { x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
     carveRoom(grid, room);
-    addPylons(grid, room, rng);
-    grid[room.cy][room.cx] = '.'; // keep the centre (corridor hookup + spawn point) clear of pylons
+    for (const it of decorateRoom(grid, room, rng)) decor.push(it); // preset structures (+ loot)
+    grid[room.cy][room.cx] = '.'; // keep the centre (corridor hookup + spawn point) clear
     rooms.push(room);
     node.room = room;
     return room;
   }
-  const a = carveAndConnect(node.left, grid, rng, rooms, minRoom);
-  const b = carveAndConnect(node.right, grid, rng, rooms, minRoom);
+  const a = carveAndConnect(node.left, grid, rng, rooms, minRoom, decor);
+  const b = carveAndConnect(node.right, grid, rng, rooms, minRoom, decor);
   if (a && b) connect(grid, a, b, rng);
   node.room = a || b;
   return node.room;
 }
 
-// Pick a room-edge cell that borders outside floor — the "secret door" the player bumps to open.
-function findEntrance(grid, room) {
-  const inRoom = (x, y) => x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h;
-  for (let y = room.y; y < room.y + room.h; y += 1) {
-    for (let x = room.x; x < room.x + room.w; x += 1) {
-      if (x !== room.x && x !== room.x + room.w - 1 && y !== room.y && y !== room.y + room.h - 1) continue;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (inRoom(nx, ny)) continue;
-        if (grid[ny] && grid[ny][nx] === '.') return { x, y };
-      }
-    }
-  }
-  return null;
-}
+// Append a few HIDDEN rooms flush against existing rooms, separated by a single wall whose one
+// cell is the "secret door" — no corridor: the hidden room aligns directly with its host so bumping
+// the door steps straight into it. The reserved rectangle is solid wall already (we never carve it
+// here), so the map's connectivity is exactly the no-hidden-room baseline — sealing it can isolate
+// nothing, so no connectivity guard is needed. carveHiddenRoom opens the box + door on reveal.
+// Hidden-room kinds, weighted by repetition (B2 adds shrine / vault / captive to the original three).
+const HIDDEN_TYPES = ['treasure', 'treasure', 'trap', 'trap', 'teleport', 'shrine', 'vault', 'captive'];
 
-// Turn a few leaf rooms into HIDDEN rooms: fill them with wall (so they read as solid until opened)
-// and record an entrance + a type. A candidate is kept only if hiding it doesn't disconnect any
-// OTHER floor (the connectivity guard), so the map stays fully traversable. The exit is chosen
-// later from reachable cells, so the stairs can never end up sealed inside one.
-function hideRooms(grid, rooms, rng) {
-  if (rooms.length < 4) return [];
-  const start = rooms[0];
-  const want = Math.min(4, 1 + Math.floor(rooms.length / 18));
-  const candidates = rng.shuffle(rooms.slice(1).filter((r) => r.w >= 6 && r.h >= 6));
+function attachHiddenRooms(grid, rooms, rng) {
+  const height = grid.length;
+  const width = grid[0].length;
+  const want = Math.min(4, 1 + Math.floor(rooms.length / 10));
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const allWall = (x, y, w, h) => {
+    if (x < 1 || y < 1 || x + w > width - 1 || y + h > height - 1) return false;
+    for (let yy = y; yy < y + h; yy += 1) { const row = grid[yy]; for (let xx = x; xx < x + w; xx += 1) if (row[xx] !== '#') return false; }
+    return true;
+  };
+  const overlaps = (b, list) => list.some((p) => b.x < p.x + p.w && b.x + b.w > p.x && b.y < p.y + p.h && b.y + b.h > p.y);
   const hidden = [];
-  let baseReach = floodDistances(grid, { x: start.cx, y: start.cy }).count;
-  for (const room of candidates) {
+  const reserved = [];
+  for (const r of rng.shuffle(rooms.slice())) {
     if (hidden.length >= want) break;
-    const cells = [];
-    for (let y = room.y; y < room.y + room.h; y += 1) for (let x = room.x; x < room.x + room.w; x += 1) cells.push([x, y]);
-    let floorRemoved = 0;
-    const saved = cells.map(([x, y]) => { if (grid[y][x] === '.') floorRemoved += 1; const v = grid[y][x]; grid[y][x] = '#'; return v; });
-    const entrance = findEntrance(grid, room);
-    const reach = floodDistances(grid, { x: start.cx, y: start.cy }).count;
-    if (!entrance || baseReach - reach > floorRemoved + 2) {
-      cells.forEach(([x, y], i) => { grid[y][x] = saved[i]; }); // revert — would isolate other cells
-      continue;
+    const hw = rng.int(5, 8);
+    const hh = rng.int(5, 8);
+    const side = rng.int(0, 3); // 0 N, 1 S, 2 W, 3 E
+    let hx; let hy; let door; let inner;
+    if (side === 2 || side === 3) { // shared vertical wall (west / east)
+      hy = clamp(r.cy - (hh >> 1), 1, height - 1 - hh);
+      const lo = Math.max(r.y, hy);
+      const hi = Math.min(r.y + r.h - 1, hy + hh - 1);
+      if (hi < lo) continue;
+      const dy = (lo + hi) >> 1;
+      if (side === 3) { hx = r.x + r.w + 1; door = { x: r.x + r.w, y: dy }; inner = { x: r.x + r.w - 1, y: dy }; }
+      else { hx = r.x - hw - 1; door = { x: r.x - 1, y: dy }; inner = { x: r.x, y: dy }; }
+    } else { // shared horizontal wall (north / south)
+      hx = clamp(r.cx - (hw >> 1), 1, width - 1 - hw);
+      const lo = Math.max(r.x, hx);
+      const hi = Math.min(r.x + r.w - 1, hx + hw - 1);
+      if (hi < lo) continue;
+      const dx = (lo + hi) >> 1;
+      if (side === 1) { hy = r.y + r.h + 1; door = { x: dx, y: r.y + r.h }; inner = { x: dx, y: r.y + r.h - 1 }; }
+      else { hy = r.y - hh - 1; door = { x: dx, y: r.y - 1 }; inner = { x: dx, y: r.y }; }
     }
-    baseReach = reach;
-    hidden.push({ x: room.x, y: room.y, w: room.w, h: room.h, entrance, type: rng.pick(['treasure', 'trap', 'teleport']), revealed: false });
+    const box = { x: hx, y: hy, w: hw, h: hh };
+    if (!allWall(hx, hy, hw, hh) || overlaps(box, reserved)) continue;
+    if (grid[door.y][door.x] !== '#' || grid[inner.y][inner.x] !== '.') continue; // door bumpable from host floor
+    reserved.push(box);
+    hidden.push({ x: hx, y: hy, w: hw, h: hh, entrance: door, type: rng.pick(HIDDEN_TYPES), revealed: false });
   }
   return hidden;
 }
@@ -161,9 +156,10 @@ export function generate(rng, { width, height, minLeaf = 18, minRoom = 5 }) {
   const root = { x: 1, y: 1, w: width - 2, h: height - 2 };
   splitNode(root, rng, Math.max(minRoom + 2, minLeaf));
   const rooms = [];
-  carveAndConnect(root, grid, rng, rooms, minRoom);
-  const hidden = hideRooms(grid, rooms, rng);
-  return { grid: grid.map((row) => row.join('')), rooms, hidden };
+  const decor = [];
+  carveAndConnect(root, grid, rng, rooms, minRoom, decor);
+  const hidden = attachHiddenRooms(grid, rooms, rng);
+  return { grid: grid.map((row) => row.join('')), rooms, hidden, decor };
 }
 
 // BFS over floor cells from `start`. Uses flat typed arrays and a head pointer (NOT Array.shift,

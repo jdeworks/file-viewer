@@ -1,3 +1,5 @@
+import { ensureKnownUiStyle, issueList, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -16,6 +18,11 @@ const CSS = `
 .ngx-path{font-weight:600;color:var(--fg,#24292f);}
 .ngx-handler{color:var(--fg-2,#666);}
 .ngx-upstream-name{font-family:ui-monospace,monospace;font-size:12px;font-weight:600;}
+.ngx-link{border:0;background:transparent;color:inherit;font:inherit;padding:0;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
+.ngx-link:hover{color:var(--accent,#2563eb);}
+.ngx-help{font-size:11px;color:var(--fg-2,#888);margin-top:3px;}
+.ngx-source-key{color:#009639;font-weight:700;}
+.ngx-source-comment{color:#6e7781;font-style:italic;}
 `;
 
 /**
@@ -23,7 +30,7 @@ const CSS = `
  * Uses regex/line scanning — not a full parser.
  */
 function parseNginx(text) {
-  const lines = text.split('\n');
+  const lines = text.split(/\r?\n/);
 
   const serverBlocks = [];
   const upstreams = [];
@@ -41,7 +48,8 @@ function parseNginx(text) {
   let locationData = null;
   let locationDepth = 0;
 
-  for (const rawLine of lines) {
+  for (const [idx, rawLine] of lines.entries()) {
+    const lineNo = idx + 1;
     const line = rawLine.trim();
 
     // Strip inline comments
@@ -61,13 +69,13 @@ function parseNginx(text) {
     if (serverMatch && !inServer && !inUpstream) {
       inServer = true;
       serverDepth = depth;
-      serverData = { serverNames: [], listens: [], root: null, index: null, locations: [] };
+      serverData = { line: lineNo, serverNames: [], listens: [], root: null, index: null, locations: [], addHeaders: [], serverTokens: null, errorLogs: [] };
     }
 
     if (upstreamMatch && !inUpstream && !inServer) {
       inUpstream = true;
       upstreamDepth = depth;
-      upstreamData = { name: upstreamMatch[1], servers: [] };
+      upstreamData = { name: upstreamMatch[1], line: lineNo, servers: [] };
     }
 
     if (locationMatch && inServer && !inLocation) {
@@ -75,7 +83,7 @@ function parseNginx(text) {
       locationDepth = depth;
       // Determine path from match groups
       const path = locationMatch[2] || locationMatch[1];
-      locationData = { path, proxyPass: null, returnDirective: null, alias: null, root: null };
+      locationData = { path, line: lineNo, proxyPass: null, returnDirective: null, alias: null, root: null, tryFiles: null, fastcgiPass: null, autoindex: null, addHeaders: [], proxySetHeaders: [] };
     }
 
     // Update depth after detecting block starts
@@ -84,41 +92,65 @@ function parseNginx(text) {
     // Collect directives inside location block
     if (inLocation && locationData) {
       const ppMatch = /^proxy_pass\s+(\S+?);/.exec(stripped);
-      if (ppMatch) locationData.proxyPass = ppMatch[1];
+      if (ppMatch) locationData.proxyPass = { value: ppMatch[1], line: lineNo };
 
       const retMatch = /^return\s+(.+?);/.exec(stripped);
-      if (retMatch) locationData.returnDirective = retMatch[1];
+      if (retMatch) locationData.returnDirective = { value: retMatch[1], line: lineNo };
 
       const aliasMatch = /^alias\s+(\S+?);/.exec(stripped);
-      if (aliasMatch) locationData.alias = aliasMatch[1];
+      if (aliasMatch) locationData.alias = { value: aliasMatch[1], line: lineNo };
 
       const rootMatch = /^root\s+(\S+?);/.exec(stripped);
-      if (rootMatch) locationData.root = rootMatch[1];
+      if (rootMatch) locationData.root = { value: rootMatch[1], line: lineNo };
+
+      const tryFilesMatch = /^try_files\s+(.+?);/.exec(stripped);
+      if (tryFilesMatch) locationData.tryFiles = { value: tryFilesMatch[1], line: lineNo };
+
+      const fastcgiMatch = /^fastcgi_pass\s+(\S+?);/.exec(stripped);
+      if (fastcgiMatch) locationData.fastcgiPass = { value: fastcgiMatch[1], line: lineNo };
+
+      const autoindexMatch = /^autoindex\s+(\S+?);/.exec(stripped);
+      if (autoindexMatch) locationData.autoindex = { value: autoindexMatch[1], line: lineNo };
+
+      const headerMatch = /^add_header\s+(\S+)\s+(.+?);/.exec(stripped);
+      if (headerMatch) locationData.addHeaders.push({ name: headerMatch[1], value: headerMatch[2], line: lineNo });
+
+      const proxyHeaderMatch = /^proxy_set_header\s+(\S+)\s+(.+?);/.exec(stripped);
+      if (proxyHeaderMatch) locationData.proxySetHeaders.push({ name: proxyHeaderMatch[1], value: proxyHeaderMatch[2], line: lineNo });
     }
 
     // Collect directives inside server block (but not inside location)
     if (inServer && serverData && !inLocation) {
       const snMatch = /^server_name\s+(.+?);/.exec(stripped);
       if (snMatch) {
-        serverData.serverNames.push(...snMatch[1].trim().split(/\s+/));
+        serverData.serverNames.push(...snMatch[1].trim().split(/\s+/).map((value) => ({ value, line: lineNo })));
       }
 
       const listenMatch = /^listen\s+(.+?);/.exec(stripped);
       if (listenMatch) {
-        serverData.listens.push(listenMatch[1].trim());
+        serverData.listens.push({ value: listenMatch[1].trim(), line: lineNo });
       }
 
       const rootMatch = /^root\s+(\S+?);/.exec(stripped);
-      if (rootMatch) serverData.root = rootMatch[1];
+      if (rootMatch) serverData.root = { value: rootMatch[1], line: lineNo };
 
       const indexMatch = /^index\s+(.+?);/.exec(stripped);
-      if (indexMatch) serverData.index = indexMatch[1].trim();
+      if (indexMatch) serverData.index = { value: indexMatch[1].trim(), line: lineNo };
+
+      const headerMatch = /^add_header\s+(\S+)\s+(.+?);/.exec(stripped);
+      if (headerMatch) serverData.addHeaders.push({ name: headerMatch[1], value: headerMatch[2], line: lineNo });
+
+      const tokensMatch = /^server_tokens\s+(\S+?);/.exec(stripped);
+      if (tokensMatch) serverData.serverTokens = { value: tokensMatch[1], line: lineNo };
+
+      const errorLogMatch = /^error_log\s+(.+?);/.exec(stripped);
+      if (errorLogMatch) serverData.errorLogs.push({ value: errorLogMatch[1], line: lineNo });
     }
 
     // Collect directives inside upstream block
     if (inUpstream && upstreamData) {
       const svMatch = /^server\s+(\S+?);/.exec(stripped);
-      if (svMatch) upstreamData.servers.push(svMatch[1]);
+      if (svMatch) upstreamData.servers.push({ value: svMatch[1], line: lineNo });
     }
 
     // Detect block ends
@@ -144,20 +176,173 @@ function parseNginx(text) {
   return { serverBlocks, upstreams };
 }
 
+const HELP = {
+  listen: 'Address and port accepted by this server block. Plain port 80 is usually a redirect-only listener.',
+  server_name: 'Hostnames matched by this server block.',
+  root: 'Filesystem directory used for static files in this context.',
+  index: 'Default files tried for directory requests.',
+  location: 'URI matcher that selects request handling rules.',
+  proxy_pass: 'Forwards matching requests to an upstream URL or named upstream.',
+  proxy_set_header: 'Headers forwarded to the upstream. Missing Host or X-Forwarded-Proto can break audit trails and app URL generation.',
+  return: 'Stops processing and returns a status or redirect.',
+  alias: 'Maps a location to a filesystem path; trailing slash semantics matter.',
+  autoindex: 'Directory listing control for this location.',
+  add_header: 'Response header emitted by Nginx.',
+  server_tokens: 'Controls whether Nginx version details are exposed in responses.',
+  error_log: 'Error log path and verbosity.',
+  try_files: 'Checks files in order before falling back.',
+  fastcgi_pass: 'Forwards matching requests to a FastCGI backend.',
+  upstream: 'Named backend pool used by proxy_pass or related directives.',
+};
+
+function helpFor(kind) {
+  return HELP[kind] || 'Open this Nginx directive in source.';
+}
+
+function lineButton(label, line, kind = '') {
+  const title = `${helpFor(kind)} Open line ${line || 1} in source.`;
+  return `<button class="ngx-link" type="button" data-source-line="${line || 1}" title="${esc(title)}">${esc(label)}</button>`;
+}
+
 function handlerHtml(loc) {
-  if (loc.proxyPass) return `<span class="ngx-handler">proxy_pass ${esc(loc.proxyPass)}</span>`;
-  if (loc.returnDirective) return `<span class="ngx-handler">return ${esc(loc.returnDirective)}</span>`;
-  if (loc.alias) return `<span class="ngx-handler">alias ${esc(loc.alias)}</span>`;
-  if (loc.root) return `<span class="ngx-handler">root ${esc(loc.root)}</span>`;
+  if (loc.proxyPass) return `<span class="ngx-handler">${lineButton('proxy_pass', loc.proxyPass.line, 'proxy_pass')} ${esc(loc.proxyPass.value)}</span>`;
+  if (loc.returnDirective) return `<span class="ngx-handler">${lineButton('return', loc.returnDirective.line, 'return')} ${esc(loc.returnDirective.value)}</span>`;
+  if (loc.alias) return `<span class="ngx-handler">${lineButton('alias', loc.alias.line, 'alias')} ${esc(loc.alias.value)}</span>`;
+  if (loc.root) return `<span class="ngx-handler">${lineButton('root', loc.root.line, 'root')} ${esc(loc.root.value)}</span>`;
+  if (loc.tryFiles) return `<span class="ngx-handler">${lineButton('try_files', loc.tryFiles.line, 'try_files')} ${esc(loc.tryFiles.value)}</span>`;
+  if (loc.fastcgiPass) return `<span class="ngx-handler">${lineButton('fastcgi_pass', loc.fastcgiPass.line, 'fastcgi_pass')} ${esc(loc.fastcgiPass.value)}</span>`;
   return `<span style="color:var(--fg-2,#888);">— static</span>`;
+}
+
+function collectIssues({ serverBlocks, upstreams }) {
+  const issues = [];
+  for (const server of serverBlocks) {
+    for (const listen of server.listens) {
+      const value = listen.value.toLowerCase();
+      const isPlainHttp = /\b80\b/.test(value) && !/\bssl\b/.test(value);
+      const isDefault = /\bdefault_server\b/.test(value);
+      if (isPlainHttp) {
+        const hasRedirect = server.locations.some((loc) => /^30[1278]\b/.test(loc.returnDirective?.value || ''));
+        issues.push({
+          severity: hasRedirect ? 'info' : 'warning',
+          label: hasRedirect ? 'http redirect' : 'plain http',
+          line: listen.line,
+          message: hasRedirect
+            ? `listen ${listen.value} accepts HTTP and appears to redirect to HTTPS.`
+            : `listen ${listen.value} accepts plain HTTP without an obvious HTTPS redirect.`,
+        });
+      }
+      if (isDefault) {
+        issues.push({
+          severity: 'info',
+          label: 'default server',
+          line: listen.line,
+          message: `listen ${listen.value} is a default server; unmatched hostnames will land here.`,
+        });
+      }
+    }
+    if (!server.serverNames.length) {
+      issues.push({
+        severity: 'info',
+        label: 'host match',
+        line: server.line,
+        message: 'Server block has no server_name directive; it may act as a catch-all depending on listen order.',
+      });
+    }
+    const headers = server.addHeaders.concat(server.locations.flatMap((loc) => loc.addHeaders || []));
+    const headerNames = new Set(headers.map((header) => header.name.toLowerCase()));
+    const hasTlsListen = server.listens.some((listen) => /\bssl\b/.test(listen.value.toLowerCase()) || /\b443\b/.test(listen.value));
+    if (hasTlsListen && !headerNames.has('strict-transport-security')) {
+      issues.push({
+        severity: 'warning',
+        label: 'missing hsts',
+        line: server.line,
+        message: 'TLS server block does not set Strict-Transport-Security.',
+      });
+    }
+    if (!headerNames.has('x-content-type-options')) {
+      issues.push({
+        severity: 'info',
+        label: 'proxy headers',
+        line: server.line,
+        message: 'No X-Content-Type-Options header is configured in this server block.',
+      });
+    }
+    if (server.serverTokens && server.serverTokens.value.toLowerCase() !== 'off') {
+      issues.push({
+        severity: 'warning',
+        label: 'server tokens',
+        line: server.serverTokens.line,
+        message: `server_tokens is ${server.serverTokens.value}; version details may be exposed.`,
+      });
+    }
+    for (const log of server.errorLogs) {
+      if (/\bdebug\b/i.test(log.value)) {
+        issues.push({
+          severity: 'warning',
+          label: 'debug logging',
+          line: log.line,
+          message: `error_log uses debug verbosity (${log.value}); avoid debug logging in production.`,
+        });
+      }
+    }
+    for (const loc of server.locations) {
+      if (loc.autoindex && loc.autoindex.value.toLowerCase() === 'on') {
+        issues.push({
+          severity: 'warning',
+          label: 'directory listing',
+          line: loc.autoindex.line,
+          message: `location ${loc.path} enables autoindex directory listings.`,
+        });
+      }
+      if (loc.proxyPass) {
+        const forwarded = new Set((loc.proxySetHeaders || []).map((header) => header.name.toLowerCase()));
+        if (!forwarded.has('host') || !forwarded.has('x-forwarded-proto')) {
+          issues.push({
+            severity: 'info',
+            label: 'proxy headers',
+            line: loc.proxyPass.line,
+            message: `location ${loc.path} proxies without both Host and X-Forwarded-Proto headers set.`,
+          });
+        }
+      }
+      if (loc.alias && !loc.path.endsWith('/') && loc.alias.value.endsWith('/')) {
+        issues.push({
+          severity: 'warning',
+          label: 'alias slash',
+          line: loc.alias.line,
+          message: `alias ${loc.alias.value} is used under location ${loc.path}; confirm trailing slash mapping is intentional.`,
+        });
+      }
+    }
+  }
+  for (const upstream of upstreams) {
+    if (!upstream.servers.length) {
+      issues.push({
+        severity: 'warning',
+        label: 'empty upstream',
+        line: upstream.line,
+        message: `upstream ${upstream.name} has no backend servers.`,
+      });
+    }
+  }
+  return issues;
+}
+
+function highlightNginxLine(line) {
+  const escaped = esc(line);
+  if (/^\s*#/.test(line)) return `<span class="ngx-source-comment">${escaped}</span>`;
+  return escaped.replace(/^(\s*[A-Za-z_][\w-]*)/, '<span class="ngx-source-key">$1</span>');
 }
 
 export function render(intake) {
   const host = document.createElement('div');
+  ensureKnownUiStyle(document);
   host.className = 'ngx-doc nginxconf-doc';
 
   const text = intake.text || '';
   const { serverBlocks, upstreams } = parseNginx(text);
+  const issues = collectIssues({ serverBlocks, upstreams });
 
   const totalLocations = serverBlocks.reduce((n, s) => n + s.locations.length, 0);
   const summaryParts = [
@@ -170,21 +355,22 @@ export function render(intake) {
   // Server info cards
   const serverCardsHtml = serverBlocks.map((s, i) => {
     const names = s.serverNames.length
-      ? s.serverNames.map((n) => `<span class="ngx-chip">${esc(n)}</span>`).join('')
+      ? s.serverNames.map((n) => `<span class="ngx-chip">${lineButton(n.value, n.line, 'server_name')}</span>`).join('')
       : '<span style="color:var(--fg-2,#888);font-size:12px;">—</span>';
     const ports = s.listens.length
-      ? s.listens.map((l) => `<span class="ngx-chip">${esc(l)}</span>`).join('')
+      ? s.listens.map((l) => `<span class="ngx-chip">${lineButton(l.value, l.line, 'listen')}</span>`).join('')
       : '<span style="color:var(--fg-2,#888);font-size:12px;">—</span>';
     const rootLine = s.root
-      ? `<div style="margin-top:6px;font-size:12px;"><span style="color:var(--fg-2,#888);">root</span> <span style="font-family:ui-monospace,monospace;">${esc(s.root)}</span></div>`
+      ? `<div style="margin-top:6px;font-size:12px;"><span style="color:var(--fg-2,#888);">${lineButton('root', s.root.line, 'root')}</span> <span style="font-family:ui-monospace,monospace;">${esc(s.root.value)}</span></div>`
       : '';
     const indexLine = s.index
-      ? `<div style="margin-top:2px;font-size:12px;"><span style="color:var(--fg-2,#888);">index</span> <span style="font-family:ui-monospace,monospace;">${esc(s.index)}</span></div>`
+      ? `<div style="margin-top:2px;font-size:12px;"><span style="color:var(--fg-2,#888);">${lineButton('index', s.index.line, 'index')}</span> <span style="font-family:ui-monospace,monospace;">${esc(s.index.value)}</span></div>`
       : '';
     return `<div class="ngx-card">
-  <div class="ngx-card-label">Server block ${serverBlocks.length > 1 ? i + 1 : ''}</div>
+  <div class="ngx-card-label">${lineButton(`Server block ${serverBlocks.length > 1 ? i + 1 : ''}`.trim(), s.line, 'server')}</div>
   <div><span style="color:var(--fg-2,#888);font-size:12px;margin-right:6px;">server_name</span>${names}</div>
   <div style="margin-top:4px;"><span style="color:var(--fg-2,#888);font-size:12px;margin-right:6px;">listen</span>${ports}</div>
+  <div class="ngx-help">${esc(helpFor('listen'))}</div>
   ${rootLine}${indexLine}
 </div>`;
   }).join('');
@@ -192,7 +378,7 @@ export function render(intake) {
   // Locations table
   const allLocations = serverBlocks.flatMap((s) => s.locations);
   const locRowsHtml = allLocations.map((loc) => `<tr>
-  <td><span class="ngx-path">${esc(loc.path)}</span></td>
+  <td><span class="ngx-path">${lineButton(loc.path, loc.line, 'location')}</span></td>
   <td>${handlerHtml(loc)}</td>
 </tr>`).join('');
 
@@ -208,8 +394,8 @@ export function render(intake) {
   const upstreamsHtml = upstreams.length ? `<div class="ngx-sec">
   <h3>Upstreams</h3>
   ${upstreams.map((u) => `<div class="ngx-card">
-  <span class="ngx-upstream-name">${esc(u.name)}</span>
-  ${u.servers.length ? `<div style="margin-top:6px;">${u.servers.map((sv) => `<span class="ngx-chip">${esc(sv)}</span>`).join('')}</div>` : ''}
+  <span class="ngx-upstream-name">${lineButton(u.name, u.line, 'upstream')}</span>
+  ${u.servers.length ? `<div style="margin-top:6px;">${u.servers.map((sv) => `<span class="ngx-chip">${lineButton(sv.value, sv.line, 'upstream')}</span>`).join('')}</div>` : ''}
 </div>`).join('')}
 </div>` : '';
 
@@ -219,6 +405,10 @@ export function render(intake) {
 ${serverBlocks.length ? `<div class="ngx-sec"><h3>Server${serverBlocks.length !== 1 ? 's' : ''}</h3>${serverCardsHtml}</div>` : ''}
 ${locTableHtml}
 ${upstreamsHtml}`;
+  const review = issueList(issues, { title: 'Nginx Review' });
+  if (review) host.insertBefore(review, host.querySelector('.ngx-sec'));
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'nginx-line', highlighter: highlightNginxLine }));
 
+  wireSourceLinks(host, { idPrefix: 'nginx-line' });
   return { parentNode: host };
 }

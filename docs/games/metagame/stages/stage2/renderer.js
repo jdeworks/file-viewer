@@ -1,13 +1,16 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
-import { attachGrid, buildFloor, monsterTurn, step } from "./engine.js";
-import { rollEntity } from "./data.js";
+import { exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
+import { monsterTurn, pressureSpawn } from "./monsters.js";
+import { statusSummary } from "./status.js";
+import { biomeForFloor } from "./biome.js";
+import { useConsumable, CONSUMABLE_KEYS, CONSUMABLES } from "./consumables.js";
+import { tickFire } from "./fire.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
 import { createView, renderHpBar } from "./view.js";
-import { BTS_PATH, CIPHER_PATH, bellMessages } from "./messages.js";
-
-const MAX_FLOOR = 5;
+import { BTS_PATH, bellMessages } from "./messages.js";
+import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, openCipher, openBts, once, DIR_ARROW } from "./runloop.js";
 
 const MOVE_KEYS = {
   ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
@@ -34,7 +37,7 @@ export function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
-      <div class="s2-compass" data-field="compass" hidden></div>
+      <div class="s2-status" data-field="status" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -47,9 +50,12 @@ export function renderStage2({
           <span class="s2-c-potion">!</span> potion
           <span class="s2-c-glyph">%</span> glyph
           <span class="s2-c-exit">&gt;</span> stairs
+          <span class="s2-c-lava">≈</span> hazard
         </div>
       </div>
       <div class="s2-controls">
+        <div class="s2-compass" data-field="compass" hidden></div>
+        <div class="s2-items" data-field="items"></div>
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
@@ -86,9 +92,11 @@ export function renderStage2({
   let lastHp = -1;
   let lastMaxHp = -1;
   let lastLogSig = "";
+  let lastItemSig = "";
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
   let monsterClocks = []; // the 5 real-time monster-movement intervals
+  let routeCache = null; // { world, field } — BFS-from-stairs distance field for the compass
 
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -112,13 +120,19 @@ export function renderStage2({
     setText(fields.atk, e.atk);
     setText(fields.def, e.def);
     setText(fields.glyphs, `${state.meta.glyphsBanked} +${e.glyphsThisRun}`);
+    const status = statusSummary(e);
+    setHidden(fields.status, !status);
+    setText(fields.status, status);
+    paintItems(e);
     setText(fields.bossStatus, state.run.boss.defeated
       ? "defeated. BTS trace available."
       : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
     setText(fields.hint, lock.hint);
+    const biome = biomeForFloor(state.run.floor);
+    if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
     setText(fields.objective, state.run.boss.reached
       ? (lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way.")
-      : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+      : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {
@@ -136,16 +150,51 @@ export function renderStage2({
     setHidden(btsBtn, !state.run.boss.defeated);
   }
 
-  // Stairs compass — a HUD arrow + tile distance to the exit, unlocked once by the glyph-shop
-  // "Stairwell Sense" purchase. Guarded writes, so it only updates as you actually move.
+  // Stairs compass — the actual shortest-route next step + path length to the exit, unlocked once by
+  // the glyph-shop "Stairwell Sense" purchase. Routes via a BFS-from-stairs field (engine) that's
+  // cheap to query each move; the field is flooded once per world and cached (re-flooded when the
+  // grid mutates — a revealed hidden room — or a new world is drawn). Guarded writes.
   function updateCompass() {
     const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
     const w = state.run.world;
-    if (!owned || !w || state.run.boss.reached) { setHidden(fields.compass, true); return; }
-    const dx = w.exit.x - w.pos.x;
-    const dy = w.exit.y - w.pos.y;
+    if (!owned || !w || !w.grid || state.run.boss.reached) { setHidden(fields.compass, true); return; }
+    if (!routeCache || routeCache.world !== w) routeCache = { world: w, field: exitDistanceField(w) };
+    const next = stepToExit(w, routeCache.field);
     setHidden(fields.compass, false);
-    setText(fields.compass, `⇲ stairs ${compassArrow(dx, dy)} ${Math.abs(dx) + Math.abs(dy)}`);
+    if (!next || next.steps === 0) { setText(fields.compass, "⇲ stairs — here"); return; }
+    setText(fields.compass, `⇲ stairs ${DIR_ARROW[next.dir]} ${next.steps}`);
+  }
+
+  // Consumable inventory bar (B3) — one button per tool with its count + hotkey. Rebuilt only when
+  // a count actually changes (guarded by a signature), then the counts re-bound for clicks.
+  function paintItems(e) {
+    const inv = e.inventory || {};
+    const sig = CONSUMABLE_KEYS.map((k) => inv[k] || 0).join(",");
+    if (sig === lastItemSig) return;
+    lastItemSig = sig;
+    const total = CONSUMABLE_KEYS.reduce((s, k) => s + (inv[k] || 0), 0);
+    setHidden(fields.items, total === 0); // only show once you actually carry a rune
+    fields.items.innerHTML = CONSUMABLE_KEYS.map((k, i) => {
+      const n = inv[k] || 0;
+      const def = CONSUMABLES[k];
+      return `<button type="button" data-use="${k}" title="${def.desc}" ${n > 0 ? "" : "disabled"}>[${i + 1}] ${def.glyph} ${k} ×${n}</button>`;
+    }).join("");
+  }
+
+  // Spend a consumable (key 1/2/3 or a button). A firebolt with no target fizzles without spending.
+  function useItem(type) {
+    if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
+    const world = state.run.world;
+    const e = state.run.entity;
+    if (!e.inventory || !(e.inventory[type] > 0)) return;
+    const events = { moved: false, log: [], damageTaken: 0, died: false };
+    const used = useConsumable(world, e, type, events);
+    for (const line of events.log) appendLog(state, line);
+    if (used) {
+      if (typeof save === "function") save();
+      view.paintExplore(world); // blink moves the camera / firebolt may clear a foe
+    }
+    paintHud();
   }
 
   // The dungeon screen — boss arena art, or the camera-following exploration view.
@@ -181,12 +230,13 @@ export function renderStage2({
       return;
     }
     if (events.descend) {
-      descend(state);
+      descend(state, { branch: events.branch });
       persistAndPaint();
       return;
     }
     // Walk / bump-attack / opened a hidden room — repaint the screen + HUD. A plain wall bump
     // changes nothing, so skip the screen repaint (paintHud is guarded and stays a no-op).
+    if (events.reveal) routeCache = null; // a revealed hidden room carves new floor → re-flood
     const changed = events.moved || events.attack || events.reveal;
     if (changed) {
       if (typeof save === "function") save();
@@ -226,6 +276,11 @@ export function renderStage2({
     if (!root.isConnected) return;
     const tag = (event.target && event.target.tagName) || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
+    if (event.key >= "1" && event.key <= "3") {
+      const type = CONSUMABLE_KEYS[Number(event.key) - 1];
+      if (type) { event.preventDefault(); useItem(type); }
+      return;
+    }
     const dir = MOVE_KEYS[event.key];
     if (!dir) return;
     event.preventDefault();
@@ -236,6 +291,8 @@ export function renderStage2({
   root.addEventListener("click", (event) => {
     const moveBtn = event.target.closest("button[data-move]");
     if (moveBtn) { move(moveBtn.dataset.move); return; }
+    const useBtn = event.target.closest("button[data-use]");
+    if (useBtn) { useItem(useBtn.dataset.use); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
@@ -258,6 +315,7 @@ export function renderStage2({
     else if (id === "atk") e.atk += 5;
     else if (id === "lvl") { e.level += 1; e.maxHp += 5; e.atk += 1; e.hp = e.maxHp; }
     else if (id === "glyphs") e.glyphsThisRun = Number(e.glyphsThisRun || 0) + 1000;
+    else if (id === "items") { e.inventory = e.inventory || {}; for (const k of CONSUMABLE_KEYS) e.inventory[k] = Number(e.inventory[k] || 0) + 3; }
     else if (id === "map") { view.toggleFullMap(state.run.world); return; }
     if (typeof save === "function") save();
     paintHud();
@@ -283,7 +341,17 @@ export function renderStage2({
     const world = state.run.world;
     if (!world || !world.grid) return;
     const events = { moved: false, log: [], damageTaken: 0, died: false };
-    monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
+    // The fast clock also burns down the player's damage-over-time effects (poison/burn/bleed) so
+    // they tick even while standing still.
+    if (bucket === 0 && state.run.entity.statuses) {
+      const ps = tickPlayerStatus(state.run.entity);
+      for (const line of ps.log) events.log.push(line);
+      events.damageTaken += ps.damageTaken;
+      if (ps.died) events.died = true;
+    }
+    if (bucket === 2 && pressureSpawn(world)) appendLog(state, "something else stirs in the dark.");
+    if (bucket === 3 && !events.died) tickFire(world, state.run.entity, events); // C1 spreading fire
+    if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
     if (events.died) {
@@ -292,7 +360,10 @@ export function renderStage2({
       persistAndPaint();
       return;
     }
-    view.tickMonsters(world);
+    // While fire is alive, do the fuller repaint so flames spread/age and burned foes clear; else
+    // the cheap sprite-only monster tick.
+    if (world.fires && world.fires.length) view.paintExplore(world);
+    else view.tickMonsters(world);
     paintHud();
   }
 
@@ -326,100 +397,4 @@ export function renderStage2({
       completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
     }
   }
-}
-
-// ── Floor / run lifecycle ─────────────────────────────────────────────────────────────────────
-function ensureWorld(state) {
-  const run = state.run;
-  if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
-  if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
-    run.world = buildFloor(run.seed, run.floor);
-  } else if (!run.world.grid) {
-    // Loaded from a save: the grid is non-enumerable so it wasn't serialised. Regenerate the
-    // deterministic terrain (entities kept their saved positions) and re-attach it in memory.
-    attachGrid(run.world, run.seed, run.world.floor);
-  }
-}
-
-function descend(state) {
-  const run = state.run;
-  run.entity.glyphsThisRun += 3;
-  run.active = true;
-  state.meta.bestFloor = Math.max(Number(state.meta.bestFloor || 0), run.floor);
-  state.meta.floorsCleared[run.floor] = true;
-  if (run.floor >= MAX_FLOOR) {
-    run.boss.reached = true;
-    appendLog(state, "the stairs end at the boss syntax. it waits.");
-    return;
-  }
-  run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor);
-  appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
-}
-
-// Bank the run's glyphs, roll a fresh entity from purchased upgrades, and draw a new dungeon.
-function resetRun(state, { banked, death }) {
-  const run = state.run;
-  if (banked) {
-    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + Number(run.entity.glyphsThisRun || 0);
-  }
-  if (death) state.meta.deaths = Number(state.meta.deaths || 0) + 1;
-  state.meta.runCount = Number(state.meta.runCount || 0) + 1;
-  run.seed = `s2-run${state.meta.runCount}`;
-  run.entity = rollEntity(state.meta.shopUpgrades);
-  run.floor = 1;
-  run.active = false;
-  run.boss.reached = false;
-  run.world = buildFloor(run.seed, 1);
-}
-
-// ── Rendering helpers ─────────────────────────────────────────────────────────────────────────
-// 8-way arrow pointing from @ toward the stairs (for the Stairwell Sense compass).
-function compassArrow(dx, dy) {
-  const ax = Math.abs(dx);
-  const ay = Math.abs(dy);
-  if (ax < ay / 2) return dy < 0 ? "↑" : "↓";
-  if (ay < ax / 2) return dx < 0 ? "←" : "→";
-  if (dx < 0) return dy < 0 ? "↖" : "↙";
-  return dy < 0 ? "↗" : "↘";
-}
-
-const NOISE_CHARS = "╳✕X#▓░*/\\";
-function damageNoise(fatal) {
-  const rows = fatal ? 7 : 4;
-  const cols = fatal ? 34 : 26;
-  const lines = [];
-  for (let y = 0; y < rows; y += 1) {
-    let line = "";
-    for (let x = 0; x < cols; x += 1) {
-      line += Math.random() < 0.7 ? NOISE_CHARS[Math.floor(Math.random() * NOISE_CHARS.length)] : " ";
-    }
-    lines.push(line);
-  }
-  return lines.join("\n");
-}
-
-function appendLog(state, line) {
-  state.run.combatLog = [...state.run.combatLog, line].slice(-6);
-}
-
-function openCipher(viewer) {
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(CIPHER_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(CIPHER_PATH);
-}
-
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(2);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(2);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
-  };
 }

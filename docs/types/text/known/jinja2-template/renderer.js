@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .j2-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -12,10 +12,10 @@ const CSS = `
 .j2-section{margin:0 0 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden;}
 .j2-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0);}
 .j2-list{margin:0;padding:0;list-style:none;}
-.j2-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;}
+.j2-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .j2-list li:last-child{border-bottom:none;}
 .j2-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#fce7e7;color:#b41717;font-weight:700;}
-.j2-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
+.j2-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px;flex-basis:100%;margin-left:0;}
 .j2-output{color:#16a34a;font-weight:600;}
 .j2-block{color:#b41717;font-weight:600;}
 .j2-comment{color:#6e7781;font-style:italic;}
@@ -27,12 +27,15 @@ const CSS = `
 const JINJA_KEYWORDS = new Set(['if', 'elif', 'else', 'endif', 'for', 'in', 'endfor', 'block', 'endblock', 'extends', 'include', 'import', 'from', 'macro', 'endmacro', 'call', 'endcall', 'filter', 'endfilter', 'set', 'do', 'not', 'and', 'or', 'is', 'true', 'false', 'none', 'with', 'without', 'context', 'scoped', 'recursive', 'loop', 'super', 'namespace', 'raw', 'endraw', 'autoescape', 'endautoescape', 'trans', 'endtrans', 'pluralize']);
 
 function analyzeJinja2(text) {
+  const lineStarts = lineStartOffsets(text);
   let extendsBase = null;
-  const blocks = [];
-  const macros = [];
-  const includes = [];
-  const filters = new Set();
-  const variables = new Set();
+  const blocks = new Map();
+  const macros = new Map();
+  const includes = new Map();
+  const filters = new Map();
+  const variables = new Map();
+  const issues = [];
+  const locals = new Set();
 
   // Block tags {% ... %}
   const blockRe = /\{%-?\s*([\s\S]*?)\s*-?%\}/g;
@@ -40,47 +43,110 @@ function analyzeJinja2(text) {
   while ((m = blockRe.exec(text)) !== null) {
     const inner = m[1].trim();
     const kw = inner.split(/\s/)[0];
+    const line = offsetToLine(lineStarts, m.index);
 
     if (kw === 'extends') {
       const nameM = inner.match(/extends\s+["']([^"']+)['"]/);
-      if (nameM) extendsBase = nameM[1];
+      if (nameM) extendsBase = { name: nameM[1], line, type: 'extends' };
     } else if (kw === 'block') {
       const nameM = inner.match(/block\s+(\w+)/);
-      if (nameM && !blocks.includes(nameM[1])) blocks.push(nameM[1]);
+      if (nameM) addOccurrence(blocks, nameM[1], { line, kind: 'block override' });
     } else if (kw === 'macro') {
-      const nameM = inner.match(/macro\s+(\w+)/);
-      if (nameM && !macros.includes(nameM[1])) macros.push(nameM[1]);
+      const nameM = inner.match(/macro\s+(\w+)\s*\(([^)]*)\)/);
+      if (nameM) addOccurrence(macros, nameM[1], { line, kind: 'macro', signature: `${nameM[1]}(${nameM[2] || ''})` });
     } else if (kw === 'include') {
       const nameM = inner.match(/include\s+["']([^"']+)['"]/);
-      if (nameM) includes.push({ type: 'include', name: nameM[1] });
+      if (nameM) addOccurrence(includes, nameM[1], { line, kind: inner.includes('ignore missing') ? 'optional include' : 'include' });
     } else if (kw === 'import' || kw === 'from') {
       const nameM = inner.match(/(?:import|from)\s+["']([^"']+)['"]/);
-      if (nameM) includes.push({ type: kw, name: nameM[1] });
+      if (nameM) addOccurrence(includes, nameM[1], { line, kind: kw === 'from' ? 'from import' : 'import' });
+    } else if (kw === 'for') {
+      const forM = inner.match(/^for\s+(.+?)\s+in\s+(.+)/);
+      if (forM) {
+        for (const name of forM[1].match(/\b[A-Za-z_]\w*\b/g) || []) locals.add(name);
+        for (const name of variableRoots(forM[2])) addOccurrence(variables, name, { line, kind: 'for context' });
+      }
+    } else if (kw === 'if') {
+      for (const name of variableRoots(inner)) addOccurrence(variables, name, { line, kind: `${kw} context` });
     }
   }
 
   // Output tags {{ ... }} — extract variable names and filters
   const outputRe = /\{\{-?\s*([\s\S]*?)\s*-?\}\}/g;
   while ((m = outputRe.exec(text)) !== null) {
+    const line = offsetToLine(lineStarts, m.index);
     const parts = m[1].split('|');
-    const varPart = parts[0].trim().split(/[\s.[]/)[0];
-    if (varPart && /^\w+/.test(varPart) && !JINJA_KEYWORDS.has(varPart)) {
-      variables.add(varPart);
-    }
+    for (const name of variableRoots(parts[0])) addOccurrence(variables, name, { line, kind: 'output context' });
     for (let i = 1; i < parts.length; i++) {
       const filterName = parts[i].trim().split(/[\s(]/)[0];
-      if (filterName) filters.add(filterName);
+      if (filterName) addOccurrence(filters, filterName, { line, kind: 'filter' });
     }
+  }
+
+  for (const item of sortedOccurrences(blocks)) {
+    if (item.count > 1) issues.push({ severity: 'warning', label: 'duplicate block', line: item.firstLine, message: `Block "${item.name}" is declared ${item.count} times.` });
+  }
+  for (const item of sortedOccurrences(macros)) {
+    if (item.count > 1) issues.push({ severity: 'warning', label: 'duplicate macro', line: item.firstLine, message: `Macro "${item.name}" is declared ${item.count} times.` });
   }
 
   return {
     extendsBase,
-    blocks,
-    macros,
-    includes,
-    filters: [...filters].sort(),
-    variables: [...variables].sort(),
+    blocks: sortedOccurrences(blocks),
+    macros: sortedOccurrences(macros),
+    includes: sortedOccurrences(includes),
+    filters: sortedOccurrences(filters),
+    variables: sortedOccurrences(variables).filter((item) => !locals.has(item.name) && !localTemplateNames().has(item.name)),
+    issues,
   };
+}
+
+function lineStartOffsets(text) {
+  const out = [0];
+  for (let i = 0; i < text.length; i++) if (text[i] === '\n') out.push(i + 1);
+  return out;
+}
+
+function offsetToLine(starts, offset) {
+  let lo = 0, hi = starts.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (starts[mid] <= offset) lo = mid + 1;
+    else hi = mid - 1;
+  }
+  return hi + 1;
+}
+
+function variableRoots(expr) {
+  const roots = new Set();
+  const cleaned = String(expr || '').replace(/(["']).*?\1/g, ' ');
+  for (const match of cleaned.matchAll(/(^|[^.\w])([A-Za-z_]\w*)\b/g)) {
+    const name = match[2];
+    if (!JINJA_KEYWORDS.has(name) && !/^\d/.test(name)) roots.add(name);
+  }
+  return [...roots];
+}
+
+function addOccurrence(map, name, item) {
+  if (!map.has(name)) map.set(name, { name, count: 0, firstLine: item.line, kinds: new Set(), lines: [], signatures: new Set() });
+  const rec = map.get(name);
+  rec.count++;
+  rec.firstLine = Math.min(rec.firstLine, item.line);
+  rec.kinds.add(item.kind);
+  rec.lines.push(item.line);
+  if (item.signature) rec.signatures.add(item.signature);
+}
+
+function sortedOccurrences(map) {
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name)).map((rec) => ({
+    ...rec,
+    kinds: [...rec.kinds],
+    signatures: [...rec.signatures],
+  }));
+}
+
+function localTemplateNames() {
+  return new Set(['key', 'value', 'loop', 'defined', 'items', 'keys', 'values', 'range']);
 }
 
 function highlightJinja2(text) {
@@ -130,7 +196,7 @@ function highlightJinja2(text) {
   return result.join('');
 }
 
-function makeSection(title, items, tagFn) {
+function makeSection(title, items, tagFn, detailFn = null) {
   if (!items || items.length === 0) return null;
   const sec = document.createElement('div');
   sec.className = 'j2-section';
@@ -146,11 +212,15 @@ function makeSection(title, items, tagFn) {
       const tag = document.createElement('span');
       tag.className = 'j2-tag';
       tag.textContent = tagFn(item);
+      tag.title = tagHint(tag.textContent);
       li.appendChild(tag);
     }
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = typeof item === 'string' ? item : item.name;
-    li.appendChild(nameSpan);
+    const label = typeof item === 'string' ? item : item.name;
+    const line = typeof item === 'string' ? 1 : item.firstLine;
+    li.appendChild(sourceButton(label, line, `Open ${label} on line ${line}`));
+    if (line) li.appendChild(chip(`line ${line}`, 'muted'));
+    if (item.count > 1) li.appendChild(chip(`${item.count} uses`, 'info'));
+    if (detailFn) detailFn(li, item);
     ul.appendChild(li);
   }
   sec.appendChild(ul);
@@ -159,7 +229,7 @@ function makeSection(title, items, tagFn) {
 
 export function render(intake) {
   const text = intake.text || '';
-  const { extendsBase, blocks, macros, includes, filters, variables } = analyzeJinja2(text);
+  const { extendsBase, blocks, macros, includes, filters, variables, issues } = analyzeJinja2(text);
 
   const host = document.createElement('div');
   host.className = 'j2-doc';
@@ -167,11 +237,20 @@ export function render(intake) {
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
+  ensureKnownUiStyle(host);
 
   const title = document.createElement('div');
   title.className = 'j2-title';
-  title.innerHTML = '<span class="j2-badge">Jinja2</span>' + (extendsBase ? `<span style="font-size:13px;font-weight:400;margin-left:8px;">extends <code style="background:var(--bg-2,#f6f8fa);padding:1px 6px;border-radius:4px;">${esc(extendsBase)}</code></span>` : '');
+  title.innerHTML = '<span class="j2-badge">Jinja2</span>';
   host.appendChild(title);
+  if (extendsBase) {
+    const ext = document.createElement('div');
+    ext.className = 'j2-sub';
+    ext.appendChild(chip('extends', 'info', 'This template inherits layout blocks from a parent template.'));
+    ext.appendChild(document.createTextNode(' '));
+    ext.appendChild(sourceButton(extendsBase.name, extendsBase.line, 'Open extends declaration in source'));
+    host.appendChild(ext);
+  }
 
   const sub = document.createElement('div');
   sub.className = 'j2-sub';
@@ -200,30 +279,53 @@ export function render(intake) {
   }
   host.appendChild(cards);
 
-  const blocksEl = makeSection('Template Blocks', blocks);
+  const blocksEl = makeSection('Template Blocks', blocks, () => 'block', (li, item) => {
+    li.appendChild(chip('override point', 'info', 'Named region filled into the parent template.'));
+    if (item.count > 1) li.appendChild(chip('duplicate', 'warn'));
+  });
   if (blocksEl) host.appendChild(blocksEl);
 
-  const macrosEl = makeSection('Macros', macros);
+  const macrosEl = makeSection('Macros', macros, () => 'macro', (li, item) => {
+    for (const sig of item.signatures) li.appendChild(chip(sig, 'muted', 'Macro signature.'));
+  });
   if (macrosEl) host.appendChild(macrosEl);
 
-  const includesEl = makeSection('Includes / Imports', includes, (i) => i.type);
+  const includesEl = makeSection('Extends / Includes / Imports', includes, (i) => i.kinds[0], (li, item) => {
+    li.appendChild(chip('template dependency', item.kinds.includes('optional include') ? 'warn' : 'info', 'Referenced template must be available from the render environment.'));
+    const note = document.createElement('div');
+    note.className = 'j2-note';
+    note.textContent = item.kinds.join(', ');
+    li.appendChild(note);
+  });
   if (includesEl) host.appendChild(includesEl);
 
-  const filtersEl = makeSection('Filters', filters);
+  const variablesEl = makeSection('External Context Variables', variables, () => 'context', (li, item) => {
+    li.appendChild(chip(item.kinds.join(', '), 'muted', 'Usage context found in template expressions or control flow.'));
+  });
+  if (variablesEl) host.appendChild(variablesEl);
+
+  const filtersEl = makeSection('Filters', filters, () => 'filter');
   if (filtersEl) host.appendChild(filtersEl);
 
-  // Source
-  const srcSec = document.createElement('div');
-  srcSec.className = 'j2-section';
-  const srcHd = document.createElement('div');
-  srcHd.className = 'j2-section-hd';
-  srcHd.textContent = 'Source';
-  srcSec.appendChild(srcHd);
-  const pre = document.createElement('pre');
-  pre.className = 'j2-pre';
-  pre.innerHTML = highlightJinja2(text);
-  srcSec.appendChild(pre);
-  host.appendChild(srcSec);
+  const issueEl = issueList(issues, { title: 'Template Diagnostics' });
+  if (issueEl) host.appendChild(issueEl);
+
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'j2-line', highlighter: highlightJinja2 }));
+  wireSourceLinks(host, { idPrefix: 'j2-line' });
 
   return { parentNode: host };
+}
+
+function tagHint(label) {
+  const hints = {
+    block: 'Block supplied to a parent template through inheritance.',
+    macro: 'Reusable template function with named parameters.',
+    include: 'Includes another template at render time.',
+    import: 'Imports macros or variables from another template.',
+    'from import': 'Imports selected macros or variables from another template.',
+    'optional include': 'Optional include; rendering continues if the template is missing.',
+    context: 'Variable expected from the render context.',
+    filter: 'Transformation applied to a value before output.',
+  };
+  return hints[label] || '';
 }

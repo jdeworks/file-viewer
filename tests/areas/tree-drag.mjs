@@ -1,7 +1,7 @@
 export async function run(ctx) {
   const { page, origin, pass, fail, openExample } = ctx;
 
-  // ── Tree-drag → dual view: dragging a tree file onto the workspace enters dual-view ──
+  // ── Tree-drag → side by side: dragging a tree file onto the workspace opens an overlay ──
   // Load a folder (two files), then simulate dragging one tree file onto the workspace.
   await page.goto(origin, { waitUntil: 'load' });
 
@@ -17,10 +17,8 @@ export async function run(ctx) {
   if (!treeHiddenBefore) pass('tree-drag: single file opens a sidebar root before drag');
   else fail('tree-drag: sidebar hidden before drag');
 
-  // Simulate a drag from a tree file item to the workspace.
-  // We synthesize the drag by: (1) setting up a File and node object via page.evaluate,
-  // (2) dispatching a dragstart on a fake element to set the module-level _dragNode,
-  // (3) dispatching dragover + drop on #workspace with the correct dataTransfer type.
+  // Simulate a drag from a tree file item to the workspace. The first pass builds a real
+  // two-file tree; the second pass below dispatches dragstart/drop on the actual row.
   await page.evaluate(async () => {
     const { TREE_DRAG_TYPE } = await import('./core/filetree.js');
     // Build a synthetic File node representing sample.csv.
@@ -28,10 +26,6 @@ export async function run(ctx) {
     const file = new File([csvContent], 'sample.csv', { type: 'text/csv' });
     const node = { name: 'sample.csv', path: 'sample.csv', file, dir: false };
 
-    // Patch getDraggedTreeNode by setting the module-level variable via a temporary dragstart.
-    // Since _dragNode is module-private, use the dragstart event on a real tree row if one
-    // exists, otherwise simulate the drop directly using the exposed onTreeFileDrop path.
-    // The cleanest seam: dispatch the events that the actual handlers listen to.
     const ws = document.getElementById('workspace');
 
     // Simulate dragover with the tree drag type (so the handler calls preventDefault).
@@ -39,13 +33,7 @@ export async function run(ctx) {
     Object.defineProperty(overEvt, 'dataTransfer', { value: { types: [TREE_DRAG_TYPE] } });
     ws.dispatchEvent(overEvt);
 
-    // For the drop, we need getDraggedTreeNode() to return our node.
-    // The module exports it, but _dragNode is only set by a real dragstart on a row.
-    // So we call the drop handler pathway directly through the test seam: expose
-    // onTreeFileDrop via window.__fv (same pattern as other app internals).
-    // Since onTreeFileDrop is not on __fv yet, use the existing approach:
-    // build a minimal folder entry and call loadFolder to produce a tree with real rows,
-    // then drag a row programmatically.
+    // Build a minimal folder entry set to produce real rows, then drag a row programmatically.
     const entries = [
       { file: new File([window.__fv.state.rawview?.getValue() || '# hi'], 'welcome.md', { type: 'text/plain' }), path: 'welcome.md' },
       { file, path: 'sample.csv' },
@@ -59,7 +47,8 @@ export async function run(ctx) {
   await page.waitForSelector('#fileTree:not([hidden])', { timeout: 5000 });
   pass('tree-drag: sidebar visible after folder load');
 
-  // Now simulate dragging the second tree item (sample.csv) onto the workspace to switch to it.
+  // Now simulate dragging the second tree item (sample.csv) onto the workspace to open it
+  // beside the active file.
   // First open welcome.md by clicking it in the tree.
   const treeRows = await page.$$('.ft-row.ft-file');
   if (treeRows.length >= 2) pass('tree-drag: at least 2 file rows in tree'); else fail('tree-drag: expected 2 tree rows, got ' + treeRows.length);
@@ -103,17 +92,22 @@ export async function run(ctx) {
     ws.dispatchEvent(dropEvt);
   });
 
-  // Wait for sample.csv to become the active file.
-  await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'sample.csv', null, { timeout: 8000 })
-    .catch(() => {});
-  const activeName = await page.evaluate(() => window.__fv?.state?.intake?.filename);
-  if (activeName === 'sample.csv') pass('tree-drag: dragged file becomes active file');
-  else fail('tree-drag: active file after drop: ' + activeName);
+  await page.waitForSelector('.sbs-overlay', { timeout: 10000 });
+  const sbsNames = await page.$$eval('.sbs-overlay .sbs-fname', (els) => els.map((e) => e.textContent));
+  if (sbsNames.some((n) => /welcome\.md/i.test(n)) && sbsNames.some((n) => /sample\.csv/i.test(n)))
+    pass('tree-drag: dragged sidebar file opens side-by-side overlay');
+  else fail('tree-drag: side-by-side names=' + sbsNames.join(','));
 
-  // The sidebar must still be visible (dual-view mode maintained).
+  const activeName = await page.evaluate(() => window.__fv?.state?.intake?.filename);
+  if (activeName === 'welcome.md') pass('tree-drag: workspace drop keeps current file active');
+  else fail('tree-drag: active file after side-by-side drop: ' + activeName);
+
+  // The sidebar must still be visible while the side-by-side overlay is open.
   const treeVisible = await page.$eval('#fileTree', (el) => !el.hidden);
-  if (treeVisible) pass('tree-drag: sidebar stays visible after drag (dual-view preserved)');
+  if (treeVisible) pass('tree-drag: sidebar stays visible after side-by-side drag');
   else fail('tree-drag: sidebar hidden after drag');
+  await page.click('.sbs-overlay .sbs-close');
+  await page.waitForFunction(() => !document.querySelector('.sbs-overlay'), null, { timeout: 4000 });
 
   await page.evaluate(async () => {
     window.__fv.state._skipDiscardGuard = true;

@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .bbc-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -12,14 +12,14 @@ const CSS = `
 .bbc-section{margin:0 0 14px;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden}
 .bbc-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0)}
 .bbc-list{margin:0;padding:0;list-style:none}
-.bbc-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-size:12px;display:flex;gap:8px;align-items:baseline}
+.bbc-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-size:12px;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
 .bbc-list li:last-child{border-bottom:none}
+.bbc-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px;flex-basis:100%}
 .bbc-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#fef3e6;color:#e67e22;font-weight:700;flex-shrink:0;font-family:ui-monospace,monospace}
 .bbc-tag-url{background:#eaf1fb;color:#3366cc}
 .bbc-tag-img{background:#fef3c7;color:#92400e}
 .bbc-tag-code{background:#f3e8ff;color:#7c3aed}
 .bbc-tag-quote{background:#e6f4ea;color:#137333}
-.bbc-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre}
 .bbc-tag-line{color:#e67e22;font-weight:600}
 .bbc-url-line{color:#0550ae}
 .bbc-code-line{color:#7c3aed}
@@ -32,39 +32,68 @@ function parseBBCode(text) {
   const urls = [];
   const images = [];
   const quotes = [];
+  const codeBlocks = [];
+  const issues = [];
   let codeBlockCount = 0;
   let boldCount = 0;
   let italicCount = 0;
+  const stack = [];
+  const pairTags = new Set(['b', 'i', 'u', 's', 'url', 'img', 'quote', 'code', 'color', 'size', 'list', 'spoiler']);
+  const selfTags = new Set(['*', 'br', 'hr']);
 
   // Extract all [tag] and [tag=...] occurrences
-  const tagRe = /\[(\/?[\w*]+)(?:=[^\]]+)?\]/gi;
-  let m;
-  while ((m = tagRe.exec(text)) !== null) {
-    const raw = m[1].toLowerCase();
-    const tag = raw.startsWith('/') ? raw.slice(1) : raw;
-    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+  const lines = text.split(/\r?\n/);
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const lineNo = i + 1;
+    const tagRe = /\[(\/?[\w*]+)(?:=[^\]]+)?\]/gi;
+    let m;
+    while ((m = tagRe.exec(line)) !== null) {
+      const raw = m[1].toLowerCase();
+      const closing = raw.startsWith('/');
+      const tag = closing ? raw.slice(1) : raw;
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      if (selfTags.has(tag)) continue;
+      if (!pairTags.has(tag)) continue;
+      if (!closing) {
+        stack.push({ tag, line: lineNo });
+        continue;
+      }
+      const last = stack.pop();
+      if (!last) {
+        issues.push({ severity: 'warning', label: 'unmatched close', line: lineNo, message: `Closing tag [/${tag}] has no matching opener.` });
+      } else if (last.tag !== tag) {
+        issues.push({ severity: 'warning', label: 'tag mismatch', line: lineNo, message: `Closing tag [/${tag}] does not match open [${last.tag}] from line ${last.line}.` });
+      }
+    }
+  }
+  for (const open of stack.reverse()) {
+    issues.push({ severity: 'warning', label: 'unclosed tag', line: open.line, message: `Opening tag [${open.tag}] is not closed.` });
   }
 
   // URLs: [url=http://...]...[/url]
   const urlRe = /\[url=([^\]]+)\]/gi;
+  let m;
   while ((m = urlRe.exec(text)) !== null) {
-    urls.push(m[1]);
+    urls.push({ url: m[1], line: lineForIndex(text, m.index) });
   }
 
   // Images: [img]url[/img]
   const imgRe = /\[img\]([^\[]+)\[\/img\]/gi;
   while ((m = imgRe.exec(text)) !== null) {
-    images.push(m[1].trim());
+    images.push({ url: m[1].trim(), line: lineForIndex(text, m.index) });
   }
 
   // Quotes: [quote]...[/quote] or [quote=author]
   const quoteRe = /\[quote(?:=([^\]]+))?\]/gi;
   while ((m = quoteRe.exec(text)) !== null) {
-    quotes.push(m[1] ? m[1].trim() : '(anonymous)');
+    quotes.push({ author: m[1] ? m[1].trim() : '(anonymous)', line: lineForIndex(text, m.index) });
   }
 
   // Code blocks
   codeBlockCount = (text.match(/\[code\]/gi) || []).length;
+  const codeRe = /\[code\]/gi;
+  while ((m = codeRe.exec(text)) !== null) codeBlocks.push({ line: lineForIndex(text, m.index) });
 
   // Bold/italic counts (opening tags only)
   boldCount = (text.match(/\[b\]/gi) || []).length;
@@ -76,18 +105,36 @@ function parseBBCode(text) {
     .sort((a, b) => b[1] - a[1])
     .map(([tag, count]) => ({ tag, count }));
 
-  return { tagList, urls, images, quotes, codeBlockCount, boldCount, italicCount };
+  for (const item of duplicateItems(urls, 'url')) {
+    issues.push({ severity: 'info', label: 'repeated link', line: item.line, message: `Link "${item.value}" appears ${item.count} times.` });
+  }
+  for (const item of duplicateItems(images, 'url')) {
+    issues.push({ severity: 'info', label: 'repeated image', line: item.line, message: `Image "${item.value}" appears ${item.count} times.` });
+  }
+
+  return { tagList, urls, images, quotes, codeBlocks, issues, codeBlockCount, boldCount, italicCount };
 }
 
-function highlightBBCode(text) {
-  const lines = text.split(/\r?\n/);
-  return lines.map((line) => {
-    if (/\[url/i.test(line)) return `<span class="bbc-url-line">${esc(line)}</span>`;
-    if (/\[code\]/i.test(line) || /\[\/code\]/i.test(line)) return `<span class="bbc-code-line">${esc(line)}</span>`;
-    if (/\[quote/i.test(line) || /\[\/quote\]/i.test(line)) return `<span class="bbc-quote-line">${esc(line)}</span>`;
-    if (/\[[a-z*]/.test(line.toLowerCase())) return `<span class="bbc-tag-line">${esc(line)}</span>`;
-    return esc(line);
-  }).join('\n');
+function lineForIndex(text, idx) {
+  return text.slice(0, idx).split(/\r?\n/).length;
+}
+
+function duplicateItems(items, key) {
+  const seen = new Map();
+  for (const item of items) {
+    const value = item[key];
+    if (!seen.has(value)) seen.set(value, { value, count: 0, line: item.line });
+    seen.get(value).count++;
+  }
+  return [...seen.values()].filter((item) => item.count > 1);
+}
+
+function highlightBBCodeLine(line) {
+  if (/\[url/i.test(line)) return `<span class="bbc-url-line">${esc(line)}</span>`;
+  if (/\[code\]/i.test(line) || /\[\/code\]/i.test(line)) return `<span class="bbc-code-line">${esc(line)}</span>`;
+  if (/\[quote/i.test(line) || /\[\/quote\]/i.test(line)) return `<span class="bbc-quote-line">${esc(line)}</span>`;
+  if (/\[[a-z*]/.test(line.toLowerCase())) return `<span class="bbc-tag-line">${esc(line)}</span>`;
+  return esc(line);
 }
 
 function makeSection(host, title) {
@@ -111,8 +158,7 @@ function makeList(sec) {
 export function render(intake) {
   const text = intake.text || '';
   const name = (intake.name || intake.filename || '').split('/').pop();
-  const { tagList, urls, images, quotes, codeBlockCount, boldCount, italicCount } = parseBBCode(text);
-  const lines = text.split(/\r?\n/);
+  const { tagList, urls, images, quotes, codeBlocks, issues, codeBlockCount, boldCount, italicCount } = parseBBCode(text);
   const wordCount = text.replace(/\[[^\]]*\]/g, '').split(/\s+/).filter(Boolean).length;
 
   const host = document.createElement('div');
@@ -121,6 +167,7 @@ export function render(intake) {
   const style = document.createElement('style');
   style.textContent = CSS;
   host.appendChild(style);
+  ensureKnownUiStyle(host);
 
   // Header
   const header = document.createElement('div');
@@ -195,13 +242,13 @@ export function render(intake) {
   if (urls.length) {
     const sec = makeSection(host, `Links (${urls.length})`);
     const ul = makeList(sec);
-    for (const url of urls.slice(0, 8)) {
+    for (const item of urls.slice(0, 8)) {
       const li = document.createElement('li');
       const tag = document.createElement('span');
       tag.className = 'bbc-tag bbc-tag-url';
       tag.textContent = 'url';
       li.appendChild(tag);
-      li.appendChild(document.createTextNode(url.length > 80 ? url.slice(0, 77) + '…' : url));
+      li.appendChild(sourceButton(item.url.length > 80 ? item.url.slice(0, 77) + '...' : item.url, item.line, 'Open link in source'));
       ul.appendChild(li);
     }
     if (urls.length > 8) {
@@ -216,13 +263,13 @@ export function render(intake) {
   if (quotes.length) {
     const sec = makeSection(host, `Quotes (${quotes.length})`);
     const ul = makeList(sec);
-    for (const author of quotes.slice(0, 6)) {
+    for (const quote of quotes.slice(0, 6)) {
       const li = document.createElement('li');
       const tag = document.createElement('span');
       tag.className = 'bbc-tag bbc-tag-quote';
       tag.textContent = 'quote';
       li.appendChild(tag);
-      li.appendChild(document.createTextNode(author));
+      li.appendChild(sourceButton(quote.author, quote.line, 'Open quote in source'));
       ul.appendChild(li);
     }
     if (quotes.length > 6) {
@@ -243,25 +290,27 @@ export function render(intake) {
       tag.className = 'bbc-tag bbc-tag-img';
       tag.textContent = 'img';
       li.appendChild(tag);
-      li.appendChild(document.createTextNode(img.length > 70 ? img.slice(0, 67) + '…' : img));
+      li.appendChild(sourceButton(img.url.length > 70 ? img.url.slice(0, 67) + '...' : img.url, img.line, 'Open image in source'));
       ul.appendChild(li);
     }
   }
 
-  // Source preview
-  const MAX = 120;
-  const truncated = lines.length > MAX;
-  const srcSec = makeSection(host, truncated ? `Source (first ${MAX} lines)` : 'Source');
-  const pre = document.createElement('pre');
-  pre.className = 'bbc-pre';
-  pre.innerHTML = highlightBBCode((truncated ? lines.slice(0, MAX) : lines).join('\n'));
-  srcSec.appendChild(pre);
-  if (truncated) {
-    const note = document.createElement('div');
-    note.style.cssText = 'padding:6px 14px;font-size:11px;color:var(--fg-2,#888);font-style:italic;border-top:1px solid var(--border,#e0e0e0)';
-    note.textContent = `… truncated — ${lines.length - MAX} more lines not shown`;
-    srcSec.appendChild(note);
+  if (codeBlocks.length) {
+    const sec = makeSection(host, `Code Blocks (${codeBlocks.length})`);
+    const ul = makeList(sec);
+    for (const block of codeBlocks.slice(0, 8)) {
+      const li = document.createElement('li');
+      li.appendChild(chip('code', 'info', 'BBCode code block.'));
+      li.appendChild(sourceButton(`line ${block.line}`, block.line, 'Open code block in source'));
+      ul.appendChild(li);
+    }
   }
+
+  const issueEl = issueList(issues, { title: 'Markup Review' });
+  if (issueEl) host.appendChild(issueEl);
+
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'bbc-line', highlighter: highlightBBCodeLine }));
+  wireSourceLinks(host, { idPrefix: 'bbc-line' });
 
   return { parentNode: host };
 }

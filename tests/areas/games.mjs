@@ -14,6 +14,10 @@ export async function run(ctx) {
     if (m) stageIndexReqs.add(m[1]);
   });
 
+  // Opening a generated file (e.g. Stage 3's memory logs) while a prior stage left an unsaved editor
+  // triggers the viewer's discard-confirm. A real player clicks "Discard and continue"; accept it so
+  // the file actually opens (Playwright otherwise auto-DISMISSES, cancelling the open).
+  page.on('dialog', (d) => { d.accept().catch(() => {}); });
   await page.goto(origin, { waitUntil: 'load' });
   await page.evaluate(() => {
     try {
@@ -602,12 +606,20 @@ export async function run(ctx) {
   await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
   const s3Locked = await page.$eval('[data-field="bossStatus"]', (el) => el.textContent);
   if (/LOCKED/.test(s3Locked) && /missing/.test(s3Locked)) pass('Stage 3 boss starts locked with missing column clues'); else fail('Stage 3 initial status: ' + s3Locked);
+  // Boss un-cheat: the SEED-DERIVED restoration key lives only in the diff of the two memory logs.
+  // (Opening a generated file prompts the discard guard — accepted via the dialog handler above.)
   await page.click('[data-action="v1"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'memory_v1.log', null, { timeout: 5000 });
   const v1Text = await page.evaluate(() => window.__fv.state.intake.text);
-  if (v1Text.includes('<sec') && v1Text.includes('ret') && v1Text.includes('key>')) pass('Stage 3 opens generated memory_v1.log through viewer'); else fail('Stage 3 generated v1 text missing key pieces');
+  const chunks = [...v1Text.matchAll(/restoration chunk (\S+)/g)].map((m) => m[1]);
+  if (chunks.length === 3 && chunks.every((c) => c && c !== '[missing]')) pass('Stage 3 memory_v1.log carries the run restoration chunks'); else fail('Stage 3 v1 chunks: ' + JSON.stringify(chunks));
+  // v2 (corrupted) has those chunks stripped — confirm the diff is real.
+  await page.click('[data-action="v2"]');
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'memory_v2.log', null, { timeout: 5000 });
+  const v2Text = await page.evaluate(() => window.__fv.state.intake.text);
+  if (/\[missing\]/.test(v2Text) && !chunks.some((c) => v2Text.includes(c))) pass('Stage 3 memory_v2.log shows the chunks as [missing] (the diff)'); else fail('Stage 3 v2 should hide the chunks');
   await page.waitForSelector('.stage3-memory-grid', { timeout: 8000 });
-  await page.fill('.s3-key', '<secretkey>');
+  await page.fill('.s3-key', chunks.join(''));
   await page.click('[data-action="restore"]');
   await page.waitForFunction(() => {
     try {

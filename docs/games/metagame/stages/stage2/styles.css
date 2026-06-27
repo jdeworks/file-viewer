@@ -63,6 +63,28 @@
   display: none;
 }
 
+/* Consumable inventory bar (B3) — a row of small rune buttons with counts + hotkeys. */
+.s2-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.s2-items button {
+  background: #21180d;
+  border: 1px solid var(--s2-border);
+  color: #ff7bf0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82em;
+  min-height: 30px;
+  padding: 4px 7px;
+  white-space: nowrap;
+}
+
+.s2-items button:disabled { color: var(--s2-dim); cursor: default; opacity: 0.5; }
+.s2-items button:not(:disabled):hover { border-color: #ffc46f; outline: 1px solid #ffc46f; }
+
 .s2-hud {
   border-bottom: 1px solid var(--s2-border);
   padding-bottom: 8px;
@@ -71,6 +93,13 @@
 .s2-objective {
   color: #ffd186;
   font-size: 0.92em;
+}
+
+/* Active player status effects (poison/burn/bleed…) — a small amber chip in the HUD. */
+.s2-status {
+  color: #ff8a5a;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .s2-screen {
@@ -117,6 +146,12 @@
   white-space: pre;
   width: max-content;
 }
+
+/* Biome bands (B1): each floor band recolours the terrain + screen background so depth has a place
+   identity. Cosmetic only — the grid stays one global colour (no per-cell spans). */
+.stage2-glyph-dungeon[data-biome="cisterns"] .s2-grid { color: #4f6b78; background: #060a0c; }
+.stage2-glyph-dungeon[data-biome="emberworks"] .s2-grid { color: #7a4a2a; background: #0c0706; }
+.stage2-glyph-dungeon[data-biome="overflow"] .s2-grid { color: #6a5a85; background: #0a0710; }
 
 /* Hidden ruler: a zero-padding twin of the grid used to measure exact cell px metrics
    (see view.measure) so sprites land on their cells at any font-size. */
@@ -194,13 +229,44 @@
 .s2-c-void { color: #050403; }
 .s2-c-player { color: #79f0ff; font-weight: 700; }
 .s2-c-foe { color: #ff5a4a; font-weight: 700; }
+.s2-c-foe-b { color: #ff9a3a; font-weight: 700; } /* C5 rival faction tint */
 .s2-c-foe2 { color: #ff2bd0; font-weight: 700; }
+.s2-c-elite { color: #ffd24a; font-weight: 700; text-shadow: 0 0 5px #ff9b2e; } /* elite — gilded + glow */
+.s2-c-ambush { color: #6b5026; font-weight: 400; } /* disguised ambusher — exact terrain colour */
+.s2-c-ally { color: #5effc4; font-weight: 700; text-shadow: 0 0 5px #00d68a; } /* freed captive ally */
+.s2-c-guardian { color: #ff5edd; font-weight: 700; text-shadow: 0 0 7px #ff00aa; } /* B6 floor guardian */
+.s2-foe-dot { filter: hue-rotate(45deg) brightness(1.1); } /* poisoned/burning tint */
+
+/* Hazard tiles (A2) — sparse colored cells. */
+.s2-c-lava { color: #ff5a1e; text-shadow: 0 0 5px #ff2a00; }
+.s2-c-spores { color: #7dd44a; }
+.s2-c-spikes { color: #9aa4ad; }
+.s2-c-chasm { color: #6a7bb0; }
+.s2-c-trap { color: #c0563a; } /* sprung trap marker */
+.s2-c-fire { color: #ff7a1e; text-shadow: 0 0 6px #ff3a00; animation: s2-fire 0.4s steps(2) infinite; } /* C1 spreading fire */
+
+@keyframes s2-fire { 50% { color: #ffd24a; opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .s2-c-fire { animation: none; } }
+/* Layer order in the absolute sprite stack: hazards under loot under foes under @. */
+.s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm, .s2-c-trap { z-index: 0; }
+.s2-c-foe, .s2-c-foe-b, .s2-c-foe2, .s2-c-elite, .s2-c-ambush, .s2-c-guardian, .s2-c-ally { z-index: 2; }
+.s2-c-player { z-index: 3; }
 .s2-c-item { color: #ffd54a; }
 .s2-c-potion { color: #6effa6; font-weight: 700; }
 .s2-c-glyph { color: #d78bff; }
+.s2-c-consum { color: #ff7bf0; font-weight: 700; text-shadow: 0 0 4px #ff00cc; } /* B3 consumable rune */
 .s2-c-exit { color: #7fe07f; font-weight: 700; }
+.s2-c-branch { color: #c98bff; font-weight: 700; text-shadow: 0 0 5px #8a3aff; } /* B5 branch stair */
 
-.s2-compass { color: #79f0ff; font-weight: 700; }
+/* Stairwell Sense readout — a status chip above the action buttons (shortest-route next step). */
+.s2-compass {
+  border: 1px dashed var(--s2-border);
+  color: #79f0ff;
+  font-weight: 700;
+  padding: 5px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
 .s2-c-secret { color: #9a7838; } /* secret-door wall — a hair brighter than terrain (#6b5026) */
 
 .s2-legend {
@@ -344,6 +410,13 @@
   outline: 1px solid #ffc46f;
 }
 
+/* Heat toggle (C3): lit when the modifier is active. */
+.s2-shop-row button.s2-mod-on {
+  background: #5a2410;
+  border-color: #ff7a3a;
+  color: #ffb98a;
+}
+
 /* How-to-play overlay (shares the shop's placement). */
 .s2-help {
   background: #140f0a;
@@ -420,6 +493,11 @@
     flex: 1 1 42%;
     text-align: center;
     width: auto;
+  }
+
+  /* Keep the compass as a full-width header above the wrapped button grid. */
+  .s2-compass {
+    flex: 1 1 100%;
   }
 
   /* Touch movement pad — full-width row below the action buttons. */

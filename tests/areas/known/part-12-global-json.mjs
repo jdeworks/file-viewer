@@ -39,10 +39,29 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .grafanaini-doc', { timeout: 12000 });
   pass('grafana.ini: badge shown');
   const grafText = await page.$eval('#previewHost .grafanaini-doc', el => el.textContent);
+  const grafHtml = await page.$eval('#previewHost .grafanaini-doc', el => el.innerHTML);
   if (!grafText.includes('3000') && !grafText.includes('grafana.example.com')) fail('grafana.ini: server not shown'); else pass('grafana.ini: server shown');
   if (!grafText.includes('postgres')) fail('grafana.ini: database type not shown'); else pass('grafana.ini: database type shown');
-  if (grafText.includes('db-secret-password') || grafText.includes('strong-admin-password')) fail('grafana.ini: secrets leaked'); else pass('grafana.ini: secrets masked');
+  if ([
+    'db-secret-password',
+    'strong-admin-password',
+    'github-client-secret',
+    'smtp-password',
+    'grafana-secret-key-here',
+  ].some(secret => (grafText + grafHtml).includes(secret))) fail('grafana.ini: secrets leaked'); else pass('grafana.ini: secrets masked');
   if (!grafText.includes('github')) fail('grafana.ini: auth providers not shown'); else pass('grafana.ini: auth providers shown');
+  if (!/Grafana Review|public bind|domain check|secret configured|external auth/i.test(grafText)) fail('grafana.ini: review findings missing'); else pass('grafana.ini: review findings shown');
+  const grafSourceCollapsed = await page.$eval('#previewHost .grafanaini-doc .kf-source-details', el => !el.open && el.textContent.includes('Redacted source'));
+  if (!grafSourceCollapsed) fail('grafana.ini: redacted source not collapsed'); else pass('grafana.ini: redacted source collapsed');
+  const grafSourceLine = await page.$eval('#previewHost .grafanaini-doc [data-source-line]', el => {
+    el.click();
+    return el.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .grafanaini-doc .kf-source-details');
+    return details?.open && document.getElementById(`grafana-line-${line}`);
+  }, grafSourceLine);
+  pass('grafana.ini: source links open redacted source');
 
   // ── mix.exs (Elixir Mix build file) viewer ──
   await openExample('mix.exs');
@@ -62,6 +81,28 @@ export async function run(ctx) {
   if (!railwayText.includes('Railway')) fail('railway.json: missing badge'); else pass('railway.json: badge shown');
   if (!railwayText.includes('web') && !railwayText.includes('worker')) fail('railway.json: services not shown'); else pass('railway.json: services shown');
   if (railwayText.includes('supersecret123') || railwayText.includes('tok_abc123') || railwayText.includes('s3cr3t')) fail('railway.json: secrets leaked'); else pass('railway.json: secrets masked');
+  if (/Railway Review|healthcheck|restart|reference|volume/i.test(railwayText)) pass('railway.json: review findings shown'); else fail('railway review: ' + railwayText.slice(0, 300));
+  const railwayBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/railway-json/renderer.js');
+    const text = JSON.stringify({ servicess: [{ name: 'web' }], deploy: { restartPolicyType: 'ALWAYS' } }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Railway Review|unknown key|servicess/i.test(railwayBad.out) && !railwayBad.open) pass('railway.json: unknown top-level key diagnostic shown'); else fail('railway unknown key: ' + JSON.stringify(railwayBad).slice(0, 700));
+  const railwayHelpTitle = await page.$eval('#previewHost .railwayjson-doc .rwj2-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Railway|Open line|source/i.test(railwayHelpTitle)) pass('railway.json: hover source help shown'); else fail('railway hover help: ' + railwayHelpTitle);
+  const railwaySourceCollapsed = await page.$eval('#previewHost .railwayjson-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (railwaySourceCollapsed) pass('railway.json: source collapsed'); else fail('railway source should start collapsed');
+  const railwaySourceLine = await page.$eval('#previewHost .railwayjson-doc .rwj2-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .railwayjson-doc .kf-source-details');
+    return details?.open && document.getElementById(`railway-line-${line}`);
+  }, railwaySourceLine, { timeout: 3000 });
+  pass('railway.json: source links open source');
 
   // ── render.yaml (Render.com infrastructure-as-code) viewer ──
   await openExample('render.yaml');
@@ -70,6 +111,26 @@ export async function run(ctx) {
   const renderText = await page.$eval('#previewHost .renderyaml-doc', el => el.textContent);
   if (!renderText.includes('Render')) fail('render.yaml: missing badge'); else pass('render.yaml: badge shown');
   if (!renderText.includes('web-app') && !renderText.includes('web')) fail('render.yaml: services not shown'); else pass('render.yaml: services shown');
+  if (!renderText.includes('Render Review') || !renderText.includes('health check')) fail('render.yaml: review findings missing'); else pass('render.yaml: review findings shown');
+  if (!renderText.includes('[dashboard managed]') || !renderText.includes('fromDatabase:main-db.connectionString')) fail('render.yaml: env notes missing'); else pass('render.yaml: env notes shown');
+  const renderBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/yaml/known/render-yaml/renderer.js');
+    const rendered = (await mod.render({ text: 'servicess:\n  - name: web\n    type: web\n' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Render Review|unknown key|servicess/i.test(renderBad.out) && !renderBad.open) pass('render.yaml: unknown top-level key diagnostic shown'); else fail('render unknown key: ' + JSON.stringify(renderBad).slice(0, 700));
+  const renderSourceCollapsed = await page.$eval('#previewHost .renderyaml-doc .kf-source-details', el => !el.open);
+  if (renderSourceCollapsed) pass('render.yaml: source collapsed'); else fail('render.yaml source should start collapsed');
+  const renderSourceLine = await page.$eval('#previewHost .renderyaml-doc .rdr-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .renderyaml-doc .kf-source-details');
+    return details?.open && document.getElementById(`render-line-${line}`);
+  }, renderSourceLine, { timeout: 3000 });
+  pass('render.yaml: source links open source');
 
   // ── .htaccess (Apache per-directory config) viewer ──
   await openExample('.htaccess');
@@ -142,6 +203,27 @@ export async function run(ctx) {
   const nginxText = await page.$eval('.nginxconf-doc', el => el.textContent);
   if (!nginxText.includes('NGINX') && !nginxText.includes('nginx')) fail('nginx.conf: missing badge'); else pass('nginx.conf: badge shown');
   if (!nginxText.includes('server') && !nginxText.includes('listen')) fail('nginx.conf: no server info'); else pass('nginx.conf: server info shown');
+  const nginxBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/nginx-conf/renderer.js');
+    const text = `server {
+  listen 443 ssl;
+  server_name risky.example.test;
+  server_tokens on;
+  error_log /var/log/nginx/error.log debug;
+  location /files/ { autoindex on; }
+  location /api/ {
+    proxy_pass http://backend;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+}`;
+    const rendered = mod.render({ text, filename: 'nginx.conf' }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Nginx Review|missing hsts|server tokens|debug logging|directory listing|proxy headers/i.test(nginxBad.out) && !nginxBad.open) pass('nginx.conf: server rule-pack diagnostics shown'); else fail('nginx.conf diagnostics: ' + JSON.stringify(nginxBad).slice(0, 700));
 
   // ── haproxy.cfg viewer (haproxycfg-doc class) ──
   await openExample('haproxy.cfg');
@@ -291,9 +373,25 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .helmfile-doc', { timeout: 12000 });
   pass('helmfile.yaml: renders');
   const helmfileText = await page.$eval('#previewHost .helmfile-doc', el => el.textContent);
+  const helmfileHtml = await page.$eval('#previewHost .helmfile-doc', el => el.innerHTML);
   if (!helmfileText.includes('Helmfile')) fail('helmfile.yaml: missing badge'); else pass('helmfile.yaml: badge shown');
   if (!helmfileText.includes('nginx-ingress') && !helmfileText.includes('cert-manager') && !helmfileText.includes('release')) fail('helmfile.yaml: no releases shown'); else pass('helmfile.yaml: releases shown');
   if (!helmfileText.includes('bitnami') && !helmfileText.includes('stable') && !helmfileText.includes('repo')) fail('helmfile.yaml: no repos shown'); else pass('helmfile.yaml: repos shown');
+  if (/Helmfile Review|stable repo|latest fallback|env secret|atomic/i.test(helmfileText)) pass('helmfile.yaml: review findings shown'); else fail('helmfile.yaml: review missing: ' + helmfileText.slice(0, 400));
+  if ((helmfileText + helmfileHtml).includes('adminPassword: "{{ requiredEnv')) fail('helmfile.yaml: secret-like source leaked'); else pass('helmfile.yaml: secret-like source redacted');
+  const helmfileHelpTitle = await page.$eval('#previewHost .helmfile-doc .helmfile-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Helmfile|Open line|source/i.test(helmfileHelpTitle)) pass('helmfile.yaml: hover source help shown'); else fail('helmfile.yaml source help title missing');
+  const helmfileSourceCollapsed = await page.$eval('#previewHost .helmfile-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (helmfileSourceCollapsed) pass('helmfile.yaml: redacted source collapsed'); else fail('helmfile.yaml: redacted source not collapsed');
+  const helmfileSourceLine = await page.$eval('#previewHost .helmfile-doc .helmfile-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .helmfile-doc .kf-source-details');
+    return details?.open && document.getElementById(`helmfile-line-${line}`);
+  }, helmfileSourceLine);
+  pass('helmfile.yaml: source links open redacted source');
 
   // ── .release-it.yml viewer ──
   await openExample('.release-it.yml');

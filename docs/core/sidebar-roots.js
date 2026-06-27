@@ -1,4 +1,5 @@
 import { buildTree, renderTree } from './filetree.js';
+import { intakeFromText } from './intake.js';
 import { $, state, toast } from './state.js';
 
 let loadIntake = null;
@@ -36,14 +37,33 @@ function fileFromIntake(intake) {
 
 export function captureActiveSidebarRoot() {
   const root = roots().find((item) => item.id === state.activeSidebarRootId);
-  if (!root) return;
-  root.treeEntries = state.treeEntries || root.treeEntries || [];
-  root.folderEdits = state.folderEdits || new Map();
+  if (!root) return false;
+  let capturedDirtyFileRoot = false;
+  if (root.kind === 'file' && state.rawview?.isDirty?.()) {
+    const entry = (root.treeEntries || [])[0];
+    const path = entry?.path || root.label;
+    const text = state.rawview.getValue();
+    const intake = intakeFromText(text, path.split('/').pop() || root.label);
+    root.treeEntries = [{
+      ...(entry || {}),
+      path,
+      file: fileFromIntake(intake),
+      intake,
+    }];
+    root.folderEdits = new Map([[path, text]]);
+    root.folderExported = false;
+    capturedDirtyFileRoot = true;
+  }
+  if (!capturedDirtyFileRoot) {
+    root.treeEntries = state.treeEntries || root.treeEntries || [];
+    root.folderEdits = state.folderEdits || new Map();
+  }
   root.folderMoves = state.folderMoves || new Map();
   root.binaryEdits = state.binaryEdits || null;
   root.archiveDeletes = state.archiveDeletes || null;
   root.currentFolderPath = state.currentFolderPath || null;
-  root.folderExported = !!state.folderExported;
+  root.folderExported = capturedDirtyFileRoot ? false : !!state.folderExported;
+  return capturedDirtyFileRoot;
 }
 
 export function activateSidebarRoot(root, { skipCapture = false } = {}) {
@@ -131,9 +151,10 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
       if (root.openNode) {
         await root.openNode(entry, innerPath);
       } else {
+        const edited = root.folderEdits?.get(innerPath);
         state._skipDiscardGuard = true;
         state._skipSidebarRoot = true;
-        await loadIntake(entry.intake);
+        await loadIntake(edited != null ? intakeFromText(edited, innerPath.split('/').pop()) : entry.intake);
       }
       state.currentFolderPath = root.kind === 'file' ? null : innerPath;
       root.currentFolderPath = state.currentFolderPath;
@@ -155,8 +176,11 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
   });
   const activePath = activeInnerPath || active.currentFolderPath || (active.treeEntries || [])[0]?.path;
   if (activePath) state.treeApi.setActive(active.kind === 'file' ? active.label : active.label + '/' + activePath);
-  for (const [path, text] of state.folderEdits || []) {
-    if (text != null) state.treeApi.setEdited(active.label + '/' + path, true);
+  for (const root of list) {
+    for (const [path, text] of root.folderEdits || []) {
+      if (text == null) continue;
+      state.treeApi.setEdited(root.kind === 'file' ? root.label : root.label + '/' + path, true);
+    }
   }
   for (const dest of state.folderMoves?.values?.() || []) {
     state.treeApi.setMoved(active.label + '/' + dest, dest);
@@ -170,7 +194,6 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
 
 export function addFileRoot(intake) {
   if (!intake || state._skipSidebarRoot) return;
-  captureActiveSidebarRoot();
   const label = uniqueLabel(intake.filename || 'File');
   const root = {
     id: 'r' + nextId++,
@@ -184,7 +207,7 @@ export function addFileRoot(intake) {
     }],
   };
   roots().push(root);
-  renderSidebarRoots(root, label);
+  renderSidebarRoots(root, label, { skipCapture: true });
 }
 
 export function addFolderRoot({ label, entries, git = false, openNode = null, alreadyCaptured = false }) {

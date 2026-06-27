@@ -245,9 +245,17 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .appsettings-doc', { timeout: 12000 });
   pass('appsettings.json: badge shown');
   const asText = await page.$eval('#previewHost .appsettings-doc', (e) => e.textContent);
+  const asHtml = await page.$eval('#previewHost .appsettings-doc', (e) => e.innerHTML);
   if (!asText.includes('DefaultConnection')) fail('appsettings.json: connection strings not shown'); else pass('appsettings.json: connection strings shown');
-  if (asText.includes('secret123') || asText.includes('super-secret-jwt')) fail('appsettings.json: secrets leaked'); else pass('appsettings.json: secrets masked');
+  if ((asText + asHtml).includes('secret123') || (asText + asHtml).includes('super-secret-jwt')) fail('appsettings.json: secrets leaked'); else pass('appsettings.json: secrets masked');
   if (/Information|Warning/i.test(asText)) pass('appsettings.json: log levels shown'); else fail('appsettings.json: log levels not shown: ' + asText.slice(0, 200));
+  if (/Appsettings Review|public hosts|connection secret|jwt signing/i.test(asText)) pass('appsettings.json: review warnings shown'); else fail('appsettings review: ' + asText.slice(0, 300));
+  const asSourceCollapsed = await page.$eval('#previewHost .appsettings-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (asSourceCollapsed) pass('appsettings.json: redacted source is collapsed'); else fail('appsettings source unexpectedly expanded');
+  await page.click('#previewHost .appsettings-doc [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .appsettings-doc .kf-source-details')?.open, null, { timeout: 3000 });
+  const asSourceOpened = await page.$eval('#previewHost .appsettings-doc .kf-source-details', (e) => e.open && !!e.querySelector('#appsettings-line-1'));
+  if (asSourceOpened) pass('appsettings.json: source links open source preview'); else fail('appsettings source link did not open preview');
 
   // ── terragrunt.hcl viewer ──
   await openExample('terragrunt.hcl (Terragrunt)');
@@ -285,10 +293,23 @@ export async function run(ctx) {
   await openExample('mongod.conf');
   await page.waitForSelector('#previewHost .mg-doc', { timeout: 12000 });
   const mgText = await page.$eval('#previewHost .mg-doc', (e) => e.textContent);
+  const mgHtml = await page.$eval('#previewHost .mg-doc', (e) => e.innerHTML);
   if (/MongoDB/i.test(mgText)) pass('mongod.conf: MongoDB badge shown'); else fail('mongod badge: ' + mgText.slice(0, 200));
   if (/27017|\/var\/lib\/mongodb/i.test(mgText)) pass('mongod.conf: storage/network settings shown'); else fail('mongod storage: ' + mgText.slice(0, 300));
   if (/rs0|replSet/i.test(mgText)) pass('mongod.conf: replication section shown'); else fail('mongod repl: ' + mgText.slice(0, 300));
-  if (/••••/.test(mgText)) pass('mongod.conf: keyFile value masked'); else fail('mongod masking: ' + mgText.slice(0, 300));
+  if (/\[configured\]/.test(mgText)) pass('mongod.conf: keyFile value masked'); else fail('mongod masking: ' + mgText.slice(0, 300));
+  if (/MongoDB Review|bind scope|authorization|key file/i.test(mgText)) pass('mongod.conf: review findings shown'); else fail('mongod review: ' + mgText.slice(0, 500));
+  if ((mgText + mgHtml).includes('/etc/mongodb/keyfile')) fail('mongod.conf: keyFile path leaked'); else pass('mongod.conf: keyFile path redacted');
+  const mgHelpTitle = await page.$eval('#previewHost .mg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/MongoDB|Open line|source/i.test(mgHelpTitle)) pass('mongod.conf: setting hover explains source action'); else fail('mongod hover title: ' + mgHelpTitle);
+  const mgSourceCollapsed = await page.$eval('#previewHost .mg-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (mgSourceCollapsed) pass('mongod.conf: redacted source starts collapsed'); else fail('mongod source was not collapsed');
+  const mgSourceLine = await page.$eval('#previewHost .mg-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .mg-doc .kf-source-details');
+    return details?.open && document.getElementById(`mg-line-${line}`);
+  }, mgSourceLine);
+  pass('mongod.conf: clicking setting opens source line');
 
   // ── my.cnf viewer ──
   await openExample('my.cnf (MySQL)');
@@ -298,15 +319,39 @@ export async function run(ctx) {
   if (/3306|127\.0\.0\.1/i.test(myText)) pass('my.cnf: [mysqld] section shown (port/bind)'); else fail('my.cnf mysqld: ' + myText.slice(0, 300));
   if (/256M|innodb_buffer_pool/i.test(myText)) pass('my.cnf: InnoDB buffer pool shown'); else fail('my.cnf innodb: ' + myText.slice(0, 300));
   if (/utf8mb4|default-character-set/i.test(myText)) pass('my.cnf: character set shown'); else fail('my.cnf charset: ' + myText.slice(0, 300));
+  if (/MySQL Review|bind scope|slow log|dump packet/i.test(myText)) pass('my.cnf: review findings shown'); else fail('my.cnf review: ' + myText.slice(0, 500));
+  const myHelpTitle = await page.$eval('#previewHost .my-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/MySQL|Open line|source/i.test(myHelpTitle)) pass('my.cnf: setting hover explains source action'); else fail('my.cnf hover title: ' + myHelpTitle);
+  const mySourceCollapsed = await page.$eval('#previewHost .my-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (mySourceCollapsed) pass('my.cnf: redacted source starts collapsed'); else fail('my.cnf source was not collapsed');
+  const mySourceLine = await page.$eval('#previewHost .my-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .my-doc .kf-source-details');
+    return details?.open && document.getElementById(`my-line-${line}`);
+  }, mySourceLine);
+  pass('my.cnf: clicking setting opens source line');
 
   // ── postgresql.conf viewer ──
   await openExample('postgresql.conf');
   await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
   const pgText = await page.$eval('#previewHost .pg-doc', (e) => e.textContent);
+  const pgHtml = await page.$eval('#previewHost .pg-doc', (e) => e.innerHTML);
   if (/PostgreSQL/i.test(pgText)) pass('postgresql.conf: PostgreSQL badge shown'); else fail('postgresql badge: ' + pgText.slice(0, 200));
   if (/5432|localhost/i.test(pgText)) pass('postgresql.conf: connections section shown'); else fail('postgresql conns: ' + pgText.slice(0, 300));
   if (/128MB|shared_buffers/i.test(pgText)) pass('postgresql.conf: memory settings shown'); else fail('postgresql mem: ' + pgText.slice(0, 300));
   if (/replica|wal_level/i.test(pgText)) pass('postgresql.conf: WAL section shown'); else fail('postgresql wal: ' + pgText.slice(0, 300));
+  if (/PostgreSQL Review|bind scope|ssl enabled/i.test(pgText)) pass('postgresql.conf: review findings shown'); else fail('postgresql review: ' + pgText.slice(0, 500));
+  if ((pgText + pgHtml).includes('server.key')) fail('postgresql.conf: ssl key path leaked'); else pass('postgresql.conf: ssl key path redacted');
+  const pgHelpTitle = await page.$eval('#previewHost .pg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/PostgreSQL|Open line|source/i.test(pgHelpTitle)) pass('postgresql.conf: setting hover explains source action'); else fail('postgresql hover title: ' + pgHelpTitle);
+  const pgSourceCollapsed = await page.$eval('#previewHost .pg-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (pgSourceCollapsed) pass('postgresql.conf: redacted source starts collapsed'); else fail('postgresql source was not collapsed');
+  const pgSourceLine = await page.$eval('#previewHost .pg-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .pg-doc .kf-source-details');
+    return details?.open && document.getElementById(`pg-line-${line}`);
+  }, pgSourceLine);
+  pass('postgresql.conf: clicking setting opens source line');
 
   // ── pgbouncer.ini viewer ──
   await openExample('pgbouncer.ini');

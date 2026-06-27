@@ -97,9 +97,13 @@ export async function run(ctx) {
   await page.click('.md-context-menu button:has-text("Name")');
   const mdSorted = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (/\| Alpha \| 2 \|\n\| Beta \| 10 \|/.test(mdSorted)) pass('Markdown context menu: sorts selected table by chosen column'); else fail('sorted table: ' + mdSorted);
+  await page.waitForTimeout(300);
   await page.evaluate(() => {
+    window.__fv.state.rawview?.markClean?.();
     window.__fv.state.downloadedSinceEdit = true;
     window.__fv.state.sessionEdits.clear();
+    window.__fv.state.folderEdits.clear();
+    window.__fv.state.folderExported = true;
   });
 
   // ── Markdown WYSIWYG toggle ──
@@ -178,9 +182,13 @@ export async function run(ctx) {
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   pass('`import easteregg` in a new file unlocks the arcade');
   await page.click('.games-close');
+  await page.waitForTimeout(300);
   await page.evaluate(() => {
+    window.__fv.state.rawview?.markClean?.();
     window.__fv.state.downloadedSinceEdit = true;
     window.__fv.state.sessionEdits.clear();
+    window.__fv.state.folderEdits.clear();
+    window.__fv.state.folderExported = true;
   });   // clear unsaved-work so the next navigation isn't blocked by beforeunload
 
   // ── HTML type + script-confirm gate (WP07) ──
@@ -602,12 +610,14 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md');
   await page.waitForSelector('#previewHost iframe.fv-preview-frame', { timeout: 15000 });
-  const sbsShown = await page.$eval('#sbsBtn', (e) => !e.hidden);
-  if (sbsShown) pass('side-by-side button shown for a previewable file'); else fail('sbs button hidden');
+  const oldSbsBtnGone = await page.$('#sbsBtn');
+  if (!oldSbsBtnGone) pass('side-by-side: obsolete toolbar button removed'); else fail('obsolete sbs toolbar button still present');
   // Forget any remembered mode so the overlay opens at Current (the per-pane toggle tests below
   // require Current mode, where each pane drives its own view).
   await page.evaluate(() => { try { localStorage.removeItem('fv:sbs:mode'); } catch {} });
-  await page.setInputFiles('#sbsInput', new URL('../../docs/examples/sample.csv', import.meta.url).pathname);
+  await page.click('#compareBtn');
+  await page.waitForFunction(() => !document.getElementById('compareBar').hidden, null, { timeout: 8000 });
+  await page.setInputFiles('#compareInput', new URL('../../docs/examples/sample.csv', import.meta.url).pathname);
   await page.waitForSelector('.sbs-overlay', { timeout: 8000 });
   const sbsPanes = await page.$$eval('.sbs-pane', (els) => els.length);
   const sbsNames = await page.$$eval('.sbs-fname', (els) => els.map((e) => e.textContent));

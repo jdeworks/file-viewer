@@ -1,128 +1,65 @@
-// Glyph Dungeon — exploration & combat engine (no DOM).
+// Glyph Dungeon — combat & movement engine (no DOM). Floor construction lives in floor.js (and is
+// re-exported below so engine.js stays the single import surface for the renderer and tests).
 //
-// Floors are procedurally generated (generate.js) from a seeded RNG (rng.js), populated
-// with scaled monsters / weapons / glyph shards (data.js). The player @ walks with the
-// arrow/WASD keys; bumping a monster trades blows (ATK vs HP), weapons raise ATK, glyph
-// shards bank glyphs, and the stairs > descend to a deeper, harder floor. The boss is still
-// gated by the cipher.txt "cheat" — this engine only governs the rooms you walk through.
-// Everything here is pure data so it stays testable and JSON-serialisable into the save.
+// The player @ walks the arrow/WASD keys; bumping a monster trades blows, weapons raise ATK, glyph
+// shards bank glyphs, hazards/traps bite, and the stairs > descend. Pure data — JSON-serialisable.
 
 import { makeRng } from "./rng.js";
-import { generate, floodDistances, carveHiddenRoom } from "./generate.js";
+import { floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
+import { detonate } from "./monsters.js";
+import { applyStatus, tickStatuses } from "./status.js";
+import { enterHazard } from "./hazards.js";
+import { springTrap } from "./traps.js";
+import { rollAffix, affixLabel, affixDamage, applyHitAffix, WEAPON_AFFIXES } from "./affixes.js";
+import { DIRS, DIR_LIST } from "./dirs.js";
 
-export const DIRS = {
-  up: { dx: 0, dy: -1 },
-  down: { dx: 0, dy: 1 },
-  left: { dx: -1, dy: 0 },
-  right: { dx: 1, dy: 0 }
-};
+export { DIRS };
+export { buildFloor, attachGrid, floorDims } from "./floor.js";
 
-// Floor dimensions: a run-wide random 200–250 base (stable across floors via the run seed),
-// grown ×1.35 per floor (area thus ~×1.8/floor) and capped so floor 5 lands near ~750². Rooms
-// and monsters scale with area. Deterministic so attachGrid() can rebuild the exact terrain.
-const GROWTH = 1.35;
-export function floorDims(runSeed, floorNum) {
-  const dimRng = makeRng(`${runSeed}:dims`);
-  const baseW = dimRng.int(200, 250);
-  const baseH = dimRng.int(200, 250);
-  const g = Math.pow(GROWTH, floorNum - 1);
-  const width = Math.min(900, Math.round(baseW * g));
-  const height = Math.min(900, Math.round(baseH * g));
-  // BSP leaf size scales with the map so rooms stay proportionally large at every depth.
-  const minLeaf = Math.max(16, Math.min(70, Math.round(width / 9)));
-  return { width, height, minLeaf, minRoom: 6 };
+// ── Stairwell Sense routing ─────────────────────────────────────────────────────────────────────
+// Best-route hint for the compass. Every floor tile costs 1, so the shortest path is a plain BFS
+// from the stairs (≡ A* with a zero/consistent heuristic) — flood once per floor, cache it, then
+// the next step is just the open neighbour with the lowest distance-to-exit. Never points at a wall.
+export function exitDistanceField(world) {
+  return floodDistances(world.grid, world.exit);
 }
 
-// Deterministic terrain only (grid + rooms) from `${runSeed}:${floor}`. buildFloor continues
-// consuming the SAME rng to place entities; attachGrid re-runs just this to recover the grid.
-function buildGrid(runSeed, floorNum) {
-  const dims = floorDims(runSeed, floorNum);
-  const rng = makeRng(`${runSeed}:${floorNum}`);
-  const { grid, rooms, hidden } = generate(rng, dims);
-  return { grid, rooms, hidden, dims, rng };
-}
-
-// The grid is large (a 750² floor is ~600KB of strings) and fully derivable from the seed, so we
-// keep it as a NON-ENUMERABLE property: JSON.stringify (the save path) skips it, but step()/view
-// still read world.grid in memory. attachGrid() restores it on load (see renderer ensureWorld).
-function defineGrid(world, grid) {
-  Object.defineProperty(world, "grid", { value: grid, enumerable: false, writable: true, configurable: true });
-}
-export function attachGrid(world, runSeed, floorNum) {
-  const grid = buildGrid(runSeed, floorNum).grid; // hidden rooms come back sealed…
-  if (Array.isArray(world.hidden)) for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h); // …re-open the ones already found
-  defineGrid(world, grid);
-  return world;
-}
-
-// Generate one floor: layout + spawn + stairs + entities, all from `${runSeed}:${floor}`.
-export function buildFloor(runSeed, floorNum) {
-  const { grid, rooms, hidden, dims, rng } = buildGrid(runSeed, floorNum);
-  const width = dims.width;
-  const height = dims.height;
-  const start = { x: rooms[0].cx, y: rooms[0].cy };
-  const flood = floodDistances(grid, start);
-  // Stairs go on the farthest reachable cell so a floor takes some crossing.
-  let exit = start;
-  let far = -1;
-  for (let i = 0; i < flood.count; i += 1) {
-    const idx = flood.order[i];
-    if (flood.dist[idx] > far) { far = flood.dist[idx]; exit = { x: idx % width, y: Math.floor(idx / width) }; }
+// First move of the shortest @→stairs path, given a precomputed field: returns a DIRS key + the
+// remaining step count, or null once standing on the exit (or if somehow walled off).
+export function stepToExit(world, field) {
+  const W = world.width;
+  const here = field.dist[world.pos.y * W + world.pos.x];
+  if (here === 0) return { dir: null, steps: 0 };
+  let best = null;
+  let bestD = Infinity;
+  for (const dir of DIR_LIST) {
+    const nx = world.pos.x + DIRS[dir].dx;
+    const ny = world.pos.y + DIRS[dir].dy;
+    if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= W || world.grid[ny][nx] === "#") continue;
+    const d = field.dist[ny * W + nx];
+    if (d >= 0 && d < bestD) { bestD = d; best = dir; }
   }
-  // Shuffle the reached cells in place (Fisher–Yates) and hand them out as unique spawn points.
-  const order = flood.order;
-  for (let i = flood.count - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng.float() * (i + 1));
-    const t = order[i]; order[i] = order[j]; order[j] = t;
-  }
-  let ci = 0;
-  const take = () => {
-    while (ci < flood.count) {
-      const idx = order[ci++];
-      const x = idx % width;
-      const y = Math.floor(idx / width);
-      if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) return { x, y };
+  return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
+}
+
+// A split-mechanic foe spawns two weaker shards on adjacent open cells when it dies.
+function spawnSplit(world, foe) {
+  let made = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (made >= 2) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !world.monsters.some((m) => m.alive && m.x === x && m.y === y)) {
+      const hp = Math.max(6, Math.round(foe.maxHp * 0.4));
+      world.monsters.push({
+        id: "shard", glyph: "ω", name: `shard of ${foe.name}`, hp, maxHp: hp,
+        atk: Math.max(2, Math.round(foe.atk * 0.6)), xp: 2, drop: 1, alive: true,
+        x, y, home: { x, y }, dir: "down", sight: 7, chasing: true, bucket: (made + 1) % 5, statuses: {}, faction: foe.faction || 0
+      });
+      made += 1;
     }
-    return null;
-  };
-
-  // Counts scale with the number of rooms (one room per BSP leaf), so density tracks the map.
-  const roomN = rooms.length;
-  const monsterCount = Math.max(16, Math.min(400, Math.round(roomN * 2.4)));
-  const monsters = [];
-  for (let i = 0; i < monsterCount; i += 1) {
-    const c = take();
-    if (!c) break;
-    const m = spawnMonster(rng, floorNum, i);
-    m.x = c.x; m.y = c.y; m.home = { x: c.x, y: c.y };
-    monsters.push(m);
   }
-  // Scatter several weapons of mixed tiers (deeper floors skew toward better gear).
-  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
-  const weapons = [];
-  const weaponCount = Math.max(2, Math.min(24, Math.round(roomN * 0.18)));
-  for (let i = 0; i < weaponCount; i += 1) {
-    const wc = take();
-    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
-  }
-  // Health potions scattered through the floor.
-  const potions = [];
-  const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
-  for (let i = 0; i < potionCount; i += 1) {
-    const c = take();
-    if (c) potions.push({ x: c.x, y: c.y, taken: false });
-  }
-  const glyphs = [];
-  const glyphCount = Math.max(6, Math.min(60, Math.round(roomN * 0.3)));
-  for (let i = 0; i < glyphCount; i += 1) {
-    const c = take();
-    if (!c) break;
-    glyphs.push({ x: c.x, y: c.y, taken: false });
-  }
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden };
-  defineGrid(world, grid);
-  return world;
 }
 
 function gainGlyphs(player, base) {
@@ -145,10 +82,38 @@ function awardXp(player, amount, events) {
   }
 }
 
+// Elites (A3) leave a guaranteed cache on death: a high-tier weapon on the death cell plus a few
+// glyph shards on adjacent open cells — so engaging the marked, tougher foe pays off.
+function dropElite(world, foe, events) {
+  if (!foe.elite) return;
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 2);
+  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], affix: WEAPON_AFFIXES[world.floor % WEAPON_AFFIXES.length], taken: false });
+  let dropped = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (dropped >= 3) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !(x === world.pos.x && y === world.pos.y)) {
+      world.glyphs.push({ x, y, taken: false });
+      dropped += 1;
+    }
+  }
+  events.log.push(`${foe.name} drops a cache!`);
+}
+
+// Tick the player's status effects (poison/burn/bleed) by one turn. The renderer calls this on a
+// real-time clock so damage-over-time keeps burning even while @ stands still.
+export function tickPlayerStatus(player) {
+  const events = { log: [], damageTaken: 0, died: false };
+  tickStatuses(player, events, true);
+  return events;
+}
+
 function bite(foe, player, events) {
   const dmg = Math.max(1, foe.atk - Number(player.def || 0));
   player.hp = Math.max(0, player.hp - dmg);
   events.damageTaken += dmg;
+  if (foe.venom) applyStatus(player, "poison", 3, 1);
   if (player.hp <= 0) events.died = true;
   return dmg;
 }
@@ -174,7 +139,9 @@ export function step(world, player, dir) {
   if (foe) {
     // Record the clash so the renderer can lunge @ and foe toward each other (view.js).
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    foe.hp -= Math.max(1, player.atk);
+    const dmg = affixDamage(player);            // double-strike swings harder (C2)
+    foe.hp -= dmg;
+    applyHitAffix(world, player, foe, dmg, events); // vampiric / burning / knockback / cleave
     if (foe.hp <= 0) {
       foe.alive = false;
       events.killed = true;
@@ -182,6 +149,10 @@ export function step(world, player, dir) {
       const got = gainGlyphs(player, foe.drop);
       events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
       awardXp(player, foe.xp, events);
+      dropElite(world, foe, events);            // elites leave a guaranteed cache (A3)
+      if (foe.split) { spawnSplit(world, foe); events.log.push(`${foe.name} splits apart!`); } // B6
+      if (foe.explode) detonate(world, foe, player, events); // segfaults blast on death (A1)
+      if (player.hp <= 0) { events.died = true; return events; }
     } else {
       const dmg = bite(foe, player, events);
       events.log.push(`${foe.name} hits for ${dmg}.`);
@@ -194,17 +165,36 @@ export function step(world, player, dir) {
     return events;
   }
 
-  // Open tile — move there, then resolve pickups / stairs.
+  // Open tile — move there, then resolve hazards / pickups / stairs.
   world.pos = { x: nx, y: ny };
   events.moved = true;
+  world.stepCount = (world.stepCount || 0) + 1; // drives A4 lingering pressure
+
+  // Hazard on-enter (A2): lava burns, spores poison, spikes bleed, a chasm drops you a floor.
+  // A spore tile that fire already consumed (C1) is spent — no poison.
+  const hz = world.hazardAt && world.hazardAt(nx, ny);
+  const burntSpore = hz === "spores" && Array.isArray(world.burned) && world.burned.includes(ny * world.width + nx);
+  if (hz && !burntSpore) {
+    enterHazard(world, player, hz, events);
+    if (events.died) return events;
+    if (events.descend) return events; // chasm fall — skip the rest of this floor's resolution
+  }
+  // Trap on-enter (B4): invisible until sprung — dart, alarm (wakes foes), blink, pit (hidden fall).
+  const tr = world.trapAt && world.trapAt(nx, ny);
+  if (tr && !tr.sprung) {
+    springTrap(world, player, tr, events);
+    if (events.died) return events;
+    if (events.descend) return events; // pit fall
+  }
 
   const weapon = world.weapons.find((wp) => !wp.taken && wp.x === nx && wp.y === ny);
   if (weapon && weapon.atk > 0) {
     weapon.taken = true;
     player.atk += weapon.atk;
+    player.affix = weapon.affix || null; // the carried weapon's on-hit identity (C2)
     player.equipment = { ...(player.equipment || {}), weapon: weapon.name };
     events.pickup = "weapon";
-    events.log.push(`found ${weapon.name.replace(/_/g, " ")}. +${weapon.atk} ATK.`);
+    events.log.push(`found ${weapon.name.replace(/_/g, " ")}${weapon.affix ? ` (${affixLabel(weapon.affix)})` : ""}. +${weapon.atk} ATK.`);
   }
   const glyph = world.glyphs.find((g) => !g.taken && g.x === nx && g.y === ny);
   if (glyph) {
@@ -221,12 +211,24 @@ export function step(world, player, dir) {
     events.pickup = events.pickup || "potion";
     events.log.push(`parse potion. +${heal} HP.`);
   }
+  // Glyph consumable pickup (B3) — banked into the run inventory.
+  const item = world.consumables && world.consumables.find((c) => !c.taken && c.x === nx && c.y === ny);
+  if (item) {
+    item.taken = true;
+    const inv = player.inventory || (player.inventory = {});
+    inv[item.type] = Number(inv[item.type] || 0) + 1;
+    events.pickup = events.pickup || "consumable";
+    events.log.push(`picked up a ${item.type} rune.`);
+  }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
+  // B5: the optional branch stair descends to a deadlier, richer floor.
+  if (world.branchExit && nx === world.branchExit.x && ny === world.branchExit.y) { events.descend = true; events.branch = true; }
   return events;
 }
 
 // Open a hidden room: carve it to floor, then resolve its kind — treasure (loot), trap (ambush),
-// or teleport (warp to the stairs). Deterministic per door via the run seed; results are persisted.
+// teleport (warp to the stairs), shrine (pay HP for a buff), vault (prime weapon + elite guards),
+// captive (free an ally that fights for you). Deterministic per door via the run seed; persisted.
 function revealHidden(world, player, h, events) {
   h.revealed = true;
   carveHiddenRoom(world.grid, h);
@@ -243,7 +245,7 @@ function revealHidden(world, player, h, events) {
     for (let i = 0; i < ng; i += 1) { const c = take(); world.glyphs.push({ x: c.x, y: c.y, taken: false }); }
     const nw = rng.int(2, 5);
     const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 1);
-    for (let i = 0; i < nw; i += 1) { const c = take(); world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], taken: false }); }
+    for (let i = 0; i < nw; i += 1) { const c = take(); world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, world.floor), taken: false }); }
     events.log.push("hidden cache! potions, glyphs and weapons spill out.");
   } else if (h.type === "trap") {
     const n = rng.int(3, 5);
@@ -254,7 +256,7 @@ function revealHidden(world, player, h, events) {
       world.monsters.push(m);
     }
     events.log.push(`ambush! ${n} foes pour out of the dark.`);
-  } else {
+  } else if (h.type === "teleport") {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
       const tx = world.exit.x + dx;
       const ty = world.exit.y + dy;
@@ -262,101 +264,38 @@ function revealHidden(world, player, h, events) {
     }
     events.moved = true;
     events.log.push("a teleport sigil! flung straight to the stairwell.");
-  }
-}
-
-// ── Monster turn — patrol, chase on sight ───────────────────────────────────────────────────────
-const DIR_LIST = ["up", "down", "left", "right"];
-
-function isOpen(world, x, y) {
-  return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
-}
-
-function freeCell(world, x, y, occupied) {
-  return isOpen(world, x, y) && !occupied.has(y * world.width + x) && !(x === world.pos.x && y === world.pos.y);
-}
-
-// Cheap Bresenham line-of-sight: any wall between monster and @ blocks the sighting.
-function hasLOS(world, x0, y0, x1, y1) {
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-  let x = x0;
-  let y = y0;
-  for (let guard = 0; guard < 80; guard += 1) {
-    if (x === x1 && y === y1) return true;
-    const e2 = 2 * err;
-    if (e2 > -dy) { err -= dy; x += sx; }
-    if (e2 < dx) { err += dx; y += sy; }
-    if (world.grid[y] && world.grid[y][x] === "#") return false;
-  }
-  return false;
-}
-
-function monsterBite(m, player, events) {
-  const dmg = Math.max(1, m.atk - Number(player.def || 0));
-  player.hp = Math.max(0, player.hp - dmg);
-  events.damageTaken += dmg;
-  if (player.hp <= 0) events.died = true;
-  events.log.push(`${m.name} bites for ${dmg}.`);
-  return dmg;
-}
-
-// Greedy chase: close the larger axis first, fall back to the other; never onto @ (that's a bite).
-function greedyStep(world, m, px, py, occupied) {
-  const ddx = px - m.x;
-  const ddy = py - m.y;
-  const order = Math.abs(ddx) >= Math.abs(ddy)
-    ? [[Math.sign(ddx), 0], [0, Math.sign(ddy)]]
-    : [[0, Math.sign(ddy)], [Math.sign(ddx), 0]];
-  for (const [sx, sy] of order) {
-    if (!sx && !sy) continue;
-    if (freeCell(world, m.x + sx, m.y + sy, occupied)) return { x: m.x + sx, y: m.y + sy };
-  }
-  return null;
-}
-
-// Patrol: keep the current heading; on a block, take the first open direction (paces corridors,
-// bounces in rooms). The heading lives on the monster so it persists across turns/saves.
-function patrolStep(world, m, occupied) {
-  const dirs = [m.dir, ...DIR_LIST.filter((d) => d !== m.dir)];
-  for (const d of dirs) {
-    const mv = DIRS[d];
-    if (!mv) continue;
-    if (freeCell(world, m.x + mv.dx, m.y + mv.dy, occupied)) return { x: m.x + mv.dx, y: m.y + mv.dy, dir: d };
-  }
-  return null;
-}
-
-// Advance monsters one tile. `filter` (optional) restricts which monsters act this call — used to
-// drive the 5 shared real-time clocks (one bucket per call) so monsters move without the player.
-// Mutates monsters + the player entity (bites) and appends to `events`.
-export function monsterTurn(world, player, events, filter) {
-  const px = world.pos.x;
-  const py = world.pos.y;
-  const occupied = new Set();
-  for (const m of world.monsters) if (m.alive) occupied.add(m.y * world.width + m.x);
-  for (const m of world.monsters) {
-    if (!m.alive) continue;
-    if (filter && !filter(m)) continue;
-    const sight = m.sight || 5;
-    const adjacent = Math.abs(px - m.x) + Math.abs(py - m.y) === 1;
-    const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
-    if (adjacent && (sees || m.chasing)) {
-      m.chasing = true;
-      monsterBite(m, player, events);
-      if (m.fast && player.hp > 0) monsterBite(m, player, events);
-      if (player.hp <= 0) { events.died = true; return; }
-      continue;
+  } else if (h.type === "shrine") {
+    // Pay a slice of current HP for a permanent (this-run) buff — never lethal.
+    const cost = Math.min(Math.max(0, player.hp - 1), Math.max(5, Math.round(player.maxHp * 0.15)));
+    player.hp = Math.max(1, player.hp - cost);
+    const boon = rng.pick(["atk", "def", "maxhp"]);
+    if (boon === "atk") { player.atk += 2; events.log.push(`a shrine — you bleed ${cost} HP for +2 ATK.`); }
+    else if (boon === "def") { player.def = Number(player.def || 0) + 1; events.log.push(`a shrine — you bleed ${cost} HP for +1 DEF.`); }
+    else { player.maxHp += 8; events.log.push(`a shrine — you bleed ${cost} HP for +8 max HP.`); }
+  } else if (h.type === "vault") {
+    const cx = h.x + (h.w >> 1);
+    const cy = h.y + (h.h >> 1);
+    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], affix: rng.pick(WEAPON_AFFIXES), taken: false }); // a prime, affixed weapon
+    const guards = rng.int(2, 3);
+    for (let i = 0; i < guards; i += 1) {
+      const c = take();
+      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
+      m.x = c.x; m.y = c.y; m.home = { x: c.x, y: c.y }; m.chasing = true;
+      m.elite = true; m.hp = Math.round(m.hp * 1.5); m.maxHp = m.hp; m.atk = Math.round(m.atk * 1.2);
+      m.name = `vault guard`; m.drop += 2;
+      world.monsters.push(m);
     }
-    const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied))
-      : (m.chasing = false, patrolStep(world, m, occupied));
-    if (target) {
-      occupied.delete(m.y * world.width + m.x);
-      m.x = target.x; m.y = target.y; if (target.dir) m.dir = target.dir;
-      occupied.add(m.y * world.width + m.x);
-    }
+    events.log.push(`a vault! a prime weapon — but ${guards} elite guards stir.`);
+  } else if (h.type === "captive") {
+    const c = take();
+    const ally = spawnMonster(rng, world.floor, world.monsters.length);
+    ally.x = c.x; ally.y = c.y; ally.home = { x: c.x, y: c.y };
+    ally.ally = true; ally.chasing = false;
+    ally.ranged = false; ally.summon = false; ally.explode = false; ally.ambush = false; ally.hidden = false; ally.elite = false; ally.venom = false;
+    ally.hp = Math.round(ally.hp * 1.6); ally.maxHp = ally.hp;
+    ally.name = "freed process";
+    world.monsters.push(ally);
+    events.log.push("a captive process — freed, it fights at your side.");
   }
 }
+

@@ -10,6 +10,27 @@ export async function run(ctx) {
   const wglText = await page.$eval('#previewHost .wgl-doc', (e) => e.textContent);
   if (/Wrangler|Cloudflare/i.test(wglText)) pass('wrangler.toml: badge shown'); else fail('wrangler badge: ' + wglText.slice(0, 200));
   if (/my-worker|MY_KV|example\.com/i.test(wglText)) pass('wrangler.toml: content shown'); else fail('wrangler content: ' + wglText.slice(0, 200));
+  if (/Wrangler Review|compatibility|wildcard route/i.test(wglText)) pass('wrangler.toml: review findings shown'); else fail('wrangler review: ' + wglText.slice(0, 300));
+  const wglBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/toml/known/wrangler/renderer.js');
+    const rendered = (await mod.render({ text: 'name = "demo"\nmain = "src/index.ts"\ncompatibility_date = "2023-01-01"\nrouets = ["example.com/*"]\n' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Wrangler Review|unknown key|rouets/i.test(wglBad.out) && !wglBad.open) pass('wrangler.toml: unknown top-level key diagnostic shown'); else fail('wrangler unknown key: ' + JSON.stringify(wglBad).slice(0, 700));
+  const wglHelpTitle = await page.$eval('#previewHost .wgl-doc .wgl-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Wrangler|Open line|source/i.test(wglHelpTitle)) pass('wrangler.toml: hover source help shown'); else fail('wrangler hover help: ' + wglHelpTitle);
+  const wglSourceCollapsed = await page.$eval('#previewHost .wgl-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (wglSourceCollapsed) pass('wrangler.toml: source collapsed'); else fail('wrangler source should start collapsed');
+  const wglSourceLine = await page.$eval('#previewHost .wgl-doc .wgl-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .wgl-doc .kf-source-details');
+    return details?.open && document.getElementById(`wrangler-line-${line}`);
+  }, wglSourceLine, { timeout: 3000 });
+  pass('wrangler.toml: source links open source');
 
   // ── fly.toml viewer ──
   await openExample('fly.toml');
@@ -80,6 +101,18 @@ export async function run(ctx) {
   const azpText = await page.$eval('#previewHost .azp-doc', (e) => e.textContent);
   if (/Azure Pipelines/i.test(azpText)) pass('azure-pipelines.yml: badge shown'); else fail('azure badge: ' + azpText.slice(0, 200));
   if (/Build|Test|ubuntu/i.test(azpText)) pass('azure-pipelines.yml: stages and pool shown'); else fail('azure content: ' + azpText.slice(0, 200));
+  if (/Azure Pipelines Review|hosted image|stage dependency|deploy step/i.test(azpText)) pass('azure-pipelines.yml: review findings shown'); else fail('azure review: ' + azpText.slice(0, 500));
+  if (/depends on Build|NODE_VERSION|CACHE_VERSION/i.test(azpText)) pass('azure-pipelines.yml: dependency and variable details shown'); else fail('azure details: ' + azpText.slice(0, 500));
+  const azpHelpTitle = await page.$eval('#previewHost .azp-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Azure Pipelines|Open line|source/i.test(azpHelpTitle)) pass('azure-pipelines.yml: hover explains source action'); else fail('azure hover title: ' + azpHelpTitle);
+  const azpSourceCollapsed = await page.$eval('#previewHost .azp-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (azpSourceCollapsed) pass('azure-pipelines.yml: source starts collapsed'); else fail('azure source was not collapsed');
+  const azpSourceLine = await page.$eval('#previewHost .azp-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .azp-doc .kf-source-details');
+    return details?.open && document.getElementById(`azp-line-${line}`);
+  }, azpSourceLine);
+  pass('azure-pipelines.yml: clicking item opens source line');
 
   // ── vscode-settings.json viewer ──
   await openExample('vscode-settings.json');
@@ -115,6 +148,18 @@ export async function run(ctx) {
   const trvText = await page.$eval('#previewHost .trv-doc', (e) => e.textContent);
   if (/Travis CI/i.test(trvText)) pass('travis.yml: badge shown'); else fail('travis badge: ' + trvText.slice(0, 200));
   if (/node_js|node|python|ruby/i.test(trvText)) pass('travis.yml: language shown'); else fail('travis language: ' + trvText.slice(0, 200));
+  if (/Travis CI Review|runtime version|branch guard/i.test(trvText)) pass('travis.yml: review findings shown'); else fail('travis review: ' + trvText.slice(0, 500));
+  if (/NODE_ENV|CI|main|release/i.test(trvText)) pass('travis.yml: env and branch details shown'); else fail('travis env/branches: ' + trvText.slice(0, 500));
+  const trvHelpTitle = await page.$eval('#previewHost .trv-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Travis CI|Open line|source/i.test(trvHelpTitle)) pass('travis.yml: hover explains source action'); else fail('travis hover title: ' + trvHelpTitle);
+  const trvSourceCollapsed = await page.$eval('#previewHost .trv-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (trvSourceCollapsed) pass('travis.yml: source starts collapsed'); else fail('travis source was not collapsed');
+  const trvSourceLine = await page.$eval('#previewHost .trv-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .trv-doc .kf-source-details');
+    return details?.open && document.getElementById(`trv-line-${line}`);
+  }, trvSourceLine);
+  pass('travis.yml: clicking item opens source line');
 
   // ── circleci.yml viewer ──
   await openExample('CircleCI config');
@@ -123,6 +168,18 @@ export async function run(ctx) {
   const cciText = await page.$eval('#previewHost .circleciconfig-doc', (e) => e.textContent);
   if (/CircleCI/i.test(cciText)) pass('circleci.yml: badge shown'); else fail('circleci badge: ' + cciText.slice(0, 200));
   if (/build|test|deploy|job/i.test(cciText)) pass('circleci.yml: jobs shown'); else fail('circleci jobs: ' + cciText.slice(0, 200));
+  if (/CircleCI Review|orb version|requires graph/i.test(cciText)) pass('circleci.yml: review findings shown'); else fail('circleci review: ' + cciText.slice(0, 500));
+  if (/requires: build|requires: test/i.test(cciText)) pass('circleci.yml: workflow dependency graph shown'); else fail('circleci requires: ' + cciText.slice(0, 500));
+  const cciHelpTitle = await page.$eval('#previewHost .circleciconfig-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/CircleCI|Open line|source/i.test(cciHelpTitle)) pass('circleci.yml: hover explains source action'); else fail('circleci hover title: ' + cciHelpTitle);
+  const cciSourceCollapsed = await page.$eval('#previewHost .circleciconfig-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (cciSourceCollapsed) pass('circleci.yml: source starts collapsed'); else fail('circleci source was not collapsed');
+  const cciSourceLine = await page.$eval('#previewHost .circleciconfig-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .circleciconfig-doc .kf-source-details');
+    return details?.open && document.getElementById(`cci-line-${line}`);
+  }, cciSourceLine);
+  pass('circleci.yml: clicking item opens source line');
 
   // ── amplify.yml viewer ──
   await openExample('AWS Amplify config');
@@ -137,6 +194,18 @@ export async function run(ctx) {
   const codText = await page.$eval('#previewHost .cod-doc', (e) => e.textContent);
   if (/CodeBuild/i.test(codText)) pass('buildspec.yml: badge shown'); else fail('codebuild badge: ' + codText.slice(0, 200));
   if (/install|build|npm/i.test(codText)) pass('buildspec.yml: phases shown'); else fail('codebuild phases: ' + codText.slice(0, 200));
+  if (/CodeBuild Review|runtime version|deploy command/i.test(codText)) pass('buildspec.yml: review findings shown'); else fail('codebuild review: ' + codText.slice(0, 500));
+  if (/Runtime versions|nodejs: 20|Artifacts|Cache paths/i.test(codText)) pass('buildspec.yml: runtime/artifact/cache details shown'); else fail('codebuild details: ' + codText.slice(0, 500));
+  const codHelpTitle = await page.$eval('#previewHost .cod-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/CodeBuild|Open line|source/i.test(codHelpTitle)) pass('buildspec.yml: hover explains source action'); else fail('codebuild hover title: ' + codHelpTitle);
+  const codSourceCollapsed = await page.$eval('#previewHost .cod-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (codSourceCollapsed) pass('buildspec.yml: source starts collapsed'); else fail('codebuild source was not collapsed');
+  const codSourceLine = await page.$eval('#previewHost .cod-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .cod-doc .kf-source-details');
+    return details?.open && document.getElementById(`cod-line-${line}`);
+  }, codSourceLine);
+  pass('buildspec.yml: clicking item opens source line');
 
   // ── jsconfig.json viewer ──
   await openExample('jsconfig.json');
@@ -253,6 +322,18 @@ export async function run(ctx) {
   const glbText = await page.$eval('#previewHost .glb-doc', (e) => e.textContent);
   if (/GitLab/i.test(glbText)) pass('.gitlab-ci.yml: badge shown'); else fail('gitlab-ci badge: ' + glbText.slice(0, 200));
   if (/install|lint|test|build|deploy/i.test(glbText)) pass('.gitlab-ci.yml: stages/jobs shown'); else fail('gitlab-ci jobs: ' + glbText.slice(0, 200));
+  if (/GitLab CI Review|mutable image|needs graph/i.test(glbText)) pass('.gitlab-ci.yml: review findings shown'); else fail('gitlab-ci review: ' + glbText.slice(0, 500));
+  if (/needs: install|needs: lint, test:unit/i.test(glbText)) pass('.gitlab-ci.yml: job needs graph shown'); else fail('gitlab-ci needs: ' + glbText.slice(0, 500));
+  const glbHelpTitle = await page.$eval('#previewHost .glb-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/GitLab CI|Open line|source/i.test(glbHelpTitle)) pass('.gitlab-ci.yml: hover explains source action'); else fail('gitlab-ci hover title: ' + glbHelpTitle);
+  const glbSourceCollapsed = await page.$eval('#previewHost .glb-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (glbSourceCollapsed) pass('.gitlab-ci.yml: source starts collapsed'); else fail('gitlab-ci source was not collapsed');
+  const glbSourceLine = await page.$eval('#previewHost .glb-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .glb-doc .kf-source-details');
+    return details?.open && document.getElementById(`glb-line-${line}`);
+  }, glbSourceLine);
+  pass('.gitlab-ci.yml: clicking item opens source line');
 
   // ── pnpm-workspace.yaml viewer ──
   await openExample('pnpm-workspace.yaml');
@@ -332,6 +413,28 @@ export async function run(ctx) {
   const fbsText = await page.$eval('#previewHost .fbs-doc', (e) => e.textContent);
   if (/Firebase/i.test(fbsText)) pass('firebase.json: badge shown'); else fail('firebase badge: ' + fbsText.slice(0, 200));
   if (/dist|hosting|functions|emulators/i.test(fbsText)) pass('firebase.json: config sections shown'); else fail('firebase config: ' + fbsText.slice(0, 200));
+  if (/Firebase Review|Content-Security-Policy|Strict-Transport-Security|broad hosting rewrite|nodejs18/i.test(fbsText)) pass('firebase.json: review findings shown'); else fail('firebase review: ' + fbsText.slice(0, 300));
+  const fbsBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/firebase/renderer.js');
+    const text = JSON.stringify({ hsoting: { public: 'dist' }, hosting: { rewrites: [{ source: '**', destination: '/index.html' }] } }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Firebase Review|unknown key|hsoting/i.test(fbsBad.out) && !fbsBad.open) pass('firebase.json: unknown top-level key diagnostic shown'); else fail('firebase unknown key: ' + JSON.stringify(fbsBad).slice(0, 700));
+  const fbsHelpTitle = await page.$eval('#previewHost .fbs-doc .fbs-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Firebase|Open line|source/i.test(fbsHelpTitle)) pass('firebase.json: hover source help shown'); else fail('firebase hover help: ' + fbsHelpTitle);
+  const fbsSourceCollapsed = await page.$eval('#previewHost .fbs-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));
+  if (fbsSourceCollapsed) pass('firebase.json: source collapsed'); else fail('firebase source should start collapsed');
+  const fbsSourceLine = await page.$eval('#previewHost .fbs-doc .fbs-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .fbs-doc .kf-source-details');
+    return details?.open && document.getElementById(`firebase-line-${line}`);
+  }, fbsSourceLine, { timeout: 3000 });
+  pass('firebase.json: source links open source');
 
   // ── app.json (Expo) viewer ──
   await openExample('app.json (Expo)');

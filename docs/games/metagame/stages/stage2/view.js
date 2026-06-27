@@ -8,6 +8,11 @@
 // dissolves the foe in place. Cell pixel metrics are measured from a hidden ruler <pre> that
 // shares the grid's font, so sprites sit exactly on their cells at any font-size.
 
+import { HAZARD_GLYPH, HAZARD_CLASS } from "./hazards.js";
+import { TRAP_GLYPH, TRAP_CLASS } from "./traps.js";
+import { CONSUMABLES } from "./consumables.js";
+import { FIRE_GLYPH } from "./fire.js";
+
 // Fixed viewport in cells. Deeper floors are far bigger (see engine.buildFloor) so only this
 // chunk is ever visible — the rest has to be explored.
 export const VIEW_W = 48;
@@ -28,6 +33,20 @@ const CELL_CLASS = {
 const HEAVY_FOES = new Set(["L", "O"]);
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+// Darkness / FOV (C4): deeper floors shrink how far the player can SEE (rendering only — monster AI
+// keeps its own LOS sight). Returns null for the shallow floors (full camera), else a per-axis
+// radius (ry < rx because monospace cells are ~2× taller than wide, so this reads as a circle).
+export function lightRadius(floor) {
+  if (floor <= 3) return null;
+  if (floor <= 6) return { rx: 13, ry: 7 };
+  if (floor <= 9) return { rx: 9, ry: 5 };
+  return { rx: 7, ry: 4 };
+}
+function lit(world, x, y) {
+  const L = lightRadius(world.floor);
+  return !L || (Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry);
+}
 
 // Width-`w` red ASCII health bar: '#' for kept HP, '.' for lost. Never empty while alive.
 export function hpBar(cur, max, width) {
@@ -119,13 +138,17 @@ export function createView(screenEl) {
   }
 
   function terrainText(world) {
+    const L = lightRadius(world.floor);
+    const px = world.pos.x;
+    const py = world.pos.y;
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
       const gy = cam.y + vy;
       let line = "";
       for (let vx = 0; vx < VIEW_W; vx += 1) {
         const gx = cam.x + vx;
-        line += (gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) ? " " : world.grid[gy][gx];
+        const dark = L && (Math.abs(gx - px) > L.rx || Math.abs(gy - py) > L.ry);
+        line += (dark || gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width) ? " " : world.grid[gy][gx];
       }
       rows.push(line);
     }
@@ -137,16 +160,23 @@ export function createView(screenEl) {
   function reconcileItems(world) {
     const live = new Set();
     const place = (id, x, y, ch, cls) => {
-      if (!inView(x, y)) return;
+      if (!inView(x, y) || !lit(world, x, y)) return;
       live.add(id);
       let el = itemEls.get(id);
       if (!el) { el = makeSprite(ch, cls); itemEls.set(id, el); sprites.append(el); }
       pos(el, x, y);
     };
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    if (world.branchExit) place("branch", world.branchExit.x, world.branchExit.y, "≣", "s2-c-branch"); // B5 risky descent
+    // Hazard tiles (A2) — sparse colored cells; static, so only reconciled on camera moves.
+    if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
+    // Sprung traps (B4) leave a marker; un-sprung traps stay invisible.
+    if (world.traps) world.traps.forEach((tr, i) => { if (tr.sprung) place("tr" + i, tr.x, tr.y, TRAP_GLYPH[tr.type] || "˙", TRAP_CLASS); });
     world.weapons.forEach((w, i) => { if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item"); });
     world.glyphs.forEach((g, i) => { if (!g.taken) place("g" + i, g.x, g.y, "%", "s2-c-glyph"); });
     if (world.potions) world.potions.forEach((p, i) => { if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion"); });
+    if (world.consumables) world.consumables.forEach((c, i) => { if (!c.taken) place("c" + i, c.x, c.y, (CONSUMABLES[c.type] || {}).glyph || "♦", "s2-c-consum"); });
+    if (world.fires) world.fires.forEach((f, i) => place("fire" + i, f.x, f.y, FIRE_GLYPH, "s2-c-fire")); // C1 spreading fire
     // Secret doors: a '#' in a slightly-off wall colour over the terrain (findable, not obvious).
     if (world.hidden) world.hidden.forEach((h, i) => { if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret"); });
     for (const id of [...itemEls.keys()]) if (!live.has(id)) { itemEls.get(id).remove(); itemEls.delete(id); }
@@ -158,15 +188,21 @@ export function createView(screenEl) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = new Set();
     world.monsters.forEach((m, i) => {
-      if (!m.alive || !inView(m.x, m.y)) { dropMob(i); return; }
+      if (!m.alive || !inView(m.x, m.y) || !lit(world, m.x, m.y)) { dropMob(i); return; }
       live.add(i);
       let s = mobEls.get(i);
       let fresh = false;
       if (!s) { s = makeMob(m); mobEls.set(i, s); sprites.append(s.el); fresh = true; }
-      if (s.glyph.textContent !== m.glyph) s.glyph.textContent = m.glyph;
-      const cls = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      // A disguised ambusher reads as a plain wall tile until it springs (m.hidden cleared).
+      const disguised = m.ambush && m.hidden;
+      const glyph = disguised ? "#" : m.glyph;
+      if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
+      const baseFoe = m.faction === 1 ? "s2-c-foe-b" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.guardian ? "s2-c-guardian" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : baseFoe;
+      const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
+      const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
-      if (m.hp < m.maxHp) {
+      if (!disguised && m.hp < m.maxHp) {
         if (s.hp.hidden) s.hp.hidden = false;
         if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) { renderHpBar(s.hp, m.hp, m.maxHp, 5); s.lastHp = m.hp; s.lastMaxHp = m.maxHp; }
       } else if (!s.hp.hidden) { s.hp.hidden = true; }
@@ -275,10 +311,16 @@ export function createView(screenEl) {
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
     if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
+    if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
+    if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
+    if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2); // dev: traps (dim=armed)
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
+    if (world.consumables) for (const c of world.consumables) if (!c.taken) dot(c.x, c.y, "#ff7bf0", 3);
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    if (world.branchExit) dot(world.branchExit.x, world.branchExit.y, "#c98bff", 4);
     for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
     dot(world.pos.x, world.pos.y, "#79f0ff", 5);
   }

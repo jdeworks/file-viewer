@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .php-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -26,7 +26,8 @@ const CSS = `
 .php-tag-public{background:#dcfce7;color:#166534;}
 .php-tag-static{background:#e0f2fe;color:#075985;}
 .php-tag-use{background:#f3e8ff;color:#7e22ce;}
-.php-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
+.php-sig{font-family:ui-monospace,monospace;white-space:normal;overflow-wrap:anywhere;}
+.php-doc-comment{font-family:system-ui,sans-serif;color:var(--fg-2,#5a6678);font-size:12px;flex-basis:100%;}
 .php-kw{color:#4f5b93;font-weight:600;}
 .php-str{color:#0a6640;}
 .php-comment{color:#6e7781;font-style:italic;}
@@ -54,25 +55,29 @@ function analyzePhp(text) {
   const functions = [];
   const constants = [];
   const includes = [];
-  let inBlockComment = false;
+  let pendingDocs = [];
+  let currentType = null;
+  let currentTypeDepth = 0;
+  let globalDepth = 0;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const trimmed = line.trim();
 
-    // Block comment handling
-    if (inBlockComment) {
-      if (trimmed.includes('*/')) inBlockComment = false;
+    // PHPDoc
+    if (trimmed.startsWith('/**')) {
+      const block = collectPhpDoc(lines, i);
+      pendingDocs = block.docs;
+      i = block.end;
       continue;
     }
-    if (trimmed.startsWith('/*') || trimmed.startsWith('/**')) {
-      inBlockComment = !trimmed.includes('*/');
-      continue;
-    }
+    if (trimmed.startsWith('/*') || trimmed.startsWith('*')) continue;
     if (trimmed.startsWith('//') || trimmed.startsWith('#')) continue;
+    if (currentType && trimmed && trimmed !== '{' && currentTypeDepth <= 0) currentType = null;
 
     // Namespace
     const nsM = trimmed.match(/^namespace\s+([\w\\]+)/);
-    if (nsM && !namespace) { namespace = nsM[1]; continue; }
+    if (nsM && !namespace) { namespace = { name: nsM[1], line: i + 1 }; continue; }
 
     // Use statements
     const useM = trimmed.match(/^use\s+(function\s+|const\s+)?([\w\\]+)(?:\s+as\s+(\w+))?;/);
@@ -80,42 +85,67 @@ function analyzePhp(text) {
       const kind = useM[1] ? useM[1].trim() : 'class';
       const name = useM[2];
       const alias = useM[3] || null;
-      uses.push({ kind, name, alias });
+      uses.push({ kind, name, alias, line: i + 1 });
       continue;
     }
 
     // Class / interface / trait / abstract / enum
     const typeM = trimmed.match(/^(?:(abstract|final)\s+)?(class|interface|trait|enum)\s+(\w+)(?:\s+extends\s+([\w\\,\s]+?))?(?:\s+implements\s+([\w\\,\s]+?))?(?:\s*[{:]|$)/);
     if (typeM) {
-      types.push({
+      currentType = {
         modifier: typeM[1] || null,
         kind: typeM[2],
         name: typeM[3],
         extends: typeM[4] ? typeM[4].trim() : null,
         implements: typeM[5] ? typeM[5].trim() : null,
-      });
-      continue;
+        line: i + 1,
+        docs: pendingDocs.join(' '),
+        functions: [],
+        constants: [],
+      };
+      currentTypeDepth = 0;
+      types.push(currentType);
+      pendingDocs = [];
     }
 
     // Functions (including methods)
-    const fnM = trimmed.match(/^(?:(public|protected|private)\s+)?(?:(static)\s+)?(?:(abstract|final)\s+)?function\s+(\w+)\s*\(/);
+    const canParseFunction = currentType ? currentTypeDepth <= 1 : globalDepth === 0;
+    const fnM = canParseFunction ? trimmed.match(/^((?:(?:public|protected|private|static|abstract|final)\s+)*)function\s+(\w+)\s*\(([^)]*)\)\s*(?::\s*([?\w\\|]+))?/) : null;
     if (fnM) {
-      functions.push({
-        visibility: fnM[1] || 'public',
-        isStatic: Boolean(fnM[2]),
-        modifier: fnM[3] || null,
-        name: fnM[4],
-      });
-      continue;
+      const mods = fnM[1].trim().split(/\s+/).filter(Boolean);
+      const item = {
+        visibility: mods.find((m) => /^(public|protected|private)$/.test(m)) || 'public',
+        isStatic: mods.includes('static'),
+        modifier: mods.find((m) => /^(abstract|final)$/.test(m)) || null,
+        name: fnM[2],
+        params: splitParams(fnM[3]),
+        ret: fnM[4] || '',
+        owner: currentType?.name || '',
+        line: i + 1,
+        docs: pendingDocs.join(' '),
+        signature: trimmed.replace(/\s*\{\s*$/, ''),
+      };
+      functions.push(item);
+      if (currentType) currentType.functions.push(item);
+      pendingDocs = [];
     }
 
     // Constants
-    const constM = trimmed.match(/^(?:(?:public|protected|private)\s+)?const\s+(\w+)\s*=/);
-    if (constM) { constants.push(constM[1]); continue; }
+    const constM = trimmed.match(/^(?:(public|protected|private)\s+)?const\s+(\w+)\s*=/);
+    if (constM) {
+      const item = { visibility: constM[1] || 'public', name: constM[2], owner: currentType?.name || '', line: i + 1, docs: pendingDocs.join(' ') };
+      constants.push(item);
+      if (currentType) currentType.constants.push(item);
+      pendingDocs = [];
+    }
 
     // Require / include
-    const incM = trimmed.match(/^(require|require_once|include|include_once)\s*[\(]?\s*['"]([^'"]+)['"]/);
-    if (incM) { includes.push({ kind: incM[1], path: incM[2] }); continue; }
+    const incM = trimmed.match(/^(require|require_once|include|include_once)\b.*?['"]([^'"]+)['"]/);
+    if (incM) { includes.push({ kind: incM[1], path: incM[2], line: i + 1, dynamic: /__DIR__|\$/.test(trimmed) }); continue; }
+
+    if (currentType) currentTypeDepth += braceDelta(line);
+    globalDepth += braceDelta(line);
+    if (trimmed) pendingDocs = [];
   }
 
   // Check for HTML template indicators
@@ -125,28 +155,33 @@ function analyzePhp(text) {
   return { namespace, uses, types, functions, constants, includes, hasHtml, hasEnum };
 }
 
-function highlightPhp(text) {
-  const lines = text.split(/\r?\n/);
-  const result = [];
-  let inBlockComment = false;
+function collectPhpDoc(lines, start) {
+  const docs = [];
+  for (let i = start; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.endsWith('*/')) return { docs, end: i };
+    const cleaned = line.replace(/^\/\*\*?/, '').replace(/^\*\s?/, '').trim();
+    if (cleaned && !cleaned.startsWith('@')) docs.push(cleaned);
+  }
+  return { docs, end: start };
+}
 
-  for (const line of lines) {
+function splitParams(text) {
+  return String(text || '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function braceDelta(line) {
+  const cleaned = line.replace(/"([^"\\]|\\.)*"/g, '""').replace(/'([^'\\]|\\.)*'/g, "''");
+  return (cleaned.match(/\{/g) || []).length - (cleaned.match(/\}/g) || []).length;
+}
+
+function highlightPhpLine(line) {
     const trimmed = line.trim();
-
-    if (inBlockComment) {
-      result.push('<span class="php-comment">' + esc(line) + '</span>');
-      if (line.includes('*/')) inBlockComment = false;
-      continue;
-    }
-
     if (trimmed.startsWith('//') || trimmed.startsWith('#')) {
-      result.push('<span class="php-comment">' + esc(line) + '</span>');
-      continue;
+      return '<span class="php-comment">' + esc(line) + '</span>';
     }
-    if (trimmed.startsWith('/*') || trimmed.startsWith('/**')) {
-      result.push('<span class="php-comment">' + esc(line) + '</span>');
-      if (!line.includes('*/')) inBlockComment = true;
-      continue;
+    if (trimmed.startsWith('/*') || trimmed.startsWith('/**') || trimmed.startsWith('*')) {
+      return '<span class="php-comment">' + esc(line) + '</span>';
     }
 
     let out = '';
@@ -212,9 +247,7 @@ function highlightPhp(text) {
       out += esc(line[i]);
       i++;
     }
-    result.push(out);
-  }
-  return result.join('\n');
+    return out;
 }
 
 function makeSection(host, title) {
@@ -253,6 +286,7 @@ export async function render(intake) {
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
+  ensureKnownUiStyle(host);
 
   // Title
   const title = document.createElement('div');
@@ -264,7 +298,7 @@ export async function render(intake) {
   const sub = document.createElement('div');
   sub.className = 'php-sub';
   const parts = [];
-  if (namespace) parts.push('namespace ' + namespace);
+  if (namespace) parts.push('namespace ' + namespace.name);
   parts.push(`${types.length} type${types.length !== 1 ? 's' : ''}`);
   parts.push(`${functions.length} function${functions.length !== 1 ? 's' : ''}`);
   if (uses.length) parts.push(`${uses.length} use${uses.length !== 1 ? 's' : ''}`);
@@ -275,7 +309,7 @@ export async function render(intake) {
   const cards = document.createElement('div');
   cards.className = 'php-cards';
   const cardItems = [
-    { value: namespace || '—', label: 'Namespace' },
+    { value: namespace?.name || '—', label: 'Namespace' },
     { value: types.length, label: 'Types' },
     { value: functions.length, label: 'Functions' },
     { value: uses.length, label: 'Uses' },
@@ -297,22 +331,26 @@ export async function render(intake) {
   if (types.length > 0) {
     const sec = makeSection(host, `Types (${types.length})`);
     const ul = makeList(sec);
-    for (const { modifier, kind, name, extends: ext, implements: impl } of types) {
+    for (const item of types) {
       const li = document.createElement('li');
-      if (modifier) {
+      if (item.modifier) {
         const tag = document.createElement('span');
         tag.className = 'php-tag php-tag-abstract';
-        tag.textContent = modifier;
+        tag.textContent = item.modifier;
+        tag.title = item.modifier === 'abstract' ? 'Contains an incomplete contract and cannot be instantiated directly.' : 'Cannot be extended.';
         li.appendChild(tag);
-        li.appendChild(document.createTextNode(' '));
       }
       const kindTag = document.createElement('span');
-      kindTag.className = 'php-tag php-tag-' + (kind === 'class' ? 'class' : kind === 'interface' ? 'interface' : kind === 'trait' ? 'trait' : 'enum');
-      kindTag.textContent = kind;
+      kindTag.className = 'php-tag php-tag-' + (item.kind === 'class' ? 'class' : item.kind === 'interface' ? 'interface' : item.kind === 'trait' ? 'trait' : 'enum');
+      kindTag.textContent = item.kind;
+      kindTag.title = typeHint(item.kind);
       li.appendChild(kindTag);
-      li.appendChild(document.createTextNode(' ' + name));
-      if (ext) li.appendChild(document.createTextNode(' extends ' + ext));
-      if (impl) li.appendChild(document.createTextNode(' implements ' + impl));
+      li.appendChild(sourceButton(item.name, item.line, 'Open type in source'));
+      if (item.extends) li.appendChild(chip('extends ' + item.extends, 'info'));
+      if (item.implements) li.appendChild(chip('implements ' + item.implements, 'muted'));
+      if (item.functions.length) li.appendChild(chip(`${item.functions.length} member${item.functions.length !== 1 ? 's' : ''}`, 'info'));
+      if (item.constants.length) li.appendChild(chip(`${item.constants.length} const${item.constants.length !== 1 ? 's' : ''}`, 'muted'));
+      addDocs(li, item.docs);
       ul.appendChild(li);
     }
   }
@@ -322,13 +360,14 @@ export async function render(intake) {
     const MAX = 8;
     const sec = makeSection(host, `Use Declarations (${uses.length})`);
     const ul = makeList(sec);
-    for (const { kind, name, alias } of uses.slice(0, MAX)) {
+    for (const { kind, name, alias, line } of uses.slice(0, MAX)) {
       const li = document.createElement('li');
       const tag = document.createElement('span');
       tag.className = 'php-tag php-tag-use';
       tag.textContent = kind;
+      tag.title = useHint(kind);
       li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + name + (alias ? ' as ' + alias : '')));
+      li.appendChild(sourceButton(name + (alias ? ' as ' + alias : ''), line, 'Open use declaration in source'));
       ul.appendChild(li);
     }
     if (uses.length > MAX) {
@@ -343,20 +382,31 @@ export async function render(intake) {
   if (functions.length > 0) {
     const sec = makeSection(host, `Functions (${functions.length})`);
     const ul = makeList(sec);
-    for (const { visibility, isStatic, modifier, name } of functions) {
+    for (const fn of functions) {
       const li = document.createElement('li');
       const visTag = document.createElement('span');
-      visTag.className = 'php-tag php-tag-' + visibility;
-      visTag.textContent = visibility;
+      visTag.className = 'php-tag php-tag-' + fn.visibility;
+      visTag.textContent = fn.visibility;
+      visTag.title = visibilityHint(fn.visibility);
       li.appendChild(visTag);
-      if (isStatic) {
-        li.appendChild(document.createTextNode(' '));
+      if (fn.isStatic) {
         const sTag = document.createElement('span');
         sTag.className = 'php-tag php-tag-static';
         sTag.textContent = 'static';
+        sTag.title = 'Callable on the class without an instance.';
         li.appendChild(sTag);
       }
-      li.appendChild(document.createTextNode(' ' + name + '()'));
+      if (fn.modifier) li.appendChild(chip(fn.modifier, 'muted'));
+      li.appendChild(sourceButton(fn.name + '()', fn.line, 'Open function in source'));
+      if (fn.owner) li.appendChild(chip('in ' + fn.owner, 'muted'));
+      if (fn.ret) li.appendChild(chip('returns ' + fn.ret, 'info'));
+      if (fn.params.length) li.appendChild(chip(`arity ${fn.params.length}`, 'muted'));
+      for (const param of fn.params) li.appendChild(chip(param, 'muted', 'Parameter from the signature.'));
+      const sig = document.createElement('span');
+      sig.className = 'php-sig';
+      sig.textContent = fn.signature;
+      li.appendChild(sig);
+      addDocs(li, fn.docs);
       ul.appendChild(li);
     }
   }
@@ -367,7 +417,10 @@ export async function render(intake) {
     const ul = makeList(sec);
     for (const c of constants) {
       const li = document.createElement('li');
-      li.textContent = c;
+      li.appendChild(sourceButton(c.name, c.line, 'Open constant in source'));
+      if (c.owner) li.appendChild(chip('in ' + c.owner, 'muted'));
+      li.appendChild(chip(c.visibility, 'muted'));
+      addDocs(li, c.docs);
       ul.appendChild(li);
     }
   }
@@ -376,23 +429,51 @@ export async function render(intake) {
   if (includes.length > 0) {
     const sec = makeSection(host, `Includes (${includes.length})`);
     const ul = makeList(sec);
-    for (const { kind, path } of includes) {
+    for (const { kind, path, line, dynamic } of includes) {
       const li = document.createElement('li');
       const tag = document.createElement('span');
       tag.className = 'php-tag';
       tag.textContent = kind;
+      tag.title = kind.includes('once') ? 'Loads the file once and avoids duplicate inclusion.' : 'Loads and executes another PHP file.';
       li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + path));
+      li.appendChild(sourceButton(path, line, 'Open include in source'));
+      if (dynamic) li.appendChild(chip('dynamic path', 'warn', 'Path is assembled with a runtime expression such as __DIR__ or a variable.'));
       ul.appendChild(li);
     }
   }
 
-  // Source
-  const srcSec = makeSection(host, 'Source');
-  const pre = document.createElement('pre');
-  pre.className = 'php-pre';
-  pre.innerHTML = highlightPhp(text);
-  srcSec.appendChild(pre);
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'php-line', highlighter: highlightPhpLine }));
+  wireSourceLinks(host, { idPrefix: 'php-line' });
 
   return { parentNode: host };
+}
+
+function addDocs(li, docs) {
+  if (!docs) return;
+  const span = document.createElement('span');
+  span.className = 'php-doc-comment';
+  span.textContent = docs;
+  li.appendChild(span);
+}
+
+function typeHint(kind) {
+  const hints = {
+    class: 'Instantiable type with state and behavior.',
+    interface: 'Contract that implementing classes must satisfy.',
+    trait: 'Reusable method/property bundle copied into classes.',
+    enum: 'Closed set of named cases, optionally backed by scalar values.',
+  };
+  return hints[kind] || 'PHP type declaration.';
+}
+
+function useHint(kind) {
+  if (kind === 'function') return 'Imports a namespaced function.';
+  if (kind === 'const') return 'Imports a namespaced constant.';
+  return 'Imports a class, interface, trait, enum, or namespace alias.';
+}
+
+function visibilityHint(visibility) {
+  if (visibility === 'private') return 'Only accessible inside the declaring class.';
+  if (visibility === 'protected') return 'Accessible inside this class and subclasses.';
+  return 'Public API callable from outside the class.';
 }

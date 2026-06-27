@@ -5,7 +5,7 @@
 
 import { getType } from './registry-runtime.generated.js';
 import { pickType } from './detect.js';
-import { wireIntake, LARGE_FILE_BYTES } from './intake.js';
+import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { matchKnown, matchAllKnown } from '../known/registry.generated.js';
 import { createRawView } from './rawview.js';
@@ -26,10 +26,10 @@ import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeCont
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
-import { initSessionTree, updateSessionTree, createNewFile, onTreeFileDrop, flushSessionEdit } from './session-tree.js';
+import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
-import { initSidebarRoots, removeActiveSidebarRoot } from './sidebar-roots.js';
+import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot } from './sidebar-roots.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -37,15 +37,17 @@ async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
   const fromTree = state._skipDiscardGuard;
   const skipSidebarRoot = state._skipSidebarRoot;
-  if (fromTree) flushSessionEdit();
+  if (fromTree && !flushSessionEdit()) captureActiveSidebarRoot();
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
   if (state._skipSidebarRoot) state._skipSidebarRoot = false;
   else {
     const retainedSessionEdit = flushSessionEdit();
-    const onlyRetainedSessionEdits = state.sessionEdits.size > 0
+    const retainedSidebarEdit = retainedSessionEdit ? false : captureActiveSidebarRoot();
+    const retainedCurrentEdit = retainedSessionEdit || retainedSidebarEdit;
+    const onlyRetainedSessionEdits = (state.sessionEdits.size > 0 || retainedSidebarEdit)
       && state.folderEdits.size === 0
       && !state.binaryEdit?.dirty
-      && !(state.rawview?.isDirty() && !retainedSessionEdit);
+      && !(state.rawview?.isDirty() && !retainedCurrentEdit);
     if (!onlyRetainedSessionEdits && !confirmDiscard()) return;
   }
   // Leaving folder context for a fresh top-level file open: discard stale folder state so
@@ -114,6 +116,22 @@ function showIntake() {
   $('repoPanel').hidden = true;
 }
 
+async function openSidebarDropSideBySide(node) {
+  if (!state.intake) return;
+  if (!node?.file) { toast('Could not find that sidebar file.'); return; }
+  try {
+    const path = node.path || node.sidebarInnerPath || node.file.name;
+    const edited = state.folderEdits?.get(path) ?? state.sessionEdits?.get(path);
+    const intake2 = edited != null
+      ? intakeFromText(edited, path.split('/').pop())
+      : await intakeFromFile(node.file);
+    const { openSideBySideWithIntake } = await import('./sidebyside.js');
+    await openSideBySideWithIntake(intake2);
+  } catch (err) {
+    toast('Could not read file: ' + err.message);
+  }
+}
+
 /* ─────────────────────────── Type activation ─────────────────────────── */
 
 async function activateType(type, knownOverride = null) {
@@ -150,7 +168,6 @@ async function activateType(type, knownOverride = null) {
   syncSaveBtn();
   $('tabbar').style.display = both && isMobile() ? 'flex' : 'none';
   $('screenshotBtn').hidden = !(type.capabilities.screenshot && canPreview);
-  $('sbsBtn').hidden = !canPreview;            // view this file beside another
   const preferredMode = ['raw', 'split', 'preview'].includes(type.preferredMode) ? type.preferredMode : 'split';
   state.mode = both ? preferredMode : (canPreview && !canRaw ? 'preview' : 'raw');
   state.rawMode = 'current';
@@ -436,16 +453,16 @@ function init() {
     },
   });
 
-  // Tree-to-workspace drag: when a file is dragged from the sidebar tree onto the workspace
-  // (editor or preview), enter dual-view mode if a file is already open.
+  // Tree-to-workspace drag: dropping a sidebar file onto the workspace opens it beside the
+  // current file. Plain sidebar clicks still navigate normally.
   $('workspace').addEventListener('dragover', (e) => {
     if (e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) e.preventDefault();
   });
-  $('workspace').addEventListener('drop', (e) => {
+  $('workspace').addEventListener('drop', async (e) => {
     if (!e.dataTransfer?.types?.includes(TREE_DRAG_TYPE)) return;
     e.preventDefault();
     e.stopPropagation();
-    onTreeFileDrop(getDraggedTreeNode());
+    await openSidebarDropSideBySide(getDraggedTreeNode());
   });
   $('treeBtn').addEventListener('click', () => setTree($('fileTree').hidden));
   $('treeCloseBtn').addEventListener('click', () => setTree(false));
@@ -499,8 +516,6 @@ function init() {
     else document.documentElement.requestFullscreen?.();
   });
   $('screenshotBtn').addEventListener('click', takeScreenshot);
-  $('sbsBtn').addEventListener('click', async () => { await exitWysiwygForFeature(); const { startSideBySide } = await import('./sidebyside.js'); startSideBySide(); });
-  $('sbsInput').addEventListener('change', async (e) => { const f = e.target.files && e.target.files[0]; if (f) { const { openSideBySide } = await import('./sidebyside.js'); openSideBySide(f); } });
   $('exportBtn').addEventListener('click', toggleExportMenu);
   $('enhanceChip').querySelector('.ec-toggle').addEventListener('click', toggleEnhance);
   $('moreBtn').addEventListener('click', toggleMoreMenu);

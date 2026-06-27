@@ -1,4 +1,5 @@
 // Kubernetes kubeconfig viewer
+import { ensureKnownUiStyle, issueList, sourcePreview, wireSourceLinks } from '../../../core/known-ui.js';
 import { appendKubeconfigTables } from './kubeconfig-tables.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -8,6 +9,7 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
  * Handles standard kubeconfig structure robustly without a YAML lib.
  */
 function parseKubeconfig(text) {
+  const lineInfo = buildLineInfo(text);
   // Extract current-context
   const ccMatch = text.match(/^current-context:\s*(.+)$/m);
   const currentContext = ccMatch ? ccMatch[1].trim() : null;
@@ -146,25 +148,152 @@ function parseKubeconfig(text) {
 
   return {
     currentContext,
+    currentContextLine: lineInfo.currentContextLine,
     clusters: clusters.map((c) => ({
       name: c.name,
       server: (clusterServers[c.name] && clusterServers[c.name].server) || null,
       insecure: (clusterServers[c.name] && clusterServers[c.name].insecure) || false,
+      line: lineInfo.clusters[c.name]?.line || 1,
+      serverLine: lineInfo.clusters[c.name]?.serverLine || lineInfo.clusters[c.name]?.line || 1,
+      insecureLine: lineInfo.clusters[c.name]?.insecureLine || lineInfo.clusters[c.name]?.line || 1,
+      certLine: lineInfo.clusters[c.name]?.certLine || 0,
     })),
     contexts: contexts.map((c) => {
       const det = contextDetails[c.name] || {};
+      const ctxInfo = lineInfo.contexts[c.name] || {};
       return {
         name: c.name,
         cluster: det.cluster || c.cluster || null,
         user: det.user || c.user || null,
         namespace: det.namespace || c.namespace || null,
+        line: ctxInfo.line || 1,
+        clusterLine: ctxInfo.clusterLine || ctxInfo.line || 1,
+        userLine: ctxInfo.userLine || ctxInfo.line || 1,
+        namespaceLine: ctxInfo.namespaceLine || ctxInfo.line || 1,
       };
     }),
-    users: users.map((u) => ({
-      name: u.name,
-      authMethod: userAuthMethods[u.name] || 'Unknown',
-    })),
+    users: users.map((u) => {
+      const userInfo = lineInfo.users[u.name] || {};
+      return {
+        name: u.name,
+        authMethod: userAuthMethods[u.name] || 'Unknown',
+        line: userInfo.line || 1,
+        authLine: userInfo.authLine || userInfo.line || 1,
+        hasEmbeddedSecret: !!userInfo.hasEmbeddedSecret,
+      };
+    }),
   };
+}
+
+function buildLineInfo(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const info = { currentContextLine: 1, clusters: {}, contexts: {}, users: {}, secretLines: new Map() };
+  let section = '';
+  let current = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineNo = i + 1;
+    const raw = lines[i];
+    const trimmed = raw.trim();
+    if (/^current-context:\s*/.test(trimmed)) info.currentContextLine = lineNo;
+    const sectionMatch = raw.match(/^([A-Za-z-]+):\s*$/);
+    if (sectionMatch) {
+      section = sectionMatch[1];
+      current = null;
+      continue;
+    }
+    if (!['clusters', 'contexts', 'users'].includes(section)) continue;
+
+    if (/^\s*-\s*/.test(raw)) {
+      current = { line: lineNo };
+    }
+    const itemName = raw.match(/^\s*(?:-\s+)?name:\s*(.+)$/);
+    if (itemName) {
+      current = current || { line: lineNo };
+      current.name = itemName[1].trim();
+      current.nameLine = lineNo;
+      info[section][current.name] = current;
+      continue;
+    }
+    if (!current) continue;
+    if (/^\s*server:\s*/.test(raw)) current.serverLine = lineNo;
+    if (/^\s*insecure-skip-tls-verify:\s*true\b/i.test(raw)) current.insecureLine = lineNo;
+    if (/^\s*certificate-authority-data:\s*/.test(raw)) {
+      current.certLine = lineNo;
+      info.secretLines.set(lineNo, 'cluster certificate authority data');
+    }
+    if (/^\s*cluster:\s*/.test(raw)) current.clusterLine = lineNo;
+    if (/^\s*user:\s*/.test(raw)) current.userLine = lineNo;
+    if (/^\s*namespace:\s*/.test(raw)) current.namespaceLine = lineNo;
+    if (/^\s*(client-certificate-data|client-key-data|token|password):\s*/.test(raw)) {
+      current.authLine = current.authLine || lineNo;
+      current.hasEmbeddedSecret = true;
+      info.secretLines.set(lineNo, trimmed.split(':')[0]);
+    }
+    if (/^\s*(exec|auth-provider|username):\s*/.test(raw)) current.authLine = current.authLine || lineNo;
+  }
+  info.secretLinesMap = info.secretLines;
+  return info;
+}
+
+function collectIssues(parsed) {
+  const issues = [];
+  for (const cluster of parsed.clusters) {
+    if (cluster.insecure) {
+      issues.push({
+        severity: 'high',
+        label: 'TLS skip',
+        line: cluster.insecureLine,
+        message: `${cluster.name} disables TLS verification. This can hide a man-in-the-middle API server.`,
+      });
+    }
+    if (cluster.certLine) {
+      issues.push({
+        severity: 'info',
+        label: 'embedded CA',
+        line: cluster.certLine,
+        message: `${cluster.name} embeds certificate authority data; it is redacted in the source preview.`,
+      });
+    }
+  }
+  for (const user of parsed.users) {
+    if (user.hasEmbeddedSecret) {
+      issues.push({
+        severity: /prod|admin/i.test(user.name) ? 'high' : 'warning',
+        label: 'embedded credential',
+        line: user.authLine,
+        message: `${user.name} has token or key material in this file. Prefer exec plugins or short-lived external credentials where possible.`,
+      });
+    }
+  }
+  if (parsed.currentContext) {
+    issues.push({
+      severity: /prod/i.test(parsed.currentContext) ? 'warning' : 'info',
+      label: 'current context',
+      line: parsed.currentContextLine,
+      message: `kubectl commands will target ${parsed.currentContext} by default.`,
+    });
+  }
+  return issues;
+}
+
+function redactedSource(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const sensitive = /^(certificate-authority-data|client-certificate-data|client-key-data|token|password):/;
+  return lines.map((line) => {
+    const trimmed = line.trim();
+    if (!sensitive.test(trimmed)) return line;
+    const indent = line.match(/^\s*/)?.[0] || '';
+    const key = trimmed.split(':')[0];
+    return `${indent}${key}: "[REDACTED ${key}]"`;
+  }).join('\n');
+}
+
+function highlightYamlLine(line) {
+  let out = esc(line);
+  out = out.replace(/^(\s*-?\s*)([A-Za-z0-9_.-]+)(:)/, '$1<span style="color:#8250df">$2</span>$3');
+  out = out.replace(/(:\s*)(&quot;[^&]*&quot;|https?:\/\/\S+|true|false)/i, '$1<span style="color:#0f766e">$2</span>');
+  return out;
 }
 
 const STYLES = `
@@ -322,6 +451,9 @@ const STYLES = `
   color: var(--text, #111);
   font-family: sans-serif;
 }
+.kc-review {
+  margin: 0;
+}
 .kc-empty-state {
   padding: 24px 16px;
   color: #888;
@@ -352,6 +484,7 @@ export async function render(intake) {
 
   const root = document.createElement('div');
   root.className = 'kc-root';
+  ensureKnownUiStyle(document);
 
   const styleEl = document.createElement('style');
   styleEl.textContent = STYLES;
@@ -412,7 +545,14 @@ export async function render(intake) {
 
   const body = document.createElement('div');
   body.className = 'kc-body';
+  const issues = issueList(collectIssues(parsed), { title: 'Kubeconfig Review' });
+  if (issues) {
+    issues.classList.add('kc-review');
+    body.appendChild(issues);
+  }
   appendKubeconfigTables(body, parsed);
+  body.appendChild(sourcePreview(redactedSource(text), { title: 'Redacted source', collapsed: true, idPrefix: 'kc-line', highlighter: highlightYamlLine }));
+  wireSourceLinks(body, { idPrefix: 'kc-line' });
 
   root.appendChild(body);
 

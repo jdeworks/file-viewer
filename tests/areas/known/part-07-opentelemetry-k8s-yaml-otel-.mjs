@@ -22,6 +22,15 @@ export async function run(ctx) {
   if (/AKIA/i.test(awscText)) pass('aws-credentials: access key ID shown (masked)'); else fail('aws-credentials key id: ' + awscText.slice(0, 300));
   if (/•{4,}/.test(awscText)) pass('aws-credentials: secret key is masked'); else fail('aws-credentials secret mask: ' + awscText.slice(0, 300));
   if (/handle with care/i.test(awscText)) pass('aws-credentials: security warning shown'); else fail('aws-credentials warning: ' + awscText.slice(0, 300));
+  const awscHtml = await page.$eval('#previewHost .awsc-doc', (e) => e.innerHTML);
+  if (/Credential Review|long-lived key|production key/i.test(awscText)) pass('aws-credentials: credential review warnings shown'); else fail('aws-credentials review: ' + awscText.slice(0, 400));
+  if (/Redacted source/i.test(awscText) && !/wJalrXUtnFEMI|je7MtGbClwBF|someSecretKeyExample/.test(awscText + awscHtml)) pass('aws-credentials: source preview redacts raw secrets'); else fail('aws-credentials source leak: ' + awscText.slice(0, 400));
+  const awscSourceCollapsed = await page.$eval('#previewHost .awsc-doc .kf-source-details', (e) => !e.open);
+  if (awscSourceCollapsed) pass('aws-credentials: redacted source is collapsed'); else fail('aws-credentials source unexpectedly expanded');
+  await page.click('#previewHost .awsc-doc [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .awsc-doc .kf-source-details')?.open, null, { timeout: 3000 });
+  const awscSourceOpened = await page.$eval('#previewHost .awsc-doc .kf-source-details', (e) => e.open && !!e.querySelector('#awsc-line-1'));
+  if (awscSourceOpened) pass('aws-credentials: source links open source preview'); else fail('aws-credentials source link did not open preview');
 
   // ── aws-config viewer ──
   await openExample('aws-config (AWS)');
@@ -52,6 +61,15 @@ export async function run(ctx) {
   if (/my-service-account@/i.test(gcpText)) pass('gcp-service-account.json: client_email shown'); else fail('gcp-sa email: ' + gcpText.slice(0, 300));
   if (/REDACTED.*private key/i.test(gcpText)) pass('gcp-service-account.json: private key is redacted'); else fail('gcp-sa private key masking: ' + gcpText.slice(0, 300));
   if (/never commit/i.test(gcpText)) pass('gcp-service-account.json: security warning shown'); else fail('gcp-sa warning: ' + gcpText.slice(0, 300));
+  const gcpHtml = await page.$eval('#previewHost .gcp-doc', (e) => e.innerHTML);
+  if (/Key Review|Workload Identity|key fingerprint/i.test(gcpText)) pass('gcp-service-account.json: key review warnings shown'); else fail('gcp-sa review: ' + gcpText.slice(0, 400));
+  if (/Redacted source/i.test(gcpText) && !/EXAMPLE_KEY_ID_NOT_A_REAL_KEY/.test(gcpText + gcpHtml)) pass('gcp-service-account.json: source preview redacts key id'); else fail('gcp-sa source leak: ' + gcpText.slice(0, 400));
+  const gcpSourceCollapsed = await page.$eval('#previewHost .gcp-doc .kf-source-details', (e) => !e.open);
+  if (gcpSourceCollapsed) pass('gcp-service-account.json: redacted source is collapsed'); else fail('gcp-sa source unexpectedly expanded');
+  await page.click('#previewHost .gcp-doc [data-source-line]');
+  await page.waitForFunction(() => document.querySelector('#previewHost .gcp-doc .kf-source-details')?.open, null, { timeout: 3000 });
+  const gcpSourceOpened = await page.$eval('#previewHost .gcp-doc .kf-source-details', (e) => e.open && !!e.querySelector('#gcp-line-1'));
+  if (gcpSourceOpened) pass('gcp-service-account.json: source links open source preview'); else fail('gcp-sa source link did not open preview');
 
   // ── apisix.yaml viewer ──
   await openExample('apisix.yaml');
@@ -80,6 +98,20 @@ export async function run(ctx) {
   if (/Apache/i.test(apacheText)) pass('httpd.conf: Apache badge shown'); else fail('apache badge: ' + apacheText.slice(0, 200));
   if (/VirtualHost|example\.com/i.test(apacheText)) pass('httpd.conf: VirtualHost or ServerName shown'); else fail('apache vhosts: ' + apacheText.slice(0, 300));
   if (/SSL|DocumentRoot/i.test(apacheText)) pass('httpd.conf: SSL or DocumentRoot shown'); else fail('apache ssl/docroot: ' + apacheText.slice(0, 300));
+  if (/Apache Review|http redirect|directory listing|public access/i.test(apacheText)) pass('httpd.conf: review findings shown'); else fail('apache review: ' + apacheText.slice(0, 400));
+  const apacheHelpTitle = await page.$eval('#previewHost .apachecfg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Apache|source|Open line/i.test(apacheHelpTitle)) pass('httpd.conf: directive hover help shown'); else fail('apache source help title missing');
+  const apacheSourceCollapsed = await page.$eval('#previewHost .apachecfg-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (apacheSourceCollapsed) pass('httpd.conf: source collapsed'); else fail('httpd.conf: source not collapsed');
+  const apacheSourceLine = await page.$eval('#previewHost .apachecfg-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .apachecfg-doc .kf-source-details');
+    return details?.open && document.getElementById(`apache-line-${line}`);
+  }, apacheSourceLine);
+  pass('httpd.conf: source links open source');
 
   // ── haproxy.cfg viewer ──
   await openExample('haproxy.cfg');
@@ -90,6 +122,22 @@ export async function run(ctx) {
   if (/http_front|https_front/i.test(haText)) pass('haproxy.cfg: frontend blocks shown'); else fail('haproxy frontends: ' + haText.slice(0, 300));
   if (/web_backend|api_backend/i.test(haText)) pass('haproxy.cfg: backend blocks shown'); else fail('haproxy backends: ' + haText.slice(0, 300));
   if (/roundrobin|leastconn/i.test(haText)) pass('haproxy.cfg: balance algorithms shown'); else fail('haproxy balance: ' + haText.slice(0, 300));
+  if (/HAProxy Review|plain bind|public bind|secret configured/i.test(haText)) pass('haproxy.cfg: review findings shown'); else fail('haproxy review: ' + haText.slice(0, 400));
+  const haHtml = await page.$eval('#previewHost .hpcfg-doc', (e) => e.innerHTML);
+  if ((haText + haHtml).includes('admin:secret')) fail('haproxy.cfg: stats auth secret leaked'); else pass('haproxy.cfg: stats auth secret redacted');
+  const haHelpTitle = await page.$eval('#previewHost .hpcfg-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/HAProxy|source|Open line/i.test(haHelpTitle)) pass('haproxy.cfg: directive hover help shown'); else fail('haproxy source help title missing');
+  const haSourceCollapsed = await page.$eval('#previewHost .hpcfg-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (haSourceCollapsed) pass('haproxy.cfg: redacted source collapsed'); else fail('haproxy.cfg: redacted source not collapsed');
+  const haSourceLine = await page.$eval('#previewHost .hpcfg-doc [data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .hpcfg-doc .kf-source-details');
+    return details?.open && document.getElementById(`haproxy-line-${line}`);
+  }, haSourceLine);
+  pass('haproxy.cfg: source links open redacted source');
 
   // ── squid.conf viewer ──
   await openExample('squid.conf');
@@ -188,14 +236,33 @@ export async function run(ctx) {
   if (/step|pipeline/i.test(wpcText)) pass('.woodpecker.yml: steps shown'); else fail('woodpecker steps: ' + wpcText.slice(0, 200));
   if (/image|plugin/i.test(wpcText)) pass('.woodpecker.yml: step images shown'); else fail('woodpecker images: ' + wpcText.slice(0, 200));
   if (/secret|when|clone|matrix/i.test(wpcText)) pass('.woodpecker.yml: pipeline metadata shown'); else fail('woodpecker metadata: ' + wpcText.slice(0, 200));
+  if (/Woodpecker Review|step image|secret ref|pipeline guard|deploy step/i.test(wpcText)) pass('.woodpecker.yml: review findings shown'); else fail('woodpecker review: ' + wpcText.slice(0, 400));
+  const wpcHelpTitle = await page.$eval('#previewHost .wpc-doc .wpc-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Woodpecker|Open line|source/i.test(wpcHelpTitle)) pass('.woodpecker.yml: hover source help shown'); else fail('woodpecker source help title missing');
+  const wpcSourceCollapsed = await page.$eval('#previewHost .wpc-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (wpcSourceCollapsed) pass('.woodpecker.yml: redacted source collapsed'); else fail('.woodpecker.yml: redacted source not collapsed');
+  const wpcSourceLine = await page.$eval('#previewHost .wpc-doc .wpc-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .wpc-doc .kf-source-details');
+    return details?.open && document.getElementById(`wpc-line-${line}`);
+  }, wpcSourceLine);
+  pass('.woodpecker.yml: source links open redacted source');
 
   // ── woodpecker.yml (non-hidden) viewer ──
   await openExample('woodpecker.yml (Woodpecker CI)');
   await page.waitForSelector('#previewHost .wpc-doc', { timeout: 12000 });
   const wpcYmlText = await page.$eval('#previewHost .wpc-doc', (e) => e.textContent);
+  const wpcYmlHtml = await page.$eval('#previewHost .wpc-doc', (e) => e.innerHTML);
   if (/Woodpecker/i.test(wpcYmlText)) pass('woodpecker.yml: badge shown'); else fail('woodpecker.yml badge: ' + wpcYmlText.slice(0, 200));
   if (/step|pipeline/i.test(wpcYmlText)) pass('woodpecker.yml: steps shown'); else fail('woodpecker.yml steps: ' + wpcYmlText.slice(0, 200));
   if (/postgres|service/i.test(wpcYmlText)) pass('woodpecker.yml: services shown'); else fail('woodpecker.yml services: ' + wpcYmlText.slice(0, 300));
+  if (/Woodpecker Review|service image|service secret|deploy step/i.test(wpcYmlText)) pass('woodpecker.yml: review findings shown'); else fail('woodpecker.yml review: ' + wpcYmlText.slice(0, 400));
+  if ((wpcYmlText + wpcYmlHtml).includes('testpass')) fail('woodpecker.yml: service secret leaked'); else pass('woodpecker.yml: service secret redacted');
+  const wpcYmlSourceCollapsed = await page.$eval('#previewHost .wpc-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (wpcYmlSourceCollapsed) pass('woodpecker.yml: redacted source collapsed'); else fail('woodpecker.yml: redacted source not collapsed');
 
   // ── harness-pipeline.yaml viewer ──
   await openExample('Harness Pipeline');
@@ -302,6 +369,27 @@ export async function run(ctx) {
   if (/es-node-01/i.test(esText)) pass('elasticsearch.yml: node.name shown'); else fail('elasticsearch node: ' + esText.slice(0, 300));
   if (/9200/i.test(esText)) pass('elasticsearch.yml: http.port shown'); else fail('elasticsearch http port: ' + esText.slice(0, 300));
   if (/••••••••|sensitive|keystore|truststore/i.test(esText)) pass('elasticsearch.yml: X-Pack sensitive keys masked'); else fail('elasticsearch security masking: ' + esText.slice(0, 300));
+
+  // ── redis.conf viewer ──
+  await openExample('redis.conf');
+  await page.waitForSelector('#previewHost .rd-doc', { timeout: 12000 });
+  const rdText = await page.$eval('#previewHost .rd-doc', (e) => e.textContent);
+  const rdHtml = await page.$eval('#previewHost .rd-doc', (e) => e.innerHTML);
+  if (/Redis/i.test(rdText)) pass('redis.conf: Redis badge shown'); else fail('redis badge: ' + rdText.slice(0, 200));
+  if (/6379|127\.0\.0\.1/i.test(rdText)) pass('redis.conf: network settings shown'); else fail('redis network: ' + rdText.slice(0, 300));
+  if (/RDB snapshots|AOF enabled|900 1/i.test(rdText)) pass('redis.conf: persistence settings shown'); else fail('redis persistence: ' + rdText.slice(0, 300));
+  if (/Redis Review|bind scope|password set|renamed commands/i.test(rdText)) pass('redis.conf: review findings shown'); else fail('redis review: ' + rdText.slice(0, 500));
+  if ((rdText + rdHtml).includes('s3cur3p@ssw0rd')) fail('redis.conf: requirepass leaked'); else pass('redis.conf: requirepass redacted');
+  const rdHelpTitle = await page.$eval('#previewHost .rd-doc [data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Redis|Open line|source/i.test(rdHelpTitle)) pass('redis.conf: directive hover explains source action'); else fail('redis hover title: ' + rdHelpTitle);
+  const rdSourceCollapsed = await page.$eval('#previewHost .rd-doc .kf-source-details', (e) => !e.open && /Redacted source/i.test(e.textContent));
+  if (rdSourceCollapsed) pass('redis.conf: redacted source starts collapsed'); else fail('redis source was not collapsed');
+  const rdSourceLine = await page.$eval('#previewHost .rd-doc [data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .rd-doc .kf-source-details');
+    return details?.open && document.getElementById(`rd-line-${line}`);
+  }, rdSourceLine);
+  pass('redis.conf: clicking directive opens source line');
 
   // ── sentinel.conf viewer ──
   await openExample('sentinel.conf (Redis Sentinel)');

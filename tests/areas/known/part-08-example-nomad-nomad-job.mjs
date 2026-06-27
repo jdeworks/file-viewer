@@ -14,6 +14,22 @@ export async function run(ctx) {
   if (/service/i.test(nomadText)) pass('example.nomad: job type shown'); else fail('nomad type: ' + nomadText.slice(0, 300));
   if (/dc1|dc2/i.test(nomadText)) pass('example.nomad: datacenters shown'); else fail('nomad datacenters: ' + nomadText.slice(0, 300));
   if (/api|worker/i.test(nomadText)) pass('example.nomad: task groups shown'); else fail('nomad groups: ' + nomadText.slice(0, 300));
+  const nomadHtml = await page.$eval('#previewHost .nj-doc', (e) => e.innerHTML);
+  if (/Nomad Review|task image|secret env|exec driver|health check/i.test(nomadText)) pass('example.nomad: review findings shown'); else fail('nomad review: ' + nomadText.slice(0, 400));
+  if ((nomadText + nomadHtml).includes('changeme')) fail('example.nomad: inline secret leaked'); else pass('example.nomad: inline secret redacted');
+  const nomadHelpTitle = await page.$eval('#previewHost .nj-doc .nj-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Nomad|Open line|source/i.test(nomadHelpTitle)) pass('example.nomad: hover source help shown'); else fail('nomad source help title missing');
+  const nomadSourceCollapsed = await page.$eval('#previewHost .nj-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (nomadSourceCollapsed) pass('example.nomad: redacted source collapsed'); else fail('example.nomad: redacted source not collapsed');
+  const nomadSourceLine = await page.$eval('#previewHost .nj-doc .nj-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .nj-doc .kf-source-details');
+    return details?.open && document.getElementById(`nomad-line-${line}`);
+  }, nomadSourceLine);
+  pass('example.nomad: source links open redacted source');
 
   // ── docker-stack viewer ──
   await openExample('docker-stack.yml (Docker Stack)');
@@ -29,11 +45,27 @@ export async function run(ctx) {
   await openExample('myapp.container (Podman Quadlet)');
   await page.waitForSelector('#previewHost .pq-doc', { timeout: 12000 });
   const pqText = await page.$eval('#previewHost .pq-doc', (e) => e.textContent);
+  const pqHtml = await page.$eval('#previewHost .pq-doc', (e) => e.innerHTML);
   if (/Podman Quadlet/i.test(pqText)) pass('myapp.container: Podman Quadlet badge shown'); else fail('podman-quadlet badge: ' + pqText.slice(0, 200));
   if (/myorg\/myapp|myapp/i.test(pqText)) pass('myapp.container: image shown'); else fail('podman-quadlet image: ' + pqText.slice(0, 300));
-  if (/\*\*\*|masked|REDACTED/i.test(pqText)) pass('myapp.container: secrets masked'); else fail('podman-quadlet masking: ' + pqText.slice(0, 300));
+  if (/\[configured\]|masked|REDACTED/i.test(pqText)) pass('myapp.container: secrets masked'); else fail('podman-quadlet masking: ' + pqText.slice(0, 300));
   if (/8080|port/i.test(pqText)) pass('myapp.container: port shown'); else fail('podman-quadlet port: ' + pqText.slice(0, 300));
   if (/\/data|volume/i.test(pqText)) pass('myapp.container: volume shown'); else fail('podman-quadlet volume: ' + pqText.slice(0, 300));
+  if (/Quadlet Review|image pin|secret env|published port|restart/i.test(pqText)) pass('myapp.container: review findings shown'); else fail('podman-quadlet review: ' + pqText.slice(0, 400));
+  if ((pqText + pqHtml).includes('s3cr3tdbpass') || (pqText + pqHtml).includes('eyJhbGciOi')) fail('myapp.container: secret value leaked'); else pass('myapp.container: secret values redacted');
+  const pqHelpTitle = await page.$eval('#previewHost .pq-doc .pq-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Quadlet|Open line|source/i.test(pqHelpTitle)) pass('myapp.container: hover source help shown'); else fail('podman-quadlet source help title missing');
+  const pqSourceCollapsed = await page.$eval('#previewHost .pq-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Redacted source'));
+  if (pqSourceCollapsed) pass('myapp.container: redacted source collapsed'); else fail('myapp.container: redacted source not collapsed');
+  const pqSourceLine = await page.$eval('#previewHost .pq-doc .pq-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .pq-doc .kf-source-details');
+    return details?.open && document.getElementById(`quadlet-line-${line}`);
+  }, pqSourceLine);
+  pass('myapp.container: source links open redacted source');
 
   // ── flux-kustomization viewer ──
   await openExample('flux-kustomization.yaml (Flux Kustomization)');
@@ -44,6 +76,20 @@ export async function run(ctx) {
   if (/clusters\/production|\.\/clusters/i.test(fkText)) pass('flux-kustomization.yaml: path shown'); else fail('flux-kust path: ' + fkText.slice(0, 300));
   if (/prune|force|wait/i.test(fkText)) pass('flux-kustomization.yaml: sync settings shown'); else fail('flux-kust settings: ' + fkText.slice(0, 300));
   if (/infrastructure|dependsOn/i.test(fkText)) pass('flux-kustomization.yaml: dependsOn shown'); else fail('flux-kust deps: ' + fkText.slice(0, 300));
+  if (/Flux Kustomization Review|prune|dependency/i.test(fkText)) pass('flux-kustomization.yaml: review findings shown'); else fail('flux-kust review: ' + fkText.slice(0, 400));
+  const fkHelpTitle = await page.$eval('#previewHost .fkust-doc .fkust-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Flux Kustomization|Open line|source/i.test(fkHelpTitle)) pass('flux-kustomization.yaml: hover source help shown'); else fail('flux-kust source help title missing');
+  const fkSourceCollapsed = await page.$eval('#previewHost .fkust-doc .kf-source-details', (e) => !e.open && e.textContent.includes('Source'));
+  if (fkSourceCollapsed) pass('flux-kustomization.yaml: source collapsed'); else fail('flux-kustomization.yaml: source not collapsed');
+  const fkSourceLine = await page.$eval('#previewHost .fkust-doc .fkust-link[data-source-line]', (e) => {
+    e.click();
+    return e.getAttribute('data-source-line');
+  });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .fkust-doc .kf-source-details');
+    return details?.open && document.getElementById(`fkust-line-${line}`);
+  }, fkSourceLine);
+  pass('flux-kustomization.yaml: source links open source');
 
   // ── CycloneDX SBOM viewer ──
   await openExample('sbom.cyclonedx.json (CycloneDX SBOM)');

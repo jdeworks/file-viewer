@@ -33,6 +33,17 @@ export async function run(ctx) {
   if (/Helm/i.test(hcText)) pass('Chart.yaml: Helm badge shown'); else fail('helm-chart badge: ' + hcText.slice(0, 200));
   if (/version|name/i.test(hcText)) pass('Chart.yaml: chart info shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
   if (/my-app|postgresql|redis/i.test(hcText)) pass('Chart.yaml: chart name and dependencies shown'); else fail('helm-chart content: ' + hcText.slice(0, 200));
+  if (/Helm Chart Review|dependency range|condition/i.test(hcText)) pass('Chart.yaml: review findings shown'); else fail('helm-chart review: ' + hcText.slice(0, 300));
+  const hcHelpTitle = await page.$eval('#previewHost .helmchart-doc .helmchart-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Helm chart|Open line|source/i.test(hcHelpTitle)) pass('Chart.yaml: hover source help shown'); else fail('helm-chart hover help: ' + hcHelpTitle);
+  const hcSourceCollapsed = await page.$eval('#previewHost .helmchart-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));
+  if (hcSourceCollapsed) pass('Chart.yaml: source collapsed'); else fail('helm-chart source should start collapsed');
+  const hcSourceLine = await page.$eval('#previewHost .helmchart-doc .helmchart-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .helmchart-doc .kf-source-details');
+    return details?.open && document.getElementById(`helmchart-line-${line}`);
+  }, hcSourceLine, { timeout: 3000 });
+  pass('Chart.yaml: source links open source');
 
   // ── kustomization.yaml (Kustomize) viewer ──
   await openExample('kustomization.yaml (Kustomize)');
@@ -86,6 +97,17 @@ export async function run(ctx) {
   const hvText = await page.$eval('#previewHost .helmvalues-doc', (e) => e.textContent);
   if (/Helm/i.test(hvText)) pass('values.yaml: Helm Values badge shown'); else fail('helm-values badge: ' + hvText.slice(0, 200));
   if (/image|service/i.test(hvText)) pass('values.yaml: values info shown'); else fail('helm-values content: ' + hvText.slice(0, 200));
+  if (/Helm Values Review|autoscaling|reference|public host/i.test(hvText)) pass('values.yaml: review findings shown'); else fail('helm-values review: ' + hvText.slice(0, 300));
+  const hvHelpTitle = await page.$eval('#previewHost .helmvalues-doc .helmvalues-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Helm values|Open line|source/i.test(hvHelpTitle)) pass('values.yaml: hover source help shown'); else fail('helm-values hover help: ' + hvHelpTitle);
+  const hvSourceCollapsed = await page.$eval('#previewHost .helmvalues-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (hvSourceCollapsed) pass('values.yaml: source collapsed'); else fail('helm-values source should start collapsed');
+  const hvSourceLine = await page.$eval('#previewHost .helmvalues-doc .helmvalues-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .helmvalues-doc .kf-source-details');
+    return details?.open && document.getElementById(`helmvalues-line-${line}`);
+  }, hvSourceLine, { timeout: 3000 });
+  pass('values.yaml: source links open source');
 
   // ── package-lock.json viewer ──
   await openExample('package-lock.json');
@@ -93,6 +115,48 @@ export async function run(ctx) {
   const plkText = await page.$eval('#previewHost .plk-doc', (e) => e.textContent);
   if (/npm/i.test(plkText)) pass('package-lock.json: badge shown'); else fail('package-lock badge: ' + plkText.slice(0, 200));
   if (/lockfileVersion|v3|Total|packages/i.test(plkText)) pass('package-lock.json: stats shown'); else fail('package-lock stats: ' + plkText.slice(0, 200));
+  if (/Root Dependencies|Resolved Packages|express|integrity/i.test(plkText)) pass('package-lock.json: dependency rows shown'); else fail('package-lock rows: ' + plkText.slice(0, 300));
+  const plkSourceCollapsed = await page.$eval('#previewHost .plk-doc .kf-source-details', (e) => !e.open && /Source/.test(e.textContent));
+  if (plkSourceCollapsed) pass('package-lock.json: source collapsed'); else fail('package-lock source should start collapsed');
+  const plkSourceLine = await page.$eval('#previewHost .plk-doc .kf-source-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('#previewHost .plk-doc .kf-source-details');
+    return details?.open && document.getElementById(`plk-line-${line}`);
+  }, plkSourceLine, { timeout: 3000 });
+  pass('package-lock.json: source links open source');
+  const plkBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/package-lock/renderer.js');
+    const text = JSON.stringify({
+      name: 'risky-lock',
+      lockfileVersion: 3,
+      packages: {
+        '': {
+          dependencies: {
+            loose: '*',
+            custom: '^1.0.0',
+            missing: '^2.0.0',
+          },
+        },
+        'node_modules/loose': {
+          version: '1.0.0',
+          resolved: 'http://registry.example.test/loose-1.0.0.tgz',
+        },
+        'node_modules/custom': {
+          version: '1.0.0',
+          resolved: 'https://mirror.example.test/custom-1.0.0.tgz',
+          integrity: 'sha512-custom',
+        },
+      },
+    }, null, 2);
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Package Lock Review|broad range|missing integrity|plain HTTP|custom source|manifest\/lock mismatch|loose|custom|missing/i.test(plkBad.out + plkBad.issues) && !plkBad.open) pass('package-lock.json: broad range, mismatch, and resolution diagnostics shown'); else fail('package-lock synthetic diagnostics: ' + JSON.stringify(plkBad).slice(0, 1000));
 
   // ── composer.lock viewer ──
   await openExample('composer.lock');

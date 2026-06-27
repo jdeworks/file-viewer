@@ -208,6 +208,83 @@ function makeRng(seed) {
   return { float, int, pick, chance, shuffle };
 }
 
+// ../../docs/games/metagame/stages/stage2/structures.js
+var STRUCTURES = [
+  ["##", "##"],
+  // solid pillar
+  ["####"],
+  // horizontal bar
+  ["#", "#", "#", "#"],
+  // vertical bar
+  ["#.", "#.", "##"],
+  // L corner
+  ["###", ".#."],
+  // T
+  [".#.", "###", ".#."],
+  // plus / cross
+  ["#..", ".#.", "..#"],
+  // diagonal
+  ["#.#", "#.#", "###"],
+  // U (open top)
+  ["##..##", "#....#"],
+  // brackets
+  ["#.#", ".#.", "#.#"],
+  // checker
+  ["##.##", "##.##"],
+  // twin pillars, central lane
+  ["###", "#..", "#.."],
+  // hooked corner
+  ["..#..", ".###.", "#####"],
+  // arrow / buttress
+  ["#####", "#...#", "#...#", "##.##"],
+  // sub-room (empty cover)
+  ["#####", "#.s.#", "##.##"],
+  // sub-room guarding a sword
+  ["#.#", ".h.", "#.#"],
+  // potion between pillars
+  ["#.#", "###", "#.#"],
+  // H frame
+  ["###", "#g#", "#.#"],
+  // glyph nook (open below)
+  ["##..", ".##.", "..##"],
+  // zigzag
+  ["##", "s#"]
+  // sword in a wall corner
+];
+var ITEM_CHANCE = { s: 0.22, h: 0.4, g: 0.5 };
+var ITEM_KIND = { s: "weapon", h: "potion", g: "glyph" };
+function decorateRoom(grid, room, rng) {
+  const items = [];
+  const innerW = room.w - 4;
+  const innerH = room.h - 4;
+  if (innerW < 2 || innerH < 2) return items;
+  const budget = Math.max(1, Math.floor(room.w * room.h / 90));
+  const placed = [];
+  let attempts = budget * 5;
+  while (placed.length < budget && attempts-- > 0) {
+    const s = rng.pick(STRUCTURES);
+    const sh = s.length;
+    const sw = s[0].length;
+    if (sw > innerW || sh > innerH) continue;
+    const ox = room.x + 2 + rng.int(0, innerW - sw);
+    const oy = room.y + 2 + rng.int(0, innerH - sh);
+    const box = { x: ox - 1, y: oy - 1, w: sw + 2, h: sh + 2 };
+    if (room.cx >= box.x && room.cx < box.x + box.w && room.cy >= box.y && room.cy < box.y + box.h) continue;
+    if (placed.some((p) => box.x < p.x + p.w && box.x + box.w > p.x && box.y < p.y + p.h && box.y + box.h > p.y)) continue;
+    for (let r = 0; r < sh; r += 1) {
+      for (let c = 0; c < sw; c += 1) {
+        const ch = s[r][c];
+        const gx = ox + c;
+        const gy = oy + r;
+        if (ch === "#") grid[gy][gx] = "#";
+        else if (ITEM_KIND[ch] && rng.chance(ITEM_CHANCE[ch])) items.push({ x: gx, y: gy, kind: ITEM_KIND[ch] });
+      }
+    }
+    placed.push(box);
+  }
+  return items;
+}
+
 // ../../docs/games/metagame/stages/stage2/generate.js
 function carveRoom(grid, room) {
   for (let y = room.y; y < room.y + room.h; y += 1) {
@@ -256,18 +333,7 @@ function splitNode(node, rng, minLeaf) {
   splitNode(node.left, rng, minLeaf);
   splitNode(node.right, rng, minLeaf);
 }
-function addPylons(grid, room, rng) {
-  if (room.w < 9 || room.h < 9) return;
-  const count = Math.floor(room.w * room.h / 50);
-  for (let i = 0; i < count; i += 1) {
-    const pw = rng.chance(0.4) ? 2 : 1;
-    const ph = rng.chance(0.4) ? 2 : 1;
-    const px = rng.int(room.x + 2, room.x + room.w - 2 - pw);
-    const py = rng.int(room.y + 2, room.y + room.h - 2 - ph);
-    for (let yy = py; yy < py + ph; yy += 1) for (let xx = px; xx < px + pw; xx += 1) grid[yy][xx] = "#";
-  }
-}
-function carveAndConnect(node, grid, rng, rooms, minRoom) {
+function carveAndConnect(node, grid, rng, rooms, minRoom, decor) {
   if (!node.left) {
     const maxW = Math.max(minRoom, node.w - 2);
     const maxH = Math.max(minRoom, node.h - 2);
@@ -277,61 +343,80 @@ function carveAndConnect(node, grid, rng, rooms, minRoom) {
     const ry = node.y + 1 + rng.int(0, Math.max(0, node.h - rh - 2));
     const room = { x: rx, y: ry, w: rw, h: rh, cx: rx + (rw >> 1), cy: ry + (rh >> 1) };
     carveRoom(grid, room);
-    addPylons(grid, room, rng);
+    for (const it of decorateRoom(grid, room, rng)) decor.push(it);
     grid[room.cy][room.cx] = ".";
     rooms.push(room);
     node.room = room;
     return room;
   }
-  const a = carveAndConnect(node.left, grid, rng, rooms, minRoom);
-  const b = carveAndConnect(node.right, grid, rng, rooms, minRoom);
+  const a = carveAndConnect(node.left, grid, rng, rooms, minRoom, decor);
+  const b = carveAndConnect(node.right, grid, rng, rooms, minRoom, decor);
   if (a && b) connect(grid, a, b, rng);
   node.room = a || b;
   return node.room;
 }
-function findEntrance(grid, room) {
-  const inRoom = (x, y) => x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h;
-  for (let y = room.y; y < room.y + room.h; y += 1) {
-    for (let x = room.x; x < room.x + room.w; x += 1) {
-      if (x !== room.x && x !== room.x + room.w - 1 && y !== room.y && y !== room.y + room.h - 1) continue;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (inRoom(nx, ny)) continue;
-        if (grid[ny] && grid[ny][nx] === ".") return { x, y };
+var HIDDEN_TYPES = ["treasure", "treasure", "trap", "trap", "teleport", "shrine", "vault", "captive"];
+function attachHiddenRooms(grid, rooms, rng) {
+  const height = grid.length;
+  const width = grid[0].length;
+  const want = Math.min(4, 1 + Math.floor(rooms.length / 10));
+  const clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const allWall = (x, y, w, h) => {
+    if (x < 1 || y < 1 || x + w > width - 1 || y + h > height - 1) return false;
+    for (let yy = y; yy < y + h; yy += 1) {
+      const row = grid[yy];
+      for (let xx = x; xx < x + w; xx += 1) if (row[xx] !== "#") return false;
+    }
+    return true;
+  };
+  const overlaps = (b, list) => list.some((p) => b.x < p.x + p.w && b.x + b.w > p.x && b.y < p.y + p.h && b.y + b.h > p.y);
+  const hidden = [];
+  const reserved = [];
+  for (const r of rng.shuffle(rooms.slice())) {
+    if (hidden.length >= want) break;
+    const hw = rng.int(5, 8);
+    const hh = rng.int(5, 8);
+    const side = rng.int(0, 3);
+    let hx;
+    let hy;
+    let door;
+    let inner;
+    if (side === 2 || side === 3) {
+      hy = clamp2(r.cy - (hh >> 1), 1, height - 1 - hh);
+      const lo = Math.max(r.y, hy);
+      const hi = Math.min(r.y + r.h - 1, hy + hh - 1);
+      if (hi < lo) continue;
+      const dy = lo + hi >> 1;
+      if (side === 3) {
+        hx = r.x + r.w + 1;
+        door = { x: r.x + r.w, y: dy };
+        inner = { x: r.x + r.w - 1, y: dy };
+      } else {
+        hx = r.x - hw - 1;
+        door = { x: r.x - 1, y: dy };
+        inner = { x: r.x, y: dy };
+      }
+    } else {
+      hx = clamp2(r.cx - (hw >> 1), 1, width - 1 - hw);
+      const lo = Math.max(r.x, hx);
+      const hi = Math.min(r.x + r.w - 1, hx + hw - 1);
+      if (hi < lo) continue;
+      const dx = lo + hi >> 1;
+      if (side === 1) {
+        hy = r.y + r.h + 1;
+        door = { x: dx, y: r.y + r.h };
+        inner = { x: dx, y: r.y + r.h - 1 };
+      } else {
+        hy = r.y - hh - 1;
+        door = { x: dx, y: r.y - 1 };
+        inner = { x: dx, y: r.y };
       }
     }
-  }
-  return null;
-}
-function hideRooms(grid, rooms, rng) {
-  if (rooms.length < 4) return [];
-  const start = rooms[0];
-  const want = Math.min(4, 1 + Math.floor(rooms.length / 18));
-  const candidates = rng.shuffle(rooms.slice(1).filter((r) => r.w >= 6 && r.h >= 6));
-  const hidden = [];
-  let baseReach = floodDistances(grid, { x: start.cx, y: start.cy }).count;
-  for (const room of candidates) {
-    if (hidden.length >= want) break;
-    const cells = [];
-    for (let y = room.y; y < room.y + room.h; y += 1) for (let x = room.x; x < room.x + room.w; x += 1) cells.push([x, y]);
-    let floorRemoved = 0;
-    const saved = cells.map(([x, y]) => {
-      if (grid[y][x] === ".") floorRemoved += 1;
-      const v = grid[y][x];
-      grid[y][x] = "#";
-      return v;
-    });
-    const entrance = findEntrance(grid, room);
-    const reach = floodDistances(grid, { x: start.cx, y: start.cy }).count;
-    if (!entrance || baseReach - reach > floorRemoved + 2) {
-      cells.forEach(([x, y], i) => {
-        grid[y][x] = saved[i];
-      });
-      continue;
-    }
-    baseReach = reach;
-    hidden.push({ x: room.x, y: room.y, w: room.w, h: room.h, entrance, type: rng.pick(["treasure", "trap", "teleport"]), revealed: false });
+    const box = { x: hx, y: hy, w: hw, h: hh };
+    if (!allWall(hx, hy, hw, hh) || overlaps(box, reserved)) continue;
+    if (grid[door.y][door.x] !== "#" || grid[inner.y][inner.x] !== ".") continue;
+    reserved.push(box);
+    hidden.push({ x: hx, y: hy, w: hw, h: hh, entrance: door, type: rng.pick(HIDDEN_TYPES), revealed: false });
   }
   return hidden;
 }
@@ -353,9 +438,10 @@ function generate(rng, { width, height, minLeaf = 18, minRoom = 5 }) {
   const root = { x: 1, y: 1, w: width - 2, h: height - 2 };
   splitNode(root, rng, Math.max(minRoom + 2, minLeaf));
   const rooms = [];
-  carveAndConnect(root, grid, rng, rooms, minRoom);
-  const hidden = hideRooms(grid, rooms, rng);
-  return { grid: grid.map((row) => row.join("")), rooms, hidden };
+  const decor = [];
+  carveAndConnect(root, grid, rng, rooms, minRoom, decor);
+  const hidden = attachHiddenRooms(grid, rooms, rng);
+  return { grid: grid.map((row) => row.join("")), rooms, hidden, decor };
 }
 function floodDistances(gridRows, start) {
   const height = gridRows.length;
@@ -398,10 +484,23 @@ var MONSTERS = [
   { id: "mite", glyph: "m", name: "parse mite", hp: 16, atk: 5, xp: 2, drop: 1, minFloor: 1 },
   { id: "spider", glyph: "s", name: "syntax spider", hp: 20, atk: 6, xp: 3, drop: 1, minFloor: 1 },
   { id: "null", glyph: "n", name: "null pointer", hp: 18, atk: 9, xp: 4, drop: 2, minFloor: 2 },
+  { id: "ambusher", glyph: "a", name: "dangling ref", hp: 24, atk: 8, xp: 6, drop: 3, minFloor: 3, ambush: true },
   { id: "race", glyph: "r", name: "race condition", hp: 22, atk: 7, xp: 6, drop: 2, minFloor: 3, fast: true },
   { id: "leak", glyph: "L", name: "memory leak", hp: 40, atk: 6, xp: 5, drop: 3, minFloor: 3 },
-  { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 }
+  { id: "spitter", glyph: "y", name: "syntax spitter", hp: 18, atk: 7, xp: 6, drop: 3, minFloor: 4, ranged: true },
+  { id: "exploder", glyph: "x", name: "segfault", hp: 16, atk: 6, xp: 5, drop: 3, minFloor: 4, explode: true },
+  { id: "overflow", glyph: "O", name: "stack overflow", hp: 52, atk: 13, xp: 9, drop: 4, minFloor: 4 },
+  { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true }
 ];
+var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush"];
+var ELITE_PREFIXES = [
+  { key: "armored", name: "armored", hpMult: 1.8, atkMult: 1.1 },
+  { key: "venomous", name: "venomous", hpMult: 1.3, atkMult: 1.3, venom: true },
+  { key: "frenzied", name: "frenzied", hpMult: 1.4, atkMult: 1.5, fast: true }
+];
+function eliteChance(floor) {
+  return Math.min(0.28, 0.04 + (floor - 1) * 0.05);
+}
 var WEAPONS = [
   { name: "hand_cursor", atk: 0 },
   { name: "parser_blade", atk: 3 },
@@ -435,6 +534,15 @@ var SHOP_UPGRADES = [
   { id: "compass", name: "Stairwell Sense", desc: "reveals the way to the stairs (HUD compass)", max: 1, apply: () => {
   } }
 ];
+var RUN_MODS = [
+  { id: "swarm", name: "Swarm", desc: "+60% monsters" },
+  { id: "no_potions", name: "Drought", desc: "no health potions on the floor" },
+  { id: "elite_storm", name: "Elite Storm", desc: "far more elites" }
+];
+var HEAT_PER_MOD = 0.25;
+function runHeat(runMods2 = {}) {
+  return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods2[m.id]).length;
+}
 var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1e3 };
 var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
 function upgradeCost(id, level) {
@@ -444,7 +552,7 @@ function xpForLevel(level) {
   return 6 + (level - 1) * 5;
 }
 function rollEntity(shopUpgrades = {}) {
-  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" } };
+  const stats = { ...BASE_STATS, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: { weapon: "hand_cursor" }, affix: null, inventory: {}, statuses: {} };
   for (const up of SHOP_UPGRADES) {
     const n = Number(shopUpgrades[up.id] || 0);
     if (n > 0) up.apply(stats, n);
@@ -453,280 +561,134 @@ function rollEntity(shopUpgrades = {}) {
   return stats;
 }
 function spawnMonster(rng, floor, index) {
-  const eligible = MONSTERS.filter((m) => m.minFloor <= floor);
+  const eligible = MONSTERS.filter((m2) => m2.minFloor <= floor);
   const def = rng.pick(eligible.length ? eligible : MONSTERS);
   const scale = 1 + (floor - 1) * 0.35;
-  const hp = Math.round(def.hp * scale) + index % 2;
-  return {
+  let hp = Math.round(def.hp * scale) + index % 2;
+  let atk = Math.round(def.atk * scale);
+  const m = {
     id: def.id,
     glyph: def.glyph,
     name: def.name,
     fast: Boolean(def.fast),
     xp: def.xp,
     drop: def.drop,
-    hp,
-    maxHp: hp,
-    atk: Math.round(def.atk * scale),
     alive: true,
     x: 0,
     y: 0,
     // Patrol heading + how far it can spot @ (set at generation; fast foes are more alert).
     dir: rng.pick(["up", "down", "left", "right"]),
-    sight: def.fast ? 7 : 5,
+    sight: def.fast || def.ranged ? 7 : 5,
     chasing: false,
     // Which of the 5 shared real-time movement clocks this monster ticks on (0=fastest .4s).
-    bucket: rng.int(0, 4)
+    bucket: rng.int(0, 4),
+    // Faction (C5): two rival camps that fight each other when not engaged with @ — bait them.
+    faction: rng.int(0, 1)
   };
+  for (const b of BEHAVIOURS) if (def[b]) m[b] = true;
+  if (m.ambush) m.hidden = true;
+  if (floor >= 2 && rng.float() < eliteChance(floor)) {
+    const p = rng.pick(ELITE_PREFIXES);
+    hp = Math.round(hp * p.hpMult);
+    atk = Math.round(atk * p.atkMult);
+    m.elite = true;
+    m.prefix = p.key;
+    m.name = `${p.name} ${def.name}`;
+    m.drop = def.drop + 2;
+    m.xp = def.xp + 4;
+    if (p.fast) m.fast = true;
+    if (p.venom) m.venom = true;
+    m.sight = Math.max(m.sight, 7);
+  }
+  m.hp = hp;
+  m.maxHp = hp;
+  m.atk = atk;
+  return m;
 }
 
-// ../../docs/games/metagame/stages/stage2/engine.js
+// ../../docs/games/metagame/stages/stage2/dirs.js
 var DIRS = {
   up: { dx: 0, dy: -1 },
   down: { dx: 0, dy: 1 },
   left: { dx: -1, dy: 0 },
   right: { dx: 1, dy: 0 }
 };
-var GROWTH = 1.35;
-function floorDims(runSeed, floorNum) {
-  const dimRng = makeRng(`${runSeed}:dims`);
-  const baseW = dimRng.int(200, 250);
-  const baseH = dimRng.int(200, 250);
-  const g = Math.pow(GROWTH, floorNum - 1);
-  const width = Math.min(900, Math.round(baseW * g));
-  const height = Math.min(900, Math.round(baseH * g));
-  const minLeaf = Math.max(16, Math.min(70, Math.round(width / 9)));
-  return { width, height, minLeaf, minRoom: 6 };
-}
-function buildGrid(runSeed, floorNum) {
-  const dims = floorDims(runSeed, floorNum);
-  const rng = makeRng(`${runSeed}:${floorNum}`);
-  const { grid, rooms, hidden } = generate(rng, dims);
-  return { grid, rooms, hidden, dims, rng };
-}
-function defineGrid(world, grid) {
-  Object.defineProperty(world, "grid", { value: grid, enumerable: false, writable: true, configurable: true });
-}
-function attachGrid(world, runSeed, floorNum) {
-  const grid = buildGrid(runSeed, floorNum).grid;
-  if (Array.isArray(world.hidden)) {
-    for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h);
-  }
-  defineGrid(world, grid);
-  return world;
-}
-function buildFloor(runSeed, floorNum) {
-  const { grid, rooms, hidden, dims, rng } = buildGrid(runSeed, floorNum);
-  const width = dims.width;
-  const height = dims.height;
-  const start = { x: rooms[0].cx, y: rooms[0].cy };
-  const flood = floodDistances(grid, start);
-  let exit = start;
-  let far = -1;
-  for (let i = 0; i < flood.count; i += 1) {
-    const idx = flood.order[i];
-    if (flood.dist[idx] > far) {
-      far = flood.dist[idx];
-      exit = { x: idx % width, y: Math.floor(idx / width) };
-    }
-  }
-  const order = flood.order;
-  for (let i = flood.count - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng.float() * (i + 1));
-    const t = order[i];
-    order[i] = order[j];
-    order[j] = t;
-  }
-  let ci = 0;
-  const take = () => {
-    while (ci < flood.count) {
-      const idx = order[ci++];
-      const x = idx % width;
-      const y = Math.floor(idx / width);
-      if ((x !== start.x || y !== start.y) && (x !== exit.x || y !== exit.y)) return { x, y };
-    }
-    return null;
+var DIR_LIST = ["up", "down", "left", "right"];
+
+// ../../docs/games/metagame/stages/stage2/status.js
+var DOT = { poison: true, burn: true, bleed: true };
+var LABEL = { poison: "poison", burn: "burning", bleed: "bleeding" };
+function applyStatus(ent, type, turns, power = 1) {
+  if (!ent || turns <= 0) return;
+  ent.statuses = ent.statuses || {};
+  const cur = ent.statuses[type];
+  ent.statuses[type] = {
+    turns: Math.max(turns, cur ? cur.turns : 0),
+    power: Math.max(power, cur ? cur.power : 0)
   };
-  const roomN = rooms.length;
-  const monsterCount = Math.max(16, Math.min(400, Math.round(roomN * 2.4)));
-  const monsters = [];
-  for (let i = 0; i < monsterCount; i += 1) {
-    const c = take();
-    if (!c) break;
-    const m = spawnMonster(rng, floorNum, i);
-    m.x = c.x;
-    m.y = c.y;
-    m.home = { x: c.x, y: c.y };
-    monsters.push(m);
-  }
-  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
-  const weapons = [];
-  const weaponCount = Math.max(2, Math.min(24, Math.round(roomN * 0.18)));
-  for (let i = 0; i < weaponCount; i += 1) {
-    const wc = take();
-    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
-  }
-  const potions = [];
-  const potionCount = Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
-  for (let i = 0; i < potionCount; i += 1) {
-    const c = take();
-    if (c) potions.push({ x: c.x, y: c.y, taken: false });
-  }
-  const glyphs = [];
-  const glyphCount = Math.max(6, Math.min(60, Math.round(roomN * 0.3)));
-  for (let i = 0; i < glyphCount; i += 1) {
-    const c = take();
-    if (!c) break;
-    glyphs.push({ x: c.x, y: c.y, taken: false });
-  }
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, monsters, weapons, potions, glyphs, hidden };
-  defineGrid(world, grid);
-  return world;
 }
-function gainGlyphs(player, base) {
-  const mult = Number(player.glyphMult || 1);
-  const got = Math.max(1, Math.round(base * mult));
-  player.glyphsThisRun = Number(player.glyphsThisRun || 0) + got;
-  return got;
+function hasStatus(ent, type) {
+  return Boolean(ent && ent.statuses && ent.statuses[type] && ent.statuses[type].turns > 0);
 }
-function awardXp(player, amount, events) {
-  player.xp = Number(player.xp || 0) + amount;
-  while (player.xp >= xpForLevel(player.level)) {
-    player.xp -= xpForLevel(player.level);
-    player.level += 1;
-    player.maxHp += 5 + Number(player.hpPerLevel || 0);
-    player.atk += 1 + Number(player.atkPerLevel || 0);
-    player.def += Number(player.defPerLevel || 0);
-    player.hp = Math.min(player.maxHp, player.hp + 3);
-    events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
+var ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄" };
+function statusSummary(ent) {
+  if (!ent || !ent.statuses) return "";
+  return Object.keys(ent.statuses).filter((t) => ent.statuses[t] && ent.statuses[t].turns > 0).map((t) => `${ICON[t] || "•"}${ent.statuses[t].turns}`).join(" ");
+}
+function tickStatuses(ent, events, isPlayer) {
+  if (!ent || !ent.statuses) return 0;
+  let dmg = 0;
+  const sources = [];
+  for (const type of Object.keys(ent.statuses)) {
+    const st = ent.statuses[type];
+    if (!st || st.turns <= 0) {
+      delete ent.statuses[type];
+      continue;
+    }
+    if (DOT[type]) {
+      dmg += st.power;
+      sources.push(LABEL[type] || type);
+    }
+    st.turns -= 1;
+    if (st.turns <= 0) delete ent.statuses[type];
   }
-}
-function bite(foe, player, events) {
-  const dmg = Math.max(1, foe.atk - Number(player.def || 0));
-  player.hp = Math.max(0, player.hp - dmg);
-  events.damageTaken += dmg;
-  if (player.hp <= 0) events.died = true;
+  if (dmg > 0 && typeof ent.hp === "number") {
+    ent.hp = Math.max(0, ent.hp - dmg);
+    if (events) {
+      if (isPlayer) {
+        events.damageTaken = (events.damageTaken || 0) + dmg;
+        if (ent.hp <= 0) events.died = true;
+      }
+      if (events.log) events.log.push(`${isPlayer ? "@" : ent.name || "foe"} takes ${dmg} from ${sources.join(" + ")}.`);
+    }
+  }
   return dmg;
 }
-function step(world, player, dir) {
-  const move = DIRS[dir];
-  const events = { moved: false, log: [], damageTaken: 0, killed: false, pickup: null, descend: false, died: false };
-  if (!move) return events;
-  const nx = world.pos.x + move.dx;
-  const ny = world.pos.y + move.dy;
-  if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
-  if (world.grid[ny][nx] === "#") {
-    const door = world.hidden && world.hidden.find((h) => !h.revealed && h.entrance.x === nx && h.entrance.y === ny);
-    if (door) revealHidden(world, player, door, events);
-    return events;
+function skipsTurn(ent) {
+  if (hasStatus(ent, "stun") || hasStatus(ent, "frozen")) return true;
+  if (hasStatus(ent, "slow")) {
+    ent._slowPhase = !ent._slowPhase;
+    return ent._slowPhase;
   }
-  const foeIndex = world.monsters.findIndex((m) => m.alive && m.x === nx && m.y === ny);
-  const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
-  if (foe) {
-    events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    foe.hp -= Math.max(1, player.atk);
-    if (foe.hp <= 0) {
-      foe.alive = false;
-      events.killed = true;
-      events.attack.killed = true;
-      const got = gainGlyphs(player, foe.drop);
-      events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
-      awardXp(player, foe.xp, events);
-    } else {
-      const dmg = bite(foe, player, events);
-      events.log.push(`${foe.name} hits for ${dmg}.`);
-      if (foe.fast && player.hp > 0) {
-        const d2 = bite(foe, player, events);
-        events.log.push(`${foe.name} strikes again for ${d2}.`);
-      }
-    }
-    return events;
-  }
-  world.pos = { x: nx, y: ny };
-  events.moved = true;
-  const weapon = world.weapons.find((wp) => !wp.taken && wp.x === nx && wp.y === ny);
-  if (weapon && weapon.atk > 0) {
-    weapon.taken = true;
-    player.atk += weapon.atk;
-    player.equipment = { ...player.equipment || {}, weapon: weapon.name };
-    events.pickup = "weapon";
-    events.log.push(`found ${weapon.name.replace(/_/g, " ")}. +${weapon.atk} ATK.`);
-  }
-  const glyph = world.glyphs.find((g) => !g.taken && g.x === nx && g.y === ny);
-  if (glyph) {
-    glyph.taken = true;
-    const got = gainGlyphs(player, 3);
-    events.pickup = events.pickup || "glyph";
-    events.log.push(`glyph shard recovered. +${got} glyphs.`);
-  }
-  const potion = world.potions && world.potions.find((p) => !p.taken && p.x === nx && p.y === ny);
-  if (potion && player.hp < player.maxHp) {
-    potion.taken = true;
-    const heal = Math.max(8, Math.round(player.maxHp * 0.35));
-    player.hp = Math.min(player.maxHp, player.hp + heal);
-    events.pickup = events.pickup || "potion";
-    events.log.push(`parse potion. +${heal} HP.`);
-  }
-  if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
-  return events;
+  return false;
 }
-function revealHidden(world, player, h, events) {
-  h.revealed = true;
-  carveHiddenRoom(world.grid, h);
-  const rng = makeRng(`${world.seed}:reveal:${h.entrance.x},${h.entrance.y}`);
-  const open = [];
-  for (let y = h.y; y < h.y + h.h; y += 1) for (let x = h.x; x < h.x + h.w; x += 1) if (world.grid[y] && world.grid[y][x] === ".") open.push({ x, y });
-  const cells = rng.shuffle(open);
-  let ci = 0;
-  const take = () => ci < cells.length ? cells[ci++] : { x: h.entrance.x, y: h.entrance.y };
-  events.reveal = h.type;
-  if (h.type === "treasure") {
-    for (let i = 0; i < 3; i += 1) {
-      const c = take();
-      world.potions.push({ x: c.x, y: c.y, taken: false });
-    }
-    const ng = rng.int(3, 7);
-    for (let i = 0; i < ng; i += 1) {
-      const c = take();
-      world.glyphs.push({ x: c.x, y: c.y, taken: false });
-    }
-    const nw = rng.int(2, 5);
-    const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 1);
-    for (let i = 0; i < nw; i += 1) {
-      const c = take();
-      world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], taken: false });
-    }
-    events.log.push("hidden cache! potions, glyphs and weapons spill out.");
-  } else if (h.type === "trap") {
-    const n = rng.int(3, 5);
-    for (let i = 0; i < n; i += 1) {
-      const c = take();
-      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
-      m.x = c.x;
-      m.y = c.y;
-      m.home = { x: c.x, y: c.y };
-      m.chasing = true;
-      world.monsters.push(m);
-    }
-    events.log.push(`ambush! ${n} foes pour out of the dark.`);
-  } else {
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
-      const tx = world.exit.x + dx;
-      const ty = world.exit.y + dy;
-      if (world.grid[ty] && world.grid[ty][tx] === ".") {
-        world.pos = { x: tx, y: ty };
-        break;
-      }
-    }
-    events.moved = true;
-    events.log.push("a teleport sigil! flung straight to the stairwell.");
-  }
-}
-var DIR_LIST = ["up", "down", "left", "right"];
+
+// ../../docs/games/metagame/stages/stage2/monsters.js
+var SUMMON_CAP = 90;
+var RANGED_COOLDOWN = 2;
+var SUMMON_COOLDOWN = 4;
+var EXPLODE_RADIUS = 2;
 function isOpen(world, x, y) {
   return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
 }
 function freeCell(world, x, y, occupied) {
-  return isOpen(world, x, y) && !occupied.has(y * world.width + x) && !(x === world.pos.x && y === world.pos.y);
+  if (!isOpen(world, x, y) || occupied.has(y * world.width + x)) return false;
+  if (x === world.pos.x && y === world.pos.y) return false;
+  if (world.hazardAt && world.hazardAt(x, y) && !world.hazardSafe) {
+    const hz = world.hazardAt(x, y);
+    if (hz === "lava" || hz === "spikes") return false;
+  }
+  return true;
 }
 function hasLOS(world, x0, y0, x1, y1) {
   const dx = Math.abs(x1 - x0);
@@ -754,9 +716,10 @@ function hasLOS(world, x0, y0, x1, y1) {
 function monsterBite(m, player, events) {
   const dmg = Math.max(1, m.atk - Number(player.def || 0));
   player.hp = Math.max(0, player.hp - dmg);
-  events.damageTaken += dmg;
+  events.damageTaken = (events.damageTaken || 0) + dmg;
+  if (m.venom) applyStatus(player, "poison", 3, 1);
   if (player.hp <= 0) events.died = true;
-  events.log.push(`${m.name} bites for ${dmg}.`);
+  if (events.log) events.log.push(`${m.name} bites for ${dmg}.`);
   return dmg;
 }
 function greedyStep(world, m, px, py, occupied) {
@@ -778,6 +741,144 @@ function patrolStep(world, m, occupied) {
   }
   return null;
 }
+function adjacentRival(world, m) {
+  for (const d of DIR_LIST) {
+    const x = m.x + DIRS[d].dx;
+    const y = m.y + DIRS[d].dy;
+    const o = world.monsters.find((q) => q.alive && !q.ally && q.x === x && q.y === y && q.faction !== m.faction && q !== m);
+    if (o) return o;
+  }
+  return null;
+}
+function adjacentFree(world, m, occupied) {
+  for (const d of DIR_LIST) {
+    const x = m.x + DIRS[d].dx;
+    const y = m.y + DIRS[d].dy;
+    if (freeCell(world, x, y, occupied)) return { x, y };
+  }
+  return null;
+}
+function pressureSpawn(world) {
+  if (world.stepCount == null) return 0;
+  const interval = Math.max(12, 40 - world.floor * 4);
+  const first = Math.max(20, 60 - world.floor * 5);
+  if (world._nextWander == null) world._nextWander = first;
+  if (world.stepCount < world._nextWander) return 0;
+  if (world.monsters.filter((m2) => m2.alive).length >= SUMMON_CAP * 4) return 0;
+  world._nextWander = world.stepCount + interval;
+  world._wanderN = (world._wanderN || 0) + 1;
+  const rng = makeRng(`${world.seed}:${world.floor}:wander:${world._wanderN}`);
+  const spot = offscreenCell(world, rng);
+  if (!spot) return 0;
+  const m = spawnMonster(rng, world.floor, world.monsters.length);
+  m.x = spot.x;
+  m.y = spot.y;
+  m.home = { x: spot.x, y: spot.y };
+  m.chasing = true;
+  m.bucket = world._wanderN % 5;
+  if (m.ambush) {
+    m.ambush = false;
+    m.hidden = false;
+  }
+  world.monsters.push(m);
+  return 1;
+}
+function offscreenCell(world, rng) {
+  for (let t = 0; t < 60; t += 1) {
+    const dx = rng.int(-44, 44);
+    const dy = rng.int(-30, 30);
+    if (Math.abs(dx) <= 26 && Math.abs(dy) <= 13) continue;
+    const x = world.pos.x + dx;
+    const y = world.pos.y + dy;
+    if (isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
+  }
+  return null;
+}
+function makeMinion(world) {
+  const scale = 1 + (world.floor - 1) * 0.35;
+  const hp = Math.round(12 * scale);
+  world._summonN = (world._summonN || 0) + 1;
+  return {
+    id: "spawnling",
+    glyph: "·",
+    name: "fork spawn",
+    hp,
+    maxHp: hp,
+    atk: Math.max(2, Math.round(4 * scale)),
+    xp: 1,
+    drop: 1,
+    alive: true,
+    x: 0,
+    y: 0,
+    dir: "down",
+    sight: 6,
+    chasing: true,
+    bucket: world._summonN % 5,
+    faction: 0
+  };
+}
+function detonate(world, at, player, events) {
+  const reach = EXPLODE_RADIUS;
+  const power = Math.max(3, Math.round((at.atk || 6) * 1.2));
+  const pd = Math.abs(world.pos.x - at.x) + Math.abs(world.pos.y - at.y);
+  if (typeof player.hp === "number" && pd <= reach) {
+    const dmg = Math.max(1, power - Number(player.def || 0));
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (events.log) events.log.push(`${at.name} detonates for ${dmg}!`);
+    if (player.hp <= 0) events.died = true;
+  } else if (events.log) {
+    events.log.push(`${at.name} detonates.`);
+  }
+  for (const o of world.monsters) {
+    if (!o.alive || o === at) continue;
+    if (Math.abs(o.x - at.x) + Math.abs(o.y - at.y) <= reach) {
+      o.hp -= power;
+      if (o.hp <= 0) o.alive = false;
+    }
+  }
+  events.blast = { x: at.x, y: at.y };
+}
+function allyTurn(world, m, occupied, events) {
+  let target = null;
+  let bd = Infinity;
+  for (const o of world.monsters) {
+    if (!o.alive || o.ally || o === m) continue;
+    const d = Math.abs(o.x - m.x) + Math.abs(o.y - m.y);
+    if (d < bd) {
+      bd = d;
+      target = o;
+    }
+  }
+  if (target && bd <= (m.sight || 6) + 4) {
+    if (bd === 1) {
+      target.hp -= Math.max(1, m.atk);
+      if (target.hp <= 0) {
+        target.alive = false;
+        occupied.delete(target.y * world.width + target.x);
+        if (target.explode) detonate(world, target, { hp: null }, events);
+        if (events.log) events.log.push(`your ally fells ${target.name}.`);
+      }
+      return;
+    }
+    const t2 = greedyStep(world, m, target.x, target.y, occupied);
+    if (t2) {
+      occupied.delete(m.y * world.width + m.x);
+      m.x = t2.x;
+      m.y = t2.y;
+      occupied.add(m.y * world.width + m.x);
+    }
+    return;
+  }
+  const t = patrolStep(world, m, occupied);
+  if (t) {
+    occupied.delete(m.y * world.width + m.x);
+    m.x = t.x;
+    m.y = t.y;
+    m.dir = t.dir;
+    occupied.add(m.y * world.width + m.x);
+  }
+}
 function monsterTurn(world, player, events, filter) {
   const px = world.pos.x;
   const py = world.pos.y;
@@ -786,9 +887,35 @@ function monsterTurn(world, player, events, filter) {
   for (const m of world.monsters) {
     if (!m.alive) continue;
     if (filter && !filter(m)) continue;
+    if (m.ally) {
+      allyTurn(world, m, occupied, events);
+      continue;
+    }
+    if (m.statuses) {
+      tickStatuses(m, events, false);
+      if (m.hp <= 0) {
+        m.alive = false;
+        occupied.delete(m.y * world.width + m.x);
+        if (m.explode) detonate(world, m, player, events);
+        if (player.hp <= 0) {
+          events.died = true;
+          return;
+        }
+        continue;
+      }
+    }
+    if (skipsTurn(m)) continue;
+    const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
     const sight = m.sight || 5;
-    const adjacent = Math.abs(px - m.x) + Math.abs(py - m.y) === 1;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
+    if (m.ambush && m.hidden) {
+      if (dist <= 2) {
+        m.hidden = false;
+        m.chasing = true;
+        if (events.log) events.log.push(`${m.name} springs from the wall!`);
+      } else continue;
+    }
+    const adjacent = dist === 1;
     if (adjacent && (sees || m.chasing)) {
       m.chasing = true;
       monsterBite(m, player, events);
@@ -799,6 +926,55 @@ function monsterTurn(world, player, events, filter) {
       }
       continue;
     }
+    if (m.ranged) {
+      if (sees && dist > 1 && (m._cd || 0) <= 0) {
+        const dmg = Math.max(1, Math.round(m.atk * 0.7) - Number(player.def || 0));
+        player.hp = Math.max(0, player.hp - dmg);
+        events.damageTaken = (events.damageTaken || 0) + dmg;
+        applyStatus(player, "poison", 3, 1);
+        if (events.log) events.log.push(`${m.name} spits for ${dmg}.`);
+        m._cd = RANGED_COOLDOWN;
+        m.chasing = true;
+        if (player.hp <= 0) {
+          events.died = true;
+          return;
+        }
+        continue;
+      }
+      if (m._cd > 0) m._cd -= 1;
+    }
+    if (m.summon && sees) {
+      if ((m._cd || 0) <= 0 && world.monsters.filter((o) => o.alive).length < SUMMON_CAP) {
+        const spot = adjacentFree(world, m, occupied);
+        if (spot) {
+          const minion = makeMinion(world);
+          minion.faction = m.faction;
+          minion.x = spot.x;
+          minion.y = spot.y;
+          minion.home = { x: spot.x, y: spot.y };
+          world.monsters.push(minion);
+          occupied.add(spot.y * world.width + spot.x);
+          m._cd = SUMMON_COOLDOWN;
+          m.chasing = true;
+          if (events.log) events.log.push(`${m.name} forks a spawn.`);
+          continue;
+        }
+      } else if (m._cd > 0) {
+        m._cd -= 1;
+      }
+    }
+    if (!sees && !m.chasing) {
+      const rival = adjacentRival(world, m);
+      if (rival) {
+        rival.hp -= Math.max(1, Math.round(m.atk * 0.8));
+        if (rival.hp <= 0) {
+          rival.alive = false;
+          occupied.delete(rival.y * world.width + rival.x);
+          if (rival.explode) detonate(world, rival, { hp: null }, events);
+        }
+        continue;
+      }
+    }
     const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied)) : (m.chasing = false, patrolStep(world, m, occupied));
     if (target) {
       occupied.delete(m.y * world.width + m.x);
@@ -808,6 +984,832 @@ function monsterTurn(world, player, events, filter) {
       occupied.add(m.y * world.width + m.x);
     }
   }
+}
+
+// ../../docs/games/metagame/stages/stage2/hazards.js
+var HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":" };
+var HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm" };
+function hazardPlan(floor) {
+  if (floor <= 2) return { types: ["spikes"], density: 0.35 };
+  if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
+  if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
+  return { types: ["lava", "spores", "chasm", "spikes"], density: 1.7 };
+}
+function placeHazards(rng, floor, roomN, takeCell) {
+  const plan = hazardPlan(floor);
+  const count = Math.round(roomN * 0.45 * plan.density);
+  const hazards = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    hazards.push({ x: c.x, y: c.y, type: rng.pick(plan.types) });
+  }
+  return hazards;
+}
+function hazardIndex(world) {
+  const map = /* @__PURE__ */ new Map();
+  if (Array.isArray(world.hazards)) for (const h of world.hazards) map.set(h.y * world.width + h.x, h.type);
+  return (x, y) => map.get(y * world.width + x);
+}
+function enterHazard(world, player, hz, events) {
+  if (hz === "lava") {
+    const dmg = 6 + world.floor * 2;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "burn", 3, 2 + Math.floor(world.floor / 3));
+    events.log.push(`lava! ${dmg} damage — you're burning.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (hz === "spores") {
+    applyStatus(player, "poison", 4, 1 + Math.floor(world.floor / 4));
+    events.log.push("a spore cloud bursts — poisoned.");
+  } else if (hz === "spikes") {
+    const dmg = 3 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "bleed", 3, 1);
+    events.log.push(`spikes! ${dmg} damage — bleeding.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (hz === "chasm") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (player.hp <= 0) {
+      events.died = true;
+      return;
+    }
+    events.descend = true;
+    events.fell = true;
+    events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
+  }
+}
+
+// ../../docs/games/metagame/stages/stage2/traps.js
+var TRAP_GLYPH = { dart: "˙", alarm: "¡", pit: "o", blink: "✶" };
+var TRAP_CLASS = "s2-c-trap";
+function trapPlan(floor) {
+  if (floor <= 2) return { types: ["dart"], density: 0.25 };
+  if (floor <= 4) return { types: ["dart", "alarm", "blink"], density: 0.5 };
+  if (floor <= 6) return { types: ["dart", "alarm", "blink", "pit"], density: 0.8 };
+  return { types: ["dart", "alarm", "pit", "blink"], density: 1.1 };
+}
+function placeTraps(rng, floor, roomN, takeCell) {
+  const plan = trapPlan(floor);
+  const count = Math.round(roomN * 0.35 * plan.density);
+  const traps = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    traps.push({ x: c.x, y: c.y, type: rng.pick(plan.types), sprung: false });
+  }
+  return traps;
+}
+function trapIndex(world) {
+  const map = /* @__PURE__ */ new Map();
+  if (Array.isArray(world.traps)) for (const t of world.traps) map.set(t.y * world.width + t.x, t);
+  return (x, y) => map.get(y * world.width + x);
+}
+function blinkCell(world, rng, rad) {
+  for (let t = 0; t < 50; t += 1) {
+    const x = world.pos.x + rng.int(-rad, rad);
+    const y = world.pos.y + rng.int(-rad, rad);
+    if (isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
+  }
+  return null;
+}
+function springTrap(world, player, trap, events) {
+  trap.sprung = true;
+  events.trap = trap.type;
+  if (trap.type === "dart") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "bleed", 2, 1);
+    events.log.push(`a dart trap! ${dmg} damage — bleeding.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (trap.type === "alarm") {
+    let woke = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 16) {
+        m.chasing = true;
+        if (m.ambush) {
+          m.hidden = false;
+        }
+        woke += 1;
+      }
+    }
+    events.log.push(`an alarm trap! ${woke} foes wake and converge.`);
+  } else if (trap.type === "blink") {
+    const rng = makeBlinkRng(world, trap);
+    const spot = blinkCell(world, rng, 8);
+    if (spot) {
+      world.pos = { x: spot.x, y: spot.y };
+      events.moved = true;
+      events.blinked = true;
+    }
+    events.log.push("a blink rune! you're flung across the floor.");
+  } else if (trap.type === "pit") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (player.hp <= 0) {
+      events.died = true;
+      return;
+    }
+    events.descend = true;
+    events.fell = true;
+    events.log.push(`a hidden pit — ${dmg} fall damage — you drop a floor.`);
+  }
+}
+function makeBlinkRng(world, trap) {
+  let h = trap.x * 73856093 ^ trap.y * 19349663 ^ (world.stepCount || 0);
+  return { int: (lo, hi) => {
+    h = h * 1103515245 + 12345 & 2147483647;
+    return lo + h % (hi - lo + 1);
+  } };
+}
+
+// ../../docs/games/metagame/stages/stage2/affixes.js
+var WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double"];
+var LABEL2 = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike" };
+function rollAffix(rng, floor) {
+  const chance = Math.min(0.6, 0.12 + floor * 0.05);
+  return rng.float() < chance ? rng.pick(WEAPON_AFFIXES) : null;
+}
+function affixLabel(a) {
+  return a ? LABEL2[a] || a : "";
+}
+function affixDamage(player) {
+  const base = Math.max(1, player.atk);
+  return player.affix === "double" ? base * 2 : base;
+}
+function applyHitAffix(world, player, foe, dmg, events) {
+  const a = player.affix;
+  if (!a) return;
+  if (a === "vampiric") {
+    player.hp = Math.min(player.maxHp, player.hp + Math.max(1, Math.round(dmg * 0.2)));
+  } else if (a === "burning") {
+    applyStatus(foe, "burn", 3, 2);
+  } else if (a === "knockback" && foe.hp > 0) {
+    const tx = foe.x + Math.sign(foe.x - world.pos.x);
+    const ty = foe.y + Math.sign(foe.y - world.pos.y);
+    if (world.grid[ty] && world.grid[ty][tx] === "." && !world.monsters.some((m) => m.alive && m.x === tx && m.y === ty)) {
+      foe.x = tx;
+      foe.y = ty;
+    }
+  } else if (a === "cleave") {
+    for (const o of world.monsters) {
+      if (!o.alive || o === foe || o.ally) continue;
+      if (Math.abs(o.x - world.pos.x) + Math.abs(o.y - world.pos.y) === 1) {
+        o.hp -= Math.max(1, Math.round(dmg * 0.5));
+        if (o.hp <= 0) o.alive = false;
+      }
+    }
+  }
+}
+
+// ../../docs/games/metagame/stages/stage2/fire.js
+var FIRE_GLYPH = "▴";
+var FIRE_LIFE = 5;
+var MAX_FIRES = 400;
+function burnedSet(world) {
+  world.burned = world.burned || [];
+  return world.burned;
+}
+function igniteCell(world, x, y, life = FIRE_LIFE) {
+  if (!world.grid[y] || world.grid[y][x] === "#") return;
+  world.fires = world.fires || [];
+  if (world.fires.length >= MAX_FIRES || world.fires.some((f) => f.x === x && f.y === y)) return;
+  world.fires.push({ x, y, life });
+  const idx = y * world.width + x;
+  if (!burnedSet(world).includes(idx)) world.burned.push(idx);
+}
+function tickFire(world, player, events) {
+  if (!world.fires || !world.fires.length) return;
+  const burned = burnedSet(world);
+  const dmg = 4 + world.floor;
+  const next = [];
+  const fresh = [];
+  for (const f of world.fires) {
+    if (world.pos.x === f.x && world.pos.y === f.y) {
+      player.hp = Math.max(0, player.hp - dmg);
+      events.damageTaken = (events.damageTaken || 0) + dmg;
+      applyStatus(player, "burn", 3, 2);
+      if (player.hp <= 0) events.died = true;
+    }
+    for (const m of world.monsters) {
+      if (m.alive && m.x === f.x && m.y === f.y) {
+        m.hp -= dmg;
+        applyStatus(m, "burn", 3, 2);
+        if (m.hp <= 0) m.alive = false;
+      }
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = f.x + dx;
+      const ny = f.y + dy;
+      const idx = ny * world.width + nx;
+      if (world.hazardAt && world.hazardAt(nx, ny) === "spores" && !burned.includes(idx) && !fresh.some((g) => g.x === nx && g.y === ny)) {
+        fresh.push({ x: nx, y: ny, life: FIRE_LIFE });
+        burned.push(idx);
+      }
+    }
+    f.life -= 1;
+    if (f.life > 0) next.push(f);
+  }
+  world.fires = next.concat(fresh);
+  events.fireActive = world.fires.length;
+}
+
+// ../../docs/games/metagame/stages/stage2/consumables.js
+var CONSUMABLES = {
+  blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
+  firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" }
+};
+var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze"];
+function placeConsumables(rng, floor, roomN, takeCell) {
+  const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
+  const out = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    out.push({ x: c.x, y: c.y, type: rng.pick(CONSUMABLE_KEYS), taken: false });
+  }
+  return out;
+}
+function nearbyOpen(world, rad) {
+  let h = world.pos.x * 73856093 ^ world.pos.y * 19349663 ^ (world.stepCount || 0) * 83492791;
+  for (let t = 0; t < 60; t += 1) {
+    h = h * 1103515245 + 12345 & 2147483647;
+    const dx = h % (rad * 2 + 1) - rad;
+    h = h * 1103515245 + 12345 & 2147483647;
+    const dy = h % (rad * 2 + 1) - rad;
+    const x = world.pos.x + dx;
+    const y = world.pos.y + dy;
+    if ((dx || dy) && isOpen(world, x, y) && !(world.hazardAt && world.hazardAt(x, y))) return { x, y };
+  }
+  return null;
+}
+function nearestVisibleFoe(world, rad) {
+  let best = null;
+  let bd = Infinity;
+  for (const m of world.monsters) {
+    if (!m.alive || m.ally) continue;
+    const d = Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y);
+    if (d <= rad && d < bd && hasLOS(world, world.pos.x, world.pos.y, m.x, m.y)) {
+      bd = d;
+      best = m;
+    }
+  }
+  return best;
+}
+function useConsumable(world, player, type, events) {
+  const inv = player.inventory || (player.inventory = {});
+  if (!inv[type] || inv[type] <= 0) return false;
+  if (type === "blink") {
+    const spot = nearbyOpen(world, 7);
+    if (!spot) {
+      events.log.push("the blink rune finds nowhere to land.");
+      return false;
+    }
+    world.pos = { x: spot.x, y: spot.y };
+    events.moved = true;
+    events.blinked = true;
+    events.log.push("blink rune — you flicker across the floor.");
+  } else if (type === "firebolt") {
+    const foe = nearestVisibleFoe(world, 10);
+    if (!foe) {
+      events.log.push("firebolt fizzles — no target in sight.");
+      return false;
+    }
+    const dmg = 12 + world.floor * 3;
+    foe.hp -= dmg;
+    applyStatus(foe, "burn", 4, 2);
+    if (foe.hp <= 0) foe.alive = false;
+    igniteCell(world, foe.x, foe.y);
+    events.log.push(`firebolt scorches ${foe.name} for ${dmg}${foe.hp <= 0 ? " — unparsed" : ""}.`);
+  } else if (type === "freeze") {
+    let n = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 5) {
+        applyStatus(m, "frozen", 4, 1);
+        if (m.ambush) m.hidden = false;
+        n += 1;
+      }
+    }
+    events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+  } else {
+    return false;
+  }
+  inv[type] -= 1;
+  events.used = type;
+  return true;
+}
+
+// ../../docs/games/metagame/stages/stage2/floor.js
+var GROWTH = 1.35;
+function floorDims(runSeed, floorNum) {
+  const dimRng = makeRng(`${runSeed}:dims`);
+  const baseW = dimRng.int(200, 250);
+  const baseH = dimRng.int(200, 250);
+  const g = Math.pow(GROWTH, floorNum - 1);
+  const width = Math.min(900, Math.round(baseW * g));
+  const height = Math.min(900, Math.round(baseH * g));
+  const minLeaf = Math.max(16, Math.min(70, Math.round(width / 9)));
+  return { width, height, minLeaf, minRoom: 6 };
+}
+function buildGrid(runSeed, floorNum) {
+  const dims = floorDims(runSeed, floorNum);
+  const rng = makeRng(`${runSeed}:${floorNum}`);
+  const { grid, rooms, hidden, decor } = generate(rng, dims);
+  return { grid, rooms, hidden, decor, dims, rng };
+}
+function defineGrid(world, grid) {
+  Object.defineProperty(world, "grid", { value: grid, enumerable: false, writable: true, configurable: true });
+}
+function attachGrid(world, runSeed, floorNum) {
+  const grid = buildGrid(runSeed, floorNum).grid;
+  if (Array.isArray(world.hidden)) {
+    for (const h of world.hidden) if (h.revealed) carveHiddenRoom(grid, h);
+  }
+  defineGrid(world, grid);
+  defineHazards(world);
+  return world;
+}
+function defineHazards(world) {
+  Object.defineProperty(world, "hazardAt", { value: hazardIndex(world), enumerable: false, writable: true, configurable: true });
+  Object.defineProperty(world, "trapAt", { value: trapIndex(world), enumerable: false, writable: true, configurable: true });
+}
+function buildFloor(runSeed, floorNum, mods = {}) {
+  const { grid, rooms, hidden, decor, dims, rng } = buildGrid(runSeed, floorNum);
+  const width = dims.width;
+  const height = dims.height;
+  const start = { x: rooms[0].cx, y: rooms[0].cy };
+  const flood = floodDistances(grid, start);
+  let exit = start;
+  let far = -1;
+  for (let i = 0; i < flood.count; i += 1) {
+    const idx = flood.order[i];
+    if (flood.dist[idx] > far) {
+      far = flood.dist[idx];
+      exit = { x: idx % width, y: Math.floor(idx / width) };
+    }
+  }
+  let branchExit = null;
+  if (makeRng(`${runSeed}:${floorNum}:branchroll`).float() < 0.5) {
+    let bf = -1;
+    for (let i = 0; i < flood.count; i += 1) {
+      const idx = flood.order[i];
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      const awayFromExit = Math.abs(x - exit.x) + Math.abs(y - exit.y) > 24;
+      if (awayFromExit && flood.dist[idx] > bf) {
+        bf = flood.dist[idx];
+        branchExit = { x, y };
+      }
+    }
+  }
+  const order = flood.order;
+  for (let i = flood.count - 1; i > 0; i -= 1) {
+    const j = Math.floor(rng.float() * (i + 1));
+    const t = order[i];
+    order[i] = order[j];
+    order[j] = t;
+  }
+  let ci = 0;
+  const take = () => {
+    while (ci < flood.count) {
+      const idx = order[ci++];
+      const x = idx % width;
+      const y = Math.floor(idx / width);
+      const onStair = x === start.x && y === start.y || x === exit.x && y === exit.y || branchExit && x === branchExit.x && y === branchExit.y;
+      if (!onStair) return { x, y };
+    }
+    return null;
+  };
+  const roomN = rooms.length;
+  const run = mods.run || {};
+  const danger = mods.branch ? 1.4 : 1;
+  const bounty = mods.branch ? 1.5 : 1;
+  const monsterCount = Math.max(16, Math.min(700, Math.round(roomN * 2.4 * danger * (run.swarm ? 1.6 : 1))));
+  const monsters = [];
+  for (let i = 0; i < monsterCount; i += 1) {
+    const c = take();
+    if (!c) break;
+    const m = spawnMonster(rng, floorNum, i);
+    if (run.elite_storm && !m.elite && rng.float() < 0.3) {
+      m.elite = true;
+      m.hp = Math.round(m.hp * 1.5);
+      m.maxHp = m.hp;
+      m.atk = Math.round(m.atk * 1.2);
+      m.drop += 2;
+      m.name = `elite ${m.name}`;
+    }
+    m.x = c.x;
+    m.y = c.y;
+    m.home = { x: c.x, y: c.y };
+    monsters.push(m);
+  }
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(floorNum / 2) + 1);
+  const weapons = [];
+  const weaponCount = Math.max(2, Math.min(36, Math.round(roomN * 0.18 * bounty)));
+  for (let i = 0; i < weaponCount; i += 1) {
+    const wc = take();
+    if (wc) weapons.push({ x: wc.x, y: wc.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
+  }
+  const potions = [];
+  const potionCount = run.no_potions ? 0 : Math.max(3, Math.min(30, Math.round(roomN * 0.22)));
+  for (let i = 0; i < potionCount; i += 1) {
+    const c = take();
+    if (c) potions.push({ x: c.x, y: c.y, taken: false });
+  }
+  const glyphs = [];
+  const glyphCount = Math.max(6, Math.min(90, Math.round(roomN * 0.3 * bounty)));
+  for (let i = 0; i < glyphCount; i += 1) {
+    const c = take();
+    if (!c) break;
+    glyphs.push({ x: c.x, y: c.y, taken: false });
+  }
+  for (const d of decor || []) {
+    const idx = d.y * width + d.x;
+    if (flood.dist[idx] < 0) continue;
+    if (d.x === start.x && d.y === start.y || d.x === exit.x && d.y === exit.y) continue;
+    if (d.kind === "weapon") weapons.push({ x: d.x, y: d.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, floorNum), taken: false });
+    else if (d.kind === "potion" && !run.no_potions) potions.push({ x: d.x, y: d.y, taken: false });
+    else if (d.kind === "glyph") glyphs.push({ x: d.x, y: d.y, taken: false });
+  }
+  if (floorNum >= 3 && floorNum % 2 === 1) {
+    const g = makeGuardian(rng, floorNum, monsters.length);
+    const spot = adjacentOpen(grid, exit) || take();
+    if (spot) {
+      g.x = spot.x;
+      g.y = spot.y;
+      g.home = { x: spot.x, y: spot.y };
+      monsters.push(g);
+    }
+  }
+  const hazards = placeHazards(rng, floorNum, roomN, take);
+  const traps = placeTraps(rng, floorNum, roomN, take);
+  const consumables = placeConsumables(rng, floorNum, roomN, take);
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps, consumables };
+  defineGrid(world, grid);
+  defineHazards(world);
+  return world;
+}
+function makeGuardian(rng, floor, idx) {
+  const g = spawnMonster(rng, floor, idx);
+  g.hp = Math.round(g.maxHp * 3);
+  g.maxHp = g.hp;
+  g.atk = Math.round(g.atk * 1.5);
+  g.glyph = "Ω";
+  g.name = "floor guardian";
+  g.guardian = true;
+  g.elite = true;
+  g.drop += 6;
+  g.xp += 12;
+  g.sight = 9;
+  g.chasing = false;
+  g.ranged = false;
+  g.ambush = false;
+  g.hidden = false;
+  g.explode = false;
+  g.venom = false;
+  if (rng.pick(["summon", "split"]) === "summon") {
+    g.summon = true;
+    g.split = false;
+  } else {
+    g.summon = false;
+    g.split = true;
+  }
+  return g;
+}
+function adjacentOpen(grid, p) {
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const x = p.x + dx;
+    const y = p.y + dy;
+    if (grid[y] && grid[y][x] === ".") return { x, y };
+  }
+  return null;
+}
+
+// ../../docs/games/metagame/stages/stage2/engine.js
+function exitDistanceField(world) {
+  return floodDistances(world.grid, world.exit);
+}
+function stepToExit(world, field) {
+  const W = world.width;
+  const here = field.dist[world.pos.y * W + world.pos.x];
+  if (here === 0) return { dir: null, steps: 0 };
+  let best = null;
+  let bestD = Infinity;
+  for (const dir of DIR_LIST) {
+    const nx = world.pos.x + DIRS[dir].dx;
+    const ny = world.pos.y + DIRS[dir].dy;
+    if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= W || world.grid[ny][nx] === "#") continue;
+    const d = field.dist[ny * W + nx];
+    if (d >= 0 && d < bestD) {
+      bestD = d;
+      best = dir;
+    }
+  }
+  return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
+}
+function spawnSplit(world, foe) {
+  let made = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (made >= 2) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !world.monsters.some((m) => m.alive && m.x === x && m.y === y)) {
+      const hp = Math.max(6, Math.round(foe.maxHp * 0.4));
+      world.monsters.push({
+        id: "shard",
+        glyph: "ω",
+        name: `shard of ${foe.name}`,
+        hp,
+        maxHp: hp,
+        atk: Math.max(2, Math.round(foe.atk * 0.6)),
+        xp: 2,
+        drop: 1,
+        alive: true,
+        x,
+        y,
+        home: { x, y },
+        dir: "down",
+        sight: 7,
+        chasing: true,
+        bucket: (made + 1) % 5,
+        statuses: {},
+        faction: foe.faction || 0
+      });
+      made += 1;
+    }
+  }
+}
+function gainGlyphs(player, base) {
+  const mult = Number(player.glyphMult || 1);
+  const got = Math.max(1, Math.round(base * mult));
+  player.glyphsThisRun = Number(player.glyphsThisRun || 0) + got;
+  return got;
+}
+function awardXp(player, amount, events) {
+  player.xp = Number(player.xp || 0) + amount;
+  while (player.xp >= xpForLevel(player.level)) {
+    player.xp -= xpForLevel(player.level);
+    player.level += 1;
+    player.maxHp += 5 + Number(player.hpPerLevel || 0);
+    player.atk += 1 + Number(player.atkPerLevel || 0);
+    player.def += Number(player.defPerLevel || 0);
+    player.hp = Math.min(player.maxHp, player.hp + 3);
+    events.log.push(`LVL ${player.level}. ATK ${player.atk}, HP ${player.hp}/${player.maxHp}.`);
+  }
+}
+function dropElite(world, foe, events) {
+  if (!foe.elite) return;
+  const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 2);
+  world.weapons.push({ x: foe.x, y: foe.y, ...WEAPONS[Math.max(1, maxTier)], affix: WEAPON_AFFIXES[world.floor % WEAPON_AFFIXES.length], taken: false });
+  let dropped = 0;
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    if (dropped >= 3) break;
+    const x = foe.x + dx;
+    const y = foe.y + dy;
+    if (world.grid[y] && world.grid[y][x] === "." && !(x === world.pos.x && y === world.pos.y)) {
+      world.glyphs.push({ x, y, taken: false });
+      dropped += 1;
+    }
+  }
+  events.log.push(`${foe.name} drops a cache!`);
+}
+function tickPlayerStatus(player) {
+  const events = { log: [], damageTaken: 0, died: false };
+  tickStatuses(player, events, true);
+  return events;
+}
+function bite(foe, player, events) {
+  const dmg = Math.max(1, foe.atk - Number(player.def || 0));
+  player.hp = Math.max(0, player.hp - dmg);
+  events.damageTaken += dmg;
+  if (foe.venom) applyStatus(player, "poison", 3, 1);
+  if (player.hp <= 0) events.died = true;
+  return dmg;
+}
+function step(world, player, dir) {
+  const move = DIRS[dir];
+  const events = { moved: false, log: [], damageTaken: 0, killed: false, pickup: null, descend: false, died: false };
+  if (!move) return events;
+  const nx = world.pos.x + move.dx;
+  const ny = world.pos.y + move.dy;
+  if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
+  if (world.grid[ny][nx] === "#") {
+    const door = world.hidden && world.hidden.find((h) => !h.revealed && h.entrance.x === nx && h.entrance.y === ny);
+    if (door) revealHidden(world, player, door, events);
+    return events;
+  }
+  const foeIndex = world.monsters.findIndex((m) => m.alive && m.x === nx && m.y === ny);
+  const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
+  if (foe) {
+    events.attack = { x: nx, y: ny, foeIndex, killed: false };
+    const dmg = affixDamage(player);
+    foe.hp -= dmg;
+    applyHitAffix(world, player, foe, dmg, events);
+    if (foe.hp <= 0) {
+      foe.alive = false;
+      events.killed = true;
+      events.attack.killed = true;
+      const got = gainGlyphs(player, foe.drop);
+      events.log.push(`${foe.name} unparsed. +${got} glyph${got === 1 ? "" : "s"}.`);
+      awardXp(player, foe.xp, events);
+      dropElite(world, foe, events);
+      if (foe.split) {
+        spawnSplit(world, foe);
+        events.log.push(`${foe.name} splits apart!`);
+      }
+      if (foe.explode) detonate(world, foe, player, events);
+      if (player.hp <= 0) {
+        events.died = true;
+        return events;
+      }
+    } else {
+      const dmg2 = bite(foe, player, events);
+      events.log.push(`${foe.name} hits for ${dmg2}.`);
+      if (foe.fast && player.hp > 0) {
+        const d2 = bite(foe, player, events);
+        events.log.push(`${foe.name} strikes again for ${d2}.`);
+      }
+    }
+    return events;
+  }
+  world.pos = { x: nx, y: ny };
+  events.moved = true;
+  world.stepCount = (world.stepCount || 0) + 1;
+  const hz = world.hazardAt && world.hazardAt(nx, ny);
+  const burntSpore = hz === "spores" && Array.isArray(world.burned) && world.burned.includes(ny * world.width + nx);
+  if (hz && !burntSpore) {
+    enterHazard(world, player, hz, events);
+    if (events.died) return events;
+    if (events.descend) return events;
+  }
+  const tr = world.trapAt && world.trapAt(nx, ny);
+  if (tr && !tr.sprung) {
+    springTrap(world, player, tr, events);
+    if (events.died) return events;
+    if (events.descend) return events;
+  }
+  const weapon = world.weapons.find((wp) => !wp.taken && wp.x === nx && wp.y === ny);
+  if (weapon && weapon.atk > 0) {
+    weapon.taken = true;
+    player.atk += weapon.atk;
+    player.affix = weapon.affix || null;
+    player.equipment = { ...player.equipment || {}, weapon: weapon.name };
+    events.pickup = "weapon";
+    events.log.push(`found ${weapon.name.replace(/_/g, " ")}${weapon.affix ? ` (${affixLabel(weapon.affix)})` : ""}. +${weapon.atk} ATK.`);
+  }
+  const glyph = world.glyphs.find((g) => !g.taken && g.x === nx && g.y === ny);
+  if (glyph) {
+    glyph.taken = true;
+    const got = gainGlyphs(player, 3);
+    events.pickup = events.pickup || "glyph";
+    events.log.push(`glyph shard recovered. +${got} glyphs.`);
+  }
+  const potion = world.potions && world.potions.find((p) => !p.taken && p.x === nx && p.y === ny);
+  if (potion && player.hp < player.maxHp) {
+    potion.taken = true;
+    const heal = Math.max(8, Math.round(player.maxHp * 0.35));
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    events.pickup = events.pickup || "potion";
+    events.log.push(`parse potion. +${heal} HP.`);
+  }
+  const item = world.consumables && world.consumables.find((c) => !c.taken && c.x === nx && c.y === ny);
+  if (item) {
+    item.taken = true;
+    const inv = player.inventory || (player.inventory = {});
+    inv[item.type] = Number(inv[item.type] || 0) + 1;
+    events.pickup = events.pickup || "consumable";
+    events.log.push(`picked up a ${item.type} rune.`);
+  }
+  if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
+  if (world.branchExit && nx === world.branchExit.x && ny === world.branchExit.y) {
+    events.descend = true;
+    events.branch = true;
+  }
+  return events;
+}
+function revealHidden(world, player, h, events) {
+  h.revealed = true;
+  carveHiddenRoom(world.grid, h);
+  const rng = makeRng(`${world.seed}:reveal:${h.entrance.x},${h.entrance.y}`);
+  const open = [];
+  for (let y = h.y; y < h.y + h.h; y += 1) for (let x = h.x; x < h.x + h.w; x += 1) if (world.grid[y] && world.grid[y][x] === ".") open.push({ x, y });
+  const cells = rng.shuffle(open);
+  let ci = 0;
+  const take = () => ci < cells.length ? cells[ci++] : { x: h.entrance.x, y: h.entrance.y };
+  events.reveal = h.type;
+  if (h.type === "treasure") {
+    for (let i = 0; i < 3; i += 1) {
+      const c = take();
+      world.potions.push({ x: c.x, y: c.y, taken: false });
+    }
+    const ng = rng.int(3, 7);
+    for (let i = 0; i < ng; i += 1) {
+      const c = take();
+      world.glyphs.push({ x: c.x, y: c.y, taken: false });
+    }
+    const nw = rng.int(2, 5);
+    const maxTier = Math.min(WEAPONS.length - 1, Math.floor(world.floor / 2) + 1);
+    for (let i = 0; i < nw; i += 1) {
+      const c = take();
+      world.weapons.push({ x: c.x, y: c.y, ...WEAPONS[rng.int(1, maxTier)], affix: rollAffix(rng, world.floor), taken: false });
+    }
+    events.log.push("hidden cache! potions, glyphs and weapons spill out.");
+  } else if (h.type === "trap") {
+    const n = rng.int(3, 5);
+    for (let i = 0; i < n; i += 1) {
+      const c = take();
+      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
+      m.x = c.x;
+      m.y = c.y;
+      m.home = { x: c.x, y: c.y };
+      m.chasing = true;
+      world.monsters.push(m);
+    }
+    events.log.push(`ambush! ${n} foes pour out of the dark.`);
+  } else if (h.type === "teleport") {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [0, 0]]) {
+      const tx = world.exit.x + dx;
+      const ty = world.exit.y + dy;
+      if (world.grid[ty] && world.grid[ty][tx] === ".") {
+        world.pos = { x: tx, y: ty };
+        break;
+      }
+    }
+    events.moved = true;
+    events.log.push("a teleport sigil! flung straight to the stairwell.");
+  } else if (h.type === "shrine") {
+    const cost = Math.min(Math.max(0, player.hp - 1), Math.max(5, Math.round(player.maxHp * 0.15)));
+    player.hp = Math.max(1, player.hp - cost);
+    const boon = rng.pick(["atk", "def", "maxhp"]);
+    if (boon === "atk") {
+      player.atk += 2;
+      events.log.push(`a shrine — you bleed ${cost} HP for +2 ATK.`);
+    } else if (boon === "def") {
+      player.def = Number(player.def || 0) + 1;
+      events.log.push(`a shrine — you bleed ${cost} HP for +1 DEF.`);
+    } else {
+      player.maxHp += 8;
+      events.log.push(`a shrine — you bleed ${cost} HP for +8 max HP.`);
+    }
+  } else if (h.type === "vault") {
+    const cx = h.x + (h.w >> 1);
+    const cy = h.y + (h.h >> 1);
+    world.weapons.push({ x: cx, y: cy, ...WEAPONS[WEAPONS.length - 1], affix: rng.pick(WEAPON_AFFIXES), taken: false });
+    const guards = rng.int(2, 3);
+    for (let i = 0; i < guards; i += 1) {
+      const c = take();
+      const m = spawnMonster(rng, world.floor, world.monsters.length + i);
+      m.x = c.x;
+      m.y = c.y;
+      m.home = { x: c.x, y: c.y };
+      m.chasing = true;
+      m.elite = true;
+      m.hp = Math.round(m.hp * 1.5);
+      m.maxHp = m.hp;
+      m.atk = Math.round(m.atk * 1.2);
+      m.name = `vault guard`;
+      m.drop += 2;
+      world.monsters.push(m);
+    }
+    events.log.push(`a vault! a prime weapon — but ${guards} elite guards stir.`);
+  } else if (h.type === "captive") {
+    const c = take();
+    const ally = spawnMonster(rng, world.floor, world.monsters.length);
+    ally.x = c.x;
+    ally.y = c.y;
+    ally.home = { x: c.x, y: c.y };
+    ally.ally = true;
+    ally.chasing = false;
+    ally.ranged = false;
+    ally.summon = false;
+    ally.explode = false;
+    ally.ambush = false;
+    ally.hidden = false;
+    ally.elite = false;
+    ally.venom = false;
+    ally.hp = Math.round(ally.hp * 1.6);
+    ally.maxHp = ally.hp;
+    ally.name = "freed process";
+    world.monsters.push(ally);
+    events.log.push("a captive process — freed, it fights at your side.");
+  }
+}
+
+// ../../docs/games/metagame/stages/stage2/biome.js
+var BIOMES = [
+  { id: "warrens", name: "The Warrens", maxFloor: 3 },
+  { id: "cisterns", name: "Flooded Cisterns", maxFloor: 6 },
+  { id: "emberworks", name: "Emberworks", maxFloor: 9 },
+  { id: "overflow", name: "The Overflow", maxFloor: Infinity }
+];
+function biomeForFloor(floor) {
+  return BIOMES.find((b) => floor <= b.maxFloor) || BIOMES[BIOMES.length - 1];
 }
 
 // ../../docs/games/metagame/stages/stage2/shop.js
@@ -829,17 +1831,41 @@ function buildShopPanel({ state, save, onClose }) {
       <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${label}</button>
     </div>`;
   }
+  function modHtml(mod) {
+    const on = Boolean((state.meta.runMods || {})[mod.id]);
+    return `<div class="s2-shop-row">
+      <div class="s2-shop-info">
+        <strong>${mod.name}</strong> <span class="s2-shop-lv">+${Math.round(HEAT_PER_MOD * 100)}% glyphs</span>
+        <div class="s2-shop-desc">${mod.desc}</div>
+      </div>
+      <button type="button" data-mod="${mod.id}" class="${on ? "s2-mod-on" : ""}">${on ? "ON" : "off"}</button>
+    </div>`;
+  }
   function paint() {
     const banked = Number(state.meta.glyphsBanked || 0);
+    const heat = runHeat(state.meta.runMods || {});
     box.innerHTML = `
       <div class="s2-shop-head">GLYPH SHOP
         <span class="s2-shop-bank"><span class="s2-c-glyph">${banked}</span> banked</span>
         <button type="button" data-shop="close" class="s2-shop-x" aria-label="close shop">&#10005;</button>
       </div>
       <div class="s2-shop-note">applies when your next run begins (after death / retreat). only banked glyphs spend.</div>
-      <div class="s2-shop-list">${SHOP_UPGRADES.map(rowHtml).join("")}</div>`;
+      <div class="s2-shop-list">${SHOP_UPGRADES.map(rowHtml).join("")}</div>
+      <div class="s2-shop-head" style="margin-top:10px">HEAT — opt-in difficulty
+        <span class="s2-shop-bank">×${heat.toFixed(2)} glyphs</span>
+      </div>
+      <div class="s2-shop-note">tougher runs bank more glyphs. takes effect next run.</div>
+      <div class="s2-shop-list">${RUN_MODS.map(modHtml).join("")}</div>`;
     box.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
+    box.querySelectorAll("[data-mod]").forEach((b) => b.addEventListener("click", () => toggleMod(b.dataset.mod)));
     box.querySelector('[data-shop="close"]').addEventListener("click", () => onClose());
+  }
+  function toggleMod(id) {
+    const meta = state.meta;
+    meta.runMods = meta.runMods || {};
+    meta.runMods[id] = !meta.runMods[id];
+    if (typeof save === "function") save();
+    paint();
   }
   function buy(id) {
     const up = SHOP_UPGRADES.find((u) => u.id === id);
@@ -864,11 +1890,24 @@ var SECTIONS = [
   ["Goal", "Descend 5 floors, then beat THE AMBIGUOUS EXPRESSION at the bottom."],
   ["Move", "Arrow keys, WASD, or the on-screen d-pad. One tile per press."],
   ["Fight", "Walk into a foe to attack (your ATK vs its HP). It hits back — watch your HP. Fast foes (race conditions) strike twice."],
-  ["Foes", "s m n r are light; L O are heavy. Deeper floors spawn tougher ones."],
+  ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
+  ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
+  ["Guardian", "Band floors post a pink Ω guardian by the stairs — huge HP and a trick (it forks minions or splits into shards). Beat it to pass."],
+  ["Factions", "Foes come in two rival camps (red vs orange). When they're not chasing you they fight each other — lead a pack past a rival and let them thin each other out."],
+  ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
+  ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
+  ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
-  ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot."],
+  ["Affixes", "Some weapons carry an on-hit affix — vampiric (lifesteal), cleaving (hit adjacent foes), burning, knockback or double-strike. The one you pick up last is active; deeper weapons roll affixes more often."],
+  ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
+  ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
+  ["Darkness", "From the deeper bands your sight shrinks — you only see a radius around @, and foes loom out of the dark. Move carefully."],
+  ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
+  ["Runes", "Pink ♦ runes are one-shot tools: pick them up, then press 1/2/3 (or the buttons) — blink (escape), firebolt (scorch the nearest foe), freeze (lock foes around you)."],
+  ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
+  ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward."],
   ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
 ];
 function buildHelpPanel({ onClose }) {
@@ -906,6 +1945,16 @@ var CELL_CLASS = {
 };
 var HEAVY_FOES = /* @__PURE__ */ new Set(["L", "O"]);
 var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function lightRadius(floor) {
+  if (floor <= 3) return null;
+  if (floor <= 6) return { rx: 13, ry: 7 };
+  if (floor <= 9) return { rx: 9, ry: 5 };
+  return { rx: 7, ry: 4 };
+}
+function lit(world, x, y) {
+  const L = lightRadius(world.floor);
+  return !L || Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry;
+}
 function hpBar(cur, max, width) {
   const ratio = max > 0 ? clamp(cur / max, 0, 1) : 0;
   let filled = Math.round(ratio * width);
@@ -976,13 +2025,17 @@ function createView(screenEl) {
     reconcileSprites(world);
   }
   function terrainText(world) {
+    const L = lightRadius(world.floor);
+    const px = world.pos.x;
+    const py = world.pos.y;
     const rows = [];
     for (let vy = 0; vy < VIEW_H; vy += 1) {
       const gy = cam.y + vy;
       let line = "";
       for (let vx = 0; vx < VIEW_W; vx += 1) {
         const gx = cam.x + vx;
-        line += gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width ? " " : world.grid[gy][gx];
+        const dark = L && (Math.abs(gx - px) > L.rx || Math.abs(gy - py) > L.ry);
+        line += dark || gy < 0 || gx < 0 || gy >= world.grid.length || gx >= world.width ? " " : world.grid[gy][gx];
       }
       rows.push(line);
     }
@@ -991,7 +2044,7 @@ function createView(screenEl) {
   function reconcileItems(world) {
     const live = /* @__PURE__ */ new Set();
     const place = (id, x, y, ch, cls) => {
-      if (!inView(x, y)) return;
+      if (!inView(x, y) || !lit(world, x, y)) return;
       live.add(id);
       let el = itemEls.get(id);
       if (!el) {
@@ -1002,6 +2055,11 @@ function createView(screenEl) {
       pos(el, x, y);
     };
     place("exit", world.exit.x, world.exit.y, ">", "s2-c-exit");
+    if (world.branchExit) place("branch", world.branchExit.x, world.branchExit.y, "≣", "s2-c-branch");
+    if (world.hazards) world.hazards.forEach((hz, i) => place("hz" + i, hz.x, hz.y, HAZARD_GLYPH[hz.type] || "^", HAZARD_CLASS[hz.type] || "s2-c-spikes"));
+    if (world.traps) world.traps.forEach((tr, i) => {
+      if (tr.sprung) place("tr" + i, tr.x, tr.y, TRAP_GLYPH[tr.type] || "˙", TRAP_CLASS);
+    });
     world.weapons.forEach((w, i) => {
       if (!w.taken) place("w" + i, w.x, w.y, "/", "s2-c-item");
     });
@@ -1011,6 +2069,10 @@ function createView(screenEl) {
     if (world.potions) world.potions.forEach((p, i) => {
       if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion");
     });
+    if (world.consumables) world.consumables.forEach((c, i) => {
+      if (!c.taken) place("c" + i, c.x, c.y, (CONSUMABLES[c.type] || {}).glyph || "♦", "s2-c-consum");
+    });
+    if (world.fires) world.fires.forEach((f, i) => place("fire" + i, f.x, f.y, FIRE_GLYPH, "s2-c-fire"));
     if (world.hidden) world.hidden.forEach((h, i) => {
       if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret");
     });
@@ -1023,7 +2085,7 @@ function createView(screenEl) {
     pos(playerEl, world.pos.x, world.pos.y);
     const live = /* @__PURE__ */ new Set();
     world.monsters.forEach((m, i) => {
-      if (!m.alive || !inView(m.x, m.y)) {
+      if (!m.alive || !inView(m.x, m.y) || !lit(world, m.x, m.y)) {
         dropMob(i);
         return;
       }
@@ -1036,10 +2098,15 @@ function createView(screenEl) {
         sprites.append(s.el);
         fresh = true;
       }
-      if (s.glyph.textContent !== m.glyph) s.glyph.textContent = m.glyph;
-      const cls = "s2-sprite " + (HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : "s2-c-foe");
+      const disguised = m.ambush && m.hidden;
+      const glyph = disguised ? "#" : m.glyph;
+      if (s.glyph.textContent !== glyph) s.glyph.textContent = glyph;
+      const baseFoe = m.faction === 1 ? "s2-c-foe-b" : "s2-c-foe";
+      const color = disguised ? "s2-c-ambush" : m.ally ? "s2-c-ally" : m.guardian ? "s2-c-guardian" : m.elite ? "s2-c-elite" : HEAVY_FOES.has(m.glyph) ? "s2-c-foe2" : baseFoe;
+      const dot = !disguised && m.statuses && (m.statuses.burn || m.statuses.poison || m.statuses.bleed) ? " s2-foe-dot" : "";
+      const cls = "s2-sprite " + color + dot;
       if (s.el.className !== cls) s.el.className = cls;
-      if (m.hp < m.maxHp) {
+      if (!disguised && m.hp < m.maxHp) {
         if (s.hp.hidden) s.hp.hidden = false;
         if (s.lastHp !== m.hp || s.lastMaxHp !== m.maxHp) {
           renderHpBar(s.hp, m.hp, m.maxHp, 5);
@@ -1162,12 +2229,20 @@ function createView(screenEl) {
     if (world.hidden) {
       for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     }
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
+    if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
+    if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
+    if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2);
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) {
       for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);
     }
+    if (world.consumables) {
+      for (const c of world.consumables) if (!c.taken) dot(c.x, c.y, "#ff7bf0", 3);
+    }
     for (const g of world.glyphs) if (!g.taken) dot(g.x, g.y, "#d78bff", 3);
     dot(world.exit.x, world.exit.y, "#7fe07f", 4);
+    if (world.branchExit) dot(world.branchExit.x, world.branchExit.y, "#c98bff", 4);
     for (const m of world.monsters) if (m.alive) dot(m.x, m.y, HEAVY_FOES.has(m.glyph) ? "#ff2bd0" : "#ff5a4a", 3);
     dot(world.pos.x, world.pos.y, "#79f0ff", 5);
   }
@@ -1211,8 +2286,89 @@ function escapeChar(ch) {
   return ch;
 }
 
-// ../../docs/games/metagame/stages/stage2/renderer.js
+// ../../docs/games/metagame/stages/stage2/runloop.js
 var MAX_FLOOR = 5;
+function runMods(state) {
+  return state.meta && state.meta.runMods || {};
+}
+function ensureWorld(state) {
+  const run = state.run;
+  if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
+  if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
+    run.world = buildFloor(run.seed, run.floor, { run: runMods(state) });
+  } else if (!run.world.grid) {
+    attachGrid(run.world, run.seed, run.world.floor);
+  }
+}
+function descend(state, opts = {}) {
+  const run = state.run;
+  run.entity.glyphsThisRun += 3;
+  run.active = true;
+  state.meta.bestFloor = Math.max(Number(state.meta.bestFloor || 0), run.floor);
+  state.meta.floorsCleared[run.floor] = true;
+  if (run.floor >= MAX_FLOOR) {
+    run.boss.reached = true;
+    appendLog(state, "the stairs end at the boss syntax. it waits.");
+    return;
+  }
+  run.floor += 1;
+  run.world = buildFloor(run.seed, run.floor, { branch: Boolean(opts.branch), run: runMods(state) });
+  if (opts.branch) appendLog(state, `you take the branching stair — a deadlier, richer floor ${run.floor}.`);
+  else appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
+}
+function resetRun(state, { banked, death }) {
+  const run = state.run;
+  if (banked) {
+    const earned = Math.round(Number(run.entity.glyphsThisRun || 0) * runHeat(runMods(state)));
+    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + earned;
+  }
+  if (death) state.meta.deaths = Number(state.meta.deaths || 0) + 1;
+  state.meta.runCount = Number(state.meta.runCount || 0) + 1;
+  run.seed = `s2-run${state.meta.runCount}`;
+  run.entity = rollEntity(state.meta.shopUpgrades);
+  run.floor = 1;
+  run.active = false;
+  run.boss.reached = false;
+  run.world = buildFloor(run.seed, 1, { run: runMods(state) });
+}
+var DIR_ARROW = { up: "↑", down: "↓", left: "←", right: "→" };
+var NOISE_CHARS = "╳✕X#▓░*/\\";
+function damageNoise(fatal) {
+  const rows = fatal ? 7 : 4;
+  const cols = fatal ? 34 : 26;
+  const lines = [];
+  for (let y = 0; y < rows; y += 1) {
+    let line = "";
+    for (let x = 0; x < cols; x += 1) {
+      line += Math.random() < 0.7 ? NOISE_CHARS[Math.floor(Math.random() * NOISE_CHARS.length)] : " ";
+    }
+    lines.push(line);
+  }
+  return lines.join("\n");
+}
+function appendLog(state, line) {
+  state.run.combatLog = [...state.run.combatLog, line].slice(-6);
+}
+function openCipher(viewer) {
+  if (viewer && typeof viewer.openFile === "function") viewer.openFile(CIPHER_PATH);
+  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(CIPHER_PATH);
+}
+function openBts({ bts, viewer }) {
+  if (bts && typeof bts.open === "function") bts.open(2);
+  else if (bts && typeof bts.openBts === "function") bts.openBts(2);
+  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
+  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
+}
+function once(fn) {
+  let called = false;
+  return (value) => {
+    if (called) return;
+    called = true;
+    fn(value);
+  };
+}
+
+// ../../docs/games/metagame/stages/stage2/renderer.js
 var MOVE_KEYS = {
   ArrowUp: "up",
   ArrowDown: "down",
@@ -1247,7 +2403,7 @@ function renderStage2({
       <div>ATK <span data-field="atk"></span></div>
       <div>DEF <span data-field="def"></span></div>
       <div>GLYPHS <span data-field="glyphs"></span></div>
-      <div class="s2-compass" data-field="compass" hidden></div>
+      <div class="s2-status" data-field="status" hidden></div>
     </header>
     <div class="s2-objective" data-field="objective"></div>
     <div class="s2-play">
@@ -1260,9 +2416,12 @@ function renderStage2({
           <span class="s2-c-potion">!</span> potion
           <span class="s2-c-glyph">%</span> glyph
           <span class="s2-c-exit">&gt;</span> stairs
+          <span class="s2-c-lava">≈</span> hazard
         </div>
       </div>
       <div class="s2-controls">
+        <div class="s2-compass" data-field="compass" hidden></div>
+        <div class="s2-items" data-field="items"></div>
         <button type="button" data-action="help">how to play</button>
         <button type="button" data-action="shop">glyph shop</button>
         <button type="button" data-action="retreat">retreat (new run)</button>
@@ -1300,9 +2459,11 @@ function renderStage2({
   let lastHp = -1;
   let lastMaxHp = -1;
   let lastLogSig = "";
+  let lastItemSig = "";
   let flashTimer = null;
   let overlay = null;
   let monsterClocks = [];
+  let routeCache = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -1323,9 +2484,15 @@ function renderStage2({
     setText(fields.atk, e.atk);
     setText(fields.def, e.def);
     setText(fields.glyphs, `${state.meta.glyphsBanked} +${e.glyphsThisRun}`);
+    const status = statusSummary(e);
+    setHidden(fields.status, !status);
+    setText(fields.status, status);
+    paintItems(e);
     setText(fields.bossStatus, state.run.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / north pillar ${lock.northPillar} / gap ${lock.projectileGapTiles}`);
     setText(fields.hint, lock.hint);
-    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
+    const biome = biomeForFloor(state.run.floor);
+    if (root.dataset.biome !== biome.id) root.dataset.biome = biome.id;
+    setText(fields.objective, state.run.boss.reached ? lock.unlocked ? "the passage is open. challenge the boss." : "blocked. find PASSAGE in cipher.txt to open the way." : `${biome.name} — reach the stairs > (floor ${state.run.floor}/${MAX_FLOOR}). fight foes, grab weapons & glyphs.`);
     updateCompass();
     const sig = state.run.combatLog.slice(-4).join("\n");
     if (sig !== lastLogSig) {
@@ -1344,14 +2511,45 @@ function renderStage2({
   function updateCompass() {
     const owned = Number((state.meta.shopUpgrades || {}).compass || 0) > 0;
     const w = state.run.world;
-    if (!owned || !w || state.run.boss.reached) {
+    if (!owned || !w || !w.grid || state.run.boss.reached) {
       setHidden(fields.compass, true);
       return;
     }
-    const dx = w.exit.x - w.pos.x;
-    const dy = w.exit.y - w.pos.y;
+    if (!routeCache || routeCache.world !== w) routeCache = { world: w, field: exitDistanceField(w) };
+    const next = stepToExit(w, routeCache.field);
     setHidden(fields.compass, false);
-    setText(fields.compass, `⇲ stairs ${compassArrow(dx, dy)} ${Math.abs(dx) + Math.abs(dy)}`);
+    if (!next || next.steps === 0) {
+      setText(fields.compass, "⇲ stairs — here");
+      return;
+    }
+    setText(fields.compass, `⇲ stairs ${DIR_ARROW[next.dir]} ${next.steps}`);
+  }
+  function paintItems(e) {
+    const inv = e.inventory || {};
+    const sig = CONSUMABLE_KEYS.map((k) => inv[k] || 0).join(",");
+    if (sig === lastItemSig) return;
+    lastItemSig = sig;
+    const total = CONSUMABLE_KEYS.reduce((s, k) => s + (inv[k] || 0), 0);
+    setHidden(fields.items, total === 0);
+    fields.items.innerHTML = CONSUMABLE_KEYS.map((k, i) => {
+      const n = inv[k] || 0;
+      const def = CONSUMABLES[k];
+      return `<button type="button" data-use="${k}" title="${def.desc}" ${n > 0 ? "" : "disabled"}>[${i + 1}] ${def.glyph} ${k} ×${n}</button>`;
+    }).join("");
+  }
+  function useItem(type) {
+    if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
+    const world = state.run.world;
+    const e = state.run.entity;
+    if (!e.inventory || !(e.inventory[type] > 0)) return;
+    const events = { moved: false, log: [], damageTaken: 0, died: false };
+    const used = useConsumable(world, e, type, events);
+    for (const line of events.log) appendLog(state, line);
+    if (used) {
+      if (typeof save === "function") save();
+      view.paintExplore(world);
+    }
+    paintHud();
   }
   function paintWorld() {
     if (state.run.boss.reached) {
@@ -1382,10 +2580,11 @@ function renderStage2({
       return;
     }
     if (events.descend) {
-      descend(state);
+      descend(state, { branch: events.branch });
       persistAndPaint();
       return;
     }
+    if (events.reveal) routeCache = null;
     const changed = events.moved || events.attack || events.reveal;
     if (changed) {
       if (typeof save === "function") save();
@@ -1427,6 +2626,14 @@ function renderStage2({
     if (!root.isConnected) return;
     const tag = event.target && event.target.tagName || "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || event.target?.isContentEditable) return;
+    if (event.key >= "1" && event.key <= "3") {
+      const type = CONSUMABLE_KEYS[Number(event.key) - 1];
+      if (type) {
+        event.preventDefault();
+        useItem(type);
+      }
+      return;
+    }
     const dir = MOVE_KEYS[event.key];
     if (!dir) return;
     event.preventDefault();
@@ -1437,6 +2644,11 @@ function renderStage2({
     const moveBtn = event.target.closest("button[data-move]");
     if (moveBtn) {
       move(moveBtn.dataset.move);
+      return;
+    }
+    const useBtn = event.target.closest("button[data-use]");
+    if (useBtn) {
+      useItem(useBtn.dataset.use);
       return;
     }
     const button = event.target.closest("button[data-action]");
@@ -1471,7 +2683,10 @@ function renderStage2({
       e.atk += 1;
       e.hp = e.maxHp;
     } else if (id === "glyphs") e.glyphsThisRun = Number(e.glyphsThisRun || 0) + 1e3;
-    else if (id === "map") {
+    else if (id === "items") {
+      e.inventory = e.inventory || {};
+      for (const k of CONSUMABLE_KEYS) e.inventory[k] = Number(e.inventory[k] || 0) + 3;
+    } else if (id === "map") {
       view.toggleFullMap(state.run.world);
       return;
     }
@@ -1494,7 +2709,15 @@ function renderStage2({
     const world = state.run.world;
     if (!world || !world.grid) return;
     const events = { moved: false, log: [], damageTaken: 0, died: false };
-    monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
+    if (bucket === 0 && state.run.entity.statuses) {
+      const ps = tickPlayerStatus(state.run.entity);
+      for (const line of ps.log) events.log.push(line);
+      events.damageTaken += ps.damageTaken;
+      if (ps.died) events.died = true;
+    }
+    if (bucket === 2 && pressureSpawn(world)) appendLog(state, "something else stirs in the dark.");
+    if (bucket === 3 && !events.died) tickFire(world, state.run.entity, events);
+    if (!events.died) monsterTurn(world, state.run.entity, events, (m) => m.bucket === bucket);
     for (const line of events.log) appendLog(state, line);
     if (events.damageTaken > 0) flashDamage(events.died);
     if (events.died) {
@@ -1503,7 +2726,8 @@ function renderStage2({
       persistAndPaint();
       return;
     }
-    view.tickMonsters(world);
+    if (world.fires && world.fires.length) view.paintExplore(world);
+    else view.tickMonsters(world);
     paintHud();
   }
   function startMonsterClocks() {
@@ -1531,87 +2755,6 @@ function renderStage2({
       completeOnce({ stage: 2, defeated: true, reward: { glyphs: 25 }, btsPath: BTS_PATH });
     }
   }
-}
-function ensureWorld(state) {
-  const run = state.run;
-  if (!run.seed) run.seed = `s2-run${state.meta.runCount || 0}`;
-  if (!run.world || run.world.floor !== run.floor || !Array.isArray(run.world.monsters)) {
-    run.world = buildFloor(run.seed, run.floor);
-  } else if (!run.world.grid) {
-    attachGrid(run.world, run.seed, run.world.floor);
-  }
-}
-function descend(state) {
-  const run = state.run;
-  run.entity.glyphsThisRun += 3;
-  run.active = true;
-  state.meta.bestFloor = Math.max(Number(state.meta.bestFloor || 0), run.floor);
-  state.meta.floorsCleared[run.floor] = true;
-  if (run.floor >= MAX_FLOOR) {
-    run.boss.reached = true;
-    appendLog(state, "the stairs end at the boss syntax. it waits.");
-    return;
-  }
-  run.floor += 1;
-  run.world = buildFloor(run.seed, run.floor);
-  appendLog(state, `floor ${run.floor - 1} parsed. descending. +3 glyphs.`);
-}
-function resetRun(state, { banked, death }) {
-  const run = state.run;
-  if (banked) {
-    state.meta.glyphsBanked = Number(state.meta.glyphsBanked || 0) + Number(run.entity.glyphsThisRun || 0);
-  }
-  if (death) state.meta.deaths = Number(state.meta.deaths || 0) + 1;
-  state.meta.runCount = Number(state.meta.runCount || 0) + 1;
-  run.seed = `s2-run${state.meta.runCount}`;
-  run.entity = rollEntity(state.meta.shopUpgrades);
-  run.floor = 1;
-  run.active = false;
-  run.boss.reached = false;
-  run.world = buildFloor(run.seed, 1);
-}
-function compassArrow(dx, dy) {
-  const ax = Math.abs(dx);
-  const ay = Math.abs(dy);
-  if (ax < ay / 2) return dy < 0 ? "↑" : "↓";
-  if (ay < ax / 2) return dx < 0 ? "←" : "→";
-  if (dx < 0) return dy < 0 ? "↖" : "↙";
-  return dy < 0 ? "↗" : "↘";
-}
-var NOISE_CHARS = "╳✕X#▓░*/\\";
-function damageNoise(fatal) {
-  const rows = fatal ? 7 : 4;
-  const cols = fatal ? 34 : 26;
-  const lines = [];
-  for (let y = 0; y < rows; y += 1) {
-    let line = "";
-    for (let x = 0; x < cols; x += 1) {
-      line += Math.random() < 0.7 ? NOISE_CHARS[Math.floor(Math.random() * NOISE_CHARS.length)] : " ";
-    }
-    lines.push(line);
-  }
-  return lines.join("\n");
-}
-function appendLog(state, line) {
-  state.run.combatLog = [...state.run.combatLog, line].slice(-6);
-}
-function openCipher(viewer) {
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(CIPHER_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(CIPHER_PATH);
-}
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(2);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(2);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
-  };
 }
 
 // ../../docs/games/metagame/stages/stage2/state.js
@@ -1700,6 +2843,7 @@ var stageMeta = {
     { id: "atk", label: "+5 ATK" },
     { id: "lvl", label: "+1 LVL" },
     { id: "glyphs", label: "+1k glyphs" },
+    { id: "items", label: "+3 of each rune" },
     { id: "map", label: "Zoom out (full map)" }
   ]
 };

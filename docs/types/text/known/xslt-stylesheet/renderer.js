@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .xsl-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -12,10 +12,10 @@ const CSS = `
 .xsl-section{margin:0 0 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden;}
 .xsl-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0);}
 .xsl-list{margin:0;padding:0;list-style:none;}
-.xsl-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;}
+.xsl-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .xsl-list li:last-child{border-bottom:none;}
 .xsl-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#ede9fe;color:#7c3aed;font-weight:700;}
-.xsl-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
+.xsl-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px;flex-basis:100%;}
 .xsl-elem{color:#7c3aed;font-weight:600;}
 .xsl-attr{color:#0369a1;}
 .xsl-str{color:#0a6640;}
@@ -30,6 +30,9 @@ function analyzeXslt(text) {
   const matchTemplates = [];
   const variables = [];
   const params = [];
+  const calls = [];
+  const applies = [];
+  const issues = [];
 
   // Version from xsl:stylesheet or xsl:transform
   const versionM = text.match(/<xsl:(?:stylesheet|transform)[^>]*\sversion=["']([^"']+)["']/);
@@ -39,86 +42,76 @@ function analyzeXslt(text) {
   const outputM = text.match(/<xsl:output[^>]*\smethod=["']([^"']+)["']/);
   if (outputM) outputMethod = outputM[1];
 
-  // Named templates
-  const namedRe = /<xsl:template[^>]+\sname=["']([^"']+)["']/g;
+  const templateRe = /<xsl:template\b([^>]*)>([\s\S]*?)<\/xsl:template>/g;
   let m;
-  while ((m = namedRe.exec(text)) !== null) {
-    if (!namedTemplates.includes(m[1])) namedTemplates.push(m[1]);
-  }
-
-  // Match templates
-  const matchRe = /<xsl:template[^>]+\smatch=["']([^"']+)["']/g;
-  while ((m = matchRe.exec(text)) !== null) {
-    if (!matchTemplates.includes(m[1])) matchTemplates.push(m[1]);
+  while ((m = templateRe.exec(text)) !== null) {
+    const attrs = m[1];
+    const body = m[2];
+    const line = lineForIndex(text, m.index);
+    const name = attr(attrs, 'name');
+    const match = attr(attrs, 'match');
+    const mode = attr(attrs, 'mode');
+    if (name) namedTemplates.push({ name, mode, line, body });
+    if (match) matchTemplates.push({ name: match, match, mode, line, body });
+    for (const call of body.matchAll(/<xsl:call-template\b[^>]*\sname=["']([^"']+)["']/g)) {
+      calls.push({ from: name || match || '(anonymous template)', to: call[1], line: lineForIndex(text, m.index + call.index) });
+    }
+    for (const apply of body.matchAll(/<xsl:apply-templates\b([^>]*)\/?>/g)) {
+      applies.push({ from: name || match || '(anonymous template)', select: attr(apply[1], 'select') || 'node()', mode: attr(apply[1], 'mode') || '', line: lineForIndex(text, m.index + apply.index) });
+    }
   }
 
   // Top-level variables (children of xsl:stylesheet/xsl:transform — approximate: single-line or first tag)
-  const varRe = /<xsl:variable[^>]+\sname=["']([^"']+)["']/g;
+  const varRe = /<xsl:variable\b[^>]*\bname=["']([^"']+)["']/g;
   while ((m = varRe.exec(text)) !== null) {
-    if (!variables.includes(m[1])) variables.push(m[1]);
+    variables.push({ name: m[1], line: lineForIndex(text, m.index), used: variableUseCount(text, m[1]) > 0 });
   }
 
   // Top-level params
-  const paramRe = /<xsl:param[^>]+\sname=["']([^"']+)["']/g;
+  const paramRe = /<xsl:param\b[^>]*\bname=["']([^"']+)["']/g;
   while ((m = paramRe.exec(text)) !== null) {
-    if (!params.includes(m[1])) params.push(m[1]);
+    params.push({ name: m[1], line: lineForIndex(text, m.index), used: variableUseCount(text, m[1]) > 0 });
   }
 
-  return { version, outputMethod, namedTemplates, matchTemplates, variables, params };
+  const names = new Map();
+  for (const tpl of namedTemplates) {
+    if (!names.has(tpl.name)) names.set(tpl.name, []);
+    names.get(tpl.name).push(tpl);
+  }
+  for (const [name, tpls] of names.entries()) {
+    if (tpls.length > 1) issues.push({ severity: 'warning', label: 'duplicate template', line: tpls[1].line, message: `Named template "${name}" is declared ${tpls.length} times.` });
+  }
+  const namedSet = new Set(namedTemplates.map((tpl) => tpl.name));
+  for (const call of calls) {
+    if (!namedSet.has(call.to)) issues.push({ severity: 'warning', label: 'missing callee', line: call.line, message: `call-template target "${call.to}" is not declared in this stylesheet.` });
+  }
+  for (const item of [...variables, ...params]) {
+    if (!item.used) issues.push({ severity: 'info', label: 'unused binding', line: item.line, message: `$${item.name} is declared but not referenced elsewhere in the stylesheet.` });
+  }
+
+  return { version, outputMethod, namedTemplates, matchTemplates, variables, params, calls, applies, issues };
 }
 
-function highlightXslt(text) {
-  const result = [];
-  let i = 0;
-  while (i < text.length) {
-    // XML comment
-    if (text.startsWith('<!--', i)) {
-      const end = text.indexOf('-->', i + 4);
-      if (end !== -1) {
-        result.push('<span class="xsl-comment">' + esc(text.slice(i, end + 3)) + '</span>');
-        i = end + 3;
-        continue;
-      }
-    }
-    // Processing instruction
-    if (text.startsWith('<?', i)) {
-      const end = text.indexOf('?>', i + 2);
-      if (end !== -1) {
-        result.push('<span class="xsl-pi">' + esc(text.slice(i, end + 2)) + '</span>');
-        i = end + 2;
-        continue;
-      }
-    }
-    // Tag
-    if (text[i] === '<') {
-      const end = text.indexOf('>', i);
-      if (end !== -1) {
-        const tag = text.slice(i, end + 1);
-        // Check if it contains xsl: prefix
-        const isXsl = /xsl:/i.test(tag);
-        if (isXsl) {
-          // Highlight tag name, attributes, strings
-          const highlighted = tag.replace(/(<\/?)([a-zA-Z][\w:.-]*)/g, (_, slash, name) => {
-            if (/^xsl:/i.test(name)) {
-              return esc(slash) + '<span class="xsl-elem">' + esc(name) + '</span>';
-            }
-            return esc(slash) + esc(name);
-          }).replace(/\s([\w-]+)=/g, (_, attr) => ' <span class="xsl-attr">' + esc(attr) + '</span>=')
-            .replace(/"([^"]*)"/g, (_, v) => '"<span class="xsl-str">' + esc(v) + '</span>"')
-            .replace(/^&lt;/, '<').replace(/&gt;$/, '>'); // undo esc on outer <> since we built string already
-          // Actually let's just escape and then un-escape selected spans
-          result.push('<span class="xsl-elem-wrap">' + escTagHighlight(tag) + '</span>');
-        } else {
-          result.push(esc(tag));
-        }
-        i = end + 1;
-        continue;
-      }
-    }
-    result.push(esc(text[i]));
-    i++;
-  }
-  return result.join('');
+function attr(attrs, name) {
+  const m = String(attrs || '').match(new RegExp(`\\s${name}=["']([^"']+)["']`, 'i'));
+  return m?.[1] || '';
+}
+
+function lineForIndex(text, idx) {
+  return text.slice(0, idx).split(/\r?\n/).length;
+}
+
+function variableUseCount(text, name) {
+  const re = new RegExp(`\\$${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+  return (text.match(re) || []).length;
+}
+
+function highlightXsltLine(line) {
+  const trimmed = line.trim();
+  if (trimmed.startsWith('<!--')) return `<span class="xsl-comment">${esc(line)}</span>`;
+  if (trimmed.startsWith('<?')) return `<span class="xsl-pi">${esc(line)}</span>`;
+  if (/<[^>]*xsl:/i.test(line)) return escTagHighlight(line);
+  return esc(line);
 }
 
 function escTagHighlight(tag) {
@@ -136,7 +129,7 @@ function escTagHighlight(tag) {
   return s;
 }
 
-function makeSection(title, items, tagFn) {
+function makeSection(title, items, renderItem) {
   if (!items || items.length === 0) return null;
   const sec = document.createElement('div');
   sec.className = 'xsl-section';
@@ -148,15 +141,7 @@ function makeSection(title, items, tagFn) {
   ul.className = 'xsl-list';
   for (const item of items) {
     const li = document.createElement('li');
-    if (tagFn) {
-      const tag = document.createElement('span');
-      tag.className = 'xsl-tag';
-      tag.textContent = tagFn(item);
-      li.appendChild(tag);
-    }
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = typeof item === 'string' ? item : item.name;
-    li.appendChild(nameSpan);
+    renderItem(li, item);
     ul.appendChild(li);
   }
   sec.appendChild(ul);
@@ -165,7 +150,7 @@ function makeSection(title, items, tagFn) {
 
 export function render(intake) {
   const text = intake.text || '';
-  const { version, outputMethod, namedTemplates, matchTemplates, variables, params } = analyzeXslt(text);
+  const { version, outputMethod, namedTemplates, matchTemplates, variables, params, calls, applies, issues } = analyzeXslt(text);
 
   const host = document.createElement('div');
   host.className = 'xsl-doc';
@@ -173,6 +158,7 @@ export function render(intake) {
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
+  ensureKnownUiStyle(host);
 
   const title = document.createElement('div');
   title.className = 'xsl-title';
@@ -195,6 +181,8 @@ export function render(intake) {
     { value: namedTemplates.length, label: 'Named templates' },
     { value: variables.length, label: 'Variables' },
     { value: params.length, label: 'Params' },
+    { value: calls.length, label: 'Calls' },
+    { value: applies.length, label: 'Applies' },
   ]) {
     const card = document.createElement('div');
     card.className = 'xsl-card';
@@ -208,30 +196,50 @@ export function render(intake) {
   }
   host.appendChild(cards);
 
-  const matchEl = makeSection('Match Templates', matchTemplates);
+  const matchEl = makeSection('Match Templates', matchTemplates, (li, item) => {
+    li.appendChild(chip('match', 'info'));
+    li.appendChild(sourceButton(item.match, item.line, 'Open match template in source'));
+    if (item.mode) li.appendChild(chip(`mode ${item.mode}`, 'muted'));
+  });
   if (matchEl) host.appendChild(matchEl);
 
-  const namedEl = makeSection('Named Templates', namedTemplates);
+  const namedEl = makeSection('Named Templates', namedTemplates, (li, item) => {
+    li.appendChild(chip('name', 'ok'));
+    li.appendChild(sourceButton(item.name, item.line, 'Open named template in source'));
+    if (item.mode) li.appendChild(chip(`mode ${item.mode}`, 'muted'));
+  });
   if (namedEl) host.appendChild(namedEl);
 
-  const varsEl = makeSection('Variables', variables);
+  const callEl = makeSection('Template Calls', calls, (li, item) => {
+    li.appendChild(chip('call', 'warn', 'Explicit xsl:call-template dependency.'));
+    li.appendChild(sourceButton(`${item.from} -> ${item.to}`, item.line, 'Open call-template in source'));
+  });
+  if (callEl) host.appendChild(callEl);
+
+  const applyEl = makeSection('Apply Templates', applies, (li, item) => {
+    li.appendChild(chip('apply', 'info', 'Dynamic template dispatch through match rules.'));
+    li.appendChild(sourceButton(`${item.from} -> ${item.select}`, item.line, 'Open apply-templates in source'));
+    if (item.mode) li.appendChild(chip(`mode ${item.mode}`, 'muted'));
+  });
+  if (applyEl) host.appendChild(applyEl);
+
+  const varsEl = makeSection('Variables', variables, (li, item) => {
+    li.appendChild(chip('var', item.used ? 'ok' : 'warn'));
+    li.appendChild(sourceButton(`$${item.name}`, item.line, 'Open variable declaration in source'));
+  });
   if (varsEl) host.appendChild(varsEl);
 
-  const paramsEl = makeSection('Parameters', params);
+  const paramsEl = makeSection('Parameters', params, (li, item) => {
+    li.appendChild(chip('param', item.used ? 'ok' : 'warn'));
+    li.appendChild(sourceButton(`$${item.name}`, item.line, 'Open parameter declaration in source'));
+  });
   if (paramsEl) host.appendChild(paramsEl);
 
-  // Source
-  const srcSec = document.createElement('div');
-  srcSec.className = 'xsl-section';
-  const srcHd = document.createElement('div');
-  srcHd.className = 'xsl-section-hd';
-  srcHd.textContent = 'Source';
-  srcSec.appendChild(srcHd);
-  const pre = document.createElement('pre');
-  pre.className = 'xsl-pre';
-  pre.innerHTML = highlightXslt(text);
-  srcSec.appendChild(pre);
-  host.appendChild(srcSec);
+  const issueEl = issueList(issues, { title: 'Stylesheet Review' });
+  if (issueEl) host.appendChild(issueEl);
+
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'xsl-line', highlighter: highlightXsltLine }));
+  wireSourceLinks(host, { idPrefix: 'xsl-line' });
 
   return { parentNode: host };
 }

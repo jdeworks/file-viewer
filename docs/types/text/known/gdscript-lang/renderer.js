@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .gd-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -15,6 +15,7 @@ const CSS = `
 .gd-list{margin:0;padding:0;list-style:none;}
 .gd-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .gd-list li:last-child{border-bottom:none;}
+.gd-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px;flex-basis:100%;margin-left:0;}
 .gd-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#e0f2fe;color:#0369a1;font-weight:700;}
 .gd-tag-export{background:#dcfce7;color:#166534;}
 .gd-tag-signal{background:#fce7f3;color:#9d174d;}
@@ -27,8 +28,11 @@ const CSS = `
 function analyzeGDScript(text) {
   const lines = text.split(/\r?\n/);
   let className = null;
+  let classLine = 0;
   let extendsClass = null;
+  let extendsLine = 0;
   let isTool = false;
+  let toolLine = 0;
   let iconAnnotation = null;
   const exports = [];
   const signals = [];
@@ -40,38 +44,38 @@ function analyzeGDScript(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
-    if (trimmed.startsWith('#')) continue;
+    if (trimmed.startsWith('#') && !trimmed.startsWith('##')) continue;
 
-    if (trimmed === '@tool') { isTool = true; continue; }
+    if (trimmed === '@tool') { isTool = true; toolLine = i + 1; continue; }
 
     const iconM = trimmed.match(/^@icon\s*\(\s*["'](.+?)["']\s*\)/);
     if (iconM) { iconAnnotation = iconM[1]; continue; }
 
     const classM = trimmed.match(/^class_name\s+(\w+)/);
-    if (classM && !className) { className = classM[1]; continue; }
+    if (classM && !className) { className = classM[1]; classLine = i + 1; continue; }
 
     const extendsM = trimmed.match(/^extends\s+(.+)/);
-    if (extendsM && !extendsClass) { extendsClass = extendsM[1].trim(); continue; }
+    if (extendsM && !extendsClass) { extendsClass = extendsM[1].trim(); extendsLine = i + 1; continue; }
 
     // @export var
     const exportM = trimmed.match(/^@export(?:\s+\w+)?\s+var\s+(\w+)(?:\s*:\s*(\w+))?/);
-    if (exportM) { exports.push({ name: exportM[1], type: exportM[2] || null }); continue; }
+    if (exportM) { exports.push({ name: exportM[1], type: exportM[2] || null, line: i + 1, docs: docsBefore(lines, i) }); continue; }
 
     // signal
     const sigM = trimmed.match(/^signal\s+(\w+)(?:\s*\(([^)]*)\))?/);
-    if (sigM) { signals.push({ name: sigM[1], params: sigM[2] || '' }); continue; }
+    if (sigM) { signals.push({ name: sigM[1], params: sigM[2] || '', line: i + 1, docs: docsBefore(lines, i) }); continue; }
 
     // const
     const constM = trimmed.match(/^const\s+(\w+)\s*(?::\s*\w+)?\s*=/);
-    if (constM) { constants.push(constM[1]); continue; }
+    if (constM) { constants.push({ name: constM[1], line: i + 1, docs: docsBefore(lines, i) }); continue; }
 
     // enum
     const enumM = trimmed.match(/^enum\s+(\w+)/);
-    if (enumM) { enums.push(enumM[1]); continue; }
+    if (enumM) { enums.push({ name: enumM[1], line: i + 1, docs: docsBefore(lines, i) }); continue; }
 
     // inner class
     const innerM = trimmed.match(/^class\s+(\w+)/);
-    if (innerM) { innerClasses.push(innerM[1]); continue; }
+    if (innerM) { innerClasses.push({ name: innerM[1], line: i + 1, docs: docsBefore(lines, i) }); continue; }
 
     // func (possibly with @rpc or @static annotation on prior line)
     const funcM = trimmed.match(/^(?:(static)\s+)?func\s+(\w+)\s*\(([^)]*)\)/);
@@ -87,12 +91,37 @@ function analyzeGDScript(text) {
         if (prev.startsWith('@rpc')) { isRpc = true; }
         break;
       }
-      funcs.push({ name, params, isStatic, isRpc });
+      const endLine = functionEndLine(lines, i);
+      const branchCount = countBranches(lines.slice(i, endLine));
+      funcs.push({ name, params, isStatic, isRpc, line: i + 1, endLine, branchCount, docs: docsBefore(lines, i) });
       continue;
     }
   }
 
-  return { className, extendsClass, isTool, iconAnnotation, exports, signals, funcs, constants, enums, innerClasses };
+  return { className, classLine, extendsClass, extendsLine, isTool, toolLine, iconAnnotation, exports, signals, funcs, constants, enums, innerClasses };
+}
+
+function docsBefore(lines, index) {
+  const docs = [];
+  for (let i = index - 1; i >= 0; i--) {
+    const trimmed = lines[i].trim();
+    if (trimmed.startsWith('##')) docs.unshift(trimmed.replace(/^##\s?/, ''));
+    else if (!trimmed) {
+      if (docs.length) break;
+    } else break;
+  }
+  return docs.join(' ').trim();
+}
+
+function functionEndLine(lines, start) {
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^(?:@rpc|static\s+func|func)\b/.test(lines[i].trim())) return i;
+  }
+  return lines.length;
+}
+
+function countBranches(lines) {
+  return lines.reduce((sum, line) => sum + (/\b(if|elif|else|for|while|match)\b/.test(line) ? 1 : 0), 0);
 }
 
 function makeSection(host, title) {
@@ -122,7 +151,7 @@ function makeTag(cls, text) {
 
 export async function render(intake, _ctx) {
   const text = intake.text || '';
-  const { className, extendsClass, isTool, iconAnnotation, exports, signals, funcs, constants, enums, innerClasses } = analyzeGDScript(text);
+  const { className, classLine, extendsClass, extendsLine, isTool, toolLine, iconAnnotation, exports, signals, funcs, constants, enums, innerClasses } = analyzeGDScript(text);
 
   const host = document.createElement('div');
   host.className = 'gd-doc';
@@ -130,13 +159,21 @@ export async function render(intake, _ctx) {
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
+  ensureKnownUiStyle(host);
 
   // Title
   const title = document.createElement('div');
   title.className = 'gd-title';
   const badgeLabel = isTool ? 'Godot Tool Script' : 'GDScript';
   title.innerHTML = `<span class="gd-badge">${esc(badgeLabel)}</span>`;
-  if (isTool) title.innerHTML += '<span class="gd-badge-tool">@tool</span>';
+  if (isTool) {
+    const tool = document.createElement('span');
+    tool.className = 'gd-badge-tool';
+    tool.title = '@tool runs this script in the Godot editor as well as at runtime.';
+    tool.textContent = '@tool';
+    if (toolLine) tool.dataset.sourceLine = String(toolLine);
+    title.appendChild(tool);
+  }
   host.appendChild(title);
 
   // Sub
@@ -179,13 +216,17 @@ export async function render(intake, _ctx) {
     if (className) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag', 'class_name'));
-      li.appendChild(document.createTextNode(' ' + className));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(className, classLine, 'Open class_name declaration'));
+      li.appendChild(chip(`line ${classLine}`, 'muted'));
       ul.appendChild(li);
     }
     if (extendsClass) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag', 'extends'));
-      li.appendChild(document.createTextNode(' ' + extendsClass));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(extendsClass, extendsLine, 'Open base class declaration'));
+      li.appendChild(chip(`line ${extendsLine}`, 'muted'));
       ul.appendChild(li);
     }
   }
@@ -194,17 +235,21 @@ export async function render(intake, _ctx) {
   if (exports.length > 0) {
     const sec = makeSection(host, `Exported Variables (${exports.length})`);
     const ul = makeList(sec);
-    for (const { name, type } of exports) {
+    for (const item of exports) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag-export', '@export'));
-      li.appendChild(document.createTextNode(' ' + name));
-      if (type) {
+      li.querySelector('.gd-tag')?.setAttribute('title', '@export exposes this variable in the Godot inspector.');
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(item.name, item.line, 'Open exported variable'));
+      if (item.type) {
         li.appendChild(document.createTextNode(': '));
         const typeSpan = document.createElement('span');
         typeSpan.style.color = 'var(--fg-2,#888)';
-        typeSpan.textContent = type;
+        typeSpan.textContent = item.type;
         li.appendChild(typeSpan);
       }
+      li.appendChild(chip(`line ${item.line}`, 'muted'));
+      if (item.docs) appendNote(li, item.docs);
       ul.appendChild(li);
     }
   }
@@ -213,10 +258,13 @@ export async function render(intake, _ctx) {
   if (signals.length > 0) {
     const sec = makeSection(host, `Signals (${signals.length})`);
     const ul = makeList(sec);
-    for (const { name, params } of signals) {
+    for (const item of signals) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag-signal', 'signal'));
-      li.appendChild(document.createTextNode(' ' + name + (params ? `(${params})` : '')));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(item.name + (item.params ? `(${item.params})` : ''), item.line, 'Open signal declaration'));
+      li.appendChild(chip(`line ${item.line}`, 'muted'));
+      if (item.docs) appendNote(li, item.docs);
       ul.appendChild(li);
     }
   }
@@ -225,11 +273,19 @@ export async function render(intake, _ctx) {
   if (funcs.length > 0) {
     const sec = makeSection(host, `Functions (${funcs.length})`);
     const ul = makeList(sec);
-    for (const { name, params, isStatic, isRpc } of funcs) {
+    for (const item of funcs) {
       const li = document.createElement('li');
-      if (isRpc) li.appendChild(makeTag('gd-tag-rpc', '@rpc'));
-      if (isStatic) li.appendChild(makeTag('gd-tag-static', 'static'));
-      li.appendChild(document.createTextNode(` ${name}(${params})`));
+      if (item.isRpc) {
+        const rpc = makeTag('gd-tag-rpc', '@rpc');
+        rpc.title = '@rpc exposes this method for Godot multiplayer remote calls.';
+        li.appendChild(rpc);
+      }
+      if (item.isStatic) li.appendChild(makeTag('gd-tag-static', 'static'));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(`${item.name}(${item.params})`, item.line, 'Open function source'));
+      li.appendChild(chip(`${Math.max(1, item.endLine - item.line + 1)} lines`, item.endLine - item.line > 20 ? 'warn' : 'muted'));
+      if (item.branchCount) li.appendChild(chip(`${item.branchCount} branch${item.branchCount === 1 ? '' : 'es'}`, item.branchCount > 4 ? 'warn' : 'muted'));
+      if (item.docs) appendNote(li, item.docs);
       ul.appendChild(li);
     }
   }
@@ -238,10 +294,12 @@ export async function render(intake, _ctx) {
   if (constants.length > 0) {
     const sec = makeSection(host, `Constants (${constants.length})`);
     const ul = makeList(sec);
-    for (const name of constants) {
+    for (const item of constants) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag-const', 'const'));
-      li.appendChild(document.createTextNode(' ' + name));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(item.name, item.line, 'Open constant declaration'));
+      li.appendChild(chip(`line ${item.line}`, 'muted'));
       ul.appendChild(li);
     }
   }
@@ -250,10 +308,12 @@ export async function render(intake, _ctx) {
   if (enums.length > 0) {
     const sec = makeSection(host, `Enums (${enums.length})`);
     const ul = makeList(sec);
-    for (const name of enums) {
+    for (const item of enums) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag-enum', 'enum'));
-      li.appendChild(document.createTextNode(' ' + name));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(item.name, item.line, 'Open enum declaration'));
+      li.appendChild(chip(`line ${item.line}`, 'muted'));
       ul.appendChild(li);
     }
   }
@@ -262,13 +322,25 @@ export async function render(intake, _ctx) {
   if (innerClasses.length > 0) {
     const sec = makeSection(host, `Inner Classes (${innerClasses.length})`);
     const ul = makeList(sec);
-    for (const name of innerClasses) {
+    for (const item of innerClasses) {
       const li = document.createElement('li');
       li.appendChild(makeTag('gd-tag', 'class'));
-      li.appendChild(document.createTextNode(' ' + name));
+      li.appendChild(document.createTextNode(' '));
+      li.appendChild(sourceButton(item.name, item.line, 'Open inner class declaration'));
+      li.appendChild(chip(`line ${item.line}`, 'muted'));
       ul.appendChild(li);
     }
   }
 
+  host.appendChild(sourcePreview(text, { title: 'Source', collapsed: true, idPrefix: 'gd-line' }));
+  wireSourceLinks(host, { idPrefix: 'gd-line' });
+
   return { parentNode: host };
+}
+
+function appendNote(li, text) {
+  const note = document.createElement('div');
+  note.className = 'gd-note';
+  note.textContent = text;
+  li.appendChild(note);
 }

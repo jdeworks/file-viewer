@@ -8,11 +8,41 @@ export async function run(ctx) {
   await openExample('sample.php');
   await page.waitForSelector('#previewHost .php-doc', { timeout: 12000 });
   pass('php-lang: rendered');
+  const phpText = await page.$eval('#previewHost .php-doc', (e) => e.textContent);
+  if (/namespace App\\Services|ContentService|RepositoryInterface/i.test(phpText)) pass('php-lang: namespace and types shown'); else fail('php-lang namespace/types: ' + phpText.slice(0, 400));
+  if (/returns Post|int \$id|in ContentService|privateclearCache|staticgetInstanceCount/i.test(phpText)) pass('php-lang: member ownership, params, and returns shown'); else fail('php-lang function details: ' + phpText.slice(0, 1000));
+  if (/require_once|dynamic path|App\\Helpers\\format_date|MAX_ITEMS_PER_PAGE/i.test(phpText)) pass('php-lang: includes and use declarations explained'); else fail('php-lang imports/includes: ' + phpText.slice(0, 1000));
+  const phpTypeHint = await page.$eval('#previewHost .php-doc .php-tag-class', (e) => e.title);
+  if (/Instantiable|state|behavior/i.test(phpTypeHint)) pass('php-lang: type hover help present'); else fail('php-lang type hint: ' + phpTypeHint);
+  const phpPrivateHint = await page.$eval('#previewHost .php-doc .php-tag-private', (e) => e.title);
+  if (/declaring class|accessible/i.test(phpPrivateHint)) pass('php-lang: visibility hover help present'); else fail('php-lang visibility hint: ' + phpPrivateHint);
+  const phpSourceOpen = await page.$eval('#previewHost .php-doc .kf-source-details', (e) => e.open);
+  if (!phpSourceOpen) pass('php-lang: source starts collapsed'); else fail('php-lang source should start collapsed');
+  await page.click('#previewHost .php-doc .kf-source-link');
+  const phpJump = await page.$eval('#previewHost .php-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (phpJump.open && phpJump.highlighted) pass('php-lang: item click opens and highlights source'); else fail('php-lang source jump: ' + JSON.stringify(phpJump));
 
   // ── sample.ps1 viewer (powershell-lang plugin) ──
   await openExample('sample.ps1');
   await page.waitForSelector('#previewHost .ps1-doc', { timeout: 12000 });
   pass('powershell-lang: rendered');
+  const ps1Text = await page.$eval('#previewHost .ps1-doc', (e) => e.textContent);
+  if (/Script Parameters \(3\)/.test(ps1Text) && /ValidateSet: dev, staging, prod/.test(ps1Text)) pass('powershell-lang: parameter metadata shown'); else fail('powershell-lang params: ' + ps1Text.slice(0, 400));
+  const ps1FnTitle = await page.$eval('#previewHost .ps1-link', (e) => e.getAttribute('title') || '');
+  if (/Line \d+/.test(ps1FnTitle) && /parameter/.test(ps1FnTitle)) pass('powershell-lang: function hover details shown'); else fail('powershell-lang function title: ' + ps1FnTitle);
+  const ps1SourceInitiallyOpen = await page.$eval('#previewHost .ps1-details', (e) => e.open);
+  if (!ps1SourceInitiallyOpen) pass('powershell-lang: source starts collapsed'); else fail('powershell-lang source should start collapsed');
+  await page.click('#previewHost .ps1-link');
+  const ps1Jump = await page.$eval('#previewHost .ps1-doc', (e) => ({
+    open: e.querySelector('.ps1-details')?.open || false,
+    highlighted: !!e.querySelector('.ps1-line-hit'),
+    lines: e.querySelectorAll('.ps1-line').length,
+    numbers: e.querySelectorAll('.ps1-ln').length,
+  }));
+  if (ps1Jump.open && ps1Jump.highlighted && ps1Jump.lines > 20 && ps1Jump.lines === ps1Jump.numbers) pass('powershell-lang: function click opens numbered source'); else fail('powershell-lang jump: ' + JSON.stringify(ps1Jump));
 
   // ── solidity-lang: Solidity smart contract viewer ──
   await openExample('sample.sol');
@@ -22,6 +52,17 @@ export async function run(ctx) {
   if (/Smart Contract|Interface|Library/i.test(solText)) pass('solidity-lang: badge shown'); else fail('solidity-lang badge: ' + solText.slice(0, 200));
   if (/pragma|solidity/i.test(solText)) pass('solidity-lang: pragma version shown'); else fail('solidity-lang pragma: ' + solText.slice(0, 300));
   if (/contract|interface|library/i.test(solText)) pass('solidity-lang: definitions listed'); else fail('solidity-lang defs: ' + solText.slice(0, 300));
+  if (/returns bool|address indexed from|InsufficientBalance|whenNotPaused|SimpleToken - A basic ERC-20-like token contract/i.test(solText)) pass('solidity-lang: ABI signatures, NatSpec, events, errors, and modifiers shown'); else fail('solidity-lang details: ' + solText.slice(0, 900));
+  const solEventHint = await page.$eval('#previewHost .sol-doc .sol-tag-event', (e) => e.title);
+  if (/Indexed log|off-chain/i.test(solEventHint)) pass('solidity-lang: event hover help present'); else fail('solidity event hint: ' + solEventHint);
+  const solSourceOpen = await page.$eval('#previewHost .sol-doc .kf-source-details', (e) => e.open);
+  if (!solSourceOpen) pass('solidity-lang: source starts collapsed'); else fail('solidity source should start collapsed');
+  await page.click('#previewHost .sol-doc .kf-source-link');
+  const solJump = await page.$eval('#previewHost .sol-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (solJump.open && solJump.highlighted) pass('solidity-lang: item click opens and highlights source'); else fail('solidity source jump: ' + JSON.stringify(solJump));
 
   // ── vhdl-lang: VHDL hardware description viewer ──
   await openExample('sample.vhd');
@@ -51,16 +92,52 @@ export async function run(ctx) {
   await openExample('sample.gleam');
   await page.waitForSelector('#previewHost .gleam-doc', { timeout: 12000 });
   pass('gleam-lang: rendered');
+  const gleamText = await page.$eval('#previewHost .gleam-doc', (e) => e.textContent);
+  if (/arity 1|returns Float|shape: Shape|Internal Functions|stdlib/i.test(gleamText)) pass('gleam-lang: signatures, params, and import groups shown'); else fail('gleam-lang details: ' + gleamText.slice(0, 800));
+  const gleamPubHint = await page.$eval('#previewHost .gleam-doc .gleam-tag-pub', (e) => e.title);
+  if (/Public function/i.test(gleamPubHint)) pass('gleam-lang: public function hover help present'); else fail('gleam-lang pub hint: ' + gleamPubHint);
+  const gleamSourceOpen = await page.$eval('#previewHost .gleam-doc .kf-source-details', (e) => e.open);
+  if (!gleamSourceOpen) pass('gleam-lang: source starts collapsed'); else fail('gleam source should start collapsed');
+  await page.click('#previewHost .gleam-doc .kf-source-link');
+  const gleamJump = await page.$eval('#previewHost .gleam-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (gleamJump.open && gleamJump.highlighted) pass('gleam-lang: item click opens and highlights source'); else fail('gleam source jump: ' + JSON.stringify(gleamJump));
 
   // ── odin-lang: rendered ──
   await openExample('sample.odin');
   await page.waitForSelector('#previewHost .odin-doc', { timeout: 12000 });
   pass('odin-lang: rendered');
+  const odinText = await page.$eval('#previewHost .odin-doc', (e) => e.textContent);
+  if (/foreign_proc_example|returns i32|ctx: rawptr|Vector2.*2 fields|ODIN_OS == \.Windows/i.test(odinText)) pass('odin-lang: signatures, fields, calling convention, and when shown'); else fail('odin details: ' + odinText.slice(0, 900));
+  const odinCcHint = await page.$eval('#previewHost .odin-doc .odin-tag-cc', (e) => e.title);
+  if (/Calling convention|ABI/i.test(odinCcHint)) pass('odin-lang: calling convention hover help present'); else fail('odin cc hint: ' + odinCcHint);
+  const odinSourceOpen = await page.$eval('#previewHost .odin-doc .kf-source-details', (e) => e.open);
+  if (!odinSourceOpen) pass('odin-lang: source starts collapsed'); else fail('odin source should start collapsed');
+  await page.click('#previewHost .odin-doc .kf-source-link');
+  const odinJump = await page.$eval('#previewHost .odin-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (odinJump.open && odinJump.highlighted) pass('odin-lang: item click opens and highlights source'); else fail('odin source jump: ' + JSON.stringify(odinJump));
 
   // ── haxe-lang: rendered ──
   await openExample('sample.hx');
   await page.waitForSelector('#previewHost .haxe-doc', { timeout: 12000 });
   pass('haxe-lang: rendered');
+  const haxeText = await page.$eval('#previewHost .haxe-doc', (e) => e.textContent);
+  if (/extends Sprite|implements Updatable|returns Void|entity:Entity|@:keep|arity 2/i.test(haxeText)) pass('haxe-lang: signatures, metadata, and inheritance shown'); else fail('haxe-lang details: ' + haxeText.slice(0, 900));
+  const haxeMetaHint = await page.$eval('#previewHost .haxe-doc .haxe-tag-meta', (e) => e.title);
+  if (/dead-code|metadata|Expose/i.test(haxeMetaHint)) pass('haxe-lang: metadata hover help present'); else fail('haxe metadata hint: ' + haxeMetaHint);
+  const haxeSourceOpen = await page.$eval('#previewHost .haxe-doc .kf-source-details', (e) => e.open);
+  if (!haxeSourceOpen) pass('haxe-lang: source starts collapsed'); else fail('haxe source should start collapsed');
+  await page.click('#previewHost .haxe-doc .kf-source-link');
+  const haxeJump = await page.$eval('#previewHost .haxe-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (haxeJump.open && haxeJump.highlighted) pass('haxe-lang: item click opens and highlights source'); else fail('haxe source jump: ' + JSON.stringify(haxeJump));
 
   // ── ada-lang: rendered ──
   await openExample('sample.ads');
@@ -120,6 +197,18 @@ export async function run(ctx) {
   await openExample('sample.pony');
   await page.waitForSelector('#previewHost .pony-doc', { timeout: 12000 });
   pass('pony-lang: rendered');
+  const ponyText = await page.$eval('#previewHost .pony-doc', (e) => e.textContent);
+  if (/Counter|3 behaviours|cb: \{\(U64\)\} iso|in Dog|ColorSet|arity 2/i.test(ponyText)) pass('pony-lang: owned APIs, behaviours, capabilities, and aliases shown'); else fail('pony details: ' + ponyText.slice(0, 900));
+  const ponyBeHint = await page.$eval('#previewHost .pony-doc .pony-tag-be', (e) => e.title);
+  if (/asynchronous message|Behaviour/i.test(ponyBeHint)) pass('pony-lang: behaviour hover help present'); else fail('pony behaviour hint: ' + ponyBeHint);
+  const ponySourceOpen = await page.$eval('#previewHost .pony-doc .kf-source-details', (e) => e.open);
+  if (!ponySourceOpen) pass('pony-lang: source starts collapsed'); else fail('pony source should start collapsed');
+  await page.click('#previewHost .pony-doc .kf-source-link');
+  const ponyJump = await page.$eval('#previewHost .pony-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (ponyJump.open && ponyJump.highlighted) pass('pony-lang: item click opens and highlights source'); else fail('pony source jump: ' + JSON.stringify(ponyJump));
 
   // ── wren-lang: rendered ──
   await openExample('sample.wren');
@@ -130,6 +219,18 @@ export async function run(ctx) {
   await openExample('sample.mojo');
   await page.waitForSelector('#previewHost .mojo-doc', { timeout: 12000 });
   pass('mojo-lang: rendered');
+  const mojoText = await page.$eval('#previewHost .mojo-doc', (e) => e.textContent);
+  if (/Point|2 fields|method of Matrix|returns Float32|alias|field of Point|arity 4/i.test(mojoText)) pass('mojo-lang: signatures, struct fields, aliases, and bindings shown'); else fail('mojo-lang details: ' + mojoText.slice(0, 900));
+  const mojoValueHint = await page.$eval('#previewHost .mojo-doc .mojo-tag-value', (e) => e.title);
+  if (/value type|generated value semantics/i.test(mojoValueHint)) pass('mojo-lang: @value hover help present'); else fail('mojo-lang value hint: ' + mojoValueHint);
+  const mojoSourceOpen = await page.$eval('#previewHost .mojo-doc .kf-source-details', (e) => e.open);
+  if (!mojoSourceOpen) pass('mojo-lang: source starts collapsed'); else fail('mojo source should start collapsed');
+  await page.click('#previewHost .mojo-doc .kf-source-link');
+  const mojoJump = await page.$eval('#previewHost .mojo-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (mojoJump.open && mojoJump.highlighted) pass('mojo-lang: item click opens and highlights source'); else fail('mojo source jump: ' + JSON.stringify(mojoJump));
 
   // ── janet-lang: rendered ──
   await openExample('sample.janet');
@@ -207,6 +308,15 @@ export async function run(ctx) {
   const gdscriptText = await page.$eval('#previewHost .gd-doc', (e) => e.textContent);
   if (/GDScript|Godot Tool Script/i.test(gdscriptText)) pass('gdscript-lang: badge shown'); else fail('gdscript-lang badge: ' + gdscriptText.slice(0, 200));
   if (/Extends|Functions|Signals|Exports/i.test(gdscriptText)) pass('gdscript-lang: structure shown'); else fail('gdscript-lang structure: ' + gdscriptText.slice(0, 300));
+  if (/sync_position|branches|lines|@rpc/i.test(gdscriptText)) pass('gdscript-lang: signature and complexity hints shown'); else fail('gdscript-lang detail: ' + gdscriptText.slice(0, 500));
+  const gdSourceOpen = await page.$eval('#previewHost .gd-doc .kf-source-details', (e) => e.open);
+  if (!gdSourceOpen) pass('gdscript-lang: source starts collapsed'); else fail('gdscript source should start collapsed');
+  await page.click('#previewHost .gd-doc .kf-source-link');
+  const gdJump = await page.$eval('#previewHost .gd-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (gdJump.open && gdJump.highlighted) pass('gdscript-lang: symbol click opens and highlights source'); else fail('gdscript source jump: ' + JSON.stringify(gdJump));
 
   // ── ink-script viewer ──
   await openExample('sample.ink');
@@ -231,6 +341,17 @@ export async function run(ctx) {
   const balText = await page.$eval('#previewHost .bal-doc', (e) => e.textContent);
   if (/Ballerina/i.test(balText)) pass('ballerina-lang: badge shown'); else fail('ballerina-lang badge: ' + balText.slice(0, 200));
   if (/Imports|Services|Functions|Types/i.test(balText)) pass('ballerina-lang: structure shown'); else fail('ballerina-lang structure: ' + balText.slice(0, 300));
+  if (/resource function get products|returns error\?|http:Caller caller|sensitive config/i.test(balText)) pass('ballerina-lang: signatures, params, and review notes shown'); else fail('ballerina-lang details: ' + balText.slice(0, 800));
+  const balResourceHint = await page.$eval('#previewHost .bal-doc .bal-tag-resource', (e) => e.title);
+  if (/resource path|HTTP/i.test(balResourceHint)) pass('ballerina-lang: qualifier hover help present'); else fail('ballerina-lang qualifier hint: ' + balResourceHint);
+  const balSourceOpen = await page.$eval('#previewHost .bal-doc .kf-source-details', (e) => e.open);
+  if (!balSourceOpen) pass('ballerina-lang: source starts collapsed'); else fail('ballerina source should start collapsed');
+  await page.click('#previewHost .bal-doc .kf-source-link');
+  const balJump = await page.$eval('#previewHost .bal-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (balJump.open && balJump.highlighted) pass('ballerina-lang: item click opens and highlights source'); else fail('ballerina source jump: ' + JSON.stringify(balJump));
 
   // ── nix-flake viewer ──
   await openExample('flake.nix');
@@ -285,6 +406,27 @@ export async function run(ctx) {
   if (/Textile/i.test(textileText)) pass('textile-markup: badge shown'); else fail('textile-markup badge: ' + textileText.slice(0, 200));
   if (/heading|link|image|code|table|word/i.test(textileText)) pass('textile-markup: stats shown'); else fail('textile-markup stats: ' + textileText.slice(0, 300));
   if (/Getting Started|Text Formatting|Links/i.test(textileText)) pass('textile-markup: heading outline shown'); else fail('textile-markup outline: ' + textileText.slice(0, 300));
+  if (/Images|Links|alt|Company Logo/i.test(textileText)) pass('textile-markup: enhanced link and image details shown'); else fail('textile-markup enhanced details: ' + textileText.slice(0, 900));
+  const textileSourceOpen = await page.$eval('#previewHost .textile-doc .kf-source-details', (e) => e.open);
+  if (!textileSourceOpen) pass('textile-markup: source starts collapsed'); else fail('textile-markup source should start collapsed');
+  await page.click('#previewHost .textile-doc .textile-outline .kf-source-link');
+  const textileJump = await page.$eval('#previewHost .textile-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (textileJump.open && textileJump.highlighted) pass('textile-markup: heading click opens and highlights source'); else fail('textile-markup source jump: ' + JSON.stringify(textileJump));
+  const textileBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/textile-markup/renderer.js');
+    const text = 'h1. Demo\n\nBroken "link":notaurl\nBroken image !missing.png\nGood image !/ok.png(Alt text)!';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/malformed link|malformed image|Alt text/i.test(textileBad.out + textileBad.issues) && !textileBad.open) pass('textile-markup: malformed link/image diagnostics shown'); else fail('textile-markup synthetic diagnostics: ' + JSON.stringify(textileBad).slice(0, 900));
 
   // ── mediawiki-markup viewer ──
   await openExample('sample.mediawiki');
@@ -294,6 +436,27 @@ export async function run(ctx) {
   if (/MediaWiki/i.test(mwText)) pass('mediawiki-markup: badge shown'); else fail('mediawiki-markup badge: ' + mwText.slice(0, 200));
   if (/section|template|categor|link/i.test(mwText)) pass('mediawiki-markup: stats shown'); else fail('mediawiki-markup stats: ' + mwText.slice(0, 300));
   if (/Introduction|Headings|References/i.test(mwText)) pass('mediawiki-markup: sections shown'); else fail('mediawiki-markup sections: ' + mwText.slice(0, 300));
+  if (/Files & Images|caption|references list|Tables/i.test(mwText)) pass('mediawiki-markup: enhanced file/ref/table details shown'); else fail('mediawiki-markup enhanced details: ' + mwText.slice(0, 900));
+  const mwSourceOpen = await page.$eval('#previewHost .mw-doc .kf-source-details', (e) => e.open);
+  if (!mwSourceOpen) pass('mediawiki-markup: source starts collapsed'); else fail('mediawiki-markup source should start collapsed');
+  await page.click('#previewHost .mw-doc .mw-outline .kf-source-link');
+  const mwJump = await page.$eval('#previewHost .mw-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (mwJump.open && mwJump.highlighted) pass('mediawiki-markup: outline click opens and highlights source'); else fail('mediawiki-markup source jump: ' + JSON.stringify(mwJump));
+  const mwBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/mediawiki-markup/renderer.js');
+    const text = '== Intro ==\n{{#if:{{{name|}}}|Hello}}\n[[File:Demo.png|thumb|alt=Accessible demo|Visible caption]]\nText<ref name=\"a\">A</ref>\nAgain<ref name=\"a\">B</ref>\nMissing<ref name=\"missing\" />\n[[Category:Demo]]\n[[Category:Demo]]';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Parser Functions|#if|caption|alt|duplicate category|duplicate ref|missing ref|references list/i.test(mwBad.out + mwBad.issues) && !mwBad.open) pass('mediawiki-markup: parser functions, media, and markup diagnostics shown'); else fail('mediawiki-markup synthetic diagnostics: ' + JSON.stringify(mwBad).slice(0, 900));
 
   // ── bbcode-text viewer ──
   await openExample('sample.bbc');
@@ -303,6 +466,27 @@ export async function run(ctx) {
   if (/BBCode/i.test(bbcText)) pass('bbcode-text: badge shown'); else fail('bbcode-text badge: ' + bbcText.slice(0, 200));
   if (/tag type|link|quote|code block|bold|italic/i.test(bbcText)) pass('bbcode-text: stats shown'); else fail('bbcode-text stats: ' + bbcText.slice(0, 300));
   if (/url|img|quote|code/i.test(bbcText)) pass('bbcode-text: tag inventory shown'); else fail('bbcode-text tags: ' + bbcText.slice(0, 300));
+  if (/Code Blocks|Links|Images|Quotes/i.test(bbcText)) pass('bbcode-text: enhanced navigation sections shown'); else fail('bbcode-text enhanced sections: ' + bbcText.slice(0, 900));
+  const bbcSourceOpen = await page.$eval('#previewHost .bbc-doc .kf-source-details', (e) => e.open);
+  if (!bbcSourceOpen) pass('bbcode-text: source starts collapsed'); else fail('bbcode-text source should start collapsed');
+  await page.click('#previewHost .bbc-doc .bbc-section .kf-source-link');
+  const bbcJump = await page.$eval('#previewHost .bbc-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (bbcJump.open && bbcJump.highlighted) pass('bbcode-text: item click opens and highlights source'); else fail('bbcode-text source jump: ' + JSON.stringify(bbcJump));
+  const bbcBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/bbcode-text/renderer.js');
+    const text = '[b]bold[i]bad[/b]\n[url=https://example.com]A[/url]\n[url=https://example.com]B[/url]\n[img]https://example.com/a.png[/img]\n[img]https://example.com/a.png[/img]\n[quote=Someone]hello';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/tag mismatch|unclosed tag|repeated link|repeated image/i.test(bbcBad.out + bbcBad.issues) && !bbcBad.open) pass('bbcode-text: tag and repeated asset diagnostics shown'); else fail('bbcode-text synthetic diagnostics: ' + JSON.stringify(bbcBad).slice(0, 900));
 
   // ── vala-lang viewer ──
   await openExample('sample.vala');
@@ -342,6 +526,27 @@ export async function run(ctx) {
   if (/article/i.test(texText)) pass('tex-doc: document class shown'); else fail('tex-doc class: ' + texText.slice(0, 300));
   if (/amsmath|graphicx|hyperref/i.test(texText)) pass('tex-doc: packages listed'); else fail('tex-doc packages: ' + texText.slice(0, 300));
   if (/Introduction|Mathematics|Conclusion/i.test(texText)) pass('tex-doc: section titles shown'); else fail('tex-doc sections: ' + texText.slice(0, 300));
+  if (/Document Outline|Packages|Labels|Refs|Cites|Includes/i.test(texText)) pass('tex-doc: enhanced outline/reference cards shown'); else fail('tex-doc enhanced cards: ' + texText.slice(0, 900));
+  const texSourceOpen = await page.$eval('#previewHost .tex-doc .kf-source-details', (e) => e.open);
+  if (!texSourceOpen) pass('tex-doc: source starts collapsed'); else fail('tex-doc source should start collapsed');
+  await page.click('#previewHost .tex-doc .tex-list .kf-source-link');
+  const texJump = await page.$eval('#previewHost .tex-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (texJump.open && texJump.highlighted) pass('tex-doc: item click opens and highlights source'); else fail('tex-doc source jump: ' + JSON.stringify(texJump));
+  const texBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/tex-doc/renderer.js');
+    const text = '\\documentclass{article}\\n\\usepackage[utf8]{inputenc}\\n\\section{Intro}\\label{sec:intro}\\nAgain \\label{sec:intro}\\nSee \\ref{sec:missing} and \\cite{doe2024}.\\n\\input{chapters/intro}\\n\\includegraphics{figures/plot.png}\\n\\begin{thebibliography}{9}\\n\\bibitem{known} Known\\n\\end{thebibliography}';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Labels And References|Citations And Bibliography|Includes And Assets|duplicate label|unresolved ref|unresolved cite|chapters\/intro|figures\/plot/i.test(texBad.out + texBad.issues) && !texBad.open) pass('tex-doc: labels, refs, cites, includes, and diagnostics shown'); else fail('tex-doc synthetic diagnostics: ' + JSON.stringify(texBad).slice(0, 900));
 
   // ── forth-lang viewer ──
   await openExample('sample.fth');

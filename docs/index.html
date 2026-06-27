@@ -88,6 +88,16 @@
     .ex-loading { display: flex; align-items: center; justify-content: center; gap: 10px;
       padding: 28px 0; min-height: 90px; color: var(--fg-2); }
     .ex-loading .boot-spinner-ring { width: 22px; height: 22px; border-width: 3px; }
+    .construction-badge { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom));
+      z-index: 180; padding: 7px 10px; border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+      border-radius: 8px; background: color-mix(in srgb, var(--bg) 92%, var(--accent)); color: var(--fg);
+      box-shadow: 0 8px 24px rgba(0,0,0,.16); font-size: 12px; font-weight: 700; letter-spacing: 0;
+      user-select: none; cursor: help; }
+    .construction-badge::after { content: attr(data-hover); position: absolute; right: 0; bottom: calc(100% + 8px);
+      width: min(260px, calc(100vw - 24px)); padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+      background: var(--bg); color: var(--fg); box-shadow: 0 8px 24px rgba(0,0,0,.18); font-weight: 500;
+      line-height: 1.35; opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity .12s, transform .12s; }
+    .construction-badge:hover::after, .construction-badge:focus::after { opacity: 1; transform: translateY(0); }
   </style>
   <!-- Full stylesheets, loaded non-render-blocking (media=print → swap to all on load). The
        <noscript> fallback keeps them render-blocking when JS is off. Zero off-origin. -->
@@ -149,8 +159,6 @@
       <button class="icon-btn" id="downloadBtn" title="Download" aria-label="Download" hidden>⤓</button>
       <button class="icon-btn" id="themeBtn" title="Toggle dark / light" aria-label="Toggle theme">◐</button>
       <button class="icon-btn" id="screenshotBtn" title="Screenshot preview" aria-label="Screenshot" hidden>▣</button>
-      <button class="icon-btn" id="sbsBtn" title="Side-by-side with another file" aria-label="Side by side" hidden>⊟</button>
-      <input type="file" id="sbsInput" hidden aria-hidden="true">
       <button class="icon-btn" id="exportBtn" title="Export / Download as…" aria-label="Export" aria-expanded="false" hidden>📤</button>
       <button class="icon-btn" id="typeHelpBtn" title="Type documentation" aria-label="Type documentation" hidden>?</button>
       <button class="icon-btn" id="metaBtn" title="File info" aria-label="File info" hidden>ⓘ</button>
@@ -362,6 +370,7 @@
     <div id="offlineStatus" class="offline-status" hidden></div>
     <!-- iOS-only opt-in: shown when audio is open on an iPhone/iPad (not Android/desktop). -->
     <div id="iosAudioHint" class="ios-hint" hidden></div>
+    <div class="construction-badge" tabindex="0" data-hover="This banner will be gone with the first full release.">Under construction</div>
     <div id="toast" class="toast" hidden></div>
     <div id="scrim" class="scrim" hidden></div>
   </div>

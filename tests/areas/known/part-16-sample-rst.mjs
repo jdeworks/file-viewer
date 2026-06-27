@@ -13,6 +13,29 @@ export async function run(ctx) {
   if (/Getting Started/i.test(rstText)) pass('sample.rst: document title shown'); else fail('rst title: ' + rstText.slice(0, 300));
   if (/Installation|Usage|Introduction/i.test(rstText)) pass('sample.rst: section headings shown'); else fail('rst sections: ' + rstText.slice(0, 300));
   if (/note|code-block|warning/i.test(rstText)) pass('sample.rst: directives listed'); else fail('rst directives: ' + rstText.slice(0, 300));
+  if (/References|Reference Review|document ref/i.test(rstText)) pass('sample.rst: references and standalone doc warnings shown'); else fail('rst references: ' + rstText.slice(0, 500));
+  if (/Targets|Substitutions/i.test(rstText)) pass('sample.rst: target and substitution summary cards shown'); else fail('rst target cards: ' + rstText.slice(0, 500));
+  const rstSourceOpen = await page.$eval('#previewHost .rst-doc .kf-source-details', (e) => e.open);
+  if (!rstSourceOpen) pass('sample.rst: source starts collapsed'); else fail('rst source should start collapsed');
+  const rstDirectiveHint = await page.$eval('#previewHost .rst-doc .rst-dir-tag', (e) => e.title);
+  if (/directive|admonition|code block|Sphinx|table/i.test(rstDirectiveHint)) pass('sample.rst: directive hover help present'); else fail('rst directive hint: ' + rstDirectiveHint);
+  await page.click('#previewHost .rst-doc .rst-outline .kf-source-link');
+  const rstJump = await page.$eval('#previewHost .rst-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (rstJump.open && rstJump.highlighted) pass('sample.rst: outline click opens and highlights source'); else fail('rst source jump: ' + JSON.stringify(rstJump));
+  const rstBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/restructuredtext/renderer.js');
+    const text = 'Demo\n====\n\n.. |product| replace:: Widget\n\nSee |missing| and :ref:`intro`.\n\n.. _intro:\n\nIntro\n-----\n\n.. toctree::\n   :maxdepth 2\n   guide/install\n   api/index\n\n.. include:: shared/intro.rst\n   :bad option\n\n.. image:: images/logo.png\n';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { out, issues };
+  });
+  if (/Directive Targets|toctree|shared\/intro\.rst|images\/logo\.png|Substitutions|missing substitution|directive option/i.test(rstBad.out + rstBad.issues)) pass('sample.rst: targets, substitutions, and directive diagnostics shown'); else fail('rst diagnostics: ' + JSON.stringify(rstBad).slice(0, 800));
 
   // ── sample.org viewer (Org-mode) ──
   await openExample('sample.org');
@@ -24,6 +47,27 @@ export async function run(ctx) {
   if (/Jane Developer/i.test(orgText)) pass('sample.org: author shown'); else fail('org author: ' + orgText.slice(0, 300));
   if (/TODO|DONE/i.test(orgText)) pass('sample.org: TODO/DONE items shown'); else fail('org todos: ' + orgText.slice(0, 300));
   if (/python|json/i.test(orgText)) pass('sample.org: code block languages shown'); else fail('org code langs: ' + orgText.slice(0, 300));
+  if (/TODO Distribution|Tags|Timestamps|Source Blocks|Links|file link/i.test(orgText)) pass('sample.org: enhanced Org sections shown'); else fail('org enhanced sections: ' + orgText.slice(0, 900));
+  const orgSourceOpen = await page.$eval('#previewHost .org-doc .kf-source-details', (e) => e.open);
+  if (!orgSourceOpen) pass('sample.org: source starts collapsed'); else fail('org source should start collapsed');
+  await page.click('#previewHost .org-doc .org-outline .kf-source-link');
+  const orgJump = await page.$eval('#previewHost .org-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (orgJump.open && orgJump.highlighted) pass('sample.org: outline click opens and highlights source'); else fail('org source jump: ' + JSON.stringify(orgJump));
+  const orgBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/org-mode/renderer.js');
+    const text = '#+TITLE: Demo\n\n* TODO Ship :release:\nSCHEDULED: <2026-07-01 Wed>\nDEADLINE: <2026-07-03 Fri>\n\n#+NAME: example\n#+BEGIN_SRC js :results output\nconsole.log(1)\n#+END_SRC\n#+RESULTS: example\n: 1\n\nSee [[missing-target][missing]] and [[file:notes.org][notes]].';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Tags|:release:|SCHEDULED|DEADLINE|named block|Results|broken link|file link/i.test(orgBad.out + orgBad.issues) && !orgBad.open) pass('sample.org: tags, dates, blocks, results, and link diagnostics shown'); else fail('org synthetic diagnostics: ' + JSON.stringify(orgBad).slice(0, 900));
 
   // ── sample.liquid viewer (Liquid Template) ──
   await openExample('sample.liquid');
@@ -44,6 +88,30 @@ export async function run(ctx) {
   if (/expression|block helper/i.test(hbsText)) pass('sample.hbs: expression counts shown'); else fail('hbs counts: ' + hbsText.slice(0, 300));
   if (/if|each|with|unless/i.test(hbsText)) pass('sample.hbs: block helpers listed'); else fail('hbs block helpers: ' + hbsText.slice(0, 300));
   if (/partial|partials/i.test(hbsText)) pass('sample.hbs: partials shown'); else fail('hbs partials: ' + hbsText.slice(0, 300));
+  if (/External-looking Variables|user\.email|formatDate/i.test(hbsText)) pass('sample.hbs: variable/helper inventory shown'); else fail('hbs inventory: ' + hbsText.slice(0, 500));
+  if (/render helper|template dependency|unescaped|section context/i.test(hbsText)) pass('sample.hbs: helper, dependency, and output hints shown'); else fail('hbs details: ' + hbsText.slice(0, 900));
+  const hbsPartialHint = await page.$$eval('#previewHost .hbs-doc .hbs-tag', (tags) => tags.find((el) => el.textContent === 'partial')?.title || '');
+  if (/Includes another template|render host/i.test(hbsPartialHint)) pass('sample.hbs: partial hover help present'); else fail('hbs partial hint: ' + hbsPartialHint);
+  const hbsCustomText = await page.$$eval('#previewHost .hbs-doc .hbs-section', (sections) => sections.find((el) => /Custom Helpers/.test(el.textContent || ''))?.textContent || '');
+  if (/capitalize|formatDate|isoDate|truncate/i.test(hbsCustomText) && !/breadcrumbItems/.test(hbsCustomText)) pass('sample.hbs: inline custom helpers separated from sections'); else fail('hbs custom helpers: ' + hbsCustomText.slice(0, 700));
+  const hbsSourceOpen = await page.$eval('#previewHost .hbs-doc .kf-source-details', (e) => e.open);
+  if (!hbsSourceOpen) pass('sample.hbs: source starts collapsed'); else fail('hbs source should start collapsed');
+  await page.click('#previewHost .hbs-doc .kf-source-link');
+  const hbsJump = await page.$eval('#previewHost .hbs-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (hbsJump.open && hbsJump.highlighted) pass('sample.hbs: summary click opens and highlights source'); else fail('hbs source jump: ' + JSON.stringify(hbsJump));
+  const hbsBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/handlebars-template/renderer.js');
+    const rendered = mod.render({ text: '{{#if user}}\n{{name}}\n{{/each}}\n{{#open}}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/mismatch|unclosed block/i.test(hbsBad.text + hbsBad.issues)) pass('sample.hbs: malformed block diagnostics shown'); else fail('hbs diagnostics: ' + JSON.stringify(hbsBad).slice(0, 500));
 
   // ── sample.j2 viewer (Jinja2 Template) ──
   await openExample('sample.j2');
@@ -54,6 +122,27 @@ export async function run(ctx) {
   if (/block|Blocks/i.test(j2Text)) pass('sample.j2: blocks listed'); else fail('j2 blocks: ' + j2Text.slice(0, 300));
   if (/extends/i.test(j2Text)) pass('sample.j2: extends shown'); else fail('j2 extends: ' + j2Text.slice(0, 300));
   if (/upper|lower|default|replace/i.test(j2Text)) pass('sample.j2: filters listed'); else fail('j2 filters: ' + j2Text.slice(0, 300));
+  if (/template dependency|External Context Variables|environment_vars|app_name/i.test(j2Text)) pass('sample.j2: dependencies and context variables shown'); else fail('j2 details: ' + j2Text.slice(0, 900));
+  const j2BlockHint = await page.$eval('#previewHost .j2-doc .j2-tag', (e) => e.title);
+  if (/Block supplied|parent template|inheritance/i.test(j2BlockHint)) pass('sample.j2: block hover help present'); else fail('j2 block hint: ' + j2BlockHint);
+  const j2SourceOpen = await page.$eval('#previewHost .j2-doc .kf-source-details', (e) => e.open);
+  if (!j2SourceOpen) pass('sample.j2: source starts collapsed'); else fail('j2 source should start collapsed');
+  await page.click('#previewHost .j2-doc .kf-source-link');
+  const j2Jump = await page.$eval('#previewHost .j2-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (j2Jump.open && j2Jump.highlighted) pass('sample.j2: item click opens and highlights source'); else fail('j2 source jump: ' + JSON.stringify(j2Jump));
+  const j2Bad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/jinja2-template/renderer.js');
+    const rendered = mod.render({ text: '{% block body %}a{% endblock %}\n{% block body %}b{% endblock %}\n{% macro card(title) %}{{ title }}{% endmacro %}\n{% macro card(text) %}{{ text }}{% endmacro %}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/duplicate block|duplicate macro/i.test(j2Bad.text + j2Bad.issues)) pass('sample.j2: duplicate block and macro diagnostics shown'); else fail('j2 diagnostics: ' + JSON.stringify(j2Bad).slice(0, 500));
 
   // ── sample.mustache viewer (Mustache Template) ──
   await openExample('sample.mustache');
@@ -64,6 +153,27 @@ export async function run(ctx) {
   if (/section|Section/i.test(mstText)) pass('sample.mustache: sections listed'); else fail('mustache sections: ' + mstText.slice(0, 300));
   if (/partial|Partial/i.test(mstText)) pass('sample.mustache: partials listed'); else fail('mustache partials: ' + mstText.slice(0, 300));
   if (/title|headline|description/i.test(mstText)) pass('sample.mustache: variables listed'); else fail('mustache variables: ' + mstText.slice(0, 300));
+  if (/external dependency|root title|unescaped/i.test(mstText)) pass('sample.mustache: partial dependencies and variable groups shown'); else fail('mustache details: ' + mstText.slice(0, 800));
+  const mstPartialHint = await page.$eval('#previewHost .mst-doc .mst-tag-partial', (e) => e.title);
+  if (/Includes another template|render host/i.test(mstPartialHint)) pass('sample.mustache: partial hover help present'); else fail('mustache partial hint: ' + mstPartialHint);
+  const mstSourceOpen = await page.$eval('#previewHost .mst-doc .kf-source-details', (e) => e.open);
+  if (!mstSourceOpen) pass('sample.mustache: source starts collapsed'); else fail('mustache source should start collapsed');
+  await page.click('#previewHost .mst-doc .kf-source-link');
+  const mstJump = await page.$eval('#previewHost .mst-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (mstJump.open && mstJump.highlighted) pass('sample.mustache: item click opens and highlights source'); else fail('mustache source jump: ' + JSON.stringify(mstJump));
+  const mstBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/mustache-template/renderer.js');
+    const rendered = mod.render({ text: '{{#items}}\n{{name}}\n{{/wrong}}\n{{#open}}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/Template Diagnostics|mismatch|unclosed section/i.test(mstBad.text + mstBad.issues)) pass('sample.mustache: malformed section diagnostics shown'); else fail('mustache diagnostics: ' + JSON.stringify(mstBad).slice(0, 500));
 
   // ── sample.sparql viewer (SPARQL Query) ──
   await openExample('sample.sparql');
@@ -152,6 +262,27 @@ export async function run(ctx) {
   if (/html/i.test(xslText)) pass('sample.xsl: output method shown'); else fail('xsl output method: ' + xslText.slice(0, 300));
   if (/book-header|format-price/i.test(xslText)) pass('sample.xsl: named templates listed'); else fail('xsl named templates: ' + xslText.slice(0, 300));
   if (/lang|showDetails/i.test(xslText)) pass('sample.xsl: params listed'); else fail('xsl params: ' + xslText.slice(0, 300));
+  if (/Template Calls|Apply Templates|book -> book-header|catalogue\/book|unused binding/i.test(xslText)) pass('sample.xsl: call graph and binding review shown'); else fail('xsl graph details: ' + xslText.slice(0, 900));
+  const xslSourceOpen = await page.$eval('#previewHost .xsl-doc .kf-source-details', (e) => e.open);
+  if (!xslSourceOpen) pass('sample.xsl: source starts collapsed'); else fail('xsl source should start collapsed');
+  await page.click('#previewHost .xsl-doc .xsl-list .kf-source-link');
+  const xslJump = await page.$eval('#previewHost .xsl-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (xslJump.open && xslJump.highlighted) pass('sample.xsl: item click opens and highlights source'); else fail('xsl source jump: ' + JSON.stringify(xslJump));
+  const xslBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/xslt-stylesheet/renderer.js');
+    const text = '<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"><xsl:param name="unused"/><xsl:template name="dup"><xsl:call-template name="missing"/></xsl:template><xsl:template name="dup"/></xsl:stylesheet>';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/duplicate template|missing callee|unused binding|Template Calls/i.test(xslBad.out + xslBad.issues) && !xslBad.open) pass('sample.xsl: duplicate, missing callee, and unused diagnostics shown'); else fail('xsl synthetic diagnostics: ' + JSON.stringify(xslBad).slice(0, 900));
 
   // ── sample.svelte viewer (Svelte Component) ──
   await openExample('sample.svelte');
@@ -172,6 +303,27 @@ export async function run(ctx) {
   if (/base\.html/i.test(njkText)) pass('sample.njk: extends shown'); else fail('njk extends: ' + njkText.slice(0, 300));
   if (/title|content|sidebar/i.test(njkText)) pass('sample.njk: blocks listed'); else fail('njk blocks: ' + njkText.slice(0, 300));
   if (/pagination/i.test(njkText)) pass('sample.njk: macros listed'); else fail('njk macros: ' + njkText.slice(0, 300));
+  if (/template dependency|External Context Variables|setfeatured|page|posts|site/i.test(njkText)) pass('sample.njk: dependencies, set vars, and context variables shown'); else fail('njk details: ' + njkText.slice(0, 900));
+  const njkBlockHint = await page.$eval('#previewHost .njk-doc .njk-tag', (e) => e.title);
+  if (/Block supplied|parent template|inheritance/i.test(njkBlockHint)) pass('sample.njk: block hover help present'); else fail('njk block hint: ' + njkBlockHint);
+  const njkSourceOpen = await page.$eval('#previewHost .njk-doc .kf-source-details', (e) => e.open);
+  if (!njkSourceOpen) pass('sample.njk: source starts collapsed'); else fail('njk source should start collapsed');
+  await page.click('#previewHost .njk-doc .kf-source-link');
+  const njkJump = await page.$eval('#previewHost .njk-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (njkJump.open && njkJump.highlighted) pass('sample.njk: item click opens and highlights source'); else fail('njk source jump: ' + JSON.stringify(njkJump));
+  const njkBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/nunjucks/renderer.js');
+    const rendered = mod.render({ text: '{% block body %}a{% endblock %}\n{% block body %}b{% endblock %}\n{% macro card(title) %}{{ title }}{% endmacro %}\n{% macro card(text) %}{{ text }}{% endmacro %}' }).parentNode;
+    document.body.appendChild(rendered);
+    const text = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { text, issues };
+  });
+  if (/duplicate block|duplicate macro/i.test(njkBad.text + njkBad.issues)) pass('sample.njk: duplicate block and macro diagnostics shown'); else fail('njk diagnostics: ' + JSON.stringify(njkBad).slice(0, 500));
 
   // ── sample.hs viewer (Haskell) ──
   await openExample('sample.hs');
@@ -192,6 +344,18 @@ export async function run(ctx) {
   if (/com\.example\.demo/.test(ktText)) pass('sample.kt: package shown'); else fail('kt package: ' + ktText.slice(0, 300));
   if (/Point|Circle|MathUtils/i.test(ktText)) pass('sample.kt: types listed'); else fail('kt types: ' + ktText.slice(0, 300));
   if (/distanceBetween|fetchPoints|main/i.test(ktText)) pass('sample.kt: functions listed'); else fail('kt functions: ' + ktText.slice(0, 300));
+  if (/returns Double|receiver Circle|a: Point|constructor param|suspend/i.test(ktText)) pass('sample.kt: signatures, params, and coroutine details shown'); else fail('kt details: ' + ktText.slice(0, 900));
+  if (!/area.*in MathUtils/is.test(ktText)) pass('sample.kt: top-level extension is not attached to object owner'); else fail('kt extension owner: ' + ktText.slice(0, 900));
+  const ktSuspendHint = await page.$eval('#previewHost .kt-doc .kt-tag-suspend', (e) => e.title);
+  if (/coroutine|suspend/i.test(ktSuspendHint)) pass('sample.kt: suspend hover help present'); else fail('kt suspend hint: ' + ktSuspendHint);
+  const ktSourceOpen = await page.$eval('#previewHost .kt-doc .kf-source-details', (e) => e.open);
+  if (!ktSourceOpen) pass('sample.kt: source starts collapsed'); else fail('kt source should start collapsed');
+  await page.click('#previewHost .kt-doc .kf-source-link');
+  const ktJump = await page.$eval('#previewHost .kt-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (ktJump.open && ktJump.highlighted) pass('sample.kt: item click opens and highlights source'); else fail('kt source jump: ' + JSON.stringify(ktJump));
 
   // ── sample.scala viewer (Scala) ──
   await openExample('sample.scala');
@@ -223,6 +387,22 @@ export async function run(ctx) {
   if (/Reading|Sensor|LabSensor/i.test(dartText)) pass('sample.dart: classes listed'); else fail('dart classes: ' + dartText.slice(0, 300));
   if (/Status/i.test(dartText)) pass('sample.dart: enum listed'); else fail('dart enum: ' + dartText.slice(0, 300));
   if (/ReadingExtension/i.test(dartText)) pass('sample.dart: extension listed'); else fail('dart extension: ' + dartText.slice(0, 300));
+  const dartMemberText = await page.$$eval('#previewHost .dart-section', (sections) => {
+    const section = sections.find((el) => /Methods & Functions/.test(el.textContent || ''));
+    return section ? section.textContent : '';
+  });
+  if (/readings|returns Stream<Reading>|ctor|formatted|main/i.test(dartMemberText)) pass('sample.dart: methods, getters, constructors, and returns shown'); else fail('dart members: ' + dartMemberText.slice(0, 600));
+  if (!/print\(reading\.formatted\)/.test(dartMemberText)) pass('sample.dart: body calls are not listed as declarations'); else fail('dart body call listed: ' + dartMemberText.slice(0, 800));
+  const dartAsyncHint = await page.$eval('#previewHost .dart-doc .dart-tag-async', (e) => e.title);
+  if (/asynchronous|Future|stream/i.test(dartAsyncHint)) pass('sample.dart: async hover help present'); else fail('dart async hint: ' + dartAsyncHint);
+  const dartSourceOpen = await page.$eval('#previewHost .dart-doc .kf-source-details', (e) => e.open);
+  if (!dartSourceOpen) pass('sample.dart: source starts collapsed'); else fail('dart source should start collapsed');
+  await page.click('#previewHost .dart-doc .kf-source-link');
+  const dartJump = await page.$eval('#previewHost .dart-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (dartJump.open && dartJump.highlighted) pass('sample.dart: item click opens and highlights source'); else fail('dart source jump: ' + JSON.stringify(dartJump));
 
   // ── sample.groovy viewer (Groovy) ──
   await openExample('sample.groovy');
@@ -233,6 +413,17 @@ export async function run(ctx) {
   if (/com\.example\.demo/.test(groovyText)) pass('sample.groovy: package shown'); else fail('groovy package: ' + groovyText.slice(0, 300));
   if (/MathUtils|Point|Circle|Shape/i.test(groovyText)) pass('sample.groovy: types listed'); else fail('groovy types: ' + groovyText.slice(0, 300));
   if (/factorial|mean|area|perimeter/i.test(groovyText)) pass('sample.groovy: methods listed'); else fail('groovy methods: ' + groovyText.slice(0, 300));
+  if (/returns double|arity 1|List<Number> values|@CompileStatic/i.test(groovyText)) pass('sample.groovy: signatures, params, and annotations shown'); else fail('groovy details: ' + groovyText.slice(0, 900));
+  const groovyAnnHint = await page.$eval('#previewHost .gr-doc .gr-ann', (e) => e.title);
+  if (/static type checking|annotation/i.test(groovyAnnHint)) pass('sample.groovy: annotation hover help present'); else fail('groovy annotation hint: ' + groovyAnnHint);
+  const groovySourceOpen = await page.$eval('#previewHost .gr-doc .kf-source-details', (e) => e.open);
+  if (!groovySourceOpen) pass('sample.groovy: source starts collapsed'); else fail('groovy source should start collapsed');
+  await page.click('#previewHost .gr-doc .kf-source-link');
+  const groovyJump = await page.$eval('#previewHost .gr-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (groovyJump.open && groovyJump.highlighted) pass('sample.groovy: item click opens and highlights source'); else fail('groovy source jump: ' + JSON.stringify(groovyJump));
 
   // ── sample.cr viewer (Crystal) ──
   await openExample('sample.cr');
@@ -252,6 +443,17 @@ export async function run(ctx) {
   if (/NumericalUtils/i.test(jlText)) pass('sample.jl: module name shown'); else fail('julia module: ' + jlText.slice(0, 300));
   if (/distance|centroid|normalize/i.test(jlText)) pass('sample.jl: functions listed'); else fail('julia functions: ' + jlText.slice(0, 300));
   if (/Point|BoundingBox/i.test(jlText)) pass('sample.jl: structs listed'); else fail('julia structs: ' + jlText.slice(0, 300));
+  if (/returns Float64|p1::Point|symbols: show, length|4 fields|@timed_call/i.test(jlText)) pass('sample.jl: signatures, dispatch args, imports, and type details shown'); else fail('julia details: ' + jlText.slice(0, 900));
+  const jlTypeHint = await page.$eval('#previewHost .jl-doc .jl-tag-mutable', (e) => e.title);
+  if (/fields can be reassigned|mutable/i.test(jlTypeHint)) pass('sample.jl: type hover help present'); else fail('julia type hint: ' + jlTypeHint);
+  const jlSourceOpen = await page.$eval('#previewHost .jl-doc .kf-source-details', (e) => e.open);
+  if (!jlSourceOpen) pass('sample.jl: source starts collapsed'); else fail('julia source should start collapsed');
+  await page.click('#previewHost .jl-doc .kf-source-link');
+  const jlJump = await page.$eval('#previewHost .jl-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (jlJump.open && jlJump.highlighted) pass('sample.jl: item click opens and highlights source'); else fail('julia source jump: ' + JSON.stringify(jlJump));
 
   // ── sample.R viewer (R) ──
   await openExample('sample.R');
@@ -353,6 +555,18 @@ export async function run(ctx) {
   await openExample('sample.f90');
   await page.waitForSelector('#previewHost .f90-doc', { timeout: 12000 });
   pass('fortran-lang: sample.f90 renders');
+  const f90Text = await page.$eval('#previewHost .f90-doc', (e) => e.textContent);
+  if (/PURE FUNCTION dot_real|RESULT\(res\)|arity 6|ONLY: REAL64, INT32|PARAMETER/i.test(f90Text)) pass('fortran-lang: signatures, imports, and parameters shown'); else fail('fortran details: ' + f90Text.slice(0, 900));
+  const f90FunctionHint = await page.$eval('#previewHost .f90-doc .f90-tag-fn', (e) => e.title);
+  if (/returns a value|RESULT/i.test(f90FunctionHint)) pass('fortran-lang: procedure hover help present'); else fail('fortran function hint: ' + f90FunctionHint);
+  const f90SourceOpen = await page.$eval('#previewHost .f90-doc .kf-source-details', (e) => e.open);
+  if (!f90SourceOpen) pass('fortran-lang: source starts collapsed'); else fail('fortran source should start collapsed');
+  await page.click('#previewHost .f90-doc .kf-source-link');
+  const f90Jump = await page.$eval('#previewHost .f90-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (f90Jump.open && f90Jump.highlighted) pass('fortran-lang: item click opens and highlights source'); else fail('fortran source jump: ' + JSON.stringify(f90Jump));
 
   // ── sample.rb viewer (ruby-lang plugin) ──
   await openExample('sample.rb');

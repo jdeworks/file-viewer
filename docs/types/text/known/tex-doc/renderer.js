@@ -1,4 +1,4 @@
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../core/known-ui.js';
 
 const CSS = `
 .tex-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -9,65 +9,152 @@ const CSS = `
 .tex-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:110px;}
 .tex-card strong{display:block;font-size:1.2rem;font-weight:700;}
 .tex-card span{font-size:.8rem;color:var(--fg-2,#5a6678);}
-.tex-section{margin:16px 0;}
-.tex-section h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--fg-2,#888);margin:0 0 6px;}
-.tex-table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px;}
-.tex-table th{text-align:left;color:var(--fg-2,#888);font-size:11px;text-transform:uppercase;padding:5px 10px;border-bottom:2px solid var(--border,#e0e0e0);background:var(--bg,#fff);}
-.tex-table td{padding:5px 10px;border-bottom:1px solid var(--border,#eaecf0);vertical-align:top;font-family:ui-monospace,monospace;font-size:12px;}
-.tex-table tr:last-child td{border-bottom:none;}
+.tex-section{margin:16px 0;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden;}
+.tex-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0);}
+.tex-list{margin:0;padding:0;list-style:none;}
+.tex-list li{padding:6px 14px;border-bottom:1px solid var(--border,#eaecf0);vertical-align:top;font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;}
+.tex-list li:last-child{border-bottom:none;}
+.tex-meta{margin:0 0 14px;}
 .tex-meta-row{margin:4px 0;font-size:13px;}
 .tex-meta-label{font-size:11px;text-transform:uppercase;color:var(--fg-2,#888);margin-right:6px;}
-.tex-section-tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;background:#d1fae5;color:#065f46;margin-right:4px;}
-.tex-section-tag.chapter{background:#dbeafe;color:#1d4ed8;}
+.tex-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px;flex-basis:100%;}
+.tex-cmd{color:#059669;font-weight:600;}
+.tex-arg{color:#0a6640;}
+.tex-comment{color:#6e7781;font-style:italic;}
 `;
+
+const OUTLINE_LEVEL = {
+  part: 0,
+  chapter: 1,
+  section: 2,
+  subsection: 3,
+  subsubsection: 4,
+  paragraph: 5,
+  subparagraph: 6,
+};
 
 function parseTex(text) {
   const lines = (text || '').split(/\r?\n/);
   let docClass = null;
-  const packages = [];
-  const sections = []; // { title, kind: 'section'|'chapter' }
   let author = null;
   let docTitle = null;
+  const packages = [];
+  const outline = [];
+  const labels = [];
+  const refs = [];
+  const cites = [];
+  const includes = [];
+  const bibitems = [];
+  const bibliographies = [];
+  const issues = [];
 
-  for (const line of lines) {
-    const t = line.trim();
-    if (t.startsWith('%')) continue; // comment
+  for (let i = 0; i < lines.length; i++) {
+    const lineNo = i + 1;
+    const t = stripTexComment(lines[i]).trim();
+    if (!t) continue;
 
-    // \documentclass[options]{class}
-    const dcMatch = t.match(/\\documentclass(?:\[[^\]]*\])?\{([^}]+)\}/);
-    if (dcMatch && !docClass) docClass = dcMatch[1];
+    const dcMatch = t.match(/\\documentclass(?:\[([^\]]*)\])?\{([^}]+)\}/);
+    if (dcMatch && !docClass) docClass = { name: dcMatch[2], options: dcMatch[1] || '', line: lineNo };
 
-    // \usepackage[options]{pkg}
-    const pkgMatch = t.match(/\\usepackage(?:\[[^\]]*\])?\{([^}]+)\}/);
-    if (pkgMatch) {
-      // may be comma-separated: {amsmath,amssymb}
-      for (const pkg of pkgMatch[1].split(',').map((s) => s.trim()).filter(Boolean)) {
-        if (!packages.includes(pkg)) packages.push(pkg);
+    for (const pkgMatch of t.matchAll(/\\usepackage(?:\[([^\]]*)\])?\{([^}]+)\}/g)) {
+      for (const pkg of pkgMatch[2].split(',').map((s) => s.trim()).filter(Boolean)) {
+        packages.push({ name: pkg, options: pkgMatch[1] || '', line: lineNo });
       }
     }
 
-    // \section{title} or \section*{title}
-    const sectionMatch = t.match(/\\section\*?\{([^}]+)\}/);
-    if (sectionMatch) sections.push({ title: sectionMatch[1], kind: 'section' });
+    for (const sec of t.matchAll(/\\(part|chapter|section|subsection|subsubsection|paragraph|subparagraph)\*?\{([^}]+)\}/g)) {
+      outline.push({ kind: sec[1], level: OUTLINE_LEVEL[sec[1]] ?? 9, title: cleanTex(sec[2]), line: lineNo });
+    }
 
-    // \chapter{title} or \chapter*{title}
-    const chapterMatch = t.match(/\\chapter\*?\{([^}]+)\}/);
-    if (chapterMatch) sections.push({ title: chapterMatch[1], kind: 'chapter' });
+    for (const label of t.matchAll(/\\label\{([^}]+)\}/g)) labels.push({ key: label[1].trim(), line: lineNo });
+    for (const ref of t.matchAll(/\\(ref|pageref|autoref|eqref)\{([^}]+)\}/g)) refs.push({ kind: ref[1], key: ref[2].trim(), line: lineNo });
+    for (const cite of t.matchAll(/\\(?:cite|citep|citet|parencite|textcite)(?:\[[^\]]*]){0,2}\{([^}]+)\}/g)) {
+      for (const key of cite[1].split(',').map((s) => s.trim()).filter(Boolean)) cites.push({ key, line: lineNo });
+    }
+    for (const inc of t.matchAll(/\\(input|include|includegraphics)(?:\[[^\]]*])?\{([^}]+)\}/g)) {
+      includes.push({ kind: inc[1], target: inc[2].trim(), line: lineNo });
+    }
+    for (const bib of t.matchAll(/\\bibitem(?:\[[^\]]*])?\{([^}]+)\}/g)) bibitems.push({ key: bib[1].trim(), line: lineNo });
+    for (const bib of t.matchAll(/\\(?:bibliography|addbibresource)(?:\[[^\]]*])?\{([^}]+)\}/g)) {
+      for (const target of bib[1].split(',').map((s) => s.trim()).filter(Boolean)) bibliographies.push({ target, line: lineNo });
+    }
 
-    // \author{...}
     const authorMatch = t.match(/\\author\{([^}]+)\}/);
-    if (authorMatch && !author) author = authorMatch[1].replace(/\\[a-zA-Z]+/g, '').trim();
-
-    // \title{...}
+    if (authorMatch && !author) author = { value: cleanTex(authorMatch[1]), line: lineNo };
     const titleMatch = t.match(/\\title\{([^}]+)\}/);
-    if (titleMatch && !docTitle) docTitle = titleMatch[1].replace(/\\[a-zA-Z]+/g, '').trim();
+    if (titleMatch && !docTitle) docTitle = { value: cleanTex(titleMatch[1]), line: lineNo };
   }
 
-  return { docClass, packages, sections, author, docTitle };
+  const labelLines = new Map();
+  for (const label of labels) {
+    if (labelLines.has(label.key)) {
+      issues.push({ severity: 'warning', label: 'duplicate label', line: label.line, message: `Label "${label.key}" was already defined at line ${labelLines.get(label.key)}.` });
+    } else {
+      labelLines.set(label.key, label.line);
+    }
+  }
+  for (const ref of refs) {
+    if (!labelLines.has(ref.key)) issues.push({ severity: 'warning', label: 'unresolved ref', line: ref.line, message: `${ref.kind} target "${ref.key}" has no matching \\label in this file.` });
+  }
+  const bibKeys = new Set(bibitems.map((item) => item.key));
+  if (cites.length && !bibitems.length && !bibliographies.length) {
+    issues.push({ severity: 'info', label: 'citation source', message: 'Citations are present but no \\bibitem, \\bibliography, or \\addbibresource was found in this file.' });
+  } else if (bibitems.length) {
+    for (const cite of cites) {
+      if (!bibKeys.has(cite.key)) issues.push({ severity: 'warning', label: 'unresolved cite', line: cite.line, message: `Citation "${cite.key}" has no matching \\bibitem in this file.` });
+    }
+  }
+
+  return { docClass, packages, outline, author, docTitle, labels, refs, cites, includes, bibitems, bibliographies, issues };
+}
+
+function stripTexComment(line) {
+  let out = '';
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '%' && line[i - 1] !== '\\') break;
+    out += line[i];
+  }
+  return out;
+}
+
+function cleanTex(text) {
+  return String(text || '').replace(/\\[a-zA-Z]+(?:\{\})?/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function highlightLine(line) {
+  let out = esc(line);
+  out = out.replace(/(%.*)$/g, '<span class="tex-comment">$1</span>');
+  out = out.replace(/(\\[a-zA-Z]+)/g, '<span class="tex-cmd">$1</span>');
+  out = out.replace(/\{([^{}]*)\}/g, '{<span class="tex-arg">$1</span>}');
+  return out;
+}
+
+function section(title) {
+  const sec = document.createElement('div');
+  sec.className = 'tex-section';
+  const hd = document.createElement('div');
+  hd.className = 'tex-section-hd';
+  hd.textContent = title;
+  sec.appendChild(hd);
+  return sec;
+}
+
+function appendList(host, title, items, renderItem) {
+  if (!items.length) return;
+  const sec = section(title);
+  const ul = document.createElement('ul');
+  ul.className = 'tex-list';
+  for (const item of items) {
+    const li = document.createElement('li');
+    renderItem(li, item);
+    ul.appendChild(li);
+  }
+  sec.appendChild(ul);
+  host.appendChild(sec);
 }
 
 export function render(intake) {
-  const { docClass, packages, sections, author, docTitle } = parseTex(intake.text || '');
+  const { docClass, packages, outline, author, docTitle, labels, refs, cites, includes, bibitems, bibliographies, issues } = parseTex(intake.text || '');
 
   const host = document.createElement('div');
   host.className = 'tex-doc';
@@ -75,56 +162,47 @@ export function render(intake) {
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
+  ensureKnownUiStyle(host);
 
   const title = document.createElement('div');
   title.className = 'tex-title';
-  title.innerHTML = '<span class="tex-badge">LaTeX</span>' + esc(docTitle || 'TeX Document');
+  const badge = document.createElement('span');
+  badge.className = 'tex-badge';
+  badge.textContent = 'LaTeX';
+  title.appendChild(badge);
+  title.appendChild(document.createTextNode(docTitle?.value || 'TeX Document'));
   host.appendChild(title);
 
   const parts = [];
-  if (docClass) parts.push(`class: ${docClass}`);
+  if (docClass) parts.push(`class: ${docClass.name}`);
   if (packages.length) parts.push(`${packages.length} package${packages.length !== 1 ? 's' : ''}`);
-  if (sections.length) parts.push(`${sections.length} section${sections.length !== 1 ? 's' : ''}`);
+  if (outline.length) parts.push(`${outline.length} outline item${outline.length !== 1 ? 's' : ''}`);
+  if (labels.length) parts.push(`${labels.length} label${labels.length !== 1 ? 's' : ''}`);
 
   const sub = document.createElement('div');
   sub.className = 'tex-sub';
   sub.textContent = parts.join(' · ') || 'LaTeX document';
   host.appendChild(sub);
 
-  // Author / title metadata
   if (docTitle || author || docClass) {
     const metaSec = document.createElement('div');
-    metaSec.className = 'tex-section';
-    if (docTitle) {
-      const row = document.createElement('div');
-      row.className = 'tex-meta-row';
-      row.innerHTML = `<span class="tex-meta-label">Title</span>${esc(docTitle)}`;
-      metaSec.appendChild(row);
-    }
-    if (author) {
-      const row = document.createElement('div');
-      row.className = 'tex-meta-row';
-      row.innerHTML = `<span class="tex-meta-label">Author</span>${esc(author)}`;
-      metaSec.appendChild(row);
-    }
-    if (docClass) {
-      const row = document.createElement('div');
-      row.className = 'tex-meta-row';
-      row.innerHTML = `<span class="tex-meta-label">Document class</span>${esc(docClass)}`;
-      metaSec.appendChild(row);
-    }
+    metaSec.className = 'tex-meta';
+    if (docTitle) appendMeta(metaSec, 'Title', docTitle.value, docTitle.line);
+    if (author) appendMeta(metaSec, 'Author', author.value, author.line);
+    if (docClass) appendMeta(metaSec, 'Document class', docClass.name, docClass.line);
     host.appendChild(metaSec);
   }
 
-  // Summary cards
   const summary = document.createElement('div');
   summary.className = 'tex-summary';
-  const cards = [
+  for (const { value, label } of [
     { value: packages.length, label: 'Packages' },
-    { value: sections.filter((s) => s.kind === 'chapter').length, label: 'Chapters' },
-    { value: sections.filter((s) => s.kind === 'section').length, label: 'Sections' },
-  ];
-  for (const { value, label } of cards) {
+    { value: outline.length, label: 'Outline' },
+    { value: labels.length, label: 'Labels' },
+    { value: refs.length, label: 'Refs' },
+    { value: cites.length, label: 'Cites' },
+    { value: includes.length, label: 'Includes' },
+  ]) {
     const card = document.createElement('div');
     card.className = 'tex-card';
     const strong = document.createElement('strong');
@@ -137,51 +215,57 @@ export function render(intake) {
   }
   host.appendChild(summary);
 
-  // Packages
-  if (packages.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'tex-section';
-    const h3 = document.createElement('h3');
-    h3.textContent = 'Packages';
-    sec.appendChild(h3);
-    const table = document.createElement('table');
-    table.className = 'tex-table';
-    const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>Package</th></tr>';
-    table.appendChild(thead);
-    const tbody = document.createElement('tbody');
-    for (const pkg of packages.slice(0, 8)) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(pkg)}</td>`;
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    sec.appendChild(table);
-    host.appendChild(sec);
-  }
+  appendList(host, 'Document Outline', outline, (li, item) => {
+    li.style.paddingLeft = `${14 + item.level * 12}px`;
+    li.appendChild(chip(item.kind, item.level <= 2 ? 'ok' : 'info', 'LaTeX sectioning command.'));
+    li.appendChild(sourceButton(item.title, item.line, 'Open outline item in source'));
+  });
 
-  // Sections
-  if (sections.length > 0) {
-    const sec = document.createElement('div');
-    sec.className = 'tex-section';
-    const h3 = document.createElement('h3');
-    h3.textContent = 'Document Outline';
-    sec.appendChild(h3);
-    const table = document.createElement('table');
-    table.className = 'tex-table';
-    const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th>Title</th><th>Level</th></tr>';
-    table.appendChild(thead);
-    const tbody = document.createElement('tbody');
-    for (const s of sections.slice(0, 6)) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(s.title)}</td><td><span class="tex-section-tag ${esc(s.kind)}">${esc(s.kind)}</span></td>`;
-      tbody.appendChild(tr);
-    }
-    table.appendChild(tbody);
-    sec.appendChild(table);
-    host.appendChild(sec);
-  }
+  appendList(host, 'Packages', packages, (li, pkg) => {
+    li.appendChild(chip('package', 'info', 'Loaded with \\usepackage.'));
+    li.appendChild(sourceButton(pkg.name, pkg.line, 'Open package declaration in source'));
+    if (pkg.options) li.appendChild(chip(pkg.options, 'muted', 'Package options.'));
+  });
+
+  appendList(host, 'Labels And References', [
+    ...labels.map((item) => ({ ...item, type: 'label' })),
+    ...refs.map((item) => ({ ...item, type: 'ref' })),
+  ], (li, item) => {
+    li.appendChild(chip(item.type, item.type === 'label' ? 'ok' : 'warn'));
+    li.appendChild(sourceButton(item.key, item.line, 'Open label/reference in source'));
+    if (item.kind) li.appendChild(chip(item.kind, 'muted'));
+  });
+
+  appendList(host, 'Citations And Bibliography', [
+    ...cites.map((item) => ({ ...item, type: 'cite' })),
+    ...bibitems.map((item) => ({ ...item, type: 'bibitem' })),
+    ...bibliographies.map((item) => ({ key: item.target, line: item.line, type: 'bibliography' })),
+  ], (li, item) => {
+    li.appendChild(chip(item.type, item.type === 'cite' ? 'warn' : 'ok'));
+    li.appendChild(sourceButton(item.key, item.line, 'Open citation or bibliography source'));
+  });
+
+  appendList(host, 'Includes And Assets', includes, (li, item) => {
+    li.appendChild(chip(item.kind, item.kind === 'includegraphics' ? 'warn' : 'info', 'External file dependency.'));
+    li.appendChild(sourceButton(item.target, item.line, 'Open include in source'));
+  });
+
+  const issueEl = issueList(issues, { title: 'Reference Review' });
+  if (issueEl) host.appendChild(issueEl);
+
+  host.appendChild(sourcePreview(intake.text || '', { title: 'Source', collapsed: true, idPrefix: 'tex-line', highlighter: highlightLine }));
+  wireSourceLinks(host, { idPrefix: 'tex-line' });
 
   return { parentNode: host };
+}
+
+function appendMeta(root, label, value, line) {
+  const row = document.createElement('div');
+  row.className = 'tex-meta-row';
+  const labelEl = document.createElement('span');
+  labelEl.className = 'tex-meta-label';
+  labelEl.textContent = label;
+  row.appendChild(labelEl);
+  row.appendChild(sourceButton(value, line, `Open ${label.toLowerCase()} in source`));
+  root.appendChild(row);
 }

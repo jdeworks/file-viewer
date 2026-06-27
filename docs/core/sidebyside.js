@@ -3,26 +3,12 @@
 // touches global `state` editor fields or the sibling pane. A SHARED mode bar (sidebyside-mode.js)
 // governs both panes: Current (independent panes) · Raw · Preview · Diff (one full-width Monaco
 // diff). This module owns the overlay shell (head/close/Esc) + the open/close orchestration.
-import { state, $, toast } from './state.js';
-import { intakeFromFile } from './intake.js';
+import { state } from './state.js';
 import { buildPane } from './sidebyside-pane.js';
 import { initModeBar, rememberedMode } from './sidebyside-mode.js';
 
-export function startSideBySide() {
-  if (!state.intake) return;
-  $('sbsInput').value = '';
-  $('sbsInput').click();
-}
-
-// Open the overlay from a picked File (reads it into an intake first).
-export async function openSideBySide(file2) {
-  let intake2;
-  try { intake2 = await intakeFromFile(file2); } catch (e) { toast('Could not read file: ' + e.message); return; }
-  return openSideBySideWithIntake(intake2);
-}
-
-// Open the overlay against an already-read intake (used by the repurposed compare drop target,
-// which already produced an intake and shouldn't re-read the file).
+// Open the overlay against an already-read intake. Entry points that pick/drop file 2 read the
+// file first, then hand the intake here.
 export async function openSideBySideWithIntake(intake2) {
   if (!state.intake) return;
   // Pane 1 seeds from the global intake — shallow-copy it (don't mutate; the pane edits its own copy).

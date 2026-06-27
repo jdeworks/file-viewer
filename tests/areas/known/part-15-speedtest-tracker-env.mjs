@@ -263,6 +263,28 @@ export async function run(ctx) {
   if (/KDL/i.test(kdlText)) pass('sample.kdl: KDL badge shown'); else fail('kdl badge: ' + kdlText.slice(0, 200));
   if (/project|dependencies|scripts|config/i.test(kdlText)) pass('sample.kdl: top-level nodes shown'); else fail('kdl nodes: ' + kdlText.slice(0, 300));
   if (/Top-level nodes|node/i.test(kdlText)) pass('sample.kdl: node count shown'); else fail('kdl count: ' + kdlText.slice(0, 300));
+  if (/line 2|Structure Review|duplicate sibling/i.test(kdlText)) pass('sample.kdl: line-linked outline and duplicate review shown'); else fail('kdl enhanced review: ' + kdlText.slice(0, 900));
+  const kdlSourceOpen = await page.$eval('#previewHost .kdl-doc .kf-source-details', (e) => e.open);
+  if (!kdlSourceOpen) pass('sample.kdl: source starts collapsed'); else fail('kdl source should start collapsed');
+  await page.click('#previewHost .kdl-doc .kdl-tree .kf-source-link');
+  const kdlJump = await page.$eval('#previewHost .kdl-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+    expandable: !!e.querySelector('.kdl-details'),
+  }));
+  if (kdlJump.open && kdlJump.highlighted && kdlJump.expandable) pass('sample.kdl: outline click opens source and tree is expandable'); else fail('kdl source jump: ' + JSON.stringify(kdlJump));
+  const kdlBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/kdl-doc/renderer.js');
+    const text = 'root {\n  child 1\n  child 2\n  /- disabled true\n}\n}';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    const open = rendered.querySelector('.kf-source-details')?.open || false;
+    rendered.remove();
+    return { out, issues, open };
+  });
+  if (/Disabled Nodes|disabled node|brace imbalance|duplicate sibling/i.test(kdlBad.out + kdlBad.issues) && !kdlBad.open) pass('sample.kdl: disabled node, duplicate, and brace diagnostics shown'); else fail('kdl synthetic diagnostics: ' + JSON.stringify(kdlBad).slice(0, 900));
 
   // ── sample.mmd viewer (Mermaid Diagram) ──
   await openExample('sample.mmd');
@@ -299,6 +321,26 @@ export async function run(ctx) {
   if (/Getting Started/i.test(adocText)) pass('sample.adoc: document title shown'); else fail('asciidoc title: ' + adocText.slice(0, 300));
   if (/Jane Developer/i.test(adocText)) pass('sample.adoc: author shown'); else fail('asciidoc author: ' + adocText.slice(0, 300));
   if (/Installation|Usage|Introduction/i.test(adocText)) pass('sample.adoc: section headings shown'); else fail('asciidoc sections: ' + adocText.slice(0, 300));
+  if (/Anchors|getting_started_guide|implicit heading/i.test(adocText)) pass('sample.adoc: anchors and heading source metadata shown'); else fail('asciidoc anchors: ' + adocText.slice(0, 800));
+  const adocSourceOpen = await page.$eval('#previewHost .adoc-doc .kf-source-details', (e) => e.open);
+  if (!adocSourceOpen) pass('sample.adoc: source starts collapsed'); else fail('asciidoc source should start collapsed');
+  await page.click('#previewHost .adoc-doc .kf-source-link');
+  const adocJump = await page.$eval('#previewHost .adoc-doc', (e) => ({
+    open: e.querySelector('.kf-source-details')?.open || false,
+    highlighted: !!e.querySelector('.kf-source-hit'),
+  }));
+  if (adocJump.open && adocJump.highlighted) pass('sample.adoc: item click opens and highlights source'); else fail('asciidoc source jump: ' + JSON.stringify(adocJump));
+  const adocBad = await page.evaluate(async () => {
+    const mod = await import('/types/text/known/asciidoc/renderer.js');
+    const text = '= Demo\n\n[[intro]]\n== Intro\n\n[#intro]\n== Duplicate\n\nSee xref:missing[Missing].\ninclude::partials/card.adoc[]\nimage::images/hero.png[Hero]\nWARNING: Check this path.';
+    const rendered = mod.render({ text }).parentNode;
+    document.body.appendChild(rendered);
+    const out = rendered.textContent;
+    const issues = rendered.querySelector('.kf-issues')?.textContent || '';
+    rendered.remove();
+    return { out, issues };
+  });
+  if (/duplicate anchor|missing xref|partials\/card\.adoc|images\/hero\.png|WARNING/i.test(adocBad.out + adocBad.issues)) pass('sample.adoc: references, media, admonitions, and diagnostics shown'); else fail('asciidoc diagnostics: ' + JSON.stringify(adocBad).slice(0, 700));
 
   // ── sample.capnp viewer (Cap'n Proto) ──
   await openExample('sample.capnp');

@@ -1,10 +1,11 @@
 // Enhanced docker-compose view: one card per service. Parses YAML with the vendored js-yaml.
+import { ensureKnownUiStyle, esc, issueList, maskedValue, sourcePreview, wireSourceLinks } from '../../../../../core/known-ui.js';
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 import { asArray, buildContext, classifyVolume, imageLink, isLocalPath, isRelativePath, splitVolumeShortSyntax } from './shared.js';
 
-const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const ext = (href, text) => '<a class="pj-link" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer">' + esc(text) + ' <span class="pj-ext">↗</span></a>';
 const tag = (text) => '<span class="kf-tag">' + esc(text) + '</span>';
+const sourceLink = (text, line) => '<button type="button" class="kf-source-link" data-source-line="' + esc(line || 1) + '">' + esc(text) + '</button>';
 
 const asList = (v) => Array.isArray(v) ? v : (v && typeof v === 'object' ? Object.entries(v).map(([k, val]) => k + '=' + val) : v != null ? [v] : []);
 
@@ -45,6 +46,26 @@ function renderVolume(entry, topVolumes) {
   return defaultValue(entry) + tag(detail);
 }
 
+function renderEnv(entry) {
+  if (typeof entry === 'string') {
+    const idx = entry.indexOf('=');
+    if (idx < 0) return defaultValue(entry);
+    const key = entry.slice(0, idx);
+    const value = entry.slice(idx + 1);
+    const masked = maskedValue(key, value);
+    return '<code title="' + esc(masked.reason || '') + '">' + esc(key + '=' + masked.text) + '</code>'
+      + (masked.masked ? tag('masked secret-like value') : '');
+  }
+  if (entry && typeof entry === 'object') {
+    return Object.entries(entry).map(([key, value]) => {
+      const masked = maskedValue(key, value);
+      return '<code title="' + esc(masked.reason || '') + '">' + esc(key + '=' + masked.text) + '</code>'
+        + (masked.masked ? tag('masked secret-like value') : '');
+    }).join(' ');
+  }
+  return defaultValue(entry);
+}
+
 function localHints(svc, topVolumes) {
   const hints = [];
   if (!svc.image && !svc.build) hints.push('No image or build source is declared.');
@@ -58,9 +79,71 @@ function localHints(svc, topVolumes) {
   return hints;
 }
 
+function composeIssues(services, topVolumes, text) {
+  const out = [];
+  for (const [name, svc] of Object.entries(services)) {
+    const line = lineOfService(text, name);
+    const image = String(svc.image || '');
+    if (svc.privileged === true) out.push({ severity: 'high', label: 'privileged', line: lineOfServiceKey(text, name, 'privileged') || line, message: `${name} runs with privileged container access.` });
+    if (svc.network_mode === 'host') out.push({ severity: 'warning', label: 'host network', line: lineOfServiceKey(text, name, 'network_mode') || line, message: `${name} shares the host network namespace.` });
+    if (svc.pid === 'host') out.push({ severity: 'warning', label: 'host pid', line: lineOfServiceKey(text, name, 'pid') || line, message: `${name} shares the host PID namespace.` });
+    if (image.endsWith(':latest') || (!/:/.test(image) && image)) out.push({ severity: 'warning', label: 'floating image', line: lineOfServiceKey(text, name, 'image') || line, message: `${name} uses an unpinned image tag.` });
+    for (const port of asArray(svc.ports)) {
+      const value = typeof port === 'object' ? JSON.stringify(port) : String(port);
+      if (/^(0\.0\.0\.0:)?\d+:\d+/.test(value) || /^"\d+:\d+"/.test(value)) {
+        out.push({ severity: 'info', label: 'published port', line: lineOfServiceKey(text, name, 'ports') || line, message: `${name} publishes ${value}; confirm it should be reachable from the host.` });
+      }
+    }
+    for (const volume of asArray(svc.volumes)) {
+      const raw = typeof volume === 'object' ? JSON.stringify(volume) : String(volume);
+      if (/docker\.sock/.test(raw)) out.push({ severity: 'high', label: 'docker socket', line: lineOfServiceKey(text, name, 'volumes') || line, message: `${name} mounts the Docker socket, which grants broad host control.` });
+    }
+    if (!svc.healthcheck && (svc.image || svc.build)) out.push({ severity: 'info', label: 'no healthcheck', line, message: `${name} has no healthcheck; depends_on will not wait for readiness.` });
+    const envEntries = asArray(svc.environment);
+    for (const env of envEntries) {
+      if (typeof env === 'string') {
+        const [key, value = ''] = env.split(/=(.*)/s);
+        if (maskedValue(key, value).masked) out.push({ severity: 'warning', label: 'secret env', line: lineOfServiceKey(text, name, 'environment') || line, message: `${name} includes secret-like environment key ${key}; value is masked in this view.` });
+      } else if (env && typeof env === 'object') {
+        for (const [key, value] of Object.entries(env)) {
+          if (maskedValue(key, value).masked) out.push({ severity: 'warning', label: 'secret env', line: lineOfServiceKey(text, name, 'environment') || line, message: `${name} includes secret-like environment key ${key}; value is masked in this view.` });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+function lineOfService(text, name) {
+  const re = new RegExp('^\\s{2}' + escapeRegExp(name) + ':\\s*$', 'm');
+  const m = re.exec(text || '');
+  return m ? (text.slice(0, m.index).match(/\n/g) || []).length + 1 : 1;
+}
+
+function lineOfServiceKey(text, name, key) {
+  const lines = String(text || '').split(/\r?\n/);
+  const start = lineOfService(text, name) - 1;
+  for (let i = start + 1; i < lines.length; i++) {
+    if (/^\s{2}\S/.test(lines[i])) break;
+    if (new RegExp('^\\s{4}' + escapeRegExp(key) + ':').test(lines[i])) return i + 1;
+  }
+  return 0;
+}
+
+function highlightComposeSourceLine(line) {
+  const envM = String(line).match(/^(\s*-\s*|[A-Za-z0-9_-]+\s*:\s*)?([A-Za-z0-9_.-]*(?:PASSWORD|TOKEN|SECRET|API_KEY|PRIVATE_KEY|CLIENT_SECRET)[A-Za-z0-9_.-]*)(\s*[:=]\s*)(.+)$/i);
+  if (!envM) return esc(line);
+  return esc(`${envM[1] || ''}${envM[2]}${envM[3]}********`);
+}
+
+function escapeRegExp(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export async function render(intake, _ctx) {
   const host = document.createElement('div');
   host.className = 'pj-doc';
+  ensureKnownUiStyle(host);
   let doc;
   try {
     const jsyaml = await loadGlobal(vendor('js-yaml/js-yaml.min.js'), 'jsyaml');
@@ -70,13 +153,15 @@ export async function render(intake, _ctx) {
   const services = doc.services && typeof doc.services === 'object' ? doc.services : {};
   const topVolumes = doc.volumes && typeof doc.volumes === 'object' ? doc.volumes : {};
   const names = Object.keys(services);
+  const issues = composeIssues(services, topVolumes, intake.text || '');
   const cards = names.map((name) => {
     const s = services[name] || {};
     const src = renderSource(s);
     const hints = localHints(s, topVolumes);
-    return '<section class="kf-svc"><h3>' + esc(name) + '</h3>'
+    const line = lineOfService(intake.text || '', name);
+    return '<section class="kf-svc" data-source-line="' + esc(line) + '"><h3>' + sourceLink(name, line) + '</h3>'
       + (src ? '<div class="kf-field"><span class="kf-fvals">' + src + '</span></div>' : '')
-      + field('ports', s.ports) + field('depends on', s.depends_on) + field('environment', s.environment)
+      + field('ports', s.ports) + field('depends on', s.depends_on) + field('environment', s.environment, renderEnv)
       + field('volumes', s.volumes, (volume) => renderVolume(volume, topVolumes)) + field('networks', s.networks)
       + (hints.length ? field('local hints', hints) : '') + '</section>';
   }).join('');
@@ -87,6 +172,10 @@ export async function render(intake, _ctx) {
   host.innerHTML = '<header class="pj-head"><h2>Compose stack</h2><p class="pj-meta">' + names.length
     + ' service' + (names.length === 1 ? '' : 's') + (doc.version ? ' · schema ' + esc(doc.version) : '') + '</p>' + extras + '</header>'
     + (cards || '<p class="pj-meta">No services defined.</p>');
+  const issueEl = issueList(issues, { title: 'Compose Review' });
+  if (issueEl) host.appendChild(issueEl);
+  host.appendChild(sourcePreview(intake.text || '', { title: 'Source', collapsed: true, idPrefix: 'compose-line', highlighter: highlightComposeSourceLine }));
+  wireSourceLinks(host, { idPrefix: 'compose-line' });
   return { parentNode: host };
 }
 
