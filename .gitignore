@@ -1,2 +1,5 @@
 node_modules/
 .example-files-internet/
+
+# Sokoban level sets solved but withheld pending author permission (see docs/games/sokoban/README.md)
+docs/games/sokoban/_held/

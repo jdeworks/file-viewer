@@ -11,6 +11,7 @@ const EXCLUDE = new Set(['asset-manifest.json', 'sw.js']);   // manifest + SW ma
 
 async function walk(dir, out) {
   for (const name of await readdir(dir)) {
+    if (name.startsWith('_')) continue;                     // _-prefixed dirs are local/scratch (e.g. _held) — never deployed
     const full = join(dir, name);
     const st = await stat(full);
     if (st.isDirectory()) await walk(full, out);
