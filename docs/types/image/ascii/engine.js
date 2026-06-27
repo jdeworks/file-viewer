@@ -11,7 +11,7 @@
 // page, so the engine is testable with canvas/option input.
 
 import { defaultOptions, newDirty } from './state.js';
-import { buildFilterString, applyThreshold, applySharpen, applyEdgeDetect } from './filters.js';
+import { processImage } from './process-image.js';
 import { imageToAscii } from './convert.js';
 import { renderAsciiToPre, renderAsciiToCanvas } from './render.js';
 
@@ -89,29 +89,10 @@ export function createAsciiEngine(initialOptions) {
     }
   }
 
-  function processImage() {
-    const w = sourceCanvas.width, h = sourceCanvas.height;
-    if (processedCanvas.width !== w || processedCanvas.height !== h) { processedCanvas.width = w; processedCanvas.height = h; }
-    const ctx = processedCanvas.getContext('2d', { willReadFrequently: true });
-    ctx.filter = buildFilterString(options);
-    ctx.clearRect(0, 0, w, h);
-    ctx.drawImage(sourceCanvas, 0, 0);
-    ctx.filter = 'none';
-    // JS-only passes — each no-ops at neutral, so the fast path stays fast.
-    const needJs = options.thresholdEnabled || options.sharpness || options.edgeDetection;
-    if (needJs) {
-      const img = ctx.getImageData(0, 0, w, h);
-      if (options.sharpness) applySharpen(img, options.sharpness);
-      if (options.edgeDetection) applyEdgeDetect(img, options.edgeDetection);
-      if (options.thresholdEnabled) applyThreshold(img, options.threshold);
-      ctx.putImageData(img, 0, 0);
-    }
-  }
-
   // Run only the dirty stages. Returns the current ASCII result (or null).
   function update() {
     if (!source || !sourceCanvas.width) return null;
-    if (dirty.processedImage) { processImage(); dirty.processedImage = false; dirty.ascii = true; }
+    if (dirty.processedImage) { processImage(sourceCanvas, processedCanvas, options); dirty.processedImage = false; dirty.ascii = true; }
     if (dirty.ascii) {
       const t0 = performance.now();
       result = imageToAscii(processedCanvas, sourceCanvas, options, scratch);
@@ -122,11 +103,62 @@ export function createAsciiEngine(initialOptions) {
     return result;
   }
 
-  // rAF-coalesced update; multiple scheduleUpdate() in one frame run once.
+  // ── Off-main-thread conversion (optional, feature-detected) ────────────────
+  // If a module Worker + OffscreenCanvas + createImageBitmap are available we convert in
+  // a Web Worker so the main thread never blocks; otherwise the synchronous update()
+  // path above runs unchanged (also what the headless unit tests use).
+  let renderMode = 'cells';                 // 'cells' (→ <pre>) | 'bitmap' (→ canvas)
+  let useWorker = typeof Worker !== 'undefined' && typeof OffscreenCanvas !== 'undefined'
+    && typeof createImageBitmap === 'function';
+  let worker = null, jobId = 0, syncOut = null;
+  const jobs = new Map();
+
+  function ensureWorker() {
+    if (worker || !useWorker) return worker;
+    try {
+      worker = new Worker(new URL('./convert-worker.js', import.meta.url), { type: 'module' });
+      worker.onmessage = (e) => { const j = jobs.get(e.data.id); if (j) { jobs.delete(e.data.id); j(e.data); } };
+      worker.onerror = () => { useWorker = false; };
+    } catch { useWorker = false; worker = null; }
+    return worker;
+  }
+  const postJob = (msg, transfer) => new Promise((resolve) => { jobs.set(msg.id, resolve); worker.postMessage(msg, transfer); });
+  function buildResult(reply) {
+    const cells = reply.cells; let cache;
+    return { columns: reply.columns, rows: reply.rows, cells, gap: '', braille: false,
+      get text() { return cache ??= cells.map((r) => r.map((c) => c.ch).join('')).join('\n') + '\n'; } };
+  }
+
+  // Convert the current source frame. 'bitmap' returns a DRAWABLE (ImageBitmap or canvas)
+  // for canvas consumers (webcam, file converter); 'cells' updates `result` for the <pre>.
+  // Always refreshes lastConvertMs + fires onResult; falls back to sync on any worker error.
+  async function convertNow(want = renderMode) {
+    if (!source || !sourceCanvas.width) return null;
+    if (useWorker) {
+      try {
+        ensureWorker();
+        if (worker) {
+          const id = ++jobId;
+          const bitmap = await createImageBitmap(sourceCanvas);
+          const reply = await postJob({ id, bitmap, options: { ...options }, want }, [bitmap]);
+          if (reply.error) throw new Error(reply.error);
+          lastConvertMs = reply.ms;
+          if (want !== 'bitmap') { result = buildResult(reply); if (onResult) onResult(result); return result; }
+          if (onResult) onResult(result, reply.bitmap);
+          return reply.bitmap;
+        }
+      } catch { useWorker = false; }
+    }
+    update();   // synchronous fallback (also fires onResult internally for 'cells')
+    if (want === 'bitmap') { if (!syncOut) syncOut = makeCanvas(); renderAsciiToCanvas(result, syncOut, options); return syncOut; }
+    return result;
+  }
+
+  // rAF-coalesced convert; multiple scheduleUpdate() in one frame run once.
   function scheduleUpdate() {
     if (pending) return;
     pending = true;
-    requestAnimationFrame(() => { pending = false; update(); });
+    requestAnimationFrame(() => { pending = false; convertNow(renderMode); });
   }
 
   return {
@@ -136,10 +168,13 @@ export function createAsciiEngine(initialOptions) {
     get processedCanvas() { return processedCanvas; },
     get sourceCanvas() { return sourceCanvas; },
     setSource, grabFrame, setOptions, markDirty, update, scheduleUpdate,
+    setRenderMode(m) { renderMode = m; },
+    convertFrame: (want) => convertNow(want),          // async; returns drawable ('bitmap') or result ('cells')
     // Re-draw the source (e.g. after a rotate/flip change) then schedule a convert.
     regrab() { if (grabFrame()) { markDirty('processedImage'); scheduleUpdate(); } },
     onResult(fn) { onResult = fn; },
     renderToPre: (pre) => result && renderAsciiToPre(result, pre, options),
     renderToCanvas: (canvas) => result && renderAsciiToCanvas(result, canvas, options),
+    terminate() { if (worker) { worker.terminate(); worker = null; } jobs.clear(); },
   };
 }

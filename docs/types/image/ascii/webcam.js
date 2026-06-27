@@ -118,21 +118,30 @@ export function mountAsciiWebcam(host, opts = {}) {
     peekCanvas.getContext('2d').drawImage(src, 0, 0, peekCanvas.width, peekCanvas.height);
   }
 
-  let lastCW = 0, lastCH = 0;
-  function renderFrame() {
+  let lastCW = 0, lastCH = 0, inFlight = false;
+  // Convert off the main thread (engine worker) and draw the returned bitmap. The
+  // in-flight guard drops frames rather than queueing when the worker can't keep up.
+  async function renderFrame() {
+    if (inFlight) return;
+    inFlight = true;
     const t0 = now();
     engine.grabFrame();
-    engine.update();
-    engine.renderToCanvas(out);
-    if (out.width !== lastCW || out.height !== lastCH) { lastCW = out.width; lastCH = out.height; applyFit(); }
-    if (eyeOn) paintOrig();
-    const ms = now() - t0;
-    frames++;
-    const elapsed = now() - fpsClock;
-    if (elapsed >= 500) {
-      stats.textContent = `${Math.round(frames * 1000 / elapsed)} fps · ${ms.toFixed(1)} ms · ${engine.result?.columns || 0}×${engine.result?.rows || 0}`;
-      frames = 0; fpsClock = now();
-    }
+    try {
+      const drawable = await engine.convertFrame('bitmap');
+      if (!running || !drawable) return;
+      if (out.width !== drawable.width || out.height !== drawable.height) { out.width = drawable.width; out.height = drawable.height; }
+      out.getContext('2d').drawImage(drawable, 0, 0);
+      drawable.close?.();
+      if (out.width !== lastCW || out.height !== lastCH) { lastCW = out.width; lastCH = out.height; applyFit(); }
+      if (eyeOn) paintOrig();
+      const ms = now() - t0;
+      frames++;
+      const elapsed = now() - fpsClock;
+      if (elapsed >= 500) {
+        stats.textContent = `${Math.round(frames * 1000 / elapsed)} fps · ${ms.toFixed(1)} ms · ${out.width}×${out.height}`;
+        frames = 0; fpsClock = now();
+      }
+    } finally { inFlight = false; }
   }
   function loopRVFC() { if (!running) return; if (!paused) renderFrame(); video.requestVideoFrameCallback(loopRVFC); }
   function loopRAF(ts) { if (!running) return; if (!paused && ts - last >= minInterval) { last = ts; renderFrame(); } requestAnimationFrame(loopRAF); }
