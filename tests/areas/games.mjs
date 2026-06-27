@@ -695,19 +695,23 @@ export async function run(ctx) {
     save.currentStage = 2;
     save.unlockedStages = [1, 2];
     save.defeated = [1];
-    // The cipher.txt + challenge-boss actions only surface once the final floor is reached
-    // (boss.reached); preset it so the boss flow is exercisable without walking all floors.
-    save.stageState = save.stageState || {};
-    save.stageState[2] = { run: { boss: { reached: true } } };
     localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save));
     window.__fv.games.open();
   });
   await page.waitForSelector('.games-overlay:not([hidden])', { timeout: 8000 });
   await page.click('.games-card[data-game="metagame"]');
   await page.waitForSelector('.stage2-glyph-dungeon', { timeout: 8000 });
-  await page.click('[data-action="boss"]');
-  const locked = await page.$eval('[data-field="bossStatus"]', (el) => el.textContent);
-  if (/LOCKED/.test(locked)) pass('Stage 2 boss starts locked before search action'); else fail('Stage 2 lock status: ' + locked);
+  await page.waitForFunction(() => !!window.__fvStage2, null, { timeout: 8000 });
+
+  // Descend the full body — all three acts (Warrens / Cisterns & Emberworks / The Overflow) — to the
+  // boss via the deterministic body solver (no real-time roguelite play). Confirms the boss sits at
+  // the END of the 9-floor body and is reachable only after the descent (MAX_FLOOR=9).
+  const body = await page.evaluate(() => window.__fvStage2.bodySolver());
+  if (body.reached && body.floor >= 9) pass('Stage 2 body: descended all 3 acts to the floor-9 boss'); else fail('Stage 2 body solver: ' + JSON.stringify(body));
+
+  // The boss is gated: attempting it before the cipher.txt search un-cheat must stay LOCKED.
+  const lockedPre = await page.evaluate(() => { window.__fvStage2.bossSolver(); return window.__fvStage2.lockState().unlocked; });
+  if (lockedPre === false) pass('Stage 2 boss starts locked before search action'); else fail('Stage 2 boss not locked pre-search');
 
   await page.evaluate(async () => {
     await window.__fv.searchViewerFile('/docs/examples/metagame/stage2/cipher.txt', 'PASSAGE');
@@ -718,10 +722,10 @@ export async function run(ctx) {
       return Boolean(save.actions?.['2.search_passage'] && save.achievements?.['stage2.search_passage']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  await page.waitForFunction(() => /UNLOCKED/.test(document.querySelector('[data-field="bossStatus"]')?.textContent || ''), null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__fvStage2 && window.__fvStage2.lockState().unlocked, null, { timeout: 5000 });
   pass('Stage 2 search action unlocks boss and achievement');
 
-  await page.click('[data-action="boss"]');
+  await page.evaluate(() => window.__fvStage2.bossSolver());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));

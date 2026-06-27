@@ -313,6 +313,21 @@ export function renderStage2({
   repaint();
   startMonsterClocks();
 
+  // TEST/DEBUG hook (window.__fvStage2) — drives the headless smoke deterministically (no real-time
+  // play): descend the three acts to the boss, then clear it AFTER the real cipher.txt search un-cheat.
+  // Not a player affordance and NOT a bypass — bossSolver still needs the search action to have
+  // unlocked the gate (challengeBoss records a locked attempt otherwise).
+  window.__fvStage2 = {
+    state: () => state,
+    dev,
+    move,
+    step: move,
+    bodySolver,
+    descendToBoss: bodySolver,
+    lockState: () => getBossLockState({ actions, state }),
+    bossSolver: challengeBoss
+  };
+
   // Dev-menu cheats for this stage (see index.js stageMeta.devControls). Map = the full-map overlay.
   function dev(id) {
     const e = state.run.entity;
@@ -334,9 +349,19 @@ export function renderStage2({
       if (flashTimer) clearTimeout(flashTimer);
       stopMonsterClocks();
       view.destroy();
+      if (window.__fvStage2) delete window.__fvStage2;
       root.remove();
     }
   };
+
+  // Fast-forward the BODY: descend every floor of all three acts until the boss syntax is reached
+  // (descend() sets boss.reached at MAX_FLOOR). Deterministic — pure floor lifecycle, no clocks.
+  function bodySolver() {
+    let guard = 0;
+    while (!state.run.boss.reached && guard++ < 64) descend(state);
+    persistAndPaint();
+    return { floor: state.run.floor, reached: state.run.boss.reached };
+  }
 
   // Five shared real-time clocks (0.4–0.8s); each ticks one bucket of monsters so they advance
   // without the player. A monster's bucket is fixed at generation. Paused while a panel is open

@@ -2800,6 +2800,16 @@ function renderStage2({
   });
   repaint();
   startMonsterClocks();
+  window.__fvStage2 = {
+    state: () => state,
+    dev,
+    move,
+    step: move,
+    bodySolver,
+    descendToBoss: bodySolver,
+    lockState: () => getBossLockState({ actions, state }),
+    bossSolver: challengeBoss
+  };
   function dev(id) {
     const e = state.run.entity;
     if (id === "heal") e.hp = e.maxHp;
@@ -2828,9 +2838,16 @@ function renderStage2({
       if (flashTimer) clearTimeout(flashTimer);
       stopMonsterClocks();
       view.destroy();
+      if (window.__fvStage2) delete window.__fvStage2;
       root.remove();
     }
   };
+  function bodySolver() {
+    let guard = 0;
+    while (!state.run.boss.reached && guard++ < 64) descend(state);
+    persistAndPaint();
+    return { floor: state.run.floor, reached: state.run.boss.reached };
+  }
   function tickBucket(bucket) {
     if (overlay || state.run.boss.reached || state.run.boss.defeated) return;
     const world = state.run.world;
