@@ -1,17 +1,23 @@
-// Decode an input file into a uniform list of frames for the ASCII converter:
-//   { width, height, kind:'gif'|'video', frames:[{ canvas, delayMs }] }
-// GIF reuses the existing gifuct decoder; video samples frames at a chosen fps via the
-// seek→seeked→drawImage pattern (same approach as docs/core/ocr/frames.js).
+// Frame sources for the ASCII converter. Both yield frames ONE AT A TIME (an async
+// iterator) so the converter can decode→convert→encode→release each frame without ever
+// holding the whole clip in memory — that's what lets long videos convert without OOM.
+//   • gifFrames  — decode a GIF up front (GIFs are small) and iterate the frames.
+//   • videoFrameStream — seek a <video> at `fps` on demand, drawing into ONE reused,
+//     size-capped canvas (consumed by the converter before the next seek overwrites it).
 import { decodeGifFrames } from '../gif-decode.js';
 
-// Animated/!animated GIF → per-frame canvases with their real delays.
-export async function gifFrames(bytes) {
-  const { width, height, frames } = await decodeGifFrames(bytes);
-  return { width, height, kind: 'gif', frames };
+// Async-iterate a decoded GIF's frames ({ canvas, delayMs, index, total }).
+export async function* gifFrames(bytes, { signal } = {}) {
+  const { frames } = await decodeGifFrames(bytes);
+  for (let i = 0; i < frames.length; i++) {
+    if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
+    yield { canvas: frames[i].canvas, delayMs: frames[i].delayMs, index: i, total: frames.length };
+  }
 }
 
-// Sample a <video> at `fps`, capped at `maxFrames` (thinned evenly if longer).
-export async function videoFrames(file, { fps = 12, maxFrames = 600, signal, onProgress } = {}) {
+// Stream a video as frames at `fps`. `maxWidth` caps the decode size (the engine works
+// at ≤1024 anyway, so full-res decode just wastes memory). No frame-count cap.
+export async function* videoFrameStream(file, { fps = 12, maxWidth = 1280, signal } = {}) {
   const url = URL.createObjectURL(file);
   const video = document.createElement('video');
   video.muted = true; video.preload = 'auto'; video.src = url;
@@ -21,25 +27,20 @@ export async function videoFrames(file, { fps = 12, maxFrames = 600, signal, onP
       video.addEventListener('error', () => rej(new Error('video failed to load')), { once: true });
     });
     const duration = video.duration || 0;
-    const w = video.videoWidth || 1, h = video.videoHeight || 1;
-    let times = [];
-    for (let t = 0; t < duration; t += 1 / fps) times.push(t);
-    if (!times.length) times = [0];
-    if (times.length > maxFrames) {
-      const step = times.length / maxFrames;
-      times = Array.from({ length: maxFrames }, (_, i) => times[Math.floor(i * step)]);
-    }
+    const vw = video.videoWidth || 1, vh = video.videoHeight || 1;
+    const scale = Math.min(1, maxWidth / Math.max(vw, vh));
+    const w = Math.max(1, Math.round(vw * scale)), h = Math.max(1, Math.round(vh * scale));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
     const delayMs = Math.round(1000 / fps);
-    const frames = [];
-    for (let i = 0; i < times.length; i++) {
+    const total = Math.max(1, Math.ceil(duration * fps));
+    for (let i = 0; i < total; i++) {
       if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
-      await seekTo(video, times[i]);
-      const c = document.createElement('canvas'); c.width = w; c.height = h;
-      c.getContext('2d', { willReadFrequently: true }).drawImage(video, 0, 0, w, h);
-      frames.push({ canvas: c, delayMs });
-      onProgress?.({ done: i + 1, total: times.length, phase: 'decode' });
+      await seekTo(video, i / fps);
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(video, 0, 0, w, h);
+      yield { canvas: c, delayMs, index: i, total };   // reused canvas — consumed before the next seek
     }
-    return { width: w, height: h, kind: 'video', frames };
   } finally {
     URL.revokeObjectURL(url);
   }

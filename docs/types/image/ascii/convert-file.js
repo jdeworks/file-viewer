@@ -4,8 +4,8 @@
 // add it back into the studio. Lazy-loaded from studio.js on demand.
 import { makeFloatingPanel } from './floating-panel.js';
 import { createAsciiEngine } from './engine.js';
-import { gifFrames, videoFrames } from './video-frames.js';
-import { encodeGif, encodeWebm } from './encode.js';
+import { gifFrames, videoFrameStream } from './video-frames.js';
+import { createGifSink, createWebmSink } from './encode.js';
 
 let cssDone = false;
 function injectStyle() {
@@ -71,44 +71,48 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     const signal = aborter.signal;
     pick.hidden = true; cancelBtn.hidden = false; prog.hidden = false; preview.hidden = false;
     dlBtn.hidden = true; studioBtn.hidden = true;
+    const fps = 12;
     const engine = createAsciiEngine(options);
     engine.setRenderMode('bitmap');
+    // Stream decode → convert → encode → release, one frame at a time (flat memory, any
+    // length). gif-in → GIF (delays preserved); video-in → WebM (real-time MediaRecorder).
+    const isGif = /gif/i.test(file.type) || /\.gif$/i.test(file.name);
+    const source = isGif ? gifFrames(new Uint8Array(await file.arrayBuffer()), { signal })
+      : videoFrameStream(file, { fps, signal });
+    const sink = isGif ? await createGifSink() : createWebmSink({ fps });
+    const name = `${baseName}-ascii.${isGif ? 'gif' : 'webm'}`;
+    const mime = isGif ? 'image/gif' : 'video/webm';
+    const conv = document.createElement('canvas');     // reused: rendered ASCII frame → sink
+    const cctx = conv.getContext('2d');
     try {
-      const isGif = /gif/i.test(file.type) || /\.gif$/i.test(file.name);
-      status.textContent = 'Decoding…';
-      const src = isGif
-        ? await gifFrames(new Uint8Array(await file.arrayBuffer()))
-        : await videoFrames(file, { fps: 12, signal, onProgress: () => {} });
-      const { frames, kind } = src;
-      if (!frames.length) throw new Error('no frames decoded');
-      const out = [];
-      let lastPreview = 0;
-      for (let i = 0; i < frames.length; i++) {
+      let count = 0, lastPreview = 0;
+      if (!isGif) status.textContent = 'Recording in real time…';
+      for await (const frame of source) {
         if (signal.aborted) throw new DOMException('aborted', 'AbortError');
-        engine.setSource(frames[i].canvas);
-        const drawable = await engine.convertFrame('bitmap');
-        const c = document.createElement('canvas'); c.width = drawable.width; c.height = drawable.height;
-        c.getContext('2d').drawImage(drawable, 0, 0);
+        engine.setSource(frame.canvas);
+        const drawable = await engine.convertFrame('bitmap');   // off the main thread (worker)
+        if (conv.width !== drawable.width || conv.height !== drawable.height) { conv.width = drawable.width; conv.height = drawable.height; }
+        cctx.clearRect(0, 0, conv.width, conv.height);
+        cctx.drawImage(drawable, 0, 0);
         drawable.close?.();
-        out.push({ canvas: c, delayMs: frames[i].delayMs });
-        prog.value = ((i + 1) / frames.length) * 0.8;
-        status.textContent = `Converting frame ${i + 1}/${frames.length}…`;
+        await sink.addFrame(conv, frame.delayMs);
+        count++;
+        if (frame.total) prog.value = Math.min(0.99, (frame.index + 1) / frame.total);
+        status.textContent = `Converting frame ${frame.index + 1}${frame.total ? '/' + frame.total : ''}…`;
         const t = performance.now();
-        if (t - lastPreview > 500) { lastPreview = t; showPreview(c); }
+        if (t - lastPreview > 500) { lastPreview = t; showPreview(conv); }
       }
-      engine.terminate();
-      showPreview(out[out.length - 1].canvas);
+      if (!count) throw new Error('no frames decoded');
       status.textContent = 'Encoding…';
-      const onP = (e) => { prog.value = 0.8 + (e.done / e.total) * 0.2; };
-      let blob, name, mime;
-      if (kind === 'gif') { blob = await encodeGif(out, { signal, onProgress: onP }); name = `${baseName}-ascii.gif`; mime = 'image/gif'; }
-      else { blob = await encodeWebm(out, { fps: 12, signal, onProgress: onP }); name = `${baseName}-ascii.webm`; mime = 'video/webm'; }
+      const blob = await sink.finish();
+      engine.terminate();
       prog.value = 1;
-      status.textContent = `Done — ${frames.length} frames, ${(blob.size / 1024).toFixed(0)} KB.`;
+      status.textContent = `Done — ${count} frames, ${(blob.size / 1024).toFixed(0)} KB.`;
       cancelBtn.hidden = true; dlBtn.hidden = false; studioBtn.hidden = !onAddToStudio;
       dlBtn.onclick = () => download(blob, name);
       studioBtn.onclick = () => onAddToStudio?.(blob, name, mime);
     } catch (err) {
+      try { await sink.finish?.(); } catch { /* discard partial */ }
       engine.terminate();
       status.textContent = err && err.name === 'AbortError' ? 'Cancelled.' : 'Failed: ' + ((err && err.message) || err);
       cancelBtn.hidden = true; pick.hidden = false; prog.hidden = true;
