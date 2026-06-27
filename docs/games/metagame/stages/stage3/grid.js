@@ -8,6 +8,7 @@ import { lineDone } from "./board.js";
 
 const GLYPH = { [FILLED]: "#", [EMPTY]: "✕", [UNKNOWN]: "·" };
 const CLASS = { [FILLED]: "s3-fill", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
+const marksFilled = (marks, x, y) => marks[y][x] === FILLED;
 
 export function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
@@ -87,6 +88,21 @@ export function buildGrid(puzzle, handlers) {
     for (let c = 0; c < width; c += 1) {
       const d = lineDone(puzzle, marks, "col", c);
       if (d !== doneCol[c]) { doneCol[c] = d; colClueEls[c].forEach((e) => e.classList.toggle("s3-done", d)); }
+    }
+    decorateVolatile(board);
+  }
+
+  // Re-assert volatile/locked decoration each update (idempotent) — the state loop above rebuilds a
+  // changed cell's className, so these extra classes must be toggled after it (like the cursor class).
+  function decorateVolatile(board) {
+    if (!board.volatile) return;
+    for (const k of board.volatile) {
+      const [x, y] = k.split(",").map(Number);
+      const el = cells[y][x].el;
+      const filled = marksFilled(board.marks, x, y);
+      const locked = board.locked && board.locked.has(k);
+      el.classList.toggle("s3-locked", filled && locked);
+      el.classList.toggle("s3-volatile", filled && !locked);
     }
   }
 

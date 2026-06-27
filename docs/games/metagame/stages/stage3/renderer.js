@@ -6,6 +6,7 @@ import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCel
 import { FILLED, UNKNOWN } from "./nonogram.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
 import { installStage3Hook } from "./s3debug.js";
+import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -36,7 +37,7 @@ export function renderStage3(ctx) {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space fill · x mark · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space fill · x mark · l lock volatile · click fills, right-click marks</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
@@ -89,6 +90,8 @@ export function renderStage3(ctx) {
     board.checksUsed = 0;
     board.mistakes = 0;
     if (fresh && upgradeLevel(state, "prefetch")) { applyPrefetch(board, upgradeLevel(state, "prefetch")); state.run.marks = encodeMarks(board.marks); }
+    // Volatile cells (corruption ≥ 2): a seeded subset of fills decays after a few moves unless locked.
+    initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => { board.cursor = { x, y }; applyCell(x, y, mark); } });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
@@ -96,11 +99,20 @@ export function renderStage3(ctx) {
 
   function applyCell(x, y, mark) {
     if (board.solved) return;
+    const reverted = tickVolatile(board, isSolved); // advance the move clock; decay overdue volatiles
     if (setCell(board, x, y, mark)) board.mistakes = (board.mistakes || 0) + 1; // a wrong fill
+    if (!mark && board.marks[y][x] === FILLED) noteFill(board, x, y); // start this cell's decay timer
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
+    if (reverted.length) { grid.flashWrong(reverted); pushLog(state, `${reverted.length} volatile cell${reverted.length === 1 ? "" : "s"} decayed — lock fills with l.`); }
     if (board.solved) onSolved();
     else { save?.(); paintHud(); }
+  }
+
+  // Lock the volatile cell under the cursor so it stops decaying (the working-memory verb).
+  function lockUnderCursor() {
+    if (!board.volatile || board.solved) return;
+    if (lockCell(board, board.cursor.x, board.cursor.y)) { grid.update(board); save?.(); paintHud(); }
   }
 
   // A solved snapshot: bank registers (size² + a small no-mistake-ish base), retain a fragment every
@@ -139,9 +151,11 @@ export function renderStage3(ctx) {
     const size = sizeForRun(state.run, state.shopUpgrades);
     setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
+    const vol = volatileStatus(board);
+    const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
     setText(fields.objective, board.solved
       ? "snapshot restored — drawing the next…"
-      : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit. clear snapshots to retain fragments.`);
+      : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
@@ -202,7 +216,8 @@ export function renderStage3(ctx) {
       return;
     }
     if (event.key === " " || event.key === "f" || event.key === "F") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, false); return; }
-    if (event.key === "x" || event.key === "X") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, true); }
+    if (event.key === "x" || event.key === "X") { event.preventDefault(); applyCell(board.cursor.x, board.cursor.y, true); return; }
+    if (event.key === "l" || event.key === "L") { event.preventDefault(); lockUnderCursor(); }
   };
   window.addEventListener("keydown", onKey);
 

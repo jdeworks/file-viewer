@@ -184,8 +184,8 @@ function runLengths(line) {
 }
 var ARR_CACHE = /* @__PURE__ */ new Map();
 function arrangements(n, clues) {
-  const key = n + ":" + clues.join(",");
-  const hit = ARR_CACHE.get(key);
+  const key2 = n + ":" + clues.join(",");
+  const hit = ARR_CACHE.get(key2);
   if (hit) return hit;
   const out = [];
   function rec(pos, ci, mask) {
@@ -204,7 +204,7 @@ function arrangements(n, clues) {
   }
   if (clues.length === 0) out.push(0);
   else rec(0, 0, 0);
-  ARR_CACHE.set(key, out);
+  ARR_CACHE.set(key2, out);
   return out;
 }
 function consistent(mask, cells) {
@@ -420,6 +420,7 @@ function progress(puzzle, marks) {
 // ../../docs/games/metagame/stages/stage3/grid.js
 var GLYPH = { [FILLED]: "#", [EMPTY]: "✕", [UNKNOWN]: "·" };
 var CLASS = { [FILLED]: "s3-fill", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
+var marksFilled = (marks, x, y) => marks[y][x] === FILLED;
 function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
   const rowDisp = rowClues.map((c) => c.length ? c : [0]);
@@ -506,6 +507,18 @@ function buildGrid(puzzle, handlers) {
         doneCol[c] = d;
         colClueEls[c].forEach((e) => e.classList.toggle("s3-done", d));
       }
+    }
+    decorateVolatile(board);
+  }
+  function decorateVolatile(board) {
+    if (!board.volatile) return;
+    for (const k of board.volatile) {
+      const [x, y] = k.split(",").map(Number);
+      const el = cells[y][x].el;
+      const filled = marksFilled(board.marks, x, y);
+      const locked = board.locked && board.locked.has(k);
+      el.classList.toggle("s3-locked", filled && locked);
+      el.classList.toggle("s3-volatile", filled && !locked);
     }
   }
   function flashWrong(list, ms = 1400) {
@@ -597,12 +610,86 @@ function installStage3Hook(api) {
       };
     },
     deriveKey: () => diffKeyFromState(api.state),
-    tryRestoreKey: (key) => api.tryRestoreKey(key),
+    tryRestoreKey: (key2) => api.tryRestoreKey(key2),
     bossSolver: () => api.bossSolver()
   };
   return () => {
     if (window.__fvStage3) delete window.__fvStage3;
   };
+}
+
+// ../../docs/games/metagame/stages/stage3/s3volatile.js
+var VOLATILE_AT = 2;
+var key = (x, y) => `${x},${y}`;
+function decayWindow(corruption) {
+  return Math.max(3, 8 - Number(corruption || 0));
+}
+function volatileCount(corruption, filled) {
+  const want = 2 + (Number(corruption || 0) - VOLATILE_AT);
+  return Math.max(0, Math.min(filled - 1, want));
+}
+function initVolatile(board, corruption, seed) {
+  if (Number(corruption || 0) < VOLATILE_AT) return board;
+  const filledCells = [];
+  for (let y = 0; y < board.puzzle.height; y += 1) {
+    for (let x = 0; x < board.puzzle.width; x += 1) {
+      if (board.puzzle.solution[y][x] === FILLED) filledCells.push(key(x, y));
+    }
+  }
+  const n = volatileCount(corruption, filledCells.length);
+  if (n <= 0) return board;
+  const picked = makeRng(`s3-volatile:${seed}`).shuffle(filledCells).slice(0, n);
+  board.volatile = new Set(picked);
+  board.locked = /* @__PURE__ */ new Set();
+  board.volFilledAt = /* @__PURE__ */ new Map();
+  board.ticks = 0;
+  board.decayWindow = decayWindow(corruption);
+  for (const k of board.volatile) {
+    const [x, y] = k.split(",").map(Number);
+    if (board.marks[y][x] === FILLED) board.locked.add(k);
+  }
+  return board;
+}
+function noteFill(board, x, y) {
+  if (!board.volatile) return;
+  const k = key(x, y);
+  if (board.volatile.has(k) && !board.locked.has(k)) board.volFilledAt.set(k, board.ticks);
+}
+function lockCell(board, x, y) {
+  if (!board.volatile) return false;
+  const k = key(x, y);
+  if (!board.volatile.has(k) || board.locked.has(k)) return false;
+  if (board.marks[y][x] !== FILLED) return false;
+  board.locked.add(k);
+  board.volFilledAt.delete(k);
+  return true;
+}
+function tickVolatile(board, isSolvedFn) {
+  if (!board.volatile) return [];
+  board.ticks += 1;
+  const reverted = [];
+  for (const [k, at] of board.volFilledAt) {
+    if (board.locked.has(k)) {
+      board.volFilledAt.delete(k);
+      continue;
+    }
+    if (board.ticks - at >= board.decayWindow) {
+      const [x, y] = k.split(",").map(Number);
+      if (board.marks[y][x] === FILLED) {
+        board.marks[y][x] = UNKNOWN;
+        reverted.push({ x, y });
+      }
+      board.volFilledAt.delete(k);
+    }
+  }
+  if (reverted.length && typeof isSolvedFn === "function") board.solved = isSolvedFn(board.puzzle, board.marks);
+  return reverted;
+}
+function volatileStatus(board) {
+  if (!board.volatile) return null;
+  let atRisk = 0;
+  for (const k of board.volatile) if (!board.locked.has(k) && board.volFilledAt.has(k)) atRisk += 1;
+  return { total: board.volatile.size, locked: board.locked.size, atRisk, window: board.decayWindow };
 }
 
 // ../../docs/games/metagame/stages/stage3/renderer.js
@@ -644,7 +731,7 @@ function renderStage3(ctx) {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space fill · x mark · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space fill · x mark · l lock volatile · click fills, right-click marks</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
@@ -700,6 +787,7 @@ function renderStage3(ctx) {
       applyPrefetch(board, upgradeLevel(state, "prefetch"));
       state.run.marks = encodeMarks(board.marks);
     }
+    initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
     grid = buildGrid(puzzle, { onCell: (x, y, mark) => {
       board.cursor = { x, y };
       applyCell(x, y, mark);
@@ -709,11 +797,25 @@ function renderStage3(ctx) {
   }
   function applyCell(x, y, mark) {
     if (board.solved) return;
+    const reverted = tickVolatile(board, isSolved);
     if (setCell(board, x, y, mark)) board.mistakes = (board.mistakes || 0) + 1;
+    if (!mark && board.marks[y][x] === FILLED) noteFill(board, x, y);
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
+    if (reverted.length) {
+      grid.flashWrong(reverted);
+      pushLog(state, `${reverted.length} volatile cell${reverted.length === 1 ? "" : "s"} decayed — lock fills with l.`);
+    }
     if (board.solved) onSolved();
     else {
+      save?.();
+      paintHud();
+    }
+  }
+  function lockUnderCursor() {
+    if (!board.volatile || board.solved) return;
+    if (lockCell(board, board.cursor.x, board.cursor.y)) {
+      grid.update(board);
       save?.();
       paintHud();
     }
@@ -750,7 +852,9 @@ function renderStage3(ctx) {
     const size = sizeForRun(state.run, state.shopUpgrades);
     setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
-    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit. clear snapshots to retain fragments.`);
+    const vol = volatileStatus(board);
+    const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
+    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
@@ -834,6 +938,11 @@ function renderStage3(ctx) {
     if (event.key === "x" || event.key === "X") {
       event.preventDefault();
       applyCell(board.cursor.x, board.cursor.y, true);
+      return;
+    }
+    if (event.key === "l" || event.key === "L") {
+      event.preventDefault();
+      lockUnderCursor();
     }
   };
   window.addEventListener("keydown", onKey);
@@ -874,8 +983,8 @@ function renderStage3(ctx) {
     if (board.solved) onSolved();
     return true;
   }
-  function tryRestoreKey(key) {
-    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key });
+  function tryRestoreKey(key2) {
+    const result = tryRestoreDiffKey({ state, actions, achievements, bell, input: key2 });
     save?.();
     paintHud();
     return result;
