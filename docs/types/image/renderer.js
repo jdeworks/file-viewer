@@ -401,7 +401,19 @@ export async function render(intake, ctx = {}) {
     if (advActive) leaveAdv();
     advController?.clear();   // Reset clears the vector overlay too (ADV_EDIT.md)
     core.reset();             // …and core.reset() has the final say on dirty/onBinaryEdit
+    selection?.clear();       // drop any selection mask (its overlay would otherwise dangle)
+    viewCtl.fitView();        // realign the image to fit so overlays aren't left displaced
   });
+
+  // The toolbar grows/shrinks as modes change (Edit ↔ Adv, tab switches), which moves the
+  // image within the stage. Re-align every overlay (view + draw + selection + vector) on any
+  // bar resize so selections/objects never drift out of register with the pixels they mark.
+  let barRO = null;
+  const barEl = host.querySelector('.imgv-bar');
+  if (barEl && typeof ResizeObserver === 'function') {
+    barRO = new ResizeObserver(() => apply());   // apply() syncs draw/selection overlays + (via applyPan) the vector overlay
+    barRO.observe(barEl);
+  }
 
   // Geometry — rotate / flip / crop / resize (edit-geometry.js). Crop registers
   // in editTools so panning stands down during a crop drag.
@@ -511,5 +523,5 @@ export async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector('.imgv-bg-checker') : null;
   bgChecker?.addEventListener('change', () => img.classList.toggle('imgv-checker', bgChecker.checked));
 
-  return { parentNode: host, revoke: () => { advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
+  return { parentNode: host, revoke: () => { barRO?.disconnect(); advController?.destroy(); selection?.teardown(); unregisterUndoKeys?.(); viewCtl.teardown(); compareView?.destroy?.(); asciiStudio?.destroy?.(); URL.revokeObjectURL(url); core.revoke(); bgTool.teardown(); host._ss?.stop(); } };
 }

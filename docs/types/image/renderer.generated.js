@@ -185,6 +185,12 @@ function createView(ctx) {
     panX = 0;
     panY = 0;
   }
+  function fitView() {
+    fit = true;
+    zoom = 1;
+    resetView();
+    apply();
+  }
   function setNatural(n) {
     natural = n;
     apply();
@@ -293,6 +299,7 @@ function createView(ctx) {
     apply,
     applyPan,
     resetView,
+    fitView,
     zoomAt,
     setNatural,
     teardown() {
@@ -5160,7 +5167,15 @@ async function render(intake, ctx = {}) {
     if (advActive) leaveAdv();
     advController?.clear();
     core.reset();
+    selection?.clear();
+    viewCtl.fitView();
   });
+  let barRO = null;
+  const barEl = host.querySelector(".imgv-bar");
+  if (barEl && typeof ResizeObserver === "function") {
+    barRO = new ResizeObserver(() => apply());
+    barRO.observe(barEl);
+  }
   const geometryTool = mountGeometry({ host, img, url, mime, core, view, els, onGeometry });
   editTools.push(geometryTool);
   selection = mountSelection({
@@ -5267,6 +5282,7 @@ async function render(intake, ctx = {}) {
   const bgChecker = canEdit ? host.querySelector(".imgv-bg-checker") : null;
   bgChecker?.addEventListener("change", () => img.classList.toggle("imgv-checker", bgChecker.checked));
   return { parentNode: host, revoke: () => {
+    barRO?.disconnect();
     advController?.destroy();
     selection?.teardown();
     unregisterUndoKeys?.();
