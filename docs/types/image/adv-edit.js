@@ -5,6 +5,7 @@ import { mountAdvPrecision } from './adv-edit-precision.js';
 import { mountAdvPointEditor } from './adv-edit-points.js';
 import { installTextControls, syncTextControls } from './adv-edit-text.js';
 import { DEFAULTS, advToolbarHtml } from './adv-edit-toolbar.js';
+import { openImageOcrPanel } from './ocr-ui.js';
 
 let konvaPromise = null;
 export function loadKonva() {
@@ -246,6 +247,8 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
   });
 
   $('.imgv-adv-add').addEventListener('click', addText);
+  // OCR reads a flattened canvas of the current image (heavy engine lazy-loads on click, behind a consent gate).
+  $('.imgv-adv-ocr').addEventListener('click', () => openImageOcrPanel({ host: stageHost, getCanvas: () => flattenToCanvas() }));
   $('.imgv-adv-rect').addEventListener('click', () => addShape('rect'));
   $('.imgv-adv-ellipse').addEventListener('click', () => addShape('ellipse'));
   $('.imgv-adv-line').addEventListener('click', () => addShape('line'));
