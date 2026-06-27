@@ -5,10 +5,7 @@
 # line here and commit. Empty (no id lines) = done; loop stops. Bar = arduino-sketch / solidity-lang.
 # Check remaining: node tests/check-known-backlog.mjs
 elixir-lang
-elm-lang
 elvish-script
-fsharp-lang
-gnuplot-script
 haskell-lang
 idris-lang
 ink-script
