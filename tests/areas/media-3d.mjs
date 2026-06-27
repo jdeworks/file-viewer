@@ -1426,6 +1426,81 @@ export async function run(ctx) {
   if (openedWebm !== false && mediaDownload.name === 'webcam-recording.webm' && /^blob:/.test(mediaDownload.href)) pass('video studio exposes direct download for opened webcam recording');
   else fail('media download: ' + JSON.stringify({ openedWebm, mediaDownload }));
 
+  // ── ASCII sampling on SPARSE / TRANSPARENT sources ── thin strokes over transparency used
+  // to speckle into "black spots" as Columns rose (point/box samplers + a hard alpha cutoff).
+  // The default is now coverage-correct 'average', so raising Columns must PRESERVE detail, and
+  // the new "Fill enclosed gaps" toggle fills only interior holes (real background stays clear).
+  await page.goto(origin, { waitUntil: 'load' });
+  // A sparse transparent fixture: thin opaque diagonal strokes on a 256² transparent canvas.
+  const sparsePng = await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const x = c.getContext('2d');
+    x.strokeStyle = '#808080'; x.lineWidth = 1;   // mid-grey → maps to a real glyph (not white→space)
+    for (let i = -256; i < 256; i += 12) { x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 256, 256); x.stroke(); }
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    return [...new Uint8Array(await blob.arrayBuffer())];
+  });
+  await page.evaluate((arr) => window.__fv.openBlobFile(new Blob([new Uint8Array(arr)], { type: 'image/png' }), 'sparse.png', { mime: 'image/png' }), sparsePng);
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).catch(() => {});
+  await page.click('#previewHost .imgv-ascii-btn');
+  await page.waitForSelector('#previewHost .asx-root .asx-out', { timeout: 15000 });
+  // Default sampling method must be the robust 'average'.
+  const defSampling = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="samplingMethod"]', (el) => el.value).catch(() => null);
+  const setAsx = (key, value) => page.evaluate(({ key, value }) => {
+    const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
+    if (el) { el.value = String(value); el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, { key, value });
+  const setAsxCheck = (key, on) => page.evaluate(({ key, on }) => {
+    const el = document.querySelector(`#previewHost .asx-panel .asx-ctl-input[data-key="${key}"]`);
+    if (el) { el.checked = on; el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, { key, on });
+  // Non-space ratio of the rendered <pre> at a given column count (settles via the worker).
+  const nonSpaceRatio = async (cols) => {
+    await setAsx('columns', cols);
+    await page.waitForTimeout(400);
+    return page.$eval('#previewHost .asx-out', (el) => {
+      const t = el.textContent.replace(/\n/g, '');
+      if (!t.length) return 0;
+      let nb = 0; for (const ch of t) if (ch !== ' ') nb++;
+      return nb / t.length;
+    });
+  };
+  const r100 = await nonSpaceRatio(100);
+  const r180 = await nonSpaceRatio(180);
+  // Detail preserved: the higher-column output keeps a comparable amount of ink (doesn't collapse
+  // to mostly-spaces the way point sampling did). Allow a band; the key is it does NOT crater.
+  const detailPreserved = r100 > 0.04 && r180 > 0.6 * r100;
+  if (defSampling === 'average' && detailPreserved) pass('ASCII sampling: default is coverage-correct average; raising Columns preserves detail on sparse art (' + r100.toFixed(2) + '→' + r180.toFixed(2) + ')');
+  else fail('ascii sparse sampling: ' + JSON.stringify({ defSampling, r100, r180 }));
+  // Fill enclosed gaps: load an opaque RING (transparent centre + transparent outside). With the
+  // toggle ON the enclosed centre fills; the true (corner) background stays a transparent space.
+  await page.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const x = c.getContext('2d');
+    x.strokeStyle = '#808080'; x.lineWidth = 12; x.strokeRect(30, 30, 68, 68);   // opaque grey ring only
+    const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    window.__fv.openBlobFile(new Blob([buf], { type: 'image/png' }), 'ring.png', { mime: 'image/png' });
+  });
+  await page.waitForSelector('#previewHost .imgv-img', { timeout: 10000 }).catch(() => {});
+  await page.click('#previewHost .imgv-ascii-btn');
+  await page.waitForSelector('#previewHost .asx-root .asx-out', { timeout: 15000 });
+  await setAsx('columns', 80);
+  await page.waitForTimeout(400);
+  // Probe the centre cell (interior hole) + a corner (true background).
+  const probe = () => page.$eval('#previewHost .asx-out', (el) => {
+    const lines = el.textContent.split('\n').filter((l) => l.length);
+    const mid = lines[Math.floor(lines.length / 2)] || '';
+    return { center: mid[Math.floor(mid.length / 2)] || '', corner: (lines[0] || '')[0] || '' };
+  });
+  const gapsOff = await probe();
+  await setAsxCheck('fillGaps', true);
+  await page.waitForTimeout(500);
+  const gapsOn = await probe();
+  // OFF: interior is a transparent space. ON: interior fills (non-space). Corner stays background.
+  const fillOk = gapsOff.center === ' ' && gapsOn.center !== ' ' && gapsOn.corner === ' ';
+  if (fillOk) pass('ASCII fill enclosed gaps: interior hole fills on toggle, real background stays transparent'); else fail('ascii fill gaps: ' + JSON.stringify({ gapsOff, gapsOn }));
+
   // ── AVIF parity ── AVIF must expose the SAME editor toolbar as PNG/JPEG/WebP
   // (canEdit), not just fit/zoom + ASCII. Regression guard for EDITABLE_MIME.
   await page.goto(origin, { waitUntil: 'load' });

@@ -9,6 +9,7 @@
 import { resolveRamp, luminanceToChar, luminance709, clamp } from './charsets.js';
 import { gridFromCanvas } from './sample.js';
 import { ditherLuminance } from './dither.js';
+import { fillEnclosedGaps } from './gap-fill.js';
 
 const ALPHA_CUTOFF = 16; // below this a cell renders as a transparent space
 
@@ -61,11 +62,20 @@ export function imageToAscii(processed, original, o, scratch) {
       // Glyph + transparency are driven ONLY by the processed image, so switching
       // the colour source never changes the symbols/shape — only the RGB colour.
       const pa = lumGridData[i + 3];
-      const ch = pa < ALPHA_CUTOFF ? ' ' : luminanceToChar(L, ramp, o.invertRamp);
+      // Coverage-aware tone: fade the glyph toward the ramp's empty (light) end as the cell's
+      // alpha coverage drops, so partial coverage anti-aliases smoothly instead of flipping
+      // between a full glyph and a space (the "black spots" on sparse/transparent art). Opaque
+      // cells (coverage=1) are unchanged. A near-empty cell stays a clean transparent space.
+      const cov = pa / 255;
+      const Leff = L * cov + 255 * (1 - cov);
+      const ch = pa < ALPHA_CUTOFF ? ' ' : luminanceToChar(Leff, ramp, o.invertRamp);
       rowCells.push({ ch, r: colorData[i], g: colorData[i + 1], b: colorData[i + 2], a: pa, luminance: L });
     }
     cells.push(rowCells);
   }
+  // Optional: fill INTERIOR transparent holes (enclosed by content) from their neighbours,
+  // leaving the genuine border-connected transparent background untouched. Off by default.
+  if (o.fillGaps) fillEnclosedGaps(cells, columns, rows, ramp, o.invertRamp, ALPHA_CUTOFF);
   const getText = lazyText(cells);
   return { columns, rows, cells, get text() { return getText(); }, gap: '', braille: false };
 }

@@ -39,13 +39,16 @@ function blockGrid(canvas, cols, rows, mode) {
         out[o] = data[s]; out[o + 1] = data[s + 1]; out[o + 2] = data[s + 2]; out[o + 3] = data[s + 3];
       } else if (mode === 'median') {
         out.set(medianBlock(data, w, x0, x1, y0, y1), o);
-      } else { // average
-        let r = 0, g = 0, b = 0, a = 0, n = 0;
+      } else { // average — ALPHA-WEIGHTED so the colour is the straight (un-premultiplied)
+        // tint of the covered pixels and the alpha is the cell's mean coverage. This keeps a
+        // sparse/transparent cell's colour vivid (coverage lives in alpha, not a dimmed RGB) and
+        // matches the downscale representation, so convert.js can apply the coverage fade once.
+        let r = 0, g = 0, b = 0, aw = 0, a = 0, n = 0;
         for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
-          const s = (y * w + x) * 4;
-          r += data[s]; g += data[s + 1]; b += data[s + 2]; a += data[s + 3]; n++;
+          const s = (y * w + x) * 4, al = data[s + 3];
+          r += data[s] * al; g += data[s + 1] * al; b += data[s + 2] * al; aw += al; a += al; n++;
         }
-        out[o] = r / n; out[o + 1] = g / n; out[o + 2] = b / n; out[o + 3] = a / n;
+        out[o] = aw ? r / aw : 0; out[o + 1] = aw ? g / aw : 0; out[o + 2] = aw ? b / aw : 0; out[o + 3] = a / n;
       }
     }
   }

@@ -15,6 +15,7 @@ const GROUPS = [
     { key: 'zoom', label: 'Zoom', kind: 'range', min: 0.25, max: 4, step: 0.05, display: true },
     { key: 'spaceDensity', label: 'Space density', kind: 'range', min: 1, max: 3, step: 0.1, display: true },
     { key: 'fontAspect', label: 'Font aspect', kind: 'range', min: 0.3, max: 1, step: 0.05, dirty: ['ascii'] },
+    { key: 'fillGaps', label: 'Fill enclosed gaps', kind: 'checkbox', dirty: ['ascii'] },
   ]],
   ['Characters', true, [
     { key: 'gradientName', label: 'Gradient', kind: 'select', options: [...Object.keys(GRADIENTS)], dirty: ['ascii'] },
