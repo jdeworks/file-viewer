@@ -4,7 +4,7 @@ import { createGameLoop } from './game-loop.js';
 import { createEngine } from './engine.js';
 import { renderTrackGrid } from './render-track.js';
 import { ROUNDS, roundByIdx, isBossRound, FINAL_ROUND_ID } from './rounds.js';
-import { UPGRADES, buyUpgrade } from './shop.js';
+import { UPGRADES, buyUpgrade, levelOf, maxLevelOf, costOf, isMaxed } from './shop.js';
 import { roundLogLine, GLYPH_LEGEND } from './content.js';
 import { BTS_PATH, TRANSMISSION_HUM_PATH } from './messages.js';
 
@@ -169,14 +169,20 @@ export function renderStage5(ctx) {
   }
 
   function renderShop() {
+    const shop = state.shop || {};
     fields.shop.replaceChildren(...UPGRADES.map((u) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.dataset.buy = u.id;
-      const owned = Boolean(state.shop?.[u.id]);
-      btn.disabled = owned || mode === 'playing' || Number(state.packets) < u.cost;
+      const level = levelOf(shop, u.id);
+      const max = maxLevelOf(u.id);
+      const maxed = isMaxed(shop, u.id);
+      const cost = costOf(shop, u.id);
+      btn.disabled = maxed || mode === 'playing' || Number(state.packets) < cost;
       btn.title = u.desc;
-      btn.textContent = owned ? `${u.label} ✓` : `${u.label} (${u.cost}p)`;
+      btn.textContent = maxed
+        ? `${u.label} ${level}/${max} ✓`
+        : `${u.label} ${level}/${max} (${cost}p)`;
       return btn;
     }));
   }

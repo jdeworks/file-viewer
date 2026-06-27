@@ -17,12 +17,9 @@ import { placePowerups, isPowerup, powerupType, durationTicks, POWERUPS } from '
 import { makeParGhost, ghostFromRecording, createRecorder, medalFor } from './ghost.js';
 import { applyForks, resolveRow } from './fork.js';
 
-const LOOK_AHEAD = 8;
-const BASE_SPEED = 1;
-const OVERCLOCK_SPEED = 1.6;
-const BUMP_DAMAGE = 1;       // sharing a lane with a rival chips a little integrity…
-const BUMP_SLOW = 0.5;       // …and bleeds race speed for that tick.
 const BUMP_COOLDOWN = 10;    // ticks before the same rival can bump again
+// Look-ahead / speeds / bump costs all come from the vehicle-shop tuning now (applyUpgrades), so a
+// kitted-out racer reads further, runs faster, and shrugs off bumps. See shop.js BASE_TUNING.
 
 export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost }) {
   const round = roundOverride || roundByIdx(roundIdx);
@@ -54,7 +51,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   run.lane = clampLane(run.lane);
   run.roundIdx = roundIdx;
   run.roundComplete = false;
-  run.integrity = 100;
+  run.integrity = tuning.maxIntegrity;
+  run.maxIntegrity = tuning.maxIntegrity;
   run.onBeatCount = 0;
   run.totalSwitches = 0;
   run.gatesThisRound = 0;
@@ -109,9 +107,9 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       if (tick < bumpReady[i]) return;
       if (Math.round(effDist(i) - race.distance) !== 0) return;
       if (r.laneAt(tick) !== run.lane) return;
-      run.integrity -= BUMP_DAMAGE;
+      run.integrity -= tuning.bumpDamage;
       bumpReady[i] = tick + BUMP_COOLDOWN;
-      slow = BUMP_SLOW;
+      slow = tuning.bumpSlow;
     });
     return slow;
   }
@@ -133,8 +131,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   function collectPowerup(type) {
     run.powerupsCollected = Number(run.powerupsCollected || 0) + 1;
     if (type === 'shield') buffs.shieldUntil = tick + durationTicks('shield', tickMs);
-    else if (type === 'overclock') buffs.overclockUntil = tick + durationTicks('overclock', tickMs);
-    else if (type === 'repair') run.integrity = Math.min(100, run.integrity + POWERUPS.repair.amount);
+    else if (type === 'overclock') buffs.overclockUntil = tick + durationTicks('overclock', tickMs, tuning.overclockBonusMs);
+    else if (type === 'repair') run.integrity = Math.min(tuning.maxIntegrity, run.integrity + POWERUPS.repair.amount);
     else if (type === 'cache') {
       const p = POWERUPS.cache.amount;
       state.packets = Number(state.packets || 0) + p;
@@ -145,7 +143,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   function paint() {
     onPaint?.({
       table, tick, lane: run.lane, round, integrity: run.integrity, gates: run.gatesThisRound,
-      suppressionActive, lookAhead: LOOK_AHEAD, race, lap: race.lap(), laps: race.laps,
+      suppressionActive, lookAhead: tuning.lookAhead, race, lap: race.lap(), laps: race.laps,
       progress: race.progress(), archetype: race.archetype, rivals: rivalView(),
       position: run.position, fieldSize: rivals.length + 1,
       channel, inFork: inForkSpan(tick), hasFork: Boolean(round.hasFork),
@@ -162,7 +160,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     if (done || target === run.lane) return;
     run.totalSwitches += 1;
     const row = rowAt(tick);
-    if (row && row.beatOpen === false) run.integrity -= 1; // off-beat switch penalty
+    if (row && row.beatOpen === false) run.integrity -= tuning.offBeatPenalty; // off-beat switch penalty
     else run.onBeatCount += 1;
     run.lane = target;
     paint();
@@ -200,9 +198,9 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     return null;
   }
 
-  // Player race speed this tick — base, lifted while an overclock buff is live.
+  // Player race speed this tick — vehicle top speed, lifted while an overclock buff is live.
   function speedFor() {
-    return tick < buffs.overclockUntil ? OVERCLOCK_SPEED : BASE_SPEED;
+    return tick < buffs.overclockUntil ? tuning.overclockSpeed : tuning.topSpeed;
   }
 
   function finish(result) {
@@ -231,10 +229,10 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       position = effRivals.length ? finishPosition(effRivals, tick) : 1;
       run.position = position;
       const onBeatPct = run.totalSwitches > 0 ? run.onBeatCount / run.totalSwitches : 1;
-      const multiplier = positionMultiplier(position, rivals.length + 1);
+      const multiplier = positionMultiplier(position, rivals.length + 1) * tuning.packetMult;
       packets = calcRoundPackets({
         roundId: round.id, onBeatPct, integrityRemaining: run.integrity,
-        gatesCollected: run.gatesThisRound, upgrades: state.shop || {}, multiplier,
+        gatesCollected: run.gatesThisRound, gateValue: tuning.gateValue, multiplier,
       });
       state.packets = Number(state.packets || 0) + packets;
     }

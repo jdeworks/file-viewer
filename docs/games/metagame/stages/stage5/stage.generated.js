@@ -398,37 +398,158 @@ function isBossRound(roundIdx) {
 }
 
 // ../../docs/games/metagame/stages/stage5/shop.js
+var BASE_TUNING = {
+  noiseDamage: 2,
+  // ░ static hit damage
+  topSpeed: 1,
+  // base race pace (distance/tick)
+  maxIntegrity: 100,
+  // hull cap
+  overclockSpeed: 1.6,
+  // pace while an overclock buff is live
+  overclockBonusMs: 0,
+  // extra overclock duration
+  lookAhead: 8,
+  // rows of track drawn ahead
+  offBeatPenalty: 1,
+  // integrity lost on an off-beat lane switch
+  bumpDamage: 1,
+  // integrity lost sharing a lane with a rival
+  bumpSlow: 0.5,
+  // speed lost on a bump
+  gateValue: 5,
+  // packets per boost gate
+  packetMult: 1
+  // overall packet reward multiplier
+};
 var UPGRADES = [
-  { id: "noiseFilter", label: "Noise Filter", cost: 60, desc: "Reduces ░ hit damage from 2 to 1." },
-  { id: "spectrumAnalyzer", label: "Spectrum Analyzer", cost: 80, desc: "Widens the beat window by 1 extra tick." },
-  { id: "signalAmplifier", label: "Signal Amplifier", cost: 100, desc: "Boost gate value: 5 → 8 packets." }
+  {
+    id: "engine",
+    label: "Engine",
+    desc: "Higher top speed on every track.",
+    cost: 50,
+    costScale: 1.6,
+    maxLevel: 4,
+    effect: (t, l) => {
+      t.topSpeed = +(1 + 0.07 * l).toFixed(3);
+    }
+  },
+  {
+    id: "chassis",
+    label: "Chassis",
+    desc: "More hull integrity to spend on hits.",
+    cost: 60,
+    costScale: 1.6,
+    maxLevel: 4,
+    effect: (t, l) => {
+      t.maxIntegrity = 100 + 12 * l;
+    }
+  },
+  {
+    id: "cooling",
+    label: "Cooling",
+    desc: "Stronger, longer overclock bursts.",
+    cost: 70,
+    costScale: 1.7,
+    maxLevel: 3,
+    effect: (t, l) => {
+      t.overclockSpeed = +(1.6 + 0.12 * l).toFixed(3);
+      t.overclockBonusMs = 500 * l;
+    }
+  },
+  {
+    id: "navArray",
+    label: "Nav Array",
+    desc: "See more rows ahead — read tunnels & forks sooner.",
+    cost: 55,
+    costScale: 1.7,
+    maxLevel: 3,
+    effect: (t, l) => {
+      t.lookAhead = 8 + l;
+    }
+  },
+  {
+    id: "traction",
+    label: "Traction",
+    desc: "Off-beat switches & rival bumps cost less.",
+    cost: 50,
+    costScale: 1.6,
+    maxLevel: 3,
+    effect: (t, l) => {
+      t.offBeatPenalty = +Math.max(0, 1 - 0.3 * l).toFixed(3);
+      t.bumpSlow = +Math.max(0.1, 0.5 - 0.12 * l).toFixed(3);
+      t.bumpDamage = +Math.max(0, 1 - 0.3 * l).toFixed(3);
+    }
+  },
+  {
+    id: "signalAmp",
+    label: "Signal Amp",
+    desc: "Boost gates & packet rewards pay more.",
+    cost: 60,
+    costScale: 1.6,
+    maxLevel: 3,
+    effect: (t, l) => {
+      t.gateValue = 5 + 2 * l;
+      t.packetMult = +(1 + 0.08 * l).toFixed(3);
+    }
+  },
+  {
+    id: "noiseFilter",
+    label: "Noise Filter",
+    desc: "Less damage from ░ static.",
+    cost: 55,
+    costScale: 1.7,
+    maxLevel: 2,
+    effect: (t, l) => {
+      t.noiseDamage = +Math.max(0.5, 2 - 0.75 * l).toFixed(3);
+    }
+  }
 ];
-var BASE = { noiseDamage: 2, beatWindowBonus: 0, gateValue: 5 };
-function applyUpgrades(shop = {}, base = BASE) {
-  return {
-    noiseDamage: shop.noiseFilter ? 1 : base.noiseDamage,
-    beatWindowBonus: shop.spectrumAnalyzer ? base.beatWindowBonus + 1 : base.beatWindowBonus,
-    gateValue: shop.signalAmplifier ? 8 : base.gateValue
-  };
+var byId = new Map(UPGRADES.map((u) => [u.id, u]));
+function levelOf(shop, id) {
+  return Math.max(0, Math.floor(Number(shop?.[id]) || 0));
+}
+function maxLevelOf(id) {
+  const def = byId.get(id);
+  return def ? Math.max(1, Number(def.maxLevel) || 1) : 0;
+}
+function isMaxed(shop, id) {
+  return levelOf(shop, id) >= maxLevelOf(id);
+}
+function costOf(shop, id) {
+  const def = byId.get(id);
+  if (!def || isMaxed(shop, id)) return Infinity;
+  const scale = Number.isFinite(Number(def.costScale)) ? Number(def.costScale) : 1;
+  return Math.round((Number(def.cost) || 0) * Math.pow(scale, levelOf(shop, id)));
+}
+function applyUpgrades(shop = {}, base = BASE_TUNING) {
+  const t = { ...base };
+  for (const def of UPGRADES) {
+    const level = levelOf(shop, def.id);
+    if (level > 0 && typeof def.effect === "function") def.effect(t, level);
+  }
+  return t;
 }
 function buyUpgrade(state, id) {
-  const def = UPGRADES.find((u) => u.id === id);
+  const def = byId.get(id);
   if (!def) return { bought: false, reason: "unknown" };
-  if (state.shop?.[id]) return { bought: false, reason: "owned" };
-  if (Number(state.packets || 0) < def.cost) return { bought: false, reason: "insufficient" };
-  state.packets = Number(state.packets) - def.cost;
-  state.shop = { ...state.shop || {}, [id]: true };
-  return { bought: true, reason: "ok", cost: def.cost };
+  const shop = state.shop = state.shop && typeof state.shop === "object" ? state.shop : {};
+  if (isMaxed(shop, id)) return { bought: false, reason: "maxed" };
+  const cost = costOf(shop, id);
+  if (Number(state.packets || 0) < cost) return { bought: false, reason: "insufficient", cost };
+  state.packets = Number(state.packets) - cost;
+  shop[id] = levelOf(shop, id) + 1;
+  return { bought: true, reason: "ok", cost, level: shop[id] };
 }
 
 // ../../docs/games/metagame/stages/stage5/economy.js
 var BASE_PACKETS = { 1: 30, 2: 40, 3: 50, 4: 60, 5: 70, 6: 80, 7: 90, 8: 95, 9: 100 };
-function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, upgrades = {}, multiplier = 1 }) {
+function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gatesCollected = 0, gateValue = 5, upgrades, multiplier = 1 }) {
   const base = BASE_PACKETS[roundId] ?? 30;
   const accuracy = Math.floor(clamp01(onBeatPct) * 20);
   const survival = Math.floor(Math.max(0, integrityRemaining) * 0.3);
-  const gateValue = upgrades.signalAmplifier ? 8 : 5;
-  const gates = Math.max(0, gatesCollected) * gateValue;
+  const gv = upgrades && upgrades.signalAmplifier ? 8 : Number(gateValue) || 5;
+  const gates = Math.max(0, gatesCollected) * gv;
   const subtotal = base + accuracy + survival + gates;
   const mult = Number.isFinite(Number(multiplier)) && multiplier > 0 ? Number(multiplier) : 1;
   return Math.max(10, Math.round(subtotal * mult));
@@ -598,11 +719,11 @@ function placePowerups(table, rng, round = {}) {
   }
   return table;
 }
-function durationTicks(type, getTickMs) {
+function durationTicks(type, getTickMs, bonusMs = 0) {
   const def = POWERUPS[type];
   if (!def || !def.durationMs) return 0;
   const ms = Math.max(1, Number(getTickMs && getTickMs()) || 130);
-  return Math.max(1, Math.ceil(def.durationMs / ms));
+  return Math.max(1, Math.ceil((def.durationMs + Math.max(0, Number(bonusMs) || 0)) / ms));
 }
 
 // ../../docs/games/metagame/stages/stage5/ghost.js
@@ -709,11 +830,6 @@ function resolveRow(row, channel) {
 }
 
 // ../../docs/games/metagame/stages/stage5/game-loop.js
-var LOOK_AHEAD = 8;
-var BASE_SPEED = 1;
-var OVERCLOCK_SPEED = 1.6;
-var BUMP_DAMAGE = 1;
-var BUMP_SLOW = 0.5;
 var BUMP_COOLDOWN = 10;
 function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, getTickMs, roundOverride, prevGhost }) {
   const round = roundOverride || roundByIdx(roundIdx);
@@ -740,7 +856,8 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   run.lane = clampLane3(run.lane);
   run.roundIdx = roundIdx;
   run.roundComplete = false;
-  run.integrity = 100;
+  run.integrity = tuning.maxIntegrity;
+  run.maxIntegrity = tuning.maxIntegrity;
   run.onBeatCount = 0;
   run.totalSwitches = 0;
   run.gatesThisRound = 0;
@@ -793,9 +910,9 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       if (tick < bumpReady[i]) return;
       if (Math.round(effDist(i) - race.distance) !== 0) return;
       if (r.laneAt(tick) !== run.lane) return;
-      run.integrity -= BUMP_DAMAGE;
+      run.integrity -= tuning.bumpDamage;
       bumpReady[i] = tick + BUMP_COOLDOWN;
-      slow = BUMP_SLOW;
+      slow = tuning.bumpSlow;
     });
     return slow;
   }
@@ -817,8 +934,8 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
   function collectPowerup(type) {
     run.powerupsCollected = Number(run.powerupsCollected || 0) + 1;
     if (type === "shield") buffs.shieldUntil = tick + durationTicks("shield", tickMs);
-    else if (type === "overclock") buffs.overclockUntil = tick + durationTicks("overclock", tickMs);
-    else if (type === "repair") run.integrity = Math.min(100, run.integrity + POWERUPS.repair.amount);
+    else if (type === "overclock") buffs.overclockUntil = tick + durationTicks("overclock", tickMs, tuning.overclockBonusMs);
+    else if (type === "repair") run.integrity = Math.min(tuning.maxIntegrity, run.integrity + POWERUPS.repair.amount);
     else if (type === "cache") {
       const p = POWERUPS.cache.amount;
       state.packets = Number(state.packets || 0) + p;
@@ -834,7 +951,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       integrity: run.integrity,
       gates: run.gatesThisRound,
       suppressionActive,
-      lookAhead: LOOK_AHEAD,
+      lookAhead: tuning.lookAhead,
       race,
       lap: race.lap(),
       laps: race.laps,
@@ -857,7 +974,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     if (done || target === run.lane) return;
     run.totalSwitches += 1;
     const row = rowAt(tick);
-    if (row && row.beatOpen === false) run.integrity -= 1;
+    if (row && row.beatOpen === false) run.integrity -= tuning.offBeatPenalty;
     else run.onBeatCount += 1;
     run.lane = target;
     paint();
@@ -900,7 +1017,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
     return null;
   }
   function speedFor() {
-    return tick < buffs.overclockUntil ? OVERCLOCK_SPEED : BASE_SPEED;
+    return tick < buffs.overclockUntil ? tuning.overclockSpeed : tuning.topSpeed;
   }
   function finish(result) {
     if (done) return;
@@ -925,13 +1042,13 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       position = effRivals.length ? finishPosition(effRivals, tick) : 1;
       run.position = position;
       const onBeatPct = run.totalSwitches > 0 ? run.onBeatCount / run.totalSwitches : 1;
-      const multiplier = positionMultiplier(position, rivals.length + 1);
+      const multiplier = positionMultiplier(position, rivals.length + 1) * tuning.packetMult;
       packets = calcRoundPackets({
         roundId: round.id,
         onBeatPct,
         integrityRemaining: run.integrity,
         gatesCollected: run.gatesThisRound,
-        upgrades: state.shop || {},
+        gateValue: tuning.gateValue,
         multiplier
       });
       state.packets = Number(state.packets || 0) + packets;
@@ -1284,14 +1401,18 @@ function renderStage5(ctx) {
     }));
   }
   function renderShop() {
+    const shop = state.shop || {};
     fields.shop.replaceChildren(...UPGRADES.map((u) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.dataset.buy = u.id;
-      const owned = Boolean(state.shop?.[u.id]);
-      btn.disabled = owned || mode === "playing" || Number(state.packets) < u.cost;
+      const level = levelOf(shop, u.id);
+      const max = maxLevelOf(u.id);
+      const maxed = isMaxed(shop, u.id);
+      const cost = costOf(shop, u.id);
+      btn.disabled = maxed || mode === "playing" || Number(state.packets) < cost;
       btn.title = u.desc;
-      btn.textContent = owned ? `${u.label} ✓` : `${u.label} (${u.cost}p)`;
+      btn.textContent = maxed ? `${u.label} ${level}/${max} ✓` : `${u.label} ${level}/${max} (${cost}p)`;
       return btn;
     }));
   }
@@ -1408,11 +1529,8 @@ function defaultState(context = {}) {
       clearedRounds: 0
       // how many non-boss rounds finished (boss gated behind this)
     },
-    shop: {
-      noiseFilter: false,
-      spectrumAnalyzer: false,
-      signalAmplifier: false
-    },
+    // vehicle shop: per-part rank levels { [partId]: level }. Empty = a stock racer.
+    shop: {},
     // time-trial: prior-best ghost transcripts keyed by round id { [id]: { tick, lanes, dist } }.
     timeTrial: {},
     log: ["signal racer mounted.", "the jammer is already in the racing line."]
