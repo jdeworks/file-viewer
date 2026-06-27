@@ -120,12 +120,22 @@ export function mountAsciiStudio(host, opts = {}) {
     // export's transparentFrame); also keep it out of the fit-width calculation.
     const pad = 8 + (engine.options.transparentFrame || 0);
     pre.style.padding = pad + 'px';
-    const avail = Math.max(40, pre.clientWidth - pad * 2);
-    // monospace advance ≈ 0.6em; include letter-spacing so the fit stays exact.
-    const fs = (avail / (r.columns * 0.6 * sd)) * (engine.options.zoom || 1);
+    const fam = fontFamily(engine.options);
+    const avail = Math.max(40, pre.clientWidth - pad * 2 - 1);   // -1: never round UP into a scrollbar
+    // Measure the REAL monospace advance for the active font (DejaVu ≈ 0.602, not 0.6) so
+    // the fit doesn't overshoot and trigger a horizontal scrollbar.
+    const fs = (avail / (r.columns * advanceRatio(fam) * sd)) * (engine.options.zoom || 1);
     pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
-    pre.style.fontFamily = fontFamily(engine.options);   // selectable output font
-    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * 0.6).toFixed(3) + 'em' : '';
+    pre.style.fontFamily = fam;
+    pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * advanceRatio(fam)).toFixed(3) + 'em' : '';
+  }
+  // Advance width (em) of a monospace glyph in the given family — measured, not assumed.
+  // Re-measured each call so it picks up the real font once it finishes loading.
+  let advCtx = null;
+  function advanceRatio(family) {
+    if (!advCtx) advCtx = document.createElement('canvas').getContext('2d');
+    advCtx.font = `100px ${family}`;
+    return (advCtx.measureText('M').width || 60) / 100;
   }
   // Collapse decisions are based on the STUDIO's own width, not the viewport —
   // the file-viewer preview pane can be narrow while the window is wide, so a
@@ -223,7 +233,9 @@ export function mountAsciiStudio(host, opts = {}) {
     engine.renderToCanvas(c);
     downloadPng(baseName + '.png', c);
   });
-  ensureAsciiFont();   // warm the font so the first <pre> + export aren't on a fallback
+  // Warm the font, then re-fit: the first <pre> lays out with a fallback (advance ≈0.6);
+  // once DejaVu (≈0.602) swaps in it's slightly wider, so re-run the fit to avoid a scrollbar.
+  ensureAsciiFont().then(() => applyDisplay());
   // Geometric transforms — re-draw the source then reconvert (works on image + video).
   q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; regrabBusy(); });
   q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; regrabBusy(); });
