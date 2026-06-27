@@ -481,6 +481,74 @@ function makeTwoColorPuzzle(seed, { width = 7, height = 7 } = {}) {
   return fallback2(w, h);
 }
 
+// ../../docs/games/metagame/stages/stage3/s3aliased.js
+var ALIASED_AT = 3;
+var ALIAS_GLYPH = "?";
+function aliasCount(corruption) {
+  return Math.max(0, Math.min(4, Number(corruption || 0) - (ALIASED_AT - 1)));
+}
+function solveWithHidden(rowClues, colClues, hiddenRows, hiddenCols) {
+  const H = rowClues.length;
+  const W = colClues.length;
+  const grid = Array.from({ length: H }, () => new Array(W).fill(UNKNOWN));
+  let changed = true;
+  let passes = 0;
+  while (changed) {
+    changed = false;
+    passes += 1;
+    if (passes > 2e3) break;
+    for (let r = 0; r < H; r += 1) {
+      if (hiddenRows.has(r)) continue;
+      const res = lineSolve(grid[r], rowClues[r]);
+      if (!res) return false;
+      if (res.changed) {
+        grid[r] = res.out;
+        changed = true;
+      }
+    }
+    for (let c = 0; c < W; c += 1) {
+      if (hiddenCols.has(c)) continue;
+      const col = grid.map((row) => row[c]);
+      const res = lineSolve(col, colClues[c]);
+      if (!res) return false;
+      if (res.changed) {
+        for (let r = 0; r < H; r += 1) grid[r][c] = res.out[r];
+        changed = true;
+      }
+    }
+  }
+  return grid.every((row) => row.every((v) => v !== UNKNOWN));
+}
+function aliasedLines(puzzle, corruption, seed) {
+  const target = aliasCount(corruption);
+  if (target <= 0) return { rows: [], cols: [] };
+  const candidates = [];
+  for (let r = 0; r < puzzle.height; r += 1) candidates.push({ kind: "r", i: r });
+  for (let c = 0; c < puzzle.width; c += 1) candidates.push({ kind: "c", i: c });
+  const order = makeRng(`s3-alias:${seed}`).shuffle(candidates);
+  const hiddenRows = /* @__PURE__ */ new Set();
+  const hiddenCols = /* @__PURE__ */ new Set();
+  let count = 0;
+  for (const cand of order) {
+    if (count >= target) break;
+    const set = cand.kind === "r" ? hiddenRows : hiddenCols;
+    set.add(cand.i);
+    if (solveWithHidden(puzzle.rowClues, puzzle.colClues, hiddenRows, hiddenCols)) count += 1;
+    else set.delete(cand.i);
+  }
+  return { rows: [...hiddenRows].sort((a, b) => a - b), cols: [...hiddenCols].sort((a, b) => a - b) };
+}
+function attachAliased(puzzle, corruption, seed) {
+  if (!puzzle || puzzle.twoColor || Number(corruption || 0) < ALIASED_AT) return puzzle;
+  const aliased = aliasedLines(puzzle, corruption, seed);
+  if (aliased.rows.length || aliased.cols.length) puzzle.aliased = aliased;
+  return puzzle;
+}
+function aliasedTotal(puzzle) {
+  const a = puzzle && puzzle.aliased;
+  return a ? a.rows.length + a.cols.length : 0;
+}
+
 // ../../docs/games/metagame/stages/stage3/board.js
 var CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
@@ -498,7 +566,9 @@ function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
   const corruption = corruptionForRun(run);
   if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  const puzzle = makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  if (corruption >= ALIASED_AT) attachAliased(puzzle, corruption, `${run.seed}:${run.index}`);
+  return puzzle;
 }
 function applyPrefetch(board, count) {
   if (!count) return board;
@@ -603,8 +673,10 @@ var clueLen = (c) => typeof c === "object" ? c.len : c;
 var clueColor = (c) => typeof c === "object" ? c.color : 0;
 function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
-  const rowDisp = rowClues.map((c) => c.length ? c : [0]);
-  const colDisp = colClues.map((c) => c.length ? c : [0]);
+  const aliasRows = new Set(puzzle.aliased && puzzle.aliased.rows || []);
+  const aliasCols = new Set(puzzle.aliased && puzzle.aliased.cols || []);
+  const rowDisp = rowClues.map((c, r) => aliasRows.has(r) ? [ALIAS_GLYPH] : c.length ? c : [0]);
+  const colDisp = colClues.map((c, k) => aliasCols.has(k) ? [ALIAS_GLYPH] : c.length ? c : [0]);
   const maxRow = Math.max(1, ...rowDisp.map((c) => c.length));
   const maxCol = Math.max(1, ...colDisp.map((c) => c.length));
   const wrap = document.createElement("div");
@@ -619,6 +691,11 @@ function buildGrid(puzzle, handlers) {
   const clueEl = (n) => {
     const el = document.createElement("span");
     el.className = "s3-clue";
+    if (n === ALIAS_GLYPH) {
+      el.textContent = ALIAS_GLYPH;
+      el.classList.add("s3-clue-alias");
+      return el;
+    }
     el.textContent = String(clueLen(n));
     const col = clueColor(n);
     if (col === FILLED) el.classList.add("s3-clue-a");
@@ -784,14 +861,17 @@ function installStage3Hook(api) {
     solveCurrent: () => api.solveCurrent(),
     bodySolver: () => {
       let guard = 0;
+      let aliasSeen = 0;
       while (!api.state.boss.corruption8Reached && guard < 300) {
         guard += 1;
+        if (typeof api.aliasedNow === "function") aliasSeen = Math.max(aliasSeen, Number(api.aliasedNow() || 0));
         if (!api.solveCurrent()) break;
       }
       return {
         reached: Boolean(api.state.boss.corruption8Reached),
         corruption: corruptionForRun(api.state.run),
-        solved: api.state.run.solvedCount
+        solved: api.state.run.solvedCount,
+        aliasSeen
       };
     },
     deriveKey: () => diffKeyFromState(api.state),
@@ -1088,12 +1168,15 @@ function renderStage3(ctx) {
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = board.puzzle.width;
     const mode = board.puzzle.twoColor ? " · 2-colour" : "";
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode} · ${rating(board.puzzle.difficulty)}`);
+    const aliased = aliasedTotal(board.puzzle);
+    const aliasMode = aliased ? ` · ${aliased} aliased` : "";
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode}${aliasMode} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
     const decayNote = board.decay?.active ? ` · instability ${Math.round(decayRatio(board.decay) * 100)}%` : "";
-    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}.`);
+    const aliasNote = aliased ? ` · ${aliased} “?” clue${aliased === 1 ? "" : "s"} aliased — deduce from crossing lines` : "";
+    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}${aliasNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
@@ -1242,7 +1325,7 @@ function renderStage3(ctx) {
     paintHud();
     return won;
   }
-  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver });
+  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver, aliasedNow: () => aliasedTotal(board?.puzzle) });
   return {
     repaint: paintHud,
     destroy() {

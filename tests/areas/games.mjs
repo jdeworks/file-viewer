@@ -784,6 +784,9 @@ export async function run(ctx) {
   const s3Body = await page.evaluate(() => window.__fvStage3.bodySolver());
   if (s3Body.reached && s3Body.corruption >= 8) pass('Stage 3 body: solved snapshots to peak corruption 8 (' + s3Body.solved + ' solves)');
   else fail('Stage 3 body solver: ' + JSON.stringify(s3Body));
+  // Aliased-clues tier: at least one mid-climb (corruption 3–5) snapshot obscured a line as "?".
+  if (s3Body.aliasSeen > 0) pass('Stage 3 aliased-clues tier appeared during the body (' + s3Body.aliasSeen + ' aliased line(s))');
+  else fail('Stage 3 aliased tier never appeared: ' + JSON.stringify(s3Body));
   // The deep tiers are live: the corruption-8 snapshot now on screen is a two-colour nonogram (the
   // body solver fast-forwarded through volatile cells + the decay clock + two-colour to get here).
   const s3Tiers = await page.evaluate(() => ({

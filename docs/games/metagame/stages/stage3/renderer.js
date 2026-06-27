@@ -8,6 +8,7 @@ import { buildShopPanel, upgradeLevel } from "./shop.js";
 import { installStage3Hook } from "./s3debug.js";
 import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
 import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } from "./s3decay.js";
+import { aliasedTotal } from "./s3aliased.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -170,14 +171,17 @@ export function renderStage3(ctx) {
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = board.puzzle.width;
     const mode = board.puzzle.twoColor ? " · 2-colour" : "";
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode} · ${rating(board.puzzle.difficulty)}`);
+    const aliased = aliasedTotal(board.puzzle);
+    const aliasMode = aliased ? ` · ${aliased} aliased` : "";
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode}${aliasMode} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
     const decayNote = board.decay?.active ? ` · instability ${Math.round(decayRatio(board.decay) * 100)}%` : "";
+    const aliasNote = aliased ? ` · ${aliased} “?” clue${aliased === 1 ? "" : "s"} aliased — deduce from crossing lines` : "";
     setText(fields.objective, board.solved
       ? "snapshot restored — drawing the next…"
-      : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}.`);
+      : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}${aliasNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
@@ -292,7 +296,7 @@ export function renderStage3(ctx) {
     paintHud();
     return won;
   }
-  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver });
+  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver, aliasedNow: () => aliasedTotal(board?.puzzle) });
 
   return {
     repaint: paintHud,

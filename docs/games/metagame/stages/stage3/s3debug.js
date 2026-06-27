@@ -6,7 +6,7 @@
 //   window.__fvStage3 = {
 //     state(),               // live save state
 //     solveCurrent(),        // solve the current snapshot (advances solvedCount/corruption)
-//     bodySolver(),          // play snapshots until corruption peaks at 8 → { reached, corruption, solved }
+//     bodySolver(),          // play snapshots until corruption peaks at 8 → { reached, corruption, solved, aliasSeen }
 //     deriveKey(),           // the seed-derived restoration key (what the v1/v2/v3 3-way diff reveals)
 //     tryRestoreKey(key),    // attempt the boss un-cheat with a key
 //     bossSolver(),          // defeat The Memory Leak once unlocked → bool
@@ -20,14 +20,19 @@ export function installStage3Hook(api) {
     solveCurrent: () => api.solveCurrent(),
     bodySolver: () => {
       let guard = 0;
+      let aliasSeen = 0;
       while (!api.state.boss.corruption8Reached && guard < 300) {
         guard += 1;
+        // Sample the current snapshot's aliased-clue count BEFORE solving it (proves the aliased
+        // tier actually appears mid-climb, at corruption 3–5 mono snapshots).
+        if (typeof api.aliasedNow === 'function') aliasSeen = Math.max(aliasSeen, Number(api.aliasedNow() || 0));
         if (!api.solveCurrent()) break;
       }
       return {
         reached: Boolean(api.state.boss.corruption8Reached),
         corruption: corruptionForRun(api.state.run),
         solved: api.state.run.solvedCount,
+        aliasSeen,
       };
     },
     deriveKey: () => diffKeyFromState(api.state),

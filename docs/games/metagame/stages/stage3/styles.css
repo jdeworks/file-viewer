@@ -68,6 +68,8 @@
 }
 
 .s3-clue.s3-done { color: #c2c6c4; text-decoration: line-through; }
+/* Aliased clue: an obscured line whose number is hidden — deduce it from the crossing clues. */
+.s3-clue.s3-clue-alias { color: #b5571f; font-weight: 700; font-style: italic; }
 
 .s3-cell {
   align-items: center;

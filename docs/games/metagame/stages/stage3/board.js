@@ -4,6 +4,7 @@
 
 import { makePuzzle, FILLED, COLOR_B, EMPTY, UNKNOWN } from "./nonogram.js";
 import { makeTwoColorPuzzle, TWOCOLOR_AT } from "./s3twocolor.js";
+import { ALIASED_AT, attachAliased } from "./s3aliased.js";
 
 const CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 const FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
@@ -39,7 +40,10 @@ export function puzzleForRun(run, shop) {
   const corruption = corruptionForRun(run);
   // Two-colour snapshots take over once corruption hits TWOCOLOR_AT (the second-colour tier).
   if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  const puzzle = makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  // Aliased clues (corruption ≥ ALIASED_AT): obscure a fair, deducible subset of lines as "?".
+  if (corruption >= ALIASED_AT) attachAliased(puzzle, corruption, `${run.seed}:${run.index}`);
+  return puzzle;
 }
 
 // Prefetch Cache: pre-fill the first `count` solution cells (deterministic order) so a snapshot

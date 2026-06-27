@@ -5,18 +5,23 @@
 
 import { FILLED, COLOR_B, EMPTY, UNKNOWN } from "./nonogram.js";
 import { lineDone } from "./board.js";
+import { ALIAS_GLYPH } from "./s3aliased.js";
 
 const GLYPH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "✕", [UNKNOWN]: "·" };
 const CLASS = { [FILLED]: "s3-fill", [COLOR_B]: "s3-fill-b", [EMPTY]: "s3-mark", [UNKNOWN]: "s3-blank" };
 const marksFilled = (marks, x, y) => marks[y][x] === FILLED || marks[y][x] === COLOR_B;
-// Clues are numbers (mono) or { len, color } (two-colour) — read both uniformly.
+// Clues are numbers (mono), { len, color } (two-colour), or the ALIAS_GLYPH sentinel (obscured line).
 const clueLen = (c) => (typeof c === "object" ? c.len : c);
 const clueColor = (c) => (typeof c === "object" ? c.color : 0);
 
 export function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
-  const rowDisp = rowClues.map((c) => (c.length ? c : [0]));
-  const colDisp = colClues.map((c) => (c.length ? c : [0]));
+  // Aliased lines (corruption ≥ ALIASED_AT) collapse their whole clue to a single "?" — the player
+  // must deduce the line from crossing clues (s3aliased guarantees it stays deducible).
+  const aliasRows = new Set((puzzle.aliased && puzzle.aliased.rows) || []);
+  const aliasCols = new Set((puzzle.aliased && puzzle.aliased.cols) || []);
+  const rowDisp = rowClues.map((c, r) => (aliasRows.has(r) ? [ALIAS_GLYPH] : c.length ? c : [0]));
+  const colDisp = colClues.map((c, k) => (aliasCols.has(k) ? [ALIAS_GLYPH] : c.length ? c : [0]));
   const maxRow = Math.max(1, ...rowDisp.map((c) => c.length));
   const maxCol = Math.max(1, ...colDisp.map((c) => c.length));
 
@@ -30,6 +35,7 @@ export function buildGrid(puzzle, handlers) {
   const clueEl = (n) => {
     const el = document.createElement("span");
     el.className = "s3-clue";
+    if (n === ALIAS_GLYPH) { el.textContent = ALIAS_GLYPH; el.classList.add("s3-clue-alias"); return el; }
     el.textContent = String(clueLen(n));
     const col = clueColor(n);
     if (col === FILLED) el.classList.add("s3-clue-a");
