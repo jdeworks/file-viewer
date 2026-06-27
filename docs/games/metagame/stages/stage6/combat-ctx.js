@@ -32,12 +32,14 @@ export function makeCtx(combat, card) {
     gainEnergy: (n) => { combat.player.energy += n; },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
-    // DELAY: schedule `fn(ctx)` to resolve at the start of a future player turn (deterministic).
+    // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
+    // start of a future player turn. The op is a plain object (not a closure) so the pending queue is
+    // serializable — a reload resumes the same delayed packets. combat-modes.applyOp interprets it.
     // A relic (Fast Retransmit) can land the FIRST queued effect one turn sooner.
-    queue: (turnsAhead, fn) => {
+    queue: (turnsAhead, op) => {
       let ahead = Math.max(1, Math.floor(turnsAhead) || 1);
       if (combat.delaySpeedup && !combat.delayUsed) { ahead = Math.max(1, ahead - 1); combat.delayUsed = true; }
-      combat.pending.push({ turn: combat.turn + ahead, fn });
+      combat.pending.push({ turn: combat.turn + ahead, op });
     },
     // THROUGHPUT: widen the congestion window by n (and gain n energy now).
     widenWindow: (n) => {

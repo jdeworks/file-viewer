@@ -387,7 +387,7 @@ var SIGNAL_CARDS = [
     text: "Deal 4. Deal 8 at the start of your next turn.",
     effect: (ctx) => {
       ctx.deal(4);
-      ctx.queue(1, (c) => c.deal(8));
+      ctx.queue(1, { deal: 8 });
     }
   },
   {
@@ -396,7 +396,7 @@ var SIGNAL_CARDS = [
     cost: 2,
     rarity: "rare",
     text: "Deal 18 in 2 turns.",
-    effect: (ctx) => ctx.queue(2, (c) => c.deal(18))
+    effect: (ctx) => ctx.queue(2, { deal: 18 })
   }
 ];
 
@@ -537,7 +537,7 @@ var PROTOCOL_CARDS = [
     text: "Gain 5 block. Gain 7 block at the start of your next turn.",
     effect: (ctx) => {
       ctx.block(5);
-      ctx.queue(1, (c) => c.block(7));
+      ctx.queue(1, { block: 7 });
     }
   },
   // Act 3 NETWORK · THROUGHPUT: spend big without the window shrinking next turn.
@@ -670,6 +670,17 @@ function makeRng(seed) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
+function makeTrackedRng(seed, steps = 0) {
+  const base = makeRng(seed);
+  for (let i = 0; i < steps; i++) base();
+  let count = steps;
+  const rng = () => {
+    count += 1;
+    return base();
+  };
+  rng.steps = () => count;
+  return rng;
+}
 function shuffle(list, rng) {
   const out = [...list];
   for (let i = out.length - 1; i > 0; i--) {
@@ -770,15 +781,17 @@ function makeCtx(combat, card) {
     },
     applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
     applySelf: (status, n) => addStatus(combat.player, status, n),
-    // DELAY: schedule `fn(ctx)` to resolve at the start of a future player turn (deterministic).
+    // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
+    // start of a future player turn. The op is a plain object (not a closure) so the pending queue is
+    // serializable — a reload resumes the same delayed packets. combat-modes.applyOp interprets it.
     // A relic (Fast Retransmit) can land the FIRST queued effect one turn sooner.
-    queue: (turnsAhead, fn) => {
+    queue: (turnsAhead, op) => {
       let ahead = Math.max(1, Math.floor(turnsAhead) || 1);
       if (combat.delaySpeedup && !combat.delayUsed) {
         ahead = Math.max(1, ahead - 1);
         combat.delayUsed = true;
       }
-      combat.pending.push({ turn: combat.turn + ahead, fn });
+      combat.pending.push({ turn: combat.turn + ahead, op });
     },
     // THROUGHPUT: widen the congestion window by n (and gain n energy now).
     widenWindow: (n) => {
@@ -912,13 +925,22 @@ function applyTurnEnergy(combat) {
   combat.player.maxEnergy = combat.window;
   combat.player.energy = combat.window;
 }
+function applyOp(ctx, op) {
+  if (!op || typeof op !== "object") return;
+  if (op.deal != null) ctx.deal(op.deal);
+  if (op.block != null) ctx.block(op.block);
+  if (op.draw != null) ctx.draw(op.draw);
+  if (op.gainEnergy != null) ctx.gainEnergy(op.gainEnergy);
+  if (op.applyEnemy) ctx.applyEnemy(op.applyEnemy.status, op.applyEnemy.value);
+  if (op.applySelf) ctx.applySelf(op.applySelf.status, op.applySelf.value);
+}
 function resolvePending(combat) {
   if (!combat.pending || !combat.pending.length) return;
   const due = combat.pending.filter((p) => p.turn <= combat.turn);
   combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
   for (const p of due) {
     if (combat.over) break;
-    p.fn(makeCtx(combat, null));
+    applyOp(makeCtx(combat, null), p.op);
     checkEnemyDead(combat);
   }
 }
@@ -927,9 +949,11 @@ function resolvePending(combat) {
 var HAND_SIZE = 5;
 var START_ENERGY = 3;
 function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
-  const rng = makeRng(seed);
+  const rng = makeTrackedRng(seed);
   const combat = {
     rng,
+    rngSeed: seed,
+    // persisted in the snapshot so a reload resumes the same shuffle sequence
     relics,
     congestion,
     // THROUGHPUT: when true, energy is a dynamic congestion window
@@ -1612,12 +1636,12 @@ var SPECS = {
   // D2 DELAY
   WINDOWED_SEND: { text: "Deal 6. Deal 10 at the start of your next turn.", effect: (ctx) => {
     ctx.deal(6);
-    ctx.queue(1, (c) => c.deal(10));
+    ctx.queue(1, { deal: 10 });
   } },
-  RETRANSMIT: { text: "Deal 24 in 2 turns.", effect: (ctx) => ctx.queue(2, (c) => c.deal(24)) },
+  RETRANSMIT: { text: "Deal 24 in 2 turns.", effect: (ctx) => ctx.queue(2, { deal: 24 }) },
   DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => {
     ctx.block(6);
-    ctx.queue(1, (c) => c.block(9));
+    ctx.queue(1, { block: 9 });
   } },
   // D3 THROUGHPUT
   BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
@@ -1930,6 +1954,10 @@ function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
   combat.bossHpMult = hpMult;
   combat.enemy.hp = phaseHp(1, hpMult);
   combat.enemy.maxHp = phaseHp(1, hpMult);
+  rewireBossCombat(combat);
+  return combat;
+}
+function rewireBossCombat(combat) {
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;
@@ -1968,6 +1996,88 @@ function playFirstMatch(combat, pred) {
   }
   return false;
 }
+
+// ../../docs/games/metagame/stages/stage6/combat-persist.js
+function clone(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+function snapshotCombat(combat) {
+  return {
+    nodeId: combat.nodeId ?? null,
+    rngSeed: combat.rngSeed,
+    rngSteps: typeof combat.rng?.steps === "function" ? combat.rng.steps() : 0,
+    congestion: Boolean(combat.congestion),
+    window: combat.window,
+    windowCap: combat.windowCap,
+    windowDecay: combat.windowDecay,
+    noShrinkNextTurn: Boolean(combat.noShrinkNextTurn),
+    jamPending: Boolean(combat.jamPending),
+    firstCardDiscount: combat.firstCardDiscount || 0,
+    delaySpeedup: Boolean(combat.delaySpeedup),
+    delayUsed: Boolean(combat.delayUsed),
+    turn: combat.turn,
+    cardsPlayedThisTurn: combat.cardsPlayedThisTurn || 0,
+    energySpentThisTurn: combat.energySpentThisTurn || 0,
+    playedIdsThisTurn: [...combat.playedIdsThisTurn || []],
+    lastCardPlayed: combat.lastCardPlayed ?? null,
+    over: Boolean(combat.over),
+    result: combat.result ?? null,
+    log: [...combat.log || []],
+    player: clone(combat.player),
+    enemy: clone(combat.enemy),
+    draw: [...combat.draw || []],
+    hand: [...combat.hand || []],
+    discard: [...combat.discard || []],
+    exhaust: [...combat.exhaust || []],
+    jammed: [...combat.jammed || []],
+    pending: clone(combat.pending || []),
+    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1 } : null
+  };
+}
+function restoreCombat(snapshot, { relics = [] } = {}) {
+  const s = snapshot || {};
+  const combat = {
+    rng: makeTrackedRng(s.rngSeed, s.rngSteps || 0),
+    rngSeed: s.rngSeed,
+    relics,
+    congestion: Boolean(s.congestion),
+    window: s.window,
+    windowCap: s.windowCap,
+    windowDecay: s.windowDecay,
+    noShrinkNextTurn: Boolean(s.noShrinkNextTurn),
+    jamPending: Boolean(s.jamPending),
+    firstCardDiscount: s.firstCardDiscount || 0,
+    delaySpeedup: Boolean(s.delaySpeedup),
+    delayUsed: Boolean(s.delayUsed),
+    player: clone(s.player),
+    enemy: clone(s.enemy),
+    draw: [...s.draw || []],
+    hand: [...s.hand || []],
+    discard: [...s.discard || []],
+    exhaust: [...s.exhaust || []],
+    jammed: [...s.jammed || []],
+    pending: clone(s.pending || []),
+    turn: s.turn,
+    cardsPlayedThisTurn: s.cardsPlayedThisTurn || 0,
+    energySpentThisTurn: s.energySpentThisTurn || 0,
+    playedIdsThisTurn: [...s.playedIdsThisTurn || []],
+    lastCardPlayed: s.lastCardPlayed ?? null,
+    over: Boolean(s.over),
+    result: s.result ?? null,
+    log: [...s.log || []]
+  };
+  combat.nodeId = s.nodeId ?? null;
+  if (s.boss) {
+    combat.bossPhase = s.boss.phase;
+    combat.bossLocked = Boolean(s.boss.locked);
+    combat.bossHpMult = s.boss.hpMult || 1;
+    rewireBossCombat(combat);
+  }
+  return combat;
+}
+
+// ../../docs/games/metagame/stages/stage6/renderer.js
+import { createRun as createRunState } from "../../shared/run-state.js";
 
 // ../../docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = {
@@ -2424,7 +2534,7 @@ function esc3(value) {
 
 // ../../docs/games/metagame/stages/stage6/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
-function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
+function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage6-protocol-codex";
   root.innerHTML = `
@@ -2432,6 +2542,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     <div class="s6db-screen" data-screen></div>`;
   host.replaceChildren(root);
   const screen = root.querySelector("[data-screen]");
+  const combatRun = orchestrator?.save ? createRunState({ save: orchestrator.save, stageId: 6, slot: "combat", debounceMs: 0 }) : null;
   let combat = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -2449,6 +2560,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       if (!state.run) beginRun();
       seatAtFinalBoss(state.run, deck);
       state.ui.screen = "run";
+      if (combatRun) combatRun.reset();
       combat = null;
       commit();
       return state.run.currentNodeId;
@@ -2468,6 +2580,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     }
   };
   return { repaint: route, destroy() {
+    if (combatRun) combatRun.destroy();
     if (window.__fvStage6) delete window.__fvStage6;
     root.remove();
   } };
@@ -2507,12 +2620,27 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     }
   }
   function mountCombat(run) {
-    if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
+    if (!combat || combat.nodeId !== run.currentNodeId) combat = loadOrMakeCombat(run);
     if (combat.over) {
       finishCombat(run);
       return route();
     }
     mount(combatView(combat, run));
+  }
+  function loadOrMakeCombat(run) {
+    const snap = combatRun?.restore();
+    if (snap && !snap.over && snap.runSeed === run.seed && snap.nodeId === run.currentNodeId) {
+      const c2 = restoreCombat(snap, { relics: relicsFor(run.relics) });
+      c2.nodeId = run.currentNodeId;
+      return c2;
+    }
+    const c = makeCombat(run);
+    checkpointCombat(c, run);
+    return c;
+  }
+  function checkpointCombat(c, run) {
+    if (!combatRun || !c) return;
+    combatRun.checkpoint({ ...snapshotCombat(c), runSeed: run.seed });
   }
   function makeCombat(run) {
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
@@ -2537,6 +2665,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
     const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
+    if (combatRun) combatRun.reset();
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
@@ -2562,6 +2691,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
     state.run = createRun({ seed, version: state.meta.protocolVersion || 0, handshakes: 0 });
     state.ui.screen = "run";
+    if (combatRun) combatRun.reset();
     combat = null;
   }
   function resolveEvent(run, key) {
@@ -2587,6 +2717,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (play && combat && !combat.over) {
       playCard(combat, Number(play.dataset.play));
       if (combat.over) finishCombat(run);
+      else checkpointCombat(combat, run);
       return true;
     }
     if (!run) return false;
@@ -2653,6 +2784,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         state.ui.screen = "run";
         return true;
       case "abandon":
+        if (combatRun) combatRun.reset();
         state.run = null;
         combat = null;
         state.ui.screen = "hub";
@@ -2670,11 +2802,15 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         if (combat && !combat.over) {
           endTurn(combat);
           if (combat.over) finishCombat(run);
+          else checkpointCombat(combat, run);
         }
         return true;
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
-        if (combat && combat.bossPhase && combat.bossLocked) combat = null;
+        if (combat && combat.bossPhase && combat.bossLocked) {
+          if (combatRun) combatRun.reset();
+          combat = null;
+        }
         return true;
       case "bts":
         openBts({ bts, viewer });

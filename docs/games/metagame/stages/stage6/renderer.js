@@ -16,6 +16,8 @@ import {
 } from "./run.js";
 import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
 import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
+import { snapshotCombat, restoreCombat } from "./combat-persist.js";
+import { createRun as createRunState } from "../../shared/run-state.js";
 import { combatView } from "./ui-combat.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView } from "./ui-rewards.js";
@@ -23,7 +25,7 @@ import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
 
-export function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
+export function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage6-protocol-codex";
   root.innerHTML = `
@@ -32,7 +34,15 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   host.replaceChildren(root);
   const screen = root.querySelector("[data-screen]");
 
-  let combat = null; // transient; not saved
+  // Combat persistence (kills the reload-retry exploit): the active fight is checkpointed into the
+  // run-state 'combat' slot (stageState[6].combat — a distinct slot from stage6's own state.run) so a
+  // reload RESUMES the same mid-fight state instead of re-rolling a fresh encounter. debounceMs:0 so
+  // every checkpoint is flushed into the save object before commit()'s save() serializes it.
+  const combatRun = orchestrator?.save
+    ? createRunState({ save: orchestrator.save, stageId: 6, slot: "combat", debounceMs: 0 })
+    : null;
+
+  let combat = null; // live engine instance; its full state is checkpointed into combatRun
   const completeOnce = once((result) => { if (typeof onStageComplete === "function") onStageComplete(result); });
   const lockState = () => getBossLockState({ actions, state });
   const mount = (node) => screen.replaceChildren(node);
@@ -49,6 +59,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       if (!state.run) beginRun();
       seatAtFinalBoss(state.run, deck);
       state.ui.screen = "run";
+      if (combatRun) combatRun.reset(); // ensure a fresh boss fight, never a resumed snapshot
       combat = null;
       commit();
       return state.run.currentNodeId;
@@ -68,7 +79,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     }
   };
 
-  return { repaint: route, destroy() { if (window.__fvStage6) delete window.__fvStage6; root.remove(); } };
+  return { repaint: route, destroy() { if (combatRun) combatRun.destroy(); if (window.__fvStage6) delete window.__fvStage6; root.remove(); } };
 
   // ── routing ──────────────────────────────────────────────────────────────────────────────────
   function route() {
@@ -91,9 +102,31 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   }
 
   function mountCombat(run) {
-    if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
+    if (!combat || combat.nodeId !== run.currentNodeId) combat = loadOrMakeCombat(run);
     if (combat.over) { finishCombat(run); return route(); }
     mount(combatView(combat, run));
+  }
+
+  // Resume the persisted fight for this exact node/run if one was checkpointed; otherwise create a
+  // fresh combat and checkpoint its opening state. The runSeed+nodeId guard prevents a stale snapshot
+  // from a previous run (node ids repeat across runs) being resumed into a different run.
+  function loadOrMakeCombat(run) {
+    const snap = combatRun?.restore();
+    if (snap && !snap.over && snap.runSeed === run.seed && snap.nodeId === run.currentNodeId) {
+      const c = restoreCombat(snap, { relics: relicsFor(run.relics) });
+      c.nodeId = run.currentNodeId;
+      return c;
+    }
+    const c = makeCombat(run);
+    checkpointCombat(c, run);
+    return c;
+  }
+
+  // Persist the live fight after a meaningful action (play card / end turn). Tagged with the run seed
+  // so resume only matches the same run.
+  function checkpointCombat(c, run) {
+    if (!combatRun || !c) return;
+    combatRun.checkpoint({ ...snapshotCombat(c), runSeed: run.seed });
   }
 
   // ── combat lifecycle ─────────────────────────────────────────────────────────────────────────
@@ -122,6 +155,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
     const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
+    // A resolved fight must NOT resume on reload: clear the checkpoint slot (also bumps runs[6]).
+    if (combatRun) combatRun.reset();
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
@@ -152,6 +187,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const seed = 1000 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
     state.run = createRun({ seed, version: state.meta.protocolVersion || 0, handshakes: 0 });
     state.ui.screen = "run";
+    if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
     combat = null;
   }
 
@@ -178,7 +214,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
 
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
-    if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); return true; }
+    if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); return true; }
     if (!run) return false;
     const node = event.target.closest("[data-node]");
     if (node) { moveTo(run, node.dataset.node); return true; }
@@ -207,15 +243,16 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     switch (action) {
       case "begin-run": case "new-run": beginRun(); return true;
       case "continue-run": state.ui.screen = "run"; return true;
-      case "abandon": state.run = null; combat = null; state.ui.screen = "hub"; return true;
+      case "abandon": if (combatRun) combatRun.reset(); state.run = null; combat = null; state.ui.screen = "hub"; return true;
       case "prestige": doPrestige(); return true;
       case "to-hub": state.ui.screen = "hub"; return true;
       case "to-map": if (run) closeNode(run); return true;
-      case "end-turn": if (combat && !combat.over) { endTurn(combat); if (combat.over) finishCombat(run); } return true;
+      case "end-turn": if (combat && !combat.over) { endTurn(combat); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); } return true;
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
-        // Reading ch9 mid-fight unlocks the negotiation: rebuild the boss combat so it is no longer locked.
-        if (combat && combat.bossPhase && combat.bossLocked) combat = null;
+        // Reading ch9 mid-fight unlocks the negotiation: drop the locked snapshot and rebuild the boss
+        // combat fresh (unlocked). This is an intentional restart of the boss fight, not the exploit.
+        if (combat && combat.bossPhase && combat.bossLocked) { if (combatRun) combatRun.reset(); combat = null; }
         return true;
       case "bts": openBts({ bts, viewer }); return true;
       default: return false;

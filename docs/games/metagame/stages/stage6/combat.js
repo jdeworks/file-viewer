@@ -14,7 +14,7 @@
 // lives in the engine, content stays declarative.
 
 import { cardById } from "./cards.js";
-import { makeRng, shuffle } from "./combat-rng.js";
+import { makeTrackedRng, shuffle } from "./combat-rng.js";
 import { drawCards, jamOne, releaseJam } from "./combat-piles.js";
 import { makeCtx, runHook } from "./combat-ctx.js";
 import { tickStatuses } from "./combat-damage.js";
@@ -25,9 +25,10 @@ const HAND_SIZE = 5;
 const START_ENERGY = 3;
 
 export function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
-  const rng = makeRng(seed);
+  const rng = makeTrackedRng(seed);
   const combat = {
     rng,
+    rngSeed: seed,         // persisted in the snapshot so a reload resumes the same shuffle sequence
     relics,
     congestion,            // THROUGHPUT: when true, energy is a dynamic congestion window
     window: START_ENERGY,  // current window size (== maxEnergy while in congestion mode)

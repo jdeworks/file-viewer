@@ -31,6 +31,18 @@ export function applyTurnEnergy(combat) {
   combat.player.energy = combat.window;
 }
 
+// Interpret a DECLARATIVE delayed-effect op (see combat-ctx.queue). Keeping the pending queue as
+// plain data (not closures) is what makes a mid-combat fight serializable / resumable on reload.
+export function applyOp(ctx, op) {
+  if (!op || typeof op !== "object") return;
+  if (op.deal != null) ctx.deal(op.deal);
+  if (op.block != null) ctx.block(op.block);
+  if (op.draw != null) ctx.draw(op.draw);
+  if (op.gainEnergy != null) ctx.gainEnergy(op.gainEnergy);
+  if (op.applyEnemy) ctx.applyEnemy(op.applyEnemy.status, op.applyEnemy.value);
+  if (op.applySelf) ctx.applySelf(op.applySelf.status, op.applySelf.value);
+}
+
 // Resolve any queued (delayed) effects whose target turn has arrived. Deterministic, no RNG.
 export function resolvePending(combat) {
   if (!combat.pending || !combat.pending.length) return;
@@ -38,7 +50,7 @@ export function resolvePending(combat) {
   combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
   for (const p of due) {
     if (combat.over) break;
-    p.fn(makeCtx(combat, null));
+    applyOp(makeCtx(combat, null), p.op);
     checkEnemyDead(combat);
   }
 }

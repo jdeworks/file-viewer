@@ -104,11 +104,11 @@ export const SIGNAL_CARDS = [
   {
     id: "WINDOWED_SEND", type: "Signal", cost: 1, rarity: "uncommon",
     text: "Deal 4. Deal 8 at the start of your next turn.",
-    effect: (ctx) => { ctx.deal(4); ctx.queue(1, (c) => c.deal(8)); }
+    effect: (ctx) => { ctx.deal(4); ctx.queue(1, { deal: 8 }); }
   },
   {
     id: "RETRANSMIT", type: "Signal", cost: 2, rarity: "rare",
     text: "Deal 18 in 2 turns.",
-    effect: (ctx) => ctx.queue(2, (c) => c.deal(18))
+    effect: (ctx) => ctx.queue(2, { deal: 18 })
   }
 ];

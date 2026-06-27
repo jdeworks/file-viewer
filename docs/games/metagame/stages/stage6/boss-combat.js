@@ -76,6 +76,15 @@ export function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
   combat.bossHpMult = hpMult;
   combat.enemy.hp = phaseHp(1, hpMult);
   combat.enemy.maxHp = phaseHp(1, hpMult);
+  rewireBossCombat(combat);
+  return combat;
+}
+
+// Re-attach the negotiation FUNCTIONS (acceptance + advancePhase) to a combat that was RESTORED from
+// a snapshot, without touching its live phase/HP/lock state (those are restored from the snapshot).
+// The snapshot persists the data fields (bossPhase/bossLocked/bossHpMult); only the closures — which
+// can't be serialized — need rebuilding here.
+export function rewireBossCombat(combat) {
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;

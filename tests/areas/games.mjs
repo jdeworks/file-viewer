@@ -715,6 +715,36 @@ export async function run(ctx) {
   await page.click('.s6db-hub [data-action="begin-run"]');
   await page.waitForSelector('.s6db-map .s6db-node.is-available[data-node]', { timeout: 4000 });
   pass('Stage 6 run begins: act map offers routable nodes');
+  // Reload-retry exploit closed: a real combat is CHECKPOINTED into the save mid-fight (run-state
+  // 'combat' slot), so a reload resumes the same in-progress fight rather than re-rolling a fresh
+  // one. Enter a combat, play one card, and confirm the persisted snapshot is a resumable partial
+  // turn (not over, tagged with the run seed, with a card already played).
+  await page.click('.s6db-map .s6db-node.is-available[data-node]');
+  await page.waitForSelector('.s6db-combat .s6db-hand button[data-play]:not([disabled])', { timeout: 4000 });
+  await page.click('.s6db-combat .s6db-hand button[data-play]:not([disabled])');
+  await page.waitForFunction(() => {
+    try {
+      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+      const snap = save.stageState?.[6]?.combat;
+      return Boolean(snap && snap.over === false && (snap.cardsPlayedThisTurn || 0) >= 1);
+    } catch { return false; }
+  }, null, { timeout: 4000 });
+  const s6resume = await page.evaluate(() => {
+    const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+    const snap = save.stageState[6].combat;
+    return {
+      resumable: snap.over === false,
+      seedTagged: snap.runSeed === save.stageState[6].run?.seed,
+      atNode: snap.nodeId === save.stageState[6].run?.currentNodeId,
+      played: (snap.cardsPlayedThisTurn || 0) >= 1,
+      hasRng: typeof snap.rngSeed === 'number' && (snap.rngSteps || 0) > 0,
+    };
+  });
+  if (s6resume.resumable && s6resume.seedTagged && s6resume.atNode && s6resume.played && s6resume.hasRng) {
+    pass('Stage 6 mid-combat is checkpointed to the save (reload resumes the same fight — exploit closed)');
+  } else {
+    fail(`Stage 6 combat not resumably checkpointed: ${JSON.stringify(s6resume)}`);
+  }
   // Reach the act-4 boss via the deterministic test hook with a winnable deck (a real run would
   // clear acts 1–3 and build this deck itself). The boss is fought with this REAL deck.
   await page.evaluate(() => window.__fvStage6.jumpToBoss(

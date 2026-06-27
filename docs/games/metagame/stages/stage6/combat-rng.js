@@ -15,6 +15,19 @@ export function makeRng(seed) {
   };
 }
 
+// A seeded rng that RECORDS how many values it has produced. A combat resumes by recreating the rng
+// and fast-forwarding to the same position: `makeTrackedRng(seed, savedSteps)` replays `savedSteps`
+// draws so the very next value matches the live fight. `rng.steps()` reads the current position
+// (persist it in the combat snapshot). Determinism is preserved — same seed ⇒ same sequence.
+export function makeTrackedRng(seed, steps = 0) {
+  const base = makeRng(seed);
+  for (let i = 0; i < steps; i++) base(); // fast-forward to the saved position
+  let count = steps;
+  const rng = () => { count += 1; return base(); };
+  rng.steps = () => count;
+  return rng;
+}
+
 // Fisher–Yates copy-shuffle driven by a seeded rng (does not mutate the input list).
 export function shuffle(list, rng) {
   const out = [...list];

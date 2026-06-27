@@ -73,7 +73,7 @@ export const PROTOCOL_CARDS = [
   {
     id: "DELAYED_ACK", type: "Protocol", cost: 1, rarity: "uncommon",
     text: "Gain 5 block. Gain 7 block at the start of your next turn.",
-    effect: (ctx) => { ctx.block(5); ctx.queue(1, (c) => c.block(7)); }
+    effect: (ctx) => { ctx.block(5); ctx.queue(1, { block: 7 }); }
   },
   // Act 3 NETWORK · THROUGHPUT: spend big without the window shrinking next turn.
   {
