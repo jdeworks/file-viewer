@@ -215,6 +215,8 @@ FULL_UNIT_TESTS=(
   tests/known-swift-lang.test.mjs
   tests/known-tcl-lang.test.mjs
   tests/known-vala-lang.test.mjs
+  tests/known-vhdl-lang.test.mjs
+  tests/known-verilog.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
