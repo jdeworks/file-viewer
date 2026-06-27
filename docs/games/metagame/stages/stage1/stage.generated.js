@@ -3240,6 +3240,52 @@ function tickPipelines(state, cfg) {
   return produced;
 }
 
+// ../../docs/games/metagame/stages/stage1/s1flux.js
+var FLUX_CHARGE_PER_TICK = 0.8;
+var FLUX_BOOST_TICKS = 100;
+var RIDE_MULT = 3;
+var CASH_MULT = 1.5;
+function fluxState(state) {
+  if (!state.flux || typeof state.flux !== "object") state.flux = { meter: 0, boostMult: 1, boostTicks: 0 };
+  return state.flux;
+}
+function fluxMult(state) {
+  const f = fluxState(state);
+  return f.boostTicks > 0 ? f.boostMult : 1;
+}
+function fluxMeter(state) {
+  return fluxState(state).meter;
+}
+function fluxBoostTicks(state) {
+  return fluxState(state).boostTicks;
+}
+function fluxCanCash(state) {
+  const f = fluxState(state);
+  return f.boostTicks <= 0 && f.meter > 0 && f.meter < 100;
+}
+function cashFlux(state) {
+  const f = fluxState(state);
+  if (!fluxCanCash(state)) return false;
+  f.boostMult = CASH_MULT;
+  f.boostTicks = FLUX_BOOST_TICKS;
+  f.meter = 0;
+  return true;
+}
+function tickFlux(state) {
+  const f = fluxState(state);
+  if (f.boostTicks > 0) {
+    f.boostTicks -= 1;
+    if (f.boostTicks <= 0) f.boostMult = 1;
+    return;
+  }
+  f.meter = Math.min(100, f.meter + FLUX_CHARGE_PER_TICK);
+  if (f.meter >= 100) {
+    f.boostMult = RIDE_MULT;
+    f.boostTicks = FLUX_BOOST_TICKS;
+    f.meter = 0;
+  }
+}
+
 // ../../docs/games/metagame/stages/stage1/s1reset.js
 var STYLE_ID2 = "mg-s1-prestige-style";
 function injectStyle2() {
@@ -3268,6 +3314,14 @@ function injectStyle2() {
 .mg-pipe-upkeep { font:600 12px ui-monospace,monospace; color:#e0742f; }
 .mg-pipe-toggle { background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:5px 12px; cursor:pointer; font-size:12px; }
 .mg-pipe-row.mg-pipe-on .mg-pipe-toggle { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+.mg-flux-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-flux-meter { height:14px; border-radius:7px; background:var(--border); overflow:hidden; margin-bottom:6px; }
+.mg-flux-fill { height:100%; width:0%; background:var(--accent); transition:width .12s linear; }
+.mg-flux-fill.mg-flux-boosting { background:#e0742f; }
+.mg-flux-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.mg-flux-status { font:600 12px ui-monospace,monospace; color:var(--fg-2); }
+.mg-flux-cash { background:var(--accent); color:var(--accent-fg); border:0; border-radius:7px; padding:6px 14px; cursor:pointer; font:600 12px ui-monospace,monospace; }
+.mg-flux-cash.mg-buy-locked { opacity:.45; pointer-events:none; }
 `;
   document.head.appendChild(el);
 }
@@ -3278,7 +3332,7 @@ function renderResetPanel(opts) {
   const newTotal = globalPull(state) * gain;
   const cores = coreGain(state.totalBits);
   const next = nextMechanic(state);
-  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
+  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + fluxHtml(state) + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
   panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset(opts));
   panelsEl.querySelector(".mg-reset-cancel").addEventListener("click", () => renderResetPanel(opts));
   panelsEl.querySelectorAll(".mg-core-buy").forEach((b) => b.addEventListener("click", () => {
@@ -3292,6 +3346,29 @@ function renderResetPanel(opts) {
     opts.save(state);
     renderResetPanel(opts);
   }));
+  const cashBtn = panelsEl.querySelector(".mg-flux-cash");
+  if (cashBtn) cashBtn.addEventListener("click", () => {
+    if (cashFlux(state)) {
+      opts.save(state);
+      paintResetPanel(panelsEl, state);
+    }
+  });
+}
+function fluxHtml(state) {
+  if (!mechanicUnlocked(state, "flux")) return "";
+  return '<div class="mg-flux-shop"><div class="mg-core-shop-title">⚡ Flux — burst meter</div><div class="mg-flux-meter"><div class="mg-flux-fill"></div></div><div class="mg-flux-row"><span class="mg-flux-status"></span><button class="mg-flux-cash" type="button">Cash now ×1.5</button></div></div>';
+}
+function paintResetPanel(panelsEl, state) {
+  const fill = panelsEl.querySelector(".mg-flux-fill");
+  if (fill) {
+    const boosting = fluxBoostTicks(state) > 0;
+    fill.style.width = (boosting ? 100 : fluxMeter(state)) + "%";
+    fill.classList.toggle("mg-flux-boosting", boosting);
+    const status = panelsEl.querySelector(".mg-flux-status");
+    if (status) status.textContent = boosting ? "🔥 ×" + fluxMult(state).toFixed(1) + " active (" + (fluxBoostTicks(state) / 10).toFixed(1) + "s)" : Math.floor(fluxMeter(state)) + "% — fills to ×3, or cash now";
+    const cashBtn = panelsEl.querySelector(".mg-flux-cash");
+    if (cashBtn) cashBtn.classList.toggle("mg-buy-locked", !fluxCanCash(state));
+  }
 }
 function pipelineHtml(opts) {
   const { state, cfg } = opts;
@@ -3335,12 +3412,15 @@ function doReset(opts) {
 
 // ../../docs/games/metagame/stages/stage1/s1mechanics.js
 function incomeMult(state) {
-  return coreIncomeMult(state);
+  let m = coreIncomeMult(state);
+  if (mechanicUnlocked(state, "flux")) m *= fluxMult(state);
+  return m;
 }
 function tickMechanics(state, cfg) {
   state.ticks = (state.ticks || 0) + 1;
   let producedUnits = false;
   if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
+  if (mechanicUnlocked(state, "flux")) tickFlux(state);
   return { producedUnits };
 }
 
@@ -3665,6 +3745,7 @@ function renderStage1(ctx2) {
         paintTimed();
         paintStats();
       } else if (activeTab === "managers") managersController.paint();
+      else if (activeTab === "reset") paintResetPanel(panelsEl, state);
     }
     if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
     if (++tickAcc >= 10) {

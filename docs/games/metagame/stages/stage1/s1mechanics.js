@@ -10,10 +10,13 @@
 import { mechanicUnlocked } from './s1prestige.js';
 import { coreIncomeMult } from './s1cores.js';
 import { tickPipelines } from './s1pipeline.js';
+import { tickFlux, fluxMult } from './s1flux.js';
 
 // Aggregate multiplier applied to bit income (passive accrual + timed payouts) in the tick loop.
 export function incomeMult(state /*, cfg */) {
-  return coreIncomeMult(state);
+  let m = coreIncomeMult(state);
+  if (mechanicUnlocked(state, 'flux')) m *= fluxMult(state);
+  return m;
 }
 
 // Run one tick of every unlocked mechanic. Returns flags so the caller can repaint cheaply.
@@ -21,5 +24,6 @@ export function tickMechanics(state, cfg) {
   state.ticks = (state.ticks || 0) + 1;
   let producedUnits = false;
   if (mechanicUnlocked(state, 'pipeline')) producedUnits = tickPipelines(state, cfg) || producedUnits;
+  if (mechanicUnlocked(state, 'flux')) tickFlux(state);
   return { producedUnits };
 }

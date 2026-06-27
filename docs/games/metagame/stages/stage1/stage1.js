@@ -18,7 +18,7 @@ import { fromNumber, add, sub, mulScalar, gte, toDisplay } from './bignum.js';
 import { bellLoad, checkMessages, escapeHtml } from './s1bell.js';
 import { checkAchievements, checkMilestones } from './s1achievements.js';
 import { createManagersController } from './s1managers.js';
-import { renderResetPanel as renderS1ResetPanel } from './s1reset.js';
+import { renderResetPanel as renderS1ResetPanel, paintResetPanel as paintS1ResetPanel } from './s1reset.js';
 import { tickMechanics, incomeMult } from './s1mechanics.js';
 import { coreAutoMult } from './s1cores.js';
 import { setText, setHidden, setHtml, bigToNum } from './s1dom.js';
@@ -413,6 +413,7 @@ export function renderStage1(ctx) {
     if (state.tabsUnlocked) {
       if (activeTab === 'bits') { paintShop(); paintTimed(); paintStats(); }
       else if (activeTab === 'managers') managersController.paint();
+      else if (activeTab === 'reset') paintS1ResetPanel(panelsEl, state);
     }
     // A newly-unlocked achievement may reveal the Achievements tab — refresh the tab bar so it
     // appears immediately (returns true only on the rare unlock tick).

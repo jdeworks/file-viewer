@@ -8,6 +8,7 @@ import { checkAchievements } from './s1achievements.js';
 import { doPrestige, coreGain, MECHANICS, prestigeDepth, nextMechanic, mechanicUnlocked } from './s1prestige.js';
 import { CORE_UPGRADES, coreLevel, coreCostOf, canBuyCore, buyCore } from './s1cores.js';
 import { wirableTiers, isWired, togglePipeline, pipelineUpkeepOf } from './s1pipeline.js';
+import { fluxMeter, fluxBoostTicks, fluxMult, fluxCanCash, cashFlux } from './s1flux.js';
 
 const STYLE_ID = 'mg-s1-prestige-style';
 function injectStyle() {
@@ -36,6 +37,14 @@ function injectStyle() {
 .mg-pipe-upkeep { font:600 12px ui-monospace,monospace; color:#e0742f; }
 .mg-pipe-toggle { background:var(--bg); color:var(--fg); border:1px solid var(--border); border-radius:7px; padding:5px 12px; cursor:pointer; font-size:12px; }
 .mg-pipe-row.mg-pipe-on .mg-pipe-toggle { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+.mg-flux-shop { margin-top:14px; border-top:1px solid var(--border); padding-top:10px; }
+.mg-flux-meter { height:14px; border-radius:7px; background:var(--border); overflow:hidden; margin-bottom:6px; }
+.mg-flux-fill { height:100%; width:0%; background:var(--accent); transition:width .12s linear; }
+.mg-flux-fill.mg-flux-boosting { background:#e0742f; }
+.mg-flux-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.mg-flux-status { font:600 12px ui-monospace,monospace; color:var(--fg-2); }
+.mg-flux-cash { background:var(--accent); color:var(--accent-fg); border:0; border-radius:7px; padding:6px 14px; cursor:pointer; font:600 12px ui-monospace,monospace; }
+.mg-flux-cash.mg-buy-locked { opacity:.45; pointer-events:none; }
 `;
   document.head.appendChild(el);
 }
@@ -60,6 +69,7 @@ export function renderResetPanel(opts) {
     + '<button class="mg-reset-go" type="button">Prestige</button>'
     + '<button class="mg-reset-cancel" type="button">Cancel</button>'
     + '</div>'
+    + fluxHtml(state)
     + pipelineHtml(opts)
     + coreShopHtml(state)
     + mechanicsRosterHtml(state)
@@ -72,6 +82,33 @@ export function renderResetPanel(opts) {
   panelsEl.querySelectorAll('.mg-pipe-toggle').forEach((b) => b.addEventListener('click', () => {
     togglePipeline(state, b.dataset.id); opts.save(state); renderResetPanel(opts);
   }));
+  const cashBtn = panelsEl.querySelector('.mg-flux-cash');
+  if (cashBtn) cashBtn.addEventListener('click', () => { if (cashFlux(state)) { opts.save(state); paintResetPanel(panelsEl, state); } });
+}
+
+function fluxHtml(state) {
+  if (!mechanicUnlocked(state, 'flux')) return '';
+  return '<div class="mg-flux-shop"><div class="mg-core-shop-title">⚡ Flux — burst meter</div>'
+    + '<div class="mg-flux-meter"><div class="mg-flux-fill"></div></div>'
+    + '<div class="mg-flux-row"><span class="mg-flux-status"></span>'
+    + '<button class="mg-flux-cash" type="button">Cash now ×1.5</button></div></div>';
+}
+
+// Live per-tick update of the flux meter + status (called from the stage1 tick when the Prestige tab
+// is active, so the meter animates without a full panel rebuild).
+export function paintResetPanel(panelsEl, state) {
+  const fill = panelsEl.querySelector('.mg-flux-fill');
+  if (fill) {
+    const boosting = fluxBoostTicks(state) > 0;
+    fill.style.width = (boosting ? 100 : fluxMeter(state)) + '%';
+    fill.classList.toggle('mg-flux-boosting', boosting);
+    const status = panelsEl.querySelector('.mg-flux-status');
+    if (status) status.textContent = boosting
+      ? '🔥 ×' + fluxMult(state).toFixed(1) + ' active (' + (fluxBoostTicks(state) / 10).toFixed(1) + 's)'
+      : Math.floor(fluxMeter(state)) + '% — fills to ×3, or cash now';
+    const cashBtn = panelsEl.querySelector('.mg-flux-cash');
+    if (cashBtn) cashBtn.classList.toggle('mg-buy-locked', !fluxCanCash(state));
+  }
 }
 
 function pipelineHtml(opts) {
