@@ -53,8 +53,10 @@ export function createClipLane(opts = {}) {
     const wrapW = canvasWrap.clientWidth || 600;
     const pxPerSec = view.pxPerSec || 0;
     const tl = Math.max(0.001, view.timelineSec);
-    // contentWidth: when pxPerSec is set, stretch the canvas to show all content; otherwise fit.
-    const contentWidth = pxPerSec > 0 ? Math.max(wrapW, tl * pxPerSec) : wrapW;
+    // contentWidth: when pxPerSec is set, size the canvas to the content. It may be WIDER than the
+    // wrap (zoom in → scroll) or NARROWER (zoom out past fit → empty space to the right). Only a
+    // small absolute floor so it can never collapse to nothing.
+    const contentWidth = pxPerSec > 0 ? Math.max(40, tl * pxPerSec) : wrapW;
     if (pxPerSec > 0) {
       canvas.style.width = `${contentWidth}px`;
       canvasWrap.classList.add('al-zoomable');

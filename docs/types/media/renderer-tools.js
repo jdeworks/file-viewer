@@ -31,19 +31,12 @@ export function buildMediaTools({
 
   const sleepNote = document.createElement('span');
   sleepNote.className = 'media-sleep-note';
-  tools.append(sleepWrap, sleepNote);
+  // Sleep timer is hidden during the studio-fidelity work (the select + its logic are kept below
+  // so it can be re-enabled later). TODO: re-append `sleepWrap, sleepNote` once the mixer is done.
+  // tools.append(sleepWrap, sleepNote);
 
-  const ffmpegPill = document.createElement('button');
-  ffmpegPill.type = 'button';
-  ffmpegPill.className = 'media-ffmpeg-pill' + (enableFfmpeg ? ' media-ffmpeg-pill--on' : '');
-  ffmpegPill.textContent = enableFfmpeg ? '🎬 Editor: on' : '🎬 Editor: off';
-  ffmpegPill.title = enableFfmpeg
-    ? 'Media editor active — scroll down to edit'
-    : 'Enable media transcoding in Settings → Advanced to unlock trim/convert';
-  ffmpegPill.addEventListener('click', () => {
-    onEditorPanelFocus?.();
-  });
-  tools.appendChild(ffmpegPill);
+  // The old "Editor: off/on" ffmpeg pill has been removed — the editor lives in the Export mode and
+  // the transcoding toggle is in Settings → Advanced.
 
   if (intake?.file || intake?.bytes) {
     const downloadBtn = trackButton('↓ Download', 'Download this media file');

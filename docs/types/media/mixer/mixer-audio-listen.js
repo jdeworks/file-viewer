@@ -106,7 +106,8 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
   function contentWidth() {
     const avail = Math.max(120, (canvasWrap.clientWidth || timeline.clientWidth - 96 || 700));
     if (pxPerSec <= 0) return avail; // fit
-    return Math.max(avail, Math.round(timelineSec() * pxPerSec));
+    // May be wider than the viewport (zoom in → scroll) or narrower (zoom out past fit).
+    return Math.max(40, Math.round(timelineSec() * pxPerSec));
   }
 
   function renderWaveform() {
