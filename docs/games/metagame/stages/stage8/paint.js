@@ -17,6 +17,9 @@ export function paintStage8({ state, lock, els, onSelectDebris }) {
   if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
   fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
   fields.stabilizers.textContent = String(state.stabilizers || 0);
+  if (fields.scrap) fields.scrap.textContent = String(Math.floor(state.scrap || 0));
+  if (fields.insight) fields.insight.textContent = String(Math.floor(state.insight || 0));
+  if (fields.insightRate) fields.insightRate.textContent = rate(state.insightRate);
   fields.salvage.textContent = String(state.salvageTotal);
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated

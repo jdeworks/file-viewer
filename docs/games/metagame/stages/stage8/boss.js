@@ -12,6 +12,7 @@ import {
 } from "./messages.js";
 import { simulateHeatDeath } from "./burn.js";
 import { makeRng } from "./rng.js";
+import { scrapYield, earnScrap } from "./resources.js";
 
 export function hasSalvageArchived(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
@@ -38,8 +39,10 @@ export function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
+  const scrap = scrapYield(debris);
+  earnScrap(state, scrap);
   state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog(state, `archived ${debris.id}. +${debris.value} States.`);
+  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
 
   const firstArchive = !hasSalvageArchived(actions);
   if (actions && typeof actions.setAction === "function") {

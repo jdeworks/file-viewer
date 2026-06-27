@@ -24,6 +24,11 @@ export function defaultState() {
     states: 0,
     totalStatesEarned: 0,
     salvageTotal: 0,
+    scrap: 0,
+    scrapTotal: 0,
+    insight: 0,
+    insightTotal: 0,
+    insightRate: 0,
     selectedDebrisId: "",
     externalImportBonusCycles: 0,
     stabilizers: 0,
@@ -83,6 +88,11 @@ export function normalizeState(state) {
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
+  target.scrap = Math.max(0, num(target.scrap, 0));
+  target.scrapTotal = Math.max(0, num(target.scrapTotal, 0));
+  target.insight = Math.max(0, num(target.insight, 0));
+  target.insightTotal = Math.max(0, num(target.insightTotal, 0));
+  target.insightRate = num(target.insightRate, 0);
   target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
   target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
   target.stabilizers = Math.max(0, num(target.stabilizers, 0));
@@ -114,6 +124,11 @@ export function snapshotRun(state) {
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,
     salvageTotal: state.salvageTotal,
+    scrap: state.scrap || 0,
+    scrapTotal: state.scrapTotal || 0,
+    insight: state.insight || 0,
+    insightTotal: state.insightTotal || 0,
+    insightRate: state.insightRate || 0,
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
     stabilizers: state.stabilizers || 0,

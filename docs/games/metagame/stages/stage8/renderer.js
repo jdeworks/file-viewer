@@ -25,6 +25,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
+      <span>scrap <b data-field="scrap"></b></span>
+      <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
     </header>
     <div class="s8-layout">

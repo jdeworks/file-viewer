@@ -6,6 +6,7 @@ import { nodeById, ADJACENCY } from "./nodes.js";
 import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
 import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat } from "./heat.js";
+import { insightIncome, earnInsight } from "./resources.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
 export const BASE_REPAIR_UNITS_PER_CYCLE = 6;  // repair budget granted each cycle
@@ -101,6 +102,11 @@ export function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round(active + degraded - entropySink));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
+  // 8a. Insight income (research output of online Core/Production nodes).
+  const insight = insightIncome(state, status);
+  earnInsight(state, insight);
+  state.insightRate = insight;
+  result.insight = insight;
   // 8b. recompute Heat from the post-decay/post-repair node statuses (generation − venting).
   const heat = computeHeatDelta(state, status);
   state.heat = clampHeat(state.heat + heat.delta);

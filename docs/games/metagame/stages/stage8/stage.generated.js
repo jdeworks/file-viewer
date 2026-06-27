@@ -108,6 +108,93 @@ function makeRng(seed) {
   return { float, int, pick, chance, shuffle };
 }
 
+// ../../docs/games/metagame/stages/stage8/nodes.js
+var TIER = {
+  1: { baseDecayPct: 2, baseOutput: 12, degradedOutput: 6, supportsHighLoad: false, debrisTier: 1 },
+  2: { baseDecayPct: 3, baseOutput: 10, degradedOutput: 5, supportsHighLoad: false, debrisTier: 2 },
+  3: { baseDecayPct: 4, baseOutput: 14, degradedOutput: 7, supportsHighLoad: true, debrisTier: 3 },
+  4: { baseDecayPct: 6, baseOutput: 16, degradedOutput: 8, supportsHighLoad: true, debrisTier: 4 }
+};
+function node(id, name, zone, tier) {
+  return { id, name, zone, tier, ...TIER[tier] };
+}
+var NODES = [
+  node("C1", "Core Kernel", "core", 1),
+  node("C2", "Secondary Core", "core", 1),
+  node("M1", "Mid Relay 1", "mid", 2),
+  node("M2", "Mid Relay 2", "mid", 2),
+  node("M3", "Mid Relay 3", "mid", 2),
+  node("M4", "Mid Relay 4", "mid", 2),
+  node("P1", "Production 1", "production", 3),
+  node("P2", "Production 2", "production", 3),
+  node("P3", "Production 3", "production", 3),
+  node("P4", "Production 4", "production", 3),
+  node("F1", "Frontier 1", "frontier", 4),
+  node("F2", "Frontier 2", "frontier", 4),
+  node("F3", "Frontier 3", "frontier", 4),
+  node("F4", "Frontier 4", "frontier", 4)
+];
+var NODE_BY_ID = new Map(NODES.map((n) => [n.id, n]));
+function nodeById(id) {
+  return NODE_BY_ID.get(id) || null;
+}
+var EDGES = [
+  ["F1", "M1"],
+  ["F2", "M2"],
+  ["F3", "M3"],
+  ["F4", "M4"],
+  ["P1", "M1"],
+  ["P2", "M2"],
+  ["P3", "M3"],
+  ["P4", "M4"],
+  ["M1", "C1"],
+  ["M2", "C1"],
+  ["M3", "C2"],
+  ["M4", "C2"],
+  ["C1", "C2"],
+  ["C2", "C1"]
+];
+var ADJACENCY = (() => {
+  const map = new Map(NODES.map((n) => [n.id, []]));
+  for (const [from, to] of EDGES) map.get(from).push(to);
+  return map;
+})();
+
+// ../../docs/games/metagame/stages/stage8/resources.js
+var ZONE_INSIGHT = { core: 0.6, production: 0.45, mid: 0, frontier: 0 };
+function scrapYield(debris) {
+  const tier = Math.max(1, Number(debris?.tier || 1));
+  const value = Math.max(0, Number(debris?.value || 0));
+  return tier * 2 + Math.floor(value / 8);
+}
+function insightIncome(state, statusOf, isOnline = () => true) {
+  let income = 0;
+  for (const n of state.nodes) {
+    if (!isOnline(n)) continue;
+    const s = statusOf(n.health);
+    if (s === "failed") continue;
+    const def = nodeById(n.id) || {};
+    const base = ZONE_INSIGHT[def.zone] || 0;
+    income += s === "degrading" ? base * 0.5 : base;
+  }
+  return round2(income);
+}
+function earnScrap(state, amount) {
+  const n = Math.max(0, Math.floor(Number(amount) || 0));
+  state.scrap = Math.max(0, Number(state.scrap || 0)) + n;
+  state.scrapTotal = Number(state.scrapTotal || 0) + n;
+  return state.scrap;
+}
+function earnInsight(state, amount) {
+  const n = Math.max(0, Number(amount) || 0);
+  state.insight = Math.max(0, Number(state.insight || 0)) + n;
+  state.insightTotal = Number(state.insightTotal || 0) + n;
+  return state.insight;
+}
+function round2(v) {
+  return Math.round(v * 100) / 100;
+}
+
 // ../../docs/games/metagame/stages/stage8/boss.js
 function hasSalvageArchived(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
@@ -132,8 +219,10 @@ function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
+  const scrap = scrapYield(debris);
+  earnScrap(state, scrap);
   state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog(state, `archived ${debris.id}. +${debris.value} States.`);
+  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
   const firstArchive = !hasSalvageArchived(actions);
   if (actions && typeof actions.setAction === "function") {
     actions.setAction(8, ACTION_NAME, {
@@ -261,58 +350,6 @@ function unlockAchievement(achievements, id, detail) {
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
 }
 
-// ../../docs/games/metagame/stages/stage8/nodes.js
-var TIER = {
-  1: { baseDecayPct: 2, baseOutput: 12, degradedOutput: 6, supportsHighLoad: false, debrisTier: 1 },
-  2: { baseDecayPct: 3, baseOutput: 10, degradedOutput: 5, supportsHighLoad: false, debrisTier: 2 },
-  3: { baseDecayPct: 4, baseOutput: 14, degradedOutput: 7, supportsHighLoad: true, debrisTier: 3 },
-  4: { baseDecayPct: 6, baseOutput: 16, degradedOutput: 8, supportsHighLoad: true, debrisTier: 4 }
-};
-function node(id, name, zone, tier) {
-  return { id, name, zone, tier, ...TIER[tier] };
-}
-var NODES = [
-  node("C1", "Core Kernel", "core", 1),
-  node("C2", "Secondary Core", "core", 1),
-  node("M1", "Mid Relay 1", "mid", 2),
-  node("M2", "Mid Relay 2", "mid", 2),
-  node("M3", "Mid Relay 3", "mid", 2),
-  node("M4", "Mid Relay 4", "mid", 2),
-  node("P1", "Production 1", "production", 3),
-  node("P2", "Production 2", "production", 3),
-  node("P3", "Production 3", "production", 3),
-  node("P4", "Production 4", "production", 3),
-  node("F1", "Frontier 1", "frontier", 4),
-  node("F2", "Frontier 2", "frontier", 4),
-  node("F3", "Frontier 3", "frontier", 4),
-  node("F4", "Frontier 4", "frontier", 4)
-];
-var NODE_BY_ID = new Map(NODES.map((n) => [n.id, n]));
-function nodeById(id) {
-  return NODE_BY_ID.get(id) || null;
-}
-var EDGES = [
-  ["F1", "M1"],
-  ["F2", "M2"],
-  ["F3", "M3"],
-  ["F4", "M4"],
-  ["P1", "M1"],
-  ["P2", "M2"],
-  ["P3", "M3"],
-  ["P4", "M4"],
-  ["M1", "C1"],
-  ["M2", "C1"],
-  ["M3", "C2"],
-  ["M4", "C2"],
-  ["C1", "C2"],
-  ["C2", "C1"]
-];
-var ADJACENCY = (() => {
-  const map = new Map(NODES.map((n) => [n.id, []]));
-  for (const [from, to] of EDGES) map.get(from).push(to);
-  return map;
-})();
-
 // ../../docs/games/metagame/stages/stage8/state.js
 var STATE_VERSION = 2;
 function freshNodes() {
@@ -326,6 +363,11 @@ function defaultState() {
     states: 0,
     totalStatesEarned: 0,
     salvageTotal: 0,
+    scrap: 0,
+    scrapTotal: 0,
+    insight: 0,
+    insightTotal: 0,
+    insightRate: 0,
     selectedDebrisId: "",
     externalImportBonusCycles: 0,
     stabilizers: 0,
@@ -379,6 +421,11 @@ function normalizeState(state) {
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
+  target.scrap = Math.max(0, num(target.scrap, 0));
+  target.scrapTotal = Math.max(0, num(target.scrapTotal, 0));
+  target.insight = Math.max(0, num(target.insight, 0));
+  target.insightTotal = Math.max(0, num(target.insightTotal, 0));
+  target.insightRate = num(target.insightRate, 0);
   target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
   target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
   target.stabilizers = Math.max(0, num(target.stabilizers, 0));
@@ -408,6 +455,11 @@ function snapshotRun(state) {
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,
     salvageTotal: state.salvageTotal,
+    scrap: state.scrap || 0,
+    scrapTotal: state.scrapTotal || 0,
+    insight: state.insight || 0,
+    insightTotal: state.insightTotal || 0,
+    insightRate: state.insightRate || 0,
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
     stabilizers: state.stabilizers || 0,
@@ -707,6 +759,10 @@ function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round(active + degraded - entropySink));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
+  const insight = insightIncome(state, status);
+  earnInsight(state, insight);
+  state.insightRate = insight;
+  result.insight = insight;
   const heat = computeHeatDelta(state, status);
   state.heat = clampHeat(state.heat + heat.delta);
   state.heatRate = heat.delta;
@@ -790,6 +846,9 @@ function paintStage8({ state, lock, els, onSelectDebris }) {
   if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
   fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
   fields.stabilizers.textContent = String(state.stabilizers || 0);
+  if (fields.scrap) fields.scrap.textContent = String(Math.floor(state.scrap || 0));
+  if (fields.insight) fields.insight.textContent = String(Math.floor(state.insight || 0));
+  if (fields.insightRate) fields.insightRate.textContent = rate(state.insightRate);
   fields.salvage.textContent = String(state.salvageTotal);
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
@@ -881,6 +940,8 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
+      <span>scrap <b data-field="scrap"></b></span>
+      <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
     </header>
     <div class="s8-layout">
