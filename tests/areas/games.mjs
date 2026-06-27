@@ -638,6 +638,15 @@ export async function run(ctx) {
   pass('Stage 3 defeat unlocks Stage 4 through v3 orchestrator');
 
   await page.waitForSelector('.stage4-fractal-bastion', { timeout: 8000 });
+  // Boss is not start-reachable: the confront button is hidden until the final wave.
+  const s4ConfrontEarly = await page.$('.stage4-fractal-bastion [data-action="confront"]:not([hidden])');
+  if (s4ConfrontEarly) throw new Error('Stage 4 boss reachable before the final wave');
+  await page.waitForSelector('.stage4-fractal-bastion [data-action="start-wave"]', { timeout: 4000 });
+  // The tower-defense actually runs: start wave 1 and advance it to completion (deterministic hook).
+  await page.evaluate(() => { window.__fvStage4.startWave(); window.__fvStage4.advance(30000); });
+  const s4Wave = await page.evaluate(() => window.__fvStage4.state().waveNumber);
+  if (s4Wave >= 2) pass('Stage 4 tower-defense runs: wave 1 resolves and advances'); else fail('Stage 4 wave did not advance: ' + s4Wave);
+  // Stage-clear gate (un-cheat): read the recursion blueprint.
   await page.click('[data-action="blueprint"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'recursion_points.json', null, { timeout: 5000 });
   await page.waitForFunction(() => {
@@ -646,15 +655,20 @@ export async function run(ctx) {
       return Boolean(save.actions?.['4.recursion_blueprint_read'] && save.achievements?.['stage4.recursion_blueprint_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  for (let i = 0; i < 3; i += 1) await page.click('[data-action="tower"]');
-  await page.click('[data-action="boss"]');
+  // Reach the final wave (a real run clears 30 waves) and cover the recursion points, then confront.
+  await page.evaluate(() => {
+    window.__fvStage4.setWave(31);
+    for (const p of window.__fvStage4.state().recursion.points) window.__fvStage4.place(p.x, p.y, 'pulse_node');
+  });
+  await page.waitForSelector('.stage4-fractal-bastion [data-action="confront"]:not([hidden])', { timeout: 4000 });
+  await page.click('[data-action="confront"]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return save.defeated?.includes(4) && save.unlockedStages?.includes(5);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 4 generated blueprint action unlocks and clears Fractal Bastion');
+  pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage at the final wave');
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
   await page.click('[data-action="audio"]');
