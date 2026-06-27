@@ -13,7 +13,7 @@ import { eventForNode, applyEventChoice } from "./events.js";
 import { nodeById } from "./mapgen.js";
 import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
-  takeReward, takePotion, usePotion, buyPotion, rest, removeCard, closeNode,
+  takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
   buyCard, buyRemoval, buyUpgrade, buyRelic,
   prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss
 } from "./run.js";
@@ -23,7 +23,7 @@ import { snapshotCombat, restoreCombat } from "./combat-persist.js";
 import { createRun as createRunState } from "../../shared/run-state.js";
 import { combatView } from "./ui-combat.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
-import { rewardView, restView, shopView, eventView } from "./ui-rewards.js";
+import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
 import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
@@ -94,6 +94,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
       case "combat": case "boss": return mountCombat(run);
       case "reward": combat = null; return mount(rewardView(run));
+      case "boss-reward": combat = null; return mount(bossRewardView(run));
       case "rest": combat = null; return mount(restView(run));
       case "shop": combat = null; return mount(shopView(run));
       case "event": combat = null; return mount(eventView(run, eventForNode(run)));
@@ -231,6 +232,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (node) { moveTo(run, node.dataset.node); return true; }
     const take = event.target.closest("[data-take]");
     if (take) { takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take); return true; }
+    const bossRelic = event.target.closest("[data-boss-relic]");
+    if (bossRelic) { takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic); return true; }
     const remove = event.target.closest("[data-remove]");
     if (remove) { removeCard(run, Number(remove.dataset.remove)); rest(run, "remove"); return true; }
     const upgrade = event.target.closest("[data-upgrade]");

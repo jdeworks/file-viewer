@@ -16,6 +16,7 @@ import {
   resolveCombat,
   seatAtFinalBoss,
   takeReward,
+  takeBossRelic,
   upgradeDeckCard,
   RELIC_COST,
   UPGRADE_COST,
@@ -110,6 +111,8 @@ import { STARTING_DECK } from "../cards.js";
       resolveCombat(run, { win: true, hpRemaining: run.hp });
     } else if (run.status === "reward") {
       takeReward(run, run.pendingReward.cards[0]);
+    } else if (run.status === "boss-reward") {
+      takeBossRelic(run, run.pendingReward.relics[0] || null);
     } else if (run.status === "rest") {
       rest(run, "heal");
     } else if (run.status === "shop" || run.status === "event") {
@@ -132,6 +135,7 @@ import { STARTING_DECK } from "../cards.js";
     if (run.status === "map") moveTo(run, availableNodes(run)[0].id);
     else if (run.status === "combat" || run.status === "boss") resolveCombat(run, { win: true, hpRemaining: run.hp });
     else if (run.status === "reward") { if (run.pendingReward.relic) eliteRelic = run.pendingReward.relic; takeReward(run, run.pendingReward.cards[0]); }
+    else if (run.status === "boss-reward") takeBossRelic(run, run.pendingReward.relics[0] || null);
     else if (run.status === "rest") rest(run, "heal");
     else closeNode(run);
   }
@@ -365,6 +369,46 @@ function findNode(run, pred) {
   moveTo(run, availableNodes(run)[0].id);
   resolveCombat(run, { win: true, hpRemaining: run.hp });
   assert.equal(run.handshakes, Math.round(10 * 0.75), "lean-rewards: combat pays 8 (75% of 10)");
+}
+
+// ── G4: clearing a mini-boss offers a seeded 1-of-3 relic choice; picking grants exactly one ───────
+{
+  function clearAct1Boss(seed) {
+    const run = createRun({ seed });
+    run.act = 1;
+    run.currentNodeId = run.map.acts[0].layers.at(-1)[0].id; // the act-1 boss node
+    run.status = "boss";
+    const r = resolveCombat(run, { win: true, hpRemaining: run.hp });
+    return { run, r };
+  }
+  const { run, r } = clearAct1Boss(7);
+  assert.equal(r.status, "boss-reward", "a mini-boss win opens the relic choice, not the map");
+  assert.equal(run.act, 1, "the act does NOT advance until a relic is chosen");
+  assert.equal(run.pendingReward.relics.length, 3, "three relics are offered");
+  assert.equal(new Set(run.pendingReward.relics).size, 3, "the three offers are distinct");
+
+  // Seeded: the SAME seed offers the SAME three relics.
+  const a = clearAct1Boss(7).run;
+  const b = clearAct1Boss(7).run;
+  assert.deepEqual(a.pendingReward.relics, b.pendingReward.relics, "same seed ⇒ same offer");
+
+  // Picking grants exactly the chosen relic and advances the act.
+  const chosen = run.pendingReward.relics[1];
+  const before = run.relics.length;
+  const pick = takeBossRelic(run, chosen);
+  assert.ok(pick.ok && pick.relic === chosen, "the chosen relic is granted");
+  assert.equal(run.relics.length, before + 1, "exactly one relic added");
+  assert.ok(run.relics.includes(chosen), "the granted relic is owned");
+  assert.equal(run.act, 2, "advanced to the next act after picking");
+  assert.equal(run.status, "map", "back on the map");
+
+  // Skipping (null) grants nothing but still advances.
+  const { run: run2 } = clearAct1Boss(9);
+  const before2 = run2.relics.length;
+  const skip = takeBossRelic(run2, null);
+  assert.ok(skip.ok && skip.relic === null, "skip grants no relic");
+  assert.equal(run2.relics.length, before2, "no relic added on skip");
+  assert.equal(run2.act, 2, "skip still advances the act");
 }
 
 function reaches(run, fromId, targetId) {

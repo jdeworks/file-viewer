@@ -172,6 +172,11 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-potion-offer { margin: 10px 0; padding: 8px 10px; border: 1px dashed #6a4fb0; border-radius: 8px; background: #f7f4fd; }
 .s6db-shop-potions { margin-top: 10px; }
 
+/* Boss 1-of-3 relic choice. */
+.s6db-relic-choice { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; max-width: 200px; padding: 8px 10px; margin: 0 6px 6px 0; border: 1px solid #2f6f6a; border-radius: 8px; background: #eef7f6; color: #1f3f3c; cursor: pointer; font: inherit; }
+.s6db-relic-choice:hover { background: #ddeeec; }
+.s6db-relic-choice.is-cursed { border-color: #8b2020; background: #fbeeee; color: #5a1414; }
+
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }

@@ -1456,6 +1456,16 @@ function rollRelic(seed, owned = []) {
   const rng = makeRng(seed);
   return pool[Math.floor(rng() * pool.length)].id;
 }
+function rollRelics(seed, owned = [], count = 3) {
+  const ownedSet = new Set(owned);
+  const pool = RELICS.filter((relic) => !ownedSet.has(relic.id));
+  const rng = makeRng(seed);
+  const out = [];
+  while (out.length < count && pool.length) {
+    out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0].id);
+  }
+  return out;
+}
 
 // ../../docs/games/metagame/stages/stage6/potions.js
 var POTIONS = [
@@ -2030,17 +2040,31 @@ function seatAtFinalBoss(run, deck) {
   if (Array.isArray(deck)) run.deck = [...deck];
   return bossNode.id;
 }
+var BOSS_RELIC_CHOICES = 3;
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
     run.status = "won";
     return { ok: true, status: "won" };
   }
+  const offered = rollRelics(hashSeed(run.seed, `boss-clear-act${run.act}:relics`), run.relics, BOSS_RELIC_CHOICES);
+  run.pendingReward = { relics: offered };
+  run.status = "boss-reward";
+  return { ok: true, status: "boss-reward", offered };
+}
+function takeBossRelic(run, relicId) {
+  if (run.status !== "boss-reward") return { ok: false, reason: "no-reward" };
+  const offered = run.pendingReward?.relics || [];
+  let granted = null;
+  if (relicId && offered.includes(relicId) && !run.relics.includes(relicId)) {
+    run.relics.push(relicId);
+    granted = relicId;
+  }
+  run.pendingReward = null;
   run.act += 1;
   run.currentNodeId = null;
-  const relicId = grantRelic(run, `boss-clear-act${run.act}`);
-  if (relicId) run.notice = `Relic acquired — ${relicById(relicId)?.name || relicId}`;
   run.status = "map";
-  return { ok: true, status: "map", advancedToAct: run.act, relic: relicId };
+  if (granted) run.notice = `Relic acquired — ${relicById(granted)?.name || granted}`;
+  return { ok: true, advancedToAct: run.act, relic: granted };
 }
 function awardRelic(run, key = "event") {
   return grantRelic(run, key);
@@ -2844,6 +2868,29 @@ function potionOffer(run, potionId) {
   }
   return wrap;
 }
+function bossRewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-reward s6db-boss-reward";
+  const offered = (run.pendingReward?.relics || []).map(relicById).filter(Boolean);
+  el.innerHTML = `<h2>Protocol negotiated</h2>
+    <p>${offered.length ? "Claim one relic to carry into the next act." : "No new relics remain."}</p>`;
+  const row = document.createElement("div");
+  row.className = "s6db-card-row";
+  row.replaceChildren(...offered.map((relic) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
+    b.dataset.bossRelic = relic.id;
+    b.innerHTML = `<strong>⬢ ${esc3(relic.name)}</strong><small class="s6db-card-text">${esc3(relic.text)}</small>`;
+    return b;
+  }));
+  el.appendChild(row);
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-hub-actions"><button type="button" data-boss-relic="skip" class="s6db-ghost">${offered.length ? "skip relic ▸" : "continue ▸"}</button></div>`
+  );
+  return el;
+}
 function restView(run) {
   const el = document.createElement("div");
   el.className = "s6db-rest";
@@ -3087,6 +3134,9 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       case "reward":
         combat = null;
         return mount(rewardView(run));
+      case "boss-reward":
+        combat = null;
+        return mount(bossRewardView(run));
       case "rest":
         combat = null;
         return mount(restView(run));
@@ -3234,6 +3284,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const take = event.target.closest("[data-take]");
     if (take) {
       takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take);
+      return true;
+    }
+    const bossRelic = event.target.closest("[data-boss-relic]");
+    if (bossRelic) {
+      takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic);
       return true;
     }
     const remove = event.target.closest("[data-remove]");

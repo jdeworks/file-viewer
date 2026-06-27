@@ -65,6 +65,30 @@ function potionOffer(run, potionId) {
   return wrap;
 }
 
+// After a mini-boss falls, choose ONE of three offered relics ([data-boss-relic="<id>"|"skip"]).
+// Picking advances to the next act. Big replay variance vs. the old forced grant.
+export function bossRewardView(run) {
+  const el = document.createElement("div");
+  el.className = "s6db-reward s6db-boss-reward";
+  const offered = (run.pendingReward?.relics || []).map(relicById).filter(Boolean);
+  el.innerHTML = `<h2>Protocol negotiated</h2>
+    <p>${offered.length ? "Claim one relic to carry into the next act." : "No new relics remain."}</p>`;
+  const row = document.createElement("div");
+  row.className = "s6db-card-row";
+  row.replaceChildren(...offered.map((relic) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
+    b.dataset.bossRelic = relic.id;
+    b.innerHTML = `<strong>⬢ ${esc(relic.name)}</strong><small class="s6db-card-text">${esc(relic.text)}</small>`;
+    return b;
+  }));
+  el.appendChild(row);
+  el.insertAdjacentHTML("beforeend",
+    `<div class="s6db-hub-actions"><button type="button" data-boss-relic="skip" class="s6db-ghost">${offered.length ? "skip relic ▸" : "continue ▸"}</button></div>`);
+  return el;
+}
+
 export function restView(run) {
   const el = document.createElement("div");
   el.className = "s6db-rest";

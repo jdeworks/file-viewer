@@ -101,3 +101,16 @@ export function rollRelic(seed, owned = []) {
   const rng = makeRng(seed);
   return pool[Math.floor(rng() * pool.length)].id;
 }
+
+// Pick up to `count` DISTINCT not-yet-owned relics (deterministic per seed). Used for the boss-relic
+// 1-of-N choice; returns fewer than `count` only when the pool runs short, [] when all are owned.
+export function rollRelics(seed, owned = [], count = 3) {
+  const ownedSet = new Set(owned);
+  const pool = RELICS.filter((relic) => !ownedSet.has(relic.id));
+  const rng = makeRng(seed);
+  const out = [];
+  while (out.length < count && pool.length) {
+    out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0].id);
+  }
+  return out;
+}
