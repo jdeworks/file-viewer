@@ -267,6 +267,7 @@ export async function render(intake, ctx = {}) {
       trackListEl,
       enableFfmpeg,
       exportPanel,
+      listenSurfaceEl: listenSurface?.el,
       onRegisterController: registerModeController,
       onReleaseController: releaseModeController,
     });

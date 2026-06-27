@@ -1,187 +1,331 @@
-import { moveElement, selectTarget, trimElement, updateElement } from './mixer-model.js';
+// Default single-track audio Listen surface — a direct port of the auto-audiobook mixer
+// aesthetic (waveform-first lane, ruler, red seek cursor, DAW-style transport + selection panel)
+// for the lone MP3/WAV case. This deliberately builds its OWN DOM and stylesheet rather than the
+// generic renderMixerShell, so the audio experience reads like a DAW instead of a debug form.
+// The shared mixer project MODEL is still the source of truth for timing/gain/fade/settings.
+import { moveElement, trimElement, updateElement } from './mixer-model.js';
 import { exportProjectSettingsJson, importProjectSettings } from './mixer-import-export.js';
-import { createMixerSnapshot, renderMixerShell } from './mixer-renderer.js';
-import { attachMixerInteractions } from './mixer-interactions.js';
-import { MIXER_LAYOUT } from './mixer-hit-test.js';
-import { ensureMixerStyles } from './mixer-ui.js';
 import {
-  attachSourceMoveDrag, aliasInput, buildProject, clamp, clampZoom,
-  createButton, decorateChapters, decorateRoomTone, decodeSummary, fmtTime,
-  mediaDuration, mergeDuration, selectFirstElement,
+  buildProject, clamp, decodeSummary, fmtTime, mediaDuration, mergeDuration, selectFirstElement,
 } from './mixer-audio-listen-helpers.js';
+import { drawListenWaveform } from './audio-listen-waveform.js';
+
+const ZOOM_MIN = 12;     // px per second (fully zoomed out)
+const ZOOM_MAX = 4000;   // px per second (fully zoomed in)
+
+export function ensureAudioListenStyles() {
+  if (document.querySelector('link[data-audio-listen-styles]')) return;
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = new URL('./audio-listen-lane.css', import.meta.url).href;
+  link.dataset.audioListenStyles = 'true';
+  document.head.append(link);
+}
 
 export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
-  ensureMixerStyles();
+  ensureAudioListenStyles();
   mediaEl.controls = false;
   mediaEl.classList.add('media-view-hidden');
   mediaEl.setAttribute('aria-hidden', 'true');
   mediaEl.tabIndex = -1;
 
-  const root = document.createElement('section');
-  root.className = 'media-listen-surface mmx-audio-listen mmx-direct-listen';
-  root.dataset.mixerContext = 'listen';
-
   let project = selectFirstElement(buildProject(mediaEl, intake));
-  let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.08, width: 960 };
-  let chapters = Array.isArray(options.chapters) ? options.chapters : [];
   let waveformSummary = null;
   let waveformStatus = 'pending';
+  let pxPerSec = 0;          // 0 → "fit to width" until first render
+  let chapters = Array.isArray(options.chapters) ? options.chapters : [];
   let onRegionSelect = typeof options.onRegionSelect === 'function' ? options.onRegionSelect : null;
   let destroyed = false;
   let rafId = 0;
-  let canvasPointer = null;
-  let suppressCanvasClick = false;
+  let drag = null;
 
-  const firstElementId = () => project.elements[0]?.id;
   const firstElement = () => project.elements[0];
+  const startSec = () => (firstElement()?.timeline?.startMs || 0) / 1000;
   const durationSec = () => {
-    const mediaDuration = Number(mediaEl.duration);
-    if (Number.isFinite(mediaDuration) && mediaDuration > 0) return mediaDuration;
+    const d = Number(mediaEl.duration);
+    if (Number.isFinite(d) && d > 0) return d;
     if (Number.isFinite(waveformSummary?.duration) && waveformSummary.duration > 0) return waveformSummary.duration;
-    return Math.max(0, (firstElement()?.timeline?.rawDurationMs || firstElement()?.timeline?.durationMs || 0) / 1000);
+    const el = firstElement();
+    return Math.max(0.001, (el?.timeline?.rawDurationMs || el?.timeline?.durationMs || 0) / 1000);
   };
+  // The clip is a positioned object: [clipStart, clipStart+clipLen] inside a timeline that grows
+  // when the clip is offset (so dragging it right "prepends" space before it).
+  const clipInSec = () => (firstElement()?.timeline?.sourceInMs || 0) / 1000;
+  const clipOutSec = () => {
+    const el = firstElement();
+    const out = (el?.timeline?.sourceOutMs || 0) / 1000;
+    return out > 0 ? out : durationSec();
+  };
+  const clipLenSec = () => Math.max(0.05, clipOutSec() - clipInSec());
+  const timelineSec = () => Math.max(durationSec(), startSec() + clipLenSec(), 0.05);
+  const cursorTimelineSec = () => startSec() + clamp((Number(mediaEl.currentTime) || 0) - clipInSec(), 0, clipLenSec());
 
-  function render() {
-    if (destroyed) return;
-    viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
-    renderMixerShell(root, createMixerSnapshot(project), viewport, { minZoom: 0.02, maxZoom: 0.8 });
-    decorateRenderedShell();
-    reflectProjectState();
+  // ── DOM ───────────────────────────────────────────────────────────────
+  const root = h('section', 'al-surface media-listen-surface', { 'data-mixer-context': 'listen' });
+
+  const stopBtn = h('button', 'al-btn al-stop', { type: 'button', title: 'Stop and rewind', 'aria-label': 'Stop' }, '⏹');
+  const playBtn = h('button', 'al-btn al-play', { type: 'button', title: 'Play', 'aria-label': 'Play' }, '▶');
+  const timeLabel = h('span', 'al-time', {}, '0:00.0 / 0:00.0');
+  const zoomOut = h('button', 'al-btn al-zoom-out', { type: 'button', title: 'Zoom out', 'aria-label': 'Zoom out' }, '−');
+  const zoomIn = h('button', 'al-btn al-zoom-in', { type: 'button', title: 'Zoom in', 'aria-label': 'Zoom in' }, '+');
+  const fitBtn = h('button', 'al-btn al-fit', { type: 'button', title: 'Fit to width' }, 'Fit');
+  const exportBtn = h('button', 'al-btn al-export', { type: 'button', title: 'Export project settings (config only)' }, 'Export settings');
+  const toolbar = h('div', 'al-toolbar', {}, [
+    h('div', 'al-transport', {}, [stopBtn, playBtn, timeLabel]),
+    h('div', 'al-spacer'),
+    h('div', 'al-zoom', {}, [zoomOut, fitBtn, zoomIn]),
+    exportBtn,
+  ]);
+
+  const errorBanner = h('div', 'al-error', { role: 'alert' });
+
+  const ruler = h('div', 'al-ruler');
+  const canvas = h('canvas', 'al-canvas');
+  const cursorLine = h('div', 'al-cursor', {}, [h('span', 'al-cursor-bubble', {}, '0:00.0')]);
+  const chapterLayer = h('div', 'al-chapters');
+  const handleLeft = h('div', 'al-handle al-handle-left', { 'data-drag': 'trim-in', title: 'Drag to trim the start' });
+  const handleRight = h('div', 'al-handle al-handle-right', { 'data-drag': 'trim-out', title: 'Drag to trim the end' });
+  const fadeKnobIn = h('div', 'al-fadeknob al-fadeknob-in', { 'data-drag': 'fade-in', title: 'Drag to set fade in' });
+  const fadeKnobOut = h('div', 'al-fadeknob al-fadeknob-out', { 'data-drag': 'fade-out', title: 'Drag to set fade out' });
+  const clip = h('div', 'al-clip', { 'data-drag': 'move', title: 'Drag to move (prepend space before); edges trim; corner knobs fade' },
+    [handleLeft, handleRight, fadeKnobIn, fadeKnobOut]);
+  const canvasWrap = h('div', 'al-canvas-wrap', {}, [canvas, clip, chapterLayer, cursorLine]);
+  const trackLabel = h('div', 'al-track-label', {}, [
+    h('span', 'al-track-name', {}, 'Source'),
+    h('span', 'al-track-kind', {}, intake?.filename?.split('.').pop()?.toUpperCase() || 'AUDIO'),
+  ]);
+  const track = h('div', 'al-track', {}, [trackLabel, canvasWrap]);
+  const timeline = h('div', 'al-timeline', {}, [ruler, track]);
+
+  const inspector = h('div', 'al-inspector');
+  const note = h('div', 'al-note', {}, 'Drag the clip to move it (prepend space before); drag its edges to trim; drag the top-corner knobs to fade. Click the track to seek. Enable Media Transcoding for ffmpeg render paths.');
+
+  root.append(toolbar, errorBanner, timeline, inspector, note);
+
+  // ── Rendering ───────────────────────────────────────────────────────────
+  function contentWidth() {
+    const avail = Math.max(120, (canvasWrap.clientWidth || timeline.clientWidth - 96 || 700));
+    if (pxPerSec <= 0) return avail; // fit
+    return Math.max(avail, Math.round(timelineSec() * pxPerSec));
   }
 
-  function dispatch(action) {
-    if (action.type === 'seek') {
-      setCursorMs(action.cursorMs);
-      mediaEl.currentTime = clamp(action.cursorMs / 1000 - elementStartSec(), 0, durationSec());
-    }
-    if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
-    if (action.type === 'zoom-relative') viewport = { ...viewport, pxPerMs: clampZoom(viewport.pxPerMs * action.factor) };
-    if (action.type === 'pan') viewport = { ...viewport, scrollLeft: Math.max(0, Number(action.scrollLeft) || 0) };
-    if (action.type === 'fit') viewport = { ...viewport, scrollLeft: 0, pxPerMs: 0.08 };
-    if (action.type === 'select') project = selectTarget(project, action.target, [action.target]);
-    if (action.type === 'update-element') updateFromInspector(action.field, action.value);
-    render();
+  function renderWaveform() {
+    const width = contentWidth();
+    canvas.style.width = `${width}px`;
+    ruler.style.width = `${96 + width}px`;
+    const el = firstElement();
+    const tl = timelineSec();
+    const total = Math.max(0.001, durationSec());
+    drawListenWaveform(canvas, root, {
+      summary: waveformSummary,
+      timelineSec: tl,
+      clipStartSec: startSec(),
+      clipLenSec: clipLenSec(),
+      sourceInFrac: clipInSec() / total,
+      sourceOutFrac: clipOutSec() / total,
+      cursorTimelineSec: cursorTimelineSec(),
+      fadeInSec: (el?.audio?.fadeInMs || 0) / 1000,
+      fadeOutSec: (el?.audio?.fadeOutMs || 0) / 1000,
+    });
+    // Position the draggable clip overlay + its fade knobs over the canvas.
+    const clipX = (startSec() / tl) * width;
+    const clipW = Math.max(6, (clipLenSec() / tl) * width);
+    clip.style.left = `${clipX}px`;
+    clip.style.width = `${clipW}px`;
+    const fadeInW = Math.min(clipW, ((el?.audio?.fadeInMs || 0) / 1000 / tl) * width);
+    const fadeOutW = Math.min(clipW, ((el?.audio?.fadeOutMs || 0) / 1000 / tl) * width);
+    fadeKnobIn.style.left = `${fadeInW}px`;
+    fadeKnobOut.style.right = `${fadeOutW}px`;
+    renderRuler(width);
+    renderChapters(width);
+    updateCursor();
   }
 
-  const interactions = attachMixerInteractions(root, () => ({
-    project,
-    snapshot: createMixerSnapshot(project),
-    viewport,
-  }), dispatch);
+  function renderChapters(width) {
+    chapterLayer.replaceChildren();
+    const dur = durationSec();
+    for (const chapter of chapters) {
+      const start = Math.max(0, Number(chapter.start) || 0);
+      const marker = h('div', 'al-chapter', { title: chapter.title || '' });
+      marker.style.left = `${(start / Math.max(0.001, dur)) * 100}%`;
+      chapterLayer.append(marker);
+    }
+  }
 
-  const onMediaUpdate = () => {
-    setCursorMs((elementStartSec() + (Number(mediaEl.currentTime) || 0)) * 1000);
-    updateTransportLabels();
-    reflectProjectState();
-  };
-  const onLoadedMetadata = () => {
-    project = mergeDuration(project, mediaDuration(mediaEl) * 1000);
-    attachWaveformSummary(waveformSummary);
-    render();
-  };
-  const onInput = (event) => {
-    if (event.target?.matches?.('.media-lane-offset, .media-lane-in, .media-lane-out, .media-lane-gain, .media-lane-fade-in, .media-lane-fade-out')) {
-      updateFromCompatInput(event.target);
+  function renderRuler(width) {
+    ruler.replaceChildren();
+    const tl = timelineSec();
+    const stepSec = niceStep((80 * tl) / Math.max(1, width)); // ~80px between ticks
+    for (let t = 0; t <= tl + 0.0001; t += stepSec) {
+      const tick = h('div', 'al-ruler-tick', {}, fmtTime(t));
+      tick.style.left = `${96 + (t / tl) * width}px`;
+      ruler.append(tick);
     }
-  };
-  const onChange = (event) => {
-    if (event.target?.matches?.('.media-lane-room-toggle')) {
-      setRoomTone(event.target.checked);
-      render();
-    }
-  };
-  const onClickCapture = (event) => {
-    const play = event.target?.closest?.('.media-listen-play');
-    if (play && root.contains(play)) {
-      if (mediaEl.paused) mediaEl.play().catch(() => {});
-      else mediaEl.pause();
-      updateTransportLabels();
-      event.stopPropagation();
-      return;
-    }
-    const stop = event.target?.closest?.('.media-listen-stop');
-    if (stop && root.contains(stop)) {
+  }
+
+  function updateCursor() {
+    const tl = timelineSec();
+    const cur = (Number(mediaEl.currentTime) || 0);
+    const cursorTl = cursorTimelineSec();
+    const width = canvas.clientWidth || contentWidth();
+    cursorLine.style.left = `${(cursorTl / tl) * width}px`;
+    const bubble = cursorLine.querySelector('.al-cursor-bubble');
+    if (bubble) bubble.textContent = fmtTime(cursorTl);
+    timeLabel.textContent = `${fmtTime(cur)} / ${fmtTime(clipLenSec())}`;
+    playBtn.textContent = mediaEl.paused ? '▶' : '⏸';
+    playBtn.setAttribute('aria-label', mediaEl.paused ? 'Play' : 'Pause');
+    playBtn.title = mediaEl.paused ? 'Play' : 'Pause';
+  }
+
+  function renderInspector() {
+    const el = firstElement();
+    const inSec = (el?.timeline?.sourceInMs || 0) / 1000;
+    const outSec = (el?.timeline?.sourceOutMs || el?.timeline?.durationMs || 0) / 1000 || durationSec();
+    inspector.replaceChildren(
+      h('div', 'al-inspector-head', {}, [
+        h('span', 'al-inspector-title', {}, 'Source'),
+        h('span', 'al-inspector-sub', {}, intake?.filename || 'Audio'),
+      ]),
+      h('div', 'al-grid', {}, [
+        numberField('Start (s)', 'al-f-start', startSec(), (v) => { project = moveElement(project, el.id, v * 1000); syncAll(); }),
+        numberField('In (s)', 'al-f-in', inSec, (v) => { project = trimElement(project, el.id, { sourceInMs: v * 1000 }); emitRegion(); syncAll(); }),
+        numberField('Out (s)', 'al-f-out', outSec, (v) => { project = trimElement(project, el.id, { sourceOutMs: v * 1000 }); emitRegion(); syncAll(); }),
+      ]),
+      h('div', 'al-sliders', {}, [
+        sliderField('Gain', 'al-f-gain', 0, 2, 0.01, el?.audio?.gain ?? 1, (v) => {
+          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, gain: v } }));
+          mediaEl.volume = clamp(v, 0, 1);
+          syncAll();
+        }, (v) => `${Math.round(v * 100)}%`),
+        sliderField('Fade in', 'al-f-fade-in', 0, 5000, 50, el?.audio?.fadeInMs ?? 0, (v) => {
+          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeInMs: v } })); syncAll();
+        }, (v) => `${(v / 1000).toFixed(1)}s`),
+        sliderField('Fade out', 'al-f-fade-out', 0, 5000, 50, el?.audio?.fadeOutMs ?? 0, (v) => {
+          project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeOutMs: v } })); syncAll();
+        }, (v) => `${(v / 1000).toFixed(1)}s`),
+        roomToneField(!!el?.audio?.roomTone, (on) => {
+          project = updateElement(project, el.id, (it) => ({
+            ...it,
+            audio: { ...it.audio, roomTone: on ? { kind: 'room-tone', source: 'derived-gap-bed', levelDb: -52 } : null },
+          }));
+          syncAll();
+        }),
+      ]),
+      h('div', 'al-inspector-sub', {}, `Duration ${fmtTime(Math.max(0, outSec - inSec))}`),
+    );
+    reflectState();
+  }
+
+  function syncAll() { renderWaveform(); renderInspector(); }
+
+  // ── Transport ─────────────────────────────────────────────────────────
+  function showError(message) {
+    errorBanner.textContent = message;
+    errorBanner.classList.add('is-visible');
+  }
+  function clearError() { errorBanner.classList.remove('is-visible'); errorBanner.textContent = ''; }
+
+  function togglePlay() {
+    if (mediaEl.paused) {
+      clearError();
+      const p = mediaEl.play();
+      if (p && typeof p.then === 'function') {
+        p.then(() => { clearError(); updateCursor(); })
+          .catch((err) => showError(`Playback failed: ${err?.message || err?.name || 'unknown error'}. Try clicking play again, or download the file.`));
+      }
+    } else {
       mediaEl.pause();
-      mediaEl.currentTime = 0;
-      onMediaUpdate();
-      event.stopPropagation();
+    }
+    updateCursor();
+  }
+  function stop() { mediaEl.pause(); mediaEl.currentTime = 0; renderWaveform(); }
+
+  stopBtn.addEventListener('click', stop);
+  playBtn.addEventListener('click', togglePlay);
+  zoomIn.addEventListener('click', () => { setZoomPxPerSec((pxPerSec || fitPxPerSec()) * 1.5); });
+  zoomOut.addEventListener('click', () => { setZoomPxPerSec((pxPerSec || fitPxPerSec()) / 1.5); });
+  fitBtn.addEventListener('click', () => { pxPerSec = 0; renderWaveform(); });
+  exportBtn.addEventListener('click', () => { exportSettings(); });
+
+  function fitPxPerSec() { return (canvasWrap.clientWidth || 700) / Math.max(0.001, timelineSec()); }
+  function setZoomPxPerSec(v) { pxPerSec = clamp(v, ZOOM_MIN, ZOOM_MAX); renderWaveform(); }
+
+  // ── Direct clip manipulation: move / trim / fade, plus click-to-seek ───
+  function xToTimelineSec(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    const frac = clamp((clientX - rect.left) / Math.max(1, rect.width), 0, 1);
+    return frac * timelineSec();
+  }
+  canvasWrap.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const mode = e.target?.dataset?.drag || 'seek';
+    const el = firstElement();
+    canvasWrap.setPointerCapture?.(e.pointerId);
+    drag = {
+      mode,
+      startX: e.clientX,
+      moved: false,
+      startStartMs: el?.timeline?.startMs || 0,
+      startInMs: el?.timeline?.sourceInMs || 0,
+      startOutMs: el?.timeline?.sourceOutMs || (durationSec() * 1000),
+      startFadeInMs: el?.audio?.fadeInMs || 0,
+      startFadeOutMs: el?.audio?.fadeOutMs || 0,
+    };
+    e.stopPropagation();
+  });
+  canvasWrap.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const rect = canvas.getBoundingClientRect();
+    const secPerPx = timelineSec() / Math.max(1, rect.width);
+    const deltaMs = (e.clientX - drag.startX) * secPerPx * 1000;
+    if (Math.abs(e.clientX - drag.startX) > 3) drag.moved = true;
+    if (!drag.moved) return;
+    const el = firstElement();
+    if (drag.mode === 'move') {
+      project = moveElement(project, el.id, Math.max(0, drag.startStartMs + deltaMs));
+    } else if (drag.mode === 'trim-in') {
+      const nextIn = clamp((drag.startInMs + deltaMs) / 1000, 0, (drag.startOutMs / 1000) - 0.05) * 1000;
+      project = trimElement(project, el.id, { sourceInMs: nextIn, sourceOutMs: drag.startOutMs });
+    } else if (drag.mode === 'trim-out') {
+      const nextOut = clamp((drag.startOutMs + deltaMs) / 1000, (drag.startInMs / 1000) + 0.05, durationSec()) * 1000;
+      project = trimElement(project, el.id, { sourceInMs: drag.startInMs, sourceOutMs: nextOut });
+    } else if (drag.mode === 'fade-in') {
+      const next = clamp(drag.startFadeInMs + deltaMs, 0, clipLenSec() * 1000);
+      project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeInMs: next } }));
+    } else if (drag.mode === 'fade-out') {
+      const next = clamp(drag.startFadeOutMs - deltaMs, 0, clipLenSec() * 1000);
+      project = updateElement(project, el.id, (it) => ({ ...it, audio: { ...it.audio, fadeOutMs: next } }));
+    } else {
       return;
     }
-    const waveform = event.target?.closest?.('.media-wv-canvas, .media-waveform-surface');
-    if (waveform && root.contains(waveform) && !event.target?.closest?.('.media-lane-trim')) {
-      if (suppressCanvasClick) {
-        suppressCanvasClick = false;
-        event.stopPropagation();
-        return;
-      }
-      if (!canvasPointer?.moved) {
-        const timeMs = canvasClientXToTimeMs(event.clientX);
-        mediaEl.currentTime = clamp(timeMs / 1000 - elementStartSec(), 0, durationSec());
-        setCursorMs(timeMs);
-        render();
-      }
-      event.stopPropagation();
+    renderWaveform();
+  });
+  canvasWrap.addEventListener('pointerup', (e) => {
+    if (!drag) return;
+    if (!drag.moved && (drag.mode === 'seek' || drag.mode === 'move')) {
+      const sec = xToTimelineSec(e.clientX);
+      mediaEl.currentTime = clamp(sec - startSec() + clipInSec(), clipInSec(), clipOutSec());
+      updateCursor();
+    } else if (drag.moved) {
+      emitRegion();
+      renderInspector();
     }
-  };
-  const onPointerDownCapture = (event) => {
-    const waveform = event.target?.closest?.('.media-wv-canvas, .media-waveform-surface');
-    if (!waveform || !root.contains(waveform) || event.target?.closest?.('.media-lane-trim') || event.button !== 0) return;
-    canvasPointer = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      moved: false,
-    };
-    try { waveform.setPointerCapture?.(event.pointerId); } catch { /* ignore synthetic capture */ }
-    event.stopPropagation();
-  };
-  const onPointerMoveCapture = (event) => {
-    if (!canvasPointer || event.pointerId !== canvasPointer.pointerId) return;
-    if (Math.abs(event.clientX - canvasPointer.startX) < 3) return;
-    canvasPointer.moved = true;
-    const a = canvasClientXToSourceSec(canvasPointer.startX);
-    const b = canvasClientXToSourceSec(event.clientX);
-    const start = Math.min(a, b);
-    const end = Math.max(a, b);
-    updateTrimRange(start, end);
-    if (onRegionSelect && end > start) onRegionSelect({ start, end });
-    render();
-    event.preventDefault();
-    event.stopPropagation();
-  };
-  const onPointerUpCapture = (event) => {
-    if (!canvasPointer || event.pointerId !== canvasPointer.pointerId) return;
-    const wasMoved = canvasPointer.moved;
-    const startX = canvasPointer.startX;
-    canvasPointer = null;
-    if (wasMoved) {
-      suppressCanvasClick = true;
-      const a = canvasClientXToSourceSec(startX);
-      const b = canvasClientXToSourceSec(event.clientX);
-      const start = Math.min(a, b);
-      const end = Math.max(a, b);
-      updateTrimRange(start, end);
-      if (onRegionSelect && end > start) onRegionSelect({ start, end });
-      render();
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  };
-  const detachDrag = attachSourceMoveDrag(root, (deltaSec) => {
-    const element = firstElement();
-    if (!element) return;
-    project = moveElement(project, element.id, element.timeline.startMs + deltaSec * 1000);
-    render();
+    drag = null;
   });
 
-  root.addEventListener('click', onClickCapture, true);
-  root.addEventListener('pointerdown', onPointerDownCapture, true);
-  root.addEventListener('pointermove', onPointerMoveCapture, true);
-  root.addEventListener('pointerup', onPointerUpCapture, true);
-  root.addEventListener('input', onInput);
-  root.addEventListener('change', onChange);
-  mediaEl.addEventListener('loadedmetadata', onLoadedMetadata);
-  ['timeupdate', 'play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((event) => mediaEl.addEventListener(event, onMediaUpdate));
-  window.addEventListener('resize', render);
+  function emitRegion() {
+    const el = firstElement();
+    const a = (el?.timeline?.sourceInMs || 0) / 1000;
+    const b = (el?.timeline?.sourceOutMs || 0) / 1000;
+    if (onRegionSelect && b > a) onRegionSelect({ start: a, end: b });
+  }
+
+  // ── Media + lifecycle ─────────────────────────────────────────────────
+  const onLoaded = () => { project = mergeDuration(project, mediaDuration(mediaEl) * 1000); syncAll(); };
+  const onMedia = () => { updateCursor(); };
+  mediaEl.addEventListener('loadedmetadata', onLoaded);
+  ['play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((ev) => mediaEl.addEventListener(ev, onMedia));
+  window.addEventListener('resize', renderWaveform);
 
   decodeSummary(intake).then((summary) => {
     if (destroyed) return;
@@ -189,42 +333,44 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
       waveformSummary = summary;
       waveformStatus = 'available';
       if (Number.isFinite(summary.duration) && summary.duration > 0) project = mergeDuration(project, summary.duration * 1000);
-      attachWaveformSummary(summary);
       options.onWaveformSummary?.(summary);
     } else {
       waveformStatus = 'unavailable';
     }
     options.onWaveformSummaryStatus?.(waveformStatus);
-    render();
-  }).catch(() => {
-    if (destroyed) return;
-    waveformStatus = 'unavailable';
-    options.onWaveformSummaryStatus?.(waveformStatus);
-    render();
-  });
+    syncAll();
+  }).catch(() => { waveformStatus = 'unavailable'; options.onWaveformSummaryStatus?.(waveformStatus); });
 
   function loop() {
     if (destroyed) return;
-    onMediaUpdate();
+    if (!mediaEl.paused) renderWaveform(); else updateCursor();
     rafId = requestAnimationFrame(loop);
   }
 
+  function reflectState() {
+    const el = firstElement();
+    root.dataset.mixerProjectId = project.project.id;
+    root.dataset.mixerElementId = el?.id || '';
+    root.dataset.mixerGain = String(el?.audio?.gain ?? 1);
+    root.dataset.mixerRoomTone = el?.audio?.roomTone ? 'true' : 'false';
+    root.dataset.mixerWaveformStatus = waveformStatus;
+    root.dataset.mixerWaveformBuckets = String(waveformSummary?.buckets || (waveformSummary?.peak?.length ?? 0));
+    root.dataset.mixerDurationSec = String(durationSec());
+  }
+
+  function exportSettings() { const json = exportProjectSettingsJson(project); root.dataset.projectSettings = json; return json; }
+  function importSettings(json) { const imported = importProjectSettings(json); project = selectFirstElement(imported.project); syncAll(); return imported; }
+
+  // Test/integration handle on the DOM node (parity with the previous surface).
   root.__mediaMixerListen = {
     getProject: () => project,
     exportSettings,
     importSettings,
-    getWaveformSummary: () => waveformSummary,
-    setZoom(value) {
-      viewport = { ...viewport, pxPerMs: clampZoom(Number(value) * 0.08) };
-      render();
-    },
-    setPan(value) {
-      viewport = { ...viewport, scrollLeft: Math.max(0, Number(value) || 0) };
-      render();
-    },
+    zoomFactor: (f) => setZoomPxPerSec(fitPxPerSec() * Math.max(0.1, Number(f) || 1)),
   };
 
-  render();
+  // Initial paint (deferred a tick so layout width is known).
+  requestAnimationFrame(() => { if (!destroyed) syncAll(); });
   rafId = requestAnimationFrame(loop);
 
   return {
@@ -232,23 +378,18 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     getProject: () => project,
     exportSettings,
     importSettings,
-    setChapters(nextChapters) {
-      chapters = Array.isArray(nextChapters) ? nextChapters : [];
-      render();
-    },
-    setRegionSelect(fn) {
-      onRegionSelect = typeof fn === 'function' ? fn : null;
-    },
+    setChapters(next) { chapters = Array.isArray(next) ? next : []; renderWaveform(); },
+    setRegionSelect(fn) { onRegionSelect = typeof fn === 'function' ? fn : null; },
     getState() {
-      const element = firstElement();
+      const el = firstElement();
       return {
-        offsetSec: elementStartSec(),
-        inSec: (element?.timeline?.sourceInMs || 0) / 1000,
-        outSec: (element?.timeline?.sourceOutMs || element?.timeline?.durationMs || 0) / 1000,
-        gain: element?.audio?.gain ?? 1,
-        fadeInMs: element?.audio?.fadeInMs ?? 0,
-        fadeOutMs: element?.audio?.fadeOutMs ?? 0,
-        roomTone: !!element?.audio?.roomTone,
+        offsetSec: startSec(),
+        inSec: (el?.timeline?.sourceInMs || 0) / 1000,
+        outSec: (el?.timeline?.sourceOutMs || el?.timeline?.durationMs || 0) / 1000,
+        gain: el?.audio?.gain ?? 1,
+        fadeInMs: el?.audio?.fadeInMs ?? 0,
+        fadeOutMs: el?.audio?.fadeOutMs ?? 0,
+        roomTone: !!el?.audio?.roomTone,
         durationSec: durationSec(),
         currentTime: Number(mediaEl.currentTime) || 0,
       };
@@ -256,244 +397,50 @@ export function buildMixerAudioListenSurface(mediaEl, intake, options = {}) {
     destroy() {
       destroyed = true;
       cancelAnimationFrame(rafId);
-      interactions.destroy();
-      detachDrag();
-      root.removeEventListener('click', onClickCapture, true);
-      root.removeEventListener('pointerdown', onPointerDownCapture, true);
-      root.removeEventListener('pointermove', onPointerMoveCapture, true);
-      root.removeEventListener('pointerup', onPointerUpCapture, true);
-      root.removeEventListener('input', onInput);
-      root.removeEventListener('change', onChange);
-      mediaEl.removeEventListener('loadedmetadata', onLoadedMetadata);
-      ['timeupdate', 'play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((event) => mediaEl.removeEventListener(event, onMediaUpdate));
-      window.removeEventListener('resize', render);
-      delete root.__mediaMixerListen;
+      mediaEl.removeEventListener('loadedmetadata', onLoaded);
+      ['play', 'pause', 'seeked', 'ended', 'volumechange'].forEach((ev) => mediaEl.removeEventListener(ev, onMedia));
+      window.removeEventListener('resize', renderWaveform);
       root.remove();
     },
   };
-
-  function decorateRenderedShell() {
-    const toolbar = root.querySelector('.mmx-toolbar');
-    const body = root.querySelector('.mmx-body');
-    const element = firstElement();
-    const currentSec = Number(mediaEl.currentTime) || 0;
-    const sourceOutSec = (element?.timeline?.sourceOutMs || element?.timeline?.durationMs || 0) / 1000;
-    const sourceInSec = (element?.timeline?.sourceInMs || 0) / 1000;
-
-    root.querySelector('.mmx-ruler')?.classList.add('media-lane-ruler');
-    const playhead = root.querySelector('.mmx-playhead');
-    playhead?.classList.add('media-wv-playhead', 'media-lane-cursor');
-    if (playhead && !playhead.querySelector('.media-wv-playhead-label')) {
-      const label = document.createElement('span');
-      label.className = 'media-wv-playhead-label';
-      label.textContent = fmtTime(viewport.cursorMs / 1000);
-      playhead.append(label);
-    }
-    root.querySelector('.mmx-lane-label')?.classList.add('media-lane-label-name');
-    root.querySelector('.mmx-element')?.classList.add('media-lane-trim');
-    const waveformCanvas = root.querySelector('.mmx-element-waveform');
-    waveformCanvas?.classList.add('media-wv-canvas', 'media-lane-canvas');
-    if (waveformCanvas) waveformCanvas.style.width = `${Math.round((viewport.pxPerMs / 0.08) * 100)}%`;
-    if (body) body.classList.add('media-waveform-surface', 'media-lane-waveform');
-
-    if (toolbar) {
-      toolbar.querySelector('.mmx-zoom')?.classList.add('mmx-listen-zoom');
-      toolbar.querySelector('[data-action="zoom-out"]')?.classList.add('mmx-listen-zoom-out');
-      toolbar.querySelector('[data-action="zoom-in"]')?.classList.add('mmx-listen-zoom-in');
-      const transport = document.createElement('div');
-      transport.className = 'media-lane-transport';
-      const stop = createButton('Stop', 'Stop and rewind', 'media-listen-btn media-listen-stop');
-      const play = createButton(mediaEl.paused ? 'Play' : 'Pause', mediaEl.paused ? 'Play' : 'Pause', 'media-listen-btn media-listen-play');
-      const time = document.createElement('span');
-      time.className = 'media-listen-time media-lane-time';
-      time.textContent = `${fmtTime(currentSec)} / ${durationSec() > 0 ? fmtTime(durationSec()) : '--:--'}`;
-      transport.append(stop, play, time);
-      toolbar.append(transport);
-
-      const pan = document.createElement('input');
-      pan.type = 'range';
-      pan.className = 'mmx-listen-pan';
-      pan.min = '0';
-      pan.max = String(Math.max(100, root.querySelector('.mmx-body')?.scrollWidth || 100));
-      pan.step = '1';
-      pan.value = String(Math.round(viewport.scrollLeft));
-      pan.setAttribute('aria-label', 'Listen lane pan');
-      pan.addEventListener('input', () => dispatch({ type: 'pan', scrollLeft: Number(pan.value) }));
-      toolbar.append(pan);
-
-      const exportBtn = createButton('Export settings', 'Export mixer settings', 'mmx-settings-export');
-      exportBtn.addEventListener('click', exportSettings);
-      toolbar.append(exportBtn);
-
-      const note = document.createElement('div');
-      note.className = 'mmx-capability-note';
-      note.textContent = 'You can edit timing, fades, gain, room tone, and project settings now. Enable Media Transcoding for render paths that need ffmpeg.';
-      root.insertBefore(note, toolbar);
-    }
-
-    const inspector = root.querySelector('.mmx-inspector');
-    if (inspector) {
-      aliasInput(root, '.mmx-inspector-start', 'media-lane-offset');
-      aliasInput(root, '.mmx-inspector-source-in', 'media-lane-in');
-      aliasInput(root, '.mmx-inspector-source-out', 'media-lane-out');
-      aliasInput(root, '.mmx-inspector-gain', 'media-lane-gain');
-      aliasInput(root, '.mmx-inspector-fade-in', 'media-lane-fade-in');
-      aliasInput(root, '.mmx-inspector-fade-out', 'media-lane-fade-out');
-      const roomField = document.createElement('label');
-      roomField.className = 'mmx-inspector-field media-lane-room-field';
-      const room = document.createElement('input');
-      room.type = 'checkbox';
-      room.className = 'media-lane-room-toggle';
-      room.checked = !!element?.audio?.roomTone;
-      const span = document.createElement('span');
-      span.textContent = 'Pink-noise / room-tone bed';
-      roomField.append(span, room);
-      inspector.querySelector('.mmx-inspector-grid')?.append(roomField);
-      const duration = document.createElement('div');
-      duration.className = 'media-lane-duration';
-      duration.textContent = `Duration ${fmtTime(Math.max(0, sourceOutSec - sourceInSec))}`;
-      inspector.append(duration);
-    }
-
-    decorateRoomTone(body, element);
-    decorateChapters(body, chapters, project.project.durationMs || 1000);
-    updateTransportLabels();
-  }
-
-  function updateTransportLabels() {
-    const play = root.querySelector('.media-listen-play');
-    if (play) {
-      play.textContent = mediaEl.paused ? 'Play' : 'Pause';
-      play.setAttribute('aria-label', mediaEl.paused ? 'Play' : 'Pause');
-    }
-    const time = root.querySelector('.media-listen-time');
-    if (time) time.textContent = `${fmtTime(Number(mediaEl.currentTime) || 0)} / ${durationSec() > 0 ? fmtTime(durationSec()) : '--:--'}`;
-    const playhead = root.querySelector('.media-wv-playhead');
-    if (playhead) {
-      playhead.style.left = `${MIXER_LAYOUT.gutterWidth + viewport.cursorMs * viewport.pxPerMs - viewport.scrollLeft}px`;
-      const label = playhead.querySelector('.media-wv-playhead-label');
-      if (label) label.textContent = fmtTime(viewport.cursorMs / 1000);
-    }
-  }
-
-  function updateFromInspector(field, value) {
-    const element = firstElement();
-    if (!element) return;
-    const n = Number(value);
-    if (!Number.isFinite(n)) return;
-    if (field === 'start') project = moveElement(project, element.id, n * 1000);
-    if (field === 'source-in') project = trimElement(project, element.id, { sourceInMs: n * 1000 });
-    if (field === 'source-out') project = trimElement(project, element.id, { sourceOutMs: n * 1000 });
-    if (field === 'gain') {
-      project = updateElement(project, element.id, (item) => ({ ...item, audio: { ...item.audio, gain: clamp(n, 0, 2) } }));
-      mediaEl.volume = clamp(n, 0, 1);
-    }
-    if (field === 'fade-in') project = updateElement(project, element.id, (item) => ({ ...item, audio: { ...item.audio, fadeInMs: Math.max(0, n) } }));
-    if (field === 'fade-out') project = updateElement(project, element.id, (item) => ({ ...item, audio: { ...item.audio, fadeOutMs: Math.max(0, n) } }));
-  }
-
-  function updateFromCompatInput(input) {
-    const map = {
-      'media-lane-offset': 'start',
-      'media-lane-in': 'source-in',
-      'media-lane-out': 'source-out',
-      'media-lane-gain': 'gain',
-      'media-lane-fade-in': 'fade-in',
-      'media-lane-fade-out': 'fade-out',
-    };
-    const field = Object.keys(map).find((className) => input.classList.contains(className));
-    if (field) {
-      updateFromInspector(map[field], input.value);
-      render();
-    }
-  }
-
-  function setRoomTone(enabled) {
-    const id = firstElementId();
-    if (!id) return;
-    project = updateElement(project, id, (element) => ({
-      ...element,
-      audio: {
-        ...element.audio,
-        roomTone: enabled ? { kind: 'room-tone', source: 'derived-gap-bed', levelDb: -52 } : null,
-      },
-    }));
-  }
-
-  function updateTrimRange(startSec, endSec) {
-    const element = firstElement();
-    if (!element) return;
-    project = trimElement(project, element.id, {
-      sourceInMs: clamp(startSec, 0, durationSec()) * 1000,
-      sourceOutMs: clamp(endSec, 0, durationSec()) * 1000,
-    });
-  }
-
-  function attachWaveformSummary(summary) {
-    const id = firstElementId();
-    if (!id || !summary) return;
-    project = updateElement(project, id, (element) => ({
-      ...element,
-      analysis: {
-        ...element.analysis,
-        waveformSummary: summary,
-      },
-    }));
-  }
-
-  function setCursorMs(cursorMs) {
-    viewport = { ...viewport, cursorMs: Math.max(0, Number(cursorMs) || 0) };
-  }
-
-  function elementStartSec() {
-    return (firstElement()?.timeline?.startMs || 0) / 1000;
-  }
-
-  function canvasClientXToTimeMs(clientX) {
-    const rect = root.querySelector('.mmx-body')?.getBoundingClientRect();
-    if (!rect) return 0;
-    const x = clientX - rect.left + viewport.scrollLeft - MIXER_LAYOUT.gutterWidth;
-    return Math.max(0, x / Math.max(0.001, viewport.pxPerMs));
-  }
-
-  function canvasClientXToSourceSec(clientX) {
-    return clamp(canvasClientXToTimeMs(clientX) / 1000 - elementStartSec(), 0, durationSec());
-  }
-
-  function exportSettings() {
-    const json = exportProjectSettingsJson(project);
-    root.dataset.projectSettings = json;
-    return json;
-  }
-
-  function importSettings(json) {
-    const imported = importProjectSettings(json);
-    project = selectFirstElement(imported.project);
-    attachWaveformSummary(waveformSummary);
-    render();
-    return imported;
-  }
-
-  function reflectProjectState() {
-    const element = firstElement();
-    root.dataset.mixerProjectId = project.project.id;
-    root.dataset.mixerElementId = element?.id || '';
-    root.dataset.mixerOffsetMs = String(Math.round(element?.timeline?.startMs || 0));
-    root.dataset.mixerGain = String(element?.audio?.gain ?? 1);
-    root.dataset.mixerRoomTone = element?.audio?.roomTone ? 'true' : 'false';
-    root.dataset.mixerZoom = String(Math.round((viewport.pxPerMs / 0.08) * 100) / 100);
-    root.dataset.mixerPan = String(Math.round(viewport.scrollLeft));
-    root.dataset.mixerWaveformStatus = waveformStatus;
-    root.dataset.mixerWaveformBuckets = String(element?.analysis?.waveformSummary?.buckets || 0);
-    root.dataset.mixerDurationSec = String(Math.max(0.001, project.project.durationMs / 1000));
-  }
 }
 
-function button(text, label, className) {
-  const node = document.createElement('button');
-  node.type = 'button';
-  node.className = className;
-  node.textContent = text;
-  node.setAttribute('aria-label', label);
+// ── small DOM + field helpers ─────────────────────────────────────────────
+function h(tag, className, attrs = {}, children) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+  if (Array.isArray(children)) node.append(...children.filter(Boolean));
+  else if (children != null) node.textContent = children;
   return node;
+}
+
+function numberField(label, cls, value, onChange) {
+  const input = h('input', cls, { type: 'number', step: '0.01', value: String(round2(value)) });
+  const fire = () => { const n = Number(input.value); if (Number.isFinite(n)) onChange(n); };
+  input.addEventListener('input', fire);
+  input.addEventListener('change', fire);
+  return h('label', 'al-field', {}, [h('span', '', {}, label), input]);
+}
+
+function sliderField(label, cls, min, max, step, value, onChange, fmt) {
+  const span = h('span', '', {}, `${label} (${fmt(value)})`);
+  const input = h('input', cls, { type: 'range', min: String(min), max: String(max), step: String(step), value: String(value) });
+  input.addEventListener('input', () => { const n = Number(input.value); span.textContent = `${label} (${fmt(n)})`; onChange(n); });
+  return h('div', 'al-slider', {}, [span, input]);
+}
+
+function roomToneField(checked, onChange) {
+  const input = h('input', 'al-f-room', { type: 'checkbox' });
+  input.checked = checked;
+  input.addEventListener('change', () => onChange(input.checked));
+  return h('div', 'al-toggle', {}, [input, h('label', '', {}, 'Pink-noise / room-tone bed')]);
+}
+
+function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+
+function niceStep(seconds) {
+  const steps = [0.1, 0.25, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
+  for (const s of steps) if (seconds <= s) return s;
+  return 600;
 }

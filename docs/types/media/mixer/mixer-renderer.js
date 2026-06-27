@@ -53,10 +53,18 @@ export function renderMixerShell(root, snapshot, viewportInput = {}, options = {
   timeline.append(renderPlayhead(layout));
   body.append(timeline);
 
-  const preview = buildSeekFramePreview(snapshot, layout.viewport.cursorMs, { ...options.previewSize, frames: options.visualFrames });
   const inspector = renderInspector(snapshot);
   root.append(toolbar, body);
-  renderSeekFramePreview(root, preview);
+  // The seek-frame preview only makes sense when the project actually contains a visual
+  // (image/video) element. An audio-only project (e.g. a lone MP3/WAV) has nothing to preview,
+  // so we skip it rather than render an empty "No active visual elements" panel.
+  const hasVisual = (snapshot.elements || []).some(
+    (element) => element.capabilities?.hasVideo || element.capabilities?.hasImage,
+  );
+  if (hasVisual) {
+    const preview = buildSeekFramePreview(snapshot, layout.viewport.cursorMs, { ...options.previewSize, frames: options.visualFrames });
+    renderSeekFramePreview(root, preview);
+  }
   root.append(inspector);
   drawElementWaveforms(root, snapshot, options);
   return {

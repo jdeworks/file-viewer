@@ -76,7 +76,22 @@ These are implemented and tested as capabilities, but the audio UI is not yet pr
 
 ### A0 — Modular Media Mixer Source Of Truth
 
-Status: Stages 1–8 implemented; lane finalized for merge readiness (2026-06-27).
+Status: Stages 1–8 implemented; audio Listen REBUILT as a direct auto-audiobook port (2026-06-27).
+
+Audio Listen rebuild (2026-06-27, commit a3f25857) — addresses user feedback that the redesign
+kept landing on the OLD look (see memory media-mixer-port-failure):
+- Root cause was adapter-over-port: the Listen surface built the generic `renderMixerShell` then
+  aliased it back to the old `media-lane-*`/`media-wv-*` DOM, so it never replaced the visual
+  language and the waveform was a blank box.
+- Replaced with a bespoke surface: `audio-listen-lane.css` (ported design tokens, light+dark),
+  `audio-listen-waveform.js` (real canvas peaks), and a rewritten `mixer-audio-listen.js` (own
+  toolbar/ruler/track/cursor/inspector, click-to-seek, drag-to-trim, chapter markers, SURFACED
+  playback errors). Verified by screenshots (sample.mp3/.wav draw real waveforms) + check.sh --fast.
+- Confirmed bugs fixed: frame-preview-on-mp3 (gated to visual elements), swallowed play() errors,
+  and the vacuous playback smoke assertion (now asserts real currentTime progress via a trusted click).
+- NOT yet merged to dev — kept on worktree-media for user visual review/iteration.
+- Remaining: the same port treatment for Mix/Compare (still generic mmx-shell), dark-theme visual
+  pass, and richer selection-panel parity with auto-audiobook.
 
 Finalization pass (2026-06-27):
 
@@ -98,10 +113,21 @@ Finalization pass (2026-06-27):
   `media-studio-mixer-audio-listen` smoke, and `./scripts/check.sh --fast` all
   green (after one unrelated flaky click-interception retry). Regenerated
   `asset-manifest.json` + `sw.js` for the new files and committed them.
-- Merge readiness: lane is 62 commits ahead of `origin/dev`; `origin/dev` is
-  ~138 commits ahead of the lane, so the merge-in of `origin/dev` is a real
-  integration step (not just the auto-resolved manifest/sw.js conflict). Awaiting
-  user go-ahead before merging to dev.
+- Merged to dev (2026-06-27, user-authorized). Merged `origin/dev` (~138 commits)
+  into the lane — only `asset-manifest.json` + `sw.js` conflicted, resolved by
+  `node scripts/gen-asset-manifest.mjs` (never hand-edited); `interactions.mjs`
+  auto-merged. Pushed lane HEAD to `dev` and updated `origin/worktree-media`.
+  Lane == `origin/dev` == `origin/worktree-media` at `7fa09070`, so the lane
+  already contains all of dev and remains live for continued work.
+- Known pre-existing gate notes (NOT from this lane, do not block media work):
+  - Full `check.sh` `core-ui` asserts the `core` bundle is light, but `core` is
+    ~1.58 MB and trips the heavy threshold — already true on `origin/dev`'s
+    committed manifest. This is a cross-cutting core-bundle/build concern for the
+    general lane, not media.
+  - The heavy `media-3d` smoke area (image/ASCII/camera/3D — not the mixer) can
+    flake on a `page.click` timeout waiting for `#previewHost .media-doc
+    video.media-view`, as previously documented. `--fast` (the pre-push gate) and
+    all owned media-studio areas are green.
 
 Prior status: Stage 5 video/image seek-frame preview started.
 
