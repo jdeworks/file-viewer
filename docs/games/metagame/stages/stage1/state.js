@@ -18,6 +18,16 @@ export function defaultState(context = {}) {
     introStages: [],
     claimed: {},
     tabsUnlocked: false,
+    // ── Prestige meta-progression (post-prestige mechanics + Cores) ──────────────────────────────
+    prestigeCount: 0,            // depth: how many prestiges performed → which mechanics are unlocked
+    cores: 0,                    // permanent cross-run meta-currency (earned on prestige)
+    coreUpgrades: {},            // { upgradeId: level } — persist across prestige
+    ticks: 0,                    // deterministic game-tick counter (drives the post-prestige mechanics)
+    pipelines: {},               // { tierId: true } — wired builders (auto-run for upkeep)
+    pipelineProgress: {},        // { tierId: ticksAccumulated } — per-pipeline cycle progress
+    flux: { meter: 0, boostMult: 1, boostTicks: 0 },  // burst-meter mechanic
+    echo: { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 },  // defrag-echo attention mechanic
+    resonanceFound: {},          // { bandId: true } — discovered tier-ratio resonances
   };
 }
 
@@ -43,6 +53,21 @@ export function normalizeState(state, context = {}) {
   target.introStages = Array.isArray(target.introStages) ? target.introStages : [];
   target.claimed = target.claimed && typeof target.claimed === 'object' ? target.claimed : {};
   target.tabsUnlocked = Boolean(target.tabsUnlocked);
+
+  // Prestige meta-progression.
+  target.prestigeCount = Number.isFinite(target.prestigeCount) ? target.prestigeCount : 0;
+  target.cores = Number.isFinite(target.cores) ? target.cores : 0;
+  target.coreUpgrades = target.coreUpgrades && typeof target.coreUpgrades === 'object' ? target.coreUpgrades : {};
+  target.ticks = Number.isFinite(target.ticks) ? target.ticks : 0;
+  target.pipelines = target.pipelines && typeof target.pipelines === 'object' ? target.pipelines : {};
+  target.pipelineProgress = target.pipelineProgress && typeof target.pipelineProgress === 'object' ? target.pipelineProgress : {};
+  target.flux = target.flux && typeof target.flux === 'object'
+    ? { meter: +target.flux.meter || 0, boostMult: +target.flux.boostMult || 1, boostTicks: +target.flux.boostTicks || 0 }
+    : { meter: 0, boostMult: 1, boostTicks: 0 };
+  target.echo = target.echo && typeof target.echo === 'object'
+    ? { active: Boolean(target.echo.active), spawnTick: +target.echo.spawnTick || 0, expireTick: +target.echo.expireTick || 0, lastTick: +target.echo.lastTick || 0 }
+    : { active: false, spawnTick: 0, expireTick: 0, lastTick: 0 };
+  target.resonanceFound = target.resonanceFound && typeof target.resonanceFound === 'object' ? target.resonanceFound : {};
 
   if (target.owned['s1-cursor']) {
     target.owned['s1-mult'] = (target.owned['s1-mult'] || 0) + target.owned['s1-cursor'];

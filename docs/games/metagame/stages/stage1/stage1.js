@@ -76,9 +76,11 @@ export function renderStage1(ctx) {
     bits: () => true,
     managers: () => (state.owned['s1-box'] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    reset: () => gte(state.totalBits, RESET_THRESHOLD),
+    // Visible once a prestige is affordable OR after any prestige (so the Cores shop / mechanic
+    // roster stays reachable while totalBits is rebuilding toward the next reset).
+    reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1,
   };
-  const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Reset' };
+  const TAB_LABELS = { bits: '🧮 Bits', managers: '🛠 Managers', achievements: '🏆 Achievements', reset: '🌀 Prestige' };
 
   host.innerHTML =
     '<div class="mg-wrap mg-s1">'
