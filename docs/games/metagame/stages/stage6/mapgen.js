@@ -13,7 +13,9 @@ const STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
   2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
   3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
-  4: ["null-pointer", "race-condition", "packet-storm"]
+  4: ["null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
+  // Act 5 PRESENTATION · CORRUPTION: cleansers + corruption-flavoured bruisers reward burst-DoT play.
+  5: ["packet-storm", "race-condition", "heisenbug", "daemon-process"]
 };
 const ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
 const CONTENT_LAYERS = 6; // + 1 boss layer => ~15 nodes/act

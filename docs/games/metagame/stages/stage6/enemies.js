@@ -91,6 +91,31 @@ export const ENEMIES = {
       { label: "Attack 12", attack: 12 }
     ]
   },
+  // Appears act 5+ (CORRUPTION): cleanses its OWN debuffs (incl. corruption) every 3rd turn —
+  // punishes a slow DoT plan, so you must burst the stack (Core Dump / Garbage Collect) before it wipes.
+  "heisenbug": {
+    id: "heisenbug",
+    name: "Heisenbug",
+    tier: "standard",
+    hp: 56, hpPerAct: 18, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Attack 12", attack: 12 },
+      { label: "Attack 8 + Weak", attack: 8, applyPlayer: { status: "weak", value: 1 } },
+      { label: "Observe — cleanse itself, Attack 8", cleanse: true, attack: 8 }
+    ]
+  },
+  // Appears act 5+: a corruption-flavoured bruiser that forks into multi-hits.
+  "daemon-process": {
+    id: "daemon-process",
+    name: "Daemon Process",
+    tier: "standard",
+    hp: 58, hpPerAct: 16, armor: 0, armorPerAct: 0,
+    script: [
+      { label: "Spawn — Block 8", block: 8 },
+      { label: "Attack 15", attack: 15 },
+      { label: "Fork — Attack 6, twice + Vulnerable", attack: 6, hits: 2, applyPlayer: { status: "vulnerable", value: 1 } }
+    ]
+  },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
   "expired-certificate": {
     // Stalls behind heavy block, then expires for a large UNBLOCKABLE hit — race it or heal.
@@ -154,7 +179,21 @@ export const ENEMIES = {
       { label: "Deadlock — Attack 32", attack: 32 }
     ]
   },
-  // ── The act-4 finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
+  // Act 5 mini-boss (CORRUPTION): gains armor on any turn you DON'T damage it (fortify) — so a pure
+  // corruption-DoT turn (no direct hits) lets it wall up. Forces you to mix burst with the DoT.
+  "stack-overflow": {
+    id: "stack-overflow",
+    name: "Stack Overflow",
+    tier: "boss",
+    hp: 320, hpPerAct: 0, armor: 4, armorPerAct: 0,
+    script: [
+      { label: "Recurse — Attack 14", attack: 14 },
+      { label: "Reinforce — +6 armor if you didn't hit it, Block 8", fortify: 6, block: 8 },
+      { label: "Attack 10, twice", attack: 10, hits: 2 },
+      { label: "Overflow — Attack 28", attack: 28 }
+    ]
+  },
+  // ── The final-act finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
   // HP here is the PHASE-1 pool; phase advance refills to BOSS_PHASE_HP[2]/[3]. Pressure is modest —
   // the challenge is satisfying the handshake (lead SYN / play ACK), not a raw damage race.
   "the-refused-connection": {
