@@ -1073,9 +1073,24 @@ export async function run(ctx) {
   await page.click('[data-action="open-source"][data-source="route_table_examined"]');
   await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:route')), null, { timeout: 5000 });
   pass('Stage 7 Case 2: opening route_table.csv mints the decisive fact card on the evidence board');
-  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and reaches the boss.
+  // Now the rule-of-three triad (entity K + route claim + route-table fact) confirms and opens Case 3.
   const s7Case2 = await page.evaluate(() => window.__fvStage7.solveCase2());
-  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and reaches the EXIF boss'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
+  if (s7Case2.solved && s7Case2.substage === 6) pass('Stage 7 Case 2: correct triad names the duplicate and opens Case 3 (Quorum Ghost)'); else fail(`Stage 7 Case 2 accusation failed (${JSON.stringify(s7Case2)})`);
+
+  // Case 3 (Quorum Ghost): a larger roster with a SEARCH-gated decisive fact. The triad cannot complete
+  // by merely OPENING the ledger — it must be SEARCHED for the claimed token.
+  await page.waitForSelector('[data-accuse="3"]', { timeout: 5000 });
+  await page.click('[data-action="open-source"][data-source="ledger_examined"]');
+  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:ledgerhint')), null, { timeout: 5000 });
+  const s7Case3Pre = await page.evaluate(() => window.__fvStage7.solveCase3());
+  if (s7Case3Pre.ok === false && s7Case3Pre.substage === 6) pass('Stage 7 Case 3: accusation impossible after only OPENING the ledger (search is load-bearing)'); else fail('Stage 7 Case 3 solvable without a real search');
+  // Run the REAL viewer search of the session ledger → mints the decisive fact:session card.
+  await page.evaluate(async () => { await window.__fv.searchViewerFile('/docs/examples/metagame/stage7/session_ledger.csv', 'S-7741'); });
+  await page.waitForFunction(() => Boolean(window.__fvStage7?.state().board.cards.some((c) => c.id === 'fact:session')), null, { timeout: 5000 });
+  pass('Stage 7 Case 3: SEARCHING session_ledger.csv mints the decisive fact card');
+  const s7Case3 = await page.evaluate(() => window.__fvStage7.solveCase3());
+  if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the ghost and reaches the EXIF boss'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
+
   // The metadata sidecar still carries the decisive GPS contradiction.
   const entitySidecar = await page.evaluate(async () => {
     const response = await fetch('examples/metagame/stage7/entity_metadata.json');

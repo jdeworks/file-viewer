@@ -4,8 +4,8 @@
 
 import { entityFields, entityFEventLog, SCAN_ENTITIES } from "./content.js";
 
-export const SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, BOSS: 6 };
-export const FINAL_SUBSTAGE = 6;
+export const SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
+export const FINAL_SUBSTAGE = 7;
 
 // SS1 — Credential Scan: flag the one wrong field on each impostor (B/C/D/E).
 export function flagField({ state, entityId, fieldId }) {

@@ -71,10 +71,10 @@ export function inspectContradictoryExif({ state, actions, achievements, bell, f
 
 export function commitIdentity({ state, entity }) {
   const selected = String(entity || "").trim().toUpperCase();
-  // The boss is only reachable once the full investigation (SS1–SS4 Case 1 + SS5 Case 2 accusation)
-  // is complete (substage 6). Guards stale saves and any path that would let a commit arrive before
-  // the run is worked through — boss-never-from-start.
-  if (Number(state.substage || 1) < 6) return { ok: false, reason: "not-yet-boss" };
+  // The boss is only reachable once the full investigation (Case 1 SS1–SS4 + Case 2 + Case 3
+  // accusations) is complete (substage 7). Guards stale saves and any path that would let a commit
+  // arrive before the run is worked through — boss-never-from-start.
+  if (Number(state.substage || 1) < 7) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
 
