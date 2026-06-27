@@ -20,6 +20,8 @@
   --al-wave-unplayed: rgba(100, 116, 139, 0.35);
   --al-wave-cursor: #dc2626;
   --al-wave-trimmed: rgba(100, 116, 139, 0.12);
+  --al-clip-bg: rgba(3, 105, 161, 0.08);
+  --al-wave-fade: rgba(220, 38, 38, 0.22);
 
   display: flex;
   flex-direction: column;
@@ -48,6 +50,8 @@
   --al-wave-unplayed: rgba(148, 163, 184, 0.3);
   --al-wave-cursor: #f87171;
   --al-wave-trimmed: rgba(148, 163, 184, 0.1);
+  --al-clip-bg: rgba(56, 189, 248, 0.1);
+  --al-wave-fade: rgba(248, 113, 113, 0.25);
 }
 
 /* Toolbar: transport on the left, zoom + time on the right. */
@@ -151,8 +155,48 @@
 .al-track-name { font-size: 11px; font-weight: 600; color: var(--al-text); }
 .al-track-kind { font-size: 10px; color: var(--al-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
 
-.al-canvas-wrap { position: relative; flex: 1 1 auto; overflow: hidden; cursor: text; }
+.al-canvas-wrap { position: relative; flex: 1 1 auto; overflow: hidden; cursor: pointer; touch-action: none; }
 .al-canvas { display: block; width: 100%; height: 100%; }
+
+/* Draggable clip object overlaid on the canvas (transparent body, the waveform shows through). */
+.al-clip {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  background: transparent;
+  border: 1.5px solid var(--al-primary);
+  border-radius: 5px;
+  box-sizing: border-box;
+  cursor: grab;
+}
+.al-clip:active { cursor: grabbing; }
+
+.al-handle {
+  position: absolute;
+  top: -1.5px;
+  bottom: -1.5px;
+  width: 8px;
+  background: var(--al-primary);
+  opacity: 0.85;
+  cursor: ew-resize;
+}
+.al-handle-left { left: -1.5px; border-radius: 5px 0 0 5px; }
+.al-handle-right { right: -1.5px; border-radius: 0 5px 5px 0; }
+
+/* Fade knobs ride the top edge; their horizontal position is the fade length. */
+.al-fadeknob {
+  position: absolute;
+  top: -5px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5px;
+  background: var(--al-bg);
+  border: 2px solid var(--al-wave-cursor);
+  border-radius: 50%;
+  cursor: ew-resize;
+}
+.al-fadeknob-in { left: 0; }
+.al-fadeknob-out { right: 0; margin-left: 0; margin-right: -5px; }
 
 /* Red seek cursor line + time bubble. */
 .al-cursor { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--al-wave-cursor); pointer-events: none; }

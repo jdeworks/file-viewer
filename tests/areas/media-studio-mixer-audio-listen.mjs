@@ -71,14 +71,17 @@ export async function run(ctx) {
     pass('modular audio listen: zoom-in increases canvas width');
   else fail('modular audio listen zoom mismatch: ' + JSON.stringify({ widthBefore, widthAfter }));
 
-  const canvasWrapBox = await page.locator('#previewHost .al-canvas-wrap').boundingBox();
-  if (canvasWrapBox) {
-    const x0 = canvasWrapBox.x + canvasWrapBox.width * 0.10;
-    const x1 = canvasWrapBox.x + canvasWrapBox.width * 0.60;
-    const y = canvasWrapBox.y + canvasWrapBox.height * 0.5;
-    await page.mouse.move(x0, y);
+  // Reset zoom to fit so the clip + its edge handles are fully within the viewport.
+  await page.click('#previewHost .al-fit');
+  await page.waitForTimeout(60);
+  // Trim by dragging the clip's right edge handle inward; the Out value must genuinely shrink.
+  const outBefore = await page.$eval('#previewHost .al-surface', (el) => Number(el.querySelector('.al-f-out')?.value || 0));
+  const rightHandleBox = await page.locator('#previewHost .al-handle-right').boundingBox();
+  if (rightHandleBox) {
+    const y = rightHandleBox.y + rightHandleBox.height * 0.5;
+    await page.mouse.move(rightHandleBox.x + rightHandleBox.width / 2, y);
     await page.mouse.down();
-    await page.mouse.move(x1, y, { steps: 5 });
+    await page.mouse.move(rightHandleBox.x - 120, y, { steps: 6 });
     await page.mouse.up();
     await page.waitForTimeout(80);
   }
@@ -86,9 +89,22 @@ export async function run(ctx) {
     inVal: el.querySelector('.al-f-in')?.value || '',
     outVal: el.querySelector('.al-f-out')?.value || '',
   }));
-  if (canvasWrapBox && Number(trimResult.outVal) > Number(trimResult.inVal) && Number(trimResult.outVal) > 0)
-    pass('modular audio listen: drag across waveform sets trim range');
-  else fail('modular audio listen drag trim mismatch: ' + JSON.stringify({ canvasWrapBox: !!canvasWrapBox, trimResult }));
+  if (rightHandleBox && Number(trimResult.outVal) > Number(trimResult.inVal) && Number(trimResult.outVal) < outBefore - 0.1)
+    pass('modular audio listen: dragging the clip edge handle trims the Out point');
+  else fail('modular audio listen drag trim mismatch: ' + JSON.stringify({ rightHandleBox: !!rightHandleBox, outBefore, trimResult }));
+
+  // Dragging the clip body offsets it (prepends space before) — Start grows from 0.
+  const moveBox = await page.locator('#previewHost .al-clip').boundingBox();
+  if (moveBox) {
+    const y = moveBox.y + moveBox.height * 0.5;
+    const x = moveBox.x + moveBox.width * 0.4;
+    await page.mouse.move(x, y);
+    await page.mouse.down(); await page.mouse.move(x + 90, y, { steps: 6 }); await page.mouse.up();
+    await page.waitForTimeout(80);
+  }
+  const startVal = await page.$eval('#previewHost .al-surface', (el) => Number(el.querySelector('.al-f-start')?.value || 0));
+  if (moveBox && startVal > 0) pass('modular audio listen: dragging the clip body offsets it (prepends space)');
+  else fail('modular audio listen clip move mismatch: ' + JSON.stringify({ moveBox: !!moveBox, startVal }));
 
   const roundtrip = await page.$eval('#previewHost .al-surface', (el) => {
     const set = (selector, value) => {
