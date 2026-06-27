@@ -695,6 +695,13 @@ export async function run(ctx) {
     konva: !!window.Konva,
   }));
   if (advUp.stage && advUp.toolbar && advUp.konva) pass('Adv Edit: Konva lazy-loads + stage/toolbar mount'); else fail('adv mount: ' + JSON.stringify(advUp));
+  // ── OCR (Extract text) ── the toolbar exposes an "Extract text (OCR)" button; clicking it shows the
+  // one-time ~11 MB download consent gate BEFORE any heavy load (we cancel here, so no wasm is fetched).
+  const ocrBtnShown = await page.$eval('#previewHost .imgv-adv-ocr', (el) => getComputedStyle(el).display !== 'none').catch(() => false);
+  await page.click('#previewHost .imgv-adv-ocr');
+  const ocrConsentShown = await page.waitForSelector('.imgv-ocr-backdrop', { timeout: 4000 }).then(() => true).catch(() => false);
+  await page.click('.imgv-ocr-cancel').catch(() => {});
+  if (ocrBtnShown && ocrConsentShown) pass('Adv Edit: Extract text (OCR) button shows the download consent gate'); else fail('OCR button/gate: ' + JSON.stringify({ ocrBtnShown, ocrConsentShown }));
   await page.fill('#previewHost .imgv-adv-text', 'Layer A');
   await page.evaluate(() => { const s = document.querySelector('#previewHost .imgv-adv-bgop'); s.value = '60'; s.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.click('#previewHost .imgv-adv-add');   // a second text object

@@ -2670,6 +2670,296 @@ function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, dele
   };
 }
 
+// ../../docs/types/image/adv-edit-controls.js
+function installObjectActions(ctx) {
+  const { getSelected, select, snap, tr, layer, Konva, cloneNode: cloneNode2, placeObject, wireObject, isGroup, stageW, stageH, refreshLayers, syncToolbar, markDirty } = ctx;
+  function deleteSelection() {
+    const sel = getSelected();
+    if (!sel.length) return;
+    snap();
+    tr.nodes([]);
+    sel.slice().forEach((n) => n.destroy());
+    select(null);
+    markDirty();
+  }
+  function duplicateSelection() {
+    const sel = getSelected();
+    if (!sel.length) return;
+    snap();
+    const clones = sel.map((n) => cloneNode2(n, stageW(), stageH()));
+    clones.forEach((n) => placeObject(n));
+    select(clones);
+  }
+  function nudgeSelection(dx, dy) {
+    const sel = getSelected();
+    if (!sel.length) return;
+    snap();
+    sel.forEach((n) => n.move({ x: dx, y: dy }));
+    layer.draw();
+    refreshLayers();
+    markDirty();
+  }
+  function groupSelection() {
+    const sel = getSelected();
+    if (sel.length < 2) return;
+    snap();
+    const group = new Konva.Group({ draggable: true });
+    wireObject(group);
+    layer.add(group);
+    sel.slice().forEach((n) => {
+      const pos = n.getAbsolutePosition();
+      n.name("group-child");
+      n.moveTo(group);
+      n.absolutePosition(pos);
+    });
+    select(group);
+    refreshLayers();
+    syncToolbar();
+    markDirty();
+  }
+  function ungroupSelection() {
+    const groups = getSelected().filter(isGroup);
+    if (!groups.length) return;
+    snap();
+    const kids = [];
+    groups.forEach((group) => {
+      group.getChildren().slice().forEach((child) => {
+        const pos = child.getAbsolutePosition();
+        child.off("click tap dblclick dbltap dragstart transformstart dragmove transformend dragend");
+        wireObject(child);
+        child.moveTo(layer);
+        child.absolutePosition(pos);
+        kids.push(child);
+      });
+      group.destroy();
+    });
+    layer.add(tr);
+    select(kids);
+    refreshLayers();
+    markDirty();
+  }
+  return { deleteSelection, duplicateSelection, nudgeSelection, groupSelection, ungroupSelection };
+}
+function installShapeControls(ctx) {
+  const {
+    $,
+    tb,
+    addText,
+    addShape,
+    openImageOcrPanel: openImageOcrPanel2,
+    stageHost,
+    flattenToCanvas,
+    deleteSelection,
+    groupSelection,
+    ungroupSelection,
+    pointEdit,
+    precision,
+    getSelected,
+    primary,
+    isLabel,
+    textNodeOf,
+    layer,
+    markDirty,
+    snap,
+    tr,
+    refreshLayers,
+    syncToolbar
+  } = ctx;
+  const sel = () => getSelected();
+  $(".imgv-adv-add").addEventListener("click", addText);
+  $(".imgv-adv-ocr").addEventListener("click", () => openImageOcrPanel2({ host: stageHost, getCanvas: () => flattenToCanvas() }));
+  $(".imgv-adv-rect").addEventListener("click", () => addShape("rect"));
+  $(".imgv-adv-ellipse").addEventListener("click", () => addShape("ellipse"));
+  $(".imgv-adv-line").addEventListener("click", () => addShape("line"));
+  $(".imgv-adv-arrow").addEventListener("click", () => addShape("arrow"));
+  $(".imgv-adv-poly").addEventListener("click", () => addShape("poly"));
+  $(".imgv-adv-star").addEventListener("click", () => addShape("star"));
+  $(".imgv-adv-more").addEventListener("click", () => {
+    const next = ["circle", "ring", "wedge", "arc"][$(".imgv-adv-more").dataset.next || 0];
+    $(".imgv-adv-more").dataset.next = String((Number($(".imgv-adv-more").dataset.next || 0) + 1) % 4);
+    addShape(next);
+  });
+  $(".imgv-adv-del").addEventListener("click", deleteSelection);
+  $(".imgv-adv-fill").addEventListener("input", () => {
+    sel().forEach((n) => (isLabel(n) ? textNodeOf(n) : n).fill($(".imgv-adv-fill").value));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-stroke").addEventListener("input", () => {
+    sel().filter((n) => !isLabel(n)).forEach((n) => n.stroke($(".imgv-adv-stroke").value));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-strokew").addEventListener("input", () => {
+    sel().filter((n) => !isLabel(n)).forEach((n) => n.strokeWidth(parseInt($(".imgv-adv-strokew").value, 10) || 0));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-dash").addEventListener("change", () => {
+    sel().filter((n) => !isLabel(n)).forEach((n) => n.dash?.($(".imgv-adv-dash").value ? $(".imgv-adv-dash").value.split(",").map(Number) : []));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-cap").addEventListener("change", () => {
+    sel().forEach((n) => n.lineCap?.($(".imgv-adv-cap").value));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-join").addEventListener("change", () => {
+    sel().forEach((n) => n.lineJoin?.($(".imgv-adv-join").value));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-opacity").addEventListener("input", () => {
+    sel().forEach((n) => n.opacity((parseInt($(".imgv-adv-opacity").value, 10) || 0) / 100));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-x").addEventListener("change", () => {
+    const n = primary();
+    if (n) {
+      n.x(parseFloat($(".imgv-adv-x").value) || 0);
+      layer.draw();
+      refreshLayers();
+      markDirty();
+    }
+  });
+  $(".imgv-adv-y").addEventListener("change", () => {
+    const n = primary();
+    if (n) {
+      n.y(parseFloat($(".imgv-adv-y").value) || 0);
+      layer.draw();
+      refreshLayers();
+      markDirty();
+    }
+  });
+  $(".imgv-adv-rot").addEventListener("change", () => {
+    sel().forEach((n) => n.rotation(parseFloat($(".imgv-adv-rot").value) || 0));
+    layer.draw();
+    markDirty();
+  });
+  function applySizeInputs() {
+    const w = parseFloat($(".imgv-adv-w").value) || 1, h = parseFloat($(".imgv-adv-h").value) || 1;
+    sel().forEach((n) => writeSize(n, w, h));
+    layer.draw();
+    markDirty();
+    syncToolbar();
+  }
+  $(".imgv-adv-w").addEventListener("change", applySizeInputs);
+  $(".imgv-adv-h").addEventListener("change", applySizeInputs);
+  $(".imgv-adv-corner").addEventListener("input", () => {
+    sel().filter((n) => n.getClassName?.() === "Rect").forEach((n) => n.cornerRadius(parseInt($(".imgv-adv-corner").value, 10) || 0));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-sides").addEventListener("change", () => {
+    sel().filter((n) => n.getClassName?.() === "RegularPolygon").forEach((n) => n.sides(Math.max(3, parseInt($(".imgv-adv-sides").value, 10) || 5)));
+    layer.draw();
+    refreshLayers();
+    markDirty();
+  });
+  $(".imgv-adv-points").addEventListener("change", () => {
+    sel().filter((n) => n.getClassName?.() === "Star").forEach((n) => n.numPoints(Math.max(3, parseInt($(".imgv-adv-points").value, 10) || 5)));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-inner").addEventListener("change", () => {
+    sel().filter((n) => ["Star", "Ring", "Arc"].includes(n.getClassName?.())).forEach((n) => n.innerRadius(Math.max(1, parseInt($(".imgv-adv-inner").value, 10) || 1)));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-radius").addEventListener("change", () => {
+    sel().forEach((n) => {
+      const v = Math.max(1, parseInt($(".imgv-adv-radius").value, 10) || 1);
+      if (["Circle", "Wedge", "RegularPolygon"].includes(n.getClassName?.())) n.radius(v);
+    });
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-angle").addEventListener("change", () => {
+    sel().forEach((n) => {
+      if (["Ring", "Wedge", "Arc"].includes(n.getClassName?.())) n.angle(Math.max(1, Math.min(360, parseInt($(".imgv-adv-angle").value, 10) || 1)));
+    });
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-head").addEventListener("change", () => {
+    sel().filter((n) => n.getClassName?.() === "Arrow").forEach((n) => {
+      const v = Math.max(1, parseInt($(".imgv-adv-head").value, 10) || 1);
+      n.pointerLength(v);
+      n.pointerWidth(v);
+    });
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-headstart").addEventListener("change", () => {
+    sel().filter((n) => n.getClassName?.() === "Arrow").forEach((n) => n.pointerAtBeginning($(".imgv-adv-headstart").checked));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-tension").addEventListener("change", () => {
+    sel().forEach((n) => n.tension?.(Math.max(0, Math.min(1, parseFloat($(".imgv-adv-tension").value) || 0))));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-closed").addEventListener("change", () => {
+    sel().filter((n) => n.getClassName?.() === "Line").forEach((n) => n.closed($(".imgv-adv-closed").checked));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-shadow").addEventListener("input", () => {
+    sel().filter((n) => !isLabel(n)).forEach((n) => {
+      n.shadowBlur(parseInt($(".imgv-adv-shadow").value, 10) || 0);
+      n.shadowOpacity(n.shadowBlur() ? 0.45 : 0);
+      n.shadowOffset({ x: 2, y: 2 });
+    });
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-shadowc").addEventListener("input", () => {
+    sel().filter((n) => !isLabel(n)).forEach((n) => n.shadowColor($(".imgv-adv-shadowc").value));
+    layer.draw();
+    markDirty();
+  });
+  $(".imgv-adv-ratio").addEventListener("change", () => tr.keepRatio($(".imgv-adv-ratio").checked));
+  $(".imgv-adv-center").addEventListener("change", () => tr.centeredScaling($(".imgv-adv-center").checked));
+  $(".imgv-adv-flip").addEventListener("change", () => tr.flipEnabled($(".imgv-adv-flip").checked));
+  $(".imgv-adv-blend").addEventListener("change", () => {
+    if (sel().length) {
+      snap();
+      sel().forEach((n) => n.globalCompositeOperation($(".imgv-adv-blend").value));
+      layer.draw();
+      markDirty();
+    }
+  });
+  $(".imgv-adv-front").addEventListener("click", () => {
+    if (!sel().length) return;
+    snap();
+    sel().forEach((n) => n.moveToTop());
+    tr.moveToTop();
+    layer.draw();
+    refreshLayers();
+    markDirty();
+  });
+  $(".imgv-adv-back").addEventListener("click", () => {
+    if (!sel().length) return;
+    snap();
+    sel().forEach((n) => n.moveToBottom());
+    tr.moveToTop();
+    layer.draw();
+    refreshLayers();
+    markDirty();
+  });
+  tb.querySelectorAll(".imgv-adv-align").forEach((b) => b.addEventListener("click", () => precision.align(b.dataset.align)));
+  tb.querySelectorAll(".imgv-adv-dist").forEach((b) => b.addEventListener("click", () => precision.distribute(b.dataset.axis)));
+  tb.addEventListener("click", (e) => {
+    if (e.target.closest(".imgv-adv-group")) groupSelection();
+    if (e.target.closest(".imgv-adv-ungroup")) ungroupSelection();
+    if (e.target.closest(".imgv-adv-pointedit")) pointEdit.setEnabled(!pointEdit.isEnabled());
+  });
+  $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
+}
+
 // ../../docs/types/image/adv-edit-layers.js
 function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, select, snap, markDirty, cloneNode: cloneNode2, placeObject, labelName, stageW, stageH }) {
   const panel = document.createElement("div");
@@ -3212,7 +3502,172 @@ function advToolbarHtml() {
     <button class="imgv-adv-align" data-align="bottom" title="Align bottom">B</button>
     <button class="imgv-adv-dist" data-axis="x" title="Distribute horizontally">DH</button>
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
+    <span class="imgv-sep"></span>
+    <button class="imgv-adv-ocr" title="Extract text from the image with OCR">Extract text (OCR)</button>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
+}
+
+// ../../docs/types/image/ocr-ui.js
+var OCR = "../../core/ocr/index.js";
+var consented = false;
+function ocrConsent(host, approxMB) {
+  if (consented) return Promise.resolve(true);
+  injectOcrStyle();
+  return new Promise((resolve) => {
+    const back = document.createElement("div");
+    back.className = "imgv-ocr-backdrop";
+    back.innerHTML = `
+      <div class="imgv-ocr-dialog" role="dialog" aria-modal="true">
+        <div class="imgv-ocr-h"><span style="font-size:20px">&#9888;</span> Extract text (OCR)</div>
+        <p class="imgv-ocr-p">Text recognition runs fully offline in your browser, but the first
+        run downloads the OCR engine (~${approxMB} MB: the recognizer + English language data).
+        It is cached afterwards. Continue?</p>
+        <div class="imgv-ocr-btns">
+          <button class="imgv-ocr-go">Download &amp; run OCR</button>
+          <button class="imgv-ocr-cancel">Cancel</button>
+        </div>
+      </div>`;
+    (host.ownerDocument?.body || document.body).appendChild(back);
+    const done = (ok) => {
+      back.remove();
+      if (ok) consented = true;
+      resolve(ok);
+    };
+    back.querySelector(".imgv-ocr-go").addEventListener("click", () => done(true));
+    back.querySelector(".imgv-ocr-cancel").addEventListener("click", () => done(false));
+    back.addEventListener("click", (e) => {
+      if (e.target === back) done(false);
+    });
+  });
+}
+function makePanel(host, title) {
+  injectOcrStyle();
+  host.querySelector(".imgv-ocr-panel")?.remove();
+  const panel = document.createElement("div");
+  panel.className = "imgv-ocr-panel";
+  panel.innerHTML = `
+    <div class="imgv-ocr-bar">
+      <strong class="imgv-ocr-title">${title}</strong>
+      <span class="imgv-ocr-status" aria-live="polite"></span>
+      <button class="imgv-ocr-x" title="Close">✕</button>
+    </div>
+    <div class="imgv-ocr-controls"></div>
+    <div class="imgv-ocr-body"></div>`;
+  host.appendChild(panel);
+  panel.querySelector(".imgv-ocr-x").addEventListener("click", () => panel.remove());
+  return {
+    panel,
+    status: panel.querySelector(".imgv-ocr-status"),
+    controls: panel.querySelector(".imgv-ocr-controls"),
+    body: panel.querySelector(".imgv-ocr-body")
+  };
+}
+async function openImageOcrPanel({ host, getCanvas }) {
+  if (!await ocrConsent(host, 11)) return;
+  const { status, controls, body } = makePanel(host, "Extract text (OCR)");
+  controls.innerHTML = `
+    <label class="imgv-ocr-chk"><input type="checkbox" class="imgv-ocr-digits"> Digits only</label>`;
+  const digits = controls.querySelector(".imgv-ocr-digits");
+  async function run() {
+    status.textContent = "Recognizing…";
+    body.innerHTML = "";
+    digits.disabled = true;
+    let result;
+    try {
+      const { recognize } = await import(OCR);
+      result = await recognize(getCanvas(), { digits: digits.checked });
+    } catch (e) {
+      status.textContent = "OCR failed";
+      body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
+      digits.disabled = false;
+      return;
+    }
+    const text = result.text || "";
+    status.textContent = text ? `${Math.round(result.confidence || 0)}% confidence` : "No text found";
+    body.innerHTML = `
+      <textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>
+      <div class="imgv-ocr-acts">
+        <button class="imgv-ocr-copy">Copy</button>
+        <button class="imgv-ocr-dl">Download .txt</button>
+      </div>`;
+    body.querySelector(".imgv-ocr-out").value = text;
+    body.querySelector(".imgv-ocr-copy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Copied";
+      } catch {
+      }
+    });
+    body.querySelector(".imgv-ocr-dl").addEventListener("click", async () => {
+      const { download } = await import(OCR);
+      download("extracted-text.txt", text, "text/plain");
+    });
+    digits.disabled = false;
+  }
+  digits.addEventListener("change", run);
+  run();
+}
+async function openGifOcrPanel({ host, getFrames }) {
+  const frames = getFrames();
+  if (!frames || !frames.length) return;
+  if (!await ocrConsent(host, 11)) return;
+  const { status, controls, body } = makePanel(host, "GIF transcript (OCR)");
+  const sources = [];
+  let t = 0;
+  for (const f of frames) {
+    sources.push({ time: t, source: f.canvas });
+    t += Math.max(0, f.delayMs || 0) / 1e3;
+  }
+  status.textContent = "Recognizing…";
+  let cues;
+  try {
+    const { ocrFrames } = await import(OCR);
+    cues = await ocrFrames(sources, { onProgress: ({ index, total }) => {
+      status.textContent = `Recognizing… frame ${index + 1}/${total}`;
+    } });
+  } catch (e) {
+    status.textContent = "OCR failed";
+    body.innerHTML = `<div class="imgv-ocr-err">${e && e.message || e}</div>`;
+    return;
+  }
+  const { FORMATS, toText, download } = await import(OCR);
+  status.textContent = cues.length ? `${cues.length} cue${cues.length === 1 ? "" : "s"}` : "No text found";
+  const opts = Object.entries(FORMATS).map(([k, f]) => `<option value="${k}">${f.label}</option>`).join("");
+  controls.innerHTML = `
+    <label class="imgv-ocr-chk">Format <select class="imgv-ocr-fmt">${opts}</select></label>
+    <button class="imgv-ocr-dl">Download</button>`;
+  body.innerHTML = `<textarea class="imgv-ocr-out" readonly placeholder="(no text recognized)"></textarea>`;
+  const out = body.querySelector(".imgv-ocr-out");
+  out.value = toText(cues);
+  controls.querySelector(".imgv-ocr-dl").addEventListener("click", () => {
+    const fmt = FORMATS[controls.querySelector(".imgv-ocr-fmt").value];
+    download("gif-transcript." + fmt.ext, fmt.fn(cues), fmt.mime);
+  });
+}
+function injectOcrStyle() {
+  if (document.getElementById("imgv-ocr-style")) return;
+  const s = document.createElement("style");
+  s.id = "imgv-ocr-style";
+  s.textContent = `
+    .imgv-ocr-backdrop { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; background:#0008; }
+    .imgv-ocr-dialog { max-width:460px; margin:16px; padding:20px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); font-family:var(--font-ui,sans-serif); }
+    .imgv-ocr-h { display:flex; align-items:center; gap:8px; font-size:15px; font-weight:600; margin-bottom:10px; }
+    .imgv-ocr-p { margin:0 0 16px; font-size:13px; line-height:1.6; opacity:.85; }
+    .imgv-ocr-btns { display:flex; gap:10px; flex-wrap:wrap; }
+    .imgv-ocr-go { padding:8px 16px; border:none; border-radius:5px; cursor:pointer; background:var(--accent,#4a8fff); color:#fff; font-size:13px; }
+    .imgv-ocr-cancel { padding:8px 16px; border-radius:5px; cursor:pointer; background:transparent; border:1px solid var(--border,#444); color:var(--fg,#ccc); font-size:13px; }
+    .imgv-ocr-panel { position:absolute; top:8px; right:8px; z-index:12; width:min(320px,calc(100% - 16px)); display:flex; flex-direction:column; gap:6px; padding:8px; border-radius:8px; background:var(--bg-2,#252525); color:var(--fg,#ddd); border:1px solid var(--border,#444); box-shadow:0 4px 16px #0006; font-family:var(--font-ui,sans-serif); font-size:12px; }
+    .imgv-ocr-bar { display:flex; align-items:center; gap:8px; }
+    .imgv-ocr-title { flex:0 0 auto; }
+    .imgv-ocr-status { flex:1; opacity:.75; font-variant-numeric:tabular-nums; }
+    .imgv-ocr-x { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; }
+    .imgv-ocr-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .imgv-ocr-chk { display:inline-flex; align-items:center; gap:4px; }
+    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; }
+    .imgv-ocr-acts { display:flex; gap:8px; margin-top:6px; }
+    .imgv-ocr-panel button { cursor:pointer; }
+    .imgv-ocr-err { color:#f88; }`;
+  document.head.appendChild(s);
 }
 
 // ../../docs/types/image/adv-edit.js
@@ -3523,260 +3978,47 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     }
     if (e.target === stage && interactive) select(null);
   });
-  $(".imgv-adv-add").addEventListener("click", addText);
-  $(".imgv-adv-rect").addEventListener("click", () => addShape("rect"));
-  $(".imgv-adv-ellipse").addEventListener("click", () => addShape("ellipse"));
-  $(".imgv-adv-line").addEventListener("click", () => addShape("line"));
-  $(".imgv-adv-arrow").addEventListener("click", () => addShape("arrow"));
-  $(".imgv-adv-poly").addEventListener("click", () => addShape("poly"));
-  $(".imgv-adv-star").addEventListener("click", () => addShape("star"));
-  $(".imgv-adv-more").addEventListener("click", () => {
-    const next = ["circle", "ring", "wedge", "arc"][$(".imgv-adv-more").dataset.next || 0];
-    $(".imgv-adv-more").dataset.next = String((Number($(".imgv-adv-more").dataset.next || 0) + 1) % 4);
-    addShape(next);
+  const { deleteSelection, duplicateSelection, nudgeSelection, groupSelection, ungroupSelection } = installObjectActions({
+    getSelected: () => selected,
+    select,
+    snap,
+    tr,
+    layer,
+    Konva,
+    cloneNode,
+    placeObject,
+    wireObject,
+    isGroup,
+    stageW: () => stageW,
+    stageH: () => stageH,
+    refreshLayers: () => refreshLayers(),
+    syncToolbar,
+    markDirty
   });
-  function deleteSelection() {
-    if (!selected.length) return;
-    snap();
-    const doomed = selected.slice();
-    tr.nodes([]);
-    selected = [];
-    doomed.forEach((n) => n.destroy());
-    select(null);
-    markDirty();
-  }
-  function duplicateSelection() {
-    if (!selected.length) return;
-    snap();
-    const clones = selected.map((n) => cloneNode(n, stageW, stageH));
-    clones.forEach((n) => placeObject(n));
-    select(clones);
-  }
-  function nudgeSelection(dx, dy) {
-    if (!selected.length) return;
-    snap();
-    selected.forEach((n) => n.move({ x: dx, y: dy }));
-    layer.draw();
-    refreshLayers();
-    markDirty();
-  }
-  function groupSelection() {
-    if (selected.length < 2) return;
-    snap();
-    const group = new Konva.Group({ draggable: true });
-    wireObject(group);
-    layer.add(group);
-    selected.slice().forEach((n) => {
-      const pos = n.getAbsolutePosition();
-      n.name("group-child");
-      n.moveTo(group);
-      n.absolutePosition(pos);
-    });
-    select(group);
-    refreshLayers();
-    syncToolbar();
-    markDirty();
-  }
-  function ungroupSelection() {
-    const groups = selected.filter(isGroup);
-    if (!groups.length) return;
-    snap();
-    const kids = [];
-    groups.forEach((group) => {
-      group.getChildren().slice().forEach((child) => {
-        const pos = child.getAbsolutePosition();
-        child.off("click tap dblclick dbltap dragstart transformstart dragmove transformend dragend");
-        wireObject(child);
-        child.moveTo(layer);
-        child.absolutePosition(pos);
-        kids.push(child);
-      });
-      group.destroy();
-    });
-    layer.add(tr);
-    select(kids);
-    refreshLayers();
-    markDirty();
-  }
-  $(".imgv-adv-del").addEventListener("click", deleteSelection);
-  $(".imgv-adv-fill").addEventListener("input", () => {
-    selected.forEach((n) => (isLabel(n) ? textNodeOf(n) : n).fill($(".imgv-adv-fill").value));
-    layer.draw();
-    markDirty();
+  installShapeControls({
+    $,
+    tb,
+    addText,
+    addShape,
+    openImageOcrPanel,
+    stageHost,
+    flattenToCanvas,
+    deleteSelection,
+    groupSelection,
+    ungroupSelection,
+    pointEdit,
+    precision,
+    getSelected: () => selected,
+    primary,
+    isLabel,
+    textNodeOf,
+    layer,
+    markDirty,
+    snap,
+    tr,
+    refreshLayers: () => refreshLayers(),
+    syncToolbar
   });
-  $(".imgv-adv-stroke").addEventListener("input", () => {
-    selected.filter((n) => !isLabel(n)).forEach((n) => n.stroke($(".imgv-adv-stroke").value));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-strokew").addEventListener("input", () => {
-    selected.filter((n) => !isLabel(n)).forEach((n) => n.strokeWidth(parseInt($(".imgv-adv-strokew").value, 10) || 0));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-dash").addEventListener("change", () => {
-    selected.filter((n) => !isLabel(n)).forEach((n) => n.dash?.($(".imgv-adv-dash").value ? $(".imgv-adv-dash").value.split(",").map(Number) : []));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-cap").addEventListener("change", () => {
-    selected.forEach((n) => n.lineCap?.($(".imgv-adv-cap").value));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-join").addEventListener("change", () => {
-    selected.forEach((n) => n.lineJoin?.($(".imgv-adv-join").value));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-opacity").addEventListener("input", () => {
-    selected.forEach((n) => n.opacity((parseInt($(".imgv-adv-opacity").value, 10) || 0) / 100));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-x").addEventListener("change", () => {
-    const n = primary();
-    if (n) {
-      n.x(parseFloat($(".imgv-adv-x").value) || 0);
-      layer.draw();
-      refreshLayers();
-      markDirty();
-    }
-  });
-  $(".imgv-adv-y").addEventListener("change", () => {
-    const n = primary();
-    if (n) {
-      n.y(parseFloat($(".imgv-adv-y").value) || 0);
-      layer.draw();
-      refreshLayers();
-      markDirty();
-    }
-  });
-  $(".imgv-adv-rot").addEventListener("change", () => {
-    selected.forEach((n) => n.rotation(parseFloat($(".imgv-adv-rot").value) || 0));
-    layer.draw();
-    markDirty();
-  });
-  function applySizeInputs() {
-    const w = parseFloat($(".imgv-adv-w").value) || 1, h = parseFloat($(".imgv-adv-h").value) || 1;
-    selected.forEach((n) => writeSize(n, w, h));
-    layer.draw();
-    markDirty();
-    syncToolbar();
-  }
-  $(".imgv-adv-w").addEventListener("change", applySizeInputs);
-  $(".imgv-adv-h").addEventListener("change", applySizeInputs);
-  $(".imgv-adv-corner").addEventListener("input", () => {
-    selected.filter((n) => n.getClassName?.() === "Rect").forEach((n) => n.cornerRadius(parseInt($(".imgv-adv-corner").value, 10) || 0));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-sides").addEventListener("change", () => {
-    selected.filter((n) => n.getClassName?.() === "RegularPolygon").forEach((n) => n.sides(Math.max(3, parseInt($(".imgv-adv-sides").value, 10) || 5)));
-    layer.draw();
-    refreshLayers();
-    markDirty();
-  });
-  $(".imgv-adv-points").addEventListener("change", () => {
-    selected.filter((n) => n.getClassName?.() === "Star").forEach((n) => n.numPoints(Math.max(3, parseInt($(".imgv-adv-points").value, 10) || 5)));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-inner").addEventListener("change", () => {
-    selected.filter((n) => ["Star", "Ring", "Arc"].includes(n.getClassName?.())).forEach((n) => n.innerRadius(Math.max(1, parseInt($(".imgv-adv-inner").value, 10) || 1)));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-radius").addEventListener("change", () => {
-    selected.forEach((n) => {
-      const v = Math.max(1, parseInt($(".imgv-adv-radius").value, 10) || 1);
-      if (["Circle", "Wedge", "RegularPolygon"].includes(n.getClassName?.())) n.radius(v);
-    });
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-angle").addEventListener("change", () => {
-    selected.forEach((n) => {
-      if (["Ring", "Wedge", "Arc"].includes(n.getClassName?.())) n.angle(Math.max(1, Math.min(360, parseInt($(".imgv-adv-angle").value, 10) || 1)));
-    });
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-head").addEventListener("change", () => {
-    selected.filter((n) => n.getClassName?.() === "Arrow").forEach((n) => {
-      const v = Math.max(1, parseInt($(".imgv-adv-head").value, 10) || 1);
-      n.pointerLength(v);
-      n.pointerWidth(v);
-    });
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-headstart").addEventListener("change", () => {
-    selected.filter((n) => n.getClassName?.() === "Arrow").forEach((n) => n.pointerAtBeginning($(".imgv-adv-headstart").checked));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-tension").addEventListener("change", () => {
-    selected.forEach((n) => n.tension?.(Math.max(0, Math.min(1, parseFloat($(".imgv-adv-tension").value) || 0))));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-closed").addEventListener("change", () => {
-    selected.filter((n) => n.getClassName?.() === "Line").forEach((n) => n.closed($(".imgv-adv-closed").checked));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-shadow").addEventListener("input", () => {
-    selected.filter((n) => !isLabel(n)).forEach((n) => {
-      n.shadowBlur(parseInt($(".imgv-adv-shadow").value, 10) || 0);
-      n.shadowOpacity(n.shadowBlur() ? 0.45 : 0);
-      n.shadowOffset({ x: 2, y: 2 });
-    });
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-shadowc").addEventListener("input", () => {
-    selected.filter((n) => !isLabel(n)).forEach((n) => n.shadowColor($(".imgv-adv-shadowc").value));
-    layer.draw();
-    markDirty();
-  });
-  $(".imgv-adv-ratio").addEventListener("change", () => tr.keepRatio($(".imgv-adv-ratio").checked));
-  $(".imgv-adv-center").addEventListener("change", () => tr.centeredScaling($(".imgv-adv-center").checked));
-  $(".imgv-adv-flip").addEventListener("change", () => tr.flipEnabled($(".imgv-adv-flip").checked));
-  $(".imgv-adv-blend").addEventListener("change", () => {
-    if (selected.length) {
-      snap();
-      selected.forEach((n) => n.globalCompositeOperation($(".imgv-adv-blend").value));
-      layer.draw();
-      markDirty();
-    }
-  });
-  $(".imgv-adv-front").addEventListener("click", () => {
-    if (!selected.length) return;
-    snap();
-    selected.forEach((n) => n.moveToTop());
-    tr.moveToTop();
-    layer.draw();
-    refreshLayers();
-    markDirty();
-  });
-  $(".imgv-adv-back").addEventListener("click", () => {
-    if (!selected.length) return;
-    snap();
-    selected.forEach((n) => n.moveToBottom());
-    tr.moveToTop();
-    layer.draw();
-    refreshLayers();
-    markDirty();
-  });
-  tb.querySelectorAll(".imgv-adv-align").forEach((b) => b.addEventListener("click", () => precision.align(b.dataset.align)));
-  tb.querySelectorAll(".imgv-adv-dist").forEach((b) => b.addEventListener("click", () => precision.distribute(b.dataset.axis)));
-  tb.addEventListener("click", (e) => {
-    if (e.target.closest(".imgv-adv-group")) groupSelection();
-    if (e.target.closest(".imgv-adv-ungroup")) ungroupSelection();
-    if (e.target.closest(".imgv-adv-pointedit")) pointEdit.setEnabled(!pointEdit.isEnabled());
-  });
-  $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
   syncToolbar();
   const uninstallKeys = installAdvKeys({
     ownerDocument: host.ownerDocument,
@@ -4029,6 +4271,7 @@ function mountGifPlayer({ host, bytes, openBlob }) {
       <span class="gifv-count">…</span>
       <label class="gifv-loop"><input class="gifv-loop-chk" type="checkbox" checked /> loop</label>
       <button class="gifv-split" title="Decompose into individual PNG frames" disabled>✂ Split frames</button>
+      <button class="gifv-ocr" title="Extract text from every frame into a timestamped transcript" disabled>Extract text (OCR)</button>
     </div>
     <div class="gifv-frames" hidden></div>`;
   host.appendChild(root);
@@ -4040,6 +4283,7 @@ function mountGifPlayer({ host, bytes, openBlob }) {
   const count = root.querySelector(".gifv-count");
   const loopChk = root.querySelector(".gifv-loop-chk");
   const splitBtn = root.querySelector(".gifv-split");
+  const ocrBtn = root.querySelector(".gifv-ocr");
   const framesBox = root.querySelector(".gifv-frames");
   let frames = [];
   let idx = 0;
@@ -4081,6 +4325,7 @@ function mountGifPlayer({ host, bytes, openBlob }) {
     if (loopChk.checked && !playing) setPlaying(true);
   });
   splitBtn.addEventListener("click", () => splitFrames());
+  ocrBtn.addEventListener("click", () => openGifOcrPanel({ host: root, getFrames: () => frames }));
   (async () => {
     let decoded;
     try {
@@ -4100,6 +4345,7 @@ function mountGifPlayer({ host, bytes, openBlob }) {
     playBtn.disabled = !animated;
     scrub.disabled = !animated;
     splitBtn.disabled = frames.length < 1;
+    ocrBtn.disabled = frames.length < 1;
     if (animated) setPlaying(true);
     else {
       playBtn.textContent = "▶";
@@ -4162,7 +4408,7 @@ function injectStyle2() {
   const s = document.createElement("style");
   s.id = "gifv-style";
   s.textContent = `
-    .gifv-root { display:flex; flex-direction:column; gap:.5rem; height:100%; min-height:0; }
+    .gifv-root { position:relative; display:flex; flex-direction:column; gap:.5rem; height:100%; min-height:0; }
     .gifv-stage { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; overflow:auto; background:#0000000d; }
     .gifv-canvas { max-width:100%; max-height:100%; image-rendering:auto; }
     .gifv-bar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.25rem .25rem; }
