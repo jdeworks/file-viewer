@@ -95,6 +95,8 @@ export function renderStage4(ctx) {
       place: (x, y, t) => active?.hook?.place?.(x, y, t),
       setWave: (n) => active?.hook?.setWave?.(n),
       cycleTarget: (id) => active?.hook?.cycleTarget?.(id),
+      upgrade: (id) => active?.hook?.upgrade?.(id),
+      pickFork: (id, forkId) => active?.hook?.pickFork?.(id, forkId),
       confront: () => active?.hook?.confront?.(),
       buyArmory: (id) => controller.buyArmory(id),
       leaveArmory: () => controller.leaveArmory(),

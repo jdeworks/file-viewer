@@ -86,6 +86,13 @@ var TOWER_ABILITIES = {
   null_wave: { label: "Null Wave", stripMs: 5e3, cooldownMs: 6e4 },
   overcharge: { label: "Overcharge", multiplier: 3, durationMs: 3e3, cooldownMs: 45e3 }
 };
+function towerUpgradeCost(type, fromLevel) {
+  const def = TOWER_TYPES[type];
+  if (!def) return Infinity;
+  if (fromLevel === 1) return def.cost * 2;
+  if (fromLevel === 2) return def.cost * 4;
+  return Infinity;
+}
 
 // ../../docs/games/metagame/stages/stage4/boss.js
 function hasRecursionBlueprint(actions) {
@@ -453,11 +460,95 @@ function clamp012(v) {
 }
 
 // ../../docs/games/metagame/stages/stage4/forks.js
+var FORKS = {
+  pulse_node: [
+    { id: "emp_lance", label: "EMP Lance", desc: "×2 damage; EMP-stun ult", ability: "emp_burst", mods: { damage: 2 } },
+    { id: "pulse_storm", label: "Pulse Storm", desc: "×1.8 fire rate, +range; overcharge ult", ability: "overcharge", mods: { fireRate: 1.8, range: 1.4 } }
+  ],
+  scatter_array: [
+    { id: "shrapnel_array", label: "Shrapnel Array", desc: "×1.6 damage, wider splash", ability: "overcharge", mods: { damage: 1.6, aoe: 1.5 } },
+    { id: "nova_array", label: "Nova Array", desc: "+damage; EMP-stun the whole splash", ability: "emp_burst", mods: { damage: 1.3, range: 1.3 } }
+  ],
+  null_spike: [
+    { id: "void_lance", label: "Void Lance", desc: "×2 null damage", ability: "null_wave", mods: { damage: 2 } },
+    { id: "null_battery", label: "Null Battery", desc: "×2.2 fire rate", ability: "overcharge", mods: { fireRate: 2.2 } }
+  ],
+  frost_lattice: [
+    { id: "deep_freeze", label: "Deep Freeze", desc: "Chill ramps to freeze far faster", ability: "emp_burst", onHit: [{ kind: "chill", stacks: 42, ms: 1800 }] },
+    { id: "glacier_field", label: "Glacier Field", desc: "Wide range; chill + hard slow", ability: "emp_burst", mods: { range: 1.6 }, onHit: [{ kind: "chill", stacks: 16, ms: 1600 }, { kind: "slow", factor: 0.5, ms: 1400 }] }
+  ],
+  thermal_loop: [
+    { id: "pyre_loop", label: "Pyre Loop", desc: "Much hotter, longer burn", ability: "overcharge", onHit: [{ kind: "burn", dps: 30, ms: 3e3 }] },
+    { id: "plasma_loop", label: "Plasma Loop", desc: "×1.8 hit damage + burn", ability: "overcharge", mods: { damage: 1.8 }, onHit: [{ kind: "burn", dps: 12, ms: 2200 }] }
+  ],
+  chain_resonator: [
+    { id: "arc_cascade", label: "Arc Cascade", desc: "Chains to 5 targets", ability: "emp_burst", mods: { chain: 5 / 3 } },
+    { id: "tesla_coil", label: "Tesla Coil", desc: "×1.7 damage, +range", ability: "overcharge", mods: { damage: 1.7, range: 1.4 } }
+  ],
+  long_recursor: [
+    { id: "siege_recursor", label: "Siege Recursor", desc: "×1.8 damage (anti-boss)", ability: "overcharge", mods: { damage: 1.8 } },
+    { id: "rapid_recursor", label: "Rapid Recursor", desc: "×2.5 fire rate", ability: "overcharge", mods: { fireRate: 2.5 } }
+  ],
+  glyph_mortar: [
+    { id: "cluster_mortar", label: "Cluster Mortar", desc: "Bigger splash, +fire rate", ability: "overcharge", mods: { aoe: 1.6, fireRate: 1.5 } },
+    { id: "incendiary_mortar", label: "Incendiary Mortar", desc: "Shells leave a burn", ability: "overcharge", mods: { damage: 1.3 }, onHit: [{ kind: "burn", dps: 16, ms: 2500 }] }
+  ],
+  shatter_drill: [
+    { id: "rend_drill", label: "Rend Drill", desc: "Strips armor to the bone", ability: "null_wave", onHit: [{ kind: "shred", armor: 0.5, ms: 2600 }] },
+    { id: "mark_drill", label: "Mark Drill", desc: "Shred + mark for +damage taken", ability: "null_wave", onHit: [{ kind: "shred", armor: 0.25, ms: 2200 }, { kind: "mark", bonus: 0.3, ms: 2200 }] }
+  ],
+  attractor_field: [
+    { id: "tar_field", label: "Tar Field", desc: "Near-total slow", mods: { slow: 1.6 } },
+    { id: "wide_field", label: "Wide Field", desc: "Much larger slow radius", mods: { range: 1.8 } }
+  ],
+  gravity_well: [
+    { id: "singularity", label: "Singularity", desc: "Stronger pull (tight cluster)", mods: { pull: 2 } },
+    { id: "event_field", label: "Event Field", desc: "Wider slow + pull radius", mods: { range: 1.8 } }
+  ],
+  resonance_hub: [
+    { id: "overdrive_hub", label: "Overdrive Hub", desc: "Bigger adjacency buff", mods: { adjacencyBonus: 1.8 } },
+    { id: "grid_hub", label: "Grid Hub", desc: "Buffs a much larger area", mods: { range: 1.6 } }
+  ],
+  cycle_extractor: [
+    { id: "turbo_extractor", label: "Turbo Extractor", desc: "×1.8 per-wave income", mods: { incomePerWave: 1.8 } },
+    { id: "burst_extractor", label: "Burst Extractor", desc: "×1.4 income, smaller footprint", mods: { incomePerWave: 1.4 } }
+  ],
+  bank_node: [
+    { id: "reserve_bank", label: "Reserve Bank", desc: "×1.8 per-wave income", mods: { incomePerWave: 1.8 } },
+    { id: "fast_bank", label: "Fast Bank", desc: "×1.5 income", mods: { incomePerWave: 1.5 } }
+  ]
+};
+function forksFor(type) {
+  return FORKS[type] || [];
+}
+function forkDef(tower) {
+  if (!tower?.fork) return null;
+  return (FORKS[tower.type] || []).find((f) => f.id === tower.fork) || null;
+}
 function forkAbility(tower) {
   return forkDef(tower)?.ability || null;
 }
-function forkDef() {
-  return null;
+function forkStatMult(tower, key) {
+  const m = forkDef(tower)?.mods?.[key];
+  return Number.isFinite(m) ? m : 1;
+}
+function towerStat(tower, key) {
+  const base = Number(TOWER_TYPES[tower?.type]?.[key]) || 0;
+  return base * forkStatMult(tower, key);
+}
+function effectiveOnHit(tower, def) {
+  return forkDef(tower)?.onHit || def?.onHit || null;
+}
+function chooseFork(state, towerId, forkId) {
+  const tower = (state?.towers || []).find((t) => t.id === towerId);
+  if (!tower) return { ok: false, reason: "not-found" };
+  if ((tower.level || 1) < 3) return { ok: false, reason: "not-l3" };
+  if (tower.fork) return { ok: false, reason: "already-forked" };
+  const fork = (FORKS[tower.type] || []).find((f) => f.id === forkId);
+  if (!fork) return { ok: false, reason: "invalid-fork" };
+  tower.fork = fork.id;
+  state.log = [...state.log || [], `${tower.type} forked → ${fork.label}.`].slice(-12);
+  return { ok: true, fork: fork.id };
 }
 
 // ../../docs/games/metagame/stages/stage4/abilities.js
@@ -732,11 +823,22 @@ function spawnSubBoss(id, idCounter) {
 }
 
 // ../../docs/games/metagame/stages/stage4/upgrades.js
+function upgradeTower(state, towerId) {
+  const tower = (state.towers || []).find((t) => t.id === towerId);
+  if (!tower) return { ok: false, reason: "not-found" };
+  const level = tower.level || 1;
+  if (level >= 3) return { ok: false, reason: "max-level" };
+  const cost = towerUpgradeCost(tower.type, level);
+  if ((state.cycles || 0) < cost) return { ok: false, reason: "poor", cost };
+  state.cycles -= cost;
+  tower.level = level + 1;
+  return { ok: true, level: tower.level, cost };
+}
 function applyExtractorIncome(state) {
   let income = 0;
   for (const tower of state.towers || []) {
     const def = TOWER_TYPES[tower.type];
-    if (def?.incomePerWave) income += def.incomePerWave;
+    if (def?.incomePerWave) income += towerStat(tower, "incomePerWave");
   }
   state.cycles = (state.cycles || 0) + income;
   return income;
@@ -834,10 +936,13 @@ function applyFields(state, dt) {
   for (const t of state.towers) {
     const def = TOWER_TYPES[t.type];
     if (!def?.slow && !def?.pull) continue;
+    const range = towerStat(t, "range");
+    const slow = towerStat(t, "slow");
+    const pull = towerStat(t, "pull");
     for (const e of state.enemies) {
-      if (dist(t, e) > def.range) continue;
-      if (def.slow) applyStatus(e, "slow", { factor: 1 - def.slow, ms: 250 });
-      if (def.pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - def.pull * back);
+      if (dist(t, e) > range) continue;
+      if (slow) applyStatus(e, "slow", { factor: Math.max(0, 1 - slow), ms: 250 });
+      if (pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - pull * back);
     }
   }
 }
@@ -866,35 +971,38 @@ function fireTowers(state, pathTiles) {
   for (const tower of state.towers) {
     const def = TOWER_TYPES[tower.type];
     if (!def || !def.fireRate || !def.damage) continue;
-    if (now - (tower.lastFiredMs ?? -Infinity) < 1e3 / def.fireRate) continue;
-    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= def.range);
+    const fireRate = towerStat(tower, "fireRate") || def.fireRate;
+    if (now - (tower.lastFiredMs ?? -Infinity) < 1e3 / fireRate) continue;
+    const range = towerStat(tower, "range");
+    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= range);
     if (!candidates.length) continue;
     tower.lastFiredMs = now;
-    const bonus = 1 + 0.3 * hubsCovering(state, tower);
-    for (const e of pickTargets(state, tower, def, candidates)) applyDamage(state, tower, def, e, bonus, pathTiles);
+    const bonus = 1 + hubsCovering(state, tower);
+    const eff = { aoe: towerStat(tower, "aoe"), chain: Math.round(towerStat(tower, "chain")), global: def.global };
+    for (const e of pickTargets(state, tower, eff, candidates)) applyDamage(state, tower, def, e, bonus, pathTiles);
   }
 }
-function pickTargets(state, tower, def, candidates) {
-  if (def.global && def.aoe) {
+function pickTargets(state, tower, eff, candidates) {
+  if (eff.global && eff.aoe) {
     const focus = selectTarget(candidates, tower);
-    return state.enemies.filter((e) => dist(e, focus) <= def.aoe);
+    return state.enemies.filter((e) => dist(e, focus) <= eff.aoe);
   }
-  if (def.aoe) return candidates;
-  if (def.chain) {
+  if (eff.aoe) return candidates;
+  if (eff.chain) {
     const focus = selectTarget(candidates, tower);
-    return [...candidates].sort((a, b) => dist(focus, a) - dist(focus, b) || b.pathIndex - a.pathIndex).slice(0, def.chain);
+    return [...candidates].sort((a, b) => dist(focus, a) - dist(focus, b) || b.pathIndex - a.pathIndex).slice(0, eff.chain);
   }
   return [selectTarget(candidates, tower)];
 }
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
-  let dmg = def.damage * bonus * (state.damageMult || 1);
+  let dmg = towerStat(tower, "damage") * bonus * (state.damageMult || 1);
   dmg *= overchargeMult(tower, state.combatClockMs || 0);
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2;
   dmg *= damageTakenMult(enemy);
   const type = def.damageType || (def.ignoresArmor ? "null" : "kinetic");
   resolveDamage(enemy, dmg, type, { armor: effectiveArmor(enemy) });
-  applyOnHit(enemy, def);
+  applyOnHit(enemy, { onHit: effectiveOnHit(tower, def) });
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }
 function maybeFireSubBossAbility(state, enemy, pathTiles) {
@@ -926,13 +1034,13 @@ function reap(state, pathTiles) {
   state.enemies = survivors;
 }
 function hubsCovering(state, tower) {
-  let n = 0;
+  let bonus = 0;
   for (const t of state.towers) {
     if (t === tower) continue;
     const def = TOWER_TYPES[t.type];
-    if (def?.adjacencyBonus && dist(t, tower) <= def.range) n += 1;
+    if (def?.adjacencyBonus && dist(t, tower) <= towerStat(t, "range")) bonus += towerStat(t, "adjacencyBonus");
   }
-  return n;
+  return bonus;
 }
 var TARGET_COMPARATORS = {
   first: (a, b) => a.pathIndex > b.pathIndex,
@@ -1275,6 +1383,8 @@ function normalizeTower(tower) {
     y,
     level: clampInt(tower.level || 1, 1, 3),
     targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : "first",
+    fork: tower.fork ? String(tower.fork) : null,
+    // chosen tier-3 fork (irrevocable; persisted)
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed)
   };
@@ -1403,12 +1513,39 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   }
   function rosterRows() {
     return (state.towers || []).map((tower) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.towerId = tower.id;
+      const wrap = document.createElement("div");
+      wrap.className = "s4-roster-row";
       const def = TOWER_TYPES[tower.type] || {};
-      btn.textContent = `${def.glyph || "[?]"} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}${def.aoe ? " (aoe)" : ""}`;
-      return btn;
+      const level = tower.level || 1;
+      const tgt = document.createElement("button");
+      tgt.type = "button";
+      tgt.dataset.towerId = tower.id;
+      tgt.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}`;
+      wrap.append(tgt);
+      if (level < 3) {
+        const up = document.createElement("button");
+        up.type = "button";
+        up.dataset.upgradeId = tower.id;
+        up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
+        wrap.append(up);
+      } else if (!tower.fork && forksFor(tower.type).length) {
+        for (const f of forksFor(tower.type)) {
+          const fb = document.createElement("button");
+          fb.type = "button";
+          fb.className = "s4-fork-btn";
+          fb.dataset.forkId = tower.id;
+          fb.dataset.forkChoice = f.id;
+          fb.textContent = `⑂ ${f.label}`;
+          fb.title = f.desc;
+          wrap.append(fb);
+        }
+      } else if (tower.fork) {
+        const tag = document.createElement("span");
+        tag.className = "s4-fork-tag";
+        tag.textContent = `⑂ ${forkDef(tower)?.label || tower.fork}`;
+        wrap.append(tag);
+      }
+      return wrap;
     });
   }
   function startWaveAction() {
@@ -1518,12 +1655,34 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     controller.persist?.();
     return m;
   }
+  function upgrade(id) {
+    const r = upgradeTower(state, id);
+    repaint();
+    controller.persist?.();
+    return r;
+  }
+  function pickFork(id, forkId) {
+    const r = chooseFork(state, id, forkId);
+    repaint();
+    controller.persist?.();
+    return r;
+  }
   function setWave(n) {
     state.waveNumber = Math.max(1, Math.trunc(n) || 1);
     state.wavePeak = state.waveNumber;
     repaint();
   }
   root.addEventListener("click", (event) => {
+    const upBtn = event.target.closest("button[data-upgrade-id]");
+    if (upBtn) {
+      upgrade(upBtn.dataset.upgradeId);
+      return;
+    }
+    const forkBtn = event.target.closest("button[data-fork-id]");
+    if (forkBtn) {
+      pickFork(forkBtn.dataset.forkId, forkBtn.dataset.forkChoice);
+      return;
+    }
     const rosterBtn = event.target.closest("button[data-tower-id]");
     if (rosterBtn) {
       cycleTarget(rosterBtn.dataset.towerId);
@@ -1602,6 +1761,8 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       setSpeed,
       place,
       cycleTarget,
+      upgrade,
+      pickFork,
       setWave,
       confront
     }
@@ -1827,6 +1988,8 @@ function renderStage4(ctx) {
       place: (x, y, t) => active?.hook?.place?.(x, y, t),
       setWave: (n) => active?.hook?.setWave?.(n),
       cycleTarget: (id) => active?.hook?.cycleTarget?.(id),
+      upgrade: (id) => active?.hook?.upgrade?.(id),
+      pickFork: (id, forkId) => active?.hook?.pickFork?.(id, forkId),
       confront: () => active?.hook?.confront?.(),
       buyArmory: (id) => controller.buyArmory(id),
       leaveArmory: () => controller.leaveArmory(),

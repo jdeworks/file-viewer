@@ -8,6 +8,7 @@ import { TOWER_TYPES } from "./towers.js";
 import { resolveDamage } from "./damage.js";
 import { applyStatus, tickStatus, statusSpeedFactor, effectiveArmor, damageTakenMult, applyOnHit } from "./status.js";
 import { fireAbilities, overchargeMult } from "./abilities.js";
+import { towerStat, effectiveOnHit } from "./forks.js";
 import { waveComposition, SPAWN_INTERVAL_MS } from "./waves.js";
 import { mapWaveComposition } from "./wavegen.js";
 import { spawnSubBoss, subBossDef } from "./subboss.js";
@@ -129,10 +130,13 @@ function applyFields(state, dt) {
   for (const t of state.towers) {
     const def = TOWER_TYPES[t.type];
     if (!def?.slow && !def?.pull) continue;
+    const range = towerStat(t, 'range');
+    const slow = towerStat(t, 'slow');
+    const pull = towerStat(t, 'pull');
     for (const e of state.enemies) {
-      if (dist(t, e) > def.range) continue;
-      if (def.slow) applyStatus(e, 'slow', { factor: 1 - def.slow, ms: 250 });
-      if (def.pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - def.pull * back);
+      if (dist(t, e) > range) continue;
+      if (slow) applyStatus(e, 'slow', { factor: Math.max(0, 1 - slow), ms: 250 });
+      if (pull && !e.slowImmune) e.pathIndex = Math.max(0, e.pathIndex - pull * back);
     }
   }
 }
@@ -164,38 +168,41 @@ function fireTowers(state, pathTiles) {
   for (const tower of state.towers) {
     const def = TOWER_TYPES[tower.type];
     if (!def || !def.fireRate || !def.damage) continue; // support towers don't fire
-    if (now - (tower.lastFiredMs ?? -Infinity) < 1000 / def.fireRate) continue;
+    const fireRate = towerStat(tower, 'fireRate') || def.fireRate; // tier-3 fork may scale cadence
+    if (now - (tower.lastFiredMs ?? -Infinity) < 1000 / fireRate) continue;
+    const range = towerStat(tower, 'range');
     // A global tower (glyph_mortar) reaches anywhere; everyone else is range-limited.
-    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= def.range);
+    const candidates = def.global ? state.enemies : state.enemies.filter((e) => dist(tower, e) <= range);
     if (!candidates.length) continue;
     tower.lastFiredMs = now;
-    const bonus = 1 + 0.3 * hubsCovering(state, tower);
-    for (const e of pickTargets(state, tower, def, candidates)) applyDamage(state, tower, def, e, bonus, pathTiles);
+    const bonus = 1 + hubsCovering(state, tower); // sum of adjacent hubs' (fork-scaled) buffs
+    const eff = { aoe: towerStat(tower, 'aoe'), chain: Math.round(towerStat(tower, 'chain')), global: def.global };
+    for (const e of pickTargets(state, tower, eff, candidates)) applyDamage(state, tower, def, e, bonus, pathTiles);
   }
 }
 
-// Which enemies a tower hits this shot:
+// Which enemies a tower hits this shot (eff = fork-scaled aoe/chain/global):
 //   global+aoe (mortar) → a focus picked anywhere, then everyone within its aoe radius of that focus
 //   aoe (scatter)       → everything in range
 //   chain (resonator)   → the `chain` nearest enemies to the focus (deterministic tie-break)
 //   else                → the single selectTarget pick
-function pickTargets(state, tower, def, candidates) {
-  if (def.global && def.aoe) {
+function pickTargets(state, tower, eff, candidates) {
+  if (eff.global && eff.aoe) {
     const focus = selectTarget(candidates, tower);
-    return state.enemies.filter((e) => dist(e, focus) <= def.aoe);
+    return state.enemies.filter((e) => dist(e, focus) <= eff.aoe);
   }
-  if (def.aoe) return candidates;
-  if (def.chain) {
+  if (eff.aoe) return candidates;
+  if (eff.chain) {
     const focus = selectTarget(candidates, tower);
     return [...candidates]
       .sort((a, b) => dist(focus, a) - dist(focus, b) || b.pathIndex - a.pathIndex)
-      .slice(0, def.chain);
+      .slice(0, eff.chain);
   }
   return [selectTarget(candidates, tower)];
 }
 
 function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
-  let dmg = def.damage * bonus * (state.damageMult || 1); // Armory "Overclocked Emitters" scales all damage
+  let dmg = towerStat(tower, 'damage') * bonus * (state.damageMult || 1); // Armory + tier-3 fork scale damage
   dmg *= overchargeMult(tower, state.combatClockMs || 0); // L3 overcharge ability self-buff
   const tile = pathTiles[Math.floor(enemy.pathIndex)];
   if (tile?.recurve) dmg *= 2; // depth-3 fold-back tiles deal double
@@ -205,7 +212,7 @@ function applyDamage(state, tower, def, enemy, bonus, pathTiles) {
   // is the SHRED-adjusted live armor so the shred support tower actually opens enemies up.
   const type = def.damageType || (def.ignoresArmor ? 'null' : 'kinetic');
   resolveDamage(enemy, dmg, type, { armor: effectiveArmor(enemy) });
-  applyOnHit(enemy, def); // chill / burn / shred / stun the tower attaches on hit
+  applyOnHit(enemy, { onHit: effectiveOnHit(tower, def) }); // chill / burn / shred (fork may override)
   if (enemy.subBoss && !enemy.abilityFired) maybeFireSubBossAbility(state, enemy, pathTiles);
 }
 
@@ -240,14 +247,15 @@ function reap(state, pathTiles) {
   state.enemies = survivors;
 }
 
+// Total (fork-scaled) adjacency buff from every resonance hub whose range covers this tower.
 function hubsCovering(state, tower) {
-  let n = 0;
+  let bonus = 0;
   for (const t of state.towers) {
     if (t === tower) continue;
     const def = TOWER_TYPES[t.type];
-    if (def?.adjacencyBonus && dist(t, tower) <= def.range) n += 1;
+    if (def?.adjacencyBonus && dist(t, tower) <= towerStat(t, 'range')) bonus += towerStat(t, 'adjacencyBonus');
   }
-  return n;
+  return bonus;
 }
 
 // Per-tower targeting modes. Each comparator returns true when candidate `a` is a BETTER target than

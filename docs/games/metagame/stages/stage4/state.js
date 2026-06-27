@@ -140,6 +140,7 @@ function normalizeTower(tower) {
     y,
     level: clampInt(tower.level || 1, 1, 3),
     targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : 'first',
+    fork: tower.fork ? String(tower.fork) : null, // chosen tier-3 fork (irrevocable; persisted)
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed),
   };

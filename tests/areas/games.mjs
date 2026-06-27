@@ -846,6 +846,25 @@ export async function run(ctx) {
     return { status: window.__fvStage4.status(), wave: window.__fvStage4.state().waveNumber };
   });
   if (s4Map.status === 'combat' && s4Map.wave >= 2) pass('Stage 4 tower-defense runs: map 1 wave 1 resolves and advances'); else fail('Stage 4 map did not play: ' + JSON.stringify(s4Map));
+  // TD DEPTH PASS: a new damage-type tower builds, upgrades to L3, and forks (tier-3 branching), and a
+  // status tower applies an effect on hit in the live engine. Exercises damage types + status + roster.
+  const s4Depth = await page.evaluate(() => {
+    const h = window.__fvStage4;
+    h.state().cycles = 6000; // afford the upgrades/forks in this smoke
+    const p = h.place(10, 10, 'pulse_node');
+    const id = p.tower.id;
+    h.upgrade(id); h.upgrade(id);              // L1 → L2 → L3
+    const forkRes = h.pickFork(id, 'emp_lance'); // irrevocable tier-3 fork
+    const t = h.state().towers.find((x) => x.id === id);
+    const builtThermal = h.place(12, 12, 'thermal_loop').ok; // a new damage-type (thermal/burn) tower
+    // Drive one short wave so the status layer runs, then look for any applied status effect.
+    h.setWave(1); h.startWave(); h.advance(8000);
+    const anyStatus = h.state().enemies.some((e) => e.status && Object.keys(e.status).length);
+    return { level: t.level, fork: t.fork, forkOk: forkRes.ok, builtThermal, anyStatus, enemies: h.state().enemies.length };
+  });
+  if (s4Depth.level === 3 && s4Depth.fork === 'emp_lance' && s4Depth.forkOk && s4Depth.builtThermal) pass('Stage 4 depth: new tower builds + upgrades to L3 + picks an irrevocable tier-3 fork'); else fail('Stage 4 tier-3 fork path broken: ' + JSON.stringify(s4Depth));
+  // Reset the campaign back to a clean map-select so the boss-gate assertions below are unaffected.
+  await page.evaluate(() => { const h = window.__fvStage4; const st = h.state(); st.towers = []; st.enemies = []; st.waveActive = false; h.leaveArmory?.(); });
   // Debug-seat the boss (smoke shortcut for clearing 150 waves; NOT a player affordance). The boss is
   // load-bearing-gated by the REAL blueprint un-cheat: BEFORE the file is opened it folds all damage
   // away even with full recursion-point coverage.

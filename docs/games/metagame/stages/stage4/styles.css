@@ -111,6 +111,25 @@
   color: var(--s4-cyan);
 }
 
+.s4-roster-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+
+.s4-roster-row .s4-fork-btn {
+  border-color: var(--s4-cyan);
+  color: var(--s4-cyan);
+}
+
+.s4-fork-tag {
+  font-size: 10px;
+  color: var(--s4-cyan);
+  opacity: 0.85;
+  padding: 0 4px;
+}
+
 .s4-log {
   margin: 0 0 0 18px;
 }

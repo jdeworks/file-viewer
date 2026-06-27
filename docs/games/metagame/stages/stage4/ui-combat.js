@@ -10,7 +10,9 @@ import { buildPath } from './lsystem.js';
 import { boardText } from './board.js';
 import { startWave as engineStartWave, tick, waveComplete, queueWave } from './engine.js';
 import { cycleTowerTarget, getBossLockState, placeTower, pushLog, fightInfiniteLoop } from './boss.js';
-import { TOWER_TYPES } from './towers.js';
+import { TOWER_TYPES, towerUpgradeCost } from './towers.js';
+import { upgradeTower } from './upgrades.js';
+import { chooseFork, forksFor, forkDef } from './forks.js';
 import { snapshotWave } from './state.js';
 import { mapByIndex, mapPathSeed } from './maps.js';
 
@@ -104,11 +106,33 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   }
   function rosterRows() {
     return (state.towers || []).map((tower) => {
-      const btn = document.createElement('button');
-      btn.type = 'button'; btn.dataset.towerId = tower.id;
+      const wrap = document.createElement('div');
+      wrap.className = 's4-roster-row';
       const def = TOWER_TYPES[tower.type] || {};
-      btn.textContent = `${def.glyph || '[?]'} ${tower.x},${tower.y} → ${String(tower.targetMode || 'first').toUpperCase()}${def.aoe ? ' (aoe)' : ''}`;
-      return btn;
+      const level = tower.level || 1;
+      const tgt = document.createElement('button');
+      tgt.type = 'button'; tgt.dataset.towerId = tower.id;
+      tgt.textContent = `${def.glyph || '[?]'} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || 'first').toUpperCase()}`;
+      wrap.append(tgt);
+      if (level < 3) {
+        const up = document.createElement('button');
+        up.type = 'button'; up.dataset.upgradeId = tower.id;
+        up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
+        wrap.append(up);
+      } else if (!tower.fork && forksFor(tower.type).length) {
+        for (const f of forksFor(tower.type)) {
+          const fb = document.createElement('button');
+          fb.type = 'button'; fb.className = 's4-fork-btn'; fb.dataset.forkId = tower.id; fb.dataset.forkChoice = f.id;
+          fb.textContent = `⑂ ${f.label}`; fb.title = f.desc;
+          wrap.append(fb);
+        }
+      } else if (tower.fork) {
+        const tag = document.createElement('span');
+        tag.className = 's4-fork-tag';
+        tag.textContent = `⑂ ${forkDef(tower)?.label || tower.fork}`;
+        wrap.append(tag);
+      }
+      return wrap;
     });
   }
 
@@ -200,10 +224,16 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     return r;
   }
   function cycleTarget(id) { const m = cycleTowerTarget(state, id); repaint(); controller.persist?.(); return m; }
+  function upgrade(id) { const r = upgradeTower(state, id); repaint(); controller.persist?.(); return r; }
+  function pickFork(id, forkId) { const r = chooseFork(state, id, forkId); repaint(); controller.persist?.(); return r; }
   function setWave(n) { state.waveNumber = Math.max(1, Math.trunc(n) || 1); state.wavePeak = state.waveNumber; repaint(); }
 
   // ── events ───────────────────────────────────────────────────────────────
   root.addEventListener('click', (event) => {
+    const upBtn = event.target.closest('button[data-upgrade-id]');
+    if (upBtn) { upgrade(upBtn.dataset.upgradeId); return; }
+    const forkBtn = event.target.closest('button[data-fork-id]');
+    if (forkBtn) { pickFork(forkBtn.dataset.forkId, forkBtn.dataset.forkChoice); return; }
     const rosterBtn = event.target.closest('button[data-tower-id]');
     if (rosterBtn) { cycleTarget(rosterBtn.dataset.towerId); return; }
     const towerBtn = event.target.closest('button[data-tower]');
@@ -248,7 +278,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
         while (t < ms && state.waveActive) { tick(state, dt * speed, path.tiles); checkpointWave(); if (settleWave()) break; t += dt; }
         if (alive) repaint();
       },
-      startWave: startWaveAction, callEarly, setSpeed, place, cycleTarget, setWave, confront,
+      startWave: startWaveAction, callEarly, setSpeed, place, cycleTarget, upgrade, pickFork, setWave, confront,
     },
   };
 }
