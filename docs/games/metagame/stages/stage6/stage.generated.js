@@ -2567,49 +2567,110 @@ var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
-// ../../docs/games/metagame/stages/stage6/modifiers.js
-var MODIFIERS = [
-  {
-    id: "lean-rewards",
-    text: "Lean economy — handshake rewards are reduced by 25%.",
-    apply: (r) => {
-      r.handshakeMult = (r.handshakeMult ?? 1) * 0.75;
-    }
-  },
-  {
-    id: "stingy-rest",
-    text: "Stingy rests — rest sites heal 10% less.",
-    apply: (r) => {
-      r.restHealMod = (r.restHealMod ?? 0) - 0.1;
-    }
-  },
-  {
-    id: "tight-window",
-    text: "Tight windows — the Act-3 congestion cap is 1 lower.",
-    apply: (r) => {
-      r.windowCapMod = (r.windowCapMod ?? 0) - 1;
-    }
-  },
-  {
-    id: "meaner-elites",
-    text: "Meaner elites — elites gain +24 HP.",
-    apply: (r) => {
-      r.eliteHpBonus = (r.eliteHpBonus ?? 0) + 24;
-    }
-  },
-  {
-    id: "tougher-boss",
-    text: "Tougher negotiation — The Refused Connection has +30% phase HP.",
-    apply: (r) => {
-      r.bossHpMult = (r.bossHpMult ?? 1) * 1.3;
-    }
-  }
+// ../../docs/games/metagame/stages/stage6/ascension-mods.js
+function baseRunConfig() {
+  return {
+    handshakeMult: 1,
+    // run.js resolveCombat: combat handshake reward multiplier
+    restHealMod: 0,
+    // run.js rest: added to the 0.30 heal fraction
+    windowCapMod: 0,
+    // renderer makeCombat: Act-3 congestion window cap delta
+    eliteHpBonus: 0,
+    // renderer makeCombat: flat HP added to elite enemies
+    bossHpMult: 1,
+    // boss-combat: per-phase HP multiplier for The Refused Connection
+    enemyHpMult: 1,
+    // renderer makeCombat: HP multiplier for NON-boss enemies
+    enemyArmorBonus: 0,
+    // renderer makeCombat: flat armor added to NON-boss enemies
+    startHpMod: 0,
+    // run.js createRun: delta to the run's STARTING hp (not maxHp)
+    skipRewardMod: 0,
+    // run.js takeReward: delta to the skip-a-card handshake payout
+    removalCostMod: 0,
+    // run.js removalCost: delta to the base deck-removal price
+    rewardChoicesMod: 0,
+    // run.js reward draft: delta to the number of cards offered
+    bossExtraPhase: false
+    // boss-combat: The Refused Connection gains a 4th mutating phase
+  };
+}
+var ASCENSION_MODS = [
+  { level: 1, id: "lean-rewards", label: "Lean economy", desc: "Handshake rewards reduced by 25%.", apply: (c) => {
+    c.handshakeMult *= 0.75;
+    return c;
+  } },
+  { level: 2, id: "stingy-rest", label: "Stingy rests", desc: "Rest sites heal 10% less.", apply: (c) => {
+    c.restHealMod -= 0.1;
+    return c;
+  } },
+  { level: 3, id: "tight-window", label: "Tight windows", desc: "The Act-3 congestion cap is 1 lower.", apply: (c) => {
+    c.windowCapMod -= 1;
+    return c;
+  } },
+  { level: 4, id: "meaner-elites", label: "Meaner elites", desc: "Elites gain +24 HP.", apply: (c) => {
+    c.eliteHpBonus += 24;
+    return c;
+  } },
+  { level: 5, id: "tougher-boss", label: "Tougher boss", desc: "The Refused Connection has +30% phase HP.", apply: (c) => {
+    c.bossHpMult *= 1.3;
+    return c;
+  } },
+  { level: 6, id: "hardened-foes", label: "Hardened foes", desc: "All non-boss enemies have +15% HP.", apply: (c) => {
+    c.enemyHpMult *= 1.15;
+    return c;
+  } },
+  { level: 7, id: "attrition", label: "Attrition", desc: "Each run starts at 8 HP below maximum.", apply: (c) => {
+    c.startHpMod -= 8;
+    return c;
+  } },
+  { level: 8, id: "thankless", label: "Thankless thinning", desc: "Skipping a reward card pays nothing.", apply: (c) => {
+    c.skipRewardMod -= 5;
+    return c;
+  } },
+  { level: 9, id: "costly-removal", label: "Costly removal", desc: "Deck removal costs 20 more handshakes.", apply: (c) => {
+    c.removalCostMod += 20;
+    return c;
+  } },
+  { level: 10, id: "fewer-options", label: "Fewer options", desc: "Reward drafts offer one fewer card.", apply: (c) => {
+    c.rewardChoicesMod -= 1;
+    return c;
+  } },
+  { level: 11, id: "armored-foes", label: "Armored foes", desc: "All non-boss enemies gain +3 armor.", apply: (c) => {
+    c.enemyArmorBonus += 3;
+    return c;
+  } },
+  { level: 12, id: "austere", label: "Austere economy", desc: "Handshake rewards reduced a further 20%.", apply: (c) => {
+    c.handshakeMult *= 0.8;
+    return c;
+  } },
+  { level: 13, id: "brutal-elites", label: "Brutal elites", desc: "Elites gain a further +30 HP.", apply: (c) => {
+    c.eliteHpBonus += 30;
+    return c;
+  } },
+  { level: 14, id: "boss-overclock", label: "Boss overclock", desc: "The Refused Connection gains a further +25% phase HP.", apply: (c) => {
+    c.bossHpMult *= 1.25;
+    return c;
+  } },
+  { level: 15, id: "endurance", label: "Endurance test", desc: "The Refused Connection gains a fourth mutating phase.", apply: (c) => {
+    c.bossExtraPhase = true;
+    return c;
+  } }
 ];
-function applyModifiers(run, version) {
-  const n = Math.max(0, Math.min(Number(version) || 0, MODIFIERS.length));
-  run.modifiers = MODIFIERS.slice(0, n).map((m) => m.id);
-  for (let i = 0; i < n; i++) MODIFIERS[i].apply(run);
-  return run;
+var MAX_ASCENSION = ASCENSION_MODS.length;
+function activeAscensionMods(level) {
+  const cap = Math.max(0, Math.floor(Number(level) || 0));
+  return ASCENSION_MODS.filter((m) => m.level <= cap);
+}
+function foldAscension(baseConfig, level) {
+  let acc = { ...baseConfig || baseRunConfig() };
+  for (const def of activeAscensionMods(level)) {
+    if (typeof def.apply !== "function") continue;
+    const next = def.apply(acc, def);
+    if (next !== void 0) acc = next;
+  }
+  return acc;
 }
 
 // ../../docs/games/metagame/stages/stage6/run.js
@@ -2626,11 +2687,22 @@ var PRESTIGE_HP_PER_VERSION = 5;
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
-function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
+function effectiveAscension(version = 0, ascension = 0) {
+  return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
+}
+function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard" } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
+  const ascensionLevel = effectiveAscension(version, ascension);
+  const cfg = foldAscension(baseRunConfig(), ascensionLevel);
   const run = {
     seed,
     version,
+    ascension: ascensionLevel,
+    // the effective rule level this run was built at (for recordClear)
+    mode,
+    // "standard" | "daily" | "custom" (for the run-end score / labelling)
+    dailyKey,
+    // the date/custom string the seed was derived from, or null
     map: generateRun(seed, FINAL_BOSS_ACT),
     act: 1,
     currentNodeId: null,
@@ -2646,16 +2718,22 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     status: "map",
     pendingReward: null,
     notice: null,
-    // Prestige rule-modifier knobs (defaults = no modifier); applyModifiers tunes them by version.
-    handshakeMult: 1,
-    restHealMod: 0,
-    windowCapMod: 0,
-    eliteHpBonus: 0,
-    bossHpMult: 1,
-    modifiers: []
+    // Ascension rule-modifier knobs (defaults = no modifier); foldAscension tuned them above.
+    handshakeMult: cfg.handshakeMult,
+    restHealMod: cfg.restHealMod,
+    windowCapMod: cfg.windowCapMod,
+    eliteHpBonus: cfg.eliteHpBonus,
+    bossHpMult: cfg.bossHpMult,
+    enemyHpMult: cfg.enemyHpMult,
+    enemyArmorBonus: cfg.enemyArmorBonus,
+    skipRewardMod: cfg.skipRewardMod,
+    removalCostMod: cfg.removalCostMod,
+    rewardChoicesMod: cfg.rewardChoicesMod,
+    bossExtraPhase: cfg.bossExtraPhase,
+    modifiers: activeAscensionMods(ascensionLevel).map((m) => m.id)
   };
+  run.hp = Math.max(1, maxHp + (cfg.startHpMod || 0));
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
-  applyModifiers(run, version);
   return run;
 }
 function availableNodes(run) {
@@ -2703,7 +2781,7 @@ function resolveCombat(run, { win, hpRemaining }) {
 function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
-  else run.handshakes += SKIP_REWARD;
+  else run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0));
   run.pendingReward = null;
   run.status = "map";
   return { ok: true, skipped: !cardId };
@@ -2747,7 +2825,7 @@ function buyCard(run, cardId, cost) {
   return { ok: true };
 }
 function removalCost(run) {
-  return REMOVAL_BASE + REMOVAL_STEP * (run.removalsPurchased || 0);
+  return REMOVAL_BASE + Math.max(0, run?.removalCostMod || 0) + REMOVAL_STEP * (run.removalsPurchased || 0);
 }
 function buyRemoval(run, index) {
   const cost = removalCost(run);
@@ -2825,7 +2903,8 @@ function rollRewardPotion(run, nodeId2) {
   return rollPotion(hashSeed(run.seed, `${nodeId2}:potion-pick`));
 }
 function rollRewardCards(run, nodeId2) {
-  return draftRewardCards(hashSeed(run.seed, nodeId2), run.act, REWARD_CHOICES);
+  const choices = Math.max(1, REWARD_CHOICES + (run.rewardChoicesMod || 0));
+  return draftRewardCards(hashSeed(run.seed, nodeId2), run.act, choices);
 }
 function screenForNode(node) {
   if (node.type === "combat" || node.type === "elite") return "combat";
@@ -3096,7 +3175,7 @@ function applyEventChoice(run, eventId, choiceId) {
 }
 
 // ../../docs/games/metagame/stages/stage6/boss-combat.js
-var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
+var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60, 4: 60 };
 var DEMAND_LEAD_SYN = "lead-syn";
 var DEMAND_ACK_FIRST = "ack-first";
 function baseId2(id) {
@@ -3121,10 +3200,11 @@ function accepts(combat, card) {
 function phaseHp(phase, hpMult) {
   return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
 }
-function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
+function wireBossCombat(combat, { locked = false, hpMult = 1, extraPhase = false } = {}) {
   combat.bossPhase = 1;
   combat.bossLocked = Boolean(locked);
   combat.bossHpMult = hpMult;
+  combat.bossMaxPhase = extraPhase ? 4 : 3;
   combat.enemy.hp = phaseHp(1, hpMult);
   combat.enemy.maxHp = phaseHp(1, hpMult);
   rewireBossCombat(combat);
@@ -3134,7 +3214,7 @@ function rewireBossCombat(combat) {
   combat.acceptance = accepts;
   combat.advancePhase = (c) => {
     const phase = c.bossPhase || 1;
-    if (phase >= 3) return false;
+    if (phase >= (c.bossMaxPhase || 3)) return false;
     c.bossPhase = phase + 1;
     c.enemy.hp = phaseHp(c.bossPhase, c.bossHpMult);
     c.enemy.maxHp = phaseHp(c.bossPhase, c.bossHpMult);
@@ -3207,7 +3287,7 @@ function snapshotCombat(combat) {
     exhaust: [...combat.exhaust || []],
     jammed: [...combat.jammed || []],
     pending: clone(combat.pending || []),
-    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1 } : null
+    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 } : null
   };
 }
 function restoreCombat(snapshot, { relics = [] } = {}) {
@@ -3250,6 +3330,7 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     combat.bossPhase = s.boss.phase;
     combat.bossLocked = Boolean(s.boss.locked);
     combat.bossHpMult = s.boss.hpMult || 1;
+    combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
   }
   return combat;
@@ -3257,6 +3338,7 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
 
 // ../../docs/games/metagame/stages/stage6/renderer.js
 import { createRun as createRunState } from "../../shared/run-state.js";
+import { createAscension } from "../../shared/ascension.js";
 
 // ../../docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = {
@@ -3450,7 +3532,7 @@ var NODE_ICON = {
   event: "❓",
   boss: "☣"
 };
-function hubView(state, lock) {
+function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
@@ -3475,16 +3557,36 @@ function hubView(state, lock) {
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
-      ${activeModifiers(m.protocolVersion)}
     </div>
+    ${ascensionPicker(asc, hasRun)}
     <p class="s6db-hint">${esc2(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
 }
-function activeModifiers(version) {
-  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+function ascensionPicker(asc, hasRun) {
+  if (!asc || hasRun) {
+    return asc ? activeRules(Math.max(asc.level, asc.floor || 0)) : "";
+  }
+  const maxPick = Math.max(asc.maxUnlocked, asc.floor || 0);
+  const cells = [];
+  for (let n = 0; n <= asc.maxLevel; n++) {
+    const locked = n > maxPick;
+    const sel = n === asc.level ? " is-selected" : "";
+    const floorPinned = n <= (asc.floor || 0) ? " is-floor" : "";
+    cells.push(locked ? `<span class="s6db-asc-cell is-locked" aria-disabled="true">${n}</span>` : `<button type="button" class="s6db-asc-cell${sel}${floorPinned}" data-ascension="${n}">${n}</button>`);
+  }
+  const effective = Math.max(asc.level, asc.floor || 0);
+  return `<div class="s6db-ascension">
+      <div class="s6db-asc-head"><strong>Ascension</strong>
+        <span>difficulty ${asc.level} · cleared ${asc.maxCleared}/${MAX_ASCENSION}${asc.floor ? ` · prestige floor ${asc.floor}` : ""}</span></div>
+      <div class="s6db-asc-track" aria-label="ascension level picker">${cells.join("")}</div>
+      ${activeRules(effective)}
+    </div>`;
+}
+function activeRules(level) {
+  const active = activeAscensionMods(level);
   if (!active.length) return "";
-  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ ${esc2(mod.text)}</li>`).join("")}</ul>`;
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc2(mod.label)}</strong> — ${esc2(mod.desc)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -3820,6 +3922,8 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   host.replaceChildren(root);
   const screen = root.querySelector("[data-screen]");
   const combatRun = orchestrator?.save ? createRunState({ save: orchestrator.save, stageId: 6, slot: "combat", debounceMs: 0 }) : null;
+  const ascension = orchestrator?.save ? createAscension({ save: orchestrator.save, stageId: 6, modifiers: ASCENSION_MODS }) : null;
+  const ascInfo = () => ascension ? { level: ascension.level(), maxUnlocked: ascension.maxUnlocked(), maxCleared: ascension.maxCleared(), maxLevel: ascension.maxLevel, floor: state.meta.protocolVersion || 0 } : null;
   let combat = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -3865,7 +3969,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const run = state.run;
     if (state.ui.screen !== "run" || !run) {
       combat = null;
-      return mount(hubView(state, lockState()));
+      return mount(hubView(state, lockState(), ascInfo()));
     }
     switch (run.status) {
       // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
@@ -3925,6 +4029,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   function makeCombat(run) {
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
+    if (enemy.tier !== "boss") {
+      if (run.enemyHpMult && run.enemyHpMult !== 1) enemy.hp = Math.round(enemy.hp * run.enemyHpMult);
+      if (run.enemyArmorBonus) enemy.armor = Number(enemy.armor || 0) + run.enemyArmorBonus;
+    }
     if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
     const c = createCombat({
       deck: run.deck,
@@ -3938,7 +4046,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1 });
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
     return c;
   }
   function finishCombat(run) {
@@ -3957,6 +4065,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     state.boss.reached = true;
     state.meta.firstClearComplete = true;
     state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
@@ -3969,7 +4078,12 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   function beginRun() {
     state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
     const seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
-    state.run = createRun({ seed, version: state.meta.protocolVersion || 0, handshakes: 0 });
+    state.run = createRun({
+      seed,
+      version: state.meta.protocolVersion || 0,
+      handshakes: 0,
+      ascension: ascension ? ascension.level() : 0
+    });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset();
     combat = null;
@@ -3994,6 +4108,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       playCard(combat, Number(play.dataset.play));
       if (combat.over) finishCombat(run);
       else checkpointCombat(combat, run);
+      return true;
+    }
+    const ascBtn = event.target.closest("[data-ascension]");
+    if (ascBtn) {
+      if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension));
       return true;
     }
     const potion = event.target.closest("[data-potion]");

@@ -21,6 +21,8 @@ import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
 import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
 import { snapshotCombat, restoreCombat } from "./combat-persist.js";
 import { createRun as createRunState } from "../../shared/run-state.js";
+import { createAscension } from "../../shared/ascension.js";
+import { ASCENSION_MODS } from "./ascension-mods.js";
 import { combatView } from "./ui-combat.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
@@ -43,6 +45,16 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   // every checkpoint is flushed into the save object before commit()'s save() serializes it.
   const combatRun = orchestrator?.save
     ? createRunState({ save: orchestrator.save, stageId: 6, slot: "combat", debounceMs: 0 })
+    : null;
+
+  // Ascension ladder STATE (selected level + cleared high-water mark) owned by the shared module; its
+  // CONTENT (the 15 rules) lives in ascension-mods.js and is applied inside createRun. Persisted at
+  // save.stageState[6].ascension + the global summary (save.global.maxAscension / ascensionCleared).
+  const ascension = orchestrator?.save
+    ? createAscension({ save: orchestrator.save, stageId: 6, modifiers: ASCENSION_MODS })
+    : null;
+  const ascInfo = () => ascension
+    ? { level: ascension.level(), maxUnlocked: ascension.maxUnlocked(), maxCleared: ascension.maxCleared(), maxLevel: ascension.maxLevel, floor: state.meta.protocolVersion || 0 }
     : null;
 
   let combat = null; // live engine instance; its full state is checkpointed into combatRun
@@ -89,7 +101,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const run = state.run;
     // The Refused Connection is reachable ONLY as the act-4 boss node of a run (see the
     // run.status === "boss" case below) — there is no standalone hub-reachable boss screen.
-    if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState())); }
+    if (state.ui.screen !== "run" || !run) { combat = null; return mount(hubView(state, lockState(), ascInfo())); }
     switch (run.status) {
       // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
       case "combat": case "boss": return mountCombat(run);
@@ -137,7 +149,12 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function makeCombat(run) {
     const enemyId = enemyForCurrentNode(run, makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
-    // Prestige modifier: meaner elites carry extra HP.
+    // Ascension modifiers: scale non-boss enemies (the boss's HP is set by wireBossCombat below).
+    if (enemy.tier !== "boss") {
+      if (run.enemyHpMult && run.enemyHpMult !== 1) enemy.hp = Math.round(enemy.hp * run.enemyHpMult);
+      if (run.enemyArmorBonus) enemy.armor = Number(enemy.armor || 0) + run.enemyArmorBonus;
+    }
+    // Ascension modifier: meaner/brutal elites carry extra HP.
     if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
     const c = createCombat({
       deck: run.deck,
@@ -151,7 +168,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     c.nodeId = run.currentNodeId;
     // The act-4 finale: layer the negotiation onto the real fight. ch9 unread ⇒ locked ⇒ every
     // Signal deals 0 (the load-bearing un-cheat); reading the codex rebuilds this combat unlocked.
-    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1 });
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1, extraPhase: Boolean(run.bossExtraPhase) });
     return c;
   }
 
@@ -174,6 +191,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     state.boss.reached = true;
     state.meta.firstClearComplete = true;
     state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    // Record the ascension clear at the rule level this run actually played under (unlocks the next rung).
+    if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
@@ -189,7 +208,12 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function beginRun() {
     state.meta.runsStarted = (state.meta.runsStarted || 0) + 1;
     const seed = 1000 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
-    state.run = createRun({ seed, version: state.meta.protocolVersion || 0, handshakes: 0 });
+    state.run = createRun({
+      seed,
+      version: state.meta.protocolVersion || 0,
+      handshakes: 0,
+      ascension: ascension ? ascension.level() : 0
+    });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
     combat = null;
@@ -217,6 +241,9 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
     if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); return true; }
+    // Hub ascension picker (no run yet): choose the difficulty rung for the next run.
+    const ascBtn = event.target.closest("[data-ascension]");
+    if (ascBtn) { if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension)); return true; }
     const potion = event.target.closest("[data-potion]");
     if (potion && combat && !combat.over && run) {
       const used = usePotion(run, Number(potion.dataset.potion));

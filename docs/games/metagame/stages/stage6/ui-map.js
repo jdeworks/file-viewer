@@ -6,13 +6,13 @@
 // as the act-4 boss node of a full run (see renderer route). The run is mandatory.
 
 import { availableNodes, prestigeCost } from "./run.js";
-import { MODIFIERS } from "./modifiers.js";
+import { activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
 
 const NODE_ICON = {
   combat: "⚔", elite: "☠", rest: "♨", shop: "⛁", event: "❓", boss: "☣"
 };
 
-export function hubView(state, lock) {
+export function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
@@ -39,8 +39,8 @@ export function hubView(state, lock) {
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
-      ${activeModifiers(m.protocolVersion)}
     </div>
+    ${ascensionPicker(asc, hasRun)}
     <p class="s6db-hint">${esc(lock.unlocked
       ? "Chapter 9 is read. The connection can be negotiated."
       : "The connection refuses everything you send. The codex explains why.")}</p>
@@ -48,12 +48,40 @@ export function hubView(state, lock) {
   return el;
 }
 
-// Show the stacked prestige rule-modifiers active at the current Protocol Version.
-function activeModifiers(version) {
-  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+// The ascension difficulty picker: choose the rule-rung (0..maxUnlocked) for the NEXT run, and show
+// the rules in force at the EFFECTIVE level = max(selected, prestige floor). Hidden once a run is
+// active (you can't re-pick mid-run) and when the ladder isn't wired (no save). Buttons are
+// [data-ascension="<n>"]; the renderer's handler calls ascension.setLevel.
+function ascensionPicker(asc, hasRun) {
+  if (!asc || hasRun) {
+    // Mid-run: still surface the rules in force so the player sees why the run is harder.
+    return asc ? activeRules(Math.max(asc.level, asc.floor || 0)) : "";
+  }
+  const maxPick = Math.max(asc.maxUnlocked, asc.floor || 0);
+  const cells = [];
+  for (let n = 0; n <= asc.maxLevel; n++) {
+    const locked = n > maxPick;
+    const sel = n === asc.level ? " is-selected" : "";
+    const floorPinned = n <= (asc.floor || 0) ? " is-floor" : "";
+    cells.push(locked
+      ? `<span class="s6db-asc-cell is-locked" aria-disabled="true">${n}</span>`
+      : `<button type="button" class="s6db-asc-cell${sel}${floorPinned}" data-ascension="${n}">${n}</button>`);
+  }
+  const effective = Math.max(asc.level, asc.floor || 0);
+  return `<div class="s6db-ascension">
+      <div class="s6db-asc-head"><strong>Ascension</strong>
+        <span>difficulty ${asc.level} · cleared ${asc.maxCleared}/${MAX_ASCENSION}${asc.floor ? ` · prestige floor ${asc.floor}` : ""}</span></div>
+      <div class="s6db-asc-track" aria-label="ascension level picker">${cells.join("")}</div>
+      ${activeRules(effective)}
+    </div>`;
+}
+
+// Show the stacked ascension rules active at the given effective level.
+function activeRules(level) {
+  const active = activeAscensionMods(level);
   if (!active.length) return "";
   return `<ul class="s6db-modifiers" aria-label="active rules">${active
-    .map((mod) => `<li>⚠ ${esc(mod.text)}</li>`).join("")}</ul>`;
+    .map((mod) => `<li>⚠ <strong>${esc(mod.label)}</strong> — ${esc(mod.desc)}</li>`).join("")}</ul>`;
 }
 
 export function mapView(run) {

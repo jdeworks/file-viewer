@@ -39,6 +39,16 @@
 .s6db-prestige span { font-size: 0.82rem; color: #6b513a; }
 .s6db-prestige button { background: #4a2f6b; border-color: #4a2f6b; }
 .s6db-hint { color: #6b513a; font-style: italic; }
+
+/* Ascension difficulty picker (hub) */
+.s6db-ascension { margin: 4px 0 12px; padding: 10px 12px; border: 1px solid #c9b48f; border-radius: 8px; background: #efe5d2; }
+.s6db-asc-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
+.s6db-asc-head span { font-size: 0.8rem; color: #6b513a; }
+.s6db-asc-track { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0; }
+.s6db-asc-cell { min-width: 26px; padding: 3px 6px; font-size: 0.82rem; border: 1px solid #c9b48f; border-radius: 5px; background: #fbf6ec; color: #3b2a1c; cursor: pointer; }
+.s6db-asc-cell.is-selected { background: #8b2020; border-color: #8b2020; color: #fbf6ec; font-weight: 700; }
+.s6db-asc-cell.is-floor:not(.is-selected) { background: #d8c7a3; }
+.s6db-asc-cell.is-locked { opacity: 0.4; cursor: default; }
 .s6db-hub-title { margin: 0 0 4px; }
 .s6db-hub-sub { max-width: 60ch; color: #3b2a1c; }
 

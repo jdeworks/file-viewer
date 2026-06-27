@@ -9,7 +9,7 @@ import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
 import { makeRng, hashSeed } from "./combat.js";
 import { STARTING_DECK, REWARD_POOL, draftRewardCards } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
-import { applyModifiers } from "./modifiers.js";
+import { baseRunConfig, foldAscension, activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
 import { rollRelic, rollRelics, relicById } from "./relics.js";
 import { rollPotion, POTION_DROP_CHANCE } from "./potions.js";
 // Belt operations live in potions.js; re-export so the renderer/tests keep importing from run.js.
@@ -35,11 +35,26 @@ export function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
 
-export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
+// effectiveAscension(version, ascension) — the rule level a run actually plays under. Prestige acts
+// as a FLOOR (its historical "one harder rule per version", now drawn from the same ladder) and the
+// explicit ascension picker can push beyond it. The max (never the sum) is what makes the prestige
+// rules and the ascension rules compose without double-applying. Clamped to the ladder length.
+export function effectiveAscension(version = 0, ascension = 0) {
+  return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
+}
+
+export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard" } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
+  const ascensionLevel = effectiveAscension(version, ascension);
+  // Fold the active ascension rules into this run's tunable config (the same ladder the hub picker
+  // and prestige floor select). Each field is read by run.js economy/rest or makeCombat enemy scaling.
+  const cfg = foldAscension(baseRunConfig(), ascensionLevel);
   const run = {
     seed,
     version,
+    ascension: ascensionLevel, // the effective rule level this run was built at (for recordClear)
+    mode,                      // "standard" | "daily" | "custom" (for the run-end score / labelling)
+    dailyKey,                  // the date/custom string the seed was derived from, or null
     map: generateRun(seed, FINAL_BOSS_ACT),
     act: 1,
     currentNodeId: null,
@@ -54,17 +69,24 @@ export function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     status: "map",
     pendingReward: null,
     notice: null,
-    // Prestige rule-modifier knobs (defaults = no modifier); applyModifiers tunes them by version.
-    handshakeMult: 1,
-    restHealMod: 0,
-    windowCapMod: 0,
-    eliteHpBonus: 0,
-    bossHpMult: 1,
-    modifiers: []
+    // Ascension rule-modifier knobs (defaults = no modifier); foldAscension tuned them above.
+    handshakeMult: cfg.handshakeMult,
+    restHealMod: cfg.restHealMod,
+    windowCapMod: cfg.windowCapMod,
+    eliteHpBonus: cfg.eliteHpBonus,
+    bossHpMult: cfg.bossHpMult,
+    enemyHpMult: cfg.enemyHpMult,
+    enemyArmorBonus: cfg.enemyArmorBonus,
+    skipRewardMod: cfg.skipRewardMod,
+    removalCostMod: cfg.removalCostMod,
+    rewardChoicesMod: cfg.rewardChoicesMod,
+    bossExtraPhase: cfg.bossExtraPhase,
+    modifiers: activeAscensionMods(ascensionLevel).map((m) => m.id)
   };
+  // Attrition (ascension): a run may start below its maximum HP.
+  run.hp = Math.max(1, maxHp + (cfg.startHpMod || 0));
   // Prestige: each Protocol Version grants one starting relic (until the pool is exhausted).
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
-  applyModifiers(run, version); // stack the Ascension-style rule modifiers
   return run;
 }
 
@@ -124,7 +146,7 @@ export function resolveCombat(run, { win, hpRemaining }) {
 export function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
-  else run.handshakes += SKIP_REWARD; // skipping the card keeps the deck thin and pays a little
+  else run.handshakes += Math.max(0, SKIP_REWARD + (run.skipRewardMod || 0)); // skip keeps the deck thin and pays a little (ascension can zero it)
   run.pendingReward = null;
   run.status = "map";
   return { ok: true, skipped: !cardId };
@@ -180,7 +202,7 @@ export function buyCard(run, cardId, cost) {
 
 // Current price to remove a card — escalates each time you buy a removal this run.
 export function removalCost(run) {
-  return REMOVAL_BASE + REMOVAL_STEP * (run.removalsPurchased || 0);
+  return REMOVAL_BASE + Math.max(0, run?.removalCostMod || 0) + REMOVAL_STEP * (run.removalsPurchased || 0);
 }
 
 // Buy a deck removal at the shop. Price climbs per purchase; deck-thinning is the strongest action.
@@ -286,7 +308,8 @@ function rollRewardPotion(run, nodeId) {
 
 // Reward-card draft: rarity-weighted + act-scaled (cards.draftRewardCards), seeded per node.
 function rollRewardCards(run, nodeId) {
-  return draftRewardCards(hashSeed(run.seed, nodeId), run.act, REWARD_CHOICES);
+  const choices = Math.max(1, REWARD_CHOICES + (run.rewardChoicesMod || 0)); // ascension can trim the draft
+  return draftRewardCards(hashSeed(run.seed, nodeId), run.act, choices);
 }
 
 function screenForNode(node) {

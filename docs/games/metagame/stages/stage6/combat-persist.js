@@ -57,7 +57,7 @@ export function snapshotCombat(combat) {
     jammed: [...(combat.jammed || [])],
     pending: clone(combat.pending || []),
     boss: combat.bossPhase
-      ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1 }
+      ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1, maxPhase: combat.bossMaxPhase || 3 }
       : null
   };
 }
@@ -105,6 +105,7 @@ export function restoreCombat(snapshot, { relics = [] } = {}) {
     combat.bossPhase = s.boss.phase;
     combat.bossLocked = Boolean(s.boss.locked);
     combat.bossHpMult = s.boss.hpMult || 1;
+    combat.bossMaxPhase = s.boss.maxPhase || 3;
     rewireBossCombat(combat);
   }
   return combat;
