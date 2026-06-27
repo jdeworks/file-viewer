@@ -1,3 +1,5 @@
+import { TARGET_MODES } from './towers.js';
+
 export function defaultState(context = {}) {
   const seed = stageSeed(context);
   return {
@@ -50,6 +52,42 @@ export function normalizeState(state, context = {}) {
   return target;
 }
 
+// snapshotWave — a plain, JSON-safe copy of the IN-FLIGHT wave (the only state normalizeState drops
+// on reload: enemies + spawn queue + combat clock). Persisted into the run-state 'runwave' slot so a
+// mid-wave reload resumes the exact wave instead of soft-losing it. Towers/boss/wave number already
+// persist through the normal stageState save; integrity/cycles are mirrored here because they change
+// per-tick (between the renderer's throttled saves) so the snapshot is the authoritative in-flight value.
+export function snapshotWave(state) {
+  return {
+    waveNumber: state.waveNumber,
+    waveActive: Boolean(state.waveActive),
+    waveFailed: Boolean(state.waveFailed),
+    integrity: state.integrity,
+    cycles: state.cycles,
+    enemies: (state.enemies || []).map((enemy) => ({ ...enemy })),
+    spawnQueue: [...(state.spawnQueue || [])],
+    spawnTimerMs: Number(state.spawnTimerMs) || 0,
+    combatClockMs: Number(state.combatClockMs) || 0,
+    enemyNextId: Number.isFinite(state.enemyNextId) ? state.enemyNextId : 1,
+  };
+}
+
+// restoreWave — overwrite ONLY the ephemeral wave fields on `state` from a snapshot (resume entry).
+export function restoreWave(state, snap) {
+  if (!snap || typeof snap !== 'object') return state;
+  if (Number.isFinite(snap.waveNumber)) state.waveNumber = snap.waveNumber;
+  state.waveActive = Boolean(snap.waveActive);
+  state.waveFailed = Boolean(snap.waveFailed);
+  if (Number.isFinite(snap.integrity)) state.integrity = snap.integrity;
+  if (Number.isFinite(snap.cycles)) state.cycles = snap.cycles;
+  state.enemies = Array.isArray(snap.enemies) ? snap.enemies.map((enemy) => ({ ...enemy })) : [];
+  state.spawnQueue = Array.isArray(snap.spawnQueue) ? [...snap.spawnQueue] : [];
+  state.spawnTimerMs = Number(snap.spawnTimerMs) || 0;
+  state.combatClockMs = Number(snap.combatClockMs) || 0;
+  state.enemyNextId = Number.isFinite(snap.enemyNextId) ? snap.enemyNextId : 1;
+  return state;
+}
+
 export function generateRecursionPoints(seed) {
   let value = hashSeed(seed);
   const points = [];
@@ -91,6 +129,7 @@ function normalizeTower(tower) {
     x,
     y,
     level: clampInt(tower.level || 1, 1, 3),
+    targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : 'first',
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed),
   };

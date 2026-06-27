@@ -87,6 +87,30 @@
   font-weight: 700;
 }
 
+.s4-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
+}
+
+.s4-roster button {
+  background: #101024;
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 6px;
+  text-align: left;
+}
+
+.s4-roster button:hover {
+  border-color: var(--s4-cyan);
+  color: var(--s4-cyan);
+}
+
 .s4-log {
   margin: 0 0 0 18px;
 }

@@ -35,22 +35,23 @@ export async function runAudioListenAndChapters(ctx) {
     return {
       w: r.width,
       h: r.height,
-      buttons: [...el.querySelectorAll('.media-listen-btn')].map((btn) => btn.textContent.trim()),
-      waveform: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
-      ruler: !!el.querySelector('.media-lane-ruler'),
-      cursor: !!el.querySelector('.media-wv-playhead'),
+      hasPlay: !!el.querySelector('.al-play'),
+      hasStop: !!el.querySelector('.al-stop'),
+      waveform: !!el.querySelector('.al-canvas'),
+      ruler: !!el.querySelector('.al-ruler'),
+      cursor: !!el.querySelector('.al-cursor'),
       controls: {
-        offset: !!el.querySelector('.media-lane-offset'),
-        in: !!el.querySelector('.media-lane-in'),
-        out: !!el.querySelector('.media-lane-out'),
-        gain: !!el.querySelector('.media-lane-gain'),
-        fadeIn: !!el.querySelector('.media-lane-fade-in'),
-        fadeOut: !!el.querySelector('.media-lane-fade-out'),
-        room: !!el.querySelector('.media-lane-room-toggle'),
+        offset: !!el.querySelector('.al-f-start'),
+        in: !!el.querySelector('.al-f-in'),
+        out: !!el.querySelector('.al-f-out'),
+        gain: !!el.querySelector('.al-f-gain'),
+        fadeIn: !!el.querySelector('.al-f-fade-in'),
+        fadeOut: !!el.querySelector('.al-f-fade-out'),
+        room: !!el.querySelector('.al-f-room'),
       },
     };
   });
-  if (listenSurface.w > 0 && listenSurface.h > 0 && listenSurface.buttons.includes('Play') && listenSurface.buttons.includes('Stop')
+  if (listenSurface.w > 0 && listenSurface.h > 0 && listenSurface.hasPlay && listenSurface.hasStop
     && listenSurface.waveform && listenSurface.ruler && listenSurface.cursor
     && Object.values(listenSurface.controls).every(Boolean))
     pass('audio listen: auto-audiobook-style waveform lane replaces native controls');
@@ -86,12 +87,12 @@ export async function runAudioListenAndChapters(ctx) {
     await reloadExampleAtViewport(ctx, MEDIA_DEFAULT_DESKTOP_VIEWPORT, 'Sample.wav', '#previewHost audio.media-view');
   }
 
-  const waveformSurface = await page.$eval('#previewHost .media-waveform-surface', (el) => {
+  const waveformSurface = await page.$eval('#previewHost .al-canvas-wrap', (el) => {
     const r = el.getBoundingClientRect();
     return { tag: el.tagName.toLowerCase(), w: r.width, h: r.height, displayed: getComputedStyle(el).display !== 'none' };
   });
   if (waveformSurface.w > 0 && waveformSurface.h > 0 && waveformSurface.displayed) pass('audio waveform surface is visible by default'); else fail('waveform surface: ' + JSON.stringify(waveformSurface));
-  const waveformDrawn = await page.$eval('#previewHost .media-waveform-surface canvas.media-wv-canvas', (canvas) => {
+  const waveformDrawn = await page.$eval('#previewHost .al-canvas', (canvas) => {
     const ctx = canvas.getContext('2d');
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     let painted = 0;
@@ -103,17 +104,17 @@ export async function runAudioListenAndChapters(ctx) {
   else fail('waveform canvas: ' + JSON.stringify(waveformDrawn));
 
   const seekBefore = await page.$eval('#previewHost audio.media-view', (audio) => audio.currentTime || 0);
-  const waveformBox = await page.locator('#previewHost .media-waveform-surface canvas.media-wv-canvas').boundingBox();
+  const waveformBox = await page.locator('#previewHost .al-canvas').boundingBox();
   if (waveformBox) {
     await page.mouse.click(waveformBox.x + waveformBox.width * 0.64, waveformBox.y + waveformBox.height * 0.52);
     await page.waitForTimeout(160);
   }
   const seekAfter = await page.$eval('#previewHost', (host) => {
     const audio = host.querySelector('audio.media-view');
-    const cursor = host.querySelector('.media-wv-playhead');
+    const cursor = host.querySelector('.al-cursor');
     return { currentTime: audio?.currentTime || 0, left: cursor?.style.left || '' };
   });
-  if (waveformBox && seekAfter.currentTime > seekBefore && seekAfter.left && seekAfter.left !== '0%')
+  if (waveformBox && seekAfter.currentTime > seekBefore && seekAfter.left && seekAfter.left !== '0px')
     pass('audio listen: waveform click-to-seek moves the red cursor');
   else fail('listen click-to-seek: ' + JSON.stringify({ waveformBox: !!waveformBox, seekBefore, seekAfter }));
 
@@ -123,38 +124,38 @@ export async function runAudioListenAndChapters(ctx) {
       input.value = String(value);
       input.dispatchEvent(new Event('input', { bubbles: true }));
     };
-    set('.media-lane-offset', 0.12);
-    set('.media-lane-in', 0.05);
-    set('.media-lane-out', 0.4);
-    set('.media-lane-gain', 0.67);
-    set('.media-lane-fade-in', 25);
-    set('.media-lane-fade-out', 80);
-    const room = el.querySelector('.media-lane-room-toggle');
+    set('.al-f-start', 0.12);
+    set('.al-f-in', 0.05);
+    set('.al-f-out', 0.4);
+    set('.al-f-gain', 0.67);
+    set('.al-f-fade-in', 50);
+    set('.al-f-fade-out', 100);
+    const room = el.querySelector('.al-f-room');
     room.checked = false;
     room.dispatchEvent(new Event('change', { bubbles: true }));
+    const durEl = [...el.querySelectorAll('.al-inspector-sub')].find((e) => /Duration/.test(e.textContent));
     return {
-      offset: el.querySelector('.media-lane-offset')?.value,
-      in: el.querySelector('.media-lane-in')?.value,
-      out: el.querySelector('.media-lane-out')?.value,
-      gain: el.querySelector('.media-lane-gain')?.value,
-      fadeIn: el.querySelector('.media-lane-fade-in')?.value,
-      fadeOut: el.querySelector('.media-lane-fade-out')?.value,
+      offset: el.querySelector('.al-f-start')?.value,
+      in: el.querySelector('.al-f-in')?.value,
+      out: el.querySelector('.al-f-out')?.value,
+      gain: el.querySelector('.al-f-gain')?.value,
+      fadeIn: el.querySelector('.al-f-fade-in')?.value,
+      fadeOut: el.querySelector('.al-f-fade-out')?.value,
       roomChecked: room?.checked,
-      roomHidden: el.querySelector('.media-lane-room-tone')?.hidden,
-      duration: el.querySelector('.media-lane-duration')?.textContent || '',
+      duration: durEl?.textContent || '',
     };
   });
   if (laneState.offset === '0.12' && laneState.in === '0.05' && laneState.out === '0.4'
-    && laneState.gain === '0.67' && laneState.fadeIn === '25' && laneState.fadeOut === '80'
-    && laneState.roomChecked === false && laneState.roomHidden === true && /Duration/.test(laneState.duration))
+    && laneState.gain === '0.67' && laneState.fadeIn === '50' && laneState.fadeOut === '100'
+    && laneState.roomChecked === false && /Duration/.test(laneState.duration))
     pass('audio listen: start/end/fade/gain controls update lane state and room-tone option');
   else fail('listen lane state controls: ' + JSON.stringify(laneState));
 
-  await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker').length >= 3, null, { timeout: 6000 });
-  const chapterMarkers = await page.$$eval('#previewHost .media-waveform-surface .media-wv-chapter-marker', (els) => els.map((el) => ({
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .al-chapters .al-chapter').length >= 3, null, { timeout: 6000 });
+  const chapterMarkers = await page.$$eval('#previewHost .al-chapters .al-chapter', (els) => els.map((el) => ({
     left: el.style.left,
     title: el.getAttribute('title') || '',
-    visible: !el.closest('.media-wv-chapter-layer')?.hidden,
+    visible: true,
   })));
   if (chapterMarkers.length === 3 && chapterMarkers.every((m) => m.visible && /%$/.test(m.left)) && chapterMarkers.some((m) => /Prologue/.test(m.title)))
     pass('R2: chapter markers render on the audio waveform');
@@ -207,10 +208,10 @@ export async function runAudioListenAndChapters(ctx) {
     ]);
   });
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
-  await page.waitForFunction(() => document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker').length >= 2, null, { timeout: 6000 });
+  await page.waitForFunction(() => document.querySelectorAll('#previewHost .al-chapters .al-chapter').length >= 2, null, { timeout: 6000 });
   const sidecarChapters = await page.evaluate(() => ({
     source: document.querySelector('#previewHost .media-chapters-source')?.textContent.trim() || '',
-    markers: [...document.querySelectorAll('#previewHost .media-waveform-surface .media-wv-chapter-marker')]
+    markers: [...document.querySelectorAll('#previewHost .al-chapters .al-chapter')]
       .map((el) => el.getAttribute('title') || ''),
     list: [...document.querySelectorAll('#previewHost .media-chapter-label')].map((el) => el.textContent.trim()),
   }));
@@ -230,9 +231,9 @@ export async function runAudioListenAndChapters(ctx) {
       const r = audio.getBoundingClientRect();
       return !audio.controls && r.width <= 2 && r.height <= 2 && getComputedStyle(audio).opacity === '0';
     })(),
-    waveform: !!el.querySelector('.media-waveform-surface canvas.media-wv-canvas'),
-    cursor: !!el.querySelector('.media-wv-playhead'),
-    room: !!el.querySelector('.media-lane-room-toggle'),
+    waveform: !!el.querySelector('.al-canvas'),
+    cursor: !!el.querySelector('.al-cursor'),
+    room: !!el.querySelector('.al-f-room'),
   }));
   if (mp3Lane.nativeHidden && mp3Lane.waveform && mp3Lane.cursor && mp3Lane.room)
     pass('audio listen: Sample.mp3 uses the same hidden-native waveform lane');

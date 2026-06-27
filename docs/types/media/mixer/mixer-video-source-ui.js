@@ -109,3 +109,22 @@ export function fitZoom(root, project) {
   const duration = Math.max(1000, project.project.durationMs || 1000);
   return clamp(width / duration, 0.02, 0.8);
 }
+
+// Build the bespoke video-source toolbar (zoom controls + title).
+// Returns { toolbar, zoomRange } so render() can update the range value.
+export function buildVideoSourceToolbar(pxPerMs = 0.06) {
+  const toolbar = document.createElement('div');
+  toolbar.className = 'al-toolbar mmx-toolbar';
+  const title = document.createElement('span');
+  title.className = 'al-title mmx-title'; title.textContent = 'Timeline';
+  const mk = (text, action, tip) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = text; b.dataset.action = action; b.title = tip; return b;
+  };
+  const zoomRange = document.createElement('input');
+  zoomRange.type = 'range'; zoomRange.className = 'mmx-zoom'; zoomRange.dataset.action = 'zoom';
+  zoomRange.min = '0.02'; zoomRange.max = '0.8'; zoomRange.step = '0.001';
+  zoomRange.value = String(pxPerMs); zoomRange.setAttribute('aria-label', 'Zoom');
+  toolbar.append(title, mk('−', 'zoom-out', 'Zoom out'), zoomRange, mk('+', 'zoom-in', 'Zoom in'), mk('Fit', 'fit', 'Fit timeline'));
+  return { toolbar, zoomRange };
+}

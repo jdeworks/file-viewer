@@ -13,7 +13,7 @@ export async function runAudioTuneAndDynamics(ctx) {
   await openExample('Sample.wav');
   await page.waitForSelector('#previewHost audio.media-view', { timeout: 12000, state: 'attached' });
   await page.waitForFunction(() => Number.isFinite(document.querySelector('#previewHost audio.media-view')?.duration), null, { timeout: 8000 });
-  const waveformSeek = page.locator('#previewHost .media-waveform-surface .media-wv-canvas');
+  const waveformSeek = page.locator('#previewHost .al-canvas');
   const waveformBox = await waveformSeek.boundingBox();
   if (waveformBox) {
     await page.mouse.click(waveformBox.x + waveformBox.width * 0.55, waveformBox.y + waveformBox.height * 0.45);
@@ -21,14 +21,14 @@ export async function runAudioTuneAndDynamics(ctx) {
   }
   const seekState = await page.$eval('#previewHost', (host) => {
     const audio = host.querySelector('audio.media-view');
-    const playhead = host.querySelector('.media-waveform-surface .media-wv-playhead');
+    const playhead = host.querySelector('.al-cursor');
     return {
       currentTime: audio?.currentTime || 0,
       left: playhead?.style.left || '',
       label: playhead?.textContent || '',
     };
   });
-  if (waveformBox && seekState.currentTime > 0 && seekState.left && seekState.left !== '0%' && /(?:\d+:)?\d+:\d\d/.test(seekState.label))
+  if (waveformBox && seekState.currentTime > 0 && seekState.left && seekState.left !== '0px' && /(?:\d+:)?\d+:\d\d/.test(seekState.label))
     pass('audio waveform: full waveform seekbar scrubs native audio');
   else fail('audio waveform seekbar: ' + JSON.stringify({ waveformBox: !!waveformBox, seekState }));
   const modeTabs = await page.$$eval('#previewHost .media-mode-tab', (els) => els.map((e) => e.textContent.trim()));

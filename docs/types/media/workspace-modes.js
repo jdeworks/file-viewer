@@ -4,6 +4,7 @@ export function createWorkspaceModes({
   stickyModes = [],
   onRegisterController,
   onReleaseController,
+  onModeChange,
 }) {
   const states = new Map();
   const sticky = new Set(stickyModes);
@@ -62,6 +63,7 @@ export function createWorkspaceModes({
     const next = states.get(id);
     if (!next) return;
     activeMode = id;
+    onModeChange?.(id);
     for (const entry of states.values()) {
       const on = entry.id === id;
       entry.tab.classList.toggle('active', on);
