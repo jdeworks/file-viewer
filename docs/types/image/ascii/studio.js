@@ -10,6 +10,8 @@ import { buildControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
 import { downloadText, downloadHtml, downloadPng, copyText, copyHtml } from './render.js';
 import { makeFloatingPanel } from './floating-panel.js';
+import { loadLast, saveLast } from './presets.js';
+import { wirePresetUi } from './preset-ui.js';
 
 let styleInjected = false;
 function injectStyle() {
@@ -54,6 +56,9 @@ export function mountAsciiStudio(host, opts = {}) {
       ${BTN('asx-convert', '🎞 Convert file', 'Convert a GIF or video file to ASCII')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
         <option value="fast">Fast</option><option value="balanced">Balanced</option><option value="quality">Quality</option></select>
+      <select class="asx-preset" title="Load a saved settings preset"><option value="">Preset…</option></select>
+      ${BTN('asx-preset-save', '💾', 'Save current settings as a preset')}
+      ${BTN('asx-preset-del', '🗑', 'Delete the selected preset')}
       ${BTN('asx-copy', 'Copy text', 'Copy plain ASCII')}
       ${BTN('asx-copy-html', 'Copy HTML', 'Copy coloured HTML')}
       ${BTN('asx-dl-txt', '↓ TXT', 'Download .txt')}
@@ -88,7 +93,7 @@ export function mountAsciiStudio(host, opts = {}) {
   const peekCanvas = peek.querySelector('canvas');
   const peekCaption = peek.querySelector('figcaption');
 
-  const engine = createAsciiEngine();
+  const engine = createAsciiEngine(loadLast() || undefined);   // seed from last-used settings (persists + carries to webcam)
   // Busy badge for slow (phone) conversions: the convert is synchronous, so we can't keep
   // the UI live during it, but we surface that work is happening (and yield a frame so the
   // badge paints first). Gated on the last convert's duration so fast machines never flash it.
@@ -171,12 +176,16 @@ export function mountAsciiStudio(host, opts = {}) {
   checkWidth();   // set initial open/narrow state from the actual studio width
 
   const floatingPanel = makeFloatingPanel(panel, { title: 'ASCII settings', onClose: () => setSettingsOpen(false) });
+  // Debounced persist of the current settings as "last used" (shared with webcam + across sessions).
+  let saveTimer = 0;
+  const rememberSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveLast({ ...engine.options }), 400); };
   const controls = buildControls(floatingPanel.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     // Background colour has no effect when the BG is transparent — disable it.
     if (key === 'transparentBackground' && controls?.inputs.backgroundColor) {
       controls.inputs.backgroundColor.disabled = !!value;
     }
+    rememberSoon();
     if (displayOnly) { applyDisplay(); return; }
     engine.markDirty(...dirty);
     reconvert();
@@ -189,6 +198,8 @@ export function mountAsciiStudio(host, opts = {}) {
     if (!preset) return;
     Object.entries(preset).forEach(([k, v]) => controls.setValue(k, v));
   });
+  // Named user presets (shared wiring with the webcam): select + Save + Delete.
+  wirePresetUi({ sel: q('.asx-preset'), saveBtn: q('.asx-preset-save'), delBtn: q('.asx-preset-del'), controls, getOptions: () => ({ ...engine.options }) });
   // Convert a GIF/video file to ASCII (lazy module). Carries the studio's current
   // settings; "Add to studio" re-opens the result through the app's intake.
   q('.asx-convert').addEventListener('click', async () => {

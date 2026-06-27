@@ -1089,6 +1089,22 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Presets + remember-last-used: change a control → it persists to fv:ascii:last; Save a named
+  // preset, change again, then load the preset → the value round-trips.
+  const setCol = (v) => page.evaluate((val) => {
+    const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="columns"]');
+    if (el) { el.value = String(val); el.dispatchEvent(new Event('input', { bubbles: true })); }
+  }, v);
+  await setCol(60);
+  await page.waitForFunction(() => { try { return (JSON.parse(localStorage.getItem('fv:ascii:last') || '{}').columns) === 60; } catch { return false; } }, null, { timeout: 3000 }).catch(() => {});
+  const lastSaved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('fv:ascii:last') || '{}').columns; } catch { return null; } });
+  page.once('dialog', (d) => d.accept('smoke-preset'));   // the Save prompt
+  await page.click('#previewHost .asx-preset-save');
+  await setCol(120);                                       // change away from the saved value
+  await page.selectOption('#previewHost .asx-preset', 'smoke-preset');   // load it back
+  const restored = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="columns"]', (el) => Number(el.value));
+  const presetStored = await page.evaluate(() => { try { return !!JSON.parse(localStorage.getItem('fv:ascii:presets') || '{}')['smoke-preset']; } catch { return false; } });
+  if (lastSaved === 60 && presetStored && restored === 60) pass('ASCII presets: last-used persists + named preset saves/loads (columns round-trips)'); else fail('ascii presets: ' + JSON.stringify({ lastSaved, presetStored, restored }));
   // Convert file → ASCII: feed a tiny 2-frame GIF and assert it converts (frame-by-frame
   // via the engine worker) + encodes a downloadable ASCII GIF.
   const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];
