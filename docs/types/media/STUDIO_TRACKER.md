@@ -98,10 +98,21 @@ Finalization pass (2026-06-27):
   `media-studio-mixer-audio-listen` smoke, and `./scripts/check.sh --fast` all
   green (after one unrelated flaky click-interception retry). Regenerated
   `asset-manifest.json` + `sw.js` for the new files and committed them.
-- Merge readiness: lane is 62 commits ahead of `origin/dev`; `origin/dev` is
-  ~138 commits ahead of the lane, so the merge-in of `origin/dev` is a real
-  integration step (not just the auto-resolved manifest/sw.js conflict). Awaiting
-  user go-ahead before merging to dev.
+- Merged to dev (2026-06-27, user-authorized). Merged `origin/dev` (~138 commits)
+  into the lane — only `asset-manifest.json` + `sw.js` conflicted, resolved by
+  `node scripts/gen-asset-manifest.mjs` (never hand-edited); `interactions.mjs`
+  auto-merged. Pushed lane HEAD to `dev` and updated `origin/worktree-media`.
+  Lane == `origin/dev` == `origin/worktree-media` at `7fa09070`, so the lane
+  already contains all of dev and remains live for continued work.
+- Known pre-existing gate notes (NOT from this lane, do not block media work):
+  - Full `check.sh` `core-ui` asserts the `core` bundle is light, but `core` is
+    ~1.58 MB and trips the heavy threshold — already true on `origin/dev`'s
+    committed manifest. This is a cross-cutting core-bundle/build concern for the
+    general lane, not media.
+  - The heavy `media-3d` smoke area (image/ASCII/camera/3D — not the mixer) can
+    flake on a `page.click` timeout waiting for `#previewHost .media-doc
+    video.media-view`, as previously documented. `--fast` (the pre-push gate) and
+    all owned media-studio areas are green.
 
 Prior status: Stage 5 video/image seek-frame preview started.
 
