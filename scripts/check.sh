@@ -164,6 +164,8 @@ FULL_UNIT_TESTS=(
   tests/arduino-sketch.test.mjs
   tests/known-ada-lang.test.mjs
   tests/known-agda-lang.test.mjs
+  tests/known-asm-lang.test.mjs
+  tests/known-alloy-lang.test.mjs
 )
 
 IMAGE_UNIT_TESTS=(
