@@ -313,12 +313,14 @@ function makePuzzle(seed, { width = 5, height = 5, hard = 0 } = {}) {
 // ../../docs/games/metagame/stages/stage3/board.js
 var CH = { [FILLED]: "#", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, x: EMPTY, ".": UNKNOWN };
+var BODY_SOLVES = 13;
 function sizeForRun(run, shop) {
   const cap = 12 + Number((shop || {}).overclock || 0);
-  return Math.max(5, Math.min(cap, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
+  const ramp = 5 + Math.floor(Number(run.solvedCount || 0) * 7 / BODY_SOLVES);
+  return Math.max(5, Math.min(cap, ramp));
 }
 function corruptionForRun(run) {
-  return Math.min(8, Math.floor(Number(run.solvedCount || 0) / 3));
+  return Math.min(8, Math.floor(Number(run.solvedCount || 0) * 8 / BODY_SOLVES));
 }
 function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
@@ -719,8 +721,8 @@ function renderStage3(ctx) {
   function onSolved() {
     const size = board.puzzle.width;
     const mult = 1 + 0.25 * upgradeLevel(state, "throughput");
-    const corrBonus = 1 + 0.12 * corruptionForRun(state.run);
-    const reward = Math.round((size * size + 5) * mult * corrBonus);
+    const corrBonus = 1 + 0.18 * corruptionForRun(state.run);
+    const reward = Math.round((size * size + 12) * mult * corrBonus);
     state.registers += reward;
     state.run.solvedCount += 1;
     state.run.index += 1;

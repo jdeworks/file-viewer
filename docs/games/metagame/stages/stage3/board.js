@@ -7,17 +7,25 @@ import { makePuzzle, FILLED, EMPTY, UNKNOWN } from "./nonogram.js";
 const CH = { [FILLED]: "#", [EMPTY]: "x", [UNKNOWN]: "." };
 const FROM_CH = { "#": FILLED, x: EMPTY, ".": UNKNOWN };
 
-// Grid size grows with snapshots cleared this run; the Overclock upgrade lifts the cap (deeper,
-// richer snapshots). Clamped to a comfortable line-solvable range.
+// The TIGHTENED body: corruption peaks at 8 (the boss gate) after BODY_SOLVES snapshots, and grid
+// size reaches 12 over the same span — so the pre-boss run is a focused ~13-solve climb (≈40-55 min
+// with the new mechanical tiers) rather than the old 90-200 min flat farm. Size/corruption are pure
+// functions of solvedCount; tune ONLY this constant + the two ramps to reshape the curve.
+export const BODY_SOLVES = 13;
+
+// Grid size grows with snapshots cleared this run, reaching 12 by the end of the body; the Overclock
+// upgrade lifts the cap (deeper, richer snapshots). Clamped to a comfortable line-solvable range.
 export function sizeForRun(run, shop) {
   const cap = 12 + Number((shop || {}).overclock || 0);
-  return Math.max(5, Math.min(cap, 5 + Math.floor(Number(run.solvedCount || 0) / 2)));
+  const ramp = 5 + Math.floor((Number(run.solvedCount || 0) * 7) / BODY_SOLVES);
+  return Math.max(5, Math.min(cap, ramp));
 }
 
-// Corruption rises as you clear snapshots — the escalation driver. It makes the generator pick
-// qualitatively harder (more solver-passes) puzzles, on top of the size ramp.
+// Corruption rises as you clear snapshots — the escalation driver and the boss gate. It makes the
+// generator pick qualitatively harder (more solver-passes) puzzles, gates the mechanical tiers
+// (volatile cells, two-colour), and peaks at 8 after BODY_SOLVES clears.
 export function corruptionForRun(run) {
-  return Math.min(8, Math.floor(Number(run.solvedCount || 0) / 3));
+  return Math.min(8, Math.floor((Number(run.solvedCount || 0) * 8) / BODY_SOLVES));
 }
 
 export function puzzleForRun(run, shop) {
