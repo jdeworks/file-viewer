@@ -533,20 +533,41 @@ var serviceWorkerNotesText = [
 ].join("\n");
 
 // ../../docs/games/metagame/stages/stage9/loop.js
-function startLoop(onTick, intervalMs = 100) {
-  const id = setInterval(() => {
+function startLoop(onFrame) {
+  const now = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+  const hasRAF = typeof requestAnimationFrame === "function";
+  let last = now();
+  let stopped = false;
+  let handle = null;
+  function frame() {
+    if (stopped) return;
+    const t = now();
+    let dt = t - last;
+    last = t;
+    if (!(dt >= 0)) dt = 0;
+    if (dt > 100) dt = 100;
     try {
-      onTick();
+      onFrame(dt);
     } catch {
     }
-  }, intervalMs);
-  return { stop() {
-    clearInterval(id);
-  } };
+    schedule();
+  }
+  function schedule() {
+    if (stopped) return;
+    handle = hasRAF ? requestAnimationFrame(frame) : setTimeout(frame, 16);
+  }
+  schedule();
+  return {
+    stop() {
+      stopped = true;
+      if (handle == null) return;
+      if (hasRAF) cancelAnimationFrame(handle);
+      else clearTimeout(handle);
+    }
+  };
 }
 
 // ../../docs/games/metagame/stages/stage9/renderer.js
-var TICK_MS = 100;
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage9-observer-state";
@@ -661,10 +682,10 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     }
     persistAndPaint();
   });
-  const loop = startLoop(() => {
-    if (!state.boss.defeated) elapsedMs += TICK_MS;
+  const loop = startLoop((dt) => {
+    if (!state.boss.defeated) elapsedMs += dt;
     paintArena();
-  }, TICK_MS);
+  });
   repaint();
   window.__fvStage9 = {
     state: () => state,

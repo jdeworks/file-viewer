@@ -19,8 +19,6 @@ import { serviceWorkerNotesText } from "./content.js";
 import { btsSummary, BTS_PATH, FIXED_OFFLINE_SEED, NOTES_PATH } from "./messages.js";
 import { startLoop } from "./loop.js";
 
-const TICK_MS = 100;
-
 export function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage9-observer-state";
@@ -61,8 +59,9 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
 
-  // Local timing state. elapsedMs accrues from the animation ticks (NOT Date.now) so the rotation
-  // is deterministic given the tick count and the smoke can drive it with explicit elapsedMs.
+  // Local timing state. elapsedMs accumulates per-frame deltas (rAF), giving fine CROSS resolution.
+  // The gap angle is a pure function of (seed, elapsedMs), so rotation is deterministic for a given
+  // accumulated time and the smoke can drive any level by passing an explicit elapsedMs via the hook.
   let elapsedMs = 0;
   let liveSeed = null; // random seed for onlineUnstable levels/boss (resampled on each OBSERVE)
 
@@ -141,10 +140,10 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     persistAndPaint();
   });
 
-  const loop = startLoop(() => {
-    if (!state.boss.defeated) elapsedMs += TICK_MS;
+  const loop = startLoop((dt) => {
+    if (!state.boss.defeated) elapsedMs += dt;
     paintArena();
-  }, TICK_MS);
+  });
 
   repaint();
 
