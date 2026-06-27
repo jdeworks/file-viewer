@@ -142,31 +142,29 @@ export function mountGifPlayer({ host, bytes, name, openBlob }) {
     return frameBlobs;
   }
 
-  // ── Split: mount the frames as a READ-ONLY folder in the left sidebar — nested UNDER a
-  // folder named after the GIF (paths "<gif>/frame-NNN.png"), each a persistent, selectable
+  // ── Split: expand the GIF's OWN sidebar item into a folder — the frames appear nested
+  // underneath the existing gif entry (no new sidebar root), each a persistent, selectable
   // entry with a real size (click → opens that frame as its own image). Reuses the app's
-  // archive-tree machinery via window.__fv.mountFramesFolder; falls back to the inline
-  // thumbnail list when that hook isn't available (e.g. the standalone tool).
+  // expandFileRootToFolder; falls back to the inline thumbnail list when that hook isn't
+  // available or the gif isn't a standalone sidebar item (e.g. opened from inside a folder).
   let splitting = false;
   async function splitFrames() {
     if (splitting || !frames.length) return;
-    const mount = window.__fv?.mountFramesFolder;
-    if (typeof mount !== 'function') { return splitFramesInline(); }
+    const expand = window.__fv?.expandFileRootToFolder;
+    if (typeof expand !== 'function') { return splitFramesInline(); }
     splitting = true; splitBtn.disabled = true;
     const orig = splitBtn.textContent;
     try {
       const blobs = await ensureFrameBlobs((d, t) => { splitBtn.textContent = `✂ Encoding ${d}/${t}…`; });
       if (destroyed) return;
-      const folder = name || `${baseName}.gif`;
-      const entryPath = (i) => `${folder}/${frameName(i)}`;
-      const archive = { rootName: folder, entries: frames.map((_, i) => ({ name: entryPath(i), size: blobs[i].size })) };
-      const openEntry = async (path) => {
-        const i = frames.findIndex((_, n) => entryPath(n) === path);
+      const getIntake = async (innerPath) => {
+        const i = frames.findIndex((_, n) => frameName(n) === innerPath);
         if (i < 0) return null;
         const blob = blobs[i] || await frameToPngBlob(frames[i].canvas);
         return intakeFromFile(new File([blob], frameName(i), { type: 'image/png' }));
       };
-      mount(archive, openEntry);
+      const ok = expand({ entries: frames.map((_, i) => ({ name: frameName(i), size: blobs[i].size })), getIntake });
+      if (!ok) splitFramesInline();   // the gif isn't a standalone sidebar item — fall back
     } finally { splitting = false; splitBtn.disabled = false; splitBtn.textContent = orig; }
   }
 

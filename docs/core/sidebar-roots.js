@@ -84,7 +84,7 @@ export function activateSidebarRoot(root, { skipCapture = false } = {}) {
   $('ftRoot').textContent = root.label;
   $('ftRoot').title = root.title || root.label;
   $('repoBtn').hidden = !root.git;
-  $('ftExportBtn').hidden = root.kind === 'file' || !!root.git || (root.kind === 'archive' && !root.archiveIntake);
+  $('ftExportBtn').hidden = root.kind === 'file' || !!root.git || !!root.readOnly || (root.kind === 'archive' && !root.archiveIntake);
   $('ftExportBtn').title = root.kind === 'archive'
     ? 'Download archive with your edits applied'
     : 'Download folder with your edits applied';
@@ -208,6 +208,31 @@ export function addFileRoot(intake) {
   };
   roots().push(root);
   renderSidebarRoots(root, label, { skipCapture: true });
+}
+
+// Turn the ACTIVE single-file root (e.g. an open GIF) into an expandable FOLDER in place:
+// the same sidebar item gains `entries` ({ name, size }) underneath it, opened lazily via
+// getIntake(innerPath). Read-only (no folder-export). Returns false if the active root
+// isn't a standalone file (e.g. the file is inside a real folder/archive) so the caller
+// can fall back. Used by the GIF viewer's "Split frames".
+export function expandActiveFileRootToFolder({ entries, getIntake }) {
+  const root = roots().find((item) => item.id === state.activeSidebarRootId);
+  if (!root || root.kind !== 'file' || !entries?.length || !loadIntake) return false;
+  root.kind = 'folder';
+  root.readOnly = true;
+  root.treeEntries = entries.map((e) => ({
+    path: e.name,
+    file: { name: e.name.split('/').pop() || e.name, size: Number(e.size) || 0 },
+  }));
+  root.openNode = async (_entry, innerPath) => {
+    const intake = await getIntake(innerPath);
+    if (!intake) return;
+    state._skipDiscardGuard = true;
+    state._skipSidebarRoot = true;   // opening a frame must not spawn its own sidebar root
+    await loadIntake(intake);
+  };
+  renderSidebarRoots(root, null, { skipCapture: true });
+  return true;
 }
 
 export function addFolderRoot({ label, entries, git = false, openNode = null, alreadyCaptured = false }) {

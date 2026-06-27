@@ -29,7 +29,7 @@ import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompa
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
-import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot } from './sidebar-roots.js';
+import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder } from './sidebar-roots.js';
 import { installGlobalScreensaver } from './global-screensaver.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
@@ -599,9 +599,9 @@ function init() {
   window.__fv = {
     state, setRawMode, downloadCurrent, loadFolder, hasUnsavedWork, openRepoView,
     openViewerFile, openFile: openViewerFile, openExampleFile, openExampleByLabel, openBlobFile, searchViewerFile,
-    // Mount a READ-ONLY virtual folder in the sidebar (e.g. a GIF's split frames). Reuses the
-    // archive-tree machinery with archiveIntake=null → no repack/delete; loadIntake is app-internal.
-    mountFramesFolder: (archive, openEntry) => mountArchiveTree(archive, openEntry, loadIntake, null),
+    // Expand the active single-file root (e.g. an open GIF) into an in-place folder of
+    // entries (e.g. its split frames) — the same sidebar item gains the frames underneath.
+    expandFileRootToFolder: (opts) => expandActiveFileRootToFolder(opts),
     persistence, games,
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
