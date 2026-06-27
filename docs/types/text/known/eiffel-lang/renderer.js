@@ -32,7 +32,14 @@ const CSS = `
 // Pure parser (DOM-free, exported for unit testing).
 // ---------------------------------------------------------------------------
 
-const stripComment = (l) => String(l).replace(/--.*$/, '').replace(/\s+$/, '');
+// Blank out string/char literals (so keywords like `from` inside "Hello from X" aren't seen as
+// block openers), then strip the `--` line comment. Literals first so a `--` inside a string goes
+// with it. Eiffel escape char is `%` (e.g. %N, %").
+const clean = (l) => String(l)
+  .replace(/"(?:%.|[^"])*"/g, '""')
+  .replace(/'(?:%.|[^'])*'/g, "''")
+  .replace(/--.*$/, '')
+  .replace(/\s+$/, '');
 
 // Keywords that may begin a line in the feature region but are NOT a feature name.
 const RESERVED = new Set([
@@ -153,7 +160,8 @@ function parseFeatureAt(lines, start, section) {
 
 // Top-level analysis. Returns structured facts; pure & DOM-free.
 export function analyzeEiffel(text) {
-  const lines = String(text || '').split(/\r?\n/).map(stripComment);
+  const raw = String(text || '').split(/\r?\n/);
+  const lines = raw.map(clean);
   const n = lines.length;
 
   let className = null, deferred = false, section = null, mode = 'pre';
@@ -183,7 +191,7 @@ export function analyzeEiffel(text) {
     }
     if (fw === 'inherit') { mode = 'inherit'; const inl = line.replace(/^inherit/i, '').trim(); if (inl) addParent(inl); i++; continue; }
     if (fw === 'create') { mode = 'create'; const inl = line.replace(/^create/i, '').trim(); if (inl) addCreators(inl); i++; continue; }
-    if (fw === 'feature') { mode = 'feature'; const lm = line.match(/^feature\b\s*(.*)$/i); section = lm && lm[1] ? lm[1].replace(/^--\s*/, '').trim() : null; i++; continue; }
+    if (fw === 'feature') { mode = 'feature'; const lm = raw[i].trim().match(/^feature\b\s*(?:--\s*(.*))?$/i); section = lm && lm[1] ? lm[1].trim() : null; i++; continue; }
     if (fw === 'invariant') { mode = 'invariant'; i++; continue; }
     if (fw === 'note' || fw === 'convert' || fw === 'indexing') { mode = 'other'; i++; continue; }
     if (fw === 'end') { mode = 'post'; i++; continue; }

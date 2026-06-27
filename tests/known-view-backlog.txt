@@ -8,7 +8,6 @@ eiffel-lang
 elixir-lang
 elm-lang
 elvish-script
-fish-script
 forth-lang
 fsharp-lang
 gnuplot-script

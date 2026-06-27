@@ -177,6 +177,7 @@ FULL_UNIT_TESTS=(
   tests/known-factor-lang.test.mjs
   tests/known-fennel-lang.test.mjs
   tests/known-d-lang.test.mjs
+  tests/known-fish-script.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
