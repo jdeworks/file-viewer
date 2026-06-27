@@ -170,6 +170,7 @@ FULL_UNIT_TESTS=(
   tests/known-awk-script.test.mjs
   tests/known-cobol-lang.test.mjs
   tests/known-coffeescript-lang.test.mjs
+  tests/known-clojure-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
