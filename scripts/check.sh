@@ -220,6 +220,7 @@ FULL_UNIT_TESTS=(
   tests/known-wolfram-lang.test.mjs
   tests/known-wren-lang.test.mjs
   tests/known-zig-lang.test.mjs
+  tests/known-zsh-script.test.mjs
   tests/known-fsharp-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
