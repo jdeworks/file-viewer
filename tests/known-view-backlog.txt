@@ -5,7 +5,6 @@
 # line here and commit. Empty (no id lines) = done; loop stops. Bar = arduino-sketch / solidity-lang.
 # Check remaining: node tests/check-known-backlog.mjs
 nim-lang
-nushell-script
 objc-lang
 ocaml-lang
 pascal-lang
