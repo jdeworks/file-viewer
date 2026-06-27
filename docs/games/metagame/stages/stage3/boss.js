@@ -47,8 +47,9 @@ export function tryRestoreDiffKey({ state, actions, achievements, bell, input })
   state.boss.unlocked = true;
   actions?.setAction?.(3, ACTION_NAME, {
     source: 'stage-boss',
-    files: ['memory_v1.log', 'memory_v2.log'],
+    files: ['memory_v1.log', 'memory_v2.log', 'memory_v3.log'],
     diffActionSeen: true,
+    threeWay: true,
     keyId: state.memoryPair.runId,
   });
   achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {

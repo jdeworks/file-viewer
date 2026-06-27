@@ -13,6 +13,7 @@ var ACHIEVEMENT_TEXT = "I found the difference.";
 var BTS_PATH = "/docs/bts/memory_grid.bts";
 var MEMORY_V1_PATH = "/docs/examples/metagame/stage3/memory_v1.log";
 var MEMORY_V2_PATH = "/docs/examples/metagame/stage3/memory_v2.log";
+var MEMORY_V3_PATH = "/docs/examples/metagame/stage3/memory_v3.log";
 var bellMessages = {
   start: "a memory is not a file until it survives being changed.",
   unlock: "the difference restored the missing key.",
@@ -21,41 +22,50 @@ var bellMessages = {
 var bodyHint = "the leak is still spreading. keep restoring snapshots until corruption peaks (8).";
 var lockedHintLadder = [
   "the grid remembers less every time you ask it.",
-  "two memory logs disagree. the disagreement matters.",
-  "compare memory_v1.log and memory_v2.log. read the changed hunks in order.",
-  "enter the restoration key formed by the diff pieces before fighting The Memory Leak."
+  "THREE snapshots disagree. one chunk corrupts between each pair.",
+  "diff v1↔v2: the chunk lost there is the FIRST key piece. diff v2↔v3: the chunk lost there is the SECOND. the chunk still intact in v3 is the THIRD.",
+  "compare memory_v1.log, memory_v2.log and memory_v3.log — read the three chunks in corruption order, then enter the restoration key."
 ];
 
 // ../../docs/games/metagame/stages/stage3/content.js
+var DISPLAY_SECTORS = ["02", "04", "06"];
 function pieces(state) {
   return Array.isArray(state?.memoryPair?.pieces) ? state.memoryPair.pieces : ["", "", ""];
 }
-function memoryV1Text(state) {
+function slots(state) {
+  const s = state?.memoryPair?.slots;
+  return Array.isArray(s) && s.length === 3 ? s.map(Number) : [0, 1, 2];
+}
+function presentIn(chunkIndex, v) {
+  if (v === 1) return true;
+  if (v === 2) return chunkIndex !== 0;
+  return chunkIndex === 2;
+}
+function memoryText(state, v, label, leakLine) {
   const id = state.memoryPair.runId;
-  const [a, b, c] = pieces(state);
-  return [
-    `MEMORY SNAPSHOT ${id} / v1 (backup)`,
-    "sector 01: retained visual boundary",
-    `sector 02: restoration chunk ${a}`,
-    "sector 03: child process @ still moving",
-    `sector 04: restoration chunk ${b}`,
-    "sector 05: registers stable",
-    `sector 06: restoration chunk ${c}`,
-    "sector 07: leak not yet visible"
-  ].join("\n");
+  const p = pieces(state);
+  const sl = slots(state);
+  const body = [
+    `MEMORY SNAPSHOT ${id} / v${v} (${label})`,
+    "sector 01: retained visual boundary"
+  ];
+  DISPLAY_SECTORS.forEach((sec, i) => {
+    const chunkIndex = sl[i];
+    const value = presentIn(chunkIndex, v) ? p[chunkIndex] : "[missing]";
+    body.push(`sector ${sec}: restoration chunk ${value}`);
+  });
+  body.push("sector 07: child process @ still moving");
+  body.push(leakLine);
+  return body.join("\n");
+}
+function memoryV1Text(state) {
+  return memoryText(state, 1, "backup", "sector 08: leak not yet visible");
 }
 function memoryV2Text(state) {
-  const id = state.memoryPair.runId;
-  return [
-    `MEMORY SNAPSHOT ${id} / v2 (corrupted)`,
-    "sector 01: retained visual boundary",
-    "sector 02: restoration chunk [missing]",
-    "sector 03: child process @ still moving",
-    "sector 04: restoration chunk [missing]",
-    "sector 05: registers unstable",
-    "sector 06: restoration chunk [missing]",
-    "sector 07: leak expanding"
-  ].join("\n");
+  return memoryText(state, 2, "ageing", "sector 08: leak expanding");
+}
+function memoryV3Text(state) {
+  return memoryText(state, 3, "corrupted", "sector 08: leak critical");
 }
 function diffKeyFromState(state) {
   return pieces(state).join("");
@@ -100,8 +110,9 @@ function tryRestoreDiffKey({ state, actions, achievements, bell, input }) {
   state.boss.unlocked = true;
   actions?.setAction?.(3, ACTION_NAME, {
     source: "stage-boss",
-    files: ["memory_v1.log", "memory_v2.log"],
+    files: ["memory_v1.log", "memory_v2.log", "memory_v3.log"],
     diffActionSeen: true,
+    threeWay: true,
     keyId: state.memoryPair.runId
   });
   achievements?.unlockAchievement?.(ACHIEVEMENT_ID, {
@@ -470,6 +481,74 @@ function makeTwoColorPuzzle(seed, { width = 7, height = 7 } = {}) {
   return fallback2(w, h);
 }
 
+// ../../docs/games/metagame/stages/stage3/s3aliased.js
+var ALIASED_AT = 3;
+var ALIAS_GLYPH = "?";
+function aliasCount(corruption) {
+  return Math.max(0, Math.min(4, Number(corruption || 0) - (ALIASED_AT - 1)));
+}
+function solveWithHidden(rowClues, colClues, hiddenRows, hiddenCols) {
+  const H = rowClues.length;
+  const W = colClues.length;
+  const grid = Array.from({ length: H }, () => new Array(W).fill(UNKNOWN));
+  let changed = true;
+  let passes = 0;
+  while (changed) {
+    changed = false;
+    passes += 1;
+    if (passes > 2e3) break;
+    for (let r = 0; r < H; r += 1) {
+      if (hiddenRows.has(r)) continue;
+      const res = lineSolve(grid[r], rowClues[r]);
+      if (!res) return false;
+      if (res.changed) {
+        grid[r] = res.out;
+        changed = true;
+      }
+    }
+    for (let c = 0; c < W; c += 1) {
+      if (hiddenCols.has(c)) continue;
+      const col = grid.map((row) => row[c]);
+      const res = lineSolve(col, colClues[c]);
+      if (!res) return false;
+      if (res.changed) {
+        for (let r = 0; r < H; r += 1) grid[r][c] = res.out[r];
+        changed = true;
+      }
+    }
+  }
+  return grid.every((row) => row.every((v) => v !== UNKNOWN));
+}
+function aliasedLines(puzzle, corruption, seed) {
+  const target = aliasCount(corruption);
+  if (target <= 0) return { rows: [], cols: [] };
+  const candidates = [];
+  for (let r = 0; r < puzzle.height; r += 1) candidates.push({ kind: "r", i: r });
+  for (let c = 0; c < puzzle.width; c += 1) candidates.push({ kind: "c", i: c });
+  const order = makeRng(`s3-alias:${seed}`).shuffle(candidates);
+  const hiddenRows = /* @__PURE__ */ new Set();
+  const hiddenCols = /* @__PURE__ */ new Set();
+  let count = 0;
+  for (const cand of order) {
+    if (count >= target) break;
+    const set = cand.kind === "r" ? hiddenRows : hiddenCols;
+    set.add(cand.i);
+    if (solveWithHidden(puzzle.rowClues, puzzle.colClues, hiddenRows, hiddenCols)) count += 1;
+    else set.delete(cand.i);
+  }
+  return { rows: [...hiddenRows].sort((a, b) => a - b), cols: [...hiddenCols].sort((a, b) => a - b) };
+}
+function attachAliased(puzzle, corruption, seed) {
+  if (!puzzle || puzzle.twoColor || Number(corruption || 0) < ALIASED_AT) return puzzle;
+  const aliased = aliasedLines(puzzle, corruption, seed);
+  if (aliased.rows.length || aliased.cols.length) puzzle.aliased = aliased;
+  return puzzle;
+}
+function aliasedTotal(puzzle) {
+  const a = puzzle && puzzle.aliased;
+  return a ? a.rows.length + a.cols.length : 0;
+}
+
 // ../../docs/games/metagame/stages/stage3/board.js
 var CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
@@ -487,7 +566,9 @@ function puzzleForRun(run, shop) {
   const size = sizeForRun(run, shop);
   const corruption = corruptionForRun(run);
   if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
-  return makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  const puzzle = makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  if (corruption >= ALIASED_AT) attachAliased(puzzle, corruption, `${run.seed}:${run.index}`);
+  return puzzle;
 }
 function applyPrefetch(board, count) {
   if (!count) return board;
@@ -592,8 +673,10 @@ var clueLen = (c) => typeof c === "object" ? c.len : c;
 var clueColor = (c) => typeof c === "object" ? c.color : 0;
 function buildGrid(puzzle, handlers) {
   const { rowClues, colClues, width, height } = puzzle;
-  const rowDisp = rowClues.map((c) => c.length ? c : [0]);
-  const colDisp = colClues.map((c) => c.length ? c : [0]);
+  const aliasRows = new Set(puzzle.aliased && puzzle.aliased.rows || []);
+  const aliasCols = new Set(puzzle.aliased && puzzle.aliased.cols || []);
+  const rowDisp = rowClues.map((c, r) => aliasRows.has(r) ? [ALIAS_GLYPH] : c.length ? c : [0]);
+  const colDisp = colClues.map((c, k) => aliasCols.has(k) ? [ALIAS_GLYPH] : c.length ? c : [0]);
   const maxRow = Math.max(1, ...rowDisp.map((c) => c.length));
   const maxCol = Math.max(1, ...colDisp.map((c) => c.length));
   const wrap = document.createElement("div");
@@ -608,6 +691,11 @@ function buildGrid(puzzle, handlers) {
   const clueEl = (n) => {
     const el = document.createElement("span");
     el.className = "s3-clue";
+    if (n === ALIAS_GLYPH) {
+      el.textContent = ALIAS_GLYPH;
+      el.classList.add("s3-clue-alias");
+      return el;
+    }
     el.textContent = String(clueLen(n));
     const col = clueColor(n);
     if (col === FILLED) el.classList.add("s3-clue-a");
@@ -773,19 +861,25 @@ function installStage3Hook(api) {
     solveCurrent: () => api.solveCurrent(),
     bodySolver: () => {
       let guard = 0;
+      let aliasSeen = 0;
       while (!api.state.boss.corruption8Reached && guard < 300) {
         guard += 1;
+        if (typeof api.aliasedNow === "function") aliasSeen = Math.max(aliasSeen, Number(api.aliasedNow() || 0));
         if (!api.solveCurrent()) break;
       }
       return {
         reached: Boolean(api.state.boss.corruption8Reached),
         corruption: corruptionForRun(api.state.run),
-        solved: api.state.run.solvedCount
+        solved: api.state.run.solvedCount,
+        aliasSeen
       };
     },
     deriveKey: () => diffKeyFromState(api.state),
     tryRestoreKey: (key2) => api.tryRestoreKey(key2),
-    bossSolver: () => api.bossSolver()
+    bossSolver: () => api.bossSolver(),
+    draftPending: () => typeof api.draftPending === "function" ? api.draftPending() : false,
+    draftOffer: () => typeof api.draftOffer === "function" ? api.draftOffer() : [],
+    draft: (id) => typeof api.draft === "function" ? api.draft(id) : false
   };
   return () => {
     if (window.__fvStage3) delete window.__fvStage3;
@@ -900,6 +994,127 @@ function decayRatio(decay) {
   return Math.max(0, Math.min(1, decay.meter / decay.threshold));
 }
 
+// ../../docs/games/metagame/stages/stage3/s3boons.js
+var DRAFT_AT = [0, 5, 10];
+var BOONS = [
+  { id: "cache", label: "Cache Primer", desc: "+2 cells pre-filled each snapshot (this run)", effect: { prefetch: 2 } },
+  { id: "oracle_echo", label: "Oracle Echo", desc: "+1 hint per snapshot (this run)", effect: { oracle: 1 } },
+  { id: "parity_echo", label: "Parity Echo", desc: "+1 integrity check per snapshot (this run)", effect: { parity: 1 } },
+  { id: "overread", label: "Overclocked Read", desc: "+50% registers per solve (this run)", effect: { throughput: 2 } },
+  { id: "stabilizer", label: "Stabilizer Field", desc: "volatile cells survive +2 moves (this run)", effect: { volatile: 2 } },
+  { id: "pressure_valve", label: "Pressure Valve", desc: "+40% instability headroom (this run)", effect: { decayPct: 0.4 } }
+];
+var BY_ID = new Map(BOONS.map((b) => [b.id, b]));
+function ensureRunBoons(state) {
+  if (!state || !state.run) return;
+  if (!Array.isArray(state.run.boons)) state.run.boons = [];
+  if (!Number.isFinite(state.run.draftsTaken)) state.run.draftsTaken = 0;
+}
+function milestonesReached(state) {
+  const solved = Number(state.run.solvedCount || 0);
+  return DRAFT_AT.filter((m) => solved >= m).length;
+}
+function draftPending(state) {
+  ensureRunBoons(state);
+  return state.run.draftsTaken < milestonesReached(state);
+}
+function draftOffer(state) {
+  ensureRunBoons(state);
+  const taken = new Set(state.run.boons);
+  const pool = BOONS.filter((b) => !taken.has(b.id));
+  if (!pool.length) return [];
+  const rng = makeRng(`${state.run.seed}:draft:${state.run.draftsTaken}`);
+  return rng.shuffle(pool).slice(0, Math.min(3, pool.length));
+}
+function pickBoon(state, id) {
+  ensureRunBoons(state);
+  if (!draftPending(state)) return false;
+  if (!BY_ID.has(id) || state.run.boons.includes(id)) return false;
+  if (!draftOffer(state).some((b) => b.id === id)) return false;
+  state.run.boons.push(id);
+  state.run.draftsTaken += 1;
+  return true;
+}
+function boonBonus(state, key2) {
+  if (!state || !state.run || !Array.isArray(state.run.boons)) return 0;
+  let total = 0;
+  for (const id of state.run.boons) {
+    const b = BY_ID.get(id);
+    if (b && b.effect && typeof b.effect[key2] === "number") total += b.effect[key2];
+  }
+  return total;
+}
+function buildDraftPanel({ state, save, onClose }) {
+  const box = document.createElement("div");
+  box.className = "s3-shop s3-draft";
+  const offer = draftOffer(state);
+  const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
+  box.innerHTML = `
+    <div class="s3-shop-head">BOON DRAFT
+      <span class="s3-shop-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</span>
+      <button type="button" data-draft="close" class="s3-shop-x" aria-label="close">&#10005;</button>
+    </div>
+    <div class="s3-shop-note">run-scoped boons — they apply to this run's snapshots only.</div>
+    ${offer.map((b) => `<div class="s3-shop-row">
+      <div><strong>${b.label}</strong><div class="s3-shop-desc">${b.desc}</div></div>
+      <button type="button" data-pick="${b.id}">draft</button>
+    </div>`).join("")}`;
+  box.querySelectorAll("[data-pick]").forEach((btn) => btn.addEventListener("click", () => {
+    if (pickBoon(state, btn.dataset.pick)) {
+      save?.();
+      onClose?.();
+    }
+  }));
+  box.querySelector('[data-draft="close"]').addEventListener("click", () => onClose?.());
+  return { el: box };
+}
+
+// ../../docs/games/metagame/stages/stage3/view.js
+function buildStage3Shell() {
+  const root = document.createElement("section");
+  root.className = "stage3-memory-grid";
+  root.innerHTML = `
+    <header class="s3-hud">
+      <strong>MEMORY GRID</strong>
+      <span>REGISTERS <span data-field="registers"></span></span>
+      <span>RETAINED <span data-field="retained"></span></span>
+      <span>SNAPSHOT <span data-field="snap"></span></span>
+      <span data-field="size"></span>
+    </header>
+    <div class="s3-objective" data-field="objective"></div>
+    <div class="s3-play">
+      <div class="s3-grid-col">
+        <div class="s3-grid-host"></div>
+        <div class="s3-toolbar">
+          <button type="button" data-action="shop">defrag shop</button>
+          <button type="button" data-action="draft" data-field="draftBtn" hidden></button>
+          <button type="button" data-action="hint" data-field="hintBtn" hidden></button>
+          <button type="button" data-action="check" data-field="checkBtn" hidden></button>
+        </div>
+      </div>
+      <aside class="s3-side">
+        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
+        <section class="s3-boss">
+          <div class="s3-boss-title">THE MEMORY LEAK</div>
+          <div data-field="bossStatus"></div>
+          <div class="s3-hint" data-field="hint"></div>
+          <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
+          <div class="s3-controls">
+            <button type="button" data-action="v1">open memory_v1.log</button>
+            <button type="button" data-action="v2">open memory_v2.log</button>
+            <button type="button" data-action="v3">open memory_v3.log</button>
+            <button type="button" data-action="restore">restore key</button>
+            <button type="button" data-action="boss">solve leak</button>
+            <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+    <ol class="s3-log"></ol>
+  `;
+  return root;
+}
+
 // ../../docs/games/metagame/stages/stage3/renderer.js
 var MOVE = {
   ArrowUp: [0, -1],
@@ -918,45 +1133,7 @@ var MOVE = {
 var RETAIN_EVERY = 4;
 function renderStage3(ctx) {
   const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete } = ctx;
-  const root = document.createElement("section");
-  root.className = "stage3-memory-grid";
-  root.innerHTML = `
-    <header class="s3-hud">
-      <strong>MEMORY GRID</strong>
-      <span>REGISTERS <span data-field="registers"></span></span>
-      <span>RETAINED <span data-field="retained"></span></span>
-      <span>SNAPSHOT <span data-field="snap"></span></span>
-      <span data-field="size"></span>
-    </header>
-    <div class="s3-objective" data-field="objective"></div>
-    <div class="s3-play">
-      <div class="s3-grid-col">
-        <div class="s3-grid-host"></div>
-        <div class="s3-toolbar">
-          <button type="button" data-action="shop">defrag shop</button>
-          <button type="button" data-action="hint" data-field="hintBtn" hidden></button>
-          <button type="button" data-action="check" data-field="checkBtn" hidden></button>
-        </div>
-      </div>
-      <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
-        <section class="s3-boss">
-          <div class="s3-boss-title">THE MEMORY LEAK</div>
-          <div data-field="bossStatus"></div>
-          <div class="s3-hint" data-field="hint"></div>
-          <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
-          <div class="s3-controls">
-            <button type="button" data-action="v1">open memory_v1.log</button>
-            <button type="button" data-action="v2">open memory_v2.log</button>
-            <button type="button" data-action="restore">restore key</button>
-            <button type="button" data-action="boss">solve leak</button>
-            <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
-          </div>
-        </section>
-      </aside>
-    </div>
-    <ol class="s3-log"></ol>
-  `;
+  const root = buildStage3Shell();
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const log = root.querySelector(".s3-log");
@@ -982,6 +1159,9 @@ function renderStage3(ctx) {
     achievements?.unlockAchievement?.(`stage3.${id}`, { stage: 3, title });
     pushLog(state, `achievement — ${title}`);
   }
+  ensureRunBoons(state);
+  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle");
+  const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
   loadBoard();
   paintHud();
   function loadBoard() {
@@ -991,12 +1171,15 @@ function renderStage3(ctx) {
     board.hintsUsed = 0;
     board.checksUsed = 0;
     board.mistakes = 0;
-    if (fresh && upgradeLevel(state, "prefetch")) {
-      applyPrefetch(board, upgradeLevel(state, "prefetch"));
+    const prefetch = upgradeLevel(state, "prefetch") + boonBonus(state, "prefetch");
+    if (fresh && prefetch) {
+      applyPrefetch(board, prefetch);
       state.run.marks = encodeMarks(board.marks);
     }
     initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    if (board.volatile) board.decayWindow += boonBonus(state, "volatile");
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
+    if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
     grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => {
       board.cursor = { x, y };
       applyCell(x, y, mark, colorB ? COLOR_B : FILLED);
@@ -1047,7 +1230,7 @@ function renderStage3(ctx) {
   }
   function onSolved() {
     const size = board.puzzle.width;
-    const mult = 1 + 0.25 * upgradeLevel(state, "throughput");
+    const mult = 1 + 0.25 * (upgradeLevel(state, "throughput") + boonBonus(state, "throughput"));
     const corrBonus = 1 + 0.18 * corruptionForRun(state.run);
     const reward = Math.round((size * size + 12) * mult * corrBonus);
     state.registers += reward;
@@ -1076,17 +1259,20 @@ function renderStage3(ctx) {
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = board.puzzle.width;
     const mode = board.puzzle.twoColor ? " · 2-colour" : "";
-    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode} · ${rating(board.puzzle.difficulty)}`);
+    const aliased = aliasedTotal(board.puzzle);
+    const aliasMode = aliased ? ` · ${aliased} aliased` : "";
+    setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode}${aliasMode} · ${rating(board.puzzle.difficulty)}`);
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
     const decayNote = board.decay?.active ? ` · instability ${Math.round(decayRatio(board.decay) * 100)}%` : "";
-    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}.`);
+    const aliasNote = aliased ? ` · ${aliased} “?” clue${aliased === 1 ? "" : "s"} aliased — deduce from crossing lines` : "";
+    setText(fields.objective, board.solved ? "snapshot restored — drawing the next…" : `restore the memory snapshot — ${pr.have}/${pr.need} cells lit${volNote}${decayNote}${aliasNote}.`);
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
-    const oracle = upgradeLevel(state, "oracle");
-    const parity = upgradeLevel(state, "parity");
+    const oracle = oracleCap();
+    const parity = parityCap();
     setHidden(fields.hintBtn, oracle <= 0);
     setHidden(fields.checkBtn, parity <= 0);
     if (oracle > 0) {
@@ -1099,6 +1285,10 @@ function renderStage3(ctx) {
       setText(fields.checkBtn, `check (${left})`);
       fields.checkBtn.disabled = left <= 0 || board.solved;
     }
+    const pending = draftPending(state);
+    setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
+    setText(fields.draftBtn, pending ? "boon draft •" : "boons");
+    fields.draftBtn.classList.toggle("s3-pending", pending);
     const sig = state.log.slice(-6).join("\n");
     if (sig !== lastLog) {
       lastLog = sig;
@@ -1110,7 +1300,7 @@ function renderStage3(ctx) {
     }
   }
   function useHint() {
-    if (board.solved || (board.hintsUsed || 0) >= upgradeLevel(state, "oracle")) return;
+    if (board.solved || (board.hintsUsed || 0) >= oracleCap()) return;
     const cell = firstHintCell(board);
     if (!cell) return;
     board.hintsUsed = (board.hintsUsed || 0) + 1;
@@ -1119,7 +1309,7 @@ function renderStage3(ctx) {
     applyCell(cell.x, cell.y, false, cell.color || FILLED);
   }
   function useCheck() {
-    if (board.solved || (board.checksUsed || 0) >= upgradeLevel(state, "parity")) return;
+    if (board.solved || (board.checksUsed || 0) >= parityCap()) return;
     board.checksUsed = (board.checksUsed || 0) + 1;
     const wrong = wrongCells(board);
     if (wrong.length) {
@@ -1137,6 +1327,23 @@ function renderStage3(ctx) {
       return;
     }
     const panel = buildShopPanel({ state, save, onClose: () => {
+      if (overlay) {
+        overlay.remove();
+        overlay = null;
+      }
+      paintHud();
+    } });
+    overlay = panel.el;
+    root.querySelector(".s3-grid-col").appendChild(panel.el);
+  }
+  function toggleDraft() {
+    if (overlay) {
+      overlay.remove();
+      overlay = null;
+      paintHud();
+      return;
+    }
+    const panel = buildDraftPanel({ state, save, onClose: () => {
       if (overlay) {
         overlay.remove();
         overlay = null;
@@ -1186,6 +1393,10 @@ function renderStage3(ctx) {
       toggleShop();
       return;
     }
+    if (action === "draft") {
+      toggleDraft();
+      return;
+    }
     if (action === "hint") {
       useHint();
       return;
@@ -1196,6 +1407,7 @@ function renderStage3(ctx) {
     }
     if (action === "v1") viewer?.openFile?.(MEMORY_V1_PATH, { text: memoryV1Text(state), source: "stage3" });
     if (action === "v2") viewer?.openFile?.(MEMORY_V2_PATH, { text: memoryV2Text(state), source: "stage3" });
+    if (action === "v3") viewer?.openFile?.(MEMORY_V3_PATH, { text: memoryV3Text(state), source: "stage3" });
     if (action === "restore") tryRestoreDiffKey({ state, actions, achievements, bell, input: keyInput.value });
     if (action === "boss" && defeatMemoryLeak(state)) completeOnce({ stage: 3, defeated: true, btsPath: BTS_PATH });
     if (action === "bts") bts?.open?.(3);
@@ -1229,7 +1441,25 @@ function renderStage3(ctx) {
     paintHud();
     return won;
   }
-  const uninstallHook = installStage3Hook({ state, solveCurrent, tryRestoreKey, bossSolver });
+  function draft(id) {
+    const offer = draftOffer(state).map((b) => b.id);
+    const ok = pickBoon(state, id != null ? id : offer[0]);
+    if (ok) {
+      save?.();
+      paintHud();
+    }
+    return ok;
+  }
+  const uninstallHook = installStage3Hook({
+    state,
+    solveCurrent,
+    tryRestoreKey,
+    bossSolver,
+    aliasedNow: () => aliasedTotal(board?.puzzle),
+    draftPending: () => draftPending(state),
+    draftOffer: () => draftOffer(state).map((b) => b.id),
+    draft
+  });
   return {
     repaint: paintHud,
     destroy() {
@@ -1253,10 +1483,21 @@ function once(fn) {
 }
 
 // ../../docs/games/metagame/stages/stage3/state.js
+var STATE_VERSION = 3;
 function makePieces(runCount) {
   const rng = makeRng(`s3-pieces:${runCount}`);
   const tok = () => Math.floor(rng.float() * 46655).toString(36).padStart(3, "0");
   return [tok(), tok(), tok()];
+}
+function makeSlots(runCount) {
+  return makeRng(`s3-slots:${runCount}`).shuffle([0, 1, 2]);
+}
+function normalizeSlots(slots2) {
+  if (!Array.isArray(slots2) || slots2.length !== 3) return null;
+  const nums = slots2.map((n) => Number(n));
+  const set = new Set(nums);
+  if (set.size !== 3 || [0, 1, 2].some((i) => !set.has(i))) return null;
+  return nums;
 }
 function defaultState() {
   return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
@@ -1264,20 +1505,21 @@ function defaultState() {
 function freshFrom(meta) {
   const runCount = Number(meta.runCount || 0);
   const pieces2 = makePieces(runCount);
+  const slots2 = makeSlots(runCount);
   return {
-    version: 2,
+    version: STATE_VERSION,
     registers: Number(meta.registers || 0),
     retained: Number(meta.retained || 0),
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null },
-    memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, key: pieces2.join("") },
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0 },
+    memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, slots: slots2, key: pieces2.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
   };
 }
 function normalizeState(state) {
-  if (!state || typeof state !== "object" || Number(state.version) !== 2) {
+  if (!state || typeof state !== "object" || Number(state.version) !== STATE_VERSION) {
     return freshFrom({
       registers: Number(state?.registers || 0),
       retained: Number(state?.retained || 0),
@@ -1293,6 +1535,7 @@ function normalizeState(state) {
   state.run = { ...fresh.run, ...state.run && typeof state.run === "object" ? state.run : {} };
   state.memoryPair = { ...fresh.memoryPair, ...state.memoryPair || {} };
   state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length ? state.memoryPair.pieces.map(String) : makePieces(state.runCount);
+  state.memoryPair.slots = normalizeSlots(state.memoryPair.slots) || makeSlots(state.runCount);
   state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
   state.boss = { ...fresh.boss, ...state.boss || {} };
   state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
