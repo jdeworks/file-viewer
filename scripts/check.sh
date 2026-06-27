@@ -163,6 +163,7 @@ FULL_UNIT_TESTS=(
   tests/ocr.test.mjs
   tests/arduino-sketch.test.mjs
   tests/known-ada-lang.test.mjs
+  tests/known-agda-lang.test.mjs
 )
 
 IMAGE_UNIT_TESTS=(
