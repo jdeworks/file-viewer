@@ -977,7 +977,7 @@ body.fv-dragging .intake::after {
 .construction-badge {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
-  bottom: max(12px, env(safe-area-inset-bottom));
+  bottom: max(42px, calc(env(safe-area-inset-bottom) + 30px));
   z-index: 180;
   padding: 7px 10px;
   border: 1px solid color-mix(in srgb, var(--accent, #0969da) 45%, var(--border, #e0e0e0));
