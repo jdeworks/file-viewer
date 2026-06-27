@@ -9,7 +9,6 @@ eiffel-lang
 elixir-lang
 elm-lang
 elvish-script
-factor-lang
 fennel-lang
 fish-script
 forth-lang
