@@ -44,6 +44,9 @@
 .s8-node.is-active { border-color: #5c7a3e; }
 .s8-node.is-degrading { border-color: #8b7355; }
 .s8-node.is-failed { border-color: #7a3b2e; }
+.s8-node.is-high-load { box-shadow: inset 0 0 0 1px rgba(216, 166, 87, 0.45); }
+.s8-node.is-stabilized { border-color: #5dcaa5; }
+.s8-node.is-stressed { background: #271d1b; }
 
 /* Node health bar in the survival map. */
 .s8-node-id { font-weight: 700; }
@@ -60,7 +63,14 @@
 .s8-node-bar > span { display: block; height: 100%; background: #5dcaa5; }
 .s8-node.is-degrading .s8-node-bar > span { background: #d8a657; }
 .s8-node.is-failed .s8-node-bar > span { background: #c8553b; }
-.s8-node [data-repair] { float: right; cursor: pointer; background: #20201d; color: inherit; border: 1px solid #4a4a4a; }
+.s8-node-stress { color: #e0a08e; font-size: 12px; font-weight: 700; }
+.s8-node-frozen { color: #9fe1cb; font-size: 12px; font-weight: 700; }
+
+/* Per-node action cluster: High-Load toggle, Stabilizer freeze, repair. */
+.s8-node-actions { float: right; display: inline-flex; gap: 4px; }
+.s8-node-actions button { cursor: pointer; background: #20201d; color: inherit; border: 1px solid #4a4a4a; font: inherit; font-size: 12px; padding: 1px 6px; }
+.s8-node-actions button:disabled { cursor: default; opacity: 0.4; }
+.s8-node-hl.is-on { border-color: #d8a657; color: #f2c879; background: #2c2410; }
 
 .s8-debris {
   border-style: dashed;
@@ -144,4 +154,31 @@
   .s8-layout {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Glitch aesthetic ─────────────────────────────────────────────────────────────────────────────
+   The field visibly corrupts as entropy rises. Fully state-driven: paint.js sets --entropy-level
+   (0–1) and data-entropy ("low"|"mid"|"high"|"critical") on the root — no JS animation loop, no
+   randomness. Respects prefers-reduced-motion. */
+.stage8-entropy-field { --entropy-level: 0; transition: box-shadow 0.4s linear; }
+.stage8-entropy-field[data-entropy="mid"] .s8-hud [data-field="entropy"] { color: #d8a657; }
+.stage8-entropy-field[data-entropy="high"] .s8-hud [data-field="entropy"],
+.stage8-entropy-field[data-entropy="critical"] .s8-hud [data-field="entropy"] { color: #e0a08e; font-weight: 700; }
+.stage8-entropy-field[data-entropy="high"],
+.stage8-entropy-field[data-entropy="critical"] {
+  box-shadow: inset 0 0 90px rgba(200, 85, 59, calc(var(--entropy-level) * 0.45));
+}
+
+@keyframes s8-glitch-shift {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, 0); }
+  80% { transform: translate(1px, 1px); }
+}
+.stage8-entropy-field[data-entropy="high"] .s8-map { animation: s8-glitch-shift 2.2s steps(2, end) infinite; }
+.stage8-entropy-field[data-entropy="critical"] .s8-map { animation: s8-glitch-shift 0.9s steps(2, end) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage8-entropy-field .s8-map { animation: none !important; }
 }

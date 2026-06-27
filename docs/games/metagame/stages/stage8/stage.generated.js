@@ -1402,6 +1402,7 @@ function advanceCycle(state, rng) {
     const def = nodeById(n.id) || {};
     if (def.noCascade && n.health > 0) n.health = clamp3(n.health + coreRegen, 0, 100);
   }
+  result.threshold = applyEntropyThresholds(state, rng);
   for (const n of state.nodes) {
     if (status(n.health) === "failed" && priorStatus.get(n.id) !== "failed") {
       const def = nodeById(n.id) || { tier: 1 };
@@ -1440,9 +1441,10 @@ function advanceCycle(state, rng) {
   for (const n of state.nodes) {
     const def = nodeById(n.id) || {};
     const s = status(n.health);
-    if (s === "active") active += def.baseOutput || 0;
+    const hlMult = state.highLoad[n.id] && def.supportsHighLoad ? 1.5 : 1;
+    if (s === "active") active += (def.baseOutput || 0) * hlMult;
     else if (s === "degrading") {
-      degraded += (def.degradedOutput || 0) * 0.5;
+      degraded += (def.degradedOutput || 0) * 0.5 * hlMult;
       degradingCount += 1;
     } else failedCount += 1;
   }
@@ -1477,6 +1479,14 @@ function applyRepair(state, nodeId, units) {
   state.repairAllocations[nodeId] = (state.repairAllocations[nodeId] || 0) + u;
   return { ok: true, remaining: state.repairUnits };
 }
+function applyStabilizer(state, nodeId) {
+  ensureRuntime(state);
+  if ((state.stabilizers || 0) < 1) return { ok: false, reason: "inventory" };
+  if (!node2(state, nodeId)) return { ok: false, reason: "no-node" };
+  state.stabilizers -= 1;
+  state.stabilized[nodeId] = 2;
+  return { ok: true };
+}
 function buildStabilizer(state, cost) {
   ensureRuntime(state);
   const c = Math.trunc(Number(cost) || 0);
@@ -1485,6 +1495,36 @@ function buildStabilizer(state, cost) {
   state.states -= c;
   state.stabilizers = (state.stabilizers || 0) + 1;
   return { ok: true, stabilizers: state.stabilizers };
+}
+var ENTROPY_THRESHOLD_CYCLE = 23;
+var PATTERN_FAILURE_AT = 60;
+var TOTAL_CASCADE_AT = 80;
+function applyEntropyThresholds(state, rng) {
+  if ((state.cycle || 0) < ENTROPY_THRESHOLD_CYCLE) return null;
+  const entropy = Number(state.entropy || 0);
+  if (entropy >= TOTAL_CASCADE_AT) return triggerTotalCascade(state);
+  if (entropy >= PATTERN_FAILURE_AT) return triggerPatternFailure(state, rng);
+  return null;
+}
+function triggerPatternFailure(state, rng) {
+  const mids = state.nodes.filter((n) => (nodeById(n.id) || {}).zone === "mid" && status(n.health) !== "failed");
+  const picks = rng.shuffle(mids).slice(0, 2);
+  for (const n of picks) n.health = clamp3(n.health - 15, 0, 100);
+  if (picks.length) pushLog7(state, `Pattern Failure (entropy ${Math.round(Number(state.entropy || 0))}%): ${picks.map((n) => n.id).join(", ")} −15.`);
+  return { kind: "pattern_failure", nodes: picks.map((n) => n.id) };
+}
+function triggerTotalCascade(state) {
+  const degrading = state.nodes.filter((n) => status(n.health) === "degrading");
+  for (const n of degrading) n.health = clamp3(n.health - 30, 0, 100);
+  if (degrading.length) pushLog7(state, `TOTAL CASCADE (entropy ${Math.round(Number(state.entropy || 0))}%): ${degrading.length} degrading node(s) −30.`);
+  return { kind: "total_cascade", nodes: degrading.map((n) => n.id) };
+}
+function toggleHighLoad(state, nodeId) {
+  ensureRuntime(state);
+  const def = nodeById(nodeId);
+  if (!def || !def.supportsHighLoad) return { ok: false, reason: "unsupported" };
+  state.highLoad[nodeId] = !state.highLoad[nodeId];
+  return { ok: true, highLoad: Boolean(state.highLoad[nodeId]) };
 }
 function pushLog7(state, line) {
   state.log = [...state.log || [], line].slice(-12);
@@ -1542,7 +1582,14 @@ function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   if (fields.storms) fields.storms.textContent = String(state.stormsSurvived || 0);
   fields.cycle.textContent = String(state.cycle);
   fields.states.textContent = String(state.states);
-  fields.entropy.textContent = String(Math.round(state.entropy || 0));
+  const entropy = Math.round(state.entropy || 0);
+  fields.entropy.textContent = String(entropy);
+  root.style.setProperty("--entropy-level", (entropy / 100).toFixed(2));
+  root.dataset.entropy = entropy >= 80 ? "critical" : entropy >= 60 ? "high" : entropy >= 35 ? "mid" : "low";
+  if (fields.stress) {
+    const totalStress = state.nodes.reduce((sum, n) => sum + (Number(n.cascadeStress) || 0), 0);
+    fields.stress.textContent = String(totalStress);
+  }
   if (fields.heat) fields.heat.textContent = `${Math.round(state.heat || 0)}/100`;
   if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
   fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
@@ -1559,7 +1606,7 @@ function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   paintStorm(root, state, storm);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
-  map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
+  map.replaceChildren(...state.nodes.map((n) => nodeCard(n, state)), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
   log.replaceChildren(...state.log.slice(-5).map((line) => {
     const li = document.createElement("li");
     li.textContent = line;
@@ -1645,15 +1692,28 @@ function paintDebrisSelect(select, state) {
     return option;
   }));
 }
-function nodeCard(n) {
+function nodeCard(n, state) {
   const def = nodeById(n.id) || {};
   const s = status(n.health);
+  const hl = Boolean(state.highLoad?.[n.id]) && def.supportsHighLoad;
+  const frozen = Number(state.stabilized?.[n.id] || 0);
+  const stress = Number(n.cascadeStress) || 0;
   const item = document.createElement("div");
-  item.className = `s8-node is-${s}`;
+  const classes = [`s8-node`, `is-${s}`];
+  if (hl) classes.push("is-high-load");
+  if (frozen) classes.push("is-stabilized");
+  if (stress > 0) classes.push("is-stressed");
+  item.className = classes.join(" ");
   const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
-  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>
+  const stressTag = stress > 0 ? ` <span class="s8-node-stress" title="cascade stress from failed neighbours: +${stress}/cycle extra decay">⚠+${stress}</span>` : "";
+  const frozenTag = frozen ? ` <span class="s8-node-frozen" title="stabilized — decay frozen">❄${frozen}</span>` : "";
+  const hlBtn = def.supportsHighLoad ? `<button type="button" data-high-load="${n.id}" class="s8-node-hl${hl ? " is-on" : ""}" aria-pressed="${hl}" title="High-Load: +50% output, +50% decay">HL${hl ? "✓" : ""}</button>` : "";
+  const showFreeze = (state.cycle || 0) >= 6;
+  const canFreeze = showFreeze && (state.stabilizers || 0) > 0 && !frozen;
+  const freezeBtn = showFreeze ? `<button type="button" data-stabilize-node="${n.id}"${canFreeze ? "" : " disabled"} title="Freeze decay for 2 cycles (spends 1 stabilizer)">freeze</button>` : "";
+  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>${stressTag}${frozenTag}
     ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
-    <button type="button" data-repair="${n.id}">repair</button>`;
+    <span class="s8-node-actions">${hlBtn}${freezeBtn}<button type="button" data-repair="${n.id}">repair</button></span>`;
   return item;
 }
 function debrisChip(item, onSelectDebris) {
@@ -1736,6 +1796,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
+      <span>stress <b data-field="stress"></b></span>
       <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
@@ -1817,6 +1878,18 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     const repair = event.target.closest("button[data-repair]");
     if (repair) {
       applyRepair(state, repair.dataset.repair, REPAIR_STEP2);
+      persistAndPaint();
+      return;
+    }
+    const highLoad = event.target.closest("button[data-high-load]");
+    if (highLoad) {
+      toggleHighLoad(state, highLoad.dataset.highLoad);
+      persistAndPaint();
+      return;
+    }
+    const freeze = event.target.closest("button[data-stabilize-node]");
+    if (freeze) {
+      applyStabilizer(state, freeze.dataset.stabilizeNode);
       persistAndPaint();
       return;
     }
