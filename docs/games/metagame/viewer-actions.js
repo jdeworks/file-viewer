@@ -9,7 +9,9 @@ const STAGE5_FILE = 'transmission_hum.mp3';
 const STAGE5_REQUIRED_MS = 14000;
 const STAGE6_FILE = 'protocols_of_the_entity.epub';
 const STAGE3_ASCII_FILE = 'entity_f_verification.png';
+const STAGE4_BLUEPRINT_FILE = 'recursion_points.json';
 const STAGE7_FILE = 'entity_f_verification.png';
+const STAGE7_ANCHOR_FILE = 'entity_anchor_0043.txt';
 
 const FALSY_CHEAT_VALUES = new Set(['false', '0', 'no', 'off', '']);
 const TRUTHY_CHEAT_VALUES = new Set(['true', '1', 'yes', 'on']);
@@ -127,6 +129,22 @@ export function recordStage5MediaPlayback({ file, continuousMs, active = true, s
   return true;
 }
 
+export function isStage4BlueprintFile(file) {
+  return basename(file) === STAGE4_BLUEPRINT_FILE;
+}
+
+// Stage 4 un-cheat: the load-bearing action is fired by ACTUALLY OPENING the tier-3 blueprint file in
+// the viewer (a real file-open through openViewerFile → recordMetagameViewerOpen), never by an in-game
+// button. Until this fires, The Infinite Loop folds all damage away (see boss.js total-armor gate).
+export function recordStage4BlueprintOpen({ file, setAction = sharedSetAction } = {}) {
+  if (!isStage4BlueprintFile(file)) return false;
+  setAction?.(4, 'recursion_blueprint_read', {
+    source: 'viewer-open',
+    file: STAGE4_BLUEPRINT_FILE,
+  });
+  return true;
+}
+
 export function isStage6CodexFile(file) {
   return basename(file) === STAGE6_FILE;
 }
@@ -158,11 +176,41 @@ export function recordStage7MetadataInspection({ file, field, entity = 'F', setA
   return true;
 }
 
+export function isStage7AnchorFile(file) {
+  return basename(file) === STAGE7_ANCHOR_FILE;
+}
+
+export function recordStage7AnchorOpen({ file, setAction = sharedSetAction } = {}) {
+  if (!isStage7AnchorFile(file)) return false;
+  setAction?.(7, 'anchor_chain_examined', {
+    source: 'viewer-open',
+    file: STAGE7_ANCHOR_FILE,
+    anchor: 'ENTITY_ANCHOR_0043',
+  });
+  return true;
+}
+
+export function stage10EchoMemoryId(file) {
+  const base = basename(file);
+  const match = base.match(/^([a-z]+)_echo\./);
+  return match ? match[1] : null;
+}
+
+export function recordStage10EchoOpen({ file, setAction = sharedSetAction } = {}) {
+  const id = stage10EchoMemoryId(file);
+  if (!id) return false;
+  setAction?.(10, `echo_${id}`, { source: 'viewer-open', file: basename(file), memory: id });
+  return true;
+}
+
 export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sharedSetAction } = {}) {
   const target = file || path;
   const results = [
     recordSecretTxtOpen({ file: target, setAction }),
+    recordStage4BlueprintOpen({ file: target, setAction }),
     recordStage6CodexOpen({ file: target, setAction }),
+    recordStage7AnchorOpen({ file: target, setAction }),
+    recordStage10EchoOpen({ file: target, setAction }),
     recordStage7MetadataInspection({
       file: target,
       field: opts.metadataField || opts.field,

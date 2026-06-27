@@ -13,6 +13,15 @@ var ACHIEVEMENT_TEXT = "I looked beyond the surface of the image.";
 var BTS_PATH = "/docs/bts/identity_arbiter.bts";
 var ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.png";
 var ENTITY_METADATA_SIDECAR_PATH = "/docs/examples/metagame/stage7/entity_metadata.json";
+var ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
+var ANCHOR_ACTION = "anchor_chain_examined";
+var substageHints = {
+  1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
+  2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
+  3: "Audit Entity F's activity log. One entry is logically impossible.",
+  4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
+  5: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+};
 var bellMessages = {
   start: "something presented itself. I had to decide.",
   unlock: "the image knew more than the image showed. the GPS was outside any layer.",
@@ -91,6 +100,7 @@ function inspectContradictoryExif({ state, actions, achievements, bell, field = 
 }
 function commitIdentity({ state, entity }) {
   const selected = String(entity || "").trim().toUpperCase();
+  if (Number(state.substage || 1) < 5) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
   if (!state.boss.unlocked) {
@@ -151,6 +161,77 @@ var metadataRows = {
     ["Software", "Boot Vision 1.0"]
   ]
 };
+var entityFields = {
+  B: [
+    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
+    {
+      id: "route_active_since",
+      label: "Route Active Since",
+      value: "cycle 0043",
+      wrong: true,
+      reason: "Route ENTITY_ANCHOR_0043 was decommissioned at cycle 0043."
+    },
+    { id: "software", label: "Software", value: "Boot Vision 1.0" }
+  ],
+  C: [
+    {
+      id: "response_timing",
+      label: "Response Timing",
+      value: "scripted: 0ms variance",
+      wrong: true,
+      reason: "All entities exhibit non-zero timing variance in this system."
+    },
+    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
+    { id: "layer_tag", label: "Layer Tag", value: "LAYER-0" }
+  ],
+  D: [
+    { id: "credential_class", label: "Credential Class", value: "TIER-1-PROXY" },
+    { id: "software", label: "Software", value: "Boot Vision 1.0" },
+    {
+      id: "log_event",
+      label: "Activity Log Event",
+      value: "LAYER_MERGE",
+      wrong: true,
+      reason: "LAYER_MERGE is not a valid event type in this system."
+    }
+  ],
+  E: [
+    {
+      id: "route_status",
+      label: "Route Status",
+      value: "active since cycle 0044",
+      wrong: true,
+      reason: "Route inactive since cycle 0043; activity after 0043 is impossible."
+    },
+    { id: "layer_tag", label: "Layer Tag", value: "LAYER-0" },
+    { id: "software", label: "Software", value: "Boot Vision 1.0" }
+  ]
+};
+var SCAN_ENTITIES = ["B", "C", "D", "E"];
+var ambientFacts = [
+  "Current cycle: 0047",
+  "Valid event types: BOOT, SHUTDOWN, SYNC, PING, WATCHDOG",
+  "All entities exhibit non-zero timing variance",
+  "ENTITY_ANCHOR_0043 decommissioned at cycle 0043"
+];
+var entityFEventLog = [
+  { cycle: "0039", event: "BOOT", id: "ev1" },
+  { cycle: "0040", event: "SYNC", id: "ev2" },
+  { cycle: "0041", event: "PING", id: "ev3" },
+  { cycle: "0042", event: "WATCHDOG", id: "ev4" },
+  { cycle: "0043", event: "ACTIVE", id: "ev5" },
+  {
+    cycle: "0043",
+    event: "DORMANT",
+    id: "ev6",
+    impossible: true,
+    reason: "Simultaneous ACTIVE/DORMANT states at cycle 0043 — a logical impossibility."
+  },
+  { cycle: "0044", event: "SYNC", id: "ev7" },
+  { cycle: "0045", event: "PING", id: "ev8" },
+  { cycle: "0046", event: "WATCHDOG", id: "ev9" },
+  { cycle: "0047", event: "BOOT", id: "ev10" }
+];
 var metadataArtifact = {
   format: "stage7-image-metadata-sidecar",
   note: "The current app image metadata reader extracts EXIF from JPEG APP1 but not PNG text chunks. Stage 7 therefore uses real same-origin PNG fixtures plus this local sidecar for the authored EXIF-style evidence.",
@@ -162,136 +243,270 @@ var metadataArtifact = {
   }
 };
 
+// ../../docs/games/metagame/stages/stage7/substages.js
+var SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, BOSS: 5 };
+function flagField({ state, entityId, fieldId }) {
+  const field = (entityFields[entityId] || []).find((f) => f.id === fieldId);
+  if (!field) return { ok: false, reason: "unknown" };
+  if (!field.wrong) {
+    state.evidence.wrongFlagCount = Number(state.evidence.wrongFlagCount || 0) + 1;
+    pushLog2(state, "insufficient evidence — cross-check the ambient facts.");
+    return { ok: false, reason: "not-contradiction" };
+  }
+  if (state.evidence.flags[entityId]) return { ok: true, already: true };
+  state.evidence.flags[entityId] = fieldId;
+  state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
+  state.addresses = Number(state.addresses || 0) + 10;
+  pushLog2(state, `Entity ${entityId}: ${field.reason}`);
+  const complete = SCAN_ENTITIES.every((e) => state.evidence.flags[e]);
+  if (complete) {
+    if (Number(state.evidence.wrongFlagCount || 0) === 0) {
+      state.addresses += 25;
+      pushLog2(state, "clean scan. +25 precision bonus.");
+    }
+    advance(state, SUBSTAGE.DUP);
+  }
+  return { ok: true, complete };
+}
+function diffField({ state, fieldName }) {
+  if (fieldName !== "GPSInfo") {
+    pushLog2(state, "this field matches across both dossiers.");
+    return { ok: false };
+  }
+  state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
+  state.evidence.dupTestComplete = true;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, "Entity F's GPSInfo diverges from Entity A. Not yet decisive — the case continues.");
+  advance(state, SUBSTAGE.TIMELINE);
+  return { ok: true, complete: true };
+}
+function markImpossible({ state, evId }) {
+  const ev = entityFEventLog.find((e) => e.id === evId);
+  if (!ev || !ev.impossible) {
+    pushLog2(state, "this entry is plausible. keep looking.");
+    return { ok: false };
+  }
+  state.evidence.timelineContradictionCycle = ev.cycle;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, ev.reason);
+  advance(state, SUBSTAGE.CHAIN);
+  return { ok: true, complete: true };
+}
+function markChainBroken({ state }) {
+  if (state.evidence.chainBroken) return { ok: true, already: true };
+  state.evidence.chainBroken = true;
+  state.addresses = Number(state.addresses || 0) + 15;
+  pushLog2(state, "Entity F's credential chain references a decommissioned anchor. The chain is invalid.");
+  advance(state, SUBSTAGE.BOSS);
+  return { ok: true, complete: true };
+}
+function advance(state, to) {
+  if (Number(state.substage || 1) < to) state.substage = to;
+}
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-8);
+}
+
 // ../../docs/games/metagame/stages/stage7/renderer.js
-function renderStage7({
-  host,
-  state,
-  actions,
-  achievements,
-  bell,
-  bts,
-  viewer,
-  save,
-  onStageComplete
-}) {
+var SUBSTAGE_LABEL = {
+  1: "1/5 CREDENTIAL SCAN",
+  2: "2/5 DUPLICATE TEST",
+  3: "3/5 TIMELINE AUDIT",
+  4: "4/5 REFERENCE CHASE",
+  5: "5/5 EXIF ARBITER (BOSS)"
+};
+function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage7-identity-arbiter";
   root.innerHTML = `
     <header class="s7-hud">
       <div><strong>IDENTITY ARBITER</strong></div>
+      <div>stage <span data-field="substage"></span></div>
       <div>addresses <span data-field="addresses"></span></div>
-      <div>selected <span data-field="selected"></span></div>
     </header>
-    <section class="s7-board" aria-label="Name Collision candidates"></section>
-    <section class="s7-evidence">
-      <div>
-        <h2>The Name Collision</h2>
-        <div class="s7-status" data-field="status"></div>
-        <p data-field="hint"></p>
-      </div>
-      <div class="s7-meta" aria-label="Entity F metadata"></div>
-    </section>
+    <section class="s7-main" aria-label="investigation"></section>
+    <p class="s7-hint" data-field="hint"></p>
     <ol class="s7-log" aria-label="judgment log"></ol>
     <div class="s7-controls">
-      <button type="button" data-action="photo">open Entity F photo</button>
-      <button type="button" data-action="gps">inspect GPSInfo</button>
       <button type="button" data-action="bts" hidden>open trace.bts</button>
     </div>
   `;
   host.replaceChildren(root);
-  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const board = root.querySelector(".s7-board");
-  const meta = root.querySelector(".s7-meta");
+  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el2) => [el2.dataset.field, el2]));
+  const main = root.querySelector(".s7-main");
   const log = root.querySelector(".s7-log");
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
-  board.replaceChildren(...candidates.map((candidate) => {
-    const card = document.createElement("article");
-    card.className = "s7-candidate";
-    card.dataset.entity = candidate.id;
-    card.innerHTML = `
-      <strong>Entity ${candidate.id}</strong>
-      <span>${candidate.claim}</span>
-      <button type="button" data-commit="${candidate.id}">commit</button>
-    `;
-    return card;
-  }));
-  meta.replaceChildren(...metadataRows.F.map(([field, value]) => {
-    const row = document.createElement("button");
-    row.type = "button";
-    row.dataset.field = field;
-    row.innerHTML = `<strong>${field}</strong><span>${value}</span>`;
-    return row;
-  }));
-  function repaint() {
-    const lock = getBossLockState({ actions, state });
-    fields.addresses.textContent = String(state.addresses);
-    fields.selected.textContent = state.evidence.selectedEntity || "none";
-    fields.status.textContent = `${lock.informationState}${lock.defeated ? " / defeated" : ""}`;
-    fields.hint.textContent = lock.hint;
-    for (const card of board.querySelectorAll(".s7-candidate")) {
-      card.classList.toggle("is-contradicted", state.evidence.contradicted.includes(card.dataset.entity));
-      card.classList.toggle("is-selected", state.evidence.selectedEntity === card.dataset.entity);
-    }
-    log.replaceChildren(...state.log.slice(-6).map((line) => {
-      const item = document.createElement("li");
-      item.textContent = line;
-      return item;
-    }));
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
-  }
   root.addEventListener("click", (event) => {
-    const fieldButton = event.target.closest("button[data-field]");
-    if (fieldButton) {
-      inspectContradictoryExif({
-        state,
-        actions,
-        achievements,
-        bell,
-        field: fieldButton.dataset.field,
-        entity: "F"
-      });
-      persistAndPaint();
-      return;
-    }
-    const commitButton = event.target.closest("button[data-commit]");
-    if (commitButton) {
-      const result = commitIdentity({ state, entity: commitButton.dataset.commit });
-      if (result.defeated) {
-        completeOnce({ stage: 7, defeated: true, reward: { addresses: 150 }, btsPath: BTS_PATH });
-      }
-      persistAndPaint();
-      return;
-    }
-    const button = event.target.closest("button[data-action]");
+    const button = event.target.closest("button[data-action], button[data-flag], button[data-diff], button[data-ev], button[data-commit]");
     if (!button) return;
-    if (button.dataset.action === "photo") openEntityFPhoto(viewer);
-    if (button.dataset.action === "gps") {
-      inspectContradictoryExif({ state, actions, achievements, bell, field: "GPSInfo", entity: "F" });
-    }
-    if (button.dataset.action === "bts") openBts({ bts, viewer });
+    const d = button.dataset;
+    if (d.flag) flagField({ state, entityId: d.entity, fieldId: d.flag });
+    else if (d.diff) diffField({ state, fieldName: d.diff });
+    else if (d.ev) markImpossible({ state, evId: d.ev });
+    else if (d.commit) commitBoss(d.commit);
+    else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
+    else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
+    else if (d.action === "bts") openBts({ bts, viewer });
     persistAndPaint();
   });
-  if (getBossLockState({ actions, state }).unlocked) {
-    applyExifContradictionUnlock({ state, achievements, bell });
-  }
   repaint();
+  window.__fvStage7 = {
+    state: () => state,
+    solveInvestigation() {
+      for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: entityFields[id].find((f) => f.wrong).id });
+      diffField({ state, fieldName: "GPSInfo" });
+      markImpossible({ state, evId: entityFEventLog.find((e) => e.impossible).id });
+      persistAndPaint();
+      return state.substage;
+    }
+  };
   return {
     repaint,
     destroy() {
+      if (window.__fvStage7) delete window.__fvStage7;
       root.remove();
     }
   };
+  function commitBoss(entity) {
+    const result = commitIdentity({ state, entity });
+    if (result.defeated) completeOnce({ stage: 7, defeated: true, reward: { addresses: 150 }, btsPath: BTS_PATH });
+  }
+  function openInViewer(path, opts) {
+    if (viewer && typeof viewer.openFile === "function") viewer.openFile(path, opts);
+    else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(path, opts);
+  }
+  function repaint() {
+    const lock = getBossLockState({ actions, state });
+    fields.substage.textContent = SUBSTAGE_LABEL[state.substage] || String(state.substage);
+    fields.addresses.textContent = String(state.addresses);
+    fields.hint.textContent = state.boss.defeated ? "Case closed." : substageHints[state.substage] || lock.hint;
+    renderMain(lock);
+    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
+    log.replaceChildren(...state.log.slice(-6).map((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      return li;
+    }));
+  }
+  function renderMain(lock) {
+    if (state.substage === SUBSTAGE.SCAN) return main.replaceChildren(renderScan());
+    if (state.substage === SUBSTAGE.DUP) return main.replaceChildren(renderDup());
+    if (state.substage === SUBSTAGE.TIMELINE) return main.replaceChildren(renderTimeline());
+    if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
+    return main.replaceChildren(renderBoss(lock));
+  }
+  function renderScan() {
+    const wrap = el("div", "s7-ss1");
+    const facts = el("aside", "s7-ambient-facts");
+    facts.innerHTML = `<h3>Ambient facts</h3><ul>${ambientFacts.map((f) => `<li>${f}</li>`).join("")}</ul>`;
+    const cards = el("div", "s7-cards");
+    for (const id of SCAN_ENTITIES) {
+      const card = el("article", "s7-card");
+      if (state.evidence.flags[id]) card.classList.add("is-flagged");
+      card.innerHTML = `<strong>Entity ${id}</strong>`;
+      for (const f of entityFields[id]) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.dataset.entity = id;
+        b.dataset.flag = f.id;
+        b.disabled = Boolean(state.evidence.flags[id]);
+        b.innerHTML = `<span>${f.label}</span><em>${f.value}</em>`;
+        card.append(b);
+      }
+      cards.append(card);
+    }
+    wrap.append(facts, cards);
+    return wrap;
+  }
+  function renderDup() {
+    const wrap = el("div", "s7-ss2");
+    const panel = el("div", "s7-duptest-panel");
+    const colA = el("div", "s7-duptest-col");
+    colA.innerHTML = `<h3>Entity A</h3>${metadataRows.A.map(([f, v]) => `<div class="s7-row"><span>${f}</span><em>${v}</em></div>`).join("")}`;
+    const colF = el("div", "s7-duptest-col");
+    colF.innerHTML = `<h3>Entity F</h3>`;
+    for (const [f, v] of metadataRows.F) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.diff = f;
+      b.innerHTML = `<span>${f}</span><em>${v}</em>`;
+      colF.append(b);
+    }
+    panel.append(colA, colF);
+    const note = el("p", "s7-duptest-hint");
+    note.textContent = "DIFF DOSSIERS — identify the tampered field on Entity F.";
+    wrap.append(panel, note);
+    return wrap;
+  }
+  function renderTimeline() {
+    const wrap = el("div", "s7-ss3");
+    wrap.innerHTML = `<p class="s7-audit-header">TIMELINE AUDIT — Entity F activity log. Mark the impossible entry.</p>`;
+    const list = el("ol", "s7-timeline");
+    for (const ev of entityFEventLog) {
+      const li = document.createElement("li");
+      li.innerHTML = `<span>cycle ${ev.cycle}</span><span>${ev.event}</span>`;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.ev = ev.id;
+      b.textContent = "mark impossible";
+      li.append(b);
+      list.append(li);
+    }
+    wrap.append(list);
+    return wrap;
+  }
+  function renderChain() {
+    const wrap = el("div", "s7-ss4");
+    wrap.innerHTML = `
+      <article class="s7-dossier-chain">
+        <h3>Entity F — Credential Chain</h3>
+        <p>Route active via: <strong>ENTITY_ANCHOR_0043</strong></p>
+        <p>Chain reference:
+          <button type="button" data-action="open-anchor">CREDENTIAL_CHAIN → ENTITY_ANCHOR_0043 [open exhibit]</button>
+        </p>
+      </article>
+      <p class="s7-chase-hint">Follow the citation. Open the referenced anchor record in the viewer.</p>`;
+    return wrap;
+  }
+  function renderBoss(lock) {
+    const wrap = el("div", "s7-ss5");
+    const header = el("header", "s7-boss-header");
+    header.textContent = "IDENTITY REQUIRES PRIMARY SOURCE VERIFICATION";
+    wrap.append(header);
+    const intro = el("p");
+    intro.textContent = "Entity F presents a verification image. Inspect its embedded metadata.";
+    wrap.append(intro);
+    const controls = el("div", "s7-controls");
+    controls.innerHTML = `<button type="button" data-action="photo">open Entity F photo</button>`;
+    wrap.append(controls);
+    if (lock.unlocked) {
+      const verdict = el("div", "s7-verdict");
+      verdict.innerHTML = `<p>Entity F's image GPS is outside every known entity layer. F is eliminated.</p>
+        <p>Commit to the real credential holder.</p>`;
+      const row = el("div", "s7-commit-row");
+      for (const c of candidates) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.dataset.commit = c.id;
+        b.disabled = state.boss.defeated;
+        b.textContent = `commit ${c.id}`;
+        row.append(b);
+      }
+      verdict.append(row);
+      wrap.append(verdict);
+    } else {
+      const waiting = el("p", "s7-hint");
+      waiting.textContent = lock.hint;
+      wrap.append(waiting);
+    }
+    return wrap;
+  }
   function persistAndPaint() {
     if (typeof save === "function") save();
     repaint();
   }
-}
-function openEntityFPhoto(viewer) {
-  const opts = buildEntityFPhotoOpenOptions();
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(ENTITY_F_IMAGE_PATH, opts);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(ENTITY_F_IMAGE_PATH, opts);
 }
 function buildEntityFPhotoOpenOptions() {
   return {
@@ -302,6 +517,11 @@ function buildEntityFPhotoOpenOptions() {
     metadataSidecar: ENTITY_METADATA_SIDECAR_PATH,
     metadataRows: metadataRows.F.map(([field, value]) => ({ field, value }))
   };
+}
+function el(tag, className) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  return node;
 }
 function openBts({ bts, viewer }) {
   if (bts && typeof bts.open === "function") bts.open(7);
@@ -321,12 +541,23 @@ function once(fn) {
 // ../../docs/games/metagame/stages/stage7/state.js
 function defaultState() {
   return {
-    version: 1,
+    version: 2,
     addresses: 0,
+    substage: 1,
+    // 1 scan · 2 dup · 3 timeline · 4 chain · 5 boss
     evidence: {
-      eliminated: ["B", "C", "D", "E"],
+      eliminated: [],
+      // populated incrementally as entities are flagged
       contradicted: [],
-      selectedEntity: null
+      selectedEntity: null,
+      flags: {},
+      // { B:"fieldId", C:"fieldId", ... } from the credential scan
+      wrongFlagCount: 0,
+      dupTestComplete: false,
+      timelineContradictionCycle: null,
+      chainBroken: false,
+      partialContra: []
+      // e.g. ["F.GPSInfo"]
     },
     boss: {
       reached: false,
@@ -346,16 +577,25 @@ function defaultState() {
 }
 function normalizeState(state) {
   const fresh = defaultState();
-  const target = state && typeof state === "object" ? state : {};
-  target.version = 1;
+  const incoming = state && typeof state === "object" ? state : {};
+  if (Number(incoming.version) < 2) return fresh;
+  const target = incoming;
+  target.version = 2;
   target.addresses = Number.isFinite(Number(target.addresses)) ? Number(target.addresses) : fresh.addresses;
+  target.substage = clampSubstage(target.substage, fresh.substage);
   target.evidence = mergePlain(fresh.evidence, target.evidence);
-  target.evidence.eliminated = Array.isArray(target.evidence.eliminated) ? target.evidence.eliminated : fresh.evidence.eliminated;
-  target.evidence.contradicted = Array.isArray(target.evidence.contradicted) ? target.evidence.contradicted : fresh.evidence.contradicted;
+  target.evidence.eliminated = Array.isArray(target.evidence.eliminated) ? target.evidence.eliminated : [];
+  target.evidence.contradicted = Array.isArray(target.evidence.contradicted) ? target.evidence.contradicted : [];
+  target.evidence.flags = target.evidence.flags && typeof target.evidence.flags === "object" ? target.evidence.flags : {};
+  target.evidence.partialContra = Array.isArray(target.evidence.partialContra) ? target.evidence.partialContra : [];
   target.boss = mergePlain(fresh.boss, target.boss);
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   target.meta = mergePlain(fresh.meta, target.meta);
   return target;
+}
+function clampSubstage(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 1 && n <= 5 ? Math.floor(n) : fallback;
 }
 function mergePlain(base, override) {
   return { ...base, ...override && typeof override === "object" ? override : {} };
@@ -379,34 +619,41 @@ function mountStage(ctx) {
   if (hasExifContradiction(ctx.actions)) {
     applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
   }
-  const unsubscribe = subscribeToExifContradiction(ctx.actions, () => {
+  const unsubscribe = subscribeToActionName(ctx.actions, ACTION_NAME, () => {
     applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
+    if (typeof ctx.save === "function") ctx.save();
+    if (view && typeof view.repaint === "function") view.repaint();
+  });
+  const unsubscribeAnchor = subscribeToActionName(ctx.actions, ANCHOR_ACTION, () => {
+    markChainBroken({ state });
     if (typeof ctx.save === "function") ctx.save();
     if (view && typeof view.repaint === "function") view.repaint();
   });
   view = renderStage7({ ...ctx, state });
   return {
+    repaint() {
+      if (view && typeof view.repaint === "function") view.repaint();
+    },
     destroy() {
       unsubscribe();
+      unsubscribeAnchor();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
 }
-function subscribeToExifContradiction(actions, onUnlock) {
+function subscribeToActionName(actions, actionName, onFire) {
+  const matches = (detail) => Boolean(detail && Number(detail.stage) === 7 && detail.action === actionName);
   if (actions && typeof actions.subscribeToActions === "function") {
     return actions.subscribeToActions((detail) => {
-      if (isExifContradictionDetail(detail)) onUnlock(detail);
+      if (matches(detail)) onFire(detail);
     }) || (() => {
     });
   }
   const handler = (event) => {
-    if (isExifContradictionDetail(event.detail)) onUnlock(event.detail);
+    if (matches(event.detail)) onFire(event.detail);
   };
   window.addEventListener("fv:games:action", handler);
   return () => window.removeEventListener("fv:games:action", handler);
-}
-function isExifContradictionDetail(detail) {
-  return Boolean(detail && Number(detail.stage) === 7 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
   const id = "stage7-identity-arbiter-styles";

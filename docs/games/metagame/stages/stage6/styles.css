@@ -144,6 +144,24 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-boss-rules { display: grid; gap: 8px; align-content: start; }
 .s6db-boss-rules article { display: grid; gap: 4px; border: 1px solid #b8962e; border-radius: 6px; background: #f6efdf; padding: 10px; }
 
+/* The act-4 real-deck negotiation banner (above the combat screen). */
+.s6db-boss-banner { border: 2px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 10px 12px; margin-bottom: 10px; }
+.s6db-boss-banner.is-locked { border-color: #8b2020; background: #f7e7e2; }
+.s6db-boss-banner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.s6db-boss-banner-head strong { letter-spacing: 0.04em; }
+.s6db-boss-phase { font-size: 0.82rem; color: #6b513a; }
+.s6db-boss-rule { margin: 6px 0 0; font-style: italic; color: #3b2a1c; }
+.s6db-boss-mismatch { margin: 6px 0; color: #8b2020; font-weight: 700; }
+
+/* DELAY: the 2-turns-ahead enemy intent telegraph. */
+.s6db-intent-next { margin-top: 4px; font-size: 0.75rem; color: #6b513a; opacity: 0.8; }
+
+/* THROUGHPUT: the congestion-window readout next to the energy pips. */
+.s6db-window { margin-left: 10px; font-size: 0.78rem; color: #2f6f6a; font-weight: 600; }
+.s6db-jammed { margin: 6px 0; font-size: 0.8rem; color: #8b2020; }
+.s6db-jammed-label { font-weight: 700; }
+.s6db-card--jammed { display: inline-block; padding: 2px 6px; margin: 0 4px; border: 1px dashed #8b2020; border-radius: 4px; opacity: 0.7; }
+
 /* ── end screens ───────────────────────────────────────────────────────────── */
 .s6db-end h2 { margin-top: 0; }
 .s6db-end--dead h2 { color: #8b2020; }

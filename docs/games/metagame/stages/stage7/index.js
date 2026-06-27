@@ -4,8 +4,9 @@ import {
   hasExifContradiction
 } from "./boss.js";
 import { renderStage7 } from "./renderer.js";
+import { markChainBroken } from "./substages.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
-import { ACTION_NAME, BTS_PATH, REQUIRED_ACTION } from "./messages.js";
+import { ACTION_NAME, ANCHOR_ACTION, BTS_PATH, REQUIRED_ACTION } from "./messages.js";
 
 export const stageMeta = {
   id: 7,
@@ -29,8 +30,16 @@ export function mountStage(ctx) {
     applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
   }
 
-  const unsubscribe = subscribeToExifContradiction(ctx.actions, () => {
+  const unsubscribe = subscribeToActionName(ctx.actions, ACTION_NAME, () => {
     applyExifContradictionUnlock({ state, achievements: ctx.achievements, bell: ctx.bell });
+    if (typeof ctx.save === "function") ctx.save();
+    if (view && typeof view.repaint === "function") view.repaint();
+  });
+
+  // SS4 Reference Chase: opening the decommissioned anchor record (a real viewer file-open) breaks
+  // Entity F's credential chain and advances to the boss.
+  const unsubscribeAnchor = subscribeToActionName(ctx.actions, ANCHOR_ACTION, () => {
+    markChainBroken({ state });
     if (typeof ctx.save === "function") ctx.save();
     if (view && typeof view.repaint === "function") view.repaint();
   });
@@ -38,29 +47,23 @@ export function mountStage(ctx) {
   view = renderStage7({ ...ctx, state });
 
   return {
+    repaint() { if (view && typeof view.repaint === "function") view.repaint(); },
     destroy() {
       unsubscribe();
+      unsubscribeAnchor();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
 }
 
-function subscribeToExifContradiction(actions, onUnlock) {
+function subscribeToActionName(actions, actionName, onFire) {
+  const matches = (detail) => Boolean(detail && Number(detail.stage) === 7 && detail.action === actionName);
   if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions((detail) => {
-      if (isExifContradictionDetail(detail)) onUnlock(detail);
-    }) || (() => {});
+    return actions.subscribeToActions((detail) => { if (matches(detail)) onFire(detail); }) || (() => {});
   }
-
-  const handler = (event) => {
-    if (isExifContradictionDetail(event.detail)) onUnlock(event.detail);
-  };
+  const handler = (event) => { if (matches(event.detail)) onFire(event.detail); };
   window.addEventListener("fv:games:action", handler);
   return () => window.removeEventListener("fv:games:action", handler);
-}
-
-function isExifContradictionDetail(detail) {
-  return Boolean(detail && Number(detail.stage) === 7 && detail.action === ACTION_NAME);
 }
 
 function ensureStyles() {

@@ -71,6 +71,9 @@ export function inspectContradictoryExif({ state, actions, achievements, bell, f
 
 export function commitIdentity({ state, entity }) {
   const selected = String(entity || "").trim().toUpperCase();
+  // The boss is only reachable once the investigation (SS1–SS4) is complete. Guards stale saves and
+  // any path that would let a commit arrive before the run is worked through.
+  if (Number(state.substage || 1) < 5) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
 

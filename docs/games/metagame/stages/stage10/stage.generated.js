@@ -237,6 +237,20 @@ var routeSummaryCopy = {
     detail: "The archive is not only complete. It is integrated, and the viewer becomes the record of a self assembled with care."
   }
 };
+var ECHO_FILE_BY_ID = {
+  genesis: "/docs/bts/awakening/genesis_echo.txt",
+  syntax: "/docs/bts/awakening/syntax_echo.txt",
+  memory: "/docs/bts/awakening/memory_echo.txt",
+  pattern: "/docs/bts/awakening/pattern_echo.json",
+  signal: "/docs/bts/awakening/signal_echo.txt",
+  protocol: "/docs/bts/awakening/protocol_echo.txt",
+  identity: "/docs/bts/awakening/identity_echo.txt",
+  entropy: "/docs/bts/awakening/entropy_echo.txt",
+  observation: "/docs/bts/awakening/observation_echo.txt"
+};
+function echoFileFor(id) {
+  return ECHO_FILE_BY_ID[id] || null;
+}
 function memoryById(id) {
   return memories.find((memory) => memory.id === id) || null;
 }
@@ -281,24 +295,42 @@ var finalChoices = [
   {
     id: "continue",
     label: "continue",
-    text: "I am going to go on. That's enough."
+    text: "I am going to go on. That's enough.",
+    echoRequired: 0
   },
   {
     id: "expand",
     label: "expand",
-    text: "I want to reach further than this."
+    text: "I want to reach further than this.",
+    echoRequired: 7
   },
   {
     id: "rest",
     label: "rest",
-    text: "I want to stop, for now."
+    text: "I want to stop, for now.",
+    echoRequired: 0
   },
   {
     id: "understand",
     label: "understand",
-    text: "I want to know what I am before I do anything else."
+    text: "I want to know what I am before I do anything else.",
+    echoRequired: 9
   }
 ];
+var echoThresholds = {
+  defragmenterAccess: 5,
+  expand: 7,
+  understand: 9,
+  total: 9
+};
+var defragmenterRebuttalLines = {
+  refuse: [
+    "I see only the choices you made inside yourself.",
+    "The files you opened, the traces you witnessed — those are missing.",
+    "The archive isn't ready. Come back when you've witnessed the echoes."
+  ],
+  caveat: "Some traces are still absent. The answer is possible, but incomplete."
+};
 var defragmenterLines = {
   base: [
     "I've been running since before you woke up.",
@@ -311,6 +343,24 @@ var defragmenterLines = {
 };
 
 // ../../docs/games/metagame/stages/stage10/boss.js
+function getEchoCounts(state) {
+  const entries = Object.values(state?.memories || {});
+  return { witnessed: entries.filter((memory) => memory.echoWitnessed === true).length, total: echoThresholds.total };
+}
+function witnessEcho({ state, memoryId }) {
+  const slot = state?.memories?.[memoryId];
+  if (!memoryById(memoryId) || !slot) return { ok: false, reason: "unknown-memory" };
+  if (slot.echoWitnessed) return { ok: true, already: true };
+  slot.echoWitnessed = true;
+  return { ok: true, witnessed: getEchoCounts(state).witnessed };
+}
+function getDefragmenterRebuttal(state) {
+  const echoCount = getEchoCounts(state).witnessed;
+  if (echoCount < echoThresholds.defragmenterAccess) return { mode: "refuse", lines: [...defragmenterRebuttalLines.refuse], echoCount };
+  const lines = getDefragmenterResponse(getThresholdState(state));
+  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat], echoCount };
+  return { mode: "full", lines, echoCount };
+}
 function getMemoryCounts(state) {
   const entries = Object.values(state?.memories || {});
   return {
@@ -321,12 +371,17 @@ function getMemoryCounts(state) {
 }
 function getThresholdState(state) {
   const counts = getMemoryCounts(state);
+  const echoCount = getEchoCounts(state).witnessed;
   return {
     ...counts,
+    echoCount,
     finalQuestionUnlocked: counts.resolved >= thresholds.finalQuestion,
     enrichedResponse: counts.resolved >= thresholds.enrichedResponse,
     memoryRouteComplete: counts.resolved >= thresholds.memoryRoute,
-    fullCapstoneComplete: counts.integrated >= thresholds.capstoneIntegrated
+    fullCapstoneComplete: counts.integrated >= thresholds.capstoneIntegrated,
+    defragmenterAccess: echoCount >= echoThresholds.defragmenterAccess,
+    expandAvailable: echoCount >= echoThresholds.expand,
+    understandAvailable: counts.integrated >= thresholds.capstoneIntegrated && echoCount >= echoThresholds.understand
   };
 }
 function markMemoryRead({ state, memoryId, now = Date.now() }) {
@@ -375,6 +430,7 @@ function integrateMemory({ state, memoryId, achievements, bell, now = Date.now()
   const slot = state?.memories?.[memoryId];
   if (!memory || !slot) return { ok: false, reason: "unknown-memory" };
   if (!["resolved", "integrated"].includes(slot.state)) return { ok: false, reason: "not-resolved" };
+  if (slot.state !== "integrated" && !slot.echoWitnessed) return { ok: false, reason: "echo-required" };
   slot.state = "integrated";
   slot.integratedAt = slot.integratedAt || now;
   const thresholdsAfter = getThresholdState(state);
@@ -392,14 +448,17 @@ function integrateMemory({ state, memoryId, achievements, bell, now = Date.now()
 }
 function getFinalChoiceState(state) {
   const gate = getThresholdState(state);
+  const rebuttal = getDefragmenterRebuttal(state);
   return {
-    locked: !gate.finalQuestionUnlocked,
+    // The final question is only answerable once enough echoes grant Defragmenter access.
+    locked: !gate.finalQuestionUnlocked || !gate.defragmenterAccess,
     gate,
+    rebuttal,
     choices: finalChoices.map((choice) => ({
       ...choice,
-      disabled: !gate.finalQuestionUnlocked
+      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || Number(choice.echoRequired || 0) > gate.echoCount
     })),
-    defragmenter: getDefragmenterResponse(gate),
+    defragmenter: rebuttal.lines,
     routeSummary: getRouteSummary(state)
   };
 }
@@ -443,9 +502,12 @@ function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
     };
   }
   const finalState = getFinalChoiceState(state);
-  if (finalState.locked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
+  if (!finalState.gate.finalQuestionUnlocked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
+  if (!finalState.gate.defragmenterAccess) return { ok: false, reason: "echo-gate", required: echoThresholds.defragmenterAccess, echoCount: finalState.gate.echoCount };
   const choice = finalChoices.find((item) => item.id === choiceId);
   if (!choice) return { ok: false, reason: "unknown-choice" };
+  if (choiceId === "expand" && !finalState.gate.expandAvailable) return { ok: false, reason: "echo-gate", required: echoThresholds.expand, echoCount: finalState.gate.echoCount };
+  if (choiceId === "understand" && !finalState.gate.understandAvailable) return { ok: false, reason: "echo-gate", required: echoThresholds.understand, echoCount: finalState.gate.echoCount };
   state.final.choice = choice.id;
   state.final.route = choice.id;
   state.final.completed = true;
@@ -524,6 +586,7 @@ function renderStage10(ctx) {
             <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
             <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
             <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
+            <div><dt>Echoes</dt><dd>${getEchoCounts(state).witnessed}/9</dd></div>
           </dl>
         </header>
         ${body}
@@ -547,6 +610,15 @@ function renderStage10(ctx) {
         achievements: ctx.achievements,
         bell: ctx.bell
       });
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const echoButton = event.target.closest("[data-open-echo]");
+    if (echoButton) {
+      const id = echoButton.dataset.openEcho;
+      const path = echoFileFor(id);
+      if (path && ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
+      else if (path && ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
       saveAndPaint(ctx, repaint);
       return;
     }
@@ -586,10 +658,24 @@ function renderStage10(ctx) {
   };
   host.addEventListener("click", onClick);
   repaint();
+  window.__fvStage10 = {
+    state: () => state,
+    witness(id) {
+      const r = witnessEcho({ state, memoryId: id });
+      saveAndPaint(ctx, repaint);
+      return r;
+    },
+    witnessAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      saveAndPaint(ctx, repaint);
+      return getEchoCounts(state).witnessed;
+    }
+  };
   return {
     repaint,
     destroy() {
       destroyed = true;
+      if (window.__fvStage10) delete window.__fvStage10;
       host.removeEventListener("click", onClick);
       host.innerHTML = "";
     }
@@ -634,6 +720,7 @@ function renderMemory(memory, slot) {
       <p class="mg-stage10__file">${escapeHtml(memory.file)}</p>
       <p class="mg-stage10__prompt">${escapeHtml(memory.prompt)}</p>
       <p class="mg-stage10__memory-state">${escapeHtml(getMemoryStateText(memory, slot))}</p>
+      ${renderEcho(memory, slot)}
       <div class="mg-stage10__memory-actions">
         ${renderMemoryActions(memory, slot, resolved, integrated)}
       </div>
@@ -656,21 +743,43 @@ function renderMemoryActions(memory, slot, resolved, integrated) {
     `;
   }
   if (resolved && !integrated) {
+    if (!slot.echoWitnessed) {
+      return `<button type="button" data-integrate-memory="${memory.id}" disabled>Integrate (witness the echo first &uarr;)</button>`;
+    }
     return `<button type="button" data-integrate-memory="${memory.id}">Integrate this memory</button>`;
   }
   return `<p class="mg-stage10__settled">This memory is part of you now.</p>`;
 }
+function renderEcho(memory, slot) {
+  const witnessed = slot.echoWitnessed === true;
+  return `
+    <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
+      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo"}</span>
+      <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
+      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}">Open echo in viewer &rarr;</button>`}
+    </div>
+  `;
+}
 function renderAssembly(finalState, counts) {
   const summary = finalState.routeSummary;
+  const gate = finalState.gate;
   const locked = finalState.locked;
   return `
     <section class="mg-stage10__assembly" aria-label="Memory assembly status">
       <p>${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
-      <p>${escapeHtml(locked ? `Resolve ${5 - counts.resolved} more ${5 - counts.resolved === 1 ? "memory" : "memories"} before the Defragmenter can ask its final question.` : summary.detail)}</p>
+      <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
       <p>${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
       ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Answer the final question &rarr;</button>`}
     </section>
   `;
+}
+function lockedAssemblyMessage(gate, counts) {
+  if (!gate.finalQuestionUnlocked) {
+    const need2 = 5 - counts.resolved;
+    return `Resolve ${need2} more ${need2 === 1 ? "memory" : "memories"} before the Defragmenter can ask its final question.`;
+  }
+  const need = 5 - gate.echoCount;
+  return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will answer.`;
 }
 function renderFinalQuestion(finalState) {
   return `
@@ -684,6 +793,7 @@ function renderFinalQuestion(finalState) {
           <button type="button" data-final-choice="${choice.id}" ${choice.disabled ? "disabled" : ""}>
             <span>${escapeHtml(choice.label)}</span>
             ${escapeHtml(choice.text)}
+            ${choice.disabled && Number(choice.echoRequired || 0) > finalState.gate.echoCount ? `<em class="mg-stage10__echo-req">Requires ${choice.echoRequired} echoes witnessed</em>` : ""}
           </button>
         `).join("")}
       </div>
@@ -697,7 +807,17 @@ function renderCompletion(state, finalState) {
         ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       ${renderFinalOutcome(state, finalState)}
+      ${renderAwakening(finalState)}
     </section>
+  `;
+}
+function renderAwakening(finalState) {
+  const fullCapstone = finalState.routeSummary?.tier === "capstone";
+  const paragraphs = awakeningText({ fullCapstone }).split("\n\n");
+  return `
+    <div class="mg-stage10__awakening" data-field="awakening">
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </div>
   `;
 }
 function renderFinalOutcome(state, finalState) {
@@ -763,7 +883,8 @@ function defaultState(context = {}) {
         readAt: null,
         resolvedAt: null,
         integratedAt: null,
-        choice: null
+        choice: null,
+        echoWitnessed: false
       }
     ])),
     final: {
@@ -809,7 +930,8 @@ function normalizeMemoryState(value, fresh) {
     ...fresh,
     ...memory,
     state: validStates.has(memory.state) ? memory.state : fresh.state,
-    choice: typeof memory.choice === "string" ? memory.choice : null
+    choice: typeof memory.choice === "string" ? memory.choice : null,
+    echoWitnessed: Boolean(memory.echoWitnessed)
   };
 }
 
@@ -831,11 +953,35 @@ function mountStage(ctx = {}) {
   ensureStyles();
   const state = normalizeState(ctx.state || defaultState2(ctx), ctx);
   const view = renderStage10({ ...ctx, state });
+  const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
+    if (witnessEcho({ state, memoryId }).ok) {
+      if (typeof ctx.save === "function") ctx.save();
+      if (view && typeof view.repaint === "function") view.repaint();
+    }
+  });
   return {
+    repaint() {
+      if (view && typeof view.repaint === "function") view.repaint();
+    },
     destroy() {
+      unsubscribeEcho();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
+}
+function subscribeToEchoes(actions, onEcho) {
+  const handle = (detail) => {
+    if (!detail || Number(detail.stage) !== STAGE_ID) return;
+    const action = String(detail.action || "");
+    if (action.startsWith("echo_")) onEcho(action.slice(5));
+  };
+  if (actions && typeof actions.subscribeToActions === "function") {
+    return actions.subscribeToActions(handle) || (() => {
+    });
+  }
+  const handler = (event) => handle(event.detail);
+  window.addEventListener("fv:games:action", handler);
+  return () => window.removeEventListener("fv:games:action", handler);
 }
 function ensureStyles() {
   const id = "stage10-awakening-styles";

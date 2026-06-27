@@ -12,13 +12,15 @@ import {
   renderAudioMixToWav,
   runVideoProxyRender,
   selectTarget,
+  trimElement,
   updateElement,
   updateLane,
   updateMaster,
 } from './index.js';
-import { renderMixerShell } from './mixer-renderer.js';
-import { attachMixerInteractions } from './mixer-interactions.js';
 import { ensureMixerStyles } from './mixer-ui.js';
+import { ensureAudioListenStyles } from './mixer-audio-listen.js';
+import { createClipLane } from './audio-clip-lane.js';
+import { buildSeekFramePreview, renderSeekFramePreview } from './mixer-visual-preview.js';
 import {
   buildProject,
   clamp,
@@ -28,7 +30,6 @@ import {
   mergeDuration,
   selectFirstElement,
 } from './mixer-audio-listen-helpers.js';
-import { MIXER_LAYOUT } from './mixer-hit-test.js';
 import {
   downloadBlob,
   updateProjectElementField,
@@ -43,23 +44,27 @@ import {
 } from './mixer-media-drop.js';
 import { createMixerVisualRuntime } from './mixer-visual-runtime.js';
 import { createMixerAudioPlayback } from './mixer-audio-playback.js';
-import { decorateMultiToolbar, reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
+import { reflectMultiPlaybackState } from './mixer-audio-multi-decorators.js';
 import { createProjectSettingsUi } from './mixer-project-settings-ui.js';
 import {
   addGeneratedLane,
+  buildClipView,
+  buildLaneControlsEl,
+  buildMixToolbar,
+  buildThumbnailStrip,
   decorateInspector,
-  decorateLanes,
   firstElementForLane,
   fitZoom,
   hasVisualElements,
   reflectState,
-  selectedElementStart,
+  updateLaneControlsState,
 } from './mixer-audio-multi-ui.js';
 
 export function mountModularAudioMixer(panel, intake, mediaEl = null, options = {}) {
   ensureMixerStyles();
+  ensureAudioListenStyles();
   const root = document.createElement('section');
-  root.className = 'mmx-audio-multi mmx-mix';
+  root.className = 'mmx-audio-multi mmx-mix al-surface';
   root.dataset.mixerContext = 'mix';
   root.tabIndex = -1;
   panel.append(root);
@@ -67,7 +72,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
   let viewport = { cursorMs: 0, scrollLeft: 0, pxPerMs: 0.06, width: 960 };
   let waveformSummary = null;
   let destroyed = false;
-  let draggingElement = null;
   let lastExportPlan = null;
   let lastVideoExportPlan = null;
   let lastProxyPlan = null;
@@ -100,21 +104,15 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     render,
     filename: `${(intake?.filename || 'media-mix').replace(/\.[^.]+$/, '')}.mixer.json`,
   });
-  function render() {
-    if (destroyed) return;
-    viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
-    renderMixerShell(root, createMixerSnapshot(project), viewport, {
-      minZoom: 0.02,
-      maxZoom: 0.8,
-      visualFrames: visualRuntime.frames,
-      visualThumbnails: visualRuntime.thumbnails,
-    });
-    visualRuntime.update(project, viewport.cursorMs);
-    decorateShell();
-    reflectState(root, project, viewport, {
-      waveformSummary, lastVideoExportPlan, lastProxyPlan, decodedAudioCache, playback,
-    });
-  }
+
+  const { toolbar, masterSlider, videoPlanBtn } = buildMixToolbar();
+  const lanesContainer = document.createElement('div');
+  lanesContainer.className = 'al-lanes';
+  const inspector = document.createElement('aside');
+  inspector.className = 'mmx-inspector';
+  root.append(toolbar, lanesContainer, inspector);
+  const clipLanes = new Map();
+
   const dispatch = (action) => {
     if (action.type === 'seek') setCursorMs(action.cursorMs);
     if (action.type === 'zoom') viewport = { ...viewport, pxPerMs: clampZoom(action.pxPerMs) };
@@ -126,11 +124,84 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (action.type === 'update-element') project = updateProjectElementField(project, action);
     render();
   };
-  const interactions = attachMixerInteractions(root, () => ({
-    project,
-    snapshot: createMixerSnapshot(project),
-    viewport,
-  }), dispatch);
+
+  function makeLaneCallbacks(laneId) {
+    const ge = () => firstElementForLane(project, laneId);
+    return {
+      onMove(ds) { const e = ge(); if (!e) return; project = moveElement(project, e.id, Math.max(0, (e.timeline.startMs || 0) + ds * 1000)); render(); },
+      onTrim(side, ds) {
+        const e = ge(); if (!e) return;
+        const raw = e.timeline.rawDurationMs || e.timeline.durationMs || 0;
+        const ins = e.timeline.sourceInMs || 0; const outs = e.timeline.sourceOutMs || raw;
+        project = trimElement(project, e.id, side === 'in'
+          ? { sourceInMs: clamp(ins + ds * 1000, 0, outs - 50), sourceOutMs: outs }
+          : { sourceInMs: ins, sourceOutMs: clamp(outs + ds * 1000, ins + 50, raw) });
+        render();
+      },
+      onFade(side, ds) {
+        const e = ge(); if (!e) return;
+        const field = side === 'in' ? 'fadeInMs' : 'fadeOutMs';
+        const sign = side === 'in' ? 1 : -1;
+        project = updateElement(project, e.id, (el) => ({ ...el, audio: { ...el.audio, [field]: Math.max(0, (el.audio?.[field] || 0) + sign * ds * 1000) } }));
+        render();
+      },
+      onSeek(sec) { setCursorMs(sec * 1000); render(); },
+      onSelect() { const e = ge(); if (e) project = selectTarget(project, { type: 'element', id: e.id }, [{ type: 'element', id: e.id }]); render(); },
+    };
+  }
+
+  function reconcileLanes() {
+    const laneIds = new Set(project.lanes.map((l) => l.id));
+    for (const [id, lane] of clipLanes) if (!laneIds.has(id)) { lane.el.remove(); clipLanes.delete(id); }
+    for (const lm of project.lanes) {
+      if (!clipLanes.has(lm.id)) {
+        const el = firstElementForLane(project, lm.id);
+        const isVis = !!(el?.capabilities?.hasVideo || el?.capabilities?.hasImage);
+        const lane = createClipLane({ label: lm.label || lm.role || 'Lane', kind: lm.role || '', interactive: !isVis, callbacks: makeLaneCallbacks(lm.id) });
+        lane.setSurface(root);
+        lane.el.dataset.laneId = lm.id;
+        lane.el.querySelector('.al-track-label').append(buildLaneControlsEl(lm, el));
+        lanesContainer.append(lane.el);
+        clipLanes.set(lm.id, lane);
+      }
+      const lane = clipLanes.get(lm.id);
+      if (lane) lanesContainer.append(lane.el);
+    }
+  }
+
+  function render() {
+    if (destroyed) return;
+    viewport = { ...viewport, width: root.clientWidth || viewport.width || 960 };
+    reconcileLanes();
+    masterSlider.value = String(project.master?.audio?.gain ?? 1);
+    videoPlanBtn.hidden = !hasVisualElements(project);
+    for (const [laneId, lane] of clipLanes) {
+      const laneModel = project.lanes.find((l) => l.id === laneId);
+      if (!laneModel) continue;
+      const clipView = buildClipView(project, laneId, viewport.cursorMs);
+      if (clipView) lane.update(clipView);
+      updateLaneControlsState(lane.el, laneModel, firstElementForLane(project, laneId));
+      const element = firstElementForLane(project, laneId);
+      if (element?.capabilities?.hasVideo || element?.capabilities?.hasImage) {
+        lane.canvasWrap.querySelector('.mmx-thumb-strip')?.remove();
+        lane.canvasWrap.append(buildThumbnailStrip(element, visualRuntime.thumbnails));
+      }
+    }
+    const snapshot = createMixerSnapshot(project);
+    visualRuntime.update(project, viewport.cursorMs);
+    root.querySelectorAll('.mmx-frame-preview').forEach((el) => el.remove());
+    if (hasVisualElements(project)) {
+      const preview = buildSeekFramePreview(snapshot, viewport.cursorMs, { frames: visualRuntime.frames, thumbnails: visualRuntime.thumbnails });
+      renderSeekFramePreview(root, preview);
+    }
+    inspector.replaceChildren();
+    decorateInspector(root, project, runtime, { lastProxyPlan, lastVideoExportPlan, buildProxyPlan, buildVideoExportPlan });
+    reflectState(root, project, viewport, { waveformSummary, lastVideoExportPlan, lastProxyPlan, decodedAudioCache, playback });
+    root.querySelector('.mmx-settings-controls')?.remove();
+    root.querySelectorAll('.mmx-relink-modal').forEach((el) => el.remove());
+    settingsUi.decorate();
+  }
+
   const onInput = (event) => {
     const target = event.target;
     if (!target?.matches) return;
@@ -159,6 +230,15 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
         render();
       }
     }
+    if (target.dataset?.action === 'update-element') {
+      project = updateProjectElementField(project, {
+        type: 'update-element',
+        elementId: target.dataset.elementId,
+        field: target.dataset.field,
+        value: target.dataset.valueType === 'string' ? target.value : Number(target.value),
+      });
+      render();
+    }
   };
   const onClick = (event) => {
     const target = event.target;
@@ -166,75 +246,30 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     if (!button || !root.contains(button)) return;
     if (button.matches('.mmx-mix-add-tone')) {
       project = addGeneratedLane(project, 'tone', 'Tone', { kind: 'tone', frequency: 440, levelDb: -18 });
-      render();
-      return;
+      render(); return;
     }
     if (button.matches('.mmx-mix-add-pink')) {
       project = addGeneratedLane(project, 'room-tone', 'Pink noise bed', { kind: 'pink-noise', levelDb: -52 });
-      render();
-      return;
+      render(); return;
     }
     if (button.matches('.mmx-mix-mute, .mmx-mix-solo')) {
       const field = button.matches('.mmx-mix-mute') ? 'muted' : 'solo';
       project = updateLane(project, button.dataset.laneId, (lane) => ({ ...lane, [field]: !lane[field] }));
-      render();
-      return;
+      render(); return;
     }
-    if (button.matches('.mmx-mix-play')) {
-      playback.play();
-      return;
-    }
-    if (button.matches('.mmx-mix-stop')) {
-      playback.stop({ resetCursor: true });
-      render();
-      return;
-    }
-    if (button.matches('.mmx-mix-download')) {
-      downloadMixdown();
-      return;
-    }
+    if (button.matches('.mmx-mix-play')) { playback.play(); return; }
+    if (button.matches('.mmx-mix-stop')) { playback.stop({ resetCursor: true }); render(); return; }
+    if (button.matches('.mmx-mix-download')) { downloadMixdown(); return; }
     if (button.matches('.mmx-mix-video-export-plan')) {
       lastVideoExportPlan = buildVideoExportPlan();
       root.dataset.lastVideoExportPlan = JSON.stringify(lastVideoExportPlan.provenance);
-      render();
-      return;
+      render(); return;
     }
-    if (button.matches('.mmx-video-proxy-run')) {
-      renderPreviewProxies();
-      return;
-    }
+    if (button.matches('.mmx-video-proxy-run')) { renderPreviewProxies(); return; }
     if (button.matches('.mmx-video-render-run')) renderFinalVideoExport();
-  };
-  const onPointerDown = (event) => {
-    const element = event.target?.closest?.('.mmx-element');
-    if (!element || !root.contains(element) || event.button !== 0) return;
-    draggingElement = {
-      id: element.dataset.elementId,
-      startX: event.clientX,
-      startMs: selectedElementStart(project, element.dataset.elementId),
-      pointerId: event.pointerId,
-      moved: false,
-    };
-    try { element.setPointerCapture?.(event.pointerId); } catch { /* synthetic capture may fail */ }
-  };
-  const onPointerMove = (event) => {
-    if (!draggingElement || event.pointerId !== draggingElement.pointerId) return;
-    const deltaMs = (event.clientX - draggingElement.startX) / Math.max(0.001, viewport.pxPerMs);
-    if (Math.abs(deltaMs) < 20) return;
-    draggingElement.moved = true;
-    project = moveElement(project, draggingElement.id, Math.max(0, draggingElement.startMs + deltaMs));
-    render();
-    event.preventDefault();
-  };
-  const onPointerUp = (event) => {
-    if (draggingElement && event.pointerId === draggingElement.pointerId) draggingElement = null;
   };
   root.addEventListener('input', onInput);
   root.addEventListener('click', onClick, true);
-  root.addEventListener('pointerdown', onPointerDown);
-  root.addEventListener('pointermove', onPointerMove);
-  root.addEventListener('pointerup', onPointerUp);
-  root.addEventListener('pointercancel', onPointerUp);
   root.addEventListener('dragover', onDragOver);
   root.addEventListener('dragleave', onDragLeave);
   root.addEventListener('drop', onDrop);
@@ -263,7 +298,7 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     render();
   }).catch(() => {});
 
-    root.__mediaMixerMulti = {
+  root.__mediaMixerMulti = {
     getProject: () => project,
     getViewport: () => viewport,
     exportSettings: () => exportProjectSettingsJson(project),
@@ -306,16 +341,11 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
     destroy() {
       destroyed = true;
       playback.destroy();
-      interactions.destroy();
       visualRuntime.dispose();
       settingsUi.destroy();
       decodedAudioCache.releaseProject(project.project.id);
       root.removeEventListener('input', onInput);
       root.removeEventListener('click', onClick, true);
-      root.removeEventListener('pointerdown', onPointerDown);
-      root.removeEventListener('pointermove', onPointerMove);
-      root.removeEventListener('pointerup', onPointerUp);
-      root.removeEventListener('pointercancel', onPointerUp);
       root.removeEventListener('dragover', onDragOver);
       root.removeEventListener('dragleave', onDragLeave);
       root.removeEventListener('drop', onDrop);
@@ -324,20 +354,6 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       root.remove();
     },
   };
-
-  function decorateShell() {
-    root.querySelector('.mmx-ruler')?.classList.add('mmx-mix-ruler');
-    root.querySelector('.mmx-playhead')?.classList.add('mmx-mix-playhead');
-    root.querySelector('.mmx-lanes')?.classList.add('mmx-mix-lanes');
-    root.querySelector('.mmx-body')?.classList.add('mmx-mix-timeline');
-    const toolbar = root.querySelector('.mmx-toolbar');
-    if (toolbar) decorateMultiToolbar(toolbar, project);
-    decorateLanes(root, project);
-    decorateInspector(root, project, runtime, {
-      lastProxyPlan, lastVideoExportPlan, buildProxyPlan, buildVideoExportPlan,
-    });
-    settingsUi.decorate();
-  }
 
   function addDroppedFile(file, input = {}) {
     const result = addDroppedMediaFile(project, file, { startMs: input.startMs ?? viewport.cursorMs });
@@ -472,5 +488,4 @@ export function mountModularAudioMixer(panel, intake, mediaEl = null, options = 
       render();
     }
   }
-
 }

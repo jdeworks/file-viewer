@@ -1,6 +1,7 @@
 import { renderStage10 } from "./renderer.js";
+import { witnessEcho } from "./boss.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
-import { BTS_PATH, REQUIRED_ACTION } from "./messages.js";
+import { BTS_PATH, REQUIRED_ACTION, STAGE_ID } from "./messages.js";
 
 export const stageMeta = {
   id: 10,
@@ -21,11 +22,37 @@ export function mountStage(ctx = {}) {
   ensureStyles();
   const state = normalizeState(ctx.state || defaultState(ctx), ctx);
   const view = renderStage10({ ...ctx, state });
+
+  // Echo witnessing: opening an awakening artifact in the real viewer fires echo_<memoryId>
+  // (viewer-actions.js) → witness that memory's echo (the load-bearing integration gate).
+  const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
+    if (witnessEcho({ state, memoryId }).ok) {
+      if (typeof ctx.save === "function") ctx.save();
+      if (view && typeof view.repaint === "function") view.repaint();
+    }
+  });
+
   return {
+    repaint() { if (view && typeof view.repaint === "function") view.repaint(); },
     destroy() {
+      unsubscribeEcho();
       if (view && typeof view.destroy === "function") view.destroy();
     }
   };
+}
+
+function subscribeToEchoes(actions, onEcho) {
+  const handle = (detail) => {
+    if (!detail || Number(detail.stage) !== STAGE_ID) return;
+    const action = String(detail.action || "");
+    if (action.startsWith("echo_")) onEcho(action.slice(5));
+  };
+  if (actions && typeof actions.subscribeToActions === "function") {
+    return actions.subscribeToActions(handle) || (() => {});
+  }
+  const handler = (event) => handle(event.detail);
+  window.addEventListener("fv:games:action", handler);
+  return () => window.removeEventListener("fv:games:action", handler);
 }
 
 function ensureStyles() {

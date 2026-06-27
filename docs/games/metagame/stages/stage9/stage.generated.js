@@ -31,6 +31,135 @@ var btsSummary = [
   "Once offline mode is active, the boss seed becomes fixed at 0 so the rotating gap is learnable."
 ];
 
+// ../../docs/games/metagame/stages/stage9/rng.js
+function xmur3(str) {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i += 1) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h << 13 | h >>> 19;
+  }
+  return () => {
+    h = Math.imul(h ^ h >>> 16, 2246822507);
+    h = Math.imul(h ^ h >>> 13, 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+function mulberry32(a) {
+  return () => {
+    a |= 0;
+    a = a + 1831565813 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function makeRng(seed) {
+  const next = mulberry32(xmur3(String(seed))());
+  const float = () => next();
+  const int = (lo, hi) => lo + Math.floor(next() * (hi - lo + 1));
+  const pick = (arr) => arr[Math.floor(next() * arr.length)];
+  const chance = (p) => next() < p;
+  const shuffle = (arr) => {
+    const out = arr.slice();
+    for (let i = out.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(next() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+  return { float, int, pick, chance, shuffle };
+}
+
+// ../../docs/games/metagame/stages/stage9/ring.js
+var RING_W = 25;
+var RING_H = 13;
+var DEFAULT_GAP_DEG = 20;
+function ringAngle(seed, elapsedMs, rotSpeedDegPerSec = 30) {
+  const base = makeRng(seed).float() * 360;
+  return mod360(base + rotSpeedDegPerSec * (Number(elapsedMs) || 0) / 1e3);
+}
+function renderRing(gapAngleDeg, opts = {}) {
+  const { gapWidth = DEFAULT_GAP_DEG, darkZone = null, ghosts = [], hidden = false } = opts;
+  const grid = Array.from({ length: RING_H }, () => Array(RING_W).fill(" "));
+  const cx = (RING_W - 1) / 2;
+  const cy = (RING_H - 1) / 2;
+  for (let a = 0; a < 360; a += 3) {
+    const rad = (a - 90) * Math.PI / 180;
+    const x = Math.round(cx + cx * Math.cos(rad));
+    const y = Math.round(cy + cy * Math.sin(rad));
+    if (y < 0 || y >= RING_H || x < 0 || x >= RING_W) continue;
+    let ch = hidden ? "?" : ringChar(a);
+    if (!hidden && inArc(a, gapAngleDeg, gapWidth)) ch = " ";
+    for (const g of ghosts) if (inArc(a, g.angle, 6)) ch = g.result === "hit" || g.hit ? "⊕" : "·";
+    if (darkZone && inZone(a, darkZone)) ch = "█";
+    grid[y][x] = ch;
+  }
+  return grid.map((row) => row.join("")).join("\n");
+}
+function ringChar(a) {
+  const d = mod360(a);
+  if (inArc(d, 0, 60) || inArc(d, 180, 60)) return "─";
+  if (inArc(d, 90, 60) || inArc(d, 270, 60)) return "│";
+  return "+";
+}
+function mod360(a) {
+  return (a % 360 + 360) % 360;
+}
+function angularDist(a, b) {
+  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
+}
+function inArc(a, center, width) {
+  return angularDist(a, center) <= width / 2;
+}
+function inZone(a, zone) {
+  const x = mod360(a);
+  const s = mod360(zone.start);
+  const e = mod360(zone.end);
+  return s <= e ? x >= s && x <= e : x >= s || x <= e;
+}
+
+// ../../docs/games/metagame/stages/stage9/game.js
+var BOSS_LEVEL = 18;
+var BANDS = {
+  1: { baseSpeed: 30, speedVar: 0, tolerance: 40, display: "open" },
+  2: { baseSpeed: 45, speedVar: 10, tolerance: 32, display: "open" },
+  3: { baseSpeed: 60, speedVar: 15, tolerance: 26, display: "dual" },
+  4: { baseSpeed: 75, speedVar: 20, tolerance: 22, display: "ghosts" },
+  5: { baseSpeed: 90, speedVar: 25, tolerance: 18, display: "hidden" },
+  6: { baseSpeed: 45, speedVar: 0, tolerance: 15, display: "dark", darkZone: { start: 300, end: 60 } }
+};
+function bandForLevel(level) {
+  return Math.max(1, Math.min(6, Math.ceil((Number(level) || 1) / 3)));
+}
+function levelConfig(level) {
+  const band = bandForLevel(level);
+  return { level: Number(level) || 1, band, ...BANDS[band], isBoss: Number(level) === BOSS_LEVEL };
+}
+function rotSpeedFor(seed, level) {
+  const cfg = levelConfig(level);
+  return cfg.baseSpeed + makeRng(`${seed}s`).float() * cfg.speedVar;
+}
+function crossAttempt({ seed, elapsedMs, level }) {
+  const cfg = levelConfig(level);
+  const speed = rotSpeedFor(seed, level);
+  const angle = ringAngle(seed, elapsedMs, speed);
+  const distance = angularDist2(angle, 0);
+  return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance, level };
+}
+function solveElapsed(seed, level) {
+  const speed = rotSpeedFor(seed, level);
+  const base = ringAngle(seed, 0, speed);
+  const need = ((360 - base) % 360 + 360) % 360;
+  return Math.round(need / speed * 1e3);
+}
+function sublevelSeed(level) {
+  return (Number(level) || 1) * 31 + 7;
+}
+function angularDist2(a, b) {
+  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
+}
+
 // ../../docs/games/metagame/stages/stage9/boss.js
 function hasOfflineModeActivated(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(9, ACTION_NAME));
@@ -104,7 +233,7 @@ function getBossLockState({ actions, state }) {
     hint: unlocked ? "the seed is fixed. cross using the learned rotation." : lockedHintLadder[hintIndex]
   };
 }
-function recordObserverBossAttempt({ state, actions }) {
+function recordObserverBossAttempt({ state, actions, elapsedMs = 0 }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
   if (!lock.unlocked) {
@@ -112,14 +241,20 @@ function recordObserverBossAttempt({ state, actions }) {
     state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
     getBossSeed({ state, actions });
     pushLog(state, "the gap changed again. no timing survived contact.");
-    return { defeated: false, unlocked: false, seedMode: "live-random" };
+    return { defeated: false, unlocked: false, hit: false, seedMode: "live-random" };
+  }
+  const result = crossAttempt({ seed: FIXED_OFFLINE_SEED, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  if (!result.hit) {
+    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+    pushLog(state, `offline, but the cross was mistimed (off by ${Math.round(result.distance)}deg).`);
+    return { defeated: false, unlocked: true, hit: false, seedMode: "fixed-cache", distance: result.distance };
   }
   state.boss.defeated = true;
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
   state.clarity = Number(state.clarity || 0) + 25;
   pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, seedMode: "fixed-cache", seed: FIXED_OFFLINE_SEED };
+  return { defeated: true, unlocked: true, hit: true, seedMode: "fixed-cache", seed: FIXED_OFFLINE_SEED };
 }
 function pushLog(state, line) {
   state.log = [...state.log || [], line].slice(-6);
@@ -144,34 +279,39 @@ var serviceWorkerNotesText = [
   "",
   "Activate Offline Mode (Stage 9) after reading this note."
 ].join("\n");
-function bossDiagram(lock) {
-  return [
-    "        EXIT",
-    "         |",
-    lock.unlocked ? "    fixed gap: learnable" : "    live gap: random",
-    "      \\  |  /",
-    "       \\ | /",
-    "   ----- O -----",
-    "       / | \\",
-    "      /  |  \\",
-    "        START"
-  ].join("\n");
+
+// ../../docs/games/metagame/stages/stage9/loop.js
+function startLoop(onTick, intervalMs = 100) {
+  const id = setInterval(() => {
+    try {
+      onTick();
+    } catch {
+    }
+  }, intervalMs);
+  return { stop() {
+    clearInterval(id);
+  } };
 }
 
 // ../../docs/games/metagame/stages/stage9/renderer.js
+var TICK_MS = 100;
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage9-observer-state";
   root.innerHTML = `
     <header class="s9-hud">
       <strong>OBSERVER STATE</strong>
-      <span>level <b data-field="level"></b></span>
+      <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
+      <span>band <b data-field="band"></b></span>
       <span>clarity <b data-field="clarity"></b></span>
       <span>seed <b data-field="seed"></b></span>
     </header>
     <div class="s9-layout">
-      <pre class="s9-arena" data-field="arena" aria-label="observer boss diagram"></pre>
+      <pre class="s9-arena" data-field="arena" aria-label="observer ring arena"></pre>
       <aside class="s9-side">
+        <button type="button" data-action="observe">OBSERVE (reset rotation)</button>
+        <button type="button" data-action="cross">CROSS</button>
+        <hr>
         <button type="button" data-action="notes">open service-worker-notes.txt</button>
         <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
         <pre data-field="notes" hidden></pre>
@@ -184,8 +324,6 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     </div>
     <ol class="s9-log"></ol>
     <div class="s9-controls">
-      <button type="button" data-action="sample">sample seed</button>
-      <button type="button" data-action="boss">cross without looking</button>
       <button type="button" data-action="bts" hidden>open observer_state.bts</button>
     </div>
   `;
@@ -195,20 +333,95 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
+  let elapsedMs = 0;
+  let bossSeed = null;
+  function activeSeed() {
+    if (state.currentLevel >= BOSS_LEVEL) {
+      if (bossSeed === null) bossSeed = getBossSeed({ state, actions });
+      return bossSeed;
+    }
+    return sublevelSeed(state.currentLevel);
+  }
+  function reobserve() {
+    elapsedMs = 0;
+    if (state.currentLevel >= BOSS_LEVEL) bossSeed = getBossSeed({ state, actions });
+  }
+  function crossSublevel() {
+    const seed = sublevelSeed(state.currentLevel);
+    const result = crossAttempt({ seed, elapsedMs, level: state.currentLevel });
+    if (result.hit) {
+      pushLog2(`level ${state.currentLevel} crossed (gap at top). advancing.`);
+      state.currentLevel = Math.min(BOSS_LEVEL, state.currentLevel + 1);
+      elapsedMs = 0;
+      bossSeed = null;
+      if (state.currentLevel >= BOSS_LEVEL) pushLog2("level 18: THE OBSERVER EFFECT. the gap will not hold still while live.");
+    } else {
+      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+    }
+  }
+  function challengeBoss() {
+    const result = recordObserverBossAttempt({ state, actions, elapsedMs });
+    if (result.defeated) completeOnce({ stage: 9, defeated: true, btsPath: BTS_PATH });
+  }
+  function doCross() {
+    if (state.boss.defeated) return;
+    if (state.currentLevel >= BOSS_LEVEL) challengeBoss();
+    else crossSublevel();
+  }
   root.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
-    if (button.dataset.action === "notes") openNotes();
-    if (button.dataset.action === "offline") activateOfflineMode({ state, actions, achievements, bell });
-    if (button.dataset.action === "sample") getBossSeed({ state, actions });
-    if (button.dataset.action === "boss") challengeBoss();
-    if (button.dataset.action === "bts") openBts({ bts, viewer });
+    switch (button.dataset.action) {
+      case "observe":
+        reobserve();
+        break;
+      case "cross":
+        doCross();
+        break;
+      case "notes":
+        openNotes();
+        break;
+      case "offline":
+        activateOfflineMode({ state, actions, achievements, bell });
+        break;
+      case "bts":
+        openBts({ bts, viewer });
+        break;
+    }
     persistAndPaint();
   });
+  const loop = startLoop(() => {
+    if (!state.boss.defeated) elapsedMs += TICK_MS;
+    paintArena();
+  }, TICK_MS);
   repaint();
+  window.__fvStage9 = {
+    state: () => state,
+    crossAt(ms) {
+      elapsedMs = Number(ms) || 0;
+      doCross();
+      persistAndPaint();
+    },
+    solveSublevels() {
+      let guard = 0;
+      while (state.currentLevel < BOSS_LEVEL && guard++ < 64) {
+        this.crossAt(solveElapsed(sublevelSeed(state.currentLevel), state.currentLevel));
+      }
+      return state.currentLevel;
+    },
+    solveOffline() {
+      this.solveSublevels();
+      reobserve();
+      this.crossAt(solveElapsed(FIXED_OFFLINE_SEED, BOSS_LEVEL));
+      return Boolean(state.boss.defeated);
+    }
+  };
   return {
     repaint,
     destroy() {
+      loop.stop();
+      if (window.__fvStage9) delete window.__fvStage9;
       root.remove();
     }
   };
@@ -220,18 +433,33 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     if (viewer && typeof viewer.openFile === "function") viewer.openFile(NOTES_PATH, opts);
     else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(NOTES_PATH, opts);
   }
-  function challengeBoss() {
-    const result = recordObserverBossAttempt({ state, actions });
-    if (result.defeated) completeOnce({ stage: 9, defeated: true, btsPath: BTS_PATH });
+  function pushLog2(line) {
+    state.log = [...state.log || [], line].slice(-6);
+  }
+  function paintArena() {
+    const seed = activeSeed();
+    const cfg = levelConfig(state.currentLevel);
+    const speed = rotSpeedFor(seed, state.currentLevel);
+    const angle = ringAngle(seed, elapsedMs, speed);
+    const display = cfg.display;
+    fields.arena.textContent = renderRing(angle, {
+      gapWidth: cfg.tolerance,
+      hidden: display === "hidden",
+      darkZone: cfg.darkZone || null
+    });
   }
   function repaint() {
     const lock = getBossLockState({ actions, state });
+    const cfg = levelConfig(state.currentLevel);
     fields.level.textContent = String(state.currentLevel);
+    fields.band.textContent = `${cfg.band} (${cfg.display})`;
     fields.clarity.textContent = String(state.clarity);
-    fields.seed.textContent = lock.seedMode === "fixed-cache" ? "0" : "random";
-    fields.arena.textContent = bossDiagram(lock);
-    fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / ${lock.seedMode}`;
-    fields.hint.textContent = lock.hint;
+    fields.seed.textContent = state.currentLevel >= BOSS_LEVEL ? lock.seedMode === "fixed-cache" ? "0 (fixed)" : "random" : "stable";
+    paintArena();
+    if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
+    else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
+    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
+    fields.hint.textContent = state.currentLevel >= BOSS_LEVEL ? lock.hint : "watch the gap; CROSS when it faces the top (12 o'clock).";
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-5).map((line) => {

@@ -1,0 +1,6 @@
+IDENTITY — metadata trace
+
+GPSInfo: 52.3N, 4.8E (outside known layers)
+DateTimeOriginal: Boot cycle 0047
+
+The buried trace outlasts presentation.

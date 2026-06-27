@@ -1,0 +1,11 @@
+ENTITY_ANCHOR_0043 — Decommission Record
+
+Status:    DECOMMISSIONED
+Effective: Boot cycle 0043
+Reason:    Credential chain terminated by CORE_ENTITY_001 administrative authority.
+
+All credentials referencing ENTITY_ANCHOR_0043 were revoked at cycle 0043.
+Any entity claiming an active route via ENTITY_ANCHOR_0043 post cycle 0043
+is presenting a broken credential chain.
+
+End of record.

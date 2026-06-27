@@ -1,11 +1,13 @@
-import { memories } from "./content.js";
+import { memories, awakeningText, echoFileFor } from "./content.js";
 import {
   chooseFinal,
+  getEchoCounts,
   getFinalChoiceState,
   getMemoryCounts,
   integrateMemory,
   markMemoryRead,
-  resolveMemory
+  resolveMemory,
+  witnessEcho
 } from "./boss.js";
 
 const LAST = memories.length - 1;
@@ -40,6 +42,7 @@ export function renderStage10(ctx) {
             <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
             <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
             <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
+            <div><dt>Echoes</dt><dd>${getEchoCounts(state).witnessed}/9</dd></div>
           </dl>
         </header>
         ${body}
@@ -65,6 +68,16 @@ export function renderStage10(ctx) {
         achievements: ctx.achievements,
         bell: ctx.bell
       });
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+
+    const echoButton = event.target.closest("[data-open-echo]");
+    if (echoButton) {
+      const id = echoButton.dataset.openEcho;
+      const path = echoFileFor(id);
+      if (path && ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
+      else if (path && ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
       saveAndPaint(ctx, repaint);
       return;
     }
@@ -111,10 +124,19 @@ export function renderStage10(ctx) {
   host.addEventListener("click", onClick);
   repaint();
 
+  // TEST/DEBUG hook (not a player affordance): witnesses echoes deterministically for the smoke. Not a
+  // bypass — it sets the SAME echoWitnessed flag the real "open echo in viewer" file-open sets.
+  window.__fvStage10 = {
+    state: () => state,
+    witness(id) { const r = witnessEcho({ state, memoryId: id }); saveAndPaint(ctx, repaint); return r; },
+    witnessAll() { for (const m of memories) witnessEcho({ state, memoryId: m.id }); saveAndPaint(ctx, repaint); return getEchoCounts(state).witnessed; }
+  };
+
   return {
     repaint,
     destroy() {
       destroyed = true;
+      if (window.__fvStage10) delete window.__fvStage10;
       host.removeEventListener("click", onClick);
       host.innerHTML = "";
     }
@@ -166,6 +188,7 @@ function renderMemory(memory, slot) {
       <p class="mg-stage10__file">${escapeHtml(memory.file)}</p>
       <p class="mg-stage10__prompt">${escapeHtml(memory.prompt)}</p>
       <p class="mg-stage10__memory-state">${escapeHtml(getMemoryStateText(memory, slot))}</p>
+      ${renderEcho(memory, slot)}
       <div class="mg-stage10__memory-actions">
         ${renderMemoryActions(memory, slot, resolved, integrated)}
       </div>
@@ -191,24 +214,48 @@ function renderMemoryActions(memory, slot, resolved, integrated) {
     `;
   }
   if (resolved && !integrated) {
+    if (!slot.echoWitnessed) {
+      return `<button type="button" data-integrate-memory="${memory.id}" disabled>Integrate (witness the echo first &uarr;)</button>`;
+    }
     return `<button type="button" data-integrate-memory="${memory.id}">Integrate this memory</button>`;
   }
   return `<p class="mg-stage10__settled">This memory is part of you now.</p>`;
 }
 
+// The echo: a real artifact to open in the viewer. Witnessing it is required before a resolved memory
+// can be integrated — the load-bearing gate that ties the finale to actual app use.
+function renderEcho(memory, slot) {
+  const witnessed = slot.echoWitnessed === true;
+  return `
+    <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
+      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo"}</span>
+      <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
+      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}">Open echo in viewer &rarr;</button>`}
+    </div>
+  `;
+}
+
 function renderAssembly(finalState, counts) {
   const summary = finalState.routeSummary;
+  const gate = finalState.gate;
   const locked = finalState.locked;
   return `
     <section class="mg-stage10__assembly" aria-label="Memory assembly status">
       <p>${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
-      <p>${escapeHtml(locked
-        ? `Resolve ${5 - counts.resolved} more ${5 - counts.resolved === 1 ? "memory" : "memories"} before the Defragmenter can ask its final question.`
-        : summary.detail)}</p>
+      <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
       <p>${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
       ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Answer the final question &rarr;</button>`}
     </section>
   `;
+}
+
+function lockedAssemblyMessage(gate, counts) {
+  if (!gate.finalQuestionUnlocked) {
+    const need = 5 - counts.resolved;
+    return `Resolve ${need} more ${need === 1 ? "memory" : "memories"} before the Defragmenter can ask its final question.`;
+  }
+  const need = 5 - gate.echoCount;
+  return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will answer.`;
 }
 
 // ── Final question + completion ────────────────────────────────────────────────────────────────
@@ -225,6 +272,8 @@ function renderFinalQuestion(finalState) {
           <button type="button" data-final-choice="${choice.id}" ${choice.disabled ? "disabled" : ""}>
             <span>${escapeHtml(choice.label)}</span>
             ${escapeHtml(choice.text)}
+            ${choice.disabled && Number(choice.echoRequired || 0) > finalState.gate.echoCount
+              ? `<em class="mg-stage10__echo-req">Requires ${choice.echoRequired} echoes witnessed</em>` : ""}
           </button>
         `).join("")}
       </div>
@@ -239,7 +288,20 @@ function renderCompletion(state, finalState) {
         ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       ${renderFinalOutcome(state, finalState)}
+      ${renderAwakening(finalState)}
     </section>
+  `;
+}
+
+// The ending narration — the awakening itself, in the first person. Capstone routes get the extra
+// line. Previously authored (content.awakeningText) but never rendered; this is the finale screen.
+function renderAwakening(finalState) {
+  const fullCapstone = finalState.routeSummary?.tier === "capstone";
+  const paragraphs = awakeningText({ fullCapstone }).split("\n\n");
+  return `
+    <div class="mg-stage10__awakening" data-field="awakening">
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </div>
   `;
 }
 

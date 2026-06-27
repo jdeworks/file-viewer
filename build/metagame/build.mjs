@@ -42,6 +42,13 @@ const ALLOWED_SHARED = new Set([
   '../../stage1.js',
   '../../messages1.js',
   '../../achievements1.js',
+  // Phase-0 shared run/economy foundations (docs/games/metagame/shared/*). Kept external (one
+  // vendored same-origin instance fetched once + SW-cached) rather than inlined per stage: they are
+  // stateless factories shared across stages (run-state retrofit started with S6; S4/S8 follow).
+  '../../shared/run-state.js',
+  '../../shared/economy.js',
+  '../../shared/shop.js',
+  '../../shared/ascension.js',
 ]);
 
 // Every stageN/ directory that has an index.js entry, in numeric order.

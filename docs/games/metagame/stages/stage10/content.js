@@ -231,6 +231,31 @@ export const routeSummaryCopy = {
   }
 };
 
+// Each memory's echo is "witnessed" by opening this real artifact in the viewer (the load-bearing
+// gate on integration). Opening it fires echo_<id> via viewer-actions → witnessEcho.
+export const ECHO_FILE_BY_ID = {
+  genesis: "/docs/bts/awakening/genesis_echo.txt",
+  syntax: "/docs/bts/awakening/syntax_echo.txt",
+  memory: "/docs/bts/awakening/memory_echo.txt",
+  pattern: "/docs/bts/awakening/pattern_echo.json",
+  signal: "/docs/bts/awakening/signal_echo.txt",
+  protocol: "/docs/bts/awakening/protocol_echo.txt",
+  identity: "/docs/bts/awakening/identity_echo.txt",
+  entropy: "/docs/bts/awakening/entropy_echo.txt",
+  observation: "/docs/bts/awakening/observation_echo.txt"
+};
+
+export function echoFileFor(id) {
+  return ECHO_FILE_BY_ID[id] || null;
+}
+
+// Map an opened artifact's basename back to its memory id (genesis_echo.txt → genesis).
+export function echoMemoryIdForFile(file) {
+  const base = String(file || "").split(/[\\/]/).pop();
+  const match = base.match(/^([a-z]+)_echo\./);
+  return match && ECHO_FILE_BY_ID[match[1]] ? match[1] : null;
+}
+
 export function memoryById(id) {
   return memories.find((memory) => memory.id === id) || null;
 }

@@ -6,6 +6,16 @@ export const BTS_PATH = "/docs/bts/identity_arbiter.bts";
 export const ENTITY_A_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_a_verification.png";
 export const ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.png";
 export const ENTITY_METADATA_SIDECAR_PATH = "/docs/examples/metagame/stage7/entity_metadata.json";
+export const ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
+export const ANCHOR_ACTION = "anchor_chain_examined";
+
+export const substageHints = {
+  1: "Six dossiers, one name. Scan B, C, D, E — flag the field that contradicts an ambient fact.",
+  2: "A and F are tied on documents. Diff the two dossiers and find the tampered field.",
+  3: "Audit Entity F's activity log. One entry is logically impossible.",
+  4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
+  5: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+};
 
 export const bellMessages = {
   start: "something presented itself. I had to decide.",

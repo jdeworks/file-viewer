@@ -13,7 +13,7 @@
   display: grid;
   gap: 10px;
   padding: 14px;
-  width: min(760px, 100%);
+  width: min(820px, 100%);
 }
 
 .s5-hud,
@@ -24,54 +24,70 @@
   gap: 8px 14px;
 }
 
-.s5-track {
-  aspect-ratio: 16 / 7;
-  background:
-    linear-gradient(90deg, transparent 31px, var(--s5-line) 32px),
-    linear-gradient(0deg, transparent 31px, var(--s5-line) 32px),
-    var(--s5-track);
-  background-size: 32px 32px;
+.s5-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 14px;
+}
+
+.s5-track-grid {
+  background: var(--s5-track);
   border: 2px solid var(--s5-wall);
-  min-height: 180px;
-  position: relative;
+  color: var(--s5-fg);
+  font: 15px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 1px;
+  margin: 0;
+  min-height: 220px;
+  padding: 12px;
+  white-space: pre;
 }
 
-.s5-track::before {
-  border: 2px solid #3a1060;
-  content: "";
-  inset: 18% 10%;
-  position: absolute;
+.s5-side {
+  display: grid;
+  gap: 10px;
 }
 
-.s5-car {
-  height: 18px;
-  position: absolute;
-  width: 9px;
+.s5-rounds,
+.s5-shop {
+  display: grid;
+  gap: 5px;
 }
 
-.s5-car.player {
-  background: #ffffff;
-  left: 46%;
-  top: 58%;
+.s5-rounds button,
+.s5-shop button,
+.s5-controls button {
+  background: #1a1030;
+  border: 1px solid var(--s5-line);
+  color: var(--s5-fg);
+  cursor: pointer;
+  padding: 6px 9px;
+  text-align: left;
 }
 
-.s5-car.jammer {
-  background: var(--s5-jammer);
-  left: 51%;
-  top: 45%;
+.s5-rounds button:disabled,
+.s5-shop button:disabled {
+  color: #6a6390;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.s5-wave-panel {
+.s5-rounds .s5-boss-btn:not(:disabled) {
+  border-color: var(--s5-jammer);
+  color: var(--s5-jammer);
+}
+
+.s5-legend {
+  color: var(--s5-counter);
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  margin: 0;
+}
+
+.s5-boss-panel {
   background: #120a20;
   border: 1px solid var(--s5-line);
   display: grid;
   gap: 6px;
   padding: 10px;
-}
-
-.s5-wave-panel span {
-  color: var(--s5-counter);
-  font: 13px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .s5-hint {
@@ -83,10 +99,8 @@
   margin: 0 0 0 18px;
 }
 
-.s5-controls button {
-  background: #1a1030;
-  border: 1px solid var(--s5-line);
-  color: var(--s5-fg);
-  cursor: pointer;
-  padding: 6px 9px;
+@media (max-width: 720px) {
+  .s5-layout {
+    grid-template-columns: 1fr;
+  }
 }

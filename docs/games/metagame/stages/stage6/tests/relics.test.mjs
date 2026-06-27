@@ -49,4 +49,38 @@ function combat(relicIds, seed = 4) {
   assert.equal(c.player.block, afterSyn + 11, "Protocol Primer adds 1 on Protocol cards only");
 }
 
+// ── C3 build-definers fire on the right primitive ──────────────────────────────────────────────────
+{
+  // Checksum Offload: a Protocol play deals 3; a Signal play does not.
+  const c = combat(["checksum-offload"]);
+  c.hand = ["SYN", "ACK"]; c.player.energy = 3;
+  const hp0 = c.enemy.hp;
+  playCard(c, 0); // SYN (Signal) deals 8, no relic bonus
+  const afterSyn = hp0 - c.enemy.hp;
+  const beforeAck = c.enemy.hp;
+  playCard(c, c.hand.indexOf("ACK")); // ACK (Protocol) deals 0 itself, +3 from the relic
+  assert.equal(beforeAck - c.enemy.hp, 3, "Checksum Offload deals 3 on a Protocol card");
+  assert.equal(afterSyn, 8, "Signal play got no relic bonus");
+}
+{
+  // Full Duplex: drawing fires only on the 3rd card of the turn.
+  const withRelic = combat(["full-duplex"]);
+  const baseline = combat([]);
+  for (const c of [withRelic, baseline]) { c.hand = ["SEGMENT", "SEGMENT", "SEGMENT", "ACK"]; c.player.energy = 9; }
+  for (let i = 0; i < 3; i++) { playCard(withRelic, 0); playCard(baseline, 0); }
+  assert.equal(withRelic.hand.length, baseline.hand.length + 1, "Full Duplex draws 1 on the 3rd card");
+}
+
+// ── C3 cursed relics: a real downside applies alongside the upside ──────────────────────────────────
+{
+  const c = combat(["memory-leak"]);
+  assert.equal(c.player.statuses.strength, 2, "Memory Leak grants 2 Strength");
+  assert.equal(c.player.statuses.weak, 2, "Memory Leak also inflicts 2 Weak (the curse)");
+}
+{
+  const c = combat(["overcommit-buffer"]);
+  assert.equal(c.player.energy, c.player.maxEnergy + 1, "Overcommit Buffer grants +1 energy on turn start");
+  assert.equal(c.player.statuses.vulnerable, 1, "Overcommit Buffer makes you Vulnerable (the curse)");
+}
+
 console.log("stage6 relics tests passed");

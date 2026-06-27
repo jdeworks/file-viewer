@@ -4,8 +4,10 @@ import {
   recordMetagameViewerOpen,
   recordStage1RawEdit,
   recordStage2SearchResult,
+  recordStage4BlueprintOpen,
   recordStage5MediaPlayback,
   recordStage6CodexOpen,
+  recordStage7AnchorOpen,
   recordStage7MetadataInspection,
   shouldSetStage1CheatDisabled,
 } from '../docs/games/metagame/viewer-actions.js';
@@ -85,6 +87,25 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
 {
   const calls = [];
   const setAction = (...args) => calls.push(args);
+  ok(recordStage4BlueprintOpen({ file: '/docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json', setAction }), 'Stage 4 blueprint open recorder returns true for deep path');
+  ok(calls.length === 1, 'Stage 4 recorder: setAction called once');
+  ok(calls[0][0] === 4 && calls[0][1] === 'recursion_blueprint_read', 'Stage 4 recorder: action id set');
+  ok(calls[0][2].source === 'viewer-open' && calls[0][2].file === 'recursion_points.json', 'Stage 4 recorder: payload set');
+  ok(recordStage4BlueprintOpen({ file: 'recursion_points.json', setAction }), 'Stage 4 recorder accepts bare basename');
+  ok(!recordStage4BlueprintOpen({ file: 'waves.json', setAction }), 'Stage 4 recorder rejects wrong file');
+  ok(calls.length === 2, 'Stage 4 recorder: no extra calls for wrong file');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordMetagameViewerOpen({ path: '/docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json', opts: {}, setAction }), 'Viewer-open aggregate records Stage 4 blueprint');
+  ok(calls.length === 1 && calls[0][0] === 4 && calls[0][1] === 'recursion_blueprint_read', 'Viewer-open aggregate: Stage 4 action id set');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
   ok(recordStage6CodexOpen({ file: '/docs/examples/metagame/stage6/protocols_of_the_entity.epub', setAction }), 'Stage 6 codex open recorder returns true');
   ok(calls.length === 1, 'Stage 6 recorder: setAction called once');
   ok(calls[0][0] === 6 && calls[0][1] === 'protocol_ch9_read', 'Stage 6 recorder: action id set');
@@ -103,6 +124,15 @@ const ok = (cond, msg) => { console.log((cond ? '✓ ' : '✗ ') + msg); if (!co
   ok(!recordStage7MetadataInspection({ file: 'entity_f_verification.png', field: 'DateTimeOriginal', entity: 'F', setAction }), 'Stage 7 recorder rejects non-contradictory metadata');
   ok(!recordStage7MetadataInspection({ file: 'entity_a_verification.png', field: 'GPSInfo', entity: 'A', setAction }), 'Stage 7 recorder rejects wrong entity/file');
   ok(calls.length === 1, 'Stage 7 recorder: no extra calls for rejected metadata');
+}
+
+{
+  const calls = [];
+  const setAction = (...args) => calls.push(args);
+  ok(recordStage7AnchorOpen({ file: 'entity_anchor_0043.txt', setAction }), 'Stage 7 anchor recorder returns true');
+  ok(calls.length === 1 && calls[0][0] === 7 && calls[0][1] === 'anchor_chain_examined', 'Stage 7 anchor recorder: action id set');
+  ok(!recordStage7AnchorOpen({ file: 'something_else.txt', setAction }), 'Stage 7 anchor recorder rejects other files');
+  ok(calls.length === 1, 'Stage 7 anchor recorder: no extra calls for wrong file');
 }
 
 {

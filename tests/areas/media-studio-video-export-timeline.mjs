@@ -88,8 +88,8 @@ export async function runVideoExportAndTimelineChecks(ctx) {
       lanes: root.dataset.laneCount,
       elements: root.dataset.elementCount,
       frameSources: Number(root.querySelector('.mmx-frame-preview')?.dataset.frameSources || 0),
-      hasRuler: !!root.querySelector('.mmx-ruler'),
-      hasPlayhead: !!root.querySelector('.mmx-playhead'),
+      hasRuler: !!root.querySelector('.al-track .al-canvas'),
+      hasPlayhead: !!root.querySelector('.al-track .al-cursor'),
       hasZoom: !!root.querySelector('.mmx-zoom'),
       hasPreview: !!root.querySelector('.mmx-frame-preview'),
       hasVisual: !!root.querySelector('.mmx-element-visual'),
@@ -414,17 +414,17 @@ export async function runVideoExportAndTimelineChecks(ctx) {
     const updatedProject = root.__mediaMixerVideoSource?.getProject?.();
     const updated = updatedProject?.elements?.find((item) => item.id === element?.id);
     const transition = updatedProject?.transitions?.find((item) => item.toElementId === element?.id);
-    const body = root.querySelector('.mmx-body');
-    const timeline = root.querySelector('.mmx-timeline');
+    const body = root.querySelector('.al-lanes');
+    const timeline = root.querySelector('.al-lanes');
     const host = document.querySelector('#previewHost');
     const hostRect = host?.getBoundingClientRect();
     const rootRect = root.getBoundingClientRect();
     const docEl = document.documentElement;
     return {
-      ruler: !!root.querySelector('.mmx-ruler'),
-      playhead: !!root.querySelector('.mmx-playhead'),
-      lanes: root.querySelectorAll('.mmx-lane').length,
-      elements: root.querySelectorAll('.mmx-element').length,
+      ruler: !!root.querySelector('.al-track .al-canvas'),
+      playhead: !!root.querySelector('.al-track .al-cursor'),
+      lanes: root.querySelectorAll('.al-track').length,
+      elements: root.querySelectorAll('.al-canvas').length,
       timelineScrollable: timeline.scrollWidth >= Math.round(body.clientWidth),
       overflowX: Math.max(0, docEl.scrollWidth - docEl.clientWidth),
       fitsHost: rootRect.left >= hostRect.left - 1 && rootRect.right <= hostRect.right + 1,

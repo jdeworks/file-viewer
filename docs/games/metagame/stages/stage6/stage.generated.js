@@ -180,8 +180,8 @@ function unlockAchievement(achievements, id, detail) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/cards.js
-var CARDS = [
+// ../../docs/games/metagame/stages/stage6/cards-signal.js
+var SIGNAL_CARDS = [
   {
     id: "SYN",
     type: "Signal",
@@ -192,14 +192,6 @@ var CARDS = [
       ctx.deal(8);
       if (ctx.playedThisTurn("ACK")) ctx.draw(2);
     }
-  },
-  {
-    id: "ACK",
-    type: "Protocol",
-    cost: 1,
-    rarity: "starter",
-    text: "Gain 10 block.",
-    effect: (ctx) => ctx.block(10)
   },
   {
     id: "RST",
@@ -219,14 +211,6 @@ var CARDS = [
     rarity: "common",
     text: "Deal 5 for each card played this turn.",
     effect: (ctx) => ctx.deal(5 * ctx.cardsPlayed)
-  },
-  {
-    id: "WINDOW",
-    type: "Protocol",
-    cost: 1,
-    rarity: "common",
-    text: "Draw 2 cards.",
-    effect: (ctx) => ctx.draw(2)
   },
   {
     id: "FRAGMENT",
@@ -259,14 +243,6 @@ var CARDS = [
     effect: (ctx) => {
       for (let i = 0; i < 4; i++) ctx.deal(4);
     }
-  },
-  {
-    id: "BUFFER",
-    type: "Protocol",
-    cost: 2,
-    rarity: "uncommon",
-    text: "Gain 4 block for each card in hand.",
-    effect: (ctx) => ctx.block(4 * ctx.handSize)
   },
   {
     id: "NULL_ROUTE",
@@ -319,6 +295,138 @@ var CARDS = [
     }
   },
   {
+    id: "SCAN",
+    type: "Signal",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 4. Apply 1 Weak to the enemy.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      ctx.applyEnemy("weak", 1);
+    }
+  },
+  {
+    id: "JITTER",
+    type: "Signal",
+    cost: 0,
+    rarity: "uncommon",
+    text: "Deal 4.",
+    effect: (ctx) => ctx.deal(4)
+  },
+  {
+    id: "PIPELINE",
+    type: "Signal",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 4. If you've played 2+ cards this turn, deal 4 more.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      if (ctx.cardsPlayed >= 2) ctx.deal(4);
+    }
+  },
+  {
+    id: "SPOOF",
+    type: "Signal",
+    cost: 1,
+    rarity: "rare",
+    text: "Apply 1 Vulnerable to the enemy. Draw 1.",
+    effect: (ctx) => {
+      ctx.applyEnemy("vulnerable", 1);
+      ctx.draw(1);
+    }
+  },
+  {
+    id: "DDOS",
+    type: "Signal",
+    cost: 3,
+    rarity: "rare",
+    exhaust: true,
+    text: "Deal 6 for each card played this turn. Exhaust.",
+    effect: (ctx) => ctx.deal(6 * ctx.cardsPlayed)
+  },
+  {
+    id: "REPLAY",
+    type: "Signal",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Deal 10. If ACK was played this turn, deal 5 more.",
+    effect: (ctx) => {
+      ctx.deal(10);
+      if (ctx.playedThisTurn("ACK")) ctx.deal(5);
+    }
+  },
+  // ── Act 1 LINK · SEQUENCE: opener (reward leading) + closer (reward following) ─────────────────────
+  {
+    id: "PREAMBLE",
+    type: "Signal",
+    cost: 1,
+    rarity: "common",
+    text: "Deal 6. If it's the first card you play this turn, deal 6 more.",
+    effect: (ctx) => {
+      ctx.deal(6);
+      if (ctx.isFirstCard) ctx.deal(6);
+    }
+  },
+  {
+    id: "FINALIZE",
+    type: "Signal",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 8. If it's NOT the first card you play this turn, deal 8 more.",
+    effect: (ctx) => {
+      ctx.deal(8);
+      if (!ctx.isFirstCard) ctx.deal(8);
+    }
+  },
+  // ── Act 2 TRANSPORT · DELAY: deferred resolution (deterministic, resolves on a future turn) ─────────
+  {
+    id: "WINDOWED_SEND",
+    type: "Signal",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Deal 4. Deal 8 at the start of your next turn.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      ctx.queue(1, { deal: 8 });
+    }
+  },
+  {
+    id: "RETRANSMIT",
+    type: "Signal",
+    cost: 2,
+    rarity: "rare",
+    text: "Deal 18 in 2 turns.",
+    effect: (ctx) => ctx.queue(2, { deal: 18 })
+  }
+];
+
+// ../../docs/games/metagame/stages/stage6/cards-protocol.js
+var PROTOCOL_CARDS = [
+  {
+    id: "ACK",
+    type: "Protocol",
+    cost: 1,
+    rarity: "starter",
+    text: "Gain 10 block.",
+    effect: (ctx) => ctx.block(10)
+  },
+  {
+    id: "WINDOW",
+    type: "Protocol",
+    cost: 1,
+    rarity: "common",
+    text: "Draw 2 cards.",
+    effect: (ctx) => ctx.draw(2)
+  },
+  {
+    id: "BUFFER",
+    type: "Protocol",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Gain 4 block for each card in hand.",
+    effect: (ctx) => ctx.block(4 * ctx.handSize)
+  },
+  {
     id: "SEGMENT",
     type: "Protocol",
     cost: 0,
@@ -357,6 +465,109 @@ var CARDS = [
     }
   },
   {
+    id: "BACKLOG",
+    type: "Protocol",
+    cost: 1,
+    rarity: "common",
+    text: "Gain 8 block.",
+    effect: (ctx) => ctx.block(8)
+  },
+  {
+    id: "NAGLE",
+    type: "Protocol",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Gain 4 block. Draw 1.",
+    effect: (ctx) => {
+      ctx.block(4);
+      ctx.draw(1);
+    }
+  },
+  {
+    id: "FIREWALL",
+    type: "Protocol",
+    cost: 2,
+    rarity: "rare",
+    text: "Gain 12 block. Apply 1 Weak to the enemy.",
+    effect: (ctx) => {
+      ctx.block(12);
+      ctx.applyEnemy("weak", 1);
+    }
+  },
+  {
+    id: "CONGESTION_CTL",
+    type: "Protocol",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Gain 7 block.",
+    effect: (ctx) => ctx.block(7)
+  },
+  {
+    id: "SACK",
+    type: "Protocol",
+    cost: 2,
+    rarity: "rare",
+    text: "Gain 6 block. Draw 2.",
+    effect: (ctx) => {
+      ctx.block(6);
+      ctx.draw(2);
+    }
+  },
+  // Act 1 LINK · SEQUENCE: a strong opener that wants to lead the turn.
+  {
+    id: "ROOT_CERTIFICATE",
+    type: "Protocol",
+    cost: 1,
+    rarity: "rare",
+    text: "Gain 4 block. If it's the first card you play this turn, gain 1 energy and draw 1.",
+    effect: (ctx) => {
+      ctx.block(4);
+      if (ctx.isFirstCard) {
+        ctx.gainEnergy(1);
+        ctx.draw(1);
+      }
+    }
+  },
+  // Act 2 TRANSPORT · DELAY: block that arrives across two turns.
+  {
+    id: "DELAYED_ACK",
+    type: "Protocol",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Gain 5 block. Gain 7 block at the start of your next turn.",
+    effect: (ctx) => {
+      ctx.block(5);
+      ctx.queue(1, { block: 7 });
+    }
+  },
+  // Act 3 NETWORK · THROUGHPUT: spend big without the window shrinking next turn.
+  {
+    id: "BACKOFF",
+    type: "Protocol",
+    cost: 0,
+    rarity: "uncommon",
+    text: "Gain 8 block. Your congestion window does not shrink next turn.",
+    effect: (ctx) => {
+      ctx.block(8);
+      ctx.noWindowShrink();
+    }
+  },
+  {
+    id: "DEFRAG",
+    type: "Protocol",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Return all jammed cards (Packet Loss) to your hand. Draw 1.",
+    effect: (ctx) => {
+      ctx.defrag();
+      ctx.draw(1);
+    }
+  }
+];
+
+// ../../docs/games/metagame/stages/stage6/cards-layer.js
+var LAYER_CARDS = [
+  {
     id: "CIPHER_LAYER",
     type: "Layer",
     cost: 2,
@@ -374,18 +585,81 @@ var CARDS = [
     rarity: "rare",
     text: "Gain 2 Strength.",
     effect: (ctx) => ctx.applySelf("strength", 2)
+  },
+  {
+    id: "ENCRYPT",
+    type: "Layer",
+    cost: 1,
+    rarity: "uncommon",
+    text: "Gain 4 block and 1 Strength.",
+    effect: (ctx) => {
+      ctx.block(4);
+      ctx.applySelf("strength", 1);
+    }
+  },
+  {
+    id: "HANDSHAKE_LAYER",
+    type: "Layer",
+    cost: 1,
+    rarity: "rare",
+    text: "Gain 1 Strength.",
+    effect: (ctx) => ctx.applySelf("strength", 1)
+  },
+  {
+    id: "DEEP_PACKET",
+    type: "Layer",
+    cost: 2,
+    rarity: "rare",
+    text: "Gain 2 Strength. Apply 1 Vulnerable to the enemy.",
+    effect: (ctx) => {
+      ctx.applySelf("strength", 2);
+      ctx.applyEnemy("vulnerable", 1);
+    }
+  },
+  {
+    id: "SESSION_KEY",
+    type: "Layer",
+    cost: 2,
+    rarity: "uncommon",
+    text: "Gain 1 Strength. Draw 1.",
+    effect: (ctx) => {
+      ctx.applySelf("strength", 1);
+      ctx.draw(1);
+    }
+  },
+  {
+    id: "ONION",
+    type: "Layer",
+    cost: 3,
+    rarity: "rare",
+    exhaust: true,
+    text: "Gain 3 Strength. Exhaust.",
+    effect: (ctx) => ctx.applySelf("strength", 3)
+  },
+  // Act 3 NETWORK · THROUGHPUT: permanently widen the congestion window (and gain energy now).
+  {
+    id: "BANDWIDTH",
+    type: "Layer",
+    cost: 1,
+    rarity: "rare",
+    text: "Widen your congestion window by 1 (gain 1 energy now).",
+    effect: (ctx) => ctx.widenWindow(1)
   }
 ];
+
+// ../../docs/games/metagame/stages/stage6/cards.js
+var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 function cardById(id) {
   return BY_ID.get(id) || null;
 }
+function registerCard(card) {
+  if (card && card.id) BY_ID.set(card.id, card);
+}
 var REWARD_POOL = CARDS.filter((card) => card.rarity !== "starter").map((card) => card.id);
 var STARTING_DECK = ["SYN", "SYN", "SYN", "SYN", "SYN", "ACK", "ACK", "ACK", "ACK", "RST"];
 
-// ../../docs/games/metagame/stages/stage6/combat.js
-var HAND_SIZE = 5;
-var START_ENERGY = 3;
+// ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
   return function rng() {
@@ -396,6 +670,17 @@ function makeRng(seed) {
     return ((t ^ t >>> 14) >>> 0) / 4294967296;
   };
 }
+function makeTrackedRng(seed, steps = 0) {
+  const base = makeRng(seed);
+  for (let i = 0; i < steps; i++) base();
+  let count = steps;
+  const rng = () => {
+    count += 1;
+    return base();
+  };
+  rng.steps = () => count;
+  return rng;
+}
 function shuffle(list, rng) {
   const out = [...list];
   for (let i = out.length - 1; i > 0; i--) {
@@ -404,185 +689,34 @@ function shuffle(list, rng) {
   }
   return out;
 }
-function createCombat({ deck, player, enemy, seed = 1, relics = [] }) {
-  const rng = makeRng(seed);
-  const combat = {
-    rng,
-    relics,
-    player: {
-      hp: player.hp,
-      maxHp: player.maxHp,
-      block: 0,
-      energy: START_ENERGY,
-      maxEnergy: START_ENERGY,
-      statuses: {}
-    },
-    enemy: {
-      id: enemy.id,
-      name: enemy.name,
-      hp: enemy.hp,
-      maxHp: enemy.hp,
-      block: 0,
-      armor: Number(enemy.armor || 0),
-      statuses: {},
-      script: enemy.script,
-      intentIndex: 0,
-      skipNext: false
-    },
-    draw: shuffle(deck, rng),
-    hand: [],
-    discard: [],
-    exhaust: [],
-    turn: 1,
-    cardsPlayedThisTurn: 0,
-    energySpentThisTurn: 0,
-    playedIdsThisTurn: [],
-    lastCardPlayed: null,
-    over: false,
-    result: null,
-    log: []
-  };
-  drawCards(combat, HAND_SIZE);
-  runHook(combat, "onCombatStart");
-  runHook(combat, "onPlayerTurnStart");
-  return combat;
+function hashSeed(seed, key) {
+  let h = (Number(seed) || 1) >>> 0;
+  for (const ch of String(key)) h = Math.imul(h, 31) + ch.charCodeAt(0) >>> 0;
+  return h || 1;
 }
-function runHook(combat, name, card = null) {
-  for (const relic of combat.relics) {
-    const fn = relic.hooks?.[name];
-    if (typeof fn === "function") fn(relicCtx(combat, card));
-  }
-}
-function relicCtx(combat, card) {
-  return {
-    combat,
-    card,
-    deal: (n) => dealToEnemy(combat, n),
-    block: (n) => {
-      combat.player.block += Math.max(0, Math.round(n));
-    },
-    draw: (n) => drawCards(combat, n),
-    gainEnergy: (n) => {
-      combat.player.energy += n;
-    },
-    applySelf: (status, n) => addStatus(combat.player, status, n),
-    applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
-  };
-}
-function currentIntent(combat) {
-  const script = combat.enemy.script;
-  return script[combat.enemy.intentIndex % script.length];
-}
-function playCard(combat, handIndex) {
-  if (combat.over) return { ok: false, reason: "over" };
-  const cardId = combat.hand[handIndex];
-  if (cardId == null) return { ok: false, reason: "no-card" };
-  const card = cardById(cardId);
-  if (!card) return { ok: false, reason: "unknown-card" };
-  if (card.cost > combat.player.energy) return { ok: false, reason: "no-energy" };
-  combat.player.energy -= card.cost;
-  combat.energySpentThisTurn += card.cost;
-  combat.cardsPlayedThisTurn += 1;
-  combat.hand.splice(handIndex, 1);
-  combat.playedIdsThisTurn.push(card.id);
-  card.effect(makeCtx(combat, card));
-  combat.lastCardPlayed = card.id;
-  if (card.exhaust) combat.exhaust.push(card.id);
-  else combat.discard.push(card.id);
-  runHook(combat, "onCardPlay", card);
-  checkEnemyDead(combat);
-  return { ok: true, card: card.id };
-}
-function makeCtx(combat, card) {
-  return {
-    combat,
-    card,
-    deal: (n) => dealToEnemy(combat, n),
-    block: (n) => {
-      combat.player.block += Math.max(0, Math.round(n));
-    },
-    draw: (n) => drawCards(combat, n),
-    gainEnergy: (n) => {
-      combat.player.energy += n;
-    },
-    applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
-    applySelf: (status, n) => addStatus(combat.player, status, n),
-    clearSelfDebuffs: () => {
-      let cleared = 0;
-      for (const key of Object.keys(combat.player.statuses)) {
-        if (DURATION_STATUSES.has(key)) {
-          cleared += combat.player.statuses[key];
-          delete combat.player.statuses[key];
-        }
-      }
-      return cleared;
-    },
-    skipEnemyNext: () => {
-      combat.enemy.skipNext = true;
-    },
-    playedThisTurn: (id) => combat.playedIdsThisTurn.includes(id),
-    get cardsPlayed() {
-      return combat.cardsPlayedThisTurn;
-    },
-    get energySpent() {
-      return combat.energySpentThisTurn;
-    },
-    get handSize() {
-      return combat.hand.length;
-    },
-    get blockNow() {
-      return combat.player.block;
-    },
-    get hp() {
-      return combat.player.hp;
-    },
-    get discardPile() {
-      return combat.discard;
+
+// ../../docs/games/metagame/stages/stage6/combat-piles.js
+function drawCards(combat, n) {
+  for (let i = 0; i < n; i++) {
+    if (combat.draw.length === 0) {
+      if (combat.discard.length === 0) return;
+      combat.draw = shuffle(combat.discard, combat.rng);
+      combat.discard = [];
     }
-  };
-}
-function endTurn(combat) {
-  if (combat.over) return combat;
-  combat.discard.push(...combat.hand);
-  combat.hand = [];
-  enemyTurn(combat);
-  if (combat.over) return combat;
-  combat.turn += 1;
-  combat.player.block = 0;
-  combat.player.energy = combat.player.maxEnergy;
-  combat.cardsPlayedThisTurn = 0;
-  combat.energySpentThisTurn = 0;
-  combat.playedIdsThisTurn = [];
-  tickStatuses(combat.player);
-  drawCards(combat, HAND_SIZE);
-  runHook(combat, "onPlayerTurnStart");
-  return combat;
-}
-function enemyTurn(combat) {
-  const enemy = combat.enemy;
-  enemy.block = 0;
-  const intent = currentIntent(combat);
-  if (enemy.skipNext) {
-    enemy.skipNext = false;
-    log(combat, `${enemy.name} action interrupted.`);
-  } else {
-    resolveIntent(combat, intent);
+    combat.hand.push(combat.draw.shift());
   }
-  enemy.intentIndex += 1;
-  tickStatuses(enemy);
-  checkPlayerDead(combat);
 }
-function resolveIntent(combat, intent) {
-  const enemy = combat.enemy;
-  if (intent.block) enemy.block += intent.block;
-  if (intent.attack) {
-    const hits = intent.hits || 1;
-    for (let i = 0; i < hits; i++) dealToPlayer(combat, intent.attack, { pierce: Boolean(intent.pierce) });
+function jamOne(combat) {
+  if (combat.hand.length) combat.jammed.push(combat.hand.shift());
+}
+function releaseJam(combat) {
+  if (combat.jammed.length) {
+    combat.discard.push(...combat.jammed);
+    combat.jammed = [];
   }
-  if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
-  if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
-  if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
 }
+
+// ../../docs/games/metagame/stages/stage6/combat-damage.js
 function dealToEnemy(combat, baseAmount) {
   let amount = Math.max(0, Math.round(baseAmount));
   if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
@@ -617,18 +751,311 @@ function tickStatuses(entity) {
     if (entity.statuses[key] <= 0) delete entity.statuses[key];
   }
 }
-function drawCards(combat, n) {
-  for (let i = 0; i < n; i++) {
-    if (combat.draw.length === 0) {
-      if (combat.discard.length === 0) return;
-      combat.draw = shuffle(combat.discard, combat.rng);
-      combat.discard = [];
+function log(combat, line) {
+  combat.log = [...combat.log, line].slice(-10);
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-ctx.js
+function baseId(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
+function makeCtx(combat, card) {
+  return {
+    combat,
+    card,
+    // Boss negotiation (optional): a Signal-type card whose handshake is unmet deals 0 —
+    // "PROTOCOL MISMATCH". Protocol/Layer cards always resolve. See boss-combat.js.
+    deal: (n) => {
+      if (combat.acceptance && card && card.type === "Signal" && !combat.acceptance(combat, card)) {
+        log(combat, "PROTOCOL MISMATCH — signal refused.");
+        return;
+      }
+      dealToEnemy(combat, n);
+    },
+    block: (n) => {
+      combat.player.block += Math.max(0, Math.round(n));
+    },
+    draw: (n) => drawCards(combat, n),
+    gainEnergy: (n) => {
+      combat.player.energy += n;
+    },
+    applyEnemy: (status, n) => addStatus(combat.enemy, status, n),
+    applySelf: (status, n) => addStatus(combat.player, status, n),
+    // DELAY: schedule a DECLARATIVE effect `op` (e.g. { deal: 8 } / { block: 9 }) to resolve at the
+    // start of a future player turn. The op is a plain object (not a closure) so the pending queue is
+    // serializable — a reload resumes the same delayed packets. combat-modes.applyOp interprets it.
+    // A relic (Fast Retransmit) can land the FIRST queued effect one turn sooner.
+    queue: (turnsAhead, op) => {
+      let ahead = Math.max(1, Math.floor(turnsAhead) || 1);
+      if (combat.delaySpeedup && !combat.delayUsed) {
+        ahead = Math.max(1, ahead - 1);
+        combat.delayUsed = true;
+      }
+      combat.pending.push({ turn: combat.turn + ahead, op });
+    },
+    // THROUGHPUT: widen the congestion window by n (and gain n energy now).
+    widenWindow: (n) => {
+      combat.window = (combat.window || combat.player.maxEnergy) + n;
+      combat.player.maxEnergy += n;
+      combat.player.energy += n;
+    },
+    noWindowShrink: () => {
+      combat.noShrinkNextTurn = true;
+    },
+    // THROUGHPUT: return all Packet-Loss jammed cards to hand (Defrag).
+    defrag: () => {
+      combat.hand.push(...combat.jammed);
+      combat.jammed = [];
+    },
+    clearSelfDebuffs: () => {
+      let cleared = 0;
+      for (const key of Object.keys(combat.player.statuses)) {
+        if (DURATION_STATUSES.has(key)) {
+          cleared += combat.player.statuses[key];
+          delete combat.player.statuses[key];
+        }
+      }
+      return cleared;
+    },
+    skipEnemyNext: () => {
+      combat.enemy.skipNext = true;
+    },
+    // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
+    playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
+    // SEQUENCE: true while resolving the FIRST card played this turn (the counter is bumped before
+    // the effect runs, so the first card sees cardsPlayedThisTurn === 1).
+    get isFirstCard() {
+      return combat.cardsPlayedThisTurn === 1;
+    },
+    get cardsPlayed() {
+      return combat.cardsPlayedThisTurn;
+    },
+    get energySpent() {
+      return combat.energySpentThisTurn;
+    },
+    get handSize() {
+      return combat.hand.length;
+    },
+    get blockNow() {
+      return combat.player.block;
+    },
+    get hp() {
+      return combat.player.hp;
+    },
+    get discardPile() {
+      return combat.discard;
     }
-    combat.hand.push(combat.draw.shift());
+  };
+}
+function relicCtx(combat, card) {
+  return {
+    combat,
+    card,
+    deal: (n) => dealToEnemy(combat, n),
+    block: (n) => {
+      combat.player.block += Math.max(0, Math.round(n));
+    },
+    draw: (n) => drawCards(combat, n),
+    gainEnergy: (n) => {
+      combat.player.energy += n;
+    },
+    applySelf: (status, n) => addStatus(combat.player, status, n),
+    applyEnemy: (status, n) => addStatus(combat.enemy, status, n)
+  };
+}
+function runHook(combat, name, card = null) {
+  for (const relic of combat.relics) {
+    const fn = relic.hooks?.[name];
+    if (typeof fn === "function") fn(relicCtx(combat, card));
   }
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-enemy.js
+function currentIntent(combat) {
+  const script = combat.enemy.script;
+  return script[combat.enemy.intentIndex % script.length];
+}
+function enemyTurn(combat) {
+  const enemy = combat.enemy;
+  enemy.block = 0;
+  const intent = currentIntent(combat);
+  if (enemy.skipNext) {
+    enemy.skipNext = false;
+    enemy.rttStacks = 0;
+    log(combat, `${enemy.name} action interrupted.`);
+  } else {
+    resolveIntent(combat, intent);
+    enemy.rttStacks = (enemy.rttStacks || 0) + 1;
+  }
+  enemy.intentIndex += 1;
+  tickStatuses(enemy);
+  checkPlayerDead(combat);
+}
+function resolveIntent(combat, intent) {
+  const enemy = combat.enemy;
+  if (intent.block) enemy.block += intent.block;
+  if (intent.attack) {
+    const hits = intent.hits || 1;
+    const dmg = intent.attack + (intent.ramp ? intent.ramp * (enemy.rttStacks || 0) : 0);
+    for (let i = 0; i < hits; i++) dealToPlayer(combat, dmg, { pierce: Boolean(intent.pierce) });
+  }
+  if (intent.congest) dealToPlayer(combat, intent.congest * (combat.energySpentThisTurn || 0));
+  if (intent.mirror) dealToPlayer(combat, intent.mirror * combat.cardsPlayedThisTurn);
+  if (intent.applySelf) addStatus(enemy, intent.applySelf.status, intent.applySelf.value);
+  if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-modes.js
+var WINDOW_CAP = 5;
+var WINDOW_FLOOR = 2;
+function applyTurnEnergy(combat) {
+  if (!combat.congestion) {
+    combat.player.energy = combat.player.maxEnergy;
+    return;
+  }
+  combat.jamPending = combat.cardsPlayedThisTurn >= 4;
+  const wide = combat.energySpentThisTurn >= combat.window;
+  if (combat.noShrinkNextTurn) {
+    combat.noShrinkNextTurn = false;
+  } else if (wide) {
+    combat.window = Math.max(WINDOW_FLOOR, combat.window - (combat.windowDecay || 1));
+  } else {
+    combat.window = Math.min(combat.windowCap || WINDOW_CAP, combat.window + 1);
+  }
+  combat.player.maxEnergy = combat.window;
+  combat.player.energy = combat.window;
+}
+function applyOp(ctx, op) {
+  if (!op || typeof op !== "object") return;
+  if (op.deal != null) ctx.deal(op.deal);
+  if (op.block != null) ctx.block(op.block);
+  if (op.draw != null) ctx.draw(op.draw);
+  if (op.gainEnergy != null) ctx.gainEnergy(op.gainEnergy);
+  if (op.applyEnemy) ctx.applyEnemy(op.applyEnemy.status, op.applyEnemy.value);
+  if (op.applySelf) ctx.applySelf(op.applySelf.status, op.applySelf.value);
+}
+function resolvePending(combat) {
+  if (!combat.pending || !combat.pending.length) return;
+  const due = combat.pending.filter((p) => p.turn <= combat.turn);
+  combat.pending = combat.pending.filter((p) => p.turn > combat.turn);
+  for (const p of due) {
+    if (combat.over) break;
+    applyOp(makeCtx(combat, null), p.op);
+    checkEnemyDead(combat);
+  }
+}
+
+// ../../docs/games/metagame/stages/stage6/combat.js
+var HAND_SIZE = 5;
+var START_ENERGY = 3;
+function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
+  const rng = makeTrackedRng(seed);
+  const combat = {
+    rng,
+    rngSeed: seed,
+    // persisted in the snapshot so a reload resumes the same shuffle sequence
+    relics,
+    congestion,
+    // THROUGHPUT: when true, energy is a dynamic congestion window
+    window: START_ENERGY,
+    // current window size (== maxEnergy while in congestion mode)
+    windowCap: Math.max(START_ENERGY, windowCap),
+    windowDecay: 1,
+    // how much a wide turn shrinks the window (relics can worsen this)
+    player: {
+      hp: player.hp,
+      maxHp: player.maxHp,
+      block: 0,
+      energy: START_ENERGY,
+      maxEnergy: START_ENERGY,
+      statuses: {}
+    },
+    enemy: {
+      id: enemy.id,
+      name: enemy.name,
+      hp: enemy.hp,
+      maxHp: enemy.hp,
+      block: 0,
+      armor: Number(enemy.armor || 0),
+      statuses: {},
+      script: enemy.script,
+      intentIndex: 0,
+      skipNext: false
+    },
+    draw: shuffle(deck, rng),
+    hand: [],
+    discard: [],
+    exhaust: [],
+    pending: [],
+    // DELAY (Act 2): effects queued to resolve at a future player turn (no RNG)
+    jammed: [],
+    // THROUGHPUT (Act 3): cards set aside (Packet Loss) — unplayable until released/Defrag'd
+    turn: 1,
+    cardsPlayedThisTurn: 0,
+    firstCardDiscount: 0,
+    // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
+    energySpentThisTurn: 0,
+    playedIdsThisTurn: [],
+    lastCardPlayed: null,
+    over: false,
+    result: null,
+    log: []
+  };
+  drawCards(combat, HAND_SIZE);
+  runHook(combat, "onCombatStart");
+  runHook(combat, "onPlayerTurnStart");
+  return combat;
+}
+function playCard(combat, handIndex) {
+  if (combat.over) return { ok: false, reason: "over" };
+  const cardId = combat.hand[handIndex];
+  if (cardId == null) return { ok: false, reason: "no-card" };
+  const card = cardById(cardId);
+  if (!card) return { ok: false, reason: "unknown-card" };
+  const isFirst = combat.cardsPlayedThisTurn === 0;
+  const cost = Math.max(0, card.cost - (isFirst ? combat.firstCardDiscount || 0 : 0));
+  if (cost > combat.player.energy) return { ok: false, reason: "no-energy" };
+  combat.player.energy -= cost;
+  combat.energySpentThisTurn += cost;
+  combat.cardsPlayedThisTurn += 1;
+  combat.hand.splice(handIndex, 1);
+  combat.playedIdsThisTurn.push(card.id);
+  card.effect(makeCtx(combat, card));
+  combat.lastCardPlayed = card.id;
+  if (card.exhaust) combat.exhaust.push(card.id);
+  else combat.discard.push(card.id);
+  runHook(combat, "onCardPlay", card);
+  checkEnemyDead(combat);
+  return { ok: true, card: card.id };
+}
+function endTurn(combat) {
+  if (combat.over) return combat;
+  if (typeof combat.onPlayerTurnEnd === "function") combat.onPlayerTurnEnd(combat);
+  if (combat.over) return combat;
+  combat.discard.push(...combat.hand);
+  combat.hand = [];
+  enemyTurn(combat);
+  if (combat.over) return combat;
+  combat.turn += 1;
+  combat.player.block = 0;
+  applyTurnEnergy(combat);
+  combat.cardsPlayedThisTurn = 0;
+  combat.energySpentThisTurn = 0;
+  combat.playedIdsThisTurn = [];
+  tickStatuses(combat.player);
+  releaseJam(combat);
+  drawCards(combat, HAND_SIZE);
+  runHook(combat, "onPlayerTurnStart");
+  resolvePending(combat);
+  if (combat.jamPending) {
+    jamOne(combat);
+    combat.jamPending = false;
+  }
+  return combat;
 }
 function checkEnemyDead(combat) {
   if (combat.enemy.hp <= 0 && !combat.over) {
+    if (typeof combat.advancePhase === "function" && combat.advancePhase(combat)) return;
     combat.over = true;
     combat.result = "win";
   }
@@ -638,9 +1065,6 @@ function checkPlayerDead(combat) {
     combat.over = true;
     combat.result = "lose";
   }
-}
-function log(combat, line) {
-  combat.log = [...combat.log, line].slice(-10);
 }
 
 // ../../docs/games/metagame/stages/stage6/enemies.js
@@ -703,6 +1127,22 @@ var ENEMIES = {
       { label: "Data race — Attack 26", attack: 26 }
     ]
   },
+  // Appears act 2+: a Round-Trip Timer whose retransmit storm GROWS each uninterrupted round —
+  // interrupt it (skipEnemyNext, e.g. RST) to reset the ramp. Telegraphed two steps ahead in the UI.
+  "round-trip-timer": {
+    id: "round-trip-timer",
+    name: "Round-Trip Timer",
+    tier: "standard",
+    hp: 52,
+    hpPerAct: 18,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Measuring RTT — block 8", block: 8 },
+      { label: "Probe — Attack 6", attack: 6 },
+      { label: "Retransmit storm — Attack 8 (+6 each uninterrupted round)", attack: 8, ramp: 6 }
+    ]
+  },
   // Appears act 3+: armored bruiser, long fights, sustained pressure.
   "packet-storm": {
     id: "packet-storm",
@@ -716,6 +1156,21 @@ var ENEMIES = {
       { label: "Attack 14", attack: 14 },
       { label: "Block 12 + Attack 10", block: 12, attack: 10 },
       { label: "Flood — Attack 7, three times", attack: 7, hits: 3 }
+    ]
+  },
+  // Appears act 3: punishes WIDE turns — its Collapse deals damage scaling with the energy you spent.
+  "congestion-collapse": {
+    id: "congestion-collapse",
+    name: "Congestion Collapse",
+    tier: "standard",
+    hp: 58,
+    hpPerAct: 16,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Buffer — Block 10", block: 10 },
+      { label: "Collapse — 3 × energy you spent", congest: 3 },
+      { label: "Attack 12", attack: 12 }
     ]
   },
   // ── Elites (need engine features: pierce + mirror) ──────────────────────────────────────────────
@@ -795,6 +1250,24 @@ var ENEMIES = {
       { label: "Attack 16 + Vulnerable", attack: 16, applyPlayer: { status: "vulnerable", value: 1 } },
       { label: "Deadlock — Attack 32", attack: 32 }
     ]
+  },
+  // ── The act-4 finale: fought with the REAL deck; negotiation = an acceptance hook (boss-combat.js).
+  // HP here is the PHASE-1 pool; phase advance refills to BOSS_PHASE_HP[2]/[3]. Pressure is modest —
+  // the challenge is satisfying the handshake (lead SYN / play ACK), not a raw damage race.
+  "the-refused-connection": {
+    id: "the-refused-connection",
+    name: "The Refused Connection",
+    tier: "boss",
+    hp: 60,
+    hpPerAct: 0,
+    armor: 0,
+    armorPerAct: 0,
+    script: [
+      { label: "Backpressure — Attack 8", attack: 8 },
+      { label: "Re-handshake — Block 12", block: 12 },
+      { label: "Reset — Attack 6, twice", attack: 6, hits: 2 },
+      { label: "Silence — Block 10 + Attack 7", block: 10, attack: 7 }
+    ]
   }
 };
 function instantiateEnemy(id, act = 1) {
@@ -849,6 +1322,92 @@ var RELICS = [
     rarity: "rare",
     text: "At the start of each combat, gain 1 Strength.",
     hooks: { onCombatStart: (ctx) => ctx.applySelf("strength", 1) }
+  },
+  // ── Build-definers: relics that change HOW you build, not just stat-sticks ──────────────────────────
+  {
+    // Rewards WIDE turns — makes dumping your hand a plan, not a panic.
+    id: "full-duplex",
+    name: "Full Duplex",
+    rarity: "uncommon",
+    text: "Each turn, when you play your 3rd card, draw 1.",
+    hooks: { onCardPlay: (ctx) => {
+      if (ctx.combat.cardsPlayedThisTurn === 3) ctx.draw(1);
+    } }
+  },
+  {
+    // Turns a Protocol/defensive deck into a KILL plan — Protocol cards now bite.
+    id: "checksum-offload",
+    name: "Checksum Offload",
+    rarity: "rare",
+    text: "Whenever you play a Protocol card, deal 3 to the enemy.",
+    hooks: { onCardPlay: (ctx) => {
+      if (ctx.card?.type === "Protocol") ctx.deal(3);
+    } }
+  },
+  {
+    // Layer/power decks get an extra payoff for stacking Strength.
+    id: "cipher-cascade",
+    name: "Cipher Cascade",
+    rarity: "uncommon",
+    text: "Whenever you play a Layer card, gain 2 block.",
+    hooks: { onCardPlay: (ctx) => {
+      if (ctx.card?.type === "Layer") ctx.block(2);
+    } }
+  },
+  // ── Cursed: strong, with a real downside (tag `cursed` so the UI can warn) ──────────────────────────
+  {
+    id: "memory-leak",
+    name: "Memory Leak",
+    rarity: "rare",
+    cursed: true,
+    text: "Cursed. At the start of each combat, gain 2 Strength — but also 2 Weak.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.applySelf("strength", 2);
+      ctx.applySelf("weak", 2);
+    } }
+  },
+  {
+    id: "overcommit-buffer",
+    name: "Overcommit Buffer",
+    rarity: "rare",
+    cursed: true,
+    text: "Cursed. At the start of each of your turns, gain 1 energy — but become Vulnerable.",
+    hooks: { onPlayerTurnStart: (ctx) => {
+      ctx.gainEnergy(1);
+      ctx.applySelf("vulnerable", 1);
+    } }
+  },
+  // ── Act 1 LINK · SEQUENCE: rewards leading the turn with the right card ─────────────────────────────
+  {
+    id: "tcp-fast-open",
+    name: "TCP Fast Open",
+    rarity: "rare",
+    text: "The first card you play each turn costs 1 less.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.firstCardDiscount = (ctx.combat.firstCardDiscount || 0) + 1;
+    } }
+  },
+  // ── Act 2 TRANSPORT · DELAY: lands the first delayed packet a turn sooner ───────────────────────────
+  {
+    id: "fast-retransmit",
+    name: "Fast Retransmit",
+    rarity: "uncommon",
+    text: "Your first delayed effect each combat resolves a turn sooner.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.delaySpeedup = true;
+    } }
+  },
+  // ── Act 3 NETWORK · THROUGHPUT: bigger pipe, harsher collapse (cursed Overclock successor) ──────────
+  {
+    id: "overclock-bus",
+    name: "Overclock Bus",
+    rarity: "rare",
+    cursed: true,
+    text: "Cursed. Your congestion window cap is +1, but a wide turn shrinks it by 2.",
+    hooks: { onCombatStart: (ctx) => {
+      ctx.combat.windowCap = (ctx.combat.windowCap || 5) + 1;
+      ctx.combat.windowDecay = 2;
+    } }
   }
 ];
 var BY_ID2 = new Map(RELICS.map((relic) => [relic.id, relic]));
@@ -869,8 +1428,8 @@ function rollRelic(seed, owned = []) {
 // ../../docs/games/metagame/stages/stage6/mapgen.js
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
-  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition"],
-  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm"],
+  2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
+  3: ["firewall-entity", "null-pointer", "race-condition", "packet-storm", "round-trip-timer", "congestion-collapse"],
   4: ["null-pointer", "race-condition", "packet-storm"]
 };
 var ELITE_ENEMIES = ["expired-certificate", "man-in-the-middle"];
@@ -882,10 +1441,11 @@ function generateAct(act, seed) {
     const width = layerWidth(layer, rng);
     const nodes = [];
     for (let col = 0; col < width; col++) {
-      nodes.push(makeNode(act, layer, col, rng));
+      nodes.push({ id: nodeId(act, layer, col), act, layer, col, type: defaultType(layer), next: [] });
     }
     layers.push(nodes);
   }
+  composeAct(layers, rng);
   layers.push([{ id: nodeId(act, CONTENT_LAYERS, 0), act, layer: CONTENT_LAYERS, col: 0, type: "boss", next: [] }]);
   wireEdges(layers, rng);
   return { act, layers, startIds: layers[0].map((n) => n.id) };
@@ -906,17 +1466,23 @@ function layerWidth(layer, rng) {
   if (layer === 0) return 2;
   return 2 + (rng() < 0.5 ? 1 : 0);
 }
-function makeNode(act, layer, col, rng) {
-  return { id: nodeId(act, layer, col), act, layer, col, type: pickType(layer, rng), next: [] };
+function defaultType(layer) {
+  return layer === CONTENT_LAYERS - 1 ? "rest" : "combat";
 }
-function pickType(layer, rng) {
-  if (layer === 0) return "combat";
-  if (layer === CONTENT_LAYERS - 1) return "rest";
-  const roll = rng();
-  if (layer >= 2 && layer <= CONTENT_LAYERS - 2 && roll < 0.18) return "elite";
-  if (roll < 0.3) return "event";
-  if (roll < 0.42) return "shop";
-  return "combat";
+function composeAct(layers, rng) {
+  const mid = [];
+  for (let l = 1; l <= CONTENT_LAYERS - 2; l++) mid.push(l);
+  const eliteIdx = 1 + Math.floor(rng() * (mid.length - 1));
+  const eliteLayer = mid[eliteIdx];
+  const pool = mid.filter((l) => l !== eliteLayer);
+  const shopLayer = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  const eventLayer = pool.splice(Math.floor(rng() * pool.length), 1)[0];
+  setOne(layers[eliteLayer], "elite", rng);
+  setOne(layers[shopLayer], "shop", rng);
+  setOne(layers[eventLayer], "event", rng);
+}
+function setOne(layerNodes, type, rng) {
+  layerNodes[Math.floor(rng() * layerNodes.length)].type = type;
 }
 function wireEdges(layers, rng) {
   for (let i = 0; i < layers.length - 1; i++) {
@@ -942,10 +1508,210 @@ function wireEdges(layers, rng) {
 function nodeId(act, layer, col) {
   return `a${act}-l${layer}-n${col}`;
 }
-function enemyForNode(node, act = 1, rng = Math.random) {
+function enemyForNode(node, act = 1, rng) {
+  if (typeof rng !== "function") throw new TypeError("enemyForNode requires a seeded rng");
   if (node.type === "elite") return ELITE_ENEMIES[Math.floor(rng() * ELITE_ENEMIES.length)];
   const pool = STANDARD_POOLS[act] || STANDARD_POOLS[4];
   return pool[Math.floor(rng() * pool.length)];
+}
+
+// ../../docs/games/metagame/stages/stage6/card-upgrades.js
+var UPGRADED_SUFFIX = "+";
+var SPECS = {
+  SYN: { text: "Deal 11. If ACK was played this turn, draw 2.", effect: (ctx) => {
+    ctx.deal(11);
+    if (ctx.playedThisTurn("ACK")) ctx.draw(2);
+  } },
+  ACK: { text: "Gain 13 block.", effect: (ctx) => ctx.block(13) },
+  RST: { text: "Deal 18. Interrupt the enemy's next action.", effect: (ctx) => {
+    ctx.deal(18);
+    ctx.skipEnemyNext();
+  } },
+  PUSH: { text: "Deal 7 for each card played this turn.", effect: (ctx) => ctx.deal(7 * ctx.cardsPlayed) },
+  WINDOW: { cost: 0, text: "Draw 2 cards. (cost 0)", effect: (ctx) => ctx.draw(2) },
+  FRAGMENT: { text: "Deal 5. Draw 1.", effect: (ctx) => {
+    ctx.deal(5);
+    ctx.draw(1);
+  } },
+  HANDSHAKE: { text: "Deal 10 and gain 12 block.", effect: (ctx) => {
+    ctx.deal(10);
+    ctx.block(12);
+  } },
+  FLOOD: { text: "Deal 5, four times.", effect: (ctx) => {
+    for (let i = 0; i < 4; i++) ctx.deal(5);
+  } },
+  BUFFER: { text: "Gain 5 block for each card in hand.", effect: (ctx) => ctx.block(5 * ctx.handSize) },
+  NULL_ROUTE: { text: "Apply 3 Vulnerable to the enemy.", effect: (ctx) => ctx.applyEnemy("vulnerable", 3) },
+  PROBE: { text: "Deal 8. Apply 1 Vulnerable.", effect: (ctx) => {
+    ctx.deal(8);
+    ctx.applyEnemy("vulnerable", 1);
+  } },
+  PRIORITY_PACKET: { text: "Deal 16.", effect: (ctx) => ctx.deal(16) },
+  ASYMMETRIC: { text: "Deal 8. If your block exceeds your HP, deal 16 more.", effect: (ctx) => {
+    ctx.deal(8);
+    if (ctx.blockNow > ctx.hp) ctx.deal(16);
+  } },
+  BURST_FRAME: { text: "Deal 40. Apply 1 Weak to yourself. Exhaust.", effect: (ctx) => {
+    ctx.deal(40);
+    ctx.applySelf("weak", 1);
+  } },
+  SEGMENT: { text: "Gain 8 block.", effect: (ctx) => ctx.block(8) },
+  KEEPALIVE: { text: "Gain 7 block. If ACK was played this turn, gain 10 more.", effect: (ctx) => {
+    ctx.block(7);
+    if (ctx.playedThisTurn("ACK")) ctx.block(10);
+  } },
+  THROTTLE: { text: "Apply 3 Weak to the enemy.", effect: (ctx) => ctx.applyEnemy("weak", 3) },
+  RENEGOTIATE: { text: "Remove your debuffs and gain 9 block.", effect: (ctx) => {
+    ctx.clearSelfDebuffs();
+    ctx.block(9);
+  } },
+  CIPHER_LAYER: { text: "Gain 1 Strength and 9 block.", effect: (ctx) => {
+    ctx.applySelf("strength", 1);
+    ctx.block(9);
+  } },
+  TCP_STACK: { cost: 1, text: "Gain 2 Strength. (cost 1)", effect: (ctx) => ctx.applySelf("strength", 2) },
+  // C5b additions
+  SCAN: { text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.applyEnemy("weak", 1);
+  } },
+  JITTER: { text: "Deal 6. (cost 0)", effect: (ctx) => ctx.deal(6) },
+  PIPELINE: { text: "Deal 5. If you've played 2+ cards this turn, deal 5 more.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.cardsPlayed >= 2) ctx.deal(5);
+  } },
+  SPOOF: { text: "Apply 2 Vulnerable to the enemy. Draw 1.", effect: (ctx) => {
+    ctx.applyEnemy("vulnerable", 2);
+    ctx.draw(1);
+  } },
+  DDOS: { text: "Deal 8 for each card played this turn. Exhaust.", effect: (ctx) => ctx.deal(8 * ctx.cardsPlayed) },
+  REPLAY: { text: "Deal 13. If ACK was played this turn, deal 6 more.", effect: (ctx) => {
+    ctx.deal(13);
+    if (ctx.playedThisTurn("ACK")) ctx.deal(6);
+  } },
+  BACKLOG: { text: "Gain 11 block.", effect: (ctx) => ctx.block(11) },
+  NAGLE: { text: "Gain 6 block. Draw 1.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.draw(1);
+  } },
+  FIREWALL: { text: "Gain 15 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(15);
+    ctx.applyEnemy("weak", 1);
+  } },
+  CONGESTION_CTL: { text: "Gain 10 block.", effect: (ctx) => ctx.block(10) },
+  SACK: { text: "Gain 8 block. Draw 2.", effect: (ctx) => {
+    ctx.block(8);
+    ctx.draw(2);
+  } },
+  ENCRYPT: { text: "Gain 6 block and 1 Strength.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.applySelf("strength", 1);
+  } },
+  HANDSHAKE_LAYER: { cost: 0, text: "Gain 1 Strength. (cost 0)", effect: (ctx) => ctx.applySelf("strength", 1) },
+  DEEP_PACKET: { text: "Gain 2 Strength. Apply 2 Vulnerable to the enemy.", effect: (ctx) => {
+    ctx.applySelf("strength", 2);
+    ctx.applyEnemy("vulnerable", 2);
+  } },
+  SESSION_KEY: { text: "Gain 2 Strength. Draw 1.", effect: (ctx) => {
+    ctx.applySelf("strength", 2);
+    ctx.draw(1);
+  } },
+  ONION: { text: "Gain 4 Strength. Exhaust.", effect: (ctx) => ctx.applySelf("strength", 4) },
+  // D1 SEQUENCE
+  PREAMBLE: { text: "Deal 8. If it's the first card this turn, deal 8 more.", effect: (ctx) => {
+    ctx.deal(8);
+    if (ctx.isFirstCard) ctx.deal(8);
+  } },
+  FINALIZE: { text: "Deal 10. If it's NOT the first card this turn, deal 10 more.", effect: (ctx) => {
+    ctx.deal(10);
+    if (!ctx.isFirstCard) ctx.deal(10);
+  } },
+  ROOT_CERTIFICATE: { text: "Gain 5 block. If it's the first card this turn, gain 1 energy and draw 2.", effect: (ctx) => {
+    ctx.block(5);
+    if (ctx.isFirstCard) {
+      ctx.gainEnergy(1);
+      ctx.draw(2);
+    }
+  } },
+  // D2 DELAY
+  WINDOWED_SEND: { text: "Deal 6. Deal 10 at the start of your next turn.", effect: (ctx) => {
+    ctx.deal(6);
+    ctx.queue(1, { deal: 10 });
+  } },
+  RETRANSMIT: { text: "Deal 24 in 2 turns.", effect: (ctx) => ctx.queue(2, { deal: 24 }) },
+  DELAYED_ACK: { text: "Gain 6 block. Gain 9 block at the start of your next turn.", effect: (ctx) => {
+    ctx.block(6);
+    ctx.queue(1, { block: 9 });
+  } },
+  // D3 THROUGHPUT
+  BANDWIDTH: { text: "Widen your congestion window by 2 (gain 2 energy now).", effect: (ctx) => ctx.widenWindow(2) },
+  BACKOFF: { text: "Gain 11 block. Your congestion window does not shrink next turn.", effect: (ctx) => {
+    ctx.block(11);
+    ctx.noWindowShrink();
+  } },
+  DEFRAG: { text: "Return all jammed cards to your hand. Draw 2.", effect: (ctx) => {
+    ctx.defrag();
+    ctx.draw(2);
+  } }
+};
+function isUpgradedId(id) {
+  return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);
+}
+function canUpgrade(id) {
+  return Boolean(SPECS[id]) && !isUpgradedId(id);
+}
+function upgradeIdFor(id) {
+  return canUpgrade(id) ? id + UPGRADED_SUFFIX : null;
+}
+var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
+  const base = cardById(baseId3);
+  return { ...base, ...spec, id: baseId3 + UPGRADED_SUFFIX, base: baseId3, upgraded: true };
+});
+for (const card of UPGRADED_CARDS) registerCard(card);
+
+// ../../docs/games/metagame/stages/stage6/modifiers.js
+var MODIFIERS = [
+  {
+    id: "lean-rewards",
+    text: "Lean economy — handshake rewards are reduced by 25%.",
+    apply: (r) => {
+      r.handshakeMult = (r.handshakeMult ?? 1) * 0.75;
+    }
+  },
+  {
+    id: "stingy-rest",
+    text: "Stingy rests — rest sites heal 10% less.",
+    apply: (r) => {
+      r.restHealMod = (r.restHealMod ?? 0) - 0.1;
+    }
+  },
+  {
+    id: "tight-window",
+    text: "Tight windows — the Act-3 congestion cap is 1 lower.",
+    apply: (r) => {
+      r.windowCapMod = (r.windowCapMod ?? 0) - 1;
+    }
+  },
+  {
+    id: "meaner-elites",
+    text: "Meaner elites — elites gain +24 HP.",
+    apply: (r) => {
+      r.eliteHpBonus = (r.eliteHpBonus ?? 0) + 24;
+    }
+  },
+  {
+    id: "tougher-boss",
+    text: "Tougher negotiation — The Refused Connection has +30% phase HP.",
+    apply: (r) => {
+      r.bossHpMult = (r.bossHpMult ?? 1) * 1.3;
+    }
+  }
+];
+function applyModifiers(run, version) {
+  const n = Math.max(0, Math.min(Number(version) || 0, MODIFIERS.length));
+  run.modifiers = MODIFIERS.slice(0, n).map((m) => m.id);
+  for (let i = 0; i < n; i++) MODIFIERS[i].apply(run);
+  return run;
 }
 
 // ../../docs/games/metagame/stages/stage6/run.js
@@ -953,6 +1719,9 @@ var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
 var REWARD_CHOICES = 3;
 var HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
+var SKIP_REWARD = 5;
+var REMOVAL_BASE = 25;
+var REMOVAL_STEP = 25;
 var FINAL_BOSS_ACT = 4;
 var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock" };
 var PRESTIGE_HP_PER_VERSION = 5;
@@ -973,11 +1742,20 @@ function createRun({ seed = 1, version = 0, handshakes = 0 } = {}) {
     hp: maxHp,
     maxHp,
     handshakes,
+    removalsPurchased: 0,
     status: "map",
     pendingReward: null,
-    notice: null
+    notice: null,
+    // Prestige rule-modifier knobs (defaults = no modifier); applyModifiers tunes them by version.
+    handshakeMult: 1,
+    restHealMod: 0,
+    windowCapMod: 0,
+    eliteHpBonus: 0,
+    bossHpMult: 1,
+    modifiers: []
   };
   for (let i = 0; i < Number(version || 0); i++) grantRelic(run, `prestige-${i}`);
+  applyModifiers(run, version);
   return run;
 }
 function availableNodes(run) {
@@ -995,7 +1773,7 @@ function moveTo(run, nodeId2) {
   run.status = screenForNode(node);
   return { ok: true, node };
 }
-function enemyForCurrentNode(run, rng = Math.random) {
+function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
   if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
@@ -1010,7 +1788,7 @@ function resolveCombat(run, { win, hpRemaining }) {
   }
   run.clearedIds.push(node.id);
   if (node.type === "boss") return clearBoss(run);
-  run.handshakes += HANDSHAKE_REWARD[node.type] ?? HANDSHAKE_REWARD.combat;
+  run.handshakes += Math.round((HANDSHAKE_REWARD[node.type] ?? HANDSHAKE_REWARD.combat) * (run.handshakeMult ?? 1));
   const reward = { cards: rollRewardCards(run, node.id) };
   if (node.type === "elite") {
     const relicId = grantRelic(run, node.id);
@@ -1023,17 +1801,29 @@ function resolveCombat(run, { win, hpRemaining }) {
 function takeReward(run, cardId) {
   if (run.status !== "reward") return { ok: false, reason: "no-reward" };
   if (cardId && run.pendingReward?.cards.includes(cardId)) run.deck.push(cardId);
+  else run.handshakes += SKIP_REWARD;
   run.pendingReward = null;
   run.status = "map";
-  return { ok: true };
+  return { ok: true, skipped: !cardId };
 }
-function rest(run, choice) {
+function rest(run, choice, payload) {
   const node = nodeById(run.map, run.currentNodeId);
   if (node?.type !== "rest") return { ok: false, reason: "not-rest" };
-  if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * REST_HEAL_FRACTION));
+  if (choice === "heal") run.hp = Math.min(run.maxHp, run.hp + Math.round(run.maxHp * Math.max(0, REST_HEAL_FRACTION + (run.restHealMod || 0))));
+  else if (choice === "upgrade") {
+    const r = upgradeDeckCard(run, Number(payload));
+    if (!r.ok) return r;
+  }
   run.clearedIds.push(node.id);
   run.status = "map";
   return { ok: true, hp: run.hp };
+}
+function upgradeDeckCard(run, index) {
+  if (index < 0 || index >= run.deck.length) return { ok: false, reason: "bad-index" };
+  const upgraded = upgradeIdFor(run.deck[index]);
+  if (!upgraded) return { ok: false, reason: "not-upgradable" };
+  run.deck[index] = upgraded;
+  return { ok: true, id: upgraded };
 }
 function removeCard(run, index) {
   if (index < 0 || index >= run.deck.length) return { ok: false };
@@ -1053,6 +1843,45 @@ function buyCard(run, cardId, cost) {
   run.handshakes -= cost;
   run.deck.push(cardId);
   return { ok: true };
+}
+function removalCost(run) {
+  return REMOVAL_BASE + REMOVAL_STEP * (run.removalsPurchased || 0);
+}
+function buyRemoval(run, index) {
+  const cost = removalCost(run);
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  if (index < 0 || index >= run.deck.length) return { ok: false, reason: "bad-index", cost };
+  if (run.deck.length <= 1) return { ok: false, reason: "deck-floor", cost };
+  run.handshakes -= cost;
+  run.deck.splice(index, 1);
+  run.removalsPurchased = (run.removalsPurchased || 0) + 1;
+  return { ok: true, cost };
+}
+var UPGRADE_COST = 40;
+var RELIC_COST = 65;
+function buyUpgrade(run, index, cost = UPGRADE_COST) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const r = upgradeDeckCard(run, index);
+  if (!r.ok) return r;
+  run.handshakes -= cost;
+  return { ok: true, id: r.id, cost };
+}
+function buyRelic(run, cost = RELIC_COST) {
+  if (run.handshakes < cost) return { ok: false, reason: "poor", cost };
+  const id = grantRelic(run, `shop:${run.currentNodeId}`);
+  if (!id) return { ok: false, reason: "sold-out", cost };
+  run.handshakes -= cost;
+  return { ok: true, relic: id, cost };
+}
+function seatAtFinalBoss(run, deck) {
+  run.act = FINAL_BOSS_ACT;
+  const bossNode = run.map.acts[FINAL_BOSS_ACT - 1].layers.at(-1)[0];
+  run.currentNodeId = bossNode.id;
+  run.status = "boss";
+  run.pendingReward = null;
+  run.notice = null;
+  if (Array.isArray(deck)) run.deck = [...deck];
+  return bossNode.id;
 }
 function clearBoss(run) {
   if (run.act >= FINAL_BOSS_ACT) {
@@ -1088,11 +1917,167 @@ function screenForNode(node) {
   if (node.type === "boss") return "boss";
   return node.type;
 }
-function hashSeed(seed, nodeId2) {
-  let h = (Number(seed) || 1) >>> 0;
-  for (const ch of String(nodeId2)) h = Math.imul(h, 31) + ch.charCodeAt(0) >>> 0;
-  return h || 1;
+
+// ../../docs/games/metagame/stages/stage6/boss-combat.js
+var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60 };
+var DEMAND_LEAD_SYN = "lead-syn";
+var DEMAND_ACK_FIRST = "ack-first";
+function isSignalCard(card) {
+  return card?.type === "Signal";
 }
+function baseId2(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
+function currentDemand(combat) {
+  const phase = combat.bossPhase || 1;
+  if (phase === 1) return DEMAND_LEAD_SYN;
+  if (phase === 2) return DEMAND_ACK_FIRST;
+  return combat.turn % 2 === 1 ? DEMAND_LEAD_SYN : DEMAND_ACK_FIRST;
+}
+function ackPlayed(combat) {
+  return combat.playedIdsThisTurn.some((id) => baseId2(id) === "ACK");
+}
+function demandMet(combat) {
+  return currentDemand(combat) === DEMAND_LEAD_SYN ? baseId2(combat.playedIdsThisTurn[0]) === "SYN" : ackPlayed(combat);
+}
+function accepts(combat, card) {
+  if (!isSignalCard(card)) return true;
+  if (combat.bossLocked) return false;
+  return demandMet(combat);
+}
+function phaseHp(phase, hpMult) {
+  return Math.round(BOSS_PHASE_HP[phase] * (hpMult || 1));
+}
+function wireBossCombat(combat, { locked = false, hpMult = 1 } = {}) {
+  combat.bossPhase = 1;
+  combat.bossLocked = Boolean(locked);
+  combat.bossHpMult = hpMult;
+  combat.enemy.hp = phaseHp(1, hpMult);
+  combat.enemy.maxHp = phaseHp(1, hpMult);
+  rewireBossCombat(combat);
+  return combat;
+}
+function rewireBossCombat(combat) {
+  combat.acceptance = accepts;
+  combat.advancePhase = (c) => {
+    const phase = c.bossPhase || 1;
+    if (phase >= 3) return false;
+    c.bossPhase = phase + 1;
+    c.enemy.hp = phaseHp(c.bossPhase, c.bossHpMult);
+    c.enemy.maxHp = phaseHp(c.bossPhase, c.bossHpMult);
+    c.log = [...c.log || [], `Phase ${c.bossPhase}.`].slice(-10);
+    return true;
+  };
+  return combat;
+}
+function autoNegotiate(combat, maxTurns = 80) {
+  let turns = 0;
+  while (!combat.over && turns++ < maxTurns) {
+    playHandshakeTurn(combat);
+    if (combat.over) break;
+    endTurn(combat);
+  }
+  return combat;
+}
+function playHandshakeTurn(combat) {
+  if (currentDemand(combat) === DEMAND_LEAD_SYN) playFirstMatch(combat, (c) => baseId2(c.id) === "SYN");
+  else playFirstMatch(combat, (c) => c.type === "Protocol");
+  let guard = 0;
+  while (guard++ < 20 && playFirstMatch(combat, () => true)) {
+  }
+}
+function playFirstMatch(combat, pred) {
+  for (let i = 0; i < combat.hand.length; i++) {
+    const card = cardById(combat.hand[i]);
+    if (!card || card.cost > combat.player.energy) continue;
+    if (!pred(card)) continue;
+    playCard(combat, i);
+    return true;
+  }
+  return false;
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-persist.js
+function clone(value) {
+  return value == null ? value : JSON.parse(JSON.stringify(value));
+}
+function snapshotCombat(combat) {
+  return {
+    nodeId: combat.nodeId ?? null,
+    rngSeed: combat.rngSeed,
+    rngSteps: typeof combat.rng?.steps === "function" ? combat.rng.steps() : 0,
+    congestion: Boolean(combat.congestion),
+    window: combat.window,
+    windowCap: combat.windowCap,
+    windowDecay: combat.windowDecay,
+    noShrinkNextTurn: Boolean(combat.noShrinkNextTurn),
+    jamPending: Boolean(combat.jamPending),
+    firstCardDiscount: combat.firstCardDiscount || 0,
+    delaySpeedup: Boolean(combat.delaySpeedup),
+    delayUsed: Boolean(combat.delayUsed),
+    turn: combat.turn,
+    cardsPlayedThisTurn: combat.cardsPlayedThisTurn || 0,
+    energySpentThisTurn: combat.energySpentThisTurn || 0,
+    playedIdsThisTurn: [...combat.playedIdsThisTurn || []],
+    lastCardPlayed: combat.lastCardPlayed ?? null,
+    over: Boolean(combat.over),
+    result: combat.result ?? null,
+    log: [...combat.log || []],
+    player: clone(combat.player),
+    enemy: clone(combat.enemy),
+    draw: [...combat.draw || []],
+    hand: [...combat.hand || []],
+    discard: [...combat.discard || []],
+    exhaust: [...combat.exhaust || []],
+    jammed: [...combat.jammed || []],
+    pending: clone(combat.pending || []),
+    boss: combat.bossPhase ? { phase: combat.bossPhase, locked: Boolean(combat.bossLocked), hpMult: combat.bossHpMult || 1 } : null
+  };
+}
+function restoreCombat(snapshot, { relics = [] } = {}) {
+  const s = snapshot || {};
+  const combat = {
+    rng: makeTrackedRng(s.rngSeed, s.rngSteps || 0),
+    rngSeed: s.rngSeed,
+    relics,
+    congestion: Boolean(s.congestion),
+    window: s.window,
+    windowCap: s.windowCap,
+    windowDecay: s.windowDecay,
+    noShrinkNextTurn: Boolean(s.noShrinkNextTurn),
+    jamPending: Boolean(s.jamPending),
+    firstCardDiscount: s.firstCardDiscount || 0,
+    delaySpeedup: Boolean(s.delaySpeedup),
+    delayUsed: Boolean(s.delayUsed),
+    player: clone(s.player),
+    enemy: clone(s.enemy),
+    draw: [...s.draw || []],
+    hand: [...s.hand || []],
+    discard: [...s.discard || []],
+    exhaust: [...s.exhaust || []],
+    jammed: [...s.jammed || []],
+    pending: clone(s.pending || []),
+    turn: s.turn,
+    cardsPlayedThisTurn: s.cardsPlayedThisTurn || 0,
+    energySpentThisTurn: s.energySpentThisTurn || 0,
+    playedIdsThisTurn: [...s.playedIdsThisTurn || []],
+    lastCardPlayed: s.lastCardPlayed ?? null,
+    over: Boolean(s.over),
+    result: s.result ?? null,
+    log: [...s.log || []]
+  };
+  combat.nodeId = s.nodeId ?? null;
+  if (s.boss) {
+    combat.bossPhase = s.boss.phase;
+    combat.bossLocked = Boolean(s.boss.locked);
+    combat.bossHpMult = s.boss.hpMult || 1;
+    rewireBossCombat(combat);
+  }
+  return combat;
+}
+
+// ../../docs/games/metagame/stages/stage6/renderer.js
+import { createRun as createRunState } from "../../shared/run-state.js";
 
 // ../../docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = {
@@ -1101,11 +2086,23 @@ var STATUS_LABEL = {
   weak: "WEAK"
 };
 var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
+var PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
+var DEMAND_TEXT = {
+  "lead-syn": "lead this turn with SYN, or your Signals are refused.",
+  "ack-first": "play an ACK before your Signals, or they are refused."
+};
+function phaseRuleText(combat) {
+  const phase = combat.bossPhase || 1;
+  const demand = currentDemand(combat);
+  const mutating = phase === 3 ? "MUTATING — " : "";
+  return `${PHASE_NAME[phase] || ""} — ${mutating}${DEMAND_TEXT[demand] || ""}`;
+}
 function combatView(combat, run) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   el.innerHTML = `
+    ${bossBanner(combat)}
     <div class="s6db-combat-head">
       <span class="s6db-turn">turn ${combat.turn}</span>
       <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
@@ -1117,7 +2114,9 @@ function combatView(combat, run) {
     <div class="s6db-energy" aria-label="energy">
       ${energyPips(combat.player.energy, combat.player.maxEnergy)}
       <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
+      ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
     </div>
+    ${jammedRow(combat)}
     <div class="s6db-hand" aria-label="hand"></div>
     <div class="s6db-combat-controls">
       <button type="button" data-action="end-turn">end turn ▸</button>
@@ -1130,6 +2129,20 @@ function combatView(combat, run) {
   log2.replaceChildren(...combat.log.slice(-5).map(toLi));
   return el;
 }
+function bossBanner(combat) {
+  if (!combat.bossPhase) return "";
+  const locked = Boolean(combat.bossLocked);
+  return `
+    <div class="s6db-boss-banner${locked ? " is-locked" : ""}">
+      <div class="s6db-boss-banner-head">
+        <strong>THE REFUSED CONNECTION</strong>
+        <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
+      </div>
+      <p class="s6db-boss-rule">${esc(phaseRuleText(combat))}</p>
+      ${locked ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
+           <button type="button" data-action="epub">open the codex</button>` : ""}
+    </div>`;
+}
 function describeIntent(intent, combat) {
   if (!intent) return { kind: "unknown", icon: "…", primary: "—", detail: "" };
   if (intent.mirror) {
@@ -1138,12 +2151,13 @@ function describeIntent(intent, combat) {
   }
   if (intent.attack) {
     const hits = intent.hits || 1;
-    const total = intent.attack * hits;
+    const each = intent.attack + (intent.ramp ? intent.ramp * (combat?.enemy?.rttStacks || 0) : 0);
+    const total = each * hits;
     return {
       kind: intent.pierce ? "pierce" : "attack",
       icon: intent.pierce ? "⚡" : "⚔",
       primary: String(total),
-      detail: (hits > 1 ? `${intent.attack}×${hits}` : "") + (intent.pierce ? " unblockable" : "")
+      detail: (hits > 1 ? `${each}×${hits}` : "") + (intent.ramp ? " ⏫ growing" : "") + (intent.pierce ? " unblockable" : "")
     };
   }
   if (intent.block) return { kind: "block", icon: "🛡", primary: String(intent.block), detail: "defend" };
@@ -1172,7 +2186,20 @@ function enemyPanel(enemy, intent, combat) {
         <span class="s6db-intent-num">${esc(d.primary)}</span>
         <span class="s6db-intent-detail">${esc(d.detail || intent?.label || "")}</span>
       </div>
+      ${nextIntentTelegraph(enemy, combat)}
     </section>`;
+}
+function jammedRow(combat) {
+  if (!combat.jammed || !combat.jammed.length) return "";
+  const chips = combat.jammed.map((id) => `<span class="s6db-card s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc(id)}</span>`).join("");
+  return `<div class="s6db-jammed" aria-label="jammed (packet loss)"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</div>`;
+}
+function nextIntentTelegraph(enemy, combat) {
+  const script = enemy.script;
+  if (!script || script.length < 2) return "";
+  const next = script[(enemy.intentIndex + 1) % script.length];
+  const d = describeIntent(next, combat);
+  return `<div class="s6db-intent-next" title="${esc(next?.label || "")}">then ${d.icon} <strong>${esc(d.primary)}</strong></div>`;
 }
 function playerPanel(player) {
   return `
@@ -1252,18 +2279,23 @@ function hubView(state, lock) {
     <div class="s6db-hub-actions">
       ${hasRun ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>` : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
-      <button type="button" data-action="confront">confront The Refused Connection</button>
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
     <div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
-      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP &amp; +1 starting relic</span>
+      <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
+      ${activeModifiers(m.protocolVersion)}
     </div>
     <p class="s6db-hint">${esc2(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
+}
+function activeModifiers(version) {
+  const active = MODIFIERS.slice(0, Math.min(Number(version) || 0, MODIFIERS.length));
+  if (!active.length) return "";
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ ${esc2(mod.text)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -1369,11 +2401,22 @@ function restView(run) {
   const heal = Math.round(run.maxHp * 0.3);
   el.innerHTML = `
     <h2>Keepalive</h2>
-    <p>A quiet socket. Recover ${heal} HP, or thin your deck by removing one card.</p>
+    <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
     <div class="s6db-hub-actions">
       <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
     </div>
+    <div class="s6db-rest-upgrade"><h3>…or upgrade a card</h3></div>
     <div class="s6db-rest-thin"><h3>…or remove a card</h3></div>`;
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  const up = el.querySelector(".s6db-rest-upgrade");
+  if (upgradeable.length) {
+    const upList = document.createElement("div");
+    upList.className = "s6db-card-row";
+    upList.replaceChildren(...upgradeable.map(({ id, i }) => cardOption(upgradeIdFor(id), "upgrade", String(i))));
+    up.appendChild(upList);
+  } else {
+    up.insertAdjacentHTML("beforeend", `<p class="s6db-hint">Every card is already upgraded.</p>`);
+  }
   const thin = el.querySelector(".s6db-rest-thin");
   const list = document.createElement("div");
   list.className = "s6db-card-row";
@@ -1396,6 +2439,43 @@ function shopView(run) {
     return chip;
   }));
   el.appendChild(row);
+  const cost = removalCost(run);
+  const affordable = run.handshakes >= cost && run.deck.length > 1;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-remove"><h3>Purge a card — ${cost} ✋ <small>(price rises each purchase)</small></h3></div>`
+  );
+  const purge = el.querySelector(".s6db-shop-remove");
+  const purgeRow = document.createElement("div");
+  purgeRow.className = "s6db-card-row";
+  purgeRow.replaceChildren(...run.deck.map((id, i) => {
+    const chip = cardOption(id, "buy-remove", String(i));
+    chip.disabled = !affordable;
+    return chip;
+  }));
+  purge.appendChild(purgeRow);
+  const upgradeable = run.deck.map((id, i) => ({ id, i })).filter(({ id }) => canUpgrade(id));
+  if (upgradeable.length) {
+    el.insertAdjacentHTML(
+      "beforeend",
+      `<div class="s6db-shop-upgrade"><h3>Sharpen a card — ${UPGRADE_COST} ✋ each</h3></div>`
+    );
+    const upRow = document.createElement("div");
+    upRow.className = "s6db-card-row";
+    upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
+      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      chip.dataset.price = String(UPGRADE_COST);
+      chip.disabled = run.handshakes < UPGRADE_COST;
+      return chip;
+    }));
+    el.querySelector(".s6db-shop-upgrade").appendChild(upRow);
+  }
+  const relicAffordable = run.handshakes >= RELIC_COST;
+  el.insertAdjacentHTML(
+    "beforeend",
+    `<div class="s6db-shop-relic"><h3>Acquire a relic — ${RELIC_COST} ✋</h3>
+       <button type="button" data-buy-relic="1" data-price="${RELIC_COST}"${relicAffordable ? "" : " disabled"}>buy a relic ⬢</button></div>`
+  );
   el.insertAdjacentHTML(
     "beforeend",
     `<div class="s6db-hub-actions"><button type="button" data-action="to-map">leave ▸</button></div>`
@@ -1452,90 +2532,9 @@ function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/content.js
-var phaseRules = [
-  {
-    phase: 1,
-    title: "SYN Phase",
-    rule: "SYN must be played first each turn before Signal damage is accepted."
-  },
-  {
-    phase: 2,
-    title: "ACK Phase",
-    rule: "ACK must precede Signal damage."
-  },
-  {
-    phase: 3,
-    title: "Unknown Protocol",
-    rule: "ACK must be played each turn to avoid ongoing damage."
-  }
-];
-var protocolCards = [
-  { id: "SYN", type: "Signal", text: "Open a connection. Required first in Phase 1." },
-  { id: "ACK", type: "Protocol", text: "Acknowledge the current protocol rule." },
-  { id: "Signal", type: "Signal", text: "Deal 30 accepted damage when phase rules are met." }
-];
-
-// ../../docs/games/metagame/stages/stage6/ui-boss.js
-function bossView(state, lock, { fromRun = false } = {}) {
-  const el = document.createElement("div");
-  el.className = "s6db-boss";
-  const boss = state.boss;
-  el.innerHTML = `
-    <header class="s6db-boss-hud">
-      <strong>THE REFUSED CONNECTION</strong>
-      <span>phase ${boss.phase}</span>
-      <span>boss hp ${boss.defeated ? 0 : boss.hp}</span>
-      <span class="s6db-boss-status">${esc4(lock.status)}${lock.defeated ? " / answered" : ""}</span>
-    </header>
-    <div class="s6db-boss-layout">
-      <section class="s6db-boss-stage">
-        <p class="s6db-boss-hint">${esc4(lock.hint)}</p>
-        <div class="s6db-boss-turn">first ${esc4(boss.turn?.firstCard || "none")} · ACK ${boss.turn?.playedAck ? "yes" : "no"}</div>
-        <div class="s6db-card-row" aria-label="protocol cards"></div>
-      </section>
-      <section class="s6db-boss-rules" aria-label="Chapter 9 rules"></section>
-    </div>
-    <ol class="s6db-log" aria-label="protocol log"></ol>
-    <div class="s6db-hub-actions">
-      <button type="button" data-action="boss"${lock.defeated ? " disabled" : ""}>${lock.unlocked ? "negotiate" : "challenge"}</button>
-      <button type="button" data-action="new-turn">new turn</button>
-      <button type="button" data-action="epub">open the codex</button>
-      ${boss.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
-      ${fromRun ? "" : `<button type="button" data-action="to-hub" class="s6db-ghost">back to hub</button>`}
-    </div>`;
-  const rules = el.querySelector(".s6db-boss-rules");
-  rules.replaceChildren(...phaseRules.map((rule) => {
-    const item = document.createElement("article");
-    item.innerHTML = `<strong>${esc4(rule.title)}</strong><span>${esc4(rule.rule)}</span>`;
-    return item;
-  }));
-  const cards = el.querySelector(".s6db-card-row");
-  cards.replaceChildren(...protocolCards.map((card) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `s6db-card s6db-card--${card.type.toLowerCase()}`;
-    button.dataset.card = card.id;
-    button.disabled = boss.defeated || !lock.unlocked;
-    button.innerHTML = `<strong class="s6db-card-id">${esc4(card.id)}</strong>
-      <span class="s6db-card-type">${esc4(card.type)}</span>
-      <small class="s6db-card-text">${esc4(card.text)}</small>`;
-    return button;
-  }));
-  const log2 = el.querySelector(".s6db-log");
-  log2.replaceChildren(...(state.log || []).slice(-6).map((line) => {
-    const li = document.createElement("li");
-    li.textContent = line;
-    return li;
-  }));
-  return el;
-}
-function esc4(value) {
-  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-}
-
 // ../../docs/games/metagame/stages/stage6/renderer.js
-function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
+var REFUSED_CONNECTION = "the-refused-connection";
+function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage6-protocol-codex";
   root.innerHTML = `
@@ -1543,6 +2542,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     <div class="s6db-screen" data-screen></div>`;
   host.replaceChildren(root);
   const screen = root.querySelector("[data-screen]");
+  const combatRun = orchestrator?.save ? createRunState({ save: orchestrator.save, stageId: 6, slot: "combat", debounceMs: 0 }) : null;
   let combat = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -1555,21 +2555,46 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   };
   root.addEventListener("click", handleClick);
   route();
+  window.__fvStage6 = {
+    jumpToBoss(deck) {
+      if (!state.run) beginRun();
+      seatAtFinalBoss(state.run, deck);
+      state.ui.screen = "run";
+      if (combatRun) combatRun.reset();
+      combat = null;
+      commit();
+      return state.run.currentNodeId;
+    },
+    // TEST/DEBUG: drive the in-run boss fight with a correct handshake strategy using the REAL
+    // engine + acceptance. NOT a bypass — if ch9 is unread the boss is locked and this cannot win.
+    autoNegotiate(maxTurns = 80) {
+      const run = state.run;
+      if (!run || run.status !== "boss") return { ok: false, reason: "not-at-boss" };
+      if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
+      autoNegotiate(combat, maxTurns);
+      const enemyHp = combat.enemy?.hp;
+      const result = combat.result;
+      if (combat.over) finishCombat(run);
+      commit();
+      return { ok: true, result, enemyHp, bossDefeated: Boolean(state.boss.defeated), won: state.run?.status === "won" };
+    }
+  };
   return { repaint: route, destroy() {
+    if (combatRun) combatRun.destroy();
+    if (window.__fvStage6) delete window.__fvStage6;
     root.remove();
   } };
   function route() {
     const run = state.run;
-    if (state.ui.screen === "boss") return mount(bossView(state, lockState(), { fromRun: false }));
     if (state.ui.screen !== "run" || !run) {
       combat = null;
       return mount(hubView(state, lockState()));
     }
     switch (run.status) {
+      // Every boss — including the act-4 finale — is now a real-deck fight (combatView).
       case "combat":
-        return mountCombat(run);
       case "boss":
-        return run.act >= FINAL_BOSS_ACT ? mount(bossView(state, lockState(), { fromRun: true })) : mountCombat(run);
+        return mountCombat(run);
       case "reward":
         combat = null;
         return mount(rewardView(run));
@@ -1595,33 +2620,65 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     }
   }
   function mountCombat(run) {
-    if (!combat || combat.nodeId !== run.currentNodeId) combat = makeCombat(run);
+    if (!combat || combat.nodeId !== run.currentNodeId) combat = loadOrMakeCombat(run);
     if (combat.over) {
       finishCombat(run);
       return route();
     }
     mount(combatView(combat, run));
   }
+  function loadOrMakeCombat(run) {
+    const snap = combatRun?.restore();
+    if (snap && !snap.over && snap.runSeed === run.seed && snap.nodeId === run.currentNodeId) {
+      const c2 = restoreCombat(snap, { relics: relicsFor(run.relics) });
+      c2.nodeId = run.currentNodeId;
+      return c2;
+    }
+    const c = makeCombat(run);
+    checkpointCombat(c, run);
+    return c;
+  }
+  function checkpointCombat(c, run) {
+    if (!combatRun || !c) return;
+    combatRun.checkpoint({ ...snapshotCombat(c), runSeed: run.seed });
+  }
   function makeCombat(run) {
-    const node = nodeById(run.map, run.currentNodeId);
     const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
+    if (enemy.tier === "elite" && run.eliteHpBonus) enemy.hp += run.eliteHpBonus;
     const c = createCombat({
       deck: run.deck,
       player: { hp: run.hp, maxHp: run.maxHp },
       enemy,
       seed: strHash2(`${run.seed}:${run.currentNodeId}:combat`),
-      relics: relicsFor(run.relics)
+      relics: relicsFor(run.relics),
+      congestion: run.act === 3,
+      // THROUGHPUT: Act 3 fights run on the dynamic congestion window
+      windowCap: 5 + (run.windowCapMod || 0)
+      // prestige tight-window modifier
     });
     c.nodeId = run.currentNodeId;
+    if (enemyId === REFUSED_CONNECTION) wireBossCombat(c, { locked: !lockState().unlocked, hpMult: run.bossHpMult || 1 });
     return c;
   }
   function finishCombat(run) {
     const win = combat.result === "win";
+    const node = nodeById(run.map, run.currentNodeId);
+    const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
+    if (combatRun) combatRun.reset();
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
+    if (win && isFinalBoss) finalBossDefeated(run);
+  }
+  function finalBossDefeated(run) {
+    state.boss.defeated = true;
+    state.boss.reached = true;
+    state.meta.firstClearComplete = true;
+    state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
+    state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
+    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
   function doPrestige() {
     const cost = prestigeCost(state.meta.protocolVersion || 0);
@@ -1634,6 +2691,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
     state.run = createRun({ seed, version: state.meta.protocolVersion || 0, handshakes: 0 });
     state.ui.screen = "run";
+    if (combatRun) combatRun.reset();
     combat = null;
   }
   function resolveEvent(run, key) {
@@ -1645,28 +2703,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       run.notice = id ? `Relic acquired — ${relicById(id)?.name || id}` : "no protocol left to rewrite";
     }
     closeNode(run);
-  }
-  function challengeBoss() {
-    state.boss.reached = true;
-    if (!lockState().unlocked) {
-      recordLockedBossAttempt(state);
-      return;
-    }
-    applyProtocolChapter9Unlock({ state, achievements, bell });
-  }
-  function playBossCard(cardId) {
-    playProtocolCard({ state, card: cardId });
-    if (state.boss.defeated) onBossDefeated();
-  }
-  function onBossDefeated() {
-    state.meta.firstClearComplete = true;
-    const run = state.run;
-    if (run && run.status === "boss") {
-      resolveCombat(run, { win: true, hpRemaining: run.hp });
-      state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
-      state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
-    }
-    completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
   }
   function handleClick(event) {
     const run = state.run;
@@ -1681,11 +2717,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (play && combat && !combat.over) {
       playCard(combat, Number(play.dataset.play));
       if (combat.over) finishCombat(run);
-      return true;
-    }
-    const card = event.target.closest("[data-card]");
-    if (card) {
-      playBossCard(card.dataset.card);
+      else checkpointCombat(combat, run);
       return true;
     }
     if (!run) return false;
@@ -1705,6 +2737,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       rest(run, "remove");
       return true;
     }
+    const upgrade = event.target.closest("[data-upgrade]");
+    if (upgrade) {
+      rest(run, "upgrade", Number(upgrade.dataset.upgrade));
+      return true;
+    }
     const restEl = event.target.closest("[data-rest]");
     if (restEl) {
       rest(run, restEl.dataset.rest);
@@ -1713,6 +2750,21 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const buy = event.target.closest("[data-buy]");
     if (buy) {
       buyCard(run, buy.dataset.buy, Number(buy.dataset.price));
+      return true;
+    }
+    const buyRemove = event.target.closest("[data-buy-remove]");
+    if (buyRemove) {
+      buyRemoval(run, Number(buyRemove.dataset.buyRemove));
+      return true;
+    }
+    const buyUp = event.target.closest("[data-buy-upgrade]");
+    if (buyUp) {
+      buyUpgrade(run, Number(buyUp.dataset.buyUpgrade), Number(buyUp.dataset.price));
+      return true;
+    }
+    const buyRel = event.target.closest("[data-buy-relic]");
+    if (buyRel) {
+      buyRelic(run, Number(buyRel.dataset.price));
       return true;
     }
     const ev = event.target.closest("[data-event]");
@@ -1732,12 +2784,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         state.ui.screen = "run";
         return true;
       case "abandon":
+        if (combatRun) combatRun.reset();
         state.run = null;
         combat = null;
         state.ui.screen = "hub";
-        return true;
-      case "confront":
-        state.ui.screen = "boss";
         return true;
       case "prestige":
         doPrestige();
@@ -1752,16 +2802,15 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         if (combat && !combat.over) {
           endTurn(combat);
           if (combat.over) finishCombat(run);
+          else checkpointCombat(combat, run);
         }
-        return true;
-      case "boss":
-        challengeBoss();
-        return true;
-      case "new-turn":
-        startProtocolTurn(state);
         return true;
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
+        if (combat && combat.bossPhase && combat.bossLocked) {
+          if (combatRun) combatRun.reset();
+          combat = null;
+        }
         return true;
       case "bts":
         openBts({ bts, viewer });
@@ -1845,7 +2894,7 @@ function normalizeState(state) {
   target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
   target.run = target.run && typeof target.run === "object" ? target.run : null;
   target.ui = mergePlain(fresh.ui, target.ui);
-  if (!["hub", "run", "boss"].includes(target.ui.screen)) target.ui.screen = "hub";
+  if (!["hub", "run"].includes(target.ui.screen)) target.ui.screen = "hub";
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   delete target.deck;
   return target;

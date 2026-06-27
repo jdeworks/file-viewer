@@ -6,7 +6,8 @@ import { bellMessages } from "./messages.js";
 //   run   — the active run.js state machine, or null between runs. Combat itself is
 //           transient (held in the renderer, never persisted): a reload mid-fight
 //           re-instantiates the encounter from the run's node.
-//   ui    — top-level screen: "hub" | "run" | "boss".
+//   ui    — top-level screen: "hub" | "run". (The boss is an in-run act-4 node, never a
+//           standalone top-level screen — legacy "boss" saves normalize to "hub".)
 const VERSION = 2;
 
 export function defaultState() {
@@ -50,7 +51,8 @@ export function normalizeState(state) {
   target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
   target.run = target.run && typeof target.run === "object" ? target.run : null;
   target.ui = mergePlain(fresh.ui, target.ui);
-  if (!["hub", "run", "boss"].includes(target.ui.screen)) target.ui.screen = "hub";
+  // The boss is now an in-run node, never a top-level screen: legacy "boss" → "hub".
+  if (!["hub", "run"].includes(target.ui.screen)) target.ui.screen = "hub";
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   delete target.deck; // stale v1 key
   return target;

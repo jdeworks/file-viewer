@@ -1,5 +1,8 @@
+// The storage KEY is a stable namespace and intentionally keeps its historical `v3` suffix even
+// though the in-save schema is now v4 — old saves were written under this key, and migrating them
+// forward (rather than orphaning them by changing the key) is the whole point of the ladder below.
 export const SAVE_KEY = 'fv:games:metagame:v3';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 5;
 export const STAGE_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
 function nowMs() {
@@ -54,6 +57,10 @@ export function createFreshSave(timestamp = nowMs()) {
     bts: {
       opened: {},
     },
+    // Per-stage run counter (stageId -> count) used by shared/run-state.js to derive a fresh
+    // deterministic seed for each new run. Lives at top level so it never pollutes the per-stage
+    // `stageState[id]` emptiness check that drives lazy defaultState seeding in metagame.js.
+    runs: {},
     stageState: freshStageState(),
     global: {
       loopCount: 0,
@@ -61,6 +68,14 @@ export function createFreshSave(timestamp = nowMs()) {
       fullCapstoneComplete: false,
       memorySignature: null,
       completionId: null,
+      // Cross-stage ASCENSION completion summary (see shared/ascension.js). Lives in `global` — a
+      // top-level container — so the future hub/meta-goal can read it WITHOUT visiting each stage
+      // (per-stage ascension state lives in stageState[id], which metagame.js lazy-seeds only on
+      // mount, so an unvisited stage's substate is not a safe home for the cross-stage summary).
+      // maxAscension     — single highest ascension level cleared across ALL stages (completionist).
+      // ascensionCleared — map stageId -> highest ascension level cleared for that stage.
+      maxAscension: 0,
+      ascensionCleared: {},
       createdAt: timestamp,
       updatedAt: timestamp,
     },
@@ -72,6 +87,7 @@ export function isValidSave(value) {
   if (!plainObject(value.achievements) || !plainObject(value.actions)) return false;
   if (!plainObject(value.bell) || !Array.isArray(value.bell.seen) || !Array.isArray(value.bell.log)) return false;
   if (!plainObject(value.bts) || !plainObject(value.bts.opened)) return false;
+  if (!plainObject(value.runs)) return false;
   if (!plainObject(value.stageState) || !plainObject(value.global)) return false;
   for (const stage of STAGE_IDS) {
     if (!plainObject(value.stageState[stage])) return false;
@@ -85,9 +101,78 @@ export function ensureSaveShape(value, timestamp = nowMs()) {
   value.defeated = uniqueStageList(value.defeated, []);
   value.unlockedStages = uniqueStageList(value.unlockedStages, [1]);
   if (!value.unlockedStages.includes(1)) value.unlockedStages.unshift(1);
+  if (!plainObject(value.runs)) value.runs = {};
   value.global.updatedAt = Number(value.global.updatedAt) || timestamp;
   value.global.createdAt = Number(value.global.createdAt) || value.global.updatedAt;
   return value;
+}
+
+// ── Save-migration ladder ─────────────────────────────────────────────────────────────────────────
+// A valid older-version save is MIGRATED forward (its actions/achievements/defeated/stageState are
+// preserved) instead of being discarded. Only a truly-unparseable / versionless / future-version save
+// falls back to fresh. Each step takes `vN` and returns `vN+1`; `migrateSave` walks them up to
+// SAVE_VERSION. Migrations MUST run before metagame.js lazy-seeds stageState[id].
+
+// Backfill any missing top-level fields from a fresh save (legacy shapes predate the bell/bts/global
+// split) WITHOUT clobbering existing player data, then stamp the target version.
+function upgradeShape(value, timestamp, toVersion) {
+  const fresh = createFreshSave(timestamp);
+  const merged = { ...fresh, ...value };
+  if (!plainObject(merged.achievements)) merged.achievements = {};
+  if (!plainObject(merged.actions)) merged.actions = {};
+  if (!plainObject(merged.bell)) merged.bell = { seen: [], log: [] };
+  if (!Array.isArray(merged.bell.seen)) merged.bell.seen = [];
+  if (!Array.isArray(merged.bell.log)) merged.bell.log = [];
+  if (!plainObject(merged.bts)) merged.bts = { opened: {} };
+  if (!plainObject(merged.bts.opened)) merged.bts.opened = {};
+  merged.global = plainObject(merged.global) ? { ...fresh.global, ...merged.global } : { ...fresh.global };
+  const stageState = plainObject(merged.stageState) ? merged.stageState : {};
+  for (const id of STAGE_IDS) if (!plainObject(stageState[id])) stageState[id] = {};
+  merged.stageState = stageState;
+  merged.version = toVersion;
+  return merged;
+}
+
+const MIGRATIONS = {
+  // 1->2, 2->3: legacy shape upgrades — backfill missing top-level containers, keep player data.
+  1: (value, timestamp) => upgradeShape(value, timestamp, 2),
+  2: (value, timestamp) => upgradeShape(value, timestamp, 3),
+  // 3->4: introduce `runs` (per-stage run counter for shared/run-state.js seeding). Additive only.
+  3: (value) => {
+    if (!plainObject(value.runs)) value.runs = {};
+    value.version = 4;
+    return value;
+  },
+  // 4->5: introduce the cross-stage ASCENSION completion summary in `global` (see shared/ascension.js).
+  // Additive only — backfill the two fields if absent, preserve all existing global/player data.
+  4: (value) => {
+    if (!plainObject(value.global)) value.global = {};
+    if (typeof value.global.maxAscension !== 'number' || !Number.isFinite(value.global.maxAscension)) {
+      value.global.maxAscension = 0;
+    }
+    if (!plainObject(value.global.ascensionCleared)) value.global.ascensionCleared = {};
+    value.version = 5;
+    return value;
+  },
+};
+
+// Walk the migration ladder from the save's version up to SAVE_VERSION. Returns the migrated save,
+// or null when it cannot be migrated (not an object, no usable integer version, a version newer than
+// we understand, or a missing/non-advancing step) — the caller then falls back to a fresh save.
+export function migrateSave(value, timestamp = nowMs()) {
+  if (!plainObject(value)) return null;
+  let version = Number(value.version);
+  if (!Number.isInteger(version) || version < 1 || version > SAVE_VERSION) return null;
+  let save = value;
+  while (version < SAVE_VERSION) {
+    const step = MIGRATIONS[version];
+    if (typeof step !== 'function') return null;
+    save = step(save, timestamp);
+    const next = Number(save?.version);
+    if (!Number.isInteger(next) || next <= version) return null; // guard a broken/non-advancing step
+    version = next;
+  }
+  return save;
 }
 
 export function loadSave({ storage = defaultStorage(), key = SAVE_KEY, timestamp = nowMs() } = {}) {
@@ -99,8 +184,13 @@ export function loadSave({ storage = defaultStorage(), key = SAVE_KEY, timestamp
       storage.setItem(key, JSON.stringify(fresh));
       return fresh;
     }
-    const save = ensureSaveShape(JSON.parse(raw), timestamp);
-    if (!isValidSave(JSON.parse(raw))) storage.setItem(key, JSON.stringify(save));
+    let parsed = null;
+    try { parsed = JSON.parse(raw); } catch { parsed = null; }
+    const wasValidCurrent = isValidSave(parsed);
+    // Migrate an older valid save forward; ensureSaveShape returns a fresh save only if migration
+    // failed (truly-corrupt / versionless / future) or the shape is still invalid.
+    const save = ensureSaveShape(migrateSave(parsed, timestamp), timestamp);
+    if (!wasValidCurrent) storage.setItem(key, JSON.stringify(save));
     return save;
   } catch {
     const fresh = createFreshSave(timestamp);
