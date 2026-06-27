@@ -7,160 +7,139 @@ const CSS = `
 .ls-title{font-size:18px;font-weight:700;margin:0 0 4px;}
 .ls-sub{font-size:12px;color:var(--fg-2,#888);margin:0 0 14px;}
 .ls-cards{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
-.ls-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:110px;}
+.ls-card{background:var(--bg-2,#f8fafc);border:1px solid var(--border,#d9e1ec);border-radius:8px;padding:9px 14px;min-width:96px;}
 .ls-card strong{display:block;font-size:1.2rem;font-weight:700;}
 .ls-card span{font-size:.8rem;color:var(--fg-2,#5a6678);}
 .ls-section{margin:0 0 16px;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden;}
 .ls-section-hd{background:var(--bg-2,#f6f8fa);padding:8px 14px;font-size:13px;font-weight:600;border-bottom:1px solid var(--border,#e0e0e0);}
 .ls-list{margin:0;padding:0;list-style:none;}
-.ls-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;}
+.ls-list li{padding:5px 14px;border-bottom:1px solid var(--border,#eaecf0);font-family:ui-monospace,monospace;font-size:12px;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
 .ls-list li:last-child{border-bottom:none;}
+.ls-list li.ls-method{padding-left:30px;background:var(--bg,#fff);}
 .ls-tag{font-size:10px;padding:1px 5px;border-radius:4px;background:#e8f4fb;color:#1a3a5c;font-weight:700;}
+.ls-tag-thin{background:#dbeafe;color:#1d4ed8;}
 .ls-tag-fat{background:#fef3c7;color:#92400e;}
-.ls-tag-back{background:#dcfce7;color:#166534;}
-.ls-pre{margin:0;background:var(--bg,#fff);padding:14px 16px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;}
-.ls-kw{color:#1a3a5c;font-weight:600;}
-.ls-str{color:#0a6640;}
-.ls-comment{color:#6e7781;font-style:italic;}
-.ls-num{color:#b45309;}
-.ls-op{color:#7ec8e3;font-weight:600;}
+.ls-tag-ctor{background:#ede9fe;color:#7c3aed;}
+.ls-tag-req{background:#dcfce7;color:#166534;}
+.ls-tag-const{background:#f3e8ff;color:#7e22ce;}
+.ls-tag-exp{background:#ffe4e6;color:#be123c;}
+.ls-name{font-weight:600;}
+.ls-params{color:var(--fg-2,#555);}
+.ls-bind{color:#0e7490;}
+.ls-val{color:#9333ea;}
+.ls-ext{color:#1a3a5c;font-style:italic;}
 `;
 
-const LS_KEYWORDS = new Set([
-  'if', 'else', 'unless', 'then', 'and', 'or', 'not', 'is', 'isnt',
-  'true', 'false', 'null', 'undefined', 'yes', 'no', 'on', 'off',
-  'new', 'return', 'throw', 'try', 'catch', 'finally', 'class', 'extends',
-  'super', 'this', 'of', 'in', 'by', 'when', 'switch', 'for', 'while',
-  'until', 'loop', 'do', 'break', 'continue', 'delete', 'typeof', 'instanceof',
-  'export', 'import', 'require', 'mixin', 'implements',
-  'let', 'const', 'var', 'function',
-]);
-
-function analyzeLS(text) {
-  const lines = text.split(/\r?\n/);
-  const classes = [];
-  const mixins = [];
-  const functions = [];
-  const requires = [];
-  let backCallCount = 0;
-  let hasPrelude = false;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('#')) continue;
-
-    // Classes
-    const classM = trimmed.match(/^class\s+(\w+)(?:\s+(?:extends|implements)\s+(\w+))?/);
-    if (classM) classes.push({ name: classM[1], parent: classM[2] || null });
-
-    // Mixins
-    const mixinM = trimmed.match(/^(\w+)\s*=\s*mixin\b/);
-    if (mixinM) mixins.push(mixinM[1]);
-
-    // Function definitions with -> and ~> (fat arrow in LS)
-    const fnFat = trimmed.match(/^(\w+)\s*[=:]\s*(?:\([^)]*\))?\s*~>/);
-    const fnThin = trimmed.match(/^(\w+)\s*[=:]\s*(?:\([^)]*\))?\s*->/);
-    const namedFn = trimmed.match(/^function\s+(\w+)/);
-
-    if (fnFat) functions.push({ name: fnFat[1], fat: true });
-    else if (fnThin) functions.push({ name: fnThin[1], fat: false });
-    else if (namedFn) functions.push({ name: namedFn[1], fat: false });
-
-    // require
-    const reqM = trimmed.match(/require\s+['"]([^'"]+)['"]/);
-    if (reqM) {
-      requires.push(reqM[1]);
-      if (/prelude/.test(reqM[1])) hasPrelude = true;
-    }
-    const reqM2 = trimmed.match(/=\s*require\s*\(\s*['"]([^'"]+)['"]\s*\)/);
-    if (reqM2 && !reqM) {
-      requires.push(reqM2[1]);
-      if (/prelude/.test(reqM2[1])) hasPrelude = true;
-    }
-
-    // backCall <- usage
-    backCallCount += (trimmed.match(/<-/g) || []).length;
-  }
-
-  return { classes, mixins, functions, requires, backCallCount, hasPrelude };
+// "(a, b)" / "(@name, @sound)" / "" -> ['a','b'] / ['@name','@sound'] / [].
+function lsParams(raw) {
+  if (raw == null) return [];
+  return String(raw).split(',').map((p) => p.trim()).filter(Boolean);
 }
 
-function highlightLS(text) {
-  const lines = text.split(/\r?\n/);
-  const result = [];
+const indentOf = (line) => (line.match(/^[ \t]*/)[0] || '').length;
+
+// Parse a `require!` block / inline entry like  'prelude-ls': { map, filter }  or  fs: FS  or  fs
+function parseRequireEntry(entry, requires) {
+  const t = entry.trim().replace(/,\s*$/, '');
+  if (!t) return;
+  const m = t.match(/^(['"]?)([\w\-./@]+)\1\s*(?::\s*([\s\S]+))?$/);
+  if (m) requires.push({ module: m[2], binding: (m[3] || m[2]).trim() });
+}
+
+// Parse LiveScript source into structured facts. Pure (no DOM) so it is unit-testable.
+// Indentation-significant: top-level defs are read at column 0; class bodies are read at the
+// method indent level only (so nested arrows inside method bodies aren't mistaken for methods).
+export function analyzeLiveScript(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const requires = [], functions = [], classes = [], constants = [];
+  let exports = [];
+
+  let cls = null, clsIndent = 0, methodIndent = null;   // active class state
+  let inReq = false, reqIndent = 0;                      // active require! block state
 
   for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('#')) {
-      result.push('<span class="ls-comment">' + esc(line) + '</span>');
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;               // blanks / comments don't close scopes
+    const indent = indentOf(line);
+
+    // --- inside a multi-line require! { ... } block ---
+    if (inReq) {
+      if (t === '}' || indent <= reqIndent) { inReq = false; if (t === '}') continue; }
+      else { parseRequireEntry(t, requires); continue; }
+    }
+
+    // --- inside a class body ---
+    if (cls) {
+      if (indent <= clsIndent) { cls = null; methodIndent = null; }   // dedent ends the class
+      else {
+        if (methodIndent === null) methodIndent = indent;
+        if (indent === methodIndent) {
+          let m;
+          if ((m = t.match(/^\(([^)]*)\)\s*(->|~>)/))) {
+            cls.methods.push({ name: 'constructor', params: lsParams(m[1]), bound: m[2] === '~>' });
+          } else if ((m = t.match(/^([\w$]+)\s*:\s*(?:\(([^)]*)\))?\s*(->|~>)/))) {
+            cls.methods.push({ name: m[1], params: lsParams(m[2]), bound: m[3] === '~>' });
+          } else if ((m = t.match(/^([\w$]+)\s*[:=]\s*(.+)$/))) {
+            cls.properties.push({ name: m[1], value: m[2].trim() });
+          }
+        }
+        continue;   // any class-body line stays consumed
+      }
+    }
+
+    // --- require! (inline or block start) ---
+    let m;
+    if ((m = t.match(/^require!\s*(.*)$/))) {
+      const rest = m[1].trim();
+      if (rest.startsWith('{')) {
+        const close = rest.indexOf('}');
+        if (close >= 0) rest.slice(1, close).split(',').forEach((e) => parseRequireEntry(e, requires));
+        else { inReq = true; reqIndent = indent; }
+      } else if (rest) {
+        parseRequireEntry(rest, requires);
+      } else { inReq = true; reqIndent = indent; }
       continue;
     }
 
-    let out = '';
-    let i = 0;
-    while (i < line.length) {
-      if (line[i] === '#') {
-        out += '<span class="ls-comment">' + esc(line.slice(i)) + '</span>';
-        break;
-      }
-      // Strings
-      if (line[i] === '"' || line[i] === "'") {
-        const q = line[i];
-        let j = i + 1;
-        while (j < line.length && line[j] !== q) {
-          if (line[j] === '\\') j++;
-          j++;
-        }
-        j++;
-        out += '<span class="ls-str">' + esc(line.slice(i, j)) + '</span>';
-        i = j;
-        continue;
-      }
-      // Numbers
-      if (/[0-9]/.test(line[i])) {
-        let j = i;
-        while (j < line.length && /[0-9._xXbBLl]/.test(line[j])) j++;
-        out += '<span class="ls-num">' + esc(line.slice(i, j)) + '</span>';
-        i = j;
-        continue;
-      }
-      // backCall <-
-      if (line[i] === '<' && line[i + 1] === '-') {
-        out += '<span class="ls-op">&lt;-</span>';
-        i += 2;
-        continue;
-      }
-      // Fat arrow ~>
-      if (line[i] === '~' && line[i + 1] === '>') {
-        out += '<span class="ls-op">~&gt;</span>';
-        i += 2;
-        continue;
-      }
-      // Thin arrow ->
-      if (line[i] === '-' && line[i + 1] === '>') {
-        out += '<span class="ls-op">-&gt;</span>';
-        i += 2;
-        continue;
-      }
-      // Keywords / identifiers
-      if (/[A-Za-z_]/.test(line[i])) {
-        let j = i;
-        while (j < line.length && /[\w]/.test(line[j])) j++;
-        const word = line.slice(i, j);
-        if (LS_KEYWORDS.has(word)) {
-          out += '<span class="ls-kw">' + esc(word) + '</span>';
-        } else {
-          out += esc(word);
-        }
-        i = j;
-        continue;
-      }
-      out += esc(line[i]);
-      i++;
+    // --- class declaration ---
+    if ((m = t.match(/^class\s+([\w.$]+)(?:\s+extends\s+([\w.$]+))?/))) {
+      cls = { name: m[1], extends: m[2] || null, methods: [], properties: [] };
+      classes.push(cls); clsIndent = indent; methodIndent = null;
+      continue;
     }
-    result.push(out);
+
+    if (indent !== 0) continue;   // only column-0 lines are top-level definitions
+
+    // --- module.exports ---
+    if ((m = t.match(/^module\.exports\s*=\s*\{([^}]*)\}/))) {
+      exports = m[1].split(',').map((s) => s.split(':')[0].trim()).filter(Boolean);
+      continue;
+    }
+    if ((m = t.match(/^module\.exports(?:\.(\w+))?\s*=\s*(.+)$/))) {
+      exports.push(m[1] || m[2].trim());
+      continue;
+    }
+
+    // --- top-level function definition ( name = (params) -> / ~> ) ---
+    if ((m = t.match(/^([\w$]+)\s*=\s*(?:\(([^)]*)\))?\s*(->|~>)/))) {
+      functions.push({ name: m[1], params: lsParams(m[2]), bound: m[3] === '~>' });
+      continue;
+    }
+
+    // --- require via assignment ( x = require 'mod' ) ---
+    if ((m = t.match(/^([\w$]+)\s*=\s*require!?\s*\(?\s*['"]([^'"]+)['"]/))) {
+      requires.push({ module: m[2], binding: m[1] });
+      continue;
+    }
+
+    // --- plain constant / assignment ---
+    if ((m = t.match(/^([\w$]+)\s*=\s*(.+)$/))) {
+      constants.push({ name: m[1], value: m[2].trim() });
+      continue;
+    }
   }
-  return result.join('\n');
+
+  return { requires, functions, classes, constants, exports };
 }
 
 function makeSection(host, title) {
@@ -181,128 +160,96 @@ function makeList(sec) {
   return ul;
 }
 
-export async function render(intake, _ctx) {
+function row(ul, html, cls) {
+  const li = document.createElement('li');
+  if (cls) li.className = cls;
+  li.innerHTML = html;
+  ul.appendChild(li);
+}
+
+const tag = (cls, t) => `<span class="ls-tag ${cls}">${esc(t)}</span>`;
+const paramsHtml = (params) => `(<span class="ls-params">${params.map(esc).join(', ')}</span>)`;
+const arrowTag = (bound) => (bound ? tag('ls-tag-fat', '~>') : tag('ls-tag-thin', '->'));
+
+export async function render(intake) {
   const text = intake.text || '';
-  const { classes, mixins, functions, requires, backCallCount, hasPrelude } = analyzeLS(text);
-  const fatCount = functions.filter((f) => f.fat).length;
+  const { requires, functions, classes, constants, exports } = analyzeLiveScript(text);
+  const methodCount = classes.reduce((n, c) => n + c.methods.length, 0);
 
   const host = document.createElement('div');
   host.className = 'ls-doc';
-
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);
 
-  // Title
   const title = document.createElement('div');
   title.className = 'ls-title';
   title.innerHTML = '<span class="ls-badge">LiveScript</span><span class="ls-badge-sub">.ls</span>';
   host.appendChild(title);
 
-  // Sub
-  const subEl = document.createElement('div');
-  subEl.className = 'ls-sub';
-  const parts = [
-    `${classes.length} class${classes.length !== 1 ? 'es' : ''}`,
-    `${functions.length} function${functions.length !== 1 ? 's' : ''}`,
-    `${requires.length} require${requires.length !== 1 ? 's' : ''}`,
-  ];
-  if (backCallCount > 0) parts.push(`${backCallCount} backCall${backCallCount !== 1 ? 's' : ''}`);
-  if (hasPrelude) parts.push('prelude.ls');
-  subEl.textContent = parts.join(' · ');
-  host.appendChild(subEl);
+  const sub = document.createElement('div');
+  sub.className = 'ls-sub';
+  sub.textContent = [
+    requires.length && `${requires.length} require${requires.length !== 1 ? 's' : ''}`,
+    classes.length && `${classes.length} class${classes.length !== 1 ? 'es' : ''}`,
+    functions.length && `${functions.length} function${functions.length !== 1 ? 's' : ''}`,
+    constants.length && `${constants.length} constant${constants.length !== 1 ? 's' : ''}`,
+  ].filter(Boolean).join(' · ');
+  host.appendChild(sub);
 
-  // Cards
   const cards = document.createElement('div');
   cards.className = 'ls-cards';
-  const cardItems = [
-    { value: classes.length, label: 'Classes' },
+  for (const { value, label } of [
+    { value: requires.length, label: 'Requires' },
     { value: functions.length, label: 'Functions' },
-    { value: fatCount, label: 'Fat Arrows (~>)' },
-    { value: backCallCount, label: 'BackCalls (<-)' },
-  ];
-  for (const { value, label } of cardItems) {
+    { value: classes.length, label: 'Classes' },
+    { value: methodCount, label: 'Methods' },
+    { value: exports.length, label: 'Exports' },
+  ]) {
     const card = document.createElement('div');
     card.className = 'ls-card';
-    const strong = document.createElement('strong');
-    strong.textContent = value;
-    const span = document.createElement('span');
-    span.textContent = label;
-    card.appendChild(strong);
-    card.appendChild(span);
-    cards.appendChild(card);
+    const s = document.createElement('strong'); s.textContent = value;
+    const sp = document.createElement('span'); sp.textContent = label;
+    card.appendChild(s); card.appendChild(sp); cards.appendChild(card);
   }
   host.appendChild(cards);
 
-  // Classes
-  if (classes.length > 0) {
-    const sec = makeSection(host, `Classes (${classes.length})`);
-    const ul = makeList(sec);
-    for (const { name: cname, parent } of classes) {
-      const li = document.createElement('li');
-      li.textContent = parent ? `${cname} extends ${parent}` : cname;
-      ul.appendChild(li);
+  if (requires.length) {
+    const ul = makeList(makeSection(host, `Requires (${requires.length})`));
+    for (const { module, binding } of requires) {
+      const bind = binding && binding !== module ? ` → <span class="ls-bind">${esc(binding)}</span>` : '';
+      row(ul, `${tag('ls-tag-req', 'require!')} <span class="ls-name">${esc(module)}</span>${bind}`);
     }
   }
 
-  // Mixins
-  if (mixins.length > 0) {
-    const sec = makeSection(host, `Mixins (${mixins.length})`);
-    const ul = makeList(sec);
-    for (const m of mixins) {
-      const li = document.createElement('li');
-      li.textContent = m;
-      ul.appendChild(li);
+  for (const c of classes) {
+    const ext = c.extends ? ` <span class="ls-ext">extends ${esc(c.extends)}</span>` : '';
+    const ul = makeList(makeSection(host, `class ${c.name}${c.extends ? ` extends ${c.extends}` : ''}`));
+    if (!c.methods.length) row(ul, `<span class="ls-name">${esc(c.name)}</span>${ext}`);
+    for (const mth of c.methods) {
+      const t = mth.name === 'constructor' ? tag('ls-tag-ctor', 'new') : arrowTag(mth.bound);
+      row(ul, `${t} <span class="ls-name">${esc(mth.name)}</span>${paramsHtml(mth.params)}`, 'ls-method');
     }
   }
 
-  // Functions
-  if (functions.length > 0) {
-    const sec = makeSection(host, `Functions (${functions.length})`);
-    const ul = makeList(sec);
-    for (const { name: fname, fat } of functions) {
-      const li = document.createElement('li');
-      const tag = document.createElement('span');
-      tag.className = fat ? 'ls-tag ls-tag-fat' : 'ls-tag';
-      tag.textContent = fat ? '~>' : '->';
-      li.appendChild(tag);
-      li.appendChild(document.createTextNode(' ' + fname));
-      ul.appendChild(li);
+  if (functions.length) {
+    const ul = makeList(makeSection(host, `Functions (${functions.length})`));
+    for (const f of functions) {
+      row(ul, `${arrowTag(f.bound)} <span class="ls-name">${esc(f.name)}</span>${paramsHtml(f.params)}`);
     }
   }
 
-  // Requires
-  if (requires.length > 0) {
-    const MAX = 8;
-    const sec = makeSection(host, `Requires (${requires.length})`);
-    const ul = makeList(sec);
-    for (const r of requires.slice(0, MAX)) {
-      const li = document.createElement('li');
-      li.textContent = r;
-      ul.appendChild(li);
-    }
-    if (requires.length > MAX) {
-      const li = document.createElement('li');
-      li.textContent = `… and ${requires.length - MAX} more`;
-      li.style.color = 'var(--fg-2,#888)';
-      ul.appendChild(li);
+  if (constants.length) {
+    const ul = makeList(makeSection(host, `Constants (${constants.length})`));
+    for (const { name, value } of constants) {
+      row(ul, `${tag('ls-tag-const', '=')} <span class="ls-name">${esc(name)}</span> = <span class="ls-val">${esc(value)}</span>`);
     }
   }
 
-  // prelude.ls note
-  if (hasPrelude) {
-    const note = document.createElement('div');
-    note.style.cssText = 'font-size:12px;color:var(--fg-2,#888);margin-bottom:12px;';
-    note.textContent = 'Uses prelude.ls (functional utility library)';
-    host.appendChild(note);
+  if (exports.length) {
+    const ul = makeList(makeSection(host, `Exports (${exports.length})`));
+    for (const e of exports) row(ul, `${tag('ls-tag-exp', 'export')} <span class="ls-name">${esc(e)}</span>`);
   }
-
-  // Source
-  const srcSec = makeSection(host, 'Source');
-  const pre = document.createElement('pre');
-  pre.className = 'ls-pre';
-  pre.innerHTML = highlightLS(text);
-  srcSec.appendChild(pre);
 
   return { parentNode: host };
 }
