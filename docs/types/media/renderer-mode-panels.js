@@ -284,6 +284,10 @@ export async function mountVideoModePanels({
   });
 
   registerMode('export', 'Export', async (panel) => {
+    // OCR → subtitles uses the offline OCR engine (not ffmpeg), so it is available regardless of
+    // the Media Transcoding opt-in. The heavy tesseract bundle still loads lazily, only on Run.
+    const { buildOcrSubtitlesControl } = await import('./ocr-subtitles.js');
+    panel.append(buildOcrSubtitlesControl(mediaElement, intake).el);
     if (!enableFfmpeg || !exportPanel) {
       panel.append(buildFfNotEnabledHint(
         'Enable <strong>Media transcoding</strong> in <strong>Settings → Advanced</strong> to unlock video export and fades.',
