@@ -8,7 +8,7 @@
 import { createAsciiEngine } from './engine.js';
 import { buildControls, syncColorControls } from './studio-controls.js';
 import { PERFORMANCE_PRESETS, defaultOptions } from './state.js';
-import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont } from './render.js';
+import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsciiFont, fontFamily } from './render.js';
 import { makeFloatingPanel } from './floating-panel.js';
 import { loadLast, saveLast } from './presets.js';
 import { wirePresetUi } from './preset-ui.js';
@@ -124,6 +124,7 @@ export function mountAsciiStudio(host, opts = {}) {
     // monospace advance ≈ 0.6em; include letter-spacing so the fit stays exact.
     const fs = (avail / (r.columns * 0.6 * sd)) * (engine.options.zoom || 1);
     pre.style.setProperty('--ascii-font-size', Math.max(2, fs).toFixed(2) + 'px');
+    pre.style.fontFamily = fontFamily(engine.options);   // selectable output font
     pre.style.letterSpacing = sd !== 1 ? ((sd - 1) * 0.6).toFixed(3) + 'em' : '';
   }
   // Collapse decisions are based on the STUDIO's own width, not the viewport —

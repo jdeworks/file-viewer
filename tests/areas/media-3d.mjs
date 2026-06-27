@@ -1137,6 +1137,12 @@ export async function run(ctx) {
   await setColorMode(true);
   const shownOn = !(await rowHidden('colorSource')) && !(await rowHidden('glyphColorMode'));
   if (hiddenOff && shownOn) pass('ASCII output: Colour source + Glyph colour hide when Colour glyphs is off'); else fail('ascii colorMode visibility: ' + JSON.stringify({ hiddenOff, shownOn }));
+  // Font is selectable (defaults to the uniform vendored font); changing it restyles the <pre>.
+  const fonts = await page.$eval('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]', (el) => [...el.options].map((o) => o.value)).catch(() => []);
+  await page.evaluate(() => { const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]'); if (el) { el.value = 'Courier'; el.dispatchEvent(new Event('input', { bubbles: true })); } });
+  const preFont = await page.$eval('#previewHost .asx-out', (el) => el.style.fontFamily || getComputedStyle(el).fontFamily);
+  await page.evaluate(() => { const el = document.querySelector('#previewHost .asx-panel .asx-ctl-input[data-key="fontName"]'); if (el) { el.value = 'Uniform'; el.dispatchEvent(new Event('input', { bubbles: true })); } });
+  if (fonts.includes('Uniform') && fonts.includes('System') && fonts.includes('Courier') && /Courier/.test(preFont)) pass('ASCII font: selectable (Uniform default) + restyles the output'); else fail('ascii font select: ' + JSON.stringify({ fonts, preFont }));
   // Convert file → ASCII: feed a tiny 2-frame GIF and assert it converts (frame-by-frame
   // via the engine worker) + encodes a downloadable ASCII GIF.
   const CGIF = [71, 73, 70, 56, 57, 97, 2, 0, 2, 0, 128, 0, 0, 255, 0, 0, 0, 255, 0, 33, 255, 11, 78, 69, 84, 83, 67, 65, 80, 69, 50, 46, 48, 3, 1, 0, 0, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 4, 128, 2, 0, 33, 249, 4, 0, 10, 0, 0, 0, 44, 0, 0, 0, 0, 2, 0, 2, 0, 0, 2, 3, 76, 146, 2, 0, 59];

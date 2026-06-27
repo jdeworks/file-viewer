@@ -7,9 +7,15 @@
 
 import { escapeHtml } from './charsets.js';
 
-// "FV ASCII Mono" (vendored DejaVu Sans Mono) first — it has uniform-width braille + block
-// glyphs, so those ramps don't distort; the system stack is the fallback.
-const MONO = '"FV ASCII Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+// Selectable output fonts. "Uniform" (vendored DejaVu Sans Mono) is the default — it has
+// uniform-width braille + block glyphs so those ramps don't distort. The others let users
+// experiment; they may distort the block/braille ramps if the system font lacks those glyphs.
+export const FONTS = {
+  Uniform: '"FV ASCII Mono", ui-monospace, monospace',
+  System: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+  Courier: '"Courier New", Courier, monospace',
+};
+export const fontFamily = (o) => FONTS[o?.fontName] || FONTS.Uniform;
 
 // The colour a cell's glyph should use, honouring colorMode + glyphColorMode.
 // null → render as plain (uncoloured) text.
@@ -50,6 +56,7 @@ export function buildHtml(result, o) {
 export function renderAsciiToPre(result, pre, o) {
   pre.innerHTML = buildHtml(result, o);
   pre.style.setProperty('--ascii-font-size', `${o.fontSize}px`);
+  pre.style.fontFamily = fontFamily(o);
   pre.style.background = o.transparentBackground ? 'transparent' : (o.backgroundColor || '#000');
 }
 
@@ -72,7 +79,7 @@ export function ensureAsciiFont() {
 export function renderAsciiToCanvas(result, canvas, o) {
   const fontSize = o.fontSize;
   const ctx = canvas.getContext('2d');
-  const fontStr = `${fontSize}px ${MONO}`;
+  const fontStr = `${fontSize}px ${fontFamily(o)}`;
   ctx.font = fontStr;
   if (fontStr !== wCacheFont) { wCache.clear(); wCacheFont = fontStr; }   // measureText depends on the font
   const charW = (ctx.measureText('M').width || fontSize * 0.6) * Math.max(1, Math.round(o.spaceDensity));
@@ -88,7 +95,7 @@ export function renderAsciiToCanvas(result, canvas, o) {
   if (o.transparentBackground) ctx.clearRect(0, 0, canvas.width, canvas.height);
   else { ctx.fillStyle = o.backgroundColor || '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
 
-  ctx.font = `${fontSize}px ${MONO}`;
+  ctx.font = fontStr;
   ctx.textBaseline = 'top';
   // Safety net: if a glyph is wider than one cell (e.g. a font substitution), scale it
   // horizontally to fit so it never overflows into the next cell. Widths are cached per
@@ -133,7 +140,7 @@ export function downloadHtml(filename, result, o) {
   const bg = o.transparentBackground ? 'transparent' : (o.backgroundColor || '#000');
   const doc = `<!doctype html><meta charset="utf-8"><title>${escapeHtml(filename)}</title>`
     + `<body style="margin:0;background:${bg}">`
-    + `<pre style="margin:0;font:${o.fontSize}px ${MONO};line-height:1;white-space:pre;color:#fff;padding:16px">`
+    + `<pre style="margin:0;font:${o.fontSize}px ${fontFamily(o)};line-height:1;white-space:pre;color:#fff;padding:16px">`
     + buildHtml(result, o) + '</pre>';
   triggerDownload(new Blob([doc], { type: 'text/html;charset=utf-8' }), filename);
 }

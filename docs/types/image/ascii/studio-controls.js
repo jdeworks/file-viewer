@@ -39,6 +39,7 @@ const GROUPS = [
     { key: 'dithering', label: 'Dithering', kind: 'select', options: DITHER_METHODS, dirty: ['ascii'] },
   ]],
   ['Output', true, [
+    { key: 'fontName', label: 'Font', kind: 'select', options: ['Uniform', 'System', 'Courier'], display: true },
     { key: 'colorMode', label: 'Colour glyphs', kind: 'checkbox', dirty: ['render'] },
     { key: 'colorSource', label: 'Colour source', kind: 'select', options: ['processed', 'original'], dirty: ['ascii'] },
     { key: 'glyphColorMode', label: 'Glyph colour', kind: 'select', options: ['colored', 'white', 'grayscale'], dirty: ['render'] },
