@@ -7,6 +7,7 @@ import {
   RECURSION_BLUEPRINT_PATH,
 } from './messages.js';
 import { isRecursionBlueprintPath } from './content.js';
+import { TARGET_MODES } from './towers.js';
 
 export function hasRecursionBlueprint(actions) {
   return Boolean(actions && typeof actions.hasAction === 'function' && actions.hasAction(4, ACTION_NAME));
@@ -48,7 +49,7 @@ export function applyRecursionBlueprintOpen({ state, actions, achievements, bell
   return true;
 }
 
-export function placeTower(state, { x, y, type = 'pulse_node' }) {
+export function placeTower(state, { x, y, type = 'pulse_node', targetMode = 'first' }) {
   const cost = type === 'scatter_array' ? 150 : 80;
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: 'cycles' };
   const tower = {
@@ -56,6 +57,7 @@ export function placeTower(state, { x, y, type = 'pulse_node' }) {
     type,
     x: Math.trunc(Number(x)),
     y: Math.trunc(Number(y)),
+    targetMode: TARGET_MODES.includes(targetMode) ? targetMode : 'first',
   };
   if (!Number.isFinite(tower.x) || !Number.isFinite(tower.y)) return { ok: false, reason: 'position' };
   state.cycles -= cost;
@@ -63,6 +65,16 @@ export function placeTower(state, { x, y, type = 'pulse_node' }) {
   const coverage = getTowerCoverage(state);
   pushLog(state, `${type} placed at ${tower.x},${tower.y}. ${coverage.covered.length}/${coverage.total} recursion points covered.`);
   return { ok: true, tower, coverage };
+}
+
+// Advance a placed tower's targeting priority to the next mode (roster click). Returns the new mode.
+export function cycleTowerTarget(state, id) {
+  const tower = (state?.towers || []).find((t) => t.id === id);
+  if (!tower) return null;
+  const i = TARGET_MODES.indexOf(tower.targetMode || 'first');
+  tower.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length];
+  pushLog(state, `${tower.type} now targets ${tower.targetMode.toUpperCase()}.`);
+  return tower.targetMode;
 }
 
 export function getTowerCoverage(state) {

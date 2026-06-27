@@ -676,20 +676,31 @@ export async function run(ctx) {
   await page.evaluate(() => { window.__fvStage4.startWave(); window.__fvStage4.advance(30000); });
   const s4Wave = await page.evaluate(() => window.__fvStage4.state().waveNumber);
   if (s4Wave >= 2) pass('Stage 4 tower-defense runs: wave 1 resolves and advances'); else fail('Stage 4 wave did not advance: ' + s4Wave);
-  // Stage-clear gate (un-cheat): read the recursion blueprint.
+  // Load-bearing un-cheat is REAL: BEFORE the blueprint file is opened, the boss is unwinnable even at
+  // the final wave with full recursion-point coverage (it folds all damage away).
+  const s4Locked = await page.evaluate(() => {
+    window.__fvStage4.setWave(31);
+    for (const p of window.__fvStage4.state().recursion.points) window.__fvStage4.place(p.x, p.y, 'pulse_node');
+    const hpBefore = window.__fvStage4.state().boss.hp;
+    window.__fvStage4.confront();
+    const s = window.__fvStage4.state();
+    return { defeated: s.boss.defeated, hpUnchanged: s.boss.hp === hpBefore };
+  });
+  if (!s4Locked.defeated && s4Locked.hpUnchanged) pass('Stage 4 boss is unwinnable before the blueprint file is opened (total-armor while locked)'); else fail('Stage 4 boss took damage / was defeated before the un-cheat');
+  // Un-cheat = a REAL file-open: click the navigation hint, which opens the static blueprint file in the
+  // viewer. The action 4.recursion_blueprint_read is fired by openViewerFile → recordMetagameViewerOpen
+  // (NOT by an in-game button), and the achievement auto-unlocks from the action.
   await page.click('[data-action="blueprint"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'recursion_points.json', null, { timeout: 5000 });
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['4.recursion_blueprint_read'] && save.achievements?.['stage4.recursion_blueprint_read']);
+      return Boolean(save.actions?.['4.recursion_blueprint_read']
+        && save.actions['4.recursion_blueprint_read'].source === 'viewer-open'
+        && save.achievements?.['stage4.recursion_blueprint_read']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  // Reach the final wave (a real run clears 30 waves) and cover the recursion points, then confront.
-  await page.evaluate(() => {
-    window.__fvStage4.setWave(31);
-    for (const p of window.__fvStage4.state().recursion.points) window.__fvStage4.place(p.x, p.y, 'pulse_node');
-  });
+  // Now at the final wave with coverage already placed, the confront button is available and wins.
   await page.waitForSelector('.stage4-fractal-bastion [data-action="confront"]:not([hidden])', { timeout: 4000 });
   await page.click('[data-action="confront"]');
   await page.waitForFunction(() => {
