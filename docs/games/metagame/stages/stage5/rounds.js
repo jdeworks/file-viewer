@@ -2,6 +2,17 @@
 // one new verb (avoid → time it → read ahead → counter-phase → boost gates → split channel → boss).
 // burstPattern: per-tick-in-cycle flags where 1 = burst (lane-switch is off-beat) and 0 = beat-open.
 // glyphs: which obstacle glyphs that round draws. counterPhaseShift: ticks between shield-lane shifts.
+//
+// RACE ARCHETYPE FIELDS (read by race-state.js / rivals.js — do NOT rename this module's export, the
+// general-lane scripts/metagame-playtime.mjs imports ROUNDS):
+//   archetype : 'sprint' (point-to-point) | 'circuit' (N laps of one looping track) | 'gauntlet'
+//               (long survival track) | 'boss'.
+//   tickCount : obstacle-table length. For a circuit this is ONE LAP; for sprint/gauntlet it is the
+//               whole track. raceLength = circuit ? tickCount × laps : (trackLength || tickCount).
+//   laps      : circuit lap count (ignored otherwise).
+//   trackLength : explicit race distance for sprint/gauntlet (defaults to tickCount).
+//   rivals    : how many seeded AI ghosts share the corridor.
+//   hasPowerups : whether deterministic powerup pickups are sprinkled into clear lanes.
 
 export const GLYPH_DAMAGE = { '░': 2, '▒': 2, '▓': 5 };
 

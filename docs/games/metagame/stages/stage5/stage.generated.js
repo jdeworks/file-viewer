@@ -209,6 +209,15 @@ function isBlock(glyph) {
 function isGate(glyph) {
   return glyph === ">>";
 }
+function optimalLane(row, currentLane) {
+  if (!row) return currentLane;
+  const clear = [0, 1, 2].filter((l) => !isBlock(row.lanes[l]));
+  const gate = clear.find((l) => isGate(row.lanes[l]));
+  if (row.beatOpen && gate !== void 0) return gate;
+  if (clear.includes(row.counterPhaseLane)) return row.counterPhaseLane;
+  if (clear.includes(currentLane)) return currentLane;
+  return clear.length ? clear[0] : currentLane;
+}
 
 // ../../docs/games/metagame/stages/stage5/rounds.js
 var GLYPH_DAMAGE = { "░": 2, "▒": 2, "▓": 5 };
@@ -346,14 +355,65 @@ function clamp01(value) {
   return n < 0 ? 0 : n > 1 ? 1 : n;
 }
 
+// ../../docs/games/metagame/stages/stage5/race-state.js
+function raceLengthFor(round) {
+  const archetype = round.archetype || "sprint";
+  const lapLength = Math.max(1, Number(round.tickCount) || 100);
+  if (archetype === "circuit") {
+    const laps = Math.max(1, Number(round.laps) || 1);
+    return lapLength * laps;
+  }
+  return Math.max(1, Number(round.trackLength) || lapLength);
+}
+function createRaceState(round) {
+  const archetype = round.archetype || "sprint";
+  const lapLength = Math.max(1, Number(round.tickCount) || 100);
+  const laps = archetype === "circuit" ? Math.max(1, Number(round.laps) || 1) : 1;
+  const raceLength = raceLengthFor(round);
+  let distance = 0;
+  return {
+    archetype,
+    lapLength,
+    laps,
+    raceLength,
+    get distance() {
+      return distance;
+    },
+    advance(speed) {
+      distance = Math.min(raceLength, distance + Math.max(0, Number(speed) || 0));
+      return distance;
+    },
+    reset() {
+      distance = 0;
+    },
+    // Logical obstacle-table row for a given scroll tick (wraps on circuits where the table = one lap).
+    rowIndex(tick, tableLen) {
+      const len = Math.max(1, Number(tableLen) || lapLength);
+      return ((Number(tick) || 0) % len + len) % len;
+    },
+    lap() {
+      return Math.min(laps, Math.floor(distance / lapLength) + 1);
+    },
+    progress() {
+      return raceLength > 0 ? Math.min(1, distance / raceLength) : 1;
+    },
+    finished() {
+      return distance >= raceLength;
+    }
+  };
+}
+
 // ../../docs/games/metagame/stages/stage5/game-loop.js
 var LOOK_AHEAD = 8;
+var BASE_SPEED = 1;
 function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
   const round = roundByIdx(roundIdx);
   const table = buildObstacleTable(seed, round);
   const tuning = applyUpgrades(state.shop || {});
   const boss = isBossRound(roundIdx);
   const suppressionActive = boss && !calibrated;
+  const race = createRaceState(round);
+  const maxTicks = race.raceLength + 16;
   const run = state.run;
   run.lane = clampLane(run.lane);
   run.roundIdx = roundIdx;
@@ -362,11 +422,30 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
   run.onBeatCount = 0;
   run.totalSwitches = 0;
   run.gatesThisRound = 0;
+  run.lap = 1;
+  run.distance = 0;
   let tick = 0;
   let done = false;
   let outcome = null;
+  function rowAt(t) {
+    return table[race.rowIndex(t, table.length)];
+  }
   function paint() {
-    onPaint?.({ table, tick, lane: run.lane, round, integrity: run.integrity, gates: run.gatesThisRound, suppressionActive, lookAhead: LOOK_AHEAD });
+    onPaint?.({
+      table,
+      tick,
+      lane: run.lane,
+      round,
+      integrity: run.integrity,
+      gates: run.gatesThisRound,
+      suppressionActive,
+      lookAhead: LOOK_AHEAD,
+      race,
+      lap: race.lap(),
+      laps: race.laps,
+      progress: race.progress(),
+      archetype: race.archetype
+    });
   }
   function damageFor(glyph) {
     const base = glyph === "▓" ? GLYPH_DAMAGE["▓"] : tuning.noiseDamage;
@@ -376,7 +455,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
     const target = clampLane(next);
     if (done || target === run.lane) return;
     run.totalSwitches += 1;
-    const row = table[tick];
+    const row = rowAt(tick);
     if (row && row.beatOpen === false) run.integrity -= 1;
     else run.onBeatCount += 1;
     run.lane = target;
@@ -388,7 +467,7 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
   }
   function step() {
     if (done) return outcome;
-    const row = table[tick];
+    const row = rowAt(tick);
     if (row) {
       const glyph = row.lanes[run.lane];
       const shielded = row.counterPhaseLane === run.lane;
@@ -401,8 +480,11 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
       finish("fail");
       return outcome;
     }
+    race.advance(BASE_SPEED);
+    run.distance = race.distance;
+    run.lap = race.lap();
     tick += 1;
-    if (tick >= table.length) {
+    if (race.finished() || tick >= maxTicks) {
       finish("clear");
       return outcome;
     }
@@ -429,18 +511,11 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
     onEnd?.({ result, round, roundIdx, integrity: run.integrity, packets, gates: run.gatesThisRound });
   }
   function bestLane(atTick) {
-    const row = table[atTick];
-    if (!row) return run.lane;
-    const clear = [0, 1, 2].filter((l) => !isBlock(row.lanes[l]));
-    const gate = clear.find((l) => isGate(row.lanes[l]));
-    if (row.beatOpen && gate !== void 0) return gate;
-    if (clear.includes(row.counterPhaseLane)) return row.counterPhaseLane;
-    if (clear.includes(run.lane)) return run.lane;
-    return clear.length ? clear[0] : run.lane;
+    return optimalLane(rowAt(atTick), run.lane);
   }
-  function autoSolve(maxTicks = 4096) {
+  function autoSolve(limit = maxTicks + 32) {
     let guard = 0;
-    while (!done && guard < maxTicks) {
+    while (!done && guard < limit) {
       run.lane = bestLane(tick);
       step();
       guard += 1;
@@ -517,13 +592,17 @@ function createEngine({ onTick, getTickMs }) {
 
 // ../../docs/games/metagame/stages/stage5/render-track.js
 var CELL = { empty: " · ", "░": " ░ ", "▒": " ▒ ", "▓": " ▓ ", ">>": ">> " };
-function renderTrackGrid({ table, tick, lane, lookAhead = 8 }) {
+function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false }) {
   const rows = [];
-  const here = table[tick] || { counterPhaseLane: null, beatOpen: true };
+  const at = (t) => {
+    if (wrap && table.length) return table[(t % table.length + table.length) % table.length];
+    return table[t];
+  };
+  const here = at(tick) || { counterPhaseLane: null, beatOpen: true };
   const header = [0, 1, 2].map((l) => l === here.counterPhaseLane ? " ~ " : "   ").join(" ");
   rows.push(`${header} ${here.beatOpen ? "*" : " "}`);
   for (let ahead = lookAhead - 1; ahead >= 0; ahead -= 1) {
-    const row = table[tick + ahead];
+    const row = at(tick + ahead);
     const cells = [0, 1, 2].map((l) => cell(row ? row.lanes[l] : null));
     rows.push(cells.join("|"));
   }
@@ -641,7 +720,13 @@ function renderStage5(ctx) {
     persistAndPaint();
   }
   function paintArena(view) {
-    fields.arena.textContent = renderTrackGrid({ table: view.table, tick: view.tick, lane: view.lane, lookAhead: view.lookAhead });
+    fields.arena.textContent = renderTrackGrid({
+      table: view.table,
+      tick: view.tick,
+      lane: view.lane,
+      lookAhead: view.lookAhead,
+      wrap: view.archetype === "circuit"
+    });
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
   }
   function repaint() {

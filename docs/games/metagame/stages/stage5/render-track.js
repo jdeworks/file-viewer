@@ -4,9 +4,13 @@
 
 const CELL = { empty: ' · ', '░': ' ░ ', '▒': ' ▒ ', '▓': ' ▓ ', '>>': '>> ' };
 
-export function renderTrackGrid({ table, tick, lane, lookAhead = 8 }) {
+export function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false }) {
   const rows = [];
-  const here = table[tick] || { counterPhaseLane: null, beatOpen: true };
+  const at = (t) => {
+    if (wrap && table.length) return table[((t % table.length) + table.length) % table.length];
+    return table[t];
+  };
+  const here = at(tick) || { counterPhaseLane: null, beatOpen: true };
 
   // Counter-phase header: '~' marks the current shield lane; '*' marks a beat-open tick.
   const header = [0, 1, 2].map((l) => (l === here.counterPhaseLane ? ' ~ ' : '   ')).join(' ');
@@ -14,7 +18,7 @@ export function renderTrackGrid({ table, tick, lane, lookAhead = 8 }) {
 
   // Obstacle rows: farthest (tick+lookAhead-1) at top, nearest (tick) at the bottom.
   for (let ahead = lookAhead - 1; ahead >= 0; ahead -= 1) {
-    const row = table[tick + ahead];
+    const row = at(tick + ahead);
     const cells = [0, 1, 2].map((l) => cell(row ? row.lanes[l] : null));
     rows.push(cells.join('|'));
   }

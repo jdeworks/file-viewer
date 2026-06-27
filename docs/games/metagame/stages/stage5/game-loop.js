@@ -6,12 +6,14 @@
 // the counter-wave is NOT calibrated, so an un-calibrated boss run mathematically runs out of integrity.
 // The actual defeat is ALSO gated by raceTheJammer/hasCounterWave in the renderer — double-locked.
 
-import { buildObstacleTable, isBlock, isGate } from './track.js';
+import { buildObstacleTable, isBlock, isGate, optimalLane } from './track.js';
 import { roundByIdx, isBossRound, GLYPH_DAMAGE } from './rounds.js';
 import { applyUpgrades } from './shop.js';
 import { calcRoundPackets } from './economy.js';
+import { createRaceState } from './race-state.js';
 
 const LOOK_AHEAD = 8;
+const BASE_SPEED = 1;
 
 export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
   const round = roundByIdx(roundIdx);
@@ -19,6 +21,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   const tuning = applyUpgrades(state.shop || {});
   const boss = isBossRound(roundIdx);
   const suppressionActive = boss && !calibrated;
+  const race = createRaceState(round);
+  const maxTicks = race.raceLength + 16;
 
   const run = state.run;
   run.lane = clampLane(run.lane);
@@ -28,13 +32,21 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   run.onBeatCount = 0;
   run.totalSwitches = 0;
   run.gatesThisRound = 0;
+  run.lap = 1;
+  run.distance = 0;
 
   let tick = 0;
   let done = false;
   let outcome = null;
 
+  function rowAt(t) { return table[race.rowIndex(t, table.length)]; }
+
   function paint() {
-    onPaint?.({ table, tick, lane: run.lane, round, integrity: run.integrity, gates: run.gatesThisRound, suppressionActive, lookAhead: LOOK_AHEAD });
+    onPaint?.({
+      table, tick, lane: run.lane, round, integrity: run.integrity, gates: run.gatesThisRound,
+      suppressionActive, lookAhead: LOOK_AHEAD, race, lap: race.lap(), laps: race.laps,
+      progress: race.progress(), archetype: race.archetype,
+    });
   }
 
   function damageFor(glyph) {
@@ -46,7 +58,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     const target = clampLane(next);
     if (done || target === run.lane) return;
     run.totalSwitches += 1;
-    const row = table[tick];
+    const row = rowAt(tick);
     if (row && row.beatOpen === false) run.integrity -= 1; // off-beat switch penalty
     else run.onBeatCount += 1;
     run.lane = target;
@@ -60,7 +72,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
 
   function step() {
     if (done) return outcome;
-    const row = table[tick];
+    const row = rowAt(tick);
     if (row) {
       const glyph = row.lanes[run.lane];
       const shielded = row.counterPhaseLane === run.lane;
@@ -69,8 +81,11 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     }
     if (suppressionActive) run.integrity -= 1; // jammer suppression — only ever an un-calibrated boss
     if (run.integrity <= 0) { run.integrity = 0; finish('fail'); return outcome; }
+    race.advance(BASE_SPEED);
+    run.distance = race.distance;
+    run.lap = race.lap();
     tick += 1;
-    if (tick >= table.length) { finish('clear'); return outcome; }
+    if (race.finished() || tick >= maxTicks) { finish('clear'); return outcome; }
     paint();
     return null;
   }
@@ -92,22 +107,14 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     onEnd?.({ result, round, roundIdx, integrity: run.integrity, packets, gates: run.gatesThisRound });
   }
 
-  // Optimal lane for a tick: a gate on a beat-open tick, else the shield lane, else stay clear, else
-  // any clear lane. Used by autoSolve (the test hook) — never an in-game affordance.
+  // Optimal lane for the current tick. Used by autoSolve (the test hook) — never an in-game affordance.
   function bestLane(atTick) {
-    const row = table[atTick];
-    if (!row) return run.lane;
-    const clear = [0, 1, 2].filter((l) => !isBlock(row.lanes[l]));
-    const gate = clear.find((l) => isGate(row.lanes[l]));
-    if (row.beatOpen && gate !== undefined) return gate;
-    if (clear.includes(row.counterPhaseLane)) return row.counterPhaseLane;
-    if (clear.includes(run.lane)) return run.lane;
-    return clear.length ? clear[0] : run.lane;
+    return optimalLane(rowAt(atTick), run.lane);
   }
 
-  function autoSolve(maxTicks = 4096) {
+  function autoSolve(limit = maxTicks + 32) {
     let guard = 0;
-    while (!done && guard < maxTicks) {
+    while (!done && guard < limit) {
       run.lane = bestLane(tick);
       step();
       guard += 1;

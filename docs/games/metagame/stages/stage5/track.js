@@ -54,3 +54,16 @@ export function isBlock(glyph) {
 export function isGate(glyph) {
   return glyph === '>>';
 }
+
+// Optimal lane for a row: grab a beat-open boost gate if one is reachable, else ride the shield
+// (counter-phase) lane, else hold the current clear lane, else any clear lane. Pure — shared by the
+// player's autoSolve and the seeded rivals' ghost precompute (which then degrades it by skill).
+export function optimalLane(row, currentLane) {
+  if (!row) return currentLane;
+  const clear = [0, 1, 2].filter((l) => !isBlock(row.lanes[l]));
+  const gate = clear.find((l) => isGate(row.lanes[l]));
+  if (row.beatOpen && gate !== undefined) return gate;
+  if (clear.includes(row.counterPhaseLane)) return row.counterPhaseLane;
+  if (clear.includes(currentLane)) return currentLane;
+  return clear.length ? clear[0] : currentLane;
+}
