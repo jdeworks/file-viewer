@@ -66,6 +66,7 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [], conge
     cardsPlayedThisTurn: 0,
     firstCardDiscount: 0, // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
     energySpentThisTurn: 0,
+    chainThisTurn: 0, // CHAIN (Act 6): number of card-replays/echoes this turn (resets each turn)
     playedIdsThisTurn: [],
     lastCardPlayed: null,
     over: false,
@@ -132,6 +133,7 @@ export function endTurn(combat) {
   applyTurnEnergy(combat); // flat refill, or recompute the congestion window from this turn's spend
   combat.cardsPlayedThisTurn = 0;
   combat.energySpentThisTurn = 0;
+  combat.chainThisTurn = 0; // CHAIN: reset the per-turn replay counter
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
   releaseJam(combat); // Packet Loss from last turn cycles back into the deck before the new draw

@@ -7,6 +7,11 @@
 
 import { dealToEnemy, addStatus, DURATION_STATUSES, log } from "./combat-damage.js";
 import { drawCards } from "./combat-piles.js";
+import { cardById } from "./cards.js";
+
+// CHAIN (Act 6): a hard cap on nested replays so a self-referential echo (a card that replays a card
+// that replays …) can never loop forever — combats stay guaranteed-terminating and deterministic.
+export const MAX_ECHO_DEPTH = 4;
 
 // Upgraded cards share their base id minus a trailing "+" (see card-upgrades.js). Combos that key
 // off a specific card (e.g. "ACK was played") match the base, so an upgrade never breaks a synergy.
@@ -26,9 +31,9 @@ export function makeCtx(combat, card) {
         log(combat, "PROTOCOL MISMATCH — refused.");
         return;
       }
-      dealToEnemy(combat, n);
+      dealToEnemy(combat, n * (combat.echoScale ?? 1));
     },
-    block: (n) => { combat.player.block += Math.max(0, Math.round(n)); },
+    block: (n) => { combat.player.block += Math.max(0, Math.round(n * (combat.echoScale ?? 1))); },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => { combat.player.energy += n; },
     // Restore HP (capped at max). Used by potions (Hotfix) and onKill heal relics. No RNG.
@@ -84,6 +89,41 @@ export function makeCtx(combat, card) {
       return cleared;
     },
     skipEnemyNext: () => { combat.enemy.skipNext = true; },
+    // CHAIN (Act 6 · APPLICATION LAYER, verb COPY/ECHO): re-run the LAST card played this fight `times`
+    // times, optionally at `scale` value (deal/block multiply by it — TAIL_CALL uses 0.5). Returns the
+    // number of replays performed. Depth-capped (MAX_ECHO_DEPTH) so a self-referential echo terminates.
+    // Note: during playCard, lastCardPlayed is still the PREVIOUS card while the current card resolves,
+    // so a replay card echoes the card before it (never itself).
+    replayLast: (scale = 1, times = 1) => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return 0;
+      const repl = cardById(id);
+      if (!repl || (combat.echoDepth || 0) >= MAX_ECHO_DEPTH) return 0;
+      const n = Math.max(1, Math.floor(times) || 1);
+      let count = 0;
+      for (let i = 0; i < n && !combat.over; i++) {
+        const prevScale = combat.echoScale;
+        combat.echoDepth = (combat.echoDepth || 0) + 1;
+        combat.echoScale = scale;
+        repl.effect(makeCtx(combat, repl));
+        combat.echoScale = prevScale;
+        combat.echoDepth -= 1;
+        combat.chainThisTurn = (combat.chainThisTurn || 0) + 1;
+        count++;
+      }
+      return count;
+    },
+    // CHAIN: schedule a replay of the last card played to land at a future player turn (CALLBACK —
+    // fuses with the DELAY verb). Captures the id now; resolves via combat-modes.applyOp's {replay}.
+    echoNextTurn: (turnsAhead = 1) => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return false;
+      combat.pending.push({ turn: combat.turn + Math.max(1, Math.floor(turnsAhead) || 1), op: { replay: id } });
+      return true;
+    },
+    get chainCount() { return combat.chainThisTurn || 0; },
+    get lastPlayedId() { return combat.lastCardPlayed ?? null; },
+    get lastPlayedType() { const id = combat.lastCardPlayed; const c = id != null ? cardById(id) : null; return c ? c.type : null; },
     // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
     playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
     // SEQUENCE: true while resolving the FIRST card played this turn (the counter is bumped before

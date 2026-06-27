@@ -5,7 +5,8 @@
 // slow-start). resolvePending lands DELAY effects whose target turn has arrived. Both are fully
 // deterministic (no RNG).
 
-import { makeCtx } from "./combat-ctx.js";
+import { makeCtx, MAX_ECHO_DEPTH } from "./combat-ctx.js";
+import { cardById } from "./cards.js";
 import { checkEnemyDead } from "./combat.js";
 
 // THROUGHPUT: the congestion window — a dynamic energy cap. A wide turn (spend it all) shrinks next
@@ -41,6 +42,18 @@ export function applyOp(ctx, op) {
   if (op.gainEnergy != null) ctx.gainEnergy(op.gainEnergy);
   if (op.applyEnemy) ctx.applyEnemy(op.applyEnemy.status, op.applyEnemy.value);
   if (op.applySelf) ctx.applySelf(op.applySelf.status, op.applySelf.value);
+  // CHAIN (Act 6): a delayed card replay (CALLBACK). Re-runs the named card's effect, depth-capped so
+  // a queued self-echo can't loop forever. Serializable: the op is just { replay: cardId }.
+  if (op.replay) {
+    const combat = ctx.combat;
+    const card = cardById(op.replay);
+    if (card && (combat.echoDepth || 0) < MAX_ECHO_DEPTH) {
+      combat.echoDepth = (combat.echoDepth || 0) + 1;
+      card.effect(makeCtx(combat, card));
+      combat.echoDepth -= 1;
+      combat.chainThisTurn = (combat.chainThisTurn || 0) + 1;
+    }
+  }
 }
 
 // Resolve any queued (delayed) effects whose target turn has arrived. Deterministic, no RNG.

@@ -884,6 +884,7 @@ function log(combat, line) {
 }
 
 // ../../docs/games/metagame/stages/stage6/combat-ctx.js
+var MAX_ECHO_DEPTH = 4;
 function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
 }
@@ -899,10 +900,10 @@ function makeCtx(combat, card) {
         log(combat, "PROTOCOL MISMATCH — refused.");
         return;
       }
-      dealToEnemy(combat, n);
+      dealToEnemy(combat, n * (combat.echoScale ?? 1));
     },
     block: (n) => {
-      combat.player.block += Math.max(0, Math.round(n));
+      combat.player.block += Math.max(0, Math.round(n * (combat.echoScale ?? 1)));
     },
     draw: (n) => drawCards(combat, n),
     gainEnergy: (n) => {
@@ -987,6 +988,49 @@ function makeCtx(combat, card) {
     },
     skipEnemyNext: () => {
       combat.enemy.skipNext = true;
+    },
+    // CHAIN (Act 6 · APPLICATION LAYER, verb COPY/ECHO): re-run the LAST card played this fight `times`
+    // times, optionally at `scale` value (deal/block multiply by it — TAIL_CALL uses 0.5). Returns the
+    // number of replays performed. Depth-capped (MAX_ECHO_DEPTH) so a self-referential echo terminates.
+    // Note: during playCard, lastCardPlayed is still the PREVIOUS card while the current card resolves,
+    // so a replay card echoes the card before it (never itself).
+    replayLast: (scale = 1, times = 1) => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return 0;
+      const repl = cardById(id);
+      if (!repl || (combat.echoDepth || 0) >= MAX_ECHO_DEPTH) return 0;
+      const n = Math.max(1, Math.floor(times) || 1);
+      let count = 0;
+      for (let i = 0; i < n && !combat.over; i++) {
+        const prevScale = combat.echoScale;
+        combat.echoDepth = (combat.echoDepth || 0) + 1;
+        combat.echoScale = scale;
+        repl.effect(makeCtx(combat, repl));
+        combat.echoScale = prevScale;
+        combat.echoDepth -= 1;
+        combat.chainThisTurn = (combat.chainThisTurn || 0) + 1;
+        count++;
+      }
+      return count;
+    },
+    // CHAIN: schedule a replay of the last card played to land at a future player turn (CALLBACK —
+    // fuses with the DELAY verb). Captures the id now; resolves via combat-modes.applyOp's {replay}.
+    echoNextTurn: (turnsAhead = 1) => {
+      const id = combat.lastCardPlayed;
+      if (id == null) return false;
+      combat.pending.push({ turn: combat.turn + Math.max(1, Math.floor(turnsAhead) || 1), op: { replay: id } });
+      return true;
+    },
+    get chainCount() {
+      return combat.chainThisTurn || 0;
+    },
+    get lastPlayedId() {
+      return combat.lastCardPlayed ?? null;
+    },
+    get lastPlayedType() {
+      const id = combat.lastCardPlayed;
+      const c = id != null ? cardById(id) : null;
+      return c ? c.type : null;
     },
     // Base-id aware: an upgraded "ACK+" still counts as having played "ACK" this turn.
     playedThisTurn: (id) => combat.playedIdsThisTurn.some((pid) => baseId(pid) === baseId(id)),
@@ -1148,6 +1192,16 @@ function applyOp(ctx, op) {
   if (op.gainEnergy != null) ctx.gainEnergy(op.gainEnergy);
   if (op.applyEnemy) ctx.applyEnemy(op.applyEnemy.status, op.applyEnemy.value);
   if (op.applySelf) ctx.applySelf(op.applySelf.status, op.applySelf.value);
+  if (op.replay) {
+    const combat = ctx.combat;
+    const card = cardById(op.replay);
+    if (card && (combat.echoDepth || 0) < MAX_ECHO_DEPTH) {
+      combat.echoDepth = (combat.echoDepth || 0) + 1;
+      card.effect(makeCtx(combat, card));
+      combat.echoDepth -= 1;
+      combat.chainThisTurn = (combat.chainThisTurn || 0) + 1;
+    }
+  }
 }
 function resolvePending(combat) {
   if (!combat.pending || !combat.pending.length) return;
@@ -1214,6 +1268,8 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
     firstCardDiscount: 0,
     // SEQUENCE (Act 1): the first card each turn costs this much less (relic-set)
     energySpentThisTurn: 0,
+    chainThisTurn: 0,
+    // CHAIN (Act 6): number of card-replays/echoes this turn (resets each turn)
     playedIdsThisTurn: [],
     lastCardPlayed: null,
     over: false,
@@ -1264,6 +1320,7 @@ function endTurn(combat) {
   applyTurnEnergy(combat);
   combat.cardsPlayedThisTurn = 0;
   combat.energySpentThisTurn = 0;
+  combat.chainThisTurn = 0;
   combat.playedIdsThisTurn = [];
   tickStatuses(combat.player);
   releaseJam(combat);
@@ -2815,6 +2872,7 @@ function snapshotCombat(combat) {
     turn: combat.turn,
     cardsPlayedThisTurn: combat.cardsPlayedThisTurn || 0,
     energySpentThisTurn: combat.energySpentThisTurn || 0,
+    chainThisTurn: combat.chainThisTurn || 0,
     playedIdsThisTurn: [...combat.playedIdsThisTurn || []],
     lastCardPlayed: combat.lastCardPlayed ?? null,
     over: Boolean(combat.over),
@@ -2859,6 +2917,7 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
     turn: s.turn,
     cardsPlayedThisTurn: s.cardsPlayedThisTurn || 0,
     energySpentThisTurn: s.energySpentThisTurn || 0,
+    chainThisTurn: s.chainThisTurn || 0,
     playedIdsThisTurn: [...s.playedIdsThisTurn || []],
     lastCardPlayed: s.lastCardPlayed ?? null,
     over: Boolean(s.over),
