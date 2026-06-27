@@ -8,7 +8,11 @@ const CFGS = {
   oscillating: { mode: "oscillating", oscBase: 40, oscAmp: 18, oscPeriod: 4000, tolerance: 28 },
   reversing: { mode: "reversing", speed: 60, speedVar: 0, tolerance: 24 },
   dual: { mode: "dual", speedInner: 45, speedOuter: 30, tolerance: 30 },
-  multigap: { mode: "multigap", speed: 50, speedVar: 0, gaps: 3, tolerance: 22 }
+  multigap: { mode: "multigap", speed: 50, speedVar: 0, gaps: 3, tolerance: 22 },
+  ghostecho: { mode: "ghostecho", speed: 34, speedVar: 0, tolerance: 26 },
+  rhythm: { mode: "rhythm", speed: 36, speedVar: 0, tolerance: 28, chain: 3 },
+  stealth: { mode: "stealth", speed: 38, speedVar: 0, eyeSpeed: 22, blind: 60, tolerance: 26 },
+  darkzone: { mode: "darkzone", speed: 40, speedVar: 0, tolerance: 22, darkZone: { start: 320, end: 40 } }
 };
 
 for (const [name, cfg] of Object.entries(CFGS)) {
@@ -20,15 +24,59 @@ for (const [name, cfg] of Object.entries(CFGS)) {
   const b = mode.evaluate(cfg, seed, 1234);
   assert.deepEqual(a, b, `${name}: evaluate deterministic`);
 
-  // solveMoment lands a hit
-  const t = mode.solveMoment(cfg, seed);
-  assert.ok(t >= 0, `${name}: solveMoment non-negative`);
-  assert.equal(mode.evaluate(cfg, seed, t).hit, true, `${name}: solveMoment is a real hit`);
+  // solveMoment lands a hit. rhythm returns an ARRAY of beat times (chain) — every beat is a real hit.
+  const solve = mode.solveMoment(cfg, seed);
+  const moments = Array.isArray(solve) ? solve : [solve];
+  for (const t of moments) {
+    assert.ok(t >= 0, `${name}: solveMoment non-negative`);
+    assert.equal(mode.evaluate(cfg, seed, t).hit, true, `${name}: solveMoment is a real hit`);
+  }
 
   // render is a non-empty deterministic ASCII block
-  const r1 = mode.render(cfg, seed, t);
-  assert.equal(r1, mode.render(cfg, seed, t), `${name}: render deterministic`);
+  const r1 = mode.render(cfg, seed, moments[0]);
+  assert.equal(r1, mode.render(cfg, seed, moments[0]), `${name}: render deterministic`);
   assert.ok(r1.length > 8, `${name}: render draws something`);
+}
+
+// rhythm: solveMoment is N evenly spaced beats (a metronome), each one rotation apart.
+{
+  const r = getMode("rhythm");
+  const cfg = CFGS.rhythm; const beats = r.solveMoment(cfg, 5);
+  assert.equal(beats.length, cfg.chain, "rhythm: one beat per chain step");
+  const d1 = beats[1] - beats[0]; const d2 = beats[2] - beats[1];
+  assert.ok(Math.abs(d1 - d2) <= 1, "rhythm: beats are evenly spaced (constant cadence)");
+}
+
+// stealth: the eye really blocks — there exist moments where the gap is at top but the eye is watching.
+{
+  const s = getMode("stealth");
+  const cfg = CFGS.stealth; const seed = 4;
+  let blocked = false;
+  for (let ms = 0; ms < 60000; ms += 3) {
+    const e = s.evaluate(cfg, seed, ms);
+    if (angularDist(e.gap, 0) <= cfg.tolerance / 2 && e.watched) {
+      assert.equal(e.hit, false, "stealth: gap at top but eye watching = miss");
+      blocked = true; break;
+    }
+  }
+  assert.ok(blocked, "stealth: the eye sometimes covers the crossing lane");
+}
+
+// ghostecho: attempt ghosts render as feedback marks without changing the win condition.
+{
+  const g = getMode("ghostecho");
+  const cfg = CFGS.ghostecho;
+  const withGhost = g.render(cfg, 2, 500, { ghosts: [{ angle: 180, result: "miss" }] });
+  assert.ok(withGhost.includes("·"), "ghostecho: a miss ghost renders");
+}
+
+// darkzone: the blackout arc covers the top so the gap is hidden right when it must be crossed.
+{
+  const d = getMode("darkzone");
+  const cfg = CFGS.darkzone; const seed = 6;
+  const t = d.solveMoment(cfg, seed);
+  assert.equal(d.evaluate(cfg, seed, t).hit, true, "darkzone: the inferred moment is a real hit");
+  assert.ok(d.render(cfg, seed, t).includes("█"), "darkzone: blackout arc renders over the top");
 }
 
 // dual is genuinely an AND of two rings: at the solve moment BOTH gaps are at the top.

@@ -10,7 +10,7 @@
 
 import { makeRng } from "./rng.js";
 import { renderRing, ringAngle } from "./ring.js";
-import { renderConcentric, renderMultiGap } from "./rings.js";
+import { renderConcentric, renderMultiGap, renderStealth } from "./rings.js";
 
 const TWO_PI = Math.PI * 2;
 export function mod360(a) { return ((a % 360) + 360) % 360; }
@@ -175,5 +175,93 @@ const multigap = {
   }
 };
 
-export const MODES = { simple, oscillating, reversing, dual, multigap };
+// The earliest perfect-CROSS moment for a constant-rotation gap (shared by simple/ghostecho/darkzone).
+function simpleSolve(cfg, seed) {
+  const speed = ringSpeed(cfg, seed);
+  const base = ringAngle(seed, 0, speed);
+  return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1000);
+}
+
+// ── ghostecho: a tight constant ring whose ONLY aid is calibration feedback — the last two attempts ──
+// render as faint ghost marks so the player reads "I pressed X° early/late" and corrects. Win = simple;
+// the ghosts come from attempt history passed in ctx.ghosts:[{angle,result}] (pure, no stored state).
+const ghostecho = {
+  angleAt(cfg, seed, ms) { return ringAngle(seed, ms, ringSpeed(cfg, seed)); },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) { return simpleSolve(cfg, seed); },
+  render(cfg, seed, ms, ctx = {}) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, ghosts: ctx.ghosts || [] });
+  }
+};
+
+// ── rhythm: land N CONSECUTIVE crosses on a seeded metronome (the gap returns to the top once per ─────
+// rotation = the beat). A miss resets the chain. solveMoment returns the press-time ARRAY (all N beats).
+// The chain itself is tracked by the facade; each beat is a pure top-pass time so it stays deterministic.
+export function rhythmParams(cfg, seed) {
+  const speed = ringSpeed(cfg, seed);
+  const period = 360000 / speed; // one rotation in ms = one beat of the metronome
+  return { speed, period, base: simpleSolve(cfg, seed), chain: Math.max(2, cfg.chain || 3) };
+}
+const rhythm = {
+  angleAt(cfg, seed, ms) { return ringAngle(seed, ms, ringSpeed(cfg, seed)); },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  // Press-time array: the gap faces the top on every beat; chain N of them in a row to clear.
+  solveMoment(cfg, seed) {
+    const { period, base, chain } = rhythmParams(cfg, seed);
+    return Array.from({ length: chain }, (_, k) => Math.round(base + k * period));
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance });
+  }
+};
+
+// ── stealth: a constant gap PLUS a deterministic scanning eye (its own seed). CROSS only counts when ──
+// the gap is at the top AND the eye beam is NOT covering the top lane (observe vs. act — wait for blind).
+export function stealthParams(cfg, seed) {
+  return { speed: ringSpeed(cfg, seed), eyeSpeed: cfg.eyeSpeed || 22, blind: cfg.blind || 60 };
+}
+const stealth = {
+  gapAngle(cfg, seed, ms) { return ringAngle(seed, ms, ringSpeed(cfg, seed)); },
+  eyeAngle(cfg, seed, ms) { return ringAngle(`${seed}eye`, ms, stealthParams(cfg, seed).eyeSpeed); },
+  evaluate(cfg, seed, ms) {
+    const gap = this.gapAngle(cfg, seed, ms);
+    const eye = this.eyeAngle(cfg, seed, ms);
+    const distance = angularDist(gap, 0);
+    const watched = angularDist(eye, 0) <= (cfg.blind || 60) / 2; // eye on the crossing lane
+    return { hit: distance <= cfg.tolerance / 2 && !watched, distance, gap, eye, watched, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    for (let t = 0; t <= 60000; t += 4) if (this.evaluate(cfg, seed, t).hit) return t;
+    return 0;
+  },
+  render(cfg, seed, ms) {
+    return renderStealth(this.gapAngle(cfg, seed, ms), this.eyeAngle(cfg, seed, ms), { gapWidth: cfg.tolerance, blind: cfg.blind || 60 });
+  }
+};
+
+// ── darkzone: a constant gap, but a blackout arc covers the TOP so the gap vanishes exactly when it ──
+// matters — the player extrapolates the cross moment from the known fixed speed. Only tractable offline
+// (online the seed reseeds → nothing to extrapolate), which is why this lives in the back third.
+const darkzone = {
+  angleAt(cfg, seed, ms) { return ringAngle(seed, ms, ringSpeed(cfg, seed)); },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) { return simpleSolve(cfg, seed); },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || { start: 320, end: 40 } });
+  }
+};
+
+export const MODES = { simple, oscillating, reversing, dual, multigap, ghostecho, rhythm, stealth, darkzone };
 export function getMode(name) { return MODES[name] || simple; }

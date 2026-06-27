@@ -131,6 +131,23 @@ function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
   plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "=", "‖", darkZone);
   return gridToString(grid);
 }
+function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
+  const { gapWidth = 20, blind = 60 } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W2 - 1) / 2;
+  const cy = (RING_H2 - 1) / 2;
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, cx, cy, a);
+    if (offGrid(x, y)) continue;
+    const inGap = inArc2(a, gapAngleDeg, gapWidth);
+    let ch = inGap ? " " : ringChar2(a);
+    if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "▒" : "▓";
+    grid[y][x] = ch;
+  }
+  const ep = project(cx, cy, cx, cy, eyeAngleDeg);
+  if (!offGrid(ep.x, ep.y)) grid[ep.y][ep.x] = "@";
+  return gridToString(grid);
+}
 function renderMultiGap(gapAngles = [], opts = {}) {
   const { gapWidth = 20, darkZone = null } = opts;
   const grid = blankGrid();
@@ -356,7 +373,92 @@ var multigap = {
     return renderMultiGap(this.gapsAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
   }
 };
-var MODES = { simple, oscillating, reversing, dual, multigap };
+function simpleSolve(cfg, seed) {
+  const speed = ringSpeed(cfg, seed);
+  const base = ringAngle(seed, 0, speed);
+  return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
+}
+var ghostecho = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return simpleSolve(cfg, seed);
+  },
+  render(cfg, seed, ms, ctx = {}) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, ghosts: ctx.ghosts || [] });
+  }
+};
+function rhythmParams(cfg, seed) {
+  const speed = ringSpeed(cfg, seed);
+  const period = 36e4 / speed;
+  return { speed, period, base: simpleSolve(cfg, seed), chain: Math.max(2, cfg.chain || 3) };
+}
+var rhythm = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  // Press-time array: the gap faces the top on every beat; chain N of them in a row to clear.
+  solveMoment(cfg, seed) {
+    const { period, base, chain } = rhythmParams(cfg, seed);
+    return Array.from({ length: chain }, (_, k) => Math.round(base + k * period));
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance });
+  }
+};
+function stealthParams(cfg, seed) {
+  return { speed: ringSpeed(cfg, seed), eyeSpeed: cfg.eyeSpeed || 22, blind: cfg.blind || 60 };
+}
+var stealth = {
+  gapAngle(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  eyeAngle(cfg, seed, ms) {
+    return ringAngle(`${seed}eye`, ms, stealthParams(cfg, seed).eyeSpeed);
+  },
+  evaluate(cfg, seed, ms) {
+    const gap = this.gapAngle(cfg, seed, ms);
+    const eye = this.eyeAngle(cfg, seed, ms);
+    const distance = angularDist3(gap, 0);
+    const watched = angularDist3(eye, 0) <= (cfg.blind || 60) / 2;
+    return { hit: distance <= cfg.tolerance / 2 && !watched, distance, gap, eye, watched, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    for (let t = 0; t <= 6e4; t += 4) if (this.evaluate(cfg, seed, t).hit) return t;
+    return 0;
+  },
+  render(cfg, seed, ms) {
+    return renderStealth(this.gapAngle(cfg, seed, ms), this.eyeAngle(cfg, seed, ms), { gapWidth: cfg.tolerance, blind: cfg.blind || 60 });
+  }
+};
+var darkzone = {
+  angleAt(cfg, seed, ms) {
+    return ringAngle(seed, ms, ringSpeed(cfg, seed));
+  },
+  evaluate(cfg, seed, ms) {
+    const angle = this.angleAt(cfg, seed, ms);
+    const distance = angularDist3(angle, 0);
+    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
+  },
+  solveMoment(cfg, seed) {
+    return simpleSolve(cfg, seed);
+  },
+  render(cfg, seed, ms) {
+    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || { start: 320, end: 40 } });
+  }
+};
+var MODES = { simple, oscillating, reversing, dual, multigap, ghostecho, rhythm, stealth, darkzone };
 function getMode(name) {
   return MODES[name] || simple;
 }

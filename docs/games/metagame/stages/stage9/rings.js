@@ -19,6 +19,27 @@ export function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
   return gridToString(grid);
 }
 
+// One ring with a gap PLUS a scanning "eye" beam (stealth mode). The beam (▓) sweeps the ring; a CROSS
+// only counts when the gap is at the top AND the eye is NOT covering the top lane (the blind window).
+// gapAngleDeg/eyeAngleDeg are deterministic angles; opts: { gapWidth, blind } (eye beam width in deg).
+export function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
+  const { gapWidth = 20, blind = 60 } = opts;
+  const grid = blankGrid();
+  const cx = (RING_W - 1) / 2;
+  const cy = (RING_H - 1) / 2;
+  for (let a = 0; a < 360; a += 3) {
+    const { x, y } = project(cx, cy, cx, cy, a);
+    if (offGrid(x, y)) continue;
+    const inGap = inArc(a, gapAngleDeg, gapWidth);
+    let ch = inGap ? " " : ringChar(a);
+    if (inArc(a, eyeAngleDeg, blind)) ch = inGap ? "▒" : "▓"; // eye beam sweep (gap-under-beam = ▒)
+    grid[y][x] = ch;
+  }
+  const ep = project(cx, cy, cx, cy, eyeAngleDeg);
+  if (!offGrid(ep.x, ep.y)) grid[ep.y][ep.x] = "@"; // the eye itself
+  return gridToString(grid);
+}
+
 // One ring with several gaps (one real, the rest phantom decoys — drawn identically so the player must
 // learn which slot is safe). gapAngles is the list of gap centre angles. opts: { gapWidth, darkZone }.
 export function renderMultiGap(gapAngles = [], opts = {}) {
