@@ -6,7 +6,6 @@
 # Check remaining: node tests/check-known-backlog.mjs
 rescript-lang
 ruby-lang
-scala-lang
 scheme-lang
 sed-script
 sml-lang
