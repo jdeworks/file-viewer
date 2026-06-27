@@ -432,6 +432,26 @@ export async function run(ctx) {
   if (floatState.deselectShown && floatState.uncommitted && moveCommitted) pass('selection move: floats + stays selected on drop, stamps one commit on leaving Move'); else fail('selection float/stamp: ' + JSON.stringify({ floatState, moveCommitted }));
   await openTab('common');
   await page.click('#previewHost .imgv-deselect');                // clear selection for later steps
+  // Arrow-key nudge — a live selection moves with the arrow keys (Paint-style), stays
+  // selected (floats), and stamps a single commit on deselect.
+  await page.click('#previewHost .imgv-marquee');                 // box-select mode
+  const nBox = await page.$eval('#previewHost .imgv-sel-overlay', (el) => { const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+  await page.mouse.move(nBox.x + nBox.w * 0.3, nBox.y + nBox.h * 0.3);
+  await page.mouse.down();
+  await page.mouse.move(nBox.x + nBox.w * 0.6, nBox.y + nBox.h * 0.6, { steps: 4 });
+  await page.mouse.up();
+  await page.click('#previewHost .imgv-marquee');                 // leave box-select (mask stays)
+  const nudgeBefore = await imgSrcNow();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
+  const nudgeState = await page.evaluate((before) => ({
+    stillSelected: !document.querySelector('#previewHost .imgv-deselect').hidden,
+    uncommitted: (document.querySelector('#previewHost .imgv-img')?.src || '') === before,
+  }), nudgeBefore);
+  await page.click('#previewHost .imgv-deselect');                // bake the nudged float
+  const nudgeCommitted = await waitNewSrc(nudgeBefore);
+  if (nudgeState.stillSelected && nudgeState.uncommitted && nudgeCommitted) pass('selection: arrow keys nudge the float (stays selected), stamp on deselect'); else fail('arrow nudge: ' + JSON.stringify({ nudgeState, nudgeCommitted }));
   // Rotate 90° CW also swaps width/height — a strong correctness check.
   await openTab('common');
   const rotBefore = await page.$eval('#previewHost .imgv-img', (e) => ({ w: e.naturalWidth, h: e.naturalHeight, src: e.src }));

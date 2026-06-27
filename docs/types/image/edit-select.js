@@ -172,6 +172,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   // Install a computed mask (or clear the rubber-band if the gesture was too small).
   function setMask(res) {
     if (!res) { octx.clearRect(0, 0, ov.width, ov.height); return; }
+    if (floating) stampFloat();   // a new selection bakes any pending float first
     mask = res.m; mw = res.w; mh = res.h;
     render();
     if (deselectBtn) deselectBtn.hidden = false;
@@ -195,6 +196,7 @@ export function mountSelection({ host, img, mime, els, getFillOpts, onActivate, 
   // Read the current image into a natural-res canvas and compute the region mask at
   // the clicked pixel using the shared fill tolerance/mode/perceptual options.
   function pickAt(e) {
+    if (floating) stampFloat();   // a new wand pick bakes any pending float first
     const w = img.naturalWidth || 1, h = img.naturalHeight || 1;
     const c = document.createElement('canvas'); c.width = w; c.height = h;
     const g = c.getContext('2d', { willReadFrequently: true });

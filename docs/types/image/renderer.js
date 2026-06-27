@@ -445,7 +445,12 @@ export async function render(intake, ctx = {}) {
   // one and not in ASCII mode — including when focus is on a slider/colour/number
   // control inside the toolbar. Text fields keep their native undo.
   const unregisterUndoKeys = canEdit
-    ? registerUndoKeys({ host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo })
+    ? registerUndoKeys({
+      host, isEnabled: () => !asciiMode, doUndo: core.doUndo, doRedo: core.doRedo,
+      // Arrow keys nudge a live pixel selection (Shift = move just the outline); the
+      // adv (vector) editor has its own arrow handling, so defer while it's active.
+      onArrow: (dx, dy, shift) => { if (advActive || !selection?.hasSelection()) return false; selection.nudge(dx, dy, shift); return true; },
+    })
     : null;
 
   // Background removal — sample a colour, flood to transparent, commit as PNG
