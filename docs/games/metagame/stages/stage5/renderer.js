@@ -102,7 +102,7 @@ export function renderStage5(ctx) {
   function paintArena(view) {
     fields.arena.textContent = renderTrackGrid({
       table: view.table, tick: view.tick, lane: view.lane, lookAhead: view.lookAhead,
-      wrap: view.archetype === 'circuit',
+      wrap: view.archetype === 'circuit', rivals: view.rivals || [],
     });
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
   }

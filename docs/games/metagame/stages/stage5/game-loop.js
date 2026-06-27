@@ -11,9 +11,13 @@ import { roundByIdx, isBossRound, GLYPH_DAMAGE } from './rounds.js';
 import { applyUpgrades } from './shop.js';
 import { calcRoundPackets } from './economy.js';
 import { createRaceState } from './race-state.js';
+import { buildRivals, finishPosition, positionMultiplier } from './rivals.js';
 
 const LOOK_AHEAD = 8;
 const BASE_SPEED = 1;
+const BUMP_DAMAGE = 1;       // sharing a lane with a rival chips a little integrity…
+const BUMP_SLOW = 0.5;       // …and bleeds race speed for that tick.
+const BUMP_COOLDOWN = 10;    // ticks before the same rival can bump again
 
 export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd }) {
   const round = roundByIdx(roundIdx);
@@ -23,6 +27,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   const suppressionActive = boss && !calibrated;
   const race = createRaceState(round);
   const maxTicks = race.raceLength + 16;
+  const rivals = buildRivals({ seed, round, table, raceLength: race.raceLength });
+  const bumpReady = rivals.map(() => 0); // tick when each rival may bump again
 
   const run = state.run;
   run.lane = clampLane(run.lane);
@@ -34,6 +40,7 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   run.gatesThisRound = 0;
   run.lap = 1;
   run.distance = 0;
+  run.position = rivals.length + 1;
 
   let tick = 0;
   let done = false;
@@ -41,11 +48,35 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
 
   function rowAt(t) { return table[race.rowIndex(t, table.length)]; }
 
+  // Live rival positions for the renderer: glyph + lane + how many rows ahead of the player they are.
+  function rivalView() {
+    return rivals.map((r) => ({
+      glyph: r.glyph,
+      lane: r.laneAt(tick),
+      ahead: Math.round(r.distAt(tick) - race.distance),
+    }));
+  }
+
+  // Share-lane bumps: a rival on the player's row + lane (cooldown-gated) costs integrity + speed.
+  function resolveBumps() {
+    let slow = 0;
+    rivals.forEach((r, i) => {
+      if (tick < bumpReady[i]) return;
+      if (Math.round(r.distAt(tick) - race.distance) !== 0) return;
+      if (r.laneAt(tick) !== run.lane) return;
+      run.integrity -= BUMP_DAMAGE;
+      bumpReady[i] = tick + BUMP_COOLDOWN;
+      slow = BUMP_SLOW;
+    });
+    return slow;
+  }
+
   function paint() {
     onPaint?.({
       table, tick, lane: run.lane, round, integrity: run.integrity, gates: run.gatesThisRound,
       suppressionActive, lookAhead: LOOK_AHEAD, race, lap: race.lap(), laps: race.laps,
-      progress: race.progress(), archetype: race.archetype,
+      progress: race.progress(), archetype: race.archetype, rivals: rivalView(),
+      position: run.position, fieldSize: rivals.length + 1,
     });
   }
 
@@ -80,14 +111,21 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       if (isGate(glyph)) run.gatesThisRound += 1;
     }
     if (suppressionActive) run.integrity -= 1; // jammer suppression — only ever an un-calibrated boss
+    const slow = resolveBumps();
     if (run.integrity <= 0) { run.integrity = 0; finish('fail'); return outcome; }
-    race.advance(BASE_SPEED);
+    race.advance(speedFor() - slow);
     run.distance = race.distance;
     run.lap = race.lap();
+    run.position = 1 + rivals.filter((r) => r.distAt(tick) > race.distance).length; // live standing
     tick += 1;
     if (race.finished() || tick >= maxTicks) { finish('clear'); return outcome; }
     paint();
     return null;
+  }
+
+  // Player race speed this tick. Powerups extend this in a later increment; base is constant.
+  function speedFor() {
+    return BASE_SPEED;
   }
 
   function finish(result) {
@@ -96,15 +134,19 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
     outcome = result;
     run.roundComplete = result === 'clear';
     let packets = 0;
+    let position = run.position;
     if (result === 'clear') {
+      position = rivals.length ? finishPosition(rivals, tick) : 1;
+      run.position = position;
       const onBeatPct = run.totalSwitches > 0 ? run.onBeatCount / run.totalSwitches : 1;
+      const multiplier = positionMultiplier(position, rivals.length + 1);
       packets = calcRoundPackets({
         roundId: round.id, onBeatPct, integrityRemaining: run.integrity,
-        gatesCollected: run.gatesThisRound, upgrades: state.shop || {},
+        gatesCollected: run.gatesThisRound, upgrades: state.shop || {}, multiplier,
       });
       state.packets = Number(state.packets || 0) + packets;
     }
-    onEnd?.({ result, round, roundIdx, integrity: run.integrity, packets, gates: run.gatesThisRound });
+    onEnd?.({ result, round, roundIdx, integrity: run.integrity, packets, gates: run.gatesThisRound, position, fieldSize: rivals.length + 1 });
   }
 
   // Optimal lane for the current tick. Used by autoSolve (the test hook) — never an in-game affordance.
@@ -123,11 +165,12 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
   }
 
   return {
-    round, table, isBoss: boss, suppressionActive,
+    round, table, isBoss: boss, suppressionActive, race, rivals,
     get tick() { return tick; },
     get done() { return done; },
     get outcome() { return outcome; },
-    handleKey, step, autoSolve, paint,
+    get position() { return run.position; },
+    handleKey, step, autoSolve, paint, rivalView,
   };
 }
 
