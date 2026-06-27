@@ -18,7 +18,9 @@ self.onmessage = (e) => {
     if (srcCanvas.width !== bitmap.width || srcCanvas.height !== bitmap.height) {
       srcCanvas.width = bitmap.width; srcCanvas.height = bitmap.height;
     }
-    srcCanvas.getContext('2d').drawImage(bitmap, 0, 0);
+    const sctx = srcCanvas.getContext('2d', { willReadFrequently: true });
+    sctx.clearRect(0, 0, srcCanvas.width, srcCanvas.height);   // reused canvas: a transparent frame must NOT keep the previous one
+    sctx.drawImage(bitmap, 0, 0);
     bitmap.close();
     const t0 = performance.now();
     processImage(srcCanvas, processed, options);

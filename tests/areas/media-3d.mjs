@@ -1102,6 +1102,22 @@ export async function run(ctx) {
   ]).catch(() => [null]);
   if (convReady && convDl && /\.gif$/.test(convDl.suggestedFilename())) pass('ASCII converter: GIF → ASCII GIF converts (worker) + downloads'); else fail('ascii converter: ' + JSON.stringify({ convReady, dl: convDl && convDl.suggestedFilename() }));
   await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
+  // Regression: converting a TRANSPARENT frame after an opaque one must not retain the
+  // previous frame (the worker/engine reuses a source canvas → it must be cleared).
+  const noAccum = await page.evaluate(async () => {
+    const { createAsciiEngine } = await import('/types/image/ascii/engine.js');
+    const eng = createAsciiEngine({ columns: 8 });
+    const mk = (draw) => { const c = document.createElement('canvas'); c.width = 16; c.height = 16; draw(c.getContext('2d')); return c; };
+    eng.setSource(mk((g) => { g.fillStyle = '#fff'; g.fillRect(0, 0, 16, 16); g.fillStyle = '#000'; g.fillRect(0, 0, 8, 16); }));   // opaque frame 1 (high contrast → glyphs)
+    await eng.convertBitmap(await createImageBitmap(eng.sourceCanvas), 'cells');
+    const f1 = eng.result.text;
+    eng.setSource(mk((g) => g.clearRect(0, 0, 16, 16)));                              // fully transparent frame 2
+    await eng.convertBitmap(await createImageBitmap(eng.sourceCanvas), 'cells');
+    const f2 = eng.result.text;
+    eng.terminate?.();
+    return { f1HasGlyph: /\S/.test(f1), f2Blank: !/\S/.test(f2) };
+  });
+  if (noAccum.f1HasGlyph && noAccum.f2Blank) pass('ASCII engine: transparent frame does not retain the previous frame (canvas cleared)'); else fail('ascii frame accumulation: ' + JSON.stringify(noAccum));
   // WebP support via the native ImageDecoder path: generate a real WebP in-page, feed it,
   // and assert it decodes + converts to a downloadable ASCII GIF (skips if no ImageDecoder).
   const webpBuf = await page.evaluate(async () => {

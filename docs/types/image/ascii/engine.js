@@ -152,7 +152,9 @@ export function createAsciiEngine(initialOptions) {
     }
     // Sync fallback: draw the bitmap back into sourceCanvas and run the normal pipeline.
     if (sourceCanvas.width !== bitmap.width || sourceCanvas.height !== bitmap.height) { sourceCanvas.width = bitmap.width; sourceCanvas.height = bitmap.height; }
-    sourceCanvas.getContext('2d', { willReadFrequently: true }).drawImage(bitmap, 0, 0); bitmap.close?.();
+    const sctx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    sctx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);   // transparent frames must not retain the previous one
+    sctx.drawImage(bitmap, 0, 0); bitmap.close?.();
     markDirty('processedImage'); update();
     if (want === 'bitmap') { if (!syncOut) syncOut = makeCanvas(); renderAsciiToCanvas(result, syncOut, options); return syncOut; }
     return result;
