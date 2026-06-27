@@ -1104,10 +1104,18 @@ export async function run(ctx) {
     return !lock.unlocked && !s.boss.defeated && !(save?.defeated?.includes(8));
   });
   if (s8BypassFailed) pass('Stage 8 BYPASS CLOSED: fresh two-click Heat Death attempt is locked, not a win'); else fail('Stage 8 two-click bypass still wins');
-  // Drive the REAL survival sim to the boss gate (repair the spine, let the frontier shed .sav debris).
-  // bodySolver only fast-forwards the real engine — it does NOT archive or touch the boss.
+  // Drive the REAL multi-act survival sim to the boss gate (repair the spine, BRACE + weather each
+  // Cascade Storm so the network grows core→α→β→γ, let the frontier shed .sav debris). bodySolver
+  // only fast-forwards the real engine — it does NOT archive or touch the Heat Death boss.
   const s8Gate = await page.evaluate(() => window.__fvStage8.bodySolver());
   if (s8Gate.enoughCycles && s8Gate.enoughStates && !s8Gate.actionReady && !s8Gate.unlocked) pass('Stage 8 body gate reached (cycles + reserves), boss still locked pending the un-cheat'); else fail(`Stage 8 body gate not reached: ${JSON.stringify(s8Gate)}`);
+  // 3-act escalation: surviving the three Cascade Storms grew the network 14→34 and the boss now
+  // requires all three storms (boss-never-from-start, stronger than the prior gate).
+  const s8Acts = await page.evaluate(() => {
+    const s = window.__fvStage8.state();
+    return { storms: s.stormsSurvived, nodes: s.nodes.length, sectors: s.onlineSectors.length, act: s.act, enoughStorms: window.__fvStage8.lockState().enoughStorms };
+  });
+  if (s8Acts.storms === 3 && s8Acts.nodes === 34 && s8Acts.sectors === 4 && s8Acts.enoughStorms) pass('Stage 8 three Cascade Storms survived: network grew core→α→β→γ (14→34), storm gate met'); else fail(`Stage 8 storm/act progression wrong: ${JSON.stringify(s8Acts)}`);
   // Run-state retrofit: the in-progress sim is checkpointed into the "runsim" slot (tagged with the
   // run identity), so a reload resumes this exact mid-run position instead of re-seeding.
   const s8Resume = await page.evaluate(() => {

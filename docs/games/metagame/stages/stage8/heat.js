@@ -23,6 +23,20 @@ export function ventFromStructures(state) {
   return Math.max(0, Number(state.heatVentBonus || 0));
 }
 
+// Venting from online, non-failed COOLANT nodes (their whole job). A degrading loop vents at half.
+export function ventFromCoolantNodes(state, statusOf, isOnline = () => true) {
+  let vent = 0;
+  for (const n of state.nodes) {
+    if (!isOnline(n)) continue;
+    const def = nodeById(n.id) || {};
+    if (def.zone !== "coolant") continue;
+    const s = statusOf(n.health);
+    if (s === "failed") continue;
+    vent += (def.coolantVent || 0) * (s === "degrading" ? 0.5 : 1);
+  }
+  return vent;
+}
+
 // Heat generated this cycle from the live node statuses. `isOnline` lets the caller exclude sectors
 // that have not been brought online yet (defaults to everything online).
 export function heatGeneration(state, statusOf, isOnline = () => true) {
@@ -43,7 +57,7 @@ export function heatGeneration(state, statusOf, isOnline = () => true) {
 // The net heat change for a cycle: generation minus (baseline + structural) venting.
 export function computeHeatDelta(state, statusOf, isOnline) {
   const gen = heatGeneration(state, statusOf, isOnline);
-  const vent = BASE_VENT + ventFromStructures(state);
+  const vent = BASE_VENT + ventFromStructures(state) + ventFromCoolantNodes(state, statusOf, isOnline);
   return { gen: round1(gen), vent: round1(vent), delta: round1(gen - vent) };
 }
 

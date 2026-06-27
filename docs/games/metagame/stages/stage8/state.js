@@ -1,4 +1,4 @@
-import { NODES } from "./nodes.js";
+import { NODES, NODE_BY_ID, freshSectorNodes } from "./nodes.js";
 import { bellMessages } from "./messages.js";
 
 // state.js — Stage 8 Entropy Field survival sim state.
@@ -10,16 +10,22 @@ import { bellMessages } from "./messages.js";
 // completed clear so a returning winner is never reset into a new fight. snapshotRun/restoreRun are
 // pure (de)serializers used by the run-state retrofit to resume an in-progress sim across reloads.
 
-export const STATE_VERSION = 2;
+export const STATE_VERSION = 3;
 
+// The field boots with ONLY the core sector online (14 nodes). alpha/beta/gamma append on storm wins.
 export function freshNodes() {
-  return NODES.map((n) => ({ id: n.id, health: 100, cascadeStress: 0 }));
+  return freshSectorNodes("core");
 }
 
 export function defaultState() {
   return {
     version: STATE_VERSION,
     cycle: 1,
+    act: 1,
+    onlineSectors: ["core"],
+    stormsSurvived: 0,
+    pendingStorm: null,
+    activeStorm: null,
     nodes: freshNodes(),
     states: 0,
     totalStatesEarned: 0,
@@ -78,13 +84,24 @@ export function normalizeState(state) {
   const target = incoming;
   target.version = STATE_VERSION;
   target.cycle = posInt(target.cycle, fresh.cycle);
-  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length
-    ? target.nodes.map((n, i) => ({
-        id: n?.id || fresh.nodes[i].id,
-        health: clampHealth(n?.health),
-        cascadeStress: Number.isFinite(Number(n?.cascadeStress)) ? Number(n.cascadeStress) : 0
+  // Node array is now variable-length (the network grows across acts): keep every entry whose id is a
+  // known node; fall back to the fresh core sector only if nothing valid survived.
+  const validNodes = Array.isArray(target.nodes)
+    ? target.nodes.filter((n) => n && NODE_BY_ID.has(n.id)).map((n) => ({
+        id: n.id,
+        health: clampHealth(n.health),
+        cascadeStress: Number.isFinite(Number(n.cascadeStress)) ? Number(n.cascadeStress) : 0
       }))
-    : fresh.nodes;
+    : [];
+  target.nodes = validNodes.length ? validNodes : fresh.nodes;
+  target.act = posInt(target.act, fresh.act);
+  target.onlineSectors = Array.isArray(target.onlineSectors) && target.onlineSectors.length
+    ? target.onlineSectors.filter((s) => typeof s === "string")
+    : fresh.onlineSectors;
+  if (!target.onlineSectors.includes("core")) target.onlineSectors.unshift("core");
+  target.stormsSurvived = Math.max(0, num(target.stormsSurvived, 0));
+  target.pendingStorm = target.pendingStorm && typeof target.pendingStorm === "object" ? target.pendingStorm : null;
+  target.activeStorm = target.activeStorm && typeof target.activeStorm === "object" ? target.activeStorm : null;
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
@@ -120,6 +137,11 @@ export function snapshotRun(state) {
   return {
     version: STATE_VERSION,
     cycle: state.cycle,
+    act: state.act || 1,
+    onlineSectors: [...(state.onlineSectors || ["core"])],
+    stormsSurvived: state.stormsSurvived || 0,
+    pendingStorm: state.pendingStorm ? { ...state.pendingStorm } : null,
+    activeStorm: state.activeStorm ? { ...state.activeStorm } : null,
     nodes: (state.nodes || []).map((n) => ({ id: n.id, health: n.health, cascadeStress: n.cascadeStress || 0 })),
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,

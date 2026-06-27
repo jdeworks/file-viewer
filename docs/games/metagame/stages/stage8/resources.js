@@ -16,7 +16,7 @@ import { nodeById } from "./nodes.js";
 
 // Per-cycle insight a single online node contributes, by zone, scaled by status. Cores and Production
 // nodes "read" the field (research); mid/frontier contribute nothing.
-const ZONE_INSIGHT = { core: 0.6, production: 0.45, mid: 0, frontier: 0 };
+const ZONE_INSIGHT = { core: 0.6, production: 0.45, research: 1.4, mid: 0, frontier: 0, coolant: 0 };
 
 // Scrap refined when a debris file is archived. Higher tiers (deeper-zone wreckage) refine richer.
 export function scrapYield(debris) {

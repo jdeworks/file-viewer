@@ -13,6 +13,7 @@ import {
 import { simulateHeatDeath } from "./burn.js";
 import { makeRng } from "./rng.js";
 import { scrapYield, earnScrap } from "./resources.js";
+import { TOTAL_STORMS } from "./storms.js";
 
 export function hasSalvageArchived(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
@@ -108,7 +109,9 @@ export function getBossLockState({ actions, state }) {
   const enoughSalvage = salvageTotal >= SALVAGE_REQUIRED;
   const enoughStates = totalEarned >= STATES_REQUIRED;
   const enoughCycles = cycle >= MIN_CYCLE;
-  const unlocked = actionReady && enoughSalvage && enoughStates && enoughCycles;
+  const stormsSurvived = Number(state.stormsSurvived || 0);
+  const enoughStorms = stormsSurvived >= TOTAL_STORMS;
+  const unlocked = enoughStorms && actionReady && enoughSalvage && enoughStates && enoughCycles;
   const lock = {
     unlocked,
     defeated: Boolean(state.boss.defeated),
@@ -116,6 +119,9 @@ export function getBossLockState({ actions, state }) {
     enoughSalvage,
     enoughStates,
     enoughCycles,
+    enoughStorms,
+    stormsSurvived,
+    stormsRequired: TOTAL_STORMS,
     salvageTotal,
     salvageRequired: SALVAGE_REQUIRED,
     totalEarned,

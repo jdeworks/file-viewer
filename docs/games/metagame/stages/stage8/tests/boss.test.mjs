@@ -64,7 +64,7 @@ function archive(state, actions) {
   assert.equal(r.locked, true);
 }
 
-// Fully gated + deep reserves → the real burn is endured → defeat.
+// The Cascade-Storm gate keeps the boss locked until all three storms are survived.
 {
   const state = defaultState();
   state.cycle = MIN_CYCLE + 2;
@@ -74,8 +74,25 @@ function archive(state, actions) {
   archive(state, actions);
   state.totalStatesEarned = 600;
   state.states = 600;
+  state.stormsSurvived = 2; // only two of three storms weathered
   const lock = getBossLockState({ actions, state });
-  assert.equal(lock.unlocked, true, "all four gates satisfied");
+  assert.equal(lock.enoughStorms, false, "storm gate not yet met");
+  assert.equal(lock.unlocked, false, "boss locked until all three storms survived");
+}
+
+// Fully gated + deep reserves → the real burn is endured → defeat.
+{
+  const state = defaultState();
+  state.cycle = MIN_CYCLE + 2;
+  state.stormsSurvived = 3; // all three Cascade Storms weathered (network fully grown)
+  state.debris = [createDebris({ node: "F1", cycle: state.cycle - 1, tier: 4, value: 80, decay: 2 })];
+  state.selectedDebrisId = state.debris[0].id;
+  const actions = actionHarness();
+  archive(state, actions);
+  state.totalStatesEarned = 600;
+  state.states = 600;
+  const lock = getBossLockState({ actions, state });
+  assert.equal(lock.unlocked, true, "all gates satisfied");
   const r = recordHeatDeathAttempt({ state, actions, rng: burnRng() });
   assert.equal(r.defeated, true);
   assert.equal(state.boss.defeated, true);
@@ -89,6 +106,7 @@ function archive(state, actions) {
   state.cycle = MIN_CYCLE + 2;
   state.debris = [createDebris({ node: "F1", cycle: state.cycle - 1, tier: 4, value: 80, decay: 2 })];
   state.selectedDebrisId = state.debris[0].id;
+  state.stormsSurvived = 3;
   const actions = actionHarness();
   archive(state, actions);
   state.totalStatesEarned = 600; // unlocks the gate (cumulative)

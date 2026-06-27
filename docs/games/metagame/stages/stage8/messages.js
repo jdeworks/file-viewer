@@ -34,6 +34,7 @@ export const lockedHintLadder = [
 
 // Gate-specific guidance: which requirement is still unmet (the renderer picks the first failing one).
 export function gateHint(lock) {
+  if (!lock.enoughStorms) return `weather the Cascade Storms first: ${lock.stormsSurvived}/${lock.stormsRequired} survived. the field must grow before it can end.`;
   if (!lock.actionReady) return "move a .sav from /entropy/debris/ into /entropy/active_archive/ — that is the lesson.";
   if (!lock.enoughSalvage) return `archive more wreckage: salvage ${lock.salvageTotal}/${lock.salvageRequired}.`;
   if (!lock.enoughCycles) return `survive longer: cycle ${lock.cycle}/${lock.minCycle} before Heat Death will commit.`;

@@ -7,9 +7,18 @@ import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
 import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat } from "./heat.js";
 import { insightIncome, earnInsight } from "./resources.js";
+import { tickStorm } from "./storms.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
 export const BASE_REPAIR_UNITS_PER_CYCLE = 6;  // repair budget granted each cycle
+export const REPAIR_PER_SECTOR = 3;            // extra budget per online sector beyond the core
+
+// The per-cycle repair budget: scales with the growing network (more crew per online sector) plus any
+// tech bonus (tech.js writes state.repairBudgetBonus). Keeps a 1-sector default-state cycle at BASE.
+export function repairBudget(state) {
+  const sectors = Math.max(1, (state.onlineSectors || ["core"]).length);
+  return BASE_REPAIR_UNITS_PER_CYCLE + REPAIR_PER_SECTOR * (sectors - 1) + Math.max(0, Number(state.repairBudgetBonus || 0));
+}
 const DEBRIS_VALUE = { 1: [8, 24], 2: [24, 48], 3: [48, 64], 4: [64, 88] }; // by node tier
 
 export function status(health) {
@@ -39,6 +48,9 @@ export function advanceCycle(state, rng) {
   // 0. resolve any telegraphed crisis event from last cycle (direct effects, before decay).
   result.event = resolveEvent(state, rng);
   const priorStatus = new Map(state.nodes.map((n) => [n.id, status(n.health)]));
+  // 0b. apply this cycle's Cascade Storm damage (if one is being weathered); may resolve the storm,
+  // grow the network, and advance the act. Storm-killed nodes are caught by the newly-failed pass.
+  result.storm = tickStorm(state, rng);
 
   // 1. tick down stabilizers
   for (const id of Object.keys(state.stabilized)) {
@@ -77,6 +89,8 @@ export function advanceCycle(state, rng) {
   for (const n of state.nodes) {
     if (status(n.health) !== "failed") continue;
     for (const downstream of ADJACENCY.get(n.id) || []) {
+      const ddef = nodeById(downstream) || {};
+      if (ddef.noCascade) continue; // core anchors never take cascade stress (recovery anchor)
       const d = node(state, downstream);
       if (d) d.cascadeStress += 1;
     }
@@ -116,8 +130,8 @@ export function advanceCycle(state, rng) {
   // 9. entropy % (failed/degrading nodes + the thermal contribution of an over-hot field)
   result.entropy = clamp(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
   state.entropy = result.entropy;
-  // 10/11. reset budget + advance the cycle
-  state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
+  // 10/11. reset budget (scales with the network) + advance the cycle
+  state.repairUnits = repairBudget(state);
   state.cycle = (state.cycle || 0) + 1;
   // 12. telegraph next cycle's crisis (shown one cycle ahead).
   result.pendingEvent = telegraphNext(state, rng);

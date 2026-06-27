@@ -31,6 +31,7 @@ var lockedHintLadder = [
   "move that debris into /entropy/active_archive/ — the Archive button or drag/drop — and bank enough before Heat Death."
 ];
 function gateHint(lock) {
+  if (!lock.enoughStorms) return `weather the Cascade Storms first: ${lock.stormsSurvived}/${lock.stormsRequired} survived. the field must grow before it can end.`;
   if (!lock.actionReady) return "move a .sav from /entropy/debris/ into /entropy/active_archive/ — that is the lesson.";
   if (!lock.enoughSalvage) return `archive more wreckage: salvage ${lock.salvageTotal}/${lock.salvageRequired}.`;
   if (!lock.enoughCycles) return `survive longer: cycle ${lock.cycle}/${lock.minCycle} before Heat Death will commit.`;
@@ -115,30 +116,66 @@ var TIER = {
   3: { baseDecayPct: 4, baseOutput: 14, degradedOutput: 7, supportsHighLoad: true, debrisTier: 3 },
   4: { baseDecayPct: 6, baseOutput: 16, degradedOutput: 8, supportsHighLoad: true, debrisTier: 4 }
 };
-function node(id, name, zone, tier) {
-  return { id, name, zone, tier, ...TIER[tier] };
+var ZONE_OVERRIDE = {
+  research: { baseDecayPct: 3, baseOutput: 4, degradedOutput: 2, supportsHighLoad: false, debrisTier: 2 },
+  coolant: { baseDecayPct: 3, baseOutput: 3, degradedOutput: 1, supportsHighLoad: false, debrisTier: 2, coolantVent: 5 }
+};
+function node(id, name, zone, tier, sector, extra = {}) {
+  const base = ZONE_OVERRIDE[zone] || TIER[tier];
+  return { id, name, zone, tier, sector, ...base, ...extra };
 }
 var NODES = [
-  node("C1", "Core Kernel", "core", 1),
-  node("C2", "Secondary Core", "core", 1),
-  node("M1", "Mid Relay 1", "mid", 2),
-  node("M2", "Mid Relay 2", "mid", 2),
-  node("M3", "Mid Relay 3", "mid", 2),
-  node("M4", "Mid Relay 4", "mid", 2),
-  node("P1", "Production 1", "production", 3),
-  node("P2", "Production 2", "production", 3),
-  node("P3", "Production 3", "production", 3),
-  node("P4", "Production 4", "production", 3),
-  node("F1", "Frontier 1", "frontier", 4),
-  node("F2", "Frontier 2", "frontier", 4),
-  node("F3", "Frontier 3", "frontier", 4),
-  node("F4", "Frontier 4", "frontier", 4)
+  // ── CORE sector (online from cycle 1) ────────────────────────────────────────────────────────────
+  node("C1", "Core Kernel", "core", 1, "core", { noCascade: true }),
+  node("C2", "Secondary Core", "core", 1, "core", { noCascade: true }),
+  node("M1", "Mid Relay 1", "mid", 2, "core"),
+  node("M2", "Mid Relay 2", "mid", 2, "core"),
+  node("M3", "Mid Relay 3", "mid", 2, "core"),
+  node("M4", "Mid Relay 4", "mid", 2, "core"),
+  node("P1", "Production 1", "production", 3, "core"),
+  node("P2", "Production 2", "production", 3, "core"),
+  node("P3", "Production 3", "production", 3, "core"),
+  node("P4", "Production 4", "production", 3, "core"),
+  node("F1", "Frontier 1", "frontier", 4, "core"),
+  node("F2", "Frontier 2", "frontier", 4, "core"),
+  node("F3", "Frontier 3", "frontier", 4, "core"),
+  node("F4", "Frontier 4", "frontier", 4, "core"),
+  // ── ALPHA sector (unlocked by surviving Storm α) — +8 → 22 ───────────────────────────────────────
+  node("M5", "Mid Relay 5", "mid", 2, "alpha"),
+  node("M6", "Mid Relay 6", "mid", 2, "alpha"),
+  node("P5", "Production 5", "production", 3, "alpha"),
+  node("P6", "Production 6", "production", 3, "alpha"),
+  node("F5", "Frontier 5", "frontier", 4, "alpha"),
+  node("F6", "Frontier 6", "frontier", 4, "alpha"),
+  node("R1", "Research Lab α", "research", 3, "alpha"),
+  node("K1", "Coolant Loop α", "coolant", 2, "alpha"),
+  // ── BETA sector (unlocked by surviving Storm β) — +6 → 28 ────────────────────────────────────────
+  node("P7", "Production 7", "production", 3, "beta"),
+  node("P8", "Production 8", "production", 3, "beta"),
+  node("F7", "Frontier 7", "frontier", 4, "beta"),
+  node("F8", "Frontier 8", "frontier", 4, "beta"),
+  node("R2", "Research Lab β", "research", 3, "beta"),
+  node("K2", "Coolant Loop β", "coolant", 2, "beta"),
+  // ── GAMMA sector (unlocked by surviving Storm γ) — +6 → 34 ───────────────────────────────────────
+  node("P9", "Production 9", "production", 3, "gamma"),
+  node("F9", "Frontier 9", "frontier", 4, "gamma"),
+  node("F10", "Frontier 10", "frontier", 4, "gamma"),
+  node("F11", "Frontier 11", "frontier", 4, "gamma"),
+  node("R3", "Research Lab γ", "research", 3, "gamma"),
+  node("K3", "Coolant Loop γ", "coolant", 2, "gamma")
 ];
 var NODE_BY_ID = new Map(NODES.map((n) => [n.id, n]));
 function nodeById(id) {
   return NODE_BY_ID.get(id) || null;
 }
+function nodesForSector(sector) {
+  return NODES.filter((n) => n.sector === sector);
+}
+function freshSectorNodes(sector) {
+  return nodesForSector(sector).map((n) => ({ id: n.id, health: 100, cascadeStress: 0 }));
+}
 var EDGES = [
+  // core sector
   ["F1", "M1"],
   ["F2", "M2"],
   ["F3", "M3"],
@@ -152,7 +189,30 @@ var EDGES = [
   ["M3", "C2"],
   ["M4", "C2"],
   ["C1", "C2"],
-  ["C2", "C1"]
+  ["C2", "C1"],
+  // alpha
+  ["F5", "M5"],
+  ["F6", "M6"],
+  ["P5", "M5"],
+  ["P6", "M6"],
+  ["R1", "M5"],
+  ["K1", "M6"],
+  ["M5", "C1"],
+  ["M6", "C2"],
+  // beta (routes through alpha relays)
+  ["F7", "M5"],
+  ["F8", "M6"],
+  ["P7", "M5"],
+  ["P8", "M6"],
+  ["R2", "M5"],
+  ["K2", "M6"],
+  // gamma
+  ["F9", "M5"],
+  ["F10", "M6"],
+  ["F11", "M5"],
+  ["P9", "M6"],
+  ["R3", "M5"],
+  ["K3", "M6"]
 ];
 var ADJACENCY = (() => {
   const map = new Map(NODES.map((n) => [n.id, []]));
@@ -161,7 +221,7 @@ var ADJACENCY = (() => {
 })();
 
 // ../../docs/games/metagame/stages/stage8/resources.js
-var ZONE_INSIGHT = { core: 0.6, production: 0.45, mid: 0, frontier: 0 };
+var ZONE_INSIGHT = { core: 0.6, production: 0.45, research: 1.4, mid: 0, frontier: 0, coolant: 0 };
 function scrapYield(debris) {
   const tier = Math.max(1, Number(debris?.tier || 1));
   const value = Math.max(0, Number(debris?.value || 0));
@@ -195,6 +255,115 @@ function round2(v) {
   return Math.round(v * 100) / 100;
 }
 
+// ../../docs/games/metagame/stages/stage8/storms.js
+var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+var zoneOf = (id) => (nodeById(id) || {}).zone;
+var isCore = (id) => zoneOf(id) === "core" && /^C/.test(id);
+var STORM_DAMAGE = {
+  alpha: { frontier: 7, production: 4, mid: 3, research: 4, coolant: 3, core: 2, spikes: 1, spike: 10 },
+  beta: { frontier: 9, production: 5, mid: 4, research: 5, coolant: 4, core: 2, spikes: 2, spike: 12 },
+  gamma: { frontier: 11, production: 6, mid: 5, research: 6, coolant: 5, core: 3, spikes: 3, spike: 14 }
+};
+var STORMS = [
+  {
+    id: "alpha",
+    label: "Cascade Storm α",
+    sector: "alpha",
+    duration: 3,
+    insightBonus: 15,
+    requires: { minCycle: 8, minStates: 220 },
+    telegraph: "Cascade Storm α is forming. Brace: 3 cycles of frontier failure. Survive to bring Sector α online."
+  },
+  {
+    id: "beta",
+    label: "Cascade Storm β",
+    sector: "beta",
+    duration: 4,
+    insightBonus: 25,
+    requires: { minCycle: 16, minStates: 520 },
+    telegraph: "Cascade Storm β is forming. Brace: 4 cycles, the relays buckle. Survive to bring Sector β online."
+  },
+  {
+    id: "gamma",
+    label: "Cascade Storm γ",
+    sector: "gamma",
+    duration: 5,
+    insightBonus: 40,
+    requires: { minCycle: 24, minStates: 900 },
+    telegraph: "Cascade Storm γ is forming. Brace: 5 cycles, field-wide. Survive to bring Sector γ online — then the Heat Death."
+  }
+];
+var STORM_BY_ID = new Map(STORMS.map((s) => [s.id, s]));
+var TOTAL_STORMS = STORMS.length;
+function stormForAct(state) {
+  const idx = Math.max(0, Number(state.act || 1) - 1);
+  return STORMS[idx] || null;
+}
+function stormAvailable(state) {
+  const storm = stormForAct(state);
+  if (!storm) return { ok: false, reason: "all-survived" };
+  if ((state.onlineSectors || []).includes(storm.sector)) return { ok: false, reason: "already-online" };
+  if (state.activeStorm) return { ok: false, reason: "in-storm" };
+  const cycleOk = Number(state.cycle || 0) >= storm.requires.minCycle;
+  const statesOk = Number(state.totalStatesEarned || 0) >= storm.requires.minStates;
+  if (!cycleOk || !statesOk) {
+    return { ok: false, reason: "body", storm, cycleOk, statesOk };
+  }
+  return { ok: true, storm };
+}
+function braceStorm(state) {
+  const avail = stormAvailable(state);
+  if (!avail.ok) return { ok: false, reason: avail.reason };
+  const storm = avail.storm;
+  state.activeStorm = { id: storm.id, sector: storm.sector, label: storm.label, cyclesLeft: storm.duration, duration: storm.duration };
+  state.pendingStorm = null;
+  pushLog(state, `${storm.label} — bracing. ${storm.duration} cycles.`);
+  return { ok: true, storm };
+}
+function bringSectorOnline(state, sector) {
+  if (!(state.onlineSectors || []).includes(sector)) state.onlineSectors.push(sector);
+  const have = new Set(state.nodes.map((n) => n.id));
+  for (const n of freshSectorNodes(sector)) if (!have.has(n.id)) state.nodes.push(n);
+}
+function tickStorm(state, rng) {
+  const active = state.activeStorm;
+  if (!active) return null;
+  const dmg = STORM_DAMAGE[active.id] || STORM_DAMAGE.alpha;
+  for (const n of state.nodes) {
+    const z = zoneOf(n.id);
+    const d = dmg[z] || 0;
+    if (d) n.health = clamp(n.health - d, 0, 100);
+  }
+  for (let i = 0; i < (dmg.spikes || 0); i += 1) {
+    const target = rng && typeof rng.pick === "function" ? rng.pick(state.nodes) : state.nodes[0];
+    if (target) target.health = clamp(target.health - (dmg.spike || 8), 0, 100);
+  }
+  active.cyclesLeft -= 1;
+  pushLog(state, `${active.label}: storm cycle, ${active.cyclesLeft} left.`);
+  if (active.cyclesLeft > 0) return { id: active.id, resolved: false, cyclesLeft: active.cyclesLeft };
+  return resolveStorm(state);
+}
+function resolveStorm(state) {
+  const active = state.activeStorm;
+  state.activeStorm = null;
+  const coresAlive = state.nodes.filter((n) => isCore(n.id)).every((n) => n.health > 0);
+  const storm = STORM_BY_ID.get(active.id);
+  if (!coresAlive) {
+    pushLog(state, `${active.label} broke through — a core fell. Recover and brace again.`);
+    return { id: active.id, resolved: true, survived: false };
+  }
+  bringSectorOnline(state, active.sector);
+  state.stormsSurvived = Number(state.stormsSurvived || 0) + 1;
+  state.act = Number(state.act || 1) + 1;
+  const bonus = storm ? storm.insightBonus : 0;
+  if (bonus) earnInsight(state, bonus);
+  pushLog(state, `${active.label} ENDURED. Sector ${active.sector} online. +${bonus} Insight.`);
+  return { id: active.id, resolved: true, survived: true, sector: active.sector, insightBonus: bonus };
+}
+function pushLog(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+
 // ../../docs/games/metagame/stages/stage8/boss.js
 function hasSalvageArchived(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
@@ -222,7 +391,7 @@ function archiveDebris({
   const scrap = scrapYield(debris);
   earnScrap(state, scrap);
   state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
+  pushLog2(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
   const firstArchive = !hasSalvageArchived(actions);
   if (actions && typeof actions.setAction === "function") {
     actions.setAction(8, ACTION_NAME, {
@@ -267,7 +436,9 @@ function getBossLockState({ actions, state }) {
   const enoughSalvage = salvageTotal >= SALVAGE_REQUIRED;
   const enoughStates = totalEarned >= STATES_REQUIRED;
   const enoughCycles = cycle >= MIN_CYCLE;
-  const unlocked = actionReady && enoughSalvage && enoughStates && enoughCycles;
+  const stormsSurvived = Number(state.stormsSurvived || 0);
+  const enoughStorms = stormsSurvived >= TOTAL_STORMS;
+  const unlocked = enoughStorms && actionReady && enoughSalvage && enoughStates && enoughCycles;
   const lock = {
     unlocked,
     defeated: Boolean(state.boss.defeated),
@@ -275,6 +446,9 @@ function getBossLockState({ actions, state }) {
     enoughSalvage,
     enoughStates,
     enoughCycles,
+    enoughStorms,
+    stormsSurvived,
+    stormsRequired: TOTAL_STORMS,
     salvageTotal,
     salvageRequired: SALVAGE_REQUIRED,
     totalEarned,
@@ -294,7 +468,7 @@ function recordHeatDeathAttempt({ state, actions, rng }) {
   const burn = simulateHeatDeath(state, rng || makeRng("8:burn"));
   state.boss.burn = burn;
   if (!burn.survived) {
-    pushLog(state, `Heat Death overran reserves at burn cycle ${burn.failedAt}.`);
+    pushLog2(state, `Heat Death overran reserves at burn cycle ${burn.failedAt}.`);
     return { ...recordHeatDeathFailure(state, lock), burn, locked: false };
   }
   state.states = Math.max(0, Math.round(burn.remainingStates));
@@ -302,7 +476,7 @@ function recordHeatDeathAttempt({ state, actions, rng }) {
   state.boss.defeated = true;
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
-  pushLog(state, bellMessages.defeated);
+  pushLog2(state, bellMessages.defeated);
   return { defeated: true, unlocked: true, btsAvailable: true, burn };
 }
 function recordHeatDeathFailure(state, lock = null) {
@@ -310,7 +484,7 @@ function recordHeatDeathFailure(state, lock = null) {
   state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
   if (!state.warningCheckpoint) state.warningCheckpoint = makeWarningCheckpoint(state);
   const checkpoint = rewindToWarningCheckpoint(state);
-  pushLog(state, bellMessages.failed);
+  pushLog2(state, bellMessages.failed);
   return {
     defeated: false,
     unlocked: Boolean(lock?.unlocked),
@@ -337,7 +511,7 @@ function rewindToWarningCheckpoint(state) {
   state.boss.firstFailureRewound = true;
   return checkpoint;
 }
-function pushLog(state, line) {
+function pushLog2(state, line) {
   state.log = [...state.log || [], line].slice(-6);
 }
 function notifyBell(bell, text, id) {
@@ -351,14 +525,19 @@ function unlockAchievement(achievements, id, detail) {
 }
 
 // ../../docs/games/metagame/stages/stage8/state.js
-var STATE_VERSION = 2;
+var STATE_VERSION = 3;
 function freshNodes() {
-  return NODES.map((n) => ({ id: n.id, health: 100, cascadeStress: 0 }));
+  return freshSectorNodes("core");
 }
 function defaultState() {
   return {
     version: STATE_VERSION,
     cycle: 1,
+    act: 1,
+    onlineSectors: ["core"],
+    stormsSurvived: 0,
+    pendingStorm: null,
+    activeStorm: null,
     nodes: freshNodes(),
     states: 0,
     totalStatesEarned: 0,
@@ -413,11 +592,18 @@ function normalizeState(state) {
   const target = incoming;
   target.version = STATE_VERSION;
   target.cycle = posInt(target.cycle, fresh.cycle);
-  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length ? target.nodes.map((n, i) => ({
-    id: n?.id || fresh.nodes[i].id,
-    health: clampHealth(n?.health),
-    cascadeStress: Number.isFinite(Number(n?.cascadeStress)) ? Number(n.cascadeStress) : 0
-  })) : fresh.nodes;
+  const validNodes = Array.isArray(target.nodes) ? target.nodes.filter((n) => n && NODE_BY_ID.has(n.id)).map((n) => ({
+    id: n.id,
+    health: clampHealth(n.health),
+    cascadeStress: Number.isFinite(Number(n.cascadeStress)) ? Number(n.cascadeStress) : 0
+  })) : [];
+  target.nodes = validNodes.length ? validNodes : fresh.nodes;
+  target.act = posInt(target.act, fresh.act);
+  target.onlineSectors = Array.isArray(target.onlineSectors) && target.onlineSectors.length ? target.onlineSectors.filter((s) => typeof s === "string") : fresh.onlineSectors;
+  if (!target.onlineSectors.includes("core")) target.onlineSectors.unshift("core");
+  target.stormsSurvived = Math.max(0, num(target.stormsSurvived, 0));
+  target.pendingStorm = target.pendingStorm && typeof target.pendingStorm === "object" ? target.pendingStorm : null;
+  target.activeStorm = target.activeStorm && typeof target.activeStorm === "object" ? target.activeStorm : null;
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
@@ -451,6 +637,11 @@ function snapshotRun(state) {
   return {
     version: STATE_VERSION,
     cycle: state.cycle,
+    act: state.act || 1,
+    onlineSectors: [...state.onlineSectors || ["core"]],
+    stormsSurvived: state.stormsSurvived || 0,
+    pendingStorm: state.pendingStorm ? { ...state.pendingStorm } : null,
+    activeStorm: state.activeStorm ? { ...state.activeStorm } : null,
     nodes: (state.nodes || []).map((n) => ({ id: n.id, health: n.health, cascadeStress: n.cascadeStress || 0 })),
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,
@@ -516,7 +707,7 @@ function createDebris({ node: node3, cycle, tier, value, decay = 2 }) {
 }
 
 // ../../docs/games/metagame/stages/stage8/events.js
-var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+var clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 var byZone = (state, zonePrefix) => state.nodes.filter((n) => String(n.id).startsWith(zonePrefix));
 var EVENTS = [
   {
@@ -525,7 +716,7 @@ var EVENTS = [
     bad: true,
     telegraph: "a heat spike is forming — frontier nodes will take damage next cycle.",
     apply(state) {
-      for (const n of byZone(state, "F")) n.health = clamp(n.health - 8, 0, 100);
+      for (const n of byZone(state, "F")) n.health = clamp2(n.health - 8, 0, 100);
       return { note: "frontier seared -8" };
     }
   },
@@ -536,7 +727,7 @@ var EVENTS = [
     telegraph: "a pattern is destabilizing — the weakest node will buckle next cycle.",
     apply(state) {
       const target = [...state.nodes].sort((a, b) => a.health - b.health)[0];
-      if (target) target.health = clamp(target.health - 18, 0, 100);
+      if (target) target.health = clamp2(target.health - 18, 0, 100);
       return { note: `pattern broke on ${target?.id || "?"} -18` };
     }
   },
@@ -546,7 +737,7 @@ var EVENTS = [
     bad: true,
     telegraph: "a jitter storm is inbound — every node will take light damage next cycle.",
     apply(state) {
-      for (const n of state.nodes) n.health = clamp(n.health - 3, 0, 100);
+      for (const n of state.nodes) n.health = clamp2(n.health - 3, 0, 100);
       return { note: "field-wide -3" };
     }
   },
@@ -558,7 +749,7 @@ var EVENTS = [
     apply(state, rng) {
       const prod = byZone(state, "P");
       const target = prod.length ? rng.pick(prod) : null;
-      if (target) target.health = clamp(target.health - 12, 0, 100);
+      if (target) target.health = clamp2(target.health - 12, 0, 100);
       return { note: `phantom load on ${target?.id || "?"} -12` };
     }
   },
@@ -579,7 +770,7 @@ var EVENTS = [
     bad: false,
     telegraph: "a resonance burst will wash the mid relays next cycle — free healing.",
     apply(state) {
-      for (const n of byZone(state, "M")) n.health = clamp(n.health + 10, 0, 100);
+      for (const n of byZone(state, "M")) n.health = clamp2(n.health + 10, 0, 100);
       return { note: "mid relays +10" };
     }
   },
@@ -606,7 +797,7 @@ var EVENTS = [
   }
 ];
 var EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
-function pushLog2(state, line) {
+function pushLog3(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 function resolveEvent(state, rng) {
@@ -618,7 +809,7 @@ function resolveEvent(state, rng) {
   if (!ev) return null;
   const detail = ev.apply(state, rng) || {};
   state.activeEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), ...detail };
-  pushLog2(state, `${ev.label}: ${detail.note || "resolved"}.`);
+  pushLog3(state, `${ev.label}: ${detail.note || "resolved"}.`);
   return state.activeEvent;
 }
 function telegraphNext(state, rng) {
@@ -627,7 +818,7 @@ function telegraphNext(state, rng) {
   const ev = rng.pick(EVENTS);
   state.pendingEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), telegraph: ev.telegraph };
   state.eventSeq = Number(state.eventSeq || 0) + 1;
-  pushLog2(state, `telegraph — next cycle: ${ev.telegraph}`);
+  pushLog3(state, `telegraph — next cycle: ${ev.telegraph}`);
   return state.pendingEvent;
 }
 
@@ -638,6 +829,18 @@ var BASE_VENT = 9;
 var TIER_HEAT = { 1: 1, 2: 1.5, 3: 2.5, 4: 3.5 };
 function ventFromStructures(state) {
   return Math.max(0, Number(state.heatVentBonus || 0));
+}
+function ventFromCoolantNodes(state, statusOf, isOnline = () => true) {
+  let vent = 0;
+  for (const n of state.nodes) {
+    if (!isOnline(n)) continue;
+    const def = nodeById(n.id) || {};
+    if (def.zone !== "coolant") continue;
+    const s = statusOf(n.health);
+    if (s === "failed") continue;
+    vent += (def.coolantVent || 0) * (s === "degrading" ? 0.5 : 1);
+  }
+  return vent;
 }
 function heatGeneration(state, statusOf, isOnline = () => true) {
   let gen = 0;
@@ -655,7 +858,7 @@ function heatGeneration(state, statusOf, isOnline = () => true) {
 }
 function computeHeatDelta(state, statusOf, isOnline) {
   const gen = heatGeneration(state, statusOf, isOnline);
-  const vent = BASE_VENT + ventFromStructures(state);
+  const vent = BASE_VENT + ventFromStructures(state) + ventFromCoolantNodes(state, statusOf, isOnline);
   return { gen: round1(gen), vent: round1(vent), delta: round1(gen - vent) };
 }
 function thermalDecayBonus(heat) {
@@ -675,6 +878,11 @@ function round1(v) {
 // ../../docs/games/metagame/stages/stage8/engine.js
 var REPAIR_EFFICIENCY = 3;
 var BASE_REPAIR_UNITS_PER_CYCLE = 6;
+var REPAIR_PER_SECTOR = 3;
+function repairBudget(state) {
+  const sectors = Math.max(1, (state.onlineSectors || ["core"]).length);
+  return BASE_REPAIR_UNITS_PER_CYCLE + REPAIR_PER_SECTOR * (sectors - 1) + Math.max(0, Number(state.repairBudgetBonus || 0));
+}
 var DEBRIS_VALUE = { 1: [8, 24], 2: [24, 48], 3: [48, 64], 4: [64, 88] };
 function status(health) {
   if (health <= 0) return "failed";
@@ -690,13 +898,14 @@ function ensureRuntime(state) {
   if (!Number.isFinite(state.heatRate)) state.heatRate = 0;
   for (const n of state.nodes) if (!Number.isFinite(n.cascadeStress)) n.cascadeStress = 0;
 }
-var clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+var clamp3 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 var node2 = (state, id) => state.nodes.find((n) => n.id === id);
 function advanceCycle(state, rng) {
   ensureRuntime(state);
   const result = { income: 0, newDebris: [], expiredDebris: [], newlyFailed: [], entropy: 0, event: null };
   result.event = resolveEvent(state, rng);
   const priorStatus = new Map(state.nodes.map((n) => [n.id, status(n.health)]));
+  result.storm = tickStorm(state, rng);
   for (const id of Object.keys(state.stabilized)) {
     state.stabilized[id] -= 1;
     if (state.stabilized[id] <= 0) delete state.stabilized[id];
@@ -707,11 +916,11 @@ function advanceCycle(state, rng) {
     const def = nodeById(n.id) || {};
     const highLoad = Boolean(state.highLoad[n.id]) && def.supportsHighLoad;
     const loss = ((def.baseDecayPct || 0) + (n.cascadeStress || 0)) * (highLoad ? 1.5 : 1) + thermalBonus;
-    n.health = clamp2(n.health - loss, 0, 100);
+    n.health = clamp3(n.health - loss, 0, 100);
   }
   for (const [id, units] of Object.entries(state.repairAllocations)) {
     const n = node2(state, id);
-    if (n) n.health = clamp2(n.health + units * REPAIR_EFFICIENCY, 0, 100);
+    if (n) n.health = clamp3(n.health + units * REPAIR_EFFICIENCY, 0, 100);
   }
   state.repairAllocations = {};
   for (const n of state.nodes) {
@@ -722,13 +931,15 @@ function advanceCycle(state, rng) {
       state.debris.push(debris);
       result.newDebris.push(debris);
       result.newlyFailed.push(n.id);
-      pushLog3(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
+      pushLog4(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
     }
   }
   for (const n of state.nodes) n.cascadeStress = 0;
   for (const n of state.nodes) {
     if (status(n.health) !== "failed") continue;
     for (const downstream of ADJACENCY.get(n.id) || []) {
+      const ddef = nodeById(downstream) || {};
+      if (ddef.noCascade) continue;
       const d = node2(state, downstream);
       if (d) d.cascadeStress += 1;
     }
@@ -738,7 +949,7 @@ function advanceCycle(state, rng) {
     item.decay -= 1;
     if (item.decay <= 0) {
       result.expiredDebris.push(item);
-      pushLog3(state, `${item.id} decayed. States lost permanently.`);
+      pushLog4(state, `${item.id} decayed. States lost permanently.`);
     } else kept.push(item);
   }
   state.debris = kept;
@@ -768,9 +979,9 @@ function advanceCycle(state, rng) {
   state.heatRate = heat.delta;
   result.heat = state.heat;
   result.heatRate = heat.delta;
-  result.entropy = clamp2(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
+  result.entropy = clamp3(failedCount * 10 + degradingCount * 4 + thermalEntropy(state.heat), 0, 100);
   state.entropy = result.entropy;
-  state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE;
+  state.repairUnits = repairBudget(state);
   state.cycle = (state.cycle || 0) + 1;
   result.pendingEvent = telegraphNext(state, rng);
   return result;
@@ -794,29 +1005,36 @@ function buildStabilizer(state, cost) {
   state.stabilizers = (state.stabilizers || 0) + 1;
   return { ok: true, stabilizers: state.stabilizers };
 }
-function pushLog3(state, line) {
+function pushLog4(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
 // ../../docs/games/metagame/stages/stage8/solver.js
 var REPAIR_STEP = 2;
+var isFrontier = (id) => String(id).startsWith("F");
+var isCore2 = (id) => /^C/.test(String(id));
 function salvageableValue(state) {
   return (state.debris || []).reduce((sum, d) => sum + Number(d.value || 0), 0);
 }
 function bodyGateMet(state) {
   return Number(state.cycle || 0) >= MIN_CYCLE && Number(state.totalStatesEarned || 0) >= STATES_REQUIRED && salvageableValue(state) >= SALVAGE_REQUIRED;
 }
+function runGateMet(state) {
+  return bodyGateMet(state) && Number(state.stormsSurvived || 0) >= TOTAL_STORMS;
+}
 function repairSpine(state) {
-  const spine = state.nodes.filter((n) => !String(n.id).startsWith("F"));
-  for (const n of [...spine].sort((a, b) => a.health - b.health)) {
+  const spine = state.nodes.filter((n) => !isFrontier(n.id));
+  spine.sort((a, b) => isCore2(b.id) - isCore2(a.id) || a.health - b.health);
+  for (const n of spine) {
     if ((state.repairUnits || 0) <= 0) break;
     if (n.health >= 100) continue;
     applyRepair(state, n.id, Math.min(REPAIR_STEP, state.repairUnits));
   }
 }
-function driveToGate(state, makeCycleRng, { maxCycles = 60 } = {}) {
+function driveToGate(state, makeCycleRng, { maxCycles = 260 } = {}) {
   for (let i = 0; i < maxCycles; i += 1) {
-    if (bodyGateMet(state)) break;
+    if (runGateMet(state)) break;
+    if (stormAvailable(state).ok) braceStorm(state);
     repairSpine(state);
     advanceCycle(state, makeCycleRng(state.cycle));
   }
@@ -837,8 +1055,10 @@ function entropyTreeText(state) {
 }
 
 // ../../docs/games/metagame/stages/stage8/paint.js
-function paintStage8({ state, lock, els, onSelectDebris }) {
+function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   const { fields, map, log, root } = els;
+  if (fields.act) fields.act.textContent = String(state.act || 1);
+  if (fields.storms) fields.storms.textContent = String(state.stormsSurvived || 0);
   fields.cycle.textContent = String(state.cycle);
   fields.states.textContent = String(state.states);
   fields.entropy.textContent = String(Math.round(state.entropy || 0));
@@ -851,9 +1071,10 @@ function paintStage8({ state, lock, els, onSelectDebris }) {
   if (fields.insightRate) fields.insightRate.textContent = rate(state.insightRate);
   fields.salvage.textContent = String(state.salvageTotal);
   fields.tree.textContent = entropyTreeText(state);
-  fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
+  fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
   paintTelegraph(fields.telegraph, state);
+  paintStorm(root, state, storm);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
   map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
@@ -872,7 +1093,27 @@ function rate(v) {
   if (!n) return "";
   return n > 0 ? `(+${n})` : `(${n})`;
 }
+function paintStorm(root, state, storm) {
+  const btn = root.querySelector('[data-action="storm"]');
+  if (!btn) return;
+  const active = state.activeStorm;
+  if (active) {
+    btn.hidden = true;
+  } else if (storm && storm.ok) {
+    btn.hidden = false;
+    btn.textContent = `brace for ${storm.storm.label} ▸`;
+  } else {
+    btn.hidden = true;
+  }
+}
 function paintTelegraph(el, state) {
+  if (!el) return;
+  if (state.activeStorm) {
+    el.hidden = false;
+    el.dataset.tone = "bad";
+    el.textContent = `⛆ ${state.activeStorm.label} — ${state.activeStorm.cyclesLeft} cycle(s) left. hold the cores.`;
+    return;
+  }
   if (!el) return;
   const pending = state.pendingEvent;
   if (pending) {
@@ -934,6 +1175,8 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
   root.innerHTML = `
     <header class="s8-hud">
       <strong>ENTROPY FIELD</strong>
+      <span>act <b data-field="act"></b>/3</span>
+      <span>storms <b data-field="storms"></b>/3</span>
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
@@ -965,6 +1208,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="advance">advance cycle ▸</button>
+      <button type="button" data-action="storm" hidden>brace for Cascade Storm</button>
       <button type="button" data-action="stabilizer">build stabilizer (${STABILIZER_COST} States)</button>
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
@@ -1013,6 +1257,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
+    if (button.dataset.action === "storm") braceStorm(state);
     if (button.dataset.action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
     if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
     if (button.dataset.action === "external") {
@@ -1030,6 +1275,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     advance(cycles = 1) {
       for (let i = 0; i < cycles; i += 1) advanceCycle(state, cycleRng(state.cycle));
       persistAndPaint();
+    },
+    stormState: () => ({ available: stormAvailable(state), active: state.activeStorm, survived: state.stormsSurvived || 0, act: state.act || 1 }),
+    brace() {
+      const r = braceStorm(state);
+      persistAndPaint();
+      return r;
     },
     bodySolver() {
       driveToGate(state, cycleRng);
@@ -1072,6 +1323,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     paintStage8({
       state,
       lock,
+      storm: stormAvailable(state),
       els: { fields, map, log, root },
       onSelectDebris: (id) => {
         state.selectedDebrisId = id;

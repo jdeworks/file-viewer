@@ -8,8 +8,10 @@ import { nodeById } from "./nodes.js";
 
 // Paint the whole field from `state` + the computed `lock`. `els` are the cached DOM handles
 // (fields/map/log/root); `onSelectDebris(id)` is called when a debris chip is clicked.
-export function paintStage8({ state, lock, els, onSelectDebris }) {
+export function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   const { fields, map, log, root } = els;
+  if (fields.act) fields.act.textContent = String(state.act || 1);
+  if (fields.storms) fields.storms.textContent = String(state.stormsSurvived || 0);
   fields.cycle.textContent = String(state.cycle);
   fields.states.textContent = String(state.states);
   fields.entropy.textContent = String(Math.round(state.entropy || 0));
@@ -24,9 +26,10 @@ export function paintStage8({ state, lock, els, onSelectDebris }) {
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated
     ? "defeated. BTS trace available."
-    : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
+    : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
   paintTelegraph(fields.telegraph, state);
+  paintStorm(root, state, storm);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
   map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
@@ -49,7 +52,29 @@ function rate(v) {
   return n > 0 ? `(+${n})` : `(${n})`;
 }
 
+// Show/hide the brace button and announce the active or available Cascade Storm in the telegraph row.
+function paintStorm(root, state, storm) {
+  const btn = root.querySelector('[data-action="storm"]');
+  if (!btn) return;
+  const active = state.activeStorm;
+  if (active) {
+    btn.hidden = true;
+  } else if (storm && storm.ok) {
+    btn.hidden = false;
+    btn.textContent = `brace for ${storm.storm.label} ▸`;
+  } else {
+    btn.hidden = true;
+  }
+}
+
 function paintTelegraph(el, state) {
+  if (!el) return;
+  if (state.activeStorm) {
+    el.hidden = false;
+    el.dataset.tone = "bad";
+    el.textContent = `⛆ ${state.activeStorm.label} — ${state.activeStorm.cyclesLeft} cycle(s) left. hold the cores.`;
+    return;
+  }
   if (!el) return;
   const pending = state.pendingEvent;
   if (pending) {
