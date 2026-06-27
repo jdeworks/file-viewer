@@ -290,10 +290,10 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       option.selected = item.id === state.selectedDebrisId;
       return option;
     }));
-    map.replaceChildren(...nodeRows.map((node) => {
+    map.replaceChildren(...nodeRows.map((node2) => {
       const item = document.createElement("div");
-      item.className = `s8-node is-${node.state}`;
-      item.textContent = `${node.id} ${node.name} ${node.state} +${node.output}`;
+      item.className = `s8-node is-${node2.state}`;
+      item.textContent = `${node2.id} ${node2.name} ${node2.state} +${node2.output}`;
       return item;
     }), ...state.debris.map((item) => {
       const debris = document.createElement("button");
@@ -336,11 +336,64 @@ function once(fn) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage8/nodes.js
+var TIER = {
+  1: { baseDecayPct: 2, baseOutput: 12, degradedOutput: 6, supportsHighLoad: false, debrisTier: 1 },
+  2: { baseDecayPct: 3, baseOutput: 10, degradedOutput: 5, supportsHighLoad: false, debrisTier: 2 },
+  3: { baseDecayPct: 4, baseOutput: 14, degradedOutput: 7, supportsHighLoad: true, debrisTier: 3 },
+  4: { baseDecayPct: 6, baseOutput: 16, degradedOutput: 8, supportsHighLoad: true, debrisTier: 4 }
+};
+function node(id, name, zone, tier) {
+  return { id, name, zone, tier, ...TIER[tier] };
+}
+var NODES = [
+  node("C1", "Core Kernel", "core", 1),
+  node("C2", "Secondary Core", "core", 1),
+  node("M1", "Mid Relay 1", "mid", 2),
+  node("M2", "Mid Relay 2", "mid", 2),
+  node("M3", "Mid Relay 3", "mid", 2),
+  node("M4", "Mid Relay 4", "mid", 2),
+  node("P1", "Production 1", "production", 3),
+  node("P2", "Production 2", "production", 3),
+  node("P3", "Production 3", "production", 3),
+  node("P4", "Production 4", "production", 3),
+  node("F1", "Frontier 1", "frontier", 4),
+  node("F2", "Frontier 2", "frontier", 4),
+  node("F3", "Frontier 3", "frontier", 4),
+  node("F4", "Frontier 4", "frontier", 4)
+];
+var NODE_BY_ID = new Map(NODES.map((n) => [n.id, n]));
+var EDGES = [
+  ["F1", "M1"],
+  ["F2", "M2"],
+  ["F3", "M3"],
+  ["F4", "M4"],
+  ["P1", "M1"],
+  ["P2", "M2"],
+  ["P3", "M3"],
+  ["P4", "M4"],
+  ["M1", "C1"],
+  ["M2", "C1"],
+  ["M3", "C2"],
+  ["M4", "C2"],
+  ["C1", "C2"],
+  ["C2", "C1"]
+];
+var ADJACENCY = (() => {
+  const map = new Map(NODES.map((n) => [n.id, []]));
+  for (const [from, to] of EDGES) map.get(from).push(to);
+  return map;
+})();
+
 // ../../docs/games/metagame/stages/stage8/state.js
+function freshNodes() {
+  return NODES.map((n) => ({ id: n.id, health: 100 }));
+}
 function defaultState() {
   return {
     version: 1,
     cycle: 14,
+    nodes: freshNodes(),
     states: 164,
     totalStatesEarned: 460,
     salvageTotal: 0,
@@ -375,6 +428,7 @@ function normalizeState(state) {
   const target = state && typeof state === "object" ? state : {};
   target.version = 1;
   target.cycle = Number.isFinite(Number(target.cycle)) ? Number(target.cycle) : fresh.cycle;
+  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length ? target.nodes.map((n, i) => ({ id: n?.id || fresh.nodes[i].id, health: clampHealth(n?.health) })) : fresh.nodes;
   target.states = Number.isFinite(Number(target.states)) ? Number(target.states) : fresh.states;
   target.totalStatesEarned = Number.isFinite(Number(target.totalStatesEarned)) ? Number(target.totalStatesEarned) : fresh.totalStatesEarned;
   target.salvageTotal = Number.isFinite(Number(target.salvageTotal)) ? Number(target.salvageTotal) : fresh.salvageTotal;
@@ -388,11 +442,16 @@ function normalizeState(state) {
   target.meta = { ...fresh.meta, ...target.meta && typeof target.meta === "object" ? target.meta : {} };
   return target;
 }
-function createDebris({ node, cycle, tier, value, decay = 2 }) {
-  const id = `node_${node}_cycle${cycle}.sav`;
+function clampHealth(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 100;
+  return Math.max(0, Math.min(100, n));
+}
+function createDebris({ node: node2, cycle, tier, value, decay = 2 }) {
+  const id = `node_${node2}_cycle${cycle}.sav`;
   return {
     id,
-    node,
+    node: node2,
     cycle,
     tier,
     value,

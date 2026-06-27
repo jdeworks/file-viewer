@@ -1,7 +1,16 @@
+import { NODES } from "./nodes.js";
+
+// Per-node health for the survival engine (A3+). Added ADDITIVELY — the existing debris/boss gate is
+// untouched; the renderer rewrite (A4) will switch to this model and reset the cycle to 1.
+export function freshNodes() {
+  return NODES.map((n) => ({ id: n.id, health: 100 }));
+}
+
 export function defaultState() {
   return {
     version: 1,
     cycle: 14,
+    nodes: freshNodes(),
     states: 164,
     totalStatesEarned: 460,
     salvageTotal: 0,
@@ -37,6 +46,10 @@ export function normalizeState(state) {
   const target = state && typeof state === "object" ? state : {};
   target.version = 1;
   target.cycle = Number.isFinite(Number(target.cycle)) ? Number(target.cycle) : fresh.cycle;
+  // Node health array: rebuild if missing/wrong-length; clamp each health to 0–100.
+  target.nodes = Array.isArray(target.nodes) && target.nodes.length === fresh.nodes.length
+    ? target.nodes.map((n, i) => ({ id: n?.id || fresh.nodes[i].id, health: clampHealth(n?.health) }))
+    : fresh.nodes;
   target.states = Number.isFinite(Number(target.states)) ? Number(target.states) : fresh.states;
   target.totalStatesEarned = Number.isFinite(Number(target.totalStatesEarned))
     ? Number(target.totalStatesEarned)
@@ -51,6 +64,12 @@ export function normalizeState(state) {
   target.boss = { ...fresh.boss, ...(target.boss && typeof target.boss === "object" ? target.boss : {}) };
   target.meta = { ...fresh.meta, ...(target.meta && typeof target.meta === "object" ? target.meta : {}) };
   return target;
+}
+
+function clampHealth(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return 100;
+  return Math.max(0, Math.min(100, n));
 }
 
 export function createDebris({ node, cycle, tier, value, decay = 2 }) {
