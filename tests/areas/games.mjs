@@ -1141,6 +1141,12 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   const s8Unlocked = await page.evaluate(() => window.__fvStage8.lockState().unlocked);
   if (s8Unlocked) pass('Stage 8 fully gated after the archive un-cheat (all four gates met)'); else fail('Stage 8 still locked after archiving');
+  // Archive the remaining debris from the grown network to bank Scrap for the economy below.
+  for (let i = 0; i < 16; i += 1) {
+    const has = await page.evaluate(() => window.__fvStage8.state().debris.length > 0);
+    if (!has) break;
+    await page.click('[data-action="archive"]');
+  }
   // Tech tree: Insight (from research nodes + storms) + Scrap (from the archives just made) buys tech.
   // Cold Storage automation stays gated behind the MANUAL archive un-cheat (load-bearing preserved).
   const s8Tech = await page.evaluate(() => {
@@ -1151,6 +1157,15 @@ export async function run(ctx) {
     return { hadResources: before.insight >= 18 && before.scrap >= 12, bought: buy.ok, bonus: s.repairBudgetBonus, manualArchiveDone: s.manualArchiveDone, coldGated: sal3.reason !== 'needs-archive' };
   });
   if (s8Tech.bought && s8Tech.bonus === 3) pass('Stage 8 tech tree: Insight+Scrap buys a tech and applies its effect'); else fail(`Stage 8 tech buy failed: ${JSON.stringify(s8Tech)}`);
+  // Structures: Scrap builds a Heat Sink (folds into venting); Cold Storage automation stays gated
+  // behind the manual archive un-cheat (cannot even be BUILT without it).
+  const s8Struct = await page.evaluate(() => {
+    const r = window.__fvStage8.buildStructure('heatSink');
+    const s = window.__fvStage8.state();
+    const cold = window.__fvStage8.structureStatus().find((x) => x.id === 'coldStorage');
+    return { built: r.ok, reason: r.reason, scrap: Math.floor(s.scrap), vent: s.structHeatVent, coldNeedsTech: cold.reason };
+  });
+  if (s8Struct.built && s8Struct.vent === 4) pass('Stage 8 structures: Scrap builds a Heat Sink that folds into venting'); else fail(`Stage 8 structure build failed: ${JSON.stringify(s8Struct)}`);
   // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
   const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
   if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);

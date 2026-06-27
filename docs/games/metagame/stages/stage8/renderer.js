@@ -9,8 +9,9 @@ import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
 import { driveToGate } from "./solver.js";
 import { stormAvailable, braceStorm } from "./storms.js";
 import { buyTech, techStatus } from "./tech.js";
+import { buildStructure, structureStatus } from "./structures.js";
 import { paintStage8 } from "./paint.js";
-import { paintTech } from "./techpanel.js";
+import { paintTech, paintStructures } from "./techpanel.js";
 import { snapshotRun } from "./state.js";
 import { makeRng } from "./rng.js";
 
@@ -55,6 +56,10 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     <details class="s8-tech-panel">
       <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
       <div class="s8-tech" data-field="tech"></div>
+    </details>
+    <details class="s8-tech-panel">
+      <summary>STRUCTURES — build with Scrap ⛭</summary>
+      <div class="s8-tech" data-field="struct"></div>
     </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
@@ -110,6 +115,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
     const tech = event.target.closest("button[data-tech]");
     if (tech) { buyTech(state, tech.dataset.tech); persistAndPaint(); return; }
+    const struct = event.target.closest("button[data-struct]");
+    if (struct) { buildStructure(state, struct.dataset.struct); persistAndPaint(); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
@@ -141,6 +148,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     stormState: () => ({ available: stormAvailable(state), active: state.activeStorm, survived: state.stormsSurvived || 0, act: state.act || 1 }),
     techStatus: () => techStatus(state),
     buyTech(id) { const r = buyTech(state, id); persistAndPaint(); return r; },
+    structureStatus: () => structureStatus(state),
+    buildStructure(id) { const r = buildStructure(state, id); persistAndPaint(); return r; },
     brace() {
       const r = braceStorm(state);
       persistAndPaint();
@@ -198,6 +207,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
     });
     paintTech(fields.tech, state);
+    paintStructures(fields.struct, state);
   }
 
   function persistAndPaint() {

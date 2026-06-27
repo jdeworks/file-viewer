@@ -40,7 +40,7 @@ export function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
-  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1)));
+  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
   earnScrap(state, scrap);
   state.manualArchiveDone = true; // the manual un-cheat has fired — gates the Cold Storage automation
   state.selectedDebrisId = state.debris[0]?.id || "";

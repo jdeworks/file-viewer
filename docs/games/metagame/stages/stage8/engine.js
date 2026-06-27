@@ -8,6 +8,7 @@ import { resolveEvent, telegraphNext } from "./events.js";
 import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat, THERMAL_THRESHOLD } from "./heat.js";
 import { insightIncome, earnInsight } from "./resources.js";
 import { tickStorm } from "./storms.js";
+import { runAutomation } from "./automation.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
 export const BASE_REPAIR_UNITS_PER_CYCLE = 6;  // repair budget granted each cycle
@@ -17,7 +18,9 @@ export const REPAIR_PER_SECTOR = 3;            // extra budget per online sector
 // tech bonus (tech.js writes state.repairBudgetBonus). Keeps a 1-sector default-state cycle at BASE.
 export function repairBudget(state) {
   const sectors = Math.max(1, (state.onlineSectors || ["core"]).length);
-  return BASE_REPAIR_UNITS_PER_CYCLE + REPAIR_PER_SECTOR * (sectors - 1) + Math.max(0, Number(state.repairBudgetBonus || 0));
+  return BASE_REPAIR_UNITS_PER_CYCLE + REPAIR_PER_SECTOR * (sectors - 1)
+    + Math.max(0, Number(state.repairBudgetBonus || 0))   // tech (Repair Drones)
+    + Math.max(0, Number(state.structRepairBonus || 0));  // structures (Buffer Capacitor)
 }
 const DEBRIS_VALUE = { 1: [8, 24], 2: [24, 48], 3: [48, 64], 4: [64, 88] }; // by node tier
 
@@ -55,6 +58,8 @@ export function advanceCycle(state, rng) {
   // 0b. apply this cycle's Cascade Storm damage (if one is being weathered); may resolve the storm,
   // grow the network, and advance the act. Storm-killed nodes are caught by the newly-failed pass.
   result.storm = tickStorm(state, rng);
+  // 0c. automation pass (auto-repair drones + Cold Storage auto-archive), pre-decay + deterministic.
+  result.automation = runAutomation(state);
 
   // 1. tick down stabilizers
   for (const id of Object.keys(state.stabilized)) {

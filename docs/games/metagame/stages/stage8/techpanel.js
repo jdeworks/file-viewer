@@ -3,6 +3,7 @@
 // paint files stay small (CLAUDE.md ≤300 LOC).
 
 import { techStatus } from "./tech.js";
+import { structureStatus } from "./structures.js";
 
 const BRANCH_LABEL = { repair: "REPAIR", thermal: "THERMAL", salvage: "SALVAGE", topology: "TOPOLOGY" };
 const REASON_HINT = {
@@ -24,6 +25,32 @@ export function paintTech(el, state) {
     col.append(head);
     for (const t of techs.filter((x) => x.branch === branch)) col.append(techRow(t));
     return col;
+  }));
+}
+
+const STRUCT_REASON = {
+  max: "at max",
+  "requires-tech": "research it first",
+  "needs-archive": "archive by hand first",
+  scrap: "more Scrap"
+};
+
+// Build the placeable-structures panel: each row is a [data-struct] build button.
+export function paintStructures(el, state) {
+  if (!el) return;
+  el.replaceChildren(...structureStatus(state).map((s) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "s8-tech-item";
+    btn.dataset.struct = s.id;
+    if (s.level > 0) btn.classList.add("is-owned");
+    btn.disabled = !s.canBuild;
+    const at = s.level >= s.max ? "MAX" : `${s.cost}⛭`;
+    const blocked = !s.canBuild && s.level < s.max && s.reason ? ` · ${STRUCT_REASON[s.reason] || s.reason}` : "";
+    btn.innerHTML = `<span class="s8-tech-name">${s.label} <small>lvl ${s.level}/${s.max}</small></span>` +
+      `<span class="s8-tech-cost">${at}${blocked}</span>` +
+      `<span class="s8-tech-desc">${s.desc}</span>`;
+    return btn;
   }));
 }
 

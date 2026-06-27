@@ -388,7 +388,7 @@ function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
-  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1)));
+  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
   earnScrap(state, scrap);
   state.manualArchiveDone = true;
   state.selectedDebrisId = state.debris[0]?.id || "";
@@ -745,6 +745,120 @@ function pushLog3(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
+// ../../docs/games/metagame/stages/stage8/structures.js
+var STRUCTURES = [
+  {
+    id: "heatSink",
+    label: "Heat Sink",
+    desc: "+4 passive heat venting.",
+    scrap: 20,
+    costScale: 1.6,
+    max: 5,
+    field: "structHeatVent",
+    per: 4
+  },
+  {
+    id: "buffer",
+    label: "Buffer Capacitor",
+    desc: "+2 repair units / cycle.",
+    scrap: 24,
+    costScale: 1.6,
+    max: 5,
+    field: "structRepairBonus",
+    per: 2
+  },
+  {
+    id: "refinery",
+    label: "Scrap Refinery",
+    desc: "+2 Scrap per archived file.",
+    scrap: 18,
+    costScale: 1.6,
+    max: 5,
+    field: "structScrapBonus",
+    per: 2
+  },
+  {
+    id: "drone",
+    label: "Auto-Repair Drone",
+    desc: "Automation: heals a weak node each cycle.",
+    scrap: 40,
+    costScale: 1.8,
+    max: 3,
+    field: "autoRepairUnits",
+    per: 1,
+    requiresTech: "rep3"
+  },
+  {
+    id: "coldStorage",
+    label: "Cold Storage Bay",
+    desc: "Automation: auto-archives a debris file each cycle.",
+    scrap: 60,
+    costScale: 1.8,
+    max: 2,
+    field: "coldStorageRate",
+    per: 1,
+    requiresTech: "sal3",
+    needsManualArchive: true
+  }
+];
+var STRUCT_BY_ID = new Map(STRUCTURES.map((s) => [s.id, s]));
+function defaultStructureBonuses() {
+  return { structHeatVent: 0, structRepairBonus: 0, structScrapBonus: 0, autoRepairUnits: 0, coldStorageRate: 0 };
+}
+function levelOf(state, id) {
+  return Math.max(0, Math.floor(Number(state.structures && state.structures[id]) || 0));
+}
+function costOf(state, id) {
+  const def = STRUCT_BY_ID.get(id);
+  if (!def) return Infinity;
+  return Math.round(def.scrap * Math.pow(def.costScale, levelOf(state, id)));
+}
+function buildBlockReason(state, id) {
+  const def = STRUCT_BY_ID.get(id);
+  if (!def) return "unknown";
+  if (levelOf(state, id) >= def.max) return "max";
+  if (def.requiresTech && !isPurchased(state, def.requiresTech)) return "requires-tech";
+  if (def.needsManualArchive && !state.manualArchiveDone) return "needs-archive";
+  if (Number(state.scrap || 0) < costOf(state, id)) return "scrap";
+  return null;
+}
+function canBuildStructure(state, id) {
+  return buildBlockReason(state, id) === null;
+}
+function buildStructure(state, id) {
+  const reason = buildBlockReason(state, id);
+  if (reason) return { ok: false, reason };
+  const cost = costOf(state, id);
+  if (!state.structures || typeof state.structures !== "object") state.structures = {};
+  state.scrap = Number(state.scrap || 0) - cost;
+  state.structures[id] = levelOf(state, id) + 1;
+  recomputeStructureBonuses(state);
+  const def = STRUCT_BY_ID.get(id);
+  pushLog4(state, `built ${def.label} (lvl ${state.structures[id]}).`);
+  return { ok: true };
+}
+function recomputeStructureBonuses(state) {
+  const b = defaultStructureBonuses();
+  for (const def of STRUCTURES) b[def.field] += def.per * levelOf(state, def.id);
+  Object.assign(state, b);
+  return b;
+}
+function structureStatus(state) {
+  return STRUCTURES.map((def) => ({
+    id: def.id,
+    label: def.label,
+    desc: def.desc,
+    level: levelOf(state, def.id),
+    max: def.max,
+    cost: costOf(state, def.id),
+    reason: buildBlockReason(state, def.id),
+    canBuild: canBuildStructure(state, def.id)
+  }));
+}
+function pushLog4(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+
 // ../../docs/games/metagame/stages/stage8/state.js
 var STATE_VERSION = 3;
 function freshNodes() {
@@ -769,8 +883,10 @@ function defaultState() {
     insightTotal: 0,
     insightRate: 0,
     tech: {},
+    structures: {},
     manualArchiveDone: false,
     ...defaultTechBonuses(),
+    ...defaultStructureBonuses(),
     selectedDebrisId: "",
     externalImportBonusCycles: 0,
     stabilizers: 0,
@@ -837,8 +953,10 @@ function normalizeState(state) {
   target.insightTotal = Math.max(0, num(target.insightTotal, 0));
   target.insightRate = num(target.insightRate, 0);
   target.tech = plain(target.tech);
+  target.structures = plain(target.structures);
   target.manualArchiveDone = Boolean(target.manualArchiveDone);
   recomputeTechBonuses(target);
+  recomputeStructureBonuses(target);
   target.selectedDebrisId = typeof target.selectedDebrisId === "string" ? target.selectedDebrisId : "";
   target.externalImportBonusCycles = num(target.externalImportBonusCycles, 0);
   target.stabilizers = Math.max(0, num(target.stabilizers, 0));
@@ -879,6 +997,7 @@ function snapshotRun(state) {
     insightTotal: state.insightTotal || 0,
     insightRate: state.insightRate || 0,
     tech: { ...state.tech || {} },
+    structures: { ...state.structures || {} },
     manualArchiveDone: Boolean(state.manualArchiveDone),
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
@@ -1026,7 +1145,7 @@ var EVENTS = [
   }
 ];
 var EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
-function pushLog4(state, line) {
+function pushLog5(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 function resolveEvent(state, rng) {
@@ -1038,7 +1157,7 @@ function resolveEvent(state, rng) {
   if (!ev) return null;
   const detail = ev.apply(state, rng) || {};
   state.activeEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), ...detail };
-  pushLog4(state, `${ev.label}: ${detail.note || "resolved"}.`);
+  pushLog5(state, `${ev.label}: ${detail.note || "resolved"}.`);
   return state.activeEvent;
 }
 function telegraphNext(state, rng) {
@@ -1047,7 +1166,7 @@ function telegraphNext(state, rng) {
   const ev = rng.pick(EVENTS);
   state.pendingEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), telegraph: ev.telegraph };
   state.eventSeq = Number(state.eventSeq || 0) + 1;
-  pushLog4(state, `telegraph — next cycle: ${ev.telegraph}`);
+  pushLog5(state, `telegraph — next cycle: ${ev.telegraph}`);
   return state.pendingEvent;
 }
 
@@ -1057,7 +1176,7 @@ var THERMAL_THRESHOLD = 55;
 var BASE_VENT = 9;
 var TIER_HEAT = { 1: 1, 2: 1.5, 3: 2.5, 4: 3.5 };
 function ventFromStructures(state) {
-  return Math.max(0, Number(state.heatVentBonus || 0));
+  return Math.max(0, Number(state.heatVentBonus || 0)) + Math.max(0, Number(state.structHeatVent || 0));
 }
 function ventFromCoolantNodes(state, statusOf, isOnline = () => true) {
   let vent = 0;
@@ -1106,13 +1225,56 @@ function round1(v) {
   return Math.round(v * 10) / 10;
 }
 
+// ../../docs/games/metagame/stages/stage8/automation.js
+var AUTO_HEAL = 6;
+function runAutomation(state) {
+  const detail = { repaired: [], archived: [] };
+  autoRepair(state, detail);
+  autoArchive(state, detail);
+  return detail;
+}
+function autoRepair(state, detail) {
+  const units = Math.max(0, Math.floor(Number(state.autoRepairUnits || 0)));
+  if (!units) return;
+  const candidates = state.nodes.filter((n) => n.health > 0 && n.health < 100 && !isCore2(n.id)).sort((a, b) => a.health - b.health || (a.id < b.id ? -1 : 1));
+  for (let i = 0; i < units && i < candidates.length; i += 1) {
+    const n = candidates[i];
+    n.health = Math.min(100, n.health + AUTO_HEAL);
+    detail.repaired.push(n.id);
+  }
+}
+function autoArchive(state, detail) {
+  const rate2 = Math.max(0, Math.floor(Number(state.coldStorageRate || 0)));
+  if (!rate2 || !Array.isArray(state.debris) || !state.debris.length) return;
+  const order = [...state.debris].sort((a, b) => a.cycle - b.cycle || (a.id < b.id ? -1 : 1));
+  const scrapBonus = Math.max(0, Number(state.structScrapBonus || 0));
+  const scrapMult = Math.max(1, Number(state.scrapMult || 1));
+  for (let i = 0; i < rate2 && i < order.length; i += 1) {
+    const debris = order[i];
+    const idx = state.debris.findIndex((d) => d.id === debris.id);
+    if (idx < 0) continue;
+    state.debris.splice(idx, 1);
+    const archived = { ...debris, archivedAtCycle: state.cycle, path: `/entropy/active_archive/${debris.id}`, auto: true };
+    state.archive = [...state.archive || [], archived];
+    state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
+    state.states = Number(state.states || 0) + Number(debris.value || 0);
+    earnScrap(state, Math.round(scrapYield(debris) * scrapMult) + scrapBonus);
+    detail.archived.push(debris.id);
+  }
+  if (detail.archived.length) pushLog6(state, `Cold Storage auto-archived ${detail.archived.length} file(s).`);
+}
+var isCore2 = (id) => (nodeById(id) || {}).noCascade === true;
+function pushLog6(state, line) {
+  state.log = [...state.log || [], line].slice(-12);
+}
+
 // ../../docs/games/metagame/stages/stage8/engine.js
 var REPAIR_EFFICIENCY = 3;
 var BASE_REPAIR_UNITS_PER_CYCLE = 6;
 var REPAIR_PER_SECTOR = 3;
 function repairBudget(state) {
   const sectors = Math.max(1, (state.onlineSectors || ["core"]).length);
-  return BASE_REPAIR_UNITS_PER_CYCLE + REPAIR_PER_SECTOR * (sectors - 1) + Math.max(0, Number(state.repairBudgetBonus || 0));
+  return BASE_REPAIR_UNITS_PER_CYCLE + REPAIR_PER_SECTOR * (sectors - 1) + Math.max(0, Number(state.repairBudgetBonus || 0)) + Math.max(0, Number(state.structRepairBonus || 0));
 }
 var DEBRIS_VALUE = { 1: [8, 24], 2: [24, 48], 3: [48, 64], 4: [64, 88] };
 function status(health) {
@@ -1141,6 +1303,7 @@ function advanceCycle(state, rng) {
   result.event = resolveEvent(state, rng);
   const priorStatus = new Map(state.nodes.map((n) => [n.id, status(n.health)]));
   result.storm = tickStorm(state, rng);
+  result.automation = runAutomation(state);
   for (const id of Object.keys(state.stabilized)) {
     state.stabilized[id] -= 1;
     if (state.stabilized[id] <= 0) delete state.stabilized[id];
@@ -1175,7 +1338,7 @@ function advanceCycle(state, rng) {
       state.debris.push(debris);
       result.newDebris.push(debris);
       result.newlyFailed.push(n.id);
-      pushLog5(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
+      pushLog7(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
     }
   }
   for (const n of state.nodes) n.cascadeStress = 0;
@@ -1194,7 +1357,7 @@ function advanceCycle(state, rng) {
     item.decay -= 1;
     if (item.decay <= 0) {
       result.expiredDebris.push(item);
-      pushLog5(state, `${item.id} decayed. States lost permanently.`);
+      pushLog7(state, `${item.id} decayed. States lost permanently.`);
     } else kept.push(item);
   }
   state.debris = kept;
@@ -1250,14 +1413,14 @@ function buildStabilizer(state, cost) {
   state.stabilizers = (state.stabilizers || 0) + 1;
   return { ok: true, stabilizers: state.stabilizers };
 }
-function pushLog5(state, line) {
+function pushLog7(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
 // ../../docs/games/metagame/stages/stage8/solver.js
 var REPAIR_STEP = 2;
 var isFrontier = (id) => String(id).startsWith("F");
-var isCore2 = (id) => /^C/.test(String(id));
+var isCore3 = (id) => /^C/.test(String(id));
 function salvageableValue(state) {
   return (state.debris || []).reduce((sum, d) => sum + Number(d.value || 0), 0);
 }
@@ -1269,7 +1432,7 @@ function runGateMet(state) {
 }
 function repairSpine(state) {
   const spine = state.nodes.filter((n) => !isFrontier(n.id));
-  spine.sort((a, b) => isCore2(b.id) - isCore2(a.id) || a.health - b.health);
+  spine.sort((a, b) => isCore3(b.id) - isCore3(a.id) || a.health - b.health);
   for (const n of spine) {
     if ((state.repairUnits || 0) <= 0) break;
     if (n.health >= 100) continue;
@@ -1434,6 +1597,27 @@ function paintTech(el, state) {
     return col;
   }));
 }
+var STRUCT_REASON = {
+  max: "at max",
+  "requires-tech": "research it first",
+  "needs-archive": "archive by hand first",
+  scrap: "more Scrap"
+};
+function paintStructures(el, state) {
+  if (!el) return;
+  el.replaceChildren(...structureStatus(state).map((s) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "s8-tech-item";
+    btn.dataset.struct = s.id;
+    if (s.level > 0) btn.classList.add("is-owned");
+    btn.disabled = !s.canBuild;
+    const at = s.level >= s.max ? "MAX" : `${s.cost}⛭`;
+    const blocked = !s.canBuild && s.level < s.max && s.reason ? ` · ${STRUCT_REASON[s.reason] || s.reason}` : "";
+    btn.innerHTML = `<span class="s8-tech-name">${s.label} <small>lvl ${s.level}/${s.max}</small></span><span class="s8-tech-cost">${at}${blocked}</span><span class="s8-tech-desc">${s.desc}</span>`;
+    return btn;
+  }));
+}
 function techRow(t) {
   const btn = document.createElement("button");
   btn.type = "button";
@@ -1488,6 +1672,10 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     <details class="s8-tech-panel">
       <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
       <div class="s8-tech" data-field="tech"></div>
+    </details>
+    <details class="s8-tech-panel">
+      <summary>STRUCTURES — build with Scrap ⛭</summary>
+      <div class="s8-tech" data-field="struct"></div>
     </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
@@ -1544,6 +1732,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       persistAndPaint();
       return;
     }
+    const struct = event.target.closest("button[data-struct]");
+    if (struct) {
+      buildStructure(state, struct.dataset.struct);
+      persistAndPaint();
+      return;
+    }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
@@ -1570,6 +1764,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     techStatus: () => techStatus(state),
     buyTech(id) {
       const r = buyTech(state, id);
+      persistAndPaint();
+      return r;
+    },
+    structureStatus: () => structureStatus(state),
+    buildStructure(id) {
+      const r = buildStructure(state, id);
       persistAndPaint();
       return r;
     },
@@ -1627,6 +1827,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       }
     });
     paintTech(fields.tech, state);
+    paintStructures(fields.struct, state);
   }
   function persistAndPaint() {
     if (run && typeof run.checkpoint === "function" && !state.boss.defeated) {
