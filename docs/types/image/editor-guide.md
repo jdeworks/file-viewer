@@ -87,6 +87,8 @@ those pixels around.
 - Gotcha: per-object **blend** modes blend against the objects *behind* them in the overlay, **not**
   the raster image underneath — the overlay flattens first, then draws over the base.
 - Objects **flatten onto the image on export/download** — until then they stay independent.
+- **⤵ Merge to image** bakes all objects into the pixels right away (one undo step) and clears
+  the overlay, so you can carry on in normal pixel Edit with them baked in.
 
 ## Extract text (OCR)
 

@@ -13,7 +13,7 @@ export function loadKonva() {
   return konvaPromise;
 }
 
-export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
+export async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector('.imgv-stage');
   let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
@@ -269,6 +269,13 @@ export async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     $, tb, addText, addShape, deleteSelection, groupSelection, ungroupSelection,
     pointEdit, precision, getSelected: () => selected, primary, isLabel, textNodeOf, layer, markDirty, snap, tr,
     refreshLayers: () => refreshLayers(), syncToolbar,
+  });
+  // Merge to image: bake the whole overlay onto the base pixels (one commit), then clear
+  // the now-redundant vector objects so the user continues in normal pixel Edit.
+  tb.querySelector('.imgv-adv-flatten')?.addEventListener('click', async () => {
+    if (objects().length === 0) return;
+    await onFlatten?.(flattenToCanvas());
+    clear();
   });
   syncToolbar();
   const uninstallKeys = installAdvKeys({

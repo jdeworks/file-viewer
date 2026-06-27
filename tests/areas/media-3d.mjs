@@ -1032,6 +1032,11 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost .imgv-adv-layers > div', { timeout: 5000 }).catch(() => {});
   const afterGeom = await page.$$eval('#previewHost .imgv-adv-layers > div', (els) => els.length);   // header + 4 rows (2 text + poly + star)
   if (afterGeom === 5) pass('Adv Edit: geometry (rotate) transforms the overlay objects, keeps them editable (not baked)'); else fail('adv geometry-transform: ' + afterGeom);
+  // Merge to image: flatten bakes the overlay onto the base pixels and clears the objects.
+  await page.click('#previewHost .imgv-adv-flatten');
+  const flattened = await page.waitForFunction(() => document.querySelectorAll('#previewHost .imgv-adv-layers span[title="Double-click to rename"]').length === 0, null, { timeout: 6000 }).then(() => true).catch(() => false);
+  const flatDirty = await page.evaluate(() => !!window.__fv.state.binaryEdit?.dirty);
+  if (flattened && flatDirty) pass('Adv Edit: Merge to image bakes the overlay + clears the objects (stays dirty)'); else fail('adv flatten: ' + JSON.stringify({ flattened, flatDirty }));
   await page.click('#previewHost .imgv-adv-btn');                   // leave Adv again for the export/ASCII steps
   // Image export (loadExports hook): menu offers PNG/JPEG/WebP, and a conversion actually downloads.
   await page.click('#exportBtn');

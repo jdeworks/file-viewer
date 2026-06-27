@@ -368,7 +368,11 @@ export async function render(intake, ctx = {}) {
     advBtn.disabled = true;
     try {
       if (!advController) {
-        advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); } });
+        advController = await mountAdvEdit({
+          host, img, pushUndo: core.pushUndo,
+          onDirty: () => { host.querySelector('.imgv-dirty-indicator')?.removeAttribute('hidden'); emitBinaryEdit(); },
+          onFlatten: async (canvas) => { core.pushUndo(); await core.commitCanvas(canvas); },   // bake overlay → base pixels
+        });
         // Fold the overlay into editor-core's history → one unified Ctrl+Z spanning
         // pixel + vector. Each entry now also carries the overlay JSON snapshot.
         core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });

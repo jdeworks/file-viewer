@@ -3956,6 +3956,8 @@ function advToolbarHtml() {
     <button class="imgv-adv-align" data-align="bottom" title="Align bottom">B</button>
     <button class="imgv-adv-dist" data-axis="x" title="Distribute horizontally">DH</button>
     <button class="imgv-adv-dist" data-axis="y" title="Distribute vertically">DV</button>
+    <span class="imgv-sep"></span>
+    <button class="imgv-adv-flatten" title="Merge all objects into the image (bake to pixels), then continue in normal Edit">⤵ Merge to image</button>
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
 
@@ -3965,7 +3967,7 @@ function loadKonva() {
   if (!konvaPromise) konvaPromise = loadGlobal2(vendor2("konva/konva.min.js"), "Konva");
   return konvaPromise;
 }
-async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
+async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   const Konva = await loadKonva();
   const stageHost = host.querySelector(".imgv-stage");
   let naturalW = img.naturalWidth || 1, naturalH = img.naturalHeight || 1;
@@ -4316,6 +4318,11 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo }) {
     tr,
     refreshLayers: () => refreshLayers(),
     syncToolbar
+  });
+  tb.querySelector(".imgv-adv-flatten")?.addEventListener("click", async () => {
+    if (objects().length === 0) return;
+    await onFlatten?.(flattenToCanvas());
+    clear();
   });
   syncToolbar();
   const uninstallKeys = installAdvKeys({
@@ -5129,10 +5136,20 @@ async function render(intake, ctx = {}) {
     advBtn.disabled = true;
     try {
       if (!advController) {
-        advController = await mountAdvEdit({ host, img, pushUndo: core.pushUndo, onDirty: () => {
-          host.querySelector(".imgv-dirty-indicator")?.removeAttribute("hidden");
-          emitBinaryEdit();
-        } });
+        advController = await mountAdvEdit({
+          host,
+          img,
+          pushUndo: core.pushUndo,
+          onDirty: () => {
+            host.querySelector(".imgv-dirty-indicator")?.removeAttribute("hidden");
+            emitBinaryEdit();
+          },
+          onFlatten: async (canvas) => {
+            core.pushUndo();
+            await core.commitCanvas(canvas);
+          }
+          // bake overlay → base pixels
+        });
         core.setOverlayHooks({ snapshot: () => advController.serialize(), restore: (j) => advController.restore(j) });
       }
       advActive = true;
