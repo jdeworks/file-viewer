@@ -172,6 +172,7 @@ FULL_UNIT_TESTS=(
   tests/known-coffeescript-lang.test.mjs
   tests/known-clojure-lang.test.mjs
   tests/known-coq-lang.test.mjs
+  tests/known-crystal-lang.test.mjs
   tests/known-alloy-lang.test.mjs
 )
 
