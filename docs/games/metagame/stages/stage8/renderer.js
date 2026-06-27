@@ -5,7 +5,12 @@ import {
   recordHeatDeathAttempt
 } from "./boss.js";
 import { btsSummary, BTS_PATH, SALVAGE_REQUIRED } from "./messages.js";
-import { entropyTreeText, nodeRows } from "./content.js";
+import { entropyTreeText } from "./content.js";
+import { advanceCycle, applyRepair, status as nodeStatus } from "./engine.js";
+import { nodeById } from "./nodes.js";
+import { makeRng } from "./rng.js";
+
+const REPAIR_STEP = 2; // repair units spent per click
 
 export function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -15,6 +20,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <strong>ENTROPY FIELD</strong>
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
+      <span>entropy <b data-field="entropy"></b>%</span>
+      <span>repair <b data-field="repairUnits"></b></span>
       <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
     </header>
     <div class="s8-layout">
@@ -35,6 +42,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     </div>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
+      <button type="button" data-action="advance">advance cycle ▸</button>
       <button type="button" data-action="boss">challenge Heat Death</button>
       <button type="button" data-action="external">simulate external import</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
@@ -77,8 +85,11 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   });
 
   root.addEventListener("click", (event) => {
+    const repair = event.target.closest("button[data-repair]");
+    if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
+    if (button.dataset.action === "advance") advanceCycle(state, makeRng(`8:${state.cycle}`));
     if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
     if (button.dataset.action === "external") {
       state.externalImportBonusCycles = 3;
@@ -91,9 +102,20 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
 
   repaint();
 
+  // TEST/DEBUG hook (not a player affordance): runs the survival sim deterministically for the smoke.
+  // Does NOT bypass the gate — the boss still needs archived salvage ≥ required + the action.
+  window.__fvStage8 = {
+    state: () => state,
+    advance(cycles = 1) {
+      for (let i = 0; i < cycles; i++) advanceCycle(state, makeRng(`8:${state.cycle}`));
+      persistAndPaint();
+    }
+  };
+
   return {
     repaint,
     destroy() {
+      if (window.__fvStage8) delete window.__fvStage8;
       root.remove();
     }
   };
@@ -109,6 +131,8 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     const lock = getBossLockState({ actions, state });
     fields.cycle.textContent = String(state.cycle);
     fields.states.textContent = String(state.states);
+    fields.entropy.textContent = String(state.entropy || 0);
+    fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
     fields.salvage.textContent = String(state.salvageTotal);
     fields.tree.textContent = entropyTreeText(state);
     fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / archived action ${lock.actionReady ? "yes" : "no"}`;
@@ -120,10 +144,15 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       option.selected = item.id === state.selectedDebrisId;
       return option;
     }));
-    map.replaceChildren(...nodeRows.map((node) => {
+    map.replaceChildren(...state.nodes.map((n) => {
+      const def = nodeById(n.id) || {};
+      const s = nodeStatus(n.health);
       const item = document.createElement("div");
-      item.className = `s8-node is-${node.state}`;
-      item.textContent = `${node.id} ${node.name} ${node.state} +${node.output}`;
+      item.className = `s8-node is-${s}`;
+      const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
+      item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>
+        ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
+        <button type="button" data-repair="${n.id}">repair</button>`;
       return item;
     }), ...state.debris.map((item) => {
       const debris = document.createElement("button");

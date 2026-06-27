@@ -45,6 +45,23 @@
 .s8-node.is-degrading { border-color: #8b7355; }
 .s8-node.is-failed { border-color: #7a3b2e; }
 
+/* Node health bar in the survival map. */
+.s8-node-id { font-weight: 700; }
+.s8-node-name { color: #b6ad9c; }
+.s8-node-bar {
+  display: inline-block;
+  width: 90px;
+  height: 9px;
+  margin: 0 6px;
+  vertical-align: middle;
+  background: #2c2a26;
+  border: 1px solid #4a4a4a;
+}
+.s8-node-bar > span { display: block; height: 100%; background: #5dcaa5; }
+.s8-node.is-degrading .s8-node-bar > span { background: #d8a657; }
+.s8-node.is-failed .s8-node-bar > span { background: #c8553b; }
+.s8-node [data-repair] { float: right; cursor: pointer; background: #20201d; color: inherit; border: 1px solid #4a4a4a; }
+
 .s8-debris {
   border-style: dashed;
   border-color: #8b7355;

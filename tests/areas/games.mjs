@@ -757,6 +757,13 @@ export async function run(ctx) {
   pass('Stage 7 EXIF contradiction unlocks and clears Identity Arbiter');
 
   await page.waitForSelector('.stage8-entropy-field', { timeout: 8000 });
+  // The survival sim is wired: node health bars render from the 14-node state + an Advance Cycle
+  // control and the engine hook exist (engine correctness is covered by engine.test).
+  await page.waitForSelector('.stage8-entropy-field .s8-node .s8-node-bar', { timeout: 4000 });
+  await page.waitForSelector('.stage8-entropy-field [data-action="advance"]', { timeout: 4000 });
+  const s8Wired = await page.evaluate(() => Boolean(window.__fvStage8) && window.__fvStage8.state().nodes.length === 14);
+  if (s8Wired) pass('Stage 8 survival sim wired: 14 node health bars + Advance Cycle + engine hook'); else fail('Stage 8 sim not wired');
+  // Un-cheat (unchanged): archive salvaged debris to reach the threshold, then challenge Heat Death.
   await page.click('[data-action="archive"]');
   await page.click('[data-action="archive"]');
   await page.waitForFunction(() => {
