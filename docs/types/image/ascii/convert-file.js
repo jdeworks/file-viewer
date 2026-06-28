@@ -1,11 +1,14 @@
 // "Convert file → ASCII": pick a GIF or video, convert it frame-by-frame to ASCII
 // (off the main thread via the engine's worker), show progress + a throttled live
-// preview, then download the result in its base format (GIF → GIF, video → WebM) or
-// add it back into the studio. Lazy-loaded from studio.js on demand.
+// preview, then download the result or add it back into the studio. Animations export
+// as GIF by default, or as a WebM video (with a bakeable loop count, since a video has
+// no native loop); videos export as WebM, with the source audio muxed in by default
+// (a real-time recording — see record-video.js). Lazy-loaded from studio.js on demand.
 import { makeFloatingPanel } from './floating-panel.js';
 import { createAsciiEngine } from './engine.js';
-import { gifFrames, imageDecoderFrames, videoFrameStream } from './video-frames.js';
+import { gifFrames, imageDecoderFrames, videoFrameStream, loopFrames } from './video-frames.js';
 import { createGifSink, createWebmSink } from './encode.js';
+import { recordVideoToAscii } from './record-video.js';
 
 let cssDone = false;
 function injectStyle() {
@@ -25,6 +28,12 @@ function injectStyle() {
       background-color: #1a1a1a;
       background-image: linear-gradient(45deg,#333 25%,transparent 25%),linear-gradient(-45deg,#333 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#333 75%),linear-gradient(-45deg,transparent 75%,#333 75%);
       background-size: 16px 16px; background-position: 0 0,0 8px,8px -8px,-8px 0; }
+    .asx-conv-opts { display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
+      font: 12px ui-monospace, monospace; color: #9ab; }
+    .asx-conv-opts select, .asx-conv-opts input[type=number] { font: 12px ui-monospace, monospace;
+      background: #000; color: #cde; border: 1px solid #2a2a2a; border-radius: 4px; padding: 2px 4px; }
+    .asx-conv-opts input[type=number] { width: 3.5em; }
+    .asx-conv-opts label { display: inline-flex; gap: 4px; align-items: center; }
     .asx-conv-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .asx-conv-actions button { cursor: pointer; }
     .asx-conv-url { display: flex; gap: 6px; }
@@ -50,6 +59,18 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
   panel.innerHTML = `
     <div class="asx-conv-body">
       <p class="asx-conv-status">Choose a GIF or video to convert to ASCII.</p>
+      <div class="asx-conv-opts">
+        <label title="Animations (GIF/WebP/APNG) export as GIF by default; choose WebM to get a video. Videos always export as WebM.">Output
+          <select class="asx-conv-fmt">
+            <option value="auto">Auto (GIF for animations)</option>
+            <option value="webm">WebM video</option>
+          </select>
+        </label>
+        <label class="asx-conv-loops-lbl" title="Bake extra loops into the WebM (a video has no native loop). 0 = play once." hidden>Loops
+          <input class="asx-conv-loops" type="number" min="0" max="10" step="1" value="0">
+        </label>
+        <label title="Include the source video's audio in the exported WebM (records in real time)."><input class="asx-conv-audio" type="checkbox" checked> Audio (video)</label>
+      </div>
       <progress class="asx-conv-prog" value="0" max="1" hidden></progress>
       <canvas class="asx-conv-preview" hidden></canvas>
       <div class="asx-conv-actions">
@@ -72,6 +93,9 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
   const pick = q('.asx-conv-pick'), cancelBtn = q('.asx-conv-cancel');
   const dlBtn = q('.asx-conv-dl'), studioBtn = q('.asx-conv-studio'), input = q('.asx-conv-input');
   const urlInput = q('.asx-conv-url-input'), urlGo = q('.asx-conv-url-go');
+  const fmtSel = q('.asx-conv-fmt'), loopsLbl = q('.asx-conv-loops-lbl'), loopsInput = q('.asx-conv-loops'), audioChk = q('.asx-conv-audio');
+  // Loops only apply when baking an animation into a WebM video.
+  fmtSel.addEventListener('change', () => { loopsLbl.hidden = fmtSel.value !== 'webm'; });
   let aborter = null;
   const float = makeFloatingPanel(panel, { title: 'Convert file → ASCII', onClose: () => { aborter?.abort(); float.destroy(); panel.remove(); } });
 
@@ -82,31 +106,65 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     preview.getContext('2d').drawImage(canvas, 0, 0, preview.width, preview.height);
   }
 
+  function showResult(blob, name, mime, summary) {
+    prog.value = 1;
+    status.textContent = summary;
+    cancelBtn.hidden = true; dlBtn.hidden = false; studioBtn.hidden = !onAddToStudio;
+    dlBtn.onclick = () => download(blob, name);
+    studioBtn.onclick = () => onAddToStudio?.(blob, name, mime);
+  }
+  function showError(err) {
+    status.textContent = err && err.name === 'AbortError' ? 'Cancelled.' : 'Failed: ' + ((err && err.message) || err);
+    cancelBtn.hidden = true; pick.hidden = false; prog.hidden = true;
+  }
+
   async function run(file, ab = new AbortController()) {
     aborter = ab;
     const signal = ab.signal;
     pick.hidden = true; cancelBtn.hidden = false; prog.hidden = false; preview.hidden = false;
     dlBtn.hidden = true; studioBtn.hidden = true;
     const fps = 12;
-    const engine = createAsciiEngine(options);
-    engine.setRenderMode('bitmap');
-    // Pick a decoder by type. GIF + animated-image (WebP/APNG) are image sequences → GIF
-    // out (delays preserved); video → WebM out (real-time MediaRecorder). Stream decode →
-    // convert → encode → release, one frame at a time (flat memory, any length).
+    // Classify the source. GIF + animated-image (WebP/APNG) are image sequences (export GIF by
+    // default, or WebM video when chosen); everything else is a video (always WebM).
     const lower = (file.name || '').toLowerCase(), type = file.type || '';
     const isGif = /gif/.test(type) || lower.endsWith('.gif');
     const isWebp = /webp/.test(type) || lower.endsWith('.webp');
     const isApng = /apng/.test(type) || lower.endsWith('.apng');
     const imageSeq = isGif || isWebp || isApng;
+    const isVideo = !imageSeq;
+    const toWebm = isVideo || fmtSel.value === 'webm';
+    const loops = imageSeq ? Math.max(0, Math.min(10, Math.round(Number(loopsInput.value) || 0))) : 0;
+    const engine = createAsciiEngine(options);
+    engine.setRenderMode('bitmap');
+
+    // Video + audio → a real-time playback recording: the only way to keep the source audio in
+    // sync (a seeked <video> produces none). Wholly separate control flow from the seek path.
+    if (isVideo && audioChk.checked) {
+      try {
+        status.textContent = 'Recording in real time (with audio)…';
+        const blob = await recordVideoToAscii(file, {
+          engine, fps: 30, signal,
+          onProgress: (p) => { prog.value = p; },
+          onPreview: (c) => showPreview(c),
+        });
+        engine.terminate();
+        showResult(blob, `${baseName}-ascii.webm`, 'video/webm', `Done — ${(blob.size / 1024).toFixed(0)} KB (with audio).`);
+      } catch (err) { engine.terminate(); showError(err); }
+      return;
+    }
+
+    // Stream decode → convert → encode → release, one frame at a time (flat memory, any length).
     const bytes = imageSeq ? new Uint8Array(await file.arrayBuffer()) : null;
-    const source = isGif ? gifFrames(bytes, { signal })
+    const baseSource = isGif ? gifFrames(bytes, { signal })
       : isWebp ? imageDecoderFrames(bytes, 'image/webp', { signal })
       : isApng ? imageDecoderFrames(bytes, 'image/png', { signal })
       : videoFrameStream(file, { fps, signal });
+    // Bake extra loops ONLY when turning an animation into a WebM (a video has no native loop).
+    const source = (imageSeq && toWebm) ? loopFrames(baseSource, loops, { signal }) : baseSource;
     // GIF preserves a transparent ASCII background (WebM has no alpha).
-    const sink = imageSeq ? await createGifSink({ transparent: !!options.transparentBackground }) : createWebmSink({ fps });
-    const name = `${baseName}-ascii.${imageSeq ? 'gif' : 'webm'}`;
-    const mime = imageSeq ? 'image/gif' : 'video/webm';
+    const sink = toWebm ? createWebmSink({ fps }) : await createGifSink({ transparent: !!options.transparentBackground });
+    const name = `${baseName}-ascii.${toWebm ? 'webm' : 'gif'}`;
+    const mime = toWebm ? 'video/webm' : 'image/gif';
     const conv = document.createElement('canvas');     // reused: rendered ASCII frame → sink
     const cctx = conv.getContext('2d');
     const it = source;
@@ -119,7 +177,7 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     };
     try {
       let count = 0, lastPreview = 0;
-      if (!imageSeq) status.textContent = 'Recording in real time…';
+      if (isVideo) status.textContent = 'Recording in real time…';
       const first = await it.next();
       if (first.done) throw new Error('no frames decoded');
       let cur = await start(first.value);
@@ -145,17 +203,12 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
       status.textContent = 'Encoding…';
       const blob = await sink.finish();
       engine.terminate();
-      prog.value = 1;
-      status.textContent = `Done — ${count} frames, ${(blob.size / 1024).toFixed(0)} KB.`;
-      cancelBtn.hidden = true; dlBtn.hidden = false; studioBtn.hidden = !onAddToStudio;
-      dlBtn.onclick = () => download(blob, name);
-      studioBtn.onclick = () => onAddToStudio?.(blob, name, mime);
+      showResult(blob, name, mime, `Done — ${count} frames, ${(blob.size / 1024).toFixed(0)} KB.`);
     } catch (err) {
       try { await it.return?.(); } catch { /* close the frame stream → revoke its blob URL */ }
       try { await sink.finish?.(); } catch { /* discard partial */ }
       engine.terminate();
-      status.textContent = err && err.name === 'AbortError' ? 'Cancelled.' : 'Failed: ' + ((err && err.message) || err);
-      cancelBtn.hidden = true; pick.hidden = false; prog.hidden = true;
+      showError(err);
     }
   }
 

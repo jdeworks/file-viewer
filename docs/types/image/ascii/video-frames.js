@@ -15,6 +15,28 @@ export async function* gifFrames(bytes, { signal } = {}) {
   }
 }
 
+// Replay an image-sequence source `loops + 1` times (loops=0 → single pass, unchanged).
+// Used when exporting an animated image (GIF/WebP/APNG) to a WebM video, which — unlike a
+// GIF — has no native loop, so the repeats must be baked into the clip. The whole sequence
+// is snapshotted to ImageBitmaps up front (imageDecoderFrames reuses ONE canvas, so the
+// live source can't be re-iterated; and only with the full count known can index/total be
+// numbered cleanly across every baked pass). Image sequences are bounded/small, so
+// buffering every frame is acceptable.
+export async function* loopFrames(source, loops = 0, { signal } = {}) {
+  if (!loops) { yield* source; return; }
+  const cache = [];
+  for await (const f of source) {
+    if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
+    cache.push({ bmp: await createImageBitmap(f.canvas), delayMs: f.delayMs });
+  }
+  const total = cache.length * (loops + 1);
+  for (let n = 0; n < total; n++) {
+    if (signal?.aborted) throw new DOMException('aborted', 'AbortError');
+    const f = cache[n % cache.length];
+    yield { canvas: f.bmp, delayMs: f.delayMs, index: n, total };
+  }
+}
+
 // Async-iterate frames of an animated image (WebP / APNG) via the browser-native
 // WebCodecs ImageDecoder — offline, no vendored lib. Static images yield one frame.
 // `duration` is microseconds → delayMs. Draws into ONE reused canvas (consumed per step).

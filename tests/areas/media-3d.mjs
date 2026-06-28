@@ -1264,6 +1264,21 @@ export async function run(ctx) {
     page.click('#previewHost .asx-conv-dl'),
   ]).catch(() => [null]);
   if (convReady && convDl && /\.gif$/.test(convDl.suggestedFilename())) pass('ASCII converter: GIF → ASCII GIF converts (worker) + downloads'); else fail('ascii converter: ' + JSON.stringify({ convReady, dl: convDl && convDl.suggestedFilename() }));
+  // GIF → WebM video with baked loops: a video has no native loop, so exporting an animation
+  // to one must repeat the frames. Choose Output=WebM + Loops=2 and re-feed the same GIF;
+  // assert a .webm (not .gif) downloads.
+  await page.evaluate(() => {
+    const p = document.querySelector('#previewHost .asx-conv');
+    const fmt = p.querySelector('.asx-conv-fmt'); fmt.value = 'webm'; fmt.dispatchEvent(new Event('change', { bubbles: true }));
+    p.querySelector('.asx-conv-loops').value = '2';
+  });
+  await page.setInputFiles('#previewHost .asx-conv-input', { name: 'anim.gif', mimeType: 'image/gif', buffer: Buffer.from(CGIF) }).catch(() => {});
+  const webmReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
+  const [webmDl] = await Promise.all([
+    page.waitForEvent('download', { timeout: 8000 }),
+    page.click('#previewHost .asx-conv-dl'),
+  ]).catch(() => [null]);
+  if (webmReady && webmDl && /\.webm$/.test(webmDl.suggestedFilename())) pass('ASCII converter: GIF → WebM video (baked loops) converts + downloads'); else fail('ascii gif→webm: ' + JSON.stringify({ webmReady, dl: webmDl && webmDl.suggestedFilename() }));
   await page.click('#previewHost .asx-conv .asx-float-close').catch(() => {});
   // Regression: converting a TRANSPARENT frame after an opaque one must not retain the
   // previous frame (the worker/engine reuses a source canvas → it must be cleared).
