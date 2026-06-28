@@ -242,6 +242,15 @@
     grid-template-columns: 1fr;
   }
 
+  /* Bigger cells so a fingertip can target a single path-adjacent tile. The board then exceeds the
+     viewport on both axes and scrolls; boardCell() measures the rendered text, so taps stay accurate
+     under scroll. */
+  .s4-board {
+    font-size: 16px;
+    letter-spacing: 2px;
+    line-height: 1.25;
+  }
+
   .s4-maprow {
     grid-template-columns: 24px 1fr auto;
   }

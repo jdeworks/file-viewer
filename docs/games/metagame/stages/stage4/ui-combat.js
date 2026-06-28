@@ -16,6 +16,7 @@ import { snapshotWave } from './state.js';
 import { mapByIndex, mapPathSeed } from './maps.js';
 import { refundTowersOnPath, preWaveHint } from './combat-helpers.js';
 import { shopRows, rosterRows } from './combat-rows.js';
+import { cellFromTextRect } from './combat-board-map.js';
 
 const PLACEABLE = [
   'pulse_node', 'scatter_array', 'null_spike', 'attractor_field',
@@ -240,15 +241,20 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     }
   });
 
+  // Map a pointer event to a board cell. We measure the RENDERED text with a Range rather than the
+  // <pre> box: range.getBoundingClientRect() gives the glyph block's on-screen rect already adjusted
+  // for the container's scroll offset (and any transform), and — unlike the box — it is the actual
+  // text extent (the <pre> is wider than the 40-char text in the desktop grid). So a tap near the
+  // edge, or after the board has been scrolled on a phone, resolves to the cell under the finger.
   function boardCell(event) {
     if (!event.target.closest('.s4-board')) return null;
-    const rect = board.getBoundingClientRect();
-    const cols = (board.textContent.split('\n')[0] || '').length || 40;
-    const rows = board.textContent.split('\n').length || 40;
-    const x = Math.floor(((event.clientX - rect.left) / rect.width) * cols);
-    const y = Math.floor(((event.clientY - rect.top) / rect.height) * rows);
-    if (x < 0 || y < 0 || x >= cols || y >= rows) return null;
-    return { x, y };
+    const lines = board.textContent.split('\n');
+    const cols = (lines[0] || '').length || 40;
+    const rows = lines.length || 40;
+    const range = document.createRange();
+    range.selectNodeContents(board);
+    const textRect = range.getBoundingClientRect();
+    return cellFromTextRect({ clientX: event.clientX, clientY: event.clientY, textRect, cols, rows });
   }
 
   // Resume a mid-flight wave restored by the dispatcher (state.waveActive true on entry).

@@ -1672,6 +1672,18 @@ function rosterRows(state) {
   });
 }
 
+// ../../docs/games/metagame/stages/stage4/combat-board-map.js
+function cellFromTextRect({ clientX, clientY, textRect, cols, rows }) {
+  if (!textRect || cols <= 0 || rows <= 0) return null;
+  if (!(textRect.width > 0) || !(textRect.height > 0)) return null;
+  const cellW = textRect.width / cols;
+  const cellH = textRect.height / rows;
+  const x = Math.floor((clientX - textRect.left) / cellW);
+  const y = Math.floor((clientY - textRect.top) / cellH);
+  if (x < 0 || y < 0 || x >= cols || y >= rows) return null;
+  return { x, y };
+}
+
 // ../../docs/games/metagame/stages/stage4/ui-combat.js
 var PLACEABLE = [
   "pulse_node",
@@ -1965,13 +1977,13 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   });
   function boardCell(event) {
     if (!event.target.closest(".s4-board")) return null;
-    const rect = board.getBoundingClientRect();
-    const cols = (board.textContent.split("\n")[0] || "").length || 40;
-    const rows = board.textContent.split("\n").length || 40;
-    const x = Math.floor((event.clientX - rect.left) / rect.width * cols);
-    const y = Math.floor((event.clientY - rect.top) / rect.height * rows);
-    if (x < 0 || y < 0 || x >= cols || y >= rows) return null;
-    return { x, y };
+    const lines = board.textContent.split("\n");
+    const cols = (lines[0] || "").length || 40;
+    const rows = lines.length || 40;
+    const range = document.createRange();
+    range.selectNodeContents(board);
+    const textRect = range.getBoundingClientRect();
+    return cellFromTextRect({ clientX: event.clientX, clientY: event.clientY, textRect, cols, rows });
   }
   if (!isBoss && state.waveActive && (state.waveNumber || 1) <= map.waveCount) runLoop();
   repaint();

@@ -175,7 +175,9 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
   inset: 0;
   justify-content: center;
   padding: 12px;
-  position: absolute;
+  /* fixed (not absolute) so the modal centres on the VIEWPORT, not within the tall stage section —
+     on mobile an absolute backdrop sits below the board instead of over the screen. */
+  position: fixed;
   z-index: 50;
 }
 .s3-modal {
