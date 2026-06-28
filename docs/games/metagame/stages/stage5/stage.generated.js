@@ -7,6 +7,7 @@
 
 // ../../docs/games/metagame/stages/stage5/messages.js
 var ACTION_NAME = "counter_wave_calibrated";
+var PROGRESS_ACTION = "calibration_progress";
 var REQUIRED_ACTION = "5.counter_wave_calibrated";
 var ACHIEVEMENT_ID = "stage5.counter_wave_calibrated";
 var ACHIEVEMENT_TEXT = "I listened before I drove.";
@@ -1811,7 +1812,44 @@ function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
   ensureStyles();
   if (hasCounterWave(ctx.actions)) state.calibration.calibrated = true;
-  return renderStage5({ ...ctx, state });
+  let view = null;
+  const unsubscribe = subscribeStage5Actions(ctx.actions, (detail) => {
+    if (detail.action === ACTION_NAME) {
+      state.calibration.calibrated = true;
+    } else if (detail.action === PROGRESS_ACTION) {
+      if (state.calibration.calibrated) return;
+      state.calibration.continuousMs = Math.max(0, Number(detail.continuousMs) || 0);
+    } else {
+      return;
+    }
+    view?.repaint?.();
+  });
+  view = renderStage5({ ...ctx, state });
+  return {
+    repaint: view.repaint,
+    destroy() {
+      unsubscribe();
+      view?.destroy?.();
+    }
+  };
+}
+function subscribeStage5Actions(actions, handler) {
+  const matches = (detail) => Boolean(detail) && Number(detail.stage) === 5;
+  if (actions && typeof actions.subscribeToActions === "function") {
+    return actions.subscribeToActions((detail) => {
+      if (matches(detail)) handler(detail);
+    }) || (() => {
+    });
+  }
+  const onEvent = (event) => {
+    if (matches(event.detail)) handler(event.detail);
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("fv:games:action", onEvent);
+    return () => window.removeEventListener("fv:games:action", onEvent);
+  }
+  return () => {
+  };
 }
 function ensureStyles() {
   const id = "stage5-signal-racer-styles";

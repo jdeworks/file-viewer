@@ -1,4 +1,4 @@
-import { setAction as sharedSetAction } from './action-flags.js';
+import { setAction as sharedSetAction, emitTransientAction as sharedEmitTransient } from './action-flags.js';
 import { echoTokenFor } from './stages/stage10/echo-token.js';
 import { echoVerb, isRealVerb, rawModeMatches, echoIdByFile } from './stages/stage10/echo-verbs.js';
 
@@ -141,7 +141,41 @@ export function shouldSetStage5CounterWave({ file, continuousMs, active = true, 
     && Number(continuousMs || 0) >= STAGE5_REQUIRED_MS;
 }
 
-export function recordStage5MediaPlayback({ file, continuousMs, active = true, seeking = false, setAction = sharedSetAction } = {}) {
+// Throttle memo for the cosmetic progress signal: the media renderer fires this ~4x/sec, but the HUD
+// only displays whole seconds, so we emit a fresh progress signal only when the floored-second value
+// actually changes (resetting to 0 when continuous playback restarts). Module-scoped on purpose — the
+// recorder is invoked fresh each timeupdate and has nowhere else to remember the last displayed second.
+let lastStage5ProgressSecond = -1;
+
+export function recordStage5MediaPlayback({
+  file,
+  continuousMs,
+  active = true,
+  seeking = false,
+  setAction = sharedSetAction,
+  emitProgress = sharedEmitTransient,
+} = {}) {
+  if (!isStage5TransmissionHum(file)) return false;
+
+  // Sub-threshold cosmetic readout. Emitted on the TRANSIENT channel (no map record, no localStorage,
+  // no save mirror/persist) so the calibration HUD can animate every tick without spamming a full
+  // game-state save. The authoritative unlock below is still a real, persisted setAction — this signal
+  // never satisfies the boss gate (hasAction). When playback is inactive/seeking the media renderer has
+  // already reset its continuous counter to 0, so the next active tick emits a low value and the HUD
+  // falls back to "uncalibrated" on its own.
+  if (active && !seeking) {
+    const ms = Math.max(0, Number(continuousMs || 0));
+    const second = Math.floor(ms / 1000);
+    if (second !== lastStage5ProgressSecond) {
+      lastStage5ProgressSecond = second;
+      emitProgress?.(5, 'calibration_progress', {
+        source: 'media-playback',
+        file: STAGE5_FILE,
+        continuousMs: ms,
+      });
+    }
+  }
+
   if (!shouldSetStage5CounterWave({ file, continuousMs, active, seeking })) return false;
   setAction?.(5, 'counter_wave_calibrated', {
     source: 'media-playback',
