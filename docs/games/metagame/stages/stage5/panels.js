@@ -22,6 +22,14 @@ export function shopButtonEls({ shop = {}, packets = 0, playing = false }) {
   });
 }
 
+// Muted per-round packet-reward estimate span for a round-selector button (renderer appends it).
+export function roundEstEl(low, high) {
+  const span = document.createElement('span');
+  span.className = 's5-round-est';
+  span.textContent = ` ~${low}–${high}p`;
+  return span;
+}
+
 // Ascension rungs (0 = base .. maxUnlocked). Empty until the stage's been beaten once (replay depth).
 export function ascensionPanelEls({ ascension, defeated = false, playing = false, mods = [] }) {
   const unlocked = ascension.maxUnlocked();

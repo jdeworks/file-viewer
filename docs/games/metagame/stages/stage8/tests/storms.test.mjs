@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { defaultState } from "../state.js";
 import { makeRng } from "../rng.js";
 import {
-  STORMS, TOTAL_STORMS, stormForAct, stormAvailable, braceStorm, bringSectorOnline, tickStorm
+  STORMS, TOTAL_STORMS, stormForAct, stormAvailable, braceStorm, bringSectorOnline, tickStorm, announceStorm
 } from "../storms.js";
 import { advanceCycle } from "../engine.js";
 
@@ -87,6 +87,35 @@ import { advanceCycle } from "../engine.js";
   const left = s.activeStorm.cyclesLeft;
   advanceCycle(s, makeRng("8:1"));
   assert.ok(!s.activeStorm || s.activeStorm.cyclesLeft === left - 1, "storm advanced one cycle through the engine");
+}
+
+// ── band/phase announcement fires ONCE per storm, only when the act body is met (deterministic) ──────
+{
+  const s = defaultState();
+  assert.equal(announceStorm(s), null, "no announcement before the act body is met");
+  const logBefore = s.log.length;
+  s.cycle = 10;
+  s.totalStatesEarned = 300;
+  const announced = announceStorm(s);
+  assert.ok(announced && announced.id === "alpha", "α announced once its body is met");
+  assert.ok(s.log.length > logBefore, "a phase line was logged");
+  assert.ok(s.log.some((l) => l.includes("NEW PHASE")), "phase line is tagged");
+  assert.deepEqual(s.announcedStorms, ["alpha"], "storm marked announced");
+  // idempotent — does not re-announce the same storm
+  const lenAfter = s.log.length;
+  assert.equal(announceStorm(s), null, "no re-announcement of the same storm");
+  assert.equal(s.log.length, lenAfter, "no duplicate log line");
+}
+
+// ── advanceCycle fires the announcement exactly once across many cycles ──────────────────────────────
+{
+  const s = defaultState();
+  s.cycle = 10;
+  s.totalStatesEarned = 300;
+  for (let i = 0; i < 6; i += 1) advanceCycle(s, makeRng(`8:ann:${i}`));
+  const count = s.log.filter((l) => l.includes("NEW PHASE") && l.includes("α")).length;
+  assert.ok(count <= 1, "α phase line never duplicated by the engine loop");
+  assert.deepEqual(s.announcedStorms, ["alpha"], "engine recorded the α announcement once");
 }
 
 console.log("stage8 storms tests passed");

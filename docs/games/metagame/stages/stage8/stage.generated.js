@@ -35,8 +35,11 @@ function gateHint(lock) {
   if (!lock.actionReady) return "move a .sav from /entropy/debris/ into /entropy/active_archive/ — that is the lesson.";
   if (!lock.enoughSalvage) return `archive more wreckage: salvage ${lock.salvageTotal}/${lock.salvageRequired}.`;
   if (!lock.enoughCycles) return `survive longer: cycle ${lock.cycle}/${lock.minCycle} before Heat Death will commit.`;
-  if (!lock.enoughStates) return `bank deeper reserves: ${lock.totalEarned}/${lock.statesRequired} States earned. the burn drains everything.`;
-  return "the reserves are deep enough. Heat Death can be endured.";
+  if (!lock.enoughStates) return `earn more total States: ${lock.totalEarned}/${lock.statesRequired} LIFETIME earned (this gate counts every State ever earned, not your current balance).`;
+  if (Number(lock.inHandStates) < Number(lock.burnEstimate)) {
+    return `gate open — but Heat Death burns your CURRENT balance (${lock.inHandStates} in hand vs ~${lock.burnEstimate} needed), not lifetime earnings. bank more before you commit.`;
+  }
+  return `reserves are deep enough (${lock.inHandStates} in hand vs ~${lock.burnEstimate} burn). Heat Death can be endured.`;
 }
 var btsSummary = [
   "Stage 8 uses internal drag and drop because OS file dragging behaves differently across browsers, touch devices, and assistive technology.",
@@ -47,6 +50,11 @@ var btsSummary = [
 // ../../docs/games/metagame/stages/stage8/burn.js
 function baseDrain(i) {
   return 12 + i * 3;
+}
+function estimateBurnTotal() {
+  let total = 0;
+  for (let i = 0; i < BURN_CYCLES; i += 1) total += baseDrain(i) + 2;
+  return total;
 }
 function simulateHeatDeath(state, rng) {
   let states = Math.max(0, Number(state.states || 0));
@@ -311,6 +319,16 @@ function stormAvailable(state) {
   }
   return { ok: true, storm };
 }
+function announceStorm(state) {
+  const avail = stormAvailable(state);
+  if (!avail.ok) return null;
+  const storm = avail.storm;
+  if (!Array.isArray(state.announcedStorms)) state.announcedStorms = [];
+  if (state.announcedStorms.includes(storm.id)) return null;
+  state.announcedStorms.push(storm.id);
+  pushLog(state, `▣ NEW PHASE — ${storm.telegraph}`);
+  return storm;
+}
 function braceStorm(state) {
   const avail = stormAvailable(state);
   if (!avail.ok) return { ok: false, reason: avail.reason };
@@ -454,6 +472,10 @@ function getBossLockState({ actions, state }) {
     salvageRequired: SALVAGE_REQUIRED,
     totalEarned,
     statesRequired: STATES_REQUIRED,
+    inHandStates: Number(state.states || 0),
+    // current balance the burn actually drains
+    burnEstimate: estimateBurnTotal(),
+    // representative burn cost (for the readout only)
     cycle,
     minCycle: MIN_CYCLE,
     defeatPossible: unlocked,
@@ -932,6 +954,7 @@ function defaultState() {
     act: 1,
     onlineSectors: ["core"],
     stormsSurvived: 0,
+    announcedStorms: [],
     pendingStorm: null,
     activeStorm: null,
     nodes: freshNodes(),
@@ -1010,6 +1033,7 @@ function normalizeState(state) {
   target.onlineSectors = Array.isArray(target.onlineSectors) && target.onlineSectors.length ? target.onlineSectors.filter((s) => typeof s === "string") : fresh.onlineSectors;
   if (!target.onlineSectors.includes("core")) target.onlineSectors.unshift("core");
   target.stormsSurvived = Math.max(0, num(target.stormsSurvived, 0));
+  target.announcedStorms = Array.isArray(target.announcedStorms) ? target.announcedStorms.filter((s) => typeof s === "string") : [];
   target.pendingStorm = target.pendingStorm && typeof target.pendingStorm === "object" ? target.pendingStorm : null;
   target.activeStorm = target.activeStorm && typeof target.activeStorm === "object" ? target.activeStorm : null;
   target.states = num(target.states, fresh.states);
@@ -1056,6 +1080,7 @@ function snapshotRun(state) {
     act: state.act || 1,
     onlineSectors: [...state.onlineSectors || ["core"]],
     stormsSurvived: state.stormsSurvived || 0,
+    announcedStorms: [...state.announcedStorms || []],
     pendingStorm: state.pendingStorm ? { ...state.pendingStorm } : null,
     activeStorm: state.activeStorm ? { ...state.activeStorm } : null,
     nodes: (state.nodes || []).map((n) => ({ id: n.id, health: n.health, cascadeStress: n.cascadeStress || 0 })),
@@ -1467,6 +1492,7 @@ function advanceCycle(state, rng) {
   state.repairUnits = repairBudget(state);
   state.cycle = (state.cycle || 0) + 1;
   result.pendingEvent = telegraphNext(state, rng);
+  result.announcedStorm = announceStorm(state);
   return result;
 }
 function applyRepair(state, nodeId, units) {
@@ -1600,7 +1626,7 @@ function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   fields.salvage.textContent = String(state.salvageTotal);
   paintPrestige(fields, root, state);
   fields.tree.textContent = entropyTreeText(state);
-  fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
+  fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · lifetime-States ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
   paintTelegraph(fields.telegraph, state);
   paintStorm(root, state, storm);

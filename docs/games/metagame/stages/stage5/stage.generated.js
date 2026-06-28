@@ -484,6 +484,31 @@ function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 0, gate
   const mult = Number.isFinite(Number(multiplier)) && multiplier > 0 ? Number(multiplier) : 1;
   return Math.max(10, Math.round(subtotal * mult));
 }
+function estimateRoundPackets(round, tuning = {}) {
+  const gateValue = Number(tuning.gateValue) || 5;
+  const packetMult = Number(tuning.packetMult) > 0 ? Number(tuning.packetMult) : 1;
+  const repGates = round && round.hasGates ? 6 : 0;
+  const roundId = round ? round.id : 1;
+  const low = calcRoundPackets({
+    roundId,
+    onBeatPct: 0.5,
+    integrityRemaining: 35,
+    gatesCollected: 0,
+    gateValue,
+    multiplier: 0.6 * packetMult
+    // 0.6 = last-place position floor
+  });
+  const high = calcRoundPackets({
+    roundId,
+    onBeatPct: 1,
+    integrityRemaining: 100,
+    gatesCollected: repGates,
+    gateValue,
+    multiplier: packetMult
+    // 1.0 = 1st-place position
+  });
+  return { low, high };
+}
 function clamp01(value) {
   const n = Number(value) || 0;
   return n < 0 ? 0 : n > 1 ? 1 : n;
@@ -1391,6 +1416,12 @@ function shopButtonEls({ shop = {}, packets = 0, playing = false }) {
     return btn;
   });
 }
+function roundEstEl(low, high) {
+  const span = document.createElement("span");
+  span.className = "s5-round-est";
+  span.textContent = ` ~${low}–${high}p`;
+  return span;
+}
 function ascensionPanelEls({ ascension, defeated = false, playing = false, mods = [] }) {
   const unlocked = ascension.maxUnlocked();
   if (!defeated || unlocked <= 0 || ascension.maxLevel <= 0) return [];
@@ -1630,6 +1661,7 @@ function renderStage5(ctx) {
   function renderRoundButtons() {
     const unlocked = unlockedRounds();
     const cleared = Number(state.run.clearedRounds || 0);
+    const tuning = applyUpgrades(state.shop || {});
     fields.rounds.replaceChildren(...ROUNDS.map((round, i) => {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -1637,7 +1669,11 @@ function renderStage5(ctx) {
       const boss = isBossRound(i);
       const locked = boss ? cleared < BOSS_IDX : i > unlocked;
       btn.disabled = locked || mode === "playing";
-      btn.textContent = `${round.id}. ${round.label}${i < cleared ? " ✓" : ""}${locked ? " 🔒" : ""}`;
+      const { low, high } = estimateRoundPackets(round, tuning);
+      btn.append(
+        `${round.id}. ${round.label}${i < cleared ? " ✓" : ""}${locked ? " 🔒" : ""}`,
+        roundEstEl(low, high)
+      );
       if (boss) btn.classList.add("s5-boss-btn");
       return btn;
     }));

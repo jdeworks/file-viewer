@@ -96,6 +96,11 @@
   opacity: 0.7;
 }
 
+.s5-round-est {
+  opacity: 0.6;
+  font-size: 0.85em;
+}
+
 .s5-rounds .s5-boss-btn:not(:disabled) {
   border-color: var(--s5-jammer);
   color: var(--s5-jammer);

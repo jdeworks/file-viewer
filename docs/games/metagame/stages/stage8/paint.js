@@ -35,7 +35,7 @@ export function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated
     ? "defeated. BTS trace available."
-    : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
+    : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · lifetime-States ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
   paintTelegraph(fields.telegraph, state);
   paintStorm(root, state, storm);

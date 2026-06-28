@@ -15,6 +15,25 @@ export function calcRoundPackets({ roundId, onBeatPct = 0, integrityRemaining = 
   return Math.max(10, Math.round(subtotal * mult));
 }
 
+// A rough pre-pick reward band for the round selector. Uses the SAME calcRoundPackets the live round
+// pays out, with representative LOW (last place, scrappy run) and HIGH (1st place, clean run) inputs,
+// plus the player's current shop tuning so the band reflects upgrades. Pure; no game-state change.
+export function estimateRoundPackets(round, tuning = {}) {
+  const gateValue = Number(tuning.gateValue) || 5;
+  const packetMult = Number(tuning.packetMult) > 0 ? Number(tuning.packetMult) : 1;
+  const repGates = round && round.hasGates ? 6 : 0; // representative gate haul on a strong run
+  const roundId = round ? round.id : 1;
+  const low = calcRoundPackets({
+    roundId, onBeatPct: 0.5, integrityRemaining: 35,
+    gatesCollected: 0, gateValue, multiplier: 0.6 * packetMult, // 0.6 = last-place position floor
+  });
+  const high = calcRoundPackets({
+    roundId, onBeatPct: 1, integrityRemaining: 100,
+    gatesCollected: repGates, gateValue, multiplier: packetMult, // 1.0 = 1st-place position
+  });
+  return { low, high };
+}
+
 function clamp01(value) {
   const n = Number(value) || 0;
   return n < 0 ? 0 : n > 1 ? 1 : n;

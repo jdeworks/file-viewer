@@ -1,7 +1,7 @@
 // ring.test.mjs — Stage 9: seed→angle determinism + ASCII ring rendering.
 import assert from "node:assert/strict";
 import { makeRng } from "../rng.js";
-import { ringAngle, renderRing, renderRingHidden } from "../ring.js";
+import { ringAngle, renderRing, renderRingHidden, ringChar } from "../ring.js";
 
 // ── rng determinism ────────────────────────────────────────────────────────────────────────────
 assert.equal(makeRng(0).float(), makeRng(0).float(), "same seed ⇒ same first float");
@@ -34,6 +34,25 @@ assert.equal(makeRng(0).float(), makeRng(0).float(), "same seed ⇒ same first f
   assert.ok(renderRingHidden({}).includes("?"), "hidden ring shows '?'");
   assert.ok(renderRing(0, { ghosts: [{ angle: 180, result: "miss" }] }).includes("·"), "ghost miss renders as ·");
   assert.ok(renderRing(0, { ghosts: [{ angle: 180, result: "hit" }] }).includes("⊕"), "ghost hit renders as ⊕");
+}
+
+// ── ringChar dedup parity: the shared helper (now imported by rings.js) reproduces the OLD rings.js
+// implementation (which had NO leading mod360) for every angle the renderers actually iterate, so the
+// unification changes ZERO rendered output. ──────────────────────────────────────────────────────────
+{
+  // exact copy of the former rings.js ringChar (no mod360) for the parity reference
+  const angDist = (a, b) => Math.abs(((a - b) % 360 + 540) % 360 - 180);
+  const inArc = (a, c, w) => angDist(a, c) <= w / 2;
+  const oldRingsChar = (a) => {
+    if (inArc(a, 0, 60) || inArc(a, 180, 60)) return "─";
+    if (inArc(a, 90, 60) || inArc(a, 270, 60)) return "│";
+    return "+";
+  };
+  // every angle the render loops touch: a ∈ [0,360) step 3, and the full integer sweep
+  for (let a = 0; a < 360; a += 3) assert.equal(ringChar(a), oldRingsChar(a), `parity at loop angle ${a}`);
+  for (let a = 0; a < 360; a += 1) assert.equal(ringChar(a), oldRingsChar(a), `parity at angle ${a}`);
+  // the leading mod360 makes the shared helper safe for out-of-range inputs too (still matches)
+  for (const a of [-30, -1, 360, 540, 720.5]) assert.equal(ringChar(a), oldRingsChar(a), `parity at ${a}`);
 }
 
 console.log("stage9 ring tests passed");

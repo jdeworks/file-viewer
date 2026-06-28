@@ -27,6 +27,7 @@ export function defaultState() {
     act: 1,
     onlineSectors: ["core"],
     stormsSurvived: 0,
+    announcedStorms: [],
     pendingStorm: null,
     activeStorm: null,
     nodes: freshNodes(),
@@ -116,6 +117,9 @@ export function normalizeState(state) {
     : fresh.onlineSectors;
   if (!target.onlineSectors.includes("core")) target.onlineSectors.unshift("core");
   target.stormsSurvived = Math.max(0, num(target.stormsSurvived, 0));
+  target.announcedStorms = Array.isArray(target.announcedStorms)
+    ? target.announcedStorms.filter((s) => typeof s === "string")
+    : [];
   target.pendingStorm = target.pendingStorm && typeof target.pendingStorm === "object" ? target.pendingStorm : null;
   target.activeStorm = target.activeStorm && typeof target.activeStorm === "object" ? target.activeStorm : null;
   target.states = num(target.states, fresh.states);
@@ -164,6 +168,7 @@ export function snapshotRun(state) {
     act: state.act || 1,
     onlineSectors: [...(state.onlineSectors || ["core"])],
     stormsSurvived: state.stormsSurvived || 0,
+    announcedStorms: [...(state.announcedStorms || [])],
     pendingStorm: state.pendingStorm ? { ...state.pendingStorm } : null,
     activeStorm: state.activeStorm ? { ...state.activeStorm } : null,
     nodes: (state.nodes || []).map((n) => ({ id: n.id, health: n.health, cascadeStress: n.cascadeStress || 0 })),

@@ -140,7 +140,7 @@ function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
     const { x, y } = project(cx, cy, cx, cy, a);
     if (offGrid(x, y)) continue;
     const inGap = inArc2(a, gapAngleDeg, gapWidth);
-    let ch = inGap ? " " : ringChar2(a);
+    let ch = inGap ? " " : ringChar(a);
     if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "▒" : "▓";
     grid[y][x] = ch;
   }
@@ -156,7 +156,7 @@ function renderMultiGap(gapAngles = [], opts = {}) {
   for (let a = 0; a < 360; a += 3) {
     const { x, y } = project(cx, cy, cx, cy, a);
     if (offGrid(x, y)) continue;
-    let ch = ringChar2(a);
+    let ch = ringChar(a);
     for (const g of gapAngles) if (inArc2(a, g, gapWidth)) ch = " ";
     if (darkZone && inZone2(a, darkZone)) ch = "█";
     grid[y][x] = ch;
@@ -185,11 +185,6 @@ function gridToString(grid) {
 }
 function offGrid(x, y) {
   return y < 0 || y >= RING_H2 || x < 0 || x >= RING_W2;
-}
-function ringChar2(a) {
-  if (inArc2(a, 0, 60) || inArc2(a, 180, 60)) return "─";
-  if (inArc2(a, 90, 60) || inArc2(a, 270, 60)) return "│";
-  return "+";
 }
 function mod3602(a) {
   return (a % 360 + 360) % 360;

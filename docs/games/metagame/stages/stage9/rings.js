@@ -2,6 +2,8 @@
 // ring.js draws ONE ring; this draws two concentric rings (dual mode) and a single ring with several
 // gaps (multi-gap / phantom-decoy mode). Deterministic for the same inputs.
 
+import { ringChar } from "./ring.js"; // shared glyph picker — kept single-source so the two can't drift
+
 const RING_W = 25;
 const RING_H = 13;
 
@@ -79,11 +81,6 @@ function project(cx, cy, rx, ry, a) {
 function blankGrid() { return Array.from({ length: RING_H }, () => Array(RING_W).fill(" ")); }
 function gridToString(grid) { return grid.map((row) => row.join("")).join("\n"); }
 function offGrid(x, y) { return y < 0 || y >= RING_H || x < 0 || x >= RING_W; }
-function ringChar(a) {
-  if (inArc(a, 0, 60) || inArc(a, 180, 60)) return "─";
-  if (inArc(a, 90, 60) || inArc(a, 270, 60)) return "│";
-  return "+";
-}
 function mod360(a) { return ((a % 360) + 360) % 360; }
 function angularDist(a, b) { return Math.abs(((a - b) % 360 + 540) % 360 - 180); }
 function inArc(a, center, width) { return angularDist(a, center) <= width / 2; }

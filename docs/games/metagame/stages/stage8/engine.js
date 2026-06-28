@@ -7,7 +7,7 @@ import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
 import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat, THERMAL_THRESHOLD } from "./heat.js";
 import { insightIncome, earnInsight } from "./resources.js";
-import { tickStorm } from "./storms.js";
+import { tickStorm, announceStorm } from "./storms.js";
 import { runAutomation } from "./automation.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
@@ -166,6 +166,9 @@ export function advanceCycle(state, rng) {
   state.cycle = (state.cycle || 0) + 1;
   // 12. telegraph next cycle's crisis (shown one cycle ahead).
   result.pendingEvent = telegraphNext(state, rng);
+  // 13. one-time band/phase bell: announce the current act's Cascade Storm the first cycle it becomes
+  // brace-able, so the player knows a new phase started (deterministic, fires once per storm).
+  result.announcedStorm = announceStorm(state);
   return result;
 }
 

@@ -3,14 +3,15 @@ import { createGameLoop } from './game-loop.js';
 import { createEngine } from './engine.js';
 import { renderTrackGrid } from './render-track.js';
 import { ROUNDS, roundByIdx, isBossRound, FINAL_ROUND_ID } from './rounds.js';
-import { buyUpgrade } from './shop.js';
+import { buyUpgrade, applyUpgrades } from './shop.js';
+import { estimateRoundPackets } from './economy.js';
 import { roundLogLine, roundIntro, GLYPH_LEGEND } from './content.js';
 import { calibrationProgressStr } from './calibration.js';
 import { BTS_PATH, TRANSMISSION_HUM_PATH } from './messages.js';
 import { createAscension } from '../../shared/ascension.js';
 import { createRun } from '../../shared/run-state.js';
 import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from './ascension-mods.js';
-import { shopButtonEls, ascensionPanelEls } from './panels.js';
+import { shopButtonEls, ascensionPanelEls, roundEstEl } from './panels.js';
 import { installDebugHook } from './debug-hook.js';
 
 const BOSS_IDX = ROUNDS.length - 1;
@@ -204,6 +205,7 @@ export function renderStage5(ctx) {
   function renderRoundButtons() {
     const unlocked = unlockedRounds();
     const cleared = Number(state.run.clearedRounds || 0);
+    const tuning = applyUpgrades(state.shop || {}); // estimate band reflects the player's upgrades
     fields.rounds.replaceChildren(...ROUNDS.map((round, i) => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -211,7 +213,9 @@ export function renderStage5(ctx) {
       const boss = isBossRound(i);
       const locked = boss ? cleared < BOSS_IDX : i > unlocked;
       btn.disabled = locked || mode === 'playing';
-      btn.textContent = `${round.id}. ${round.label}${i < cleared ? ' ✓' : ''}${locked ? ' 🔒' : ''}`;
+      const { low, high } = estimateRoundPackets(round, tuning);
+      btn.append(`${round.id}. ${round.label}${i < cleared ? ' ✓' : ''}${locked ? ' 🔒' : ''}`,
+        roundEstEl(low, high));
       if (boss) btn.classList.add('s5-boss-btn');
       return btn;
     }));

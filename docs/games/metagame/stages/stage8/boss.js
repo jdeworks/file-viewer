@@ -10,7 +10,7 @@ import {
   gateHint,
   lockedHintLadder
 } from "./messages.js";
-import { simulateHeatDeath } from "./burn.js";
+import { simulateHeatDeath, estimateBurnTotal } from "./burn.js";
 import { makeRng } from "./rng.js";
 import { scrapYield, earnScrap } from "./resources.js";
 import { TOTAL_STORMS } from "./storms.js";
@@ -127,6 +127,8 @@ export function getBossLockState({ actions, state }) {
     salvageRequired: SALVAGE_REQUIRED,
     totalEarned,
     statesRequired: STATES_REQUIRED,
+    inHandStates: Number(state.states || 0),   // current balance the burn actually drains
+    burnEstimate: estimateBurnTotal(),          // representative burn cost (for the readout only)
     cycle,
     minCycle: MIN_CYCLE,
     defeatPossible: unlocked,
