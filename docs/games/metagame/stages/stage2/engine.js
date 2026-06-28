@@ -46,6 +46,36 @@ export function stepToExit(world, field) {
   return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
 }
 
+// Stairwell Sense L2: reconstruct the WHOLE @→stairs shortest path from the cached distance field by
+// greedily stepping to the open neighbour with the strictly-lower distance-to-exit. Returns the cells
+// from @ (inclusive) to the stairs (inclusive); deterministic (the field is). Empty if @ is walled off.
+export function reconstructRoute(world, field) {
+  const W = world.width;
+  const route = [];
+  let x = world.pos.x;
+  let y = world.pos.y;
+  let d = field.dist[y * W + x];
+  if (d == null || d < 0) return route;
+  route.push({ x, y });
+  let guard = 0;
+  while (d > 0 && guard++ < field.count) {
+    let nx = x;
+    let ny = y;
+    let nd = d;
+    for (const dir of DIR_LIST) {
+      const cx = x + DIRS[dir].dx;
+      const cy = y + DIRS[dir].dy;
+      if (cy < 0 || cx < 0 || cy >= world.grid.length || cx >= W || world.grid[cy][cx] === "#") continue;
+      const cd = field.dist[cy * W + cx];
+      if (cd >= 0 && cd < nd) { nd = cd; nx = cx; ny = cy; }
+    }
+    if (nd >= d) break; // no descending neighbour (only on a disconnected field)
+    x = nx; y = ny; d = nd;
+    route.push({ x, y });
+  }
+  return route;
+}
+
 // A split-mechanic foe spawns two weaker shards on adjacent open cells when it dies.
 function spawnSplit(world, foe) {
   let made = 0;

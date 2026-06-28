@@ -1,6 +1,7 @@
 import { damageUnlockedBoss, getBossLockState, recordLockedBossAttempt } from "./boss.js";
 import { bossArenaLocked, bossArenaUnlocked } from "./content.js";
-import { exitDistanceField, step, stepToExit, tickPlayerStatus } from "./engine.js";
+import { exitDistanceField, reconstructRoute, step, stepToExit, tickPlayerStatus } from "./engine.js";
+import { stairTrailEnabled } from "./data.js";
 import { monsterTurn, pressureSpawn } from "./monsters.js";
 import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
@@ -117,7 +118,17 @@ export function renderStage2({
   let flashTimer = null;
   let overlay = null; // { el } for the open shop/help panel, or null
   let monsterClocks = []; // the 5 real-time monster-movement intervals
-  let routeCache = null; // { world, field } — BFS-from-stairs distance field for the compass
+  let routeCache = null; // { world, field } — BFS-from-stairs distance field for the compass + L2 trail
+
+  // Stairwell Sense L2 — hand the view a provider that reconstructs the live @→stairs route (from the
+  // SAME cached BFS field the compass uses) so paintExplore can draw it as a faint trail. Returns null
+  // (no trail) unless compass is level 2+ and we're still exploring; the route shortens as @ advances.
+  view.setTrailProvider((w) => {
+    const lvl = Number((state.meta.shopUpgrades || {}).compass || 0);
+    if (!stairTrailEnabled(lvl) || state.run.boss.reached || !w || !w.grid) return null;
+    if (!routeCache || routeCache.world !== w) routeCache = { world: w, field: exitDistanceField(w) };
+    return reconstructRoute(w, routeCache.field);
+  });
 
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);

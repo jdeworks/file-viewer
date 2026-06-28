@@ -68,8 +68,14 @@ export const SHOP_UPGRADES = [
   { id: 'greed', name: 'Glyph Magnet', desc: '+25% glyphs', max: 4, apply: (s, n) => { s.glyphMult = 1 + 0.25 * n; } },
   { id: 'torchcraft', name: 'Torchbearer', desc: '+12 torch steps & start each run with a torch (per level)', max: 4, apply: (s, n) => { s.torchSteps = 12 * n; s.startTorches = n; } },
   { id: 'acid_resist', name: 'Acid Resistance', desc: '−1 acid-corrosion ATK penalty per level', max: 2, apply: (s, n) => { s.acidResist = n; } },
-  { id: 'compass', name: 'Stairwell Sense', desc: 'reveals the way to the stairs (HUD compass)', max: 1, apply: () => {} }
+  // Stairwell Sense — two tiers (read by the renderer; apply is a no-op). L1 = the HUD next-step
+  // compass; L2 additionally draws the full route to the stairs as a faint trail on the map.
+  { id: 'compass', name: 'Stairwell Sense', desc: 'L1: HUD compass to the stairs. L2: also draws the path on the map.', max: 2, apply: () => {} }
 ];
+
+// Stairwell Sense L2 gate: the on-map trail only lights up at compass level 2+. Exported so the
+// renderer and the unit test share one predicate (no magic level number in the view layer).
+export function stairTrailEnabled(compassLevel) { return Number(compassLevel || 0) >= 2; }
 
 // Run modifiers (C3, "Heat") — opt-in difficulty toggles set in the shop. Each active one raises the
 // run's banked-glyph reward by its `heatBonus`. Applied in buildFloor (swarm/drought/elite storm/
@@ -88,7 +94,8 @@ export function runHeat(runMods = {}) {
 }
 
 const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, acid_resist: 18, compass: 1000 };
-const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, acid_resist: 1.8, compass: 1 };
+// compass: 1.5 → L1 buy = round(1000*1.5^0)=1000, L2 buy = round(1000*1.5^1)=1500.
+const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, acid_resist: 1.8, compass: 1.5 };
 
 export function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);

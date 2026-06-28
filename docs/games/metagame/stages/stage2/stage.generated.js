@@ -548,9 +548,14 @@ var SHOP_UPGRADES = [
   { id: "acid_resist", name: "Acid Resistance", desc: "−1 acid-corrosion ATK penalty per level", max: 2, apply: (s, n) => {
     s.acidResist = n;
   } },
-  { id: "compass", name: "Stairwell Sense", desc: "reveals the way to the stairs (HUD compass)", max: 1, apply: () => {
+  // Stairwell Sense — two tiers (read by the renderer; apply is a no-op). L1 = the HUD next-step
+  // compass; L2 additionally draws the full route to the stairs as a faint trail on the map.
+  { id: "compass", name: "Stairwell Sense", desc: "L1: HUD compass to the stairs. L2: also draws the path on the map.", max: 2, apply: () => {
   } }
 ];
+function stairTrailEnabled(compassLevel) {
+  return Number(compassLevel || 0) >= 2;
+}
 var RUN_MODS = [
   { id: "swarm", name: "Swarm", desc: "+60% monsters", heatBonus: 0.25 },
   { id: "no_potions", name: "Drought", desc: "no health potions on the floor", heatBonus: 0.25 },
@@ -562,7 +567,7 @@ function runHeat(runMods2 = {}) {
   return 1 + RUN_MODS.filter((m) => runMods2[m.id]).reduce((s, m) => s + (m.heatBonus || HEAT_PER_MOD), 0);
 }
 var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, acid_resist: 18, compass: 1e3 };
-var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, acid_resist: 1.8, compass: 1 };
+var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, acid_resist: 1.8, compass: 1.5 };
 function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
 }
@@ -1850,6 +1855,38 @@ function stepToExit(world, field) {
   }
   return best ? { dir: best, steps: here > 0 ? here : bestD + 1 } : null;
 }
+function reconstructRoute(world, field) {
+  const W = world.width;
+  const route = [];
+  let x = world.pos.x;
+  let y = world.pos.y;
+  let d = field.dist[y * W + x];
+  if (d == null || d < 0) return route;
+  route.push({ x, y });
+  let guard = 0;
+  while (d > 0 && guard++ < field.count) {
+    let nx = x;
+    let ny = y;
+    let nd = d;
+    for (const dir of DIR_LIST) {
+      const cx = x + DIRS[dir].dx;
+      const cy = y + DIRS[dir].dy;
+      if (cy < 0 || cx < 0 || cy >= world.grid.length || cx >= W || world.grid[cy][cx] === "#") continue;
+      const cd = field.dist[cy * W + cx];
+      if (cd >= 0 && cd < nd) {
+        nd = cd;
+        nx = cx;
+        ny = cy;
+      }
+    }
+    if (nd >= d) break;
+    x = nx;
+    y = ny;
+    d = nd;
+    route.push({ x, y });
+  }
+  return route;
+}
 function spawnSplit(world, foe) {
   let made = 0;
   for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
@@ -2331,6 +2368,16 @@ var CELL_CLASS = {
   ">": "s2-c-exit"
 };
 var HEAVY_FOES = /* @__PURE__ */ new Set(["L", "O"]);
+var HAZ_BASE = {
+  lava: [120, 52, 20],
+  spores: [52, 82, 35],
+  spikes: [78, 84, 92],
+  chasm: [42, 54, 96],
+  rift: [40, 28, 60],
+  acid: [70, 92, 40],
+  wet: [34, 70, 92],
+  ice: [120, 158, 184]
+};
 var clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function lit(world, x, y) {
   const L = effectiveLight(world);
@@ -2352,6 +2399,9 @@ function createView(screenEl) {
   const map = document.createElement("pre");
   map.className = "s2-grid";
   map.setAttribute("aria-label", "ASCII dungeon map");
+  const trail = document.createElement("div");
+  trail.className = "s2-trail";
+  trail.setAttribute("aria-hidden", "true");
   const sprites = document.createElement("div");
   sprites.className = "s2-sprites";
   sprites.setAttribute("aria-hidden", "true");
@@ -2361,7 +2411,7 @@ function createView(screenEl) {
   const ruler = document.createElement("pre");
   ruler.className = "s2-grid s2-ruler";
   ruler.textContent = "MMMMMMMMMM\nMMMMMMMMMM";
-  screenEl.replaceChildren(map, sprites, flash, ruler);
+  screenEl.replaceChildren(map, trail, sprites, flash, ruler);
   let chW = 8.4;
   let chH = 17.5;
   const cam = { x: 0, y: 0 };
@@ -2369,6 +2419,8 @@ function createView(screenEl) {
   sprites.append(playerEl);
   const mobEls = /* @__PURE__ */ new Map();
   const itemEls = /* @__PURE__ */ new Map();
+  const trailEls = /* @__PURE__ */ new Map();
+  let trailFn = null;
   const ghostMem = /* @__PURE__ */ new Map();
   const ghostEls = /* @__PURE__ */ new Map();
   let lastFloor = null;
@@ -2399,6 +2451,7 @@ function createView(screenEl) {
     itemEls.clear();
     ghostEls.clear();
     ghostMem.clear();
+    clearTrail();
     map.innerHTML = colorize(lines);
   }
   function paintExplore(world) {
@@ -2411,8 +2464,35 @@ function createView(screenEl) {
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
     map.textContent = terrainText(world);
+    reconcileTrail(world);
     reconcileItems(world);
     reconcileSprites(world);
+  }
+  function reconcileTrail(world) {
+    const route = trailFn ? trailFn(world) : null;
+    const live = /* @__PURE__ */ new Set();
+    if (route) for (const c of route) {
+      if (!inView(c.x, c.y) || c.x === world.pos.x && c.y === world.pos.y) continue;
+      const id = c.x + "," + c.y;
+      live.add(id);
+      let el = trailEls.get(id);
+      if (!el) {
+        el = document.createElement("span");
+        el.className = "s2-trail-cell";
+        el.textContent = "·";
+        trailEls.set(id, el);
+        trail.append(el);
+      }
+      pos(el, c.x, c.y);
+    }
+    for (const id of [...trailEls.keys()]) if (!live.has(id)) {
+      trailEls.get(id).remove();
+      trailEls.delete(id);
+    }
+  }
+  function clearTrail() {
+    for (const el of trailEls.values()) el.remove();
+    trailEls.clear();
   }
   function terrainText(world) {
     const L = effectiveLight(world);
@@ -2648,15 +2728,29 @@ function createView(screenEl) {
     const octx = off.getContext("2d");
     const img = octx.createImageData(W, H);
     const d = img.data;
+    const hazAt = /* @__PURE__ */ new Map();
+    if (world.hazards) for (const hz of world.hazards) hazAt.set(hz.y * W + hz.x, hz.type);
     for (let y = 0; y < H; y += 1) {
       const row = world.grid[y];
       for (let x = 0; x < W; x += 1) {
         const i = (y * W + x) * 4;
-        const wall = row[x] === "#";
-        d[i] = wall ? 18 : 60;
-        d[i + 1] = wall ? 14 : 46;
-        d[i + 2] = wall ? 10 : 28;
         d[i + 3] = 255;
+        if (row[x] === "#") {
+          d[i] = 18;
+          d[i + 1] = 14;
+          d[i + 2] = 10;
+          continue;
+        }
+        const c = HAZ_BASE[hazAt.get(y * W + x)];
+        if (c) {
+          d[i] = c[0];
+          d[i + 1] = c[1];
+          d[i + 2] = c[2];
+        } else {
+          d[i] = 60;
+          d[i + 1] = 46;
+          d[i + 2] = 28;
+        }
       }
     }
     octx.putImageData(img, 0, 0);
@@ -2699,7 +2793,10 @@ function createView(screenEl) {
       fullMap = null;
     }
   }
-  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, measure, destroy };
+  function setTrailProvider(fn) {
+    trailFn = fn;
+  }
+  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, setTrailProvider, measure, destroy };
 }
 function makeSprite(glyph, cls) {
   const el = document.createElement("span");
@@ -2928,6 +3025,12 @@ function renderStage2({
   let overlay = null;
   let monsterClocks = [];
   let routeCache = null;
+  view.setTrailProvider((w) => {
+    const lvl = Number((state.meta.shopUpgrades || {}).compass || 0);
+    if (!stairTrailEnabled(lvl) || state.run.boss.reached || !w || !w.grid) return null;
+    if (!routeCache || routeCache.world !== w) routeCache = { world: w, field: exitDistanceField(w) };
+    return reconstructRoute(w, routeCache.field);
+  });
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });

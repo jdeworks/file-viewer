@@ -36,6 +36,13 @@ const CELL_CLASS = {
 
 const HEAVY_FOES = new Set(["L", "O"]);
 
+// Zoom-out minimap region fills for terrain hazards (RGB), echoing the HAZ_DOT palette but dimmed so
+// they read as regions under the crisp centre dots: lava orange, spikes gray, chasm dark-blue, etc.
+const HAZ_BASE = {
+  lava: [120, 52, 20], spores: [52, 82, 35], spikes: [78, 84, 92], chasm: [42, 54, 96],
+  rift: [40, 28, 60], acid: [70, 92, 40], wet: [34, 70, 92], ice: [120, 158, 184]
+};
+
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 function lit(world, x, y) {
@@ -64,6 +71,11 @@ export function createView(screenEl) {
   const map = document.createElement("pre");
   map.className = "s2-grid";
   map.setAttribute("aria-label", "ASCII dungeon map");
+  // Stairwell Sense L2 trail layer — its own container BEFORE the sprite layer so the dotted trail
+  // always paints UNDER loot / foes / @ (never obscuring what sits on the path).
+  const trail = document.createElement("div");
+  trail.className = "s2-trail";
+  trail.setAttribute("aria-hidden", "true");
   const sprites = document.createElement("div");
   sprites.className = "s2-sprites";
   sprites.setAttribute("aria-hidden", "true");
@@ -73,7 +85,7 @@ export function createView(screenEl) {
   const ruler = document.createElement("pre");
   ruler.className = "s2-grid s2-ruler";
   ruler.textContent = "MMMMMMMMMM\nMMMMMMMMMM";
-  screenEl.replaceChildren(map, sprites, flash, ruler);
+  screenEl.replaceChildren(map, trail, sprites, flash, ruler);
 
   let chW = 8.4;
   let chH = 17.5;
@@ -82,6 +94,8 @@ export function createView(screenEl) {
   sprites.append(playerEl);
   const mobEls = new Map(); // foe index -> { el, glyph, hp }
   const itemEls = new Map(); // item id ("exit"/"w0"/"g1"/"p2") -> sprite element
+  const trailEls = new Map(); // "x,y" -> faint trail marker (Stairwell Sense L2)
+  let trailFn = null; // provider set by the renderer: (world) -> route cells | null
   const ghostMem = new Map(); // Overflow act: foe index -> { x, y, glyph } LAST-SEEN tile
   const ghostEls = new Map(); // foe index -> the dim "ghost" sprite currently shown at last-seen
   let lastFloor = null;       // clears the ghost memory whenever we descend to a new floor
@@ -120,6 +134,7 @@ export function createView(screenEl) {
     itemEls.clear();
     ghostEls.clear();
     ghostMem.clear();
+    clearTrail(); // the boss arena has no stairs trail
     map.innerHTML = colorize(lines);
   }
 
@@ -134,8 +149,31 @@ export function createView(screenEl) {
     cam.x = clamp(world.pos.x - (VIEW_W >> 1), 0, Math.max(0, world.width - VIEW_W));
     cam.y = clamp(world.pos.y - (VIEW_H >> 1), 0, Math.max(0, world.grid.length - VIEW_H));
     map.textContent = terrainText(world);
+    reconcileTrail(world);
     reconcileItems(world);
     reconcileSprites(world);
+  }
+
+  // Stairwell Sense L2: a faint dotted "follow this" trail along the @→stairs route (provided by the
+  // renderer). Drawn only for cells in view (not @'s own cell); reconciled like items so it shortens
+  // as @ advances and clears the moment the upgrade is absent (provider returns null).
+  function reconcileTrail(world) {
+    const route = trailFn ? trailFn(world) : null;
+    const live = new Set();
+    if (route) for (const c of route) {
+      if (!inView(c.x, c.y) || (c.x === world.pos.x && c.y === world.pos.y)) continue;
+      const id = c.x + "," + c.y;
+      live.add(id);
+      let el = trailEls.get(id);
+      if (!el) { el = document.createElement("span"); el.className = "s2-trail-cell"; el.textContent = "·"; trailEls.set(id, el); trail.append(el); }
+      pos(el, c.x, c.y);
+    }
+    for (const id of [...trailEls.keys()]) if (!live.has(id)) { trailEls.get(id).remove(); trailEls.delete(id); }
+  }
+
+  function clearTrail() {
+    for (const el of trailEls.values()) el.remove();
+    trailEls.clear();
   }
 
   function terrainText(world) {
@@ -342,12 +380,20 @@ export function createView(screenEl) {
     const octx = off.getContext("2d");
     const img = octx.createImageData(W, H);
     const d = img.data;
+    // Terrain hazards (lava/spikes/chasm/…) aren't baked into world.grid (it's only #/./space) — they
+    // live as objects in world.hazards. So fill those cells in the BASE layer with a region colour
+    // (consistent with HAZ_DOT below) so the zoom-out reflects the real floor terrain, not bare floor.
+    const hazAt = new Map();
+    if (world.hazards) for (const hz of world.hazards) hazAt.set(hz.y * W + hz.x, hz.type);
     for (let y = 0; y < H; y += 1) {
       const row = world.grid[y];
       for (let x = 0; x < W; x += 1) {
         const i = (y * W + x) * 4;
-        const wall = row[x] === "#";
-        d[i] = wall ? 18 : 60; d[i + 1] = wall ? 14 : 46; d[i + 2] = wall ? 10 : 28; d[i + 3] = 255;
+        d[i + 3] = 255;
+        if (row[x] === "#") { d[i] = 18; d[i + 1] = 14; d[i + 2] = 10; continue; }
+        const c = HAZ_BASE[hazAt.get(y * W + x)];
+        if (c) { d[i] = c[0]; d[i + 1] = c[1]; d[i + 2] = c[2]; }
+        else { d[i] = 60; d[i + 1] = 46; d[i + 2] = 28; }
       }
     }
     octx.putImageData(img, 0, 0);
@@ -382,7 +428,9 @@ export function createView(screenEl) {
     if (fullMap) { fullMap.remove(); fullMap = null; }
   }
 
-  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, measure, destroy };
+  function setTrailProvider(fn) { trailFn = fn; }
+
+  return { mapEl: map, flashEl: flash, screenEl, paintExplore, paintArena, applyMove, tickMonsters, toggleFullMap, setTrailProvider, measure, destroy };
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────────────────────

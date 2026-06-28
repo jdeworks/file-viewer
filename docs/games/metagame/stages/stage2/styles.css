@@ -228,6 +228,22 @@
   .s2-sprite-die .s2-mob-glyph { animation-duration: 0.12s; }
 }
 
+/* Stairwell Sense L2 — a faint dotted trail toward the stairs. Its own layer under the sprite stack
+   (and z-index 0) so it never obscures loot / foes / @ that sit on the path. Green echoes the exit. */
+.s2-trail { inset: 0; pointer-events: none; position: absolute; }
+.s2-trail-cell {
+  color: #7fe07f;
+  font-weight: 700;
+  left: 0;
+  opacity: 0.34;
+  position: absolute;
+  text-shadow: 0 0 4px #2f8f4f;
+  top: 0;
+  white-space: pre;
+  will-change: transform;
+  z-index: 0;
+}
+
 /* Per-tile colours so walls, foes and loot read at a glance. */
 .s2-c-wall { color: #6f4d20; }
 .s2-c-floor { color: #34281a; }
