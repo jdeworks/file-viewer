@@ -6,12 +6,13 @@ const SECTIONS = [
   ["Move", "Arrow keys, WASD, or the on-screen d-pad. One tile per press."],
   ["Fight", "Walk into a foe to attack (your ATK vs its HP). It hits back — watch your HP. Fast foes (race conditions) strike twice."],
   ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
-  ["Overflow foes", "Act III adds three dark-dwellers: e light eater — feeds on darkness and grows; torchlight starves it. M mirror — copies most of YOUR attack power back at you; don't out-gear yourself into a beating. ψ null phantom — fast and leaves NO ghost trail, but a lit torch pins (slows) it."],
+  ["Overflow foes", "Act III adds four dark-dwellers: e light eater — feeds on darkness and grows; torchlight starves it. M mirror — copies most of YOUR attack power back at you; don't out-gear yourself into a beating. ψ null phantom — fast and leaves NO ghost trail, but a lit torch pins (slows) it. v void ref — invisible while it lurks in the dark; drift too close and it SHADOW-STEPS to a cell beside you, then bites. A lit torch reveals every void ref in range AND freezes its step, so light is your only warning."],
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
   ["Guardian", "Each act caps in a pink Ω guardian by the stairs — huge HP and a trick that escalates with the act: it forks/splits (Act I), explodes &amp; splits (Act II), or feeds on the dark &amp; leaves no ghost (Act III). Beat it to pass."],
   ["Factions", "Foes come in two rival camps (red vs orange). When they're not chasing you they fight each other — lead a pack past a rival and let them thin each other out."],
   ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal. ❄ frozen/slowed and ✦ stunned keep a foe from acting."],
-  ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut). In the Overflow, ○ void rifts snuff your torch and leave you reeling in the dark."],
+  ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut). From floor 5, ≀ acid pools corrode your cursor (ATK drops until it clears) — but foes refuse to step in acid, so a pool is a funnel: bait a pack around it. In the Overflow, ○ void rifts snuff your torch and leave you reeling in the dark."],
+  ["Wych-gas (Emberworks)", "Deep fire floors hang \" wych-gas pockets from the ceiling — always visible, harmless on their own. But when spreading flame touches one it DETONATES straight down in a blast. Read the gas before you light a firebolt, or herd a foe beneath a pocket and ignite a spore trail to reach it."],
   ["Ice (Cisterns)", "The flooded Cisterns (floors 4-6) are dotted with ~ wet cells. A freeze rune glazes nearby wet cells into ice. Anything that steps on ice SLIDES one more cell in its heading — slide a chasing foe into a : chasm for an instant kill, or into a wall to stun it. You slide too, so memorise the ice."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
@@ -26,7 +27,7 @@ const SECTIONS = [
   ["Combos", "Systems chain: firebolt a * spore field to roast a pack; freeze then SHATTER a frozen foe (or acid-corrode first for an even bigger crack); freeze a wet cell into ice and slide a chaser into a chasm."],
   ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
-  ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward."],
+  ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward. Once you've reached the Overflow, a mastery modifier unlocks: Lights Out shrinks your light radius for the whole run for the biggest multiplier of all."],
   ["Boss", "It starts LOCKED. Open cipher.txt and read it to find the PASSAGE — that opens the boss. Then 'challenge boss'."]
 ];
 

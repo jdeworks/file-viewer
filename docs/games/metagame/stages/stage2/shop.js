@@ -26,12 +26,14 @@ export function buildShopPanel({ state, save, onClose }) {
     </div>`;
   }
 
-  // Heat toggle row: opt into a harder run for a bigger banked-glyph multiplier (C3).
+  // Heat toggle row: opt into a harder run for a bigger banked-glyph multiplier (C3). Each mod
+  // carries its own heatBonus (Lights Out is the richest); a mod with an `unlock` only appears once
+  // its condition is met (D4: Lights Out surfaces after you've reached the Overflow).
   function modHtml(mod) {
     const on = Boolean((state.meta.runMods || {})[mod.id]);
     return `<div class="s2-shop-row">
       <div class="s2-shop-info">
-        <strong>${mod.name}</strong> <span class="s2-shop-lv">+${Math.round(HEAT_PER_MOD * 100)}% glyphs</span>
+        <strong>${mod.name}</strong> <span class="s2-shop-lv">+${Math.round((mod.heatBonus || HEAT_PER_MOD) * 100)}% glyphs</span>
         <div class="s2-shop-desc">${mod.desc}</div>
       </div>
       <button type="button" data-mod="${mod.id}" class="${on ? "s2-mod-on" : ""}">${on ? "ON" : "off"}</button>
@@ -48,7 +50,8 @@ export function buildShopPanel({ state, save, onClose }) {
     const note = onBuy
       ? "applies when your next run begins (after death / retreat). only banked glyphs spend."
       : "tougher runs bank more glyphs. takes effect next run.";
-    const list = onBuy ? SHOP_UPGRADES.map(rowHtml).join("") : RUN_MODS.map(modHtml).join("");
+    const mods = RUN_MODS.filter((m) => !m.unlock || m.unlock(state.meta));
+    const list = onBuy ? SHOP_UPGRADES.map(rowHtml).join("") : mods.map(modHtml).join("");
     box.innerHTML = `
       <div class="s2-shop-head">GLYPH SHOP
         ${headExtra}

@@ -10,7 +10,7 @@ import { DIRS, DIR_LIST } from "./dirs.js";
 import { tickStatuses, skipsTurn, applyStatus } from "./status.js";
 import { spawnMonster } from "./data.js";
 import { makeRng } from "./rng.js";
-import { torchSightBonus } from "./darkness.js";
+import { torchSightBonus, litCell } from "./darkness.js";
 import { lightEaterTick, mirrorTick, phantomTick } from "./overflow.js";
 import { iceSlide } from "./hazards.js";
 
@@ -18,6 +18,7 @@ const SUMMON_CAP = 90; // hard ceiling on live monsters so a summoner can't runa
 const RANGED_COOLDOWN = 2;
 const SUMMON_COOLDOWN = 4;
 const EXPLODE_RADIUS = 2;
+const SHADOW_RANGE = 9; // D3: how close (Manhattan) @ must drift for an unlit void ref to shadow-step
 
 export function isOpen(world, x, y) {
   return y >= 0 && x >= 0 && y < world.grid.length && x < world.width && world.grid[y][x] !== "#";
@@ -29,9 +30,21 @@ function freeCell(world, x, y, occupied) {
   // Monsters avoid lethal terrain (lava/spikes) unless they're already doomed by it.
   if (world.hazardAt && world.hazardAt(x, y) && !world.hazardSafe) {
     const hz = world.hazardAt(x, y);
-    if (hz === "lava" || hz === "spikes") return false;
+    if (hz === "lava" || hz === "spikes" || hz === "acid") return false; // E2: foes funnel AROUND acid pools
   }
   return true;
+}
+
+// D3 void ref: a free open cell cardinally adjacent to @ to shadow-step into (deterministic, DIR_LIST
+// order; freeCell already excludes occupied cells, @ itself, and lethal terrain so it never blinks
+// onto lava/acid). Returns null when @ is fully boxed in.
+function adjacentToPlayerFree(world, occupied) {
+  for (const d of DIR_LIST) {
+    const x = world.pos.x + DIRS[d].dx;
+    const y = world.pos.y + DIRS[d].dy;
+    if (freeCell(world, x, y, occupied)) return { x, y };
+  }
+  return null;
 }
 
 // Cheap Bresenham line-of-sight: any wall between the monster and @ blocks the sighting.
@@ -273,6 +286,24 @@ export function monsterTurn(world, player, events, filter) {
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
     const sight = (m.sight || 5) + torchAggro;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
+
+    // Void ref (D3) shadow-step. While UNLIT it lurks invisibly (every unlit foe is hidden); if @
+    // drifts within SHADOW_RANGE it BLINKS to a cell beside @ and bites on its next turn — a dark
+    // cell is never safe. A torch puts it inside the light (litCell true): the step is frozen and it
+    // simply chases like a normal foe (so a torch both reveals AND defangs it). Deterministic.
+    if (m.shadow && !litCell(world, m.x, m.y)) {
+      if (dist <= SHADOW_RANGE) {
+        const spot = adjacentToPlayerFree(world, occupied);
+        if (spot) {
+          occupied.delete(m.y * world.width + m.x);
+          m.x = spot.x; m.y = spot.y;
+          occupied.add(m.y * world.width + m.x);
+          m.chasing = true;
+          if (events.log) events.log.push(`${m.name} shadow-steps out of the dark beside you!`);
+        }
+      }
+      continue; // unlit void refs lurk (or spent the turn blinking) — they don't patrol into view
+    }
 
     // Ambusher: disguised as a wall until @ steps within 2, then springs and chases.
     if (m.ambush && m.hidden) {

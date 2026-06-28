@@ -5,10 +5,11 @@
 
 import { applyStatus } from "./status.js";
 
-export const HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":", rift: "○", wet: "~", ice: "~" };
+export const HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":", rift: "○", wet: "~", ice: "~", acid: "≀" };
 // rift reuses the chasm colour (a dim void-blue) so no new CSS is needed (styles.css is at the cap).
 // wet/ice (E1) render with the same ~ glyph but different colour classes (blue water vs pale ice).
-export const HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm", rift: "s2-c-chasm", wet: "s2-c-wet", ice: "s2-c-ice" };
+// acid (E2) reuses the acid-element glyph ≀ in the green s2-c-acid colour — a corroding floor pool.
+export const HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm", rift: "s2-c-chasm", wet: "s2-c-wet", ice: "s2-c-ice", acid: "s2-c-acid" };
 
 // Available hazard types + density by floor band (the escalation arc: mild spikes early, lava/chasm
 // deep). The Overflow act (floor 7+) adds the darkness-only `rift` — a void that snuffs your torch.
@@ -16,8 +17,9 @@ export const HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: 
 function hazardPlan(floor) {
   if (floor <= 2) return { types: ["spikes"], density: 0.35 };
   if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
-  if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
-  return { types: ["lava", "spores", "chasm", "spikes", "rift"], density: 1.7 };
+  // E2 acid pools join the late hazard act (5+): corroding terrain that foes funnel around.
+  if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm", "acid"], density: 1.2 };
+  return { types: ["lava", "spores", "chasm", "spikes", "rift", "acid"], density: 1.7 };
 }
 
 // E1 — Act II (the "hazard" act, floors 4-6: Flooded Cisterns + Emberworks) is the only band that
@@ -113,6 +115,17 @@ export function enterHazard(world, player, hz, events) {
     events.descend = true;
     events.fell = true;
     events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
+  } else if (hz === "acid") {
+    // E2 acid pool: a splash of corroding damage + the `corroded` status (same status the acid
+    // element/flask applies to FOES — here it strips YOUR cursor: ATK is reduced while it lasts,
+    // resolved in engine.step). Foes avoid acid (monsters.freeCell), so a pool is a funnel you can
+    // bait them around — but a careless step costs you. Acid Resistance (shop) softens the bite.
+    const dmg = 2 + Math.floor(world.floor / 2);
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "corroded", 3, 1);
+    events.log.push(`an acid pool! ${dmg} damage — your cursor corrodes (ATK down until it clears).`);
+    if (player.hp <= 0) events.died = true;
   } else if (hz === "rift") {
     // Void rift (Overflow act): SNUFFS your torch and leaves you reeling in the dark — shadow damage
     // plus a stumble (slow). Darkness navigation becomes load-bearing: a careless step kills your light.

@@ -65,5 +65,22 @@ export function tickFire(world, player, events) {
     if (f.life > 0) next.push(f);
   }
   world.fires = next.concat(fresh);
+  // E3 wych-gas: a ceiling pocket cardinally adjacent to ANY live flame detonates once — a downward
+  // blast (gasExplosion, stronger than a spore burst) onto everything beneath it, and the pocket
+  // itself catches so the chain can keep spreading. Deterministic — driven only by fire + pocket
+  // layout. Snapshot the fires list since igniteCell pushes into it.
+  if (Array.isArray(world.gasPockets) && world.gasPockets.length) {
+    const active = world.fires.slice();
+    for (const g of world.gasPockets) {
+      if (g.blown) continue;
+      if (active.some((f) => Math.abs(f.x - g.x) + Math.abs(f.y - g.y) === 1)) {
+        g.blown = true;
+        gasExplosion(world, g.x, g.y, player, events, 8 + world.floor);
+        igniteCell(world, g.x, g.y);
+        events.blast = { x: g.x, y: g.y };
+        events.gasPocket = (events.gasPocket || 0) + 1;
+      }
+    }
+  }
   events.fireActive = world.fires.length;
 }

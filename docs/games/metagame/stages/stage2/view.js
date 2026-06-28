@@ -178,6 +178,16 @@ export function createView(screenEl) {
     if (world.potions) world.potions.forEach((p, i) => { if (!p.taken) place("p" + i, p.x, p.y, "!", "s2-c-potion"); });
     if (world.consumables) world.consumables.forEach((c, i) => { if (!c.taken) place("c" + i, c.x, c.y, (CONSUMABLES[c.type] || {}).glyph || "♦", "s2-c-consum"); });
     if (world.fires) world.fires.forEach((f, i) => place("fire" + i, f.x, f.y, FIRE_GLYPH, "s2-c-fire")); // C1 spreading fire
+    // E3 wych-gas pockets pulse overhead — drawn even through the dark (NOT lit-gated) so the player
+    // can always read the gas topology before igniting it. Cleared once a pocket has blown.
+    if (world.gasPockets) world.gasPockets.forEach((g, i) => {
+      const id = "gas" + i;
+      if (g.blown || !inView(g.x, g.y)) return;
+      live.add(id);
+      let el = itemEls.get(id);
+      if (!el) { el = makeSprite('"', "s2-c-gas"); itemEls.set(id, el); sprites.append(el); }
+      pos(el, g.x, g.y);
+    });
     // Secret doors: a '#' in a slightly-off wall colour over the terrain (findable, not obvious).
     if (world.hidden) world.hidden.forEach((h, i) => { if (!h.revealed) place("h" + i, h.entrance.x, h.entrance.y, "#", "s2-c-secret"); });
     for (const id of [...itemEls.keys()]) if (!live.has(id)) { itemEls.get(id).remove(); itemEls.delete(id); }
@@ -218,8 +228,8 @@ export function createView(screenEl) {
       } else if (!s.hp.hidden) { s.hp.hidden = true; }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
       // Remember where it was last lit so a ghost can be drawn when it leaves the torchlight — EXCEPT
-      // phantoms, which leave no trace (untrackable; the dark-act stealth foe).
-      if (dark && !m.phantom) ghostMem.set(i, { x: m.x, y: m.y, glyph });
+      // phantoms and void refs (D3), which leave no trace (untrackable; the dark-act stealth foes).
+      if (dark && !m.phantom && !m.shadow) ghostMem.set(i, { x: m.x, y: m.y, glyph });
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
   }
@@ -352,9 +362,10 @@ export function createView(screenEl) {
       ctx.fillRect(Math.round(x * scale) - (sz >> 1), Math.round(y * scale) - (sz >> 1), sz, sz);
     };
     if (world.hidden) for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
-    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0", rift: "#3a2a55" };
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0", rift: "#3a2a55", acid: "#9ee04a", wet: "#3f8fb8", ice: "#b8ecff" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
     if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
+    if (world.gasPockets) for (const g of world.gasPockets) if (!g.blown) dot(g.x, g.y, "#ffd24a", 2); // E3 wych-gas
     if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2); // dev: traps (dim=armed)
     for (const w of world.weapons) if (!w.taken) dot(w.x, w.y, "#ffd54a", 3);
     if (world.potions) for (const p of world.potions) if (!p.taken) dot(p.x, p.y, "#6effa6", 3);

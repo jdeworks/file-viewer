@@ -31,10 +31,21 @@ export const TORCH_STEPS = 28;   // how many player steps a torch stays lit
 export const TORCH_AGGRO = 4;    // extra monster sight while a torch burns (the stealth cost)
 
 // The radius actually used for rendering (terrain + which monsters are shown). In the Overflow act
-// the torch state overrides the baseline; elsewhere it's the plain depth fog.
+// the torch state overrides the baseline; elsewhere it's the plain depth fog. The Lights Out run
+// modifier (D4) shaves a fixed _lightsOutPenalty off both axes for the WHOLE run (clamped so the
+// ring never collapses to nothing); on the full-light shallow floors there's no radius to shrink.
 export function effectiveLight(world) {
-  if (isDarkAct(world.floor)) return torchLit(world) ? TORCH_RADIUS : DARK_RADIUS;
-  return lightRadius(world.floor);
+  const base = isDarkAct(world.floor) ? (torchLit(world) ? TORCH_RADIUS : DARK_RADIUS) : lightRadius(world.floor);
+  const pen = Number((world && world._lightsOutPenalty) || 0);
+  if (!base || !pen) return base;
+  return { rx: Math.max(2, base.rx - pen), ry: Math.max(1, base.ry - pen) };
+}
+
+// Shared lit/dark predicate (D3): is cell (x,y) inside @'s current light? Used by the void ref's
+// shadow-step (an unlit void ref blinks; a torch-lit one can't) and mirrors view.js's own `lit`.
+export function litCell(world, x, y) {
+  const L = effectiveLight(world);
+  return !L || (Math.abs(x - world.pos.x) <= L.rx && Math.abs(y - world.pos.y) <= L.ry);
 }
 
 export function torchLit(world) {

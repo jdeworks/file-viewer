@@ -167,7 +167,18 @@ export function buildFloor(runSeed, floorNum, mods = {}) {
   const hazards = placeHazards(rng, floorNum, roomN, take);
   const traps = placeTraps(rng, floorNum, roomN, take);
   const consumables = placeConsumables(rng, floorNum, roomN, take);
-  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps, consumables };
+  // E3 wych-gas: flammable ceiling pockets on the fire-heavy floors (5+). They pulse overhead (always
+  // visible) and do nothing on their own — but when spreading flame reaches one it detonates a blast
+  // straight down (fire.tickFire). Read the gas topology, or walk a foe under one and firebolt it.
+  // Deterministic: placed through the shared floor rng + `take` cell allocator.
+  const gasPockets = [];
+  if (floorNum >= 5) {
+    const gasN = Math.min(8, 2 + Math.round(roomN * 0.08));
+    for (let i = 0; i < gasN; i += 1) { const c = take(); if (!c) break; gasPockets.push({ x: c.x, y: c.y, blown: false }); }
+  }
+  const world = { floor: floorNum, width, height, seed: runSeed, pos: { ...start }, exit, branchExit, branch: Boolean(mods.branch), monsters, weapons, potions, glyphs, hidden, hazards, traps, consumables, gasPockets,
+    // D4 Lights Out: shave the light radius for the whole run (darkness.effectiveLight reads this).
+    _lightsOutPenalty: run.lights_out ? 2 : 0 };
   defineGrid(world, grid);
   defineHazards(world);
   return world;

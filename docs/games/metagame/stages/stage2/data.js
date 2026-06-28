@@ -24,11 +24,15 @@ export const MONSTERS = [
   { id: 'mirror', glyph: 'M', name: 'mirror', hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true },
   // Phantom: leaves NO last-seen ghost (untrackable in the dark, view.js) and full speed in true
   // darkness, but torchlight pins it (phantomTick slows it). The pure stealth-vs-light foe.
-  { id: 'phantom', glyph: 'ψ', name: 'null phantom', hp: 28, atk: 9, xp: 9, drop: 4, minFloor: 8, fast: true, phantom: true }
+  { id: 'phantom', glyph: 'ψ', name: 'null phantom', hp: 28, atk: 9, xp: 9, drop: 4, minFloor: 8, fast: true, phantom: true },
+  // Void ref (D3): the Act-III paranoia foe. While it sits in the dark it's invisible (like every
+  // unlit foe); drift within 2 tiles and it SHADOW-STEPS to a cell beside @ and bites next turn —
+  // so a dark cell is never safe. A lit torch reveals it AND freezes the step (see monsters.shadow).
+  { id: 'voidref', glyph: 'v', name: 'void ref', hp: 28, atk: 11, xp: 8, drop: 4, minFloor: 7, shadow: true }
 ];
 
 // Behaviour flags copied verbatim from the roster entry onto a spawned monster.
-const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror', 'phantom'];
+const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror', 'phantom', 'shadow'];
 
 // Elites (A3): a marked, prefixed, beefed-up variant. Chance + strength rise with depth. They get a
 // guaranteed cache on death (engine.dropElite). One random prefix shapes the bonus.
@@ -63,23 +67,28 @@ export const SHOP_UPGRADES = [
   { id: 'def_level', name: 'Tempered Types', desc: '+1 DEF per level', max: 4, apply: (s, n) => { s.defPerLevel = n; } },
   { id: 'greed', name: 'Glyph Magnet', desc: '+25% glyphs', max: 4, apply: (s, n) => { s.glyphMult = 1 + 0.25 * n; } },
   { id: 'torchcraft', name: 'Torchbearer', desc: '+12 torch steps & start each run with a torch (per level)', max: 4, apply: (s, n) => { s.torchSteps = 12 * n; s.startTorches = n; } },
+  { id: 'acid_resist', name: 'Acid Resistance', desc: '−1 acid-corrosion ATK penalty per level', max: 2, apply: (s, n) => { s.acidResist = n; } },
   { id: 'compass', name: 'Stairwell Sense', desc: 'reveals the way to the stairs (HUD compass)', max: 1, apply: () => {} }
 ];
 
 // Run modifiers (C3, "Heat") — opt-in difficulty toggles set in the shop. Each active one raises the
-// run's banked-glyph reward by HEAT_PER_MOD. Applied in buildFloor (swarm/drought/elite storm).
+// run's banked-glyph reward by its `heatBonus`. Applied in buildFloor (swarm/drought/elite storm/
+// lights_out). `lights_out` (D4) is the mastery track: it darkens the WHOLE run (light radius −2,
+// read by darkness.effectiveLight) for the highest multiplier, and the shop only surfaces it once
+// you've reached the Overflow (so newcomers aren't handed it). `unlock` gates a mod in the shop UI.
 export const RUN_MODS = [
-  { id: 'swarm', name: 'Swarm', desc: '+60% monsters' },
-  { id: 'no_potions', name: 'Drought', desc: 'no health potions on the floor' },
-  { id: 'elite_storm', name: 'Elite Storm', desc: 'far more elites' }
+  { id: 'swarm', name: 'Swarm', desc: '+60% monsters', heatBonus: 0.25 },
+  { id: 'no_potions', name: 'Drought', desc: 'no health potions on the floor', heatBonus: 0.25 },
+  { id: 'elite_storm', name: 'Elite Storm', desc: 'far more elites', heatBonus: 0.25 },
+  { id: 'lights_out', name: 'Lights Out', desc: 'light radius −2 the whole run — a mastery test', heatBonus: 0.35, unlock: (meta) => Number((meta || {}).bestFloor || 0) >= 7 }
 ];
-export const HEAT_PER_MOD = 0.25;
+export const HEAT_PER_MOD = 0.25; // legacy default for mods without an explicit heatBonus
 export function runHeat(runMods = {}) {
-  return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods[m.id]).length;
+  return 1 + RUN_MODS.filter((m) => runMods[m.id]).reduce((s, m) => s + (m.heatBonus || HEAT_PER_MOD), 0);
 }
 
-const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, compass: 1000 };
-const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, compass: 1 };
+const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, acid_resist: 18, compass: 1000 };
+const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, acid_resist: 1.8, compass: 1 };
 
 export function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);

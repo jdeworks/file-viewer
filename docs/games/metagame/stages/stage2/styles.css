@@ -249,13 +249,16 @@
 .s2-c-chasm { color: #6a7bb0; }
 .s2-c-wet { color: #3f8fb8; } /* E1 Cisterns flooded cell — a freeze rune glazes it to ice */
 .s2-c-ice { color: #b8ecff; text-shadow: 0 0 4px #6fd0ff; } /* E1 ice — a stepping creature slides one cell */
+.s2-c-acid { color: #9ee04a; text-shadow: 0 0 5px #5fa800; } /* E2 acid pool — corrodes @ (foes avoid it) */
 .s2-c-trap { color: #c0563a; } /* sprung trap marker */
 .s2-c-fire { color: #ff7a1e; text-shadow: 0 0 6px #ff3a00; animation: s2-fire 0.4s steps(2) infinite; } /* C1 spreading fire */
+.s2-c-gas { color: #ffd24a; text-shadow: 0 0 6px #ffae2a; animation: s2-gas 1.2s ease-in-out infinite; } /* E3 wych-gas pocket — ignites if flame reaches it */
 
 @keyframes s2-fire { 50% { color: #ffd24a; opacity: 0.85; } }
-@media (prefers-reduced-motion: reduce) { .s2-c-fire { animation: none; } }
+@keyframes s2-gas { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .s2-c-fire, .s2-c-gas { animation: none; } }
 /* Layer order in the absolute sprite stack: hazards under loot under foes under @. */
-.s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm, .s2-c-wet, .s2-c-ice, .s2-c-trap { z-index: 0; }
+.s2-c-lava, .s2-c-spores, .s2-c-spikes, .s2-c-chasm, .s2-c-wet, .s2-c-ice, .s2-c-acid, .s2-c-trap { z-index: 0; }
 .s2-c-foe, .s2-c-foe-b, .s2-c-foe2, .s2-c-elite, .s2-c-ambush, .s2-c-guardian, .s2-c-ally { z-index: 2; }
 .s2-c-player { z-index: 3; }
 .s2-c-item { color: #ffd54a; }
