@@ -14,11 +14,21 @@
 export const SUPERBOSS_ID = "the-kernel-of-refusal";
 
 // Per-phase HP pools (index 0..2). Overkill is lost when a phase falls.
-// NOTE (round-4): the negotiation boss is 200 base, so on paper this true-ending fight (165) is the
-// lighter pool — but it is reached with a REAL act-6 deck, the no-handshake fight plays faster, and
-// the smoke fixture (a 10-card starter deck) enters at ~15 HP with no headroom to chew a bigger pool.
-// Raising it requires a healthier/representative smoke deck first (a cross-lane test-fixture change).
-export const SUPERBOSS_PHASE_HP = [50, 55, 60];
+// TUNING (round-5): a climactic three-stage ladder totalling 264 HP — clearly the hardest fight in
+// the stage (the act-6 negotiation boss is a single 200-HP pool; this is +60% across three escalating
+// phases, the last nearly double its old value). It supersedes the old timid [50,55,60]=165, which
+// was only kept low because the smoke fought it with a bare 10-card starter deck at ~15 HP. The
+// blocker is now removed: the test path equips a REPRESENTATIVE end-game loadout (testhook.js
+// equipEndgameLoadout) before the bonus fight — a developed 16-card deck at 50 HP, the kind a real
+// player holds arriving at act 6 — so the pool can be tuned to a real climax.
+// Empirically tuned with that loadout against the auto-player (the limiting factor is the bot, which
+// plays greedily and does not block optimally): the deterministic smoke fixture (run.seed pinned to
+// 7 by equipEndgameLoadout) wins with startHp 50 → endHp 6 in 14 turns — a genuine down-to-the-wire
+// finish (88% of HP spent) yet structurally safe: the same bot still clears this loadout up to ~285
+// total HP, so 264 keeps ~20 HP of headroom against incidental drift. See keys.test.mjs for the
+// asserted win + margin. Going higher only narrows that safety buffer without making the bot's
+// (already wire-thin) finish feel harder — so the cap here is the test bot, not design intent.
+export const SUPERBOSS_PHASE_HP = [82, 88, 94];
 
 // Each phase's looping intent script (telegraphed one step ahead like every enemy).
 export const SUPERBOSS_PHASE_SCRIPTS = [

@@ -7,6 +7,27 @@
 // It closes over the renderer's live combat instance, so the renderer passes accessors rather than
 // the value: getCombat/setCombat (the mutable engine) and setDailyKeyOverride (the daily-seed clock).
 
+// A REPRESENTATIVE end-game deck — the kind of developed ~16-card list a real player plausibly holds
+// arriving at act 6 (thinned starters, upgraded cores, a strength engine, vulnerable, burst, block).
+// This is NOT a bypass: the superboss is still reachable only through the real run + the 3 keys; this
+// merely STANDS IN for the deck-building of acts 1–5 that the deterministic test path skips, so the
+// bonus fight is tuned against real end-game power rather than the bare 10-card starter. The array
+// ORDER is load-bearing (it seeds the shuffle) — keep it in sync with keys.test.mjs.
+export const REPRESENTATIVE_ENDGAME_DECK = [
+  "SYN+", "SYN+", "ACK", "ACK",
+  "PRIORITY_PACKET", "PRIORITY_PACKET+",
+  "TCP_STACK+", "ONION",
+  "FLOOD", "HANDSHAKE", "FIREWALL",
+  "REPLAY+", "PROBE+", "NULL_ROUTE",
+  "BURST_FRAME", "DDOS+"
+];
+// HP a representative act-6 player enters the bonus fight with (PLAYER_MAX_HP is 60). Fixed so the
+// observability margin is stable. And a pinned run seed so the bonus-fight shuffle is fully
+// deterministic (the act-6 boss node id is always "a6-l6-n0", so this alone pins the combat seed) —
+// letting the smoke + unit test assert an exact climactic margin. See superboss.js SUPERBOSS_PHASE_HP.
+export const REPRESENTATIVE_ENDGAME_HP = 50;
+export const ENDGAME_FIXTURE_SEED = 7;
+
 export function installStage6TestHook(api) {
   const {
     state, combatRun, runScore, seatAtFinalBoss, runAutoNegotiate,
@@ -40,6 +61,24 @@ export function installStage6TestHook(api) {
       state.run.keys = ["untouchable", "ascetic", "sacrifice"].slice(0, Math.max(0, Math.min(3, n)));
       commit();
       return state.run.keys.length;
+    },
+    // Equip the REPRESENTATIVE end-game loadout for the bonus fight (deck + HP + a pinned seed). This
+    // stands in for the deck-building of acts 1–5 the test path skips — it is NOT a second un-cheat:
+    // the superboss is still reached only via the real run + 3 keys; this only fills the deck/HP a
+    // real act-6 player would hold so the fight is tuned against real power, not the bare starter.
+    // It also drops any superboss combat the renderer already built from the starter deck (and its
+    // checkpoint) so autoSuperboss rebuilds the fight from this loadout. Call it AFTER the negotiation
+    // diverts to the superboss and BEFORE autoSuperboss. Deterministic.
+    equipEndgameLoadout() {
+      const run = state.run;
+      if (!run || run.status !== "superboss") return { ok: false, reason: "not-at-superboss" };
+      run.deck = [...REPRESENTATIVE_ENDGAME_DECK];
+      run.hp = Math.min(run.maxHp || REPRESENTATIVE_ENDGAME_HP, REPRESENTATIVE_ENDGAME_HP);
+      run.seed = ENDGAME_FIXTURE_SEED; // pins the bonus-fight shuffle (boss node id is always a6-l6-n0)
+      setCombat(null);                 // drop the starter-deck superboss combat the renderer may have built
+      if (combatRun) combatRun.reset(); // and its stale checkpoint, so autoSuperboss rebuilds from this deck
+      commit();
+      return { ok: true, deckSize: run.deck.length, hp: run.hp };
     },
     // Drive the key-gated superboss to its end with the REAL deck (play all affordable cards each
     // turn). Not a bypass — it uses the normal engine. Returns the outcome.

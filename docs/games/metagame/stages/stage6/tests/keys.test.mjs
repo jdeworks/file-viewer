@@ -4,7 +4,11 @@ import {
   enemyForCurrentNode, awardKey, hasAllKeys,
   KEY_UNTOUCHABLE, KEY_ASCETIC, KEY_SACRIFICE, KEYS_FOR_SUPERBOSS, FINAL_BOSS_ACT
 } from "../run.js";
-import { SUPERBOSS_ID, SUPERBOSS_PHASE_HP } from "../superboss.js";
+import { SUPERBOSS_ID, SUPERBOSS_PHASE_HP, wireSuperboss } from "../superboss.js";
+import { createCombat, playCard, endTurn, strHash } from "../combat.js";
+import { cardById } from "../cards.js";
+import { REPRESENTATIVE_ENDGAME_DECK, REPRESENTATIVE_ENDGAME_HP, ENDGAME_FIXTURE_SEED } from "../testhook.js";
+import "../card-upgrades.js"; // register the upgraded "<ID>+" forms used by the representative deck
 
 // ── awardKey / hasAllKeys ─────────────────────────────────────────────────────────────────────────
 {
@@ -84,6 +88,49 @@ import { SUPERBOSS_ID, SUPERBOSS_PHASE_HP } from "../superboss.js";
 {
   assert.equal(SUPERBOSS_PHASE_HP.length, 3, "the superboss has 3 phases");
   assert.ok(SUPERBOSS_PHASE_HP.every((h) => h > 0), "each phase has HP");
+}
+
+// ── superboss tuning: a CLIMACTIC pool, escalating per phase ────────────────────────────────────────
+{
+  assert.deepEqual(SUPERBOSS_PHASE_HP, [82, 88, 94], "the superboss is tuned to its climactic 264-HP ladder");
+  const total = SUPERBOSS_PHASE_HP.reduce((a, b) => a + b, 0);
+  assert.equal(total, 264, "total HP across the 3 phases");
+  assert.ok(total > 165, "the new tuning is far heavier than the old timid [50,55,60]=165 pool");
+  assert.ok(SUPERBOSS_PHASE_HP[2] > SUPERBOSS_PHASE_HP[1] && SUPERBOSS_PHASE_HP[1] > SUPERBOSS_PHASE_HP[0], "phases escalate (the final phase is the hardest)");
+}
+
+// ── superboss winnability + margin: the auto-player clears it with the representative end-game deck ──
+// Mirrors testhook.autoSuperboss EXACTLY against the same pinned fixture (deck + 50 HP + seed 7, with
+// the act-6 boss node id always "a6-l6-n0"), so the smoke's down-to-the-wire win is asserted here
+// deterministically. This is the guard the round-4 attempt lacked: proof the higher pool is winnable.
+{
+  const combatSeed = strHash(`${ENDGAME_FIXTURE_SEED}:a6-l6-n0:superboss:combat`);
+  const combat = createCombat({
+    deck: REPRESENTATIVE_ENDGAME_DECK,
+    player: { hp: REPRESENTATIVE_ENDGAME_HP, maxHp: 60 },
+    enemy: { id: SUPERBOSS_ID, name: "The Kernel of Refusal", hp: 50, armor: 0, script: [] },
+    seed: combatSeed,
+    congestion: false
+  });
+  wireSuperboss(combat);
+  const startHp = combat.player.hp;
+  let turns = 0;
+  while (!combat.over && turns++ < 120) {
+    let guard = 0;
+    while (guard++ < 30 && !combat.over) {
+      const idx = combat.hand.findIndex((id) => { const c = cardById(id); return c && c.cost <= combat.player.energy; });
+      if (idx < 0) break;
+      playCard(combat, idx);
+    }
+    if (combat.over) break;
+    endTurn(combat);
+  }
+  const endHp = combat.player.hp;
+  assert.equal(combat.result, "win", "the auto-player defeats the superboss with the representative loadout");
+  assert.equal(startHp, 50, "enters the bonus fight at the representative 50 HP");
+  assert.ok(endHp > 0, "survives the fight (a real win, not a mutual KO)");
+  assert.ok(startHp - endHp >= 25, `it is no pushover — a real amount of HP is spent (lost ${startHp - endHp})`);
+  assert.ok(endHp <= 25, `it comes down to the wire — not a trivial romp (ended at ${endHp}/${startHp})`);
 }
 
 function findNode(run, type) {

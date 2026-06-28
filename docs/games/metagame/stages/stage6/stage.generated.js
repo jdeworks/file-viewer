@@ -2622,7 +2622,7 @@ function foldAscension(baseConfig, level) {
 
 // ../../docs/games/metagame/stages/stage6/superboss.js
 var SUPERBOSS_ID = "the-kernel-of-refusal";
-var SUPERBOSS_PHASE_HP = [50, 55, 60];
+var SUPERBOSS_PHASE_HP = [82, 88, 94];
 var SUPERBOSS_PHASE_SCRIPTS = [
   // Phase 1 — SEQUENCE / DELAY: ordered pressure with a guard turn.
   [
@@ -3289,6 +3289,26 @@ function playFirstMatch(combat, pred) {
 }
 
 // ../../docs/games/metagame/stages/stage6/testhook.js
+var REPRESENTATIVE_ENDGAME_DECK = [
+  "SYN+",
+  "SYN+",
+  "ACK",
+  "ACK",
+  "PRIORITY_PACKET",
+  "PRIORITY_PACKET+",
+  "TCP_STACK+",
+  "ONION",
+  "FLOOD",
+  "HANDSHAKE",
+  "FIREWALL",
+  "REPLAY+",
+  "PROBE+",
+  "NULL_ROUTE",
+  "BURST_FRAME",
+  "DDOS+"
+];
+var REPRESENTATIVE_ENDGAME_HP = 50;
+var ENDGAME_FIXTURE_SEED = 7;
 function installStage6TestHook(api) {
   const {
     state,
@@ -3338,6 +3358,24 @@ function installStage6TestHook(api) {
       state.run.keys = ["untouchable", "ascetic", "sacrifice"].slice(0, Math.max(0, Math.min(3, n)));
       commit();
       return state.run.keys.length;
+    },
+    // Equip the REPRESENTATIVE end-game loadout for the bonus fight (deck + HP + a pinned seed). This
+    // stands in for the deck-building of acts 1–5 the test path skips — it is NOT a second un-cheat:
+    // the superboss is still reached only via the real run + 3 keys; this only fills the deck/HP a
+    // real act-6 player would hold so the fight is tuned against real power, not the bare starter.
+    // It also drops any superboss combat the renderer already built from the starter deck (and its
+    // checkpoint) so autoSuperboss rebuilds the fight from this loadout. Call it AFTER the negotiation
+    // diverts to the superboss and BEFORE autoSuperboss. Deterministic.
+    equipEndgameLoadout() {
+      const run = state.run;
+      if (!run || run.status !== "superboss") return { ok: false, reason: "not-at-superboss" };
+      run.deck = [...REPRESENTATIVE_ENDGAME_DECK];
+      run.hp = Math.min(run.maxHp || REPRESENTATIVE_ENDGAME_HP, REPRESENTATIVE_ENDGAME_HP);
+      run.seed = ENDGAME_FIXTURE_SEED;
+      setCombat(null);
+      if (combatRun) combatRun.reset();
+      commit();
+      return { ok: true, deckSize: run.deck.length, hp: run.hp };
     },
     // Drive the key-gated superboss to its end with the REAL deck (play all affordable cards each
     // turn). Not a bypass — it uses the normal engine. Returns the outcome.

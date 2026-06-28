@@ -1074,9 +1074,17 @@ export async function run(ctx) {
   if (s6neg.bossDefeated && !s6neg.won) pass('Stage 6 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 6 negotiation/diversion wrong: ${JSON.stringify(s6neg)}`);
   // The superboss is a real-deck multi-phase fight (The Kernel of Refusal), no lock / no un-cheat.
   await page.waitForSelector('.s6db-combat', { timeout: 4000 });
+  // Equip a REPRESENTATIVE end-game loadout (developed 16-card deck at 50 HP, pinned seed) — standing
+  // in for the acts 1–5 deck-building the test path skips, NOT a bypass — so the climactic bonus pool
+  // (264 HP across 3 escalating phases) is fought against real power, not the bare 10-card starter.
+  const s6load = await page.evaluate(() => window.__fvStage6.equipEndgameLoadout());
+  if (s6load.ok && s6load.deckSize >= 14 && s6load.hp === 50) pass('Stage 6 superboss fought with a representative end-game loadout (not the starter deck)'); else fail(`Stage 6 endgame loadout wrong: ${JSON.stringify(s6load)}`);
   // Drive the superboss to its end with the real deck → the TRUE ending, which now clears the stage.
   const s6super = await page.evaluate(() => window.__fvStage6.autoSuperboss());
   if (s6super.ok && s6super.status === 'won' && s6super.trueEnding) pass('Stage 6 key-gated superboss defeated → true ending'); else fail(`Stage 6 superboss not won: ${JSON.stringify(s6super)}`);
+  // It is a CLIMACTIC fight, not a pushover: the auto-player wins down to the wire (real HP spent),
+  // confirming the 264-HP tuning is winnable-but-hard with the representative loadout.
+  if (s6super.startHp === 50 && s6super.endHp > 0 && (s6super.startHp - s6super.endHp) >= 25) pass(`Stage 6 superboss is a real climax (won at ${s6super.endHp}/${s6super.startHp} HP in ${s6super.turns} turns)`); else fail(`Stage 6 superboss margin wrong (too trivial or a loss): ${JSON.stringify(s6super)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
