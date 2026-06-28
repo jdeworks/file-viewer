@@ -493,8 +493,9 @@ export async function run(ctx) {
     disabled: button.disabled,
     text: button.textContent,
   })));
-  if (freshStageButtons.length === 1 && freshStageButtons[0].stage === '1' && !freshStageButtons[0].disabled) {
-    pass('Defragmenter fresh start shows only unlocked Stage 1 navigation');
+  const freshStages = freshStageButtons.map((b) => b.stage).join(',');
+  if (freshStages === '1,2,3,4,5,6,7,8,9' && freshStageButtons.every((b) => !b.disabled)) {
+    pass('Defragmenter fresh start shows stages 1–9 unlocked (stage 10 gated)');
   } else {
     fail('Defragmenter fresh stage buttons unexpected: ' + JSON.stringify(freshStageButtons));
   }

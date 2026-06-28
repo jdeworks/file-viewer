@@ -4,6 +4,11 @@
 export const SAVE_KEY = 'fv:games:metagame:v3';
 export const SAVE_VERSION = 5;
 export const STAGE_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+// Stages 1–9 are unlocked by default (the stage buttons exist even after a full reset). Stage 10
+// stays gated: it is added to unlockedStages ONLY by beating stage 9 (metagame.js id+1 progression)
+// or via the dev unlock-all. This is the stage-to-stage META unlock only — each stage's internal
+// boss/un-cheat gating is unchanged (a boss is still reachable only after its stage body).
+export const DEFAULT_UNLOCKED_STAGES = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
 function nowMs() {
   return Date.now();
@@ -47,7 +52,7 @@ export function createFreshSave(timestamp = nowMs()) {
     version: SAVE_VERSION,
     currentStage: 1,
     defeated: [],
-    unlockedStages: [1],
+    unlockedStages: [...DEFAULT_UNLOCKED_STAGES],
     achievements: {},
     actions: {},
     bell: {
@@ -99,8 +104,15 @@ export function ensureSaveShape(value, timestamp = nowMs()) {
   if (!isValidSave(value)) return createFreshSave(timestamp);
   value.currentStage = STAGE_IDS.includes(Number(value.currentStage)) ? Number(value.currentStage) : 1;
   value.defeated = uniqueStageList(value.defeated, []);
-  value.unlockedStages = uniqueStageList(value.unlockedStages, [1]);
-  if (!value.unlockedStages.includes(1)) value.unlockedStages.unshift(1);
+  // Stages 1–9 are always unlocked (forward-migrates any older save — including a bare [1] or a
+  // fresh-after-reset save — without ever losing an already-earned stage 10). uniqueStageList only
+  // applies its fallback when value isn't an array, so we explicitly UNION the defaults in, then sort
+  // so the nav renders in stage order. Stage 10 is preserved when present but never added here.
+  value.unlockedStages = uniqueStageList(value.unlockedStages, DEFAULT_UNLOCKED_STAGES);
+  for (const stage of DEFAULT_UNLOCKED_STAGES) {
+    if (!value.unlockedStages.includes(stage)) value.unlockedStages.push(stage);
+  }
+  value.unlockedStages.sort((a, b) => a - b);
   if (!plainObject(value.runs)) value.runs = {};
   value.global.updatedAt = Number(value.global.updatedAt) || timestamp;
   value.global.createdAt = Number(value.global.createdAt) || value.global.updatedAt;

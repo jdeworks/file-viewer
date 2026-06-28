@@ -1,9 +1,11 @@
 import {
   createFreshSave,
+  ensureSaveShape,
   isValidSave,
   loadSave,
   migrateSave,
   persistSave,
+  resetSave,
   SAVE_KEY,
   SAVE_VERSION,
 } from '../docs/games/metagame/save.js';
@@ -84,7 +86,9 @@ function validStageModule(id = 2) {
 {
   const save = createFreshSave(1000);
   ok(isValidSave(save), 'save: fresh v5 validates');
-  ok(save.version === 5 && save.unlockedStages.join(',') === '1', 'save: fresh v5 starts at stage 1');
+  ok(save.version === 5 && save.currentStage === 1, 'save: fresh v5 starts at stage 1');
+  ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'save: fresh v5 unlocks stages 1–9 (stage 10 gated)');
+  ok(!save.unlockedStages.includes(10), 'save: fresh v5 does NOT unlock stage 10');
   ok(Object.keys(save.stageState).length === 10 && save.stageState[10], 'save: fresh v5 creates all stageState slots');
   ok(save.runs && Object.keys(save.runs).length === 0, 'save: fresh v5 has an empty run-counter map');
   ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'save: fresh v5 seeds the ascension summary');
@@ -115,7 +119,8 @@ function validStageModule(id = 2) {
   const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v3) });
   const save = loadSave({ storage, timestamp: 3000 });
   ok(isValidSave(save) && save.version === 5, 'save: a valid v3 save migrates forward to v5');
-  ok(save.defeated.join(',') === '1,2' && save.unlockedStages.join(',') === '1,2,3', 'migrate: defeated/unlocked preserved');
+  ok(save.defeated.join(',') === '1,2', 'migrate: defeated preserved');
+  ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'migrate: an old [1,2,3] save normalizes to 1–9 unlocked (stage 10 still gated)');
   ok(save.achievements['stage1.cheat_disabled'] && save.actions['2.search_passage'].detail.value === 'PASSAGE', 'migrate: achievements/actions preserved');
   ok(save.stageState[3].progress === 7 && save.stageState[6].run.hp === 42, 'migrate: per-stage progress preserved');
   ok(save.global.loopCount === 3 && save.global.createdAt === 111, 'migrate: global data preserved (not reset to fresh)');
@@ -147,6 +152,24 @@ function validStageModule(id = 2) {
   ok(save.global.loopCount === 1 && save.global.crashCourseUnlocked === true && save.global.createdAt === 5, 'migrate: v4 global data preserved');
   ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v4->v5 backfills the ascension summary');
   ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 5, 'migrate: the upgraded v4 save is persisted back');
+}
+
+{
+  // Stages 1–9 unlocked by default: a full reset must yield 1–9 (and never stage 10), so the stage
+  // buttons exist immediately. Stage 10 stays gated (only beating stage 9 / dev unlock-all adds it).
+  const storage = new MemoryStorage();
+  const reset = resetSave({ storage, timestamp: 8000 });
+  ok(reset.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'reset: a full reset unlocks stages 1–9');
+  ok(!reset.unlockedStages.includes(10), 'reset: a full reset does NOT unlock stage 10');
+
+  // An old save with only [1] normalizes forward to 1–9.
+  const bare = ensureSaveShape({ ...createFreshSave(8100), unlockedStages: [1] }, 8100);
+  ok(bare.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'normalize: a bare [1] save becomes 1–9 unlocked');
+  ok(!bare.unlockedStages.includes(10), 'normalize: a bare [1] save still has stage 10 gated');
+
+  // A save that had already earned stage 10 KEEPS it (forward-migration must not lose progress).
+  const earned = ensureSaveShape({ ...createFreshSave(8200), unlockedStages: [1, 2, 3, 10], defeated: [9] }, 8200);
+  ok(earned.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9,10', 'normalize: an earned-stage-10 save keeps stage 10');
 }
 
 {
