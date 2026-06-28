@@ -1187,6 +1187,33 @@
     ]
   },
   {
+    "label": "Awakening syntax_echo.txt",
+    "file": "metagame/stage10/syntax_echo.txt",
+    "mime": "text/plain",
+    "category": "Metagame",
+    "categories": [
+      "Metagame"
+    ]
+  },
+  {
+    "label": "Awakening pattern_echo.json",
+    "file": "metagame/stage10/nested/echoes/pattern_echo.json",
+    "mime": "application/json",
+    "category": "Metagame",
+    "categories": [
+      "Metagame"
+    ]
+  },
+  {
+    "label": "Awakening identity_echo.jpg",
+    "file": "metagame/stage10/identity_echo.jpg",
+    "mime": "image/jpeg",
+    "category": "Metagame",
+    "categories": [
+      "Metagame"
+    ]
+  },
+  {
     "label": "Sample.html",
     "file": "sample.html",
     "mime": "text/html",

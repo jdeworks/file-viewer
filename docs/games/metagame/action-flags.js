@@ -102,6 +102,21 @@ export function setAction(stage, action, detail = {}) {
   return record;
 }
 
+// Transient action signal: notifies subscribers (and the window event) WITHOUT recording the action
+// in the canonical map, WITHOUT writing localStorage, and WITHOUT mirroring/persisting the save.
+// Use for purely cosmetic live readouts that must update many times a second (e.g. Stage 5's
+// calibration-progress HUD) but must never trigger a full game-state save per tick. The authoritative
+// unlock stays a real, persisted setAction — this channel never satisfies hasAction().
+export function emitTransientAction(stage, action, detail = {}) {
+  dispatch({
+    stage: Number(stage),
+    action: String(action),
+    source: detail.source || null,
+    detail: { ...detail },
+    transient: true,
+  });
+}
+
 export function hasAction(stage, action) {
   return actions.has(actionId(stage, action));
 }

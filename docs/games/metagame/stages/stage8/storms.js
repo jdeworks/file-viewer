@@ -69,6 +69,22 @@ export function stormAvailable(state) {
   return { ok: true, storm };
 }
 
+// One-time band/phase announcement. The first cycle the current act's storm becomes brace-able (its
+// act body is met), log its telegraph so the player knows a new phase has started. Keyed off
+// deterministic state (the cycle + cumulative-States thresholds in stormAvailable) plus a per-storm
+// announced flag, so it fires EXACTLY once per storm and replays identically. Returns the announced
+// storm or null. engine.advanceCycle calls this once per cycle after the cycle is committed.
+export function announceStorm(state) {
+  const avail = stormAvailable(state);
+  if (!avail.ok) return null;
+  const storm = avail.storm;
+  if (!Array.isArray(state.announcedStorms)) state.announcedStorms = [];
+  if (state.announcedStorms.includes(storm.id)) return null;
+  state.announcedStorms.push(storm.id);
+  pushLog(state, `▣ NEW PHASE — ${storm.telegraph}`);
+  return storm;
+}
+
 // Begin weathering the current act's storm (validated). The storm then runs over the next `duration`
 // advanceCycle calls via tickStorm.
 export function braceStorm(state) {

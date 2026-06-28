@@ -2,13 +2,16 @@
 import { applyStatus, tickStatuses, hasStatus, skipsTurn } from "../status.js";
 import { monsterTurn, detonate, hasLOS, pressureSpawn } from "../monsters.js";
 import { buildFloor, step, exitDistanceField, stepToExit } from "../engine.js";
-import { spawnMonster } from "../data.js";
-import { enterHazard, hazardIndex } from "../hazards.js";
+import { spawnMonster, rollEntity } from "../data.js";
+import { TORCH_STEPS } from "../darkness.js";
+import { enterHazard, hazardIndex, iceSlide } from "../hazards.js";
 import { springTrap } from "../traps.js";
 import { useConsumable } from "../consumables.js";
 import { affixDamage, applyHitAffix } from "../affixes.js";
 import { runHeat } from "../data.js";
 import { igniteCell, tickFire } from "../fire.js";
+import { interact, elementStrike, applyElement, gasExplosion, BRITTLE_MULT, SHATTER_BONUS } from "../elements.js";
+import { phantomTick } from "../overflow.js";
 import { makeRng } from "../rng.js";
 
 let failed = 0;
@@ -235,6 +238,15 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const burner = { hp: 50, maxHp: 50, atk: 10, affix: "burning" };
   applyHitAffix(w, burner, target, 10, { log: [] });
   ok(hasStatus(target, "burn"), "burning affix sets burn on the struck foe");
+  // Element-matrix affixes: frost chills (sets up a shatter), acid corrodes (brittle).
+  const froster = { hp: 50, maxHp: 50, atk: 10, affix: "frost" };
+  const frostFoe = foe({ x: 2, y: 1, hp: 40 });
+  applyHitAffix(w, froster, frostFoe, 10, { log: [] });
+  ok(hasStatus(frostFoe, "frozen"), "frost affix chills the struck foe (sets up a shatter)");
+  const corroder = { hp: 50, maxHp: 50, atk: 10, affix: "acid" };
+  const acidFoe = foe({ x: 2, y: 1, hp: 40 });
+  applyHitAffix(w, corroder, acidFoe, 10, { log: [] });
+  ok(hasStatus(acidFoe, "corroded"), "acid affix corrodes the struck foe (brittle)");
 }
 
 // ── C5 faction infighting: idle rivals trade blows; same camp doesn't ────────────────────────────
@@ -307,6 +319,220 @@ ok(skipsTurn(slow) !== skipsTurn(slow), "slow acts every other turn (alternates)
   const player = { hp: 999, def: 0, statuses: {}, atk: 40 };
   monsterTurn(w, player, { log: [], damageTaken: 0, died: false }, () => true);
   ok(m.atk === Math.round(40 * 0.85), "mirror copies 85% of the player's ATK");
+}
+
+// ── Element interaction matrix (elements.js) ─────────────────────────────────────────────────────
+{
+  // The matrix is symmetric and only defines the real combos.
+  ok(interact("fire", "gas") === "explode" && interact("gas", "fire") === "explode", "fire+gas → explode (order-independent)");
+  ok(interact("fire", "frost") === "melt", "fire+frost → melt");
+  ok(interact("acid", "frost") === "brittle", "acid+frost → brittle");
+  ok(interact("fire", "fire") === null && interact("frost", "bogus") === null, "no interaction for same/unknown elements");
+}
+{
+  // elementStrike: corroded foe is brittle (×1.4); frozen foe shatters (+60%); both stack higher.
+  const plain = elementStrike({ statuses: {} }, 100);
+  ok(plain.total === 100 && !plain.shattered, "a clean foe takes the raw hit");
+  const corroded = { statuses: {} }; applyElement(corroded, "acid");
+  ok(elementStrike(corroded, 100).total === Math.round(100 * BRITTLE_MULT), "acid → corroded foe takes amplified (brittle) damage");
+  const frozen = { statuses: {} }; applyElement(frozen, "frost");
+  const fr = elementStrike(frozen, 100);
+  ok(fr.total === 100 + Math.round(100 * SHATTER_BONUS) && fr.shattered, "frost → frozen foe SHATTERS for bonus damage");
+  ok(!frozen.statuses.frozen, "shatter consumes (thaws) the frozen status");
+  const both = { statuses: {} }; applyElement(both, "acid"); applyElement(both, "frost");
+  const bb = elementStrike(both, 100);
+  ok(bb.total > Math.round(100 * BRITTLE_MULT) + Math.round(100 * SHATTER_BONUS) - 1 && bb.shattered, "acid+frost is the deadliest strike (brittle + bigger shatter)");
+}
+{
+  // fire+gas explosion: igniting a spore cell next to a foe bursts it for AoE damage.
+  const grid = ["########", "#......#", "########"];
+  const w = { floor: 6, width: 8, grid, pos: { x: 7, y: 1 }, monsters: [foe({ x: 4, y: 1, hp: 8, name: "near" })], hazards: [] };
+  for (let x = 2; x <= 5; x += 1) w.hazards.push({ x, y: 1, type: "spores" });
+  w.hazardAt = hazardIndex(w);
+  igniteCell(w, 2, 1);
+  const ev = { log: [], damageTaken: 0, died: false };
+  for (let t = 0; t < 8; t += 1) tickFire(w, { hp: 100, maxHp: 100, statuses: {} }, ev);
+  ok(ev.gasExplode > 0, "fire reaching gas detonates the spore cloud (fire+gas → explode)");
+  ok(!w.monsters[0].alive, "the gas explosion kills an adjacent foe");
+}
+{
+  // Direct gasExplosion: player adjacent takes the burst, foes in radius 1 hurt.
+  const w = { floor: 5, width: 8, monsters: [foe({ x: 3, y: 1, hp: 5 })], pos: { x: 3, y: 1 } };
+  const player = { hp: 50, def: 0, statuses: {} };
+  const ev = { log: [], damageTaken: 0, died: false };
+  gasExplosion(w, 3, 1, player, ev);
+  ok(player.hp < 50 && ev.damageTaken > 0 && !w.monsters[0].alive, "gasExplosion blasts the player + a co-located foe");
+}
+{
+  // Acid consumable corrodes nearby foes; then a bump-attack lands amplified (engine integration).
+  const w = buildFloor("acid-seed", 4);
+  const target = w.monsters[0];
+  target.alive = true; target.hp = 200; target.maxHp = 200; target.statuses = {};
+  target.x = w.pos.x + 1; target.y = w.pos.y;
+  w.grid[target.y] = w.grid[target.y].slice(0, target.x) + "." + w.grid[target.y].slice(target.x + 1);
+  const player = { atk: 10, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: { acid: 1 } };
+  ok(useConsumable(w, player, "acid", { log: [], damageTaken: 0, died: false }) && hasStatus(target, "corroded"), "acid flask corrodes a nearby foe and is spent");
+  const hpBefore = target.hp;
+  step(w, player, "right"); // bump the corroded foe — brittle amplifies the hit
+  ok(hpBefore - target.hp === Math.round(10 * BRITTLE_MULT), "a corroded foe takes amplified bump-attack damage");
+}
+{
+  // Freeze → shatter through the engine: freeze a foe, then a bump-attack shatters it.
+  const w = buildFloor("shatter-seed", 4);
+  const target = w.monsters[0];
+  target.alive = true; target.hp = 200; target.maxHp = 200; target.statuses = {};
+  target.x = w.pos.x + 1; target.y = w.pos.y;
+  w.grid[target.y] = w.grid[target.y].slice(0, target.x) + "." + w.grid[target.y].slice(target.x + 1);
+  const player = { atk: 10, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: { freeze: 1 } };
+  useConsumable(w, player, "freeze", { log: [], damageTaken: 0, died: false });
+  ok(hasStatus(target, "frozen"), "freeze rune freezes the adjacent foe");
+  const hpBefore = target.hp;
+  const ev = step(w, player, "right");
+  ok(ev.shattered && hpBefore - target.hp > 10, "bumping a frozen foe SHATTERS it for bonus damage");
+}
+
+// ── Overflow content: phantom foe + void rift hazard ─────────────────────────────────────────────
+{
+  // The phantom only joins the spawn pool in the deep Overflow act (floor 8+) and carries its flag.
+  const shallow = makeRng("phantom-shallow");
+  let earlyPhantom = false;
+  for (let i = 0; i < 300; i += 1) if (spawnMonster(shallow, 6, i).phantom) earlyPhantom = true;
+  ok(!earlyPhantom, "no phantom spawns before the deep Overflow (floor 8)");
+  const deep = makeRng("phantom-deep");
+  let phantoms = 0;
+  for (let i = 0; i < 400; i += 1) if (spawnMonster(deep, 9, i).phantom) phantoms += 1;
+  ok(phantoms > 0, "phantom spawns in the deep Overflow act");
+}
+{
+  // Torchlight pins the phantom (slowed); true darkness leaves it free.
+  const dark = arena(); dark.floor = 8; dark.torch = 0;
+  const m1 = foe({ phantom: true, x: 5, y: 1, statuses: {} });
+  phantomTick(dark, m1);
+  ok(!hasStatus(m1, "slow"), "a phantom in true darkness is not slowed");
+  const lit = arena(); lit.floor = 8; lit.torch = 12;
+  const m2 = foe({ phantom: true, x: 5, y: 1, statuses: {} });
+  phantomTick(lit, m2);
+  ok(hasStatus(m2, "slow"), "torchlight pins the phantom (slowed)");
+}
+{
+  // Void rift: snuffs the torch, deals shadow damage, and slows the player.
+  const w = arena(); w.floor = 8; w.torch = 20;
+  const player = { hp: 100, def: 0, statuses: {} };
+  const ev = { log: [], damageTaken: 0, died: false };
+  enterHazard(w, player, "rift", ev);
+  ok(w.torch === 0 && ev.riftSnuff === true, "a void rift swallows a lit torch");
+  ok(player.hp < 100 && hasStatus(player, "slow"), "a void rift deals shadow damage and slows you");
+}
+{
+  // The rift only enters the hazard pool in the Overflow act (floor 7+).
+  const shallow = buildFloor("rift-shallow", 4);
+  ok(!shallow.hazards.some((h) => h.type === "rift"), "no rift hazard on mid-act floors");
+  let deepRift = false;
+  for (let s = 0; s < 8 && !deepRift; s += 1) if (buildFloor("rift-deep" + s, 8).hazards.some((h) => h.type === "rift")) deepRift = true;
+  ok(deepRift, "void rifts appear in the Overflow act");
+}
+
+// ── Torch economy: Torchbearer upgrade + extended torch duration ─────────────────────────────────
+{
+  const base = rollEntity({});
+  ok(!(base.inventory && base.inventory.torch), "no starting torch without the Torchbearer upgrade");
+  const e = rollEntity({ torchcraft: 2 });
+  ok(e.inventory.torch === 2 && e.torchSteps === 24, "Torchbearer stocks starting torches + extends torch steps");
+  // The extended duration actually applies when a torch is struck.
+  const w = arena(); w.floor = 7;
+  const player = { hp: 50, def: 0, statuses: {}, torchSteps: 12, inventory: { torch: 1 } };
+  useConsumable(w, player, "torch", { log: [], damageTaken: 0, died: false });
+  ok(w.torch === TORCH_STEPS + 12, "Torchbearer makes each struck torch burn longer");
+}
+
+// ── Act-escalating guardians (combat → hazard → darkness) ────────────────────────────────────────
+{
+  const g3 = buildFloor("guard-esc", 3).monsters.find((m) => m.guardian);
+  ok(g3 && (g3.summon || g3.split) && !g3.lighteater, "act-I guardian is a combat spike (summon/split)");
+  const g6 = buildFloor("guard-esc", 6).monsters.find((m) => m.guardian);
+  ok(g6 && g6.explode && g6.split, "act-II guardian is a hazard spike (explodes + splits)");
+  const g9 = buildFloor("guard-esc", 9).monsters.find((m) => m.guardian);
+  ok(g9 && g9.lighteater && g9.phantom, "act-III guardian is darkness-aware (feeds on dark + no ghost)");
+}
+
+// ── E1 ice patches: wet→ice glaze, slide direction, slide-into-chasm kill, player slide ──────────
+function playerEnt() {
+  return { hp: 50, def: 0, atk: 5, statuses: {}, inventory: {}, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, equipment: {} };
+}
+
+// iceSlide helper — pure positional outcome (wall slam / chasm kill / open glide).
+{
+  const w = arena(12);
+  w.hazards = [{ x: 6, y: 1, type: "chasm" }];
+  w.hazardAt = hazardIndex(w);
+  ok(iceSlide(w, 5, 1, 1, 0).chasm === true, "iceSlide over a chasm reports a kill");
+  const glide = iceSlide(w, 8, 1, 1, 0);
+  ok(glide.x === 9 && !glide.chasm && !glide.wall, "iceSlide onto open floor glides one cell on");
+  ok(iceSlide(w, 10, 1, 1, 0).wall === true, "iceSlide into a wall reports a slam");
+}
+
+// Freeze rune glazes a nearby wet cell into ice; the live hazard index reflects the mutation.
+{
+  const w = arena(12); // floor 5 (Act II)
+  w.hazards = [{ x: 6, y: 1, type: "wet" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 5, y: 1 };
+  const p = playerEnt(); p.inventory.freeze = 1;
+  ok(useConsumable(w, p, "freeze", { log: [], damageTaken: 0, died: false }), "freeze rune is spent");
+  ok(w.hazards[0].type === "ice", "freeze rune glazes a nearby wet cell into ice");
+  ok(w.hazardAt(6, 1) === "ice", "hazard index reflects the live wet→ice mutation (no rebuild)");
+}
+
+// A monster that steps onto ice slides one extra cell — into a chasm it dies.
+{
+  const w = arena(12);
+  w.hazards = [{ x: 5, y: 1, type: "ice" }, { x: 6, y: 1, type: "chasm" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 8, y: 1 }; // player to the right, so the foe greedily steps right onto the ice
+  const m = foe({ x: 4, y: 1, sight: 10, chasing: true });
+  w.monsters = [m];
+  monsterTurn(w, { hp: 100, def: 0, atk: 5, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(!m.alive, "a foe that slides off ice into a chasm is killed");
+}
+
+// A monster that steps onto ice with open floor beyond slides one cell (not stuck on the ice).
+{
+  const w = arena(12);
+  w.hazards = [{ x: 5, y: 1, type: "ice" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 8, y: 1 };
+  const m = foe({ x: 4, y: 1, sight: 10, chasing: true });
+  w.monsters = [m];
+  monsterTurn(w, { hp: 100, def: 0, atk: 5, statuses: {} }, { log: [], damageTaken: 0, died: false }, () => true);
+  ok(m.alive && m.x === 6, "a foe slides one extra cell past the ice in its heading");
+}
+
+// The player also slides on ice — and falls if the slide ends over a chasm.
+{
+  const w = arena(12);
+  w.exit = { x: 0, y: 0 };
+  w.hazards = [{ x: 6, y: 1, type: "ice" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 5, y: 1 };
+  const ev = step(w, playerEnt(), "right");
+  ok(w.pos.x === 7 && ev.slid, "@ stepping onto ice slides one extra cell");
+}
+{
+  const w = arena(12);
+  w.exit = { x: 0, y: 0 };
+  w.hazards = [{ x: 6, y: 1, type: "ice" }, { x: 7, y: 1, type: "chasm" }];
+  w.hazardAt = hazardIndex(w);
+  w.pos = { x: 5, y: 1 };
+  const ev = step(w, playerEnt(), "right");
+  ok(ev.descend === true, "@ sliding off ice into a chasm falls to the next floor");
+}
+
+// E1 is an Act-II (floors 4-6) terrain feature: those floors get wet cells, others do not.
+{
+  const wetA = buildFloor("ice-floor", 5).hazards.some((h) => h.type === "wet");
+  const wetI = buildFloor("ice-floor", 1).hazards.some((h) => h.type === "wet");
+  ok(wetA, "Cisterns/Act-II floors scatter wet cells");
+  ok(!wetI, "Act-I floors have no wet cells");
 }
 
 console.log(failed ? `\nSTAGE 2 COMBAT FAILED (${failed})` : "\nSTAGE 2 COMBAT PASSED");

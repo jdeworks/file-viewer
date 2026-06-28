@@ -78,12 +78,20 @@ function isSearchPassageDetail(detail) {
 }
 
 function ensureStyles() {
-  const id = "stage2-glyph-dungeon-styles";
+  // Three sheets, link-tagged in cascade order (core → ui → overlays). The board styles were split
+  // out of one styles.css to stay under the project LOC cap; load order matters so the responsive
+  // @media overrides in styles-ui.css still win over the base rules in styles.css.
+  ensureStylesheet("stage2-glyph-dungeon-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage2-glyph-dungeon-ui-styles", new URL("./styles-ui.css", import.meta.url).href);
+  ensureStylesheet("stage2-glyph-dungeon-overlay-styles", new URL("./styles-overlays.css", import.meta.url).href);
+}
+
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 

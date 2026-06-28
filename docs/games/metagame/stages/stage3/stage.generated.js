@@ -553,7 +553,7 @@ function aliasedTotal(puzzle) {
 var CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
 var fillColor = (v) => v === FILLED ? FILLED : v === COLOR_B ? COLOR_B : EMPTY;
-var BODY_SOLVES = 13;
+var BODY_SOLVES = 20;
 function sizeForRun(run, shop) {
   const cap = 12 + Number((shop || {}).overclock || 0);
   const ramp = 5 + Math.floor(Number(run.solvedCount || 0) * 7 / BODY_SOLVES);
@@ -730,7 +730,7 @@ function buildGrid(puzzle, handlers) {
     const t = e.target.closest(".s3-cell");
     if (!t || t.dataset.x === void 0) return;
     e.preventDefault();
-    handlers.onCell(Number(t.dataset.x), Number(t.dataset.y), e.button === 2 || e.shiftKey);
+    handlers.onCell(Number(t.dataset.x), Number(t.dataset.y), e.button === 2 || e.shiftKey, e.altKey);
   });
   wrap.addEventListener("contextmenu", (e) => e.preventDefault());
   let lastCursor = null;
@@ -799,12 +799,19 @@ var SHOP_UPGRADES = [
   { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
   { id: "oracle", name: "Oracle", desc: "+1 hint (reveal a correct cell) per snapshot", max: 4 },
   { id: "parity", name: "Parity Unit", desc: "+1 integrity check (flag wrong fills) per snapshot", max: 3 },
-  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 3 }
+  { id: "overclock", name: "Overclock", desc: "+1 to the maximum grid size (deeper, richer snapshots)", max: 3 },
+  // Paid in RETAINED fragments (not registers) — gives the slow fragment currency a real sink.
+  { id: "engram", name: "Engram Bank", desc: "+1 Oracle hint per snapshot — paid in retained fragments", max: 4, currency: "retained" }
 ];
 var BASE = { prefetch: 40, throughput: 80, oracle: 60, parity: 70, overclock: 150 };
 var GROWTH = { prefetch: 1.7, throughput: 1.9, oracle: 1.8, parity: 1.8, overclock: 2 };
-var ACTIVE = /* @__PURE__ */ new Set(["prefetch", "throughput", "overclock", "oracle", "parity"]);
+var RETAINED_BASE = { engram: 2 };
+var ACTIVE = /* @__PURE__ */ new Set(["prefetch", "throughput", "overclock", "oracle", "parity", "engram"]);
+function upgradeCurrency(id) {
+  return (SHOP_UPGRADES.find((u) => u.id === id) || {}).currency === "retained" ? "retained" : "registers";
+}
 function upgradeCost(id, level) {
+  if (upgradeCurrency(id) === "retained") return (RETAINED_BASE[id] || 2) + level;
   return Math.round((BASE[id] || 50) * (GROWTH[id] || 1.8) ** level);
 }
 function upgradeLevel(state, id) {
@@ -817,19 +824,22 @@ function buildShopPanel({ state, save, onClose }) {
     const lvl = upgradeLevel(state, up.id);
     const maxed = lvl >= up.max;
     const cost = upgradeCost(up.id, lvl);
-    const afford = !maxed && Number(state.registers || 0) >= cost;
+    const retained = upgradeCurrency(up.id) === "retained";
+    const bank = Number((retained ? state.retained : state.registers) || 0);
+    const afford = !maxed && bank >= cost;
+    const unit = retained ? "frag" : "reg";
     return `<div class="s3-shop-row">
       <div>
         <strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span>
         <div class="s3-shop-desc">${up.desc}</div>
       </div>
-      <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAX" : cost + " reg"}</button>
+      <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAX" : cost + " " + unit}</button>
     </div>`;
   }
   function paint() {
     box.innerHTML = `
       <div class="s3-shop-head">DEFRAG SHOP
-        <span class="s3-shop-bank">${Number(state.registers || 0)} registers</span>
+        <span class="s3-shop-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</span>
         <button type="button" data-shop="close" class="s3-shop-x" aria-label="close">&#10005;</button>
       </div>
       <div class="s3-shop-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
@@ -844,8 +854,11 @@ function buildShopPanel({ state, save, onClose }) {
     const lvl = Number(state.shopUpgrades[id] || 0);
     if (lvl >= up.max) return;
     const cost = upgradeCost(id, lvl);
-    if (Number(state.registers || 0) < cost) return;
-    state.registers -= cost;
+    const retained = upgradeCurrency(id) === "retained";
+    const bank = Number((retained ? state.retained : state.registers) || 0);
+    if (bank < cost) return;
+    if (retained) state.retained = bank - cost;
+    else state.registers = bank - cost;
     state.shopUpgrades[id] = lvl + 1;
     save?.();
     paint();
@@ -897,6 +910,24 @@ function volatileCount(corruption, filled) {
   const want = 2 + (Number(corruption || 0) - VOLATILE_AT);
   return Math.max(0, Math.min(filled - 1, want));
 }
+function pass1Forced(puzzle) {
+  const forced = /* @__PURE__ */ new Set();
+  if (!puzzle || puzzle.twoColor || !Array.isArray(puzzle.rowClues)) return forced;
+  const H = puzzle.height;
+  const W = puzzle.width;
+  const grid = Array.from({ length: H }, () => new Array(W).fill(UNKNOWN));
+  for (let r = 0; r < H; r += 1) {
+    const res = lineSolve(grid[r], puzzle.rowClues[r]);
+    if (res && res.changed) grid[r] = res.out;
+  }
+  for (let c = 0; c < W; c += 1) {
+    const col = grid.map((row) => row[c]);
+    const res = lineSolve(col, puzzle.colClues[c]);
+    if (res && res.changed) for (let r = 0; r < H; r += 1) grid[r][c] = res.out[r];
+  }
+  for (let y = 0; y < H; y += 1) for (let x = 0; x < W; x += 1) if (grid[y][x] === FILLED) forced.add(key(x, y));
+  return forced;
+}
 function initVolatile(board, corruption, seed) {
   if (Number(corruption || 0) < VOLATILE_AT) return board;
   const filledCells = [];
@@ -907,7 +938,10 @@ function initVolatile(board, corruption, seed) {
   }
   const n = volatileCount(corruption, filledCells.length);
   if (n <= 0) return board;
-  const picked = makeRng(`s3-volatile:${seed}`).shuffle(filledCells).slice(0, n);
+  const forced = pass1Forced(board.puzzle);
+  const interesting = filledCells.filter((k) => !forced.has(k));
+  const candidates = interesting.length >= n ? interesting : filledCells;
+  const picked = makeRng(`s3-volatile:${seed}`).shuffle(candidates).slice(0, n);
   board.volatile = new Set(picked);
   board.locked = /* @__PURE__ */ new Set();
   board.volFilledAt = /* @__PURE__ */ new Map();
@@ -1069,6 +1103,43 @@ function buildDraftPanel({ state, save, onClose }) {
   return { el: box };
 }
 
+// ../../docs/games/metagame/stages/stage3/s3tiers.js
+var TIER_MESSAGES = [
+  {
+    id: "volatile",
+    at: VOLATILE_AT,
+    msg: "CACHE PRESSURE: volatile memory cells activated — a filled cell now fades after a few moves unless you LOCK it (press l)."
+  },
+  {
+    id: "aliased",
+    at: ALIASED_AT,
+    msg: "MEMORY ALIAS: some clues are now obscured as “?” — deduce those lines from the crossing clues."
+  },
+  {
+    id: "decay",
+    at: DECAY_AT,
+    msg: "DECAY CLOCK: an instability meter now climbs as you work — wrong fills spike it; cross it and the snapshot collapses."
+  },
+  {
+    id: "twocolor",
+    at: TWOCOLOR_AT,
+    msg: "HOT / COLD MEMORY: snapshots split into two colours — fill A (space/1) and B (g/2); same-colour blocks need a gap, different colours may touch."
+  }
+];
+function announceTiers(state, corruption) {
+  const run = state.run || (state.run = {});
+  const seen = Array.isArray(run.tiers) ? run.tiers : run.tiers = [];
+  const fired = [];
+  for (const tier of TIER_MESSAGES) {
+    if (Number(corruption || 0) >= tier.at && !seen.includes(tier.id)) {
+      seen.push(tier.id);
+      pushLog(state, tier.msg);
+      fired.push(tier.id);
+    }
+  }
+  return fired;
+}
+
 // ../../docs/games/metagame/stages/stage3/view.js
 function buildStage3Shell() {
   const root = document.createElement("section");
@@ -1160,12 +1231,13 @@ function renderStage3(ctx) {
     pushLog(state, `achievement — ${title}`);
   }
   ensureRunBoons(state);
-  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle");
+  const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle") + upgradeLevel(state, "engram");
   const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
   loadBoard();
   paintHud();
   function loadBoard() {
     const fresh = !state.run.marks;
+    announceTiers(state, corruptionForRun(state.run));
     const puzzle = puzzleForRun(state.run, state.shopUpgrades);
     board = createBoard(puzzle, state.run.marks);
     board.hintsUsed = 0;
@@ -1490,7 +1562,12 @@ function makePieces(runCount) {
   return [tok(), tok(), tok()];
 }
 function makeSlots(runCount) {
-  return makeRng(`s3-slots:${runCount}`).shuffle([0, 1, 2]);
+  const rng = makeRng(`s3-slots:${runCount}`);
+  let slots2 = rng.shuffle([0, 1, 2]);
+  for (let i = 0; i < 8 && slots2[0] === 0 && slots2[1] === 1 && slots2[2] === 2; i += 1) {
+    slots2 = rng.shuffle([0, 1, 2]);
+  }
+  return slots2;
 }
 function normalizeSlots(slots2) {
   if (!Array.isArray(slots2) || slots2.length !== 3) return null;
@@ -1512,7 +1589,7 @@ function freshFrom(meta) {
     retained: Number(meta.retained || 0),
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0 },
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [] },
     memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, slots: slots2, key: pieces2.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]

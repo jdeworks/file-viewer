@@ -937,6 +937,116 @@ try {
   console.error("[bignum] TEST FAILED:", e.message);
 }
 
+// ../../docs/games/metagame/stages/stage1/boss1-data.js
+var TAUNTS = {
+  lobby: [
+    "scattered bits. how careless. shall we begin?",
+    "I have all the time in the world. and all of your bits.",
+    "I am The Defragmenter. fragmentation is… temporary.",
+    "press Fight whenever you're ready to lose."
+  ],
+  general: [
+    "you call that clicking?",
+    "beep boop. I win again.",
+    "your bits are mine now.",
+    "I've been defragging longer than you've existed.",
+    "don't worry, I'll put your bits in order. my order."
+  ],
+  hint: [
+    "I don't fight fair — and you can't out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won't help you.",
+    "a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.",
+    "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
+    "open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing."
+  ],
+  burstCheat: [
+    "look at this box I found! 📦",
+    "oh would you look at that, another box! 📦",
+    "I just love finding these lying around."
+  ],
+  burstNormal: [
+    "I'm on fire! 🔥",
+    "is it getting hot in here?"
+  ],
+  lossGated: [
+    { atLosses: 3, text: "come back any time. I'll be here. always." },
+    { atLosses: 5, text: "you seem frustrated. have you tried… looking around? no reason." },
+    { atLosses: 7, text: "I am so glad nobody can touch me, The Defragmenter. so glad." },
+    { atLosses: 10, text: "there is nothing in the examples folder that could help you. nothing at all. don't look." },
+    { atLosses: 12, text: "even if someone had hidden something in a file somewhere… hypothetically… you'd never find it." },
+    { atLosses: 15, text: "CHEAT? what CHEAT? I have no idea what a CHEAT= line is. stop looking at me." }
+  ],
+  win: [
+    "this is… unexpected. my boxes aren't working. who did this.",
+    "I'll be back. after a full defrag."
+  ],
+  loss: [
+    "better luck next defrag.",
+    "and stay defragged.",
+    "your bits have been reorganized. you're welcome."
+  ]
+};
+var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+var esc3 = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+function readCheat(actions) {
+  if (actions && typeof actions.hasAction === "function") {
+    return !actions.hasAction(1, "cheat_disabled");
+  }
+  return true;
+}
+
+// ../../docs/games/metagame/stages/stage1/boss1-style.js
+var STYLE_ID = "mg-defrag-style";
+function injectStyle() {
+  if (typeof document === "undefined" || document.getElementById(STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = STYLE_ID;
+  el.textContent = `
+.mg-defrag-arena { text-align:center; padding:18px 14px; border:1px solid var(--border); border-radius:12px;
+  background:var(--bg-2); transition:box-shadow .15s, border-color .15s; }
+.mg-defrag-header { font:700 22px/1.1 ui-monospace, monospace; letter-spacing:2px; color:#e0742f; margin-bottom:10px; }
+.mg-defrag-intro { font-size:13px; color:var(--fg-2); margin-bottom:12px; }
+.mg-defrag-hint { font-size:12px; color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);
+  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:8px; padding:7px 10px; margin:8px 0; }
+.mg-defrag-taunt-wrap { min-height:64px; margin:8px 0; }
+.boss-taunt { display:flex; align-items:flex-start; gap:8px; justify-content:center; text-align:left; }
+.boss-taunt-avatar { font-size:26px; line-height:1; flex:0 0 auto; animation:mg-defrag-gear 4s linear infinite; }
+@keyframes mg-defrag-gear { to { transform:rotate(360deg); } }
+.boss-taunt-bubble { position:relative; background:var(--bg); border:1px solid var(--border); border-radius:10px;
+  padding:8px 12px; font-size:13px; color:var(--fg); max-width:300px; min-height:1.2em; }
+.mg-defrag-scores { display:flex; align-items:center; justify-content:center; gap:14px; margin:14px 0; }
+.mg-defrag-side { flex:1 1 0; min-width:80px; }
+.mg-defrag-label { font-size:11px; letter-spacing:2px; color:var(--fg-2); }
+.mg-defrag-score { font:700 40px/1 ui-monospace, monospace; transition:color .12s; }
+.mg-defrag-boss .mg-defrag-score { color:#e0742f; }
+.mg-defrag-bar { height:8px; border-radius:4px; background:var(--border); margin-top:6px; overflow:hidden; }
+.mg-defrag-bar::after { content:''; display:block; height:100%; width:var(--w,0%); background:currentColor; transition:width .1s linear; }
+.user-bar { color:#3fb950; } .boss-bar { color:#e0742f; }
+.mg-defrag-timer { font:700 22px/1 ui-monospace, monospace; flex:0 0 auto; min-width:64px; }
+.mg-defrag-tap { display:block; width:100%; margin:6px 0; padding:26px 0; font:700 22px/1 ui-monospace, monospace;
+  letter-spacing:3px; color:var(--accent-fg); background:var(--accent); border:0; border-radius:12px; cursor:pointer;
+  user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+.mg-defrag-tap:active { transform:scale(.98); }
+.mg-defrag-tap:disabled { opacity:.5; cursor:default; }
+.mg-defrag-status { font-size:13px; color:var(--fg-2); min-height:1.4em; margin-top:6px; }
+.mg-defrag-burst-hot { border-color:#e0742f; box-shadow:0 0 0 2px #e0742f88, 0 0 22px #e0742f55; }
+.mg-defrag-burst-hot .mg-defrag-boss .mg-defrag-score { color:#ff7a18; animation:mg-defrag-pulse .25s ease infinite alternate; }
+.mg-defrag-burst-warm { border-color:#e8c339; box-shadow:0 0 0 2px #e8c33988; }
+.mg-defrag-burst-warm .mg-defrag-boss .mg-defrag-score { color:#e8c339; }
+@keyframes mg-defrag-pulse { from { transform:scale(1); } to { transform:scale(1.12); } }
+.mg-defrag-lobby-btns { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
+.mg-defrag-btn { background:var(--accent); color:var(--accent-fg); border:0; border-radius:8px; padding:9px 18px;
+  cursor:pointer; font-size:14px; }
+.mg-defrag-btn.alt { background:var(--bg); color:var(--fg); border:1px solid var(--border); }
+.mg-defrag-btn:disabled { opacity:.5; cursor:default; }
+.mg-defrag-overlay { margin-top:10px; padding:14px; border-radius:10px; border:1px solid var(--border); background:var(--bg); }
+.mg-defrag-result { font:700 28px/1 ui-monospace, monospace; letter-spacing:2px; margin-bottom:8px; }
+.mg-defrag-result.win { color:#3fb950; } .mg-defrag-result.lose { color:#e03131; }
+.mg-defrag-arena.mg-fade-in { animation:mg-defrag-fade .4s ease; }
+@keyframes mg-defrag-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+`;
+  document.head.appendChild(el);
+}
+
 // ../../docs/games/metagame/stages/stage1/boss-sim.js
 var FIGHT_MS = 2e4;
 var BURST_MS = 800;
@@ -999,239 +1109,9 @@ function simulateFight({ cheatActive, tapsPerSec = 10, seed = 1 } = {}) {
   return { won: userScore > bossScore, userScore, bossScore, cheatActive };
 }
 
-// ../../docs/games/metagame/stages/stage1/boss1.js
-var DEFAULT_TICKET = { m: 1, e: 9 };
-var TAUNTS = {
-  // Shown in the LOBBY (before/after a fight) — intimidation, not the during-fight jabs.
-  lobby: [
-    "scattered bits. how careless. shall we begin?",
-    "I have all the time in the world. and all of your bits.",
-    "I am The Defragmenter. fragmentation is… temporary.",
-    "press Fight whenever you're ready to lose."
-  ],
-  // Shown only DURING the fight.
-  general: [
-    "you call that clicking?",
-    "beep boop. I win again.",
-    "your bits are mine now.",
-    "I've been defragging longer than you've existed.",
-    "don't worry, I'll put your bits in order. my order."
-  ],
-  // The win-mechanic hint, escalating with losses (shown in the lobby). The boss cheats; you can't
-  // out-tap it — you disable the cheat by editing Overwriter.frag (CHEAT=true → false) in the viewer.
-  hint: [
-    // First visit (0 losses): establish the MECHANIC — you can't out-tap a cheater; the fix is
-    // editable, not in this window. No file named yet.
-    "I don't fight fair — and you can't out-tap a cheater. the rules of this fight are written down somewhere you can edit. this window won't help you.",
-    // 0 losses
-    // After the first loss: name the file and the flag outright (kept faintly coy).
-    "a file decides how I cheat. Overwriter.frag — CHEAT=true. flip it to false and come back. …not that you would.",
-    // 1
-    "still losing? the examples folder. Overwriter.frag. CHEAT=false. I'm only saying it so you DON'T do it.",
-    // 2
-    "open Overwriter.frag, set CHEAT=false, fight me again. there. now stop losing."
-    // 3+
-  ],
-  burstCheat: [
-    "look at this box I found! 📦",
-    "oh would you look at that, another box! 📦",
-    "I just love finding these lying around."
-  ],
-  burstNormal: [
-    "I'm on fire! 🔥",
-    "is it getting hot in here?"
-  ],
-  lossGated: [
-    { atLosses: 3, text: "come back any time. I'll be here. always." },
-    { atLosses: 5, text: "you seem frustrated. have you tried… looking around? no reason." },
-    { atLosses: 7, text: "I am so glad nobody can touch me, The Defragmenter. so glad." },
-    { atLosses: 10, text: "there is nothing in the examples folder that could help you. nothing at all. don't look." },
-    { atLosses: 12, text: "even if someone had hidden something in a file somewhere… hypothetically… you'd never find it." },
-    { atLosses: 15, text: "CHEAT? what CHEAT? I have no idea what a CHEAT= line is. stop looking at me." }
-  ],
-  win: [
-    "this is… unexpected. my boxes aren't working. who did this.",
-    "I'll be back. after a full defrag."
-  ],
-  loss: [
-    "better luck next defrag.",
-    "and stay defragged.",
-    "your bits have been reorganized. you're welcome."
-  ]
-};
-var pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-var esc3 = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-function readCheat(actions) {
-  if (actions && typeof actions.hasAction === "function") {
-    return !actions.hasAction(1, "cheat_disabled");
-  }
-  return true;
-}
-var STYLE_ID = "mg-defrag-style";
-function injectStyle() {
-  if (document.getElementById(STYLE_ID)) return;
-  const el = document.createElement("style");
-  el.id = STYLE_ID;
-  el.textContent = `
-.mg-defrag-arena { text-align:center; padding:18px 14px; border:1px solid var(--border); border-radius:12px;
-  background:var(--bg-2); transition:box-shadow .15s, border-color .15s; }
-.mg-defrag-header { font:700 22px/1.1 ui-monospace, monospace; letter-spacing:2px; color:#e0742f; margin-bottom:10px; }
-.mg-defrag-intro { font-size:13px; color:var(--fg-2); margin-bottom:12px; }
-.mg-defrag-hint { font-size:12px; color:var(--accent); background:color-mix(in srgb, var(--accent) 10%, transparent);
-  border:1px solid color-mix(in srgb, var(--accent) 35%, transparent); border-radius:8px; padding:7px 10px; margin:8px 0; }
-.mg-defrag-taunt-wrap { min-height:64px; margin:8px 0; }
-.boss-taunt { display:flex; align-items:flex-start; gap:8px; justify-content:center; text-align:left; }
-.boss-taunt-avatar { font-size:26px; line-height:1; flex:0 0 auto; animation:mg-defrag-gear 4s linear infinite; }
-@keyframes mg-defrag-gear { to { transform:rotate(360deg); } }
-.boss-taunt-bubble { position:relative; background:var(--bg); border:1px solid var(--border); border-radius:10px;
-  padding:8px 12px; font-size:13px; color:var(--fg); max-width:300px; min-height:1.2em; }
-.mg-defrag-scores { display:flex; align-items:center; justify-content:center; gap:14px; margin:14px 0; }
-.mg-defrag-side { flex:1 1 0; min-width:80px; }
-.mg-defrag-label { font-size:11px; letter-spacing:2px; color:var(--fg-2); }
-.mg-defrag-score { font:700 40px/1 ui-monospace, monospace; transition:color .12s; }
-.mg-defrag-boss .mg-defrag-score { color:#e0742f; }
-.mg-defrag-bar { height:8px; border-radius:4px; background:var(--border); margin-top:6px; overflow:hidden; }
-.mg-defrag-bar::after { content:''; display:block; height:100%; width:var(--w,0%); background:currentColor; transition:width .1s linear; }
-.user-bar { color:#3fb950; } .boss-bar { color:#e0742f; }
-.mg-defrag-timer { font:700 22px/1 ui-monospace, monospace; flex:0 0 auto; min-width:64px; }
-.mg-defrag-tap { display:block; width:100%; margin:6px 0; padding:26px 0; font:700 22px/1 ui-monospace, monospace;
-  letter-spacing:3px; color:var(--accent-fg); background:var(--accent); border:0; border-radius:12px; cursor:pointer;
-  user-select:none; -webkit-user-select:none; touch-action:manipulation; }
-.mg-defrag-tap:active { transform:scale(.98); }
-.mg-defrag-tap:disabled { opacity:.5; cursor:default; }
-.mg-defrag-status { font-size:13px; color:var(--fg-2); min-height:1.4em; margin-top:6px; }
-.mg-defrag-burst-hot { border-color:#e0742f; box-shadow:0 0 0 2px #e0742f88, 0 0 22px #e0742f55; }
-.mg-defrag-burst-hot .mg-defrag-boss .mg-defrag-score { color:#ff7a18; animation:mg-defrag-pulse .25s ease infinite alternate; }
-.mg-defrag-burst-warm { border-color:#e8c339; box-shadow:0 0 0 2px #e8c33988; }
-.mg-defrag-burst-warm .mg-defrag-boss .mg-defrag-score { color:#e8c339; }
-@keyframes mg-defrag-pulse { from { transform:scale(1); } to { transform:scale(1.12); } }
-.mg-defrag-lobby-btns { display:flex; gap:8px; justify-content:center; margin-top:10px; flex-wrap:wrap; }
-.mg-defrag-btn { background:var(--accent); color:var(--accent-fg); border:0; border-radius:8px; padding:9px 18px;
-  cursor:pointer; font-size:14px; }
-.mg-defrag-btn.alt { background:var(--bg); color:var(--fg); border:1px solid var(--border); }
-.mg-defrag-btn:disabled { opacity:.5; cursor:default; }
-.mg-defrag-overlay { margin-top:10px; padding:14px; border-radius:10px; border:1px solid var(--border); background:var(--bg); }
-.mg-defrag-result { font:700 28px/1 ui-monospace, monospace; letter-spacing:2px; margin-bottom:8px; }
-.mg-defrag-result.win { color:#3fb950; } .mg-defrag-result.lose { color:#e03131; }
-.mg-defrag-arena.mg-fade-in { animation:mg-defrag-fade .4s ease; }
-@keyframes mg-defrag-fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-`;
-  document.head.appendChild(el);
-}
-function mountDefragmenter(arena, opts = {}) {
-  const { stage, onDefeat } = opts;
-  const state = opts.state || {};
-  const save = typeof opts.save === "function" ? opts.save : () => {
-  };
-  const checkMessages2 = typeof opts.checkMessages === "function" ? opts.checkMessages : () => {
-  };
-  const bellLoad2 = typeof opts.bellLoad === "function" ? opts.bellLoad : () => ({});
-  const bellAdd2 = typeof opts.bellAdd === "function" ? opts.bellAdd : () => {
-  };
-  const actions = opts.actions || null;
-  const ticket = opts.stage && opts.stage.bossTicket || DEFAULT_TICKET;
-  const halfTicket = mulScalar(ticket, 0.5);
-  const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
-  const pay = (price) => {
-    state.bits = sub(state.bits, price);
-  };
-  injectStyle();
-  let destroyed = false;
-  const timers = /* @__PURE__ */ new Set();
-  const listeners = [];
-  let lobbyTaunt = null;
-  const setT = (fn, ms) => {
-    const id = setTimeout(() => {
-      timers.delete(id);
-      if (!destroyed) fn();
-    }, ms);
-    timers.add(id);
-    return id;
-  };
-  const setI = (fn, ms) => {
-    const id = setInterval(() => {
-      if (!destroyed) fn();
-    }, ms);
-    timers.add(id);
-    return id;
-  };
-  const on = (target, ev, fn) => {
-    target.addEventListener(ev, fn);
-    listeners.push([target, ev, fn]);
-  };
-  let lobbyCheat = readCheat(actions);
-  if (!state.bossSeen) {
-    state.bossSeen = true;
-    save(state);
-    lobbyCheat = readCheat(actions);
-    fireAchievement("ach-boss-seen");
-  }
-  function fireAchievement(id) {
-    state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
-    if (state.achievements.includes(id)) return;
-    state.achievements.push(id);
-    save(state);
-    const bellText = {
-      "ach-boss-seen": "🥊 you stared the Defragmenter down.",
-      "ach-boss-cheat-found": "🕵️ something was off. you fixed it.",
-      "ach-boss-victory": "🏆 defragmented — your bits, your win.",
-      "ach-boss-lose": "😤 it cheated. of course it did."
-    }[id];
-    if (bellText) bellAdd2(id, bellText, bellLoad2());
-  }
-  function lobbyPool() {
-    return TAUNTS.lobby;
-  }
-  function winHint() {
-    return TAUNTS.hint[Math.min(state.bossLossCount || 0, TAUNTS.hint.length - 1)];
-  }
-  function makeTauntDialog() {
-    const bubble = arena.querySelector(".boss-taunt-bubble");
-    let idleId = null;
-    function show(text) {
-      if (bubble) bubble.textContent = text;
-    }
-    function startIdle() {
-      stopIdle();
-      const tick = () => {
-        show(pick(lobbyPool()));
-        idleId = setT(tick, 8e3 + Math.random() * 4e3);
-      };
-      tick();
-    }
-    function stopIdle() {
-      if (idleId) {
-        clearTimeout(idleId);
-        timers.delete(idleId);
-        idleId = null;
-      }
-    }
-    return { show, startIdle, stopIdle };
-  }
-  function renderLobby(extraStatus) {
-    if (lobbyTaunt) lobbyTaunt.stopIdle();
-    arena.innerHTML = `<div class="mg-defrag-arena mg-fade-in"><div class="mg-defrag-header">THE DEFRAGMENTER</div><div class="mg-defrag-intro">your bits are scattered. I'll reorganize them — into mine.</div><div class="mg-defrag-taunt-wrap"><div class="boss-taunt"><span class="boss-taunt-avatar">⚙️</span><div class="boss-taunt-bubble"></div></div></div><div class="mg-defrag-hint">💡 ` + esc3(winHint()) + '</div><div class="mg-defrag-status">' + esc3(extraStatus || "") + '</div><div class="mg-defrag-lobby-btns"><button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? "" : " disabled") + ">Fight — " + esc3(toDisplay(ticket)) + '</button><button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button></div></div>';
-    lobbyTaunt = makeTauntDialog();
-    lobbyTaunt.startIdle();
-    on(arena.querySelector(".mg-defrag-fight"), "click", () => {
-      if (!canPay(ticket)) {
-        renderLobby("insufficient bits — the ticket is " + toDisplay(ticket) + ".");
-        return;
-      }
-      pay(ticket);
-      state.bossEntered = true;
-      fireAchievement("ach-boss-enter");
-      save(state);
-      lobbyTaunt.stopIdle();
-      startFight();
-    });
-    on(arena.querySelector(".mg-defrag-retreat"), "click", retreat);
-  }
-  function retreat() {
-    cleanup();
-    if (typeof opts.onRetreat === "function") opts.onRetreat();
-  }
-  function startFight() {
+// ../../docs/games/metagame/stages/stage1/boss1-fight.js
+function makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish }) {
+  return function startFight() {
     const cheatActive = readCheat(actions);
     const p = fightParams(cheatActive);
     const bursts = makeBurstSchedule(Date.now(), cheatActive);
@@ -1314,17 +1194,138 @@ function mountDefragmenter(arena, opts = {}) {
       updateDisplay();
       if (remaining <= 0) {
         fightActive = false;
-        clearInterval(tickId);
-        timers.delete(tickId);
+        clearTimer(tickId);
         tapBtn.disabled = true;
         arenaEl.classList.remove("mg-defrag-burst-hot", "mg-defrag-burst-warm");
-        setT(() => finishFight(userScore, bossScore, cheatActive), 1e3);
+        setT(() => onFinish(userScore, bossScore, cheatActive), 1e3);
       }
     }, 100);
+  };
+}
+
+// ../../docs/games/metagame/stages/stage1/boss1.js
+var DEFAULT_TICKET = { m: 1, e: 9 };
+function mountDefragmenter(arena, opts = {}) {
+  const { stage, onDefeat } = opts;
+  const state = opts.state || {};
+  const save = typeof opts.save === "function" ? opts.save : () => {
+  };
+  const checkMessages2 = typeof opts.checkMessages === "function" ? opts.checkMessages : () => {
+  };
+  const bellLoad2 = typeof opts.bellLoad === "function" ? opts.bellLoad : () => ({});
+  const bellAdd2 = typeof opts.bellAdd === "function" ? opts.bellAdd : () => {
+  };
+  const actions = opts.actions || null;
+  const ticket = opts.stage && opts.stage.bossTicket || DEFAULT_TICKET;
+  const halfTicket = mulScalar(ticket, 0.5);
+  const canPay = (price) => gte(state.bits || { m: 0, e: 0 }, price);
+  const pay = (price) => {
+    state.bits = sub(state.bits, price);
+  };
+  injectStyle();
+  let destroyed = false;
+  const timers = /* @__PURE__ */ new Set();
+  const listeners = [];
+  let lobbyTaunt = null;
+  const setT = (fn, ms) => {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      if (!destroyed) fn();
+    }, ms);
+    timers.add(id);
+    return id;
+  };
+  const setI = (fn, ms) => {
+    const id = setInterval(() => {
+      if (!destroyed) fn();
+    }, ms);
+    timers.add(id);
+    return id;
+  };
+  const clearTimer = (id) => {
+    clearInterval(id);
+    timers.delete(id);
+  };
+  const on = (target, ev, fn) => {
+    target.addEventListener(ev, fn);
+    listeners.push([target, ev, fn]);
+  };
+  let lobbyCheat = readCheat(actions);
+  void lobbyCheat;
+  if (!state.bossSeen) {
+    state.bossSeen = true;
+    save(state);
+    lobbyCheat = readCheat(actions);
+    fireAchievement("ach-boss-seen");
   }
+  function fireAchievement(id) {
+    state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
+    if (state.achievements.includes(id)) return;
+    state.achievements.push(id);
+    save(state);
+    const bellText = {
+      "ach-boss-seen": "🥊 you stared the Defragmenter down.",
+      "ach-boss-cheat-found": "🕵️ something was off. you fixed it.",
+      "ach-boss-victory": "🏆 defragmented — your bits, your win.",
+      "ach-boss-lose": "😤 it cheated. of course it did."
+    }[id];
+    if (bellText) bellAdd2(id, bellText, bellLoad2());
+  }
+  function lobbyPool() {
+    return TAUNTS.lobby;
+  }
+  function winHint() {
+    return TAUNTS.hint[Math.min(state.bossLossCount || 0, TAUNTS.hint.length - 1)];
+  }
+  function makeTauntDialog() {
+    const bubble = arena.querySelector(".boss-taunt-bubble");
+    let idleId = null;
+    function show(text) {
+      if (bubble) bubble.textContent = text;
+    }
+    function startIdle() {
+      stopIdle();
+      const tick = () => {
+        show(pick(lobbyPool()));
+        idleId = setT(tick, 8e3 + Math.random() * 4e3);
+      };
+      tick();
+    }
+    function stopIdle() {
+      if (idleId) {
+        clearTimeout(idleId);
+        timers.delete(idleId);
+        idleId = null;
+      }
+    }
+    return { show, startIdle, stopIdle };
+  }
+  function renderLobby(extraStatus) {
+    if (lobbyTaunt) lobbyTaunt.stopIdle();
+    arena.innerHTML = `<div class="mg-defrag-arena mg-fade-in"><div class="mg-defrag-header">THE DEFRAGMENTER</div><div class="mg-defrag-intro">your bits are scattered. I'll reorganize them — into mine.</div><div class="mg-defrag-taunt-wrap"><div class="boss-taunt"><span class="boss-taunt-avatar">⚙️</span><div class="boss-taunt-bubble"></div></div></div><div class="mg-defrag-hint">💡 ` + esc3(winHint()) + '</div><div class="mg-defrag-status">' + esc3(extraStatus || "") + '</div><div class="mg-defrag-lobby-btns"><button class="mg-defrag-btn mg-defrag-fight" type="button"' + (canPay(ticket) ? "" : " disabled") + ">Fight — " + esc3(toDisplay(ticket)) + '</button><button class="mg-defrag-btn alt mg-defrag-retreat" type="button">Retreat</button></div></div>';
+    lobbyTaunt = makeTauntDialog();
+    lobbyTaunt.startIdle();
+    on(arena.querySelector(".mg-defrag-fight"), "click", () => {
+      if (!canPay(ticket)) {
+        renderLobby("insufficient bits — the ticket is " + toDisplay(ticket) + ".");
+        return;
+      }
+      pay(ticket);
+      state.bossEntered = true;
+      fireAchievement("ach-boss-enter");
+      save(state);
+      lobbyTaunt.stopIdle();
+      startFight();
+    });
+    on(arena.querySelector(".mg-defrag-retreat"), "click", retreat);
+  }
+  function retreat() {
+    cleanup();
+    if (typeof opts.onRetreat === "function") opts.onRetreat();
+  }
+  const startFight = makeFight({ arena, actions, setT, setI, clearTimer, on, onFinish: finishFight });
   function finishFight(userScore, bossScore, cheatActive) {
     const won = userScore > bossScore;
-    const arenaEl = arena.querySelector(".mg-defrag-arena");
     const statusEl = arena.querySelector(".mg-defrag-status");
     const bubble = arena.querySelector(".boss-taunt-bubble");
     if (won) {
@@ -1865,460 +1866,6 @@ function clickTick() {
   }
 }
 
-// ../../docs/games/metagame/stages/stage1/achievements1.js
-function fromN(n) {
-  if (!isFinite(n) || n <= 0) return { m: 0, e: 0 };
-  let e = 0, m = n;
-  while (m >= 1e3) {
-    m /= 1e3;
-    e += 3;
-  }
-  return { m, e };
-}
-function bigGte(bn, n) {
-  if (!bn || bn.m === 0) return n <= 0;
-  const target = n <= 0 ? { m: 0, e: 0 } : fromN(n);
-  if (bn.e !== target.e) return bn.e > target.e;
-  return bn.m >= target.m;
-}
-var ACHIEVEMENTS1 = [
-  // --- Milestone (1–8) ---
-  {
-    id: "ach-bits-100",
-    name: "First Hundred 💯",
-    icon: "💯",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 100),
-    bell: "🏆 100 bits. it begins."
-  },
-  {
-    id: "ach-bits-1k",
-    name: "Kilobit ⓚ",
-    icon: "ⓚ",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e3),
-    bell: "🏆 a thousand bits."
-  },
-  {
-    id: "ach-bits-10k",
-    name: "Ten-K 🔟",
-    icon: "🔟",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e4),
-    bell: "🏆 ten thousand."
-  },
-  {
-    id: "ach-bits-100k",
-    name: "Six Figures 📈",
-    icon: "📈",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e5),
-    bell: "🏆 a hundred thousand."
-  },
-  {
-    id: "ach-bits-1m",
-    name: "Megabit 🧮",
-    icon: "🧮",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e6),
-    bell: "🏆 one million bits."
-  },
-  {
-    id: "ach-bits-1b",
-    name: "Gigabit 🌐",
-    icon: "🌐",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e9),
-    bell: "🏆 a billion. boss money."
-  },
-  {
-    id: "ach-bits-1aa",
-    name: "Petascale 🪐",
-    icon: "🪐",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e15),
-    bell: "🏆 1aa. past safe-integer."
-  },
-  {
-    id: "ach-bits-1bb",
-    name: "Beyond 🌌",
-    icon: "🌌",
-    category: "milestone",
-    condition: (state) => bigGte(state.totalBits, 1e96),
-    bell: "🏆 1bb. absurd."
-  },
-  // --- Behavior / buy-count (9–11) ---
-  {
-    id: "ach-buy-1",
-    name: "First Blood 🩸",
-    icon: "🩸",
-    category: "behavior",
-    condition: (state) => (state.totalBought || 0) >= 1,
-    bell: "⚡ first purchase."
-  },
-  {
-    id: "ach-buy-10",
-    name: "Shopper 🛒",
-    icon: "🛒",
-    category: "behavior",
-    condition: (state) => (state.totalBought || 0) >= 10,
-    bell: "⚡ ten buys deep."
-  },
-  {
-    id: "ach-buy-100",
-    name: "Hoarder 📦",
-    icon: "📦",
-    category: "behavior",
-    condition: (state) => (state.totalBought || 0) >= 100,
-    bell: "⚡ a hundred purchases."
-  },
-  // --- Speed (12–14) ---
-  {
-    id: "ach-speed-1k-2m",
-    name: "Quick Start ⏱",
-    icon: "⏱",
-    category: "speed",
-    condition: (state) => bigGte(state.totalBits, 1e3) && !!state.runStartedAt && Date.now() - state.runStartedAt <= 2 * 60 * 1e3,
-    bell: "🚀 1K in two minutes."
-  },
-  {
-    id: "ach-speed-1m-15m",
-    name: "Sprinter 🏃",
-    icon: "🏃",
-    category: "speed",
-    condition: (state) => bigGte(state.totalBits, 1e6) && !!state.runStartedAt && Date.now() - state.runStartedAt <= 15 * 60 * 1e3,
-    bell: "🚀 1M in fifteen."
-  },
-  {
-    id: "ach-speed-1b-30m",
-    name: "Velocity 🌠",
-    icon: "🌠",
-    category: "speed",
-    condition: (state) => bigGte(state.totalBits, 1e9) && !!state.runStartedAt && Date.now() - state.runStartedAt <= 30 * 60 * 1e3,
-    bell: "🚀 1B in half an hour."
-  },
-  // --- Manager (15–17) ---
-  {
-    id: "ach-mgr-1",
-    name: "Automation 🤖",
-    icon: "🤖",
-    category: "manager",
-    condition: (state) => {
-      const mgrs = state.managers || {};
-      return Object.values(mgrs).some((m) => (m.level || 0) >= 1);
-    },
-    bell: "🛠 first manager hired."
-  },
-  {
-    id: "ach-mgr-5",
-    name: "Middle Management 🧑‍💼",
-    icon: "🧑‍💼",
-    category: "manager",
-    condition: (state) => {
-      const mgrs = state.managers || {};
-      const total = Object.values(mgrs).reduce((sum, m) => sum + (m.level || 0), 0);
-      return total >= 5;
-    },
-    bell: "🛠 five levels of managers."
-  },
-  {
-    id: "ach-mgr-solvent",
-    name: "In the Black 💹",
-    icon: "💹",
-    category: "manager",
-    condition: (state) => {
-      const mgrs = state.managers || {};
-      const hired = Object.values(mgrs).filter((m) => (m.level || 0) >= 1).length;
-      return (state.netRate || 0) > 0 && hired >= 3;
-    },
-    bell: "🛠 three managers, still profitable."
-  },
-  // --- Behavior: net-negative (18) ---
-  // Requires state._netNegSince to be set by the game tick (WP-S1-09) when netRate first goes
-  // negative. The tick must set state._netNegSince = Date.now() on transition to negative, and
-  // clear it (set to 0/null) when netRate returns to >= 0.
-  {
-    id: "ach-net-neg",
-    name: "In the Red 🔻",
-    icon: "🔻",
-    category: "behavior",
-    condition: (state) => !!state._netNegSince && Date.now() - state._netNegSince >= 1e4,
-    bell: "🔻 you ran negative. lesson learned."
-  },
-  // --- Behavior: zero after 1M (19) ---
-  {
-    id: "ach-zero",
-    name: "Rock Bottom 🕳",
-    icon: "🕳",
-    category: "behavior",
-    condition: (state) => bigGte(state.totalBits, 1e6) && !!state.bits && state.bits.m === 0,
-    bell: "🕳 back to nothing."
-  },
-  // --- Prestige (20–22) ---
-  {
-    id: "ach-prestige-1",
-    name: "Gravity Well 🌀",
-    icon: "🌀",
-    category: "prestige",
-    condition: (state) => Array.isArray(state.pullFactors) && state.pullFactors.length >= 1,
-    bell: "🌀 first reset. pull begins."
-  },
-  {
-    id: "ach-prestige-3",
-    name: "Event Horizon 🕳️",
-    icon: "🕳️",
-    category: "prestige",
-    condition: (state) => Array.isArray(state.pullFactors) && state.pullFactors.length >= 3,
-    bell: "🌀 three resets deep."
-  },
-  {
-    id: "ach-prestige-10aa",
-    name: "Heavy Pull 🪨",
-    icon: "🪨",
-    category: "prestige",
-    // globalPull = product of all pullFactors; must be >= 10 at the time of a reset.
-    // The condition is polled each tick; it fires once pullFactors product reaches 10.
-    condition: (state) => {
-      const factors = state.pullFactors;
-      if (!Array.isArray(factors) || factors.length === 0) return false;
-      const globalPull2 = factors.reduce((a, b) => a * b, 1);
-      return globalPull2 >= 10;
-    },
-    bell: "🌀 a reset worth ×10+ pull."
-  },
-  // --- Boss: enter (23) ---
-  {
-    id: "ach-boss-enter",
-    name: "Challenger ⚔",
-    icon: "⚔",
-    category: "boss",
-    condition: (state) => !!state.bossEntered,
-    bell: "⚔ you paid to fight."
-  },
-  // --- Boss: lose (24) ---
-  {
-    id: "ach-boss-lose",
-    name: "Out-Cheated 😤",
-    icon: "😤",
-    category: "boss",
-    condition: (state) => (state.bossLossCount || 0) >= 1,
-    bell: "😤 it cheated. of course it did."
-  },
-  // --- Secret: fast tap (25) ---
-  {
-    id: "ach-secret-fast-tap",
-    name: "Speed Demon 🤫",
-    icon: "🤫",
-    category: "behavior",
-    secret: true,
-    // Requires state._fastTapAt set by the click handler (WP-S1-09) when >= 12 taps occur in 1 s.
-    condition: (state) => !!state._fastTapUnlocked,
-    bell: "🤫 you're fast. noted."
-  },
-  // --- Behavior: idle (26) ---
-  {
-    id: "ach-flavor-idle",
-    name: "Patience ⏳",
-    icon: "⏳",
-    category: "behavior",
-    // Requires state._gameOpenedAt (epoch ms) set on mount. netRate > 0 and >= 10 min open.
-    condition: (state) => (state.netRate || 0) > 0 && !!state._gameOpenedAt && Date.now() - state._gameOpenedAt >= 10 * 60 * 1e3,
-    bell: "⏳ you let it run. it ran."
-  },
-  // --- Boss: seen (27) ---
-  {
-    id: "ach-boss-seen",
-    name: "First Encounter 🥊",
-    icon: "🥊",
-    category: "boss",
-    condition: (state) => state.bossSeen === true,
-    bell: "🥊 you stared the Defragmenter down."
-  },
-  // --- Boss: cheat found (28) ---
-  // Legacy Stage 1 achievement entry; canonical v3 unlocks use stage1.cheat_disabled.
-  {
-    id: "ach-boss-cheat-found",
-    name: "Suspicious Activity 🕵️",
-    icon: "🕵️",
-    category: "boss",
-    condition: () => false,
-    bell: "🕵️ something was off. you fixed it."
-  },
-  // --- Boss: victory (29) ---
-  {
-    id: "ach-boss-victory",
-    name: "Defragmented 🏆",
-    icon: "🏆",
-    category: "boss",
-    condition: (state) => Array.isArray(state.defeated) && state.defeated.includes(1),
-    bell: "🏆 defragmented — your bits, your win."
-  }
-];
-
-// ../../docs/games/metagame/stages/stage1/messages1.js
-function bigGte2(bn, n) {
-  if (!bn || bn.m === 0) return n <= 0;
-  if (!isFinite(n)) return false;
-  let e = 0, m = n;
-  while (m >= 1e3) {
-    m /= 1e3;
-    e += 3;
-  }
-  if (bn.e !== e) return bn.e > e;
-  return bn.m >= m;
-}
-var MESSAGES1 = [
-  {
-    id: "bell-nothing",
-    text: "🌑 nothing here",
-    trigger: "game-start",
-    condition: () => true,
-    maxCount: 1,
-    removeAfterFire: true
-  },
-  {
-    id: "bell-firstsight",
-    text: "👁 I can see something",
-    trigger: "bit-earn",
-    condition: (state) => bigGte2(state.bits, 10),
-    maxCount: 1,
-    removeAfterFire: true
-  },
-  {
-    id: "bell-stronger",
-    text: "⚡ I feel stronger already",
-    trigger: "buy",
-    condition: (state) => (state.totalBought || 0) < 5,
-    maxCount: void 0,
-    removeAfterFire: false
-  },
-  {
-    id: "bell-reset",
-    text: "🕳 where did everything go :(",
-    trigger: "bit-lose",
-    condition: (state) => !bigGte2(state.bits, 10),
-    maxCount: void 0,
-    removeAfterFire: false
-  },
-  {
-    id: "bell-halfway",
-    text: "🌗 halfway there",
-    trigger: "bit-earn",
-    condition: (state) => bigGte2(state.totalBits, 500),
-    maxCount: 1,
-    removeAfterFire: true
-  },
-  {
-    id: "bell-patient",
-    text: "⏳ patience has a cost",
-    trigger: "buy",
-    condition: (state) => (state.totalBought || 0) >= 10,
-    maxCount: 1,
-    removeAfterFire: true
-  },
-  // §2.2 Sub-stage first-unlock bells
-  { id: "bell-mult", text: "✖ now my taps multiply.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-mult"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
-  { id: "bell-box", text: "🧰 a box. it makes more of me.", trigger: "bit-earn", condition: (state) => bigGte2(state.bits, 500), maxCount: 1, removeAfterFire: true },
-  { id: "bell-boost", text: "📡 the box hums louder now.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-boost"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
-  { id: "bell-cluster", text: "🧊 a cluster. things are accelerating.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-cluster"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
-  { id: "bell-array", text: "🛰 it runs without me. that's new.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-array"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
-  { id: "bell-neural", text: "🧠 it's… thinking? everything multiplies.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-neural"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
-  { id: "bell-quantum", text: "⚛ my tap fractured into many.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-quantum"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
-  // §8.5 Prestige bell (unlimited, fires each time)
-  { id: "bell-reset-prestige", text: "🌀 collapsed. denser now.", trigger: "prestige", condition: () => true, maxCount: void 0, removeAfterFire: false },
-  // §7.3 Boss-hint bells (fire on 'boss-loss' trigger at 5/10/15 losses)
-  { id: "bell-boss-hint-1", text: '💬 "have you tried… looking around?" — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 5, maxCount: 1, removeAfterFire: true },
-  { id: "bell-boss-hint-2", text: '💬 "there is nothing in the examples. nothing." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 10, maxCount: 1, removeAfterFire: true },
-  { id: "bell-boss-hint-3", text: '💬 "CHEAT= ? I have no idea what that is." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 15, maxCount: 1, removeAfterFire: true }
-];
-
-// ../../docs/games/metagame/stages/stage1/s1bell.js
-var BELL_KEY = "fv:games:mg:bell";
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-}
-function bellLoad() {
-  try {
-    const s = JSON.parse(localStorage.getItem(BELL_KEY)) || {};
-    return {
-      messages: Array.isArray(s.messages) ? s.messages : [],
-      fired: s.fired && typeof s.fired === "object" ? s.fired : {},
-      removed: Array.isArray(s.removed) ? s.removed : [],
-      lastReadCount: Number(s.lastReadCount) || 0
-    };
-  } catch {
-    return { messages: [], fired: {}, removed: [], lastReadCount: 0 };
-  }
-}
-function bellSave(bs) {
-  try {
-    localStorage.setItem(BELL_KEY, JSON.stringify(bs));
-  } catch {
-  }
-}
-function bellAdd(id, text, bs) {
-  const state = bs || bellLoad();
-  const existing = state.messages.find((m) => m.id === id);
-  if (existing) existing.count++;
-  else state.messages.push({ id, text, count: 1, ts: Date.now() });
-  bellSave(state);
-  updateBellDot();
-}
-var bellRoot = null;
-function updateBellDot() {
-  if (!bellRoot) return;
-  const bs = bellLoad();
-  const total = bs.messages.reduce((s, m) => s + m.count, 0);
-  const dot = bellRoot.querySelector(".mg-bell-dot");
-  if (dot) dot.hidden = !(total > bs.lastReadCount);
-}
-var activeMessages = null;
-function loadActiveMessages(bs) {
-  const removed = new Set(bs.removed || []);
-  return MESSAGES1.filter((m) => !removed.has(m.id));
-}
-function checkMessages(eventType, state, bs, v3Bell = null) {
-  if (!activeMessages) activeMessages = loadActiveMessages(bs);
-  let changed = false;
-  for (const msg of activeMessages.slice()) {
-    if (msg.trigger !== eventType && msg.trigger !== "any") continue;
-    if (msg.maxCount !== void 0 && (bs.fired[msg.id] || 0) >= msg.maxCount) continue;
-    if (!msg.condition(state)) continue;
-    const firstFire = (bs.fired[msg.id] || 0) === 0;
-    bellAdd(msg.id, msg.text, bs);
-    if (firstFire) v3Bell?.showBell?.(`stage1.${msg.id}`, msg.text, { stage: 1 });
-    bs.fired[msg.id] = (bs.fired[msg.id] || 0) + 1;
-    if (msg.removeAfterFire) {
-      bs.removed = bs.removed || [];
-      if (!bs.removed.includes(msg.id)) bs.removed.push(msg.id);
-      activeMessages = activeMessages.filter((m) => m.id !== msg.id);
-    }
-    changed = true;
-  }
-  if (changed) bellSave(bs);
-}
-
-// ../../docs/games/metagame/stages/stage1/s1achpanel.js
-var PER_ACH_MULT = 1.02;
-function renderAchievementsPanel({ panelsEl, state }) {
-  const unlocked = new Set(state.achievements || []);
-  const list = ACHIEVEMENTS1.filter((a) => a.id !== "ach-boss-cheat-found");
-  const n = list.filter((a) => unlocked.has(a.id)).length;
-  const total = Math.pow(PER_ACH_MULT, n);
-  const pct = Math.round((total - 1) * 100);
-  const head = '<div class="mg-s1-ach-head"><span class="mg-s1-ach-count">🏆 ' + n + " / " + list.length + '</span><span class="mg-s1-ach-mult">×' + total.toFixed(2) + " <small>+" + pct + "% to clicks &amp; income</small></span></div>";
-  const rows = list.map((a) => {
-    const got = unlocked.has(a.id);
-    const secret = a.secret && !got;
-    const icon = secret ? "❔" : a.icon || "🏆";
-    const name = secret ? '??? <span class="mg-s1-ach-secret">hidden</span>' : escapeHtml(a.name);
-    const desc = secret ? "Unlock condition hidden — keep playing." : escapeHtml(a.bell || "");
-    const cls = got ? " mg-s1-ach-got" : " mg-s1-ach-locked";
-    return '<div class="mg-s1-ach' + cls + '"><span class="mg-s1-ach-icon">' + icon + '</span><span class="mg-s1-ach-text"><strong>' + name + '</strong><span class="mg-s1-ach-desc">' + desc + '</span></span><span class="mg-s1-ach-chip" title="Each achievement grants ×1.02 to clicks &amp; income">+2%</span></div>';
-  }).join("");
-  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="achievements">' + head + '<div class="mg-s1-ach-list">' + rows + "</div></div>";
-}
-
 // ../../docs/games/metagame/stages/stage1/s1economy.js
 function totalCost(t, owned, n) {
   if (n <= 0) return ZERO;
@@ -2522,6 +2069,439 @@ function pullGain(totalBitsAtReset) {
   const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
   return Math.max(2, 2 + Math.pow(Math.log10(ratio), 1.92));
 }
+
+// ../../docs/games/metagame/stages/stage1/messages1.js
+function bigGte(bn, n) {
+  if (!bn || bn.m === 0) return n <= 0;
+  if (!isFinite(n)) return false;
+  let e = 0, m = n;
+  while (m >= 1e3) {
+    m /= 1e3;
+    e += 3;
+  }
+  if (bn.e !== e) return bn.e > e;
+  return bn.m >= m;
+}
+var MESSAGES1 = [
+  {
+    id: "bell-nothing",
+    text: "🌑 nothing here",
+    trigger: "game-start",
+    condition: () => true,
+    maxCount: 1,
+    removeAfterFire: true
+  },
+  {
+    id: "bell-firstsight",
+    text: "👁 I can see something",
+    trigger: "bit-earn",
+    condition: (state) => bigGte(state.bits, 10),
+    maxCount: 1,
+    removeAfterFire: true
+  },
+  {
+    id: "bell-stronger",
+    text: "⚡ I feel stronger already",
+    trigger: "buy",
+    condition: (state) => (state.totalBought || 0) < 5,
+    maxCount: void 0,
+    removeAfterFire: false
+  },
+  {
+    id: "bell-reset",
+    text: "🕳 where did everything go :(",
+    trigger: "bit-lose",
+    condition: (state) => !bigGte(state.bits, 10),
+    maxCount: void 0,
+    removeAfterFire: false
+  },
+  {
+    id: "bell-halfway",
+    text: "🌗 halfway there",
+    trigger: "bit-earn",
+    condition: (state) => bigGte(state.totalBits, 500),
+    maxCount: 1,
+    removeAfterFire: true
+  },
+  {
+    id: "bell-patient",
+    text: "⏳ patience has a cost",
+    trigger: "buy",
+    condition: (state) => (state.totalBought || 0) >= 10,
+    maxCount: 1,
+    removeAfterFire: true
+  },
+  // §2.2 Sub-stage first-unlock bells
+  { id: "bell-mult", text: "✖ now my taps multiply.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-mult"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
+  { id: "bell-box", text: "🧰 a box. it makes more of me.", trigger: "bit-earn", condition: (state) => bigGte(state.bits, 500), maxCount: 1, removeAfterFire: true },
+  { id: "bell-boost", text: "📡 the box hums louder now.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-boost"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
+  { id: "bell-cluster", text: "🧊 a cluster. things are accelerating.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-cluster"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
+  { id: "bell-array", text: "🛰 it runs without me. that's new.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-array"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
+  { id: "bell-neural", text: "🧠 it's… thinking? everything multiplies.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-neural"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
+  { id: "bell-quantum", text: "⚛ my tap fractured into many.", trigger: "buy", condition: (state) => (state.owned && state.owned["s1-quantum"] || 0) >= 1, maxCount: 1, removeAfterFire: true },
+  // §8.5 Prestige bell (unlimited, fires each time)
+  { id: "bell-reset-prestige", text: "🌀 collapsed. denser now.", trigger: "prestige", condition: () => true, maxCount: void 0, removeAfterFire: false },
+  // §7.3 Boss-hint bells (fire on 'boss-loss' trigger at 5/10/15 losses)
+  { id: "bell-boss-hint-1", text: '💬 "have you tried… looking around?" — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 5, maxCount: 1, removeAfterFire: true },
+  { id: "bell-boss-hint-2", text: '💬 "there is nothing in the examples. nothing." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 10, maxCount: 1, removeAfterFire: true },
+  { id: "bell-boss-hint-3", text: '💬 "CHEAT= ? I have no idea what that is." — The Defragmenter', trigger: "boss-loss", condition: (state) => (state.bossLossCount || 0) >= 15, maxCount: 1, removeAfterFire: true }
+];
+
+// ../../docs/games/metagame/stages/stage1/s1bell.js
+var BELL_KEY = "fv:games:mg:bell";
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+}
+function bellLoad() {
+  try {
+    const s = JSON.parse(localStorage.getItem(BELL_KEY)) || {};
+    return {
+      messages: Array.isArray(s.messages) ? s.messages : [],
+      fired: s.fired && typeof s.fired === "object" ? s.fired : {},
+      removed: Array.isArray(s.removed) ? s.removed : [],
+      lastReadCount: Number(s.lastReadCount) || 0
+    };
+  } catch {
+    return { messages: [], fired: {}, removed: [], lastReadCount: 0 };
+  }
+}
+function bellSave(bs) {
+  try {
+    localStorage.setItem(BELL_KEY, JSON.stringify(bs));
+  } catch {
+  }
+}
+function bellAdd(id, text, bs) {
+  const state = bs || bellLoad();
+  const existing = state.messages.find((m) => m.id === id);
+  if (existing) existing.count++;
+  else state.messages.push({ id, text, count: 1, ts: Date.now() });
+  bellSave(state);
+  updateBellDot();
+}
+var bellRoot = null;
+function updateBellDot() {
+  if (!bellRoot) return;
+  const bs = bellLoad();
+  const total = bs.messages.reduce((s, m) => s + m.count, 0);
+  const dot = bellRoot.querySelector(".mg-bell-dot");
+  if (dot) dot.hidden = !(total > bs.lastReadCount);
+}
+var activeMessages = null;
+function loadActiveMessages(bs) {
+  const removed = new Set(bs.removed || []);
+  return MESSAGES1.filter((m) => !removed.has(m.id));
+}
+function checkMessages(eventType, state, bs, v3Bell = null) {
+  if (!activeMessages) activeMessages = loadActiveMessages(bs);
+  let changed = false;
+  for (const msg of activeMessages.slice()) {
+    if (msg.trigger !== eventType && msg.trigger !== "any") continue;
+    if (msg.maxCount !== void 0 && (bs.fired[msg.id] || 0) >= msg.maxCount) continue;
+    if (!msg.condition(state)) continue;
+    const firstFire = (bs.fired[msg.id] || 0) === 0;
+    bellAdd(msg.id, msg.text, bs);
+    if (firstFire) v3Bell?.showBell?.(`stage1.${msg.id}`, msg.text, { stage: 1 });
+    bs.fired[msg.id] = (bs.fired[msg.id] || 0) + 1;
+    if (msg.removeAfterFire) {
+      bs.removed = bs.removed || [];
+      if (!bs.removed.includes(msg.id)) bs.removed.push(msg.id);
+      activeMessages = activeMessages.filter((m) => m.id !== msg.id);
+    }
+    changed = true;
+  }
+  if (changed) bellSave(bs);
+}
+
+// ../../docs/games/metagame/stages/stage1/achievements1.js
+function fromN(n) {
+  if (!isFinite(n) || n <= 0) return { m: 0, e: 0 };
+  let e = 0, m = n;
+  while (m >= 1e3) {
+    m /= 1e3;
+    e += 3;
+  }
+  return { m, e };
+}
+function bigGte2(bn, n) {
+  if (!bn || bn.m === 0) return n <= 0;
+  const target = n <= 0 ? { m: 0, e: 0 } : fromN(n);
+  if (bn.e !== target.e) return bn.e > target.e;
+  return bn.m >= target.m;
+}
+var ACHIEVEMENTS1 = [
+  // --- Milestone (1–8) ---
+  {
+    id: "ach-bits-100",
+    name: "First Hundred 💯",
+    icon: "💯",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 100),
+    bell: "🏆 100 bits. it begins."
+  },
+  {
+    id: "ach-bits-1k",
+    name: "Kilobit ⓚ",
+    icon: "ⓚ",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e3),
+    bell: "🏆 a thousand bits."
+  },
+  {
+    id: "ach-bits-10k",
+    name: "Ten-K 🔟",
+    icon: "🔟",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e4),
+    bell: "🏆 ten thousand."
+  },
+  {
+    id: "ach-bits-100k",
+    name: "Six Figures 📈",
+    icon: "📈",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e5),
+    bell: "🏆 a hundred thousand."
+  },
+  {
+    id: "ach-bits-1m",
+    name: "Megabit 🧮",
+    icon: "🧮",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e6),
+    bell: "🏆 one million bits."
+  },
+  {
+    id: "ach-bits-1b",
+    name: "Gigabit 🌐",
+    icon: "🌐",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e9),
+    bell: "🏆 a billion. boss money."
+  },
+  {
+    id: "ach-bits-1aa",
+    name: "Petascale 🪐",
+    icon: "🪐",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e15),
+    bell: "🏆 1aa. past safe-integer."
+  },
+  {
+    id: "ach-bits-1bb",
+    name: "Beyond 🌌",
+    icon: "🌌",
+    category: "milestone",
+    condition: (state) => bigGte2(state.totalBits, 1e96),
+    bell: "🏆 1bb. absurd."
+  },
+  // --- Behavior / buy-count (9–11) ---
+  {
+    id: "ach-buy-1",
+    name: "First Blood 🩸",
+    icon: "🩸",
+    category: "behavior",
+    condition: (state) => (state.totalBought || 0) >= 1,
+    bell: "⚡ first purchase."
+  },
+  {
+    id: "ach-buy-10",
+    name: "Shopper 🛒",
+    icon: "🛒",
+    category: "behavior",
+    condition: (state) => (state.totalBought || 0) >= 10,
+    bell: "⚡ ten buys deep."
+  },
+  {
+    id: "ach-buy-100",
+    name: "Hoarder 📦",
+    icon: "📦",
+    category: "behavior",
+    condition: (state) => (state.totalBought || 0) >= 100,
+    bell: "⚡ a hundred purchases."
+  },
+  // --- Speed (12–14) ---
+  {
+    id: "ach-speed-1k-2m",
+    name: "Quick Start ⏱",
+    icon: "⏱",
+    category: "speed",
+    condition: (state) => bigGte2(state.totalBits, 1e3) && !!state.runStartedAt && Date.now() - state.runStartedAt <= 2 * 60 * 1e3,
+    bell: "🚀 1K in two minutes."
+  },
+  {
+    id: "ach-speed-1m-15m",
+    name: "Sprinter 🏃",
+    icon: "🏃",
+    category: "speed",
+    condition: (state) => bigGte2(state.totalBits, 1e6) && !!state.runStartedAt && Date.now() - state.runStartedAt <= 15 * 60 * 1e3,
+    bell: "🚀 1M in fifteen."
+  },
+  {
+    id: "ach-speed-1b-30m",
+    name: "Velocity 🌠",
+    icon: "🌠",
+    category: "speed",
+    condition: (state) => bigGte2(state.totalBits, 1e9) && !!state.runStartedAt && Date.now() - state.runStartedAt <= 30 * 60 * 1e3,
+    bell: "🚀 1B in half an hour."
+  },
+  // --- Manager (15–17) ---
+  {
+    id: "ach-mgr-1",
+    name: "Automation 🤖",
+    icon: "🤖",
+    category: "manager",
+    condition: (state) => {
+      const mgrs = state.managers || {};
+      return Object.values(mgrs).some((m) => (m.level || 0) >= 1);
+    },
+    bell: "🛠 first manager hired."
+  },
+  {
+    id: "ach-mgr-5",
+    name: "Middle Management 🧑‍💼",
+    icon: "🧑‍💼",
+    category: "manager",
+    condition: (state) => {
+      const mgrs = state.managers || {};
+      const total = Object.values(mgrs).reduce((sum, m) => sum + (m.level || 0), 0);
+      return total >= 5;
+    },
+    bell: "🛠 five levels of managers."
+  },
+  {
+    id: "ach-mgr-solvent",
+    name: "In the Black 💹",
+    icon: "💹",
+    category: "manager",
+    condition: (state) => {
+      const mgrs = state.managers || {};
+      const hired = Object.values(mgrs).filter((m) => (m.level || 0) >= 1).length;
+      return (state.netRate || 0) > 0 && hired >= 3;
+    },
+    bell: "🛠 three managers, still profitable."
+  },
+  // --- Behavior: net-negative (18) ---
+  // Requires state._netNegSince to be set by the game tick (WP-S1-09) when netRate first goes
+  // negative. The tick must set state._netNegSince = Date.now() on transition to negative, and
+  // clear it (set to 0/null) when netRate returns to >= 0.
+  {
+    id: "ach-net-neg",
+    name: "In the Red 🔻",
+    icon: "🔻",
+    category: "behavior",
+    condition: (state) => !!state._netNegSince && Date.now() - state._netNegSince >= 1e4,
+    bell: "🔻 you ran negative. lesson learned."
+  },
+  // --- Behavior: zero after 1M (19) ---
+  {
+    id: "ach-zero",
+    name: "Rock Bottom 🕳",
+    icon: "🕳",
+    category: "behavior",
+    condition: (state) => bigGte2(state.totalBits, 1e6) && !!state.bits && state.bits.m === 0,
+    bell: "🕳 back to nothing."
+  },
+  // --- Prestige (20–22) ---
+  {
+    id: "ach-prestige-1",
+    name: "Gravity Well 🌀",
+    icon: "🌀",
+    category: "prestige",
+    condition: (state) => Array.isArray(state.pullFactors) && state.pullFactors.length >= 1,
+    bell: "🌀 first reset. pull begins."
+  },
+  {
+    id: "ach-prestige-3",
+    name: "Event Horizon 🕳️",
+    icon: "🕳️",
+    category: "prestige",
+    condition: (state) => Array.isArray(state.pullFactors) && state.pullFactors.length >= 3,
+    bell: "🌀 three resets deep."
+  },
+  {
+    id: "ach-prestige-10aa",
+    name: "Heavy Pull 🪨",
+    icon: "🪨",
+    category: "prestige",
+    // globalPull = product of all pullFactors; must be >= 10 at the time of a reset.
+    // The condition is polled each tick; it fires once pullFactors product reaches 10.
+    condition: (state) => {
+      const factors = state.pullFactors;
+      if (!Array.isArray(factors) || factors.length === 0) return false;
+      const globalPull2 = factors.reduce((a, b) => a * b, 1);
+      return globalPull2 >= 10;
+    },
+    bell: "🌀 a reset worth ×10+ pull."
+  },
+  // --- Boss: enter (23) ---
+  {
+    id: "ach-boss-enter",
+    name: "Challenger ⚔",
+    icon: "⚔",
+    category: "boss",
+    condition: (state) => !!state.bossEntered,
+    bell: "⚔ you paid to fight."
+  },
+  // --- Boss: lose (24) ---
+  {
+    id: "ach-boss-lose",
+    name: "Out-Cheated 😤",
+    icon: "😤",
+    category: "boss",
+    condition: (state) => (state.bossLossCount || 0) >= 1,
+    bell: "😤 it cheated. of course it did."
+  },
+  // --- Secret: fast tap (25) ---
+  {
+    id: "ach-secret-fast-tap",
+    name: "Speed Demon 🤫",
+    icon: "🤫",
+    category: "behavior",
+    secret: true,
+    // Requires state._fastTapAt set by the click handler (WP-S1-09) when >= 12 taps occur in 1 s.
+    condition: (state) => !!state._fastTapUnlocked,
+    bell: "🤫 you're fast. noted."
+  },
+  // --- Behavior: idle (26) ---
+  {
+    id: "ach-flavor-idle",
+    name: "Patience ⏳",
+    icon: "⏳",
+    category: "behavior",
+    // Requires state._gameOpenedAt (epoch ms) set on mount. netRate > 0 and >= 10 min open.
+    condition: (state) => (state.netRate || 0) > 0 && !!state._gameOpenedAt && Date.now() - state._gameOpenedAt >= 10 * 60 * 1e3,
+    bell: "⏳ you let it run. it ran."
+  },
+  // --- Boss: seen (27) ---
+  {
+    id: "ach-boss-seen",
+    name: "First Encounter 🥊",
+    icon: "🥊",
+    category: "boss",
+    condition: (state) => state.bossSeen === true,
+    bell: "🥊 you stared the Defragmenter down."
+  },
+  // --- Boss: cheat found (28) ---
+  // Legacy Stage 1 achievement entry; canonical v3 unlocks use stage1.cheat_disabled.
+  {
+    id: "ach-boss-cheat-found",
+    name: "Suspicious Activity 🕵️",
+    icon: "🕵️",
+    category: "boss",
+    condition: () => false,
+    bell: "🕵️ something was off. you fixed it."
+  },
+  // --- Boss: victory (29) ---
+  {
+    id: "ach-boss-victory",
+    name: "Defragmented 🏆",
+    icon: "🏆",
+    category: "boss",
+    condition: (state) => Array.isArray(state.defeated) && state.defeated.includes(1),
+    bell: "🏆 defragmented — your bits, your win."
+  }
+];
 
 // ../../docs/games/metagame/stages/stage1/s1achievements.js
 function bigToNum(bn) {
@@ -3084,6 +3064,24 @@ var CORE_UPGRADES = [
     effect: (l) => ({ incomeMult: 1 + 0.1 * l })
   },
   {
+    id: "core-compound",
+    icon: "🔁",
+    name: "Recursion Core",
+    max: 15,
+    cost: (l) => 2 + 2 * l,
+    desc: "+12% COMPOUNDING income per level — a deep, long-haul investment",
+    effect: (l) => ({ incomeMult: Math.pow(1.12, l) })
+  },
+  {
+    id: "core-dividend",
+    icon: "⬡",
+    name: "Core Dividend",
+    max: 5,
+    cost: (l) => 5 + 5 * l,
+    desc: "+1 ⬡ Core per prestige per level — spend Cores to earn more Cores",
+    effect: (l) => ({ coreBonus: l })
+  },
+  {
     id: "core-startmult",
     icon: "✖",
     name: "Warm Cache",
@@ -3133,13 +3131,14 @@ function buyCore(state, id) {
   return true;
 }
 function coreEffects(state) {
-  const eff = { incomeMult: 1, start: {}, autoMult: false };
+  const eff = { incomeMult: 1, start: {}, autoMult: false, coreBonus: 0 };
   for (const up of CORE_UPGRADES) {
     const lvl = coreLevel(state, up.id);
     if (lvl <= 0) continue;
     const e = up.effect(lvl);
     if (e.incomeMult) eff.incomeMult *= e.incomeMult;
     if (e.autoMult) eff.autoMult = true;
+    if (e.coreBonus) eff.coreBonus += e.coreBonus;
     if (e.start) for (const k in e.start) eff.start[k] = (eff.start[k] || 0) + e.start[k];
   }
   return eff;
@@ -3149,6 +3148,9 @@ function coreIncomeMult(state) {
 }
 function coreAutoMult(state) {
   return coreEffects(state).autoMult;
+}
+function coreGainBonus(state) {
+  return coreEffects(state).coreBonus;
 }
 function applyCoreStartState(state) {
   const start = coreEffects(state).start;
@@ -3213,9 +3215,12 @@ function coreGain(totalBitsAtReset) {
   const ratio = Math.max(1, n / RESET_UNLOCK_BITS);
   return Math.max(1, 1 + Math.floor(Math.log10(ratio)));
 }
+function coreGainFor(state) {
+  return coreGain(state.totalBits) + coreGainBonus(state);
+}
 function doPrestige(state) {
   const gain = pullGain(state.totalBits);
-  const cores = coreGain(state.totalBits);
+  const cores = coreGain(state.totalBits) + coreGainBonus(state);
   state.pullFactors = [...state.pullFactors || [], gain];
   state.cores = (state.cores || 0) + cores;
   state.prestigeCount = (state.prestigeCount || 0) + 1;
@@ -3432,7 +3437,7 @@ function renderResetPanel(opts) {
   injectStyle2();
   const gain = pullGain(state.totalBits);
   const newTotal = globalPull(state) * gain;
-  const cores = coreGain(state.totalBits);
+  const cores = coreGainFor(state);
   const next = nextMechanic(state);
   panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="reset"><div class="mg-reset-panel"><div class="mg-reset-title">🌀 Prestige</div><div class="mg-reset-balance">⬡ <strong>' + (state.cores || 0) + "</strong> Cores · depth " + prestigeDepth(state) + '</div><p class="mg-reset-line">Reset now to gain <strong>×' + toDisplay(fromNumber(gain)) + "</strong> Pull (total <strong>×" + toDisplay(fromNumber(newTotal)) + "</strong>) and <strong>+" + cores + "</strong> ⬡ Cores.</p>" + (next ? '<p class="mg-reset-line mg-reset-next">Next prestige unlocks ' + next.icon + " <strong>" + escapeHtml(next.name) + "</strong> — " + escapeHtml(next.blurb) + "</p>" : "") + '<p class="mg-reset-line">All bits, buildings, and managers are lost.</p><p class="mg-reset-line mg-reset-keep">Cores, upgrades, achievements, and pull persist.</p><div class="mg-reset-actions"><button class="mg-reset-go" type="button">Prestige</button><button class="mg-reset-cancel" type="button">Cancel</button></div>' + fluxHtml(state) + resonanceHtml(state) + pipelineHtml(opts) + coreShopHtml(state) + mechanicsRosterHtml(state) + "</div></div>";
   panelsEl.querySelector(".mg-reset-go").addEventListener("click", () => doReset(opts));
@@ -3524,30 +3529,25 @@ function doReset(opts) {
   renderAll();
 }
 
-// ../../docs/games/metagame/stages/stage1/s1entropy.js
-var ENTROPY_PERIOD = 600;
-function decayableTiers(cfg) {
-  return (cfg.tiers || []).filter((t) => t.type === "timed");
-}
-function isProtected(state, cfg, tierId) {
-  if ((state.pipelines || {})[tierId]) return true;
-  const mgr = (cfg.managers || []).find((m) => m.manages === tierId);
-  if (!mgr) return false;
-  const ms = (state.managers || {})[mgr.id];
-  return Boolean(ms && ms.level >= 1 && !ms.paused);
-}
-function tickEntropy(state, cfg) {
-  if ((state.ticks || 0) % ENTROPY_PERIOD !== 0) return false;
-  let decayed = false;
-  state.owned = state.owned || {};
-  for (const t of decayableTiers(cfg)) {
-    const owned = state.owned[t.id] || 0;
-    if (owned > 1 && !isProtected(state, cfg, t.id)) {
-      state.owned[t.id] = owned - 1;
-      decayed = true;
-    }
-  }
-  return decayed;
+// ../../docs/games/metagame/stages/stage1/s1achpanel.js
+var PER_ACH_MULT = 1.02;
+function renderAchievementsPanel({ panelsEl, state }) {
+  const unlocked = new Set(state.achievements || []);
+  const list = ACHIEVEMENTS1.filter((a) => a.id !== "ach-boss-cheat-found");
+  const n = list.filter((a) => unlocked.has(a.id)).length;
+  const total = Math.pow(PER_ACH_MULT, n);
+  const pct = Math.round((total - 1) * 100);
+  const head = '<div class="mg-s1-ach-head"><span class="mg-s1-ach-count">🏆 ' + n + " / " + list.length + '</span><span class="mg-s1-ach-mult">×' + total.toFixed(2) + " <small>+" + pct + "% to clicks &amp; income</small></span></div>";
+  const rows = list.map((a) => {
+    const got = unlocked.has(a.id);
+    const secret = a.secret && !got;
+    const icon = secret ? "❔" : a.icon || "🏆";
+    const name = secret ? '??? <span class="mg-s1-ach-secret">hidden</span>' : escapeHtml(a.name);
+    const desc = secret ? "Unlock condition hidden — keep playing." : escapeHtml(a.bell || "");
+    const cls = got ? " mg-s1-ach-got" : " mg-s1-ach-locked";
+    return '<div class="mg-s1-ach' + cls + '"><span class="mg-s1-ach-icon">' + icon + '</span><span class="mg-s1-ach-text"><strong>' + name + '</strong><span class="mg-s1-ach-desc">' + desc + '</span></span><span class="mg-s1-ach-chip" title="Each achievement grants ×1.02 to clicks &amp; income">+2%</span></div>';
+  }).join("");
+  panelsEl.innerHTML = '<div class="mg-s1-panel" data-panel="achievements">' + head + '<div class="mg-s1-ach-list">' + rows + "</div></div>";
 }
 
 // ../../docs/games/metagame/stages/stage1/s1echoes.js
@@ -3595,25 +3595,6 @@ function tickEcho(state) {
     return { spawned: true, expired: false };
   }
   return { spawned: false, expired: false };
-}
-
-// ../../docs/games/metagame/stages/stage1/s1mechanics.js
-function incomeMult(state) {
-  let m = coreIncomeMult(state);
-  if (mechanicUnlocked(state, "flux")) m *= fluxMult(state);
-  if (mechanicUnlocked(state, "resonance")) m *= resonanceMult(state);
-  return m;
-}
-function tickMechanics(state, cfg) {
-  state.ticks = (state.ticks || 0) + 1;
-  let producedUnits = false;
-  if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
-  if (mechanicUnlocked(state, "flux")) tickFlux(state);
-  if (mechanicUnlocked(state, "entropy")) producedUnits = tickEntropy(state, cfg) || producedUnits;
-  let echo = null;
-  if (mechanicUnlocked(state, "echoes")) echo = tickEcho(state, cfg);
-  if (mechanicUnlocked(state, "resonance")) tickResonance(state);
-  return { producedUnits, echo };
 }
 
 // ../../docs/games/metagame/stages/stage1/s1debug.js
@@ -3697,12 +3678,254 @@ function installStage1Debug(api) {
   } };
 }
 
-// ../../docs/games/metagame/stages/stage1/stage1.js
+// ../../docs/games/metagame/stages/stage1/s1layout.js
 var GRID_COLS = 20;
 var GRID_ROWS = 5;
 var GRID_CELLS = GRID_COLS * GRID_ROWS;
+function stage1Markup(multTier) {
+  return '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
+}
+var ECHO_STYLE_ID = "mg-s1-echo-style";
+function injectEchoStyle() {
+  if (typeof document === "undefined" || document.getElementById(ECHO_STYLE_ID)) return;
+  const el = document.createElement("style");
+  el.id = ECHO_STYLE_ID;
+  el.textContent = `
+.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
+  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
+  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
+.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
+@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
+`;
+  document.head.appendChild(el);
+}
+
+// ../../docs/games/metagame/stages/stage1/s1hud.js
+var HELP_SECTIONS = [
+  ["👆 Tap", "Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level."],
+  ["🧰 Bit Box", "Tap it to run a timed cycle that pays out bits. Your main income."],
+  ["📡 Signal Booster", "Each cycle BUILDS Bit Boxes for you (and boosts their payout). It makes machines, not bits."],
+  ["🧊 Core Cluster", "Each cycle BUILDS Signal Boosters — a machine that builds the machine that builds boxes."],
+  ["🛠 Managers", "Hire one to auto-run a builder for a per-second bit cost. Watch the net rate stays positive."],
+  ["🌀 Reset", "Once your total reaches ~1ab bits you may reset for a permanent ×pull multiplier on everything."]
+];
+function createHud({ hudEl, scoreValEl, gravEl, helpEl, state }) {
+  function renderHelp() {
+    setHtml(helpEl, '<div class="mg-s1-help-title">How the Foundry works</div>' + HELP_SECTIONS.map(([h, b]) => '<div class="mg-s1-help-row"><strong>' + escapeHtml(h) + "</strong><span>" + escapeHtml(b) + "</span></div>").join(""));
+  }
+  function toggleHelp() {
+    const open = helpEl.hidden;
+    if (open) renderHelp();
+    setHidden(helpEl, !open);
+  }
+  let lastScoreAt = 0;
+  function updateHud() {
+    const scoreOn = (state.milestones || []).includes("score-unlock") || bigToNum2(state.totalBits) >= 400;
+    setHidden(hudEl, !scoreOn);
+    if (!scoreOn) return;
+    const grav = globalPull(state);
+    if (grav > 1.0001) {
+      setText(gravEl, "🌀 ×" + toDisplay(fromNumber(grav)));
+      setHidden(gravEl, false);
+    } else setHidden(gravEl, true);
+    const now = Date.now();
+    if (now - lastScoreAt >= 250) {
+      lastScoreAt = now;
+      setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum2(state.bits)))));
+    }
+  }
+  return { updateHud, toggleHelp };
+}
+
+// ../../docs/games/metagame/stages/stage1/s1reveal.js
+function createReveal({ host, grid, computeBtn, state, multTier }) {
+  const cells = [];
+  for (let i = 0; i < GRID_CELLS; i++) {
+    const c = Math.floor(i / GRID_ROWS), r = i % GRID_ROWS;
+    const cell = document.createElement("div");
+    cell.className = "mg-s1-cell";
+    cell.style.gridColumn = c + 1;
+    cell.style.gridRow = r + 1;
+    cell.dataset.i = String(i);
+    grid.appendChild(cell);
+    cells.push(cell);
+  }
+  function reveal() {
+    if (state.tabsUnlocked) return;
+    const wrapper = host.querySelector(".mg-wrap.mg-s1");
+    if (wrapper) wrapper.classList.toggle("mg-s1-empty", bigToNum2(state.bits) <= 0 && bigToNum2(state.totalBits) <= 0);
+    const bits = bigToNum2(state.bits);
+    const owned = state.owned["s1-mult"] || 0;
+    const cost = multTier ? totalCost(multTier, owned, 1) : fromNumber(GRID_CELLS);
+    const target = Math.max(1, bigToNum2(cost));
+    const progress = Math.max(0, Math.min(1, bits / target));
+    const n = bits <= 0 ? 0 : Math.min(GRID_CELLS, Math.max(1, Math.floor(GRID_CELLS * progress)));
+    for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle("mg-s1-on", i < n);
+    const done = progress >= 1;
+    computeBtn.style.opacity = done ? "" : String(progress);
+    computeBtn.classList.toggle("mg-s1-ready", done);
+    grid.classList.toggle("mg-s1-clear", done);
+  }
+  return { reveal };
+}
+
+// ../../docs/games/metagame/stages/stage1/s1entropy.js
+var ENTROPY_PERIOD = 600;
+function decayableTiers(cfg) {
+  return (cfg.tiers || []).filter((t) => t.type === "timed");
+}
+function isProtected(state, cfg, tierId) {
+  if ((state.pipelines || {})[tierId]) return true;
+  const mgr = (cfg.managers || []).find((m) => m.manages === tierId);
+  if (!mgr) return false;
+  const ms = (state.managers || {})[mgr.id];
+  return Boolean(ms && ms.level >= 1 && !ms.paused);
+}
+function tickEntropy(state, cfg) {
+  if ((state.ticks || 0) % ENTROPY_PERIOD !== 0) return false;
+  let decayed = false;
+  state.owned = state.owned || {};
+  for (const t of decayableTiers(cfg)) {
+    const owned = state.owned[t.id] || 0;
+    if (owned > 1 && !isProtected(state, cfg, t.id)) {
+      state.owned[t.id] = owned - 1;
+      decayed = true;
+    }
+  }
+  return decayed;
+}
+
+// ../../docs/games/metagame/stages/stage1/s1mechanics.js
+function incomeMult(state) {
+  let m = coreIncomeMult(state);
+  if (mechanicUnlocked(state, "flux")) m *= fluxMult(state);
+  if (mechanicUnlocked(state, "resonance")) m *= resonanceMult(state);
+  return m;
+}
+function tickMechanics(state, cfg) {
+  state.ticks = (state.ticks || 0) + 1;
+  let producedUnits = false;
+  if (mechanicUnlocked(state, "pipeline")) producedUnits = tickPipelines(state, cfg) || producedUnits;
+  if (mechanicUnlocked(state, "flux")) tickFlux(state);
+  if (mechanicUnlocked(state, "entropy")) producedUnits = tickEntropy(state, cfg) || producedUnits;
+  let echo = null;
+  if (mechanicUnlocked(state, "echoes")) echo = tickEcho(state, cfg);
+  if (mechanicUnlocked(state, "resonance")) tickResonance(state);
+  return { producedUnits, echo };
+}
+
+// ../../docs/games/metagame/stages/stage1/s1tick.js
+function createTickLoop(deps) {
+  const {
+    host,
+    grid,
+    state,
+    cfg,
+    bell,
+    save,
+    timedTiers,
+    multTier,
+    panelsEl,
+    managersController,
+    getActiveTab,
+    reveal,
+    checkTabUnlock,
+    updateHud,
+    updateEcho,
+    renderTabs,
+    paintShop,
+    paintTimed,
+    paintStats,
+    onTeardown
+  } = deps;
+  let tickAcc = 0;
+  function tick() {
+    if (!host.isConnected || !grid.isConnected) {
+      onTeardown();
+      return;
+    }
+    const activeTab = getActiveTab();
+    const incMult = incomeMult(state, cfg);
+    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
+    state.bits = add(state.bits, passive);
+    state.totalBits = add(state.totalBits, passive);
+    state.bits = sub(state.bits, mulScalar(fromNumber(managerCostPerSec(state, cfg)), 1 / 10));
+    const rate = netRate(state, cfg);
+    if (rate < 0) {
+      if (!state._netNegSince) state._netNegSince = Date.now();
+    } else state._netNegSince = 0;
+    let timedDone = false;
+    let builtUnits = false;
+    for (const t of timedTiers) {
+      const ts = state.timedStates[t.id];
+      if (!ts || !ts.active) continue;
+      if (Date.now() - ts.startedAt >= (ts.duration_ms || t.duration_ms)) {
+        if (t.produces) {
+          const prod = timedProduction(state, cfg, t.id);
+          if (prod && prod.amount > 0) {
+            state.owned[prod.targetId] = (state.owned[prod.targetId] || 0) + prod.amount;
+            builtUnits = true;
+          }
+        } else {
+          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
+          state.bits = add(state.bits, payout);
+          state.totalBits = add(state.totalBits, payout);
+        }
+        ts.active = false;
+        timedDone = true;
+      }
+    }
+    if (timedDone) checkMessages("bit-earn", state, bellLoad(), bell);
+    if (builtUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === "bits") {
+        paintShop();
+        paintTimed();
+      }
+    }
+    managersController.runAutoFire();
+    const mech = tickMechanics(state, cfg);
+    if (mech.producedUnits && state.tabsUnlocked) {
+      renderTabs();
+      if (activeTab === "bits") {
+        paintShop();
+        paintTimed();
+      }
+    }
+    if (mech.echo) updateEcho();
+    if (coreAutoMult(state) && multTier) {
+      const lvl = state.owned[multTier.id] || 0;
+      const cost = totalCost(multTier, lvl, 1);
+      if (gte(state.bits, cost)) {
+        state.bits = sub(state.bits, cost);
+        state.owned[multTier.id] = lvl + 1;
+        state.totalBought = (state.totalBought || 0) + 1;
+      }
+    }
+    reveal();
+    checkTabUnlock();
+    updateHud();
+    if (state.tabsUnlocked) {
+      if (activeTab === "bits") {
+        paintShop();
+        paintTimed();
+        paintStats();
+      } else if (activeTab === "managers") managersController.paint();
+      else if (activeTab === "reset") paintResetPanel(panelsEl, state);
+    }
+    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
+    if (++tickAcc >= 10) {
+      tickAcc = 0;
+      save(state);
+    }
+  }
+  return { tick };
+}
+
+// ../../docs/games/metagame/stages/stage1/stage1.js
 function renderStage1(ctx2) {
   const { host, state, save, stage, onExit, attachChrome, bell } = ctx2;
+  void onExit;
   const sfxOn = () => typeof ctx2.sfxEnabled === "function" ? ctx2.sfxEnabled() : true;
   const cfg = stage();
   if (typeof state.bits === "number") state.bits = fromNumber(state.bits);
@@ -3739,12 +3962,10 @@ function renderStage1(ctx2) {
     bits: () => true,
     managers: () => (state.owned["s1-box"] || 0) >= 1,
     achievements: () => (state.achievements || []).length >= 1,
-    // Visible once a prestige is affordable OR after any prestige (so the Cores shop / mechanic
-    // roster stays reachable while totalBits is rebuilding toward the next reset).
     reset: () => gte(state.totalBits, RESET_THRESHOLD) || (state.prestigeCount || 0) >= 1
   };
   const TAB_LABELS = { bits: "🧮 Bits", managers: "🛠 Managers", achievements: "🏆 Achievements", reset: "🌀 Prestige" };
-  host.innerHTML = '<div class="mg-wrap mg-s1"><div class="mg-s1-hud" hidden>  <span class="mg-s1-grav" hidden>🌀 ×1.0</span>  <span class="mg-s1-score"><strong class="mg-s1-score-val">0</strong> bits</span></div><div class="mg-s1-help" hidden></div><button class="mg-s1-echo" type="button" hidden aria-label="defrag the corrupted glyph">👾<span class="mg-s1-echo-t"></span></button><div class="mg-s1-top">  <div class="mg-s1-tap" aria-label="tap to compute"></div>  <div class="mg-s1-stage">    <button class="mg-s1-btn mg-compute" type="button">' + (multTier ? multTier.icon + " " + multTier.name : "Compute") + '</button>    <div class="mg-s1-grid" aria-hidden="true"></div>  </div></div><div class="mg-s1-tabs" role="tablist"></div><div class="mg-s1-panels"></div></div>';
+  host.innerHTML = stage1Markup(multTier);
   const $ = (s) => host.querySelector(s);
   const tap = $(".mg-s1-tap");
   const computeBtn = $(".mg-s1-btn");
@@ -3774,65 +3995,8 @@ function renderStage1(ctx2) {
       updateHud();
     }
   });
-  const HELP_SECTIONS = [
-    ["👆 Tap", "Tap the top area to compute bits. The ✖ Multiplier adds +1 bit per tap each level."],
-    ["🧰 Bit Box", "Tap it to run a timed cycle that pays out bits. Your main income."],
-    ["📡 Signal Booster", "Each cycle BUILDS Bit Boxes for you (and boosts their payout). It makes machines, not bits."],
-    ["🧊 Core Cluster", "Each cycle BUILDS Signal Boosters — a machine that builds the machine that builds boxes."],
-    ["🛠 Managers", "Hire one to auto-run a builder for a per-second bit cost. Watch the net rate stays positive."],
-    ["🌀 Reset", "Once your total reaches ~1ab bits you may reset for a permanent ×pull multiplier on everything."]
-  ];
-  function renderHelp() {
-    setHtml(helpEl, '<div class="mg-s1-help-title">How the Foundry works</div>' + HELP_SECTIONS.map(([h, b]) => '<div class="mg-s1-help-row"><strong>' + escapeHtml(h) + "</strong><span>" + escapeHtml(b) + "</span></div>").join(""));
-  }
-  function toggleHelp() {
-    const open = helpEl.hidden;
-    if (open) renderHelp();
-    setHidden(helpEl, !open);
-  }
-  let lastScoreAt = 0;
-  function updateHud() {
-    const scoreOn = (state.milestones || []).includes("score-unlock") || bigToNum2(state.totalBits) >= 400;
-    setHidden(hudEl, !scoreOn);
-    if (!scoreOn) return;
-    const grav = globalPull(state);
-    if (grav > 1.0001) {
-      setText(gravEl, "🌀 ×" + toDisplay(fromNumber(grav)));
-      setHidden(gravEl, false);
-    } else setHidden(gravEl, true);
-    const now = Date.now();
-    if (now - lastScoreAt >= 250) {
-      lastScoreAt = now;
-      setText(scoreValEl, toDisplay(fromNumber(Math.floor(bigToNum2(state.bits)))));
-    }
-  }
-  const cells = [];
-  for (let i = 0; i < GRID_CELLS; i++) {
-    const c = Math.floor(i / GRID_ROWS), r = i % GRID_ROWS;
-    const cell = document.createElement("div");
-    cell.className = "mg-s1-cell";
-    cell.style.gridColumn = c + 1;
-    cell.style.gridRow = r + 1;
-    cell.dataset.i = String(i);
-    grid.appendChild(cell);
-    cells.push(cell);
-  }
-  function reveal() {
-    if (state.tabsUnlocked) return;
-    const wrapper = host.querySelector(".mg-wrap.mg-s1");
-    if (wrapper) wrapper.classList.toggle("mg-s1-empty", bigToNum2(state.bits) <= 0 && bigToNum2(state.totalBits) <= 0);
-    const bits = bigToNum2(state.bits);
-    const owned = state.owned["s1-mult"] || 0;
-    const cost = multTier ? totalCost(multTier, owned, 1) : fromNumber(GRID_CELLS);
-    const target = Math.max(1, bigToNum2(cost));
-    const progress = Math.max(0, Math.min(1, bits / target));
-    const n = bits <= 0 ? 0 : Math.min(GRID_CELLS, Math.max(1, Math.floor(GRID_CELLS * progress)));
-    for (let i = 0; i < GRID_CELLS; i++) cells[i].classList.toggle("mg-s1-on", i < n);
-    const done = progress >= 1;
-    computeBtn.style.opacity = done ? "" : String(progress);
-    computeBtn.classList.toggle("mg-s1-ready", done);
-    grid.classList.toggle("mg-s1-clear", done);
-  }
+  const { updateHud, toggleHelp } = createHud({ hudEl, scoreValEl, gravEl, helpEl, state });
+  const { reveal } = createReveal({ host, grid, computeBtn, state, multTier });
   let tabsSig = null;
   function renderTabs() {
     const visible = Object.keys(TAB_LABELS).filter((id) => tabVisible[id]());
@@ -3966,91 +4130,35 @@ function renderStage1(ctx2) {
     clearInterval(renderStage1._tickId);
     renderStage1._tickId = null;
   }
-  let tickAcc = 0;
-  function tick() {
-    if (!host.isConnected || !grid.isConnected) {
+  const { tick } = createTickLoop({
+    host,
+    grid,
+    state,
+    cfg,
+    bell,
+    save,
+    timedTiers,
+    multTier,
+    panelsEl,
+    managersController,
+    getActiveTab: () => activeTab,
+    reveal,
+    checkTabUnlock,
+    updateHud,
+    updateEcho,
+    renderTabs,
+    paintShop,
+    paintTimed,
+    paintStats,
+    onTeardown: () => {
       clearInterval(renderStage1._tickId);
       renderStage1._tickId = null;
       if (renderStage1._debug) {
         renderStage1._debug.destroy();
         renderStage1._debug = null;
       }
-      return;
     }
-    const incMult = incomeMult(state, cfg);
-    const passive = mulScalar(fromNumber(passiveRate(state, cfg) * incMult), 1 / 10);
-    state.bits = add(state.bits, passive);
-    state.totalBits = add(state.totalBits, passive);
-    state.bits = sub(state.bits, mulScalar(fromNumber(managerCostPerSec(state, cfg)), 1 / 10));
-    const rate = netRate(state, cfg);
-    if (rate < 0) {
-      if (!state._netNegSince) state._netNegSince = Date.now();
-    } else state._netNegSince = 0;
-    let timedDone = false;
-    let builtUnits = false;
-    for (const t of timedTiers) {
-      const ts = state.timedStates[t.id];
-      if (!ts || !ts.active) continue;
-      if (Date.now() - ts.startedAt >= (ts.duration_ms || t.duration_ms)) {
-        if (t.produces) {
-          const prod = timedProduction(state, cfg, t.id);
-          if (prod && prod.amount > 0) {
-            state.owned[prod.targetId] = (state.owned[prod.targetId] || 0) + prod.amount;
-            builtUnits = true;
-          }
-        } else {
-          const payout = mulScalar(timedPayout(state, cfg, t.id), incMult);
-          state.bits = add(state.bits, payout);
-          state.totalBits = add(state.totalBits, payout);
-        }
-        ts.active = false;
-        timedDone = true;
-      }
-    }
-    if (timedDone) checkMessages("bit-earn", state, bellLoad(), bell);
-    if (builtUnits && state.tabsUnlocked) {
-      renderTabs();
-      if (activeTab === "bits") {
-        paintShop();
-        paintTimed();
-      }
-    }
-    managersController.runAutoFire();
-    const mech = tickMechanics(state, cfg);
-    if (mech.producedUnits && state.tabsUnlocked) {
-      renderTabs();
-      if (activeTab === "bits") {
-        paintShop();
-        paintTimed();
-      }
-    }
-    if (mech.echo) updateEcho();
-    if (coreAutoMult(state) && multTier) {
-      const lvl = state.owned[multTier.id] || 0;
-      const cost = totalCost(multTier, lvl, 1);
-      if (gte(state.bits, cost)) {
-        state.bits = sub(state.bits, cost);
-        state.owned[multTier.id] = lvl + 1;
-        state.totalBought = (state.totalBought || 0) + 1;
-      }
-    }
-    reveal();
-    checkTabUnlock();
-    updateHud();
-    if (state.tabsUnlocked) {
-      if (activeTab === "bits") {
-        paintShop();
-        paintTimed();
-        paintStats();
-      } else if (activeTab === "managers") managersController.paint();
-      else if (activeTab === "reset") paintResetPanel(panelsEl, state);
-    }
-    if (checkAchievements(state, cfg, bellLoad()) && state.tabsUnlocked) renderTabs();
-    if (++tickAcc >= 10) {
-      tickAcc = 0;
-      save(state);
-    }
-  }
+  });
   renderStage1._tickId = setInterval(tick, 100);
   renderAll();
   attachChrome(host);
@@ -4069,20 +4177,6 @@ function renderStage1(ctx2) {
     updateEcho
   });
   return { toggleHelp };
-}
-var ECHO_STYLE_ID = "mg-s1-echo-style";
-function injectEchoStyle() {
-  if (typeof document === "undefined" || document.getElementById(ECHO_STYLE_ID)) return;
-  const el = document.createElement("style");
-  el.id = ECHO_STYLE_ID;
-  el.textContent = `
-.mg-s1-echo { position:absolute; top:48px; right:14px; z-index:6; display:flex; flex-direction:column; align-items:center;
-  gap:1px; background:#3a1020; color:#ff6b9d; border:1px solid #ff6b9d; border-radius:10px; padding:6px 9px;
-  font-size:20px; cursor:pointer; animation:mg-s1-echo-pulse .7s ease infinite alternate; }
-.mg-s1-echo .mg-s1-echo-t { font:600 10px ui-monospace,monospace; color:#ff6b9d; }
-@keyframes mg-s1-echo-pulse { from { transform:scale(1); box-shadow:0 0 0 0 #ff6b9d55; } to { transform:scale(1.08); box-shadow:0 0 12px 2px #ff6b9d55; } }
-`;
-  document.head.appendChild(el);
 }
 
 // ../../docs/games/metagame/stages/stage1/boss.js

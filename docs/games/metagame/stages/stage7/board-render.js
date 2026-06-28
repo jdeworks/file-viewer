@@ -47,7 +47,7 @@ export function renderAccusation(state, caseId = 2) {
   for (const s of SOURCES_FOR_CASE[cid] || []) {
     const b = button({ "data-action": "open-source", "data-source": s.action });
     const opened = cardsForCase(state, cid).some((c) => c.id === s.card.id);
-    b.textContent = `${opened ? "✓ " : "open "}${s.file}`;
+    b.textContent = `${opened ? "[done] " : "open "}${s.file}`;
     if (opened) b.classList.add("is-opened");
     sources.append(b);
   }
@@ -56,7 +56,7 @@ export function renderAccusation(state, caseId = 2) {
     const searched = cardsForCase(state, 3).some((c) => c.id === CASE3_SEARCH.card.id);
     const sb = button({ "data-action": "search-source", "data-source": CASE3_SEARCH.action });
     sb.classList.add("s7-search-btn");
-    sb.textContent = `${searched ? "✓ " : "🔍 "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
+    sb.textContent = `${searched ? "[done] " : "[search] "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
     if (searched) sb.classList.add("is-opened");
     sources.append(sb);
   }
@@ -76,7 +76,7 @@ export function renderAccusation(state, caseId = 2) {
     for (const c of cards) {
       const b = button({ "data-pin": c.id });
       if (c.pinned) b.classList.add("is-pinned");
-      b.textContent = (c.pinned ? "📌 " : "") + c.label;
+      b.textContent = (c.pinned ? "[pinned] " : "") + c.label;
       col.append(b);
     }
     board.append(col);

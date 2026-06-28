@@ -42,6 +42,31 @@
   white-space: pre;
 }
 
+/* Beat-pulse: the genre's core sensory promise — the beat must be FELT, not just read as a '*'.
+   Toggled by the renderer (paintArena) from view.beatOpen, so it is fully game-state-driven; the
+   animation itself is pure presentation. */
+.s5-track-grid.s5-beat-open {
+  animation: s5-beat-pulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes s5-beat-pulse {
+  from {
+    border-color: var(--s5-wall);
+    box-shadow: none;
+  }
+  to {
+    border-color: var(--s5-counter);
+    box-shadow: 0 0 16px -2px var(--s5-counter);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s5-track-grid.s5-beat-open {
+    animation: none;
+    border-color: var(--s5-counter); /* static teal cue instead of a pulse */
+  }
+}
+
 .s5-side {
   display: grid;
   gap: 10px;
@@ -69,6 +94,11 @@
   color: #6a6390;
   cursor: not-allowed;
   opacity: 0.7;
+}
+
+.s5-round-est {
+  opacity: 0.6;
+  font-size: 0.85em;
 }
 
 .s5-rounds .s5-boss-btn:not(:disabled) {

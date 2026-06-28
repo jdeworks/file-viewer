@@ -1,7 +1,8 @@
 import { awakeningText } from "./content.js";
 import { assembleSynthesis } from "./synthesis.js";
 import { assembleCapstoneData } from "./capstone.js";
-import { escapeHtml } from "./escape.js";
+import { routeEpilogues } from "./content-confront.js";
+import { escapeHtml, escapeAttr } from "./escape.js";
 
 // ── Final question + completion ────────────────────────────────────────────────────────────────
 
@@ -40,12 +41,28 @@ export function renderCompletion(state, finalState) {
 }
 
 // Route-specific epilogue panels with real weight: understand → woven Synthesis memory (+ stance
-// closer), expand → personalized capstone grid of all nine stages/choices. continue/rest get none.
+// closer), expand → personalized capstone grid of all nine stages/choices, continue/rest → a short
+// stance-flavored closer (base line + the Phase-C self-model's line).
 function renderRouteEpilogue(state, finalState) {
   const route = state.final?.route;
   if (route === "understand") return renderSynthesis(state);
   if (route === "expand") return renderCapstone(state);
+  if (route === "continue" || route === "rest") return renderRouteCloser(state, route);
   return "";
+}
+
+function renderRouteCloser(state, route) {
+  const ep = routeEpilogues[route];
+  if (!ep) return "";
+  const stance = state?.confront?.stance?.dominant;
+  const paragraphs = [ep.base];
+  if (stance && ep[stance]) paragraphs.push(ep[stance]);
+  return `
+    <section class="mg-stage10__route-closer" data-field="routeCloser" data-route="${escapeAttr(route)}" aria-label="Route closer">
+      <h3>${escapeHtml(ep.heading)}</h3>
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </section>
+  `;
 }
 
 function renderSynthesis(state) {

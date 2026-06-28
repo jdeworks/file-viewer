@@ -17,6 +17,24 @@ export function roundLogLine(roundIdx) {
   return roundLogLines[Math.max(0, Math.min(roundLogLines.length - 1, Number(roundIdx) || 0))];
 }
 
+// One-line mechanic intro shown when a round starts, so a brand-new verb (counter-phase lane, boost
+// gates, time-trial par clock, forks) is never met cold. Indexed by round index (0-based). Pure.
+export const roundIntros = [
+  'this round: slide off the static — any clear lane survives.',
+  'this round: switch on the beat gap, not against the burst.',
+  'this round: read the looping pattern ahead and hold a clear line.',
+  'this round: the ~ shield lane phases through noise — ride it.',
+  'this round: grab >> boost gates on the beat for extra packets.',
+  'this round: the channel splits — pick a route and hold it to the merge.',
+  'this round: beat the par ghost (P) to the line — survival alone is not a clear.',
+  'this round: forks come fast — commit ↑HI for gates or ↓LO to stay alive.',
+  'this round: the jammer races every verb at once. only a calibrated counter-wave wins.',
+];
+
+export function roundIntro(roundIdx) {
+  return roundIntros[Math.max(0, Math.min(roundIntros.length - 1, Number(roundIdx) || 0))];
+}
+
 export const GLYPH_LEGEND = [
   ['░', 'static (−2)'],
   ['▒', 'pulse (−2, off-beat hurts)'],
@@ -26,7 +44,8 @@ export const GLYPH_LEGEND = [
   ['o', 'rival racer (bump = −integrity)'],
   ['U', 'shield buff'],
   ['O', 'overclock (speed burst)'],
-  ['+', 'repair   $ packet-cache'],
+  ['+', 'repair (+12 hull)'],
+  ['$', 'packet cache (+15p)'],
   ['E', 'EMP (set a rival back)'],
   ['P', 'par ghost (the clock to beat)'],
   ['G', 'your prior-best ghost'],

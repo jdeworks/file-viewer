@@ -1,0 +1,138 @@
+/* Glyph Dungeon — HUD-adjacent UI chrome (split out of styles.css to stay under the LOC cap):
+   the compass/secret-marker, the on-screen legend, the damage flash, the combat log, the action
+   buttons, and the responsive (narrow-screen) layout. Loaded after styles.css so its rules — and
+   the @media block at the foot — override the base board styles where they intentionally do. */
+
+/* Stairwell Sense readout — a status chip above the action buttons (shortest-route next step). */
+.s2-compass {
+  border: 1px dashed var(--s2-border);
+  color: #79f0ff;
+  font-weight: 700;
+  padding: 5px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+.s2-c-secret { color: #9a7838; } /* secret-door wall — a hair brighter than terrain (#6b5026) */
+
+.s2-legend {
+  color: var(--s2-dim);
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85em;
+  gap: 2px;
+  max-width: 100%;
+}
+
+/* Two fixed rows so the legend never overruns the board width; each wraps internally only if forced. */
+.s2-legend-row { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+
+.s2-legend span { font-weight: 700; }
+
+/* Damage flash — a screen of red ASCII noise that blinks for a split second on a hit. */
+.s2-flash {
+  color: #ff2a1a;
+  font-weight: 700;
+  inset: 0;
+  letter-spacing: 2px;
+  line-height: 1.1;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  text-shadow: 0 0 6px #ff0000;
+  white-space: pre;
+}
+
+.s2-flash-on {
+  animation: s2-flash-pulse 0.24s ease-out;
+}
+
+@keyframes s2-flash-pulse {
+  0% { opacity: 0; }
+  25% { opacity: 0.95; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s2-flash-on { animation-duration: 0.12s; }
+}
+
+.s2-log {
+  border-left: 2px solid var(--s2-border);
+  color: #f5bf66;
+  margin: 0;
+  min-height: 5.5em;
+  padding-left: 28px;
+}
+
+.s2-controls button {
+  background: #21180d;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  font: inherit;
+  min-height: 34px;
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.s2-controls button:hover,
+.s2-controls button:focus-visible {
+  border-color: #ffc46f;
+  outline: 1px solid #ffc46f;
+}
+@media (max-width: 760px) {
+  .stage2-glyph-dungeon {
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .s2-grid,
+  .s2-sprites {
+    font-size: 11px;
+  }
+
+  /* Stack the buttons below the map on narrow screens. */
+  .s2-play {
+    flex-direction: column;
+  }
+
+  .s2-controls {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .s2-controls button {
+    flex: 1 1 42%;
+    text-align: center;
+    width: auto;
+  }
+
+  /* Keep the compass as a full-width header above the wrapped button grid. */
+  .s2-compass {
+    flex: 1 1 100%;
+  }
+
+  /* Touch movement pad — full-width row below the action buttons. */
+  .s2-dpad {
+    display: grid;
+    flex: 1 1 100%;
+    gap: 4px;
+    grid-template-areas: ". up ." "left down right";
+    grid-template-columns: repeat(3, 1fr);
+    margin-top: 4px;
+  }
+
+  .s2-dpad button {
+    min-height: 48px;
+    width: auto;
+  }
+
+  .s2-dpad [data-move="up"] { grid-area: up; }
+  .s2-dpad [data-move="left"] { grid-area: left; }
+  .s2-dpad [data-move="down"] { grid-area: down; }
+  .s2-dpad [data-move="right"] { grid-area: right; }
+}

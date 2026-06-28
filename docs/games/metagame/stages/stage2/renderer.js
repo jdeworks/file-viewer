@@ -6,6 +6,7 @@ import { statusSummary } from "./status.js";
 import { biomeForFloor } from "./biome.js";
 import { isDarkAct } from "./darkness.js";
 import { useConsumable, CONSUMABLE_KEYS, CONSUMABLES } from "./consumables.js";
+import { applyElement } from "./elements.js";
 import { tickFire } from "./fire.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
@@ -57,6 +58,14 @@ export function renderStage2({
             <span class="s2-c-exit">&gt;</span> stairs
             <span class="s2-c-lava">≈</span> lava
             <span class="s2-c-spikes">^</span> spikes
+            <span class="s2-c-chasm">:</span> chasm
+            <span class="s2-c-ice">~</span> water/ice
+          </div>
+          <div class="s2-legend-row">
+            <span class="s2-c-consum">†</span> torch
+            <span class="s2-c-chasm">○</span> rift
+            <span class="s2-c-foe">?</span> ghost
+            <span class="s2-c-foe">e</span><span class="s2-c-foe2">M</span><span class="s2-c-foe2">ψ</span> dark foes
           </div>
         </div>
       </div>
@@ -331,8 +340,27 @@ export function renderStage2({
     bodySolver,
     descendToBoss: bodySolver,
     lockState: () => getBossLockState({ actions, state }),
-    bossSolver: challengeBoss
+    bossSolver: challengeBoss,
+    elementProbe
   };
+
+  // Deterministic, self-contained check that the element matrix + Overflow content are wired through
+  // the real engine: (1) freezing a foe then striking it SHATTERS (element interaction), (2) a
+  // null phantom is pinned (slowed) by torchlight in the dark act (new Overflow foe). Used by the
+  // Stage-2 smoke; runs on throwaway worlds so it never disturbs the live run.
+  function elementProbe() {
+    const grid = ["#####", "#...#", "#####"];
+    const sw = { floor: 5, width: 5, grid, pos: { x: 1, y: 1 }, exit: { x: 9, y: 9 }, monsters: [{ alive: true, x: 2, y: 1, hp: 300, maxHp: 300, atk: 5, name: "frost foe", glyph: "f", statuses: {} }], weapons: [], glyphs: [], potions: [], hidden: [], seed: "probe" };
+    applyElement(sw.monsters[0], "frost");
+    const player = { atk: 12, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: {} };
+    const hpBefore = sw.monsters[0].hp;
+    const ev = step(sw, player, "right");
+    const shatter = ev.shattered === true && hpBefore - sw.monsters[0].hp > 12;
+    const pw = { floor: 8, width: 5, grid, pos: { x: 1, y: 1 }, monsters: [{ alive: true, x: 3, y: 1, hp: 30, maxHp: 30, atk: 7, name: "null phantom", glyph: "ψ", phantom: true, statuses: {}, bucket: 0, dir: "left", sight: 5, chasing: false, faction: 0 }], torch: 12 };
+    monsterTurn(pw, { hp: 999, def: 0, statuses: {}, atk: 5 }, { log: [], damageTaken: 0, died: false }, () => true);
+    const phantomPinned = Boolean(pw.monsters[0].statuses && pw.monsters[0].statuses.slow);
+    return { shatter, phantomPinned };
+  }
 
   // Dev-menu cheats for this stage (see index.js stageMeta.devControls). Map = the full-map overlay.
   function dev(id) {

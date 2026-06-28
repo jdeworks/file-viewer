@@ -35,8 +35,6 @@ var combatLines = {
 };
 
 // ../../docs/games/metagame/stages/stage6/boss.js
-var PHASE_HP = { 1: 60, 2: 80, 3: 60 };
-var SIGNAL_DAMAGE = 30;
 function hasProtocolChapter9(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(6, ACTION_NAME));
 }
@@ -77,94 +75,8 @@ function applyProtocolChapter9Unlock({ state, achievements, bell }) {
   }
   return firstUnlock;
 }
-function startProtocolTurn(state) {
-  state.boss.turn = {
-    firstCard: null,
-    playedAck: false,
-    signalDamageThisTurn: 0
-  };
-}
-function playProtocolCard({ state, card }) {
-  const boss = state.boss;
-  const normalized = normalizeCard(card);
-  boss.reached = true;
-  if (boss.defeated) return { ok: false, reason: "defeated", damage: 0, phase: boss.phase };
-  if (!boss.unlocked) {
-    recordLockedBossAttempt(state);
-    return { ok: false, reason: "locked", damage: 0, phase: boss.phase };
-  }
-  const turn = boss.turn || {};
-  if (!turn.firstCard) turn.firstCard = normalized;
-  if (normalized === "ACK") {
-    turn.playedAck = true;
-    boss.turn = turn;
-    pushLog(state, phaseAckLine(boss.phase));
-    return { ok: true, reason: "ack", damage: 0, phase: boss.phase };
-  }
-  let damage2 = 0;
-  if (normalized === "Signal" || normalized === "SYN") {
-    damage2 = acceptedSignalDamage({ phase: boss.phase, card: normalized, turn });
-    if (damage2 === 0) pushLog(state, combatLines.mismatch);
-    else applyBossDamage(state, damage2);
-  }
-  boss.turn = turn;
-  return { ok: damage2 > 0, reason: damage2 > 0 ? "accepted" : "mismatch", damage: damage2, phase: boss.phase };
-}
-function endProtocolTurn(state) {
-  const boss = state.boss;
-  if (!boss.unlocked || boss.defeated) return { penalty: 0 };
-  if (boss.phase !== 3) {
-    startProtocolTurn(state);
-    return { penalty: 0 };
-  }
-  const acknowledged = Boolean(boss.turn?.playedAck);
-  startProtocolTurn(state);
-  if (acknowledged) return { penalty: 0 };
-  pushLog(state, "no ACK this turn. 8 ongoing damage returns through the protocol.");
-  return { penalty: 8 };
-}
-function defeatRefusedConnection(state) {
-  const boss = state.boss;
-  if (!boss.unlocked || boss.defeated) return false;
-  boss.defeated = true;
-  state.handshakes = Number(state.handshakes || 0) + 80;
-  state.meta.firstClearComplete = true;
-  pushLog(state, combatLines.defeated);
-  return true;
-}
 function pushLog(state, line) {
   state.log = [...state.log || [], line].slice(-8);
-}
-function acceptedSignalDamage({ phase, card, turn }) {
-  if (phase === 1) return turn.firstCard === "SYN" ? SIGNAL_DAMAGE : 0;
-  if (phase === 2) return turn.playedAck ? SIGNAL_DAMAGE : 0;
-  if (phase === 3) return SIGNAL_DAMAGE;
-  return card === "SYN" ? SIGNAL_DAMAGE : 0;
-}
-function applyBossDamage(state, amount) {
-  const boss = state.boss;
-  boss.hp = Math.max(0, Number(boss.hp || PHASE_HP[boss.phase] || 60) - amount);
-  pushLog(state, `${amount} protocol damage accepted.`);
-  if (boss.hp > 0) return;
-  if (boss.phase < 3) {
-    boss.phase += 1;
-    boss.hp = PHASE_HP[boss.phase];
-    startProtocolTurn(state);
-    pushLog(state, boss.phase === 2 ? bellMessages.phase2 : bellMessages.phase3);
-    return;
-  }
-  defeatRefusedConnection(state);
-}
-function normalizeCard(card) {
-  const value = String(card || "").trim().toLowerCase();
-  if (value === "syn") return "SYN";
-  if (value === "ack") return "ACK";
-  return "Signal";
-}
-function phaseAckLine(phase) {
-  if (phase === 2) return combatLines.ackSignal;
-  if (phase === 3) return combatLines.ackOngoing;
-  return combatLines.synFirst;
 }
 function notifyBell(bell, text, id) {
   if (bell && typeof bell.push === "function") bell.push({ id, stage: 6, text });
@@ -310,8 +222,11 @@ var SIGNAL_CARDS = [
     type: "Signal",
     cost: 0,
     rarity: "uncommon",
-    text: "Deal 4.",
-    effect: (ctx) => ctx.deal(4)
+    text: "Deal 4. If a card was replayed this turn, deal 4 more.",
+    effect: (ctx) => {
+      ctx.deal(4);
+      if (ctx.chainCount > 0) ctx.deal(4);
+    }
   },
   {
     id: "PIPELINE",
@@ -934,6 +849,15 @@ function hashSeed(seed, key) {
   for (const ch of String(key)) h = Math.imul(h, 31) + ch.charCodeAt(0) >>> 0;
   return h || 1;
 }
+function strHash(str) {
+  let h = 2166136261 >>> 0;
+  const s = String(str);
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h || 1;
+}
 
 // ../../docs/games/metagame/stages/stage6/cards.js
 var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
@@ -1321,6 +1245,10 @@ function resolveIntent(combat, intent) {
 // ../../docs/games/metagame/stages/stage6/combat-modes.js
 var WINDOW_CAP = 5;
 var WINDOW_FLOOR = 2;
+var CONGESTION_ACT = 3;
+function congestionForAct(act) {
+  return Number(act) >= CONGESTION_ACT;
+}
 function applyTurnEnergy(combat) {
   if (!combat.congestion) {
     combat.player.energy = combat.player.maxEnergy;
@@ -2386,7 +2314,10 @@ var SPECS = {
     ctx.deal(6);
     ctx.applyEnemy("weak", 1);
   } },
-  JITTER: { text: "Deal 6. (cost 0)", effect: (ctx) => ctx.deal(6) },
+  JITTER: { text: "Deal 6. If a card was replayed this turn, deal 6 more.", effect: (ctx) => {
+    ctx.deal(6);
+    if (ctx.chainCount > 0) ctx.deal(6);
+  } },
   PIPELINE: { text: "Deal 5. If you've played 2+ cards this turn, deal 5 more.", effect: (ctx) => {
     ctx.deal(5);
     if (ctx.cardsPlayed >= 2) ctx.deal(5);
@@ -2691,7 +2622,7 @@ function foldAscension(baseConfig, level) {
 
 // ../../docs/games/metagame/stages/stage6/superboss.js
 var SUPERBOSS_ID = "the-kernel-of-refusal";
-var SUPERBOSS_PHASE_HP = [50, 55, 60];
+var SUPERBOSS_PHASE_HP = [82, 88, 94];
 var SUPERBOSS_PHASE_SCRIPTS = [
   // Phase 1 — SEQUENCE / DELAY: ordered pressure with a guard turn.
   [
@@ -2714,6 +2645,7 @@ var SUPERBOSS_PHASE_SCRIPTS = [
 ];
 function wireSuperboss(combat) {
   combat.superPhase = 0;
+  combat.congestion = false;
   combat.enemy.hp = SUPERBOSS_PHASE_HP[0];
   combat.enemy.maxHp = SUPERBOSS_PHASE_HP[0];
   combat.enemy.armor = 0;
@@ -2843,7 +2775,7 @@ function moveTo(run, nodeId2) {
   run.status = screenForNode(node);
   return { ok: true, node };
 }
-function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
+function enemyForCurrentNode(run, rng = makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`))) {
   if (run.atSuperboss) return SUPERBOSS_ID;
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
@@ -3357,6 +3289,26 @@ function playFirstMatch(combat, pred) {
 }
 
 // ../../docs/games/metagame/stages/stage6/testhook.js
+var REPRESENTATIVE_ENDGAME_DECK = [
+  "SYN+",
+  "SYN+",
+  "ACK",
+  "ACK",
+  "PRIORITY_PACKET",
+  "PRIORITY_PACKET+",
+  "TCP_STACK+",
+  "ONION",
+  "FLOOD",
+  "HANDSHAKE",
+  "FIREWALL",
+  "REPLAY+",
+  "PROBE+",
+  "NULL_ROUTE",
+  "BURST_FRAME",
+  "DDOS+"
+];
+var REPRESENTATIVE_ENDGAME_HP = 50;
+var ENDGAME_FIXTURE_SEED = 7;
 function installStage6TestHook(api) {
   const {
     state,
@@ -3407,6 +3359,24 @@ function installStage6TestHook(api) {
       commit();
       return state.run.keys.length;
     },
+    // Equip the REPRESENTATIVE end-game loadout for the bonus fight (deck + HP + a pinned seed). This
+    // stands in for the deck-building of acts 1–5 the test path skips — it is NOT a second un-cheat:
+    // the superboss is still reached only via the real run + 3 keys; this only fills the deck/HP a
+    // real act-6 player would hold so the fight is tuned against real power, not the bare starter.
+    // It also drops any superboss combat the renderer already built from the starter deck (and its
+    // checkpoint) so autoSuperboss rebuilds the fight from this loadout. Call it AFTER the negotiation
+    // diverts to the superboss and BEFORE autoSuperboss. Deterministic.
+    equipEndgameLoadout() {
+      const run = state.run;
+      if (!run || run.status !== "superboss") return { ok: false, reason: "not-at-superboss" };
+      run.deck = [...REPRESENTATIVE_ENDGAME_DECK];
+      run.hp = Math.min(run.maxHp || REPRESENTATIVE_ENDGAME_HP, REPRESENTATIVE_ENDGAME_HP);
+      run.seed = ENDGAME_FIXTURE_SEED;
+      setCombat(null);
+      if (combatRun) combatRun.reset();
+      commit();
+      return { ok: true, deckSize: run.deck.length, hp: run.hp };
+    },
     // Drive the key-gated superboss to its end with the REAL deck (play all affordable cards each
     // turn). Not a bypass — it uses the normal engine. Returns the outcome.
     autoSuperboss(maxTurns = 120) {
@@ -3417,6 +3387,7 @@ function installStage6TestHook(api) {
         combat = makeCombat(run);
         setCombat(combat);
       }
+      const startHp = combat.player.hp;
       let turns = 0;
       while (!combat.over && turns++ < maxTurns) {
         let guard = 0;
@@ -3434,7 +3405,7 @@ function installStage6TestHook(api) {
       const result = combat.result ?? null;
       if (combat.over) finishCombat(run);
       commit();
-      return { ok: true, result, status: state.run?.status, trueEnding: Boolean(state.run?.trueEnding), keys: run.keys?.length || 0 };
+      return { ok: true, result, status: state.run?.status, trueEnding: Boolean(state.run?.trueEnding), keys: run.keys?.length || 0, startHp, endHp: combat.player.hp, turns };
     },
     // Seat a run directly at the act-6 boss so the harness reaches the negotiation in one hop.
     jumpToBoss(deck) {
@@ -4157,14 +4128,6 @@ function cardOption(id, attr, value) {
     <small class="s6db-card-text">${esc3(card?.text || "")}</small>`;
   return button;
 }
-function strHash(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
-  }
-  return h || 1;
-}
 function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
@@ -4284,7 +4247,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     combatRun.checkpoint({ ...snapshotCombat(c), runSeed: run.seed });
   }
   function makeCombat(run) {
-    const enemyId = enemyForCurrentNode(run, makeRng(strHash2(`${run.seed}:${run.currentNodeId}:enemy`)));
+    const enemyId = enemyForCurrentNode(run, makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`)));
     const enemy = instantiateEnemy(enemyId, run.act);
     if (enemy.tier !== "boss") {
       if (run.enemyHpMult && run.enemyHpMult !== 1) enemy.hp = Math.round(enemy.hp * run.enemyHpMult);
@@ -4295,10 +4258,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       deck: run.deck,
       player: { hp: run.hp, maxHp: run.maxHp },
       enemy,
-      seed: strHash2(`${run.seed}:${run.currentNodeId}:combat`),
+      seed: strHash(`${run.seed}:${run.currentNodeId}:combat`),
       relics: relicsFor(run.relics),
-      congestion: run.act === 3,
-      // THROUGHPUT: Act 3 fights run on the dynamic congestion window
+      congestion: congestionForAct(run.act),
+      // THROUGHPUT: window opens in act 3 and persists for acts 3-6 (carry verbs forward)
       windowCap: 5 + (run.windowCapMod || 0)
       // prestige tight-window modifier
     });
@@ -4355,10 +4318,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     let seed, dailyKey = null;
     if (mode === "daily") {
       dailyKey = currentDailyKey();
-      seed = strHash2(`daily:${dailyKey}`);
+      seed = strHash(`daily:${dailyKey}`);
     } else if (mode === "custom" && String(seedText || "").trim()) {
       dailyKey = String(seedText).trim().slice(0, 40);
-      seed = strHash2(`custom:${dailyKey}`);
+      seed = strHash(`custom:${dailyKey}`);
     } else {
       mode = "standard";
       seed = 1e3 + state.meta.runsStarted * 7919 + (state.meta.protocolVersion || 0) * 131;
@@ -4569,14 +4532,6 @@ function openBts({ bts, viewer }) {
   else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
   else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
 }
-function strHash2(str) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619) >>> 0;
-  }
-  return h || 1;
-}
 function once(fn) {
   let called = false;
   return (value) => {
@@ -4711,12 +4666,8 @@ function ensureStyles() {
 export {
   applyProtocolChapter9Unlock,
   defaultState2 as defaultState,
-  defeatRefusedConnection,
-  endProtocolTurn,
   getBossLockState,
   mountStage,
-  playProtocolCard,
   recordLockedBossAttempt,
-  stageMeta,
-  startProtocolTurn
+  stageMeta
 };

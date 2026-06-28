@@ -1,12 +1,16 @@
-// Systemic spreading fire (C1) — the emergent-puzzle layer. Fire is lit by a firebolt rune, then
-// spreads tile-to-tile each tick through SPORE fields (the fuel), burning whatever stands on it.
-// Deliberately FUEL-BOUNDED (only spore cells carry it) so it can never engulf the whole map, and
-// fully DETERMINISTIC (no RNG — spread is decided entirely by the spore layout), so it reproduces
-// from a save. Only the small active-fire set updates per tick — never a terrain redraw.
+// Systemic spreading fire (C1) — the emergent-puzzle layer, now a member of the element matrix
+// (elements.js). Fire is lit by a firebolt rune, then spreads tile-to-tile each tick through SPORE
+// (= GAS) fields (the fuel), burning whatever stands on it; when flame first reaches a gas cell the
+// fire+gas interaction DETONATES it (gasExplosion). Deliberately FUEL-BOUNDED (only spore cells carry
+// it) so it can never engulf the whole map, and fully DETERMINISTIC (no RNG — spread is decided
+// entirely by the spore layout), so it reproduces from a save. fire's glyph + burn status come from
+// ELEMENTS.fire, so all element data lives in one table. Only the small active-fire set updates per
+// tick — never a terrain redraw.
 
 import { applyStatus } from "./status.js";
+import { ELEMENTS, gasExplosion } from "./elements.js";
 
-export const FIRE_GLYPH = "▴";
+export const FIRE_GLYPH = ELEMENTS.fire.glyph;
 const FIRE_LIFE = 5;
 const MAX_FIRES = 400;
 
@@ -34,16 +38,18 @@ export function tickFire(world, player, events) {
   const next = [];
   const fresh = [];
   for (const f of world.fires) {
+    const F = ELEMENTS.fire;
     if (world.pos.x === f.x && world.pos.y === f.y) {
       player.hp = Math.max(0, player.hp - dmg);
       events.damageTaken = (events.damageTaken || 0) + dmg;
-      applyStatus(player, "burn", 3, 2);
+      applyStatus(player, F.status, F.turns, F.power);
       if (player.hp <= 0) events.died = true;
     }
     for (const m of world.monsters) {
-      if (m.alive && m.x === f.x && m.y === f.y) { m.hp -= dmg; applyStatus(m, "burn", 3, 2); if (m.hp <= 0) m.alive = false; }
+      if (m.alive && m.x === f.x && m.y === f.y) { m.hp -= dmg; applyStatus(m, F.status, F.turns, F.power); if (m.hp <= 0) m.alive = false; }
     }
-    // Spread into adjacent spore fuel that hasn't burned yet.
+    // Spread into adjacent spore (= gas) fuel that hasn't burned yet. fire+gas → explode: the cloud
+    // detonates the instant flame reaches it (one burst per cell — the burned set bounds re-ignition).
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = f.x + dx;
       const ny = f.y + dy;
@@ -52,6 +58,7 @@ export function tickFire(world, player, events) {
         && !fresh.some((g) => g.x === nx && g.y === ny)) {
         fresh.push({ x: nx, y: ny, life: FIRE_LIFE });
         burned.push(idx);
+        gasExplosion(world, nx, ny, player, events); // fire meets gas — the spore cloud bursts
       }
     }
     f.life -= 1;

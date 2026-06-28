@@ -21,11 +21,14 @@ export const MONSTERS = [
   { id: 'summoner', glyph: 'u', name: 'fork bomb', hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
   // Overflow act (darkness) foes — see overflow.js for their behaviour.
   { id: 'lighteater', glyph: 'e', name: 'light eater', hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
-  { id: 'mirror', glyph: 'M', name: 'mirror', hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
+  { id: 'mirror', glyph: 'M', name: 'mirror', hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true },
+  // Phantom: leaves NO last-seen ghost (untrackable in the dark, view.js) and full speed in true
+  // darkness, but torchlight pins it (phantomTick slows it). The pure stealth-vs-light foe.
+  { id: 'phantom', glyph: 'ψ', name: 'null phantom', hp: 28, atk: 9, xp: 9, drop: 4, minFloor: 8, fast: true, phantom: true }
 ];
 
 // Behaviour flags copied verbatim from the roster entry onto a spawned monster.
-const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror'];
+const BEHAVIOURS = ['fast', 'ranged', 'summon', 'explode', 'ambush', 'lighteater', 'mirror', 'phantom'];
 
 // Elites (A3): a marked, prefixed, beefed-up variant. Chance + strength rise with depth. They get a
 // guaranteed cache on death (engine.dropElite). One random prefix shapes the bonus.
@@ -59,6 +62,7 @@ export const SHOP_UPGRADES = [
   { id: 'guard', name: 'Hardened Types', desc: '+1 starting DEF', max: 6, apply: (s, n) => { s.def += n; } },
   { id: 'def_level', name: 'Tempered Types', desc: '+1 DEF per level', max: 4, apply: (s, n) => { s.defPerLevel = n; } },
   { id: 'greed', name: 'Glyph Magnet', desc: '+25% glyphs', max: 4, apply: (s, n) => { s.glyphMult = 1 + 0.25 * n; } },
+  { id: 'torchcraft', name: 'Torchbearer', desc: '+12 torch steps & start each run with a torch (per level)', max: 4, apply: (s, n) => { s.torchSteps = 12 * n; s.startTorches = n; } },
   { id: 'compass', name: 'Stairwell Sense', desc: 'reveals the way to the stairs (HUD compass)', max: 1, apply: () => {} }
 ];
 
@@ -74,8 +78,8 @@ export function runHeat(runMods = {}) {
   return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods[m.id]).length;
 }
 
-const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1000 };
-const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
+const SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, compass: 1000 };
+const SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, compass: 1 };
 
 export function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
@@ -95,6 +99,8 @@ export function rollEntity(shopUpgrades = {}) {
     if (n > 0) up.apply(stats, n);
   }
   stats.hp = stats.maxHp;
+  // Torchbearer: stock the run inventory with starting torches so you enter the Overflow act lit.
+  if (stats.startTorches > 0) stats.inventory.torch = Number(stats.startTorches);
   return stats;
 }
 

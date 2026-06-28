@@ -74,7 +74,8 @@ export function buildGrid(puzzle, handlers) {
     const t = e.target.closest(".s3-cell");
     if (!t || t.dataset.x === undefined) return;
     e.preventDefault();
-    handlers.onCell(Number(t.dataset.x), Number(t.dataset.y), e.button === 2 || e.shiftKey);
+    // mark (✕) on right/shift-click; otherwise a fill — alt-click lays Color B (two-colour snapshots).
+    handlers.onCell(Number(t.dataset.x), Number(t.dataset.y), e.button === 2 || e.shiftKey, e.altKey);
   });
   wrap.addEventListener("contextmenu", (e) => e.preventDefault());
 

@@ -6,7 +6,7 @@
 // prestige version) is held by the caller across runs.
 
 import { generateRun, nodeById, enemyForNode } from "./mapgen.js";
-import { makeRng, hashSeed } from "./combat.js";
+import { makeRng, hashSeed, strHash } from "./combat.js";
 import { STARTING_DECK, REWARD_POOL, draftRewardCards } from "./cards.js";
 import { upgradeIdFor } from "./card-upgrades.js";
 import { baseRunConfig, foldAscension, activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
@@ -150,7 +150,7 @@ export function moveTo(run, nodeId) {
 
 // `rng` is REQUIRED — a seeded rng (e.g. `makeRng(hashSeed(seed, nodeId))`). No `Math.random`
 // fallback: which enemy a node spawns must be deterministic from the run seed.
-export function enemyForCurrentNode(run, rng = makeRng(hashSeed(run.seed, `${run.currentNodeId}:enemy`))) {
+export function enemyForCurrentNode(run, rng = makeRng(strHash(`${run.seed}:${run.currentNodeId}:enemy`))) {
   if (run.atSuperboss) return SUPERBOSS_ID; // the key-gated true-ending fight (synthetic node)
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;

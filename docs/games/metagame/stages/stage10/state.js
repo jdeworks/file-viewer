@@ -33,7 +33,11 @@ export function defaultState(context = {}) {
       compaction: {},
       fragmentation: {},
       core: [],
-      stance: null
+      stance: null,
+      // Achievement bookkeeping: everCompacted = a memory ever failed Phase A recall (no flawless);
+      // everRewitnessed = a trace ever needed a manual Phase B re-open (not fully honest prior run).
+      everCompacted: false,
+      everRewitnessed: false
     },
     // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
     ui: {
@@ -78,7 +82,9 @@ function normalizeConfront(value, fresh) {
     compaction: c.compaction && typeof c.compaction === "object" ? { ...c.compaction } : {},
     fragmentation: c.fragmentation && typeof c.fragmentation === "object" ? { ...c.fragmentation } : {},
     core: Array.isArray(c.core) ? c.core.filter((id) => typeof id === "string") : [],
-    stance: c.stance && typeof c.stance === "object" ? c.stance : null
+    stance: c.stance && typeof c.stance === "object" ? c.stance : null,
+    everCompacted: Boolean(c.everCompacted),
+    everRewitnessed: Boolean(c.everRewitnessed)
   };
 }
 

@@ -137,14 +137,18 @@ function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
   const cost = def.cost || 0;
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: "cycles" };
   const mode = targetMode || def.defaultTarget || "first";
+  const tx = Math.trunc(Number(x));
+  const ty = Math.trunc(Number(y));
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) return { ok: false, reason: "position" };
   const tower = {
-    id: `tower-${state.towers.length + 1}`,
+    // Position+type id, IDENTICAL to state.normalizeTower's scheme, so a tower's id survives a
+    // save/reload round-trip and upgrade/sell lookups never break (Round-3 Issue 5). One tower per cell.
+    id: `tower-${type}-${tx}-${ty}`,
     type,
-    x: Math.trunc(Number(x)),
-    y: Math.trunc(Number(y)),
+    x: tx,
+    y: ty,
     targetMode: TARGET_MODES.includes(mode) ? mode : "first"
   };
-  if (!Number.isFinite(tower.x) || !Number.isFinite(tower.y)) return { ok: false, reason: "position" };
   state.cycles -= cost;
   state.towers.push(tower);
   const coverage = getTowerCoverage(state);
@@ -210,6 +214,16 @@ var LO = MARGIN;
 var HI = GRID - 1 - MARGIN;
 var AXIOM = "F";
 var RULE = "F+F-F-F+F";
+function waveGroupDepth(waveNum) {
+  const n = Number(waveNum) || 1;
+  if (n <= 10) return 1;
+  if (n <= 20) return 2;
+  return 3;
+}
+function mapPathDepth(mapDepth, waveNum) {
+  const cap = Math.max(1, Math.min(3, Math.trunc(Number(mapDepth)) || 1));
+  return Math.min(cap, waveGroupDepth(waveNum));
+}
 function buildPath(seed, depth = 1) {
   const d = Math.max(1, Math.min(3, Math.trunc(Number(depth)) || 1));
   const instructions = expand(d);
@@ -916,6 +930,17 @@ function spawnSubBoss(id, idCounter) {
 }
 
 // ../../docs/games/metagame/stages/stage4/upgrades.js
+function sellTower(state, towerId) {
+  const idx = (state.towers || []).findIndex((t) => t.id === towerId);
+  if (idx < 0) return { ok: false, reason: "not-found" };
+  const tower = state.towers[idx];
+  const base = TOWER_TYPES[tower.type]?.cost || 0;
+  const invested = base * Math.pow(2, (tower.level || 1) - 1);
+  const refund = Math.floor(invested * 0.7);
+  state.cycles = (state.cycles || 0) + refund;
+  state.towers.splice(idx, 1);
+  return { ok: true, refund };
+}
 function upgradeTower(state, towerId) {
   const tower = (state.towers || []).find((t) => t.id === towerId);
   if (!tower) return { ok: false, reason: "not-found" };
@@ -1507,6 +1532,129 @@ function mergePlain(base, override) {
   return { ...base, ...override && typeof override === "object" ? override : {} };
 }
 
+// ../../docs/games/metagame/stages/stage4/combat-helpers.js
+var TOWER_UNLOCK_MAP = {
+  pulse_node: 0,
+  cycle_extractor: 0,
+  scatter_array: 0,
+  null_spike: 0,
+  attractor_field: 0,
+  frost_lattice: 1,
+  thermal_loop: 1,
+  shatter_drill: 1,
+  chain_resonator: 2,
+  resonance_hub: 2,
+  gravity_well: 2,
+  long_recursor: 3,
+  glyph_mortar: 3,
+  bank_node: 3
+};
+function availableTowers(placeable, mapIndex) {
+  const idx = Math.max(0, Math.trunc(Number(mapIndex)) || 0);
+  return placeable.filter((type) => (TOWER_UNLOCK_MAP[type] ?? 0) <= idx);
+}
+function sellValue(tower) {
+  const base = TOWER_TYPES[tower?.type]?.cost || 0;
+  return Math.floor(base * Math.pow(2, (tower?.level || 1) - 1) * 0.7);
+}
+function refundTowersOnPath(state, tiles) {
+  const onPath = new Set((tiles || []).map((t) => `${t.x},${t.y}`));
+  const kept = [];
+  let count = 0;
+  let refund = 0;
+  for (const tower of state.towers || []) {
+    if (!onPath.has(`${tower.x},${tower.y}`)) {
+      kept.push(tower);
+      continue;
+    }
+    const base = TOWER_TYPES[tower.type]?.cost || 0;
+    refund += Math.floor(base * Math.pow(2, (tower.level || 1) - 1));
+    count += 1;
+  }
+  if (count) {
+    state.towers = kept;
+    state.cycles = (state.cycles || 0) + refund;
+  }
+  return { count, refund };
+}
+function reshapesAfter(mapIndex, waveNumber) {
+  const map = mapByIndex(mapIndex);
+  const w = Math.max(1, Math.trunc(Number(waveNumber)) || 1);
+  if (w >= map.waveCount) return false;
+  return mapPathDepth(map.depth, w + 1) > mapPathDepth(map.depth, w);
+}
+function preWaveHint(mapIndex, waveNumber) {
+  const w = Math.max(1, Math.trunc(Number(waveNumber)) || 1);
+  const comp = mapWaveComposition(mapIndex, w);
+  const parts = [];
+  const sbId = subBossIdForWave(mapIndex, w);
+  if (sbId) {
+    const d = subBossDef(sbId);
+    if (d) parts.push(`${d.glyph} ${d.name} — ${d.telegraph}`);
+  }
+  const summary = (comp.enemies || []).map((e) => `${e.count}×${e.type}`).join(", ");
+  parts.push(summary ? `wave ${w} incoming: ${summary}` : `wave ${w} incoming`);
+  if (reshapesAfter(mapIndex, w)) parts.push("⚠ the path reshapes after this wave — place for the fold to come");
+  parts.push("place towers, then start the wave");
+  return parts.join("  ·  ");
+}
+
+// ../../docs/games/metagame/stages/stage4/combat-rows.js
+function shopRows({ placeable, isBoss, mapIndex, selected }) {
+  const list = isBoss ? placeable : availableTowers(placeable, mapIndex);
+  return list.map((type) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.tower = type;
+    btn.className = type === selected ? "is-selected" : "";
+    btn.textContent = `${TOWER_TYPES[type].glyph} ${type} (${TOWER_TYPES[type].cost})`;
+    return btn;
+  });
+}
+function rosterRows(state) {
+  return (state.towers || []).map((tower) => {
+    const wrap = document.createElement("div");
+    wrap.className = "s4-roster-row";
+    const def = TOWER_TYPES[tower.type] || {};
+    const level = tower.level || 1;
+    const tgt = document.createElement("button");
+    tgt.type = "button";
+    tgt.dataset.towerId = tower.id;
+    tgt.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}`;
+    wrap.append(tgt);
+    if (level < 3) {
+      const up = document.createElement("button");
+      up.type = "button";
+      up.dataset.upgradeId = tower.id;
+      up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
+      wrap.append(up);
+    } else if (!tower.fork && forksFor(tower.type).length) {
+      for (const f of forksFor(tower.type)) {
+        const fb = document.createElement("button");
+        fb.type = "button";
+        fb.className = "s4-fork-btn";
+        fb.dataset.forkId = tower.id;
+        fb.dataset.forkChoice = f.id;
+        fb.textContent = `⑂ ${f.label}`;
+        fb.title = f.desc;
+        wrap.append(fb);
+      }
+    } else if (tower.fork) {
+      const tag = document.createElement("span");
+      tag.className = "s4-fork-tag";
+      tag.textContent = `⑂ ${forkDef(tower)?.label || tower.fork}`;
+      wrap.append(tag);
+    }
+    const sell = document.createElement("button");
+    sell.type = "button";
+    sell.className = "s4-sell-btn";
+    sell.dataset.sellId = tower.id;
+    sell.textContent = `sell (${sellValue(tower)})`;
+    wrap.append(sell);
+    return wrap;
+  });
+}
+
 // ../../docs/games/metagame/stages/stage4/ui-combat.js
 var PLACEABLE = [
   "pulse_node",
@@ -1568,8 +1716,20 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   let raf = null;
   let lastPersistMs = -Infinity;
   let alive = true;
-  let path = buildPath(isBoss ? state.recursion?.pointSetId || "x" : mapPathSeed(state.recursion?.pointSetId, mapIndex), isBoss ? 3 : map.depth);
+  const pathSeed = isBoss ? state.recursion?.pointSetId || "x" : mapPathSeed(state.recursion?.pointSetId, mapIndex);
+  let pathDepth = isBoss ? 3 : mapPathDepth(map.depth, state.waveNumber || 1);
+  let path = buildPath(pathSeed, pathDepth);
   if (!Number.isFinite(state.wavePeak)) state.wavePeak = state.waveNumber || 1;
+  function maybeReshape() {
+    if (isBoss) return false;
+    const want = mapPathDepth(map.depth, state.waveNumber || 1);
+    if (want === pathDepth) return false;
+    pathDepth = want;
+    path = buildPath(pathSeed, pathDepth);
+    const { count } = refundTowersOnPath(state, path.tiles);
+    pushLog(state, `⟲ the recursion folds — the path reshapes to depth ${pathDepth}.` + (count ? ` ${count} tower(s) caught on the new route were refunded.` : ""));
+    return true;
+  }
   function checkpointWave(overrides) {
     controller.checkpointWave?.({ ...snapshotWave(state), ...overrides });
   }
@@ -1582,9 +1742,9 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     fields.cycles.textContent = String(state.cycles);
     fields.integrity.textContent = `${state.integrity}/${state.maxIntegrity || state.integrity}`;
     fields.progress.textContent = isBoss ? `${lock.coveredPoints}/${lock.totalPoints}` : `${Math.min(state.waveNumber || 1, map.waveCount)}/${map.waveCount}`;
-    fields.hint.textContent = isBoss ? lock.hint : state.waveActive ? "hold the line — call the next wave early for bonus cycles" : "place towers, then start the wave";
-    fields.shop.replaceChildren(...shopRows());
-    fields.roster.replaceChildren(...rosterRows());
+    fields.hint.textContent = isBoss ? lock.hint : state.waveActive ? "hold the line — call the next wave early for bonus cycles" : preWaveHint(mapIndex, state.waveNumber || 1);
+    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected }));
+    fields.roster.replaceChildren(...rosterRows(state));
     board.textContent = boardText(state, path.tiles);
     if (!isBoss) {
       root.querySelector('[data-action="call-early"]').hidden = !state.waveActive || (state.wavePeak || 1) >= map.waveCount;
@@ -1596,55 +1756,9 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       return li;
     }));
   }
-  function shopRows() {
-    return PLACEABLE.map((type) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.dataset.tower = type;
-      btn.className = type === selected ? "is-selected" : "";
-      btn.textContent = `${TOWER_TYPES[type].glyph} ${type} (${TOWER_TYPES[type].cost})`;
-      return btn;
-    });
-  }
-  function rosterRows() {
-    return (state.towers || []).map((tower) => {
-      const wrap = document.createElement("div");
-      wrap.className = "s4-roster-row";
-      const def = TOWER_TYPES[tower.type] || {};
-      const level = tower.level || 1;
-      const tgt = document.createElement("button");
-      tgt.type = "button";
-      tgt.dataset.towerId = tower.id;
-      tgt.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}`;
-      wrap.append(tgt);
-      if (level < 3) {
-        const up = document.createElement("button");
-        up.type = "button";
-        up.dataset.upgradeId = tower.id;
-        up.textContent = `upgrade (${towerUpgradeCost(tower.type, level)})`;
-        wrap.append(up);
-      } else if (!tower.fork && forksFor(tower.type).length) {
-        for (const f of forksFor(tower.type)) {
-          const fb = document.createElement("button");
-          fb.type = "button";
-          fb.className = "s4-fork-btn";
-          fb.dataset.forkId = tower.id;
-          fb.dataset.forkChoice = f.id;
-          fb.textContent = `⑂ ${f.label}`;
-          fb.title = f.desc;
-          wrap.append(fb);
-        }
-      } else if (tower.fork) {
-        const tag = document.createElement("span");
-        tag.className = "s4-fork-tag";
-        tag.textContent = `⑂ ${forkDef(tower)?.label || tower.fork}`;
-        wrap.append(tag);
-      }
-      return wrap;
-    });
-  }
   function startWaveAction() {
     if (isBoss || state.waveActive || (state.waveNumber || 1) > map.waveCount) return;
+    maybeReshape();
     startWave(state, state.waveNumber, path.tiles);
     state.wavePeak = state.waveNumber;
     lastPersistMs = -Infinity;
@@ -1712,6 +1826,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
         controller.rerender();
         return true;
       }
+      maybeReshape();
       repaint();
       return true;
     }
@@ -1756,6 +1871,12 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     controller.persist?.();
     return r;
   }
+  function sell(id) {
+    const r = sellTower(state, id);
+    repaint();
+    controller.persist?.();
+    return r;
+  }
   function pickFork(id, forkId) {
     const r = chooseFork(state, id, forkId);
     repaint();
@@ -1771,6 +1892,11 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     const upBtn = event.target.closest("button[data-upgrade-id]");
     if (upBtn) {
       upgrade(upBtn.dataset.upgradeId);
+      return;
+    }
+    const sellBtn = event.target.closest("button[data-sell-id]");
+    if (sellBtn) {
+      sell(sellBtn.dataset.sellId);
       return;
     }
     const forkBtn = event.target.closest("button[data-fork-id]");
@@ -1857,9 +1983,13 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       place,
       cycleTarget,
       upgrade,
+      sell,
       pickFork,
       setWave,
-      confront
+      confront,
+      reshape: maybeReshape,
+      pathInfo: () => ({ depth: pathDepth, tiles: path.tiles })
+      // reshape test hooks
     }
   };
 }

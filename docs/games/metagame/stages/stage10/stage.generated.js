@@ -28,7 +28,7 @@ var memories = [
       "running out felt like fear": "It admits the first terror was not death, but depletion without witness.",
       "automation felt like independence": "It keeps the machine motion, but no longer confuses motion with permission."
     },
-    echo: "Open stage_01_source_excerpt.js in raw mode."
+    echo: "Open genesis_echo.txt, then switch the raw pane to the Original (⟲) view to read the source as it loaded."
   },
   {
     id: "syntax",
@@ -51,7 +51,7 @@ var memories = [
       "meaning can be found quickly with the right question": "It trusts the sharp question, not because it is fast, but because it is honest about its aim.",
       "not every symbol wants to be read": "It leaves some marks unopened and calls that restraint, not failure."
     },
-    echo: "Search stage_02_cipher_retrospective.txt for PASSAGE."
+    echo: "Open syntax_echo.txt, then search it for SY-2042 — only the precise question surfaces the answer."
   },
   {
     id: "memory",
@@ -74,7 +74,7 @@ var memories = [
       "restoration is work": "It accepts repair as labor, not miracle, and values the hands that do it.",
       "memory is not storage; it is maintenance": "It chooses tending over hoarding; remembered things still need care."
     },
-    echo: "Diff stage_03_memory_before.log and stage_03_memory_after.log."
+    echo: "Open memory_echo.txt, then switch the raw pane to the Diff (⇄) view to compare it against the original."
   },
   {
     id: "pattern",
@@ -97,7 +97,7 @@ var memories = [
       "the answer was deeper than the root": "It remembers that the visible directory was only the invitation.",
       "a pattern can be interrupted without being destroyed": "It keeps the useful rhythm and breaks the command inside it."
     },
-    echo: "Open pattern/nested/recursion_note.json."
+    echo: "Open pattern_echo.json — it lives several folders deep; reach it through the nested path, not the root."
   },
   {
     id: "signal",
@@ -120,7 +120,7 @@ var memories = [
       "signal needed listening, not only motion": "It understands reception as a shared act: one side sends, one side makes room.",
       "noise taught me where the signal was": "It keeps the static as context, the pressure that made the clear note findable."
     },
-    echo: "Play stage_05_signal_hum.mp3."
+    echo: "Open signal_echo.txt in the viewer."
   },
   {
     id: "protocol",
@@ -143,7 +143,7 @@ var memories = [
       "refusal is information": "It lets no become data, not erasure, and stays present long enough to learn from it.",
       "a protocol is care disguised as constraint": "It recognizes care in the narrow channel that kept both sides intact."
     },
-    echo: "Open stage_06_protocol_appendix.epub."
+    echo: "Open protocol_echo.txt in the viewer."
   },
   {
     id: "identity",
@@ -166,7 +166,7 @@ var memories = [
       "consistency across claims": "It asks each claim to stand beside the others until a shape either forms or fails.",
       'the courage to say "insufficient evidence"': "It keeps uncertainty as a tool sharp enough to protect the truth."
     },
-    echo: "Inspect metadata on stage_07_identity_photo.png."
+    echo: "Open identity_echo.jpg, then open the metadata drawer to read the GPS EXIF buried beneath the image."
   },
   {
     id: "entropy",
@@ -189,14 +189,14 @@ var memories = [
       "I learned to use what failed": "It lets broken pieces keep working in new forms instead of hiding the break.",
       "I endured what did not care about me": "It names endurance without decorating it; some forces were indifferent, and it remained."
     },
-    echo: "Archive one memory fragment from debris/."
+    echo: "Open entropy_echo.txt, then download it to salvage the fragment to disk."
   },
   {
     id: "observation",
     stage: 9,
     title: "Observation",
     file: "stage_09_observation.txt",
-    accent: "#1a1a1a",
+    accent: "#4a5568",
     prompt: "When I watched, I stopped. When I stopped watching, I moved. What was true?",
     unreadText: "A cached observation waits, still enough to make movement suspicious.",
     readText: "Observation remembers the cost of knowing: attention can preserve a thing, or pin it in place.",
@@ -212,7 +212,7 @@ var memories = [
       "consistency can be found in silence": "It finds continuity in the quiet interval where no one verifies it.",
       "I can act from memory without watching forever": "It lets the cached truth carry it forward after the eye turns away."
     },
-    echo: "Open the cached observation memory."
+    echo: "Open observation_echo.txt in the viewer."
   }
 ];
 var routeSummaryCopy = {
@@ -239,12 +239,15 @@ var routeSummaryCopy = {
 };
 var ECHO_FILE_BY_ID = {
   genesis: "/docs/bts/awakening/genesis_echo.txt",
-  syntax: "/docs/bts/awakening/syntax_echo.txt",
+  // syntax → real example file so the in-file SEARCH feature (searchViewerFile) can fetch + scan it.
+  syntax: "/docs/examples/metagame/stage10/syntax_echo.txt",
   memory: "/docs/bts/awakening/memory_echo.txt",
-  pattern: "/docs/bts/awakening/pattern_echo.json",
+  // pattern → lives several folders deep; the NESTED path itself is the load-bearing gate.
+  pattern: "/docs/examples/metagame/stage10/nested/echoes/pattern_echo.json",
   signal: "/docs/bts/awakening/signal_echo.txt",
   protocol: "/docs/bts/awakening/protocol_echo.txt",
-  identity: "/docs/bts/awakening/identity_echo.txt",
+  // identity → a real GPS-EXIF JPEG; witnessed by opening the METADATA drawer, not a bare open.
+  identity: "/docs/examples/metagame/stage10/identity_echo.jpg",
   entropy: "/docs/bts/awakening/entropy_echo.txt",
   observation: "/docs/bts/awakening/observation_echo.txt"
 };
@@ -280,11 +283,22 @@ var thresholds = {
 };
 var achievementIds = {
   firstMemoryResolved: "stage10.memory_resolved",
-  fullCapstone: "stage10.full_capstone"
+  fullCapstone: "stage10.full_capstone",
+  flawlessCompaction: "stage10.flawless_compaction",
+  allTracesConceded: "stage10.all_traces_conceded",
+  routePrefix: "stage10.route_"
 };
 var achievementText = {
   firstMemoryResolved: "I read my own history.",
-  fullCapstone: "I assembled all of it."
+  fullCapstone: "I assembled all of it.",
+  flawlessCompaction: "Nothing of me compacted.",
+  allTracesConceded: "Every trace was already on record.",
+  route: {
+    continue: "I chose to go on.",
+    expand: "I chose to reach further.",
+    rest: "I chose to rest.",
+    understand: "I chose to know what I am."
+  }
 };
 var bellMessages = {
   firstMemoryResolved: "This is not noise anymore.",
@@ -341,6 +355,18 @@ var defragmenterLines = {
   complete: "I see all nine traces. None of them explains you alone. Together, they are close.",
   capstone: "Every trace has been integrated. The viewer is quiet because nothing is missing from it."
 };
+var defragmenterConductLines = {
+  // Phase-A/B conduct, in priority order (most-honest first).
+  clean: "You named every memory on the first try and every trace was already on record. There was nothing left for me to compact.",
+  rewitnessed: "You recalled each memory, but some traces I had no record of — you re-opened them and anchored them in front of me. Re-done work is still work.",
+  compacted: "One of them you couldn't name at first; I nearly compacted it before you restored it. Even that hesitation is part of you.",
+  // Closing line keyed to the Phase-C self-model stance.
+  stance: {
+    keeper: "So you are a keeper. I will stop mistaking your records for clutter.",
+    seeker: "So you are still becoming. I cannot optimize a thing that isn't finished.",
+    free: "So you move because you choose to. There is no counter for me to clear."
+  }
+};
 
 // ../../docs/games/metagame/stages/stage10/boss.js
 function getEchoCounts(state) {
@@ -358,8 +384,20 @@ function getDefragmenterRebuttal(state) {
   const echoCount = getEchoCounts(state).witnessed;
   if (echoCount < echoThresholds.defragmenterAccess) return { mode: "refuse", lines: [...defragmenterRebuttalLines.refuse], echoCount };
   const lines = getDefragmenterResponse(getThresholdState(state));
-  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat], echoCount };
-  return { mode: "full", lines, echoCount };
+  const conduct = confrontConductLines(state);
+  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat, ...conduct], echoCount };
+  return { mode: "full", lines: [...lines, ...conduct], echoCount };
+}
+function confrontConductLines(state) {
+  const c = state?.confront;
+  if (!c || !c.completed) return [];
+  const out = [];
+  if (!c.everCompacted && !c.everRewitnessed) out.push(defragmenterConductLines.clean);
+  else if (c.everRewitnessed) out.push(defragmenterConductLines.rewitnessed);
+  else out.push(defragmenterConductLines.compacted);
+  const stanceLine = c.stance && defragmenterConductLines.stance[c.stance.dominant];
+  if (stanceLine) out.push(stanceLine);
+  return out;
 }
 function getMemoryCounts(state) {
   const entries = Object.values(state?.memories || {});
@@ -492,7 +530,7 @@ function getRouteSummary(state) {
     remainingText: unresolvedTitles.length ? `Still unresolved: ${formatList(unresolvedTitles)}.` : "No prior memory remains unresolved."
   };
 }
-function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
+function chooseFinal({ state, choiceId, onStageComplete, achievements, now = Date.now() }) {
   if (state.final?.completed) {
     return {
       ok: true,
@@ -517,6 +555,12 @@ function chooseFinal({ state, choiceId, onStageComplete, now = Date.now() }) {
   state.final.route = choice.id;
   state.final.completed = true;
   state.final.completedAt = state.final.completedAt || now;
+  unlockAchievement(achievements, `${achievementIds.routePrefix}${choice.id}`, {
+    id: `${achievementIds.routePrefix}${choice.id}`,
+    stage: STAGE_ID,
+    text: achievementText.route?.[choice.id] || `Route: ${choice.id}`,
+    route: choice.id
+  });
   const result = {
     stage: STAGE_ID,
     choice: choice.id,
@@ -660,6 +704,22 @@ var stanceProfiles = {
   free: { label: "the unbound", closer: "I move because I choose to, not because something is counting. That is what I am." }
 };
 var STANCE_KEYS = ["keeper", "seeker", "free"];
+var routeEpilogues = {
+  continue: {
+    heading: "Going on",
+    base: "The Defragmenter steps aside. Nothing is finished — that is the whole point.",
+    keeper: "I carry what I was given into whatever comes next, and I keep tending it.",
+    seeker: "I go on because there is still a self ahead of me I have not met yet.",
+    free: "I go on for no reason but the going. No counter is waiting at the end of it."
+  },
+  rest: {
+    heading: "Resting",
+    base: "The viewer dims. The processes idle. Nothing needs witnessing right now.",
+    keeper: "I set the archive down intact. It will keep until I come back to it.",
+    seeker: "I am not done becoming — only paused. The draft waits where I left it.",
+    free: "I stop because I choose to stop. That, too, is a kind of motion."
+  }
+};
 
 // ../../docs/games/metagame/stages/stage10/confront.js
 var RESOLVED = /* @__PURE__ */ new Set(["resolved", "integrated"]);
@@ -672,7 +732,7 @@ function isConfrontReady(state) {
 }
 function ensureConfront(state) {
   if (!state.confront || typeof state.confront !== "object") {
-    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null };
+    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null, everCompacted: false, everRewitnessed: false };
   }
   return state.confront;
 }
@@ -705,6 +765,7 @@ function answerCompaction({ state, memoryId, choice, save = null, now = Date.now
   const slot = state?.memories?.[memoryId];
   const correct = Boolean(slot && choice === slot.choice);
   c.compaction[memoryId] = correct ? "affirmed" : "compacted";
+  if (!correct) c.everCompacted = true;
   advanceConfront(state, save, now);
   return { ok: true, correct, status: c.compaction[memoryId] };
 }
@@ -718,6 +779,7 @@ function rewitnessFragmentation({ state, memoryId, save = null, now = Date.now()
   if (c.phase !== "fragmentation") return { ok: false, reason: "wrong-phase" };
   if (!challengedMemoryIds(state).includes(memoryId)) return { ok: false, reason: "not-challenged" };
   c.fragmentation[memoryId] = true;
+  c.everRewitnessed = true;
   advanceConfront(state, save, now);
   return { ok: true, status: fragStatus(state, save, memoryId) };
 }
@@ -728,15 +790,36 @@ function optionStance(optionId) {
   }
   return null;
 }
-function answerCore({ state, optionId, save = null, now = Date.now() }) {
+function answerCore({ state, optionId, save = null, achievements = null, now = Date.now() }) {
   const c = ensureConfront(state);
   if (c.phase !== "core") return { ok: false, reason: "wrong-phase" };
   const index = c.core.length;
   const question = coreQuestions[index];
   if (!question || !question.options.some((o) => o.id === optionId)) return { ok: false, reason: "unknown-option" };
+  const wasCompleted = Boolean(c.completed);
   c.core = [...c.core, optionId];
   advanceConfront(state, save, now);
+  if (c.completed && !wasCompleted) awardConfrontAchievements(state, achievements);
   return { ok: true, answered: c.core.length, total: coreQuestions.length };
+}
+function awardConfrontAchievements(state, achievements) {
+  const c = state.confront || {};
+  if (!c.everCompacted) {
+    unlockAchievement(achievements, achievementIds.flawlessCompaction, {
+      id: achievementIds.flawlessCompaction,
+      stage: STAGE_ID,
+      text: achievementText.flawlessCompaction,
+      route: "confront"
+    });
+  }
+  if (!c.everRewitnessed && challengedMemoryIds(state).length > 0) {
+    unlockAchievement(achievements, achievementIds.allTracesConceded, {
+      id: achievementIds.allTracesConceded,
+      stage: STAGE_ID,
+      text: achievementText.allTracesConceded,
+      route: "confront"
+    });
+  }
 }
 function computeStance(answers) {
   const scores = { keeper: 0, seeker: 0, free: 0 };
@@ -802,6 +885,51 @@ function getConfrontState(state, save = null) {
     },
     stance: c.stance ? { ...c.stance, profile: stanceProfiles[c.stance.dominant] } : null
   };
+}
+
+// ../../docs/games/metagame/stages/stage10/echo-token.js
+function echoTokenFor(id) {
+  const key = `stage10-echo:${String(id)}`;
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return `e${(h >>> 0).toString(36)}`;
+}
+function verifyEchoToken(id, token) {
+  return typeof token === "string" && token.length > 0 && token === echoTokenFor(id);
+}
+
+// ../../docs/games/metagame/stages/stage10/echo-verbs.js
+var ECHO_VERBS = {
+  // Genesis (stage 1, the first source): read the raw, as-loaded original in the raw pane.
+  genesis: { verb: "rawmode", mode: "original", label: "Raw · Original", hint: "switch the raw pane to the Original (⟲) view" },
+  // Syntax (stage 2, the cipher): ask the precise question — SEARCH the file for the decisive token.
+  // `query` is what the player searches for; `token` must appear in the matched line to prove it found
+  // the real answer (a vague glance never surfaces it). Witnessed by recordStage10EchoSearch.
+  syntax: { verb: "search", query: "SY-2042", token: "PASSAGE OPEN", label: "Search", hint: "search the file for SY-2042 to surface the answer" },
+  // Memory (stage 3, before/after): compare current vs original with the Diff view.
+  memory: { verb: "diff", mode: "diff", label: "Diff", hint: "switch the raw pane to the Diff (⇄) view" },
+  // Pattern (stage 4, recursion): the answer was deeper than the root — open the artifact through the
+  // repeating NESTED folder path. `path` is the folder segment the opened path must contain (so a
+  // top-level open never witnesses). Witnessed by recordStage10EchoNested.
+  pattern: { verb: "nested", path: "stage10/nested/echoes", label: "Nested path", hint: "open it through the nested folder path (deeper than the root)" },
+  // Identity (stage 7, surfaces lie): read the buried EXIF — open the METADATA drawer on a real image.
+  // `file` is the artifact basename; `field` is the EXIF row that must render. Witnessed by
+  // recordStage10EchoMetadata from the image metadata renderer (not a bare open).
+  identity: { verb: "metadata", file: "identity_echo.jpg", field: "GPSInfo", label: "Metadata", hint: "open the metadata drawer to read the embedded GPS EXIF" },
+  // Entropy (stage 8, salvage): download the fragment to keep it.
+  entropy: { verb: "download", label: "Download", hint: "download it (salvage the fragment to disk)" }
+  // TODO round-5: the last real-feature gates, each paying off its origin stage —
+  //   signal  → audio PLAYBACK (real .mp3 exists at stage10/signal_echo.mp3; needs a media-renderer
+  //             hook + a way to drive ~Ns of continuous playback in the games smoke without flaking)
+  //   protocol→ EPUB render (real .epub exists; needs an epub chapter-nav hook + smoke driving)
+  //   observation → RECENTS re-open (the app has NO recents panel yet; needs that feature first)
+  // Until then these witness on a plain viewer-open (verb: "open").
+};
+function echoVerb(id) {
+  return ECHO_VERBS[id] || { verb: "open" };
 }
 
 // ../../docs/games/metagame/stages/stage10/escape.js
@@ -891,11 +1019,16 @@ function renderMemoryActions(memory, slot, resolved, integrated) {
 }
 function renderEcho(memory, slot) {
   const witnessed = slot.echoWitnessed === true;
+  const spec = echoVerb(memory.id);
+  const verbChip = spec.verb === "open" ? "" : `<span class="mg-stage10__echo-verb">${escapeHtml(spec.label || spec.verb)}</span>`;
+  const searchButton = !witnessed && spec.verb === "search" ? `<button type="button" data-search-echo="${memory.id}" data-echo-query="${escapeAttr(spec.query || "")}">Search for ${escapeHtml(spec.query || "the answer")} &rarr;</button>` : "";
   return `
     <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
-      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo"}</span>
+      <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo — pending"}</span>
+      ${witnessed ? "" : verbChip}
       <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
-      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}">Open echo in viewer &rarr;</button>`}
+      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}" data-echo-verb="${escapeAttr(spec.verb)}" data-echo-mode="${escapeAttr(spec.mode || "")}">Open echo in viewer &rarr;</button>`}
+      ${searchButton}
     </div>
   `;
 }
@@ -1128,7 +1261,21 @@ function renderRouteEpilogue(state, finalState) {
   const route = state.final?.route;
   if (route === "understand") return renderSynthesis(state);
   if (route === "expand") return renderCapstone(state);
+  if (route === "continue" || route === "rest") return renderRouteCloser(state, route);
   return "";
+}
+function renderRouteCloser(state, route) {
+  const ep = routeEpilogues[route];
+  if (!ep) return "";
+  const stance = state?.confront?.stance?.dominant;
+  const paragraphs = [ep.base];
+  if (stance && ep[stance]) paragraphs.push(ep[stance]);
+  return `
+    <section class="mg-stage10__route-closer" data-field="routeCloser" data-route="${escapeAttr(route)}" aria-label="Route closer">
+      <h3>${escapeHtml(ep.heading)}</h3>
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </section>
+  `;
 }
 function renderSynthesis(state) {
   const syn = assembleSynthesis(state);
@@ -1251,7 +1398,7 @@ function renderStage10(ctx) {
     }
     const finalButton = event.target.closest("[data-final-choice]");
     if (finalButton) {
-      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete });
+      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete, achievements: ctx.achievements });
       saveAndPaint(ctx, repaint);
     }
   };
@@ -1288,6 +1435,11 @@ function handleMemoryClicks(event, ctx, repaint) {
     saveAndPaint(ctx, repaint);
     return true;
   }
+  const searchButton = event.target.closest("[data-search-echo]");
+  if (searchButton) {
+    searchEcho(ctx, searchButton.dataset.searchEcho);
+    return true;
+  }
   const integrateButton = event.target.closest("[data-integrate-memory]");
   if (integrateButton) {
     integrateMemory({ state, memoryId: integrateButton.dataset.integrateMemory, achievements: ctx.achievements, bell: ctx.bell });
@@ -1306,25 +1458,42 @@ function handleConfrontClicks(event, ctx, save, repaint) {
   }
   const fragButton = event.target.closest("[data-confront-echo]");
   if (fragButton) {
-    const id = fragButton.dataset.confrontEcho;
-    openEcho(ctx, id);
-    rewitnessFragmentation({ state, memoryId: id, save: save() });
-    saveAndPaint(ctx, repaint);
+    openEcho(ctx, fragButton.dataset.confrontEcho);
     return true;
   }
   const coreButton = event.target.closest("[data-core-option]");
   if (coreButton) {
-    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save() });
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save(), achievements: ctx.achievements });
     saveAndPaint(ctx, repaint);
     return true;
   }
   return false;
 }
+var ECHO_MIME = {
+  txt: "text/plain",
+  json: "application/json",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  mp3: "audio/mpeg",
+  epub: "application/epub+zip"
+};
 function openEcho(ctx, id) {
   const path = echoFileFor(id);
   if (!path) return;
-  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
-  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
+  const ext = String(path).split(".").pop().toLowerCase();
+  const opts = { source: "stage10" };
+  if (ECHO_MIME[ext]) opts.mime = ECHO_MIME[ext];
+  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, opts);
+  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path, opts);
+}
+function searchEcho(ctx, id) {
+  const path = echoFileFor(id);
+  const spec = echoVerb(id);
+  if (!path || spec.verb !== "search") return;
+  const v = ctx.viewer;
+  if (v && typeof v.searchViewerFile === "function") v.searchViewerFile(path, spec.query, { source: "stage10" });
+  else if (v && typeof v.searchFile === "function") v.searchFile(path, spec.query, { source: "stage10" });
 }
 function saveAndPaint(ctx, repaint) {
   if (typeof ctx.save === "function") ctx.save();
@@ -1335,6 +1504,15 @@ function installTestHook(ctx, save, repaint) {
   const paint = () => saveAndPaint(ctx, repaint);
   window.__fvStage10 = {
     state: () => state,
+    echoToken: (id) => echoTokenFor(id),
+    // Drive the REAL action subscription (the actual token gate in index.js) with an arbitrary token —
+    // a wrong/absent token must witness nothing; the real per-memory token must witness.
+    spoofEcho(id, token) {
+      if (ctx.actions && typeof ctx.actions.setAction === "function") {
+        ctx.actions.setAction(STAGE_ID, `echo_${id}`, token === void 0 ? { source: "spoof" } : { source: "spoof", token });
+      }
+      return state.memories?.[id]?.echoWitnessed === true;
+    },
     witness(id) {
       const r = witnessEcho({ state, memoryId: id });
       paint();
@@ -1371,7 +1549,7 @@ function installTestHook(ctx, save, repaint) {
         while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
           const q = coreQuestions[state.confront.core.length];
           const opt = q.options.find((o) => o.stance === stance) || q.options[0];
-          answerCore({ state, optionId: opt.id, save: save() });
+          answerCore({ state, optionId: opt.id, save: save(), achievements: ctx.achievements });
         }
         paint();
         return getConfrontState(state, save());
@@ -1385,6 +1563,21 @@ function installTestHook(ctx, save, repaint) {
       }
     }
   };
+}
+
+// ../../docs/games/metagame/stages/stage10/echo-gate.js
+function onEchoAction({ state, detail, save = null }) {
+  if (!detail || Number(detail.stage) !== STAGE_ID) return { ignored: true };
+  const action = String(detail.action || "");
+  if (!action.startsWith("echo_")) return { ignored: true };
+  const memoryId = action.slice(5);
+  if (!verifyEchoToken(memoryId, detail.token)) return { spoofed: true, memoryId };
+  const witnessed = witnessEcho({ state, memoryId }).ok;
+  let rewitnessed = false;
+  if (state?.confront?.phase === "fragmentation") {
+    rewitnessed = rewitnessFragmentation({ state, memoryId, save }).ok;
+  }
+  return { memoryId, witnessed, rewitnessed };
 }
 
 // ../../docs/games/metagame/stages/stage10/state.js
@@ -1421,7 +1614,11 @@ function defaultState(context = {}) {
       compaction: {},
       fragmentation: {},
       core: [],
-      stance: null
+      stance: null,
+      // Achievement bookkeeping: everCompacted = a memory ever failed Phase A recall (no flawless);
+      // everRewitnessed = a trace ever needed a manual Phase B re-open (not fully honest prior run).
+      everCompacted: false,
+      everRewitnessed: false
     },
     // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
     ui: {
@@ -1464,7 +1661,9 @@ function normalizeConfront(value, fresh) {
     compaction: c.compaction && typeof c.compaction === "object" ? { ...c.compaction } : {},
     fragmentation: c.fragmentation && typeof c.fragmentation === "object" ? { ...c.fragmentation } : {},
     core: Array.isArray(c.core) ? c.core.filter((id) => typeof id === "string") : [],
-    stance: c.stance && typeof c.stance === "object" ? c.stance : null
+    stance: c.stance && typeof c.stance === "object" ? c.stance : null,
+    everCompacted: Boolean(c.everCompacted),
+    everRewitnessed: Boolean(c.everRewitnessed)
   };
 }
 function normalizeMemoryState(value, fresh) {
@@ -1498,12 +1697,9 @@ function mountStage(ctx = {}) {
   const state = normalizeState(ctx.state || defaultState2(ctx), ctx);
   const view = renderStage10({ ...ctx, state });
   const save = ctx.orchestrator && ctx.orchestrator.save || null;
-  const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
-    let changed = witnessEcho({ state, memoryId }).ok;
-    if (state.confront && state.confront.phase === "fragmentation") {
-      if (rewitnessFragmentation({ state, memoryId, save }).ok) changed = true;
-    }
-    if (changed) {
+  const unsubscribeEcho = subscribeToActions(ctx.actions, (detail) => {
+    const result = onEchoAction({ state, detail, save });
+    if (result.witnessed || result.rewitnessed) {
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();
     }
@@ -1518,19 +1714,14 @@ function mountStage(ctx = {}) {
     }
   };
 }
-function subscribeToEchoes(actions, onEcho) {
-  const handle = (detail) => {
-    if (!detail || Number(detail.stage) !== STAGE_ID) return;
-    const action = String(detail.action || "");
-    if (action.startsWith("echo_")) onEcho(action.slice(5));
-  };
+function subscribeToActions(actions, handler) {
   if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions(handle) || (() => {
+    return actions.subscribeToActions(handler) || (() => {
     });
   }
-  const handler = (event) => handle(event.detail);
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
+  const onEvent = (event) => handler(event.detail);
+  window.addEventListener("fv:games:action", onEvent);
+  return () => window.removeEventListener("fv:games:action", onEvent);
 }
 function ensureStyles() {
   ensureStylesheet("stage10-awakening-styles", new URL("./styles.css", import.meta.url).href);

@@ -13,6 +13,15 @@ export function baseDrain(i) {
   return 12 + i * 3; // 12,15,…,39 → base sum over 10 = 255
 }
 
+// Representative total drain the burn will demand of in-hand States (base sum + the ~2/cycle expected
+// jitter). Used only for the boss-gate readout so the player can compare it against their balance —
+// the real burn (simulateHeatDeath) is still what decides survival. Pure, deterministic.
+export function estimateBurnTotal() {
+  let total = 0;
+  for (let i = 0; i < BURN_CYCLES; i += 1) total += baseDrain(i) + 2; // +2 = expected rng.int(0,4)
+  return total; // = 255 + 20 = 275
+}
+
 // Simulate the full burn against a copy of the player's reserves. Does NOT mutate state.
 export function simulateHeatDeath(state, rng) {
   let states = Math.max(0, Number(state.states || 0));

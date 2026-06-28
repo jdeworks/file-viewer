@@ -1,8 +1,7 @@
 import { renderStage10 } from "./renderer.js";
-import { witnessEcho } from "./boss.js";
-import { rewitnessFragmentation } from "./confront.js";
+import { onEchoAction } from "./echo-gate.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
-import { BTS_PATH, REQUIRED_ACTION, STAGE_ID } from "./messages.js";
+import { BTS_PATH, REQUIRED_ACTION } from "./messages.js";
 
 export const stageMeta = {
   id: 10,
@@ -24,17 +23,15 @@ export function mountStage(ctx = {}) {
   const state = normalizeState(ctx.state || defaultState(ctx), ctx);
   const view = renderStage10({ ...ctx, state });
 
-  // Echo witnessing: opening an awakening artifact in the real viewer fires echo_<memoryId>
-  // (viewer-actions.js) → witness that memory's echo (the load-bearing integration gate). The SAME
-  // real file-open, when it happens during the confrontation's Phase B, anchors that memory's
-  // fragmentation trace (transient — never lowers the canonical echoWitnessed).
+  // Echo witnessing: performing a memory's gated real-app verb (plain open / raw-mode / diff /
+  // download …) fires echo_<memoryId> with the per-memory token (viewer-actions.js). onEchoAction is
+  // the SINGLE gate: it verifies the token (anti-spoof) then witnesses the echo, and — during the
+  // confrontation's Phase B — anchors that memory's fragmentation trace (transient; never lowers the
+  // canonical echoWitnessed). Phase B re-witness happens ONLY here, never on a bare button click.
   const save = (ctx.orchestrator && ctx.orchestrator.save) || null;
-  const unsubscribeEcho = subscribeToEchoes(ctx.actions, (memoryId) => {
-    let changed = witnessEcho({ state, memoryId }).ok;
-    if (state.confront && state.confront.phase === "fragmentation") {
-      if (rewitnessFragmentation({ state, memoryId, save }).ok) changed = true;
-    }
-    if (changed) {
+  const unsubscribeEcho = subscribeToActions(ctx.actions, (detail) => {
+    const result = onEchoAction({ state, detail, save });
+    if (result.witnessed || result.rewitnessed) {
       if (typeof ctx.save === "function") ctx.save();
       if (view && typeof view.repaint === "function") view.repaint();
     }
@@ -49,18 +46,15 @@ export function mountStage(ctx = {}) {
   };
 }
 
-function subscribeToEchoes(actions, onEcho) {
-  const handle = (detail) => {
-    if (!detail || Number(detail.stage) !== STAGE_ID) return;
-    const action = String(detail.action || "");
-    if (action.startsWith("echo_")) onEcho(action.slice(5));
-  };
+// Raw action subscription — every metagame action detail flows through `handler`. The stage/token/
+// phase filtering all lives in onEchoAction (echo-gate.js), keeping that gate logic pure + testable.
+function subscribeToActions(actions, handler) {
   if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions(handle) || (() => {});
+    return actions.subscribeToActions(handler) || (() => {});
   }
-  const handler = (event) => handle(event.detail);
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
+  const onEvent = (event) => handler(event.detail);
+  window.addEventListener("fv:games:action", onEvent);
+  return () => window.removeEventListener("fv:games:action", onEvent);
 }
 
 function ensureStyles() {

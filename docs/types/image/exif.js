@@ -29,6 +29,26 @@ function parseTiff(b, base) {
     : ((b[o] << 24) | (b[o + 1] << 16) | (b[o + 2] << 8) | b[o + 3]) >>> 0;
 
   const out = {};
+  // RATIONAL (type 5): a numerator/denominator u32 pair at `off`. Used for GPS lat/lon triples.
+  const readRational = (off) => { const den = u32(off + 4); return den ? u32(off) / den : 0; };
+  // A GPS coordinate is three RATIONALs (deg, min, sec) starting at `off`.
+  const readGpsCoord = (off) => readRational(off) + readRational(off + 8) / 60 + readRational(off + 16) / 3600;
+  // GPS IFD (tag 0x8825): decode lat/lon (+ N/S/E/W refs) into decimal degrees. Additive — only
+  // touches its own out.gps* keys, never the existing IFD0/Exif tags above.
+  const readGpsIfd = (ifd) => {
+    if (ifd + 2 > b.length) return;
+    const n = u16(ifd);
+    for (let i = 0; i < n; i++) {
+      const e = ifd + 2 + i * 12;
+      if (e + 12 > b.length) break;
+      const tag = u16(e), count = u32(e + 4);
+      const valOff = count * 8 > 4 ? base + u32(e + 8) : e + 8;          // RATIONALs are always > 4 bytes
+      if (tag === 0x0001) out.gpsLatRef = String.fromCharCode(b[e + 8] || 0).trim();
+      else if (tag === 0x0003) out.gpsLonRef = String.fromCharCode(b[e + 8] || 0).trim();
+      else if (tag === 0x0002 && valOff + 24 <= b.length) out.gpsLat = readGpsCoord(valOff);
+      else if (tag === 0x0004 && valOff + 24 <= b.length) out.gpsLon = readGpsCoord(valOff);
+    }
+  };
   const readIfd = (ifd) => {
     if (ifd + 2 > b.length) return;
     const n = u16(ifd);
@@ -37,6 +57,7 @@ function parseTiff(b, base) {
       if (e + 12 > b.length) break;
       const tag = u16(e), type = u16(e + 2), count = u32(e + 4);
       if (tag === 0x8769) { readIfd(base + u32(e + 8)); continue; }   // Exif sub-IFD pointer
+      if (tag === 0x8825) { readGpsIfd(base + u32(e + 8)); continue; } // GPS IFD pointer
       const name = TAGS[tag];
       if (!name) continue;
       if (type === 2) {                                              // ASCII

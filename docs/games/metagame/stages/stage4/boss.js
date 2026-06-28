@@ -4,7 +4,6 @@ import {
   ACTION_NAME,
   bellMessages,
   lockedHintLadder,
-  RECURSION_BLUEPRINT_PATH,
 } from './messages.js';
 import { isRecursionBlueprintPath } from './content.js';
 import { TARGET_MODES, TOWER_TYPES } from './towers.js';
@@ -55,14 +54,18 @@ export function placeTower(state, { x, y, type = 'pulse_node', targetMode }) {
   const cost = def.cost || 0; // was hard-coded to scatter/80 — now reads the real per-tower cost
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: 'cycles' };
   const mode = targetMode || def.defaultTarget || 'first';
+  const tx = Math.trunc(Number(x));
+  const ty = Math.trunc(Number(y));
+  if (!Number.isFinite(tx) || !Number.isFinite(ty)) return { ok: false, reason: 'position' };
   const tower = {
-    id: `tower-${state.towers.length + 1}`,
+    // Position+type id, IDENTICAL to state.normalizeTower's scheme, so a tower's id survives a
+    // save/reload round-trip and upgrade/sell lookups never break (Round-3 Issue 5). One tower per cell.
+    id: `tower-${type}-${tx}-${ty}`,
     type,
-    x: Math.trunc(Number(x)),
-    y: Math.trunc(Number(y)),
+    x: tx,
+    y: ty,
     targetMode: TARGET_MODES.includes(mode) ? mode : 'first',
   };
-  if (!Number.isFinite(tower.x) || !Number.isFinite(tower.y)) return { ok: false, reason: 'position' };
   state.cycles -= cost;
   state.towers.push(tower);
   const coverage = getTowerCoverage(state);
@@ -115,9 +118,10 @@ export function fightInfiniteLoop({ state, actions }) {
   return { defeated: state.boss.defeated, locked: false, damage };
 }
 
-export function openRecursionBlueprintInViewer({ state, viewer, actions, achievements, bell }) {
-  applyRecursionBlueprintOpen({ state, actions, achievements, bell, path: RECURSION_BLUEPRINT_PATH });
-}
+// NOTE (Round-3 Issue 4): a direct `openRecursionBlueprintInViewer(...)` helper was removed. The ONLY
+// entry point to applyRecursionBlueprintOpen is the host app's real file-open dispatch (recordMetagame-
+// ViewerOpen → renderer), so the un-cheat cannot be bypassed by a programmatic caller reaching into the
+// stage's exports. Opening recursion_points.json in the host viewer is load-bearing and not skippable.
 
 export function pushLog(state, line) {
   state.log = [...(state.log || []), line].slice(-8);

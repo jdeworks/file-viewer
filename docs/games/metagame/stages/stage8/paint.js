@@ -14,7 +14,15 @@ export function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   if (fields.storms) fields.storms.textContent = String(state.stormsSurvived || 0);
   fields.cycle.textContent = String(state.cycle);
   fields.states.textContent = String(state.states);
-  fields.entropy.textContent = String(Math.round(state.entropy || 0));
+  const entropy = Math.round(state.entropy || 0);
+  fields.entropy.textContent = String(entropy);
+  // Drive the glitch aesthetic deterministically from the entropy level (CSS reads both).
+  root.style.setProperty("--entropy-level", (entropy / 100).toFixed(2));
+  root.dataset.entropy = entropy >= 80 ? "critical" : entropy >= 60 ? "high" : entropy >= 35 ? "mid" : "low";
+  if (fields.stress) {
+    const totalStress = state.nodes.reduce((sum, n) => sum + (Number(n.cascadeStress) || 0), 0);
+    fields.stress.textContent = String(totalStress);
+  }
   if (fields.heat) fields.heat.textContent = `${Math.round(state.heat || 0)}/100`;
   if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
   fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
@@ -27,13 +35,13 @@ export function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   fields.tree.textContent = entropyTreeText(state);
   fields.boss.textContent = state.boss.defeated
     ? "defeated. BTS trace available."
-    : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · reserves ${tick(lock.enoughStates)}`;
+    : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · lifetime-States ${tick(lock.enoughStates)}`;
   fields.hint.textContent = lock.hint;
   paintTelegraph(fields.telegraph, state);
   paintStorm(root, state, storm);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
-  map.replaceChildren(...state.nodes.map(nodeCard), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
+  map.replaceChildren(...state.nodes.map((n) => nodeCard(n, state)), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
   log.replaceChildren(...state.log.slice(-5).map((line) => {
     const li = document.createElement("li");
     li.textContent = line;
@@ -132,15 +140,34 @@ function paintDebrisSelect(select, state) {
   }));
 }
 
-function nodeCard(n) {
+function nodeCard(n, state) {
   const def = nodeById(n.id) || {};
   const s = nodeStatus(n.health);
+  const hl = Boolean(state.highLoad?.[n.id]) && def.supportsHighLoad;
+  const frozen = Number(state.stabilized?.[n.id] || 0);
+  const stress = Number(n.cascadeStress) || 0;
   const item = document.createElement("div");
-  item.className = `s8-node is-${s}`;
+  const classes = [`s8-node`, `is-${s}`];
+  if (hl) classes.push("is-high-load");
+  if (frozen) classes.push("is-stabilized");
+  if (stress > 0) classes.push("is-stressed");
+  item.className = classes.join(" ");
   const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
-  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>
+  const stressTag = stress > 0
+    ? ` <span class="s8-node-stress" title="cascade stress from failed neighbours: +${stress}/cycle extra decay">⚠+${stress}</span>` : "";
+  const frozenTag = frozen
+    ? ` <span class="s8-node-frozen" title="stabilized — decay frozen">❄${frozen}</span>` : "";
+  // RISK-TOGGLE: High-Load is offered only on nodes that support it (production + frontier).
+  const hlBtn = def.supportsHighLoad
+    ? `<button type="button" data-high-load="${n.id}" class="s8-node-hl${hl ? " is-on" : ""}" aria-pressed="${hl}" title="High-Load: +50% output, +50% decay">HL${hl ? "✓" : ""}</button>` : "";
+  // ENDURE: deploy a banked Stabilizer to freeze a node through a storm. Unlocks in Band 2 (cycle ≥ 6).
+  const showFreeze = (state.cycle || 0) >= 6;
+  const canFreeze = showFreeze && (state.stabilizers || 0) > 0 && !frozen;
+  const freezeBtn = showFreeze
+    ? `<button type="button" data-stabilize-node="${n.id}"${canFreeze ? "" : " disabled"} title="Freeze decay for 2 cycles (spends 1 stabilizer)">freeze</button>` : "";
+  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>${stressTag}${frozenTag}
     ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
-    <button type="button" data-repair="${n.id}">repair</button>`;
+    <span class="s8-node-actions">${hlBtn}${freezeBtn}<button type="button" data-repair="${n.id}">repair</button></span>`;
   return item;
 }
 

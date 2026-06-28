@@ -1,17 +1,18 @@
 import assert from "node:assert/strict";
 import {
   applyProtocolChapter9Unlock,
-  endProtocolTurn,
   getBossLockState,
-  playProtocolCard,
-  recordLockedBossAttempt,
-  startProtocolTurn
+  recordLockedBossAttempt
 } from "../boss.js";
 import { defaultState } from "../state.js";
 
+// The boss is a real-deck fight (boss-combat.js) gated by the ch9 un-cheat. This suite covers ONLY the
+// surviving lock surface — the retired 3-button puzzle (playProtocolCard / start|endProtocolTurn /
+// defeatRefusedConnection) was deleted in round-4 (it had been dead since B2b).
 const lockedActions = { hasAction: () => false };
 const unlockedActions = { hasAction: (stage, action) => stage === 6 && action === "protocol_ch9_read" };
 
+// Locked: ch9 unread ⇒ permanent mismatch, no defeat possible (the load-bearing un-cheat).
 {
   const state = defaultState();
   const lock = getBossLockState({ actions: lockedActions, state });
@@ -19,9 +20,9 @@ const unlockedActions = { hasAction: (stage, action) => stage === 6 && action ==
   assert.equal(lock.status, "PROTOCOL MISMATCH");
   assert.equal(lock.mismatchPermanent, true);
   assert.equal(lock.defeatPossible, false);
-  assert.equal(playProtocolCard({ state, card: "SYN" }).damage, 0);
 }
 
+// Repeated locked attempts escalate the hint ladder.
 {
   const state = defaultState();
   recordLockedBossAttempt(state);
@@ -31,6 +32,7 @@ const unlockedActions = { hasAction: (stage, action) => stage === 6 && action ==
   assert.match(lock.hint, /Chapter 9|protocol/i);
 }
 
+// Reading ch9 unlocks the negotiation once (idempotent): fires the bell + achievement a single time.
 {
   const state = defaultState();
   const achievements = [];
@@ -53,46 +55,6 @@ const unlockedActions = { hasAction: (stage, action) => stage === 6 && action ==
   assert.equal(state.boss.defeated, false);
   assert.equal(achievements.length, 1);
   assert.equal(bells.length, 1);
-}
-
-{
-  const state = defaultState();
-  state.boss.unlocked = true;
-  assert.equal(playProtocolCard({ state, card: "Signal" }).damage, 0);
-  startProtocolTurn(state);
-  assert.equal(playProtocolCard({ state, card: "SYN" }).damage, 30);
-}
-
-{
-  const state = defaultState();
-  state.boss.unlocked = true;
-  state.boss.phase = 2;
-  state.boss.hp = 80;
-  assert.equal(playProtocolCard({ state, card: "Signal" }).damage, 0);
-  startProtocolTurn(state);
-  playProtocolCard({ state, card: "ACK" });
-  assert.equal(playProtocolCard({ state, card: "Signal" }).damage, 30);
-}
-
-{
-  const state = defaultState();
-  state.boss.unlocked = true;
-  state.boss.phase = 3;
-  assert.equal(endProtocolTurn(state).penalty, 8);
-  playProtocolCard({ state, card: "ACK" });
-  assert.equal(endProtocolTurn(state).penalty, 0);
-}
-
-{
-  const state = defaultState();
-  state.boss.unlocked = true;
-  state.boss.phase = 3;
-  state.boss.hp = 30;
-  const result = playProtocolCard({ state, card: "Signal" });
-  assert.equal(result.damage, 30);
-  assert.equal(state.boss.defeated, true);
-  assert.equal(state.meta.firstClearComplete, true);
-  assert.equal(state.handshakes, 80);
 }
 
 console.log("stage6 boss tests passed");

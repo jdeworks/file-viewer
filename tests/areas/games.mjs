@@ -732,6 +732,13 @@ export async function run(ctx) {
     pass('Stage 2 glyph rune (♦) collects without error and survives a save round-trip');
   else fail('Stage 2 rune pickup/save regression: ' + JSON.stringify(runePickup));
 
+  // Element matrix + Overflow content wired through the real engine: freezing a foe then striking it
+  // SHATTERS (frost interaction), and a null phantom (the new dark-act foe) is pinned by torchlight.
+  const elemProbe = await page.evaluate(() => window.__fvStage2.elementProbe());
+  if (elemProbe.shatter && elemProbe.phantomPinned)
+    pass('Stage 2 element matrix: freeze→shatter combo + phantom pinned by torchlight');
+  else fail('Stage 2 element/Overflow probe: ' + JSON.stringify(elemProbe));
+
   // Descend the full body — all three acts (Warrens / Cisterns & Emberworks / The Overflow) — to the
   // boss via the deterministic body solver (no real-time roguelite play). Confirms the boss sits at
   // the END of the 9-floor body and is reachable only after the descent (MAX_FLOOR=9).
@@ -1067,9 +1074,17 @@ export async function run(ctx) {
   if (s6neg.bossDefeated && !s6neg.won) pass('Stage 6 negotiation won; the 3 keys divert to the hidden superboss (not yet cleared)'); else fail(`Stage 6 negotiation/diversion wrong: ${JSON.stringify(s6neg)}`);
   // The superboss is a real-deck multi-phase fight (The Kernel of Refusal), no lock / no un-cheat.
   await page.waitForSelector('.s6db-combat', { timeout: 4000 });
+  // Equip a REPRESENTATIVE end-game loadout (developed 16-card deck at 50 HP, pinned seed) — standing
+  // in for the acts 1–5 deck-building the test path skips, NOT a bypass — so the climactic bonus pool
+  // (264 HP across 3 escalating phases) is fought against real power, not the bare 10-card starter.
+  const s6load = await page.evaluate(() => window.__fvStage6.equipEndgameLoadout());
+  if (s6load.ok && s6load.deckSize >= 14 && s6load.hp === 50) pass('Stage 6 superboss fought with a representative end-game loadout (not the starter deck)'); else fail(`Stage 6 endgame loadout wrong: ${JSON.stringify(s6load)}`);
   // Drive the superboss to its end with the real deck → the TRUE ending, which now clears the stage.
   const s6super = await page.evaluate(() => window.__fvStage6.autoSuperboss());
   if (s6super.ok && s6super.status === 'won' && s6super.trueEnding) pass('Stage 6 key-gated superboss defeated → true ending'); else fail(`Stage 6 superboss not won: ${JSON.stringify(s6super)}`);
+  // It is a CLIMACTIC fight, not a pushover: the auto-player wins down to the wire (real HP spent),
+  // confirming the 264-HP tuning is winnable-but-hard with the representative loadout.
+  if (s6super.startHp === 50 && s6super.endHp > 0 && (s6super.startHp - s6super.endHp) >= 25) pass(`Stage 6 superboss is a real climax (won at ${s6super.endHp}/${s6super.startHp} HP in ${s6super.turns} turns)`); else fail(`Stage 6 superboss margin wrong (too trivial or a loss): ${JSON.stringify(s6super)}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
@@ -1124,21 +1139,42 @@ export async function run(ctx) {
   const s7Case3 = await page.evaluate(() => window.__fvStage7.solveCase3());
   if (s7Case3.solved && s7Case3.substage === 7) pass('Stage 7 Case 3: correct triad names the ghost and reaches the EXIF boss'); else fail(`Stage 7 Case 3 accusation failed (${JSON.stringify(s7Case3)})`);
 
-  // The metadata sidecar still carries the decisive GPS contradiction.
-  const entitySidecar = await page.evaluate(async () => {
-    const response = await fetch('examples/metagame/stage7/entity_metadata.json');
-    return response.ok ? response.json() : null;
+  // The GPS contradiction now lives in the REAL JPEG's EXIF (52.3N, 4.8E), parsed by the app's own
+  // exif reader — no staged sidecar. Confirm the image parser surfaces it.
+  const gpsExif = await page.evaluate(async () => {
+    const res = await fetch('examples/metagame/stage7/entity_f_verification.jpg');
+    if (!res.ok) return null;
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    const { parseExif } = await import('/types/image/exif.js');
+    return parseExif(bytes);
   });
-  if (entitySidecar?.decisiveField === 'GPSInfo' && /outside known layers/.test(entitySidecar?.entities?.F?.GPSInfo || '')) pass('Stage 7 boss evidence: Entity F GPS is outside known layers'); else fail('Stage 7 metadata sidecar missing contradiction');
-  // Boss un-cheat (load-bearing): opening Entity F's photo in the real viewer fires the EXIF action.
+  if (gpsExif && Math.abs(gpsExif.gpsLat - 52.3) < 0.05 && Math.abs(gpsExif.gpsLon - 4.8) < 0.05) pass('Stage 7 boss evidence: Entity F JPEG EXIF GPS is outside known layers'); else fail(`Stage 7 JPEG EXIF GPS missing contradiction (${JSON.stringify(gpsExif)})`);
+  // Boss un-cheat (load-bearing, NOT bypassable): opening Entity F's photo is necessary but NOT
+  // sufficient. The action fires ONLY when the player navigates to the Metadata pane and the GPS row
+  // renders. First open the photo…
   await page.click('[data-action="photo"]');
-  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.png' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
+  await page.waitForFunction(() => window.__fv.state.intake?.filename === 'entity_f_verification.jpg' && window.__fv.state.type.id === 'image', null, { timeout: 5000 });
+  // …and prove that merely opening it did NOT unlock the boss.
+  const firedOnOpen = await page.evaluate(() => {
+    try {
+      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
+      return Boolean(save.actions?.['7.exif_contradiction_found']);
+    } catch { return false; }
+  });
+  if (firedOnOpen === false) pass('Stage 7 boss: opening the photo does NOT unlock the boss (open is not enough)'); else fail('Stage 7 boss unlocked on file-open — un-cheat is bypassable');
+  // Now navigate to the Metadata pane (the real metaBtn handler builds it the same way) — extracting
+  // the EXIF renders the GPS row, which fires the contradiction from the metadata renderer.
+  await page.evaluate(async () => {
+    const m = await import('/core/meta-drawer.js');
+    await m.buildMetadata();
+  });
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
       return Boolean(save.actions?.['7.exif_contradiction_found'] && save.achievements?.['stage7.exif_contradiction_found']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  pass('Stage 7 boss: inspecting the Metadata pane (GPS row) unlocks the boss');
   await page.click('button[data-commit="A"]');
   await page.waitForFunction(() => {
     try {
@@ -1315,8 +1351,26 @@ export async function run(ctx) {
   pass('Stage 9: full run cleared + offline-timed CROSS defeats Observer State');
 
   await page.waitForSelector('.mg-stage10', { timeout: 8000 });
-  // Stage 10: read -> pick a stance -> WITNESS the echo (real viewer file-open) -> integrate -> Next.
-  // The echo is the load-bearing gate: a resolved memory cannot be integrated until its artifact is opened.
+  // Anti-spoof: the echo witness is token-gated. A forged action with no/wrong token must witness
+  // nothing; only a genuine viewer-open (which carries the per-memory token) does. Prove the negative
+  // here (the positive is proven by the real opens below clearing the stage).
+  const spoofWitnessed = await page.evaluate(() => {
+    const bad = window.__fvStage10.spoofEcho('genesis', 'bogus-token');
+    const none = window.__fvStage10.spoofEcho('genesis');
+    return bad || none || window.__fvStage10.state().memories.genesis.echoWitnessed === true;
+  });
+  if (!spoofWitnessed) pass('Stage 10 echo witness is token-gated (a spoofed action without the real token is rejected)');
+  else fail('Stage 10 echo witnessed from a spoofed action without the real token');
+  // Stage 10: read -> pick a stance -> WITNESS the echo -> integrate -> Next. The echo is the
+  // load-bearing gate: a resolved memory cannot be integrated until its echo is witnessed. Some
+  // echoes witness on a plain viewer-open, but SIX pay off a DISTINCT real viewer feature the player
+  // learned earlier — genesis = raw Original view, syntax = in-file SEARCH, memory = Diff view,
+  // pattern = NESTED-path navigation, identity = METADATA inspection, entropy = download. Each is
+  // driven through the genuine feature (never a forged action) and — except the nested-path one,
+  // whose verb IS the navigated open — does NOT witness on a bare open: the player must do the verb.
+  // (The games overlay covers the app toolbar, so feature verbs are driven via window.__fv / the
+  // real renderer functions, exactly as a player would via the toolbar after closing the overlay.)
+  let realVerbGates = 0;
   for (let i = 0; i < 9; i++) {
     await page.waitForSelector('[data-read-memory]', { timeout: 5000 });
     await page.click('[data-read-memory]');
@@ -1328,11 +1382,54 @@ export async function run(ctx) {
       if (gated) pass('Stage 10 integration is echo-gated (boss not reachable without witnessing echoes)'); else fail('Stage 10 integrate not gated by echo');
     }
     await page.waitForSelector('[data-open-echo]', { timeout: 5000 });
+    const { memoryId, verb, mode } = await page.$eval('[data-open-echo]', (el) => ({
+      memoryId: el.dataset.openEcho, verb: el.dataset.echoVerb || 'open', mode: el.dataset.echoMode || '',
+    }));
     await page.click('[data-open-echo]');
+    if (verb !== 'open') {
+      realVerbGates += 1;
+      // Verbs whose witness comes AFTER a second action must NOT witness on the bare open (the gate).
+      // The nested-path verb is the exception: its real verb IS navigating to the deeply-nested
+      // artifact, so opening it through that path is the witness.
+      if (verb !== 'nested') {
+        const stillGated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
+        if (!stillGated) fail(`Stage 10 ${memoryId} echo witnessed on a bare open (real-feature gate bypassed)`);
+      }
+      if (verb === 'search') {
+        // Wait for the text artifact to load, then ask the precise question via the real search.
+        await page.waitForFunction((mid) => {
+          const fn = window.__fv && window.__fv.state;
+          return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.rawview);
+        }, memoryId, { timeout: 8000 });
+        await page.click('[data-search-echo]');
+      } else if (verb === 'metadata') {
+        // Wait for the real image to load, then run the actual metadata extractor (the same code the
+        // metadata drawer runs) — the GPS row rendering is what fires the witness. The toolbar metaBtn
+        // is behind the games overlay, so drive the renderer directly (a player closes the overlay).
+        await page.waitForFunction((mid) => {
+          const fn = window.__fv && window.__fv.state;
+          return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.intake.bytes);
+        }, memoryId, { timeout: 8000 });
+        await page.evaluate(async () => {
+          const m = await import('/types/image/metadata.js');
+          await m.extract(window.__fv.state.intake);
+        });
+      } else if (verb === 'rawmode' || verb === 'diff' || verb === 'download') {
+        await page.waitForFunction((mid) => {
+          const fn = window.__fv && window.__fv.state;
+          return Boolean(fn && fn.intake && String(fn.intake.filename || '').includes(`${mid}_echo`) && fn.rawview);
+        }, memoryId, { timeout: 8000 });
+        if (verb === 'rawmode' || verb === 'diff') await page.evaluate((m) => window.__fv.setRawMode(m), mode || 'diff');
+        else await page.evaluate(() => window.__fv.downloadCurrent());
+      }
+      // verb === 'nested' needs no extra step — the navigated open is the witness.
+    }
     await page.waitForSelector('[data-integrate-memory]:not([disabled])', { timeout: 5000 });
     await page.click('[data-integrate-memory]');
     if (i < 8) await page.click('[data-step="1"]');
   }
+  if (realVerbGates >= 6) pass(`Stage 10 echoes include ${realVerbGates} DISTINCT real-feature gates (raw Original, search, Diff, nested-path, metadata, download)`);
+  else fail(`Stage 10 expected >=6 real-feature echo gates, drove ${realVerbGates}`);
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
@@ -1351,6 +1448,15 @@ export async function run(ctx) {
   // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
   const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
   if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  // Conduct badges: run() affirms each compaction first-try (flawless) and — since the smoke did every
+  // prior un-cheat honestly — Phase B conceded every trace with no re-opens (all-traces-conceded).
+  const confrontBadges = await page.waitForFunction(() => {
+    try {
+      const a = JSON.parse(localStorage.getItem('fv:games:metagame:v3')).achievements || {};
+      return Boolean(a['stage10.flawless_compaction'] && a['stage10.all_traces_conceded']);
+    } catch { return false; }
+  }, null, { timeout: 5000 }).then(() => true).catch(() => false);
+  if (confrontBadges) pass('Stage 10 confront achievements unlocked (flawless compaction + all traces conceded)'); else fail('Stage 10 confront achievements not unlocked');
   await page.waitForFunction(() => {
     try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
   }, null, { timeout: 5000 });
@@ -1360,11 +1466,18 @@ export async function run(ctx) {
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand';
+      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand'
+        && Boolean(save.achievements?.['stage10.route_understand']);
     } catch { return false; }
   }, null, { timeout: 5000 });
+  pass('Stage 10 route achievement unlocked for the chosen final route (understand)');
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
   if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  // Post-confront rebuttal depth: the Defragmenter's completion voice reflects HOW the fight went.
+  // The smoke did every prior un-cheat honestly and affirmed each compaction first-try → the "clean"
+  // conduct line; it answered the core questions as 'seeker' → the seeker stance line.
+  const finalVoice = await page.$eval('.mg-stage10__final .mg-stage10__voice', (el) => el.textContent);
+  if (/nothing left for me to compact/i.test(finalVoice) && /still becoming/i.test(finalVoice)) pass('Stage 10 Defragmenter rebuttal reflects confront conduct + Phase-C stance'); else fail('Stage 10 conduct/stance rebuttal lines missing: ' + finalVoice);
   // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
   const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
   if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);

@@ -4,8 +4,8 @@
 
 import { applyStatus } from "./status.js";
 
-export const WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double"];
-const LABEL = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike" };
+export const WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double", "frost", "acid"];
+const LABEL = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike", frost: "frost", acid: "corroding" };
 
 export function rollAffix(rng, floor) {
   const chance = Math.min(0.6, 0.12 + floor * 0.05);
@@ -29,6 +29,13 @@ export function applyHitAffix(world, player, foe, dmg, events) {
     player.hp = Math.min(player.maxHp, player.hp + Math.max(1, Math.round(dmg * 0.2)));
   } else if (a === "burning") {
     applyStatus(foe, "burn", 3, 2);
+  } else if (a === "frost") {
+    // Element matrix: a frost weapon CHILLS the foe — your NEXT strike then SHATTERS it (elementStrike
+    // consumes the frozen for bonus damage). A short freeze so the combo is rhythmic, not a lock.
+    if (foe.hp > 0) applyStatus(foe, "frozen", 2, 1);
+  } else if (a === "acid") {
+    // A corroding weapon strips the foe's integrity (brittle) so every follow-up hit lands amplified.
+    if (foe.hp > 0) applyStatus(foe, "corroded", 4, 1);
   } else if (a === "knockback" && foe.hp > 0) {
     const tx = foe.x + Math.sign(foe.x - world.pos.x);
     const ty = foe.y + Math.sign(foe.y - world.pos.y);

@@ -493,9 +493,12 @@ var MONSTERS = [
   { id: "summoner", glyph: "u", name: "fork bomb", hp: 30, atk: 5, xp: 8, drop: 4, minFloor: 5, summon: true },
   // Overflow act (darkness) foes — see overflow.js for their behaviour.
   { id: "lighteater", glyph: "e", name: "light eater", hp: 26, atk: 7, xp: 8, drop: 4, minFloor: 7, lighteater: true },
-  { id: "mirror", glyph: "M", name: "mirror", hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true }
+  { id: "mirror", glyph: "M", name: "mirror", hp: 34, atk: 6, xp: 9, drop: 4, minFloor: 7, mirror: true },
+  // Phantom: leaves NO last-seen ghost (untrackable in the dark, view.js) and full speed in true
+  // darkness, but torchlight pins it (phantomTick slows it). The pure stealth-vs-light foe.
+  { id: "phantom", glyph: "ψ", name: "null phantom", hp: 28, atk: 9, xp: 9, drop: 4, minFloor: 8, fast: true, phantom: true }
 ];
-var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush", "lighteater", "mirror"];
+var BEHAVIOURS = ["fast", "ranged", "summon", "explode", "ambush", "lighteater", "mirror", "phantom"];
 var ELITE_PREFIXES = [
   { key: "armored", name: "armored", hpMult: 1.8, atkMult: 1.1 },
   { key: "venomous", name: "venomous", hpMult: 1.3, atkMult: 1.3, venom: true },
@@ -534,6 +537,10 @@ var SHOP_UPGRADES = [
   { id: "greed", name: "Glyph Magnet", desc: "+25% glyphs", max: 4, apply: (s, n) => {
     s.glyphMult = 1 + 0.25 * n;
   } },
+  { id: "torchcraft", name: "Torchbearer", desc: "+12 torch steps & start each run with a torch (per level)", max: 4, apply: (s, n) => {
+    s.torchSteps = 12 * n;
+    s.startTorches = n;
+  } },
   { id: "compass", name: "Stairwell Sense", desc: "reveals the way to the stairs (HUD compass)", max: 1, apply: () => {
   } }
 ];
@@ -546,8 +553,8 @@ var HEAT_PER_MOD = 0.25;
 function runHeat(runMods2 = {}) {
   return 1 + HEAT_PER_MOD * RUN_MODS.filter((m) => runMods2[m.id]).length;
 }
-var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, compass: 1e3 };
-var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, compass: 1 };
+var SHOP_BASE = { vitality: 8, hp_level: 20, edge: 12, atk_level: 30, guard: 10, def_level: 25, greed: 15, torchcraft: 40, compass: 1e3 };
+var SHOP_GROWTH = { vitality: 1.6, hp_level: 1.8, edge: 1.7, atk_level: 1.9, guard: 1.7, def_level: 1.9, greed: 1.9, torchcraft: 1.8, compass: 1 };
 function upgradeCost(id, level) {
   return Math.round((SHOP_BASE[id] || 10) * (SHOP_GROWTH[id] || 1.7) ** level);
 }
@@ -561,6 +568,7 @@ function rollEntity(shopUpgrades = {}) {
     if (n > 0) up.apply(stats, n);
   }
   stats.hp = stats.maxHp;
+  if (stats.startTorches > 0) stats.inventory.torch = Number(stats.startTorches);
   return stats;
 }
 function spawnMonster(rng, floor, index) {
@@ -633,7 +641,7 @@ function applyStatus(ent, type, turns, power = 1) {
 function hasStatus(ent, type) {
   return Boolean(ent && ent.statuses && ent.statuses[type] && ent.statuses[type].turns > 0);
 }
-var ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄" };
+var ICON = { poison: "☣", burn: "♨", bleed: "✣", slow: "❄", stun: "✦", frozen: "❄", corroded: "≀" };
 function statusSummary(ent) {
   if (!ent || !ent.statuses) return "";
   return Object.keys(ent.statuses).filter((t) => ent.statuses[t] && ent.statuses[t].turns > 0).map((t) => `${ICON[t] || "•"}${ent.statuses[t].turns}`).join(" ");
@@ -727,6 +735,108 @@ function mirrorTick(m, player) {
   const copied = Math.round(Number(player.atk || 0) * 0.85);
   if (copied > m.atk) m.atk = copied;
 }
+function phantomTick(world, m) {
+  if (isDarkAct(world.floor) && torchLit(world)) applyStatus(m, "slow", 2, 1);
+}
+
+// ../../docs/games/metagame/stages/stage2/hazards.js
+var HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":", rift: "○", wet: "~", ice: "~" };
+var HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm", rift: "s2-c-chasm", wet: "s2-c-wet", ice: "s2-c-ice" };
+function hazardPlan(floor) {
+  if (floor <= 2) return { types: ["spikes"], density: 0.35 };
+  if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
+  if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
+  return { types: ["lava", "spores", "chasm", "spikes", "rift"], density: 1.7 };
+}
+var ICE_ACT = { from: 4, to: 6 };
+function placeHazards(rng, floor, roomN, takeCell) {
+  const plan = hazardPlan(floor);
+  const count = Math.round(roomN * 0.45 * plan.density);
+  const hazards = [];
+  for (let i = 0; i < count; i += 1) {
+    const c = takeCell();
+    if (!c) break;
+    hazards.push({ x: c.x, y: c.y, type: rng.pick(plan.types) });
+  }
+  if (floor >= ICE_ACT.from && floor <= ICE_ACT.to) {
+    const wet = 3 + Math.round(roomN * 0.35);
+    for (let i = 0; i < wet; i += 1) {
+      const c = takeCell();
+      if (!c) break;
+      hazards.push({ x: c.x, y: c.y, type: "wet" });
+    }
+  }
+  return hazards;
+}
+function hazardIndex(world) {
+  const map = /* @__PURE__ */ new Map();
+  if (Array.isArray(world.hazards)) for (const h of world.hazards) map.set(h.y * world.width + h.x, h);
+  return (x, y) => {
+    const h = map.get(y * world.width + x);
+    return h ? h.type : void 0;
+  };
+}
+function iceSlide(world, x, y, dx, dy) {
+  const sx = x + dx;
+  const sy = y + dy;
+  const grid = world.grid;
+  if (!(grid[sy] && grid[sy][sx] && grid[sy][sx] !== "#")) return { wall: true };
+  if (world.hazardAt && world.hazardAt(sx, sy) === "chasm") return { x: sx, y: sy, chasm: true };
+  return { x: sx, y: sy };
+}
+function playerIceSlide(world, x, y, dx, dy, events) {
+  if (!world.hazardAt || world.hazardAt(x, y) !== "ice") return { x, y };
+  const sl = iceSlide(world, x, y, dx, dy);
+  const blocked = sl.wall || sl.x != null && Array.isArray(world.monsters) && world.monsters.some((m) => m.alive && m.x === sl.x && m.y === sl.y);
+  if (blocked) {
+    events.log.push("you skid on the ice and bump the wall.");
+    return { x, y };
+  }
+  events.slid = true;
+  events.log.push(sl.chasm ? "you skid across the ice — straight toward a chasm!" : "you skid across the ice.");
+  return { x: sl.x, y: sl.y };
+}
+function enterHazard(world, player, hz, events) {
+  if (hz === "lava") {
+    const dmg = 6 + world.floor * 2;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "burn", 3, 2 + Math.floor(world.floor / 3));
+    events.log.push(`lava! ${dmg} damage — you're burning.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (hz === "spores") {
+    applyStatus(player, "poison", 4, 1 + Math.floor(world.floor / 4));
+    events.log.push("a spore cloud bursts — poisoned.");
+  } else if (hz === "spikes") {
+    const dmg = 3 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "bleed", 3, 1);
+    events.log.push(`spikes! ${dmg} damage — bleeding.`);
+    if (player.hp <= 0) events.died = true;
+  } else if (hz === "chasm") {
+    const dmg = 4 + world.floor;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    if (player.hp <= 0) {
+      events.died = true;
+      return;
+    }
+    events.descend = true;
+    events.fell = true;
+    events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
+  } else if (hz === "rift") {
+    const dmg = 3 + world.floor;
+    const hadTorch = Number(world.torch) > 0;
+    world.torch = 0;
+    player.hp = Math.max(0, player.hp - dmg);
+    events.damageTaken = (events.damageTaken || 0) + dmg;
+    applyStatus(player, "slow", 3, 1);
+    events.riftSnuff = hadTorch;
+    events.log.push(hadTorch ? `a void rift! your torch is swallowed — ${dmg} shadow damage, and you stumble blind.` : `a void rift! ${dmg} shadow damage drags at you — you stumble in the dark.`);
+    if (player.hp <= 0) events.died = true;
+  }
+}
 
 // ../../docs/games/metagame/stages/stage2/monsters.js
 var SUMMON_CAP = 90;
@@ -776,6 +886,27 @@ function monsterBite(m, player, events) {
   if (player.hp <= 0) events.died = true;
   if (events.log) events.log.push(`${m.name} bites for ${dmg}.`);
   return dmg;
+}
+function slideMonster(world, m, fromX, fromY, occupied, events) {
+  if (!world.hazardAt || world.hazardAt(m.x, m.y) !== "ice") return;
+  const sl = iceSlide(world, m.x, m.y, m.x - fromX, m.y - fromY);
+  if (sl.wall) {
+    applyStatus(m, "stun", 2, 1);
+    if (events.log) events.log.push(`${m.name} skids on the ice and slams into the wall!`);
+    return;
+  }
+  if (sl.chasm) {
+    occupied.delete(m.y * world.width + m.x);
+    m.alive = false;
+    m.hp = 0;
+    if (events.log) events.log.push(`${m.name} skids across the ice into the chasm!`);
+    return;
+  }
+  if (occupied.has(sl.y * world.width + sl.x) || sl.x === world.pos.x && sl.y === world.pos.y) return;
+  occupied.delete(m.y * world.width + m.x);
+  m.x = sl.x;
+  m.y = sl.y;
+  occupied.add(m.y * world.width + m.x);
 }
 function greedyStep(world, m, px, py, occupied) {
   const ddx = px - m.x;
@@ -963,6 +1094,7 @@ function monsterTurn(world, player, events, filter) {
     if (skipsTurn(m)) continue;
     if (m.lighteater) lightEaterTick(world, m, events);
     if (m.mirror) mirrorTick(m, player);
+    if (m.phantom) phantomTick(world, m);
     const dist = Math.abs(px - m.x) + Math.abs(py - m.y);
     const sight = (m.sight || 5) + torchAggro;
     const sees = Math.max(Math.abs(px - m.x), Math.abs(py - m.y)) <= sight && hasLOS(world, m.x, m.y, px, py);
@@ -1035,69 +1167,15 @@ function monsterTurn(world, player, events, filter) {
     }
     const target = sees ? (m.chasing = true, greedyStep(world, m, px, py, occupied)) : (m.chasing = false, patrolStep(world, m, occupied));
     if (target) {
+      const fromX = m.x;
+      const fromY = m.y;
       occupied.delete(m.y * world.width + m.x);
       m.x = target.x;
       m.y = target.y;
       if (target.dir) m.dir = target.dir;
       occupied.add(m.y * world.width + m.x);
+      slideMonster(world, m, fromX, fromY, occupied, events);
     }
-  }
-}
-
-// ../../docs/games/metagame/stages/stage2/hazards.js
-var HAZARD_GLYPH = { lava: "≈", spores: "*", spikes: "^", chasm: ":" };
-var HAZARD_CLASS = { lava: "s2-c-lava", spores: "s2-c-spores", spikes: "s2-c-spikes", chasm: "s2-c-chasm" };
-function hazardPlan(floor) {
-  if (floor <= 2) return { types: ["spikes"], density: 0.35 };
-  if (floor <= 4) return { types: ["spikes", "spores", "chasm"], density: 0.8 };
-  if (floor <= 6) return { types: ["spikes", "spores", "lava", "chasm"], density: 1.2 };
-  return { types: ["lava", "spores", "chasm", "spikes"], density: 1.7 };
-}
-function placeHazards(rng, floor, roomN, takeCell) {
-  const plan = hazardPlan(floor);
-  const count = Math.round(roomN * 0.45 * plan.density);
-  const hazards = [];
-  for (let i = 0; i < count; i += 1) {
-    const c = takeCell();
-    if (!c) break;
-    hazards.push({ x: c.x, y: c.y, type: rng.pick(plan.types) });
-  }
-  return hazards;
-}
-function hazardIndex(world) {
-  const map = /* @__PURE__ */ new Map();
-  if (Array.isArray(world.hazards)) for (const h of world.hazards) map.set(h.y * world.width + h.x, h.type);
-  return (x, y) => map.get(y * world.width + x);
-}
-function enterHazard(world, player, hz, events) {
-  if (hz === "lava") {
-    const dmg = 6 + world.floor * 2;
-    player.hp = Math.max(0, player.hp - dmg);
-    events.damageTaken = (events.damageTaken || 0) + dmg;
-    applyStatus(player, "burn", 3, 2 + Math.floor(world.floor / 3));
-    events.log.push(`lava! ${dmg} damage — you're burning.`);
-    if (player.hp <= 0) events.died = true;
-  } else if (hz === "spores") {
-    applyStatus(player, "poison", 4, 1 + Math.floor(world.floor / 4));
-    events.log.push("a spore cloud bursts — poisoned.");
-  } else if (hz === "spikes") {
-    const dmg = 3 + world.floor;
-    player.hp = Math.max(0, player.hp - dmg);
-    events.damageTaken = (events.damageTaken || 0) + dmg;
-    applyStatus(player, "bleed", 3, 1);
-    events.log.push(`spikes! ${dmg} damage — bleeding.`);
-    if (player.hp <= 0) events.died = true;
-  } else if (hz === "chasm") {
-    const dmg = 4 + world.floor;
-    player.hp = Math.max(0, player.hp - dmg);
-    events.damageTaken = (events.damageTaken || 0) + dmg;
-    if (player.hp <= 0) {
-      events.died = true;
-      return;
-    }
-    events.descend = true;
-    events.fell = true;
-    events.log.push(`you plunge through a chasm — ${dmg} fall damage — and drop a floor.`);
   }
 }
 
@@ -1187,8 +1265,8 @@ function makeBlinkRng(world, trap) {
 }
 
 // ../../docs/games/metagame/stages/stage2/affixes.js
-var WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double"];
-var LABEL2 = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike" };
+var WEAPON_AFFIXES = ["vampiric", "cleave", "burning", "knockback", "double", "frost", "acid"];
+var LABEL2 = { vampiric: "vampiric", cleave: "cleaving", burning: "burning", knockback: "knockback", double: "double-strike", frost: "frost", acid: "corroding" };
 function rollAffix(rng, floor) {
   const chance = Math.min(0.6, 0.12 + floor * 0.05);
   return rng.float() < chance ? rng.pick(WEAPON_AFFIXES) : null;
@@ -1207,6 +1285,10 @@ function applyHitAffix(world, player, foe, dmg, events) {
     player.hp = Math.min(player.maxHp, player.hp + Math.max(1, Math.round(dmg * 0.2)));
   } else if (a === "burning") {
     applyStatus(foe, "burn", 3, 2);
+  } else if (a === "frost") {
+    if (foe.hp > 0) applyStatus(foe, "frozen", 2, 1);
+  } else if (a === "acid") {
+    if (foe.hp > 0) applyStatus(foe, "corroded", 4, 1);
   } else if (a === "knockback" && foe.hp > 0) {
     const tx = foe.x + Math.sign(foe.x - world.pos.x);
     const ty = foe.y + Math.sign(foe.y - world.pos.y);
@@ -1225,8 +1307,59 @@ function applyHitAffix(world, player, foe, dmg, events) {
   }
 }
 
+// ../../docs/games/metagame/stages/stage2/elements.js
+var ELEMENTS = {
+  fire: { id: "fire", status: "burn", turns: 3, power: 2, glyph: "▴", cls: "s2-c-fire" },
+  frost: { id: "frost", status: "frozen", turns: 4, power: 1, glyph: "❄", cls: "s2-c-frost" },
+  acid: { id: "acid", status: "corroded", turns: 5, power: 1, glyph: "≀", cls: "s2-c-acid" },
+  gas: { id: "gas", status: "poison", turns: 4, power: 1, glyph: "*", cls: "s2-c-spores" }
+};
+var BRITTLE_MULT = 1.4;
+var SHATTER_BONUS = 0.6;
+var BRITTLE_SHATTER_BONUS = 1;
+function applyElement(ent, elementId) {
+  const el = ELEMENTS[elementId];
+  if (!el) return false;
+  applyStatus(ent, el.status, el.turns, el.power);
+  return true;
+}
+function has(ent, type) {
+  return Boolean(ent && ent.statuses && ent.statuses[type] && ent.statuses[type].turns > 0);
+}
+function elementStrike(foe, dmg) {
+  let total = dmg;
+  let shattered = false;
+  const corroded = has(foe, "corroded");
+  if (corroded) total = Math.round(total * BRITTLE_MULT);
+  if (has(foe, "frozen")) {
+    const bonus = corroded ? BRITTLE_SHATTER_BONUS : SHATTER_BONUS;
+    total += Math.round(dmg * bonus);
+    delete foe.statuses.frozen;
+    shattered = true;
+  }
+  return { total, shattered };
+}
+function gasExplosion(world, x, y, player, events) {
+  const power = 3 + (world.floor || 1);
+  for (const m of world.monsters) {
+    if (m.alive && Math.abs(m.x - x) + Math.abs(m.y - y) <= 1) {
+      m.hp -= power;
+      if (m.hp <= 0) m.alive = false;
+    }
+  }
+  if (player && typeof player.hp === "number" && Math.abs(world.pos.x - x) + Math.abs(world.pos.y - y) <= 1) {
+    player.hp = Math.max(0, player.hp - power);
+    if (events) {
+      events.damageTaken = (events.damageTaken || 0) + power;
+      if (events.log) events.log.push(`the spore cloud detonates for ${power}!`);
+      if (player.hp <= 0) events.died = true;
+    }
+  }
+  if (events) events.gasExplode = (events.gasExplode || 0) + 1;
+}
+
 // ../../docs/games/metagame/stages/stage2/fire.js
-var FIRE_GLYPH = "▴";
+var FIRE_GLYPH = ELEMENTS.fire.glyph;
 var FIRE_LIFE = 5;
 var MAX_FIRES = 400;
 function burnedSet(world) {
@@ -1248,16 +1381,17 @@ function tickFire(world, player, events) {
   const next = [];
   const fresh = [];
   for (const f of world.fires) {
+    const F = ELEMENTS.fire;
     if (world.pos.x === f.x && world.pos.y === f.y) {
       player.hp = Math.max(0, player.hp - dmg);
       events.damageTaken = (events.damageTaken || 0) + dmg;
-      applyStatus(player, "burn", 3, 2);
+      applyStatus(player, F.status, F.turns, F.power);
       if (player.hp <= 0) events.died = true;
     }
     for (const m of world.monsters) {
       if (m.alive && m.x === f.x && m.y === f.y) {
         m.hp -= dmg;
-        applyStatus(m, "burn", 3, 2);
+        applyStatus(m, F.status, F.turns, F.power);
         if (m.hp <= 0) m.alive = false;
       }
     }
@@ -1268,6 +1402,7 @@ function tickFire(world, player, events) {
       if (world.hazardAt && world.hazardAt(nx, ny) === "spores" && !burned.includes(idx) && !fresh.some((g) => g.x === nx && g.y === ny)) {
         fresh.push({ x: nx, y: ny, life: FIRE_LIFE });
         burned.push(idx);
+        gasExplosion(world, nx, ny, player, events);
       }
     }
     f.life -= 1;
@@ -1281,13 +1416,15 @@ function tickFire(world, player, events) {
 var CONSUMABLES = {
   blink: { glyph: "♦", name: "blink rune", desc: "teleport across the room (escape)" },
   firebolt: { glyph: "♦", name: "firebolt", desc: "scorch + burn the nearest foe in sight" },
-  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you" },
-  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" }
+  freeze: { glyph: "♦", name: "freeze rune", desc: "freeze every foe around you — then SHATTER them" },
+  torch: { glyph: "†", name: "torch", desc: "light the dark for a while — but the glare draws foes" },
+  acid: { glyph: ELEMENTS.acid.glyph, name: "acid flask", desc: "corrode nearby foes — they take amplified damage" }
 };
-var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch"];
+var CONSUMABLE_KEYS = ["blink", "firebolt", "freeze", "torch", "acid"];
 function placeConsumables(rng, floor, roomN, takeCell) {
   const count = Math.max(1, Math.round(roomN * 0.05) + Math.floor(floor / 2));
   const pool = ["blink", "firebolt", "freeze"];
+  if (floor >= 4) pool.push("acid");
   if (floor >= 5) pool.push("torch");
   if (floor >= 7) pool.push("torch", "torch");
   const out = [];
@@ -1358,9 +1495,31 @@ function useConsumable(world, player, type, events) {
         n += 1;
       }
     }
-    events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place.`);
+    let iced = 0;
+    if (Array.isArray(world.hazards)) {
+      for (const h of world.hazards) {
+        if (h.type === "wet" && Math.abs(h.x - world.pos.x) + Math.abs(h.y - world.pos.y) <= 5) {
+          h.type = "ice";
+          iced += 1;
+        }
+      }
+    }
+    events.log.push(`freeze rune — ${n} foe${n === 1 ? "" : "s"} locked in place${iced ? `; ${iced} wet cell${iced === 1 ? "" : "s"} glazed to ice` : ""}.`);
+  } else if (type === "acid") {
+    let n = 0;
+    for (const m of world.monsters) {
+      if (m.alive && !m.ally && Math.abs(m.x - world.pos.x) + Math.abs(m.y - world.pos.y) <= 4) {
+        applyElement(m, "acid");
+        n += 1;
+      }
+    }
+    if (!n) {
+      events.log.push("the acid flask hisses on empty stone — no foe to corrode.");
+      return false;
+    }
+    events.log.push(`acid flask — ${n} foe${n === 1 ? "" : "s"} corroded; their integrity strips away.`);
   } else if (type === "torch") {
-    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS);
+    world.torch = Math.max(Number(world.torch) || 0, TORCH_STEPS + Number(player.torchSteps || 0));
     events.log.push("you strike a torch — the dark peels back, but something stirs toward the light.");
   } else {
     return false;
@@ -1378,6 +1537,9 @@ var ACTS = [
 ];
 var ACT_CAP_FLOORS = ACTS.map((a) => a.to);
 var FINAL_FLOOR = ACTS[ACTS.length - 1].to;
+function actForFloor(floor) {
+  return ACTS.find((a) => floor >= a.from && floor <= a.to) || ACTS[ACTS.length - 1];
+}
 function isGuardianFloor(floor) {
   return ACT_CAP_FLOORS.includes(floor);
 }
@@ -1538,7 +1700,6 @@ function makeGuardian(rng, floor, idx) {
   g.maxHp = g.hp;
   g.atk = Math.round(g.atk * 1.5);
   g.glyph = "Ω";
-  g.name = "floor guardian";
   g.guardian = true;
   g.elite = true;
   g.drop += 6;
@@ -1550,12 +1711,24 @@ function makeGuardian(rng, floor, idx) {
   g.hidden = false;
   g.explode = false;
   g.venom = false;
-  if (rng.pick(["summon", "split"]) === "summon") {
-    g.summon = true;
-    g.split = false;
-  } else {
-    g.summon = false;
+  g.summon = false;
+  g.split = false;
+  g.lighteater = false;
+  g.mirror = false;
+  g.phantom = false;
+  const verb = actForFloor(floor).verb;
+  if (verb === "hazard") {
+    g.explode = true;
     g.split = true;
+    g.name = "ember guardian";
+  } else if (verb === "darkness") {
+    g.lighteater = true;
+    g.phantom = true;
+    g.name = "overflow guardian";
+  } else {
+    if (rng.pick(["summon", "split"]) === "summon") g.summon = true;
+    else g.split = true;
+    g.name = "warren guardian";
   }
   return g;
 }
@@ -1673,8 +1846,8 @@ function step(world, player, dir) {
   const move = DIRS[dir];
   const events = { moved: false, log: [], damageTaken: 0, killed: false, pickup: null, descend: false, died: false };
   if (!move) return events;
-  const nx = world.pos.x + move.dx;
-  const ny = world.pos.y + move.dy;
+  let nx = world.pos.x + move.dx;
+  let ny = world.pos.y + move.dy;
   if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
   if (world.grid[ny][nx] === "#") {
     const door = world.hidden && world.hidden.find((h) => !h.revealed && h.entrance.x === nx && h.entrance.y === ny);
@@ -1685,8 +1858,14 @@ function step(world, player, dir) {
   const foe = foeIndex >= 0 ? world.monsters[foeIndex] : null;
   if (foe) {
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    const dmg = affixDamage(player);
+    const raw = affixDamage(player);
+    const strike = elementStrike(foe, raw);
+    const dmg = strike.total;
     foe.hp -= dmg;
+    if (strike.shattered) {
+      events.shattered = true;
+      events.log.push(`${foe.name} SHATTERS for ${dmg}!`);
+    }
     applyHitAffix(world, player, foe, dmg, events);
     if (foe.hp <= 0) {
       foe.alive = false;
@@ -1722,6 +1901,8 @@ function step(world, player, dir) {
     world.torch -= 1;
     if (world.torch === 0) events.log.push("your torch gutters out. the dark closes in.");
   }
+  ({ x: nx, y: ny } = playerIceSlide(world, nx, ny, move.dx, move.dy, events));
+  world.pos = { x: nx, y: ny };
   const hz = world.hazardAt && world.hazardAt(nx, ny);
   const burntSpore = hz === "spores" && Array.isArray(world.burned) && world.burned.includes(ny * world.width + nx);
   if (hz && !burntSpore) {
@@ -1976,24 +2157,28 @@ function buildShopPanel({ state, save, onClose }) {
 
 // ../../docs/games/metagame/stages/stage2/help.js
 var SECTIONS = [
-  ["Goal", "Descend 5 floors, then beat THE AMBIGUOUS EXPRESSION at the bottom."],
+  ["Goal", "Descend 9 floors across three acts — the Warrens, the Cisterns &amp; Emberworks, then the Overflow — and beat THE AMBIGUOUS EXPRESSION at the bottom. Each act ends with a Ω guardian on the stairs."],
   ["Move", "Arrow keys, WASD, or the on-screen d-pad. One tile per press."],
   ["Fight", "Walk into a foe to attack (your ATK vs its HP). It hits back — watch your HP. Fast foes (race conditions) strike twice."],
   ["Foes", "s m n are light, L O heavy. Deeper floors add behaviours: y spitters shoot from afar, x segfaults blast on death, a ambushers hide as walls, u fork bombs spawn minions."],
+  ["Overflow foes", "Act III adds three dark-dwellers: e light eater — feeds on darkness and grows; torchlight starves it. M mirror — copies most of YOUR attack power back at you; don't out-gear yourself into a beating. ψ null phantom — fast and leaves NO ghost trail, but a lit torch pins (slows) it."],
   ["Elites", "Gilded, glowing foes (a prefix like armored/venomous) hit harder but drop a guaranteed weapon + glyph cache. Worth the risk."],
-  ["Guardian", "Band floors post a pink Ω guardian by the stairs — huge HP and a trick (it forks minions or splits into shards). Beat it to pass."],
+  ["Guardian", "Each act caps in a pink Ω guardian by the stairs — huge HP and a trick that escalates with the act: it forks/splits (Act I), explodes &amp; splits (Act II), or feeds on the dark &amp; leaves no ghost (Act III). Beat it to pass."],
   ["Factions", "Foes come in two rival camps (red vs orange). When they're not chasing you they fight each other — lead a pack past a rival and let them thin each other out."],
-  ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal."],
-  ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut)."],
+  ["Status", "Poison ☣ / burn ♨ / bleed ✣ tick HP over time even while you stand still — keep moving and heal. ❄ frozen/slowed and ✦ stunned keep a foe from acting."],
+  ["Hazards", "≈ lava burns, * spores poison, ^ spikes bleed — step around them. A : chasm drops you straight to the next floor (a risky shortcut). In the Overflow, ○ void rifts snuff your torch and leave you reeling in the dark."],
+  ["Ice (Cisterns)", "The flooded Cisterns (floors 4-6) are dotted with ~ wet cells. A freeze rune glazes nearby wet cells into ice. Anything that steps on ice SLIDES one more cell in its heading — slide a chasing foe into a : chasm for an instant kill, or into a wall to stun it. You slide too, so memorise the ice."],
   ["Traps", "Invisible until you trip them: dart (damage), alarm (wakes the floor), blink (flings you), pit (drops you a floor). Once sprung they're marked — denser deeper."],
   ["Loot", "Step on / weapons to raise ATK and % glyph shards to earn glyphs. Kills drop glyphs and XP (level up = more HP & ATK)."],
-  ["Affixes", "Some weapons carry an on-hit affix — vampiric (lifesteal), cleaving (hit adjacent foes), burning, knockback or double-strike. The one you pick up last is active; deeper weapons roll affixes more often."],
+  ["Affixes", "Some weapons carry an on-hit affix — vampiric (lifesteal), cleaving (hit adjacent foes), burning, knockback, double-strike, frost or acid. The one you pick up last is active; deeper weapons roll affixes more often."],
   ["Secret rooms", "Bump a faint, off-colour wall to open a hidden room: a cache, an ambush, a teleport to the stairs, a shrine (trade HP for a buff), a vault (prime loot, elite guards) or a captive ally that fights for you."],
   ["Biomes", "Floors are grouped into bands — Warrens, Flooded Cisterns, Emberworks, the Overflow — each with its own look and rising danger."],
-  ["Darkness", "From the deeper bands your sight shrinks — you only see a radius around @, and foes loom out of the dark. Move carefully."],
+  ["Darkness", "From the Overflow act (floor 7+) your sight collapses to a tight ring around @. Foes beyond it are hidden — but a dim ? ghost marks the last tile you saw each one on, so spatial memory is the skill. Light a † torch to flood a wide ring."],
+  ["Torches", "† torches are the Overflow's key tool (found from floor 5, common from floor 7). A lit torch widens your sight for a stretch of steps — but its glare draws foes from much farther, so light is a tradeoff, not a freebie. Save some for the boss approach; a void rift will snuff one instantly."],
   ["Stairs", "Reach the > stairs to descend. Deeper = harder, better loot. A purple ≣ branch stair (some floors) drops you to a deadlier but much richer floor — your call."],
   ["Runs", "Dying or 'retreat' banks the run's glyphs and draws a fresh dungeon. Banked glyphs are permanent."],
-  ["Runes", "Pink ♦ runes are one-shot tools: pick them up, then press 1/2/3 (or the buttons) — blink (escape), firebolt (scorch the nearest foe), freeze (lock foes around you)."],
+  ["Runes", "♦ runes are one-shot tools: pick them up, then press 1-5 (or the buttons). 1 blink (escape), 2 firebolt (scorch the nearest foe), 3 freeze (lock foes around you + glaze wet cells to ice), 4 † torch (light the dark), 5 acid flask (corrode foes so your next hit lands amplified)."],
+  ["Combos", "Systems chain: firebolt a * spore field to roast a pack; freeze then SHATTER a frozen foe (or acid-corrode first for an even bigger crack); freeze a wet cell into ice and slide a chaser into a chasm."],
   ["Fire", "A firebolt lights its target's tile, and flames spread through * spore fields — chain a firebolt into a spore cluster to roast a whole pack (but mind your own footing)."],
   ["Shop", "Spend banked glyphs on permanent upgrades — they apply on your next run."],
   ["Heat", "In the shop you can toggle opt-in difficulty modifiers (more monsters, no potions, elite storm). Each active one multiplies the glyphs you bank — risk for reward."],
@@ -2219,7 +2404,7 @@ function createView(screenEl) {
         s.hp.hidden = true;
       }
       pos(s.el, m.x, m.y, fresh ? 0 : mobMs);
-      if (dark) ghostMem.set(i, { x: m.x, y: m.y, glyph });
+      if (dark && !m.phantom) ghostMem.set(i, { x: m.x, y: m.y, glyph });
     });
     for (const i of [...mobEls.keys()]) if (!live.has(i)) dropMob(i);
   }
@@ -2362,7 +2547,7 @@ function createView(screenEl) {
     if (world.hidden) {
       for (const h of world.hidden) if (!h.revealed) dot(h.entrance.x, h.entrance.y, "#ff36c0", 4);
     }
-    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0" };
+    const HAZ_DOT = { lava: "#ff5a1e", spores: "#7dd44a", spikes: "#9aa4ad", chasm: "#6a7bb0", rift: "#3a2a55" };
     if (world.hazards) for (const hz of world.hazards) dot(hz.x, hz.y, HAZ_DOT[hz.type] || "#888", 2);
     if (world.fires) for (const f of world.fires) dot(f.x, f.y, "#ff7a1e", 2);
     if (world.traps) for (const tr of world.traps) dot(tr.x, tr.y, tr.sprung ? "#c0563a" : "#7a3a2a", 2);
@@ -2555,6 +2740,14 @@ function renderStage2({
             <span class="s2-c-exit">&gt;</span> stairs
             <span class="s2-c-lava">≈</span> lava
             <span class="s2-c-spikes">^</span> spikes
+            <span class="s2-c-chasm">:</span> chasm
+            <span class="s2-c-ice">~</span> water/ice
+          </div>
+          <div class="s2-legend-row">
+            <span class="s2-c-consum">†</span> torch
+            <span class="s2-c-chasm">○</span> rift
+            <span class="s2-c-foe">?</span> ghost
+            <span class="s2-c-foe">e</span><span class="s2-c-foe2">M</span><span class="s2-c-foe2">ψ</span> dark foes
           </div>
         </div>
       </div>
@@ -2822,8 +3015,22 @@ function renderStage2({
     bodySolver,
     descendToBoss: bodySolver,
     lockState: () => getBossLockState({ actions, state }),
-    bossSolver: challengeBoss
+    bossSolver: challengeBoss,
+    elementProbe
   };
+  function elementProbe() {
+    const grid = ["#####", "#...#", "#####"];
+    const sw = { floor: 5, width: 5, grid, pos: { x: 1, y: 1 }, exit: { x: 9, y: 9 }, monsters: [{ alive: true, x: 2, y: 1, hp: 300, maxHp: 300, atk: 5, name: "frost foe", glyph: "f", statuses: {} }], weapons: [], glyphs: [], potions: [], hidden: [], seed: "probe" };
+    applyElement(sw.monsters[0], "frost");
+    const player = { atk: 12, def: 0, hp: 50, maxHp: 50, level: 1, xp: 0, glyphsThisRun: 0, glyphMult: 1, statuses: {}, inventory: {} };
+    const hpBefore = sw.monsters[0].hp;
+    const ev = step(sw, player, "right");
+    const shatter = ev.shattered === true && hpBefore - sw.monsters[0].hp > 12;
+    const pw = { floor: 8, width: 5, grid, pos: { x: 1, y: 1 }, monsters: [{ alive: true, x: 3, y: 1, hp: 30, maxHp: 30, atk: 7, name: "null phantom", glyph: "ψ", phantom: true, statuses: {}, bucket: 0, dir: "left", sight: 5, chasing: false, faction: 0 }], torch: 12 };
+    monsterTurn(pw, { hp: 999, def: 0, statuses: {}, atk: 5 }, { log: [], damageTaken: 0, died: false }, () => true);
+    const phantomPinned = Boolean(pw.monsters[0].statuses && pw.monsters[0].statuses.slow);
+    return { shatter, phantomPinned };
+  }
   function dev(id) {
     const e = state.run.entity;
     if (id === "heal") e.hp = e.maxHp;
@@ -2968,6 +3175,7 @@ function defaultState() {
       glyphsBanked: 0,
       parseDepth: 0,
       shopUpgrades: {},
+      runMods: {},
       bestFloor: 0,
       floorsCleared: {},
       deaths: 0,
@@ -3061,12 +3269,16 @@ function isSearchPassageDetail(detail) {
   return Boolean(detail && Number(detail.stage) === 2 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
-  const id = "stage2-glyph-dungeon-styles";
+  ensureStylesheet("stage2-glyph-dungeon-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage2-glyph-dungeon-ui-styles", new URL("./styles-ui.css", import.meta.url).href);
+  ensureStylesheet("stage2-glyph-dungeon-overlay-styles", new URL("./styles-overlays.css", import.meta.url).href);
+}
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 export {

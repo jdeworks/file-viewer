@@ -8,9 +8,18 @@
 // Motion is always a pure function of (seed, elapsedMs).
 
 import { getMode, ringSpeed } from "./modes.js";
-import { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, MOVEMENTS } from "./movements.js";
+import { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, modeHint, MOVEMENTS } from "./movements.js";
 
-export { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, MOVEMENTS };
+export { LEVELS, BOSS_LEVEL, levelConfig, movementForLevel, modeHint, MOVEMENTS };
+
+// Classify a CROSS result for instant arena feedback (pure — no DOM/clock). A hit inside the inner
+// quarter of the tolerance window reads as "perfect"; any other hit is "hit"; everything else "miss".
+// Drives the s9-arena--{perfect,hit,miss} flash so the timing result lands at the point of action.
+export function crossOutcome(result) {
+  if (!result || !result.hit) return "miss";
+  const tol = Number(result.tolerance) || 0;
+  return tol > 0 && Number(result.distance) <= tol / 4 ? "perfect" : "hit";
+}
 
 // Evaluate a CROSS press for (seed, level, elapsedMs). Dispatches to the level's mode. toleranceMult
 // (>1) widens the win window for one press — used by the optional Stabilizer Lens aid; it never changes

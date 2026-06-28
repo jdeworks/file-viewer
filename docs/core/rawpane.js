@@ -12,7 +12,7 @@ import { previewStyle } from './settings-schema.js';
 import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
-import { recordStage1RawEdit } from '../games/metagame/viewer-actions.js';
+import { recordStage1RawEdit, recordStage10EchoRawMode, recordStage10EchoDownload } from '../games/metagame/viewer-actions.js';
 import { markdownLinkForPastedUrl } from '../types/markdown/edit-actions.js';
 import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive } from '../types/markdown/wysiwyg.js';
 import { toggleHtmlWysiwyg, teardownHtmlWysiwyg, getHtmlWysiwygValue,
@@ -384,6 +384,9 @@ export function setRawMode(mode) {
   if (!state.rawview) return;
   state.rawMode = mode;
   state.rawview.setMode(mode);
+  // Stage-10 finale echo: switching a memory's echo artifact into its gated raw mode (genesis →
+  // Original, memory → Diff) witnesses that echo via the real feature (self-gates on the fixture).
+  recordStage10EchoRawMode({ file: state.intake?.filename || '', mode });
   syncRawModeButtons();
   // Keep the chosen view layout (split + draggable divider) stable across raw modes so
   // nothing jumps when switching original/current/diff/move-diff. Use the view-mode
@@ -415,6 +418,10 @@ export async function takeScreenshot() {
 }
 
 export async function downloadCurrent() {
+  // Stage-10 finale echo: downloading the entropy echo artifact witnesses its echo via the real
+  // download feature (self-gates on the fixture; fires before the download work, so it's recorded
+  // even if the browser handles the save oddly).
+  recordStage10EchoDownload({ file: state.intake?.filename || '' });
   let blob;
   if (state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function') {
     const bytes = await state.binaryEdit.getBytes();

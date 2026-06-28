@@ -4,7 +4,7 @@ export const ACHIEVEMENT_ID = "stage7.exif_contradiction_found";
 export const ACHIEVEMENT_TEXT = "I looked beyond the surface of the image.";
 export const BTS_PATH = "/docs/bts/identity_arbiter.bts";
 export const ENTITY_A_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_a_verification.png";
-export const ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.png";
+export const ENTITY_F_IMAGE_PATH = "/docs/examples/metagame/stage7/entity_f_verification.jpg";
 export const ENTITY_METADATA_SIDECAR_PATH = "/docs/examples/metagame/stage7/entity_metadata.json";
 export const ENTITY_ANCHOR_PATH = "/docs/examples/metagame/stage7/entity_anchor_0043.txt";
 export const ANCHOR_ACTION = "anchor_chain_examined";
@@ -40,7 +40,7 @@ export const substageHints = {
   4: "Follow F's credential chain. Open the referenced anchor record in the viewer.",
   5: "A second roster claims the name. Open the system files, pin the evidence, and name the duplicate with a triad (entity + claim + source fact).",
   6: "A THIRD roster (L/M/N/P/Q) claims CORE_ENTITY_002. Two anomalies are exonerated by different files; the duplicate's lie is only exposed by SEARCHING the session ledger.",
-  7: "Open Entity F's photo, inspect its metadata, then commit to the real holder."
+  7: "Open Entity F's photo, then open its Metadata pane and read the GPS row — the image knows where it was. Then commit to the real holder."
 };
 
 export const bellMessages = {

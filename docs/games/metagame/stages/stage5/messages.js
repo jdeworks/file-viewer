@@ -1,4 +1,7 @@
 export const ACTION_NAME = 'counter_wave_calibrated';
+// Cosmetic-only live progress signal (transient channel — never persisted, never satisfies the boss
+// gate). Carries the accumulating continuousMs so the calibration HUD can animate toward the loop.
+export const PROGRESS_ACTION = 'calibration_progress';
 export const REQUIRED_ACTION = '5.counter_wave_calibrated';
 export const ACHIEVEMENT_ID = 'stage5.counter_wave_calibrated';
 export const ACHIEVEMENT_TEXT = 'I listened before I drove.';

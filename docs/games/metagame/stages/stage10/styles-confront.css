@@ -123,6 +123,24 @@
   margin: 0 0 10px;
 }
 
+/* ── Route closer (continue / rest routes) ── */
+.mg-stage10__route-closer {
+  border-top: 2px solid #1a1a1a;
+  font-style: italic;
+  line-height: 1.6;
+  margin-top: 18px;
+  max-width: 760px;
+  padding-top: 16px;
+}
+
+.mg-stage10__route-closer[data-route="rest"] {
+  opacity: 0.82;
+}
+
+.mg-stage10__route-closer p {
+  margin: 0 0 10px;
+}
+
 /* ── Capstone grid (expand route) ── */
 .mg-stage10__capstone {
   margin-top: 18px;

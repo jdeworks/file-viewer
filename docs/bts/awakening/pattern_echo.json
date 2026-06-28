@@ -1,6 +1,0 @@
-{
-  "pattern": "nested",
-  "path": "pattern/nested/recursion_note.json",
-  "note": "the answer was deeper than the root",
-  "rule": "a loop is not destiny"
-}

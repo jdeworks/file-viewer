@@ -42,7 +42,10 @@ export function renderRingHidden(opts = {}) {
 
 // ── internals ────────────────────────────────────────────────────────────────────────────────────
 
-function ringChar(a) {
+// Shared ring glyph picker (also imported by rings.js so the two renderers can't drift). The leading
+// mod360 is a defensive normalization; since every caller iterates a ∈ [0,360) and inArc/angularDist
+// already normalize via %360, it never changes output — it only makes the helper safe for any input.
+export function ringChar(a) {
   const d = mod360(a);
   if (inArc(d, 0, 60) || inArc(d, 180, 60)) return "─"; // top/bottom arcs
   if (inArc(d, 90, 60) || inArc(d, 270, 60)) return "│"; // side arcs

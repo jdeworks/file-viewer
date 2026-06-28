@@ -180,7 +180,8 @@ export function checkPlayerDead(combat) {
 }
 
 // ── Re-exports: the engine's stable public surface (imports elsewhere stay unchanged) ─────────────
-export { makeRng, shuffle, hashSeed } from "./combat-rng.js";
+export { makeRng, shuffle, hashSeed, strHash } from "./combat-rng.js";
 export { dealToEnemy, dealToPlayer } from "./combat-damage.js";
 export { drawCards } from "./combat-piles.js";
 export { currentIntent } from "./combat-enemy.js";
+export { congestionForAct } from "./combat-modes.js";

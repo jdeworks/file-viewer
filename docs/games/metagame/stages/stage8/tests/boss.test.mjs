@@ -120,4 +120,32 @@ function archive(state, actions) {
   assert.equal(r.burn.survived, false);
 }
 
+// Gate-message clarity (Issue 8): the lock exposes both quantities and the hint disambiguates the
+// cumulative-earned gate from the in-hand balance the burn actually drains.
+{
+  const state = defaultState();
+  state.cycle = MIN_CYCLE + 2;
+  state.debris = [createDebris({ node: "F1", cycle: state.cycle - 1, tier: 4, value: 80, decay: 2 })];
+  state.selectedDebrisId = state.debris[0].id;
+  state.stormsSurvived = 3;
+  const actions = actionHarness();
+  archive(state, actions);
+  state.totalStatesEarned = 600; // gate (cumulative) passes
+  state.states = 30;             // but the in-hand balance the burn drains is thin
+  const lock = getBossLockState({ actions, state });
+  assert.equal(lock.unlocked, true);
+  assert.equal(lock.inHandStates, 30, "lock exposes current balance");
+  assert.ok(lock.burnEstimate > 0, "lock exposes a burn estimate");
+  assert.ok(lock.inHandStates < lock.burnEstimate, "thin balance < burn cost");
+  assert.ok(/CURRENT balance/.test(lock.hint), "hint warns the burn drains the CURRENT balance");
+  assert.ok(lock.hint.includes(String(lock.inHandStates)) && lock.hint.includes(String(lock.burnEstimate)),
+    "hint shows both numbers");
+
+  // With ample in-hand reserves the hint flips to the endurable message (gate unchanged either way).
+  state.states = lock.burnEstimate + 100;
+  const lock2 = getBossLockState({ actions, state });
+  assert.equal(lock2.unlocked, true, "gate threshold unchanged");
+  assert.ok(/deep enough/.test(lock2.hint), "hint confirms reserves are deep enough");
+}
+
 console.log("stage8 boss tests passed");

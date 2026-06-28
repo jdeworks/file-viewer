@@ -9,7 +9,9 @@ import {
 import {
   BOSS_LEVEL,
   crossAttempt,
+  crossOutcome,
   levelConfig,
+  modeHint,
   movementForLevel,
   renderLevel,
   sublevelSeed
@@ -62,6 +64,9 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
 
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const log = root.querySelector(".s9-log");
+  const hud = root.querySelector(".s9-hud");
+  const FLASH_CLASSES = ["s9-arena--perfect", "s9-arena--hit", "s9-arena--miss"];
+  let flashTimer = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -119,7 +124,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
       liveSeed = getBossSeed({ state, actions });
       state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
       pushLog("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
-      return;
+      return "miss";
     }
     const seed = activeSeed();
     const toleranceMult = consumeStabilizer(state); // armed Stabilizer Lens widens this one press
@@ -140,33 +145,51 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
         } else {
           pushLog(`on beat (${rhythmChain}/${need}). hold the cadence.`);
         }
-      } else {
-        rhythmChain = 0;
-        state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-        pushLog(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+        return crossOutcome(result);
       }
-      return;
+      rhythmChain = 0;
+      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      pushLog(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      return "miss";
     }
 
     if (result.hit) {
       state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
       pushLog(`level ${level} crossed (gap at top). advancing.`);
       advanceFrom(level);
-    } else {
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-      pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+      return crossOutcome(result);
     }
+    state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+    pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+    return "miss";
   }
 
   function challengeBoss() {
     const result = recordObserverBossAttempt({ state, actions, elapsedMs });
     if (result.defeated) completeOnce({ stage: 9, defeated: true, btsPath: BTS_PATH });
+    return result.hit ? "perfect" : "miss";
   }
 
   function doCross() {
     if (state.boss.defeated) return;
-    if (state.currentLevel >= BOSS_LEVEL) challengeBoss();
-    else crossSublevel();
+    const outcome = state.currentLevel >= BOSS_LEVEL ? challengeBoss() : crossSublevel();
+    flashArena(outcome);
+  }
+
+  // Instant point-of-action feedback: flash the arena border/glow for the CROSS result so the player
+  // never has to drop their eye to the log mid-window. Pure presentation — the gap motion stays a pure
+  // f(seed,elapsedMs); the setTimeout only clears a CSS class and never feeds back into game logic.
+  function flashArena(outcome) {
+    if (!outcome) return;
+    const el = fields.arena;
+    el.classList.remove(...FLASH_CLASSES);
+    void el.offsetWidth; // restart the transition even on consecutive same-outcome presses
+    el.classList.add(`s9-arena--${outcome}`);
+    if (flashTimer) clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      el.classList.remove(...FLASH_CLASSES);
+      flashTimer = null;
+    }, 360);
   }
 
   root.addEventListener("click", (event) => {
@@ -228,6 +251,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     repaint,
     destroy() {
       loop.stop();
+      if (flashTimer) clearTimeout(flashTimer);
       uninstallHook();
       root.remove();
     }
@@ -267,15 +291,14 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     const cfg = levelConfig(state.currentLevel);
     const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
     fields.seed.textContent = unstable ? (lock.unlocked ? "0 (fixed cache)" : "live-random") : "stable";
+    hud.classList.toggle("s9-hud--unstable", unstable && !lock.unlocked);
     paintTach(cfg);
     paintAids();
     paintArena();
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
     else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
-    fields.hint.textContent = unstable && !lock.unlocked
-      ? lock.hint
-      : "watch the gap; CROSS when it faces the top (12 o'clock).";
+    fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : modeHint(cfg);
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     log.replaceChildren(...state.log.slice(-5).map((line) => {

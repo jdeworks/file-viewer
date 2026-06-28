@@ -35,6 +35,28 @@
   place-items: center;
   color: #fff;
   font-size: 16px;
+  transition: border-color 90ms ease-out, box-shadow 90ms ease-out, color 90ms ease-out;
+}
+
+/* Point-of-action CROSS feedback (toggled ~360ms by renderer.js, then fades back). */
+.s9-arena--hit {
+  border-color: #5dcaa5;
+  box-shadow: 0 0 16px rgba(93, 202, 165, 0.65);
+}
+
+.s9-arena--perfect {
+  border-color: #8ef7d1;
+  color: #d6fff2;
+  box-shadow: 0 0 24px rgba(142, 247, 209, 0.9);
+}
+
+.s9-arena--miss {
+  border-color: #c0392b;
+  box-shadow: 0 0 16px rgba(192, 57, 43, 0.65);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .s9-arena { transition: none; }
 }
 
 .s9-side button,
@@ -75,8 +97,19 @@
   padding-left: 24px;
 }
 
+/* Online-unstable levels (the live-random back third): flag the seed field so the rule change
+   is visible before the first wasted CROSS, not buried in the log. */
+.s9-hud--unstable [data-field="seed"] {
+  color: #f5a623;
+  font-weight: bold;
+}
+
 @media (max-width: 760px) {
   .s9-layout {
     grid-template-columns: 1fr;
+  }
+  .s9-side button,
+  .s9-controls button {
+    min-height: 40px;
   }
 }

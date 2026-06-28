@@ -23,7 +23,7 @@ import {
   UPGRADE_COST,
   FINAL_BOSS_ACT
 } from "../run.js";
-import { makeRng, createCombat, playCard } from "../combat.js";
+import { makeRng, createCombat, playCard, strHash } from "../combat.js";
 import { instantiateEnemy } from "../enemies.js";
 import { RELICS } from "../relics.js";
 import { STARTING_DECK } from "../cards.js";
@@ -190,6 +190,10 @@ function autoRun(seed) {
     assert.equal(ea, eb, `seed ${seed}: same node ⇒ same enemy`);
     // The default rng path is also deterministic (derived from run.seed + node), never Math.random.
     assert.equal(enemyForCurrentNode(a), enemyForCurrentNode(b), `seed ${seed}: default rng is replayable`);
+    // Round-4 fix: the default seed derivation MUST match what the renderer feeds live (strHash on
+    // `${seed}:${nodeId}:enemy`), so the tests exercise the same enemy sequence players actually see.
+    const live = enemyForCurrentNode(a, makeRng(strHash(`${a.seed}:${a.currentNodeId}:enemy`)));
+    assert.equal(enemyForCurrentNode(a), live, `seed ${seed}: default rng matches the renderer's strHash derivation`);
   }
 }
 

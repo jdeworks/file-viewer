@@ -7,7 +7,7 @@ import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
 import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat, THERMAL_THRESHOLD } from "./heat.js";
 import { insightIncome, earnInsight } from "./resources.js";
-import { tickStorm } from "./storms.js";
+import { tickStorm, announceStorm } from "./storms.js";
 import { runAutomation } from "./automation.js";
 
 export const REPAIR_EFFICIENCY = 3;            // % health restored per repair unit
@@ -93,6 +93,12 @@ export function advanceCycle(state, rng) {
     const def = nodeById(n.id) || {};
     if (def.noCascade && n.health > 0) n.health = clamp(n.health + coreRegen, 0, 100);
   }
+  // 3c. Entropy-threshold cascades (the SUPPRESS pressure). Once the field runs deep (cycle ≥ 23),
+  // crossing 60% entropy fires a Pattern Failure (two mid relays −15) and 80% a Total Cascade (all
+  // degrading nodes −30). Deterministic via the cycle's seeded rng. Keyed off LAST cycle's entropy
+  // (already in state.entropy) so the readout warns the player a cycle ahead; placed before the
+  // failed-node pass so threshold-killed nodes still shed debris and propagate cascade stress.
+  result.threshold = applyEntropyThresholds(state, rng);
   // 4/5. status transition + debris on newly-failed nodes
   for (const n of state.nodes) {
     if (status(n.health) === "failed" && priorStatus.get(n.id) !== "failed") {
@@ -130,8 +136,10 @@ export function advanceCycle(state, rng) {
   for (const n of state.nodes) {
     const def = nodeById(n.id) || {};
     const s = status(n.health);
-    if (s === "active") active += def.baseOutput || 0;
-    else if (s === "degrading") { degraded += (def.degradedOutput || 0) * 0.5; degradingCount += 1; }
+    // High-Load is a temporal bet: +50% output now (here), paid for by 1.5× decay (step 2 above).
+    const hlMult = (state.highLoad[n.id] && def.supportsHighLoad) ? 1.5 : 1;
+    if (s === "active") active += (def.baseOutput || 0) * hlMult;
+    else if (s === "degrading") { degraded += (def.degradedOutput || 0) * 0.5 * hlMult; degradingCount += 1; }
     else failedCount += 1;
   }
   const entropySink = Math.floor(state.cycle / 3);
@@ -158,6 +166,9 @@ export function advanceCycle(state, rng) {
   state.cycle = (state.cycle || 0) + 1;
   // 12. telegraph next cycle's crisis (shown one cycle ahead).
   result.pendingEvent = telegraphNext(state, rng);
+  // 13. one-time band/phase bell: announce the current act's Cascade Storm the first cycle it becomes
+  // brace-able, so the player knows a new phase started (deterministic, fires once per storm).
+  result.announcedStorm = announceStorm(state);
   return result;
 }
 
@@ -194,7 +205,38 @@ export function buildStabilizer(state, cost) {
   return { ok: true, stabilizers: state.stabilizers };
 }
 
-// Toggle a node into high-load (1.5× output is the renderer's concern; engine applies 1.5× decay).
+// Entropy thresholds (SUPPRESS). The system-level entropy% becomes load-bearing past this cycle:
+// the player must sometimes repair a low-value FAILED node purely to pull entropy below 60%/80%.
+export const ENTROPY_THRESHOLD_CYCLE = 23;
+export const PATTERN_FAILURE_AT = 60;
+export const TOTAL_CASCADE_AT = 80;
+
+function applyEntropyThresholds(state, rng) {
+  if ((state.cycle || 0) < ENTROPY_THRESHOLD_CYCLE) return null;
+  const entropy = Number(state.entropy || 0);
+  if (entropy >= TOTAL_CASCADE_AT) return triggerTotalCascade(state);
+  if (entropy >= PATTERN_FAILURE_AT) return triggerPatternFailure(state, rng);
+  return null;
+}
+
+// Pattern Failure: two surviving mid relays simultaneously lose 15 (seeded pick). Deterministic.
+function triggerPatternFailure(state, rng) {
+  const mids = state.nodes.filter((n) => (nodeById(n.id) || {}).zone === "mid" && status(n.health) !== "failed");
+  const picks = rng.shuffle(mids).slice(0, 2);
+  for (const n of picks) n.health = clamp(n.health - 15, 0, 100);
+  if (picks.length) pushLog(state, `Pattern Failure (entropy ${Math.round(Number(state.entropy || 0))}%): ${picks.map((n) => n.id).join(", ")} −15.`);
+  return { kind: "pattern_failure", nodes: picks.map((n) => n.id) };
+}
+
+// Total Cascade: every currently-degrading node loses an extra 30 in one cycle.
+function triggerTotalCascade(state) {
+  const degrading = state.nodes.filter((n) => status(n.health) === "degrading");
+  for (const n of degrading) n.health = clamp(n.health - 30, 0, 100);
+  if (degrading.length) pushLog(state, `TOTAL CASCADE (entropy ${Math.round(Number(state.entropy || 0))}%): ${degrading.length} degrading node(s) −30.`);
+  return { kind: "total_cascade", nodes: degrading.map((n) => n.id) };
+}
+
+// Toggle a node into high-load (+50% output in the income pass; the engine applies 1.5× decay).
 export function toggleHighLoad(state, nodeId) {
   ensureRuntime(state);
   const def = nodeById(nodeId);

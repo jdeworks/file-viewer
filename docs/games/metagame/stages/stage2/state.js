@@ -50,6 +50,7 @@ export function defaultState() {
       glyphsBanked: 0,
       parseDepth: 0,
       shopUpgrades: {},
+      runMods: {},
       bestFloor: 0,
       floorsCleared: {},
       deaths: 0,

@@ -14,7 +14,6 @@ import {
   candidates,
   entityFEventLog,
   entityFields,
-  metadataArtifact,
   metadataRows,
   SCAN_ENTITIES
 } from "./content.js";
@@ -26,7 +25,6 @@ import {
   CASE3_SEARCH_QUERY,
   ENTITY_ANCHOR_PATH,
   ENTITY_F_IMAGE_PATH,
-  ENTITY_METADATA_SIDECAR_PATH,
   substageHints
 } from "./messages.js";
 
@@ -263,16 +261,12 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
   }
 }
 
-// Load-bearing un-cheat: opening this image with these opts fires recordStage7MetadataInspection.
+// Open the REAL Entity-F JPEG in the image viewer. No sidecar, no pre-staged metadata: the GPS
+// contradiction lives in the file's actual EXIF. The un-cheat fires from the image metadata
+// renderer when the player navigates to the Metadata pane (docs/types/image/metadata.js), NOT from
+// this open — so opening the photo is necessary but not sufficient; inspection is required.
 export function buildEntityFPhotoOpenOptions() {
-  return {
-    mime: "image/png",
-    source: "stage7",
-    metadataField: metadataArtifact.decisiveField,
-    entity: metadataArtifact.decisiveEntity,
-    metadataSidecar: ENTITY_METADATA_SIDECAR_PATH,
-    metadataRows: metadataRows.F.map(([field, value]) => ({ field, value }))
-  };
+  return { mime: "image/jpeg", source: "stage7", entity: "F" };
 }
 
 function el(tag, className) {

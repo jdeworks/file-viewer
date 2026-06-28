@@ -19,8 +19,16 @@ export function makePieces(runCount) {
 // Seeded permutation mapping the three DISPLAY sectors (02/04/06, fixed order) → which key chunk each
 // holds. Decoupling display order from key order is what forces the player to actually diff the three
 // logs (reading v1 top-to-bottom gives the WRONG key order). slots[sectorIdx] = chunkIndex.
+// The IDENTITY permutation [0,1,2] is rejected (it would put v1 sectors in key order, letting a player
+// read the key top-to-bottom without diffing — a partial bypass of the un-cheat); we keep reshuffling
+// the seeded stream until it yields a non-identity order, so EVERY run requires a real 3-way diff.
 export function makeSlots(runCount) {
-  return makeRng(`s3-slots:${runCount}`).shuffle([0, 1, 2]);
+  const rng = makeRng(`s3-slots:${runCount}`);
+  let slots = rng.shuffle([0, 1, 2]);
+  for (let i = 0; i < 8 && slots[0] === 0 && slots[1] === 1 && slots[2] === 2; i += 1) {
+    slots = rng.shuffle([0, 1, 2]);
+  }
+  return slots;
 }
 
 function normalizeSlots(slots) {
@@ -46,7 +54,7 @@ function freshFrom(meta) {
     retained: Number(meta.retained || 0),
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0 },
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [] },
     memoryPair: { runId: `mem-${runCount}`, pieces, slots, key: pieces.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]

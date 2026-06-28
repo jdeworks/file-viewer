@@ -66,8 +66,8 @@ export const SIGNAL_CARDS = [
   },
   {
     id: "JITTER", type: "Signal", cost: 0, rarity: "uncommon",
-    text: "Deal 4.",
-    effect: (ctx) => ctx.deal(4)
+    text: "Deal 4. If a card was replayed this turn, deal 4 more.",
+    effect: (ctx) => { ctx.deal(4); if (ctx.chainCount > 0) ctx.deal(4); }
   },
   {
     id: "PIPELINE", type: "Signal", cost: 1, rarity: "uncommon",

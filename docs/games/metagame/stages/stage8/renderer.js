@@ -5,7 +5,7 @@ import {
   recordHeatDeathAttempt
 } from "./boss.js";
 import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messages.js";
-import { advanceCycle, applyRepair, buildStabilizer } from "./engine.js";
+import { advanceCycle, applyRepair, applyStabilizer, buildStabilizer, toggleHighLoad } from "./engine.js";
 import { driveToGate } from "./solver.js";
 import { stormAvailable, braceStorm } from "./storms.js";
 import { buyTech, techStatus } from "./tech.js";
@@ -29,6 +29,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <span>cycle <b data-field="cycle"></b></span>
       <span>States <b data-field="states"></b></span>
       <span>entropy <b data-field="entropy"></b>%</span>
+      <span>stress <b data-field="stress"></b></span>
       <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
       <span>repair <b data-field="repairUnits"></b></span>
       <span>stabilizers <b data-field="stabilizers"></b></span>
@@ -116,6 +117,10 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   root.addEventListener("click", (event) => {
     const repair = event.target.closest("button[data-repair]");
     if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
+    const highLoad = event.target.closest("button[data-high-load]");
+    if (highLoad) { toggleHighLoad(state, highLoad.dataset.highLoad); persistAndPaint(); return; }
+    const freeze = event.target.closest("button[data-stabilize-node]");
+    if (freeze) { applyStabilizer(state, freeze.dataset.stabilizeNode); persistAndPaint(); return; }
     const tech = event.target.closest("button[data-tech]");
     if (tech) { buyTech(state, tech.dataset.tech); persistAndPaint(); return; }
     const struct = event.target.closest("button[data-struct]");

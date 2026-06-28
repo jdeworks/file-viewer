@@ -19,6 +19,9 @@ import {
   startConfront
 } from "./confront.js";
 import { coreQuestions } from "./content-confront.js";
+import { echoTokenFor } from "./echo-token.js";
+import { echoVerb } from "./echo-verbs.js";
+import { STAGE_ID } from "./messages.js";
 import { renderStepper } from "./renderer-memory.js";
 import { renderConfront } from "./renderer-confront.js";
 import { renderCompletion, renderFinalQuestion } from "./renderer-final.js";
@@ -93,7 +96,7 @@ export function renderStage10(ctx) {
 
     const finalButton = event.target.closest("[data-final-choice]");
     if (finalButton) {
-      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete });
+      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete, achievements: ctx.achievements });
       saveAndPaint(ctx, repaint);
     }
   };
@@ -129,6 +132,11 @@ function handleMemoryClicks(event, ctx, repaint) {
   const echoButton = event.target.closest("[data-open-echo]");
   if (echoButton) { openEcho(ctx, echoButton.dataset.openEcho); saveAndPaint(ctx, repaint); return true; }
 
+  // SEARCH verb (syntax): a distinct, post-open affordance that drives the real in-file search. The
+  // witness returns through the token-gated subscription, never from this click directly.
+  const searchButton = event.target.closest("[data-search-echo]");
+  if (searchButton) { searchEcho(ctx, searchButton.dataset.searchEcho); return true; }
+
   const integrateButton = event.target.closest("[data-integrate-memory]");
   if (integrateButton) {
     integrateMemory({ state, memoryId: integrateButton.dataset.integrateMemory, achievements: ctx.achievements, bell: ctx.bell });
@@ -150,27 +158,52 @@ function handleConfrontClicks(event, ctx, save, repaint) {
 
   const fragButton = event.target.closest("[data-confront-echo]");
   if (fragButton) {
-    const id = fragButton.dataset.confrontEcho;
-    openEcho(ctx, id); // re-open the real artifact — the work the speed-run skipped
-    rewitnessFragmentation({ state, memoryId: id, save: save() });
-    saveAndPaint(ctx, repaint);
+    // Phase B re-witness is NOT granted on click. openEcho only OPENS the artifact; the trace is
+    // re-anchored ONLY when the genuine, token-carrying echo action returns from the viewer
+    // (index.js subscription → onEchoAction → rewitnessFragmentation). A bare click — or an open
+    // that finds no viewer / fails to load — advances nothing. Closes the round-3 bypass.
+    openEcho(ctx, fragButton.dataset.confrontEcho);
     return true;
   }
 
   const coreButton = event.target.closest("[data-core-option]");
   if (coreButton) {
-    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save() });
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save(), achievements: ctx.achievements });
     saveAndPaint(ctx, repaint);
     return true;
   }
   return false;
 }
 
+// MIME per echo artifact extension. The earlier text/json echoes load as text/plain; the real-image
+// echo (identity_echo.jpg) MUST NOT be forced to text/plain or the image renderer never engages.
+const ECHO_MIME = {
+  txt: "text/plain", json: "application/json",
+  jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
+  mp3: "audio/mpeg", epub: "application/epub+zip"
+};
+
 function openEcho(ctx, id) {
   const path = echoFileFor(id);
   if (!path) return;
-  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
-  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
+  const ext = String(path).split(".").pop().toLowerCase();
+  const opts = { source: "stage10" };
+  if (ECHO_MIME[ext]) opts.mime = ECHO_MIME[ext];
+  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, opts);
+  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path, opts);
+}
+
+// SEARCH echo (syntax): a SECOND, distinct affordance — opening is step one, but the witness only
+// fires when the player asks the precise question. Drives the real searchViewerFile feature (same
+// metagame-bridge call stage 7 uses); the un-cheat lives server-side in recordStage10EchoSearch
+// (query + matched-line token must both check out). A bare open never triggers this.
+function searchEcho(ctx, id) {
+  const path = echoFileFor(id);
+  const spec = echoVerb(id);
+  if (!path || spec.verb !== "search") return;
+  const v = ctx.viewer;
+  if (v && typeof v.searchViewerFile === "function") v.searchViewerFile(path, spec.query, { source: "stage10" });
+  else if (v && typeof v.searchFile === "function") v.searchFile(path, spec.query, { source: "stage10" });
 }
 
 function saveAndPaint(ctx, repaint) {
@@ -185,6 +218,15 @@ function installTestHook(ctx, save, repaint) {
   const paint = () => saveAndPaint(ctx, repaint);
   window.__fvStage10 = {
     state: () => state,
+    echoToken: (id) => echoTokenFor(id),
+    // Drive the REAL action subscription (the actual token gate in index.js) with an arbitrary token —
+    // a wrong/absent token must witness nothing; the real per-memory token must witness.
+    spoofEcho(id, token) {
+      if (ctx.actions && typeof ctx.actions.setAction === "function") {
+        ctx.actions.setAction(STAGE_ID, `echo_${id}`, token === undefined ? { source: "spoof" } : { source: "spoof", token });
+      }
+      return state.memories?.[id]?.echoWitnessed === true;
+    },
     witness(id) { const r = witnessEcho({ state, memoryId: id }); paint(); return r; },
     witnessAll() { for (const m of memories) witnessEcho({ state, memoryId: m.id }); paint(); return getEchoCounts(state).witnessed; },
     confront: {
@@ -197,7 +239,7 @@ function installTestHook(ctx, save, repaint) {
         while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
           const q = coreQuestions[state.confront.core.length];
           const opt = q.options.find((o) => o.stance === stance) || q.options[0];
-          answerCore({ state, optionId: opt.id, save: save() });
+          answerCore({ state, optionId: opt.id, save: save(), achievements: ctx.achievements });
         }
         paint();
         return getConfrontState(state, save());

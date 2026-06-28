@@ -3,13 +3,15 @@ import { createGameLoop } from './game-loop.js';
 import { createEngine } from './engine.js';
 import { renderTrackGrid } from './render-track.js';
 import { ROUNDS, roundByIdx, isBossRound, FINAL_ROUND_ID } from './rounds.js';
-import { buyUpgrade } from './shop.js';
-import { roundLogLine, GLYPH_LEGEND } from './content.js';
+import { buyUpgrade, applyUpgrades } from './shop.js';
+import { estimateRoundPackets } from './economy.js';
+import { roundLogLine, roundIntro, GLYPH_LEGEND } from './content.js';
+import { calibrationProgressStr } from './calibration.js';
 import { BTS_PATH, TRANSMISSION_HUM_PATH } from './messages.js';
 import { createAscension } from '../../shared/ascension.js';
 import { createRun } from '../../shared/run-state.js';
 import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from './ascension-mods.js';
-import { shopButtonEls, ascensionPanelEls } from './panels.js';
+import { shopButtonEls, ascensionPanelEls, roundEstEl } from './panels.js';
 import { installDebugHook } from './debug-hook.js';
 
 const BOSS_IDX = ROUNDS.length - 1;
@@ -95,6 +97,7 @@ export function renderStage5(ctx) {
     if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX) return; // boss only after the run
     const round = roundByIdx(roundIdx);
     const prevGhost = state.timeTrial?.[round.id] || null;
+    pushLog(roundIntro(roundIdx)); // one-line mechanic intro so a new verb isn't met cold
     loop = createGameLoop({
       state, seed: state.calibration.seed, roundIdx, calibrated: calibrated(),
       prevGhost, mods: ascensionMods(), resume: opts.resume || null,
@@ -136,10 +139,13 @@ export function renderStage5(ctx) {
           completeOnce({ stage: 5, defeated: true, btsPath: BTS_PATH });
         }
       }
+    } else if (round.id === FINAL_ROUND_ID) {
+      pushLog('the jammer held the throttle down. the counter-wave is not calibrated.');
+    } else if (round.archetype === 'time-trial') {
+      // The player survived to the finish but missed par — integrity was fine, the clock wasn't.
+      pushLog('the par ghost had the channel — run faster next time.');
     } else {
-      pushLog(round.id === FINAL_ROUND_ID
-        ? 'the jammer held the throttle down. the counter-wave is not calibrated.'
-        : 'signal integrity collapsed. recalibrate and run it again.');
+      pushLog('signal integrity collapsed. recalibrate and run it again.');
     }
     persistAndPaint();
   }
@@ -150,6 +156,8 @@ export function renderStage5(ctx) {
       table: view.table, tick: view.tick, lane: view.lane, lookAhead: view.lookAhead,
       wrap: view.archetype === 'circuit', rivals: view.rivals || [], channel: view.channel || 'lo',
     });
+    // Beat-pulse: glow the arena while the beat window is open (state-driven, pure presentation).
+    fields.arena.classList.toggle('s5-beat-open', Boolean(view.beatOpen));
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
     const pct = Math.round((view.progress || 0) * 100);
     const fork = view.hasFork ? ` · ${view.channel === 'hi' ? 'HI' : 'LO'}${view.inFork ? '◆' : ''}` : '';
@@ -164,13 +172,17 @@ export function renderStage5(ctx) {
     const idx = Number(state.run.roundIdx || 0);
     const r = roundByIdx(idx);
     fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
-    if (mode !== 'playing') {
+    const playing = mode === 'playing';
+    fields.raceBox.hidden = !playing;   // no live race in select/result mode — hide the race/pos chips
+    fields.posBox.hidden = !playing;
+    if (!playing) {
       fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
       fields.race.textContent = r.archetype || 'sprint';
       fields.position.textContent = '—';
+      fields.arena.classList.remove('s5-beat-open'); // stop the beat glow once the round is over
     }
     fields.packets.textContent = String(state.packets);
-    fields.calib.textContent = lock.unlocked ? 'LOCKED-IN' : 'uncalibrated';
+    fields.calib.textContent = lock.unlocked ? 'LOCKED-IN' : calibrationProgressStr(state);
     fields.bossState.textContent = state.boss.defeated
       ? 'defeated. BTS trace available.'
       : `${lock.jammerSuppression} / ${lock.unlocked ? 'beatable' : 'suppression dominant'}`;
@@ -193,6 +205,7 @@ export function renderStage5(ctx) {
   function renderRoundButtons() {
     const unlocked = unlockedRounds();
     const cleared = Number(state.run.clearedRounds || 0);
+    const tuning = applyUpgrades(state.shop || {}); // estimate band reflects the player's upgrades
     fields.rounds.replaceChildren(...ROUNDS.map((round, i) => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -200,7 +213,9 @@ export function renderStage5(ctx) {
       const boss = isBossRound(i);
       const locked = boss ? cleared < BOSS_IDX : i > unlocked;
       btn.disabled = locked || mode === 'playing';
-      btn.textContent = `${round.id}. ${round.label}${i < cleared ? ' ✓' : ''}${locked ? ' 🔒' : ''}`;
+      const { low, high } = estimateRoundPackets(round, tuning);
+      btn.append(`${round.id}. ${round.label}${i < cleared ? ' ✓' : ''}${locked ? ' 🔒' : ''}`,
+        roundEstEl(low, high));
       if (boss) btn.classList.add('s5-boss-btn');
       return btn;
     }));

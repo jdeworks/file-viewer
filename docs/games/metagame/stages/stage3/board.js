@@ -14,11 +14,19 @@ const FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
 // (whose solutions only ever use 0/1).
 export const fillColor = (v) => (v === FILLED ? FILLED : v === COLOR_B ? COLOR_B : EMPTY);
 
-// The TIGHTENED body: corruption peaks at 8 (the boss gate) after BODY_SOLVES snapshots, and grid
-// size reaches 12 over the same span — so the pre-boss run is a focused ~13-solve climb (≈40-55 min
-// with the new mechanical tiers) rather than the old 90-200 min flat farm. Size/corruption are pure
-// functions of solvedCount; tune ONLY this constant + the two ramps to reshape the curve.
-export const BODY_SOLVES = 13;
+// The body: corruption peaks at 8 (the boss gate) after BODY_SOLVES snapshots, and grid size reaches
+// 12 over the same span. BODY_SOLVES = 20 gives every mechanical tier a fair introduction-and-practice
+// window before the next layers on (with corruptionForRun = floor(solvedCount·8/20)):
+//   solves 0–4   corruption 0–1  pure tutorial nonograms (5 puzzles)
+//   solves 5–7   corruption 2    volatile cells, ALONE (3 puzzles to learn the fill-then-lock verb)
+//   solves 8–9   corruption 3    aliased "?" clues stack on volatile (2 puzzles)
+//   solves 10–14 corruption 4–5  the decay clock engages on top (5 puzzles)
+//   solves 15–19 corruption 6–7  two-colour snapshots take over (5 puzzles)
+//   solve  20    corruption 8    boss gate opens
+// This spreads the four mechanics across ~40–120 min instead of the old compressed ~13-solve climb.
+// Size/corruption are pure functions of solvedCount; tune ONLY this constant + the two ramps to
+// reshape the curve. (Tier-arrival messaging in s3tiers.js is keyed off the same thresholds.)
+export const BODY_SOLVES = 20;
 
 // Grid size grows with snapshots cleared this run, reaching 12 by the end of the body; the Overclock
 // upgrade lifts the cap (deeper, richer snapshots). Clamped to a comfortable line-solvable range.

@@ -20,8 +20,13 @@ import {
   startConfront
 } from "../confront.js";
 import { coreQuestions } from "../content-confront.js";
+import { MEMORY_UNCHEAT } from "../crossstage.js";
+import { defragmenterConductLines } from "../messages.js";
 import { memories } from "../content.js";
 import { defaultState } from "../state.js";
+
+const allTracesSave = { actions: {} };
+for (const id of Object.keys(MEMORY_UNCHEAT)) allTracesSave.actions[MEMORY_UNCHEAT[id].key] = {};
 
 const witnessAll = (state, n = memories.length) => memories.slice(0, n).forEach((m) => witnessEcho({ state, memoryId: m.id }));
 
@@ -174,6 +179,34 @@ function completeConfront(state, save = null) {
   assert.equal(getDefragmenterRebuttal(state).mode, "caveat");
   witnessAll(state, 9);
   assert.equal(getDefragmenterRebuttal(state).mode, "full");
+}
+
+// ── post-confront rebuttal depth: conduct + stance lines vary by HOW the fight went ───────────────
+{
+  // No conduct lines until the confrontation is actually won.
+  const before = defaultState({ now: 100 });
+  for (const m of memories) { resolveMemory({ state: before, memoryId: m.id, choice: m.choices[0], now: 200 }); }
+  witnessAll(before, 9);
+  const beforeLines = getDefragmenterRebuttal(before).lines;
+  assert.ok(!beforeLines.includes(defragmenterConductLines.clean), "no conduct line before the confront is won");
+
+  // Flawless + fully-honest prior run (all traces on record) → the "clean" conduct line + a stance line.
+  const clean = defaultState({ now: 100 });
+  for (const m of memories) { resolveMemory({ state: clean, memoryId: m.id, choice: m.choices[0], now: 200 }); }
+  witnessAll(clean, 9);
+  completeConfront(clean, allTracesSave); // correct recall + every trace conceded → no compaction, no re-witness
+  const cleanLines = getDefragmenterRebuttal(clean).lines;
+  assert.ok(cleanLines.includes(defragmenterConductLines.clean), "flawless honest run → clean conduct line");
+  assert.ok(cleanLines.includes(defragmenterConductLines.stance[clean.confront.stance.dominant]), "stance line appended");
+
+  // Re-witnessed run (no prior un-cheats on record) → the "rewitnessed" conduct line instead.
+  const redone = defaultState({ now: 100 });
+  for (const m of memories) { resolveMemory({ state: redone, memoryId: m.id, choice: m.choices[0], now: 200 }); }
+  witnessAll(redone, 9);
+  completeConfront(redone, null); // every trace pending → re-opened in Phase B
+  const redoneLines = getDefragmenterRebuttal(redone).lines;
+  assert.ok(redoneLines.includes(defragmenterConductLines.rewitnessed), "re-anchored traces → rewitnessed conduct line");
+  assert.ok(!redoneLines.includes(defragmenterConductLines.clean), "not the clean line when traces were re-anchored");
 }
 
 // ── per-choice echo gates: expand needs 7, understand needs 9 + 9 integrated ──────────────────────

@@ -9,9 +9,10 @@ import { floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
 import { detonate } from "./monsters.js";
 import { applyStatus, tickStatuses } from "./status.js";
-import { enterHazard } from "./hazards.js";
+import { enterHazard, playerIceSlide } from "./hazards.js";
 import { springTrap } from "./traps.js";
 import { rollAffix, affixLabel, affixDamage, applyHitAffix, WEAPON_AFFIXES } from "./affixes.js";
+import { elementStrike } from "./elements.js";
 import { DIRS, DIR_LIST } from "./dirs.js";
 
 export { DIRS };
@@ -124,8 +125,8 @@ export function step(world, player, dir) {
   const move = DIRS[dir];
   const events = { moved: false, log: [], damageTaken: 0, killed: false, pickup: null, descend: false, died: false };
   if (!move) return events;
-  const nx = world.pos.x + move.dx;
-  const ny = world.pos.y + move.dy;
+  let nx = world.pos.x + move.dx;
+  let ny = world.pos.y + move.dy;
   if (ny < 0 || nx < 0 || ny >= world.grid.length || nx >= world.width) return events;
   if (world.grid[ny][nx] === "#") {
     // Bumping the secret door of an unopened hidden room triggers its reveal (then stay put).
@@ -139,8 +140,13 @@ export function step(world, player, dir) {
   if (foe) {
     // Record the clash so the renderer can lunge @ and foe toward each other (view.js).
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    const dmg = affixDamage(player);            // double-strike swings harder (C2)
+    const raw = affixDamage(player);            // double-strike swings harder (C2)
+    // Element matrix: a corroded foe is brittle (acid strip → amplified damage); a frozen foe
+    // SHATTERS for bonus damage and is thawed. elementStrike folds both combos into one number.
+    const strike = elementStrike(foe, raw);
+    const dmg = strike.total;
     foe.hp -= dmg;
+    if (strike.shattered) { events.shattered = true; events.log.push(`${foe.name} SHATTERS for ${dmg}!`); }
     applyHitAffix(world, player, foe, dmg, events); // vampiric / burning / knockback / cleave
     if (foe.hp <= 0) {
       foe.alive = false;
@@ -170,6 +176,10 @@ export function step(world, player, dir) {
   events.moved = true;
   world.stepCount = (world.stepCount || 0) + 1; // drives A4 lingering pressure
   if (world.torch > 0) { world.torch -= 1; if (world.torch === 0) events.log.push("your torch gutters out. the dark closes in."); } // C4 Overflow darkness
+  // E1 ice slide — if @ landed on ice, glide one more cell in the heading; a chasm at the end is
+  // resolved by the hazard pass below (the player falls), a wall/foe stops @. nx/ny track the rest cell.
+  ({ x: nx, y: ny } = playerIceSlide(world, nx, ny, move.dx, move.dy, events));
+  world.pos = { x: nx, y: ny };
 
   // Hazard on-enter (A2): lava burns, spores poison, spikes bleed, a chasm drops you a floor.
   // A spore tile that fire already consumed (C1) is spent — no poison.
