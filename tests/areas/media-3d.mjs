@@ -264,6 +264,29 @@ export async function run(ctx) {
   await page.keyboard.down('Control'); await page.keyboard.press('='); await page.keyboard.up('Control');
   const wPostKey = await page.$eval('#previewHost .imgv-img', (e) => parseFloat(e.style.width) || 0);
   if (wPostKey > wPreKey) pass('Ctrl+= zooms in (keyboard)'); else fail('ctrl-zoom key: ' + wPreKey + ' -> ' + wPostKey);
+  // Touch (phone): a single pointer drag pans the canvas (translate3d) and two touch pointers
+  // pinch-zoom — so a zoomed image is navigable without a mouse/wheel. Driven by synthetic
+  // PointerEvents on the stage (pointerType:'touch'); reset the view afterwards.
+  const touchNav = await page.evaluate(() => {
+    const stage = document.querySelector('#previewHost .imgv-stage');
+    const img = document.querySelector('#previewHost .imgv-img');
+    const zoomEl = document.querySelector('#previewHost .imgv-zoom');
+    const r = stage.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const pe = (type, id, x, y) => stage.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, pointerType: 'touch', button: 0, isPrimary: id === 1, bubbles: true }));
+    const before = img.style.transform;
+    pe('pointerdown', 1, cx, cy); pe('pointermove', 1, cx + 45, cy + 33); pe('pointerup', 1, cx + 45, cy + 33);
+    const afterPan = img.style.transform;
+    const zoomBefore = zoomEl.textContent;
+    pe('pointerdown', 2, cx - 20, cy); pe('pointerdown', 3, cx + 20, cy);   // two fingers, close together
+    pe('pointermove', 2, cx - 90, cy); pe('pointermove', 3, cx + 90, cy);   // spread apart → zoom in
+    pe('pointerup', 2, cx - 90, cy); pe('pointerup', 3, cx + 90, cy);
+    return { before, afterPan, zoomBefore, zoomAfter: zoomEl.textContent };
+  });
+  const panMoved = touchNav.afterPan !== touchNav.before && /translate3d/.test(touchNav.afterPan);
+  const pinchZoomed = touchNav.zoomAfter !== touchNav.zoomBefore;
+  if (panMoved && pinchZoomed) pass('image: touch pan (translate3d) + two-finger pinch-zoom navigate the canvas'); else fail('touch nav: ' + JSON.stringify(touchNav));
+  await page.click('#previewHost .imgv-fit');   // restore default framing for the rest of the test
   // Images open in plain VIEW mode — the edit toolbar is hidden until you press Edit
   // (the Edit + ASCII buttons are stacked next to the zoom controls).
   const editToolbarShown = () => page.$eval('#previewHost .imgv-edit-tools', (el) => getComputedStyle(el).display !== 'none');
@@ -271,6 +294,26 @@ export async function run(ctx) {
   if (startsInView) pass('image opens in view mode (edit toolbar hidden until Edit)'); else fail('edit toolbar visible on open');
   await page.click('#previewHost .imgv-tools-btn');   // enter edit mode
   if (await editToolbarShown()) pass('Edit button reveals the editing toolbar'); else fail('Edit did not reveal toolbar');
+  // Mobile: a ☰ toggle collapses the whole tool palette so it doesn't wall a phone.
+  // Verify the CSS by applying the narrow+collapsed classes, then restore for the rest.
+  const editorCollapse = await page.evaluate(() => {
+    const et = document.querySelector('#previewHost .imgv-edit-tools');
+    if (!et) return null;
+    const toggle = et.querySelector('.imgv-tools-collapse');
+    et.classList.add('imgv-narrow', 'imgv-collapsed');
+    const r = {
+      hasToggle: !!toggle,
+      toggleShown: !!toggle && getComputedStyle(toggle).display !== 'none',
+      tabsHidden: [...et.querySelectorAll('.imgv-tab')].every((t) => getComputedStyle(t).display === 'none'),
+      panelsHidden: [...et.querySelectorAll('.imgv-tabpanel')].every((p) => getComputedStyle(p).display === 'none'),
+    };
+    et.classList.remove('imgv-narrow', 'imgv-collapsed');   // restore (desktop) for the rest of the test
+    return r;
+  });
+  if (editorCollapse && editorCollapse.hasToggle && editorCollapse.toggleShown && editorCollapse.tabsHidden && editorCollapse.panelsHidden)
+    pass('image editor: mobile ☰ toggle collapses the tool palette (tabs + panel hidden)'); else fail('editor collapse: ' + JSON.stringify(editorCollapse));
+  // Keep the palette expanded regardless of pane width so the tab/tool clicks below are actionable.
+  await page.evaluate(() => document.querySelector('#previewHost .imgv-edit-tools')?.classList.remove('imgv-collapsed'));
   // The editing toolbar is grouped into tabs; open the relevant tab before each tool.
   const openTab = (name) => page.click(`#previewHost .imgv-tab[data-tab="${name}"]`);
   const tabState = await page.evaluate(() => ({
@@ -1106,6 +1149,29 @@ export async function run(ctx) {
   }, null, { timeout: 15000 });
   const ctlCount = await page.$$eval('#previewHost .asx-panel .asx-ctl-input', (els) => els.length);
   if (ctlCount > 15) pass('ASCII studio mounts with full control panel (' + ctlCount + ' controls)'); else fail('ascii controls: ' + ctlCount);
+  // Mobile: a ☰ Tools toggle collapses the toolbar to Back / Settings / ☰ when narrow,
+  // and reveals the rest when opened. Verify the CSS, then leave it open so the bar
+  // clicks below are actionable regardless of pane width.
+  const barCollapse = await page.evaluate(() => {
+    const root = document.querySelector('#previewHost .asx-root');
+    if (!root) return null;
+    const toggle = root.querySelector('.asx-menu-toggle');
+    const conv = root.querySelector('.asx-convert');
+    const settings = root.querySelector('.asx-settings-btn');
+    root.classList.add('asx-narrow'); root.classList.remove('asx-menu-open');
+    const r = {
+      hasToggle: !!toggle,
+      toggleShown: !!toggle && getComputedStyle(toggle).display !== 'none',
+      secondaryHidden: !!conv && getComputedStyle(conv).display === 'none',
+      settingsShown: !!settings && getComputedStyle(settings).display !== 'none',
+    };
+    root.classList.add('asx-menu-open');
+    r.revealed = !!conv && getComputedStyle(conv).display !== 'none';
+    root.classList.remove('asx-narrow');   // back to desktop, but keep menu-open as a harmless no-op
+    return r;
+  });
+  if (barCollapse && barCollapse.hasToggle && barCollapse.toggleShown && barCollapse.secondaryHidden && barCollapse.settingsShown && barCollapse.revealed)
+    pass('ASCII studio: mobile ☰ collapses the toolbar (secondary hidden, Settings kept) and reveals on open'); else fail('ascii bar collapse: ' + JSON.stringify(barCollapse));
   // Presets + remember-last-used: change a control → it persists to fv:ascii:last; Save a named
   // preset, change again, then load the preset → the value round-trips.
   const setCol = (v) => page.evaluate((val) => {
@@ -1179,6 +1245,18 @@ export async function run(ctx) {
     return { pick: !!p?.querySelector('.asx-conv-pick'), url: !!p?.querySelector('.asx-conv-url-input'), idle: /choose/i.test(p?.querySelector('.asx-conv-status')?.textContent || '') };
   });
   if (convPanel.pick && convPanel.url && convPanel.idle) pass('ASCII converter: opens to a chooser (file + URL), no auto-start'); else fail('converter chooser: ' + JSON.stringify(convPanel));
+  // Mobile: the panel positions with explicit left, so its CSS centering transform
+  // (translateX(-50%)) must be neutralized — otherwise on a phone it'd be shoved half
+  // its width off-screen and "Choose file…" becomes untappable. Verify it sits fully
+  // within the viewport with no residual transform.
+  const convPos = await page.evaluate(() => {
+    const p = document.querySelector('#previewHost .asx-conv');
+    if (!p) return null;
+    const r = p.getBoundingClientRect();
+    return { transform: getComputedStyle(p).transform, left: r.left, right: r.right, vw: window.innerWidth };
+  });
+  if (convPos && convPos.transform === 'none' && convPos.left >= -1 && convPos.right <= convPos.vw + 1)
+    pass('ASCII converter: panel fully on-screen (centering transform neutralized)'); else fail('converter position: ' + JSON.stringify(convPos));
   await page.setInputFiles('#previewHost .asx-conv-input', { name: 'anim.gif', mimeType: 'image/gif', buffer: Buffer.from(CGIF) }).catch(() => {});
   const convReady = await page.waitForSelector('#previewHost .asx-conv-dl:not([hidden])', { timeout: 25000 }).then(() => true).catch(() => false);
   const [convDl] = await Promise.all([

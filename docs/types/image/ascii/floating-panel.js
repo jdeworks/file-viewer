@@ -26,8 +26,12 @@ export function makeFloatingPanel(panel, { title = 'Settings', initialWidth = 36
   panel.append(head, body);
 
   // Responsive initial size/position — never wider than the viewport, never off-screen.
+  // We position with explicit left/top, so neutralise any centering transform the panel's
+  // own CSS may set (e.g. .asx-conv's `translateX(-50%)`) — otherwise it'd be shoved half
+  // its width off-screen on a phone, leaving its controls unreachable.
   const w = Math.min(initialWidth, window.innerWidth - 16);
   panel.style.width = `${w}px`;
+  panel.style.transform = 'none';
   panel.style.left = `${Math.max(8, window.innerWidth - w - 24)}px`;
   panel.style.top = '92px';
 

@@ -6,11 +6,11 @@
 // they are NOT inlined here. index.js's loadRenderer imports THIS file.
 
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 import { loadGlobal as loadGlobal4, vendor as vendor4 } from "../../core/script-loader.js";
 import { loadTemplate, fill } from "../../core/template.js";
 
-// ../../docs/types/image/imglib.js
+// docs/types/image/imglib.js
 var EXT_MIME = {
   png: "image/png",
   jpg: "image/jpeg",
@@ -43,10 +43,10 @@ function dimensions(url) {
   });
 }
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 import { recordStage3AsciiActivation } from "../../games/metagame/viewer-actions.js";
 
-// ../../docs/types/image/edit-els.js
+// docs/types/image/edit-els.js
 function queryEls(host, canEdit) {
   const q = (sel) => host.querySelector(sel);
   const qe = (sel) => canEdit ? host.querySelector(sel) : null;
@@ -145,7 +145,7 @@ function queryEls(host, canEdit) {
   };
 }
 
-// ../../docs/types/image/view-controller.js
+// docs/types/image/view-controller.js
 function createView(ctx) {
   const { host, img, zoomLabel } = ctx;
   let natural = 0, fit = true, zoom = 1;
@@ -218,35 +218,81 @@ function createView(ctx) {
   });
   const stageEl = host.querySelector(".imgv-stage");
   stageEl.style.overflow = "hidden";
-  let dragLastX = 0, dragLastY = 0;
+  stageEl.style.touchAction = "none";
+  const pointers = /* @__PURE__ */ new Map();
+  let panMode = false, pinchPrev = 0, dragLastX = 0, dragLastY = 0;
+  const pinchDist = () => {
+    const [a, b] = [...pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  const pinchMid = () => {
+    const [a, b] = [...pointers.values()];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
   const onPanMove = (e) => {
-    panX += e.clientX - dragLastX;
-    panY += e.clientY - dragLastY;
-    dragLastX = e.clientX;
-    dragLastY = e.clientY;
-    applyPan();
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    p.x = e.clientX;
+    p.y = e.clientY;
+    if (pointers.size >= 2) {
+      const d = pinchDist();
+      if (pinchPrev > 0 && d > 0) {
+        const m = pinchMid();
+        zoomAt(d / pinchPrev, m.x, m.y);
+      }
+      pinchPrev = d;
+    } else if (panMode) {
+      panX += e.clientX - dragLastX;
+      panY += e.clientY - dragLastY;
+      dragLastX = e.clientX;
+      dragLastY = e.clientY;
+      applyPan();
+    }
   };
-  const onPanUp = () => {
-    stageEl.style.cursor = "";
-    window.removeEventListener("mousemove", onPanMove);
-    window.removeEventListener("mouseup", onPanUp);
+  const onPanUp = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchPrev = 0;
+    if (pointers.size === 0) {
+      panMode = false;
+      stageEl.style.cursor = "";
+    } else if (pointers.size === 1) {
+      const [only] = [...pointers.values()];
+      dragLastX = only.x;
+      dragLastY = only.y;
+      panMode = true;
+    }
   };
-  stageEl.addEventListener("mousedown", (e) => {
-    if (e.button === 0 && (e.ctrlKey || e.metaKey)) {
+  stageEl.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button === 0 && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       startCtrlZoom(e);
       return;
     }
+    const touch = e.pointerType !== "mouse";
+    if (touch && ctx.isEditModeActive?.()) return;
+    if (e.target !== stageEl && e.target !== img && e.target !== ctx.getOverlayEl?.()) return;
     const leftPan = e.button === 0 && !ctx.isEditModeActive?.();
     const midPan = e.button === 1;
-    if (!leftPan && !midPan) return;
-    dragLastX = e.clientX;
-    dragLastY = e.clientY;
-    stageEl.style.cursor = "grabbing";
+    if (!touch && !leftPan && !midPan) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) {
+      panMode = true;
+      dragLastX = e.clientX;
+      dragLastY = e.clientY;
+      stageEl.style.cursor = "grabbing";
+    } else if (pointers.size === 2) {
+      panMode = false;
+      pinchPrev = pinchDist();
+    }
     e.preventDefault();
-    window.addEventListener("mousemove", onPanMove);
-    window.addEventListener("mouseup", onPanUp);
+    try {
+      stageEl.setPointerCapture(e.pointerId);
+    } catch {
+    }
   });
+  stageEl.addEventListener("pointermove", onPanMove);
+  stageEl.addEventListener("pointerup", onPanUp);
+  stageEl.addEventListener("pointercancel", onPanUp);
   function zoomAt(factor, clientX, clientY) {
     const r = stageEl.getBoundingClientRect();
     const prev = fit ? img.offsetWidth / (natural || img.offsetWidth) : zoom;
@@ -308,7 +354,7 @@ function createView(ctx) {
   };
 }
 
-// ../../docs/types/image/fill.js
+// docs/types/image/fill.js
 function hexToRgba(hex) {
   const h = (hex || "#ff0000").replace("#", "");
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 255];
@@ -451,7 +497,7 @@ function bgFloodFill(srcData, w, h, sx, sy, tol) {
   return dst;
 }
 
-// ../../docs/types/image/draw-overlay.js
+// docs/types/image/draw-overlay.js
 function createDrawTools(ctx) {
   const { host, img, mime, core, els } = ctx;
   const {
@@ -821,7 +867,7 @@ function createDrawTools(ctx) {
   };
 }
 
-// ../../docs/types/image/editor-core.js
+// docs/types/image/editor-core.js
 var CANVAS_ENCODABLE = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif"]);
 function createEditCore({ img, url, mime, ctx, els }) {
   const { editReset, exportFmt, undoBtn, redoBtn, dirtyIndicator } = els;
@@ -940,7 +986,7 @@ function createEditCore({ img, url, mime, ctx, els }) {
   };
 }
 
-// ../../docs/types/image/levels.js
+// docs/types/image/levels.js
 function buildLevelsLUT(black = 0, white = 255, gamma = 1) {
   black = Math.max(0, Math.min(254, black | 0));
   white = Math.max(black + 1, Math.min(255, white | 0));
@@ -962,7 +1008,7 @@ function applyLevels(data, lut) {
   }
 }
 
-// ../../docs/types/image/edit-filters.js
+// docs/types/image/edit-filters.js
 function mountFilters({ img, mime, core, els }) {
   const { filtersBtn, filtersPanel, fBrightness, fContrast, fSaturation, fHue, fApplyBtn, fResetBtn } = els;
   const { levelsBtn, levelsPanel, lvBlack, lvWhite, lvGamma, lvApply, lvCancel } = els;
@@ -1122,7 +1168,7 @@ function injectFilterStyle() {
   document.head.appendChild(st);
 }
 
-// ../../docs/types/image/curves.js
+// docs/types/image/curves.js
 function normalizePoints(points) {
   const clamp = (v) => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
   const pts = (points || []).map((p) => ({ x: clamp(p.x), y: clamp(p.y) })).sort((a, b) => a.x - b.x);
@@ -1194,7 +1240,7 @@ function applyChannelLUTs(data, luts) {
   }
 }
 
-// ../../docs/types/image/edit-curves.js
+// docs/types/image/edit-curves.js
 function mountCurves({ img, mime, core, els }) {
   const { curvesBtn, curvesPanel, curveCanvas, curveChannel, curveApply, curveReset, curveCancel } = els;
   if (!curvesBtn || !curveCanvas) return { teardown() {
@@ -1390,7 +1436,7 @@ function mountCurves({ img, mime, core, els }) {
   } };
 }
 
-// ../../docs/types/image/convolve.js
+// docs/types/image/convolve.js
 var GAUSS = [1, 2, 1, 2, 4, 2, 1, 2, 1].map((v) => v / 16);
 var IDENT = [0, 0, 0, 0, 1, 0, 0, 0, 0];
 function buildKernel(type, strength) {
@@ -1429,7 +1475,7 @@ function applyConvolution(data, w, h, kernel) {
   return out;
 }
 
-// ../../docs/types/image/edit-convolve.js
+// docs/types/image/edit-convolve.js
 function mountConvolve({ img, mime, core, els }) {
   const { convolveBtn, convolvePanel, convType, convStrength, convApply, convCancel } = els;
   if (!convolveBtn || !convolvePanel) return { teardown() {
@@ -1507,7 +1553,7 @@ function mountConvolve({ img, mime, core, els }) {
   } };
 }
 
-// ../../docs/types/image/edit-text.js
+// docs/types/image/edit-text.js
 function mountTextTool({ host, img, mime, core, els }) {
   const { editInput, editSize, editColor, editFont, editApply } = els;
   let textDragDiv = null, textCommitBtn = null, textCancelBtn = null;
@@ -1652,7 +1698,7 @@ function mountTextTool({ host, img, mime, core, els }) {
   return { isActive: () => !!textDragDiv, exitPlaceMode };
 }
 
-// ../../docs/types/image/geometry-affine.js
+// docs/types/image/geometry-affine.js
 function affineForGeometry(type, w, h, p = {}) {
   switch (type) {
     case "rotateCW":
@@ -1680,7 +1726,7 @@ function affineForGeometry(type, w, h, p = {}) {
   }
 }
 
-// ../../docs/types/image/edit-geometry.js
+// docs/types/image/edit-geometry.js
 function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   const {
     rotLBtn,
@@ -1988,7 +2034,7 @@ function mountGeometry({ host, img, url, mime, core, view, els, onGeometry }) {
   return { isActive: () => cropMode };
 }
 
-// ../../docs/types/image/edit-bg.js
+// docs/types/image/edit-bg.js
 function mountBg({ img, url, core, els }) {
   const { bgBtn, bgTol, bgOk, bgX, exportFmt } = els;
   const bgTolWrap = bgTol && (bgTol.closest(".imgv-bg-tol-wrap") || bgTol);
@@ -2087,7 +2133,7 @@ function mountBg({ img, url, core, els }) {
   } };
 }
 
-// ../../docs/types/image/edit-undo-key.js
+// docs/types/image/edit-undo-key.js
 var active = null;
 var installed = false;
 function isTextEntry(t) {
@@ -2138,7 +2184,7 @@ function registerUndoKeys(editor) {
   };
 }
 
-// ../../docs/types/image/edit-tabs.js
+// docs/types/image/edit-tabs.js
 var STYLE_ID = "imgv-tabs-css";
 var CSS = `
 .imgv-tabs{flex-basis:100%;display:flex;flex-wrap:wrap;gap:2px;align-items:center;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px;}
@@ -2156,6 +2202,16 @@ var CSS = `
 .imgv-mode-col{display:inline-flex;flex-direction:row;flex-wrap:nowrap;gap:4px;align-self:center;}
 .imgv-mode-col button{white-space:nowrap;}
 .imgv-edit-tools{flex-basis:100%;}
+/* Mobile: collapse the whole tool palette behind a 🛠 toggle. On a narrow toolbar
+   (set by the ResizeObserver below) only the toggle + persistent undo/redo/dirty stay;
+   the tabs and the active panel hide until 🛠 is tapped, so the many controls don't eat
+   the screen. Desktop is untouched — the toggle never shows there. */
+.imgv-tools-collapse{display:none;order:-1;font-size:12px;padding:3px 9px;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;cursor:pointer;white-space:nowrap;}
+.imgv-edit-tools.imgv-narrow .imgv-tools-collapse{display:inline-block;}
+.imgv-tools-collapse.active{color:var(--accent);border-color:var(--accent);}
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-tab,
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-help-btn,
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-tabpanel{display:none;}
 /* Checkerboard behind the image so transparent pixels read as transparent. */
 .imgv-img.imgv-checker{background-image:linear-gradient(45deg,#b4b4b4 25%,transparent 25%),linear-gradient(-45deg,#b4b4b4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#b4b4b4 75%),linear-gradient(-45deg,transparent 75%,#b4b4b4 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;}
 `;
@@ -2211,6 +2267,7 @@ function mountTabs(host) {
     showTab(t.dataset.tab);
     clearHint();
   }));
+  mountCollapse(host);
   host.querySelectorAll("[data-go-tab]").forEach((el) => el.addEventListener("click", () => {
     showTab(el.dataset.goTab);
     clearHint();
@@ -2220,8 +2277,31 @@ function mountTabs(host) {
   tabs.slice(1).forEach((t) => t.classList.add("imgv-tab-hint"));
   return { showTab };
 }
+var NARROW_PX = 560;
+function mountCollapse(host) {
+  const root = host.querySelector(".imgv-edit-tools") || host;
+  const tabsRow = root.querySelector(".imgv-tabs");
+  if (!tabsRow || root.querySelector(".imgv-tools-collapse")) return;
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "imgv-tools-collapse";
+  toggle.title = "Show / hide the editing tools";
+  toggle.textContent = "☰ Tools";
+  toggle.addEventListener("click", () => toggle.classList.toggle("active", !root.classList.toggle("imgv-collapsed")));
+  tabsRow.prepend(toggle);
+  let isNarrow = null;
+  const ro = new ResizeObserver(() => {
+    const narrow = root.clientWidth > 0 && root.clientWidth < NARROW_PX;
+    if (narrow === isNarrow) return;
+    isNarrow = narrow;
+    root.classList.toggle("imgv-narrow", narrow);
+    root.classList.toggle("imgv-collapsed", narrow);
+    toggle.classList.toggle("active", !narrow);
+  });
+  ro.observe(root);
+}
 
-// ../../docs/types/image/help-tab.js
+// docs/types/image/help-tab.js
 import { loadGlobal, vendor } from "../../core/script-loader.js";
 var GUIDE_URL = new URL("./editor-guide.md", import.meta.url);
 var cssInjected = false;
@@ -2325,7 +2405,7 @@ function makeDraggable(modal, handle) {
   }
 }
 
-// ../../docs/types/image/pixel-clipboard.js
+// docs/types/image/pixel-clipboard.js
 var clip = null;
 function setClip(canvas) {
   clip = canvas;
@@ -2362,7 +2442,7 @@ async function blobToCanvas(blob) {
   return c;
 }
 
-// ../../docs/types/image/ocr-ui.js
+// docs/types/image/ocr-ui.js
 var OCR = "../../core/ocr/index.js";
 var CONSENT_KEY = "imgv-ocr-consent";
 var consented = false;
@@ -2542,7 +2622,7 @@ function injectOcrStyle() {
   document.head.appendChild(s);
 }
 
-// ../../docs/types/image/edit-select-masks.js
+// docs/types/image/edit-select-masks.js
 function rectMask(a, b, w, h) {
   const x0 = Math.max(0, Math.min(w, Math.min(a.x, b.x))), x1 = Math.max(0, Math.min(w, Math.max(a.x, b.x)));
   const y0 = Math.max(0, Math.min(h, Math.min(a.y, b.y))), y1 = Math.max(0, Math.min(h, Math.max(a.y, b.y)));
@@ -2595,7 +2675,7 @@ function translateMask(src, w, h, dx, dy) {
   return out;
 }
 
-// ../../docs/types/image/edit-select.js
+// docs/types/image/edit-select.js
 function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommit }) {
   const { selectBtn, marqueeBtn, ellipseBtn, lassoBtn, moveBtn, deselectBtn } = els;
   if (!selectBtn) return { isActive: () => false, hasSelection: () => false, getMask: () => null, copySelection: () => null, clipFillInPlace() {
@@ -3051,10 +3131,10 @@ function mountSelection({ host, img, mime, els, getFillOpts, onActivate, onCommi
   };
 }
 
-// ../../docs/types/image/adv-edit.js
+// docs/types/image/adv-edit.js
 import { loadGlobal as loadGlobal2, vendor as vendor2 } from "../../core/script-loader.js";
 
-// ../../docs/types/image/adv-edit-actions.js
+// docs/types/image/adv-edit-actions.js
 function isTypingTarget(target) {
   if (!target) return false;
   if (target.isContentEditable || target.tagName === "TEXTAREA") return true;
@@ -3218,7 +3298,7 @@ function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, dele
   };
 }
 
-// ../../docs/types/image/adv-edit-controls.js
+// docs/types/image/adv-edit-controls.js
 function installObjectActions(ctx) {
   const { getSelected, select, snap, tr, layer, Konva, cloneNode: cloneNode2, placeObject, wireObject, isGroup, stageW, stageH, refreshLayers, syncToolbar, markDirty } = ctx;
   function deleteSelection() {
@@ -3504,7 +3584,7 @@ function installShapeControls(ctx) {
   $(".imgv-adv-grid").addEventListener("change", () => precision.setGrid($(".imgv-adv-grid").checked));
 }
 
-// ../../docs/types/image/adv-edit-layers.js
+// docs/types/image/adv-edit-layers.js
 function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, select, snap, markDirty, cloneNode: cloneNode2, placeObject, labelName, stageW, stageH }) {
   const panel = document.createElement("div");
   panel.className = "imgv-adv-layers";
@@ -3630,7 +3710,7 @@ function mountAdvLayersPanel({ stageHost, layer, tr, getObjects, getSelected, se
   return { panel, refresh, destroy: () => panel.remove() };
 }
 
-// ../../docs/types/image/adv-edit-precision.js
+// docs/types/image/adv-edit-precision.js
 function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, markDirty, refreshLayers, stageW, stageH }) {
   const layer = new Konva.Layer({ listening: false });
   layer.name("precision");
@@ -3765,7 +3845,7 @@ function mountAdvPrecision({ Konva, stage, tr, getObjects, getSelected, snap, ma
   };
 }
 
-// ../../docs/types/image/adv-edit-points.js
+// docs/types/image/adv-edit-points.js
 function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refreshLayers }) {
   const layer = new Konva.Layer({ listening: true });
   layer.name("point-edit");
@@ -3846,7 +3926,7 @@ function mountAdvPointEditor({ Konva, stage, tr, getSelected, markDirty, refresh
   };
 }
 
-// ../../docs/types/image/adv-edit-text.js
+// docs/types/image/adv-edit-text.js
 function syncTextControls($, label, { multi = false, textNodeOf, tagNodeOf, rgbToHex: rgbToHex2 }) {
   const t = textNodeOf(label), tag = tagNodeOf(label);
   const style = t.fontStyle?.() || "";
@@ -3964,7 +4044,7 @@ function installTextControls({ $, selectedLabels, textNodeOf, tagNodeOf, layer, 
   });
 }
 
-// ../../docs/types/image/adv-edit-toolbar.js
+// docs/types/image/adv-edit-toolbar.js
 var DEFAULTS = {
   text: "Text",
   fontFamily: "system-ui, sans-serif",
@@ -3984,7 +4064,7 @@ function advToolbarHtml() {
     <button class="imgv-adv-star" title="Add star">★</button>
     <button class="imgv-adv-more" title="Add circle, ring, wedge, or arc">More</button>
     <span class="imgv-sep"></span>
-    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="min-width:120px">
+    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="flex:1 1 120px;min-width:90px;max-width:100%">
     <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
     <select class="imgv-adv-font imgv-adv-txtctl" title="Font"><option value="system-ui, sans-serif">Sans</option><option value="Georgia, serif">Serif</option><option value="monospace">Mono</option><option value="Impact, sans-serif">Impact</option><option value="cursive">Cursive</option></select>
     <label class="imgv-adv-txtctl" style="font-size:.8em"><input class="imgv-adv-bold" type="checkbox"> B</label>
@@ -4051,7 +4131,7 @@ function advToolbarHtml() {
     <button class="imgv-adv-del" title="Delete selected">🗑 Delete</button>`;
 }
 
-// ../../docs/types/image/adv-edit.js
+// docs/types/image/adv-edit.js
 var konvaPromise = null;
 function loadKonva() {
   if (!konvaPromise) konvaPromise = loadGlobal2(vendor2("konva/konva.min.js"), "Konva");
@@ -4579,7 +4659,7 @@ async function mountAdvEdit({ host, img, onDirty, pushUndo, onFlatten }) {
   }
 }
 
-// ../../docs/types/image/gif-decode.js
+// docs/types/image/gif-decode.js
 var mod = null;
 async function loadGifuct() {
   if (!mod) mod = await import("../../vendor/gifuct/gifuct.esm.js");
@@ -4654,7 +4734,7 @@ async function frameToPngBlob(canvas) {
   return new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
 }
 
-// ../../docs/types/image/gif-anim.js
+// docs/types/image/gif-anim.js
 import { loadGlobal as loadGlobal3, vendor as vendor3 } from "../../core/script-loader.js";
 import { intakeFromFile } from "../../core/intake.js";
 function mountGifPlayer({ host, bytes, name, openBlob }) {
@@ -4885,7 +4965,7 @@ function injectStyle3() {
     .gifv-bar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.25rem .25rem; }
     .gifv-bar button { cursor:pointer; }
     .gifv-bar button:disabled { cursor:default; opacity:.5; }
-    .gifv-scrub { flex:1; min-width:120px; }
+    .gifv-scrub { flex:1; min-width:64px; }
     .gifv-count { font-variant-numeric:tabular-nums; min-width:3.5em; text-align:center; }
     .gifv-loop { display:inline-flex; align-items:center; gap:.25rem; font-size:.85em; }
     .gifv-frames { display:flex; flex-direction:column; gap:.25rem; max-height:30%; overflow:auto; padding:.25rem; }
@@ -4897,7 +4977,7 @@ function injectStyle3() {
   document.head.appendChild(s);
 }
 
-// ../../docs/types/image/renderer.js
+// docs/types/image/renderer.js
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);

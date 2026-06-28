@@ -232,7 +232,7 @@ function injectStyle() {
     .gifv-bar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.25rem .25rem; }
     .gifv-bar button { cursor:pointer; }
     .gifv-bar button:disabled { cursor:default; opacity:.5; }
-    .gifv-scrub { flex:1; min-width:120px; }
+    .gifv-scrub { flex:1; min-width:64px; }
     .gifv-count { font-variant-numeric:tabular-nums; min-width:3.5em; text-align:center; }
     .gifv-loop { display:inline-flex; align-items:center; gap:.25rem; font-size:.85em; }
     .gifv-frames { display:flex; flex-direction:column; gap:.25rem; max-height:30%; overflow:auto; padding:.25rem; }

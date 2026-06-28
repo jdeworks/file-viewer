@@ -45,32 +45,59 @@ export function createView(ctx) {
   host.querySelector('.imgv-up').addEventListener('click', () => { fit = false; zoom = Math.min(16, zoom * 1.25); apply(); });
   host.querySelector('.imgv-dn').addEventListener('click', () => { fit = false; zoom = Math.max(0.1, zoom / 1.25); apply(); });
 
-  // ── Pan & wheel-zoom ── click-drag moves the whole canvas; wheel zooms toward the cursor. Left-
-  // drag pans only when no edit mode owns the pointer; middle drag pans even mid-draw.
+  // ── Pan & zoom ── pointer-driven so it works with mouse, pen, and touch. One pointer drags
+  // (pans) the whole canvas; two touch pointers pinch-zoom toward their midpoint. A single touch
+  // only pans in VIEW mode — in edit mode the draw/crop/text overlay owns the finger. The wheel /
+  // Ctrl-drag / Ctrl-+/- desktop paths are unchanged; middle-drag still pans even mid-edit.
   const stageEl = host.querySelector('.imgv-stage');
   stageEl.style.overflow = 'hidden';
-  let dragLastX = 0, dragLastY = 0;
+  stageEl.style.touchAction = 'none';   // we own pan/pinch over the image; don't let the page scroll/zoom
+  const pointers = new Map();            // active pointerId → { x, y }
+  let panMode = false, pinchPrev = 0, dragLastX = 0, dragLastY = 0;
+  const pinchDist = () => { const [a, b] = [...pointers.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+  const pinchMid = () => { const [a, b] = [...pointers.values()]; return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; };
   const onPanMove = (e) => {
-    panX += e.clientX - dragLastX; panY += e.clientY - dragLastY;
-    dragLastX = e.clientX; dragLastY = e.clientY;
-    applyPan();
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pointers.size >= 2) {                       // pinch: zoom by the change in finger spread
+      const d = pinchDist();
+      if (pinchPrev > 0 && d > 0) { const m = pinchMid(); zoomAt(d / pinchPrev, m.x, m.y); }
+      pinchPrev = d;
+    } else if (panMode) {
+      panX += e.clientX - dragLastX; panY += e.clientY - dragLastY;
+      dragLastX = e.clientX; dragLastY = e.clientY;
+      applyPan();
+    }
   };
-  const onPanUp = () => {
-    stageEl.style.cursor = '';
-    window.removeEventListener('mousemove', onPanMove);
-    window.removeEventListener('mouseup', onPanUp);
+  const onPanUp = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchPrev = 0;
+    if (pointers.size === 0) { panMode = false; stageEl.style.cursor = ''; }
+    else if (pointers.size === 1) {                 // a finger lifted after a pinch — resume panning
+      const [only] = [...pointers.values()]; dragLastX = only.x; dragLastY = only.y; panMode = true;
+    }
   };
-  stageEl.addEventListener('mousedown', (e) => {
-    if (e.button === 0 && (e.ctrlKey || e.metaKey)) { e.preventDefault(); startCtrlZoom(e); return; }
+  stageEl.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button === 0 && (e.ctrlKey || e.metaKey)) { e.preventDefault(); startCtrlZoom(e); return; }
+    const touch = e.pointerType !== 'mouse';
+    if (touch && ctx.isEditModeActive?.()) return;  // edit-mode touches belong to the drawing overlay
+    // Only the bare image / stage background / draw overlay drives pan & zoom. In-stage UI
+    // (compare bar, layers panel, eye toggles…) must keep its own clicks — capturing the pointer
+    // to the stage here would otherwise swallow them.
+    if (e.target !== stageEl && e.target !== img && e.target !== ctx.getOverlayEl?.()) return;
     const leftPan = e.button === 0 && !ctx.isEditModeActive?.();
     const midPan = e.button === 1;
-    if (!leftPan && !midPan) return;
-    dragLastX = e.clientX; dragLastY = e.clientY;
-    stageEl.style.cursor = 'grabbing';
+    if (!touch && !leftPan && !midPan) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) { panMode = true; dragLastX = e.clientX; dragLastY = e.clientY; stageEl.style.cursor = 'grabbing'; }
+    else if (pointers.size === 2) { panMode = false; pinchPrev = pinchDist(); }
     e.preventDefault();
-    window.addEventListener('mousemove', onPanMove);
-    window.addEventListener('mouseup', onPanUp);
+    try { stageEl.setPointerCapture(e.pointerId); } catch { /* synthetic / already-released pointer */ }
   });
+  stageEl.addEventListener('pointermove', onPanMove);
+  stageEl.addEventListener('pointerup', onPanUp);
+  stageEl.addEventListener('pointercancel', onPanUp);
   // Zoom by `factor`, keeping the image point under (clientX,clientY) fixed; defaults to centre.
   function zoomAt(factor, clientX, clientY) {
     const r = stageEl.getBoundingClientRect();

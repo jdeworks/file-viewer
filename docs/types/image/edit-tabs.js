@@ -23,6 +23,16 @@ const CSS = `
 .imgv-mode-col{display:inline-flex;flex-direction:row;flex-wrap:nowrap;gap:4px;align-self:center;}
 .imgv-mode-col button{white-space:nowrap;}
 .imgv-edit-tools{flex-basis:100%;}
+/* Mobile: collapse the whole tool palette behind a 🛠 toggle. On a narrow toolbar
+   (set by the ResizeObserver below) only the toggle + persistent undo/redo/dirty stay;
+   the tabs and the active panel hide until 🛠 is tapped, so the many controls don't eat
+   the screen. Desktop is untouched — the toggle never shows there. */
+.imgv-tools-collapse{display:none;order:-1;font-size:12px;padding:3px 9px;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;cursor:pointer;white-space:nowrap;}
+.imgv-edit-tools.imgv-narrow .imgv-tools-collapse{display:inline-block;}
+.imgv-tools-collapse.active{color:var(--accent);border-color:var(--accent);}
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-tab,
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-help-btn,
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-tabpanel{display:none;}
 /* Checkerboard behind the image so transparent pixels read as transparent. */
 .imgv-img.imgv-checker{background-image:linear-gradient(45deg,#b4b4b4 25%,transparent 25%),linear-gradient(-45deg,#b4b4b4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#b4b4b4 75%),linear-gradient(-45deg,transparent 75%,#b4b4b4 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;}
 `;
@@ -72,6 +82,7 @@ export function mountTabs(host) {
   const clearHint = () => host.querySelectorAll('.imgv-tab-hint').forEach((t) => t.classList.remove('imgv-tab-hint'));
 
   tabs.forEach((t) => t.addEventListener('click', () => { showTab(t.dataset.tab); clearHint(); }));
+  mountCollapse(host);
   // A control in Common whose fine-tuning lives in another tab (Filters/Resize/BG)
   // carries data-go-tab — clicking it also jumps to that tab so its options show.
   host.querySelectorAll('[data-go-tab]').forEach((el) => el.addEventListener('click', () => { showTab(el.dataset.goTab); clearHint(); }));
@@ -80,4 +91,33 @@ export function mountTabs(host) {
   showTab(tabs[0].dataset.tab);           // Common first
   tabs.slice(1).forEach((t) => t.classList.add('imgv-tab-hint'));   // hint: there's more behind these
   return { showTab };
+}
+
+// Below NARROW_PX the toolbar would wrap into a wall of buttons on a phone, so collapse
+// it behind a 🛠 toggle (default collapsed when it first goes narrow). Width is measured
+// off the toolbar itself (a ResizeObserver, container-query style) — the preview pane can
+// be narrow while the window is wide, so a viewport media query would miss it.
+const NARROW_PX = 560;
+function mountCollapse(host) {
+  const root = host.querySelector('.imgv-edit-tools') || host;
+  const tabsRow = root.querySelector('.imgv-tabs');
+  if (!tabsRow || root.querySelector('.imgv-tools-collapse')) return;
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'imgv-tools-collapse';
+  toggle.title = 'Show / hide the editing tools';
+  toggle.textContent = '☰ Tools';
+  toggle.addEventListener('click', () => toggle.classList.toggle('active', !root.classList.toggle('imgv-collapsed')));
+  tabsRow.prepend(toggle);
+
+  let isNarrow = null;
+  const ro = new ResizeObserver(() => {
+    const narrow = root.clientWidth > 0 && root.clientWidth < NARROW_PX;
+    if (narrow === isNarrow) return;
+    isNarrow = narrow;
+    root.classList.toggle('imgv-narrow', narrow);
+    root.classList.toggle('imgv-collapsed', narrow);   // start collapsed when it first goes narrow
+    toggle.classList.toggle('active', !narrow);
+  });
+  ro.observe(root);
 }
