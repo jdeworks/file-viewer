@@ -1,0 +1,122 @@
+/* Metagame chrome: commentary bell, debug/dev menus, Defragmenter v3 shell, Glyph Dungeon (S2),
+   hub fullscreen/tip, shared touch controls + the responsive @media block. Loaded LAST so the
+   mobile overrides still follow every base rule (cascade preserved). Split out of games.css. */
+/* ── Commentary bell — top-right overlay, absolute (never pushes layout). ── */
+.mg-bell-wrap { position: absolute; top: 8px; right: 8px; z-index: 20; }
+.mg-bell-btn { position: relative; background: var(--bg-2); border: 1px solid var(--border);
+  color: var(--fg); border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-bell-btn:hover { border-color: var(--accent); }
+.mg-bell-dot { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px;
+  background: #e03131; border-radius: 50%; border: 1.5px solid var(--bg); }
+.mg-bell-dot[hidden] { display: none; }
+.mg-bell-panel { position: absolute; top: 38px; right: 0; width: min(240px, 70vw); max-height: 50vh;
+  overflow: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35); padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+.mg-bell-panel[hidden] { display: none; }
+.mg-bell-msg { font-size: 13px; padding: 7px 9px; background: var(--bg-2); border-radius: 7px; }
+.mg-bell-x { color: var(--fg-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+.mg-bell-empty { font-size: 13px; color: var(--fg-2); padding: 10px; text-align: center; }
+
+/* Debug toggle (grind header) — subtle gear next to Back/Fullscreen. */
+.mg-dbg-toggle { position: absolute; top: 8px; left: 8px; z-index: 20; background: var(--bg-2);
+  border: 1px solid var(--border); color: var(--fg-2); border-radius: 8px; padding: 4px 8px;
+  cursor: pointer; font-size: 13px; line-height: 1; opacity: .6; }
+.mg-dbg-toggle:hover { opacity: 1; border-color: var(--accent); }
+.mg-dbg-toggle[hidden] { display: none; }
+
+/* Debug jump panel — absolutely positioned overlay; hidden until the gear toggles it. */
+.mg-debug { position: absolute; top: 44px; left: 8px; z-index: 19; max-width: min(360px, 92%);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 8px 10px; background: var(--bg-2); border: 1px dashed var(--border);
+  border-radius: 8px; font-size: 11px; color: var(--fg-2); box-shadow: 0 6px 20px rgba(0,0,0,.3); }
+.mg-debug[hidden] { display: none; }
+.mg-debug-label { font-weight: 700; color: var(--fg); }
+.mg-debug label { display: flex; align-items: center; gap: 4px; }
+.mg-debug select { font-size: 11px; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 4px; padding: 2px 4px; }
+.mg-dbg-jump, .mg-dbg-reset { background: var(--bg-3, var(--bg-2)); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 5px; padding: 3px 10px;
+  cursor: pointer; font-size: 11px; }
+.mg-dbg-jump:hover { border-color: var(--accent); color: var(--accent); }
+.mg-dbg-reset:hover { border-color: #e03131; color: #e03131; }
+
+/* Dev/testing menu — absolute overlay (toggled by the 🛠 header button), never shifts the layout. */
+.mg-v3-debug { position: absolute; top: 50px; right: 8px; z-index: 60; width: min(340px, 92%); }
+.mg-v3-debug[hidden] { display: none; }
+.mg-dev { background: var(--bg-2); border: 1px solid var(--accent); border-radius: 10px; padding: 12px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.5); }
+.mg-dev-title { font-weight: 700; color: var(--fg); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.mg-dev-x { background: transparent; border: 0; color: var(--fg-2); cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-dev-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 6px 0; font-size: 12px; color: var(--fg-2); }
+.mg-dev-row button { background: var(--bg-3, var(--bg)); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 6px; padding: 4px 9px; cursor: pointer; font-size: 12px; }
+.mg-dev-row button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Defragmenter v3 shell and Stage 2 vertical slice. */
+.mg-v3 { width: min(760px, 100%); position: relative; }
+.mg-v3-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 10px; flex-wrap: wrap;
+  position: relative; z-index: 50; }   /* keep the header (and the bell dropdown) above the stage content */
+.mg-v3-head > div:first-child { min-width: 0; }   /* let the stage title shrink instead of pushing actions off-screen */
+.mg-v3-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mg-sfx-btn, .mg-dev-btn, .mg-help-btn, .mg-readme-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
+.mg-sfx-btn:hover, .mg-dev-btn:hover, .mg-help-btn:hover, .mg-readme-btn:hover { border-color: var(--accent); }
+.mg-sfx-btn.mg-sfx-off { opacity: .55; }
+.mg-dev-btn[hidden], .mg-help-btn[hidden] { display: none; }
+.mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
+.mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
+.mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }
+.mg-v3-host { display: flex; justify-content: center; }
+.mg-v3-loading { padding: 32px; color: #8a93a7; font-size: 0.9rem; letter-spacing: 0.04em; }
+.mg-v3-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+.mg-v3-bell { position: relative; }
+.stage2-glyph-dungeon { width: min(720px, 100%); background: #0f0e0c; color: #ef9f27; border: 1px solid #5b3a10; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.s2-hud { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; font-size: 12px; }
+.s2-grid { margin: 10px 0; padding: 10px; overflow: auto; border: 1px solid #5b3a10; background: #070604; color: #ef9f27; font: 12px/1.05 ui-monospace, monospace; }
+.s2-boss-panel { border: 1px solid #5b3a10; padding: 8px; margin-bottom: 8px; }
+.s2-boss-title { font-weight: 700; }
+.s2-hint { color: #f7d08b; font-size: 12px; margin-top: 4px; }
+.s2-log { min-height: 4.5em; margin: 0 0 10px 18px; color: #f7d08b; font-size: 12px; }
+.s2-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+.s2-controls button { background: #23190b; border: 1px solid #8a5a18; color: #ef9f27; border-radius: 6px; padding: 6px 8px; cursor: pointer; font: inherit; font-size: 12px; }
+.s2-controls button[hidden] { display: none; }
+
+/* Hub fullscreen button. */
+.games-fs-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; padding: 5px 10px; cursor: pointer; font-size: 14px; line-height: 1; }
+.games-fs-btn:hover { border-color: var(--accent); }
+.games-fs-ingame { position: absolute; top: 8px; right: 8px; z-index: 10; opacity: .7; }
+.games-fs-ingame:hover { opacity: 1; }
+
+/* Mobile tip banner. */
+.games-tip { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 7px 14px; background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-bottom: 1px solid var(--border); font-size: 12px; color: var(--fg-2); }
+.games-tip-x { background: none; border: none; cursor: pointer; color: var(--fg-2);
+  font-size: 15px; line-height: 1; padding: 0 2px; }
+
+/* ── Shared on-screen touch controls (docs/games/metagame/touch-controls.js) ──────────────────────
+   Default-HIDDEN; revealed only on touch / small screens by the media query below. A stage drives
+   live visibility by toggling [hidden] (the :not([hidden]) keys make that win, and desktop stay off). */
+.mg-touch { display: none; }
+.mg-touch-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; font-size: 15px; cursor: pointer; padding: 6px 8px; }
+.mg-touch-btn:hover, .mg-touch-btn:focus-visible { border-color: var(--accent); color: var(--accent); }
+.mg-touch-btn:disabled { opacity: .4; cursor: default; }
+.mg-touch-on { border-color: var(--accent); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+@media (max-width: 760px), (pointer: coarse) {
+  /* Global touch-target rule — lifts the tiny stage buttons the audit flagged (S1 ×N counts, S8 node
+     repair/HL/freeze, S10 dialogue, S4/S5 secondary controls) to a comfortable height at once. */
+  .mg-v3 button { min-height: 40px; }
+
+  .mg-touch:not([hidden]) { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .mg-touch .mg-touch-btn { min-height: 48px; }
+  .mg-touch-dpad { display: grid; gap: 4px; grid-template-columns: repeat(3, 1fr);
+    grid-template-areas: ". up ." "left down right"; }
+  .mg-touch-up { grid-area: up; } .mg-touch-left { grid-area: left; }
+  .mg-touch-down { grid-area: down; } .mg-touch-right { grid-area: right; }
+  .mg-touch-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+  .mg-touch-actions .mg-touch-btn { flex: 1 1 22%; }
+}

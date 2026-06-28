@@ -17,14 +17,19 @@ function setUnlocked() {
 
 // The games/metagame stylesheet is split out of app.css and only attached the first time the
 // arcade opens — so the always-loaded core CSS stays small for users who never find the egg.
+// The sheet is itself split into three files (500-LOC cap); they MUST attach in this order so the
+// CSS cascade matches the former single sheet (games-chrome.css carries the mobile @media overrides
+// and so must come last). launcher.js lives at docs/games/; the stylesheets at docs/assets/.
+const GAMES_CSS = ['games.css', 'games-stage1.css', 'games-chrome.css'];
 function ensureGamesCss() {
   if (document.getElementById('fv-games-css')) return;
-  const link = document.createElement('link');
-  link.id = 'fv-games-css';
-  link.rel = 'stylesheet';
-  // launcher.js lives at docs/games/; the stylesheet at docs/assets/.
-  link.href = new URL('../assets/games.css', import.meta.url).href;
-  document.head.appendChild(link);
+  GAMES_CSS.forEach((name, i) => {
+    const link = document.createElement('link');
+    if (i === 0) link.id = 'fv-games-css';   // sentinel: presence means all three are attached
+    link.rel = 'stylesheet';
+    link.href = new URL('../assets/' + name, import.meta.url).href;
+    document.head.appendChild(link);
+  });
 }
 
 async function openHub() {
