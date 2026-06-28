@@ -20,10 +20,14 @@
   flex-direction: column;
   font-size: 0.85em;
   gap: 2px;
-  max-width: 100%;
+  /* The legend must NEVER widen .s2-stage past the dungeon screen. width:0 drops its max-content
+     contribution to the flex column's width, while min-width:100% makes it fill the width the screen
+     already established — so it wraps WITHIN the board instead of overrunning the right border. */
+  width: 0;
+  min-width: 100%;
 }
 
-/* Two fixed rows so the legend never overruns the board width; each wraps internally only if forced. */
+/* Four balanced rows so the legend never overruns the board width; each wraps internally if forced. */
 .s2-legend-row { display: flex; flex-wrap: wrap; gap: 4px 12px; }
 
 .s2-legend span { font-weight: 700; }
@@ -58,13 +62,22 @@
   .s2-flash-on { animation-duration: 0.12s; }
 }
 
+/* Combat log — now the last child of the right-hand controls column, directly below the action
+   buttons + d-pad. Narrower column, so trim the indent and keep the marker close to the text. */
 .s2-log {
   border-left: 2px solid var(--s2-border);
   color: #f5bf66;
-  margin: 0;
+  font-size: 0.85em;
+  margin: 4px 0 0;
   min-height: 5.5em;
-  padding-left: 28px;
+  padding-left: 16px;
 }
+
+/* The action column needs enough room for the log to read, but must NOT expand to its widest content
+   (the 5 nowrap rune buttons in .s2-items): .s2-controls is flex:0 0 auto, so an unbounded max-content
+   there steals all the row width and collapses the flexible .s2-stage (the dungeon screen) to 0 the
+   moment you pick up your first rune. A max-width keeps the rune bar WRAPPING inside the column instead. */
+.s2-controls { min-width: 200px; max-width: 240px; }
 
 .s2-controls button {
   background: #21180d;
@@ -103,6 +116,7 @@
   .s2-controls {
     flex-direction: row;
     flex-wrap: wrap;
+    max-width: none; /* stacked full-width below the map on narrow screens */
   }
 
   .s2-controls button {
@@ -113,6 +127,11 @@
 
   /* Keep the compass as a full-width header above the wrapped button grid. */
   .s2-compass {
+    flex: 1 1 100%;
+  }
+
+  /* The combat log spans the full wrapped controls row on narrow screens. */
+  .s2-log {
     flex: 1 1 100%;
   }
 

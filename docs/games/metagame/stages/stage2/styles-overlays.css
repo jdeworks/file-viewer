@@ -143,3 +143,58 @@
   color: #f5bf66;
   margin: 0 0 6px;
 }
+
+/* Rune-pickup card — a compact modal shown on collecting a ♦ rune (shares the float/dismiss with
+   the shop & help panels so play pauses behind it). */
+.s2-rune {
+  background: #140f0a;
+  border: 1px solid #ff7bf0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  left: 50%;
+  max-height: 90%;
+  max-width: 94%;
+  overflow: auto;
+  padding: 12px 14px;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  z-index: 50;
+}
+
+.s2-rune-head {
+  align-items: center;
+  border-bottom: 1px solid var(--s2-border);
+  color: #ff9bf5;
+  display: flex;
+  font-weight: 700;
+  justify-content: space-between;
+  padding-bottom: 8px;
+}
+
+.s2-rune-x {
+  background: none;
+  border: 1px solid var(--s2-border);
+  color: var(--s2-fg);
+  cursor: pointer;
+  padding: 2px 8px;
+}
+
+.s2-rune-body {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.s2-rune-glyph {
+  color: #ff7bf0;
+  font-size: 2.2em;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.s2-rune-info { min-width: 0; }
+.s2-rune-name { color: #ffd186; font-weight: 700; }
+.s2-rune-desc { color: #f5bf66; margin: 4px 0 0; }
+.s2-rune-key { color: var(--s2-dim); font-size: 0.85em; margin: 6px 0 0; }

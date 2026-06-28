@@ -234,6 +234,7 @@ export function step(world, player, dir) {
     const inv = player.inventory || (player.inventory = {});
     inv[item.type] = Number(inv[item.type] || 0) + 1;
     events.pickup = events.pickup || "consumable";
+    events.rune = item.type; // the renderer surfaces this as a pickup modal (not an inline panel)
     events.log.push(`picked up a ${item.type} rune.`);
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;

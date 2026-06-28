@@ -10,6 +10,7 @@ import { applyElement } from "./elements.js";
 import { tickFire } from "./fire.js";
 import { buildShopPanel } from "./shop.js";
 import { buildHelpPanel } from "./help.js";
+import { buildRunePickupPanel } from "./rune-pickup.js";
 import { createView, renderHpBar } from "./view.js";
 import { BTS_PATH, bellMessages } from "./messages.js";
 import { MAX_FLOOR, ensureWorld, descend, resetRun, appendLog, damageNoise, openCipher, openBts, once, DIR_ARROW } from "./runloop.js";
@@ -51,20 +52,22 @@ export function renderStage2({
             <span class="s2-c-foe">s</span> foe
             <span class="s2-c-item">/</span> weapon
             <span class="s2-c-potion">!</span> potion
-            <span class="s2-c-glyph">%</span> glyph
-            <span class="s2-c-consum">♦</span> rune
           </div>
           <div class="s2-legend-row">
+            <span class="s2-c-glyph">%</span> glyph
+            <span class="s2-c-consum">♦</span> rune
             <span class="s2-c-exit">&gt;</span> stairs
+            <span class="s2-c-consum">†</span> torch
+          </div>
+          <div class="s2-legend-row">
             <span class="s2-c-lava">≈</span> lava
             <span class="s2-c-spikes">^</span> spikes
             <span class="s2-c-chasm">:</span> chasm
             <span class="s2-c-ice">~</span> water/ice
-            <span class="s2-c-acid">≀</span> acid
-            <span class="s2-c-gas">&quot;</span> gas
           </div>
           <div class="s2-legend-row">
-            <span class="s2-c-consum">†</span> torch
+            <span class="s2-c-acid">≀</span> acid
+            <span class="s2-c-gas">&quot;</span> gas
             <span class="s2-c-chasm">○</span> rift
             <span class="s2-c-foe">?</span> ghost
             <span class="s2-c-foe">e</span><span class="s2-c-foe2">M</span><span class="s2-c-foe2">ψ</span><span class="s2-c-foe">v</span> dark foes
@@ -86,9 +89,9 @@ export function renderStage2({
           <button type="button" data-move="down" aria-label="move down">&#9660;</button>
           <button type="button" data-move="right" aria-label="move right">&#9654;</button>
         </div>
+        <ol class="s2-log" aria-label="combat log"></ol>
       </div>
     </div>
-    <ol class="s2-log" aria-label="combat log"></ol>
     </div>
     <div class="s2-bossmeta" hidden>
       <span data-field="bossStatus"></span><span class="s2-hint" data-field="hint"></span>
@@ -265,6 +268,9 @@ export function renderStage2({
       view.applyMove(state.run.world, events);
     }
     paintHud();
+    // A picked-up rune surfaces as a modal over the screen (not an inline panel below the board);
+    // opening it pauses play via the `overlay` guard, exactly like the shop/help overlays.
+    if (events.rune) openRunePickup(events.rune);
   }
 
   function flashDamage(fatal) {
@@ -291,6 +297,16 @@ export function renderStage2({
       ? buildShopPanel({ state, save, onClose })
       : buildHelpPanel({ onClose });
     overlay = { el: panel.el, kind };
+    root.querySelector(".s2-screen").appendChild(panel.el);
+  }
+
+  // Show the rune-pickup card through the SAME overlay path as the shop/help panels — it floats over
+  // the dungeon screen, dims/pauses play (via the `overlay` guard), and dismisses the same way.
+  function openRunePickup(type) {
+    closeOverlay();
+    const onClose = () => { closeOverlay(); repaint(); };
+    const panel = buildRunePickupPanel({ type, onClose });
+    overlay = { el: panel.el, kind: "rune" };
     root.querySelector(".s2-screen").appendChild(panel.el);
   }
 

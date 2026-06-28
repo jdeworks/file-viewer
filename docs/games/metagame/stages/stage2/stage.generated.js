@@ -2034,6 +2034,7 @@ function step(world, player, dir) {
     const inv = player.inventory || (player.inventory = {});
     inv[item.type] = Number(inv[item.type] || 0) + 1;
     events.pickup = events.pickup || "consumable";
+    events.rune = item.type;
     events.log.push(`picked up a ${item.type} rune.`);
   }
   if (nx === world.exit.x && ny === world.exit.y) events.descend = true;
@@ -2285,6 +2286,28 @@ function buildHelpPanel({ onClose }) {
       ${SECTIONS.map(([t, d]) => `<dt>${t}</dt><dd>${d}</dd>`).join("")}
     </dl>`;
   box.querySelector('[data-help="close"]').addEventListener("click", () => onClose());
+  return { el: box };
+}
+
+// ../../docs/games/metagame/stages/stage2/rune-pickup.js
+function buildRunePickupPanel({ type, onClose }) {
+  const def = CONSUMABLES[type];
+  const slot = CONSUMABLE_KEYS.indexOf(type) + 1;
+  const box = document.createElement("div");
+  box.className = "s2-rune";
+  box.innerHTML = `
+    <div class="s2-rune-head">RUNE FOUND
+      <button type="button" data-rune="close" class="s2-rune-x" aria-label="close rune card">&#10005;</button>
+    </div>
+    <div class="s2-rune-body">
+      <span class="s2-rune-glyph">${def ? def.glyph : "♦"}</span>
+      <div class="s2-rune-info">
+        <div class="s2-rune-name">${def ? def.name : `${type} rune`}</div>
+        <p class="s2-rune-desc">${def ? def.desc : ""}</p>
+        <p class="s2-rune-key">banked to your pack${slot > 0 ? ` — press [${slot}] or its button to use` : ""}.</p>
+      </div>
+    </div>`;
+  box.querySelector('[data-rune="close"]').addEventListener("click", () => onClose());
   return { el: box };
 }
 
@@ -2838,20 +2861,22 @@ function renderStage2({
             <span class="s2-c-foe">s</span> foe
             <span class="s2-c-item">/</span> weapon
             <span class="s2-c-potion">!</span> potion
-            <span class="s2-c-glyph">%</span> glyph
-            <span class="s2-c-consum">♦</span> rune
           </div>
           <div class="s2-legend-row">
+            <span class="s2-c-glyph">%</span> glyph
+            <span class="s2-c-consum">♦</span> rune
             <span class="s2-c-exit">&gt;</span> stairs
+            <span class="s2-c-consum">†</span> torch
+          </div>
+          <div class="s2-legend-row">
             <span class="s2-c-lava">≈</span> lava
             <span class="s2-c-spikes">^</span> spikes
             <span class="s2-c-chasm">:</span> chasm
             <span class="s2-c-ice">~</span> water/ice
-            <span class="s2-c-acid">≀</span> acid
-            <span class="s2-c-gas">&quot;</span> gas
           </div>
           <div class="s2-legend-row">
-            <span class="s2-c-consum">†</span> torch
+            <span class="s2-c-acid">≀</span> acid
+            <span class="s2-c-gas">&quot;</span> gas
             <span class="s2-c-chasm">○</span> rift
             <span class="s2-c-foe">?</span> ghost
             <span class="s2-c-foe">e</span><span class="s2-c-foe2">M</span><span class="s2-c-foe2">ψ</span><span class="s2-c-foe">v</span> dark foes
@@ -2873,9 +2898,9 @@ function renderStage2({
           <button type="button" data-move="down" aria-label="move down">&#9660;</button>
           <button type="button" data-move="right" aria-label="move right">&#9654;</button>
         </div>
+        <ol class="s2-log" aria-label="combat log"></ol>
       </div>
     </div>
-    <ol class="s2-log" aria-label="combat log"></ol>
     </div>
     <div class="s2-bossmeta" hidden>
       <span data-field="bossStatus"></span><span class="s2-hint" data-field="hint"></span>
@@ -3032,6 +3057,7 @@ function renderStage2({
       view.applyMove(state.run.world, events);
     }
     paintHud();
+    if (events.rune) openRunePickup(events.rune);
   }
   function flashDamage(fatal) {
     const flash = view.flashEl;
@@ -3061,6 +3087,16 @@ function renderStage2({
     };
     const panel = kind === "shop" ? buildShopPanel({ state, save, onClose }) : buildHelpPanel({ onClose });
     overlay = { el: panel.el, kind };
+    root.querySelector(".s2-screen").appendChild(panel.el);
+  }
+  function openRunePickup(type) {
+    closeOverlay();
+    const onClose = () => {
+      closeOverlay();
+      repaint();
+    };
+    const panel = buildRunePickupPanel({ type, onClose });
+    overlay = { el: panel.el, kind: "rune" };
     root.querySelector(".s2-screen").appendChild(panel.el);
   }
   const onKey = (event) => {
