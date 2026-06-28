@@ -14,8 +14,9 @@ function injectStyle() {
   s.id = 'asx-conv-css';
   s.textContent = `
     .asx-conv { position: fixed; z-index: 45; top: 12vh; left: 50%; transform: translateX(-50%);
-      width: min(380px, 92vw); display: flex; flex-direction: column; background: rgba(13,13,13,.98);
-      border: 1px solid #2a2a2a; border-radius: 8px; box-shadow: 0 10px 40px #0008; overflow: hidden; }
+      width: min(380px, 92vw); max-height: min(86vh, 640px); display: flex; flex-direction: column;
+      background: rgba(13,13,13,.98); border: 1px solid #2a2a2a; border-radius: 8px;
+      box-shadow: 0 10px 40px #0008; overflow: hidden; }
     .asx-conv-body { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
     .asx-conv-status { margin: 0; font: 12px ui-monospace, monospace; color: #9ab; min-height: 1.2em; }
     .asx-conv-prog { width: 100%; height: 10px; }

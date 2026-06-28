@@ -218,35 +218,81 @@ function createView(ctx) {
   });
   const stageEl = host.querySelector(".imgv-stage");
   stageEl.style.overflow = "hidden";
-  let dragLastX = 0, dragLastY = 0;
+  stageEl.style.touchAction = "none";
+  const pointers = /* @__PURE__ */ new Map();
+  let panMode = false, pinchPrev = 0, dragLastX = 0, dragLastY = 0;
+  const pinchDist = () => {
+    const [a, b] = [...pointers.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+  const pinchMid = () => {
+    const [a, b] = [...pointers.values()];
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  };
   const onPanMove = (e) => {
-    panX += e.clientX - dragLastX;
-    panY += e.clientY - dragLastY;
-    dragLastX = e.clientX;
-    dragLastY = e.clientY;
-    applyPan();
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    p.x = e.clientX;
+    p.y = e.clientY;
+    if (pointers.size >= 2) {
+      const d = pinchDist();
+      if (pinchPrev > 0 && d > 0) {
+        const m = pinchMid();
+        zoomAt(d / pinchPrev, m.x, m.y);
+      }
+      pinchPrev = d;
+    } else if (panMode) {
+      panX += e.clientX - dragLastX;
+      panY += e.clientY - dragLastY;
+      dragLastX = e.clientX;
+      dragLastY = e.clientY;
+      applyPan();
+    }
   };
-  const onPanUp = () => {
-    stageEl.style.cursor = "";
-    window.removeEventListener("mousemove", onPanMove);
-    window.removeEventListener("mouseup", onPanUp);
+  const onPanUp = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinchPrev = 0;
+    if (pointers.size === 0) {
+      panMode = false;
+      stageEl.style.cursor = "";
+    } else if (pointers.size === 1) {
+      const [only] = [...pointers.values()];
+      dragLastX = only.x;
+      dragLastY = only.y;
+      panMode = true;
+    }
   };
-  stageEl.addEventListener("mousedown", (e) => {
-    if (e.button === 0 && (e.ctrlKey || e.metaKey)) {
+  stageEl.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button === 0 && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       startCtrlZoom(e);
       return;
     }
+    const touch = e.pointerType !== "mouse";
+    if (touch && ctx.isEditModeActive?.()) return;
+    if (e.target !== stageEl && e.target !== img && e.target !== ctx.getOverlayEl?.()) return;
     const leftPan = e.button === 0 && !ctx.isEditModeActive?.();
     const midPan = e.button === 1;
-    if (!leftPan && !midPan) return;
-    dragLastX = e.clientX;
-    dragLastY = e.clientY;
-    stageEl.style.cursor = "grabbing";
+    if (!touch && !leftPan && !midPan) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 1) {
+      panMode = true;
+      dragLastX = e.clientX;
+      dragLastY = e.clientY;
+      stageEl.style.cursor = "grabbing";
+    } else if (pointers.size === 2) {
+      panMode = false;
+      pinchPrev = pinchDist();
+    }
     e.preventDefault();
-    window.addEventListener("mousemove", onPanMove);
-    window.addEventListener("mouseup", onPanUp);
+    try {
+      stageEl.setPointerCapture(e.pointerId);
+    } catch {
+    }
   });
+  stageEl.addEventListener("pointermove", onPanMove);
+  stageEl.addEventListener("pointerup", onPanUp);
+  stageEl.addEventListener("pointercancel", onPanUp);
   function zoomAt(factor, clientX, clientY) {
     const r = stageEl.getBoundingClientRect();
     const prev = fit ? img.offsetWidth / (natural || img.offsetWidth) : zoom;
@@ -2156,6 +2202,16 @@ var CSS = `
 .imgv-mode-col{display:inline-flex;flex-direction:row;flex-wrap:nowrap;gap:4px;align-self:center;}
 .imgv-mode-col button{white-space:nowrap;}
 .imgv-edit-tools{flex-basis:100%;}
+/* Mobile: collapse the whole tool palette behind a 🛠 toggle. On a narrow toolbar
+   (set by the ResizeObserver below) only the toggle + persistent undo/redo/dirty stay;
+   the tabs and the active panel hide until 🛠 is tapped, so the many controls don't eat
+   the screen. Desktop is untouched — the toggle never shows there. */
+.imgv-tools-collapse{display:none;order:-1;font-size:12px;padding:3px 9px;border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:6px;cursor:pointer;white-space:nowrap;}
+.imgv-edit-tools.imgv-narrow .imgv-tools-collapse{display:inline-block;}
+.imgv-tools-collapse.active{color:var(--accent);border-color:var(--accent);}
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-tab,
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-help-btn,
+.imgv-edit-tools.imgv-narrow.imgv-collapsed .imgv-tabpanel{display:none;}
 /* Checkerboard behind the image so transparent pixels read as transparent. */
 .imgv-img.imgv-checker{background-image:linear-gradient(45deg,#b4b4b4 25%,transparent 25%),linear-gradient(-45deg,#b4b4b4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#b4b4b4 75%),linear-gradient(-45deg,transparent 75%,#b4b4b4 75%);background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0;}
 `;
@@ -2211,6 +2267,7 @@ function mountTabs(host) {
     showTab(t.dataset.tab);
     clearHint();
   }));
+  mountCollapse(host);
   host.querySelectorAll("[data-go-tab]").forEach((el) => el.addEventListener("click", () => {
     showTab(el.dataset.goTab);
     clearHint();
@@ -2219,6 +2276,29 @@ function mountTabs(host) {
   showTab(tabs[0].dataset.tab);
   tabs.slice(1).forEach((t) => t.classList.add("imgv-tab-hint"));
   return { showTab };
+}
+var NARROW_PX = 560;
+function mountCollapse(host) {
+  const root = host.querySelector(".imgv-edit-tools") || host;
+  const tabsRow = root.querySelector(".imgv-tabs");
+  if (!tabsRow || root.querySelector(".imgv-tools-collapse")) return;
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "imgv-tools-collapse";
+  toggle.title = "Show / hide the editing tools";
+  toggle.textContent = "☰ Tools";
+  toggle.addEventListener("click", () => toggle.classList.toggle("active", !root.classList.toggle("imgv-collapsed")));
+  tabsRow.prepend(toggle);
+  let isNarrow = null;
+  const ro = new ResizeObserver(() => {
+    const narrow = root.clientWidth > 0 && root.clientWidth < NARROW_PX;
+    if (narrow === isNarrow) return;
+    isNarrow = narrow;
+    root.classList.toggle("imgv-narrow", narrow);
+    root.classList.toggle("imgv-collapsed", narrow);
+    toggle.classList.toggle("active", !narrow);
+  });
+  ro.observe(root);
 }
 
 // ../../docs/types/image/help-tab.js
@@ -3984,7 +4064,7 @@ function advToolbarHtml() {
     <button class="imgv-adv-star" title="Add star">★</button>
     <button class="imgv-adv-more" title="Add circle, ring, wedge, or arc">More</button>
     <span class="imgv-sep"></span>
-    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="min-width:120px">
+    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="flex:1 1 120px;min-width:90px;max-width:100%">
     <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
     <select class="imgv-adv-font imgv-adv-txtctl" title="Font"><option value="system-ui, sans-serif">Sans</option><option value="Georgia, serif">Serif</option><option value="monospace">Mono</option><option value="Impact, sans-serif">Impact</option><option value="cursive">Cursive</option></select>
     <label class="imgv-adv-txtctl" style="font-size:.8em"><input class="imgv-adv-bold" type="checkbox"> B</label>
@@ -4885,7 +4965,7 @@ function injectStyle3() {
     .gifv-bar { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; padding:.25rem .25rem; }
     .gifv-bar button { cursor:pointer; }
     .gifv-bar button:disabled { cursor:default; opacity:.5; }
-    .gifv-scrub { flex:1; min-width:120px; }
+    .gifv-scrub { flex:1; min-width:64px; }
     .gifv-count { font-variant-numeric:tabular-nums; min-width:3.5em; text-align:center; }
     .gifv-loop { display:inline-flex; align-items:center; gap:.25rem; font-size:.85em; }
     .gifv-frames { display:flex; flex-direction:column; gap:.25rem; max-height:30%; overflow:auto; padding:.25rem; }

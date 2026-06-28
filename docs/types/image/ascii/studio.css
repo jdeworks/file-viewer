@@ -9,6 +9,15 @@
    own toolbar); only the 📷/back toggle remains. */
 .asx-bar.asx-cam-on > *:not(.asx-cam) { display: none; }
 
+/* ── Mobile: collapse the toolbar behind a ☰ toggle ── On a wide pane every control
+   sits in the bar. On a narrow pane (set by the ResizeObserver in studio.js) the bar
+   keeps only Back / Settings / ☰ and tucks the rest away until ☰ is tapped — so the
+   many export/transform/preset buttons don't wrap into several screen-eating rows. */
+.asx-menu-toggle { display: none; }
+.asx-root.asx-narrow .asx-menu-toggle { display: inline-block; }
+.asx-root.asx-narrow:not(.asx-menu-open) .asx-bar:not(.asx-cam-on) > *:not(.asx-back):not(.asx-settings-btn):not(.asx-menu-toggle) { display: none; }
+.asx-menu-toggle.active { color: #6ab0ff; border-color: #3a5a8a; }
+
 .asx-body { position: relative; flex: 1; min-height: 0; display: flex; gap: 12px; padding: 12px; overflow: hidden; }
 
 /* ASCII result stage — fills the space; the art auto-fits its width. */
@@ -34,7 +43,7 @@
   padding: 4px 12px; border-radius: 14px; background: rgba(13,13,13,.92); border: 1px solid #2a2a2a;
   color: #9ecbff; font: 11px ui-monospace, monospace; pointer-events: none; }
 .asx-busy[hidden] { display: none; }
-.asx-eye { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+.asx-eye { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px;
   border-radius: 6px; border: 1px solid #3a3a3a; background: rgba(20,20,20,.85); color: #bbb; cursor: pointer; }
 .asx-eye:hover { color: #fff; background: rgba(40,40,40,.9); }
 .asx-eye.active { color: #6ab0ff; border-color: #3a5a8a; }
@@ -78,7 +87,7 @@
 .asx-ctl-input[type="color"] { width: 36px; height: 24px; padding: 0; }
 .asx-ctl-input:disabled { opacity: .4; }
 .asx-ctl-val { color: #9a9a9a; font: 11px ui-monospace, monospace; min-width: 2.8em; text-align: right; }
-.asx-ctl-reset { flex: 0 0 auto; width: 20px; height: 20px; line-height: 1; padding: 0; border-radius: 4px;
+.asx-ctl-reset { flex: 0 0 auto; width: 28px; height: 28px; line-height: 1; padding: 0; border-radius: 4px;
   border: 1px solid #3a3a3a; background: #1b1b1b; color: #bbb; cursor: pointer; font-size: 12px; }
 .asx-ctl-reset:hover { background: #2a2a2a; color: #fff; }
 .asx-ctl-reset.asx-hidden { visibility: hidden; }
@@ -105,7 +114,7 @@
 
 /* original feed, revealed top-right by the eye toggle */
 .cam-eye { position: absolute; top: 12px; right: 12px; z-index: 4; display: inline-flex; align-items: center;
-  justify-content: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid #3a3a3a;
+  justify-content: center; width: 40px; height: 40px; border-radius: 6px; border: 1px solid #3a3a3a;
   background: rgba(20,20,20,.85); color: #bbb; cursor: pointer; }
 .cam-eye:hover { color: #fff; } .cam-eye.active { color: #6ab0ff; border-color: #3a5a8a; }
 .cam-orig-peek { position: absolute; top: 50px; right: 12px; z-index: 3; margin: 0; padding: 6px;

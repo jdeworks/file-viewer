@@ -18,7 +18,7 @@ export function advToolbarHtml() {
     <button class="imgv-adv-star" title="Add star">★</button>
     <button class="imgv-adv-more" title="Add circle, ring, wedge, or arc">More</button>
     <span class="imgv-sep"></span>
-    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="min-width:120px">
+    <input class="imgv-adv-text imgv-adv-txtctl" type="text" placeholder="Selected text" style="flex:1 1 120px;min-width:90px;max-width:100%">
     <label class="imgv-adv-txtctl" style="font-size:.8em">Size <input class="imgv-adv-size" type="number" min="6" max="400" value="${DEFAULTS.fontSize}" style="width:56px"></label>
     <select class="imgv-adv-font imgv-adv-txtctl" title="Font"><option value="system-ui, sans-serif">Sans</option><option value="Georgia, serif">Serif</option><option value="monospace">Mono</option><option value="Impact, sans-serif">Impact</option><option value="cursive">Cursive</option></select>
     <label class="imgv-adv-txtctl" style="font-size:.8em"><input class="imgv-adv-bold" type="checkbox"> B</label>

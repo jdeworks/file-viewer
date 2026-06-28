@@ -52,6 +52,7 @@ export function mountAsciiStudio(host, opts = {}) {
     <div class="asx-bar">
       ${opts.onBack ? BTN('asx-back', '🖼 Image', 'Back to the image') : ''}
       ${BTN('asx-settings-btn', '⚙ Settings', 'Show / hide the settings panel')}
+      ${BTN('asx-menu-toggle', '☰ Tools', 'Show / hide the toolbar (mobile)')}
       ${BTN('asx-cam', '📷 Camera', 'Live webcam → ASCII (experimental)')}
       ${BTN('asx-convert', '🎞 Convert file', 'Convert a GIF or video file to ASCII')}
       <select class="asx-perf" title="Performance preset"><option value="">Quality preset…</option>
@@ -156,6 +157,8 @@ export function mountAsciiStudio(host, opts = {}) {
     if (narrow === isNarrow) return;
     isNarrow = narrow;
     host.classList.toggle('asx-narrow', narrow);
+    // On a wide pane the ☰ menu doesn't apply — drop any open state so the bar is whole again.
+    if (!narrow) host.classList.remove('asx-menu-open');
     setSettingsOpen(!narrow);   // collapse when narrow, expand when there's room
   }
   const ro = new ResizeObserver(() => { applyDisplay(); checkWidth(); });
@@ -192,6 +195,10 @@ export function mountAsciiStudio(host, opts = {}) {
     applyDisplay();
   }
   settingsBtn.addEventListener('click', () => setSettingsOpen(!host.classList.contains('asx-settings-open')));
+  // ☰ Tools: on a narrow pane the toolbar collapses to Back / Settings / ☰; this reveals
+  // the rest (export, transforms, presets, camera) on demand so they don't eat the screen.
+  const menuToggle = q('.asx-menu-toggle');
+  menuToggle.addEventListener('click', () => menuToggle.classList.toggle('active', host.classList.toggle('asx-menu-open')));
   checkWidth();   // set initial open/narrow state from the actual studio width
 
   const floatingPanel = makeFloatingPanel(panel, { title: 'ASCII settings', onClose: () => setSettingsOpen(false) });
