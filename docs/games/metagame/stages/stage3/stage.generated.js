@@ -1140,6 +1140,95 @@ function announceTiers(state, corruption) {
   return fired;
 }
 
+// ../../docs/games/metagame/stages/stage3/state.js
+var STATE_VERSION = 3;
+function makePieces(runCount) {
+  const rng = makeRng(`s3-pieces:${runCount}`);
+  const tok = () => Math.floor(rng.float() * 46655).toString(36).padStart(3, "0");
+  return [tok(), tok(), tok()];
+}
+function makeSlots(runCount) {
+  const rng = makeRng(`s3-slots:${runCount}`);
+  let slots2 = rng.shuffle([0, 1, 2]);
+  for (let i = 0; i < 8 && slots2[0] === 0 && slots2[1] === 1 && slots2[2] === 2; i += 1) {
+    slots2 = rng.shuffle([0, 1, 2]);
+  }
+  return slots2;
+}
+function normalizeSlots(slots2) {
+  if (!Array.isArray(slots2) || slots2.length !== 3) return null;
+  const nums = slots2.map((n) => Number(n));
+  const set = new Set(nums);
+  if (set.size !== 3 || [0, 1, 2].some((i) => !set.has(i))) return null;
+  return nums;
+}
+function defaultState() {
+  return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
+}
+function freshFrom(meta) {
+  const runCount = Number(meta.runCount || 0);
+  const pieces2 = makePieces(runCount);
+  const slots2 = makeSlots(runCount);
+  return {
+    version: STATE_VERSION,
+    registers: Number(meta.registers || 0),
+    retained: Number(meta.retained || 0),
+    shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
+    runCount,
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [], pressure: 0 },
+    memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, slots: slots2, key: pieces2.join("") },
+    boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
+    log: ["memory grid online.", "solve snapshots to retain fragments."]
+  };
+}
+function normalizeState(state) {
+  if (!state || typeof state !== "object" || Number(state.version) !== STATE_VERSION) {
+    return freshFrom({
+      registers: Number(state?.registers || 0),
+      retained: Number(state?.retained || 0),
+      shopUpgrades: state?.shopUpgrades || {},
+      runCount: Number(state?.runCount || 0)
+    });
+  }
+  const fresh = freshFrom(state);
+  state.registers = Number.isFinite(state.registers) ? state.registers : 0;
+  state.retained = Number.isFinite(state.retained) ? state.retained : 0;
+  state.shopUpgrades = state.shopUpgrades && typeof state.shopUpgrades === "object" ? state.shopUpgrades : {};
+  state.runCount = Number.isFinite(state.runCount) ? state.runCount : 0;
+  state.run = { ...fresh.run, ...state.run && typeof state.run === "object" ? state.run : {} };
+  state.memoryPair = { ...fresh.memoryPair, ...state.memoryPair || {} };
+  state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length ? state.memoryPair.pieces.map(String) : makePieces(state.runCount);
+  state.memoryPair.slots = normalizeSlots(state.memoryPair.slots) || makeSlots(state.runCount);
+  state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
+  state.boss = { ...fresh.boss, ...state.boss || {} };
+  state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
+  return state;
+}
+var RUN_PRESSURE_BASE = 20;
+var RUN_PRESSURE_PER_CORRUPTION = 2;
+function runPressureLimit(corruption, valveHeadroom = 0) {
+  const base = RUN_PRESSURE_BASE + Math.max(0, Number(corruption || 0)) * RUN_PRESSURE_PER_CORRUPTION;
+  return Math.round(base * (1 + Math.max(0, Number(valveHeadroom || 0))));
+}
+function bumpRunPressure(state) {
+  if (!state || !state.run) return 0;
+  state.run.pressure = Number(state.run.pressure || 0) + 1;
+  return state.run.pressure;
+}
+function runPressureReached(state, corruption, valveHeadroom = 0) {
+  return Number(state?.run?.pressure || 0) >= runPressureLimit(corruption, valveHeadroom);
+}
+function collapseRun(state) {
+  const fresh = freshFrom({
+    registers: state.registers,
+    retained: state.retained,
+    shopUpgrades: state.shopUpgrades,
+    runCount: Number(state.runCount || 0) + 1
+  });
+  Object.assign(state, fresh);
+  return state;
+}
+
 // ../../docs/games/metagame/stages/stage3/view.js
 function buildStage3Shell() {
   const root = document.createElement("section");
@@ -1150,6 +1239,7 @@ function buildStage3Shell() {
       <span>REGISTERS <span data-field="registers"></span></span>
       <span>RETAINED <span data-field="retained"></span></span>
       <span>SNAPSHOT <span data-field="snap"></span></span>
+      <span class="s3-pressure" data-field="pressure"></span>
       <span data-field="size"></span>
     </header>
     <div class="s3-objective" data-field="objective"></div>
@@ -1233,6 +1323,8 @@ function renderStage3(ctx) {
   ensureRunBoons(state);
   const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle") + upgradeLevel(state, "engram");
   const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
+  const valveHeadroom = () => boonBonus(state, "decayPct");
+  const pressureLimit = () => runPressureLimit(corruptionForRun(state.run), valveHeadroom());
   loadBoard();
   paintHud();
   function loadBoard() {
@@ -1266,7 +1358,14 @@ function renderStage3(ctx) {
     if (wrong) board.mistakes = (board.mistakes || 0) + 1;
     if (!mark && board.marks[y][x] !== UNKNOWN) noteFill(board, x, y);
     pressureMove(board.decay);
-    if (wrong) pressureWrong(board.decay);
+    if (wrong) {
+      pressureWrong(board.decay);
+      bumpRunPressure(state);
+      if (runPressureReached(state, corruptionForRun(state.run), valveHeadroom())) {
+        collapse();
+        return;
+      }
+    }
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
     if (reverted.length) {
@@ -1288,6 +1387,13 @@ function renderStage3(ctx) {
     state.registers = Math.max(0, Number(state.registers || 0) - penalty);
     state.run.marks = null;
     pushLog(state, `memory destabilized — snapshot collapsed. -${penalty} registers. restoring a fresh copy.`);
+    save?.();
+    loadBoard();
+    paintHud();
+  }
+  function collapse() {
+    collapseRun(state);
+    pushLog(state, "MEMORY DESTABILIZED — too many corrupt writes; the run collapsed and a clean copy rebuilt. Your registers, retained fragments, Defrag upgrades and achievements all carried over.");
     save?.();
     loadBoard();
     paintHud();
@@ -1334,6 +1440,13 @@ function renderStage3(ctx) {
     const aliased = aliasedTotal(board.puzzle);
     const aliasMode = aliased ? ` · ${aliased} aliased` : "";
     setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode}${aliasMode} · ${rating(board.puzzle.difficulty)}`);
+    const plimit = pressureLimit();
+    const pnow = Number(state.run.pressure || 0);
+    setText(fields.pressure, `STABILITY ${Math.max(0, plimit - pnow)}/${plimit}`);
+    const pratio = plimit ? pnow / plimit : 0;
+    fields.pressure.classList.toggle("s3-pressure-warn", pratio >= 0.5 && pratio < 0.8);
+    fields.pressure.classList.toggle("s3-pressure-crit", pratio >= 0.8);
+    fields.pressure.title = "Run stability — wrong fills across the whole run lower it. Hit zero and the run softly collapses and restarts fresh; your registers, retained, upgrades and achievements all carry over.";
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";
@@ -1552,71 +1665,6 @@ function once(fn) {
     called = true;
     fn(value);
   };
-}
-
-// ../../docs/games/metagame/stages/stage3/state.js
-var STATE_VERSION = 3;
-function makePieces(runCount) {
-  const rng = makeRng(`s3-pieces:${runCount}`);
-  const tok = () => Math.floor(rng.float() * 46655).toString(36).padStart(3, "0");
-  return [tok(), tok(), tok()];
-}
-function makeSlots(runCount) {
-  const rng = makeRng(`s3-slots:${runCount}`);
-  let slots2 = rng.shuffle([0, 1, 2]);
-  for (let i = 0; i < 8 && slots2[0] === 0 && slots2[1] === 1 && slots2[2] === 2; i += 1) {
-    slots2 = rng.shuffle([0, 1, 2]);
-  }
-  return slots2;
-}
-function normalizeSlots(slots2) {
-  if (!Array.isArray(slots2) || slots2.length !== 3) return null;
-  const nums = slots2.map((n) => Number(n));
-  const set = new Set(nums);
-  if (set.size !== 3 || [0, 1, 2].some((i) => !set.has(i))) return null;
-  return nums;
-}
-function defaultState() {
-  return freshFrom({ registers: 0, retained: 0, shopUpgrades: {}, runCount: 0 });
-}
-function freshFrom(meta) {
-  const runCount = Number(meta.runCount || 0);
-  const pieces2 = makePieces(runCount);
-  const slots2 = makeSlots(runCount);
-  return {
-    version: STATE_VERSION,
-    registers: Number(meta.registers || 0),
-    retained: Number(meta.retained || 0),
-    shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
-    runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [] },
-    memoryPair: { runId: `mem-${runCount}`, pieces: pieces2, slots: slots2, key: pieces2.join("") },
-    boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
-    log: ["memory grid online.", "solve snapshots to retain fragments."]
-  };
-}
-function normalizeState(state) {
-  if (!state || typeof state !== "object" || Number(state.version) !== STATE_VERSION) {
-    return freshFrom({
-      registers: Number(state?.registers || 0),
-      retained: Number(state?.retained || 0),
-      shopUpgrades: state?.shopUpgrades || {},
-      runCount: Number(state?.runCount || 0)
-    });
-  }
-  const fresh = freshFrom(state);
-  state.registers = Number.isFinite(state.registers) ? state.registers : 0;
-  state.retained = Number.isFinite(state.retained) ? state.retained : 0;
-  state.shopUpgrades = state.shopUpgrades && typeof state.shopUpgrades === "object" ? state.shopUpgrades : {};
-  state.runCount = Number.isFinite(state.runCount) ? state.runCount : 0;
-  state.run = { ...fresh.run, ...state.run && typeof state.run === "object" ? state.run : {} };
-  state.memoryPair = { ...fresh.memoryPair, ...state.memoryPair || {} };
-  state.memoryPair.pieces = Array.isArray(state.memoryPair.pieces) && state.memoryPair.pieces.length ? state.memoryPair.pieces.map(String) : makePieces(state.runCount);
-  state.memoryPair.slots = normalizeSlots(state.memoryPair.slots) || makeSlots(state.runCount);
-  state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
-  state.boss = { ...fresh.boss, ...state.boss || {} };
-  state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
-  return state;
 }
 
 // ../../docs/games/metagame/stages/stage3/index.js

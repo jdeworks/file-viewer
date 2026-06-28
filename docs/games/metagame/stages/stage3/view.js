@@ -11,6 +11,7 @@ export function buildStage3Shell() {
       <span>REGISTERS <span data-field="registers"></span></span>
       <span>RETAINED <span data-field="retained"></span></span>
       <span>SNAPSHOT <span data-field="snap"></span></span>
+      <span class="s3-pressure" data-field="pressure"></span>
       <span data-field="size"></span>
     </header>
     <div class="s3-objective" data-field="objective"></div>
