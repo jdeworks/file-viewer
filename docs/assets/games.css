@@ -503,3 +503,29 @@
   border-bottom: 1px solid var(--border); font-size: 12px; color: var(--fg-2); }
 .games-tip-x { background: none; border: none; cursor: pointer; color: var(--fg-2);
   font-size: 15px; line-height: 1; padding: 0 2px; }
+
+/* ── Shared on-screen touch controls (docs/games/metagame/touch-controls.js) ──────────────────────
+   Default-HIDDEN; revealed only on touch / small screens by the media query below. A stage drives
+   live visibility by toggling [hidden] (the :not([hidden]) keys make that win, and desktop stay off). */
+.mg-touch { display: none; }
+.mg-touch-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+  border-radius: 8px; font-size: 15px; cursor: pointer; padding: 6px 8px; }
+.mg-touch-btn:hover, .mg-touch-btn:focus-visible { border-color: var(--accent); color: var(--accent); }
+.mg-touch-btn:disabled { opacity: .4; cursor: default; }
+.mg-touch-on { border-color: var(--accent); color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+@media (max-width: 760px), (pointer: coarse) {
+  /* Global touch-target rule — lifts the tiny stage buttons the audit flagged (S1 ×N counts, S8 node
+     repair/HL/freeze, S10 dialogue, S4/S5 secondary controls) to a comfortable height at once. */
+  .mg-v3 button { min-height: 40px; }
+
+  .mg-touch:not([hidden]) { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .mg-touch .mg-touch-btn { min-height: 48px; }
+  .mg-touch-dpad { display: grid; gap: 4px; grid-template-columns: repeat(3, 1fr);
+    grid-template-areas: ". up ." "left down right"; }
+  .mg-touch-up { grid-area: up; } .mg-touch-left { grid-area: left; }
+  .mg-touch-down { grid-area: down; } .mg-touch-right { grid-area: right; }
+  .mg-touch-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+  .mg-touch-actions .mg-touch-btn { flex: 1 1 22%; }
+}

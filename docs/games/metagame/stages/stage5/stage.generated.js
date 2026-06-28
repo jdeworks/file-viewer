@@ -1526,6 +1526,29 @@ function applyDev(id, state, actions) {
   return false;
 }
 
+// ../../docs/games/metagame/stages/stage5/steer.js
+import { createTouchControls } from "../../touch-controls.js";
+var STEER_DPAD = {
+  up: { id: "ArrowUp", label: "HI", ariaLabel: "fork high" },
+  down: { id: "ArrowDown", label: "LO", ariaLabel: "fork low" },
+  left: { id: "ArrowLeft", label: "◀", ariaLabel: "lane left" },
+  right: { id: "ArrowRight", label: "▶", ariaLabel: "lane right" }
+};
+function steerAction({ getMode, getLoop }, key) {
+  if (getMode() !== "playing") return;
+  getLoop()?.handleKey(key);
+}
+function createSteer(deps) {
+  const controls = createTouchControls({
+    className: "s5-steer",
+    ariaLabel: "steering",
+    dpad: STEER_DPAD,
+    onAction: (key) => steerAction(deps, key)
+  });
+  controls.el.hidden = true;
+  return controls;
+}
+
 // ../../docs/games/metagame/stages/stage5/renderer.js
 var BOSS_IDX2 = ROUNDS.length - 1;
 function renderStage5(ctx) {
@@ -1574,6 +1597,8 @@ function renderStage5(ctx) {
   let loop = null;
   let engine = null;
   let mode = "select";
+  const steer = createSteer({ getMode: () => mode, getLoop: () => loop });
+  root.insertBefore(steer.el, root.querySelector(".s5-controls"));
   fields.legend.textContent = GLYPH_LEGEND.map(([g, t]) => `${g}  ${t}`).join("\n");
   function calibrated() {
     return getBossLockState({ actions, state }).unlocked;
@@ -1676,6 +1701,7 @@ function renderStage5(ctx) {
     const playing = mode === "playing";
     fields.raceBox.hidden = !playing;
     fields.posBox.hidden = !playing;
+    steer.el.hidden = !playing;
     if (!playing) {
       fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
       fields.race.textContent = r.archetype || "sprint";
@@ -1797,6 +1823,7 @@ function renderStage5(ctx) {
     destroy() {
       engine?.stop();
       raceRun.destroy();
+      steer.destroy();
       if (window.__fvStage5) delete window.__fvStage5;
       root.removeEventListener("keydown", onKey);
       root.remove();

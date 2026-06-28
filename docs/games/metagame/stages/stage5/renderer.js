@@ -14,6 +14,7 @@ import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from './ascension-mods.js';
 import { shopButtonEls, ascensionPanelEls, roundEstEl } from './panels.js';
 import { installDebugHook } from './debug-hook.js';
 import { applyDev } from './s5dev.js';
+import { createSteer } from './steer.js';
 
 const BOSS_IDX = ROUNDS.length - 1;
 
@@ -70,6 +71,11 @@ export function renderStage5(ctx) {
   let loop = null;
   let engine = null;
   let mode = 'select'; // 'select' | 'playing' | 'result'
+
+  // Touch steering: on-screen ◀ ▶ (lane) + HI/LO ▲ ▼ (fork), wired to the SAME loop.handleKey() the
+  // arrow keys use. Shown only while a race is live (and only on touch/small screens via the CSS).
+  const steer = createSteer({ getMode: () => mode, getLoop: () => loop });
+  root.insertBefore(steer.el, root.querySelector('.s5-controls'));
 
   fields.legend.textContent = GLYPH_LEGEND.map(([g, t]) => `${g}  ${t}`).join('\n');
 
@@ -176,6 +182,7 @@ export function renderStage5(ctx) {
     const playing = mode === 'playing';
     fields.raceBox.hidden = !playing;   // no live race in select/result mode — hide the race/pos chips
     fields.posBox.hidden = !playing;
+    steer.el.hidden = !playing;         // touch steering only while a race is live
     if (!playing) {
       fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
       fields.race.textContent = r.archetype || 'sprint';
@@ -277,6 +284,7 @@ export function renderStage5(ctx) {
     destroy() {
       engine?.stop();
       raceRun.destroy(); // flush + detach listeners
+      steer.destroy();
       if (window.__fvStage5) delete window.__fvStage5;
       root.removeEventListener('keydown', onKey);
       root.remove();

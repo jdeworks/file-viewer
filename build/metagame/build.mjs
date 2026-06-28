@@ -49,6 +49,9 @@ const ALLOWED_SHARED = new Set([
   '../../shared/economy.js',
   '../../shared/shop.js',
   '../../shared/ascension.js',
+  // Shared on-screen touch-control component (d-pad / verb toggle). Stateless factory reused across
+  // stages (S5 steering, S3 verb toggle); kept external like the other shared singletons.
+  '../../touch-controls.js',
 ]);
 
 // Every stageN/ directory that has an index.js entry, in numeric order.

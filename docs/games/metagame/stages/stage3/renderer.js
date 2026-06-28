@@ -14,6 +14,7 @@ import { boonBonus, buildDraftPanel, draftOffer, draftPending, ensureRunBoons, p
 import { announceTiers } from "./s3tiers.js";
 import { bumpRunPressure, collapseRun, runPressureLimit, runPressureReached } from "./state.js";
 import { buildStage3Shell } from "./view.js";
+import { createVerbBar, verbToCell } from "./s3verbs.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -31,6 +32,10 @@ export function renderStage3(ctx) {
   const keyInput = root.querySelector(".s3-key");
   const gridHost = root.querySelector(".s3-grid-host");
   const btsBtn = root.querySelector('[data-action="bts"]');
+  // Touch verb toggle (Fill A / Fill B / Mark / Lock): a single-select bar so a plain TAP on a cell
+  // applies the selected verb. Shown only on touch/small screens (CSS); desktop keeps mouse/keyboard.
+  const verbBar = createVerbBar();
+  root.querySelector(".s3-toolbar").before(verbBar.el);
   let overlay = null; // open shop panel, or null
   const setText = (el, v) => { const s = String(v); if (el.textContent !== s) el.textContent = s; };
   const setHidden = (el, h) => { if (el.hidden !== h) el.hidden = h; };
@@ -81,9 +86,21 @@ export function renderStage3(ctx) {
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
     // Pressure Valve boon: extra instability headroom this run.
     if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
-    grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => { board.cursor = { x, y }; applyCell(x, y, mark, colorB ? COLOR_B : FILLED); } });
+    grid = buildGrid(puzzle, {
+      onCell: (x, y, mark, colorB) => { board.cursor = { x, y }; applyCell(x, y, mark, colorB ? COLOR_B : FILLED); },
+      onTap: (x, y) => tapCell(x, y),
+    });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
+  }
+
+  // A plain tap applies the verb currently selected in the on-screen toggle (touch path). Lock routes
+  // to lockUnderCursor; the rest go through the SAME applyCell() a click/keypress uses (rules identical).
+  function tapCell(x, y) {
+    board.cursor = { x, y };
+    const op = verbToCell(verbBar.getActive());
+    if (op.lock) { lockUnderCursor(); return; }
+    applyCell(x, y, op.mark, op.color);
   }
 
   function applyCell(x, y, mark, color = FILLED) {
@@ -202,6 +219,13 @@ export function renderStage3(ctx) {
     setHidden(fields.checkBtn, parity <= 0);
     if (oracle > 0) { const left = oracle - (board.hintsUsed || 0); setText(fields.hintBtn, `hint (${left})`); fields.hintBtn.disabled = left <= 0 || board.solved; }
     if (parity > 0) { const left = parity - (board.checksUsed || 0); setText(fields.checkBtn, `check (${left})`); fields.checkBtn.disabled = left <= 0 || board.solved; }
+    // Verb toggle: Fill B is only meaningful on two-colour snapshots, Lock only when cells are
+    // volatile — disable the rest so a tap can't lay a guaranteed-wrong colour. If the active verb
+    // just became unavailable (e.g. a new mono snapshot), fall back to Fill A.
+    verbBar.setEnabled("fillB", Boolean(board.puzzle.twoColor));
+    verbBar.setEnabled("lock", Boolean(board.volatile));
+    const active = verbBar.getActive();
+    if ((active === "fillB" && !board.puzzle.twoColor) || (active === "lock" && !board.volatile)) verbBar.setActive("fillA");
     // Boon draft button — highlighted while a pick is pending.
     const pending = draftPending(state);
     setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
@@ -355,7 +379,7 @@ export function renderStage3(ctx) {
   return {
     repaint: paintHud,
     dev,
-    destroy() { window.removeEventListener("keydown", onKey); uninstallHook(); root.remove(); }
+    destroy() { window.removeEventListener("keydown", onKey); uninstallHook(); verbBar.destroy(); root.remove(); }
   };
 }
 

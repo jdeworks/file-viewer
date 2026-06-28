@@ -74,8 +74,13 @@ export function buildGrid(puzzle, handlers) {
     const t = e.target.closest(".s3-cell");
     if (!t || t.dataset.x === undefined) return;
     e.preventDefault();
-    // mark (✕) on right/shift-click; otherwise a fill — alt-click lays Color B (two-colour snapshots).
-    handlers.onCell(Number(t.dataset.x), Number(t.dataset.y), e.button === 2 || e.shiftKey, e.altKey);
+    const x = Number(t.dataset.x), y = Number(t.dataset.y);
+    // A PLAIN tap (no modifier) defers to the on-screen verb toggle when present (touch path) so a
+    // single tap can mark / fill-B / lock. Modified clicks keep the original mouse semantics:
+    // mark (✕) on right/shift-click; alt-click lays Color B (two-colour snapshots).
+    const modified = e.button === 2 || e.shiftKey || e.altKey;
+    if (!modified && handlers.onTap) { handlers.onTap(x, y); return; }
+    handlers.onCell(x, y, e.button === 2 || e.shiftKey, e.altKey);
   });
   wrap.addEventListener("contextmenu", (e) => e.preventDefault());
 

@@ -730,7 +730,13 @@ function buildGrid(puzzle, handlers) {
     const t = e.target.closest(".s3-cell");
     if (!t || t.dataset.x === void 0) return;
     e.preventDefault();
-    handlers.onCell(Number(t.dataset.x), Number(t.dataset.y), e.button === 2 || e.shiftKey, e.altKey);
+    const x = Number(t.dataset.x), y = Number(t.dataset.y);
+    const modified = e.button === 2 || e.shiftKey || e.altKey;
+    if (!modified && handlers.onTap) {
+      handlers.onTap(x, y);
+      return;
+    }
+    handlers.onCell(x, y, e.button === 2 || e.shiftKey, e.altKey);
   });
   wrap.addEventListener("contextmenu", (e) => e.preventDefault());
   let lastCursor = null;
@@ -1347,7 +1353,7 @@ function buildStage3Shell() {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks · on touch: pick a verb above then tap a cell</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
@@ -1367,6 +1373,29 @@ function buildStage3Shell() {
     <ol class="s3-log"></ol>
   `;
   return root;
+}
+
+// ../../docs/games/metagame/stages/stage3/s3verbs.js
+import { createTouchControls } from "../../touch-controls.js";
+function verbToCell(verb) {
+  if (verb === "lock") return { lock: true };
+  if (verb === "mark") return { mark: true, color: FILLED };
+  if (verb === "fillB") return { mark: false, color: COLOR_B };
+  return { mark: false, color: FILLED };
+}
+function createVerbBar({ onSelect } = {}) {
+  return createTouchControls({
+    className: "s3-verbs",
+    ariaLabel: "tap verb",
+    toggle: true,
+    onAction: onSelect,
+    buttons: [
+      { id: "fillA", label: "Fill A", ariaLabel: "tap to fill colour A" },
+      { id: "fillB", label: "Fill B", ariaLabel: "tap to fill colour B" },
+      { id: "mark", label: "Mark", ariaLabel: "tap to mark empty" },
+      { id: "lock", label: "Lock", ariaLabel: "tap to lock volatile cell" }
+    ]
+  });
 }
 
 // ../../docs/games/metagame/stages/stage3/renderer.js
@@ -1394,6 +1423,8 @@ function renderStage3(ctx) {
   const keyInput = root.querySelector(".s3-key");
   const gridHost = root.querySelector(".s3-grid-host");
   const btsBtn = root.querySelector('[data-action="bts"]');
+  const verbBar = createVerbBar();
+  root.querySelector(".s3-toolbar").before(verbBar.el);
   let overlay = null;
   const setText = (el, v) => {
     const s = String(v);
@@ -1437,12 +1468,24 @@ function renderStage3(ctx) {
     if (board.volatile) board.decayWindow += boonBonus(state, "volatile");
     board.decay = createDecay(puzzle, corruptionForRun(state.run));
     if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
-    grid = buildGrid(puzzle, { onCell: (x, y, mark, colorB) => {
-      board.cursor = { x, y };
-      applyCell(x, y, mark, colorB ? COLOR_B : FILLED);
-    } });
+    grid = buildGrid(puzzle, {
+      onCell: (x, y, mark, colorB) => {
+        board.cursor = { x, y };
+        applyCell(x, y, mark, colorB ? COLOR_B : FILLED);
+      },
+      onTap: (x, y) => tapCell(x, y)
+    });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
+  }
+  function tapCell(x, y) {
+    board.cursor = { x, y };
+    const op = verbToCell(verbBar.getActive());
+    if (op.lock) {
+      lockUnderCursor();
+      return;
+    }
+    applyCell(x, y, op.mark, op.color);
   }
   function applyCell(x, y, mark, color = FILLED) {
     if (board.solved) return;
@@ -1563,6 +1606,10 @@ function renderStage3(ctx) {
       setText(fields.checkBtn, `check (${left})`);
       fields.checkBtn.disabled = left <= 0 || board.solved;
     }
+    verbBar.setEnabled("fillB", Boolean(board.puzzle.twoColor));
+    verbBar.setEnabled("lock", Boolean(board.volatile));
+    const active = verbBar.getActive();
+    if (active === "fillB" && !board.puzzle.twoColor || active === "lock" && !board.volatile) verbBar.setActive("fillA");
     const pending = draftPending(state);
     setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
     setText(fields.draftBtn, pending ? "boon draft •" : "boons");
@@ -1774,6 +1821,7 @@ function renderStage3(ctx) {
     destroy() {
       window.removeEventListener("keydown", onKey);
       uninstallHook();
+      verbBar.destroy();
       root.remove();
     }
   };

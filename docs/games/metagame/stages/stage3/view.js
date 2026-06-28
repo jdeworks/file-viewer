@@ -26,7 +26,7 @@ export function buildStage3Shell() {
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks</div>
+        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks · on touch: pick a verb above then tap a cell</div>
         <section class="s3-boss">
           <div class="s3-boss-title">THE MEMORY LEAK</div>
           <div data-field="bossStatus"></div>
