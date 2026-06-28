@@ -38,6 +38,7 @@ export function startWave(state, waveNum, pathTiles) {
   state.waveNumber = waveNum;
   state.waveActive = true;
   state.waveFailed = false;
+  state.waveHpScale = comp.hpScale || 1; // rebalance: trash HP scales with wave+map (wavegen.waveHpScale)
   state.enemies = [];
   state.spawnQueue = queue;
   state.spawnTimerMs = SPAWN_INTERVAL_MS; // first enemy enters on the first tick
@@ -115,10 +116,12 @@ function spawnDueEnemies(state, dt, pathTiles) {
   while ((state.spawnQueue?.length || 0) > 0 && state.spawnTimerMs >= SPAWN_INTERVAL_MS) {
     state.spawnTimerMs -= SPAWN_INTERVAL_MS;
     const type = state.spawnQueue.shift();
-    const e = String(type).startsWith('subboss:')
+    const isSub = String(type).startsWith('subboss:');
+    const e = isSub
       ? spawnSubBoss(type.slice('subboss:'.length), state.enemyNextId++)
       : spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
     if (!e) continue;
+    if (!isSub) scaleEnemyHp(e, state.waveHpScale || 1); // rebalance: trash HP grows with wave+map
     placeOnPath(e, pathTiles);
     state.enemies.push(e);
   }
@@ -281,6 +284,13 @@ export function selectTarget(enemies, tower) {
   if (!Array.isArray(enemies) || !enemies.length) return null;
   const cmp = TARGET_COMPARATORS[tower?.targetMode] || TARGET_COMPARATORS.first;
   return enemies.reduce((best, e) => (cmp(e, best, tower) ? e : best), enemies[0]);
+}
+
+// Scale a trash enemy's HP (and any shield pool) by the wave's deterministic hpScale. Pure — no RNG.
+function scaleEnemyHp(e, scale) {
+  if (!e || scale === 1) return;
+  e.hp = Math.round(e.hp * scale); e.maxHp = Math.round(e.maxHp * scale);
+  if (e.shield) { e.shield = Math.round(e.shield * scale); e.shieldMax = Math.round(e.shieldMax * scale); }
 }
 
 function placeOnPath(enemy, pathTiles) {

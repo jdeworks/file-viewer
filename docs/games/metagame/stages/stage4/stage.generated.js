@@ -759,33 +759,33 @@ var MAPS = [
     name: "Fractal Atrium",
     glyph: "✦",
     theme: "an open court that folds back on itself at the edges",
-    waveCount: 20,
+    waveCount: 15,
     depth: 2,
     startCycles: 340,
     startIntegrity: 110,
-    subBosses: { 10: "mirror-prefect", 20: "atrium-regent" }
+    subBosses: { 8: "mirror-prefect", 15: "atrium-regent" }
   },
   {
     id: "depth-cascade",
     name: "Depth Cascade",
     glyph: "❈",
     theme: "a stairwell that descends faster than you climb it",
-    waveCount: 45,
+    waveCount: 25,
     depth: 2,
     startCycles: 420,
     startIntegrity: 120,
-    subBosses: { 15: "cascade-anchor", 30: "descent-marshal", 45: "cascade-sovereign" }
+    subBosses: { 10: "cascade-anchor", 18: "descent-marshal", 25: "cascade-sovereign" }
   },
   {
     id: "infinite-approach",
     name: "Infinite Approach",
     glyph: "∞",
     theme: "the last span before the loop — it never quite arrives",
-    waveCount: 70,
+    waveCount: 35,
     depth: 3,
     startCycles: 520,
     startIntegrity: 140,
-    subBosses: { 20: "approach-vanguard", 40: "event-horizon", 60: "penultimate-knot", 70: "final-bastion" }
+    subBosses: { 10: "approach-vanguard", 20: "event-horizon", 30: "penultimate-knot", 35: "final-bastion" }
   }
 ];
 var MAP_COUNT = MAPS.length;
@@ -829,7 +829,7 @@ function mapWaveComposition(mapIndex, waveNum) {
   const w = Math.max(1, Math.trunc(Number(waveNum)) || 1);
   const subBoss = subBossIdForWave(mapIndex, w);
   const pool = mapEnemyPool(mapIndex);
-  const ramp = 5 + Math.floor(w * (1.1 + 0.15 * mapIndex)) + mapIndex * 2;
+  const ramp = 6 + Math.floor(w * (1.5 + 0.35 * mapIndex)) + mapIndex * 3;
   const budget = subBoss ? Math.max(4, Math.round(ramp * 0.55)) : ramp;
   const weights = pool.map((type) => typeWeight(type, w, map.waveCount, mapIndex));
   const total = weights.reduce((s, x) => s + x, 0) || 1;
@@ -845,9 +845,14 @@ function mapWaveComposition(mapIndex, waveNum) {
     }
   });
   if (!subBoss && assigned === 0) enemies.push({ type: "recursion", count: Math.max(3, Math.round(budget / 2)) });
-  const comp = { enemies, subBoss: subBoss || null, leftFraction: null };
+  const comp = { enemies, subBoss: subBoss || null, leftFraction: null, hpScale: waveHpScale(w, mapIndex) };
   if (subBoss) comp.note = "a guardian holds the line";
   return comp;
+}
+function waveHpScale(waveNum, mapIndex) {
+  const w = Math.max(1, Math.trunc(Number(waveNum)) || 1);
+  const mi = Math.max(0, Math.trunc(Number(mapIndex)) || 0);
+  return 1 + 0.03 * (w - 1) + 0.08 * mi;
 }
 function typeWeight(type, w, waveCount, mapIndex) {
   const p = Math.min(1, w / Math.max(1, waveCount));
@@ -978,6 +983,7 @@ function startWave(state, waveNum, pathTiles) {
   state.waveNumber = waveNum;
   state.waveActive = true;
   state.waveFailed = false;
+  state.waveHpScale = comp.hpScale || 1;
   state.enemies = [];
   state.spawnQueue = queue;
   state.spawnTimerMs = SPAWN_INTERVAL_MS;
@@ -1044,8 +1050,10 @@ function spawnDueEnemies(state, dt, pathTiles) {
   while ((state.spawnQueue?.length || 0) > 0 && state.spawnTimerMs >= SPAWN_INTERVAL_MS) {
     state.spawnTimerMs -= SPAWN_INTERVAL_MS;
     const type = state.spawnQueue.shift();
-    const e = String(type).startsWith("subboss:") ? spawnSubBoss(type.slice("subboss:".length), state.enemyNextId++) : spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
+    const isSub = String(type).startsWith("subboss:");
+    const e = isSub ? spawnSubBoss(type.slice("subboss:".length), state.enemyNextId++) : spawnEnemy(type, state.recursion?.pointSetId || "x", state.enemyNextId++);
     if (!e) continue;
+    if (!isSub) scaleEnemyHp(e, state.waveHpScale || 1);
     placeOnPath(e, pathTiles);
     state.enemies.push(e);
   }
@@ -1177,6 +1185,15 @@ function selectTarget(enemies, tower) {
   if (!Array.isArray(enemies) || !enemies.length) return null;
   const cmp = TARGET_COMPARATORS[tower?.targetMode] || TARGET_COMPARATORS.first;
   return enemies.reduce((best, e) => cmp(e, best, tower) ? e : best, enemies[0]);
+}
+function scaleEnemyHp(e, scale) {
+  if (!e || scale === 1) return;
+  e.hp = Math.round(e.hp * scale);
+  e.maxHp = Math.round(e.maxHp * scale);
+  if (e.shield) {
+    e.shield = Math.round(e.shield * scale);
+    e.shieldMax = Math.round(e.shieldMax * scale);
+  }
 }
 function placeOnPath(enemy, pathTiles) {
   const tile = pathTiles[Math.min(pathTiles.length - 1, Math.max(0, Math.floor(enemy.pathIndex)))];

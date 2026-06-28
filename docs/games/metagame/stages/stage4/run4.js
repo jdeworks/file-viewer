@@ -8,7 +8,7 @@
 //
 // THE BOSS GATE (stronger than the old wave-31 gate): "The Infinite Loop" is reachable ONLY when ALL
 // FIVE maps are cleared (bossUnlocked). There is no start bypass. A debug-only seatAtBoss() lets the
-// smoke reach the boss in one hop without playing 150 waves — it is NOT a player affordance.
+// smoke reach the boss in one hop without playing all 90 waves — it is NOT a player affordance.
 
 import { MAPS, MAP_COUNT, mapByIndex } from './maps.js';
 import { armoryEffects } from './armory.js';
@@ -162,7 +162,7 @@ export function winCampaign(state) {
 }
 
 // TEST/DEBUG ONLY — clear all maps and seat the player in the boss arena in one hop (the smoke uses
-// this to reach The Infinite Loop without playing 150 waves). NOT a player affordance.
+// this to reach The Infinite Loop without playing all 90 waves). NOT a player affordance.
 export function seatAtBoss(state) {
   const c = ensureCampaign(state);
   c.clearedMaps = MAPS.map((_, i) => i);

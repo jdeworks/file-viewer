@@ -1,11 +1,19 @@
 // maps.js — Stage 4 Fractal Bastion: the 5-map campaign definitions (pure data + tiny helpers).
 //
 // The bastion is no longer one 31-wave map. It is a campaign of five maps of growing length
-// (5 / 10 / 20 / 45 / 70 waves), each with its own theme, L-system path depth, and authored
-// sub-boss "guardian" waves at the ends of its arcs. run4.js gates map N+1 behind clearing N, and
-// The Infinite Loop boss is reachable ONLY after all five maps are cleared. Long maps are filled by
-// wavegen.js (deterministic procedural scaling) so we don't hand-author 150 waves — only the
+// (5 / 10 / 15 / 25 / 35 waves = 90 total), each with its own theme, L-system path depth, and
+// authored sub-boss "guardian" waves at the ends of its arcs. run4.js gates map N+1 behind clearing N,
+// and The Infinite Loop boss is reachable ONLY after all five maps are cleared. Long maps are filled
+// by wavegen.js (deterministic procedural scaling) so we don't hand-author 90 waves — only the
 // landmark sub-boss waves are authored here.
+//
+// LENGTH REBALANCE (round 4): the campaign was 150 waves (≈2–4h, far over the 40–120m target). It is
+// now 90 waves (≈90–100m realistic). To keep the campaign from going hollow, wavegen.js boosts the
+// per-wave count ramp (peak waves stay as dense as the old 150-wave campaign's) AND scales enemy HP up
+// with the wave + map (hpScale), so the shorter campaign hits HARDER per wave, not softer. The path
+// reshape boundaries (waves 11/21, lsystem.waveGroupDepth) are unchanged: every multi-depth map still
+// reaches them — depth-2 maps fold once at wave 11 (atrium 15w, cascade 25w), the depth-3 map folds at
+// 11 AND 21 (approach 35w).
 
 // Each map: { id, name, theme, waveCount, depth (L-system path depth 1–3), subBosses: {wave: id},
 //   startCycles, startIntegrity, glyph }. `depth` drives lsystem.buildPath so each map's path differs.
@@ -25,20 +33,20 @@ export const MAPS = [
   {
     id: 'fractal-atrium', name: 'Fractal Atrium', glyph: '✦',
     theme: 'an open court that folds back on itself at the edges',
-    waveCount: 20, depth: 2, startCycles: 340, startIntegrity: 110,
-    subBosses: { 10: 'mirror-prefect', 20: 'atrium-regent' },
+    waveCount: 15, depth: 2, startCycles: 340, startIntegrity: 110,
+    subBosses: { 8: 'mirror-prefect', 15: 'atrium-regent' },
   },
   {
     id: 'depth-cascade', name: 'Depth Cascade', glyph: '❈',
     theme: 'a stairwell that descends faster than you climb it',
-    waveCount: 45, depth: 2, startCycles: 420, startIntegrity: 120,
-    subBosses: { 15: 'cascade-anchor', 30: 'descent-marshal', 45: 'cascade-sovereign' },
+    waveCount: 25, depth: 2, startCycles: 420, startIntegrity: 120,
+    subBosses: { 10: 'cascade-anchor', 18: 'descent-marshal', 25: 'cascade-sovereign' },
   },
   {
     id: 'infinite-approach', name: 'Infinite Approach', glyph: '∞',
     theme: 'the last span before the loop — it never quite arrives',
-    waveCount: 70, depth: 3, startCycles: 520, startIntegrity: 140,
-    subBosses: { 20: 'approach-vanguard', 40: 'event-horizon', 60: 'penultimate-knot', 70: 'final-bastion' },
+    waveCount: 35, depth: 3, startCycles: 520, startIntegrity: 140,
+    subBosses: { 10: 'approach-vanguard', 20: 'event-horizon', 30: 'penultimate-knot', 35: 'final-bastion' },
   },
 ];
 

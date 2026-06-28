@@ -1,6 +1,6 @@
 // renderer.js — Stage 4 Fractal Bastion: the CAMPAIGN dispatcher.
 //
-// Stage 4 is a 5-map campaign (run4.js): the player clears maps of growing length (5/10/20/45/70
+// Stage 4 is a 5-map campaign (run4.js): the player clears maps of growing length (5/10/15/25/35
 // waves), spends Glory in the Armory between maps, and may confront The Infinite Loop ONLY once all
 // five maps are cleared (boss-never-from-start, enforced by run4). This module owns the screen
 // container, the run-state wave snapshot, the save plumbing, and the __fvStage4 test hook; it

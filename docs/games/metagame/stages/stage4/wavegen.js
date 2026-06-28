@@ -1,9 +1,15 @@
 // wavegen.js — Stage 4 Fractal Bastion: deterministic procedural wave generation for the campaign.
 //
-// The five maps total 150 waves — far too many to hand-author. wavegen scales enemy mix and counts
+// The five maps total 90 waves — too many to hand-author. wavegen scales enemy mix, counts AND HP
 // from (mapIndex, waveNum) with NO randomness (pure formula → identical every run, so the file-tree
 // un-cheat and replays stay honest). Authored landmark sub-boss waves (maps.js) are layered on top:
 // on a sub-boss wave the composition carries a `subBoss` id plus a reduced escort.
+//
+// LENGTH REBALANCE (round 4): the campaign was cut 150→90 waves. To stop the shorter campaign going
+// hollow, the count ramp is steeper (per-wave counts on the late maps match the old 150-wave peaks)
+// and every wave carries an `hpScale` that grows with the wave + map — so each enemy is tankier on the
+// deep maps and the climax HITS HARDER than the old campaign even though there are fewer waves. The
+// engine applies hpScale to spawned trash (sub-bosses keep their authored HP).
 //
 // Enemy types unlock by map so the campaign teaches one threat at a time:
 //   map0 recursion · map1 +pattern_crawler · map2 +null_packet ·
@@ -42,8 +48,9 @@ export function mapWaveComposition(mapIndex, waveNum) {
   const pool = mapEnemyPool(mapIndex);
 
   // Overall size budget for the wave: grows roughly linearly with the wave, faster on later maps.
-  // Sub-boss waves carry a SMALLER escort (the guardian is the threat).
-  const ramp = 5 + Math.floor(w * (1.1 + 0.15 * mapIndex)) + mapIndex * 2;
+  // Steeper than the old 150-wave campaign (rebalance) so the now-shorter maps keep their density —
+  // late-map waves field as many enemies as the old peaks. Sub-boss waves carry a SMALLER escort.
+  const ramp = 6 + Math.floor(w * (1.5 + 0.35 * mapIndex)) + mapIndex * 3;
   const budget = subBoss ? Math.max(4, Math.round(ramp * 0.55)) : ramp;
 
   // Distribute the budget across the unlocked pool. Earlier (basic) types weight higher early; later
@@ -62,9 +69,19 @@ export function mapWaveComposition(mapIndex, waveNum) {
   // Guarantee at least one basic enemy on a non-sub-boss wave so the wave is never empty.
   if (!subBoss && assigned === 0) enemies.push({ type: 'recursion', count: Math.max(3, Math.round(budget / 2)) });
 
-  const comp = { enemies, subBoss: subBoss || null, leftFraction: null };
+  const comp = { enemies, subBoss: subBoss || null, leftFraction: null, hpScale: waveHpScale(w, mapIndex) };
   if (subBoss) comp.note = 'a guardian holds the line';
   return comp;
+}
+
+// Per-wave enemy-HP multiplier (the rebalance's difficulty-compensation lever). Grows with the wave
+// within a map and with the map index across the campaign, so the shorter campaign's late waves field
+// genuinely tankier enemies — intensity comes from durability, not only spawn-queue length. Pure +
+// deterministic; map 0 wave 1 = 1.0 (onboarding stays gentle). Applied by engine.spawnDueEnemies.
+export function waveHpScale(waveNum, mapIndex) {
+  const w = Math.max(1, Math.trunc(Number(waveNum)) || 1);
+  const mi = Math.max(0, Math.trunc(Number(mapIndex)) || 0);
+  return 1 + 0.03 * (w - 1) + 0.08 * mi;
 }
 
 // Total non-sub-boss enemy count for a wave (spawn-queue / bookkeeping; sub-boss adds one more).
