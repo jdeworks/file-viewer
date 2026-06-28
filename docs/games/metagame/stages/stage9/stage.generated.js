@@ -780,6 +780,66 @@ function installTestHook(api) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage9/s9dev.js
+var DEV_CONTROLS = [
+  { id: "add-clarity", label: "+100 clarity" },
+  { id: "stabilizer-3", label: "Arm 3 Stabilizers" },
+  { id: "unlock-offline", label: "Force offline mode" },
+  { id: "skip-to-boss", label: "Skip to boss (offline)" },
+  { id: "reveal-pattern", label: "Log solve moment" }
+];
+function pushLog2(state, line) {
+  state.log = [...state.log || [], line].slice(-6);
+}
+function devAddClarity(state) {
+  state.clarity = Number(state.clarity || 0) + 100;
+  pushLog2(state, "[dev] +100 clarity.");
+}
+function devStabilizer3(state) {
+  state.aids = state.aids && typeof state.aids === "object" ? state.aids : {};
+  state.aids.stabilizer = Number(state.aids.stabilizer || 0) + 3;
+  pushLog2(state, "[dev] 3 stabilizer charges armed.");
+}
+function devUnlockOffline(state) {
+  state.offlineMode = true;
+  state.offlineControlVisible = true;
+  state.notesRead = true;
+  state.boss.fixedSeed = FIXED_OFFLINE_SEED;
+  pushLog2(state, "[dev] offline mode forced — seed fixed to 0.");
+}
+function devSkipToBoss(state) {
+  devUnlockOffline(state);
+  state.currentLevel = BOSS_LEVEL;
+  pushLog2(state, `[dev] jumped to level ${BOSS_LEVEL} (offline, seed fixed).`);
+}
+function devRevealPattern(state, seed) {
+  const sol = solveMoment(seed, state.currentLevel);
+  const text = Array.isArray(sol) ? `[dev] level ${state.currentLevel} beats: [${sol.join(", ")}] ms` : `[dev] level ${state.currentLevel} solve at ${sol} ms`;
+  pushLog2(state, text);
+  return sol;
+}
+function applyDevControl(id, state, { seed = 0 } = {}) {
+  switch (id) {
+    case "add-clarity":
+      devAddClarity(state);
+      return true;
+    case "stabilizer-3":
+      devStabilizer3(state);
+      return true;
+    case "unlock-offline":
+      devUnlockOffline(state);
+      return true;
+    case "skip-to-boss":
+      devSkipToBoss(state);
+      return true;
+    case "reveal-pattern":
+      devRevealPattern(state, seed);
+      return true;
+    default:
+      return false;
+  }
+}
+
 // ../../docs/games/metagame/stages/stage9/renderer.js
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -859,7 +919,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     liveSeed = null;
     rhythmChain = 0;
     attempts = [];
-    if (state.currentLevel >= BOSS_LEVEL) pushLog2(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
+    if (state.currentLevel >= BOSS_LEVEL) pushLog3(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
   }
   function crossSublevel() {
     const level = state.currentLevel;
@@ -868,12 +928,12 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
       liveSeed = getBossSeed({ state, actions });
       state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
-      pushLog2("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
+      pushLog3("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
       return "miss";
     }
     const seed = activeSeed();
     const toleranceMult = consumeStabilizer(state);
-    if (toleranceMult > 1) pushLog2("stabilizer lens engaged (+tolerance for this cross).");
+    if (toleranceMult > 1) pushLog3("stabilizer lens engaged (+tolerance for this cross).");
     const result = crossAttempt({ seed, elapsedMs, level, toleranceMult });
     if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
     if (cfg.mode === "rhythm") {
@@ -882,26 +942,26 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
         rhythmChain += 1;
         if (rhythmChain >= need) {
           state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
-          pushLog2(`cadence held — ${need} crosses on the beat. advancing.`);
+          pushLog3(`cadence held — ${need} crosses on the beat. advancing.`);
           advanceFrom(level);
         } else {
-          pushLog2(`on beat (${rhythmChain}/${need}). hold the cadence.`);
+          pushLog3(`on beat (${rhythmChain}/${need}). hold the cadence.`);
         }
         return crossOutcome(result);
       }
       rhythmChain = 0;
       state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-      pushLog2(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
+      pushLog3(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
       return "miss";
     }
     if (result.hit) {
       state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
-      pushLog2(`level ${level} crossed (gap at top). advancing.`);
+      pushLog3(`level ${level} crossed (gap at top). advancing.`);
       advanceFrom(level);
       return crossOutcome(result);
     }
     state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-    pushLog2(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+    pushLog3(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
     return "miss";
   }
   function challengeBoss() {
@@ -956,18 +1016,18 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const res = buyAid(state, id, { offline });
     if (!res.ok) {
       const why = { "offline-only": "single-frame only works in Offline Mode (online the seed reseeds).", insufficient: "not enough clarity.", owned: "already owned." }[res.reason] || "cannot buy that.";
-      pushLog2(why);
+      pushLog3(why);
       return res;
     }
-    if (id === "stabilizer") pushLog2("stabilizer lens armed: your next CROSS gets a wider window.");
-    if (id === "tachometer") pushLog2("tachometer online: numeric gap readout enabled.");
+    if (id === "stabilizer") pushLog3("stabilizer lens armed: your next CROSS gets a wider window.");
+    if (id === "tachometer") pushLog3("tachometer online: numeric gap readout enabled.");
     if (id === "peek") doPeek();
     return res;
   }
   function doPeek() {
     const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
     const ang = Number.isFinite(r.angle) ? `gap at ${Math.round(r.angle)}deg` : "two gaps to align";
-    pushLog2(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
+    pushLog3(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
   }
   const loop = startLoop((dt) => {
     if (!state.boss.defeated) elapsedMs += dt;
@@ -988,6 +1048,10 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   });
   return {
     repaint,
+    dev(id) {
+      applyDevControl(id, state, { seed: activeSeed() });
+      persistAndPaint();
+    },
     destroy() {
       loop.stop();
       if (flashTimer) clearTimeout(flashTimer);
@@ -1003,7 +1067,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     if (viewer && typeof viewer.openFile === "function") viewer.openFile(NOTES_PATH, opts);
     else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(NOTES_PATH, opts);
   }
-  function pushLog2(line) {
+  function pushLog3(line) {
     state.log = [...state.log || [], line].slice(-6);
   }
   function paintArena() {
@@ -1134,7 +1198,9 @@ var stageMeta = {
   slug: "observer-state",
   name: "Observer State",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: DEV_CONTROLS
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -1149,6 +1215,10 @@ function mountStage(ctx) {
   });
   const view = renderStage9({ ...ctx, state });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     destroy() {
       unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();

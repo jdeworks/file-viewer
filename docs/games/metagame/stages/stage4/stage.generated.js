@@ -2102,6 +2102,28 @@ function renderArmory(host, controller) {
   } };
 }
 
+// ../../docs/games/metagame/stages/stage4/s4dev.js
+function devGiveGlory(state, amount = 500) {
+  ensureCampaign(state);
+  state.campaign.glory = (state.campaign.glory || 0) + amount;
+  return { glory: state.campaign.glory };
+}
+function devSkipWave(state) {
+  state.waveActive = false;
+  state.waveFailed = false;
+  state.enemies = [];
+  state.spawnQueue = [];
+  return recordWaveCleared(state);
+}
+function devSkipToBoss(state) {
+  return seatAtBoss(state);
+}
+function devGodCore(state) {
+  state.integrity = 99999;
+  state.maxIntegrity = 99999;
+  return { integrity: state.integrity };
+}
+
 // ../../docs/games/metagame/stages/stage4/renderer.js
 function renderStage4(ctx) {
   const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
@@ -2241,6 +2263,32 @@ function renderStage4(ctx) {
       bossUnlocked: () => bossUnlocked(state)
     };
   }
+  function dev(id) {
+    if (id === "give-glory") {
+      devGiveGlory(state);
+      persistNow();
+      active?.repaint?.();
+      return;
+    }
+    if (id === "skip-wave") {
+      devSkipWave(state);
+      persistNow();
+      render();
+      return;
+    }
+    if (id === "skip-to-boss") {
+      devSkipToBoss(state);
+      persistNow();
+      render();
+      return;
+    }
+    if (id === "god-core") {
+      devGodCore(state);
+      persistNow();
+      active?.repaint?.();
+      return;
+    }
+  }
   const onHide = () => {
     if (typeof document === "undefined" || document.visibilityState === "hidden") persistNow();
   };
@@ -2248,6 +2296,7 @@ function renderStage4(ctx) {
   if (typeof window !== "undefined") window.addEventListener("pagehide", persistNow);
   render();
   return {
+    dev,
     repaint: () => active?.repaint?.(),
     destroy() {
       destroyActive();
@@ -2283,7 +2332,14 @@ var stageMeta = {
   slug: "fractal-bastion",
   name: "Fractal Bastion",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "give-glory", label: "+500 Glory" },
+    { id: "skip-wave", label: "Skip Wave" },
+    { id: "skip-to-boss", label: "Skip to Boss" },
+    { id: "god-core", label: "God Core (∞ integrity)" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -2296,6 +2352,10 @@ function mountStage(ctx) {
   const run = saveData ? createRun({ save: saveData, stageId: 4, slot: "runwave", debounceMs: 0 }) : null;
   const view = renderStage4({ ...ctx, state, run });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     repaint: view.repaint,
     destroy() {
       if (run && typeof run.destroy === "function") run.destroy();

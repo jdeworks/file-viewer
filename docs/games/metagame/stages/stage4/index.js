@@ -10,6 +10,13 @@ export const stageMeta = {
   name: 'Fractal Bastion',
   btsPath: BTS_PATH,
   requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: 'give-glory',   label: '+500 Glory' },
+    { id: 'skip-wave',    label: 'Skip Wave' },
+    { id: 'skip-to-boss', label: 'Skip to Boss' },
+    { id: 'god-core',     label: 'God Core (∞ integrity)' },
+  ],
 };
 
 export function defaultState(context) {
@@ -30,6 +37,8 @@ export function mountStage(ctx) {
 
   const view = renderStage4({ ...ctx, state, run });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === 'function') view.dev(id); },
     repaint: view.repaint,
     destroy() {
       if (run && typeof run.destroy === 'function') run.destroy();

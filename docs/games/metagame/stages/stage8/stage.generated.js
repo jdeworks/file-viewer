@@ -1150,6 +1150,91 @@ function createDebris({ node: node3, cycle, tier, value, decay = 2 }) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage8/s8dev.js
+var pushLog5 = (state, line) => {
+  state.log = [...state.log || [], line].slice(-12);
+};
+function devGiveResources(state) {
+  state.states = Number(state.states || 0) + 500;
+  state.totalStatesEarned = Number(state.totalStatesEarned || 0) + 500;
+  earnScrap(state, 200);
+  earnInsight(state, 100);
+  pushLog5(state, "DEV: +500 States, +200 Scrap, +100 Insight.");
+}
+function devSkipStorm(state) {
+  const idx = Math.max(0, Number(state.act || 1) - 1);
+  const storm = STORMS[idx];
+  if (!storm) {
+    pushLog5(state, "DEV: all storms already survived.");
+    return;
+  }
+  state.activeStorm = null;
+  bringSectorOnline(state, storm.sector);
+  state.stormsSurvived = Number(state.stormsSurvived || 0) + 1;
+  state.act = Number(state.act || 1) + 1;
+  if (!Array.isArray(state.announcedStorms)) state.announcedStorms = [];
+  if (!state.announcedStorms.includes(storm.id)) state.announcedStorms.push(storm.id);
+  earnInsight(state, storm.insightBonus);
+  pushLog5(state, `DEV: Storm ${storm.id} skipped — sector ${storm.sector} online, +${storm.insightBonus} Insight.`);
+}
+function devUnlockBossGate(state) {
+  for (const storm of STORMS) {
+    bringSectorOnline(state, storm.sector);
+    if (!Array.isArray(state.announcedStorms)) state.announcedStorms = [];
+    if (!state.announcedStorms.includes(storm.id)) state.announcedStorms.push(storm.id);
+  }
+  state.stormsSurvived = TOTAL_STORMS;
+  state.act = TOTAL_STORMS + 1;
+  state.activeStorm = null;
+  if (Number(state.cycle || 0) < MIN_CYCLE) state.cycle = MIN_CYCLE;
+  if (Number(state.totalStatesEarned || 0) < STATES_REQUIRED) {
+    const bump = STATES_REQUIRED - Number(state.totalStatesEarned || 0);
+    state.totalStatesEarned = STATES_REQUIRED;
+    state.states = Number(state.states || 0) + bump;
+  }
+  if (Number(state.states || 0) < 400) state.states = 400;
+  if (Number(state.salvageTotal || 0) < SALVAGE_REQUIRED) {
+    const dummy = createDebris({ node: "F1", cycle: Math.max(1, Number(state.cycle || 1)), tier: 4, value: SALVAGE_REQUIRED, decay: 2 });
+    if (!Array.isArray(state.archive)) state.archive = [];
+    if (!state.archive.some((a) => a.id === dummy.id)) {
+      state.archive.push({ ...dummy, archivedAtCycle: state.cycle, path: `/entropy/active_archive/${dummy.id}` });
+    }
+    state.salvageTotal = Math.max(Number(state.salvageTotal || 0), SALVAGE_REQUIRED);
+  }
+  state.manualArchiveDone = true;
+  pushLog5(state, "DEV: boss gate satisfied — storms weathered, archives stocked, reserves banked.");
+}
+function devCoolField(state) {
+  state.heat = 0;
+  state.heatRate = 0;
+  state.entropy = 0;
+  for (const n of state.nodes || []) {
+    n.health = 100;
+    n.cascadeStress = 0;
+  }
+  state.repairUnits = Math.max(Number(state.repairUnits || 0), 6);
+  pushLog5(state, "DEV: field cooled — heat/entropy zeroed, all nodes restored.");
+}
+var DEV_DEBRIS_TEMPLATES = [
+  { node: "F1", cycle: 1, tier: 4, value: 30, decay: 2 },
+  { node: "F2", cycle: 1, tier: 4, value: 30, decay: 2 },
+  { node: "P1", cycle: 1, tier: 3, value: 20, decay: 2 }
+];
+function devSpawnDebris(state) {
+  if (!Array.isArray(state.debris)) state.debris = [];
+  const have = new Set(state.debris.map((d) => d.id));
+  let added = 0;
+  for (const t of DEV_DEBRIS_TEMPLATES) {
+    const item = createDebris(t);
+    if (!have.has(item.id)) {
+      state.debris.push(item);
+      added += 1;
+    }
+  }
+  if (!state.selectedDebrisId && state.debris[0]) state.selectedDebrisId = state.debris[0].id;
+  pushLog5(state, `DEV: spawned ${added} debris item${added !== 1 ? "s" : ""}.`);
+}
+
 // ../../docs/games/metagame/stages/stage8/events.js
 var clamp2 = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 var byZone = (state, zonePrefix) => state.nodes.filter((n) => String(n.id).startsWith(zonePrefix));
@@ -1241,7 +1326,7 @@ var EVENTS = [
   }
 ];
 var EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
-function pushLog5(state, line) {
+function pushLog6(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 function resolveEvent(state, rng) {
@@ -1253,7 +1338,7 @@ function resolveEvent(state, rng) {
   if (!ev) return null;
   const detail = ev.apply(state, rng) || {};
   state.activeEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), ...detail };
-  pushLog5(state, `${ev.label}: ${detail.note || "resolved"}.`);
+  pushLog6(state, `${ev.label}: ${detail.note || "resolved"}.`);
   return state.activeEvent;
 }
 function telegraphNext(state, rng) {
@@ -1262,7 +1347,7 @@ function telegraphNext(state, rng) {
   const ev = rng.pick(EVENTS);
   state.pendingEvent = { id: ev.id, label: ev.label, bad: Boolean(ev.bad), telegraph: ev.telegraph };
   state.eventSeq = Number(state.eventSeq || 0) + 1;
-  pushLog5(state, `telegraph — next cycle: ${ev.telegraph}`);
+  pushLog6(state, `telegraph — next cycle: ${ev.telegraph}`);
   return state.pendingEvent;
 }
 
@@ -1357,10 +1442,10 @@ function autoArchive(state, detail) {
     earnScrap(state, Math.round(scrapYield(debris) * scrapMult) + scrapBonus);
     detail.archived.push(debris.id);
   }
-  if (detail.archived.length) pushLog6(state, `Cold Storage auto-archived ${detail.archived.length} file(s).`);
+  if (detail.archived.length) pushLog7(state, `Cold Storage auto-archived ${detail.archived.length} file(s).`);
 }
 var isCore2 = (id) => (nodeById(id) || {}).noCascade === true;
-function pushLog6(state, line) {
+function pushLog7(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
@@ -1436,7 +1521,7 @@ function advanceCycle(state, rng) {
       state.debris.push(debris);
       result.newDebris.push(debris);
       result.newlyFailed.push(n.id);
-      pushLog7(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
+      pushLog8(state, `${n.id} failed. ${debris.id} created in /entropy/debris/.`);
     }
   }
   for (const n of state.nodes) n.cascadeStress = 0;
@@ -1455,7 +1540,7 @@ function advanceCycle(state, rng) {
     item.decay -= 1;
     if (item.decay <= 0) {
       result.expiredDebris.push(item);
-      pushLog7(state, `${item.id} decayed. States lost permanently.`);
+      pushLog8(state, `${item.id} decayed. States lost permanently.`);
     } else kept.push(item);
   }
   state.debris = kept;
@@ -1536,13 +1621,13 @@ function triggerPatternFailure(state, rng) {
   const mids = state.nodes.filter((n) => (nodeById(n.id) || {}).zone === "mid" && status(n.health) !== "failed");
   const picks = rng.shuffle(mids).slice(0, 2);
   for (const n of picks) n.health = clamp3(n.health - 15, 0, 100);
-  if (picks.length) pushLog7(state, `Pattern Failure (entropy ${Math.round(Number(state.entropy || 0))}%): ${picks.map((n) => n.id).join(", ")} −15.`);
+  if (picks.length) pushLog8(state, `Pattern Failure (entropy ${Math.round(Number(state.entropy || 0))}%): ${picks.map((n) => n.id).join(", ")} −15.`);
   return { kind: "pattern_failure", nodes: picks.map((n) => n.id) };
 }
 function triggerTotalCascade(state) {
   const degrading = state.nodes.filter((n) => status(n.health) === "degrading");
   for (const n of degrading) n.health = clamp3(n.health - 30, 0, 100);
-  if (degrading.length) pushLog7(state, `TOTAL CASCADE (entropy ${Math.round(Number(state.entropy || 0))}%): ${degrading.length} degrading node(s) −30.`);
+  if (degrading.length) pushLog8(state, `TOTAL CASCADE (entropy ${Math.round(Number(state.entropy || 0))}%): ${degrading.length} degrading node(s) −30.`);
   return { kind: "total_cascade", nodes: degrading.map((n) => n.id) };
 }
 function toggleHighLoad(state, nodeId) {
@@ -1552,7 +1637,7 @@ function toggleHighLoad(state, nodeId) {
   state.highLoad[nodeId] = !state.highLoad[nodeId];
   return { ok: true, highLoad: Boolean(state.highLoad[nodeId]) };
 }
-function pushLog7(state, line) {
+function pushLog8(state, line) {
   state.log = [...state.log || [], line].slice(-12);
 }
 
@@ -1997,11 +2082,24 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
   };
   return {
     repaint,
+    dev,
     destroy() {
       if (window.__fvStage8) delete window.__fvStage8;
       root.remove();
     }
   };
+  function dev(id) {
+    if (id === "resources") devGiveResources(state);
+    else if (id === "skip-storm") devSkipStorm(state);
+    else if (id === "boss-gate") {
+      devUnlockBossGate(state);
+      if (actions && typeof actions.setAction === "function") {
+        actions.setAction(8, ACTION_NAME, { source: "dev-cheat", fallback: true });
+      }
+    } else if (id === "cool-field") devCoolField(state);
+    else if (id === "spawn-debris") devSpawnDebris(state);
+    persistAndPaint();
+  }
   function cycleRng(cycle) {
     return makeRng(`${seedBase}:cyc:${cycle}`);
   }
@@ -2063,7 +2161,15 @@ var stageMeta = {
   slug: "entropy-field",
   name: "Entropy Field",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "resources", label: "+500 States / +200 Scrap / +100 Insight" },
+    { id: "skip-storm", label: "Skip Cascade Storm" },
+    { id: "boss-gate", label: "Unlock Boss Gate" },
+    { id: "cool-field", label: "Cool Field (restore nodes)" },
+    { id: "spawn-debris", label: "Spawn Debris" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -2087,6 +2193,10 @@ function mountStage(ctx) {
   });
   const view = renderStage8({ ...ctx, state, run });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     destroy() {
       unsubscribe();
       if (run && typeof run.destroy === "function") run.destroy();

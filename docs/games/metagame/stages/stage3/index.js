@@ -9,6 +9,13 @@ export const stageMeta = {
   name: 'Memory Grid',
   btsPath: BTS_PATH,
   requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: 'show-solution', label: 'Show Solution' },
+    { id: 'give-currency', label: '+500 reg / +3 frag' },
+    { id: 'skip-to-boss', label: 'Skip to Boss Gate' },
+    { id: 'clear-pressure', label: 'Clear Run Pressure' },
+  ],
 };
 
 export function defaultState(context) {
@@ -19,7 +26,13 @@ export function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
   ensureStyles();
   if (hasDiffKeyRestored(ctx.actions)) state.boss.unlocked = true;
-  return renderStage3({ ...ctx, state });
+  const view = renderStage3({ ...ctx, state });
+  return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === 'function') view.dev(id); },
+    repaint() { if (view && typeof view.repaint === 'function') view.repaint(); },
+    destroy() { if (view && typeof view.destroy === 'function') view.destroy(); },
+  };
 }
 
 function ensureStyles() {

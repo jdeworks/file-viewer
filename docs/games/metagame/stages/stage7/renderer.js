@@ -1,3 +1,4 @@
+import { applyDev } from "./s7dev.js";
 import { commitIdentity, getBossLockState } from "./boss.js";
 import {
   SUBSTAGE,
@@ -88,8 +89,15 @@ export function renderStage7({ host, state, actions, achievements, bell, bts, vi
   // searched).
   installStage7Hook({ state, persistAndPaint });
 
+  function dev(id) {
+    applyDev(state, id);
+    if (typeof save === "function") save();
+    repaint();
+  }
+
   return {
     repaint,
+    dev,
     destroy() {
       removeStage7Hook();
       root.remove();

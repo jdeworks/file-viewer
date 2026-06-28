@@ -30,6 +30,7 @@ import { combatView } from "./ui-combat.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
 import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
+import { applyDev, devSkipToBoss } from "./s6dev.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
 
@@ -82,7 +83,26 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     setDailyKeyOverride: (v) => { dailyKeyOverride = v; }
   });
 
-  return { repaint: route, destroy() { if (combatRun) combatRun.destroy(); removeStage6TestHook(); root.remove(); } };
+  return {
+    repaint: route,
+    // Dev-menu cheats (see index.js stageMeta.devControls; wired by metagame.js → mounted.dev(id)).
+    // skip-boss is dispatched inline here because it must null the live combat + reset combatRun.
+    // energy mutates the transient combat.player only and is NOT persisted.
+    dev(id) {
+      if (id === "skip-boss") {
+        if (!state.run) beginRun();
+        devSkipToBoss(state.run);
+        state.ui.screen = "run";
+        combat = null;
+        if (combatRun) combatRun.reset();
+      } else {
+        applyDev(id, state.run, combat?.player ?? null);
+      }
+      if (typeof save === "function") save();
+      route();
+    },
+    destroy() { if (combatRun) combatRun.destroy(); removeStage6TestHook(); root.remove(); }
+  };
 
   // ── routing ──────────────────────────────────────────────────────────────────────────────────
   function route() {

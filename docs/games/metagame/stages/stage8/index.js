@@ -9,7 +9,15 @@ export const stageMeta = {
   slug: "entropy-field",
   name: "Entropy Field",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "resources",   label: "+500 States / +200 Scrap / +100 Insight" },
+    { id: "skip-storm",  label: "Skip Cascade Storm" },
+    { id: "boss-gate",   label: "Unlock Boss Gate" },
+    { id: "cool-field",  label: "Cool Field (restore nodes)" },
+    { id: "spawn-debris", label: "Spawn Debris" }
+  ]
 };
 
 export function defaultState(context) {
@@ -43,6 +51,8 @@ export function mountStage(ctx) {
   });
   const view = renderStage8({ ...ctx, state, run });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     destroy() {
       unsubscribe();
       if (run && typeof run.destroy === "function") run.destroy();

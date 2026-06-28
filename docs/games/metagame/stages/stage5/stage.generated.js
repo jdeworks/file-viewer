@@ -1484,8 +1484,50 @@ function installDebugHook(h) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage5/s5dev.js
+var BOSS_IDX = ROUND_COUNT - 1;
+function devGivePackets(state, amount = 200) {
+  state.packets = Number(state.packets || 0) + amount;
+}
+function devRepair(state) {
+  state.run.integrity = 100;
+}
+function devClearAllRounds(state, bossIdx = BOSS_IDX) {
+  state.run.clearedRounds = bossIdx;
+}
+function devInstantCalibrate(state, actions) {
+  const loopMs = Number(state.calibration?.loopMs) || 14e3;
+  state.calibration.calibrated = true;
+  state.calibration.continuousMs = loopMs;
+  actions?.setAction?.(5, ACTION_NAME, {
+    source: "dev-cheat",
+    file: "transmission_hum.mp3",
+    durationMs: loopMs,
+    loopCompleted: true
+  });
+}
+function applyDev(id, state, actions) {
+  if (id === "calibrate") {
+    devInstantCalibrate(state, actions);
+    return true;
+  }
+  if (id === "clear-runs") {
+    devClearAllRounds(state);
+    return true;
+  }
+  if (id === "packets") {
+    devGivePackets(state);
+    return true;
+  }
+  if (id === "repair") {
+    devRepair(state);
+    return true;
+  }
+  return false;
+}
+
 // ../../docs/games/metagame/stages/stage5/renderer.js
-var BOSS_IDX = ROUNDS.length - 1;
+var BOSS_IDX2 = ROUNDS.length - 1;
 function renderStage5(ctx) {
   const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
   const ascension = createAscension({ save: orchestrator?.save || null, stageId: 5, modifiers: ASCENSION_MODS });
@@ -1537,7 +1579,7 @@ function renderStage5(ctx) {
     return getBossLockState({ actions, state }).unlocked;
   }
   function unlockedRounds() {
-    return Math.min(BOSS_IDX, Number(state.run.clearedRounds || 0));
+    return Math.min(BOSS_IDX2, Number(state.run.clearedRounds || 0));
   }
   function pendingResume() {
     const ck = raceRun.restore();
@@ -1549,9 +1591,9 @@ function renderStage5(ctx) {
   }
   function startRound(idx, opts = {}) {
     if (mode === "playing") return;
-    const roundIdx = Math.max(0, Math.min(BOSS_IDX, Number(idx) || 0));
+    const roundIdx = Math.max(0, Math.min(BOSS_IDX2, Number(idx) || 0));
     if (roundIdx > unlockedRounds()) return;
-    if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX) return;
+    if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX2) return;
     const round = roundByIdx(roundIdx);
     const prevGhost = state.timeTrial?.[round.id] || null;
     pushLog3(roundIntro(roundIdx));
@@ -1667,7 +1709,7 @@ function renderStage5(ctx) {
       btn.type = "button";
       btn.dataset.startRound = String(i);
       const boss = isBossRound(i);
-      const locked = boss ? cleared < BOSS_IDX : i > unlocked;
+      const locked = boss ? cleared < BOSS_IDX2 : i > unlocked;
       btn.disabled = locked || mode === "playing";
       const { low, high } = estimateRoundPackets(round, tuning);
       btn.append(
@@ -1736,7 +1778,7 @@ function renderStage5(ctx) {
     startRound,
     getLoop: () => loop,
     getMode: () => mode,
-    bossIdx: BOSS_IDX,
+    bossIdx: BOSS_IDX2,
     actions,
     achievements,
     bell,
@@ -1746,8 +1788,12 @@ function renderStage5(ctx) {
     ascensionMods,
     raceRun
   });
+  function dev(id) {
+    if (applyDev(id, state, actions)) persistAndPaint();
+  }
   return {
     repaint,
+    dev,
     destroy() {
       engine?.stop();
       raceRun.destroy();
@@ -1839,7 +1885,14 @@ var stageMeta = {
   slug: "signal-racer",
   name: "Signal Racer",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls wired in metagame.js → mounted.dev(id).
+  devControls: [
+    { id: "calibrate", label: "Instant-calibrate (unlock boss)" },
+    { id: "clear-runs", label: "Clear all rounds (boss button)" },
+    { id: "packets", label: "+200 packets" },
+    { id: "repair", label: "Full repair (integrity)" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -1862,6 +1915,10 @@ function mountStage(ctx) {
   });
   view = renderStage5({ ...ctx, state });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      view?.dev?.(id);
+    },
     repaint: view.repaint,
     destroy() {
       unsubscribe();

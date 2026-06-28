@@ -710,6 +710,61 @@ function pushLog3(state, line) {
   state.log = [...state.log || [], line].slice(-8);
 }
 
+// ../../docs/games/metagame/stages/stage7/s7dev.js
+var wrongField = (id) => (entityFields[id] || []).find((f) => f.wrong)?.id;
+var impossibleEvId = entityFEventLog.find((e) => e.impossible)?.id;
+function devSkipCase1(state) {
+  for (const id of SCAN_ENTITIES) flagField({ state, entityId: id, fieldId: wrongField(id) });
+  diffField({ state, fieldName: "GPSInfo" });
+  markImpossible({ state, evId: impossibleEvId });
+  markChainBroken({ state });
+  ensureCase2(state);
+}
+function devMintCaseFacts(state) {
+  ensureCase2(state);
+  for (const src of CASE2_SOURCES) mintSourceFact(state, src.action);
+  ensureCase3(state);
+  for (const src of CASE3_SOURCES) mintSourceFact(state, src.action);
+  mintSourceFact(state, CASE3_SEARCH.action);
+}
+function devSolveAccusation(state) {
+  const ss = Number(state.substage || 1);
+  if (ss === 5) {
+    ensureCase2(state);
+    mintSourceFact(state, "route_table_examined");
+    setPinned(state, "entity:K", true);
+    setPinned(state, "field:K:route", true);
+    setPinned(state, "fact:route", true);
+    attemptAccusationForCase(state, 2, { entityId: "K", fieldId: "route", factId: "fact:route" });
+    ensureCase3(state);
+  } else if (ss === 6) {
+    ensureCase3(state);
+    mintSourceFact(state, CASE3_SEARCH.action);
+    setPinned(state, "entity:N", true);
+    setPinned(state, "field:N:session", true);
+    setPinned(state, "fact:session", true);
+    attemptAccusationForCase(state, 3, { entityId: "N", fieldId: "session", factId: "fact:session" });
+  }
+}
+function devMarkUncheat(state) {
+  state.boss.unlocked = true;
+  const set = new Set(state.evidence.contradicted || []);
+  set.add("F");
+  state.evidence.contradicted = [...set];
+}
+var devControls = [
+  { id: "skip-case1", label: "Skip Case 1 (SS1–SS4)" },
+  { id: "mint-case-facts", label: "Mint all case fact cards" },
+  { id: "solve-accusation", label: "Solve current accusation" },
+  { id: "mark-uncheat", label: "Mark EXIF un-cheat satisfied" }
+];
+function applyDev(state, id) {
+  if (id === "skip-case1") devSkipCase1(state);
+  else if (id === "mint-case-facts") devMintCaseFacts(state);
+  else if (id === "solve-accusation") devSolveAccusation(state);
+  else if (id === "mark-uncheat") devMarkUncheat(state);
+}
+
 // ../../docs/games/metagame/stages/stage7/board-render.js
 var KIND_GROUPS = [
   ["entity", "Dossiers"],
@@ -896,8 +951,14 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
   });
   repaint();
   installStage7Hook({ state, persistAndPaint });
+  function dev(id) {
+    applyDev(state, id);
+    if (typeof save === "function") save();
+    repaint();
+  }
   return {
     repaint,
+    dev,
     destroy() {
       removeStage7Hook();
       root.remove();
@@ -1180,7 +1241,9 @@ var stageMeta = {
   slug: "identity-arbiter",
   name: "Identity Arbiter",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -1220,6 +1283,10 @@ function mountStage(ctx) {
   );
   view = renderStage7({ ...ctx, state });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     repaint() {
       if (view && typeof view.repaint === "function") view.repaint();
     },

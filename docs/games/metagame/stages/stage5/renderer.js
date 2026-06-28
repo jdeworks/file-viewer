@@ -13,6 +13,7 @@ import { createRun } from '../../shared/run-state.js';
 import { ASCENSION_MODS, BASE_ASCENSION_CONFIG } from './ascension-mods.js';
 import { shopButtonEls, ascensionPanelEls, roundEstEl } from './panels.js';
 import { installDebugHook } from './debug-hook.js';
+import { applyDev } from './s5dev.js';
 
 const BOSS_IDX = ROUNDS.length - 1;
 
@@ -268,8 +269,11 @@ export function renderStage5(ctx) {
     actions, achievements, bell, persistAndPaint, calibrated, ascension, ascensionMods, raceRun,
   });
 
+  function dev(id) { if (applyDev(id, state, actions)) persistAndPaint(); }
+
   return {
     repaint,
+    dev,
     destroy() {
       engine?.stop();
       raceRun.destroy(); // flush + detach listeners

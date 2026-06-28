@@ -19,6 +19,7 @@ import {
 import { buyArmory } from './armory.js';
 import { snapshotWave, restoreWave } from './state.js';
 import { BTS_PATH, RECURSION_BLUEPRINT_PATH } from './messages.js';
+import { devGiveGlory, devSkipWave, devSkipToBoss, devGodCore } from './s4dev.js';
 
 export function renderStage4(ctx) {
   const { host, state, actions, bts, viewer, save, onStageComplete, run } = ctx;
@@ -107,12 +108,23 @@ export function renderStage4(ctx) {
     };
   }
 
+  // Dev-menu cheats (see index.js stageMeta.devControls + metagame.js's generic button row).
+  // Pure mutation is in s4dev.js; this wires save/repaint. Screen-changing cheats call render();
+  // in-place cheats (glory / god-core) just repaint the active sub-view.
+  function dev(id) {
+    if (id === 'give-glory')   { devGiveGlory(state);  persistNow(); active?.repaint?.(); return; }
+    if (id === 'skip-wave')    { devSkipWave(state);   persistNow(); render(); return; }
+    if (id === 'skip-to-boss') { devSkipToBoss(state); persistNow(); render(); return; }
+    if (id === 'god-core')     { devGodCore(state);    persistNow(); active?.repaint?.(); return; }
+  }
+
   const onHide = () => { if (typeof document === 'undefined' || document.visibilityState === 'hidden') persistNow(); };
   if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onHide);
   if (typeof window !== 'undefined') window.addEventListener('pagehide', persistNow);
 
   render();
   return {
+    dev,
     repaint: () => active?.repaint?.(),
     destroy() {
       destroyActive();

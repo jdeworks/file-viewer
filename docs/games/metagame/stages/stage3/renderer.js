@@ -6,6 +6,7 @@ import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCel
 import { FILLED, COLOR_B, UNKNOWN } from "./nonogram.js";
 import { buildShopPanel, upgradeLevel } from "./shop.js";
 import { installStage3Hook } from "./s3debug.js";
+import { devFillSolution, devGiveCurrency, devSkipToBody, devClearPressure } from "./s3dev.js";
 import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
 import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } from "./s3decay.js";
 import { aliasedTotal } from "./s3aliased.js";
@@ -334,8 +335,26 @@ export function renderStage3(ctx) {
     draft,
   });
 
+  // Dev-menu cheats (see index.js stageMeta.devControls). Pure state mutation via s3dev.js;
+  // DOM-side effects (grid update, board reload, repaint) are handled here in the renderer.
+  function dev(id) {
+    if (id === "show-solution") {
+      if (!board || board.solved) return;
+      devFillSolution(board);
+      board.solved = isSolved(board.puzzle, board.marks);
+      state.run.marks = encodeMarks(board.marks);
+      grid.update(board);
+      if (board.solved) onSolved();
+      return;
+    }
+    if (id === "give-currency") { devGiveCurrency(state); save?.(); paintHud(); return; }
+    if (id === "skip-to-boss") { devSkipToBody(state); save?.(); loadBoard(); paintHud(); return; }
+    if (id === "clear-pressure") { devClearPressure(state); save?.(); paintHud(); return; }
+  }
+
   return {
     repaint: paintHud,
+    dev,
     destroy() { window.removeEventListener("keydown", onKey); uninstallHook(); root.remove(); }
   };
 }

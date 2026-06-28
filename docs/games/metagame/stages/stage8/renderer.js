@@ -4,7 +4,8 @@ import {
   handleDebrisDrop,
   recordHeatDeathAttempt
 } from "./boss.js";
-import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST } from "./messages.js";
+import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST, ACTION_NAME } from "./messages.js";
+import { devGiveResources, devSkipStorm, devUnlockBossGate, devCoolField, devSpawnDebris } from "./s8dev.js";
 import { advanceCycle, applyRepair, applyStabilizer, buildStabilizer, toggleHighLoad } from "./engine.js";
 import { driveToGate } from "./solver.js";
 import { stormAvailable, braceStorm } from "./storms.js";
@@ -183,11 +184,29 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
 
   return {
     repaint,
+    dev,
     destroy() {
       if (window.__fvStage8) delete window.__fvStage8;
       root.remove();
     }
   };
+
+  // Dev-menu cheats (see index.js stageMeta.devControls). Pure state mutations live in s8dev.js;
+  // action-bus side-effects (actions.setAction) are handled here where `actions` is in scope.
+  function dev(id) {
+    if (id === "resources")    devGiveResources(state);
+    else if (id === "skip-storm")  devSkipStorm(state);
+    else if (id === "boss-gate") {
+      devUnlockBossGate(state);
+      // Fire the action-bus entry that hasSalvageArchived() checks — can't be done in pure state.
+      if (actions && typeof actions.setAction === "function") {
+        actions.setAction(8, ACTION_NAME, { source: "dev-cheat", fallback: true });
+      }
+    }
+    else if (id === "cool-field")  devCoolField(state);
+    else if (id === "spawn-debris") devSpawnDebris(state);
+    persistAndPaint();
+  }
 
   // Deterministic per-cycle rng, reseeded from the run seed: `${run.seed}:cyc:${cycle}` (so the SAME
   // run replays identically across reloads, and a fresh run after reset() gets a new seed base).

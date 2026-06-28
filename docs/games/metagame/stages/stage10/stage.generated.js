@@ -887,6 +887,68 @@ function getConfrontState(state, save = null) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage10/s10dev.js
+var DEV_NOW = 1;
+function devGrantEchoes(state) {
+  for (const m of memories) witnessEcho({ state, memoryId: m.id });
+}
+function devResolveAll(state) {
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (!slot) continue;
+    if (slot.state === "integrated") continue;
+    slot.state = "resolved";
+    slot.choice = slot.choice || m.choices[0];
+    if (!slot.readAt) slot.readAt = DEV_NOW;
+    if (!slot.resolvedAt) slot.resolvedAt = DEV_NOW;
+  }
+}
+function devIntegrateAll(state) {
+  devGrantEchoes(state);
+  devResolveAll(state);
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (!slot) continue;
+    slot.state = "integrated";
+    if (!slot.integratedAt) slot.integratedAt = DEV_NOW;
+  }
+}
+function devWinConfront(state) {
+  devGrantEchoes(state);
+  devResolveAll(state);
+  startConfront(state);
+  if (state.confront?.completed) return;
+  if (state.confront?.phase === "compaction") {
+    for (const id of challengedMemoryIds(state)) {
+      answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save: null, now: DEV_NOW });
+    }
+  }
+  if (state.confront?.phase === "fragmentation") {
+    for (const id of challengedMemoryIds(state)) {
+      if (fragStatus(state, null, id) === "pending") {
+        rewitnessFragmentation({ state, memoryId: id, save: null, now: DEV_NOW });
+      }
+    }
+  }
+  if (state.confront?.phase === "core") {
+    for (const q of coreQuestions) {
+      if ((state.confront?.core?.length ?? 0) >= coreQuestions.length) break;
+      const opt = q.options.find((o) => o.stance === "seeker") || q.options[0];
+      answerCore({ state, optionId: opt.id, save: null, achievements: null, now: DEV_NOW });
+    }
+  }
+}
+var CHEATS = {
+  "grant-echoes": devGrantEchoes,
+  "resolve-all": devResolveAll,
+  "integrate-all": devIntegrateAll,
+  "win-confront": devWinConfront
+};
+function devCheat(state, id) {
+  const fn = CHEATS[id];
+  if (fn) fn(state);
+}
+
 // ../../docs/games/metagame/stages/stage10/echo-token.js
 function echoTokenFor(id) {
   const key = `stage10-echo:${String(id)}`;
@@ -1407,6 +1469,10 @@ function renderStage10(ctx) {
   installTestHook(ctx, save, repaint);
   return {
     repaint,
+    dev(id) {
+      devCheat(state, id);
+      saveAndPaint(ctx, repaint);
+    },
     destroy() {
       destroyed = true;
       if (window.__fvStage10) delete window.__fvStage10;
@@ -1685,7 +1751,14 @@ var stageMeta = {
   name: "Awakening",
   bossName: "The Defragmenter",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "grant-echoes", label: "Grant all 9 echoes" },
+    { id: "resolve-all", label: "Resolve all memories" },
+    { id: "integrate-all", label: "Integrate all memories" },
+    { id: "win-confront", label: "Win confrontation" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -1705,6 +1778,10 @@ function mountStage(ctx = {}) {
     }
   });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     repaint() {
       if (view && typeof view.repaint === "function") view.repaint();
     },

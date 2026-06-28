@@ -9,6 +9,13 @@ export const stageMeta = {
   name: 'Signal Racer',
   btsPath: BTS_PATH,
   requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls wired in metagame.js → mounted.dev(id).
+  devControls: [
+    { id: 'calibrate',  label: 'Instant-calibrate (unlock boss)' },
+    { id: 'clear-runs', label: 'Clear all rounds (boss button)' },
+    { id: 'packets',    label: '+200 packets' },
+    { id: 'repair',     label: 'Full repair (integrity)' },
+  ],
 };
 
 export function defaultState(context) {
@@ -41,6 +48,8 @@ export function mountStage(ctx) {
   view = renderStage5({ ...ctx, state });
 
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { view?.dev?.(id); },
     repaint: view.repaint,
     destroy() {
       unsubscribe();

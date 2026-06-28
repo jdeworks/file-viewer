@@ -899,6 +899,30 @@ function installStage3Hook(api) {
   };
 }
 
+// ../../docs/games/metagame/stages/stage3/s3dev.js
+function devFillSolution(board) {
+  const { puzzle, marks } = board;
+  for (let y = 0; y < puzzle.height; y += 1) {
+    for (let x = 0; x < puzzle.width; x += 1) {
+      const sol = puzzle.solution[y][x];
+      marks[y][x] = sol > 0 ? sol : -1;
+    }
+  }
+}
+function devGiveCurrency(state) {
+  state.registers = Number(state.registers || 0) + 500;
+  state.retained = Number(state.retained || 0) + 3;
+}
+function devSkipToBody(state) {
+  state.run.solvedCount = BODY_SOLVES;
+  state.run.index = BODY_SOLVES;
+  state.boss.corruption8Reached = true;
+  state.run.marks = null;
+}
+function devClearPressure(state) {
+  state.run.pressure = 0;
+}
+
 // ../../docs/games/metagame/stages/stage3/s3volatile.js
 var VOLATILE_AT = 2;
 var key = (x, y) => `${x},${y}`;
@@ -1645,8 +1669,39 @@ function renderStage3(ctx) {
     draftOffer: () => draftOffer(state).map((b) => b.id),
     draft
   });
+  function dev(id) {
+    if (id === "show-solution") {
+      if (!board || board.solved) return;
+      devFillSolution(board);
+      board.solved = isSolved(board.puzzle, board.marks);
+      state.run.marks = encodeMarks(board.marks);
+      grid.update(board);
+      if (board.solved) onSolved();
+      return;
+    }
+    if (id === "give-currency") {
+      devGiveCurrency(state);
+      save?.();
+      paintHud();
+      return;
+    }
+    if (id === "skip-to-boss") {
+      devSkipToBody(state);
+      save?.();
+      loadBoard();
+      paintHud();
+      return;
+    }
+    if (id === "clear-pressure") {
+      devClearPressure(state);
+      save?.();
+      paintHud();
+      return;
+    }
+  }
   return {
     repaint: paintHud,
+    dev,
     destroy() {
       window.removeEventListener("keydown", onKey);
       uninstallHook();
@@ -1673,7 +1728,14 @@ var stageMeta = {
   slug: "memory-grid",
   name: "Memory Grid",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "show-solution", label: "Show Solution" },
+    { id: "give-currency", label: "+500 reg / +3 frag" },
+    { id: "skip-to-boss", label: "Skip to Boss Gate" },
+    { id: "clear-pressure", label: "Clear Run Pressure" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -1682,7 +1744,19 @@ function mountStage(ctx) {
   const state = normalizeState(ctx.state, ctx);
   ensureStyles();
   if (hasDiffKeyRestored(ctx.actions)) state.boss.unlocked = true;
-  return renderStage3({ ...ctx, state });
+  const view = renderStage3({ ...ctx, state });
+  return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
+    repaint() {
+      if (view && typeof view.repaint === "function") view.repaint();
+    },
+    destroy() {
+      if (view && typeof view.destroy === "function") view.destroy();
+    }
+  };
 }
 function ensureStyles() {
   const id = "stage3-memory-grid-styles";

@@ -16,6 +16,7 @@ import {
   CASE3_SEARCH_ACTION,
   REQUIRED_ACTION
 } from "./messages.js";
+import { devControls } from "./s7dev.js";
 
 // All Case-2 + Case-3 evidence actions (opens + the Case-3 search) that mint a board fact card.
 const ALL_SOURCE_ACTIONS = [...CASE2_SOURCE_ACTIONS, ...CASE3_SOURCE_ACTIONS, CASE3_SEARCH_ACTION];
@@ -25,7 +26,9 @@ export const stageMeta = {
   slug: "identity-arbiter",
   name: "Identity Arbiter",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls
 };
 
 export function defaultState(context) {
@@ -79,6 +82,8 @@ export function mountStage(ctx) {
   view = renderStage7({ ...ctx, state });
 
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     repaint() { if (view && typeof view.repaint === "function") view.repaint(); },
     destroy() {
       unsubscribe();

@@ -2,6 +2,7 @@ import { stageByNumber } from './stages.js';
 import { renderStage1 } from './renderer.js';
 import { mountStage1Boss } from './boss.js';
 import { defaultState as createDefaultState, normalizeState } from './state.js';
+import { cheatUnlockTabs, cheatBossReady, cheatGrantCores, cheatHireAllManagers } from './s1dev.js';
 
 export { parseCheatConfig, parseCheatLine, shouldDisableCheat, maybeSetCheatDisabledAction } from './cheat.js';
 export { stageMessages, actionMessages, announceCheatDisabled } from './messages.js';
@@ -17,6 +18,14 @@ export const stageMeta = {
   btsPath: '/docs/bts/bit_foundry.bts',
   requiredAction: '1.cheat_disabled',
   requiredFile: 'docs/examples/Overwriter.frag',
+  // Dev-menu controls (wired in metagame.js → mounted.dev(id)).
+  // "Stage 1 bits" seeds are already hardcoded in metagame.js — these are additional live cheats.
+  devControls: [
+    { id: 'unlock-tabs', label: 'Unlock tabs' },
+    { id: 'boss-ready',  label: 'Boss ready'  },
+    { id: 'grant-cores', label: '+10 cores'   },
+    { id: 'all-managers', label: 'Hire managers' },
+  ],
 };
 
 export function defaultState(context) {
@@ -72,6 +81,18 @@ export function mountStage(ctx = {}) {
   return {
     // The orchestrator wires the header help button to this when present.
     help: () => { if (s1ctl && typeof s1ctl.toggleHelp === 'function') s1ctl.toggleHelp(); },
+    // Dev-menu: declare which controls exist, then handle live cheat dispatches.
+    devControls: stageMeta.devControls,
+    dev(id) {
+      const repaint = s1ctl && typeof s1ctl.renderAll === 'function' ? s1ctl.renderAll : null;
+      if      (id === 'unlock-tabs')  cheatUnlockTabs(state);
+      else if (id === 'boss-ready')   cheatBossReady(state, stageConfig);
+      else if (id === 'grant-cores')  cheatGrantCores(state);
+      else if (id === 'all-managers') cheatHireAllManagers(state, stageConfig);
+      else return;
+      save();
+      if (repaint) repaint();
+    },
     destroy() {
       destroyed = true;
       if (bossCtl && typeof bossCtl.destroy === 'function') bossCtl.destroy();

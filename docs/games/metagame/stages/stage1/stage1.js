@@ -278,8 +278,9 @@ export function renderStage1(ctx) {
     actions: ctx.actions, onStageComplete: ctx.onStageComplete, updateEcho,
   });
 
-  // Expose the help toggle so the orchestrator can wire it to the header help button.
-  return { toggleHelp };
+  // Expose the help toggle and renderAll so the orchestrator can wire them up.
+  // renderAll is used by the dev-menu dev(id) path to repaint after a cheat.
+  return { toggleHelp, renderAll };
 }
 
 export const STAGE1 = { GRID_CELLS, GRID_COLS, GRID_ROWS };

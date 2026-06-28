@@ -4176,7 +4176,7 @@ function renderStage1(ctx2) {
     onStageComplete: ctx2.onStageComplete,
     updateEcho
   });
-  return { toggleHelp };
+  return { toggleHelp, renderAll };
 }
 
 // ../../docs/games/metagame/stages/stage1/boss.js
@@ -4287,6 +4287,38 @@ function normalizeState(state, context = {}) {
   delete target.defeated;
   delete target.achievements;
   return target;
+}
+
+// ../../docs/games/metagame/stages/stage1/s1dev.js
+function cheatUnlockTabs(state) {
+  state.tabsUnlocked = true;
+  state.helpersUnlocked = true;
+  const needed = ["score-unlock", "sound-unlock"];
+  state.milestones = [.../* @__PURE__ */ new Set([...state.milestones || [], ...needed])];
+}
+function cheatBossReady(state, cfg) {
+  cheatUnlockTabs(state);
+  state.owned = state.owned || {};
+  for (const t of cfg.tiers || []) {
+    if ((state.owned[t.id] || 0) < 1) state.owned[t.id] = 1;
+  }
+  if (cfg.bossTicket) {
+    state.bits = { ...cfg.bossTicket };
+    const currentE = state.totalBits && typeof state.totalBits === "object" ? state.totalBits.e || 0 : 0;
+    if (currentE < cfg.bossTicket.e) state.totalBits = { ...cfg.bossTicket };
+  }
+}
+function cheatGrantCores(state, amount = 10) {
+  state.cores = (state.cores || 0) + amount;
+}
+function cheatHireAllManagers(state, cfg) {
+  state.managers = state.managers || {};
+  for (const m of cfg.managers || []) {
+    const ms = state.managers[m.id];
+    if (!ms || ms.level < 1) {
+      state.managers[m.id] = { level: 1, paused: false, lastFire: 0 };
+    }
+  }
 }
 
 // ../../docs/games/metagame/stages/stage1/cheat.js
@@ -4412,7 +4444,15 @@ var stageMeta = {
   bossName: "The Defragmenter",
   btsPath: "/docs/bts/bit_foundry.bts",
   requiredAction: "1.cheat_disabled",
-  requiredFile: "docs/examples/Overwriter.frag"
+  requiredFile: "docs/examples/Overwriter.frag",
+  // Dev-menu controls (wired in metagame.js → mounted.dev(id)).
+  // "Stage 1 bits" seeds are already hardcoded in metagame.js — these are additional live cheats.
+  devControls: [
+    { id: "unlock-tabs", label: "Unlock tabs" },
+    { id: "boss-ready", label: "Boss ready" },
+    { id: "grant-cores", label: "+10 cores" },
+    { id: "all-managers", label: "Hire managers" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -4463,6 +4503,18 @@ function mountStage(ctx2 = {}) {
     // The orchestrator wires the header help button to this when present.
     help: () => {
       if (s1ctl && typeof s1ctl.toggleHelp === "function") s1ctl.toggleHelp();
+    },
+    // Dev-menu: declare which controls exist, then handle live cheat dispatches.
+    devControls: stageMeta.devControls,
+    dev(id) {
+      const repaint = s1ctl && typeof s1ctl.renderAll === "function" ? s1ctl.renderAll : null;
+      if (id === "unlock-tabs") cheatUnlockTabs(state);
+      else if (id === "boss-ready") cheatBossReady(state, stageConfig);
+      else if (id === "grant-cores") cheatGrantCores(state);
+      else if (id === "all-managers") cheatHireAllManagers(state, stageConfig);
+      else return;
+      save();
+      if (repaint) repaint();
     },
     destroy() {
       destroyed = true;

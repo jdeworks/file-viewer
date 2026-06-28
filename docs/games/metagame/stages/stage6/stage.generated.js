@@ -4132,6 +4132,56 @@ function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
+// ../../docs/games/metagame/stages/stage6/s6dev.js
+var DEV_CARDS = ["HANDSHAKE", "FIREWALL", "TCP_STACK"];
+var ALL_KEYS = [KEY_UNTOUCHABLE, KEY_ASCETIC, KEY_SACRIFICE];
+function devHeal(run, combatPlayer) {
+  if (!run) return { ok: false, reason: "no-run" };
+  run.hp = run.maxHp;
+  if (combatPlayer && typeof combatPlayer.maxHp === "number") {
+    combatPlayer.hp = combatPlayer.maxHp;
+  }
+  return { ok: true, hp: run.hp };
+}
+function devGrantKeys(run) {
+  if (!run) return { ok: false, reason: "no-run" };
+  if (!Array.isArray(run.keys)) run.keys = [];
+  for (const k of ALL_KEYS) {
+    if (!run.keys.includes(k)) run.keys.push(k);
+  }
+  return { ok: true, keys: run.keys.length };
+}
+function devAddCards(run) {
+  if (!run) return { ok: false, reason: "no-run" };
+  if (!Array.isArray(run.deck)) run.deck = [];
+  run.deck = [...run.deck, ...DEV_CARDS];
+  return { ok: true, added: DEV_CARDS.length, deckSize: run.deck.length };
+}
+function devSkipToBoss(run) {
+  if (!run) return { ok: false, reason: "no-run" };
+  const nodeId2 = seatAtFinalBoss(run);
+  return { ok: true, nodeId: nodeId2, act: run.act };
+}
+function devAddEnergy(combatPlayer, n = 3) {
+  if (!combatPlayer) return { ok: false, reason: "no-combat" };
+  combatPlayer.energy = Math.min(9, (combatPlayer.energy || 0) + n);
+  return { ok: true, energy: combatPlayer.energy };
+}
+function applyDev(id, run, combatPlayer) {
+  switch (id) {
+    case "heal":
+      return devHeal(run, combatPlayer);
+    case "keys":
+      return devGrantKeys(run);
+    case "cards":
+      return devAddCards(run);
+    case "energy":
+      return devAddEnergy(combatPlayer);
+    default:
+      return { ok: false, reason: "unknown-id" };
+  }
+}
+
 // ../../docs/games/metagame/stages/stage6/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
 function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
@@ -4179,11 +4229,30 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       dailyKeyOverride = v;
     }
   });
-  return { repaint: route, destroy() {
-    if (combatRun) combatRun.destroy();
-    removeStage6TestHook();
-    root.remove();
-  } };
+  return {
+    repaint: route,
+    // Dev-menu cheats (see index.js stageMeta.devControls; wired by metagame.js → mounted.dev(id)).
+    // skip-boss is dispatched inline here because it must null the live combat + reset combatRun.
+    // energy mutates the transient combat.player only and is NOT persisted.
+    dev(id) {
+      if (id === "skip-boss") {
+        if (!state.run) beginRun();
+        devSkipToBoss(state.run);
+        state.ui.screen = "run";
+        combat = null;
+        if (combatRun) combatRun.reset();
+      } else {
+        applyDev(id, state.run, combat?.player ?? null);
+      }
+      if (typeof save === "function") save();
+      route();
+    },
+    destroy() {
+      if (combatRun) combatRun.destroy();
+      removeStage6TestHook();
+      root.remove();
+    }
+  };
   function route() {
     const run = state.run;
     if (state.ui.screen !== "run" || !run) {
@@ -4613,7 +4682,15 @@ var stageMeta = {
   slug: "protocol-codex",
   name: "Protocol Codex",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "heal", label: "Full HP" },
+    { id: "keys", label: "Grant 3 Keys" },
+    { id: "cards", label: "+3 Cards" },
+    { id: "skip-boss", label: "Skip to Boss" },
+    { id: "energy", label: "+3 Energy" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
@@ -4632,6 +4709,10 @@ function mountStage(ctx) {
   });
   view = renderStage6({ ...ctx, state });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) {
+      if (view && typeof view.dev === "function") view.dev(id);
+    },
     destroy() {
       unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();

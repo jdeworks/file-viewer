@@ -19,6 +19,7 @@ import {
   startConfront
 } from "./confront.js";
 import { coreQuestions } from "./content-confront.js";
+import { devCheat } from "./s10dev.js";
 import { echoTokenFor } from "./echo-token.js";
 import { echoVerb } from "./echo-verbs.js";
 import { STAGE_ID } from "./messages.js";
@@ -107,6 +108,7 @@ export function renderStage10(ctx) {
 
   return {
     repaint,
+    dev(id) { devCheat(state, id); saveAndPaint(ctx, repaint); },
     destroy() {
       destroyed = true;
       if (window.__fvStage10) delete window.__fvStage10;

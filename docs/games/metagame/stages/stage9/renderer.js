@@ -21,6 +21,7 @@ import { btsSummary, BTS_PATH, FIXED_OFFLINE_SEED, NOTES_PATH } from "./messages
 import { startLoop } from "./loop.js";
 import { AIDS, buyAid, consumeStabilizer } from "./aids.js";
 import { installTestHook } from "./testhook.js";
+import { applyDevControl } from "./s9dev.js";
 
 export function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -249,6 +250,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
 
   return {
     repaint,
+    dev(id) { applyDevControl(id, state, { seed: activeSeed() }); persistAndPaint(); },
     destroy() {
       loop.stop();
       if (flashTimer) clearTimeout(flashTimer);

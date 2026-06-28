@@ -1,13 +1,16 @@
 import { renderStage9 } from "./renderer.js";
 import { defaultState as createDefaultState, normalizeState } from "./state.js";
 import { ACTION_NAME, BTS_PATH, REQUIRED_ACTION } from "./messages.js";
+import { DEV_CONTROLS } from "./s9dev.js";
 
 export const stageMeta = {
   id: 9,
   slug: "observer-state",
   name: "Observer State",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: DEV_CONTROLS
 };
 
 export function defaultState(context) {
@@ -24,6 +27,8 @@ export function mountStage(ctx) {
   });
   const view = renderStage9({ ...ctx, state });
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     destroy() {
       unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();

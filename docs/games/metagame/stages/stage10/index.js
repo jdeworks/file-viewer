@@ -9,7 +9,14 @@ export const stageMeta = {
   name: "Awakening",
   bossName: "The Defragmenter",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "grant-echoes",  label: "Grant all 9 echoes" },
+    { id: "resolve-all",   label: "Resolve all memories" },
+    { id: "integrate-all", label: "Integrate all memories" },
+    { id: "win-confront",  label: "Win confrontation" }
+  ]
 };
 
 export function defaultState(context) {
@@ -38,6 +45,8 @@ export function mountStage(ctx = {}) {
   });
 
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     repaint() { if (view && typeof view.repaint === "function") view.repaint(); },
     destroy() {
       unsubscribeEcho();

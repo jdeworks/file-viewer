@@ -12,7 +12,15 @@ export const stageMeta = {
   slug: "protocol-codex",
   name: "Protocol Codex",
   btsPath: BTS_PATH,
-  requiredAction: REQUIRED_ACTION
+  requiredAction: REQUIRED_ACTION,
+  // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
+  devControls: [
+    { id: "heal",      label: "Full HP" },
+    { id: "keys",      label: "Grant 3 Keys" },
+    { id: "cards",     label: "+3 Cards" },
+    { id: "skip-boss", label: "Skip to Boss" },
+    { id: "energy",    label: "+3 Energy" }
+  ]
 };
 
 export function defaultState(context) {
@@ -38,6 +46,8 @@ export function mountStage(ctx) {
   view = renderStage6({ ...ctx, state });
 
   return {
+    devControls: stageMeta.devControls,
+    dev(id) { if (view && typeof view.dev === "function") view.dev(id); },
     destroy() {
       unsubscribe();
       if (view && typeof view.destroy === "function") view.destroy();
