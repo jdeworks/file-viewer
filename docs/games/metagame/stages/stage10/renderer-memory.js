@@ -93,12 +93,18 @@ function renderEcho(memory, slot) {
   const verbChip = spec.verb === "open"
     ? ""
     : `<span class="mg-stage10__echo-verb">${escapeHtml(spec.label || spec.verb)}</span>`;
+  // The SEARCH verb gets a second, distinct affordance: opening is step one; the witness only fires
+  // when the player asks the precise question (drives the real searchViewerFile feature).
+  const searchButton = (!witnessed && spec.verb === "search")
+    ? `<button type="button" data-search-echo="${memory.id}" data-echo-query="${escapeAttr(spec.query || "")}">Search for ${escapeHtml(spec.query || "the answer")} &rarr;</button>`
+    : "";
   return `
     <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
       <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo — pending"}</span>
       ${witnessed ? "" : verbChip}
       <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
       ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}" data-echo-verb="${escapeAttr(spec.verb)}" data-echo-mode="${escapeAttr(spec.mode || "")}">Open echo in viewer &rarr;</button>`}
+      ${searchButton}
     </div>
   `;
 }

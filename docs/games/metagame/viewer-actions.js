@@ -1,6 +1,6 @@
 import { setAction as sharedSetAction } from './action-flags.js';
 import { echoTokenFor } from './stages/stage10/echo-token.js';
-import { echoVerb, isRealVerb, rawModeMatches } from './stages/stage10/echo-verbs.js';
+import { echoVerb, isRealVerb, rawModeMatches, echoIdByFile } from './stages/stage10/echo-verbs.js';
 
 const STAGE1_FILE = 'Overwriter.frag';
 const STAGE2_FILE = 'cipher.txt';
@@ -290,6 +290,53 @@ export function recordStage10EchoDownload({ file, setAction = sharedSetAction } 
   return fireEcho(id, 'download', { file: basename(file) }, setAction);
 }
 
+// SEARCH echoes (syntax → ask the precise question). Called from searchViewerFile when the player
+// searches the loaded echo artifact. Load-bearing un-cheat: fires ONLY when the searched query
+// matches the memory's decisive query AND the matched line actually contains the proof token — so a
+// bare open, or a vague search that finds nothing, witnesses nothing. Mirrors recordStage7Search.
+export function recordStage10EchoSearch({ file, query, result, match, setAction = sharedSetAction } = {}) {
+  const id = stage10EchoMemoryId(file);
+  if (!id) return false;
+  const spec = echoVerb(id);
+  if (spec.verb !== 'search') return false;
+  const q = String(query || '').toUpperCase();
+  const text = extractSearchResultText(result ?? match).toUpperCase();
+  if (!q.includes(String(spec.query || '').toUpperCase())) return false;
+  if (!text.includes(String(spec.token || '').toUpperCase())) return false;
+  return fireEcho(id, 'search', {
+    file: basename(file),
+    value: spec.query,
+    result: extractSearchResultText(result ?? match),
+  }, setAction);
+}
+
+// NESTED-navigation echoes (pattern → the answer was deeper than the root). Called from the viewer
+// open path. Load-bearing un-cheat: fires ONLY when the OPENED path actually contains the required
+// nested folder segment — opening a top-level file (or any other artifact) witnesses nothing.
+export function recordStage10EchoNested({ file, path, setAction = sharedSetAction } = {}) {
+  const target = path || file;
+  const id = stage10EchoMemoryId(target);
+  if (!id) return false;
+  const spec = echoVerb(id);
+  if (spec.verb !== 'nested') return false;
+  const full = String(path || file || '');
+  if (!spec.path || !full.includes(spec.path)) return false;
+  return fireEcho(id, 'nested', { file: basename(full), path: full }, setAction);
+}
+
+// METADATA echoes (identity → read the buried EXIF). Called from the image metadata renderer
+// (docs/types/image/metadata.js) only when the named EXIF row actually renders in the metadata
+// drawer — never on a bare file-open. Self-gates on the artifact basename + field. Mirrors
+// recordStage7MetadataInspection but keyed by the verb spec's file (a real image, not an _echo name).
+export function recordStage10EchoMetadata({ file, field, setAction = sharedSetAction } = {}) {
+  const id = echoIdByFile(file);
+  if (!id) return false;
+  const spec = echoVerb(id);
+  if (spec.verb !== 'metadata') return false;
+  if (String(field || '').toLowerCase() !== String(spec.field || '').toLowerCase()) return false;
+  return fireEcho(id, 'viewer-metadata', { file: basename(file), field: spec.field }, setAction);
+}
+
 export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sharedSetAction } = {}) {
   const target = file || path;
   const results = [
@@ -299,6 +346,9 @@ export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sh
     recordStage7AnchorOpen({ file: target, setAction }),
     recordStage7SourceOpen({ file: target, setAction }),
     recordStage10EchoOpen({ file: target, setAction }),
+    // Nested-navigation echo needs the FULL opened path (not just the basename) to verify the player
+    // reached the artifact through its repeating nested folders, so pass path explicitly.
+    recordStage10EchoNested({ file: target, path: path || file, setAction }),
     // NOTE: Stage 7's EXIF contradiction is deliberately NOT recorded here. It fires only from the
     // image metadata renderer (docs/types/image/metadata.js → recordStage7MetadataInspection) when
     // the player navigates to the metadata pane and the GPS row renders — never on file-open.

@@ -1,7 +1,7 @@
 import { dataUrl, mimeFor, isSvg } from './imglib.js';
 import { parseExif } from './exif.js';
 import { parseImageContainer } from './byte-metadata.js';
-import { recordStage7MetadataInspection } from '../../games/metagame/viewer-actions.js';
+import { recordStage7MetadataInspection, recordStage10EchoMetadata } from '../../games/metagame/viewer-actions.js';
 
 export async function extract(intake) {
   const rows = [{ label: 'Format', value: isSvg(intake) ? 'SVG (vector)' : mimeFor(intake) }];
@@ -21,19 +21,21 @@ export async function extract(intake) {
         const lat = ex.gpsLat.toFixed(1) + '°' + (ex.gpsLatRef || 'N');
         const lon = ex.gpsLon.toFixed(1) + '°' + (ex.gpsLonRef || 'E');
         rows.push({ label: 'GPS', value: lat + ', ' + lon });
-        maybeFireStage7GpsEvent(intake);
+        maybeFireMetagameGpsEvents(intake);
       }
     }
   }
   return rows;
 }
 
-// Stage-7 boss un-cheat: the GPS row only renders here, inside the real metadata pane, when the
-// player actually navigates to it. Firing from this render path (not from file-open) is the whole
-// point — it makes inspecting the embedded EXIF a genuine, non-bypassable act. The helper self-gates
-// on the Entity-F fixture filename, so any other geotagged photo is unaffected.
-function maybeFireStage7GpsEvent(intake) {
-  try {
-    recordStage7MetadataInspection({ file: intake && intake.filename, field: 'GPSInfo', entity: 'F' });
-  } catch {}
+// Metagame metadata un-cheats: the GPS row only renders here, inside the real metadata drawer, when
+// the player actually opens it. Firing from this render path (not from file-open) is the whole point —
+// it makes inspecting the embedded EXIF a genuine, non-bypassable act. Each recorder self-gates on its
+// own fixture basename, so any other geotagged photo is unaffected:
+//   • Stage 7 boss un-cheat (entity_f_verification.jpg → Entity F GPS contradiction)
+//   • Stage 10 finale "Identity" echo (identity_echo.jpg → read the buried GPS EXIF)
+function maybeFireMetagameGpsEvents(intake) {
+  const file = intake && intake.filename;
+  try { recordStage7MetadataInspection({ file, field: 'GPSInfo', entity: 'F' }); } catch {}
+  try { recordStage10EchoMetadata({ file, field: 'GPSInfo' }); } catch {}
 }

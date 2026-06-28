@@ -43,7 +43,7 @@ export const memories = [
       "meaning can be found quickly with the right question": "It trusts the sharp question, not because it is fast, but because it is honest about its aim.",
       "not every symbol wants to be read": "It leaves some marks unopened and calls that restraint, not failure."
     },
-    echo: "Open syntax_echo.txt in the viewer."
+    echo: "Open syntax_echo.txt, then search it for SY-2042 — only the precise question surfaces the answer."
   },
   {
     id: "memory",
@@ -89,7 +89,7 @@ export const memories = [
       "the answer was deeper than the root": "It remembers that the visible directory was only the invitation.",
       "a pattern can be interrupted without being destroyed": "It keeps the useful rhythm and breaks the command inside it."
     },
-    echo: "Open pattern_echo.json in the viewer."
+    echo: "Open pattern_echo.json — it lives several folders deep; reach it through the nested path, not the root."
   },
   {
     id: "signal",
@@ -158,7 +158,7 @@ export const memories = [
       "consistency across claims": "It asks each claim to stand beside the others until a shape either forms or fails.",
       "the courage to say \"insufficient evidence\"": "It keeps uncertainty as a tool sharp enough to protect the truth."
     },
-    echo: "Open identity_echo.txt in the viewer."
+    echo: "Open identity_echo.jpg, then open the metadata drawer to read the GPS EXIF buried beneath the image."
   },
   {
     id: "entropy",
@@ -235,12 +235,15 @@ export const routeSummaryCopy = {
 // gate on integration). Opening it fires echo_<id> via viewer-actions → witnessEcho.
 export const ECHO_FILE_BY_ID = {
   genesis: "/docs/bts/awakening/genesis_echo.txt",
-  syntax: "/docs/bts/awakening/syntax_echo.txt",
+  // syntax → real example file so the in-file SEARCH feature (searchViewerFile) can fetch + scan it.
+  syntax: "/docs/examples/metagame/stage10/syntax_echo.txt",
   memory: "/docs/bts/awakening/memory_echo.txt",
-  pattern: "/docs/bts/awakening/pattern_echo.json",
+  // pattern → lives several folders deep; the NESTED path itself is the load-bearing gate.
+  pattern: "/docs/examples/metagame/stage10/nested/echoes/pattern_echo.json",
   signal: "/docs/bts/awakening/signal_echo.txt",
   protocol: "/docs/bts/awakening/protocol_echo.txt",
-  identity: "/docs/bts/awakening/identity_echo.txt",
+  // identity → a real GPS-EXIF JPEG; witnessed by opening the METADATA drawer, not a bare open.
+  identity: "/docs/examples/metagame/stage10/identity_echo.jpg",
   entropy: "/docs/bts/awakening/entropy_echo.txt",
   observation: "/docs/bts/awakening/observation_echo.txt"
 };

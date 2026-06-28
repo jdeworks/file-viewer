@@ -51,7 +51,7 @@ var memories = [
       "meaning can be found quickly with the right question": "It trusts the sharp question, not because it is fast, but because it is honest about its aim.",
       "not every symbol wants to be read": "It leaves some marks unopened and calls that restraint, not failure."
     },
-    echo: "Open syntax_echo.txt in the viewer."
+    echo: "Open syntax_echo.txt, then search it for SY-2042 — only the precise question surfaces the answer."
   },
   {
     id: "memory",
@@ -97,7 +97,7 @@ var memories = [
       "the answer was deeper than the root": "It remembers that the visible directory was only the invitation.",
       "a pattern can be interrupted without being destroyed": "It keeps the useful rhythm and breaks the command inside it."
     },
-    echo: "Open pattern_echo.json in the viewer."
+    echo: "Open pattern_echo.json — it lives several folders deep; reach it through the nested path, not the root."
   },
   {
     id: "signal",
@@ -166,7 +166,7 @@ var memories = [
       "consistency across claims": "It asks each claim to stand beside the others until a shape either forms or fails.",
       'the courage to say "insufficient evidence"': "It keeps uncertainty as a tool sharp enough to protect the truth."
     },
-    echo: "Open identity_echo.txt in the viewer."
+    echo: "Open identity_echo.jpg, then open the metadata drawer to read the GPS EXIF buried beneath the image."
   },
   {
     id: "entropy",
@@ -239,12 +239,15 @@ var routeSummaryCopy = {
 };
 var ECHO_FILE_BY_ID = {
   genesis: "/docs/bts/awakening/genesis_echo.txt",
-  syntax: "/docs/bts/awakening/syntax_echo.txt",
+  // syntax → real example file so the in-file SEARCH feature (searchViewerFile) can fetch + scan it.
+  syntax: "/docs/examples/metagame/stage10/syntax_echo.txt",
   memory: "/docs/bts/awakening/memory_echo.txt",
-  pattern: "/docs/bts/awakening/pattern_echo.json",
+  // pattern → lives several folders deep; the NESTED path itself is the load-bearing gate.
+  pattern: "/docs/examples/metagame/stage10/nested/echoes/pattern_echo.json",
   signal: "/docs/bts/awakening/signal_echo.txt",
   protocol: "/docs/bts/awakening/protocol_echo.txt",
-  identity: "/docs/bts/awakening/identity_echo.txt",
+  // identity → a real GPS-EXIF JPEG; witnessed by opening the METADATA drawer, not a bare open.
+  identity: "/docs/examples/metagame/stage10/identity_echo.jpg",
   entropy: "/docs/bts/awakening/entropy_echo.txt",
   observation: "/docs/bts/awakening/observation_echo.txt"
 };
@@ -902,17 +905,27 @@ function verifyEchoToken(id, token) {
 var ECHO_VERBS = {
   // Genesis (stage 1, the first source): read the raw, as-loaded original in the raw pane.
   genesis: { verb: "rawmode", mode: "original", label: "Raw · Original", hint: "switch the raw pane to the Original (⟲) view" },
+  // Syntax (stage 2, the cipher): ask the precise question — SEARCH the file for the decisive token.
+  // `query` is what the player searches for; `token` must appear in the matched line to prove it found
+  // the real answer (a vague glance never surfaces it). Witnessed by recordStage10EchoSearch.
+  syntax: { verb: "search", query: "SY-2042", token: "PASSAGE OPEN", label: "Search", hint: "search the file for SY-2042 to surface the answer" },
   // Memory (stage 3, before/after): compare current vs original with the Diff view.
   memory: { verb: "diff", mode: "diff", label: "Diff", hint: "switch the raw pane to the Diff (⇄) view" },
+  // Pattern (stage 4, recursion): the answer was deeper than the root — open the artifact through the
+  // repeating NESTED folder path. `path` is the folder segment the opened path must contain (so a
+  // top-level open never witnesses). Witnessed by recordStage10EchoNested.
+  pattern: { verb: "nested", path: "stage10/nested/echoes", label: "Nested path", hint: "open it through the nested folder path (deeper than the root)" },
+  // Identity (stage 7, surfaces lie): read the buried EXIF — open the METADATA drawer on a real image.
+  // `file` is the artifact basename; `field` is the EXIF row that must render. Witnessed by
+  // recordStage10EchoMetadata from the image metadata renderer (not a bare open).
+  identity: { verb: "metadata", file: "identity_echo.jpg", field: "GPSInfo", label: "Metadata", hint: "open the metadata drawer to read the embedded GPS EXIF" },
   // Entropy (stage 8, salvage): download the fragment to keep it.
   entropy: { verb: "download", label: "Download", hint: "download it (salvage the fragment to disk)" }
-  // TODO round-5: real-feature gates for the remaining echoes, each paying off its origin stage —
-  //   syntax  → in-file SEARCH (needs the artifact loadable by searchViewerFile / a rawview-text path)
-  //   pattern → NESTED navigation (open a file under a nested folder path)
-  //   signal  → audio PLAYBACK (needs a real .mp3 artifact + a binary BTS open path)
-  //   protocol→ EPUB render (needs a real .epub artifact)
-  //   identity→ METADATA inspection (needs a real image artifact; reuse stage 7's metadata hook)
-  //   observation → RECENTS re-open (needs a recents-panel open carrying source: 'recents')
+  // TODO round-5: the last real-feature gates, each paying off its origin stage —
+  //   signal  → audio PLAYBACK (real .mp3 exists at stage10/signal_echo.mp3; needs a media-renderer
+  //             hook + a way to drive ~Ns of continuous playback in the games smoke without flaking)
+  //   protocol→ EPUB render (real .epub exists; needs an epub chapter-nav hook + smoke driving)
+  //   observation → RECENTS re-open (the app has NO recents panel yet; needs that feature first)
   // Until then these witness on a plain viewer-open (verb: "open").
 };
 function echoVerb(id) {
@@ -1008,12 +1021,14 @@ function renderEcho(memory, slot) {
   const witnessed = slot.echoWitnessed === true;
   const spec = echoVerb(memory.id);
   const verbChip = spec.verb === "open" ? "" : `<span class="mg-stage10__echo-verb">${escapeHtml(spec.label || spec.verb)}</span>`;
+  const searchButton = !witnessed && spec.verb === "search" ? `<button type="button" data-search-echo="${memory.id}" data-echo-query="${escapeAttr(spec.query || "")}">Search for ${escapeHtml(spec.query || "the answer")} &rarr;</button>` : "";
   return `
     <div class="mg-stage10__echo ${witnessed ? "is-witnessed" : "is-pending"}">
       <span class="mg-stage10__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo — pending"}</span>
       ${witnessed ? "" : verbChip}
       <span class="mg-stage10__echo-hint">${escapeHtml(memory.echo)}</span>
       ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}" data-echo-verb="${escapeAttr(spec.verb)}" data-echo-mode="${escapeAttr(spec.mode || "")}">Open echo in viewer &rarr;</button>`}
+      ${searchButton}
     </div>
   `;
 }
@@ -1420,6 +1435,11 @@ function handleMemoryClicks(event, ctx, repaint) {
     saveAndPaint(ctx, repaint);
     return true;
   }
+  const searchButton = event.target.closest("[data-search-echo]");
+  if (searchButton) {
+    searchEcho(ctx, searchButton.dataset.searchEcho);
+    return true;
+  }
   const integrateButton = event.target.closest("[data-integrate-memory]");
   if (integrateButton) {
     integrateMemory({ state, memoryId: integrateButton.dataset.integrateMemory, achievements: ctx.achievements, bell: ctx.bell });
@@ -1449,11 +1469,31 @@ function handleConfrontClicks(event, ctx, save, repaint) {
   }
   return false;
 }
+var ECHO_MIME = {
+  txt: "text/plain",
+  json: "application/json",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  mp3: "audio/mpeg",
+  epub: "application/epub+zip"
+};
 function openEcho(ctx, id) {
   const path = echoFileFor(id);
   if (!path) return;
-  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, { source: "stage10", mime: "text/plain" });
-  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path);
+  const ext = String(path).split(".").pop().toLowerCase();
+  const opts = { source: "stage10" };
+  if (ECHO_MIME[ext]) opts.mime = ECHO_MIME[ext];
+  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, opts);
+  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path, opts);
+}
+function searchEcho(ctx, id) {
+  const path = echoFileFor(id);
+  const spec = echoVerb(id);
+  if (!path || spec.verb !== "search") return;
+  const v = ctx.viewer;
+  if (v && typeof v.searchViewerFile === "function") v.searchViewerFile(path, spec.query, { source: "stage10" });
+  else if (v && typeof v.searchFile === "function") v.searchFile(path, spec.query, { source: "stage10" });
 }
 function saveAndPaint(ctx, repaint) {
   if (typeof ctx.save === "function") ctx.save();

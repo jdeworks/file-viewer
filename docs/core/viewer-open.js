@@ -1,6 +1,6 @@
 import { intakeFromFile, intakeFromText } from './intake.js';
 import { state } from './state.js';
-import { recordMetagameViewerOpen, recordStage2SearchResult, recordStage7Search } from '../games/metagame/viewer-actions.js';
+import { recordMetagameViewerOpen, recordStage2SearchResult, recordStage7Search, recordStage10EchoSearch } from '../games/metagame/viewer-actions.js';
 
 let loadIntakeCallback = null;
 
@@ -68,5 +68,6 @@ export async function searchViewerFile(path, query, opts = {}) {
   const result = line && line.trim();
   recordStage2SearchResult({ file: target || clean, query, result });
   recordStage7Search({ file: target || clean, query, result });
+  recordStage10EchoSearch({ file: target || clean, query, result });
   return { found: Boolean(result), result };
 }
