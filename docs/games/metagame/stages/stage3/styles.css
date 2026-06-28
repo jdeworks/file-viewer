@@ -32,6 +32,29 @@
 
 .s3-objective { color: #0b6b52; font-size: 0.95em; }
 
+/* Run-stability meter (the forgiving run-pressure clock). Calm green by default; escalates to amber,
+   then a pulsing red as the run nears a soft collapse — always legible, never alarming until close. */
+.s3-pressure {
+  background: #e7f4ec;
+  border: 1px solid var(--s3-line);
+  border-radius: 3px;
+  color: #0b6b52;
+  font-size: 0.82em;
+  padding: 2px 7px;
+}
+.s3-pressure.s3-pressure-warn { background: #fbf0d8; border-color: #e0a32e; color: #8a5a13; }
+.s3-pressure.s3-pressure-crit {
+  animation: s3-pressure-pulse 1s ease-in-out infinite;
+  background: #d6453a;
+  border-color: #b5571f;
+  color: #fff;
+}
+
+@keyframes s3-pressure-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
 .s3-play {
   align-items: flex-start;
   display: flex;

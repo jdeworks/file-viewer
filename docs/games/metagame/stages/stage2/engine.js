@@ -8,7 +8,7 @@ import { makeRng } from "./rng.js";
 import { floodDistances, carveHiddenRoom } from "./generate.js";
 import { WEAPONS, spawnMonster, xpForLevel } from "./data.js";
 import { detonate } from "./monsters.js";
-import { applyStatus, tickStatuses } from "./status.js";
+import { applyStatus, tickStatuses, hasStatus } from "./status.js";
 import { enterHazard, playerIceSlide } from "./hazards.js";
 import { springTrap } from "./traps.js";
 import { rollAffix, affixLabel, affixDamage, applyHitAffix, WEAPON_AFFIXES } from "./affixes.js";
@@ -17,6 +17,8 @@ import { DIRS, DIR_LIST } from "./dirs.js";
 
 export { DIRS };
 export { buildFloor, attachGrid, floorDims } from "./floor.js";
+
+const ACID_ATK_PENALTY = 2; // E2: ATK lost while @ is `corroded` from an acid pool (Acid Resistance offsets it)
 
 // ── Stairwell Sense routing ─────────────────────────────────────────────────────────────────────
 // Best-route hint for the compass. Every floor tile costs 1, so the shortest path is a plain BFS
@@ -140,7 +142,10 @@ export function step(world, player, dir) {
   if (foe) {
     // Record the clash so the renderer can lunge @ and foe toward each other (view.js).
     events.attack = { x: nx, y: ny, foeIndex, killed: false };
-    const raw = affixDamage(player);            // double-strike swings harder (C2)
+    let raw = affixDamage(player);              // double-strike swings harder (C2)
+    // E2: if @ stepped in an acid pool the `corroded` status strips the cursor — ATK reduced by
+    // ACID_ATK_PENALTY (softened, to zero at max, by the Acid Resistance shop upgrade) until it clears.
+    if (hasStatus(player, "corroded")) raw = Math.max(1, raw - Math.max(0, ACID_ATK_PENALTY - Number(player.acidResist || 0)));
     // Element matrix: a corroded foe is brittle (acid strip → amplified damage); a frozen foe
     // SHATTERS for bonus damage and is thawed. elementStrike folds both combos into one number.
     const strike = elementStrike(foe, raw);

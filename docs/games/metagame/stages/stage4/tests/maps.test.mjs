@@ -1,12 +1,14 @@
 // maps.test.mjs — Stage 4 campaign map definitions + wavegen + sub-bosses.
 import assert from 'node:assert/strict';
 import { MAPS, MAP_COUNT, mapByIndex, mapPathSeed, subBossIdForWave } from '../maps.js';
-import { mapWaveComposition, mapWaveEnemyCount, mapEnemyPool } from '../wavegen.js';
+import { mapWaveComposition, mapWaveEnemyCount, mapEnemyPool, waveHpScale } from '../wavegen.js';
 import { SUB_BOSSES, subBossDef, spawnSubBoss } from '../subboss.js';
 
 // Five maps of the designed lengths.
 assert.equal(MAP_COUNT, 5, 'campaign has five maps');
-assert.deepEqual(MAPS.map((m) => m.waveCount), [5, 10, 20, 45, 70], 'wave counts are 5/10/20/45/70');
+// Round-4 length rebalance: 150→90 waves (≈90–100m realistic, inside the 40–120m target band).
+assert.deepEqual(MAPS.map((m) => m.waveCount), [5, 10, 15, 25, 35], 'wave counts are 5/10/15/25/35 (90 total)');
+assert.equal(MAPS.reduce((s, m) => s + m.waveCount, 0), 90, 'campaign totals 90 waves');
 for (const m of MAPS) {
   assert.ok(m.id && m.name && m.theme, `${m.id} has identity`);
   assert.ok(m.depth >= 1 && m.depth <= 3, `${m.id} depth in range`);
@@ -21,8 +23,10 @@ assert.notEqual(mapPathSeed('abc', 0), mapPathSeed('abc', 1), 'each map gets a d
 // Sub-boss waves are at the documented block ends.
 assert.equal(subBossIdForWave(0, 5), 'shell-warden', 'map0 final wave is a guardian');
 assert.equal(subBossIdForWave(0, 4), null, 'map0 wave 4 is normal');
-assert.equal(subBossIdForWave(4, 70), 'final-bastion', 'map4 final wave is the final guardian');
-assert.equal(subBossIdForWave(3, 15), 'cascade-anchor', 'map3 arc end is a guardian');
+assert.equal(subBossIdForWave(4, 35), 'final-bastion', 'map4 final wave is the final guardian');
+assert.equal(subBossIdForWave(3, 10), 'cascade-anchor', 'map3 arc end is a guardian');
+// Every map's final wave carries its capstone guardian (arc ends moved with the rebalance).
+for (const m of MAPS) assert.ok(subBossIdForWave(MAPS.indexOf(m), m.waveCount), `${m.id} final wave is a guardian`);
 
 // Every referenced sub-boss id resolves to a definition.
 for (const m of MAPS) for (const id of Object.values(m.subBosses)) {
@@ -45,7 +49,16 @@ for (const m of MAPS) for (const id of Object.values(m.subBosses)) {
   const a = mapWaveComposition(2, 7);
   const b = mapWaveComposition(2, 7);
   assert.deepEqual(a, b, 'composition is deterministic');
-  assert.ok(mapWaveEnemyCount(4, 60) > mapWaveEnemyCount(0, 1), 'later/bigger maps field more enemies');
+  assert.ok(mapWaveEnemyCount(4, 30) > mapWaveEnemyCount(0, 1), 'later/bigger maps field more enemies');
+}
+
+// Difficulty compensation (rebalance): per-wave HP scales up with wave + map, gentle at the start.
+{
+  assert.equal(waveHpScale(1, 0), 1, 'map0 wave1 HP is unscaled (gentle onboarding)');
+  assert.ok(waveHpScale(35, 4) > waveHpScale(1, 4), 'HP scales up within a map');
+  assert.ok(waveHpScale(10, 4) > waveHpScale(10, 0), 'later maps field tankier enemies at the same wave');
+  assert.ok(waveHpScale(35, 4) > 2, 'the climactic final wave roughly doubles enemy HP');
+  assert.equal(mapWaveComposition(4, 30).hpScale, waveHpScale(30, 4), 'composition carries the wave HP scale');
 }
 
 // Enemy pool unlocks by map.

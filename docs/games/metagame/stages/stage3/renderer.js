@@ -11,6 +11,7 @@ import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } fro
 import { aliasedTotal } from "./s3aliased.js";
 import { boonBonus, buildDraftPanel, draftOffer, draftPending, ensureRunBoons, pickBoon } from "./s3boons.js";
 import { announceTiers } from "./s3tiers.js";
+import { bumpRunPressure, collapseRun, runPressureLimit, runPressureReached } from "./state.js";
 import { buildStage3Shell } from "./view.js";
 
 const MOVE = {
@@ -49,6 +50,10 @@ export function renderStage3(ctx) {
   // retained-fragment Engram Bank, which adds Oracle hints — the sink for the fragment currency).
   const oracleCap = () => upgradeLevel(state, "oracle") + boonBonus(state, "oracle") + upgradeLevel(state, "engram");
   const parityCap = () => upgradeLevel(state, "parity") + boonBonus(state, "parity");
+  // The Pressure Valve boon's instability headroom (decayPct) widens BOTH the per-snapshot decay clock
+  // and the run-level pressure limit — a coherent "more slack" synergy.
+  const valveHeadroom = () => boonBonus(state, "decayPct");
+  const pressureLimit = () => runPressureLimit(corruptionForRun(state.run), valveHeadroom());
 
   loadBoard();
   paintHud();
@@ -87,7 +92,13 @@ export function renderStage3(ctx) {
     if (wrong) board.mistakes = (board.mistakes || 0) + 1; // a wrong fill
     if (!mark && board.marks[y][x] !== UNKNOWN) noteFill(board, x, y); // start this cell's decay timer
     pressureMove(board.decay);
-    if (wrong) pressureWrong(board.decay);
+    if (wrong) {
+      pressureWrong(board.decay);
+      // Run-level pressure: this wrong fill accumulates across ALL snapshots of the run. Cross the
+      // (corruption + valve)-scaled limit and the whole run softly collapses (meta preserved).
+      bumpRunPressure(state);
+      if (runPressureReached(state, corruptionForRun(state.run), valveHeadroom())) { collapse(); return; }
+    }
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
     if (reverted.length) { grid.flashWrong(reverted); pushLog(state, `${reverted.length} volatile cell${reverted.length === 1 ? "" : "s"} decayed — lock fills with l.`); }
@@ -103,6 +114,17 @@ export function renderStage3(ctx) {
     state.registers = Math.max(0, Number(state.registers || 0) - penalty);
     state.run.marks = null;
     pushLog(state, `memory destabilized — snapshot collapsed. -${penalty} registers. restoring a fresh copy.`);
+    save?.();
+    loadBoard();
+    paintHud();
+  }
+
+  // The RUN pressure clock crossed its limit: the whole run softly collapses. A SOFT reset — draws a
+  // fresh run (new seed) but keeps ALL permanent progress; reads as "destabilized, start fresh", never
+  // a punishment. (Distinct from failSnapshot, which resets only the current snapshot.)
+  function collapse() {
+    collapseRun(state);
+    pushLog(state, "MEMORY DESTABILIZED — too many corrupt writes; the run collapsed and a clean copy rebuilt. Your registers, retained fragments, Defrag upgrades and achievements all carried over.");
     save?.();
     loadBoard();
     paintHud();
@@ -152,6 +174,15 @@ export function renderStage3(ctx) {
     const aliased = aliasedTotal(board.puzzle);
     const aliasMode = aliased ? ` · ${aliased} aliased` : "";
     setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode}${aliasMode} · ${rating(board.puzzle.difficulty)}`);
+    // Run-stability meter (the forgiving run-pressure clock) — shows remaining stability before a soft
+    // collapse, with escalating warning as it nears zero. Higher = safer, so it reads non-punitively.
+    const plimit = pressureLimit();
+    const pnow = Number(state.run.pressure || 0);
+    setText(fields.pressure, `STABILITY ${Math.max(0, plimit - pnow)}/${plimit}`);
+    const pratio = plimit ? pnow / plimit : 0;
+    fields.pressure.classList.toggle("s3-pressure-warn", pratio >= 0.5 && pratio < 0.8);
+    fields.pressure.classList.toggle("s3-pressure-crit", pratio >= 0.8);
+    fields.pressure.title = "Run stability — wrong fills across the whole run lower it. Hit zero and the run softly collapses and restarts fresh; your registers, retained, upgrades and achievements all carry over.";
     const pr = progress(board.puzzle, board.marks);
     const vol = volatileStatus(board);
     const volNote = vol ? ` · volatile ${vol.locked}/${vol.total} locked — fills decay in ${vol.window} moves (press l)` : "";

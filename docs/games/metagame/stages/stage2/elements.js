@@ -70,9 +70,10 @@ export function elementStrike(foe, dmg) {
 
 // fire+gas → explode: an igniting spore (gas) cloud bursts, dealing a one-tick blast to the player
 // and monsters within radius 1 of the cell. Deterministic; adds NO new fire cells (fuel-bounded
-// spread stays owned by fire.js). Called by tickFire when flame first reaches a spore cell.
-export function gasExplosion(world, x, y, player, events) {
-  const power = 3 + (world.floor || 1);
+// spread stays owned by fire.js). Called by tickFire when flame first reaches a spore cell, and by
+// the E3 wych-gas pocket detonation (which passes a bigger `power`). Default = the spore-cloud burst.
+export function gasExplosion(world, x, y, player, events, power) {
+  power = power != null ? power : 3 + (world.floor || 1);
   for (const m of world.monsters) {
     if (m.alive && Math.abs(m.x - x) + Math.abs(m.y - y) <= 1) {
       m.hp -= power;

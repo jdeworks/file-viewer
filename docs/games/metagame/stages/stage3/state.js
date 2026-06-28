@@ -54,7 +54,7 @@ function freshFrom(meta) {
     retained: Number(meta.retained || 0),
     shopUpgrades: meta.shopUpgrades && typeof meta.shopUpgrades === "object" ? meta.shopUpgrades : {},
     runCount,
-    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [] },
+    run: { seed: `s3-run${runCount}`, index: 0, solvedCount: 0, marks: null, boons: [], draftsTaken: 0, tiers: [], pressure: 0 },
     memoryPair: { runId: `mem-${runCount}`, pieces, slots, key: pieces.join("") },
     boss: { reached: false, attempts: 0, lockHintStep: 0, unlocked: false, defeated: false, corruption8Reached: false },
     log: ["memory grid online.", "solve snapshots to retain fragments."]
@@ -85,5 +85,54 @@ export function normalizeState(state) {
   state.memoryPair.key = String(state.memoryPair.key || state.memoryPair.pieces.join(""));
   state.boss = { ...fresh.boss, ...(state.boss || {}) };
   state.log = Array.isArray(state.log) ? state.log : [...fresh.log];
+  return state;
+}
+
+// ── Run-pressure clock (round 4): the FORGIVING run-level failure arc ──────────────────────────────
+// Distinct from s3decay (which is a PER-SNAPSHOT meter that resets when a snapshot collapses): this is
+// a CUMULATIVE wrong-fill counter (run.pressure) spanning EVERY snapshot of a run. When it reaches the
+// limit the run COLLAPSES — a SOFT reset (collapseRun) that draws a fresh run while preserving all
+// permanent meta. The clock only ever resets on a full run collapse, never on a snapshot reset.
+//
+// Forgiving + tunable by design: the limit is generous and scales UP with corruption (deeper, harder
+// snapshots earn MORE slack), and the Pressure Valve boon widens it further. Tune the two constants.
+export const RUN_PRESSURE_BASE = 20;          // wrong fills tolerated at corruption 0 (generous floor)
+export const RUN_PRESSURE_PER_CORRUPTION = 2; // +2 tolerance per corruption level (≈20→36 over a run)
+
+// The collapse threshold at the given corruption, widened by the Pressure Valve boon's headroom
+// (valveHeadroom is the boon's decayPct effect, e.g. 0.4 → +40%), so the boon coherently eases BOTH
+// the per-snapshot decay clock and this run-level clock.
+export function runPressureLimit(corruption, valveHeadroom = 0) {
+  const base = RUN_PRESSURE_BASE + Math.max(0, Number(corruption || 0)) * RUN_PRESSURE_PER_CORRUPTION;
+  return Math.round(base * (1 + Math.max(0, Number(valveHeadroom || 0))));
+}
+
+// Accrue ONE wrong fill onto the run-level pressure (cumulative across snapshots). Returns the new total.
+export function bumpRunPressure(state) {
+  if (!state || !state.run) return 0;
+  state.run.pressure = Number(state.run.pressure || 0) + 1;
+  return state.run.pressure;
+}
+
+// True once accumulated wrong fills reach the (corruption- and valve-scaled) collapse limit.
+export function runPressureReached(state, corruption, valveHeadroom = 0) {
+  return Number(state?.run?.pressure || 0) >= runPressureLimit(corruption, valveHeadroom);
+}
+
+// A run COLLAPSE — the forgiving run-level failure. Redraws a brand-new run IN PLACE (fresh seed via
+// the incremented runCount) while PRESERVING every scrap of permanent progress: registers, retained
+// fragments, Defrag shop upgrades, and — untouched by Object.assign, which never deletes keys absent
+// from the source — the achievements map. This is a SOFT reset ("the memory destabilized, start
+// fresh"), never a loss of meta. Only this path zeroes run.pressure; a per-snapshot decay reset leaves
+// it accumulating. (boss/run/memoryPair/log are refreshed for the new seed; a collapse happens during
+// an active run, before the boss is defeated.)
+export function collapseRun(state) {
+  const fresh = freshFrom({
+    registers: state.registers,
+    retained: state.retained,
+    shopUpgrades: state.shopUpgrades,
+    runCount: Number(state.runCount || 0) + 1,
+  });
+  Object.assign(state, fresh);
   return state;
 }
