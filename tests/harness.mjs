@@ -30,8 +30,44 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/jav
   '.geojson': 'application/geo+json', '.gpx': 'application/gpx+xml', '.als': 'application/x-ableton-live-set', '.mid': 'audio/midi', '.midi': 'audio/midi', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
   '.sqlite': 'application/vnd.sqlite3', '.clip': 'application/vnd.clip-studio.paint', '.wasm': 'application/wasm', '.png': 'image/png', '.srt': 'application/x-subrip', '.vcf': 'text/vcard', '.stl': 'model/stl', '.obj': 'model/obj', '.glb': 'model/gltf-binary', '.3mf': 'model/3mf', '.mbox': 'application/mbox', '.ply': 'model/ply' };
 
-export const fail = (m) => { console.error('✗ ' + m); process.exitCode = 1; };
+// Single source of truth for the run's verdict. `fail()` records an explicit, human-readable
+// reason into the active run's list AND sets process.exitCode; `finish()` derives BOTH the
+// banner and the process exit code from that same list, so they can never disagree. Relying on
+// the bare `process.exitCode` global for the banner (the old behaviour) is racy: a late async
+// event (e.g. a floating-promise rejection during browser teardown) could flip the global after
+// every assertion had already passed, printing "SMOKE FAILED" with no ✗ in the log while the
+// shell still observed exit 0. Recording reasons makes a spurious-banner impossible (no reason ⇒
+// PASS) and a genuine late failure loud (it prints the attributed reason and exits non-zero).
+let activeRun = null;            // { failures: string[], state: { tearingDown: boolean } }
+let guardsInstalled = false;
+
 export const pass = (m) => console.log('✓ ' + m);
+export const fail = (m) => {
+  console.error('✗ ' + m);
+  process.exitCode = 1;
+  if (activeRun) activeRun.failures.push(m);
+};
+
+// Rejections raised while we're tearing the browser/server down are expected artifacts of
+// closing Chromium with operations still in flight — NOT product/test failures. Scoped to the
+// exact Playwright close phrases so a genuine mid-run rejection still fails the suite.
+const isBenignTeardownRejection = (msg) =>
+  /Target (page, context or browser has been closed|closed)|browser has been closed|has been closed|Execution context was destroyed|Protocol error.*(closed|Target)/i.test(msg);
+
+// Convert what would otherwise be a process-killing uncaught rejection/exception (which raced
+// with normal exit and produced the inconsistent banner) into an attributed, recorded failure.
+function installProcessGuards() {
+  if (guardsInstalled) return;
+  guardsInstalled = true;
+  process.on('unhandledRejection', (reason) => {
+    const msg = reason && reason.message ? reason.message : String(reason);
+    if (activeRun?.state.tearingDown && isBenignTeardownRejection(msg)) return;
+    fail('unhandled promise rejection (late async, no owning assertion): ' + msg);
+  });
+  process.on('uncaughtException', (err) => {
+    fail('uncaught exception: ' + (err && err.stack ? err.stack : String(err)));
+  });
+}
 
 // Some console/page errors are unavoidable ARTIFACTS of the harness rapidly opening files, disposing
 // Monaco editors, and navigating (page.goto + the every-50-opens reload) — NOT product bugs, and not
@@ -55,6 +91,12 @@ export const isBenignConsoleError = (text, url) =>
   (url.startsWith('blob:') && /Failed to load resource/.test(text));
 
 export async function createHarness() {
+  // Establish this run's verdict ledger BEFORE anything can fail, and install the process-level
+  // guards so a late/teardown rejection is attributed instead of silently flipping the exit code.
+  const runState = { tearingDown: false };
+  activeRun = { failures: [], state: runState };
+  installProcessGuards();
+
   const chromium = loadChromium();
 
   const server = http.createServer(async (req, res) => {
@@ -185,7 +227,36 @@ export async function createHarness() {
 
 export async function finish(ctx) {
   const { browser, server } = ctx;
-  await browser.close();
-  server.close();
-  console.log(process.exitCode ? '\nSMOKE FAILED' : '\nSMOKE PASSED');
+  if (activeRun) activeRun.state.tearingDown = true;
+  try { await browser?.close(); } catch { /* teardown best-effort */ }
+  try { server?.close(); } catch { /* teardown best-effort */ }
+  // Let any teardown-triggered microtasks / unhandledRejection events settle so they're
+  // attributed to this run BEFORE we compute the verdict (otherwise a late reject could land
+  // after the banner printed and disagree with the exit code).
+  await new Promise((r) => setTimeout(r, 50));
+
+  const failures = activeRun ? activeRun.failures : [];
+  // A truthy exitCode with NO recorded reason should never happen now (fail() and the process
+  // guards both record), but if it does, surface it LOUDLY instead of a bare banner so the next
+  // occurrence is diagnosable rather than mysterious.
+  const failed = failures.length > 0 || process.exitCode === 1;
+  if (failed) {
+    if (failures.length) {
+      console.log(`\nSMOKE FAILED — ${failures.length} failure(s):`);
+      for (const f of failures) console.log('  ✗ ' + f);
+    } else {
+      console.log('\nSMOKE FAILED — exit code was set to 1 but no assertion recorded a reason '
+        + '(likely a late async error escaping the harness); investigate the area that ran last.');
+    }
+  } else {
+    console.log('\nSMOKE PASSED');
+  }
+
+  // Derive the exit code from the SAME verdict as the banner and lock it in with process.exit so
+  // no late async event can flip it after the banner is printed — banner and exit ALWAYS agree.
+  const code = failed ? 1 : 0;
+  process.exitCode = code;
+  // Flush stdout (a pipe write is async; process.exit can truncate it) before exiting.
+  await new Promise((res) => process.stdout.write('', res));
+  process.exit(code);
 }
