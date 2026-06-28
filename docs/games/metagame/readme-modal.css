@@ -1,0 +1,73 @@
+/* Shared metagame "Stage rules" README modal — one overlay reused for whichever stage is active.
+   Dimmed backdrop, caps to the viewport and scrolls, ≥44px tap targets. Injected on first open by
+   readme-modal.js (kept out of games.css so that sheet stays near its LOC budget). */
+
+.mg-readme-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .62);
+  padding: max(12px, env(safe-area-inset-top)) 12px;
+  box-sizing: border-box;
+}
+.mg-readme-overlay[hidden] { display: none; }
+
+.mg-readme-panel {
+  position: relative;
+  display: flex; flex-direction: column;
+  width: min(720px, 100%);
+  max-height: min(86vh, 100%);
+  background: var(--bg-1, #14161c);
+  color: var(--fg, #e8e8ea);
+  border: 1px solid var(--border, #2b2f3a);
+  border-radius: 12px;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .55);
+  overflow: hidden;
+}
+
+.mg-readme-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border, #2b2f3a);
+  background: var(--bg-2, #1b1e26);
+}
+.mg-readme-title { flex: 1 1 auto; font-weight: 700; font-size: 15px; }
+.mg-readme-x {
+  flex: 0 0 auto;
+  min-width: 44px; min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--bg-1, #14161c); color: var(--fg, #e8e8ea);
+  border: 1px solid var(--border, #2b2f3a); border-radius: 9px;
+  font-size: 18px; line-height: 1; cursor: pointer;
+}
+.mg-readme-x:hover { border-color: var(--accent, #6ea8fe); }
+.mg-readme-x:focus-visible { outline: 2px solid var(--accent, #6ea8fe); outline-offset: 2px; }
+
+.mg-readme-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 18px 20px;
+  font-size: 14px; line-height: 1.55;
+}
+.mg-readme-body h1 { font-size: 20px; margin: 4px 0 10px; }
+.mg-readme-body h2 { font-size: 16px; margin: 18px 0 8px; border-bottom: 1px solid var(--border, #2b2f3a); padding-bottom: 4px; }
+.mg-readme-body h3 { font-size: 14px; margin: 14px 0 6px; }
+.mg-readme-body p, .mg-readme-body li { margin: 6px 0; }
+.mg-readme-body ul, .mg-readme-body ol { padding-left: 22px; }
+.mg-readme-body code { background: var(--bg-2, #1b1e26); padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+.mg-readme-body kbd {
+  background: var(--bg-2, #1b1e26); border: 1px solid var(--border, #2b2f3a);
+  border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-size: 12px;
+}
+.mg-readme-body strong { color: var(--fg, #fff); }
+.mg-readme-body hr { border: none; border-top: 1px solid var(--border, #2b2f3a); margin: 16px 0; }
+.mg-readme-body blockquote {
+  margin: 10px 0; padding: 6px 12px; border-left: 3px solid var(--accent, #6ea8fe);
+  color: var(--fg-2, #b6b9c2);
+}
+.mg-readme-msg { color: var(--fg-2, #b6b9c2); }
+
+@media (max-width: 560px) {
+  .mg-readme-panel { max-height: 92vh; width: 100%; border-radius: 10px; }
+  .mg-readme-body { padding: 12px 14px 18px; }
+}

@@ -577,6 +577,24 @@ export async function run(ctx) {
   const helpInHeader = await page.$eval('.mg-v3-head-actions .mg-help-btn', (el) => !el.hidden).catch(() => false);
   if (helpInHeader) pass('Stage 1 help button appears in the header next to SFX'); else fail('Stage 1 header help button missing/hidden');
 
+  // ── Stage-rules README modal (shared chrome): the 📖 button sits next to the bell, opens a modal
+  // whose body holds README markdown rendered via the VENDORED markdown-it + DOMPurify (zero off-origin).
+  const readmeBtnByBell = await page.$eval('.mg-v3-head-actions', (head) => {
+    const readme = head.querySelector('.mg-readme-btn[data-action="readme"]');
+    const bell = head.querySelector('.mg-v3-bell');
+    return Boolean(readme && bell && (readme.compareDocumentPosition(bell) & Node.DOCUMENT_POSITION_FOLLOWING));
+  }).catch(() => false);
+  if (readmeBtnByBell) pass('Stage rules README button sits in the header before the bell'); else fail('README button missing or not next to the bell');
+  await page.click('.mg-readme-btn[data-action="readme"]');
+  await page.waitForSelector('.mg-readme-overlay .mg-readme-body h1', { timeout: 8000 });
+  const readmeHeading = await page.$eval('.mg-readme-overlay .mg-readme-body h1', (el) => el.textContent.trim());
+  if (/Bit Foundry/i.test(readmeHeading)) pass(`README modal renders Stage 1 markdown (h1: "${readmeHeading}")`);
+  else fail('README modal heading unexpected for Stage 1: ' + readmeHeading);
+  // Backdrop click closes it (≥40px × button + dimmed backdrop are the mobile contract).
+  await page.evaluate(() => document.querySelector('.mg-readme-overlay [data-readme="close"]').click());
+  await page.waitForSelector('.mg-readme-overlay', { state: 'detached', timeout: 4000 });
+  pass('README modal closes cleanly');
+
   // ── Stage 1 prestige loop + boss, driven deterministically via window.__fvStage1 (no real-time wait) ──
   await page.waitForFunction(() => !!window.__fvStage1, null, { timeout: 8000 });
   // Each prestige unlocks ONE post-prestige mechanic, in order.

@@ -126,6 +126,7 @@ export function mount(host, { onExit } = {}) {
             <button class="mg-dev-btn" type="button" data-action="dev" aria-label="Dev menu" title="Dev menu" hidden>🛠</button>
             <button class="mg-help-btn" type="button" data-action="help" aria-label="Help" title="Help" hidden>❓</button>
             <button class="mg-sfx-btn" type="button" data-action="sfx" aria-label="Toggle sound effects"></button>
+            <button class="mg-readme-btn" type="button" data-action="readme" aria-label="Stage rules" title="Stage rules">📖</button>
             <div class="mg-v3-bell"></div>
             <button class="mg-back" type="button" data-action="exit">Back to arcade</button>
           </div>
@@ -148,6 +149,16 @@ export function mount(host, { onExit } = {}) {
       paintSfx();
     });
     paintSfx();
+    // Stage-rules README: a shared modal (readme-modal.js) that fetches + renders the ACTIVE stage's
+    // same-origin README.md via the vendored markdown-it + DOMPurify. Lazy-imported on first click so
+    // the markdown libs never load until the player asks for help.
+    const readmeBtn = host.querySelector('[data-action="readme"]');
+    readmeBtn.addEventListener('click', async () => {
+      const id = Number(saveData.currentStage) || 1;
+      const stageName = stageMetaFor(id)?.name || `Stage ${id}`;
+      const { openReadmeModal } = await import('./readme-modal.js');
+      openReadmeModal({ stageId: id, stageName });
+    });
     const devBtn = host.querySelector('[data-action="dev"]');
     if (saveData.global.devUnlocked || devUnlockedPersisted()) devBtn.hidden = false;
     devBtn.addEventListener('click', () => toggleDevMenu());
@@ -335,6 +346,9 @@ export function mount(host, { onExit } = {}) {
 
   return {
     destroy() {
+      // Close any open stage-rules modal (it lives on document.body, outside `host`). Its own close
+      // handler tears down the document-level keydown listener.
+      document.querySelector('.mg-readme-overlay [data-readme="close"]')?.click();
       mounted?.destroy?.();
       if (bellDotUnsub) { bellDotUnsub(); bellDotUnsub = null; }
       services.destroy();

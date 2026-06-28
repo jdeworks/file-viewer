@@ -467,9 +467,9 @@
   position: relative; z-index: 50; }   /* keep the header (and the bell dropdown) above the stage content */
 .mg-v3-head > div:first-child { min-width: 0; }   /* let the stage title shrink instead of pushing actions off-screen */
 .mg-v3-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.mg-sfx-btn, .mg-dev-btn, .mg-help-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
+.mg-sfx-btn, .mg-dev-btn, .mg-help-btn, .mg-readme-btn { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg);
   border-radius: 8px; padding: 5px 9px; cursor: pointer; font-size: 15px; line-height: 1; }
-.mg-sfx-btn:hover, .mg-dev-btn:hover, .mg-help-btn:hover { border-color: var(--accent); }
+.mg-sfx-btn:hover, .mg-dev-btn:hover, .mg-help-btn:hover, .mg-readme-btn:hover { border-color: var(--accent); }
 .mg-sfx-btn.mg-sfx-off { opacity: .55; }
 .mg-dev-btn[hidden], .mg-help-btn[hidden] { display: none; }
 .mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
