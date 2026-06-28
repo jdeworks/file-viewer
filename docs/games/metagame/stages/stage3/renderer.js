@@ -242,7 +242,7 @@ export function renderStage3(ctx) {
     if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
     const panel = buildShopPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
     overlay = panel.el;
-    root.querySelector(".s3-grid-col").appendChild(panel.el);
+    root.appendChild(panel.el);
   }
 
   // Boon draft overlay — drafting a run-scoped boon spends nothing; it just commits a build choice and
@@ -251,7 +251,7 @@ export function renderStage3(ctx) {
     if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
     const panel = buildDraftPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
     overlay = panel.el;
-    root.querySelector(".s3-grid-col").appendChild(panel.el);
+    root.appendChild(panel.el);
   }
 
   const onKey = (event) => {

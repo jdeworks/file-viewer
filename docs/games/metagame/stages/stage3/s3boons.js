@@ -8,6 +8,7 @@
 // + draft index, never Date.now()/Math.random().
 
 import { makeRng } from "./rng.js";
+import { buildPaginatedModal } from "./s3modal.js";
 
 // Solve milestones at which a draft becomes available (3 picks across the ~13-solve body).
 export const DRAFT_AT = [0, 5, 10];
@@ -81,28 +82,31 @@ export function boonBonus(state, key) {
   return total;
 }
 
-// Draft overlay (DOM) — show the 3-card offer; clicking a card picks it and closes. Mirrors the shop
-// panel shape so the renderer wires it the same way.
+// HTML for ONE offered boon's page (name, description, "draft this" button).
+export function boonPageHtml(boon) {
+  return `<div class="s3-item">
+    <div class="s3-item-name"><strong>${boon.label}</strong></div>
+    <div class="s3-item-desc">${boon.desc}</div>
+    <button type="button" class="s3-item-action" data-pick="${boon.id}">draft this boon</button>
+  </div>`;
+}
+
+// Draft as a true floating modal, paginated one offered boon per page. Picking a boon closes the
+// draft (as before). The seeded 3-offer logic is unchanged.
 export function buildDraftPanel({ state, save, onClose }) {
-  const box = document.createElement("div");
-  box.className = "s3-shop s3-draft";
   const offer = draftOffer(state);
   const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
-
-  box.innerHTML = `
-    <div class="s3-shop-head">BOON DRAFT
-      <span class="s3-shop-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</span>
-      <button type="button" data-draft="close" class="s3-shop-x" aria-label="close">&#10005;</button>
-    </div>
-    <div class="s3-shop-note">run-scoped boons — they apply to this run's snapshots only.</div>
-    ${offer.map((b) => `<div class="s3-shop-row">
-      <div><strong>${b.label}</strong><div class="s3-shop-desc">${b.desc}</div></div>
-      <button type="button" data-pick="${b.id}">draft</button>
-    </div>`).join("")}`;
-
-  box.querySelectorAll("[data-pick]").forEach((btn) => btn.addEventListener("click", () => {
-    if (pickBoon(state, btn.dataset.pick)) { save?.(); onClose?.(); }
-  }));
-  box.querySelector('[data-draft="close"]').addEventListener("click", () => onClose?.());
-  return { el: box };
+  return buildPaginatedModal({
+    title: "BOON DRAFT",
+    accentClass: "s3-modal-draft",
+    note: "run-scoped boons — they apply to this run's snapshots only.",
+    bank: () => `pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending`,
+    count: () => offer.length,
+    page: (i) => boonPageHtml(offer[i]),
+    wire: (pageEl, i, modal) => {
+      const btn = pageEl.querySelector("[data-pick]");
+      btn?.addEventListener("click", () => { if (pickBoon(state, offer[i].id)) { save?.(); modal.close(); } });
+    },
+    onClose,
+  });
 }

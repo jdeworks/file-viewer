@@ -2,6 +2,8 @@
 // the loop deeper. Levels live in state.shopUpgrades and apply to every future snapshot, so progress
 // survives the run. Mirrors the Stage 2 glyph shop. Pure-ish: an overlay panel + the upgrade table.
 
+import { buildPaginatedModal } from "./s3modal.js";
+
 export const SHOP_UPGRADES = [
   { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
   { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
@@ -33,55 +35,60 @@ export function upgradeLevel(state, id) {
   return Number((state.shopUpgrades || {})[id] || 0);
 }
 
+// The shop's purchasable upgrades, in display/pagination order (one upgrade per modal page).
+export function shopUpgradeList() {
+  return SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id));
+}
+
+// HTML for ONE upgrade's page (name, level, description, cost, buy button).
+export function shopPageHtml(state, up) {
+  const lvl = upgradeLevel(state, up.id);
+  const maxed = lvl >= up.max;
+  const cost = upgradeCost(up.id, lvl);
+  const retained = upgradeCurrency(up.id) === "retained";
+  const bank = Number((retained ? state.retained : state.registers) || 0);
+  const afford = !maxed && bank >= cost;
+  const unit = retained ? "frag" : "reg";
+  return `<div class="s3-item">
+    <div class="s3-item-name"><strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span></div>
+    <div class="s3-item-desc">${up.desc}</div>
+    <div class="s3-item-cost">cost: ${maxed ? "—" : cost + " " + unit}</div>
+    <button type="button" class="s3-item-action" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAXED" : afford ? `buy · ${cost} ${unit}` : `need ${cost} ${unit}`}</button>
+  </div>`;
+}
+
+// Spend currency on an upgrade level. Returns true if a purchase happened.
+export function buyUpgrade(state, save, id) {
+  const up = SHOP_UPGRADES.find((u) => u.id === id);
+  if (!up) return false;
+  state.shopUpgrades = state.shopUpgrades || {};
+  const lvl = Number(state.shopUpgrades[id] || 0);
+  if (lvl >= up.max) return false;
+  const cost = upgradeCost(id, lvl);
+  const retained = upgradeCurrency(id) === "retained";
+  const bank = Number((retained ? state.retained : state.registers) || 0);
+  if (bank < cost) return false;
+  if (retained) state.retained = bank - cost; else state.registers = bank - cost;
+  state.shopUpgrades[id] = lvl + 1;
+  save?.();
+  return true;
+}
+
+// Defrag shop as a true floating modal, paginated one upgrade per page. Buying stays on the same
+// page and refreshes it (cost/level/bank update in place).
 export function buildShopPanel({ state, save, onClose }) {
-  const box = document.createElement("div");
-  box.className = "s3-shop";
-
-  function rowHtml(up) {
-    const lvl = upgradeLevel(state, up.id);
-    const maxed = lvl >= up.max;
-    const cost = upgradeCost(up.id, lvl);
-    const retained = upgradeCurrency(up.id) === "retained";
-    const bank = Number((retained ? state.retained : state.registers) || 0);
-    const afford = !maxed && bank >= cost;
-    const unit = retained ? "frag" : "reg";
-    return `<div class="s3-shop-row">
-      <div>
-        <strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span>
-        <div class="s3-shop-desc">${up.desc}</div>
-      </div>
-      <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAX" : cost + " " + unit}</button>
-    </div>`;
-  }
-
-  function paint() {
-    box.innerHTML = `
-      <div class="s3-shop-head">DEFRAG SHOP
-        <span class="s3-shop-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</span>
-        <button type="button" data-shop="close" class="s3-shop-x" aria-label="close">&#10005;</button>
-      </div>
-      <div class="s3-shop-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
-      ${SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id)).map(rowHtml).join("")}`;
-    box.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
-    box.querySelector('[data-shop="close"]').addEventListener("click", () => onClose());
-  }
-
-  function buy(id) {
-    const up = SHOP_UPGRADES.find((u) => u.id === id);
-    if (!up) return;
-    state.shopUpgrades = state.shopUpgrades || {};
-    const lvl = Number(state.shopUpgrades[id] || 0);
-    if (lvl >= up.max) return;
-    const cost = upgradeCost(id, lvl);
-    const retained = upgradeCurrency(id) === "retained";
-    const bank = Number((retained ? state.retained : state.registers) || 0);
-    if (bank < cost) return;
-    if (retained) state.retained = bank - cost; else state.registers = bank - cost;
-    state.shopUpgrades[id] = lvl + 1;
-    save?.();
-    paint();
-  }
-
-  paint();
-  return { el: box };
+  const ups = shopUpgradeList();
+  return buildPaginatedModal({
+    title: "DEFRAG SHOP",
+    accentClass: "s3-modal-shop",
+    note: "spend registers on permanent upgrades — they apply to every snapshot.",
+    bank: () => `${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag`,
+    count: () => ups.length,
+    page: (i) => shopPageHtml(state, ups[i]),
+    wire: (pageEl, i, modal) => {
+      const btn = pageEl.querySelector("[data-buy]");
+      btn?.addEventListener("click", () => { buyUpgrade(state, save, ups[i].id); modal.refresh(); });
+    },
+    onClose,
+  });
 }

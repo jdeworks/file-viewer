@@ -793,6 +793,66 @@ function buildGrid(puzzle, handlers) {
   return { el: wrap, update, flashWrong };
 }
 
+// ../../docs/games/metagame/stages/stage3/s3modal.js
+function buildPaginatedModal(opts) {
+  const { title, accentClass, note, bank, count, page, wire, onClose } = opts;
+  const backdrop = document.createElement("div");
+  backdrop.className = "s3-modal-backdrop";
+  const panel = document.createElement("div");
+  panel.className = "s3-modal" + (accentClass ? " " + accentClass : "");
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-label", title);
+  backdrop.appendChild(panel);
+  let idx = 0;
+  const close = () => onClose?.();
+  const api = {
+    refresh: () => paint(),
+    close,
+    goto: (i) => {
+      idx = i;
+      paint();
+    }
+  };
+  function paint() {
+    const total = count();
+    if (idx > total - 1) idx = Math.max(0, total - 1);
+    if (idx < 0) idx = 0;
+    const bankHtml = bank ? bank() : "";
+    const body = total ? page(idx) : `<div class="s3-modal-empty">nothing available.</div>`;
+    panel.innerHTML = `
+      <div class="s3-modal-head">${title}
+        ${bankHtml ? `<span class="s3-modal-bank">${bankHtml}</span>` : ""}
+        <button type="button" class="s3-modal-x" data-modal="close" aria-label="close">&#10005;</button>
+      </div>
+      ${note ? `<div class="s3-modal-note">${note}</div>` : ""}
+      <div class="s3-modal-page">${body}</div>
+      <div class="s3-modal-nav">
+        <button type="button" class="s3-modal-btn s3-modal-prev" data-modal="prev" ${idx <= 0 ? "disabled" : ""} aria-label="previous">&#8249; Prev</button>
+        <span class="s3-modal-count" aria-live="polite">${total ? idx + 1 : 0} / ${total}</span>
+        <button type="button" class="s3-modal-btn s3-modal-next" data-modal="next" ${idx >= total - 1 ? "disabled" : ""} aria-label="next">Next &#8250;</button>
+      </div>`;
+    panel.querySelector('[data-modal="close"]').addEventListener("click", close);
+    panel.querySelector('[data-modal="prev"]').addEventListener("click", () => {
+      if (idx > 0) {
+        idx -= 1;
+        paint();
+      }
+    });
+    panel.querySelector('[data-modal="next"]').addEventListener("click", () => {
+      if (idx < count() - 1) {
+        idx += 1;
+        paint();
+      }
+    });
+    if (total) wire?.(panel.querySelector(".s3-modal-page"), idx, api);
+  }
+  backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop) close();
+  });
+  paint();
+  return { el: backdrop, api };
+}
+
 // ../../docs/games/metagame/stages/stage3/shop.js
 var SHOP_UPGRADES = [
   { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
@@ -817,54 +877,58 @@ function upgradeCost(id, level) {
 function upgradeLevel(state, id) {
   return Number((state.shopUpgrades || {})[id] || 0);
 }
+function shopUpgradeList() {
+  return SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id));
+}
+function shopPageHtml(state, up) {
+  const lvl = upgradeLevel(state, up.id);
+  const maxed = lvl >= up.max;
+  const cost = upgradeCost(up.id, lvl);
+  const retained = upgradeCurrency(up.id) === "retained";
+  const bank = Number((retained ? state.retained : state.registers) || 0);
+  const afford = !maxed && bank >= cost;
+  const unit = retained ? "frag" : "reg";
+  return `<div class="s3-item">
+    <div class="s3-item-name"><strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span></div>
+    <div class="s3-item-desc">${up.desc}</div>
+    <div class="s3-item-cost">cost: ${maxed ? "—" : cost + " " + unit}</div>
+    <button type="button" class="s3-item-action" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAXED" : afford ? `buy · ${cost} ${unit}` : `need ${cost} ${unit}`}</button>
+  </div>`;
+}
+function buyUpgrade(state, save, id) {
+  const up = SHOP_UPGRADES.find((u) => u.id === id);
+  if (!up) return false;
+  state.shopUpgrades = state.shopUpgrades || {};
+  const lvl = Number(state.shopUpgrades[id] || 0);
+  if (lvl >= up.max) return false;
+  const cost = upgradeCost(id, lvl);
+  const retained = upgradeCurrency(id) === "retained";
+  const bank = Number((retained ? state.retained : state.registers) || 0);
+  if (bank < cost) return false;
+  if (retained) state.retained = bank - cost;
+  else state.registers = bank - cost;
+  state.shopUpgrades[id] = lvl + 1;
+  save?.();
+  return true;
+}
 function buildShopPanel({ state, save, onClose }) {
-  const box = document.createElement("div");
-  box.className = "s3-shop";
-  function rowHtml(up) {
-    const lvl = upgradeLevel(state, up.id);
-    const maxed = lvl >= up.max;
-    const cost = upgradeCost(up.id, lvl);
-    const retained = upgradeCurrency(up.id) === "retained";
-    const bank = Number((retained ? state.retained : state.registers) || 0);
-    const afford = !maxed && bank >= cost;
-    const unit = retained ? "frag" : "reg";
-    return `<div class="s3-shop-row">
-      <div>
-        <strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span>
-        <div class="s3-shop-desc">${up.desc}</div>
-      </div>
-      <button type="button" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAX" : cost + " " + unit}</button>
-    </div>`;
-  }
-  function paint() {
-    box.innerHTML = `
-      <div class="s3-shop-head">DEFRAG SHOP
-        <span class="s3-shop-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</span>
-        <button type="button" data-shop="close" class="s3-shop-x" aria-label="close">&#10005;</button>
-      </div>
-      <div class="s3-shop-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
-      ${SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id)).map(rowHtml).join("")}`;
-    box.querySelectorAll("[data-buy]").forEach((b) => b.addEventListener("click", () => buy(b.dataset.buy)));
-    box.querySelector('[data-shop="close"]').addEventListener("click", () => onClose());
-  }
-  function buy(id) {
-    const up = SHOP_UPGRADES.find((u) => u.id === id);
-    if (!up) return;
-    state.shopUpgrades = state.shopUpgrades || {};
-    const lvl = Number(state.shopUpgrades[id] || 0);
-    if (lvl >= up.max) return;
-    const cost = upgradeCost(id, lvl);
-    const retained = upgradeCurrency(id) === "retained";
-    const bank = Number((retained ? state.retained : state.registers) || 0);
-    if (bank < cost) return;
-    if (retained) state.retained = bank - cost;
-    else state.registers = bank - cost;
-    state.shopUpgrades[id] = lvl + 1;
-    save?.();
-    paint();
-  }
-  paint();
-  return { el: box };
+  const ups = shopUpgradeList();
+  return buildPaginatedModal({
+    title: "DEFRAG SHOP",
+    accentClass: "s3-modal-shop",
+    note: "spend registers on permanent upgrades — they apply to every snapshot.",
+    bank: () => `${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag`,
+    count: () => ups.length,
+    page: (i) => shopPageHtml(state, ups[i]),
+    wire: (pageEl, i, modal) => {
+      const btn = pageEl.querySelector("[data-buy]");
+      btn?.addEventListener("click", () => {
+        buyUpgrade(state, save, ups[i].id);
+        modal.refresh();
+      });
+    },
+    onClose
+  });
 }
 
 // ../../docs/games/metagame/stages/stage3/s3debug.js
@@ -1102,29 +1166,34 @@ function boonBonus(state, key2) {
   }
   return total;
 }
+function boonPageHtml(boon) {
+  return `<div class="s3-item">
+    <div class="s3-item-name"><strong>${boon.label}</strong></div>
+    <div class="s3-item-desc">${boon.desc}</div>
+    <button type="button" class="s3-item-action" data-pick="${boon.id}">draft this boon</button>
+  </div>`;
+}
 function buildDraftPanel({ state, save, onClose }) {
-  const box = document.createElement("div");
-  box.className = "s3-shop s3-draft";
   const offer = draftOffer(state);
   const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
-  box.innerHTML = `
-    <div class="s3-shop-head">BOON DRAFT
-      <span class="s3-shop-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</span>
-      <button type="button" data-draft="close" class="s3-shop-x" aria-label="close">&#10005;</button>
-    </div>
-    <div class="s3-shop-note">run-scoped boons — they apply to this run's snapshots only.</div>
-    ${offer.map((b) => `<div class="s3-shop-row">
-      <div><strong>${b.label}</strong><div class="s3-shop-desc">${b.desc}</div></div>
-      <button type="button" data-pick="${b.id}">draft</button>
-    </div>`).join("")}`;
-  box.querySelectorAll("[data-pick]").forEach((btn) => btn.addEventListener("click", () => {
-    if (pickBoon(state, btn.dataset.pick)) {
-      save?.();
-      onClose?.();
-    }
-  }));
-  box.querySelector('[data-draft="close"]').addEventListener("click", () => onClose?.());
-  return { el: box };
+  return buildPaginatedModal({
+    title: "BOON DRAFT",
+    accentClass: "s3-modal-draft",
+    note: "run-scoped boons — they apply to this run's snapshots only.",
+    bank: () => `pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending`,
+    count: () => offer.length,
+    page: (i) => boonPageHtml(offer[i]),
+    wire: (pageEl, i, modal) => {
+      const btn = pageEl.querySelector("[data-pick]");
+      btn?.addEventListener("click", () => {
+        if (pickBoon(state, offer[i].id)) {
+          save?.();
+          modal.close();
+        }
+      });
+    },
+    onClose
+  });
 }
 
 // ../../docs/games/metagame/stages/stage3/s3tiers.js
@@ -1543,7 +1612,7 @@ function renderStage3(ctx) {
       paintHud();
     } });
     overlay = panel.el;
-    root.querySelector(".s3-grid-col").appendChild(panel.el);
+    root.appendChild(panel.el);
   }
   function toggleDraft() {
     if (overlay) {
@@ -1560,7 +1629,7 @@ function renderStage3(ctx) {
       paintHud();
     } });
     overlay = panel.el;
-    root.querySelector(".s3-grid-col").appendChild(panel.el);
+    root.appendChild(panel.el);
   }
   const onKey = (event) => {
     if (!root.isConnected || overlay) return;
