@@ -41,7 +41,7 @@ No known-file plugin.
 
 ## Real-World Examples
 
-- [`sample.djvu`](../examples/sample.djvu) — multi-page scanned document demonstrating page navigation
+- [`sample.djvu`](../examples/sample.djvu) — single-page DjVu fixture (FORM:DJVU) demonstrating the decoder, zoom, and text-layer toggle; not a multi-page bundle so it doesn't exercise Prev/Next
 
 ## Known Limitations
 

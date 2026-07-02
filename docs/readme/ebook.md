@@ -7,8 +7,8 @@
 | Format | Extensions | MIME type |
 |--------|-----------|-----------|
 | EPUB | `.epub` | `application/epub+zip` |
-| Comic | `.cbz`, `.cbr`, `.cb7` | `application/vnd.comicbook+zip` |
-| DjVu | `.djvu` | `image/vnd.djvu` |
+| Comic | `.cbz`, `.cbr`, `.cb7`, `.cbt` | `application/vnd.comicbook+zip` |
+| DjVu | `.djvu`, `.djv` | `image/vnd.djvu` |
 | MOBI | `.mobi`, `.azw` | `application/x-mobipocket-ebook` |
 | FB2 | `.fb2` | `application/x-fictionbook+xml` |
 | Sony LRF | `.lrf`, `.lrx` | `application/x-sony-bbeb` |
@@ -35,7 +35,7 @@
 | Continuous page display | ✅ | Lazy-loaded full-width image pages in vertical scroll |
 | Spread mode | ✅ | Optional two-page spread layout on wide screens |
 | Page count | ✅ | Shown in toolbar and metadata |
-| CBR / CB7 | ⚠️ | Opens through archive WASM only when `enableArchiveWasm` is enabled |
+| CBR / CB7 / CBT | ⚠️ | Opens through archive WASM only when `enableArchiveWasm` is enabled |
 
 ### View — DjVu / MOBI / FB2 / LRF
 | Capability | Status | Notes |

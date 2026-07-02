@@ -64,6 +64,7 @@
     "label": "Sample.djvu",
     "file": "sample.djvu",
     "mime": "image/vnd.djvu",
+    "type": "djvu",
     "category": "Documents",
     "categories": [
       "Documents",

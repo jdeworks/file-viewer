@@ -71,7 +71,6 @@ Master overview of all file types supported by the viewer. Columns:
 | [OpenDocument](office.md) | `.odt` | Basic | None | download | — | — |
 | [Apple iWork](office.md) | `.pages` | Basic | None | download | — | Numbers/Keynote |
 | [RTF](rtf.md) | `.rtf` | Basic | Monaco | download | — | — |
-| [DjVu Document](ebook.md) | `.djvu` | Basic | None | download | — | — |
 | [Jupyter Notebook](ipynb.md) | `.ipynb` | Basic | Monaco | download | — | Cell execution |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
 | [Outlook Email](msg.md) | `.msg` | Basic | None | download | — | Attachment extraction |
@@ -96,9 +95,9 @@ Master overview of all file types supported by the viewer. Columns:
 | [E-book](ebook.md) | `.epub` | Basic | None | download | — | Pagination |
 | [Kindle / MOBI](ebook.md) | `.mobi` | Basic | None | download | — | — |
 | [FictionBook (FB2)](ebook.md) | `.fb2` | Basic | Monaco | download | — | — |
-| [DjVu Document](ebook.md) | `.djvu` | Basic | None | download | — | — |
+| [DjVu Document](djvu.md) | `.djvu` `.djv` | Basic | None | download | — | Page-jump input |
 | [Sony LRF](ebook.md) | `.lrf` | Basic | None | download | — | — |
-| [Comic Book](/) | `.cbz` | Basic | None | download | — | Page turn |
+| [Comic Book](comic.md) | `.cbz` `.cbr` `.cb7` `.cbt` | Basic | None | download | — | Page turn |
 
 ---
 
