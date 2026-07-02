@@ -27,7 +27,7 @@
 | Version | ✅ | MBTiles spec version |
 | Source view | ❌ | Binary SQLite |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Name, format, bounds, zoom range, tile count |
+| Metadata | ⚠️ | Side panel reports MBTiles/SQLite container; preview reads name, bounds, zoom range, and tile count |
 
 ### Edit
 | Capability | Status | Notes |

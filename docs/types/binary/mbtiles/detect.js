@@ -1,4 +1,4 @@
-import { hasExtension } from '../../../core/detect.js';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
 function hasSqliteMagic(intake) {
   const b = intake.bytes;
@@ -9,7 +9,13 @@ function hasSqliteMagic(intake) {
 }
 
 export function detect(intake) {
-  if (!hasSqliteMagic(intake)) return 0;
-  if (hasExtension(intake, 'mbtiles')) return 0.97;
+  const isMbtiles = hasExtension(intake, 'mbtiles');
+  if (!hasSqliteMagic(intake)) {
+    if (isMbtiles) return 0.6;
+    if (mimeMatches(intake, 'sqlite', 'x-sqlite')) return 0.25;
+    return 0;
+  }
+  if (isMbtiles) return 0.97;
+  if (mimeMatches(intake, 'sqlite', 'x-sqlite')) return 0.45;
   return 0;
 }

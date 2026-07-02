@@ -88,7 +88,7 @@
     },
     "archive": {
       "label": "Archive",
-      "support": "supported",
+      "support": "partial",
       "sampleFiles": [
         "Sample.7z"
       ],
@@ -191,7 +191,7 @@
         "Layer pixel data is proprietary and not decoded",
         "Layer names, blending modes, and opacity are not shown"
       ],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

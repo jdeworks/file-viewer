@@ -249,7 +249,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [KML Map](/) | `.kml` | Basic | Monaco | download | — | Map tile render |
 | [KMZ Archive](kmz.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |
-| [MBTiles](/) | `.mbtiles` | Basic | None | download | — | Tile decode |
+| [MBTiles](mbtiles.md) | `.mbtiles` | Basic | None | download | — | Tile decode |
 
 ---
 

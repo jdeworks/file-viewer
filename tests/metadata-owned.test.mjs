@@ -61,6 +61,8 @@ import { detect as detectLmms } from '../docs/types/binary/lmms/detect.js';
 import { metadata as lmmsMeta } from '../docs/types/binary/lmms/metadata.js';
 import { detect as detectMat } from '../docs/types/binary/mat/detect.js';
 import { extractMetadata as matMeta } from '../docs/types/binary/mat/metadata.js';
+import { detect as detectMbtiles } from '../docs/types/binary/mbtiles/detect.js';
+import { extractMetadata as mbtilesMeta } from '../docs/types/binary/mbtiles/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -785,6 +787,16 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rows['Variable names'], /greeting/);
   assert.match(rows['Variable classes'], /double/);
   assert.match(rows.Dimensions, /pi_vals: 1x3/);
+}
+
+{
+  const data = await bytes('sample.mbtiles');
+  assert.equal(detectMbtiles({ filename: 'sample.mbtiles', mimeType: 'application/x-sqlite3', bytes: data, isBinary: true }), 0.97);
+  assert.equal(detectMbtiles({ filename: 'empty.mbtiles', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectMbtiles({ filename: 'sample.bin', mimeType: 'application/x-sqlite3', bytes: data, isBinary: true }), 0.45);
+  const rows = mbtilesMeta({ filename: 'sample.mbtiles', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'MBTiles');
+  assert.equal(rows.Container, 'SQLite 3');
 }
 
 {

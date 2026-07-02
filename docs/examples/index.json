@@ -137,6 +137,9 @@
     "label": "File Viewer Demo Map (MBTiles)",
     "file": "sample.mbtiles",
     "mime": "application/x-sqlite3",
+    "type": "mbtiles",
+    "binary": true,
+    "partial": true,
     "category": "Geo",
     "categories": [
       "Geo"
