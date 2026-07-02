@@ -1,6 +1,6 @@
 # SDF / MDL Molfile
 
-> SDF and MDL Molfile viewer — molecular formula, atom/bond counts, molecular weight, bond type summary, and SD data fields.
+> SDF and MDL Molfile viewer — molecular formula, atom/bond counts, molecular weight, SD data fields, and opt-in 3D structure preview.
 
 ## Format Details
 
@@ -27,6 +27,7 @@
 | SD data fields | ✅ | All additional key-value pairs shown |
 | V2000 / V3000 detection | ✅ | Molfile format version auto-detected |
 | Multi-molecule SDF | ✅ | Up to 5 molecules shown (count reported) |
+| 3D structure preview | ✅ | First molecule can be loaded through the shared 3Dmol panel |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
 | Preferred mode | Preview | Opens directly in preview |
@@ -43,9 +44,13 @@
 |------------|--------|-------|
 | Download original | ✅ | Always available |
 
+## Real-World Examples
+
+- [`sample.sdf`](../examples/sample.sdf) — aspirin molecule fixture with PubChem-style SD fields
+
 ## Known Limitations
 
-- No 2D chemical structure drawing
+- No dedicated 2D chemical structure depiction; the 3D panel renders the first molecule only
 - Stereochemistry (chiral centres, E/Z bonds) is not shown
 - Reaction files (`.rxn`) are not supported
 
@@ -53,6 +58,6 @@
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| 2D structure rendering | Med | Hard | Requires RDKit.js or Kekule.js WASM |
+| Dedicated 2D structure rendering | Med | Hard | Requires RDKit.js or Kekule.js WASM |
 | Export SMILES string | Med | Med | Derive SMILES from connectivity table |
 | SD field filter / search | Low | Easy | Filter multi-molecule SDF by SD field value |

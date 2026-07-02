@@ -1,6 +1,6 @@
 # SARIF Security Report
 
-> Static analysis results viewer with severity grouping, rule IDs, file:line locations, and tool attribution.
+> Static analysis results viewer with severity summaries, paginated findings, severity filters, rule IDs, file:line locations, and tool attribution.
 
 ## Format Details
 
@@ -16,8 +16,9 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Finding cards | ✅ | Each result shown with severity badge, rule ID, message, file, and line |
-| Severity grouping | ✅ | Error / Warning / Note / None — each with distinct color |
+| Finding table | ✅ | Each result shown with severity badge, rule ID, message, file, and line |
+| Severity filter | ✅ | `All`, error, warning, note, and none chips where present |
+| Pagination | ✅ | 50 findings per page, capped at 2000 rendered rows |
 | Severity summary | ✅ | Count badges per severity in header |
 | Tool attribution | ✅ | Tool name and version shown per run |
 | Multi-run files | ✅ | Multiple SARIF runs shown with tool labels |
@@ -46,6 +47,7 @@
 - Code snippets (`region.snippet`) are not shown inline
 - Rule help text (from `rules[]`) is not surfaced in the UI
 - `relatedLocations` (secondary locations) are not displayed
+- Very large reports render the first 2000 findings in the preview
 
 ## Gap Analysis
 
@@ -54,4 +56,4 @@
 | Code snippet display | Med | Easy | Show the relevant code line from `region` |
 | Export as CSV | Med | Easy | One row per finding: file, line, severity, rule, message |
 | Rule help / description | Low | Easy | Show rule's `helpText.text` on hover |
-| Severity filter | Low | Med | Show/hide by severity level |
+| Related locations | Low | Med | Expand finding rows with secondary locations |

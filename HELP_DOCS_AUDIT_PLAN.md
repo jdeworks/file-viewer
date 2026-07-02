@@ -167,11 +167,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/rdp.md
 - [x] docs/readme/reg.md
 - [x] docs/readme/rpm.md
-- [ ] docs/readme/rtf.md
-- [ ] docs/readme/ruffle.md
-- [ ] docs/readme/sarif.md
-- [ ] docs/readme/sdf.md
-- [ ] docs/readme/shapefile.md
+- [x] docs/readme/rtf.md
+- [x] docs/readme/ruffle.md
+- [x] docs/readme/sarif.md
+- [x] docs/readme/sdf.md
+- [x] docs/readme/shapefile.md
 - [ ] docs/readme/sketch.md
 - [ ] docs/readme/sqlite.md
 - [ ] docs/readme/ssh-config.md

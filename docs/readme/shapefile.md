@@ -1,14 +1,14 @@
 # ESRI Shapefile
 
-> ESRI Shapefile viewer — geometry type, bounding box, shape count, and attribute field list from DBF header.
+> ESRI Shapefile viewer — parses `.shp` headers and records to show geometry type, bounding box, shape count, and record type summary.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.shp`, `.shx`, `.dbf`, `.prj` |
+| Extension(s) | `.shp` |
 | MIME type | `application/x-esri-shapefile` |
-| Binary / Text | Binary (.shp, .shx, .dbf) / Text (.prj) |
+| Binary / Text | Binary |
 | Common use | GIS data exchange, cartographic datasets, census geography |
 
 ## Capabilities Matrix
@@ -18,12 +18,13 @@
 |------------|--------|-------|
 | Geometry type | ✅ | Point / PolyLine / Polygon / MultiPoint etc. |
 | Bounding box | ✅ | Xmin/Ymin/Xmax/Ymax from file header |
-| Shape count | ✅ | Total records from .shp index |
-| DBF field list | ✅ | Column names, types, and widths from .dbf header |
-| DBF record count | ✅ | Number of attribute table rows |
+| Shape count | ✅ | Records counted by walking the `.shp` record stream, capped at 500 for safety |
+| Record type summary | ✅ | Count by record shape type |
+| DBF field list | ❌ | DBF is handled by the separate DBF viewer when opened directly |
+| DBF record count | ❌ | Not available from `.shp` alone |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Geometry type, bounding box, shape/record counts |
+| Metadata | ⚠️ Partial | Format, geometry type, and bounding box; record counts are preview-only |
 
 ### Edit
 | Capability | Status | Notes |
@@ -35,15 +36,21 @@
 |------------|--------|-------|
 | Download original | ✅ | Always available |
 
+## Real-World Examples
+
+- [`sample.shp`](../examples/sample.shp) — compact shapefile fixture for geometry header and record parsing
+- [`sample.dbf`](../examples/sample.dbf) — companion-style DBF fixture opened by the separate DBF viewer
+
 ## Known Limitations
 
-- `.shx` index and `.prj` projection file must be viewed separately
-- Only the `.shp` file is parsed; attribute data in `.dbf` shown structurally only
+- `.shx`, `.dbf`, and `.prj` companion files are not assembled into a single dataset view
+- Attribute data must be opened separately as DBF
+- No map drawing or coordinate reprojection is performed
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Map rendering | Low | Med | Convert first N shapes to SVG |
-| Export to GeoJSON | Low | Med | Convert shapefile geometry to GeoJSON |
-| DBF attribute preview | Low | Easy | Show first 10 rows of attribute table |
+| Map rendering | Med | Med | Convert first N shapes to SVG/canvas |
+| Export to GeoJSON | Med | Med | Convert shapefile geometry to GeoJSON |
+| Companion bundle support | Med | Hard | Load `.shp` + `.shx` + `.dbf` + `.prj` together |

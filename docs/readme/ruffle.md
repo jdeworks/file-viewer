@@ -18,11 +18,13 @@
 ### View / Play
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Flash emulation | ✅ | Full WASM emulation via Ruffle |
-| Interactive content | ✅ | Mouse, keyboard, buttons, and timelines work |
+| Flash emulation | ✅ | Local vendored Ruffle JavaScript/WASM loads after user confirmation |
+| Trust prompt | ✅ | User must confirm before SWF content is loaded; cancel leaves a reload option |
+| Interactive content | ✅ | Mouse, keyboard, buttons, and timelines are handled by Ruffle when supported |
 | ActionScript 1 / 2 | ✅ | Well-supported |
 | ActionScript 3 | ⚠️ Partial | Partial support; complex AS3 SWFs may not run correctly |
 | Complex SWFs | ⚠️ | Some SWFs with advanced features may not run |
+| Metadata | ✅ | SWF version, compression type, and declared file size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -40,14 +42,15 @@ No known-file plugin — all SWF files use the Ruffle emulator.
 
 ## Real-World Examples
 
-- [`sample.swf`](../examples/sample.swf) — Flash animation demonstrating Ruffle emulation
+- [`sample.swf`](../examples/sample.swf) — compact SWF fixture for detection and Ruffle load flow
 
 ## Known Limitations
 
 - ActionScript 3 support is partial; many modern SWFs will not run correctly
 - SWFs that stream video from external servers will not function (no network emulation)
-- Loading time scales with SWF size; large SWFs can take several seconds
+- Loading time includes the on-demand Ruffle runtime/WASM chunks and then scales with SWF size
 - Ruffle is updated independently; compatibility improves over time
+- SWF execution is intentionally gated because Flash content can run active code inside the emulator
 
 ## Gap Analysis
 
