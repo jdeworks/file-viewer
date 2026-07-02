@@ -204,11 +204,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 <!-- AUDIT_SECTION base-types START -->
 - [x] 3mf | 3D Manufacturing Format
 - [x] abc | ABC Music Notation
-- [ ] acf | Steam App Manifest (ACF)
-- [ ] als | Ableton Live Set
-- [ ] apk | Android Package (APK/AAB)
-- [ ] archive | Archive
-- [ ] arrow | Apache Arrow / Feather
+- [x] acf | Steam App Manifest (ACF)
+- [x] als | Ableton Live Set
+- [x] apk | Android Package (APK/AAB)
+- [x] archive | Archive
+- [x] arrow | Apache Arrow / Feather
 - [ ] asciiart | ASCII / ANSI Art
 - [ ] avro | Apache Avro
 - [ ] bio | Bioinformatics (FASTA/FASTQ/VCF)

@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.acf`, `.vdf` |
+| Extension(s) | `.acf` |
 | MIME type | `text/plain` |
 | Binary / Text | Text (Valve KeyValues) |
 | Common use | Steam game installation manifests, workshop item descriptors |
@@ -24,7 +24,7 @@
 | Platform & branch | ✅ | From `UserConfig` sub-block |
 | Timestamps | ✅ | `LastUpdated` and `LastPlayed` decoded from Unix epoch |
 | Installed depots | ✅ | Depot IDs shown as chips (first 10) |
-| Nested KeyValues | ✅ | Full recursive parse of the Valve KV format |
+| UserConfig summary | ✅ | Platform and beta branch surfaced when present |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
 | Metadata | ✅ | App ID, name, install dir, build ID |
@@ -44,6 +44,7 @@
 
 - VDF files with non-AppState root structures may show partial info
 - Nested sub-blocks beyond `InstalledDepots` and `UserConfig` are not rendered
+- Generic `.vdf` files are not registered to this base type yet
 
 ## Real-World Examples
 
@@ -55,4 +56,5 @@
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Full recursive KV tree view | Low | Med | Render all nested blocks as collapsible tree |
+| `.vdf` extension support | Low | Easy | Add detection once generic Valve KeyValues routing is clear |
 | Steam library summary | Low | Med | Aggregate multiple ACF files |
