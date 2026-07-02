@@ -279,11 +279,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] lnk | Windows Shortcut (.lnk)
 - [x] log | Log
 - [x] lrf | Sony LRF (e-book)
-- [ ] markdown | Markdown
-- [ ] mat | MATLAB MAT-file
-- [ ] mbox | Mailbox (mbox)
-- [ ] mbtiles | MBTiles Map Tileset
-- [ ] mcp-config | MCP Server Config
+- [x] markdown | Markdown
+- [x] mat | MATLAB MAT-file
+- [x] mbox | Mailbox (mbox)
+- [x] mbtiles | MBTiles Map Tileset
+- [x] mcp-config | MCP Server Config
 - [ ] mcworld | Minecraft World (.mcworld)
 - [ ] media | Audio / Video
 - [ ] midi | MIDI Sequence
