@@ -843,15 +843,15 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/markdown/settings.compact.json
 - [x] docs/types/markdown/settings.default.json
 - [x] docs/types/markdown/wysiwyg.js
-- [ ] docs/types/mbox/detect.js
-- [ ] docs/types/mbox/doc.html
-- [ ] docs/types/mbox/EDITOR.md
-- [ ] docs/types/mbox/index.js
-- [ ] docs/types/mbox/mboxlib.js
-- [ ] docs/types/mbox/metadata.js
-- [ ] docs/types/mbox/msg.html
-- [ ] docs/types/mbox/renderer.js
-- [ ] docs/types/mbox/settings.default.json
+- [x] docs/types/mbox/detect.js
+- [x] docs/types/mbox/doc.html
+- [x] docs/types/mbox/EDITOR.md
+- [x] docs/types/mbox/index.js
+- [x] docs/types/mbox/mboxlib.js
+- [x] docs/types/mbox/metadata.js
+- [x] docs/types/mbox/msg.html
+- [x] docs/types/mbox/renderer.js
+- [x] docs/types/mbox/settings.default.json
 - [ ] docs/types/media/AUDIO_LANE_REQUIREMENTS.md
 - [ ] docs/types/media/audio-filters.js
 - [ ] docs/types/media/audio-graph.js
