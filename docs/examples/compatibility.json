@@ -3609,14 +3609,18 @@
       "partialSamples": [],
       "realWorldQuality": "needs-review",
       "notes": "Pure-JS MDMP header parser; shows OS version, architecture, exception code, process ID",
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "dmp",
       "previewDepth": "basic",
-      "metadataDepth": "basic",
+      "metadataDepth": "rich",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "knownParserGaps": [
+        "ThreadList and ModuleList streams are named but not decoded",
+        "Stack traces and symbols are not resolved",
+        "Memory regions are not decoded"
+      ],
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

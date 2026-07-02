@@ -104,6 +104,12 @@ export async function run(ctx) {
   if (/MINIDUMP/i.test(dmpText)) pass('MINIDUMP badge shown'); else fail('dmp badge missing');
   if (/Windows 11/i.test(dmpText)) pass('DMP OS Windows 11 shown'); else fail('dmp os: ' + dmpText.slice(0, 300));
   if (/x64|AMD64/i.test(dmpText)) pass('DMP architecture x64 shown'); else fail('dmp arch: ' + dmpText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const dmpMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*Windows Minidump/.test(dmpMeta)) pass('DMP metadata includes format'); else fail('dmp meta format: ' + dmpMeta.replace(/\s+/g, ' ').slice(0, 180));
+  if (/Streams\s*2/.test(dmpMeta)) pass('DMP metadata includes stream count'); else fail('dmp meta streams: ' + dmpMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
 
   // ── DXF AutoCAD ──────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

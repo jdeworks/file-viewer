@@ -210,7 +210,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Java Class](java-class.md) | `.class` | Basic | None | download | — | No disassembly |
 | [Executable (ELF/PE/Mach-O)](/) | `.elf` `.exe` `.dll` `.dylib` `.so` | Basic | None | download | — | Section listing |
 | [Windows Shortcut](/) | `.lnk` | Basic | None | download | — | — |
-| [Windows Minidump](/) | `.dmp` `.mdmp` | Basic | None | download | — | — |
+| [Windows Minidump](dmp.md) | `.dmp` `.mdmp` | Basic | None | download | — | — |
 | [Network Capture](/) | `.pcap` `.pcapng` `.cap` | Basic | None | download | — | Protocol decode |
 
 ---

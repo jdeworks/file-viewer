@@ -37,4 +37,11 @@ assert.equal(dicomInfo.name, 'DICOM medical image');
 assert.match(dicomInfo.description, /CT, MRI/);
 assert.match(dicomInfo.fileExamplesHref, /fileexamples\.com.*dicom/i);
 
+const dmp = REGISTRY.find((type) => type.id === 'dmp');
+assert.ok(dmp, 'dmp type is registered');
+const dmpInfo = getTypeInfo(dmp, null, { filename: 'sample.dmp' });
+assert.equal(dmpInfo.name, 'Windows minidump');
+assert.match(dmpInfo.description, /crash diagnostics/);
+assert.match(dmpInfo.fileExamplesHref, /fileexamples\.com.*dmp/i);
+
 console.log('type info: ok');

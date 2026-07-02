@@ -66,6 +66,7 @@ const FE_SLUGS = {
   wasm:        null,
   npy:         null,
   lnk:         null,
+  dmp:         'dmp',
   reg:         null,
   gltf:        null,
   stl:         'stl',

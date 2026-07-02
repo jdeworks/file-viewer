@@ -29,6 +29,9 @@ import { render as renderDeb } from '../docs/types/binary/deb/renderer.js';
 import { detect as detectDicom } from '../docs/types/binary/dicom/detect.js';
 import { extractMetadata as dicomMeta } from '../docs/types/binary/dicom/metadata.js';
 import { render as renderDicom } from '../docs/types/binary/dicom/renderer.js';
+import { detect as detectDmp } from '../docs/types/binary/dmp/detect.js';
+import { extractMetadata as dmpMeta } from '../docs/types/binary/dmp/metadata.js';
+import { render as renderDmp } from '../docs/types/binary/dmp/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -504,6 +507,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /Computed Tomography/);
   assert.match(rendered, /Demo Hospital/);
   assert.match(rendered, /Protected Health Information/);
+}
+
+{
+  const data = await bytes('sample.dmp');
+  assert.equal(detectDmp({ filename: 'sample.dmp', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectDmp({ filename: 'sample.bin', mimeType: 'application/x-dmp', bytes: data, isBinary: true }), 0.98);
+  assert.ok(detectDmp({ filename: 'empty.mdmp', bytes: new Uint8Array(0), isBinary: true }) > 0.5);
+  const rows = dmpMeta({ filename: 'sample.dmp', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'Windows Minidump');
+  assert.equal(rows.Streams, '2');
+  assert.equal(rows.Architecture, 'x64');
+  assert.match(rows.OS, /Windows 11/);
+  assert.equal(rows['Dump type'], 'MiniDumpNormal');
+
+  const rendered = renderDmp({ filename: 'sample.dmp', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /MINIDUMP/);
+  assert.match(rendered, /Windows 11/);
+  assert.match(rendered, /x64|AMD64/);
 }
 
 console.log('metadata-owned: ok');
