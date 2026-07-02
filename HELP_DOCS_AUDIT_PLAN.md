@@ -592,11 +592,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/binary/shapefile/metadata.js
 - [ ] docs/types/binary/shapefile/renderer.js
 - [ ] docs/types/binary/shapefile/settings.default.json
-- [ ] docs/types/binary/torrent/detect.js
-- [ ] docs/types/binary/torrent/index.js
-- [ ] docs/types/binary/torrent/metadata.js
-- [ ] docs/types/binary/torrent/renderer.js
-- [ ] docs/types/binary/torrent/settings.default.json
+- [x] docs/types/binary/torrent/detect.js
+- [x] docs/types/binary/torrent/index.js
+- [x] docs/types/binary/torrent/metadata.js
+- [x] docs/types/binary/torrent/renderer.js
+- [x] docs/types/binary/torrent/settings.default.json
 - [ ] docs/types/binary/wad/detect.js
 - [ ] docs/types/binary/wad/index.js
 - [ ] docs/types/binary/wad/metadata.js

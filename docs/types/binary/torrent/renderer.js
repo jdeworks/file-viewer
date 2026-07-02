@@ -120,6 +120,16 @@ export async function render(intake, _ctx) {
   if (infoHash) html += `<dt>Info hash</dt><dd class="mono" title="Magnet info hash (SHA-1)">${esc(infoHash)}</dd>`;
   html += `</dl></div>`;
 
+  if (infoHash) {
+    const params = [`xt=urn:btih:${infoHash}`];
+    if (typeof info.name === 'string') params.push(`dn=${encodeURIComponent(info.name)}`);
+    for (const t of trackers) params.push(`tr=${encodeURIComponent(t)}`);
+    const magnet = `magnet:?${params.join('&')}`;
+    html += `<div class="sec"><div class="sec-title">Magnet Link</div>`;
+    html += `<div class="tracker mono" style="word-break:break-all"><a href="${esc(magnet)}" style="color:inherit">${esc(magnet)}</a></div>`;
+    html += `</div>`;
+  }
+
   if (Array.isArray(info.files) && info.files.length > 0) {
     const MAX = 200;
     html += `<div class="sec"><div class="sec-title">Files (${info.files.length})</div><ul class="fl">`;

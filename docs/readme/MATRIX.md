@@ -157,7 +157,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Archive (ZIP)](zip.md) | `.zip` `.jar` `.war` `.nupkg` `.cbz` `.whl` | Basic | Entry edits | modified ZIP, CSV, download | — | Add files |
 | [Archive](archive.md) | `.7z` `.rar` `.tar` `.tar.gz` `.tgz` `.tar.bz2` `.tbz2` `.tar.xz` `.txz` `.tar.zst` | Basic | None | download | — | Entry preview |
-| [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
+| [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Private flag |
 | [Minecraft World](mcworld.md) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
 | [KMZ Map Archive](kmz.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ISO Disc Image](iso.md) | `.iso` | Basic | None | download | — | File listing |
@@ -273,7 +273,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Molecular XYZ](xyz.md) | `.xyz` | Basic | Monaco | download | — | Trajectory playback |
 | [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
-| [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
+| [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Private flag |
 | [Android Package](apk.md) | `.apk` `.aab` `.xapk` | Partial | None | download | — | Manifest parse |
 | [iOS App (IPA)](ipa.md) | `.ipa` | Basic | None | download | — | Signature verify |
 | [Debian Package](deb.md) | `.deb` `.udeb` | Full | None | download | — | control.tar |
