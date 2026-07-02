@@ -284,11 +284,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] mbox | Mailbox (mbox)
 - [x] mbtiles | MBTiles Map Tileset
 - [x] mcp-config | MCP Server Config
-- [ ] mcworld | Minecraft World (.mcworld)
-- [ ] media | Audio / Video
-- [ ] midi | MIDI Sequence
-- [ ] mobi | Kindle / MOBI
-- [ ] msg | Outlook Email
+- [x] mcworld | Minecraft World (.mcworld)
+- [x] media | Audio / Video
+- [x] midi | MIDI Sequence
+- [x] mobi | Kindle / MOBI
+- [x] msg | Outlook Email
 - [ ] msgpack | MessagePack
 - [ ] mt940 | MT940 Bank Statement
 - [ ] musicxml | MusicXML Score
