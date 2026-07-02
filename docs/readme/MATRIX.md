@@ -84,7 +84,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Spreadsheet](office.md) | `.xlsx` | Basic | None | download | — | Formula eval |
+| [Spreadsheet](xlsx.md) | `.xlsx` `.xls` `.xlsm` `.xlsb` `.ods` | Basic | Cell grid | XLSX, CSV, JSON, download | — | Formula text |
 | [CSV / TSV](csv.md) | `.csv` `.tsv` | Basic | Monaco | download | — | Column types |
 
 ---
@@ -197,13 +197,13 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [WebAssembly](wasm.md) | `.wasm` | Basic | None | download | — | Section decode |
+| [WebAssembly](wasm.md) | `.wasm` | Basic | None | download | — | WAT disassembly |
 | [DICOM Medical](dicom.md) | `.dcm` `.dicom` | Partial | None | download | — | Pixel render |
 | [NIfTI Brain](/) | `.nii` `.hdr` `.img` | Full | None | download | — | Voxel render |
 | [NumPy Array](/) | `.npy` `.npz` | Basic | None | download | — | Data values |
 | [FITS Astronomy](/) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
 | [Protein Structure](/) | `.pdb` `.ent` | Basic | Monaco | download | — | 3D viz |
-| [Molecular Structure XYZ](/) | `.xyz` | Basic | Monaco | download | — | 3D viz |
+| [Molecular Structure XYZ](xyz.md) | `.xyz` | Basic | Monaco | download | — | Trajectory playback |
 | [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Python Bytecode](/) | `.pyc` `.pyo` | Basic | None | download | — | Bytecode disasm |
@@ -270,7 +270,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [MT940 Bank Statement](/) | `.mt940` `.mt942` `.sta` | Full | Monaco | download | — | Multi-statement |
 | [HTTP Archive (HAR)](har.md) | `.har` | Basic | Monaco | download | — | Waterfall chart |
 | [Protein Structure](/) | `.pdb` `.ent` | Basic | Monaco | download | — | 3D viz |
-| [Molecular XYZ](/) | `.xyz` | Basic | Monaco | download | — | 3D viz |
+| [Molecular XYZ](xyz.md) | `.xyz` | Basic | Monaco | download | — | Trajectory playback |
 | [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |

@@ -9,7 +9,7 @@
 | Extension(s) | `.xml`, `.xsd`, `.xsl`, `.xslt`, `.rss`, `.atom`, `.wsdl`, `.pom`, `.csproj`, `.props`, `.targets`, `.resx` |
 | MIME type | `application/xml`, `text/xml` |
 | Binary / Text | Text |
-| Common use | Configuration, data interchange, RSS/Atom feeds, SVG graphics, SOAP APIs |
+| Common use | Configuration, data interchange, RSS/Atom feeds, SOAP APIs, XML-based project files |
 
 ## Capabilities Matrix
 

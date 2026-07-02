@@ -340,11 +340,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] v86 | x86 Disk Image (v86)
 - [x] vcard | Contacts (vCard)
 - [x] wad | Doom WAD Game Archive
-- [ ] wasm | WebAssembly Binary
-- [ ] xlsx | Spreadsheet
-- [ ] xml | XML
-- [ ] xyz | Molecular Structure (.xyz)
-- [ ] yaml | YAML
+- [x] wasm | WebAssembly Binary
+- [x] xlsx | Spreadsheet
+- [x] xml | XML
+- [x] xyz | Molecular Structure (.xyz)
+- [x] yaml | YAML
 - [ ] zip | Archive
 <!-- AUDIT_SECTION base-types END -->
 
