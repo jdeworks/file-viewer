@@ -7,7 +7,7 @@
 | Field | Value |
 |-------|-------|
 | Extension(s) | `.dbf` |
-| MIME type | `application/dbase` |
+| MIME type | `application/dbf`, `application/dbase` |
 | Binary / Text | Binary |
 | Common use | Legacy database exports, GIS shapefiles, FoxPro/Clipper applications |
 

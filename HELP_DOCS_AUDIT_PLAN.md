@@ -219,11 +219,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] chat | Chat Export (WhatsApp / Telegram / Discord)
 - [x] cif | CIF Crystallographic Data
 - [x] clip | Clip Studio Paint
-- [ ] code | Code
-- [ ] comic | Comic book
-- [ ] crash | Crash Report
-- [ ] csv | CSV / TSV
-- [ ] dbf | dBase / DBF Database
+- [x] code | Code
+- [x] comic | Comic book
+- [x] crash | Crash Report
+- [x] csv | CSV / TSV
+- [x] dbf | dBase / DBF Database
 - [ ] deb | Debian Package
 - [ ] dicom | DICOM Medical Image (.dcm)
 - [ ] djvu | DjVu Document
