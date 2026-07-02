@@ -415,11 +415,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/bson/metadata.js
 - [x] docs/types/binary/bson/renderer.js
 - [x] docs/types/binary/bson/settings.default.json
-- [ ] docs/types/binary/bsp/detect.js
-- [ ] docs/types/binary/bsp/index.js
-- [ ] docs/types/binary/bsp/metadata.js
-- [ ] docs/types/binary/bsp/renderer.js
-- [ ] docs/types/binary/bsp/settings.default.json
+- [x] docs/types/binary/bsp/detect.js
+- [x] docs/types/binary/bsp/index.js
+- [x] docs/types/binary/bsp/metadata.js
+- [x] docs/types/binary/bsp/renderer.js
+- [x] docs/types/binary/bsp/settings.default.json
 - [ ] docs/types/binary/cbor/detect.js
 - [ ] docs/types/binary/cbor/index.js
 - [ ] docs/types/binary/cbor/metadata.js

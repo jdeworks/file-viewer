@@ -48,7 +48,7 @@ function parseBspHeader(b) {
     const label = labels[version] || { game: `Unknown v${version}`, engine: magic === 'IBSP' ? 'id Tech' : 'Source Engine' };
     const entityOff = r32le(b, 8);
     const entityLen = r32le(b, 12);
-    return { magic, version, ...label, entityOff, entityLen };
+    return { magic, version, format: `${magic} v${version}`, ...label, entityOff, entityLen };
   }
 
   const version = r32le(b, 0);
@@ -56,7 +56,7 @@ function parseBspHeader(b) {
     const label = Q1_VERSIONS[version] || { game: `BSP v${version}`, engine: 'Unknown' };
     const entityOff = r32le(b, 4);
     const entityLen = r32le(b, 8);
-    return { magic: `v${version}`, version, ...label, entityOff, entityLen };
+    return { magic: `v${version}`, version, format: `BSP v${version}`, ...label, entityOff, entityLen };
   }
 
   return null;
@@ -109,7 +109,7 @@ export function render(intake) {
   const headerHtml = `
     <div class="meta-section">
       <h4 class="meta-section-title">Map Header</h4>
-      <div class="meta-row"><span class="meta-key">Format</span><span class="meta-val">${esc(hdr.magic)} v${esc(hdr.version)}</span></div>
+      <div class="meta-row"><span class="meta-key">Format</span><span class="meta-val">${esc(hdr.format)}</span></div>
       <div class="meta-row"><span class="meta-key">Game Engine</span><span class="meta-val">${esc(hdr.engine)}</span></div>
       <div class="meta-row"><span class="meta-key">Compatible Game</span><span class="meta-val">${esc(hdr.game)}</span></div>
       ${entities.length ? `<div class="meta-row"><span class="meta-key">Entities</span><span class="meta-val">${entities.length}</span></div>` : ''}

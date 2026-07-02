@@ -162,7 +162,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [KMZ Map Archive](geo.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ISO Disc Image](/) | `.iso` | Basic | None | download | — | File listing |
 | [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
-| [BSP Game Map](/) | `.bsp` | Full | None | download | — | Geometry render |
+| [BSP Game Map](bsp.md) | `.bsp` | Full | None | download | — | Header/entity inspection |
 
 ---
 
@@ -224,7 +224,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [x86 Disk Image (v86)](v86.md) | `.img` `.ima` `.iso` `.vhd` `.qcow2` | Basic | None | download | — | Large image streaming |
 | [Flash (SWF / Ruffle)](/) | `.swf` | Basic | None | download | — | — |
 | [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
-| [BSP Game Map](/) | `.bsp` | Full | None | download | — | Geometry render |
+| [BSP Game Map](bsp.md) | `.bsp` | Full | None | download | — | Header/entity inspection |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
 
 ---

@@ -2364,6 +2364,8 @@
   {
     "file": "sample.bsp",
     "label": "Quake BSP Game Map (demo)",
+    "type": "bsp",
+    "typeLabel": "BSP Game Map",
     "mime": "application/octet-stream",
     "category": "game",
     "categories": [

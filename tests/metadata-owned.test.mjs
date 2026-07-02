@@ -11,6 +11,9 @@ import { extract as gltfMeta } from '../docs/types/3d/gltf/metadata.js';
 import { parseGLTF } from '../docs/types/3d/gltf/gltflib.js';
 import { extractMetadata as blendMeta } from '../docs/types/binary/blend/metadata.js';
 import { render as renderBlend } from '../docs/types/binary/blend/renderer.js';
+import { detect as detectBsp } from '../docs/types/binary/bsp/detect.js';
+import { extractMetadata as bspMeta } from '../docs/types/binary/bsp/metadata.js';
+import { render as renderBsp } from '../docs/types/binary/bsp/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -46,6 +49,18 @@ function value(rows, label) {
 
 function numberValue(rows, label) {
   return Number(value(rows, label).replace(/,/g, ''));
+}
+
+function bspHeaderBytes(magic, version, entityText) {
+  const entityBytes = new TextEncoder().encode(entityText);
+  const out = new Uint8Array(16 + entityBytes.length);
+  out.set(new TextEncoder().encode(magic), 0);
+  const view = new DataView(out.buffer);
+  view.setUint32(4, version, true);
+  view.setUint32(8, 16, true);
+  view.setUint32(12, entityBytes.length, true);
+  out.set(entityBytes, 16);
+  return out;
 }
 
 {
@@ -348,6 +363,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   new DataView(truncated.buffer).setUint32(16, 64, true);
   const rendered = renderBlend({ filename: 'bad.blend', bytes: truncated, isBinary: true, size: truncated.length }).bodyHtml;
   assert.doesNotMatch(rendered, /File blocks\s*1/, 'truncated Blender block body is not counted');
+}
+
+{
+  const data = await bytes('sample.bsp');
+  const rows = bspMeta({ filename: 'sample.bsp', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'BSP v29');
+  assert.equal(rows.Game, 'Quake');
+  assert.equal(rows['Map Name'], 'File Viewer Demo Map');
+
+  const ibsp = bspHeaderBytes('IBSP', 46, '{"classname" "worldspawn" "message" "Arena"}');
+  assert.ok(detectBsp({ filename: 'arena.bsp', bytes: ibsp }) > 0.9);
+  assert.equal(bspMeta({ filename: 'arena.bsp', bytes: ibsp }).Format, 'IBSP v46');
+  assert.match(renderBsp({ filename: 'arena.bsp', bytes: ibsp }).bodyHtml, /Quake III Arena/);
+
+  const vbsp = bspHeaderBytes('VBSP', 20, '{"classname" "worldspawn" "message" "Source Map"}');
+  assert.ok(detectBsp({ filename: 'source.bsp', bytes: vbsp }) > 0.9);
+  assert.equal(bspMeta({ filename: 'source.bsp', bytes: vbsp }).Format, 'VBSP v20');
+  assert.match(renderBsp({ filename: 'source.bsp', bytes: vbsp }).bodyHtml, /Counter-Strike: Source/);
 }
 
 console.log('metadata-owned: ok');

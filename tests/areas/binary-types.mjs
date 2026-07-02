@@ -292,8 +292,14 @@ export async function run(ctx) {
   if (bspTypeId === 'bsp') pass('.bsp detected as bsp type'); else fail('bsp typeId: ' + bspTypeId);
   const bspText = await bspf.$eval('body', (el) => el.textContent);
   if (/Quake BSP/i.test(bspText)) pass('BSP badge shown'); else fail('bsp badge: ' + bspText.slice(0, 300));
+  if (/Format\s*BSP v29/i.test(bspText) && !/v29\s*v29/i.test(bspText)) pass('BSP format label shown once'); else fail('bsp format: ' + bspText.slice(0, 300));
   if (/Quake|GoldSrc/i.test(bspText)) pass('BSP game engine shown'); else fail('bsp engine: ' + bspText.slice(0, 300));
   if (/File Viewer Demo|monster_soldier|info_player/i.test(bspText)) pass('BSP entity info shown'); else fail('bsp entities: ' + bspText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const bspMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*BSP v29/i.test(bspMeta) && /Game\s*Quake/i.test(bspMeta) && /Map Name\s*File Viewer Demo Map/i.test(bspMeta)) pass('BSP metadata includes format, game, and map name'); else fail('bsp meta: ' + bspMeta.replace(/\s+/g, ' ').slice(0, 260));
+  await page.click('#metaDrawer [data-close]');
 
   // ── CBOR Binary Data ──────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

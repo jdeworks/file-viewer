@@ -4039,7 +4039,7 @@
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true,
       "fileExamplesSlug": null,
