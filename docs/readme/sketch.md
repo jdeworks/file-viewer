@@ -1,6 +1,6 @@
 # Sketch Design File
 
-> UI/UX design files from the Sketch macOS app — artboard tree, page metadata, and flattened page previews.
+> UI/UX design files from the Sketch macOS app — embedded preview image plus page, artboard, font, and version metadata.
 
 ## Format Details
 
@@ -19,9 +19,9 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Page and artboard tree | ✅ | Hierarchical list of pages and artboard names |
-| Flattened page previews | ✅ | Rendered preview images embedded in the file |
-| Metadata | ✅ | Sketch version, page count, artboard count |
-| Exact visual rendering | ⚠️ Partial | Limited by font availability in browser |
+| Embedded preview | ✅ | Shows `previews/preview.png` or `previews/preview@2x.png` when present |
+| Metadata | ✅ | Sketch version/build, file size, page count, artboard count, and fonts |
+| Exact visual rendering | ❌ | Browser does not render Sketch vector/layer content |
 
 ### Edit
 | Capability | Status | Notes |
@@ -39,19 +39,19 @@ No known-file plugin — all `.sketch` files use the same metadata + preview vie
 
 ## Real-World Examples
 
-- [`sample.sketch`](../examples/sample.sketch) — multi-page design demonstrating artboard tree and page preview
+- [`sample.sketch`](../examples/sample.sketch) — Sketch archive demonstrating embedded preview and page/artboard metadata
 
 ## Known Limitations
 
-- Per-artboard image export is not available; only whole-page previews are shown
-- Symbol library contents are listed but not rendered individually
-- Font rendering differences arise when system fonts differ from the design machine
+- Per-artboard image export is not available; only the stored preview image is shown
+- Symbol library contents are listed when present but not rendered individually
+- The viewer does not reconstruct text, vectors, layout, masks, or effects from Sketch JSON
 - Sketch file format changes between versions; very old or very new files may parse with warnings
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Per-artboard image export | High | Med | Artboard bounds are in the JSON; crop from page preview |
+| Per-artboard image export | High | Med | Artboard bounds are in the JSON; crop from stored preview when available |
 | Symbol library inspection | Med | Med | Symbols are stored in a dedicated page; list and preview |
 | Design token extraction | Med | Med | Colors and text styles are in the JSON layer tree |

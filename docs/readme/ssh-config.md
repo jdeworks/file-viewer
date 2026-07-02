@@ -1,12 +1,12 @@
 # SSH Config
 
-> Interactive SSH config viewer with per-host command palette — generates ready-to-paste ssh, sftp, scp, rsync, and VS Code Remote commands.
+> Interactive SSH config viewer with per-host tabs, directive tables, security metadata, and generated ssh/sftp/scp/rsync/VS Code Remote commands.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `~/.ssh/config`, `ssh_config` |
+| Extension(s) | `~/.ssh/config`, `ssh_config`, `.ssh-config` |
 | MIME type | `text/plain` |
 | Binary / Text | Text |
 | Common use | SSH client configuration, jump hosts, identity files, port forwarding |
@@ -23,6 +23,7 @@
 | HostName resolution | ✅ | Full commands use HostName, alias uses the pattern |
 | ProxyJump support | ✅ | `-J` flag included when ProxyJump is set |
 | ForwardAgent support | ✅ | `-A` flag included when ForwardAgent=yes |
+| Metadata | ✅ | Host aliases, users, ports, identities, ProxyJump/ProxyCommand, forwards, includes, and security notes |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | `diff: false` |
 | Screenshot | ❌ | Interactive panel not suitable |
@@ -40,12 +41,16 @@
 
 ## Real-World Examples
 
-- [`ssh_config`](../examples/ssh_config) — example SSH client config
+- [`ssh_config`](../examples/ssh_config) — SSH client config with named hosts, ProxyJump chains, wildcard fallback, and key paths
+
+## Known-File Enhancement
+
+The `ssh-client-config` known-file renderer handles canonical `ssh_config` paths that are not already claimed by the dedicated base type. It shows a compact card list with `ssh`/`sftp` copy buttons, while the base `ssh-config` renderer provides the full tabbed command palette.
 
 ## Known Limitations
 
 - Wildcard host patterns (`Host *`) are shown but excluded from command generation
-- `Match` blocks (conditional directives) are not parsed
+- `Match` blocks are parsed for metadata, but they are not rendered as command tabs
 
 ## Gap Analysis
 

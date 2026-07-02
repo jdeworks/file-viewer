@@ -1,6 +1,6 @@
 # STL — Stereolithography
 
-> The universal 3D print format — WebGL render with orbit controls, color picker, and PLY/OBJ export.
+> The universal 3D print format — canvas mesh render with orbit controls, region/face/group coloring, and PLY/OBJ export.
 
 ## Format Details
 
@@ -18,22 +18,23 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| WebGL 3D render | ✅ | Orbit / zoom / pan controls |
+| 3D mesh render | ✅ | Canvas renderer with drag-to-orbit controls |
 | Auto-center and fit | ✅ | Mesh centred and scaled to fill viewport |
-| Group color display | ✅ | Single material group (STL has no material data) |
+| Mesh metadata | ✅ | Format, solid name, vertices, triangles, and dimensions |
+| Selection coloring | ✅ | Region, face, and group color modes with reset |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Color picker | ✅ | Assign display color to the mesh |
+| Color picker | ✅ | Assign global color or selection-specific colors |
 | Geometry editing | ❌ | Vertex positions not editable |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original STL | ✅ | Always available |
-| Export as PLY | ✅ | Per-triangle color baked from chosen display color |
-| Export as OBJ | ✅ | With accompanying `.mtl` for color |
+| Export as PLY | ✅ | Export menu downloads PLY; preview toolbar downloads colored PLY |
+| Export as OBJ | ✅ | Export menu downloads OBJ; preview toolbar downloads colored OBJ plus `.mtl` |
 
 ## Known-File Enhancement
 
@@ -41,7 +42,7 @@ No known-file plugin — all STL files use the same 3D viewer.
 
 ## Real-World Examples
 
-- [`sample.stl`](../examples/sample.stl) — 3D printable part demonstrating orbit controls and PLY export
+- [`sample.stl`](../examples/sample.stl) — compact binary STL demonstrating canvas rendering, coloring, and OBJ/PLY export
 
 ## Known Limitations
 
@@ -49,6 +50,7 @@ No known-file plugin — all STL files use the same 3D viewer.
 - No repair tools for non-manifold geometry (open edges, intersecting faces)
 - No scale / unit display (STL has no unit metadata)
 - No layer-by-layer slicer preview
+- Exported colors reflect viewer color selections, not source STL material data
 
 ## Gap Analysis
 

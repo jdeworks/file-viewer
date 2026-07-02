@@ -172,11 +172,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/sarif.md
 - [x] docs/readme/sdf.md
 - [x] docs/readme/shapefile.md
-- [ ] docs/readme/sketch.md
-- [ ] docs/readme/sqlite.md
-- [ ] docs/readme/ssh-config.md
-- [ ] docs/readme/step.md
-- [ ] docs/readme/stl.md
+- [x] docs/readme/sketch.md
+- [x] docs/readme/sqlite.md
+- [x] docs/readme/ssh-config.md
+- [x] docs/readme/step.md
+- [x] docs/readme/stl.md
 - [ ] docs/readme/strings.md
 - [ ] docs/readme/subtitle.md
 - [ ] docs/readme/TEMPLATE.md

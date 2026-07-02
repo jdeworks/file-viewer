@@ -1,13 +1,13 @@
 # STEP CAD Exchange (ISO 10303-21)
 
-> STEP file inspector — entity type histogram, schema declaration, file header metadata, and section statistics.
+> STEP file inspector — file header metadata, schema declaration, entity count, and top entity type histogram.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
 | Extension(s) | `.step`, `.stp`, `.p21` |
-| MIME type | `application/step` |
+| MIME type | `application/step`, `model/step` |
 | Binary / Text | Text |
 | Common use | 3D CAD model exchange between software (CATIA, SolidWorks, Fusion 360, FreeCAD) |
 
@@ -17,13 +17,13 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | File header | ✅ | `FILE_SCHEMA`, `FILE_DESCRIPTION`, `FILE_NAME` parsed |
-| Entity histogram | ✅ | Count per entity type (ADVANCED_FACE, EDGE_CURVE, etc.) |
+| Entity histogram | ✅ | Top 20 entity types by count |
 | Schema name | ✅ | Application protocol (AP203, AP214, AP242) shown |
-| Section boundaries | ✅ | HEADER / DATA / END-SEC shown |
+| Section boundaries | ❌ | Sections are parsed internally but not shown as a boundary list |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | `diff: false` |
 | Preferred mode | Preview | Opens directly in preview |
-| Metadata | ✅ | Schema, entity count, file description, software |
+| Metadata | ⚠️ Partial | Format, schema, and entity count; richer header fields are preview-only |
 
 ### Edit
 | Capability | Status | Notes |
@@ -36,10 +36,15 @@
 |------------|--------|-------|
 | Download original | ✅ | Always available |
 
+## Real-World Examples
+
+- [`sample.stp`](../examples/sample.stp) — STEP CAD exchange fixture with schema and entity histogram
+
 ## Known Limitations
 
 - No 3D geometric rendering — text/entity inspection only
 - The 3D model itself (faces, edges) is not visualized
+- Only the top 20 entity types are shown in the histogram
 
 ## Gap Analysis
 
