@@ -58,4 +58,3 @@
 | Math rendering (KaTeX) | Med | Med | LaTeX in `$...$` blocks inside Markdown cells |
 | Export as HTML (nbconvert-style) | Med | Med | Self-contained HTML with embedded outputs |
 | Cell-level folding | Low | Easy | Collapse/expand individual cells |
-| Execution count display | Low | Easy | Show `[N]:` execution counter beside code cells |

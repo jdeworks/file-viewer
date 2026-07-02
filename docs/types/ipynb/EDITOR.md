@@ -1,7 +1,7 @@
 # Editor Roadmap — Jupyter Notebook (.ipynb)
 
 ## Current state
-Read-only renderer: parses `.ipynb` JSON (nbformat 3 and 4), renders markdown cells via markdown-it + DOMPurify, displays code cells with syntax-highlighted source and saved outputs (stream, error, execute_result/display_data covering text/html, text/plain, image/png, image/jpeg, image/svg+xml). All HTML outputs are sanitized. Notebook code is never executed. Runs in the sandboxed iframe (`bodyHtml` path).
+Read-only renderer: parses `.ipynb` JSON (nbformat 3 and 4), renders markdown cells via markdown-it + DOMPurify, displays code cells with plain (unhighlighted) escaped source and saved outputs (stream, error, execute_result/display_data covering text/html, text/plain, image/png, image/jpeg, image/svg+xml). All HTML outputs are sanitized. Notebook code is never executed. Runs in the sandboxed iframe (`bodyHtml` path).
 
 ## Viewer enhancements (no write-back needed)
 - **Syntax highlighting for code cells** — load highlight.js (already used elsewhere?) or Prism.js (vendorable, ~30 KB for Python grammar) and apply to `<pre>` code blocks. Detect the kernel language from `nb.metadata.kernelspec.language`. — S — highlight.js or prism.js
