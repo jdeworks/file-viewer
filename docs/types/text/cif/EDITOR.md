@@ -6,15 +6,17 @@ mmCIF/PDBx. Parses data_ blocks, extracts key-value pairs (same-line and
 semicolon multiline), and renders sections for compound identity, unit cell
 parameters, and experiment metadata. Auto-detects mmCIF by the presence of
 `_entity`/`_struct` keys. Atom count is approximated via regex, not a full
-loop_ table parse.
+loop_ table parse. **3D structure viewer shipped**: `renderer.js` imports the
+shared `build3dPanel()` from `docs/core/molview.js` (vendored 3Dmol.js,
+opt-in/click-to-load) and offers it whenever `_atom_site` coordinates are
+present; the panel supports stick/sphere/cartoon/wireframe styles and spin.
+Same code path is shared with PDB/XYZ/SDF.
 
 ## Viewer enhancements (no write-back needed)
 
-- **3D structure viewer** — Same 3Dmol.js or NGL path as PDB. 3Dmol accepts
-  CIF/mmCIF directly with `viewer.addModel(text, 'cif')` — L (vendor bundle
-  first; share with PDB)
-- **Color by chain / residue / B-factor** — Identical to PDB once 3Dmol is
-  loaded — S (after 3Dmol)
+- **Color by chain / residue / B-factor** — 3Dmol's style dropdown already
+  offers stick/sphere/cartoon/wireframe; per-chain/B-factor colour mapping is
+  not yet exposed — S (extend `molview.js` `styleSpec`, shared with PDB)
 - **Unit cell wireframe overlay** — Draw the crystallographic unit cell box on
   the 3D viewer using the a/b/c/alpha/beta/gamma parameters already parsed.
   3Dmol supports arbitrary box primitives via `addBox` — M
@@ -47,7 +49,8 @@ loop_ table parse.
   crystallographers re-refining structures — L
 
 ## Shared toolbar / modular note
-CIF and PDB share the same 3Dmol.js dependency — vendor-bundle once. The
-loop_ table browser is the highest-value pure-JS feature here; a robust CIF
-loop parser should be extracted as `cif-loop.js` since loop_ blocks also appear
-in mmCIF dictionaries used by deposition pipelines.
+CIF and PDB already share the same vendored 3Dmol.js dependency via
+`docs/core/molview.js` (`build3dPanel`) — no further vendor work needed. The
+loop_ table browser is the highest-value pure-JS feature remaining here; a
+robust CIF loop parser should be extracted as `cif-loop.js` since loop_ blocks
+also appear in mmCIF dictionaries used by deposition pipelines.

@@ -202,7 +202,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [FITS Astronomy](/) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
 | [Protein Structure](/) | `.pdb` `.ent` | Basic | Monaco | download | — | 3D viz |
 | [Molecular Structure XYZ](xyz.md) | `.xyz` | Basic | Monaco | download | — | Trajectory playback |
-| [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
+| [CIF Crystallographic](cif.md) | `.cif` `.mmcif` `.cif2` | Full | Monaco | download | — | Loop table viewer |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Python Bytecode](/) | `.pyc` `.pyo` | Basic | None | download | — | Bytecode disasm |
 | [Java Class](java-class.md) | `.class` | Basic | None | download | — | No disassembly |
@@ -269,7 +269,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [HTTP Archive (HAR)](har.md) | `.har` | Basic | Monaco | download | — | Waterfall chart |
 | [Protein Structure](/) | `.pdb` `.ent` | Basic | Monaco | download | — | 3D viz |
 | [Molecular XYZ](xyz.md) | `.xyz` | Basic | Monaco | download | — | Trajectory playback |
-| [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
+| [CIF Crystallographic](cif.md) | `.cif` `.mmcif` `.cif2` | Full | Monaco | download | — | Loop table viewer |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Private flag |
 | [Android Package](apk.md) | `.apk` `.aab` `.xapk` | Partial | None | download | — | Manifest parse |

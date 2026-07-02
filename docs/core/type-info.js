@@ -97,6 +97,8 @@ const TYPE_INFO = {
   thrift: ['Apache Thrift', 'used for cross-language RPC service definitions with structs, exceptions, and services.', 'https://thrift.apache.org/'],
   code: ['Source code', 'used for programs, scripts, configuration, and markup edited as text.', 'https://en.wikipedia.org/wiki/Source_code'],
   raw: ['Plain text', 'used for unstructured text or unsupported text-like files.', 'https://en.wikipedia.org/wiki/Text_file'],
+  chat: ['Chat export', 'used to archive exported conversations from messaging apps like WhatsApp, Telegram, Discord, and Messenger.', 'https://en.wikipedia.org/wiki/Instant_messaging'],
+  cif: ['CIF crystallographic data', 'used to store crystal structure data from X-ray, neutron, and electron diffraction experiments.', 'https://en.wikipedia.org/wiki/Crystallographic_Information_File'],
   bio: ['Bioinformatics data', 'used to store DNA/RNA/protein sequences, sequencer reads, and genomic variants for bioinformatics pipelines.', 'https://en.wikipedia.org/wiki/FASTA_format'],
 };
 

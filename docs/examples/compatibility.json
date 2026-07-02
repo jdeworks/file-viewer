@@ -4169,7 +4169,7 @@
       },
       "previewDepth": "rich",
       "metadataDepth": "basic",
-      "editCapability": "none",
+      "editCapability": "full",
       "exportCapability": "download",
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
@@ -4177,7 +4177,7 @@
       "fileExamplesSlug": "cif",
       "securityLimitations": [],
       "knownParserGaps": [
-        "No 3D crystal structure rendering",
+        "loop_ table contents not rendered (only loop_ counts)",
         "Large atom tables truncated in display",
         "CIF 2.0 features not fully supported"
       ]
