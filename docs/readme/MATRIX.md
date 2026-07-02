@@ -31,7 +31,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [JSON Lines](jsonl.md) | `.jsonl` `.ndjson` | Basic | Monaco | download | — | Row limit |
 | [Code](/) | `.py` `.js` `.ts` `.tsx` `.go` `.rs` `.java` `.c` `.cpp` `.cs` `.rb` `.php` `.sh` + 25 more | Fallback | Monaco | download | Dockerfile, .gitignore, .editorconfig (3) | — |
 | [Dockerfile](dockerfile.md) | `Dockerfile` `.dockerfile` | Basic | Monaco | download | Dockerfile (1) | Multi-stage viz |
-| [Docker Compose](/) | `docker-compose.yml` | Basic | Monaco | download | docker-compose (1) | Service graph |
+| [Docker Compose](docker-compose.md) | `docker-compose.yml` | Basic | Monaco | download | docker-compose (1) | Service graph |
 | [EditorConfig](editorconfig.md) | `.editorconfig` | Basic | Monaco | download | .editorconfig (1) | — |
 | [.gitignore](gitignore.md) | `.gitignore` | Basic | Monaco | download | .gitignore (1) | — |
 | [Git Attributes](gitattributes.md) | `.gitattributes` | Basic | Monaco | download | — | — |

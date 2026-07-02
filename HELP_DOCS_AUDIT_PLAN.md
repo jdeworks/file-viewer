@@ -1080,12 +1080,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/csv/renderer.js
 - [ ] docs/types/text/csv/settings.default.json
 - [ ] docs/types/text/csv/table-editor.js
-- [ ] docs/types/text/docker-compose/detect.js
-- [ ] docs/types/text/docker-compose/EDITOR.md
-- [ ] docs/types/text/docker-compose/index.js
-- [ ] docs/types/text/docker-compose/metadata.js
-- [ ] docs/types/text/docker-compose/renderer.js
-- [ ] docs/types/text/docker-compose/settings.default.json
+- [x] docs/types/text/docker-compose/detect.js
+- [x] docs/types/text/docker-compose/EDITOR.md
+- [x] docs/types/text/docker-compose/index.js
+- [x] docs/types/text/docker-compose/metadata.js
+- [x] docs/types/text/docker-compose/renderer.js
+- [x] docs/types/text/docker-compose/settings.default.json
 - [ ] docs/types/text/dockerfile/detect.js
 - [ ] docs/types/text/dockerfile/EDITOR.md
 - [ ] docs/types/text/dockerfile/index.js
