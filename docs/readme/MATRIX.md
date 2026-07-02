@@ -74,7 +74,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [DjVu Document](ebook.md) | `.djvu` | Basic | None | download | — | — |
 | [Jupyter Notebook](ipynb.md) | `.ipynb` | Basic | Monaco | download | — | Cell execution |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
-| [Outlook Email](/) | `.msg` | Basic | None | download | — | — |
+| [Outlook Email](msg.md) | `.msg` | Basic | None | download | — | Attachment extraction |
 | [Mailbox](mbox.md) | `.mbox` | Partial | Monaco | download | — | Expandable message bodies |
 | [Adobe Premiere Project](/) | `.prproj` | Basic | None | download | — | Timeline view |
 
