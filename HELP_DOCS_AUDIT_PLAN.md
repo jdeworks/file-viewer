@@ -833,16 +833,16 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/layered/ora/renderer.js
 - [ ] docs/types/layered/renderer.js
 - [ ] docs/types/layered/settings.default.json
-- [ ] docs/types/markdown/detect.js
-- [ ] docs/types/markdown/edit-actions.js
-- [ ] docs/types/markdown/EDITOR.md
-- [ ] docs/types/markdown/exports.js
-- [ ] docs/types/markdown/index.js
-- [ ] docs/types/markdown/metadata.js
-- [ ] docs/types/markdown/renderer.js
-- [ ] docs/types/markdown/settings.compact.json
-- [ ] docs/types/markdown/settings.default.json
-- [ ] docs/types/markdown/wysiwyg.js
+- [x] docs/types/markdown/detect.js
+- [x] docs/types/markdown/edit-actions.js
+- [x] docs/types/markdown/EDITOR.md
+- [x] docs/types/markdown/exports.js
+- [x] docs/types/markdown/index.js
+- [x] docs/types/markdown/metadata.js
+- [x] docs/types/markdown/renderer.js
+- [x] docs/types/markdown/settings.compact.json
+- [x] docs/types/markdown/settings.default.json
+- [x] docs/types/markdown/wysiwyg.js
 - [ ] docs/types/mbox/detect.js
 - [ ] docs/types/mbox/doc.html
 - [ ] docs/types/mbox/EDITOR.md

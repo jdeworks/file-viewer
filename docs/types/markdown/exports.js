@@ -12,9 +12,11 @@ export function getExports(intake) {
       ]);
       const md = markdownit({ html: true, linkify: true, typographer: true });
       const dirty = md.render(intake.text || '');
+      // Same vector list as the live renderer (renderer.js) — this file is downloaded and opened
+      // directly (no sandboxed iframe), so an under-forbidden sanitize() here is just as exploitable.
       const clean = DOMPurify.sanitize(dirty, {
-        FORBID_TAGS: ['script', 'style'],
-        FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+        FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+        FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
       });
       const title = base;
       const html = '<!DOCTYPE html>\n<html><head><meta charset="utf-8"><title>' + title + '</title>\n'

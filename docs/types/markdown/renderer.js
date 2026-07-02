@@ -48,11 +48,18 @@ export async function render(intake, ctx) {
   md.set({ html: true, linkify: s.mdLinkify !== false, typographer: s.mdTypographer !== false, breaks: !!s.mdBreaks });
   const dirty = md.render(intake.text || '');
   DOMPurify.removed = [];
-  // Sanitize. Keep our data-fv-src mapping attribute; forbid event handlers + scripts.
+  // Sanitize. Keep our data-fv-src mapping attribute. markdown-it runs with html:true (raw HTML
+  // pass-through), so arbitrary embedded HTML reaches here — FORBID_TAGS/FORBID_ATTR must cover
+  // every DOMPurify-default-allowed vector that can trigger a live off-origin fetch we don't
+  // control: <style>/style="" (CSS url()), background=/poster= (legacy + <video> poster),
+  // <link>/<meta>/<base> (a <base href> would turn even a *relative* markdown image/link into an
+  // off-origin request), and <iframe>/<video>/<audio>/<source>/<track>/<object>/<embed>/<form>
+  // (all DOMPurify-allowed by default, all capable of an eager off-origin request or off-origin
+  // form POST). Mirrors the vector list used by the epub/eml renderers.
   const clean = DOMPurify.sanitize(dirty, {
     ADD_ATTR: ['data-fv-src', 'target'],
-    FORBID_TAGS: ['script', 'style'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+    FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+    FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
   });
   const hadUnsafe = DOMPurify.removed.length > 0;
   return {
