@@ -14,6 +14,7 @@ const TYPE_INFO = {
   exe: ['Executable binary', 'used for native application and library binaries such as ELF, PE/COFF, and Mach-O files.', 'https://en.wikipedia.org/wiki/Executable'],
   exr: ['OpenEXR image', 'used for high dynamic range image data in visual effects, animation, and compositing workflows.', 'https://openexr.com/'],
   f3d: ['Fusion 360 design', 'used for Autodesk Fusion 360 CAD designs and assemblies stored as ZIP-backed project archives.', 'https://help.autodesk.com/view/fusion360/ENU/'],
+  fbx: ['FBX 3D animation', 'used for proprietary 3D scene, model, rigging, and animation exchange across DCC and game tools.', 'https://en.wikipedia.org/wiki/FBX'],
   ics: ['iCalendar', 'used for calendar events, invites, reminders, and recurring schedules.', 'https://en.wikipedia.org/wiki/ICalendar'],
   kubeconfig: ['Kubernetes config', 'used to describe clusters, users, contexts, and credentials for kubectl.', 'https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/'],
   yaml: ['YAML', 'used for human-readable configuration, manifests, and structured data.', 'https://yaml.org/'],
@@ -126,6 +127,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   exe: 'exe',
   exr: 'exr',
   f3d: 'f3d',
+  fbx: 'fbx',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -166,6 +168,7 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   exr: 'exr',
   f3d: 'f3d',
   f3z: 'f3d',
+  fbx: 'fbx',
 };
 
 function fileExtension(intake) {

@@ -72,4 +72,11 @@ assert.equal(f3dInfo.name, 'Fusion 360 design');
 assert.match(f3dInfo.description, /ZIP-backed project archives/);
 assert.match(f3dInfo.fileExamplesHref, /fileexamples\.com.*f3d/i);
 
+const fbx = REGISTRY.find((type) => type.id === 'fbx');
+assert.ok(fbx, 'fbx type is registered');
+const fbxInfo = getTypeInfo(fbx, null, { filename: 'sample.fbx' });
+assert.equal(fbxInfo.name, 'FBX 3D animation');
+assert.match(fbxInfo.description, /animation exchange/);
+assert.match(fbxInfo.fileExamplesHref, /fileexamples\.com.*fbx/i);
+
 console.log('type info: ok');

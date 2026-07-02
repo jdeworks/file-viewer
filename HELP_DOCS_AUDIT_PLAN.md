@@ -475,11 +475,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/f3d/index.js
 - [x] docs/types/binary/f3d/metadata.js
 - [x] docs/types/binary/f3d/renderer.js
-- [ ] docs/types/binary/f3d/settings.default.json
-- [ ] docs/types/binary/fbx/detect.js
-- [ ] docs/types/binary/fbx/index.js
-- [ ] docs/types/binary/fbx/metadata.js
-- [ ] docs/types/binary/fbx/renderer.js
+- [x] docs/types/binary/f3d/settings.default.json
+- [x] docs/types/binary/fbx/detect.js
+- [x] docs/types/binary/fbx/index.js
+- [x] docs/types/binary/fbx/metadata.js
+- [x] docs/types/binary/fbx/renderer.js
 - [ ] docs/types/binary/fbx/settings.default.json
 - [ ] docs/types/binary/gamerom/detect.js
 - [ ] docs/types/binary/gamerom/headers.js

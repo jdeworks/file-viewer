@@ -13,7 +13,7 @@ const ENHANCED_FILES = new Set([
   '.editorconfig', 'pom.xml', 'build.gradle', 'Pipfile', 'openapi.yaml',
   'sample.gitignore',
 ]);
-const PARTIAL_FILES = new Set(['sample.djvu', 'sample.dwg', 'sample.exr', 'sample.f3d', 'sample.lrf']);
+const PARTIAL_FILES = new Set(['sample.djvu', 'sample.dwg', 'sample.exr', 'sample.f3d', 'sample.fbx', 'sample.lrf']);
 
 function categoriesFor(ex) {
   const raw = ex.categories || ex.groups || ex.category || 'Other';

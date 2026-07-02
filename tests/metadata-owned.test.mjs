@@ -43,6 +43,9 @@ import { extractMetadata as exrMeta } from '../docs/types/binary/exr/metadata.js
 import { render as renderExr } from '../docs/types/binary/exr/renderer.js';
 import { detect as detectF3d } from '../docs/types/binary/f3d/detect.js';
 import { metadata as f3dMeta } from '../docs/types/binary/f3d/metadata.js';
+import { detect as detectFbx } from '../docs/types/binary/fbx/detect.js';
+import { extractMetadata as fbxMeta } from '../docs/types/binary/fbx/metadata.js';
+import { render as renderFbx } from '../docs/types/binary/fbx/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -635,6 +638,22 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows.Format, 'Fusion 360 Design');
   assert.equal(rows['Archive format'], 'ZIP');
   assert.match(rows['File size'], /bytes/);
+}
+
+{
+  const data = await bytes('sample.fbx');
+  assert.equal(detectFbx({ filename: 'sample.fbx', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectFbx({ filename: 'sample.bin', bytes: data, isBinary: true }), 0.97);
+  assert.ok(detectFbx({ filename: 'empty.fbx', bytes: new Uint8Array(0), isBinary: true }) > 0.9);
+  assert.equal(detectFbx({ filename: 'ascii.fbx', bytes: new Uint8Array(0), textSample: '; FBX 7.4.0 project', isBinary: false }), 0.92);
+  const rows = fbxMeta({ filename: 'sample.fbx', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'FBX (Filmbox 3D)');
+  assert.equal(rows.Encoding, 'Binary');
+  assert.match(rows['FBX version'], /7\.4 \(7400\)/);
+
+  const rendered = renderFbx({ filename: 'sample.fbx', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /FBXHeaderExtension/);
+  assert.match(rendered, /7\.4 \(7400\)/);
 }
 
 console.log('metadata-owned: ok');

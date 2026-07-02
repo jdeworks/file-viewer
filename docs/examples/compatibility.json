@@ -4495,11 +4495,11 @@
         "Property values inside nodes not decoded",
         "Only root node list shown"
       ],
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "fbx",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
