@@ -319,11 +319,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] reg | Windows Registry
 - [x] rpm | RPM Package
 - [x] rtf | Rich Text Format
-- [ ] ruffle | Flash (SWF via Ruffle)
-- [ ] sarif | SARIF Security Report
-- [ ] sdf | SDF / MDL Molfile
-- [ ] shapefile | ESRI Shapefile (.shp)
-- [ ] sketch | Sketch Design File
+- [x] ruffle | Flash (SWF via Ruffle)
+- [x] sarif | SARIF Security Report
+- [x] sdf | SDF / MDL Molfile
+- [x] shapefile | ESRI Shapefile (.shp)
+- [x] sketch | Sketch Design File
 - [ ] sqlite | SQLite database
 - [ ] ssh-config | SSH Config
 - [ ] step | STEP CAD Exchange (ISO 10303-21)
