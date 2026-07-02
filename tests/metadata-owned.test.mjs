@@ -92,6 +92,8 @@ import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
 import { detect as detectEmulatorJs } from '../docs/types/emulator/emulatorjs/detect.js';
 import { extractMetadata as emulatorJsMeta } from '../docs/types/emulator/emulatorjs/metadata.js';
+import { detect as detectRuffle } from '../docs/types/emulator/ruffle/detect.js';
+import { extractMetadata as ruffleMeta } from '../docs/types/emulator/ruffle/metadata.js';
 import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
 import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
 import { detect as detectParquet } from '../docs/types/binary/parquet/detect.js';
@@ -1007,6 +1009,23 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(nesRows.System, 'NES / Famicom');
   assert.equal(nesRows['PRG ROM'], '1 × 16KB');
   assert.equal(nesRows['CHR ROM'], '0 × 8KB');
+}
+
+{
+  const swf = await bytes('sample.swf');
+  assert.equal(detectRuffle({ filename: 'sample.swf', bytes: swf }), 0.98);
+  assert.equal(detectRuffle({ filename: 'sample.dat', bytes: swf }), 0.97); // FWS magic, no .swf ext
+  assert.equal(detectRuffle({ filename: 'sample.txt', bytes: new Uint8Array([1, 2, 3]) }), 0);
+
+  const swfRows = await ruffleMeta({ bytes: swf });
+  assert.equal(swfRows['SWF Version'], 10);
+  assert.equal(swfRows.Compression, 'None');
+  assert.equal(swfRows['File size'], '25 bytes');
+
+  const cwsBytes = new Uint8Array(swf);
+  cwsBytes.set([0x43, 0x57, 0x53], 0); // CWS = zlib-compressed
+  const cwsRows = await ruffleMeta({ bytes: cwsBytes });
+  assert.equal(cwsRows.Compression, 'zlib');
 }
 
 {

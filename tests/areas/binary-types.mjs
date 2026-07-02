@@ -731,4 +731,12 @@ export async function run(ctx) {
   const ejsButtons = await page.$$eval('#previewHost button', (els) => els.map((b) => b.textContent));
   if (ejsButtons.some((t) => /I understand/i.test(t)) && ejsButtons.some((t) => /Cancel/i.test(t)))
     pass('EmulatorJS Start/Cancel buttons present'); else fail('gba buttons: ' + ejsButtons.join(','));
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.swf');
+  await page.waitForSelector('#previewHost', { timeout: 12000 });
+  const ruffleTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ruffleTypeId === 'ruffle') pass('.swf detected as ruffle type'); else fail('swf typeId: ' + ruffleTypeId);
+  const ruffleText = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/Ruffle/i.test(ruffleText)) pass('Ruffle security dialog shown'); else fail('swf dialog: ' + ruffleText.slice(0, 200));
 }

@@ -662,11 +662,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/emulator/emulatorjs/metadata.js
 - [x] docs/types/emulator/emulatorjs/renderer.js
 - [x] docs/types/emulator/emulatorjs/settings.default.json
-- [ ] docs/types/emulator/ruffle/detect.js
-- [ ] docs/types/emulator/ruffle/index.js
-- [ ] docs/types/emulator/ruffle/metadata.js
-- [ ] docs/types/emulator/ruffle/renderer.js
-- [ ] docs/types/emulator/ruffle/settings.default.json
+- [x] docs/types/emulator/ruffle/detect.js
+- [x] docs/types/emulator/ruffle/index.js
+- [x] docs/types/emulator/ruffle/metadata.js
+- [x] docs/types/emulator/ruffle/renderer.js
+- [x] docs/types/emulator/ruffle/settings.default.json
 - [ ] docs/types/emulator/v86/detect.js
 - [ ] docs/types/emulator/v86/index.js
 - [ ] docs/types/emulator/v86/metadata.js
