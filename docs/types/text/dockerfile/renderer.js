@@ -93,12 +93,6 @@ export function render(intake) {
     ? `<div class="df-warn-box">${securityWarnings.map(w => `<div class="df-warn">⚠ ${w}</div>`).join('')}</div>`
     : '';
 
-  const metaRows = [
-    ['Stages', `${stages.length}${isMultiStage ? ' (multi-stage)' : ''}`],
-    stages[0] ? ['Base image', stages[0].image] : null,
-    ['Exposed ports', null],
-  ].filter(Boolean);
-
   const overviewHtml = `
     <div class="meta-row"><span class="meta-key">Stages</span><span class="meta-val">${stages.length}${isMultiStage ? ' <span style="color:#607d8b;font-size:0.85rem">(multi-stage)</span>' : ''}</span></div>
     ${stages[0] ? `<div class="meta-row"><span class="meta-key">Base image</span><span class="meta-val"><code>${esc(stages[0].image)}</code></span></div>` : ''}
