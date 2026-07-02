@@ -152,11 +152,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/parquet.md
 - [x] docs/readme/patch.md
 - [x] docs/readme/pcap.md
-- [ ] docs/readme/pdb.md
-- [ ] docs/readme/pdf.md
-- [ ] docs/readme/pem.md
-- [ ] docs/readme/plist.md
-- [ ] docs/readme/ply.md
+- [x] docs/readme/pdb.md
+- [x] docs/readme/pdf.md
+- [x] docs/readme/pem.md
+- [x] docs/readme/plist.md
+- [x] docs/readme/ply.md
 - [ ] docs/readme/postscript.md
 - [ ] docs/readme/pptx.md
 - [ ] docs/readme/procreate.md

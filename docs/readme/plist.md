@@ -1,6 +1,6 @@
 # Property List (plist)
 
-> Apple plist viewer — parses XML plist and renders a collapsible key-value tree with typed value display.
+> Apple plist viewer — parses XML plist and renders a collapsible key-value tree with typed value display; binary plist files are detected with a conversion notice.
 
 ## Format Details
 
@@ -8,7 +8,7 @@
 |-------|-------|
 | Extension(s) | `.plist` |
 | MIME type | `application/x-plist`, `text/xml` |
-| Binary / Text | Text (XML) or binary |
+| Binary / Text | Text (XML); binary plist detected but not decoded |
 | Common use | macOS/iOS application preferences, configuration, Info.plist, launch agents |
 
 ## Capabilities Matrix
@@ -20,9 +20,10 @@
 | Type display | ✅ | string, integer, real, boolean (true/false), date (formatted), data (truncated hex) |
 | Date formatting | ✅ | ISO 8601 → locale date/time display |
 | Data fields | ✅ | Base64 `<data>` shown as `[data: ...]` placeholder |
+| Binary plist detection | ⚠️ Partial | `bplist00` files show a conversion notice instead of decoded contents |
 | Source view | ✅ | Monaco editor with XML syntax highlighting |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Key count, nesting depth, type breakdown |
+| Metadata | ⚠️ Partial | Format, root type, and top-level key count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -35,7 +36,7 @@
 |------------|--------|-------|
 | Download original | ✅ | Always available |
 | Convert to JSON | ❌ | Not yet implemented |
-| Binary plist | ❌ | Only XML plist format is parsed |
+| Binary plist | ⚠️ Partial | Detected, but not decoded |
 
 ## Real-World Examples
 
@@ -43,7 +44,7 @@
 
 ## Known Limitations
 
-- Binary plist format (bplist00 magic) is not decoded — only XML plist
+- Binary plist format (`bplist00` magic) is not decoded — a `plutil -convert xml1` hint is shown
 - `NSData` / `<data>` content is shown as a truncated placeholder, not decoded
 
 ## Gap Analysis

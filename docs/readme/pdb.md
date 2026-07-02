@@ -1,6 +1,6 @@
 # Protein Structure (PDB)
 
-> PDB protein structure viewer — PDB ID, experimental method, resolution, chains with residue/atom counts, and ligand list.
+> PDB protein structure viewer — PDB ID, experimental method, resolution, chains with residue/atom counts, ligand list, and opt-in 3D structure view.
 
 ## Format Details
 
@@ -27,6 +27,7 @@
 | Chain list | ✅ | Chain ID, residue count, atom count per chain |
 | Total atoms & residues | ✅ | Summary stat cards |
 | Ligands | ✅ | HETATM records (excl. HOH/WAT) with atom counts |
+| 3D molecular view | ✅ | Lazy-loaded 3D panel mounts on user action |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
 | Metadata | ✅ | PDB ID, method, resolution, residues, atoms |
@@ -44,14 +45,14 @@
 
 ## Known Limitations
 
-- No 3D molecular visualization
-- NMR structures with multiple models show only the first model's atom count
+- 3D rendering is opt-in and lazy-loaded, not part of the initial static summary
+- Multiple-model NMR files are summarized from ATOM/HETATM records without per-model controls
 - mmCIF / PDBx format is handled by the `cif` viewer, not this one
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| 3D structure via NGL Viewer | Med | Hard | Render protein in-browser (~2 MB WASM) |
 | FASTA sequence export | Med | Easy | Extract SEQRES records to FASTA |
 | Secondary structure summary | Low | Med | α-helix / β-sheet counts from HELIX/SHEET records |
+| 3D display presets | Low | Med | Add cartoon/stick/surface presets to the existing opt-in 3D panel |

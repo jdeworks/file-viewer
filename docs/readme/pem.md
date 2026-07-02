@@ -1,12 +1,12 @@
 # Certificate / Key (PEM/DER)
 
-> X.509 certificate inspector showing subject, issuer, validity, SANs, and key info — private key material is never displayed.
+> X.509 certificate inspector showing subject, issuer, validity, SANs, and key info — private key blocks are summarized but not rendered in the preview.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.pem`, `.crt`, `.cer`, `.key`, `.p12`, `.pfx`, `.der` |
+| Extension(s) | `.pem`, `.crt`, `.cer`, `.key`, `.der`, `.p7b`, `.p7c` |
 | MIME type | `application/x-pem-file`, `application/x-x509-ca-cert` |
 | Binary / Text | Text (PEM) or binary (DER) |
 | Common use | TLS certificates, CA bundles, code-signing certs, SSH/GPG keys |
@@ -19,12 +19,13 @@
 | Certificate inspection | ✅ | Subject, issuer, SAN list, validity period, serial number |
 | Validity badge | ✅ | VALID / EXPIRING SOON / EXPIRED colored badge |
 | CA flag | ✅ | Basic constraints CA:TRUE shown |
-| CSR inspection | ✅ | Certificate Signing Request fields shown |
-| Public key info | ✅ | Key type and size displayed |
-| Private key — security block | ✅ | Private key content is NEVER shown; a warning badge is displayed instead |
+| CSR inspection | ⚠️ Partial | CSR PEM blocks are identified; full CSR field decoding may fall back to parse errors |
+| Public key info | ✅ | Certificate public-key type and size/curve where decoded |
+| Private key — security block | ✅ | Raw key material is not displayed; key block type and DER byte size are shown |
 | Multi-PEM bundles | ✅ | Each PEM block in the file shown as a separate card |
 | Algorithm display | ✅ | Signature algorithm shown on each certificate |
-| Source view | ✅ | Monaco editor (but no syntax highlighting — raw base64) |
+| PKCS#7/CMS blocks | ⚠️ Partial | Blocks are identified and sized, not fully decoded |
+| Source view | ✅ | Monaco editor for PEM text (no dedicated syntax language) |
 | Diff | ❌ | `diff: false` — base64 diffs are not meaningful |
 
 ### Edit
@@ -41,7 +42,7 @@
 
 ## Security Notes
 
-- **Private key content is never displayed.** If a file contains a `-----BEGIN ... PRIVATE KEY-----` block, the viewer shows a warning badge and the key type/size only — the key bytes are never rendered.
+- **Private key content is never displayed in the preview.** If a file contains a `-----BEGIN ... PRIVATE KEY-----` block, the preview shows the block type and DER byte size only.
 - The viewer parses ASN.1 entirely in-browser using a hand-rolled decoder (`asn1.js`). No key material is sent to any server.
 
 ## Real-World Examples
@@ -50,7 +51,8 @@ PEM examples are pending; private-key and certificate behavior is covered by par
 
 ## Known Limitations
 
-- PKCS#12 (`.p12`/`.pfx`) binary format is not fully decoded — shown as raw block
+- PKCS#12 (`.p12`/`.pfx`) is not claimed by this viewer
+- PKCS#7/CMS and CSR blocks are identified but not fully decoded like X.509 certificates
 - ECDSA curve parameters may not be decoded for all OIDs
 - Very long certificate chains may truncate in the card view
 

@@ -1,6 +1,6 @@
 # PDF
 
-> Full PDF rendering via pdf.js with page-level editing (rotate, delete, reorder, insert image) and re-download via pdf-lib.
+> Full PDF rendering via pdf.js with page-level editing, page extraction/splitting, watermarking, merge, and re-download via pdf-lib.
 
 ## Format Details
 | Field | Value |
@@ -15,31 +15,34 @@
 ### View
 | Feature | Status | Details |
 |---------|--------|---------|
-| Rich preview | ✅ | pdf.js renders all pages at configurable scale (1×, 1.5×, 2×, 3×) |
-| Multi-page navigation | ✅ | Scroll through all pages |
-| Text layer | ✅ | Selectable text (where embedded) |
+| Rich preview | ✅ | pdf.js rasterizes up to 50 pages at configurable scale (1×, 1.5×, 2×, 3×) |
+| Multi-page navigation | ✅ | Continuous scroll, single-page mode, keyboard/touch page navigation, and two-page spread mode |
+| Text layer | ❌ | Pages are rendered as images; selectable text is not layered into the preview |
 | Metadata | ✅ | Title, author, subject, creator, page count, PDF version |
-| Encrypted PDFs | ⚠️ Partial | Listing metadata only; content blocked by encryption |
+| Encrypted PDFs | ⚠️ Partial | Password prompt unlocks supported encrypted PDFs; editing may still be unavailable |
 | Diff/compare | ❌ | Binary format; structural diff not available |
 
 ### Edit
 | Feature | Status | Details |
 |---------|--------|---------|
-| Rotate pages | ✅ | 90° CW/CCW per page or all pages |
+| Rotate pages | ✅ | 90° CW/CCW per page |
 | Delete pages | ✅ | Remove individual pages, re-download remainder |
-| Reorder pages | ✅ | Drag-and-drop page reordering |
+| Reorder pages | ✅ | Move page up/down with page controls |
 | Insert image as page | ✅ | Add PNG/JPEG as a new A4 page |
 | Merge PDFs | ✅ | Load second PDF and merge pages |
-| Annotation / text stamp | ❌ | Not yet implemented |
+| Watermark | ✅ | Add or clear diagonal text watermark across pages |
+| Extract pages | ✅ | Download a selected page range as a new PDF |
+| Split PDF | ✅ | Download one or more page ranges, zipped when needed |
+| Annotation / free text | ❌ | General annotations and positioned text stamps are not implemented |
 | Form fill | ❌ | PDF form fields not supported |
 
 ### Export
 | Feature | Status | Details |
 |---------|--------|---------|
 | Download original | ✅ | Always available |
-| Download edited PDF | ✅ | pdf-lib re-assembles modified page order/rotation |
-| Save as PDF | ✅ | Via Companion local server (optional) |
-| Print/save-as-PDF | ✅ | Browser print dialog |
+| Download edited PDF | ✅ | pdf-lib re-assembles modified pages, rotations, insertions, merges, and watermarks |
+| Extract text / images export menu | ❌ | Helper code exists, but PDF export actions are not registered in the type yet |
+| Save as PDF | ❌ | Edited PDFs download from the preview; Companion write-back is not wired for PDF edits |
 
 ## Example Files
 - [`sample.pdf`](../examples/sample.pdf) — basic PDF document
@@ -50,7 +53,7 @@
 |---------|----------|-------|
 | Annotation / highlight | High | Text highlight, sticky note, freehand draw on pages |
 | Form field fill | High | PDF AcroForm fields — fill in values, download |
+| Register PDF export menu | Medium | Wire existing text extraction and page-image export helpers through `loadExports` |
 | Text extraction | Medium | Copy all text to clipboard or download as .txt |
 | Table extraction | Medium | Detect and export tables as CSV |
 | OCR support | Low | Run Tesseract.wasm on scanned pages |
-| Split PDF | Medium | Split at specified page ranges, download each part |
