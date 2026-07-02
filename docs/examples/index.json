@@ -2060,6 +2060,8 @@
     "file": "sample.nc",
     "label": "NetCDF Climate Dataset (demo)",
     "mime": "application/x-netcdf",
+    "type": "netcdf",
+    "binary": true,
     "category": "Binary",
     "categories": [
       "Binary"

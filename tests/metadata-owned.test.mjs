@@ -68,6 +68,9 @@ import { extractMetadata as mcworldMeta } from '../docs/types/binary/mcworld/met
 import { detect as detectMsgpack } from '../docs/types/binary/msgpack/detect.js';
 import { extractMetadata as msgpackMeta } from '../docs/types/binary/msgpack/metadata.js';
 import { render as renderMsgpack } from '../docs/types/binary/msgpack/renderer.js';
+import { detect as detectNetcdf } from '../docs/types/binary/netcdf/detect.js';
+import { extractMetadata as netcdfMeta } from '../docs/types/binary/netcdf/metadata.js';
+import { render as renderNetcdf } from '../docs/types/binary/netcdf/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -835,6 +838,29 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   // Negative int64 (0xd3) must decode as signed, not as a huge unsigned number.
   const negInt64 = new Uint8Array([0xd3, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
   assert.match(renderMsgpack({ bytes: negInt64 }).bodyHtml, /msgp-num">-1</);
+}
+
+{
+  const data = await bytes('sample.nc');
+  assert.equal(detectNetcdf({ filename: 'sample.nc', bytes: data, isBinary: true }), 0.98);
+  assert.equal(detectNetcdf({ filename: 'empty.nc', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  // Magic bytes alone are high-confidence for NetCDF-3, independent of extension.
+  assert.equal(detectNetcdf({ filename: 'sample.bin', bytes: data, isBinary: true }), 0.98);
+  // A NetCDF-4 (HDF5-backed) file must win over the generic hdf5 detector's 0.95
+  // default so it isn't misclassified as plain HDF5 (registry picks the highest score).
+  const h5 = await bytes('sample.h5');
+  const nc4Score = detectNetcdf({ filename: 'sample.nc4', bytes: h5, isBinary: true });
+  const hdf5Score = detectHdf5({ filename: 'sample.nc4', bytes: h5, isBinary: true });
+  assert.ok(nc4Score > hdf5Score, `netcdf score ${nc4Score} should beat hdf5 score ${hdf5Score} for a .nc4 file`);
+  const rows = netcdfMeta({ bytes: data });
+  assert.equal(rows.Format, 'NetCDF-3 Classic');
+  assert.equal(rows.Dimensions, '4');
+  assert.equal(rows.Variables, '5');
+  assert.equal(rows.Title, 'File Viewer Demo Climate Dataset');
+  assert.equal(rows.Institution, 'File Viewer Demo Institute');
+  const rendered = renderNetcdf({ bytes: data, size: data.length }).bodyHtml;
+  assert.match(rendered, /Dimensions \(4\)/);
+  assert.match(rendered, /Variables \(5\)/);
 }
 
 {

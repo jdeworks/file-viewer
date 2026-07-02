@@ -9,7 +9,7 @@ export function extractMetadata(intake) {
   if (!(b[0] === 0x43 && b[1] === 0x44 && b[2] === 0x46)) return {};
 
   const fields = {};
-  fields['Format'] = b[3] === 1 ? 'NetCDF-3 Classic' : 'NetCDF-3 64-bit';
+  fields['Format'] = b[3] === 1 ? 'NetCDF-3 Classic' : 'NetCDF-3 64-bit Offset';
 
   // Quick scan for global title attribute
   let pos = 8;
@@ -39,6 +39,14 @@ export function extractMetadata(intake) {
           if (name.toLowerCase() === 'institution' && val) fields['Institution'] = val;
         }
         pos += pad4(count * typeSize);
+      }
+    }
+    // var_list: count variables only (full per-variable parsing is the renderer's job)
+    if (pos + 8 <= b.length) {
+      const varTag = readU32BE(b, pos); pos += 4;
+      if (varTag !== 0) {
+        const nvars = readU32BE(b, pos);
+        fields['Variables'] = String(nvars);
       }
     }
   } catch {}

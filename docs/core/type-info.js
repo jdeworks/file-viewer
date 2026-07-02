@@ -59,6 +59,7 @@ const TYPE_INFO = {
   clip: ['Clip Studio Paint', 'used for layered illustration documents.', 'https://www.clipstudio.net/'],
   sqlite: ['SQLite database', 'used for embedded relational databases in a single file.', 'https://www.sqlite.org/fileformat.html'],
   msgpack: ['MessagePack', 'used for compact binary serialisation in APIs, caches, and inter-process communication.', 'https://msgpack.org/'],
+  netcdf: ['NetCDF scientific data', 'used for climate, oceanography, and atmospheric model datasets with dimensions, variables, and attributes.', 'https://www.unidata.ucar.edu/software/netcdf/'],
   epub: ['EPUB', 'used for reflowable ebooks with chapters, metadata, and resources.', 'https://www.w3.org/publishing/epub3/'],
   comic: ['Comic archive', 'used for page-image comics packaged as ZIP/RAR/7z archives.', 'https://en.wikipedia.org/wiki/Comic_book_archive'],
   djvu: ['DjVu', 'used for scanned documents with high compression and optional OCR text.', 'https://en.wikipedia.org/wiki/DjVu'],

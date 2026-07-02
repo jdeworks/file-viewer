@@ -181,7 +181,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [MessagePack](msgpack.md) | `.msgpack` `.mpk` | Full | None | download | — | Ext types |
 | [MATLAB MAT-file](mat.md) | `.mat` | Partial | None | download | — | v7.3 / compressed payloads |
 | [MBTiles](mbtiles.md) | `.mbtiles` | Partial | None | download | — | Tile preview |
-| [NetCDF](/) | `.nc` `.nc4` `.netcdf` | Partial | None | download | — | NetCDF-4 |
+| [NetCDF](netcdf.md) | `.nc` `.nc4` `.netcdf` | Partial | None | download | — | NetCDF-4 |
 
 ---
 
@@ -280,7 +280,6 @@ Master overview of all file types supported by the viewer. Columns:
 | [RPM Package](/) | `.rpm` `.src.rpm` | Basic | None | download | — | Payload extract |
 | [NuGet/VSIX/Wheel/JAR](/) | `.nupkg` `.vsix` `.whl` `.jar` | Basic | None | download | — | Class manifest |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |
-| [NetCDF Scientific](/) | `.nc` `.nc4` `.netcdf` | Partial | None | download | — | NetCDF-4 |
 | [NIfTI Brain Imaging](/) | `.nii` `.hdr` `.img` | Full | None | download | — | Voxel render |
 
 ---
