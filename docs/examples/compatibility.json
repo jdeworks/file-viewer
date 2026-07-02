@@ -3482,7 +3482,7 @@
       "fileExamplesSlug": null,
       "previewDepth": "basic",
       "metadataDepth": "basic",
-      "editCapability": "none",
+      "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [

@@ -55,7 +55,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [G-code](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
 | [MusicXML](/) | `.musicxml` `.mxl` | Basic | Monaco | download | — | Score render |
 | [ABC Music](/) | `.abc` | Basic | Monaco | download | — | Score render |
-| [Chat Export](/) | `.txt` `.json` (Telegram/WhatsApp/Discord) | Basic | None | download | — | Facebook schema |
+| [Chat Export](chat.md) | `.txt` `.json` (Telegram/WhatsApp/Discord) | Basic | Monaco | download | — | Facebook schema |
 | [Hydrogen](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [FITS Astronomy](/) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
 
