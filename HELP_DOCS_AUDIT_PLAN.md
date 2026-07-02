@@ -184,11 +184,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/TEMPLATE.md
 - [x] docs/readme/text.md
 - [x] docs/readme/tiff.md
-- [ ] docs/readme/toml.md
-- [ ] docs/readme/torrent.md
-- [ ] docs/readme/url.md
-- [ ] docs/readme/v86.md
-- [ ] docs/readme/vcard.md
+- [x] docs/readme/toml.md
+- [x] docs/readme/torrent.md
+- [x] docs/readme/url.md
+- [x] docs/readme/v86.md
+- [x] docs/readme/vcard.md
 - [ ] docs/readme/video.md
 - [ ] docs/readme/wad.md
 - [ ] docs/readme/wasm.md

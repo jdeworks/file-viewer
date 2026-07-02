@@ -22,14 +22,13 @@
 | Total size | ✅ | Sum of all file lengths |
 | Piece size | ✅ | `info.piece_length` in KB/MB |
 | File count | ✅ | Number of files in multi-file torrent |
-| File list | ✅ | Path and size per file (first 50) |
+| File list | ✅ | Path and size per file (first 200) |
 | Creation date | ✅ | Unix epoch from `creation date` |
 | Created by | ✅ | `created by` client string |
 | Comment | ✅ | `comment` field |
-| Private flag | ✅ | `info.private = 1` shown |
-| Source view | ✅ | Monaco editor |
+| Raw view | ✅ | Binary/raw pane available for the bencoded source bytes |
 | Diff | ❌ | Binary bencoded format |
-| Metadata | ✅ | Info hash, name, size, tracker, file count |
+| Metadata | ✅ | Name, size, file count, piece size, tracker count, created by/date |
 
 ### Edit
 | Capability | Status | Notes |
@@ -44,6 +43,7 @@
 ## Known Limitations
 
 - Magnet links cannot be generated without tracker access
+- Private torrent flag is not surfaced yet
 - Piece hashes are not verified
 
 ## Gap Analysis
@@ -52,3 +52,4 @@
 |---------|----------|------------|-------|
 | Magnet link generation | Med | Easy | Compose `magnet:?xt=urn:btih:...` from info hash |
 | Export file list as CSV | Low | Easy | Path/size list to CSV |
+| Private flag display | Low | Easy | Surface `info.private = 1` alongside tracker data |

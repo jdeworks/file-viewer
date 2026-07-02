@@ -1,6 +1,6 @@
 # TOML
 
-> Collapsible tree preview parsed by a hand-rolled TOML parser with Date support, exported to JSON; Cargo.toml dependency count extracted.
+> Collapsible tree preview parsed by a hand-rolled TOML parser with Date support, source-line jumps, diagnostics, query filtering, form editing, and JSON/YAML export.
 
 ## Format Details
 
@@ -17,6 +17,10 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Collapsible tree | ✅ | Reuses JSON tree styling; datetime values shown as ISO string |
+| Query/filter panel | ✅ | JSONPath-style TOML path queries such as `$.table.key`, `$..name`, and `array[*]` |
+| Source line jumps | ✅ | Click keys/paths to open the matching source line |
+| Diagnostics | ✅ | Duplicate table/key warnings and sensitive-looking value redaction |
+| Collapsed source preview | ✅ | Redacted source shown below the tree |
 | Date / datetime support | ✅ | TOML native date types rendered correctly |
 | Parse error | ✅ | Parser error message surfaced with context |
 | Source view | ✅ | Monaco editor with TOML syntax highlighting |
@@ -28,6 +32,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Source editing | ✅ | Full Monaco editor |
+| Form editing | ✅ | Typed form editor for scalar values; preserves a leading comment block |
 | Save (Companion) | ✅ | Write-back to local file |
 
 ### Export
@@ -35,16 +40,11 @@
 |------------|--------|-------|
 | Download original | ✅ | Always available |
 | Download as JSON | ✅ | Via hand-rolled TOML parser |
+| Download as YAML | ✅ | Via TOML parser plus local YAML serializer |
 
 ## Known-File Enhancement
 
-TOML files get Layer-3 plugins for specific file names. Current plugins (in `docs/types/text/toml/known/`):
-
-| Plugin | File(s) |
-|--------|---------|
-| `wrangler` | `wrangler.toml` — Cloudflare Workers config |
-| `fly` | `fly.toml` — Fly.io deployment config |
-| `cliff` | `cliff.toml` — git-cliff changelog config |
+TOML files get Layer-3 plugins for specific file names. Current plugins live in `docs/types/text/toml/known/` and cover 46 known TOML variants, including `Cargo.toml`, `.cargo/config.toml`, `pyproject.toml`, `Cargo.lock`, `wrangler.toml`, `fly.toml`, `cliff.toml`, `uv.toml`, `ruff.toml`, `mise.toml`, `bunfig.toml`, `netlify.toml`, `telegraf.conf`, `vector.toml`, and Rust/Julia/Supabase/Starship/Helix/Gitleaks configs.
 
 ## Real-World Examples
 
@@ -52,13 +52,13 @@ TOML files get Layer-3 plugins for specific file names. Current plugins (in `doc
 
 ## Known Limitations
 
-- TOML v1.1 float edge cases (NaN/Inf) may not parse correctly
+- TOML v1.1 edge cases may not parse correctly
 - No semantic diff (only text diff)
+- Form editing covers scalar values and scalar arrays; complex table structure changes still require source editing
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| pyproject.toml plugin | Med | Easy | Show tool config sections, Python version |
 | Semantic diff | Med | Med | Table-level diff like JSON has |
-| Convert TOML → YAML | Low | Easy | Via JSON intermediary |
+| Known-plugin index docs | Low | Easy | Generate the plugin list from `docs/types/text/toml/known/` |

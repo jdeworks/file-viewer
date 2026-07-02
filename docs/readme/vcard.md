@@ -1,6 +1,6 @@
 # Contacts (vCard)
 
-> Contact card viewer with emails, phones, addresses, URLs, birthday, and note — exports to CSV or JSON.
+> Contact card viewer with emails, phones, addresses, URLs, birthday, note, QR import codes, and CSV/JSON export.
 
 ## Format Details
 
@@ -25,9 +25,11 @@
 | Birthday | ✅ | Shown with birthday icon |
 | Note | ✅ | Full note field shown |
 | Multi-contact file | ✅ | Multiple vCards in one file all shown |
+| QR code | ✅ | Per-card QR button lazily loads vendored qrcodejs and encodes a minimal vCard 3.0 block |
+| Quoted-printable decode | ✅ | Basic vCard 2.1 quoted-printable values are decoded |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Contact count, email count, phone count, unique organizations |
+| Metadata | ✅ | Contacts, emails, phones, addresses, URLs, organizations, photo count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -48,14 +50,15 @@
 
 ## Known Limitations
 
-- vCard 2.1 encoded fields (Quoted-Printable) may not decode correctly
+- vCard 2.1 quoted-printable support is basic; charset-specific edge cases may not decode correctly
 - `PHOTO` fields (base64 contact photos) are not rendered
-- Multiple email/phone values per field are shown but only one is listed in CSV export
+- QR export uses a normalized minimal vCard, not the original source bytes
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Contact photo display | Med | Easy | Decode base64 PHOTO field and show avatar |
-| vCard 2.1 QP decoding | Low | Med | Quoted-Printable value decoding for older vCard files |
+| vCard 2.1 charset coverage | Low | Med | Improve quoted-printable decoding for charset-specific older vCard files |
+| Export as vCard 3.0 | Low | Med | Serialize edited/normalized cards back to vCard |
 | Merge / deduplicate contacts | Low | Hard | Detect and merge duplicate vCard entries |
