@@ -1,6 +1,6 @@
 # Debian Package
 
-> Debian .deb package viewer — package name, version, architecture, maintainer, installed size, dependencies, and description.
+> Debian .deb package viewer — validates the AR container, shows package archive members, and surfaces control fields when they are directly readable.
 
 ## Format Details
 
@@ -16,18 +16,18 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Package name | ✅ | From `control` file `Package:` field |
-| Version | ✅ | `Version:` field |
-| Architecture | ✅ | `Architecture:` field |
-| Maintainer | ✅ | `Maintainer:` field |
-| Installed size | ✅ | `Installed-Size:` in KB |
-| Description | ✅ | Short and extended description |
-| Dependencies | ✅ | `Depends:`, `Pre-Depends:` parsed |
-| Recommends / Suggests | ✅ | Optional dependency fields |
-| Section / Priority | ✅ | Package category and priority |
+| AR container validation | ✅ | Checks `!<arch>\n` magic and `debian-binary` member |
+| Format version | ✅ | Reads the `debian-binary` member |
+| Archive members | ✅ | Lists member names and compressed member sizes |
+| Package name | ⚠️ | Shown only when readable control text is directly present |
+| Version / architecture | ⚠️ | Same direct-control-text limitation |
+| Maintainer / homepage | ⚠️ | Same direct-control-text limitation |
+| Installed size | ⚠️ | Same direct-control-text limitation |
+| Description | ⚠️ | Same direct-control-text limitation |
+| Dependencies | ⚠️ | Same direct-control-text limitation |
 | Source view | ❌ | Binary AR archive |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Name, version, arch, maintainer, depends |
+| Metadata | ✅ | Identifies valid Debian package files |
 
 ### Edit
 | Capability | Status | Notes |
@@ -41,6 +41,7 @@
 
 ## Known Limitations
 
+- `control.tar.*` is not decompressed yet, so most modern packages show archive members without package fields
 - File list (from `data.tar.*`) is not extracted
 - Preinst / postinst scripts are not shown
 
@@ -48,5 +49,6 @@
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Control archive extraction | High | Med | Decompress `control.tar.*` and parse `control`, scripts, md5sums |
 | File list extraction | Med | Med | Parse data.tar.gz to list installed paths |
 | Script viewer | Low | Easy | Show maintainer scripts (preinst, postinst, etc.) |

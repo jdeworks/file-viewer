@@ -1,6 +1,6 @@
 # DICOM Medical Image
 
-> Medical imaging format used by CT, MRI, X-ray, and ultrasound equipment — parsed in-browser with tag inspection.
+> Medical imaging format used by CT, MRI, X-ray, and ultrasound equipment — parsed in-browser as a safety-focused metadata summary.
 
 ## Format Details
 | Field | Value |
@@ -15,18 +15,23 @@
 ### View
 | Feature | Status | Details |
 |---------|--------|---------|
-| Image rendering | ✅ | Pixel data decoded with window/level adjustments |
-| Tag browser | ✅ | All DICOM tags with VR, group/element, and value |
-| Patient/study info | ✅ | Patient name, ID, study date, modality, series |
-| Metadata | ✅ | Modality, institution, manufacturer, image size |
-| Multi-frame (video) | ⚠️ Partial | Multi-frame detection; animation not implemented |
-| Compressed pixel data | ⚠️ Partial | JPEG-in-DICOM works; JPEG 2000 not supported |
+| DICM signature check | ✅ | Requires the `DICM` marker at offset 128 |
+| Explicit VR Little Endian scan | ✅ | Reads up to 200 metadata tags and stops before pixel data |
+| Study / scan info | ✅ | Study date/time, descriptions, modality, SOP class, transfer syntax when present |
+| Patient info warning | ✅ | Shows PHI warning when patient identifiers are detected |
+| Equipment info | ✅ | Manufacturer and model when present |
+| Image parameters | ✅ | Rows, columns, bit depth, spacing, and slice thickness when present |
+| Metadata | ✅ | Modality, rows, columns, study date, institution |
+| Image rendering | ❌ | Pixel data is not decoded or displayed |
+| Full tag browser | ❌ | Only selected clinically useful tags are surfaced |
+| Multi-frame (video) | ❌ | Pixel data is not decoded |
+| Compressed pixel data | ❌ | Transfer syntax is labelled, but compressed pixels are not decoded |
 | Diff/compare | ❌ | Not supported |
 
 ### Edit
 | Feature | Status | Details |
 |---------|--------|---------|
-| Window/level adjust | ✅ | Brightness/contrast slider for diagnostic viewing |
+| Window/level adjust | ❌ | No rendered pixel canvas yet |
 | Anonymization | ❌ | Strip patient data — not yet implemented |
 | Annotation | ❌ | Draw ROI/measurements on image |
 
@@ -38,12 +43,13 @@
 | Export tag list as JSON | ❌ | Not yet implemented |
 
 ## Example Files
-- [`sample.dcm`](../examples/sample.dcm) — DICOM medical image sample
+- [`sample.dcm`](../examples/sample.dcm) — DICOM metadata summary sample
 
 ## Gaps / Planned Improvements
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Export rendered image as PNG | High | Canvas.toBlob on the rendered pixel data |
+| Pixel renderer with window/level | High | Decode uncompressed pixel data first, then add brightness/contrast controls |
+| Full tag table export | High | Show every parsed tag and export JSON |
 | Patient data anonymization | High | Zero out identifying tags; download cleaned file |
 | JPEG 2000 pixel data | Medium | Need j2k decoder (OpenJPEG WASM) |
 | Multi-frame animation | Medium | Cine loop for multi-frame CT/MRI series |

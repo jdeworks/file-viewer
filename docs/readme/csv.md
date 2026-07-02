@@ -1,6 +1,6 @@
 # CSV / TSV
 
-> Tabular data rendered as a sortable table — auto-detects delimiter, handles quoted fields, exports to JSON or Excel.
+> Tabular data rendered as an editable table with charting — auto-detects delimiter, handles quoted fields, and exports to JSON or Excel.
 
 ## Format Details
 
@@ -16,9 +16,12 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Rendered table | ✅ | Header row highlighted; values HTML-escaped |
+| Rendered table | ✅ | Editable table cells rendered in the parent pane |
 | Auto delimiter detection | ✅ | Comma, semicolon, tab, pipe auto-detected via PapaParse |
 | First-row header | ✅ | Configurable via setting (on by default) |
+| Inline table editing | ✅ | Contenteditable cells with Tab/Enter navigation |
+| Add/delete rows and columns | ✅ | Toolbar adds rows/columns; context menus delete rows/columns |
+| Chart tab | ✅ | Lazy-loads Chart.js for numeric columns |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
 | Metadata | ✅ | Row count, column count, delimiter, line endings, ragged rows, empty cells |
@@ -27,13 +30,14 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Source editing | ✅ | Full Monaco editor |
-| Cell / grid editing | ❌ | Planned |
+| Cell / grid editing | ✅ | Inline table editor updates exported CSV state |
 | Save (Companion) | ✅ | Write-back to local file |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
+| Export edited table as CSV | ✅ | Preview toolbar downloads the current table state |
 | Download as JSON | ✅ | Array-of-objects (with header) or array-of-arrays |
 | Download as Excel (.xlsx) | ✅ | Via vendored SheetJS |
 
@@ -50,7 +54,7 @@
 
 ## Known Limitations
 
-- No in-browser row sorting (sort by downloading as JSON/Excel)
+- No in-browser column sorting yet
 - Large files (>100k rows) may be slow to render; source view handles any size
 
 ## Gap Analysis
@@ -58,6 +62,6 @@
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Interactive column sort | High | Med | Click header to sort in-browser |
-| Cell grid editing | Med | Hard | Edit individual cells; write back as CSV |
+| Richer grid editing | Med | Hard | Undo/redo, selection ranges, paste ranges, and type-aware edits |
 | Column statistics | Med | Med | Min/max/mean/null-count per column |
 | Convert to Parquet | Low | Hard | Requires full columnar encoding in-browser |

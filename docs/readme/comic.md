@@ -1,6 +1,6 @@
 # Comic Book Archive
 
-> Page-by-page comic reader for CBZ/CBR archives — keyboard navigation, fit modes, and thumbnail strip.
+> Comic archive reader for CBZ plus opt-in RAR/7z comics — renders ordered image pages as lazy blob images with a two-page spread toggle.
 
 ## Format Details
 
@@ -17,12 +17,13 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Page-by-page navigation | ✅ | Arrow keys, Space, on-screen buttons |
-| Thumbnail strip | ✅ | Page thumbnails for quick jump |
-| Fit-to-width / fit-to-height | ✅ | Toggle between fit modes |
+| Page rendering | ✅ | Ordered image pages rendered vertically with lazy-loaded blob URLs |
+| Page count | ✅ | Header shows total page count |
+| Two-page spread | ✅ | Spread toggle lays pages out in book mode on wider screens |
 | CBZ (ZIP) support | ✅ | Fully supported |
-| CBR (RAR) support | ⚠️ Partial | Requires unrar.js; may not load in all browsers |
-| CB7 / CBT support | ⚠️ Partial | 7-zip and tar archives; best-effort extraction |
+| CBR (RAR) support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in |
+| CB7 support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in |
+| CBT support | ❌ | Tar comics are not currently opened by the comic reader path |
 
 ### Edit
 | Capability | Status | Notes |
@@ -33,7 +34,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Download individual page | ✅ | Current page saved as image |
+| Download individual page | ❌ | Not wired in the current reader |
 
 ## Known-File Enhancement
 
@@ -45,15 +46,15 @@ No known-file plugin — all comic archives use the same reader.
 
 ## Known Limitations
 
-- CBR (RAR) decompression depends on unrar.js availability; large RAR files may fail
-- No double-page spread mode for wide landscape pages
+- CBR/CB7 decompression depends on the opt-in archive WASM path; large archives may fail
+- No thumbnail strip or jump-to-page control yet
 - Reading direction is always left-to-right (no RTL mode for manga)
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| CBR full support | High | Hard | Native RAR decompression requires WASM unrar |
+| CBR full support | High | Hard | RAR support depends on the archive WASM path |
 | Right-to-left (manga) mode | Med | Easy | Flip page order and navigation direction |
-| Double-page spread view | Med | Med | Show two pages side-by-side |
+| Thumbnail / page picker | Med | Med | Generate small previews and jump controls |
 | Bookmarks / reading position save | Low | Med | Persist last-read page in localStorage |

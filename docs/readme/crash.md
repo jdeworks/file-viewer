@@ -23,7 +23,7 @@
 | Classic and JSON-IPS formats | ✅ | Both legacy `.crash` text and newer `.ips` JSON formats parsed |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | `diff: false` |
-| Metadata | ✅ | App name, version, OS, exception type, frame count |
+| Metadata | ✅ | Process, version, exception type, OS version, date, and triggered thread when present |
 
 ### Edit
 | Capability | Status | Notes |

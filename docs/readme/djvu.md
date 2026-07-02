@@ -20,6 +20,9 @@
 |------------|--------|-------|
 | Page rendering | ✅ | Rendered via DjVu.js (WASM/JS decoder) |
 | Multi-page navigation | ✅ | Previous / next page controls |
+| Keyboard navigation | ✅ | Arrow keys move between pages while the viewer is focused |
+| Zoom control | ✅ | 50%, 75%, 100%, 150%, and 200% render scales |
+| Text layer toggle | ✅ | Uses DjVu.js OCR/text data when the document contains it |
 | WASM warm-up | ⚠️ | First page may be slow while decoder initialises |
 
 ### Edit
@@ -43,7 +46,7 @@ No known-file plugin.
 ## Known Limitations
 
 - Large documents are slow on first open due to WASM decoder warm-up
-- No text layer / OCR extraction — hidden text in DjVu is not exposed
+- Text output depends on the document having an embedded text layer
 - No thumbnail strip or page-jump input field
 
 ## Gap Analysis
@@ -52,5 +55,4 @@ No known-file plugin.
 |---------|----------|------------|-------|
 | Page-jump input | High | Easy | Number field to jump to a specific page |
 | Thumbnail strip | Med | Med | Decode page thumbnails in background |
-| Text layer extraction | Med | Hard | DjVu text chunks exist but require parser extension |
-| Zoom control | Low | Easy | Scale page rendering up/down |
+| Text export | Med | Med | Save extracted page text when available |
