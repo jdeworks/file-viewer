@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.sqlite`, `.sqlite3`, `.db`, `.db3`, `.s3db`, `.sl3` |
+| Extension(s) | `.sqlite`, `.sqlite3`, `.db`, `.db3`, `.s3db`, `.sl3`, `.gpkg` |
 | MIME type | `application/vnd.sqlite3` |
 | Binary / Text | Binary |
 | Common use | Mobile app databases, local application storage, embedded analytics, prototyping |

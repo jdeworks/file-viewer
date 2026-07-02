@@ -36,7 +36,7 @@ return detect;
 const detect_sqlite=(()=>{
 // SQLite database files. By extension, or the 16-byte magic header "SQLite format 3\0".
 function detect(intake) {
-  if (hasExtension(intake, 'sqlite', 'sqlite3', 'db', 'db3', 'gpkg')) {
+  if (hasExtension(intake, 'sqlite', 'sqlite3', 'db', 'db3', 's3db', 'sl3', 'gpkg')) {
     return magic(intake) ? 0.97 : 0.8;   // extension + magic = very confident
   }
   return magic(intake) ? 0.9 : 0;

@@ -324,11 +324,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sdf | SDF / MDL Molfile
 - [x] shapefile | ESRI Shapefile (.shp)
 - [x] sketch | Sketch Design File
-- [ ] sqlite | SQLite database
-- [ ] ssh-config | SSH Config
-- [ ] step | STEP CAD Exchange (ISO 10303-21)
-- [ ] stl | 3D model (STL)
-- [ ] strings | Localization Strings
+- [x] sqlite | SQLite database
+- [x] ssh-config | SSH Config
+- [x] step | STEP CAD Exchange (ISO 10303-21)
+- [x] stl | 3D model (STL)
+- [x] strings | Localization Strings
 - [ ] subtitle | Subtitles
 - [ ] svg | SVG image
 - [ ] thrift | Apache Thrift
