@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.ics`, `.ical`, `.ifb` |
+| Extension(s) | `.ics`, `.ical`, `.ifb`, `.icalendar` |
 | MIME type | `text/calendar` |
 | Binary / Text | Text |
 | Common use | Calendar exports, meeting invites, recurring event schedules |

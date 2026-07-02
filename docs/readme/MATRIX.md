@@ -24,7 +24,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [XML](xml.md) | `.xml` | Basic | Monaco | download | pom.xml (1) | XPath query |
 | [INI](ini.md) | `.ini` | Basic | Monaco | download | tox.ini (1) | — |
 | [Markdown](markdown.md) | `.md` `.markdown` `.mdown` `.mkd` | Full | Monaco / WYSIWYG | HTML, DOCX, download | CODEOWNERS, Gemfile (2) | Math / Mermaid |
-| [HTML](html.md) | `.html` | Basic | Monaco | download | — | Sandboxed render |
+| [HTML](html.md) | `.html` | Basic | Monaco | download | — | CSS isolation (scoped styles) |
 | [Plain text](/) | `.txt` `.bin` `.gradle` `.mod` | Basic | Monaco | download | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc (6) | — |
 | [Log](log.md) | `.log` | Basic | Monaco | download | — | Filter/tail |
 | [CSV / TSV](csv.md) | `.csv` | Basic | Monaco | download | — | Sort/filter |
@@ -256,7 +256,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Contacts (vCard)](vcard.md) | `.vcf` | Basic | Monaco | download | — | — |
-| [Calendar](ics.md) | `.ics` | Basic | Monaco | download | — | — |
+| [Calendar](ics.md) | `.ics` | Basic | Monaco | download | — | Calendar month/grid view |
 | [Mailbox](mbox.md) | `.mbox` | Basic | Monaco | download | — | Thread view |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
 | [HL7 v2 Health](/) | `.hl7` | Basic | Monaco | download | — | FHIR support |

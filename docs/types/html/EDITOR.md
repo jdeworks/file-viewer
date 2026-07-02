@@ -2,10 +2,19 @@
 
 ## Current state
 
-renderer.js sanitizes HTML via DOMPurify (scripts stripped) and returns `bodyHtml` for the
-sandboxed iframe. An opt-in `allowScripts` mode passes the raw document as `srcdoc` with
-`sandbox="allow-scripts"` (no allow-same-origin), so scripts run but cannot reach the parent.
-`htmlInjectHead` setting lets users inject extra `<script>` / `<link>` tags before `</head>`.
+renderer.js sanitizes HTML via DOMPurify and returns `bodyHtml` for the sandboxed iframe.
+`FORBID_TAGS`/`FORBID_ATTR` strip every DOMPurify-default-allowed tag/attribute that can trigger
+an eager off-origin network request we don't control (`<script>`/`<iframe>`/`<object>`/`<embed>`/
+`<video>`/`<audio>`/`<source>`/`<track>`/`<form>`/`<meta>`/`<base>`/`<link>`, `background=`/
+`poster=`). `<style>`/`style=""`/`<img src>` stay allowed (DOMPurify doesn't parse CSS, so it
+can't strip a `url()` itself) but `blankOffOriginImgSrc()`/`stripOffOriginCssUrls()` post-process
+the sanitized string to neutralize any remaining off-origin `src`/`url()`/`@import` reference —
+only same-origin-relative or `data:` images/backgrounds render. An opt-in `allowScripts` mode
+passes the raw document as `srcdoc` with `sandbox="allow-scripts"` (no allow-same-origin), so
+scripts run and off-origin references are no longer blocked — that mode is an explicit,
+user-confirmed trust decision (WP07). `htmlInjectHead` setting lets users inject extra `<script>`
+/ `<link>` tags before `</head>` (this is the local user's own setting, not attacker-controlled
+file content, so it is out of scope for the sanitizer).
 
 wysiwyg-html.js provides a `contenteditable` div editor (`HtmlWysiwygEditor`): extracts `<body>`
 content, puts it in a `contenteditable`, reconstructs the full document on `getValue()`. Supports

@@ -15,9 +15,9 @@
 ### View
 | Feature | Status | Details |
 |---------|--------|---------|
-| Rendered preview | ✅ | Sandboxed iframe — layout, styles, images all work |
-| Script execution | ⚠️ Opt-in | Scripts sanitized by default; user prompt to allow in sandbox |
-| DOMPurify sanitization | ✅ | Malicious scripts stripped; safe by default |
+| Rendered preview | ✅ | Sandboxed iframe (`sandbox="allow-scripts"`, no `allow-same-origin`) — layout & styles always render; `<img>` src and CSS `url()` only load when same-origin-relative or `data:` — remote/absolute references are blanked by default so opening a file can never silently phone home |
+| Script execution | ⚠️ Opt-in | Scripts sanitized by default; user prompt to allow in sandbox (opting in also lifts the off-origin-fetch blocking below, since the raw document is trusted at that point) |
+| DOMPurify sanitization | ✅ | `<script>`/`<iframe>`/`<object>`/`<embed>`/`<video>`/`<audio>`/`<source>`/`<track>`/`<form>`/`<meta>`/`<base>`/`<link>` and legacy `background=`/`poster=` stripped outright; remaining `<style>`/`style=""`/`<img src>` are kept but any off-origin `url()`/`src` reference inside them is neutralized — safe by default |
 | Source view | ✅ | Full HTML in Monaco with syntax highlighting |
 | Structural diff | ✅ | DOM-level diff (not text diff) — shows added/removed/moved elements |
 | Text diff | ✅ | Standard text diff also available |
@@ -35,6 +35,7 @@
 |---------|--------|---------|
 | Download original | ✅ | Always available |
 | Print / Save as PDF | ✅ | Browser print on rendered view |
+| Screenshot | ✅ | Captures the sanitized rendered view as a PNG (html2canvas, off-screen same-origin iframe) |
 
 ## Example Files
 - [`sample.html`](../examples/sample.html) — sample HTML page
@@ -43,6 +44,5 @@
 | Feature | Priority | Notes |
 |---------|----------|-------|
 | CSS isolation (scoped styles) | Medium | Styles inside viewer may bleed; Shadow DOM could isolate |
-| Screenshot of rendered page | Medium | html2canvas or headless capture of the sandboxed preview |
 | Template variable substitution | Low | Fill in `{{variable}}` placeholders from a JSON data file |
 | Accessibility audit | Low | Run axe-core in the sandbox and report issues |
