@@ -400,11 +400,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/arrow/metadata.js
 - [x] docs/types/binary/arrow/renderer.js
 - [x] docs/types/binary/arrow/settings.default.json
-- [ ] docs/types/binary/avro/detect.js
-- [ ] docs/types/binary/avro/index.js
-- [ ] docs/types/binary/avro/metadata.js
-- [ ] docs/types/binary/avro/renderer.js
-- [ ] docs/types/binary/avro/settings.default.json
+- [x] docs/types/binary/avro/detect.js
+- [x] docs/types/binary/avro/index.js
+- [x] docs/types/binary/avro/metadata.js
+- [x] docs/types/binary/avro/renderer.js
+- [x] docs/types/binary/avro/settings.default.json
 - [ ] docs/types/binary/blend/detect.js
 - [ ] docs/types/binary/blend/index.js
 - [ ] docs/types/binary/blend/metadata.js

@@ -7,7 +7,7 @@
 | Field | Value |
 |-------|-------|
 | Extension(s) | `.avro` |
-| MIME type | `application/octet-stream` |
+| MIME type | `application/avro-binary` |
 | Binary / Text | Binary |
 | Common use | Kafka message serialisation, Hadoop data files, event streaming |
 

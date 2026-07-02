@@ -363,6 +363,11 @@ export async function run(ctx) {
   if (/Apache Avro/i.test(avroText)) pass('Avro badge shown'); else fail('avro badge: ' + avroText.slice(0, 300));
   if (/Employee|com\.example/i.test(avroText)) pass('Avro schema name shown'); else fail('avro schema: ' + avroText.slice(0, 300));
   if (/salary|department|hire_date/i.test(avroText)) pass('Avro schema fields shown'); else fail('avro fields: ' + avroText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const avroMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Schema\s*com\.example\.Employee/.test(avroMeta) && /Fields\s*8/.test(avroMeta) && /Codec\s*null/.test(avroMeta)) pass('Avro metadata includes schema, field count, and codec'); else fail('avro meta: ' + avroMeta.replace(/\s+/g, ' ').slice(0, 220));
+  await page.click('#metaDrawer [data-close]');
 
   // ── MessagePack ───────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
