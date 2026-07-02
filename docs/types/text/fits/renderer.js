@@ -2,6 +2,16 @@
 // FITS header: fixed-width 80-char records in 2880-byte blocks.
 // Each record: 8-char keyword, optional "= value / comment"
 // Records end with "END" keyword.
+//
+// SECURITY: keyword/value/comment strings come straight from file content (the FITS spec allows
+// any printable ASCII in a quoted string value or COMMENT/HISTORY free text), so every one of
+// them must be HTML-escaped before landing in bodyHtml — otherwise a crafted header (e.g.
+// OBJECT = '<img src=http://evil.tld/x>') injects markup into the sandboxed preview iframe,
+// which can still issue a live off-origin request even though scripts there can't reach the
+// parent (violates the zero-off-origin-at-runtime rule).
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
 
 function parseCard(rec) {
   const kw = rec.slice(0, 8).trim();
@@ -58,15 +68,15 @@ const BITPIX_DESC = {
 
 function row(label, value, comment) {
   if (!value && value !== '0') return '';
-  const note = comment ? `<span class="fits-comment"> / ${comment}</span>` : '';
-  return `<tr><td class="fits-key">${label}</td><td>${value}${note}</td></tr>`;
+  const note = comment ? `<span class="fits-comment"> / ${esc(comment)}</span>` : '';
+  return `<tr><td class="fits-key">${esc(label)}</td><td>${esc(value)}${note}</td></tr>`;
 }
 
 export function render(intake) {
   const cards = parseFitsHeader(intake);
 
   if (!cards.length) {
-    return { bodyHtml: '<div class="fits-preview"><p class="fits-note">No FITS header found.</p></div>' };
+    return { bodyHtml: '<div class="fits-preview"><p class="fits-note">No FITS header found.</p></div>', hadUnsafe: false };
   }
 
   const naxis = val(cards, 'NAXIS') || '0';
@@ -77,10 +87,12 @@ export function render(intake) {
   const dims = [naxis1, naxis2, naxis3].filter(Boolean).join(' × ');
   const bpDesc = bitpix ? (BITPIX_DESC[bitpix] || `${bitpix}-bit`) : null;
 
+  // NAXIS/NAXIS1-3/BITPIX are supposed to be numeric per spec, but the parser doesn't validate
+  // that — escape them too (file content, not derived data) before they land in bodyHtml.
   const statsHtml = `<div class="fits-stats">
-    ${dims ? `<div class="fits-stat"><div class="fits-stat-value">${dims}</div><div class="fits-stat-label">Dimensions</div></div>` : ''}
-    ${naxis ? `<div class="fits-stat"><div class="fits-stat-value">${naxis}</div><div class="fits-stat-label">NAXIS</div></div>` : ''}
-    ${bpDesc ? `<div class="fits-stat"><div class="fits-stat-value">${bpDesc}</div><div class="fits-stat-label">Data Type</div></div>` : ''}
+    ${dims ? `<div class="fits-stat"><div class="fits-stat-value">${esc(dims)}</div><div class="fits-stat-label">Dimensions</div></div>` : ''}
+    ${naxis ? `<div class="fits-stat"><div class="fits-stat-value">${esc(naxis)}</div><div class="fits-stat-label">NAXIS</div></div>` : ''}
+    ${bpDesc ? `<div class="fits-stat"><div class="fits-stat-value">${esc(bpDesc)}</div><div class="fits-stat-label">Data Type</div></div>` : ''}
     ${cards.length ? `<div class="fits-stat"><div class="fits-stat-value">${cards.length}</div><div class="fits-stat-label">Header Cards</div></div>` : ''}
   </div>`;
 
@@ -94,15 +106,15 @@ export function render(intake) {
       return row(c.kw, v, c.comment);
     }).join('');
 
-  // Full card dump (collapsed)
-  const allRows = cards.map((c) => `<tr><td class="fits-key">${c.kw}</td><td><code>${c.value}</code>${c.comment ? `<span class="fits-comment"> / ${c.comment}</span>` : ''}</td></tr>`).join('');
+  // Full card dump (collapsed) — kw/value/comment are file content, must be escaped (see esc() note above).
+  const allRows = cards.map((c) => `<tr><td class="fits-key">${esc(c.kw)}</td><td><code>${esc(c.value)}</code>${c.comment ? `<span class="fits-comment"> / ${esc(c.comment)}</span>` : ''}</td></tr>`).join('');
 
   const bodyHtml = `<div class="fits-preview">
-  <div class="fits-header"><span class="fits-badge">FITS</span><span class="fits-subhead">${val(cards, 'OBJECT') || 'Flexible Image Transport System'}</span></div>
+  <div class="fits-header"><span class="fits-badge">FITS</span><span class="fits-subhead">${esc(val(cards, 'OBJECT')) || 'Flexible Image Transport System'}</span></div>
   ${statsHtml}
   ${keyRows ? `<table class="fits-table">${keyRows}</table>` : ''}
   <details class="fits-all"><summary>${cards.length} header cards</summary><table class="fits-table">${allRows}</table></details>
 </div>`;
 
-  return { bodyHtml };
+  return { bodyHtml, hadUnsafe: false };
 }

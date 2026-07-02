@@ -57,7 +57,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [ABC Music](abc.md) | `.abc` | Full | Monaco | download, PNG | — | MIDI playback |
 | [Chat Export](chat.md) | `.txt` `.json` (Telegram/WhatsApp/Discord) | Basic | Monaco | download | — | Facebook schema |
 | [Hydrogen](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
-| [FITS Astronomy](/) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
+| [FITS Astronomy](fits.md) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
 
 ---
 
@@ -199,7 +199,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [DICOM Medical](dicom.md) | `.dcm` `.dicom` | Partial | None | download | — | Pixel render |
 | [NIfTI Brain](/) | `.nii` `.hdr` `.img` | Full | None | download | — | Voxel render |
 | [NumPy Array](/) | `.npy` `.npz` | Basic | None | download | — | Data values |
-| [FITS Astronomy](/) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
+| [FITS Astronomy](fits.md) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
 | [Protein Structure](/) | `.pdb` `.ent` | Basic | Monaco | download | — | 3D viz |
 | [Molecular Structure XYZ](xyz.md) | `.xyz` | Basic | Monaco | download | — | Trajectory playback |
 | [CIF Crystallographic](cif.md) | `.cif` `.mmcif` `.cif2` | Full | Monaco | download | — | Loop table viewer |
