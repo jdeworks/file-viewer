@@ -168,7 +168,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [SQLite](sqlite.md) | `.sqlite` `.db` | Basic | None | download | — | CSV/JSON export |
+| [SQLite](sqlite.md) | `.sqlite` `.db` | Full | SQL query | CSV/JSON, modified DB | — | Schema diagram |
 | [Apache Parquet](parquet.md) | `.parquet` | Basic | None | download | — | Row data |
 | [Apache Arrow / Feather](arrow.md) | `.arrow` `.feather` `.ipc` | Basic | None | download | — | Column types |
 | [Apache Avro](avro.md) | `.avro` | Full | None | download | — | Record decode |

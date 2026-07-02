@@ -7,7 +7,7 @@
 | Field | Value |
 |-------|-------|
 | Extension(s) | `.db`, `.sqlite`, `.sqlite3`, `.csv`, `.tsv` |
-| MIME type | `application/x-sqlite3`, `text/csv`, `text/tab-separated-values` |
+| MIME type | `application/vnd.sqlite3`, `text/csv`, `text/tab-separated-values` |
 | Binary / Text | Binary (SQLite), Text (CSV/TSV) |
 | Common use | Local app databases, data exports, spreadsheet interchange, analytics |
 | Spec / Docs | [SQLite file format](https://www.sqlite.org/fileformat.html), [RFC 4180 (CSV)](https://www.rfc-editor.org/rfc/rfc4180) |

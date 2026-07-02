@@ -2367,14 +2367,18 @@
       },
       "partialSamples": [],
       "realWorldQuality": "needs-review",
-      "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
+      "notes": "Opens the DB via vendored sql.js (WASM). Interactive table browser, free-form SQL query panel (with EXPLAIN QUERY PLAN and query history), and CSV/JSON export of results; write queries mutate the in-memory copy and can be downloaded as a modified .sqlite file.",
       "fileExamplesSlug": null,
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
+      "editCapability": "basic",
+      "exportCapability": "transform",
       "securityLimitations": [],
-      "knownParserGaps": [],
+      "knownParserGaps": [
+        "No schema/DDL (CREATE TABLE) view",
+        "Views not listed alongside tables",
+        "WAL-mode databases and SQLCipher-encrypted databases cannot be opened"
+      ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
