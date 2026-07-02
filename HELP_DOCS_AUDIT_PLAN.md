@@ -646,7 +646,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/ebook/mobi/mobilib.js
 - [x] docs/types/ebook/mobi/renderer.js
 - [x] docs/types/ebook/mobi/settings.default.json
-- [ ] docs/types/EDITOR-INDEX.md
+- [x] docs/types/EDITOR-INDEX.md
 - [ ] docs/types/eml/detect.js
 - [ ] docs/types/eml/EDITOR.md
 - [ ] docs/types/eml/head-row.html
