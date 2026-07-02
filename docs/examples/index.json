@@ -2541,6 +2541,9 @@
     "file": "sample.mat",
     "label": "MATLAB MAT-file (demo)",
     "mime": "application/x-matlab-data",
+    "type": "mat",
+    "binary": true,
+    "partial": true,
     "category": "scientific",
     "categories": [
       "scientific",

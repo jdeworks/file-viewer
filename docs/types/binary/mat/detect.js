@@ -3,12 +3,17 @@
 // v4: no magic, very old format — extension-only detection
 // HDF5-based (v7.3+): uses HDF5 container with attribute "MATLAB_class" — handled by HDF5 type
 
-export function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isMatExt = ext === 'mat';
+import { hasExtension, mimeMatches } from '../../../core/detect.js';
 
-  if (!b || b.length < 128) return isMatExt ? 0.6 : 0;
+export function detect(intake) {
+  const { bytes: b } = intake;
+  const isMatExt = hasExtension(intake, 'mat');
+
+  if (!b || b.length < 128) {
+    if (isMatExt) return 0.6;
+    if (mimeMatches(intake, 'matlab', 'x-matlab')) return 0.5;
+    return 0;
+  }
 
   // MATLAB v5: first 4 bytes of descriptive text start with "MATL"
   const headerText = new TextDecoder('ascii', { fatal: false }).decode(b.slice(0, 20));
@@ -19,5 +24,6 @@ export function detect(intake) {
   const structural = isV5 && endian;
 
   if (isMatExt) return structural ? 0.99 : isV5 ? 0.85 : 0.65;
+  if (mimeMatches(intake, 'matlab', 'x-matlab')) return structural ? 0.96 : 0.5;
   return structural ? 0.97 : 0;
 }

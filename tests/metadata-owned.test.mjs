@@ -59,6 +59,8 @@ import { detect as detectLnk } from '../docs/types/binary/lnk/detect.js';
 import { extractMetadata as lnkMeta } from '../docs/types/binary/lnk/metadata.js';
 import { detect as detectLmms } from '../docs/types/binary/lmms/detect.js';
 import { metadata as lmmsMeta } from '../docs/types/binary/lmms/metadata.js';
+import { detect as detectMat } from '../docs/types/binary/mat/detect.js';
+import { extractMetadata as matMeta } from '../docs/types/binary/mat/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -767,6 +769,22 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows['Instrument tracks'], '3');
   assert.equal(rows['Beat+bassline tracks'], '1');
   assert.equal(rows['LMMS version'], '1.2.2');
+}
+
+{
+  const data = await bytes('sample.mat');
+  assert.equal(detectMat({ filename: 'sample.mat', mimeType: 'application/x-matlab-data', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectMat({ filename: 'empty.mat', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectMat({ filename: 'sample.bin', mimeType: 'application/x-matlab-data', bytes: data, isBinary: true }), 0.96);
+  const rows = matMeta({ filename: 'sample.mat', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'MATLAB MAT-file v5');
+  assert.equal(rows.Endianness, 'Little-endian');
+  assert.equal(rows.Variables, '3');
+  assert.match(rows['Variable names'], /pi_vals/);
+  assert.match(rows['Variable names'], /counts/);
+  assert.match(rows['Variable names'], /greeting/);
+  assert.match(rows['Variable classes'], /double/);
+  assert.match(rows.Dimensions, /pi_vals: 1x3/);
 }
 
 {

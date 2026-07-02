@@ -4303,7 +4303,7 @@
     },
     "bson": {
       "label": "BSON (Binary JSON)",
-      "support": "full",
+      "support": "partial",
       "sampleFiles": [
         "sample.bson"
       ],
@@ -4317,7 +4317,7 @@
         "magicSelector": false,
         "screenshot": false
       },
-      "previewDepth": "rich",
+      "previewDepth": "structure-only",
       "metadataDepth": "basic",
       "knownParserGaps": [
         "Multi-document streams show only the first document",
@@ -4327,7 +4327,7 @@
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
