@@ -1,6 +1,6 @@
 # RPM Package
 
-> RPM package viewer — name, version, architecture, summary, description, build host, and file count.
+> RPM package viewer — package name, version, architecture, summary, license, vendor, URL, packager, and dependency overview.
 
 ## Format Details
 
@@ -22,13 +22,14 @@
 | Summary | ✅ | One-line description |
 | Description | ✅ | Full package description |
 | License | ✅ | `LICENSE` tag |
-| Build host | ✅ | Host that built the package |
-| Build time | ✅ | POSIX timestamp decoded |
-| Size | ✅ | Installed size |
-| File count | ✅ | Number of files in the package |
+| Build host | ❌ | Tag is not displayed in the preview |
+| Build time | ❌ | Tag is not displayed in the preview |
+| Installed size | ❌ | Not displayed |
+| File count | ❌ | Payload file list is not extracted |
+| Requirements | ✅ | First 15 `REQUIRENAME` entries displayed |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Name, version, arch, summary, build info |
+| Metadata | ⚠️ Partial | Format and lead name only in the side panel; richer header fields are preview-only |
 
 ### Edit
 | Capability | Status | Notes |
@@ -40,14 +41,20 @@
 |------------|--------|-------|
 | Download original | ✅ | Always available |
 
+## Real-World Examples
+
+- [`sample.rpm`](../examples/sample.rpm) — compact RPM fixture for header parsing
+
 ## Known Limitations
 
 - File list (from CPIO payload) is not extracted
 - Pre/post install scriptlets are not shown
+- Build host/time and installed size tags are parsed opportunistically but not displayed yet
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | File list extraction | Med | Hard | Decompress CPIO payload to list paths |
+| Build metadata rows | Low | Easy | Surface parsed build host, build time, and installed size when present |
 | Scriptlet viewer | Low | Med | Parse PREIN/POSTIN/PREUN/POSTUN tags |

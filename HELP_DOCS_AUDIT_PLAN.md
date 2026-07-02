@@ -162,11 +162,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/procreate.md
 - [x] docs/readme/prproj.md
 - [x] docs/readme/pyc.md
-- [ ] docs/readme/qif.md
-- [ ] docs/readme/raw.md
-- [ ] docs/readme/rdp.md
-- [ ] docs/readme/reg.md
-- [ ] docs/readme/rpm.md
+- [x] docs/readme/qif.md
+- [x] docs/readme/raw.md
+- [x] docs/readme/rdp.md
+- [x] docs/readme/reg.md
+- [x] docs/readme/rpm.md
 - [ ] docs/readme/rtf.md
 - [ ] docs/readme/ruffle.md
 - [ ] docs/readme/sarif.md

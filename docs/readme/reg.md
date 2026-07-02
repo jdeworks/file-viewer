@@ -26,7 +26,7 @@
 | Line continuation | ✅ | Multi-line values with `\` continuation joined |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Key count, value count, delete marker count, warning count |
+| Metadata | ⚠️ Partial | Version, key count, and quoted-value count; delete/warning counts are preview-only |
 
 ### Edit
 | Capability | Status | Notes |
