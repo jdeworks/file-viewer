@@ -1,4 +1,4 @@
-# Apple iWork (.pages / .numbers / .keynote)
+# Apple iWork (.pages / .numbers / .key)
 
 > Apple's productivity suite formats — embedded thumbnail plus best-effort text extraction from IWA data; full rendering blocked by a closed protobuf format.
 
@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.pages`, `.numbers`, `.keynote` |
+| Extension(s) | `.pages`, `.numbers`, `.key` (Keynote's real filesystem extension — not `.keynote`) |
 | MIME type | `application/x-iwork-pages-sffpages` (Pages); `application/x-iwork-numbers-sffnumbers` (Numbers); `application/x-iwork-keynote-sffkey` (Keynote) |
 | Binary / Text | Binary (ZIP + Apple protobuf) |
 | Created by | Apple |

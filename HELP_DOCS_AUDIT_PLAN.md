@@ -973,12 +973,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/office/docx/metadata.js
 - [x] docs/types/office/docx/renderer.js
 - [x] docs/types/office/docx/settings.default.json
-- [ ] docs/types/office/EDITOR.md
-- [ ] docs/types/office/iwork/detect.js
-- [ ] docs/types/office/iwork/index.js
-- [ ] docs/types/office/iwork/metadata.js
-- [ ] docs/types/office/iwork/renderer.js
-- [ ] docs/types/office/iwork/settings.default.json
+- [x] docs/types/office/EDITOR.md
+- [x] docs/types/office/iwork/detect.js
+- [x] docs/types/office/iwork/index.js
+- [x] docs/types/office/iwork/metadata.js
+- [x] docs/types/office/iwork/renderer.js
+- [x] docs/types/office/iwork/settings.default.json
 - [ ] docs/types/office/odf/detect.js
 - [ ] docs/types/office/odf/index.js
 - [ ] docs/types/office/odf/metadata.js

@@ -10,7 +10,7 @@
 | XLSX | SheetJS → **editable grid in the parent pane** (per-sheet tabs, contentEditable cells, delta buffer) | SheetJS xlsx.full.min (vendored) | **EDIT → .xlsx write-back** (`xlsx/editor.js`, `XLSX.write`; untouched sheets preserved) |
 | PPTX | pptx-preview renders each slide to canvas → PNG dataURL (cap 50 slides) | pptxviewjs + Chart.js + JSZip (vendored) | none (deferred — no faithful slide-layout writer) |
 | ODF (.odt/.odp) | JSZip → content.xml → custom XML walker (headings, lists, tables, images, ODP slides) → sanitized HTML; pictures inlined as data: URLs | JSZip + DOMPurify (vendored) | none |
-| iWork (.pages/.numbers/.keynote) | JSZip thumbnail (multi-path fallback) + Snappy/IWA protobuf text extraction (scans Document.iwa + up to 3 more IWA files, dedup-filtered, word count); Thumbnail / Text-content tab UI | JSZip + SnappyJS (vendored) | none (proprietary) |
+| iWork (.pages/.numbers/.key) | JSZip thumbnail (multi-path fallback) + Snappy/IWA protobuf text extraction (scans Document.iwa + up to 3 more IWA files, dedup-filtered, word count); Thumbnail / Text-content tab UI | JSZip + SnappyJS (vendored) | none (proprietary) |
 
 DOCX/XLSX now render in the parent pane (`{ parentNode }`) as interactive editors;
 PPTX/ODF/iWork remain read-only (iframe or parent DOM). All libs run in the parent
@@ -251,7 +251,7 @@ after DOCX, since we already parse content.xml in-house.
 
 ---
 
-## iWork (.pages, .numbers, .keynote)
+## iWork (.pages, .numbers, .key)
 
 iWork uses a proprietary Protobuf/IWA binary format (Snappy-compressed). Full
 editing is not feasible. Scope is limited to improved extraction and PDF export.

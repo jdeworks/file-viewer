@@ -69,7 +69,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Word](office.md) | `.docx` `.dotx` | Full | WYSIWYG | DOCX (edited), download | — | Track changes |
 | [PowerPoint](office.md) | `.pptx` | Basic | None | download | — | Animation |
 | [OpenDocument](office.md) | `.odt` | Basic | None | download | — | — |
-| [Apple iWork](office.md) | `.pages` | Basic | None | download | — | Numbers/Keynote |
+| [Apple iWork](office.md) | `.pages` `.numbers` `.key` | Basic | None | download | — | Full IWA layout |
 | [RTF](rtf.md) | `.rtf` | Basic | Monaco | download | — | — |
 | [Jupyter Notebook](ipynb.md) | `.ipynb` | Basic | Monaco | download | — | Cell execution |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |

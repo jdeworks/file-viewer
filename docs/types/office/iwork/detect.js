@@ -1,4 +1,8 @@
-const EXTS = { '.pages': 'Pages', '.numbers': 'Numbers', '.keynote': 'Keynote' };
+// Keynote's real filesystem extension is `.key` (not `.keynote`, which does not exist in the
+// wild). `.key` also happens to be claimed by the PEM/certificate type, but that detector only
+// scores an extension-only match at 0.6 (0.85 needs a DER 0x30 lead byte) while this detector
+// requires ZIP magic (PK\x03\x04) + binary and scores 0.92, so a real Keynote ZIP always wins.
+const EXTS = { '.pages': 'Pages', '.numbers': 'Numbers', '.key': 'Keynote' };
 
 export function detect(intake) {
   if (!intake.isBinary) return 0;
