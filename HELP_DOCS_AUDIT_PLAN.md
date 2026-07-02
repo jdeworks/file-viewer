@@ -9,8 +9,10 @@ The help markdown files are only the first lane. If a future summary says the ta
 1. Run `node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5`.
 2. Confirm the output includes all eight sections and an `audit_total` in the thousands.
 3. Work only the next five unchecked lines that it prints, unless one of those items exposes a directly related dependency.
-4. Mark a line `[x]` only after the matching item was verified and any fix was made.
-5. Repeat until the script exits with `audit_unchecked=0`.
+4. For each printed row, inspect the real implementation/catalog/file state. "Audited" means verified against source and fixed when stale; it does not mean blindly editing every file.
+5. Mark a line `[x]` only after the matching item was verified and any fix was made.
+6. Regenerate derived assets after content/catalog changes, run the smallest relevant validation, and commit useful checkpoints.
+7. Repeat until the script exits with `audit_unchecked=0`.
 
 Use section filters when a batch needs a narrower lane, for example `--section=examples --limit=5`. The `readme-docs` section is intentionally only the help-doc lane; full coverage is the sum of every audit section.
 
@@ -27,14 +29,14 @@ The help markdown lane is small by itself: currently 153 `docs/readme/*.md` rows
 - `internet-example-files`: 10 `.example-files-internet` edge files
 - `special-examples`: 1,040 special capability/example rows
 
-If a checker run reports only the help markdown count, the checklist or checker is broken for this goal and must be fixed before audit work continues.
+If a checker run reports only the help markdown count, the checklist or checker is broken for this goal and must be fixed before audit work continues. The first unchecked rows are expected to stay in `readme-docs` until that lane is finished; that ordering does not reduce the full scope.
 
 ## /goal Prompt
 
 Codex goal objectives are capped, so keep the `/goal` text compact and point it at this file for the long checklist. Use this exact prompt:
 
 ```text
-Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-viewer general-lane audit. This is not the docs-only lane: the checker must report all eight AUDIT_SECTION blocks and an audit_total in the thousands, currently 7,423 rows. Start every batch with `node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5`, work only the next unchecked rows, and mark `[x]` only after verifying or fixing the matching doc/type/file/example/capability. If the checker reports only ~153/163 docs or misses sections, stop and fix the checklist/checker before auditing. Continue the help docs audit, startup polish, and capabilities showcase work from the plan. Completion requires `audit_unchecked=0` with no section filter, generated assets up to date, measured startup/network notes captured, validation passing, and a final commit/push checkpoint.
+Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-viewer general-lane audit. This is not the docs-only lane: the checker must report all eight AUDIT_SECTION blocks and `audit_total=7423` or another justified thousands-level count. At the start of every turn, run `node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5`, work only the next unchecked rows, inspect source/catalog/files for each row, fix stale behavior/docs/catalog entries, then mark `[x]`. If the checker reports only ~153/163 rows or misses sections, stop and fix the checklist/checker first. Continue help-doc fixes, startup/network polish, and capabilities showcase coverage from the plan. Completion requires `audit_unchecked=0` with no section filter, derived assets current, measured startup/network notes captured, focused validation passing, and a final commit/push checkpoint.
 ```
 
 ## Audit Sections
@@ -177,11 +179,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/ssh-config.md
 - [x] docs/readme/step.md
 - [x] docs/readme/stl.md
-- [ ] docs/readme/strings.md
-- [ ] docs/readme/subtitle.md
-- [ ] docs/readme/TEMPLATE.md
-- [ ] docs/readme/text.md
-- [ ] docs/readme/tiff.md
+- [x] docs/readme/strings.md
+- [x] docs/readme/subtitle.md
+- [x] docs/readme/TEMPLATE.md
+- [x] docs/readme/text.md
+- [x] docs/readme/tiff.md
 - [ ] docs/readme/toml.md
 - [ ] docs/readme/torrent.md
 - [ ] docs/readme/url.md

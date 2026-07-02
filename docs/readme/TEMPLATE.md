@@ -22,7 +22,8 @@
 | Syntax highlighting | ✅ `language` / ❌ | Monaco language ID |
 | Metadata extraction | ✅ / ❌ | Fields extracted |
 | Diff view | ✅ Text / ✅ Semantic / ❌ | Diff type |
-| Screenshot / PDF export | ✅ / ❌ | |
+| Screenshot / preview export | ✅ / ❌ | Snapshot support from the preview surface |
+| Metadata side panel | ✅ / ❌ | Fields surfaced outside the preview |
 
 ### Edit
 | Capability | Status | Notes |
@@ -44,6 +45,7 @@
 If this type has a known-file Layer-3 plugin (e.g. `package.json`, `tsconfig.json`), describe it here:
 - **Plugin ID**: `plugin-id`
 - **What it adds**: ...
+- **Preferred mode**: Preview / source / enhanced / tool
 
 ## Real-World Examples
 

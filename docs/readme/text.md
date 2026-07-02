@@ -57,7 +57,7 @@ Types that build on top of plain text and win when their detection passes:
 ## Real-World Examples
 
 - [`sample.txt`](../examples/sample.txt) — generic plain text file
-- [`secret.txt`](../examples/secret.txt) — plain text with sensitive-looking content (tests redaction UI)
+- [`secret.txt`](../examples/secret.txt) — sensitive-looking plain text / easter-egg sample
 
 ## Known Limitations
 

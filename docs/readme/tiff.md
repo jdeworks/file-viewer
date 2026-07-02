@@ -1,6 +1,6 @@
 # TIFF — Tagged Image File Format
 
-> High-quality archival image format — native browser render with metadata display, draw overlay, and format conversion.
+> High-quality archival image format — decoded with the vendored UTIF library, handed into the editable image editor, with structural metadata and format conversion.
 
 ## Format Details
 
@@ -18,24 +18,24 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Image render | ✅ | Native browser support (Safari, Chrome) |
-| Multi-page TIFF | ⚠️ | First page only (browser limitation) |
-| Metadata display | ✅ | Width, height, DPI, compression type, color space |
+| Image render | ✅ | Vendored UTIF decoder converts the first image to PNG for the main image editor |
+| Multi-page TIFF | ⚠️ | First page/sub-image only |
+| Metadata display | ✅ | Format, byte order, dimensions, bits per sample, compression, photometric interpretation, samples per pixel, first IFD offset |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Draw overlay | ✅ | Pencil / eraser / text annotation tools |
-| Magic background removal | ✅ | AI-powered subject isolation |
+| Selection and background tools | ✅ | Uses the shared image editor selection/background-removal tooling |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Convert to PNG | ✅ | Via canvas export |
-| Convert to JPEG | ✅ | Via canvas export |
-| Convert to WebP | ✅ | Via canvas export |
-| Convert to AVIF | ✅ | Via canvas export (Chrome/Edge) |
+| Convert to PNG | ✅ | Decoded/editor canvas export |
+| Convert to JPEG | ✅ | Decoded/editor canvas export |
+| Convert to WebP | ✅ | Decoded/editor canvas export |
+| Convert to AVIF | ✅ | Decoded/editor canvas export where supported by the browser |
 
 ## Known-File Enhancement
 
@@ -43,18 +43,19 @@ No known-file plugin.
 
 ## Real-World Examples
 
-- [`sample.tiff`](../examples/sample.tiff) — high-resolution scan demonstrating metadata display and PNG conversion
+- [`sample.tiff`](../examples/sample.tiff) — CC0 flower sample converted to TIFF; vendored UTIF decodes it into the editable image editor
 
 ## Known Limitations
 
 - Multi-page TIFFs display only the first page; page navigation is not supported
-- GeoTIFF coordinate reference system metadata is extracted but not visualised on a map
-- 16-bit and 32-bit per-channel images are tone-mapped to 8-bit by the browser; full bit depth is not preserved in exports
+- GeoTIFF coordinate reference system tags are not parsed yet
+- Edits are exported as PNG/JPEG/WebP/AVIF; the app does not re-encode edited TIFF files
+- The editor path works on decoded 8-bit RGBA pixels; original bit depth is not preserved in exports
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Multi-page TIFF navigation | High | Hard | Requires JS TIFF decoder (e.g. UTIF.js) to decode pages independently |
+| Multi-page TIFF navigation | High | Med | UTIF is present; add page selection and per-page decode UI |
 | GeoTIFF coordinate display | Med | Med | Parse GeoTIFF tags and show CRS + bounding box |
-| 16-bit export | Low | Hard | Preserve bit depth in PNG export via WASM encoder |
+| TIFF re-encode | Low | Hard | Preserve TIFF output and bit depth via encoder/WASM path |

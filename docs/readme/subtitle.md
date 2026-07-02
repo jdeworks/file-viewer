@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.srt`, `.vtt`, `.sub` |
+| Extension(s) | `.srt`, `.vtt` |
 | MIME type | `text/vtt`, `application/x-subrip` |
 | Binary / Text | Text |
 | Common use | Video subtitles, closed captions, translated audio tracks |
@@ -23,7 +23,7 @@
 | Cue count | ✅ | Total cues shown in header |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Cue count, duration, average cue length |
+| Metadata | ✅ | Format, cue count, first cue, duration, spoken time |
 
 ### Edit
 | Capability | Status | Notes |
@@ -35,7 +35,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Convert SRT ↔ VTT | ❌ | Not yet implemented |
+| Convert SRT ↔ VTT | ✅ | Export menu serializes the parsed cue list as the other format |
 
 ## Real-World Examples
 
@@ -43,13 +43,14 @@
 
 ## Known Limitations
 
-- Styling tags in VTT (e.g. `<b>`, `<i>`, `<c.color>`) are shown as raw text
+- Styling tags in VTT (e.g. `<b>`, `<i>`, `<c.color>`) are stripped for the plain cue preview
 - ASS/SSA advanced subtitle format not supported
+- MicroDVD/SubViewer `.sub` files are not detected by this type
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Convert SRT ↔ VTT | Med | Easy | Format conversion in the export menu |
 | Inline video sync | Low | Hard | Play video alongside; jump to cue on click |
-| Tag rendering | Low | Easy | Strip or render `<b>`/`<i>` in VTT cues |
+| Tag rendering | Low | Easy | Preserve or render `<b>`/`<i>` in VTT cues instead of stripping them |
+| `.sub` support | Low | Med | Add MicroDVD/SubViewer parsing and detection |
