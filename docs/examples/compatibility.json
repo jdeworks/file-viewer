@@ -18,7 +18,7 @@
   "types": {
     "3mf": {
       "label": "3D Manufacturing Format",
-      "support": "supported",
+      "support": "partial",
       "sampleFiles": [
         "sample.3mf"
       ],
@@ -36,7 +36,9 @@
         "sourced": 0,
         "total": 1
       },
-      "partialSamples": [],
+      "partialSamples": [
+        "sample.iso"
+      ],
       "realWorldQuality": "needs-review",
       "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
       "fileExamplesSlug": null,
@@ -80,7 +82,7 @@
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

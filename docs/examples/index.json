@@ -2320,6 +2320,9 @@
     "file": "sample.iso",
     "label": "ISO 9660 Disc Image (demo)",
     "mime": "application/x-iso9660-image",
+    "type": "iso",
+    "binary": true,
+    "partial": true,
     "category": "Binary",
     "categories": [
       "Binary"

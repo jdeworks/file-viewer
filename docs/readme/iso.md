@@ -26,7 +26,7 @@
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Screenshot | ✅ | Available |
-| Metadata | ⚠️ | Side panel currently reports format and volume ID; preview shows richer PVD fields |
+| Metadata | ✅ | Side panel reports format, volume ID, publisher, sector size, total size, and root date |
 
 ### Edit
 | Capability | Status | Notes |

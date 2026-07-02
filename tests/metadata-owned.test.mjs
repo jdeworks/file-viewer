@@ -51,6 +51,8 @@ import { extractMetadata as hdf5Meta } from '../docs/types/binary/hdf5/metadata.
 import { render as renderHdf5 } from '../docs/types/binary/hdf5/renderer.js';
 import { detect as detectIpa } from '../docs/types/binary/ipa/detect.js';
 import { metadata as ipaMeta } from '../docs/types/binary/ipa/metadata.js';
+import { detect as detectIso } from '../docs/types/binary/iso/detect.js';
+import { extractMetadata as isoMeta } from '../docs/types/binary/iso/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -699,6 +701,20 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows['Bundle ID'], 'com.example.demoapp');
   assert.equal(rows['Minimum OS'], '15.0');
   assert.equal(rows.Platforms, 'iPhoneOS');
+}
+
+{
+  const data = await bytes('sample.iso');
+  assert.equal(detectIso({ filename: 'sample.iso', mimeType: 'application/x-iso9660-image', bytes: data, isBinary: true }), 0.98);
+  assert.equal(detectIso({ filename: 'empty.iso', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectIso({ filename: 'sample.bin', mimeType: 'application/x-iso9660-image', bytes: new Uint8Array(0), isBinary: true }), 0.5);
+  const rows = (await isoMeta({ filename: 'sample.iso', bytes: data, isBinary: true, size: data.length })).fields;
+  assert.equal(value(rows, 'Format'), 'ISO 9660');
+  assert.equal(value(rows, 'Volume ID'), 'FILEVIEWER_DEMO');
+  assert.equal(value(rows, 'Publisher'), 'FILE VIEWER PROJECT');
+  assert.equal(value(rows, 'Sector size'), '2,048 bytes');
+  assert.equal(value(rows, 'Total sectors'), '18');
+  assert.match(value(rows, 'Total size'), /36,864 bytes/);
 }
 
 {

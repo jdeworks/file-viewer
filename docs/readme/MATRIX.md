@@ -160,7 +160,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
 | [KMZ Map Archive](geo.md) | `.kmz` | Basic | None | download | — | Overlay render |
-| [ISO Disc Image](/) | `.iso` | Basic | None | download | — | File listing |
+| [ISO Disc Image](iso.md) | `.iso` | Basic | None | download | — | File listing |
 | [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
 | [BSP Game Map](bsp.md) | `.bsp` | Full | None | download | — | Header/entity inspection |
 

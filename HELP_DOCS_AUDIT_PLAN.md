@@ -495,11 +495,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/ipa/detect.js
 - [x] docs/types/binary/ipa/index.js
 - [x] docs/types/binary/ipa/metadata.js
-- [ ] docs/types/binary/ipa/renderer.js
-- [ ] docs/types/binary/ipa/settings.default.json
-- [ ] docs/types/binary/iso/detect.js
-- [ ] docs/types/binary/iso/index.js
-- [ ] docs/types/binary/iso/metadata.js
+- [x] docs/types/binary/ipa/renderer.js
+- [x] docs/types/binary/ipa/settings.default.json
+- [x] docs/types/binary/iso/detect.js
+- [x] docs/types/binary/iso/index.js
+- [x] docs/types/binary/iso/metadata.js
 - [ ] docs/types/binary/iso/renderer.js
 - [ ] docs/types/binary/iso/settings.default.json
 - [ ] docs/types/binary/kmz/detect.js
