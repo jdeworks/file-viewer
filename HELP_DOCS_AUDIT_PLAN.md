@@ -309,11 +309,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] ply | 3D model (PLY)
 - [x] postscript | PostScript / EPS
 - [x] pptx | PowerPoint
-- [ ] procreate | Procreate painting
-- [ ] proto | Protocol Buffer
-- [ ] prproj | Adobe Premiere Project
-- [ ] pyc | Python Bytecode
-- [ ] qif | QIF Financial
+- [x] procreate | Procreate painting
+- [x] proto | Protocol Buffer
+- [x] prproj | Adobe Premiere Project
+- [x] pyc | Python Bytecode
+- [x] qif | QIF Financial
 - [ ] raw | Plain text
 - [ ] rdp | RDP Connection
 - [ ] reg | Windows Registry
