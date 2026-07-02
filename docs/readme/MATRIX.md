@@ -112,7 +112,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Icon File](/) | `.ico` | Fallback | None | download | — | Multi-size preview |
 | [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Basic | None | download | — | Layer tree |
 | [OpenEXR](exr.md) | `.exr` | Basic | None | download | — | Pixel decode |
-| [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
+| [ASCII / ANSI Art](asciiart.md) | `.ans` | Basic | Monaco | download | — | — |
 
 ---
 
@@ -294,7 +294,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
 | [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
-| [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
+| [ASCII / ANSI Art](asciiart.md) | `.ans` | Basic | Monaco | download | — | — |
 
 ---
 

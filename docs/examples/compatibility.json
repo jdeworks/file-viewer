@@ -140,9 +140,7 @@
         "sourced": 0,
         "total": 1
       },
-      "partialSamples": [
-        "sample.mcworld"
-      ],
+      "partialSamples": [],
       "realWorldQuality": "synthetic",
       "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
       "fileExamplesSlug": null,
@@ -152,9 +150,9 @@
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [
-        "ExtraData blocks not decoded",
-        "Shell link flags are not listed separately",
-        "Volume serial number not extracted"
+        "Cursor movement escape sequences (cursor-up, clear-screen) are ignored",
+        "CP437 block characters may not render identically across fonts",
+        "Animated ANSI (blink, cursor) is not animated"
       ],
       "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
