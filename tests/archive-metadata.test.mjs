@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import { imageEntryCount, listCentralDirectory, verifyZipCryptoPassword } from '../docs/types/zip/ziplib.js';
+import { detect as detectArchive } from '../docs/types/archive/detect.js';
 import { inspectArchive } from '../docs/types/archive/metadata.js';
 import { riskyArchiveEntries } from '../docs/types/zip/metadata.js';
 import { parseHeader } from '../docs/types/sqlite/sqlitelib.js';
@@ -71,6 +72,11 @@ assert.equal(tar.format, 'TAR');
 assert.equal(tar.files, 1);
 assert.equal(tar.folders, 1);
 assert.equal(tar.total, 5);
+
+assert.equal(detectArchive({ filename: 'source.tbz2' }), 0.92);
+assert.equal(detectArchive({ filename: 'source.txz' }), 0.92);
+assert.equal(inspectArchive(Uint8Array.from([0x42, 0x5a, 0x68]), 'source.tbz2').format, 'Bzip2-compressed TAR');
+assert.equal(inspectArchive(Uint8Array.from([0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00]), 'source.txz').format, 'XZ-compressed TAR');
 
 const sqlite = parseHeader(await readFile(new URL('sample.sqlite', root)));
 assert.equal(sqlite.pageSize, 4096);

@@ -1,12 +1,12 @@
 # Archive (7z / RAR / tar)
 
-> Archive listing for 7z, RAR, tar, tar.gz, tar.bz2, and tar.xz — file names, sizes, and directory structure decoded client-side via WASM.
+> Archive listing for 7z, RAR, tar, tar.gz/tgz, tar.bz2/tbz2, tar.xz/txz, and tar.zst — file names, sizes, and directory structure decoded client-side via WASM.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.7z`, `.rar`, `.tar`, `.tar.gz`, `.tgz`, `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz` |
+| Extension(s) | `.7z`, `.rar`, `.tar`, `.tar.gz`, `.tgz`, `.tar.bz2`, `.tbz2`, `.tar.xz`, `.txz`, `.tar.zst` |
 | MIME type | `application/x-7z-compressed`, `application/x-rar-compressed`, `application/x-tar` |
 | Binary / Text | Binary |
 | Common use | Source code distribution, backup archives, software packages |

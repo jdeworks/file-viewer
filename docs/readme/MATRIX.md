@@ -156,7 +156,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Archive (ZIP)](zip.md) | `.zip` `.jar` `.war` `.nupkg` `.apk` `.cbz` `.whl` | Basic | Entry edits | modified ZIP, CSV, download | — | Add files |
-| [Archive](archive.md) | `.7z` `.tar` `.gz` `.bz2` `.xz` | Basic | None | download | — | Streaming extract |
+| [Archive](archive.md) | `.7z` `.rar` `.tar` `.tar.gz` `.tgz` `.tar.bz2` `.tbz2` `.tar.xz` `.txz` `.tar.zst` | Basic | None | download | — | Entry preview |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
 | [KMZ Map Archive](geo.md) | `.kmz` | Basic | None | download | — | Overlay render |

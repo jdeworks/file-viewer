@@ -380,11 +380,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/3d/stl/detect.js
 - [x] docs/types/3d/stl/exports.js
 - [x] docs/types/3d/stl/index.js
-- [ ] docs/types/3d/stl/metadata.js
-- [ ] docs/types/3d/stl/renderer.js
-- [ ] docs/types/3d/stl/settings.default.json
-- [ ] docs/types/3d/stl/stllib.js
-- [ ] docs/types/archive/detect.js
+- [x] docs/types/3d/stl/metadata.js
+- [x] docs/types/3d/stl/renderer.js
+- [x] docs/types/3d/stl/settings.default.json
+- [x] docs/types/3d/stl/stllib.js
+- [x] docs/types/archive/detect.js
 - [ ] docs/types/archive/EDITOR.md
 - [ ] docs/types/archive/index.js
 - [ ] docs/types/archive/metadata.js

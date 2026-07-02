@@ -4,7 +4,7 @@ import { hasExtension } from '../../core/detect.js';
 // the archive listing renderer rather than the zip renderer or raw fallback. Zip (.zip) stays
 // with the zip type (which has its own JSZip-based reader and central-directory fallback).
 export function detect(intake) {
-  if (hasExtension(intake, '7z', 'rar', 'tar', 'tgz')) return 0.92;
+  if (hasExtension(intake, '7z', 'rar', 'tar', 'tgz', 'tbz2', 'txz')) return 0.92;
   // Compound extensions — check the filename directly.
   const name = (intake.filename || '').toLowerCase();
   if (name.endsWith('.tar.gz') || name.endsWith('.tar.bz2') || name.endsWith('.tar.xz') || name.endsWith('.tar.zst')) return 0.92;

@@ -52,8 +52,8 @@ export function inspectArchive(bytes, filename = '') {
   if (hasMagic(bytes, 0, [0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x01, 0x00])) return { format: 'RAR5' };
   if (hasMagic(bytes, 0, [0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00])) return { format: 'RAR4' };
   if (hasMagic(bytes, 0, [0x1f, 0x8b])) return { format: name.endsWith('.tar.gz') || name.endsWith('.tgz') ? 'Gzip-compressed TAR' : 'Gzip' };
-  if (hasMagic(bytes, 0, [0x42, 0x5a, 0x68])) return { format: name.endsWith('.tar.bz2') ? 'Bzip2-compressed TAR' : 'Bzip2' };
-  if (hasMagic(bytes, 0, [0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00])) return { format: name.endsWith('.tar.xz') ? 'XZ-compressed TAR' : 'XZ' };
+  if (hasMagic(bytes, 0, [0x42, 0x5a, 0x68])) return { format: name.endsWith('.tar.bz2') || name.endsWith('.tbz2') ? 'Bzip2-compressed TAR' : 'Bzip2' };
+  if (hasMagic(bytes, 0, [0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00])) return { format: name.endsWith('.tar.xz') || name.endsWith('.txz') ? 'XZ-compressed TAR' : 'XZ' };
   if (name.endsWith('.tar.zst')) return { format: 'Zstd-compressed TAR' };
   return { format: 'Archive' };
 }
