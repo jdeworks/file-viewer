@@ -11,7 +11,6 @@ import { FILE_LOAD_FEEDBACK_BYTES, intakeFromFile, intakeFromText } from './inta
 import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
 import { repackZipWithDeletions } from './repack.js';
-import { recordStage2SearchResult } from '../games/metagame/viewer-actions.js';
 import { addFolderRoot, captureActiveSidebarRoot, renderSidebarRoots } from './sidebar-roots.js';
 
 // Injected core-flow callbacks (set once by app.js init()).
@@ -20,6 +19,11 @@ let confirmDiscard = () => true;
 let onFolderFileOpened = null; // optional callback(node) called after a tree file opens
 let onTreeDelete = null;       // optional callback({path,isFolder,name}) for per-row delete-on-disk
 let onTreeReveal = null;       // optional callback({path,isFolder,name}) for per-row reveal-in-folder
+let viewerActionsPromise = null;
+function viewerActions() {
+  if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
+  return viewerActionsPromise;
+}
 export function initFolder(deps) {
   loadIntake = deps.loadIntake;
   confirmDiscard = deps.confirmDiscard;
@@ -282,7 +286,7 @@ export async function searchTreeContents() {
       if (text.toLowerCase().includes(ql)) {
         matched.add(e.path);
         const line = text.split(/\r?\n/).find((entry) => entry.includes(q));
-        recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() });
+        viewerActions().then(({ recordStage2SearchResult }) => recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() }));
       }
     } catch { /* unreadable — skip */ }
   }

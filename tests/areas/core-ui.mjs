@@ -171,7 +171,10 @@ export async function run(ctx) {
     else fail('whole-page drop affordance wrongly triggered by a tree-path drag');
   }
 
-  // Examples gallery is grouped by category (tidy intake catalogue).
+  // Examples gallery is grouped by category (tidy intake catalogue). It is user-triggered so the
+  // large examples index stays out of the startup network lane.
+  await page.click('#loadExamplesBtn');
+  await page.waitForSelector('#examples .ex-folder-label', { timeout: 4000 });
   const exGroups = await page.$$eval('#examples .ex-folder-label', (els) => els.map((e) => e.textContent));
   if (exGroups.includes('Documents') && exGroups.includes('Office') && exGroups.length >= 5)
     pass(`examples grouped by category (${exGroups.length} groups: ${exGroups.join(', ')})`);

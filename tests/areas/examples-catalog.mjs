@@ -2,6 +2,10 @@ import { REGISTRY } from '../../docs/core/registry.js';
 
 export async function run(ctx) {
   const { page, origin, pass, fail } = ctx;
+  const loadExamplesGallery = async (selector = '.ex-folder-card') => {
+    await page.click('#loadExamplesBtn');
+    await page.waitForSelector(selector, { timeout: 10000 });
+  };
   await page.goto(origin, { waitUntil: 'load' });
   const examples = await page.evaluate(async () => {
     const res = await fetch('examples/index.json');
@@ -195,7 +199,7 @@ export async function run(ctx) {
   // Quality badges: sourced and partial examples display visual indicators
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });
-  await page.waitForSelector('.ex-folder-card', { timeout: 10000 }).catch(() => {});
+  await loadExamplesGallery('.ex-folder-card');
   const sourcedBadgeOk = await page.evaluate(async () => {
     // Open a category that contains sourced examples (Image category has sample.png)
     const cards = Array.from(document.querySelectorAll('.ex-folder-card'));
@@ -271,7 +275,7 @@ export async function run(ctx) {
 
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });
-  await page.waitForSelector('.ex-showall-btn', { timeout: 10000 }).catch(() => {});
+  await loadExamplesGallery('.ex-showall-btn');
   const partialBadgeOk = await page.evaluate(async () => {
     // Show all files and look for any .ex-badge-partial badge (djvu or lrf are partial)
     const showAll = document.querySelector('.ex-showall-btn');
@@ -310,7 +314,7 @@ export async function run(ctx) {
   // bottom, and known/enhanced files only inside the known-files section.
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });
-  await page.waitForSelector('.ex-known-section', { timeout: 10000 }).catch(() => {});
+  await loadExamplesGallery('.ex-known-section');
   const layout = await page.evaluate(async () => {
     const host = document.getElementById('examples');
     if (!host) return { ok: false, reason: 'examples host not found' };

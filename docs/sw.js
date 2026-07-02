@@ -1,18 +1,25 @@
 // Service worker — makes the viewer work fully offline without becoming an "installed app"
-// (no manifest, no install prompt). The page drives a background precache via a 'precache'
-// message: the SW caches every asset in asset-manifest.json, skipping ones already cached
-// so it RESUMES if interrupted or reloaded, and reports progress back. Requests are served
-// stale-while-revalidate for assets (instant from cache, refreshed in the background when
-// online) and network-first for navigations (fresh HTML online, cached shell offline).
-// Same-origin GET only — never touches a third party.
+// (no manifest, no install prompt). The page drives an opt-in precache via a 'precache'
+// message: the SW caches selected assets from asset-manifest.json, skipping ones already cached
+// so it RESUMES if interrupted or reloaded, and reports progress back. Versioned static assets
+// are cache-first once seen; navigations stay network-first with a cached shell fallback. We avoid
+// background revalidating every JS/CSS/JSON request on reload because GitHub Pages request latency
+// is a bigger startup cost than the transfer size alone. Same-origin GET only — never third-party.
 
 // VERSION is stamped at build time by scripts/gen-asset-manifest.mjs (it equals the asset-manifest
 // version). Two things hang off it: (1) the SW's bytes change every deploy, so the browser detects
 // an update and installs a new SW; (2) the cache is NAMED per version, so a new SW serves a single
 // CONSISTENT asset set instead of a stale mix of old+new modules (the version-skew that looked like
 // a hang). Keep this line in the exact `const VERSION = '...';` shape — the generator rewrites it.
-const VERSION = '1296b2d43de1';   // stamped by scripts/gen-asset-manifest.mjs
+const VERSION = '1847e8088d50';   // stamped by scripts/gen-asset-manifest.mjs
 const CACHE = 'file-viewer-' + VERSION;
+const STATUS_KEY = new Request('/__fv-cache-status__/' + VERSION);
+
+let cachePromise = null;
+function appCache() {
+  if (!cachePromise) cachePromise = caches.open(CACHE);
+  return cachePromise;
+}
 
 self.addEventListener('install', () => {
   // First install (no worker is active yet): activate immediately so cache-on-use starts now.
@@ -30,6 +37,18 @@ async function notify(msg) {
   for (const c of await self.clients.matchAll()) c.postMessage(msg);
 }
 
+async function readStatusMeta() {
+  const hit = await (await appCache()).match(STATUS_KEY);
+  if (!hit) return null;
+  try { return await hit.json(); } catch { return null; }
+}
+
+async function writeStatusMeta(meta) {
+  await (await appCache()).put(STATUS_KEY, new Response(JSON.stringify(meta), {
+    headers: { 'content-type': 'application/json' },
+  }));
+}
+
 let precaching = false;
 // `only`: optional list of asset paths to cache (a per-bundle selection from the cache modal).
 // When omitted, the whole manifest is cached (the old "save everything" behaviour).
@@ -38,7 +57,7 @@ async function precache(only) {
   precaching = true;
   try {
     const manifest = await (await fetch('asset-manifest.json', { cache: 'no-store' })).json();
-    const cache = await caches.open(CACHE);
+    const cache = await appCache();
     let assets = manifest.assets || [];
     if (Array.isArray(only) && only.length) { const set = new Set(only); assets = assets.filter((a) => set.has(a)); }
     const pending = [];
@@ -55,6 +74,7 @@ async function precache(only) {
       }
     };
     await Promise.all(Array.from({ length: 6 }, worker));
+    await writeStatusMeta({ cached: assets.length, total: assets.length, version: manifest.version, complete: true, updatedAt: Date.now() });
     await notify({ type: 'precache-done', total: assets.length, version: manifest.version });
   } catch (err) {
     await notify({ type: 'precache-error', error: String(err) });
@@ -63,21 +83,11 @@ async function precache(only) {
   }
 }
 
-// Report how much of the manifest is already cached + the current manifest version,
-// WITHOUT fetching anything new — lets the page show a resting pill state (cache-on-use is
-// the default; a full precache is opt-in). Offline: falls back to the cached manifest.
+// Report the last known completed precache status without fetching or scanning the whole manifest.
+// Cache-on-use is the default; exact bundle accounting happens when the user opens the modal.
 async function status() {
-  let version = null, total = 0, cached = 0;
-  try {
-    const res = await fetch('asset-manifest.json', { cache: 'no-store' }).catch(() => caches.match('asset-manifest.json'));
-    const manifest = await res.json();
-    version = manifest.version;
-    const assets = manifest.assets || [];
-    total = assets.length;
-    const cache = await caches.open(CACHE);
-    for (const a of assets) { if (await cache.match(a)) cached++; }
-  } catch { /* no manifest reachable — report unknown (version stays null) */ }
-  await notify({ type: 'cache-status', cached, total, version });
+  const meta = await readStatusMeta();
+  await notify({ type: 'cache-status', cached: meta?.cached || 0, total: meta?.total || 0, version: meta?.version || VERSION, complete: !!meta?.complete });
 }
 
 self.addEventListener('message', (e) => {
@@ -94,14 +104,20 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   const isNavigate = req.mode === 'navigate';
   e.respondWith((async () => {
-    const cache = await caches.open(CACHE);
+    const cache = await appCache();
     if (isNavigate) {
       try { const net = await fetch(req); cache.put(req, net.clone()); return net; }
       catch { return (await cache.match(req)) || (await cache.match('index.html')) || Response.error(); }
     }
+    const path = new URL(req.url).pathname.replace(/^\//, '');
+    if (path === 'sw.js' || path === 'asset-manifest.json') {
+      try { const net = await fetch(req, { cache: 'no-store' }); if (net && net.ok) cache.put(req, net.clone()); return net; }
+      catch { return (await cache.match(req)) || Response.error(); }
+    }
     const hit = await cache.match(req);
-    const network = fetch(req).then((net) => { if (net && net.ok) cache.put(req, net.clone()); return net; }).catch(() => null);
-    if (hit) { e.waitUntil(network); return hit; }
-    return (await network) || Response.error();
+    if (hit) return hit;
+    const net = await fetch(req);
+    if (net && net.ok) e.waitUntil(cache.put(req, net.clone()));
+    return net;
   })());
 });

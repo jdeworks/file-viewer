@@ -7,14 +7,11 @@ import { getType } from './registry-runtime.generated.js';
 import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
-import { matchKnown, matchAllKnown } from '../known/registry.generated.js';
 import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
 import * as persistence from './persistence.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, monacoOptions, renderSettings, persistGlobalKey, readGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
-import { initGames } from '../games/launcher.js';
-import { loadExamples } from './examples.js';
 import { initLayout, layoutTopbar, toggleMoreMenu, closeMoreMenu, updateExportButton, closeExportMenu, toggleExportMenu, applyLayout, applyPreviewPaneWidth, initSplitDivider } from './layout.js';
 import { mapPreviewToRaw, syncScrollFromPreview } from './sync.js';
 import { initCompare, startCompare, onComparePicked, stopCompare, resetCompare, initCompareDropTarget } from './compare.js';
@@ -30,6 +27,12 @@ import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, ex
 import { installGlobalScreensaver } from './global-screensaver.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
+
+let knownRegistryPromise = null;
+function knownRegistry() {
+  if (!knownRegistryPromise) knownRegistryPromise = import('../known/registry.generated.js');
+  return knownRegistryPromise;
+}
 
 async function loadIntake(intake) {
   // Guard unsaved work — unless loadFolder already asked for this same action.
@@ -72,6 +75,7 @@ async function loadIntake(intake) {
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();
   const { type, ranking } = pickType(intake);
+  const { matchAllKnown } = await knownRegistry();
   state.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake, state.knownCandidates);
   await activateType(type);
@@ -159,6 +163,7 @@ async function activateType(type, knownOverride = null) {
   // Layer 3: does a known-file enhancement apply (e.g. package.json, Dockerfile)? A known
   // renderer can supply a preview even when the base type has none (e.g. Dockerfile→code).
   // knownOverride lets the type-select force a specific known-file view.
+  const { matchKnown } = await knownRegistry();
   state.known = knownOverride || matchKnown(state.intake, type);
   state.forceBase = false;
   updateEnhanceChip();
@@ -585,12 +590,17 @@ function init() {
     if (hasUnsavedWork()) { e.preventDefault(); e.returnValue = ''; }
   });
 
-  // Defer the example gallery until after the main UI is wired and first paint has settled. The
-  // intake screen shows a lightweight "Loading examples…" placeholder (in index.html) meanwhile,
-  // so the ~1154-entry catalogue render stays off the critical interaction path.
-  const loadGallery = () => loadExamples(loadIntake);
-  if ('requestIdleCallback' in window) requestIdleCallback(loadGallery, { timeout: 2000 });
-  else setTimeout(loadGallery, 0);
+  // Keep the examples catalogue out of the startup network lane. It pulls a large JSON index and
+  // several helper modules, so load it only when the user asks for sample files.
+  const loadGallery = async () => {
+    const host = $('examples');
+    if (host && !host.querySelector('.boot-spinner-ring')) {
+      host.innerHTML = '<div class="ex-loading" role="status" aria-live="polite"><span class="boot-spinner-ring" aria-hidden="true"></span><span>Loading examples...</span></div>';
+    }
+    const { loadExamples } = await import('./examples.js');
+    return loadExamples(loadIntake);
+  };
+  document.getElementById('loadExamplesBtn')?.addEventListener('click', loadGallery, { once: true });
 
   // Register the service worker + start the background offline precache (spinner → ✓).
   initOffline($('offlineStatus'));
@@ -600,10 +610,12 @@ function init() {
 
   // Easter-egg games: attaches only a tiny Konami-code keydown listener at startup; the hub and
   // the games themselves are lazy-loaded on first unlock, so this costs ~nothing.
-  const games = initGames({ onToast: toast });
-  state.games = games;   // so onRawEdited can offer the `import easteregg` unlock
-  if (games.isUnlocked()) $('gamesBtn').hidden = false;
-  $('gamesBtn').addEventListener('click', () => games.open());
+  import('../games/launcher.js').then(({ initGames }) => {
+    const games = initGames({ onToast: toast });
+    state.games = games;   // so onRawEdited can offer the `import easteregg` unlock
+    if (games.isUnlocked()) $('gamesBtn').hidden = false;
+    $('gamesBtn').addEventListener('click', () => games.open());
+  });
 
   async function openExampleByLabel(label) {
     const index = await fetch('examples/index.json').then((r) => r.ok ? r.json() : []).catch(() => []);
@@ -619,7 +631,8 @@ function init() {
     // Expand the active single-file root (e.g. an open GIF) into an in-place folder of
     // entries (e.g. its split frames) — the same sidebar item gains the frames underneath.
     expandFileRootToFolder: (opts) => expandActiveFileRootToFolder(opts),
-    persistence, games,
+    persistence,
+    get games() { return state.games; },
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };
 

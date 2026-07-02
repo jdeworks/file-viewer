@@ -12,7 +12,6 @@ import { previewStyle } from './settings-schema.js';
 import { captureBodyHtml } from './iframe.js';
 import { mapRawToPreview, syncScrollFromRaw } from './sync.js';
 import { applyLayout } from './layout.js';
-import { recordStage1RawEdit, recordStage10EchoRawMode, recordStage10EchoDownload } from '../games/metagame/viewer-actions.js';
 import { markdownLinkForPastedUrl } from '../types/markdown/edit-actions.js';
 import { mountWysiwyg, unmountWysiwyg, getWysiwygValue, isWysiwygActive } from '../types/markdown/wysiwyg.js';
 import { toggleHtmlWysiwyg, teardownHtmlWysiwyg, getHtmlWysiwygValue,
@@ -30,6 +29,11 @@ let renderPreview = async () => {};
 export function initRawPane(deps) { renderPreview = deps.renderPreview; }
 
 let wysiwygMode = false;
+let viewerActionsPromise = null;
+function viewerActions() {
+  if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
+  return viewerActionsPromise;
+}
 
 // Re-syncs the has-tools class on rawPane: true iff ANY type-specific toolbar is visible.
 // Called after each setXxxToolsVisible so that showing one toolbar and then hiding another
@@ -320,9 +324,11 @@ function showCheatToast(msg) {
 }
 
 export async function onRawEdited(value) {
-  if (recordStage1RawEdit({ file: state.intake?.filename || '', text: value })) {
-    showCheatToast('The Defragmenter cheat routine has been disabled.');
-  }
+  viewerActions().then(({ recordStage1RawEdit }) => {
+    if (recordStage1RawEdit({ file: state.intake?.filename || '', text: value })) {
+      showCheatToast('The Defragmenter cheat routine has been disabled.');
+    }
+  });
 
   // One-time toast (A): fire on the very first edit ever to explain the in-memory model.
   try {
@@ -388,7 +394,7 @@ export function setRawMode(mode) {
   state.rawview.setMode(mode);
   // Stage-10 finale echo: switching a memory's echo artifact into its gated raw mode (genesis →
   // Original, memory → Diff) witnesses that echo via the real feature (self-gates on the fixture).
-  recordStage10EchoRawMode({ file: state.intake?.filename || '', mode });
+  viewerActions().then(({ recordStage10EchoRawMode }) => recordStage10EchoRawMode({ file: state.intake?.filename || '', mode }));
   syncRawModeButtons();
   // Keep the chosen view layout (split + draggable divider) stable across raw modes so
   // nothing jumps when switching original/current/diff/move-diff. Use the view-mode
@@ -423,7 +429,7 @@ export async function downloadCurrent() {
   // Stage-10 finale echo: downloading the entropy echo artifact witnesses its echo via the real
   // download feature (self-gates on the fixture; fires before the download work, so it's recorded
   // even if the browser handles the save oddly).
-  recordStage10EchoDownload({ file: state.intake?.filename || '' });
+  viewerActions().then(({ recordStage10EchoDownload }) => recordStage10EchoDownload({ file: state.intake?.filename || '' }));
   let blob;
   if (state.binaryEdit?.dirty && typeof state.binaryEdit.getBytes === 'function') {
     const bytes = await state.binaryEdit.getBytes();

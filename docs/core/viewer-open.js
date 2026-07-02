@@ -1,8 +1,12 @@
 import { intakeFromFile, intakeFromText } from './intake.js';
 import { state } from './state.js';
-import { recordMetagameViewerOpen, recordStage2SearchResult, recordStage7Search, recordStage10EchoSearch } from '../games/metagame/viewer-actions.js';
 
 let loadIntakeCallback = null;
+let viewerActionsPromise = null;
+function viewerActions() {
+  if (!viewerActionsPromise) viewerActionsPromise = import('../games/metagame/viewer-actions.js');
+  return viewerActionsPromise;
+}
 
 export function initViewerOpen({ loadIntake }) {
   loadIntakeCallback = loadIntake;
@@ -26,7 +30,7 @@ export async function openViewerFile(path, opts = {}) {
   if (opts.text != null) {
     state._skipDiscardGuard = true;
     await loadIntakeCallback(intakeFromText(String(opts.text), target.split('/').pop() || opts.filename || 'generated.txt'));
-    recordMetagameViewerOpen({ path: target, opts });
+    viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: target, opts }));
     return true;
   }
   if (target.includes('/docs/bts/') || target.includes('/bts/')) {
@@ -36,11 +40,11 @@ export async function openViewerFile(path, opts = {}) {
     const text = await res.text();
     state._skipDiscardGuard = true;
     await loadIntakeCallback(intakeFromText(text, clean));
-    recordMetagameViewerOpen({ path: target, opts });
+    viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: target, opts }));
     return true;
   }
   const opened = await openExampleFile(target, opts);
-  if (opened) recordMetagameViewerOpen({ path: target, opts });
+  if (opened) viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: target, opts }));
   return opened;
 }
 
@@ -55,7 +59,7 @@ export async function openBlobFile(blob, name, opts = {}) {
   const type = opts.mime || blob.type || '';
   state._skipDiscardGuard = true;
   await loadIntakeCallback(await intakeFromFile(new File([blob], filename, { type })));
-  recordMetagameViewerOpen({ path: filename, opts });
+  viewerActions().then(({ recordMetagameViewerOpen }) => recordMetagameViewerOpen({ path: filename, opts }));
   return true;
 }
 
@@ -66,8 +70,10 @@ export async function searchViewerFile(path, query, opts = {}) {
   const sourceText = text == null ? await fetch('examples/' + clean).then((r) => r.ok ? r.text() : '').catch(() => '') : text;
   const line = sourceText.split(/\r?\n/).find((entry) => entry.includes(query));
   const result = line && line.trim();
-  recordStage2SearchResult({ file: target || clean, query, result });
-  recordStage7Search({ file: target || clean, query, result });
-  recordStage10EchoSearch({ file: target || clean, query, result });
+  viewerActions().then(({ recordStage2SearchResult, recordStage7Search, recordStage10EchoSearch }) => {
+    recordStage2SearchResult({ file: target || clean, query, result });
+    recordStage7Search({ file: target || clean, query, result });
+    recordStage10EchoSearch({ file: target || clean, query, result });
+  });
   return { found: Boolean(result), result };
 }
