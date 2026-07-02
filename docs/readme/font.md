@@ -41,13 +41,17 @@
 
 ## Real-World Examples
 
-- [`sample.ttf`](../examples/sample.ttf) — example TrueType font
+- [`sample.ttf`](../examples/sample.ttf) — Ubuntu Mono TrueType specimen
+- [`sample.otf`](../examples/sample.otf) — Source Serif 4 OpenType/CFF specimen
+- [`sample.woff`](../examples/sample.woff) — WOFF webfont (zlib-compressed tables)
+- [`sample.woff2`](../examples/sample.woff2) — WOFF2 webfont (Brotli-compressed)
 
 ## Known Limitations
 
 - Icon fonts can still show empty boxes for Latin text; use the custom preview text when you know the glyph mapping
 - Variable fonts are displayed at default axis values only
 - CJK fonts with thousands of glyphs can take a moment to load
+- WOFF2 metadata is limited to Format, Size, and Table count — the name-table/head/maxp/OS2 fields (family, version, units-per-em, glyph count, weight/width class, vendor/license) aren't shown because WOFF2 packs all tables into a single Brotli-compressed blob and no Brotli decompressor is vendored; WOFF (zlib-compressed tables) and raw TTF/OTF get the full field set
 
 ## Gap Analysis
 

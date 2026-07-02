@@ -672,12 +672,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/emulator/v86/metadata.js
 - [ ] docs/types/emulator/v86/renderer.js
 - [ ] docs/types/emulator/v86/settings.default.json
-- [ ] docs/types/font/detect.js
-- [ ] docs/types/font/EDITOR.md
-- [ ] docs/types/font/index.js
-- [ ] docs/types/font/metadata.js
-- [ ] docs/types/font/renderer.js
-- [ ] docs/types/font/settings.default.json
+- [x] docs/types/font/detect.js
+- [x] docs/types/font/EDITOR.md
+- [x] docs/types/font/index.js
+- [x] docs/types/font/metadata.js
+- [x] docs/types/font/renderer.js
+- [x] docs/types/font/settings.default.json
 - [ ] docs/types/geo/detect.js
 - [ ] docs/types/geo/doc.html
 - [ ] docs/types/geo/EDITOR.md
