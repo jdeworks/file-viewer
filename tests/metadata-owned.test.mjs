@@ -78,6 +78,8 @@ import { extractMetadata as npyMeta } from '../docs/types/binary/npy/metadata.js
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
+import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
+import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -937,6 +939,29 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const n64Rows = (await gameRomMeta({ filename: 'demo.z64', bytes: n64, isBinary: true, size: n64.length })).fields;
   assert.equal(value(n64Rows, 'Format'), 'Nintendo 64');
   assert.equal(value(n64Rows, 'CRC2'), '9ABCDEF0');
+}
+
+{
+  const nupkgBytes = await bytes('sample.nupkg');
+  assert.equal(detectNupkg({ filename: 'sample.nupkg', bytes: nupkgBytes }), 0.99);
+  assert.equal(detectNupkg({ filename: 'sample.jar', bytes: nupkgBytes }), 0.95);
+  assert.equal(detectNupkg({ filename: 'sample.unknown', bytes: nupkgBytes }), 0);
+  assert.equal(detectNupkg({ filename: 'sample.nupkg', bytes: new Uint8Array(0) }), 0.6);
+  assert.equal(detectNupkg({ filename: 'sample.unknown', bytes: new Uint8Array(0) }), 0);
+  const rows = await nupkgMeta({ filename: 'sample.nupkg', bytes: nupkgBytes });
+  assert.equal(rows.format, 'NuGet');
+  const jarRows = await nupkgMeta({ filename: 'sample.jar', bytes: nupkgBytes });
+  assert.equal(jarRows.format, 'Java JAR');
+
+  const vsixBytes = await bytes('sample.vsix');
+  assert.equal(detectNupkg({ filename: 'sample.vsix', bytes: vsixBytes }), 0.99);
+  const vsixRows = await nupkgMeta({ filename: 'sample.vsix', bytes: vsixBytes });
+  assert.equal(vsixRows.format, 'VS Extension');
+
+  const whlBytes = await bytes('sample.whl');
+  assert.equal(detectNupkg({ filename: 'sample.whl', bytes: whlBytes }), 0.99);
+  const whlRows = await nupkgMeta({ filename: 'sample.whl', bytes: whlBytes });
+  assert.equal(whlRows.format, 'Python Wheel');
 }
 
 console.log('metadata-owned: ok');

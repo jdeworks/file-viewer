@@ -278,7 +278,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [iOS App (IPA)](ipa.md) | `.ipa` | Basic | None | download | — | Signature verify |
 | [Debian Package](deb.md) | `.deb` `.udeb` | Full | None | download | — | control.tar |
 | [RPM Package](/) | `.rpm` `.src.rpm` | Basic | None | download | — | Payload extract |
-| [NuGet/VSIX/Wheel/JAR](/) | `.nupkg` `.vsix` `.whl` `.jar` | Basic | None | download | — | Class manifest |
+| [NuGet/VSIX/Wheel/JAR](nupkg.md) | `.nupkg` `.vsix` `.whl` `.jar` | Basic | None | download | — | Class manifest |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |
 
 ---
