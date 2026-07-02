@@ -21,6 +21,13 @@ function parseYamlLite(src) {
       indent0 = indent;
       continue;
     }
+    if (inServices && indent <= indent0) {
+      // Left the services block (a sibling top-level key like volumes/networks/secrets) —
+      // stop treating its children (e.g. a named volume) as service entries.
+      inServices = false;
+      currentService = null;
+      currentBlock = null;
+    }
     if (inServices && indent === indent0 + 2 && /^\w[\w-]*\s*:/.test(trimmed)) {
       const name = trimmed.replace(/:.*/, '');
       currentService = { name, image: null, ports: [], volumes: [], depends: [], build: false };
