@@ -2770,7 +2770,7 @@
         "preview": true,
         "diff": false,
         "magicSelector": false,
-        "screenshot": true
+        "screenshot": false
       },
       "provenance": {
         "sourced": 0,
@@ -2780,10 +2780,10 @@
       "realWorldQuality": "needs-review",
       "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
       "fileExamplesSlug": "xlsx",
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
+      "editCapability": "basic",
+      "exportCapability": "transform",
       "securityLimitations": [],
       "knownParserGaps": [],
       "testCoverage": "smoke",

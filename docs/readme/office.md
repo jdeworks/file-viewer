@@ -30,7 +30,7 @@
 | Multi-sheet workbook | ✅ | Sheet tabs; each sheet as a scrollable table |
 | First-row-as-header | ✅ | Configurable setting |
 | Cell values | ✅ | Numbers, strings, dates |
-| Formulas | ⚠️ Partial | Formula text shown; values shown from saved results only |
+| Formulas | ⚠️ Partial | Formula text is not shown; only cached values are displayed and edited |
 | Cell editing | ✅ | Editable grid with dirty-cell tracking and edited `.xlsx` download |
 | Source / diff | ❌ | Binary format |
 
