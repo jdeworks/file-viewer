@@ -214,11 +214,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] bio | Bioinformatics (FASTA/FASTQ/VCF)
 - [x] blend | Blender 3D Scene
 - [x] bson | BSON (Binary JSON)
-- [ ] bsp | BSP Game Map
-- [ ] cbor | CBOR Binary Data
-- [ ] chat | Chat Export (WhatsApp / Telegram / Discord)
-- [ ] cif | CIF Crystallographic Data
-- [ ] clip | Clip Studio Paint
+- [x] bsp | BSP Game Map
+- [x] cbor | CBOR Binary Data
+- [x] chat | Chat Export (WhatsApp / Telegram / Discord)
+- [x] cif | CIF Crystallographic Data
+- [x] clip | Clip Studio Paint
 - [ ] code | Code
 - [ ] comic | Comic book
 - [ ] crash | Crash Report

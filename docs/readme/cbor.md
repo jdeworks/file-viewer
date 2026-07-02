@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.cbor`, `.cbor2` |
+| Extension(s) | `.cbor` |
 | MIME type | `application/cbor` |
 | Binary / Text | Binary |
 | Common use | IoT device data, COSE/CWT security tokens, WebAuthn attestations, IETF protocols |

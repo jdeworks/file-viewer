@@ -27,7 +27,7 @@
 | Platform colour | ✅ | Badge colour matches platform brand |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | Disabled — message logs grow monotonically |
-| Metadata | ✅ | Platform, message count, participant count |
+| Metadata | ✅ | Platform, message count, and participant details where available |
 
 ### Edit
 | Capability | Status | Notes |
