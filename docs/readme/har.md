@@ -23,10 +23,10 @@
 | Duration | ✅ | Total time per request in ms |
 | Category filtering | ✅ | XHR/Fetch, JS, CSS, Image, Other categories |
 | Request / response headers | ✅ | Expandable details per entry |
-| Category totals | ✅ | Summary counts by category in header |
+| Category filters | ✅ | All / XHR / JS / CSS / Image / Other filter buttons |
 | Source view | ✅ | Monaco editor with JSON syntax highlighting |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Entry count, total transfer size, total duration, page count |
+| Metadata | ⚠️ | Side panel reports entry count, capture date, creator, and page count; preview cards show transfer size and total duration |
 
 ### Edit
 | Capability | Status | Notes |
@@ -46,7 +46,7 @@
 
 ## Known Limitations
 
-- Response bodies are not decoded from base64 — content preview not available
+- Response/request body previews are capped and shown only when HAR text is present; base64 payloads are not decoded
 - Very large HARs (>10 MB) may be slow to parse all entries
 
 ## Gap Analysis

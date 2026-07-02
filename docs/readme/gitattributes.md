@@ -22,7 +22,7 @@
 | GitHub Linguist support | ✅ | `linguist-generated`, `linguist-vendored`, `linguist-language` explained |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Rule count, LFS-tracked file count, Linguist override count |
+| Metadata | ⚠️ | Side panel reports rule count, binary patterns, and line-ending rules; LFS and Linguist details are shown in the preview |
 
 ### Edit
 | Capability | Status | Notes |

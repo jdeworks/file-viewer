@@ -1,6 +1,6 @@
 # glTF — GL Transmission Format
 
-> The "JPEG of 3D" — WebGL render with orbit controls, per-material color editing, animation playback, and PLY export.
+> The "JPEG of 3D" — offline mesh render with orbit controls, material-color groups, metadata, and PLY export.
 
 ## Format Details
 
@@ -18,10 +18,14 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| WebGL 3D render | ✅ | Orbit / zoom / pan controls |
+| 3D render | ✅ | Shared mesh viewer with orbit / zoom / pan controls |
 | Per-material group display | ✅ | Each mesh group shown in its assigned material color |
-| Animation playback | ✅ | Plays embedded animations if present |
+| Animation metadata | ⚠️ | Animation count is reported, but animation playback is not implemented |
 | Auto-center and fit | ✅ | Scene scaled and centred automatically |
+| Embedded buffers | ✅ | GLB binary buffers and `.gltf` data URI buffers |
+| External buffers | ❌ | External `.bin` assets are not fetched |
+| Source view | ❌ | The 3D preview owns both `.glb` and `.gltf` |
+| Diff | ❌ | Disabled for 3D model previews |
 
 ### Edit
 | Capability | Status | Notes |
@@ -45,8 +49,9 @@ No known-file plugin — all glTF/GLB files use the same 3D viewer.
 
 ## Known Limitations
 
-- PBR material properties (metalness, roughness, emissive) are not fully previewed — flat color approximation only
+- PBR material properties (metalness, roughness, emissive) are not fully previewed — base color factor is used as a flat color
 - Texture maps are not displayed even if embedded in the GLB
+- External buffers/images referenced by `.gltf` are not loaded
 - Morph target (blend shape) animation is not supported
 
 ## Gap Analysis

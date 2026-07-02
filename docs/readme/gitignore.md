@@ -16,7 +16,7 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Syntax-highlighted rules | ✅ | Extensions amber · directories blue · negations green · globs purple · files white |
+| Syntax-highlighted rules | ✅ | Extensions amber · directories blue · negations green · comments gray · other rules white |
 | Rule classification breakdown | ✅ | Count of dirs, extension patterns, globs, specific files, negations, comments |
 | Extension chips | ✅ | Unique `*.ext` extensions shown as chips (up to 8) |
 | Rule count summary | ✅ | Total active rules displayed prominently |

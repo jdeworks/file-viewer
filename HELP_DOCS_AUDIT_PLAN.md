@@ -104,11 +104,11 @@ Completion gates:
 - [x] docs/readme/geo.md
 - [x] docs/readme/geojson.md
 - [x] docs/readme/gff.md
-- [ ] docs/readme/gitattributes.md
-- [ ] docs/readme/gitignore.md
-- [ ] docs/readme/gltf.md
-- [ ] docs/readme/guitar-pro.md
-- [ ] docs/readme/har.md
+- [x] docs/readme/gitattributes.md
+- [x] docs/readme/gitignore.md
+- [x] docs/readme/gltf.md
+- [x] docs/readme/guitar-pro.md
+- [x] docs/readme/har.md
 - [ ] docs/readme/hdf5.md
 - [ ] docs/readme/heif.md
 - [ ] docs/readme/hl7.md
