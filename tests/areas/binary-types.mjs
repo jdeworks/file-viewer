@@ -592,6 +592,12 @@ export async function run(ctx) {
   const debText = await debf.$eval('body', (el) => el.textContent);
   if (/DEB|Debian/i.test(debText)) pass('DEB badge shown'); else fail('deb badge: ' + debText.slice(0, 300));
   if (/hello-world|Package|debian-binary/i.test(debText)) pass('DEB package info shown'); else fail('deb pkg: ' + debText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const debMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*Debian Package/.test(debMeta)) pass('DEB metadata includes format'); else fail('deb meta: ' + debMeta.replace(/\s+/g, ' ').slice(0, 160));
+  if (/Archive Members\s*3/.test(debMeta)) pass('DEB metadata includes archive member count'); else fail('deb meta members: ' + debMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── QIF Financial Data (parentNode) ─────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

@@ -23,6 +23,9 @@ import { render as renderJavaClass } from '../docs/types/binary/class/renderer.j
 import { detect as detectDbf } from '../docs/types/binary/dbf/detect.js';
 import { extractMetadata as dbfMeta } from '../docs/types/binary/dbf/metadata.js';
 import { render as renderDbf } from '../docs/types/binary/dbf/renderer.js';
+import { detect as detectDeb } from '../docs/types/binary/deb/detect.js';
+import { extractMetadata as debMeta } from '../docs/types/binary/deb/metadata.js';
+import { render as renderDeb } from '../docs/types/binary/deb/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -459,6 +462,25 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /ACTIVE/);
   assert.match(rendered, /Alice Johnson/);
   assert.doesNotMatch(rendered, /\0/, 'DBF preview strips NUL-padded character fields');
+}
+
+{
+  const data = await bytes('sample.deb');
+  assert.equal(detectDeb({ filename: 'sample.deb', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectDeb({ filename: 'sample.udeb', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectDeb({ filename: 'sample.bin', mimeType: 'application/vnd.debian.binary-package', bytes: data, isBinary: true }), 0.98);
+  assert.ok(detectDeb({ filename: 'libfoo.a', bytes: data.slice(0, 8), isBinary: true }) < 0.1);
+  const rows = debMeta({ filename: 'sample.deb', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'Debian Package');
+  assert.equal(rows['Format version'], '2.0');
+  assert.equal(rows['Archive members'], '3');
+  assert.equal(rows['Control archive'], 'present');
+  assert.equal(rows['Data archive'], 'present');
+
+  const rendered = renderDeb({ filename: 'sample.deb', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /debian-binary/);
+  assert.match(rendered, /control\.tar/);
+  assert.match(rendered, /data\.tar/);
 }
 
 console.log('metadata-owned: ok');

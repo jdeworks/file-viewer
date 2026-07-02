@@ -23,4 +23,11 @@ const dbfInfo = getTypeInfo(dbf, null, { filename: 'sample.dbf' });
 assert.equal(dbfInfo.name, 'dBase / DBF Database');
 assert.match(dbfInfo.fileExamplesHref, /fileexamples\.com.*dbf/i);
 
+const deb = REGISTRY.find((type) => type.id === 'deb');
+assert.ok(deb, 'deb type is registered');
+const debInfo = getTypeInfo(deb, null, { filename: 'sample.deb' });
+assert.equal(debInfo.name, 'Debian package');
+assert.match(debInfo.description, /Debian, Ubuntu/);
+assert.match(debInfo.fileExamplesHref, /fileexamples\.com.*deb/i);
+
 console.log('type info: ok');

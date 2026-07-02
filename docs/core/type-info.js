@@ -54,6 +54,7 @@ const TYPE_INFO = {
   comic: ['Comic archive', 'used for page-image comics packaged as ZIP/RAR/7z archives.', 'https://en.wikipedia.org/wiki/Comic_book_archive'],
   djvu: ['DjVu', 'used for scanned documents with high compression and optional OCR text.', 'https://en.wikipedia.org/wiki/DjVu'],
   archive: ['Archive', 'used to package files and folders, often with compression.', 'https://en.wikipedia.org/wiki/Archive_file'],
+  deb: ['Debian package', 'used to distribute installable software packages for Debian, Ubuntu, and derivatives.', 'https://www.debian.org/doc/manuals/debian-faq/pkg-basics.en.html'],
   iwork: ['Apple iWork', 'used by Pages, Numbers, and Keynote documents.', 'https://en.wikipedia.org/wiki/IWork'],
   zip: ['ZIP archive', 'used to package and compress files, sometimes with encryption.', 'https://en.wikipedia.org/wiki/ZIP_(file_format)'],
   torrent: ['BitTorrent metadata', 'used to describe files, trackers, and piece hashes for BitTorrent.', 'https://en.wikipedia.org/wiki/Torrent_file'],
@@ -112,6 +113,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   zip: 'zip',
   clip: 'clip',
   dbf: 'dbf',
+  deb: 'deb',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -137,6 +139,8 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   zip: 'zip',
   clip: 'clip',
   dbf: 'dbf',
+  deb: 'deb',
+  udeb: 'deb',
 };
 
 function fileExtension(intake) {
