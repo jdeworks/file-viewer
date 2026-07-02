@@ -178,7 +178,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [dBase / DBF](dbf.md) | `.dbf` | Full | None | download | — | Memo fields |
 | [BSON](bson.md) | `.bson` | Full | None | download | — | Multi-doc |
 | [CBOR](cbor.md) | `.cbor` | Full | None | download | — | Tag display |
-| [MessagePack](/) | `.msgpack` `.mpk` | Full | None | download | — | Ext types |
+| [MessagePack](msgpack.md) | `.msgpack` `.mpk` | Full | None | download | — | Ext types |
 | [MATLAB MAT-file](mat.md) | `.mat` | Partial | None | download | — | v7.3 / compressed payloads |
 | [MBTiles](mbtiles.md) | `.mbtiles` | Partial | None | download | — | Tile preview |
 | [NetCDF](/) | `.nc` `.nc4` `.netcdf` | Partial | None | download | — | NetCDF-4 |

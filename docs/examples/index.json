@@ -2463,6 +2463,7 @@
     "file": "sample.msgpack",
     "label": "MessagePack data (demo)",
     "mime": "application/x-msgpack",
+    "binary": true,
     "category": "data",
     "categories": [
       "data",

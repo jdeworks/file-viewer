@@ -542,11 +542,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/binary/msg/metadata.js
 - [ ] docs/types/binary/msg/renderer.js
 - [ ] docs/types/binary/msg/settings.default.json
-- [ ] docs/types/binary/msgpack/detect.js
-- [ ] docs/types/binary/msgpack/index.js
-- [ ] docs/types/binary/msgpack/metadata.js
-- [ ] docs/types/binary/msgpack/renderer.js
-- [ ] docs/types/binary/msgpack/settings.default.json
+- [x] docs/types/binary/msgpack/detect.js
+- [x] docs/types/binary/msgpack/index.js
+- [x] docs/types/binary/msgpack/metadata.js
+- [x] docs/types/binary/msgpack/renderer.js
+- [x] docs/types/binary/msgpack/settings.default.json
 - [ ] docs/types/binary/netcdf/detect.js
 - [ ] docs/types/binary/netcdf/index.js
 - [ ] docs/types/binary/netcdf/metadata.js

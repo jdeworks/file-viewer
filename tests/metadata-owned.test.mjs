@@ -65,6 +65,9 @@ import { detect as detectMbtiles } from '../docs/types/binary/mbtiles/detect.js'
 import { extractMetadata as mbtilesMeta } from '../docs/types/binary/mbtiles/metadata.js';
 import { detect as detectMcworld } from '../docs/types/binary/mcworld/detect.js';
 import { extractMetadata as mcworldMeta } from '../docs/types/binary/mcworld/metadata.js';
+import { detect as detectMsgpack } from '../docs/types/binary/msgpack/detect.js';
+import { extractMetadata as msgpackMeta } from '../docs/types/binary/msgpack/metadata.js';
+import { render as renderMsgpack } from '../docs/types/binary/msgpack/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -814,6 +817,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows['level.dat'], 'present');
   assert.equal(rows['levelname.txt'], 'present');
   assert.equal(rows.LevelDB, 'present');
+}
+
+{
+  const data = await bytes('sample.msgpack');
+  assert.equal(detectMsgpack({ filename: 'sample.msgpack', bytes: data, isBinary: true }), 0.95);
+  assert.equal(detectMsgpack({ filename: 'empty.msgpack', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectMsgpack({ filename: 'sample.bin', bytes: data, isBinary: true }), 0.45);
+  const rows = msgpackMeta({ bytes: data });
+  assert.equal(rows.Format, 'MessagePack');
+  assert.equal(rows['Root type'], 'Map (5 keys)');
+  assert.equal(rows['File size'], `${data.length} bytes`);
+  const rendered = renderMsgpack({ bytes: data }).bodyHtml;
+  assert.match(rendered, /Root type: Map \(5 keys\)/);
+  assert.match(rendered, /"status"/);
+  assert.match(rendered, /"ok"/);
+  // Negative int64 (0xd3) must decode as signed, not as a huge unsigned number.
+  const negInt64 = new Uint8Array([0xd3, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]);
+  assert.match(renderMsgpack({ bytes: negInt64 }).bodyHtml, /msgp-num">-1</);
 }
 
 {
