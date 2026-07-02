@@ -23,6 +23,7 @@
 | Revision | ✅ | Version/revision ID |
 | Created / modified dates | ✅ | ISO 8601 timestamps from manifest |
 | Files in archive | ✅ | Count of entries in ZIP |
+| Archive contents | ✅ | First 30 ZIP entries listed with truncation notice |
 | Embedded thumbnail | ✅ | PNG/JPEG preview image shown |
 | Source view | ❌ | Binary ZIP format |
 | Diff | ❌ | Binary format |
@@ -42,10 +43,11 @@
 
 - 3D geometry data is not decoded — manifest metadata and thumbnail only
 - Assembly sub-component relationships are not shown
+- Metadata drawer identifies the file as Fusion 360 design/assembly only; detailed manifest fields are in the preview
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Component tree | Low | Hard | Requires parsing Fusion internal JSON schema |
-| File listing | Low | Easy | List all entries in the ZIP archive |
+| Complete file listing export | Low | Easy | Download the archive entry list as text/JSON |

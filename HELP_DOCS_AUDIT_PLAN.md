@@ -88,11 +88,11 @@ Completion gates:
 - [x] docs/readme/excel.md
 - [x] docs/readme/exe.md
 - [x] docs/readme/exr.md
-- [ ] docs/readme/f3d.md
-- [ ] docs/readme/fb2.md
-- [ ] docs/readme/fbx.md
-- [ ] docs/readme/fits.md
-- [ ] docs/readme/font.md
+- [x] docs/readme/f3d.md
+- [x] docs/readme/fb2.md
+- [x] docs/readme/fbx.md
+- [x] docs/readme/fits.md
+- [x] docs/readme/font.md
 - [ ] docs/readme/gamerom.md
 - [ ] docs/readme/gcode.md
 - [ ] docs/readme/geo.md

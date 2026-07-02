@@ -1,14 +1,14 @@
 # FictionBook 2 (.fb2)
 
-> XML-based ebook format popular in Russia and Eastern Europe — rendered chapters, cover image, and rich metadata.
+> XML-based ebook format popular in Russia and Eastern Europe — sanitized reader view with inline images, source editing, and XML metadata.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.fb2`, `.fb2.zip` |
+| Extension(s) | `.fb2` |
 | MIME type | `application/x-fictionbook+xml` |
-| Binary / Text | Text (XML); `.fb2.zip` is a ZIP wrapper |
+| Binary / Text | Text (XML) |
 | Created by | Dmitry Gribov |
 | Common use | Ebooks; widely used in Russian and Eastern European digital book ecosystems |
 | Spec / Docs | [FictionBook wiki](http://www.fictionbook.org/index.php/Eng:FictionBook) |
@@ -18,11 +18,14 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Rendered ebook content | ✅ | Chapters, paragraphs, epigraphs, footnotes |
-| Cover image | ✅ | Extracted from `<coverpage>` element |
-| Metadata panel | ✅ | Title, author, genre, annotation, language |
-| Table of contents | ✅ | Section / chapter navigation |
-| Inline images | ✅ | Base64-encoded images in `<binary>` sections |
+| Rendered ebook content | ✅ | Sections, titles, paragraphs, epigraphs, poems, tables, and inline formatting |
+| Inline images | ✅ | Base64-encoded `<binary>` images are converted to inlined data URLs |
+| Reader controls | ✅ | CSS-only size, font, theme, line-height, and page-width controls |
+| Sanitization | ✅ | DOMPurify strips scripts/styles/event handlers before preview |
+| Source view / diff | ✅ | XML source and text diff are available |
+| Metadata panel | ✅ | Title, author, language, section count, image count, genres, date, sequence |
+| Table of contents | ❌ | No navigation sidebar or generated TOC |
+| Cover image extraction | ⚠️ | Cover images render when referenced in the body; no dedicated cover panel |
 
 ### Edit
 | Capability | Status | Notes |
@@ -41,18 +44,18 @@ No known-file plugin — all FB2 files use the same ebook renderer.
 
 ## Real-World Examples
 
-- [`sample.fb2`](../examples/sample.fb2) — multi-chapter ebook demonstrating TOC navigation and cover image
+- [`sample.fb2`](../examples/sample.fb2) — FictionBook XML ebook sample
 
 ## Known Limitations
 
-- Font size control not exposed (uses page default)
+- `.fb2.zip` is not handled by this type; open it as an archive
 - No bookmark or reading-position persistence
-- Night mode uses global theme; no FB2-specific reader theming
+- No generated table of contents or chapter navigation sidebar
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Font size / line spacing controls | Med | Easy | CSS variable adjustments in reader view |
+| TOC / section navigation | Med | Med | Build a sidebar from nested `<section><title>` nodes |
 | Reading position persistence | Med | Med | Store last scroll position in localStorage |
-| Night mode reader styling | Low | Easy | High-contrast dark palette for long reading |
+| Dedicated cover panel | Low | Easy | Surface `<coverpage>` image before the body |

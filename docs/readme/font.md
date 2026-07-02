@@ -1,6 +1,6 @@
 # Font
 
-> Live font specimen rendered using the browser's FontFace API — pangram, alphabet, digit ramp, and size ladder in the actual typeface.
+> Live font specimen rendered using the browser's FontFace API — editable preview text, size/color/background controls, alphabet, digits, weight ramp, size ladder, and parsed font metadata.
 
 ## Format Details
 
@@ -17,13 +17,16 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Live font specimen | ✅ | Rendered using `FontFace` API — actual typeface, not a simulation |
-| Pangram | ✅ | "The quick brown fox jumps over the lazy dog" at 40px and 28px |
-| Uppercase / lowercase alphabet | ✅ | Full Latin alphabet at 20px |
-| Digit and punctuation ramp | ✅ | `0-9` and common symbols at 20px |
-| Size ramp | ✅ | Sentences at multiple sizes (40px → 15px) |
+| Custom preview text | ✅ | Editable specimen textarea updates live |
+| Size control | ✅ | Slider from 12px to 200px |
+| Color / background controls | ✅ | Text color picker plus white/black/transparent background toggle |
+| Uppercase / lowercase alphabet | ✅ | Full Latin alphabet specimen |
+| Digit and punctuation ramp | ✅ | `0-9` and common symbols |
+| Size ramp | ✅ | Sentences from 12px to 80px |
+| Weight ramp | ✅ | 100 through 900 weight samples |
 | Source view | ❌ | Binary format — no raw text view |
 | Diff | ❌ | Binary format not diffable |
-| Metadata | ✅ | Family name, style, version, glyph count (where available) |
+| Metadata | ✅ | Format, size, table count, name-table fields, units per em, glyph count, OS/2 weight/width, vendor/license fields when available |
 
 ### Edit
 | Capability | Status | Notes |
@@ -42,7 +45,7 @@
 
 ## Known Limitations
 
-- Icon fonts show empty boxes for pangram (no Latin glyphs) — custom specimen text is not configurable
+- Icon fonts can still show empty boxes for Latin text; use the custom preview text when you know the glyph mapping
 - Variable fonts are displayed at default axis values only
 - CJK fonts with thousands of glyphs can take a moment to load
 
@@ -50,7 +53,6 @@
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Custom specimen text input | Med | Easy | Let the user type text to preview |
 | Variable font axis sliders | Med | Med | Expose weight/width/slant axes interactively |
 | Glyph grid view | Low | Med | Show all glyphs in a scrollable grid |
 | Convert WOFF2 → TTF | Low | Med | Would require vendoring a WOFF2 decoder |

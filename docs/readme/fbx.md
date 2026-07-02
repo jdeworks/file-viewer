@@ -1,6 +1,6 @@
 # FBX 3D Animation
 
-> FBX file inspector — format version (text/binary), creator, timestamp, scene statistics from header.
+> FBX file inspector — binary FBX version and root-node summary, with ASCII FBX routed to raw text.
 
 ## Format Details
 
@@ -16,14 +16,15 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Format variant | ✅ | Binary FBX vs. ASCII FBX detected |
+| Format variant | ✅ | Binary FBX detected by magic; ASCII FBX gets a raw-view note |
 | FBX version | ✅ | Version number from header |
-| Creator | ✅ | Application that saved the file |
-| Creation time | ✅ | Embedded timestamp |
-| Object counts | ✅ | Model, material, texture, animation layer counts |
-| Source view | ❌ | Binary format (text FBX: limited) |
+| Root nodes | ✅ | Top-level binary FBX nodes and property counts listed |
+| Creator | ❌ | Creator metadata is not decoded |
+| Creation time | ❌ | Embedded timestamp is not decoded |
+| Object counts | ❌ | Model/material/texture/animation counts are not decoded |
+| Source view | ❌ | Binary FBX has no raw text view; ASCII FBX should be inspected as raw text |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Version, creator, object type counts |
+| Metadata | ✅ | Format, binary version, encoding, file size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -37,12 +38,14 @@
 
 ## Known Limitations
 
-- 3D geometry is not rendered
-- ASCII FBX (text format) shows more detail than binary
+- 3D geometry, scene hierarchy, materials, skinning, and animations are not rendered
+- ASCII FBX is detected only enough to show a note; detailed ASCII parsing is not implemented
+- Binary parser lists root nodes only, not nested node contents
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Scene hierarchy tree | Low | Hard | Parse node hierarchy from binary blocks |
+| ASCII FBX summary | Low | Med | Extract object counts from text FBX files |
 | Convert to GLTF | Low | Hard | Requires FBX SDK or three-fbx-loader |
