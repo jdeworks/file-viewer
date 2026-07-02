@@ -967,12 +967,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/media/waveform-data.js
 - [ ] docs/types/media/waveform.js
 - [ ] docs/types/media/workspace-modes.js
-- [ ] docs/types/office/docx/detect.js
-- [ ] docs/types/office/docx/editor.js
-- [ ] docs/types/office/docx/index.js
-- [ ] docs/types/office/docx/metadata.js
-- [ ] docs/types/office/docx/renderer.js
-- [ ] docs/types/office/docx/settings.default.json
+- [x] docs/types/office/docx/detect.js
+- [x] docs/types/office/docx/editor.js
+- [x] docs/types/office/docx/index.js
+- [x] docs/types/office/docx/metadata.js
+- [x] docs/types/office/docx/renderer.js
+- [x] docs/types/office/docx/settings.default.json
 - [ ] docs/types/office/EDITOR.md
 - [ ] docs/types/office/iwork/detect.js
 - [ ] docs/types/office/iwork/index.js

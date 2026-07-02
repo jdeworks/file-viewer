@@ -66,7 +66,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [PDF](pdf.md) | `.pdf` | Basic | None | download | — | Text search |
-| [Word](office.md) | `.docx` | Basic | None | download | — | Track changes |
+| [Word](office.md) | `.docx` `.dotx` | Full | WYSIWYG | DOCX (edited), download | — | Track changes |
 | [PowerPoint](office.md) | `.pptx` | Basic | None | download | — | Animation |
 | [OpenDocument](office.md) | `.odt` | Basic | None | download | — | — |
 | [Apple iWork](office.md) | `.pages` | Basic | None | download | — | Numbers/Keynote |
