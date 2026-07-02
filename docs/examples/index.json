@@ -2239,6 +2239,9 @@
     "label": "World Cities (KMZ)",
     "file": "sample.kmz",
     "mime": "application/vnd.google-earth.kmz",
+    "type": "kmz",
+    "binary": true,
+    "partial": true,
     "category": "Geo",
     "categories": [
       "Geo"

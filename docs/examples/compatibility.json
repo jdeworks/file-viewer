@@ -54,7 +54,7 @@
     },
     "als": {
       "label": "Ableton Live Set",
-      "support": "supported",
+      "support": "partial",
       "sampleFiles": [
         "sample.als"
       ],
@@ -116,7 +116,7 @@
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

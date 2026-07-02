@@ -53,6 +53,8 @@ import { detect as detectIpa } from '../docs/types/binary/ipa/detect.js';
 import { metadata as ipaMeta } from '../docs/types/binary/ipa/metadata.js';
 import { detect as detectIso } from '../docs/types/binary/iso/detect.js';
 import { extractMetadata as isoMeta } from '../docs/types/binary/iso/metadata.js';
+import { detect as detectKmz } from '../docs/types/binary/kmz/detect.js';
+import { extractMetadata as kmzMeta } from '../docs/types/binary/kmz/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -715,6 +717,20 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(value(rows, 'Sector size'), '2,048 bytes');
   assert.equal(value(rows, 'Total sectors'), '18');
   assert.match(value(rows, 'Total size'), /36,864 bytes/);
+}
+
+{
+  const data = await bytes('sample.kmz');
+  assert.equal(detectKmz({ filename: 'sample.kmz', mimeType: 'application/vnd.google-earth.kmz', bytes: data, isBinary: true }), 0.97);
+  assert.equal(detectKmz({ filename: 'sample.zip', mimeType: 'application/vnd.google-earth.kmz', bytes: data, isBinary: true }), 0.9);
+  assert.equal(detectKmz({ filename: 'empty.kmz', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  const rows = kmzMeta({ filename: 'sample.kmz', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'KMZ (Compressed KML)');
+  assert.equal(rows.Container, 'ZIP');
+  assert.equal(rows.Files, '1');
+  assert.equal(rows['KML files'], '1');
+  assert.equal(rows['Primary KML'], 'doc.kml');
+  assert.match(rows['Uncompressed size'], /1,170 bytes/);
 }
 
 {

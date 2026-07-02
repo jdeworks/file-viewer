@@ -500,11 +500,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/iso/detect.js
 - [x] docs/types/binary/iso/index.js
 - [x] docs/types/binary/iso/metadata.js
-- [ ] docs/types/binary/iso/renderer.js
-- [ ] docs/types/binary/iso/settings.default.json
-- [ ] docs/types/binary/kmz/detect.js
-- [ ] docs/types/binary/kmz/index.js
-- [ ] docs/types/binary/kmz/metadata.js
+- [x] docs/types/binary/iso/renderer.js
+- [x] docs/types/binary/iso/settings.default.json
+- [x] docs/types/binary/kmz/detect.js
+- [x] docs/types/binary/kmz/index.js
+- [x] docs/types/binary/kmz/metadata.js
 - [ ] docs/types/binary/kmz/renderer.js
 - [ ] docs/types/binary/kmz/settings.default.json
 - [ ] docs/types/binary/lmms/detect.js

@@ -159,7 +159,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Archive](archive.md) | `.7z` `.rar` `.tar` `.tar.gz` `.tgz` `.tar.bz2` `.tbz2` `.tar.xz` `.txz` `.tar.zst` | Basic | None | download | — | Entry preview |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
-| [KMZ Map Archive](geo.md) | `.kmz` | Basic | None | download | — | Overlay render |
+| [KMZ Map Archive](kmz.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ISO Disc Image](iso.md) | `.iso` | Basic | None | download | — | File listing |
 | [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
 | [BSP Game Map](bsp.md) | `.bsp` | Full | None | download | — | Header/entity inspection |
@@ -247,7 +247,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Map (GeoJSON/GPX)](geo.md) | `.geojson` `.gpx` | Basic | Monaco | download | — | Tile map render |
 | [KML Map](/) | `.kml` | Basic | Monaco | download | — | Map tile render |
-| [KMZ Archive](geo.md) | `.kmz` | Basic | None | download | — | Overlay render |
+| [KMZ Archive](kmz.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |
 | [MBTiles](/) | `.mbtiles` | Basic | None | download | — | Tile decode |
 

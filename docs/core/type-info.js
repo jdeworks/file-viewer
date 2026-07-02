@@ -39,6 +39,7 @@ const TYPE_INFO = {
   'mcp-config': ['MCP config', 'used to configure Model Context Protocol servers for desktop clients.', 'https://modelcontextprotocol.io/'],
   har: ['HAR', 'used to capture browser network requests and timings for debugging.', 'https://en.wikipedia.org/wiki/HAR_(file_format)'],
   json: ['JSON', 'used for structured data interchange and configuration.', 'https://developer.mozilla.org/docs/Learn_web_development/Core/Scripting/JSON'],
+  kmz: ['KMZ map archive', 'used to share compressed KML geographic places, paths, overlays, and Google Earth map data.', 'https://developers.google.com/kml/documentation/kmzarchives'],
   layered: ['Layered image', 'used by design and painting tools to store editable layers.', 'https://en.wikipedia.org/wiki/Adobe_Photoshop'],
   heif: ['HEIF/HEIC', 'used for high-efficiency photos and image sequences.', 'https://en.wikipedia.org/wiki/High_Efficiency_Image_File_Format'],
   ico: ['ICO icon', 'used for Windows icons and website favicons.', 'https://en.wikipedia.org/wiki/ICO_(file_format)'],

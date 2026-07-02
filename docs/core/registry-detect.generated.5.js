@@ -3,6 +3,32 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_hdf5=(()=>{
+// HDF5 magic: 0x89 'H' 'D' 'F' '\r' '\n' 0x1a '\n' (8 bytes)
+const HDF5_MAGIC = [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a];
+
+function detect(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 8) {
+    if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.35;
+    if (mimeMatches(intake, 'hdf5', 'x-hdf')) return 0.3;
+    return 0;
+  }
+
+  const matches = HDF5_MAGIC.every((v, i) => b[i] === v);
+  if (matches) {
+    if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.98;
+    if (mimeMatches(intake, 'hdf5', 'x-hdf')) return 0.97;
+    return 0.95;
+  }
+
+  if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.35;
+  if (mimeMatches(intake, 'hdf5', 'x-hdf')) return 0.3;
+  return 0;
+}
+return detect;
+})();
+
 const detect_msgpack=(()=>{
 function detect(intake) {
   const { filename, bytes: b } = intake;
@@ -287,31 +313,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_lmms=(()=>{
-// LMMS .mmp: plain XML starting with <lmms-project or <?xml
-// LMMS .mmpz: gzip-compressed .mmp (magic: 1f 8b)
-
-function detect(intake) {
-  const { filename, bytes: b, textSample } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isLmmsExt = ext === 'mmp' || ext === 'mmpz';
-
-  if (!b || b.length < 4) return isLmmsExt ? 0.5 : 0;
-
-  // .mmpz: gzip magic
-  const isGzip = b[0] === 0x1f && b[1] === 0x8b;
-  if (isGzip && ext === 'mmpz') return 0.95;
-  if (isGzip && isLmmsExt) return 0.95;
-
-  // .mmp: XML with lmms-project root
-  if (textSample) {
-    const s = textSample.trimStart();
-    if (s.includes('<lmms-project')) return isLmmsExt ? 0.99 : 0.92;
-    if (s.includes('<?xml') && isLmmsExt) return 0.80;
-  }
-  return isLmmsExt ? 0.5 : 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms};
+export const DETECTORS={"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc};

@@ -27,7 +27,7 @@
 | File count | ✅ | Number of files inside ZIP |
 | Source view | ❌ | Binary ZIP format |
 | Diff | ❌ | Binary format |
-| Metadata | ⚠️ | Side panel reports KMZ/ZIP container only; map details are in the preview |
+| Metadata | ✅ | Side panel reports KMZ/ZIP container, file counts, primary KML, and uncompressed size |
 
 ### Edit
 | Capability | Status | Notes |

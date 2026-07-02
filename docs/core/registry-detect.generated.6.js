@@ -3,6 +3,33 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_lmms=(()=>{
+// LMMS .mmp: plain XML starting with <lmms-project or <?xml
+// LMMS .mmpz: gzip-compressed .mmp (magic: 1f 8b)
+
+function detect(intake) {
+  const { filename, bytes: b, textSample } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isLmmsExt = ext === 'mmp' || ext === 'mmpz';
+
+  if (!b || b.length < 4) return isLmmsExt ? 0.5 : 0;
+
+  // .mmpz: gzip magic
+  const isGzip = b[0] === 0x1f && b[1] === 0x8b;
+  if (isGzip && ext === 'mmpz') return 0.95;
+  if (isGzip && isLmmsExt) return 0.95;
+
+  // .mmp: XML with lmms-project root
+  if (textSample) {
+    const s = textSample.trimStart();
+    if (s.includes('<lmms-project')) return isLmmsExt ? 0.99 : 0.92;
+    if (s.includes('<?xml') && isLmmsExt) return 0.80;
+  }
+  return isLmmsExt ? 0.5 : 0;
+}
+return detect;
+})();
+
 const detect_f3d=(()=>{
 // Fusion 360 .f3d: ZIP file (PK magic) with specific internal structure
 // Also .f3z (assembly) shares the same format
@@ -295,35 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_guitar_pro=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'gpx')) {
-    // GPX is a ZIP — check for PK magic
-    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
-    return 0.7;
-  }
-  if (!intake.isBinary) return 0;
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  // GP5 magic: "FICHIER GUITAR PRO v5"
-  // GP4: "FICHIER GUITAR PRO v4"
-  // GP3: "FICHIER GUITAR PRO v3"
-  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
-  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
-  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
-  return 0;
-}
-return detect;
-})();
-
-const detect_postscript=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'ps', 'eps', 'ai')) return 0.85;
-  const head = (intake.textSample || '').slice(0, 120);
-  if (/^%!PS(-Adobe)?/.test(head)) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript};
+export const DETECTORS={"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat};

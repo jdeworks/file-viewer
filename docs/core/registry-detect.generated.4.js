@@ -5,10 +5,15 @@ function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCas
 
 const detect_kmz=(()=>{
 function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  if (!intake.bytes || intake.bytes.length < 4) {
+    if (hasExtension(intake, 'kmz')) return 0.6;
+    if (mimeMatches(intake, 'google-earth.kmz', 'kmz')) return 0.5;
+    return 0;
+  }
   const b = intake.bytes;
   if (!(b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04)) return 0;
   if (hasExtension(intake, 'kmz')) return 0.97;
+  if (mimeMatches(intake, 'google-earth.kmz', 'kmz')) return 0.9;
   return 0;
 }
 return detect;
@@ -301,30 +306,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_hdf5=(()=>{
-// HDF5 magic: 0x89 'H' 'D' 'F' '\r' '\n' 0x1a '\n' (8 bytes)
-const HDF5_MAGIC = [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a];
-
-function detect(intake) {
-  const b = intake.bytes;
-  if (!b || b.length < 8) {
-    if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.35;
-    if (mimeMatches(intake, 'hdf5', 'x-hdf')) return 0.3;
-    return 0;
-  }
-
-  const matches = HDF5_MAGIC.every((v, i) => b[i] === v);
-  if (matches) {
-    if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.98;
-    if (mimeMatches(intake, 'hdf5', 'x-hdf')) return 0.97;
-    return 0.95;
-  }
-
-  if (hasExtension(intake, 'h5', 'hdf5', 'hdf', 'he5')) return 0.35;
-  if (mimeMatches(intake, 'hdf5', 'x-hdf')) return 0.3;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro,"hdf5":detect_hdf5};
+export const DETECTORS={"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro};

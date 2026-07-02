@@ -3,6 +3,37 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_guitar_pro=(()=>{
+function detect(intake) {
+  if (hasExtension(intake, 'gpx')) {
+    // GPX is a ZIP — check for PK magic
+    if (intake.bytes && intake.bytes[0] === 0x50 && intake.bytes[1] === 0x4b) return 0.9;
+    return 0.7;
+  }
+  if (!intake.isBinary) return 0;
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  // GP5 magic: "FICHIER GUITAR PRO v5"
+  // GP4: "FICHIER GUITAR PRO v4"
+  // GP3: "FICHIER GUITAR PRO v3"
+  const head = String.fromCharCode(...intake.bytes.slice(0, 32));
+  if (/FICHIER GUITAR PRO v[3-5]/.test(head)) return 0.98;
+  if (hasExtension(intake, 'gp3', 'gp4', 'gp5', 'gp')) return 0.7;
+  return 0;
+}
+return detect;
+})();
+
+const detect_postscript=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, 'ps', 'eps', 'ai')) return 0.85;
+  const head = (intake.textSample || '').slice(0, 120);
+  if (/^%!PS(-Adobe)?/.test(head)) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
 const detect_acf=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -271,43 +302,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_exe=(()=>{
-function hasPeSignature(b) {
-  if (!b || b.length < 0x40) return false;
-  const peOff = (b[0x3c] | (b[0x3d] << 8) | (b[0x3e] << 16) | (b[0x3f] << 24)) >>> 0;
-  return peOff + 4 <= b.length && b[peOff] === 0x50 && b[peOff + 1] === 0x45 && b[peOff + 2] === 0 && b[peOff + 3] === 0;
-}
-
-function detect(intake) {
-  const isExecutableName = hasExtension(intake, 'elf', 'exe', 'dll', 'dylib', 'so', 'out');
-  const isExecutableMime = mimeMatches(intake, 'x-elf', 'x-executable', 'x-msdownload', 'x-dosexec', 'portable-executable', 'x-mach-binary', 'mach-o', 'x-sharedlib');
-  if (!intake.bytes) return isExecutableName || isExecutableMime ? 0.55 : 0;
-  const b = intake.bytes;
-  if (b.length < 4) return isExecutableName || isExecutableMime ? 0.55 : 0;
-
-  // ELF: \x7fELF
-  if (b[0] === 0x7f && b[1] === 0x45 && b[2] === 0x4c && b[3] === 0x46) return isExecutableName || isExecutableMime ? 0.99 : 0.98;
-
-  // PE/COFF: MZ magic (Windows)
-  if (b[0] === 0x4d && b[1] === 0x5a) return hasPeSignature(b) ? (isExecutableName || isExecutableMime ? 0.99 : 0.98) : (isExecutableName || isExecutableMime ? 0.75 : 0.35);
-
-  // Mach-O: check all 4 magic variants
-  const m32be = b[0] === 0xfe && b[1] === 0xed && b[2] === 0xfa && b[3] === 0xce;
-  const m64be = b[0] === 0xfe && b[1] === 0xed && b[2] === 0xfa && b[3] === 0xcf;
-  const m32le = b[0] === 0xce && b[1] === 0xfa && b[2] === 0xed && b[3] === 0xfe;
-  const m64le = b[0] === 0xcf && b[1] === 0xfa && b[2] === 0xed && b[3] === 0xfe;
-  // CAFEBABE: Mach-O fat binary, but ALSO Java .class — distinguish by major version at [6:8]
-  const mFat  = b[0] === 0xca && b[1] === 0xfe && b[2] === 0xba && b[3] === 0xbe;
-  if (m32be || m64be || m32le || m64le) return isExecutableName || isExecutableMime ? 0.99 : 0.98;
-  if (mFat && b.length >= 8) {
-    const major = (b[6] << 8) | b[7];
-    if (major >= 45 && major <= 70) return 0; // Java class file (major 45=Java1.1 … 70=Java26)
-    return isExecutableName || isExecutableMime ? 0.99 : 0.98;
-  }
-
-  return isExecutableName || isExecutableMime ? 0.55 : 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe};
+export const DETECTORS={"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom};
