@@ -75,6 +75,15 @@ import { detect as detectNifti } from '../docs/types/binary/nifti/detect.js';
 import { metadata as niftiMeta } from '../docs/types/binary/nifti/metadata.js';
 import { detect as detectNpy } from '../docs/types/binary/npy/detect.js';
 import { extractMetadata as npyMeta } from '../docs/types/binary/npy/metadata.js';
+import { detect as detectPyc } from '../docs/types/binary/pyc/detect.js';
+import { metadata as pycMeta } from '../docs/types/binary/pyc/metadata.js';
+import { render as renderPyc } from '../docs/types/binary/pyc/renderer.js';
+import { detect as detectRpm } from '../docs/types/binary/rpm/detect.js';
+import { metadata as rpmMeta } from '../docs/types/binary/rpm/metadata.js';
+import { render as renderRpm } from '../docs/types/binary/rpm/renderer.js';
+import { detect as detectShapefile } from '../docs/types/binary/shapefile/detect.js';
+import { extractMetadata as shapefileMeta } from '../docs/types/binary/shapefile/metadata.js';
+import { render as renderShapefile } from '../docs/types/binary/shapefile/renderer.js';
 import { detect as detectWasm } from '../docs/types/binary/wasm/detect.js';
 import { extractMetadata as wasmMeta } from '../docs/types/binary/wasm/metadata.js';
 import { render as renderWasm } from '../docs/types/binary/wasm/renderer.js';
@@ -967,6 +976,99 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const n64Rows = (await gameRomMeta({ filename: 'demo.z64', bytes: n64, isBinary: true, size: n64.length })).fields;
   assert.equal(value(n64Rows, 'Format'), 'Nintendo 64');
   assert.equal(value(n64Rows, 'CRC2'), '9ABCDEF0');
+}
+
+{
+  const data = await bytes('sample.pyc');
+  assert.equal(detectPyc({ filename: 'sample.pyc', bytes: data }), 0.99);
+  const rows = pycMeta({ bytes: data });
+  assert.equal(rows.format, 'Python Bytecode');
+  assert.equal(rows.pythonVersion, '3.11');
+
+  // Python 3.7 (PEP 552) introduced the hash-based .pyc header: a 4-byte bit
+  // field immediately after the magic, replacing the timestamp+size layout
+  // used by 3.0-3.6. Magic 3394 is a real Python 3.7 magic number, and the
+  // renderer's layout threshold must include it (not just 3.8+).
+  const py37 = new Uint8Array(16);
+  py37[0] = 0x42; py37[1] = 0x0d; // magic 3394, little-endian
+  py37[2] = 0x0d; py37[3] = 0x0a;
+  py37[4] = 1; // bit field: hash-based flag set
+  const rendered37 = renderPyc({ bytes: py37 }).bodyHtml;
+  assert.match(rendered37, /3\.7/);
+  assert.match(rendered37, /Hash-based/);
+
+  // The duplicated getPythonVersion() in metadata.js must stay in sync with
+  // renderer.js: it used to lack an upper bound on the 2.0-2.5 range, so any
+  // magic above 23012 that wasn't 2.6/2.7 was mislabeled "2.0-2.5" in the
+  // sidebar while the renderer's already-bounded copy correctly cascaded the
+  // same magic into the "3.13+" forward-compat bucket - a visible mismatch
+  // between the metadata sidebar and the preview panel for the same file.
+  const bogus = new Uint8Array(16);
+  bogus[0] = 0x30; bogus[1] = 0x75; // magic 30000, little-endian
+  bogus[2] = 0x0d; bogus[3] = 0x0a;
+  assert.equal(pycMeta({ bytes: bogus }).pythonVersion, '3.13+');
+  assert.match(renderPyc({ bytes: bogus }).bodyHtml, /3\.13\+/);
+}
+
+{
+  const data = await bytes('sample.rpm');
+  assert.equal(detectRpm({ filename: 'sample.rpm', bytes: data }), 0.99);
+  const meta = rpmMeta({ bytes: data });
+  assert.equal(meta.format, 'Binary RPM');
+  assert.equal(meta.name, 'hello-world-1.0.0-1.x86_64');
+
+  // Header tag IDs must match rpm's real RPMTAG_* namespace (rpmtag.h) so
+  // fields don't cross-wire on a real-world .rpm (the old table read e.g.
+  // Vendor from the real GROUP tag and License from the real URL tag, and
+  // never matched the real ARCH/OS tags at all).
+  const rendered = renderRpm({ bytes: data }).bodyHtml;
+  assert.match(rendered, /Architecture[\s\S]*?x86_64/);
+  assert.match(rendered, /OS[\s\S]*?linux/);
+  assert.match(rendered, /License[\s\S]*?MIT/);
+  assert.match(rendered, /Group[\s\S]*?Development\/Tools/);
+  assert.match(rendered, /Vendor[\s\S]*?Demo Vendor/);
+  assert.match(rendered, /URL[\s\S]*?https:\/\/example\.com\/hello-world/);
+  assert.match(rendered, /Packager[\s\S]*?Demo Packager/);
+  // Description was parsed into a local variable but never rendered.
+  assert.match(rendered, /This is a demo RPM package/);
+  // Requires must read RPMTAG_REQUIRENAME (1049, STRING_ARRAY), not
+  // RPMTAG_REQUIREFLAGS (1048, an INT32 array) - the old mapping meant this
+  // list was always empty for any real RPM.
+  assert.match(rendered, /Requires \(3\)/);
+  assert.match(rendered, /glibc/);
+  assert.match(rendered, /bash/);
+  assert.match(rendered, /coreutils/);
+}
+
+{
+  const data = await bytes('sample.shp');
+  assert.equal(detectShapefile({ filename: 'sample.shp', bytes: data }), 0.99);
+  const meta = shapefileMeta({ bytes: data });
+  assert.equal(meta.Format, 'ESRI Shapefile');
+  assert.equal(meta['Shape Type'], 'Polygon');
+  assert.equal(meta.Xmin, '-74.05000');
+  assert.equal(meta.Ymax, '40.79000');
+  const rendered = renderShapefile({ bytes: data }).bodyHtml;
+  assert.match(rendered, /Polygon/);
+  assert.match(rendered, /Records<\/td><td>1<\/td>/);
+  assert.match(rendered, /40\.79000°N/);
+
+  // MultiPatch (31) is inherently 3D and must be treated as Z-bearing like
+  // the explicit *Z shape types, so a non-zero header Z range is surfaced.
+  const mp = new Uint8Array(100);
+  const dv = new DataView(mp.buffer);
+  dv.setInt32(0, 9994, false);
+  dv.setInt32(24, 50, false); // file length in words = 100-byte header only
+  dv.setInt32(28, 1000, true);
+  dv.setInt32(32, 31, true); // MultiPatch
+  dv.setFloat64(36, 0, true);
+  dv.setFloat64(44, 0, true);
+  dv.setFloat64(52, 1, true);
+  dv.setFloat64(60, 1, true);
+  dv.setFloat64(68, 5, true);
+  dv.setFloat64(76, 15, true);
+  const mpHtml = renderShapefile({ bytes: mp }).bodyHtml;
+  assert.match(mpHtml, /Z range[\s\S]*?5\.000[\s\S]*?15\.000/);
 }
 
 console.log('metadata-owned: ok');

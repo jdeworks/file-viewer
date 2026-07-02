@@ -577,21 +577,21 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/binary/pcap/metadata.js
 - [ ] docs/types/binary/pcap/renderer.js
 - [ ] docs/types/binary/pcap/settings.default.json
-- [ ] docs/types/binary/pyc/detect.js
-- [ ] docs/types/binary/pyc/index.js
-- [ ] docs/types/binary/pyc/metadata.js
-- [ ] docs/types/binary/pyc/renderer.js
-- [ ] docs/types/binary/pyc/settings.default.json
-- [ ] docs/types/binary/rpm/detect.js
-- [ ] docs/types/binary/rpm/index.js
-- [ ] docs/types/binary/rpm/metadata.js
-- [ ] docs/types/binary/rpm/renderer.js
-- [ ] docs/types/binary/rpm/settings.default.json
-- [ ] docs/types/binary/shapefile/detect.js
-- [ ] docs/types/binary/shapefile/index.js
-- [ ] docs/types/binary/shapefile/metadata.js
-- [ ] docs/types/binary/shapefile/renderer.js
-- [ ] docs/types/binary/shapefile/settings.default.json
+- [x] docs/types/binary/pyc/detect.js
+- [x] docs/types/binary/pyc/index.js
+- [x] docs/types/binary/pyc/metadata.js
+- [x] docs/types/binary/pyc/renderer.js
+- [x] docs/types/binary/pyc/settings.default.json
+- [x] docs/types/binary/rpm/detect.js
+- [x] docs/types/binary/rpm/index.js
+- [x] docs/types/binary/rpm/metadata.js
+- [x] docs/types/binary/rpm/renderer.js
+- [x] docs/types/binary/rpm/settings.default.json
+- [x] docs/types/binary/shapefile/detect.js
+- [x] docs/types/binary/shapefile/index.js
+- [x] docs/types/binary/shapefile/metadata.js
+- [x] docs/types/binary/shapefile/renderer.js
+- [x] docs/types/binary/shapefile/settings.default.json
 - [x] docs/types/binary/torrent/detect.js
 - [x] docs/types/binary/torrent/index.js
 - [x] docs/types/binary/torrent/metadata.js

@@ -53,7 +53,9 @@ export function render(intake) {
   const mmin = rf64le(b, 84);
   const mmax = rf64le(b, 92);
 
-  const hasZ = [11, 13, 15, 18].includes(shapeType);
+  // MultiPatch (31) is inherently 3D and always carries Z values, same as the
+  // explicit *Z shape types.
+  const hasZ = [11, 13, 15, 18, 31].includes(shapeType);
   const hasM = [21, 23, 25, 28].includes(shapeType) || hasZ;
 
   // Count records

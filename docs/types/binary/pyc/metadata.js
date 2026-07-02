@@ -1,7 +1,7 @@
 function getPythonVersion(magic) {
   if (magic >= 62061 && magic <= 62211) return '2.7';
   if (magic >= 50700 && magic <= 50823) return '2.6';
-  if (magic >= 23012) return '2.0–2.5';
+  if (magic >= 20115 && magic <= 23012) return '2.0–2.5';
   if (magic >= 3571) return '3.13+';
   if (magic >= 3530) return '3.12';
   if (magic >= 3450) return '3.11';

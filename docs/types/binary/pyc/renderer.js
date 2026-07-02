@@ -39,13 +39,16 @@ export function render(intake) {
   const magic = b[0] | (b[1] << 8);
   const pyVersion = getPythonVersion(magic);
   const py3x = magic >= 3000 && magic <= 3600;
-  const py38plus = magic >= 3401 && magic <= 3600;
+  // PEP 552 (hash-based .pyc files) landed in Python 3.7 (magic 3390+): from
+  // that version on, the header always carries a 4-byte bit field after the
+  // magic number, replacing the plain timestamp/size layout used by 3.0-3.6.
+  const py37plus = magic >= 3390 && magic <= 3600;
 
   let srcTimestamp = null;
   let srcSize = null;
   let isHashBased = false;
 
-  if (py38plus) {
+  if (py37plus) {
     const bitField = readU32le(b, 4);
     isHashBased = (bitField & 1) === 1;
     if (!isHashBased) {
