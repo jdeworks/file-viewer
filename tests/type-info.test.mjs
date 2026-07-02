@@ -30,4 +30,11 @@ assert.equal(debInfo.name, 'Debian package');
 assert.match(debInfo.description, /Debian, Ubuntu/);
 assert.match(debInfo.fileExamplesHref, /fileexamples\.com.*deb/i);
 
+const dicom = REGISTRY.find((type) => type.id === 'dicom');
+assert.ok(dicom, 'dicom type is registered');
+const dicomInfo = getTypeInfo(dicom, null, { filename: 'sample.dcm' });
+assert.equal(dicomInfo.name, 'DICOM medical image');
+assert.match(dicomInfo.description, /CT, MRI/);
+assert.match(dicomInfo.fileExamplesHref, /fileexamples\.com.*dicom/i);
+
 console.log('type info: ok');

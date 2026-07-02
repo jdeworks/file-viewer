@@ -166,6 +166,12 @@ export async function run(ctx) {
   if (/DICOM/i.test(dcmText)) pass('DICOM badge shown'); else fail('dcm badge missing');
   if (/CT|Computed Tomography/i.test(dcmText)) pass('DICOM modality CT shown'); else fail('dcm mod: ' + dcmText.slice(0, 300));
   if (/512|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const dcmMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*DICOM/.test(dcmMeta)) pass('DICOM metadata includes format'); else fail('dcm meta format: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
+  if (/Dimensions\s*512 x 512/.test(dcmMeta)) pass('DICOM metadata includes image dimensions'); else fail('dcm meta dimensions: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
 
   // ── NetCDF Scientific Data ────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

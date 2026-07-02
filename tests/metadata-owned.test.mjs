@@ -26,6 +26,9 @@ import { render as renderDbf } from '../docs/types/binary/dbf/renderer.js';
 import { detect as detectDeb } from '../docs/types/binary/deb/detect.js';
 import { extractMetadata as debMeta } from '../docs/types/binary/deb/metadata.js';
 import { render as renderDeb } from '../docs/types/binary/deb/renderer.js';
+import { detect as detectDicom } from '../docs/types/binary/dicom/detect.js';
+import { extractMetadata as dicomMeta } from '../docs/types/binary/dicom/metadata.js';
+import { render as renderDicom } from '../docs/types/binary/dicom/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -481,6 +484,26 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /debian-binary/);
   assert.match(rendered, /control\.tar/);
   assert.match(rendered, /data\.tar/);
+}
+
+{
+  const data = await bytes('sample.dcm');
+  assert.equal(detectDicom({ filename: 'sample.dcm', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectDicom({ filename: 'sample.bin', mimeType: 'application/dicom', bytes: data, isBinary: true }), 0.98);
+  assert.ok(detectDicom({ filename: 'empty.dcm', bytes: new Uint8Array(0), isBinary: true }) > 0.5);
+  const rows = dicomMeta({ filename: 'sample.dcm', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'DICOM');
+  assert.equal(rows.Modality, 'CT - Computed Tomography');
+  assert.equal(rows.Rows, '512');
+  assert.equal(rows.Columns, '512');
+  assert.equal(rows.Dimensions, '512 x 512');
+  assert.equal(rows.Institution, 'File Viewer Demo Hospital');
+  assert.equal(rows['Patient name present'], 'yes');
+
+  const rendered = renderDicom({ filename: 'sample.dcm', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /Computed Tomography/);
+  assert.match(rendered, /Demo Hospital/);
+  assert.match(rendered, /Protected Health Information/);
 }
 
 console.log('metadata-owned: ok');

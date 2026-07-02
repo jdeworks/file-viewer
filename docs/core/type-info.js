@@ -73,6 +73,7 @@ const TYPE_INFO = {
   rdp: ['RDP connection file', 'used by Remote Desktop clients to store connection settings.', 'https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files'],
   pem: ['PEM certificate/key', 'used to wrap certificates, public keys, and private keys in base64 text.', 'https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail'],
   gamerom: ['Game ROM', 'used to store console cartridge images and metadata for emulators.', 'https://en.wikipedia.org/wiki/ROM_image'],
+  dicom: ['DICOM medical image', 'used for medical imaging studies from CT, MRI, X-ray, ultrasound, and related equipment.', 'https://www.dicomstandard.org/'],
   ruffle: ['Flash movie', 'used for SWF animation, games, and interactive Flash content.', 'https://en.wikipedia.org/wiki/SWF'],
   v86: ['PC disk image', 'used to boot legacy operating systems or disks in an x86 emulator.', 'https://en.wikipedia.org/wiki/Disk_image'],
   emulatorjs: ['Emulator ROM', 'used by web emulators to run supported console/game images.', 'https://emulatorjs.org/'],
@@ -114,6 +115,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   clip: 'clip',
   dbf: 'dbf',
   deb: 'deb',
+  dicom: 'dicom',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -141,6 +143,8 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   dbf: 'dbf',
   deb: 'deb',
   udeb: 'deb',
+  dcm: 'dicom',
+  dicom: 'dicom',
 };
 
 function fileExtension(intake) {
