@@ -2,7 +2,7 @@
 
 ## Current state
 
-All five formats share `docs/core/meshview.js`: a dependency-free canvas renderer using the painter's algorithm with flat shading, orthographic projection, and mouse/touch orbit. The toolbar already has:
+STL, OBJ, PLY, and GLTF/GLB share `docs/core/meshview.js`: a dependency-free canvas renderer using the painter's algorithm with flat shading, orthographic projection, and mouse/touch orbit. 3MF currently uses its own structured package preview. The mesh toolbar already has:
 
 - Global mesh color override (color picker)
 - **Select-mode toggle (Region / Face / Group)** in the toolbar — controls what a click selects

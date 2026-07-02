@@ -1,7 +1,7 @@
 // Shared 3D mesh viewer — renders a triangle mesh to a <canvas> in the parent pane with NO
 // dependency: each face is rotated, orthographically projected, flat-shaded by its normal, and
-// painted back-to-front (painter's algorithm). Drag (mouse/touch) to orbit. Used by the STL and
-// OBJ viewers (and any future mesh format) — each supplies a normalized model + an info string.
+// painted back-to-front (painter's algorithm). Drag (mouse/touch) to orbit. Used by the STL, OBJ,
+// PLY, and glTF/GLB viewers — each supplies a normalized model + an info string.
 //
 // model: { tris: [{ v: [[x,y,z],[x,y,z],[x,y,z]], n: [x,y,z], color?: [r,g,b,a] }], size, center }
 //
