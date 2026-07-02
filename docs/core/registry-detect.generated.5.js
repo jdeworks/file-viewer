@@ -3,6 +3,33 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_avro=(()=>{
+function hasAscii(b, off, s) {
+  if (off + s.length > b.length) return false;
+  for (let i = 0; i < s.length; i++) if (b[off + i] !== s.charCodeAt(i)) return false;
+  return true;
+}
+
+function hasExtension(intake, ...exts) {
+  const name = (intake.filename || '').toLowerCase();
+  return exts.some((e) => name.endsWith('.' + e));
+}
+
+function detect(intake) {
+  const b = intake.bytes;
+  if (!b || b.length < 4) return 0;
+
+  // Avro object container file magic: 0x4F 0x62 0x6A 0x01 = 'Obj\x01'
+  if (hasAscii(b, 0, 'Obj') && b[3] === 0x01) {
+    return hasExtension(intake, 'avro') ? 0.99 : 0.95;
+  }
+
+  if (hasExtension(intake, 'avro')) return 0.45;
+  return 0;
+}
+return detect;
+})();
+
 const detect_hdf5=(()=>{
 // HDF5 magic: 0x89 'H' 'D' 'F' '\r' '\n' 0x1a '\n' (8 bytes)
 const HDF5_MAGIC = [0x89, 0x48, 0x44, 0x46, 0x0d, 0x0a, 0x1a, 0x0a];
@@ -297,25 +324,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_pyc=(()=>{
-// Python bytecode: magic uint16 LE followed by \r\n at bytes [2-3]
-// Known magic ranges: 3000-3600 (Python 3.x), 62061-62211 (Python 2.7), etc.
-
-function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isPycExt = ext === 'pyc' || ext === 'pyo';
-
-  if (!b || b.length < 16) return isPycExt ? 0.5 : 0;
-
-  if (b[2] !== 0x0d || b[3] !== 0x0a) return isPycExt ? 0.3 : 0;
-
-  const magic = b[0] | (b[1] << 8);
-  const known = (magic >= 3000 && magic <= 3600) || (magic >= 20000 && magic <= 65000);
-  if (isPycExt) return known ? 0.99 : 0.75;
-  return known ? 0.85 : 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc};
+export const DETECTORS={"avro":detect_avro,"hdf5":detect_hdf5,"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti};

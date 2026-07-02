@@ -43,7 +43,7 @@ function decode(b, off, depth) {
     case 0xd0: return { val: b[off] > 127 ? b[off] - 256 : b[off], next: off + 1 };
     case 0xd1: { const v = r16(b, off); return { val: v > 32767 ? v - 65536 : v, next: off + 2 }; }
     case 0xd2: { const v = r32(b, off); return { val: v > 0x7fffffff ? v - 0x100000000 : v, next: off + 4 }; }
-    case 0xd3: return { val: r64(b, off), next: off + 8 };
+    case 0xd3: return { val: r64signed(b, off), next: off + 8 };
     case 0xd4: { const t = b[off++]; return { val: `<fixext1 type=${t}>`, next: off + 1 }; }
     case 0xd5: { const t = b[off++]; return { val: `<fixext2 type=${t}>`, next: off + 2 }; }
     case 0xd6: { const t = b[off++]; return { val: `<fixext4 type=${t}>`, next: off + 4 }; }
@@ -64,6 +64,15 @@ function r16(b, off) { return (b[off] << 8) | b[off + 1]; }
 function r32(b, off) { return ((b[off] << 24) | (b[off + 1] << 16) | (b[off + 2] << 8) | b[off + 3]) >>> 0; }
 function r64(b, off) {
   const hi = r32(b, off), lo = r32(b, off + 4);
+  return hi * 0x100000000 + lo;
+}
+
+// Signed 64-bit read (for msgpack int64, 0xd3). Keeps the high word sign-extended
+// (plain `<<`/`|` bitwise ops are 32-bit signed in JS) so negative values decode
+// correctly instead of always reading as a huge unsigned number.
+function r64signed(b, off) {
+  const hi = (b[off] << 24) | (b[off + 1] << 16) | (b[off + 2] << 8) | b[off + 3];
+  const lo = r32(b, off + 4);
   return hi * 0x100000000 + lo;
 }
 

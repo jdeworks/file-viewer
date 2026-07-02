@@ -2065,6 +2065,8 @@
     "file": "sample.nc",
     "label": "NetCDF Climate Dataset (demo)",
     "mime": "application/x-netcdf",
+    "type": "netcdf",
+    "binary": true,
     "category": "Binary",
     "categories": [
       "Binary"
@@ -2468,6 +2470,7 @@
     "file": "sample.msgpack",
     "label": "MessagePack data (demo)",
     "mime": "application/x-msgpack",
+    "binary": true,
     "category": "data",
     "categories": [
       "data",

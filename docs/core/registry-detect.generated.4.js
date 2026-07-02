@@ -5,13 +5,21 @@ function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCas
 
 const detect_netcdf=(()=>{
 function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  if (!intake.bytes || intake.bytes.length < 4) {
+    // No/short bytes to check magic against (e.g. a zero-byte upload, or a catalog
+    // pass that only has filename metadata) — fall back to the extension hint
+    // instead of unconditionally returning 0, same as the sibling hdf5 detector.
+    return hasExtension(intake, 'nc', 'nc4', 'netcdf') ? 0.6 : 0;
+  }
   const b = intake.bytes;
   // NetCDF-3 classic: "CDF\x01" or "CDF\x02"
   if (b[0] === 0x43 && b[1] === 0x44 && b[2] === 0x46 && (b[3] === 0x01 || b[3] === 0x02)) return 0.98;
   // NetCDF-4 (HDF5-based): HDF5 signature "\x89HDF\r\n\x1a\n"
+  // Score must beat the generic HDF5 detector's 0.95 default (an HDF5-signature file
+  // without an h5/hdf5/hdf/he5 extension) so a .nc/.nc4/.netcdf file routes here instead
+  // of being misclassified as plain HDF5.
   if (b[0] === 0x89 && b[1] === 0x48 && b[2] === 0x44 && b[3] === 0x46) {
-    if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.85;
+    if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.96;
   }
   if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.6;
   return 0;
@@ -301,31 +309,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_avro=(()=>{
-function hasAscii(b, off, s) {
-  if (off + s.length > b.length) return false;
-  for (let i = 0; i < s.length; i++) if (b[off + i] !== s.charCodeAt(i)) return false;
-  return true;
-}
-
-function hasExtension(intake, ...exts) {
-  const name = (intake.filename || '').toLowerCase();
-  return exts.some((e) => name.endsWith('.' + e));
-}
-
-function detect(intake) {
-  const b = intake.bytes;
-  if (!b || b.length < 4) return 0;
-
-  // Avro object container file magic: 0x4F 0x62 0x6A 0x01 = 'Obj\x01'
-  if (hasAscii(b, 0, 'Obj') && b[3] === 0x01) {
-    return hasExtension(intake, 'avro') ? 0.99 : 0.95;
-  }
-
-  if (hasExtension(intake, 'avro')) return 0.45;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet,"avro":detect_avro};
+export const DETECTORS={"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb,"pcap":detect_pcap,"xyz":detect_xyz,"shapefile":detect_shapefile,"wad":detect_wad,"bsp":detect_bsp,"cbor":detect_cbor,"arrow":detect_arrow,"cif":detect_cif,"parquet":detect_parquet};
