@@ -175,7 +175,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Apache Arrow / Feather](arrow.md) | `.arrow` `.feather` `.ipc` | Basic | None | download | — | Column types |
 | [Apache Avro](avro.md) | `.avro` | Full | None | download | — | Record decode |
 | [HDF5 Scientific](/) | `.h5` `.hdf5` `.hdf` `.he5` | Basic | None | download | — | Dataset contents |
-| [dBase / DBF](/) | `.dbf` | Full | None | download | — | Memo fields |
+| [dBase / DBF](dbf.md) | `.dbf` | Full | None | download | — | Memo fields |
 | [BSON](bson.md) | `.bson` | Full | None | download | — | Multi-doc |
 | [CBOR](cbor.md) | `.cbor` | Full | None | download | — | Tag display |
 | [MessagePack](/) | `.msgpack` `.mpk` | Full | None | download | — | Ext types |

@@ -20,6 +20,9 @@ import { render as renderCbor } from '../docs/types/binary/cbor/renderer.js';
 import { detect as detectJavaClass } from '../docs/types/binary/class/detect.js';
 import { extractMetadata as javaClassMeta } from '../docs/types/binary/class/metadata.js';
 import { render as renderJavaClass } from '../docs/types/binary/class/renderer.js';
+import { detect as detectDbf } from '../docs/types/binary/dbf/detect.js';
+import { extractMetadata as dbfMeta } from '../docs/types/binary/dbf/metadata.js';
+import { render as renderDbf } from '../docs/types/binary/dbf/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -438,6 +441,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const invalidMeta = javaClassMeta({ filename: 'bad.class', bytes: invalid, isBinary: true, size: invalid.length });
   assert.equal(metadataField(invalidMeta, 'Error'), 'Missing CAFEBABE class-file signature');
   assert.match(renderJavaClass({ filename: 'bad.class', bytes: invalid, isBinary: true, size: invalid.length }).bodyHtml, /Missing CAFEBABE/);
+}
+
+{
+  const data = await bytes('sample.dbf');
+  const rows = dbfMeta({ filename: 'sample.dbf', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'dBase / DBF');
+  assert.equal(rows.Version, 'dBASE III+');
+  assert.equal(rows.Records, '3');
+  assert.equal(rows.Fields, '4');
+  assert.equal(rows['Last update'], '2024-06-19');
+  assert.ok(detectDbf({ filename: 'sample.dbf', bytes: data, isBinary: true }) > 0.9);
+  assert.ok(detectDbf({ filename: 'sample.bin', mimeType: 'application/dbf', bytes: data, isBinary: true }) >= 0.9);
+
+  const rendered = renderDbf({ filename: 'sample.dbf', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /NAME/);
+  assert.match(rendered, /ACTIVE/);
+  assert.match(rendered, /Alice Johnson/);
+  assert.doesNotMatch(rendered, /\0/, 'DBF preview strips NUL-padded character fields');
 }
 
 console.log('metadata-owned: ok');

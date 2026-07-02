@@ -111,6 +111,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   xlsx: 'xlsx',
   zip: 'zip',
   clip: 'clip',
+  dbf: 'dbf',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -135,6 +136,7 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   mp3: 'mp3',
   zip: 'zip',
   clip: 'clip',
+  dbf: 'dbf',
 };
 
 function fileExtension(intake) {

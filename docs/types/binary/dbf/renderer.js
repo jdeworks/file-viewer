@@ -79,6 +79,10 @@ function parseFields(b, headerSize) {
   return fields;
 }
 
+function cleanText(raw) {
+  return new TextDecoder('ascii', { fatal: false }).decode(raw).replace(/\0+$/g, '').trim();
+}
+
 function renderRows(b, header, fields) {
   const { headerSize, recordSize, numRecords } = header;
   const MAX_ROWS = 20;
@@ -92,7 +96,7 @@ function renderRows(b, header, fields) {
     let fieldOff = rowOff + 1; // skip deletion flag
     for (const f of fields) {
       const raw = b.slice(fieldOff, fieldOff + f.length);
-      let val = new TextDecoder('ascii', { fatal: false }).decode(raw).trim();
+      let val = cleanText(raw);
       if (f.type === 'L') val = val === 'T' || val === 'Y' ? 'true' : val === 'F' || val === 'N' ? 'false' : val;
       cells.push(val);
       fieldOff += f.length;

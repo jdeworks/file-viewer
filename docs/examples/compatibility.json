@@ -4360,14 +4360,15 @@
       "previewDepth": "rich",
       "metadataDepth": "rich",
       "knownParserGaps": [
-        "Memo field (.dbt/.fpt) content not loaded — only field names shown",
+        "Memo field (.dbt/.fpt) content not loaded - only field names shown",
+        "Text decoding is ASCII-oriented and not codepage-aware",
         "Limited to first 20 records in preview"
       ],
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "dbf",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },

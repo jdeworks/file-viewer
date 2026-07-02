@@ -2475,6 +2475,8 @@
     "file": "sample.dbf",
     "label": "dBase DBF database (demo)",
     "mime": "application/dbf",
+    "type": "dbf",
+    "typeLabel": "dBase / DBF Database",
     "category": "data",
     "categories": [
       "data",

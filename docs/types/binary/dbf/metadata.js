@@ -4,13 +4,25 @@ const VERSION_NAMES = {
   0xf5: 'FoxPro (memo)',
 };
 
+function countFields(b, headerSize) {
+  let count = 0;
+  let off = 32;
+  while (off + 32 <= headerSize && off + 32 <= b.length) {
+    if (b[off] === 0x0d || b[off] === 0x00) break;
+    count += 1;
+    off += 32;
+    if (count >= 100) break;
+  }
+  return count;
+}
+
 export function extractMetadata(intake) {
   const b = intake.bytes;
   if (!b || b.length < 32) return {};
   const version = b[0];
   const numRecords = (b[4] | (b[5] << 8) | (b[6] << 16) | (b[7] << 24)) >>> 0;
   const headerSize = b[8] | (b[9] << 8);
-  const fieldCount = Math.max(0, Math.floor((headerSize - 32) / 32) - 1);
+  const fieldCount = countFields(b, headerSize);
   const year = b[1]; const month = b[2]; const day = b[3];
   const y = year < 100 ? (year < 50 ? 2000 + year : 1900 + year) : year;
   return {

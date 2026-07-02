@@ -419,7 +419,12 @@ export async function run(ctx) {
   if (dbfTypeId === 'dbf') pass('.dbf detected as dbf type'); else fail('dbf typeId: ' + dbfTypeId);
   const dbfText = await dbff.$eval('body', (el) => el.textContent);
   if (/DBF|dBase/i.test(dbfText)) pass('DBF badge shown'); else fail('dbf badge: ' + dbfText.slice(0, 300));
-  if (/NAME|CITY|Alice/i.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
+  if (/NAME|CITY|ACTIVE|Alice Johnson/i.test(dbfText) && !/\u0000/.test(dbfText)) pass('DBF fields and records shown'); else fail('dbf fields: ' + dbfText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const dbfMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Version\s*dBASE III\+/i.test(dbfMeta) && /Records\s*3/i.test(dbfMeta) && /Fields\s*4/i.test(dbfMeta) && /Last update\s*2024-06-19/i.test(dbfMeta)) pass('DBF metadata includes version, records, fields, and date'); else fail('dbf meta: ' + dbfMeta.replace(/\s+/g, ' ').slice(0, 260));
+  await page.click('#metaDrawer [data-close]');
 
   // ── MATLAB MAT-file ───────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

@@ -17,4 +17,10 @@ const clipInfo = getTypeInfo(clip, null, { filename: 'sample.clip' });
 assert.equal(clipInfo.name, 'Clip Studio Paint');
 assert.match(clipInfo.fileExamplesHref, /fileexamples\.com.*clip/i);
 
+const dbf = REGISTRY.find((type) => type.id === 'dbf');
+assert.ok(dbf, 'dbf type is registered');
+const dbfInfo = getTypeInfo(dbf, null, { filename: 'sample.dbf' });
+assert.equal(dbfInfo.name, 'dBase / DBF Database');
+assert.match(dbfInfo.fileExamplesHref, /fileexamples\.com.*dbf/i);
+
 console.log('type info: ok');

@@ -83,11 +83,11 @@ const detect_dbf=(()=>{
 const KNOWN_VERSIONS = new Set([0x02, 0x03, 0x04, 0x05, 0x07, 0x30, 0x31, 0x32, 0x7b, 0x82, 0x83, 0x8b, 0x8e, 0xcb, 0xf5]);
 
 function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isDbfExt = ext === 'dbf';
+  const { bytes: b } = intake;
+  const isDbfExt = hasExtension(intake, 'dbf');
+  const isDbfMime = mimeMatches(intake, 'dbf', 'dbase');
 
-  if (!b || b.length < 32) return isDbfExt ? 0.6 : 0;
+  if (!b || b.length < 32) return isDbfExt || isDbfMime ? 0.6 : 0;
 
   const version = b[0];
   const knownVersion = KNOWN_VERSIONS.has(version);
@@ -97,6 +97,7 @@ function detect(intake) {
   const structural = knownVersion && headerSize >= 32 && headerSize <= 65535 && recordSize >= 1 && recordSize <= 65535;
 
   if (isDbfExt) return structural ? 0.97 : knownVersion ? 0.80 : 0.65;
+  if (isDbfMime) return structural ? 0.90 : knownVersion ? 0.70 : 0.55;
   return structural ? 0.70 : 0;
 }
 return detect;
