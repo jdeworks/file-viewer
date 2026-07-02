@@ -739,4 +739,12 @@ export async function run(ctx) {
   if (ruffleTypeId === 'ruffle') pass('.swf detected as ruffle type'); else fail('swf typeId: ' + ruffleTypeId);
   const ruffleText = await page.$eval('#previewHost', (el) => el.textContent);
   if (/Ruffle/i.test(ruffleText)) pass('Ruffle security dialog shown'); else fail('swf dialog: ' + ruffleText.slice(0, 200));
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.img');
+  await page.waitForSelector('#previewHost', { timeout: 12000 });
+  const v86TypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (v86TypeId === 'v86') pass('.img detected as v86 type'); else fail('img typeId: ' + v86TypeId);
+  const v86Text = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/x86 Emulator \(v86\)/i.test(v86Text)) pass('v86 security dialog shown'); else fail('img dialog: ' + v86Text.slice(0, 200));
 }

@@ -94,6 +94,8 @@ import { detect as detectEmulatorJs } from '../docs/types/emulator/emulatorjs/de
 import { extractMetadata as emulatorJsMeta } from '../docs/types/emulator/emulatorjs/metadata.js';
 import { detect as detectRuffle } from '../docs/types/emulator/ruffle/detect.js';
 import { extractMetadata as ruffleMeta } from '../docs/types/emulator/ruffle/metadata.js';
+import { detect as detectV86 } from '../docs/types/emulator/v86/detect.js';
+import { extractMetadata as v86Meta } from '../docs/types/emulator/v86/metadata.js';
 import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
 import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
 import { detect as detectParquet } from '../docs/types/binary/parquet/detect.js';
@@ -1026,6 +1028,23 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   cwsBytes.set([0x43, 0x57, 0x53], 0); // CWS = zlib-compressed
   const cwsRows = await ruffleMeta({ bytes: cwsBytes });
   assert.equal(cwsRows.Compression, 'zlib');
+}
+
+{
+  const img = await bytes('sample.img');
+  assert.equal(detectV86({ filename: 'sample.img', bytes: img, isBinary: true }), 0.85);
+  assert.equal(detectV86({ filename: 'sample.iso', bytes: img, isBinary: true }), 0.80);
+  assert.equal(detectV86({ filename: 'sample.vhd', bytes: img, isBinary: true }), 0.75);
+  assert.equal(detectV86({ filename: 'sample.qcow2', bytes: img, isBinary: true }), 0.75);
+  assert.equal(detectV86({ filename: 'sample.img', bytes: img, isBinary: false }), 0); // text -> never a disk image
+  assert.equal(detectV86({ filename: 'sample.txt', bytes: img, isBinary: true }), 0);
+
+  const imgRows = await v86Meta({ filename: 'sample.img', bytes: img });
+  assert.equal(imgRows['Image type'], 'Floppy disk image (1.44MB)');
+  assert.match(imgRows.Size, /MB$/);
+
+  const isoRows = await v86Meta({ filename: 'sample.img.iso', bytes: new Uint8Array(2000000) });
+  assert.equal(isoRows['Image type'], 'CD-ROM image');
 }
 
 {
