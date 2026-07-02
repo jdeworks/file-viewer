@@ -314,11 +314,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] prproj | Adobe Premiere Project
 - [x] pyc | Python Bytecode
 - [x] qif | QIF Financial
-- [ ] raw | Plain text
-- [ ] rdp | RDP Connection
-- [ ] reg | Windows Registry
-- [ ] rpm | RPM Package
-- [ ] rtf | Rich Text Format
+- [x] raw | Plain text
+- [x] rdp | RDP Connection
+- [x] reg | Windows Registry
+- [x] rpm | RPM Package
+- [x] rtf | Rich Text Format
 - [ ] ruffle | Flash (SWF via Ruffle)
 - [ ] sarif | SARIF Security Report
 - [ ] sdf | SDF / MDL Molfile
