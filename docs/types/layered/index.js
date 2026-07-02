@@ -6,7 +6,7 @@ export default {
   detect,
   capabilities: {
     rawView: false,
-    preview: false,
+    preview: true,
     diff: false,
     magicSelector: false,
     screenshot: true,

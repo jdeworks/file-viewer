@@ -274,11 +274,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] kml | KML Map
 - [x] kmz | KMZ Map Archive
 - [x] kubeconfig | Kubernetes Config
-- [ ] layered | Layered Image
-- [ ] lmms | LMMS Project
-- [ ] lnk | Windows Shortcut (.lnk)
-- [ ] log | Log
-- [ ] lrf | Sony LRF (e-book)
+- [x] layered | Layered Image
+- [x] lmms | LMMS Project
+- [x] lnk | Windows Shortcut (.lnk)
+- [x] log | Log
+- [x] lrf | Sony LRF (e-book)
 - [ ] markdown | Markdown
 - [ ] mat | MATLAB MAT-file
 - [ ] mbox | Mailbox (mbox)
