@@ -1,6 +1,6 @@
 # ISO 9660 Disc Image
 
-> ISO disc image viewer — volume name, system identifier, sector size, file count, and directory listing.
+> ISO disc image viewer — Primary Volume Descriptor summary with volume name, system identifier, sector size, and volume descriptor list.
 
 ## Format Details
 
@@ -21,12 +21,12 @@
 | Volume size | ✅ | Logical block count × logical block size |
 | Logical block size | ✅ | Typically 2048 bytes |
 | Publisher / preparer | ✅ | From PVD fields |
-| File count | ✅ | Files in root directory listing |
-| Directory listing | ✅ | Root directory entries with sizes |
+| File count | ❌ | Directory records are not walked yet |
+| Directory listing | ❌ | Directory records are not walked yet |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Screenshot | ✅ | Available |
-| Metadata | ✅ | Volume name, size, system, file count |
+| Metadata | ⚠️ | Side panel currently reports format and volume ID; preview shows richer PVD fields |
 
 ### Edit
 | Capability | Status | Notes |
@@ -41,8 +41,8 @@
 ## Known Limitations
 
 - UDF (Universal Disk Format) filesystem is not parsed — ISO 9660 only
-- Cannot extract files from inside the ISO
-- Joliet / Rock Ridge extensions shown if present in PVD
+- Cannot list or extract files from inside the ISO
+- Joliet / Rock Ridge directory extensions are not parsed
 
 ## Gap Analysis
 

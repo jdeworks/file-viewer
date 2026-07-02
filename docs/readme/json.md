@@ -38,6 +38,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
+| Download as CSV | ✅ | Array-of-objects table, object key/value rows, or scalar value column |
 | Download as YAML | ✅ | Via vendored js-yaml |
 | Download pretty JSON | ✅ | 2-space indented |
 | Download minified JSON | ✅ | Single-line compact |
@@ -79,5 +80,4 @@ Many well-known JSON files get a Layer-3 plugin that adds a rich summary panel. 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Schema validation (JSON Schema) | High | Med | Validate against a schema; show errors inline |
-| Convert to CSV | Med | Easy | Flatten array-of-objects to tabular CSV |
 | JSON Pointer navigation | Low | Easy | Copy RFC 6901 pointer alongside JSONPath |

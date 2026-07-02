@@ -119,11 +119,11 @@ Completion gates:
 - [x] docs/readme/image.md
 - [x] docs/readme/ini.md
 - [x] docs/readme/ipa.md
-- [ ] docs/readme/ipynb.md
-- [ ] docs/readme/iso.md
-- [ ] docs/readme/iwork.md
-- [ ] docs/readme/java-class.md
-- [ ] docs/readme/json.md
+- [x] docs/readme/ipynb.md
+- [x] docs/readme/iso.md
+- [x] docs/readme/iwork.md
+- [x] docs/readme/java-class.md
+- [x] docs/readme/json.md
 - [ ] docs/readme/jsonl.md
 - [ ] docs/readme/kicad.md
 - [ ] docs/readme/kml.md
