@@ -51,4 +51,11 @@ assert.equal(dwgInfo.name, 'AutoCAD DWG drawing');
 assert.match(dwgInfo.description, /CAD workflows/);
 assert.match(dwgInfo.fileExamplesHref, /fileexamples\.com.*dwg/i);
 
+const exe = REGISTRY.find((type) => type.id === 'exe');
+assert.ok(exe, 'exe type is registered');
+const exeInfo = getTypeInfo(exe, null, { filename: 'sample.elf' });
+assert.equal(exeInfo.name, 'Executable binary');
+assert.match(exeInfo.description, /ELF, PE\/COFF, and Mach-O/);
+assert.match(exeInfo.fileExamplesHref, /fileexamples\.com.*exe/i);
+
 console.log('type info: ok');

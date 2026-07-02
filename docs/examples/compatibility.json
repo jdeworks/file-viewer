@@ -3417,7 +3417,7 @@
       "partialSamples": [],
       "realWorldQuality": "synthetic",
       "notes": "Parses ELF (Linux), PE32/PE32+ (Windows EXE/DLL), and Mach-O (macOS) binary headers.",
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "exe",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
@@ -3427,7 +3427,7 @@
         "Only reads first 4 bytes of 64-bit entry point",
         "No section listing"
       ],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

@@ -460,11 +460,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/dwg/metadata.js
 - [x] docs/types/binary/dwg/renderer.js
 - [x] docs/types/binary/dwg/settings.default.json
-- [ ] docs/types/binary/EDITOR.md
-- [ ] docs/types/binary/exe/detect.js
-- [ ] docs/types/binary/exe/index.js
-- [ ] docs/types/binary/exe/metadata.js
-- [ ] docs/types/binary/exe/renderer.js
+- [x] docs/types/binary/EDITOR.md
+- [x] docs/types/binary/exe/detect.js
+- [x] docs/types/binary/exe/index.js
+- [x] docs/types/binary/exe/metadata.js
+- [x] docs/types/binary/exe/renderer.js
 - [ ] docs/types/binary/exe/settings.default.json
 - [ ] docs/types/binary/exr/detect.js
 - [ ] docs/types/binary/exr/index.js

@@ -35,6 +35,9 @@ import { render as renderDmp } from '../docs/types/binary/dmp/renderer.js';
 import { detect as detectDwg } from '../docs/types/binary/dwg/detect.js';
 import { extractMetadata as dwgMeta } from '../docs/types/binary/dwg/metadata.js';
 import { render as renderDwg } from '../docs/types/binary/dwg/renderer.js';
+import { detect as detectExe } from '../docs/types/binary/exe/detect.js';
+import { extractMetadata as exeMeta } from '../docs/types/binary/exe/metadata.js';
+import { render as renderExe } from '../docs/types/binary/exe/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -66,6 +69,30 @@ function value(rows, label) {
   const row = rows.find((r) => r.label === label);
   assert.ok(row, `missing metadata row: ${label}`);
   return row.value;
+}
+
+function peFixture() {
+  const b = new Uint8Array(160);
+  b[0] = 0x4d; b[1] = 0x5a;
+  b[0x3c] = 0x40;
+  b[0x40] = 0x50; b[0x41] = 0x45;
+  b[0x44] = 0x64; b[0x45] = 0x86;
+  b[0x46] = 0x03;
+  b[0x54] = 0xf0;
+  b[0x56] = 0x02;
+  b[0x58] = 0x0b; b[0x59] = 0x02;
+  b[0x9e] = 0x03;
+  b[0xa0] = 0x40; b[0xa1] = 0x01;
+  return b;
+}
+
+function machoFixture() {
+  const b = new Uint8Array(32);
+  b[0] = 0xcf; b[1] = 0xfa; b[2] = 0xed; b[3] = 0xfe;
+  b[4] = 0x07; b[7] = 0x01;
+  b[12] = 0x02;
+  b[16] = 0x03;
+  return b;
 }
 
 function numberValue(rows, label) {
@@ -471,6 +498,37 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /ACTIVE/);
   assert.match(rendered, /Alice Johnson/);
   assert.doesNotMatch(rendered, /\0/, 'DBF preview strips NUL-padded character fields');
+}
+
+{
+  const elf = await bytes('sample.elf');
+  assert.equal(detectExe({ filename: 'sample.elf', mimeType: 'application/x-elf', bytes: elf, isBinary: true }), 0.99);
+  assert.equal(detectExe({ filename: 'sample.bin', bytes: elf, isBinary: true }), 0.98);
+  assert.ok(detectExe({ filename: 'empty.exe', bytes: new Uint8Array(0), isBinary: true }) > 0.5);
+
+  const elfRows = (await exeMeta({ filename: 'sample.elf', bytes: elf, isBinary: true, size: elf.length })).fields;
+  assert.equal(value(elfRows, 'Format'), 'ELF 64-bit');
+  assert.equal(value(elfRows, 'Architecture'), 'x86-64');
+  assert.equal(value(elfRows, 'Bit width'), '64-bit');
+
+  const pe = peFixture();
+  assert.equal(detectExe({ filename: 'demo.exe', mimeType: 'application/x-msdownload', bytes: pe, isBinary: true }), 0.99);
+  const peRows = (await exeMeta({ filename: 'demo.exe', bytes: pe, isBinary: true, size: pe.length })).fields;
+  assert.equal(value(peRows, 'Format'), 'PE32+ (EXE)');
+  assert.equal(value(peRows, 'Architecture'), 'x86-64 (AMD64)');
+  assert.equal(value(peRows, 'Bit width'), '64-bit');
+
+  const macho = machoFixture();
+  assert.equal(detectExe({ filename: 'demo.dylib', mimeType: 'application/x-mach-binary', bytes: macho, isBinary: true }), 0.99);
+  const machoRows = (await exeMeta({ filename: 'demo.dylib', bytes: macho, isBinary: true, size: macho.length })).fields;
+  assert.equal(value(machoRows, 'Format'), 'Mach-O 64-bit');
+  assert.equal(value(machoRows, 'Architecture'), 'x86-64');
+  assert.equal(value(machoRows, 'Bit width'), '64-bit');
+
+  const rendered = renderExe({ filename: 'sample.elf', bytes: elf, isBinary: true, size: elf.length }).bodyHtml;
+  assert.match(rendered, /ELF/);
+  assert.match(rendered, /x86-64/);
+  assert.match(rendered, /64-bit/);
 }
 
 {

@@ -22,7 +22,7 @@ function categoriesFor(ex) {
 }
 
 function isBinaryExample(ex) {
-  return !!ex.binary || /^(application\/(dicom|octet-stream|pdf|zip|x-7z-compressed|x-dmp|wasm|vnd|x-msdownload)|audio\/|font\/|image\/|model\/|video\/)/i.test(ex.mime || '');
+  return !!ex.binary || /^(application\/(dicom|octet-stream|pdf|zip|x-7z-compressed|x-dmp|x-elf|x-executable|x-msdownload|x-dosexec|wasm|vnd|x-mach-binary|x-sharedlib)|audio\/|font\/|image\/|model\/|video\/)/i.test(ex.mime || '');
 }
 
 function isEnhancedExample(ex) {

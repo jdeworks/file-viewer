@@ -11,6 +11,7 @@ const TYPE_INFO = {
   eml: ['EML email', 'used for single RFC 5322 email messages with headers and MIME bodies.', 'https://en.wikipedia.org/wiki/Email'],
   mbox: ['Mbox mailbox', 'used for storing multiple email messages in one mailbox file.', 'https://en.wikipedia.org/wiki/Mbox'],
   msg: ['Outlook MSG', 'used for Microsoft Outlook email messages and attachments.', 'https://en.wikipedia.org/wiki/Outlook.com'],
+  exe: ['Executable binary', 'used for native application and library binaries such as ELF, PE/COFF, and Mach-O files.', 'https://en.wikipedia.org/wiki/Executable'],
   ics: ['iCalendar', 'used for calendar events, invites, reminders, and recurring schedules.', 'https://en.wikipedia.org/wiki/ICalendar'],
   kubeconfig: ['Kubernetes config', 'used to describe clusters, users, contexts, and credentials for kubectl.', 'https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/'],
   yaml: ['YAML', 'used for human-readable configuration, manifests, and structured data.', 'https://yaml.org/'],
@@ -120,6 +121,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   dicom: 'dicom',
   dmp: 'dmp',
   dwg: 'dwg',
+  exe: 'exe',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -152,6 +154,11 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   dmp: 'dmp',
   mdmp: 'dmp',
   dwg: 'dwg',
+  elf: 'exe',
+  exe: 'exe',
+  dll: 'exe',
+  dylib: 'exe',
+  so: 'exe',
 };
 
 function fileExtension(intake) {
