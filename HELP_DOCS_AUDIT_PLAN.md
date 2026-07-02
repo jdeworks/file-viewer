@@ -689,14 +689,14 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/geo/renderer.js
 - [x] docs/types/geo/settings.default.json
 - [x] docs/types/geo/svg.html
-- [ ] docs/types/html/detect.js
-- [ ] docs/types/html/EDITOR.md
-- [ ] docs/types/html/htmldiff.js
-- [ ] docs/types/html/index.js
-- [ ] docs/types/html/metadata.js
-- [ ] docs/types/html/renderer.js
-- [ ] docs/types/html/settings.default.json
-- [ ] docs/types/html/wysiwyg-html.js
+- [x] docs/types/html/detect.js
+- [x] docs/types/html/EDITOR.md
+- [x] docs/types/html/htmldiff.js
+- [x] docs/types/html/index.js
+- [x] docs/types/html/metadata.js
+- [x] docs/types/html/renderer.js
+- [x] docs/types/html/settings.default.json
+- [x] docs/types/html/wysiwyg-html.js
 - [ ] docs/types/ics/detect.js
 - [ ] docs/types/ics/doc.html
 - [ ] docs/types/ics/EDITOR.md
