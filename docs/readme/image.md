@@ -19,9 +19,10 @@
 | SVG preview | ✅ | DOMPurify-sanitized, rendered in sandboxed iframe |
 | EXIF / metadata | ✅ | Date, camera, GPS, dimensions, color space |
 | ASCII art mode | ✅ | Convert to ASCII/block/braille art; mono or ANSI color |
-| HEIF/HEIC | ✅ | via vendored libheif.wasm |
-| TIFF | ⚠️ Partial | First page only via libheif; multi-page not supported |
-| JPEG XL | ⚠️ Partial | Detected, metadata shown; browser decoding varies |
+| Animated GIF | ✅ | Multi-frame GIFs get play/pause, scrubber, and frame-split tools |
+| HEIF/HEIC | ✅ | Dedicated HEIF renderer uses vendored libheif.js |
+| TIFF | ⚠️ Partial | Dedicated TIFF renderer handles supported pages separately from the base image renderer |
+| JPEG XL | ⚠️ Partial | Lazy JavaScript decoder attempts preview; download still works when decode fails |
 | Diff/compare | ❌ | Pixel-level diff not implemented |
 
 ### Edit
@@ -32,9 +33,9 @@
 | Background removal | ✅ | "✂ BG" button — click to sample color, flood-fill to transparent, tolerance slider; always exports as PNG |
 | Undo | ✅ | Per-action undo stack for text and draw operations |
 | Export format selector | ✅ | Choose PNG / JPEG / WebP / AVIF before editing |
-| Crop / resize | ❌ | Not yet implemented |
-| Color adjust (brightness/contrast) | ❌ | Not yet implemented |
-| Magic wand selection | ❌ | Global color-range select (not just flood-fill) not yet implemented |
+| Crop / resize | ✅ | Crop, resize, expand canvas, rotate, and flip tools are available for editable raster images |
+| Color adjust | ✅ | Brightness, contrast, saturation, hue, levels, curves, presets, and convolution filters |
+| Magic wand selection | ✅ | Selection tools include wand/marquee/ellipse/lasso plus cut/invert/move actions |
 
 ### Export
 | Feature | Status | Details |
@@ -56,10 +57,8 @@
 ## Gaps / Planned Improvements
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Crop tool | High | Canvas crop rectangle + download |
-| Resize (px / %) | High | Canvas resize with bilinear filtering |
 | Pixel-level diff | Medium | Highlight changed pixels between two images |
-| Color adjustments | Medium | Brightness, contrast, saturation via canvas filter API |
-| Multi-page TIFF | Medium | Need separate TIFF decoder |
+| Batch export / presets | Medium | Save repeatable image-edit presets or export multiple formats at once |
+| Multi-page TIFF polish | Medium | Dedicated TIFF path exists; broader TIFF feature coverage remains open |
 | JPEG XL decode | Low | Waiting for native browser support (Chrome flag exists) |
 | Layer support | Low | Multiple draw layers; complex |

@@ -1,12 +1,12 @@
 # INI / Config
 
-> Key-value pair table grouped by [sections]; tolerates `=` and `:` separators, `#`/`;` comments, and quoted values.
+> Key-value pair table grouped by [sections]; tolerates `=` and `:` separators, masks likely secrets, and exports JSON.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.ini`, `.cfg`, `.conf`, `.properties` |
+| Extension(s) | `.ini`, `.env`, `.cfg`, `.conf`, `.properties` |
 | MIME type | `text/plain` |
 | Binary / Text | Text |
 | Common use | Application configuration, Windows registry exports, Java properties, pip/git config |
@@ -20,6 +20,8 @@
 | Comment stripping | ✅ | `#` and `;` comment lines ignored |
 | Quoted value unescaping | ✅ | Single and double quotes stripped from values |
 | Both `=` and `:` separators | ✅ | Both assignment styles supported |
+| Secret masking | ✅ | Keys that look like secrets/tokens/passwords are redacted in preview and source summary |
+| Source jumps | ✅ | Key labels link into the redacted source preview |
 | Source view | ✅ | Monaco editor with INI syntax highlighting |
 | Text diff | ✅ | Standard line diff |
 | Metadata | ✅ | Key count, section count, comment count, duplicate key count |
@@ -34,7 +36,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Convert to JSON | ❌ | Not yet implemented |
+| Convert to JSON | ✅ | Export menu writes sections/global keys as JSON |
 
 ## Real-World Examples
 
@@ -49,6 +51,5 @@
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Export to JSON | Med | Easy | section → object, keys as fields |
-| `.env` specialized view | Med | Med | Redact SECRET/TOKEN/PASSWORD keys (security) |
+| `.env` specialized view | Med | Med | Dedicated env-focused layout and validation |
 | Multiline value support | Low | Med | `key = value \` continuation lines |

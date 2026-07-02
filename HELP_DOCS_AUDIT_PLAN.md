@@ -114,11 +114,11 @@ Completion gates:
 - [x] docs/readme/hl7.md
 - [x] docs/readme/html.md
 - [x] docs/readme/hydrogen.md
-- [ ] docs/readme/ico.md
-- [ ] docs/readme/ics.md
-- [ ] docs/readme/image.md
-- [ ] docs/readme/ini.md
-- [ ] docs/readme/ipa.md
+- [x] docs/readme/ico.md
+- [x] docs/readme/ics.md
+- [x] docs/readme/image.md
+- [x] docs/readme/ini.md
+- [x] docs/readme/ipa.md
 - [ ] docs/readme/ipynb.md
 - [ ] docs/readme/iso.md
 - [ ] docs/readme/iwork.md
