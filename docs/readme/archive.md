@@ -45,12 +45,13 @@
 
 ## Real-World Examples
 
-Archive examples are covered by the ZIP-specific samples until broader archive samples are added.
+- [`Sample.7z`](../examples/Sample.7z) — compact 7z sample for archive detection/listing
+- [`sample.zip`](../examples/sample.zip) — ZIP sample handled by the dedicated ZIP viewer
 
 ## Known Limitations
 
 - Password-protected archives cannot be listed (no decryption)
-- `enableArchiveWasm` setting must be turned on in Settings → Advanced on first use (~1 MB WASM download)
+- `enableArchiveWasm` setting must be turned on in Settings -> Advanced on first use (~1 MB WASM download)
 - Entry content cannot be previewed (no entry-level navigation like ZIP)
 
 ## Gap Analysis

@@ -26,7 +26,7 @@
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Screenshot | ✅ | Preview screenshot available |
-| Metadata | ✅ | DEX count, ABIs, asset count, file count |
+| Metadata | ✅ | Format surfaced in metadata; detailed package counts are in the preview |
 
 ### Edit
 | Capability | Status | Notes |
@@ -42,6 +42,10 @@
 
 - `AndroidManifest.xml` is binary-encoded XML — package name / version not parsed
 - No in-browser APK decompiler or smali viewer
+
+## Real-World Examples
+
+- [`sample.apk`](../examples/sample.apk) — compact APK-like ZIP sample for package inventory checks
 
 ## Gap Analysis
 

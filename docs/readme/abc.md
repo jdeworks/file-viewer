@@ -1,6 +1,6 @@
 # ABC Music Notation
 
-> ABC tune list viewer — parses tune headers (title, composer, key, meter, tempo) and displays structured tune cards.
+> ABC tune viewer — parses tune headers, renders sheet music with ABCJS, and can export rendered scores as PNG.
 
 ## Format Details
 
@@ -19,9 +19,11 @@
 | Tune list | ✅ | Each `X:` tune shown as a card |
 | Header fields | ✅ | Title, Composer, Key, Meter, Tempo, Rhythm, Origin, Notes |
 | Multi-tune files | ✅ | All tunes in a file shown separately |
+| Sheet music rendering | ✅ | Lazy-loads ABCJS and renders visible tunes as SVG |
+| Large tune sets | ✅ | Shows the first 30 tunes to keep the preview responsive |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Tune count, keys used, unique composers |
+| Metadata | ✅ | Tune count plus first title, composer, key, and meter |
 
 ### Edit
 | Capability | Status | Notes |
@@ -33,17 +35,22 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
+| Export rendered score as PNG | ✅ | Per-tune PNG button after notation renders |
 | Export as MIDI | ❌ | Not yet implemented |
+
+## Real-World Examples
+
+- [`sample.abc`](../examples/sample.abc) — sample ABC tune file
 
 ## Known Limitations
 
-- Music notation (staffs, notes) is not rendered — header inspection only
+- Score rendering depends on the bundled ABCJS vendor file loading successfully
+- Only the first 30 tunes are rendered in very large ABC files
 - Playback is not supported
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Sheet music rendering | High | Hard | Requires ABCJS or similar library (~300 KB) |
 | MIDI playback | Med | Hard | Requires ABCJS with MIDI synth; significant size |
-| Export as PDF score | Low | Hard | Requires rendering first |
+| Export as PDF score | Low | Hard | Can build on the rendered SVG path |

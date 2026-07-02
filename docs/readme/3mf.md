@@ -1,6 +1,6 @@
 # 3MF — 3D Manufacturing Format
 
-> A modern 3D print format that carries colors, materials, and metadata inside a ZIP container — richer than STL.
+> A modern 3D print format that carries objects, materials, metadata, and thumbnails inside a ZIP container — richer than STL.
 
 ## Format Details
 
@@ -18,22 +18,24 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| WebGL 3D render | ✅ | Orbit / zoom / pan controls |
-| Per-group color display | ✅ | Material groups rendered in assigned colors |
-| Auto-center and fit | ✅ | Mesh auto-scaled to fill viewport |
-| Metadata extraction | ✅ | Title, designer, description from 3MF XML |
+| Package parse | ✅ | Reads the `3D/3dmodel.model` XML from the ZIP container |
+| Object table | ✅ | Lists object IDs, names, and object types |
+| Material list | ✅ | Shows base material names and display colors |
+| Embedded thumbnail | ✅ | Displays a bundled thumbnail PNG when present |
+| Metadata extraction | ✅ | Title, designer, unit, objects, materials, and thumbnail presence |
+| Mesh render | ❌ | Current 3MF view is structured package metadata, not the shared mesh canvas |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Per-material color picker | ✅ | Click face group → floating color wheel |
+| Source editing | ❌ | Binary ZIP container |
 | Geometry editing | ❌ | Mesh vertices not editable |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Export as PLY | ✅ | Per-triangle colors baked in |
+| Export as PLY | ❌ | 3MF mesh extraction is not wired to the mesh exporter |
 | Re-export as 3MF | ❌ | Color edits cannot be saved back to 3MF |
 
 ## Known-File Enhancement
@@ -46,14 +48,15 @@ No known-file plugin — 3MF files are treated generically by filename.
 
 ## Known Limitations
 
-- Re-export as 3MF is not supported; color edits can only be exported via PLY
+- Re-export as 3MF is not supported
+- Mesh geometry is not rendered yet; the current preview focuses on package contents and metadata
 - Texture maps referenced inside the 3MF package are not displayed
-- Embedded thumbnail preview from the 3MF package is not surfaced separately
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Mesh rendering | High | Hard | Parse vertices/triangles and feed the shared mesh viewer |
+| Export as PLY / OBJ / STL | High | Med | Depends on mesh extraction from the 3MF XML |
 | Re-export as 3MF with edited colors | High | Hard | Requires rebuilding the ZIP + XML structure |
 | Texture / UV map rendering | Med | Hard | Textures are bundled inside the ZIP package |
-| Metadata panel in sidebar | Low | Easy | Title, designer, description already parsed |

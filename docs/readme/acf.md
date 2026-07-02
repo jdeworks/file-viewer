@@ -45,6 +45,11 @@
 - VDF files with non-AppState root structures may show partial info
 - Nested sub-blocks beyond `InstalledDepots` and `UserConfig` are not rendered
 
+## Real-World Examples
+
+- [`sample.acf`](../examples/sample.acf) — compact sample Steam app manifest
+- [`appmanifest_570.acf`](../examples/appmanifest_570.acf) — Dota 2-style Steam manifest sample
+
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |

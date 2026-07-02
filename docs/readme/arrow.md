@@ -1,6 +1,6 @@
 # Apache Arrow / Feather
 
-> Apache Arrow IPC and Feather v1/v2 viewer — schema with column names and types, row count, and record batch summary.
+> Apache Arrow IPC and Feather viewer — lightweight file identification plus heuristic field-name extraction for Arrow IPC footers.
 
 ## Format Details
 
@@ -16,16 +16,17 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Schema | ✅ | Column names and Arrow data types |
-| Row count | ✅ | Total rows across all record batches |
-| Column count | ✅ | Number of columns |
-| Record batches | ✅ | Batch count and metadata |
-| Feather v1/v2 detection | ✅ | Magic bytes distinguish Feather from Arrow IPC |
-| Nullable flags | ✅ | Per-column nullability |
-| Dictionary types | ✅ | Dictionary-encoded columns identified |
+| Format detection | ✅ | Detects Arrow IPC and Feather v1 magic bytes |
+| File info | ✅ | Format, file size, and Arrow footer size when readable |
+| Feather v1 counts | ✅ | Reads v1 row and column counts from the header |
+| Field-name hints | ✅ | Heuristically extracts printable field-name strings from Arrow IPC footer bytes |
+| Schema types | ❌ | Full FlatBuffers schema decoding is not implemented |
+| Record batches | ❌ | Batch metadata is not decoded |
+| Nullable flags | ❌ | Per-column nullability is not decoded |
+| Dictionary types | ❌ | Dictionary-encoded column details are not decoded |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Schema, row count, column count |
+| Metadata | ✅ | Format and file size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -39,12 +40,18 @@
 
 ## Known Limitations
 
-- Column data is not shown — schema and statistics only
+- Arrow IPC field names are heuristic and can include false positives from FlatBuffers strings
+- Column data is not shown — current output is limited to file info and heuristic field-name hints
 - Compressed record batches (LZ4/Zstd) may not be decompressed
+
+## Real-World Examples
+
+- [`sample.arrow`](../examples/sample.arrow) — compact Arrow IPC demo file
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Full FlatBuffers schema parser | High | Hard | Decode real column types, nullability, dictionaries, and batches |
 | First N rows preview | Med | Med | Decode first batch values for tabular preview |
 | Export schema as JSON | Low | Easy | Column names/types to JSON |

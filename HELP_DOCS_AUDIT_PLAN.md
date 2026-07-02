@@ -1,0 +1,3459 @@
+# General Lane Full Audit Plan
+
+This plan is intentionally deterministic. The audit runner reads only checkbox lines between the section markers below, so every covered file/type/example has to be explicitly checked off.
+
+## How To Work
+
+1. Run `node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5`.
+2. Work the next five unchecked lines that it prints.
+3. Mark a line `[x]` only after the matching item was verified and any fix was made.
+4. Repeat until the script exits with `audit_unchecked=0`.
+
+Use section filters when a batch needs a narrower lane, for example `--section=examples --limit=5`.
+
+## /goal Prompt
+
+```text
+Audit and complete the file-viewer general-lane docs, startup, and capabilities work using HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth.
+
+Operating loop:
+- Start each batch with: node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5
+- Work only the next unchecked items printed by that command, unless a blocker requires a directly related dependency.
+- Mark an item [x] only after verifying the file/type/example/capability actually works or after documenting and fixing the concrete gap.
+- Keep batches small enough that the next command output stays useful; do not rely on memory or prompt matching for coverage.
+
+Required work tracks:
+- Help/docs audit: every docs/readme markdown file must be opened, links checked, stale feature text updated, and help-overlay behavior verified where relevant.
+- Type and capability audit: every registered base type and known plugin must be checked against docs, detection, icon/capability metadata, and showcase coverage.
+- Example audit: every docs/examples/index.json entry must be checked for file existence, catalog metadata, capability/icon representation, and ability to open through the app path.
+- Special example audit: known/enhanced/partial/tool/source/license/code/config/security/build/emulator cases need extra validation against detection and UI behavior.
+- Startup polish: continue reducing and documenting startup/network/service-worker costs with measured traces, not guesswork.
+- Capabilities showcase: implement or finish a lightweight showcase/list that can be loaded from compact metadata and supports sample selection without loading heavyweight viewer code first.
+
+Completion gates:
+- node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md exits 0 and reports audit_unchecked=0.
+- Deterministic generated assets are up to date.
+- Startup trace/current network behavior is documented in the plan or linked audit notes.
+- ./scripts/check.sh --fast passes.
+- Commit and push the final checkpoint.
+```
+
+## Audit Sections
+
+### Help Markdown Files
+
+<!-- AUDIT_SECTION readme-docs START -->
+- [x] docs/readme/3d.md
+- [x] docs/readme/3mf.md
+- [x] docs/readme/abc.md
+- [x] docs/readme/acf.md
+- [x] docs/readme/als.md
+- [x] docs/readme/apk.md
+- [x] docs/readme/archive.md
+- [x] docs/readme/arrow.md
+- [x] docs/readme/asciiart.md
+- [x] docs/readme/audio.md
+- [ ] docs/readme/avro.md
+- [ ] docs/readme/bio.md
+- [ ] docs/readme/blend.md
+- [ ] docs/readme/bson.md
+- [ ] docs/readme/bsp.md
+- [ ] docs/readme/cbor.md
+- [ ] docs/readme/chat.md
+- [ ] docs/readme/cif.md
+- [ ] docs/readme/class.md
+- [ ] docs/readme/clip.md
+- [ ] docs/readme/code.md
+- [ ] docs/readme/comic.md
+- [ ] docs/readme/crash.md
+- [ ] docs/readme/csv.md
+- [ ] docs/readme/database.md
+- [ ] docs/readme/dbf.md
+- [ ] docs/readme/deb.md
+- [ ] docs/readme/dicom.md
+- [ ] docs/readme/djvu.md
+- [ ] docs/readme/dmp.md
+- [ ] docs/readme/docker-compose.md
+- [ ] docs/readme/dockerfile.md
+- [ ] docs/readme/docx.md
+- [ ] docs/readme/dwg.md
+- [ ] docs/readme/dxf.md
+- [ ] docs/readme/ebook.md
+- [ ] docs/readme/editorconfig.md
+- [ ] docs/readme/email.md
+- [ ] docs/readme/eml.md
+- [ ] docs/readme/emulatorjs.md
+- [ ] docs/readme/env.md
+- [ ] docs/readme/epub.md
+- [ ] docs/readme/excel.md
+- [ ] docs/readme/exe.md
+- [ ] docs/readme/exr.md
+- [ ] docs/readme/f3d.md
+- [ ] docs/readme/fb2.md
+- [ ] docs/readme/fbx.md
+- [ ] docs/readme/fits.md
+- [ ] docs/readme/font.md
+- [ ] docs/readme/gamerom.md
+- [ ] docs/readme/gcode.md
+- [ ] docs/readme/geo.md
+- [ ] docs/readme/geojson.md
+- [ ] docs/readme/gff.md
+- [ ] docs/readme/gitattributes.md
+- [ ] docs/readme/gitignore.md
+- [ ] docs/readme/gltf.md
+- [ ] docs/readme/guitar-pro.md
+- [ ] docs/readme/har.md
+- [ ] docs/readme/hdf5.md
+- [ ] docs/readme/heif.md
+- [ ] docs/readme/hl7.md
+- [ ] docs/readme/html.md
+- [ ] docs/readme/hydrogen.md
+- [ ] docs/readme/ico.md
+- [ ] docs/readme/ics.md
+- [ ] docs/readme/image.md
+- [ ] docs/readme/ini.md
+- [ ] docs/readme/ipa.md
+- [ ] docs/readme/ipynb.md
+- [ ] docs/readme/iso.md
+- [ ] docs/readme/iwork.md
+- [ ] docs/readme/java-class.md
+- [ ] docs/readme/json.md
+- [ ] docs/readme/jsonl.md
+- [ ] docs/readme/kicad.md
+- [ ] docs/readme/kml.md
+- [ ] docs/readme/kmz.md
+- [ ] docs/readme/kubeconfig.md
+- [ ] docs/readme/layered.md
+- [ ] docs/readme/lmms.md
+- [ ] docs/readme/lnk.md
+- [ ] docs/readme/log.md
+- [ ] docs/readme/lrf.md
+- [ ] docs/readme/markdown.md
+- [ ] docs/readme/mat.md
+- [ ] docs/readme/MATRIX.md
+- [ ] docs/readme/mbox.md
+- [ ] docs/readme/mbtiles.md
+- [ ] docs/readme/mcp-config.md
+- [ ] docs/readme/mcworld.md
+- [ ] docs/readme/media.md
+- [ ] docs/readme/midi.md
+- [ ] docs/readme/mobi.md
+- [ ] docs/readme/msg.md
+- [ ] docs/readme/msgpack.md
+- [ ] docs/readme/mt940.md
+- [ ] docs/readme/musicxml.md
+- [ ] docs/readme/netcdf.md
+- [ ] docs/readme/nifti.md
+- [ ] docs/readme/npy.md
+- [ ] docs/readme/nupkg.md
+- [ ] docs/readme/obj.md
+- [ ] docs/readme/odf.md
+- [ ] docs/readme/office.md
+- [ ] docs/readme/ofx.md
+- [ ] docs/readme/parquet.md
+- [ ] docs/readme/patch.md
+- [ ] docs/readme/pcap.md
+- [ ] docs/readme/pdb.md
+- [ ] docs/readme/pdf.md
+- [ ] docs/readme/pem.md
+- [ ] docs/readme/plist.md
+- [ ] docs/readme/ply.md
+- [ ] docs/readme/postscript.md
+- [ ] docs/readme/pptx.md
+- [ ] docs/readme/procreate.md
+- [ ] docs/readme/prproj.md
+- [ ] docs/readme/pyc.md
+- [ ] docs/readme/qif.md
+- [ ] docs/readme/raw.md
+- [ ] docs/readme/rdp.md
+- [ ] docs/readme/reg.md
+- [ ] docs/readme/rpm.md
+- [ ] docs/readme/rtf.md
+- [ ] docs/readme/ruffle.md
+- [ ] docs/readme/sarif.md
+- [ ] docs/readme/sdf.md
+- [ ] docs/readme/shapefile.md
+- [ ] docs/readme/sketch.md
+- [ ] docs/readme/sqlite.md
+- [ ] docs/readme/ssh-config.md
+- [ ] docs/readme/step.md
+- [ ] docs/readme/stl.md
+- [ ] docs/readme/strings.md
+- [ ] docs/readme/subtitle.md
+- [ ] docs/readme/TEMPLATE.md
+- [ ] docs/readme/text.md
+- [ ] docs/readme/tiff.md
+- [ ] docs/readme/toml.md
+- [ ] docs/readme/torrent.md
+- [ ] docs/readme/url.md
+- [ ] docs/readme/v86.md
+- [ ] docs/readme/vcard.md
+- [ ] docs/readme/video.md
+- [ ] docs/readme/wad.md
+- [ ] docs/readme/wasm.md
+- [ ] docs/readme/xlsx.md
+- [ ] docs/readme/xml.md
+- [ ] docs/readme/xyz.md
+- [ ] docs/readme/yaml.md
+- [ ] docs/readme/zip.md
+<!-- AUDIT_SECTION readme-docs END -->
+
+### Registered Base Types
+
+<!-- AUDIT_SECTION base-types START -->
+- [ ] 3mf | 3D Manufacturing Format
+- [ ] abc | ABC Music Notation
+- [ ] acf | Steam App Manifest (ACF)
+- [ ] als | Ableton Live Set
+- [ ] apk | Android Package (APK/AAB)
+- [ ] archive | Archive
+- [ ] arrow | Apache Arrow / Feather
+- [ ] asciiart | ASCII / ANSI Art
+- [ ] avro | Apache Avro
+- [ ] bio | Bioinformatics (FASTA/FASTQ/VCF)
+- [ ] blend | Blender 3D Scene
+- [ ] bson | BSON (Binary JSON)
+- [ ] bsp | BSP Game Map
+- [ ] cbor | CBOR Binary Data
+- [ ] chat | Chat Export (WhatsApp / Telegram / Discord)
+- [ ] cif | CIF Crystallographic Data
+- [ ] clip | Clip Studio Paint
+- [ ] code | Code
+- [ ] comic | Comic book
+- [ ] crash | Crash Report
+- [ ] csv | CSV / TSV
+- [ ] dbf | dBase / DBF Database
+- [ ] deb | Debian Package
+- [ ] dicom | DICOM Medical Image (.dcm)
+- [ ] djvu | DjVu Document
+- [ ] dmp | Windows Minidump (.dmp)
+- [ ] docker-compose | Docker Compose
+- [ ] dockerfile | Dockerfile
+- [ ] docx | Word
+- [ ] dwg | AutoCAD DWG Drawing
+- [ ] dxf | AutoCAD Drawing (.dxf)
+- [ ] editorconfig | EditorConfig
+- [ ] eml | Email
+- [ ] emulatorjs | Console ROM (EmulatorJS)
+- [ ] env | Environment Variables
+- [ ] epub | E-book
+- [ ] exe | Executable (ELF / PE / Mach-O)
+- [ ] exr | OpenEXR Image
+- [ ] f3d | Fusion 360
+- [ ] fb2 | FictionBook (FB2)
+- [ ] fbx | FBX 3D Animation
+- [ ] fits | FITS Astronomy Image
+- [ ] font | Font
+- [ ] gamerom | Game ROM Header
+- [ ] gcode | G-code (3D Print)
+- [ ] geo | Map (GeoJSON/GPX)
+- [ ] gff | GFF/GTF Genomic
+- [ ] gitattributes | Git Attributes
+- [ ] gitignore | .gitignore / ignore rules
+- [ ] gltf | 3D model (glTF)
+- [ ] guitar-pro | Guitar Pro Tab
+- [ ] har | HTTP Archive (HAR)
+- [ ] hdf5 | HDF5 Scientific Data
+- [ ] heif | HEIC/HEIF Image
+- [ ] hl7 | HL7 v2 Health Message
+- [ ] html | HTML
+- [ ] hydrogen | Hydrogen Drum Machine
+- [ ] ico | Icon File
+- [ ] ics | Calendar
+- [ ] image | Image
+- [ ] ini | Config (INI/env)
+- [ ] ipa | iOS App (IPA)
+- [ ] ipynb | Jupyter Notebook
+- [ ] iso | ISO 9660 Disc Image
+- [ ] iwork | Apple iWork
+- [ ] java-class | Java Class
+- [ ] json | JSON
+- [ ] jsonl | JSON Lines (JSONL)
+- [ ] kicad | KiCad EDA File
+- [ ] kml | KML Map
+- [ ] kmz | KMZ Map Archive
+- [ ] kubeconfig | Kubernetes Config
+- [ ] layered | Layered Image
+- [ ] lmms | LMMS Project
+- [ ] lnk | Windows Shortcut (.lnk)
+- [ ] log | Log
+- [ ] lrf | Sony LRF (e-book)
+- [ ] markdown | Markdown
+- [ ] mat | MATLAB MAT-file
+- [ ] mbox | Mailbox (mbox)
+- [ ] mbtiles | MBTiles Map Tileset
+- [ ] mcp-config | MCP Server Config
+- [ ] mcworld | Minecraft World (.mcworld)
+- [ ] media | Audio / Video
+- [ ] midi | MIDI Sequence
+- [ ] mobi | Kindle / MOBI
+- [ ] msg | Outlook Email
+- [ ] msgpack | MessagePack
+- [ ] mt940 | MT940 Bank Statement
+- [ ] musicxml | MusicXML Score
+- [ ] netcdf | NetCDF Scientific Data (.nc)
+- [ ] nifti | NIfTI
+- [ ] npy | NumPy Array (.npy/.npz)
+- [ ] nupkg | Package (NuGet/VSIX/Wheel/JAR)
+- [ ] obj | 3D model (OBJ)
+- [ ] odf | OpenDocument
+- [ ] ofx | OFX / QFX Financial
+- [ ] parquet | Apache Parquet
+- [ ] patch | Patch / Diff
+- [ ] pcap | Network Capture (.pcap)
+- [ ] pdb | Protein Structure (.pdb)
+- [ ] pdf | PDF
+- [ ] pem | Certificate / Key (PEM/DER)
+- [ ] plist | Property List
+- [ ] ply | 3D model (PLY)
+- [ ] postscript | PostScript / EPS
+- [ ] pptx | PowerPoint
+- [ ] procreate | Procreate painting
+- [ ] proto | Protocol Buffer
+- [ ] prproj | Adobe Premiere Project
+- [ ] pyc | Python Bytecode
+- [ ] qif | QIF Financial
+- [ ] raw | Plain text
+- [ ] rdp | RDP Connection
+- [ ] reg | Windows Registry
+- [ ] rpm | RPM Package
+- [ ] rtf | Rich Text Format
+- [ ] ruffle | Flash (SWF via Ruffle)
+- [ ] sarif | SARIF Security Report
+- [ ] sdf | SDF / MDL Molfile
+- [ ] shapefile | ESRI Shapefile (.shp)
+- [ ] sketch | Sketch Design File
+- [ ] sqlite | SQLite database
+- [ ] ssh-config | SSH Config
+- [ ] step | STEP CAD Exchange (ISO 10303-21)
+- [ ] stl | 3D model (STL)
+- [ ] strings | Localization Strings
+- [ ] subtitle | Subtitles
+- [ ] svg | SVG image
+- [ ] thrift | Apache Thrift
+- [ ] tiff | TIFF image
+- [ ] toml | TOML
+- [ ] torrent | Torrent
+- [ ] url | URL Inspector
+- [ ] v86 | x86 Disk Image (v86)
+- [ ] vcard | Contacts (vCard)
+- [ ] wad | Doom WAD Game Archive
+- [ ] wasm | WebAssembly Binary
+- [ ] xlsx | Spreadsheet
+- [ ] xml | XML
+- [ ] xyz | Molecular Structure (.xyz)
+- [ ] yaml | YAML
+- [ ] zip | Archive
+<!-- AUDIT_SECTION base-types END -->
+
+### Known Plugins
+
+<!-- AUDIT_SECTION known-plugins START -->
+- [ ] docs/types/text/ini/known/airflow
+- [ ] docs/types/text/ini/known/alembic
+- [ ] docs/types/text/ini/known/aws-config
+- [ ] docs/types/text/ini/known/aws-credentials
+- [ ] docs/types/text/ini/known/flake8
+- [ ] docs/types/text/ini/known/forgejo-config
+- [ ] docs/types/text/ini/known/glances-config
+- [ ] docs/types/text/ini/known/grafana-ini
+- [ ] docs/types/text/ini/known/netdata-config
+- [ ] docs/types/text/ini/known/odoo-conf
+- [ ] docs/types/text/ini/known/php-ini
+- [ ] docs/types/text/ini/known/podman-quadlet
+- [ ] docs/types/text/ini/known/pylintrc
+- [ ] docs/types/text/ini/known/radicale-config
+- [ ] docs/types/text/ini/known/sabnzbd-config
+- [ ] docs/types/text/ini/known/setup-cfg
+- [ ] docs/types/text/ini/known/wandb-config
+- [ ] docs/types/text/json/known/actual-budget-config
+- [ ] docs/types/text/json/known/angular
+- [ ] docs/types/text/json/known/apollo
+- [ ] docs/types/text/json/known/app-json
+- [ ] docs/types/text/json/known/appsettings
+- [ ] docs/types/text/json/known/avro-schema
+- [ ] docs/types/text/json/known/babel
+- [ ] docs/types/text/json/known/babelrc
+- [ ] docs/types/text/json/known/biome
+- [ ] docs/types/text/json/known/bruno
+- [ ] docs/types/text/json/known/capacitor
+- [ ] docs/types/text/json/known/cdk-json
+- [ ] docs/types/text/json/known/cmake-presets
+- [ ] docs/types/text/json/known/commitlint
+- [ ] docs/types/text/json/known/composer-json
+- [ ] docs/types/text/json/known/composer-lock
+- [ ] docs/types/text/json/known/cyclonedx-sbom
+- [ ] docs/types/text/json/known/deno
+- [ ] docs/types/text/json/known/devbox-json
+- [ ] docs/types/text/json/known/devcontainer
+- [ ] docs/types/text/json/known/dotnet-global
+- [ ] docs/types/text/json/known/dprint
+- [ ] docs/types/text/json/known/eas-json
+- [ ] docs/types/text/json/known/elm-json
+- [ ] docs/types/text/json/known/eslint
+- [ ] docs/types/text/json/known/expo
+- [ ] docs/types/text/json/known/filebrowser-config
+- [ ] docs/types/text/json/known/firebase
+- [ ] docs/types/text/json/known/gcp-service-account
+- [ ] docs/types/text/json/known/ghost-config
+- [ ] docs/types/text/json/known/google-services
+- [ ] docs/types/text/json/known/grafana-dashboard
+- [ ] docs/types/text/json/known/graphql-config
+- [ ] docs/types/text/json/known/growthbook
+- [ ] docs/types/text/json/known/har
+- [ ] docs/types/text/json/known/husky
+- [ ] docs/types/text/json/known/ionic-config
+- [ ] docs/types/text/json/known/jellyseerr-config
+- [ ] docs/types/text/json/known/jest
+- [ ] docs/types/text/json/known/jsconfig
+- [ ] docs/types/text/json/known/kavita-config
+- [ ] docs/types/text/json/known/keycloak-realm
+- [ ] docs/types/text/json/known/knip
+- [ ] docs/types/text/json/known/launch-settings
+- [ ] docs/types/text/json/known/lerna
+- [ ] docs/types/text/json/known/lighthouserc
+- [ ] docs/types/text/json/known/lint-staged
+- [ ] docs/types/text/json/known/markdownlint
+- [ ] docs/types/text/json/known/mattermost-config
+- [ ] docs/types/text/json/known/mcp-config
+- [ ] docs/types/text/json/known/mintlify
+- [ ] docs/types/text/json/known/mocha
+- [ ] docs/types/text/json/known/ncurc
+- [ ] docs/types/text/json/known/nest-cli
+- [ ] docs/types/text/json/known/netbird-config
+- [ ] docs/types/text/json/known/nx
+- [ ] docs/types/text/json/known/nycrc
+- [ ] docs/types/text/json/known/overseerr-config
+- [ ] docs/types/text/json/known/package-json
+- [ ] docs/types/text/json/known/package-lock
+- [ ] docs/types/text/json/known/package-resolved
+- [ ] docs/types/text/json/known/packer
+- [ ] docs/types/text/json/known/parcelrc
+- [ ] docs/types/text/json/known/postcss
+- [ ] docs/types/text/json/known/postman-collection
+- [ ] docs/types/text/json/known/prettierrc
+- [ ] docs/types/text/json/known/pyrightconfig
+- [ ] docs/types/text/json/known/railway-json
+- [ ] docs/types/text/json/known/release-please-config
+- [ ] docs/types/text/json/known/releaserc
+- [ ] docs/types/text/json/known/renovate
+- [ ] docs/types/text/json/known/rush
+- [ ] docs/types/text/json/known/semaphore-config
+- [ ] docs/types/text/json/known/sftpgo-config
+- [ ] docs/types/text/json/known/slsa-provenance
+- [ ] docs/types/text/json/known/storybook
+- [ ] docs/types/text/json/known/stryker
+- [ ] docs/types/text/json/known/stylelint
+- [ ] docs/types/text/json/known/swcrc
+- [ ] docs/types/text/json/known/tailscale-acl
+- [ ] docs/types/text/json/known/tailwind
+- [ ] docs/types/text/json/known/tauri-conf
+- [ ] docs/types/text/json/known/tsconfig
+- [ ] docs/types/text/json/known/turbo
+- [ ] docs/types/text/json/known/uptime-kuma-config
+- [ ] docs/types/text/json/known/vcpkg
+- [ ] docs/types/text/json/known/vercel
+- [ ] docs/types/text/json/known/vitest
+- [ ] docs/types/text/json/known/volta
+- [ ] docs/types/text/json/known/vscode-extensions
+- [ ] docs/types/text/json/known/vscode-launch
+- [ ] docs/types/text/json/known/vscode-settings
+- [ ] docs/types/text/json/known/vscode-tasks
+- [ ] docs/types/text/json/known/wails-json
+- [ ] docs/types/text/json/known/waybar-config
+- [ ] docs/types/text/known/act-config
+- [ ] docs/types/text/known/actrc
+- [ ] docs/types/text/known/ada-lang
+- [ ] docs/types/text/known/agda-lang
+- [ ] docs/types/text/known/alacritty-conf
+- [ ] docs/types/text/known/alloy-lang
+- [ ] docs/types/text/known/ansible-cfg
+- [ ] docs/types/text/known/ansible-hosts
+- [ ] docs/types/text/known/apache-conf
+- [ ] docs/types/text/known/apparmor-profile
+- [ ] docs/types/text/known/appfile
+- [ ] docs/types/text/known/appsmith-config
+- [ ] docs/types/text/known/apt-sources
+- [ ] docs/types/text/known/archivebox-config
+- [ ] docs/types/text/known/arduino-sketch
+- [ ] docs/types/text/known/aria2-conf
+- [ ] docs/types/text/known/asciidoc
+- [ ] docs/types/text/known/asm-lang
+- [ ] docs/types/text/known/astro-config
+- [ ] docs/types/text/known/atlas-hcl
+- [ ] docs/types/text/known/audiobookshelf-config
+- [ ] docs/types/text/known/audit-rules
+- [ ] docs/types/text/known/authentik-config
+- [ ] docs/types/text/known/avahi-daemon-conf
+- [ ] docs/types/text/known/awk-script
+- [ ] docs/types/text/known/azure-bicep
+- [ ] docs/types/text/known/ballerina-lang
+- [ ] docs/types/text/known/bazel
+- [ ] docs/types/text/known/bazelrc
+- [ ] docs/types/text/known/bbcode-text
+- [ ] docs/types/text/known/berksfile
+- [ ] docs/types/text/known/bind-zone
+- [ ] docs/types/text/known/bookstack-config
+- [ ] docs/types/text/known/bookstack-env
+- [ ] docs/types/text/known/brewfile
+- [ ] docs/types/text/known/browserslist
+- [ ] docs/types/text/known/bspwmrc
+- [ ] docs/types/text/known/build-gradle
+- [ ] docs/types/text/known/build-sbt
+- [ ] docs/types/text/known/build-zig-zon
+- [ ] docs/types/text/known/cabal
+- [ ] docs/types/text/known/caddyfile
+- [ ] docs/types/text/known/cal-com-config
+- [ ] docs/types/text/known/capnp
+- [ ] docs/types/text/known/carbon-lang
+- [ ] docs/types/text/known/cartfile
+- [ ] docs/types/text/known/changedetection-config
+- [ ] docs/types/text/known/chapel-lang
+- [ ] docs/types/text/known/chrony-conf
+- [ ] docs/types/text/known/claude-md
+- [ ] docs/types/text/known/clojure-lang
+- [ ] docs/types/text/known/cmake
+- [ ] docs/types/text/known/cmus-conf
+- [ ] docs/types/text/known/cobol-lang
+- [ ] docs/types/text/known/codeowners
+- [ ] docs/types/text/known/coder-config
+- [ ] docs/types/text/known/coffeescript-lang
+- [ ] docs/types/text/known/common-lisp
+- [ ] docs/types/text/known/conanfile
+- [ ] docs/types/text/known/concourse-config
+- [ ] docs/types/text/known/conky-conf
+- [ ] docs/types/text/known/consul-config
+- [ ] docs/types/text/known/containerd-config
+- [ ] docs/types/text/known/copilot-instructions
+- [ ] docs/types/text/known/coq-lang
+- [ ] docs/types/text/known/corefile
+- [ ] docs/types/text/known/corosync-conf
+- [ ] docs/types/text/known/coturn-conf
+- [ ] docs/types/text/known/cpanfile
+- [ ] docs/types/text/known/crontab
+- [ ] docs/types/text/known/crypttab
+- [ ] docs/types/text/known/crystal-lang
+- [ ] docs/types/text/known/cue-lang
+- [ ] docs/types/text/known/cups-conf
+- [ ] docs/types/text/known/curlrc
+- [ ] docs/types/text/known/cursor-rules
+- [ ] docs/types/text/known/cypress-config
+- [ ] docs/types/text/known/d-lang
+- [ ] docs/types/text/known/dafny
+- [ ] docs/types/text/known/dart-lang
+- [ ] docs/types/text/known/debian-control
+- [ ] docs/types/text/known/deps-edn
+- [ ] docs/types/text/known/dhall-config
+- [ ] docs/types/text/known/dhcpd-conf
+- [ ] docs/types/text/known/django-settings
+- [ ] docs/types/text/known/dnf-conf
+- [ ] docs/types/text/known/dnsmasq
+- [ ] docs/types/text/known/docker-bake
+- [ ] docs/types/text/known/dockerfile
+- [ ] docs/types/text/known/dockerignore
+- [ ] docs/types/text/known/docusaurus-config
+- [ ] docs/types/text/known/dovecot-conf
+- [ ] docs/types/text/known/doxyfile
+- [ ] docs/types/text/known/drizzle-config
+- [ ] docs/types/text/known/drone-config
+- [ ] docs/types/text/known/dune-build
+- [ ] docs/types/text/known/dunstrc
+- [ ] docs/types/text/known/earthfile
+- [ ] docs/types/text/known/editorconfig
+- [ ] docs/types/text/known/eiffel-lang
+- [ ] docs/types/text/known/ejs-template
+- [ ] docs/types/text/known/elastic-apm-config
+- [ ] docs/types/text/known/eleventy-config
+- [ ] docs/types/text/known/elixir-lang
+- [ ] docs/types/text/known/elm-lang
+- [ ] docs/types/text/known/elvish-script
+- [ ] docs/types/text/known/emacs-config
+- [ ] docs/types/text/known/emacs-lisp
+- [ ] docs/types/text/known/env-example
+- [ ] docs/types/text/known/envrc
+- [ ] docs/types/text/known/erlang-source
+- [ ] docs/types/text/known/erlang-sys-config
+- [ ] docs/types/text/known/erlang-vm-args
+- [ ] docs/types/text/known/esbuild-config
+- [ ] docs/types/text/known/eslintignore
+- [ ] docs/types/text/known/etc-environment
+- [ ] docs/types/text/known/exim-conf
+- [ ] docs/types/text/known/factor-lang
+- [ ] docs/types/text/known/fail2ban-conf
+- [ ] docs/types/text/known/fastfile
+- [ ] docs/types/text/known/fennel-lang
+- [ ] docs/types/text/known/fish-script
+- [ ] docs/types/text/known/flatbuffers
+- [ ] docs/types/text/known/flatpak-manifest
+- [ ] docs/types/text/known/fluent-bit
+- [ ] docs/types/text/known/fluentd-conf
+- [ ] docs/types/text/known/flyway-conf
+- [ ] docs/types/text/known/foot-config
+- [ ] docs/types/text/known/forge-config
+- [ ] docs/types/text/known/forth-lang
+- [ ] docs/types/text/known/fortran-lang
+- [ ] docs/types/text/known/freshrss-config
+- [ ] docs/types/text/known/fsharp-lang
+- [ ] docs/types/text/known/fstab
+- [ ] docs/types/text/known/gatling-conf
+- [ ] docs/types/text/known/gatsby-config
+- [ ] docs/types/text/known/gcloudignore
+- [ ] docs/types/text/known/gdbinit
+- [ ] docs/types/text/known/gdscript-lang
+- [ ] docs/types/text/known/gemfile
+- [ ] docs/types/text/known/gemfile-lock
+- [ ] docs/types/text/known/gemspec
+- [ ] docs/types/text/known/gitattributes
+- [ ] docs/types/text/known/gitconfig
+- [ ] docs/types/text/known/gitea-conf
+- [ ] docs/types/text/known/gitignore
+- [ ] docs/types/text/known/gitmodules
+- [ ] docs/types/text/known/gitolite-conf
+- [ ] docs/types/text/known/gleam-lang
+- [ ] docs/types/text/known/glitchtip-config
+- [ ] docs/types/text/known/glsl-shader
+- [ ] docs/types/text/known/gnuplot-script
+- [ ] docs/types/text/known/go-mod
+- [ ] docs/types/text/known/go-sum
+- [ ] docs/types/text/known/go-work
+- [ ] docs/types/text/known/gpg-conf
+- [ ] docs/types/text/known/gradle-props
+- [ ] docs/types/text/known/gradle-wrapper
+- [ ] docs/types/text/known/grafana-alloy
+- [ ] docs/types/text/known/grain-lang
+- [ ] docs/types/text/known/graphql-schema
+- [ ] docs/types/text/known/graphviz-dot
+- [ ] docs/types/text/known/graylog-conf
+- [ ] docs/types/text/known/grist-config
+- [ ] docs/types/text/known/groovy-lang
+- [ ] docs/types/text/known/grub-conf
+- [ ] docs/types/text/known/handlebars-template
+- [ ] docs/types/text/known/haproxy-cfg
+- [ ] docs/types/text/known/haproxy-conf
+- [ ] docs/types/text/known/haproxy-config
+- [ ] docs/types/text/known/hardhat-config
+- [ ] docs/types/text/known/haskell-lang
+- [ ] docs/types/text/known/haxe-lang
+- [ ] docs/types/text/known/hlsl-shader
+- [ ] docs/types/text/known/hoarder-config
+- [ ] docs/types/text/known/hoppscotch-config
+- [ ] docs/types/text/known/hosts-file
+- [ ] docs/types/text/known/htaccess
+- [ ] docs/types/text/known/htpasswd
+- [ ] docs/types/text/known/hugo-config
+- [ ] docs/types/text/known/humans-txt
+- [ ] docs/types/text/known/hyprland-conf
+- [ ] docs/types/text/known/i3-config
+- [ ] docs/types/text/known/idris-lang
+- [ ] docs/types/text/known/immich-config
+- [ ] docs/types/text/known/infisical-config
+- [ ] docs/types/text/known/ink-script
+- [ ] docs/types/text/known/inputrc
+- [ ] docs/types/text/known/invoiceninja-config
+- [ ] docs/types/text/known/iptables-rules
+- [ ] docs/types/text/known/isabelle-thy
+- [ ] docs/types/text/known/janet-lang
+- [ ] docs/types/text/known/jenkinsfile
+- [ ] docs/types/text/known/jest-config
+- [ ] docs/types/text/known/jinja2-template
+- [ ] docs/types/text/known/joplin-server-config
+- [ ] docs/types/text/known/journald-conf
+- [ ] docs/types/text/known/jsonnet
+- [ ] docs/types/text/known/julia-lang
+- [ ] docs/types/text/known/justfile
+- [ ] docs/types/text/known/jvm-options
+- [ ] docs/types/text/known/k6-config
+- [ ] docs/types/text/known/kafka-server-props
+- [ ] docs/types/text/known/kdl-doc
+- [ ] docs/types/text/known/keepalived-conf
+- [ ] docs/types/text/known/keycloak-config
+- [ ] docs/types/text/known/kitty-conf
+- [ ] docs/types/text/known/knexfile
+- [ ] docs/types/text/known/koka-lang
+- [ ] docs/types/text/known/kotlin-lang
+- [ ] docs/types/text/known/krb5-conf
+- [ ] docs/types/text/known/lean-lang
+- [ ] docs/types/text/known/lex-yacc
+- [ ] docs/types/text/known/lfrc
+- [ ] docs/types/text/known/license
+- [ ] docs/types/text/known/lighttpd-conf
+- [ ] docs/types/text/known/limits-conf
+- [ ] docs/types/text/known/linkding-config
+- [ ] docs/types/text/known/linkwarden-config
+- [ ] docs/types/text/known/liquibase-props
+- [ ] docs/types/text/known/liquid-template
+- [ ] docs/types/text/known/livescript-lang
+- [ ] docs/types/text/known/loader-conf
+- [ ] docs/types/text/known/logrotate-conf
+- [ ] docs/types/text/known/logstash-conf
+- [ ] docs/types/text/known/lua-lang
+- [ ] docs/types/text/known/lxc-config
+- [ ] docs/types/text/known/m4-macro
+- [ ] docs/types/text/known/mailmap
+- [ ] docs/types/text/known/makefile
+- [ ] docs/types/text/known/makepkg-conf
+- [ ] docs/types/text/known/mako-conf
+- [ ] docs/types/text/known/matchfile
+- [ ] docs/types/text/known/maybe-config
+- [ ] docs/types/text/known/mealie-config
+- [ ] docs/types/text/known/mediawiki-markup
+- [ ] docs/types/text/known/memos-config
+- [ ] docs/types/text/known/mermaid-diagram
+- [ ] docs/types/text/known/meson-build
+- [ ] docs/types/text/known/metro-config
+- [ ] docs/types/text/known/miniflux-conf
+- [ ] docs/types/text/known/minio-config
+- [ ] docs/types/text/known/mix-exs
+- [ ] docs/types/text/known/mkinitcpio-conf
+- [ ] docs/types/text/known/modprobe-conf
+- [ ] docs/types/text/known/mojo-lang
+- [ ] docs/types/text/known/mongod-conf
+- [ ] docs/types/text/known/monica-config
+- [ ] docs/types/text/known/mosquitto-conf
+- [ ] docs/types/text/known/mpd-conf
+- [ ] docs/types/text/known/mpv-conf
+- [ ] docs/types/text/known/msmtp-conf
+- [ ] docs/types/text/known/mustache-template
+- [ ] docs/types/text/known/muttrc
+- [ ] docs/types/text/known/my-cnf
+- [ ] docs/types/text/known/mypy
+- [ ] docs/types/text/known/mypy-ini
+- [ ] docs/types/text/known/n8n-config
+- [ ] docs/types/text/known/nagios-conf
+- [ ] docs/types/text/known/named-conf
+- [ ] docs/types/text/known/nanorc
+- [ ] docs/types/text/known/nats-config
+- [ ] docs/types/text/known/ncmpcpp-conf
+- [ ] docs/types/text/known/neomutt-conf
+- [ ] docs/types/text/known/neovim-config
+- [ ] docs/types/text/known/netbox-config
+- [ ] docs/types/text/known/netdata-conf
+- [ ] docs/types/text/known/newsboat-conf
+- [ ] docs/types/text/known/next-config
+- [ ] docs/types/text/known/nfs-exports
+- [ ] docs/types/text/known/nftables-rules
+- [ ] docs/types/text/known/nginx-conf
+- [ ] docs/types/text/known/nim-lang
+- [ ] docs/types/text/known/nimble
+- [ ] docs/types/text/known/ninja-build
+- [ ] docs/types/text/known/nix-config
+- [ ] docs/types/text/known/nix-daemon-conf
+- [ ] docs/types/text/known/nix-expr
+- [ ] docs/types/text/known/nix-flake
+- [ ] docs/types/text/known/nocodb-config
+- [ ] docs/types/text/known/node-version-file
+- [ ] docs/types/text/known/nomad-job
+- [ ] docs/types/text/known/npmignore
+- [ ] docs/types/text/known/npmrc
+- [ ] docs/types/text/known/nsq-conf
+- [ ] docs/types/text/known/nsswitch-conf
+- [ ] docs/types/text/known/nunjucks
+- [ ] docs/types/text/known/nushell-config
+- [ ] docs/types/text/known/nushell-script
+- [ ] docs/types/text/known/nuxt-config
+- [ ] docs/types/text/known/nvmrc
+- [ ] docs/types/text/known/nzbget-config
+- [ ] docs/types/text/known/oauth2-proxy-config
+- [ ] docs/types/text/known/objc-lang
+- [ ] docs/types/text/known/ocaml-lang
+- [ ] docs/types/text/known/odin-lang
+- [ ] docs/types/text/known/opa-policy
+- [ ] docs/types/text/known/opam-file
+- [ ] docs/types/text/known/open-webui-config
+- [ ] docs/types/text/known/openapi
+- [ ] docs/types/text/known/openldap-conf
+- [ ] docs/types/text/known/openrc-init
+- [ ] docs/types/text/known/openssl-conf
+- [ ] docs/types/text/known/openvpn-config
+- [ ] docs/types/text/known/org-mode
+- [ ] docs/types/text/known/outline-config
+- [ ] docs/types/text/known/package-swift
+- [ ] docs/types/text/known/pacman-conf
+- [ ] docs/types/text/known/paperless-conf
+- [ ] docs/types/text/known/pascal-lang
+- [ ] docs/types/text/known/pdns-conf
+- [ ] docs/types/text/known/pdns-recursor-conf
+- [ ] docs/types/text/known/perl-lang
+- [ ] docs/types/text/known/pg-hba
+- [ ] docs/types/text/known/pgbackrest-conf
+- [ ] docs/types/text/known/pgbouncer-ini
+- [ ] docs/types/text/known/php-cs-fixer
+- [ ] docs/types/text/known/php-lang
+- [ ] docs/types/text/known/phpstan
+- [ ] docs/types/text/known/picom-conf
+- [ ] docs/types/text/known/pihole-setupvars
+- [ ] docs/types/text/known/pip-conf
+- [ ] docs/types/text/known/pipewire-conf
+- [ ] docs/types/text/known/pipfile
+- [ ] docs/types/text/known/pkgbuild
+- [ ] docs/types/text/known/plane-config
+- [ ] docs/types/text/known/plantuml
+- [ ] docs/types/text/known/plausible-config
+- [ ] docs/types/text/known/playwright-config
+- [ ] docs/types/text/known/plist
+- [ ] docs/types/text/known/pocket-id-config
+- [ ] docs/types/text/known/podfile
+- [ ] docs/types/text/known/podfile-lock
+- [ ] docs/types/text/known/podspec
+- [ ] docs/types/text/known/polybar-conf
+- [ ] docs/types/text/known/pony-lang
+- [ ] docs/types/text/known/postfix-conf
+- [ ] docs/types/text/known/postfix-main
+- [ ] docs/types/text/known/postgresql-conf
+- [ ] docs/types/text/known/powershell-lang
+- [ ] docs/types/text/known/prettierignore
+- [ ] docs/types/text/known/prisma-schema
+- [ ] docs/types/text/known/procfile
+- [ ] docs/types/text/known/proftpd-conf
+- [ ] docs/types/text/known/proguard-rules
+- [ ] docs/types/text/known/project-clj
+- [ ] docs/types/text/known/prolog-lang
+- [ ] docs/types/text/known/promela
+- [ ] docs/types/text/known/pug-template
+- [ ] docs/types/text/known/pulsar-conf
+- [ ] docs/types/text/known/pulseaudio-conf
+- [ ] docs/types/text/known/puma-config
+- [ ] docs/types/text/known/purescript-lang
+- [ ] docs/types/text/known/pytest-ini
+- [ ] docs/types/text/known/python-version
+- [ ] docs/types/text/known/r-description
+- [ ] docs/types/text/known/r-lang
+- [ ] docs/types/text/known/r-profile
+- [ ] docs/types/text/known/rabbitmq-conf
+- [ ] docs/types/text/known/racket-lang
+- [ ] docs/types/text/known/rallly-config
+- [ ] docs/types/text/known/ranger-conf
+- [ ] docs/types/text/known/rclone-conf
+- [ ] docs/types/text/known/rdp-config
+- [ ] docs/types/text/known/react-native-config
+- [ ] docs/types/text/known/reason-lang
+- [ ] docs/types/text/known/rebar-config
+- [ ] docs/types/text/known/rector-config
+- [ ] docs/types/text/known/red-lang
+- [ ] docs/types/text/known/redirects
+- [ ] docs/types/text/known/redis-conf
+- [ ] docs/types/text/known/redis-sentinel
+- [ ] docs/types/text/known/rego-policy
+- [ ] docs/types/text/known/remix-config
+- [ ] docs/types/text/known/requirements-txt
+- [ ] docs/types/text/known/rescript-lang
+- [ ] docs/types/text/known/resolv-conf
+- [ ] docs/types/text/known/restic-config
+- [ ] docs/types/text/known/restructuredtext
+- [ ] docs/types/text/known/robots-txt
+- [ ] docs/types/text/known/rofi-config
+- [ ] docs/types/text/known/rollup-config
+- [ ] docs/types/text/known/rpm-spec
+- [ ] docs/types/text/known/rspack-config
+- [ ] docs/types/text/known/rspec-config
+- [ ] docs/types/text/known/rsyslog-conf
+- [ ] docs/types/text/known/ruby-lang
+- [ ] docs/types/text/known/ruby-version
+- [ ] docs/types/text/known/scala-lang
+- [ ] docs/types/text/known/scalafix-conf
+- [ ] docs/types/text/known/scalafmt-conf
+- [ ] docs/types/text/known/scheme-lang
+- [ ] docs/types/text/known/screenrc
+- [ ] docs/types/text/known/security-txt
+- [ ] docs/types/text/known/sed-script
+- [ ] docs/types/text/known/sentry-props
+- [ ] docs/types/text/known/settings-gradle
+- [ ] docs/types/text/known/shadow-cljs
+- [ ] docs/types/text/known/shell-rc
+- [ ] docs/types/text/known/smb-conf
+- [ ] docs/types/text/known/sml-lang
+- [ ] docs/types/text/known/smtlib
+- [ ] docs/types/text/known/snapcraft-yaml
+- [ ] docs/types/text/known/snapfile
+- [ ] docs/types/text/known/snyk-config
+- [ ] docs/types/text/known/solidity-lang
+- [ ] docs/types/text/known/sonar
+- [ ] docs/types/text/known/sonarqube-config
+- [ ] docs/types/text/known/sorbet-config
+- [ ] docs/types/text/known/sparql-query
+- [ ] docs/types/text/known/spdx-sbom
+- [ ] docs/types/text/known/speedtest-tracker-config
+- [ ] docs/types/text/known/sphinx-conf
+- [ ] docs/types/text/known/spring-app
+- [ ] docs/types/text/known/sqitch-conf
+- [ ] docs/types/text/known/sql-query
+- [ ] docs/types/text/known/squid-conf
+- [ ] docs/types/text/known/squirrel-lang
+- [ ] docs/types/text/known/ssh-config
+- [ ] docs/types/text/known/ssh-known-hosts
+- [ ] docs/types/text/known/sshd-config
+- [ ] docs/types/text/known/sssd-conf
+- [ ] docs/types/text/known/stata-do
+- [ ] docs/types/text/known/steam-acf
+- [ ] docs/types/text/known/stunnel-conf
+- [ ] docs/types/text/known/sudoers
+- [ ] docs/types/text/known/supervisord-conf
+- [ ] docs/types/text/known/svelte-component
+- [ ] docs/types/text/known/svelte-config
+- [ ] docs/types/text/known/sway-config
+- [ ] docs/types/text/known/swift-lang
+- [ ] docs/types/text/known/sxhkdrc
+- [ ] docs/types/text/known/sysctl-conf
+- [ ] docs/types/text/known/syslog-ng
+- [ ] docs/types/text/known/systemd-unit
+- [ ] docs/types/text/known/tandoor-config
+- [ ] docs/types/text/known/taskrc
+- [ ] docs/types/text/known/tcl-lang
+- [ ] docs/types/text/known/terraform-hcl
+- [ ] docs/types/text/known/terragrunt
+- [ ] docs/types/text/known/tex-doc
+- [ ] docs/types/text/known/textile-markup
+- [ ] docs/types/text/known/tf-lock
+- [ ] docs/types/text/known/tflint
+- [ ] docs/types/text/known/tfvars
+- [ ] docs/types/text/known/tiltfile
+- [ ] docs/types/text/known/tla-plus
+- [ ] docs/types/text/known/tlp-conf
+- [ ] docs/types/text/known/tmpfiles-d
+- [ ] docs/types/text/known/tmux-conf
+- [ ] docs/types/text/known/tool-versions
+- [ ] docs/types/text/known/tox
+- [ ] docs/types/text/known/tox-ini
+- [ ] docs/types/text/known/traefik-conf
+- [ ] docs/types/text/known/truffle-config
+- [ ] docs/types/text/known/tsup-config
+- [ ] docs/types/text/known/turtle-rdf
+- [ ] docs/types/text/known/twenty-crm-config
+- [ ] docs/types/text/known/typst-doc
+- [ ] docs/types/text/known/udev-rules
+- [ ] docs/types/text/known/ufw-conf
+- [ ] docs/types/text/known/umami-config
+- [ ] docs/types/text/known/unbound-conf
+- [ ] docs/types/text/known/unleash-config
+- [ ] docs/types/text/known/vagrantfile
+- [ ] docs/types/text/known/vala-lang
+- [ ] docs/types/text/known/vale-ini
+- [ ] docs/types/text/known/varnish-vcl
+- [ ] docs/types/text/known/vault-hcl
+- [ ] docs/types/text/known/vaultwarden-config
+- [ ] docs/types/text/known/vaultwarden-env
+- [ ] docs/types/text/known/vector-config
+- [ ] docs/types/text/known/verilog
+- [ ] docs/types/text/known/versions-tf
+- [ ] docs/types/text/known/vhdl-lang
+- [ ] docs/types/text/known/vim-config
+- [ ] docs/types/text/known/vite-config
+- [ ] docs/types/text/known/vitepress-config
+- [ ] docs/types/text/known/vsftpd-conf
+- [ ] docs/types/text/known/wallabag-config
+- [ ] docs/types/text/known/wallos-config
+- [ ] docs/types/text/known/watchtower-config
+- [ ] docs/types/text/known/waypoint
+- [ ] docs/types/text/known/wdio-config
+- [ ] docs/types/text/known/webpack-config
+- [ ] docs/types/text/known/wezterm-conf
+- [ ] docs/types/text/known/wgetrc
+- [ ] docs/types/text/known/wgsl-shader
+- [ ] docs/types/text/known/windmill-config
+- [ ] docs/types/text/known/windsurfrules
+- [ ] docs/types/text/known/wireguard-conf
+- [ ] docs/types/text/known/wolfram-lang
+- [ ] docs/types/text/known/woodpecker-agent-config
+- [ ] docs/types/text/known/wpa-supplicant-conf
+- [ ] docs/types/text/known/wren-lang
+- [ ] docs/types/text/known/wsl-conf
+- [ ] docs/types/text/known/xcconfig
+- [ ] docs/types/text/known/xdg-desktop-entry
+- [ ] docs/types/text/known/xorg-conf
+- [ ] docs/types/text/known/xresources
+- [ ] docs/types/text/known/xslt-stylesheet
+- [ ] docs/types/text/known/yarnrc
+- [ ] docs/types/text/known/ytdlp-conf
+- [ ] docs/types/text/known/zabbix-conf
+- [ ] docs/types/text/known/zathurarc
+- [ ] docs/types/text/known/zig-lang
+- [ ] docs/types/text/known/zig-zon
+- [ ] docs/types/text/known/zookeeper-config
+- [ ] docs/types/text/known/zsh-script
+- [ ] docs/types/text/toml/known/air-config
+- [ ] docs/types/text/toml/known/anchor-toml
+- [ ] docs/types/text/toml/known/aws-sam-config
+- [ ] docs/types/text/toml/known/bunfig
+- [ ] docs/types/text/toml/known/cargo-config
+- [ ] docs/types/text/toml/known/cargo-deny
+- [ ] docs/types/text/toml/known/cargo-lock
+- [ ] docs/types/text/toml/known/cargo-toml
+- [ ] docs/types/text/toml/known/cliff
+- [ ] docs/types/text/toml/known/clippy-toml
+- [ ] docs/types/text/toml/known/conduit-config
+- [ ] docs/types/text/toml/known/fly
+- [ ] docs/types/text/toml/known/foundry-toml
+- [ ] docs/types/text/toml/known/frpc-config
+- [ ] docs/types/text/toml/known/frps-config
+- [ ] docs/types/text/toml/known/gitleaks-config
+- [ ] docs/types/text/toml/known/gleam-toml
+- [ ] docs/types/text/toml/known/gradle-version-catalog
+- [ ] docs/types/text/toml/known/hatch
+- [ ] docs/types/text/toml/known/helix-config
+- [ ] docs/types/text/toml/known/influxdb
+- [ ] docs/types/text/toml/known/julia-manifest
+- [ ] docs/types/text/toml/known/julia-project
+- [ ] docs/types/text/toml/known/listmonk-config
+- [ ] docs/types/text/toml/known/lldap-config
+- [ ] docs/types/text/toml/known/mise
+- [ ] docs/types/text/toml/known/netlify
+- [ ] docs/types/text/toml/known/osv-scanner
+- [ ] docs/types/text/toml/known/pixi-config
+- [ ] docs/types/text/toml/known/poetry-lock
+- [ ] docs/types/text/toml/known/proto-config
+- [ ] docs/types/text/toml/known/pyproject
+- [ ] docs/types/text/toml/known/registries-conf
+- [ ] docs/types/text/toml/known/ruff
+- [ ] docs/types/text/toml/known/ruff-toml
+- [ ] docs/types/text/toml/known/rust-toolchain
+- [ ] docs/types/text/toml/known/rustfmt-toml
+- [ ] docs/types/text/toml/known/shopify-app
+- [ ] docs/types/text/toml/known/starship-config
+- [ ] docs/types/text/toml/known/storage-conf
+- [ ] docs/types/text/toml/known/supabase-config
+- [ ] docs/types/text/toml/known/telegraf
+- [ ] docs/types/text/toml/known/typos
+- [ ] docs/types/text/toml/known/uv
+- [ ] docs/types/text/toml/known/vector-toml
+- [ ] docs/types/text/toml/known/wrangler
+- [ ] docs/types/text/xml/known/android-manifest
+- [ ] docs/types/text/xml/known/android-strings
+- [ ] docs/types/text/xml/known/ant-build
+- [ ] docs/types/text/xml/known/app-config
+- [ ] docs/types/text/xml/known/checkstyle-xml
+- [ ] docs/types/text/xml/known/clickhouse-config
+- [ ] docs/types/text/xml/known/csproj
+- [ ] docs/types/text/xml/known/directory-build
+- [ ] docs/types/text/xml/known/jetbrains-workspace
+- [ ] docs/types/text/xml/known/log4j2
+- [ ] docs/types/text/xml/known/logback
+- [ ] docs/types/text/xml/known/maven-pom
+- [ ] docs/types/text/xml/known/maven-settings
+- [ ] docs/types/text/xml/known/msbuild-props
+- [ ] docs/types/text/xml/known/nuget-config
+- [ ] docs/types/text/xml/known/nuspec
+- [ ] docs/types/text/xml/known/packages-config
+- [ ] docs/types/text/xml/known/phpunit
+- [ ] docs/types/text/xml/known/phpunit-config
+- [ ] docs/types/text/xml/known/pom-xml
+- [ ] docs/types/text/xml/known/psalm-config
+- [ ] docs/types/text/xml/known/sitemap
+- [ ] docs/types/text/xml/known/spotbugs-config
+- [ ] docs/types/text/xml/known/web-config
+- [ ] docs/types/text/xml/known/xcode-scheme
+- [ ] docs/types/text/yaml/known/act-runner-config
+- [ ] docs/types/text/yaml/known/aider-conf
+- [ ] docs/types/text/yaml/known/alertmanager
+- [ ] docs/types/text/yaml/known/amplify
+- [ ] docs/types/text/yaml/known/analysis-options
+- [ ] docs/types/text/yaml/known/ansible-inventory
+- [ ] docs/types/text/yaml/known/ansible-lint
+- [ ] docs/types/text/yaml/known/ansible-playbook
+- [ ] docs/types/text/yaml/known/ansible-requirements
+- [ ] docs/types/text/yaml/known/apisix-config
+- [ ] docs/types/text/yaml/known/appveyor
+- [ ] docs/types/text/yaml/known/aqua-config
+- [ ] docs/types/text/yaml/known/argo-cd-app
+- [ ] docs/types/text/yaml/known/artifactory-system
+- [ ] docs/types/text/yaml/known/artillery-yml
+- [ ] docs/types/text/yaml/known/asyncapi
+- [ ] docs/types/text/yaml/known/atlantis
+- [ ] docs/types/text/yaml/known/authelia-config
+- [ ] docs/types/text/yaml/known/authentik-config
+- [ ] docs/types/text/yaml/known/azure-pipelines
+- [ ] docs/types/text/yaml/known/bandit-yaml
+- [ ] docs/types/text/yaml/known/bazarr-config
+- [ ] docs/types/text/yaml/known/beats-config
+- [ ] docs/types/text/yaml/known/behat
+- [ ] docs/types/text/yaml/known/benthos
+- [ ] docs/types/text/yaml/known/bitbucket-pipelines
+- [ ] docs/types/text/yaml/known/blackbox
+- [ ] docs/types/text/yaml/known/borgmatic-config
+- [ ] docs/types/text/yaml/known/buf-config
+- [ ] docs/types/text/yaml/known/buf-gen
+- [ ] docs/types/text/yaml/known/buildkite
+- [ ] docs/types/text/yaml/known/bundler-audit-config
+- [ ] docs/types/text/yaml/known/cassandra-config
+- [ ] docs/types/text/yaml/known/catalog-info
+- [ ] docs/types/text/yaml/known/cert-manager
+- [ ] docs/types/text/yaml/known/cfn-template
+- [ ] docs/types/text/yaml/known/checkov
+- [ ] docs/types/text/yaml/known/circleci
+- [ ] docs/types/text/yaml/known/citation-cff
+- [ ] docs/types/text/yaml/known/clang-format
+- [ ] docs/types/text/yaml/known/clang-tidy
+- [ ] docs/types/text/yaml/known/cloudbuild
+- [ ] docs/types/text/yaml/known/cloudflared
+- [ ] docs/types/text/yaml/known/cluster-config
+- [ ] docs/types/text/yaml/known/codebuild
+- [ ] docs/types/text/yaml/known/codeclimate-config
+- [ ] docs/types/text/yaml/known/codecov
+- [ ] docs/types/text/yaml/known/codefresh-config
+- [ ] docs/types/text/yaml/known/coderabbit
+- [ ] docs/types/text/yaml/known/conda-env
+- [ ] docs/types/text/yaml/known/cortex
+- [ ] docs/types/text/yaml/known/crossplane-config
+- [ ] docs/types/text/yaml/known/crowdin-yml
+- [ ] docs/types/text/yaml/known/crowdsec-acquis
+- [ ] docs/types/text/yaml/known/crowdsec-config
+- [ ] docs/types/text/yaml/known/crystal-shard
+- [ ] docs/types/text/yaml/known/dagster-config
+- [ ] docs/types/text/yaml/known/dashy-config
+- [ ] docs/types/text/yaml/known/datadog-config
+- [ ] docs/types/text/yaml/known/dbt-project
+- [ ] docs/types/text/yaml/known/dendrite-config
+- [ ] docs/types/text/yaml/known/dependabot
+- [ ] docs/types/text/yaml/known/devfile
+- [ ] docs/types/text/yaml/known/dex-config
+- [ ] docs/types/text/yaml/known/diun-config
+- [ ] docs/types/text/yaml/known/docker-compose
+- [ ] docs/types/text/yaml/known/docker-stack
+- [ ] docs/types/text/yaml/known/dozzle-config
+- [ ] docs/types/text/yaml/known/drone
+- [ ] docs/types/text/yaml/known/dvc-pipeline
+- [ ] docs/types/text/yaml/known/dynatrace-config
+- [ ] docs/types/text/yaml/known/ejabberd-config
+- [ ] docs/types/text/yaml/known/elasticsearch-config
+- [ ] docs/types/text/yaml/known/electron-builder
+- [ ] docs/types/text/yaml/known/envoy-config
+- [ ] docs/types/text/yaml/known/etcd-config
+- [ ] docs/types/text/yaml/known/external-secrets
+- [ ] docs/types/text/yaml/known/falco-config
+- [ ] docs/types/text/yaml/known/falco-rules
+- [ ] docs/types/text/yaml/known/filebeat
+- [ ] docs/types/text/yaml/known/flux-helm-release
+- [ ] docs/types/text/yaml/known/flux-kustomization
+- [ ] docs/types/text/yaml/known/frigate-config
+- [ ] docs/types/text/yaml/known/gae-app
+- [ ] docs/types/text/yaml/known/garden-io
+- [ ] docs/types/text/yaml/known/gatekeeper-config
+- [ ] docs/types/text/yaml/known/github-actions
+- [ ] docs/types/text/yaml/known/gitlab-ci
+- [ ] docs/types/text/yaml/known/golangci-lint
+- [ ] docs/types/text/yaml/known/goreleaser
+- [ ] docs/types/text/yaml/known/gotosocial-config
+- [ ] docs/types/text/yaml/known/graphql-codegen
+- [ ] docs/types/text/yaml/known/grype
+- [ ] docs/types/text/yaml/known/hadolint
+- [ ] docs/types/text/yaml/known/harbor
+- [ ] docs/types/text/yaml/known/harbor-config
+- [ ] docs/types/text/yaml/known/harness-pipeline
+- [ ] docs/types/text/yaml/known/headscale-config
+- [ ] docs/types/text/yaml/known/heartbeat
+- [ ] docs/types/text/yaml/known/helm-chart
+- [ ] docs/types/text/yaml/known/helmfile
+- [ ] docs/types/text/yaml/known/heroku
+- [ ] docs/types/text/yaml/known/homarr-config
+- [ ] docs/types/text/yaml/known/homepage-config
+- [ ] docs/types/text/yaml/known/homer-config
+- [ ] docs/types/text/yaml/known/hydra-config
+- [ ] docs/types/text/yaml/known/influxdb-config
+- [ ] docs/types/text/yaml/known/infracost
+- [ ] docs/types/text/yaml/known/insomnia
+- [ ] docs/types/text/yaml/known/invidious-config
+- [ ] docs/types/text/yaml/known/istio-config
+- [ ] docs/types/text/yaml/known/jaeger-config
+- [ ] docs/types/text/yaml/known/jekyll-config
+- [ ] docs/types/text/yaml/known/k8s-hpa
+- [ ] docs/types/text/yaml/known/k8s-ingress
+- [ ] docs/types/text/yaml/known/k8s-manifest
+- [ ] docs/types/text/yaml/known/k8s-network-policy
+- [ ] docs/types/text/yaml/known/k8s-rbac
+- [ ] docs/types/text/yaml/known/kamal-config
+- [ ] docs/types/text/yaml/known/keda-config
+- [ ] docs/types/text/yaml/known/kibana
+- [ ] docs/types/text/yaml/known/ko-config
+- [ ] docs/types/text/yaml/known/komga-config
+- [ ] docs/types/text/yaml/known/kong-config
+- [ ] docs/types/text/yaml/known/kube-helm-values
+- [ ] docs/types/text/yaml/known/kubeconfig
+- [ ] docs/types/text/yaml/known/kustomize
+- [ ] docs/types/text/yaml/known/kyverno-policy
+- [ ] docs/types/text/yaml/known/lefthook
+- [ ] docs/types/text/yaml/known/linkerd-config
+- [ ] docs/types/text/yaml/known/loki-config
+- [ ] docs/types/text/yaml/known/markdownlint
+- [ ] docs/types/text/yaml/known/meltano-config
+- [ ] docs/types/text/yaml/known/mimir
+- [ ] docs/types/text/yaml/known/mkdocs
+- [ ] docs/types/text/yaml/known/mlflow-project
+- [ ] docs/types/text/yaml/known/mockery-config
+- [ ] docs/types/text/yaml/known/molecule
+- [ ] docs/types/text/yaml/known/moon
+- [ ] docs/types/text/yaml/known/moonrepo
+- [ ] docs/types/text/yaml/known/netplan
+- [ ] docs/types/text/yaml/known/newrelic-config
+- [ ] docs/types/text/yaml/known/nfpm-config
+- [ ] docs/types/text/yaml/known/ntfy-config
+- [ ] docs/types/text/yaml/known/openapi-generator
+- [ ] docs/types/text/yaml/known/opencost-config
+- [ ] docs/types/text/yaml/known/opentelemetry-k8s
+- [ ] docs/types/text/yaml/known/otel-collector
+- [ ] docs/types/text/yaml/known/patroni-config
+- [ ] docs/types/text/yaml/known/photoprism-config
+- [ ] docs/types/text/yaml/known/pnpm-lock
+- [ ] docs/types/text/yaml/known/pnpm-workspace
+- [ ] docs/types/text/yaml/known/pre-commit
+- [ ] docs/types/text/yaml/known/pre-commit-config
+- [ ] docs/types/text/yaml/known/prefect-config
+- [ ] docs/types/text/yaml/known/prometheus-config
+- [ ] docs/types/text/yaml/known/prometheus-rules
+- [ ] docs/types/text/yaml/known/promtail-config
+- [ ] docs/types/text/yaml/known/pubspec
+- [ ] docs/types/text/yaml/known/pubspec-lock
+- [ ] docs/types/text/yaml/known/pulumi
+- [ ] docs/types/text/yaml/known/rails-credentials
+- [ ] docs/types/text/yaml/known/readthedocs
+- [ ] docs/types/text/yaml/known/release-it
+- [ ] docs/types/text/yaml/known/render-yaml
+- [ ] docs/types/text/yaml/known/rubocop
+- [ ] docs/types/text/yaml/known/rubocop-todo
+- [ ] docs/types/text/yaml/known/sam-template
+- [ ] docs/types/text/yaml/known/scorecard
+- [ ] docs/types/text/yaml/known/scrutiny-config
+- [ ] docs/types/text/yaml/known/searxng-config
+- [ ] docs/types/text/yaml/known/semaphore-ci
+- [ ] docs/types/text/yaml/known/semgrep-config
+- [ ] docs/types/text/yaml/known/serverless
+- [ ] docs/types/text/yaml/known/shard-yml
+- [ ] docs/types/text/yaml/known/skaffold
+- [ ] docs/types/text/yaml/known/snmp-exporter
+- [ ] docs/types/text/yaml/known/socket-security
+- [ ] docs/types/text/yaml/known/spacelift-config
+- [ ] docs/types/text/yaml/known/spectral
+- [ ] docs/types/text/yaml/known/spring-app
+- [ ] docs/types/text/yaml/known/spring-profiles
+- [ ] docs/types/text/yaml/known/sqlc-config
+- [ ] docs/types/text/yaml/known/stack-yaml
+- [ ] docs/types/text/yaml/known/standardrb-config
+- [ ] docs/types/text/yaml/known/stirling-pdf-config
+- [ ] docs/types/text/yaml/known/suricata-config
+- [ ] docs/types/text/yaml/known/syft-config
+- [ ] docs/types/text/yaml/known/synapse-config
+- [ ] docs/types/text/yaml/known/taskfile
+- [ ] docs/types/text/yaml/known/tekton-pipeline
+- [ ] docs/types/text/yaml/known/tempo
+- [ ] docs/types/text/yaml/known/terraform-docs
+- [ ] docs/types/text/yaml/known/test-kitchen
+- [ ] docs/types/text/yaml/known/tetragon
+- [ ] docs/types/text/yaml/known/thanos-config
+- [ ] docs/types/text/yaml/known/traefik-config
+- [ ] docs/types/text/yaml/known/travis
+- [ ] docs/types/text/yaml/known/trivy-config
+- [ ] docs/types/text/yaml/known/trufflehog-config
+- [ ] docs/types/text/yaml/known/tspconfig
+- [ ] docs/types/text/yaml/known/velero-config
+- [ ] docs/types/text/yaml/known/victoria-metrics-config
+- [ ] docs/types/text/yaml/known/vikunja-config
+- [ ] docs/types/text/yaml/known/wakapi-config
+- [ ] docs/types/text/yaml/known/woodpecker-ci
+- [ ] docs/types/text/yaml/known/yamllint
+- [ ] docs/types/text/yaml/known/zitadel-config
+<!-- AUDIT_SECTION known-plugins END -->
+
+### Example Catalog Entries
+
+<!-- AUDIT_SECTION examples START -->
+- [ ] _config.yml | Jekyll _config.yml | Config
+- [ ] _redirects | _redirects | Config
+- [ ] .actrc | act config (.actrc) | Config, DevOps
+- [ ] .air.toml | .air.toml | Config
+- [ ] .ansible-lint | .ansible-lint | Config, Ansible
+- [ ] .babelrc | .babelrc | Config
+- [ ] .bandit | .bandit | Config
+- [ ] .bashrc | .bashrc | Config, Shell
+- [ ] .bazelrc | .bazelrc | Config
+- [ ] .bundler-audit.yml | .bundler-audit.yml | Config
+- [ ] .checkov.yaml | .checkov.yaml | Config
+- [ ] .clang-format | .clang-format | Config
+- [ ] .clang-tidy | .clang-tidy | Config
+- [ ] .codeclimate.yml | .codeclimate.yml | Config
+- [ ] .coderabbit.yaml | .coderabbit.yaml | Config
+- [ ] .commitlintrc.json | .commitlintrc.json | Config
+- [ ] .curlrc | .curlrc | Config
+- [ ] .cursorrules | .cursorrules | Config
+- [ ] .dockerignore | .dockerignore | Config
+- [ ] .drone.yml | .drone.yml | Config, devops
+- [ ] .editorconfig | .editorconfig | Config
+- [ ] .env.example | .env.example (Env Template) | Config, Environment
+- [ ] .envrc | .envrc | Config
+- [ ] .eslintignore | .eslintignore | Config
+- [ ] .eslintrc.json | .eslintrc.json | Config
+- [ ] .flake8 | .flake8 | Config
+- [ ] .gcloudignore | .gcloudignore | Config, Google Cloud
+- [ ] .gdbinit | .gdbinit | Config
+- [ ] .gitattributes | .gitattributes | Config
+- [ ] .gitconfig | .gitconfig | Config
+- [ ] .gitignore | .gitignore | Config
+- [ ] .gitlab-ci.yml | .gitlab-ci.yml | Config
+- [ ] .gitleaks.toml | .gitleaks.toml | Config
+- [ ] .gitmodules | .gitmodules | Config
+- [ ] .golangci.yml | .golangci.yml | Config
+- [ ] .goreleaser.yaml | .goreleaser.yaml | Config
+- [ ] .grype.yaml | .grype.yaml (Grype config) | Security, Config
+- [ ] .hadolint.yaml | .hadolint.yaml | Config
+- [ ] .htaccess | .htaccess | Config
+- [ ] .htpasswd | .htpasswd | Config
+- [ ] .huskyrc.json | .huskyrc.json | Config
+- [ ] .inputrc | .inputrc | Config
+- [ ] .kitchen.yml | .kitchen.yml | uncategorized
+- [ ] .kitchen.yml | Test Kitchen Config | Config
+- [ ] .ko.yaml | .ko.yaml (ko container build) | Config
+- [ ] .lighthouserc.json | .lighthouserc.json | uncategorized
+- [ ] .lighthouserc.json | Lighthouse CI Config | Config
+- [ ] .lintstagedrc.json | .lintstagedrc.json | Config
+- [ ] .mailmap | .mailmap | Config
+- [ ] .markdownlint.json | .markdownlint.json | Config
+- [ ] .markdownlint.yml | .markdownlint.yml (Markdownlint YAML) | Config
+- [ ] .mocharc.json | .mocharc.json | Config
+- [ ] .mockery.yaml | .mockery.yaml (mockery) | Config
+- [ ] .msmtprc | .msmtprc (msmtp Config) | Config
+- [ ] .muttrc | .muttrc | Email, Config
+- [ ] .nanorc | .nanorc | Config
+- [ ] .ncurc.json | .ncurc.json | uncategorized
+- [ ] .ncurc.json | npm-check-updates Config | Config
+- [ ] .neomuttrc | .neomuttrc (NeoMutt Config) | Config
+- [ ] .node-version | .node-version | Config
+- [ ] .npmignore | .npmignore | Config
+- [ ] .npmrc | .npmrc | Config
+- [ ] .nycrc.json | .nycrc.json | Config
+- [ ] .parcelrc | .parcelrc | Config
+- [ ] .php-cs-fixer.php | .php-cs-fixer.php | Config
+- [ ] .prettierignore | .prettierignore | Config
+- [ ] .prettierrc.json | .prettierrc.json | Config
+- [ ] .prototools | .prototools | Config
+- [ ] .pylintrc | .pylintrc | Config
+- [ ] .python-version | .python-version | Config
+- [ ] .readthedocs.yaml | .readthedocs.yaml | Config
+- [ ] .release-it.yml | .release-it.yml | DevOps, Config
+- [ ] .releaserc.json | .releaserc.json | Config
+- [ ] .Rprofile | .Rprofile | Config, R
+- [ ] .rspec | .rspec | Config
+- [ ] .rubocop_todo.yml | .rubocop_todo.yml | Config
+- [ ] .rubocop.yml | .rubocop.yml | Config
+- [ ] .ruby-version | .ruby-version | Config
+- [ ] .scalafix.conf | .scalafix.conf | Config, Scala
+- [ ] .scalafmt.conf | .scalafmt.conf | Config, Scala
+- [ ] .screenrc | .screenrc | Config, Terminal
+- [ ] .semgrep.yml | .semgrep.yml | Config
+- [ ] .snyk | .snyk | Config
+- [ ] .spectral.yml | .spectral.yml | Config
+- [ ] .standard.yml | .standard.yml | Config
+- [ ] .stylelintrc.json | .stylelintrc.json | Config
+- [ ] .swcrc | .swcrc | Config
+- [ ] .syft.yaml | .syft.yaml (Syft config) | Config
+- [ ] .taskrc | .taskrc | Config
+- [ ] .terraform-docs.yml | .terraform-docs.yml | Config
+- [ ] .terraform.lock.hcl | .terraform.lock.hcl | Config
+- [ ] .tflint.hcl | .tflint.hcl (TFLint) | Config
+- [ ] .tmux.conf | .tmux.conf | Config, Terminal
+- [ ] .tool-versions | .tool-versions | Config
+- [ ] .trufflehog.yaml | .trufflehog.yaml | Security
+- [ ] .vimrc | .vimrc (Vim) | Config
+- [ ] .wezterm.lua | .wezterm.lua | Config, Terminal
+- [ ] .wgetrc | .wgetrc | Config
+- [ ] .windsurfrules | .windsurfrules | Config
+- [ ] .woodpecker.yml | .woodpecker.yml (Woodpecker CI) | Config, devops
+- [ ] .Xresources | .Xresources | Config, Desktop
+- [ ] .yamllint | .yamllint | Config
+- [ ] .yamllint.yml | .yamllint.yml | Config
+- [ ] .yarnrc.yml | .yarnrc.yml (Yarn) | Config, Package Manager
+- [ ] 01-netcfg.yaml | 01-netcfg.yaml | Config
+- [ ] 01-netcfg.yaml | 01-netcfg.yaml | uncategorized
+- [ ] 50-usb.rules | 50-usb.rules | Config, Linux
+- [ ] acquis.yaml | acquis.yaml (CrowdSec Acquis) | Config, Security
+- [ ] act_runner.yaml | Act Runner Config | Config, CI/CD
+- [ ] actual-config.json | Actual Budget Config | Config, Self-hosted
+- [ ] aider.conf.yml | aider.conf.yml | Config
+- [ ] airflow.cfg | airflow.cfg | Config
+- [ ] airflow.cfg | airflow.cfg | uncategorized
+- [ ] alacritty.toml | alacritty.toml | Config, Terminal
+- [ ] alembic.ini | alembic.ini | Config
+- [ ] alertmanager.yml | alertmanager.yml | Config
+- [ ] amplify.yml | AWS Amplify config | Config
+- [ ] analysis_options.yaml | analysis_options.yaml (Dart Analyzer) | Config, mobile
+- [ ] analysis.r | analysis.r | Code, Data
+- [ ] analytics.fs | analytics.fs | Code, Data
+- [ ] Anchor.toml | Anchor.toml (Anchor) | Config, Blockchain
+- [ ] AndroidManifest.xml | AndroidManifest.xml | Config
+- [ ] angular.json | Angular workspace | Config
+- [ ] ansible-playbook.yml | ansible-playbook.yml (Ansible) | DevOps, Config
+- [ ] ansible.cfg | ansible.cfg (Ansible Config) | Config, Ansible, DevOps
+- [ ] api.postman_collection.json | api.postman_collection.json (Postman) | API, Config
+- [ ] apisix.yaml | apisix.yaml | Config
+- [ ] apollo.config.json | apollo.config.json | Config
+- [ ] app.config | app.config (.NET) | Config
+- [ ] app.csproj | app.csproj | Config
+- [ ] app.dart | app.dart | Code
+- [ ] app.ini | app.ini (Gitea/Forgejo) | Config, DevOps
+- [ ] app.json | app.json (Expo) | Config
+- [ ] App.swift | App.swift | Code
+- [ ] app.ts | app.ts | Code
+- [ ] app.yaml | app.yaml | Config
+- [ ] Appfile | Appfile | Config
+- [ ] application-production.yml | application-production.yml (Spring Boot) | Config
+- [ ] application.properties | application.properties | Config
+- [ ] application.yml | application.yml | Config
+- [ ] appmanifest_570.acf | appmanifest_570.acf | Data
+- [ ] appsettings.json | appsettings.json (ASP.NET) | Config
+- [ ] appsmith.env | appsmith.env | Config, Application, Low-Code
+- [ ] appveyor.yml | appveyor.yml | Config
+- [ ] aqua.yaml | aqua.yaml | Config
+- [ ] arch-linux.conf | arch-linux.conf (boot entry) | Config
+- [ ] archivebox.conf | ArchiveBox config | Productivity, Archiving, Self-Hosted
+- [ ] ArchiveBox.conf | ArchiveBox.conf | Config, Application, Archiving
+- [ ] argo-cd-app.yaml | argo-cd-app.yaml (Argo CD) | Config
+- [ ] aria2.conf | aria2.conf | Config
+- [ ] artillery.yml | artillery.yml | Config
+- [ ] astro.config.mjs | astro.config.mjs | Config
+- [ ] asyncapi.yml | asyncapi.yml | Config
+- [ ] asyncapi.yml | asyncapi.yml | uncategorized
+- [ ] atlantis.yaml | atlantis.yaml | Config
+- [ ] atlas.hcl | atlas.hcl | Config, Database
+- [ ] audiobookshelf.env | Audiobookshelf config | Media, Audio, Self-Hosted
+- [ ] audit.rules | audit.rules (Audit Rules) | Config
+- [ ] authelia-config.yml | authelia-config.yml (Authelia) | Config, Security
+- [ ] authentik-blueprint.yaml | authentik-blueprint.yaml (Authentik) | Config, Security
+- [ ] authentik.env | Authentik Config | Config, Self-hosted
+- [ ] avahi-daemon.conf | avahi-daemon.conf (Avahi Daemon Config) | Config
+- [ ] aws-config | aws-config (AWS) | Config
+- [ ] aws-credentials | aws-credentials (AWS) | Config
+- [ ] azure-pipelines.yml | azure-pipelines.yml | Config
+- [ ] babel.config.json | babel.config.json | Config
+- [ ] bazarr.yaml | Bazarr config | Media, Subtitles, Self-Hosted
+- [ ] behat.yml | behat.yml | Config
+- [ ] benthos.yaml | benthos.yaml | Config
+- [ ] benthos.yaml | benthos.yaml | uncategorized
+- [ ] Berksfile | Berksfile | Config
+- [ ] biome.json | biome.json | Config
+- [ ] bitbucket-pipelines.yml | bitbucket-pipelines.yml | Config
+- [ ] blackbox.yml | blackbox.yml | Config
+- [ ] blacklist.conf | blacklist.conf (modprobe) | Config, System
+- [ ] bookstack.env | BookStack Config | Config, Self-hosted
+- [ ] borgmatic.yaml | borgmatic.yaml | DevOps, Config
+- [ ] Brewfile | Brewfile | Config
+- [ ] browserslistrc | .browserslistrc | Config
+- [ ] bruno.json | bruno.json | Config
+- [ ] bruno.json | bruno.json | uncategorized
+- [ ] bspwmrc | bspwmrc (bspwm WM) | Config, Desktop
+- [ ] buf.gen.yaml | buf.gen.yaml | Config
+- [ ] buf.gen.yaml | buf.gen.yaml | uncategorized
+- [ ] buf.yaml | buf.yaml | Config
+- [ ] build.bat | build.bat | Code
+- [ ] BUILD.bazel | BUILD.bazel | Code
+- [ ] build.gradle | build.gradle | Config
+- [ ] build.ninja | build.ninja | Code
+- [ ] build.sbt | build.sbt | Code
+- [ ] build.xml | build.xml (Apache Ant) | Config, Build
+- [ ] build.zig.zon | build.zig.zon | Package
+- [ ] buildkite.yml | buildkite.yml | Config, devops
+- [ ] buildspec.yml | AWS CodeBuild buildspec | Config
+- [ ] bunfig.toml | bunfig.toml | Config
+- [ ] Caddyfile | Caddyfile | Config, Server
+- [ ] cal-com.env | Cal.com Config | Config, Self-hosted
+- [ ] capacitor.config.json | capacitor.config.json | Config
+- [ ] cargo.config.toml | cargo.config.toml | Config
+- [ ] Cargo.lock | Cargo.lock | Config
+- [ ] Cargo.toml | Cargo.toml | Config
+- [ ] Cartfile | Cartfile | Config
+- [ ] cassandra.yaml | cassandra.yaml | Config
+- [ ] catalog-info.yaml | catalog-info.yaml | Config
+- [ ] cdk.json | cdk.json (AWS CDK) | Config
+- [ ] cert-manager.yaml | cert-manager.yaml (cert-manager) | Config, Kubernetes
+- [ ] changedetection.env | changedetection.io Config | Config, Self-hosted
+- [ ] Chart.yaml | Chart.yaml (Helm chart) | Config, DevOps
+- [ ] chart.yaml | Helm Chart.yaml | Config
+- [ ] checkstyle.xml | checkstyle.xml (Checkstyle) | Config
+- [ ] chrony.conf | chrony.conf (NTP) | Config, System
+- [ ] circleci-config.yml | circleci-config.yml | Config
+- [ ] circleci.yml | CircleCI config | Config
+- [ ] CITATION.cff | CITATION.cff | Config
+- [ ] claude_desktop_config.json | claude_desktop_config.json | Config
+- [ ] claude.md | CLAUDE.md | Config
+- [ ] client.ovpn | client.ovpn | Config, Network
+- [ ] cliff.toml | cliff.toml | Config
+- [ ] clippy.toml | clippy.toml (Clippy) | Config
+- [ ] cloudbuild.yaml | cloudbuild.yaml | Config
+- [ ] cloudflared.yml | cloudflared.yml | Config
+- [ ] cloudflared.yml | cloudflared.yml | uncategorized
+- [ ] cloudformation.yaml | cloudformation.yaml (CloudFormation) | Config
+- [ ] cluster-config.yaml | cluster-config.yaml (K8s Cluster Config) | Config, Kubernetes
+- [ ] CMakeLists.txt | CMakeLists.txt | Code
+- [ ] CMakePresets.json | CMakePresets.json | Config
+- [ ] cmus.rc | cmus.rc | Config, Music
+- [ ] codecov.yml | codecov.yml | Config
+- [ ] codefresh.yml | Codefresh config | Config, devops
+- [ ] codegen.yml | codegen.yml | Config
+- [ ] codegen.yml | codegen.yml | uncategorized
+- [ ] CODEOWNERS | CODEOWNERS | Config
+- [ ] coder.env | coder.env | Config, Application, Developer Tools
+- [ ] Common.props | Common.props (MSBuild) | Config
+- [ ] composer.json | composer.json | Config
+- [ ] composer.lock | composer.lock | Config
+- [ ] conanfile.txt | conanfile.txt | Config
+- [ ] concourse.env | Concourse CI Config | Config, CI/CD
+- [ ] conduit.toml | Conduit Config | Config, Self-hosted
+- [ ] conf.py | conf.py | Config
+- [ ] config.alloy | config.alloy | Config
+- [ ] config.nu | config.nu | Config, Terminal
+- [ ] config.production.json | config.production.json (Ghost) | Config, Application
+- [ ] config.rasi | config.rasi (Rofi) | Config, Desktop
+- [ ] config.xml | config.xml (ClickHouse) | Config
+- [ ] configure.ac | configure.ac (M4/Autoconf) | Build
+- [ ] conky.conf | conky.conf | Config
+- [ ] consul.hcl | consul.hcl (HashiCorp Consul) | Config
+- [ ] containerd.toml | containerd.toml (containerd) | Config, Container
+- [ ] control | control (Debian Control) | Config
+- [ ] Controller.m | Controller.m | Code
+- [ ] copilot-instructions.md | copilot-instructions.md | Config
+- [ ] core.clj | core.clj | Code
+- [ ] Corefile | Corefile (CoreDNS) | Config, Kubernetes
+- [ ] corosync.conf | corosync.conf | Config, Networking
+- [ ] cortex.yaml | cortex.yaml | Config
+- [ ] coturn.conf | coturn.conf | Config, Networking
+- [ ] cpanfile | cpanfile | Package, Perl
+- [ ] credentials.yml | credentials.yml (Rails) | Config
+- [ ] crontab | crontab (Cron Schedule) | Config, System
+- [ ] crossplane-config.yaml | crossplane-config.yaml (Crossplane) | Config
+- [ ] crowdin.yml | crowdin.yml (Crowdin config) | Config
+- [ ] crowdsec-config.yaml | crowdsec-config.yaml (CrowdSec Config) | Config, Security
+- [ ] crypttab | crypttab (Linux Encrypted Devices) | Config, System
+- [ ] cupsd.conf | cupsd.conf (CUPS) | Config
+- [ ] cypress.config.js | cypress.config.js | Config
+- [ ] daemon.conf | daemon.conf | Config
+- [ ] dagster.yaml | dagster.yaml | Data, Config
+- [ ] Dashboard.tsx | Dashboard.tsx | Code
+- [ ] dashy.yml | Dashy dashboard config | Dashboard, Self-Hosted, YAML
+- [ ] datadog.yaml | datadog.yaml | Config
+- [ ] dbt_project.yml | dbt_project.yml | Config, Database
+- [ ] default.vcl | default.vcl (Varnish VCL) | Config, Web Server
+- [ ] dendrite.yaml | Dendrite Config | Config, Self-hosted
+- [ ] deno.json | Deno config | Config
+- [ ] deny.toml | deny.toml | Config
+- [ ] dependabot.yml | dependabot.yml | Config
+- [ ] deploy.ps1 | deploy.ps1 | Code
+- [ ] deps.edn | deps.edn | Config
+- [ ] DESCRIPTION | DESCRIPTION | Config, R
+- [ ] devbox.json | devbox.json | Config
+- [ ] devcontainer.json | devcontainer.json | Config
+- [ ] devfile.yaml | devfile.yaml | Config
+- [ ] devfile.yaml | devfile.yaml | uncategorized
+- [ ] dex.yaml | dex.yaml | Config, Security, Identity
+- [ ] dhcpd.conf | dhcpd.conf (ISC DHCP Server) | Config, Network
+- [ ] Directory.Build.props | Directory.Build.props | Config
+- [ ] diun.yaml | Diun Config | Config, DevOps
+- [ ] dnf.conf | dnf.conf | Config, Linux
+- [ ] dnsmasq.conf | dnsmasq.conf | Config
+- [ ] dnsmasq.conf | dnsmasq.conf | uncategorized
+- [ ] docker-bake.hcl | docker-bake.hcl | Config
+- [ ] docker-compose.yml | docker-compose.yml | Config
+- [ ] docker-stack.yml | docker-stack.yml (Docker Stack) | Config
+- [ ] Dockerfile | Dockerfile | Config
+- [ ] docusaurus.config.js | docusaurus.config.js | Config
+- [ ] dovecot.conf | dovecot.conf (Dovecot IMAP/POP3) | Config, Mail
+- [ ] Doxyfile | Doxyfile | Config
+- [ ] dozzle.yaml | Dozzle config | Docker, Monitoring, Self-Hosted
+- [ ] dprint.json | dprint.json | Tooling, Config
+- [ ] drizzle.config.ts | drizzle.config.ts | Config
+- [ ] drone.env | Drone CI Config | Config, CI/CD
+- [ ] dtconfig.yaml | dtconfig.yaml (Dynatrace OneAgent) | Config, Monitoring
+- [ ] dune-project | dune-project | Config, Build, OCaml
+- [ ] dunstrc | dunstrc (dunst notification daemon) | Config, Desktop
+- [ ] dvc.yaml | dvc.yaml (DVC Pipeline) | Config, Data Science
+- [ ] Earthfile | Earthfile (Earthly build) | Config
+- [ ] eas.json | eas.json (Expo EAS) | Config, mobile
+- [ ] easteregg | easteregg | Other
+- [ ] ejabberd.yml | ejabberd.yml | Config, Messaging
+- [ ] elastic-apm-agent.properties | elastic-apm-agent.properties (Elastic APM Agent) | Config, Monitoring
+- [ ] elasticsearch.yml | elasticsearch.yml | Config
+- [ ] electron-builder.yml | electron-builder.yml | Config
+- [ ] eleventy.config.js | eleventy.config.js | Config
+- [ ] elm.json | elm.json (Elm) | Config
+- [ ] environment | environment (/etc/environment) | Config
+- [ ] environment.yml | environment.yml (Conda) | Config
+- [ ] envoy.yaml | envoy.yaml | Config
+- [ ] esbuild.config.mjs | esbuild.config.mjs | Config, JavaScript, Build
+- [ ] Escrow.sol | Escrow.sol | Code
+- [ ] etcd.yaml | etcd.yaml | Config
+- [ ] example.cabal | example.cabal | Config
+- [ ] example.gemspec | example.gemspec | Config
+- [ ] example.js | example.js | Code
+- [ ] example.nimble | example.nimble (Nim) | Config
+- [ ] example.nomad | example.nomad (Nomad Job) | Config
+- [ ] Example.podspec | Example.podspec | Config
+- [ ] example.rdp | example.rdp | Other
+- [ ] example.svg | example.svg | Image, Media
+- [ ] exim4.conf | exim4.conf (Exim MTA) | Config, Mail
+- [ ] exports | exports (NFS exports) | Config, Network
+- [ ] external-secrets.yaml | external-secrets.yaml | Config
+- [ ] falco_rules.yaml | falco_rules.yaml | Config
+- [ ] falco.yaml | falco.yaml | Security
+- [ ] Fastfile | Fastfile | Config
+- [ ] filebeat.yml | filebeat.yml (Filebeat) | Config, Monitoring, Observability
+- [ ] filebeat.yml | filebeat.yml | uncategorized
+- [ ] filebrowser.json | File Browser Config | Config, Self-hosted
+- [ ] filter.lua | filter.lua | Code
+- [ ] firebase.json | firebase.json | Config, DevOps
+- [ ] flake.nix | flake.nix | Config, Nix
+- [ ] fluent-bit.conf | fluent-bit.conf | Config
+- [ ] fluent.conf | fluent.conf | Config
+- [ ] flux-helm-release.yaml | flux-helm-release.yaml (Flux CD) | Config
+- [ ] flux-kustomization.yaml | flux-kustomization.yaml (Flux Kustomization) | Config
+- [ ] fly.toml | fly.toml | Config, devops
+- [ ] flyway.conf | flyway.conf | Config
+- [ ] foot.ini | foot.ini | Config, Terminal
+- [ ] forge.config.js | forge.config.js (Electron Forge) | Config
+- [ ] forgejo.ini | Forgejo config | DevOps, Git, Self-Hosted
+- [ ] foundry.toml | foundry.toml (Foundry) | Config, Blockchain
+- [ ] freshrss.env | FreshRSS config | Productivity, RSS, Self-Hosted
+- [ ] frigate.yml | Frigate NVR Config | Config, NVR, Self-Hosted, Security
+- [ ] frpc.toml | frpc.toml | Config
+- [ ] frpc.toml | frpc.toml | uncategorized
+- [ ] frps.toml | frps.toml | Config
+- [ ] frps.toml | frps.toml | uncategorized
+- [ ] fstab | fstab (Linux Filesystem Table) | Config, System
+- [ ] FUNDING.yml | FUNDING.yml | Config
+- [ ] garden.yml | garden.yml | Config
+- [ ] garden.yml | garden.yml | uncategorized
+- [ ] gatekeeper-constraint.yaml | gatekeeper-constraint.yaml | Config
+- [ ] gatling.conf | gatling.conf | Config
+- [ ] gatsby-config.js | gatsby-config.js | Config
+- [ ] gcp-service-account.json | gcp-service-account.json (GCP) | Config
+- [ ] Gemfile | Gemfile | Code
+- [ ] Gemfile.lock | Gemfile.lock | Config
+- [ ] gitolite.conf | gitolite.conf | Config
+- [ ] glances.conf | Glances config | Monitoring, System, Self-Hosted
+- [ ] gleam.toml | gleam.toml (Gleam) | Config
+- [ ] glitchtip.env | glitchtip.env | Config, Application, Monitoring
+- [ ] global.json | global.json | Config
+- [ ] go.mod | go.mod | Config
+- [ ] go.sum | go.sum | Config
+- [ ] go.work | go.work | Config
+- [ ] google-services.json | google-services.json | Config
+- [ ] gotosocial-config.yaml | gotosocial-config.yaml | Config, Social
+- [ ] gpg.conf | gpg.conf (GnuPG) | Config, Security
+- [ ] gradle-wrapper.properties | gradle-wrapper.properties | Config
+- [ ] gradle.properties | gradle.properties | Config
+- [ ] grafana-dashboard.json | grafana-dashboard.json | Config
+- [ ] grafana.ini | grafana.ini | Config
+- [ ] graphql.config.json | graphql.config.json | Config
+- [ ] graylog.conf | graylog.conf | Monitoring, Config
+- [ ] grist.env | Grist Config | Config, Self-hosted
+- [ ] growthbook.json | growthbook.json | Config
+- [ ] grub | grub (/etc/default/grub) | Config, System
+- [ ] haproxy.cfg | haproxy.cfg | Config
+- [ ] harbor.yml | Harbor Config | Config, Self-hosted, DevOps
+- [ ] hardhat.config.js | hardhat.config.js (Hardhat) | Config, Blockchain
+- [ ] harness-pipeline.yaml | Harness Pipeline | Config, devops
+- [ ] hatch.toml | hatch.toml | Config
+- [ ] headscale-config.yaml | headscale-config.yaml (Headscale) | Config, networking
+- [ ] headscale.yaml | Headscale Config | Config, Self-hosted, Networking
+- [ ] heartbeat.yml | heartbeat.yml (Heartbeat) | Config, Monitoring, Observability
+- [ ] heartbeat.yml | heartbeat.yml | uncategorized
+- [ ] helix.toml | helix.toml | Config
+- [ ] helmfile.yaml | helmfile.yaml | Infrastructure, Kubernetes, Helm
+- [ ] heroku-app.json | heroku-app.json | Config, Deploy
+- [ ] heroku.yml | heroku.yml | Config
+- [ ] hoarder.env | Hoarder / Karakeep config | Productivity, Bookmarks, Self-Hosted
+- [ ] homarr.yaml | Homarr dashboard config | Dashboard, Self-Hosted, YAML
+- [ ] homepage-services.yaml | Homepage services config | Dashboard, Self-Hosted, YAML
+- [ ] homer.yml | homer.yml | Config, Self-hosted
+- [ ] homeserver.yaml | homeserver.yaml (Synapse) | Config, Messaging
+- [ ] hoppscotch.env | hoppscotch.env | Config, Application, API
+- [ ] hosts | hosts | Config, Network
+- [ ] httpd.conf | httpd.conf (Apache HTTP Server) | Config, Web Server
+- [ ] hugo.toml | hugo.toml | Config, Hugo
+- [ ] humans.txt | humans.txt (demo) | Config
+- [ ] humans.txt | humans.txt (demo) | Config
+- [ ] hydra-config.yaml | hydra-config.yaml (Hydra Config) | Config, Data Science
+- [ ] hyprland.conf | hyprland.conf (Hyprland Wayland compositor) | Config, Desktop
+- [ ] i3.config | i3.config (i3 WM) | Config, Desktop
+- [ ] immich.env | immich.env | Config, Application
+- [ ] index.php | index.php | Code
+- [ ] infisical.env | infisical.env | Config, Application, Security
+- [ ] influxdb.conf | influxdb.conf | Config
+- [ ] influxdb.conf | influxdb.conf | uncategorized
+- [ ] influxdb.yml | InfluxDB Config | Config, Monitoring
+- [ ] infra.tf | infra.tf | Code, Config
+- [ ] infracost.yml | infracost.yml | Config
+- [ ] init.el | init.el (Emacs) | Config
+- [ ] init.lua | init.lua (Neovim) | Config
+- [ ] insomnia.yaml | insomnia.yaml | Config
+- [ ] insomnia.yaml | insomnia.yaml | uncategorized
+- [ ] inventory | inventory (Ansible Inventory) | Config, Ansible
+- [ ] inventory.yml | inventory.yml | Config
+- [ ] invidious-config.yml | Invidious Config | Config, Self-hosted
+- [ ] invoiceninja.env | Invoice Ninja Config | Config, Self-hosted
+- [ ] ionic.config.json | ionic.config.json | Config
+- [ ] iptables.rules | iptables.rules (Firewall Rules) | Config, Network
+- [ ] istio-virtual-service.yaml | istio-virtual-service.yaml (Istio) | Config
+- [ ] jaeger-config.yaml | jaeger-config.yaml | Config
+- [ ] jail.local | jail.local (Fail2ban) | Config, Security
+- [ ] jellyseerr-settings.json | Jellyseerr config | Media, Requests, Self-Hosted
+- [ ] Jenkinsfile | Jenkinsfile | Config
+- [ ] jest.config.js | jest.config.js | Config
+- [ ] jest.config.json | jest.config.json | Config
+- [ ] Job.scala | Job.scala | Code
+- [ ] joplin.env | Joplin Server config | Productivity, Notes, Self-Hosted
+- [ ] journald.conf | journald.conf (journald) | Config
+- [ ] jsconfig.json | jsconfig.json | Config
+- [ ] justfile | Justfile | Config
+- [ ] Justfile | Justfile | Config
+- [ ] jvm.options | jvm.options | Config
+- [ ] k6.config.js | k6.config.js | Config
+- [ ] k8s-hpa.yaml | k8s-hpa.yaml (HPA) | Config
+- [ ] k8s-ingress.yaml | k8s-ingress.yaml | Config
+- [ ] k8s-network-policy.yaml | k8s-network-policy.yaml | Config
+- [ ] k8s-rbac.yaml | k8s-rbac.yaml (Kubernetes RBAC) | Config
+- [ ] k8s-role.yaml | k8s-role.yaml | Config
+- [ ] kamal.yml | kamal.yml | DevOps, Config
+- [ ] kavita-appsettings.json | Kavita config | Media, Books, Self-Hosted
+- [ ] keda-scaledobject.yaml | keda-scaledobject.yaml (KEDA) | Config
+- [ ] keepalived.conf | keepalived.conf (Keepalived VRRP) | Config, Network
+- [ ] keycloak-realm.json | keycloak-realm.json (Keycloak Realm) | Config, Security
+- [ ] keycloak.conf | Keycloak Config | Config, Security
+- [ ] kibana.yml | kibana.yml | Config
+- [ ] kibana.yml | kibana.yml | uncategorized
+- [ ] kitty.conf | kitty.conf | Config, Terminal
+- [ ] knexfile.js | knexfile.js | Config
+- [ ] knip.json | knip.json | Config
+- [ ] known_hosts | known_hosts (SSH) | Config
+- [ ] komga.yml | komga.yml | Config, Application, Media, Comics
+- [ ] kong.yaml | kong.yaml | Config
+- [ ] krb5.conf | krb5.conf (Kerberos) | Config, Security
+- [ ] kubeconfig | kubeconfig | Other
+- [ ] kubeconfig.yaml | kubeconfig.yaml | Config
+- [ ] kustomization.yaml | kustomization.yaml (Kustomize) | DevOps, Config
+- [ ] kyverno-policy.yaml | kyverno-policy.yaml | Config
+- [ ] launchSettings.json | launchSettings.json (ASP.NET) | Config
+- [ ] lefthook.yml | lefthook.yml | Config
+- [ ] lerna.json | lerna.json | Config
+- [ ] lfrc | lfrc | Config
+- [ ] libs.versions.toml | libs.versions.toml (Gradle Version Catalog) | Config
+- [ ] LICENSE | LICENSE | Documents
+- [ ] lighttpd.conf | lighttpd.conf (Lighttpd Web Server) | Config, Network
+- [ ] limits.conf | limits.conf (PAM Limits) | Config
+- [ ] linkding.env | linkding.env | Config, Application
+- [ ] linkerd-config.yaml | linkerd-config.yaml (Linkerd) | Config
+- [ ] linkwarden.env | Linkwarden config | Productivity, Bookmarks, Self-Hosted
+- [ ] liquibase.properties | liquibase.properties | Config, Database
+- [ ] listmonk-config.toml | listmonk-config.toml | Config, Application, Email
+- [ ] lldap_config.toml | lldap_config.toml | Config, Security, Identity, LDAP
+- [ ] loader.conf | loader.conf | Config
+- [ ] Localizable.strings | Localizable.strings | Config
+- [ ] log4j2.xml | log4j2.xml | Config
+- [ ] logback.xml | logback.xml | Config
+- [ ] logrotate.conf | logrotate.conf (Log Rotation) | Config, System
+- [ ] logstash.conf | logstash.conf | Config
+- [ ] loki-config.yaml | loki-config.yaml | Config
+- [ ] lxc.config | lxc.config (LXC container) | Config, Container
+- [ ] main.c | main.c | Code
+- [ ] main.cf | main.cf (Postfix Mail Server) | Config, Mail
+- [ ] Main.java | Main.java | Code
+- [ ] Main.kt | Main.kt | Code
+- [ ] main.py | main.py | Code
+- [ ] main.rb | main.rb | Code
+- [ ] Makefile | Makefile | Code
+- [ ] makepkg.conf | makepkg.conf (makepkg Config) | Config, Arch Linux
+- [ ] mako | mako (mako notification daemon) | Config, Desktop
+- [ ] Manifest.toml | Manifest.toml (Julia Manifest) | Config
+- [ ] Manifest.toml | Manifest.toml | Config
+- [ ] Matchfile | Matchfile (Fastlane Match) | Config
+- [ ] mattermost-config.json | mattermost-config.json | Config, Application
+- [ ] maven-settings.xml | maven-settings.xml | Config
+- [ ] maybe.env | Maybe Config | Config, Self-hosted
+- [ ] mealie.env | mealie.env | Config, Application
+- [ ] meltano.yml | meltano.yml | Data, Config
+- [ ] memos.env | Memos config | Productivity, Notes, Self-Hosted
+- [ ] mesh.cpp | mesh.cpp | Code
+- [ ] meson.build | meson.build | Code
+- [ ] metagame/stage10/identity_echo.jpg | Awakening identity_echo.jpg | Metagame
+- [ ] metagame/stage10/nested/echoes/pattern_echo.json | Awakening pattern_echo.json | Metagame
+- [ ] metagame/stage10/syntax_echo.txt | Awakening syntax_echo.txt | Metagame
+- [ ] metagame/stage2/cipher.txt | Glyph Dungeon cipher.txt | Metagame
+- [ ] metagame/stage5/transmission_hum.mp3 | Signal Racer transmission_hum.mp3 | Metagame
+- [ ] metagame/stage6/protocols_of_the_entity.epub | Protocol Codex protocols_of_the_entity.epub | Metagame
+- [ ] metagame/stage7/entity_a_verification.png | Identity Arbiter Entity A image | Metagame
+- [ ] metagame/stage7/entity_f_verification.png | Identity Arbiter Entity F image | Metagame
+- [ ] metagame/stage7/entity_metadata.json | Identity Arbiter metadata sidecar | Metagame
+- [ ] metro.config.js | metro.config.js | Config
+- [ ] mimir.yaml | mimir.yaml | Config
+- [ ] miniflux.conf | miniflux.conf | Config, Application
+- [ ] minio.env | minio.env | Config, Self-hosted
+- [ ] mint.json | mint.json | Config
+- [ ] mint.json | mint.json | uncategorized
+- [ ] mise.toml | mise.toml | Config
+- [ ] mix.exs | mix.exs | Code
+- [ ] mkdocs.yml | mkdocs.yml | Config
+- [ ] mkinitcpio.conf | mkinitcpio.conf (mkinitcpio) | Config
+- [ ] MLproject | MLproject (MLflow Project) | Config, Data Science
+- [ ] Module.vb | Module.vb | Code
+- [ ] molecule.yml | molecule.yml | Config, Ansible, Testing
+- [ ] mongod.conf | mongod.conf | Config
+- [ ] monica.env | monica.env | Config, Application
+- [ ] moon.yml | moon.yml | Config
+- [ ] mosquitto.conf | mosquitto.conf | Config, Networking
+- [ ] mpd.conf | mpd.conf | Config, Audio
+- [ ] mpv.conf | mpv.conf | Config
+- [ ] my.cnf | my.cnf (MySQL) | Config
+- [ ] myapp.container | myapp.container (Podman Quadlet) | Config
+- [ ] myapp.service | myapp.service (systemd Service) | Config, System
+- [ ] MyApp.xcscheme | MyApp.xcscheme (Xcode Scheme) | Config, mobile
+- [ ] mypackage.opam | mypackage.opam | Code, OCaml
+- [ ] mypy.ini | mypy config | Config
+- [ ] n8n.env | n8n.env | Config, Application, Automation
+- [ ] nagios.cfg | nagios.cfg | Monitoring, Config
+- [ ] named.conf | named.conf (BIND DNS) | Config, Network
+- [ ] nats.conf | nats.conf | Config
+- [ ] ncmpcpp.conf | ncmpcpp.conf | Config, Music
+- [ ] nest-cli.json | nest-cli.json | Config
+- [ ] netbird.json | netbird.json | Networking, Config
+- [ ] netbox-configuration.py | netbox-configuration.py | Config, Application, Network
+- [ ] netdata.conf | netdata.conf (Netdata) | Monitoring, Infrastructure, Self-Hosted
+- [ ] netlify.toml | Netlify config (netlify.toml demo) | Config, devops
+- [ ] netplan.yaml | netplan.yaml | Config
+- [ ] newrelic.yml | newrelic.yml (New Relic Agent) | Config, Monitoring
+- [ ] newsboat.conf | newsboat.conf | Config
+- [ ] next.config.js | next.config.js | Config
+- [ ] nfpm.yaml | nfpm.yaml (nfpm) | Config
+- [ ] nftables.conf | nftables.conf (nftables Firewall Rules) | Config, Network
+- [ ] nginx.conf | nginx.conf | Config
+- [ ] nix.conf | nix.conf | Config
+- [ ] nix.conf | nix.conf | uncategorized
+- [ ] nocodb.env | nocodb.env | Config, Application, Database
+- [ ] nsqd.cfg | nsqd.cfg | Config
+- [ ] nsqd.cfg | nsqd.cfg | uncategorized
+- [ ] nsswitch.conf | nsswitch.conf (NSSwitch) | Config
+- [ ] ntfy-server.yml | ntfy-server.yml (ntfy) | Config, Application, Notifications
+- [ ] nuget.config | nuget.config | Config
+- [ ] nuxt.config.ts | nuxt.config.ts | Config
+- [ ] nvmrc | .nvmrc | Config
+- [ ] nx.json | nx.json | Config
+- [ ] nzbget.conf | NZBGet config | Download, Usenet, Self-Hosted
+- [ ] oauth2-proxy.cfg | oauth2-proxy.cfg (OAuth2 Proxy) | Config, Security
+- [ ] odoo.conf | odoo.conf | Config, Application
+- [ ] open-webui.env | Open WebUI Config | Config, AI, Self-hosted
+- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | Config
+- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | uncategorized
+- [ ] openapi.yaml | openapi.yaml | Config
+- [ ] opencost.yaml | opencost.yaml | Config
+- [ ] openrc-myapp | openrc-myapp (OpenRC) | Config
+- [ ] openssl.cnf | openssl.cnf | Config, Security
+- [ ] opentelemetry-k8s.yaml | opentelemetry-k8s.yaml (OTel Operator) | Config
+- [ ] org.example.App.yaml | org.example.App.yaml (Flatpak Manifest) | Config
+- [ ] osv-scanner.toml | osv-scanner.toml | Config
+- [ ] otel-collector-config.yaml | otel-collector-config.yaml | Config
+- [ ] outline.env | outline.env | Config, Application
+- [ ] overseerr-settings.json | Overseerr config | Media, Requests, Self-Hosted
+- [ ] Overwriter.frag | Overwriter.frag | Code
+- [ ] package-lock.json | package-lock.json | Config
+- [ ] package.json | package.json | Config
+- [ ] package.nuspec | package.nuspec | Config
+- [ ] Package.resolved | Package.resolved | Config
+- [ ] Package.swift | Package.swift | Code
+- [ ] packages.config | packages.config (NuGet) | Config
+- [ ] packer.json | packer.json (HashiCorp Packer) | DevOps, Config
+- [ ] pacman.conf | pacman.conf | Config
+- [ ] Panel.vue | Panel.vue | Code
+- [ ] paperless.conf | paperless.conf | Config, Application
+- [ ] patroni.yml | patroni.yml | Config, Database
+- [ ] pdns.conf | pdns.conf | Config
+- [ ] pdns.conf | pdns.conf | uncategorized
+- [ ] pg_hba.conf | pg_hba.conf | Config, Database
+- [ ] pgbackrest.conf | pgbackrest.conf | Config, Database
+- [ ] pgbouncer.ini | pgbouncer.ini | Config
+- [ ] photoprism-options.yml | photoprism-options.yml | Config, Application
+- [ ] php.ini | php.ini | Config
+- [ ] phpstan.neon | phpstan.neon | Config
+- [ ] phpunit.xml | phpunit.xml | Config
+- [ ] phpunit.xml.dist | phpunit.xml.dist (PHPUnit Config) | Config
+- [ ] picom.conf | picom.conf | Config
+- [ ] pihole-setupVars.conf | setupVars.conf (Pi-hole) | Networking, Config
+- [ ] pip.conf | pip.conf | Config
+- [ ] pipeline.ex | pipeline.ex | Code
+- [ ] pipewire.conf | pipewire.conf | Config
+- [ ] Pipfile | Pipfile | Config
+- [ ] pixi.toml | pixi.toml | Config
+- [ ] PKGBUILD | PKGBUILD (Arch Linux) | Config
+- [ ] plane.env | plane.env | Config, Application, Project Management
+- [ ] plausible.env | plausible.env | Config, Application, Analytics
+- [ ] playwright.config.ts | playwright.config.ts | Config
+- [ ] pnpm-lock.yaml | pnpm-lock.yaml | Config
+- [ ] pnpm-workspace.yaml | pnpm-workspace.yaml | Config
+- [ ] pocket-id.env | Pocket ID config | Authentication, Identity, Self-Hosted
+- [ ] Podfile | Podfile | Config
+- [ ] Podfile.lock | Podfile.lock (CocoaPods) | Config, mobile
+- [ ] poetry.lock | poetry.lock | Config
+- [ ] policy.rego | policy.rego | Config
+- [ ] polybar.ini | polybar.ini (Polybar status bar) | Config, Desktop
+- [ ] pom.xml | pom.xml (Maven POM) | Config, Java
+- [ ] postcss.config.json | postcss.config.json | Config
+- [ ] postgresql.conf | postgresql.conf | Config
+- [ ] pre-commit-config.yaml | .pre-commit-config.yaml | Config
+- [ ] pre-commit-config.yaml | pre-commit config | Config
+- [ ] prefect.yaml | prefect.yaml | DevOps, Config
+- [ ] Procfile | Procfile | Config, DevOps
+- [ ] proftpd.conf | proftpd.conf | Config
+- [ ] proftpd.conf | proftpd.conf | uncategorized
+- [ ] Program.cs | Program.cs | Code
+- [ ] proguard-rules.pro | proguard-rules.pro (ProGuard Rules) | Config
+- [ ] project.clj | project.clj | Config
+- [ ] Project.toml | Project.toml | Config
+- [ ] prometheus-rules.yaml | prometheus-rules.yaml | Config
+- [ ] prometheus.yml | prometheus.yml | Config
+- [ ] promtail-config.yaml | promtail-config.yaml | Config
+- [ ] provenance.json | provenance.json (SLSA Provenance) | Security
+- [ ] psalm.xml | psalm.xml | Config
+- [ ] pubspec.lock | pubspec.lock (demo) | Config, mobile
+- [ ] pubspec.yaml | Flutter pubspec.yaml (demo) | Config, mobile
+- [ ] Pulumi.yaml | Pulumi.yaml (Pulumi project) | DevOps, Config
+- [ ] puma.rb | puma.rb (Puma) | Config
+- [ ] pyproject.toml | pyproject.toml | Config
+- [ ] pyrightconfig.json | Pyright config | Config
+- [ ] pytest.ini | pytest.ini (pytest Config) | Config, Python
+- [ ] query.sql | query.sql | Code, Data
+- [ ] rabbitmq.conf | rabbitmq.conf | Config
+- [ ] radicale.conf | radicale.conf | Config, Application
+- [ ] railway.json | railway.json | Config
+- [ ] rallly.env | Rallly Config | Config, Self-hosted
+- [ ] ranger.conf | ranger.conf | Config
+- [ ] rclone.conf | rclone.conf | Config
+- [ ] react-native.config.js | react-native.config.js | Config
+- [ ] rebar.config | rebar.config | Config
+- [ ] rector.php | rector.php (Rector Config) | Config
+- [ ] recursor.conf | recursor.conf | Config
+- [ ] recursor.conf | recursor.conf | uncategorized
+- [ ] redis.conf | redis.conf | Config
+- [ ] registries.conf | registries.conf | Config
+- [ ] registries.conf | registries.conf | uncategorized
+- [ ] release-please-config.json | release-please-config.json | Config
+- [ ] Release.xcconfig | Release.xcconfig | Config
+- [ ] remix.config.js | remix.config.js | Config
+- [ ] render.yaml | render.yaml | Config
+- [ ] renovate.json | renovate.json | Config
+- [ ] report.pl | report.pl | Code
+- [ ] requirements.txt | requirements.txt | Config
+- [ ] requirements.yml | requirements.yml | Config
+- [ ] resolv.conf | resolv.conf | Config, Network
+- [ ] resticprofile.toml | resticprofile.toml | Config
+- [ ] robots.txt | robots.txt (demo) | Config
+- [ ] robots.txt | robots.txt (demo) | Config
+- [ ] rollup.config.js | rollup.config.js | Config
+- [ ] rspack.config.js | rspack.config.js | Config
+- [ ] rsyslog.conf | rsyslog.conf (rsyslog) | Config, System
+- [ ] ruff.toml | ruff.toml (Ruff linter) | Config
+- [ ] rush.json | rush.json | Config
+- [ ] rust-toolchain.toml | rust-toolchain.toml | Config
+- [ ] rustfmt.toml | rustfmt.toml (rustfmt) | Config
+- [ ] sabnzbd.ini | SABnzbd config | Download, Usenet, Self-Hosted
+- [ ] sam-template.yaml | sam-template.yaml (AWS SAM) | Config
+- [ ] samconfig.toml | samconfig.toml (SAM Config) | Config
+- [ ] sample_old.png | sample_old.png | Image, Media
+- [ ] sample-alloy.als | sample-alloy.als (Alloy) | Code
+- [ ] sample-k8s.yaml | Kubernetes Deployment manifest (demo) | Config, devops
+- [ ] sample-locked.zip | Locked.zip | Archive & Binary
+- [ ] sample-pages.pdf | Sample (3 pages).pdf | Documents
+- [ ] sample-telegram.json | Telegram Chat Export (JSON) | Data
+- [ ] sample-variants.vcf | Sample variants (VCF) | Data
+- [ ] sample-workflow.yml | GitHub Actions CI workflow (demo) | Code, devops
+- [ ] sample.3mf | Sample.3mf | Media, 3D
+- [ ] Sample.7z | Sample.7z | Archive & Binary
+- [ ] sample.aac | Sample.aac | Media
+- [ ] sample.abc | Folk Tunes (ABC) | Music
+- [ ] sample.acf | Steam App Manifest (ACF) | Data
+- [ ] sample.adoc | sample.adoc (AsciiDoc) | Docs, Documentation
+- [ ] sample.ads | sample.ads | Systems, Programming
+- [ ] sample.agda | sample.agda (Agda) | Code
+- [ ] sample.als | Sample.als | Media
+- [ ] sample.ans | Sample.ans | Text
+- [ ] sample.apk | Android Package (APK stub) | Binary
+- [ ] sample.arrow | Apache Arrow IPC File (demo) | data, binary, scientific
+- [ ] sample.asm | sample.asm | Systems, Programming
+- [ ] Sample.avi | Sample.avi | Media
+- [ ] sample.avif | Sample.avif | Image, Media
+- [ ] sample.avro | Avro Employee Schema (demo) | data, binary
+- [ ] sample.avsc | Avro Schema (demo) | Data
+- [ ] sample.awk | sample.awk (AWK) | Code
+- [ ] sample.bal | sample.bal (Ballerina) | Code
+- [ ] sample.bbc | sample.bbc (BBCode) | Document
+- [ ] sample.bicep | sample.bicep (Azure Bicep) | Config, Infrastructure
+- [ ] sample.bin | Sample.bin | Archive & Binary
+- [ ] sample.blend | Blender 3D scene (demo) | 3D, binary, Design
+- [ ] sample.bmp | Sample.bmp | Image, Media
+- [ ] sample.bson | BSON document (demo) | data, binary
+- [ ] sample.bsp | Quake BSP Game Map (demo) | game, binary
+- [ ] sample.capnp | sample.capnp (Cap'n Proto) | Schema, Serialization
+- [ ] sample.carbon | sample.carbon (Carbon) | Code
+- [ ] sample.cbor | CBOR API Response (demo) | data, binary
+- [ ] sample.cbz | Sample.cbz | Documents, Ebook, Archive & Binary
+- [ ] sample.chpl | sample.chpl (Chapel) | Code
+- [ ] sample.cif | Aspirin Crystal Structure (CIF) | chemical, scientific
+- [ ] sample.class | sample.class | Binary
+- [ ] sample.clip | Sample.clip | Image, Media
+- [ ] sample.clj | sample.clj | Functional, Lisp
+- [ ] sample.cob | sample.cob | Legacy, Programming
+- [ ] sample.coffee | sample.coffee (CoffeeScript) | Code
+- [ ] sample.coq | sample.coq (Coq) | Code
+- [ ] sample.cr | sample.cr | Systems, Programming
+- [ ] sample.crash | sample.crash | Code
+- [ ] sample.csv | Sample.csv | Data
+- [ ] sample.cue | CUE schema (demo) | Config
+- [ ] sample.cue | sample.cue | Config
+- [ ] sample.d | sample.d | Systems, Programming
+- [ ] sample.dart | sample.dart | Mobile, Programming
+- [ ] sample.dbf | dBase DBF database (demo) | data, binary
+- [ ] sample.dcm | DICOM Medical Image (demo) | Binary
+- [ ] sample.deb | Debian package (demo) | code, binary, archive
+- [ ] sample.desktop | sample.desktop (Desktop Entry) | Config
+- [ ] sample.dfy | sample.dfy (Dafny) | Code
+- [ ] sample.dhall | sample.dhall (Dhall) | Config, Functional
+- [ ] sample.djvu | Sample.djvu | Documents, Ebook
+- [ ] sample.dmp | Windows Minidump (demo) | Binary
+- [ ] sample.do | sample.do (Stata) | Code
+- [ ] sample.docx | Sample.docx | Office
+- [ ] sample.dot | sample.dot | Diagram, Visualization
+- [ ] sample.dwg | AutoCAD DWG drawing (demo) | Design, binary
+- [ ] sample.dxf | AutoCAD DXF Drawing (demo) | Design
+- [ ] sample.e | sample.e (Eiffel) | Code
+- [ ] sample.ejs | sample.ejs (EJS Template) | Code
+- [ ] sample.el | sample.el (Emacs Lisp) | Code
+- [ ] sample.elf | ELF Executable (x86-64 Linux stub) | Binary
+- [ ] sample.elm | sample.elm | Functional, Frontend
+- [ ] sample.elv | sample.elv (Elvish) | Code
+- [ ] sample.eml | Sample.eml | Data
+- [ ] sample.env | sample.env (environment variables) | Secrets, Config
+- [ ] sample.eps | Hello PostScript (EPS) | Data
+- [ ] sample.epub | Sample.epub | Documents, Ebook
+- [ ] sample.erl | sample.erl | Functional, Programming
+- [ ] sample.ex | sample.ex (Elixir) | Code
+- [ ] sample.exr | OpenEXR HDR image (demo) | Image, binary
+- [ ] sample.f3d | Fusion 360 design (demo) | Design, 3D, binary
+- [ ] sample.f90 | sample.f90 | Science, Systems
+- [ ] sample.factor | sample.factor (Factor) | Code
+- [ ] sample.fasta | Sample gene sequences (FASTA) | Data
+- [ ] sample.fb2 | Sample.fb2 | Documents, Ebook
+- [ ] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
+- [ ] sample.fbx | FBX 3D animation (demo) | 3D, binary, Design
+- [ ] sample.fish | sample.fish (Fish) | Code
+- [ ] sample.fits | Helix Nebula (FITS) | Data
+- [ ] sample.flac | Sample.flac | Media
+- [ ] sample.fnl | sample.fnl (Fennel) | Code
+- [ ] sample.fs | sample.fs | Functional, JVM
+- [ ] sample.fth | sample.fth (Forth) | Code
+- [ ] sample.gba | Sample.gba | Binary, Emulator
+- [ ] sample.gcode | sample.gcode | Data
+- [ ] sample.gd | sample.gd (GDScript) | Code
+- [ ] sample.geojson | Sample.geojson | Geo
+- [ ] sample.gff3 | GFF3 genome annotation (demo) | Scientific, bioinformatics
+- [ ] sample.gif | Sample.gif | Image, Media
+- [ ] sample.gitignore | sample.gitignore | Text
+- [ ] sample.glb | Sample.glb | Media, 3D
+- [ ] sample.gleam | sample.gleam | Functional, Programming
+- [ ] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
+- [ ] sample.gnuplot | sample.gnuplot (gnuplot) | Code
+- [ ] sample.gp5 | Guitar Pro 5 Tab (binary) | Music
+- [ ] sample.gpx | Sample.gpx | Data
+- [ ] sample.gr | sample.gr (Grain) | Code
+- [ ] sample.groovy | sample.groovy | JVM, Programming
+- [ ] sample.h2song | Demo Beat (Hydrogen) | Music
+- [ ] sample.h5 | HDF5 Scientific Dataset (demo) | scientific, binary, data
+- [ ] sample.har | Sample.har | Data
+- [ ] sample.hbs | sample.hbs | Template, Web
+- [ ] sample.heic | sample.heic | Image, Media
+- [ ] sample.hl7 | Patient Admission (HL7) | Data
+- [ ] sample.hlsl | sample.hlsl (HLSL Shader) | Graphics, Shader
+- [ ] sample.hs | sample.hs (Haskell) | Code
+- [ ] sample.htaccess | sample.htaccess | Config
+- [ ] sample.html | Sample.html | Code
+- [ ] sample.hx | sample.hx | Cross-platform, Programming
+- [ ] sample.ico | sample.ico | Image, Media
+- [ ] sample.ics | Sample.ics | Data
+- [ ] sample.idr | sample.idr (Idris) | Code
+- [ ] sample.img | sample.img | Binary, Emulator
+- [ ] sample.ini | Sample.ini | Config
+- [ ] sample.ink | sample.ink (Ink) | Code
+- [ ] sample.ino | sample.ino | Embedded, Programming
+- [ ] sample.ipa | iOS App (IPA demo) | code, binary, mobile
+- [ ] sample.ipynb | Sample.ipynb | Code
+- [ ] sample.iso | ISO 9660 Disc Image (demo) | Binary
+- [ ] sample.j2 | sample.j2 | Template, Web
+- [ ] sample.janet | sample.janet (Janet) | Code
+- [ ] sample.jl | sample.jl | Science, Programming
+- [ ] sample.jpeg | Sample.jpeg | Image, Media
+- [ ] sample.jpg | Sample.jpg | Image, Media
+- [ ] sample.json | Sample.json | Data
+- [ ] sample.jsonl | Sample.jsonl | Data
+- [ ] sample.jsonnet | Jsonnet template (demo) | Code
+- [ ] sample.jsonnet | sample.jsonnet | Config
+- [ ] sample.jxl | Sample.jxl | Image, Media
+- [ ] sample.kdl | sample.kdl (KDL document) | Config
+- [ ] sample.kicad_pcb | LED Blinker PCB (KiCad) | Data
+- [ ] sample.kml | Silicon Valley Map (KML) | Geo
+- [ ] sample.kmz | World Cities (KMZ) | Geo
+- [ ] sample.koka | sample.koka (Koka) | Code
+- [ ] sample.kra | Sample.kra | Image, Media
+- [ ] sample.kt | sample.kt | JVM, Programming
+- [ ] sample.lean | sample.lean (Lean 4) | Code
+- [ ] sample.liquid | sample.liquid | Template, Web
+- [ ] sample.lisp | sample.lisp (Common Lisp) | Code
+- [ ] sample.lnk | sample.lnk | Other
+- [ ] sample.log | Sample.log | Code
+- [ ] sample.lrf | Sample.lrf | Documents, Ebook
+- [ ] sample.ls | sample.ls (LiveScript) | Code
+- [ ] sample.lua | sample.lua | Scripting, Programming
+- [ ] sample.m | sample.m | Mobile, Programming
+- [ ] sample.m4 | sample.m4 (M4) | Code
+- [ ] sample.m4a | Sample.m4a | Media
+- [ ] sample.mat | MATLAB MAT-file (demo) | scientific, data, binary
+- [ ] sample.mbox | Sample.mbox | Data
+- [ ] sample.mbtiles | File Viewer Demo Map (MBTiles) | Geo
+- [ ] sample.mcworld | Minecraft World (demo) | Binary
+- [ ] sample.mediawiki | sample.mediawiki (MediaWiki) | Document
+- [ ] sample.mid | Sample.mid | Media
+- [ ] sample.mkv | Sample.mkv | Media
+- [ ] sample.ml | sample.ml | Functional, Programming
+- [ ] sample.mmd | sample.mmd (Mermaid Diagram) | Diagram, Visualization
+- [ ] sample.mmp | LMMS music project (demo) | audio, creative
+- [ ] sample.mobi | Sample.mobi | Documents, Ebook
+- [ ] sample.mojo | sample.mojo (Mojo) | Code
+- [ ] sample.mov | Sample.mov | Media
+- [ ] sample.mp3 | Sample.mp3 | Media
+- [ ] sample.mp4 | Sample.mp4 | Media
+- [ ] sample.msg | Sample.msg | Data
+- [ ] sample.msgpack | MessagePack data (demo) | data, binary
+- [ ] sample.mt940 | MT940 bank statement (demo) | Data, financial
+- [ ] sample.musicxml | Ode to Joy Theme (MusicXML) | Media
+- [ ] sample.mustache | sample.mustache | Template, Web
+- [ ] sample.nc | NetCDF Climate Dataset (demo) | Binary
+- [ ] sample.nes | sample.nes | Binary, Emulator
+- [ ] sample.nii | NIfTI neuroimaging (demo) | scientific, medical, binary
+- [ ] sample.nim | sample.nim | Systems, Programming
+- [ ] sample.nix | sample.nix (Nix expression) | Config, Nix
+- [ ] sample.njk | sample.njk (Nunjucks Template) | Code
+- [ ] sample.npy | sample.npy | Other
+- [ ] sample.nu | sample.nu (Nushell Script) | Code
+- [ ] sample.nupkg | NuGet package (demo) | code, binary, archive
+- [ ] sample.nut | sample.nut (Squirrel) | Code
+- [ ] sample.obj | Sample.obj | Media, 3D
+- [ ] sample.odin | sample.odin | Systems, Programming
+- [ ] sample.odt | Sample.odt | Office
+- [ ] sample.ofx | Sample.ofx | Data
+- [ ] sample.ogg | Sample.ogg | Media
+- [ ] sample.ora | Sample.ora | Image, Media
+- [ ] sample.org | sample.org (Org-mode) | Documents, Notes
+- [ ] sample.otf | Sample.otf | Media, Font
+- [ ] sample.pages | sample.pages | Office
+- [ ] sample.parquet | Apache Parquet Dataset (demo) | data, binary, scientific
+- [ ] sample.pas | sample.pas (Pascal) | Code
+- [ ] sample.patch | Sample.patch | Code
+- [ ] sample.pcap | Network Capture Demo (PCAP) | System, Data
+- [ ] sample.pdb | Demo Protein Structure (PDB) | Science, Data
+- [ ] sample.pdf | Sample.pdf | Documents
+- [ ] sample.pem | sample.pem | Secrets, Config
+- [ ] sample.php | sample.php | Web, Programming
+- [ ] sample.plist | sample.plist | Config
+- [ ] sample.ply | Sample.ply | Media, 3D
+- [ ] sample.pm | sample.pm | Scripting, Programming
+- [ ] sample.pml | sample.pml (PROMELA) | Code
+- [ ] sample.png | Sample.png | Image, Media
+- [ ] sample.pony | sample.pony (Pony) | Code
+- [ ] sample.pptx | Sample.pptx | Office
+- [ ] sample.pro | sample.pro | Functional, Logic
+- [ ] sample.procreate | sample.procreate | Image, Media
+- [ ] sample.proto | Protocol Buffer IDL (demo) | Code
+- [ ] sample.prproj | Short Film Project (Premiere) | Media
+- [ ] sample.ps1 | sample.ps1 | Scripting, Systems
+- [ ] sample.psb | Sample.psb | Image, Media
+- [ ] sample.psd | Sample.psd | Image, Media
+- [ ] sample.pug | sample.pug (Pug/Jade) | Code
+- [ ] sample.puml | sample.puml (PlantUML) | Diagram, UML
+- [ ] sample.purs | sample.purs | Functional, Programming
+- [ ] sample.pyc | Python bytecode (demo) | code, binary
+- [ ] sample.qif | QIF financial data (demo) | Data, financial
+- [ ] sample.R | sample.R | Science, Programming
+- [ ] sample.rb | sample.rb | Scripting, Programming
+- [ ] sample.rdp | sample.rdp | Other
+- [ ] sample.re | sample.re (Reason) | Code
+- [ ] sample.red | sample.red (Red) | Code
+- [ ] sample.reg | sample.reg | Config
+- [ ] sample.rego | sample.rego (Rego Policy) | Config, Security
+- [ ] sample.res | sample.res (ReScript) | Code
+- [ ] sample.rkt | sample.rkt | Functional, Lisp
+- [ ] sample.rpm | RPM package (demo) | code, binary
+- [ ] sample.rst | sample.rst (reStructuredText) | Documents, Documentation
+- [ ] sample.rtf | Sample.rtf | Documents
+- [ ] sample.sarif | SARIF security scan results (demo) | Code, security
+- [ ] sample.scala | sample.scala | JVM, Functional
+- [ ] sample.scm | sample.scm | Functional, Lisp
+- [ ] sample.sdf | Aspirin Molecule (SDF) | chemical, scientific
+- [ ] sample.sed | sample.sed (sed) | Code
+- [ ] sample.shp | NYC Borough Boundary (Shapefile) | Geo, Science
+- [ ] sample.sketch | sample.sketch | Image, Media
+- [ ] sample.sml | sample.sml (Standard ML) | Code
+- [ ] sample.smt2 | sample.smt2 (SMT-LIB 2) | Code
+- [ ] sample.sol | sample.sol | Blockchain, Programming
+- [ ] sample.sparql | sample.sparql | Data, Semantic Web
+- [ ] sample.spec | sample.spec (RPM Spec) | Config
+- [ ] sample.sqlite | Sample.sqlite | Data
+- [ ] sample.srt | Sample.srt | Media
+- [ ] sample.stl | Sample.stl | Media, 3D
+- [ ] sample.stp | STEP CAD Exchange file (demo) | Design, 3D
+- [ ] sample.svelte | sample.svelte (Svelte Component) | Code
+- [ ] sample.swf | sample.swf | Binary, Emulator
+- [ ] sample.swift | sample.swift | Mobile, Programming
+- [ ] sample.tcl | sample.tcl | Scripting, Programming
+- [ ] sample.tex | sample.tex (LaTeX) | Document
+- [ ] sample.textile | sample.textile (Textile) | Document
+- [ ] sample.tf | sample.tf (Terraform HCL) | Config, Infrastructure
+- [ ] sample.thrift | Apache Thrift IDL (demo) | Code
+- [ ] sample.thy | sample.thy (Isabelle/HOL) | Code
+- [ ] sample.tiff | Sample.tiff | Image, Media
+- [ ] sample.tla | sample.tla (TLA+) | Code
+- [ ] sample.tmpfiles | sample.tmpfiles (tmpfiles.d) | Config
+- [ ] sample.toml | Sample.toml | Config
+- [ ] sample.torrent | sample.torrent | Archive & Binary
+- [ ] sample.ttf | Sample.ttf | Media, Font
+- [ ] sample.ttl | sample.ttl | Data, Semantic Web
+- [ ] sample.txt | Sample.txt | Documents
+- [ ] sample.typ | sample.typ (Typst) | Document
+- [ ] sample.url | sample.url | Code
+- [ ] sample.v | sample.v | Hardware, HDL
+- [ ] sample.vala | sample.vala (Vala) | Code
+- [ ] sample.vcf | Sample.vcf | Data
+- [ ] sample.vhd | sample.vhd | Hardware, Programming
+- [ ] sample.vsix | VS Extension (demo) | code, binary, archive
+- [ ] sample.wad | Doom Patch WAD (demo) | Games
+- [ ] sample.wasm | sample.wasm | Other
+- [ ] sample.wav | Sample.wav | Media
+- [ ] sample.webm | Sample.webm | Media
+- [ ] sample.webp | Sample.webp | Image, Media
+- [ ] sample.wgsl | sample.wgsl (WGSL Shader) | Graphics, Shader
+- [ ] sample.whl | Python Wheel (demo) | code, binary, archive
+- [ ] sample.wl | sample.wl (Wolfram Language) | Code
+- [ ] sample.woff | Sample.woff | Media, Font
+- [ ] sample.woff2 | Sample.woff2 | Media, Font
+- [ ] sample.wren | sample.wren (Wren) | Code
+- [ ] sample.xcf | Sample.xcf | Image, Media
+- [ ] sample.xlsx | Sample.xlsx | Office
+- [ ] sample.xml | Sample.xml | Config
+- [ ] sample.xsl | sample.xsl (XSLT Stylesheet) | Code
+- [ ] sample.xyz | Ethanol Molecule (XYZ) | Science, Data
+- [ ] sample.y | sample.y (Yacc) | Code
+- [ ] sample.yaml | Sample.yaml | Config
+- [ ] sample.zig | sample.zig (Zig) | Code
+- [ ] sample.zip | Sample.zip | Archive & Binary
+- [ ] sample.zone | sample.zone (DNS Zone File) | Config, Network
+- [ ] sample.zsh | sample.zsh (Zsh) | Code
+- [ ] sbom.cyclonedx.json | sbom.cyclonedx.json (CycloneDX SBOM) | Security
+- [ ] sbom.spdx | sbom.spdx (SPDX SBOM) | Security
+- [ ] schema.graphql | schema.graphql (GraphQL Schema) | API, Code
+- [ ] schema.prisma | schema.prisma | Config
+- [ ] scorecard.yml | scorecard.yml | Config
+- [ ] script.sh | script.sh | Code
+- [ ] scrutiny.yaml | Scrutiny config | Monitoring, Storage, Self-Hosted
+- [ ] searxng-settings.yml | searxng-settings.yml | Config, Search
+- [ ] secret.txt | secret.txt | Secrets, Text
+- [ ] security.txt | security.txt (demo) | Config
+- [ ] security.txt | security.txt (demo) | Config
+- [ ] semaphore-config.json | Semaphore Config | Config, CI/CD
+- [ ] semaphore.yml | semaphore.yml | CI, Config
+- [ ] sentinel.conf | sentinel.conf (Redis Sentinel) | Config
+- [ ] sentry.properties | sentry.properties | Config
+- [ ] server.go | server.go | Code
+- [ ] server.properties | server.properties (Kafka) | Config
+- [ ] serverless.yml | serverless.yml | Config
+- [ ] service.proto | service.proto | Code, Data
+- [ ] settings.gradle | settings.gradle | Config
+- [ ] settings.py | settings.py (Django) | Config
+- [ ] settings.xml | settings.xml (Maven) | Config, Java
+- [ ] setup.cfg | setup.cfg | Config
+- [ ] sftpgo.json | SFTPGo Config | Config, Self-hosted
+- [ ] shader.wgsl | shader.wgsl | Code, Media
+- [ ] shadow-cljs.edn | shadow-cljs.edn | Config
+- [ ] shard.yml | shard.yml | Package
+- [ ] shopify.app.toml | shopify.app.toml | Config
+- [ ] shopify.app.toml | shopify.app.toml | uncategorized
+- [ ] sitemap.xml | XML Sitemap (demo) | Config
+- [ ] skaffold.yaml | skaffold.yaml | Config, devops
+- [ ] slapd.conf | slapd.conf (OpenLDAP Config) | Config
+- [ ] smb.conf | smb.conf (Samba) | Config, Network
+- [ ] snapcraft.yaml | snapcraft.yaml (Snapcraft) | Config
+- [ ] Snapfile | Snapfile | Config
+- [ ] snmp.yml | snmp.yml | Config
+- [ ] socket.yml | socket.yml | Config
+- [ ] sonar-project.properties | sonar-project.properties | Config
+- [ ] sonar.properties | SonarQube Config | Config, DevOps
+- [ ] sorbet.config | sorbet.config | Config
+- [ ] sources.list | sources.list (APT Sources) | Config
+- [ ] spacelift-config.yml | spacelift-config.yml | Config
+- [ ] speedtest-tracker.env | Speedtest Tracker config | Monitoring, Network, Self-Hosted
+- [ ] spotbugs-exclude.xml | spotbugs-exclude.xml (SpotBugs) | Config
+- [ ] sqitch.conf | sqitch.conf | Config, Database
+- [ ] sqlc.yaml | sqlc.yaml (sqlc) | Config
+- [ ] squid.conf | squid.conf | Config
+- [ ] ssh_config | ssh_config (SSH Client Config) | Config, Network
+- [ ] ssh-config | ssh-config | Config
+- [ ] sshd_config | sshd_config | Config
+- [ ] sssd.conf | sssd.conf (SSSD) | Config
+- [ ] stack.yaml | stack.yaml | Config
+- [ ] standalone.conf | standalone.conf | Config
+- [ ] standalone.conf | standalone.conf | uncategorized
+- [ ] starship.toml | starship.toml | Config, Terminal
+- [ ] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
+- [ ] storage.conf | storage.conf | Config
+- [ ] storage.conf | storage.conf | uncategorized
+- [ ] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
+- [ ] strings.xml | strings.xml (Android Strings) | Config
+- [ ] stryker.conf.json | stryker.conf.json | Config
+- [ ] stryker.conf.json | stryker.conf.json | uncategorized
+- [ ] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
+- [ ] styles.css | styles.css | Code
+- [ ] sudoers | sudoers (sudo access control) | Config, Security
+- [ ] supabase-config.toml | supabase/config.toml | Config
+- [ ] supervisord.conf | supervisord.conf | Config, Process
+- [ ] suricata.yaml | suricata.yaml | Security, Config
+- [ ] svelte.config.js | svelte.config.js | Config
+- [ ] sway | sway (Sway WM) | Config, Desktop
+- [ ] sxhkdrc | sxhkdrc (sxhkd hotkey daemon) | Config, Desktop
+- [ ] sys.config | sys.config | Config, Erlang
+- [ ] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
+- [ ] syslog-ng.conf | syslog-ng.conf | Config
+- [ ] syslog-ng.conf | syslog-ng.conf | uncategorized
+- [ ] system.yaml | system.yaml | Config
+- [ ] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
+- [ ] tailwind.config.json | tailwind.config.json | Config
+- [ ] tandoor.env | Tandoor Recipes config | Productivity, Food, Self-Hosted
+- [ ] Taskfile.yml | Taskfile.yml | Config
+- [ ] tauri.conf.json | tauri.conf.json (Tauri) | Config
+- [ ] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
+- [ ] telegraf.conf | telegraf.conf | Config
+- [ ] telegraf.conf | telegraf.conf | uncategorized
+- [ ] tempo.yaml | tempo.yaml | Config
+- [ ] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
+- [ ] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
+- [ ] tetragon.yaml | tetragon.yaml (Tetragon policy) | Security, Config
+- [ ] thanos-bucket.yml | thanos-bucket.yml (Thanos) | Config, Monitoring
+- [ ] thanos.yaml | thanos.yaml | Observability, Config
+- [ ] theme.less | theme.less | Code
+- [ ] theme.scss | theme.scss | Code
+- [ ] Tiltfile | Tiltfile | Config
+- [ ] tlp.conf | tlp.conf (TLP Power) | Config, System
+- [ ] tox.ini | tox.ini (tox Config) | Config, Python
+- [ ] traefik.toml | traefik.toml | Config
+- [ ] traefik.yml | traefik.yml | Config
+- [ ] travis.yml | Travis CI config | Config
+- [ ] trivy.yaml | trivy.yaml | Config
+- [ ] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
+- [ ] tsconfig.json | tsconfig.json | Config
+- [ ] tspconfig.yaml | tspconfig.yaml | Config
+- [ ] tspconfig.yaml | tspconfig.yaml | uncategorized
+- [ ] tsup.config.ts | tsup.config.ts | Config
+- [ ] turbo.json | turbo.json | Config
+- [ ] twenty.env | twenty.env | Config, Application, CRM
+- [ ] typos.toml | typos.toml (typos spell checker) | Config
+- [ ] ufw.conf | ufw.conf (UFW Firewall) | Config, Network
+- [ ] umami.env | umami.env | Config, Application, Analytics
+- [ ] unbound.conf | unbound.conf (Unbound DNS) | Config, Network
+- [ ] unleash.config.js | unleash.config.js | Config
+- [ ] uptime-kuma.json | uptime-kuma.json | Config, Monitoring
+- [ ] usr.bin.nginx | usr.bin.nginx (AppArmor profile) | Config, Security
+- [ ] uv.toml | uv.toml (uv package manager) | Config
+- [ ] Vagrantfile | Vagrantfile | Config
+- [ ] vale.ini | vale.ini | Config
+- [ ] values.yaml | values.yaml (Helm values) | DevOps, Config
+- [ ] vault.hcl | vault.hcl (HashiCorp Vault) | Config
+- [ ] vaultwarden.env | Vaultwarden Config | Config, Self-hosted
+- [ ] vcpkg.json | vcpkg.json | Config
+- [ ] vector.toml | vector.toml (Vector) | Config
+- [ ] velero-schedule.yaml | velero-schedule.yaml (Velero) | Config
+- [ ] vercel.json | Vercel config (vercel.json demo) | Config, devops
+- [ ] versions.tf | versions.tf (Terraform) | Config
+- [ ] victoria-metrics.yml | victoria-metrics.yml (VictoriaMetrics) | Config, Monitoring
+- [ ] vikunja.yml | vikunja.yml | Config, Application, Task Management
+- [ ] vite.config.js | vite.config.js | Config
+- [ ] vitepress.config.ts | vitepress.config.ts | Config
+- [ ] vitest.config.json | vitest.config.json | Config
+- [ ] vm.args | vm.args | Config, Erlang
+- [ ] volta.json | volta.json | Config
+- [ ] vscode-extensions.json | vscode-extensions.json | Config
+- [ ] vscode-launch.json | vscode-launch.json | Config
+- [ ] vscode-settings.json | vscode-settings.json | Config
+- [ ] vscode-tasks.json | vscode-tasks.json | Config
+- [ ] vsftpd.conf | vsftpd.conf | Config
+- [ ] vsftpd.conf | vsftpd.conf | uncategorized
+- [ ] wails.json | wails.json (Wails) | Config
+- [ ] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
+- [ ] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
+- [ ] wallabag.env | Wallabag config | Productivity, Reading, Self-Hosted
+- [ ] wallos.env | Wallos Config | Config, Self-hosted
+- [ ] wandb-settings | wandb-settings (W&B Config) | Config, Data Science
+- [ ] watchtower.env | Watchtower Config | Config, DevOps
+- [ ] waybar-config.json | waybar/config | Config, Desktop
+- [ ] waypoint.hcl | waypoint.hcl | Config
+- [ ] waypoint.hcl | waypoint.hcl | uncategorized
+- [ ] wdio.conf.js | wdio.conf.js | Config
+- [ ] web.config | web.config (IIS/ASP.NET) | Config
+- [ ] webpack.config.js | webpack.config.js | Config
+- [ ] welcome.md | Welcome.md | Documents
+- [ ] wg0.conf | wg0.conf | Config, Network
+- [ ] Widget.jsx | Widget.jsx | Code
+- [ ] windmill.env | windmill.env | Config, Application, Automation
+- [ ] woodpecker-agent.env | Woodpecker CI Agent Config | Config, CI/CD
+- [ ] woodpecker.yml | woodpecker.yml (Woodpecker CI) | Config, devops
+- [ ] worker.rs | worker.rs | Code
+- [ ] workspace.xml | workspace.xml (JetBrains) | Config
+- [ ] wpa_supplicant.conf | wpa_supplicant.conf (wpa_supplicant) | Config
+- [ ] wrangler.toml | wrangler.toml | Config
+- [ ] wsl.conf | wsl.conf | Config
+- [ ] xorg.conf | xorg.conf | Config, Desktop
+- [ ] yt-dlp.conf | yt-dlp.conf | Config
+- [ ] zabbix_agentd.conf | zabbix_agentd.conf | Monitoring, Config
+- [ ] zathurarc | zathurarc | Config
+- [ ] zitadel.yaml | ZITADEL Config | Config, Self-hosted
+- [ ] zoo.cfg | zoo.cfg | Config
+<!-- AUDIT_SECTION examples END -->
+
+### Special / Enhanced Example Entries
+
+<!-- AUDIT_SECTION special-examples START -->
+- [ ] _config.yml | Jekyll _config.yml | Config
+- [ ] _redirects | _redirects | Config
+- [ ] .actrc | act config (.actrc) | Config, DevOps
+- [ ] .air.toml | .air.toml | Config
+- [ ] .ansible-lint | .ansible-lint | Config, Ansible
+- [ ] .babelrc | .babelrc | Config
+- [ ] .bandit | .bandit | Config
+- [ ] .bashrc | .bashrc | Config, Shell
+- [ ] .bazelrc | .bazelrc | Config
+- [ ] .bundler-audit.yml | .bundler-audit.yml | Config
+- [ ] .checkov.yaml | .checkov.yaml | Config
+- [ ] .clang-format | .clang-format | Config
+- [ ] .clang-tidy | .clang-tidy | Config
+- [ ] .codeclimate.yml | .codeclimate.yml | Config
+- [ ] .coderabbit.yaml | .coderabbit.yaml | Config
+- [ ] .commitlintrc.json | .commitlintrc.json | Config
+- [ ] .curlrc | .curlrc | Config
+- [ ] .cursorrules | .cursorrules | Config
+- [ ] .dockerignore | .dockerignore | Config
+- [ ] .drone.yml | .drone.yml | Config, devops
+- [ ] .editorconfig | .editorconfig | Config
+- [ ] .env.example | .env.example (Env Template) | Config, Environment
+- [ ] .envrc | .envrc | Config
+- [ ] .eslintignore | .eslintignore | Config
+- [ ] .eslintrc.json | .eslintrc.json | Config
+- [ ] .flake8 | .flake8 | Config
+- [ ] .gcloudignore | .gcloudignore | Config, Google Cloud
+- [ ] .gdbinit | .gdbinit | Config
+- [ ] .gitattributes | .gitattributes | Config
+- [ ] .gitconfig | .gitconfig | Config
+- [ ] .gitignore | .gitignore | Config
+- [ ] .gitlab-ci.yml | .gitlab-ci.yml | Config
+- [ ] .gitleaks.toml | .gitleaks.toml | Config
+- [ ] .gitmodules | .gitmodules | Config
+- [ ] .golangci.yml | .golangci.yml | Config
+- [ ] .goreleaser.yaml | .goreleaser.yaml | Config
+- [ ] .grype.yaml | .grype.yaml (Grype config) | Security, Config
+- [ ] .hadolint.yaml | .hadolint.yaml | Config
+- [ ] .htaccess | .htaccess | Config
+- [ ] .htpasswd | .htpasswd | Config
+- [ ] .huskyrc.json | .huskyrc.json | Config
+- [ ] .inputrc | .inputrc | Config
+- [ ] .kitchen.yml | .kitchen.yml | uncategorized
+- [ ] .kitchen.yml | Test Kitchen Config | Config
+- [ ] .ko.yaml | .ko.yaml (ko container build) | Config
+- [ ] .lighthouserc.json | .lighthouserc.json | uncategorized
+- [ ] .lighthouserc.json | Lighthouse CI Config | Config
+- [ ] .lintstagedrc.json | .lintstagedrc.json | Config
+- [ ] .mailmap | .mailmap | Config
+- [ ] .markdownlint.json | .markdownlint.json | Config
+- [ ] .markdownlint.yml | .markdownlint.yml (Markdownlint YAML) | Config
+- [ ] .mocharc.json | .mocharc.json | Config
+- [ ] .mockery.yaml | .mockery.yaml (mockery) | Config
+- [ ] .msmtprc | .msmtprc (msmtp Config) | Config
+- [ ] .muttrc | .muttrc | Email, Config
+- [ ] .nanorc | .nanorc | Config
+- [ ] .ncurc.json | .ncurc.json | uncategorized
+- [ ] .ncurc.json | npm-check-updates Config | Config
+- [ ] .neomuttrc | .neomuttrc (NeoMutt Config) | Config
+- [ ] .node-version | .node-version | Config
+- [ ] .npmignore | .npmignore | Config
+- [ ] .npmrc | .npmrc | Config
+- [ ] .nycrc.json | .nycrc.json | Config
+- [ ] .parcelrc | .parcelrc | Config
+- [ ] .php-cs-fixer.php | .php-cs-fixer.php | Config
+- [ ] .prettierignore | .prettierignore | Config
+- [ ] .prettierrc.json | .prettierrc.json | Config
+- [ ] .prototools | .prototools | Config
+- [ ] .pylintrc | .pylintrc | Config
+- [ ] .python-version | .python-version | Config
+- [ ] .readthedocs.yaml | .readthedocs.yaml | Config
+- [ ] .release-it.yml | .release-it.yml | DevOps, Config
+- [ ] .releaserc.json | .releaserc.json | Config
+- [ ] .Rprofile | .Rprofile | Config, R
+- [ ] .rspec | .rspec | Config
+- [ ] .rubocop_todo.yml | .rubocop_todo.yml | Config
+- [ ] .rubocop.yml | .rubocop.yml | Config
+- [ ] .ruby-version | .ruby-version | Config
+- [ ] .scalafix.conf | .scalafix.conf | Config, Scala
+- [ ] .scalafmt.conf | .scalafmt.conf | Config, Scala
+- [ ] .screenrc | .screenrc | Config, Terminal
+- [ ] .semgrep.yml | .semgrep.yml | Config
+- [ ] .snyk | .snyk | Config
+- [ ] .spectral.yml | .spectral.yml | Config
+- [ ] .standard.yml | .standard.yml | Config
+- [ ] .stylelintrc.json | .stylelintrc.json | Config
+- [ ] .swcrc | .swcrc | Config
+- [ ] .syft.yaml | .syft.yaml (Syft config) | Config
+- [ ] .taskrc | .taskrc | Config
+- [ ] .terraform-docs.yml | .terraform-docs.yml | Config
+- [ ] .terraform.lock.hcl | .terraform.lock.hcl | Config
+- [ ] .tflint.hcl | .tflint.hcl (TFLint) | Config
+- [ ] .tmux.conf | .tmux.conf | Config, Terminal
+- [ ] .tool-versions | .tool-versions | Config
+- [ ] .trufflehog.yaml | .trufflehog.yaml | Security
+- [ ] .vimrc | .vimrc (Vim) | Config
+- [ ] .wezterm.lua | .wezterm.lua | Config, Terminal
+- [ ] .wgetrc | .wgetrc | Config
+- [ ] .windsurfrules | .windsurfrules | Config
+- [ ] .woodpecker.yml | .woodpecker.yml (Woodpecker CI) | Config, devops
+- [ ] .Xresources | .Xresources | Config, Desktop
+- [ ] .yamllint | .yamllint | Config
+- [ ] .yamllint.yml | .yamllint.yml | Config
+- [ ] .yarnrc.yml | .yarnrc.yml (Yarn) | Config, Package Manager
+- [ ] 01-netcfg.yaml | 01-netcfg.yaml | Config
+- [ ] 01-netcfg.yaml | 01-netcfg.yaml | uncategorized
+- [ ] 50-usb.rules | 50-usb.rules | Config, Linux
+- [ ] acquis.yaml | acquis.yaml (CrowdSec Acquis) | Config, Security
+- [ ] act_runner.yaml | Act Runner Config | Config, CI/CD
+- [ ] actual-config.json | Actual Budget Config | Config, Self-hosted
+- [ ] aider.conf.yml | aider.conf.yml | Config
+- [ ] airflow.cfg | airflow.cfg | Config
+- [ ] airflow.cfg | airflow.cfg | uncategorized
+- [ ] alacritty.toml | alacritty.toml | Config, Terminal
+- [ ] alembic.ini | alembic.ini | Config
+- [ ] alertmanager.yml | alertmanager.yml | Config
+- [ ] amplify.yml | AWS Amplify config | Config
+- [ ] analysis_options.yaml | analysis_options.yaml (Dart Analyzer) | Config, mobile
+- [ ] analysis.r | analysis.r | Code, Data
+- [ ] analytics.fs | analytics.fs | Code, Data
+- [ ] Anchor.toml | Anchor.toml (Anchor) | Config, Blockchain
+- [ ] AndroidManifest.xml | AndroidManifest.xml | Config
+- [ ] angular.json | Angular workspace | Config
+- [ ] ansible-playbook.yml | ansible-playbook.yml (Ansible) | DevOps, Config
+- [ ] ansible.cfg | ansible.cfg (Ansible Config) | Config, Ansible, DevOps
+- [ ] api.postman_collection.json | api.postman_collection.json (Postman) | API, Config
+- [ ] apisix.yaml | apisix.yaml | Config
+- [ ] apollo.config.json | apollo.config.json | Config
+- [ ] app.config | app.config (.NET) | Config
+- [ ] app.csproj | app.csproj | Config
+- [ ] app.dart | app.dart | Code
+- [ ] app.ini | app.ini (Gitea/Forgejo) | Config, DevOps
+- [ ] app.json | app.json (Expo) | Config
+- [ ] App.swift | App.swift | Code
+- [ ] app.ts | app.ts | Code
+- [ ] app.yaml | app.yaml | Config
+- [ ] Appfile | Appfile | Config
+- [ ] application-production.yml | application-production.yml (Spring Boot) | Config
+- [ ] application.properties | application.properties | Config
+- [ ] application.yml | application.yml | Config
+- [ ] appmanifest_570.acf | appmanifest_570.acf | Data
+- [ ] appsettings.json | appsettings.json (ASP.NET) | Config
+- [ ] appsmith.env | appsmith.env | Config, Application, Low-Code
+- [ ] appveyor.yml | appveyor.yml | Config
+- [ ] aqua.yaml | aqua.yaml | Config
+- [ ] arch-linux.conf | arch-linux.conf (boot entry) | Config
+- [ ] archivebox.conf | ArchiveBox config | Productivity, Archiving, Self-Hosted
+- [ ] ArchiveBox.conf | ArchiveBox.conf | Config, Application, Archiving
+- [ ] argo-cd-app.yaml | argo-cd-app.yaml (Argo CD) | Config
+- [ ] aria2.conf | aria2.conf | Config
+- [ ] artillery.yml | artillery.yml | Config
+- [ ] astro.config.mjs | astro.config.mjs | Config
+- [ ] asyncapi.yml | asyncapi.yml | Config
+- [ ] asyncapi.yml | asyncapi.yml | uncategorized
+- [ ] atlantis.yaml | atlantis.yaml | Config
+- [ ] atlas.hcl | atlas.hcl | Config, Database
+- [ ] audiobookshelf.env | Audiobookshelf config | Media, Audio, Self-Hosted
+- [ ] audit.rules | audit.rules (Audit Rules) | Config
+- [ ] authelia-config.yml | authelia-config.yml (Authelia) | Config, Security
+- [ ] authentik-blueprint.yaml | authentik-blueprint.yaml (Authentik) | Config, Security
+- [ ] authentik.env | Authentik Config | Config, Self-hosted
+- [ ] avahi-daemon.conf | avahi-daemon.conf (Avahi Daemon Config) | Config
+- [ ] aws-config | aws-config (AWS) | Config
+- [ ] aws-credentials | aws-credentials (AWS) | Config
+- [ ] azure-pipelines.yml | azure-pipelines.yml | Config
+- [ ] babel.config.json | babel.config.json | Config
+- [ ] bazarr.yaml | Bazarr config | Media, Subtitles, Self-Hosted
+- [ ] behat.yml | behat.yml | Config
+- [ ] benthos.yaml | benthos.yaml | Config
+- [ ] benthos.yaml | benthos.yaml | uncategorized
+- [ ] Berksfile | Berksfile | Config
+- [ ] biome.json | biome.json | Config
+- [ ] bitbucket-pipelines.yml | bitbucket-pipelines.yml | Config
+- [ ] blackbox.yml | blackbox.yml | Config
+- [ ] blacklist.conf | blacklist.conf (modprobe) | Config, System
+- [ ] bookstack.env | BookStack Config | Config, Self-hosted
+- [ ] borgmatic.yaml | borgmatic.yaml | DevOps, Config
+- [ ] Brewfile | Brewfile | Config
+- [ ] browserslistrc | .browserslistrc | Config
+- [ ] bruno.json | bruno.json | Config
+- [ ] bruno.json | bruno.json | uncategorized
+- [ ] bspwmrc | bspwmrc (bspwm WM) | Config, Desktop
+- [ ] buf.gen.yaml | buf.gen.yaml | Config
+- [ ] buf.gen.yaml | buf.gen.yaml | uncategorized
+- [ ] buf.yaml | buf.yaml | Config
+- [ ] build.bat | build.bat | Code
+- [ ] BUILD.bazel | BUILD.bazel | Code
+- [ ] build.gradle | build.gradle | Config
+- [ ] build.ninja | build.ninja | Code
+- [ ] build.sbt | build.sbt | Code
+- [ ] build.xml | build.xml (Apache Ant) | Config, Build
+- [ ] build.zig.zon | build.zig.zon | Package
+- [ ] buildkite.yml | buildkite.yml | Config, devops
+- [ ] buildspec.yml | AWS CodeBuild buildspec | Config
+- [ ] bunfig.toml | bunfig.toml | Config
+- [ ] Caddyfile | Caddyfile | Config, Server
+- [ ] cal-com.env | Cal.com Config | Config, Self-hosted
+- [ ] capacitor.config.json | capacitor.config.json | Config
+- [ ] cargo.config.toml | cargo.config.toml | Config
+- [ ] Cargo.lock | Cargo.lock | Config
+- [ ] Cargo.toml | Cargo.toml | Config
+- [ ] Cartfile | Cartfile | Config
+- [ ] cassandra.yaml | cassandra.yaml | Config
+- [ ] catalog-info.yaml | catalog-info.yaml | Config
+- [ ] cdk.json | cdk.json (AWS CDK) | Config
+- [ ] cert-manager.yaml | cert-manager.yaml (cert-manager) | Config, Kubernetes
+- [ ] changedetection.env | changedetection.io Config | Config, Self-hosted
+- [ ] Chart.yaml | Chart.yaml (Helm chart) | Config, DevOps
+- [ ] chart.yaml | Helm Chart.yaml | Config
+- [ ] checkstyle.xml | checkstyle.xml (Checkstyle) | Config
+- [ ] chrony.conf | chrony.conf (NTP) | Config, System
+- [ ] circleci-config.yml | circleci-config.yml | Config
+- [ ] circleci.yml | CircleCI config | Config
+- [ ] CITATION.cff | CITATION.cff | Config
+- [ ] claude_desktop_config.json | claude_desktop_config.json | Config
+- [ ] claude.md | CLAUDE.md | Config
+- [ ] client.ovpn | client.ovpn | Config, Network
+- [ ] cliff.toml | cliff.toml | Config
+- [ ] clippy.toml | clippy.toml (Clippy) | Config
+- [ ] cloudbuild.yaml | cloudbuild.yaml | Config
+- [ ] cloudflared.yml | cloudflared.yml | Config
+- [ ] cloudflared.yml | cloudflared.yml | uncategorized
+- [ ] cloudformation.yaml | cloudformation.yaml (CloudFormation) | Config
+- [ ] cluster-config.yaml | cluster-config.yaml (K8s Cluster Config) | Config, Kubernetes
+- [ ] CMakeLists.txt | CMakeLists.txt | Code
+- [ ] CMakePresets.json | CMakePresets.json | Config
+- [ ] cmus.rc | cmus.rc | Config, Music
+- [ ] codecov.yml | codecov.yml | Config
+- [ ] codefresh.yml | Codefresh config | Config, devops
+- [ ] codegen.yml | codegen.yml | Config
+- [ ] codegen.yml | codegen.yml | uncategorized
+- [ ] CODEOWNERS | CODEOWNERS | Config
+- [ ] coder.env | coder.env | Config, Application, Developer Tools
+- [ ] Common.props | Common.props (MSBuild) | Config
+- [ ] composer.json | composer.json | Config
+- [ ] composer.lock | composer.lock | Config
+- [ ] conanfile.txt | conanfile.txt | Config
+- [ ] concourse.env | Concourse CI Config | Config, CI/CD
+- [ ] conduit.toml | Conduit Config | Config, Self-hosted
+- [ ] conf.py | conf.py | Config
+- [ ] config.alloy | config.alloy | Config
+- [ ] config.nu | config.nu | Config, Terminal
+- [ ] config.production.json | config.production.json (Ghost) | Config, Application
+- [ ] config.rasi | config.rasi (Rofi) | Config, Desktop
+- [ ] config.xml | config.xml (ClickHouse) | Config
+- [ ] configure.ac | configure.ac (M4/Autoconf) | Build
+- [ ] conky.conf | conky.conf | Config
+- [ ] consul.hcl | consul.hcl (HashiCorp Consul) | Config
+- [ ] containerd.toml | containerd.toml (containerd) | Config, Container
+- [ ] control | control (Debian Control) | Config
+- [ ] Controller.m | Controller.m | Code
+- [ ] copilot-instructions.md | copilot-instructions.md | Config
+- [ ] core.clj | core.clj | Code
+- [ ] Corefile | Corefile (CoreDNS) | Config, Kubernetes
+- [ ] corosync.conf | corosync.conf | Config, Networking
+- [ ] cortex.yaml | cortex.yaml | Config
+- [ ] coturn.conf | coturn.conf | Config, Networking
+- [ ] cpanfile | cpanfile | Package, Perl
+- [ ] credentials.yml | credentials.yml (Rails) | Config
+- [ ] crontab | crontab (Cron Schedule) | Config, System
+- [ ] crossplane-config.yaml | crossplane-config.yaml (Crossplane) | Config
+- [ ] crowdin.yml | crowdin.yml (Crowdin config) | Config
+- [ ] crowdsec-config.yaml | crowdsec-config.yaml (CrowdSec Config) | Config, Security
+- [ ] crypttab | crypttab (Linux Encrypted Devices) | Config, System
+- [ ] cupsd.conf | cupsd.conf (CUPS) | Config
+- [ ] cypress.config.js | cypress.config.js | Config
+- [ ] daemon.conf | daemon.conf | Config
+- [ ] dagster.yaml | dagster.yaml | Data, Config
+- [ ] Dashboard.tsx | Dashboard.tsx | Code
+- [ ] dashy.yml | Dashy dashboard config | Dashboard, Self-Hosted, YAML
+- [ ] datadog.yaml | datadog.yaml | Config
+- [ ] dbt_project.yml | dbt_project.yml | Config, Database
+- [ ] default.vcl | default.vcl (Varnish VCL) | Config, Web Server
+- [ ] dendrite.yaml | Dendrite Config | Config, Self-hosted
+- [ ] deno.json | Deno config | Config
+- [ ] deny.toml | deny.toml | Config
+- [ ] dependabot.yml | dependabot.yml | Config
+- [ ] deploy.ps1 | deploy.ps1 | Code
+- [ ] deps.edn | deps.edn | Config
+- [ ] DESCRIPTION | DESCRIPTION | Config, R
+- [ ] devbox.json | devbox.json | Config
+- [ ] devcontainer.json | devcontainer.json | Config
+- [ ] devfile.yaml | devfile.yaml | Config
+- [ ] devfile.yaml | devfile.yaml | uncategorized
+- [ ] dex.yaml | dex.yaml | Config, Security, Identity
+- [ ] dhcpd.conf | dhcpd.conf (ISC DHCP Server) | Config, Network
+- [ ] Directory.Build.props | Directory.Build.props | Config
+- [ ] diun.yaml | Diun Config | Config, DevOps
+- [ ] dnf.conf | dnf.conf | Config, Linux
+- [ ] dnsmasq.conf | dnsmasq.conf | Config
+- [ ] dnsmasq.conf | dnsmasq.conf | uncategorized
+- [ ] docker-bake.hcl | docker-bake.hcl | Config
+- [ ] docker-compose.yml | docker-compose.yml | Config
+- [ ] docker-stack.yml | docker-stack.yml (Docker Stack) | Config
+- [ ] Dockerfile | Dockerfile | Config
+- [ ] docusaurus.config.js | docusaurus.config.js | Config
+- [ ] dovecot.conf | dovecot.conf (Dovecot IMAP/POP3) | Config, Mail
+- [ ] Doxyfile | Doxyfile | Config
+- [ ] dozzle.yaml | Dozzle config | Docker, Monitoring, Self-Hosted
+- [ ] dprint.json | dprint.json | Tooling, Config
+- [ ] drizzle.config.ts | drizzle.config.ts | Config
+- [ ] drone.env | Drone CI Config | Config, CI/CD
+- [ ] dtconfig.yaml | dtconfig.yaml (Dynatrace OneAgent) | Config, Monitoring
+- [ ] dune-project | dune-project | Config, Build, OCaml
+- [ ] dunstrc | dunstrc (dunst notification daemon) | Config, Desktop
+- [ ] dvc.yaml | dvc.yaml (DVC Pipeline) | Config, Data Science
+- [ ] Earthfile | Earthfile (Earthly build) | Config
+- [ ] eas.json | eas.json (Expo EAS) | Config, mobile
+- [ ] ejabberd.yml | ejabberd.yml | Config, Messaging
+- [ ] elastic-apm-agent.properties | elastic-apm-agent.properties (Elastic APM Agent) | Config, Monitoring
+- [ ] elasticsearch.yml | elasticsearch.yml | Config
+- [ ] electron-builder.yml | electron-builder.yml | Config
+- [ ] eleventy.config.js | eleventy.config.js | Config
+- [ ] elm.json | elm.json (Elm) | Config
+- [ ] environment | environment (/etc/environment) | Config
+- [ ] environment.yml | environment.yml (Conda) | Config
+- [ ] envoy.yaml | envoy.yaml | Config
+- [ ] esbuild.config.mjs | esbuild.config.mjs | Config, JavaScript, Build
+- [ ] Escrow.sol | Escrow.sol | Code
+- [ ] etcd.yaml | etcd.yaml | Config
+- [ ] example.cabal | example.cabal | Config
+- [ ] example.gemspec | example.gemspec | Config
+- [ ] example.js | example.js | Code
+- [ ] example.nimble | example.nimble (Nim) | Config
+- [ ] example.nomad | example.nomad (Nomad Job) | Config
+- [ ] Example.podspec | Example.podspec | Config
+- [ ] example.rdp | example.rdp | Other
+- [ ] exim4.conf | exim4.conf (Exim MTA) | Config, Mail
+- [ ] exports | exports (NFS exports) | Config, Network
+- [ ] external-secrets.yaml | external-secrets.yaml | Config
+- [ ] falco_rules.yaml | falco_rules.yaml | Config
+- [ ] falco.yaml | falco.yaml | Security
+- [ ] Fastfile | Fastfile | Config
+- [ ] filebeat.yml | filebeat.yml (Filebeat) | Config, Monitoring, Observability
+- [ ] filebeat.yml | filebeat.yml | uncategorized
+- [ ] filebrowser.json | File Browser Config | Config, Self-hosted
+- [ ] filter.lua | filter.lua | Code
+- [ ] firebase.json | firebase.json | Config, DevOps
+- [ ] flake.nix | flake.nix | Config, Nix
+- [ ] fluent-bit.conf | fluent-bit.conf | Config
+- [ ] fluent.conf | fluent.conf | Config
+- [ ] flux-helm-release.yaml | flux-helm-release.yaml (Flux CD) | Config
+- [ ] flux-kustomization.yaml | flux-kustomization.yaml (Flux Kustomization) | Config
+- [ ] fly.toml | fly.toml | Config, devops
+- [ ] flyway.conf | flyway.conf | Config
+- [ ] foot.ini | foot.ini | Config, Terminal
+- [ ] forge.config.js | forge.config.js (Electron Forge) | Config
+- [ ] forgejo.ini | Forgejo config | DevOps, Git, Self-Hosted
+- [ ] foundry.toml | foundry.toml (Foundry) | Config, Blockchain
+- [ ] freshrss.env | FreshRSS config | Productivity, RSS, Self-Hosted
+- [ ] frigate.yml | Frigate NVR Config | Config, NVR, Self-Hosted, Security
+- [ ] frpc.toml | frpc.toml | Config
+- [ ] frpc.toml | frpc.toml | uncategorized
+- [ ] frps.toml | frps.toml | Config
+- [ ] frps.toml | frps.toml | uncategorized
+- [ ] fstab | fstab (Linux Filesystem Table) | Config, System
+- [ ] FUNDING.yml | FUNDING.yml | Config
+- [ ] garden.yml | garden.yml | Config
+- [ ] garden.yml | garden.yml | uncategorized
+- [ ] gatekeeper-constraint.yaml | gatekeeper-constraint.yaml | Config
+- [ ] gatling.conf | gatling.conf | Config
+- [ ] gatsby-config.js | gatsby-config.js | Config
+- [ ] gcp-service-account.json | gcp-service-account.json (GCP) | Config
+- [ ] Gemfile | Gemfile | Code
+- [ ] Gemfile.lock | Gemfile.lock | Config
+- [ ] gitolite.conf | gitolite.conf | Config
+- [ ] glances.conf | Glances config | Monitoring, System, Self-Hosted
+- [ ] gleam.toml | gleam.toml (Gleam) | Config
+- [ ] glitchtip.env | glitchtip.env | Config, Application, Monitoring
+- [ ] global.json | global.json | Config
+- [ ] go.mod | go.mod | Config
+- [ ] go.sum | go.sum | Config
+- [ ] go.work | go.work | Config
+- [ ] google-services.json | google-services.json | Config
+- [ ] gotosocial-config.yaml | gotosocial-config.yaml | Config, Social
+- [ ] gpg.conf | gpg.conf (GnuPG) | Config, Security
+- [ ] gradle-wrapper.properties | gradle-wrapper.properties | Config
+- [ ] gradle.properties | gradle.properties | Config
+- [ ] grafana-dashboard.json | grafana-dashboard.json | Config
+- [ ] grafana.ini | grafana.ini | Config
+- [ ] graphql.config.json | graphql.config.json | Config
+- [ ] graylog.conf | graylog.conf | Monitoring, Config
+- [ ] grist.env | Grist Config | Config, Self-hosted
+- [ ] growthbook.json | growthbook.json | Config
+- [ ] grub | grub (/etc/default/grub) | Config, System
+- [ ] haproxy.cfg | haproxy.cfg | Config
+- [ ] harbor.yml | Harbor Config | Config, Self-hosted, DevOps
+- [ ] hardhat.config.js | hardhat.config.js (Hardhat) | Config, Blockchain
+- [ ] harness-pipeline.yaml | Harness Pipeline | Config, devops
+- [ ] hatch.toml | hatch.toml | Config
+- [ ] headscale-config.yaml | headscale-config.yaml (Headscale) | Config, networking
+- [ ] headscale.yaml | Headscale Config | Config, Self-hosted, Networking
+- [ ] heartbeat.yml | heartbeat.yml (Heartbeat) | Config, Monitoring, Observability
+- [ ] heartbeat.yml | heartbeat.yml | uncategorized
+- [ ] helix.toml | helix.toml | Config
+- [ ] helmfile.yaml | helmfile.yaml | Infrastructure, Kubernetes, Helm
+- [ ] heroku-app.json | heroku-app.json | Config, Deploy
+- [ ] heroku.yml | heroku.yml | Config
+- [ ] hoarder.env | Hoarder / Karakeep config | Productivity, Bookmarks, Self-Hosted
+- [ ] homarr.yaml | Homarr dashboard config | Dashboard, Self-Hosted, YAML
+- [ ] homepage-services.yaml | Homepage services config | Dashboard, Self-Hosted, YAML
+- [ ] homer.yml | homer.yml | Config, Self-hosted
+- [ ] homeserver.yaml | homeserver.yaml (Synapse) | Config, Messaging
+- [ ] hoppscotch.env | hoppscotch.env | Config, Application, API
+- [ ] hosts | hosts | Config, Network
+- [ ] httpd.conf | httpd.conf (Apache HTTP Server) | Config, Web Server
+- [ ] hugo.toml | hugo.toml | Config, Hugo
+- [ ] humans.txt | humans.txt (demo) | Config
+- [ ] humans.txt | humans.txt (demo) | Config
+- [ ] hydra-config.yaml | hydra-config.yaml (Hydra Config) | Config, Data Science
+- [ ] hyprland.conf | hyprland.conf (Hyprland Wayland compositor) | Config, Desktop
+- [ ] i3.config | i3.config (i3 WM) | Config, Desktop
+- [ ] immich.env | immich.env | Config, Application
+- [ ] index.php | index.php | Code
+- [ ] infisical.env | infisical.env | Config, Application, Security
+- [ ] influxdb.conf | influxdb.conf | Config
+- [ ] influxdb.conf | influxdb.conf | uncategorized
+- [ ] influxdb.yml | InfluxDB Config | Config, Monitoring
+- [ ] infra.tf | infra.tf | Code, Config
+- [ ] infracost.yml | infracost.yml | Config
+- [ ] init.el | init.el (Emacs) | Config
+- [ ] init.lua | init.lua (Neovim) | Config
+- [ ] insomnia.yaml | insomnia.yaml | Config
+- [ ] insomnia.yaml | insomnia.yaml | uncategorized
+- [ ] inventory | inventory (Ansible Inventory) | Config, Ansible
+- [ ] inventory.yml | inventory.yml | Config
+- [ ] invidious-config.yml | Invidious Config | Config, Self-hosted
+- [ ] invoiceninja.env | Invoice Ninja Config | Config, Self-hosted
+- [ ] ionic.config.json | ionic.config.json | Config
+- [ ] iptables.rules | iptables.rules (Firewall Rules) | Config, Network
+- [ ] istio-virtual-service.yaml | istio-virtual-service.yaml (Istio) | Config
+- [ ] jaeger-config.yaml | jaeger-config.yaml | Config
+- [ ] jail.local | jail.local (Fail2ban) | Config, Security
+- [ ] jellyseerr-settings.json | Jellyseerr config | Media, Requests, Self-Hosted
+- [ ] Jenkinsfile | Jenkinsfile | Config
+- [ ] jest.config.js | jest.config.js | Config
+- [ ] jest.config.json | jest.config.json | Config
+- [ ] Job.scala | Job.scala | Code
+- [ ] joplin.env | Joplin Server config | Productivity, Notes, Self-Hosted
+- [ ] journald.conf | journald.conf (journald) | Config
+- [ ] jsconfig.json | jsconfig.json | Config
+- [ ] justfile | Justfile | Config
+- [ ] Justfile | Justfile | Config
+- [ ] jvm.options | jvm.options | Config
+- [ ] k6.config.js | k6.config.js | Config
+- [ ] k8s-hpa.yaml | k8s-hpa.yaml (HPA) | Config
+- [ ] k8s-ingress.yaml | k8s-ingress.yaml | Config
+- [ ] k8s-network-policy.yaml | k8s-network-policy.yaml | Config
+- [ ] k8s-rbac.yaml | k8s-rbac.yaml (Kubernetes RBAC) | Config
+- [ ] k8s-role.yaml | k8s-role.yaml | Config
+- [ ] kamal.yml | kamal.yml | DevOps, Config
+- [ ] kavita-appsettings.json | Kavita config | Media, Books, Self-Hosted
+- [ ] keda-scaledobject.yaml | keda-scaledobject.yaml (KEDA) | Config
+- [ ] keepalived.conf | keepalived.conf (Keepalived VRRP) | Config, Network
+- [ ] keycloak-realm.json | keycloak-realm.json (Keycloak Realm) | Config, Security
+- [ ] keycloak.conf | Keycloak Config | Config, Security
+- [ ] kibana.yml | kibana.yml | Config
+- [ ] kibana.yml | kibana.yml | uncategorized
+- [ ] kitty.conf | kitty.conf | Config, Terminal
+- [ ] knexfile.js | knexfile.js | Config
+- [ ] knip.json | knip.json | Config
+- [ ] known_hosts | known_hosts (SSH) | Config
+- [ ] komga.yml | komga.yml | Config, Application, Media, Comics
+- [ ] kong.yaml | kong.yaml | Config
+- [ ] krb5.conf | krb5.conf (Kerberos) | Config, Security
+- [ ] kubeconfig.yaml | kubeconfig.yaml | Config
+- [ ] kustomization.yaml | kustomization.yaml (Kustomize) | DevOps, Config
+- [ ] kyverno-policy.yaml | kyverno-policy.yaml | Config
+- [ ] launchSettings.json | launchSettings.json (ASP.NET) | Config
+- [ ] lefthook.yml | lefthook.yml | Config
+- [ ] lerna.json | lerna.json | Config
+- [ ] lfrc | lfrc | Config
+- [ ] libs.versions.toml | libs.versions.toml (Gradle Version Catalog) | Config
+- [ ] LICENSE | LICENSE | Documents
+- [ ] lighttpd.conf | lighttpd.conf (Lighttpd Web Server) | Config, Network
+- [ ] limits.conf | limits.conf (PAM Limits) | Config
+- [ ] linkding.env | linkding.env | Config, Application
+- [ ] linkerd-config.yaml | linkerd-config.yaml (Linkerd) | Config
+- [ ] linkwarden.env | Linkwarden config | Productivity, Bookmarks, Self-Hosted
+- [ ] liquibase.properties | liquibase.properties | Config, Database
+- [ ] listmonk-config.toml | listmonk-config.toml | Config, Application, Email
+- [ ] lldap_config.toml | lldap_config.toml | Config, Security, Identity, LDAP
+- [ ] loader.conf | loader.conf | Config
+- [ ] Localizable.strings | Localizable.strings | Config
+- [ ] log4j2.xml | log4j2.xml | Config
+- [ ] logback.xml | logback.xml | Config
+- [ ] logrotate.conf | logrotate.conf (Log Rotation) | Config, System
+- [ ] logstash.conf | logstash.conf | Config
+- [ ] loki-config.yaml | loki-config.yaml | Config
+- [ ] lxc.config | lxc.config (LXC container) | Config, Container
+- [ ] main.c | main.c | Code
+- [ ] main.cf | main.cf (Postfix Mail Server) | Config, Mail
+- [ ] Main.java | Main.java | Code
+- [ ] Main.kt | Main.kt | Code
+- [ ] main.py | main.py | Code
+- [ ] main.rb | main.rb | Code
+- [ ] Makefile | Makefile | Code
+- [ ] makepkg.conf | makepkg.conf (makepkg Config) | Config, Arch Linux
+- [ ] mako | mako (mako notification daemon) | Config, Desktop
+- [ ] Manifest.toml | Manifest.toml (Julia Manifest) | Config
+- [ ] Manifest.toml | Manifest.toml | Config
+- [ ] Matchfile | Matchfile (Fastlane Match) | Config
+- [ ] mattermost-config.json | mattermost-config.json | Config, Application
+- [ ] maven-settings.xml | maven-settings.xml | Config
+- [ ] maybe.env | Maybe Config | Config, Self-hosted
+- [ ] mealie.env | mealie.env | Config, Application
+- [ ] meltano.yml | meltano.yml | Data, Config
+- [ ] memos.env | Memos config | Productivity, Notes, Self-Hosted
+- [ ] mesh.cpp | mesh.cpp | Code
+- [ ] meson.build | meson.build | Code
+- [ ] metagame/stage10/identity_echo.jpg | Awakening identity_echo.jpg | Metagame
+- [ ] metagame/stage10/nested/echoes/pattern_echo.json | Awakening pattern_echo.json | Metagame
+- [ ] metagame/stage10/syntax_echo.txt | Awakening syntax_echo.txt | Metagame
+- [ ] metagame/stage2/cipher.txt | Glyph Dungeon cipher.txt | Metagame
+- [ ] metagame/stage5/transmission_hum.mp3 | Signal Racer transmission_hum.mp3 | Metagame
+- [ ] metagame/stage6/protocols_of_the_entity.epub | Protocol Codex protocols_of_the_entity.epub | Metagame
+- [ ] metagame/stage7/entity_a_verification.png | Identity Arbiter Entity A image | Metagame
+- [ ] metagame/stage7/entity_f_verification.png | Identity Arbiter Entity F image | Metagame
+- [ ] metagame/stage7/entity_metadata.json | Identity Arbiter metadata sidecar | Metagame
+- [ ] metro.config.js | metro.config.js | Config
+- [ ] mimir.yaml | mimir.yaml | Config
+- [ ] miniflux.conf | miniflux.conf | Config, Application
+- [ ] minio.env | minio.env | Config, Self-hosted
+- [ ] mint.json | mint.json | Config
+- [ ] mint.json | mint.json | uncategorized
+- [ ] mise.toml | mise.toml | Config
+- [ ] mix.exs | mix.exs | Code
+- [ ] mkdocs.yml | mkdocs.yml | Config
+- [ ] mkinitcpio.conf | mkinitcpio.conf (mkinitcpio) | Config
+- [ ] MLproject | MLproject (MLflow Project) | Config, Data Science
+- [ ] Module.vb | Module.vb | Code
+- [ ] molecule.yml | molecule.yml | Config, Ansible, Testing
+- [ ] mongod.conf | mongod.conf | Config
+- [ ] monica.env | monica.env | Config, Application
+- [ ] moon.yml | moon.yml | Config
+- [ ] mosquitto.conf | mosquitto.conf | Config, Networking
+- [ ] mpd.conf | mpd.conf | Config, Audio
+- [ ] mpv.conf | mpv.conf | Config
+- [ ] my.cnf | my.cnf (MySQL) | Config
+- [ ] myapp.container | myapp.container (Podman Quadlet) | Config
+- [ ] myapp.service | myapp.service (systemd Service) | Config, System
+- [ ] MyApp.xcscheme | MyApp.xcscheme (Xcode Scheme) | Config, mobile
+- [ ] mypackage.opam | mypackage.opam | Code, OCaml
+- [ ] mypy.ini | mypy config | Config
+- [ ] n8n.env | n8n.env | Config, Application, Automation
+- [ ] nagios.cfg | nagios.cfg | Monitoring, Config
+- [ ] named.conf | named.conf (BIND DNS) | Config, Network
+- [ ] nats.conf | nats.conf | Config
+- [ ] ncmpcpp.conf | ncmpcpp.conf | Config, Music
+- [ ] nest-cli.json | nest-cli.json | Config
+- [ ] netbird.json | netbird.json | Networking, Config
+- [ ] netbox-configuration.py | netbox-configuration.py | Config, Application, Network
+- [ ] netdata.conf | netdata.conf (Netdata) | Monitoring, Infrastructure, Self-Hosted
+- [ ] netlify.toml | Netlify config (netlify.toml demo) | Config, devops
+- [ ] netplan.yaml | netplan.yaml | Config
+- [ ] newrelic.yml | newrelic.yml (New Relic Agent) | Config, Monitoring
+- [ ] newsboat.conf | newsboat.conf | Config
+- [ ] next.config.js | next.config.js | Config
+- [ ] nfpm.yaml | nfpm.yaml (nfpm) | Config
+- [ ] nftables.conf | nftables.conf (nftables Firewall Rules) | Config, Network
+- [ ] nginx.conf | nginx.conf | Config
+- [ ] nix.conf | nix.conf | Config
+- [ ] nix.conf | nix.conf | uncategorized
+- [ ] nocodb.env | nocodb.env | Config, Application, Database
+- [ ] nsqd.cfg | nsqd.cfg | Config
+- [ ] nsqd.cfg | nsqd.cfg | uncategorized
+- [ ] nsswitch.conf | nsswitch.conf (NSSwitch) | Config
+- [ ] ntfy-server.yml | ntfy-server.yml (ntfy) | Config, Application, Notifications
+- [ ] nuget.config | nuget.config | Config
+- [ ] nuxt.config.ts | nuxt.config.ts | Config
+- [ ] nvmrc | .nvmrc | Config
+- [ ] nx.json | nx.json | Config
+- [ ] nzbget.conf | NZBGet config | Download, Usenet, Self-Hosted
+- [ ] oauth2-proxy.cfg | oauth2-proxy.cfg (OAuth2 Proxy) | Config, Security
+- [ ] odoo.conf | odoo.conf | Config, Application
+- [ ] open-webui.env | Open WebUI Config | Config, AI, Self-hosted
+- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | Config
+- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | uncategorized
+- [ ] openapi.yaml | openapi.yaml | Config
+- [ ] opencost.yaml | opencost.yaml | Config
+- [ ] openrc-myapp | openrc-myapp (OpenRC) | Config
+- [ ] openssl.cnf | openssl.cnf | Config, Security
+- [ ] opentelemetry-k8s.yaml | opentelemetry-k8s.yaml (OTel Operator) | Config
+- [ ] org.example.App.yaml | org.example.App.yaml (Flatpak Manifest) | Config
+- [ ] osv-scanner.toml | osv-scanner.toml | Config
+- [ ] otel-collector-config.yaml | otel-collector-config.yaml | Config
+- [ ] outline.env | outline.env | Config, Application
+- [ ] overseerr-settings.json | Overseerr config | Media, Requests, Self-Hosted
+- [ ] Overwriter.frag | Overwriter.frag | Code
+- [ ] package-lock.json | package-lock.json | Config
+- [ ] package.json | package.json | Config
+- [ ] package.nuspec | package.nuspec | Config
+- [ ] Package.resolved | Package.resolved | Config
+- [ ] Package.swift | Package.swift | Code
+- [ ] packages.config | packages.config (NuGet) | Config
+- [ ] packer.json | packer.json (HashiCorp Packer) | DevOps, Config
+- [ ] pacman.conf | pacman.conf | Config
+- [ ] Panel.vue | Panel.vue | Code
+- [ ] paperless.conf | paperless.conf | Config, Application
+- [ ] patroni.yml | patroni.yml | Config, Database
+- [ ] pdns.conf | pdns.conf | Config
+- [ ] pdns.conf | pdns.conf | uncategorized
+- [ ] pg_hba.conf | pg_hba.conf | Config, Database
+- [ ] pgbackrest.conf | pgbackrest.conf | Config, Database
+- [ ] pgbouncer.ini | pgbouncer.ini | Config
+- [ ] photoprism-options.yml | photoprism-options.yml | Config, Application
+- [ ] php.ini | php.ini | Config
+- [ ] phpstan.neon | phpstan.neon | Config
+- [ ] phpunit.xml | phpunit.xml | Config
+- [ ] phpunit.xml.dist | phpunit.xml.dist (PHPUnit Config) | Config
+- [ ] picom.conf | picom.conf | Config
+- [ ] pihole-setupVars.conf | setupVars.conf (Pi-hole) | Networking, Config
+- [ ] pip.conf | pip.conf | Config
+- [ ] pipeline.ex | pipeline.ex | Code
+- [ ] pipewire.conf | pipewire.conf | Config
+- [ ] Pipfile | Pipfile | Config
+- [ ] pixi.toml | pixi.toml | Config
+- [ ] PKGBUILD | PKGBUILD (Arch Linux) | Config
+- [ ] plane.env | plane.env | Config, Application, Project Management
+- [ ] plausible.env | plausible.env | Config, Application, Analytics
+- [ ] playwright.config.ts | playwright.config.ts | Config
+- [ ] pnpm-lock.yaml | pnpm-lock.yaml | Config
+- [ ] pnpm-workspace.yaml | pnpm-workspace.yaml | Config
+- [ ] pocket-id.env | Pocket ID config | Authentication, Identity, Self-Hosted
+- [ ] Podfile | Podfile | Config
+- [ ] Podfile.lock | Podfile.lock (CocoaPods) | Config, mobile
+- [ ] poetry.lock | poetry.lock | Config
+- [ ] policy.rego | policy.rego | Config
+- [ ] polybar.ini | polybar.ini (Polybar status bar) | Config, Desktop
+- [ ] pom.xml | pom.xml (Maven POM) | Config, Java
+- [ ] postcss.config.json | postcss.config.json | Config
+- [ ] postgresql.conf | postgresql.conf | Config
+- [ ] pre-commit-config.yaml | .pre-commit-config.yaml | Config
+- [ ] pre-commit-config.yaml | pre-commit config | Config
+- [ ] prefect.yaml | prefect.yaml | DevOps, Config
+- [ ] Procfile | Procfile | Config, DevOps
+- [ ] proftpd.conf | proftpd.conf | Config
+- [ ] proftpd.conf | proftpd.conf | uncategorized
+- [ ] Program.cs | Program.cs | Code
+- [ ] proguard-rules.pro | proguard-rules.pro (ProGuard Rules) | Config
+- [ ] project.clj | project.clj | Config
+- [ ] Project.toml | Project.toml | Config
+- [ ] prometheus-rules.yaml | prometheus-rules.yaml | Config
+- [ ] prometheus.yml | prometheus.yml | Config
+- [ ] promtail-config.yaml | promtail-config.yaml | Config
+- [ ] provenance.json | provenance.json (SLSA Provenance) | Security
+- [ ] psalm.xml | psalm.xml | Config
+- [ ] pubspec.lock | pubspec.lock (demo) | Config, mobile
+- [ ] pubspec.yaml | Flutter pubspec.yaml (demo) | Config, mobile
+- [ ] Pulumi.yaml | Pulumi.yaml (Pulumi project) | DevOps, Config
+- [ ] puma.rb | puma.rb (Puma) | Config
+- [ ] pyproject.toml | pyproject.toml | Config
+- [ ] pyrightconfig.json | Pyright config | Config
+- [ ] pytest.ini | pytest.ini (pytest Config) | Config, Python
+- [ ] query.sql | query.sql | Code, Data
+- [ ] rabbitmq.conf | rabbitmq.conf | Config
+- [ ] radicale.conf | radicale.conf | Config, Application
+- [ ] railway.json | railway.json | Config
+- [ ] rallly.env | Rallly Config | Config, Self-hosted
+- [ ] ranger.conf | ranger.conf | Config
+- [ ] rclone.conf | rclone.conf | Config
+- [ ] react-native.config.js | react-native.config.js | Config
+- [ ] rebar.config | rebar.config | Config
+- [ ] rector.php | rector.php (Rector Config) | Config
+- [ ] recursor.conf | recursor.conf | Config
+- [ ] recursor.conf | recursor.conf | uncategorized
+- [ ] redis.conf | redis.conf | Config
+- [ ] registries.conf | registries.conf | Config
+- [ ] registries.conf | registries.conf | uncategorized
+- [ ] release-please-config.json | release-please-config.json | Config
+- [ ] Release.xcconfig | Release.xcconfig | Config
+- [ ] remix.config.js | remix.config.js | Config
+- [ ] render.yaml | render.yaml | Config
+- [ ] renovate.json | renovate.json | Config
+- [ ] report.pl | report.pl | Code
+- [ ] requirements.txt | requirements.txt | Config
+- [ ] requirements.yml | requirements.yml | Config
+- [ ] resolv.conf | resolv.conf | Config, Network
+- [ ] resticprofile.toml | resticprofile.toml | Config
+- [ ] robots.txt | robots.txt (demo) | Config
+- [ ] robots.txt | robots.txt (demo) | Config
+- [ ] rollup.config.js | rollup.config.js | Config
+- [ ] rspack.config.js | rspack.config.js | Config
+- [ ] rsyslog.conf | rsyslog.conf (rsyslog) | Config, System
+- [ ] ruff.toml | ruff.toml (Ruff linter) | Config
+- [ ] rush.json | rush.json | Config
+- [ ] rust-toolchain.toml | rust-toolchain.toml | Config
+- [ ] rustfmt.toml | rustfmt.toml (rustfmt) | Config
+- [ ] sabnzbd.ini | SABnzbd config | Download, Usenet, Self-Hosted
+- [ ] sam-template.yaml | sam-template.yaml (AWS SAM) | Config
+- [ ] samconfig.toml | samconfig.toml (SAM Config) | Config
+- [ ] sample-alloy.als | sample-alloy.als (Alloy) | Code
+- [ ] sample-k8s.yaml | Kubernetes Deployment manifest (demo) | Config, devops
+- [ ] sample-workflow.yml | GitHub Actions CI workflow (demo) | Code, devops
+- [ ] sample.aac | Sample.aac | Media
+- [ ] sample.adoc | sample.adoc (AsciiDoc) | Docs, Documentation
+- [ ] sample.ads | sample.ads | Systems, Programming
+- [ ] sample.agda | sample.agda (Agda) | Code
+- [ ] sample.asm | sample.asm | Systems, Programming
+- [ ] sample.avif | Sample.avif | Image, Media
+- [ ] sample.avsc | Avro Schema (demo) | Data
+- [ ] sample.awk | sample.awk (AWK) | Code
+- [ ] sample.bal | sample.bal (Ballerina) | Code
+- [ ] sample.bbc | sample.bbc (BBCode) | Document
+- [ ] sample.bicep | sample.bicep (Azure Bicep) | Config, Infrastructure
+- [ ] sample.bmp | Sample.bmp | Image, Media
+- [ ] sample.capnp | sample.capnp (Cap'n Proto) | Schema, Serialization
+- [ ] sample.carbon | sample.carbon (Carbon) | Code
+- [ ] sample.chpl | sample.chpl (Chapel) | Code
+- [ ] sample.clj | sample.clj | Functional, Lisp
+- [ ] sample.cob | sample.cob | Legacy, Programming
+- [ ] sample.coffee | sample.coffee (CoffeeScript) | Code
+- [ ] sample.coq | sample.coq (Coq) | Code
+- [ ] sample.cr | sample.cr | Systems, Programming
+- [ ] sample.crash | sample.crash | Code
+- [ ] sample.cue | CUE schema (demo) | Config
+- [ ] sample.cue | sample.cue | Config
+- [ ] sample.d | sample.d | Systems, Programming
+- [ ] sample.dart | sample.dart | Mobile, Programming
+- [ ] sample.desktop | sample.desktop (Desktop Entry) | Config
+- [ ] sample.dfy | sample.dfy (Dafny) | Code
+- [ ] sample.dhall | sample.dhall (Dhall) | Config, Functional
+- [ ] sample.djvu | Sample.djvu | Documents, Ebook
+- [ ] sample.do | sample.do (Stata) | Code
+- [ ] sample.dot | sample.dot | Diagram, Visualization
+- [ ] sample.e | sample.e (Eiffel) | Code
+- [ ] sample.ejs | sample.ejs (EJS Template) | Code
+- [ ] sample.el | sample.el (Emacs Lisp) | Code
+- [ ] sample.elm | sample.elm | Functional, Frontend
+- [ ] sample.elv | sample.elv (Elvish) | Code
+- [ ] sample.env | sample.env (environment variables) | Secrets, Config
+- [ ] sample.epub | Sample.epub | Documents, Ebook
+- [ ] sample.erl | sample.erl | Functional, Programming
+- [ ] sample.ex | sample.ex (Elixir) | Code
+- [ ] sample.f90 | sample.f90 | Science, Systems
+- [ ] sample.factor | sample.factor (Factor) | Code
+- [ ] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
+- [ ] sample.fish | sample.fish (Fish) | Code
+- [ ] sample.flac | Sample.flac | Media
+- [ ] sample.fnl | sample.fnl (Fennel) | Code
+- [ ] sample.fs | sample.fs | Functional, JVM
+- [ ] sample.fth | sample.fth (Forth) | Code
+- [ ] sample.gba | Sample.gba | Binary, Emulator
+- [ ] sample.gd | sample.gd (GDScript) | Code
+- [ ] sample.gif | Sample.gif | Image, Media
+- [ ] sample.gitignore | sample.gitignore | Text
+- [ ] sample.gleam | sample.gleam | Functional, Programming
+- [ ] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
+- [ ] sample.gnuplot | sample.gnuplot (gnuplot) | Code
+- [ ] sample.gr | sample.gr (Grain) | Code
+- [ ] sample.groovy | sample.groovy | JVM, Programming
+- [ ] sample.hbs | sample.hbs | Template, Web
+- [ ] sample.hlsl | sample.hlsl (HLSL Shader) | Graphics, Shader
+- [ ] sample.hs | sample.hs (Haskell) | Code
+- [ ] sample.htaccess | sample.htaccess | Config
+- [ ] sample.html | Sample.html | Code
+- [ ] sample.hx | sample.hx | Cross-platform, Programming
+- [ ] sample.idr | sample.idr (Idris) | Code
+- [ ] sample.img | sample.img | Binary, Emulator
+- [ ] sample.ini | Sample.ini | Config
+- [ ] sample.ink | sample.ink (Ink) | Code
+- [ ] sample.ino | sample.ino | Embedded, Programming
+- [ ] sample.ipynb | Sample.ipynb | Code
+- [ ] sample.j2 | sample.j2 | Template, Web
+- [ ] sample.janet | sample.janet (Janet) | Code
+- [ ] sample.jl | sample.jl | Science, Programming
+- [ ] sample.jpeg | Sample.jpeg | Image, Media
+- [ ] sample.jpg | Sample.jpg | Image, Media
+- [ ] sample.jsonnet | Jsonnet template (demo) | Code
+- [ ] sample.jsonnet | sample.jsonnet | Config
+- [ ] sample.jxl | Sample.jxl | Image, Media
+- [ ] sample.kdl | sample.kdl (KDL document) | Config
+- [ ] sample.koka | sample.koka (Koka) | Code
+- [ ] sample.kra | Sample.kra | Image, Media
+- [ ] sample.kt | sample.kt | JVM, Programming
+- [ ] sample.lean | sample.lean (Lean 4) | Code
+- [ ] sample.liquid | sample.liquid | Template, Web
+- [ ] sample.lisp | sample.lisp (Common Lisp) | Code
+- [ ] sample.log | Sample.log | Code
+- [ ] sample.lrf | Sample.lrf | Documents, Ebook
+- [ ] sample.ls | sample.ls (LiveScript) | Code
+- [ ] sample.lua | sample.lua | Scripting, Programming
+- [ ] sample.m | sample.m | Mobile, Programming
+- [ ] sample.m4 | sample.m4 (M4) | Code
+- [ ] sample.m4a | Sample.m4a | Media
+- [ ] sample.mediawiki | sample.mediawiki (MediaWiki) | Document
+- [ ] sample.mkv | Sample.mkv | Media
+- [ ] sample.ml | sample.ml | Functional, Programming
+- [ ] sample.mmd | sample.mmd (Mermaid Diagram) | Diagram, Visualization
+- [ ] sample.mobi | Sample.mobi | Documents, Ebook
+- [ ] sample.mojo | sample.mojo (Mojo) | Code
+- [ ] sample.mov | Sample.mov | Media
+- [ ] sample.mp4 | Sample.mp4 | Media
+- [ ] sample.mustache | sample.mustache | Template, Web
+- [ ] sample.nes | sample.nes | Binary, Emulator
+- [ ] sample.nim | sample.nim | Systems, Programming
+- [ ] sample.nix | sample.nix (Nix expression) | Config, Nix
+- [ ] sample.njk | sample.njk (Nunjucks Template) | Code
+- [ ] sample.nu | sample.nu (Nushell Script) | Code
+- [ ] sample.nut | sample.nut (Squirrel) | Code
+- [ ] sample.odin | sample.odin | Systems, Programming
+- [ ] sample.ogg | Sample.ogg | Media
+- [ ] sample.org | sample.org (Org-mode) | Documents, Notes
+- [ ] sample.otf | Sample.otf | Media, Font
+- [ ] sample.pas | sample.pas (Pascal) | Code
+- [ ] sample.patch | Sample.patch | Code
+- [ ] sample.pem | sample.pem | Secrets, Config
+- [ ] sample.php | sample.php | Web, Programming
+- [ ] sample.plist | sample.plist | Config
+- [ ] sample.pm | sample.pm | Scripting, Programming
+- [ ] sample.pml | sample.pml (PROMELA) | Code
+- [ ] sample.png | Sample.png | Image, Media
+- [ ] sample.pony | sample.pony (Pony) | Code
+- [ ] sample.pro | sample.pro | Functional, Logic
+- [ ] sample.proto | Protocol Buffer IDL (demo) | Code
+- [ ] sample.ps1 | sample.ps1 | Scripting, Systems
+- [ ] sample.psb | Sample.psb | Image, Media
+- [ ] sample.psd | Sample.psd | Image, Media
+- [ ] sample.pug | sample.pug (Pug/Jade) | Code
+- [ ] sample.puml | sample.puml (PlantUML) | Diagram, UML
+- [ ] sample.purs | sample.purs | Functional, Programming
+- [ ] sample.R | sample.R | Science, Programming
+- [ ] sample.rb | sample.rb | Scripting, Programming
+- [ ] sample.re | sample.re (Reason) | Code
+- [ ] sample.red | sample.red (Red) | Code
+- [ ] sample.reg | sample.reg | Config
+- [ ] sample.rego | sample.rego (Rego Policy) | Config, Security
+- [ ] sample.res | sample.res (ReScript) | Code
+- [ ] sample.rkt | sample.rkt | Functional, Lisp
+- [ ] sample.rst | sample.rst (reStructuredText) | Documents, Documentation
+- [ ] sample.sarif | SARIF security scan results (demo) | Code, security
+- [ ] sample.scala | sample.scala | JVM, Functional
+- [ ] sample.scm | sample.scm | Functional, Lisp
+- [ ] sample.sed | sample.sed (sed) | Code
+- [ ] sample.sml | sample.sml (Standard ML) | Code
+- [ ] sample.smt2 | sample.smt2 (SMT-LIB 2) | Code
+- [ ] sample.sol | sample.sol | Blockchain, Programming
+- [ ] sample.sparql | sample.sparql | Data, Semantic Web
+- [ ] sample.spec | sample.spec (RPM Spec) | Config
+- [ ] sample.svelte | sample.svelte (Svelte Component) | Code
+- [ ] sample.swf | sample.swf | Binary, Emulator
+- [ ] sample.swift | sample.swift | Mobile, Programming
+- [ ] sample.tcl | sample.tcl | Scripting, Programming
+- [ ] sample.tex | sample.tex (LaTeX) | Document
+- [ ] sample.textile | sample.textile (Textile) | Document
+- [ ] sample.tf | sample.tf (Terraform HCL) | Config, Infrastructure
+- [ ] sample.thrift | Apache Thrift IDL (demo) | Code
+- [ ] sample.thy | sample.thy (Isabelle/HOL) | Code
+- [ ] sample.tiff | Sample.tiff | Image, Media
+- [ ] sample.tla | sample.tla (TLA+) | Code
+- [ ] sample.tmpfiles | sample.tmpfiles (tmpfiles.d) | Config
+- [ ] sample.toml | Sample.toml | Config
+- [ ] sample.ttf | Sample.ttf | Media, Font
+- [ ] sample.ttl | sample.ttl | Data, Semantic Web
+- [ ] sample.typ | sample.typ (Typst) | Document
+- [ ] sample.url | sample.url | Code
+- [ ] sample.v | sample.v | Hardware, HDL
+- [ ] sample.vala | sample.vala (Vala) | Code
+- [ ] sample.vhd | sample.vhd | Hardware, Programming
+- [ ] sample.webm | Sample.webm | Media
+- [ ] sample.webp | Sample.webp | Image, Media
+- [ ] sample.wgsl | sample.wgsl (WGSL Shader) | Graphics, Shader
+- [ ] sample.wl | sample.wl (Wolfram Language) | Code
+- [ ] sample.woff | Sample.woff | Media, Font
+- [ ] sample.woff2 | Sample.woff2 | Media, Font
+- [ ] sample.wren | sample.wren (Wren) | Code
+- [ ] sample.xcf | Sample.xcf | Image, Media
+- [ ] sample.xml | Sample.xml | Config
+- [ ] sample.xsl | sample.xsl (XSLT Stylesheet) | Code
+- [ ] sample.y | sample.y (Yacc) | Code
+- [ ] sample.yaml | Sample.yaml | Config
+- [ ] sample.zig | sample.zig (Zig) | Code
+- [ ] sample.zone | sample.zone (DNS Zone File) | Config, Network
+- [ ] sample.zsh | sample.zsh (Zsh) | Code
+- [ ] sbom.cyclonedx.json | sbom.cyclonedx.json (CycloneDX SBOM) | Security
+- [ ] sbom.spdx | sbom.spdx (SPDX SBOM) | Security
+- [ ] schema.graphql | schema.graphql (GraphQL Schema) | API, Code
+- [ ] schema.prisma | schema.prisma | Config
+- [ ] scorecard.yml | scorecard.yml | Config
+- [ ] script.sh | script.sh | Code
+- [ ] scrutiny.yaml | Scrutiny config | Monitoring, Storage, Self-Hosted
+- [ ] searxng-settings.yml | searxng-settings.yml | Config, Search
+- [ ] secret.txt | secret.txt | Secrets, Text
+- [ ] security.txt | security.txt (demo) | Config
+- [ ] security.txt | security.txt (demo) | Config
+- [ ] semaphore-config.json | Semaphore Config | Config, CI/CD
+- [ ] semaphore.yml | semaphore.yml | CI, Config
+- [ ] sentinel.conf | sentinel.conf (Redis Sentinel) | Config
+- [ ] sentry.properties | sentry.properties | Config
+- [ ] server.go | server.go | Code
+- [ ] server.properties | server.properties (Kafka) | Config
+- [ ] serverless.yml | serverless.yml | Config
+- [ ] service.proto | service.proto | Code, Data
+- [ ] settings.gradle | settings.gradle | Config
+- [ ] settings.py | settings.py (Django) | Config
+- [ ] settings.xml | settings.xml (Maven) | Config, Java
+- [ ] setup.cfg | setup.cfg | Config
+- [ ] sftpgo.json | SFTPGo Config | Config, Self-hosted
+- [ ] shader.wgsl | shader.wgsl | Code, Media
+- [ ] shadow-cljs.edn | shadow-cljs.edn | Config
+- [ ] shard.yml | shard.yml | Package
+- [ ] shopify.app.toml | shopify.app.toml | Config
+- [ ] shopify.app.toml | shopify.app.toml | uncategorized
+- [ ] sitemap.xml | XML Sitemap (demo) | Config
+- [ ] skaffold.yaml | skaffold.yaml | Config, devops
+- [ ] slapd.conf | slapd.conf (OpenLDAP Config) | Config
+- [ ] smb.conf | smb.conf (Samba) | Config, Network
+- [ ] snapcraft.yaml | snapcraft.yaml (Snapcraft) | Config
+- [ ] Snapfile | Snapfile | Config
+- [ ] snmp.yml | snmp.yml | Config
+- [ ] socket.yml | socket.yml | Config
+- [ ] sonar-project.properties | sonar-project.properties | Config
+- [ ] sonar.properties | SonarQube Config | Config, DevOps
+- [ ] sorbet.config | sorbet.config | Config
+- [ ] sources.list | sources.list (APT Sources) | Config
+- [ ] spacelift-config.yml | spacelift-config.yml | Config
+- [ ] speedtest-tracker.env | Speedtest Tracker config | Monitoring, Network, Self-Hosted
+- [ ] spotbugs-exclude.xml | spotbugs-exclude.xml (SpotBugs) | Config
+- [ ] sqitch.conf | sqitch.conf | Config, Database
+- [ ] sqlc.yaml | sqlc.yaml (sqlc) | Config
+- [ ] squid.conf | squid.conf | Config
+- [ ] ssh_config | ssh_config (SSH Client Config) | Config, Network
+- [ ] ssh-config | ssh-config | Config
+- [ ] sshd_config | sshd_config | Config
+- [ ] sssd.conf | sssd.conf (SSSD) | Config
+- [ ] stack.yaml | stack.yaml | Config
+- [ ] standalone.conf | standalone.conf | Config
+- [ ] standalone.conf | standalone.conf | uncategorized
+- [ ] starship.toml | starship.toml | Config, Terminal
+- [ ] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
+- [ ] storage.conf | storage.conf | Config
+- [ ] storage.conf | storage.conf | uncategorized
+- [ ] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
+- [ ] strings.xml | strings.xml (Android Strings) | Config
+- [ ] stryker.conf.json | stryker.conf.json | Config
+- [ ] stryker.conf.json | stryker.conf.json | uncategorized
+- [ ] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
+- [ ] styles.css | styles.css | Code
+- [ ] sudoers | sudoers (sudo access control) | Config, Security
+- [ ] supabase-config.toml | supabase/config.toml | Config
+- [ ] supervisord.conf | supervisord.conf | Config, Process
+- [ ] suricata.yaml | suricata.yaml | Security, Config
+- [ ] svelte.config.js | svelte.config.js | Config
+- [ ] sway | sway (Sway WM) | Config, Desktop
+- [ ] sxhkdrc | sxhkdrc (sxhkd hotkey daemon) | Config, Desktop
+- [ ] sys.config | sys.config | Config, Erlang
+- [ ] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
+- [ ] syslog-ng.conf | syslog-ng.conf | Config
+- [ ] syslog-ng.conf | syslog-ng.conf | uncategorized
+- [ ] system.yaml | system.yaml | Config
+- [ ] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
+- [ ] tailwind.config.json | tailwind.config.json | Config
+- [ ] tandoor.env | Tandoor Recipes config | Productivity, Food, Self-Hosted
+- [ ] Taskfile.yml | Taskfile.yml | Config
+- [ ] tauri.conf.json | tauri.conf.json (Tauri) | Config
+- [ ] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
+- [ ] telegraf.conf | telegraf.conf | Config
+- [ ] telegraf.conf | telegraf.conf | uncategorized
+- [ ] tempo.yaml | tempo.yaml | Config
+- [ ] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
+- [ ] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
+- [ ] tetragon.yaml | tetragon.yaml (Tetragon policy) | Security, Config
+- [ ] thanos-bucket.yml | thanos-bucket.yml (Thanos) | Config, Monitoring
+- [ ] thanos.yaml | thanos.yaml | Observability, Config
+- [ ] theme.less | theme.less | Code
+- [ ] theme.scss | theme.scss | Code
+- [ ] Tiltfile | Tiltfile | Config
+- [ ] tlp.conf | tlp.conf (TLP Power) | Config, System
+- [ ] tox.ini | tox.ini (tox Config) | Config, Python
+- [ ] traefik.toml | traefik.toml | Config
+- [ ] traefik.yml | traefik.yml | Config
+- [ ] travis.yml | Travis CI config | Config
+- [ ] trivy.yaml | trivy.yaml | Config
+- [ ] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
+- [ ] tsconfig.json | tsconfig.json | Config
+- [ ] tspconfig.yaml | tspconfig.yaml | Config
+- [ ] tspconfig.yaml | tspconfig.yaml | uncategorized
+- [ ] tsup.config.ts | tsup.config.ts | Config
+- [ ] turbo.json | turbo.json | Config
+- [ ] twenty.env | twenty.env | Config, Application, CRM
+- [ ] typos.toml | typos.toml (typos spell checker) | Config
+- [ ] ufw.conf | ufw.conf (UFW Firewall) | Config, Network
+- [ ] umami.env | umami.env | Config, Application, Analytics
+- [ ] unbound.conf | unbound.conf (Unbound DNS) | Config, Network
+- [ ] unleash.config.js | unleash.config.js | Config
+- [ ] uptime-kuma.json | uptime-kuma.json | Config, Monitoring
+- [ ] usr.bin.nginx | usr.bin.nginx (AppArmor profile) | Config, Security
+- [ ] uv.toml | uv.toml (uv package manager) | Config
+- [ ] Vagrantfile | Vagrantfile | Config
+- [ ] vale.ini | vale.ini | Config
+- [ ] values.yaml | values.yaml (Helm values) | DevOps, Config
+- [ ] vault.hcl | vault.hcl (HashiCorp Vault) | Config
+- [ ] vaultwarden.env | Vaultwarden Config | Config, Self-hosted
+- [ ] vcpkg.json | vcpkg.json | Config
+- [ ] vector.toml | vector.toml (Vector) | Config
+- [ ] velero-schedule.yaml | velero-schedule.yaml (Velero) | Config
+- [ ] vercel.json | Vercel config (vercel.json demo) | Config, devops
+- [ ] versions.tf | versions.tf (Terraform) | Config
+- [ ] victoria-metrics.yml | victoria-metrics.yml (VictoriaMetrics) | Config, Monitoring
+- [ ] vikunja.yml | vikunja.yml | Config, Application, Task Management
+- [ ] vite.config.js | vite.config.js | Config
+- [ ] vitepress.config.ts | vitepress.config.ts | Config
+- [ ] vitest.config.json | vitest.config.json | Config
+- [ ] vm.args | vm.args | Config, Erlang
+- [ ] volta.json | volta.json | Config
+- [ ] vscode-extensions.json | vscode-extensions.json | Config
+- [ ] vscode-launch.json | vscode-launch.json | Config
+- [ ] vscode-settings.json | vscode-settings.json | Config
+- [ ] vscode-tasks.json | vscode-tasks.json | Config
+- [ ] vsftpd.conf | vsftpd.conf | Config
+- [ ] vsftpd.conf | vsftpd.conf | uncategorized
+- [ ] wails.json | wails.json (Wails) | Config
+- [ ] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
+- [ ] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
+- [ ] wallabag.env | Wallabag config | Productivity, Reading, Self-Hosted
+- [ ] wallos.env | Wallos Config | Config, Self-hosted
+- [ ] wandb-settings | wandb-settings (W&B Config) | Config, Data Science
+- [ ] watchtower.env | Watchtower Config | Config, DevOps
+- [ ] waybar-config.json | waybar/config | Config, Desktop
+- [ ] waypoint.hcl | waypoint.hcl | Config
+- [ ] waypoint.hcl | waypoint.hcl | uncategorized
+- [ ] wdio.conf.js | wdio.conf.js | Config
+- [ ] web.config | web.config (IIS/ASP.NET) | Config
+- [ ] webpack.config.js | webpack.config.js | Config
+- [ ] wg0.conf | wg0.conf | Config, Network
+- [ ] Widget.jsx | Widget.jsx | Code
+- [ ] windmill.env | windmill.env | Config, Application, Automation
+- [ ] woodpecker-agent.env | Woodpecker CI Agent Config | Config, CI/CD
+- [ ] woodpecker.yml | woodpecker.yml (Woodpecker CI) | Config, devops
+- [ ] worker.rs | worker.rs | Code
+- [ ] workspace.xml | workspace.xml (JetBrains) | Config
+- [ ] wpa_supplicant.conf | wpa_supplicant.conf (wpa_supplicant) | Config
+- [ ] wrangler.toml | wrangler.toml | Config
+- [ ] wsl.conf | wsl.conf | Config
+- [ ] xorg.conf | xorg.conf | Config, Desktop
+- [ ] yt-dlp.conf | yt-dlp.conf | Config
+- [ ] zabbix_agentd.conf | zabbix_agentd.conf | Monitoring, Config
+- [ ] zathurarc | zathurarc | Config
+- [ ] zitadel.yaml | ZITADEL Config | Config, Self-hosted
+- [ ] zoo.cfg | zoo.cfg | Config
+<!-- AUDIT_SECTION special-examples END -->

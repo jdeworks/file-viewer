@@ -39,6 +39,10 @@
 | Download original | ✅ | Always available |
 | Export as PNG | ❌ | Screenshot mode available but no direct export |
 
+## Real-World Examples
+
+- [`sample.ans`](../examples/sample.ans) — ANSI art sample with color escape sequences
+
 ## Known Limitations
 
 - CP437 block characters (▓▒░) may not render identically across fonts

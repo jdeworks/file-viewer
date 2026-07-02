@@ -1,6 +1,6 @@
 # Audio
 
-> Native HTML5 audio playback for the most common audio formats — press play and the browser handles the rest.
+> Audio playback and listening workspace for common browser-playable formats, with waveform-style navigation, ID3 metadata, chapters, playlist support, and optional FFmpeg-powered editing/export tools.
 
 ## Format Details
 
@@ -16,24 +16,32 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Playback controls | ✅ | Native `<audio>` element — play, pause, seek, volume |
-| Duration display | ✅ | Total length shown in the browser player |
+| Playback controls | ✅ | Native media element plus viewer controls for play, pause, seek, and volume |
+| Duration display | ✅ | Current time and total duration shown when browser metadata is available |
 | Format badge | ✅ | Extension shown in the file header |
+| Listen workspace | ✅ | Waveform/lane surface with seek cursor, trim region, and chapter markers |
+| Chapters | ✅ | Embedded ID3 chapters and supported sidecar chapter files are normalized when present |
+| Cover art | ✅ | Embedded ID3 cover art is shown when present |
+| ID3 / metadata display | ✅ | Title, artist, album, year, track, genre, duration, and container facts where available |
+| Playlist navigation | ✅ | Sibling media files in an opened folder can be queued/navigated |
+| Sleep timer / resume | ✅ | Playback extras persist position and support long-form listening helpers |
+| Transcode hint | ✅ | Unsupported/awkward formats show a conversion hint |
 | Source view | ❌ | Binary format — no raw text view |
 | Diff | ❌ | Binary format not diffable |
-| Waveform visualization | ❌ | Not implemented |
-| ID3 / metadata display | ❌ | Tags not surfaced in UI |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Audio editing | ❌ | Read-only |
+| Trim / export panel | ✅ | Available when Media transcoding is enabled in Settings |
+| EQ / fades / listen edits | ✅ | In-browser listen surface supports non-destructive settings/export workflows |
+| Direct tag editing | ❌ | Embedded metadata write-back is not implemented |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Format conversion | ❌ | Not implemented |
+| Processed audio export | ✅ | Available when FFmpeg support is enabled |
+| Format conversion | ✅ | Optional FFmpeg path; requires first-use WASM download/cache |
 
 ## Browser Format Support
 
@@ -52,23 +60,33 @@ Native playback depends on the browser's codec support. The following table refl
 
 WMA files are not supported by any major browser without a plugin.
 
+## Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Media transcoding | Off | Enables FFmpeg-powered conversion, trim, export, and some editor tools after a large first-use WASM download |
+
 ## Real-World Examples
 
 - [`sample.mp3`](../examples/sample.mp3) — example MP3 audio clip
 - [`sample.ogg`](../examples/sample.ogg) — example Ogg Vorbis clip
+- [`sample.wav`](../examples/sample.wav) — example WAV clip
+- [`sample.flac`](../examples/sample.flac) — example FLAC clip
+- [`sample.m4a`](../examples/sample.m4a) — example M4A clip
+- [`sample.aac`](../examples/sample.aac) — example AAC clip
 
 ## Known Limitations
 
 - WMA files will not play in any browser — download and use a local player instead
 - Opus and Ogg are unsupported in Safari; use MP3 or AAC for cross-browser compatibility
-- No metadata (title, artist, album art) is displayed from embedded ID3/Vorbis tags
+- FFmpeg-based tools are intentionally opt-in because the WASM payload is large
+- Embedded metadata is read-only; title/artist/cover edits are not written back
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Waveform visualization | High | Med | Web Audio API + Canvas; scrub seek from waveform |
-| ID3 / Vorbis tag display | Med | Med | `music-metadata` or `jsmediatags` for tag parsing |
-| Metadata editor | Low | Hard | Write-back requires Companion server |
-| Format conversion (e.g. WAV → MP3) | Low | Hard | Needs FFmpeg WASM (~30 MB) |
-| Playlist / multi-file queue | Low | Med | Sequential playback across dropped files |
+| Vorbis/MP4 tag parity | Med | Med | ID3 is surfaced; other tag families need broader parsers |
+| Metadata editor | Low | Hard | Write-back requires safe container-specific tag writers |
+| Smaller transcoding path | Low | Hard | Current FFmpeg option is powerful but heavy |
+| Playlist persistence | Low | Med | Preserve queue state across folder reloads |

@@ -44,6 +44,11 @@
 - Automation lanes and send/return routing are not shown
 - Very large sessions may fail decompression due to browser memory limits
 
+## Real-World Examples
+
+- [`sample.als`](../examples/sample.als) — compact Ableton Live Set sample
+- [`sample-alloy.als`](../examples/sample-alloy.als) — Ableton sample containing track/plugin inventory
+
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
