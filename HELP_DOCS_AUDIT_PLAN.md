@@ -189,11 +189,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/url.md
 - [x] docs/readme/v86.md
 - [x] docs/readme/vcard.md
-- [ ] docs/readme/video.md
-- [ ] docs/readme/wad.md
-- [ ] docs/readme/wasm.md
-- [ ] docs/readme/xlsx.md
-- [ ] docs/readme/xml.md
+- [x] docs/readme/video.md
+- [x] docs/readme/wad.md
+- [x] docs/readme/wasm.md
+- [x] docs/readme/xlsx.md
+- [x] docs/readme/xml.md
 - [ ] docs/readme/xyz.md
 - [ ] docs/readme/yaml.md
 - [ ] docs/readme/zip.md

@@ -1,6 +1,6 @@
 # WebAssembly Binary
 
-> WebAssembly module inspector showing section layout, imports, exports, and function signatures — all decoded from the binary format.
+> WebAssembly module inspector showing section layout, imports, exports, memory declarations, and section counts decoded from the binary format.
 
 ## Format Details
 | Field | Value |
@@ -18,12 +18,12 @@
 | Section layout | ✅ | All standard sections (Type, Import, Function, Table, Memory, Global, Export, Element, Code, Data) |
 | Import list | ✅ | Module + field name + kind (function/table/memory/global) |
 | Export list | ✅ | Exported name + kind + index |
-| Function types | ✅ | Parameter/result types for all type entries |
+| Type/code/data counts | ✅ | Type, code, and data section item counts summarized |
 | Memory/table info | ✅ | Minimum/maximum size limits |
-| Global declarations | ✅ | Type + mutability |
+| Global declarations | ⚠️ | Global sections are identified in layout; individual global initializers are not expanded |
 | Custom sections | ✅ | Name, size of non-standard sections |
 | Source maps | ❌ | DWARF debug info not parsed |
-| Metadata | ✅ | Module size, magic/version, section count by type |
+| Metadata | ✅ | Format, version, size, section/import/export/function counts, memory flag, custom section names |
 | Diff/compare | ❌ | Binary diff only (not semantic) |
 
 ### Edit
@@ -44,6 +44,8 @@
 | Feature | Priority | Notes |
 |---------|----------|-------|
 | Disassemble to WAT text format | High | Use wasm-tools or Binaryen WASM to do WAT conversion client-side |
+| Function signatures | Medium | Decode function type indices into parameter/result signatures |
 | Code section size per function | Medium | Show byte size per function body |
+| Global initializer decoding | Low | Show global value types, mutability, and init expressions |
 | DWARF debug section parsing | Low | Extract source file/line info from debug sections |
 | Validate module | Low | WebAssembly.validate() result shown in UI |

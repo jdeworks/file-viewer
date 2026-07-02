@@ -1,12 +1,12 @@
 # XML
 
-> Collapsible element tree with attribute display, structural DOM diff, and platform DOMParser validation.
+> Collapsible XML element tree with XPath filtering, attribute display, structural DOM diff, JSON export, and platform DOMParser validation.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.xml`, `.xsl`, `.xslt`, `.svg`, `.rss`, `.atom` |
+| Extension(s) | `.xml`, `.xsd`, `.xsl`, `.xslt`, `.rss`, `.atom`, `.wsdl`, `.pom`, `.csproj`, `.props`, `.targets`, `.resx` |
 | MIME type | `application/xml`, `text/xml` |
 | Binary / Text | Text |
 | Common use | Configuration, data interchange, RSS/Atom feeds, SVG graphics, SOAP APIs |
@@ -18,12 +18,13 @@
 |------------|--------|-------|
 | Collapsible element tree | ✅ | Tag names, attributes, and text content shown |
 | Attribute display | ✅ | Attributes shown inline on the element node |
+| XPath query panel | ✅ | Native `document.evaluate()` filters/highlights matching elements |
 | Namespace display | ✅ | Root namespace URI shown in metadata |
 | Parse error | ✅ | Browser DOMParser surfaces position and message |
 | Source view | ✅ | Monaco editor with XML syntax highlighting |
 | Structural diff | ✅ | DOM-level diff via `xmldiff.js` |
 | Text diff | ✅ | Standard line diff also available |
-| Metadata | ✅ | Root element, element count, attribute count, comment count, namespace |
+| Metadata | ✅ | Root element, element/attribute/comment counts, namespace count, character count, POM dependency count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -35,11 +36,11 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Convert to JSON | ❌ | XML → JSON mapping is ambiguous; not yet implemented |
+| Convert to JSON | ✅ | Recursive element-to-object mapping with `@attribute` and `#text` conventions |
 
 ## Known-File Enhancement
 
-`pom.xml` (Maven) gets a dependency count in the metadata panel.
+XML files get Layer-3 known-file plugins for 25 common XML-based configs, including Maven POM/settings, Ant, AndroidManifest, Android strings, .NET `csproj`/MSBuild props, NuGet, Log4j/Logback, PHPUnit, Psalm, Checkstyle, SpotBugs, ClickHouse, sitemap, Xcode scheme, and JetBrains workspace files.
 
 ## Real-World Examples
 
@@ -47,14 +48,14 @@
 
 ## Known Limitations
 
-- XSLT transformation not applied (would require cross-origin XSL files)
+- XSLT transformation is not applied; XSL/XSLT files are inspected as XML/source
 - Very large XML files may be slow to tree-render; source view handles any size
+- SVG is normally handled by the dedicated SVG/image path, not the generic XML type
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| XPath query | Med | Med | Filter/highlight nodes by XPath expression |
-| Convert to JSON | Med | Med | opinionated XML→JSON mapping (e.g. xml2js-style) |
 | XML Schema validation (XSD) | Low | Hard | Validate against a provided XSD |
 | Format / pretty-print | Low | Easy | Re-indent the source on save |
+| Known-plugin index docs | Low | Easy | Generate the plugin list from `docs/types/text/xml/known/` |
