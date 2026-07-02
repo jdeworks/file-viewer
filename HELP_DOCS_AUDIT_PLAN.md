@@ -1042,11 +1042,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/asciiart/metadata.js
 - [ ] docs/types/text/asciiart/renderer.js
 - [ ] docs/types/text/asciiart/settings.default.json
-- [ ] docs/types/text/bio/detect.js
-- [ ] docs/types/text/bio/index.js
-- [ ] docs/types/text/bio/metadata.js
-- [ ] docs/types/text/bio/renderer.js
-- [ ] docs/types/text/bio/settings.default.json
+- [x] docs/types/text/bio/detect.js
+- [x] docs/types/text/bio/index.js
+- [x] docs/types/text/bio/metadata.js
+- [x] docs/types/text/bio/renderer.js
+- [x] docs/types/text/bio/settings.default.json
 - [ ] docs/types/text/chat/detect.js
 - [ ] docs/types/text/chat/index.js
 - [ ] docs/types/text/chat/metadata.js

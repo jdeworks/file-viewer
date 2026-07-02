@@ -261,7 +261,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
 | [HL7 v2 Health](/) | `.hl7` | Basic | Monaco | download | — | FHIR support |
 | [DICOM Medical](dicom.md) | `.dcm` `.dicom` | Partial | None | download | — | Pixel render |
-| [Bioinformatics](/) | `.fasta` `.fa` `.fq` `.fastq` `.vcf` `.bed` | Basic | Monaco | download | — | Alignment view |
+| [Bioinformatics](bio.md) | `.fasta` `.fa` `.fq` `.fastq` `.vcf` `.bed` | Basic | Monaco | download | — | Alignment view |
 | [GFF/GTF Genomic](/) | `.gff` `.gff3` `.gtf` | Basic | Monaco | download | — | Genome browser |
 | [OFX / QFX Financial](/) | `.ofx` `.qfx` `.ofc` | Basic | Monaco | download | — | — |
 | [QIF Financial](/) | `.qif` `.qfx` | Full | Monaco | download | — | Split transactions |

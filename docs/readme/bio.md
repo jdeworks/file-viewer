@@ -49,6 +49,10 @@
 - No alignment viewer (BAM/SAM not supported)
 - VCF genotype columns not parsed
 - GFF/GTF and BED previews do not yet add format-specific metadata drawer fields
+- Well-formed `.gff`/`.gff3`/`.gtf` files (with a `##gff-version` directive) are detected with
+  higher confidence by the dedicated [GFF/GTF Genomic](/) viewer, which has richer feature-type
+  colouring; this module's own GFF rendering is a fallback for atypical/low-confidence content
+  only and rarely wins detection in practice
 
 ## Real-World Examples
 
