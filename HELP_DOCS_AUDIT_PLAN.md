@@ -229,11 +229,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] djvu | DjVu Document
 - [x] dmp | Windows Minidump (.dmp)
 - [x] docker-compose | Docker Compose
-- [ ] dockerfile | Dockerfile
-- [ ] docx | Word
-- [ ] dwg | AutoCAD DWG Drawing
-- [ ] dxf | AutoCAD Drawing (.dxf)
-- [ ] editorconfig | EditorConfig
+- [x] dockerfile | Dockerfile
+- [x] docx | Word
+- [x] dwg | AutoCAD DWG Drawing
+- [x] dxf | AutoCAD Drawing (.dxf)
+- [x] editorconfig | EditorConfig
 - [ ] eml | Email
 - [ ] emulatorjs | Console ROM (EmulatorJS)
 - [ ] env | Environment Variables

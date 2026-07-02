@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `Dockerfile`, `dockerfile`, `Containerfile` |
+| Extension(s) | `Dockerfile`, `dockerfile`, `Dockerfile.*`, `*.dockerfile` |
 | MIME type | `text/x-dockerfile` |
 | Binary / Text | Text |
 | Common use | Container image build instructions for Docker and OCI-compatible runtimes |
