@@ -67,6 +67,8 @@ import { detect as detectMcworld } from '../docs/types/binary/mcworld/detect.js'
 import { extractMetadata as mcworldMeta } from '../docs/types/binary/mcworld/metadata.js';
 import { detect as detectNifti } from '../docs/types/binary/nifti/detect.js';
 import { metadata as niftiMeta } from '../docs/types/binary/nifti/metadata.js';
+import { detect as detectNpy } from '../docs/types/binary/npy/detect.js';
+import { extractMetadata as npyMeta } from '../docs/types/binary/npy/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -827,6 +829,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows.format, 'NIfTI-1 Neuroimaging');
   assert.equal(rows.dimensions, '3D [64 × 64 × 32]');
   assert.equal(rows.fileType, 'Single .nii file');
+}
+
+{
+  const data = await bytes('sample.npy');
+  assert.equal(detectNpy({ filename: 'sample.npy', bytes: data, isBinary: true }), 0.99);
+  // Detection must not depend on isBinary being set (e.g. catalog/summary probing
+  // that only supplies bytes, or extension-only probing with no bytes at all).
+  assert.equal(detectNpy({ filename: 'sample.npy', bytes: data, isBinary: false }), 0.99);
+  assert.equal(detectNpy({ filename: 'sample.npy', bytes: new Uint8Array(0) }), 0.6);
+  assert.equal(detectNpy({ filename: 'empty.npy', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectNpy({ filename: 'sample.bin', bytes: data, isBinary: true }), 0.99);
+  const rows = await npyMeta({ filename: 'sample.npy', bytes: data, size: data.length });
+  assert.equal(rows.format, 'NumPy Array');
+  assert.equal(rows.dtype, '<f4');
+  assert.equal(rows.dtypeHuman, 'little-endian float32');
+  assert.deepEqual(rows.shape, [3, 4]);
+  assert.equal(rows.elements, 12);
+  assert.equal(rows.fortranOrder, false);
 }
 
 {

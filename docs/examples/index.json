@@ -1999,11 +1999,16 @@
     ]
   },
   {
-    "label": "sample.npy",
+    "label": "NumPy array (demo)",
     "file": "sample.npy",
-    "category": "Other",
+    "mime": "application/octet-stream",
+    "type": "npy",
+    "binary": true,
+    "category": "scientific",
     "categories": [
-      "Other"
+      "scientific",
+      "data",
+      "binary"
     ]
   },
   {

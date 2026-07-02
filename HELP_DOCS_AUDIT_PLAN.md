@@ -557,11 +557,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/nifti/metadata.js
 - [x] docs/types/binary/nifti/renderer.js
 - [x] docs/types/binary/nifti/settings.default.json
-- [ ] docs/types/binary/npy/detect.js
-- [ ] docs/types/binary/npy/index.js
-- [ ] docs/types/binary/npy/metadata.js
-- [ ] docs/types/binary/npy/renderer.js
-- [ ] docs/types/binary/npy/settings.default.json
+- [x] docs/types/binary/npy/detect.js
+- [x] docs/types/binary/npy/index.js
+- [x] docs/types/binary/npy/metadata.js
+- [x] docs/types/binary/npy/renderer.js
+- [x] docs/types/binary/npy/settings.default.json
 - [ ] docs/types/binary/nupkg/detect.js
 - [ ] docs/types/binary/nupkg/index.js
 - [ ] docs/types/binary/nupkg/metadata.js

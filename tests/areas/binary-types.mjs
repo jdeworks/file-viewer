@@ -562,6 +562,19 @@ export async function run(ctx) {
   if (/NIfTI/i.test(niftiText)) pass('NIfTI badge shown'); else fail('nifti badge: ' + niftiText.slice(0, 300));
   if (/3D|64.*64|dimensions/i.test(niftiText)) pass('NIfTI dimension info shown'); else fail('nifti dims: ' + niftiText.slice(0, 300));
 
+  // ── NumPy Array (.npy) ────────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('NumPy array (demo)');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  const npyf = await frameOf('iframe.fv-preview-frame');
+  await npyf.waitForSelector('.header-card', { timeout: 8000 });
+  const npyTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (npyTypeId === 'npy') pass('.npy detected as npy type'); else fail('npy typeId: ' + npyTypeId);
+  const npyText = await npyf.$eval('body', (el) => el.textContent);
+  if (/NumPy Array/i.test(npyText)) pass('NumPy Array badge shown'); else fail('npy badge: ' + npyText.slice(0, 300));
+  if (/float32/i.test(npyText)) pass('NumPy dtype shown'); else fail('npy dtype: ' + npyText.slice(0, 300));
+  if (/3\s*×\s*4/.test(npyText)) pass('NumPy shape shown'); else fail('npy shape: ' + npyText.slice(0, 300));
+
   // ── Python Bytecode (.pyc) ────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('Python bytecode (demo)');
