@@ -131,7 +131,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [AutoCAD DWG](dwg.md) | `.dwg` | Basic | None | download | — | Geometry |
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [FBX Animation](/) | `.fbx` | Basic | None | download | — | Mesh data |
-| [Fusion 360](/) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
+| [Fusion 360](f3d.md) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
 | [G-code (3D Print)](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
 
 ---
@@ -291,7 +291,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Clip Studio Paint](clip.md) | `.clip` | Basic | None | download | — | Layer detail |
 | [Procreate](/) | `.procreate` | Basic | None | download | — | Layer tree |
-| [Fusion 360](/) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
+| [Fusion 360](f3d.md) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
 | [Sketch Design](/) | `.sketch` | Basic | None | download | — | Artboard view |
 | [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Fallback | None | download | — | Layer tree |
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |

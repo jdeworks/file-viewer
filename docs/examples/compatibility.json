@@ -4632,7 +4632,7 @@
     },
     "f3d": {
       "label": "Fusion 360",
-      "support": "full",
+      "support": "partial",
       "sampleFiles": [
         "sample.f3d"
       ],
@@ -4654,11 +4654,11 @@
         "Design history and timeline not parsed",
         "Component tree requires deep JSON traversal"
       ],
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "f3d",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },

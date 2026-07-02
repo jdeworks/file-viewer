@@ -470,11 +470,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/exr/index.js
 - [x] docs/types/binary/exr/metadata.js
 - [x] docs/types/binary/exr/renderer.js
-- [ ] docs/types/binary/exr/settings.default.json
-- [ ] docs/types/binary/f3d/detect.js
-- [ ] docs/types/binary/f3d/index.js
-- [ ] docs/types/binary/f3d/metadata.js
-- [ ] docs/types/binary/f3d/renderer.js
+- [x] docs/types/binary/exr/settings.default.json
+- [x] docs/types/binary/f3d/detect.js
+- [x] docs/types/binary/f3d/index.js
+- [x] docs/types/binary/f3d/metadata.js
+- [x] docs/types/binary/f3d/renderer.js
 - [ ] docs/types/binary/f3d/settings.default.json
 - [ ] docs/types/binary/fbx/detect.js
 - [ ] docs/types/binary/fbx/index.js

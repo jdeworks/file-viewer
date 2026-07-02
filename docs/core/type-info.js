@@ -13,6 +13,7 @@ const TYPE_INFO = {
   msg: ['Outlook MSG', 'used for Microsoft Outlook email messages and attachments.', 'https://en.wikipedia.org/wiki/Outlook.com'],
   exe: ['Executable binary', 'used for native application and library binaries such as ELF, PE/COFF, and Mach-O files.', 'https://en.wikipedia.org/wiki/Executable'],
   exr: ['OpenEXR image', 'used for high dynamic range image data in visual effects, animation, and compositing workflows.', 'https://openexr.com/'],
+  f3d: ['Fusion 360 design', 'used for Autodesk Fusion 360 CAD designs and assemblies stored as ZIP-backed project archives.', 'https://help.autodesk.com/view/fusion360/ENU/'],
   ics: ['iCalendar', 'used for calendar events, invites, reminders, and recurring schedules.', 'https://en.wikipedia.org/wiki/ICalendar'],
   kubeconfig: ['Kubernetes config', 'used to describe clusters, users, contexts, and credentials for kubectl.', 'https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/'],
   yaml: ['YAML', 'used for human-readable configuration, manifests, and structured data.', 'https://yaml.org/'],
@@ -124,6 +125,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   dwg: 'dwg',
   exe: 'exe',
   exr: 'exr',
+  f3d: 'f3d',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -162,6 +164,8 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   dylib: 'exe',
   so: 'exe',
   exr: 'exr',
+  f3d: 'f3d',
+  f3z: 'f3d',
 };
 
 function fileExtension(intake) {

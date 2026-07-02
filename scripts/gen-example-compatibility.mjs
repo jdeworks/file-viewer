@@ -94,6 +94,7 @@ const FE_SLUGS = {
   'ssh-config':null,
   exe:         'exe',
   exr:         'exr',
+  f3d:         'f3d',
   rdp:         null,
   kubeconfig:  null,
   'mcp-config':null,

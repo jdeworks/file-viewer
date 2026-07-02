@@ -65,4 +65,11 @@ assert.equal(exrInfo.name, 'OpenEXR image');
 assert.match(exrInfo.description, /compositing workflows/);
 assert.match(exrInfo.fileExamplesHref, /fileexamples\.com.*exr/i);
 
+const f3d = REGISTRY.find((type) => type.id === 'f3d');
+assert.ok(f3d, 'f3d type is registered');
+const f3dInfo = getTypeInfo(f3d, null, { filename: 'sample.f3d' });
+assert.equal(f3dInfo.name, 'Fusion 360 design');
+assert.match(f3dInfo.description, /ZIP-backed project archives/);
+assert.match(f3dInfo.fileExamplesHref, /fileexamples\.com.*f3d/i);
+
 console.log('type info: ok');

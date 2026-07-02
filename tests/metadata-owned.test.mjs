@@ -41,6 +41,8 @@ import { render as renderExe } from '../docs/types/binary/exe/renderer.js';
 import { detect as detectExr } from '../docs/types/binary/exr/detect.js';
 import { extractMetadata as exrMeta } from '../docs/types/binary/exr/metadata.js';
 import { render as renderExr } from '../docs/types/binary/exr/renderer.js';
+import { detect as detectF3d } from '../docs/types/binary/f3d/detect.js';
+import { metadata as f3dMeta } from '../docs/types/binary/f3d/metadata.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -622,6 +624,17 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /OpenEXR/);
   assert.match(rendered, /compression/);
   assert.match(rendered, /Display window/);
+}
+
+{
+  const data = await bytes('sample.f3d');
+  assert.equal(detectF3d({ filename: 'sample.f3d', bytes: data, isBinary: true }), 0.97);
+  assert.equal(detectF3d({ filename: 'sample.f3z', bytes: data, isBinary: true }), 0.97);
+  assert.ok(detectF3d({ filename: 'empty.f3d', bytes: new Uint8Array(0), isBinary: true }) > 0.5);
+  const rows = f3dMeta({ filename: 'sample.f3d', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'Fusion 360 Design');
+  assert.equal(rows['Archive format'], 'ZIP');
+  assert.match(rows['File size'], /bytes/);
 }
 
 console.log('metadata-owned: ok');
