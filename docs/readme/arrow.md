@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.arrow`, `.feather` |
+| Extension(s) | `.arrow`, `.feather`, `.ipc` |
 | MIME type | `application/vnd.apache.arrow.file` |
 | Binary / Text | Binary |
 | Common use | Columnar data exchange between Pandas, Spark, DuckDB, Polars |

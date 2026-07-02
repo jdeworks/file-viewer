@@ -319,6 +319,12 @@ export async function run(ctx) {
   const arrText = await arrf.$eval('body', (el) => el.textContent);
   if (/Apache Arrow/i.test(arrText)) pass('Arrow badge shown'); else fail('arrow badge: ' + arrText.slice(0, 300));
   if (/Arrow IPC|Feather/i.test(arrText)) pass('Arrow format shown'); else fail('arrow format: ' + arrText.slice(0, 300));
+  if (/Footer size\s*101 bytes/.test(arrText) && /name|salary|active/.test(arrText)) pass('Arrow footer info and field-name hints shown'); else fail('arrow details: ' + arrText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const arrowMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*Apache Arrow IPC File/.test(arrowMeta) && /File Size\s*129 bytes/.test(arrowMeta)) pass('Arrow metadata includes format and file size'); else fail('arrow meta: ' + arrowMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
 
   // ── CIF Crystallographic Data (parent-pane mol-doc + opt-in 3D viewer) ─────────
   await page.goto(origin, { waitUntil: 'load' });

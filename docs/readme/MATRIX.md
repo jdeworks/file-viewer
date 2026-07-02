@@ -172,7 +172,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [SQLite](sqlite.md) | `.sqlite` `.db` | Basic | None | download | — | CSV/JSON export |
 | [Apache Parquet](parquet.md) | `.parquet` | Basic | None | download | — | Row data |
-| [Apache Arrow / Feather](/) | `.arrow` `.feather` `.ipc` | Basic | None | download | — | Column types |
+| [Apache Arrow / Feather](arrow.md) | `.arrow` `.feather` `.ipc` | Basic | None | download | — | Column types |
 | [Apache Avro](/) | `.avro` | Full | None | download | — | Record decode |
 | [HDF5 Scientific](/) | `.h5` `.hdf5` `.hdf` `.he5` | Basic | None | download | — | Dataset contents |
 | [dBase / DBF](/) | `.dbf` | Full | None | download | — | Memo fields |
