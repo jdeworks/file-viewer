@@ -46,6 +46,9 @@ import { metadata as f3dMeta } from '../docs/types/binary/f3d/metadata.js';
 import { detect as detectFbx } from '../docs/types/binary/fbx/detect.js';
 import { extractMetadata as fbxMeta } from '../docs/types/binary/fbx/metadata.js';
 import { render as renderFbx } from '../docs/types/binary/fbx/renderer.js';
+import { detect as detectHdf5 } from '../docs/types/binary/hdf5/detect.js';
+import { extractMetadata as hdf5Meta } from '../docs/types/binary/hdf5/metadata.js';
+import { render as renderHdf5 } from '../docs/types/binary/hdf5/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -662,6 +665,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const rendered = renderFbx({ filename: 'sample.fbx', bytes: data, isBinary: true, size: data.length }).bodyHtml;
   assert.match(rendered, /FBXHeaderExtension/);
   assert.match(rendered, /7\.4 \(7400\)/);
+}
+
+{
+  const data = await bytes('sample.h5');
+  assert.equal(detectHdf5({ filename: 'sample.h5', mimeType: 'application/x-hdf5', bytes: data, isBinary: true }), 0.98);
+  assert.equal(detectHdf5({ filename: 'sample.bin', mimeType: 'application/x-hdf5', bytes: data, isBinary: true }), 0.97);
+  assert.equal(detectHdf5({ filename: 'sample.nc', bytes: data, isBinary: true }), 0.95);
+  assert.ok(detectHdf5({ filename: 'empty.h5', bytes: new Uint8Array(0), isBinary: true }) > 0.3);
+  const rows = hdf5Meta({ filename: 'sample.h5', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'HDF5 (Hierarchical Data Format 5)');
+  assert.equal(rows['Superblock Version'], '0');
+  assert.equal(rows['Offset Size'], '8 bytes');
+  assert.equal(rows['Length Size'], '8 bytes');
+
+  const rendered = renderHdf5({ filename: 'sample.h5', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /HDF5/);
+  assert.match(rendered, /Superblock version/);
+  assert.match(rendered, /Size of offsets/);
 }
 
 {

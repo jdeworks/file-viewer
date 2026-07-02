@@ -485,11 +485,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/gamerom/headers.js
 - [x] docs/types/binary/gamerom/index.js
 - [x] docs/types/binary/gamerom/metadata.js
-- [ ] docs/types/binary/gamerom/renderer.js
-- [ ] docs/types/binary/gamerom/settings.default.json
-- [ ] docs/types/binary/hdf5/detect.js
-- [ ] docs/types/binary/hdf5/index.js
-- [ ] docs/types/binary/hdf5/metadata.js
+- [x] docs/types/binary/gamerom/renderer.js
+- [x] docs/types/binary/gamerom/settings.default.json
+- [x] docs/types/binary/hdf5/detect.js
+- [x] docs/types/binary/hdf5/index.js
+- [x] docs/types/binary/hdf5/metadata.js
 - [ ] docs/types/binary/hdf5/renderer.js
 - [ ] docs/types/binary/hdf5/settings.default.json
 - [ ] docs/types/binary/ipa/detect.js

@@ -96,6 +96,7 @@ const FE_SLUGS = {
   exr:         'exr',
   f3d:         'f3d',
   fbx:         'fbx',
+  hdf5:        'hdf5',
   rdp:         null,
   kubeconfig:  null,
   'mcp-config':null,

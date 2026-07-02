@@ -2434,6 +2434,9 @@
     "file": "sample.h5",
     "label": "HDF5 Scientific Dataset (demo)",
     "mime": "application/x-hdf5",
+    "type": "hdf5",
+    "binary": true,
+    "partial": true,
     "category": "scientific",
     "categories": [
       "scientific",

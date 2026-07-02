@@ -15,6 +15,7 @@ const TYPE_INFO = {
   exr: ['OpenEXR image', 'used for high dynamic range image data in visual effects, animation, and compositing workflows.', 'https://openexr.com/'],
   f3d: ['Fusion 360 design', 'used for Autodesk Fusion 360 CAD designs and assemblies stored as ZIP-backed project archives.', 'https://help.autodesk.com/view/fusion360/ENU/'],
   fbx: ['FBX 3D animation', 'used for proprietary 3D scene, model, rigging, and animation exchange across DCC and game tools.', 'https://en.wikipedia.org/wiki/FBX'],
+  hdf5: ['HDF5 scientific data', 'used for hierarchical scientific datasets, machine-learning weights, climate data, and genomics data.', 'https://www.hdfgroup.org/solutions/hdf5/'],
   ics: ['iCalendar', 'used for calendar events, invites, reminders, and recurring schedules.', 'https://en.wikipedia.org/wiki/ICalendar'],
   kubeconfig: ['Kubernetes config', 'used to describe clusters, users, contexts, and credentials for kubectl.', 'https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/'],
   yaml: ['YAML', 'used for human-readable configuration, manifests, and structured data.', 'https://yaml.org/'],
@@ -128,6 +129,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   exr: 'exr',
   f3d: 'f3d',
   fbx: 'fbx',
+  hdf5: 'hdf5',
   gamerom: 'nes',
 };
 
@@ -170,6 +172,10 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   f3d: 'f3d',
   f3z: 'f3d',
   fbx: 'fbx',
+  h5: 'hdf5',
+  hdf: 'hdf5',
+  hdf5: 'hdf5',
+  he5: 'hdf5',
   nes: 'nes',
   sfc: 'sfc',
   smc: 'sfc',
