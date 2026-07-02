@@ -285,7 +285,7 @@ export async function render(intake) {
   title.className = 'vhd-title';
   const badge = document.createElement('span');
   badge.className = 'vhd-badge';
-  badge.textContent = entities.length ? 'VHDL' : (packages.length ? 'VHDL Package' : 'VHDL');
+  badge.textContent = entities.length ? 'VHDL Entity' : (packages.length ? 'VHDL Package' : 'VHDL Architecture');
   title.appendChild(badge);
   const unitName = (entities[0] && entities[0].name) || packages[0] || (architectures[0] && architectures[0].name);
   if (unitName) { const n = document.createElement('span'); n.className = 'vhd-unit'; n.textContent = unitName; title.appendChild(n); }

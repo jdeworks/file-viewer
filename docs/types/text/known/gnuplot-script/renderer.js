@@ -164,7 +164,7 @@ export function render(intake) {
   const { sets, variables, functions, plots, loads, terminal, output } = analyzeGnuplot(text);
 
   const host = document.createElement('div');
-  host.className = 'gp-doc';
+  host.className = 'gp-doc gnuplot-doc';
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);

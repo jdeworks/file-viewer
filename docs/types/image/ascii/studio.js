@@ -12,6 +12,7 @@ import { downloadText, downloadHtml, downloadPng, copyText, copyHtml, ensureAsci
 import { makeFloatingPanel } from './floating-panel.js';
 import { loadLast, saveLast } from './presets.js';
 import { wirePresetUi } from './preset-ui.js';
+import { createAsciiUpdateScheduler } from './update-scheduler.js';
 
 let styleInjected = false;
 function injectStyle() {
@@ -101,15 +102,12 @@ export function mountAsciiStudio(host, opts = {}) {
   const busyEl = q('.asx-busy');
   const setBusy = (on) => { if (busyEl) busyEl.hidden = !on; };
   // Show the badge, let it paint, then run the (blocking) convert.
-  const reconvert = () => {
-    if (engine.lastConvertMs > 80) { setBusy(true); requestAnimationFrame(() => engine.scheduleUpdate()); }
-    else engine.scheduleUpdate();
-  };
-  const regrabBusy = () => {
-    if (engine.lastConvertMs > 80) { setBusy(true); requestAnimationFrame(() => engine.regrab()); }
-    else engine.regrab();
-  };
   engine.onResult(() => { engine.renderToPre(pre); applyDisplay(); if (activeEye) paintPeek(); setBusy(false); });
+  const updateScheduler = createAsciiUpdateScheduler({
+    engine,
+    onBusy: setBusy,
+    onDisplay: applyDisplay,
+  });
 
   // ── fit-to-screen + display zoom ── the art is sized to fit the WHOLE stage
   // (both axes) at zoom 1, so changing columns/font/aspect/space-density/padding never
@@ -215,7 +213,7 @@ export function mountAsciiStudio(host, opts = {}) {
     rememberSoon();
     if (displayOnly) { applyDisplay(); return; }
     engine.markDirty(...dirty);
-    reconvert();
+    updateScheduler.scheduleUpdate();
   });
   controls.inputs.backgroundColor.disabled = !!engine.options.transparentBackground;
   syncColorControls(controls, engine.options.colorMode);   // initial state
@@ -252,10 +250,10 @@ export function mountAsciiStudio(host, opts = {}) {
   // once DejaVu (≈0.602) swaps in it's slightly wider, so re-run the fit to avoid a scrollbar.
   ensureAsciiFont().then(() => applyDisplay());
   // Geometric transforms — re-draw the source then reconvert (works on image + video).
-  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; regrabBusy(); });
-  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; regrabBusy(); });
-  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; regrabBusy(); });
-  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; regrabBusy(); });
+  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; updateScheduler.scheduleRegrab(); });
+  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; updateScheduler.scheduleRegrab(); });
+  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; updateScheduler.scheduleRegrab(); });
+  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; updateScheduler.scheduleRegrab(); });
   q('.asx-reset-filters').addEventListener('click', () => resetKeys(FILTER_KEYS));
   q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
   function resetKeys(keys) {
@@ -268,7 +266,7 @@ export function mountAsciiStudio(host, opts = {}) {
       if (k === 'rotate' || k === 'flipH' || k === 'flipV') { engine.options[k] = defs[k]; transformReset = true; }
       else controls.setValue(k, defs[k]);
     });
-    if (transformReset) engine.regrab();
+    if (transformReset) updateScheduler.scheduleRegrab();
   }
 
   // ── webcam easter egg ── the 📷 button swaps in the live-camera consumer.
@@ -310,7 +308,7 @@ export function mountAsciiStudio(host, opts = {}) {
     if (!src && bytes) src = await decode(bytes, mime);
     if (!src) { pre.textContent = 'No image to convert.'; return; }
     engine.setSource(src);
-    engine.update();
+    updateScheduler.scheduleUpdate(0);
     if (activeEye) paintPeek();
     opts.onActivate?.();
   }
@@ -321,7 +319,7 @@ export function mountAsciiStudio(host, opts = {}) {
     setImage,
     isCameraActive: () => !!webcam,
     stopCamera: closeCamera,
-    destroy() { ro.disconnect(); floatingPanel.destroy(); webcam?.destroy(); host.classList.remove('asx-root'); host.innerHTML = ''; },
+    destroy() { updateScheduler.destroy(); ro.disconnect(); floatingPanel.destroy(); webcam?.destroy(); engine.terminate(); host.classList.remove('asx-root'); host.innerHTML = ''; },
   };
 }
 

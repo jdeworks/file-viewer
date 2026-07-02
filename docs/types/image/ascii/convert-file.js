@@ -142,13 +142,20 @@ export function openConverter({ host, options = {}, baseName = 'image', onAddToS
     if (isVideo && audioChk.checked) {
       try {
         status.textContent = 'Recording in real time (with audio)…';
+        let audioStatus = null;
         const blob = await recordVideoToAscii(file, {
           engine, fps: 30, signal,
           onProgress: (p) => { prog.value = p; },
           onPreview: (c) => showPreview(c),
+          onAudioStatus: (info) => {
+            audioStatus = info;
+            if (info?.warning) status.textContent = info.warning + ' Recording video…';
+          },
         });
         engine.terminate();
-        showResult(blob, `${baseName}-ascii.webm`, 'video/webm', `Done — ${(blob.size / 1024).toFixed(0)} KB (with audio).`);
+        const audioNote = audioStatus?.included ? 'with audio' : 'silent video';
+        const warning = audioStatus?.warning ? audioStatus.warning + ' ' : '';
+        showResult(blob, `${baseName}-ascii.webm`, 'video/webm', `${warning}Done — ${(blob.size / 1024).toFixed(0)} KB (${audioNote}).`);
       } catch (err) { engine.terminate(); showError(err); }
       return;
     }

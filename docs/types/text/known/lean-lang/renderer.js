@@ -211,7 +211,7 @@ export async function render(intake) {
   if (!total) return null;
 
   const host = document.createElement('div');
-  host.className = 'lean-doc';
+  host.className = 'lean-doc ln-doc';
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);

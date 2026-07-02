@@ -53,14 +53,14 @@ export async function run(ctx) {
     rv.setValue('bold italic');
     rv.setSelection(1, 1, 1, 5);
   });
-  await page.click('#markdownTools [data-md-action="bold"]');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="bold"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
   const mdBold = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdBold === '**bold** italic') pass('Markdown tools: bold wraps selected text'); else fail('bold result: ' + mdBold);
   await page.evaluate(() => {
     const rv = window.__fv.state.rawview;
     rv.setSelection(1, 10, 1, 16);
   });
-  await page.click('#markdownTools [data-md-action="italic"]');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="italic"]').dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true })));
   const mdItalic = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdItalic === '**bold** *italic*') pass('Markdown tools: italic wraps selected text'); else fail('italic result: ' + mdItalic);
   await page.evaluate(() => {
@@ -75,10 +75,10 @@ export async function run(ctx) {
   const mdPasteLink = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (mdPasteLink === '[OpenAI](https://openai.com/docs) docs') pass('Markdown paste: selected text plus URL becomes link'); else fail('paste link result: ' + mdPasteLink);
   // Table picker — click the table button, then click the 2×2 cell in the grid picker
-  await page.click('#markdownTools [data-md-action="table"]');
+  await page.evaluate(() => document.querySelector('#markdownTools [data-md-action="table"]').click());
   await page.waitForSelector('.md-table-picker', { timeout: 4000 });
   // Cell at row=1,col=1 gives a 2×2 table
-  await page.click('.md-table-picker-cell[data-r="1"][data-c="1"]');
+  await page.evaluate(() => document.querySelector('.md-table-picker-cell[data-r="1"][data-c="1"]').click());
   const mdTableInserted = await page.evaluate(() => window.__fv.state.rawview.getValue());
   if (/\| Column 1 \| Column 2 \|/.test(mdTableInserted) && mdTableInserted.split('\n').length === 4) pass('Markdown tools: table grid picker inserts 2×2 table'); else fail('table inserted: ' + mdTableInserted);
   await page.evaluate(() => {

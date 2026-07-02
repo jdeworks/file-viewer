@@ -232,6 +232,8 @@ IMAGE_UNIT_TESTS=(
   tests/image-curves.test.mjs
   tests/image-convolve.test.mjs
   tests/image-gif.test.mjs
+  tests/image-ascii-scheduler.test.mjs
+  tests/image-ascii-audio.test.mjs
 )
 
 FAST_GAME_UNIT_TESTS=(

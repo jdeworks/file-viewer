@@ -118,9 +118,13 @@ export function createAsciiEngine(initialOptions) {
     try {
       worker = new Worker(new URL('./convert-worker.js', import.meta.url), { type: 'module' });
       worker.onmessage = (e) => { const j = jobs.get(e.data.id); if (j) { jobs.delete(e.data.id); j(e.data); } };
-      worker.onerror = () => { useWorker = false; };
+      worker.onerror = () => { useWorker = false; failJobs('ASCII worker failed.'); };
     } catch { useWorker = false; worker = null; }
     return worker;
+  }
+  function failJobs(message) {
+    for (const resolve of jobs.values()) resolve({ error: message });
+    jobs.clear();
   }
   const postJob = (msg, transfer) => new Promise((resolve) => { jobs.set(msg.id, resolve); worker.postMessage(msg, transfer); });
   function buildResult(reply) {
@@ -193,6 +197,8 @@ export function createAsciiEngine(initialOptions) {
     get sourceCanvas() { return sourceCanvas; },
     setSource, grabFrame, setOptions, markDirty, update, scheduleUpdate,
     setRenderMode(m) { renderMode = m; },
+    get workerAvailable() { return useWorker; },
+    get workerActive() { return useWorker && !!worker; },
     convertFrame: (want) => convertNow(want),          // async; returns drawable ('bitmap') or result ('cells')
     convertBitmap,                                      // async; pipeline a pre-made source bitmap (file converter)
     // Re-draw the source (e.g. after a rotate/flip change) then schedule a convert.
@@ -200,6 +206,6 @@ export function createAsciiEngine(initialOptions) {
     onResult(fn) { onResult = fn; },
     renderToPre: (pre) => result && renderAsciiToPre(result, pre, options),
     renderToCanvas: (canvas) => result && renderAsciiToCanvas(result, canvas, options),
-    terminate() { if (worker) { worker.terminate(); worker = null; } jobs.clear(); },
+    terminate() { failJobs('ASCII worker terminated.'); if (worker) { worker.terminate(); worker = null; } },
   };
 }

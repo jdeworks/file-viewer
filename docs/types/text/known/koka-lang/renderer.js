@@ -221,7 +221,7 @@ export async function render(intake) {
   const { moduleName, imports, functions, values, types, effects, aliases } = analyzeKoka(text);
 
   const host = document.createElement('div');
-  host.className = 'koka-doc';
+  host.className = 'koka-doc kka-doc';
   const styleEl = document.createElement('style');
   styleEl.textContent = CSS;
   host.appendChild(styleEl);

@@ -11,21 +11,21 @@
 // WITHOUT connecting to the speakers — nothing plays aloud during the (possibly long) export.
 
 import { ensureAsciiFont } from './render.js';
+import { attachBestEffortAudio } from './audio-track.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : 0);
 
 // recordVideoToAscii(file, { engine, fps, signal, onProgress, onPreview }) → Promise<Blob>
 // `engine` is a ready ASCII engine (renderMode 'bitmap'); we drive its frames here.
-export async function recordVideoToAscii(file, { engine, fps = 30, signal, onProgress, onPreview } = {}) {
+export async function recordVideoToAscii(file, { engine, fps = 30, signal, onProgress, onPreview, onAudioStatus } = {}) {
   const url = URL.createObjectURL(file);
   const video = document.createElement('video');
   video.playsInline = true; video.preload = 'auto'; video.src = url;
-  // NOT muted: createMediaElementSource needs decoded audio. It re-routes the element's
-  // output to our graph, so the element itself stays silent regardless.
+  video.muted = true;
 
   const out = document.createElement('canvas');             // the ASCII canvas we record
   const octx = out.getContext('2d');
-  let ac = null, recorder = null, recStream = null;
+  let recorder = null, recStream = null, audio = null;
   const chunks = [];
   let inFlight = false, running = false, lastPreview = 0;
 
@@ -49,7 +49,7 @@ export async function recordVideoToAscii(file, { engine, fps = 30, signal, onPro
 
   const cleanup = () => {
     try { recStream?.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
-    try { ac?.close(); } catch { /* ignore */ }
+    try { audio?.cleanup?.(); } catch { /* ignore */ }
     URL.revokeObjectURL(url);
   };
 
@@ -65,14 +65,8 @@ export async function recordVideoToAscii(file, { engine, fps = 30, signal, onPro
     // A first conversion gives the canvas real dimensions before captureStream samples it.
     await convertFrame();
     recStream = out.captureStream(fps);
-    try {
-      ac = new (window.AudioContext || window.webkitAudioContext)();
-      await ac.resume?.();                                  // a suspended context passes no samples
-      const srcNode = ac.createMediaElementSource(video);
-      const dest = ac.createMediaStreamDestination();
-      srcNode.connect(dest);                                // audio → recording only (not speakers)
-      dest.stream.getAudioTracks().forEach((t) => recStream.addTrack(t));
-    } catch { /* no audio track / unsupported → silent video, still valid */ }
+    audio = await attachBestEffortAudio(file, video, recStream);
+    onAudioStatus?.(audio);
 
     const mime = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm']
       .find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || 'video/webm';
@@ -93,8 +87,25 @@ export async function recordVideoToAscii(file, { engine, fps = 30, signal, onPro
       video.addEventListener('ended', res, { once: true });
       if (signal) signal.addEventListener('abort', res, { once: true });
     });
-    await video.play();                                     // start playback before recording
+    if (audio?.method === 'media-element') video.muted = false;
+    try {
+      await video.play();                                   // start playback before recording
+    } catch (err) {
+      if (!audio?.included) throw err;
+      audio.cleanup?.();
+      audio = {
+        included: false,
+        method: 'silent',
+        warning: 'Audio could not be included on this browser; exported silent video.',
+        start() {},
+        cleanup() {},
+      };
+      onAudioStatus?.(audio);
+      video.muted = true;
+      await video.play();
+    }
     recorder.start(1000);
+    audio?.start?.(video.currentTime || 0);
     running = true;
     if (video.requestVideoFrameCallback) video.requestVideoFrameCallback(tick);
     else requestAnimationFrame(tick);
