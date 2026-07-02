@@ -130,8 +130,16 @@ export async function render(intake, _ctx) {
     // Sanitize into an INERT DocumentFragment: its nodes aren't connected to the page, so
     // images don't start loading until we've rewritten every src to an in-book blob URL (or
     // removed it). Rewriting a live <img src="..."> would eagerly hit the origin first.
+    // FORBID_TAGS/FORBID_ATTR must cover every DOMPurify-default-allowed vector that can trigger
+    // a live network fetch we don't control: <style>/style="" (CSS url()), background=/poster=
+    // (legacy + <video> poster), and <iframe>/<video>/<audio>/<source>/<track>/<object>/<form>
+    // (all DOMPurify-allowed by default, all capable of an eager off-origin request or off-origin
+    // form POST) — only <img> and SVG <image> are resolved to in-book blob: URLs below, so
+    // everything else that could reach the network must be stripped outright.
     const frag2 = DOMPurify.sanitize(bodyHtml, {
-      FORBID_TAGS: ['script', 'link', 'style'], FORBID_ATTR: ['srcset'], RETURN_DOM_FRAGMENT: true,
+      FORBID_TAGS: ['script', 'link', 'style', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+      FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
+      RETURN_DOM_FRAGMENT: true,
     });
     await rewriteResources(frag2, item.path);
     // Wrap in an inner flow element so two-column mode (CSS columns) balances within the chapter

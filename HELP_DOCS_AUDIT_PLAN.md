@@ -618,13 +618,13 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/ebook/djvu/metadata.js
 - [ ] docs/types/ebook/djvu/renderer.js
 - [ ] docs/types/ebook/djvu/settings.default.json
-- [ ] docs/types/ebook/EDITOR.md
-- [ ] docs/types/ebook/epub/detect.js
-- [ ] docs/types/ebook/epub/epublib.js
-- [ ] docs/types/ebook/epub/index.js
-- [ ] docs/types/ebook/epub/metadata.js
-- [ ] docs/types/ebook/epub/renderer.js
-- [ ] docs/types/ebook/epub/settings.default.json
+- [x] docs/types/ebook/EDITOR.md
+- [x] docs/types/ebook/epub/detect.js
+- [x] docs/types/ebook/epub/epublib.js
+- [x] docs/types/ebook/epub/index.js
+- [x] docs/types/ebook/epub/metadata.js
+- [x] docs/types/ebook/epub/renderer.js
+- [x] docs/types/ebook/epub/settings.default.json
 - [ ] docs/types/ebook/fb2/detect.js
 - [ ] docs/types/ebook/fb2/index.js
 - [ ] docs/types/ebook/fb2/metadata.js
