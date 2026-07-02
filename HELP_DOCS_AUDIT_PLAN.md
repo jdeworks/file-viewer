@@ -625,11 +625,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/ebook/epub/metadata.js
 - [x] docs/types/ebook/epub/renderer.js
 - [x] docs/types/ebook/epub/settings.default.json
-- [ ] docs/types/ebook/fb2/detect.js
-- [ ] docs/types/ebook/fb2/index.js
-- [ ] docs/types/ebook/fb2/metadata.js
-- [ ] docs/types/ebook/fb2/renderer.js
-- [ ] docs/types/ebook/fb2/settings.default.json
+- [x] docs/types/ebook/fb2/detect.js
+- [x] docs/types/ebook/fb2/index.js
+- [x] docs/types/ebook/fb2/metadata.js
+- [x] docs/types/ebook/fb2/renderer.js
+- [x] docs/types/ebook/fb2/settings.default.json
 - [ ] docs/types/ebook/lrf/detect.js
 - [ ] docs/types/ebook/lrf/index.js
 - [ ] docs/types/ebook/lrf/lrf-header.js
