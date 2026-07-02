@@ -4070,13 +4070,14 @@
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false,
       "fileExamplesSlug": "cbor",
       "securityLimitations": [],
       "knownParserGaps": [
-        "No indefinite-length collection streaming display",
+        "Indefinite-length values are fully buffered before display",
+        "CBOR tag numbers are not preserved in the rendered value tree",
         "BigInt (64-bit) values may lose precision above 2^53"
       ]
     },

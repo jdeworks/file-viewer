@@ -2376,6 +2376,8 @@
   {
     "file": "sample.cbor",
     "label": "CBOR API Response (demo)",
+    "type": "cbor",
+    "typeLabel": "CBOR Binary Data",
     "mime": "application/cbor",
     "category": "data",
     "categories": [

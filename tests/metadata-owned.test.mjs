@@ -14,6 +14,9 @@ import { render as renderBlend } from '../docs/types/binary/blend/renderer.js';
 import { detect as detectBsp } from '../docs/types/binary/bsp/detect.js';
 import { extractMetadata as bspMeta } from '../docs/types/binary/bsp/metadata.js';
 import { render as renderBsp } from '../docs/types/binary/bsp/renderer.js';
+import { detect as detectCbor } from '../docs/types/binary/cbor/detect.js';
+import { extractMetadata as cborMeta } from '../docs/types/binary/cbor/metadata.js';
+import { render as renderCbor } from '../docs/types/binary/cbor/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -381,6 +384,29 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.ok(detectBsp({ filename: 'source.bsp', bytes: vbsp }) > 0.9);
   assert.equal(bspMeta({ filename: 'source.bsp', bytes: vbsp }).Format, 'VBSP v20');
   assert.match(renderBsp({ filename: 'source.bsp', bytes: vbsp }).bodyHtml, /Counter-Strike: Source/);
+}
+
+{
+  const data = await bytes('sample.cbor');
+  const rows = cborMeta({ filename: 'sample.cbor', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'CBOR (RFC 8949)');
+  assert.equal(rows['File Size'], '310 bytes');
+  assert.equal(rows['Top-level Major Type'], 'Map');
+  assert.ok(detectCbor({ filename: 'sample.cbor', bytes: data, isBinary: true }) > 0.9);
+
+  const mapRendered = renderCbor({ filename: 'sample.cbor', bytes: data, isBinary: true }).bodyHtml;
+  assert.match(mapRendered, /Map\{8 keys\}/);
+  assert.match(mapRendered, /Alice Smith/);
+
+  const indefiniteArray = new Uint8Array([0x9f, 0x01, 0x02, 0xff]);
+  const arrayRendered = renderCbor({ filename: 'stream.cbor', bytes: indefiniteArray, isBinary: true }).bodyHtml;
+  assert.match(arrayRendered, /array\[2\]/i);
+  assert.match(arrayRendered, />1</);
+  assert.match(arrayRendered, />2</);
+
+  const tagged = new Uint8Array([0xc1, 0x63, 0x61, 0x62, 0x63]);
+  const taggedRendered = renderCbor({ filename: 'tagged.cbor', bytes: tagged, isBinary: true }).bodyHtml;
+  assert.match(taggedRendered, /"abc"/);
 }
 
 console.log('metadata-owned: ok');

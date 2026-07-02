@@ -42,7 +42,9 @@
 
 - Output is capped at 500 decoded items and 12 decode levels
 - Preview renders only the first 20 array/map children at each visible level
+- Indefinite-length values are decoded into memory before display, not streamed progressively
 - CBOR tag numbers are not preserved in the rendered value tree
+- 64-bit integer values above JavaScript's safe integer range may lose precision
 - Non-string map keys are stringified for display
 
 ## Real-World Examples

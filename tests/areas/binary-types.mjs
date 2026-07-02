@@ -313,6 +313,11 @@ export async function run(ctx) {
   if (/CBOR/i.test(cborText)) pass('CBOR badge shown'); else fail('cbor badge: ' + cborText.slice(0, 300));
   if (/Map\{|Alice|items/i.test(cborText)) pass('CBOR decoded content shown'); else fail('cbor content: ' + cborText.slice(0, 300));
   if (/310 bytes|Top-level/i.test(cborText)) pass('CBOR metadata shown'); else fail('cbor meta: ' + cborText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const cborMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*CBOR \(RFC 8949\)/i.test(cborMeta) && /File Size\s*310\s*(?:bytes?|B)/i.test(cborMeta) && /Top.?Level Major Type\s*Map/i.test(cborMeta)) pass('CBOR metadata drawer includes format, size, and major type'); else fail('cbor drawer meta: ' + cborMeta.replace(/\s+/g, ' ').slice(0, 260));
+  await page.click('#metaDrawer [data-close]');
 
   // ── Apache Arrow IPC File ─────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
