@@ -124,11 +124,11 @@ Completion gates:
 - [x] docs/readme/iwork.md
 - [x] docs/readme/java-class.md
 - [x] docs/readme/json.md
-- [ ] docs/readme/jsonl.md
-- [ ] docs/readme/kicad.md
-- [ ] docs/readme/kml.md
-- [ ] docs/readme/kmz.md
-- [ ] docs/readme/kubeconfig.md
+- [x] docs/readme/jsonl.md
+- [x] docs/readme/kicad.md
+- [x] docs/readme/kml.md
+- [x] docs/readme/kmz.md
+- [x] docs/readme/kubeconfig.md
 - [ ] docs/readme/layered.md
 - [ ] docs/readme/lmms.md
 - [ ] docs/readme/lnk.md

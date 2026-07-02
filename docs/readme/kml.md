@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.kml`, `.kmz` |
+| Extension(s) | `.kml` |
 | MIME type | `application/vnd.google-earth.kml+xml` |
 | Binary / Text | Text (XML) |
 | Common use | Google Earth / Maps layers, GPS track exports, geographic annotations |
@@ -41,7 +41,7 @@
 
 ## Known Limitations
 
-- `.kmz` (zipped KML) is not decompressed — open the `.kml` inside directly
+- `.kmz` (zipped KML) is handled by the dedicated KMZ viewer, not this text type
 - No interactive map rendering
 - Extended data / schemas are not parsed
 
@@ -50,5 +50,4 @@
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Interactive map (Leaflet) | Med | Med | Render placemarks on a tile map |
-| KMZ decompression | Med | Easy | Unzip `.kmz` and extract `doc.kml` |
 | Coordinate bounds | Low | Easy | Compute min/max lat/lng from all coordinates |
