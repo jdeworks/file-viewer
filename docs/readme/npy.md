@@ -23,7 +23,7 @@
 | Total elements | ✅ | Product of all dimensions |
 | Memory size | ✅ | Estimated uncompressed bytes |
 | .npz member list | ✅ | Array names inside ZIP archive |
-| First few values | ✅ | Sample of array data |
+| First few values | ✅ | Plain `.npy` previews up to 100 values; uncompressed `.npz` members show a short inline preview |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Metadata | ✅ | dtype, shape, order, element count |
@@ -40,8 +40,9 @@
 
 ## Known Limitations
 
-- Only first ~16 element values are sampled
-- Structured dtypes (record arrays) are not fully decoded
+- Plain `.npy` data preview is capped at 100 values
+- `.npz` members are listed, but compressed members are not decompressed for dtype/shape/value preview
+- Structured/object dtypes (record arrays) are not fully decoded
 
 ## Gap Analysis
 
@@ -49,3 +50,4 @@
 |---------|----------|------------|-------|
 | Array heatmap | Low | Med | Render 2D arrays as colour-mapped canvas |
 | Statistical summary | Low | Easy | min/max/mean/std from first N elements |
+| Compressed `.npz` member preview | Med | Med | Inflate member data before parsing embedded `.npy` headers |

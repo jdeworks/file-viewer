@@ -1,13 +1,16 @@
 # General Lane Full Audit Plan
 
-This plan is intentionally deterministic. The audit runner reads only checkbox lines between the section markers below, so every covered doc, type, type implementation/support file, catalog entry, physical example file, and special-case example has to be explicitly checked off.
+This plan is intentionally deterministic. The audit runner reads only checkbox lines between the section markers below, so every covered doc, registered type, implementation/support file, catalog entry, physical example file, and special-case example has to be explicitly checked off.
+
+The help markdown files are only the first lane. If a future summary says the task is 153 or 163 files, that is a docs-only number and is not enough for this goal. The full general-lane audit is the checklist total reported by the checker with no `--section` filter.
 
 ## How To Work
 
 1. Run `node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5`.
-2. Work the next five unchecked lines that it prints.
-3. Mark a line `[x]` only after the matching item was verified and any fix was made.
-4. Repeat until the script exits with `audit_unchecked=0`.
+2. Confirm the output includes all eight sections and an `audit_total` in the thousands.
+3. Work only the next five unchecked lines that it prints, unless one of those items exposes a directly related dependency.
+4. Mark a line `[x]` only after the matching item was verified and any fix was made.
+5. Repeat until the script exits with `audit_unchecked=0`.
 
 Use section filters when a batch needs a narrower lane, for example `--section=examples --limit=5`. The `readme-docs` section is intentionally only the help-doc lane; full coverage is the sum of every audit section.
 
@@ -28,35 +31,10 @@ If a checker run reports only the help markdown count, the checklist or checker 
 
 ## /goal Prompt
 
+Codex goal objectives are capped, so keep the `/goal` text compact and point it at this file for the long checklist. Use this exact prompt:
+
 ```text
-Audit and complete the file-viewer general-lane docs, startup, and capabilities work using HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth. The full audit is not the 153 help markdown files by themselves; it is every checkbox row across every AUDIT_SECTION in this file.
-
-Preflight:
-- Run: node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5
-- Confirm the output includes all eight audit sections and an audit_total in the thousands. At plan creation this was 7,423 total rows: 153 readme docs, 143 base types, 2,892 docs/types files, 900 known plugin rows, 1,157 catalog rows, 1,128 physical example files, 10 .example-files-internet files, and 1,040 special example/capability cases.
-- If the total unexpectedly drops to the help-doc count only, stop and fix the plan/check script before auditing; do not proceed from an undersized list.
-
-Operating loop:
-- Start each batch with: node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5
-- Work only the next unchecked items printed by that command, unless a blocker requires a directly related dependency.
-- Mark an item [x] only after verifying the file/type/example/capability actually works or after documenting and fixing the concrete gap.
-- Keep batches small enough that the next command output stays useful; do not rely on memory or prompt matching for coverage.
-- Use --section only for a deliberate temporary lane focus. The completion check must always run without --section so it covers every audit section.
-
-Required work tracks:
-- Help/docs audit: every docs/readme markdown file must be opened, links checked, stale feature text updated, and help-overlay behavior verified where relevant.
-- Type and capability audit: every registered base type, every docs/types implementation/support file, and every known plugin must be checked against docs, detection, icon/capability metadata, lazy-load impact, and showcase coverage.
-- Example audit: every docs/examples/index.json entry, every physical docs/examples file, and every .example-files-internet edge file must be checked for file existence, catalog metadata, capability/icon representation, and ability to open through the app path.
-- Special example audit: known/enhanced/partial/tool/source/license/code/config/security/build/emulator cases need extra validation against detection and UI behavior.
-- Startup polish: continue reducing and documenting startup/network/service-worker costs with measured traces, not guesswork.
-- Capabilities showcase: implement or finish a lightweight showcase/list that can be loaded from compact metadata and supports sample selection without loading heavyweight viewer code first.
-
-Completion gates:
-- node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md exits 0 and reports audit_unchecked=0 across every section.
-- Deterministic generated assets are up to date.
-- Startup trace/current network behavior is documented in the plan or linked audit notes.
-- ./scripts/check.sh --fast passes.
-- Commit and push the final checkpoint.
+Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-viewer general-lane audit. This is not the docs-only lane: the checker must report all eight AUDIT_SECTION blocks and an audit_total in the thousands, currently 7,423 rows. Start every batch with `node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5`, work only the next unchecked rows, and mark `[x]` only after verifying or fixing the matching doc/type/file/example/capability. If the checker reports only ~153/163 docs or misses sections, stop and fix the checklist/checker before auditing. Continue the help docs audit, startup polish, and capabilities showcase work from the plan. Completion requires `audit_unchecked=0` with no section filter, generated assets up to date, measured startup/network notes captured, validation passing, and a final commit/push checkpoint.
 ```
 
 ## Audit Sections
@@ -164,11 +142,11 @@ Completion gates:
 - [x] docs/readme/mt940.md
 - [x] docs/readme/musicxml.md
 - [x] docs/readme/netcdf.md
-- [ ] docs/readme/nifti.md
-- [ ] docs/readme/npy.md
-- [ ] docs/readme/nupkg.md
-- [ ] docs/readme/obj.md
-- [ ] docs/readme/odf.md
+- [x] docs/readme/nifti.md
+- [x] docs/readme/npy.md
+- [x] docs/readme/nupkg.md
+- [x] docs/readme/obj.md
+- [x] docs/readme/odf.md
 - [ ] docs/readme/office.md
 - [ ] docs/readme/ofx.md
 - [ ] docs/readme/parquet.md

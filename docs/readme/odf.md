@@ -1,13 +1,13 @@
 # ODF — OpenDocument Format
 
-> LibreOffice's open-standard documents — rendered text, spreadsheet tables, and presentation slides with raw XML access.
+> LibreOffice's open-standard documents — rendered ODT text documents and ODP presentations from `content.xml`.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.odt`, `.ods`, `.odp`, `.odg`, `.odf` |
-| MIME type | `application/vnd.oasis.opendocument.text` (ODT); `application/vnd.oasis.opendocument.spreadsheet` (ODS); `application/vnd.oasis.opendocument.presentation` (ODP) |
+| Extension(s) | `.odt`, `.odp`, `.fodt`, `.fodp` |
+| MIME type | `application/vnd.oasis.opendocument.text` (ODT); `application/vnd.oasis.opendocument.presentation` (ODP) |
 | Binary / Text | Binary (ZIP + XML) |
 | Created by | OASIS / LibreOffice Foundation |
 | Common use | LibreOffice and OpenOffice documents; open-standard alternative to DOCX/XLSX/PPTX |
@@ -18,16 +18,16 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Text document rendering | ✅ | Paragraphs, headings, tables, lists (ODT) |
-| Spreadsheet table rendering | ✅ | Rows, columns, cell values (ODS) |
-| Presentation slide rendering | ✅ | Slide content and layout (ODP) |
-| Metadata extraction | ✅ | Title, author, creation date from `meta.xml` |
-| Complex formatting (macros, charts) | ⚠️ Partial | Best-effort; embedded charts shown as placeholders |
+| Text document rendering | ✅ | Paragraphs, headings, tables, lists, links, and inline images (ODT) |
+| Spreadsheet table rendering | ❌ | `.ods` is not claimed by this ODF renderer |
+| Presentation slide rendering | ✅ | ODP slides render as one block per `draw:page` |
+| Metadata extraction | ✅ | Kind, title, creator, language, generator, dates, counts, tables, images |
+| Complex formatting (macros, charts) | ⚠️ Partial | Best-effort XML-to-HTML conversion; charts/transitions are not interpreted |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Raw XML editing | ✅ | Internal XML parts editable via archive tree |
+| Raw XML editing | ❌ | ODF preview is read-only |
 | Visual editing | ❌ | No WYSIWYG editor |
 
 ### Export
@@ -45,7 +45,7 @@ No known-file plugin — all ODF subtypes use the same content renderer.
 
 ## Known Limitations
 
-- ODS pivot tables and named ranges are not rendered
+- ODS spreadsheets, ODG drawings, and formula-only `.odf` files are not handled by this renderer
 - ODP slide transitions and animations are not played
 - Font substitution may cause layout differences from LibreOffice
 - Macros (Basic/Python) are not executed
@@ -54,6 +54,7 @@ No known-file plugin — all ODF subtypes use the same content renderer.
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| ODS / ODG support | Med | Med | Add spreadsheet/drawing routing or delegate to specialized renderers |
 | ODP slide transitions | Med | Hard | Requires CSS/JS animation mapping |
 | ODS chart rendering | Med | Hard | Charts stored as Draw objects; need SVG rendering |
 | Better font substitution | Low | Med | Use CSS font-face or Google Fonts matching |

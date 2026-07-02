@@ -28,7 +28,7 @@
 | File listing | ✅ | ZIP entries from archive |
 | Source view | ❌ | Binary ZIP format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Kind, ID, version, author |
+| Metadata | ⚠️ Partial | Side-panel metadata exposes package format; rich package fields are shown in the preview |
 
 ### Edit
 | Capability | Status | Notes |
@@ -44,6 +44,7 @@
 
 - JAR manifest reading is limited to `MANIFEST.MF` — no POM.xml parsing
 - Dependency resolution / transitive deps are not shown
+- File listing is capped to the first 20 ZIP entries in the preview
 
 ## Gap Analysis
 
@@ -51,3 +52,4 @@
 |---------|----------|------------|-------|
 | Full dependency tree | Low | Hard | Requires package registry API |
 | JAR POM.xml parsing | Low | Med | Parse Maven POM inside JAR for richer metadata |
+| Rich side-panel metadata | Low | Easy | Promote parsed ID/version/author fields from preview into metadata extraction |

@@ -1,12 +1,12 @@
 # OBJ — Wavefront Object
 
-> The most widely supported 3D format — WebGL render with per-material color editing, MTL auto-load, and OBJ/PLY export.
+> The most widely supported 3D format — canvas 3D render with face, region, and OBJ group/material color editing plus STL/PLY export.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.obj`, `.mtl` |
+| Extension(s) | `.obj` |
 | MIME type | `model/obj` |
 | Binary / Text | Text |
 | Created by | Wavefront Technologies |
@@ -18,23 +18,24 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| WebGL 3D render | ✅ | Orbit / zoom / pan controls |
-| Per-material group display | ✅ | Groups rendered in assigned material colors |
-| MTL auto-load | ✅ | Companion `.mtl` file loaded automatically if alongside OBJ |
-| Auto-center and fit | ✅ | Mesh scaled and centred in viewport |
+| Canvas 3D render | ✅ | Drag to orbit; reset view available |
+| Group/material display | ✅ | `g` and `usemtl` names become selectable color groups |
+| MTL auto-load | ❌ | `mtllib` is counted but companion `.mtl` files are not loaded |
+| Auto-center and fit | ✅ | Mesh scaled and centered in viewport |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Per-material color picker | ✅ | Click face group → floating color wheel |
+| Color picker | ✅ | Click a region, single face, or group/material → floating color input |
 | Geometry editing | ❌ | Vertex positions not editable |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original OBJ | ✅ | Always available |
-| Export edited OBJ + MTL | ✅ | Updated material colors written to generated `.mtl` |
-| Export as PLY | ✅ | Per-triangle colors baked in |
+| Export as STL / PLY | ✅ | Export menu converts the parsed mesh |
+| Export edited OBJ + MTL | ✅ | Preview toolbar writes generated colored OBJ and MTL files |
+| Export colored PLY | ✅ | Preview toolbar bakes selected colors per triangle |
 
 ## Known-File Enhancement
 
@@ -42,11 +43,12 @@ No known-file plugin — all OBJ files use the same 3D viewer.
 
 ## Real-World Examples
 
-- [`sample.obj`](../examples/sample.obj) — multi-material mesh demonstrating MTL loading and color editing
+- [`sample.obj`](../examples/sample.obj) — mesh sample for group/material selection and color editing
 
 ## Known Limitations
 
-- Texture (UV map) rendering is not supported; only flat material colors are shown
+- Companion `.mtl` files, material properties, and texture images are not loaded
+- Texture (UV map) rendering is not supported; `vt` coordinates are counted but ignored for rendering
 - Large meshes (>500k triangles) may have slow load and low frame rate
 - No support for OBJ smooth-shading groups (`s` directive)
 
@@ -55,5 +57,6 @@ No known-file plugin — all OBJ files use the same 3D viewer.
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Texture / UV rendering | High | Hard | Requires loading image files referenced in MTL |
+| MTL material loading | High | Med | Resolve companion `.mtl` assets and apply material colors |
 | Large mesh performance | Med | Med | LOD or mesh decimation for files >500k triangles |
 | Smooth-shading group support | Low | Med | Parse `s` directive and compute vertex normals per group |

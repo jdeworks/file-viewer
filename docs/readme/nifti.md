@@ -1,12 +1,12 @@
 # NIfTI Neuroimaging
 
-> NIfTI-1/2 viewer — image dimensions, voxel size, data type, intent code, slice timing, and header fields.
+> NIfTI-1 header viewer — image dimensions, voxel size, data type, intent code, units, and core header fields.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.nii`, `.nii.gz` |
+| Extension(s) | `.nii`, `.hdr`, `.img` |
 | MIME type | `application/octet-stream` |
 | Binary / Text | Binary |
 | Common use | Neuroimaging data from MRI, fMRI, DTI (FSL, SPM, FreeSurfer, ANTs) |
@@ -16,15 +16,15 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| NIfTI version | ✅ | NIfTI-1 (magic `ni1`/`n+1`) or NIfTI-2 detected |
+| NIfTI version | ✅ | NIfTI-1 (magic `ni1`/`n+1`) rendered; NIfTI-2 may be detected but is not rendered |
 | Image dimensions | ✅ | ndim + dim[1..7] |
 | Voxel size | ✅ | pixdim values with units |
 | Data type | ✅ | INT16 / FLOAT32 / COMPLEX64 etc. |
 | Intent code | ✅ | TTEST / FTEST / ZSCORE / LABEL etc. |
-| Slice timing | ✅ | slice_start / slice_end / slice_duration |
+| Slice timing | ⚠️ Partial | Header fields exist but are not shown in the current preview |
 | Space / time units | ✅ | xyzt_units (mm/s/Hz etc.) |
-| TR | ✅ | Repetition time from pixdim[4] |
-| gzip detection | ✅ | `.nii.gz` decompressed transparently |
+| TR | ⚠️ Partial | Time unit is shown; repetition time from pixdim[4] is not surfaced separately |
+| gzip detection | ❌ | `.nii.gz` is not decompressed by this viewer yet |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Metadata | ✅ | Dimensions, voxel size, dtype, intent |
@@ -42,7 +42,8 @@
 ## Known Limitations
 
 - 3D/4D volume data is not rendered — header inspection only
-- Affine matrix shown as raw numbers, not spatial interpretation
+- NIfTI-2 headers and gzip-compressed `.nii.gz` files are not rendered yet
+- qform/sform affine matrices and slice timing details are not shown
 
 ## Gap Analysis
 
@@ -50,3 +51,4 @@
 |---------|----------|------------|-------|
 | Axial/coronal/sagittal slice view | Low | Hard | Render orthographic brain slices to canvas |
 | Export header as JSON | Low | Easy | All header fields to JSON |
+| NIfTI-2 / `.nii.gz` support | Med | Med | Parse 540-byte NIfTI-2 headers and add gzip decompression |
