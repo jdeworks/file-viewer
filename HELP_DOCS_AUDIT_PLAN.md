@@ -194,16 +194,16 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/wasm.md
 - [x] docs/readme/xlsx.md
 - [x] docs/readme/xml.md
-- [ ] docs/readme/xyz.md
-- [ ] docs/readme/yaml.md
-- [ ] docs/readme/zip.md
+- [x] docs/readme/xyz.md
+- [x] docs/readme/yaml.md
+- [x] docs/readme/zip.md
 <!-- AUDIT_SECTION readme-docs END -->
 
 ### Registered Base Types
 
 <!-- AUDIT_SECTION base-types START -->
-- [ ] 3mf | 3D Manufacturing Format
-- [ ] abc | ABC Music Notation
+- [x] 3mf | 3D Manufacturing Format
+- [x] abc | ABC Music Notation
 - [ ] acf | Steam App Manifest (ACF)
 - [ ] als | Ableton Live Set
 - [ ] apk | Android Package (APK/AAB)

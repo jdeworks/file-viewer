@@ -1,12 +1,12 @@
 # YAML
 
-> Collapsible tree preview with multi-document stream support, exported to JSON; Docker Compose and OpenAPI metadata extracted automatically.
+> Collapsible YAML tree preview with multi-document streams, JSONPath-style queries, source-line jumps, redacted source review, JSON export, and known-file enhancements.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.yaml`, `.yml` |
+| Extension(s) | `.yaml`, `.yml`; explicit `.txt` / `.text` files can still keep YAML available as a low-confidence option |
 | MIME type | `application/yaml`, `text/yaml` |
 | Binary / Text | Text |
 | Common use | Configuration files, CI/CD pipelines, Docker Compose, Kubernetes manifests, OpenAPI specs |
@@ -18,6 +18,10 @@
 |------------|--------|-------|
 | Collapsible tree | ✅ | Reuses JSON tree styling; Date objects shown as ISO string |
 | Multi-document stream | ✅ | `---` separators supported; each document shown separately |
+| YAMLPath query panel | ✅ | JSONPath-style filters such as `$..name`, `$.a.b`, and `arr[*]` |
+| Source-line jumps | ✅ | Keys, paths, and step rows link into a collapsed redacted source preview |
+| Structure review | ✅ | Duplicate-key and secret-like scalar diagnostics are shown where detectable |
+| Step summary | ✅ | CI/pipeline-style `steps` arrays are summarized with capped rows |
 | Parse error | ✅ | js-yaml error message surfaced with position |
 | Source view | ✅ | Monaco editor with YAML syntax highlighting |
 | Text diff | ✅ | Standard line diff |
@@ -39,20 +43,7 @@
 
 ## Known-File Enhancement
 
-Many well-known YAML files get a Layer-3 plugin. Current plugins (in `docs/types/text/yaml/known/`):
-
-| Plugin | File(s) |
-|--------|---------|
-| `github-actions` | `.github/workflows/*.yml` |
-| `k8s-manifest` | Kubernetes resource YAML |
-| `docker-compose` | `docker-compose.yml`, `compose.yml` |
-| `gitlab-ci` | `.gitlab-ci.yml` |
-| `codecov` | `codecov.yml`, `.codecov.yml` |
-| `azure-pipelines` | `azure-pipelines.yml` |
-| `amplify` | `amplify.yml` |
-| `circleci` | `.circleci/config.yml` |
-| `codebuild` | `buildspec.yml` |
-| `dependabot` | `.github/dependabot.yml` |
+Many well-known YAML files get a Layer-3 plugin. The current registry has 208 plugin folders in `docs/types/text/yaml/known/`, covering CI/CD systems, Kubernetes and Helm, observability configs, cloud deployment files, security scanners, self-hosted app configs, package managers, docs tooling, and infra-as-code manifests.
 
 ## Real-World Examples
 
@@ -62,6 +53,7 @@ Many well-known YAML files get a Layer-3 plugin. Current plugins (in `docs/types
 
 - Only the first document is exported to JSON (multi-document YAML export produces first doc)
 - YAML anchors/aliases are resolved by js-yaml before display (merged result shown, not raw)
+- Query syntax is JSONPath-style over parsed YAML, not full YAMLPath
 
 ## Gap Analysis
 
@@ -70,3 +62,4 @@ Many well-known YAML files get a Layer-3 plugin. Current plugins (in `docs/types
 | Semantic diff | Med | Med | Key-tree diff like JSON has |
 | Export all documents as JSON array | Med | Easy | Multi-doc YAML → JSON array |
 | Schema validation | Low | Med | Validate against JSON Schema or Kwalify |
+| Generated known-plugin docs | Low | Easy | Build a compact plugin index from `docs/types/text/yaml/known/` |
