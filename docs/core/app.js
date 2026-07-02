@@ -3,8 +3,6 @@
 // Settings here are intentionally minimal; WP03 replaces buildSettings() with the
 // full descriptor-driven system. The contract this file consumes is frozen.
 
-import { getType } from './registry-runtime.generated.js';
-import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
@@ -21,10 +19,10 @@ import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
 import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
-import { populateTypeSelect } from './type-select.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
 import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder } from './sidebar-roots.js';
 import { installGlobalScreensaver } from './global-screensaver.js';
+import { rankLiteCandidates } from './detect-lite.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
 
@@ -32,6 +30,21 @@ let knownRegistryPromise = null;
 function knownRegistry() {
   if (!knownRegistryPromise) knownRegistryPromise = import('../known/registry.generated.js');
   return knownRegistryPromise;
+}
+let detectRuntimePromise = null;
+function detectRuntime() {
+  if (!detectRuntimePromise) detectRuntimePromise = import('./detect.js');
+  return detectRuntimePromise;
+}
+let registryRuntimePromise = null;
+function registryRuntime() {
+  if (!registryRuntimePromise) registryRuntimePromise = import('./registry-runtime.generated.js');
+  return registryRuntimePromise;
+}
+let typeSelectPromise = null;
+function typeSelectRuntime() {
+  if (!typeSelectPromise) typeSelectPromise = import('./type-select.js');
+  return typeSelectPromise;
 }
 
 async function loadIntake(intake) {
@@ -74,11 +87,17 @@ async function loadIntake(intake) {
   // When loading a single top-level file (not a folder-tree navigation), reset the folder root
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();
+  const liteCandidates = await rankLiteCandidates(intake);
+  if (liteCandidates.length) {
+    showFileLoading('Detecting file type', { detail: liteCandidates.map((row) => row.type.label).join(', ') });
+  }
+  const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
   const { type, ranking } = pickType(intake);
   const { matchAllKnown } = await knownRegistry();
   state.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake, state.knownCandidates);
   await activateType(type);
+  showFileLoading(null);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
     const total = (intake.size / 1048576).toFixed(0);
@@ -350,12 +369,13 @@ function openSettings() {
 
 // Re-apply settings after any change. Editor options apply live; the preview only
 // re-renders when a viewer setting that affects rendering changed (syncScroll reads live).
-function onSettingsChange(model, changedKey) {
+async function onSettingsChange(model, changedKey) {
   state.rawview?.updateOptions(monacoOptions(model));
   // "Show all file types" is a global pref applied to the type dropdown immediately.
   if (changedKey === 'showAllTypes') {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);
     if (state.intake && state.type) {
+      const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
       const { ranking } = pickType(state.intake);
       const selId = state.known && !state.forceBase ? 'known:' + state.known.id : state.type.id;
       populateTypeSelect(ranking, selId, !!state.settingsModel?.values?.showAllTypes, state.intake, state.knownCandidates || []);
@@ -517,6 +537,7 @@ function init() {
       if (match) await activateType(match.baseType, match.known);
       return;
     }
+    const { getType } = await registryRuntime();
     const t = getType(val);
     if (t) await activateType(t);
   });

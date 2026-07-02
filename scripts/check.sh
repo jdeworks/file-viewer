@@ -116,8 +116,32 @@ run_phase_metagame_bundles() {
 run_phase "regenerating metagame stage bundles (must be committed fresh)…" \
   run_phase_metagame_bundles
 
+run_phase_app_core() {
+  node scripts/gen-app-core.mjs >/dev/null
+  stale "app.generated.js changed (startup app graph changed since last regen)" docs/core/app.generated.js
+}
+
+run_phase "regenerating bundled app core (must be committed fresh)…" \
+  run_phase_app_core
+
 run_phase "running compatibility matrix generator…" \
   node scripts/gen-example-compatibility.mjs
+
+run_phase_examples_summary() {
+  node scripts/gen-examples-summary.mjs >/dev/null
+  stale "examples/summary.json changed" docs/examples/summary.json
+}
+
+run_phase "regenerating examples summary (must be committed fresh)…" \
+  run_phase_examples_summary
+
+run_phase_detect_lite() {
+  node scripts/gen-detect-lite.mjs >/dev/null
+  stale "detect-lite.generated.json changed" docs/core/detect-lite.generated.json
+}
+
+run_phase "regenerating lightweight detector metadata (must be committed fresh)…" \
+  run_phase_detect_lite
 
 run_phase_asset_manifest() {
   node scripts/gen-asset-manifest.mjs >/dev/null

@@ -15,7 +15,7 @@ export function initViewerOpen({ loadIntake }) {
 export async function openExampleFile(path, opts = {}) {
   const clean = String(path || '').replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
   if (!clean) return false;
-  const index = await fetch('examples/index.json').then((r) => r.ok ? r.json() : []).catch(() => []);
+  const index = await fetch('examples/summary.json').then((r) => r.ok ? r.json() : []).catch(() => []);
   const meta = Array.isArray(index) ? index.find((entry) => entry.file === clean) : null;
   const res = await fetch('examples/' + clean);
   if (!res.ok) return false;

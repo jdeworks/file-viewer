@@ -8,7 +8,6 @@ import { state, $, toast } from './state.js';
 import { intakeFromFile } from './intake.js';
 import { applyLayout } from './layout.js';
 import { TREE_DRAG_TYPE, getDraggedTreeNode } from './filetree.js';
-import { openSideBySideWithIntake } from './sidebyside.js';
 
 let syncRawModeButtons = () => {};
 export function initCompare(deps) { syncRawModeButtons = deps.syncRawModeButtons; }
@@ -98,6 +97,7 @@ function showCompareTarget() {
 // remembered mode (default Current). Diff is now a mode the user selects inside the overlay.
 async function handPicked(intake) {
   resetCompare();
+  const { openSideBySideWithIntake } = await import('./sidebyside.js');
   await openSideBySideWithIntake(intake);
 }
 

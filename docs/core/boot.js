@@ -4,12 +4,12 @@
 // registry-runtime + 9 detect chunks, and ~25 core modules. The browser had to download + parse
 // ALL of that before the base screen became interactive. boot.js fixes that: it is tiny, does the
 // minimal first-paint work (theme is already applied by the inline <head> script + critical CSS),
-// wires a MINIMAL drag/drop + Open handler, then schedules the heavy `import('./app.js')` in the
+// wires a MINIMAL drag/drop + Open handler, then schedules the app-core bundle in the
 // BACKGROUND (after first paint). If the user drops/opens a file BEFORE the full app is ready, we
 // show a spinner, await the in-flight import, then forward the file to the real pipeline — the
 // result is identical to a normal open, just slightly delayed.
 //
-// Coordination: boot owns the app-import promise. app.js runs its own init() on import and then
+// Coordination: boot owns the app-import promise. app.generated.js runs init() on import and then
 // calls window.__fvOnReady() to signal that the full pipeline (window.__fv) is live. boot's early
 // handlers capture input only until then; once ready, the real intake wiring in app.js owns
 // everything and boot's handlers no-op.
@@ -48,7 +48,7 @@ let appLoadStarted = false;
 function ensureApp() {
   if (appLoadStarted) return;
   appLoadStarted = true;
-  import('./app.js')                       // app.js runs init() itself and calls __fvOnReady(bridge)
+  import('./app.generated.js')             // app.generated.js runs init() and calls __fvOnReady(bridge)
     .catch((err) => {
       hideBootSpinner();
       const intake = document.getElementById('intake');
@@ -58,7 +58,7 @@ function ensureApp() {
         msg.textContent = 'Failed to load the viewer. Please reload.';
         intake.querySelector('.dropzone')?.appendChild(msg);
       }
-      console.error('boot: failed to load app.js', err);
+      console.error('boot: failed to load app.generated.js', err);
     });
 }
 

@@ -5,7 +5,6 @@
 // The "Metagame" category is gated behind fv:games:unlocked.
 import { $ } from './state.js';
 import { intakeFromFile } from './intake.js';
-import { REGISTRY } from './registry-runtime.generated.js';
 import { getTypeInfo, sampleDescription } from './type-info.js';
 import { KNOWN_GROUP_ORDER, knownFileGroup, isKnownExample as isKnownExampleFor } from './examples-known.js';
 
@@ -40,14 +39,6 @@ const CATEGORY_ICONS = {
 const SS_KEY = 'fv:examples:lastCat';
 const GAMES_KEY = 'fv:games:unlocked';
 const FILTER_KEY = 'fv:examples:filters';
-const ENHANCED_FILES = new Set([
-  'package.json', 'tsconfig.json', 'Dockerfile', 'docker-compose.yml', 'Cargo.toml',
-  'requirements.txt', 'go.mod', 'composer.json', 'Gemfile', 'CODEOWNERS',
-  '.editorconfig', 'pom.xml', 'build.gradle', 'Pipfile', 'openapi.yaml',
-  'sample.gitignore',
-]);
-const PARTIAL_FILES = new Set(['sample.djvu', 'sample.lrf']);
-
 function isGamesUnlocked() {
   try { return localStorage.getItem(GAMES_KEY) === '1'; } catch { return false; }
 }
@@ -60,22 +51,6 @@ function saveLastCat(cat) {
 }
 function clearLastCat() {
   try { sessionStorage.removeItem(SS_KEY); } catch { /* ok */ }
-}
-
-function detectTypeForExample(ex) {
-  const fname = (ex.file || '').split('/').pop();
-  const intake = {
-    filename: fname,
-    mimeType: ex.mime || '',
-    bytes: new Uint8Array(0),
-    isBinary: false,   // forces binary detectors to return 0 immediately
-    text: '', textSample: '', isPaste: false, size: 0, lastModified: 0,
-  };
-  let best = null, bestConf = 0;
-  for (const t of REGISTRY) {
-    try { const c = t.detect(intake); if (c > bestConf) { bestConf = c; best = t; } } catch {}
-  }
-  return bestConf > 0.25 ? best : null;
 }
 
 function categoriesFor(ex) {
@@ -101,18 +76,6 @@ function saveFilters(filters) {
   try { sessionStorage.setItem(FILTER_KEY, JSON.stringify(filters)); } catch { /* ok */ }
 }
 
-function isBinaryExample(ex) {
-  return !!ex.binary || /^(application\/(octet-stream|pdf|zip|x-7z-compressed|wasm|vnd|x-msdownload)|audio\/|font\/|image\/|model\/|video\/)/i.test(ex.mime || '');
-}
-
-function isEnhancedExample(ex) {
-  return !!ex.enhanced || ENHANCED_FILES.has((ex.file || '').split('/').pop());
-}
-
-function isPartialExample(ex) {
-  return !!ex.partial || PARTIAL_FILES.has((ex.file || '').split('/').pop());
-}
-
 function provenanceText(ex) {
   const bits = [];
   if (ex.license) bits.push('License: ' + ex.license);
@@ -126,14 +89,13 @@ function toolsFor(ex) {
 }
 
 function exampleInfo(ex) {
-  const type = ex.type ? REGISTRY.find((t) => t.id === ex.type) || detectTypeForExample(ex) : detectTypeForExample(ex);
   return {
-    type,
-    typeLabel: type?.label || '',
-    editable: !!type?.capabilities?.rawView,
-    binary: isBinaryExample(ex),
-    enhanced: isEnhancedExample(ex),
-    partial: isPartialExample(ex),
+    typeId: ex.type || '',
+    typeLabel: ex.typeLabel || '',
+    editable: !!ex.editable,
+    binary: !!ex.binary,
+    enhanced: !!ex.enhanced,
+    partial: !!ex.partial,
   };
 }
 
@@ -218,7 +180,7 @@ function applyFilter(container) {
 export async function loadExamples(onPick) {
   const host = $('examples');
   try {
-    const res = await fetch('examples/index.json');
+    const res = await fetch('examples/summary.json');
     if (!res.ok) { if (host) host.textContent = ''; return; }
     const list = await res.json();
     renderGallery(host, list, onPick);            // clears the "Loading examples…" placeholder
@@ -251,7 +213,8 @@ function renderGallery(host, list, onPick) {
       b.textContent = ex.label || ex.file;
       b.className = 'ex-file-btn';
       const info = exampleInfo(ex);
-      const baseTip = ex.description || sampleDescription(ex, getTypeInfo(info.type));
+      const typeForInfo = info.typeId ? { id: info.typeId, label: info.typeLabel } : null;
+      const baseTip = sampleDescription(ex, getTypeInfo(typeForInfo));
       const tip = [baseTip, provenanceText(ex)].filter(Boolean).join('\n');
       const toolLinks = toolsFor(ex);
       const toolSearch = toolLinks.flatMap((tool) => [tool.label, tool.description || '', tool.href]).join(' ');
@@ -271,7 +234,7 @@ function renderGallery(host, list, onPick) {
         const fname = ex.file.split('/').pop();
         await onPick(await intakeFromFile(new File([buf], fname, { type: ex.mime || '' })));
       };
-      if (info.type) {
+      if (info.typeId) {
         const badge = document.createElement('span');
         badge.className = info.editable ? 'ex-badge ex-badge-edit' : 'ex-badge ex-badge-view';
         badge.title = info.editable ? 'Editable in browser' : 'Preview only';
@@ -282,10 +245,10 @@ function renderGallery(host, list, onPick) {
       // sample can still be only partially supported (e.g. JPEG XL: detected +
       // downloadable, but browsers can't decode it for preview). Show both so a
       // sourced ✓ isn't mistaken for "fully works".
-      if (ex.source && ex.license) {
+      if (ex.sourced) {
         const qb = document.createElement('span');
         qb.className = 'ex-badge ex-badge-sourced';
-        qb.title = 'Real-world sourced sample' + (ex.license ? ' (' + ex.license + ')' : '');
+        qb.title = 'Real-world sourced sample';
         qb.textContent = '✓';
         b.appendChild(qb);
       }
@@ -296,7 +259,7 @@ function renderGallery(host, list, onPick) {
         qb.textContent = '⚠';
         b.appendChild(qb);
       }
-      b.dataset.sourced = (ex.source && ex.license) ? '1' : '0';
+      b.dataset.sourced = ex.sourced ? '1' : '0';
       if (toolLinks.length) {
         const entry = document.createElement('span');
         entry.className = 'ex-file-entry';
@@ -522,9 +485,9 @@ function renderGallery(host, list, onPick) {
         card.dataset.categories = cat;
         card.dataset.search = [cat, ...(groups.get(cat) || []).flatMap((ex) => [ex.label, ex.file, ex.mime])].join(' ').toLowerCase();
         card.dataset.editable = (groups.get(cat) || []).some((ex) => exampleInfo(ex).editable) ? '1' : '0';
-        card.dataset.binary = (groups.get(cat) || []).some(isBinaryExample) ? '1' : '0';
-        card.dataset.enhanced = (groups.get(cat) || []).some(isEnhancedExample) ? '1' : '0';
-        card.dataset.partial = (groups.get(cat) || []).some(isPartialExample) ? '1' : '0';
+        card.dataset.binary = (groups.get(cat) || []).some((ex) => !!ex.binary) ? '1' : '0';
+        card.dataset.enhanced = (groups.get(cat) || []).some((ex) => !!ex.enhanced) ? '1' : '0';
+        card.dataset.partial = (groups.get(cat) || []).some((ex) => !!ex.partial) ? '1' : '0';
         card.innerHTML =
           `<span class="ex-folder-icon">${CATEGORY_ICONS[cat] || '📂'}</span>`
           + `<span class="ex-folder-label">${cat}</span>`
