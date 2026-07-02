@@ -125,7 +125,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [3D](3d.md) | `.obj` | Basic | Monaco | download | — | — |
 | [3D](3d.md) | `.glb` `.gltf` | Basic | None | download | — | — |
 | [3D](3d.md) | `.ply` | Basic | None | download | — | — |
-| [3D Manufacturing (3MF)](3d.md) | `.3mf` | Basic | None | download | — | — |
+| [3D Manufacturing (3MF)](3mf.md) | `.3mf` | Basic | None | download | — | Mesh render |
 | [STEP CAD](/) | `.stp` `.step` `.p21` | Full | Monaco | download | — | 3D geometry |
 | [AutoCAD DXF](/) | `.dxf` | Partial | None | download | — | 2D render |
 | [AutoCAD DWG](/) | `.dwg` | Basic | None | download | — | Geometry |
@@ -155,7 +155,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Archive (ZIP)](zip.md) | `.zip` | Basic | None | download | — | Repack |
+| [Archive (ZIP)](zip.md) | `.zip` `.jar` `.war` `.nupkg` `.apk` `.cbz` `.whl` | Basic | Entry edits | modified ZIP, CSV, download | — | Add files |
 | [Archive](archive.md) | `.7z` `.tar` `.gz` `.bz2` `.xz` | Basic | None | download | — | Streaming extract |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |

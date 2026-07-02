@@ -345,16 +345,16 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] xml | XML
 - [x] xyz | Molecular Structure (.xyz)
 - [x] yaml | YAML
-- [ ] zip | Archive
+- [x] zip | Archive
 <!-- AUDIT_SECTION base-types END -->
 
 ### Type Implementation And Support Files
 
 <!-- AUDIT_SECTION type-files START -->
-- [ ] docs/types/3d/3mf/detect.js
-- [ ] docs/types/3d/3mf/index.js
-- [ ] docs/types/3d/3mf/metadata.js
-- [ ] docs/types/3d/3mf/renderer.js
+- [x] docs/types/3d/3mf/detect.js
+- [x] docs/types/3d/3mf/index.js
+- [x] docs/types/3d/3mf/metadata.js
+- [x] docs/types/3d/3mf/renderer.js
 - [ ] docs/types/3d/3mf/settings.default.json
 - [ ] docs/types/3d/EDITOR.md
 - [ ] docs/types/3d/gltf/detect.js
