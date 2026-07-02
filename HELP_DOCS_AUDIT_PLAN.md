@@ -294,11 +294,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] musicxml | MusicXML Score
 - [x] netcdf | NetCDF Scientific Data (.nc)
 - [x] nifti | NIfTI
-- [ ] npy | NumPy Array (.npy/.npz)
-- [ ] nupkg | Package (NuGet/VSIX/Wheel/JAR)
-- [ ] obj | 3D model (OBJ)
-- [ ] odf | OpenDocument
-- [ ] ofx | OFX / QFX Financial
+- [x] npy | NumPy Array (.npy/.npz)
+- [x] nupkg | Package (NuGet/VSIX/Wheel/JAR)
+- [x] obj | 3D model (OBJ)
+- [x] odf | OpenDocument
+- [x] ofx | OFX / QFX Financial
 - [ ] parquet | Apache Parquet
 - [ ] patch | Patch / Diff
 - [ ] pcap | Network Capture (.pcap)

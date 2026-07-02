@@ -22,6 +22,9 @@
 | Group/material display | ✅ | `g` and `usemtl` names become selectable color groups |
 | MTL auto-load | ❌ | `mtllib` is counted but companion `.mtl` files are not loaded |
 | Auto-center and fit | ✅ | Mesh scaled and centered in viewport |
+| Source view | ✅ | Monaco editor for the OBJ text source |
+| Text diff | ✅ | Standard line diff for OBJ source |
+| Metadata | ✅ | Vertex, normal, UV, face, group, and material counts |
 
 ### Edit
 | Capability | Status | Notes |
