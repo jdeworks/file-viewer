@@ -281,7 +281,6 @@ Master overview of all file types supported by the viewer. Columns:
 | [NuGet/VSIX/Wheel/JAR](/) | `.nupkg` `.vsix` `.whl` `.jar` | Basic | None | download | — | Class manifest |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |
 | [NetCDF Scientific](/) | `.nc` `.nc4` `.netcdf` | Partial | None | download | — | NetCDF-4 |
-| [NIfTI Brain Imaging](/) | `.nii` `.hdr` `.img` | Full | None | download | — | Voxel render |
 
 ---
 
