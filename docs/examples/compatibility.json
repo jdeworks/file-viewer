@@ -1399,7 +1399,7 @@
       ],
       "capabilities": {
         "rawView": false,
-        "preview": false,
+        "preview": true,
         "diff": false,
         "magicSelector": false,
         "screenshot": true
@@ -1414,7 +1414,7 @@
       "realWorldQuality": "sourced-or-derived",
       "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
       "fileExamplesSlug": null,
-      "previewDepth": "none",
+      "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",

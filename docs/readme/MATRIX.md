@@ -110,7 +110,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [TIFF](tiff.md) | `.tiff` `.tif` | Basic | Image editor | PNG/JPEG/WebP/AVIF, download | — | Multi-page |
 | [HEIC/HEIF](image.md) | `.heic` `.avif` | Basic | None | download | — | — |
 | [Icon File](/) | `.ico` | Fallback | None | download | — | Multi-size preview |
-| [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Fallback | None | download | — | Layer tree |
+| [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Basic | None | download | — | Layer tree |
 | [OpenEXR](exr.md) | `.exr` | Basic | None | download | — | Pixel decode |
 | [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
 
@@ -288,7 +288,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Procreate](/) | `.procreate` | Basic | None | download | — | Layer tree |
 | [Fusion 360](f3d.md) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
 | [Sketch Design](/) | `.sketch` | Basic | None | download | — | Artboard view |
-| [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Fallback | None | download | — | Layer tree |
+| [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Basic | None | download | — | Layer tree |
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [Adobe Premiere](/) | `.prproj` | Basic | None | download | — | Timeline view |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |

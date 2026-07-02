@@ -823,16 +823,16 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/ipynb/notebook.html
 - [x] docs/types/ipynb/renderer.js
 - [x] docs/types/ipynb/settings.default.json
-- [ ] docs/types/layered/decoders/kra.js
-- [ ] docs/types/layered/decoders/xcf.js
-- [ ] docs/types/layered/detect.js
-- [ ] docs/types/layered/index.js
-- [ ] docs/types/layered/metadata.js
-- [ ] docs/types/layered/ora/detect.js
-- [ ] docs/types/layered/ora/index.js
-- [ ] docs/types/layered/ora/renderer.js
-- [ ] docs/types/layered/renderer.js
-- [ ] docs/types/layered/settings.default.json
+- [x] docs/types/layered/decoders/kra.js
+- [x] docs/types/layered/decoders/xcf.js
+- [x] docs/types/layered/detect.js
+- [x] docs/types/layered/index.js
+- [x] docs/types/layered/metadata.js
+- [x] docs/types/layered/ora/detect.js
+- [x] docs/types/layered/ora/index.js
+- [x] docs/types/layered/ora/renderer.js
+- [x] docs/types/layered/renderer.js
+- [x] docs/types/layered/settings.default.json
 - [ ] docs/types/markdown/detect.js
 - [ ] docs/types/markdown/edit-actions.js
 - [ ] docs/types/markdown/EDITOR.md
