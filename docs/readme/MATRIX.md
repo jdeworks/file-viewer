@@ -256,7 +256,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Contacts (vCard)](vcard.md) | `.vcf` | Basic | Monaco | download | — | — |
-| [Calendar](ics.md) | `.ics` | Basic | Monaco | download | — | — |
+| [Calendar](ics.md) | `.ics` | Basic | Monaco | download | — | Calendar month/grid view |
 | [Mailbox](mbox.md) | `.mbox` | Basic | Monaco | download | — | Thread view |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
 | [HL7 v2 Health](/) | `.hl7` | Basic | Monaco | download | — | FHIR support |
