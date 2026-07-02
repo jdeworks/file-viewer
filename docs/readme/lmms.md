@@ -19,7 +19,7 @@
 | BPM | ✅ | From `head` element `bpm` attribute |
 | Time signature | ✅ | Numerator / denominator |
 | Master volume | ✅ | Global `mastervol` setting |
-| Master pitch | ❌ | Not currently extracted |
+| Master pitch | ✅ | Global `masterpit` setting |
 | Track counts | ✅ | Instrument, beat+bassline, sample, and automation track counts |
 | Instrument track names | ✅ | Track names for instrument tracks, up to 20 |
 | Pattern count | ❌ | Pattern elements are not counted yet |
@@ -27,7 +27,7 @@
 | Gzip decompression | ✅ | Transparent decompression of `.mmpz` |
 | Source view | ❌ | Compressed binary |
 | Diff | ❌ | Binary format |
-| Metadata | ⚠️ | Side panel reports format, BPM, and LMMS version |
+| Metadata | ✅ | Side panel reports format, BPM, song name, signature, track counts, and LMMS version |
 
 ### Edit
 | Capability | Status | Notes |

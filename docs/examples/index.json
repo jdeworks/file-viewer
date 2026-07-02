@@ -2570,6 +2570,8 @@
     "file": "sample.mmp",
     "label": "LMMS music project (demo)",
     "mime": "application/xml",
+    "type": "lmms",
+    "partial": true,
     "category": "audio",
     "categories": [
       "audio",

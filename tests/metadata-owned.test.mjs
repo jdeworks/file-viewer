@@ -55,6 +55,8 @@ import { detect as detectIso } from '../docs/types/binary/iso/detect.js';
 import { extractMetadata as isoMeta } from '../docs/types/binary/iso/metadata.js';
 import { detect as detectKmz } from '../docs/types/binary/kmz/detect.js';
 import { extractMetadata as kmzMeta } from '../docs/types/binary/kmz/metadata.js';
+import { detect as detectLmms } from '../docs/types/binary/lmms/detect.js';
+import { metadata as lmmsMeta } from '../docs/types/binary/lmms/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -731,6 +733,24 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows['KML files'], '1');
   assert.equal(rows['Primary KML'], 'doc.kml');
   assert.match(rows['Uncompressed size'], /1,170 bytes/);
+}
+
+{
+  const data = await bytes('sample.mmp');
+  const textSample = await text('sample.mmp');
+  assert.equal(detectLmms({ filename: 'sample.mmp', bytes: data, textSample, isBinary: false }), 0.99);
+  assert.equal(detectLmms({ filename: 'empty.mmpz', bytes: new Uint8Array(0), isBinary: true }), 0.5);
+  assert.ok(detectLmms({ filename: 'demo.xml', bytes: data, textSample, isBinary: false }) > 0.9);
+  const rows = await lmmsMeta({ filename: 'sample.mmp', bytes: data, text: textSample, isBinary: false, size: data.length });
+  assert.equal(rows.Format, 'LMMS Project');
+  assert.equal(rows.BPM, '128');
+  assert.equal(rows['Song name'], 'Demo Beat');
+  assert.equal(rows['Time signature'], '4/4');
+  assert.equal(rows['Master pitch'], '0');
+  assert.equal(rows.Tracks, '4');
+  assert.equal(rows['Instrument tracks'], '3');
+  assert.equal(rows['Beat+bassline tracks'], '1');
+  assert.equal(rows['LMMS version'], '1.2.2');
 }
 
 {
