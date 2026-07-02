@@ -25,7 +25,7 @@
 | PE imported DLLs | ❌ | Import directory table is not parsed |
 | Mach-O summary | ✅ | CPU type, file type, load-command count, endian; fat binaries are identified only |
 | Mach-O dylibs | ❌ | Load commands are counted but not decoded into dylib names |
-| Source view | ✅ | Raw binary view is available |
+| Raw view | ✅ | Binary raw/hex view is available |
 | Diff | ❌ | Binary format |
 | Metadata | ✅ | Format, architecture, and bit width |
 

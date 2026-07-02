@@ -234,11 +234,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] dwg | AutoCAD DWG Drawing
 - [x] dxf | AutoCAD Drawing (.dxf)
 - [x] editorconfig | EditorConfig
-- [ ] eml | Email
-- [ ] emulatorjs | Console ROM (EmulatorJS)
-- [ ] env | Environment Variables
-- [ ] epub | E-book
-- [ ] exe | Executable (ELF / PE / Mach-O)
+- [x] eml | Email
+- [x] emulatorjs | Console ROM (EmulatorJS)
+- [x] env | Environment Variables
+- [x] epub | E-book
+- [x] exe | Executable (ELF / PE / Mach-O)
 - [ ] exr | OpenEXR Image
 - [ ] f3d | Fusion 360
 - [ ] fb2 | FictionBook (FB2)
