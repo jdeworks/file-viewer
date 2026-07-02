@@ -224,11 +224,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] crash | Crash Report
 - [x] csv | CSV / TSV
 - [x] dbf | dBase / DBF Database
-- [ ] deb | Debian Package
-- [ ] dicom | DICOM Medical Image (.dcm)
-- [ ] djvu | DjVu Document
-- [ ] dmp | Windows Minidump (.dmp)
-- [ ] docker-compose | Docker Compose
+- [x] deb | Debian Package
+- [x] dicom | DICOM Medical Image (.dcm)
+- [x] djvu | DjVu Document
+- [x] dmp | Windows Minidump (.dmp)
+- [x] docker-compose | Docker Compose
 - [ ] dockerfile | Dockerfile
 - [ ] docx | Word
 - [ ] dwg | AutoCAD DWG Drawing
