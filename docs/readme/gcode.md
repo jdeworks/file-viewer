@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.gcode`, `.gc`, `.ngc`, `.cnc` |
+| Extension(s) | `.gcode`, `.gc`, `.nc`, `.ngc` |
 | MIME type | `text/plain` |
 | Binary / Text | Text |
 | Common use | 3D printer job files, CNC machine instructions, slicer output |

@@ -1,13 +1,13 @@
-# Map (GeoJSON / GPX / KML)
+# Map (GeoJSON / GPX)
 
-> Geographic data rendered as an interactive canvas map with track stats, waypoint listing, and GeoJSON↔GPX conversion.
+> Geographic data rendered as an offline map preview with GPX track stats, waypoint listing, and GeoJSON↔GPX conversion.
 
 ## Format Details
 | Field | Value |
 |-------|-------|
-| Extensions | `.geojson`, `.gpx`, `.kml`, `.kmz`, `.topojson` |
-| MIME types | `application/geo+json`, `application/gpx+xml`, `application/vnd.google-earth.kml+xml` |
-| Binary/Text | Text (XML or JSON) |
+| Extensions | `.geojson`, `.gpx` |
+| MIME types | `application/geo+json`, `application/gpx+xml` |
+| Binary/Text | Text (JSON or XML) |
 | Common use | GPS tracks, mapping data, location datasets, GIS exports |
 
 ## Capabilities
@@ -15,15 +15,16 @@
 ### View
 | Feature | Status | Details |
 |---------|--------|---------|
-| Interactive map | ✅ | Canvas-rendered track/waypoints (no tile server — zero off-origin) |
+| Offline map preview | ✅ | GeoJSON renders as inline SVG; GPX renders track/waypoints on canvas (no tile server — zero off-origin) |
 | Track stats | ✅ | Distance, elevation gain/loss, duration, trackpoints, waypoints |
 | GPX metadata | ✅ | Track name, creator, bounds |
 | Waypoints | ✅ | Listed with name and coordinates |
-| GeoJSON features | ✅ | Points, LineStrings, Polygons rendered with labels |
-| KML rendering | ✅ | Placemarks and paths |
-| KMZ (zipped KML) | ✅ | Auto-extracted and parsed |
+| GeoJSON features | ✅ | Points, LineStrings, Polygons, and Multi* geometries rendered without property labels |
+| KML rendering | ❌ | Handled by the dedicated KML viewer, not this map type |
+| KMZ (zipped KML) | ❌ | Handled by the dedicated KMZ viewer, not this map type |
+| TopoJSON rendering | ❌ | Use the GeoJSON / TopoJSON summary viewer |
 | Source view / diff | ✅ | Full raw text editable in Monaco; text diff available |
-| Metadata | ✅ | Feature count, bounds, coordinate count |
+| Metadata | ✅ | GeoJSON geometry counts and bounds; GPX track stats and bounds |
 
 ### Edit
 | Feature | Status | Details |

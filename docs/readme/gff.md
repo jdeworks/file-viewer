@@ -22,10 +22,10 @@
 | Sequence list | ✅ | Unique chromosome / scaffold names |
 | Sequence region count | ✅ | `##sequence-region` directives counted |
 | Colour coding | ✅ | Known feature types (gene, exon, CDS) colour-coded |
-| First features table | ✅ | seqname/feature/start/end/strand (first 8 rows) |
+| First features table | ❌ | Parsed internally for future use, but no per-feature table is rendered yet |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | Disabled — large annotation files |
-| Metadata | ✅ | Version, feature count, unique sequences |
+| Metadata | ⚠️ | Metadata side panel currently reports format and sampled feature-type count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -41,12 +41,14 @@
 ## Known Limitations
 
 - Attributes column (column 9) is not parsed — feature names not shown
-- Only first 1000 features are processed for the histogram
+- Feature histogram counts all parsed rows, but the side-panel metadata samples the text preview
+- Per-feature table is not rendered yet
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Attribute parsing | Med | Med | Parse key=value pairs from column 9 |
+| First features table | Med | Easy | Render seqname/source/type/start/end/strand for the first rows |
 | Gene model diagram | Low | Hard | SVG track view of exon/intron structure |
 | Export feature stats as CSV | Low | Easy | Type/count table to CSV |

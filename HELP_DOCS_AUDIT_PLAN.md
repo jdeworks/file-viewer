@@ -14,13 +14,19 @@ Use section filters when a batch needs a narrower lane, for example `--section=e
 ## /goal Prompt
 
 ```text
-Audit and complete the file-viewer general-lane docs, startup, and capabilities work using HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth. Do not treat the 153 help markdown files as the full scope; the full scope is every checkbox row across all audit sections.
+Audit and complete the file-viewer general-lane docs, startup, and capabilities work using HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth. The full audit is not the 153 help markdown files by themselves; it is every checkbox row across every AUDIT_SECTION in this file.
+
+Preflight:
+- Run: node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5
+- Confirm the output includes all audit sections and an audit_total in the thousands. At plan creation this was 7,423 total rows: 153 readme docs plus registered base types, docs/types implementation files, known plugins, catalog entries, physical examples, .example-files-internet files, and special example/capability cases.
+- If the total unexpectedly drops to the help-doc count only, stop and fix the plan/check script before auditing; do not proceed from an undersized list.
 
 Operating loop:
 - Start each batch with: node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5
 - Work only the next unchecked items printed by that command, unless a blocker requires a directly related dependency.
 - Mark an item [x] only after verifying the file/type/example/capability actually works or after documenting and fixing the concrete gap.
 - Keep batches small enough that the next command output stays useful; do not rely on memory or prompt matching for coverage.
+- Use --section only for a deliberate temporary lane focus. The completion check must always run without --section so it covers every audit section.
 
 Required work tracks:
 - Help/docs audit: every docs/readme markdown file must be opened, links checked, stale feature text updated, and help-overlay behavior verified where relevant.
@@ -93,11 +99,11 @@ Completion gates:
 - [x] docs/readme/fbx.md
 - [x] docs/readme/fits.md
 - [x] docs/readme/font.md
-- [ ] docs/readme/gamerom.md
-- [ ] docs/readme/gcode.md
-- [ ] docs/readme/geo.md
-- [ ] docs/readme/geojson.md
-- [ ] docs/readme/gff.md
+- [x] docs/readme/gamerom.md
+- [x] docs/readme/gcode.md
+- [x] docs/readme/geo.md
+- [x] docs/readme/geojson.md
+- [x] docs/readme/gff.md
 - [ ] docs/readme/gitattributes.md
 - [ ] docs/readme/gitignore.md
 - [ ] docs/readme/gltf.md
