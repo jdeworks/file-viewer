@@ -176,7 +176,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Apache Avro](avro.md) | `.avro` | Full | None | download | — | Record decode |
 | [HDF5 Scientific](/) | `.h5` `.hdf5` `.hdf` `.he5` | Basic | None | download | — | Dataset contents |
 | [dBase / DBF](/) | `.dbf` | Full | None | download | — | Memo fields |
-| [BSON](/) | `.bson` | Full | None | download | — | Multi-doc |
+| [BSON](bson.md) | `.bson` | Full | None | download | — | Multi-doc |
 | [CBOR](/) | `.cbor` | Full | None | download | — | Indefinite length |
 | [MessagePack](/) | `.msgpack` `.mpk` | Full | None | download | — | Ext types |
 | [MATLAB MAT-file](mat.md) | `.mat` | Partial | None | download | — | v7.3 / compressed payloads |

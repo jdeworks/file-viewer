@@ -392,6 +392,11 @@ export async function run(ctx) {
   const bsonText = await bsonf.$eval('body', (el) => el.textContent);
   if (/BSON/i.test(bsonText)) pass('BSON badge shown'); else fail('bson badge: ' + bsonText.slice(0, 300));
   if (/name|Alice|role/i.test(bsonText)) pass('BSON fields rendered'); else fail('bson fields: ' + bsonText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const bsonMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Document Size\s*131\s*(?:bytes?|B)/i.test(bsonMeta) && /Top.?level.?fields\s*7/i.test(bsonMeta)) pass('BSON metadata includes document size and field count'); else fail('bson meta: ' + bsonMeta.replace(/\s+/g, ' ').slice(0, 260));
+  await page.click('#metaDrawer [data-close]');
 
   // ── dBase DBF ─────────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

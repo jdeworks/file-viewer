@@ -28,7 +28,7 @@
 | Document / Array nesting | ✅ | Recursive nested display, capped at 10 levels / 200 items |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Document size and top-level field count |
+| Metadata | ✅ | Document size and top-level field count, capped at 100 fields for safety |
 
 ### Edit
 | Capability | Status | Notes |
@@ -44,6 +44,7 @@
 ## Known Limitations
 
 - Only the first root document is rendered; extra bytes are flagged as a possible multi-document stream
+- Metadata top-level field count is capped at 100 fields
 - Decimal128 is identified but not converted to a decimal string
 - DateTime and Timestamp values are shown as raw numeric values, not formatted dates
 
