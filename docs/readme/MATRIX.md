@@ -20,7 +20,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [JSON](json.md) | `.json` `.frag` | Basic | Monaco | download | package.json, tsconfig, composer.json, vercel.json, renovate, prettier, turbo, eslint, jest, stylelint, babel, commitlint, releaserc, lerna, nx, biome, vscode-settings, vscode-extensions, vscode-launch, vscode-tasks, jsconfig, deno.json, pyrightconfig, angular, capacitor, nycrc, devcontainer, knip, mocha (29) | Schema validation |
 | [YAML](yaml.md) | `.yaml` `.yml` | Basic | Monaco | download | docker-compose, github-actions, k8s-manifest, pubspec, netlify.toml→, dependabot, lefthook, codecov, serverless, azure-pipelines, travis, circleci, amplify, codebuild, pre-commit, gitlab-ci, pnpm-workspace (17) | Schema validation |
-| [TOML](toml.md) | `.toml` `Pipfile` | Basic | Monaco | download | Cargo.toml, netlify.toml, wrangler.toml, fly.toml, cliff.toml, pyproject.toml (6) | — |
+| [TOML](toml.md) | `.toml` `Pipfile` | Basic | Monaco / form | JSON, YAML, download | Cargo.toml, netlify.toml, wrangler.toml, fly.toml, cliff.toml, pyproject.toml + more (46) | Semantic diff |
 | [XML](xml.md) | `.xml` | Basic | Monaco | download | pom.xml (1) | XPath query |
 | [INI](ini.md) | `.ini` | Basic | Monaco | download | tox.ini (1) | — |
 | [Markdown](markdown.md) | `.md` `.markdown` `.mdown` `.mkd` | Full | Monaco / WYSIWYG | HTML, DOCX, download | CODEOWNERS, Gemfile (2) | Math / Mermaid |
@@ -46,7 +46,8 @@ Master overview of all file types supported by the viewer. Columns:
 | [Localization Strings](strings.md) | `.strings` | Basic | Monaco | download | — | — |
 | [HAR](har.md) | `.har` | Basic | Monaco | download | — | Waterfall chart |
 | [SARIF](sarif.md) | `.sarif` | Basic | Monaco | download | — | — |
-| [Subtitles](subtitle.md) | `.srt` | Basic | Monaco | download | — | VTT/ASS support |
+| [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
+| [Apache Thrift](thrift.md) | `.thrift` | Basic | Monaco | download | — | Include resolution |
 | [URL Inspector](url.md) | `.url` | Basic | Monaco | download | — | — |
 | [Steam ACF](/) | `.acf` | Basic | Monaco | download | — | — |
 | [PostScript / EPS](/) | `.ps` `.eps` `.ai` | Basic | Monaco | download | — | No PS render |
@@ -105,8 +106,9 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Image](image.md) | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp` `.jxl` `.svg` | Full | Monaco (overlay) | PNG/JPEG/WebP | — | EXIF editor |
-| [TIFF](image.md) | `.tiff` | Basic | None | download | — | Multi-page |
+| [Image](image.md) | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.bmp` `.jxl` | Full | Image editor | PNG/JPEG/WebP/AVIF | — | EXIF editor |
+| [SVG image](image.md) | `.svg` `.svgz` | Full | Monaco split editor | download | — | Visual vector editing |
+| [TIFF](tiff.md) | `.tiff` `.tif` | Basic | Image editor | PNG/JPEG/WebP/AVIF, download | — | Multi-page |
 | [HEIC/HEIF](image.md) | `.heic` `.avif` | Basic | None | download | — | — |
 | [Icon File](/) | `.ico` | Fallback | None | download | — | Multi-size preview |
 | [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Fallback | None | download | — | Layer tree |
@@ -144,7 +146,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [LMMS Project](/) | `.mmp` `.mmpz` | Full | None | download | — | Automation |
 | [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
-| [Subtitles](subtitle.md) | `.srt` | Basic | Monaco | download | — | VTT support |
+| [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
 | [Flash (SWF / Ruffle)](/) | `.swf` | Basic | None | download | — | — |
 
 ---
@@ -303,13 +305,13 @@ Master overview of all file types supported by the viewer. Columns:
 
 ## Known-file plugin summary
 
-69 enhanced filename matchers are registered across the base types above. The breakdown by base type:
+Enhanced filename matchers are registered across the base types above. This table is a compact snapshot; the exhaustive known-plugin audit is tracked separately in `HELP_DOCS_AUDIT_PLAN.md`.
 
 | Base type | Plugin count | Examples |
 |-----------|-------------|---------|
 | JSON | 29 | package.json, tsconfig, eslint, jest, babel, biome, renovate, prettier, vscode-* |
 | YAML | 17 | docker-compose, github-actions, k8s-manifest, dependabot, lefthook, codecov, travis, circleci, gitlab-ci, pnpm-workspace |
-| TOML | 6 | Cargo.toml, netlify.toml, wrangler.toml, fly.toml, cliff.toml, pyproject.toml |
+| TOML | 46 | Cargo.toml, netlify.toml, wrangler.toml, fly.toml, cliff.toml, pyproject.toml |
 | Text/Raw | 6 | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc |
 | Markdown | 2 | CODEOWNERS, Gemfile |
 | XML | 1 | pom.xml |
@@ -319,4 +321,4 @@ Master overview of all file types supported by the viewer. Columns:
 | toml/ini | 1 | tox.ini |
 | YAML/text | 4 | mypy.ini, pubspec.yaml, amplify, azure-pipelines |
 
-*Count from `docs/known/registry.js` — 69 entries in the `KNOWN` export.*
+Counts in this snapshot are hand-maintained and should be refreshed during the known-plugin audit.

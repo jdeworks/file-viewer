@@ -183,6 +183,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/subtitle.md
 - [x] docs/readme/TEMPLATE.md
 - [x] docs/readme/text.md
+- [x] docs/readme/thrift.md
 - [x] docs/readme/tiff.md
 - [x] docs/readme/toml.md
 - [x] docs/readme/torrent.md
@@ -329,11 +330,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] step | STEP CAD Exchange (ISO 10303-21)
 - [x] stl | 3D model (STL)
 - [x] strings | Localization Strings
-- [ ] subtitle | Subtitles
-- [ ] svg | SVG image
-- [ ] thrift | Apache Thrift
-- [ ] tiff | TIFF image
-- [ ] toml | TOML
+- [x] subtitle | Subtitles
+- [x] svg | SVG image
+- [x] thrift | Apache Thrift
+- [x] tiff | TIFF image
+- [x] toml | TOML
 - [ ] torrent | Torrent
 - [ ] url | URL Inspector
 - [ ] v86 | x86 Disk Image (v86)
