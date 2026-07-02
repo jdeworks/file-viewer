@@ -1252,11 +1252,11 @@
         ".class"
       ],
       "capabilities": {
-        "rawView": false,
+        "rawView": true,
         "preview": true,
         "diff": false,
         "magicSelector": false,
-        "screenshot": true
+        "screenshot": false
       },
       "provenance": {
         "sourced": 0,
@@ -1271,8 +1271,12 @@
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "knownParserGaps": [
+        "Bytecode instructions are not disassembled",
+        "Field and method signatures are not shown",
+        "Superclass, interfaces, access flags, and referenced class lists are not shown"
+      ],
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

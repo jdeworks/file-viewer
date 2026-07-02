@@ -17,6 +17,9 @@ import { render as renderBsp } from '../docs/types/binary/bsp/renderer.js';
 import { detect as detectCbor } from '../docs/types/binary/cbor/detect.js';
 import { extractMetadata as cborMeta } from '../docs/types/binary/cbor/metadata.js';
 import { render as renderCbor } from '../docs/types/binary/cbor/renderer.js';
+import { detect as detectJavaClass } from '../docs/types/binary/class/detect.js';
+import { extractMetadata as javaClassMeta } from '../docs/types/binary/class/metadata.js';
+import { render as renderJavaClass } from '../docs/types/binary/class/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -52,6 +55,12 @@ function value(rows, label) {
 
 function numberValue(rows, label) {
   return Number(value(rows, label).replace(/,/g, ''));
+}
+
+function metadataField(record, label) {
+  const row = record.fields.find((r) => r.label === label);
+  assert.ok(row, `missing metadata field: ${label}`);
+  return row.value;
 }
 
 function bspHeaderBytes(magic, version, entityText) {
@@ -407,6 +416,28 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const tagged = new Uint8Array([0xc1, 0x63, 0x61, 0x62, 0x63]);
   const taggedRendered = renderCbor({ filename: 'tagged.cbor', bytes: tagged, isBinary: true }).bodyHtml;
   assert.match(taggedRendered, /"abc"/);
+}
+
+{
+  const data = await bytes('sample.class');
+  const rows = javaClassMeta({ filename: 'sample.class', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.label, 'Sample');
+  assert.equal(metadataField(rows, 'Class name'), 'Sample');
+  assert.equal(metadataField(rows, 'Java version'), 'Java 17');
+  assert.equal(metadataField(rows, 'Major version'), '61');
+  assert.equal(metadataField(rows, 'Constant pool entries'), '4');
+  assert.ok(detectJavaClass({ filename: 'sample.class', bytes: data, isBinary: true }) > 0.9);
+
+  const rendered = renderJavaClass({ filename: 'sample.class', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /CA FE BA BE/);
+  assert.match(rendered, /Sample/);
+  assert.match(rendered, /Java 17/);
+  assert.match(rendered, /Constant pool/);
+
+  const invalid = new Uint8Array([0, 1, 2, 3, 0, 0, 0, 61, 0, 1]);
+  const invalidMeta = javaClassMeta({ filename: 'bad.class', bytes: invalid, isBinary: true, size: invalid.length });
+  assert.equal(metadataField(invalidMeta, 'Error'), 'Missing CAFEBABE class-file signature');
+  assert.match(renderJavaClass({ filename: 'bad.class', bytes: invalid, isBinary: true, size: invalid.length }).bodyHtml, /Missing CAFEBABE/);
 }
 
 console.log('metadata-owned: ok');

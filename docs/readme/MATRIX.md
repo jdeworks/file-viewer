@@ -207,7 +207,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Python Bytecode](/) | `.pyc` `.pyo` | Basic | None | download | — | Bytecode disasm |
-| [Java Class](/) | `.class` | Basic | None | download | — | Bytecode |
+| [Java Class](java-class.md) | `.class` | Basic | None | download | — | No disassembly |
 | [Executable (ELF/PE/Mach-O)](/) | `.elf` `.exe` `.dll` `.dylib` `.so` | Basic | None | download | — | Section listing |
 | [Windows Shortcut](/) | `.lnk` | Basic | None | download | — | — |
 | [Windows Minidump](/) | `.dmp` `.mdmp` | Basic | None | download | — | — |

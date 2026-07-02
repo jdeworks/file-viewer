@@ -28,6 +28,10 @@ function javaVersion(major) {
   return `Java ${major - 44} (major ${major})`;
 }
 
+function hasClassMagic(b) {
+  return b?.[0] === 0xca && b[1] === 0xfe && b[2] === 0xba && b[3] === 0xbe;
+}
+
 // Walk the constant pool starting at offset 8. Returns { utf8: Map<index, string>,
 // classes: number[], cpCount, nextOff } or null on error.
 function parseConstantPool(b) {
@@ -94,6 +98,9 @@ export function extractMetadata(intake) {
   const b = intake.bytes;
   if (!b || b.length < 8) {
     return { label: 'Java Class', fields: [{ label: 'Error', value: 'File too small' }] };
+  }
+  if (!hasClassMagic(b)) {
+    return { label: 'Java Class', fields: [{ label: 'Error', value: 'Missing CAFEBABE class-file signature' }] };
   }
 
   const minor = (b[4] << 8) | b[5];

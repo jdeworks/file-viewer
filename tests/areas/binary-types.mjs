@@ -534,6 +534,24 @@ export async function run(ctx) {
   if (/PYC|Python/i.test(pycText)) pass('PYC badge shown'); else fail('pyc badge: ' + pycText.slice(0, 300));
   if (/3\.11|3495/i.test(pycText)) pass('Python version shown'); else fail('pyc version: ' + pycText.slice(0, 300));
 
+  // ── Java Class (.class) ───────────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.class');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  const classf = await frameOf('iframe.fv-preview-frame');
+  await classf.waitForSelector('.magic-badge', { timeout: 8000 });
+  const classTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (classTypeId === 'java-class') pass('.class detected as java-class type'); else fail('class typeId: ' + classTypeId);
+  const classText = await classf.$eval('body', (el) => el.textContent);
+  if (/CA FE BA BE/i.test(classText)) pass('Java class magic shown'); else fail('class magic: ' + classText.slice(0, 300));
+  if (/Sample|Java 17|major:\s*61/i.test(classText)) pass('Java class name and version shown'); else fail('class version: ' + classText.slice(0, 300));
+  if (/Constant pool\s*4/i.test(classText)) pass('Java class constant pool count shown'); else fail('class constant pool: ' + classText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const classMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Class name\s*Sample/i.test(classMeta) && /Java version\s*Java 17/i.test(classMeta) && /Major version\s*61/i.test(classMeta)) pass('Java class metadata drawer includes class and version'); else fail('class meta: ' + classMeta.replace(/\s+/g, ' ').slice(0, 260));
+  await page.click('#metaDrawer [data-close]');
+
   // ── LMMS Music Project ────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('LMMS music project (demo)');

@@ -10,6 +10,10 @@ function fmtBytes(n) {
   return (n / 1073741824).toFixed(2) + ' GB';
 }
 
+function hasClassMagic(b) {
+  return b?.[0] === 0xca && b[1] === 0xfe && b[2] === 0xba && b[3] === 0xbe;
+}
+
 // Map JVM major version to Java release name.
 function javaVersion(major) {
   if (major < 45) return 'Pre-Java 1';
@@ -168,6 +172,14 @@ export function render(intake) {
     const html = `<style>${STYLE}</style><div class="card">` +
       `<span class="magic-badge">CA FE BA BE</span>` +
       `<div class="error-box">File too small to be a valid Java class file (${b ? b.length : 0} bytes).</div>` +
+      `</div>`;
+    return { bodyHtml: html, hadUnsafe: false };
+  }
+
+  if (!hasClassMagic(b)) {
+    const html = `<style>${STYLE}</style><div class="card">` +
+      `<span class="magic-badge">CA FE BA BE</span>` +
+      `<div class="error-box">Missing CAFEBABE class-file signature.</div>` +
       `</div>`;
     return { bodyHtml: html, hadUnsafe: false };
   }

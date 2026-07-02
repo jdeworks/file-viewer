@@ -1819,11 +1819,13 @@
   {
     "label": "sample.class",
     "file": "sample.class",
+    "mime": "application/java-vm",
     "category": "Binary",
     "categories": [
       "Binary"
     ],
     "type": "java-class",
+    "typeLabel": "Java Class",
     "description": "Minimal valid Java class (public class Sample extends Object, Java 17 / major version 61)"
   },
   {
