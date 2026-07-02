@@ -1,6 +1,6 @@
 # Executable (ELF / PE / Mach-O)
 
-> Executable binary viewer — format detection (ELF/PE/Mach-O), architecture, sections/segments, imported libraries.
+> Executable binary viewer — lightweight header inspection for ELF, PE/COFF, and Mach-O files.
 
 ## Format Details
 
@@ -19,16 +19,15 @@
 | Format detection | ✅ | ELF, PE (MZ), Mach-O magic bytes |
 | Architecture | ✅ | x86, x86-64, ARM, ARM64, MIPS, etc. |
 | ELF type | ✅ | ET_EXEC / ET_DYN / ET_REL / ET_CORE |
-| ELF sections | ✅ | `.text`, `.data`, `.bss`, `.rodata`, etc. |
-| ELF dynamic libs | ✅ | `DT_NEEDED` entries from dynamic section |
-| PE sections | ✅ | `.text`, `.rdata`, `.data`, etc. with sizes |
-| PE imported DLLs | ✅ | Import directory table |
-| PE characteristics | ✅ | DLL / GUI / console flags |
-| Mach-O segments | ✅ | `__TEXT`, `__DATA`, `__LINKEDIT` |
-| Mach-O dylibs | ✅ | `LC_LOAD_DYLIB` commands |
-| Source view | ✅ | Monaco (hex preview for binary portions) |
+| ELF header counts | ✅ | Program-header and section-header counts, not section names |
+| ELF dynamic libs | ❌ | Dynamic sections are not parsed |
+| PE summary | ✅ | Machine, section count, timestamp, subsystem, EXE/DLL, and selected DLL-characteristic hardening flags |
+| PE imported DLLs | ❌ | Import directory table is not parsed |
+| Mach-O summary | ✅ | CPU type, file type, load-command count, endian; fat binaries are identified only |
+| Mach-O dylibs | ❌ | Load commands are counted but not decoded into dylib names |
+| Source view | ✅ | Raw binary view is available |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Format, arch, section count, linked libs |
+| Metadata | ✅ | Format, architecture, and bit width |
 
 ### Edit
 | Capability | Status | Notes |
@@ -43,13 +42,16 @@
 ## Known Limitations
 
 - No disassembly — static header inspection only
-- Mach-O fat binaries show first arch slice only
-- PE imports are parsed from the standard import directory
+- Section names, segment names, imported libraries, and string tables are not decoded
+- Mach-O fat binaries are identified but individual slices are not inspected
+- ELF 64-bit entry point display uses the low 32 bits only
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Section / segment tables | Med | Med | Decode ELF section names, PE section table, and Mach-O segment load commands |
+| Imported libraries | Med | Med | Parse ELF dynamic section, PE import directory, and Mach-O dylib load commands |
 | String table extraction | Med | Easy | Scan for printable string runs |
 | Export section list as JSON | Low | Easy | Name/offset/size to JSON |
 | Disassembly via WASM | Low | Hard | Requires Capstone.js or similar |

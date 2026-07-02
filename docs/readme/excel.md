@@ -1,6 +1,6 @@
 # Excel Spreadsheets
 
-> XLSX and XLS spreadsheets rendered as multi-sheet tabular HTML, with CSV and JSON export via SheetJS — all client-side.
+> XLSX, XLS, XLSM, XLSB, and ODS spreadsheets rendered as editable multi-sheet grids, with CSV/JSON export and edited-XLSX download via SheetJS — all client-side.
 
 ## Format Details
 
@@ -21,23 +21,24 @@
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Sheet rendering | ✅ | Each sheet rendered as a scrollable HTML `<table>` |
+| Sheet rendering | ✅ | Each sheet rendered as an editable grid table |
 | Multi-sheet tabs | ✅ | Tab navigation between named sheets |
-| First-row header | ✅ | `firstRowHeader` setting (default on) renders top row as `<th>` |
-| Formatted cell values | ✅ | SheetJS `raw: false` — dates, numbers, and booleans rendered as formatted strings |
-| Empty cell handling | ✅ | `defval: ''` fills missing cells with empty strings to preserve column alignment |
-| Formulas | ⚠️ Partial | Pre-calculated results from the saved file are shown; formulas are not recalculated |
+| Row/column headers | ✅ | Spreadsheet-style row numbers and column letters |
+| Cell values | ✅ | SheetJS parses the workbook; cell text is rendered via `textContent` |
+| Empty cell handling | ✅ | Blank cells are editable and preserved in the displayed used range |
+| Formulas | ⚠️ Partial | Saved values are displayed; edited cells replace stale formula/format data on export |
 | Cell formatting (colors/fonts) | ❌ | Data only — no background colors, font weights, or borders |
 | Charts | ❌ | Chart objects are not rendered |
 | Pivot tables | ❌ | Rendered as plain data only |
 | Merged cells | ⚠️ Partial | SheetJS may flatten merges depending on the sheet structure |
-| Metadata | ✅ | Sheet count, sheet names |
+| Metadata | ✅ | Sheet count, sheet names, per-sheet dimensions, defined names, and workbook properties when available |
 
 ### Edit
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Cell editing | ❌ | Read-only table view; no in-browser cell editing |
+| Cell editing | ✅ | Inline editable cells with dirty-state tracking |
+| Download edited workbook | ✅ | Applies cell deltas back to the parsed workbook and downloads a fresh `.xlsx` |
 | Source view | ❌ | Binary format — no raw XML view |
 
 ### Export
@@ -48,13 +49,13 @@
 | First sheet → CSV | ✅ | SheetJS `sheet_to_csv`; comma-separated |
 | First sheet → JSON | ✅ | SheetJS `sheet_to_json` as array-of-objects |
 | All sheets → JSON | ✅ | Object keyed by sheet name; available when workbook has more than one sheet |
-| Export as XLSX | ❌ | Roundtrip write not implemented |
+| Export edited XLSX | ✅ | Edited grid can be downloaded as `.xlsx`; original workbook download remains available |
 
 ## Settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `firstRowHeader` | `true` | Treat first row as column headers (`<th>` instead of `<td>`) |
+| `firstRowHeader` | `true` | Legacy setting retained; current editable grid uses spreadsheet row/column headers |
 
 ## Real-World Examples
 
@@ -64,7 +65,7 @@
 
 - Formulas are not recalculated — values shown are those saved by the last application to write the file
 - Cell colors, borders, and font styling are stripped; rendering is data-only
-- Very large sheets (100k+ rows) may be slow to render as a DOM table
+- Very large sheets are truncated in the editor grid to keep the UI responsive
 - Macro-enabled workbooks (`.xlsm`) are treated as regular XLSX (macros never execute)
 - Password-protected workbooks cannot be opened (no decryption support)
 

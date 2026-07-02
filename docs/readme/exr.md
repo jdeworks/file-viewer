@@ -1,6 +1,6 @@
 # OpenEXR Image
 
-> OpenEXR viewer — version flags, compression method, display/data window, pixel aspect, and full attribute table.
+> OpenEXR viewer — header inspection for version flags, compression, display/data windows, pixel aspect, and selected attributes.
 
 ## Format Details
 
@@ -23,11 +23,11 @@
 | Pixel aspect ratio | ✅ | v2f from `pixelAspectRatio` attribute |
 | Line order | ✅ | INCREASING_Y / DECREASING_Y / RANDOM_Y |
 | Environment map | ✅ | LATLONG / CUBE |
-| Full attribute table | ✅ | All header attributes with name, type, and value |
-| Channel list | ✅ | R, G, B, A and custom channels shown |
+| Attribute table | ⚠️ | Up to 50 attributes are parsed and up to 20 non-summary attributes are displayed |
+| Channel list | ⚠️ | `channels` is shown as an attribute-size summary; individual channel names are not decoded |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Dimensions, compression, channel list |
+| Metadata | ✅ | Format, file version, layout, multipart flag, file size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -42,11 +42,13 @@
 ## Known Limitations
 
 - Pixel data is not decoded — header attributes only (requires imath/openexr-js)
+- Individual channel list entries are not decoded from the `chlist` attribute yet
 - Deep EXR (per-sample data) attributes are not specially parsed
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Decode `chlist` channels | Med | Med | Parse channel names, pixel types, sampling, and pLinear flag |
 | Tonemapped preview | Low | Hard | Requires pixel decode + tone mapping; large library |
 | Export metadata as JSON | Low | Easy | Dump attribute table to JSON |

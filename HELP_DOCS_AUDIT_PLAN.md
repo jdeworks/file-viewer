@@ -83,11 +83,11 @@ Completion gates:
 - [x] docs/readme/email.md
 - [x] docs/readme/eml.md
 - [x] docs/readme/emulatorjs.md
-- [ ] docs/readme/env.md
-- [ ] docs/readme/epub.md
-- [ ] docs/readme/excel.md
-- [ ] docs/readme/exe.md
-- [ ] docs/readme/exr.md
+- [x] docs/readme/env.md
+- [x] docs/readme/epub.md
+- [x] docs/readme/excel.md
+- [x] docs/readme/exe.md
+- [x] docs/readme/exr.md
 - [ ] docs/readme/f3d.md
 - [ ] docs/readme/fb2.md
 - [ ] docs/readme/fbx.md

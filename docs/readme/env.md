@@ -1,6 +1,6 @@
 # Environment Variables File (.env)
 
-> App configuration files in KEY=VALUE format — 100+ known-file plugins show structured, secrets-masked views for specific apps.
+> App configuration files in KEY=VALUE format — parsed into a redacted key/value table with source-line links and a redacted source preview.
 
 ## Format Details
 
@@ -17,10 +17,12 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Syntax highlighting | ✅ | Monaco `dotenv` language mode |
-| Known-file structured view | ✅ | 100+ app-specific plugins (see below) |
-| Secrets masking | ✅ | Sensitive fields masked by default in structured view |
-| Raw source view | ✅ | Always accessible alongside structured view |
+| Raw text view | ✅ | Raw pane available; no dedicated dotenv syntax language is registered |
+| Key/value table | ✅ | Supports comments, `export KEY=VALUE`, quoted values, and multi-line quoted values |
+| Secrets masking | ✅ | Sensitive-looking keys and URL passwords are redacted before being embedded in preview DOM |
+| Redacted source preview | ✅ | Source lines shown with masked values and jump links from each parsed key |
+| Raw source view | ✅ | Available through the raw pane |
+| Text diff | ❌ | Disabled intentionally to reduce accidental secret exposure in diff output |
 
 ### Edit
 | Capability | Status | Notes |
@@ -35,11 +37,9 @@
 
 ## Known-File Enhancement
 
-Over 100 known-file plugins in `docs/types/text/env/known/` detect the target application from filename patterns and/or content keys, then display a structured, app-specific panel with sensitive fields masked:
+Several known-file plugins in `docs/types/text/known/` detect common env-like files such as `.env.example`, `bookstack.env`, `vaultwarden.env`, `.envrc`, `/etc/environment`, and OpenVPN configs. They provide targeted structure where available; otherwise the generic `.env` renderer shows the redacted key/value table.
 
-Examples include: **Nextcloud**, **Gitea**, **Ghost**, **Keycloak**, **Grafana**, **Prometheus**, **MinIO**, **Redis**, **PostgreSQL**, **MySQL**, **MongoDB**, **RabbitMQ**, **Kafka**, and many more.
-
-The generic fallback groups all KEY=VALUE pairs into sections by prefix (e.g. `DB_*`, `SMTP_*`) with no masking.
+The generic fallback does not group by prefix. It keeps the file order, shows line numbers, masks sensitive values, and includes a redacted source block.
 
 ## Real-World Examples
 
@@ -47,7 +47,7 @@ The generic fallback groups all KEY=VALUE pairs into sections by prefix (e.g. `D
 
 ## Known Limitations
 
-- Secret scanning / leak detection not built in (no pattern matching against known secret formats)
+- Masking is heuristic; it is not a full secret scanner or leak detector
 - No diff against `.env.example` to show missing or extra keys
 - `.env.vault` (Dotenv Vault encrypted format) is shown as raw text
 

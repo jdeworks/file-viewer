@@ -19,15 +19,15 @@
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Full chapter rendering | ✅ | XHTML chapter content rendered with correct fonts and layout |
+| Chapter rendering | ✅ | One XHTML spine item rendered at a time with viewer-controlled typography |
 | Table of contents | ✅ | Sidebar TOC built from the NCX/OPF manifest; click to jump |
 | Chapter navigation | ✅ | Prev / Next buttons + keyboard arrow keys |
 | Spine position indicator | ✅ | "Chapter N / Total" shown in reader toolbar |
 | Inline images | ✅ | All `<img>` and SVG `<image>` refs rewritten to blob: URLs — no off-origin requests |
 | Internal links | ✅ | `<a href>` within the book navigate to the correct spine item |
 | External links | ✅ | Open in a new tab with `rel=noopener` |
-| XSS sanitization | ✅ | DOMPurify strips scripts, event handlers, and `<style>` tags before rendering |
-| Metadata | ✅ | Title, creator, language, publisher, date from OPF |
+| XSS sanitization | ✅ | DOMPurify strips scripts, event handlers, `<style>`, `<link>`, and `srcset` before rendering |
+| Metadata | ✅ | Title, creator, chapters, TOC entries, language, publisher, date, identifier, and rights when present |
 | Reading progress | ✅ | Chapter index and scroll position saved per file via `fingerprint` + `localStorage` |
 | Diff/compare | ❌ | Not supported (binary container) |
 
@@ -56,7 +56,7 @@
 ## Known Limitations
 
 - One spine item (chapter) rendered at a time — no continuous scroll across all chapters
-- DOMPurify removes `<style>` tags, so chapter-specific CSS is not applied; layout relies on the viewer's own stylesheet
+- DOMPurify removes `<style>` and `<link>` tags, so chapter-specific CSS is not applied; layout relies on the viewer's own stylesheet
 - Encrypted/DRM-protected EPUBs are not supported (DRM requires a vendor key)
 - `srcset` attributes are stripped to prevent off-origin image probing
 - Non-XHTML spine items (SVG documents used as full pages) may not render correctly
