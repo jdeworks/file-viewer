@@ -335,11 +335,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] thrift | Apache Thrift
 - [x] tiff | TIFF image
 - [x] toml | TOML
-- [ ] torrent | Torrent
-- [ ] url | URL Inspector
-- [ ] v86 | x86 Disk Image (v86)
-- [ ] vcard | Contacts (vCard)
-- [ ] wad | Doom WAD Game Archive
+- [x] torrent | Torrent
+- [x] url | URL Inspector
+- [x] v86 | x86 Disk Image (v86)
+- [x] vcard | Contacts (vCard)
+- [x] wad | Doom WAD Game Archive
 - [ ] wasm | WebAssembly Binary
 - [ ] xlsx | Spreadsheet
 - [ ] xml | XML

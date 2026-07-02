@@ -157,11 +157,11 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Archive (ZIP)](zip.md) | `.zip` | Basic | None | download | — | Repack |
 | [Archive](archive.md) | `.7z` `.tar` `.gz` `.bz2` `.xz` | Basic | None | download | — | Streaming extract |
-| [Torrent](/) | `.torrent` | Basic | Monaco | download | — | — |
+| [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
 | [KMZ Map Archive](geo.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ISO Disc Image](/) | `.iso` | Basic | None | download | — | File listing |
-| [Doom WAD](/) | `.wad` | Basic | None | download | — | Lump decode |
+| [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
 | [BSP Game Map](/) | `.bsp` | Full | None | download | — | Geometry render |
 
 ---
@@ -221,9 +221,9 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Console ROM (EmulatorJS)](/) | `.gba` `.snes` `.n64` `.nes` (via emulatorjs) | Basic | None | download | — | Save states |
 | [Game ROM Header](/) | `.nes` | Basic | None | download | — | — |
-| [x86 Disk Image (v86)](/) | `.img` | Basic | None | download | — | Filesystem list |
+| [x86 Disk Image (v86)](v86.md) | `.img` `.ima` `.iso` `.vhd` `.qcow2` | Basic | None | download | — | Large image streaming |
 | [Flash (SWF / Ruffle)](/) | `.swf` | Basic | None | download | — | — |
-| [Doom WAD](/) | `.wad` | Basic | None | download | — | Lump decode |
+| [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
 | [BSP Game Map](/) | `.bsp` | Full | None | download | — | Geometry render |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
 
@@ -273,7 +273,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Molecular XYZ](/) | `.xyz` | Basic | Monaco | download | — | 3D viz |
 | [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
-| [Torrent](/) | `.torrent` | Basic | Monaco | download | — | — |
+| [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Android Package](/) | `.apk` `.aab` `.xapk` | Partial | None | download | — | Manifest parse |
 | [iOS App (IPA)](/) | `.ipa` | Basic | None | download | — | Signature verify |
 | [Debian Package](/) | `.deb` `.udeb` | Full | None | download | — | control.tar |
