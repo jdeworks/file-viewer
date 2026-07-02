@@ -1,28 +1,34 @@
 // Email (.eml) preview — parentNode contract.
 // Header panel + body (HTML in sandboxed srcdoc iframe, plain text as <pre>) + attachments list.
-// No external deps: uses the shared mime.js MIME parser and inline DOM construction.
+// Uses the shared mime.js MIME parser, inline DOM construction, and the vendored DOMPurify for
+// HTML-body sanitization (mail HTML is fully untrusted — this is a common phishing vector).
 // CSS lives in docs/assets/preview.css (.eml-* classes).
 import { extractMessage } from './mime.js';
+import { loadGlobal, vendor } from '../../core/script-loader.js';
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-
-// Strip external resource references from HTML for safety (cid: is fine to leave; it just won't load).
-// External http/https src/href attributes on img/link/script tags are blanked.
-function stripExternalResources(html) {
-  return html
-    .replace(/(<(?:img|source|video|audio|track|iframe|embed|object)[^>]*\s)src\s*=\s*(?:"https?:[^"]*"|'https?:[^']*'|https?:\S+)/gi,
-      '$1src=""')
-    .replace(/(<link[^>]*\s)href\s*=\s*(?:"https?:[^"]*"|'https?:[^']*'|https?:\S+)/gi,
-      '$1href=""');
-}
-
-// Minimal sanitizer: strip <script> blocks and on* event handlers.
-function sanitizeHtml(html) {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, '');
+// Sanitize an untrusted HTML mail body for display in the sandboxed srcdoc iframe. The iframe's
+// `sandbox="allow-same-origin"` (no allow-scripts) already blocks script execution, but resource
+// loading (images, CSS backgrounds, etc.) happens regardless of sandboxing — so external requests
+// (classic email tracking pixels) must be blocked here, not relied on the sandbox for.
+//  - FORBID_TAGS/FORBID_ATTR cover every DOMPurify-default-allowed vector that can trigger an
+//    eager off-origin fetch we don't control: <style>/style="" (CSS url()), background=/poster=
+//    (legacy + <video> poster), <link>/<meta>/<base> (a <base href> would turn even a *relative*
+//    <img src> into an off-origin request), and <iframe>/<video>/<audio>/<source>/<track>/
+//    <object>/<embed>/<form> (all DOMPurify-allowed by default, all capable of an eager
+//    off-origin request or off-origin form POST).
+//  - The only fetch-capable element DOMPurify still allows by default is <img src> (we don't
+//    resolve cid: attachment references to blob URLs, so there's no legitimate reason for an
+//    external image to load) — any absolute http(s) src is blanked afterward.
+async function sanitizeMailHtml(html) {
+  const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
+  const clean = DOMPurify.sanitize(html, {
+    FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+    FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
+  });
+  return clean.replace(
+    /(<img[^>]*\s)src\s*=\s*(?:"https?:[^"]*"|'https?:[^']*'|https?:\S+)/gi,
+    '$1src=""',
+  );
 }
 
 function fmtBytes(n) {
@@ -86,7 +92,7 @@ export async function render(intake, _ctx) {
     notice.textContent = 'HTML content sandboxed — scripts and external resources blocked.';
     wrap.appendChild(notice);
 
-    const safe = stripExternalResources(sanitizeHtml(msg.html));
+    const safe = await sanitizeMailHtml(msg.html);
     const iframe = document.createElement('iframe');
     iframe.className = 'eml-body-iframe';
     iframe.setAttribute('sandbox', 'allow-same-origin');

@@ -647,15 +647,15 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/ebook/mobi/renderer.js
 - [x] docs/types/ebook/mobi/settings.default.json
 - [x] docs/types/EDITOR-INDEX.md
-- [ ] docs/types/eml/detect.js
-- [ ] docs/types/eml/EDITOR.md
-- [ ] docs/types/eml/head-row.html
-- [ ] docs/types/eml/index.js
-- [ ] docs/types/eml/metadata.js
-- [ ] docs/types/eml/mime.js
-- [ ] docs/types/eml/msg.html
-- [ ] docs/types/eml/renderer.js
-- [ ] docs/types/eml/settings.default.json
+- [x] docs/types/eml/detect.js
+- [x] docs/types/eml/EDITOR.md
+- [x] docs/types/eml/head-row.html
+- [x] docs/types/eml/index.js
+- [x] docs/types/eml/metadata.js
+- [x] docs/types/eml/mime.js
+- [x] docs/types/eml/msg.html
+- [x] docs/types/eml/renderer.js
+- [x] docs/types/eml/settings.default.json
 - [ ] docs/types/emulator/EDITOR.md
 - [ ] docs/types/emulator/emulatorjs/detect.js
 - [ ] docs/types/emulator/emulatorjs/index.js
