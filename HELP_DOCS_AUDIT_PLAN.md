@@ -249,11 +249,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] gcode | G-code (3D Print)
 - [x] geo | Map (GeoJSON/GPX)
 - [x] gff | GFF/GTF Genomic
-- [ ] gitattributes | Git Attributes
-- [ ] gitignore | .gitignore / ignore rules
-- [ ] gltf | 3D model (glTF)
-- [ ] guitar-pro | Guitar Pro Tab
-- [ ] har | HTTP Archive (HAR)
+- [x] gitattributes | Git Attributes
+- [x] gitignore | .gitignore / ignore rules
+- [x] gltf | 3D model (glTF)
+- [x] guitar-pro | Guitar Pro Tab
+- [x] har | HTTP Archive (HAR)
 - [ ] hdf5 | HDF5 Scientific Data
 - [ ] heif | HEIC/HEIF Image
 - [ ] hl7 | HL7 v2 Health Message
