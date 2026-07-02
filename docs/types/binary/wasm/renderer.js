@@ -123,6 +123,38 @@ function parseExports(bytes, section) {
   return exports_;
 }
 
+const REFTYPE_NAMES = { 0x70: 'funcref', 0x6f: 'externref' };
+
+function reftypeName(rt) {
+  return REFTYPE_NAMES[rt] ?? `unknown(0x${rt.toString(16)})`;
+}
+
+function parseTables(bytes, section) {
+  const tables = [];
+  let pos = section.contentStart;
+  const end = section.contentEnd;
+  try {
+    const { value: count, next: afterCount } = readULEB128(bytes, pos);
+    pos = afterCount;
+    for (let i = 0; i < count && pos < end; i++) {
+      const reftype = bytes[pos++];
+      const flags = bytes[pos++];
+      const { value: minSize, next: afterMin } = readULEB128(bytes, pos);
+      pos = afterMin;
+      let maxSize = null;
+      if (flags & 1) {
+        const { value: mx, next: afterMax } = readULEB128(bytes, pos);
+        pos = afterMax;
+        maxSize = mx;
+      }
+      tables.push({ reftype, minSize, maxSize });
+    }
+  } catch {
+    // partial results
+  }
+  return tables;
+}
+
 function parseMemory(bytes, section) {
   const mems = [];
   let pos = section.contentStart;
@@ -332,13 +364,14 @@ export function render(intake) {
   let imports = [];
   let exports_ = [];
   let memories = [];
+  let tables = [];
   let typeCount = null;
   let codeCount = null;
   let dataCount = null;
   let customNames = [];
 
-  // Read version (little-endian uint32 at offset 4)
-  const versionNum = b[4] | (b[5] << 8) | (b[6] << 16) | (b[7] << 24);
+  // Read version (little-endian uint32 at offset 4; avoid 32-bit sign overflow on the high byte)
+  const versionNum = ((b[4] | (b[5] << 8) | (b[6] << 16)) >>> 0) + (b[7] * 0x1000000);
 
   try {
     sections = parseSections(b);
@@ -355,6 +388,9 @@ export function render(intake) {
           break;
         case 2:
           imports = parseImports(b, sec);
+          break;
+        case 4:
+          tables = parseTables(b, sec);
           break;
         case 5:
           memories = parseMemory(b, sec);
@@ -453,6 +489,26 @@ export function render(intake) {
       }
     } else if (importedMemories.length > 0) {
       html += `<div class="info-row"><span class="info-label">Memory imported from:</span> <span class="info-value">${esc(importedMemories[0].module + '.' + importedMemories[0].name)}</span></div>`;
+    }
+    html += `</div>`;
+  }
+
+  // Table info
+  const importedTables = imports.filter((i) => i.kind === 'table');
+  if (tables.length > 0 || importedTables.length > 0) {
+    html += `<div class="section-block">`;
+    html += `<div class="section-title">Tables</div>`;
+    if (tables.length > 0) {
+      for (const t of tables) {
+        const maxStr = t.maxSize != null ? `${t.maxSize} elements` : 'unbounded';
+        html += `<div class="info-row">`;
+        html += `<span class="info-label">Type:</span><span class="info-value">${esc(reftypeName(t.reftype))}</span>`;
+        html += `<span class="info-label" style="margin-left:12px">Initial:</span><span class="info-value">${t.minSize} elements</span>`;
+        html += `<span class="info-label" style="margin-left:12px">Max:</span><span class="info-value">${maxStr}</span>`;
+        html += `</div>`;
+      }
+    } else if (importedTables.length > 0) {
+      html += `<div class="info-row"><span class="info-label">Table imported from:</span> <span class="info-value">${esc(importedTables[0].module + '.' + importedTables[0].name)}</span></div>`;
     }
     html += `</div>`;
   }

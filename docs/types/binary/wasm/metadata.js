@@ -73,7 +73,8 @@ export function extractMetadata(intake) {
     };
   }
 
-  const version = b[4] | (b[5] << 8) | (b[6] << 16) | (b[7] << 24);
+  // Little-endian uint32 at offset 4; avoid 32-bit sign overflow on the high byte.
+  const version = ((b[4] | (b[5] << 8) | (b[6] << 16)) >>> 0) + (b[7] * 0x1000000);
 
   let sections = [];
   let importCount = 0;

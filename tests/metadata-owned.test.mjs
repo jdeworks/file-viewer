@@ -75,6 +75,9 @@ import { detect as detectNifti } from '../docs/types/binary/nifti/detect.js';
 import { metadata as niftiMeta } from '../docs/types/binary/nifti/metadata.js';
 import { detect as detectNpy } from '../docs/types/binary/npy/detect.js';
 import { extractMetadata as npyMeta } from '../docs/types/binary/npy/metadata.js';
+import { detect as detectWasm } from '../docs/types/binary/wasm/detect.js';
+import { extractMetadata as wasmMeta } from '../docs/types/binary/wasm/metadata.js';
+import { render as renderWasm } from '../docs/types/binary/wasm/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -894,6 +897,33 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.deepEqual(rows.shape, [3, 4]);
   assert.equal(rows.elements, 12);
   assert.equal(rows.fortranOrder, false);
+}
+
+{
+  const data = await bytes('sample.wasm');
+  assert.equal(detectWasm({ isBinary: true, bytes: data }), 0.99);
+  assert.equal(detectWasm({ isBinary: true, bytes: new Uint8Array(0) }), 0);
+  assert.equal(detectWasm({ isBinary: false, bytes: data }), 0);
+  const meta = wasmMeta({ bytes: data, size: data.length });
+  assert.equal(meta.format, 'WebAssembly');
+  assert.equal(meta.version, 1);
+  assert.equal(meta.sectionCount, 4);
+  assert.equal(meta.exportCount, 1);
+  assert.equal(meta.functionCount, 1);
+  assert.equal(meta.hasMemory, false);
+  const rendered = renderWasm({ bytes: data, size: data.length }).bodyHtml;
+  assert.match(rendered, /Sections \(4\)/);
+  assert.match(rendered, /Exports \(1\)/);
+
+  // Synthetic module with a Table section (id 4): 1 funcref table, min 1 / max 2.
+  const withTable = new Uint8Array([
+    0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+    0x04, 0x05, 0x01, 0x70, 0x01, 0x01, 0x02,
+  ]);
+  const tableRendered = renderWasm({ bytes: withTable, size: withTable.length }).bodyHtml;
+  assert.match(tableRendered, /funcref/);
+  assert.match(tableRendered, /1 elements/);
+  assert.match(tableRendered, /2 elements/);
 }
 
 {
