@@ -24217,7 +24217,7 @@
         "sample.acf"
       ],
       "extensions": [
-        ".yml"
+        ".acf"
       ],
       "capabilities": {
         "rawView": true,

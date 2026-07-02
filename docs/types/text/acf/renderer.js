@@ -65,6 +65,14 @@ function bytes(b) {
   return `${(n / 1024).toFixed(0)} KB`;
 }
 
+// Values come straight from the parsed KeyValues tree — a malicious ACF could set e.g. `name` to
+// `<img src=x onerror=...>`. bodyHtml renders in a sandbox="allow-scripts" iframe (no allow-same-origin),
+// so script tags can't reach the parent, but any element that eagerly fetches (img/link/etc.) would
+// still make an off-origin request from inside that sandboxed context — escape every field.
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
 function row(label, value) {
   if (!value) return '';
   return `<tr><td class="acf-key">${label}</td><td>${value}</td></tr>`;
@@ -90,18 +98,18 @@ export function render(intake) {
   const platform = data.UserConfig?.platform || null;
   const branch = data.UserConfig?.BetaKey || null;
 
-  const badge = rootKey ? `<span class="acf-badge">${rootKey}</span>` : '';
-  const title = name ? `<span class="acf-title">${name}</span>` : '';
+  const badge = rootKey ? `<span class="acf-badge">${esc(rootKey)}</span>` : '';
+  const title = name ? `<span class="acf-title">${esc(name)}</span>` : '';
 
   const rows = [
-    row('App ID', appid),
-    row('Install Dir', installdir ? `<code>${installdir}</code>` : null),
-    row('State', state ? stateLabel(state) : null),
+    row('App ID', appid ? esc(appid) : null),
+    row('Install Dir', installdir ? `<code>${esc(installdir)}</code>` : null),
+    row('State', state ? esc(stateLabel(state)) : null),
     row('Size on Disk', bytes(sizeOnDisk)),
-    row('Build ID', buildId),
-    row('Universe', universe),
-    row('Platform', platform),
-    row('Branch', branch),
+    row('Build ID', buildId ? esc(buildId) : null),
+    row('Universe', universe ? esc(universe) : null),
+    row('Platform', platform ? esc(platform) : null),
+    row('Branch', branch ? esc(branch) : null),
     row('Last Updated', fmt(lastUpdated)),
     row('Last Played', fmt(lastPlayed)),
   ].filter(Boolean).join('');
@@ -112,7 +120,7 @@ export function render(intake) {
   if (depots && typeof depots === 'object') {
     const ids = Object.keys(depots).slice(0, 10);
     depotsHtml = `<div class="acf-section"><div class="acf-label">Installed Depots (${Object.keys(depots).length})</div>
-      <div class="acf-chips">${ids.map((id) => `<span class="acf-chip">${id}</span>`).join('')}${Object.keys(depots).length > 10 ? `<span class="acf-chip-more">+${Object.keys(depots).length - 10}</span>` : ''}</div></div>`;
+      <div class="acf-chips">${ids.map((id) => `<span class="acf-chip">${esc(id)}</span>`).join('')}${Object.keys(depots).length > 10 ? `<span class="acf-chip-more">+${Object.keys(depots).length - 10}</span>` : ''}</div></div>`;
   }
 
   const bodyHtml = `<div class="acf-preview">

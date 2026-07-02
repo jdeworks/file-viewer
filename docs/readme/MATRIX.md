@@ -49,7 +49,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
 | [Apache Thrift](thrift.md) | `.thrift` | Basic | Monaco | download | — | Include resolution |
 | [URL Inspector](url.md) | `.url` | Basic | Monaco | download | — | — |
-| [Steam ACF](/) | `.acf` | Basic | Monaco | download | — | — |
+| [Steam ACF](acf.md) | `.acf` | Basic | Monaco | download | — | — |
 | [PostScript / EPS](/) | `.ps` `.eps` `.ai` | Basic | Monaco | download | — | No PS render |
 | [KiCad EDA](/) | `.kicad_pcb` `.kicad_sch` `.kicad_pro` | Basic | Monaco | download | — | Board render |
 | [G-code](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |

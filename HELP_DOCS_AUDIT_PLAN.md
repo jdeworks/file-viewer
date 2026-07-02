@@ -1024,12 +1024,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/abc/metadata.js
 - [ ] docs/types/text/abc/renderer.js
 - [ ] docs/types/text/abc/settings.default.json
-- [ ] docs/types/text/acf/detect.js
-- [ ] docs/types/text/acf/EDITOR.md
-- [ ] docs/types/text/acf/index.js
-- [ ] docs/types/text/acf/metadata.js
-- [ ] docs/types/text/acf/renderer.js
-- [ ] docs/types/text/acf/settings.default.json
+- [x] docs/types/text/acf/detect.js
+- [x] docs/types/text/acf/EDITOR.md
+- [x] docs/types/text/acf/index.js
+- [x] docs/types/text/acf/metadata.js
+- [x] docs/types/text/acf/renderer.js
+- [x] docs/types/text/acf/settings.default.json
 - [ ] docs/types/text/als/detect.js
 - [ ] docs/types/text/als/EDITOR.md
 - [ ] docs/types/text/als/index.js

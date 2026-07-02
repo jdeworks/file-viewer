@@ -24,6 +24,7 @@ const TYPE_INFO = {
   strings: ['Apple strings', 'used for app localization strings on Apple platforms.', 'https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/LoadingResources/Strings/Strings.html'],
   xml: ['XML', 'used for structured documents, data exchange, feeds, and configuration.', 'https://developer.mozilla.org/docs/Web/XML/XML_introduction'],
   als: ['Ableton Live Set', 'used by Ableton Live projects to store tracks, clips, devices, and timing.', 'https://help.ableton.com/hc/en-us/articles/209773265-File-types-used-by-Ableton-Live'],
+  acf: ['Steam App Manifest', 'used by Steam to track installed depots, build ID, and update state for a game.', 'https://developer.valvesoftware.com/wiki/KeyValues'],
   env: ['Environment file', 'used to store environment variables for local apps and services.', 'https://en.wikipedia.org/wiki/Environment_variable'],
   ini: ['INI config', 'used for simple sectioned key-value configuration.', 'https://en.wikipedia.org/wiki/INI_file'],
   patch: ['Patch/diff', 'used to describe line-based source changes that can be reviewed or applied.', 'https://en.wikipedia.org/wiki/Diff'],
