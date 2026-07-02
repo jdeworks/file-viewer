@@ -78,6 +78,9 @@ import { extractMetadata as npyMeta } from '../docs/types/binary/npy/metadata.js
 import { detect as detectPyc } from '../docs/types/binary/pyc/detect.js';
 import { metadata as pycMeta } from '../docs/types/binary/pyc/metadata.js';
 import { render as renderPyc } from '../docs/types/binary/pyc/renderer.js';
+import { detect as detectRpm } from '../docs/types/binary/rpm/detect.js';
+import { metadata as rpmMeta } from '../docs/types/binary/rpm/metadata.js';
+import { render as renderRpm } from '../docs/types/binary/rpm/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -972,6 +975,36 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   bogus[2] = 0x0d; bogus[3] = 0x0a;
   assert.equal(pycMeta({ bytes: bogus }).pythonVersion, '3.13+');
   assert.match(renderPyc({ bytes: bogus }).bodyHtml, /3\.13\+/);
+}
+
+{
+  const data = await bytes('sample.rpm');
+  assert.equal(detectRpm({ filename: 'sample.rpm', bytes: data }), 0.99);
+  const meta = rpmMeta({ bytes: data });
+  assert.equal(meta.format, 'Binary RPM');
+  assert.equal(meta.name, 'hello-world-1.0.0-1.x86_64');
+
+  // Header tag IDs must match rpm's real RPMTAG_* namespace (rpmtag.h) so
+  // fields don't cross-wire on a real-world .rpm (the old table read e.g.
+  // Vendor from the real GROUP tag and License from the real URL tag, and
+  // never matched the real ARCH/OS tags at all).
+  const rendered = renderRpm({ bytes: data }).bodyHtml;
+  assert.match(rendered, /Architecture[\s\S]*?x86_64/);
+  assert.match(rendered, /OS[\s\S]*?linux/);
+  assert.match(rendered, /License[\s\S]*?MIT/);
+  assert.match(rendered, /Group[\s\S]*?Development\/Tools/);
+  assert.match(rendered, /Vendor[\s\S]*?Demo Vendor/);
+  assert.match(rendered, /URL[\s\S]*?https:\/\/example\.com\/hello-world/);
+  assert.match(rendered, /Packager[\s\S]*?Demo Packager/);
+  // Description was parsed into a local variable but never rendered.
+  assert.match(rendered, /This is a demo RPM package/);
+  // Requires must read RPMTAG_REQUIRENAME (1049, STRING_ARRAY), not
+  // RPMTAG_REQUIREFLAGS (1048, an INT32 array) - the old mapping meant this
+  // list was always empty for any real RPM.
+  assert.match(rendered, /Requires \(3\)/);
+  assert.match(rendered, /glibc/);
+  assert.match(rendered, /bash/);
+  assert.match(rendered, /coreutils/);
 }
 
 console.log('metadata-owned: ok');

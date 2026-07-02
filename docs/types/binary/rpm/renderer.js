@@ -2,18 +2,16 @@ function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// RPM tag IDs for the header section (most common metadata tags)
+// RPM header tag IDs (rpm's rpmtag.h RPMTAG_* namespace; most common metadata tags).
 const TAGS = {
-  1000: 'name', 1001: 'version', 1002: 'release', 1003: 'serial',
+  1000: 'name', 1001: 'version', 1002: 'release', 1003: 'epoch',
   1004: 'summary', 1005: 'description', 1006: 'buildTime', 1007: 'buildHost',
-  1014: 'url', 1015: 'distributor', 1016: 'vendor', 1020: 'license',
-  1021: 'packager', 1022: 'group', 1044: 'source', 1048: 'requireName',
-  1049: 'requireVersion', 1054: 'conflictName', 1085: 'requireFlags',
-  1000100: 'arch', 1000110: 'os', 1022: 'group',
-  1033: 'fileNames', 1034: 'fileSizes',
-  1064: 'rpmVersion',
-  1124: 'sourceName',
-  1106: 'epoch',
+  1009: 'size', 1010: 'distribution', 1011: 'vendor',
+  1014: 'license', 1015: 'packager', 1016: 'group',
+  1020: 'url', 1021: 'os', 1022: 'arch',
+  1028: 'fileSizes', 1027: 'fileNames',
+  1044: 'sourceRpm', 1049: 'requireName', 1050: 'requireVersion',
+  1054: 'conflictName', 1064: 'rpmVersion',
 };
 
 // RPM type codes
@@ -157,6 +155,10 @@ export function render(intake) {
     ? `<div class="meta-section"><h4 class="meta-section-title">Summary</h4><p style="color:#37474f">${esc(summary)}</p></div>`
     : '';
 
+  const descriptionHtml = description
+    ? `<div class="meta-section"><h4 class="meta-section-title">Description</h4><p style="color:#37474f;white-space:pre-wrap">${esc(description)}</p></div>`
+    : '';
+
   const reqHtml = requires.length
     ? `<div class="meta-section"><h4 class="meta-section-title">Requires (${requires.length}${requires.length >= 15 ? '+' : ''})</h4>
         <div style="display:flex;flex-wrap:wrap;gap:4px">
@@ -179,6 +181,7 @@ export function render(intake) {
         ${overviewHtml}
       </div>
       ${summaryHtml}
+      ${descriptionHtml}
       ${reqHtml}
     `,
     hadUnsafe: false,
