@@ -93,12 +93,14 @@ function parsePcap(b) {
 }
 
 function parsePcapng(b) {
-  // Section Header Block: 0x0A0D0D0A
+  // Section Header Block: 0x0A0D0D0A. The Byte-Order Magic field (offset 8) must be read
+  // BEFORE the endianness-dependent Block Total Length (offset 4) — reading blockLen with a
+  // hardcoded r32le would silently misparse (skip to a garbage offset) any big-endian capture.
   if (b.length < 12) return null;
-  const blockLen = r32le(b, 4);
   const boMagic = r32le(b, 8);
   const le = boMagic === 0x1A2B3C4D;
   const r32 = le ? r32le : r32be;
+  const blockLen = r32(b, 4);
 
   const major = le ? r16le(b, 12) : r16be(b, 12);
   const minor = le ? r16le(b, 14) : r16be(b, 14);

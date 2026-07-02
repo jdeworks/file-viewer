@@ -211,7 +211,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Executable (ELF/PE/Mach-O)](exe.md) | `.elf` `.exe` `.dll` `.dylib` `.so` | Basic | None | download | — | Section listing |
 | [Windows Shortcut](lnk.md) | `.lnk` | Basic | None | download | — | — |
 | [Windows Minidump](dmp.md) | `.dmp` `.mdmp` | Basic | None | download | — | — |
-| [Network Capture](/) | `.pcap` `.pcapng` `.cap` | Basic | None | download | — | Protocol decode |
+| [Network Capture](pcap.md) | `.pcap` `.pcapng` `.cap` | Basic | None | download | — | Protocol decode |
 
 ---
 
@@ -237,7 +237,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Environment Variables](/) | `.env` | Basic | Monaco | download | — | Secret masking |
 | [Windows Registry](reg.md) | `.reg` | Basic | Monaco | download | — | — |
 | [SARIF Security Report](sarif.md) | `.sarif` | Basic | Monaco | download | — | — |
-| [Network Capture](/) | `.pcap` `.pcapng` `.cap` | Basic | None | download | — | Protocol decode |
+| [Network Capture](pcap.md) | `.pcap` `.pcapng` `.cap` | Basic | None | download | — | Protocol decode |
 
 ---
 
