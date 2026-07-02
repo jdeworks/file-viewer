@@ -1,4 +1,4 @@
-// Archive listing renderer for 7z, RAR, tar, tar.gz, tar.bz2, tar.xz archives.
+// Archive listing renderer for 7z, RAR, tar and compressed tar archives.
 // Requires enableArchiveWasm setting — shows an opt-in panel when it is off.
 // Shares styling with the zip renderer (zip-doc, zip-meta, zip-table) from preview.css.
 import { listArchive, fmtSize } from '../../core/archivelib.js';

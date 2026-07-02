@@ -1,7 +1,7 @@
-# Editor Roadmap — Archive (7z / RAR / TAR / TAR.GZ / TAR.BZ2 / TAR.XZ)
+# Editor Roadmap — Archive (7z / RAR / TAR / TAR.GZ / TGZ / TAR.BZ2 / TBZ2 / TAR.XZ / TXZ / TAR.ZST)
 
 ## Current state
-Flat file listing via `core/archivelib.js` (libarchive.wasm, ~1 MB, opt-in behind `enableArchiveWasm` setting). Renders a sortable name + size table using shared `zip-doc` / `zip-table` CSS. No entry extraction or preview. The archive renderer and zip renderer share the same CSS class namespace.
+Flat file listing via `core/archivelib.js` (libarchive.wasm, ~1 MB, opt-in behind `enableArchiveWasm` setting). Renders an alphabetically sorted name + size table using shared `zip-doc` / `zip-table` CSS. No entry extraction or preview. The archive renderer and zip renderer share the same CSS class namespace.
 
 ## Viewer enhancements (no write-back needed)
 - **Recursive tree view** — parse entry paths into a folder tree; render as a collapsible tree (folders expand/collapse) instead of a flat list. — M

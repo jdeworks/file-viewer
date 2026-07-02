@@ -385,11 +385,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/3d/stl/settings.default.json
 - [x] docs/types/3d/stl/stllib.js
 - [x] docs/types/archive/detect.js
-- [ ] docs/types/archive/EDITOR.md
-- [ ] docs/types/archive/index.js
-- [ ] docs/types/archive/metadata.js
-- [ ] docs/types/archive/renderer.js
-- [ ] docs/types/archive/settings.default.json
+- [x] docs/types/archive/EDITOR.md
+- [x] docs/types/archive/index.js
+- [x] docs/types/archive/metadata.js
+- [x] docs/types/archive/renderer.js
+- [x] docs/types/archive/settings.default.json
 - [ ] docs/types/binary/apk/detect.js
 - [ ] docs/types/binary/apk/index.js
 - [ ] docs/types/binary/apk/metadata.js
