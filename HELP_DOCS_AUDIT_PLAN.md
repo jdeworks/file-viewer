@@ -154,11 +154,11 @@ Completion gates:
 - [x] docs/readme/MATRIX.md
 - [x] docs/readme/mbox.md
 - [x] docs/readme/mbtiles.md
-- [ ] docs/readme/mcp-config.md
-- [ ] docs/readme/mcworld.md
-- [ ] docs/readme/media.md
-- [ ] docs/readme/midi.md
-- [ ] docs/readme/mobi.md
+- [x] docs/readme/mcp-config.md
+- [x] docs/readme/mcworld.md
+- [x] docs/readme/media.md
+- [x] docs/readme/midi.md
+- [x] docs/readme/mobi.md
 - [ ] docs/readme/msg.md
 - [ ] docs/readme/msgpack.md
 - [ ] docs/readme/mt940.md

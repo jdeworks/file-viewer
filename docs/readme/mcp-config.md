@@ -17,10 +17,10 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Server list | ✅ | Each `mcpServers` entry shown as a card |
-| Transport type | ✅ | stdio / HTTP / SSE distinguished |
+| Transport type | ✅ | stdio and URL-based HTTP/SSE-style servers distinguished |
 | Command display | ✅ | Launch command and arguments shown |
-| Environment variables | ✅ | Env vars shown (sensitive values masked) |
-| Tool list | ✅ | `tools` array shown per server if present |
+| URL and headers | ✅ | URL-based servers show endpoint and configured headers |
+| Environment variables | ✅ | Env vars shown with secret-like keys masked behind a reveal toggle |
 | Source view | ✅ | Monaco editor with JSON syntax highlighting |
 | Diff | ❌ | `diff: false` |
 | Metadata | ✅ | Server count, transport type breakdown |
@@ -45,4 +45,5 @@
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Schema validation | Low | Easy | Validate against MCP config JSON Schema |
+| Tool list display | Low | Easy | Surface optional per-server `tools` arrays when present |
 | Server health check | Low | Hard | Would require executing the command — violates zero-off-origin |
