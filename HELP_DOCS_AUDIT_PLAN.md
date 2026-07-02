@@ -254,11 +254,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] gltf | 3D model (glTF)
 - [x] guitar-pro | Guitar Pro Tab
 - [x] har | HTTP Archive (HAR)
-- [ ] hdf5 | HDF5 Scientific Data
-- [ ] heif | HEIC/HEIF Image
-- [ ] hl7 | HL7 v2 Health Message
-- [ ] html | HTML
-- [ ] hydrogen | Hydrogen Drum Machine
+- [x] hdf5 | HDF5 Scientific Data
+- [x] heif | HEIC/HEIF Image
+- [x] hl7 | HL7 v2 Health Message
+- [x] html | HTML
+- [x] hydrogen | Hydrogen Drum Machine
 - [ ] ico | Icon File
 - [ ] ics | Calendar
 - [ ] image | Image
