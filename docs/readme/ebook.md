@@ -1,6 +1,6 @@
 # E-book
 
-> In-browser e-book reader for EPUB, comic archives, DjVu, and MOBI — chapter navigation, TOC, reading preferences, and position persistence.
+> In-browser e-book and scanned-document readers for EPUB, FB2, MOBI/AZW, Sony LRF, comics, and DjVu — with format-specific navigation, reading preferences, and sanitized local rendering.
 
 ## Format Details
 
@@ -11,6 +11,7 @@
 | DjVu | `.djvu` | `image/vnd.djvu` |
 | MOBI | `.mobi`, `.azw` | `application/x-mobipocket-ebook` |
 | FB2 | `.fb2` | `application/x-fictionbook+xml` |
+| Sony LRF | `.lrf`, `.lrx` | `application/x-sony-bbeb` |
 
 ## Capabilities Matrix
 
@@ -26,19 +27,24 @@
 | Font family | ✅ | Serif / Sans toggle |
 | Theme | ✅ | Light / Sepia / Dark |
 | Column layout | ✅ | 1 or 2 columns |
-| Metadata | ✅ | Title, author, language, chapter count |
+| Metadata | ✅ | Title, author, chapters, TOC count, language, publisher/date/identifier/rights when present |
 
-### View — Comic (CBZ/CBR)
+### View — Comic (CBZ/CBR/CB7)
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Page-by-page display | ✅ | Full-width image pages |
-| Previous / Next page | ✅ | Keyboard and button navigation |
-| Page count | ✅ | Shown in toolbar |
+| Continuous page display | ✅ | Lazy-loaded full-width image pages in vertical scroll |
+| Spread mode | ✅ | Optional two-page spread layout on wide screens |
+| Page count | ✅ | Shown in toolbar and metadata |
+| CBR / CB7 | ⚠️ | Opens through archive WASM only when `enableArchiveWasm` is enabled |
 
-### View — DjVu / MOBI / FB2
+### View — DjVu / MOBI / FB2 / LRF
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Basic rendering | ⚠️ Partial | Best-effort; some formats have limited support |
+| DjVu rendering | ✅ | DjVu.js page rendering with previous/next, zoom, arrow-key navigation, and text-layer toggle when available |
+| MOBI / AZW rendering | ⚠️ | Parses unencrypted PalmDOC-style MOBI/AZW, rewrites embedded images, and shows a clear note for DRM or HUFF/CDIC compression |
+| FB2 rendering | ✅ | XML book body converted to sanitized reading HTML with embedded binary images inlined as data URLs |
+| Sony LRF rendering | ⚠️ | Unprotected `.lrf` books render page-by-page with EPUB-style controls; DRM `.lrx` is refused |
+| Reader preferences | ✅ | Font size/family/theme for EPUB/LRF and size/font/theme/line/margin controls for MOBI/FB2 |
 
 ### Edit
 | Capability | Status | Notes |
@@ -54,12 +60,19 @@
 ## Real-World Examples
 
 - [`sample.epub`](../examples/sample.epub) — example EPUB book
+- [`sample.fb2`](../examples/sample.fb2) — FictionBook XML book
+- [`sample.mobi`](../examples/sample.mobi) — MOBI/Kindle-style book
+- [`sample.lrf`](../examples/sample.lrf) — Sony LRF book
+- [`sample.djvu`](../examples/sample.djvu) — scanned DjVu document
+- [`sample.cbz`](../examples/sample.cbz) — comic archive
 
 ## Known Limitations
 
 - DRM-protected books cannot be opened
 - EPUB 3 media overlays (audio sync) not supported
 - CBR (RAR-compressed comics) requires `enableArchiveWasm` setting
+- MOBI HUFF/CDIC compression and protected books are reported but not decoded
+- Comic archives do not expose individual page downloads yet
 
 ## Gap Analysis
 
@@ -69,3 +82,4 @@
 | Bookmarks | Low | Med | Save named positions across sessions |
 | Annotations / highlights | Low | Hard | Store highlights in local persistence |
 | Export chapter as HTML | Low | Easy | Download current chapter as self-contained HTML |
+| Page export for comics/DjVu | Low | Med | Save selected rendered pages as images |

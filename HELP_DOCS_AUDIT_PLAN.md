@@ -78,11 +78,11 @@ Completion gates:
 - [x] docs/readme/docx.md
 - [x] docs/readme/dwg.md
 - [x] docs/readme/dxf.md
-- [ ] docs/readme/ebook.md
-- [ ] docs/readme/editorconfig.md
-- [ ] docs/readme/email.md
-- [ ] docs/readme/eml.md
-- [ ] docs/readme/emulatorjs.md
+- [x] docs/readme/ebook.md
+- [x] docs/readme/editorconfig.md
+- [x] docs/readme/email.md
+- [x] docs/readme/eml.md
+- [x] docs/readme/emulatorjs.md
 - [ ] docs/readme/env.md
 - [ ] docs/readme/epub.md
 - [ ] docs/readme/excel.md

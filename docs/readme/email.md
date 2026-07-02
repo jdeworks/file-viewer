@@ -1,6 +1,6 @@
 # Email
 
-> In-browser email viewer supporting RFC 822 `.eml`, Outlook `.msg`, and Unix mailbox `.mbox` — headers, sanitized HTML body, and attachment listing.
+> In-browser email viewer supporting RFC 822 `.eml`, Outlook `.msg`, and Unix mailbox `.mbox` — headers, sandboxed HTML body, text fallback, metadata, and attachment-name listing.
 
 ## Format Details
 
@@ -17,11 +17,11 @@
 | Feature | Status | Details |
 |---------|--------|---------|
 | Header card | ✅ | From, To, Cc, Subject, Date displayed in a structured table |
-| HTML body | ✅ | Rendered after DOMPurify sanitization (scripts, styles, and on* handlers stripped) |
+| HTML body | ✅ | Rendered in a sandboxed iframe after script handlers and external resources are stripped |
 | Plain-text fallback | ✅ | `<pre>` block when no HTML body is present |
 | Multipart parsing | ✅ | `multipart/alternative` — picks HTML then plain; `multipart/mixed` for attachments |
 | Attachment listing | ✅ | Count and filenames shown; content not extracted |
-| Unsafe-content flag | ✅ | Warning banner when DOMPurify removed something |
+| Unsafe-content handling | ✅ | HTML content is sandboxed; external media resources are blanked |
 | Source / diff | ✅ | Monaco editor (plaintext) + standard line diff |
 
 ### View — MSG (Outlook)
@@ -39,7 +39,7 @@
 
 | Feature | Status | Details |
 |---------|--------|---------|
-| Message list | ✅ | One row per message with From, Subject, Date, and text snippet |
+| Message list | ✅ | One row per message with From, Subject, Date, text snippet, and attachment count when present |
 | Snippet | ✅ | First ~280 chars of plain text (HTML stripped for snippet generation) |
 | Attachment indicator | ✅ | Paperclip count per message row |
 | MIME parsing | ✅ | Shares EML MIME parser for each message |
@@ -69,7 +69,7 @@
 
 ## Known Limitations
 
-- EML attachment content cannot be extracted or downloaded — filenames only
+- EML attachment content cannot be extracted or downloaded — filenames, MIME types, and approximate sizes only
 - MSG attachment content is not extracted
 - Large MBOX files with thousands of messages render all rows at once (no pagination)
 - `=?UTF-8?Q?...?=` encoded-word decoding handles common cases; edge cases may not fully decode

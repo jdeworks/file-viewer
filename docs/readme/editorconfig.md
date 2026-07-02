@@ -1,6 +1,6 @@
 # EditorConfig
 
-> EditorConfig file viewer showing section-by-section glob patterns and formatting rules with inherited values.
+> EditorConfig file viewer showing section-by-section glob patterns, formatting rules, root status, and readable annotations for common properties.
 
 ## Format Details
 
@@ -20,9 +20,11 @@
 | `root = true` marker | ✅ | Root declaration highlighted in header |
 | Property display | ✅ | All known properties shown with values |
 | Glob pattern display | ✅ | Patterns like `[*.js]`, `[{*.ts,*.tsx}]` shown clearly |
+| Base settings summary | ✅ | Highlights `[*]` indentation, line ending, charset, whitespace, and final-newline defaults |
+| Known-file enhancement | ✅ | `.editorconfig` files also get parent-pane cards with notes for well-known keys |
 | Source view | ✅ | Monaco editor with INI syntax highlighting |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Section count, property count, root status |
+| Metadata | ✅ | Base type reports section count, root status, and indent style; known-file metadata also reports property count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -41,7 +43,8 @@
 
 ## Known Limitations
 
-- Effective settings for a given file path (property inheritance across sections) are not computed
+- Effective settings for a given file path are not computed
+- Conflict detection is visual only; there is no validation pass for contradictory properties
 
 ## Gap Analysis
 
