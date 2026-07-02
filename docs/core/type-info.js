@@ -70,6 +70,7 @@ const TYPE_INFO = {
   iso: ['ISO 9660 disc image', 'used for CD, DVD, boot media, operating-system installers, and software distribution images.', 'https://en.wikipedia.org/wiki/ISO_9660'],
   zip: ['ZIP archive', 'used to package and compress files, sometimes with encryption.', 'https://en.wikipedia.org/wiki/ZIP_(file_format)'],
   torrent: ['BitTorrent metadata', 'used to describe files, trackers, and piece hashes for BitTorrent.', 'https://en.wikipedia.org/wiki/Torrent_file'],
+  wad: ['Doom WAD', 'used to bundle id Tech 1 (Doom-engine) game data — levels, textures, sprites, and audio — into a single IWAD/PWAD archive.', 'https://doomwiki.org/wiki/WAD'],
   'java-class': ['Java class', 'used for compiled Java bytecode loaded by the JVM.', 'https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-4.html'],
   wasm: ['WebAssembly', 'used for portable low-level modules that run in browsers and runtimes.', 'https://webassembly.org/'],
   npy: ['NumPy array', 'used to store Python NumPy arrays and array archives.', 'https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html'],

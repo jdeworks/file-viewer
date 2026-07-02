@@ -7,9 +7,9 @@
 | Field | Value |
 |-------|-------|
 | Extension(s) | `.wad` |
-| MIME type | `application/octet-stream` |
+| MIME type | `application/x-doom-wad` (no IANA-registered type; falls back to `application/octet-stream`) |
 | Binary / Text | Binary |
-| Common use | Doom, Doom II, Heretic, Hexen, Quake game data and mods |
+| Common use | Doom, Doom II, Heretic, Hexen game data and mods (id Tech 1 IWAD/PWAD archives) |
 
 ## Capabilities Matrix
 
