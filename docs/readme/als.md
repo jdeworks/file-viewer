@@ -43,11 +43,13 @@
 - No audio waveform or MIDI piano-roll visualization
 - Automation lanes and send/return routing are not shown
 - Very large sessions may fail decompression due to browser memory limits
+- The `.als` extension collides with the unrelated Alloy formal-specification language; a
+  non-gzip `.als` file with Alloy syntax (e.g. [`sample-alloy.als`](../examples/sample-alloy.als))
+  is recognized and rendered by the separate `alloy-lang` known-file plugin instead of this viewer
 
 ## Real-World Examples
 
 - [`sample.als`](../examples/sample.als) — compact Ableton Live Set sample
-- [`sample-alloy.als`](../examples/sample-alloy.als) — Ableton sample containing track/plugin inventory
 
 ## Gap Analysis
 

@@ -49,7 +49,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
 | [Apache Thrift](thrift.md) | `.thrift` | Basic | Monaco | download | — | Include resolution |
 | [URL Inspector](url.md) | `.url` | Basic | Monaco | download | — | — |
-| [Steam ACF](/) | `.acf` | Basic | Monaco | download | — | — |
+| [Steam ACF](acf.md) | `.acf` | Basic | Monaco | download | — | — |
 | [PostScript / EPS](/) | `.ps` `.eps` `.ai` | Basic | Monaco | download | — | No PS render |
 | [KiCad EDA](/) | `.kicad_pcb` `.kicad_sch` `.kicad_pro` | Basic | Monaco | download | — | Board render |
 | [G-code](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
@@ -112,7 +112,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Icon File](/) | `.ico` | Fallback | None | download | — | Multi-size preview |
 | [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Basic | None | download | — | Layer tree |
 | [OpenEXR](exr.md) | `.exr` | Basic | None | download | — | Pixel decode |
-| [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
+| [ASCII / ANSI Art](asciiart.md) | `.ans` | Basic | Monaco | download | — | — |
 
 ---
 
@@ -141,7 +141,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Audio / Video](media.md) | `.mp3` `.mp4` `.aac` `.flac` `.m4a` `.mkv` `.mov` `.avi` `.ogg` `.wav` `.webm` | Basic | None | download | — | Clip export |
 | [MIDI Sequence](midi.md) | `.mid` `.midi` | Basic | None | download | — | Piano roll |
-| [Ableton Live Set](/) | `.als` | Basic | None | download | — | Track list |
+| [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
 | [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
@@ -292,9 +292,9 @@ Master overview of all file types supported by the viewer. Columns:
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [Adobe Premiere](/) | `.prproj` | Basic | None | download | — | Timeline view |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
-| [Ableton Live Set](/) | `.als` | Basic | None | download | — | Track list |
+| [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
-| [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
+| [ASCII / ANSI Art](asciiart.md) | `.ans` | Basic | Monaco | download | — | — |
 
 ---
 
