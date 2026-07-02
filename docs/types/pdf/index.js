@@ -14,6 +14,7 @@ export default {
   syntaxLanguage: null,
   loadRenderer: () => import('./renderer.js'),
   loadMetadata: () => import('./metadata.js'),
+  loadExports: () => import('./exports.js'),   // Export menu: extract text (.txt) / pages as PNG zip
   settingsUrl: new URL('./settings.default.json', import.meta.url),
   settings: {
     schema: [

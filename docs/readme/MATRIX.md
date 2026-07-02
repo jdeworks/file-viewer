@@ -65,7 +65,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [PDF](pdf.md) | `.pdf` | Basic | None | download | — | Text search |
+| [PDF](pdf.md) | `.pdf` | Full | Page ops (rotate/reorder/delete/merge/watermark/split) | download, edited PDF, TXT, PNG zip | — | Annotation / highlight |
 | [Word](office.md) | `.docx` | Basic | None | download | — | Track changes |
 | [PowerPoint](office.md) | `.pptx` | Basic | None | download | — | Animation |
 | [OpenDocument](office.md) | `.odt` | Basic | None | download | — | — |

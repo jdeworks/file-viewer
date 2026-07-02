@@ -1001,15 +1001,15 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/office/xlsx/renderer.js
 - [x] docs/types/office/xlsx/settings.default.json
 - [x] docs/types/office/xlsx/xlsxlib.js
-- [ ] docs/types/pdf/detect.js
-- [ ] docs/types/pdf/EDITOR.md
-- [ ] docs/types/pdf/exports.js
-- [ ] docs/types/pdf/index.js
-- [ ] docs/types/pdf/metadata.js
-- [ ] docs/types/pdf/pdfedit.js
-- [ ] docs/types/pdf/pdflib.js
-- [ ] docs/types/pdf/renderer.js
-- [ ] docs/types/pdf/settings.default.json
+- [x] docs/types/pdf/detect.js
+- [x] docs/types/pdf/EDITOR.md
+- [x] docs/types/pdf/exports.js
+- [x] docs/types/pdf/index.js
+- [x] docs/types/pdf/metadata.js
+- [x] docs/types/pdf/pdfedit.js
+- [x] docs/types/pdf/pdflib.js
+- [x] docs/types/pdf/renderer.js
+- [x] docs/types/pdf/settings.default.json
 - [ ] docs/types/sqlite/detect.js
 - [ ] docs/types/sqlite/EDITOR.md
 - [ ] docs/types/sqlite/exports.js

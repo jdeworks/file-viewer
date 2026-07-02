@@ -41,7 +41,7 @@
 |---------|--------|---------|
 | Download original | ✅ | Always available |
 | Download edited PDF | ✅ | pdf-lib re-assembles modified pages, rotations, insertions, merges, and watermarks |
-| Extract text / images export menu | ❌ | Helper code exists, but PDF export actions are not registered in the type yet |
+| Extract text / images export menu | ✅ | Export menu offers "Extract text (.txt)" and "Export pages as PNG images" (zipped) |
 | Save as PDF | ❌ | Edited PDFs download from the preview; Companion write-back is not wired for PDF edits |
 
 ## Example Files
@@ -53,7 +53,5 @@
 |---------|----------|-------|
 | Annotation / highlight | High | Text highlight, sticky note, freehand draw on pages |
 | Form field fill | High | PDF AcroForm fields — fill in values, download |
-| Register PDF export menu | Medium | Wire existing text extraction and page-image export helpers through `loadExports` |
-| Text extraction | Medium | Copy all text to clipboard or download as .txt |
 | Table extraction | Medium | Detect and export tables as CSV |
 | OCR support | Low | Run Tesseract.wasm on scanned pages |
