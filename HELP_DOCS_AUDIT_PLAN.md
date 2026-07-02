@@ -239,11 +239,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] env | Environment Variables
 - [x] epub | E-book
 - [x] exe | Executable (ELF / PE / Mach-O)
-- [ ] exr | OpenEXR Image
-- [ ] f3d | Fusion 360
-- [ ] fb2 | FictionBook (FB2)
-- [ ] fbx | FBX 3D Animation
-- [ ] fits | FITS Astronomy Image
+- [x] exr | OpenEXR Image
+- [x] f3d | Fusion 360
+- [x] fb2 | FictionBook (FB2)
+- [x] fbx | FBX 3D Animation
+- [x] fits | FITS Astronomy Image
 - [ ] font | Font
 - [ ] gamerom | Game ROM Header
 - [ ] gcode | G-code (3D Print)
