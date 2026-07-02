@@ -1099,11 +1099,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/dxf/metadata.js
 - [ ] docs/types/text/dxf/renderer.js
 - [ ] docs/types/text/dxf/settings.default.json
-- [ ] docs/types/text/editorconfig/detect.js
-- [ ] docs/types/text/editorconfig/index.js
-- [ ] docs/types/text/editorconfig/metadata.js
-- [ ] docs/types/text/editorconfig/renderer.js
-- [ ] docs/types/text/editorconfig/settings.default.json
+- [x] docs/types/text/editorconfig/detect.js
+- [x] docs/types/text/editorconfig/index.js
+- [x] docs/types/text/editorconfig/metadata.js
+- [x] docs/types/text/editorconfig/renderer.js
+- [x] docs/types/text/editorconfig/settings.default.json
 - [ ] docs/types/text/env/detect.js
 - [ ] docs/types/text/env/form-editor.js
 - [ ] docs/types/text/env/index.js
