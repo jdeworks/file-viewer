@@ -46,7 +46,7 @@
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

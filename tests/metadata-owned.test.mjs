@@ -49,6 +49,8 @@ import { render as renderFbx } from '../docs/types/binary/fbx/renderer.js';
 import { detect as detectHdf5 } from '../docs/types/binary/hdf5/detect.js';
 import { extractMetadata as hdf5Meta } from '../docs/types/binary/hdf5/metadata.js';
 import { render as renderHdf5 } from '../docs/types/binary/hdf5/renderer.js';
+import { detect as detectIpa } from '../docs/types/binary/ipa/detect.js';
+import { metadata as ipaMeta } from '../docs/types/binary/ipa/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -683,6 +685,20 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /HDF5/);
   assert.match(rendered, /Superblock version/);
   assert.match(rendered, /Size of offsets/);
+}
+
+{
+  const data = await bytes('sample.ipa');
+  assert.equal(detectIpa({ filename: 'sample.ipa', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectIpa({ filename: 'empty.ipa', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectIpa({ filename: 'sample.zip', bytes: data, isBinary: true }), 0);
+  const rows = ipaMeta({ filename: 'sample.ipa', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'iOS App Package (IPA)');
+  assert.equal(rows['Info.plist'], 'present');
+  assert.equal(rows['App name'], 'Demo App');
+  assert.equal(rows['Bundle ID'], 'com.example.demoapp');
+  assert.equal(rows['Minimum OS'], '15.0');
+  assert.equal(rows.Platforms, 'iPhoneOS');
 }
 
 {

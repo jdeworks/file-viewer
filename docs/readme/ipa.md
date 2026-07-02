@@ -28,7 +28,7 @@
 | File count | ❌ | File count is not shown in the current preview |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ❌ | Metadata extractor is currently empty; details are preview-only |
+| Metadata | ✅ | Format, file count, uncompressed size, and XML `Info.plist` fields |
 
 ### Edit
 | Capability | Status | Notes |

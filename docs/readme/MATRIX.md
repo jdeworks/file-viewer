@@ -275,7 +275,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Android Package](apk.md) | `.apk` `.aab` `.xapk` | Partial | None | download | — | Manifest parse |
-| [iOS App (IPA)](/) | `.ipa` | Basic | None | download | — | Signature verify |
+| [iOS App (IPA)](ipa.md) | `.ipa` | Basic | None | download | — | Signature verify |
 | [Debian Package](deb.md) | `.deb` `.udeb` | Full | None | download | — | control.tar |
 | [RPM Package](/) | `.rpm` `.src.rpm` | Basic | None | download | — | Payload extract |
 | [NuGet/VSIX/Wheel/JAR](/) | `.nupkg` `.vsix` `.whl` `.jar` | Basic | None | download | — | Class manifest |

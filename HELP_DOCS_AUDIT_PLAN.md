@@ -490,11 +490,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/hdf5/detect.js
 - [x] docs/types/binary/hdf5/index.js
 - [x] docs/types/binary/hdf5/metadata.js
-- [ ] docs/types/binary/hdf5/renderer.js
-- [ ] docs/types/binary/hdf5/settings.default.json
-- [ ] docs/types/binary/ipa/detect.js
-- [ ] docs/types/binary/ipa/index.js
-- [ ] docs/types/binary/ipa/metadata.js
+- [x] docs/types/binary/hdf5/renderer.js
+- [x] docs/types/binary/hdf5/settings.default.json
+- [x] docs/types/binary/ipa/detect.js
+- [x] docs/types/binary/ipa/index.js
+- [x] docs/types/binary/ipa/metadata.js
 - [ ] docs/types/binary/ipa/renderer.js
 - [ ] docs/types/binary/ipa/settings.default.json
 - [ ] docs/types/binary/iso/detect.js

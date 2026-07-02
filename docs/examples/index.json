@@ -2639,6 +2639,9 @@
     "file": "sample.ipa",
     "label": "iOS App (IPA demo)",
     "mime": "application/octet-stream",
+    "type": "ipa",
+    "binary": true,
+    "partial": true,
     "category": "code",
     "categories": [
       "code",
