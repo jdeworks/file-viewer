@@ -244,11 +244,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] fb2 | FictionBook (FB2)
 - [x] fbx | FBX 3D Animation
 - [x] fits | FITS Astronomy Image
-- [ ] font | Font
-- [ ] gamerom | Game ROM Header
-- [ ] gcode | G-code (3D Print)
-- [ ] geo | Map (GeoJSON/GPX)
-- [ ] gff | GFF/GTF Genomic
+- [x] font | Font
+- [x] gamerom | Game ROM Header
+- [x] gcode | G-code (3D Print)
+- [x] geo | Map (GeoJSON/GPX)
+- [x] gff | GFF/GTF Genomic
 - [ ] gitattributes | Git Attributes
 - [ ] gitignore | .gitignore / ignore rules
 - [ ] gltf | 3D model (glTF)
