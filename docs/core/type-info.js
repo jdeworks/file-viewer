@@ -110,6 +110,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   csv: 'csv',
   xlsx: 'xlsx',
   zip: 'zip',
+  clip: 'clip',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -133,6 +134,7 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   m4v: 'mp4',
   mp3: 'mp3',
   zip: 'zip',
+  clip: 'clip',
 };
 
 function fileExtension(intake) {

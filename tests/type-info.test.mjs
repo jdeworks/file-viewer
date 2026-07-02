@@ -11,4 +11,10 @@ assert.equal(info.name, 'Java class');
 assert.match(info.description, /compiled Java bytecode/);
 assert.match(info.href, /jvms-4/);
 
+const clip = REGISTRY.find((type) => type.id === 'clip');
+assert.ok(clip, 'clip type is registered');
+const clipInfo = getTypeInfo(clip, null, { filename: 'sample.clip' });
+assert.equal(clipInfo.name, 'Clip Studio Paint');
+assert.match(clipInfo.fileExamplesHref, /fileexamples\.com.*clip/i);
+
 console.log('type info: ok');

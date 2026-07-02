@@ -289,7 +289,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Clip Studio Paint](/) | `.clip` | Basic | None | download | — | Layer tree |
+| [Clip Studio Paint](clip.md) | `.clip` | Basic | None | download | — | Layer detail |
 | [Procreate](/) | `.procreate` | Basic | None | download | — | Layer tree |
 | [Fusion 360](/) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
 | [Sketch Design](/) | `.sketch` | Basic | None | download | — | Artboard view |

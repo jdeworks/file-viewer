@@ -173,15 +173,18 @@
         "total": 1
       },
       "partialSamples": [],
-      "realWorldQuality": "needs-review",
-      "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
-      "fileExamplesSlug": null,
+      "realWorldQuality": "synthetic",
+      "notes": "SQLite-backed Clip Studio Paint structure sample with canvas dimensions, layer count, table list, and PNG thumbnail.",
+      "fileExamplesSlug": "clip",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "knownParserGaps": [],
+      "knownParserGaps": [
+        "Layer pixel data is proprietary and not decoded",
+        "Layer names, blending modes, and opacity are not shown"
+      ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true

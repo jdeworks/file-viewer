@@ -87,6 +87,9 @@ assert.equal(winner(RUNTIME, intake('config.yaml', { text: '---\nname: app\n' })
 const pkZip = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
 assert.equal(winner(RUNTIME, intake('bundle.aab', { bytes: pkZip, isBinary: true }))[0], 'apk', '.aab ZIP package routes to Android Package');
 assert.equal(winner(RUNTIME, intake('bundle.xapk', { bytes: pkZip, isBinary: true }))[0], 'apk', '.xapk ZIP package routes to Android Package');
+const sqliteHeader = new TextEncoder().encode('SQLite format 3\0');
+assert.equal(winner(RUNTIME, intake('sample.clip', { bytes: sqliteHeader, isBinary: true }))[0], 'clip', '.clip SQLite payload routes to Clip Studio Paint');
+assert.equal(winner(RUNTIME, intake('draft.clip', { bytes: new Uint8Array([1, 2, 3, 4]), isBinary: true }))[0], 'clip', '.clip extension keeps Clip Studio Paint available for unusual payloads');
 const blendHeader = new TextEncoder().encode('BLENDER-v420');
 assert.equal(winner(RUNTIME, intake('scene.blend1', { bytes: blendHeader, isBinary: true }))[0], 'blend', '.blend1 routes to Blender Scene');
 assert.equal(winner(RUNTIME, intake('scene.blend2', { bytes: blendHeader, isBinary: true }))[0], 'blend', '.blend2 routes to Blender Scene');

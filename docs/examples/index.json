@@ -147,6 +147,7 @@
     "file": "sample.clip",
     "mime": "application/vnd.clip-studio.paint",
     "type": "clip",
+    "typeLabel": "Clip Studio Paint",
     "category": "Image",
     "categories": [
       "Image",
