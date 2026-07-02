@@ -1,6 +1,6 @@
 # Network Capture (.pcap / .pcapng)
 
-> PCAP and PCAPNG viewer — link type, packet count, protocol breakdown, top conversations, and packet timestamps.
+> PCAP and PCAPNG viewer — link type, packet count, protocol breakdown, first-packet table, and relative timestamps.
 
 ## Format Details
 
@@ -21,12 +21,13 @@
 | PCAP version | ✅ | Major.Minor from header |
 | Snaplen | ✅ | Max capture length |
 | Packet count | ✅ | Total packets parsed |
-| Protocol breakdown | ✅ | IPv4 / IPv6 / ARP / TCP / UDP / ICMP counts |
-| Top flows | ✅ | Most frequent src:port → dst:port conversations |
-| Timestamps | ✅ | First and last capture timestamps |
+| Protocol breakdown | ✅ | Ethernet IPv4/IPv6/ARP and common IP protocol counts where supported |
+| Top flows | ❌ | Conversation aggregation is not implemented |
+| Timestamps | ⚠️ Partial | Relative timestamps are shown for classic PCAP packets |
+| Packet table | ✅ | First 20 packets with number, relative time, protocol, and captured length |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Link type, packet count, protocol counts |
+| Metadata | ⚠️ Partial | Side-panel metadata exposes format, snaplen, and some link types; richer counts are in the preview |
 
 ### Edit
 | Capability | Status | Notes |
@@ -42,6 +43,8 @@
 
 - Payload decryption (TLS/HTTPS) is not possible
 - Application-layer protocols (HTTP, DNS) are not dissected
+- PCAPNG support is structural only: packet counts are read, but packet payloads and timestamps are not listed
+- Non-Ethernet link types have limited protocol dissection
 - Truncated at the loaded byte budget for large captures
 
 ## Gap Analysis
@@ -49,5 +52,6 @@
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | DNS query extraction | Med | Med | Parse UDP port-53 payloads |
+| Conversation aggregation | Med | Med | Build src:port → dst:port flow counts |
 | HTTP request list | Med | Hard | Reassemble TCP streams for HTTP |
 | Export conversation table as CSV | Low | Easy | Top flows to CSV download |

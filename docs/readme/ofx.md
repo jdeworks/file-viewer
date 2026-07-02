@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.ofx`, `.qfx` |
+| Extension(s) | `.ofx`, `.qfx`, `.ofc` |
 | MIME type | `application/x-ofx` |
 | Binary / Text | Text (SGML or XML) |
 | Common use | Bank/brokerage data exports for Quicken, Mint, financial aggregators |
@@ -24,6 +24,7 @@
 | Ledger balance | ✅ | `BALAMT` with `DTASOF` date |
 | Transaction list | ✅ | Date / type / amount / memo (up to 200, newest first) |
 | Amount colour coding | ✅ | Positive amounts green, negative red |
+| Running balance chart | ✅ | Chart.js loads lazily when at least two transactions exist |
 | SGML and XML mode | ✅ | Both OFX 1.x (SGML) and 2.x (XML) parsed |
 | Source view | ✅ | Monaco editor (XML syntax) |
 | Text diff | ✅ | Standard line diff |
@@ -39,17 +40,17 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Export as CSV | ❌ | Not yet implemented |
+| Export as CSV | ✅ | Preview button exports Date/Type/Amount/Memo; export menu includes Name and Transaction ID |
 
 ## Known Limitations
 
-- Investment transactions (`INVSTMTTRNRS`) parsed for accounts but position data not shown
+- `.ofc` is detected as a related financial export format, but OFX/QFX coverage is better exercised
+- Investment transactions (`INVSTMTTRNRS`) are parsed for accounts and statement transactions, but positions are not shown
 - More than 200 transactions are truncated in preview
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Export transactions as CSV | Med | Easy | Download filtered transaction table |
 | Spending category chart | Low | Med | Pie chart of transaction types or categories |
 | Investment positions table | Low | Med | Parse `INVPOSLIST` position records |

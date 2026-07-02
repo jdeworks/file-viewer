@@ -1,6 +1,6 @@
 # Apache Parquet
 
-> Columnar binary data format used in big-data pipelines — schema, row group stats, and column encoding shown without server-side processing.
+> Columnar binary data format used in big-data pipelines — validates PAR1 framing and shows heuristic footer metadata without server-side processing.
 
 ## Format Details
 | Field | Value |
@@ -15,13 +15,16 @@
 ### View
 | Feature | Status | Details |
 |---------|--------|---------|
-| Schema | ✅ | Column names, data types, repetition/definition levels |
-| Row group info | ✅ | Count, byte size, row count per group |
-| Column encoding | ✅ | Encoding type (PLAIN, RLE, DELTA, etc.) per column chunk |
-| Compression codec | ✅ | SNAPPY, GZIP, ZSTD, etc. per column |
-| File metadata | ✅ | Row count, created-by app/version, key-value metadata |
+| PAR1 framing | ✅ | Magic bytes checked at file start and end |
+| Footer metadata | ✅ | Footer size, file size, optional format version/row count when recoverable |
+| Field names | ⚠️ Partial | Printable field names extracted heuristically from the Thrift footer |
+| Schema | ⚠️ Partial | Full type/repetition/definition metadata is not decoded |
+| Row group info | ❌ | Row-group counts, byte sizes, and per-group row counts are not decoded |
+| Column encoding | ❌ | Encoding type per column chunk is not decoded |
+| Compression codec | ❌ | Compression codec per column is not decoded |
+| File metadata | ⚠️ Partial | Basic footer facts only; key-value metadata is not fully decoded |
 | Data preview (rows) | ❌ | Actual row data not decoded (requires Thrift + codec decoding) |
-| Statistics | ✅ | Min/max/null count per column chunk where available |
+| Statistics | ❌ | Min/max/null count per column chunk is not decoded |
 | Diff/compare | ❌ | Binary format; schema diff not supported |
 
 ### Edit
@@ -43,6 +46,7 @@
 | Feature | Priority | Notes |
 |---------|----------|-------|
 | Row data preview | High | Decode first N rows of PLAIN-encoded columns for display |
+| Full Thrift footer decoding | High | Replace heuristic footer string scan with a real Parquet metadata parser |
 | Export to CSV/JSON | High | Full decode + re-serialize; large files need streaming |
 | Arrow IPC / Feather support | Medium | Related columnar formats |
 | Column statistics visualization | Low | Min/max as mini-chart per column |

@@ -147,11 +147,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/nupkg.md
 - [x] docs/readme/obj.md
 - [x] docs/readme/odf.md
-- [ ] docs/readme/office.md
-- [ ] docs/readme/ofx.md
-- [ ] docs/readme/parquet.md
-- [ ] docs/readme/patch.md
-- [ ] docs/readme/pcap.md
+- [x] docs/readme/office.md
+- [x] docs/readme/ofx.md
+- [x] docs/readme/parquet.md
+- [x] docs/readme/patch.md
+- [x] docs/readme/pcap.md
 - [ ] docs/readme/pdb.md
 - [ ] docs/readme/pdf.md
 - [ ] docs/readme/pem.md
