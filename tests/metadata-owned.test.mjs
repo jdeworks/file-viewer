@@ -9,6 +9,8 @@ import { extract as objMeta } from '../docs/types/3d/obj/metadata.js';
 import { extract as plyMeta } from '../docs/types/3d/ply/metadata.js';
 import { extract as gltfMeta } from '../docs/types/3d/gltf/metadata.js';
 import { parseGLTF } from '../docs/types/3d/gltf/gltflib.js';
+import { extractMetadata as blendMeta } from '../docs/types/binary/blend/metadata.js';
+import { render as renderBlend } from '../docs/types/binary/blend/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -331,6 +333,21 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const rows = editorconfigMeta({ filename: '.editorconfig', text: await text('.editorconfig') });
   assert.equal(value(rows, 'Root config'), 'yes');
   assert.equal(value(rows, 'Sections'), '10');
+}
+
+{
+  const data = await bytes('sample.blend');
+  const rows = blendMeta({ filename: 'sample.blend', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows['Blender version'], '4.2.0');
+  assert.equal(rows['Pointer size'], '8 bytes');
+  assert.equal(rows.Endianness, 'Little-endian');
+
+  const truncated = new Uint8Array(12 + 24);
+  truncated.set(new TextEncoder().encode('BLENDER-v420'), 0);
+  truncated.set(new TextEncoder().encode('OB\0\0'), 12);
+  new DataView(truncated.buffer).setUint32(16, 64, true);
+  const rendered = renderBlend({ filename: 'bad.blend', bytes: truncated, isBinary: true, size: truncated.length }).bodyHtml;
+  assert.doesNotMatch(rendered, /File blocks\s*1/, 'truncated Blender block body is not counted');
 }
 
 console.log('metadata-owned: ok');

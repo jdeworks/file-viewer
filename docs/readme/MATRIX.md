@@ -129,7 +129,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [STEP CAD](/) | `.stp` `.step` `.p21` | Full | Monaco | download | — | 3D geometry |
 | [AutoCAD DXF](/) | `.dxf` | Partial | None | download | — | 2D render |
 | [AutoCAD DWG](/) | `.dwg` | Basic | None | download | — | Geometry |
-| [Blender Scene](/) | `.blend` `.blend1` | Basic | None | download | — | Scene tree |
+| [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [FBX Animation](/) | `.fbx` | Basic | None | download | — | Mesh data |
 | [Fusion 360](/) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
 | [G-code (3D Print)](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
@@ -294,7 +294,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Fusion 360](/) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
 | [Sketch Design](/) | `.sketch` | Basic | None | download | — | Artboard view |
 | [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Fallback | None | download | — | Layer tree |
-| [Blender Scene](/) | `.blend` `.blend1` | Basic | None | download | — | Scene tree |
+| [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [Adobe Premiere](/) | `.prproj` | Basic | None | download | — | Timeline view |
 | [LMMS Project](/) | `.mmp` `.mmpz` | Full | None | download | — | Automation |
 | [Ableton Live Set](/) | `.als` | Basic | None | download | — | Track list |

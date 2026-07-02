@@ -61,7 +61,7 @@ function parseBlocks(b, ptrSize, isLE) {
     const code = new TextDecoder('ascii', { fatal: false }).decode(b.slice(off, off + 4)).replace(/\x00/g, '');
     const bodySize = r32(b, off + 4);
     if (code === 'ENDB') { blocks['ENDB'] = (blocks['ENDB'] || 0) + 1; break; }
-    if (bodySize > b.length) break;
+    if (off + blockHeaderSize + bodySize > b.length) break;
     blocks[code] = (blocks[code] || 0) + 1;
     off += blockHeaderSize + bodySize;
     if (Object.keys(blocks).length > 200) break;

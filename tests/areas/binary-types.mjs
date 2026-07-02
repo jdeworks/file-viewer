@@ -440,6 +440,11 @@ export async function run(ctx) {
   const blendText = await blendf.$eval('body', (el) => el.textContent);
   if (/Blender/i.test(blendText)) pass('Blender badge shown'); else fail('blend badge: ' + blendText.slice(0, 300));
   if (/4\.2|420|version/i.test(blendText)) pass('Blender version shown'); else fail('blend version: ' + blendText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const blendMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Blender Version\s*4\.2\.0/i.test(blendMeta) && /Pointer Size\s*8 bytes/i.test(blendMeta) && /Endianness\s*Little-endian/i.test(blendMeta)) pass('Blender metadata includes version, pointer size, and endianness'); else fail('blend meta: ' + blendMeta.replace(/\s+/g, ' ').slice(0, 220));
+  await page.click('#metaDrawer [data-close]');
 
   // ── STEP CAD Exchange ─────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

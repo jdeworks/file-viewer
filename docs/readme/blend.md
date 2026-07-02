@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.blend` |
+| Extension(s) | `.blend`, `.blend1`, `.blend2` |
 | MIME type | `application/x-blender` |
 | Binary / Text | Binary |
 | Common use | Blender 3D modelling, animation, and rendering projects |
