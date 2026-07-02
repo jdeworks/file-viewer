@@ -209,11 +209,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] apk | Android Package (APK/AAB)
 - [x] archive | Archive
 - [x] arrow | Apache Arrow / Feather
-- [ ] asciiart | ASCII / ANSI Art
-- [ ] avro | Apache Avro
-- [ ] bio | Bioinformatics (FASTA/FASTQ/VCF)
-- [ ] blend | Blender 3D Scene
-- [ ] bson | BSON (Binary JSON)
+- [x] asciiart | ASCII / ANSI Art
+- [x] avro | Apache Avro
+- [x] bio | Bioinformatics (FASTA/FASTQ/VCF)
+- [x] blend | Blender 3D Scene
+- [x] bson | BSON (Binary JSON)
 - [ ] bsp | BSP Game Map
 - [ ] cbor | CBOR Binary Data
 - [ ] chat | Chat Export (WhatsApp / Telegram / Discord)

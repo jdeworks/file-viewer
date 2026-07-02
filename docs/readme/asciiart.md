@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.ans`, `.asc`, `.txt`, `.nfo` |
+| Extension(s) | `.ans`, `.asc`, `.nfo`, `.diz`; extensionless or other text can still be detected from ANSI/SAUCE/art signals |
 | MIME type | `text/plain` |
 | Binary / Text | Text (ASCII or Latin-1/CP437) |
 | Common use | BBS art, scene releases, NFO files, terminal art collections |
