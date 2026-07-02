@@ -61,7 +61,7 @@ const TYPE_INFO = {
   msgpack: ['MessagePack', 'used for compact binary serialisation in APIs, caches, and inter-process communication.', 'https://msgpack.org/'],
   netcdf: ['NetCDF scientific data', 'used for climate, oceanography, and atmospheric model datasets with dimensions, variables, and attributes.', 'https://www.unidata.ucar.edu/software/netcdf/'],
   epub: ['EPUB', 'used for reflowable ebooks with chapters, metadata, and resources.', 'https://www.w3.org/publishing/epub3/'],
-  comic: ['Comic archive', 'used for page-image comics packaged as ZIP/RAR/7z archives.', 'https://en.wikipedia.org/wiki/Comic_book_archive'],
+  comic: ['Comic archive', 'used for page-image comics packaged as ZIP/RAR/7z/tar archives.', 'https://en.wikipedia.org/wiki/Comic_book_archive'],
   djvu: ['DjVu', 'used for scanned documents with high compression and optional OCR text.', 'https://en.wikipedia.org/wiki/DjVu'],
   archive: ['Archive', 'used to package files and folders, often with compression.', 'https://en.wikipedia.org/wiki/Archive_file'],
   deb: ['Debian package', 'used to distribute installable software packages for Debian, Ubuntu, and derivatives.', 'https://www.debian.org/doc/manuals/debian-faq/pkg-basics.en.html'],

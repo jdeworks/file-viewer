@@ -607,12 +607,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/wasm/metadata.js
 - [x] docs/types/binary/wasm/renderer.js
 - [x] docs/types/binary/wasm/settings.default.json
-- [ ] docs/types/ebook/comic/comiclib.js
-- [ ] docs/types/ebook/comic/detect.js
-- [ ] docs/types/ebook/comic/index.js
-- [ ] docs/types/ebook/comic/metadata.js
-- [ ] docs/types/ebook/comic/renderer.js
-- [ ] docs/types/ebook/comic/settings.default.json
+- [x] docs/types/ebook/comic/comiclib.js
+- [x] docs/types/ebook/comic/detect.js
+- [x] docs/types/ebook/comic/index.js
+- [x] docs/types/ebook/comic/metadata.js
+- [x] docs/types/ebook/comic/renderer.js
+- [x] docs/types/ebook/comic/settings.default.json
 - [ ] docs/types/ebook/djvu/detect.js
 - [ ] docs/types/ebook/djvu/index.js
 - [ ] docs/types/ebook/djvu/metadata.js

@@ -1,6 +1,6 @@
 # Comic Book Archive
 
-> Comic archive reader for CBZ plus opt-in RAR/7z comics — renders ordered image pages as lazy blob images with a two-page spread toggle.
+> Comic archive reader for CBZ plus opt-in RAR/7z/Tar comics — renders ordered image pages as lazy blob images with a two-page spread toggle.
 
 ## Format Details
 
@@ -23,7 +23,7 @@
 | CBZ (ZIP) support | ✅ | Fully supported |
 | CBR (RAR) support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in |
 | CB7 support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in |
-| CBT support | ❌ | Tar comics are not currently opened by the comic reader path |
+| CBT support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in (libarchive.js handles tar natively) |
 
 ### Edit
 | Capability | Status | Notes |
@@ -42,11 +42,11 @@ No known-file plugin — all comic archives use the same reader.
 
 ## Real-World Examples
 
-- [`sample.cbz`](../examples/sample.cbz) — ZIP-based comic demonstrating page navigation and thumbnail strip
+- [`sample.cbz`](../examples/sample.cbz) — ZIP-based comic demonstrating page navigation
 
 ## Known Limitations
 
-- CBR/CB7 decompression depends on the opt-in archive WASM path; large archives may fail
+- CBR/CB7/CBT decompression depends on the opt-in archive WASM path; large archives may fail
 - No thumbnail strip or jump-to-page control yet
 - Reading direction is always left-to-right (no RTL mode for manga)
 
@@ -54,7 +54,7 @@ No known-file plugin — all comic archives use the same reader.
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| CBR full support | High | Hard | RAR support depends on the archive WASM path |
+| CBR/CBT full support without opt-in | High | Hard | RAR/tar support depends on the archive WASM path |
 | Right-to-left (manga) mode | Med | Easy | Flip page order and navigation direction |
 | Thumbnail / page picker | Med | Med | Generate small previews and jump controls |
 | Bookmarks / reading position save | Low | Med | Persist last-read page in localStorage |
