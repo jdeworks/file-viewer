@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.ps`, `.eps`, `.epsf` |
+| Extension(s) | `.ps`, `.eps`, `.ai` |
 | MIME type | `application/postscript` |
 | Binary / Text | Text |
 | Common use | Vector graphics, print-ready artwork, legacy illustration files |
@@ -25,7 +25,7 @@
 | Language level | ✅ | PostScript level (1/2/3) shown |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Format, pages, bounding box, fonts, creator |
+| Metadata | ✅ | Format, DSC version, language level, pages, bounding box, creator |
 
 ### Edit
 | Capability | Status | Notes |
@@ -44,6 +44,7 @@
 
 - PostScript execution is not possible in-browser — visual rendering is not available
 - Only DSC-compliant files have parseable metadata; raw PS files show minimal info
+- `.ai` files are claimed when they are text PostScript/Illustrator-era files, not modern PDF-based Illustrator files
 
 ## Gap Analysis
 

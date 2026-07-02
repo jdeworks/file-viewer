@@ -1,12 +1,12 @@
 # PPTX — PowerPoint Presentation
 
-> Slide-by-slide rendering with thumbnail strip and speaker notes — shapes, images, and text; no animations.
+> Slide-by-slide rendering to static images — text, shapes, and images; no animations or editing.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.pptx`, `.potx` |
+| Extension(s) | `.pptx`, `.ppsx`, `.pptm` |
 | MIME type | `application/vnd.openxmlformats-officedocument.presentationml.presentation` |
 | Binary / Text | Binary (ZIP + XML) |
 | Created by | Microsoft |
@@ -18,23 +18,26 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Slide rendering | ✅ | Text, shapes, and images per slide |
-| Slide thumbnail strip | ✅ | All slides shown as clickable thumbnails |
-| Speaker notes | ✅ | Notes pane displayed below slide |
+| Slide rendering | ✅ | Up to 50 slides rendered to static images |
+| Continuous view | ✅ | Slides shown in a vertical scroll by default |
+| Single-slide mode | ✅ | Button, previous/next controls, keyboard, and touch swipe navigation |
+| Slide thumbnail strip | ❌ | Not implemented |
+| Speaker notes | ❌ | Notes are not extracted or displayed |
 | Transitions / animations | ⚠️ | Not rendered; slides shown as static snapshots |
-| Complex chart types | ⚠️ Partial | Simple charts attempted; complex types shown as placeholders |
+| Complex chart types | ⚠️ Partial | Dependent on pptxviewjs static rendering |
+| Metadata | ✅ | Slides, title, author, dates, app, paragraphs, words where present |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Visual editing | ❌ | No WYSIWYG slide editor |
-| Raw XML editing | ✅ | Internal XML parts editable via archive tree |
+| Raw XML editing | ❌ | PPTX is preview-only in the PowerPoint viewer |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Screenshot individual slides | ✅ | Canvas capture of current slide |
+| Screenshot individual slides | ❌ | No registered slide screenshot/export action yet |
 
 ## Known-File Enhancement
 
@@ -42,20 +45,22 @@ No known-file plugin — all PPTX files use the same slide renderer.
 
 ## Real-World Examples
 
-- [`sample.pptx`](../examples/sample.pptx) — presentation demonstrating slide navigation, thumbnails, and speaker notes
+- [`sample.pptx`](../examples/sample.pptx) — presentation demonstrating slide rendering and single-slide navigation
 
 ## Known Limitations
 
 - Slide transitions and entrance/exit animations are not played
 - Embedded video and audio are not played back
-- Chart rendering accuracy varies; complex charts (waterfall, funnel) show placeholders
+- Chart rendering accuracy depends on the static renderer and may differ from PowerPoint
 - Font rendering may differ from PowerPoint due to font availability
+- Rendering is capped to the first 50 slides
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | PDF export of all slides | High | Med | Render each slide to canvas then combine as PDF |
+| Thumbnail strip / notes | Med | Med | Parse notes XML and add compact navigation thumbnails |
 | Embedded video playback | Med | Hard | Videos stored in `ppt/media/`; need MIME-type routing |
 | Accurate chart rendering | Med | Hard | OOXML chart spec is complex; partial support only |
 | Slide transitions | Low | Hard | Would require CSS/JS animation for each transition type |

@@ -1,6 +1,6 @@
 # Procreate Artwork (.procreate)
 
-> iPad illustration files — composite image preview with metadata, draw overlay, background removal, and format export.
+> iPad illustration files — ZIP thumbnail preview with basic archive metadata.
 
 ## Format Details
 
@@ -8,7 +8,7 @@
 |-------|-------|
 | Extension(s) | `.procreate` |
 | MIME type | `application/octet-stream` |
-| Binary / Text | Binary (gzip-compressed plist + layer images) |
+| Binary / Text | Binary (ZIP archive) |
 | Created by | Savage Interactive |
 | Common use | Digital artwork and illustrations created on iPad with Apple Pencil |
 
@@ -17,43 +17,43 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Flattened composite image | ✅ | All layers merged into a single preview |
-| Canvas metadata | ✅ | Canvas size, layer count, creation date |
-| Individual layer access | ⚠️ | Layers not extracted (proprietary format) |
+| Thumbnail preview | ✅ | Reads `thumbnail.png`, `QuickLook/Thumbnail.png`, or matching archive thumbnail |
+| Archive metadata | ✅ | Entry count, thumbnail presence, `Document.archive` presence |
+| Flattened composite image | ❌ | Full canvas composite is not decoded |
+| Canvas metadata | ❌ | Canvas size/layer count/creation date are not parsed |
+| Individual layer access | ❌ | Layers not extracted |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Draw overlay | ✅ | Pencil / eraser / text annotation on composite |
-| Magic background removal | ✅ | AI-powered subject isolation |
+| Draw overlay | ❌ | Procreate preview is read-only |
+| Magic background removal | ❌ | Not available for Procreate thumbnails |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Export as PNG | ✅ | Composite image via canvas |
-| Export as JPEG | ✅ | Via canvas |
-| Export as WebP | ✅ | Via canvas |
-| Export as AVIF | ✅ | Via canvas (Chrome/Edge) |
+| Export as PNG/JPEG/WebP/AVIF | ❌ | No image export actions are registered for Procreate previews |
 
 ## Known-File Enhancement
 
-No known-file plugin — all `.procreate` files use the same composite viewer.
+No known-file plugin — all `.procreate` files use the same thumbnail preview.
 
 ## Real-World Examples
 
-- [`sample.procreate`](../examples/sample.procreate) — iPad illustration demonstrating composite display and export
+- [`sample.procreate`](../examples/sample.procreate) — Procreate archive demonstrating thumbnail preview and metadata
 
 ## Known Limitations
 
-- Individual layers are not accessible; only the merged composite is shown
-- Layer blend modes are already baked into the composite (not re-composited in browser)
+- Individual layers and full merged canvas are not accessible; only the stored thumbnail is shown
+- Layer blend modes are not re-composited in browser
 - Time-lapse video embedded in `.procreate` files is not played back
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Composite image extraction | High | Hard | Decode Procreate document/layer data and render a full canvas |
 | Individual layer extraction | High | Hard | Procreate plist structure partially documented; layer images are LZO-compressed |
 | Time-lapse playback | Med | Hard | Video frames stored in companion `.procreate` data; needs extraction |
 | Blend mode re-compositing | Low | Hard | Requires full layer stack parser |

@@ -157,11 +157,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/readme/pem.md
 - [x] docs/readme/plist.md
 - [x] docs/readme/ply.md
-- [ ] docs/readme/postscript.md
-- [ ] docs/readme/pptx.md
-- [ ] docs/readme/procreate.md
-- [ ] docs/readme/prproj.md
-- [ ] docs/readme/pyc.md
+- [x] docs/readme/postscript.md
+- [x] docs/readme/pptx.md
+- [x] docs/readme/procreate.md
+- [x] docs/readme/prproj.md
+- [x] docs/readme/pyc.md
 - [ ] docs/readme/qif.md
 - [ ] docs/readme/raw.md
 - [ ] docs/readme/rdp.md

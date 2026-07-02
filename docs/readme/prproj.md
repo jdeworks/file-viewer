@@ -24,9 +24,9 @@
 | Version | ✅ | `Version` attribute on `<PremiereData>` |
 | Creation date | ✅ | `Created` attribute on `<PremiereData>` |
 | Gzip decompression | ✅ | Transparent via browser `DecompressionStream` |
-| Source view | ❌ | Disabled — binary gzip format |
-| Diff | ❌ | Disabled — binary format |
-| Metadata | ✅ | Sequence/clip/media counts, frame rate, version |
+| Source view | ❌ | Disabled in the registered viewer, even though decompressed XML can be parsed |
+| Diff | ❌ | Disabled — gzip/binary project format |
+| Metadata | ⚠️ Partial | Format, version, sequence count, and clip count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -42,6 +42,7 @@
 
 - Effects, transitions, and colour grading data are not parsed
 - Media file paths inside the project are not extracted
+- Metadata side panel is narrower than the preview summary
 - Very large projects may hit browser memory limits during decompression
 
 ## Gap Analysis
