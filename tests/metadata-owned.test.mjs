@@ -230,7 +230,7 @@ function bspHeaderBytes(magic, version, entityText) {
 
 {
   const data = await bytes('sample.ttf');
-  const rows = fontMeta({ filename: 'sample.ttf', bytes: data, size: data.length });
+  const rows = await fontMeta({ filename: 'sample.ttf', bytes: data, size: data.length });
   assert.equal(value(rows, 'Format'), 'TrueType');
   assert.ok(numberValue(rows, 'Tables') > 0);
   assert.ok(numberValue(rows, 'Glyphs') > 0);

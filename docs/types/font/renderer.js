@@ -172,7 +172,7 @@ export async function render(intake, _ctx) {
   host.appendChild(specimens);
 
   // ── Info card ────────────────────────────────────────────────────────────
-  const metaRows = extract(intake);
+  const metaRows = await extract(intake);
   if (metaRows.length) {
     const card = document.createElement('div');
     card.className = 'font-info-card';
