@@ -45,6 +45,11 @@
 - WhatsApp format varies by locale / OS; unusual date formats may not be detected
 - Message content (text) is not shown in preview — only metadata and stats
 - Telegram secret chat exports may have different JSON structure
+- Messenger support covers the common JSON export shape with `participants` and `sender_name`
+
+## Real-World Examples
+
+- [`sample-telegram.json`](../examples/sample-telegram.json) — Telegram JSON chat export sample
 
 ## Gap Analysis
 

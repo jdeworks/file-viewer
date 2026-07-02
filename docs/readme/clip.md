@@ -41,6 +41,10 @@
 - Layer pixel data is proprietary and not decoded
 - Layer names, blending modes, and opacity are not shown
 
+## Real-World Examples
+
+- [`sample.clip`](../examples/sample.clip) — Clip Studio Paint sample with structure and thumbnail data
+
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |

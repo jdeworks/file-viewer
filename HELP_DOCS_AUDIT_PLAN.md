@@ -53,16 +53,16 @@ Completion gates:
 - [x] docs/readme/arrow.md
 - [x] docs/readme/asciiart.md
 - [x] docs/readme/audio.md
-- [ ] docs/readme/avro.md
-- [ ] docs/readme/bio.md
-- [ ] docs/readme/blend.md
-- [ ] docs/readme/bson.md
-- [ ] docs/readme/bsp.md
-- [ ] docs/readme/cbor.md
-- [ ] docs/readme/chat.md
-- [ ] docs/readme/cif.md
-- [ ] docs/readme/class.md
-- [ ] docs/readme/clip.md
+- [x] docs/readme/avro.md
+- [x] docs/readme/bio.md
+- [x] docs/readme/blend.md
+- [x] docs/readme/bson.md
+- [x] docs/readme/bsp.md
+- [x] docs/readme/cbor.md
+- [x] docs/readme/chat.md
+- [x] docs/readme/cif.md
+- [x] docs/readme/class.md
+- [x] docs/readme/clip.md
 - [ ] docs/readme/code.md
 - [ ] docs/readme/comic.md
 - [ ] docs/readme/crash.md

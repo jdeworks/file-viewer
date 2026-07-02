@@ -24,7 +24,7 @@
 | Entity class breakdown | ✅ | Count per classname (info_player_start, weapon_*, monster_*, etc.) |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Engine, game, version, entity count |
+| Metadata | ✅ | Format/game and map name when available; entity counts are in the preview |
 
 ### Edit
 | Capability | Status | Notes |
@@ -40,6 +40,11 @@
 
 - Geometry (faces, vertices, brushes) is not decoded
 - Lightmap and texture data are not shown
+- Entity lump parsing is capped to simple key/value entity blocks
+
+## Real-World Examples
+
+- [`sample.bsp`](../examples/sample.bsp) — compact Quake-style BSP sample
 
 ## Gap Analysis
 

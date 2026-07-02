@@ -29,6 +29,7 @@
 | mmCIF / PDBx detection | ✅ | Distinguished from CIF 1.1 by entity/pdbx tags |
 | Loop table count | ✅ | Number of `loop_` blocks per data block |
 | Atom records | ✅ | Approximate atom count from coordinate lines |
+| 3D structure panel | ✅ | Offered when atom-site coordinates are present; powered by the shared molecular viewer |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
 | Metadata | ✅ | Formula, space group, format, block count |
@@ -48,12 +49,16 @@
 
 - CIF 2.0 syntax (square-bracket delimiters) may not parse correctly
 - Loop table contents are not rendered — only loop counts
-- No 3D crystal structure visualization
+- 3D display depends on atom-site coordinates and the molecular viewer dependency loading
+
+## Real-World Examples
+
+- [`sample.cif`](../examples/sample.cif) — aspirin crystal structure CIF sample
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Loop table viewer | Med | Med | Render key loop_ tables as paginated tables |
-| 3D structure via NGL Viewer | Low | Hard | Render molecular structure (~2 MB WASM) |
+| Better crystal interactions | Low | Hard | Unit-cell controls, labels, and export from the existing 3D path |
 | Export metadata as JSON | Low | Easy | Key-value pairs to JSON download |

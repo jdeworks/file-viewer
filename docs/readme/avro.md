@@ -1,6 +1,6 @@
 # Apache Avro
 
-> Apache Avro viewer — schema (JSON), codec, sync marker, and record count estimate.
+> Apache Avro object-container viewer — reads the header schema and codec without decoding data records.
 
 ## Format Details
 
@@ -18,10 +18,11 @@
 |------------|--------|-------|
 | Schema | ✅ | JSON schema from Avro file header |
 | Record type | ✅ | Top-level record name and namespace |
-| Fields | ✅ | Field names and types from schema |
-| Codec | ✅ | `null` / `deflate` / `snappy` / `bzip2` |
-| Sync marker | ✅ | 16-byte marker shown as hex |
-| Custom metadata | ✅ | Extra header metadata key-value pairs |
+| Fields | ✅ | First 30 schema fields with names, types, and field docs when present |
+| Codec | ✅ | `avro.codec` metadata decoded when present; defaults to `null` |
+| Raw schema fallback | ✅ | Shows truncated raw schema text when field extraction is not possible |
+| Sync marker | ❌ | Header parser stops before surfacing the 16-byte sync marker |
+| Custom metadata | ❌ | Header keys beyond schema/codec are not listed yet |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Metadata | ✅ | Schema name, field count, codec |
@@ -41,9 +42,15 @@
 - Records are not decoded — schema inspection only
 - Compressed blocks (snappy/deflate) are not decompressed for data preview
 
+## Real-World Examples
+
+- [`sample.avro`](../examples/sample.avro) — compact Avro object-container sample
+- [`sample.avsc`](../examples/sample.avsc) — plain Avro schema sample handled as text/JSON
+
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | First N records preview | Med | Hard | Decompress and decode data blocks |
+| Sync marker and custom header metadata | Low | Easy | Continue header parse after the metadata map |
 | Export schema as JSON | Low | Easy | Pretty-print embedded JSON schema |

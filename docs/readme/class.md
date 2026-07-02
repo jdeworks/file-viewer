@@ -1,6 +1,6 @@
 # Java Bytecode (.class)
 
-> Compiled Java class files containing JVM bytecode — structured metadata view with class info, methods, and constants.
+> Compiled Java class files containing JVM bytecode — lightweight class metadata view from the header and constant pool.
 
 ## Format Details
 
@@ -18,10 +18,11 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Structured metadata panel | ✅ | Class name, superclass, interfaces, access flags |
+| Structured metadata panel | ✅ | Class name, Java version, file size, and constant pool count |
 | Java version display | ✅ | Major/minor version decoded to Java release (e.g. 61 → Java 17) |
-| Methods and fields list | ✅ | Name, descriptor, access flags for each |
-| Constants summary | ✅ | Constant pool entry count and type breakdown |
+| Constant pool parse | ✅ | Walks enough of the constant pool to find class names and entry count |
+| Methods and fields list | ❌ | Member tables are not parsed yet |
+| Access flags / interfaces | ❌ | Class-body metadata after the constant pool is not decoded yet |
 | Full decompile to Java source | ❌ | Would require a vendored decompiler (e.g. Fernflower) |
 
 ### Edit
@@ -45,13 +46,15 @@ No known-file plugin — all `.class` files use the same bytecode viewer.
 ## Known Limitations
 
 - No decompilation to Java source; only structural metadata is shown
+- Methods, fields, interfaces, and access flags are not decoded yet
 - Inner class relationships (outer/inner class links) not visualised
-- Annotation metadata from the constant pool is listed but not decoded
+- Annotation metadata is not decoded
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Method / field table parsing | Med | Med | Decode member counts, descriptors, and access flags after the constant pool |
 | Full Java decompilation | High | Hard | Requires vendoring Fernflower or similar WASM decompiler |
 | Bytecode instruction listing | Med | Med | Decode `Code` attributes per method |
 | Annotation decoding | Low | Med | Parse `RuntimeVisibleAnnotations` attribute |

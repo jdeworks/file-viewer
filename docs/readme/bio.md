@@ -30,7 +30,7 @@
 | Format auto-detect | ✅ | Sniffs FASTA/FASTQ/VCF/GFF/BED from content |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | Disabled — too noisy for large sequence files |
-| Metadata | ✅ | Sequence count, total residues, GC%, variant count |
+| Metadata | ✅ | FASTA/FASTQ/VCF metadata; GFF/BED preview works but metadata is lighter |
 
 ### Edit
 | Capability | Status | Notes |
@@ -48,6 +48,14 @@
 - Truncated to first 2000 records/variants for performance
 - No alignment viewer (BAM/SAM not supported)
 - VCF genotype columns not parsed
+- GFF/GTF and BED previews do not yet add format-specific metadata drawer fields
+
+## Real-World Examples
+
+- [`sample.fasta`](../examples/sample.fasta) — sample FASTA sequence file
+- [`sample.vcf`](../examples/sample.vcf) — compact VCF sample
+- [`sample-variants.vcf`](../examples/sample-variants.vcf) — variant table sample
+- [`sample.gff3`](../examples/sample.gff3) — GFF3 genome annotation sample
 
 ## Gap Analysis
 
