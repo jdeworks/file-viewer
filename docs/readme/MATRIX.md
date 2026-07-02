@@ -218,7 +218,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Console ROM (EmulatorJS)](/) | `.gba` `.snes` `.n64` `.nes` (via emulatorjs) | Basic | None | download | — | Save states |
+| [Console ROM (EmulatorJS)](emulatorjs.md) | `.nes` `.fds` `.sfc` `.smc` `.gb` `.gbc` `.sgb` `.gba` `.gen` `.smd` `.a26` | Basic | None | download | — | Disc systems (PSX/CHD) |
 | [Game ROM Header](gamerom.md) | `.nes` `.sfc` `.smc` `.gb` `.gbc` `.n64` `.z64` `.v64` | Basic | None | download | — | More platforms |
 | [x86 Disk Image (v86)](v86.md) | `.img` `.ima` `.iso` `.vhd` `.qcow2` | Basic | None | download | — | Large image streaming |
 | [Flash (SWF / Ruffle)](/) | `.swf` | Basic | None | download | — | — |

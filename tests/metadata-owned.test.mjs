@@ -90,6 +90,8 @@ import { render as renderWasm } from '../docs/types/binary/wasm/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
+import { detect as detectEmulatorJs } from '../docs/types/emulator/emulatorjs/detect.js';
+import { extractMetadata as emulatorJsMeta } from '../docs/types/emulator/emulatorjs/metadata.js';
 import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
 import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
 import { detect as detectParquet } from '../docs/types/binary/parquet/detect.js';
@@ -984,6 +986,27 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const n64Rows = (await gameRomMeta({ filename: 'demo.z64', bytes: n64, isBinary: true, size: n64.length })).fields;
   assert.equal(value(n64Rows, 'Format'), 'Nintendo 64');
   assert.equal(value(n64Rows, 'CRC2'), '9ABCDEF0');
+}
+
+{
+  // emulatorjs: extension match short-circuits before the NES-magic fallback (dead for known
+  // extensions, only reachable for extensionless/renamed NES dumps) — cover both paths.
+  const nes = await bytes('sample.nes');
+  assert.equal(detectEmulatorJs({ filename: 'sample.nes', bytes: nes, isBinary: true }), 0.92);
+  assert.equal(detectEmulatorJs({ filename: 'sample.rom', bytes: nes, isBinary: true }), 0.98);
+  assert.equal(detectEmulatorJs({ filename: 'sample.txt', bytes: nes, isBinary: false }), 0);
+  assert.equal(detectEmulatorJs({ filename: 'sample.unknownext', bytes: new Uint8Array([1, 2, 3, 4]), isBinary: true }), 0);
+
+  const gba = await bytes('sample.gba');
+  assert.equal(detectEmulatorJs({ filename: 'sample.gba', bytes: gba, isBinary: true }), 0.92);
+  const gbaRows = await emulatorJsMeta({ filename: 'sample.gba', bytes: gba });
+  assert.equal(gbaRows.System, 'Game Boy Advance');
+  assert.match(gbaRows.Size, /KB$/);
+
+  const nesRows = await emulatorJsMeta({ filename: 'sample.nes', bytes: nes });
+  assert.equal(nesRows.System, 'NES / Famicom');
+  assert.equal(nesRows['PRG ROM'], '1 × 16KB');
+  assert.equal(nesRows['CHR ROM'], '0 × 8KB');
 }
 
 {
