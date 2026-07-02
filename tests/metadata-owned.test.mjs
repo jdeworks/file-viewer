@@ -65,6 +65,8 @@ import { detect as detectMbtiles } from '../docs/types/binary/mbtiles/detect.js'
 import { extractMetadata as mbtilesMeta } from '../docs/types/binary/mbtiles/metadata.js';
 import { detect as detectMcworld } from '../docs/types/binary/mcworld/detect.js';
 import { extractMetadata as mcworldMeta } from '../docs/types/binary/mcworld/metadata.js';
+import { detect as detectNifti } from '../docs/types/binary/nifti/detect.js';
+import { metadata as niftiMeta } from '../docs/types/binary/nifti/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -814,6 +816,17 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows['level.dat'], 'present');
   assert.equal(rows['levelname.txt'], 'present');
   assert.equal(rows.LevelDB, 'present');
+}
+
+{
+  const data = await bytes('sample.nii');
+  assert.equal(detectNifti({ filename: 'sample.nii', bytes: data }), 0.99);
+  assert.equal(detectNifti({ filename: 'empty.nii', bytes: new Uint8Array(0) }), 0.5);
+  assert.equal(detectNifti({ filename: 'sample.bin', bytes: data }), 0.97);
+  const rows = niftiMeta({ bytes: data });
+  assert.equal(rows.format, 'NIfTI-1 Neuroimaging');
+  assert.equal(rows.dimensions, '3D [64 × 64 × 32]');
+  assert.equal(rows.fileType, 'Single .nii file');
 }
 
 {

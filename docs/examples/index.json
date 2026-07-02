@@ -2561,6 +2561,8 @@
     "file": "sample.nii",
     "label": "NIfTI neuroimaging (demo)",
     "mime": "application/x-nifti",
+    "type": "nifti",
+    "binary": true,
     "category": "scientific",
     "categories": [
       "scientific",

@@ -86,6 +86,7 @@ const TYPE_INFO = {
   pem: ['PEM certificate/key', 'used to wrap certificates, public keys, and private keys in base64 text.', 'https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail'],
   gamerom: ['Game ROM', 'used to store console cartridge images and metadata for NES, SNES, Game Boy, and Nintendo 64 emulators.', 'https://en.wikipedia.org/wiki/ROM_image'],
   dicom: ['DICOM medical image', 'used for medical imaging studies from CT, MRI, X-ray, ultrasound, and related equipment.', 'https://www.dicomstandard.org/'],
+  nifti: ['NIfTI neuroimaging', 'used to store MRI, fMRI, and DTI brain volumes with header metadata for neuroimaging analysis tools.', 'https://nifti.nimh.nih.gov/'],
   ruffle: ['Flash movie', 'used for SWF animation, games, and interactive Flash content.', 'https://en.wikipedia.org/wiki/SWF'],
   v86: ['PC disk image', 'used to boot legacy operating systems or disks in an x86 emulator.', 'https://en.wikipedia.org/wiki/Disk_image'],
   emulatorjs: ['Emulator ROM', 'used by web emulators to run supported console/game images.', 'https://emulatorjs.org/'],

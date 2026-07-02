@@ -1,7 +1,7 @@
 // NIfTI-1: magic at offset 344 = "n+1\0" (single file) or "ni1\0" (header only)
 //           sizeof_hdr (int32 LE at offset 0) must be 348
-// NIfTI-2: magic at offset 0 = "n+2\0" or "ni2\0"
-//           sizeof_hdr (int32 LE at offset 0) must be 540
+// NIfTI-2: sizeof_hdr (int32 LE at offset 0) must be 540
+//           magic at offset 4 (8-byte field) = "n+2\0" or "ni2\0" (+ "\r\n\x1a\n")
 // ANALYZE 7.5: sizeof_hdr = 348 but magic = "          " (no NIfTI magic)
 
 export function detect(intake) {
