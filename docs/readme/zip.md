@@ -1,14 +1,16 @@
-# Archive (ZIP / JAR / NUPKG / APK / IPA)
+# Archive (ZIP / JAR / NUPKG / IPA)
 
 > Archive file listing with single-entry extraction, archive tree navigation, password-protected ZIP handling, edited-archive export, and CSV listing export.
 
 ## Format Details
 | Field | Value |
 |-------|-------|
-| Extensions | `.zip`, `.jar`, `.war`, `.nupkg`, `.apk`, `.cbz`, `.whl`; ZIP magic fallback for misnamed archives |
+| Extensions | `.zip`, `.jar`, `.war`, `.nupkg`, `.cbz`, `.whl`; ZIP magic fallback for misnamed archives |
 | MIME type | `application/zip`, `application/java-archive`, etc. |
 | Binary/Text | Binary container |
 | Common use | Distribution packages, source archives, app bundles |
+
+APK/AAB/XAPK files are ZIP-based but route to the dedicated [Android Package](apk.md) viewer before the generic ZIP viewer.
 
 ## Capabilities
 

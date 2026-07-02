@@ -155,7 +155,7 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Archive (ZIP)](zip.md) | `.zip` `.jar` `.war` `.nupkg` `.apk` `.cbz` `.whl` | Basic | Entry edits | modified ZIP, CSV, download | — | Add files |
+| [Archive (ZIP)](zip.md) | `.zip` `.jar` `.war` `.nupkg` `.cbz` `.whl` | Basic | Entry edits | modified ZIP, CSV, download | — | Add files |
 | [Archive](archive.md) | `.7z` `.rar` `.tar` `.tar.gz` `.tgz` `.tar.bz2` `.tbz2` `.tar.xz` `.txz` `.tar.zst` | Basic | None | download | — | Entry preview |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
 | [Minecraft World](/) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |
@@ -274,7 +274,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [CIF Crystallographic](/) | `.cif` `.mmcif` `.cif2` | Full | None | download | — | 3D render |
 | [SDF / MDL Molfile](/) | `.sdf` `.sd` `.mol` | Full | None | download | — | 3D viz |
 | [Torrent](torrent.md) | `.torrent` | Basic | Monaco | download | — | Magnet link |
-| [Android Package](/) | `.apk` `.aab` `.xapk` | Partial | None | download | — | Manifest parse |
+| [Android Package](apk.md) | `.apk` `.aab` `.xapk` | Partial | None | download | — | Manifest parse |
 | [iOS App (IPA)](/) | `.ipa` | Basic | None | download | — | Signature verify |
 | [Debian Package](/) | `.deb` `.udeb` | Full | None | download | — | control.tar |
 | [RPM Package](/) | `.rpm` `.src.rpm` | Basic | None | download | — | Payload extract |

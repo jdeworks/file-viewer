@@ -84,6 +84,10 @@ const sqlmapLog = intake('log_sqlmap_errors.txt', {
 assert.equal(winner(RUNTIME, sqlmapLog)[0], 'raw', '.txt sqlmap-style log stays Plain text even with YAML-looking markers');
 assert.equal(winner(RUNTIME, intake('config.yaml', { text: '---\nname: app\n' }))[0], 'yaml', '.yaml extension still wins as YAML');
 
+const pkZip = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+assert.equal(winner(RUNTIME, intake('bundle.aab', { bytes: pkZip, isBinary: true }))[0], 'apk', '.aab ZIP package routes to Android Package');
+assert.equal(winner(RUNTIME, intake('bundle.xapk', { bytes: pkZip, isBinary: true }))[0], 'apk', '.xapk ZIP package routes to Android Package');
+
 const markdownProse = intake('guide.md', {
   text: '# API Guide\n\nThis feature can create a class. Requirements ensure users do the setup.\n',
 });

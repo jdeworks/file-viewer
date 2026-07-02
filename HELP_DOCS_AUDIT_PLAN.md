@@ -390,11 +390,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/archive/metadata.js
 - [x] docs/types/archive/renderer.js
 - [x] docs/types/archive/settings.default.json
-- [ ] docs/types/binary/apk/detect.js
-- [ ] docs/types/binary/apk/index.js
-- [ ] docs/types/binary/apk/metadata.js
-- [ ] docs/types/binary/apk/renderer.js
-- [ ] docs/types/binary/apk/settings.default.json
+- [x] docs/types/binary/apk/detect.js
+- [x] docs/types/binary/apk/index.js
+- [x] docs/types/binary/apk/metadata.js
+- [x] docs/types/binary/apk/renderer.js
+- [x] docs/types/binary/apk/settings.default.json
 - [ ] docs/types/binary/arrow/detect.js
 - [ ] docs/types/binary/arrow/index.js
 - [ ] docs/types/binary/arrow/metadata.js

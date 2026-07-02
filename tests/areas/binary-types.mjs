@@ -74,6 +74,11 @@ export async function run(ctx) {
   const apkText = await apkf.$eval('.apk-preview', (el) => el.textContent);
   if (/classes\.dex/i.test(apkText)) pass('APK classes.dex shown'); else fail('apk content: ' + apkText.slice(0, 200));
   if (/arm64-v8a|x86_64/i.test(apkText)) pass('APK native ABI shown'); else fail('apk abi: ' + apkText.slice(0, 200));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const apkMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*APK/.test(apkMeta)) pass('APK metadata includes format'); else fail('apk meta: ' + apkMeta.replace(/\s+/g, ' ').slice(0, 160));
+  await page.click('#metaDrawer [data-close]');
 
   // ── ISO 9660 ─────────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
