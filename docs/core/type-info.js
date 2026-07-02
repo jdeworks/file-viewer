@@ -12,6 +12,7 @@ const TYPE_INFO = {
   mbox: ['Mbox mailbox', 'used for storing multiple email messages in one mailbox file.', 'https://en.wikipedia.org/wiki/Mbox'],
   msg: ['Outlook MSG', 'used for Microsoft Outlook email messages and attachments.', 'https://en.wikipedia.org/wiki/Outlook.com'],
   exe: ['Executable binary', 'used for native application and library binaries such as ELF, PE/COFF, and Mach-O files.', 'https://en.wikipedia.org/wiki/Executable'],
+  exr: ['OpenEXR image', 'used for high dynamic range image data in visual effects, animation, and compositing workflows.', 'https://openexr.com/'],
   ics: ['iCalendar', 'used for calendar events, invites, reminders, and recurring schedules.', 'https://en.wikipedia.org/wiki/ICalendar'],
   kubeconfig: ['Kubernetes config', 'used to describe clusters, users, contexts, and credentials for kubectl.', 'https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/'],
   yaml: ['YAML', 'used for human-readable configuration, manifests, and structured data.', 'https://yaml.org/'],
@@ -122,6 +123,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   dmp: 'dmp',
   dwg: 'dwg',
   exe: 'exe',
+  exr: 'exr',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -159,6 +161,7 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   dll: 'exe',
   dylib: 'exe',
   so: 'exe',
+  exr: 'exr',
 };
 
 function fileExtension(intake) {

@@ -112,7 +112,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [HEIC/HEIF](image.md) | `.heic` `.avif` | Basic | None | download | — | — |
 | [Icon File](/) | `.ico` | Fallback | None | download | — | Multi-size preview |
 | [Layered Image](layered.md) | `.psd` `.psb` `.kra` `.ora` `.xcf` | Fallback | None | download | — | Layer tree |
-| [OpenEXR](/) | `.exr` | Basic | None | download | — | Pixel decode |
+| [OpenEXR](exr.md) | `.exr` | Basic | None | download | — | Pixel decode |
 | [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
 
 ---

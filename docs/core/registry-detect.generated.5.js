@@ -61,15 +61,15 @@ const detect_exr=(()=>{
 const MAGIC = [0x76, 0x2f, 0x31, 0x01];
 
 function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isExrExt = ext === 'exr';
+  const { bytes: b } = intake;
+  const isExrExt = hasExtension(intake, 'exr');
+  const isExrMime = mimeMatches(intake, 'x-exr', 'openexr');
 
-  if (!b || b.length < 4) return isExrExt ? 0.6 : 0;
+  if (!b || b.length < 4) return isExrExt || isExrMime ? 0.95 : 0;
   const hasMagic = MAGIC.every((v, i) => b[i] === v);
 
-  if (isExrExt) return hasMagic ? 0.99 : 0.65;
-  return hasMagic ? 0.97 : 0;
+  if (hasMagic) return isExrExt ? 0.99 : isExrMime ? 0.98 : 0.97;
+  return isExrExt || isExrMime ? 0.55 : 0;
 }
 return detect;
 })();

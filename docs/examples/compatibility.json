@@ -4337,11 +4337,11 @@
         "Deep compositing and multi-layer channels not traversed",
         "Half-float and integer pixel types not rendered"
       ],
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "exr",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },

@@ -38,6 +38,9 @@ import { render as renderDwg } from '../docs/types/binary/dwg/renderer.js';
 import { detect as detectExe } from '../docs/types/binary/exe/detect.js';
 import { extractMetadata as exeMeta } from '../docs/types/binary/exe/metadata.js';
 import { render as renderExe } from '../docs/types/binary/exe/renderer.js';
+import { detect as detectExr } from '../docs/types/binary/exr/detect.js';
+import { extractMetadata as exrMeta } from '../docs/types/binary/exr/metadata.js';
+import { render as renderExr } from '../docs/types/binary/exr/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -603,6 +606,22 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /DWG/);
   assert.match(rendered, /AutoCAD 2000/);
   assert.match(rendered, /AC1015/);
+}
+
+{
+  const data = await bytes('sample.exr');
+  assert.equal(detectExr({ filename: 'sample.exr', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectExr({ filename: 'sample.bin', mimeType: 'image/x-exr', bytes: data, isBinary: true }), 0.98);
+  assert.ok(detectExr({ filename: 'empty.exr', bytes: new Uint8Array(0), isBinary: true }) > 0.5);
+  const rows = exrMeta({ filename: 'sample.exr', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'OpenEXR (High Dynamic Range Image)');
+  assert.equal(rows['File version'], '2');
+  assert.equal(rows.Layout, 'Scanline');
+
+  const rendered = renderExr({ filename: 'sample.exr', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /OpenEXR/);
+  assert.match(rendered, /compression/);
+  assert.match(rendered, /Display window/);
 }
 
 console.log('metadata-owned: ok');

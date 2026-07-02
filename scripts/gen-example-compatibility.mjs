@@ -93,6 +93,7 @@ const FE_SLUGS = {
   gitattributes:null,
   'ssh-config':null,
   exe:         'exe',
+  exr:         'exr',
   rdp:         null,
   kubeconfig:  null,
   'mcp-config':null,

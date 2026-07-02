@@ -58,4 +58,11 @@ assert.equal(exeInfo.name, 'Executable binary');
 assert.match(exeInfo.description, /ELF, PE\/COFF, and Mach-O/);
 assert.match(exeInfo.fileExamplesHref, /fileexamples\.com.*exe/i);
 
+const exr = REGISTRY.find((type) => type.id === 'exr');
+assert.ok(exr, 'exr type is registered');
+const exrInfo = getTypeInfo(exr, null, { filename: 'sample.exr' });
+assert.equal(exrInfo.name, 'OpenEXR image');
+assert.match(exrInfo.description, /compositing workflows/);
+assert.match(exrInfo.fileExamplesHref, /fileexamples\.com.*exr/i);
+
 console.log('type info: ok');
