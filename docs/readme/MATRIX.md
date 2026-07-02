@@ -141,7 +141,7 @@ Master overview of all file types supported by the viewer. Columns:
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Audio / Video](media.md) | `.mp3` `.mp4` `.aac` `.flac` `.m4a` `.mkv` `.mov` `.avi` `.ogg` `.wav` `.webm` | Basic | None | download | — | Clip export |
 | [MIDI Sequence](midi.md) | `.mid` `.midi` | Basic | None | download | — | Piano roll |
-| [Ableton Live Set](/) | `.als` | Basic | None | download | — | Track list |
+| [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
 | [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
@@ -292,7 +292,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [Adobe Premiere](/) | `.prproj` | Basic | None | download | — | Timeline view |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
-| [Ableton Live Set](/) | `.als` | Basic | None | download | — | Track list |
+| [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
 | [ASCII / ANSI Art](/) | `.ans` | Basic | Monaco | download | — | — |
 
