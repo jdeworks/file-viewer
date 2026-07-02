@@ -1,6 +1,11 @@
-// OpenDocument (.odt/.odp) reader helpers. ODF is a ZIP holding content.xml (the document body)
-// plus a Pictures/ folder. We read it with the already-vendored JSZip (no new dependency), inline
-// the pictures as data: URLs (zero off-origin), and hand back the XML + image map + document kind.
+// OpenDocument (.odt/.odp) reader helpers. Regular ODF is a ZIP holding content.xml (the
+// document body) plus a Pictures/ folder. We read it with the already-vendored JSZip (no new
+// dependency), inline the pictures as data: URLs (zero off-origin), and hand back the XML +
+// image map + document kind. Flat XML ODF (.fodt/.fodp) is NOT a zip — it's a single
+// <office:document> that inlines what would otherwise be content.xml/meta.xml/styles.xml as
+// direct children, with embedded images as base64 <office:binary-data> instead of zip entries.
+// Detect by the zip magic number ('PK'); the flat-XML body/meta elements share the exact same
+// tag vocabulary as the zipped form; downstream code (metadata.js, renderer.js) needs no changes.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const picMime = (name) => {
@@ -9,7 +14,18 @@ const picMime = (name) => {
     : ext === 'bmp' ? 'image/bmp' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 };
 
+const isZip = (bytes) => bytes && bytes.length >= 2 && bytes[0] === 0x50 && bytes[1] === 0x4b; // 'PK'
+
 export async function openOdf(intake, { loadImages = true } = {}) {
+  if (!isZip(intake.bytes)) {
+    // Flat XML ODF: the whole file is content+meta+styles in one <office:document>, so the
+    // same text serves as both "contentXml" and "metaXml" — callers look up elements by
+    // localName across the whole parsed document either way.
+    const text = new TextDecoder('utf-8', { fatal: false }).decode(intake.bytes);
+    const kind = /<office:presentation[\s>/]/.test(text) ? 'presentation' : 'text';
+    const imageCount = (text.match(/<draw:image[\s>]/g) || []).length;
+    return { contentXml: text, metaXml: text, kind, images: new Map(), imageCount };
+  }
   const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
   const zip = await JSZip.loadAsync(intake.bytes);
   const contentFile = zip.file('content.xml');

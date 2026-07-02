@@ -9,8 +9,21 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 
 function imgSrc(el, images) {
   const href = el.getAttribute('xlink:href') || el.getAttribute('href') || '';
-  if (!href) return '';
-  return images.get(href.replace(/^\.\//, '')) || images.get(href) || '';
+  if (href) {
+    const mapped = images.get(href.replace(/^\.\//, '')) || images.get(href);
+    if (mapped) return mapped;
+  }
+  // Flat XML ODF (.fodt/.fodp) has no zip Pictures/ entries — images are inlined as base64
+  // directly under the draw:image element instead.
+  const bin = [...el.childNodes].find((n) => n.nodeType === 1 && n.localName === 'binary-data');
+  if (bin) {
+    const b64 = (bin.textContent || '').replace(/\s+/g, '');
+    if (b64) {
+      const mime = el.getAttribute('draw:mime-type') || 'image/png';
+      return 'data:' + mime + ';base64,' + b64;
+    }
+  }
+  return '';
 }
 
 // Convert one ODF node → HTML. Matches on localName (the prefix text:/draw:/table: is stripped).
@@ -58,11 +71,16 @@ export async function render(intake, _ctx) {
   const cls = data.kind === 'presentation' ? 'odf-doc odf-presentation' : 'odf-doc odf-text';
 
   DOMPurify.removed = [];
+  // convert() only ever emits a hard whitelist of tags (h1-6/p/ul/li/a/br/img/div/table/tr/td/
+  // section) with escaped text and href/src drawn from esc()'d XML attributes or the images map
+  // — so this string cannot literally contain script/iframe/etc. FORBID_TAGS/FORBID_ATTR below
+  // is defense-in-depth matching the gold-standard list used by eml/html/ipynb/markdown, so a
+  // future convert() change can't accidentally reopen an off-origin vector.
   const clean = DOMPurify.sanitize('<article class="' + cls + '">' + inner + '</article>', {
     ADD_ATTR: ['target'],
     ADD_DATA_URI_TAGS: ['img'],
-    FORBID_TAGS: ['script', 'style'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick'],
+    FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+    FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
   });
   return { bodyHtml: clean, hadUnsafe: DOMPurify.removed.length > 0 };
 }
