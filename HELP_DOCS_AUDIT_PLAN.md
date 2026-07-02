@@ -159,11 +159,11 @@ Completion gates:
 - [x] docs/readme/media.md
 - [x] docs/readme/midi.md
 - [x] docs/readme/mobi.md
-- [ ] docs/readme/msg.md
-- [ ] docs/readme/msgpack.md
-- [ ] docs/readme/mt940.md
-- [ ] docs/readme/musicxml.md
-- [ ] docs/readme/netcdf.md
+- [x] docs/readme/msg.md
+- [x] docs/readme/msgpack.md
+- [x] docs/readme/mt940.md
+- [x] docs/readme/musicxml.md
+- [x] docs/readme/netcdf.md
 - [ ] docs/readme/nifti.md
 - [ ] docs/readme/npy.md
 - [ ] docs/readme/nupkg.md

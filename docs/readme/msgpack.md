@@ -1,6 +1,6 @@
 # MessagePack
 
-> MessagePack binary serialisation viewer — decoded value tree, type summary, and size comparison vs. JSON.
+> MessagePack binary serialisation viewer — decoded first value tree, root type summary, and truncation notices.
 
 ## Format Details
 
@@ -16,13 +16,14 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Full decode | ✅ | Complete msgpack value tree rendered |
+| Decode | ✅ | First MessagePack value decoded with item/depth/string limits |
 | Type display | ✅ | Integer / float / string / bool / nil / map / array |
-| Pretty-printed tree | ✅ | Collapsible JSON-like view |
-| Size info | ✅ | Binary size vs. equivalent JSON estimate |
+| Pretty-printed tree | ✅ | JSON-like nested map/array view |
+| Size info | ✅ | Binary byte size and root type shown |
+| Multi-value stream notice | ✅ | Remaining bytes are reported when data follows the first decoded value |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Root type, key count (if map), element count |
+| Metadata | ✅ | Format, root type from first byte, and file size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -38,11 +39,13 @@
 ## Known Limitations
 
 - Ext types (application-defined types) shown as raw bytes
-- Very large nested structures may be truncated
+- Output is limited to 500 decoded items, 12 levels of nesting, and 200 characters per string
+- Multi-value streams are not expanded beyond the first value
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Copy decoded value as JSON | Med | Easy | `JSON.stringify` the decoded object to clipboard |
+| Stream expansion | Med | Med | Decode all top-level values in concatenated streams |
 | Ext type registry | Low | Med | Allow registering ext type decoders |

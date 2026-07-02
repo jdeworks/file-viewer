@@ -1,6 +1,6 @@
 # Outlook Email (.msg)
 
-> Outlook MSG viewer — subject, sender, recipients, date, body text, and attachment list.
+> Outlook MSG viewer — subject, sender, recipients, sanitized message body, and attachment names from OLE2/MAPI data.
 
 ## Format Details
 
@@ -19,13 +19,13 @@
 | Subject | ✅ | PR_SUBJECT MAPI property |
 | From / sender | ✅ | PR_SENDER_NAME and PR_SENDER_EMAIL |
 | Recipients | ✅ | To / CC extracted from recipient table |
-| Date | ✅ | PR_MESSAGE_DELIVERY_TIME |
-| Body (plain text) | ✅ | PR_BODY property shown |
-| Attachment list | ✅ | PR_ATTACH_FILENAME + size for each attachment |
-| Importance | ✅ | Normal / High / Low |
+| Date | ❌ | Delivery-time properties are not surfaced yet |
+| Body (HTML/plain text) | ✅ | `PR_HTML` is sanitized in an iframe when present; otherwise `PR_BODY` plain text is shown |
+| Attachment list | ✅ | Attachment names from long/short filename properties |
+| Importance | ❌ | Importance/priority properties are not decoded yet |
 | Source view | ❌ | Binary OLE2 format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Subject, sender, date, recipient/attachment counts |
+| Metadata | ✅ | Subject, sender, To/CC, HTML flag, and attachment count |
 
 ### Edit
 | Capability | Status | Notes |
@@ -40,13 +40,14 @@
 
 ## Known Limitations
 
-- HTML body (`PR_HTML`) is not rendered — plain text only
+- HTML body rendering is sanitized and isolated, but not a full Outlook layout engine
 - Embedded messages (`.msg` within `.msg`) are shown as attachments only
+- Attachment payloads and sizes are not extracted yet
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| HTML body rendering | Med | Med | Render PR_HTML in sandboxed iframe |
+| Delivery date / importance | Med | Easy | Decode the relevant MAPI scalar properties |
 | Attachment extraction | Med | Med | Download individual attachments |
 | Meeting request / calendar support | Low | Hard | Parse IPM.Schedule properties |
