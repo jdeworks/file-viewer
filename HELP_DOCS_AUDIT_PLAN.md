@@ -264,11 +264,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] image | Image
 - [x] ini | Config (INI/env)
 - [x] ipa | iOS App (IPA)
-- [ ] ipynb | Jupyter Notebook
-- [ ] iso | ISO 9660 Disc Image
-- [ ] iwork | Apple iWork
-- [ ] java-class | Java Class
-- [ ] json | JSON
+- [x] ipynb | Jupyter Notebook
+- [x] iso | ISO 9660 Disc Image
+- [x] iwork | Apple iWork
+- [x] java-class | Java Class
+- [x] json | JSON
 - [ ] jsonl | JSON Lines (JSONL)
 - [ ] kicad | KiCad EDA File
 - [ ] kml | KML Map
