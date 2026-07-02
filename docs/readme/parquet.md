@@ -1,6 +1,6 @@
 # Apache Parquet
 
-> Columnar binary data format used in big-data pipelines — validates PAR1 framing and shows heuristic footer metadata without server-side processing.
+> Columnar binary data format used in big-data pipelines — validates PAR1 framing and structurally decodes the Thrift-compact-protocol footer (version, row count, schema field names, created-by) without server-side processing.
 
 ## Format Details
 | Field | Value |
@@ -16,9 +16,9 @@
 | Feature | Status | Details |
 |---------|--------|---------|
 | PAR1 framing | ✅ | Magic bytes checked at file start and end |
-| Footer metadata | ✅ | Footer size, file size, optional format version/row count when recoverable |
-| Field names | ⚠️ Partial | Printable field names extracted heuristically from the Thrift footer |
-| Schema | ⚠️ Partial | Full type/repetition/definition metadata is not decoded |
+| Footer metadata | ✅ | Footer size, file size, format version, row count, created-by — decoded from the real Thrift-compact-protocol `FileMetaData` struct (the encoding every real-world Parquet writer uses), not guessed from raw bytes |
+| Field names | ✅ | Column names decoded from each `SchemaElement.name` in the schema list |
+| Schema | ⚠️ Partial | Field names decoded; type/repetition/logical-type/precision metadata is not yet decoded |
 | Row group info | ❌ | Row-group counts, byte sizes, and per-group row counts are not decoded |
 | Column encoding | ❌ | Encoding type per column chunk is not decoded |
 | Compression codec | ❌ | Compression codec per column is not decoded |
@@ -46,7 +46,7 @@
 | Feature | Priority | Notes |
 |---------|----------|-------|
 | Row data preview | High | Decode first N rows of PLAIN-encoded columns for display |
-| Full Thrift footer decoding | High | Replace heuristic footer string scan with a real Parquet metadata parser |
+| Schema type/repetition decoding | Med | Decode `SchemaElement.type`/`repetition_type`/`logicalType` for each column, not just names |
 | Export to CSV/JSON | High | Full decode + re-serialize; large files need streaming |
 | Arrow IPC / Feather support | Medium | Related columnar formats |
 | Column statistics visualization | Low | Min/max as mini-chart per column |

@@ -80,6 +80,9 @@ import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
 import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
 import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
+import { detect as detectParquet } from '../docs/types/binary/parquet/detect.js';
+import { extractMetadata as parquetMeta, readParquetFooter } from '../docs/types/binary/parquet/metadata.js';
+import { render as renderParquet } from '../docs/types/binary/parquet/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -962,6 +965,36 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(detectNupkg({ filename: 'sample.whl', bytes: whlBytes }), 0.99);
   const whlRows = await nupkgMeta({ filename: 'sample.whl', bytes: whlBytes });
   assert.equal(whlRows.format, 'Python Wheel');
+}
+
+{
+  // sample.parquet is a real Thrift-compact-protocol-encoded FileMetaData footer
+  // (the encoding every real Parquet writer uses), not the old synthetic
+  // binary-protocol-shaped fixture the previous heuristic scanner needed.
+  const parquetBytes = await bytes('sample.parquet');
+  assert.equal(detectParquet({ filename: 'sample.parquet', bytes: parquetBytes }), 0.99);
+  assert.equal(detectParquet({ filename: 'sample.parquet', bytes: new Uint8Array(4) }), 0);
+  assert.equal(detectParquet({ filename: 'sample.parquet', bytes: new Uint8Array(8) }), 0.4);
+  assert.equal(detectParquet({ filename: 'unknown.bin', bytes: new Uint8Array(8) }), 0);
+
+  const footer = readParquetFooter(parquetBytes);
+  assert.ok(footer);
+  assert.equal(footer.version, 2);
+  assert.equal(footer.numRows, 100);
+  assert.deepEqual(footer.colNames, ['id', 'name', 'age', 'salary', 'department', 'active']);
+  assert.equal(footer.createdBy, 'file-viewer-test-fixture version 1.0');
+
+  const rows = await parquetMeta({ filename: 'sample.parquet', bytes: parquetBytes });
+  assert.equal(rows.Format, 'Apache Parquet');
+  assert.equal(rows['Row Count'], '100');
+  assert.equal(rows['Format Version'], '2');
+  assert.equal(rows.Columns, '6');
+
+  const rendered = renderParquet({ filename: 'sample.parquet', bytes: parquetBytes }).bodyHtml;
+  assert.match(rendered, /salary/);
+  assert.match(rendered, /department/);
+  assert.match(rendered, /Parquet v2/);
+  assert.match(rendered, /100/);
 }
 
 console.log('metadata-owned: ok');

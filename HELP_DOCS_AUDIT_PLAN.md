@@ -567,11 +567,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/nupkg/metadata.js
 - [x] docs/types/binary/nupkg/renderer.js
 - [x] docs/types/binary/nupkg/settings.default.json
-- [ ] docs/types/binary/parquet/detect.js
-- [ ] docs/types/binary/parquet/index.js
-- [ ] docs/types/binary/parquet/metadata.js
-- [ ] docs/types/binary/parquet/renderer.js
-- [ ] docs/types/binary/parquet/settings.default.json
+- [x] docs/types/binary/parquet/detect.js
+- [x] docs/types/binary/parquet/index.js
+- [x] docs/types/binary/parquet/metadata.js
+- [x] docs/types/binary/parquet/renderer.js
+- [x] docs/types/binary/parquet/settings.default.json
 - [ ] docs/types/binary/pcap/detect.js
 - [ ] docs/types/binary/pcap/index.js
 - [ ] docs/types/binary/pcap/metadata.js
