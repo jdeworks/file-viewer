@@ -121,10 +121,10 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [3D](3d.md) | `.stl` | Basic | None | download | — | Coloring |
-| [3D](3d.md) | `.obj` | Basic | Monaco | download | — | — |
-| [3D](3d.md) | `.glb` `.gltf` | Basic | None | download | — | — |
-| [3D](3d.md) | `.ply` | Basic | None | download | — | — |
+| [3D](3d.md) | `.stl` | Basic | None | OBJ/PLY, download | — | — |
+| [3D](3d.md) | `.obj` | Basic | Monaco | STL/PLY, colored OBJ/MTL, download | — | — |
+| [3D](3d.md) | `.glb` `.gltf` | Basic | None | OBJ/PLY, download | — | Animation playback |
+| [3D](3d.md) | `.ply` | Basic | None | STL/OBJ, download | — | — |
 | [3D Manufacturing (3MF)](3mf.md) | `.3mf` | Basic | None | download | — | Mesh render |
 | [STEP CAD](/) | `.stp` `.step` `.p21` | Full | Monaco | download | — | 3D geometry |
 | [AutoCAD DXF](/) | `.dxf` | Partial | None | download | — | 2D render |
