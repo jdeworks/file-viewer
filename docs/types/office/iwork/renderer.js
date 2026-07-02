@@ -181,7 +181,7 @@ export async function render(intake) {
   const SnappyJS = await loadGlobal(vendor('snappyjs.min.js'), 'SnappyJS');
 
   const ext = '.' + (intake.filename || '').split('.').pop().toLowerCase();
-  const NAMES = { '.pages': 'Pages Document', '.numbers': 'Numbers Spreadsheet', '.keynote': 'Keynote Presentation' };
+  const NAMES = { '.pages': 'Pages Document', '.numbers': 'Numbers Spreadsheet', '.key': 'Keynote Presentation' };
   const typeName = NAMES[ext] || 'iWork Document';
 
   const wrap = document.createElement('div');

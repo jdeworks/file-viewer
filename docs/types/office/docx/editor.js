@@ -37,9 +37,22 @@ export async function mountDocxEditor(intake, host) {
   const { mammoth, DOMPurify } = await libs();
   const result = await mammoth.convertToHtml({ arrayBuffer: intake.bytes.slice().buffer });
   DOMPurify.removed = [];
+  // mammoth normally embeds images as data: URIs, but a *linked* (not embedded, TargetMode=
+  // "External") image relationship in the .docx is passed through as a plain <img src="http(s)://…">
+  // — a live off-origin fetch (tracking pixel) the instant the document is opened, since this
+  // renders directly in the parent pane (no sandboxed iframe here, unlike eml/epub). FORBID_TAGS/
+  // FORBID_ATTR must cover every DOMPurify-default-allowed vector that can trigger a fetch we don't
+  // control: <style>/style="" (CSS url()), background=/poster=, <link>/<meta>/<base> (a <base href>
+  // would turn even a relative <img src> off-origin), and <iframe>/<video>/<audio>/<source>/<track>/
+  // <object>/<embed>/<form>. Any remaining absolute http(s) <img src> (linked image) is blanked
+  // afterward, mirroring the eml/epub renderers.
   const clean = DOMPurify.sanitize(result.value, {
-    FORBID_TAGS: ['script', 'style'], FORBID_ATTR: ['onerror', 'onload', 'onclick'],
-  });
+    FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+    FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
+  }).replace(
+    /(<img[^>]*\s)src\s*=\s*(?:"https?:[^"]*"|'https?:[^']*'|https?:\S+)/gi,
+    '$1src=""',
+  );
   const hadUnsafe = DOMPurify.removed.length > 0;
   const base = (intake.filename || 'document').replace(/\.[^.]+$/, '');
 

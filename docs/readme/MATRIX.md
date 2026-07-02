@@ -66,10 +66,10 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [PDF](pdf.md) | `.pdf` | Full | Page ops (rotate/reorder/delete/merge/watermark/split) | download, edited PDF, TXT, PNG zip | — | Annotation / highlight |
-| [Word](office.md) | `.docx` | Basic | None | download | — | Track changes |
+| [Word](office.md) | `.docx` `.dotx` | Full | WYSIWYG | DOCX (edited), download | — | Track changes |
 | [PowerPoint](office.md) | `.pptx` | Basic | None | download | — | Animation |
 | [OpenDocument](office.md) | `.odt` | Basic | None | download | — | — |
-| [Apple iWork](office.md) | `.pages` | Basic | None | download | — | Numbers/Keynote |
+| [Apple iWork](office.md) | `.pages` `.numbers` `.key` | Basic | None | download | — | Full IWA layout |
 | [RTF](rtf.md) | `.rtf` | Basic | Monaco | download | — | — |
 | [Jupyter Notebook](ipynb.md) | `.ipynb` | Basic | Monaco | download | — | Cell execution |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
