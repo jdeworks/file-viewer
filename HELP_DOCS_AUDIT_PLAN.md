@@ -269,11 +269,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] iwork | Apple iWork
 - [x] java-class | Java Class
 - [x] json | JSON
-- [ ] jsonl | JSON Lines (JSONL)
-- [ ] kicad | KiCad EDA File
-- [ ] kml | KML Map
-- [ ] kmz | KMZ Map Archive
-- [ ] kubeconfig | Kubernetes Config
+- [x] jsonl | JSON Lines (JSONL)
+- [x] kicad | KiCad EDA File
+- [x] kml | KML Map
+- [x] kmz | KMZ Map Archive
+- [x] kubeconfig | Kubernetes Config
 - [ ] layered | Layered Image
 - [ ] lmms | LMMS Project
 - [ ] lnk | Windows Shortcut (.lnk)
