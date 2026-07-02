@@ -1042,22 +1042,22 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/asciiart/metadata.js
 - [x] docs/types/text/asciiart/renderer.js
 - [x] docs/types/text/asciiart/settings.default.json
-- [ ] docs/types/text/bio/detect.js
-- [ ] docs/types/text/bio/index.js
-- [ ] docs/types/text/bio/metadata.js
-- [ ] docs/types/text/bio/renderer.js
-- [ ] docs/types/text/bio/settings.default.json
-- [ ] docs/types/text/chat/detect.js
-- [ ] docs/types/text/chat/index.js
-- [ ] docs/types/text/chat/metadata.js
-- [ ] docs/types/text/chat/renderer.js
-- [ ] docs/types/text/chat/settings.default.json
-- [ ] docs/types/text/cif/detect.js
-- [ ] docs/types/text/cif/EDITOR.md
-- [ ] docs/types/text/cif/index.js
-- [ ] docs/types/text/cif/metadata.js
-- [ ] docs/types/text/cif/renderer.js
-- [ ] docs/types/text/cif/settings.default.json
+- [x] docs/types/text/bio/detect.js
+- [x] docs/types/text/bio/index.js
+- [x] docs/types/text/bio/metadata.js
+- [x] docs/types/text/bio/renderer.js
+- [x] docs/types/text/bio/settings.default.json
+- [x] docs/types/text/chat/detect.js
+- [x] docs/types/text/chat/index.js
+- [x] docs/types/text/chat/metadata.js
+- [x] docs/types/text/chat/renderer.js
+- [x] docs/types/text/chat/settings.default.json
+- [x] docs/types/text/cif/detect.js
+- [x] docs/types/text/cif/EDITOR.md
+- [x] docs/types/text/cif/index.js
+- [x] docs/types/text/cif/metadata.js
+- [x] docs/types/text/cif/renderer.js
+- [x] docs/types/text/cif/settings.default.json
 - [ ] docs/types/text/code/codelens.js
 - [ ] docs/types/text/code/detect.js
 - [ ] docs/types/text/code/EDITOR.md
