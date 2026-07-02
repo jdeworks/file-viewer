@@ -2006,6 +2006,9 @@
   {
     "label": "sample.lnk",
     "file": "sample.lnk",
+    "mime": "application/x-ms-shortcut",
+    "type": "lnk",
+    "binary": true,
     "category": "Other",
     "categories": [
       "Other"

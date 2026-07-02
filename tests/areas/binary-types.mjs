@@ -111,6 +111,23 @@ export async function run(ctx) {
   if (/Streams\s*2/.test(dmpMeta)) pass('DMP metadata includes stream count'); else fail('dmp meta streams: ' + dmpMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
+  // ── Windows Shortcut (.lnk) ─────────────────────────────────────────────────
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.lnk');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  const lnkf = await frameOf('iframe.fv-preview-frame');
+  await lnkf.waitForFunction(() => /Windows Shortcut/i.test(document.body.textContent), { timeout: 8000 });
+  const lnkTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (lnkTypeId === 'lnk') pass('.lnk detected as lnk type'); else fail('lnk typeId: ' + lnkTypeId);
+  const lnkText = await lnkf.$eval('body', (el) => el.textContent);
+  if (/notepad\.exe/i.test(lnkText)) pass('LNK target path shown'); else fail('lnk target: ' + lnkText.slice(0, 300));
+  if (/Normal window|Target size/i.test(lnkText)) pass('LNK shell metadata shown'); else fail('lnk metadata: ' + lnkText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const lnkMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Windows Shortcut/i.test(lnkMeta) && /notepad\.exe/i.test(lnkMeta)) pass('LNK metadata drawer includes format and target'); else fail('lnk meta: ' + lnkMeta.replace(/\s+/g, ' ').slice(0, 220));
+  await page.click('#metaDrawer [data-close]');
+
   // ── DXF AutoCAD ──────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });
   await openExample('AutoCAD DXF Drawing (demo)');

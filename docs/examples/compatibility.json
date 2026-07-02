@@ -39,8 +39,8 @@
       "partialSamples": [
         "sample.iso"
       ],
-      "realWorldQuality": "needs-review",
-      "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
+      "realWorldQuality": "synthetic",
+      "notes": "Parses Shell Link header, LinkInfo, StringData, target path, working directory, arguments, icon location, window state, target size, and timestamps.",
       "fileExamplesSlug": null,
       "previewDepth": "basic",
       "metadataDepth": "basic",
@@ -149,8 +149,12 @@
       "editCapability": "basic",
       "exportCapability": "download",
       "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "knownParserGaps": [
+        "ExtraData blocks not decoded",
+        "Shell link flags are not listed separately",
+        "Volume serial number not extracted"
+      ],
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

@@ -55,6 +55,8 @@ import { detect as detectIso } from '../docs/types/binary/iso/detect.js';
 import { extractMetadata as isoMeta } from '../docs/types/binary/iso/metadata.js';
 import { detect as detectKmz } from '../docs/types/binary/kmz/detect.js';
 import { extractMetadata as kmzMeta } from '../docs/types/binary/kmz/metadata.js';
+import { detect as detectLnk } from '../docs/types/binary/lnk/detect.js';
+import { extractMetadata as lnkMeta } from '../docs/types/binary/lnk/metadata.js';
 import { detect as detectLmms } from '../docs/types/binary/lmms/detect.js';
 import { metadata as lmmsMeta } from '../docs/types/binary/lmms/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
@@ -733,6 +735,20 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.equal(rows['KML files'], '1');
   assert.equal(rows['Primary KML'], 'doc.kml');
   assert.match(rows['Uncompressed size'], /1,170 bytes/);
+}
+
+{
+  const data = await bytes('sample.lnk');
+  assert.equal(detectLnk({ filename: 'sample.lnk', mimeType: 'application/x-ms-shortcut', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectLnk({ filename: 'empty.lnk', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectLnk({ filename: 'sample.bin', mimeType: 'application/x-ms-shortcut', bytes: new Uint8Array(0), isBinary: true }), 0.5);
+  const rows = lnkMeta({ filename: 'sample.lnk', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.format, 'Windows Shortcut');
+  assert.equal(rows.targetPath, 'C:\\Windows\\System32\\notepad.exe');
+  assert.equal(rows.workingDir, 'C:\\Windows\\System32');
+  assert.equal(rows.showCommand, 'Normal');
+  assert.equal(rows.targetSize, 193536);
+  assert.match(rows.created, /^2024-01-15T12:00:00/);
 }
 
 {
