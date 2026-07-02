@@ -54,7 +54,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [KiCad EDA](/) | `.kicad_pcb` `.kicad_sch` `.kicad_pro` | Basic | Monaco | download | — | Board render |
 | [G-code](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
 | [MusicXML](/) | `.musicxml` `.mxl` | Basic | Monaco | download | — | Score render |
-| [ABC Music](/) | `.abc` | Basic | Monaco | download | — | Score render |
+| [ABC Music](abc.md) | `.abc` | Full | Monaco | download, PNG | — | MIDI playback |
 | [Chat Export](/) | `.txt` `.json` (Telegram/WhatsApp/Discord) | Basic | None | download | — | Facebook schema |
 | [Hydrogen](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [FITS Astronomy](/) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |

@@ -17,7 +17,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Tune list | ✅ | Each `X:` tune shown as a card |
-| Header fields | ✅ | Title, Composer, Key, Meter, Tempo, Rhythm, Origin, Notes |
+| Header fields | ✅ | Index, Title, Composer, Key, Meter, Tempo, Rhythm shown as card header/pills |
 | Multi-tune files | ✅ | All tunes in a file shown separately |
 | Sheet music rendering | ✅ | Lazy-loads ABCJS and renders visible tunes as SVG |
 | Large tune sets | ✅ | Shows the first 30 tunes to keep the preview responsive |

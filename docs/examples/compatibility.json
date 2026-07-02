@@ -3295,16 +3295,16 @@
       },
       "partialSamples": [],
       "realWorldQuality": "synthetic",
-      "notes": "Parses ABC tune headers (X/T/C/K/M/Q). No audio playback or score rendering.",
+      "notes": "Parses ABC tune headers (X/T/C/K/M/Q) and renders real sheet-music notation as SVG via the vendored abcjs library (lazy-loaded), with a per-tune PNG export.",
       "fileExamplesSlug": null,
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
       "editCapability": "basic",
-      "exportCapability": "download",
+      "exportCapability": "transform",
       "securityLimitations": [],
       "knownParserGaps": [
-        "No score rendering",
-        "No audio playback"
+        "No audio/MIDI playback",
+        "Only first 30 tunes rendered in very large files"
       ],
       "testCoverage": "smoke",
       "sampleSource": "synthetic",
