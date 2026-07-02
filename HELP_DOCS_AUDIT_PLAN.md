@@ -365,11 +365,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/3d/gltf/settings.default.json
 - [x] docs/types/3d/obj/detect.js
 - [x] docs/types/3d/obj/exports.js
-- [ ] docs/types/3d/obj/index.js
-- [ ] docs/types/3d/obj/metadata.js
-- [ ] docs/types/3d/obj/objlib.js
-- [ ] docs/types/3d/obj/renderer.js
-- [ ] docs/types/3d/obj/settings.default.json
+- [x] docs/types/3d/obj/index.js
+- [x] docs/types/3d/obj/metadata.js
+- [x] docs/types/3d/obj/objlib.js
+- [x] docs/types/3d/obj/renderer.js
+- [x] docs/types/3d/obj/settings.default.json
 - [ ] docs/types/3d/ply/detect.js
 - [ ] docs/types/3d/ply/exports.js
 - [ ] docs/types/3d/ply/index.js

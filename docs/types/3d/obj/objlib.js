@@ -1,7 +1,7 @@
-// Wavefront OBJ parser → triangle mesh for the shared mesh viewer. Reads `v` (vertices) and `vn`
-// (normals); `f` faces (any of v, v/vt, v/vt/vn, v//vn; positive or negative indices); polygons
-// are fan-triangulated. Per-face normals are taken from `vn` when present, else computed. Other
-// directives (vt, groups, materials) are ignored. Pure JS, no dependency.
+// Wavefront OBJ parser → triangle mesh for the shared mesh viewer. Reads `v` (vertices), `vt`
+// (texture coords), `vn` (normals), group/material labels, and `f` faces (any of v, v/vt, v/vt/vn,
+// v//vn; positive or negative indices). Polygons are fan-triangulated. Per-face normals are taken
+// from `vn` when present, else computed. Pure JS, no dependency.
 import { bounds } from '../../../core/meshview.js';
 
 function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
