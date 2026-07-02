@@ -11,6 +11,21 @@ This plan is intentionally deterministic. The audit runner reads only checkbox l
 
 Use section filters when a batch needs a narrower lane, for example `--section=examples --limit=5`. The `readme-docs` section is intentionally only the help-doc lane; full coverage is the sum of every audit section.
 
+## Scope Count
+
+The help markdown lane is small by itself: currently 153 `docs/readme/*.md` rows. That is not the full general-lane audit. The full checklist currently has 7,423 rows:
+
+- `readme-docs`: 153 help markdown files
+- `base-types`: 143 registered base type rows
+- `type-files`: 2,892 implementation/support files under `docs/types`
+- `known-plugins`: 900 known plugin/capability rows
+- `examples`: 1,157 catalog rows
+- `example-files`: 1,128 physical files under `docs/examples`
+- `internet-example-files`: 10 `.example-files-internet` edge files
+- `special-examples`: 1,040 special capability/example rows
+
+If a checker run reports only the help markdown count, the checklist or checker is broken for this goal and must be fixed before audit work continues.
+
 ## /goal Prompt
 
 ```text
@@ -18,7 +33,7 @@ Audit and complete the file-viewer general-lane docs, startup, and capabilities 
 
 Preflight:
 - Run: node scripts/audit-plan-check.mjs HELP_DOCS_AUDIT_PLAN.md --limit=5
-- Confirm the output includes all audit sections and an audit_total in the thousands. At plan creation this was 7,423 total rows: 153 readme docs plus registered base types, docs/types implementation files, known plugins, catalog entries, physical examples, .example-files-internet files, and special example/capability cases.
+- Confirm the output includes all eight audit sections and an audit_total in the thousands. At plan creation this was 7,423 total rows: 153 readme docs, 143 base types, 2,892 docs/types files, 900 known plugin rows, 1,157 catalog rows, 1,128 physical example files, 10 .example-files-internet files, and 1,040 special example/capability cases.
 - If the total unexpectedly drops to the help-doc count only, stop and fix the plan/check script before auditing; do not proceed from an undersized list.
 
 Operating loop:
@@ -129,11 +144,11 @@ Completion gates:
 - [x] docs/readme/kml.md
 - [x] docs/readme/kmz.md
 - [x] docs/readme/kubeconfig.md
-- [ ] docs/readme/layered.md
-- [ ] docs/readme/lmms.md
-- [ ] docs/readme/lnk.md
-- [ ] docs/readme/log.md
-- [ ] docs/readme/lrf.md
+- [x] docs/readme/layered.md
+- [x] docs/readme/lmms.md
+- [x] docs/readme/lnk.md
+- [x] docs/readme/log.md
+- [x] docs/readme/lrf.md
 - [ ] docs/readme/markdown.md
 - [ ] docs/readme/mat.md
 - [ ] docs/readme/MATRIX.md

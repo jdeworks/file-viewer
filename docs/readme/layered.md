@@ -1,6 +1,6 @@
 # Layered Image
 
-> Layer tree inspector and flattened canvas preview for PSD, XCF, ORA, and KRA files — all decoded client-side with no server upload.
+> Layer tree inspector and canvas/preview surface for PSD, XCF, ORA, and KRA files — all decoded client-side with no server upload.
 
 ## Format Details
 
@@ -17,16 +17,16 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Layer tree | ✅ | Hierarchical list with layer names, visibility, opacity, blend mode |
-| Flattened canvas preview | ✅ | Visible layers composited onto a canvas |
+| Flattened canvas preview | ⚠️ | PSD/KRA composite visible layers; ORA shows merged image/layer PNGs; XCF currently shows a placeholder canvas |
 | Layer visibility toggle | ✅ | Click eye icon to show/hide layers and recomposite |
 | Group / folder layers | ✅ | Nested layer groups shown with indent |
 | PSD decoding | ✅ | Via vendored ag-psd library |
-| XCF decoding | ✅ | Via hand-rolled XCF decoder |
+| XCF decoding | ⚠️ | Hand-rolled decoder extracts dimensions/layer structure; pixel compositing is not implemented |
 | ORA decoding | ✅ | Via JSZip + stack.xml parsing |
 | KRA decoding | ✅ | Via hand-rolled KRA decoder |
 | Source view | ❌ | Binary format — no raw text view |
 | Diff | ❌ | Binary format not diffable |
-| Metadata | ✅ | Canvas size, layer count, color mode |
+| Metadata | ⚠️ | PSD metadata reports canvas size, channels, depth, and color mode; other formats are preview-driven |
 
 ### Edit
 | Capability | Status | Notes |
@@ -38,7 +38,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Export flattened as PNG | ❌ | Canvas could be exported; not yet wired |
+| Export flattened as PNG | ✅ | PNG button exports the current composite/merged image where available |
 
 ## Real-World Examples
 
@@ -48,6 +48,7 @@
 ## Known Limitations
 
 - Smart objects and adjustment layers in PSD are rendered as raster (no live filters)
+- XCF pixel data is not composited yet; the preview is a layer-structure placeholder
 - Very large canvases (>8192×8192) may exceed browser canvas limits
 - Text layers rendered as pixels — live text is not re-rendered from font
 
@@ -55,7 +56,7 @@
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Export flattened as PNG | Med | Easy | `canvas.toBlob('image/png')` after composition |
 | Export individual layer as PNG | Med | Med | Render single layer to canvas and download |
+| XCF pixel compositing | Med | Hard | Decode and composite GIMP layer pixels instead of placeholder |
 | Blend mode accuracy | Med | Hard | PSD blend modes beyond Normal/Multiply/Screen |
 | Text layer metadata | Low | Med | Show font, size, text content from text layers |

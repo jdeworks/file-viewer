@@ -1,6 +1,6 @@
 # Log File
 
-> Severity-colorized log viewer with timestamp highlighting and line-level error/warn/info/debug counts.
+> Severity-colorized log viewer with timestamp highlighting, ANSI SGR rendering, severity filters, and line-level counts.
 
 ## Format Details
 
@@ -18,6 +18,8 @@
 |------------|--------|-------|
 | Severity colorization | ✅ | ERROR/FATAL red · WARN yellow · INFO blue · DEBUG gray |
 | Timestamp highlighting | ✅ | ISO-8601 and HH:MM:SS timestamps highlighted at line start |
+| Severity filter | ✅ | Filter chips for all present severities |
+| ANSI color rendering | ✅ | SGR foreground colors, bright colors, 256-color, and true-color sequences rendered |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
 | Metadata | ✅ | Line count, error/warn/info/debug counts, timestamped line count |
@@ -41,13 +43,12 @@
 
 - Very large log files (>50 MB) may be slow to render; Monaco source view handles any size
 - Log format detection is heuristic (keyword matching) — custom formats may not colorize correctly
-- No search / filter by severity
+- Regex search is not implemented in the preview
+- Structured JSON log lines are not parsed as fields
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Severity filter | High | Med | Show only ERROR/WARN/INFO/DEBUG lines |
 | Regex search with highlight | Med | Med | Jump to matching lines |
-| ANSI escape code rendering | Med | Med | Colorize escape sequences from CI/terminal output |
 | Parse structured JSON logs | Low | Med | `{"level":"error","msg":"..."}`-style log lines |

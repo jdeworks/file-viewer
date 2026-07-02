@@ -23,12 +23,12 @@
 | Hotkey | ✅ | Virtual key code decoded |
 | Window state | ✅ | Normal / Minimized / Maximized |
 | Drive type | ✅ | Fixed / Removable / Network / CD-ROM |
-| Shell link flags | ✅ | HasLinkTargetIDList, HasLinkInfo, etc. |
-| Drive serial number | ✅ | From VolumeID |
+| Shell link flags | ❌ | Parsed internally to locate sections, but not displayed as a flag list |
+| Drive serial number | ❌ | Volume serial is not currently extracted |
 | Timestamps | ✅ | Target file creation / modified / accessed |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Target, working dir, arguments, icon |
+| Metadata | ✅ | Target, working dir, arguments, relative path, icon, target size, timestamps |
 
 ### Edit
 | Capability | Status | Notes |
@@ -49,4 +49,6 @@
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Shell link flag list | Low | Easy | Display parsed LinkFlags in a diagnostics section |
+| Drive serial number | Low | Easy | Decode VolumeID serial alongside drive type |
 | ExtraData block decoding | Low | Med | Decode distributed link tracking, special folder IDs |

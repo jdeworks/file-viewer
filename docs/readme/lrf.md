@@ -1,12 +1,12 @@
 # LRF — Sony Reader Format (BBeB)
 
-> Sony's proprietary ebook format (Broadband eBook) — basic metadata display only; no page rendering available.
+> Sony's proprietary ebook format (Broadband eBook) — client-side reader with page navigation, extracted text/images, metadata, and clear DRM refusal.
 
 ## Format Details
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.lrf` |
+| Extension(s) | `.lrf`, `.lrx` |
 | MIME type | `application/x-sony-bbeb` |
 | Binary / Text | Binary |
 | Created by | Sony |
@@ -18,7 +18,11 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Header metadata | ✅ | Title, author, book ID extracted from binary header |
-| Page rendering | ❌ | No BBeB parser available in JS/WASM |
+| Page rendering | ✅ | BBeB object stream parsed into sanitized reader pages when unencrypted |
+| Image rendering | ✅ | In-book image streams become blob URLs; no off-origin requests |
+| Reader controls | ✅ | Page list, previous/next, keyboard navigation, font size, font family, theme |
+| DRM refusal | ✅ | `.lrx` / DRM-protected books show a clear unsupported message |
+| Metadata | ✅ | Version, screen size, title, author, publisher, language, pages, images, file size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -40,8 +44,9 @@ No known-file plugin.
 
 ## Known Limitations
 
-- Only header-level metadata (title, author, book ID) can be read; no content rendering
-- BBeB is a complex binary format with no maintained JS decoder
+- DRM-protected `.lrx` files cannot be read
+- Unsupported or malformed BBeB object streams may show a clear error instead of pages
+- Layout fidelity is approximate; text/images are extracted into the shared ebook reader chrome
 - LRF files are rarely encountered today; the format has been abandoned since ~2010
 
 ## Gap Analysis
@@ -49,4 +54,5 @@ No known-file plugin.
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Conversion recommendation | Med | Easy | Show a notice suggesting conversion to EPUB via Calibre |
-| BBeB content parser | Low | Hard | No maintained JS implementation; would require porting a C library |
+| Layout fidelity | Low | Hard | Preserve more original Sony Reader positioning and typography |
+| Broader BBeB coverage | Low | Hard | Handle more object/stream variants from real-world files |
