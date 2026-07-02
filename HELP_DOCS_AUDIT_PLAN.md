@@ -656,22 +656,22 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/eml/msg.html
 - [x] docs/types/eml/renderer.js
 - [x] docs/types/eml/settings.default.json
-- [ ] docs/types/emulator/EDITOR.md
-- [ ] docs/types/emulator/emulatorjs/detect.js
-- [ ] docs/types/emulator/emulatorjs/index.js
-- [ ] docs/types/emulator/emulatorjs/metadata.js
-- [ ] docs/types/emulator/emulatorjs/renderer.js
-- [ ] docs/types/emulator/emulatorjs/settings.default.json
-- [ ] docs/types/emulator/ruffle/detect.js
-- [ ] docs/types/emulator/ruffle/index.js
-- [ ] docs/types/emulator/ruffle/metadata.js
-- [ ] docs/types/emulator/ruffle/renderer.js
-- [ ] docs/types/emulator/ruffle/settings.default.json
-- [ ] docs/types/emulator/v86/detect.js
-- [ ] docs/types/emulator/v86/index.js
-- [ ] docs/types/emulator/v86/metadata.js
-- [ ] docs/types/emulator/v86/renderer.js
-- [ ] docs/types/emulator/v86/settings.default.json
+- [x] docs/types/emulator/EDITOR.md
+- [x] docs/types/emulator/emulatorjs/detect.js
+- [x] docs/types/emulator/emulatorjs/index.js
+- [x] docs/types/emulator/emulatorjs/metadata.js
+- [x] docs/types/emulator/emulatorjs/renderer.js
+- [x] docs/types/emulator/emulatorjs/settings.default.json
+- [x] docs/types/emulator/ruffle/detect.js
+- [x] docs/types/emulator/ruffle/index.js
+- [x] docs/types/emulator/ruffle/metadata.js
+- [x] docs/types/emulator/ruffle/renderer.js
+- [x] docs/types/emulator/ruffle/settings.default.json
+- [x] docs/types/emulator/v86/detect.js
+- [x] docs/types/emulator/v86/index.js
+- [x] docs/types/emulator/v86/metadata.js
+- [x] docs/types/emulator/v86/renderer.js
+- [x] docs/types/emulator/v86/settings.default.json
 - [x] docs/types/font/detect.js
 - [x] docs/types/font/EDITOR.md
 - [x] docs/types/font/index.js

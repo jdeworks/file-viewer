@@ -716,4 +716,35 @@ export async function run(ctx) {
   const ipaText = await ipaf.$eval('body', (el) => el.textContent);
   if (/iOS App/i.test(ipaText)) pass('IPA badge shown'); else fail('ipa badge: ' + ipaText.slice(0, 300));
   if (/Demo App|com\.example|15\.0/i.test(ipaText)) pass('IPA app info shown'); else fail('ipa info: ' + ipaText.slice(0, 300));
+
+  // ── Emulators (parentNode) — detection + security-gate dialog only. The dialog's "I understand
+  // — Start" button is intentionally NOT clicked here: that would pull in a full WASM emulator
+  // core boot (EmulatorJS/Ruffle/v86), which is heavier WASM test infra than this quick check
+  // needs. Zero prior smoke coverage existed for these three types before this block.
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.gba');
+  await page.waitForSelector('#previewHost', { timeout: 12000 });
+  const ejsTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ejsTypeId === 'emulatorjs') pass('.gba detected as emulatorjs type'); else fail('gba typeId: ' + ejsTypeId);
+  const ejsText = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/EmulatorJS/i.test(ejsText)) pass('EmulatorJS security dialog shown'); else fail('gba dialog: ' + ejsText.slice(0, 200));
+  const ejsButtons = await page.$$eval('#previewHost button', (els) => els.map((b) => b.textContent));
+  if (ejsButtons.some((t) => /I understand/i.test(t)) && ejsButtons.some((t) => /Cancel/i.test(t)))
+    pass('EmulatorJS Start/Cancel buttons present'); else fail('gba buttons: ' + ejsButtons.join(','));
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.swf');
+  await page.waitForSelector('#previewHost', { timeout: 12000 });
+  const ruffleTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (ruffleTypeId === 'ruffle') pass('.swf detected as ruffle type'); else fail('swf typeId: ' + ruffleTypeId);
+  const ruffleText = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/Ruffle/i.test(ruffleText)) pass('Ruffle security dialog shown'); else fail('swf dialog: ' + ruffleText.slice(0, 200));
+
+  await page.goto(origin, { waitUntil: 'load' });
+  await openExample('sample.img');
+  await page.waitForSelector('#previewHost', { timeout: 12000 });
+  const v86TypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (v86TypeId === 'v86') pass('.img detected as v86 type'); else fail('img typeId: ' + v86TypeId);
+  const v86Text = await page.$eval('#previewHost', (el) => el.textContent);
+  if (/x86 Emulator \(v86\)/i.test(v86Text)) pass('v86 security dialog shown'); else fail('img dialog: ' + v86Text.slice(0, 200));
 }

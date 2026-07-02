@@ -27,6 +27,26 @@ function loadScript(src) {
   });
 }
 
+// The vendored EmulatorJS core calls `checkForUpdates()` — an unconditional
+// `fetch('https://cdn.emulatorjs.org/stable/data/version.json')` — whenever
+// `location.hostname` is `localhost`/`127.0.0.1` (its own debug heuristic), regardless of any
+// EJS_* config we set. That fires during local dev/testing (this repo's smoke tests run against
+// a localhost server) and violates the zero-off-origin-at-runtime rule. There is no public
+// EmulatorJS option to disable it, so block just that host at the fetch layer — same-origin and
+// blob: requests the emulator needs (core wasm, ROM blob) are untouched.
+function installOffOriginGuard() {
+  if (window.__ejsFetchGuardInstalled) return;
+  window.__ejsFetchGuardInstalled = true;
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    if (/^https?:\/\/(cdn|netplay)\.emulatorjs\.org\//i.test(url)) {
+      return Promise.reject(new Error('Blocked off-origin request (zero off-origin runtime policy): ' + url));
+    }
+    return nativeFetch(input, init);
+  };
+}
+
 export async function render(intake, _ctx) {
   const wrap = document.createElement('div');
   wrap.style.cssText = [
@@ -135,6 +155,8 @@ export async function render(intake, _ctx) {
     window.EJS_language = 'en-US';
     window.EJS_startOnLoaded = true;
     window.EJS_gameName = intake.filename.replace(/\.[^.]+$/, '');
+
+    installOffOriginGuard();
 
     try {
       await loadScript('./vendor/emulatorjs/data/loader.js');

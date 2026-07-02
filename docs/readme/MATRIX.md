@@ -146,7 +146,6 @@ Master overview of all file types supported by the viewer. Columns:
 | [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
 | [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
-| [Flash (SWF / Ruffle)](/) | `.swf` | Basic | None | download | — | — |
 
 ---
 
@@ -218,10 +217,10 @@ Master overview of all file types supported by the viewer. Columns:
 
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
-| [Console ROM (EmulatorJS)](/) | `.gba` `.snes` `.n64` `.nes` (via emulatorjs) | Basic | None | download | — | Save states |
+| [Console ROM (EmulatorJS)](emulatorjs.md) | `.nes` `.fds` `.sfc` `.smc` `.gb` `.gbc` `.sgb` `.gba` `.gen` `.smd` `.a26` | Basic | None | download | — | Disc systems (PSX/CHD) |
 | [Game ROM Header](gamerom.md) | `.nes` `.sfc` `.smc` `.gb` `.gbc` `.n64` `.z64` `.v64` | Basic | None | download | — | More platforms |
 | [x86 Disk Image (v86)](v86.md) | `.img` `.ima` `.iso` `.vhd` `.qcow2` | Basic | None | download | — | Large image streaming |
-| [Flash (SWF / Ruffle)](/) | `.swf` | Basic | None | download | — | — |
+| [Flash (SWF / Ruffle)](ruffle.md) | `.swf` | Basic | None | download | — | AS3 full compatibility |
 | [Doom WAD](wad.md) | `.wad` | Basic | None | download | — | Lump decode |
 | [BSP Game Map](bsp.md) | `.bsp` | Full | None | download | — | Header/entity inspection |
 | [Minecraft World](mcworld.md) | `.mcworld` `.mctemplate` `.mcpack` | Partial | None | download | — | Java edition |

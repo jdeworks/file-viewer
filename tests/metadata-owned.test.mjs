@@ -90,6 +90,12 @@ import { render as renderWasm } from '../docs/types/binary/wasm/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
+import { detect as detectEmulatorJs } from '../docs/types/emulator/emulatorjs/detect.js';
+import { extractMetadata as emulatorJsMeta } from '../docs/types/emulator/emulatorjs/metadata.js';
+import { detect as detectRuffle } from '../docs/types/emulator/ruffle/detect.js';
+import { extractMetadata as ruffleMeta } from '../docs/types/emulator/ruffle/metadata.js';
+import { detect as detectV86 } from '../docs/types/emulator/v86/detect.js';
+import { extractMetadata as v86Meta } from '../docs/types/emulator/v86/metadata.js';
 import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
 import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
 import { detect as detectParquet } from '../docs/types/binary/parquet/detect.js';
@@ -984,6 +990,61 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const n64Rows = (await gameRomMeta({ filename: 'demo.z64', bytes: n64, isBinary: true, size: n64.length })).fields;
   assert.equal(value(n64Rows, 'Format'), 'Nintendo 64');
   assert.equal(value(n64Rows, 'CRC2'), '9ABCDEF0');
+}
+
+{
+  // emulatorjs: extension match short-circuits before the NES-magic fallback (dead for known
+  // extensions, only reachable for extensionless/renamed NES dumps) — cover both paths.
+  const nes = await bytes('sample.nes');
+  assert.equal(detectEmulatorJs({ filename: 'sample.nes', bytes: nes, isBinary: true }), 0.92);
+  assert.equal(detectEmulatorJs({ filename: 'sample.rom', bytes: nes, isBinary: true }), 0.98);
+  assert.equal(detectEmulatorJs({ filename: 'sample.txt', bytes: nes, isBinary: false }), 0);
+  assert.equal(detectEmulatorJs({ filename: 'sample.unknownext', bytes: new Uint8Array([1, 2, 3, 4]), isBinary: true }), 0);
+
+  const gba = await bytes('sample.gba');
+  assert.equal(detectEmulatorJs({ filename: 'sample.gba', bytes: gba, isBinary: true }), 0.92);
+  const gbaRows = await emulatorJsMeta({ filename: 'sample.gba', bytes: gba });
+  assert.equal(gbaRows.System, 'Game Boy Advance');
+  assert.match(gbaRows.Size, /KB$/);
+
+  const nesRows = await emulatorJsMeta({ filename: 'sample.nes', bytes: nes });
+  assert.equal(nesRows.System, 'NES / Famicom');
+  assert.equal(nesRows['PRG ROM'], '1 × 16KB');
+  assert.equal(nesRows['CHR ROM'], '0 × 8KB');
+}
+
+{
+  const swf = await bytes('sample.swf');
+  assert.equal(detectRuffle({ filename: 'sample.swf', bytes: swf }), 0.98);
+  assert.equal(detectRuffle({ filename: 'sample.dat', bytes: swf }), 0.97); // FWS magic, no .swf ext
+  assert.equal(detectRuffle({ filename: 'sample.txt', bytes: new Uint8Array([1, 2, 3]) }), 0);
+
+  const swfRows = await ruffleMeta({ bytes: swf });
+  assert.equal(swfRows['SWF Version'], 10);
+  assert.equal(swfRows.Compression, 'None');
+  assert.equal(swfRows['File size'], '25 bytes');
+
+  const cwsBytes = new Uint8Array(swf);
+  cwsBytes.set([0x43, 0x57, 0x53], 0); // CWS = zlib-compressed
+  const cwsRows = await ruffleMeta({ bytes: cwsBytes });
+  assert.equal(cwsRows.Compression, 'zlib');
+}
+
+{
+  const img = await bytes('sample.img');
+  assert.equal(detectV86({ filename: 'sample.img', bytes: img, isBinary: true }), 0.85);
+  assert.equal(detectV86({ filename: 'sample.iso', bytes: img, isBinary: true }), 0.80);
+  assert.equal(detectV86({ filename: 'sample.vhd', bytes: img, isBinary: true }), 0.75);
+  assert.equal(detectV86({ filename: 'sample.qcow2', bytes: img, isBinary: true }), 0.75);
+  assert.equal(detectV86({ filename: 'sample.img', bytes: img, isBinary: false }), 0); // text -> never a disk image
+  assert.equal(detectV86({ filename: 'sample.txt', bytes: img, isBinary: true }), 0);
+
+  const imgRows = await v86Meta({ filename: 'sample.img', bytes: img });
+  assert.equal(imgRows['Image type'], 'Floppy disk image (1.44MB)');
+  assert.match(imgRows.Size, /MB$/);
+
+  const isoRows = await v86Meta({ filename: 'sample.img.iso', bytes: new Uint8Array(2000000) });
+  assert.equal(isoRows['Image type'], 'CD-ROM image');
 }
 
 {
