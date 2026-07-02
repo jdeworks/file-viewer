@@ -73,11 +73,11 @@ Completion gates:
 - [x] docs/readme/dicom.md
 - [x] docs/readme/djvu.md
 - [x] docs/readme/dmp.md
-- [ ] docs/readme/docker-compose.md
-- [ ] docs/readme/dockerfile.md
-- [ ] docs/readme/docx.md
-- [ ] docs/readme/dwg.md
-- [ ] docs/readme/dxf.md
+- [x] docs/readme/docker-compose.md
+- [x] docs/readme/dockerfile.md
+- [x] docs/readme/docx.md
+- [x] docs/readme/dwg.md
+- [x] docs/readme/dxf.md
 - [ ] docs/readme/ebook.md
 - [ ] docs/readme/editorconfig.md
 - [ ] docs/readme/email.md
