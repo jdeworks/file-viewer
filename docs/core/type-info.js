@@ -78,7 +78,7 @@ const TYPE_INFO = {
   'ssh-config': ['SSH config', 'used to define SSH hosts, identities, jumps, and connection options.', 'https://man.openbsd.org/ssh_config'],
   rdp: ['RDP connection file', 'used by Remote Desktop clients to store connection settings.', 'https://learn.microsoft.com/windows-server/remote/remote-desktop-services/clients/rdp-files'],
   pem: ['PEM certificate/key', 'used to wrap certificates, public keys, and private keys in base64 text.', 'https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail'],
-  gamerom: ['Game ROM', 'used to store console cartridge images and metadata for emulators.', 'https://en.wikipedia.org/wiki/ROM_image'],
+  gamerom: ['Game ROM', 'used to store console cartridge images and metadata for NES, SNES, Game Boy, and Nintendo 64 emulators.', 'https://en.wikipedia.org/wiki/ROM_image'],
   dicom: ['DICOM medical image', 'used for medical imaging studies from CT, MRI, X-ray, ultrasound, and related equipment.', 'https://www.dicomstandard.org/'],
   ruffle: ['Flash movie', 'used for SWF animation, games, and interactive Flash content.', 'https://en.wikipedia.org/wiki/SWF'],
   v86: ['PC disk image', 'used to boot legacy operating systems or disks in an x86 emulator.', 'https://en.wikipedia.org/wiki/Disk_image'],
@@ -128,6 +128,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   exr: 'exr',
   f3d: 'f3d',
   fbx: 'fbx',
+  gamerom: 'nes',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -169,6 +170,14 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   f3d: 'f3d',
   f3z: 'f3d',
   fbx: 'fbx',
+  nes: 'nes',
+  sfc: 'sfc',
+  smc: 'sfc',
+  gb: 'gb',
+  gbc: 'gb',
+  n64: 'n64',
+  z64: 'n64',
+  v64: 'n64',
 };
 
 function fileExtension(intake) {

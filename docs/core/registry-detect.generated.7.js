@@ -256,6 +256,8 @@ return detect;
 const detect_gamerom=(()=>{
 function detect(intake) {
   const b = intake.bytes || new Uint8Array();
+  const hasRomExtension = hasExtension(intake, 'nes', 'sfc', 'smc', 'gb', 'gbc', 'n64', 'z64', 'v64');
+  if (b.length < 4) return hasRomExtension ? 0.95 : 0;
   if (b.length >= 4 && b[0] === 0x4e && b[1] === 0x45 && b[2] === 0x53 && b[3] === 0x1a) return 0.99;
   if (b.length >= 0x108 && b[0x104] === 0xce && b[0x105] === 0xed && b[0x106] === 0x66 && b[0x107] === 0x66) return 0.99;
   if (b.length >= 4 && b[0] === 0x80 && b[1] === 0x37 && b[2] === 0x12 && b[3] === 0x40) return 0.99;
@@ -263,6 +265,7 @@ function detect(intake) {
   if (b.length >= 4 && b[0] === 0x40 && b[1] === 0x12 && b[2] === 0x37 && b[3] === 0x80) return 0.90;
   if (hasExtension(intake, 'sfc', 'smc') && parseRom(b)?.format === 'SNES') return 0.93;
   if (hasExtension(intake, 'gb', 'gbc')) return 0.80;
+  if (hasRomExtension) return 0.35;
   return 0;
 }
 return detect;
@@ -307,19 +310,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_apk=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  const b = intake.bytes;
-  const isPk = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
-  if (!isPk) return 0;
-  if (hasExtension(intake, 'apk', 'aab', 'xapk')) return 0.97;
-  // Sniff for APK-specific files in text sample
-  const head = intake.textSample || '';
-  if (/AndroidManifest\.xml|classes\.dex|META-INF\//.test(head)) return 0.9;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};
+export const DETECTORS={"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe};

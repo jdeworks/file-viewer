@@ -480,11 +480,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/fbx/index.js
 - [x] docs/types/binary/fbx/metadata.js
 - [x] docs/types/binary/fbx/renderer.js
-- [ ] docs/types/binary/fbx/settings.default.json
-- [ ] docs/types/binary/gamerom/detect.js
-- [ ] docs/types/binary/gamerom/headers.js
-- [ ] docs/types/binary/gamerom/index.js
-- [ ] docs/types/binary/gamerom/metadata.js
+- [x] docs/types/binary/fbx/settings.default.json
+- [x] docs/types/binary/gamerom/detect.js
+- [x] docs/types/binary/gamerom/headers.js
+- [x] docs/types/binary/gamerom/index.js
+- [x] docs/types/binary/gamerom/metadata.js
 - [ ] docs/types/binary/gamerom/renderer.js
 - [ ] docs/types/binary/gamerom/settings.default.json
 - [ ] docs/types/binary/hdf5/detect.js

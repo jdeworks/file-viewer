@@ -718,12 +718,19 @@
     },
     "gamerom": {
       "label": "Game ROM Header",
-      "support": "supported",
+      "support": "partial",
       "sampleFiles": [
         "sample.nes"
       ],
       "extensions": [
-        ".nes"
+        ".nes",
+        ".sfc",
+        ".smc",
+        ".gb",
+        ".gbc",
+        ".n64",
+        ".z64",
+        ".v64"
       ],
       "capabilities": {
         "rawView": false,
@@ -739,14 +746,18 @@
       "partialSamples": [],
       "realWorldQuality": "needs-review",
       "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "nes",
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "knownParserGaps": [
+        "GBA, NDS, Genesis / Mega Drive, and many other ROM headers are not implemented yet",
+        "SNES detection uses header heuristics and can miss unusual dumps",
+        "No ROM database matching or hash lookup"
+      ],
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": true
     },

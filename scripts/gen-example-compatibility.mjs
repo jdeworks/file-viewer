@@ -103,7 +103,7 @@ const FE_SLUGS = {
   har:         null,
   clip:        null,
   iwork:       null,
-  gamerom:     null,
+  gamerom:     'nes',
   dicom:       'dicom',
   dwg:         'dwg',
   ruffle:      null,

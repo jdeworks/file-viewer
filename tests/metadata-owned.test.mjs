@@ -46,6 +46,9 @@ import { metadata as f3dMeta } from '../docs/types/binary/f3d/metadata.js';
 import { detect as detectFbx } from '../docs/types/binary/fbx/detect.js';
 import { extractMetadata as fbxMeta } from '../docs/types/binary/fbx/metadata.js';
 import { render as renderFbx } from '../docs/types/binary/fbx/renderer.js';
+import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
+import { parseRom } from '../docs/types/binary/gamerom/headers.js';
+import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -101,6 +104,11 @@ function machoFixture() {
   b[12] = 0x02;
   b[16] = 0x03;
   return b;
+}
+
+function putAsciiBytes(target, offset, text, len = text.length) {
+  const raw = Buffer.from(text.padEnd(len, '\0').slice(0, len), 'ascii');
+  target.set(raw, offset);
 }
 
 function numberValue(rows, label) {
@@ -654,6 +662,49 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const rendered = renderFbx({ filename: 'sample.fbx', bytes: data, isBinary: true, size: data.length }).bodyHtml;
   assert.match(rendered, /FBXHeaderExtension/);
   assert.match(rendered, /7\.4 \(7400\)/);
+}
+
+{
+  const nes = await bytes('sample.nes');
+  assert.equal(detectGameRom({ filename: 'sample.nes', bytes: nes, isBinary: true }), 0.99);
+  assert.ok(detectGameRom({ filename: 'empty.nes', bytes: new Uint8Array(0), isBinary: true }) > 0.9);
+  const nesRom = parseRom(nes);
+  assert.equal(nesRom.format, 'NES');
+  assert.equal(nesRom.title, 'iNES ROM');
+  assert.ok(nesRom.fields.some(([label, value]) => label === 'Mapper' && /NROM/.test(value)));
+
+  const snes = new Uint8Array(0x8000);
+  putAsciiBytes(snes, 0x7fc0, 'SNES DEMO', 21);
+  snes[0x7fc0 + 0x15] = 0x20;
+  snes[0x7fc0 + 0x17] = 10;
+  snes[0x7fc0 + 0x18] = 5;
+  snes[0x7fc0 + 0x19] = 1;
+  assert.ok(detectGameRom({ filename: 'demo.sfc', bytes: snes, isBinary: true }) > 0.9);
+  assert.equal(parseRom(snes).format, 'SNES');
+  assert.equal(parseRom(snes).title, 'SNES DEMO');
+
+  const gb = new Uint8Array(0x150);
+  gb.set([0xce, 0xed, 0x66, 0x66], 0x104);
+  putAsciiBytes(gb, 0x134, 'GB DEMO', 15);
+  gb[0x143] = 0x80;
+  gb[0x146] = 0x03;
+  gb[0x147] = 0x13;
+  gb[0x148] = 0x02;
+  gb[0x149] = 0x03;
+  gb[0x14a] = 0x01;
+  assert.equal(detectGameRom({ filename: 'demo.gbc', bytes: gb, isBinary: true }), 0.99);
+  assert.equal(parseRom(gb).format, 'Game Boy');
+
+  const n64 = new Uint8Array(0x40);
+  n64.set([0x80, 0x37, 0x12, 0x40], 0);
+  n64.set([0x12, 0x34, 0x56, 0x78], 0x10);
+  n64.set([0x9a, 0xbc, 0xde, 0xf0], 0x14);
+  putAsciiBytes(n64, 0x20, 'N64 DEMO', 20);
+  putAsciiBytes(n64, 0x3b, 'NABE', 4);
+  assert.equal(detectGameRom({ filename: 'demo.z64', bytes: n64, isBinary: true }), 0.99);
+  const n64Rows = (await gameRomMeta({ filename: 'demo.z64', bytes: n64, isBinary: true, size: n64.length })).fields;
+  assert.equal(value(n64Rows, 'Format'), 'Nintendo 64');
+  assert.equal(value(n64Rows, 'CRC2'), '9ABCDEF0');
 }
 
 console.log('metadata-owned: ok');

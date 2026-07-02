@@ -79,4 +79,11 @@ assert.equal(fbxInfo.name, 'FBX 3D animation');
 assert.match(fbxInfo.description, /animation exchange/);
 assert.match(fbxInfo.fileExamplesHref, /fileexamples\.com.*fbx/i);
 
+const gamerom = REGISTRY.find((type) => type.id === 'gamerom');
+assert.ok(gamerom, 'gamerom type is registered');
+const gameromInfo = getTypeInfo(gamerom, null, { filename: 'sample.nes' });
+assert.equal(gameromInfo.name, 'Game ROM');
+assert.match(gameromInfo.description, /NES, SNES, Game Boy/);
+assert.match(gameromInfo.fileExamplesHref, /fileexamples\.com.*nes/i);
+
 console.log('type info: ok');

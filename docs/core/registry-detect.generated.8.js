@@ -3,6 +3,21 @@ import { isCode } from '../types/text/code/langmap.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_apk=(()=>{
+function detect(intake) {
+  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const b = intake.bytes;
+  const isPk = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+  if (!isPk) return 0;
+  if (hasExtension(intake, 'apk', 'aab', 'xapk')) return 0.97;
+  // Sniff for APK-specific files in text sample
+  const head = intake.textSample || '';
+  if (/AndroidManifest\.xml|classes\.dex|META-INF\//.test(head)) return 0.9;
+  return 0;
+}
+return detect;
+})();
+
 const detect_iso=(()=>{
 function detect(intake) {
   if (!intake.bytes) return 0;
@@ -96,4 +111,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
