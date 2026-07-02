@@ -4,14 +4,20 @@ function hasSparqlContent(text) {
   if (!text) return false;
   // Strip leading comments / whitespace lines, then check for keyword
   const lines = text.split(/\r?\n/);
+  let first = '';
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith('#')) continue;
-    const lower = trimmed.toLowerCase();
-    if (SPARQL_CONTENT_KWS.some((kw) => lower.startsWith(kw))) return true;
+    first = trimmed.toLowerCase();
     break; // First non-comment, non-blank line doesn't match — stop
   }
-  return false;
+  if (!SPARQL_CONTENT_KWS.some((kw) => first.startsWith(kw))) return false;
+  if (first.startsWith('prefix')) return true;
+  const lower = text.toLowerCase();
+  const hasWhereBlock = /\bwhere\s*\{/.test(lower);
+  const hasVar = /\?[a-z_][\w-]*/i.test(text);
+  const hasRdfName = /(?:^|\s)[a-z_][\w-]*:[\w-]+/i.test(text) || /<https?:\/\//i.test(text);
+  return hasWhereBlock && hasVar && hasRdfName;
 }
 
 export const plugin = {

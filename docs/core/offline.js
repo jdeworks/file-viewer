@@ -146,7 +146,47 @@ function emulatorsEnabled() {
   } catch { return false; }
 }
 
-const GROUP_ORDER = ['App shell', 'File viewers', 'Editor', 'Data & charts', 'Documents', 'Archives', 'Media', 'Games', 'Content', 'Emulators'];
+const GROUP_ORDER = ['App shell', 'File viewers', 'Editor', 'Data & charts', 'Documents', 'Archives', 'Media', 'Games', 'Easter eggs', 'Content', 'Emulators'];
+
+const CACHE_PRESETS = [
+  {
+    id: 'common-v',
+    label: 'Common V',
+    title: 'Common viewing: app shell, file viewers, common document/data/media libraries, and common sample files.',
+    bundles: ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml', 'vendor:papaparse',
+      'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
+      'vendor:html2canvas', 'vendor:gifuct', 'vendor:utif', 'vendor:libheif', 'vendor:fonts',
+      'examples:catalog', 'examples:text-config', 'examples:data', 'examples:office'],
+  },
+  {
+    id: 'common-e',
+    label: 'Common E',
+    title: 'Common editing: Common V plus Monaco, TipTap, and common export/editing helpers.',
+    bundles: ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml', 'vendor:papaparse',
+      'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
+      'vendor:html2canvas', 'vendor:gifuct', 'vendor:gifenc', 'vendor:utif', 'vendor:libheif', 'vendor:fonts',
+      'vendor:monaco', 'vendor:tiptap', 'vendor:pdf-lib', 'vendor:konva',
+      'examples:catalog', 'examples:text-config', 'examples:data', 'examples:office'],
+  },
+  {
+    id: 'office-v',
+    label: 'Office V',
+    title: 'Office viewing: Markdown, PDF, spreadsheets, slides, Word/OpenDocument, archives used by Office formats, and office examples.',
+    bundles: ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml',
+      'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
+      'vendor:html2canvas', 'examples:catalog', 'examples:office', 'examples:text-config', 'examples:data'],
+  },
+  {
+    id: 'office-e',
+    label: 'Office E',
+    title: 'Office editing: Office V plus source editor, Markdown WYSIWYG, and document export/editing helpers.',
+    bundles: ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml',
+      'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
+      'vendor:html2canvas', 'vendor:monaco', 'vendor:tiptap', 'vendor:pdf-lib',
+      'examples:catalog', 'examples:office', 'examples:text-config', 'examples:data'],
+  },
+];
+const DEFAULT_CACHE_BUNDLES = new Set(CACHE_PRESETS[0].bundles);
 
 async function openCacheModal(onConfirm) {
   let bundles;
@@ -175,7 +215,9 @@ async function openCacheModal(onConfirm) {
     '<div class="cache-modal" role="dialog" aria-label="Save for offline">'
     + '<header class="cm-head"><h2>Save for offline</h2><button class="cm-close" aria-label="Close">✕</button></header>'
     + '<p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p>'
-    + '<div class="cm-toolbar"><button class="cm-all">Select all</button><button class="cm-none">Deselect all</button><span class="cm-grand-total"></span></div>'
+    + '<div class="cm-toolbar"><button class="cm-all">Select all</button><button class="cm-none">Deselect all</button>'
+    + CACHE_PRESETS.map((p) => '<button class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '">' + p.label + '</button>').join('')
+    + '<span class="cm-grand-total"></span></div>'
     + '<div class="cm-groups"></div>'
     + '<footer class="cm-foot"><span class="cm-total"></span><button class="cm-save">Save selected</button></footer>'
     + '</div>';
@@ -187,7 +229,7 @@ async function openCacheModal(onConfirm) {
 
   function rowHtml(b) {
     const isCore = b.id === 'core' || b.id === 'known';
-    const checked = isCore || !b.heavy;
+    const checked = isCore || DEFAULT_CACHE_BUNDLES.has(b.id);
     return '<label class="cm-row' + (b.heavy ? ' cm-row-heavy' : '') + '">'
       + '<input type="checkbox" class="cm-chk" data-id="' + b.id + '" data-size="' + b.size + '"'
       + (checked ? ' checked' : '') + (isCore ? ' disabled' : '') + '>'
@@ -245,6 +287,15 @@ async function openCacheModal(onConfirm) {
   root.querySelector('.cm-none').addEventListener('click', () => {
     for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = false;
     updateTotals();
+  });
+  root.querySelectorAll('.cm-preset').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = CACHE_PRESETS.find((p) => p.id === btn.dataset.preset);
+      if (!preset) return;
+      const ids = new Set(preset.bundles);
+      for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = ids.has(c.dataset.id);
+      updateTotals();
+    });
   });
 
   const close = () => root.remove();

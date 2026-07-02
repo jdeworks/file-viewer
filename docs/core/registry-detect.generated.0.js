@@ -252,7 +252,11 @@ function detect(intake) {
   if (hasExtension(intake, 'yaml', 'yml')) return 0.95;
   if (mimeMatches(intake, 'yaml', 'x-yaml')) return 0.9;
   const t = intake.textSample || '';
-  if (/^---\s*$/m.test(t) && /^\s*[\w-]+:\s/m.test(t)) return 0.5;   // doc marker + a mapping
+  if (/^---\s*$/m.test(t) && /^\s*[\w-]+:\s/m.test(t)) {
+    // `.txt` logs often contain YAML-looking separators/labels; keep YAML available, but let
+    // Plain text win for explicit text files.
+    return hasExtension(intake, 'txt', 'text') ? 0.18 : 0.5;
+  }
   return 0;
 }
 return detect;
@@ -305,21 +309,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_musicxml=(()=>{
-function detect(intake) {
-  if (intake.isBinary && !hasExtension(intake, 'mxl')) return 0;
-  if (hasExtension(intake, 'musicxml')) return 0.95;
-  if (hasExtension(intake, 'mxl')) return 0.9;
-  if (hasExtension(intake, 'xml')) {
-    const head = (intake.text || '').slice(0, 1200);
-    if (/<score-partwise|<score-timewise/i.test(head)) return 0.8;
-    return 0;
-  }
-  const head = (intake.text || '').slice(0, 1200);
-  if (/<score-partwise|<score-timewise/i.test(head)) return 0.6;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"docker-compose":detect_docker_compose,"dockerfile":detect_dockerfile,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings,"musicxml":detect_musicxml};
+export const DETECTORS={"markdown":detect_markdown,"pdf":detect_pdf,"csv":detect_csv,"xlsx":detect_xlsx,"docx":detect_docx,"pptx":detect_pptx,"odf":detect_odf,"rtf":detect_rtf,"html":detect_html,"eml":detect_eml,"mbox":detect_mbox,"msg":detect_msg,"ics":detect_ics,"kubeconfig":detect_kubeconfig,"docker-compose":detect_docker_compose,"dockerfile":detect_dockerfile,"yaml":detect_yaml,"toml":detect_toml,"plist":detect_plist,"strings":detect_strings};

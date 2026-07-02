@@ -42,7 +42,6 @@ No known-file plugin — all ODF subtypes use the same content renderer.
 ## Real-World Examples
 
 - [`sample.odt`](../examples/sample.odt) — text document demonstrating paragraph and table rendering
-- [`sample.ods`](../examples/sample.ods) — spreadsheet demonstrating table cell display
 
 ## Known Limitations
 

@@ -1,24 +1,36 @@
 // Breakout brick maps + brick-type model. Glyphs per cell: ' ' empty · '1' normal (1 hit) ·
 // '2' tough (2 hits) · '#' indestructible wall (bounces, never breaks, not counted for clearing).
 // Layouts follow well-known Breakout/Arkanoid patterns (wall, pyramid, checkerboard, fortress,
-// tunnels) with a twist or two of our own. Maps never fully ring a breakable brick in walls, so the
-// board is always clearable. Maps cycle as you level up (the ball keeps getting faster).
-export const COLS = 8;
+// tunnels, lanes, invaders) with a twist or two of our own. Maps never fully ring a breakable brick
+// in walls, so the board is always clearable. Maps cycle as you level up (the ball keeps getting faster).
+export const COLS = 12;
 export const ROW_COLORS = ['#e57373', '#ffb74d', '#ffd54f', '#81c784', '#4dd0e1', '#7986cb', '#ba68c8', '#f06292'];
 
 export const MAPS = [
   // 1 — classic wall with a tough band
-  ['11111111', '12222221', '11111111', '11111111'],
+  ['111111111111', '112222222211', '111111111111', '111111111111'],
   // 2 — pyramid
-  ['   11   ', '  1122  ', ' 112211 ', '11222211'],
+  ['     11     ', '    1221    ', '   112211   ', '  11222211  ', ' 1112222111 '],
   // 3 — checkerboard (twist: alternating tough)
-  ['1 2 1 2 ', ' 2 1 2 1', '1 2 1 2 ', ' 2 1 2 1'],
+  ['1 2 1 2 1 2 ', ' 2 1 2 1 2 1', '1 2 1 2 1 2 ', ' 2 1 2 1 2 1', '111111111111'],
   // 4 — fortress: solid corners, tough core
-  ['#111111#', '11222211', '11222211', '#111111#'],
+  ['#1111111111#', '112222222211', '1122####2211', '112222222211', '#1111111111#'],
   // 5 — tunnels: solid pillars with an open floor
-  ['1#1111#1', '1#2222#1', '1#1111#1', '11111111'],
+  ['11#111111#11', '11#222222#11', '11#111111#11', '111111111111', '  11111111  '],
   // 6 — zigzag twist: staggered solid ends
-  ['1111111#', '#1111111', '1111111#', '#1111111'],
+  ['11111111111#', '#11111111111', '11112222111#', '#11122221111', '11111111111#'],
+  // 7 — lane splitter
+  ['111#1111#111', '222#2222#222', '111111111111', '   111111   ', '111111111111'],
+  // 8 — crown
+  ['  11    11  ', ' 1221  1221 ', '112222222211', ' 1111111111 ', '   112211   '],
+  // 9 — gates
+  ['##11111111##', '111222222111', '111 1111 111', '222 2222 222', '111111111111'],
+  // 10 — invader
+  [' 11 1111 11 ', '111111111111', '221122221122', '  11111111  ', ' 11 1  1 11 '],
+  // 11 — staircase
+  ['1           ', '11          ', '111         ', '1111    2222', '11111  22222', '111111222222'],
+  // 12 — finale: wide wall, solid bumpers
+  ['111111111111', '122222222221', '11#111111#11', '122222222221', '111111111111', '#1111111111#'],
 ];
 
 // Build the brick list for a map at the given geometry. Returns { bricks, brickW }.

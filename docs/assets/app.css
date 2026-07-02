@@ -67,6 +67,18 @@ body {
 .export-item:hover { background: var(--bg); border-color: var(--border); }
 .export-loading { padding: 9px 12px; color: var(--fg-2); font-size: 13px; }
 
+.file-loading {
+  position: fixed; left: 50%; top: calc(var(--topbar-h) + env(safe-area-inset-top) + 14px);
+  z-index: 120; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+  max-width: min(420px, calc(100vw - 24px)); padding: 10px 14px;
+  background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0,0,0,.24);
+}
+.file-loading .boot-spinner-ring { width: 22px; height: 22px; border-width: 3px; flex: 0 0 auto; }
+.file-loading-copy { min-width: 0; display: grid; line-height: 1.25; }
+.file-loading-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.file-loading-detail { color: var(--fg-2); font-size: 12px; }
+
 /* ── Body layout: sidebar + main ── */
 .body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
 .main-area { flex: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
@@ -676,8 +688,8 @@ body.fv-dragging .intake::after {
 .cm-close { background: var(--bg-2); border: 1px solid var(--border); color: var(--fg); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
 .cm-intro { padding: 12px 16px 4px; margin: 0; font-size: 12px; color: var(--fg-2); }
 .cm-toolbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.cm-all, .cm-none { font-size: 12px; padding: 3px 8px; background: var(--btn-bg, var(--bg-2)); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--fg); }
-.cm-all:hover, .cm-none:hover { background: var(--hover); }
+.cm-all, .cm-none, .cm-preset { font-size: 12px; padding: 3px 8px; background: var(--btn-bg, var(--bg-2)); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: var(--fg); }
+.cm-all:hover, .cm-none:hover, .cm-preset:hover { background: var(--hover); }
 .cm-grand-total { margin-left: auto; font-size: 12px; color: var(--fg-2); }
 .cm-groups { flex: 1 1 auto; overflow-y: auto; }
 .cm-group { border-bottom: 1px solid var(--border); }

@@ -64,7 +64,6 @@
 
 - [`sample.sqlite`](../examples/sample.sqlite) — example SQLite database
 - [`sample.csv`](../examples/sample.csv) — example CSV data file
-- [`sample.tsv`](../examples/sample.tsv) — example TSV data file
 
 ## Known Limitations
 

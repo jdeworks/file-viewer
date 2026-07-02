@@ -20,6 +20,17 @@ async function loadFile(file) {
   ensureStudio().setImage({ bytes, mime: file.type });
 }
 
+async function loadExampleSample(name) {
+  const clean = String(name || '').replace(/^\/?docs\/examples\//, '').replace(/^\/?examples\//, '');
+  if (!clean || clean.includes('..') || clean.includes('\\')) return false;
+  const res = await fetch('../../examples/' + clean).catch(() => null);
+  if (!res?.ok) return false;
+  const blob = await res.blob();
+  if (!blob.type.startsWith('image/')) return false;
+  await loadFile(new File([blob], clean.split('/').pop() || 'sample', { type: blob.type }));
+  return true;
+}
+
 // A tiny generated test pattern so the page is useful with no upload.
 function loadSample() {
   const c = document.createElement('canvas');
@@ -58,4 +69,6 @@ const drop = $('drop');
 ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
 drop.addEventListener('drop', (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
 
-loadSample();
+const initialSample = new URLSearchParams(location.search).get('sample');
+if (initialSample) loadExampleSample(initialSample).then((ok) => { if (!ok) loadSample(); });
+else loadSample();

@@ -22,6 +22,30 @@ export async function run(ctx) {
   await page.waitForFunction(() => document.querySelectorAll('#previewHost .json-tree .qp-match').length > 0, null, { timeout: 4000 }).catch(() => {});
   const jMatches = await page.$$eval('#previewHost .json-tree .qp-match', (els) => els.length);
   if (jMatches > 0) pass('JSON query panel highlights JSONPath matches (' + jMatches + ')'); else fail('json query no matches');
+  await page.click('#previewHost .json-qp .qp-clear');
+  await page.click('#previewHost .json-tree summary');
+  const jsonCopy = await page.evaluate(async () => {
+    const row = [...document.querySelectorAll('#previewHost .json-tree [data-qp-path]')]
+      .find((el) => el.dataset.qpPath === 'name');
+    if (!row) return { missing: true };
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 180, clientY: 180 }));
+    const menuVisible = !document.querySelector('#previewHost .json-copy-menu')?.hidden;
+    const clickCopy = async (kind) => {
+      document.querySelector(`#previewHost .json-copy-menu [data-copy="${kind}"]`)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      const copied = document.querySelector('#previewHost .json-qp')?.dataset.lastJsonCopy || '';
+      row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 180, clientY: 180 }));
+      return copied;
+    };
+    const path = await clickCopy('path');
+    const key = await clickCopy('key');
+    const value = await clickCopy('value');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    return { menuVisible, path, key, value };
+  });
+  if (jsonCopy.menuVisible && jsonCopy.path === '$.name' && jsonCopy.key === 'name' && jsonCopy.value === 'file-viewer')
+    pass('JSON context menu copies JSONPath, key, and value');
+  else fail('json context copy: ' + JSON.stringify(jsonCopy));
   const sortedKeys = await page.evaluate(async () => {
     const { render } = await import('./types/text/json/renderer.js');
     const rendered = await render(window.__fv.state.intake, { settings: { jsonSortKeys: 'A-Z' } });
@@ -76,6 +100,29 @@ export async function run(ctx) {
   await openExample('Sample.json');
   await page.waitForSelector('#previewHost .json-tree', { timeout: 30000 });
 
+  // ── SQL enhanced view ── .sql stays editable Code underneath, with a focused SQL overview.
+  await openExample('query.sql');
+  await page.waitForSelector('#previewHost .sql-doc', { timeout: 12000 });
+  const sqlTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  const sqlChip = await page.$eval('#enhanceChip', (e) => e.textContent);
+  const sqlText = await page.$eval('#previewHost .sql-doc', (e) => e.textContent);
+  const sqlSourceCollapsed = await page.$eval('#previewHost .sql-doc .kf-source-details', (e) => !e.open && /Source/i.test(e.textContent));
+  const sqlNotSparql = await page.$('#previewHost .sparql-doc') === null;
+  if (sqlTypeId === 'code' && /SQL Query/.test(sqlChip)) pass('query.sql remains Code with SQL enhanced view selected'); else fail('sql type/chip: ' + sqlTypeId + ' / ' + sqlChip);
+  if (/SQL|CREATE TABLE|SELECT|readings|GROUP BY|ORDER BY/i.test(sqlText)) pass('query.sql enhanced view summarizes statements, tables, and modifiers'); else fail('sql text: ' + sqlText.replace(/\s+/g, ' ').slice(0, 300));
+  if (sqlSourceCollapsed) pass('query.sql enhanced source starts collapsed'); else fail('sql source not collapsed');
+  if (sqlNotSparql) pass('query.sql does not render as SPARQL'); else fail('query.sql rendered SPARQL');
+
+  await openExample('postgresql.conf');
+  await page.waitForSelector('#previewHost .pg-doc', { timeout: 12000 });
+  const pgStillPg = await page.$('#previewHost .sql-doc') === null;
+  if (pgStillPg) pass('postgresql.conf still uses PostgreSQL config enhancer'); else fail('postgresql.conf was intercepted by SQL enhancer');
+
+  await openExample('sample.sparql');
+  await page.waitForSelector('#previewHost .sparql-doc', { timeout: 12000 });
+  const sparqlStillSparql = await page.$('#previewHost .sql-doc') === null;
+  if (sparqlStillSparql) pass('sample.sparql still uses SPARQL enhancer'); else fail('sample.sparql was intercepted by SQL enhancer');
+
   await page.evaluate(() => window.__fv.openViewerFile('edge.jsonc', {
     text: '{\n  // File Examples JSON comments edge case\n  "name": "jsonc",\n  "items": [1, 2,],\n}\n',
   }));
@@ -108,6 +155,17 @@ export async function run(ctx) {
   }));
   if (/JSON Structure Review|secret|\[configured\]/i.test(jsonSecret.text) && !/plain-text-secret|abcdefghijklmnopqrstuvwxyz123456/.test(jsonSecret.text + jsonSecret.html) && !jsonSecret.sourceOpen) pass('JSON secret-like values are warned and redacted');
   else fail('json secret redaction: ' + JSON.stringify({ ...jsonSecret, html: jsonSecret.html.slice(0, 300), text: jsonSecret.text.slice(0, 300) }));
+  const copiedSecret = await page.evaluate(async () => {
+    const row = [...document.querySelectorAll('#previewHost .json-tree [data-qp-path]')]
+      .find((el) => el.dataset.qpPath === 'nested.password');
+    if (!row) return { missing: true };
+    row.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, clientX: 210, clientY: 210 }));
+    document.querySelector('#previewHost .json-copy-menu [data-copy="value"]')?.click();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    return document.querySelector('#previewHost .json-qp')?.dataset.lastJsonCopy || '';
+  });
+  if (copiedSecret === '[configured]') pass('JSON context value copy preserves secret redaction');
+  else fail('json copied secret value: ' + copiedSecret);
   await page.$eval('#previewHost .json-qp .kf-source-link[data-source-line]', (e) => e.click());
   await page.waitForFunction(() => {
     const root = document.querySelector('#previewHost .json-qp');

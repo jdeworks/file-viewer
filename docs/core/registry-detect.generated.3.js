@@ -3,6 +3,36 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_3mf=(()=>{
+const hasZipMagic = (b) => b && b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
+
+function detect(intake) {
+  const b = intake.bytes || new Uint8Array();
+  if (!hasZipMagic(b)) return 0;
+  const sample = new TextDecoder('latin1').decode(b.subarray(0, Math.min(b.length, 32768)));
+  if (sample.includes('[Content_Types].xml') && /model\/3mf/i.test(sample)) return 0.99;
+  if (hasExtension(intake, '3mf')) return 0.97;
+  return 0;
+}
+return detect;
+})();
+
+const detect_clip=(()=>{
+function magic(intake) {
+  const b = intake.bytes || new Uint8Array();
+  const sig = 'SQLite format 3\0';
+  if (b.length < sig.length) return false;
+  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
+  return true;
+}
+
+function detect(intake) {
+  if (!hasExtension(intake, 'clip')) return 0;
+  return magic(intake) ? 0.97 : 0.70;
+}
+return detect;
+})();
+
 const detect_sqlite=(()=>{
 // SQLite database files. By extension, or the 16-byte magic header "SQLite format 3\0".
 function detect(intake) {
@@ -288,38 +318,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_mbtiles=(()=>{
-function hasSqliteMagic(intake) {
-  const b = intake.bytes;
-  if (!b || b.length < 16) return false;
-  const sig = 'SQLite format 3\0';
-  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
-  return true;
-}
-
-function detect(intake) {
-  if (!hasSqliteMagic(intake)) return 0;
-  if (hasExtension(intake, 'mbtiles')) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-const detect_pdb=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0; // VS .pdb files are binary
-  const head = (intake.textSample || '').slice(0, 600);
-  const hasHeader = /^HEADER\s/m.test(head);
-  const hasAtom = /^(?:ATOM|HETATM)\s/m.test(head);
-  if (hasExtension(intake, 'pdb', 'ent')) {
-    if (hasHeader || hasAtom) return 0.96;
-    return 0.5; // extension alone — might be VS pdb (but those are binary)
-  }
-  if (hasHeader && hasAtom) return 0.90;
-  if (hasHeader || hasAtom) return 0.50;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz,"mbtiles":detect_mbtiles,"pdb":detect_pdb};
+export const DETECTORS={"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf,"kmz":detect_kmz};

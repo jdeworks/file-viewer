@@ -795,6 +795,7 @@ import handlebarsTemplate from '../types/text/known/handlebars-template/index.js
 import jinja2Template from '../types/text/known/jinja2-template/index.js';
 import mustacheTemplate from '../types/text/known/mustache-template/index.js';
 import sparqlQuery from '../types/text/known/sparql-query/index.js';
+import sqlQuery from '../types/text/known/sql-query/index.js';
 import turtleRdf from '../types/text/known/turtle-rdf/index.js';
 import graphvizDot from '../types/text/known/graphviz-dot/index.js';
 import verilog from '../types/text/known/verilog/index.js';
@@ -914,7 +915,7 @@ import flatpakManifest from '../types/text/known/flatpak-manifest/index.js';
 import snapcraftYaml from '../types/text/known/snapcraft-yaml/index.js';
 import smtlib from '../types/text/known/smtlib/index.js';
 import promela from '../types/text/known/promela/index.js';
-export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
+export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidTemplate, handlebarsTemplate, jinja2Template, mustacheTemplate, sparqlQuery, sqlQuery, turtleRdf, graphvizDot, verilog, xsltStylesheet, svelteComponent, nunjucks,
   // Extension-specific language plugins — listed BEFORE broad content-heuristic matchers to avoid interception.
   // Within this block: more-specific (fewer heuristics) goes first to avoid false-positive interception.
   // forth-lang before factor-lang (factor uses VARIABLE/CONSTANT which forth also has)

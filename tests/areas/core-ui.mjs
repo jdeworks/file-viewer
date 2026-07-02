@@ -33,10 +33,15 @@ export async function run(ctx) {
   const monaco = bundles.find((b) => b.id === 'vendor:monaco');
   const core = bundles.find((b) => b.id === 'core');
   const ffmpeg = bundles.find((b) => b.id === 'vendor:ffmpeg');
+  const splitExamples = ['examples:catalog', 'examples:text-config', 'examples:data', 'examples:office', 'examples:image', 'examples:media', 'examples:binary']
+    .every((id) => bundles.some((b) => b.id === id));
+  const easteregg = bundles.find((b) => b.id === 'easteregg');
   if (allCovered && sized && monaco && monaco.heavy && core && !core.heavy) pass('asset-manifest grouped into ' + bundles.length + ' sized bundles (Monaco flagged heavy)');
   else fail('manifest bundles: covered=' + allCovered + ' sized=' + sized + ' monacoHeavy=' + (monaco && monaco.heavy) + ' coreLight=' + (core && !core.heavy));
   if (ffmpeg && ffmpeg.heavy) pass('ffmpeg bundle present and flagged heavy (~23 MB, opt-in)');
   else fail('ffmpeg bundle missing or not heavy: ' + JSON.stringify(ffmpeg));
+  if (splitExamples && easteregg && easteregg.group === 'Easter eggs') pass('asset-manifest splits examples and easter eggs into selectable bundles');
+  else fail('example/easteregg bundles: split=' + splitExamples + ' easteregg=' + JSON.stringify(easteregg));
 }
 
 // SW update-guard: a deploy bumps the version stamped into sw.js (its bytes change → the browser
@@ -128,9 +133,10 @@ export async function run(ctx) {
   // Startup stays light: no Monaco editor exists before a file is opened...
   const editorAtStartup = await page.$('#editor .monaco-editor');
   if (!editorAtStartup) pass('startup is lazy (no editor mounted before opening a file)'); else fail('Monaco editor mounted at startup');
-  // ...but Monaco is warmed in the background (idle) so the first open is instant.
-  await page.waitForFunction(() => !!window.monaco, null, { timeout: 12000 });
-  pass('Monaco preloaded in the background during idle');
+  // ...and Monaco should not be fetched or initialized until a raw editor is actually needed.
+  await page.waitForTimeout(1200);
+  const monacoAtStartup = await page.evaluate(() => !!window.monaco);
+  if (!monacoAtStartup) pass('Monaco not preloaded before opening a file'); else fail('Monaco was preloaded before opening a file');
 
   // Whole-page drop affordance: on the empty/intake screen, dragging a FILE over any part of the
   // page lights up the whole page (body.fv-dragging). A tree-path drag (or no-file drag) must NOT.
@@ -181,6 +187,31 @@ export async function run(ctx) {
   const welcomeTip = await page.$eval('#examples .ex-file-btn', (el) => el.getAttribute('title') || '');
   if (/used for/i.test(welcomeTip)) pass('sample files expose hover descriptions');
   else fail('sample hover description missing: ' + welcomeTip);
+
+  // Single large-file reads show progress before the editor/render pipeline starts. Keep the
+  // sample below the existing 8 MB warning threshold so this tests feedback, not confirmation.
+  await page.evaluate(() => {
+    const text = 'big file loading feedback\n'.repeat(26000);
+    const file = new File([text], 'big-visible.txt', { type: 'text/plain' });
+    const read = file.arrayBuffer.bind(file);
+    file.arrayBuffer = () => new Promise((resolve, reject) =>
+      setTimeout(() => read().then(resolve, reject), 350));
+    const input = document.getElementById('fileInput');
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForSelector('#fileLoadStatus', { timeout: 3000 });
+  const loadStatus = await page.$eval('#fileLoadStatus', (el) => el.textContent);
+  if (/Reading big-visible\.txt/.test(loadStatus) && /\d+\s*KB/.test(loadStatus))
+    pass('large text file shows loading feedback while bytes are read');
+  else fail('large file loading status text: ' + loadStatus);
+  await page.waitForFunction(() =>
+    window.__fv?.state?.intake?.filename === 'big-visible.txt'
+    && !document.getElementById('fileLoadStatus'), null, { timeout: 15000 });
+  pass('large text file loading feedback clears after open');
+  await page.evaluate(() => { window.__fv.state.downloadedSinceEdit = true; });
 
   // Load the Welcome.md example.
   await openExample('Welcome.md');

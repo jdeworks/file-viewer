@@ -33,7 +33,7 @@
 | WYSIWYG editor | ✅ | TipTap visual editor (toggle in the toolbar); round-trips to CommonMark. Compare / Side-by-side switch back to the code editor automatically |
 | Heading levels | ✅ | Toolbar **H** opens a picker — H1–H6 or Normal text — applied in both the Monaco and WYSIWYG editors |
 | Bold/italic/strike | ✅ | Toggle on the selection (native marks in WYSIWYG) |
-| Link from clipboard | ✅ | Paste URL over selection → `[text](url)` |
+| Link from clipboard | ✅ | Paste URL over selected text to create Markdown link syntax |
 | Table insert | ✅ | Size-grid picker → insert GFM table |
 | Table sort | ✅ | Right-click column header → sort by that column |
 | Save (Companion) | ✅ | Write-back to local file via Companion server |
@@ -43,7 +43,8 @@
 |---------|--------|---------|
 | Download original | ✅ | Always available |
 | Print / Save as PDF | ✅ | Browser print dialog on rendered view |
-| Export as HTML | ❌ | Not yet wired (rendered HTML is in sandboxed iframe) |
+| Export as HTML | ✅ | Download the rendered, sanitized preview as a standalone HTML file |
+| Export as Word (.docx) | ✅ | Convert the rendered preview to a basic OOXML document |
 
 ## Settings
 | Setting | Default | Description |
@@ -60,7 +61,6 @@
 |---------|----------|-------|
 | Math rendering (KaTeX) | High | LaTeX math in `$...$` and `$$...$$` blocks |
 | Mermaid diagrams | Medium | Flowcharts, sequence diagrams in fenced blocks |
-| Export as HTML file | Medium | Self-contained HTML download of rendered view |
 | Front-matter (YAML) display | Medium | Show/parse YAML front matter as structured metadata |
 | Image paste | Medium | Paste image from clipboard → encode as base64 data URI |
 | Spell check | Low | Browser spellcheck or custom dictionary |

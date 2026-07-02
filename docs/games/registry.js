@@ -38,7 +38,7 @@ export const GAMES = [
     id: 'breakout',
     title: 'Breakout',
     emoji: '🧱',
-    blurb: 'Bounce the ball, smash every brick. ← → or drag. Each board gets faster.',
+    blurb: 'Bounce, catch, blast, and skip through wider brick boards. ← → or drag.',
     load: () => import('./breakout/breakout.js'),
   },
   {
@@ -52,7 +52,7 @@ export const GAMES = [
     id: 'minesweeper',
     title: 'Minesweeper',
     emoji: '💣',
-    blurb: 'Clear the field without hitting a mine. Tap to dig, toggle Flag mode. Boards grow.',
+    blurb: 'Clear the field without hitting a mine. Pick a difficulty or a no-guess board.',
     load: () => import('./minesweeper/minesweeper.js'),
   },
   {

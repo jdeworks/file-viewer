@@ -13021,14 +13021,20 @@ var SPARQL_CONTENT_KWS = ["prefix", "select", "construct", "ask", "describe"];
 function hasSparqlContent(text) {
   if (!text) return false;
   const lines = text.split(/\r?\n/);
+  let first = "";
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
-    const lower = trimmed.toLowerCase();
-    if (SPARQL_CONTENT_KWS.some((kw) => lower.startsWith(kw))) return true;
+    first = trimmed.toLowerCase();
     break;
   }
-  return false;
+  if (!SPARQL_CONTENT_KWS.some((kw) => first.startsWith(kw))) return false;
+  if (first.startsWith("prefix")) return true;
+  const lower = text.toLowerCase();
+  const hasWhereBlock = /\bwhere\s*\{/.test(lower);
+  const hasVar = /\?[a-z_][\w-]*/i.test(text);
+  const hasRdfName = /(?:^|\s)[a-z_][\w-]*:[\w-]+/i.test(text) || /<https?:\/\//i.test(text);
+  return hasWhereBlock && hasVar && hasRdfName;
 }
 var plugin116 = {
   id: "sparql-query",
@@ -13051,12 +13057,50 @@ var plugin116 = {
 };
 var sparql_query_default = plugin116;
 
+// ../../docs/types/text/known/sql-query/index.js
+var SQL_START = /^(with|select|insert|update|delete|create|alter|drop|truncate|merge|grant|revoke)\b/i;
+var SQL_STRUCTURE = /\b(from|join|where|group\s+by|order\s+by|create\s+table|insert\s+into|update\s+[\w".[\]]+|delete\s+from)\b/i;
+function firstCodeLine(text) {
+  const withoutBlockComments = String(text || "").replace(/\/\*[\s\S]*?\*\//g, "");
+  for (const line of withoutBlockComments.split(/\r?\n/)) {
+    const trimmed = line.replace(/--.*$/, "").trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
+}
+function looksLikeSql(text) {
+  const first = firstCodeLine(text);
+  if (!SQL_START.test(first)) return false;
+  return SQL_STRUCTURE.test(text || "");
+}
+var plugin117 = {
+  id: "sql-query",
+  label: "SQL Query",
+  tags: ["sql", "database", "query"],
+  match(intake, baseType) {
+    const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
+    const ext = name.includes(".") ? name.split(".").pop() : "";
+    if (ext === "sparql" || ext === "rq") return false;
+    if (ext === "sql") return true;
+    if (baseType?.id !== "code") return false;
+    return looksLikeSql(intake.textSample || intake.text || "");
+  },
+  loadRenderer: () => import("../types/text/known/sql-query/renderer.js"),
+  about: {
+    description: "SQL query file — schema definitions and database queries, summarized by statements, referenced tables, joins, aliases, CTEs, and query modifiers.",
+    usedFor: [
+      { label: "SQL", description: "Structured Query Language for relational databases", href: "https://en.wikipedia.org/wiki/SQL" }
+    ]
+  }
+};
+var sql_query_default = plugin117;
+
 // ../../docs/types/text/known/turtle-rdf/index.js
 function hasTurtleContent(text) {
   if (!text) return false;
   return /@prefix\s+/i.test(text) || /^\s*@base\s+/im.test(text);
 }
-var plugin117 = {
+var plugin118 = {
   id: "turtle-rdf",
   label: "Turtle RDF",
   tags: ["rdf", "turtle", "semantic-web", "ontology", "linked-data"],
@@ -13075,7 +13119,7 @@ var plugin117 = {
     ]
   }
 };
-var turtle_rdf_default = plugin117;
+var turtle_rdf_default = plugin118;
 
 // ../../docs/types/text/known/graphviz-dot/index.js
 function hasDotContent(text) {
@@ -13083,7 +13127,7 @@ function hasDotContent(text) {
   const stripped = (text || "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "").trimStart();
   return /^(strict\s+)?(di)?graph\b/i.test(stripped);
 }
-var plugin118 = {
+var plugin119 = {
   id: "graphviz-dot",
   label: "Graphviz DOT",
   tags: ["graph", "visualization", "dot", "graphviz"],
@@ -13102,7 +13146,7 @@ var plugin118 = {
     ]
   }
 };
-var graphviz_dot_default = plugin118;
+var graphviz_dot_default = plugin119;
 
 // ../../docs/types/text/known/verilog/index.js
 function isCoq(text) {
@@ -13114,7 +13158,7 @@ function hasVerilogContent(text) {
   if (!/\bmodule\s+\w/.test(text)) return false;
   return /\b(endmodule|always|assign|wire\b|reg\b|input\b|output\b|inout\b|parameter\b|localparam\b|posedge|negedge|initial\b)\b/.test(text);
 }
-var plugin119 = {
+var plugin120 = {
   id: "verilog",
   label: "Verilog / SystemVerilog",
   tags: ["hdl", "verilog", "systemverilog", "hardware", "fpga", "rtl"],
@@ -13140,10 +13184,10 @@ var plugin119 = {
     ]
   }
 };
-var verilog_default = plugin119;
+var verilog_default = plugin120;
 
 // ../../docs/types/text/known/xslt-stylesheet/index.js
-var plugin120 = {
+var plugin121 = {
   id: "xslt-stylesheet",
   label: "XSLT Stylesheet",
   tags: ["xslt", "xsl", "xml", "transform", "stylesheet"],
@@ -13162,10 +13206,10 @@ var plugin120 = {
     ]
   }
 };
-var xslt_stylesheet_default = plugin120;
+var xslt_stylesheet_default = plugin121;
 
 // ../../docs/types/text/known/svelte-component/index.js
-var plugin121 = {
+var plugin122 = {
   id: "svelte-component",
   label: "Svelte Component",
   tags: ["svelte", "sfc", "component", "frontend"],
@@ -13182,10 +13226,10 @@ var plugin121 = {
     ]
   }
 };
-var svelte_component_default = plugin121;
+var svelte_component_default = plugin122;
 
 // ../../docs/types/text/known/nunjucks/index.js
-var plugin122 = {
+var plugin123 = {
   id: "nunjucks",
   label: "Nunjucks Template",
   tags: ["nunjucks", "njk", "mozilla", "jinja", "template"],
@@ -13203,10 +13247,10 @@ var plugin122 = {
     ]
   }
 };
-var nunjucks_default = plugin122;
+var nunjucks_default = plugin123;
 
 // ../../docs/types/text/known/haskell-lang/index.js
-var plugin123 = {
+var plugin124 = {
   id: "haskell-lang",
   label: "Haskell",
   tags: ["haskell", "hs", "lhs", "functional", "ml"],
@@ -13228,10 +13272,10 @@ var plugin123 = {
     ]
   }
 };
-var haskell_lang_default = plugin123;
+var haskell_lang_default = plugin124;
 
 // ../../docs/types/text/known/zig-lang/index.js
-var plugin124 = {
+var plugin125 = {
   id: "zig-lang",
   label: "Zig",
   tags: ["zig", "systems", "compiled", "low-level"],
@@ -13249,14 +13293,14 @@ var plugin124 = {
     ]
   }
 };
-var zig_lang_default = plugin124;
+var zig_lang_default = plugin125;
 
 // ../../docs/types/text/known/elixir-lang/index.js
 function hasElixirContent(text) {
   if (!text) return false;
   return /\b(defmodule|def |defp |use |alias |import )\b/.test(text);
 }
-var plugin125 = {
+var plugin126 = {
   id: "elixir-lang",
   label: "Elixir",
   tags: ["elixir", "functional", "beam", "erlang", "phoenix"],
@@ -13278,10 +13322,10 @@ var plugin125 = {
     ]
   }
 };
-var elixir_lang_default = plugin125;
+var elixir_lang_default = plugin126;
 
 // ../../docs/types/text/known/pug-template/index.js
-var plugin126 = {
+var plugin127 = {
   id: "pug-template",
   label: "Pug / Jade",
   tags: ["pug", "jade", "template", "html", "view"],
@@ -13298,10 +13342,10 @@ var plugin126 = {
     ]
   }
 };
-var pug_template_default = plugin126;
+var pug_template_default = plugin127;
 
 // ../../docs/types/text/known/ejs-template/index.js
-var plugin127 = {
+var plugin128 = {
   id: "ejs-template",
   label: "EJS",
   tags: ["ejs", "template", "html", "javascript", "view"],
@@ -13318,10 +13362,10 @@ var plugin127 = {
     ]
   }
 };
-var ejs_template_default = plugin127;
+var ejs_template_default = plugin128;
 
 // ../../docs/types/text/known/ocaml-lang/index.js
-var plugin128 = {
+var plugin129 = {
   id: "ocaml-lang",
   label: "OCaml",
   tags: ["ocaml", "ml", "mli", "functional", "ml-family"],
@@ -13351,10 +13395,10 @@ var plugin128 = {
     ]
   }
 };
-var ocaml_lang_default = plugin128;
+var ocaml_lang_default = plugin129;
 
 // ../../docs/types/text/known/fsharp-lang/index.js
-var plugin129 = {
+var plugin130 = {
   id: "fsharp-lang",
   label: "F#",
   tags: ["fsharp", "fs", "fsi", "fsx", "functional", "dotnet", "ml-family"],
@@ -13388,10 +13432,10 @@ var plugin129 = {
     ]
   }
 };
-var fsharp_lang_default = plugin129;
+var fsharp_lang_default = plugin130;
 
 // ../../docs/types/text/known/clojure-lang/index.js
-var plugin130 = {
+var plugin131 = {
   id: "clojure-lang",
   label: "Clojure",
   tags: ["clojure", "clj", "cljs", "cljc", "edn", "functional", "lisp", "jvm"],
@@ -13413,10 +13457,10 @@ var plugin130 = {
     ]
   }
 };
-var clojure_lang_default = plugin130;
+var clojure_lang_default = plugin131;
 
 // ../../docs/types/text/known/elm-lang/index.js
-var plugin131 = {
+var plugin132 = {
   id: "elm-lang",
   label: "Elm",
   tags: ["elm", "functional", "frontend", "tea"],
@@ -13438,10 +13482,10 @@ var plugin131 = {
     ]
   }
 };
-var elm_lang_default = plugin131;
+var elm_lang_default = plugin132;
 
 // ../../docs/types/text/known/kotlin-lang/index.js
-var plugin132 = {
+var plugin133 = {
   id: "kotlin-lang",
   label: "Kotlin",
   tags: ["kotlin", "kt", "kts", "jvm", "android"],
@@ -13467,10 +13511,10 @@ var plugin132 = {
     ]
   }
 };
-var kotlin_lang_default = plugin132;
+var kotlin_lang_default = plugin133;
 
 // ../../docs/types/text/known/scala-lang/index.js
-var plugin133 = {
+var plugin134 = {
   id: "scala-lang",
   label: "Scala",
   tags: ["scala", "sc", "jvm", "functional", "ammonite"],
@@ -13496,10 +13540,10 @@ var plugin133 = {
     ]
   }
 };
-var scala_lang_default = plugin133;
+var scala_lang_default = plugin134;
 
 // ../../docs/types/text/known/nim-lang/index.js
-var plugin134 = {
+var plugin135 = {
   id: "nim-lang",
   label: "Nim",
   tags: ["nim", "systems", "compiled"],
@@ -13518,10 +13562,10 @@ var plugin134 = {
     ]
   }
 };
-var nim_lang_default = plugin134;
+var nim_lang_default = plugin135;
 
 // ../../docs/types/text/known/dart-lang/index.js
-var plugin135 = {
+var plugin136 = {
   id: "dart-lang",
   label: "Dart",
   tags: ["dart", "flutter", "mobile", "web"],
@@ -13544,11 +13588,11 @@ var plugin135 = {
     ]
   }
 };
-var dart_lang_default = plugin135;
+var dart_lang_default = plugin136;
 
 // ../../docs/types/text/known/groovy-lang/index.js
 var GROOVY_EXTS = /* @__PURE__ */ new Set(["groovy", "gvy", "gy", "gsh", "gradle"]);
-var plugin136 = {
+var plugin137 = {
   id: "groovy-lang",
   label: "Groovy",
   tags: ["groovy", "gvy", "gy", "gsh", "jvm", "scripting"],
@@ -13576,10 +13620,10 @@ var plugin136 = {
     ]
   }
 };
-var groovy_lang_default = plugin136;
+var groovy_lang_default = plugin137;
 
 // ../../docs/types/text/known/crystal-lang/index.js
-var plugin137 = {
+var plugin138 = {
   id: "crystal-lang",
   label: "Crystal",
   tags: ["crystal", "cr", "ruby-like", "systems"],
@@ -13606,10 +13650,10 @@ var plugin137 = {
     ]
   }
 };
-var crystal_lang_default = plugin137;
+var crystal_lang_default = plugin138;
 
 // ../../docs/types/text/known/julia-lang/index.js
-var plugin138 = {
+var plugin139 = {
   id: "julia-lang",
   label: "Julia",
   tags: ["julia", "jl", "scientific", "numerical"],
@@ -13637,10 +13681,10 @@ var plugin138 = {
     ]
   }
 };
-var julia_lang_default = plugin138;
+var julia_lang_default = plugin139;
 
 // ../../docs/types/text/known/r-lang/index.js
-var plugin139 = {
+var plugin140 = {
   id: "r-lang",
   label: "R",
   tags: ["r", "rlang", "statistics", "datascience"],
@@ -13662,10 +13706,10 @@ var plugin139 = {
     ]
   }
 };
-var r_lang_default = plugin139;
+var r_lang_default = plugin140;
 
 // ../../docs/types/text/known/lua-lang/index.js
-var plugin140 = {
+var plugin141 = {
   id: "lua-lang",
   label: "Lua",
   tags: ["lua", "scripting", "embedded", "gamedev"],
@@ -13692,10 +13736,10 @@ var plugin140 = {
     ]
   }
 };
-var lua_lang_default = plugin140;
+var lua_lang_default = plugin141;
 
 // ../../docs/types/text/known/purescript-lang/index.js
-var plugin141 = {
+var plugin142 = {
   id: "purescript-lang",
   label: "PureScript",
   tags: ["purescript", "purs", "functional", "haskell", "javascript"],
@@ -13720,10 +13764,10 @@ var plugin141 = {
     ]
   }
 };
-var purescript_lang_default = plugin141;
+var purescript_lang_default = plugin142;
 
 // ../../docs/types/text/known/swift-lang/index.js
-var plugin142 = {
+var plugin143 = {
   id: "swift-lang",
   label: "Swift",
   tags: ["swift", "ios", "macos", "apple", "swiftui"],
@@ -13751,10 +13795,10 @@ var plugin142 = {
     ]
   }
 };
-var swift_lang_default = plugin142;
+var swift_lang_default = plugin143;
 
 // ../../docs/types/text/known/erlang-source/index.js
-var plugin143 = {
+var plugin144 = {
   id: "erlang-source",
   label: "Erlang",
   tags: ["erlang", "erl", "hrl", "otp", "functional", "concurrent"],
@@ -13779,10 +13823,10 @@ var plugin143 = {
     ]
   }
 };
-var erlang_source_default = plugin143;
+var erlang_source_default = plugin144;
 
 // ../../docs/types/text/known/tcl-lang/index.js
-var plugin144 = {
+var plugin145 = {
   id: "tcl-lang",
   label: "Tcl",
   tags: ["tcl", "tk", "scripting", "embedded"],
@@ -13802,10 +13846,10 @@ var plugin144 = {
     ]
   }
 };
-var tcl_lang_default = plugin144;
+var tcl_lang_default = plugin145;
 
 // ../../docs/types/text/known/scheme-lang/index.js
-var plugin145 = {
+var plugin146 = {
   id: "scheme-lang",
   label: "Scheme",
   tags: ["scheme", "lisp", "functional", "r7rs"],
@@ -13825,10 +13869,10 @@ var plugin145 = {
     ]
   }
 };
-var scheme_lang_default = plugin145;
+var scheme_lang_default = plugin146;
 
 // ../../docs/types/text/known/racket-lang/index.js
-var plugin146 = {
+var plugin147 = {
   id: "racket-lang",
   label: "Racket",
   tags: ["racket", "lisp", "scheme", "functional"],
@@ -13848,10 +13892,10 @@ var plugin146 = {
     ]
   }
 };
-var racket_lang_default = plugin146;
+var racket_lang_default = plugin147;
 
 // ../../docs/types/text/known/fortran-lang/index.js
-var plugin147 = {
+var plugin148 = {
   id: "fortran-lang",
   label: "Fortran",
   tags: ["fortran", "scientific", "numerical", "hpc"],
@@ -13872,10 +13916,10 @@ var plugin147 = {
     ]
   }
 };
-var fortran_lang_default = plugin147;
+var fortran_lang_default = plugin148;
 
 // ../../docs/types/text/known/ruby-lang/index.js
-var plugin148 = {
+var plugin149 = {
   id: "ruby-lang",
   label: "Ruby",
   tags: ["ruby", "scripting", "oop", "rb"],
@@ -13895,10 +13939,10 @@ var plugin148 = {
     ]
   }
 };
-var ruby_lang_default = plugin148;
+var ruby_lang_default = plugin149;
 
 // ../../docs/types/text/known/perl-lang/index.js
-var plugin149 = {
+var plugin150 = {
   id: "perl-lang",
   label: "Perl",
   tags: ["perl", "scripting", "pl", "pm", "pod"],
@@ -13921,10 +13965,10 @@ var plugin149 = {
     ]
   }
 };
-var perl_lang_default = plugin149;
+var perl_lang_default = plugin150;
 
 // ../../docs/types/text/known/php-lang/index.js
-var plugin150 = {
+var plugin151 = {
   id: "php-lang",
   label: "PHP",
   tags: ["php", "web", "scripting", "phtml"],
@@ -13945,10 +13989,10 @@ var plugin150 = {
     ]
   }
 };
-var php_lang_default = plugin150;
+var php_lang_default = plugin151;
 
 // ../../docs/types/text/known/powershell-lang/index.js
-var plugin151 = {
+var plugin152 = {
   id: "powershell-lang",
   label: "PowerShell",
   tags: ["powershell", "ps1", "psm1", "psd1", "windows", "scripting"],
@@ -13966,10 +14010,10 @@ var plugin151 = {
     ]
   }
 };
-var powershell_lang_default = plugin151;
+var powershell_lang_default = plugin152;
 
 // ../../docs/types/text/known/solidity-lang/index.js
-var plugin152 = {
+var plugin153 = {
   id: "solidity-lang",
   label: "Solidity",
   tags: ["solidity", "ethereum", "smart-contract", "blockchain", "evm"],
@@ -13989,10 +14033,10 @@ var plugin152 = {
     ]
   }
 };
-var solidity_lang_default = plugin152;
+var solidity_lang_default = plugin153;
 
 // ../../docs/types/text/known/vhdl-lang/index.js
-var plugin153 = {
+var plugin154 = {
   id: "vhdl-lang",
   label: "VHDL",
   tags: ["vhdl", "hdl", "hardware", "fpga", "rtl", "digital-design"],
@@ -14012,10 +14056,10 @@ var plugin153 = {
     ]
   }
 };
-var vhdl_lang_default = plugin153;
+var vhdl_lang_default = plugin154;
 
 // ../../docs/types/text/known/arduino-sketch/index.js
-var plugin154 = {
+var plugin155 = {
   id: "arduino-sketch",
   label: "Arduino Sketch",
   tags: ["arduino", "embedded", "microcontroller", "iot", "c++"],
@@ -14035,10 +14079,10 @@ var plugin154 = {
     ]
   }
 };
-var arduino_sketch_default = plugin154;
+var arduino_sketch_default = plugin155;
 
 // ../../docs/types/text/known/cobol-lang/index.js
-var plugin155 = {
+var plugin156 = {
   id: "cobol-lang",
   label: "COBOL",
   tags: ["cobol", "mainframe", "business", "legacy", "enterprise"],
@@ -14058,10 +14102,10 @@ var plugin155 = {
     ]
   }
 };
-var cobol_lang_default = plugin155;
+var cobol_lang_default = plugin156;
 
 // ../../docs/types/text/known/gleam-lang/index.js
-var plugin156 = {
+var plugin157 = {
   id: "gleam-lang",
   label: "Gleam",
   tags: ["gleam", "functional", "erlang", "beam"],
@@ -14086,10 +14130,10 @@ var plugin156 = {
     ]
   }
 };
-var gleam_lang_default = plugin156;
+var gleam_lang_default = plugin157;
 
 // ../../docs/types/text/known/odin-lang/index.js
-var plugin157 = {
+var plugin158 = {
   id: "odin-lang",
   label: "Odin",
   tags: ["odin", "systems", "native", "c-alternative"],
@@ -14114,10 +14158,10 @@ var plugin157 = {
     ]
   }
 };
-var odin_lang_default = plugin157;
+var odin_lang_default = plugin158;
 
 // ../../docs/types/text/known/haxe-lang/index.js
-var plugin158 = {
+var plugin159 = {
   id: "haxe-lang",
   label: "Haxe",
   tags: ["haxe", "hx", "multi-target", "cross-platform"],
@@ -14146,10 +14190,10 @@ var plugin158 = {
     ]
   }
 };
-var haxe_lang_default = plugin158;
+var haxe_lang_default = plugin159;
 
 // ../../docs/types/text/known/ada-lang/index.js
-var plugin159 = {
+var plugin160 = {
   id: "ada-lang",
   label: "Ada",
   tags: ["ada", "safety-critical", "embedded", "military"],
@@ -14179,10 +14223,10 @@ var plugin159 = {
     ]
   }
 };
-var ada_lang_default = plugin159;
+var ada_lang_default = plugin160;
 
 // ../../docs/types/text/known/prolog-lang/index.js
-var plugin160 = {
+var plugin161 = {
   id: "prolog-lang",
   label: "Prolog",
   tags: ["prolog", "logic", "pl", "pro", "dcg"],
@@ -14214,10 +14258,10 @@ var plugin160 = {
     ]
   }
 };
-var prolog_lang_default = plugin160;
+var prolog_lang_default = plugin161;
 
 // ../../docs/types/text/known/asm-lang/index.js
-var plugin161 = {
+var plugin162 = {
   id: "asm-lang",
   label: "Assembly",
   tags: ["asm", "assembly", "nasm", "gas", "x86", "s", "nas"],
@@ -14241,10 +14285,10 @@ var plugin161 = {
     ]
   }
 };
-var asm_lang_default = plugin161;
+var asm_lang_default = plugin162;
 
 // ../../docs/types/text/known/objc-lang/index.js
-var plugin162 = {
+var plugin163 = {
   id: "objc-lang",
   label: "Objective-C",
   tags: ["objc", "objectivec", "m", "mm", "cocoa", "ios", "macos"],
@@ -14272,10 +14316,10 @@ var plugin162 = {
     ]
   }
 };
-var objc_lang_default = plugin162;
+var objc_lang_default = plugin163;
 
 // ../../docs/types/text/known/d-lang/index.js
-var plugin163 = {
+var plugin164 = {
   id: "d-lang",
   label: "D",
   tags: ["dlang", "d", "dmd", "phobos"],
@@ -14305,11 +14349,11 @@ var plugin163 = {
     ]
   }
 };
-var d_lang_default = plugin163;
+var d_lang_default = plugin164;
 
 // ../../docs/types/text/known/coffeescript-lang/index.js
 var COFFEE_EXTS = /* @__PURE__ */ new Set(["coffee", "litcoffee"]);
-var plugin164 = {
+var plugin165 = {
   id: "coffeescript-lang",
   label: "CoffeeScript",
   tags: ["coffeescript", "coffee", "javascript", "literate"],
@@ -14335,7 +14379,7 @@ var plugin164 = {
     ]
   }
 };
-var coffeescript_lang_default = plugin164;
+var coffeescript_lang_default = plugin165;
 
 // ../../docs/types/text/known/livescript-lang/index.js
 function hasLiveScriptContent(text) {
@@ -14343,7 +14387,7 @@ function hasLiveScriptContent(text) {
   const sample = text.slice(0, 2e3);
   return /->/.test(sample) || /<-/.test(sample) || /\bfunction\s+\w+/.test(sample) || /\bclass\s+\w+/.test(sample);
 }
-var plugin165 = {
+var plugin166 = {
   id: "livescript-lang",
   label: "LiveScript",
   tags: ["livescript", "ls", "javascript", "functional"],
@@ -14363,10 +14407,10 @@ var plugin165 = {
     ]
   }
 };
-var livescript_lang_default = plugin165;
+var livescript_lang_default = plugin166;
 
 // ../../docs/types/text/known/rescript-lang/index.js
-var plugin166 = {
+var plugin167 = {
   id: "rescript-lang",
   label: "ReScript",
   tags: ["rescript", "res", "resi", "ocaml", "react"],
@@ -14388,7 +14432,7 @@ var plugin166 = {
     ]
   }
 };
-var rescript_lang_default = plugin166;
+var rescript_lang_default = plugin167;
 
 // ../../docs/types/text/known/reason-lang/index.js
 function hasReasonContent(text) {
@@ -14396,7 +14440,7 @@ function hasReasonContent(text) {
   const sample = text.slice(0, 2e3);
   return /\blet\s+/.test(sample) && (/\bmodule\s+/.test(sample) || /\btype\s+/.test(sample) || /\bopen\s+/.test(sample));
 }
-var plugin167 = {
+var plugin168 = {
   id: "reason-lang",
   label: "Reason",
   tags: ["reason", "re", "rei", "ocaml", "react", "reasonml"],
@@ -14417,10 +14461,10 @@ var plugin167 = {
     ]
   }
 };
-var reason_lang_default = plugin167;
+var reason_lang_default = plugin168;
 
 // ../../docs/types/text/known/pony-lang/index.js
-var plugin168 = {
+var plugin169 = {
   id: "pony-lang",
   label: "Pony",
   tags: ["pony", "actor", "concurrent", "capability"],
@@ -14455,10 +14499,10 @@ var plugin168 = {
     ]
   }
 };
-var pony_lang_default = plugin168;
+var pony_lang_default = plugin169;
 
 // ../../docs/types/text/known/wren-lang/index.js
-var plugin169 = {
+var plugin170 = {
   id: "wren-lang",
   label: "Wren Script",
   tags: ["wren", "scripting", "embedded", "class-based"],
@@ -14485,10 +14529,10 @@ var plugin169 = {
     ]
   }
 };
-var wren_lang_default = plugin169;
+var wren_lang_default = plugin170;
 
 // ../../docs/types/text/known/mojo-lang/index.js
-var plugin170 = {
+var plugin171 = {
   id: "mojo-lang",
   label: "Mojo",
   tags: ["mojo", "python", "ai", "ml", "systems"],
@@ -14518,10 +14562,10 @@ var plugin170 = {
     ]
   }
 };
-var mojo_lang_default = plugin170;
+var mojo_lang_default = plugin171;
 
 // ../../docs/types/text/known/janet-lang/index.js
-var plugin171 = {
+var plugin172 = {
   id: "janet-lang",
   label: "Janet Script",
   tags: ["janet", "lisp", "scripting", "functional"],
@@ -14549,10 +14593,10 @@ var plugin171 = {
     ]
   }
 };
-var janet_lang_default = plugin171;
+var janet_lang_default = plugin172;
 
 // ../../docs/types/text/known/awk-script/index.js
-var plugin172 = {
+var plugin173 = {
   id: "awk-script",
   label: "AWK Script",
   tags: ["awk", "gawk", "nawk", "mawk", "text-processing", "script"],
@@ -14578,10 +14622,10 @@ var plugin172 = {
     ]
   }
 };
-var awk_script_default = plugin172;
+var awk_script_default = plugin173;
 
 // ../../docs/types/text/known/sed-script/index.js
-var plugin173 = {
+var plugin174 = {
   id: "sed-script",
   label: "sed Script",
   tags: ["sed", "text-processing", "script", "stream-editor"],
@@ -14607,10 +14651,10 @@ var plugin173 = {
     ]
   }
 };
-var sed_script_default = plugin173;
+var sed_script_default = plugin174;
 
 // ../../docs/types/text/known/m4-macro/index.js
-var plugin174 = {
+var plugin175 = {
   id: "m4-macro",
   label: "M4 Macro",
   tags: ["m4", "autoconf", "macro", "build", "text-processing"],
@@ -14637,10 +14681,10 @@ var plugin174 = {
     ]
   }
 };
-var m4_macro_default = plugin174;
+var m4_macro_default = plugin175;
 
 // ../../docs/types/text/known/lex-yacc/index.js
-var plugin175 = {
+var plugin176 = {
   id: "lex-yacc",
   label: "Lex/Yacc Grammar",
   tags: ["lex", "flex", "yacc", "bison", "parser", "lexer", "grammar"],
@@ -14669,10 +14713,10 @@ var plugin175 = {
     ]
   }
 };
-var lex_yacc_default = plugin175;
+var lex_yacc_default = plugin176;
 
 // ../../docs/types/text/known/elvish-script/index.js
-var plugin176 = {
+var plugin177 = {
   id: "elvish-script",
   label: "Elvish Script",
   tags: ["elvish", "elv", "shell", "script"],
@@ -14696,10 +14740,10 @@ var plugin176 = {
     ]
   }
 };
-var elvish_script_default = plugin176;
+var elvish_script_default = plugin177;
 
 // ../../docs/types/text/known/fish-script/index.js
-var plugin177 = {
+var plugin178 = {
   id: "fish-script",
   label: "Fish Script",
   tags: ["fish", "shell", "script", "config"],
@@ -14716,10 +14760,10 @@ var plugin177 = {
     ]
   }
 };
-var fish_script_default = plugin177;
+var fish_script_default = plugin178;
 
 // ../../docs/types/text/known/zsh-script/index.js
-var plugin178 = {
+var plugin179 = {
   id: "zsh-script",
   label: "Zsh Script",
   tags: ["zsh", "shell", "script", "z-shell"],
@@ -14737,10 +14781,10 @@ var plugin178 = {
     ]
   }
 };
-var zsh_script_default = plugin178;
+var zsh_script_default = plugin179;
 
 // ../../docs/types/text/known/nushell-script/index.js
-var plugin179 = {
+var plugin180 = {
   id: "nushell-script",
   label: "Nushell Script",
   tags: ["nushell", "nu", "shell", "script"],
@@ -14761,10 +14805,10 @@ var plugin179 = {
     ]
   }
 };
-var nushell_script_default = plugin179;
+var nushell_script_default = plugin180;
 
 // ../../docs/types/text/known/gdscript-lang/index.js
-var plugin180 = {
+var plugin181 = {
   id: "gdscript-lang",
   label: "GDScript",
   tags: ["gdscript", "godot", "gamedev", "gd"],
@@ -14784,10 +14828,10 @@ var plugin180 = {
     ]
   }
 };
-var gdscript_lang_default = plugin180;
+var gdscript_lang_default = plugin181;
 
 // ../../docs/types/text/known/ink-script/index.js
-var plugin181 = {
+var plugin182 = {
   id: "ink-script",
   label: "Ink Story",
   tags: ["ink", "inkle", "narrative", "interactive fiction", "ink2"],
@@ -14807,10 +14851,10 @@ var plugin181 = {
     ]
   }
 };
-var ink_script_default = plugin181;
+var ink_script_default = plugin182;
 
 // ../../docs/types/text/known/fennel-lang/index.js
-var plugin182 = {
+var plugin183 = {
   id: "fennel-lang",
   label: "Fennel Script",
   tags: ["fennel", "lua", "lisp", "fnl"],
@@ -14830,10 +14874,10 @@ var plugin182 = {
     ]
   }
 };
-var fennel_lang_default = plugin182;
+var fennel_lang_default = plugin183;
 
 // ../../docs/types/text/known/ballerina-lang/index.js
-var plugin183 = {
+var plugin184 = {
   id: "ballerina-lang",
   label: "Ballerina",
   tags: ["ballerina", "bal", "wso2", "cloud-native", "integration"],
@@ -14853,10 +14897,10 @@ var plugin183 = {
     ]
   }
 };
-var ballerina_lang_default = plugin183;
+var ballerina_lang_default = plugin184;
 
 // ../../docs/types/text/known/typst-doc/index.js
-var plugin184 = {
+var plugin185 = {
   id: "typst-doc",
   label: "Typst Document",
   tags: ["typst", "typ", "markup", "documentation", "typesetting"],
@@ -14875,10 +14919,10 @@ var plugin184 = {
     ]
   }
 };
-var typst_doc_default = plugin184;
+var typst_doc_default = plugin185;
 
 // ../../docs/types/text/known/textile-markup/index.js
-var plugin185 = {
+var plugin186 = {
   id: "textile-markup",
   label: "Textile",
   tags: ["textile", "markup", "wiki", "redmine", "documentation"],
@@ -14895,10 +14939,10 @@ var plugin185 = {
     ]
   }
 };
-var textile_markup_default = plugin185;
+var textile_markup_default = plugin186;
 
 // ../../docs/types/text/known/mediawiki-markup/index.js
-var plugin186 = {
+var plugin187 = {
   id: "mediawiki-markup",
   label: "MediaWiki",
   tags: ["mediawiki", "wiki", "markup", "wikipedia"],
@@ -14920,10 +14964,10 @@ var plugin186 = {
     ]
   }
 };
-var mediawiki_markup_default = plugin186;
+var mediawiki_markup_default = plugin187;
 
 // ../../docs/types/text/known/bbcode-text/index.js
-var plugin187 = {
+var plugin188 = {
   id: "bbcode-text",
   label: "BBCode",
   tags: ["bbcode", "bbc", "forum", "markup", "phpbb", "vbulletin"],
@@ -14951,10 +14995,10 @@ var plugin187 = {
     ]
   }
 };
-var bbcode_text_default = plugin187;
+var bbcode_text_default = plugin188;
 
 // ../../docs/types/text/known/vala-lang/index.js
-var plugin188 = {
+var plugin189 = {
   id: "vala-lang",
   label: "Vala",
   tags: ["vala", "gnome", "compiled", "object-oriented"],
@@ -14973,10 +15017,10 @@ var plugin188 = {
     ]
   }
 };
-var vala_lang_default = plugin188;
+var vala_lang_default = plugin189;
 
 // ../../docs/types/text/known/idris-lang/index.js
-var plugin189 = {
+var plugin190 = {
   id: "idris-lang",
   label: "Idris",
   tags: ["idris", "functional", "dependent-types", "total"],
@@ -14997,10 +15041,10 @@ var plugin189 = {
     ]
   }
 };
-var idris_lang_default = plugin189;
+var idris_lang_default = plugin190;
 
 // ../../docs/types/text/known/sml-lang/index.js
-var plugin190 = {
+var plugin191 = {
   id: "sml-lang",
   label: "Standard ML",
   tags: ["sml", "functional", "statically-typed", "ml"],
@@ -15022,10 +15066,10 @@ var plugin190 = {
     ]
   }
 };
-var sml_lang_default = plugin190;
+var sml_lang_default = plugin191;
 
 // ../../docs/types/text/known/tex-doc/index.js
-var plugin191 = {
+var plugin192 = {
   id: "tex-doc",
   label: "LaTeX",
   tags: ["latex", "tex", "typesetting", "document"],
@@ -15044,10 +15088,10 @@ var plugin191 = {
     ]
   }
 };
-var tex_doc_default = plugin191;
+var tex_doc_default = plugin192;
 
 // ../../docs/types/text/known/forth-lang/index.js
-var plugin192 = {
+var plugin193 = {
   id: "forth-lang",
   label: "Forth",
   tags: ["forth", "fth", "4th", "stack", "concatenative"],
@@ -15068,10 +15112,10 @@ var plugin192 = {
     ]
   }
 };
-var forth_lang_default = plugin192;
+var forth_lang_default = plugin193;
 
 // ../../docs/types/text/known/lean-lang/index.js
-var plugin193 = {
+var plugin194 = {
   id: "lean-lang",
   label: "Lean 4",
   tags: ["lean", "lean4", "theorem-prover", "dependent-types", "functional"],
@@ -15092,10 +15136,10 @@ var plugin193 = {
     ]
   }
 };
-var lean_lang_default = plugin193;
+var lean_lang_default = plugin194;
 
 // ../../docs/types/text/known/agda-lang/index.js
-var plugin194 = {
+var plugin195 = {
   id: "agda-lang",
   label: "Agda",
   tags: ["agda", "dependent-types", "theorem-prover", "functional"],
@@ -15117,10 +15161,10 @@ var plugin194 = {
     ]
   }
 };
-var agda_lang_default = plugin194;
+var agda_lang_default = plugin195;
 
 // ../../docs/types/text/known/chapel-lang/index.js
-var plugin195 = {
+var plugin196 = {
   id: "chapel-lang",
   label: "Chapel",
   tags: ["chapel", "chpl", "parallel", "hpc", "compiled"],
@@ -15140,10 +15184,10 @@ var plugin195 = {
     ]
   }
 };
-var chapel_lang_default = plugin195;
+var chapel_lang_default = plugin196;
 
 // ../../docs/types/text/known/koka-lang/index.js
-var plugin196 = {
+var plugin197 = {
   id: "koka-lang",
   label: "Koka",
   tags: ["koka", "functional", "effects", "compiled"],
@@ -15161,10 +15205,10 @@ var plugin196 = {
     ]
   }
 };
-var koka_lang_default = plugin196;
+var koka_lang_default = plugin197;
 
 // ../../docs/types/text/known/carbon-lang/index.js
-var plugin197 = {
+var plugin198 = {
   id: "carbon-lang",
   label: "Carbon",
   tags: ["carbon", "systems", "compiled", "cpp-successor"],
@@ -15182,10 +15226,10 @@ var plugin197 = {
     ]
   }
 };
-var carbon_lang_default = plugin197;
+var carbon_lang_default = plugin198;
 
 // ../../docs/types/text/known/grain-lang/index.js
-var plugin198 = {
+var plugin199 = {
   id: "grain-lang",
   label: "Grain",
   tags: ["grain", "functional", "webassembly", "compiled"],
@@ -15203,10 +15247,10 @@ var plugin198 = {
     ]
   }
 };
-var grain_lang_default = plugin198;
+var grain_lang_default = plugin199;
 
 // ../../docs/types/text/known/factor-lang/index.js
-var plugin199 = {
+var plugin200 = {
   id: "factor-lang",
   label: "Factor",
   tags: ["factor", "concatenative", "stack-based", "functional"],
@@ -15224,10 +15268,10 @@ var plugin199 = {
     ]
   }
 };
-var factor_lang_default = plugin199;
+var factor_lang_default = plugin200;
 
 // ../../docs/types/text/known/apt-sources/index.js
-var plugin200 = {
+var plugin201 = {
   id: "apt-sources",
   label: "APT Sources",
   tags: ["apt", "debian", "ubuntu", "package-manager", "linux"],
@@ -15251,10 +15295,10 @@ var plugin200 = {
     ]
   }
 };
-var apt_sources_default = plugin200;
+var apt_sources_default = plugin201;
 
 // ../../docs/types/text/known/pkgbuild/index.js
-var plugin201 = {
+var plugin202 = {
   id: "pkgbuild",
   label: "PKGBUILD",
   tags: ["arch", "linux", "package", "pkgbuild", "makepkg"],
@@ -15271,10 +15315,10 @@ var plugin201 = {
     ]
   }
 };
-var pkgbuild_default = plugin201;
+var pkgbuild_default = plugin202;
 
 // ../../docs/types/text/known/limits-conf/index.js
-var plugin202 = {
+var plugin203 = {
   id: "limits-conf",
   label: "Limits Config",
   tags: ["pam", "limits", "security", "linux", "ulimit"],
@@ -15295,10 +15339,10 @@ var plugin202 = {
     ]
   }
 };
-var limits_conf_default = plugin202;
+var limits_conf_default = plugin203;
 
 // ../../docs/types/text/known/audit-rules/index.js
-var plugin203 = {
+var plugin204 = {
   id: "audit-rules",
   label: "Audit Rules",
   tags: ["audit", "linux", "security", "auditd", "syscall"],
@@ -15319,10 +15363,10 @@ var plugin203 = {
     ]
   }
 };
-var audit_rules_default = plugin203;
+var audit_rules_default = plugin204;
 
 // ../../docs/types/text/known/common-lisp/index.js
-var plugin204 = {
+var plugin205 = {
   id: "common-lisp",
   label: "Common Lisp",
   tags: ["lisp", "common-lisp", "functional", "interpreted"],
@@ -15342,10 +15386,10 @@ var plugin204 = {
     ]
   }
 };
-var common_lisp_default = plugin204;
+var common_lisp_default = plugin205;
 
 // ../../docs/types/text/known/emacs-lisp/index.js
-var plugin205 = {
+var plugin206 = {
   id: "emacs-lisp",
   label: "Emacs Lisp",
   tags: ["emacs", "lisp", "elisp", "editor"],
@@ -15365,10 +15409,10 @@ var plugin205 = {
     ]
   }
 };
-var emacs_lisp_default = plugin205;
+var emacs_lisp_default = plugin206;
 
 // ../../docs/types/text/known/squirrel-lang/index.js
-var plugin206 = {
+var plugin207 = {
   id: "squirrel-lang",
   label: "Squirrel",
   tags: ["squirrel", "scripting", "game", "source-engine"],
@@ -15397,10 +15441,10 @@ var plugin206 = {
     ]
   }
 };
-var squirrel_lang_default = plugin206;
+var squirrel_lang_default = plugin207;
 
 // ../../docs/types/text/known/red-lang/index.js
-var plugin207 = {
+var plugin208 = {
   id: "red-lang",
   label: "Red",
   tags: ["red", "rebol", "scripting", "functional"],
@@ -15419,7 +15463,7 @@ var plugin207 = {
     ]
   }
 };
-var red_lang_default = plugin207;
+var red_lang_default = plugin208;
 
 // ../../docs/types/text/known/journald-conf/index.js
 var JOURNAL_KEYS = [
@@ -15563,7 +15607,7 @@ var mkinitcpio_conf_default = {
 };
 
 // ../../docs/types/text/known/wpa-supplicant-conf/index.js
-var plugin208 = {
+var plugin209 = {
   id: "wpa-supplicant-conf",
   label: "wpa_supplicant",
   tags: ["wpa_supplicant", "wifi", "wireless", "network", "linux"],
@@ -15581,10 +15625,10 @@ var plugin208 = {
     ]
   }
 };
-var wpa_supplicant_conf_default = plugin208;
+var wpa_supplicant_conf_default = plugin209;
 
 // ../../docs/types/text/known/sssd-conf/index.js
-var plugin209 = {
+var plugin210 = {
   id: "sssd-conf",
   label: "SSSD",
   tags: ["sssd", "ldap", "authentication", "identity", "linux", "kerberos"],
@@ -15603,11 +15647,11 @@ var plugin209 = {
     ]
   }
 };
-var sssd_conf_default = plugin209;
+var sssd_conf_default = plugin210;
 
 // ../../docs/types/text/known/pascal-lang/index.js
 var PASCAL_EXTS = /* @__PURE__ */ new Set(["pas", "pp", "dpr", "dpk"]);
-var plugin210 = {
+var plugin211 = {
   id: "pascal-lang",
   label: "Pascal",
   tags: ["pascal", "freepascal", "delphi", "compiled", "language"],
@@ -15630,10 +15674,10 @@ var plugin210 = {
     ]
   }
 };
-var pascal_lang_default = plugin210;
+var pascal_lang_default = plugin211;
 
 // ../../docs/types/text/known/eiffel-lang/index.js
-var plugin211 = {
+var plugin212 = {
   id: "eiffel-lang",
   label: "Eiffel",
   tags: ["eiffel", "oop", "design-by-contract", "compiled", "language"],
@@ -15663,10 +15707,10 @@ var plugin211 = {
     ]
   }
 };
-var eiffel_lang_default = plugin211;
+var eiffel_lang_default = plugin212;
 
 // ../../docs/types/text/known/avahi-daemon-conf/index.js
-var plugin212 = {
+var plugin213 = {
   id: "avahi-daemon-conf",
   label: "Avahi Daemon Config",
   tags: ["avahi", "mdns", "zeroconf", "networking", "linux"],
@@ -15684,10 +15728,10 @@ var plugin212 = {
     ]
   }
 };
-var avahi_daemon_conf_default = plugin212;
+var avahi_daemon_conf_default = plugin213;
 
 // ../../docs/types/text/known/neomutt-conf/index.js
-var plugin213 = {
+var plugin214 = {
   id: "neomutt-conf",
   label: "NeoMutt Config",
   tags: ["neomutt", "mutt", "email", "mail-client", "config"],
@@ -15715,10 +15759,10 @@ var plugin213 = {
     ]
   }
 };
-var neomutt_conf_default = plugin213;
+var neomutt_conf_default = plugin214;
 
 // ../../docs/types/text/known/msmtp-conf/index.js
-var plugin214 = {
+var plugin215 = {
   id: "msmtp-conf",
   label: "msmtp Config",
   tags: ["msmtp", "smtp", "email", "mail-sender", "config"],
@@ -15736,10 +15780,10 @@ var plugin214 = {
     ]
   }
 };
-var msmtp_conf_default = plugin214;
+var msmtp_conf_default = plugin215;
 
 // ../../docs/types/text/known/openldap-conf/index.js
-var plugin215 = {
+var plugin216 = {
   id: "openldap-conf",
   label: "OpenLDAP Config",
   tags: ["openldap", "ldap", "slapd", "directory", "config"],
@@ -15759,10 +15803,10 @@ var plugin215 = {
     ]
   }
 };
-var openldap_conf_default = plugin215;
+var openldap_conf_default = plugin216;
 
 // ../../docs/types/text/known/gnuplot-script/index.js
-var plugin216 = {
+var plugin217 = {
   id: "gnuplot-script",
   label: "gnuplot",
   tags: ["gnuplot", "plotting", "visualization", "data"],
@@ -15783,10 +15827,10 @@ var plugin216 = {
     ]
   }
 };
-var gnuplot_script_default = plugin216;
+var gnuplot_script_default = plugin217;
 
 // ../../docs/types/text/known/wolfram-lang/index.js
-var plugin217 = {
+var plugin218 = {
   id: "wolfram-lang",
   label: "Wolfram Language",
   tags: ["wolfram", "mathematica", "symbolic", "computation"],
@@ -15808,11 +15852,11 @@ var plugin217 = {
     ]
   }
 };
-var wolfram_lang_default = plugin217;
+var wolfram_lang_default = plugin218;
 
 // ../../docs/types/text/known/stata-do/index.js
 var STATA_KEYWORDS = ["use ", "keep ", "drop ", "gen ", "reg ", "summarize", "merge", "reshape", "xtset"];
-var plugin218 = {
+var plugin219 = {
   id: "stata-do",
   label: "Stata",
   tags: ["stata", "statistics", "econometrics", "data-analysis"],
@@ -15834,10 +15878,10 @@ var plugin218 = {
     ]
   }
 };
-var stata_do_default = plugin218;
+var stata_do_default = plugin219;
 
 // ../../docs/types/text/known/tla-plus/index.js
-var plugin219 = {
+var plugin220 = {
   id: "tla-plus",
   label: "TLA+",
   tags: ["tla+", "formal-methods", "specification", "verification"],
@@ -15856,10 +15900,10 @@ var plugin219 = {
     ]
   }
 };
-var tla_plus_default = plugin219;
+var tla_plus_default = plugin220;
 
 // ../../docs/types/text/known/rpm-spec/index.js
-var plugin220 = {
+var plugin221 = {
   id: "rpm-spec",
   label: "RPM Spec",
   tags: ["rpm", "packaging", "linux", "spec"],
@@ -15880,10 +15924,10 @@ var plugin220 = {
     ]
   }
 };
-var rpm_spec_default = plugin220;
+var rpm_spec_default = plugin221;
 
 // ../../docs/types/text/known/debian-control/index.js
-var plugin221 = {
+var plugin222 = {
   id: "debian-control",
   label: "Debian Control",
   tags: ["debian", "packaging", "linux", "dpkg"],
@@ -15906,10 +15950,10 @@ var plugin221 = {
     ]
   }
 };
-var debian_control_default = plugin221;
+var debian_control_default = plugin222;
 
 // ../../docs/types/text/known/cups-conf/index.js
-var plugin222 = {
+var plugin223 = {
   id: "cups-conf",
   label: "CUPS",
   tags: ["cups", "printing", "linux", "config"],
@@ -15929,20 +15973,21 @@ var plugin222 = {
     ]
   }
 };
-var cups_conf_default = plugin222;
+var cups_conf_default = plugin223;
 
 // ../../docs/types/text/known/dafny/index.js
-var plugin223 = {
+var plugin224 = {
   id: "dafny",
   label: "Dafny",
   tags: ["dafny", "verification", "formal", "specification"],
-  match(intake) {
+  match(intake, baseType) {
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (name.endsWith(".dfy")) return true;
+    if (baseType?.id === "markdown") return false;
     const text = intake.text || "";
-    const keywords = ["method ", "function ", "predicate ", "class ", "ensures ", "requires ", "modifies ", "invariant "];
-    const hits = keywords.filter((kw) => text.includes(kw)).length;
-    return hits >= 3;
+    const decls = ["method ", "function ", "predicate ", "class "].filter((kw) => text.includes(kw)).length;
+    const specs = ["ensures ", "requires ", "modifies ", "invariant "].filter((kw) => text.includes(kw)).length;
+    return decls >= 1 && specs >= 1 && decls + specs >= 3;
   },
   loadRenderer: () => import("../types/text/known/dafny/renderer.js"),
   about: {
@@ -15953,10 +15998,10 @@ var plugin223 = {
     ]
   }
 };
-var dafny_default = plugin223;
+var dafny_default = plugin224;
 
 // ../../docs/types/text/known/xdg-desktop-entry/index.js
-var plugin224 = {
+var plugin225 = {
   id: "xdg-desktop-entry",
   label: "Desktop Entry",
   tags: ["linux", "freedesktop", "xdg", "desktop", "launcher"],
@@ -15974,10 +16019,10 @@ var plugin224 = {
     ]
   }
 };
-var xdg_desktop_entry_default = plugin224;
+var xdg_desktop_entry_default = plugin225;
 
 // ../../docs/types/text/known/isabelle-thy/index.js
-var plugin225 = {
+var plugin226 = {
   id: "isabelle-thy",
   label: "Isabelle/HOL",
   tags: ["isabelle", "hol", "theorem-prover", "formal-methods", "proof"],
@@ -15996,10 +16041,10 @@ var plugin225 = {
     ]
   }
 };
-var isabelle_thy_default = plugin225;
+var isabelle_thy_default = plugin226;
 
 // ../../docs/types/text/known/alloy-lang/index.js
-var plugin226 = {
+var plugin227 = {
   id: "alloy-lang",
   label: "Alloy",
   tags: ["alloy", "formal-methods", "specification", "model-checking", "relational-logic"],
@@ -16018,7 +16063,7 @@ var plugin226 = {
     ]
   }
 };
-var alloy_lang_default = plugin226;
+var alloy_lang_default = plugin227;
 
 // ../../docs/types/text/known/coq-lang/index.js
 function hasVerilogKeywords(text) {
@@ -16028,7 +16073,7 @@ function hasCoqSignals(text) {
   if (!text) return false;
   return /\bInductive\s+/.test(text) || /\bTheorem\s+/.test(text) && /\bProof\b/.test(text) || /\bFixpoint\s+/.test(text) || /\bLemma\s+/.test(text) && /\bQed\./.test(text);
 }
-var plugin227 = {
+var plugin228 = {
   id: "coq-lang",
   label: "Coq",
   tags: ["coq", "theorem-prover", "formal-methods", "proof-assistant", "dependent-types"],
@@ -16050,7 +16095,7 @@ var plugin227 = {
     ]
   }
 };
-var coq_lang_default = plugin227;
+var coq_lang_default = plugin228;
 
 // ../../docs/types/text/known/flatpak-manifest/index.js
 var FLATPAK_APP_ID_RE = /^[a-z][a-z0-9_-]*\.[a-z][a-z0-9_-]*(\.[a-z][a-z0-9_-]*)+$/i;
@@ -16186,6 +16231,7 @@ var KNOWN = [
   jinja2_template_default,
   mustache_template_default,
   sparql_query_default,
+  sql_query_default,
   turtle_rdf_default,
   graphviz_dot_default,
   verilog_default,

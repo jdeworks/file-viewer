@@ -77,14 +77,36 @@ for (const sample of samples) {
 
 assert.equal(winner(RUNTIME, samples.at(-1))[0], 'raw', '.txt with a comment-like heading stays Plain text');
 assert.equal(winner(RUNTIME, intake('notes.txt', { text: '# Heading\n\n- item\n' }))[0], 'markdown', '.txt with stronger Markdown structure can still rank as Markdown');
+const sqlmapLog = intake('log_sqlmap_errors.txt', {
+  mimeType: 'text/plain',
+  text: '---\nParameter: #1* (URI)\n    Type: time-based blind\n    Title: PostgreSQL > 8.1 AND time-based blind\n---\nback-end DBMS: PostgreSQL\n',
+});
+assert.equal(winner(RUNTIME, sqlmapLog)[0], 'raw', '.txt sqlmap-style log stays Plain text even with YAML-looking markers');
+assert.equal(winner(RUNTIME, intake('config.yaml', { text: '---\nname: app\n' }))[0], 'yaml', '.yaml extension still wins as YAML');
 
 const markdownProse = intake('guide.md', {
   text: '# API Guide\n\nThis feature can create a class. Requirements ensure users do the setup.\n',
 });
 assert.equal(winner(RUNTIME, markdownProse)[0], 'markdown', '.md prose stays Markdown');
 assert.notEqual(matchKnown(markdownProse, getType('markdown'))?.id, 'eiffel-lang', '.md prose must not be enhanced as Eiffel');
+const markdownPlan = intake('plan.md', {
+  text: '# Plan\n\n```dafny\nmethod Example() requires true ensures true { }\n```\n\nAlso mention class and invariant in prose.\n',
+});
+assert.equal(matchKnown(markdownPlan, getType('markdown'))?.id, undefined, 'Markdown plans with Dafny/code terms are not enhanced as Dafny');
+assert.equal(matchKnown(intake('sample.dfy', {
+  text: 'method Example() requires true ensures true { }\n',
+}), getType('code'))?.id, 'dafny', '.dfy files still match Dafny');
 assert.equal(matchKnown(intake('sample.e', {
   text: 'class HELLO\nfeature\n  make\n    do\n    end\nend\n',
 }), getType('code'))?.id, 'eiffel-lang', '.e files still match Eiffel');
+const sqlQuery = intake('query.sql', {
+  text: 'SELECT id, name FROM users WHERE active = true ORDER BY name;\n',
+});
+assert.equal(matchKnown(sqlQuery, getType('code'))?.id, 'sql-query', 'SQL SELECT query is enhanced as SQL');
+assert.notEqual(matchKnown(sqlQuery, getType('code'))?.id, 'sparql-query', 'SQL SELECT query is not enhanced as SPARQL');
+const sparqlQuery = intake('query.rq', {
+  text: 'PREFIX foaf: <http://xmlns.com/foaf/0.1/>\nSELECT ?name WHERE { ?person foaf:name ?name . }\n',
+});
+assert.equal(matchKnown(sparqlQuery, getType('code'))?.id, 'sparql-query', '.rq SPARQL query still matches SPARQL');
 
 console.log('registry runtime: ok');

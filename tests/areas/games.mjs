@@ -223,18 +223,40 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
-  // Breakout — clean start, escalating ball speed, launch on Space
+  // Breakout — clean start, richer Arkanoid-style options, launch on Space
   await page.click('.games-card[data-game="breakout"]');
   await page.waitForSelector('.breakout-canvas', { timeout: 8000 });
   pass('Breakout launches');
   const bo = await page.$eval('.breakout-wrap', (w) => {
     const s = w.__breakout.state();
     return { score: s.score, lives: s.lives, level: s.level, dead: s.dead, stuck: s.stuck,
-      bricks: s.bricks, sp0: w.__breakout.speedAt(0), spFast: w.__breakout.speedAt(5) };
+      bricks: s.bricks, maps: s.maps, width: s.width, sp0: w.__breakout.speedAt(0), spFast: w.__breakout.speedAt(5) };
   });
-  if (bo.score === 0 && bo.lives === 3 && bo.level === 0 && !bo.dead && bo.stuck && bo.bricks > 0 && bo.spFast > bo.sp0)
-    pass('Breakout: clean start + ball speed escalates with level');
+  if (bo.score === 0 && bo.lives === 3 && bo.level === 0 && !bo.dead && bo.stuck && bo.bricks > 0
+      && bo.maps >= 12 && bo.width >= 384 && bo.spFast > bo.sp0)
+    pass('Breakout: clean start + wider level set + ball speed escalates with level');
   else fail('Breakout start/escalation: ' + JSON.stringify(bo));
+  const boOptions = await page.$eval('.breakout-wrap', (w) => ({
+    speedOptions: [...w.querySelectorAll('.breakout-speed option')].map((o) => o.value),
+    skip: !!w.querySelector('.breakout-skip'),
+    mute: !!w.querySelector('.breakout-mute'),
+  }));
+  if (boOptions.skip && boOptions.mute && boOptions.speedOptions.join(',') === 'calm,normal,fast')
+    pass('Breakout: speed selector, skip level, and mute control exposed');
+  else fail('Breakout controls missing: ' + JSON.stringify(boOptions));
+  const boSpeed = await page.$eval('.breakout-wrap', (w) => {
+    w.__breakout.setSpeedMode('fast');
+    return { mode: w.__breakout.state().speedMode, fast: w.__breakout.speedAt(0), calm: w.__breakout.speedAt(0, 'calm') };
+  });
+  if (boSpeed.mode === 'fast' && boSpeed.fast > boSpeed.calm) pass('Breakout: speed option changes ball speed');
+  else fail('Breakout speed option: ' + JSON.stringify(boSpeed));
+  const boSkip = await page.$eval('.breakout-wrap', (w) => {
+    const before = w.__breakout.state().level;
+    w.__breakout.skipLevel();
+    return { before, after: w.__breakout.state().level, stuck: w.__breakout.state().stuck };
+  });
+  if (boSkip.after === boSkip.before + 1 && boSkip.stuck) pass('Breakout: skip level advances to a fresh stuck-ball board');
+  else fail('Breakout skip: ' + JSON.stringify(boSkip));
   await page.keyboard.press('Space');                       // launch the ball
   const boLaunched = await page.$eval('.breakout-wrap', (w) => w.__breakout.state());
   if (!boLaunched.stuck && !boLaunched.dead) pass('Breakout: ball launches on Space');
@@ -248,6 +270,22 @@ export async function run(ctx) {
   });
   if (boPower.after > boPower.before && boPower.lives === 4) pass('Breakout: multiball adds balls + extra-life power-up');
   else fail('Breakout power-ups: ' + JSON.stringify(boPower));
+  const boSticky = await page.$eval('.breakout-wrap', (w) => {
+    const caught = w.__breakout.testCatchSticky();
+    w.__breakout.launch();
+    return { caught, released: w.__breakout.state() };
+  });
+  if (boSticky.caught.stuckBalls > 0 && boSticky.caught.stickyCharges >= 2 && boSticky.released.stuckBalls === 0)
+    pass('Breakout: sticky/catch power-up catches and releases the ball');
+  else fail('Breakout sticky: ' + JSON.stringify(boSticky));
+  const boLaser = await page.$eval('.breakout-wrap', (w) => {
+    const before = w.__breakout.state().bricks;
+    const after = w.__breakout.testLaserHit();
+    return { before, after };
+  });
+  if (boLaser.after.bricks < boLaser.before && boLaser.after.laserShots > 0)
+    pass('Breakout: laser power-up shoots and breaks a brick');
+  else fail('Breakout laser: ' + JSON.stringify(boLaser));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
@@ -296,14 +334,33 @@ export async function run(ctx) {
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 
-  // Minesweeper — safe first click reveals + scores; Flag mode flags without digging
+  // Minesweeper — explicit difficulties, safe first click, and no-guess solvable mode
   await page.click('.games-card[data-game="minesweeper"]');
   await page.waitForSelector('.mine-grid', { timeout: 8000 });
   pass('Minesweeper launches');
   const ms0 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
-  if (ms0.score === 0 && ms0.level === 0 && !ms0.dead && !ms0.flagMode && ms0.cells === 81 && ms0.minesLeft > 0 && ms0.revealed === 0)
-    pass('Minesweeper: clean 9×9 start');
+  if (ms0.score === 0 && ms0.level === 0 && !ms0.dead && !ms0.flagMode && ms0.mode === 'easy'
+      && ms0.cols === 9 && ms0.rows === 9 && ms0.mines === 10 && ms0.cells === 81 && ms0.minesLeft > 0 && ms0.revealed === 0)
+    pass('Minesweeper: clean Easy 9×9 start');
   else fail('Minesweeper start: ' + JSON.stringify(ms0));
+  const msModes = await page.$eval('.mine-wrap', (w) => {
+    const options = [...w.querySelectorAll('.mine-mode option')].map((o) => o.value);
+    const out = { options, probes: [] };
+    for (const mode of options) {
+      w.__mine.setMode(mode);
+      const s = w.__mine.state();
+      out.probes.push({ mode: s.mode, cols: s.cols, rows: s.rows, mines: s.mines, cells: s.cells });
+    }
+    w.__mine.setMode('easy');
+    return out;
+  });
+  const expectedModes = ['easy', 'medium', 'hard', 'solvable'];
+  const modeShapeOk = msModes.options.join(',') === expectedModes.join(',')
+    && msModes.probes.some((p) => p.mode === 'medium' && p.cols === 12 && p.rows === 12 && p.mines === 22)
+    && msModes.probes.some((p) => p.mode === 'hard' && p.cols === 16 && p.rows === 16 && p.mines === 45)
+    && msModes.probes.some((p) => p.mode === 'solvable' && p.cols === 9 && p.rows === 9 && p.mines === 10);
+  if (modeShapeOk) pass('Minesweeper: Easy/Medium/Hard/Solvable difficulty options configure board sizes');
+  else fail('Minesweeper modes: ' + JSON.stringify(msModes));
   await page.click('.mine-cell[data-i="40"]');             // center; first click is always safe
   const ms1 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
   if (!ms1.dead && ms1.revealed > 0 && ms1.score > 0) pass('Minesweeper: safe first dig reveals + scores');
@@ -314,6 +371,19 @@ export async function run(ctx) {
   const ms2 = await page.$eval('.mine-wrap', (w) => w.__mine.state());
   if (ms2.flagMode && ms2.minesLeft === ms1.minesLeft - 1) pass('Minesweeper: Flag mode flags a covered cell');
   else fail('Minesweeper flag: ' + JSON.stringify({ ms1, ms2, cov }));
+  const msSolvable = await page.$eval('.mine-wrap', (w) => {
+    w.__mine.setMode('solvable');
+    w.__mine.reveal(40);
+    const state = w.__mine.state();
+    const proof = w.__mine.solveCurrent(40);
+    const starts = w.__mine.proveSolvableStarts([0, 10, 40, 70, 80]);
+    return { state, proof, starts };
+  });
+  if (msSolvable.state.mode === 'solvable' && msSolvable.state.solvableProof?.solved && msSolvable.proof.solved
+      && msSolvable.proof.revealed === msSolvable.state.cells - msSolvable.state.mines
+      && msSolvable.starts.every((entry) => entry.proof?.solved))
+    pass('Minesweeper: Solvable mode generated deterministic no-guess boards across first-click starts');
+  else fail('Minesweeper solvable: ' + JSON.stringify(msSolvable));
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
 

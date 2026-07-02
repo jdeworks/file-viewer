@@ -2,6 +2,7 @@
 // Produces a normalized Intake object. Mobile-first: all three paths must work on a phone.
 
 const TEXT_SNIFF_BYTES = 4096;     // how much we decode for textSample / detection
+export const FILE_LOAD_FEEDBACK_BYTES = 500 * 1024;
 export const LARGE_FILE_BYTES = 8 * 1024 * 1024;  // >8MB: warn before loading into Monaco
 const MEDIA_STREAM_BYTES = 8 * 1024 * 1024;       // media bigger than this is streamed, not read into RAM
 const MEDIA_HEAD_BYTES = 64 * 1024;               // header slice kept for detection of streamed media
@@ -79,6 +80,21 @@ export async function intakeFromFile(file) {
   });
 }
 
+const nextPaint = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes)) return '';
+  if (bytes >= 1048576) return (bytes / 1048576).toFixed(bytes >= 10 * 1048576 ? 0 : 1) + ' MB';
+  if (bytes >= 1024) return Math.round(bytes / 1024) + ' KB';
+  return bytes + ' B';
+}
+
+async function showFileReadStatus(file, onFileStatus) {
+  if (!onFileStatus || !file || file.size < FILE_LOAD_FEEDBACK_BYTES) return;
+  onFileStatus('Reading ' + (file.name || 'file') + '…', { detail: formatBytes(file.size) });
+  await nextPaint();
+}
+
 export function intakeFromText(text, filename) {
   const bytes = new TextEncoder().encode(text);
   return buildIntake({ filename, mimeType: 'text/plain', bytes, isPaste: true });
@@ -144,13 +160,16 @@ export async function walkEntries(roots, onProgress) {
 }
 
 // Wire intake: single file (picker/drop/paste) -> onIntake; folder (dir picker/drop) -> onFolder.
-export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolder, onError, onFolderStatus }) {
+export function wireIntake({ dropZone, fileInput, folderInput, onIntake, onFolder, onError, onFolderStatus, onFileStatus }) {
   const handleFile = async (file) => {
     try {
       if (!file) return;
-      onIntake(await intakeFromFile(file));
+      await showFileReadStatus(file, onFileStatus);
+      await onIntake(await intakeFromFile(file));
     } catch (err) {
       onError?.(err);
+    } finally {
+      onFileStatus?.(null);
     }
   };
 

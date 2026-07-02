@@ -40,7 +40,7 @@ No known-file plugin — all `.class` files use the same bytecode viewer.
 
 ## Real-World Examples
 
-- [`HelloWorld.class`](../examples/HelloWorld.class) — minimal compiled class demonstrating metadata extraction
+- [`sample.class`](../examples/sample.class) — minimal compiled class demonstrating metadata extraction
 
 ## Known Limitations
 

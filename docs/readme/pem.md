@@ -46,7 +46,7 @@
 
 ## Real-World Examples
 
-- [`sample.crt`](../examples/sample.crt) — example TLS certificate in PEM format
+PEM examples are pending; private-key and certificate behavior is covered by parser tests and synthetic fixtures.
 
 ## Known Limitations
 

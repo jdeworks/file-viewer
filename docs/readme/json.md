@@ -1,6 +1,6 @@
 # JSON
 
-> Collapsible tree preview with JSONC tolerance, semantic key-tree diff, sort controls, and YAML/pretty/minified export.
+> Collapsible tree preview with JSONC tolerance, JSONPath search/filter, context copy actions, semantic key-tree diff, sort controls, and YAML/pretty/minified export.
 
 ## Format Details
 
@@ -19,6 +19,8 @@
 | Collapsible tree | ✅ | `<details>`/`<summary>` — all nesting levels |
 | JSONC recovery | ✅ | Trailing commas and `//` comments tolerated |
 | Sort object keys | ✅ | A-Z / Z-A / original order (setting) |
+| JSONPath query | ✅ | Search/filter the live tree with `$..key`, `$.path[*]`, or bare key queries |
+| Context copy | ✅ | Right-click a tree row to copy JSONPath, key/path, or value; secret-like values stay redacted |
 | Key/value type coloring | ✅ | String, number, boolean, null styled distinctly |
 | Parse error message | ✅ | Position shown on invalid JSON |
 | Source view | ✅ | Monaco editor with JSON syntax highlighting |
@@ -77,6 +79,5 @@ Many well-known JSON files get a Layer-3 plugin that adds a rich summary panel. 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Schema validation (JSON Schema) | High | Med | Validate against a schema; show errors inline |
-| JSON Path query | Med | Med | Filter/search nodes by JSON Path expression |
 | Convert to CSV | Med | Easy | Flatten array-of-objects to tabular CSV |
-| JSON Pointer navigation | Low | Easy | Click path → copy RFC 6901 pointer |
+| JSON Pointer navigation | Low | Easy | Copy RFC 6901 pointer alongside JSONPath |

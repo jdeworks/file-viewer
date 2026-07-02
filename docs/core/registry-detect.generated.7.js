@@ -3,6 +3,29 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_fits=(()=>{
+function detect(intake) {
+  if (hasExtension(intake, 'fits', 'fit', 'fts')) {
+    // FITS header: "SIMPLE  =                    T" in first 30 bytes
+    if (intake.isBinary) {
+      const head = intake.bytes ? String.fromCharCode(...intake.bytes.slice(0, 30)) : '';
+      if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
+      return 0.8; // extension match, assume FITS
+    }
+    const head = (intake.text || '').slice(0, 30);
+    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
+    return 0.8;
+  }
+  // Content sniff (text only)
+  if (!intake.isBinary) {
+    const head = (intake.text || '').slice(0, 30);
+    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.95;
+  }
+  return 0;
+}
+return detect;
+})();
+
 const detect_kml=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0; // KMZ handled by kmz type
@@ -278,39 +301,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_iso=(()=>{
-function detect(intake) {
-  if (!intake.bytes) return 0;
-  const b = intake.bytes;
-  if (hasExtension(intake, 'iso', 'img')) {
-    // ISO 9660 primary volume descriptor at offset 32769 (sector 16 * 2048 + 1)
-    if (b.length > 32774) {
-      const magic = String.fromCharCode(b[32769], b[32770], b[32771], b[32772], b[32773]);
-      if (magic === 'CD001') return 0.98;
-    }
-    // For .img files, only if we confirmed CD001
-    if (hasExtension(intake, 'iso')) return 0.6;
-    return 0;
-  }
-  // Check for CD001 magic regardless of extension (sector 16)
-  if (b.length > 32774) {
-    const magic = String.fromCharCode(b[32769], b[32770], b[32771], b[32772], b[32773]);
-    if (magic === 'CD001') return 0.95;
-  }
-  return 0;
-}
-return detect;
-})();
-
-const detect_ruffle=(()=>{
-function detect(intake) {
-  if (/\.swf$/i.test(intake.filename)) return 0.98;
-  // Flash magic bytes: CWS (compressed), FWS (uncompressed), ZWS (zlib)
-  const b = intake.bytes;
-  if (b.length >= 3 && (b[0] === 0x43 || b[0] === 0x46 || b[0] === 0x5a) && b[1] === 0x57 && b[2] === 0x53) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle};
+export const DETECTORS={"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};

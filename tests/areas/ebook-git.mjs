@@ -248,11 +248,16 @@ export async function run(ctx) {
   await waitForFv();
   await page.evaluate(async () => {
     const mk = (name, body) => ({ file: new File([body], name.split('/').pop(), { type: '' }), path: name });
+    const bigFile = new File(['folder loading feedback\n'.repeat(26000)], 'big-visible.txt', { type: 'text/plain' });
+    const readBig = bigFile.arrayBuffer.bind(bigFile);
+    bigFile.arrayBuffer = () => new Promise((resolve, reject) =>
+      setTimeout(() => readBig().then(resolve, reject), 350));
     const entries = [
       mk('proj/README.md', '# Project\n\nHello from the tree.'),
       mk('proj/src/app.js', 'console.log(1)'),
       mk('proj/src/util.py', 'print(2)'),
       mk('proj/data/rows.csv', 'a,b\n1,2'),
+      { file: bigFile, path: 'proj/logs/big-visible.txt' },
       mk('proj/a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt', 'x'),
     ];
     window.__fv.state._skipDiscardGuard = true;
@@ -268,7 +273,7 @@ export async function run(ctx) {
   await page.click('#ftExpandBtn');
   await page.waitForSelector('#fileTree .ft-file[data-path="src/app.js"]', { timeout: 5000 });
   const expandedRows = await page.$$eval('#fileTree .ft-file', (els) => els.length);
-  if (expandedRows === 5) pass('folder tree expand-all reveals nested files'); else fail('expanded file rows: ' + expandedRows);
+  if (expandedRows === 6) pass('folder tree expand-all reveals nested files'); else fail('expanded file rows: ' + expandedRows);
   await page.click('#ftCollapseBtn');
   await page.waitForTimeout(100);
   const nestedCollapsed = await page.$('#fileTree .ft-file[data-path="src/app.js"]') === null;
@@ -284,6 +289,17 @@ export async function run(ctx) {
   await page.waitForTimeout(400);
   const pyType = await page.$eval('#typeSelect', (s) => s.value);
   if (pyType === 'code') pass('clicking tree file opens it (util.py -> Code)'); else fail('py type: ' + pyType);
+
+  await page.click('#fileTree .ft-file[data-path="logs/big-visible.txt"]');
+  await page.waitForSelector('#ftNotice:not([hidden])', { timeout: 3000 });
+  const treeLoadText = await page.$eval('#ftNotice', (e) => e.textContent);
+  if (/Reading big-visible\.txt/.test(treeLoadText) && /\d+\s*KB/.test(treeLoadText))
+    pass('folder tree large file shows loading feedback while bytes are read');
+  else fail('folder tree loading status text: ' + treeLoadText);
+  await page.waitForFunction(() =>
+    window.__fv.state.currentFolderPath === 'logs/big-visible.txt'
+    && document.getElementById('ftNotice').hidden, null, { timeout: 15000 });
+  pass('folder tree large file loading feedback clears after open');
 
   // Marquee: a long active file name that overflows the column scrolls (ticker class).
   await page.click('#fileTree .ft-file[data-path="a-really-extremely-long-file-name-that-overflows-the-sidebar-column.txt"]');

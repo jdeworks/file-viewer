@@ -42,7 +42,7 @@ No known-file plugin.
 
 ## Real-World Examples
 
-- [`favicon.ico`](../examples/favicon.ico) — multi-size favicon demonstrating size grid display
+- [`sample.ico`](../examples/sample.ico) — multi-size icon demonstrating size grid display
 
 ## Known Limitations
 

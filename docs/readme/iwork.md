@@ -38,7 +38,6 @@ No known-file plugin — all iWork files use the same metadata extractor.
 ## Real-World Examples
 
 - [`sample.pages`](../examples/sample.pages) — Pages document demonstrating metadata extraction
-- [`sample.key`](../examples/sample.key) — Keynote presentation showing slide count
 
 ## Known Limitations
 

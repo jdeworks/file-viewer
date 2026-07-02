@@ -140,6 +140,8 @@ export async function toggleWysiwyg({ skipPersist = false } = {}) {
       persistTypeKey('markdown', 'markdownEditor', 'monaco');
     }
     await buildRawView();
+    await renderPreview();
+    applyLayout();
   }
 }
 

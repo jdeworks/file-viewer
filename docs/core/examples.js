@@ -121,6 +121,10 @@ function provenanceText(ex) {
   return bits.join('\n');
 }
 
+function toolsFor(ex) {
+  return Array.isArray(ex.tools) ? ex.tools.filter((tool) => tool && tool.href && tool.label) : [];
+}
+
 function exampleInfo(ex) {
   const type = ex.type ? REGISTRY.find((t) => t.id === ex.type) || detectTypeForExample(ex) : detectTypeForExample(ex);
   return {
@@ -193,6 +197,8 @@ function applyFilter(container) {
   const filters = readFilters();
   for (const b of container.querySelectorAll('.ex-file-btn, .ex-folder-card')) {
     b.hidden = !matchesFilters(b, filters);
+    const entry = b.closest?.('.ex-file-entry');
+    if (entry) entry.hidden = b.hidden;
   }
   for (const chip of container.querySelectorAll('.ex-filter-chip')) {
     chip.classList.toggle('active', (filters.kind || 'all') === chip.dataset.filter);
@@ -247,9 +253,11 @@ function renderGallery(host, list, onPick) {
       const info = exampleInfo(ex);
       const baseTip = ex.description || sampleDescription(ex, getTypeInfo(info.type));
       const tip = [baseTip, provenanceText(ex)].filter(Boolean).join('\n');
+      const toolLinks = toolsFor(ex);
+      const toolSearch = toolLinks.flatMap((tool) => [tool.label, tool.description || '', tool.href]).join(' ');
       const cats = categoriesFor(ex);
       b.dataset.categories = cats.join('|');
-      b.dataset.search = [ex.label, ex.file, ex.mime, info.typeLabel, tip, ex.license, ex.attribution, cats.join(' ')].join(' ').toLowerCase();
+      b.dataset.search = [ex.label, ex.file, ex.mime, info.typeLabel, tip, toolSearch, ex.license, ex.attribution, cats.join(' ')].join(' ').toLowerCase();
       b.dataset.editable = info.editable ? '1' : '0';
       b.dataset.binary = info.binary ? '1' : '0';
       b.dataset.enhanced = info.enhanced ? '1' : '0';
@@ -289,7 +297,25 @@ function renderGallery(host, list, onPick) {
         b.appendChild(qb);
       }
       b.dataset.sourced = (ex.source && ex.license) ? '1' : '0';
-      frag.appendChild(b);
+      if (toolLinks.length) {
+        const entry = document.createElement('span');
+        entry.className = 'ex-file-entry';
+        entry.appendChild(b);
+        for (const tool of toolLinks) {
+          const a = document.createElement('a');
+          a.className = 'ex-tool-link';
+          a.href = tool.href;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.textContent = tool.label;
+          a.title = tool.description || tool.label;
+          a.dataset.toolHref = tool.href;
+          entry.appendChild(a);
+        }
+        frag.appendChild(entry);
+      } else {
+        frag.appendChild(b);
+      }
     }
     return frag;
   }

@@ -3,6 +3,30 @@ import { mediaInfo } from '../types/media/medialib.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_bio=(()=>{
+const FASTA_EXT = ['fa', 'fasta', 'fna', 'faa', 'ffn', 'frn', 'fsa', 'mpfa'];
+const FASTQ_EXT = ['fq', 'fastq'];
+const VCF_EXT = ['bcf'];
+const GFF_EXT = ['gff', 'gff3', 'gtf'];
+const BED_EXT = ['bed'];
+
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (hasExtension(intake, ...FASTA_EXT)) return 0.92;
+  if (hasExtension(intake, ...FASTQ_EXT)) return 0.92;
+  if (hasExtension(intake, ...VCF_EXT)) return 0.92;
+  if (hasExtension(intake, ...GFF_EXT)) return 0.88;
+  if (hasExtension(intake, ...BED_EXT)) return 0.82;
+  const head = (intake.text || '').slice(0, 600);
+  if (/^>[\w\s]/.test(head)) return 0.75;           // FASTA >header
+  if (/^@[\w\s]/.test(head) && /^\+/m.test(head)) return 0.7;  // FASTQ @header + +
+  if (/^##fileformat=VCF/i.test(head)) return 0.85; // VCF meta
+  if (/^##gff-version/i.test(head)) return 0.82;    // GFF
+  return 0;
+}
+return detect;
+})();
+
 const detect_gff=(()=>{
 // GFF3: General Feature Format v3 — starts with ##gff-version 3
 // GFF2/GTF: starts with ##gff-version 2 or tab-delimited with 9 columns starting with seqname
@@ -287,34 +311,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_3mf=(()=>{
-const hasZipMagic = (b) => b && b.length >= 4 && b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
-
-function detect(intake) {
-  const b = intake.bytes || new Uint8Array();
-  if (!hasZipMagic(b)) return 0;
-  const sample = new TextDecoder('latin1').decode(b.subarray(0, Math.min(b.length, 32768)));
-  if (sample.includes('[Content_Types].xml') && /model\/3mf/i.test(sample)) return 0.99;
-  if (hasExtension(intake, '3mf')) return 0.97;
-  return 0;
-}
-return detect;
-})();
-
-const detect_clip=(()=>{
-function magic(intake) {
-  const b = intake.bytes || new Uint8Array();
-  const sig = 'SQLite format 3\0';
-  if (b.length < sig.length) return false;
-  for (let i = 0; i < sig.length; i++) if (b[i] !== sig.charCodeAt(i)) return false;
-  return true;
-}
-
-function detect(intake) {
-  if (!hasExtension(intake, 'clip')) return 0;
-  return magic(intake) ? 0.97 : 0.70;
-}
-return detect;
-})();
-
-export const DETECTORS={"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"svg":detect_svg,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply,"3mf":detect_3mf,"clip":detect_clip};
+export const DETECTORS={"bio":detect_bio,"gff":detect_gff,"sarif":detect_sarif,"json":detect_json,"layered":detect_layered,"tiff":detect_tiff,"heif":detect_heif,"ico":detect_ico,"procreate":detect_procreate,"sketch":detect_sketch,"svg":detect_svg,"image":detect_image,"midi":detect_midi,"media":detect_media,"font":detect_font,"stl":detect_stl,"obj":detect_obj,"gltf":detect_gltf,"ply":detect_ply};

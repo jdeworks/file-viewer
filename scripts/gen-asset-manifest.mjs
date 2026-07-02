@@ -33,15 +33,40 @@ function bundleOf(path) {
     const parts = path.split('/');
     return 'vendor:' + (parts.length > 2 ? parts[1] : parts[1].replace(/(\.min)?\.[^.]+$/, ''));
   }
-  if (path.startsWith('examples/')) return 'examples';
+  if (path.startsWith('bts/') || path.startsWith('games/metagame/') || path.startsWith('examples/metagame/') || path === 'examples/easteregg') return 'easteregg';
+  if (path.startsWith('examples/')) return exampleBundleOf(path);
   if (path.startsWith('games/')) return 'games';
   if (path.startsWith('types/')) return 'types';
   if (path.startsWith('known/')) return 'known';
   return 'core';            // index.html, core/, assets/, *.json, etc. — the app shell
 }
+function extOf(path) {
+  const base = path.split('/').pop().toLowerCase();
+  return base.includes('.') ? base.split('.').pop() : '';
+}
+function exampleBundleOf(path) {
+  const base = path.split('/').pop().toLowerCase();
+  const ext = extOf(path);
+  if (['index.json', 'provenance.json', '_config.yml', '_redirects'].includes(base)) return 'examples:catalog';
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif', 'jxl', 'tif', 'tiff', 'bmp', 'ico', 'svg', 'eps', 'psd', 'xcf'].includes(ext)) return 'examples:image';
+  if (['mp3', 'wav', 'flac', 'ogg', 'oga', 'm4a', 'mp4', 'webm', 'avi', 'mov', 'mid', 'midi'].includes(ext)) return 'examples:media';
+  if (['pdf', 'docx', 'odt', 'pptx', 'xlsx', 'xls', 'epub', 'mobi', 'fb2', 'lrf', 'djvu', 'rtf'].includes(ext)) return 'examples:office';
+  if (['zip', '7z', 'cbz', 'bin', 'nes', 'sfc', 'smc', 'gb', 'gbc', 'gba', 'n64', 'z64', 'v64', 'wasm', 'sqlite', 'db', 'clip'].includes(ext)) return 'examples:binary';
+  if (['json', 'jsonl', 'yaml', 'yml', 'toml', 'xml', 'csv', 'tsv', 'har', 'ini', 'env', 'gpx', 'geojson', 'kml', 'vcf', 'ics', 'ofx', 'qfx'].includes(ext)) return 'examples:data';
+  if (['md', 'markdown', 'txt', 'log', 'ans', 'srt', 'vtt'].includes(ext)) return 'examples:text-config';
+  return 'examples:text-config';
+}
 const LABELS = {
   core: 'Core app', types: 'File-type viewers', known: 'Known-file enhancers', games: 'Arcade games',
-  examples: 'Example files',
+  easteregg: 'Easter eggs',
+  'vendor:easymde': 'EasyMDE legacy editor',
+  'examples:catalog': 'Examples catalog',
+  'examples:text-config': 'Text/config examples',
+  'examples:data': 'Data examples',
+  'examples:office': 'Office/document examples',
+  'examples:image': 'Image examples',
+  'examples:media': 'Media examples',
+  'examples:binary': 'Archive/binary examples',
 };
 const labelFor = (id) => LABELS[id] || (id.startsWith('vendor:') ? id.slice(7) + ' (library)' : id);
 
@@ -53,7 +78,8 @@ const BUNDLE_GROUPS = {
   'vendor:jszip': 'File viewers', 'vendor:papaparse': 'File viewers', 'vendor:pdf-lib': 'File viewers',
   'vendor:pptxviewjs': 'File viewers', 'vendor:mammoth': 'File viewers', 'vendor:html2canvas': 'File viewers',
   'vendor:ag-psd': 'File viewers', 'vendor:jxl': 'File viewers',
-  'vendor:monaco': 'Editor', 'vendor:tiptap': 'Editor', 'vendor:easymde': 'Editor',
+  'vendor:monaco': 'Editor', 'vendor:tiptap': 'Editor',
+  'vendor:easymde': 'Editor',
   'vendor:chartjs': 'Data & charts', 'vendor:xlsx': 'Data & charts', 'vendor:sql.js': 'Data & charts',
   'vendor:pdfjs': 'Documents',
   'vendor:libarchive': 'Archives',
@@ -62,7 +88,14 @@ const BUNDLE_GROUPS = {
   'vendor:v86': 'Emulators',
   'vendor:emulatorjs': 'Emulators',
   games: 'Games',
-  examples: 'Content',
+  easteregg: 'Easter eggs',
+  'examples:catalog': 'Content',
+  'examples:text-config': 'Content',
+  'examples:data': 'Data & charts',
+  'examples:office': 'Documents',
+  'examples:image': 'Media',
+  'examples:media': 'Media',
+  'examples:binary': 'Archives',
 };
 const groupFor = (id) => BUNDLE_GROUPS[id] || 'File viewers';
 
@@ -76,7 +109,7 @@ for (const f of kept) {
 const HEAVY_BYTES = 1.5 * 1024 * 1024;   // bundles over this are large optional downloads
 // Bundles always treated as heavy/opt-in regardless of size (lazy-loaded only when
 // the feature is used, so they should NOT be precached by default).
-const FORCE_HEAVY = new Set(['vendor:jxl', 'vendor:tesseract']);
+const FORCE_HEAVY = new Set(['vendor:easymde', 'vendor:jxl', 'vendor:tesseract']);
 // Essential bundles are NEVER heavy: 'core' is the app shell (index.html + core/ + assets/ + the
 // bundled type-detection registry) — it must always be precached for offline-first to work, so it is
 // not an optional download even though detection bundling has pushed it past HEAVY_BYTES (~1.58 MB).

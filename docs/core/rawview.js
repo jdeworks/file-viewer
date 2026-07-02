@@ -13,6 +13,9 @@ export async function createRawView(host, {
   onChange, onCursor, onScroll, onContextMenu, onPaste, onMoveDiff, onCustomDiff,
 }) {
   const monaco = await loadMonaco();
+  import('../types/text/code/codelens.js')
+    .then((m) => m.registerCodeMetrics?.(monaco))
+    .catch(() => {});
   host.innerHTML = '';
   const stdHost = fill(document.createElement('div'));
   const diffHost = fill(document.createElement('div'));

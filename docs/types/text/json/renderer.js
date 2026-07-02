@@ -13,6 +13,11 @@ const JSON_EXTRA_CSS = `
 .json-redacted{color:var(--fg-2,#6b7280);font-style:italic}
 .json-src-key{color:#0550ae;font-weight:700}
 .json-src-string{color:#0a7f38}
+.json-copy-menu{position:fixed;z-index:180;display:grid;gap:2px;min-width:190px;padding:5px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#d0d7de);border-radius:8px;box-shadow:0 12px 28px rgba(0,0,0,.25)}
+.json-copy-menu[hidden]{display:none}
+.json-copy-menu button{display:block;width:100%;padding:7px 9px;border:0;border-radius:6px;background:transparent;color:var(--fg,#24292f);font:12px system-ui,sans-serif;text-align:left;cursor:pointer}
+.json-copy-menu button:hover{background:var(--bg-3,#eaeef2)}
+.json-copy-toast{position:fixed;z-index:181;right:16px;bottom:16px;padding:7px 10px;border-radius:7px;background:var(--bg-2,#f6f8fa);border:1px solid var(--border,#d0d7de);box-shadow:0 8px 22px rgba(0,0,0,.22);font:12px system-ui,sans-serif;color:var(--fg,#24292f)}
 `;
 
 function entriesFor(val, sortMode) {
@@ -27,24 +32,113 @@ function entriesFor(val, sortMode) {
 function valueNode(key, val, sortMode, path, secrets) {
   const keyHtml = key !== null ? '<span class="j-key">' + esc(key) + '</span>: ' : '';
   const pathAttr = ' data-qp-path="' + esc(path) + '"';
-  if (val === null) return '<div class="j-row"' + pathAttr + '>' + keyHtml + '<span class="j-null">null</span></div>';
+  const copyAttrs = ' data-json-path="' + esc(jsonPathFromPath(path)) + '"' + (key !== null ? ' data-json-key="' + esc(key) + '"' : '');
+  if (val === null) return '<div class="j-row"' + pathAttr + copyAttrs + '>' + keyHtml + '<span class="j-null">null</span></div>';
   const t = typeof val;
   if (t === 'object') {
     const isArr = Array.isArray(val);
     const entries = entriesFor(val, sortMode);
     const open = isArr ? '[' : '{', close = isArr ? ']' : '}';
     const count = entries.length;
-    if (!count) return '<div class="j-row"' + pathAttr + '>' + keyHtml + '<span class="j-punc">' + open + close + '</span></div>';
+    if (!count) return '<div class="j-row"' + pathAttr + copyAttrs + '>' + keyHtml + '<span class="j-punc">' + open + close + '</span></div>';
     const children = entries.map(([k, v]) => valueNode(isArr ? null : k, v, sortMode, path ? path + '.' + k : String(k), secrets)).join('');
-    return '<details class="j-node" open' + pathAttr + '><summary>' + keyHtml
+    return '<details class="j-node" open' + pathAttr + copyAttrs + '><summary>' + keyHtml
       + '<span class="j-punc">' + open + '</span><span class="j-count">' + count + (isArr ? ' items' : ' keys') + '</span></summary>'
       + '<div class="j-children">' + children + '</div><div class="j-row j-close">' + close + '</div></details>';
   }
   const cls = t === 'number' ? 'j-num' : t === 'boolean' ? 'j-bool' : 'j-str';
   const secret = secrets.get(path);
   const disp = secret ? `<span class="json-redacted" title="${esc(secret.reason)}">"[configured]"</span>` : (t === 'string' ? '"' + esc(val) + '"' : esc(String(val)));
-  if (secret) return '<div class="j-row"' + pathAttr + '>' + keyHtml + disp + '</div>';
-  return '<div class="j-row"' + pathAttr + '>' + keyHtml + '<span class="' + cls + '">' + disp + '</span></div>';
+  if (secret) return '<div class="j-row"' + pathAttr + copyAttrs + ' data-json-redacted="1">' + keyHtml + disp + '</div>';
+  return '<div class="j-row"' + pathAttr + copyAttrs + '>' + keyHtml + '<span class="' + cls + '">' + disp + '</span></div>';
+}
+
+function jsonPathFromPath(path) {
+  if (!path) return '$';
+  return '$' + String(path).split('.').map((part) => {
+    if (/^\d+$/.test(part)) return '[' + part + ']';
+    if (/^[A-Za-z_$][\w$]*$/.test(part)) return '.' + part;
+    return '[' + JSON.stringify(part) + ']';
+  }).join('');
+}
+
+function valueAtPath(data, path) {
+  if (!path) return data;
+  let node = data;
+  for (const part of String(path).split('.')) {
+    if (node == null) return undefined;
+    node = node[part];
+  }
+  return node;
+}
+
+function copyTextForValue(data, path, redacted) {
+  if (redacted) return '[configured]';
+  const val = valueAtPath(data, path);
+  if (typeof val === 'string') return val;
+  return JSON.stringify(val, null, 2);
+}
+
+function nearestCopyTarget(node, treeRoot) {
+  const el = node?.closest?.('.j-row[data-qp-path], .j-node[data-qp-path], summary');
+  if (!el) return null;
+  const target = el.matches('summary') ? el.closest('.j-node[data-qp-path]') : el;
+  return target && treeRoot.contains(target) ? target : null;
+}
+
+function wireJsonCopyMenu(host, treeRoot, data) {
+  const menu = document.createElement('div');
+  menu.className = 'json-copy-menu';
+  menu.hidden = true;
+  menu.innerHTML = '<button type="button" data-copy="path">Copy JSONPath</button><button type="button" data-copy="key">Copy key/path</button><button type="button" data-copy="value">Copy value</button>';
+  host.appendChild(menu);
+  let active = null;
+
+  const hide = () => { menu.hidden = true; active = null; };
+  const showToast = (message) => {
+    host.querySelector('.json-copy-toast')?.remove();
+    const toast = document.createElement('div');
+    toast.className = 'json-copy-toast';
+    toast.textContent = message;
+    host.appendChild(toast);
+    setTimeout(() => toast.remove(), 1300);
+  };
+  const writeClipboard = async (text) => {
+    host.dataset.lastJsonCopy = text;
+    try { await navigator.clipboard?.writeText(text); }
+    catch { /* secure-context clipboard can be unavailable; keep in-view status */ }
+    showToast('Copied');
+  };
+
+  treeRoot.addEventListener('contextmenu', (e) => {
+    const target = nearestCopyTarget(e.target, treeRoot);
+    if (!target) return;
+    e.preventDefault();
+    active = target;
+    const keyBtn = menu.querySelector('[data-copy="key"]');
+    keyBtn.textContent = target.dataset.jsonKey ? 'Copy key' : 'Copy path';
+    menu.hidden = false;
+    const x = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8);
+    const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8);
+    menu.style.left = Math.max(8, x) + 'px';
+    menu.style.top = Math.max(8, y) + 'px';
+  });
+
+  menu.addEventListener('click', async (e) => {
+    const btn = e.target.closest('button[data-copy]');
+    if (!btn || !active) return;
+    const path = active.dataset.qpPath || '';
+    const kind = btn.dataset.copy;
+    const text = kind === 'path'
+      ? active.dataset.jsonPath
+      : kind === 'key'
+        ? (active.dataset.jsonKey || path || '$')
+        : copyTextForValue(data, path, active.dataset.jsonRedacted === '1');
+    hide();
+    await writeClipboard(text == null ? '' : String(text));
+  });
+  document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) hide(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
 }
 
 function findKeyLine(text, key, fallback = 1) {
@@ -110,6 +204,7 @@ export async function render(intake, ctx) {
   host.className = 'qp-preview json-qp';
   host.innerHTML = `<style>${JSON_EXTRA_CSS}</style>${bodyHtml}`;
   const treeRoot = host.querySelector('.json-tree');
+  wireJsonCopyMenu(host, treeRoot, parsed.data);
   const panel = createQueryPanel({
     placeholder: "JSONPath… e.g. $..name  or  items[*].id",
     hint: 'JSONPath: $.a.b · $..key (recursive) · $.arr[*] · bare key',

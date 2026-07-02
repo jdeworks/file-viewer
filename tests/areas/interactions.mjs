@@ -165,6 +165,33 @@ export async function run(ctx) {
   if (taskRtOk) pass('WYSIWYG: task list round-trips to `- [ ]`/`- [x]` markdown');
   else fail('WYSIWYG: task list round-trip lost GFM checkboxes: ' + JSON.stringify(taskRt));
 
+  // Regression: raw edits made after leaving WYSIWYG must feed the next WYSIWYG mount, and
+  // switching back to raw must restore the split preview with the latest markdown rendered.
+  const mixedMd = '# Mixed modes\n\nVisual baseline.\n\n## Raw-only heading\n\nraw-only paragraph';
+  await page.evaluate((md) => window.__fv.state.rawview.setValue(md), mixedMd);
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .tiptap-host .ProseMirror', { state: 'attached', timeout: 15000 });
+  const rawEditReachedWys = await page.evaluate(() => {
+    const pm = document.querySelector('#editor .tiptap-host .ProseMirror');
+    return !!pm?.querySelector('h2')?.textContent?.includes('Raw-only heading')
+      && /raw-only paragraph/.test(pm?.textContent || '');
+  });
+  if (rawEditReachedWys) pass('WYSIWYG: re-entering visual mode applies latest raw edits');
+  else fail('WYSIWYG did not include latest raw edits');
+  await page.evaluate(() => document.getElementById('wysiwygBtn').click());
+  await page.waitForSelector('#editor .monaco-editor', { state: 'attached', timeout: 15000 });
+  await page.waitForSelector('iframe.fv-preview-frame', { state: 'attached', timeout: 15000 });
+  await page.waitForFunction(() => document.getElementById('panes')?.dataset.mode === 'split', null, { timeout: 8000 });
+  const previewRecovered = await page.waitForFunction(() => {
+    const html = window.__fv?.state?.lastBodyHtml || '';
+    return /Raw-only heading/.test(html) && /raw-only paragraph/.test(html) ? html : false;
+  }, null, { timeout: 8000 }).then((h) => h.jsonValue()).catch(() => '');
+  if (previewRecovered) {
+    pass('WYSIWYG: switching back to raw restores the refreshed preview');
+  } else {
+    fail('WYSIWYG preview not refreshed after returning to raw');
+  }
+
   await page.evaluate(() => {
     window.__fv.state.downloadedSinceEdit = true;
     window.__fv.state.sessionEdits.clear();
@@ -468,9 +495,31 @@ export async function run(ctx) {
     await op.click('#offlineStatus');
     await op.waitForSelector('.cache-modal', { timeout: 8000 });
     const monacoChecked = await op.$eval('.cm-chk[data-id="vendor:monaco"]', (e) => e.checked);
+    const easymdeChecked = await op.$eval('.cm-chk[data-id="vendor:easymde"]', (e) => e.checked);
     const coreRequired = await op.$eval('.cm-chk[data-id="core"]', (e) => e.disabled && e.checked);
     const hasSizes = await op.$$eval('.cm-size', (els) => els.length > 5 && els.every((e) => /\d/.test(e.textContent)));
-    if (monacoChecked === false && coreRequired && hasSizes) pass('cache modal: sized bundles listed; core required, Monaco (heavy) opt-in'); else fail('cache modal: monacoChecked=' + monacoChecked + ' coreReq=' + coreRequired + ' sizes=' + hasSizes);
+    if (monacoChecked === false && easymdeChecked === false && coreRequired && hasSizes) pass('cache modal: sized bundles listed; core required, uncommon editors opt-in'); else fail('cache modal: monacoChecked=' + monacoChecked + ' easymdeChecked=' + easymdeChecked + ' coreReq=' + coreRequired + ' sizes=' + hasSizes);
+    const presets = await op.$$eval('.cm-preset', (els) => els.map((e) => e.textContent.trim()));
+    const eastereggBundle = await op.$('.cm-chk[data-id="easteregg"]');
+    if (['Common V', 'Common E', 'Office V', 'Office E'].every((p) => presets.includes(p)) && eastereggBundle) {
+      pass('cache modal: common/office presets and Easter eggs bundle shown');
+    } else {
+      fail('cache modal presets=' + presets.join(',') + ' easteregg=' + !!eastereggBundle);
+    }
+    await op.click('.cm-preset[data-preset="office-v"]');
+    const officePreset = await op.evaluate(() => ({
+      pdfjs: document.querySelector('.cm-chk[data-id="vendor:pdfjs"]')?.checked,
+      xlsx: document.querySelector('.cm-chk[data-id="vendor:xlsx"]')?.checked,
+      mammoth: document.querySelector('.cm-chk[data-id="vendor:mammoth"]')?.checked,
+      officeExamples: document.querySelector('.cm-chk[data-id="examples:office"]')?.checked,
+      monaco: document.querySelector('.cm-chk[data-id="vendor:monaco"]')?.checked,
+      easteregg: document.querySelector('.cm-chk[data-id="easteregg"]')?.checked,
+    }));
+    if (officePreset.pdfjs && officePreset.xlsx && officePreset.mammoth && officePreset.officeExamples && !officePreset.monaco && !officePreset.easteregg) {
+      pass('cache modal: Office V preset selects office viewing without editor/easteregg bundles');
+    } else {
+      fail('Office V preset: ' + JSON.stringify(officePreset));
+    }
     // Select everything (full offline) and save → precache → green "ready".
     const boxes = await op.$$('.cm-chk:not([disabled])');
     for (const b of boxes) { if (!(await b.isChecked())) await b.check(); }
@@ -872,6 +921,41 @@ export async function run(ctx) {
   await page.click('#typeHelpDialog [data-close]');
   await page.waitForFunction(() => !document.getElementById('typeHelpDialog')?.open, null, { timeout: 4000 });
   pass('type help: close button dismisses the modal');
+
+  await openExample('Sample.txt');
+  await page.waitForSelector('#typeHelpBtn:not([hidden])', { timeout: 8000 });
+  await page.click('#typeHelpBtn');
+  await page.waitForSelector('#typeHelpBody .th-body h1', { timeout: 8000 });
+  const rawHelpTitle = await page.$eval('#typeHelpBody .th-body h1', (el) => el.textContent);
+  if (/Plain Text/i.test(rawHelpTitle)) pass('type help: Plain text opens text.md docs via raw alias'); else fail('raw help title: ' + rawHelpTitle);
+  await page.click('#typeHelpBody a[href="code.md"]');
+  await page.waitForFunction(() => /Source Code/i.test(document.querySelector('#typeHelpBody .th-body h1')?.textContent || ''), null, { timeout: 8000 });
+  pass('type help: readme-relative links navigate inside the help modal');
+  const codeLinkTarget = await page.$eval('#typeHelpBody a[href="../examples/query.sql"]', (a) => ({
+    target: a.getAttribute('target') || '',
+    rel: a.getAttribute('rel') || '',
+    example: a.dataset.examplePath || '',
+  }));
+  if (!codeLinkTarget.target && !codeLinkTarget.rel && codeLinkTarget.example === 'query.sql') pass('type help: example links are handled in-app, not as new tabs');
+  else fail('type help example link attrs: ' + JSON.stringify(codeLinkTarget));
+  await page.click('#typeHelpDialog [data-close]');
+
+  await page.evaluate(() => window.__fv.openViewerFile('temporary-note.md', { text: '# Temporary note\n\nOpen docs link next.' }));
+  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'temporary-note.md', null, { timeout: 8000 });
+  await page.click('#typeHelpBtn');
+  await page.waitForSelector('#typeHelpBody a[href="../examples/welcome.md"]', { timeout: 8000 });
+  await page.click('#typeHelpBody a[href="../examples/welcome.md"]');
+  await page.waitForFunction(() => document.querySelector('#fileName')?.textContent === 'welcome.md', null, { timeout: 12000 });
+  const openedHelpExample = await page.evaluate(() => ({
+    file: window.__fv.state.intake?.filename,
+    text: window.__fv.state.rawview?.getValue?.() || '',
+    stillOpen: !!document.getElementById('typeHelpDialog')?.open,
+    body: document.getElementById('typeHelpBody')?.textContent || '',
+  }));
+  if (openedHelpExample.file === 'welcome.md' && /Welcome to File Viewer/.test(openedHelpExample.text) && openedHelpExample.stillOpen && !/Could not open|No documentation|file not found/i.test(openedHelpExample.body))
+    pass('type help: example links open same-origin files in the viewer without file-not-found');
+  else fail('type help example open: ' + JSON.stringify({ ...openedHelpExample, text: openedHelpExample.text.slice(0, 80), body: openedHelpExample.body.slice(0, 120) }));
+  await page.click('#typeHelpDialog [data-close]');
 
   // ── Markdown heading levels + WYSIWYG compare/side-by-side handoff ──
   await page.goto(origin, { waitUntil: 'load' });

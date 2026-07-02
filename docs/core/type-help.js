@@ -20,6 +20,10 @@ const CSS = `
 `;
 
 let _styleInjected = false;
+const DOC_ALIASES = {
+  raw: 'text',
+};
+
 function injectStyle() {
   if (_styleInjected) return;
   _styleInjected = true;
@@ -28,21 +32,55 @@ function injectStyle() {
   document.head.appendChild(s);
 }
 
-export async function buildTypeHelp(typeId) {
+function docIdFor(typeId) {
+  return DOC_ALIASES[typeId] || typeId;
+}
+
+function normalizeReadmeDoc(href, currentDocId) {
+  if (!href || href.startsWith('#')) return null;
+  let url;
+  try {
+    url = new URL(href, new URL(`readme/${currentDocId}.md`, location.href));
+  } catch {
+    return null;
+  }
+  if (url.origin !== location.origin) return null;
+  const path = url.pathname.replace(/^\/+/, '');
+  const m = /^readme\/([^/?#]+)\.md$/i.exec(path);
+  if (!m) return null;
+  return { docId: m[1], hash: url.hash || '' };
+}
+
+function normalizeExamplePath(href, currentDocId) {
+  if (!href || href.startsWith('#')) return '';
+  let url;
+  try {
+    url = new URL(href, new URL(`readme/${currentDocId}.md`, location.href));
+  } catch {
+    return '';
+  }
+  if (url.origin !== location.origin) return '';
+  const path = url.pathname.replace(/^\/+/, '');
+  const m = /^(?:docs\/)?examples\/(.+)$/i.exec(path);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+export async function buildTypeHelp(typeId, opts = {}) {
   injectStyle();
   const body = document.getElementById('typeHelpBody');
   const titleEl = document.getElementById('typeHelpTitle');
   if (!body) return;
+  const docId = docIdFor(typeId);
   body.innerHTML = '<p class="th-empty">Loading…</p>';
   if (titleEl) titleEl.textContent = typeId ? `${typeId} — docs` : 'Type docs';
 
-  if (!typeId) {
+  if (!docId) {
     body.innerHTML = '<p class="th-empty">No file loaded.</p>';
     return;
   }
 
   try {
-    const resp = await fetch(`readme/${typeId}.md`);
+    const resp = await fetch(`readme/${docId}.md`);
     if (!resp.ok) {
       body.innerHTML = `<p class="th-empty">No documentation available for <strong>${typeId}</strong> yet.</p>`;
       return;
@@ -52,18 +90,44 @@ export async function buildTypeHelp(typeId) {
     const md = markdownit({ html: false, linkify: true, typographer: false, breaks: false });
     const html = md.render(mdText);
     body.innerHTML = `<div class="th-body">${html}</div>`;
-    // Make internal readme links work by opening them in the viewer via click handler
+    body.dataset.docId = docId;
     body.querySelectorAll('a[href]').forEach((a) => {
       const href = a.getAttribute('href');
-      if (href && !href.startsWith('http') && !href.startsWith('#')) {
-        a.setAttribute('target', '_blank');
-        a.setAttribute('rel', 'noopener');
-      } else if (href && href.startsWith('http')) {
+      const readmeDoc = normalizeReadmeDoc(href, docId);
+      const examplePath = normalizeExamplePath(href, docId);
+      if (readmeDoc) {
+        a.dataset.readmeDoc = readmeDoc.docId;
+        if (readmeDoc.hash) a.dataset.readmeHash = readmeDoc.hash;
+        a.removeAttribute('target');
+        a.removeAttribute('rel');
+      } else if (examplePath) {
+        a.dataset.examplePath = examplePath;
+        a.removeAttribute('target');
+        a.removeAttribute('rel');
+      } else if (href && /^https?:\/\//i.test(href)) {
         a.setAttribute('target', '_blank');
         a.setAttribute('rel', 'noopener');
       }
     });
+    body.querySelector('.th-body')?.addEventListener('click', async (e) => {
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+      if (link.dataset.readmeDoc) {
+        e.preventDefault();
+        await buildTypeHelp(link.dataset.readmeDoc, opts);
+        if (link.dataset.readmeHash) {
+          const id = link.dataset.readmeHash.slice(1);
+          document.getElementById(id)?.scrollIntoView?.();
+        }
+        return;
+      }
+      if (link.dataset.examplePath) {
+        e.preventDefault();
+        const opened = await opts.openExampleFile?.(link.dataset.examplePath);
+        if (!opened) body.insertAdjacentHTML('afterbegin', '<p class="th-empty">Could not open linked example.</p>');
+      }
+    });
   } catch {
-    body.innerHTML = `<p class="th-empty">Failed to load documentation for ${typeId}.</p>`;
+    body.innerHTML = `<p class="th-empty">Failed to load documentation for ${docId}.</p>`;
   }
 }

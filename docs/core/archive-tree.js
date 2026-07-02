@@ -41,6 +41,8 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
   $('ftSearchInput').value = '';
   $('ftSearchCount').textContent = '';
 
+  let archiveRoot = null;
+
   async function openArchiveNode(nodeOrPath) {
     const node = typeof nodeOrPath === 'string'
       ? entries.find((entry) => entry.path === nodeOrPath)
@@ -67,10 +69,14 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
         toast('Could not open ' + node.path);
         return;
       }
+      state.currentFolderPath = node.path;
+      archiveRoot.currentFolderPath = node.path;
+      state.treeApi?.setActive?.(node.path);
       state._skipDiscardGuard = true;
       state._skipSidebarRoot = true;
       await loadIntake(intake);
       state.currentFolderPath = node.path;
+      archiveRoot.currentFolderPath = node.path;
       state.treeApi?.setActive?.(node.path);
       if (isMobile()) setTree(false);
     } catch {
@@ -84,14 +90,14 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
     onOpen: openArchiveNode,
     onMove: null,
   });
-  const root = addArchiveRoot({
+  archiveRoot = addArchiveRoot({
     label: rootName,
     entries,
     openNode: (entry, path) => openArchiveNode(path || entry.path),
     archiveIntake,
     alreadyCaptured: true,
   });
-  root.archiveOpenNode = openArchiveNode;
+  archiveRoot.archiveOpenNode = openArchiveNode;
   state.archiveOpenNode = openArchiveNode;
   if (archiveIntake) mountDeletePanel(entries);
   setTree(true);

@@ -3,6 +3,32 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_deb=(()=>{
+// Debian .deb: ar archive magic "!<arch>\n" followed by debian-binary member
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isDebExt = ext === 'deb' || ext === 'udeb';
+
+  if (!b || b.length < 8) return isDebExt ? 0.5 : 0;
+
+  // ar magic: "!<arch>\n" = 21 3C 61 72 63 68 3E 0A
+  const isArMagic = b[0] === 0x21 && b[1] === 0x3c && b[2] === 0x61 && b[3] === 0x72
+    && b[4] === 0x63 && b[5] === 0x68 && b[6] === 0x3e && b[7] === 0x0a;
+
+  if (!isArMagic) return isDebExt ? 0.3 : 0;
+
+  // Look for "debian-binary" in the first entry name (at offset 8)
+  if (b.length >= 24) {
+    const name = new TextDecoder('ascii', { fatal: false }).decode(b.slice(8, 24)).trimEnd();
+    if (name.startsWith('debian-binary')) return isDebExt ? 0.99 : 0.97;
+  }
+  return isDebExt ? 0.85 : 0.4;
+}
+return detect;
+})();
+
 const detect_rpm=(()=>{
 function detect(intake) {
   const { filename, bytes: b } = intake;
@@ -296,27 +322,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_fits=(()=>{
-function detect(intake) {
-  if (hasExtension(intake, 'fits', 'fit', 'fts')) {
-    // FITS header: "SIMPLE  =                    T" in first 30 bytes
-    if (intake.isBinary) {
-      const head = intake.bytes ? String.fromCharCode(...intake.bytes.slice(0, 30)) : '';
-      if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-      return 0.8; // extension match, assume FITS
-    }
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.99;
-    return 0.8;
-  }
-  // Content sniff (text only)
-  if (!intake.isBinary) {
-    const head = (intake.text || '').slice(0, 30);
-    if (/^SIMPLE\s+=\s+T/.test(head)) return 0.95;
-  }
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits};
+export const DETECTORS={"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf};

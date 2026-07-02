@@ -3,6 +3,38 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_msgpack=(()=>{
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isMsgpackExt = ext === 'msgpack' || ext === 'mpk';
+
+  if (!b || b.length === 0) return isMsgpackExt ? 0.6 : 0;
+
+  // MessagePack has no magic bytes, but byte 0 identifies the first value type.
+  // Valid first bytes cover: fixint (0x00-0x7f), nil (0xc0), false/true (0xc2/c3),
+  // fixmap (0x80-0x8f), fixarray (0x90-0x9f), fixstr (0xa0-0xbf),
+  // uint8-64 (0xcc-0xcf), int8-64 (0xd0-0xd3), float32/64 (0xca/cb),
+  // str8-32 (0xd9-0xdb), bin8-32 (0xc4-0xc6), array16/32 (0xdc-0xdd),
+  // map16/32 (0xde-0xdf), ext8-32 (0xc7-0xc9), fixext1-16 (0xd4-0xd8).
+  // 0xc1 is never-used (RESERVED), 0xe0-0xff are negative fixint.
+  const first = b[0];
+  const invalid = first === 0xc1; // only reserved byte
+  if (isMsgpackExt) return invalid ? 0.5 : 0.95;
+
+  // Without extension: require a map or array root object (common in practice)
+  // and at least minimal structural validity.
+  const isMapOrArray =
+    (first >= 0x80 && first <= 0x8f) || // fixmap
+    (first >= 0x90 && first <= 0x9f) || // fixarray
+    first === 0xdc || first === 0xdd ||  // array 16/32
+    first === 0xde || first === 0xdf;    // map 16/32
+
+  return isMapOrArray && !invalid ? 0.45 : 0;
+}
+return detect;
+})();
+
 const detect_bson=(()=>{
 function detect(intake) {
   const { filename, bytes: b } = intake;
@@ -293,30 +325,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_deb=(()=>{
-// Debian .deb: ar archive magic "!<arch>\n" followed by debian-binary member
-
-function detect(intake) {
-  const { filename, bytes: b } = intake;
-  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
-  const isDebExt = ext === 'deb' || ext === 'udeb';
-
-  if (!b || b.length < 8) return isDebExt ? 0.5 : 0;
-
-  // ar magic: "!<arch>\n" = 21 3C 61 72 63 68 3E 0A
-  const isArMagic = b[0] === 0x21 && b[1] === 0x3c && b[2] === 0x61 && b[3] === 0x72
-    && b[4] === 0x63 && b[5] === 0x68 && b[6] === 0x3e && b[7] === 0x0a;
-
-  if (!isArMagic) return isDebExt ? 0.3 : 0;
-
-  // Look for "debian-binary" in the first entry name (at offset 8)
-  if (b.length >= 24) {
-    const name = new TextDecoder('ascii', { fatal: false }).decode(b.slice(8, 24)).trimEnd();
-    if (name.startsWith('debian-binary')) return isDebExt ? 0.99 : 0.97;
-  }
-  return isDebExt ? 0.85 : 0.4;
-}
-return detect;
-})();
-
-export const DETECTORS={"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d,"deb":detect_deb};
+export const DETECTORS={"msgpack":detect_msgpack,"bson":detect_bson,"exr":detect_exr,"dbf":detect_dbf,"dwg":detect_dwg,"step":detect_step,"blend":detect_blend,"fbx":detect_fbx,"mat":detect_mat,"nifti":detect_nifti,"pyc":detect_pyc,"lmms":detect_lmms,"f3d":detect_f3d};

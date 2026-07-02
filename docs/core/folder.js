@@ -7,7 +7,7 @@ import { state, $, isMobile, toast, escapeHtml } from './state.js';
 import { findGitDir, isGitInternal, openRepo } from './git.js';
 import { renderRepoView } from './repoview.js';
 import { buildTree, renderTree } from './filetree.js';
-import { intakeFromFile, intakeFromText } from './intake.js';
+import { FILE_LOAD_FEEDBACK_BYTES, intakeFromFile, intakeFromText } from './intake.js';
 import { exportFolderZip } from './folder-export.js';
 import { downloadBlob } from './exports.js';
 import { repackZipWithDeletions } from './repack.js';
@@ -216,11 +216,18 @@ export async function openRepoView({ auto = false, walkLimit } = {}) {
 }
 
 async function openTreeFile(node) {
+  const showReadNotice = !state.folderEdits.has(node.path) && node.file?.size >= FILE_LOAD_FEEDBACK_BYTES;
   try {
     _repoViewToken++;
     flushFolderEdit();                 // stash any pending edit of the file we're leaving
     // If this folder file was edited earlier, reopen its edited text (edits persist across nav).
     const stashed = state.folderEdits.get(node.path);
+    if (showReadNotice) {
+      showFolderLoading('Reading ' + node.path.split('/').pop() + '…', {
+        detail: Math.round(node.file.size / 1024).toLocaleString() + ' KB',
+      });
+      await nextFrame();
+    }
     const intake = stashed != null
       ? intakeFromText(stashed, node.path.split('/').pop())
       : await intakeFromFile(node.file);
@@ -232,6 +239,8 @@ async function openTreeFile(node) {
     if (isMobile()) setTree(false);    // collapse the overlay after picking on phones
   } catch (err) {
     toast('Could not open ' + node.path);
+  } finally {
+    if (showReadNotice) hideFolderLoading();
   }
 }
 

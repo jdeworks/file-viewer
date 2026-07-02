@@ -214,6 +214,61 @@ export async function run(ctx) {
   if (sourcedBadgeOk.ok) pass('sourced badge visible on sample.png in examples gallery');
   else fail('sourced badge missing: ' + sourcedBadgeOk.reason);
 
+  const toolMetadataOk = await page.evaluate(async () => {
+    const res = await fetch('examples/index.json');
+    const examples = res.ok ? await res.json() : [];
+    const linked = examples.filter((ex) => Array.isArray(ex.tools) && ex.tools.some((tool) => tool.href?.startsWith('tools/ascii-studio/index.html?sample=')));
+    const png = examples.find((ex) => ex.file === 'sample.png');
+    const pngTool = png?.tools?.find((tool) => tool.label === 'ASCII Studio');
+    return {
+      count: linked.length,
+      pngHref: pngTool?.href || '',
+      pngDescription: pngTool?.description || '',
+      allSameOriginRelative: linked.every((ex) => ex.tools.every((tool) => /^tools\/ascii-studio\/index\.html\?sample=[A-Za-z0-9._/-]+$/.test(tool.href || ''))),
+    };
+  });
+  if (toolMetadataOk.count >= 5 && toolMetadataOk.pngHref === 'tools/ascii-studio/index.html?sample=sample.png'
+      && toolMetadataOk.pngDescription.includes('same-origin') && toolMetadataOk.allSameOriginRelative) {
+    pass('sample metadata links relevant images to same-origin ASCII Studio tool');
+  } else {
+    fail('sample tool metadata invalid: ' + JSON.stringify(toolMetadataOk));
+  }
+
+  const toolLinkOk = await page.evaluate(async () => {
+    const cards = Array.from(document.querySelectorAll('.ex-folder-card'));
+    const imageCard = cards.find((c) => c.dataset.categories === 'Image');
+    if (imageCard) {
+      imageCard.click();
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    const btns = Array.from(document.querySelectorAll('.ex-file-btn'));
+    const pngBtn = btns.find((b) => (b.dataset.search || '').includes('sample.png'));
+    const entry = pngBtn?.closest('.ex-file-entry');
+    const link = entry?.querySelector('.ex-tool-link');
+    if (!link) return { ok: false, reason: 'ASCII Studio tool link not rendered for sample.png' };
+    return {
+      ok: true,
+      text: link.textContent,
+      href: link.getAttribute('href'),
+      absolute: link.href,
+      target: link.target,
+      rel: link.rel,
+    };
+  });
+  if (toolLinkOk.ok && toolLinkOk.text === 'ASCII Studio' && toolLinkOk.href === 'tools/ascii-studio/index.html?sample=sample.png'
+      && toolLinkOk.absolute.startsWith(origin + '/tools/ascii-studio/') && toolLinkOk.target === '_blank' && toolLinkOk.rel.includes('noopener')) {
+    pass('examples gallery renders same-origin ASCII Studio link on image samples');
+  } else {
+    fail('examples gallery tool link invalid: ' + JSON.stringify(toolLinkOk));
+  }
+
+  await page.goto(origin + '/tools/ascii-studio/index.html?sample=sample.png', { waitUntil: 'load' });
+  await page.waitForSelector('.asx-root .asx-out', { timeout: 10000 });
+  await page.waitForFunction(() => (document.querySelector('.asx-out')?.textContent || '').trim().length > 20, null, { timeout: 10000 });
+  const asciiLoaded = await page.$eval('.asx-out', (el) => (el.textContent || '').trim().length);
+  if (asciiLoaded > 20) pass('ASCII Studio tool loads linked sample image from same-origin query');
+  else fail('ASCII Studio linked sample did not render ASCII output');
+
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });
   await page.waitForSelector('.ex-showall-btn', { timeout: 10000 }).catch(() => {});

@@ -3,6 +3,23 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_musicxml=(()=>{
+function detect(intake) {
+  if (intake.isBinary && !hasExtension(intake, 'mxl')) return 0;
+  if (hasExtension(intake, 'musicxml')) return 0.95;
+  if (hasExtension(intake, 'mxl')) return 0.9;
+  if (hasExtension(intake, 'xml')) {
+    const head = (intake.text || '').slice(0, 1200);
+    if (/<score-partwise|<score-timewise/i.test(head)) return 0.8;
+    return 0;
+  }
+  const head = (intake.text || '').slice(0, 1200);
+  if (/<score-partwise|<score-timewise/i.test(head)) return 0.6;
+  return 0;
+}
+return detect;
+})();
+
 const detect_xml=(()=>{
 // XML family (but NOT .svg — that's the image type, and not the Office/zip XML containers).
 // Strong on explicit XML extensions; a `<?xml` / root-element sniff catches the rest.
@@ -299,28 +316,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_bio=(()=>{
-const FASTA_EXT = ['fa', 'fasta', 'fna', 'faa', 'ffn', 'frn', 'fsa', 'mpfa'];
-const FASTQ_EXT = ['fq', 'fastq'];
-const VCF_EXT = ['bcf'];
-const GFF_EXT = ['gff', 'gff3', 'gtf'];
-const BED_EXT = ['bed'];
-
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (hasExtension(intake, ...FASTA_EXT)) return 0.92;
-  if (hasExtension(intake, ...FASTQ_EXT)) return 0.92;
-  if (hasExtension(intake, ...VCF_EXT)) return 0.92;
-  if (hasExtension(intake, ...GFF_EXT)) return 0.88;
-  if (hasExtension(intake, ...BED_EXT)) return 0.82;
-  const head = (intake.text || '').slice(0, 600);
-  if (/^>[\w\s]/.test(head)) return 0.75;           // FASTA >header
-  if (/^@[\w\s]/.test(head) && /^\+/m.test(head)) return 0.7;  // FASTQ @header + +
-  if (/^##fileformat=VCF/i.test(head)) return 0.85; // VCF meta
-  if (/^##gff-version/i.test(head)) return 0.82;    // GFF
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx,"bio":detect_bio};
+export const DETECTORS={"musicxml":detect_musicxml,"xml":detect_xml,"als":detect_als,"env":detect_env,"ini":detect_ini,"patch":detect_patch,"log":detect_log,"crash":detect_crash,"subtitle":detect_subtitle,"vcard":detect_vcard,"geo":detect_geo,"ipynb":detect_ipynb,"fb2":detect_fb2,"mobi":detect_mobi,"lrf":detect_lrf,"mcp-config":detect_mcp_config,"har":detect_har,"jsonl":detect_jsonl,"ofx":detect_ofx};

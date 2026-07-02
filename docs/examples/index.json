@@ -778,7 +778,8 @@
       "Data"
     ],
     "type": "code",
-    "description": "SQL schema and grouped aggregate query."
+    "description": "SQL schema and grouped aggregate query.",
+    "knownFile": "sql-query"
   },
   {
     "label": "styles.css",
@@ -1261,7 +1262,14 @@
     "description": "CC0 flower PNG with transparency and real image detail.",
     "source": "https://commons.wikimedia.org/wiki/File:Red_flower_01.png",
     "license": "CC0 1.0 Universal",
-    "attribution": "Wikimedia Commons contributor"
+    "attribution": "Wikimedia Commons contributor",
+    "tools": [
+      {
+        "label": "ASCII Studio",
+        "href": "tools/ascii-studio/index.html?sample=sample.png",
+        "description": "Open this image in the same-origin ASCII art converter."
+      }
+    ]
   },
   {
     "label": "Sample.jpg",
@@ -1276,7 +1284,14 @@
     "description": "Public-domain Hubble sample image in JPEG format.",
     "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
     "license": "Public domain (NASA/ESA Hubble material)",
-    "attribution": "NASA, ESA, and STScI"
+    "attribution": "NASA, ESA, and STScI",
+    "tools": [
+      {
+        "label": "ASCII Studio",
+        "href": "tools/ascii-studio/index.html?sample=sample.jpg",
+        "description": "Open this image in the same-origin ASCII art converter."
+      }
+    ]
   },
   {
     "label": "Sample.jpeg",
@@ -1291,7 +1306,14 @@
     "description": "Public-domain Hubble sample image with the long .jpeg extension.",
     "source": "https://commons.wikimedia.org/wiki/File:DSS_Sample_Images_(1993-14-105).jpg",
     "license": "Public domain (NASA/ESA Hubble material)",
-    "attribution": "NASA, ESA, and STScI"
+    "attribution": "NASA, ESA, and STScI",
+    "tools": [
+      {
+        "label": "ASCII Studio",
+        "href": "tools/ascii-studio/index.html?sample=sample.jpeg",
+        "description": "Open this image in the same-origin ASCII art converter."
+      }
+    ]
   },
   {
     "label": "Sample.gif",
@@ -1306,7 +1328,14 @@
     "description": "Public-domain ranked-ballot example image in GIF format.",
     "source": "https://commons.wikimedia.org/wiki/File:Rankballotoval.gif",
     "license": "Public domain",
-    "attribution": "Tom Ruen"
+    "attribution": "Tom Ruen",
+    "tools": [
+      {
+        "label": "ASCII Studio",
+        "href": "tools/ascii-studio/index.html?sample=sample.gif",
+        "description": "Open this image in the same-origin ASCII art converter."
+      }
+    ]
   },
   {
     "label": "Sample.webp",
@@ -1321,7 +1350,14 @@
     "description": "Public-domain NASA Mars sample return illustration in WebP format.",
     "source": "https://commons.wikimedia.org/wiki/File:Mars_sample_return_ascent_vehicle.webp",
     "license": "Public domain (NASA material)",
-    "attribution": "NASA/JPL-Caltech"
+    "attribution": "NASA/JPL-Caltech",
+    "tools": [
+      {
+        "label": "ASCII Studio",
+        "href": "tools/ascii-studio/index.html?sample=sample.webp",
+        "description": "Open this image in the same-origin ASCII art converter."
+      }
+    ]
   },
   {
     "label": "Sample.bmp",
@@ -1336,7 +1372,14 @@
     "description": "LGPL sample bitmap image of a blackbuck in BMP format.",
     "source": "https://people.math.sc.edu/Burkardt/data/bmp/blackbuck.bmp",
     "license": "GNU LGPL",
-    "attribution": "John Burkardt data directory"
+    "attribution": "John Burkardt data directory",
+    "tools": [
+      {
+        "label": "ASCII Studio",
+        "href": "tools/ascii-studio/index.html?sample=sample.bmp",
+        "description": "Open this image in the same-origin ASCII art converter."
+      }
+    ]
   },
   {
     "label": "Sample.tiff",

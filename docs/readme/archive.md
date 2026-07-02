@@ -45,7 +45,7 @@
 
 ## Real-World Examples
 
-- [`sample.tar.gz`](../examples/sample.tar.gz) — example tarball
+Archive examples are covered by the ZIP-specific samples until broader archive samples are added.
 
 ## Known Limitations
 

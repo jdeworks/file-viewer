@@ -2,13 +2,14 @@ export const plugin = {
   id: 'dafny',
   label: 'Dafny',
   tags: ['dafny', 'verification', 'formal', 'specification'],
-  match(intake) {
+  match(intake, baseType) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.dfy')) return true;
+    if (baseType?.id === 'markdown') return false;
     const text = intake.text || '';
-    const keywords = ['method ', 'function ', 'predicate ', 'class ', 'ensures ', 'requires ', 'modifies ', 'invariant '];
-    const hits = keywords.filter((kw) => text.includes(kw)).length;
-    return hits >= 3;
+    const decls = ['method ', 'function ', 'predicate ', 'class '].filter((kw) => text.includes(kw)).length;
+    const specs = ['ensures ', 'requires ', 'modifies ', 'invariant '].filter((kw) => text.includes(kw)).length;
+    return decls >= 1 && specs >= 1 && decls + specs >= 3;
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -8,11 +8,8 @@ import { pickType } from './detect.js';
 import { wireIntake, intakeFromFile, intakeFromText, LARGE_FILE_BYTES } from './intake.js';
 import { getDraggedTreeNode, TREE_DRAG_TYPE } from './filetree.js';
 import { matchKnown, matchAllKnown } from '../known/registry.generated.js';
-import { createRawView } from './rawview.js';
-import { loadMonaco } from './monaco-loader.js';
 import { initOffline, offlineMissHtml, initOfflineBadge } from './offline.js';
 import * as persistence from './persistence.js';
-import { registerCodeMetrics } from '../types/text/code/codelens.js';
 import { mountPreview, captureBodyHtml } from './iframe.js';
 import { getModel, monacoOptions, renderSettings, persistGlobalKey, readGlobalKey, syncModelPreset } from './settings.js';
 import { previewStyle } from './settings-schema.js';
@@ -100,6 +97,27 @@ function maybeUnlockEasteregg(text) {
   $('gamesBtn').hidden = false;
   toast('🎮 import easteregg — arcade unlocked!');
   state.games.open();
+}
+
+function showFileLoading(message, { detail = '' } = {}) {
+  let el = document.getElementById('fileLoadStatus');
+  if (!message) {
+    el?.remove();
+    return;
+  }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'fileLoadStatus';
+    el.className = 'file-loading';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.innerHTML = '<span class="boot-spinner-ring" aria-hidden="true"></span><span class="file-loading-copy"><span class="file-loading-label"></span><span class="file-loading-detail"></span></span>';
+    document.body.appendChild(el);
+  }
+  el.querySelector('.file-loading-label').textContent = message;
+  const detailEl = el.querySelector('.file-loading-detail');
+  detailEl.textContent = detail;
+  detailEl.hidden = !detail;
 }
 
 // Load a dropped/picked folder: reset any prior companion root, build the tree, then resolve the
@@ -390,7 +408,7 @@ async function openTypeHelp() {
   const dialog = $('typeHelpDialog');
   if (!dialog) return;
   const { buildTypeHelp } = await import('./type-help.js');
-  buildTypeHelp(state.type?.id);
+  buildTypeHelp(state.type?.id, { openExampleFile });
   if (!dialog.dataset.wired) {
     dialog.dataset.wired = '1';
     dialog.querySelector('[data-close]')?.addEventListener('click', () => dialog.close());
@@ -453,6 +471,7 @@ function init() {
     onIntake: loadIntake,
     onFolder: openFolderEntries,
     onError: (e) => toast('Could not read file: ' + e.message),
+    onFileStatus: showFileLoading,
     onFolderStatus: (message, opts = {}) => {
       if (!message) { hideFolderLoading(); return; }
       $('ftRoot').textContent = 'Loading folder'; $('treeBtn').hidden = false; setTree(true);
@@ -572,13 +591,6 @@ function init() {
   const loadGallery = () => loadExamples(loadIntake);
   if ('requestIdleCallback' in window) requestIdleCallback(loadGallery, { timeout: 2000 });
   else setTimeout(loadGallery, 0);
-
-  // Startup stays light (Monaco isn't loaded just to show the intake screen). Warm it in
-  // the background during idle so the FIRST file opens instantly instead of waiting on
-  // the heaviest dependency. loadMonaco() caches its promise, so buildRawView reuses this.
-  const warm = () => { loadMonaco().then((m) => registerCodeMetrics(m)).catch(() => {}); };
-  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 3000 });
-  else setTimeout(warm, 1200);
 
   // Register the service worker + start the background offline precache (spinner → ✓).
   initOffline($('offlineStatus'));

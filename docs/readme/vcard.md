@@ -44,7 +44,7 @@
 
 ## Real-World Examples
 
-- [`contacts.vcf`](../examples/contacts.vcf) — example vCard file with multiple contacts
+- [`sample.vcf`](../examples/sample.vcf) — example vCard file with multiple contacts
 
 ## Known Limitations
 

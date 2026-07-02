@@ -25,6 +25,7 @@
 | Metadata: code structure | ✅ | Imports/includes, exports (JS/TS), classes (JS/TS), entrypoints (main functions) |
 | Metadata: function analysis | ✅ | Function count, avg/max complexity, complex functions (≥10), avg/max function LOC |
 | TODO/FIXME count | ✅ | Scans for `TODO`, `FIXME`, `XXX` markers |
+| SQL enhanced view | ✅ | `.sql` files get a SQL overview with statement types, tables, joins, aliases, CTEs, modifiers, and collapsed source |
 
 ### Edit
 | Capability | Status | Notes |
@@ -52,6 +53,8 @@
 | Other | `.wgsl`, `.m`, `.fs`, `.fsx`, `.vb`, `Dockerfile`, `Makefile` |
 
 CodeLens function metrics are available for brace-based languages (JS/TS/Java/C/C++/C#/Go/Rust/PHP/Swift/Kotlin/Scala/Dart) and Python. Complexity is approximated (1 + decision points); files over 400 KB are skipped to keep the editor responsive.
+
+SQL files remain editable as Code but use the SQL Query enhancement by default. The enhancement extracts schema/table references, aliases, joins, CTEs, and query modifiers without executing the file.
 
 ## Real-World Examples
 
