@@ -1250,9 +1250,9 @@
     "label": "Sample.gpx",
     "file": "sample.gpx",
     "mime": "application/gpx+xml",
-    "category": "Data",
+    "category": "Geo",
     "categories": [
-      "Data"
+      "Geo"
     ]
   },
   {

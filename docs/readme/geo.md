@@ -18,7 +18,7 @@
 | Offline map preview | ✅ | GeoJSON renders as inline SVG; GPX renders track/waypoints on canvas (no tile server — zero off-origin) |
 | Track stats | ✅ | Distance, elevation gain/loss, duration, trackpoints, waypoints |
 | GPX metadata | ✅ | Track name, creator, bounds |
-| Waypoints | ✅ | Listed with name and coordinates |
+| Waypoints | ⚠️ | Plotted as points and counted in the stats table; `<name>` is not parsed or labeled yet (see EDITOR.md "GPX waypoint labels") |
 | GeoJSON features | ✅ | Points, LineStrings, Polygons, and Multi* geometries rendered without property labels |
 | KML rendering | ❌ | Handled by the dedicated KML viewer, not this map type |
 | KMZ (zipped KML) | ❌ | Handled by the dedicated KMZ viewer, not this map type |
@@ -29,7 +29,7 @@
 ### Edit
 | Feature | Status | Details |
 |---------|--------|---------|
-| Text / source editing | ✅ | Full GeoJSON/GPX/KML editing in Monaco editor |
+| Text / source editing | ✅ | Full GeoJSON/GPX editing in Monaco editor (KML has its own dedicated viewer type) |
 | Add/move waypoints | ❌ | Visual map editing not yet implemented |
 
 ### Export

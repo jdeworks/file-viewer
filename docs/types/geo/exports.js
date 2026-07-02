@@ -2,7 +2,7 @@
 // model, so conversion is just re-serializing. GPX tracks/waypoints ↔ GeoJSON LineString/Point/
 // Polygon. Lossy on properties (geometry only), which is fine for a quick interchange.
 import { downloadBlob } from '../../core/exports.js';
-import { parseGeo } from './geolib.js';
+import { parseGeo, isGpx as isGpxFile } from './geolib.js';
 
 const n = (x) => Math.round(x * 1e7) / 1e7;
 
@@ -26,7 +26,6 @@ function toGpx(geo) {
 export function getExports(intake) {
   const base = (intake.filename || 'map').replace(/\.[^.]+$/, '');
   const geo = parseGeo(intake);
-  const isGpx = /\.gpx$/i.test(intake.filename || '') || /<gpx[\s>]/.test(intake.text || '');
-  if (isGpx) return [{ label: 'Download as GeoJSON', run: () => downloadBlob(JSON.stringify(toGeoJson(geo), null, 2), base + '.geojson', 'application/geo+json') }];
+  if (isGpxFile(intake)) return [{ label: 'Download as GeoJSON', run: () => downloadBlob(JSON.stringify(toGeoJson(geo), null, 2), base + '.geojson', 'application/geo+json') }];
   return [{ label: 'Download as GPX', run: () => downloadBlob(toGpx(geo), base + '.gpx', 'application/gpx+xml') }];
 }

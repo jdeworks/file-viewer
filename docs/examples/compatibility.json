@@ -836,7 +836,7 @@
       "previewDepth": "basic",
       "metadataDepth": "basic",
       "editCapability": "basic",
-      "exportCapability": "download",
+      "exportCapability": "transform | download",
       "securityLimitations": [],
       "knownParserGaps": [],
       "testCoverage": "smoke",
