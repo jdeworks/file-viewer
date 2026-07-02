@@ -299,11 +299,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] obj | 3D model (OBJ)
 - [x] odf | OpenDocument
 - [x] ofx | OFX / QFX Financial
-- [ ] parquet | Apache Parquet
-- [ ] patch | Patch / Diff
-- [ ] pcap | Network Capture (.pcap)
-- [ ] pdb | Protein Structure (.pdb)
-- [ ] pdf | PDF
+- [x] parquet | Apache Parquet
+- [x] patch | Patch / Diff
+- [x] pcap | Network Capture (.pcap)
+- [x] pdb | Protein Structure (.pdb)
+- [x] pdf | PDF
 - [ ] pem | Certificate / Key (PEM/DER)
 - [ ] plist | Property List
 - [ ] ply | 3D model (PLY)
