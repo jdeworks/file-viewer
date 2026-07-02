@@ -81,6 +81,9 @@ import { render as renderPyc } from '../docs/types/binary/pyc/renderer.js';
 import { detect as detectRpm } from '../docs/types/binary/rpm/detect.js';
 import { metadata as rpmMeta } from '../docs/types/binary/rpm/metadata.js';
 import { render as renderRpm } from '../docs/types/binary/rpm/renderer.js';
+import { detect as detectShapefile } from '../docs/types/binary/shapefile/detect.js';
+import { extractMetadata as shapefileMeta } from '../docs/types/binary/shapefile/metadata.js';
+import { render as renderShapefile } from '../docs/types/binary/shapefile/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -1005,6 +1008,37 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /glibc/);
   assert.match(rendered, /bash/);
   assert.match(rendered, /coreutils/);
+}
+
+{
+  const data = await bytes('sample.shp');
+  assert.equal(detectShapefile({ filename: 'sample.shp', bytes: data }), 0.99);
+  const meta = shapefileMeta({ bytes: data });
+  assert.equal(meta.Format, 'ESRI Shapefile');
+  assert.equal(meta['Shape Type'], 'Polygon');
+  assert.equal(meta.Xmin, '-74.05000');
+  assert.equal(meta.Ymax, '40.79000');
+  const rendered = renderShapefile({ bytes: data }).bodyHtml;
+  assert.match(rendered, /Polygon/);
+  assert.match(rendered, /Records<\/td><td>1<\/td>/);
+  assert.match(rendered, /40\.79000°N/);
+
+  // MultiPatch (31) is inherently 3D and must be treated as Z-bearing like
+  // the explicit *Z shape types, so a non-zero header Z range is surfaced.
+  const mp = new Uint8Array(100);
+  const dv = new DataView(mp.buffer);
+  dv.setInt32(0, 9994, false);
+  dv.setInt32(24, 50, false); // file length in words = 100-byte header only
+  dv.setInt32(28, 1000, true);
+  dv.setInt32(32, 31, true); // MultiPatch
+  dv.setFloat64(36, 0, true);
+  dv.setFloat64(44, 0, true);
+  dv.setFloat64(52, 1, true);
+  dv.setFloat64(60, 1, true);
+  dv.setFloat64(68, 5, true);
+  dv.setFloat64(76, 15, true);
+  const mpHtml = renderShapefile({ bytes: mp }).bodyHtml;
+  assert.match(mpHtml, /Z range[\s\S]*?5\.000[\s\S]*?15\.000/);
 }
 
 console.log('metadata-owned: ok');
