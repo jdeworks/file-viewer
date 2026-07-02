@@ -30,7 +30,18 @@ const stripAnsi = (s) => String(s).replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '');
 const joinSrc = (s) => (Array.isArray(s) ? s.join('') : (s || ''));
 const b64 = (s) => String(joinSrc(s)).replace(/\s+/g, '');
 
-const SAN_OPTS = { FORBID_TAGS: ['script', 'style'], FORBID_ATTR: ['onerror', 'onload', 'onclick'] };
+// A notebook's markdown cells (rendered with html:true) and code-cell display_data/
+// execute_result outputs can carry arbitrary attacker-controlled HTML — same threat model as
+// an email HTML body (see docs/types/eml/renderer.js, whose FORBID list this mirrors). Beyond
+// <script>/on*, DOMPurify's default allowlist still permits several vectors that trigger an
+// eager off-origin fetch with no user interaction: style="" / <style> (CSS url()), the legacy
+// background= attribute, <base href> (turns even a *relative* <img src> off-origin),
+// <link>/<meta>, and autoplaying/preloading <video>/<audio>/<source>/<track>/<iframe>/
+// <object>/<embed>. None of these have a legitimate use in a rendered notebook cell.
+const SAN_OPTS = {
+  FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+  FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
+};
 
 function renderOutputs(outputs, DOMPurify) {
   let html = '';

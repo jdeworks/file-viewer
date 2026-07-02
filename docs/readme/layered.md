@@ -43,7 +43,10 @@
 ## Real-World Examples
 
 - [`sample.psd`](../examples/sample.psd) — example Photoshop document with layers
+- [`sample.psb`](../examples/sample.psb) — large-document Photoshop companion to the PSD fixture
 - [`sample.xcf`](../examples/sample.xcf) — example GIMP project file
+- [`sample.kra`](../examples/sample.kra) — Krita document with separate background, shape, and annotation layers
+- [`sample.ora`](../examples/sample.ora) — OpenRaster archive with merged image and per-layer PNGs
 
 ## Known Limitations
 

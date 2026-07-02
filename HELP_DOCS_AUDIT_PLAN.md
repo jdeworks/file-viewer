@@ -812,27 +812,27 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/image/tiff/renderer.js
 - [ ] docs/types/image/tiff/settings.default.json
 - [ ] docs/types/image/view-controller.js
-- [ ] docs/types/ipynb/cell-code.html
-- [ ] docs/types/ipynb/cell-md.html
-- [ ] docs/types/ipynb/cell-raw.html
-- [ ] docs/types/ipynb/detect.js
-- [ ] docs/types/ipynb/EDITOR.md
-- [ ] docs/types/ipynb/error.html
-- [ ] docs/types/ipynb/index.js
-- [ ] docs/types/ipynb/metadata.js
-- [ ] docs/types/ipynb/notebook.html
-- [ ] docs/types/ipynb/renderer.js
-- [ ] docs/types/ipynb/settings.default.json
-- [ ] docs/types/layered/decoders/kra.js
-- [ ] docs/types/layered/decoders/xcf.js
-- [ ] docs/types/layered/detect.js
-- [ ] docs/types/layered/index.js
-- [ ] docs/types/layered/metadata.js
-- [ ] docs/types/layered/ora/detect.js
-- [ ] docs/types/layered/ora/index.js
-- [ ] docs/types/layered/ora/renderer.js
-- [ ] docs/types/layered/renderer.js
-- [ ] docs/types/layered/settings.default.json
+- [x] docs/types/ipynb/cell-code.html
+- [x] docs/types/ipynb/cell-md.html
+- [x] docs/types/ipynb/cell-raw.html
+- [x] docs/types/ipynb/detect.js
+- [x] docs/types/ipynb/EDITOR.md
+- [x] docs/types/ipynb/error.html
+- [x] docs/types/ipynb/index.js
+- [x] docs/types/ipynb/metadata.js
+- [x] docs/types/ipynb/notebook.html
+- [x] docs/types/ipynb/renderer.js
+- [x] docs/types/ipynb/settings.default.json
+- [x] docs/types/layered/decoders/kra.js
+- [x] docs/types/layered/decoders/xcf.js
+- [x] docs/types/layered/detect.js
+- [x] docs/types/layered/index.js
+- [x] docs/types/layered/metadata.js
+- [x] docs/types/layered/ora/detect.js
+- [x] docs/types/layered/ora/index.js
+- [x] docs/types/layered/ora/renderer.js
+- [x] docs/types/layered/renderer.js
+- [x] docs/types/layered/settings.default.json
 - [x] docs/types/markdown/detect.js
 - [x] docs/types/markdown/edit-actions.js
 - [x] docs/types/markdown/EDITOR.md
