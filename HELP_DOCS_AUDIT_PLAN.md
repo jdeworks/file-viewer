@@ -985,14 +985,14 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/office/odf/odflib.js
 - [x] docs/types/office/odf/renderer.js
 - [x] docs/types/office/odf/settings.default.json
-- [ ] docs/types/office/pptx/detect.js
-- [ ] docs/types/office/pptx/doc.html
-- [ ] docs/types/office/pptx/index.js
-- [ ] docs/types/office/pptx/metadata.js
-- [ ] docs/types/office/pptx/pptxlib.js
-- [ ] docs/types/office/pptx/renderer.js
-- [ ] docs/types/office/pptx/settings.default.json
-- [ ] docs/types/office/pptx/slide.html
+- [x] docs/types/office/pptx/detect.js
+- [x] docs/types/office/pptx/doc.html
+- [x] docs/types/office/pptx/index.js
+- [x] docs/types/office/pptx/metadata.js
+- [x] docs/types/office/pptx/pptxlib.js
+- [x] docs/types/office/pptx/renderer.js
+- [x] docs/types/office/pptx/settings.default.json
+- [x] docs/types/office/pptx/slide.html
 - [ ] docs/types/office/xlsx/detect.js
 - [ ] docs/types/office/xlsx/editor.js
 - [ ] docs/types/office/xlsx/exports.js

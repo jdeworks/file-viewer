@@ -2082,7 +2082,7 @@
         "preview": true,
         "diff": false,
         "magicSelector": false,
-        "screenshot": true
+        "screenshot": false
       },
       "provenance": {
         "sourced": 0,
