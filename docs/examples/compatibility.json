@@ -316,7 +316,10 @@
         "sample.cbz"
       ],
       "extensions": [
-        ".cbz"
+        ".cbz",
+        ".cbr",
+        ".cb7",
+        ".cbt"
       ],
       "capabilities": {
         "rawView": false,
@@ -418,7 +421,8 @@
         "sample.djvu"
       ],
       "extensions": [
-        ".djvu"
+        ".djvu",
+        ".djv"
       ],
       "capabilities": {
         "rawView": false,

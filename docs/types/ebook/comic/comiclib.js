@@ -1,6 +1,7 @@
 // Comic archive reader. .cbz is a ZIP of page images → we read it with the already-vendored JSZip
-// (no new dependency) and hand back the sorted page entries. .cbr/.cb7 need libarchive.wasm
-// (opt-in via enableArchiveWasm setting) — openComic() accepts an options object for that.
+// (no new dependency) and hand back the sorted page entries. .cbr/.cb7/.cbt need libarchive.wasm
+// (opt-in via enableArchiveWasm setting; libarchive.js natively handles tar too, see
+// core/archivelib.js) — openComic() accepts an options object for that.
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 
 const IMAGE_RE = /\.(jpe?g|png|gif|webp|avif|bmp)$/i;
@@ -11,12 +12,17 @@ function naturalCmp(a, b) {
 }
 
 // Identify the container from magic bytes: PK = zip (.cbz), Rar! = rar (.cbr), 7z = 7-zip.
+// POSIX/GNU tar (.cbt) has no magic at offset 0 — the "ustar" marker sits at offset 257, so a
+// short buffer (e.g. a small metadata-only read) won't classify as tar; that's fine, we only
+// need this for the full-file open/inspect path.
 export function archiveKind(bytes) {
   const b = bytes;
   if (!b || b.length < 4) return 'unknown';
   if (b[0] === 0x50 && b[1] === 0x4b) return 'zip';                                   // PK
   if (b[0] === 0x52 && b[1] === 0x61 && b[2] === 0x72 && b[3] === 0x21) return 'rar'; // Rar!
   if (b[0] === 0x37 && b[1] === 0x7a && b[2] === 0xbc && b[3] === 0xaf) return '7z';  // 7z BC AF 27
+  if (b.length >= 262 && b[257] === 0x75 && b[258] === 0x73 && b[259] === 0x74 &&
+      b[260] === 0x61 && b[261] === 0x72) return 'tar';                              // ustar @ 257
   return 'unknown';
 }
 
@@ -38,7 +44,8 @@ export async function inspectComic(intake) {
 
 // Open a .cbz → { kind:'zip', pages:[{ name, blobUrl }] } with image pages natural-sorted. Blob
 // URLs are created for each page and must be revoked by the caller (renderer's revoke()).
-// For .cbr/.cb7 with enableArchiveWasm=true, calls archivelib to extract each image entry.
+// For .cbr/.cb7/.cbt with enableArchiveWasm=true, calls archivelib to extract each image entry
+// (libarchive.js auto-detects the container format, so the same code path covers all three).
 export async function openComic(intake, { enableArchiveWasm = false } = {}) {
   const kind = archiveKind(intake.bytes);
 
@@ -54,7 +61,7 @@ export async function openComic(intake, { enableArchiveWasm = false } = {}) {
     return { kind: 'zip', pages };
   }
 
-  if ((kind === 'rar' || kind === '7z') && enableArchiveWasm) {
+  if ((kind === 'rar' || kind === '7z' || kind === 'tar') && enableArchiveWasm) {
     const { listArchive, extractFile } = await import('../../../core/archivelib.js');
     const listing = await listArchive(intake);
     const imageNames = listing.files
@@ -73,6 +80,6 @@ export async function openComic(intake, { enableArchiveWasm = false } = {}) {
     return { kind, pages };
   }
 
-  // RAR/7z without WASM enabled, or unknown format — caller shows a friendly note.
+  // RAR/7z/tar without WASM enabled, or unknown format — caller shows a friendly note.
   return { kind };
 }
