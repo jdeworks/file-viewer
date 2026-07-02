@@ -41,7 +41,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [RDP Connection](rdp.md) | `.rdp` | Basic | Monaco | download | — | — |
 | [MCP Server Config](mcp-config.md) | `.json` (claude_desktop_config.json) | Basic | Monaco | download | — | — |
 | [Kubernetes Config](kubeconfig.md) | `kubeconfig` | Basic | Monaco | download | k8s-manifest (1) | — |
-| [Environment Variables](/) | `.env` | Basic | Monaco | download | — | Secret masking |
+| [Environment Variables](env.md) | `.env` | Basic | Monaco | download | — | Secret masking |
 | [Property List](plist.md) | `.plist` | Basic | Monaco | download | — | Binary plist |
 | [Localization Strings](strings.md) | `.strings` | Basic | Monaco | download | — | — |
 | [HAR](har.md) | `.har` | Basic | Monaco | download | — | Waterfall chart |
@@ -232,7 +232,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Certificate / Key (PEM)](pem.md) | `.pem` `.crt` `.key` | Basic | Monaco | download | — | Chain viewer |
-| [Environment Variables](/) | `.env` | Basic | Monaco | download | — | Secret masking |
+| [Environment Variables](env.md) | `.env` | Basic | Monaco | download | — | Secret masking |
 | [Windows Registry](reg.md) | `.reg` | Basic | Monaco | download | — | — |
 | [SARIF Security Report](sarif.md) | `.sarif` | Basic | Monaco | download | — | — |
 | [Network Capture](pcap.md) | `.pcap` `.pcapng` `.cap` | Basic | None | download | — | Protocol decode |

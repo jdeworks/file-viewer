@@ -1,6 +1,11 @@
 // Form editor for .env files. Manages a list of entries (comments, blank lines, vars) with
 // reveal-on-demand for secrets, comment/uncomment toggles, and undo/redo (buttons + Ctrl+Z/Y).
-const SENSITIVE_RE = /SECRET|PASSWORD|TOKEN|KEY|API|PRIVATE/i;
+// Kept in sync with the broader key patterns used by the read-only renderer.js/metadata.js
+// (SECRET|PASSWORD|PASSWD|TOKEN|AUTH|CREDENTIAL|PRIVATE|PWD|SALT|SIGNING|MASTER|WEBHOOK) plus
+// KEY/API — this must be AT LEAST as protective as the read-only preview's masking, since this
+// is the interactive form where a value can otherwise sit in a plain-text input. Real bundled
+// examples (SMTP_PWD, APPSMITH_ENCRYPTION_SALT) were shown unmasked here before this was widened.
+const SENSITIVE_RE = /SECRET|PASSWORD|PASSWD|PWD|TOKEN|KEY|API|PRIVATE|AUTH|CREDENTIAL|SALT|SIGNING|MASTER|WEBHOOK/i;
 // Credentials embedded in a connection-string value (DATABASE_URL=postgres://user:pass@host),
 // where the key name itself isn't a secret — still mask the value.
 const URL_CREDS = /:\/\/[^\s/:@]+:[^\s/@]+@/;

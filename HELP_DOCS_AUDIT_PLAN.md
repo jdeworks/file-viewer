@@ -1104,12 +1104,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/editorconfig/metadata.js
 - [x] docs/types/text/editorconfig/renderer.js
 - [x] docs/types/text/editorconfig/settings.default.json
-- [ ] docs/types/text/env/detect.js
-- [ ] docs/types/text/env/form-editor.js
-- [ ] docs/types/text/env/index.js
-- [ ] docs/types/text/env/metadata.js
-- [ ] docs/types/text/env/renderer.js
-- [ ] docs/types/text/env/settings.default.json
+- [x] docs/types/text/env/detect.js
+- [x] docs/types/text/env/form-editor.js
+- [x] docs/types/text/env/index.js
+- [x] docs/types/text/env/metadata.js
+- [x] docs/types/text/env/renderer.js
+- [x] docs/types/text/env/settings.default.json
 - [ ] docs/types/text/fits/detect.js
 - [ ] docs/types/text/fits/EDITOR.md
 - [ ] docs/types/text/fits/index.js
