@@ -23,6 +23,7 @@
 | Center | ✅ | Default center coordinate and zoom |
 | Min/max zoom | ✅ | `minzoom` and `maxzoom` |
 | Tile count | ✅ | Total tiles in `tiles` table |
+| Zoom histogram | ✅ | Tile count grouped by zoom level |
 | Version | ✅ | MBTiles spec version |
 | Source view | ❌ | Binary SQLite |
 | Diff | ❌ | Binary format |
@@ -42,6 +43,7 @@
 
 - Individual tiles are not rendered (no map preview)
 - Vector tile (PBF) schema is not decoded
+- Metadata is limited to the standard `metadata` table and tile counts
 
 ## Gap Analysis
 

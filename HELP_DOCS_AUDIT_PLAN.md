@@ -149,11 +149,11 @@ Completion gates:
 - [x] docs/readme/lnk.md
 - [x] docs/readme/log.md
 - [x] docs/readme/lrf.md
-- [ ] docs/readme/markdown.md
-- [ ] docs/readme/mat.md
-- [ ] docs/readme/MATRIX.md
-- [ ] docs/readme/mbox.md
-- [ ] docs/readme/mbtiles.md
+- [x] docs/readme/markdown.md
+- [x] docs/readme/mat.md
+- [x] docs/readme/MATRIX.md
+- [x] docs/readme/mbox.md
+- [x] docs/readme/mbtiles.md
 - [ ] docs/readme/mcp-config.md
 - [ ] docs/readme/mcworld.md
 - [ ] docs/readme/media.md

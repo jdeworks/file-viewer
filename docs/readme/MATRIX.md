@@ -23,7 +23,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [TOML](toml.md) | `.toml` `Pipfile` | Basic | Monaco | download | Cargo.toml, netlify.toml, wrangler.toml, fly.toml, cliff.toml, pyproject.toml (6) | — |
 | [XML](xml.md) | `.xml` | Basic | Monaco | download | pom.xml (1) | XPath query |
 | [INI](ini.md) | `.ini` | Basic | Monaco | download | tox.ini (1) | — |
-| [Markdown](markdown.md) | `.md` `CODEOWNERS` `Gemfile` | Basic | Monaco | download | CODEOWNERS, Gemfile (2) | Live preview |
+| [Markdown](markdown.md) | `.md` `.markdown` `.mdown` `.mkd` | Full | Monaco / WYSIWYG | HTML, DOCX, download | CODEOWNERS, Gemfile (2) | Math / Mermaid |
 | [HTML](html.md) | `.html` | Basic | Monaco | download | — | Sandboxed render |
 | [Plain text](/) | `.txt` `.bin` `.gradle` `.mod` | Basic | Monaco | download | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc (6) | — |
 | [Log](log.md) | `.log` | Basic | Monaco | download | — | Filter/tail |
@@ -74,7 +74,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Jupyter Notebook](ipynb.md) | `.ipynb` | Basic | Monaco | download | — | Cell execution |
 | [Email](eml.md) | `.eml` | Basic | Monaco | download | — | MIME tree |
 | [Outlook Email](/) | `.msg` | Basic | None | download | — | — |
-| [Mailbox](mbox.md) | `.mbox` | Basic | Monaco | download | — | Thread view |
+| [Mailbox](mbox.md) | `.mbox` | Partial | Monaco | download | — | Expandable message bodies |
 | [Adobe Premiere Project](/) | `.prproj` | Basic | None | download | — | Timeline view |
 
 ---
@@ -177,8 +177,8 @@ Master overview of all file types supported by the viewer. Columns:
 | [BSON](/) | `.bson` | Full | None | download | — | Multi-doc |
 | [CBOR](/) | `.cbor` | Full | None | download | — | Indefinite length |
 | [MessagePack](/) | `.msgpack` `.mpk` | Full | None | download | — | Ext types |
-| [MATLAB MAT-file](/) | `.mat` | Full | None | download | — | v7.3 format |
-| [MBTiles](/) | `.mbtiles` | Basic | None | download | — | Tile decode |
+| [MATLAB MAT-file](mat.md) | `.mat` | Partial | None | download | — | v7.3 / compressed payloads |
+| [MBTiles](mbtiles.md) | `.mbtiles` | Partial | None | download | — | Tile preview |
 | [NetCDF](/) | `.nc` `.nc4` `.netcdf` | Partial | None | download | — | NetCDF-4 |
 
 ---

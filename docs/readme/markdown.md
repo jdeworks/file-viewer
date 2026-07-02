@@ -15,11 +15,11 @@
 ### View
 | Feature | Status | Details |
 |---------|--------|---------|
-| Rendered preview | ✅ | markdown-it with GitHub Flavored Markdown (GFM) |
-| Code syntax highlighting | ✅ | Fenced code blocks with language detection |
+| Rendered preview | ✅ | markdown-it with tables, strikethrough, raw HTML sanitization, auto-linking, and smart typography |
+| Fenced code blocks | ✅ | Code fences render with language classes; syntax coloring is still planned |
 | Tables | ✅ | Standard GFM table rendering |
-| Task lists | ✅ | `- [x]` checkbox syntax |
-| Footnotes | ✅ | `[^ref]` syntax |
+| Task lists | ◐ | Supported in the TipTap WYSIWYG editor; rendered preview still needs markdown-it task-list support |
+| Footnotes | ❌ | `[^ref]` syntax not integrated in markdown-it yet |
 | Math (LaTeX) | ❌ | KaTeX/MathJax not integrated |
 | Mermaid diagrams | ❌ | Not integrated |
 | Source editing + diff | ✅ | Full Monaco editor + text diff |
@@ -61,6 +61,9 @@
 |---------|----------|-------|
 | Math rendering (KaTeX) | High | LaTeX math in `$...$` and `$$...$$` blocks |
 | Mermaid diagrams | Medium | Flowcharts, sequence diagrams in fenced blocks |
+| Preview syntax highlighting | Medium | Add a local highlighter for fenced code blocks |
+| Task-list checkbox rendering | Medium | Add markdown-it task-list support in preview mode |
+| Footnote rendering | Medium | Add markdown-it-footnote support |
 | Front-matter (YAML) display | Medium | Show/parse YAML front matter as structured metadata |
 | Image paste | Medium | Paste image from clipboard → encode as base64 data URI |
 | Spell check | Low | Browser spellcheck or custom dictionary |
