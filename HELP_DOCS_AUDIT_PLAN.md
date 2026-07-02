@@ -259,11 +259,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] hl7 | HL7 v2 Health Message
 - [x] html | HTML
 - [x] hydrogen | Hydrogen Drum Machine
-- [ ] ico | Icon File
-- [ ] ics | Calendar
-- [ ] image | Image
-- [ ] ini | Config (INI/env)
-- [ ] ipa | iOS App (IPA)
+- [x] ico | Icon File
+- [x] ics | Calendar
+- [x] image | Image
+- [x] ini | Config (INI/env)
+- [x] ipa | iOS App (IPA)
 - [ ] ipynb | Jupyter Notebook
 - [ ] iso | ISO 9660 Disc Image
 - [ ] iwork | Apple iWork

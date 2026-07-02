@@ -23,7 +23,8 @@
 | HEIF/HEIC | ✅ | Dedicated HEIF renderer uses vendored libheif.js |
 | TIFF | ⚠️ Partial | Dedicated TIFF renderer handles supported pages separately from the base image renderer |
 | JPEG XL | ⚠️ Partial | Lazy JavaScript decoder attempts preview; download still works when decode fails |
-| Diff/compare | ❌ | Pixel-level diff not implemented |
+| In-editor compare | ✅ | Edited raster images can compare original vs current with split, overlay, and diff-highlight modes |
+| Type-level diff | ❌ | Global two-file image diff is not implemented |
 
 ### Edit
 | Feature | Status | Details |
