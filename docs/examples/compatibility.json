@@ -1695,7 +1695,8 @@
         "sample.mid"
       ],
       "extensions": [
-        ".mid"
+        ".mid",
+        ".midi"
       ],
       "capabilities": {
         "rawView": false,

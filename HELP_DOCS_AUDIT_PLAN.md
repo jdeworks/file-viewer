@@ -532,11 +532,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/mcworld/metadata.js
 - [x] docs/types/binary/mcworld/renderer.js
 - [x] docs/types/binary/mcworld/settings.default.json
-- [ ] docs/types/binary/midi/detect.js
-- [ ] docs/types/binary/midi/index.js
-- [ ] docs/types/binary/midi/metadata.js
-- [ ] docs/types/binary/midi/renderer.js
-- [ ] docs/types/binary/midi/settings.default.json
+- [x] docs/types/binary/midi/detect.js
+- [x] docs/types/binary/midi/index.js
+- [x] docs/types/binary/midi/metadata.js
+- [x] docs/types/binary/midi/renderer.js
+- [x] docs/types/binary/midi/settings.default.json
 - [ ] docs/types/binary/msg/detect.js
 - [ ] docs/types/binary/msg/index.js
 - [ ] docs/types/binary/msg/metadata.js

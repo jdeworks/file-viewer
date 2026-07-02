@@ -141,7 +141,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Audio / Video](media.md) | `.mp3` `.mp4` `.aac` `.flac` `.m4a` `.mkv` `.mov` `.avi` `.ogg` `.wav` `.webm` | Basic | None | download | — | Clip export |
-| [MIDI Sequence](media.md) | `.mid` | Basic | None | download | — | Piano roll |
+| [MIDI Sequence](midi.md) | `.mid` `.midi` | Basic | None | download | — | Piano roll |
 | [Ableton Live Set](/) | `.als` | Basic | None | download | — | Track list |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
 | [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
