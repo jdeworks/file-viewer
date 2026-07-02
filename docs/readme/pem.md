@@ -47,7 +47,7 @@
 
 ## Real-World Examples
 
-PEM examples are pending; private-key and certificate behavior is covered by parser tests and synthetic fixtures.
+- [`sample.pem`](../examples/sample.pem) — PEM certificate fixture demonstrating in-browser ASN.1 certificate inspection.
 
 ## Known Limitations
 

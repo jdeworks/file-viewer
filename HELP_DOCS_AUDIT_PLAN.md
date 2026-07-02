@@ -304,11 +304,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] pcap | Network Capture (.pcap)
 - [x] pdb | Protein Structure (.pdb)
 - [x] pdf | PDF
-- [ ] pem | Certificate / Key (PEM/DER)
-- [ ] plist | Property List
-- [ ] ply | 3D model (PLY)
-- [ ] postscript | PostScript / EPS
-- [ ] pptx | PowerPoint
+- [x] pem | Certificate / Key (PEM/DER)
+- [x] plist | Property List
+- [x] ply | 3D model (PLY)
+- [x] postscript | PostScript / EPS
+- [x] pptx | PowerPoint
 - [ ] procreate | Procreate painting
 - [ ] proto | Protocol Buffer
 - [ ] prproj | Adobe Premiere Project

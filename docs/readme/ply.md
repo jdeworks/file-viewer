@@ -24,6 +24,9 @@
 | Vertex color display | ❌ | Color properties are skipped during parsing |
 | Per-group color assignment | ⚠️ Partial | Shared mesh color picker supports region/face/default group coloring |
 | Auto-center and fit | ✅ | Geometry centered and scaled to viewport |
+| Source view | ❌ | Mesh data is preview-only, including ASCII PLY |
+| Diff | ❌ | Mesh diff is not implemented |
+| Metadata | ✅ | Format, vertices, faces, triangles, elements, comments, and dimensions |
 
 ### Edit
 | Capability | Status | Notes |
