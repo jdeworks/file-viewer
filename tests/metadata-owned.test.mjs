@@ -90,6 +90,14 @@ import { render as renderWasm } from '../docs/types/binary/wasm/renderer.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
+import { detect as detectNupkg } from '../docs/types/binary/nupkg/detect.js';
+import { metadata as nupkgMeta } from '../docs/types/binary/nupkg/metadata.js';
+import { detect as detectParquet } from '../docs/types/binary/parquet/detect.js';
+import { extractMetadata as parquetMeta, readParquetFooter } from '../docs/types/binary/parquet/metadata.js';
+import { render as renderParquet } from '../docs/types/binary/parquet/renderer.js';
+import { detect as detectPcap } from '../docs/types/binary/pcap/detect.js';
+import { extractMetadata as pcapMeta } from '../docs/types/binary/pcap/metadata.js';
+import { render as renderPcap } from '../docs/types/binary/pcap/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -1069,6 +1077,107 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   dv.setFloat64(76, 15, true);
   const mpHtml = renderShapefile({ bytes: mp }).bodyHtml;
   assert.match(mpHtml, /Z range[\s\S]*?5\.000[\s\S]*?15\.000/);
+}
+
+{
+  const nupkgBytes = await bytes('sample.nupkg');
+  assert.equal(detectNupkg({ filename: 'sample.nupkg', bytes: nupkgBytes }), 0.99);
+  assert.equal(detectNupkg({ filename: 'sample.jar', bytes: nupkgBytes }), 0.95);
+  assert.equal(detectNupkg({ filename: 'sample.unknown', bytes: nupkgBytes }), 0);
+  assert.equal(detectNupkg({ filename: 'sample.nupkg', bytes: new Uint8Array(0) }), 0.6);
+  assert.equal(detectNupkg({ filename: 'sample.unknown', bytes: new Uint8Array(0) }), 0);
+  const rows = await nupkgMeta({ filename: 'sample.nupkg', bytes: nupkgBytes });
+  assert.equal(rows.format, 'NuGet');
+  const jarRows = await nupkgMeta({ filename: 'sample.jar', bytes: nupkgBytes });
+  assert.equal(jarRows.format, 'Java JAR');
+
+  const vsixBytes = await bytes('sample.vsix');
+  assert.equal(detectNupkg({ filename: 'sample.vsix', bytes: vsixBytes }), 0.99);
+  const vsixRows = await nupkgMeta({ filename: 'sample.vsix', bytes: vsixBytes });
+  assert.equal(vsixRows.format, 'VS Extension');
+
+  const whlBytes = await bytes('sample.whl');
+  assert.equal(detectNupkg({ filename: 'sample.whl', bytes: whlBytes }), 0.99);
+  const whlRows = await nupkgMeta({ filename: 'sample.whl', bytes: whlBytes });
+  assert.equal(whlRows.format, 'Python Wheel');
+}
+
+{
+  // sample.parquet is a real Thrift-compact-protocol-encoded FileMetaData footer
+  // (the encoding every real Parquet writer uses), not the old synthetic
+  // binary-protocol-shaped fixture the previous heuristic scanner needed.
+  const parquetBytes = await bytes('sample.parquet');
+  assert.equal(detectParquet({ filename: 'sample.parquet', bytes: parquetBytes }), 0.99);
+  assert.equal(detectParquet({ filename: 'sample.parquet', bytes: new Uint8Array(4) }), 0);
+  assert.equal(detectParquet({ filename: 'sample.parquet', bytes: new Uint8Array(8) }), 0.4);
+  assert.equal(detectParquet({ filename: 'unknown.bin', bytes: new Uint8Array(8) }), 0);
+
+  const footer = readParquetFooter(parquetBytes);
+  assert.ok(footer);
+  assert.equal(footer.version, 2);
+  assert.equal(footer.numRows, 100);
+  assert.deepEqual(footer.colNames, ['id', 'name', 'age', 'salary', 'department', 'active']);
+  assert.equal(footer.createdBy, 'file-viewer-test-fixture version 1.0');
+
+  const rows = await parquetMeta({ filename: 'sample.parquet', bytes: parquetBytes });
+  assert.equal(rows.Format, 'Apache Parquet');
+  assert.equal(rows['Row Count'], '100');
+  assert.equal(rows['Format Version'], '2');
+  assert.equal(rows.Columns, '6');
+
+  const rendered = renderParquet({ filename: 'sample.parquet', bytes: parquetBytes }).bodyHtml;
+  assert.match(rendered, /salary/);
+  assert.match(rendered, /department/);
+  assert.match(rendered, /Parquet v2/);
+  assert.match(rendered, /100/);
+}
+
+{
+  const pcapBytes = await bytes('sample.pcap');
+  assert.equal(detectPcap({ filename: 'sample.pcap', bytes: pcapBytes }), 0.98);
+  assert.equal(detectPcap({ filename: 'unknown.bin', bytes: new Uint8Array(4) }), 0);
+  assert.equal(detectPcap({ filename: 'sample.pcap', bytes: new Uint8Array(0) }), 0);
+
+  const rows = await pcapMeta({ filename: 'sample.pcap', bytes: pcapBytes });
+  assert.equal(rows.Format, 'PCAP');
+  assert.equal(rows['Link Type'], 'Ethernet');
+
+  const rendered = renderPcap({ filename: 'sample.pcap', bytes: pcapBytes }).bodyHtml;
+  assert.match(rendered, /badge-pcap/);
+  assert.match(rendered, /Ethernet/);
+  assert.match(rendered, /ARP/); // first packet in the fixture is a broadcast ARP request
+
+  // PCAPNG Section Header Block + one Interface Description Block, hand-built in BIG-ENDIAN
+  // byte order (real PCAPNG files support either order via the byte-order-magic field).
+  // Regression test for a bug where Block Total Length was always read as little-endian
+  // before the byte order was determined, so BE captures silently failed to locate the IDB
+  // (linkType stayed -1 / "Unknown" and the block walk never advanced).
+  const shbLen = 28;
+  const idbLen = 20;
+  const beNg = new Uint8Array(shbLen + idbLen);
+  const w32be = (off, v) => { beNg[off] = (v >>> 24) & 0xff; beNg[off + 1] = (v >>> 16) & 0xff; beNg[off + 2] = (v >>> 8) & 0xff; beNg[off + 3] = v & 0xff; };
+  const w16be = (off, v) => { beNg[off] = (v >>> 8) & 0xff; beNg[off + 1] = v & 0xff; };
+  // Section Header Block
+  w32be(0, 0x0a0d0d0a);      // block type
+  w32be(4, shbLen);          // block total length
+  w32be(8, 0x1a2b3c4d);      // byte-order magic (BE, unswapped)
+  w16be(12, 1);               // major version
+  w16be(14, 0);               // minor version
+  w32be(16, 0xffffffff);      // section length (upper 4 bytes, unknown)
+  w32be(20, 0xffffffff);      // section length (lower 4 bytes, unknown)
+  w32be(24, shbLen);          // block total length (repeated)
+  // Interface Description Block
+  w32be(28, 1);                // block type = IDB
+  w32be(32, idbLen);           // block total length
+  w16be(36, 1);                 // LinkType = Ethernet
+  w16be(38, 0);                 // reserved
+  w32be(40, 65535);             // snaplen
+  w32be(44, idbLen);            // block total length (repeated)
+
+  const ngRows = await pcapMeta({ filename: 'sample.pcapng', bytes: beNg });
+  assert.equal(ngRows.Format, 'PCAPNG');
+  const ngRendered = renderPcap({ filename: 'sample.pcapng', bytes: beNg }).bodyHtml;
+  assert.match(ngRendered, /Ethernet/); // fails (shows "Unknown") if blockLen endianness bug regresses
 }
 
 console.log('metadata-owned: ok');
