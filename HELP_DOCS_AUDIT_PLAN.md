@@ -525,11 +525,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/binary/mbtiles/detect.js
 - [x] docs/types/binary/mbtiles/index.js
 - [x] docs/types/binary/mbtiles/metadata.js
-- [ ] docs/types/binary/mbtiles/renderer.js
-- [ ] docs/types/binary/mbtiles/settings.default.json
-- [ ] docs/types/binary/mcworld/detect.js
-- [ ] docs/types/binary/mcworld/index.js
-- [ ] docs/types/binary/mcworld/metadata.js
+- [x] docs/types/binary/mbtiles/renderer.js
+- [x] docs/types/binary/mbtiles/settings.default.json
+- [x] docs/types/binary/mcworld/detect.js
+- [x] docs/types/binary/mcworld/index.js
+- [x] docs/types/binary/mcworld/metadata.js
 - [ ] docs/types/binary/mcworld/renderer.js
 - [ ] docs/types/binary/mcworld/settings.default.json
 - [ ] docs/types/binary/midi/detect.js

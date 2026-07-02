@@ -26,7 +26,7 @@
 | File listing | ✅ | First 40 archive entries with sizes |
 | Source view | ❌ | Binary NBT / ZIP format |
 | Diff | ❌ | Binary format |
-| Metadata | ❌ | Side-panel metadata extractor is not populated yet |
+| Metadata | ✅ | Side panel reports ZIP container, package type, file count, key files, and uncompressed size |
 
 ### Edit
 | Capability | Status | Notes |
@@ -49,6 +49,5 @@
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
 | Manifest details | Med | Easy | Parse `manifest.json` for pack name, description, UUID, and version |
-| Metadata extractor | Med | Easy | Surface level name, package type, and file counts in the side panel |
 | Level stats | Low | Med | Player inventory item count, biome, dimension |
 | Pack content listing | Low | Easy | List behaviours/textures/scripts inside pack |

@@ -122,7 +122,7 @@
     },
     "asciiart": {
       "label": "ASCII / ANSI Art",
-      "support": "supported",
+      "support": "partial",
       "sampleFiles": [
         "sample.ans"
       ],
@@ -140,8 +140,10 @@
         "sourced": 0,
         "total": 1
       },
-      "partialSamples": [],
-      "realWorldQuality": "needs-review",
+      "partialSamples": [
+        "sample.mcworld"
+      ],
+      "realWorldQuality": "synthetic",
       "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
       "fileExamplesSlug": null,
       "previewDepth": "basic",
@@ -303,7 +305,7 @@
       "exportCapability": "download",
       "securityLimitations": [],
       "knownParserGaps": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },

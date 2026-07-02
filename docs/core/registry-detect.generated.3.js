@@ -276,11 +276,17 @@ return detect;
 
 const detect_mcworld=(()=>{
 function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
+  const hasMcExt = hasExtension(intake, 'mcworld', 'mctemplate', 'mcpack');
+  if (!intake.bytes || intake.bytes.length < 4) {
+    if (hasMcExt) return 0.6;
+    if (mimeMatches(intake, 'mcworld', 'mcpack', 'minecraft')) return 0.5;
+    return 0;
+  }
   const b = intake.bytes;
   const isPk = b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04;
   if (!isPk) return 0;
-  if (hasExtension(intake, 'mcworld', 'mctemplate', 'mcpack')) return 0.97;
+  if (hasMcExt) return 0.97;
+  if (mimeMatches(intake, 'mcworld', 'mcpack', 'minecraft')) return 0.9;
   const head = intake.textSample || '';
   if (/level\.dat|levelname\.txt|db\/CURRENT|db\/MANIFEST/.test(head)) return 0.85;
   return 0;
@@ -304,20 +310,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_netcdf=(()=>{
-function detect(intake) {
-  if (!intake.bytes || intake.bytes.length < 4) return 0;
-  const b = intake.bytes;
-  // NetCDF-3 classic: "CDF\x01" or "CDF\x02"
-  if (b[0] === 0x43 && b[1] === 0x44 && b[2] === 0x46 && (b[3] === 0x01 || b[3] === 0x02)) return 0.98;
-  // NetCDF-4 (HDF5-based): HDF5 signature "\x89HDF\r\n\x1a\n"
-  if (b[0] === 0x89 && b[1] === 0x48 && b[2] === 0x44 && b[3] === 0x46) {
-    if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.85;
-  }
-  if (hasExtension(intake, 'nc', 'nc4', 'netcdf')) return 0.6;
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom,"netcdf":detect_netcdf};
+export const DETECTORS={"3mf":detect_3mf,"clip":detect_clip,"sqlite":detect_sqlite,"epub":detect_epub,"comic":detect_comic,"djvu":detect_djvu,"archive":detect_archive,"iwork":detect_iwork,"zip":detect_zip,"torrent":detect_torrent,"java-class":detect_java_class,"wasm":detect_wasm,"npy":detect_npy,"lnk":detect_lnk,"dmp":detect_dmp,"dxf":detect_dxf,"mcworld":detect_mcworld,"dicom":detect_dicom};

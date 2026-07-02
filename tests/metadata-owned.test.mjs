@@ -63,6 +63,8 @@ import { detect as detectMat } from '../docs/types/binary/mat/detect.js';
 import { extractMetadata as matMeta } from '../docs/types/binary/mat/metadata.js';
 import { detect as detectMbtiles } from '../docs/types/binary/mbtiles/detect.js';
 import { extractMetadata as mbtilesMeta } from '../docs/types/binary/mbtiles/metadata.js';
+import { detect as detectMcworld } from '../docs/types/binary/mcworld/detect.js';
+import { extractMetadata as mcworldMeta } from '../docs/types/binary/mcworld/metadata.js';
 import { detect as detectGameRom } from '../docs/types/binary/gamerom/detect.js';
 import { parseRom } from '../docs/types/binary/gamerom/headers.js';
 import { extractMetadata as gameRomMeta } from '../docs/types/binary/gamerom/metadata.js';
@@ -797,6 +799,21 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const rows = mbtilesMeta({ filename: 'sample.mbtiles', bytes: data, isBinary: true, size: data.length });
   assert.equal(rows.Format, 'MBTiles');
   assert.equal(rows.Container, 'SQLite 3');
+}
+
+{
+  const data = await bytes('sample.mcworld');
+  assert.equal(detectMcworld({ filename: 'sample.mcworld', mimeType: 'application/x-mcworld', bytes: data, isBinary: true }), 0.97);
+  assert.equal(detectMcworld({ filename: 'empty.mcworld', bytes: new Uint8Array(0), isBinary: true }), 0.6);
+  assert.equal(detectMcworld({ filename: 'sample.zip', mimeType: 'application/x-mcworld', bytes: data, isBinary: true }), 0.9);
+  const rows = mcworldMeta({ filename: 'sample.mcworld', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'Minecraft Bedrock Package');
+  assert.equal(rows.Container, 'ZIP');
+  assert.equal(rows['Package type'], 'World');
+  assert.equal(rows.Files, '8');
+  assert.equal(rows['level.dat'], 'present');
+  assert.equal(rows['levelname.txt'], 'present');
+  assert.equal(rows.LevelDB, 'present');
 }
 
 {

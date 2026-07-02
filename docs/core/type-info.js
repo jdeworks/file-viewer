@@ -49,6 +49,7 @@ const TYPE_INFO = {
   image: ['Raster image', 'used for photos, screenshots, graphics, and bitmap artwork.', 'https://developer.mozilla.org/docs/Web/Media/Guides/Formats/Image_types'],
   midi: ['MIDI', 'used for musical note, instrument, timing, and control events.', 'https://en.wikipedia.org/wiki/MIDI'],
   media: ['Audio/video', 'used for playable or transcodable media streams.', 'https://developer.mozilla.org/docs/Web/Media/Guides/Formats'],
+  mcworld: ['Minecraft Bedrock package', 'used for Minecraft Bedrock world exports, templates, resource packs, and behavior packs.', 'https://minecraft.wiki/w/Bedrock_Edition_level_format'],
   font: ['Font', 'used to package glyph outlines and typographic metadata.', 'https://developer.mozilla.org/docs/Web/CSS/@font-face'],
   stl: ['STL mesh', 'used for 3D printing and triangle mesh exchange.', 'https://en.wikipedia.org/wiki/STL_(file_format)'],
   obj: ['OBJ mesh', 'used for 3D model geometry and simple material references.', 'https://en.wikipedia.org/wiki/Wavefront_.obj_file'],
