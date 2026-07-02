@@ -109,11 +109,11 @@ Completion gates:
 - [x] docs/readme/gltf.md
 - [x] docs/readme/guitar-pro.md
 - [x] docs/readme/har.md
-- [ ] docs/readme/hdf5.md
-- [ ] docs/readme/heif.md
-- [ ] docs/readme/hl7.md
-- [ ] docs/readme/html.md
-- [ ] docs/readme/hydrogen.md
+- [x] docs/readme/hdf5.md
+- [x] docs/readme/heif.md
+- [x] docs/readme/hl7.md
+- [x] docs/readme/html.md
+- [x] docs/readme/hydrogen.md
 - [ ] docs/readme/ico.md
 - [ ] docs/readme/ics.md
 - [ ] docs/readme/image.md

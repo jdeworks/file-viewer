@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.h2song`, `.h2drumkit` |
+| Extension(s) | `.h2song`, `.h2pattern`, `.h2drumkit` |
 | MIME type | `text/xml` |
 | Binary / Text | Text (XML) |
 | Common use | Hydrogen open-source drum machine projects and drumkit definitions |

@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.hl7`, `.edi` |
+| Extension(s) | `.hl7`, `.hl7v2`, `.msh` |
 | MIME type | `text/plain` |
 | Binary / Text | Text (pipe-delimited) |
 | Common use | Hospital information systems, lab results, patient admissions, pharmacy orders |

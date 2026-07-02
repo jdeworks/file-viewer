@@ -1,6 +1,6 @@
 # HEIF / HEIC — High Efficiency Image Format
 
-> Apple's default photo format — rendered natively in Safari/Chrome, with draw overlay, background removal, and format conversion.
+> Apple's default photo format — decoded locally with vendored libheif, primary image preview, multi-image thumbnails, and PNG export.
 
 ## Format Details
 
@@ -18,24 +18,24 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Image render | ✅ | Native browser support (Safari, Chrome 85+) |
-| Firefox fallback | ⚠️ | Firefox lacks native HEIF; fallback message shown |
-| Metadata extraction | ✅ | Width, height, EXIF data where available |
+| Image render | ✅ | Decoded in-browser with vendored `libheif.js` |
+| Multi-image files | ✅ | Thumbnail strip for additional images when present |
+| Metadata extraction | ⚠️ | Brand/container metadata plus decoded width/height in preview; EXIF/GPS not extracted |
 
 ### Edit
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Draw overlay | ✅ | Pencil / eraser / text annotation tools |
-| Magic background removal | ✅ | AI-powered subject isolation |
+| Draw overlay | ❌ | Not wired for this HEIF-specific renderer |
+| Magic background removal | ❌ | Not wired for this HEIF-specific renderer |
 
 ### Export
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Convert to PNG | ✅ | Via canvas export |
-| Convert to JPEG | ✅ | Via canvas export |
-| Convert to WebP | ✅ | Via canvas export |
-| Convert to AVIF | ✅ | Via canvas export (Chrome/Edge) |
+| Download as PNG | ✅ | Primary decoded canvas only |
+| Convert to JPEG | ❌ | Not exposed in current HEIF renderer |
+| Convert to WebP | ❌ | Not exposed in current HEIF renderer |
+| Convert to AVIF | ❌ | Not exposed in current HEIF renderer |
 
 ## Known-File Enhancement
 
@@ -47,14 +47,14 @@ No known-file plugin.
 
 ## Known Limitations
 
-- Firefox users cannot view HEIF without a browser extension; a clear fallback message is shown
-- HEIF image sequences (burst photos, live photos) are not navigable — only the primary image is shown
+- HEIF decode depends on the vendored libheif runtime loading successfully
 - HDR tone-mapping is handled by the browser; extended dynamic range is not explicitly communicated
+- EXIF/GPS metadata is not extracted
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
-| Firefox HEIF decode | High | Hard | Requires WASM HEIF decoder (e.g. libheif) |
-| Burst / sequence navigation | Med | Hard | HEIF sequences require parsing multi-image containers |
+| JPEG/WebP export | Med | Easy | Reuse canvas export with explicit format buttons |
 | HDR metadata display | Low | Med | Surface HDR color space and peak luminance |
+| EXIF/GPS metadata | Low | Med | Parse metadata boxes from the HEIF container |

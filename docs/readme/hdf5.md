@@ -1,6 +1,6 @@
 # HDF5 Scientific Data
 
-> HDF5 file viewer — group/dataset hierarchy, dataset shapes and types, and key attributes.
+> HDF5 file viewer — superblock/header inspector with file-size and layout metadata.
 
 ## Format Details
 
@@ -16,15 +16,18 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Root group contents | ✅ | Datasets and sub-groups in root |
-| Dataset shapes | ✅ | Dimensions per dataset |
-| Dataset dtypes | ✅ | float32, int16, string, compound, etc. |
-| Dataset sizes | ✅ | Total element count and byte estimate |
-| Attributes | ✅ | Key-value attributes on root and datasets |
-| Nested groups | ✅ | Recursive group listing (up to depth limit) |
+| HDF5 signature validation | ✅ | Verifies the 8-byte HDF5 magic signature |
+| Superblock version | ✅ | Reports v0/v1/v2/v3 superblock layout |
+| Offset / length sizes | ✅ | Extracted from supported superblock layouts |
+| Consistency flags | ✅ | Basic SWMR/write-access flags decoded |
+| File size | ✅ | Original byte length shown |
+| Root group contents | ❌ | Full group/dataset traversal is not implemented |
+| Dataset shapes | ❌ | Requires a full HDF5 parser |
+| Dataset dtypes | ❌ | Requires a full HDF5 parser |
+| Attributes | ❌ | Requires a full HDF5 parser |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
-| Metadata | ✅ | Group/dataset counts, total datasets |
+| Metadata | ✅ | Format, superblock version, file size, offset/length sizes |
 
 ### Edit
 | Capability | Status | Notes |
@@ -38,12 +41,13 @@
 
 ## Known Limitations
 
-- Dataset values are not shown — structural metadata only
-- HDF5 chunked / compressed datasets show declared shape, not chunk layout
+- Dataset/group hierarchy, attributes, shapes, dtypes, and values are not parsed
+- HDF5 chunking, compression filters, and external links are not inspected
 
 ## Gap Analysis
 
 | Feature | Priority | Difficulty | Notes |
 |---------|----------|------------|-------|
+| Group/dataset tree | High | Hard | Traverse HDF5 object headers and B-trees |
 | Dataset value preview | Low | Hard | Read first N elements via h5wasm |
 | h5wasm integration | Low | Hard | Full HDF5 parsing via WASM library (~2 MB) |
