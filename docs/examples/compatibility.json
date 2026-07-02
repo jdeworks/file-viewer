@@ -4399,11 +4399,11 @@
         "Layer, block, and attribute data not decoded",
         "Only version string and header shown"
       ],
-      "fileExamplesSlug": null,
+      "fileExamplesSlug": "dwg",
       "editCapability": "none",
       "exportCapability": "download",
       "securityLimitations": [],
-      "testCoverage": "smoke",
+      "testCoverage": "smoke+unit",
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },

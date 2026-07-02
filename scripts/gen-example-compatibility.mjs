@@ -101,6 +101,7 @@ const FE_SLUGS = {
   iwork:       null,
   gamerom:     null,
   dicom:       'dicom',
+  dwg:         'dwg',
   ruffle:      null,
   v86:         null,
   emulatorjs:  null,

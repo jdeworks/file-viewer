@@ -21,6 +21,7 @@ const VERSION_MAP = {
   AC1032: '2018',
   AC1035: '2023',
 };
+const DWG_VERSION_RE = /^AC\d{4}$/;
 
 function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -33,8 +34,8 @@ export function render(intake) {
   }
 
   const versionStr = new TextDecoder('ascii', { fatal: false }).decode(b.slice(0, 6));
-  if (!versionStr.startsWith('AC')) {
-    return { bodyHtml: '<p class="viewer-message">Missing DWG "AC" signature.</p>', hadUnsafe: false };
+  if (!DWG_VERSION_RE.test(versionStr)) {
+    return { bodyHtml: '<p class="viewer-message">Missing DWG version signature.</p>', hadUnsafe: false };
   }
 
   const acadVersion = VERSION_MAP[versionStr] || 'Unknown';

@@ -44,4 +44,11 @@ assert.equal(dmpInfo.name, 'Windows minidump');
 assert.match(dmpInfo.description, /crash diagnostics/);
 assert.match(dmpInfo.fileExamplesHref, /fileexamples\.com.*dmp/i);
 
+const dwg = REGISTRY.find((type) => type.id === 'dwg');
+assert.ok(dwg, 'dwg type is registered');
+const dwgInfo = getTypeInfo(dwg, null, { filename: 'sample.dwg' });
+assert.equal(dwgInfo.name, 'AutoCAD DWG drawing');
+assert.match(dwgInfo.description, /CAD workflows/);
+assert.match(dwgInfo.fileExamplesHref, /fileexamples\.com.*dwg/i);
+
 console.log('type info: ok');

@@ -3,6 +3,24 @@
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_f3d=(()=>{
+// Fusion 360 .f3d: ZIP file (PK magic) with specific internal structure
+// Also .f3z (assembly) shares the same format
+
+function detect(intake) {
+  const { filename, bytes: b } = intake;
+  const ext = filename ? filename.split('.').pop().toLowerCase() : '';
+  const isF3dExt = ext === 'f3d' || ext === 'f3z';
+
+  if (!b || b.length < 4) return isF3dExt ? 0.5 : 0;
+
+  const isPkZip = b[0] === 0x50 && b[1] === 0x4b && (b[2] === 0x03 || b[2] === 0x05 || b[2] === 0x07);
+  if (isF3dExt) return isPkZip ? 0.97 : 0.4;
+  return 0;
+}
+return detect;
+})();
+
 const detect_deb=(()=>{
 // Debian .deb: ar archive magic "!<arch>\n" followed by debian-binary member
 
@@ -309,17 +327,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_acf=(()=>{
-function detect(intake) {
-  if (intake.isBinary) return 0;
-  if (!hasExtension(intake, 'acf')) return 0;
-  const t = intake.textSample || '';
-  // Valve KeyValues format — top-level key is typically "AppState"
-  if (/^\s*"AppState"\s*\{/.test(t)) return 0.98;
-  if (/^\s*"[^"]+"\s*\{/.test(t)) return 0.7;
-  return 0.5;
-}
-return detect;
-})();
-
-export const DETECTORS={"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf};
+export const DETECTORS={"f3d":detect_f3d,"deb":detect_deb,"rpm":detect_rpm,"nupkg":detect_nupkg,"ipa":detect_ipa,"qif":detect_qif,"mt940":detect_mt940,"sdf":detect_sdf,"reg":detect_reg,"url":detect_url,"asciiart":detect_asciiart,"kicad":detect_kicad,"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript};

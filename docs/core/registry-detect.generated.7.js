@@ -3,6 +3,19 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_acf=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  if (!hasExtension(intake, 'acf')) return 0;
+  const t = intake.textSample || '';
+  // Valve KeyValues format — top-level key is typically "AppState"
+  if (/^\s*"AppState"\s*\{/.test(t)) return 0.98;
+  if (/^\s*"[^"]+"\s*\{/.test(t)) return 0.7;
+  return 0.5;
+}
+return detect;
+})();
+
 const detect_fits=(()=>{
 function detect(intake) {
   if (hasExtension(intake, 'fits', 'fit', 'fts')) {
@@ -301,4 +314,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};
+export const DETECTORS={"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk};

@@ -63,6 +63,7 @@ const TYPE_INFO = {
   npy: ['NumPy array', 'used to store Python NumPy arrays and array archives.', 'https://numpy.org/doc/stable/reference/generated/numpy.lib.format.html'],
   lnk: ['Windows shortcut', 'used by Windows Shell to point to files, folders, apps, or URLs.', 'https://learn.microsoft.com/openspecs/windows_protocols/ms-shllink/'],
   dmp: ['Windows minidump', 'used to capture compact Windows process crash diagnostics, exception data, and system information.', 'https://learn.microsoft.com/windows/win32/debug/minidump-files'],
+  dwg: ['AutoCAD DWG drawing', 'used for proprietary AutoCAD 2D/3D drawing files in architecture, engineering, and CAD workflows.', 'https://en.wikipedia.org/wiki/.dwg'],
   reg: ['Windows Registry export', 'used to export or import Windows Registry keys and values.', 'https://learn.microsoft.com/windows-server/administration/windows-commands/reg-import'],
   url: ['Internet shortcut', 'used to store a URL or target location as a small shortcut file.', 'https://en.wikipedia.org/wiki/Internet_shortcut'],
   asciiart: ['ANSI/ASCII art', 'used for terminal-style text art, often with ANSI color codes.', 'https://en.wikipedia.org/wiki/ANSI_art'],
@@ -118,6 +119,7 @@ const FILE_EXAMPLES_GUIDES_BY_ID = {
   deb: 'deb',
   dicom: 'dicom',
   dmp: 'dmp',
+  dwg: 'dwg',
 };
 
 const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
@@ -149,6 +151,7 @@ const FILE_EXAMPLES_GUIDES_BY_EXTENSION = {
   dicom: 'dicom',
   dmp: 'dmp',
   mdmp: 'dmp',
+  dwg: 'dwg',
 };
 
 function fileExtension(intake) {

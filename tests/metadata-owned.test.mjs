@@ -32,6 +32,9 @@ import { render as renderDicom } from '../docs/types/binary/dicom/renderer.js';
 import { detect as detectDmp } from '../docs/types/binary/dmp/detect.js';
 import { extractMetadata as dmpMeta } from '../docs/types/binary/dmp/metadata.js';
 import { render as renderDmp } from '../docs/types/binary/dmp/renderer.js';
+import { detect as detectDwg } from '../docs/types/binary/dwg/detect.js';
+import { extractMetadata as dwgMeta } from '../docs/types/binary/dwg/metadata.js';
+import { render as renderDwg } from '../docs/types/binary/dwg/renderer.js';
 import { extract as dockerMeta } from '../docs/types/text/known/dockerfile/metadata.js';
 import { extract as packageJsonMeta } from '../docs/types/text/json/known/package-json/metadata.js';
 import { extract as tsconfigMeta } from '../docs/types/text/json/known/tsconfig/metadata.js';
@@ -525,6 +528,23 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.match(rendered, /MINIDUMP/);
   assert.match(rendered, /Windows 11/);
   assert.match(rendered, /x64|AMD64/);
+}
+
+{
+  const data = await bytes('sample.dwg');
+  assert.equal(detectDwg({ filename: 'sample.dwg', bytes: data, isBinary: true }), 0.99);
+  assert.equal(detectDwg({ filename: 'sample.bin', mimeType: 'image/vnd.dwg', bytes: data, isBinary: true }), 0.98);
+  assert.ok(detectDwg({ filename: 'empty.dwg', bytes: new Uint8Array(0), isBinary: true }) > 0.9);
+  const rows = dwgMeta({ filename: 'sample.dwg', bytes: data, isBinary: true, size: data.length });
+  assert.equal(rows.Format, 'AutoCAD DWG');
+  assert.equal(rows.Version, 'AC1015');
+  assert.equal(rows['Known version'], 'yes');
+  assert.equal(rows['AutoCAD version'], 'AutoCAD 2000');
+
+  const rendered = renderDwg({ filename: 'sample.dwg', bytes: data, isBinary: true, size: data.length }).bodyHtml;
+  assert.match(rendered, /DWG/);
+  assert.match(rendered, /AutoCAD 2000/);
+  assert.match(rendered, /AC1015/);
 }
 
 console.log('metadata-owned: ok');

@@ -502,6 +502,12 @@ export async function run(ctx) {
   const dwgText = await dwgf.$eval('body', (el) => el.textContent);
   if (/DWG|AutoCAD/i.test(dwgText)) pass('DWG badge shown'); else fail('dwg badge: ' + dwgText.slice(0, 300));
   if (/AC1015|2000/i.test(dwgText)) pass('DWG version info shown'); else fail('dwg version: ' + dwgText.slice(0, 300));
+  await page.click('#metaBtn');
+  await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
+  const dwgMeta = await page.$eval('#metaBody', (e) => e.textContent);
+  if (/Format\s*AutoCAD DWG/.test(dwgMeta)) pass('DWG metadata includes format'); else fail('dwg meta format: ' + dwgMeta.replace(/\s+/g, ' ').slice(0, 180));
+  if (/Version\s*AC1015/.test(dwgMeta)) pass('DWG metadata includes version'); else fail('dwg meta version: ' + dwgMeta.replace(/\s+/g, ' ').slice(0, 180));
+  await page.click('#metaDrawer [data-close]');
 
   // ── OpenEXR ───────────────────────────────────────────────────────────────────
   await page.goto(origin, { waitUntil: 'load' });

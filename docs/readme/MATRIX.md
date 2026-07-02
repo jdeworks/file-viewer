@@ -128,7 +128,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [3D Manufacturing (3MF)](3mf.md) | `.3mf` | Basic | None | download | — | Mesh render |
 | [STEP CAD](/) | `.stp` `.step` `.p21` | Full | Monaco | download | — | 3D geometry |
 | [AutoCAD DXF](/) | `.dxf` | Partial | None | download | — | 2D render |
-| [AutoCAD DWG](/) | `.dwg` | Basic | None | download | — | Geometry |
+| [AutoCAD DWG](dwg.md) | `.dwg` | Basic | None | download | — | Geometry |
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [FBX Animation](/) | `.fbx` | Basic | None | download | — | Mesh data |
 | [Fusion 360](/) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
