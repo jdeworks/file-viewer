@@ -289,11 +289,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] midi | MIDI Sequence
 - [x] mobi | Kindle / MOBI
 - [x] msg | Outlook Email
-- [ ] msgpack | MessagePack
-- [ ] mt940 | MT940 Bank Statement
-- [ ] musicxml | MusicXML Score
-- [ ] netcdf | NetCDF Scientific Data (.nc)
-- [ ] nifti | NIfTI
+- [x] msgpack | MessagePack
+- [x] mt940 | MT940 Bank Statement
+- [x] musicxml | MusicXML Score
+- [x] netcdf | NetCDF Scientific Data (.nc)
+- [x] nifti | NIfTI
 - [ ] npy | NumPy Array (.npy/.npz)
 - [ ] nupkg | Package (NuGet/VSIX/Wheel/JAR)
 - [ ] obj | 3D model (OBJ)
