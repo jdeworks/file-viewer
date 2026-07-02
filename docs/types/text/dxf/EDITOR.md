@@ -4,12 +4,13 @@
 
 Rich structured viewer: parses group-code pairs; extracts version (`$ACADVER`), insertion units (`$INSUNITS`), sections present, entity type counts (with icons), layer names, block names, and key header variables including drawing extents/limits. Renders badge header, section pills, entity table, layer chips, block chips, and header variable grid. Returns `{ bodyHtml }`.
 
+- ✅ SHIPPED — **2D canvas render** — `geometry.js` walks the ENTITIES section and extracts drawable primitives (`LINE`, `CIRCLE`, `ARC`, `ELLIPSE`, `POINT`, `LWPOLYLINE`/`POLYLINE` (incl. old-style VERTEX/SEQEND), `SPLINE`, `TEXT`/`MTEXT`, `SOLID`/`3DFACE`, `INSERT`); `renderer.js` draws them to a `<canvas>` inside the sandboxed preview iframe with fit + scroll-zoom + drag-pan (pointer/wheel events), auto-framed from the entity bounds (falls back to `$EXTMIN`/`$EXTMAX` when no drawables exist). Model space only — `INSERT` block references are drawn as a marker at the insertion point (blocks aren't expanded), and `LWPOLYLINE` bulge arcs are approximated as straight segments. The geometry JSON is injected via an inline `<script>` with `<`/backtick/`$` escaping so no entity text (e.g. a crafted `TEXT`/`MTEXT` value) can break out of the script tag or the surrounding template literal — see the "Shared toolbar" note below.
+
 ## Viewer enhancements (no write-back needed)
 
-- **2D canvas render** — parse `LINE`, `CIRCLE`, `ARC`, `LWPOLYLINE`, `TEXT`, `INSERT` entities from the ENTITIES section; render to a `<canvas>` with pan/zoom (pointer events); use `$EXTMIN`/`$EXTMAX` for initial viewport — L (pure canvas, no lib; or dxf-parser npm ~80 KB ESM)
-- **Layer toggle** — once the canvas is live, show a layer list with eye icons; toggling a layer hides/shows all entities on that layer in the canvas render — M (depends on canvas render)
-- **2D measurement tool** — click two points on the canvas to measure distance in the file's native units; display in the status bar with unit conversion (mm/inch/m) — M (depends on canvas render)
-- **Entity detail on hover** — hovering a rendered entity shows a tooltip with entity type, layer, and key attributes (start/end point, radius, text content) — M (depends on canvas render)
+- **Layer toggle** — show a layer list with eye icons; toggling a layer hides/shows all entities on that layer in the canvas render — M
+- **2D measurement tool** — click two points on the canvas to measure distance in the file's native units; display in the status bar with unit conversion (mm/inch/m) — M
+- **Entity detail on hover** — hovering a rendered entity shows a tooltip with entity type, layer, and key attributes (start/end point, radius, text content) — M
 - **Block reference exploder** — for each `INSERT` entity, show which block it references; list all INSERT placements of a selected block as a table — S
 
 ## In-browser editing (download-on-save)
@@ -26,4 +27,8 @@ Rich structured viewer: parses group-code pairs; extracts version (`$ACADVER`), 
 
 ## Shared toolbar / modular note
 
-The 2D canvas render is the most impactful single feature. dxf-parser (MIT, ~80 KB ESM) handles the entity parsing robustly including `LWPOLYLINE` bulge arcs, which are error-prone to implement manually. Layer toggle and measurement tool build on top of it and share the entity list data structure. If vendoring dxf-parser is approved, it should replace the current group-code parser for the entity section (keeping the header/metadata parser in `renderer.js` as-is since it's fast and purpose-built).
+The hand-rolled `geometry.js` parser (no external dep) now covers the common drawable entity
+types, including `LWPOLYLINE` bulge-free vertex collection; true bulge-arc curvature is still
+approximated as straight segments. dxf-parser (MIT, ~80 KB ESM) would improve bulge-arc fidelity
+if vendored, but is not required for the current feature set. Layer toggle and measurement tool
+build on top of the existing entity list / bounds data structure returned by `parseGeometry()`.
