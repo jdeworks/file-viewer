@@ -17,7 +17,7 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Header metadata | ✅ | Title, author, book ID extracted from binary header |
+| Header metadata | ✅ | Title, author, publisher, language extracted from the header's compressed info XML block |
 | Page rendering | ✅ | BBeB object stream parsed into sanitized reader pages when unencrypted |
 | Image rendering | ✅ | In-book image streams become blob URLs; no off-origin requests |
 | Reader controls | ✅ | Page list, previous/next, keyboard navigation, font size, font family, theme |

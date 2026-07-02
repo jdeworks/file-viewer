@@ -630,23 +630,23 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/ebook/fb2/metadata.js
 - [x] docs/types/ebook/fb2/renderer.js
 - [x] docs/types/ebook/fb2/settings.default.json
-- [ ] docs/types/ebook/lrf/detect.js
-- [ ] docs/types/ebook/lrf/index.js
-- [ ] docs/types/ebook/lrf/lrf-header.js
-- [ ] docs/types/ebook/lrf/lrf-objects.js
-- [ ] docs/types/ebook/lrf/lrf-text.js
-- [ ] docs/types/ebook/lrf/lrflib.js
-- [ ] docs/types/ebook/lrf/metadata.js
-- [ ] docs/types/ebook/lrf/renderer.js
-- [ ] docs/types/ebook/lrf/settings.default.json
-- [ ] docs/types/ebook/mobi/detect.js
-- [ ] docs/types/ebook/mobi/error.html
-- [ ] docs/types/ebook/mobi/index.js
-- [ ] docs/types/ebook/mobi/metadata.js
-- [ ] docs/types/ebook/mobi/mobilib.js
-- [ ] docs/types/ebook/mobi/renderer.js
-- [ ] docs/types/ebook/mobi/settings.default.json
-- [ ] docs/types/EDITOR-INDEX.md
+- [x] docs/types/ebook/lrf/detect.js
+- [x] docs/types/ebook/lrf/index.js
+- [x] docs/types/ebook/lrf/lrf-header.js
+- [x] docs/types/ebook/lrf/lrf-objects.js
+- [x] docs/types/ebook/lrf/lrf-text.js
+- [x] docs/types/ebook/lrf/lrflib.js
+- [x] docs/types/ebook/lrf/metadata.js
+- [x] docs/types/ebook/lrf/renderer.js
+- [x] docs/types/ebook/lrf/settings.default.json
+- [x] docs/types/ebook/mobi/detect.js
+- [x] docs/types/ebook/mobi/error.html
+- [x] docs/types/ebook/mobi/index.js
+- [x] docs/types/ebook/mobi/metadata.js
+- [x] docs/types/ebook/mobi/mobilib.js
+- [x] docs/types/ebook/mobi/renderer.js
+- [x] docs/types/ebook/mobi/settings.default.json
+- [x] docs/types/EDITOR-INDEX.md
 - [ ] docs/types/eml/detect.js
 - [ ] docs/types/eml/EDITOR.md
 - [ ] docs/types/eml/head-row.html

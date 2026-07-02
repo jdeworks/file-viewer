@@ -97,12 +97,15 @@ export async function inflateAny(buf) {
 }
 
 // LRF stream descrambling (NOT DRM). flags & 0x200 → scrambled. key = xorKey & 0xFF; if
-// 0 < key <= 0xF0 then key = (len % key) + 0xF. Image/font/sound streams scramble only the first
-// 0x400 bytes; text streams scramble the whole buffer.
+// 0 < key <= 0xF0 then key = (len % key) + 0xF, else key = 0 (no scrambling — calibre's
+// LRFStream.read_stream treats any masked key above 0xF0, same as a zero key, as "don't touch the
+// buffer", not "XOR with the raw byte"). Image/font/sound streams scramble only the first 0x400
+// bytes; text streams scramble the whole buffer.
 export function descramble(buf, xorKey, wholeBuffer) {
   let key = xorKey & 0xff;
+  if (key !== 0 && key <= 0xf0) key = (buf.length % key) + 0x0f;
+  else key = 0;
   if (key === 0) return buf;
-  if (key <= 0xf0) key = (buf.length % key) + 0x0f;
   const out = new Uint8Array(buf);
   const n = wholeBuffer ? out.length : Math.min(out.length, 0x400);
   for (let i = 0; i < n; i++) out[i] ^= key;

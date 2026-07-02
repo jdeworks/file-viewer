@@ -4,25 +4,39 @@ Quick reference across all EDITOR.md files. Pick tasks top-down within each
 priority section. Effort labels: **S** = small (hours), **M** = medium (days),
 **L** = large (week+).
 
+> **Staleness note (2026-07-02):** this is a planning snapshot, not a live status
+> board — items get checked off in `docs/types/**/EDITOR.md` / shipped in code
+> without always being removed here. Before starting an item, verify it isn't
+> already done (grep the type's `renderer.js` / `exports.js`, or check
+> `docs/readme/<type>.md` and `docs/readme/MATRIX.md`). The former "Quick wins"
+> table below was found to be **100% shipped** and has been removed accordingly.
+
 ---
 
-## Quick wins (S effort)
+## Quick wins (S effort) — all shipped
 
-The ten easiest items across all types — zero or trivially-vendored dependencies,
-surgically-scoped diffs.
+The original ten-item quick-wins list (Code Monaco edit mode, Image BMP/GIF in
+`EDITABLE_MIME`, SQLite query history/EXPLAIN/CSV+JSON export, PDF inline zoom
+buttons, OFX/QIF CSV export, vCard QR codes, ABC score PNG export) has all
+shipped:
 
-| # | Type | Item | Notes |
-|---|------|------|-------|
-| 1 | Code | Enable Monaco edit mode (`readOnly: false`) + Ctrl+S blob download | Monaco already vendored; one flag flip |
-| 2 | Image | Extend `EDITABLE_MIME` to include BMP and GIF | `createImageBitmap` decodes both; full toolbar for free |
-| 3 | SQLite | Query history (last 50 SQL strings in localStorage) | Zero deps |
-| 4 | SQLite | EXPLAIN QUERY PLAN button | Zero deps; secondary result panel |
-| 5 | SQLite | Export table as CSV / JSON | `db.exec` + Blob URL; zero deps |
-| 6 | PDF | Page zoom +/− inline buttons (move from Settings into toolbar) | pdf.js already loaded |
-| 7 | OFX | Export filtered rows as CSV | String serialization; zero deps |
-| 8 | QIF | Export as CSV | String serialization; zero deps |
-| 9 | vCard | QR code per card (qrcode.js ~20 KB, pre-bundle once) | Single small lib |
-| 10 | ABC | Export score PNG from abcjs SVG + canvas | abcjs already needed for rendering; `canvas.toBlob()` |
+- Code Monaco edit mode + Ctrl+S download: generic `docs/core/editor-mode.js`
+  (`applyEditorMode`), wired in `docs/core/rawpane.js`.
+- Image BMP/GIF editing: `EDITABLE_MIME` in `docs/types/image/renderer.js`
+  already includes `image/bmp` and `image/gif`.
+- SQLite history / EXPLAIN QUERY PLAN / CSV+JSON export:
+  `docs/types/sqlite/renderer.js` (`historyLoad`/`historySave`, `.sq-explain`,
+  `exportCsv`/`exportJson`).
+- PDF inline zoom buttons: `.pdf-zoom-in`/`.pdf-zoom-out` in
+  `docs/types/pdf/renderer.js`.
+- OFX / QIF CSV export: `docs/types/text/ofx/exports.js`,
+  `docs/types/text/qif/exports.js`.
+- vCard QR code: `docs/types/vcard/renderer.js` (`.vcf-qr-btn`, lazy
+  `qrcodejs`).
+- ABC score PNG export: `docs/types/text/abc/renderer.js`
+  (`.abc-export-png`, `canvas.toBlob(...,'image/png')`).
+
+Pick the next batch of quick wins from the per-type `EDITOR.md` files directly.
 
 ---
 

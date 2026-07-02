@@ -3,13 +3,14 @@
 //   0xA1 start_para / 0xA2 end_para  → <p>…</p>
 //   0xD2 cr                          → paragraph/line break
 //   0x81 Italic / 0x82 end           → <i>…</i>
-//   0xB5 Sup  / 0xB9 Sub             → <sup>/<sub>
+//   0xB7 Sup / 0xB9 Sub              → <sup>/<sub>
 //   0xC1 EmpLine                     → <span class="lrf-empline">
 //   0xA7 char_button (link) / 0xA8   → <span> (no off-origin target)
 //   0xCA space                       → ' '
 //   0xD1 plot (inline image, refs an Image/ImageStream object) → <img> placeholder w/ data-ref
-//   0xBB NoBR, 0xB1 Yoko, 0xA9 Rubi… → transparent <span> wrappers (best-effort)
-// Unknown 0xF5xx tags are skipped using the size table in lrf-objects.js.
+//   0xA9 Rubi, 0xAB Oyamoji, 0xAD Rubimoji, 0xB1 Yoko, 0xB3 Tate, 0xB5 Nekase, 0xBB NoBR →
+//     transparent <span> wrappers (best-effort; each has a matching end_container tag)
+// Unknown 0xF5xx tags are skipped using the size table below.
 
 import { utf16le } from './lrf-objects.js';
 
@@ -73,18 +74,18 @@ function emit(low, operand, plots) {
     case 0xd2: return '<br>';                         // cr
     case 0x81: return '<i>';                          // Italic
     case 0x82: return '</i>';                         // end Italic / container
-    case 0xb5: return '<sup>';                        // Sup
-    case 0xb6: return '</sup>';                        // end Sup
+    case 0xb7: return '<sup>';                        // Sup
+    case 0xb8: return '</sup>';                        // end Sup
     case 0xb9: return '<sub>';                        // Sub
     case 0xba: return '</sub>';                        // end Sub
     case 0xc2: return '</span>';                       // end EmpLine
-    case 0xb7: return '<b>';                          // Bold (start)
-    case 0xb8: return '</b>';                          // Bold (end)
     case 0xc1: return '<span class="lrf-empline">';   // EmpLine
     case 0xa7: return '<span class="lrf-link">';      // char_button (link, no off-origin target)
     case 0xa8: return '</span>';                      // end char_button
-    case 0xaa: case 0xac: return '</span>';           // end Rubi/Oyamoji containers
-    case 0xa9: case 0xab: case 0xb1: case 0xbb: return '<span>';  // Rubi/Oyamoji/Yoko/NoBR
+    case 0xaa: case 0xac: case 0xae: case 0xb2: case 0xb4: case 0xb6: case 0xbc:
+      return '</span>';                                // end Rubi/Oyamoji/Rubimoji/Yoko/Tate/Nekase/NoBR
+    case 0xa9: case 0xab: case 0xad: case 0xb1: case 0xb3: case 0xb5: case 0xbb:
+      return '<span>';                                 // Rubi/Oyamoji/Rubimoji/Yoko/Tate/Nekase/NoBR (best-effort)
     case 0xca: return ' ';                            // space
     case 0xbd: return '';                             // EmpDots — drop
     case 0xd1: {                                      // plot → inline image ref (first u32 is the ref id)
