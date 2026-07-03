@@ -1608,179 +1608,177 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/dnsmasq/renderer.js
 - [ ] docs/types/text/known/docker-bake/index.js
 - [ ] docs/types/text/known/docker-bake/renderer.js
-- [ ] docs/types/text/known/dockerfile/index.js
-- [ ] docs/types/text/known/dockerfile/metadata.js
-- [ ] docs/types/text/known/dockerfile/render.js
-- [ ] docs/types/text/known/dockerignore/index.js
-- [ ] docs/types/text/known/dockerignore/render.js
-- [ ] docs/types/text/known/dockerignore/renderer.js
-- [ ] docs/types/text/known/docusaurus-config/index.js
-- [ ] docs/types/text/known/docusaurus-config/renderer.js
-- [ ] docs/types/text/known/dovecot-conf/index.js
-- [ ] docs/types/text/known/dovecot-conf/renderer.js
-- [ ] docs/types/text/known/doxyfile/index.js
-- [ ] docs/types/text/known/doxyfile/renderer.js
-- [ ] docs/types/text/known/drizzle-config/index.js
-- [ ] docs/types/text/known/drizzle-config/renderer.js
-- [ ] docs/types/text/known/drone-config/index.js
-- [ ] docs/types/text/known/drone-config/renderer.js
-- [ ] docs/types/text/known/dune-build/index.js
-- [ ] docs/types/text/known/dune-build/renderer.js
-- [ ] docs/types/text/known/dunstrc/index.js
-- [ ] docs/types/text/known/dunstrc/renderer.js
-- [ ] docs/types/text/known/earthfile/index.js
-- [ ] docs/types/text/known/earthfile/renderer.js
-- [ ] docs/types/text/known/editorconfig/index.js
-- [ ] docs/types/text/known/editorconfig/metadata.js
-- [ ] docs/types/text/known/editorconfig/render.js
-- [ ] docs/types/text/known/editorconfig/renderer.js
-- [ ] docs/types/text/known/eiffel-lang/index.js
-- [ ] docs/types/text/known/eiffel-lang/renderer.js
-- [ ] docs/types/text/known/ejs-template/index.js
-- [ ] docs/types/text/known/ejs-template/renderer.js
-- [ ] docs/types/text/known/elastic-apm-config/index.js
-- [ ] docs/types/text/known/elastic-apm-config/renderer.js
-- [ ] docs/types/text/known/eleventy-config/index.js
-- [ ] docs/types/text/known/eleventy-config/renderer.js
-- [ ] docs/types/text/known/elixir-lang/index.js
-- [ ] docs/types/text/known/elixir-lang/renderer.js
-- [ ] docs/types/text/known/elm-lang/index.js
-- [ ] docs/types/text/known/elm-lang/renderer.js
-- [ ] docs/types/text/known/elvish-script/index.js
-- [ ] docs/types/text/known/elvish-script/renderer.js
-- [ ] docs/types/text/known/emacs-config/index.js
-- [ ] docs/types/text/known/emacs-config/renderer.js
-- [ ] docs/types/text/known/emacs-lisp/index.js
-- [ ] docs/types/text/known/emacs-lisp/renderer.js
-- [ ] docs/types/text/known/env-example/index.js
-- [ ] docs/types/text/known/env-example/renderer.js
-- [ ] docs/types/text/known/envrc/index.js
-- [ ] docs/types/text/known/envrc/renderer.js
-- [ ] docs/types/text/known/erlang-source/index.js
-- [ ] docs/types/text/known/erlang-source/renderer.js
-- [ ] docs/types/text/known/erlang-sys-config/index.js
-- [ ] docs/types/text/known/erlang-sys-config/renderer.js
-- [ ] docs/types/text/known/erlang-vm-args/index.js
-- [ ] docs/types/text/known/erlang-vm-args/renderer.js
-- [ ] docs/types/text/known/esbuild-config/index.js
-- [ ] docs/types/text/known/esbuild-config/renderer.js
-- [ ] docs/types/text/known/eslintignore/index.js
-- [ ] docs/types/text/known/eslintignore/renderer.js
-- [ ] docs/types/text/known/etc-environment/index.js
-- [ ] docs/types/text/known/etc-environment/renderer.js
-- [ ] docs/types/text/known/exim-conf/index.js
-- [ ] docs/types/text/known/exim-conf/renderer.js
-- [ ] docs/types/text/known/factor-lang/index.js
-- [ ] docs/types/text/known/factor-lang/renderer.js
-- [ ] docs/types/text/known/fail2ban-conf/index.js
-- [ ] docs/types/text/known/fail2ban-conf/renderer.js
-- [ ] docs/types/text/known/fastfile/index.js
-- [ ] docs/types/text/known/fastfile/renderer.js
-- [ ] docs/types/text/known/fennel-lang/index.js
-- [ ] docs/types/text/known/fennel-lang/renderer.js
-- [ ] docs/types/text/known/fish-script/index.js
-- [ ] docs/types/text/known/fish-script/renderer.js
-- [ ] docs/types/text/known/flatbuffers/index.js
-- [ ] docs/types/text/known/flatbuffers/renderer.js
-- [ ] docs/types/text/known/flatpak-manifest/index.js
-- [ ] docs/types/text/known/flatpak-manifest/renderer.js
-- [ ] docs/types/text/known/fluent-bit/index.js
-- [ ] docs/types/text/known/fluent-bit/renderer.js
-- [ ] docs/types/text/known/fluentd-conf/index.js
-- [ ] docs/types/text/known/fluentd-conf/renderer.js
-- [ ] docs/types/text/known/flyway-conf/index.js
-- [ ] docs/types/text/known/flyway-conf/renderer.js
-- [ ] docs/types/text/known/foot-config/index.js
-- [ ] docs/types/text/known/foot-config/renderer.js
-- [ ] docs/types/text/known/forge-config/index.js
-- [ ] docs/types/text/known/forge-config/renderer.js
-- [ ] docs/types/text/known/forth-lang/index.js
-- [ ] docs/types/text/known/forth-lang/renderer.js
-- [ ] docs/types/text/known/fortran-lang/index.js
-- [ ] docs/types/text/known/fortran-lang/renderer.js
-- [ ] docs/types/text/known/freshrss-config/index.js
-- [ ] docs/types/text/known/freshrss-config/renderer.js
-- [ ] docs/types/text/known/fsharp-lang/index.js
-- [ ] docs/types/text/known/fsharp-lang/renderer.js
-- [ ] docs/types/text/known/fstab/index.js
-- [ ] docs/types/text/known/fstab/renderer.js
-- [ ] docs/types/text/known/gatling-conf/index.js
-- [ ] docs/types/text/known/gatling-conf/renderer.js
-- [ ] docs/types/text/known/gatsby-config/index.js
-- [ ] docs/types/text/known/gatsby-config/renderer.js
-- [ ] docs/types/text/known/gcloudignore/index.js
-- [ ] docs/types/text/known/gcloudignore/renderer.js
-- [ ] docs/types/text/known/gdbinit/index.js
-- [ ] docs/types/text/known/gdbinit/renderer.js
-- [ ] docs/types/text/known/gdscript-lang/index.js
-- [ ] docs/types/text/known/gdscript-lang/renderer.js
-- [ ] docs/types/text/known/gemfile-lock/index.js
-- [ ] docs/types/text/known/gemfile-lock/renderer.js
-- [ ] docs/types/text/known/gemfile/index.js
-- [ ] docs/types/text/known/gemfile/metadata.js
-- [ ] docs/types/text/known/gemfile/render.js
-- [ ] docs/types/text/known/gemspec/index.js
-- [ ] docs/types/text/known/gemspec/renderer.js
-- [ ] docs/types/text/known/gitattributes/index.js
-- [ ] docs/types/text/known/gitattributes/render.js
-- [ ] docs/types/text/known/gitconfig/index.js
-- [ ] docs/types/text/known/gitconfig/render.js
-- [ ] docs/types/text/known/gitea-conf/index.js
-- [ ] docs/types/text/known/gitea-conf/renderer.js
-- [ ] docs/types/text/known/gitignore/index.js
-- [ ] docs/types/text/known/gitignore/metadata.js
-- [ ] docs/types/text/known/gitignore/render.js
-- [ ] docs/types/text/known/gitmodules/index.js
-- [ ] docs/types/text/known/gitmodules/renderer.js
-- [ ] docs/types/text/known/gitolite-conf/index.js
-- [ ] docs/types/text/known/gitolite-conf/renderer.js
-- [ ] docs/types/text/known/gleam-lang/index.js
-- [ ] docs/types/text/known/gleam-lang/renderer.js
-- [ ] docs/types/text/known/glitchtip-config/index.js
-- [ ] docs/types/text/known/glitchtip-config/renderer.js
-- [ ] docs/types/text/known/glsl-shader/index.js
-- [ ] docs/types/text/known/glsl-shader/renderer.js
-- [ ] docs/types/text/known/gnuplot-script/index.js
-- [ ] docs/types/text/known/gnuplot-script/renderer.js
-- [ ] docs/types/text/known/go-mod/index.js
-- [ ] docs/types/text/known/go-mod/metadata.js
-- [ ] docs/types/text/known/go-mod/render.js
-- [ ] docs/types/text/known/go-sum/index.js
-- [ ] docs/types/text/known/go-sum/renderer.js
-- [ ] docs/types/text/known/go-work/index.js
-- [ ] docs/types/text/known/go-work/renderer.js
-- [ ] docs/types/text/known/gpg-conf/index.js
-- [ ] docs/types/text/known/gpg-conf/renderer.js
-- [ ] docs/types/text/known/gradle-props/index.js
-- [ ] docs/types/text/known/gradle-props/renderer.js
-- [ ] docs/types/text/known/gradle-wrapper/index.js
-- [ ] docs/types/text/known/gradle-wrapper/renderer.js
-- [ ] docs/types/text/known/grafana-alloy/index.js
-- [ ] docs/types/text/known/grafana-alloy/renderer.js
-- [ ] docs/types/text/known/grain-lang/index.js
-- [ ] docs/types/text/known/grain-lang/renderer.js
-- [ ] docs/types/text/known/graphql-schema/index.js
-- [ ] docs/types/text/known/graphql-schema/renderer.js
-- [ ] docs/types/text/known/graphviz-dot/index.js
-- [ ] docs/types/text/known/graphviz-dot/renderer.js
-- [ ] docs/types/text/known/graylog-conf/index.js
-- [ ] docs/types/text/known/graylog-conf/renderer.js
-- [ ] docs/types/text/known/grist-config/index.js
-- [ ] docs/types/text/known/grist-config/renderer.js
-- [ ] docs/types/text/known/groovy-lang/index.js
-- [ ] docs/types/text/known/groovy-lang/renderer.js
-- [ ] docs/types/text/known/grub-conf/index.js
-- [ ] docs/types/text/known/grub-conf/renderer.js
-- [ ] docs/types/text/known/handlebars-template/index.js
-- [ ] docs/types/text/known/handlebars-template/renderer.js
-- [ ] docs/types/text/known/haproxy-cfg/index.js
-- [ ] docs/types/text/known/haproxy-cfg/renderer.js
-- [ ] docs/types/text/known/haproxy-conf/index.js
-- [ ] docs/types/text/known/haproxy-conf/renderer.js
-- [ ] docs/types/text/known/haproxy-config/index.js
-- [ ] docs/types/text/known/haproxy-config/renderer.js
-- [ ] docs/types/text/known/hardhat-config/index.js
-- [ ] docs/types/text/known/hardhat-config/renderer.js
+- [x] docs/types/text/known/dockerfile/index.js
+- [x] docs/types/text/known/dockerfile/metadata.js
+- [x] docs/types/text/known/dockerfile/render.js
+- [x] docs/types/text/known/dockerignore/index.js
+- [x] docs/types/text/known/dockerignore/renderer.js
+- [x] docs/types/text/known/docusaurus-config/index.js
+- [x] docs/types/text/known/docusaurus-config/renderer.js
+- [x] docs/types/text/known/dovecot-conf/index.js
+- [x] docs/types/text/known/dovecot-conf/renderer.js
+- [x] docs/types/text/known/doxyfile/index.js
+- [x] docs/types/text/known/doxyfile/renderer.js
+- [x] docs/types/text/known/drizzle-config/index.js
+- [x] docs/types/text/known/drizzle-config/renderer.js
+- [x] docs/types/text/known/drone-config/index.js
+- [x] docs/types/text/known/drone-config/renderer.js
+- [x] docs/types/text/known/dune-build/index.js
+- [x] docs/types/text/known/dune-build/renderer.js
+- [x] docs/types/text/known/dunstrc/index.js
+- [x] docs/types/text/known/dunstrc/renderer.js
+- [x] docs/types/text/known/earthfile/index.js
+- [x] docs/types/text/known/earthfile/renderer.js
+- [x] docs/types/text/known/editorconfig/index.js
+- [x] docs/types/text/known/editorconfig/metadata.js
+- [x] docs/types/text/known/editorconfig/renderer.js
+- [x] docs/types/text/known/eiffel-lang/index.js
+- [x] docs/types/text/known/eiffel-lang/renderer.js
+- [x] docs/types/text/known/ejs-template/index.js
+- [x] docs/types/text/known/ejs-template/renderer.js
+- [x] docs/types/text/known/elastic-apm-config/index.js
+- [x] docs/types/text/known/elastic-apm-config/renderer.js
+- [x] docs/types/text/known/eleventy-config/index.js
+- [x] docs/types/text/known/eleventy-config/renderer.js
+- [x] docs/types/text/known/elixir-lang/index.js
+- [x] docs/types/text/known/elixir-lang/renderer.js
+- [x] docs/types/text/known/elm-lang/index.js
+- [x] docs/types/text/known/elm-lang/renderer.js
+- [x] docs/types/text/known/elvish-script/index.js
+- [x] docs/types/text/known/elvish-script/renderer.js
+- [x] docs/types/text/known/emacs-config/index.js
+- [x] docs/types/text/known/emacs-config/renderer.js
+- [x] docs/types/text/known/emacs-lisp/index.js
+- [x] docs/types/text/known/emacs-lisp/renderer.js
+- [x] docs/types/text/known/env-example/index.js
+- [x] docs/types/text/known/env-example/renderer.js
+- [x] docs/types/text/known/envrc/index.js
+- [x] docs/types/text/known/envrc/renderer.js
+- [x] docs/types/text/known/erlang-source/index.js
+- [x] docs/types/text/known/erlang-source/renderer.js
+- [x] docs/types/text/known/erlang-sys-config/index.js
+- [x] docs/types/text/known/erlang-sys-config/renderer.js
+- [x] docs/types/text/known/erlang-vm-args/index.js
+- [x] docs/types/text/known/erlang-vm-args/renderer.js
+- [x] docs/types/text/known/esbuild-config/index.js
+- [x] docs/types/text/known/esbuild-config/renderer.js
+- [x] docs/types/text/known/eslintignore/index.js
+- [x] docs/types/text/known/eslintignore/renderer.js
+- [x] docs/types/text/known/etc-environment/index.js
+- [x] docs/types/text/known/etc-environment/renderer.js
+- [x] docs/types/text/known/exim-conf/index.js
+- [x] docs/types/text/known/exim-conf/renderer.js
+- [x] docs/types/text/known/factor-lang/index.js
+- [x] docs/types/text/known/factor-lang/renderer.js
+- [x] docs/types/text/known/fail2ban-conf/index.js
+- [x] docs/types/text/known/fail2ban-conf/renderer.js
+- [x] docs/types/text/known/fastfile/index.js
+- [x] docs/types/text/known/fastfile/renderer.js
+- [x] docs/types/text/known/fennel-lang/index.js
+- [x] docs/types/text/known/fennel-lang/renderer.js
+- [x] docs/types/text/known/fish-script/index.js
+- [x] docs/types/text/known/fish-script/renderer.js
+- [x] docs/types/text/known/flatbuffers/index.js
+- [x] docs/types/text/known/flatbuffers/renderer.js
+- [x] docs/types/text/known/flatpak-manifest/index.js
+- [x] docs/types/text/known/flatpak-manifest/renderer.js
+- [x] docs/types/text/known/fluent-bit/index.js
+- [x] docs/types/text/known/fluent-bit/renderer.js
+- [x] docs/types/text/known/fluentd-conf/index.js
+- [x] docs/types/text/known/fluentd-conf/renderer.js
+- [x] docs/types/text/known/flyway-conf/index.js
+- [x] docs/types/text/known/flyway-conf/renderer.js
+- [x] docs/types/text/known/foot-config/index.js
+- [x] docs/types/text/known/foot-config/renderer.js
+- [x] docs/types/text/known/forge-config/index.js
+- [x] docs/types/text/known/forge-config/renderer.js
+- [x] docs/types/text/known/forth-lang/index.js
+- [x] docs/types/text/known/forth-lang/renderer.js
+- [x] docs/types/text/known/fortran-lang/index.js
+- [x] docs/types/text/known/fortran-lang/renderer.js
+- [x] docs/types/text/known/freshrss-config/index.js
+- [x] docs/types/text/known/freshrss-config/renderer.js
+- [x] docs/types/text/known/fsharp-lang/index.js
+- [x] docs/types/text/known/fsharp-lang/renderer.js
+- [x] docs/types/text/known/fstab/index.js
+- [x] docs/types/text/known/fstab/renderer.js
+- [x] docs/types/text/known/gatling-conf/index.js
+- [x] docs/types/text/known/gatling-conf/renderer.js
+- [x] docs/types/text/known/gatsby-config/index.js
+- [x] docs/types/text/known/gatsby-config/renderer.js
+- [x] docs/types/text/known/gcloudignore/index.js
+- [x] docs/types/text/known/gcloudignore/renderer.js
+- [x] docs/types/text/known/gdbinit/index.js
+- [x] docs/types/text/known/gdbinit/renderer.js
+- [x] docs/types/text/known/gdscript-lang/index.js
+- [x] docs/types/text/known/gdscript-lang/renderer.js
+- [x] docs/types/text/known/gemfile-lock/index.js
+- [x] docs/types/text/known/gemfile-lock/renderer.js
+- [x] docs/types/text/known/gemfile/index.js
+- [x] docs/types/text/known/gemfile/metadata.js
+- [x] docs/types/text/known/gemfile/render.js
+- [x] docs/types/text/known/gemspec/index.js
+- [x] docs/types/text/known/gemspec/renderer.js
+- [x] docs/types/text/known/gitattributes/index.js
+- [x] docs/types/text/known/gitattributes/render.js
+- [x] docs/types/text/known/gitconfig/index.js
+- [x] docs/types/text/known/gitconfig/render.js
+- [x] docs/types/text/known/gitea-conf/index.js
+- [x] docs/types/text/known/gitea-conf/renderer.js
+- [x] docs/types/text/known/gitignore/index.js
+- [x] docs/types/text/known/gitignore/metadata.js
+- [x] docs/types/text/known/gitignore/render.js
+- [x] docs/types/text/known/gitmodules/index.js
+- [x] docs/types/text/known/gitmodules/renderer.js
+- [x] docs/types/text/known/gitolite-conf/index.js
+- [x] docs/types/text/known/gitolite-conf/renderer.js
+- [x] docs/types/text/known/gleam-lang/index.js
+- [x] docs/types/text/known/gleam-lang/renderer.js
+- [x] docs/types/text/known/glitchtip-config/index.js
+- [x] docs/types/text/known/glitchtip-config/renderer.js
+- [x] docs/types/text/known/glsl-shader/index.js
+- [x] docs/types/text/known/glsl-shader/renderer.js
+- [x] docs/types/text/known/gnuplot-script/index.js
+- [x] docs/types/text/known/gnuplot-script/renderer.js
+- [x] docs/types/text/known/go-mod/index.js
+- [x] docs/types/text/known/go-mod/metadata.js
+- [x] docs/types/text/known/go-mod/render.js
+- [x] docs/types/text/known/go-sum/index.js
+- [x] docs/types/text/known/go-sum/renderer.js
+- [x] docs/types/text/known/go-work/index.js
+- [x] docs/types/text/known/go-work/renderer.js
+- [x] docs/types/text/known/gpg-conf/index.js
+- [x] docs/types/text/known/gpg-conf/renderer.js
+- [x] docs/types/text/known/gradle-props/index.js
+- [x] docs/types/text/known/gradle-props/renderer.js
+- [x] docs/types/text/known/gradle-wrapper/index.js
+- [x] docs/types/text/known/gradle-wrapper/renderer.js
+- [x] docs/types/text/known/grafana-alloy/index.js
+- [x] docs/types/text/known/grafana-alloy/renderer.js
+- [x] docs/types/text/known/grain-lang/index.js
+- [x] docs/types/text/known/grain-lang/renderer.js
+- [x] docs/types/text/known/graphql-schema/index.js
+- [x] docs/types/text/known/graphql-schema/renderer.js
+- [x] docs/types/text/known/graphviz-dot/index.js
+- [x] docs/types/text/known/graphviz-dot/renderer.js
+- [x] docs/types/text/known/graylog-conf/index.js
+- [x] docs/types/text/known/graylog-conf/renderer.js
+- [x] docs/types/text/known/grist-config/index.js
+- [x] docs/types/text/known/grist-config/renderer.js
+- [x] docs/types/text/known/groovy-lang/index.js
+- [x] docs/types/text/known/groovy-lang/renderer.js
+- [x] docs/types/text/known/grub-conf/index.js
+- [x] docs/types/text/known/grub-conf/renderer.js
+- [x] docs/types/text/known/handlebars-template/index.js
+- [x] docs/types/text/known/handlebars-template/renderer.js
+- [x] docs/types/text/known/haproxy-cfg/index.js
+- [x] docs/types/text/known/haproxy-cfg/renderer.js
+- [x] docs/types/text/known/haproxy-conf/index.js
+- [x] docs/types/text/known/haproxy-conf/renderer.js
+- [x] docs/types/text/known/haproxy-config/index.js
+- [x] docs/types/text/known/haproxy-config/renderer.js
+- [x] docs/types/text/known/hardhat-config/index.js
+- [x] docs/types/text/known/hardhat-config/renderer.js
 - [ ] docs/types/text/known/haskell-lang/index.js
 - [ ] docs/types/text/known/haskell-lang/renderer.js
 - [ ] docs/types/text/known/haxe-lang/index.js
@@ -3448,89 +3446,89 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/dnf-conf
 - [ ] docs/types/text/known/dnsmasq
 - [ ] docs/types/text/known/docker-bake
-- [ ] docs/types/text/known/dockerfile
-- [ ] docs/types/text/known/dockerignore
-- [ ] docs/types/text/known/docusaurus-config
-- [ ] docs/types/text/known/dovecot-conf
-- [ ] docs/types/text/known/doxyfile
-- [ ] docs/types/text/known/drizzle-config
-- [ ] docs/types/text/known/drone-config
-- [ ] docs/types/text/known/dune-build
-- [ ] docs/types/text/known/dunstrc
-- [ ] docs/types/text/known/earthfile
-- [ ] docs/types/text/known/editorconfig
-- [ ] docs/types/text/known/eiffel-lang
-- [ ] docs/types/text/known/ejs-template
-- [ ] docs/types/text/known/elastic-apm-config
-- [ ] docs/types/text/known/eleventy-config
-- [ ] docs/types/text/known/elixir-lang
-- [ ] docs/types/text/known/elm-lang
-- [ ] docs/types/text/known/elvish-script
-- [ ] docs/types/text/known/emacs-config
-- [ ] docs/types/text/known/emacs-lisp
-- [ ] docs/types/text/known/env-example
-- [ ] docs/types/text/known/envrc
-- [ ] docs/types/text/known/erlang-source
-- [ ] docs/types/text/known/erlang-sys-config
-- [ ] docs/types/text/known/erlang-vm-args
-- [ ] docs/types/text/known/esbuild-config
-- [ ] docs/types/text/known/eslintignore
-- [ ] docs/types/text/known/etc-environment
-- [ ] docs/types/text/known/exim-conf
-- [ ] docs/types/text/known/factor-lang
-- [ ] docs/types/text/known/fail2ban-conf
-- [ ] docs/types/text/known/fastfile
-- [ ] docs/types/text/known/fennel-lang
-- [ ] docs/types/text/known/fish-script
-- [ ] docs/types/text/known/flatbuffers
-- [ ] docs/types/text/known/flatpak-manifest
-- [ ] docs/types/text/known/fluent-bit
-- [ ] docs/types/text/known/fluentd-conf
-- [ ] docs/types/text/known/flyway-conf
-- [ ] docs/types/text/known/foot-config
-- [ ] docs/types/text/known/forge-config
-- [ ] docs/types/text/known/forth-lang
-- [ ] docs/types/text/known/fortran-lang
-- [ ] docs/types/text/known/freshrss-config
-- [ ] docs/types/text/known/fsharp-lang
-- [ ] docs/types/text/known/fstab
-- [ ] docs/types/text/known/gatling-conf
-- [ ] docs/types/text/known/gatsby-config
-- [ ] docs/types/text/known/gcloudignore
-- [ ] docs/types/text/known/gdbinit
-- [ ] docs/types/text/known/gdscript-lang
-- [ ] docs/types/text/known/gemfile
-- [ ] docs/types/text/known/gemfile-lock
-- [ ] docs/types/text/known/gemspec
-- [ ] docs/types/text/known/gitattributes
-- [ ] docs/types/text/known/gitconfig
-- [ ] docs/types/text/known/gitea-conf
-- [ ] docs/types/text/known/gitignore
-- [ ] docs/types/text/known/gitmodules
-- [ ] docs/types/text/known/gitolite-conf
-- [ ] docs/types/text/known/gleam-lang
-- [ ] docs/types/text/known/glitchtip-config
-- [ ] docs/types/text/known/glsl-shader
-- [ ] docs/types/text/known/gnuplot-script
-- [ ] docs/types/text/known/go-mod
-- [ ] docs/types/text/known/go-sum
-- [ ] docs/types/text/known/go-work
-- [ ] docs/types/text/known/gpg-conf
-- [ ] docs/types/text/known/gradle-props
-- [ ] docs/types/text/known/gradle-wrapper
-- [ ] docs/types/text/known/grafana-alloy
-- [ ] docs/types/text/known/grain-lang
-- [ ] docs/types/text/known/graphql-schema
-- [ ] docs/types/text/known/graphviz-dot
-- [ ] docs/types/text/known/graylog-conf
-- [ ] docs/types/text/known/grist-config
-- [ ] docs/types/text/known/groovy-lang
-- [ ] docs/types/text/known/grub-conf
-- [ ] docs/types/text/known/handlebars-template
-- [ ] docs/types/text/known/haproxy-cfg
-- [ ] docs/types/text/known/haproxy-conf
-- [ ] docs/types/text/known/haproxy-config
-- [ ] docs/types/text/known/hardhat-config
+- [x] docs/types/text/known/dockerfile
+- [x] docs/types/text/known/dockerignore
+- [x] docs/types/text/known/docusaurus-config
+- [x] docs/types/text/known/dovecot-conf
+- [x] docs/types/text/known/doxyfile
+- [x] docs/types/text/known/drizzle-config
+- [x] docs/types/text/known/drone-config
+- [x] docs/types/text/known/dune-build
+- [x] docs/types/text/known/dunstrc
+- [x] docs/types/text/known/earthfile
+- [x] docs/types/text/known/editorconfig
+- [x] docs/types/text/known/eiffel-lang
+- [x] docs/types/text/known/ejs-template
+- [x] docs/types/text/known/elastic-apm-config
+- [x] docs/types/text/known/eleventy-config
+- [x] docs/types/text/known/elixir-lang
+- [x] docs/types/text/known/elm-lang
+- [x] docs/types/text/known/elvish-script
+- [x] docs/types/text/known/emacs-config
+- [x] docs/types/text/known/emacs-lisp
+- [x] docs/types/text/known/env-example
+- [x] docs/types/text/known/envrc
+- [x] docs/types/text/known/erlang-source
+- [x] docs/types/text/known/erlang-sys-config
+- [x] docs/types/text/known/erlang-vm-args
+- [x] docs/types/text/known/esbuild-config
+- [x] docs/types/text/known/eslintignore
+- [x] docs/types/text/known/etc-environment
+- [x] docs/types/text/known/exim-conf
+- [x] docs/types/text/known/factor-lang
+- [x] docs/types/text/known/fail2ban-conf
+- [x] docs/types/text/known/fastfile
+- [x] docs/types/text/known/fennel-lang
+- [x] docs/types/text/known/fish-script
+- [x] docs/types/text/known/flatbuffers
+- [x] docs/types/text/known/flatpak-manifest
+- [x] docs/types/text/known/fluent-bit
+- [x] docs/types/text/known/fluentd-conf
+- [x] docs/types/text/known/flyway-conf
+- [x] docs/types/text/known/foot-config
+- [x] docs/types/text/known/forge-config
+- [x] docs/types/text/known/forth-lang
+- [x] docs/types/text/known/fortran-lang
+- [x] docs/types/text/known/freshrss-config
+- [x] docs/types/text/known/fsharp-lang
+- [x] docs/types/text/known/fstab
+- [x] docs/types/text/known/gatling-conf
+- [x] docs/types/text/known/gatsby-config
+- [x] docs/types/text/known/gcloudignore
+- [x] docs/types/text/known/gdbinit
+- [x] docs/types/text/known/gdscript-lang
+- [x] docs/types/text/known/gemfile
+- [x] docs/types/text/known/gemfile-lock
+- [x] docs/types/text/known/gemspec
+- [x] docs/types/text/known/gitattributes
+- [x] docs/types/text/known/gitconfig
+- [x] docs/types/text/known/gitea-conf
+- [x] docs/types/text/known/gitignore
+- [x] docs/types/text/known/gitmodules
+- [x] docs/types/text/known/gitolite-conf
+- [x] docs/types/text/known/gleam-lang
+- [x] docs/types/text/known/glitchtip-config
+- [x] docs/types/text/known/glsl-shader
+- [x] docs/types/text/known/gnuplot-script
+- [x] docs/types/text/known/go-mod
+- [x] docs/types/text/known/go-sum
+- [x] docs/types/text/known/go-work
+- [x] docs/types/text/known/gpg-conf
+- [x] docs/types/text/known/gradle-props
+- [x] docs/types/text/known/gradle-wrapper
+- [x] docs/types/text/known/grafana-alloy
+- [x] docs/types/text/known/grain-lang
+- [x] docs/types/text/known/graphql-schema
+- [x] docs/types/text/known/graphviz-dot
+- [x] docs/types/text/known/graylog-conf
+- [x] docs/types/text/known/grist-config
+- [x] docs/types/text/known/groovy-lang
+- [x] docs/types/text/known/grub-conf
+- [x] docs/types/text/known/handlebars-template
+- [x] docs/types/text/known/haproxy-cfg
+- [x] docs/types/text/known/haproxy-conf
+- [x] docs/types/text/known/haproxy-config
+- [x] docs/types/text/known/hardhat-config
 - [ ] docs/types/text/known/haskell-lang
 - [ ] docs/types/text/known/haxe-lang
 - [ ] docs/types/text/known/hlsl-shader

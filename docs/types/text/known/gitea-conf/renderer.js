@@ -1,4 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
 
 const CSS = `
 .giteacfg-doc{padding:16px 18px;max-width:900px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -279,7 +283,9 @@ export function render(intake) {
   }
 
   const urlDisplay = rootUrl
-    ? `<a class="giteacfg-url" href="${esc(rootUrl)}" target="_blank" rel="noopener">${esc(rootUrl)}</a>`
+    ? (safeHref(rootUrl)
+        ? `<a class="giteacfg-url" href="${esc(rootUrl)}" target="_blank" rel="noopener">${esc(rootUrl)}</a>`
+        : `<span class="giteacfg-url">${esc(rootUrl)}</span>`)
     : '';
 
   const host = document.createElement('div');

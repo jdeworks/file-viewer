@@ -23,9 +23,9 @@ function parseIni(text) {
 }
 
 function colorSwatch(hex) {
-  const clean = String(hex || '').replace(/"/g, '').trim();
-  if (!clean.startsWith('#')) return '';
-  return '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + esc(clean) + ';border:1px solid rgba(0,0,0,.25);margin-right:5px;vertical-align:middle"></span>';
+  const clean = String(hex || '').trim();
+  if (!/^#[0-9a-fA-F]{3,8}$/.test(clean)) return '';
+  return '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + clean + ';border:1px solid rgba(0,0,0,.25);margin-right:5px;vertical-align:middle"></span>';
 }
 
 export function render(intake) {

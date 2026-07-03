@@ -2,6 +2,10 @@
 // platform blocks. Groups shown as individual cards. require:false gems get a chip.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const rubygemsUrl = (name) => 'https://rubygems.org/gems/' + encodeURIComponent(name);
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
 
 const CSS = `
 .gemfile-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -113,7 +117,9 @@ export function render(intake) {
   ].filter(Boolean).join(' ');
 
   const sourceHtml = source
-    ? `<div class="gf-source"><span class="gf-chip" style="background:none;border:none;padding:0">Source:</span> <a href="${esc(source)}" target="_blank" rel="noopener noreferrer">${esc(source.replace(/^https?:\/\//, ''))}</a></div>`
+    ? (safeHref(source)
+        ? `<div class="gf-source"><span class="gf-chip" style="background:none;border:none;padding:0">Source:</span> <a href="${esc(source)}" target="_blank" rel="noopener noreferrer">${esc(source.replace(/^https?:\/\//, ''))}</a></div>`
+        : `<div class="gf-source"><span class="gf-chip" style="background:none;border:none;padding:0">Source:</span> ${esc(source)}</div>`)
     : '';
 
   // Core gems card
