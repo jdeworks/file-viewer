@@ -3,10 +3,12 @@ export default {
   label: 'Moon (Moonrepo)',
   match: (intake, baseType) => {
     if (baseType.id !== 'yaml' && baseType.id !== 'docker-compose') return false;
-    const name = (intake.filename || '').split('/').pop().toLowerCase();
     const path = (intake.filename || '').replace(/\\/g, '/');
-    return name === 'moon.yml' ||
-           path.endsWith('.moon/workspace.yml') ||
+    // NOTE: bare "moon.yml" (per-project config) is intentionally NOT matched here —
+    // it's handled by the dedicated moon-yml plugin (docs/types/text/yaml/known/moon),
+    // which is registered later in docs/known/registry.js and would otherwise be
+    // permanently shadowed by this plugin's broader match.
+    return path.endsWith('.moon/workspace.yml') ||
            path.endsWith('.moon/toolchain.yml');
   },
   loadRenderer: () => import('./renderer.js'),

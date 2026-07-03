@@ -100,7 +100,7 @@ export async function render(intake) {
 
   host.innerHTML = `<style>${CSS}</style>
 <div class="golangci-title"><span class="badge-golangci">golangci-lint</span>${esc(name || '.golangci.yml')}${goChip}</div>
-<div class="golangci-sub">${parts.join(' · ')}</div>
+<div class="golangci-sub">${esc(parts.join(' · '))}</div>
 ${enabledHtml}
 ${disabledHtml}
 ${presetsHtml}

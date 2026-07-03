@@ -2943,150 +2943,150 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/yaml/known/drone/renderer.js
 - [ ] docs/types/text/yaml/known/dvc-pipeline/index.js
 - [ ] docs/types/text/yaml/known/dvc-pipeline/renderer.js
-- [ ] docs/types/text/yaml/known/dynatrace-config/index.js
-- [ ] docs/types/text/yaml/known/dynatrace-config/renderer.js
-- [ ] docs/types/text/yaml/known/ejabberd-config/index.js
-- [ ] docs/types/text/yaml/known/ejabberd-config/renderer.js
-- [ ] docs/types/text/yaml/known/elasticsearch-config/index.js
-- [ ] docs/types/text/yaml/known/elasticsearch-config/renderer.js
-- [ ] docs/types/text/yaml/known/electron-builder/index.js
-- [ ] docs/types/text/yaml/known/electron-builder/renderer.js
-- [ ] docs/types/text/yaml/known/envoy-config/index.js
-- [ ] docs/types/text/yaml/known/envoy-config/renderer.js
-- [ ] docs/types/text/yaml/known/etcd-config/index.js
-- [ ] docs/types/text/yaml/known/etcd-config/renderer.js
-- [ ] docs/types/text/yaml/known/external-secrets/index.js
-- [ ] docs/types/text/yaml/known/external-secrets/renderer.js
-- [ ] docs/types/text/yaml/known/falco-config/index.js
-- [ ] docs/types/text/yaml/known/falco-config/renderer.js
-- [ ] docs/types/text/yaml/known/falco-rules/index.js
-- [ ] docs/types/text/yaml/known/falco-rules/renderer.js
-- [ ] docs/types/text/yaml/known/filebeat/index.js
-- [ ] docs/types/text/yaml/known/filebeat/renderer.js
-- [ ] docs/types/text/yaml/known/flux-helm-release/index.js
-- [ ] docs/types/text/yaml/known/flux-helm-release/renderer.js
-- [ ] docs/types/text/yaml/known/flux-kustomization/index.js
-- [ ] docs/types/text/yaml/known/flux-kustomization/renderer.js
-- [ ] docs/types/text/yaml/known/frigate-config/index.js
-- [ ] docs/types/text/yaml/known/frigate-config/renderer.js
-- [ ] docs/types/text/yaml/known/gae-app/index.js
-- [ ] docs/types/text/yaml/known/gae-app/renderer.js
-- [ ] docs/types/text/yaml/known/garden-io/index.js
-- [ ] docs/types/text/yaml/known/garden-io/renderer.js
-- [ ] docs/types/text/yaml/known/gatekeeper-config/index.js
-- [ ] docs/types/text/yaml/known/gatekeeper-config/renderer.js
-- [ ] docs/types/text/yaml/known/github-actions/index.js
-- [ ] docs/types/text/yaml/known/github-actions/renderer.js
-- [ ] docs/types/text/yaml/known/gitlab-ci/index.js
-- [ ] docs/types/text/yaml/known/gitlab-ci/renderer.js
-- [ ] docs/types/text/yaml/known/golangci-lint/index.js
-- [ ] docs/types/text/yaml/known/golangci-lint/renderer.js
-- [ ] docs/types/text/yaml/known/goreleaser/index.js
-- [ ] docs/types/text/yaml/known/goreleaser/renderer.js
-- [ ] docs/types/text/yaml/known/gotosocial-config/index.js
-- [ ] docs/types/text/yaml/known/gotosocial-config/renderer.js
-- [ ] docs/types/text/yaml/known/graphql-codegen/index.js
-- [ ] docs/types/text/yaml/known/graphql-codegen/renderer.js
-- [ ] docs/types/text/yaml/known/grype/index.js
-- [ ] docs/types/text/yaml/known/grype/renderer.js
-- [ ] docs/types/text/yaml/known/hadolint/index.js
-- [ ] docs/types/text/yaml/known/hadolint/renderer.js
-- [ ] docs/types/text/yaml/known/harbor-config/index.js
-- [ ] docs/types/text/yaml/known/harbor-config/renderer.js
-- [ ] docs/types/text/yaml/known/harbor/index.js
-- [ ] docs/types/text/yaml/known/harbor/renderer.js
-- [ ] docs/types/text/yaml/known/harness-pipeline/index.js
-- [ ] docs/types/text/yaml/known/harness-pipeline/renderer.js
-- [ ] docs/types/text/yaml/known/headscale-config/index.js
-- [ ] docs/types/text/yaml/known/headscale-config/renderer.js
-- [ ] docs/types/text/yaml/known/heartbeat/index.js
-- [ ] docs/types/text/yaml/known/heartbeat/renderer.js
-- [ ] docs/types/text/yaml/known/helm-chart/index.js
-- [ ] docs/types/text/yaml/known/helm-chart/renderer.js
-- [ ] docs/types/text/yaml/known/helmfile/index.js
-- [ ] docs/types/text/yaml/known/helmfile/renderer.js
-- [ ] docs/types/text/yaml/known/heroku/index.js
-- [ ] docs/types/text/yaml/known/heroku/renderer.js
-- [ ] docs/types/text/yaml/known/homarr-config/index.js
-- [ ] docs/types/text/yaml/known/homarr-config/renderer.js
-- [ ] docs/types/text/yaml/known/homepage-config/index.js
-- [ ] docs/types/text/yaml/known/homepage-config/renderer.js
-- [ ] docs/types/text/yaml/known/homer-config/index.js
-- [ ] docs/types/text/yaml/known/homer-config/renderer.js
-- [ ] docs/types/text/yaml/known/hydra-config/index.js
-- [ ] docs/types/text/yaml/known/hydra-config/renderer.js
-- [ ] docs/types/text/yaml/known/influxdb-config/index.js
-- [ ] docs/types/text/yaml/known/influxdb-config/renderer.js
-- [ ] docs/types/text/yaml/known/infracost/index.js
-- [ ] docs/types/text/yaml/known/infracost/renderer.js
-- [ ] docs/types/text/yaml/known/insomnia/index.js
-- [ ] docs/types/text/yaml/known/insomnia/renderer.js
-- [ ] docs/types/text/yaml/known/invidious-config/index.js
-- [ ] docs/types/text/yaml/known/invidious-config/renderer.js
-- [ ] docs/types/text/yaml/known/istio-config/index.js
-- [ ] docs/types/text/yaml/known/istio-config/renderer.js
-- [ ] docs/types/text/yaml/known/jaeger-config/index.js
-- [ ] docs/types/text/yaml/known/jaeger-config/renderer.js
-- [ ] docs/types/text/yaml/known/jekyll-config/index.js
-- [ ] docs/types/text/yaml/known/jekyll-config/renderer.js
-- [ ] docs/types/text/yaml/known/k8s-hpa/index.js
-- [ ] docs/types/text/yaml/known/k8s-hpa/renderer.js
-- [ ] docs/types/text/yaml/known/k8s-ingress/index.js
-- [ ] docs/types/text/yaml/known/k8s-ingress/renderer.js
-- [ ] docs/types/text/yaml/known/k8s-manifest/index.js
-- [ ] docs/types/text/yaml/known/k8s-manifest/renderer.js
-- [ ] docs/types/text/yaml/known/k8s-network-policy/index.js
-- [ ] docs/types/text/yaml/known/k8s-network-policy/renderer.js
-- [ ] docs/types/text/yaml/known/k8s-rbac/index.js
-- [ ] docs/types/text/yaml/known/k8s-rbac/renderer.js
-- [ ] docs/types/text/yaml/known/kamal-config/index.js
-- [ ] docs/types/text/yaml/known/kamal-config/renderer.js
-- [ ] docs/types/text/yaml/known/keda-config/index.js
-- [ ] docs/types/text/yaml/known/keda-config/renderer.js
-- [ ] docs/types/text/yaml/known/kibana/index.js
-- [ ] docs/types/text/yaml/known/kibana/renderer.js
-- [ ] docs/types/text/yaml/known/ko-config/index.js
-- [ ] docs/types/text/yaml/known/ko-config/renderer.js
-- [ ] docs/types/text/yaml/known/komga-config/index.js
-- [ ] docs/types/text/yaml/known/komga-config/renderer.js
-- [ ] docs/types/text/yaml/known/kong-config/index.js
-- [ ] docs/types/text/yaml/known/kong-config/renderer.js
-- [ ] docs/types/text/yaml/known/kube-helm-values/index.js
-- [ ] docs/types/text/yaml/known/kube-helm-values/renderer.js
-- [ ] docs/types/text/yaml/known/kubeconfig/index.js
-- [ ] docs/types/text/yaml/known/kubeconfig/renderer.js
-- [ ] docs/types/text/yaml/known/kustomize/index.js
-- [ ] docs/types/text/yaml/known/kustomize/renderer.js
-- [ ] docs/types/text/yaml/known/kyverno-policy/index.js
-- [ ] docs/types/text/yaml/known/kyverno-policy/renderer.js
-- [ ] docs/types/text/yaml/known/lefthook/index.js
-- [ ] docs/types/text/yaml/known/lefthook/renderer.js
-- [ ] docs/types/text/yaml/known/linkerd-config/index.js
-- [ ] docs/types/text/yaml/known/linkerd-config/renderer.js
-- [ ] docs/types/text/yaml/known/loki-config/index.js
-- [ ] docs/types/text/yaml/known/loki-config/renderer.js
-- [ ] docs/types/text/yaml/known/markdownlint/index.js
-- [ ] docs/types/text/yaml/known/markdownlint/renderer.js
-- [ ] docs/types/text/yaml/known/meltano-config/index.js
-- [ ] docs/types/text/yaml/known/meltano-config/renderer.js
-- [ ] docs/types/text/yaml/known/mimir/index.js
-- [ ] docs/types/text/yaml/known/mimir/renderer.js
-- [ ] docs/types/text/yaml/known/mkdocs/index.js
-- [ ] docs/types/text/yaml/known/mkdocs/renderer.js
-- [ ] docs/types/text/yaml/known/mlflow-project/index.js
-- [ ] docs/types/text/yaml/known/mlflow-project/renderer.js
-- [ ] docs/types/text/yaml/known/mockery-config/index.js
-- [ ] docs/types/text/yaml/known/mockery-config/renderer.js
-- [ ] docs/types/text/yaml/known/molecule/index.js
-- [ ] docs/types/text/yaml/known/molecule/renderer.js
-- [ ] docs/types/text/yaml/known/moon/index.js
-- [ ] docs/types/text/yaml/known/moon/renderer.js
-- [ ] docs/types/text/yaml/known/moonrepo/index.js
-- [ ] docs/types/text/yaml/known/moonrepo/renderer.js
-- [ ] docs/types/text/yaml/known/netplan/index.js
-- [ ] docs/types/text/yaml/known/netplan/renderer.js
-- [ ] docs/types/text/yaml/known/newrelic-config/index.js
-- [ ] docs/types/text/yaml/known/newrelic-config/renderer.js
+- [x] docs/types/text/yaml/known/dynatrace-config/index.js
+- [x] docs/types/text/yaml/known/dynatrace-config/renderer.js
+- [x] docs/types/text/yaml/known/ejabberd-config/index.js
+- [x] docs/types/text/yaml/known/ejabberd-config/renderer.js
+- [x] docs/types/text/yaml/known/elasticsearch-config/index.js
+- [x] docs/types/text/yaml/known/elasticsearch-config/renderer.js
+- [x] docs/types/text/yaml/known/electron-builder/index.js
+- [x] docs/types/text/yaml/known/electron-builder/renderer.js
+- [x] docs/types/text/yaml/known/envoy-config/index.js
+- [x] docs/types/text/yaml/known/envoy-config/renderer.js
+- [x] docs/types/text/yaml/known/etcd-config/index.js
+- [x] docs/types/text/yaml/known/etcd-config/renderer.js
+- [x] docs/types/text/yaml/known/external-secrets/index.js
+- [x] docs/types/text/yaml/known/external-secrets/renderer.js
+- [x] docs/types/text/yaml/known/falco-config/index.js
+- [x] docs/types/text/yaml/known/falco-config/renderer.js
+- [x] docs/types/text/yaml/known/falco-rules/index.js
+- [x] docs/types/text/yaml/known/falco-rules/renderer.js
+- [x] docs/types/text/yaml/known/filebeat/index.js
+- [x] docs/types/text/yaml/known/filebeat/renderer.js
+- [x] docs/types/text/yaml/known/flux-helm-release/index.js
+- [x] docs/types/text/yaml/known/flux-helm-release/renderer.js
+- [x] docs/types/text/yaml/known/flux-kustomization/index.js
+- [x] docs/types/text/yaml/known/flux-kustomization/renderer.js
+- [x] docs/types/text/yaml/known/frigate-config/index.js
+- [x] docs/types/text/yaml/known/frigate-config/renderer.js
+- [x] docs/types/text/yaml/known/gae-app/index.js
+- [x] docs/types/text/yaml/known/gae-app/renderer.js
+- [x] docs/types/text/yaml/known/garden-io/index.js
+- [x] docs/types/text/yaml/known/garden-io/renderer.js
+- [x] docs/types/text/yaml/known/gatekeeper-config/index.js
+- [x] docs/types/text/yaml/known/gatekeeper-config/renderer.js
+- [x] docs/types/text/yaml/known/github-actions/index.js
+- [x] docs/types/text/yaml/known/github-actions/renderer.js
+- [x] docs/types/text/yaml/known/gitlab-ci/index.js
+- [x] docs/types/text/yaml/known/gitlab-ci/renderer.js
+- [x] docs/types/text/yaml/known/golangci-lint/index.js
+- [x] docs/types/text/yaml/known/golangci-lint/renderer.js
+- [x] docs/types/text/yaml/known/goreleaser/index.js
+- [x] docs/types/text/yaml/known/goreleaser/renderer.js
+- [x] docs/types/text/yaml/known/gotosocial-config/index.js
+- [x] docs/types/text/yaml/known/gotosocial-config/renderer.js
+- [x] docs/types/text/yaml/known/graphql-codegen/index.js
+- [x] docs/types/text/yaml/known/graphql-codegen/renderer.js
+- [x] docs/types/text/yaml/known/grype/index.js
+- [x] docs/types/text/yaml/known/grype/renderer.js
+- [x] docs/types/text/yaml/known/hadolint/index.js
+- [x] docs/types/text/yaml/known/hadolint/renderer.js
+- [x] docs/types/text/yaml/known/harbor-config/index.js
+- [x] docs/types/text/yaml/known/harbor-config/renderer.js
+- [x] docs/types/text/yaml/known/harbor/index.js
+- [x] docs/types/text/yaml/known/harbor/renderer.js
+- [x] docs/types/text/yaml/known/harness-pipeline/index.js
+- [x] docs/types/text/yaml/known/harness-pipeline/renderer.js
+- [x] docs/types/text/yaml/known/headscale-config/index.js
+- [x] docs/types/text/yaml/known/headscale-config/renderer.js
+- [x] docs/types/text/yaml/known/heartbeat/index.js
+- [x] docs/types/text/yaml/known/heartbeat/renderer.js
+- [x] docs/types/text/yaml/known/helm-chart/index.js
+- [x] docs/types/text/yaml/known/helm-chart/renderer.js
+- [x] docs/types/text/yaml/known/helmfile/index.js
+- [x] docs/types/text/yaml/known/helmfile/renderer.js
+- [x] docs/types/text/yaml/known/heroku/index.js
+- [x] docs/types/text/yaml/known/heroku/renderer.js
+- [x] docs/types/text/yaml/known/homarr-config/index.js
+- [x] docs/types/text/yaml/known/homarr-config/renderer.js
+- [x] docs/types/text/yaml/known/homepage-config/index.js
+- [x] docs/types/text/yaml/known/homepage-config/renderer.js
+- [x] docs/types/text/yaml/known/homer-config/index.js
+- [x] docs/types/text/yaml/known/homer-config/renderer.js
+- [x] docs/types/text/yaml/known/hydra-config/index.js
+- [x] docs/types/text/yaml/known/hydra-config/renderer.js
+- [x] docs/types/text/yaml/known/influxdb-config/index.js
+- [x] docs/types/text/yaml/known/influxdb-config/renderer.js
+- [x] docs/types/text/yaml/known/infracost/index.js
+- [x] docs/types/text/yaml/known/infracost/renderer.js
+- [x] docs/types/text/yaml/known/insomnia/index.js
+- [x] docs/types/text/yaml/known/insomnia/renderer.js
+- [x] docs/types/text/yaml/known/invidious-config/index.js
+- [x] docs/types/text/yaml/known/invidious-config/renderer.js
+- [x] docs/types/text/yaml/known/istio-config/index.js
+- [x] docs/types/text/yaml/known/istio-config/renderer.js
+- [x] docs/types/text/yaml/known/jaeger-config/index.js
+- [x] docs/types/text/yaml/known/jaeger-config/renderer.js
+- [x] docs/types/text/yaml/known/jekyll-config/index.js
+- [x] docs/types/text/yaml/known/jekyll-config/renderer.js
+- [x] docs/types/text/yaml/known/k8s-hpa/index.js
+- [x] docs/types/text/yaml/known/k8s-hpa/renderer.js
+- [x] docs/types/text/yaml/known/k8s-ingress/index.js
+- [x] docs/types/text/yaml/known/k8s-ingress/renderer.js
+- [x] docs/types/text/yaml/known/k8s-manifest/index.js
+- [x] docs/types/text/yaml/known/k8s-manifest/renderer.js
+- [x] docs/types/text/yaml/known/k8s-network-policy/index.js
+- [x] docs/types/text/yaml/known/k8s-network-policy/renderer.js
+- [x] docs/types/text/yaml/known/k8s-rbac/index.js
+- [x] docs/types/text/yaml/known/k8s-rbac/renderer.js
+- [x] docs/types/text/yaml/known/kamal-config/index.js
+- [x] docs/types/text/yaml/known/kamal-config/renderer.js
+- [x] docs/types/text/yaml/known/keda-config/index.js
+- [x] docs/types/text/yaml/known/keda-config/renderer.js
+- [x] docs/types/text/yaml/known/kibana/index.js
+- [x] docs/types/text/yaml/known/kibana/renderer.js
+- [x] docs/types/text/yaml/known/ko-config/index.js
+- [x] docs/types/text/yaml/known/ko-config/renderer.js
+- [x] docs/types/text/yaml/known/komga-config/index.js
+- [x] docs/types/text/yaml/known/komga-config/renderer.js
+- [x] docs/types/text/yaml/known/kong-config/index.js
+- [x] docs/types/text/yaml/known/kong-config/renderer.js
+- [x] docs/types/text/yaml/known/kube-helm-values/index.js
+- [x] docs/types/text/yaml/known/kube-helm-values/renderer.js
+- [x] docs/types/text/yaml/known/kubeconfig/index.js
+- [x] docs/types/text/yaml/known/kubeconfig/renderer.js
+- [x] docs/types/text/yaml/known/kustomize/index.js
+- [x] docs/types/text/yaml/known/kustomize/renderer.js
+- [x] docs/types/text/yaml/known/kyverno-policy/index.js
+- [x] docs/types/text/yaml/known/kyverno-policy/renderer.js
+- [x] docs/types/text/yaml/known/lefthook/index.js
+- [x] docs/types/text/yaml/known/lefthook/renderer.js
+- [x] docs/types/text/yaml/known/linkerd-config/index.js
+- [x] docs/types/text/yaml/known/linkerd-config/renderer.js
+- [x] docs/types/text/yaml/known/loki-config/index.js
+- [x] docs/types/text/yaml/known/loki-config/renderer.js
+- [x] docs/types/text/yaml/known/markdownlint/index.js
+- [x] docs/types/text/yaml/known/markdownlint/renderer.js
+- [x] docs/types/text/yaml/known/meltano-config/index.js
+- [x] docs/types/text/yaml/known/meltano-config/renderer.js
+- [x] docs/types/text/yaml/known/mimir/index.js
+- [x] docs/types/text/yaml/known/mimir/renderer.js
+- [x] docs/types/text/yaml/known/mkdocs/index.js
+- [x] docs/types/text/yaml/known/mkdocs/renderer.js
+- [x] docs/types/text/yaml/known/mlflow-project/index.js
+- [x] docs/types/text/yaml/known/mlflow-project/renderer.js
+- [x] docs/types/text/yaml/known/mockery-config/index.js
+- [x] docs/types/text/yaml/known/mockery-config/renderer.js
+- [x] docs/types/text/yaml/known/molecule/index.js
+- [x] docs/types/text/yaml/known/molecule/renderer.js
+- [x] docs/types/text/yaml/known/moon/index.js
+- [x] docs/types/text/yaml/known/moon/renderer.js
+- [x] docs/types/text/yaml/known/moonrepo/index.js
+- [x] docs/types/text/yaml/known/moonrepo/renderer.js
+- [x] docs/types/text/yaml/known/netplan/index.js
+- [x] docs/types/text/yaml/known/netplan/renderer.js
+- [x] docs/types/text/yaml/known/newrelic-config/index.js
+- [x] docs/types/text/yaml/known/newrelic-config/renderer.js
 - [ ] docs/types/text/yaml/known/nfpm-config/index.js
 - [ ] docs/types/text/yaml/known/nfpm-config/renderer.js
 - [ ] docs/types/text/yaml/known/ntfy-config/index.js
@@ -4010,78 +4010,78 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/yaml/known/dozzle-config
 - [ ] docs/types/text/yaml/known/drone
 - [ ] docs/types/text/yaml/known/dvc-pipeline
-- [ ] docs/types/text/yaml/known/dynatrace-config
-- [ ] docs/types/text/yaml/known/ejabberd-config
-- [ ] docs/types/text/yaml/known/elasticsearch-config
-- [ ] docs/types/text/yaml/known/electron-builder
-- [ ] docs/types/text/yaml/known/envoy-config
-- [ ] docs/types/text/yaml/known/etcd-config
-- [ ] docs/types/text/yaml/known/external-secrets
-- [ ] docs/types/text/yaml/known/falco-config
-- [ ] docs/types/text/yaml/known/falco-rules
-- [ ] docs/types/text/yaml/known/filebeat
-- [ ] docs/types/text/yaml/known/flux-helm-release
-- [ ] docs/types/text/yaml/known/flux-kustomization
-- [ ] docs/types/text/yaml/known/frigate-config
-- [ ] docs/types/text/yaml/known/gae-app
-- [ ] docs/types/text/yaml/known/garden-io
-- [ ] docs/types/text/yaml/known/gatekeeper-config
-- [ ] docs/types/text/yaml/known/github-actions
-- [ ] docs/types/text/yaml/known/gitlab-ci
-- [ ] docs/types/text/yaml/known/golangci-lint
-- [ ] docs/types/text/yaml/known/goreleaser
-- [ ] docs/types/text/yaml/known/gotosocial-config
-- [ ] docs/types/text/yaml/known/graphql-codegen
-- [ ] docs/types/text/yaml/known/grype
-- [ ] docs/types/text/yaml/known/hadolint
-- [ ] docs/types/text/yaml/known/harbor
-- [ ] docs/types/text/yaml/known/harbor-config
-- [ ] docs/types/text/yaml/known/harness-pipeline
-- [ ] docs/types/text/yaml/known/headscale-config
-- [ ] docs/types/text/yaml/known/heartbeat
-- [ ] docs/types/text/yaml/known/helm-chart
-- [ ] docs/types/text/yaml/known/helmfile
-- [ ] docs/types/text/yaml/known/heroku
-- [ ] docs/types/text/yaml/known/homarr-config
-- [ ] docs/types/text/yaml/known/homepage-config
-- [ ] docs/types/text/yaml/known/homer-config
-- [ ] docs/types/text/yaml/known/hydra-config
-- [ ] docs/types/text/yaml/known/influxdb-config
-- [ ] docs/types/text/yaml/known/infracost
-- [ ] docs/types/text/yaml/known/insomnia
-- [ ] docs/types/text/yaml/known/invidious-config
-- [ ] docs/types/text/yaml/known/istio-config
-- [ ] docs/types/text/yaml/known/jaeger-config
-- [ ] docs/types/text/yaml/known/jekyll-config
-- [ ] docs/types/text/yaml/known/k8s-hpa
-- [ ] docs/types/text/yaml/known/k8s-ingress
-- [ ] docs/types/text/yaml/known/k8s-manifest
-- [ ] docs/types/text/yaml/known/k8s-network-policy
-- [ ] docs/types/text/yaml/known/k8s-rbac
-- [ ] docs/types/text/yaml/known/kamal-config
-- [ ] docs/types/text/yaml/known/keda-config
-- [ ] docs/types/text/yaml/known/kibana
-- [ ] docs/types/text/yaml/known/ko-config
-- [ ] docs/types/text/yaml/known/komga-config
-- [ ] docs/types/text/yaml/known/kong-config
-- [ ] docs/types/text/yaml/known/kube-helm-values
-- [ ] docs/types/text/yaml/known/kubeconfig
-- [ ] docs/types/text/yaml/known/kustomize
-- [ ] docs/types/text/yaml/known/kyverno-policy
-- [ ] docs/types/text/yaml/known/lefthook
-- [ ] docs/types/text/yaml/known/linkerd-config
-- [ ] docs/types/text/yaml/known/loki-config
-- [ ] docs/types/text/yaml/known/markdownlint
-- [ ] docs/types/text/yaml/known/meltano-config
-- [ ] docs/types/text/yaml/known/mimir
-- [ ] docs/types/text/yaml/known/mkdocs
-- [ ] docs/types/text/yaml/known/mlflow-project
-- [ ] docs/types/text/yaml/known/mockery-config
-- [ ] docs/types/text/yaml/known/molecule
-- [ ] docs/types/text/yaml/known/moon
-- [ ] docs/types/text/yaml/known/moonrepo
-- [ ] docs/types/text/yaml/known/netplan
-- [ ] docs/types/text/yaml/known/newrelic-config
+- [x] docs/types/text/yaml/known/dynatrace-config
+- [x] docs/types/text/yaml/known/ejabberd-config
+- [x] docs/types/text/yaml/known/elasticsearch-config
+- [x] docs/types/text/yaml/known/electron-builder
+- [x] docs/types/text/yaml/known/envoy-config
+- [x] docs/types/text/yaml/known/etcd-config
+- [x] docs/types/text/yaml/known/external-secrets
+- [x] docs/types/text/yaml/known/falco-config
+- [x] docs/types/text/yaml/known/falco-rules
+- [x] docs/types/text/yaml/known/filebeat
+- [x] docs/types/text/yaml/known/flux-helm-release
+- [x] docs/types/text/yaml/known/flux-kustomization
+- [x] docs/types/text/yaml/known/frigate-config
+- [x] docs/types/text/yaml/known/gae-app
+- [x] docs/types/text/yaml/known/garden-io
+- [x] docs/types/text/yaml/known/gatekeeper-config
+- [x] docs/types/text/yaml/known/github-actions
+- [x] docs/types/text/yaml/known/gitlab-ci
+- [x] docs/types/text/yaml/known/golangci-lint
+- [x] docs/types/text/yaml/known/goreleaser
+- [x] docs/types/text/yaml/known/gotosocial-config
+- [x] docs/types/text/yaml/known/graphql-codegen
+- [x] docs/types/text/yaml/known/grype
+- [x] docs/types/text/yaml/known/hadolint
+- [x] docs/types/text/yaml/known/harbor
+- [x] docs/types/text/yaml/known/harbor-config
+- [x] docs/types/text/yaml/known/harness-pipeline
+- [x] docs/types/text/yaml/known/headscale-config
+- [x] docs/types/text/yaml/known/heartbeat
+- [x] docs/types/text/yaml/known/helm-chart
+- [x] docs/types/text/yaml/known/helmfile
+- [x] docs/types/text/yaml/known/heroku
+- [x] docs/types/text/yaml/known/homarr-config
+- [x] docs/types/text/yaml/known/homepage-config
+- [x] docs/types/text/yaml/known/homer-config
+- [x] docs/types/text/yaml/known/hydra-config
+- [x] docs/types/text/yaml/known/influxdb-config
+- [x] docs/types/text/yaml/known/infracost
+- [x] docs/types/text/yaml/known/insomnia
+- [x] docs/types/text/yaml/known/invidious-config
+- [x] docs/types/text/yaml/known/istio-config
+- [x] docs/types/text/yaml/known/jaeger-config
+- [x] docs/types/text/yaml/known/jekyll-config
+- [x] docs/types/text/yaml/known/k8s-hpa
+- [x] docs/types/text/yaml/known/k8s-ingress
+- [x] docs/types/text/yaml/known/k8s-manifest
+- [x] docs/types/text/yaml/known/k8s-network-policy
+- [x] docs/types/text/yaml/known/k8s-rbac
+- [x] docs/types/text/yaml/known/kamal-config
+- [x] docs/types/text/yaml/known/keda-config
+- [x] docs/types/text/yaml/known/kibana
+- [x] docs/types/text/yaml/known/ko-config
+- [x] docs/types/text/yaml/known/komga-config
+- [x] docs/types/text/yaml/known/kong-config
+- [x] docs/types/text/yaml/known/kube-helm-values
+- [x] docs/types/text/yaml/known/kubeconfig
+- [x] docs/types/text/yaml/known/kustomize
+- [x] docs/types/text/yaml/known/kyverno-policy
+- [x] docs/types/text/yaml/known/lefthook
+- [x] docs/types/text/yaml/known/linkerd-config
+- [x] docs/types/text/yaml/known/loki-config
+- [x] docs/types/text/yaml/known/markdownlint
+- [x] docs/types/text/yaml/known/meltano-config
+- [x] docs/types/text/yaml/known/mimir
+- [x] docs/types/text/yaml/known/mkdocs
+- [x] docs/types/text/yaml/known/mlflow-project
+- [x] docs/types/text/yaml/known/mockery-config
+- [x] docs/types/text/yaml/known/molecule
+- [x] docs/types/text/yaml/known/moon
+- [x] docs/types/text/yaml/known/moonrepo
+- [x] docs/types/text/yaml/known/netplan
+- [x] docs/types/text/yaml/known/newrelic-config
 - [ ] docs/types/text/yaml/known/nfpm-config
 - [ ] docs/types/text/yaml/known/ntfy-config
 - [ ] docs/types/text/yaml/known/openapi-generator

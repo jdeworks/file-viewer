@@ -2284,9 +2284,8 @@ var moonrepo_default = {
   label: "Moon (Moonrepo)",
   match: (intake, baseType) => {
     if (baseType.id !== "yaml" && baseType.id !== "docker-compose") return false;
-    const name = (intake.filename || "").split("/").pop().toLowerCase();
     const path = (intake.filename || "").replace(/\\/g, "/");
-    return name === "moon.yml" || path.endsWith(".moon/workspace.yml") || path.endsWith(".moon/toolchain.yml");
+    return path.endsWith(".moon/workspace.yml") || path.endsWith(".moon/toolchain.yml");
   },
   loadRenderer: () => import("../types/text/yaml/known/moonrepo/renderer.js"),
   about: {

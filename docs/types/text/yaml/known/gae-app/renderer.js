@@ -77,7 +77,7 @@ export async function render(intake) {
   host.className = 'appyaml-doc';
   host.innerHTML = `<style>${CSS}</style>
 <div class="appyaml-title"><span class="badge-appyaml">App Engine</span>app.yaml</div>
-<div class="appyaml-sub">${parts.join(' · ') || 'Google App Engine configuration'}</div>
+<div class="appyaml-sub">${esc(parts.join(' · ')) || 'Google App Engine configuration'}</div>
 
 <div class="appyaml-sec">
   <div class="appyaml-grid">
