@@ -132,9 +132,15 @@ function parseClassic(text) {
     if (tm && !line.startsWith('Thread') === false) {
       const threadNo = parseInt(tm[1], 10);
       const qualifier = tm[2]?.trim() || '';
-      const label = tm[3]?.trim() || '';
+      // Real reports use a double colon before a dispatch-queue name, e.g.
+      // "Thread 0 Crashed:: Dispatch queue: com.apple.main-thread" — the thread
+      // regex's optional `:?` only consumes the first colon, so strip any
+      // leftover leading colon(s) here rather than showing a stray ":" in the UI.
+      const label = (tm[3] || '').replace(/^:+\s*/, '').trim();
       const isCrashed = /crashed/i.test(qualifier) || /crashed/i.test(label) || threadNo === result.crashedThread;
-      const thread = { no: threadNo, label: label || qualifier || '', isCrashed, frames: [] };
+      // Don't fall back to the qualifier when it's just the crash indicator itself
+      // (already surfaced via `isCrashed`/crashLabel) — avoids "Crashed — Crashed".
+      const thread = { no: threadNo, label: label || (/crashed/i.test(qualifier) ? '' : qualifier), isCrashed, frames: [] };
       i++;
       while (i < lines.length) {
         const fl = lines[i];

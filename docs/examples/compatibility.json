@@ -351,7 +351,9 @@
         "sample.crash"
       ],
       "extensions": [
-        ".crash"
+        ".crash",
+        ".ips",
+        ".diagnostic"
       ],
       "capabilities": {
         "rawView": true,
@@ -366,9 +368,9 @@
       },
       "partialSamples": [],
       "realWorldQuality": "needs-review",
-      "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
+      "notes": "Renders a structured hero/exception/thread-backtrace/registers/binary-images card view (renderer.js) for classic .crash text and .ips JSON formats, not just raw text.",
       "fileExamplesSlug": null,
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
       "editCapability": "basic",
       "exportCapability": "download",

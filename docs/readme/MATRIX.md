@@ -36,7 +36,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [.gitignore](gitignore.md) | `.gitignore` | Basic | Monaco | download | .gitignore (1) | — |
 | [Git Attributes](gitattributes.md) | `.gitattributes` | Basic | Monaco | download | — | — |
 | [Patch / Diff](patch.md) | `.patch` | Basic | Monaco | download | — | — |
-| [Crash Report](crash.md) | `.crash` | Basic | Monaco | download | — | — |
+| [Crash Report](crash.md) | `.crash` `.ips` `.diagnostic` | Full | Monaco | download | — | — |
 | [SSH Config](ssh-config.md) | `ssh-config` | Basic | Monaco | download | — | — |
 | [RDP Connection](rdp.md) | `.rdp` | Basic | Monaco | download | — | — |
 | [MCP Server Config](mcp-config.md) | `.json` (claude_desktop_config.json) | Basic | Monaco | download | — | — |
