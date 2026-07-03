@@ -46,7 +46,8 @@ Reference alignment:
 
 ### R0a — Modular Media Mixer Foundation
 
-Status: Stage 5 video/image seek-frame preview started.
+Status: Stage 8 prototype retirement complete (old `mixer-engine.js`, `timeline.js`,
+and `compare-ui.js` removed); see the Stage 8 notes below and `STUDIO_TRACKER.md`.
 
 The next media-studio foundation is a modular, capability-gated media
 mixer/editor, not a narrow replacement of the current audio Listen lane. The
@@ -75,8 +76,9 @@ Implementation should follow:
 - `modular-mixer-research/09-build-runbook.md`
 - `modular-mixer-research/10-review-checklist.md`
 
-The current file-viewer Mix, Compare, and video Timeline implementations remain
-prototype coverage only. Do not evolve them as the final architecture.
+The current file-viewer Mix, Compare, and video Timeline surfaces now run on the
+modular `mixer/` model (Stage 8 prototype retirement is complete); the old
+non-modular prototypes they superseded are deleted.
 
 Stage 1 implementation added `docs/types/media/mixer/` pure modules and unit
 tests for model/timing, capability gating, config-only project settings

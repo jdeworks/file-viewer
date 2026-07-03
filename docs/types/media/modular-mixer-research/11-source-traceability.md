@@ -131,10 +131,12 @@ Observed implementation lessons:
 - `renderer.js`: media intake, blob-backed native preview, workspace creation,
   playlist/chapters/export wiring.
 - `renderer-mode-panels.js` and `workspace-modes.js`: lazy mode mount/destroy.
-- `mixer-engine.js`: existing audio-only mix lessons and memory risks.
-- `timeline.js`: existing 2-lane video timeline lessons and limits.
-- `compare-ui.js` plus compare helpers: shifted overlap and compare workflow
-  lessons.
+- `mixer-engine.js` (retired/deleted in Stage 8 prototype retirement): audio-only
+  mix lessons and memory risks it surfaced while it existed.
+- `timeline.js` (retired/deleted in Stage 8 prototype retirement): 2-lane video
+  timeline lessons and limits it surfaced while it existed.
+- `compare-ui.js` (retired/deleted in Stage 8 prototype retirement) plus compare
+  helpers: shifted overlap and compare workflow lessons.
 - `studio-export.js`, `transcoder.js`, `transcoder-ops.js`, `video-filters.js`:
   export presets, ffmpeg lazy-load, operation planning, error handling.
 - Existing tests under `tests/areas/media-studio*.mjs`: smoke coverage patterns
@@ -145,9 +147,12 @@ Primary local paths:
 - `docs/types/media/renderer.js`
 - `docs/types/media/renderer-mode-panels.js`
 - `docs/types/media/workspace-modes.js`
-- `docs/types/media/mixer-engine.js`
-- `docs/types/media/timeline.js`
-- `docs/types/media/compare-ui.js`
+- `docs/types/media/mixer-engine.js` (retired/deleted in Stage 8 prototype
+  retirement — see `STUDIO_TRACKER.md`)
+- `docs/types/media/timeline.js` (retired/deleted in Stage 8 prototype
+  retirement — see `STUDIO_TRACKER.md`)
+- `docs/types/media/compare-ui.js` (retired/deleted in Stage 8 prototype
+  retirement — see `STUDIO_TRACKER.md`)
 - `docs/types/media/studio-export.js`
 - `docs/types/media/transcoder.js`
 - `docs/types/media/transcoder-ops.js`

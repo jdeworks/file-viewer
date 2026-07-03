@@ -215,8 +215,12 @@ Current modules to reuse or mine:
 - `waveform-data.js`: waveform summaries.
 - `waveform.js`: existing drawing lessons.
 - `audio-graph.js`: current shared EQ graph, if compatible.
-- `mixer-engine.js`: realtime/offline audio mix lessons.
-- `timeline.js`: ffmpeg-backed video timeline lessons.
+- `mixer-engine.js`: realtime/offline audio mix lessons (file has since been
+  deleted as part of Stage 8 prototype retirement; lessons were mined into
+  `mixer/mixer-audio-playback.js` and `mixer/mixer-audio-export.js`).
+- `timeline.js`: ffmpeg-backed video timeline lessons (file has since been
+  deleted as part of Stage 8 prototype retirement; lessons were mined into
+  `mixer/mixer-video-source.js`).
 - `compare-math.js`: shifted overlap math.
 - `transcoder.js`: ffmpeg load/run/cancel/error handling.
 - `export-presets.js`: export presets.

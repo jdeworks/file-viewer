@@ -926,47 +926,47 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/media/mixer/mixer-video-source.js
 - [ ] docs/types/media/mixer/mixer-visual-preview.js
 - [ ] docs/types/media/mixer/mixer-visual-runtime.js
-- [ ] docs/types/media/modular-mixer-research/00-scope-and-decisions.md
-- [ ] docs/types/media/modular-mixer-research/01-feature-research.md
-- [ ] docs/types/media/modular-mixer-research/02-module-architecture.md
-- [ ] docs/types/media/modular-mixer-research/03-project-model.md
-- [ ] docs/types/media/modular-mixer-research/04-rendering-interaction.md
-- [ ] docs/types/media/modular-mixer-research/05-memory-performance.md
-- [ ] docs/types/media/modular-mixer-research/06-implementation-plan.md
-- [ ] docs/types/media/modular-mixer-research/07-risks.md
-- [ ] docs/types/media/modular-mixer-research/08-acceptance-and-test-strategy.md
-- [ ] docs/types/media/modular-mixer-research/09-build-runbook.md
-- [ ] docs/types/media/modular-mixer-research/10-review-checklist.md
-- [ ] docs/types/media/modular-mixer-research/11-source-traceability.md
-- [ ] docs/types/media/modular-mixer-research/12-user-workflows.md
-- [ ] docs/types/media/modular-mixer-research/13-package-audit.md
-- [ ] docs/types/media/modular-mixer-research/14-review-summary.md
-- [ ] docs/types/media/modular-mixer-research/README.md
-- [ ] docs/types/media/ocr-subtitles.js
-- [ ] docs/types/media/panel-toggle.js
-- [ ] docs/types/media/playback-extras.js
-- [ ] docs/types/media/qc-ui.js
-- [ ] docs/types/media/qc.js
-- [ ] docs/types/media/renderer-mode-panels.js
-- [ ] docs/types/media/renderer-tools.js
-- [ ] docs/types/media/renderer-workspace.js
-- [ ] docs/types/media/renderer.js
-- [ ] docs/types/media/settings.default.json
-- [ ] docs/types/media/spectrum-draw.js
-- [ ] docs/types/media/spectrum-panel.js
-- [ ] docs/types/media/spectrum.js
-- [ ] docs/types/media/STUDIO_AUDIOBOOK_QC.md
-- [ ] docs/types/media/STUDIO_ROADMAP.md
-- [ ] docs/types/media/STUDIO_TRACKER.md
-- [ ] docs/types/media/studio-export.js
-- [ ] docs/types/media/subtitles.js
-- [ ] docs/types/media/transcoder-ops.js
-- [ ] docs/types/media/transcoder.js
-- [ ] docs/types/media/video-filters.js
-- [ ] docs/types/media/video-studio.js
-- [ ] docs/types/media/waveform-data.js
-- [ ] docs/types/media/waveform.js
-- [ ] docs/types/media/workspace-modes.js
+- [x] docs/types/media/modular-mixer-research/00-scope-and-decisions.md
+- [x] docs/types/media/modular-mixer-research/01-feature-research.md
+- [x] docs/types/media/modular-mixer-research/02-module-architecture.md
+- [x] docs/types/media/modular-mixer-research/03-project-model.md
+- [x] docs/types/media/modular-mixer-research/04-rendering-interaction.md
+- [x] docs/types/media/modular-mixer-research/05-memory-performance.md
+- [x] docs/types/media/modular-mixer-research/06-implementation-plan.md
+- [x] docs/types/media/modular-mixer-research/07-risks.md
+- [x] docs/types/media/modular-mixer-research/08-acceptance-and-test-strategy.md
+- [x] docs/types/media/modular-mixer-research/09-build-runbook.md
+- [x] docs/types/media/modular-mixer-research/10-review-checklist.md
+- [x] docs/types/media/modular-mixer-research/11-source-traceability.md
+- [x] docs/types/media/modular-mixer-research/12-user-workflows.md
+- [x] docs/types/media/modular-mixer-research/13-package-audit.md
+- [x] docs/types/media/modular-mixer-research/14-review-summary.md
+- [x] docs/types/media/modular-mixer-research/README.md
+- [x] docs/types/media/ocr-subtitles.js
+- [x] docs/types/media/panel-toggle.js
+- [x] docs/types/media/playback-extras.js
+- [x] docs/types/media/qc-ui.js
+- [x] docs/types/media/qc.js
+- [x] docs/types/media/renderer-mode-panels.js
+- [x] docs/types/media/renderer-tools.js
+- [x] docs/types/media/renderer-workspace.js
+- [x] docs/types/media/renderer.js
+- [x] docs/types/media/settings.default.json
+- [x] docs/types/media/spectrum-draw.js
+- [x] docs/types/media/spectrum-panel.js
+- [x] docs/types/media/spectrum.js
+- [x] docs/types/media/STUDIO_AUDIOBOOK_QC.md
+- [x] docs/types/media/STUDIO_ROADMAP.md
+- [x] docs/types/media/STUDIO_TRACKER.md
+- [x] docs/types/media/studio-export.js
+- [x] docs/types/media/subtitles.js
+- [x] docs/types/media/transcoder-ops.js
+- [x] docs/types/media/transcoder.js
+- [x] docs/types/media/video-filters.js
+- [x] docs/types/media/video-studio.js
+- [x] docs/types/media/waveform-data.js
+- [x] docs/types/media/waveform.js
+- [x] docs/types/media/workspace-modes.js
 - [x] docs/types/office/docx/detect.js
 - [x] docs/types/office/docx/editor.js
 - [x] docs/types/office/docx/index.js
