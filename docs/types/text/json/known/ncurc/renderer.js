@@ -44,7 +44,10 @@ export function render(intake) {
   const jsonAll = cfg.jsonAll;
   const pre = cfg.pre;
 
-  const targetClass = target ? `target-${target.toLowerCase()}` : '';
+  // target is untrusted file content — only build a CSS class from a known-safe value so it
+  // can never break out of the class="" attribute in the innerHTML template below.
+  const KNOWN_TARGETS = new Set(['latest', 'newest', 'greatest', 'minor', 'patch', 'semver']);
+  const targetClass = target && KNOWN_TARGETS.has(target.toLowerCase()) ? `target-${target.toLowerCase()}` : '';
 
   const boolRow = (key, val) => {
     if (val == null) return '';
