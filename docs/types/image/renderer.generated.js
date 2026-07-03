@@ -4981,11 +4981,14 @@ function injectStyle3() {
 var DOC_TPL = new URL("./doc.html", import.meta.url);
 var EDIT_TOOLS_TPL = new URL("./edit-tools.html", import.meta.url);
 var EDITABLE_MIME = /* @__PURE__ */ new Set(["image/png", "image/jpeg", "image/webp", "image/avif", "image/bmp", "image/gif"]);
+function stripOffOriginSvgRefs(svg) {
+  return svg.replace(/(<(?:image|use|feimage)\b[^>]*?\s)(?:xlink:)?href\s*=\s*(?:"https?:[^"]*"|'https?:[^']*')/gi, '$1href=""').replace(/url\(\s*(?:"https?:[^")]*"|'https?:[^')]*'|https?:[^)\s'"]*)\s*\)/gi, "url()").replace(/@import\s+(?:url\([^)]*\)|"https?:[^"]*"|'https?:[^']*')\s*;?/gi, "");
+}
 async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
     const DOMPurify = await loadGlobal4(vendor4("dompurify/purify.min.js"), "DOMPurify");
     DOMPurify.removed = [];
-    const clean = DOMPurify.sanitize(intake.text || "", { USE_PROFILES: { svg: true, svgFilters: true } });
+    const clean = stripOffOriginSvgRefs(DOMPurify.sanitize(intake.text || "", { USE_PROFILES: { svg: true, svgFilters: true } }));
     return { bodyHtml: '<div class="img-doc">' + clean + "</div>", hadUnsafe: DOMPurify.removed.length > 0 };
   }
   if (mimeFor(intake) === "image/gif") {

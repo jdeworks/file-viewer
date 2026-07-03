@@ -50,7 +50,9 @@ function renderMetadataFallback(intake, err) {
 
   const note = document.createElement('p');
   note.style.cssText = 'margin:0 0 14px;color:var(--fg-muted,#666);';
-  note.textContent = 'This TIFF could not be decoded here (' + esc(err?.message || String(err)) + '). Metadata is shown below; the original file still downloads.';
+  // .textContent, not innerHTML — no escaping needed (and esc()-ing here would double-encode:
+  // the entities esc() produces would show up literally instead of being rendered).
+  note.textContent = 'This TIFF could not be decoded here (' + (err?.message || String(err)) + '). Metadata is shown below; the original file still downloads.';
 
   const rows = parseTiffMetadata(intake.bytes || new Uint8Array());
   const table = document.createElement('table');

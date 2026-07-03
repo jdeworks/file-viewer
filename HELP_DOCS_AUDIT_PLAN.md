@@ -786,32 +786,32 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/image/jxl-decode.js
 - [ ] docs/types/image/levels.js
 - [ ] docs/types/image/metadata.js
-- [ ] docs/types/image/ocr-ui.js
-- [ ] docs/types/image/pixel-clipboard.js
-- [ ] docs/types/image/procreate/detect.js
-- [ ] docs/types/image/procreate/index.js
-- [ ] docs/types/image/procreate/metadata.js
-- [ ] docs/types/image/procreate/renderer.js
-- [ ] docs/types/image/procreate/settings.default.json
+- [x] docs/types/image/ocr-ui.js
+- [x] docs/types/image/pixel-clipboard.js
+- [x] docs/types/image/procreate/detect.js
+- [x] docs/types/image/procreate/index.js
+- [x] docs/types/image/procreate/metadata.js
+- [x] docs/types/image/procreate/renderer.js
+- [x] docs/types/image/procreate/settings.default.json
 - [ ] docs/types/image/renderer.generated.js
-- [ ] docs/types/image/renderer.js
-- [ ] docs/types/image/settings.default.json
-- [ ] docs/types/image/sketch/detect.js
-- [ ] docs/types/image/sketch/index.js
-- [ ] docs/types/image/sketch/metadata.js
-- [ ] docs/types/image/sketch/renderer.js
-- [ ] docs/types/image/sketch/settings.default.json
-- [ ] docs/types/image/svg/detect.js
-- [ ] docs/types/image/svg/index.js
-- [ ] docs/types/image/svg/renderer.js
-- [ ] docs/types/image/svg/settings.default.json
-- [ ] docs/types/image/tiff/decode-tiff.js
-- [ ] docs/types/image/tiff/detect.js
-- [ ] docs/types/image/tiff/index.js
-- [ ] docs/types/image/tiff/metadata.js
-- [ ] docs/types/image/tiff/renderer.js
-- [ ] docs/types/image/tiff/settings.default.json
-- [ ] docs/types/image/view-controller.js
+- [x] docs/types/image/renderer.js
+- [x] docs/types/image/settings.default.json
+- [x] docs/types/image/sketch/detect.js
+- [x] docs/types/image/sketch/index.js
+- [x] docs/types/image/sketch/metadata.js
+- [x] docs/types/image/sketch/renderer.js
+- [x] docs/types/image/sketch/settings.default.json
+- [x] docs/types/image/svg/detect.js
+- [x] docs/types/image/svg/index.js
+- [x] docs/types/image/svg/renderer.js
+- [x] docs/types/image/svg/settings.default.json
+- [x] docs/types/image/tiff/decode-tiff.js
+- [x] docs/types/image/tiff/detect.js
+- [x] docs/types/image/tiff/index.js
+- [x] docs/types/image/tiff/metadata.js
+- [x] docs/types/image/tiff/renderer.js
+- [x] docs/types/image/tiff/settings.default.json
+- [x] docs/types/image/view-controller.js
 - [x] docs/types/ipynb/cell-code.html
 - [x] docs/types/ipynb/cell-md.html
 - [x] docs/types/ipynb/cell-raw.html
