@@ -81,3 +81,21 @@ Fixed 25×13 arena architecture + rAF `textContent` repaint (cheap, deterministi
 the flash system + reduced-motion; archetype variety; clarity economy; the
 online-random/offline-fixed un-cheat and its HUD seed field (make the unstable state
 even louder — it's the lesson); no-modal layout.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+Near budget: 4 HUD values, one currency (clarity), 3 aids. The overload here is
+*conceptual pacing*, not counters:
+
+- (M1, S) **Aids appear when they help.** The aid shop renders from level 1, before
+  clarity income exists; gate it to first-clarity-earned with an arrival line
+  ("clarity can be spent — calibration available"). Single-Frame (offline-only) stays
+  hidden until Offline Mode has been activated once (R4).
+- (M2, S) **One-new-thing-per-level check.** 9 archetypes over 16 levels sometimes
+  stack a new archetype AND a speed/tolerance jump; audit the level table so each
+  level changes ONE dimension, and every archetype's first level runs at its gentlest
+  parameters (movements.js data-only tuning).
+- (M3, S) Seed field plain-languages itself: `stable` → nothing shown (suppress when
+  normal, R4); unstable levels show the orange `live-random — unlearnable online`
+  chip only. The un-cheat lesson gets louder by contrast.
+- No mergers needed; no cuts proposed.

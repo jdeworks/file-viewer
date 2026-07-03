@@ -86,3 +86,18 @@ serif, spacious; the fixes add staging, not noise); the echo→real-viewer-featu
 and token system (untouched); the counts header; per-memory accent colors (extend them
 into the grid); the three-phase confront structure and stance system; route epilogue
 writing.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+Within budget (4 counts, no currencies) and the loop is intentionally contemplative.
+Two pacing notes rather than overload findings:
+
+- (M1, S) The four counts (Read/Resolved/Integrated/Echoes ×/9) present four parallel
+  checklists up front. Collapse to ONE progress notion in the header ("memories
+  restored 3/9") — the per-memory states live on the grid cards (UI pass #1) where
+  they're actionable; the counts table becomes hover/expand detail (R3, informational).
+- (M2, S) Per-memory flow is read → witness echo → resolve → integrate: four clicks
+  of ceremony per memory ×9. Keep the beats but auto-advance the trivial one:
+  READ marks itself on card open (you are reading it); the deliberate verbs stay
+  (echo, resolve stance, integrate). 36 clicks → 27, zero decision loss.
+- No mechanics changes beyond these; the finale's fixes are staging (first pass).

@@ -90,3 +90,30 @@ the screen-swap + delegation architecture (the redesign is views/CSS only); inte
 telegraph + 2-turn preview (better than base StS — surface it more, drop none);
 energy pips; parchment/navy identity (the *layout* is the problem, not the theme);
 boss banner + PROTOCOL MISMATCH gate; map column structure and footer stats.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+In-run complexity is genre-appropriate (StS carries the same). The overload is the
+HUB: a 0-runs player sees 5 meta tiles, daily/custom/seeded-run controls, a greyed
+prestige button with its cost formula, and a 16-cell ascension track
+(`s6-hub-full`) — 10+ meta concepts before the first card.
+
+- (M1, S) **Hub progressive disclosure** (R1/R4, the StS unlock convention):
+  - 0 runs: title + flavor + `begin a run` + `open the codex`. Nothing else.
+  - after first death: Runs/Best tiles + banked handshakes appear (now meaningful).
+  - after first WIN: ascension track appears (banner: "difficulty 1 unlocked") +
+    daily/custom seeds.
+  - when bank ≥ prestige cost ×0.75: the `reinforce protocol` block appears.
+  Pure hub-view gating; state/engine untouched, saves unaffected.
+- (M2, S) **In-run info diet:** relics/keys currently live only as map-footer counts —
+  give them a hover/tap strip on the map screen instead of adding more combat chrome;
+  congestion window chip only renders from act 3 (it already gates ≥3 — also hide the
+  label until first triggered, R4).
+- (M3, S) **Key challenges get one-line telegraphs** at the moment they're live
+  ("skip this reward to stay Ascetic — ⚷") — the true-ending system is invisible today
+  (EVAL flagged; it's a fun leak, not just UX).
+- OPTION (user call): first-run act count. Six acts before the first boss kill is a
+  long first exposure (~60-90m); StS ships 3. Option: first victory unlocks acts 5-6
+  (run ends at act 4's Refused Connection until then — which IS the story boss).
+  Engine supports FINAL_BOSS_ACT; this is a settings-level change but touches pacing
+  balance — user decides.

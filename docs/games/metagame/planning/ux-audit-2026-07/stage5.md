@@ -74,3 +74,31 @@ The 9-round structure + archetype labels on rounds; beat-pulse (extend, don't re
 HUD chip set; steering key mapping + `loop.handleKey` seam (the pad reuses it — correct
 design); calibration progress string; ascension ladder UI pattern; the un-cheat and
 suppression double-gate untouched.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+This is the "menus to get half a game" exemplar: first contact is 9 round buttons,
+**seven** upgrade tracks (Engine/Chassis/Cooling/Nav/Traction/Signal Amp/Noise Filter),
+a 14-glyph legend, the boss panel, and an empty 780px track box (`s5-select-full`) —
+for a game whose play surface is 3 lanes.
+
+- (M1, M) **7 upgrade tracks → 3 stats.** Merge into ENGINE (speed/overclock:
+  engine+cooling), HULL (integrity/collisions: chassis+traction), SIGNAL
+  (packets/calibration/rivals: nav+amp+filter). Map existing levels onto the 3 lines
+  (sum of purchased levels, prices rebased) so saves migrate. Three visible stats a
+  racer understands at a glance; same total depth (R3).
+- (M2, M) **Kill the shop menu — pit-stop offers.** After each round: "PIT STOP — pick
+  1 of 2" (two of the 3 tracks offered, price shown, skippable). The upgrade decision
+  arrives in flow; the side column stops hosting a store (R2). Packets stay the only
+  currency.
+- (M3, S) **First contact = round 1.** Fresh entry shows the track (attract-mode: the
+  road idling with drifting static — kills the empty void), ONE button (`START ROUND 1
+  — AVOID`), and integrity/packets. The full round list appears after round 1; per-round
+  packet estimates after first clear; legend goes behind ❓ and gets taught by first-
+  pickup toasts (R5). JAMMER panel → locked chip until round 6 cleared (R6).
+- (M4, S) **Powerup diet on early rounds:** rounds 1–2 spawn only boost gates +
+  repair (2 glyph types); the other pickups phase in with their archetypes (display +
+  spawn-table gating; deterministic seeds unaffected per-round).
+- OPTION (user call): drop the Noise Filter/Signal Amp *effects* into one "SIGNAL"
+  effect curve rather than keeping 3 hidden sub-effects under the merged stat —
+  simpler to explain, slightly changes tuning; decide at implementation.

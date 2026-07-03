@@ -70,3 +70,28 @@ paginated one item per page. Verb bar (Fill A/B, Mark, Lock) exists and works on
 The verb bar (good fix, right pattern); the STABILITY meter; volatile pulse + lock ring
 visuals; clue strike-through; the light "paper memory" theme (it's the intended outlier
 and reads well); the objective one-liner; the diff un-cheat flow untouched.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+Current cognitive load: registers + retained fragments + Engram Bank + shop (6 tracks)
++ boon drafts (solves 0/5/10) + STABILITY/pressure + corruption tiers + boss keys —
+seven systems around a nonogram, most visible from snapshot 1.
+
+- (M1, S) **Two acquisition surfaces → one.** Fold the defrag shop INTO the boon-draft
+  moment: at each draft, offer 1-of-3 where purchasable shop upgrades appear as picks
+  (pay registers) alongside free boons. The shop button disappears; the same economy
+  runs through one in-flow choice (R2). Engram Bank becomes one card in that pool
+  (R3) — its separate panel dies.
+- (M2, S) **Retained fragments stop being a "currency".** Display them only as boss
+  progress ("fragments 3 — the leak feeds on them"), not a spendable-looking counter
+  next to registers. One currency on the HUD: registers.
+- (M3, S) **First contact = the puzzle.** Snapshot 1 shows: grid, verb bar, objective,
+  registers. No shop/draft buttons (first draft announces itself at solve 1 with a
+  banner), no boss panel (chip arrives at corruption 2 with the tier message — the
+  s3tiers arrival lines already exist, reuse them), help behind ❓ (UI pass #5).
+- (M4, S) **Tier arrivals get a learning window** (formalize what partially exists):
+  the first snapshot after each tier unlock is a small board featuring ONLY the new
+  mechanic, introduced by its one-liner. No other change to tier thresholds.
+- OPTION (user call): cap simultaneous ACTIVE tier mechanics at 2 per snapshot late-game
+  (volatile+decay+two-colour+aliased can all stack today) — trades peak chaos for
+  legibility; engine-side flag, easy to try.

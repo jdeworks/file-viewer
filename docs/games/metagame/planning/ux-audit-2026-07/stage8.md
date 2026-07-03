@@ -84,3 +84,34 @@ The engine and all mechanics; storm telegraph banner (right instinct — make it
 entropy-driven glitch CSS with reduced-motion guard (best ambient touch in the
 metagame); `<pre>` file-tree/burn readouts (thematic, well-capped); the tap-first
 archive path; monospace terminal identity.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+Worst offender on the census. Cycle 1 shows 13 stats (NINE of them zero:
+storms/States/entropy/stress/heat/stabilizers/scrap/insight/salvage), tech + structures
+accordions with nothing to spend, the five-✗ Heat Death lock, and a `challenge Heat
+Death` button (`s8-initial-full`). Six currencies/meters + two build systems + storms +
+prestige are presented simultaneously to someone who has pressed nothing.
+
+- (M1, M) **Act-gated disclosure** (R4/R5 — display gating, engine untouched):
+  - Cycle 1: nodes + repair + entropy + `advance cycle`. Full stop.
+  - States appear with first income; debris/archive panel with first failure;
+    heat with the first thermal tick; scrap+insight with first salvage income, which
+    also unlocks the TECH panel (banner: "insight can be spent — tech tree online");
+    structures with their tech prerequisite; storm HUD at the first telegraph;
+    prestige after the first boss attempt. Each with a one-line arrival banner.
+  - Heat Death panel = locked chip naming ONLY the next unmet gate ("survive Cascade
+    Storm α first") — the 5-item checklist (UI pass #3) renders once ≥3 gates are met.
+- (M2, S) **Counter mergers** (R3): `salvage 0/72` leaves the HUD — it's boss
+  progress, shown as a progress bar on the archive panel. `stabilizers` leaves the
+  HUD — freezing is a node action; show remaining charges on the freeze button
+  itself. `stress` never appears as a number — it's edge/tile highlights on the map
+  (UI pass #2). HUD lands at ≤6 live numbers late-game, 3 early.
+- (M3, S) **Relabel + stage `simulate external import`.** Verified designed (grants
+  bonus cycles + fires `external_debris_imported`, renderer.js:136-137/boss.js:89) —
+  but the label reads as a debug verb sitting beside `advance cycle` from minute zero.
+  Rename in-fiction ("import external debris (+3 cycles)") and reveal it only once
+  debris/archiving exists (same disclosure event as the archive panel, M1).
+- OPTION (user call): merge scrap+insight into one salvage resource (tech costs
+  become single-currency). Cuts a currency and a mental exchange rate; loses the
+  build-vs-research tension. Defensible either way — flag for playtest.

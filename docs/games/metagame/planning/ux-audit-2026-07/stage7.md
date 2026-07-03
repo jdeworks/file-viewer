@@ -82,3 +82,19 @@ the right verb on both inputs; the strings are feedback, not the input method); 
 file-open/search gating (load-bearing un-cheats — untouched); hint ladder economics;
 serif dossier typography (it becomes characterful once the surfaces differ); the
 timeline's monospace look.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+The lightest stage on the census (one currency, no meta layers) — within budget.
+Remaining overload is *informational*, not systemic:
+
+- (M1, S) **Board information diet.** Claims grouped per entity (UI pass #5) plus:
+  facts column shows only facts RELEVANT to un-eliminated entities (established/
+  eliminated evidence collapses into a "case file" accordion). The board shrinks as
+  you solve — progress you can feel, less to scan (R4).
+- (M2, S) **Ambient facts arrive as used.** SS1's full ambient-facts list fronts the
+  screen; instead, reveal each fact the first time its topic is touched (flag a field
+  → its related ambient line slides in). Same content, paced (R5).
+- (M3, S) Addresses: show the wrong-accusation cost ON the Accuse button
+  ("Accuse K — costs 10 if wrong") at the moment it matters, not in help text.
+- No mechanics cuts proposed — the triad/rule-of-three economy is the right size.

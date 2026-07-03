@@ -4,19 +4,26 @@ Author: Fable (this audit was done by hand: code read + live screenshot playtest
 stage at 1280×800 and 390×844, driven through the real hub via `tools/shots.mjs`).
 Stages 1–2 are explicitly out of scope (user-tested, good for now).
 
-**Scope of the verdicts:** mechanics, un-cheats, and stage designs are LOCKED and good.
-What fails is presentation: layout, hierarchy, feedback, game-feel. Every stage after 2
-currently reads as a *document about a game* rather than a game. The fixes proposed here
-change DOM/CSS/view code, not rules. Nothing here weakens an un-cheat or a boss gate.
+**Scope of the verdicts:** un-cheats, boss gates, themes and genre picks are LOCKED.
+Two passes live in this folder:
+1. **Presentation pass** — layout, hierarchy, feedback, game-feel (views/CSS/input only).
+   Every stage after 2 currently reads as a *document about a game* rather than a game.
+2. **Fun/complexity pass** (user extension, 2026-07-03) — cognitive overload: mechanics
+   changes ARE in scope where they reduce load — progressive disclosure, in-flow offers
+   instead of shops, counter mergers, "open on play, not meta". See
+   `01-fun-complexity.md` for the framework/budgets and each stage file's
+   "Second pass" section for its items (deeper cuts are marked OPTION for user sign-off).
 
 ## Files
 
 - `00-shared-shell.md` — the systemic findings (fix FIRST; every stage inherits them):
   the missing height contract (all stages scroll), the shrink-wrap host bug, panel width,
   phone chrome diet, feedback baseline, modal standard.
+- `01-fun-complexity.md` — the overload framework: first-contact/quantity/menu-depth/
+  currency budgets, the per-stage census, cross-cutting rules R1–R6.
 - `stage3.md` … `stage10.md` — per stage: what exists (evidence), why it fails
-  (UX / UI / fun, argued against the stage's genre reference), prioritized changes, and
-  what to keep.
+  (UX / UI / fun, argued against the stage's genre reference), prioritized changes,
+  what to keep, and the second-pass fun/mechanics items (M1, M2, …).
 - `90-priorities.md` — the cross-stage ranked backlog with effort estimates.
 - `tools/shots.mjs` — the screenshot playtest driver (re-run after each fix round;
   screenshots + a scroll-metrics JSON land in a temp dir, never in the repo).

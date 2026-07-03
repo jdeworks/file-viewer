@@ -74,3 +74,27 @@ Map-select campaign screen (clean, readable, good lock states); the Range-based 
 mapping fix; speed controls + call-early (right verbs, wrong shelf); armory rows;
 the dark terminal aesthetic (right for the fiction — it needs *contrast*, not a
 restyle); blueprint un-cheat flow untouched.
+
+## Second pass — fun & mechanics (overload) [01-fun-complexity.md]
+
+Current load: 14 towers + tier-3 forks + per-tower targeting modes + 5 damage types +
+resistances + 6 status effects + abilities + cycles + Glory/armory + 5-map campaign.
+The progressive tower unlock (5/8/11/14) already exists — the *information* systems
+don't follow it.
+
+- (M1, S) **Map 1 is vanilla TD.** On map 1: damage types/resistances/status effects
+  exist in the engine but the UI shows plain numbers only (no type tags, no resist
+  lines); targeting is AUTO with no toggle shown. Type/resist/status UI + targeting
+  toggles arrive with map 2 via an arrival banner ("enemies now shield against pulse —
+  check tower types"), forks with map 3's first tier-3. Engine untouched; display
+  gating only (R4/R5).
+- (M2, S) **Armory appears after map 1 clear.** First entry lands on map-select with
+  map 1 preselected and one START button (R1); Glory + armory unlock as the map-1
+  victory reward moment ("Glory earned — the armory opens").
+- (M3, S) **One decision per interruption.** Wave-end currently just flows; put the
+  call-early bonus + wave preview into one compact between-wave strip (single glance,
+  single optional click) instead of asking the player to monitor controls below the
+  board mid-wave (pairs with UI pass #1/#6).
+- OPTION (user call): reduce targeting modes to 3 presets (first/strong/cycle) from
+  the current per-tower cycle list, if playtest shows the mode cycling is bookkeeping
+  rather than decisions. Cheap to revert.
