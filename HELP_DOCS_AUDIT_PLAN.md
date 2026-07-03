@@ -760,32 +760,32 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/image/edit-tabs.js
 - [x] docs/types/image/edit-text.js
 - [x] docs/types/image/edit-tools.html
-- [ ] docs/types/image/edit-undo-key.js
-- [ ] docs/types/image/editor-core.js
-- [ ] docs/types/image/editor-guide.md
-- [ ] docs/types/image/EDITOR.md
-- [ ] docs/types/image/exif.js
-- [ ] docs/types/image/exports.js
-- [ ] docs/types/image/fill.js
-- [ ] docs/types/image/geometry-affine.js
-- [ ] docs/types/image/gif-anim.js
-- [ ] docs/types/image/gif-decode.js
-- [ ] docs/types/image/heif/detect.js
-- [ ] docs/types/image/heif/index.js
-- [ ] docs/types/image/heif/metadata.js
-- [ ] docs/types/image/heif/renderer.js
-- [ ] docs/types/image/heif/settings.default.json
-- [ ] docs/types/image/help-tab.js
-- [ ] docs/types/image/ico/detect.js
-- [ ] docs/types/image/ico/index.js
-- [ ] docs/types/image/ico/metadata.js
-- [ ] docs/types/image/ico/renderer.js
-- [ ] docs/types/image/ico/settings.default.json
-- [ ] docs/types/image/imglib.js
-- [ ] docs/types/image/index.js
-- [ ] docs/types/image/jxl-decode.js
-- [ ] docs/types/image/levels.js
-- [ ] docs/types/image/metadata.js
+- [x] docs/types/image/edit-undo-key.js
+- [x] docs/types/image/editor-core.js
+- [x] docs/types/image/editor-guide.md
+- [x] docs/types/image/EDITOR.md
+- [x] docs/types/image/exif.js
+- [x] docs/types/image/exports.js
+- [x] docs/types/image/fill.js
+- [x] docs/types/image/geometry-affine.js
+- [x] docs/types/image/gif-anim.js
+- [x] docs/types/image/gif-decode.js
+- [x] docs/types/image/heif/detect.js
+- [x] docs/types/image/heif/index.js
+- [x] docs/types/image/heif/metadata.js
+- [x] docs/types/image/heif/renderer.js
+- [x] docs/types/image/heif/settings.default.json
+- [x] docs/types/image/help-tab.js
+- [x] docs/types/image/ico/detect.js
+- [x] docs/types/image/ico/index.js
+- [x] docs/types/image/ico/metadata.js
+- [x] docs/types/image/ico/renderer.js
+- [x] docs/types/image/ico/settings.default.json
+- [x] docs/types/image/imglib.js
+- [x] docs/types/image/index.js
+- [x] docs/types/image/jxl-decode.js
+- [x] docs/types/image/levels.js
+- [x] docs/types/image/metadata.js
 - [ ] docs/types/image/ocr-ui.js
 - [ ] docs/types/image/pixel-clipboard.js
 - [ ] docs/types/image/procreate/detect.js

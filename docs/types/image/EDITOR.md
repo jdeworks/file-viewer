@@ -10,6 +10,8 @@ Covers: PNG, JPG, WebP, BMP, AVIF, GIF, TIFF, HEIF/HEIC, ICO/CUR, SVG, Procreate
 
 Opens in plain **view mode**; the editing toolbar is hidden until you press **Edit**. ASCII / Edit / Adv are compact same-row mode buttons anchored left by the zoom controls (`doc.html` `.imgv-mode-col`). The toolbar is grouped into **tabs** (`edit-tabs.js`): Common / Draw / Text / Adjust / Size / Background — each tool's button is in Common AND (linked via `data-link` proxy) its own tab, which holds the fine-tuning.
 
+**Animated GIF playback** (`gif-anim.js` + `gif-decode.js`): a multi-frame GIF opens into a real player instead of the static raster path — play/pause, frame scrubber, loop toggle, "N/total" counter, each frame timed off its own GIF delay. Decodes via the vendored **gifuct-js** bundle (lazy — loads only for an actual multi-frame GIF), compositing each frame's disposal method (restore/clear/leave) into a full RGBA buffer per frame. **✂ Split frames** expands the GIF's own sidebar entry into a folder of individually-openable `frame-NNN.png` entries; **⬇ Download all** zips every frame (lazy JSZip); **Extract text (OCR)** runs the shared OCR engine over every frame into a timestamped `.srt`/`.vtt`/`.txt`/`.json` transcript. Single-frame GIFs fall through to the normal editable-raster path (first/only frame is editable like any other raster).
+
 **Editing tools shipped (the full `EDITABLE_MIME` set):**
 - Pencil / eraser free-draw (colour + size); overlay canvas committed on stroke end
 - **Fill bucket** (`fill.js`): seed / connected-shade / **Sobel edge-stop region** modes, Euclidean or **perceptual (redmean)** distance, tolerance (default 12), **feathered** edges
@@ -59,7 +61,7 @@ Opens in plain **view mode**; the editing toolbar is hidden until you press **Ed
 
 - **Sketch artboard thumbnail extraction** — Parse individual `pages/*.json` layer trees; for symbol masters / artboard layers that contain `_images/` entries, extract and display as a scrollable artboard strip. Incremental — only load visible artboards. — M
 
-- **GIF frame strip** — Parse GIF frame count and delay table with a small pure-JS GIF header parser (~1 KB, no lib needed — the spec is compact). Show frame thumbnails and a frame count badge. No play/seek yet (that is an editing feature). — M
+- ✅ **SHIPPED — GIF frame strip, and then some** (`gif-anim.js`/`gif-decode.js`): went well past the original scope (frame thumbnails + count badge, no play/seek) — full playback (play/pause, scrubber, loop), Split-into-sidebar-folder, Download-all-as-ZIP, and per-frame OCR. See "Current state" above.
 
 - **SVG element tree panel** — Parse the SVG DOM and show a collapsible element tree (tag, id, class) alongside the Monaco editor. Clicking an element selects it in Monaco using `editor.setSelection()`. Read-only tree, no attribute editing yet. — M
 
