@@ -69,6 +69,14 @@
 .s5-mode-playing .s5-track-col { justify-content: center; }
 .s5-mode-playing .s5-track-grid { font-size: clamp(19px, 3vw, 26px); letter-spacing: 2px; padding: 14px 20px; }
 
+/* Desktop (≥1000px stage): the road becomes a real full-height strip — bigger glyphs fill the vertical
+   budget and wider letter-spacing fills the stage's dead side-margins. Height-capped (font + slim
+   vertical padding) so the whole 10-line road stays visible without the panel scrolling. Below 1000px
+   the clamp above (and the phone override) still governs, so phone sizing is untouched. */
+@media (min-width: 1000px) {
+  .s5-mode-playing .s5-track-grid { font-size: 30px; letter-spacing: 4px; padding: 10px 26px; }
+}
+
 /* ── RESULT / PIT-STOP OVERLAY ──────────────────────────────────────────────────────────────────── */
 .s5-overlay { display: none; }
 .s5-has-overlay .s5-overlay {

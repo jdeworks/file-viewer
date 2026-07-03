@@ -98,6 +98,25 @@
   padding: 10px;
 }
 
+/* Desktop board-dominant layout (#1): the wide grid column has ~480px of horizontal slack around the
+   centred board, but the verb bar + toolbar stacked BELOW it steal the board's vertical budget (which
+   is what caps the cell scaler). Lay the column out as a grid instead: the board host takes the whole
+   top row, and the verb bar + toolbar share ONE bottom row side by side — reclaiming their stacked
+   height so s3fit.js reaches its 44px max on a 7×7. Phone keeps them stacked (max-width:760 block). */
+@media (min-width: 761px) {
+  .s3-grid-col {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .s3-grid-col > .s3-grid-host { grid-column: 1 / -1; grid-row: 1; align-self: stretch; padding: 6px; }
+  .s3-grid-col > .s3-verbs { grid-column: 1; grid-row: 2; align-self: center; }
+  .s3-grid-col > .s3-toolbar { grid-column: 2; grid-row: 2; align-self: center; justify-content: flex-start; }
+  /* Reclaim a little more vertical for the board (desktop only — phone budget is untouched). */
+  .stage3-memory-grid { gap: 6px; }
+  .s3-log { max-height: 3em; }
+}
+
 .s3-side {
   display: flex;
   flex: 0 0 240px;
