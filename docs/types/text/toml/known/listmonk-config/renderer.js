@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -27,7 +29,13 @@ function row(label, html) {
 }
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  // intake.parsed is never populated at detection/render time, so parse the TOML ourselves.
+  let cfg;
+  if (intake.parsed && typeof intake.parsed === 'object') {
+    cfg = intake.parsed;
+  } else {
+    try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
+  }
   const app = cfg.app || {};
   const db = cfg.db || {};
   const smtpList = Array.isArray(cfg.smtp) ? cfg.smtp : (cfg.smtp ? [cfg.smtp] : []);

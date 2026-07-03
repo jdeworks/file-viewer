@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 const CSS = `
@@ -53,7 +55,15 @@ function firstEntry(section, name) {
 }
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  // intake.parsed is never populated at detection/render time. Telegraf's config format
+  // (both .toml and the more common .conf extension) is TOML syntax, so self-parse with
+  // the shared TOML parser regardless of which base type matched.
+  let cfg;
+  if (intake.parsed && typeof intake.parsed === 'object') {
+    cfg = intake.parsed;
+  } else {
+    try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
+  }
 
   // [agent] section
   const agent = cfg.agent || {};

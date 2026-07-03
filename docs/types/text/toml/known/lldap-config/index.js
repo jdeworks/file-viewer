@@ -1,7 +1,8 @@
 export default {
   id: 'lldap-config',
   label: 'LLDAP Config',
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'toml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'lldap_config.toml';
   },

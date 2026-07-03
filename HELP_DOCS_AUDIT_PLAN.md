@@ -2674,52 +2674,52 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/toml/known/julia-manifest/renderer.js
 - [ ] docs/types/text/toml/known/julia-project/index.js
 - [ ] docs/types/text/toml/known/julia-project/renderer.js
-- [ ] docs/types/text/toml/known/listmonk-config/index.js
-- [ ] docs/types/text/toml/known/listmonk-config/renderer.js
-- [ ] docs/types/text/toml/known/lldap-config/index.js
-- [ ] docs/types/text/toml/known/lldap-config/renderer.js
-- [ ] docs/types/text/toml/known/mise/index.js
-- [ ] docs/types/text/toml/known/mise/renderer.js
-- [ ] docs/types/text/toml/known/netlify/index.js
-- [ ] docs/types/text/toml/known/netlify/renderer.js
-- [ ] docs/types/text/toml/known/osv-scanner/index.js
-- [ ] docs/types/text/toml/known/osv-scanner/renderer.js
-- [ ] docs/types/text/toml/known/pixi-config/index.js
-- [ ] docs/types/text/toml/known/pixi-config/renderer.js
-- [ ] docs/types/text/toml/known/poetry-lock/index.js
-- [ ] docs/types/text/toml/known/poetry-lock/renderer.js
-- [ ] docs/types/text/toml/known/proto-config/index.js
-- [ ] docs/types/text/toml/known/proto-config/renderer.js
-- [ ] docs/types/text/toml/known/pyproject/index.js
-- [ ] docs/types/text/toml/known/pyproject/renderer.js
-- [ ] docs/types/text/toml/known/registries-conf/index.js
-- [ ] docs/types/text/toml/known/registries-conf/renderer.js
-- [ ] docs/types/text/toml/known/ruff-toml/index.js
-- [ ] docs/types/text/toml/known/ruff-toml/renderer.js
-- [ ] docs/types/text/toml/known/ruff/index.js
-- [ ] docs/types/text/toml/known/ruff/renderer.js
-- [ ] docs/types/text/toml/known/rust-toolchain/index.js
-- [ ] docs/types/text/toml/known/rust-toolchain/renderer.js
-- [ ] docs/types/text/toml/known/rustfmt-toml/index.js
-- [ ] docs/types/text/toml/known/rustfmt-toml/renderer.js
-- [ ] docs/types/text/toml/known/shopify-app/index.js
-- [ ] docs/types/text/toml/known/shopify-app/renderer.js
-- [ ] docs/types/text/toml/known/starship-config/index.js
-- [ ] docs/types/text/toml/known/starship-config/renderer.js
-- [ ] docs/types/text/toml/known/storage-conf/index.js
-- [ ] docs/types/text/toml/known/storage-conf/renderer.js
-- [ ] docs/types/text/toml/known/supabase-config/index.js
-- [ ] docs/types/text/toml/known/supabase-config/renderer.js
-- [ ] docs/types/text/toml/known/telegraf/index.js
-- [ ] docs/types/text/toml/known/telegraf/renderer.js
-- [ ] docs/types/text/toml/known/typos/index.js
-- [ ] docs/types/text/toml/known/typos/renderer.js
-- [ ] docs/types/text/toml/known/uv/index.js
-- [ ] docs/types/text/toml/known/uv/renderer.js
-- [ ] docs/types/text/toml/known/vector-toml/index.js
-- [ ] docs/types/text/toml/known/vector-toml/renderer.js
-- [ ] docs/types/text/toml/known/wrangler/index.js
-- [ ] docs/types/text/toml/known/wrangler/renderer.js
+- [x] docs/types/text/toml/known/listmonk-config/index.js
+- [x] docs/types/text/toml/known/listmonk-config/renderer.js
+- [x] docs/types/text/toml/known/lldap-config/index.js
+- [x] docs/types/text/toml/known/lldap-config/renderer.js
+- [x] docs/types/text/toml/known/mise/index.js
+- [x] docs/types/text/toml/known/mise/renderer.js
+- [x] docs/types/text/toml/known/netlify/index.js
+- [x] docs/types/text/toml/known/netlify/renderer.js
+- [x] docs/types/text/toml/known/osv-scanner/index.js
+- [x] docs/types/text/toml/known/osv-scanner/renderer.js
+- [x] docs/types/text/toml/known/pixi-config/index.js
+- [x] docs/types/text/toml/known/pixi-config/renderer.js
+- [x] docs/types/text/toml/known/poetry-lock/index.js
+- [x] docs/types/text/toml/known/poetry-lock/renderer.js
+- [x] docs/types/text/toml/known/proto-config/index.js
+- [x] docs/types/text/toml/known/proto-config/renderer.js
+- [x] docs/types/text/toml/known/pyproject/index.js
+- [x] docs/types/text/toml/known/pyproject/renderer.js
+- [x] docs/types/text/toml/known/registries-conf/index.js
+- [x] docs/types/text/toml/known/registries-conf/renderer.js
+- [x] docs/types/text/toml/known/ruff-toml/index.js
+- [x] docs/types/text/toml/known/ruff-toml/renderer.js
+- [x] docs/types/text/toml/known/ruff/index.js
+- [x] docs/types/text/toml/known/ruff/renderer.js
+- [x] docs/types/text/toml/known/rust-toolchain/index.js
+- [x] docs/types/text/toml/known/rust-toolchain/renderer.js
+- [x] docs/types/text/toml/known/rustfmt-toml/index.js
+- [x] docs/types/text/toml/known/rustfmt-toml/renderer.js
+- [x] docs/types/text/toml/known/shopify-app/index.js
+- [x] docs/types/text/toml/known/shopify-app/renderer.js
+- [x] docs/types/text/toml/known/starship-config/index.js
+- [x] docs/types/text/toml/known/starship-config/renderer.js
+- [x] docs/types/text/toml/known/storage-conf/index.js
+- [x] docs/types/text/toml/known/storage-conf/renderer.js
+- [x] docs/types/text/toml/known/supabase-config/index.js
+- [x] docs/types/text/toml/known/supabase-config/renderer.js
+- [x] docs/types/text/toml/known/telegraf/index.js
+- [x] docs/types/text/toml/known/telegraf/renderer.js
+- [x] docs/types/text/toml/known/typos/index.js
+- [x] docs/types/text/toml/known/typos/renderer.js
+- [x] docs/types/text/toml/known/uv/index.js
+- [x] docs/types/text/toml/known/uv/renderer.js
+- [x] docs/types/text/toml/known/vector-toml/index.js
+- [x] docs/types/text/toml/known/vector-toml/renderer.js
+- [x] docs/types/text/toml/known/wrangler/index.js
+- [x] docs/types/text/toml/known/wrangler/renderer.js
 - [ ] docs/types/text/toml/metadata.js
 - [ ] docs/types/text/toml/renderer.js
 - [ ] docs/types/text/toml/settings.default.json
@@ -3892,29 +3892,29 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/toml/known/influxdb
 - [ ] docs/types/text/toml/known/julia-manifest
 - [ ] docs/types/text/toml/known/julia-project
-- [ ] docs/types/text/toml/known/listmonk-config
-- [ ] docs/types/text/toml/known/lldap-config
-- [ ] docs/types/text/toml/known/mise
-- [ ] docs/types/text/toml/known/netlify
-- [ ] docs/types/text/toml/known/osv-scanner
-- [ ] docs/types/text/toml/known/pixi-config
-- [ ] docs/types/text/toml/known/poetry-lock
-- [ ] docs/types/text/toml/known/proto-config
-- [ ] docs/types/text/toml/known/pyproject
-- [ ] docs/types/text/toml/known/registries-conf
-- [ ] docs/types/text/toml/known/ruff
-- [ ] docs/types/text/toml/known/ruff-toml
-- [ ] docs/types/text/toml/known/rust-toolchain
-- [ ] docs/types/text/toml/known/rustfmt-toml
-- [ ] docs/types/text/toml/known/shopify-app
-- [ ] docs/types/text/toml/known/starship-config
-- [ ] docs/types/text/toml/known/storage-conf
-- [ ] docs/types/text/toml/known/supabase-config
-- [ ] docs/types/text/toml/known/telegraf
-- [ ] docs/types/text/toml/known/typos
-- [ ] docs/types/text/toml/known/uv
-- [ ] docs/types/text/toml/known/vector-toml
-- [ ] docs/types/text/toml/known/wrangler
+- [x] docs/types/text/toml/known/listmonk-config
+- [x] docs/types/text/toml/known/lldap-config
+- [x] docs/types/text/toml/known/mise
+- [x] docs/types/text/toml/known/netlify
+- [x] docs/types/text/toml/known/osv-scanner
+- [x] docs/types/text/toml/known/pixi-config
+- [x] docs/types/text/toml/known/poetry-lock
+- [x] docs/types/text/toml/known/proto-config
+- [x] docs/types/text/toml/known/pyproject
+- [x] docs/types/text/toml/known/registries-conf
+- [x] docs/types/text/toml/known/ruff
+- [x] docs/types/text/toml/known/ruff-toml
+- [x] docs/types/text/toml/known/rust-toolchain
+- [x] docs/types/text/toml/known/rustfmt-toml
+- [x] docs/types/text/toml/known/shopify-app
+- [x] docs/types/text/toml/known/starship-config
+- [x] docs/types/text/toml/known/storage-conf
+- [x] docs/types/text/toml/known/supabase-config
+- [x] docs/types/text/toml/known/telegraf
+- [x] docs/types/text/toml/known/typos
+- [x] docs/types/text/toml/known/uv
+- [x] docs/types/text/toml/known/vector-toml
+- [x] docs/types/text/toml/known/wrangler
 - [ ] docs/types/text/xml/known/android-manifest
 - [ ] docs/types/text/xml/known/android-strings
 - [ ] docs/types/text/xml/known/ant-build
