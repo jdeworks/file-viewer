@@ -3208,11 +3208,12 @@ function toCsvText(rows, sep) {
   ).join("\n");
 }
 var TableEditor = class {
-  constructor(container, text, sep, onChange) {
+  constructor(container, text, sep, onChange, hasHeader = true) {
     this._sep = sep || ",";
     this._onChange = onChange;
     this._rows = parseCsvText(text, this._sep);
     this._container = container;
+    this._hasHeader = hasHeader !== false;
     this._render();
   }
   _maxCols() {
@@ -3251,9 +3252,10 @@ var TableEditor = class {
     const maxCols = this._maxCols();
     this._rows.forEach((row, ri) => {
       const tr = document.createElement("tr");
+      const isHeaderRow = this._hasHeader && ri === 0;
       const idx = document.createElement("td");
       idx.className = "te-idx";
-      idx.textContent = ri === 0 ? "#" : String(ri);
+      idx.textContent = isHeaderRow ? "#" : String(this._hasHeader ? ri : ri + 1);
       idx.title = "Right-click to delete this row";
       idx.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -3264,7 +3266,7 @@ var TableEditor = class {
       tr.append(idx);
       for (let ci = 0; ci < maxCols; ci++) {
         const td = document.createElement("td");
-        td.className = ri === 0 ? "te-cell te-header" : "te-cell";
+        td.className = isHeaderRow ? "te-cell te-header" : "te-cell";
         td.contentEditable = "true";
         td.textContent = row[ci] ?? "";
         td.dataset.ri = ri;
@@ -3482,7 +3484,7 @@ function getTableEditorValue() {
 import { state as state7 } from "./state.js";
 
 // ../../docs/types/text/env/form-editor.js
-var SENSITIVE_RE = /SECRET|PASSWORD|TOKEN|KEY|API|PRIVATE/i;
+var SENSITIVE_RE = /SECRET|PASSWORD|PASSWD|PWD|TOKEN|KEY|API|PRIVATE|AUTH|CREDENTIAL|SALT|SIGNING|MASTER|WEBHOOK/i;
 var URL_CREDS = /:\/\/[^\s/:@]+:[^\s/@]+@/;
 function hasUrlCreds(v) {
   return URL_CREDS.test(v || "");
