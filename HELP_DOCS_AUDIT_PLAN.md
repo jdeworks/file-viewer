@@ -4925,391 +4925,392 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] sample.epub | Sample.epub | Documents, Ebook
 - [ ] sample.erl | sample.erl | Functional, Programming
 - [ ] sample.ex | sample.ex (Elixir) | Code
-- [ ] sample.exr | OpenEXR HDR image (demo) | Image, binary
-- [ ] sample.f3d | Fusion 360 design (demo) | Design, 3D, binary
-- [ ] sample.f90 | sample.f90 | Science, Systems
-- [ ] sample.factor | sample.factor (Factor) | Code
-- [ ] sample.fasta | Sample gene sequences (FASTA) | Data
-- [ ] sample.fb2 | Sample.fb2 | Documents, Ebook
-- [ ] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
-- [ ] sample.fbx | FBX 3D animation (demo) | 3D, binary, Design
-- [ ] sample.fish | sample.fish (Fish) | Code
-- [ ] sample.fits | Helix Nebula (FITS) | Data
-- [ ] sample.flac | Sample.flac | Media
-- [ ] sample.fnl | sample.fnl (Fennel) | Code
-- [ ] sample.fs | sample.fs | Functional, JVM
-- [ ] sample.fth | sample.fth (Forth) | Code
-- [ ] sample.gba | Sample.gba | Binary, Emulator
-- [ ] sample.gcode | sample.gcode | Data
-- [ ] sample.gd | sample.gd (GDScript) | Code
-- [ ] sample.geojson | Sample.geojson | Geo
-- [ ] sample.gff3 | GFF3 genome annotation (demo) | Scientific, bioinformatics
-- [ ] sample.gif | Sample.gif | Image, Media
-- [ ] sample.gitignore | sample.gitignore | Text
-- [ ] sample.glb | Sample.glb | Media, 3D
-- [ ] sample.gleam | sample.gleam | Functional, Programming
-- [ ] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
-- [ ] sample.gnuplot | sample.gnuplot (gnuplot) | Code
-- [ ] sample.gp5 | Guitar Pro 5 Tab (binary) | Music
-- [ ] sample.gpx | Sample.gpx | Data
-- [ ] sample.gr | sample.gr (Grain) | Code
-- [ ] sample.groovy | sample.groovy | JVM, Programming
-- [ ] sample.h2song | Demo Beat (Hydrogen) | Music
-- [ ] sample.h5 | HDF5 Scientific Dataset (demo) | scientific, binary, data
-- [ ] sample.har | Sample.har | Data
-- [ ] sample.hbs | sample.hbs | Template, Web
-- [ ] sample.heic | sample.heic | Image, Media
-- [ ] sample.hl7 | Patient Admission (HL7) | Data
-- [ ] sample.hlsl | sample.hlsl (HLSL Shader) | Graphics, Shader
-- [ ] sample.hs | sample.hs (Haskell) | Code
-- [ ] sample.htaccess | sample.htaccess | Config
-- [ ] sample.html | Sample.html | Code
-- [ ] sample.hx | sample.hx | Cross-platform, Programming
-- [ ] sample.ico | sample.ico | Image, Media
-- [ ] sample.ics | Sample.ics | Data
-- [ ] sample.idr | sample.idr (Idris) | Code
-- [ ] sample.img | sample.img | Binary, Emulator
-- [ ] sample.ini | Sample.ini | Config
-- [ ] sample.ink | sample.ink (Ink) | Code
-- [ ] sample.ino | sample.ino | Embedded, Programming
-- [ ] sample.ipa | iOS App (IPA demo) | code, binary, mobile
-- [ ] sample.ipynb | Sample.ipynb | Code
-- [ ] sample.iso | ISO 9660 Disc Image (demo) | Binary
-- [ ] sample.j2 | sample.j2 | Template, Web
-- [ ] sample.janet | sample.janet (Janet) | Code
-- [ ] sample.jl | sample.jl | Science, Programming
-- [ ] sample.jpeg | Sample.jpeg | Image, Media
-- [ ] sample.jpg | Sample.jpg | Image, Media
-- [ ] sample.json | Sample.json | Data
-- [ ] sample.jsonl | Sample.jsonl | Data
-- [ ] sample.jsonnet | Jsonnet template (demo) | Code
-- [ ] sample.jsonnet | sample.jsonnet | Config
-- [ ] sample.jxl | Sample.jxl | Image, Media
-- [ ] sample.kdl | sample.kdl (KDL document) | Config
-- [ ] sample.kicad_pcb | LED Blinker PCB (KiCad) | Data
-- [ ] sample.kml | Silicon Valley Map (KML) | Geo
-- [ ] sample.kmz | World Cities (KMZ) | Geo
-- [ ] sample.koka | sample.koka (Koka) | Code
-- [ ] sample.kra | Sample.kra | Image, Media
-- [ ] sample.kt | sample.kt | JVM, Programming
-- [ ] sample.lean | sample.lean (Lean 4) | Code
-- [ ] sample.liquid | sample.liquid | Template, Web
-- [ ] sample.lisp | sample.lisp (Common Lisp) | Code
-- [ ] sample.lnk | sample.lnk | Other
-- [ ] sample.log | Sample.log | Code
-- [ ] sample.lrf | Sample.lrf | Documents, Ebook
-- [ ] sample.ls | sample.ls (LiveScript) | Code
-- [ ] sample.lua | sample.lua | Scripting, Programming
-- [ ] sample.m | sample.m | Mobile, Programming
-- [ ] sample.m4 | sample.m4 (M4) | Code
-- [ ] sample.m4a | Sample.m4a | Media
-- [ ] sample.mat | MATLAB MAT-file (demo) | scientific, data, binary
-- [ ] sample.mbox | Sample.mbox | Data
-- [ ] sample.mbtiles | File Viewer Demo Map (MBTiles) | Geo
-- [ ] sample.mcworld | Minecraft World (demo) | Binary
-- [ ] sample.mediawiki | sample.mediawiki (MediaWiki) | Document
-- [ ] sample.mid | Sample.mid | Media
-- [ ] sample.mkv | Sample.mkv | Media
-- [ ] sample.ml | sample.ml | Functional, Programming
-- [ ] sample.mmd | sample.mmd (Mermaid Diagram) | Diagram, Visualization
-- [ ] sample.mmp | LMMS music project (demo) | audio, creative
-- [ ] sample.mobi | Sample.mobi | Documents, Ebook
-- [ ] sample.mojo | sample.mojo (Mojo) | Code
-- [ ] sample.mov | Sample.mov | Media
-- [ ] sample.mp3 | Sample.mp3 | Media
-- [ ] sample.mp4 | Sample.mp4 | Media
-- [ ] sample.msg | Sample.msg | Data
-- [ ] sample.msgpack | MessagePack data (demo) | data, binary
-- [ ] sample.mt940 | MT940 bank statement (demo) | Data, financial
-- [ ] sample.musicxml | Ode to Joy Theme (MusicXML) | Media
-- [ ] sample.mustache | sample.mustache | Template, Web
-- [ ] sample.nc | NetCDF Climate Dataset (demo) | Binary
-- [ ] sample.nes | sample.nes | Binary, Emulator
-- [ ] sample.nii | NIfTI neuroimaging (demo) | scientific, medical, binary
-- [ ] sample.nim | sample.nim | Systems, Programming
-- [ ] sample.nix | sample.nix (Nix expression) | Config, Nix
-- [ ] sample.njk | sample.njk (Nunjucks Template) | Code
-- [ ] sample.npy | sample.npy | Other
-- [ ] sample.nu | sample.nu (Nushell Script) | Code
-- [ ] sample.nupkg | NuGet package (demo) | code, binary, archive
-- [ ] sample.nut | sample.nut (Squirrel) | Code
-- [ ] sample.obj | Sample.obj | Media, 3D
-- [ ] sample.odin | sample.odin | Systems, Programming
-- [ ] sample.odt | Sample.odt | Office
-- [ ] sample.ofx | Sample.ofx | Data
-- [ ] sample.ogg | Sample.ogg | Media
-- [ ] sample.ora | Sample.ora | Image, Media
-- [ ] sample.org | sample.org (Org-mode) | Documents, Notes
-- [ ] sample.otf | Sample.otf | Media, Font
-- [ ] sample.pages | sample.pages | Office
-- [ ] sample.parquet | Apache Parquet Dataset (demo) | data, binary, scientific
-- [ ] sample.pas | sample.pas (Pascal) | Code
-- [ ] sample.patch | Sample.patch | Code
-- [ ] sample.pcap | Network Capture Demo (PCAP) | System, Data
-- [ ] sample.pdb | Demo Protein Structure (PDB) | Science, Data
-- [ ] sample.pdf | Sample.pdf | Documents
-- [ ] sample.pem | sample.pem | Secrets, Config
-- [ ] sample.php | sample.php | Web, Programming
-- [ ] sample.plist | sample.plist | Config
-- [ ] sample.ply | Sample.ply | Media, 3D
-- [ ] sample.pm | sample.pm | Scripting, Programming
-- [ ] sample.pml | sample.pml (PROMELA) | Code
-- [ ] sample.png | Sample.png | Image, Media
-- [ ] sample.pony | sample.pony (Pony) | Code
-- [ ] sample.pptx | Sample.pptx | Office
-- [ ] sample.pro | sample.pro | Functional, Logic
-- [ ] sample.procreate | sample.procreate | Image, Media
-- [ ] sample.proto | Protocol Buffer IDL (demo) | Code
-- [ ] sample.prproj | Short Film Project (Premiere) | Media
-- [ ] sample.ps1 | sample.ps1 | Scripting, Systems
-- [ ] sample.psb | Sample.psb | Image, Media
-- [ ] sample.psd | Sample.psd | Image, Media
-- [ ] sample.pug | sample.pug (Pug/Jade) | Code
-- [ ] sample.puml | sample.puml (PlantUML) | Diagram, UML
-- [ ] sample.purs | sample.purs | Functional, Programming
-- [ ] sample.pyc | Python bytecode (demo) | code, binary
-- [ ] sample.qif | QIF financial data (demo) | Data, financial
-- [ ] sample.R | sample.R | Science, Programming
-- [ ] sample.rb | sample.rb | Scripting, Programming
-- [ ] sample.rdp | sample.rdp | Other
-- [ ] sample.re | sample.re (Reason) | Code
-- [ ] sample.red | sample.red (Red) | Code
-- [ ] sample.reg | sample.reg | Config
-- [ ] sample.rego | sample.rego (Rego Policy) | Config, Security
-- [ ] sample.res | sample.res (ReScript) | Code
-- [ ] sample.rkt | sample.rkt | Functional, Lisp
-- [ ] sample.rpm | RPM package (demo) | code, binary
-- [ ] sample.rst | sample.rst (reStructuredText) | Documents, Documentation
-- [ ] sample.rtf | Sample.rtf | Documents
-- [ ] sample.sarif | SARIF security scan results (demo) | Code, security
-- [ ] sample.scala | sample.scala | JVM, Functional
-- [ ] sample.scm | sample.scm | Functional, Lisp
-- [ ] sample.sdf | Aspirin Molecule (SDF) | chemical, scientific
-- [ ] sample.sed | sample.sed (sed) | Code
-- [ ] sample.shp | NYC Borough Boundary (Shapefile) | Geo, Science
-- [ ] sample.sketch | sample.sketch | Image, Media
-- [ ] sample.sml | sample.sml (Standard ML) | Code
-- [ ] sample.smt2 | sample.smt2 (SMT-LIB 2) | Code
-- [ ] sample.sol | sample.sol | Blockchain, Programming
-- [ ] sample.sparql | sample.sparql | Data, Semantic Web
-- [ ] sample.spec | sample.spec (RPM Spec) | Config
-- [ ] sample.sqlite | Sample.sqlite | Data
-- [ ] sample.srt | Sample.srt | Media
-- [ ] sample.stl | Sample.stl | Media, 3D
-- [ ] sample.stp | STEP CAD Exchange file (demo) | Design, 3D
-- [ ] sample.svelte | sample.svelte (Svelte Component) | Code
-- [ ] sample.swf | sample.swf | Binary, Emulator
-- [ ] sample.swift | sample.swift | Mobile, Programming
-- [ ] sample.tcl | sample.tcl | Scripting, Programming
-- [ ] sample.tex | sample.tex (LaTeX) | Document
-- [ ] sample.textile | sample.textile (Textile) | Document
-- [ ] sample.tf | sample.tf (Terraform HCL) | Config, Infrastructure
-- [ ] sample.thrift | Apache Thrift IDL (demo) | Code
-- [ ] sample.thy | sample.thy (Isabelle/HOL) | Code
-- [ ] sample.tiff | Sample.tiff | Image, Media
-- [ ] sample.tla | sample.tla (TLA+) | Code
-- [ ] sample.tmpfiles | sample.tmpfiles (tmpfiles.d) | Config
-- [ ] sample.toml | Sample.toml | Config
-- [ ] sample.torrent | sample.torrent | Archive & Binary
-- [ ] sample.ttf | Sample.ttf | Media, Font
-- [ ] sample.ttl | sample.ttl | Data, Semantic Web
-- [ ] sample.txt | Sample.txt | Documents
-- [ ] sample.typ | sample.typ (Typst) | Document
-- [ ] sample.url | sample.url | Code
-- [ ] sample.v | sample.v | Hardware, HDL
-- [ ] sample.vala | sample.vala (Vala) | Code
-- [ ] sample.vcf | Sample.vcf | Data
-- [ ] sample.vhd | sample.vhd | Hardware, Programming
-- [ ] sample.vsix | VS Extension (demo) | code, binary, archive
-- [ ] sample.wad | Doom Patch WAD (demo) | Games
-- [ ] sample.wasm | sample.wasm | Other
-- [ ] sample.wav | Sample.wav | Media
-- [ ] sample.webm | Sample.webm | Media
-- [ ] sample.webp | Sample.webp | Image, Media
-- [ ] sample.wgsl | sample.wgsl (WGSL Shader) | Graphics, Shader
-- [ ] sample.whl | Python Wheel (demo) | code, binary, archive
-- [ ] sample.wl | sample.wl (Wolfram Language) | Code
-- [ ] sample.woff | Sample.woff | Media, Font
-- [ ] sample.woff2 | Sample.woff2 | Media, Font
-- [ ] sample.wren | sample.wren (Wren) | Code
-- [ ] sample.xcf | Sample.xcf | Image, Media
-- [ ] sample.xlsx | Sample.xlsx | Office
-- [ ] sample.xml | Sample.xml | Config
-- [ ] sample.xsl | sample.xsl (XSLT Stylesheet) | Code
-- [ ] sample.xyz | Ethanol Molecule (XYZ) | Science, Data
-- [ ] sample.y | sample.y (Yacc) | Code
-- [ ] sample.yaml | Sample.yaml | Config
-- [ ] sample.zig | sample.zig (Zig) | Code
-- [ ] sample.zip | Sample.zip | Archive & Binary
-- [ ] sample.zone | sample.zone (DNS Zone File) | Config, Network
-- [ ] sample.zsh | sample.zsh (Zsh) | Code
-- [ ] sbom.cyclonedx.json | sbom.cyclonedx.json (CycloneDX SBOM) | Security
-- [ ] sbom.spdx | sbom.spdx (SPDX SBOM) | Security
-- [ ] schema.graphql | schema.graphql (GraphQL Schema) | API, Code
-- [ ] schema.prisma | schema.prisma | Config
-- [ ] scorecard.yml | scorecard.yml | Config
-- [ ] script.sh | script.sh | Code
-- [ ] scrutiny.yaml | Scrutiny config | Monitoring, Storage, Self-Hosted
-- [ ] searxng-settings.yml | searxng-settings.yml | Config, Search
-- [ ] secret.txt | secret.txt | Secrets, Text
-- [ ] security.txt | security.txt (demo) | Config
-- [ ] security.txt | security.txt (demo) | Config
-- [ ] semaphore-config.json | Semaphore Config | Config, CI/CD
-- [ ] semaphore.yml | semaphore.yml | CI, Config
-- [ ] sentinel.conf | sentinel.conf (Redis Sentinel) | Config
-- [ ] sentry.properties | sentry.properties | Config
-- [ ] server.go | server.go | Code
-- [ ] server.properties | server.properties (Kafka) | Config
-- [ ] serverless.yml | serverless.yml | Config
-- [ ] service.proto | service.proto | Code, Data
-- [ ] settings.gradle | settings.gradle | Config
-- [ ] settings.py | settings.py (Django) | Config
-- [ ] settings.xml | settings.xml (Maven) | Config, Java
-- [ ] setup.cfg | setup.cfg | Config
-- [ ] sftpgo.json | SFTPGo Config | Config, Self-hosted
-- [ ] shader.wgsl | shader.wgsl | Code, Media
-- [ ] shadow-cljs.edn | shadow-cljs.edn | Config
-- [ ] shard.yml | shard.yml | Package
-- [ ] shopify.app.toml | shopify.app.toml | Config
-- [ ] shopify.app.toml | shopify.app.toml | uncategorized
-- [ ] sitemap.xml | XML Sitemap (demo) | Config
-- [ ] skaffold.yaml | skaffold.yaml | Config, devops
-- [ ] slapd.conf | slapd.conf (OpenLDAP Config) | Config
-- [ ] smb.conf | smb.conf (Samba) | Config, Network
-- [ ] snapcraft.yaml | snapcraft.yaml (Snapcraft) | Config
-- [ ] Snapfile | Snapfile | Config
-- [ ] snmp.yml | snmp.yml | Config
-- [ ] socket.yml | socket.yml | Config
-- [ ] sonar-project.properties | sonar-project.properties | Config
-- [ ] sonar.properties | SonarQube Config | Config, DevOps
-- [ ] sorbet.config | sorbet.config | Config
-- [ ] sources.list | sources.list (APT Sources) | Config
-- [ ] spacelift-config.yml | spacelift-config.yml | Config
-- [ ] speedtest-tracker.env | Speedtest Tracker config | Monitoring, Network, Self-Hosted
-- [ ] spotbugs-exclude.xml | spotbugs-exclude.xml (SpotBugs) | Config
-- [ ] sqitch.conf | sqitch.conf | Config, Database
-- [ ] sqlc.yaml | sqlc.yaml (sqlc) | Config
-- [ ] squid.conf | squid.conf | Config
-- [ ] ssh_config | ssh_config (SSH Client Config) | Config, Network
-- [ ] ssh-config | ssh-config | Config
-- [ ] sshd_config | sshd_config | Config
-- [ ] sssd.conf | sssd.conf (SSSD) | Config
-- [ ] stack.yaml | stack.yaml | Config
-- [ ] standalone.conf | standalone.conf | Config
-- [ ] standalone.conf | standalone.conf | uncategorized
-- [ ] starship.toml | starship.toml | Config, Terminal
-- [ ] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
-- [ ] storage.conf | storage.conf | Config
-- [ ] storage.conf | storage.conf | uncategorized
-- [ ] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
-- [ ] strings.xml | strings.xml (Android Strings) | Config
-- [ ] stryker.conf.json | stryker.conf.json | Config
-- [ ] stryker.conf.json | stryker.conf.json | uncategorized
-- [ ] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
-- [ ] styles.css | styles.css | Code
-- [ ] sudoers | sudoers (sudo access control) | Config, Security
-- [ ] supabase-config.toml | supabase/config.toml | Config
-- [ ] supervisord.conf | supervisord.conf | Config, Process
-- [ ] suricata.yaml | suricata.yaml | Security, Config
-- [ ] svelte.config.js | svelte.config.js | Config
-- [ ] sway | sway (Sway WM) | Config, Desktop
-- [ ] sxhkdrc | sxhkdrc (sxhkd hotkey daemon) | Config, Desktop
-- [ ] sys.config | sys.config | Config, Erlang
-- [ ] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
-- [ ] syslog-ng.conf | syslog-ng.conf | Config
-- [ ] syslog-ng.conf | syslog-ng.conf | uncategorized
-- [ ] system.yaml | system.yaml | Config
-- [ ] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
-- [ ] tailwind.config.json | tailwind.config.json | Config
-- [ ] tandoor.env | Tandoor Recipes config | Productivity, Food, Self-Hosted
-- [ ] Taskfile.yml | Taskfile.yml | Config
-- [ ] tauri.conf.json | tauri.conf.json (Tauri) | Config
-- [ ] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
-- [ ] telegraf.conf | telegraf.conf | Config
-- [ ] telegraf.conf | telegraf.conf | uncategorized
-- [ ] tempo.yaml | tempo.yaml | Config
-- [ ] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
-- [ ] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
-- [ ] tetragon.yaml | tetragon.yaml (Tetragon policy) | Security, Config
-- [ ] thanos-bucket.yml | thanos-bucket.yml (Thanos) | Config, Monitoring
-- [ ] thanos.yaml | thanos.yaml | Observability, Config
-- [ ] theme.less | theme.less | Code
-- [ ] theme.scss | theme.scss | Code
-- [ ] Tiltfile | Tiltfile | Config
-- [ ] tlp.conf | tlp.conf (TLP Power) | Config, System
-- [ ] tox.ini | tox.ini (tox Config) | Config, Python
-- [ ] traefik.toml | traefik.toml | Config
-- [ ] traefik.yml | traefik.yml | Config
-- [ ] travis.yml | Travis CI config | Config
-- [ ] trivy.yaml | trivy.yaml | Config
-- [ ] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
-- [ ] tsconfig.json | tsconfig.json | Config
-- [ ] tspconfig.yaml | tspconfig.yaml | Config
-- [ ] tspconfig.yaml | tspconfig.yaml | uncategorized
-- [ ] tsup.config.ts | tsup.config.ts | Config
-- [ ] turbo.json | turbo.json | Config
-- [ ] twenty.env | twenty.env | Config, Application, CRM
-- [ ] typos.toml | typos.toml (typos spell checker) | Config
-- [ ] ufw.conf | ufw.conf (UFW Firewall) | Config, Network
-- [ ] umami.env | umami.env | Config, Application, Analytics
-- [ ] unbound.conf | unbound.conf (Unbound DNS) | Config, Network
-- [ ] unleash.config.js | unleash.config.js | Config
-- [ ] uptime-kuma.json | uptime-kuma.json | Config, Monitoring
-- [ ] usr.bin.nginx | usr.bin.nginx (AppArmor profile) | Config, Security
-- [ ] uv.toml | uv.toml (uv package manager) | Config
-- [ ] Vagrantfile | Vagrantfile | Config
-- [ ] vale.ini | vale.ini | Config
-- [ ] values.yaml | values.yaml (Helm values) | DevOps, Config
-- [ ] vault.hcl | vault.hcl (HashiCorp Vault) | Config
-- [ ] vaultwarden.env | Vaultwarden Config | Config, Self-hosted
-- [ ] vcpkg.json | vcpkg.json | Config
-- [ ] vector.toml | vector.toml (Vector) | Config
-- [ ] velero-schedule.yaml | velero-schedule.yaml (Velero) | Config
-- [ ] vercel.json | Vercel config (vercel.json demo) | Config, devops
-- [ ] versions.tf | versions.tf (Terraform) | Config
-- [ ] victoria-metrics.yml | victoria-metrics.yml (VictoriaMetrics) | Config, Monitoring
-- [ ] vikunja.yml | vikunja.yml | Config, Application, Task Management
-- [ ] vite.config.js | vite.config.js | Config
-- [ ] vitepress.config.ts | vitepress.config.ts | Config
-- [ ] vitest.config.json | vitest.config.json | Config
-- [ ] vm.args | vm.args | Config, Erlang
-- [ ] volta.json | volta.json | Config
-- [ ] vscode-extensions.json | vscode-extensions.json | Config
-- [ ] vscode-launch.json | vscode-launch.json | Config
-- [ ] vscode-settings.json | vscode-settings.json | Config
-- [ ] vscode-tasks.json | vscode-tasks.json | Config
-- [ ] vsftpd.conf | vsftpd.conf | Config
-- [ ] vsftpd.conf | vsftpd.conf | uncategorized
-- [ ] wails.json | wails.json (Wails) | Config
-- [ ] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
-- [ ] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
-- [ ] wallabag.env | Wallabag config | Productivity, Reading, Self-Hosted
-- [ ] wallos.env | Wallos Config | Config, Self-hosted
-- [ ] wandb-settings | wandb-settings (W&B Config) | Config, Data Science
-- [ ] watchtower.env | Watchtower Config | Config, DevOps
-- [ ] waybar-config.json | waybar/config | Config, Desktop
-- [ ] waypoint.hcl | waypoint.hcl | Config
-- [ ] waypoint.hcl | waypoint.hcl | uncategorized
-- [ ] wdio.conf.js | wdio.conf.js | Config
-- [ ] web.config | web.config (IIS/ASP.NET) | Config
-- [ ] webpack.config.js | webpack.config.js | Config
-- [ ] welcome.md | Welcome.md | Documents
-- [ ] wg0.conf | wg0.conf | Config, Network
-- [ ] Widget.jsx | Widget.jsx | Code
-- [ ] windmill.env | windmill.env | Config, Application, Automation
-- [ ] woodpecker-agent.env | Woodpecker CI Agent Config | Config, CI/CD
-- [ ] woodpecker.yml | woodpecker.yml (Woodpecker CI) | Config, devops
-- [ ] worker.rs | worker.rs | Code
-- [ ] workspace.xml | workspace.xml (JetBrains) | Config
-- [ ] wpa_supplicant.conf | wpa_supplicant.conf (wpa_supplicant) | Config
-- [ ] wrangler.toml | wrangler.toml | Config
-- [ ] wsl.conf | wsl.conf | Config
-- [ ] xorg.conf | xorg.conf | Config, Desktop
-- [ ] yt-dlp.conf | yt-dlp.conf | Config
-- [ ] zabbix_agentd.conf | zabbix_agentd.conf | Monitoring, Config
-- [ ] zathurarc | zathurarc | Config
-- [ ] zitadel.yaml | ZITADEL Config | Config, Self-hosted
-- [ ] zoo.cfg | zoo.cfg | Config
+- [x] sample.exr | OpenEXR HDR image (demo) | Image, binary
+- [x] sample.f3d | Fusion 360 design (demo) | Design, 3D, binary
+- [x] sample.f90 | sample.f90 | Science, Systems
+- [x] sample.factor | sample.factor (Factor) | Code
+- [x] sample.fasta | Sample gene sequences (FASTA) | Data
+- [x] sample.fb2 | Sample.fb2 | Documents, Ebook
+- [x] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
+- [x] sample.fbx | FBX 3D animation (demo) | 3D, binary, Design
+- [x] sample.fish | sample.fish (Fish) | Code
+- [x] sample.fits | Helix Nebula (FITS) | Data
+- [x] sample.flac | Sample.flac | Media
+- [x] sample.fnl | sample.fnl (Fennel) | Code
+- [x] sample.fs | sample.fs | Functional, JVM
+- [x] sample.fth | sample.fth (Forth) | Code
+- [x] sample.gba | Sample.gba | Binary, Emulator
+- [x] sample.gcode | sample.gcode | Data
+- [x] sample.gd | sample.gd (GDScript) | Code
+- [x] sample.geojson | Sample.geojson | Geo
+- [x] sample.gff3 | GFF3 genome annotation (demo) | Scientific, bioinformatics
+- [x] sample.gif | Sample.gif | Image, Media
+- [x] sample.gitignore | sample.gitignore | Text
+- [x] sample.glb | Sample.glb | Media, 3D
+- [x] sample.gleam | sample.gleam | Functional, Programming
+- [x] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
+- [x] sample.gnuplot | sample.gnuplot (gnuplot) | Code
+- [x] sample.gp5 | Guitar Pro 5 Tab (binary) | Music
+- [x] sample.gpx | Sample.gpx | Geo
+- [x] sample.gr | sample.gr (Grain) | Code
+- [x] sample.groovy | sample.groovy | JVM, Programming
+- [x] sample.h2song | Demo Beat (Hydrogen) | Music
+- [x] sample.h5 | HDF5 Scientific Dataset (demo) | scientific, binary, data
+- [x] sample.har | Sample.har | Data
+- [x] sample.hbs | sample.hbs | Template, Web
+- [x] sample.heic | sample.heic | Image, Media
+- [x] sample.hl7 | Patient Admission (HL7) | Data
+- [x] sample.hlsl | sample.hlsl (HLSL Shader) | Graphics, Shader
+- [x] sample.hs | sample.hs (Haskell) | Code
+- [x] sample.htaccess | sample.htaccess | Config
+- [x] sample.html | Sample.html | Code
+- [x] sample.hx | sample.hx | Cross-platform, Programming
+- [x] sample.ico | sample.ico | Image, Media
+- [x] sample.ics | Sample.ics | Data
+- [x] sample.idr | sample.idr (Idris) | Code
+- [x] sample.img | sample.img | Binary, Emulator
+- [x] sample.ini | Sample.ini | Config
+- [x] sample.ink | sample.ink (Ink) | Code
+- [x] sample.ino | sample.ino | Embedded, Programming
+- [x] sample.ipa | iOS App (IPA demo) | code, binary, mobile
+- [x] sample.ipynb | Sample.ipynb | Code
+- [x] sample.iso | ISO 9660 Disc Image (demo) | Binary
+- [x] sample.j2 | sample.j2 | Template, Web
+- [x] sample.janet | sample.janet (Janet) | Code
+- [x] sample.jl | sample.jl | Science, Programming
+- [x] sample.jpeg | Sample.jpeg | Image, Media
+- [x] sample.jpg | Sample.jpg | Image, Media
+- [x] sample.json | Sample.json | Data
+- [x] sample.jsonl | Sample.jsonl | Data
+- [x] sample.jsonnet | Jsonnet template (demo) | Code
+- [x] sample.jsonnet | sample.jsonnet | Config
+- [x] sample.jxl | Sample.jxl | Image, Media
+- [x] sample.kdl | sample.kdl (KDL document) | Config
+- [x] sample.kicad_pcb | LED Blinker PCB (KiCad) | Data
+- [x] sample.kml | Silicon Valley Map (KML) | Geo
+- [x] sample.kmz | World Cities (KMZ) | Geo
+- [x] sample.koka | sample.koka (Koka) | Code
+- [x] sample.kra | Sample.kra | Image, Media
+- [x] sample.kt | sample.kt | JVM, Programming
+- [x] sample.l | sample.l (Lex) | Code
+- [x] sample.lean | sample.lean (Lean 4) | Code
+- [x] sample.liquid | sample.liquid | Template, Web
+- [x] sample.lisp | sample.lisp (Common Lisp) | Code
+- [x] sample.lnk | sample.lnk | Other
+- [x] sample.log | Sample.log | Code
+- [x] sample.lrf | Sample.lrf | Documents, Ebook
+- [x] sample.ls | sample.ls (LiveScript) | Code
+- [x] sample.lua | sample.lua | Scripting, Programming
+- [x] sample.m | sample.m | Mobile, Programming
+- [x] sample.m4 | sample.m4 (M4) | Code
+- [x] sample.m4a | Sample.m4a | Media
+- [x] sample.mat | MATLAB MAT-file (demo) | scientific, data, binary
+- [x] sample.mbox | Sample.mbox | Data
+- [x] sample.mbtiles | File Viewer Demo Map (MBTiles) | Geo
+- [x] sample.mcworld | Minecraft World (demo) | Binary
+- [x] sample.mediawiki | sample.mediawiki (MediaWiki) | Document
+- [x] sample.mid | Sample.mid | Media
+- [x] sample.mkv | Sample.mkv | Media
+- [x] sample.ml | sample.ml | Functional, Programming
+- [x] sample.mmd | sample.mmd (Mermaid Diagram) | Diagram, Visualization
+- [x] sample.mmp | LMMS music project (demo) | audio, creative
+- [x] sample.mobi | Sample.mobi | Documents, Ebook
+- [x] sample.mojo | sample.mojo (Mojo) | Code
+- [x] sample.mov | Sample.mov | Media
+- [x] sample.mp3 | Sample.mp3 | Media
+- [x] sample.mp4 | Sample.mp4 | Media
+- [x] sample.msg | Sample.msg | Data
+- [x] sample.msgpack | MessagePack data (demo) | data, binary
+- [x] sample.mt940 | MT940 bank statement (demo) | Data, financial
+- [x] sample.musicxml | Ode to Joy Theme (MusicXML) | Media
+- [x] sample.mustache | sample.mustache | Template, Web
+- [x] sample.nc | NetCDF Climate Dataset (demo) | Binary
+- [x] sample.nes | sample.nes | Binary, Emulator
+- [x] sample.nii | NIfTI neuroimaging (demo) | scientific, medical, binary
+- [x] sample.nim | sample.nim | Systems, Programming
+- [x] sample.nix | sample.nix (Nix expression) | Config, Nix
+- [x] sample.njk | sample.njk (Nunjucks Template) | Code
+- [x] sample.npy | NumPy array (demo) | scientific, data, binary
+- [x] sample.nu | sample.nu (Nushell Script) | Code
+- [x] sample.nupkg | NuGet package (demo) | code, binary, archive
+- [x] sample.nut | sample.nut (Squirrel) | Code
+- [x] sample.obj | Sample.obj | Media, 3D
+- [x] sample.odin | sample.odin | Systems, Programming
+- [x] sample.odt | Sample.odt | Office
+- [x] sample.ofx | Sample.ofx | Data
+- [x] sample.ogg | Sample.ogg | Media
+- [x] sample.ora | Sample.ora | Image, Media
+- [x] sample.org | sample.org (Org-mode) | Documents, Notes
+- [x] sample.otf | Sample.otf | Media, Font
+- [x] sample.pages | sample.pages | Office
+- [x] sample.parquet | Apache Parquet Dataset (demo) | data, binary, scientific
+- [x] sample.pas | sample.pas (Pascal) | Code
+- [x] sample.patch | Sample.patch | Code
+- [x] sample.pcap | Network Capture Demo (PCAP) | System, Data
+- [x] sample.pdb | Demo Protein Structure (PDB) | Science, Data
+- [x] sample.pdf | Sample.pdf | Documents
+- [x] sample.pem | sample.pem | Secrets, Config
+- [x] sample.php | sample.php | Web, Programming
+- [x] sample.plist | sample.plist | Config
+- [x] sample.ply | Sample.ply | Media, 3D
+- [x] sample.pm | sample.pm | Scripting, Programming
+- [x] sample.pml | sample.pml (PROMELA) | Code
+- [x] sample.png | Sample.png | Image, Media
+- [x] sample.pony | sample.pony (Pony) | Code
+- [x] sample.pptx | Sample.pptx | Office
+- [x] sample.pro | sample.pro | Functional, Logic
+- [x] sample.procreate | sample.procreate | Image, Media
+- [x] sample.proto | Protocol Buffer IDL (demo) | Code
+- [x] sample.prproj | Short Film Project (Premiere) | Media
+- [x] sample.ps1 | sample.ps1 | Scripting, Systems
+- [x] sample.psb | Sample.psb | Image, Media
+- [x] sample.psd | Sample.psd | Image, Media
+- [x] sample.pug | sample.pug (Pug/Jade) | Code
+- [x] sample.puml | sample.puml (PlantUML) | Diagram, UML
+- [x] sample.purs | sample.purs | Functional, Programming
+- [x] sample.pyc | Python bytecode (demo) | code, binary
+- [x] sample.qif | QIF financial data (demo) | Data, financial
+- [x] sample.R | sample.R | Science, Programming
+- [x] sample.rb | sample.rb | Scripting, Programming
+- [x] sample.rdp | sample.rdp | Other
+- [x] sample.re | sample.re (Reason) | Code
+- [x] sample.red | sample.red (Red) | Code
+- [x] sample.reg | sample.reg | Config
+- [x] sample.rego | sample.rego (Rego Policy) | Config, Security
+- [x] sample.res | sample.res (ReScript) | Code
+- [x] sample.rkt | sample.rkt | Functional, Lisp
+- [x] sample.rpm | RPM package (demo) | code, binary
+- [x] sample.rst | sample.rst (reStructuredText) | Documents, Documentation
+- [x] sample.rtf | Sample.rtf | Documents
+- [x] sample.sarif | SARIF security scan results (demo) | Code, security
+- [x] sample.scala | sample.scala | JVM, Functional
+- [x] sample.scm | sample.scm | Functional, Lisp
+- [x] sample.sdf | Aspirin Molecule (SDF) | chemical, scientific
+- [x] sample.sed | sample.sed (sed) | Code
+- [x] sample.shp | NYC Borough Boundary (Shapefile) | Geo, Science
+- [x] sample.sketch | sample.sketch | Image, Media
+- [x] sample.sml | sample.sml (Standard ML) | Code
+- [x] sample.smt2 | sample.smt2 (SMT-LIB 2) | Code
+- [x] sample.sol | sample.sol | Blockchain, Programming
+- [x] sample.sparql | sample.sparql | Data, Semantic Web
+- [x] sample.spec | sample.spec (RPM Spec) | Config
+- [x] sample.sqlite | Sample.sqlite | Data
+- [x] sample.srt | Sample.srt | Media
+- [x] sample.stl | Sample.stl | Media, 3D
+- [x] sample.stp | STEP CAD Exchange file (demo) | Design, 3D
+- [x] sample.svelte | sample.svelte (Svelte Component) | Code
+- [x] sample.swf | sample.swf | Binary, Emulator
+- [x] sample.swift | sample.swift | Mobile, Programming
+- [x] sample.tcl | sample.tcl | Scripting, Programming
+- [x] sample.tex | sample.tex (LaTeX) | Document
+- [x] sample.textile | sample.textile (Textile) | Document
+- [x] sample.tf | sample.tf (Terraform HCL) | Config, Infrastructure
+- [x] sample.thrift | Apache Thrift IDL (demo) | Code
+- [x] sample.thy | sample.thy (Isabelle/HOL) | Code
+- [x] sample.tiff | Sample.tiff | Image, Media
+- [x] sample.tla | sample.tla (TLA+) | Code
+- [x] sample.tmpfiles | sample.tmpfiles (tmpfiles.d) | Config
+- [x] sample.toml | Sample.toml | Config
+- [x] sample.torrent | sample.torrent | Archive & Binary
+- [x] sample.ttf | Sample.ttf | Media, Font
+- [x] sample.ttl | sample.ttl | Data, Semantic Web
+- [x] sample.txt | Sample.txt | Documents
+- [x] sample.typ | sample.typ (Typst) | Document
+- [x] sample.url | sample.url | Code
+- [x] sample.v | sample.v | Hardware, HDL
+- [x] sample.vala | sample.vala (Vala) | Code
+- [x] sample.vcf | Sample.vcf | Data
+- [x] sample.vhd | sample.vhd | Hardware, Programming
+- [x] sample.vsix | VS Extension (demo) | code, binary, archive
+- [x] sample.wad | Doom Patch WAD (demo) | Games
+- [x] sample.wasm | sample.wasm | Other
+- [x] sample.wav | Sample.wav | Media
+- [x] sample.webm | Sample.webm | Media
+- [x] sample.webp | Sample.webp | Image, Media
+- [x] sample.wgsl | sample.wgsl (WGSL Shader) | Graphics, Shader
+- [x] sample.whl | Python Wheel (demo) | code, binary, archive
+- [x] sample.wl | sample.wl (Wolfram Language) | Code
+- [x] sample.woff | Sample.woff | Media, Font
+- [x] sample.woff2 | Sample.woff2 | Media, Font
+- [x] sample.wren | sample.wren (Wren) | Code
+- [x] sample.xcf | Sample.xcf | Image, Media
+- [x] sample.xlsx | Sample.xlsx | Office
+- [x] sample.xml | Sample.xml | Config
+- [x] sample.xsl | sample.xsl (XSLT Stylesheet) | Code
+- [x] sample.xyz | Ethanol Molecule (XYZ) | Science, Data
+- [x] sample.y | sample.y (Yacc) | Code
+- [x] sample.yaml | Sample.yaml | Config
+- [x] sample.zig | sample.zig (Zig) | Code
+- [x] sample.zip | Sample.zip | Archive & Binary
+- [x] sample.zone | sample.zone (DNS Zone File) | Config, Network
+- [x] sample.zsh | sample.zsh (Zsh) | Code
+- [x] sbom.cyclonedx.json | sbom.cyclonedx.json (CycloneDX SBOM) | Security
+- [x] sbom.spdx | sbom.spdx (SPDX SBOM) | Security
+- [x] schema.graphql | schema.graphql (GraphQL Schema) | API, Code
+- [x] schema.prisma | schema.prisma | Config
+- [x] scorecard.yml | scorecard.yml | Config
+- [x] script.sh | script.sh | Code
+- [x] scrutiny.yaml | Scrutiny config | Monitoring, Storage, Self-Hosted
+- [x] searxng-settings.yml | searxng-settings.yml | Config, Search
+- [x] secret.txt | secret.txt | Secrets, Text
+- [x] security.txt | security.txt (demo) | Config
+- [x] security.txt | security.txt (demo) | Config
+- [x] semaphore-config.json | Semaphore Config | Config, CI/CD
+- [x] semaphore.yml | semaphore.yml | CI, Config
+- [x] sentinel.conf | sentinel.conf (Redis Sentinel) | Config
+- [x] sentry.properties | sentry.properties | Config
+- [x] server.go | server.go | Code
+- [x] server.properties | server.properties (Kafka) | Config
+- [x] serverless.yml | serverless.yml | Config
+- [x] service.proto | service.proto | Code, Data
+- [x] settings.gradle | settings.gradle | Config
+- [x] settings.py | settings.py (Django) | Config
+- [x] settings.xml | settings.xml (Maven) | Config, Java
+- [x] setup.cfg | setup.cfg | Config
+- [x] sftpgo.json | SFTPGo Config | Config, Self-hosted
+- [x] shader.wgsl | shader.wgsl | Code, Media
+- [x] shadow-cljs.edn | shadow-cljs.edn | Config
+- [x] shard.yml | shard.yml | Package
+- [x] shopify.app.toml | shopify.app.toml | Config
+- [x] shopify.app.toml | shopify.app.toml | Config
+- [x] sitemap.xml | XML Sitemap (demo) | Config
+- [x] skaffold.yaml | skaffold.yaml | Config, devops
+- [x] slapd.conf | slapd.conf (OpenLDAP Config) | Config
+- [x] smb.conf | smb.conf (Samba) | Config, Network
+- [x] snapcraft.yaml | snapcraft.yaml (Snapcraft) | Config
+- [x] Snapfile | Snapfile | Config
+- [x] snmp.yml | snmp.yml | Config
+- [x] socket.yml | socket.yml | Config
+- [x] sonar-project.properties | sonar-project.properties | Config
+- [x] sonar.properties | SonarQube Config | Config, DevOps
+- [x] sorbet.config | sorbet.config | Config
+- [x] sources.list | sources.list (APT Sources) | Config
+- [x] spacelift-config.yml | spacelift-config.yml | Config
+- [x] speedtest-tracker.env | Speedtest Tracker config | Monitoring, Network, Self-Hosted
+- [x] spotbugs-exclude.xml | spotbugs-exclude.xml (SpotBugs) | Config
+- [x] sqitch.conf | sqitch.conf | Config, Database
+- [x] sqlc.yaml | sqlc.yaml (sqlc) | Config
+- [x] squid.conf | squid.conf | Config
+- [x] ssh_config | ssh_config (SSH Client Config) | Config, Network
+- [x] ssh-config | ssh-config | Config
+- [x] sshd_config | sshd_config | Config
+- [x] sssd.conf | sssd.conf (SSSD) | Config
+- [x] stack.yaml | stack.yaml | Config
+- [x] standalone.conf | standalone.conf | Config
+- [x] standalone.conf | standalone.conf | Infrastructure
+- [x] starship.toml | starship.toml | Config, Terminal
+- [x] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
+- [x] storage.conf | storage.conf | Config
+- [x] storage.conf | storage.conf | Infrastructure
+- [x] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
+- [x] strings.xml | strings.xml (Android Strings) | Config
+- [x] stryker.conf.json | stryker.conf.json | Config
+- [x] stryker.conf.json | stryker.conf.json | Testing
+- [x] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
+- [x] styles.css | styles.css | Code
+- [x] sudoers | sudoers (sudo access control) | Config, Security
+- [x] supabase-config.toml | supabase/config.toml | Config
+- [x] supervisord.conf | supervisord.conf | Config, Process
+- [x] suricata.yaml | suricata.yaml | Security, Config
+- [x] svelte.config.js | svelte.config.js | Config
+- [x] sway | sway (Sway WM) | Config, Desktop
+- [x] sxhkdrc | sxhkdrc (sxhkd hotkey daemon) | Config, Desktop
+- [x] sys.config | sys.config | Config, Erlang
+- [x] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
+- [x] syslog-ng.conf | syslog-ng.conf | Config
+- [x] syslog-ng.conf | syslog-ng.conf | System
+- [x] system.yaml | system.yaml | Config
+- [x] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
+- [x] tailwind.config.json | tailwind.config.json | Config
+- [x] tandoor.env | Tandoor Recipes config | Productivity, Food, Self-Hosted
+- [x] Taskfile.yml | Taskfile.yml | Config
+- [x] tauri.conf.json | tauri.conf.json (Tauri) | Config
+- [x] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
+- [x] telegraf.conf | telegraf.conf | Config
+- [x] telegraf.conf | telegraf.conf | Observability
+- [x] tempo.yaml | tempo.yaml | Config
+- [x] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
+- [x] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
+- [x] tetragon.yaml | tetragon.yaml (Tetragon policy) | Security, Config
+- [x] thanos-bucket.yml | thanos-bucket.yml (Thanos) | Config, Monitoring
+- [x] thanos.yaml | thanos.yaml | Observability, Config
+- [x] theme.less | theme.less | Code
+- [x] theme.scss | theme.scss | Code
+- [x] Tiltfile | Tiltfile | Config
+- [x] tlp.conf | tlp.conf (TLP Power) | Config, System
+- [x] tox.ini | tox.ini (tox Config) | Config, Python
+- [x] traefik.toml | traefik.toml | Config
+- [x] traefik.yml | traefik.yml | Config
+- [x] travis.yml | Travis CI config | Config
+- [x] trivy.yaml | trivy.yaml | Config
+- [x] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
+- [x] tsconfig.json | tsconfig.json | Config
+- [x] tspconfig.yaml | tspconfig.yaml | Config
+- [x] tspconfig.yaml | tspconfig.yaml | Tooling
+- [x] tsup.config.ts | tsup.config.ts | Config
+- [x] turbo.json | turbo.json | Config
+- [x] twenty.env | twenty.env | Config, Application, CRM
+- [x] typos.toml | typos.toml (typos spell checker) | Config
+- [x] ufw.conf | ufw.conf (UFW Firewall) | Config, Network
+- [x] umami.env | umami.env | Config, Application, Analytics
+- [x] unbound.conf | unbound.conf (Unbound DNS) | Config, Network
+- [x] unleash.config.js | unleash.config.js | Config
+- [x] uptime-kuma.json | uptime-kuma.json | Config, Monitoring
+- [x] usr.bin.nginx | usr.bin.nginx (AppArmor profile) | Config, Security
+- [x] uv.toml | uv.toml (uv package manager) | Config
+- [x] Vagrantfile | Vagrantfile | Config
+- [x] vale.ini | vale.ini | Config
+- [x] values.yaml | values.yaml (Helm values) | DevOps, Config
+- [x] vault.hcl | vault.hcl (HashiCorp Vault) | Config
+- [x] vaultwarden.env | Vaultwarden Config | Config, Self-hosted
+- [x] vcpkg.json | vcpkg.json | Config
+- [x] vector.toml | vector.toml (Vector) | Config
+- [x] velero-schedule.yaml | velero-schedule.yaml (Velero) | Config
+- [x] vercel.json | Vercel config (vercel.json demo) | Config, devops
+- [x] versions.tf | versions.tf (Terraform) | Config
+- [x] victoria-metrics.yml | victoria-metrics.yml (VictoriaMetrics) | Config, Monitoring
+- [x] vikunja.yml | vikunja.yml | Config, Application, Task Management
+- [x] vite.config.js | vite.config.js | Config
+- [x] vitepress.config.ts | vitepress.config.ts | Config
+- [x] vitest.config.json | vitest.config.json | Config
+- [x] vm.args | vm.args | Config, Erlang
+- [x] volta.json | volta.json | Config
+- [x] vscode-extensions.json | vscode-extensions.json | Config
+- [x] vscode-launch.json | vscode-launch.json | Config
+- [x] vscode-settings.json | vscode-settings.json | Config
+- [x] vscode-tasks.json | vscode-tasks.json | Config
+- [x] vsftpd.conf | vsftpd.conf | Config
+- [x] vsftpd.conf | vsftpd.conf | Server
+- [x] wails.json | wails.json (Wails) | Config
+- [x] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
+- [x] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
+- [x] wallabag.env | Wallabag config | Productivity, Reading, Self-Hosted
+- [x] wallos.env | Wallos Config | Config, Self-hosted
+- [x] wandb-settings | wandb-settings (W&B Config) | Config, Data Science
+- [x] watchtower.env | Watchtower Config | Config, DevOps
+- [x] waybar-config.json | waybar/config | Config, Desktop
+- [x] waypoint.hcl | waypoint.hcl | Config
+- [x] waypoint.hcl | waypoint.hcl | Infrastructure
+- [x] wdio.conf.js | wdio.conf.js | Config
+- [x] web.config | web.config (IIS/ASP.NET) | Config
+- [x] webpack.config.js | webpack.config.js | Config
+- [x] welcome.md | Welcome.md | Documents
+- [x] wg0.conf | wg0.conf | Config, Network
+- [x] Widget.jsx | Widget.jsx | Code
+- [x] windmill.env | windmill.env | Config, Application, Automation
+- [x] woodpecker-agent.env | Woodpecker CI Agent Config | Config, CI/CD
+- [x] woodpecker.yml | woodpecker.yml (Woodpecker CI) | Config, devops
+- [x] worker.rs | worker.rs | Code
+- [x] workspace.xml | workspace.xml (JetBrains) | Config
+- [x] wpa_supplicant.conf | wpa_supplicant.conf (wpa_supplicant) | Config
+- [x] wrangler.toml | wrangler.toml | Config
+- [x] wsl.conf | wsl.conf | Config
+- [x] xorg.conf | xorg.conf | Config, Desktop
+- [x] yt-dlp.conf | yt-dlp.conf | Config
+- [x] zabbix_agentd.conf | zabbix_agentd.conf | Monitoring, Config
+- [x] zathurarc | zathurarc | Config
+- [x] zitadel.yaml | ZITADEL Config | Config, Self-hosted
+- [x] zoo.cfg | zoo.cfg | Config
 <!-- AUDIT_SECTION examples END -->
 
 ### Example Files On Disk
@@ -6067,397 +6068,397 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/examples/sample.epub
 - [ ] docs/examples/sample.erl
 - [ ] docs/examples/sample.ex
-- [ ] docs/examples/sample.exr
-- [ ] docs/examples/sample.f3d
-- [ ] docs/examples/sample.f90
-- [ ] docs/examples/sample.factor
-- [ ] docs/examples/sample.fasta
-- [ ] docs/examples/sample.fb2
-- [ ] docs/examples/sample.fbs
-- [ ] docs/examples/sample.fbx
-- [ ] docs/examples/sample.fish
-- [ ] docs/examples/sample.fits
-- [ ] docs/examples/sample.flac
-- [ ] docs/examples/sample.fnl
-- [ ] docs/examples/sample.fs
-- [ ] docs/examples/sample.fth
-- [ ] docs/examples/sample.gba
-- [ ] docs/examples/sample.gcode
-- [ ] docs/examples/sample.gd
-- [ ] docs/examples/sample.geojson
-- [ ] docs/examples/sample.gff3
-- [ ] docs/examples/sample.gif
-- [ ] docs/examples/sample.gitignore
-- [ ] docs/examples/sample.glb
-- [ ] docs/examples/sample.gleam
-- [ ] docs/examples/sample.glsl
-- [ ] docs/examples/sample.gnuplot
-- [ ] docs/examples/sample.gp5
-- [ ] docs/examples/sample.gpx
-- [ ] docs/examples/sample.gr
-- [ ] docs/examples/sample.groovy
-- [ ] docs/examples/sample.h2song
-- [ ] docs/examples/sample.h5
-- [ ] docs/examples/sample.har
-- [ ] docs/examples/sample.hbs
-- [ ] docs/examples/sample.heic
-- [ ] docs/examples/sample.hl7
-- [ ] docs/examples/sample.hlsl
-- [ ] docs/examples/sample.hs
-- [ ] docs/examples/sample.htaccess
-- [ ] docs/examples/sample.html
-- [ ] docs/examples/sample.hx
-- [ ] docs/examples/sample.ico
-- [ ] docs/examples/sample.ics
-- [ ] docs/examples/sample.idr
-- [ ] docs/examples/sample.img
-- [ ] docs/examples/sample.ini
-- [ ] docs/examples/sample.ink
-- [ ] docs/examples/sample.ino
-- [ ] docs/examples/sample.ipa
-- [ ] docs/examples/sample.ipynb
-- [ ] docs/examples/sample.iso
-- [ ] docs/examples/sample.j2
-- [ ] docs/examples/sample.janet
-- [ ] docs/examples/sample.jl
-- [ ] docs/examples/sample.jpeg
-- [ ] docs/examples/sample.jpg
-- [ ] docs/examples/sample.json
-- [ ] docs/examples/sample.jsonl
-- [ ] docs/examples/sample.jsonnet
-- [ ] docs/examples/sample.jxl
-- [ ] docs/examples/sample.kdl
-- [ ] docs/examples/sample.kicad_pcb
-- [ ] docs/examples/sample.kml
-- [ ] docs/examples/sample.kmz
-- [ ] docs/examples/sample.koka
-- [ ] docs/examples/sample.kra
-- [ ] docs/examples/sample.kt
-- [ ] docs/examples/sample.l
-- [ ] docs/examples/sample.lean
-- [ ] docs/examples/sample.liquid
-- [ ] docs/examples/sample.lisp
-- [ ] docs/examples/sample.lnk
-- [ ] docs/examples/sample.log
-- [ ] docs/examples/sample.lrf
-- [ ] docs/examples/sample.ls
-- [ ] docs/examples/sample.lua
-- [ ] docs/examples/sample.m
-- [ ] docs/examples/sample.m4
-- [ ] docs/examples/sample.m4a
-- [ ] docs/examples/sample.mat
-- [ ] docs/examples/sample.mbox
-- [ ] docs/examples/sample.mbtiles
-- [ ] docs/examples/sample.mcworld
-- [ ] docs/examples/sample.mediawiki
-- [ ] docs/examples/sample.mid
-- [ ] docs/examples/sample.mkv
-- [ ] docs/examples/sample.ml
-- [ ] docs/examples/sample.mmd
-- [ ] docs/examples/sample.mmp
-- [ ] docs/examples/sample.mobi
-- [ ] docs/examples/sample.mojo
-- [ ] docs/examples/sample.mov
-- [ ] docs/examples/sample.mp3
-- [ ] docs/examples/sample.mp4
-- [ ] docs/examples/sample.msg
-- [ ] docs/examples/sample.msgpack
-- [ ] docs/examples/sample.mt940
-- [ ] docs/examples/sample.musicxml
-- [ ] docs/examples/sample.mustache
-- [ ] docs/examples/sample.nc
-- [ ] docs/examples/sample.nes
-- [ ] docs/examples/sample.nii
-- [ ] docs/examples/sample.nim
-- [ ] docs/examples/sample.nix
-- [ ] docs/examples/sample.njk
-- [ ] docs/examples/sample.npy
-- [ ] docs/examples/sample.nu
-- [ ] docs/examples/sample.nupkg
-- [ ] docs/examples/sample.nut
-- [ ] docs/examples/sample.obj
-- [ ] docs/examples/sample.odin
-- [ ] docs/examples/sample.odt
-- [ ] docs/examples/sample.ofx
-- [ ] docs/examples/sample.ogg
-- [ ] docs/examples/sample.ora
-- [ ] docs/examples/sample.org
-- [ ] docs/examples/sample.otf
-- [ ] docs/examples/sample.pages
-- [ ] docs/examples/sample.parquet
-- [ ] docs/examples/sample.pas
-- [ ] docs/examples/sample.patch
-- [ ] docs/examples/sample.pcap
-- [ ] docs/examples/sample.pdb
-- [ ] docs/examples/sample.pdf
-- [ ] docs/examples/sample.pem
-- [ ] docs/examples/sample.php
-- [ ] docs/examples/sample.plist
-- [ ] docs/examples/sample.ply
-- [ ] docs/examples/sample.pm
-- [ ] docs/examples/sample.pml
-- [ ] docs/examples/sample.png
-- [ ] docs/examples/sample.pony
-- [ ] docs/examples/sample.pptx
-- [ ] docs/examples/sample.pro
-- [ ] docs/examples/sample.procreate
-- [ ] docs/examples/sample.proto
-- [ ] docs/examples/sample.prproj
-- [ ] docs/examples/sample.ps1
-- [ ] docs/examples/sample.psb
-- [ ] docs/examples/sample.psd
-- [ ] docs/examples/sample.pug
-- [ ] docs/examples/sample.puml
-- [ ] docs/examples/sample.purs
-- [ ] docs/examples/sample.pyc
-- [ ] docs/examples/sample.qif
-- [ ] docs/examples/sample.R
-- [ ] docs/examples/sample.rb
-- [ ] docs/examples/sample.rdp
-- [ ] docs/examples/sample.re
-- [ ] docs/examples/sample.red
-- [ ] docs/examples/sample.reg
-- [ ] docs/examples/sample.rego
-- [ ] docs/examples/sample.res
-- [ ] docs/examples/sample.rkt
-- [ ] docs/examples/sample.rpm
-- [ ] docs/examples/sample.rst
-- [ ] docs/examples/sample.rtf
-- [ ] docs/examples/sample.sarif
-- [ ] docs/examples/sample.scala
-- [ ] docs/examples/sample.scm
-- [ ] docs/examples/sample.sdf
-- [ ] docs/examples/sample.sed
-- [ ] docs/examples/sample.shp
-- [ ] docs/examples/sample.sketch
-- [ ] docs/examples/sample.sml
-- [ ] docs/examples/sample.smt2
-- [ ] docs/examples/sample.sol
-- [ ] docs/examples/sample.sparql
-- [ ] docs/examples/sample.spec
-- [ ] docs/examples/sample.sqlite
-- [ ] docs/examples/sample.srt
-- [ ] docs/examples/sample.stl
-- [ ] docs/examples/sample.stp
-- [ ] docs/examples/sample.svelte
-- [ ] docs/examples/sample.swf
-- [ ] docs/examples/sample.swift
-- [ ] docs/examples/sample.tcl
-- [ ] docs/examples/sample.tex
-- [ ] docs/examples/sample.textile
-- [ ] docs/examples/sample.tf
-- [ ] docs/examples/sample.thrift
-- [ ] docs/examples/sample.thy
-- [ ] docs/examples/sample.tiff
-- [ ] docs/examples/sample.tla
-- [ ] docs/examples/sample.tmpfiles
-- [ ] docs/examples/sample.toml
-- [ ] docs/examples/sample.torrent
-- [ ] docs/examples/sample.ttf
-- [ ] docs/examples/sample.ttl
-- [ ] docs/examples/sample.txt
-- [ ] docs/examples/sample.typ
-- [ ] docs/examples/sample.url
-- [ ] docs/examples/sample.v
-- [ ] docs/examples/sample.vala
-- [ ] docs/examples/sample.vcf
-- [ ] docs/examples/sample.vhd
-- [ ] docs/examples/sample.vsix
-- [ ] docs/examples/sample.wad
-- [ ] docs/examples/sample.wasm
-- [ ] docs/examples/sample.wav
-- [ ] docs/examples/sample.webm
-- [ ] docs/examples/sample.webp
-- [ ] docs/examples/sample.wgsl
-- [ ] docs/examples/sample.whl
-- [ ] docs/examples/sample.wl
-- [ ] docs/examples/sample.woff
-- [ ] docs/examples/sample.woff2
-- [ ] docs/examples/sample.wren
-- [ ] docs/examples/sample.xcf
-- [ ] docs/examples/sample.xlsx
-- [ ] docs/examples/sample.xml
-- [ ] docs/examples/sample.xsl
-- [ ] docs/examples/sample.xyz
-- [ ] docs/examples/sample.y
-- [ ] docs/examples/sample.yaml
-- [ ] docs/examples/sample.zig
-- [ ] docs/examples/sample.zip
-- [ ] docs/examples/sample.zone
-- [ ] docs/examples/sample.zsh
-- [ ] docs/examples/sbom.cyclonedx.json
-- [ ] docs/examples/sbom.spdx
-- [ ] docs/examples/schema.graphql
-- [ ] docs/examples/schema.prisma
-- [ ] docs/examples/scorecard.yml
-- [ ] docs/examples/script.sh
-- [ ] docs/examples/scrutiny.yaml
-- [ ] docs/examples/searxng-settings.yml
-- [ ] docs/examples/secret.txt
-- [ ] docs/examples/security.txt
-- [ ] docs/examples/semaphore-config.json
-- [ ] docs/examples/semaphore.yml
-- [ ] docs/examples/sentinel.conf
-- [ ] docs/examples/sentry.properties
-- [ ] docs/examples/server.go
-- [ ] docs/examples/server.properties
-- [ ] docs/examples/serverless.yml
-- [ ] docs/examples/service.proto
-- [ ] docs/examples/settings.gradle
-- [ ] docs/examples/settings.py
-- [ ] docs/examples/settings.xml
-- [ ] docs/examples/setup.cfg
-- [ ] docs/examples/sftpgo.json
-- [ ] docs/examples/shader.wgsl
-- [ ] docs/examples/shadow-cljs.edn
-- [ ] docs/examples/shard.yml
-- [ ] docs/examples/shopify.app.toml
-- [ ] docs/examples/sitemap.xml
-- [ ] docs/examples/skaffold.yaml
-- [ ] docs/examples/slapd.conf
-- [ ] docs/examples/smb.conf
-- [ ] docs/examples/snapcraft.yaml
-- [ ] docs/examples/Snapfile
-- [ ] docs/examples/snmp.yml
-- [ ] docs/examples/socket.yml
-- [ ] docs/examples/sonar-project.properties
-- [ ] docs/examples/sonar.properties
-- [ ] docs/examples/sorbet.config
-- [ ] docs/examples/sources.list
-- [ ] docs/examples/spacelift-config.yml
-- [ ] docs/examples/speedtest-tracker.env
-- [ ] docs/examples/spotbugs-exclude.xml
-- [ ] docs/examples/sqitch.conf
-- [ ] docs/examples/sqlc.yaml
-- [ ] docs/examples/squid.conf
-- [ ] docs/examples/ssh_config
-- [ ] docs/examples/ssh-config
-- [ ] docs/examples/sshd_config
-- [ ] docs/examples/sssd.conf
-- [ ] docs/examples/stack.yaml
-- [ ] docs/examples/standalone.conf
-- [ ] docs/examples/starship.toml
-- [ ] docs/examples/stirling-pdf-settings.yml
-- [ ] docs/examples/storage.conf
-- [ ] docs/examples/storybook.main.json
-- [ ] docs/examples/strings.xml
-- [ ] docs/examples/stryker.conf.json
-- [ ] docs/examples/stunnel.conf
-- [ ] docs/examples/styles.css
-- [ ] docs/examples/sudoers
-- [ ] docs/examples/summary.json
-- [ ] docs/examples/supabase-config.toml
-- [ ] docs/examples/supervisord.conf
-- [ ] docs/examples/suricata.yaml
-- [ ] docs/examples/svelte.config.js
-- [ ] docs/examples/sway
-- [ ] docs/examples/sxhkdrc
-- [ ] docs/examples/sys.config
-- [ ] docs/examples/sysctl.conf
-- [ ] docs/examples/syslog-ng.conf
-- [ ] docs/examples/system.yaml
-- [ ] docs/examples/tailscale-acl.hujson
-- [ ] docs/examples/tailwind.config.json
-- [ ] docs/examples/tandoor.env
-- [ ] docs/examples/Taskfile.yml
-- [ ] docs/examples/tauri.conf.json
-- [ ] docs/examples/tekton-pipeline.yaml
-- [ ] docs/examples/telegraf.conf
-- [ ] docs/examples/tempo.yaml
-- [ ] docs/examples/terraform.tfvars
-- [ ] docs/examples/terragrunt.hcl
-- [ ] docs/examples/tetragon.yaml
-- [ ] docs/examples/thanos-bucket.yml
-- [ ] docs/examples/thanos.yaml
-- [ ] docs/examples/theme.less
-- [ ] docs/examples/theme.scss
-- [ ] docs/examples/Tiltfile
-- [ ] docs/examples/tlp.conf
-- [ ] docs/examples/tox.ini
-- [ ] docs/examples/traefik.toml
-- [ ] docs/examples/traefik.yml
-- [ ] docs/examples/travis.yml
-- [ ] docs/examples/trivy.yaml
-- [ ] docs/examples/truffle-config.js
-- [ ] docs/examples/tsconfig.json
-- [ ] docs/examples/tspconfig.yaml
-- [ ] docs/examples/tsup.config.ts
-- [ ] docs/examples/turbo.json
-- [ ] docs/examples/twenty.env
-- [ ] docs/examples/typos.toml
-- [ ] docs/examples/ufw.conf
-- [ ] docs/examples/umami.env
-- [ ] docs/examples/unbound.conf
-- [ ] docs/examples/unleash.config.js
-- [ ] docs/examples/uptime-kuma.json
-- [ ] docs/examples/usr.bin.nginx
-- [ ] docs/examples/uv.toml
-- [ ] docs/examples/Vagrantfile
-- [ ] docs/examples/vale.ini
-- [ ] docs/examples/values.yaml
-- [ ] docs/examples/vault.hcl
-- [ ] docs/examples/vaultwarden.env
-- [ ] docs/examples/vcpkg.json
-- [ ] docs/examples/vector.toml
-- [ ] docs/examples/velero-schedule.yaml
-- [ ] docs/examples/vercel.json
-- [ ] docs/examples/versions.tf
-- [ ] docs/examples/victoria-metrics.yml
-- [ ] docs/examples/vikunja.yml
-- [ ] docs/examples/vite.config.js
-- [ ] docs/examples/vitepress.config.ts
-- [ ] docs/examples/vitest.config.json
-- [ ] docs/examples/vm.args
-- [ ] docs/examples/volta.json
-- [ ] docs/examples/vscode-extensions.json
-- [ ] docs/examples/vscode-launch.json
-- [ ] docs/examples/vscode-settings.json
-- [ ] docs/examples/vscode-tasks.json
-- [ ] docs/examples/vsftpd.conf
-- [ ] docs/examples/wails.json
-- [ ] docs/examples/wakapi.yaml
-- [ ] docs/examples/wakapi.yml
-- [ ] docs/examples/wallabag.env
-- [ ] docs/examples/wallos.env
-- [ ] docs/examples/wandb-settings
-- [ ] docs/examples/watchtower.env
-- [ ] docs/examples/waybar-config.json
-- [ ] docs/examples/waypoint.hcl
-- [ ] docs/examples/wdio.conf.js
-- [ ] docs/examples/web.config
-- [ ] docs/examples/webpack.config.js
-- [ ] docs/examples/welcome.md
-- [ ] docs/examples/wg0.conf
-- [ ] docs/examples/Widget.jsx
-- [ ] docs/examples/windmill.env
-- [ ] docs/examples/woodpecker-agent.env
-- [ ] docs/examples/woodpecker.yml
-- [ ] docs/examples/worker.rs
-- [ ] docs/examples/workspace.xml
-- [ ] docs/examples/wpa_supplicant.conf
-- [ ] docs/examples/wrangler.toml
-- [ ] docs/examples/wsl.conf
-- [ ] docs/examples/xorg.conf
-- [ ] docs/examples/yt-dlp.conf
-- [ ] docs/examples/zabbix_agentd.conf
-- [ ] docs/examples/zathurarc
-- [ ] docs/examples/zitadel.yaml
-- [ ] docs/examples/zoo.cfg
+- [x] docs/examples/sample.exr
+- [x] docs/examples/sample.f3d
+- [x] docs/examples/sample.f90
+- [x] docs/examples/sample.factor
+- [x] docs/examples/sample.fasta
+- [x] docs/examples/sample.fb2
+- [x] docs/examples/sample.fbs
+- [x] docs/examples/sample.fbx
+- [x] docs/examples/sample.fish
+- [x] docs/examples/sample.fits
+- [x] docs/examples/sample.flac
+- [x] docs/examples/sample.fnl
+- [x] docs/examples/sample.fs
+- [x] docs/examples/sample.fth
+- [x] docs/examples/sample.gba
+- [x] docs/examples/sample.gcode
+- [x] docs/examples/sample.gd
+- [x] docs/examples/sample.geojson
+- [x] docs/examples/sample.gff3
+- [x] docs/examples/sample.gif
+- [x] docs/examples/sample.gitignore
+- [x] docs/examples/sample.glb
+- [x] docs/examples/sample.gleam
+- [x] docs/examples/sample.glsl
+- [x] docs/examples/sample.gnuplot
+- [x] docs/examples/sample.gp5
+- [x] docs/examples/sample.gpx
+- [x] docs/examples/sample.gr
+- [x] docs/examples/sample.groovy
+- [x] docs/examples/sample.h2song
+- [x] docs/examples/sample.h5
+- [x] docs/examples/sample.har
+- [x] docs/examples/sample.hbs
+- [x] docs/examples/sample.heic
+- [x] docs/examples/sample.hl7
+- [x] docs/examples/sample.hlsl
+- [x] docs/examples/sample.hs
+- [x] docs/examples/sample.htaccess
+- [x] docs/examples/sample.html
+- [x] docs/examples/sample.hx
+- [x] docs/examples/sample.ico
+- [x] docs/examples/sample.ics
+- [x] docs/examples/sample.idr
+- [x] docs/examples/sample.img
+- [x] docs/examples/sample.ini
+- [x] docs/examples/sample.ink
+- [x] docs/examples/sample.ino
+- [x] docs/examples/sample.ipa
+- [x] docs/examples/sample.ipynb
+- [x] docs/examples/sample.iso
+- [x] docs/examples/sample.j2
+- [x] docs/examples/sample.janet
+- [x] docs/examples/sample.jl
+- [x] docs/examples/sample.jpeg
+- [x] docs/examples/sample.jpg
+- [x] docs/examples/sample.json
+- [x] docs/examples/sample.jsonl
+- [x] docs/examples/sample.jsonnet
+- [x] docs/examples/sample.jxl
+- [x] docs/examples/sample.kdl
+- [x] docs/examples/sample.kicad_pcb
+- [x] docs/examples/sample.kml
+- [x] docs/examples/sample.kmz
+- [x] docs/examples/sample.koka
+- [x] docs/examples/sample.kra
+- [x] docs/examples/sample.kt
+- [x] docs/examples/sample.l
+- [x] docs/examples/sample.lean
+- [x] docs/examples/sample.liquid
+- [x] docs/examples/sample.lisp
+- [x] docs/examples/sample.lnk
+- [x] docs/examples/sample.log
+- [x] docs/examples/sample.lrf
+- [x] docs/examples/sample.ls
+- [x] docs/examples/sample.lua
+- [x] docs/examples/sample.m
+- [x] docs/examples/sample.m4
+- [x] docs/examples/sample.m4a
+- [x] docs/examples/sample.mat
+- [x] docs/examples/sample.mbox
+- [x] docs/examples/sample.mbtiles
+- [x] docs/examples/sample.mcworld
+- [x] docs/examples/sample.mediawiki
+- [x] docs/examples/sample.mid
+- [x] docs/examples/sample.mkv
+- [x] docs/examples/sample.ml
+- [x] docs/examples/sample.mmd
+- [x] docs/examples/sample.mmp
+- [x] docs/examples/sample.mobi
+- [x] docs/examples/sample.mojo
+- [x] docs/examples/sample.mov
+- [x] docs/examples/sample.mp3
+- [x] docs/examples/sample.mp4
+- [x] docs/examples/sample.msg
+- [x] docs/examples/sample.msgpack
+- [x] docs/examples/sample.mt940
+- [x] docs/examples/sample.musicxml
+- [x] docs/examples/sample.mustache
+- [x] docs/examples/sample.nc
+- [x] docs/examples/sample.nes
+- [x] docs/examples/sample.nii
+- [x] docs/examples/sample.nim
+- [x] docs/examples/sample.nix
+- [x] docs/examples/sample.njk
+- [x] docs/examples/sample.npy
+- [x] docs/examples/sample.nu
+- [x] docs/examples/sample.nupkg
+- [x] docs/examples/sample.nut
+- [x] docs/examples/sample.obj
+- [x] docs/examples/sample.odin
+- [x] docs/examples/sample.odt
+- [x] docs/examples/sample.ofx
+- [x] docs/examples/sample.ogg
+- [x] docs/examples/sample.ora
+- [x] docs/examples/sample.org
+- [x] docs/examples/sample.otf
+- [x] docs/examples/sample.pages
+- [x] docs/examples/sample.parquet
+- [x] docs/examples/sample.pas
+- [x] docs/examples/sample.patch
+- [x] docs/examples/sample.pcap
+- [x] docs/examples/sample.pdb
+- [x] docs/examples/sample.pdf
+- [x] docs/examples/sample.pem
+- [x] docs/examples/sample.php
+- [x] docs/examples/sample.plist
+- [x] docs/examples/sample.ply
+- [x] docs/examples/sample.pm
+- [x] docs/examples/sample.pml
+- [x] docs/examples/sample.png
+- [x] docs/examples/sample.pony
+- [x] docs/examples/sample.pptx
+- [x] docs/examples/sample.pro
+- [x] docs/examples/sample.procreate
+- [x] docs/examples/sample.proto
+- [x] docs/examples/sample.prproj
+- [x] docs/examples/sample.ps1
+- [x] docs/examples/sample.psb
+- [x] docs/examples/sample.psd
+- [x] docs/examples/sample.pug
+- [x] docs/examples/sample.puml
+- [x] docs/examples/sample.purs
+- [x] docs/examples/sample.pyc
+- [x] docs/examples/sample.qif
+- [x] docs/examples/sample.R
+- [x] docs/examples/sample.rb
+- [x] docs/examples/sample.rdp
+- [x] docs/examples/sample.re
+- [x] docs/examples/sample.red
+- [x] docs/examples/sample.reg
+- [x] docs/examples/sample.rego
+- [x] docs/examples/sample.res
+- [x] docs/examples/sample.rkt
+- [x] docs/examples/sample.rpm
+- [x] docs/examples/sample.rst
+- [x] docs/examples/sample.rtf
+- [x] docs/examples/sample.sarif
+- [x] docs/examples/sample.scala
+- [x] docs/examples/sample.scm
+- [x] docs/examples/sample.sdf
+- [x] docs/examples/sample.sed
+- [x] docs/examples/sample.shp
+- [x] docs/examples/sample.sketch
+- [x] docs/examples/sample.sml
+- [x] docs/examples/sample.smt2
+- [x] docs/examples/sample.sol
+- [x] docs/examples/sample.sparql
+- [x] docs/examples/sample.spec
+- [x] docs/examples/sample.sqlite
+- [x] docs/examples/sample.srt
+- [x] docs/examples/sample.stl
+- [x] docs/examples/sample.stp
+- [x] docs/examples/sample.svelte
+- [x] docs/examples/sample.swf
+- [x] docs/examples/sample.swift
+- [x] docs/examples/sample.tcl
+- [x] docs/examples/sample.tex
+- [x] docs/examples/sample.textile
+- [x] docs/examples/sample.tf
+- [x] docs/examples/sample.thrift
+- [x] docs/examples/sample.thy
+- [x] docs/examples/sample.tiff
+- [x] docs/examples/sample.tla
+- [x] docs/examples/sample.tmpfiles
+- [x] docs/examples/sample.toml
+- [x] docs/examples/sample.torrent
+- [x] docs/examples/sample.ttf
+- [x] docs/examples/sample.ttl
+- [x] docs/examples/sample.txt
+- [x] docs/examples/sample.typ
+- [x] docs/examples/sample.url
+- [x] docs/examples/sample.v
+- [x] docs/examples/sample.vala
+- [x] docs/examples/sample.vcf
+- [x] docs/examples/sample.vhd
+- [x] docs/examples/sample.vsix
+- [x] docs/examples/sample.wad
+- [x] docs/examples/sample.wasm
+- [x] docs/examples/sample.wav
+- [x] docs/examples/sample.webm
+- [x] docs/examples/sample.webp
+- [x] docs/examples/sample.wgsl
+- [x] docs/examples/sample.whl
+- [x] docs/examples/sample.wl
+- [x] docs/examples/sample.woff
+- [x] docs/examples/sample.woff2
+- [x] docs/examples/sample.wren
+- [x] docs/examples/sample.xcf
+- [x] docs/examples/sample.xlsx
+- [x] docs/examples/sample.xml
+- [x] docs/examples/sample.xsl
+- [x] docs/examples/sample.xyz
+- [x] docs/examples/sample.y
+- [x] docs/examples/sample.yaml
+- [x] docs/examples/sample.zig
+- [x] docs/examples/sample.zip
+- [x] docs/examples/sample.zone
+- [x] docs/examples/sample.zsh
+- [x] docs/examples/sbom.cyclonedx.json
+- [x] docs/examples/sbom.spdx
+- [x] docs/examples/schema.graphql
+- [x] docs/examples/schema.prisma
+- [x] docs/examples/scorecard.yml
+- [x] docs/examples/script.sh
+- [x] docs/examples/scrutiny.yaml
+- [x] docs/examples/searxng-settings.yml
+- [x] docs/examples/secret.txt
+- [x] docs/examples/security.txt
+- [x] docs/examples/semaphore-config.json
+- [x] docs/examples/semaphore.yml
+- [x] docs/examples/sentinel.conf
+- [x] docs/examples/sentry.properties
+- [x] docs/examples/server.go
+- [x] docs/examples/server.properties
+- [x] docs/examples/serverless.yml
+- [x] docs/examples/service.proto
+- [x] docs/examples/settings.gradle
+- [x] docs/examples/settings.py
+- [x] docs/examples/settings.xml
+- [x] docs/examples/setup.cfg
+- [x] docs/examples/sftpgo.json
+- [x] docs/examples/shader.wgsl
+- [x] docs/examples/shadow-cljs.edn
+- [x] docs/examples/shard.yml
+- [x] docs/examples/shopify.app.toml
+- [x] docs/examples/sitemap.xml
+- [x] docs/examples/skaffold.yaml
+- [x] docs/examples/slapd.conf
+- [x] docs/examples/smb.conf
+- [x] docs/examples/snapcraft.yaml
+- [x] docs/examples/Snapfile
+- [x] docs/examples/snmp.yml
+- [x] docs/examples/socket.yml
+- [x] docs/examples/sonar-project.properties
+- [x] docs/examples/sonar.properties
+- [x] docs/examples/sorbet.config
+- [x] docs/examples/sources.list
+- [x] docs/examples/spacelift-config.yml
+- [x] docs/examples/speedtest-tracker.env
+- [x] docs/examples/spotbugs-exclude.xml
+- [x] docs/examples/sqitch.conf
+- [x] docs/examples/sqlc.yaml
+- [x] docs/examples/squid.conf
+- [x] docs/examples/ssh_config
+- [x] docs/examples/ssh-config
+- [x] docs/examples/sshd_config
+- [x] docs/examples/sssd.conf
+- [x] docs/examples/stack.yaml
+- [x] docs/examples/standalone.conf
+- [x] docs/examples/starship.toml
+- [x] docs/examples/stirling-pdf-settings.yml
+- [x] docs/examples/storage.conf
+- [x] docs/examples/storybook.main.json
+- [x] docs/examples/strings.xml
+- [x] docs/examples/stryker.conf.json
+- [x] docs/examples/stunnel.conf
+- [x] docs/examples/styles.css
+- [x] docs/examples/sudoers
+- [x] docs/examples/summary.json
+- [x] docs/examples/supabase-config.toml
+- [x] docs/examples/supervisord.conf
+- [x] docs/examples/suricata.yaml
+- [x] docs/examples/svelte.config.js
+- [x] docs/examples/sway
+- [x] docs/examples/sxhkdrc
+- [x] docs/examples/sys.config
+- [x] docs/examples/sysctl.conf
+- [x] docs/examples/syslog-ng.conf
+- [x] docs/examples/system.yaml
+- [x] docs/examples/tailscale-acl.hujson
+- [x] docs/examples/tailwind.config.json
+- [x] docs/examples/tandoor.env
+- [x] docs/examples/Taskfile.yml
+- [x] docs/examples/tauri.conf.json
+- [x] docs/examples/tekton-pipeline.yaml
+- [x] docs/examples/telegraf.conf
+- [x] docs/examples/tempo.yaml
+- [x] docs/examples/terraform.tfvars
+- [x] docs/examples/terragrunt.hcl
+- [x] docs/examples/tetragon.yaml
+- [x] docs/examples/thanos-bucket.yml
+- [x] docs/examples/thanos.yaml
+- [x] docs/examples/theme.less
+- [x] docs/examples/theme.scss
+- [x] docs/examples/Tiltfile
+- [x] docs/examples/tlp.conf
+- [x] docs/examples/tox.ini
+- [x] docs/examples/traefik.toml
+- [x] docs/examples/traefik.yml
+- [x] docs/examples/travis.yml
+- [x] docs/examples/trivy.yaml
+- [x] docs/examples/truffle-config.js
+- [x] docs/examples/tsconfig.json
+- [x] docs/examples/tspconfig.yaml
+- [x] docs/examples/tsup.config.ts
+- [x] docs/examples/turbo.json
+- [x] docs/examples/twenty.env
+- [x] docs/examples/typos.toml
+- [x] docs/examples/ufw.conf
+- [x] docs/examples/umami.env
+- [x] docs/examples/unbound.conf
+- [x] docs/examples/unleash.config.js
+- [x] docs/examples/uptime-kuma.json
+- [x] docs/examples/usr.bin.nginx
+- [x] docs/examples/uv.toml
+- [x] docs/examples/Vagrantfile
+- [x] docs/examples/vale.ini
+- [x] docs/examples/values.yaml
+- [x] docs/examples/vault.hcl
+- [x] docs/examples/vaultwarden.env
+- [x] docs/examples/vcpkg.json
+- [x] docs/examples/vector.toml
+- [x] docs/examples/velero-schedule.yaml
+- [x] docs/examples/vercel.json
+- [x] docs/examples/versions.tf
+- [x] docs/examples/victoria-metrics.yml
+- [x] docs/examples/vikunja.yml
+- [x] docs/examples/vite.config.js
+- [x] docs/examples/vitepress.config.ts
+- [x] docs/examples/vitest.config.json
+- [x] docs/examples/vm.args
+- [x] docs/examples/volta.json
+- [x] docs/examples/vscode-extensions.json
+- [x] docs/examples/vscode-launch.json
+- [x] docs/examples/vscode-settings.json
+- [x] docs/examples/vscode-tasks.json
+- [x] docs/examples/vsftpd.conf
+- [x] docs/examples/wails.json
+- [x] docs/examples/wakapi.yaml
+- [x] docs/examples/wakapi.yml
+- [x] docs/examples/wallabag.env
+- [x] docs/examples/wallos.env
+- [x] docs/examples/wandb-settings
+- [x] docs/examples/watchtower.env
+- [x] docs/examples/waybar-config.json
+- [x] docs/examples/waypoint.hcl
+- [x] docs/examples/wdio.conf.js
+- [x] docs/examples/web.config
+- [x] docs/examples/webpack.config.js
+- [x] docs/examples/welcome.md
+- [x] docs/examples/wg0.conf
+- [x] docs/examples/Widget.jsx
+- [x] docs/examples/windmill.env
+- [x] docs/examples/woodpecker-agent.env
+- [x] docs/examples/woodpecker.yml
+- [x] docs/examples/worker.rs
+- [x] docs/examples/workspace.xml
+- [x] docs/examples/wpa_supplicant.conf
+- [x] docs/examples/wrangler.toml
+- [x] docs/examples/wsl.conf
+- [x] docs/examples/xorg.conf
+- [x] docs/examples/yt-dlp.conf
+- [x] docs/examples/zabbix_agentd.conf
+- [x] docs/examples/zathurarc
+- [x] docs/examples/zitadel.yaml
+- [x] docs/examples/zoo.cfg
 <!-- AUDIT_SECTION example-files END -->
 
 ### Internet / Edge Example Files On Disk
 
 <!-- AUDIT_SECTION internet-example-files START -->
-- [ ] .example-files-internet/Arm_Chair.glb
-- [ ] .example-files-internet/chango-lero-lero-leronlero.gif
-- [ ] .example-files-internet/frame-002.png
-- [ ] .example-files-internet/log_sqlmap_errors.txt
-- [ ] .example-files-internet/sample_map.geojson
-- [ ] .example-files-internet/sample_product.glb
-- [ ] .example-files-internet/Sway.lrf
-- [ ] .example-files-internet/welcome-brute.zip
-- [ ] .example-files-internet/welcome.md
-- [ ] .example-files-internet/welcome.zip
+- [x] .example-files-internet/Arm_Chair.glb
+- [x] .example-files-internet/chango-lero-lero-leronlero.gif
+- [x] .example-files-internet/frame-002.png
+- [x] .example-files-internet/log_sqlmap_errors.txt
+- [x] .example-files-internet/sample_map.geojson
+- [x] .example-files-internet/sample_product.glb
+- [x] .example-files-internet/Sway.lrf
+- [x] .example-files-internet/welcome-brute.zip
+- [x] .example-files-internet/welcome.md
+- [x] .example-files-internet/welcome.zip
 <!-- AUDIT_SECTION internet-example-files END -->
 
 ### Special / Enhanced Example Entries
@@ -7197,310 +7198,310 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] sample.epub | Sample.epub | Documents, Ebook
 - [ ] sample.erl | sample.erl | Functional, Programming
 - [ ] sample.ex | sample.ex (Elixir) | Code
-- [ ] sample.f90 | sample.f90 | Science, Systems
-- [ ] sample.factor | sample.factor (Factor) | Code
-- [ ] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
-- [ ] sample.fish | sample.fish (Fish) | Code
-- [ ] sample.flac | Sample.flac | Media
-- [ ] sample.fnl | sample.fnl (Fennel) | Code
-- [ ] sample.fs | sample.fs | Functional, JVM
-- [ ] sample.fth | sample.fth (Forth) | Code
-- [ ] sample.gba | Sample.gba | Binary, Emulator
-- [ ] sample.gd | sample.gd (GDScript) | Code
-- [ ] sample.gif | Sample.gif | Image, Media
-- [ ] sample.gitignore | sample.gitignore | Text
-- [ ] sample.gleam | sample.gleam | Functional, Programming
-- [ ] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
-- [ ] sample.gnuplot | sample.gnuplot (gnuplot) | Code
-- [ ] sample.gr | sample.gr (Grain) | Code
-- [ ] sample.groovy | sample.groovy | JVM, Programming
-- [ ] sample.hbs | sample.hbs | Template, Web
-- [ ] sample.hlsl | sample.hlsl (HLSL Shader) | Graphics, Shader
-- [ ] sample.hs | sample.hs (Haskell) | Code
-- [ ] sample.htaccess | sample.htaccess | Config
-- [ ] sample.html | Sample.html | Code
-- [ ] sample.hx | sample.hx | Cross-platform, Programming
-- [ ] sample.idr | sample.idr (Idris) | Code
-- [ ] sample.img | sample.img | Binary, Emulator
-- [ ] sample.ini | Sample.ini | Config
-- [ ] sample.ink | sample.ink (Ink) | Code
-- [ ] sample.ino | sample.ino | Embedded, Programming
-- [ ] sample.ipynb | Sample.ipynb | Code
-- [ ] sample.j2 | sample.j2 | Template, Web
-- [ ] sample.janet | sample.janet (Janet) | Code
-- [ ] sample.jl | sample.jl | Science, Programming
-- [ ] sample.jpeg | Sample.jpeg | Image, Media
-- [ ] sample.jpg | Sample.jpg | Image, Media
-- [ ] sample.jsonnet | Jsonnet template (demo) | Code
-- [ ] sample.jsonnet | sample.jsonnet | Config
-- [ ] sample.jxl | Sample.jxl | Image, Media
-- [ ] sample.kdl | sample.kdl (KDL document) | Config
-- [ ] sample.koka | sample.koka (Koka) | Code
-- [ ] sample.kra | Sample.kra | Image, Media
-- [ ] sample.kt | sample.kt | JVM, Programming
-- [ ] sample.lean | sample.lean (Lean 4) | Code
-- [ ] sample.liquid | sample.liquid | Template, Web
-- [ ] sample.lisp | sample.lisp (Common Lisp) | Code
-- [ ] sample.log | Sample.log | Code
-- [ ] sample.lrf | Sample.lrf | Documents, Ebook
-- [ ] sample.ls | sample.ls (LiveScript) | Code
-- [ ] sample.lua | sample.lua | Scripting, Programming
-- [ ] sample.m | sample.m | Mobile, Programming
-- [ ] sample.m4 | sample.m4 (M4) | Code
-- [ ] sample.m4a | Sample.m4a | Media
-- [ ] sample.mediawiki | sample.mediawiki (MediaWiki) | Document
-- [ ] sample.mkv | Sample.mkv | Media
-- [ ] sample.ml | sample.ml | Functional, Programming
-- [ ] sample.mmd | sample.mmd (Mermaid Diagram) | Diagram, Visualization
-- [ ] sample.mobi | Sample.mobi | Documents, Ebook
-- [ ] sample.mojo | sample.mojo (Mojo) | Code
-- [ ] sample.mov | Sample.mov | Media
-- [ ] sample.mp4 | Sample.mp4 | Media
-- [ ] sample.mustache | sample.mustache | Template, Web
-- [ ] sample.nes | sample.nes | Binary, Emulator
-- [ ] sample.nim | sample.nim | Systems, Programming
-- [ ] sample.nix | sample.nix (Nix expression) | Config, Nix
-- [ ] sample.njk | sample.njk (Nunjucks Template) | Code
-- [ ] sample.nu | sample.nu (Nushell Script) | Code
-- [ ] sample.nut | sample.nut (Squirrel) | Code
-- [ ] sample.odin | sample.odin | Systems, Programming
-- [ ] sample.ogg | Sample.ogg | Media
-- [ ] sample.org | sample.org (Org-mode) | Documents, Notes
-- [ ] sample.otf | Sample.otf | Media, Font
-- [ ] sample.pas | sample.pas (Pascal) | Code
-- [ ] sample.patch | Sample.patch | Code
-- [ ] sample.pem | sample.pem | Secrets, Config
-- [ ] sample.php | sample.php | Web, Programming
-- [ ] sample.plist | sample.plist | Config
-- [ ] sample.pm | sample.pm | Scripting, Programming
-- [ ] sample.pml | sample.pml (PROMELA) | Code
-- [ ] sample.png | Sample.png | Image, Media
-- [ ] sample.pony | sample.pony (Pony) | Code
-- [ ] sample.pro | sample.pro | Functional, Logic
-- [ ] sample.proto | Protocol Buffer IDL (demo) | Code
-- [ ] sample.ps1 | sample.ps1 | Scripting, Systems
-- [ ] sample.psb | Sample.psb | Image, Media
-- [ ] sample.psd | Sample.psd | Image, Media
-- [ ] sample.pug | sample.pug (Pug/Jade) | Code
-- [ ] sample.puml | sample.puml (PlantUML) | Diagram, UML
-- [ ] sample.purs | sample.purs | Functional, Programming
-- [ ] sample.R | sample.R | Science, Programming
-- [ ] sample.rb | sample.rb | Scripting, Programming
-- [ ] sample.re | sample.re (Reason) | Code
-- [ ] sample.red | sample.red (Red) | Code
-- [ ] sample.reg | sample.reg | Config
-- [ ] sample.rego | sample.rego (Rego Policy) | Config, Security
-- [ ] sample.res | sample.res (ReScript) | Code
-- [ ] sample.rkt | sample.rkt | Functional, Lisp
-- [ ] sample.rst | sample.rst (reStructuredText) | Documents, Documentation
-- [ ] sample.sarif | SARIF security scan results (demo) | Code, security
-- [ ] sample.scala | sample.scala | JVM, Functional
-- [ ] sample.scm | sample.scm | Functional, Lisp
-- [ ] sample.sed | sample.sed (sed) | Code
-- [ ] sample.sml | sample.sml (Standard ML) | Code
-- [ ] sample.smt2 | sample.smt2 (SMT-LIB 2) | Code
-- [ ] sample.sol | sample.sol | Blockchain, Programming
-- [ ] sample.sparql | sample.sparql | Data, Semantic Web
-- [ ] sample.spec | sample.spec (RPM Spec) | Config
-- [ ] sample.svelte | sample.svelte (Svelte Component) | Code
-- [ ] sample.swf | sample.swf | Binary, Emulator
-- [ ] sample.swift | sample.swift | Mobile, Programming
-- [ ] sample.tcl | sample.tcl | Scripting, Programming
-- [ ] sample.tex | sample.tex (LaTeX) | Document
-- [ ] sample.textile | sample.textile (Textile) | Document
-- [ ] sample.tf | sample.tf (Terraform HCL) | Config, Infrastructure
-- [ ] sample.thrift | Apache Thrift IDL (demo) | Code
-- [ ] sample.thy | sample.thy (Isabelle/HOL) | Code
-- [ ] sample.tiff | Sample.tiff | Image, Media
-- [ ] sample.tla | sample.tla (TLA+) | Code
-- [ ] sample.tmpfiles | sample.tmpfiles (tmpfiles.d) | Config
-- [ ] sample.toml | Sample.toml | Config
-- [ ] sample.ttf | Sample.ttf | Media, Font
-- [ ] sample.ttl | sample.ttl | Data, Semantic Web
-- [ ] sample.typ | sample.typ (Typst) | Document
-- [ ] sample.url | sample.url | Code
-- [ ] sample.v | sample.v | Hardware, HDL
-- [ ] sample.vala | sample.vala (Vala) | Code
-- [ ] sample.vhd | sample.vhd | Hardware, Programming
-- [ ] sample.webm | Sample.webm | Media
-- [ ] sample.webp | Sample.webp | Image, Media
-- [ ] sample.wgsl | sample.wgsl (WGSL Shader) | Graphics, Shader
-- [ ] sample.wl | sample.wl (Wolfram Language) | Code
-- [ ] sample.woff | Sample.woff | Media, Font
-- [ ] sample.woff2 | Sample.woff2 | Media, Font
-- [ ] sample.wren | sample.wren (Wren) | Code
-- [ ] sample.xcf | Sample.xcf | Image, Media
-- [ ] sample.xml | Sample.xml | Config
-- [ ] sample.xsl | sample.xsl (XSLT Stylesheet) | Code
-- [ ] sample.y | sample.y (Yacc) | Code
-- [ ] sample.yaml | Sample.yaml | Config
-- [ ] sample.zig | sample.zig (Zig) | Code
-- [ ] sample.zone | sample.zone (DNS Zone File) | Config, Network
-- [ ] sample.zsh | sample.zsh (Zsh) | Code
-- [ ] sbom.cyclonedx.json | sbom.cyclonedx.json (CycloneDX SBOM) | Security
-- [ ] sbom.spdx | sbom.spdx (SPDX SBOM) | Security
-- [ ] schema.graphql | schema.graphql (GraphQL Schema) | API, Code
-- [ ] schema.prisma | schema.prisma | Config
-- [ ] scorecard.yml | scorecard.yml | Config
-- [ ] script.sh | script.sh | Code
-- [ ] scrutiny.yaml | Scrutiny config | Monitoring, Storage, Self-Hosted
-- [ ] searxng-settings.yml | searxng-settings.yml | Config, Search
-- [ ] secret.txt | secret.txt | Secrets, Text
-- [ ] security.txt | security.txt (demo) | Config
-- [ ] security.txt | security.txt (demo) | Config
-- [ ] semaphore-config.json | Semaphore Config | Config, CI/CD
-- [ ] semaphore.yml | semaphore.yml | CI, Config
-- [ ] sentinel.conf | sentinel.conf (Redis Sentinel) | Config
-- [ ] sentry.properties | sentry.properties | Config
-- [ ] server.go | server.go | Code
-- [ ] server.properties | server.properties (Kafka) | Config
-- [ ] serverless.yml | serverless.yml | Config
-- [ ] service.proto | service.proto | Code, Data
-- [ ] settings.gradle | settings.gradle | Config
-- [ ] settings.py | settings.py (Django) | Config
-- [ ] settings.xml | settings.xml (Maven) | Config, Java
-- [ ] setup.cfg | setup.cfg | Config
-- [ ] sftpgo.json | SFTPGo Config | Config, Self-hosted
-- [ ] shader.wgsl | shader.wgsl | Code, Media
-- [ ] shadow-cljs.edn | shadow-cljs.edn | Config
-- [ ] shard.yml | shard.yml | Package
-- [ ] shopify.app.toml | shopify.app.toml | Config
-- [ ] shopify.app.toml | shopify.app.toml | uncategorized
-- [ ] sitemap.xml | XML Sitemap (demo) | Config
-- [ ] skaffold.yaml | skaffold.yaml | Config, devops
-- [ ] slapd.conf | slapd.conf (OpenLDAP Config) | Config
-- [ ] smb.conf | smb.conf (Samba) | Config, Network
-- [ ] snapcraft.yaml | snapcraft.yaml (Snapcraft) | Config
-- [ ] Snapfile | Snapfile | Config
-- [ ] snmp.yml | snmp.yml | Config
-- [ ] socket.yml | socket.yml | Config
-- [ ] sonar-project.properties | sonar-project.properties | Config
-- [ ] sonar.properties | SonarQube Config | Config, DevOps
-- [ ] sorbet.config | sorbet.config | Config
-- [ ] sources.list | sources.list (APT Sources) | Config
-- [ ] spacelift-config.yml | spacelift-config.yml | Config
-- [ ] speedtest-tracker.env | Speedtest Tracker config | Monitoring, Network, Self-Hosted
-- [ ] spotbugs-exclude.xml | spotbugs-exclude.xml (SpotBugs) | Config
-- [ ] sqitch.conf | sqitch.conf | Config, Database
-- [ ] sqlc.yaml | sqlc.yaml (sqlc) | Config
-- [ ] squid.conf | squid.conf | Config
-- [ ] ssh_config | ssh_config (SSH Client Config) | Config, Network
-- [ ] ssh-config | ssh-config | Config
-- [ ] sshd_config | sshd_config | Config
-- [ ] sssd.conf | sssd.conf (SSSD) | Config
-- [ ] stack.yaml | stack.yaml | Config
-- [ ] standalone.conf | standalone.conf | Config
-- [ ] standalone.conf | standalone.conf | uncategorized
-- [ ] starship.toml | starship.toml | Config, Terminal
-- [ ] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
-- [ ] storage.conf | storage.conf | Config
-- [ ] storage.conf | storage.conf | uncategorized
-- [ ] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
-- [ ] strings.xml | strings.xml (Android Strings) | Config
-- [ ] stryker.conf.json | stryker.conf.json | Config
-- [ ] stryker.conf.json | stryker.conf.json | uncategorized
-- [ ] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
-- [ ] styles.css | styles.css | Code
-- [ ] sudoers | sudoers (sudo access control) | Config, Security
-- [ ] supabase-config.toml | supabase/config.toml | Config
-- [ ] supervisord.conf | supervisord.conf | Config, Process
-- [ ] suricata.yaml | suricata.yaml | Security, Config
-- [ ] svelte.config.js | svelte.config.js | Config
-- [ ] sway | sway (Sway WM) | Config, Desktop
-- [ ] sxhkdrc | sxhkdrc (sxhkd hotkey daemon) | Config, Desktop
-- [ ] sys.config | sys.config | Config, Erlang
-- [ ] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
-- [ ] syslog-ng.conf | syslog-ng.conf | Config
-- [ ] syslog-ng.conf | syslog-ng.conf | uncategorized
-- [ ] system.yaml | system.yaml | Config
-- [ ] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
-- [ ] tailwind.config.json | tailwind.config.json | Config
-- [ ] tandoor.env | Tandoor Recipes config | Productivity, Food, Self-Hosted
-- [ ] Taskfile.yml | Taskfile.yml | Config
-- [ ] tauri.conf.json | tauri.conf.json (Tauri) | Config
-- [ ] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
-- [ ] telegraf.conf | telegraf.conf | Config
-- [ ] telegraf.conf | telegraf.conf | uncategorized
-- [ ] tempo.yaml | tempo.yaml | Config
-- [ ] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
-- [ ] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
-- [ ] tetragon.yaml | tetragon.yaml (Tetragon policy) | Security, Config
-- [ ] thanos-bucket.yml | thanos-bucket.yml (Thanos) | Config, Monitoring
-- [ ] thanos.yaml | thanos.yaml | Observability, Config
-- [ ] theme.less | theme.less | Code
-- [ ] theme.scss | theme.scss | Code
-- [ ] Tiltfile | Tiltfile | Config
-- [ ] tlp.conf | tlp.conf (TLP Power) | Config, System
-- [ ] tox.ini | tox.ini (tox Config) | Config, Python
-- [ ] traefik.toml | traefik.toml | Config
-- [ ] traefik.yml | traefik.yml | Config
-- [ ] travis.yml | Travis CI config | Config
-- [ ] trivy.yaml | trivy.yaml | Config
-- [ ] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
-- [ ] tsconfig.json | tsconfig.json | Config
-- [ ] tspconfig.yaml | tspconfig.yaml | Config
-- [ ] tspconfig.yaml | tspconfig.yaml | uncategorized
-- [ ] tsup.config.ts | tsup.config.ts | Config
-- [ ] turbo.json | turbo.json | Config
-- [ ] twenty.env | twenty.env | Config, Application, CRM
-- [ ] typos.toml | typos.toml (typos spell checker) | Config
-- [ ] ufw.conf | ufw.conf (UFW Firewall) | Config, Network
-- [ ] umami.env | umami.env | Config, Application, Analytics
-- [ ] unbound.conf | unbound.conf (Unbound DNS) | Config, Network
-- [ ] unleash.config.js | unleash.config.js | Config
-- [ ] uptime-kuma.json | uptime-kuma.json | Config, Monitoring
-- [ ] usr.bin.nginx | usr.bin.nginx (AppArmor profile) | Config, Security
-- [ ] uv.toml | uv.toml (uv package manager) | Config
-- [ ] Vagrantfile | Vagrantfile | Config
-- [ ] vale.ini | vale.ini | Config
-- [ ] values.yaml | values.yaml (Helm values) | DevOps, Config
-- [ ] vault.hcl | vault.hcl (HashiCorp Vault) | Config
-- [ ] vaultwarden.env | Vaultwarden Config | Config, Self-hosted
-- [ ] vcpkg.json | vcpkg.json | Config
-- [ ] vector.toml | vector.toml (Vector) | Config
-- [ ] velero-schedule.yaml | velero-schedule.yaml (Velero) | Config
-- [ ] vercel.json | Vercel config (vercel.json demo) | Config, devops
-- [ ] versions.tf | versions.tf (Terraform) | Config
-- [ ] victoria-metrics.yml | victoria-metrics.yml (VictoriaMetrics) | Config, Monitoring
-- [ ] vikunja.yml | vikunja.yml | Config, Application, Task Management
-- [ ] vite.config.js | vite.config.js | Config
-- [ ] vitepress.config.ts | vitepress.config.ts | Config
-- [ ] vitest.config.json | vitest.config.json | Config
-- [ ] vm.args | vm.args | Config, Erlang
-- [ ] volta.json | volta.json | Config
-- [ ] vscode-extensions.json | vscode-extensions.json | Config
-- [ ] vscode-launch.json | vscode-launch.json | Config
-- [ ] vscode-settings.json | vscode-settings.json | Config
-- [ ] vscode-tasks.json | vscode-tasks.json | Config
-- [ ] vsftpd.conf | vsftpd.conf | Config
-- [ ] vsftpd.conf | vsftpd.conf | uncategorized
-- [ ] wails.json | wails.json (Wails) | Config
-- [ ] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
-- [ ] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
-- [ ] wallabag.env | Wallabag config | Productivity, Reading, Self-Hosted
-- [ ] wallos.env | Wallos Config | Config, Self-hosted
-- [ ] wandb-settings | wandb-settings (W&B Config) | Config, Data Science
-- [ ] watchtower.env | Watchtower Config | Config, DevOps
-- [ ] waybar-config.json | waybar/config | Config, Desktop
-- [ ] waypoint.hcl | waypoint.hcl | Config
-- [ ] waypoint.hcl | waypoint.hcl | uncategorized
-- [ ] wdio.conf.js | wdio.conf.js | Config
-- [ ] web.config | web.config (IIS/ASP.NET) | Config
-- [ ] webpack.config.js | webpack.config.js | Config
-- [ ] wg0.conf | wg0.conf | Config, Network
-- [ ] Widget.jsx | Widget.jsx | Code
-- [ ] windmill.env | windmill.env | Config, Application, Automation
-- [ ] woodpecker-agent.env | Woodpecker CI Agent Config | Config, CI/CD
-- [ ] woodpecker.yml | woodpecker.yml (Woodpecker CI) | Config, devops
-- [ ] worker.rs | worker.rs | Code
-- [ ] workspace.xml | workspace.xml (JetBrains) | Config
-- [ ] wpa_supplicant.conf | wpa_supplicant.conf (wpa_supplicant) | Config
-- [ ] wrangler.toml | wrangler.toml | Config
-- [ ] wsl.conf | wsl.conf | Config
-- [ ] xorg.conf | xorg.conf | Config, Desktop
-- [ ] yt-dlp.conf | yt-dlp.conf | Config
-- [ ] zabbix_agentd.conf | zabbix_agentd.conf | Monitoring, Config
-- [ ] zathurarc | zathurarc | Config
-- [ ] zitadel.yaml | ZITADEL Config | Config, Self-hosted
-- [ ] zoo.cfg | zoo.cfg | Config
+- [x] sample.f90 | sample.f90 | Science, Systems
+- [x] sample.factor | sample.factor (Factor) | Code
+- [x] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
+- [x] sample.fish | sample.fish (Fish) | Code
+- [x] sample.flac | Sample.flac | Media
+- [x] sample.fnl | sample.fnl (Fennel) | Code
+- [x] sample.fs | sample.fs | Functional, JVM
+- [x] sample.fth | sample.fth (Forth) | Code
+- [x] sample.gba | Sample.gba | Binary, Emulator
+- [x] sample.gd | sample.gd (GDScript) | Code
+- [x] sample.gif | Sample.gif | Image, Media
+- [x] sample.gitignore | sample.gitignore | Text
+- [x] sample.gleam | sample.gleam | Functional, Programming
+- [x] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
+- [x] sample.gnuplot | sample.gnuplot (gnuplot) | Code
+- [x] sample.gr | sample.gr (Grain) | Code
+- [x] sample.groovy | sample.groovy | JVM, Programming
+- [x] sample.hbs | sample.hbs | Template, Web
+- [x] sample.hlsl | sample.hlsl (HLSL Shader) | Graphics, Shader
+- [x] sample.hs | sample.hs (Haskell) | Code
+- [x] sample.htaccess | sample.htaccess | Config
+- [x] sample.html | Sample.html | Code
+- [x] sample.hx | sample.hx | Cross-platform, Programming
+- [x] sample.idr | sample.idr (Idris) | Code
+- [x] sample.img | sample.img | Binary, Emulator
+- [x] sample.ini | Sample.ini | Config
+- [x] sample.ink | sample.ink (Ink) | Code
+- [x] sample.ino | sample.ino | Embedded, Programming
+- [x] sample.ipynb | Sample.ipynb | Code
+- [x] sample.j2 | sample.j2 | Template, Web
+- [x] sample.janet | sample.janet (Janet) | Code
+- [x] sample.jl | sample.jl | Science, Programming
+- [x] sample.jpeg | Sample.jpeg | Image, Media
+- [x] sample.jpg | Sample.jpg | Image, Media
+- [x] sample.jsonnet | Jsonnet template (demo) | Code
+- [x] sample.jsonnet | sample.jsonnet | Config
+- [x] sample.jxl | Sample.jxl | Image, Media
+- [x] sample.kdl | sample.kdl (KDL document) | Config
+- [x] sample.koka | sample.koka (Koka) | Code
+- [x] sample.kra | Sample.kra | Image, Media
+- [x] sample.kt | sample.kt | JVM, Programming
+- [x] sample.lean | sample.lean (Lean 4) | Code
+- [x] sample.liquid | sample.liquid | Template, Web
+- [x] sample.lisp | sample.lisp (Common Lisp) | Code
+- [x] sample.log | Sample.log | Code
+- [x] sample.lrf | Sample.lrf | Documents, Ebook
+- [x] sample.ls | sample.ls (LiveScript) | Code
+- [x] sample.lua | sample.lua | Scripting, Programming
+- [x] sample.m | sample.m | Mobile, Programming
+- [x] sample.m4 | sample.m4 (M4) | Code
+- [x] sample.m4a | Sample.m4a | Media
+- [x] sample.mediawiki | sample.mediawiki (MediaWiki) | Document
+- [x] sample.mkv | Sample.mkv | Media
+- [x] sample.ml | sample.ml | Functional, Programming
+- [x] sample.mmd | sample.mmd (Mermaid Diagram) | Diagram, Visualization
+- [x] sample.mobi | Sample.mobi | Documents, Ebook
+- [x] sample.mojo | sample.mojo (Mojo) | Code
+- [x] sample.mov | Sample.mov | Media
+- [x] sample.mp4 | Sample.mp4 | Media
+- [x] sample.mustache | sample.mustache | Template, Web
+- [x] sample.nes | sample.nes | Binary, Emulator
+- [x] sample.nim | sample.nim | Systems, Programming
+- [x] sample.nix | sample.nix (Nix expression) | Config, Nix
+- [x] sample.njk | sample.njk (Nunjucks Template) | Code
+- [x] sample.nu | sample.nu (Nushell Script) | Code
+- [x] sample.nut | sample.nut (Squirrel) | Code
+- [x] sample.odin | sample.odin | Systems, Programming
+- [x] sample.ogg | Sample.ogg | Media
+- [x] sample.org | sample.org (Org-mode) | Documents, Notes
+- [x] sample.otf | Sample.otf | Media, Font
+- [x] sample.pas | sample.pas (Pascal) | Code
+- [x] sample.patch | Sample.patch | Code
+- [x] sample.pem | sample.pem | Secrets, Config
+- [x] sample.php | sample.php | Web, Programming
+- [x] sample.plist | sample.plist | Config
+- [x] sample.pm | sample.pm | Scripting, Programming
+- [x] sample.pml | sample.pml (PROMELA) | Code
+- [x] sample.png | Sample.png | Image, Media
+- [x] sample.pony | sample.pony (Pony) | Code
+- [x] sample.pro | sample.pro | Functional, Logic
+- [x] sample.proto | Protocol Buffer IDL (demo) | Code
+- [x] sample.ps1 | sample.ps1 | Scripting, Systems
+- [x] sample.psb | Sample.psb | Image, Media
+- [x] sample.psd | Sample.psd | Image, Media
+- [x] sample.pug | sample.pug (Pug/Jade) | Code
+- [x] sample.puml | sample.puml (PlantUML) | Diagram, UML
+- [x] sample.purs | sample.purs | Functional, Programming
+- [x] sample.R | sample.R | Science, Programming
+- [x] sample.rb | sample.rb | Scripting, Programming
+- [x] sample.re | sample.re (Reason) | Code
+- [x] sample.red | sample.red (Red) | Code
+- [x] sample.reg | sample.reg | Config
+- [x] sample.rego | sample.rego (Rego Policy) | Config, Security
+- [x] sample.res | sample.res (ReScript) | Code
+- [x] sample.rkt | sample.rkt | Functional, Lisp
+- [x] sample.rst | sample.rst (reStructuredText) | Documents, Documentation
+- [x] sample.sarif | SARIF security scan results (demo) | Code, security
+- [x] sample.scala | sample.scala | JVM, Functional
+- [x] sample.scm | sample.scm | Functional, Lisp
+- [x] sample.sed | sample.sed (sed) | Code
+- [x] sample.sml | sample.sml (Standard ML) | Code
+- [x] sample.smt2 | sample.smt2 (SMT-LIB 2) | Code
+- [x] sample.sol | sample.sol | Blockchain, Programming
+- [x] sample.sparql | sample.sparql | Data, Semantic Web
+- [x] sample.spec | sample.spec (RPM Spec) | Config
+- [x] sample.svelte | sample.svelte (Svelte Component) | Code
+- [x] sample.swf | sample.swf | Binary, Emulator
+- [x] sample.swift | sample.swift | Mobile, Programming
+- [x] sample.tcl | sample.tcl | Scripting, Programming
+- [x] sample.tex | sample.tex (LaTeX) | Document
+- [x] sample.textile | sample.textile (Textile) | Document
+- [x] sample.tf | sample.tf (Terraform HCL) | Config, Infrastructure
+- [x] sample.thrift | Apache Thrift IDL (demo) | Code
+- [x] sample.thy | sample.thy (Isabelle/HOL) | Code
+- [x] sample.tiff | Sample.tiff | Image, Media
+- [x] sample.tla | sample.tla (TLA+) | Code
+- [x] sample.tmpfiles | sample.tmpfiles (tmpfiles.d) | Config
+- [x] sample.toml | Sample.toml | Config
+- [x] sample.ttf | Sample.ttf | Media, Font
+- [x] sample.ttl | sample.ttl | Data, Semantic Web
+- [x] sample.typ | sample.typ (Typst) | Document
+- [x] sample.url | sample.url | Code
+- [x] sample.v | sample.v | Hardware, HDL
+- [x] sample.vala | sample.vala (Vala) | Code
+- [x] sample.vhd | sample.vhd | Hardware, Programming
+- [x] sample.webm | Sample.webm | Media
+- [x] sample.webp | Sample.webp | Image, Media
+- [x] sample.wgsl | sample.wgsl (WGSL Shader) | Graphics, Shader
+- [x] sample.wl | sample.wl (Wolfram Language) | Code
+- [x] sample.woff | Sample.woff | Media, Font
+- [x] sample.woff2 | Sample.woff2 | Media, Font
+- [x] sample.wren | sample.wren (Wren) | Code
+- [x] sample.xcf | Sample.xcf | Image, Media
+- [x] sample.xml | Sample.xml | Config
+- [x] sample.xsl | sample.xsl (XSLT Stylesheet) | Code
+- [x] sample.y | sample.y (Yacc) | Code
+- [x] sample.yaml | Sample.yaml | Config
+- [x] sample.zig | sample.zig (Zig) | Code
+- [x] sample.zone | sample.zone (DNS Zone File) | Config, Network
+- [x] sample.zsh | sample.zsh (Zsh) | Code
+- [x] sbom.cyclonedx.json | sbom.cyclonedx.json (CycloneDX SBOM) | Security
+- [x] sbom.spdx | sbom.spdx (SPDX SBOM) | Security
+- [x] schema.graphql | schema.graphql (GraphQL Schema) | API, Code
+- [x] schema.prisma | schema.prisma | Config
+- [x] scorecard.yml | scorecard.yml | Config
+- [x] script.sh | script.sh | Code
+- [x] scrutiny.yaml | Scrutiny config | Monitoring, Storage, Self-Hosted
+- [x] searxng-settings.yml | searxng-settings.yml | Config, Search
+- [x] secret.txt | secret.txt | Secrets, Text
+- [x] security.txt | security.txt (demo) | Config
+- [x] security.txt | security.txt (demo) | Config
+- [x] semaphore-config.json | Semaphore Config | Config, CI/CD
+- [x] semaphore.yml | semaphore.yml | CI, Config
+- [x] sentinel.conf | sentinel.conf (Redis Sentinel) | Config
+- [x] sentry.properties | sentry.properties | Config
+- [x] server.go | server.go | Code
+- [x] server.properties | server.properties (Kafka) | Config
+- [x] serverless.yml | serverless.yml | Config
+- [x] service.proto | service.proto | Code, Data
+- [x] settings.gradle | settings.gradle | Config
+- [x] settings.py | settings.py (Django) | Config
+- [x] settings.xml | settings.xml (Maven) | Config, Java
+- [x] setup.cfg | setup.cfg | Config
+- [x] sftpgo.json | SFTPGo Config | Config, Self-hosted
+- [x] shader.wgsl | shader.wgsl | Code, Media
+- [x] shadow-cljs.edn | shadow-cljs.edn | Config
+- [x] shard.yml | shard.yml | Package
+- [x] shopify.app.toml | shopify.app.toml | Config
+- [x] shopify.app.toml | shopify.app.toml | Config
+- [x] sitemap.xml | XML Sitemap (demo) | Config
+- [x] skaffold.yaml | skaffold.yaml | Config, devops
+- [x] slapd.conf | slapd.conf (OpenLDAP Config) | Config
+- [x] smb.conf | smb.conf (Samba) | Config, Network
+- [x] snapcraft.yaml | snapcraft.yaml (Snapcraft) | Config
+- [x] Snapfile | Snapfile | Config
+- [x] snmp.yml | snmp.yml | Config
+- [x] socket.yml | socket.yml | Config
+- [x] sonar-project.properties | sonar-project.properties | Config
+- [x] sonar.properties | SonarQube Config | Config, DevOps
+- [x] sorbet.config | sorbet.config | Config
+- [x] sources.list | sources.list (APT Sources) | Config
+- [x] spacelift-config.yml | spacelift-config.yml | Config
+- [x] speedtest-tracker.env | Speedtest Tracker config | Monitoring, Network, Self-Hosted
+- [x] spotbugs-exclude.xml | spotbugs-exclude.xml (SpotBugs) | Config
+- [x] sqitch.conf | sqitch.conf | Config, Database
+- [x] sqlc.yaml | sqlc.yaml (sqlc) | Config
+- [x] squid.conf | squid.conf | Config
+- [x] ssh_config | ssh_config (SSH Client Config) | Config, Network
+- [x] ssh-config | ssh-config | Config
+- [x] sshd_config | sshd_config | Config
+- [x] sssd.conf | sssd.conf (SSSD) | Config
+- [x] stack.yaml | stack.yaml | Config
+- [x] standalone.conf | standalone.conf | Config
+- [x] standalone.conf | standalone.conf | Infrastructure
+- [x] starship.toml | starship.toml | Config, Terminal
+- [x] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
+- [x] storage.conf | storage.conf | Config
+- [x] storage.conf | storage.conf | Infrastructure
+- [x] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
+- [x] strings.xml | strings.xml (Android Strings) | Config
+- [x] stryker.conf.json | stryker.conf.json | Config
+- [x] stryker.conf.json | stryker.conf.json | Testing
+- [x] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
+- [x] styles.css | styles.css | Code
+- [x] sudoers | sudoers (sudo access control) | Config, Security
+- [x] supabase-config.toml | supabase/config.toml | Config
+- [x] supervisord.conf | supervisord.conf | Config, Process
+- [x] suricata.yaml | suricata.yaml | Security, Config
+- [x] svelte.config.js | svelte.config.js | Config
+- [x] sway | sway (Sway WM) | Config, Desktop
+- [x] sxhkdrc | sxhkdrc (sxhkd hotkey daemon) | Config, Desktop
+- [x] sys.config | sys.config | Config, Erlang
+- [x] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
+- [x] syslog-ng.conf | syslog-ng.conf | Config
+- [x] syslog-ng.conf | syslog-ng.conf | System
+- [x] system.yaml | system.yaml | Config
+- [x] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
+- [x] tailwind.config.json | tailwind.config.json | Config
+- [x] tandoor.env | Tandoor Recipes config | Productivity, Food, Self-Hosted
+- [x] Taskfile.yml | Taskfile.yml | Config
+- [x] tauri.conf.json | tauri.conf.json (Tauri) | Config
+- [x] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
+- [x] telegraf.conf | telegraf.conf | Config
+- [x] telegraf.conf | telegraf.conf | Observability
+- [x] tempo.yaml | tempo.yaml | Config
+- [x] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
+- [x] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
+- [x] tetragon.yaml | tetragon.yaml (Tetragon policy) | Security, Config
+- [x] thanos-bucket.yml | thanos-bucket.yml (Thanos) | Config, Monitoring
+- [x] thanos.yaml | thanos.yaml | Observability, Config
+- [x] theme.less | theme.less | Code
+- [x] theme.scss | theme.scss | Code
+- [x] Tiltfile | Tiltfile | Config
+- [x] tlp.conf | tlp.conf (TLP Power) | Config, System
+- [x] tox.ini | tox.ini (tox Config) | Config, Python
+- [x] traefik.toml | traefik.toml | Config
+- [x] traefik.yml | traefik.yml | Config
+- [x] travis.yml | Travis CI config | Config
+- [x] trivy.yaml | trivy.yaml | Config
+- [x] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
+- [x] tsconfig.json | tsconfig.json | Config
+- [x] tspconfig.yaml | tspconfig.yaml | Config
+- [x] tspconfig.yaml | tspconfig.yaml | Tooling
+- [x] tsup.config.ts | tsup.config.ts | Config
+- [x] turbo.json | turbo.json | Config
+- [x] twenty.env | twenty.env | Config, Application, CRM
+- [x] typos.toml | typos.toml (typos spell checker) | Config
+- [x] ufw.conf | ufw.conf (UFW Firewall) | Config, Network
+- [x] umami.env | umami.env | Config, Application, Analytics
+- [x] unbound.conf | unbound.conf (Unbound DNS) | Config, Network
+- [x] unleash.config.js | unleash.config.js | Config
+- [x] uptime-kuma.json | uptime-kuma.json | Config, Monitoring
+- [x] usr.bin.nginx | usr.bin.nginx (AppArmor profile) | Config, Security
+- [x] uv.toml | uv.toml (uv package manager) | Config
+- [x] Vagrantfile | Vagrantfile | Config
+- [x] vale.ini | vale.ini | Config
+- [x] values.yaml | values.yaml (Helm values) | DevOps, Config
+- [x] vault.hcl | vault.hcl (HashiCorp Vault) | Config
+- [x] vaultwarden.env | Vaultwarden Config | Config, Self-hosted
+- [x] vcpkg.json | vcpkg.json | Config
+- [x] vector.toml | vector.toml (Vector) | Config
+- [x] velero-schedule.yaml | velero-schedule.yaml (Velero) | Config
+- [x] vercel.json | Vercel config (vercel.json demo) | Config, devops
+- [x] versions.tf | versions.tf (Terraform) | Config
+- [x] victoria-metrics.yml | victoria-metrics.yml (VictoriaMetrics) | Config, Monitoring
+- [x] vikunja.yml | vikunja.yml | Config, Application, Task Management
+- [x] vite.config.js | vite.config.js | Config
+- [x] vitepress.config.ts | vitepress.config.ts | Config
+- [x] vitest.config.json | vitest.config.json | Config
+- [x] vm.args | vm.args | Config, Erlang
+- [x] volta.json | volta.json | Config
+- [x] vscode-extensions.json | vscode-extensions.json | Config
+- [x] vscode-launch.json | vscode-launch.json | Config
+- [x] vscode-settings.json | vscode-settings.json | Config
+- [x] vscode-tasks.json | vscode-tasks.json | Config
+- [x] vsftpd.conf | vsftpd.conf | Config
+- [x] vsftpd.conf | vsftpd.conf | Server
+- [x] wails.json | wails.json (Wails) | Config
+- [x] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
+- [x] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
+- [x] wallabag.env | Wallabag config | Productivity, Reading, Self-Hosted
+- [x] wallos.env | Wallos Config | Config, Self-hosted
+- [x] wandb-settings | wandb-settings (W&B Config) | Config, Data Science
+- [x] watchtower.env | Watchtower Config | Config, DevOps
+- [x] waybar-config.json | waybar/config | Config, Desktop
+- [x] waypoint.hcl | waypoint.hcl | Config
+- [x] waypoint.hcl | waypoint.hcl | Infrastructure
+- [x] wdio.conf.js | wdio.conf.js | Config
+- [x] web.config | web.config (IIS/ASP.NET) | Config
+- [x] webpack.config.js | webpack.config.js | Config
+- [x] wg0.conf | wg0.conf | Config, Network
+- [x] Widget.jsx | Widget.jsx | Code
+- [x] windmill.env | windmill.env | Config, Application, Automation
+- [x] woodpecker-agent.env | Woodpecker CI Agent Config | Config, CI/CD
+- [x] woodpecker.yml | woodpecker.yml (Woodpecker CI) | Config, devops
+- [x] worker.rs | worker.rs | Code
+- [x] workspace.xml | workspace.xml (JetBrains) | Config
+- [x] wpa_supplicant.conf | wpa_supplicant.conf (wpa_supplicant) | Config
+- [x] wrangler.toml | wrangler.toml | Config
+- [x] wsl.conf | wsl.conf | Config
+- [x] xorg.conf | xorg.conf | Config, Desktop
+- [x] yt-dlp.conf | yt-dlp.conf | Config
+- [x] zabbix_agentd.conf | zabbix_agentd.conf | Monitoring, Config
+- [x] zathurarc | zathurarc | Config
+- [x] zitadel.yaml | ZITADEL Config | Config, Self-hosted
+- [x] zoo.cfg | zoo.cfg | Config
 <!-- AUDIT_SECTION special-examples END -->

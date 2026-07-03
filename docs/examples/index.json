@@ -9181,7 +9181,10 @@
     "file": "shopify.app.toml",
     "label": "shopify.app.toml",
     "category": "Config",
-    "knownFile": "shopify-app"
+    "knownFile": "shopify-app",
+    "categories": [
+      "Config"
+    ]
   },
   {
     "file": ".lighthouserc.json",
@@ -9193,7 +9196,10 @@
     "file": "stryker.conf.json",
     "label": "stryker.conf.json",
     "category": "Testing",
-    "knownFile": "stryker"
+    "knownFile": "stryker",
+    "categories": [
+      "Testing"
+    ]
   },
   {
     "file": "airflow.cfg",
@@ -9205,7 +9211,10 @@
     "file": "waypoint.hcl",
     "label": "waypoint.hcl",
     "category": "Infrastructure",
-    "knownFile": "waypoint"
+    "knownFile": "waypoint",
+    "categories": [
+      "Infrastructure"
+    ]
   },
   {
     "file": "buf.gen.yaml",
@@ -9223,7 +9232,10 @@
     "file": "storage.conf",
     "label": "storage.conf",
     "category": "Infrastructure",
-    "knownFile": "storage-conf"
+    "knownFile": "storage-conf",
+    "categories": [
+      "Infrastructure"
+    ]
   },
   {
     "file": "codegen.yml",
@@ -9235,7 +9247,10 @@
     "file": "tspconfig.yaml",
     "label": "tspconfig.yaml",
     "category": "Tooling",
-    "knownFile": "tspconfig"
+    "knownFile": "tspconfig",
+    "categories": [
+      "Tooling"
+    ]
   },
   {
     "file": "asyncapi.yml",
@@ -9247,7 +9262,10 @@
     "file": "telegraf.conf",
     "label": "telegraf.conf",
     "category": "Observability",
-    "knownFile": "telegraf"
+    "knownFile": "telegraf",
+    "categories": [
+      "Observability"
+    ]
   },
   {
     "file": "devfile.yaml",
@@ -9290,7 +9308,10 @@
     "file": "standalone.conf",
     "label": "standalone.conf",
     "category": "Infrastructure",
-    "knownFile": "pulsar-conf"
+    "knownFile": "pulsar-conf",
+    "categories": [
+      "Infrastructure"
+    ]
   },
   {
     "file": "mint.json",
@@ -9362,7 +9383,10 @@
     "file": "syslog-ng.conf",
     "label": "syslog-ng.conf",
     "category": "System",
-    "knownFile": "syslog-ng"
+    "knownFile": "syslog-ng",
+    "categories": [
+      "System"
+    ]
   },
   {
     "file": "frpc.toml",
@@ -9380,7 +9404,10 @@
     "file": "vsftpd.conf",
     "label": "vsftpd.conf",
     "category": "Server",
-    "knownFile": true
+    "knownFile": "vsftpd-conf",
+    "categories": [
+      "Server"
+    ]
   },
   {
     "file": "proftpd.conf",
@@ -12479,6 +12506,18 @@
     ],
     "enhanced": true,
     "description": "Yacc/Bison parser grammar",
+    "knownFile": "lex-yacc"
+  },
+  {
+    "label": "sample.l (Lex)",
+    "file": "sample.l",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Lex/Flex lexical analyzer specification with token rules and scanner definitions",
     "knownFile": "lex-yacc"
   },
   {
