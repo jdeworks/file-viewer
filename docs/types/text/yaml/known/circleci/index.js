@@ -3,7 +3,7 @@ export const plugin = {
   label: 'CircleCI Config',
   tags: ['circleci', 'ci', 'yaml'],
   match(intake, baseType) {
-    if (baseType && !['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
+    if (baseType && baseType.id !== 'yaml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     const path = (intake.name || intake.filename || '').toLowerCase();
     if (n === 'config.yml' && path.includes('.circleci')) return true;

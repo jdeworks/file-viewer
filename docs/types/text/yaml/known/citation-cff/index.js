@@ -2,7 +2,7 @@ export default {
   id: 'citation-cff',
   label: 'Citation File Format',
   match(intake, baseType) {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType?.id)) return false;
+    if (baseType?.id !== 'yaml') return false;
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return name === 'citation.cff';
   },

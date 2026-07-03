@@ -8,10 +8,12 @@ export default {
       const text = intake.text || '';
       return text.includes('pageInfo') && text.includes('sections');
     }
-    // Generic conf.yml — require parsed YAML structure
+    // Generic conf.yml — require the two distinguishing top-level Dashy keys.
+    // match() is synchronous (js-yaml loads async) and intake.parsed is never populated at
+    // detection time, so this has to be a text heuristic, not a parsed-object check.
     if (n === 'conf.yml') {
-      const parsed = intake.parsed || {};
-      return typeof parsed.pageInfo === 'object' && parsed.pageInfo !== null && Array.isArray(parsed.sections);
+      const text = intake.text || intake.textSample || '';
+      return /^pageInfo:/m.test(text) && /^sections:/m.test(text);
     }
     return false;
   },

@@ -84,7 +84,7 @@ export async function render(intake) {
 <div class="cat-title">
   <span class="badge-cat">Backstage</span>${esc(title || name || 'Catalog Entity')}
 </div>
-<div class="cat-sub">${parts.join(' · ')}${namespace !== 'default' ? ` · ns: ${esc(namespace)}` : ''}</div>
+<div class="cat-sub">${esc(parts.join(' · '))}${namespace !== 'default' ? ` · ns: ${esc(namespace)}` : ''}</div>
 
 <div class="cat-sec">
   <div style="margin-bottom:8px;">

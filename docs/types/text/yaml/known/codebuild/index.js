@@ -2,7 +2,7 @@ export default {
   id: 'codebuild',
   label: 'AWS CodeBuild buildspec',
   match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
+    if (baseType.id !== 'yaml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
     return name === 'buildspec.yml' || name === 'buildspec.yaml' || /^buildspec\..+\.ya?ml$/.test(name);
   },

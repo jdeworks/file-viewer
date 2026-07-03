@@ -2,9 +2,10 @@ export default {
   id: 'buf-config',
   label: 'Buf config',
   match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType?.id)) return false;
+    if (baseType?.id !== 'yaml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === 'buf.yaml' || name === 'buf.gen.yaml';
+    // buf.gen.yaml is a distinct plugin (buf-gen); don't shadow it here.
+    return name === 'buf.yaml';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

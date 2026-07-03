@@ -3,7 +3,7 @@ export const plugin = {
   label: 'Buf code generation',
   tags: ['protobuf', 'grpc', 'buf', 'codegen'],
   match(intake, baseType) {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType?.id)) return false;
+    if (baseType?.id !== 'yaml') return false;
     const name = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
     return name === 'buf.gen.yaml';
   },

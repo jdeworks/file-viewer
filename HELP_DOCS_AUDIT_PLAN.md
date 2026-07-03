@@ -2795,154 +2795,154 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/xyz/metadata.js
 - [ ] docs/types/text/xyz/renderer.js
 - [ ] docs/types/text/xyz/settings.default.json
-- [ ] docs/types/text/yaml/detect.js
-- [ ] docs/types/text/yaml/EDITOR.md
-- [ ] docs/types/text/yaml/exports.js
-- [ ] docs/types/text/yaml/form-editor.js
-- [ ] docs/types/text/yaml/index.js
-- [ ] docs/types/text/yaml/known/act-runner-config/index.js
-- [ ] docs/types/text/yaml/known/act-runner-config/renderer.js
-- [ ] docs/types/text/yaml/known/aider-conf/index.js
-- [ ] docs/types/text/yaml/known/aider-conf/renderer.js
-- [ ] docs/types/text/yaml/known/alertmanager/index.js
-- [ ] docs/types/text/yaml/known/alertmanager/renderer.js
-- [ ] docs/types/text/yaml/known/amplify/index.js
-- [ ] docs/types/text/yaml/known/amplify/renderer.js
-- [ ] docs/types/text/yaml/known/analysis-options/index.js
-- [ ] docs/types/text/yaml/known/analysis-options/renderer.js
-- [ ] docs/types/text/yaml/known/ansible-inventory/index.js
-- [ ] docs/types/text/yaml/known/ansible-inventory/renderer.js
-- [ ] docs/types/text/yaml/known/ansible-lint/index.js
-- [ ] docs/types/text/yaml/known/ansible-lint/renderer.js
-- [ ] docs/types/text/yaml/known/ansible-playbook/index.js
-- [ ] docs/types/text/yaml/known/ansible-playbook/renderer.js
-- [ ] docs/types/text/yaml/known/ansible-requirements/index.js
-- [ ] docs/types/text/yaml/known/ansible-requirements/renderer.js
-- [ ] docs/types/text/yaml/known/apisix-config/index.js
-- [ ] docs/types/text/yaml/known/apisix-config/renderer.js
-- [ ] docs/types/text/yaml/known/appveyor/index.js
-- [ ] docs/types/text/yaml/known/appveyor/renderer.js
-- [ ] docs/types/text/yaml/known/aqua-config/index.js
-- [ ] docs/types/text/yaml/known/aqua-config/renderer.js
-- [ ] docs/types/text/yaml/known/argo-cd-app/index.js
-- [ ] docs/types/text/yaml/known/argo-cd-app/renderer.js
-- [ ] docs/types/text/yaml/known/artifactory-system/index.js
-- [ ] docs/types/text/yaml/known/artifactory-system/renderer.js
-- [ ] docs/types/text/yaml/known/artillery-yml/index.js
-- [ ] docs/types/text/yaml/known/artillery-yml/renderer.js
-- [ ] docs/types/text/yaml/known/asyncapi/index.js
-- [ ] docs/types/text/yaml/known/asyncapi/renderer.js
-- [ ] docs/types/text/yaml/known/atlantis/index.js
-- [ ] docs/types/text/yaml/known/atlantis/renderer.js
-- [ ] docs/types/text/yaml/known/authelia-config/index.js
-- [ ] docs/types/text/yaml/known/authelia-config/renderer.js
-- [ ] docs/types/text/yaml/known/authentik-config/index.js
-- [ ] docs/types/text/yaml/known/authentik-config/renderer.js
-- [ ] docs/types/text/yaml/known/azure-pipelines/index.js
-- [ ] docs/types/text/yaml/known/azure-pipelines/renderer.js
-- [ ] docs/types/text/yaml/known/bandit-yaml/index.js
-- [ ] docs/types/text/yaml/known/bandit-yaml/renderer.js
-- [ ] docs/types/text/yaml/known/bazarr-config/index.js
-- [ ] docs/types/text/yaml/known/bazarr-config/renderer.js
-- [ ] docs/types/text/yaml/known/beats-config/index.js
-- [ ] docs/types/text/yaml/known/beats-config/renderer.js
-- [ ] docs/types/text/yaml/known/behat/index.js
-- [ ] docs/types/text/yaml/known/behat/renderer.js
-- [ ] docs/types/text/yaml/known/benthos/index.js
-- [ ] docs/types/text/yaml/known/benthos/renderer.js
-- [ ] docs/types/text/yaml/known/bitbucket-pipelines/index.js
-- [ ] docs/types/text/yaml/known/bitbucket-pipelines/renderer.js
-- [ ] docs/types/text/yaml/known/blackbox/index.js
-- [ ] docs/types/text/yaml/known/blackbox/renderer.js
-- [ ] docs/types/text/yaml/known/borgmatic-config/index.js
-- [ ] docs/types/text/yaml/known/borgmatic-config/renderer.js
-- [ ] docs/types/text/yaml/known/buf-config/index.js
-- [ ] docs/types/text/yaml/known/buf-config/renderer.js
-- [ ] docs/types/text/yaml/known/buf-gen/index.js
-- [ ] docs/types/text/yaml/known/buf-gen/renderer.js
-- [ ] docs/types/text/yaml/known/buildkite/index.js
-- [ ] docs/types/text/yaml/known/buildkite/renderer.js
-- [ ] docs/types/text/yaml/known/bundler-audit-config/index.js
-- [ ] docs/types/text/yaml/known/bundler-audit-config/renderer.js
-- [ ] docs/types/text/yaml/known/cassandra-config/index.js
-- [ ] docs/types/text/yaml/known/cassandra-config/renderer.js
-- [ ] docs/types/text/yaml/known/catalog-info/index.js
-- [ ] docs/types/text/yaml/known/catalog-info/renderer.js
-- [ ] docs/types/text/yaml/known/cert-manager/index.js
-- [ ] docs/types/text/yaml/known/cert-manager/renderer.js
-- [ ] docs/types/text/yaml/known/cfn-template/index.js
-- [ ] docs/types/text/yaml/known/cfn-template/renderer.js
-- [ ] docs/types/text/yaml/known/checkov/index.js
-- [ ] docs/types/text/yaml/known/checkov/renderer.js
-- [ ] docs/types/text/yaml/known/circleci/index.js
-- [ ] docs/types/text/yaml/known/circleci/renderer.js
-- [ ] docs/types/text/yaml/known/citation-cff/index.js
-- [ ] docs/types/text/yaml/known/citation-cff/renderer.js
-- [ ] docs/types/text/yaml/known/clang-format/index.js
-- [ ] docs/types/text/yaml/known/clang-format/renderer.js
-- [ ] docs/types/text/yaml/known/clang-tidy/index.js
-- [ ] docs/types/text/yaml/known/clang-tidy/renderer.js
-- [ ] docs/types/text/yaml/known/cloudbuild/index.js
-- [ ] docs/types/text/yaml/known/cloudbuild/renderer.js
-- [ ] docs/types/text/yaml/known/cloudflared/index.js
-- [ ] docs/types/text/yaml/known/cloudflared/renderer.js
-- [ ] docs/types/text/yaml/known/cluster-config/index.js
-- [ ] docs/types/text/yaml/known/cluster-config/renderer.js
-- [ ] docs/types/text/yaml/known/codebuild/index.js
-- [ ] docs/types/text/yaml/known/codebuild/renderer.js
-- [ ] docs/types/text/yaml/known/codeclimate-config/index.js
-- [ ] docs/types/text/yaml/known/codeclimate-config/renderer.js
-- [ ] docs/types/text/yaml/known/codecov/index.js
-- [ ] docs/types/text/yaml/known/codecov/renderer.js
-- [ ] docs/types/text/yaml/known/codefresh-config/index.js
-- [ ] docs/types/text/yaml/known/codefresh-config/renderer.js
-- [ ] docs/types/text/yaml/known/coderabbit/index.js
-- [ ] docs/types/text/yaml/known/coderabbit/renderer.js
-- [ ] docs/types/text/yaml/known/conda-env/index.js
-- [ ] docs/types/text/yaml/known/conda-env/renderer.js
-- [ ] docs/types/text/yaml/known/cortex/index.js
-- [ ] docs/types/text/yaml/known/cortex/renderer.js
-- [ ] docs/types/text/yaml/known/crossplane-config/index.js
-- [ ] docs/types/text/yaml/known/crossplane-config/renderer.js
-- [ ] docs/types/text/yaml/known/crowdin-yml/index.js
-- [ ] docs/types/text/yaml/known/crowdin-yml/renderer.js
-- [ ] docs/types/text/yaml/known/crowdsec-acquis/index.js
-- [ ] docs/types/text/yaml/known/crowdsec-acquis/renderer.js
-- [ ] docs/types/text/yaml/known/crowdsec-config/index.js
-- [ ] docs/types/text/yaml/known/crowdsec-config/renderer.js
-- [ ] docs/types/text/yaml/known/crystal-shard/index.js
-- [ ] docs/types/text/yaml/known/crystal-shard/renderer.js
-- [ ] docs/types/text/yaml/known/dagster-config/index.js
-- [ ] docs/types/text/yaml/known/dagster-config/renderer.js
-- [ ] docs/types/text/yaml/known/dashy-config/index.js
-- [ ] docs/types/text/yaml/known/dashy-config/renderer.js
-- [ ] docs/types/text/yaml/known/datadog-config/index.js
-- [ ] docs/types/text/yaml/known/datadog-config/renderer.js
-- [ ] docs/types/text/yaml/known/dbt-project/index.js
-- [ ] docs/types/text/yaml/known/dbt-project/renderer.js
-- [ ] docs/types/text/yaml/known/dendrite-config/index.js
-- [ ] docs/types/text/yaml/known/dendrite-config/renderer.js
-- [ ] docs/types/text/yaml/known/dependabot/index.js
-- [ ] docs/types/text/yaml/known/dependabot/renderer.js
-- [ ] docs/types/text/yaml/known/devfile/index.js
-- [ ] docs/types/text/yaml/known/devfile/renderer.js
-- [ ] docs/types/text/yaml/known/dex-config/index.js
-- [ ] docs/types/text/yaml/known/dex-config/renderer.js
-- [ ] docs/types/text/yaml/known/diun-config/index.js
-- [ ] docs/types/text/yaml/known/diun-config/renderer.js
-- [ ] docs/types/text/yaml/known/docker-compose/index.js
-- [ ] docs/types/text/yaml/known/docker-compose/metadata.js
-- [ ] docs/types/text/yaml/known/docker-compose/render.js
-- [ ] docs/types/text/yaml/known/docker-compose/shared.js
-- [ ] docs/types/text/yaml/known/docker-stack/index.js
-- [ ] docs/types/text/yaml/known/docker-stack/renderer.js
+- [x] docs/types/text/yaml/detect.js
+- [x] docs/types/text/yaml/EDITOR.md
+- [x] docs/types/text/yaml/exports.js
+- [x] docs/types/text/yaml/form-editor.js
+- [x] docs/types/text/yaml/index.js
+- [x] docs/types/text/yaml/known/act-runner-config/index.js
+- [x] docs/types/text/yaml/known/act-runner-config/renderer.js
+- [x] docs/types/text/yaml/known/aider-conf/index.js
+- [x] docs/types/text/yaml/known/aider-conf/renderer.js
+- [x] docs/types/text/yaml/known/alertmanager/index.js
+- [x] docs/types/text/yaml/known/alertmanager/renderer.js
+- [x] docs/types/text/yaml/known/amplify/index.js
+- [x] docs/types/text/yaml/known/amplify/renderer.js
+- [x] docs/types/text/yaml/known/analysis-options/index.js
+- [x] docs/types/text/yaml/known/analysis-options/renderer.js
+- [x] docs/types/text/yaml/known/ansible-inventory/index.js
+- [x] docs/types/text/yaml/known/ansible-inventory/renderer.js
+- [x] docs/types/text/yaml/known/ansible-lint/index.js
+- [x] docs/types/text/yaml/known/ansible-lint/renderer.js
+- [x] docs/types/text/yaml/known/ansible-playbook/index.js
+- [x] docs/types/text/yaml/known/ansible-playbook/renderer.js
+- [x] docs/types/text/yaml/known/ansible-requirements/index.js
+- [x] docs/types/text/yaml/known/ansible-requirements/renderer.js
+- [x] docs/types/text/yaml/known/apisix-config/index.js
+- [x] docs/types/text/yaml/known/apisix-config/renderer.js
+- [x] docs/types/text/yaml/known/appveyor/index.js
+- [x] docs/types/text/yaml/known/appveyor/renderer.js
+- [x] docs/types/text/yaml/known/aqua-config/index.js
+- [x] docs/types/text/yaml/known/aqua-config/renderer.js
+- [x] docs/types/text/yaml/known/argo-cd-app/index.js
+- [x] docs/types/text/yaml/known/argo-cd-app/renderer.js
+- [x] docs/types/text/yaml/known/artifactory-system/index.js
+- [x] docs/types/text/yaml/known/artifactory-system/renderer.js
+- [x] docs/types/text/yaml/known/artillery-yml/index.js
+- [x] docs/types/text/yaml/known/artillery-yml/renderer.js
+- [x] docs/types/text/yaml/known/asyncapi/index.js
+- [x] docs/types/text/yaml/known/asyncapi/renderer.js
+- [x] docs/types/text/yaml/known/atlantis/index.js
+- [x] docs/types/text/yaml/known/atlantis/renderer.js
+- [x] docs/types/text/yaml/known/authelia-config/index.js
+- [x] docs/types/text/yaml/known/authelia-config/renderer.js
+- [x] docs/types/text/yaml/known/authentik-config/index.js
+- [x] docs/types/text/yaml/known/authentik-config/renderer.js
+- [x] docs/types/text/yaml/known/azure-pipelines/index.js
+- [x] docs/types/text/yaml/known/azure-pipelines/renderer.js
+- [x] docs/types/text/yaml/known/bandit-yaml/index.js
+- [x] docs/types/text/yaml/known/bandit-yaml/renderer.js
+- [x] docs/types/text/yaml/known/bazarr-config/index.js
+- [x] docs/types/text/yaml/known/bazarr-config/renderer.js
+- [x] docs/types/text/yaml/known/beats-config/index.js
+- [x] docs/types/text/yaml/known/beats-config/renderer.js
+- [x] docs/types/text/yaml/known/behat/index.js
+- [x] docs/types/text/yaml/known/behat/renderer.js
+- [x] docs/types/text/yaml/known/benthos/index.js
+- [x] docs/types/text/yaml/known/benthos/renderer.js
+- [x] docs/types/text/yaml/known/bitbucket-pipelines/index.js
+- [x] docs/types/text/yaml/known/bitbucket-pipelines/renderer.js
+- [x] docs/types/text/yaml/known/blackbox/index.js
+- [x] docs/types/text/yaml/known/blackbox/renderer.js
+- [x] docs/types/text/yaml/known/borgmatic-config/index.js
+- [x] docs/types/text/yaml/known/borgmatic-config/renderer.js
+- [x] docs/types/text/yaml/known/buf-config/index.js
+- [x] docs/types/text/yaml/known/buf-config/renderer.js
+- [x] docs/types/text/yaml/known/buf-gen/index.js
+- [x] docs/types/text/yaml/known/buf-gen/renderer.js
+- [x] docs/types/text/yaml/known/buildkite/index.js
+- [x] docs/types/text/yaml/known/buildkite/renderer.js
+- [x] docs/types/text/yaml/known/bundler-audit-config/index.js
+- [x] docs/types/text/yaml/known/bundler-audit-config/renderer.js
+- [x] docs/types/text/yaml/known/cassandra-config/index.js
+- [x] docs/types/text/yaml/known/cassandra-config/renderer.js
+- [x] docs/types/text/yaml/known/catalog-info/index.js
+- [x] docs/types/text/yaml/known/catalog-info/renderer.js
+- [x] docs/types/text/yaml/known/cert-manager/index.js
+- [x] docs/types/text/yaml/known/cert-manager/renderer.js
+- [x] docs/types/text/yaml/known/cfn-template/index.js
+- [x] docs/types/text/yaml/known/cfn-template/renderer.js
+- [x] docs/types/text/yaml/known/checkov/index.js
+- [x] docs/types/text/yaml/known/checkov/renderer.js
+- [x] docs/types/text/yaml/known/circleci/index.js
+- [x] docs/types/text/yaml/known/circleci/renderer.js
+- [x] docs/types/text/yaml/known/citation-cff/index.js
+- [x] docs/types/text/yaml/known/citation-cff/renderer.js
+- [x] docs/types/text/yaml/known/clang-format/index.js
+- [x] docs/types/text/yaml/known/clang-format/renderer.js
+- [x] docs/types/text/yaml/known/clang-tidy/index.js
+- [x] docs/types/text/yaml/known/clang-tidy/renderer.js
+- [x] docs/types/text/yaml/known/cloudbuild/index.js
+- [x] docs/types/text/yaml/known/cloudbuild/renderer.js
+- [x] docs/types/text/yaml/known/cloudflared/index.js
+- [x] docs/types/text/yaml/known/cloudflared/renderer.js
+- [x] docs/types/text/yaml/known/cluster-config/index.js
+- [x] docs/types/text/yaml/known/cluster-config/renderer.js
+- [x] docs/types/text/yaml/known/codebuild/index.js
+- [x] docs/types/text/yaml/known/codebuild/renderer.js
+- [x] docs/types/text/yaml/known/codeclimate-config/index.js
+- [x] docs/types/text/yaml/known/codeclimate-config/renderer.js
+- [x] docs/types/text/yaml/known/codecov/index.js
+- [x] docs/types/text/yaml/known/codecov/renderer.js
+- [x] docs/types/text/yaml/known/codefresh-config/index.js
+- [x] docs/types/text/yaml/known/codefresh-config/renderer.js
+- [x] docs/types/text/yaml/known/coderabbit/index.js
+- [x] docs/types/text/yaml/known/coderabbit/renderer.js
+- [x] docs/types/text/yaml/known/conda-env/index.js
+- [x] docs/types/text/yaml/known/conda-env/renderer.js
+- [x] docs/types/text/yaml/known/cortex/index.js
+- [x] docs/types/text/yaml/known/cortex/renderer.js
+- [x] docs/types/text/yaml/known/crossplane-config/index.js
+- [x] docs/types/text/yaml/known/crossplane-config/renderer.js
+- [x] docs/types/text/yaml/known/crowdin-yml/index.js
+- [x] docs/types/text/yaml/known/crowdin-yml/renderer.js
+- [x] docs/types/text/yaml/known/crowdsec-acquis/index.js
+- [x] docs/types/text/yaml/known/crowdsec-acquis/renderer.js
+- [x] docs/types/text/yaml/known/crowdsec-config/index.js
+- [x] docs/types/text/yaml/known/crowdsec-config/renderer.js
+- [x] docs/types/text/yaml/known/crystal-shard/index.js
+- [x] docs/types/text/yaml/known/crystal-shard/renderer.js
+- [x] docs/types/text/yaml/known/dagster-config/index.js
+- [x] docs/types/text/yaml/known/dagster-config/renderer.js
+- [x] docs/types/text/yaml/known/dashy-config/index.js
+- [x] docs/types/text/yaml/known/dashy-config/renderer.js
+- [x] docs/types/text/yaml/known/datadog-config/index.js
+- [x] docs/types/text/yaml/known/datadog-config/renderer.js
+- [x] docs/types/text/yaml/known/dbt-project/index.js
+- [x] docs/types/text/yaml/known/dbt-project/renderer.js
+- [x] docs/types/text/yaml/known/dendrite-config/index.js
+- [x] docs/types/text/yaml/known/dendrite-config/renderer.js
+- [x] docs/types/text/yaml/known/dependabot/index.js
+- [x] docs/types/text/yaml/known/dependabot/renderer.js
+- [x] docs/types/text/yaml/known/devfile/index.js
+- [x] docs/types/text/yaml/known/devfile/renderer.js
+- [x] docs/types/text/yaml/known/dex-config/index.js
+- [x] docs/types/text/yaml/known/dex-config/renderer.js
+- [x] docs/types/text/yaml/known/diun-config/index.js
+- [x] docs/types/text/yaml/known/diun-config/renderer.js
+- [x] docs/types/text/yaml/known/docker-compose/index.js
+- [x] docs/types/text/yaml/known/docker-compose/metadata.js
+- [x] docs/types/text/yaml/known/docker-compose/render.js
+- [x] docs/types/text/yaml/known/docker-compose/shared.js
+- [x] docs/types/text/yaml/known/docker-stack/index.js
+- [x] docs/types/text/yaml/known/docker-stack/renderer.js
 - [ ] docs/types/text/yaml/known/dotted-keys.js
-- [ ] docs/types/text/yaml/known/dozzle-config/index.js
-- [ ] docs/types/text/yaml/known/dozzle-config/renderer.js
-- [ ] docs/types/text/yaml/known/drone/index.js
-- [ ] docs/types/text/yaml/known/drone/renderer.js
-- [ ] docs/types/text/yaml/known/dvc-pipeline/index.js
-- [ ] docs/types/text/yaml/known/dvc-pipeline/renderer.js
+- [x] docs/types/text/yaml/known/dozzle-config/index.js
+- [x] docs/types/text/yaml/known/dozzle-config/renderer.js
+- [x] docs/types/text/yaml/known/drone/index.js
+- [x] docs/types/text/yaml/known/drone/renderer.js
+- [x] docs/types/text/yaml/known/dvc-pipeline/index.js
+- [x] docs/types/text/yaml/known/dvc-pipeline/renderer.js
 - [x] docs/types/text/yaml/known/dynatrace-config/index.js
 - [x] docs/types/text/yaml/known/dynatrace-config/renderer.js
 - [x] docs/types/text/yaml/known/ejabberd-config/index.js
@@ -3219,9 +3219,9 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/yaml/known/yamllint/renderer.js
 - [ ] docs/types/text/yaml/known/zitadel-config/index.js
 - [ ] docs/types/text/yaml/known/zitadel-config/renderer.js
-- [ ] docs/types/text/yaml/metadata.js
-- [ ] docs/types/text/yaml/renderer.js
-- [ ] docs/types/text/yaml/settings.default.json
+- [x] docs/types/text/yaml/metadata.js
+- [x] docs/types/text/yaml/renderer.js
+- [x] docs/types/text/yaml/settings.default.json
 - [ ] docs/types/vcard/card.html
 - [ ] docs/types/vcard/detect.js
 - [ ] docs/types/vcard/doc.html
@@ -3940,76 +3940,76 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/xml/known/spotbugs-config
 - [ ] docs/types/text/xml/known/web-config
 - [ ] docs/types/text/xml/known/xcode-scheme
-- [ ] docs/types/text/yaml/known/act-runner-config
-- [ ] docs/types/text/yaml/known/aider-conf
-- [ ] docs/types/text/yaml/known/alertmanager
-- [ ] docs/types/text/yaml/known/amplify
-- [ ] docs/types/text/yaml/known/analysis-options
-- [ ] docs/types/text/yaml/known/ansible-inventory
-- [ ] docs/types/text/yaml/known/ansible-lint
-- [ ] docs/types/text/yaml/known/ansible-playbook
-- [ ] docs/types/text/yaml/known/ansible-requirements
-- [ ] docs/types/text/yaml/known/apisix-config
-- [ ] docs/types/text/yaml/known/appveyor
-- [ ] docs/types/text/yaml/known/aqua-config
-- [ ] docs/types/text/yaml/known/argo-cd-app
-- [ ] docs/types/text/yaml/known/artifactory-system
-- [ ] docs/types/text/yaml/known/artillery-yml
-- [ ] docs/types/text/yaml/known/asyncapi
-- [ ] docs/types/text/yaml/known/atlantis
-- [ ] docs/types/text/yaml/known/authelia-config
-- [ ] docs/types/text/yaml/known/authentik-config
-- [ ] docs/types/text/yaml/known/azure-pipelines
-- [ ] docs/types/text/yaml/known/bandit-yaml
-- [ ] docs/types/text/yaml/known/bazarr-config
-- [ ] docs/types/text/yaml/known/beats-config
-- [ ] docs/types/text/yaml/known/behat
-- [ ] docs/types/text/yaml/known/benthos
-- [ ] docs/types/text/yaml/known/bitbucket-pipelines
-- [ ] docs/types/text/yaml/known/blackbox
-- [ ] docs/types/text/yaml/known/borgmatic-config
-- [ ] docs/types/text/yaml/known/buf-config
-- [ ] docs/types/text/yaml/known/buf-gen
-- [ ] docs/types/text/yaml/known/buildkite
-- [ ] docs/types/text/yaml/known/bundler-audit-config
-- [ ] docs/types/text/yaml/known/cassandra-config
-- [ ] docs/types/text/yaml/known/catalog-info
-- [ ] docs/types/text/yaml/known/cert-manager
-- [ ] docs/types/text/yaml/known/cfn-template
-- [ ] docs/types/text/yaml/known/checkov
-- [ ] docs/types/text/yaml/known/circleci
-- [ ] docs/types/text/yaml/known/citation-cff
-- [ ] docs/types/text/yaml/known/clang-format
-- [ ] docs/types/text/yaml/known/clang-tidy
-- [ ] docs/types/text/yaml/known/cloudbuild
-- [ ] docs/types/text/yaml/known/cloudflared
-- [ ] docs/types/text/yaml/known/cluster-config
-- [ ] docs/types/text/yaml/known/codebuild
-- [ ] docs/types/text/yaml/known/codeclimate-config
-- [ ] docs/types/text/yaml/known/codecov
-- [ ] docs/types/text/yaml/known/codefresh-config
-- [ ] docs/types/text/yaml/known/coderabbit
-- [ ] docs/types/text/yaml/known/conda-env
-- [ ] docs/types/text/yaml/known/cortex
-- [ ] docs/types/text/yaml/known/crossplane-config
-- [ ] docs/types/text/yaml/known/crowdin-yml
-- [ ] docs/types/text/yaml/known/crowdsec-acquis
-- [ ] docs/types/text/yaml/known/crowdsec-config
-- [ ] docs/types/text/yaml/known/crystal-shard
-- [ ] docs/types/text/yaml/known/dagster-config
-- [ ] docs/types/text/yaml/known/dashy-config
-- [ ] docs/types/text/yaml/known/datadog-config
-- [ ] docs/types/text/yaml/known/dbt-project
-- [ ] docs/types/text/yaml/known/dendrite-config
-- [ ] docs/types/text/yaml/known/dependabot
-- [ ] docs/types/text/yaml/known/devfile
-- [ ] docs/types/text/yaml/known/dex-config
-- [ ] docs/types/text/yaml/known/diun-config
-- [ ] docs/types/text/yaml/known/docker-compose
-- [ ] docs/types/text/yaml/known/docker-stack
-- [ ] docs/types/text/yaml/known/dozzle-config
-- [ ] docs/types/text/yaml/known/drone
-- [ ] docs/types/text/yaml/known/dvc-pipeline
+- [x] docs/types/text/yaml/known/act-runner-config
+- [x] docs/types/text/yaml/known/aider-conf
+- [x] docs/types/text/yaml/known/alertmanager
+- [x] docs/types/text/yaml/known/amplify
+- [x] docs/types/text/yaml/known/analysis-options
+- [x] docs/types/text/yaml/known/ansible-inventory
+- [x] docs/types/text/yaml/known/ansible-lint
+- [x] docs/types/text/yaml/known/ansible-playbook
+- [x] docs/types/text/yaml/known/ansible-requirements
+- [x] docs/types/text/yaml/known/apisix-config
+- [x] docs/types/text/yaml/known/appveyor
+- [x] docs/types/text/yaml/known/aqua-config
+- [x] docs/types/text/yaml/known/argo-cd-app
+- [x] docs/types/text/yaml/known/artifactory-system
+- [x] docs/types/text/yaml/known/artillery-yml
+- [x] docs/types/text/yaml/known/asyncapi
+- [x] docs/types/text/yaml/known/atlantis
+- [x] docs/types/text/yaml/known/authelia-config
+- [x] docs/types/text/yaml/known/authentik-config
+- [x] docs/types/text/yaml/known/azure-pipelines
+- [x] docs/types/text/yaml/known/bandit-yaml
+- [x] docs/types/text/yaml/known/bazarr-config
+- [x] docs/types/text/yaml/known/beats-config
+- [x] docs/types/text/yaml/known/behat
+- [x] docs/types/text/yaml/known/benthos
+- [x] docs/types/text/yaml/known/bitbucket-pipelines
+- [x] docs/types/text/yaml/known/blackbox
+- [x] docs/types/text/yaml/known/borgmatic-config
+- [x] docs/types/text/yaml/known/buf-config
+- [x] docs/types/text/yaml/known/buf-gen
+- [x] docs/types/text/yaml/known/buildkite
+- [x] docs/types/text/yaml/known/bundler-audit-config
+- [x] docs/types/text/yaml/known/cassandra-config
+- [x] docs/types/text/yaml/known/catalog-info
+- [x] docs/types/text/yaml/known/cert-manager
+- [x] docs/types/text/yaml/known/cfn-template
+- [x] docs/types/text/yaml/known/checkov
+- [x] docs/types/text/yaml/known/circleci
+- [x] docs/types/text/yaml/known/citation-cff
+- [x] docs/types/text/yaml/known/clang-format
+- [x] docs/types/text/yaml/known/clang-tidy
+- [x] docs/types/text/yaml/known/cloudbuild
+- [x] docs/types/text/yaml/known/cloudflared
+- [x] docs/types/text/yaml/known/cluster-config
+- [x] docs/types/text/yaml/known/codebuild
+- [x] docs/types/text/yaml/known/codeclimate-config
+- [x] docs/types/text/yaml/known/codecov
+- [x] docs/types/text/yaml/known/codefresh-config
+- [x] docs/types/text/yaml/known/coderabbit
+- [x] docs/types/text/yaml/known/conda-env
+- [x] docs/types/text/yaml/known/cortex
+- [x] docs/types/text/yaml/known/crossplane-config
+- [x] docs/types/text/yaml/known/crowdin-yml
+- [x] docs/types/text/yaml/known/crowdsec-acquis
+- [x] docs/types/text/yaml/known/crowdsec-config
+- [x] docs/types/text/yaml/known/crystal-shard
+- [x] docs/types/text/yaml/known/dagster-config
+- [x] docs/types/text/yaml/known/dashy-config
+- [x] docs/types/text/yaml/known/datadog-config
+- [x] docs/types/text/yaml/known/dbt-project
+- [x] docs/types/text/yaml/known/dendrite-config
+- [x] docs/types/text/yaml/known/dependabot
+- [x] docs/types/text/yaml/known/devfile
+- [x] docs/types/text/yaml/known/dex-config
+- [x] docs/types/text/yaml/known/diun-config
+- [x] docs/types/text/yaml/known/docker-compose
+- [x] docs/types/text/yaml/known/docker-stack
+- [x] docs/types/text/yaml/known/dozzle-config
+- [x] docs/types/text/yaml/known/drone
+- [x] docs/types/text/yaml/known/dvc-pipeline
 - [x] docs/types/text/yaml/known/dynatrace-config
 - [x] docs/types/text/yaml/known/ejabberd-config
 - [x] docs/types/text/yaml/known/elasticsearch-config

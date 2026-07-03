@@ -1,6 +1,11 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// `dep.git` is an arbitrary string from an untrusted shard.yml — only ever wire it up as a
+// clickable link if it's http(s); otherwise render as inert (escaped) text so a "javascript:"
+// URI can't execute in the page's origin when clicked. github/gitlab hrefs are always safe
+// since they're built from a fixed https:// prefix.
+const isSafeHref = (href) => /^https?:\/\//i.test(String(href || ''));
 
 function scalar(obj, key) {
   if (obj == null) return null;
@@ -81,7 +86,7 @@ export async function render(intake) {
     return list.map((d) => {
       const src = depSource(d);
       const srcHtml = src
-        ? (src.url
+        ? (src.url && isSafeHref(src.url)
           ? `<a class="crystalshard-dep-src" href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">${esc(src.label)}: ${esc(src.display)} &#8599;</a>`
           : `<span class="crystalshard-dep-src">${esc(src.label)}: ${esc(src.display)}</span>`)
         : '';

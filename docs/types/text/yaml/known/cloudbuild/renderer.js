@@ -54,7 +54,7 @@ export async function render(intake) {
 
   const parts = [];
   parts.push(`${steps.length} step${steps.length !== 1 ? 's' : ''}`);
-  if (timeout) parts.push(`timeout: ${timeout}`);
+  if (timeout) parts.push(`timeout: ${esc(timeout)}`);
   if (images.length) parts.push(`${images.length} image${images.length !== 1 ? 's' : ''}`);
 
   const stepsHtml = steps.slice(0, 10).map((step, i) => {

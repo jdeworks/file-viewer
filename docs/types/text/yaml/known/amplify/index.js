@@ -2,7 +2,7 @@ export default {
   id: 'amplify',
   label: 'AWS Amplify config',
   match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
+    if (baseType.id !== 'yaml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
     return name === 'amplify.yml' || name === 'amplify.yaml';
   },
