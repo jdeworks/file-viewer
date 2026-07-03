@@ -2,7 +2,8 @@ export const plugin = {
   id: 'test-kitchen',
   label: 'Test Kitchen',
   tags: ['chef', 'testing', 'infrastructure'],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'yaml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === '.kitchen.yml' || n === '.kitchen.yaml' || n === 'kitchen.yml' || n === 'kitchen.yaml';
   },

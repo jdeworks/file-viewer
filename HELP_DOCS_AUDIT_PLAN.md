@@ -3087,138 +3087,138 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/yaml/known/netplan/renderer.js
 - [x] docs/types/text/yaml/known/newrelic-config/index.js
 - [x] docs/types/text/yaml/known/newrelic-config/renderer.js
-- [ ] docs/types/text/yaml/known/nfpm-config/index.js
-- [ ] docs/types/text/yaml/known/nfpm-config/renderer.js
-- [ ] docs/types/text/yaml/known/ntfy-config/index.js
-- [ ] docs/types/text/yaml/known/ntfy-config/renderer.js
-- [ ] docs/types/text/yaml/known/openapi-generator/index.js
-- [ ] docs/types/text/yaml/known/openapi-generator/renderer.js
-- [ ] docs/types/text/yaml/known/opencost-config/index.js
-- [ ] docs/types/text/yaml/known/opencost-config/renderer.js
-- [ ] docs/types/text/yaml/known/opentelemetry-k8s/index.js
-- [ ] docs/types/text/yaml/known/opentelemetry-k8s/renderer.js
-- [ ] docs/types/text/yaml/known/otel-collector/index.js
-- [ ] docs/types/text/yaml/known/otel-collector/renderer.js
-- [ ] docs/types/text/yaml/known/patroni-config/index.js
-- [ ] docs/types/text/yaml/known/patroni-config/renderer.js
-- [ ] docs/types/text/yaml/known/photoprism-config/index.js
-- [ ] docs/types/text/yaml/known/photoprism-config/renderer.js
-- [ ] docs/types/text/yaml/known/pnpm-lock/index.js
-- [ ] docs/types/text/yaml/known/pnpm-lock/renderer.js
-- [ ] docs/types/text/yaml/known/pnpm-workspace/index.js
-- [ ] docs/types/text/yaml/known/pnpm-workspace/renderer.js
-- [ ] docs/types/text/yaml/known/pre-commit-config/index.js
-- [ ] docs/types/text/yaml/known/pre-commit-config/renderer.js
-- [ ] docs/types/text/yaml/known/pre-commit/index.js
-- [ ] docs/types/text/yaml/known/pre-commit/renderer.js
-- [ ] docs/types/text/yaml/known/prefect-config/index.js
-- [ ] docs/types/text/yaml/known/prefect-config/renderer.js
-- [ ] docs/types/text/yaml/known/prometheus-config/index.js
-- [ ] docs/types/text/yaml/known/prometheus-config/renderer.js
-- [ ] docs/types/text/yaml/known/prometheus-rules/index.js
-- [ ] docs/types/text/yaml/known/prometheus-rules/renderer.js
-- [ ] docs/types/text/yaml/known/promtail-config/index.js
-- [ ] docs/types/text/yaml/known/promtail-config/renderer.js
-- [ ] docs/types/text/yaml/known/pubspec-lock/index.js
-- [ ] docs/types/text/yaml/known/pubspec-lock/renderer.js
-- [ ] docs/types/text/yaml/known/pubspec/index.js
-- [ ] docs/types/text/yaml/known/pubspec/renderer.js
-- [ ] docs/types/text/yaml/known/pulumi/index.js
-- [ ] docs/types/text/yaml/known/pulumi/renderer.js
-- [ ] docs/types/text/yaml/known/rails-credentials/index.js
-- [ ] docs/types/text/yaml/known/rails-credentials/renderer.js
-- [ ] docs/types/text/yaml/known/readthedocs/index.js
-- [ ] docs/types/text/yaml/known/readthedocs/renderer.js
-- [ ] docs/types/text/yaml/known/release-it/index.js
-- [ ] docs/types/text/yaml/known/release-it/renderer.js
-- [ ] docs/types/text/yaml/known/render-yaml/index.js
-- [ ] docs/types/text/yaml/known/render-yaml/renderer.js
-- [ ] docs/types/text/yaml/known/rubocop-todo/index.js
-- [ ] docs/types/text/yaml/known/rubocop-todo/renderer.js
-- [ ] docs/types/text/yaml/known/rubocop/index.js
-- [ ] docs/types/text/yaml/known/rubocop/renderer.js
-- [ ] docs/types/text/yaml/known/sam-template/index.js
-- [ ] docs/types/text/yaml/known/sam-template/renderer.js
-- [ ] docs/types/text/yaml/known/scorecard/index.js
-- [ ] docs/types/text/yaml/known/scorecard/renderer.js
-- [ ] docs/types/text/yaml/known/scrutiny-config/index.js
-- [ ] docs/types/text/yaml/known/scrutiny-config/renderer.js
-- [ ] docs/types/text/yaml/known/searxng-config/index.js
-- [ ] docs/types/text/yaml/known/searxng-config/renderer.js
-- [ ] docs/types/text/yaml/known/semaphore-ci/index.js
-- [ ] docs/types/text/yaml/known/semaphore-ci/renderer.js
-- [ ] docs/types/text/yaml/known/semgrep-config/index.js
-- [ ] docs/types/text/yaml/known/semgrep-config/renderer.js
-- [ ] docs/types/text/yaml/known/serverless/index.js
-- [ ] docs/types/text/yaml/known/serverless/renderer.js
-- [ ] docs/types/text/yaml/known/shard-yml/index.js
-- [ ] docs/types/text/yaml/known/shard-yml/renderer.js
-- [ ] docs/types/text/yaml/known/skaffold/index.js
-- [ ] docs/types/text/yaml/known/skaffold/renderer.js
-- [ ] docs/types/text/yaml/known/snmp-exporter/index.js
-- [ ] docs/types/text/yaml/known/snmp-exporter/renderer.js
-- [ ] docs/types/text/yaml/known/socket-security/index.js
-- [ ] docs/types/text/yaml/known/socket-security/renderer.js
-- [ ] docs/types/text/yaml/known/spacelift-config/index.js
-- [ ] docs/types/text/yaml/known/spacelift-config/renderer.js
-- [ ] docs/types/text/yaml/known/spectral/index.js
-- [ ] docs/types/text/yaml/known/spectral/renderer.js
-- [ ] docs/types/text/yaml/known/spring-app/index.js
-- [ ] docs/types/text/yaml/known/spring-app/renderer.js
-- [ ] docs/types/text/yaml/known/spring-profiles/index.js
-- [ ] docs/types/text/yaml/known/spring-profiles/renderer.js
-- [ ] docs/types/text/yaml/known/sqlc-config/index.js
-- [ ] docs/types/text/yaml/known/sqlc-config/renderer.js
-- [ ] docs/types/text/yaml/known/stack-yaml/index.js
-- [ ] docs/types/text/yaml/known/stack-yaml/renderer.js
-- [ ] docs/types/text/yaml/known/standardrb-config/index.js
-- [ ] docs/types/text/yaml/known/standardrb-config/renderer.js
-- [ ] docs/types/text/yaml/known/stirling-pdf-config/index.js
-- [ ] docs/types/text/yaml/known/stirling-pdf-config/renderer.js
-- [ ] docs/types/text/yaml/known/suricata-config/index.js
-- [ ] docs/types/text/yaml/known/suricata-config/renderer.js
-- [ ] docs/types/text/yaml/known/syft-config/index.js
-- [ ] docs/types/text/yaml/known/syft-config/renderer.js
-- [ ] docs/types/text/yaml/known/synapse-config/index.js
-- [ ] docs/types/text/yaml/known/synapse-config/renderer.js
-- [ ] docs/types/text/yaml/known/taskfile/index.js
-- [ ] docs/types/text/yaml/known/taskfile/renderer.js
-- [ ] docs/types/text/yaml/known/tekton-pipeline/index.js
-- [ ] docs/types/text/yaml/known/tekton-pipeline/renderer.js
-- [ ] docs/types/text/yaml/known/tempo/index.js
-- [ ] docs/types/text/yaml/known/tempo/renderer.js
-- [ ] docs/types/text/yaml/known/terraform-docs/index.js
-- [ ] docs/types/text/yaml/known/terraform-docs/renderer.js
-- [ ] docs/types/text/yaml/known/test-kitchen/index.js
-- [ ] docs/types/text/yaml/known/test-kitchen/renderer.js
-- [ ] docs/types/text/yaml/known/tetragon/index.js
-- [ ] docs/types/text/yaml/known/tetragon/renderer.js
-- [ ] docs/types/text/yaml/known/thanos-config/index.js
-- [ ] docs/types/text/yaml/known/thanos-config/renderer.js
-- [ ] docs/types/text/yaml/known/traefik-config/index.js
-- [ ] docs/types/text/yaml/known/traefik-config/renderer.js
-- [ ] docs/types/text/yaml/known/travis/index.js
-- [ ] docs/types/text/yaml/known/travis/renderer.js
-- [ ] docs/types/text/yaml/known/trivy-config/index.js
-- [ ] docs/types/text/yaml/known/trivy-config/renderer.js
-- [ ] docs/types/text/yaml/known/trufflehog-config/index.js
-- [ ] docs/types/text/yaml/known/trufflehog-config/renderer.js
-- [ ] docs/types/text/yaml/known/tspconfig/index.js
-- [ ] docs/types/text/yaml/known/tspconfig/renderer.js
-- [ ] docs/types/text/yaml/known/velero-config/index.js
-- [ ] docs/types/text/yaml/known/velero-config/renderer.js
-- [ ] docs/types/text/yaml/known/victoria-metrics-config/index.js
-- [ ] docs/types/text/yaml/known/victoria-metrics-config/renderer.js
-- [ ] docs/types/text/yaml/known/vikunja-config/index.js
-- [ ] docs/types/text/yaml/known/vikunja-config/renderer.js
-- [ ] docs/types/text/yaml/known/wakapi-config/index.js
-- [ ] docs/types/text/yaml/known/wakapi-config/renderer.js
-- [ ] docs/types/text/yaml/known/woodpecker-ci/index.js
-- [ ] docs/types/text/yaml/known/woodpecker-ci/renderer.js
-- [ ] docs/types/text/yaml/known/yamllint/index.js
-- [ ] docs/types/text/yaml/known/yamllint/renderer.js
-- [ ] docs/types/text/yaml/known/zitadel-config/index.js
-- [ ] docs/types/text/yaml/known/zitadel-config/renderer.js
+- [x] docs/types/text/yaml/known/nfpm-config/index.js
+- [x] docs/types/text/yaml/known/nfpm-config/renderer.js
+- [x] docs/types/text/yaml/known/ntfy-config/index.js
+- [x] docs/types/text/yaml/known/ntfy-config/renderer.js
+- [x] docs/types/text/yaml/known/openapi-generator/index.js
+- [x] docs/types/text/yaml/known/openapi-generator/renderer.js
+- [x] docs/types/text/yaml/known/opencost-config/index.js
+- [x] docs/types/text/yaml/known/opencost-config/renderer.js
+- [x] docs/types/text/yaml/known/opentelemetry-k8s/index.js
+- [x] docs/types/text/yaml/known/opentelemetry-k8s/renderer.js
+- [x] docs/types/text/yaml/known/otel-collector/index.js
+- [x] docs/types/text/yaml/known/otel-collector/renderer.js
+- [x] docs/types/text/yaml/known/patroni-config/index.js
+- [x] docs/types/text/yaml/known/patroni-config/renderer.js
+- [x] docs/types/text/yaml/known/photoprism-config/index.js
+- [x] docs/types/text/yaml/known/photoprism-config/renderer.js
+- [x] docs/types/text/yaml/known/pnpm-lock/index.js
+- [x] docs/types/text/yaml/known/pnpm-lock/renderer.js
+- [x] docs/types/text/yaml/known/pnpm-workspace/index.js
+- [x] docs/types/text/yaml/known/pnpm-workspace/renderer.js
+- [x] docs/types/text/yaml/known/pre-commit-config/index.js
+- [x] docs/types/text/yaml/known/pre-commit-config/renderer.js
+- [x] docs/types/text/yaml/known/pre-commit/index.js
+- [x] docs/types/text/yaml/known/pre-commit/renderer.js
+- [x] docs/types/text/yaml/known/prefect-config/index.js
+- [x] docs/types/text/yaml/known/prefect-config/renderer.js
+- [x] docs/types/text/yaml/known/prometheus-config/index.js
+- [x] docs/types/text/yaml/known/prometheus-config/renderer.js
+- [x] docs/types/text/yaml/known/prometheus-rules/index.js
+- [x] docs/types/text/yaml/known/prometheus-rules/renderer.js
+- [x] docs/types/text/yaml/known/promtail-config/index.js
+- [x] docs/types/text/yaml/known/promtail-config/renderer.js
+- [x] docs/types/text/yaml/known/pubspec-lock/index.js
+- [x] docs/types/text/yaml/known/pubspec-lock/renderer.js
+- [x] docs/types/text/yaml/known/pubspec/index.js
+- [x] docs/types/text/yaml/known/pubspec/renderer.js
+- [x] docs/types/text/yaml/known/pulumi/index.js
+- [x] docs/types/text/yaml/known/pulumi/renderer.js
+- [x] docs/types/text/yaml/known/rails-credentials/index.js
+- [x] docs/types/text/yaml/known/rails-credentials/renderer.js
+- [x] docs/types/text/yaml/known/readthedocs/index.js
+- [x] docs/types/text/yaml/known/readthedocs/renderer.js
+- [x] docs/types/text/yaml/known/release-it/index.js
+- [x] docs/types/text/yaml/known/release-it/renderer.js
+- [x] docs/types/text/yaml/known/render-yaml/index.js
+- [x] docs/types/text/yaml/known/render-yaml/renderer.js
+- [x] docs/types/text/yaml/known/rubocop-todo/index.js
+- [x] docs/types/text/yaml/known/rubocop-todo/renderer.js
+- [x] docs/types/text/yaml/known/rubocop/index.js
+- [x] docs/types/text/yaml/known/rubocop/renderer.js
+- [x] docs/types/text/yaml/known/sam-template/index.js
+- [x] docs/types/text/yaml/known/sam-template/renderer.js
+- [x] docs/types/text/yaml/known/scorecard/index.js
+- [x] docs/types/text/yaml/known/scorecard/renderer.js
+- [x] docs/types/text/yaml/known/scrutiny-config/index.js
+- [x] docs/types/text/yaml/known/scrutiny-config/renderer.js
+- [x] docs/types/text/yaml/known/searxng-config/index.js
+- [x] docs/types/text/yaml/known/searxng-config/renderer.js
+- [x] docs/types/text/yaml/known/semaphore-ci/index.js
+- [x] docs/types/text/yaml/known/semaphore-ci/renderer.js
+- [x] docs/types/text/yaml/known/semgrep-config/index.js
+- [x] docs/types/text/yaml/known/semgrep-config/renderer.js
+- [x] docs/types/text/yaml/known/serverless/index.js
+- [x] docs/types/text/yaml/known/serverless/renderer.js
+- [x] docs/types/text/yaml/known/shard-yml/index.js
+- [x] docs/types/text/yaml/known/shard-yml/renderer.js
+- [x] docs/types/text/yaml/known/skaffold/index.js
+- [x] docs/types/text/yaml/known/skaffold/renderer.js
+- [x] docs/types/text/yaml/known/snmp-exporter/index.js
+- [x] docs/types/text/yaml/known/snmp-exporter/renderer.js
+- [x] docs/types/text/yaml/known/socket-security/index.js
+- [x] docs/types/text/yaml/known/socket-security/renderer.js
+- [x] docs/types/text/yaml/known/spacelift-config/index.js
+- [x] docs/types/text/yaml/known/spacelift-config/renderer.js
+- [x] docs/types/text/yaml/known/spectral/index.js
+- [x] docs/types/text/yaml/known/spectral/renderer.js
+- [x] docs/types/text/yaml/known/spring-app/index.js
+- [x] docs/types/text/yaml/known/spring-app/renderer.js
+- [x] docs/types/text/yaml/known/spring-profiles/index.js
+- [x] docs/types/text/yaml/known/spring-profiles/renderer.js
+- [x] docs/types/text/yaml/known/sqlc-config/index.js
+- [x] docs/types/text/yaml/known/sqlc-config/renderer.js
+- [x] docs/types/text/yaml/known/stack-yaml/index.js
+- [x] docs/types/text/yaml/known/stack-yaml/renderer.js
+- [x] docs/types/text/yaml/known/standardrb-config/index.js
+- [x] docs/types/text/yaml/known/standardrb-config/renderer.js
+- [x] docs/types/text/yaml/known/stirling-pdf-config/index.js
+- [x] docs/types/text/yaml/known/stirling-pdf-config/renderer.js
+- [x] docs/types/text/yaml/known/suricata-config/index.js
+- [x] docs/types/text/yaml/known/suricata-config/renderer.js
+- [x] docs/types/text/yaml/known/syft-config/index.js
+- [x] docs/types/text/yaml/known/syft-config/renderer.js
+- [x] docs/types/text/yaml/known/synapse-config/index.js
+- [x] docs/types/text/yaml/known/synapse-config/renderer.js
+- [x] docs/types/text/yaml/known/taskfile/index.js
+- [x] docs/types/text/yaml/known/taskfile/renderer.js
+- [x] docs/types/text/yaml/known/tekton-pipeline/index.js
+- [x] docs/types/text/yaml/known/tekton-pipeline/renderer.js
+- [x] docs/types/text/yaml/known/tempo/index.js
+- [x] docs/types/text/yaml/known/tempo/renderer.js
+- [x] docs/types/text/yaml/known/terraform-docs/index.js
+- [x] docs/types/text/yaml/known/terraform-docs/renderer.js
+- [x] docs/types/text/yaml/known/test-kitchen/index.js
+- [x] docs/types/text/yaml/known/test-kitchen/renderer.js
+- [x] docs/types/text/yaml/known/tetragon/index.js
+- [x] docs/types/text/yaml/known/tetragon/renderer.js
+- [x] docs/types/text/yaml/known/thanos-config/index.js
+- [x] docs/types/text/yaml/known/thanos-config/renderer.js
+- [x] docs/types/text/yaml/known/traefik-config/index.js
+- [x] docs/types/text/yaml/known/traefik-config/renderer.js
+- [x] docs/types/text/yaml/known/travis/index.js
+- [x] docs/types/text/yaml/known/travis/renderer.js
+- [x] docs/types/text/yaml/known/trivy-config/index.js
+- [x] docs/types/text/yaml/known/trivy-config/renderer.js
+- [x] docs/types/text/yaml/known/trufflehog-config/index.js
+- [x] docs/types/text/yaml/known/trufflehog-config/renderer.js
+- [x] docs/types/text/yaml/known/tspconfig/index.js
+- [x] docs/types/text/yaml/known/tspconfig/renderer.js
+- [x] docs/types/text/yaml/known/velero-config/index.js
+- [x] docs/types/text/yaml/known/velero-config/renderer.js
+- [x] docs/types/text/yaml/known/victoria-metrics-config/index.js
+- [x] docs/types/text/yaml/known/victoria-metrics-config/renderer.js
+- [x] docs/types/text/yaml/known/vikunja-config/index.js
+- [x] docs/types/text/yaml/known/vikunja-config/renderer.js
+- [x] docs/types/text/yaml/known/wakapi-config/index.js
+- [x] docs/types/text/yaml/known/wakapi-config/renderer.js
+- [x] docs/types/text/yaml/known/woodpecker-ci/index.js
+- [x] docs/types/text/yaml/known/woodpecker-ci/renderer.js
+- [x] docs/types/text/yaml/known/yamllint/index.js
+- [x] docs/types/text/yaml/known/yamllint/renderer.js
+- [x] docs/types/text/yaml/known/zitadel-config/index.js
+- [x] docs/types/text/yaml/known/zitadel-config/renderer.js
 - [x] docs/types/text/yaml/metadata.js
 - [x] docs/types/text/yaml/renderer.js
 - [x] docs/types/text/yaml/settings.default.json
@@ -4082,72 +4082,72 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/yaml/known/moonrepo
 - [x] docs/types/text/yaml/known/netplan
 - [x] docs/types/text/yaml/known/newrelic-config
-- [ ] docs/types/text/yaml/known/nfpm-config
-- [ ] docs/types/text/yaml/known/ntfy-config
-- [ ] docs/types/text/yaml/known/openapi-generator
-- [ ] docs/types/text/yaml/known/opencost-config
-- [ ] docs/types/text/yaml/known/opentelemetry-k8s
-- [ ] docs/types/text/yaml/known/otel-collector
-- [ ] docs/types/text/yaml/known/patroni-config
-- [ ] docs/types/text/yaml/known/photoprism-config
-- [ ] docs/types/text/yaml/known/pnpm-lock
-- [ ] docs/types/text/yaml/known/pnpm-workspace
-- [ ] docs/types/text/yaml/known/pre-commit
-- [ ] docs/types/text/yaml/known/pre-commit-config
-- [ ] docs/types/text/yaml/known/prefect-config
-- [ ] docs/types/text/yaml/known/prometheus-config
-- [ ] docs/types/text/yaml/known/prometheus-rules
-- [ ] docs/types/text/yaml/known/promtail-config
-- [ ] docs/types/text/yaml/known/pubspec
-- [ ] docs/types/text/yaml/known/pubspec-lock
-- [ ] docs/types/text/yaml/known/pulumi
-- [ ] docs/types/text/yaml/known/rails-credentials
-- [ ] docs/types/text/yaml/known/readthedocs
-- [ ] docs/types/text/yaml/known/release-it
-- [ ] docs/types/text/yaml/known/render-yaml
-- [ ] docs/types/text/yaml/known/rubocop
-- [ ] docs/types/text/yaml/known/rubocop-todo
-- [ ] docs/types/text/yaml/known/sam-template
-- [ ] docs/types/text/yaml/known/scorecard
-- [ ] docs/types/text/yaml/known/scrutiny-config
-- [ ] docs/types/text/yaml/known/searxng-config
-- [ ] docs/types/text/yaml/known/semaphore-ci
-- [ ] docs/types/text/yaml/known/semgrep-config
-- [ ] docs/types/text/yaml/known/serverless
-- [ ] docs/types/text/yaml/known/shard-yml
-- [ ] docs/types/text/yaml/known/skaffold
-- [ ] docs/types/text/yaml/known/snmp-exporter
-- [ ] docs/types/text/yaml/known/socket-security
-- [ ] docs/types/text/yaml/known/spacelift-config
-- [ ] docs/types/text/yaml/known/spectral
-- [ ] docs/types/text/yaml/known/spring-app
-- [ ] docs/types/text/yaml/known/spring-profiles
-- [ ] docs/types/text/yaml/known/sqlc-config
-- [ ] docs/types/text/yaml/known/stack-yaml
-- [ ] docs/types/text/yaml/known/standardrb-config
-- [ ] docs/types/text/yaml/known/stirling-pdf-config
-- [ ] docs/types/text/yaml/known/suricata-config
-- [ ] docs/types/text/yaml/known/syft-config
-- [ ] docs/types/text/yaml/known/synapse-config
-- [ ] docs/types/text/yaml/known/taskfile
-- [ ] docs/types/text/yaml/known/tekton-pipeline
-- [ ] docs/types/text/yaml/known/tempo
-- [ ] docs/types/text/yaml/known/terraform-docs
-- [ ] docs/types/text/yaml/known/test-kitchen
-- [ ] docs/types/text/yaml/known/tetragon
-- [ ] docs/types/text/yaml/known/thanos-config
-- [ ] docs/types/text/yaml/known/traefik-config
-- [ ] docs/types/text/yaml/known/travis
-- [ ] docs/types/text/yaml/known/trivy-config
-- [ ] docs/types/text/yaml/known/trufflehog-config
-- [ ] docs/types/text/yaml/known/tspconfig
-- [ ] docs/types/text/yaml/known/velero-config
-- [ ] docs/types/text/yaml/known/victoria-metrics-config
-- [ ] docs/types/text/yaml/known/vikunja-config
-- [ ] docs/types/text/yaml/known/wakapi-config
-- [ ] docs/types/text/yaml/known/woodpecker-ci
-- [ ] docs/types/text/yaml/known/yamllint
-- [ ] docs/types/text/yaml/known/zitadel-config
+- [x] docs/types/text/yaml/known/nfpm-config
+- [x] docs/types/text/yaml/known/ntfy-config
+- [x] docs/types/text/yaml/known/openapi-generator
+- [x] docs/types/text/yaml/known/opencost-config
+- [x] docs/types/text/yaml/known/opentelemetry-k8s
+- [x] docs/types/text/yaml/known/otel-collector
+- [x] docs/types/text/yaml/known/patroni-config
+- [x] docs/types/text/yaml/known/photoprism-config
+- [x] docs/types/text/yaml/known/pnpm-lock
+- [x] docs/types/text/yaml/known/pnpm-workspace
+- [x] docs/types/text/yaml/known/pre-commit
+- [x] docs/types/text/yaml/known/pre-commit-config
+- [x] docs/types/text/yaml/known/prefect-config
+- [x] docs/types/text/yaml/known/prometheus-config
+- [x] docs/types/text/yaml/known/prometheus-rules
+- [x] docs/types/text/yaml/known/promtail-config
+- [x] docs/types/text/yaml/known/pubspec
+- [x] docs/types/text/yaml/known/pubspec-lock
+- [x] docs/types/text/yaml/known/pulumi
+- [x] docs/types/text/yaml/known/rails-credentials
+- [x] docs/types/text/yaml/known/readthedocs
+- [x] docs/types/text/yaml/known/release-it
+- [x] docs/types/text/yaml/known/render-yaml
+- [x] docs/types/text/yaml/known/rubocop
+- [x] docs/types/text/yaml/known/rubocop-todo
+- [x] docs/types/text/yaml/known/sam-template
+- [x] docs/types/text/yaml/known/scorecard
+- [x] docs/types/text/yaml/known/scrutiny-config
+- [x] docs/types/text/yaml/known/searxng-config
+- [x] docs/types/text/yaml/known/semaphore-ci
+- [x] docs/types/text/yaml/known/semgrep-config
+- [x] docs/types/text/yaml/known/serverless
+- [x] docs/types/text/yaml/known/shard-yml
+- [x] docs/types/text/yaml/known/skaffold
+- [x] docs/types/text/yaml/known/snmp-exporter
+- [x] docs/types/text/yaml/known/socket-security
+- [x] docs/types/text/yaml/known/spacelift-config
+- [x] docs/types/text/yaml/known/spectral
+- [x] docs/types/text/yaml/known/spring-app
+- [x] docs/types/text/yaml/known/spring-profiles
+- [x] docs/types/text/yaml/known/sqlc-config
+- [x] docs/types/text/yaml/known/stack-yaml
+- [x] docs/types/text/yaml/known/standardrb-config
+- [x] docs/types/text/yaml/known/stirling-pdf-config
+- [x] docs/types/text/yaml/known/suricata-config
+- [x] docs/types/text/yaml/known/syft-config
+- [x] docs/types/text/yaml/known/synapse-config
+- [x] docs/types/text/yaml/known/taskfile
+- [x] docs/types/text/yaml/known/tekton-pipeline
+- [x] docs/types/text/yaml/known/tempo
+- [x] docs/types/text/yaml/known/terraform-docs
+- [x] docs/types/text/yaml/known/test-kitchen
+- [x] docs/types/text/yaml/known/tetragon
+- [x] docs/types/text/yaml/known/thanos-config
+- [x] docs/types/text/yaml/known/traefik-config
+- [x] docs/types/text/yaml/known/travis
+- [x] docs/types/text/yaml/known/trivy-config
+- [x] docs/types/text/yaml/known/trufflehog-config
+- [x] docs/types/text/yaml/known/tspconfig
+- [x] docs/types/text/yaml/known/velero-config
+- [x] docs/types/text/yaml/known/victoria-metrics-config
+- [x] docs/types/text/yaml/known/vikunja-config
+- [x] docs/types/text/yaml/known/wakapi-config
+- [x] docs/types/text/yaml/known/woodpecker-ci
+- [x] docs/types/text/yaml/known/yamllint
+- [x] docs/types/text/yaml/known/zitadel-config
 <!-- AUDIT_SECTION known-plugins END -->
 
 ### Example Catalog Entries

@@ -1,7 +1,8 @@
 export default {
   id: 'vikunja-config',
   label: 'Vikunja Config',
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'yaml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n !== 'config.yml' && n !== 'vikunja.yml') return false;
     const text = intake.text || '';

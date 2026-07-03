@@ -90,7 +90,7 @@ ${i.clusterid ? row('cluster-id', i.clusterid) : ''}
       ? `<span class="sur-pill ${o.enabled ? 'on' : 'off'}" style="margin-left:6px">${o.enabled ? 'enabled' : 'disabled'}</span>`
       : '';
     const cidHtml = o.communityId != null
-      ? `<span style="font-size:11px;color:var(--fg-2,#888);margin-left:4px">community-id: ${o.communityId}</span>`
+      ? `<span style="font-size:11px;color:var(--fg-2,#888);margin-left:4px">community-id: ${esc(String(o.communityId))}</span>`
       : '';
     return `<div class="sur-row"><span class="sur-key">${esc(o.name)}</span><span class="sur-val">${stateHtml}${cidHtml}</span></div>`;
   }).join('')}</div>

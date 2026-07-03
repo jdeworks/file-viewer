@@ -24530,31 +24530,6 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "pre-commit-config": {
-      "label": "pre-commit config",
-      "baseType": "raw",
-      "support": "supported",
-      "sampleFiles": [
-        "pre-commit-config.yaml"
-      ],
-      "extensions": [],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": false
-      },
-      "previewDepth": "basic",
-      "metadataDepth": "basic",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "conky-conf": {
       "label": "Conky config",
       "baseType": "raw",

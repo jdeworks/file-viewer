@@ -644,7 +644,6 @@ import cmusConf from '../types/text/known/cmus-conf/index.js';
 import pacmanConf from '../types/text/known/pacman-conf/index.js';
 import dnfConf from '../types/text/known/dnf-conf/index.js';
 import gdbinit from '../types/text/known/gdbinit/index.js';
-import { plugin as preCommitConfig } from '../types/text/yaml/known/pre-commit-config/index.js';
 import { plugin as conkyConf } from '../types/text/known/conky-conf/index.js';
 import { plugin as semaphoreCi } from '../types/text/yaml/known/semaphore-ci/index.js';
 import nanorc from '../types/text/known/nanorc/index.js';
@@ -1070,7 +1069,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   wslConf, loaderConf,
   cmusConf, pacmanConf, dnfConf,
   gdbinit,
-  preCommitConfig, conkyConf,
+  conkyConf,
   semaphoreCi,
   ansibleLint, molecule,
   helmfile, releaseIt,

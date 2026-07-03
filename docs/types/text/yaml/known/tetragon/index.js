@@ -2,7 +2,8 @@ export const plugin = {
   id: 'tetragon',
   label: 'Tetragon policy',
   tags: ['security', 'ebpf', 'runtime', 'cilium'],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'yaml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'tetragon.yaml' || n === 'tetragon.yml') return true;
     // content heuristic: Tetragon TracingPolicy CRD

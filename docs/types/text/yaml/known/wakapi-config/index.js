@@ -1,7 +1,8 @@
 export default {
   id: 'wakapi-config',
   label: 'Wakapi Config',
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'yaml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'wakapi.yaml' || n === 'wakapi.yml' || n === 'wakapi.cfg') return true;
     const text = intake.text || '';
