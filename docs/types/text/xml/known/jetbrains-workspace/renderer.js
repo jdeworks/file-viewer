@@ -2,9 +2,13 @@
 // Shows: run configurations, changed files list, VCS mappings.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// `color` is only ever passed as a hardcoded literal by this file's own callers today (never
+// attacker-controlled XML content), but interpolating it unescaped into style="..." would be a
+// live injection hole the moment a future caller passes anything dynamic — allowlist to hex.
 function tag(text, color) {
-  return color
-    ? '<span class="kf-tag" style="background:' + color + ';color:#fff">' + esc(text) + '</span>'
+  const safeColor = color && /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : null;
+  return safeColor
+    ? '<span class="kf-tag" style="background:' + safeColor + ';color:#fff">' + esc(text) + '</span>'
     : '<span class="kf-tag">' + esc(text) + '</span>';
 }
 

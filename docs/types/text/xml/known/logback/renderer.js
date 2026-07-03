@@ -34,7 +34,10 @@ function shortClass(cls) {
 function levelBadge(level) {
   if (!level) return '';
   const l = level.toUpperCase();
-  return `<span class="lb-level ${l}">${esc(l)}</span>`;
+  // `l` comes straight from the untrusted file's level="..." attribute; it must be esc()'d for
+  // the class attribute too, not just the text node — a raw `"` here breaks out of class="..."
+  // and this renderer's output lands in the parent pane (real DOM), not the sandboxed iframe.
+  return `<span class="lb-level ${esc(l)}">${esc(l)}</span>`;
 }
 
 function attr(el, name) {

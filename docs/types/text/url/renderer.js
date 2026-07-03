@@ -17,9 +17,18 @@ function extractTld(host) {
   return parts.length >= 2 ? parts.slice(-2).join('.') : host;
 }
 
+// NOTE: copy buttons carry their payload in a data-* attribute (HTML-attribute-escaped via
+// esc(), read back with getAttribute()) rather than inline onclick="...('value')". HTML entity
+// decoding happens BEFORE an inline event-handler attribute is compiled as JS, so escaping a
+// quote as &#39; does NOT stop it from becoming a literal ' in the compiled handler and breaking
+// out of the JS string — esc() alone is not safe in that context. A single delegated listener
+// (installed once by copyDelegationScript()) handles every button.
 function copyBtn(val) {
-  const escaped = esc(val).replace(/'/g, '&#39;');
-  return `<button class="ui-copy-btn" onclick="navigator.clipboard?.writeText('${escaped}')" title="Copy">⧉</button>`;
+  return `<button class="ui-copy-btn" data-copy="${esc(val)}" title="Copy">⧉</button>`;
+}
+
+function copyDelegationScript() {
+  return `<script>document.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(b)navigator.clipboard?.writeText(b.getAttribute('data-copy'));});</script>`;
 }
 
 function renderJwt(val) {
@@ -170,18 +179,15 @@ function renderMultiUrl(lines) {
       <div class="ui-url-detail">${renderSingleUrl(urls[i]) || '<em>Could not parse</em>'}</div>
     </details>`;
   }
-  html += `<button class="ui-copy-all-btn" onclick="
-    const urls=[${urls.map((u) => JSON.stringify(u)).join(',')}];
-    navigator.clipboard?.writeText(JSON.stringify(urls,null,2));
-  ">Copy all as JSON array</button>`;
+  html += `<button class="ui-copy-all-btn" data-copy="${esc(JSON.stringify(urls, null, 2))}">Copy all as JSON array</button>`;
   return html;
 }
 
 function copyAllParamsBtn(params) {
   const obj = {};
   for (const [k, v] of params.entries()) obj[k] = v;
-  const json = JSON.stringify(obj, null, 2).replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-  return `<button class="ui-copy-all-btn" onclick="navigator.clipboard?.writeText('${json}')">Copy all params as JSON</button>`;
+  const json = JSON.stringify(obj, null, 2);
+  return `<button class="ui-copy-all-btn" data-copy="${esc(json)}">Copy all params as JSON</button>`;
 }
 
 const CSS = `
@@ -258,7 +264,8 @@ export async function render(intake, _ctx) {
 
   const body = `${CSS}
     <code class="ui-raw-box">${esc(rawDisplay)}${copyBtn(text)}</code>
-    ${mainHtml}`;
+    ${mainHtml}
+    ${copyDelegationScript()}`;
 
   return { bodyHtml: body, hadUnsafe: false };
 }
