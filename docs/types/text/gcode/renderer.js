@@ -77,19 +77,6 @@ function parseGcode(text) {
   return { printTime, filamentMm, layerCount, layerHeight, slicer, nozzleTemp, bedTemp, xMax, yMax, zMax };
 }
 
-function highlightLine(line) {
-  if (!line.trim()) return '';
-  const commentIdx = line.indexOf(';');
-  let code = commentIdx >= 0 ? line.slice(0, commentIdx) : line;
-  const comment = commentIdx >= 0 ? line.slice(commentIdx) : '';
-
-  code = code.replace(/\b(G\d+)\b/g, '<span style="color:#7ec8e3">$1</span>');
-  code = code.replace(/\b(M\d+)\b/g, '<span style="color:#e8a87c">$1</span>');
-
-  const commentHtml = comment ? '<span style="color:var(--fg2)">' + esc(comment) + '</span>' : '';
-  return esc(code).replace(/&lt;span/g, '<span').replace(/style=&quot;/g, 'style="').replace(/&quot;&gt;/g, '">').replace(/&lt;\/span&gt;/g, '</span>') + commentHtml;
-}
-
 function fmtMm(mm) {
   if (mm == null) return null;
   if (mm >= 1000) return (mm / 1000).toFixed(2) + ' m';
