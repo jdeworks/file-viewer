@@ -1,4 +1,4 @@
-import { TARGET_MODES } from './towers.js';
+import { toPreset } from './towers.js';
 import { createCampaign, ensureCampaign } from './run4.js';
 
 export function defaultState(context = {}) {
@@ -139,7 +139,8 @@ function normalizeTower(tower) {
     x,
     y,
     level: clampInt(tower.level || 1, 1, 3),
-    targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : 'first',
+    // Migrate any legacy 5-mode value onto one of the 3 presets (surface reduction, 2026-07-03).
+    targetMode: toPreset(tower.targetMode),
     fork: tower.fork ? String(tower.fork) : null, // chosen tier-3 fork (irrevocable; persisted)
     abilityReady: tower.abilityReady !== false,
     abilityUsed: Boolean(tower.abilityUsed),

@@ -1,22 +1,27 @@
 // ui-combat.js — Stage 4 Fractal Bastion: the tower-defense combat board.
 //
-// Used for BOTH a campaign map (mode 'map': play the map's waves) and the boss arena (mode 'boss':
-// place coverage, then confront The Infinite Loop). Renders the ASCII board + tower shop + roster,
-// runs the rAF tick loop (map mode), and exposes a synchronous advance() for the headless smoke.
-// Pacing: tight spawn cadence (waves.js) + fast-forward 1×/2×/3× + call-wave-early bonus; the player
-// calls each wave (no forced inter-wave gap). Campaign transitions are delegated to the controller.
+// Used for BOTH a campaign map (mode 'map') and the boss arena (mode 'boss'). The controls + HUD are
+// DOCKED in a sticky command bar ABOVE the board (UX audit #1) so the verbs and the board share one
+// viewport; the board is COLOUR-CLASSED spans (board.boardHTML, audit #2); selecting a shop tower enters
+// a placement PREVIEW (footprint + range ring, audit #3); tapping a placed tower opens a stats POPOVER
+// (combat-popover). Feedback is diffed each frame (combat-fx, audit #5). On a fresh player's map 1 the
+// damage-type / status / targeting UI is suppressed (M1); it discloses from map 2 with an arrival banner.
 
 import { buildPath, mapPathDepth } from './lsystem.js';
-import { boardText } from './board.js';
+import { boardHTML, boardText } from './board.js';
 import { startWave as engineStartWave, tick, waveComplete, queueWave } from './engine.js';
 import { cycleTowerTarget, getBossLockState, placeTower, pushLog, fightInfiniteLoop } from './boss.js';
 import { upgradeTower, sellTower } from './upgrades.js';
 import { chooseFork } from './forks.js';
 import { snapshotWave } from './state.js';
-import { mapByIndex, mapPathSeed } from './maps.js';
-import { refundTowersOnPath, preWaveHint } from './combat-helpers.js';
+import { mapByIndex, mapPathSeed, subBossIdForWave } from './maps.js';
+import { subBossDef } from './subboss.js';
+import { refundTowersOnPath, preWaveHint, placementPreview, rangeRing, wavePreviewLine } from './combat-helpers.js';
 import { shopRows, rosterRows } from './combat-rows.js';
 import { cellFromTextRect } from './combat-board-map.js';
+import { combatDisclosed } from './run4.js';
+import { openTowerPopover, closeTowerPopover, popoverTowerId } from './combat-popover.js';
+import { createCombatFx, playFx, fxBanner } from './combat-fx.js';
 
 const PLACEABLE = [
   'pulse_node', 'scatter_array', 'null_spike', 'attractor_field',
@@ -31,55 +36,71 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   const isBoss = mode === 'boss';
   const mapIndex = state.campaign?.mapIndex ?? 0;
   const map = mapByIndex(mapIndex);
+  const disclosed = isBoss || combatDisclosed(state, mapIndex);
 
   const root = document.createElement('section');
   root.className = 'stage4-combat';
   root.innerHTML = `
-    <header class="s4-hud">
-      <strong>${isBoss ? 'THE INFINITE LOOP' : `${map.glyph} ${map.name.toUpperCase()}`}</strong>
-      <span>CYCLES <span data-field="cycles"></span></span>
-      <span>INTEGRITY <span data-field="integrity"></span></span>
-      <span>${isBoss ? 'POINTS' : 'WAVE'} <span data-field="progress"></span></span>
-      <button type="button" data-action="leave" class="s4-leave">${isBoss ? 'retreat' : '← maps'}</button>
-    </header>
-    <div class="s4-layout">
-      <pre class="s4-board" aria-label="fractal bastion board"></pre>
+    <div class="s4-cmdbar">
+      <div class="s4-cmd-hud">
+        <strong>${isBoss ? 'THE INFINITE LOOP' : `${map.glyph} ${map.name.toUpperCase()}`}</strong>
+        <span class="s4-stat">CYCLES <b data-field="cycles"></b></span>
+        <span class="s4-stat">INTEGRITY <b data-field="integrity"></b></span>
+        <span class="s4-stat">${isBoss ? 'POINTS' : 'WAVE'} <b data-field="progress"></b></span>
+      </div>
+      <div class="s4-cmd-actions">
+        ${isBoss ? '' : `
+          <span class="s4-next" data-field="next"></span>
+          <button type="button" data-action="start-wave">▶ start wave</button>
+          <button type="button" data-action="call-early" hidden>call next (+${CALL_EARLY_BONUS})</button>
+          <button type="button" data-action="speed">speed 1×</button>`}
+        ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ''}
+        <button type="button" data-action="blueprint">recursion_points.json</button>
+        <button type="button" data-action="leave" class="s4-leave">${isBoss ? 'retreat' : '← maps'}</button>
+      </div>
+      <button type="button" class="s4-ticker" data-field="ticker" title="show full log"></button>
+    </div>
+    <ol class="s4-log-full" data-field="logfull" hidden></ol>
+    <div class="s4-stage">
+      <div class="s4-board-wrap">
+        <pre class="s4-board" aria-label="fractal bastion board"></pre>
+      </div>
       <section class="s4-panel">
         <div class="s4-hint" data-field="hint"></div>
         <div class="s4-shop" data-field="shop"></div>
         <div class="s4-roster" data-field="roster"></div>
       </section>
     </div>
-    <ol class="s4-log"></ol>
-    <div class="s4-controls">
-      ${isBoss ? '' : `
-        <button type="button" data-action="start-wave">start wave</button>
-        <button type="button" data-action="call-early" hidden>call next wave (+${CALL_EARLY_BONUS})</button>
-        <button type="button" data-action="speed">speed 1×</button>`}
-      ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ''}
-      <button type="button" data-action="blueprint">open recursion_points.json</button>
-    </div>
   `;
   host.replaceChildren(root);
 
   const fields = Object.fromEntries([...root.querySelectorAll('[data-field]')].map((el) => [el.dataset.field, el]));
-  const logEl = root.querySelector('.s4-log');
   const board = root.querySelector('.s4-board');
-  let selected = 'pulse_node';
+  const boardWrap = root.querySelector('.s4-board-wrap');
+  const cmdbar = root.querySelector('.s4-cmdbar');
+  let selected = null;        // selected SHOP tower type (placement mode) — null until the player picks
+  let selectedTowerId = null; // a selected PLACED tower (range ring + popover)
+  let hoverCell = null;       // cell under the pointer (desktop) / last tapped (touch preview)
+  let pendingCell = null;     // touch two-step: first tap previews, second tap on the same cell confirms
+  let touchMode = false;      // set when the last pointer interaction was touch (→ tap-once-preview)
   let speed = 1;
   let raf = null;
   let lastPersistMs = -Infinity;
   let alive = true;
-  // Depth-aware L-system path (lsystem.mapPathDepth): it folds deeper per wave group. `pathDepth` tracks
-  // which depth `path` was built at so the reshape rebuilds only on a group change. Boss = fixed depth 3.
+  const fx = createCombatFx();
+  let lastHits = null;
+
   const pathSeed = isBoss ? (state.recursion?.pointSetId || 'x') : mapPathSeed(state.recursion?.pointSetId, mapIndex);
   let pathDepth = isBoss ? 3 : mapPathDepth(map.depth, state.waveNumber || 1);
   let path = buildPath(pathSeed, pathDepth);
   if (!Number.isFinite(state.wavePeak)) state.wavePeak = state.waveNumber || 1;
 
-  // Per-wave-group RESHAPE: on a group crossing the path folds deeper. Towers never move (research) — any
-  // caught ON the new road are refunded (full invested) + the fold is telegraphed so it reads as
-  // ANTICIPATE, not a gotcha. Idempotent (no-op when depth unchanged); deterministic (seeded, no clock).
+  // One-time disclosure arrival banner (M1): the moment the advanced systems first appear.
+  if (disclosed && !state.campaign.disclosureSeen) {
+    state.campaign.disclosureSeen = true;
+    setTimeout(() => alive && fxBanner(boardWrap, 'enemies now resist by type — check tower damage types'), 30);
+  }
+
   function maybeReshape() {
     if (isBoss) return false;
     const want = mapPathDepth(map.depth, state.waveNumber || 1);
@@ -92,11 +113,25 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     return true;
   }
 
-  // ── persistence ──────────────────────────────────────────────────────────
   function checkpointWave(overrides) { controller.checkpointWave?.({ ...snapshotWave(state), ...overrides }); }
   function endWaveSnapshot() { controller.endWaveSnapshot?.(); }
 
   // ── render ───────────────────────────────────────────────────────────────
+  function currentOverlay() {
+    const overlay = {};
+    if (lastHits && lastHits.size) overlay.hits = lastHits;
+    if (selectedTowerId) {
+      const t = (state.towers || []).find((x) => x.id === selectedTowerId);
+      if (t) overlay.rings = rangeRing(t.type, { x: t.x, y: t.y });
+    } else if (selected && hoverCell) {
+      const pv = placementPreview(state, path.tiles, selected, hoverCell);
+      overlay.rings = pv.rings; overlay.foot = pv.foot; overlay.footValid = pv.valid;
+    }
+    return overlay;
+  }
+
+  function paintBoard() { if (alive) board.innerHTML = boardHTML(state, path.tiles, currentOverlay()); }
+
   function repaint() {
     if (!alive) return;
     const lock = getBossLockState({ actions: controller.actions, state });
@@ -109,28 +144,45 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       : (state.waveActive
         ? 'hold the line — call the next wave early for bonus cycles'
         : preWaveHint(mapIndex, state.waveNumber || 1));
-    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected }));
-    fields.roster.replaceChildren(...rosterRows(state));
-    board.textContent = boardText(state, path.tiles);
+    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected, disclosed }));
+    fields.roster.replaceChildren(...rosterRows(state, disclosed));
     if (!isBoss) {
+      fields.next.textContent = state.waveActive ? '' : `next: ${wavePreviewLine(mapIndex, state.waveNumber || 1)}`;
       root.querySelector('[data-action="call-early"]').hidden = !state.waveActive || (state.wavePeak || 1) >= map.waveCount;
+      root.querySelector('[data-action="start-wave"]').hidden = state.waveActive;
       root.querySelector('[data-action="speed"]').textContent = `speed ${speed}×`;
     }
-    logEl.replaceChildren(...(state.log || []).slice(-6).map((line) => { const li = document.createElement('li'); li.textContent = line; return li; }));
+    const lines = (state.log || []).slice(-2);
+    fields.ticker.textContent = lines.join('  ·  ') || 'the path repeats before it explains itself.';
+    if (!fields.logfull.hidden) fields.logfull.replaceChildren(...(state.log || []).slice(-12).map((l) => li(l)));
+    paintBoard();
+    syncPopover();
+  }
+
+  function li(text) { const el = document.createElement('li'); el.textContent = text; return el; }
+
+  function syncPopover() {
+    if (!selectedTowerId) return;
+    const t = (state.towers || []).find((x) => x.id === selectedTowerId);
+    if (!t) { selectedTowerId = null; closeTowerPopover(); return; }
+    if (popoverTowerId() === t.id) openTowerPopover({ root: boardWrap, state, tower: t, disclosed }); // refresh in place
   }
 
   // ── wave loop (map mode) ─────────────────────────────────────────────────
   function startWaveAction() {
     if (isBoss || state.waveActive || (state.waveNumber || 1) > map.waveCount) return;
-    maybeReshape(); // safety: ensure the path matches this wave's group (also covers debug wave jumps)
+    maybeReshape();
     engineStartWave(state, state.waveNumber, path.tiles);
     state.wavePeak = state.waveNumber;
     lastPersistMs = -Infinity;
+    fx.reset();
+    fxBanner(boardWrap, `WAVE ${state.waveNumber}/${map.waveCount}`);
+    const sbId = subBossIdForWave(mapIndex, state.waveNumber || 1);
+    if (sbId) { const d = subBossDef(sbId); if (d) setTimeout(() => alive && fxBanner(boardWrap, `⚠ ${d.name} — ${d.telegraph}`), 700); }
     checkpointWave(); controller.persist?.();
     runLoop();
   }
 
-  // Call the next wave while the current one is still live: pour its enemies in for bonus cycles.
   function callEarly() {
     if (isBoss || !state.waveActive || (state.wavePeak || 1) >= map.waveCount) return;
     state.wavePeak = (state.wavePeak || state.waveNumber) + 1;
@@ -153,6 +205,9 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       const dt = (last == null ? 16 : Math.min(100, ts - last)) * speed;
       last = ts;
       tick(state, dt, path.tiles);
+      const deltas = fx.observe(state);
+      lastHits = deltas.hitCells;
+      playFx(deltas, { board, bar: cmdbar, floatHost: boardWrap });
       checkpointWave();
       if (settleWave()) { raf = null; return; }
       if ((state.combatClockMs || 0) - lastPersistMs >= PERSIST_THROTTLE_MS) { lastPersistMs = state.combatClockMs; controller.persist?.(); }
@@ -163,8 +218,6 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   }
   function stopLoop() { if (raf != null) { cancelAnimationFrame(raf); raf = null; } }
 
-  // Returns true (and stops the loop) when the wave ends. On a map clear it asks the controller to
-  // re-render (→ Armory), which destroys THIS component — so guard everything after with `alive`.
   function settleWave() {
     if (state.waveFailed) {
       stopLoop(); pushLog(state, 'integrity collapsed — the bastion folds.'); endWaveSnapshot();
@@ -174,14 +227,14 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       const cleared = creditWaves();
       endWaveSnapshot(); controller.persist?.();
       if (cleared) { stopLoop(); controller.rerender(); return true; }
-      maybeReshape(); // the wave counter just advanced — fold the path now so the player sees it next
+      maybeReshape();
+      lastHits = null;
       repaint();
       return true;
     }
     return false;
   }
 
-  // Credit every wave whose enemies were in the cleared blob (≥1; more if waves were called early).
   function creditWaves() {
     const target = Math.max(state.wavePeak || state.waveNumber, state.waveNumber);
     let cleared = false;
@@ -202,7 +255,7 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     return result;
   }
 
-  // ── placement ────────────────────────────────────────────────────────────
+  // ── placement / selection ──────────────────────────────────────────────────
   function place(x, y, type) {
     const r = placeTower(state, { x, y, type: type || selected });
     repaint(); controller.persist?.();
@@ -210,11 +263,37 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
   }
   function cycleTarget(id) { const m = cycleTowerTarget(state, id); repaint(); controller.persist?.(); return m; }
   function upgrade(id) { const r = upgradeTower(state, id); repaint(); controller.persist?.(); return r; }
-  function sell(id) { const r = sellTower(state, id); repaint(); controller.persist?.(); return r; }
+  function sell(id) { const r = sellTower(state, id); if (selectedTowerId === id) { selectedTowerId = null; closeTowerPopover(); } repaint(); controller.persist?.(); return r; }
   function pickFork(id, forkId) { const r = chooseFork(state, id, forkId); repaint(); controller.persist?.(); return r; }
   function setWave(n) { state.waveNumber = Math.max(1, Math.trunc(n) || 1); state.wavePeak = state.waveNumber; repaint(); }
 
+  // Pointer placement: desktop click places immediately on a valid cell; touch previews first, then a
+  // second tap on the SAME cell confirms. Placing on a placed tower selects it (opens the popover).
+  function boardTap(event, cell) {
+    const onTower = (state.towers || []).find((t) => t.x === cell.x && t.y === cell.y);
+    if (onTower) {
+      selected = null; pendingCell = null; hoverCell = null; selectedTowerId = onTower.id;
+      openTowerPopover({ root: boardWrap, anchor: pointerAnchor(event), state, tower: onTower, disclosed, onClose: () => { selectedTowerId = null; paintBoard(); } });
+      repaint(); return;
+    }
+    selectedTowerId = null; closeTowerPopover();
+    if (!selected) { hoverCell = cell; paintBoard(); return; }
+    const pv = placementPreview(state, path.tiles, selected, cell);
+    if (touchMode && (!pendingCell || pendingCell.x !== cell.x || pendingCell.y !== cell.y)) {
+      pendingCell = cell; hoverCell = cell; paintBoard(); return; // first tap → preview
+    }
+    pendingCell = null;
+    if (!pv.valid) { hoverCell = cell; paintBoard(); return; }
+    place(cell.x, cell.y);
+  }
+
+  function pointerAnchor(event) {
+    const r = board.getBoundingClientRect();
+    return { left: event?.clientX ?? r.left, bottom: event?.clientY ?? r.top, top: event?.clientY ?? r.top };
+  }
+
   // ── events ───────────────────────────────────────────────────────────────
+  root.addEventListener('pointerdown', (event) => { touchMode = event.pointerType === 'touch'; }, true);
   root.addEventListener('click', (event) => {
     const upBtn = event.target.closest('button[data-upgrade-id]');
     if (upBtn) { upgrade(upBtn.dataset.upgradeId); return; }
@@ -225,9 +304,10 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     const rosterBtn = event.target.closest('button[data-tower-id]');
     if (rosterBtn) { cycleTarget(rosterBtn.dataset.towerId); return; }
     const towerBtn = event.target.closest('button[data-tower]');
-    if (towerBtn) { selected = towerBtn.dataset.tower; repaint(); return; }
+    if (towerBtn) { selected = selected === towerBtn.dataset.tower ? null : towerBtn.dataset.tower; selectedTowerId = null; pendingCell = null; closeTowerPopover(); repaint(); return; }
+    if (event.target.closest('.s4-ticker')) { fields.logfull.hidden = !fields.logfull.hidden; repaint(); return; }
     const cell = boardCell(event);
-    if (cell) { place(cell.x, cell.y); return; }
+    if (cell) { boardTap(event, cell); return; }
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     switch (button.dataset.action) {
@@ -235,20 +315,24 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
       case 'call-early': callEarly(); break;
       case 'speed': setSpeed(); break;
       case 'confront': confront(); break;
-      case 'leave': stopLoop(); controller.leaveCombat?.(); break;
+      case 'leave': stopLoop(); closeTowerPopover(); controller.leaveCombat?.(); break;
       case 'blueprint': controller.openBlueprint?.(); break;
       default: break;
     }
   });
 
-  // Map a pointer event to a board cell. We measure the RENDERED text with a Range rather than the
-  // <pre> box: range.getBoundingClientRect() gives the glyph block's on-screen rect already adjusted
-  // for the container's scroll offset (and any transform), and — unlike the box — it is the actual
-  // text extent (the <pre> is wider than the 40-char text in the desktop grid). So a tap near the
-  // edge, or after the board has been scrolled on a phone, resolves to the cell under the finger.
+  // Desktop hover preview (placement mode only) — no state mutation, just the overlay.
+  board.addEventListener('mousemove', (event) => {
+    if (touchMode || !selected || selectedTowerId) return;
+    const cell = boardCell(event);
+    if (cell && (!hoverCell || hoverCell.x !== cell.x || hoverCell.y !== cell.y)) { hoverCell = cell; paintBoard(); }
+  });
+  board.addEventListener('mouseleave', () => { if (hoverCell) { hoverCell = null; paintBoard(); } });
+
+  // Map a pointer event to a board cell via a Range over the RENDERED text (scroll/transform-safe).
   function boardCell(event) {
     if (!event.target.closest('.s4-board')) return null;
-    const lines = board.textContent.split('\n');
+    const lines = boardText(state, path.tiles).split('\n');
     const cols = (lines[0] || '').length || 40;
     const rows = lines.length || 40;
     const range = document.createRange();
@@ -257,22 +341,20 @@ export function mountCombat({ host, state, controller, mode = 'map' }) {
     return cellFromTextRect({ clientX: event.clientX, clientY: event.clientY, textRect, cols, rows });
   }
 
-  // Resume a mid-flight wave restored by the dispatcher (state.waveActive true on entry).
   if (!isBoss && state.waveActive && (state.waveNumber || 1) <= map.waveCount) runLoop();
 
   repaint();
   return {
     repaint,
-    destroy() { alive = false; stopLoop(); root.remove(); },
+    destroy() { alive = false; stopLoop(); closeTowerPopover(); root.remove(); },
     hook: {
-      // Synchronous wave runner for the headless smoke (no rAF).
       advance(ms = 30000, dt = 100) {
         let t = 0;
-        while (t < ms && state.waveActive) { tick(state, dt * speed, path.tiles); checkpointWave(); if (settleWave()) break; t += dt; }
+        while (t < ms && state.waveActive) { tick(state, dt * speed, path.tiles); lastHits = fx.observe(state).hitCells; checkpointWave(); if (settleWave()) break; t += dt; }
         if (alive) repaint();
       },
       startWave: startWaveAction, callEarly, setSpeed, place, cycleTarget, upgrade, sell, pickFork, setWave, confront,
-      reshape: maybeReshape, pathInfo: () => ({ depth: pathDepth, tiles: path.tiles }), // reshape test hooks
+      reshape: maybeReshape, pathInfo: () => ({ depth: pathDepth, tiles: path.tiles }),
     },
   };
 }

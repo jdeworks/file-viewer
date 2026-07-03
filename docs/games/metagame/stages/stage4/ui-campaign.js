@@ -6,29 +6,36 @@
 // ui-combat.js.
 
 import { MAPS } from './maps.js';
-import { mapUnlocked, mapCleared, bossUnlocked, allMapsCleared, campaignProgress } from './run4.js';
+import { mapUnlocked, mapCleared, bossUnlocked, allMapsCleared, campaignProgress, isVeteran } from './run4.js';
 import { ARMORY_UPGRADES, armoryLevel, armoryCost, canBuyArmory } from './armory.js';
+import { banner } from '../../shared/feedback.js';
 
 export function renderMapSelect(host, controller) {
   const state = controller.state;
   const root = document.createElement('section');
   root.className = 'stage4-mapselect';
   const won = state.campaign.status === 'won' || state.boss?.defeated;
+  // Progressive disclosure (M2/R1): a FRESH player (no map cleared) lands on a lean screen — map 1 is
+  // the single primary START, and Glory/armory/boss meta stay hidden until the map-1 victory moment.
+  const veteran = isVeteran(state) || won;
 
   function repaint() {
     const prog = campaignProgress(state);
     const bossReady = bossUnlocked(state);
     root.innerHTML = `
-      <header class="s4-hud"><strong>FRACTAL BASTION — CAMPAIGN</strong>
-        <span>GLORY ${state.campaign.glory}</span>
+      <header class="s4-hud"><strong>FRACTAL BASTION${veteran ? ' — CAMPAIGN' : ''}</strong>
+        ${veteran ? `<span>GLORY ${state.campaign.glory}</span>` : ''}
         <span>MAPS ${prog.cleared}/${prog.total}</span>
       </header>
-      <p class="s4-hint">${won ? 'The Infinite Loop has stopped. The bastion holds.' : 'Clear each map to unlock the next. The Infinite Loop opens only when all five are held.'}</p>
+      <p class="s4-hint">${won ? 'The Infinite Loop has stopped. The bastion holds.'
+        : veteran ? 'Clear each map to unlock the next. The Infinite Loop opens only when all five are held.'
+        : 'The recursion is leaking in. Hold the Outer Shell.'}</p>
       <ol class="s4-maplist">
         ${MAPS.map((m, i) => mapRow(m, i)).join('')}
       </ol>
       <div class="s4-controls">
-        <button type="button" data-action="boss" ${bossReady ? '' : 'disabled'}>${won ? 'The Infinite Loop (cleared)' : 'confront The Infinite Loop'}</button>
+        <button type="button" data-action="boss" class="s4-boss-chip" ${bossReady ? '' : 'disabled'}>${won ? 'The Infinite Loop (cleared)' : bossReady ? 'confront The Infinite Loop' : 'The Infinite Loop — locked · clear all five maps'}</button>
+        ${veteran && !won ? '<button type="button" data-action="armory">⚙ armory</button>' : ''}
         ${won ? '<button type="button" data-action="bts">open fractal_bastion.bts</button>' : ''}
       </div>`;
   }
@@ -37,13 +44,16 @@ export function renderMapSelect(host, controller) {
     const unlocked = mapUnlocked(state, i);
     const cleared = mapCleared(state, i);
     const status = cleared ? 'CLEARED' : unlocked ? 'OPEN' : 'LOCKED';
+    // Fresh player: map 1's button is the ONE primary START; other rows are locked anyway.
+    const primary = !veteran && unlocked && !cleared;
+    const label = cleared ? 'replay' : primary ? '▶ start' : 'enter';
     return `<li class="s4-maprow ${cleared ? 'is-cleared' : unlocked ? 'is-open' : 'is-locked'}">
       <span class="s4-mapglyph">${m.glyph}</span>
       <span class="s4-mapname">${m.name}</span>
       <span class="s4-mapwaves">${m.waveCount} waves</span>
       <span class="s4-maptheme">${m.theme}</span>
       <span class="s4-mapstatus">${status}</span>
-      <button type="button" data-select="${i}" ${unlocked ? '' : 'disabled'}>${cleared ? 'replay' : 'enter'}</button>
+      <button type="button" class="${primary ? 's4-primary' : ''}" data-select="${i}" ${unlocked ? '' : 'disabled'}>${label}</button>
     </li>`;
   }
 
@@ -53,6 +63,7 @@ export function renderMapSelect(host, controller) {
     const action = event.target.closest('button[data-action]');
     if (!action) return;
     if (action.dataset.action === 'boss' && allMapsCleared(state)) controller.enterBoss();
+    else if (action.dataset.action === 'armory') controller.openArmory?.();
     else if (action.dataset.action === 'bts') controller.openBts();
   });
 
@@ -65,11 +76,14 @@ export function renderArmory(host, controller) {
   const state = controller.state;
   const root = document.createElement('section');
   root.className = 'stage4-armory';
+  // The map-1 victory moment (M2): the armory OPENS as the first-clear reward — announce it once.
+  const firstOpen = (state.campaign.clearedMaps || []).length === 1 && !state.campaign.armoryOpened;
+  if (firstOpen) { state.campaign.armoryOpened = true; setTimeout(() => banner(root, 'Glory earned — the armory opens'), 30); }
 
   function repaint() {
     root.innerHTML = `
       <header class="s4-hud"><strong>⚙ THE ARMORY</strong><span>GLORY ${state.campaign.glory}</span></header>
-      <p class="s4-hint">Map cleared. Spend Glory on permanent campaign upgrades, then advance.</p>
+      <p class="s4-hint">${firstOpen ? 'You held the Outer Shell. ' : ''}Spend Glory on permanent campaign upgrades, then advance.</p>
       <ol class="s4-armorylist">${ARMORY_UPGRADES.map((u) => armoryRow(u)).join('')}</ol>
       <div class="s4-controls"><button type="button" data-action="continue">continue →</button></div>`;
   }

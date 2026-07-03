@@ -48,12 +48,16 @@ export function mountStage(ctx) {
 }
 
 function ensureStyles() {
-  const id = 'stage4-fractal-bastion-styles';
+  injectSheet('stage4-fractal-bastion-styles', './styles.css');
+  injectSheet('stage4-fractal-bastion-board-styles', './styles-board.css');
+}
+
+function injectSheet(id, rel) {
   if (document.getElementById(id)) return;
   const link = document.createElement('link');
   link.id = id;
   link.rel = 'stylesheet';
-  link.href = new URL('./styles.css', import.meta.url).href;
+  link.href = new URL(rel, import.meta.url).href;
   document.head.append(link);
 }
 

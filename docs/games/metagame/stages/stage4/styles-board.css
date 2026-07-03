@@ -1,0 +1,195 @@
+/* styles-board.css — Stage 4 Fractal Bastion: the COMBAT board presentation (UX audit #1–#5). Injected
+   alongside styles.css. Owns: the docked command bar (#1), the colour-classed board spans (#2), the
+   placement/selection overlay + stats popover (#3), the two-line shop rows (#4), and the feedback edge
+   flash (#5). Colours are chosen for CONTRAST on the dark terminal — the path must read as a road. */
+
+.stage4-combat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── #1 docked command bar (sticky HUD + wave controls + log ticker) ───────── */
+.s4-cmdbar {
+  background: #12121f;
+  border: 1px solid var(--s4-line);
+  border-radius: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 7px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+}
+
+.s4-cmd-hud,
+.s4-cmd-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; }
+.s4-cmd-hud strong { color: var(--s4-yellow); letter-spacing: 1px; }
+.s4-stat { color: #8fa0c0; font-size: 12px; }
+.s4-stat b { color: var(--s4-fg); font-weight: 700; }
+.s4-cmd-actions { margin-left: auto; }
+
+.s4-cmd-actions button {
+  background: #1a1a30;
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  cursor: pointer;
+  min-height: 34px;
+  padding: 5px 10px;
+}
+.s4-cmd-actions button:hover { border-color: var(--s4-cyan); }
+.s4-cmd-actions [data-action="start-wave"] { border-color: var(--s4-cyan); color: #cffbe6; font-weight: 700; }
+.s4-cmd-actions [data-action="call-early"] { border-color: var(--s4-yellow); color: #ffdf9b; }
+.s4-next { color: #8fa0c0; font-size: 12px; }
+
+.s4-ticker {
+  flex: 1 0 100%;
+  background: none;
+  border: 0;
+  border-top: 1px dashed #23234a;
+  color: #7c8bb0;
+  cursor: pointer;
+  font-size: 11px;
+  margin-top: 2px;
+  overflow: hidden;
+  padding: 3px 0 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s4-ticker:hover { color: var(--s4-cyan); }
+
+.s4-log-full {
+  background: #0d0d16;
+  border: 1px solid var(--s4-line);
+  color: #8fa0c0;
+  font-size: 11px;
+  margin: 0;
+  max-height: 90px;
+  overflow-y: auto;
+  padding: 6px 6px 6px 20px;
+}
+
+/* ── stage layout: board + panel fill the remaining height ─────────────────── */
+.s4-stage {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr minmax(190px, 260px);
+}
+
+.s4-board-wrap {
+  position: relative;
+  min-height: 0;
+  display: flex;
+  background: #0e0e16;
+  border: 1px solid var(--s4-line);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* ── #2 the coloured board ─────────────────────────────────────────────────── */
+.s4-board {
+  flex: 1;
+  color: #3a3a4d;
+  cursor: crosshair;
+  font: 12px/0.95 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 1px;
+  margin: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+  white-space: pre;
+}
+
+.s4-board .s4c-empty { color: #26263a; }
+.s4-board .s4c-path,
+.s4-board .s4c-entry,
+.s4-board .s4c-exit,
+.s4-board .s4c-recurve { background: rgba(214, 170, 92, 0.16); }
+.s4-board .s4c-path { color: #d6aa5c; }
+.s4-board .s4c-entry { color: #62e39a; font-weight: 700; }
+.s4-board .s4c-exit { color: #ff6b6b; font-weight: 700; }
+.s4-board .s4c-recurve { color: #ffcf4d; font-weight: 700; }
+.s4-board .s4c-recur { color: #ffcf4d; font-weight: 700; }
+
+/* towers coloured by damage type */
+.s4-board .s4c-tower { font-weight: 700; }
+.s4-board .s4c-t-kinetic { color: #7fd0ff; }
+.s4-board .s4c-t-thermal { color: #ff8c42; }
+.s4-board .s4c-t-arc { color: #b98cff; }
+.s4-board .s4c-t-null { color: #ff5db0; }
+.s4-board .s4c-t-support { color: #7ee0a0; }
+
+/* enemies — red family, per-type shade */
+.s4-board .s4c-enemy { font-weight: 700; }
+.s4-board .s4c-e1 { color: #ff7a7a; }
+.s4-board .s4c-e2 { color: #e01f1f; }
+.s4-board .s4c-e3 { color: #ff4fa3; }
+
+/* ── #3 placement / selection overlay ─────────────────────────────────────── */
+.s4-board .s4c-range { background: rgba(120, 200, 255, 0.14); }
+.s4-board .s4c-foot { background: rgba(126, 224, 160, 0.5); color: #06210f; font-weight: 700; }
+.s4-board .s4c-foot-bad { background: rgba(255, 80, 80, 0.5); color: #2a0606; font-weight: 700; }
+.s4-board .s4c-hit { background: rgba(255, 255, 255, 0.72); color: #1a0000; }
+
+/* integrity-leak edge flash (feedback #5) — driven by shared mg-hit--bad on the board */
+.s4-board.mg-hit--bad { outline: 2px solid #ff4d4d; outline-offset: -2px; }
+
+/* ── #4 two-line shop rows ────────────────────────────────────────────────── */
+.s4-shop { display: flex; flex-direction: column; gap: 5px; margin-top: 6px; }
+
+.s4-shop-row {
+  background: #15152a;
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 7px;
+  text-align: left;
+}
+.s4-shop-row.is-selected { border-color: var(--s4-cyan); }
+.s4-shop-head { color: var(--s4-fg); font-size: 12px; font-weight: 700; }
+.s4-shop-row.is-selected .s4-shop-head { color: var(--s4-cyan); }
+.s4-shop-sub { color: #8a93b5; font-size: 10px; }
+
+/* ── stats popover (S8-B pattern) ─────────────────────────────────────────── */
+.s4-popover {
+  position: absolute;
+  z-index: 8;
+  min-width: 180px;
+  max-width: 240px;
+  background: #14142a;
+  border: 1px solid var(--s4-cyan);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  padding: 8px;
+}
+.s4-pop-head { color: var(--s4-fg); font-size: 12px; margin-bottom: 3px; }
+.s4-pop-stat { color: #8a93b5; font-size: 11px; margin-bottom: 6px; }
+.s4-pop-actions { display: flex; flex-direction: column; gap: 4px; }
+.s4-pop-btn {
+  background: #1a1a30;
+  border: 1px solid var(--s4-line);
+  color: var(--s4-fg);
+  cursor: pointer;
+  min-height: 40px;
+  padding: 6px 8px;
+  text-align: left;
+}
+.s4-pop-btn:hover { border-color: var(--s4-cyan); }
+.s4-pop-btn.s4-fork-btn { border-color: var(--s4-cyan); color: var(--s4-cyan); }
+.s4-pop-btn.s4-sell-btn { border-color: var(--s4-amber, #d08b2f); color: var(--s4-amber, #d08b2f); }
+
+@media (max-width: 760px) {
+  .s4-stage { grid-template-columns: 1fr; }
+  .s4-board { font-size: 15px; letter-spacing: 2px; line-height: 1.15; }
+  .s4-cmd-actions { margin-left: 0; }
+}

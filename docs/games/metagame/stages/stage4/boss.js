@@ -6,7 +6,7 @@ import {
   lockedHintLadder,
 } from './messages.js';
 import { isRecursionBlueprintPath } from './content.js';
-import { TARGET_MODES, TOWER_TYPES } from './towers.js';
+import { TARGET_PRESETS, toPreset, TOWER_TYPES } from './towers.js';
 
 export function hasRecursionBlueprint(actions) {
   return Boolean(actions && typeof actions.hasAction === 'function' && actions.hasAction(4, ACTION_NAME));
@@ -53,7 +53,8 @@ export function placeTower(state, { x, y, type = 'pulse_node', targetMode }) {
   if (!def) return { ok: false, reason: 'type' };
   const cost = def.cost || 0; // was hard-coded to scatter/80 — now reads the real per-tower cost
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: 'cycles' };
-  const mode = targetMode || def.defaultTarget || 'first';
+  // Collapse the requested mode (or the tower's default target) onto one of the 3 presets.
+  const mode = toPreset(targetMode || def.defaultTarget || 'first');
   const tx = Math.trunc(Number(x));
   const ty = Math.trunc(Number(y));
   if (!Number.isFinite(tx) || !Number.isFinite(ty)) return { ok: false, reason: 'position' };
@@ -64,7 +65,7 @@ export function placeTower(state, { x, y, type = 'pulse_node', targetMode }) {
     type,
     x: tx,
     y: ty,
-    targetMode: TARGET_MODES.includes(mode) ? mode : 'first',
+    targetMode: mode,
   };
   state.cycles -= cost;
   state.towers.push(tower);
@@ -73,12 +74,15 @@ export function placeTower(state, { x, y, type = 'pulse_node', targetMode }) {
   return { ok: true, tower, coverage };
 }
 
-// Advance a placed tower's targeting priority to the next mode (roster click). Returns the new mode.
+// Advance a placed tower's targeting priority to the next PRESET (roster / popover click). Migrates the
+// tower's current mode onto a preset first, then steps to the next of the 3 (FIRST → STRONG → CYCLE →).
+// Returns the new mode (a preset key). Engine selectTarget is untouched — the stored value stays a valid
+// comparator key, so the reduced surface never changes how a tower actually fires.
 export function cycleTowerTarget(state, id) {
   const tower = (state?.towers || []).find((t) => t.id === id);
   if (!tower) return null;
-  const i = TARGET_MODES.indexOf(tower.targetMode || 'first');
-  tower.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length];
+  const i = TARGET_PRESETS.indexOf(toPreset(tower.targetMode || 'first'));
+  tower.targetMode = TARGET_PRESETS[(i + 1) % TARGET_PRESETS.length];
   pushLog(state, `${tower.type} now targets ${tower.targetMode.toUpperCase()}.`);
   return tower.targetMode;
 }

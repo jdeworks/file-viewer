@@ -28,9 +28,37 @@ export const TOWER_TYPES = {
   bank_node:       { glyph: "[B]", cost: 300, range: 0, fireRate: 0,   damage: 0,  incomePerWave: 40, role: "economy v2 — bigger per-wave payout than the extractor" }
 };
 
-// Per-tower targeting priority. The engine's selectTarget() reads tower.targetMode; players cycle it
-// from the roster. 'first' (furthest-along) is the default and matches the legacy single-target rule.
+// Per-tower targeting priority. The engine's selectTarget() reads tower.targetMode and looks the key up
+// in TARGET_COMPARATORS (engine.js) — that comparator table is UNTOUCHED, so all five keys still resolve
+// deterministically for any legacy save. 'first' (furthest-along) is the default / legacy single-target
+// rule. These are the ENGINE-level modes; the player-facing surface is now the 3 presets below.
 export const TARGET_MODES = ['first', 'last', 'closest', 'strongest', 'weakest'];
+
+// TARGETING PRESETS (approved option, 2026-07-03) — the OPTION SURFACE is reduced from the 5-mode cycle
+// to 3 presets, because playtest showed the extra modes were bookkeeping, not decisions. This is a
+// surface reduction ONLY: each preset is backed by an existing engine comparator key, so engine
+// determinism (selectTarget / TARGET_COMPARATORS) is unchanged — we just cycle through fewer choices.
+//   FIRST  → 'first'      leader / furthest-along (default)
+//   STRONG → 'strongest'  biggest-HP threat first
+//   CYCLE  → 'last'       rear of the line — spreads fire onto fresh arrivals instead of the leader
+export const TARGET_PRESETS = ['first', 'strongest', 'last'];
+export const PRESET_LABELS = { first: 'FIRST', strongest: 'STRONG', last: 'CYCLE' };
+
+// Migrate ANY per-tower mode (legacy 5-mode value OR a preset key) onto the 3 presets. Additive: old
+// saves keep working (their engine comparator still resolves); the SURFACE just shows/cycles a preset.
+//   strongest        → 'strongest' (STRONG)
+//   last | weakest    → 'last'      (CYCLE — both are "not the leader / spread")
+//   first | closest…  → 'first'     (FIRST — default; closest collapses to the leader-defence preset)
+export function toPreset(mode) {
+  if (mode === 'strongest') return 'strongest';
+  if (mode === 'last' || mode === 'weakest') return 'last';
+  return 'first';
+}
+
+// The player-facing label for whatever mode a tower currently holds (migrates on read).
+export function presetLabel(mode) {
+  return PRESET_LABELS[toPreset(mode)] || 'FIRST';
+}
 
 // Level-3 active abilities (unlocked at max level). Engine/abilities.js consume these.
 export const TOWER_ABILITIES = {

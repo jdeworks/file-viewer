@@ -80,7 +80,16 @@ var TOWER_TYPES = {
   // Economy v2: scaling per-wave income that grows as the campaign deepens (data-set later).
   bank_node: { glyph: "[B]", cost: 300, range: 0, fireRate: 0, damage: 0, incomePerWave: 40, role: "economy v2 — bigger per-wave payout than the extractor" }
 };
-var TARGET_MODES = ["first", "last", "closest", "strongest", "weakest"];
+var TARGET_PRESETS = ["first", "strongest", "last"];
+var PRESET_LABELS = { first: "FIRST", strongest: "STRONG", last: "CYCLE" };
+function toPreset(mode) {
+  if (mode === "strongest") return "strongest";
+  if (mode === "last" || mode === "weakest") return "last";
+  return "first";
+}
+function presetLabel(mode) {
+  return PRESET_LABELS[toPreset(mode)] || "FIRST";
+}
 var TOWER_ABILITIES = {
   emp_burst: { label: "EMP Burst", radius: 5, stunMs: 2e3, cooldownMs: 3e4 },
   null_wave: { label: "Null Wave", stripMs: 5e3, cooldownMs: 6e4 },
@@ -136,7 +145,7 @@ function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
   if (!def) return { ok: false, reason: "type" };
   const cost = def.cost || 0;
   if (Number(state.cycles || 0) < cost) return { ok: false, reason: "cycles" };
-  const mode = targetMode || def.defaultTarget || "first";
+  const mode = toPreset(targetMode || def.defaultTarget || "first");
   const tx = Math.trunc(Number(x));
   const ty = Math.trunc(Number(y));
   if (!Number.isFinite(tx) || !Number.isFinite(ty)) return { ok: false, reason: "position" };
@@ -147,7 +156,7 @@ function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
     type,
     x: tx,
     y: ty,
-    targetMode: TARGET_MODES.includes(mode) ? mode : "first"
+    targetMode: mode
   };
   state.cycles -= cost;
   state.towers.push(tower);
@@ -158,8 +167,8 @@ function placeTower(state, { x, y, type = "pulse_node", targetMode }) {
 function cycleTowerTarget(state, id) {
   const tower = (state?.towers || []).find((t) => t.id === id);
   if (!tower) return null;
-  const i = TARGET_MODES.indexOf(tower.targetMode || "first");
-  tower.targetMode = TARGET_MODES[(i + 1) % TARGET_MODES.length];
+  const i = TARGET_PRESETS.indexOf(toPreset(tower.targetMode || "first"));
+  tower.targetMode = TARGET_PRESETS[(i + 1) % TARGET_PRESETS.length];
   pushLog(state, `${tower.type} now targets ${tower.targetMode.toUpperCase()}.`);
   return tower.targetMode;
 }
@@ -307,12 +316,81 @@ var ENEMY_CHAR = {
   flicker_ghost: '"',
   burrower: "u"
 };
+var ENEMY_SHADE = {
+  recursion: "e1",
+  pattern_crawler: "e1",
+  swarm_bit: "e1",
+  null_packet: "e1",
+  armored_loop: "e2",
+  depth_crawler: "e2",
+  fractal_host: "e2",
+  regenerator: "e2",
+  burrower: "e2",
+  resonance_ghost: "e3",
+  shield_drone: "e3",
+  healer_node: "e3",
+  flicker_ghost: "e3"
+};
 function boardText(state, pathTiles, width = 40, height = 40) {
+  return charGrid(state, pathTiles, width, height).map((row) => row.join("")).join("\n");
+}
+function boardHTML(state, pathTiles, overlay = null, width = 40, height = 40) {
+  const grid = charGrid(state, pathTiles, width, height);
+  const cls = classGrid(state, pathTiles, width, height);
+  const rings = overlay?.rings;
+  const hits = overlay?.hits;
+  const foot = overlay?.foot;
+  const footValid = overlay?.footValid !== false;
+  const rows = [];
+  for (let y = 0; y < height; y += 1) {
+    let out = "";
+    let run = "";
+    let runCls = null;
+    const flush = () => {
+      if (run) out += `<span class="${runCls}">${run}</span>`;
+      run = "";
+    };
+    for (let x = 0; x < width; x += 1) {
+      let c = cls[y][x];
+      if (rings && rings.has(`${x},${y}`)) c += " s4c-range";
+      if (hits && hits.has(`${x},${y}`)) c += " s4c-hit";
+      if (foot && foot.x === x && foot.y === y) c += footValid ? " s4c-foot" : " s4c-foot-bad";
+      if (c !== runCls) {
+        flush();
+        runCls = c;
+      }
+      run += esc(grid[y][x]);
+    }
+    flush();
+    rows.push(out);
+  }
+  return rows.join("\n");
+}
+function segmentCells(tiles) {
+  const cells = [];
+  for (let i = 0; i < tiles.length - 1; i += 1) {
+    const a = tiles[i];
+    const b = tiles[i + 1];
+    const dx = Math.sign(b.x - a.x);
+    const dy = Math.sign(b.y - a.y);
+    const glyph = dy === 0 ? "-" : dx === 0 ? "|" : "+";
+    let x = a.x;
+    let y = a.y;
+    while (x !== b.x || y !== b.y) {
+      if (!(x === a.x && y === a.y)) cells.push({ x, y, glyph });
+      if (x !== b.x) x += dx;
+      if (y !== b.y) y += dy;
+    }
+  }
+  return cells;
+}
+function charGrid(state, pathTiles, width, height) {
   const grid = Array.from({ length: height }, () => Array.from({ length: width }, () => EMPTY));
   const put = (x, y, ch) => {
     if (y >= 0 && y < height && x >= 0 && x < width) grid[y][x] = ch;
   };
   const tiles = pathTiles || [];
+  for (const c of segmentCells(tiles)) put(c.x, c.y, c.glyph);
   tiles.forEach((t, i) => {
     if (i === 0) return put(t.x, t.y, ">");
     if (i === tiles.length - 1) return put(t.x, t.y, "X");
@@ -324,7 +402,40 @@ function boardText(state, pathTiles, width = 40, height = 40) {
   }
   for (const t of state?.towers || []) put(t.x, t.y, TOWER_CHAR[t.type] || "?");
   for (const e of state?.enemies || []) put(e.x, e.y, ENEMY_CHAR[e.type] || "*");
-  return grid.map((row) => row.join("")).join("\n");
+  return grid;
+}
+function classGrid(state, pathTiles, width, height) {
+  const cls = Array.from({ length: height }, () => Array.from({ length: width }, () => "s4c-empty"));
+  const set = (x, y, c) => {
+    if (y >= 0 && y < height && x >= 0 && x < width) cls[y][x] = c;
+  };
+  const tiles = pathTiles || [];
+  const charAt = charGrid(state, pathTiles, width, height);
+  for (const c of segmentCells(tiles)) set(c.x, c.y, "s4c-path");
+  tiles.forEach((t, i) => {
+    if (i === 0) return set(t.x, t.y, "s4c-entry");
+    if (i === tiles.length - 1) return set(t.x, t.y, "s4c-exit");
+    if (t.recurve) return set(t.x, t.y, "s4c-recurve");
+    set(t.x, t.y, "s4c-path");
+  });
+  for (const p of state?.recursion?.points || []) {
+    if (charAt[p.y]?.[p.x] === "R") set(p.x, p.y, "s4c-recur");
+  }
+  for (const t of state?.towers || []) set(t.x, t.y, `s4c-tower s4c-t-${towerDmgType(t.type)}`);
+  for (const e of state?.enemies || []) set(e.x, e.y, `s4c-enemy s4c-${ENEMY_SHADE[e.type] || "e1"}`);
+  return cls;
+}
+function towerDmgType(type) {
+  const def = TOWER_TYPES[type];
+  if (!def) return "support";
+  return def.damageType || (def.ignoresArmor ? "null" : "support");
+}
+function esc(ch) {
+  if (ch === "&") return "&amp;";
+  if (ch === "<") return "&lt;";
+  if (ch === ">") return "&gt;";
+  if (ch === '"') return "&quot;";
+  return ch;
 }
 function pathGlyph(prev, here, next) {
   if (!prev || !next) return "+";
@@ -1388,6 +1499,13 @@ function debugClearMap(state) {
 function campaignProgress(state) {
   return { cleared: (state.campaign?.clearedMaps || []).length, total: MAP_COUNT };
 }
+function isVeteran(state) {
+  return (state?.campaign?.clearedMaps || []).length > 0;
+}
+function combatDisclosed(state, mapIndex) {
+  const idx = clampIndex(mapIndex ?? state?.campaign?.mapIndex ?? 0);
+  return isVeteran(state) || idx >= 1;
+}
 function clampIndex(i) {
   return Math.max(0, Math.min(MAP_COUNT - 1, Math.trunc(Number(i)) || 0));
 }
@@ -1519,7 +1637,8 @@ function normalizeTower(tower) {
     x,
     y,
     level: clampInt(tower.level || 1, 1, 3),
-    targetMode: TARGET_MODES.includes(tower.targetMode) ? tower.targetMode : "first",
+    // Migrate any legacy 5-mode value onto one of the 3 presets (surface reduction, 2026-07-03).
+    targetMode: toPreset(tower.targetMode),
     fork: tower.fork ? String(tower.fork) : null,
     // chosen tier-3 fork (irrevocable; persisted)
     abilityReady: tower.abilityReady !== false,
@@ -1550,6 +1669,49 @@ function mergePlain(base, override) {
 }
 
 // ../../docs/games/metagame/stages/stage4/combat-helpers.js
+function towerRange(type) {
+  const def = TOWER_TYPES[type];
+  if (!def) return 0;
+  if (def.global) return Infinity;
+  return Number(def.range) || 0;
+}
+function placementPreview(state, pathTiles, type, cell, { size = 40 } = {}) {
+  const foot = cell ? { x: Math.trunc(cell.x), y: Math.trunc(cell.y) } : null;
+  const rings = rangeRing(type, foot, size);
+  if (!foot) return { foot: null, rings, valid: false, reason: "none" };
+  const onBoard = foot.x >= 0 && foot.y >= 0 && foot.x < size && foot.y < size;
+  const occupied = (state?.towers || []).some((t) => t.x === foot.x && t.y === foot.y);
+  const onPath = (pathTiles || []).some((t) => t.x === foot.x && t.y === foot.y);
+  const cost = TOWER_TYPES[type]?.cost || 0;
+  const afford = Number(state?.cycles || 0) >= cost;
+  let reason = "ok";
+  if (!onBoard) reason = "bounds";
+  else if (occupied) reason = "occupied";
+  else if (onPath) reason = "path";
+  else if (!afford) reason = "cycles";
+  return { foot, rings, valid: reason === "ok", reason };
+}
+function rangeRing(type, center, size = 40) {
+  const rings = /* @__PURE__ */ new Set();
+  const r = towerRange(type);
+  if (!center || !Number.isFinite(r) || r <= 0) return rings;
+  for (let y = Math.max(0, center.y - r); y <= Math.min(size - 1, center.y + r); y += 1) {
+    for (let x = Math.max(0, center.x - r); x <= Math.min(size - 1, center.x + r); x += 1) {
+      if (x === center.x && y === center.y) continue;
+      if (Math.hypot(x - center.x, y - center.y) <= r) rings.add(`${x},${y}`);
+    }
+  }
+  return rings;
+}
+function wavePreviewLine(mapIndex, waveNumber) {
+  const w = Math.max(1, Math.trunc(Number(waveNumber)) || 1);
+  const comp = mapWaveComposition(mapIndex, w);
+  const parts = (comp.enemies || []).map((e) => `${e.count} ${shortEnemy(e.type)}`);
+  return parts.length ? parts.join(" · ") : "—";
+}
+function shortEnemy(type) {
+  return String(type).replace(/_(node|loop|packet|crawler|ghost|host|bit|drone)$/, "").replace(/_/g, " ");
+}
 var TOWER_UNLOCK_MAP = {
   pulse_node: 0,
   cycle_extractor: 0,
@@ -1617,28 +1779,63 @@ function preWaveHint(mapIndex, waveNumber) {
 }
 
 // ../../docs/games/metagame/stages/stage4/combat-rows.js
-function shopRows({ placeable, isBoss, mapIndex, selected }) {
+function towerStatLine(def, disclosed) {
+  const parts = [];
+  if (Number(def.damage) > 0) {
+    parts.push(`dmg ${def.damage}`);
+    parts.push(def.range >= 99 ? "global" : `rng ${def.range}`);
+    if (Number(def.fireRate) > 0) parts.push(`${def.fireRate}/s`);
+    if (disclosed && def.damageType) parts.push(def.damageType);
+  } else if (def.incomePerWave) {
+    parts.push(`+${def.incomePerWave}c / wave`);
+  } else if (def.adjacencyBonus) {
+    parts.push(`+${Math.round(def.adjacencyBonus * 100)}% adjacent · rng ${def.range}`);
+  } else if (def.slow || def.pull) {
+    const bits = [`rng ${def.range}`];
+    if (def.slow) bits.unshift("slow");
+    if (def.pull) bits.push("pull");
+    parts.push(bits.join(" · "));
+  } else {
+    parts.push("support");
+  }
+  return parts.join(" · ");
+}
+function shopRows({ placeable, isBoss, mapIndex, selected, disclosed }) {
   const list = isBoss ? placeable : availableTowers(placeable, mapIndex);
   return list.map((type) => {
+    const def = TOWER_TYPES[type];
     const btn = document.createElement("button");
     btn.type = "button";
     btn.dataset.tower = type;
-    btn.className = type === selected ? "is-selected" : "";
-    btn.textContent = `${TOWER_TYPES[type].glyph} ${type} (${TOWER_TYPES[type].cost})`;
+    btn.className = `s4-shop-row${type === selected ? " is-selected" : ""}`;
+    const head = document.createElement("span");
+    head.className = "s4-shop-head";
+    head.textContent = `${def.glyph} ${type} · ${def.cost}c`;
+    const sub = document.createElement("span");
+    sub.className = "s4-shop-sub";
+    sub.textContent = towerStatLine(def, disclosed);
+    btn.append(head, sub);
     return btn;
   });
 }
-function rosterRows(state) {
+function rosterRows(state, disclosed = true) {
   return (state.towers || []).map((tower) => {
     const wrap = document.createElement("div");
     wrap.className = "s4-roster-row";
     const def = TOWER_TYPES[tower.type] || {};
     const level = tower.level || 1;
-    const tgt = document.createElement("button");
-    tgt.type = "button";
-    tgt.dataset.towerId = tower.id;
-    tgt.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y} → ${String(tower.targetMode || "first").toUpperCase()}`;
-    wrap.append(tgt);
+    if (disclosed) {
+      const tgt = document.createElement("button");
+      tgt.type = "button";
+      tgt.dataset.towerId = tower.id;
+      tgt.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y} → ${presetLabel(tower.targetMode)}`;
+      wrap.append(tgt);
+    } else {
+      const tag = document.createElement("span");
+      tag.className = "s4-roster-name";
+      tag.textContent = `${def.glyph || "[?]"} L${level} ${tower.x},${tower.y}`;
+      wrap.append(tag);
+    }
     if (level < 3) {
       const up = document.createElement("button");
       up.type = "button";
@@ -1684,6 +1881,136 @@ function cellFromTextRect({ clientX, clientY, textRect, cols, rows }) {
   return { x, y };
 }
 
+// ../../docs/games/metagame/stages/stage4/combat-popover.js
+var active = null;
+function popoverTowerId() {
+  return active?.towerId || null;
+}
+function closeTowerPopover() {
+  if (!active) return;
+  document.removeEventListener("click", active.onDocClick, true);
+  document.removeEventListener("keydown", active.onKey, true);
+  active.el.remove();
+  active = null;
+}
+function openTowerPopover({ root, anchor, state, tower, disclosed = true, onClose }) {
+  if (!tower) return null;
+  const refreshing = active && active.towerId === tower.id;
+  if (!refreshing) closeTowerPopover();
+  const el = refreshing ? active.el : document.createElement("div");
+  el.className = "s4-popover";
+  el.setAttribute("role", "menu");
+  el.setAttribute("aria-label", `${tower.type} actions`);
+  el.innerHTML = popoverHTML(tower, disclosed);
+  if (refreshing) return el;
+  root.appendChild(el);
+  position(el, anchor, root);
+  const onDocClick = (event) => {
+    if (el.contains(event.target)) return;
+    if (event.target.closest?.(".s4-board")) return;
+    closeTowerPopover();
+    onClose?.();
+  };
+  const onKey = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeTowerPopover();
+      onClose?.();
+    }
+  };
+  active = { el, towerId: tower.id, onDocClick, onKey };
+  setTimeout(() => {
+    if (active && active.el === el) {
+      document.addEventListener("click", onDocClick, true);
+      document.addEventListener("keydown", onKey, true);
+    }
+  }, 0);
+  return el;
+}
+function popoverHTML(tower, disclosed) {
+  const def = TOWER_TYPES[tower.type] || {};
+  const level = tower.level || 1;
+  const stat = [];
+  if (Number(def.damage) > 0) {
+    stat.push(`dmg ${def.damage}`);
+    stat.push(def.range >= 99 ? "global" : `rng ${def.range}`);
+    if (Number(def.fireRate) > 0) stat.push(`${def.fireRate}/s`);
+    if (disclosed && def.damageType) stat.push(def.damageType);
+  } else {
+    stat.push(def.role ? def.role.split("—")[0].trim() : "support");
+  }
+  let verbs = "";
+  if (disclosed) {
+    verbs += `<button type="button" class="s4-pop-btn" data-tower-id="${tower.id}">target ▸ ${presetLabel(tower.targetMode)}</button>`;
+  }
+  if (level < 3) {
+    verbs += `<button type="button" class="s4-pop-btn" data-upgrade-id="${tower.id}">upgrade (${towerUpgradeCost(tower.type, level)}c)</button>`;
+  } else if (!tower.fork && forksFor(tower.type).length) {
+    for (const f of forksFor(tower.type)) {
+      verbs += `<button type="button" class="s4-pop-btn s4-fork-btn" data-fork-id="${tower.id}" data-fork-choice="${f.id}" title="${escAttr(f.desc)}">⑂ ${f.label}</button>`;
+    }
+  } else if (tower.fork) {
+    verbs += `<span class="s4-fork-tag">⑂ ${forkDef(tower)?.label || tower.fork}</span>`;
+  }
+  verbs += `<button type="button" class="s4-pop-btn s4-sell-btn" data-sell-id="${tower.id}">sell (${sellValue(tower)}c)</button>`;
+  return `<div class="s4-pop-head"><b>${def.glyph || "[?]"} ${tower.type}</b> · L${level} @ ${tower.x},${tower.y}</div><div class="s4-pop-stat">${stat.join(" · ")}</div><div class="s4-pop-actions">${verbs}</div>`;
+}
+function position(el, anchor, root) {
+  const r = root.getBoundingClientRect();
+  const top = (anchor?.bottom ?? r.top) - r.top + 4;
+  el.style.top = `${Math.max(4, top)}px`;
+  const w = el.offsetWidth || 200;
+  let left = (anchor?.left ?? r.left) - r.left;
+  const max = root.clientWidth - w - 6;
+  if (left > max) left = Math.max(4, max);
+  el.style.left = `${Math.max(4, left)}px`;
+}
+function escAttr(s) {
+  return String(s || "").replace(/"/g, "&quot;");
+}
+
+// ../../docs/games/metagame/stages/stage4/combat-fx.js
+import { flash, shake, floatNum, banner } from "../../shared/feedback.js";
+function createCombatFx() {
+  let prevHp = /* @__PURE__ */ new Map();
+  let prevCycles = null;
+  let prevIntegrity = null;
+  return {
+    reset() {
+      prevHp = /* @__PURE__ */ new Map();
+      prevCycles = null;
+      prevIntegrity = null;
+    },
+    // Diff the live state against the last frame. Returns { hitCells:Set<"x,y">, cyclesGained, integrityLost }.
+    observe(state) {
+      const hitCells = /* @__PURE__ */ new Set();
+      const nextHp = /* @__PURE__ */ new Map();
+      for (const e of state.enemies || []) {
+        nextHp.set(e.id, e.hp);
+        const was = prevHp.get(e.id);
+        if (was != null && e.hp < was) hitCells.add(`${Math.round(e.x)},${Math.round(e.y)}`);
+      }
+      const cyclesGained = prevCycles == null ? 0 : Math.max(0, Number(state.cycles || 0) - prevCycles);
+      const integrityLost = prevIntegrity != null && Number(state.integrity || 0) < prevIntegrity;
+      prevHp = nextHp;
+      prevCycles = Number(state.cycles || 0);
+      prevIntegrity = Number(state.integrity || 0);
+      return { hitCells, cyclesGained, integrityLost };
+    }
+  };
+}
+function playFx(deltas, refs) {
+  if (!deltas || !refs) return;
+  if (deltas.integrityLost) {
+    flash(refs.board, "bad");
+    shake(refs.bar);
+  }
+  if (deltas.cyclesGained > 0 && refs.floatHost) floatNum(refs.floatHost, `+${deltas.cyclesGained}`, "good");
+}
+function fxBanner(host, text) {
+  return banner(host, text);
+}
+
 // ../../docs/games/metagame/stages/stage4/ui-combat.js
 var PLACEABLE = [
   "pulse_node",
@@ -1708,47 +2035,65 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   const isBoss = mode === "boss";
   const mapIndex = state.campaign?.mapIndex ?? 0;
   const map = mapByIndex(mapIndex);
+  const disclosed = isBoss || combatDisclosed(state, mapIndex);
   const root = document.createElement("section");
   root.className = "stage4-combat";
   root.innerHTML = `
-    <header class="s4-hud">
-      <strong>${isBoss ? "THE INFINITE LOOP" : `${map.glyph} ${map.name.toUpperCase()}`}</strong>
-      <span>CYCLES <span data-field="cycles"></span></span>
-      <span>INTEGRITY <span data-field="integrity"></span></span>
-      <span>${isBoss ? "POINTS" : "WAVE"} <span data-field="progress"></span></span>
-      <button type="button" data-action="leave" class="s4-leave">${isBoss ? "retreat" : "← maps"}</button>
-    </header>
-    <div class="s4-layout">
-      <pre class="s4-board" aria-label="fractal bastion board"></pre>
+    <div class="s4-cmdbar">
+      <div class="s4-cmd-hud">
+        <strong>${isBoss ? "THE INFINITE LOOP" : `${map.glyph} ${map.name.toUpperCase()}`}</strong>
+        <span class="s4-stat">CYCLES <b data-field="cycles"></b></span>
+        <span class="s4-stat">INTEGRITY <b data-field="integrity"></b></span>
+        <span class="s4-stat">${isBoss ? "POINTS" : "WAVE"} <b data-field="progress"></b></span>
+      </div>
+      <div class="s4-cmd-actions">
+        ${isBoss ? "" : `
+          <span class="s4-next" data-field="next"></span>
+          <button type="button" data-action="start-wave">▶ start wave</button>
+          <button type="button" data-action="call-early" hidden>call next (+${CALL_EARLY_BONUS})</button>
+          <button type="button" data-action="speed">speed 1×</button>`}
+        ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ""}
+        <button type="button" data-action="blueprint">recursion_points.json</button>
+        <button type="button" data-action="leave" class="s4-leave">${isBoss ? "retreat" : "← maps"}</button>
+      </div>
+      <button type="button" class="s4-ticker" data-field="ticker" title="show full log"></button>
+    </div>
+    <ol class="s4-log-full" data-field="logfull" hidden></ol>
+    <div class="s4-stage">
+      <div class="s4-board-wrap">
+        <pre class="s4-board" aria-label="fractal bastion board"></pre>
+      </div>
       <section class="s4-panel">
         <div class="s4-hint" data-field="hint"></div>
         <div class="s4-shop" data-field="shop"></div>
         <div class="s4-roster" data-field="roster"></div>
       </section>
     </div>
-    <ol class="s4-log"></ol>
-    <div class="s4-controls">
-      ${isBoss ? "" : `
-        <button type="button" data-action="start-wave">start wave</button>
-        <button type="button" data-action="call-early" hidden>call next wave (+${CALL_EARLY_BONUS})</button>
-        <button type="button" data-action="speed">speed 1×</button>`}
-      ${isBoss ? '<button type="button" data-action="confront">confront The Infinite Loop</button>' : ""}
-      <button type="button" data-action="blueprint">open recursion_points.json</button>
-    </div>
   `;
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const logEl = root.querySelector(".s4-log");
   const board = root.querySelector(".s4-board");
-  let selected = "pulse_node";
+  const boardWrap = root.querySelector(".s4-board-wrap");
+  const cmdbar = root.querySelector(".s4-cmdbar");
+  let selected = null;
+  let selectedTowerId = null;
+  let hoverCell = null;
+  let pendingCell = null;
+  let touchMode = false;
   let speed = 1;
   let raf = null;
   let lastPersistMs = -Infinity;
   let alive = true;
+  const fx = createCombatFx();
+  let lastHits = null;
   const pathSeed = isBoss ? state.recursion?.pointSetId || "x" : mapPathSeed(state.recursion?.pointSetId, mapIndex);
   let pathDepth = isBoss ? 3 : mapPathDepth(map.depth, state.waveNumber || 1);
   let path = buildPath(pathSeed, pathDepth);
   if (!Number.isFinite(state.wavePeak)) state.wavePeak = state.waveNumber || 1;
+  if (disclosed && !state.campaign.disclosureSeen) {
+    state.campaign.disclosureSeen = true;
+    setTimeout(() => alive && fxBanner(boardWrap, "enemies now resist by type — check tower damage types"), 30);
+  }
   function maybeReshape() {
     if (isBoss) return false;
     const want = mapPathDepth(map.depth, state.waveNumber || 1);
@@ -1765,6 +2110,23 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   function endWaveSnapshot() {
     controller.endWaveSnapshot?.();
   }
+  function currentOverlay() {
+    const overlay = {};
+    if (lastHits && lastHits.size) overlay.hits = lastHits;
+    if (selectedTowerId) {
+      const t = (state.towers || []).find((x) => x.id === selectedTowerId);
+      if (t) overlay.rings = rangeRing(t.type, { x: t.x, y: t.y });
+    } else if (selected && hoverCell) {
+      const pv = placementPreview(state, path.tiles, selected, hoverCell);
+      overlay.rings = pv.rings;
+      overlay.foot = pv.foot;
+      overlay.footValid = pv.valid;
+    }
+    return overlay;
+  }
+  function paintBoard() {
+    if (alive) board.innerHTML = boardHTML(state, path.tiles, currentOverlay());
+  }
   function repaint() {
     if (!alive) return;
     const lock = getBossLockState({ actions: controller.actions, state });
@@ -1772,18 +2134,34 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     fields.integrity.textContent = `${state.integrity}/${state.maxIntegrity || state.integrity}`;
     fields.progress.textContent = isBoss ? `${lock.coveredPoints}/${lock.totalPoints}` : `${Math.min(state.waveNumber || 1, map.waveCount)}/${map.waveCount}`;
     fields.hint.textContent = isBoss ? lock.hint : state.waveActive ? "hold the line — call the next wave early for bonus cycles" : preWaveHint(mapIndex, state.waveNumber || 1);
-    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected }));
-    fields.roster.replaceChildren(...rosterRows(state));
-    board.textContent = boardText(state, path.tiles);
+    fields.shop.replaceChildren(...shopRows({ placeable: PLACEABLE, isBoss, mapIndex, selected, disclosed }));
+    fields.roster.replaceChildren(...rosterRows(state, disclosed));
     if (!isBoss) {
+      fields.next.textContent = state.waveActive ? "" : `next: ${wavePreviewLine(mapIndex, state.waveNumber || 1)}`;
       root.querySelector('[data-action="call-early"]').hidden = !state.waveActive || (state.wavePeak || 1) >= map.waveCount;
+      root.querySelector('[data-action="start-wave"]').hidden = state.waveActive;
       root.querySelector('[data-action="speed"]').textContent = `speed ${speed}×`;
     }
-    logEl.replaceChildren(...(state.log || []).slice(-6).map((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      return li;
-    }));
+    const lines = (state.log || []).slice(-2);
+    fields.ticker.textContent = lines.join("  ·  ") || "the path repeats before it explains itself.";
+    if (!fields.logfull.hidden) fields.logfull.replaceChildren(...(state.log || []).slice(-12).map((l) => li(l)));
+    paintBoard();
+    syncPopover();
+  }
+  function li(text) {
+    const el = document.createElement("li");
+    el.textContent = text;
+    return el;
+  }
+  function syncPopover() {
+    if (!selectedTowerId) return;
+    const t = (state.towers || []).find((x) => x.id === selectedTowerId);
+    if (!t) {
+      selectedTowerId = null;
+      closeTowerPopover();
+      return;
+    }
+    if (popoverTowerId() === t.id) openTowerPopover({ root: boardWrap, state, tower: t, disclosed });
   }
   function startWaveAction() {
     if (isBoss || state.waveActive || (state.waveNumber || 1) > map.waveCount) return;
@@ -1791,6 +2169,13 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     startWave(state, state.waveNumber, path.tiles);
     state.wavePeak = state.waveNumber;
     lastPersistMs = -Infinity;
+    fx.reset();
+    fxBanner(boardWrap, `WAVE ${state.waveNumber}/${map.waveCount}`);
+    const sbId = subBossIdForWave(mapIndex, state.waveNumber || 1);
+    if (sbId) {
+      const d = subBossDef(sbId);
+      if (d) setTimeout(() => alive && fxBanner(boardWrap, `⚠ ${d.name} — ${d.telegraph}`), 700);
+    }
     checkpointWave();
     controller.persist?.();
     runLoop();
@@ -1816,6 +2201,9 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       const dt = (last == null ? 16 : Math.min(100, ts - last)) * speed;
       last = ts;
       tick(state, dt, path.tiles);
+      const deltas = fx.observe(state);
+      lastHits = deltas.hitCells;
+      playFx(deltas, { board, bar: cmdbar, floatHost: boardWrap });
       checkpointWave();
       if (settleWave()) {
         raf = null;
@@ -1856,6 +2244,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
         return true;
       }
       maybeReshape();
+      lastHits = null;
       repaint();
       return true;
     }
@@ -1902,6 +2291,10 @@ function mountCombat({ host, state, controller, mode = "map" }) {
   }
   function sell(id) {
     const r = sellTower(state, id);
+    if (selectedTowerId === id) {
+      selectedTowerId = null;
+      closeTowerPopover();
+    }
     repaint();
     controller.persist?.();
     return r;
@@ -1917,6 +2310,49 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     state.wavePeak = state.waveNumber;
     repaint();
   }
+  function boardTap(event, cell) {
+    const onTower = (state.towers || []).find((t) => t.x === cell.x && t.y === cell.y);
+    if (onTower) {
+      selected = null;
+      pendingCell = null;
+      hoverCell = null;
+      selectedTowerId = onTower.id;
+      openTowerPopover({ root: boardWrap, anchor: pointerAnchor(event), state, tower: onTower, disclosed, onClose: () => {
+        selectedTowerId = null;
+        paintBoard();
+      } });
+      repaint();
+      return;
+    }
+    selectedTowerId = null;
+    closeTowerPopover();
+    if (!selected) {
+      hoverCell = cell;
+      paintBoard();
+      return;
+    }
+    const pv = placementPreview(state, path.tiles, selected, cell);
+    if (touchMode && (!pendingCell || pendingCell.x !== cell.x || pendingCell.y !== cell.y)) {
+      pendingCell = cell;
+      hoverCell = cell;
+      paintBoard();
+      return;
+    }
+    pendingCell = null;
+    if (!pv.valid) {
+      hoverCell = cell;
+      paintBoard();
+      return;
+    }
+    place(cell.x, cell.y);
+  }
+  function pointerAnchor(event) {
+    const r = board.getBoundingClientRect();
+    return { left: event?.clientX ?? r.left, bottom: event?.clientY ?? r.top, top: event?.clientY ?? r.top };
+  }
+  root.addEventListener("pointerdown", (event) => {
+    touchMode = event.pointerType === "touch";
+  }, true);
   root.addEventListener("click", (event) => {
     const upBtn = event.target.closest("button[data-upgrade-id]");
     if (upBtn) {
@@ -1940,13 +2376,21 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     }
     const towerBtn = event.target.closest("button[data-tower]");
     if (towerBtn) {
-      selected = towerBtn.dataset.tower;
+      selected = selected === towerBtn.dataset.tower ? null : towerBtn.dataset.tower;
+      selectedTowerId = null;
+      pendingCell = null;
+      closeTowerPopover();
+      repaint();
+      return;
+    }
+    if (event.target.closest(".s4-ticker")) {
+      fields.logfull.hidden = !fields.logfull.hidden;
       repaint();
       return;
     }
     const cell = boardCell(event);
     if (cell) {
-      place(cell.x, cell.y);
+      boardTap(event, cell);
       return;
     }
     const button = event.target.closest("button[data-action]");
@@ -1966,6 +2410,7 @@ function mountCombat({ host, state, controller, mode = "map" }) {
         break;
       case "leave":
         stopLoop();
+        closeTowerPopover();
         controller.leaveCombat?.();
         break;
       case "blueprint":
@@ -1975,9 +2420,23 @@ function mountCombat({ host, state, controller, mode = "map" }) {
         break;
     }
   });
+  board.addEventListener("mousemove", (event) => {
+    if (touchMode || !selected || selectedTowerId) return;
+    const cell = boardCell(event);
+    if (cell && (!hoverCell || hoverCell.x !== cell.x || hoverCell.y !== cell.y)) {
+      hoverCell = cell;
+      paintBoard();
+    }
+  });
+  board.addEventListener("mouseleave", () => {
+    if (hoverCell) {
+      hoverCell = null;
+      paintBoard();
+    }
+  });
   function boardCell(event) {
     if (!event.target.closest(".s4-board")) return null;
-    const lines = board.textContent.split("\n");
+    const lines = boardText(state, path.tiles).split("\n");
     const cols = (lines[0] || "").length || 40;
     const rows = lines.length || 40;
     const range = document.createRange();
@@ -1992,14 +2451,15 @@ function mountCombat({ host, state, controller, mode = "map" }) {
     destroy() {
       alive = false;
       stopLoop();
+      closeTowerPopover();
       root.remove();
     },
     hook: {
-      // Synchronous wave runner for the headless smoke (no rAF).
       advance(ms = 3e4, dt = 100) {
         let t = 0;
         while (t < ms && state.waveActive) {
           tick(state, dt * speed, path.tiles);
+          lastHits = fx.observe(state).hitCells;
           checkpointWave();
           if (settleWave()) break;
           t += dt;
@@ -2018,31 +2478,33 @@ function mountCombat({ host, state, controller, mode = "map" }) {
       confront,
       reshape: maybeReshape,
       pathInfo: () => ({ depth: pathDepth, tiles: path.tiles })
-      // reshape test hooks
     }
   };
 }
 
 // ../../docs/games/metagame/stages/stage4/ui-campaign.js
+import { banner as banner2 } from "../../shared/feedback.js";
 function renderMapSelect(host, controller) {
   const state = controller.state;
   const root = document.createElement("section");
   root.className = "stage4-mapselect";
   const won = state.campaign.status === "won" || state.boss?.defeated;
+  const veteran = isVeteran(state) || won;
   function repaint() {
     const prog = campaignProgress(state);
     const bossReady = bossUnlocked(state);
     root.innerHTML = `
-      <header class="s4-hud"><strong>FRACTAL BASTION — CAMPAIGN</strong>
-        <span>GLORY ${state.campaign.glory}</span>
+      <header class="s4-hud"><strong>FRACTAL BASTION${veteran ? " — CAMPAIGN" : ""}</strong>
+        ${veteran ? `<span>GLORY ${state.campaign.glory}</span>` : ""}
         <span>MAPS ${prog.cleared}/${prog.total}</span>
       </header>
-      <p class="s4-hint">${won ? "The Infinite Loop has stopped. The bastion holds." : "Clear each map to unlock the next. The Infinite Loop opens only when all five are held."}</p>
+      <p class="s4-hint">${won ? "The Infinite Loop has stopped. The bastion holds." : veteran ? "Clear each map to unlock the next. The Infinite Loop opens only when all five are held." : "The recursion is leaking in. Hold the Outer Shell."}</p>
       <ol class="s4-maplist">
         ${MAPS.map((m, i) => mapRow(m, i)).join("")}
       </ol>
       <div class="s4-controls">
-        <button type="button" data-action="boss" ${bossReady ? "" : "disabled"}>${won ? "The Infinite Loop (cleared)" : "confront The Infinite Loop"}</button>
+        <button type="button" data-action="boss" class="s4-boss-chip" ${bossReady ? "" : "disabled"}>${won ? "The Infinite Loop (cleared)" : bossReady ? "confront The Infinite Loop" : "The Infinite Loop — locked · clear all five maps"}</button>
+        ${veteran && !won ? '<button type="button" data-action="armory">⚙ armory</button>' : ""}
         ${won ? '<button type="button" data-action="bts">open fractal_bastion.bts</button>' : ""}
       </div>`;
   }
@@ -2050,13 +2512,15 @@ function renderMapSelect(host, controller) {
     const unlocked = mapUnlocked(state, i);
     const cleared = mapCleared(state, i);
     const status = cleared ? "CLEARED" : unlocked ? "OPEN" : "LOCKED";
+    const primary = !veteran && unlocked && !cleared;
+    const label = cleared ? "replay" : primary ? "▶ start" : "enter";
     return `<li class="s4-maprow ${cleared ? "is-cleared" : unlocked ? "is-open" : "is-locked"}">
       <span class="s4-mapglyph">${m.glyph}</span>
       <span class="s4-mapname">${m.name}</span>
       <span class="s4-mapwaves">${m.waveCount} waves</span>
       <span class="s4-maptheme">${m.theme}</span>
       <span class="s4-mapstatus">${status}</span>
-      <button type="button" data-select="${i}" ${unlocked ? "" : "disabled"}>${cleared ? "replay" : "enter"}</button>
+      <button type="button" class="${primary ? "s4-primary" : ""}" data-select="${i}" ${unlocked ? "" : "disabled"}>${label}</button>
     </li>`;
   }
   root.addEventListener("click", (event) => {
@@ -2068,6 +2532,7 @@ function renderMapSelect(host, controller) {
     const action = event.target.closest("button[data-action]");
     if (!action) return;
     if (action.dataset.action === "boss" && allMapsCleared(state)) controller.enterBoss();
+    else if (action.dataset.action === "armory") controller.openArmory?.();
     else if (action.dataset.action === "bts") controller.openBts();
   });
   repaint();
@@ -2080,10 +2545,15 @@ function renderArmory(host, controller) {
   const state = controller.state;
   const root = document.createElement("section");
   root.className = "stage4-armory";
+  const firstOpen = (state.campaign.clearedMaps || []).length === 1 && !state.campaign.armoryOpened;
+  if (firstOpen) {
+    state.campaign.armoryOpened = true;
+    setTimeout(() => banner2(root, "Glory earned — the armory opens"), 30);
+  }
   function repaint() {
     root.innerHTML = `
       <header class="s4-hud"><strong>⚙ THE ARMORY</strong><span>GLORY ${state.campaign.glory}</span></header>
-      <p class="s4-hint">Map cleared. Spend Glory on permanent campaign upgrades, then advance.</p>
+      <p class="s4-hint">${firstOpen ? "You held the Outer Shell. " : ""}Spend Glory on permanent campaign upgrades, then advance.</p>
       <ol class="s4-armorylist">${ARMORY_UPGRADES.map((u) => armoryRow(u)).join("")}</ol>
       <div class="s4-controls"><button type="button" data-action="continue">continue →</button></div>`;
   }
@@ -2147,7 +2617,7 @@ function renderStage4(ctx) {
   host.replaceChildren(root);
   const screen = root.querySelector("[data-screen]");
   const completeOnce = once((result) => onStageComplete?.(result));
-  let active = null;
+  let active2 = null;
   function persistNow() {
     run?.flush?.();
     save?.();
@@ -2189,6 +2659,11 @@ function renderStage4(ctx) {
       save?.();
       render();
     },
+    openArmory() {
+      ensureCampaign(state).status = "armory";
+      persistNow();
+      render();
+    },
     leaveCombat() {
       ensureCampaign(state).status = "map-select";
       persistNow();
@@ -2198,7 +2673,7 @@ function renderStage4(ctx) {
       const r = buyArmory(state.campaign, id);
       if (r.ok) {
         save?.();
-        active?.repaint?.();
+        active2?.repaint?.();
       }
       return r;
     },
@@ -2236,16 +2711,16 @@ function renderStage4(ctx) {
     }
   };
   function destroyActive() {
-    if (active?.destroy) active.destroy();
-    active = null;
+    if (active2?.destroy) active2.destroy();
+    active2 = null;
   }
   function render() {
     destroyActive();
     const status = state.campaign.status;
-    if (status === "combat") active = mountCombat({ host: screen, state, controller, mode: "map" });
-    else if (status === "boss") active = mountCombat({ host: screen, state, controller, mode: "boss" });
-    else if (status === "armory") active = renderArmory(screen, controller);
-    else active = renderMapSelect(screen, controller);
+    if (status === "combat") active2 = mountCombat({ host: screen, state, controller, mode: "map" });
+    else if (status === "boss") active2 = mountCombat({ host: screen, state, controller, mode: "boss" });
+    else if (status === "armory") active2 = renderArmory(screen, controller);
+    else active2 = renderMapSelect(screen, controller);
     refreshHook();
   }
   if (state.campaign.status === "combat" && run) {
@@ -2257,16 +2732,16 @@ function renderStage4(ctx) {
       state: () => state,
       status: () => state.campaign.status,
       selectMap: (i) => controller.selectMap(i),
-      startWave: () => active?.hook?.startWave?.(),
-      advance: (ms, dt) => active?.hook?.advance?.(ms, dt),
-      callEarly: () => active?.hook?.callEarly?.(),
-      setSpeed: (n) => active?.hook?.setSpeed?.(n),
-      place: (x, y, t) => active?.hook?.place?.(x, y, t),
-      setWave: (n) => active?.hook?.setWave?.(n),
-      cycleTarget: (id) => active?.hook?.cycleTarget?.(id),
-      upgrade: (id) => active?.hook?.upgrade?.(id),
-      pickFork: (id, forkId) => active?.hook?.pickFork?.(id, forkId),
-      confront: () => active?.hook?.confront?.(),
+      startWave: () => active2?.hook?.startWave?.(),
+      advance: (ms, dt) => active2?.hook?.advance?.(ms, dt),
+      callEarly: () => active2?.hook?.callEarly?.(),
+      setSpeed: (n) => active2?.hook?.setSpeed?.(n),
+      place: (x, y, t) => active2?.hook?.place?.(x, y, t),
+      setWave: (n) => active2?.hook?.setWave?.(n),
+      cycleTarget: (id) => active2?.hook?.cycleTarget?.(id),
+      upgrade: (id) => active2?.hook?.upgrade?.(id),
+      pickFork: (id, forkId) => active2?.hook?.pickFork?.(id, forkId),
+      confront: () => active2?.hook?.confront?.(),
       buyArmory: (id) => controller.buyArmory(id),
       leaveArmory: () => controller.leaveArmory(),
       enterBoss: () => controller.enterBoss(),
@@ -2279,7 +2754,7 @@ function renderStage4(ctx) {
     if (id === "give-glory") {
       devGiveGlory(state);
       persistNow();
-      active?.repaint?.();
+      active2?.repaint?.();
       return;
     }
     if (id === "skip-wave") {
@@ -2297,7 +2772,7 @@ function renderStage4(ctx) {
     if (id === "god-core") {
       devGodCore(state);
       persistNow();
-      active?.repaint?.();
+      active2?.repaint?.();
       return;
     }
   }
@@ -2309,7 +2784,7 @@ function renderStage4(ctx) {
   render();
   return {
     dev,
-    repaint: () => active?.repaint?.(),
+    repaint: () => active2?.repaint?.(),
     destroy() {
       destroyActive();
       if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onHide);
@@ -2320,12 +2795,15 @@ function renderStage4(ctx) {
   };
 }
 function ensureStyles() {
-  const id = "stage4-fractal-bastion-styles";
+  injectSheet("stage4-fractal-bastion-styles", "./styles.css");
+  injectSheet("stage4-fractal-bastion-board-styles", "./styles-board.css");
+}
+function injectSheet(id, rel) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = new URL(rel, import.meta.url).href;
   document.head.append(link);
 }
 function once(fn) {
@@ -2376,12 +2854,15 @@ function mountStage(ctx) {
   };
 }
 function ensureStyles2() {
-  const id = "stage4-fractal-bastion-styles";
+  injectSheet2("stage4-fractal-bastion-styles", "./styles.css");
+  injectSheet2("stage4-fractal-bastion-board-styles", "./styles-board.css");
+}
+function injectSheet2(id, rel) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = new URL(rel, import.meta.url).href;
   document.head.append(link);
 }
 export {

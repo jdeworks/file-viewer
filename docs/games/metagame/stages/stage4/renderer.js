@@ -52,6 +52,7 @@ export function renderStage4(ctx) {
     selectMap(i) { const r = selectMap(state, i); if (r.ok) { persistNow(); render(); } return r; },
     recordWaveCleared() { const r = recordWaveCleared(state); save?.(); return r; },
     leaveArmory() { leaveArmory(state); save?.(); render(); },
+    openArmory() { ensureCampaign(state).status = 'armory'; persistNow(); render(); },
     leaveCombat() { ensureCampaign(state).status = 'map-select'; persistNow(); render(); },
     buyArmory(id) { const r = buyArmory(state.campaign, id); if (r.ok) { save?.(); active?.repaint?.(); } return r; },
     enterBoss() { const r = enterBoss(state); if (r.ok) { run?.reset?.(); persistNow(); render(); } return r; },
@@ -137,11 +138,15 @@ export function renderStage4(ctx) {
 }
 
 function ensureStyles() {
-  const id = 'stage4-fractal-bastion-styles';
+  injectSheet('stage4-fractal-bastion-styles', './styles.css');
+  injectSheet('stage4-fractal-bastion-board-styles', './styles-board.css');
+}
+
+function injectSheet(id, rel) {
   if (document.getElementById(id)) return;
   const link = document.createElement('link');
   link.id = id; link.rel = 'stylesheet';
-  link.href = new URL('./styles.css', import.meta.url).href;
+  link.href = new URL(rel, import.meta.url).href;
   document.head.append(link);
 }
 

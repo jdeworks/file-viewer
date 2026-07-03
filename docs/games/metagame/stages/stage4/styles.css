@@ -1,3 +1,7 @@
+/* styles.css — Stage 4 Fractal Bastion: shell, campaign map-select, Armory, shared bits. The COMBAT
+   board (command bar, coloured board spans, placement/popover, shop rows, feedback) lives in the
+   companion sheet styles-board.css (both injected by index.js/renderer.js). Split to stay under the
+   300-LOC soft cap and keep the board's presentation concerns in one place. */
 .stage4-fractal-bastion {
   --s4-bg: #0a0a0f;
   --s4-fg: #9fe1cb;
@@ -8,11 +12,16 @@
   background: var(--s4-bg);
   border: 1px solid var(--s4-line);
   color: var(--s4-fg);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   padding: 14px;
-  width: min(760px, 100%);
+  height: 100%;
+  width: 100%;
 }
+
+/* Height contract (UX audit F1): the combat screen fills the bounded host; interior panes scroll. */
+.s4-screen { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 .s4-hud,
 .s4-controls {
@@ -22,69 +31,20 @@
   gap: 8px 14px;
 }
 
-.s4-layout {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: 1fr minmax(180px, 240px);
-}
-
-.s4-board,
 .s4-panel {
   background: #111118;
   border: 1px solid var(--s4-line);
-}
-
-.s4-board {
-  color: var(--s4-cyan);
-  /* Sized for the full 40×40 TD grid: tight monospace so the board fits without dominating. */
-  font: 11px/1.05 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: 1px;
-  margin: 0;
-  max-height: 60vh;
-  min-height: 210px;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
   padding: 10px;
-  white-space: pre;
-  cursor: crosshair; /* click a cell to place the selected tower */
-}
-
-.s4-panel {
-  padding: 10px;
-}
-
-.s4-boss-title {
-  color: var(--s4-yellow);
-  font-weight: 700;
 }
 
 .s4-hint {
   color: #fac775;
   font-size: 13px;
-  margin: 8px 0;
-}
-
-/* Tower shop / picker (replaces the old points panel). */
-.s4-shop {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 8px;
-}
-
-.s4-shop button {
-  background: #15152a;
-  border: 1px solid var(--s4-line);
-  color: var(--s4-fg);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 5px 7px;
-  text-align: left;
-}
-
-.s4-shop button.is-selected {
-  border-color: var(--s4-cyan);
-  color: var(--s4-cyan);
-  font-weight: 700;
+  margin: 6px 0;
 }
 
 .s4-roster {
@@ -92,24 +52,20 @@
   flex-direction: column;
   gap: 4px;
   margin-top: 8px;
-  max-height: 140px;
-  overflow-y: auto;
 }
 
-.s4-roster button {
+.s4-roster button,
+.s4-roster-name {
   background: #101024;
   border: 1px solid var(--s4-line);
   color: var(--s4-fg);
-  cursor: pointer;
   font-size: 11px;
   padding: 3px 6px;
   text-align: left;
 }
 
-.s4-roster button:hover {
-  border-color: var(--s4-cyan);
-  color: var(--s4-cyan);
-}
+.s4-roster button { cursor: pointer; }
+.s4-roster button:hover { border-color: var(--s4-cyan); color: var(--s4-cyan); }
 
 .s4-roster-row {
   display: flex;
@@ -118,27 +74,10 @@
   align-items: center;
 }
 
-.s4-roster-row .s4-fork-btn {
-  border-color: var(--s4-cyan);
-  color: var(--s4-cyan);
-}
+.s4-roster-row .s4-fork-btn { border-color: var(--s4-cyan); color: var(--s4-cyan); }
+.s4-roster-row .s4-sell-btn { margin-left: auto; border-color: var(--s4-amber, #d08b2f); color: var(--s4-amber, #d08b2f); }
 
-.s4-roster-row .s4-sell-btn {
-  margin-left: auto;
-  border-color: var(--s4-amber, #d08b2f);
-  color: var(--s4-amber, #d08b2f);
-}
-
-.s4-fork-tag {
-  font-size: 10px;
-  color: var(--s4-cyan);
-  opacity: 0.85;
-  padding: 0 4px;
-}
-
-.s4-log {
-  margin: 0 0 0 18px;
-}
+.s4-fork-tag { font-size: 10px; color: var(--s4-cyan); opacity: 0.85; padding: 0 4px; }
 
 .s4-controls button {
   background: #1a1a30;
@@ -148,11 +87,12 @@
   padding: 6px 9px;
 }
 
-.s4-leave {
-  margin-left: auto;
-}
+.s4-leave { margin-left: auto; }
 
 /* ── campaign map-select + Armory ───────────────────────────────────────── */
+.stage4-mapselect,
+.stage4-armory { position: relative; }
+
 .s4-maplist,
 .s4-armorylist {
   display: grid;
@@ -173,43 +113,17 @@
   padding: 7px 9px;
 }
 
-.s4-armoryrow {
-  grid-template-columns: 1fr 1.4fr auto;
-}
+.s4-armoryrow { grid-template-columns: 1fr 1.4fr auto; }
 
-.s4-maprow.is-locked {
-  color: #5a5a72;
-  opacity: 0.65;
-}
+.s4-maprow.is-locked { color: #5a5a72; opacity: 0.65; }
+.s4-maprow.is-cleared .s4-mapstatus { color: var(--s4-cyan); }
+.s4-maprow.is-open .s4-mapstatus { color: var(--s4-yellow); }
 
-.s4-maprow.is-cleared .s4-mapstatus {
-  color: var(--s4-cyan);
-}
-
-.s4-maprow.is-open .s4-mapstatus {
-  color: var(--s4-yellow);
-}
-
-.s4-mapglyph {
-  color: var(--s4-magenta);
-  font-size: 16px;
-}
-
+.s4-mapglyph { color: var(--s4-magenta); font-size: 16px; }
 .s4-mapname,
-.s4-armoryname {
-  color: var(--s4-fg);
-  font-weight: 700;
-}
-
-.s4-maptheme {
-  color: #8a8aa6;
-  font-size: 12px;
-}
-
-.s4-mapstatus {
-  font-size: 11px;
-  letter-spacing: 1px;
-}
+.s4-armoryname { color: var(--s4-fg); font-weight: 700; }
+.s4-maptheme { color: #8a8aa6; font-size: 12px; }
+.s4-mapstatus { font-size: 11px; letter-spacing: 1px; }
 
 .s4-maprow button,
 .s4-armoryrow button {
@@ -221,43 +135,25 @@
 }
 
 .s4-maprow button:disabled,
-.s4-armoryrow button:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
+.s4-armoryrow button:disabled { cursor: not-allowed; opacity: 0.4; }
+
+/* The single primary START on a fresh player's map-select (R1). */
+.s4-maprow button.s4-primary {
+  background: #1c3a2a;
+  border-color: var(--s4-cyan);
+  color: #cffbe6;
+  font-weight: 700;
+  padding: 6px 14px;
 }
 
-.s4-armorydesc {
-  color: #8a8aa6;
-  font-size: 12px;
-}
+.s4-boss-chip { font-size: 12px; }
 
-.s4-armoryname em {
-  color: var(--s4-yellow);
-  font-size: 11px;
-  font-style: normal;
-}
+.s4-armorydesc { color: #8a8aa6; font-size: 12px; }
+.s4-armoryname em { color: var(--s4-yellow); font-size: 11px; font-style: normal; }
 
 @media (max-width: 760px) {
-  .s4-layout {
-    grid-template-columns: 1fr;
-  }
-
-  /* Bigger cells so a fingertip can target a single path-adjacent tile. The board then exceeds the
-     viewport on both axes and scrolls; boardCell() measures the rendered text, so taps stay accurate
-     under scroll. */
-  .s4-board {
-    font-size: 16px;
-    letter-spacing: 2px;
-    line-height: 1.25;
-  }
-
-  .s4-maprow {
-    grid-template-columns: 24px 1fr auto;
-  }
-
+  .s4-maprow { grid-template-columns: 24px 1fr auto; }
   .s4-maprow .s4-mapwaves,
   .s4-maprow .s4-maptheme,
-  .s4-maprow .s4-mapstatus {
-    display: none;
-  }
+  .s4-maprow .s4-mapstatus { display: none; }
 }

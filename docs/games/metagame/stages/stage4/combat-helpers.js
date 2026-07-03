@@ -16,6 +16,66 @@ import { mapByIndex, subBossIdForWave } from './maps.js';
 import { mapWaveComposition } from './wavegen.js';
 import { subBossDef } from './subboss.js';
 
+// The effective (base) range of a tower type — used to draw range rings. Global towers (mortar) return
+// Infinity (whole board); support/economy towers with range 0 return 0 (no ring).
+export function towerRange(type) {
+  const def = TOWER_TYPES[type];
+  if (!def) return 0;
+  if (def.global) return Infinity;
+  return Number(def.range) || 0;
+}
+
+// PLACEMENT / SELECTION PREVIEW (PURE — never mutates state). Given the tower `type` and the target
+// `cell`, returns the footprint + the set of range-ring cells + whether the cell is a legal place:
+//   { foot: {x,y}, rings: Set<"x,y">, valid, reason }.
+// invalid when: off-board, a tower already occupies the cell, the cell is ON the path (placing there is
+// pointless — a reshape refunds it), or the player can't afford it. This is DISPLAY guidance only; the
+// engine's placeTower is unchanged (the pointer flow just refuses an invalid confirm).
+export function placementPreview(state, pathTiles, type, cell, { size = 40 } = {}) {
+  const foot = cell ? { x: Math.trunc(cell.x), y: Math.trunc(cell.y) } : null;
+  const rings = rangeRing(type, foot, size);
+  if (!foot) return { foot: null, rings, valid: false, reason: 'none' };
+  const onBoard = foot.x >= 0 && foot.y >= 0 && foot.x < size && foot.y < size;
+  const occupied = (state?.towers || []).some((t) => t.x === foot.x && t.y === foot.y);
+  const onPath = (pathTiles || []).some((t) => t.x === foot.x && t.y === foot.y);
+  const cost = TOWER_TYPES[type]?.cost || 0;
+  const afford = Number(state?.cycles || 0) >= cost;
+  let reason = 'ok';
+  if (!onBoard) reason = 'bounds';
+  else if (occupied) reason = 'occupied';
+  else if (onPath) reason = 'path';
+  else if (!afford) reason = 'cycles';
+  return { foot, rings, valid: reason === 'ok', reason };
+}
+
+// The set of "x,y" cells within a tower's Euclidean range of `center` (matches engine dist()). Empty for
+// range 0; skipped for global towers (Infinity) — a full-board ring is noise, the UI labels it GLOBAL.
+export function rangeRing(type, center, size = 40) {
+  const rings = new Set();
+  const r = towerRange(type);
+  if (!center || !Number.isFinite(r) || r <= 0) return rings;
+  for (let y = Math.max(0, center.y - r); y <= Math.min(size - 1, center.y + r); y += 1) {
+    for (let x = Math.max(0, center.x - r); x <= Math.min(size - 1, center.x + r); x += 1) {
+      if (x === center.x && y === center.y) continue;
+      if (Math.hypot(x - center.x, y - center.y) <= r) rings.add(`${x},${y}`);
+    }
+  }
+  return rings;
+}
+
+// One-line wave PREVIEW for the between-wave strip / call-early decision (UX audit #6): the incoming
+// composition as "12 swarm · 3 armored · 1 healer" (type suffixes trimmed for glance-ability).
+export function wavePreviewLine(mapIndex, waveNumber) {
+  const w = Math.max(1, Math.trunc(Number(waveNumber)) || 1);
+  const comp = mapWaveComposition(mapIndex, w);
+  const parts = (comp.enemies || []).map((e) => `${e.count} ${shortEnemy(e.type)}`);
+  return parts.length ? parts.join(' · ') : '—';
+}
+
+function shortEnemy(type) {
+  return String(type).replace(/_(node|loop|packet|crawler|ghost|host|bit|drone)$/, '').replace(/_/g, ' ');
+}
+
 // Earliest campaign map (0-based) on which each tower appears in the shop. Drip: 5 → 8 → 11 → 14 towers
 // as the player advances, matching the enemy-archetype unlock cadence (wavegen UNLOCKS) so each new
 // tower answers a freshly-introduced threat (MATCH). The boss arena ignores this (all towers available).

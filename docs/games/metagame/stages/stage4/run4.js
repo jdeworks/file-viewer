@@ -185,6 +185,22 @@ export function campaignProgress(state) {
   return { cleared: (state.campaign?.clearedMaps || []).length, total: MAP_COUNT };
 }
 
+// ── progressive disclosure (display-only; engine UNTOUCHED) ────────────────────────────────────────
+// A FRESH player's first map (Outer Shell) is vanilla TD: plain numbers, no damage-type/resist/status
+// UI, no targeting presets, no Glory HUD, no Armory affordance. Those advanced systems reveal at the
+// map-1 victory moment and stay revealed thereafter. A VETERAN — anyone who has already cleared a map
+// (glory alone is earned mid-map, so it does NOT count) — sees everything, including on a map-1 replay.
+export function isVeteran(state) {
+  return (state?.campaign?.clearedMaps || []).length > 0;
+}
+
+// Advanced COMBAT UI (damage-type tags, resist lines, status effects, targeting presets) is disclosed
+// on map 2+ (index ≥ 1) or for a veteran. Map 1 for a fresh player stays plain.
+export function combatDisclosed(state, mapIndex) {
+  const idx = clampIndex(mapIndex ?? state?.campaign?.mapIndex ?? 0);
+  return isVeteran(state) || idx >= 1;
+}
+
 function clampIndex(i) {
   return Math.max(0, Math.min(MAP_COUNT - 1, Math.trunc(Number(i)) || 0));
 }
