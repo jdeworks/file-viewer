@@ -2581,47 +2581,47 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/sarif/metadata.js
 - [ ] docs/types/text/sarif/renderer.js
 - [ ] docs/types/text/sarif/settings.default.json
-- [ ] docs/types/text/sdf/detect.js
-- [ ] docs/types/text/sdf/EDITOR.md
-- [ ] docs/types/text/sdf/index.js
-- [ ] docs/types/text/sdf/metadata.js
-- [ ] docs/types/text/sdf/renderer.js
-- [ ] docs/types/text/sdf/settings.default.json
-- [ ] docs/types/text/ssh-config/detect.js
-- [ ] docs/types/text/ssh-config/EDITOR.md
-- [ ] docs/types/text/ssh-config/index.js
-- [ ] docs/types/text/ssh-config/metadata.js
-- [ ] docs/types/text/ssh-config/parse.js
-- [ ] docs/types/text/ssh-config/renderer.js
-- [ ] docs/types/text/ssh-config/settings.default.json
-- [ ] docs/types/text/step/detect.js
-- [ ] docs/types/text/step/EDITOR.md
-- [ ] docs/types/text/step/index.js
-- [ ] docs/types/text/step/metadata.js
-- [ ] docs/types/text/step/renderer.js
-- [ ] docs/types/text/step/settings.default.json
-- [ ] docs/types/text/strings/detect.js
-- [ ] docs/types/text/strings/EDITOR.md
-- [ ] docs/types/text/strings/index.js
-- [ ] docs/types/text/strings/metadata.js
-- [ ] docs/types/text/strings/renderer.js
-- [ ] docs/types/text/strings/settings.default.json
-- [ ] docs/types/text/subtitle/cue.html
-- [ ] docs/types/text/subtitle/detect.js
-- [ ] docs/types/text/subtitle/doc.html
-- [ ] docs/types/text/subtitle/EDITOR.md
-- [ ] docs/types/text/subtitle/exports.js
-- [ ] docs/types/text/subtitle/index.js
-- [ ] docs/types/text/subtitle/metadata.js
-- [ ] docs/types/text/subtitle/renderer.js
-- [ ] docs/types/text/subtitle/settings.default.json
-- [ ] docs/types/text/subtitle/sublib.js
-- [ ] docs/types/text/thrift/detect.js
-- [ ] docs/types/text/thrift/EDITOR.md
-- [ ] docs/types/text/thrift/index.js
-- [ ] docs/types/text/thrift/metadata.js
-- [ ] docs/types/text/thrift/renderer.js
-- [ ] docs/types/text/thrift/settings.default.json
+- [x] docs/types/text/sdf/detect.js
+- [x] docs/types/text/sdf/EDITOR.md
+- [x] docs/types/text/sdf/index.js
+- [x] docs/types/text/sdf/metadata.js
+- [x] docs/types/text/sdf/renderer.js
+- [x] docs/types/text/sdf/settings.default.json
+- [x] docs/types/text/ssh-config/detect.js
+- [x] docs/types/text/ssh-config/EDITOR.md
+- [x] docs/types/text/ssh-config/index.js
+- [x] docs/types/text/ssh-config/metadata.js
+- [x] docs/types/text/ssh-config/parse.js
+- [x] docs/types/text/ssh-config/renderer.js
+- [x] docs/types/text/ssh-config/settings.default.json
+- [x] docs/types/text/step/detect.js
+- [x] docs/types/text/step/EDITOR.md
+- [x] docs/types/text/step/index.js
+- [x] docs/types/text/step/metadata.js
+- [x] docs/types/text/step/renderer.js
+- [x] docs/types/text/step/settings.default.json
+- [x] docs/types/text/strings/detect.js
+- [x] docs/types/text/strings/EDITOR.md
+- [x] docs/types/text/strings/index.js
+- [x] docs/types/text/strings/metadata.js
+- [x] docs/types/text/strings/renderer.js
+- [x] docs/types/text/strings/settings.default.json
+- [x] docs/types/text/subtitle/cue.html
+- [x] docs/types/text/subtitle/detect.js
+- [x] docs/types/text/subtitle/doc.html
+- [x] docs/types/text/subtitle/EDITOR.md
+- [x] docs/types/text/subtitle/exports.js
+- [x] docs/types/text/subtitle/index.js
+- [x] docs/types/text/subtitle/metadata.js
+- [x] docs/types/text/subtitle/renderer.js
+- [x] docs/types/text/subtitle/settings.default.json
+- [x] docs/types/text/subtitle/sublib.js
+- [x] docs/types/text/thrift/detect.js
+- [x] docs/types/text/thrift/EDITOR.md
+- [x] docs/types/text/thrift/index.js
+- [x] docs/types/text/thrift/metadata.js
+- [x] docs/types/text/thrift/renderer.js
+- [x] docs/types/text/thrift/settings.default.json
 - [x] docs/types/text/toml/detect.js
 - [x] docs/types/text/toml/EDITOR.md
 - [x] docs/types/text/toml/exports.js
@@ -2789,12 +2789,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/xml/renderer.js
 - [x] docs/types/text/xml/settings.default.json
 - [x] docs/types/text/xml/xmldiff.js
-- [ ] docs/types/text/xyz/detect.js
-- [ ] docs/types/text/xyz/EDITOR.md
-- [ ] docs/types/text/xyz/index.js
-- [ ] docs/types/text/xyz/metadata.js
-- [ ] docs/types/text/xyz/renderer.js
-- [ ] docs/types/text/xyz/settings.default.json
+- [x] docs/types/text/xyz/detect.js
+- [x] docs/types/text/xyz/EDITOR.md
+- [x] docs/types/text/xyz/index.js
+- [x] docs/types/text/xyz/metadata.js
+- [x] docs/types/text/xyz/renderer.js
+- [x] docs/types/text/xyz/settings.default.json
 - [x] docs/types/text/yaml/detect.js
 - [x] docs/types/text/yaml/EDITOR.md
 - [x] docs/types/text/yaml/exports.js
@@ -2936,7 +2936,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/yaml/known/docker-compose/shared.js
 - [x] docs/types/text/yaml/known/docker-stack/index.js
 - [x] docs/types/text/yaml/known/docker-stack/renderer.js
-- [ ] docs/types/text/yaml/known/dotted-keys.js
+- [x] docs/types/text/yaml/known/dotted-keys.js
 - [x] docs/types/text/yaml/known/dozzle-config/index.js
 - [x] docs/types/text/yaml/known/dozzle-config/renderer.js
 - [x] docs/types/text/yaml/known/drone/index.js
@@ -3222,27 +3222,27 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/yaml/metadata.js
 - [x] docs/types/text/yaml/renderer.js
 - [x] docs/types/text/yaml/settings.default.json
-- [ ] docs/types/vcard/card.html
-- [ ] docs/types/vcard/detect.js
-- [ ] docs/types/vcard/doc.html
-- [ ] docs/types/vcard/EDITOR.md
-- [ ] docs/types/vcard/exports.js
-- [ ] docs/types/vcard/index.js
-- [ ] docs/types/vcard/metadata.js
-- [ ] docs/types/vcard/renderer.js
-- [ ] docs/types/vcard/row.html
-- [ ] docs/types/vcard/settings.default.json
-- [ ] docs/types/vcard/vcardlib.js
-- [ ] docs/types/zip/detect.js
-- [ ] docs/types/zip/doc.html
-- [ ] docs/types/zip/EDITOR.md
-- [ ] docs/types/zip/exports.js
-- [ ] docs/types/zip/index.js
-- [ ] docs/types/zip/metadata.js
-- [ ] docs/types/zip/renderer.js
-- [ ] docs/types/zip/row.html
-- [ ] docs/types/zip/settings.default.json
-- [ ] docs/types/zip/ziplib.js
+- [x] docs/types/vcard/card.html
+- [x] docs/types/vcard/detect.js
+- [x] docs/types/vcard/doc.html
+- [x] docs/types/vcard/EDITOR.md
+- [x] docs/types/vcard/exports.js
+- [x] docs/types/vcard/index.js
+- [x] docs/types/vcard/metadata.js
+- [x] docs/types/vcard/renderer.js
+- [x] docs/types/vcard/row.html
+- [x] docs/types/vcard/settings.default.json
+- [x] docs/types/vcard/vcardlib.js
+- [x] docs/types/zip/detect.js
+- [x] docs/types/zip/doc.html
+- [x] docs/types/zip/EDITOR.md
+- [x] docs/types/zip/exports.js
+- [x] docs/types/zip/index.js
+- [x] docs/types/zip/metadata.js
+- [x] docs/types/zip/renderer.js
+- [x] docs/types/zip/row.html
+- [x] docs/types/zip/settings.default.json
+- [x] docs/types/zip/ziplib.js
 <!-- AUDIT_SECTION type-files END -->
 
 ### Known Plugins

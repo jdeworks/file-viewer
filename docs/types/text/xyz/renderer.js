@@ -61,7 +61,7 @@ export function render(intake) {
         if (bi !== -1) return 1;
         return a.localeCompare(b);
       })
-      .map(([sym, cnt]) => cnt === 1 ? sym : `${sym}<sub>${cnt}</sub>`)
+      .map(([sym, cnt]) => cnt === 1 ? esc(sym) : `${esc(sym)}<sub>${cnt}</sub>`)
       .join('');
 
     const elemRows = Object.entries(elementCounts).sort((a,b) => b[1]-a[1]).map(([sym, cnt]) => {
