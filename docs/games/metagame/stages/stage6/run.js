@@ -26,10 +26,33 @@ const SKIP_REWARD = 5;
 const REMOVAL_BASE = 25;
 const REMOVAL_STEP = 25;
 export const FINAL_BOSS_ACT = 6;
-// Per-act combat mini-bosses (acts 1–5); the final act (6) is the codex-gated negotiation, The
-// Refused Connection. Acts 5–6 add the CORRUPTION + CHAIN verbs (Stack Overflow / the act-6 pools).
+// First-run pacing (UX audit approved option): a player's FIRST-EVER run terminates victoriously at
+// the act-4 story boss, The Refused Connection (which IS the epub un-cheat carrier). Acts 5–6 unlock
+// on the first win. Six acts before any boss kill is a ~60–90m first exposure; StS ships 3.
+export const FIRST_RUN_FINAL_ACT = 4;
+// Per-act combat mini-bosses (acts 1–5); the final act is the codex-gated negotiation, The Refused
+// Connection. On a 4-act first run its boss node IS that negotiation (enemyForCurrentNode keys off
+// run.act === finalActOf(run)); on a 6-act veteran run acts 4/5 are the mini-bosses below.
 const ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock", 4: "session-hijack", 5: "stack-overflow" };
 const PRESTIGE_HP_PER_VERSION = 5;
+
+// The terminal act for a run derived from LIFETIME wins: 0 wins ⇒ end at act 4; ≥1 win ⇒ full six.
+export function finalActForWins(wins) {
+  return (Number(wins) || 0) >= 1 ? FINAL_BOSS_ACT : FIRST_RUN_FINAL_ACT;
+}
+
+// The run's terminal act. Runs saved before run.finalAct existed (or in-flight act-5/6 runs) default
+// to the full six acts, so an existing run is NEVER shortened mid-flight. Clamped to [1, 6].
+export function finalActOf(run) {
+  const n = Number(run?.finalAct);
+  return Number.isFinite(n) && n >= 1 ? Math.min(FINAL_BOSS_ACT, n) : FINAL_BOSS_ACT;
+}
+
+// Whether acts 5-6 + the key-gated true-ending superboss are reachable this run (a veteran run). Key
+// telegraphs and the superboss only apply here — a first-ever 4-act run can't collect all 3 keys.
+export function isVeteranRun(run) {
+  return finalActOf(run) >= FINAL_BOSS_ACT;
+}
 
 // Banked-handshake cost to advance from the given Protocol Version to the next.
 export function prestigeCost(version) {
@@ -42,7 +65,7 @@ export function prestigeCost(version) {
 export function runScore(run) {
   if (!run) return 0;
   const won = run.status === "won";
-  const actsCleared = won ? FINAL_BOSS_ACT : Math.max(0, (run.act || 1) - 1);
+  const actsCleared = won ? finalActOf(run) : Math.max(0, (run.act || 1) - 1);
   const base = Math.max(0, run.handshakes || 0) + actsCleared * 50 + Math.max(0, run.hp || 0);
   return Math.round(base * (1 + (run.ascension || 0) / 10));
 }
@@ -55,9 +78,12 @@ export function effectiveAscension(version = 0, ascension = 0) {
   return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
 }
 
-export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard" } = {}) {
+export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard", finalAct = FINAL_BOSS_ACT } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
   const ascensionLevel = effectiveAscension(version, ascension);
+  // The number of acts this run generates AND terminates at (see finalActForWins). Clamped to [1,6].
+  // generateAct is independent of the total count, so acts 1..N are identical across a 4- or 6-act run.
+  const acts = Math.max(1, Math.min(FINAL_BOSS_ACT, Number(finalAct) || FINAL_BOSS_ACT));
   // Fold the active ascension rules into this run's tunable config (the same ladder the hub picker
   // and prestige floor select). Each field is read by run.js economy/rest or makeCombat enemy scaling.
   const cfg = foldAscension(baseRunConfig(), ascensionLevel);
@@ -67,7 +93,8 @@ export function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0
     ascension: ascensionLevel, // the effective rule level this run was built at (for recordClear)
     mode,                      // "standard" | "daily" | "custom" (for the run-end score / labelling)
     dailyKey,                  // the date/custom string the seed was derived from, or null
-    map: generateRun(seed, FINAL_BOSS_ACT),
+    finalAct: acts,            // this run terminates victoriously at this act's boss (4 on a first run)
+    map: generateRun(seed, acts),
     act: 1,
     currentNodeId: null,
     clearedIds: [],
@@ -154,7 +181,7 @@ export function enemyForCurrentNode(run, rng = makeRng(strHash(`${run.seed}:${ru
   if (run.atSuperboss) return SUPERBOSS_ID; // the key-gated true-ending fight (synthetic node)
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
-  if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : (ACT_BOSSES[run.act] || "kernel-panic");
+  if (node.type === "boss") return run.act === finalActOf(run) ? "the-refused-connection" : (ACT_BOSSES[run.act] || "kernel-panic");
   return enemyForNode(node, run.act, rng);
 }
 
@@ -289,8 +316,9 @@ export function buyRelic(run, cost = RELIC_COST) {
 // negotiation in one hop. Optionally swaps in a known `deck` so the boss fight is reproducible.
 // Returns the boss node id. Deterministic: only mutates run position/act/status.
 export function seatAtFinalBoss(run, deck) {
-  run.act = FINAL_BOSS_ACT;
-  const bossNode = run.map.acts[FINAL_BOSS_ACT - 1].layers.at(-1)[0];
+  const finalAct = finalActOf(run);
+  run.act = finalAct;
+  const bossNode = run.map.acts[finalAct - 1].layers.at(-1)[0];
   run.currentNodeId = bossNode.id;
   run.status = "boss";
   run.pendingReward = null;
@@ -304,7 +332,7 @@ export function seatAtFinalBoss(run, deck) {
 const BOSS_RELIC_CHOICES = 3;
 
 function clearBoss(run) {
-  if (run.act >= FINAL_BOSS_ACT) {
+  if (run.act >= finalActOf(run)) {
     // True ending: the negotiation is won. With all 3 keys, a hidden superboss opens AFTER it (pure
     // extra combat — NO second un-cheat). It's reached via a synthetic node id; enemyForCurrentNode
     // returns the superboss while run.atSuperboss is set.

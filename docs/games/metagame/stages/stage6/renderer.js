@@ -16,9 +16,12 @@ import {
   createRun, moveTo, enemyForCurrentNode, resolveCombat,
   takeReward, takePotion, usePotion, buyPotion, takeBossRelic, rest, removeCard, closeNode,
   buyCard, buyRemoval, buyUpgrade, buyRelic,
-  prestigeCost, FINAL_BOSS_ACT, seatAtFinalBoss, runScore
+  prestigeCost, seatAtFinalBoss, runScore,
+  finalActForWins, finalActOf, isVeteranRun
 } from "./run.js";
-import { applyProtocolChapter9Unlock, getBossLockState } from "./boss.js";
+import { banner } from "../../shared/feedback.js";
+import { getBossLockState } from "./boss.js";
+import { BTS_PATH } from "./messages.js";
 import { wireBossCombat, autoNegotiate as runAutoNegotiate } from "./boss-combat.js";
 import { SUPERBOSS_ID, wireSuperboss } from "./superboss.js";
 import { installStage6TestHook, removeStage6TestHook } from "./testhook.js";
@@ -29,9 +32,9 @@ import { ASCENSION_MODS } from "./ascension-mods.js";
 import { combatView } from "./ui-combat.js";
 import { applyCombatFx } from "./combat-fx.js";
 import { openPileModal, openLogModal } from "./combat-modals.js";
-import { hubView, mapView, deathView, wonView } from "./ui-map.js";
+import { hubView, mapView, paintMapEdges, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
-import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
+import { openEpub, openBts, once } from "./renderer-open.js";
 import { applyDev, devSkipToBoss } from "./s6dev.js";
 
 const REFUSED_CONNECTION = "the-refused-connection";
@@ -68,12 +71,17 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   // the one-shot feedback descriptor applied after the next combat re-mount (stage6 #4, combat-fx.js).
   let pendingCardIndex = null;
   let pendingFx = null;
+  let pendingBanner = null; // one-shot arrival banner (M1 disclosure / acts-5-6 unlock); flushed in mount()
   // Daily-seed clock: read ONCE per run at creation (a SEED, never consulted inside the combat loop,
   // so it honors the no-live-entropy rule). Overridable for deterministic tests via the test hook.
   let dailyKeyOverride = null;
   const completeOnce = once((result) => { if (typeof onStageComplete === "function") onStageComplete(result); });
   const lockState = () => getBossLockState({ actions, state });
-  const mount = (node) => screen.replaceChildren(node);
+  const mount = (node) => {
+    screen.replaceChildren(node);
+    if (pendingBanner) { banner(screen, pendingBanner); pendingBanner = null; }
+    return node;
+  };
   const commit = () => { if (typeof save === "function") save(); route(); };
 
   root.addEventListener("click", handleClick);
@@ -128,7 +136,12 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       case "dead": combat = null; return mount(deathView(state, run));
       case "won": combat = null; return mount(wonView(state, run));
       case "map":
-      default: combat = null; return mount(mapView(run));
+      default: {
+        combat = null;
+        const node = mount(mapView(run));
+        paintMapEdges(node, run); // #5: draw the act DAG's adjacency under the node chips (post-mount)
+        return node;
+      }
     }
   }
 
@@ -233,12 +246,14 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (run.status === "superboss" || run.atSuperboss) return finishSuperboss(run);
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
-    const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
+    const isFinalBoss = node?.type === "boss" && run.act >= finalActOf(run);
     // A resolved fight must NOT resume on reload: clear the checkpoint slot (also bumps runs[6]).
     if (combatRun) combatRun.reset();
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
+    // M1: a first finished run (a death here) reveals the stat tiles on the hub.
+    if (run.status === "dead") state.meta.disclosed.stats = true;
     combat = null;
     pendingCardIndex = null; // combat over — drop any raised card / pending feedback so it can't leak
     pendingFx = null;
@@ -255,6 +270,9 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     state.boss.defeated = true;
     state.boss.reached = true;
     state.meta.firstClearComplete = true;
+    // M1: the first WIN reveals the ascension picker + seed controls (announced once). Stats too.
+    state.meta.disclosed.stats = true;
+    if (!state.meta.disclosed.meta) { state.meta.disclosed.meta = true; pendingBanner = "difficulty ladder unlocked ⚑"; }
     state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
     // Record the ascension clear at the rule level this run actually played under (unlocks the next rung).
     if (ascension) ascension.recordClear(run.ascension || 0);
@@ -276,6 +294,14 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     else run.status = "dead"; // fell to the kernel — but the connection had already accepted you
     recordScore(run);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+
+  // First time a veteran run advances into act 5 (unlocked by the first win): announce the extended
+  // archive once. A 4-act first run never reaches act 5, so this can't fire there.
+  function maybeRevealActs(run) {
+    if (!run || run.act < 5 || !isVeteranRun(run) || state.meta.disclosed.actsRevealed) return;
+    state.meta.disclosed.actsRevealed = true;
+    pendingBanner = "the archive descends further — acts 5 and 6 unlocked";
   }
 
   function doPrestige() {
@@ -305,7 +331,9 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       handshakes: 0,
       ascension: ascension ? ascension.level() : 0,
       mode,
-      dailyKey
+      dailyKey,
+      // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
+      finalAct: finalActForWins(state.meta.runsCleared || 0)
     });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
@@ -395,7 +423,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const take = event.target.closest("[data-take]");
     if (take) { takeReward(run, take.dataset.take === "skip" ? null : take.dataset.take); return true; }
     const bossRelic = event.target.closest("[data-boss-relic]");
-    if (bossRelic) { takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic); return true; }
+    if (bossRelic) { takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic); maybeRevealActs(run); return true; }
     const remove = event.target.closest("[data-remove]");
     if (remove) { removeCard(run, Number(remove.dataset.remove)); rest(run, "remove"); return true; }
     const upgrade = event.target.closest("[data-upgrade]");
@@ -453,21 +481,4 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   }
 }
 
-export function openEpub({ viewer, actions, achievements, bell, state }) {
-  actions?.setAction?.(6, ACTION_NAME, { source: "stage6-codex", file: EPUB_PATH, chapter: 9 });
-  applyProtocolChapter9Unlock({ state, achievements, bell });
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(EPUB_PATH, { source: "stage6" });
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(EPUB_PATH, { source: "stage6" });
-}
-
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(6);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(6);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-
-function once(fn) {
-  let called = false;
-  return (value) => { if (called) return; called = true; fn(value); };
-}
+export { openEpub } from "./renderer-open.js";

@@ -1134,8 +1134,18 @@ export async function run(ctx) {
   } else {
     fail(`Stage 6 combat not resumably checkpointed: ${JSON.stringify(s6resume)}`);
   }
-  // Reach the act-4 boss via the deterministic test hook with a winnable deck (a real run would
-  // clear acts 1–3 and build this deck itself). The boss is fought with this REAL deck.
+  // First-run pacing (UX audit approved option): a fresh save's very first run terminates at the
+  // act-4 story boss (The Refused Connection); acts 5-6 unlock on the first win. Assert that, then
+  // mark this save a VETERAN so the run below restores the full six acts — the superboss fixture
+  // (equipEndgameLoadout pins the act-6 boss node a6-l6-n0) is veteran content and can't be reached
+  // on a 4-act first run. markVeteran sets only the win counter through the existing test seam.
+  const s6fresh = await page.evaluate(() => window.__fvStage6.beginRun());
+  if (s6fresh.finalAct === 4) pass('Stage 6 first run ends at act 4 (The Refused Connection); acts 5-6 unlock on first win'); else fail(`Stage 6 fresh finalAct wrong: ${JSON.stringify(s6fresh)}`);
+  await page.evaluate(() => window.__fvStage6.markVeteran());
+  const s6vet = await page.evaluate(() => window.__fvStage6.beginRun());
+  if (s6vet.finalAct === 6) pass('Stage 6 veteran run restores the full six acts (5-6 unlocked)'); else fail(`Stage 6 veteran finalAct wrong: ${JSON.stringify(s6vet)}`);
+  // Reach the final boss via the deterministic test hook with a winnable deck (a real veteran run
+  // would clear acts 1–5 and build this deck itself). The boss is fought with this REAL deck.
   await page.evaluate(() => window.__fvStage6.jumpToBoss(
     ['SYN', 'SYN', 'SYN', 'SYN', 'SYN', 'ACK', 'ACK', 'ACK', 'ACK', 'SEGMENT']
   ));

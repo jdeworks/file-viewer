@@ -16,6 +16,7 @@ import { currentIntent } from "./combat.js";
 import { currentDemand } from "./boss-combat.js";
 import { potionById } from "./potions.js";
 import { cardFaceInner, cardTypeClass } from "./card-face.js";
+import { isVeteranRun } from "./run.js";
 
 const STATUS_LABEL = { strength: "STR", vulnerable: "VULN", weak: "WEAK" };
 const TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
@@ -38,6 +39,14 @@ function normalizePending(idx, combat) {
   return (idx == null || idx < 0 || idx >= combat.hand.length) ? null : idx;
 }
 
+// M3 — key telegraph: the untouchable challenge is decided DURING an elite fight, so surface its one
+// quiet line at the top of that fight — only on a veteran run (acts 5-6/superboss reachable) and only
+// while the key is still unearned. First-run 4-act fights show nothing (that key can't complete there).
+function eliteTelegraph(combat, run) {
+  if (combat.enemy?.tier !== "elite" || !isVeteranRun(run) || (run?.keys || []).includes("untouchable")) return "";
+  return `<p class="s6db-telegraph">take ≤5 damage this fight to earn the untouchable key ⚷</p>`;
+}
+
 export function combatView(combat, run, opts = {}) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
@@ -49,6 +58,7 @@ export function combatView(combat, run, opts = {}) {
   const arena = arenaStrip(combat);
   el.innerHTML = `
     ${bossBanner(combat)}
+    ${eliteTelegraph(combat, run)}
     <div class="s6db-battlefield">
       ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
@@ -201,7 +211,7 @@ function energyBlock(combat) {
   return `<div class="s6db-energy" aria-label="energy">
     <span class="s6db-pips" aria-hidden="true">${pips}</span>
     <span class="s6db-energy-num">${energy}/${maxEnergy}</span>
-    ${combat.congestion ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
+    ${combat.congestion && (combat.turn || 1) > 1 ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
   </div>`;
 }
 

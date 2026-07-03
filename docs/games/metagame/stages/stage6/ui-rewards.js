@@ -15,7 +15,7 @@ import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
 import { cardFaceInner, cardTypeClass } from "./card-face.js";
 import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
-import { removalCost, UPGRADE_COST, RELIC_COST, POTION_COST, POTION_SLOTS } from "./run.js";
+import { removalCost, UPGRADE_COST, RELIC_COST, POTION_COST, POTION_SLOTS, isVeteranRun } from "./run.js";
 import { makeRng, strHash } from "./combat.js";
 import { relicById } from "./relics.js";
 import { potionById, rollPotion } from "./potions.js";
@@ -29,7 +29,8 @@ export function rewardView(run) {
   const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
   el.innerHTML = `<h2>Signal recovered</h2>
     ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc(relic.name)}</strong>: ${esc(relic.text)}</p>` : ""}
-    <p>Add one card to your deck.</p>`;
+    <p>Add one card to your deck.</p>
+    ${keyTelegraph(run, "ascetic", "skip everything to stay ascetic ⚷")}`;
   const row = document.createElement("div");
   row.className = "s6db-card-row";
   row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
@@ -97,6 +98,7 @@ export function restView(run) {
   el.innerHTML = `
     <h2>Keepalive</h2>
     <p>A quiet socket. Choose ONE: recover ${heal} HP, upgrade a card, or thin your deck.</p>
+    ${keyTelegraph(run, "sacrifice", "spend this rest thinning a card to earn the sacrifice key ⚷")}
     <div class="s6db-hub-actions">
       <button type="button" data-rest="heal">rest — heal ${heal} HP ▸</button>
     </div>
@@ -251,6 +253,13 @@ export function shopPotionOffers(run) {
     if (!out.includes(id)) out.push(id);
   }
   return out;
+}
+
+// M3 — key telegraph: one quiet line at a true-ending challenge's decision point. Only on a veteran
+// run (acts 5-6/superboss reachable) and only while that key is still unearned this run.
+function keyTelegraph(run, keyId, text) {
+  if (!isVeteranRun(run) || (run?.keys || []).includes(keyId)) return "";
+  return `<p class="s6db-telegraph">${esc(text)}</p>`;
 }
 
 function cardOption(id, attr, value) {

@@ -5,30 +5,36 @@
 // NOTE: there is deliberately NO "confront" button — The Refused Connection is reachable ONLY
 // as the act-4 boss node of a full run (see renderer route). The run is mandatory.
 
-import { availableNodes, prestigeCost, runScore } from "./run.js";
+import { availableNodes, prestigeCost, runScore, isVeteranRun } from "./run.js";
 import { activeAscensionMods, MAX_ASCENSION } from "./ascension-mods.js";
+import { relicById } from "./relics.js";
 
 const NODE_ICON = {
   combat: "⚔", elite: "☠", rest: "♨", shop: "⛁", event: "❓", boss: "☣"
 };
 
+// True-ending key metadata for the in-run info strip (M2) — names + one-line "how you earn it".
+const KEY_ORDER = ["untouchable", "ascetic", "sacrifice"];
+const KEY_INFO = {
+  untouchable: { name: "Untouchable", hint: "clear an elite taking ≤5 damage" },
+  ascetic:     { name: "Ascetic",     hint: "skip a card reward" },
+  sacrifice:   { name: "Sacrifice",   hint: "spend a rest thinning a card" }
+};
+
+// Progressive disclosure (M1): a 0-runs player sees only title + flavor + begin/codex. Each meta
+// cluster is gated on state.meta.disclosed (set at the event that makes it meaningful; backfilled
+// for existing saves in normalizeState so nothing regresses). prestige appears at ≥75% of its cost.
 export function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
+  const d = m.disclosed || {};
   const hasRun = Boolean(state.run);
+  const prestigeReady = (m.banked || 0) >= prestigeCost(m.protocolVersion) * 0.75;
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend six acts, and earn the right to be acknowledged.</p>
-    <dl class="s6db-meta-grid">
-      <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
-      <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
-      <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
-      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
-      <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
-    </dl>
-    ${seedModes(hasRun)}
+      and protocols, descend through the archive, and earn the right to be acknowledged.</p>
     <div class="s6db-hub-actions">
       ${hasRun
         ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
@@ -37,15 +43,23 @@ export function hubView(state, lock, asc = null) {
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
-    <div class="s6db-prestige">
+    ${d.stats ? `<dl class="s6db-meta-grid">
+      <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
+      <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
+      <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
+      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
+      <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
+    </dl>` : ""}
+    ${d.meta ? seedModes(hasRun) : ""}
+    ${prestigeReady ? `<div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
-    </div>
-    ${ascensionPicker(asc, hasRun)}
-    <p class="s6db-hint">${esc(lock.unlocked
+    </div>` : ""}
+    ${d.meta ? ascensionPicker(asc, hasRun) : ""}
+    ${d.stats ? `<p class="s6db-hint">${esc(lock.unlocked
       ? "Chapter 9 is read. The connection can be negotiated."
-      : "The connection refuses everything you send. The codex explains why.")}</p>
+      : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
   `;
   return el;
 }
@@ -125,16 +139,86 @@ export function mapView(run) {
   }
   el.appendChild(grid);
 
+  // M2 — in-run info diet: relics + keys are a tap/hover strip here (with names + one-liners),
+  // not permanent combat chrome. The footer keeps just the vitals + navigation.
+  el.insertAdjacentHTML("beforeend", inventoryStrip(run));
+
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
-  const keyCount = run.keys?.length || 0;
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
-    <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
-    <span title="true-ending keys (untouchable elite · skip a reward · sacrificial rest)">keys ${"⚷".repeat(keyCount)}${keyCount}/3</span>
+    <span>deck ${run.deck.length}</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
   return el;
+}
+
+// The owned-relics + true-ending-keys strip (M2). Tap/hover to expand names + one-liners. On a
+// veteran run the unearned keys are shown too (they're achievable); on a 4-act first run only earned
+// keys appear (all three can't be collected there, so it stays quiet).
+function inventoryStrip(run) {
+  const relics = (run.relics || []).map(relicById).filter(Boolean);
+  const keys = run.keys || [];
+  const vet = isVeteranRun(run);
+  const rItems = relics.length
+    ? relics.map((r) => `<li><strong>⬢ ${esc(r.name)}</strong> — ${esc(r.text)}</li>`).join("")
+    : `<li class="s6db-inv-none">No relics yet — clear elites and act bosses to earn them.</li>`;
+  const keyRows = KEY_ORDER.filter((id) => vet || keys.includes(id)).map((id) => {
+    const got = keys.includes(id);
+    return `<li class="${got ? "is-earned" : ""}"><strong>${got ? "⚷" : "○"} ${esc(KEY_INFO[id].name)}</strong> — ${esc(KEY_INFO[id].hint)}</li>`;
+  }).join("");
+  const keySection = keyRows
+    ? `<div class="s6db-inv-keys"><h4>True-ending keys ${keys.length}/3</h4><ul>${keyRows}</ul></div>` : "";
+  return `<details class="s6db-inv"><summary>relics ${relics.length} · keys ${keys.length}/3</summary>
+    <div class="s6db-inv-body">
+      <div class="s6db-inv-relics"><h4>Relics</h4><ul>${rItems}</ul></div>${keySection}
+    </div></details>`;
+}
+
+// #5 — MAP EDGES: draw the act DAG's adjacency as an SVG overlay UNDER the node chips. Called by the
+// renderer AFTER the map is mounted (positions need layout). pointer-events:none, sized to the grid's
+// scroll extent so it scrolls with the horizontal map and never intercepts a node click. Recomputed
+// on every render. Edges from the CURRENT node are highlighted; edges out of a cleared node are traced.
+export function paintMapEdges(mapEl, run) {
+  const grid = mapEl?.querySelector?.(".s6db-map-grid");
+  if (!grid) return;
+  grid.querySelector(":scope > svg.s6db-edges")?.remove();
+  const gridRect = grid.getBoundingClientRect();
+  if (!gridRect.width) return; // not laid out / styled yet — a later render will paint it
+  const act = run.map.acts[run.act - 1];
+  const cleared = new Set(run.clearedIds);
+  const SVG = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "s6db-edges");
+  svg.setAttribute("aria-hidden", "true");
+  const w = grid.scrollWidth, h = grid.scrollHeight;
+  svg.setAttribute("width", String(w));
+  svg.setAttribute("height", String(h));
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const rectOf = (id) => grid.querySelector(`[data-node-id="${id}"]`)?.getBoundingClientRect() || null;
+  const frag = document.createDocumentFragment();
+  for (const layer of act.layers) {
+    for (const node of layer) {
+      const from = rectOf(node.id);
+      if (!from) continue;
+      for (const nextId of node.next || []) {
+        const to = rectOf(nextId);
+        if (!to) continue;
+        const line = document.createElementNS(SVG, "line");
+        line.setAttribute("x1", String(from.right - gridRect.left + grid.scrollLeft));
+        line.setAttribute("y1", String(from.top - gridRect.top + grid.scrollTop + from.height / 2));
+        line.setAttribute("x2", String(to.left - gridRect.left + grid.scrollLeft));
+        line.setAttribute("y2", String(to.top - gridRect.top + grid.scrollTop + to.height / 2));
+        let cls = "s6db-edge";
+        if (node.id === run.currentNodeId) cls += " is-current";
+        else if (cleared.has(node.id)) cls += " is-cleared";
+        line.setAttribute("class", cls);
+        frag.appendChild(line);
+      }
+    }
+  }
+  svg.appendChild(frag);
+  grid.insertBefore(svg, grid.firstChild);
 }
 
 function nodeChip(node, run, available, cleared) {
@@ -149,6 +233,7 @@ function nodeChip(node, run, available, cleared) {
     + (isCleared ? " is-cleared" : "")
     + (!isAvailable && !isCleared && !isCurrent ? " is-locked" : "");
   if (tag === "button") { chip.type = "button"; chip.dataset.node = node.id; }
+  chip.dataset.nodeId = node.id; // stable anchor for the edge overlay (#5); distinct from data-node (move target)
   chip.innerHTML = `<span class="s6db-node-icon">${NODE_ICON[node.type] || "?"}</span>
     <span class="s6db-node-type">${esc(node.type)}</span>`;
   return chip;

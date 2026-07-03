@@ -118,8 +118,14 @@
 
 /* ── map ───────────────────────────────────────────────────────────────────── */
 .s6db-map-head { font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.s6db-map-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
-.s6db-map-col { display: flex; flex-direction: column; gap: 10px; min-width: 78px; }
+.s6db-map-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; position: relative; }
+.s6db-map-col { display: flex; flex-direction: column; gap: 10px; min-width: 78px; position: relative; z-index: 1; }
+/* #5 — map edges: the adjacency SVG scrolls with the grid content, never intercepts a node click,
+   and sits UNDER the chips. Edges default dim; the current node's out-edges glow; cleared out-edges traced. */
+.s6db-edges { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 0; overflow: visible; }
+.s6db-edge { stroke: #b8962e; stroke-width: 2; stroke-opacity: 0.4; fill: none; }
+.s6db-edge.is-cleared { stroke: #2f6f6a; stroke-opacity: 0.7; }
+.s6db-edge.is-current { stroke: #1e2840; stroke-width: 3; stroke-opacity: 0.9; }
 .s6db-node {
   display: grid; gap: 2px; place-items: center;
   padding: 8px 6px; border-radius: 8px;
@@ -132,6 +138,16 @@
 .s6db-node.is-current { outline: 2px solid #8b2020; }
 button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !important; border: 2px solid #1e2840 !important; cursor: pointer; }
 .s6db-map-foot { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; font-weight: 700; color: #3b2a1c; }
+/* M2 — in-run info strip: relics + keys as a tap/hover expandable, not permanent chrome. */
+.s6db-inv { margin-top: 12px; border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; }
+.s6db-inv > summary { cursor: pointer; padding: 6px 10px; font-weight: 700; color: #3b2a1c; }
+.s6db-inv-body { display: flex; flex-wrap: wrap; gap: 18px; padding: 4px 12px 10px; }
+.s6db-inv-body h4 { margin: 4px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: #6a4fb0; }
+.s6db-inv-body ul { margin: 0; padding-left: 18px; font-size: 0.84rem; line-height: 1.5; color: #3b2a1c; }
+.s6db-inv-keys li.is-earned { color: #2f6f6a; }
+.s6db-inv-none { list-style: none; margin-left: -18px; opacity: 0.7; }
+/* M3 — key telegraph: one quiet line at a true-ending challenge's decision point. */
+.s6db-telegraph { margin: 8px 0 0; font-size: 0.85rem; font-weight: 700; color: #6a4fb0; }
 .s6db-notice { margin: 6px 0 10px; padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; font-weight: 700; }
 .s6db-relic-won { padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; }
 .s6db-act-track { display: inline-flex; gap: 6px; }

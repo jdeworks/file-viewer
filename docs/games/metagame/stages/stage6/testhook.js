@@ -41,7 +41,16 @@ export function installStage6TestHook(api) {
     beginRun(opts) {
       beginRun(opts || {});
       commit();
-      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+      // finalAct exposes the first-run pacing: a fresh save (0 wins) run ends at act 4; a veteran at 6.
+      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey, finalAct: state.run?.finalAct };
+    },
+    // TEST seam: mark this save a VETERAN (≥1 win) so the NEXT run restores the full six acts. The
+    // superboss fixture (equipEndgameLoadout pins the act-6 boss node a6-l6-n0) is veteran content —
+    // it can't be reached on a fresh save's 4-act run. Sets only the win counter; commits.
+    markVeteran() {
+      state.meta.runsCleared = Math.max(1, state.meta.runsCleared || 0);
+      commit();
+      return { runsCleared: state.meta.runsCleared };
     },
     // Pin the daily-seed clock so a daily run is reproducible in the harness.
     setDailyKey(key) { setDailyKeyOverride(key ? String(key) : null); },

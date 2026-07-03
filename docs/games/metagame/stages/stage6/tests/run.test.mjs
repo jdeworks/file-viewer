@@ -21,7 +21,9 @@ import {
   upgradeDeckCard,
   RELIC_COST,
   UPGRADE_COST,
-  FINAL_BOSS_ACT
+  FINAL_BOSS_ACT,
+  FIRST_RUN_FINAL_ACT,
+  finalActForWins
 } from "../run.js";
 import { makeRng, createCombat, playCard, strHash } from "../combat.js";
 import { instantiateEnemy } from "../enemies.js";
@@ -102,8 +104,8 @@ import { STARTING_DECK } from "../cards.js";
 
 // Drive a seeded run greedily (always the first option) to its end. Returns the run + a step count.
 // Deterministic by construction: same seed ⇒ identical map/enemies/rewards ⇒ identical traversal.
-function autoRun(seed) {
-  const run = createRun({ seed });
+function autoRun(seed, finalAct = FINAL_BOSS_ACT) {
+  const run = createRun({ seed, finalAct });
   let guard = 0;
   while (run.status !== "won" && run.status !== "dead" && guard++ < 4000) {
     if (run.status === "map") moveTo(run, availableNodes(run)[0].id);
@@ -124,6 +126,32 @@ function autoRun(seed) {
   assert.equal(run.act, FINAL_BOSS_ACT, "ended in the final act (6)");
   assert.ok(steps < 4000, "the run terminated well within the guard (no infinite loop)");
   assert.equal(run.map.acts.length, FINAL_BOSS_ACT, "the run map has six acts");
+}
+
+// ── first-run pacing: a fresh save (0 wins) run terminates at the act-4 story boss ────────────────
+{
+  // 0 wins ⇒ 4-act first run; ≥1 win ⇒ the full six acts (veteran, unchanged).
+  assert.equal(finalActForWins(0), FIRST_RUN_FINAL_ACT, "a first-ever run ends at act 4");
+  assert.equal(finalActForWins(1), FINAL_BOSS_ACT, "≥1 win restores the six acts");
+
+  const fresh = createRun({ seed: 7, finalAct: finalActForWins(0) });
+  assert.equal(fresh.finalAct, 4, "the fresh run carries finalAct 4");
+  assert.equal(fresh.map.acts.length, 4, "the fresh run map has four acts");
+  // The act-4 boss of a fresh run IS The Refused Connection (story boss / epub un-cheat carrier).
+  fresh.act = 4; fresh.currentNodeId = fresh.map.acts[3].layers.at(-1)[0].id;
+  assert.equal(enemyForCurrentNode(fresh, makeRng(1)), "the-refused-connection", "fresh act-4 boss is the story boss");
+
+  // A greedy fresh run TERMINATES in a win at act 4 and is deterministic; the veteran (6) is unchanged.
+  const a = autoRun(7, 4), b = autoRun(7, 4);
+  assert.equal(a.run.status, "won", "a fresh run wins at the act-4 boss");
+  assert.equal(a.run.act, 4, "the winning act is 4 (acts 5-6 are veteran content)");
+  assert.equal(a.steps, b.steps, "fresh run is deterministic (same seed ⇒ same steps)");
+  assert.deepEqual(a.run.clearedIds, b.run.clearedIds, "same nodes cleared in the same order");
+  assert.equal(autoRun(7, 6).run.act, FINAL_BOSS_ACT, "a veteran run still ends in act 6");
+
+  // Seeds compose: generateAct is independent of the act count, so acts 1..4 are identical either way.
+  const four = createRun({ seed: 3, finalAct: 4 }), six = createRun({ seed: 3, finalAct: 6 });
+  for (let i = 0; i < 4; i++) assert.deepEqual(four.map.acts[i], six.map.acts[i], `act ${i + 1} identical across 4- and 6-act runs`);
 }
 
 // ── H · a full 6-act run is DETERMINISTIC from its seed ────────────────────────────────────────────

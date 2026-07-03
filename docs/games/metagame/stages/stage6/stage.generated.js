@@ -5,7 +5,7 @@
 // external (NOT inlined). The hub's stage-manifest.js LOADERS import THIS file.
 
 
-// ../../docs/games/metagame/stages/stage6/messages.js
+// docs/games/metagame/stages/stage6/messages.js
 var ACTION_NAME = "protocol_ch9_read";
 var REQUIRED_ACTION = "6.protocol_ch9_read";
 var ACHIEVEMENT_ID = "stage6.protocol_ch9_read";
@@ -34,7 +34,7 @@ var combatLines = {
   defeated: "The Refused Connection closes without refusal."
 };
 
-// ../../docs/games/metagame/stages/stage6/boss.js
+// docs/games/metagame/stages/stage6/boss.js
 function hasProtocolChapter9(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(6, ACTION_NAME));
 }
@@ -92,7 +92,7 @@ function unlockAchievement(achievements, id, detail) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/cards-signal.js
+// docs/games/metagame/stages/stage6/cards-signal.js
 var SIGNAL_CARDS = [
   {
     id: "SYN",
@@ -328,7 +328,7 @@ var SIGNAL_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-protocol.js
+// docs/games/metagame/stages/stage6/cards-protocol.js
 var PROTOCOL_CARDS = [
   {
     id: "ACK",
@@ -505,7 +505,7 @@ var PROTOCOL_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-layer.js
+// docs/games/metagame/stages/stage6/cards-layer.js
 var LAYER_CARDS = [
   {
     id: "CIPHER_LAYER",
@@ -598,7 +598,7 @@ var LAYER_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-daemon.js
+// docs/games/metagame/stages/stage6/cards-daemon.js
 var DAEMON_CARDS = [
   {
     id: "FORK_BOMB",
@@ -715,7 +715,7 @@ var DAEMON_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-recursion.js
+// docs/games/metagame/stages/stage6/cards-recursion.js
 var RECURSION_CARDS = [
   {
     id: "STACK_FRAME",
@@ -814,7 +814,7 @@ var RECURSION_CARDS = [
   { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
 ];
 
-// ../../docs/games/metagame/stages/stage6/combat-rng.js
+// docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
   return function rng() {
@@ -859,7 +859,7 @@ function strHash(str) {
   return h || 1;
 }
 
-// ../../docs/games/metagame/stages/stage6/cards.js
+// docs/games/metagame/stages/stage6/cards.js
 var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 var NAME_ACRONYMS = /* @__PURE__ */ new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP"]);
@@ -926,7 +926,7 @@ function draftRewardCards(seed, act, count = 3) {
   return picks;
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-damage.js
+// docs/games/metagame/stages/stage6/combat-damage.js
 function dealToEnemy(combat, baseAmount) {
   let amount = Math.max(0, Math.round(baseAmount));
   if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
@@ -976,7 +976,7 @@ function log(combat, line) {
   combat.log = [...combat.log, line].slice(-10);
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-ctx.js
+// docs/games/metagame/stages/stage6/combat-ctx.js
 var MAX_ECHO_DEPTH = 4;
 function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
@@ -1187,7 +1187,7 @@ function runHook(combat, name, card = null) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-piles.js
+// docs/games/metagame/stages/stage6/combat-piles.js
 function drawCards(combat, n) {
   for (let i = 0; i < n; i++) {
     if (combat.draw.length === 0) {
@@ -1209,7 +1209,7 @@ function releaseJam(combat) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-enemy.js
+// docs/games/metagame/stages/stage6/combat-enemy.js
 function currentIntent(combat) {
   const script = combat.enemy.script;
   return script[combat.enemy.intentIndex % script.length];
@@ -1261,7 +1261,7 @@ function resolveIntent(combat, intent) {
   if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-modes.js
+// docs/games/metagame/stages/stage6/combat-modes.js
 var WINDOW_CAP = 5;
 var WINDOW_FLOOR = 2;
 var CONGESTION_ACT = 3;
@@ -1315,7 +1315,7 @@ function resolvePending(combat) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/combat.js
+// docs/games/metagame/stages/stage6/combat.js
 var HAND_SIZE = 5;
 var START_ENERGY = 3;
 function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
@@ -1459,7 +1459,7 @@ function checkPlayerDead(combat) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/enemies.js
+// docs/games/metagame/stages/stage6/enemies.js
 var ENEMIES = {
   // ── Standard trash ──────────────────────────────────────────────────────────────────────────────
   "corrupt-packet": {
@@ -1810,7 +1810,7 @@ function instantiateEnemy(id, act = 1) {
   };
 }
 
-// ../../docs/games/metagame/stages/stage6/relics.js
+// docs/games/metagame/stages/stage6/relics.js
 var RELICS = [
   {
     id: "handshake-token",
@@ -2062,7 +2062,7 @@ function rollRelics(seed, owned = [], count = 3) {
   return out;
 }
 
-// ../../docs/games/metagame/stages/stage6/potions.js
+// docs/games/metagame/stages/stage6/potions.js
 var POTIONS = [
   {
     id: "hotfix",
@@ -2173,7 +2173,7 @@ function rollPotion(seed) {
   return POTIONS[POTIONS.length - 1].id;
 }
 
-// ../../docs/games/metagame/stages/stage6/mapgen.js
+// docs/games/metagame/stages/stage6/mapgen.js
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
   2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
@@ -2273,7 +2273,7 @@ function enemyForNode(node, act = 1, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
-// ../../docs/games/metagame/stages/stage6/card-upgrades.js
+// docs/games/metagame/stages/stage6/card-upgrades.js
 var UPGRADED_SUFFIX = "+";
 var SPECS = {
   SYN: { text: "Deal 11. If ACK was played this turn, draw 2.", effect: (ctx) => {
@@ -2533,7 +2533,7 @@ var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
-// ../../docs/games/metagame/stages/stage6/ascension-mods.js
+// docs/games/metagame/stages/stage6/ascension-mods.js
 function baseRunConfig() {
   return {
     handshakeMult: 1,
@@ -2639,7 +2639,7 @@ function foldAscension(baseConfig, level) {
   return acc;
 }
 
-// ../../docs/games/metagame/stages/stage6/superboss.js
+// docs/games/metagame/stages/stage6/superboss.js
 var SUPERBOSS_ID = "the-kernel-of-refusal";
 var SUPERBOSS_PHASE_HP = [82, 88, 94];
 var SUPERBOSS_PHASE_SCRIPTS = [
@@ -2688,7 +2688,7 @@ function rewireSuperboss(combat) {
   return combat;
 }
 
-// ../../docs/games/metagame/stages/stage6/run.js
+// docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
 var REWARD_CHOICES = 3;
@@ -2697,24 +2697,36 @@ var SKIP_REWARD = 5;
 var REMOVAL_BASE = 25;
 var REMOVAL_STEP = 25;
 var FINAL_BOSS_ACT = 6;
+var FIRST_RUN_FINAL_ACT = 4;
 var ACT_BOSSES = { 1: "kernel-panic", 2: "buffer-overflow", 3: "deadlock", 4: "session-hijack", 5: "stack-overflow" };
 var PRESTIGE_HP_PER_VERSION = 5;
+function finalActForWins(wins) {
+  return (Number(wins) || 0) >= 1 ? FINAL_BOSS_ACT : FIRST_RUN_FINAL_ACT;
+}
+function finalActOf(run) {
+  const n = Number(run?.finalAct);
+  return Number.isFinite(n) && n >= 1 ? Math.min(FINAL_BOSS_ACT, n) : FINAL_BOSS_ACT;
+}
+function isVeteranRun(run) {
+  return finalActOf(run) >= FINAL_BOSS_ACT;
+}
 function prestigeCost(version) {
   return (Number(version || 0) + 1) * 40;
 }
 function runScore(run) {
   if (!run) return 0;
   const won = run.status === "won";
-  const actsCleared = won ? FINAL_BOSS_ACT : Math.max(0, (run.act || 1) - 1);
+  const actsCleared = won ? finalActOf(run) : Math.max(0, (run.act || 1) - 1);
   const base = Math.max(0, run.handshakes || 0) + actsCleared * 50 + Math.max(0, run.hp || 0);
   return Math.round(base * (1 + (run.ascension || 0) / 10));
 }
 function effectiveAscension(version = 0, ascension = 0) {
   return Math.max(0, Math.min(MAX_ASCENSION, Math.max(Number(version) || 0, Number(ascension) || 0)));
 }
-function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard" } = {}) {
+function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, dailyKey = null, mode = "standard", finalAct = FINAL_BOSS_ACT } = {}) {
   const maxHp = PLAYER_MAX_HP + Number(version || 0) * PRESTIGE_HP_PER_VERSION;
   const ascensionLevel = effectiveAscension(version, ascension);
+  const acts = Math.max(1, Math.min(FINAL_BOSS_ACT, Number(finalAct) || FINAL_BOSS_ACT));
   const cfg = foldAscension(baseRunConfig(), ascensionLevel);
   const run = {
     seed,
@@ -2725,7 +2737,9 @@ function createRun({ seed = 1, version = 0, handshakes = 0, ascension = 0, daily
     // "standard" | "daily" | "custom" (for the run-end score / labelling)
     dailyKey,
     // the date/custom string the seed was derived from, or null
-    map: generateRun(seed, FINAL_BOSS_ACT),
+    finalAct: acts,
+    // this run terminates victoriously at this act's boss (4 on a first run)
+    map: generateRun(seed, acts),
     act: 1,
     currentNodeId: null,
     clearedIds: [],
@@ -2798,7 +2812,7 @@ function enemyForCurrentNode(run, rng = makeRng(strHash(`${run.seed}:${run.curre
   if (run.atSuperboss) return SUPERBOSS_ID;
   const node = nodeById(run.map, run.currentNodeId);
   if (!node) return null;
-  if (node.type === "boss") return run.act === FINAL_BOSS_ACT ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
+  if (node.type === "boss") return run.act === finalActOf(run) ? "the-refused-connection" : ACT_BOSSES[run.act] || "kernel-panic";
   return enemyForNode(node, run.act, rng);
 }
 function resolveCombat(run, { win, hpRemaining }) {
@@ -2905,8 +2919,9 @@ function buyRelic(run, cost = RELIC_COST) {
   return { ok: true, relic: id, cost };
 }
 function seatAtFinalBoss(run, deck) {
-  run.act = FINAL_BOSS_ACT;
-  const bossNode = run.map.acts[FINAL_BOSS_ACT - 1].layers.at(-1)[0];
+  const finalAct = finalActOf(run);
+  run.act = finalAct;
+  const bossNode = run.map.acts[finalAct - 1].layers.at(-1)[0];
   run.currentNodeId = bossNode.id;
   run.status = "boss";
   run.pendingReward = null;
@@ -2916,7 +2931,7 @@ function seatAtFinalBoss(run, deck) {
 }
 var BOSS_RELIC_CHOICES = 3;
 function clearBoss(run) {
-  if (run.act >= FINAL_BOSS_ACT) {
+  if (run.act >= finalActOf(run)) {
     if (hasAllKeys(run) && !run.superbossCleared && !run.atSuperboss) {
       run.atSuperboss = true;
       run.currentNodeId = `${run.currentNodeId}:superboss`;
@@ -2969,7 +2984,7 @@ function screenForNode(node) {
   return node.type;
 }
 
-// ../../docs/games/metagame/stages/stage6/events.js
+// docs/games/metagame/stages/stage6/events.js
 var RARE_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "rare");
 var COMMON_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "common");
 function damage(run, n) {
@@ -3231,7 +3246,10 @@ function applyEventChoice(run, eventId, choiceId) {
   return { ok: true, notice };
 }
 
-// ../../docs/games/metagame/stages/stage6/boss-combat.js
+// docs/games/metagame/stages/stage6/renderer.js
+import { banner as banner2 } from "../../shared/feedback.js";
+
+// docs/games/metagame/stages/stage6/boss-combat.js
 var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60, 4: 60 };
 var DEMAND_LEAD_SYN = "lead-syn";
 var DEMAND_ACK_FIRST = "ack-first";
@@ -3307,7 +3325,7 @@ function playFirstMatch(combat, pred) {
   return false;
 }
 
-// ../../docs/games/metagame/stages/stage6/testhook.js
+// docs/games/metagame/stages/stage6/testhook.js
 var REPRESENTATIVE_ENDGAME_DECK = [
   "SYN+",
   "SYN+",
@@ -3352,7 +3370,15 @@ function installStage6TestHook(api) {
     beginRun(opts) {
       beginRun(opts || {});
       commit();
-      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey };
+      return { seed: state.run?.seed, mode: state.run?.mode, dailyKey: state.run?.dailyKey, finalAct: state.run?.finalAct };
+    },
+    // TEST seam: mark this save a VETERAN (≥1 win) so the NEXT run restores the full six acts. The
+    // superboss fixture (equipEndgameLoadout pins the act-6 boss node a6-l6-n0) is veteran content —
+    // it can't be reached on a fresh save's 4-act run. Sets only the win counter; commits.
+    markVeteran() {
+      state.meta.runsCleared = Math.max(1, state.meta.runsCleared || 0);
+      commit();
+      return { runsCleared: state.meta.runsCleared };
     },
     // Pin the daily-seed clock so a daily run is reproducible in the harness.
     setDailyKey(key) {
@@ -3459,7 +3485,7 @@ function removeStage6TestHook() {
   if (window.__fvStage6) delete window.__fvStage6;
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-persist.js
+// docs/games/metagame/stages/stage6/combat-persist.js
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
@@ -3552,11 +3578,11 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
   return combat;
 }
 
-// ../../docs/games/metagame/stages/stage6/renderer.js
+// docs/games/metagame/stages/stage6/renderer.js
 import { createRun as createRunState } from "../../shared/run-state.js";
 import { createAscension } from "../../shared/ascension.js";
 
-// ../../docs/games/metagame/stages/stage6/card-face.js
+// docs/games/metagame/stages/stage6/card-face.js
 function cardTypeClass(card) {
   return `s6db-card--${(card?.type || "").toLowerCase()}`;
 }
@@ -3576,7 +3602,7 @@ function esc(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/ui-combat.js
+// docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = { strength: "STR", vulnerable: "VULN", weak: "WEAK" };
 var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 var PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
@@ -3593,6 +3619,10 @@ function phaseRuleText(combat) {
 function normalizePending(idx, combat) {
   return idx == null || idx < 0 || idx >= combat.hand.length ? null : idx;
 }
+function eliteTelegraph(combat, run) {
+  if (combat.enemy?.tier !== "elite" || !isVeteranRun(run) || (run?.keys || []).includes("untouchable")) return "";
+  return `<p class="s6db-telegraph">take ≤5 damage this fight to earn the untouchable key ⚷</p>`;
+}
 function combatView(combat, run, opts = {}) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
@@ -3601,6 +3631,7 @@ function combatView(combat, run, opts = {}) {
   const arena = arenaStrip(combat);
   el.innerHTML = `
     ${bossBanner(combat)}
+    ${eliteTelegraph(combat, run)}
     <div class="s6db-battlefield">
       ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
@@ -3729,7 +3760,7 @@ function energyBlock(combat) {
   return `<div class="s6db-energy" aria-label="energy">
     <span class="s6db-pips" aria-hidden="true">${pips}</span>
     <span class="s6db-energy-num">${energy}/${maxEnergy}</span>
-    ${combat.congestion ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
+    ${combat.congestion && (combat.turn || 1) > 1 ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
   </div>`;
 }
 function pileChips(combat) {
@@ -3782,7 +3813,7 @@ function esc2(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-fx.js
+// docs/games/metagame/stages/stage6/combat-fx.js
 import { flash, shake, floatNum, banner } from "../../shared/feedback.js";
 var reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 function applyCombatFx(node, fx) {
@@ -3823,7 +3854,7 @@ function flyCard({ rect, faceHTML }, arena) {
   setTimeout(() => clone2.remove(), 240);
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-modals.js
+// docs/games/metagame/stages/stage6/combat-modals.js
 import { openModal } from "../../shared/modal.js";
 function openPileModal(combat, kind) {
   if (!combat) return;
@@ -3857,7 +3888,7 @@ function openLogModal(combat) {
   openModal({ title: "combat log", contentEl: box, className: "s6db-modal" });
 }
 
-// ../../docs/games/metagame/stages/stage6/ui-map.js
+// docs/games/metagame/stages/stage6/ui-map.js
 var NODE_ICON = {
   combat: "⚔",
   elite: "☠",
@@ -3866,36 +3897,44 @@ var NODE_ICON = {
   event: "❓",
   boss: "☣"
 };
+var KEY_ORDER = ["untouchable", "ascetic", "sacrifice"];
+var KEY_INFO = {
+  untouchable: { name: "Untouchable", hint: "clear an elite taking ≤5 damage" },
+  ascetic: { name: "Ascetic", hint: "skip a card reward" },
+  sacrifice: { name: "Sacrifice", hint: "spend a rest thinning a card" }
+};
 function hubView(state, lock, asc = null) {
   const el = document.createElement("div");
   el.className = "s6db-hub";
   const m = state.meta;
+  const d = m.disclosed || {};
   const hasRun = Boolean(state.run);
+  const prestigeReady = (m.banked || 0) >= prestigeCost(m.protocolVersion) * 0.75;
   el.innerHTML = `
     <h2 class="s6db-hub-title">Protocol Codex</h2>
     <p class="s6db-hub-sub">A refused handshake at the edge of the archive. Build a deck of signals
-      and protocols, descend six acts, and earn the right to be acknowledged.</p>
-    <dl class="s6db-meta-grid">
-      <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
-      <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
-      <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
-      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
-      <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
-    </dl>
-    ${seedModes(hasRun)}
+      and protocols, descend through the archive, and earn the right to be acknowledged.</p>
     <div class="s6db-hub-actions">
       ${hasRun ? `<button type="button" data-action="continue-run">continue run ▸ act ${state.run.act}</button>
            <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>` : `<button type="button" data-action="begin-run">begin a run ▸</button>`}
       <button type="button" data-action="epub">open the codex</button>
       ${lock.defeated ? `<button type="button" data-action="bts">open trace.bts</button>` : ""}
     </div>
-    <div class="s6db-prestige">
+    ${d.stats ? `<dl class="s6db-meta-grid">
+      <div><dt>Banked handshakes</dt><dd>${m.banked}</dd></div>
+      <div><dt>Protocol Version</dt><dd>v${m.protocolVersion}</dd></div>
+      <div><dt>Runs cleared</dt><dd>${m.runsCleared}</dd></div>
+      <div><dt>Best score</dt><dd>${m.bestScore || 0}</dd></div>
+      <div><dt>The Refused Connection</dt><dd>${lock.defeated ? "answered" : lock.unlocked ? "negotiable" : "refusing"}</dd></div>
+    </dl>` : ""}
+    ${d.meta ? seedModes(hasRun) : ""}
+    ${prestigeReady ? `<div class="s6db-prestige">
       <button type="button" data-action="prestige"${m.banked < prestigeCost(m.protocolVersion) ? " disabled" : ""}>
         reinforce protocol → v${m.protocolVersion + 1}</button>
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
-    </div>
-    ${ascensionPicker(asc, hasRun)}
-    <p class="s6db-hint">${esc3(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
+    </div>` : ""}
+    ${d.meta ? ascensionPicker(asc, hasRun) : ""}
+    ${d.stats ? `<p class="s6db-hint">${esc3(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
   `;
   return el;
 }
@@ -3956,16 +3995,71 @@ function mapView(run) {
     grid.appendChild(col);
   }
   el.appendChild(grid);
+  el.insertAdjacentHTML("beforeend", inventoryStrip(run));
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
-  const keyCount = run.keys?.length || 0;
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
-    <span>deck ${run.deck.length}</span><span>relics ${run.relics.length}</span>
-    <span title="true-ending keys (untouchable elite · skip a reward · sacrificial rest)">keys ${"⚷".repeat(keyCount)}${keyCount}/3</span>
+    <span>deck ${run.deck.length}</span>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
   return el;
+}
+function inventoryStrip(run) {
+  const relics = (run.relics || []).map(relicById).filter(Boolean);
+  const keys = run.keys || [];
+  const vet = isVeteranRun(run);
+  const rItems = relics.length ? relics.map((r) => `<li><strong>⬢ ${esc3(r.name)}</strong> — ${esc3(r.text)}</li>`).join("") : `<li class="s6db-inv-none">No relics yet — clear elites and act bosses to earn them.</li>`;
+  const keyRows = KEY_ORDER.filter((id) => vet || keys.includes(id)).map((id) => {
+    const got = keys.includes(id);
+    return `<li class="${got ? "is-earned" : ""}"><strong>${got ? "⚷" : "○"} ${esc3(KEY_INFO[id].name)}</strong> — ${esc3(KEY_INFO[id].hint)}</li>`;
+  }).join("");
+  const keySection = keyRows ? `<div class="s6db-inv-keys"><h4>True-ending keys ${keys.length}/3</h4><ul>${keyRows}</ul></div>` : "";
+  return `<details class="s6db-inv"><summary>relics ${relics.length} · keys ${keys.length}/3</summary>
+    <div class="s6db-inv-body">
+      <div class="s6db-inv-relics"><h4>Relics</h4><ul>${rItems}</ul></div>${keySection}
+    </div></details>`;
+}
+function paintMapEdges(mapEl, run) {
+  const grid = mapEl?.querySelector?.(".s6db-map-grid");
+  if (!grid) return;
+  grid.querySelector(":scope > svg.s6db-edges")?.remove();
+  const gridRect = grid.getBoundingClientRect();
+  if (!gridRect.width) return;
+  const act = run.map.acts[run.act - 1];
+  const cleared = new Set(run.clearedIds);
+  const SVG = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "s6db-edges");
+  svg.setAttribute("aria-hidden", "true");
+  const w = grid.scrollWidth, h = grid.scrollHeight;
+  svg.setAttribute("width", String(w));
+  svg.setAttribute("height", String(h));
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const rectOf = (id) => grid.querySelector(`[data-node-id="${id}"]`)?.getBoundingClientRect() || null;
+  const frag = document.createDocumentFragment();
+  for (const layer of act.layers) {
+    for (const node of layer) {
+      const from = rectOf(node.id);
+      if (!from) continue;
+      for (const nextId of node.next || []) {
+        const to = rectOf(nextId);
+        if (!to) continue;
+        const line = document.createElementNS(SVG, "line");
+        line.setAttribute("x1", String(from.right - gridRect.left + grid.scrollLeft));
+        line.setAttribute("y1", String(from.top - gridRect.top + grid.scrollTop + from.height / 2));
+        line.setAttribute("x2", String(to.left - gridRect.left + grid.scrollLeft));
+        line.setAttribute("y2", String(to.top - gridRect.top + grid.scrollTop + to.height / 2));
+        let cls = "s6db-edge";
+        if (node.id === run.currentNodeId) cls += " is-current";
+        else if (cleared.has(node.id)) cls += " is-cleared";
+        line.setAttribute("class", cls);
+        frag.appendChild(line);
+      }
+    }
+  }
+  svg.appendChild(frag);
+  grid.insertBefore(svg, grid.firstChild);
 }
 function nodeChip(node, run, available, cleared) {
   const isAvailable = available.has(node.id);
@@ -3978,6 +4072,7 @@ function nodeChip(node, run, available, cleared) {
     chip.type = "button";
     chip.dataset.node = node.id;
   }
+  chip.dataset.nodeId = node.id;
   chip.innerHTML = `<span class="s6db-node-icon">${NODE_ICON[node.type] || "?"}</span>
     <span class="s6db-node-type">${esc3(node.type)}</span>`;
   return chip;
@@ -4032,7 +4127,7 @@ function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/ui-rewards.js
+// docs/games/metagame/stages/stage6/ui-rewards.js
 var PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
 function rewardView(run) {
   const el = document.createElement("div");
@@ -4041,7 +4136,8 @@ function rewardView(run) {
   const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
   el.innerHTML = `<h2>Signal recovered</h2>
     ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc4(relic.name)}</strong>: ${esc4(relic.text)}</p>` : ""}
-    <p>Add one card to your deck.</p>`;
+    <p>Add one card to your deck.</p>
+    ${keyTelegraph(run, "ascetic", "skip everything to stay ascetic ⚷")}`;
   const row = document.createElement("div");
   row.className = "s6db-card-row";
   row.replaceChildren(...cards.map((id) => cardOption(id, "take", id)));
@@ -4107,6 +4203,7 @@ function restView(run) {
   el.innerHTML = `
     <h2>Keepalive</h2>
     <p>A quiet socket. Choose ONE: recover ${heal2} HP, upgrade a card, or thin your deck.</p>
+    ${keyTelegraph(run, "sacrifice", "spend this rest thinning a card to earn the sacrifice key ⚷")}
     <div class="s6db-hub-actions">
       <button type="button" data-rest="heal">rest — heal ${heal2} HP ▸</button>
     </div>
@@ -4252,6 +4349,10 @@ function shopPotionOffers(run) {
   }
   return out;
 }
+function keyTelegraph(run, keyId, text) {
+  if (!isVeteranRun(run) || (run?.keys || []).includes(keyId)) return "";
+  return `<p class="s6db-telegraph">${esc4(text)}</p>`;
+}
 function cardOption(id, attr, value) {
   const card = cardById(id);
   const button = document.createElement("button");
@@ -4265,7 +4366,29 @@ function esc4(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/s6dev.js
+// docs/games/metagame/stages/stage6/renderer-open.js
+function openEpub({ viewer, actions, achievements, bell, state }) {
+  actions?.setAction?.(6, ACTION_NAME, { source: "stage6-codex", file: EPUB_PATH, chapter: 9 });
+  applyProtocolChapter9Unlock({ state, achievements, bell });
+  if (viewer && typeof viewer.openFile === "function") viewer.openFile(EPUB_PATH, { source: "stage6" });
+  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(EPUB_PATH, { source: "stage6" });
+}
+function openBts({ bts, viewer }) {
+  if (bts && typeof bts.open === "function") bts.open(6);
+  else if (bts && typeof bts.openBts === "function") bts.openBts(6);
+  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
+  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
+}
+function once(fn) {
+  let called = false;
+  return (value) => {
+    if (called) return;
+    called = true;
+    fn(value);
+  };
+}
+
+// docs/games/metagame/stages/stage6/s6dev.js
 var DEV_CARDS = ["HANDSHAKE", "FIREWALL", "TCP_STACK"];
 var ALL_KEYS = [KEY_UNTOUCHABLE, KEY_ASCETIC, KEY_SACRIFICE];
 function devHeal(run, combatPlayer) {
@@ -4315,7 +4438,7 @@ function applyDev(id, run, combatPlayer) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/renderer.js
+// docs/games/metagame/stages/stage6/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
 function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
@@ -4331,12 +4454,20 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   let combat = null;
   let pendingCardIndex = null;
   let pendingFx = null;
+  let pendingBanner = null;
   let dailyKeyOverride = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
   const lockState = () => getBossLockState({ actions, state });
-  const mount = (node) => screen.replaceChildren(node);
+  const mount = (node) => {
+    screen.replaceChildren(node);
+    if (pendingBanner) {
+      banner2(screen, pendingBanner);
+      pendingBanner = null;
+    }
+    return node;
+  };
   const commit = () => {
     if (typeof save === "function") save();
     route();
@@ -4423,9 +4554,12 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         combat = null;
         return mount(wonView(state, run));
       case "map":
-      default:
+      default: {
         combat = null;
-        return mount(mapView(run));
+        const node = mount(mapView(run));
+        paintMapEdges(node, run);
+        return node;
+      }
     }
   }
   function mountCombat(run) {
@@ -4524,11 +4658,12 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (run.status === "superboss" || run.atSuperboss) return finishSuperboss(run);
     const win = combat.result === "win";
     const node = nodeById(run.map, run.currentNodeId);
-    const isFinalBoss = node?.type === "boss" && run.act >= FINAL_BOSS_ACT;
+    const isFinalBoss = node?.type === "boss" && run.act >= finalActOf(run);
     if (combatRun) combatRun.reset();
     resolveCombat(run, { win, hpRemaining: combat.player.hp });
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
+    if (run.status === "dead") state.meta.disclosed.stats = true;
     combat = null;
     pendingCardIndex = null;
     pendingFx = null;
@@ -4539,6 +4674,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     state.boss.defeated = true;
     state.boss.reached = true;
     state.meta.firstClearComplete = true;
+    state.meta.disclosed.stats = true;
+    if (!state.meta.disclosed.meta) {
+      state.meta.disclosed.meta = true;
+      pendingBanner = "difficulty ladder unlocked ⚑";
+    }
     state.meta.runsCleared = (state.meta.runsCleared || 0) + 1;
     if (ascension) ascension.recordClear(run.ascension || 0);
     state.meta.banked = (state.meta.banked || 0) + (run.handshakes || 0);
@@ -4558,6 +4698,11 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     } else run.status = "dead";
     recordScore(run);
     completeOnce({ stage: 6, defeated: true, reward: { handshakes: 80 }, btsPath: BTS_PATH });
+  }
+  function maybeRevealActs(run) {
+    if (!run || run.act < 5 || !isVeteranRun(run) || state.meta.disclosed.actsRevealed) return;
+    state.meta.disclosed.actsRevealed = true;
+    pendingBanner = "the archive descends further — acts 5 and 6 unlocked";
   }
   function doPrestige() {
     const cost = prestigeCost(state.meta.protocolVersion || 0);
@@ -4584,7 +4729,9 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       handshakes: 0,
       ascension: ascension ? ascension.level() : 0,
       mode,
-      dailyKey
+      dailyKey,
+      // First-ever run (0 wins) ends at the act-4 story boss; ≥1 win restores the full six acts.
+      finalAct: finalActForWins(state.meta.runsCleared || 0)
     });
     state.ui.screen = "run";
     if (combatRun) combatRun.reset();
@@ -4684,6 +4831,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const bossRelic = event.target.closest("[data-boss-relic]");
     if (bossRelic) {
       takeBossRelic(run, bossRelic.dataset.bossRelic === "skip" ? null : bossRelic.dataset.bossRelic);
+      maybeRevealActs(run);
       return true;
     }
     const remove = event.target.closest("[data-remove]");
@@ -4788,28 +4936,8 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     }
   }
 }
-function openEpub({ viewer, actions, achievements, bell, state }) {
-  actions?.setAction?.(6, ACTION_NAME, { source: "stage6-codex", file: EPUB_PATH, chapter: 9 });
-  applyProtocolChapter9Unlock({ state, achievements, bell });
-  if (viewer && typeof viewer.openFile === "function") viewer.openFile(EPUB_PATH, { source: "stage6" });
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(EPUB_PATH, { source: "stage6" });
-}
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(6);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(6);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-}
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
-  };
-}
 
-// ../../docs/games/metagame/stages/stage6/state.js
+// docs/games/metagame/stages/stage6/state.js
 var VERSION = 2;
 function defaultState() {
   return {
@@ -4830,7 +4958,15 @@ function defaultState() {
       lastScore: 0,
       lastMode: null,
       lastSeedKey: null,
-      dailyBest: {}
+      dailyBest: {},
+      // Hub progressive disclosure (UX audit M1): which meta clusters have been REVEALED. A fresh
+      // save opens on just title + flavor + begin/codex; each cluster appears at the event that makes
+      // it meaningful and stays. Additive + backfilled from existing counters (normalizeState) so an
+      // existing save NEVER regresses to the minimal hub.
+      //   stats       — the stat tiles: first finished run (death or win).
+      //   meta        — ascension picker + daily/custom seeds: first WIN (banner announced once).
+      //   actsRevealed — acts 5-6 opened: first time a veteran run advances past act 4 (banner once).
+      disclosed: { stats: false, meta: false, actsRevealed: false }
     },
     handshakes: 0,
     // legacy mirror the boss reward writes to
@@ -4857,6 +4993,8 @@ function normalizeState(state) {
   const target = state && typeof state === "object" ? state : {};
   target.version = VERSION;
   target.meta = mergePlain(fresh.meta, target.meta);
+  target.meta.disclosed = mergePlain(fresh.meta.disclosed, target.meta.disclosed);
+  backfillDisclosure(target.meta);
   target.handshakes = num(target.handshakes, fresh.handshakes);
   target.boss = mergePlain(fresh.boss, target.boss);
   target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
@@ -4867,6 +5005,16 @@ function normalizeState(state) {
   delete target.deck;
   return target;
 }
+function backfillDisclosure(meta) {
+  const d = meta.disclosed;
+  const won = (meta.runsCleared || 0) > 0;
+  const finished = won || (meta.bestScore || 0) > 0 || (meta.bestAct || 0) > 0 || (meta.banked || 0) > 0 || meta.lastMode != null;
+  if (finished) d.stats = true;
+  if (won) {
+    d.meta = true;
+    d.actsRevealed = true;
+  }
+}
 function mergePlain(base, override) {
   return { ...base, ...override && typeof override === "object" ? override : {} };
 }
@@ -4875,7 +5023,7 @@ function num(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// ../../docs/games/metagame/stages/stage6/index.js
+// docs/games/metagame/stages/stage6/index.js
 var stageMeta = {
   id: 6,
   slug: "protocol-codex",

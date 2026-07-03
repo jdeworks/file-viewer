@@ -27,7 +27,15 @@ export function defaultState() {
       lastScore: 0,
       lastMode: null,
       lastSeedKey: null,
-      dailyBest: {}
+      dailyBest: {},
+      // Hub progressive disclosure (UX audit M1): which meta clusters have been REVEALED. A fresh
+      // save opens on just title + flavor + begin/codex; each cluster appears at the event that makes
+      // it meaningful and stays. Additive + backfilled from existing counters (normalizeState) so an
+      // existing save NEVER regresses to the minimal hub.
+      //   stats       — the stat tiles: first finished run (death or win).
+      //   meta        — ascension picker + daily/custom seeds: first WIN (banner announced once).
+      //   actsRevealed — acts 5-6 opened: first time a veteran run advances past act 4 (banner once).
+      disclosed: { stats: false, meta: false, actsRevealed: false }
     },
     handshakes: 0,          // legacy mirror the boss reward writes to
     boss: {
@@ -54,6 +62,8 @@ export function normalizeState(state) {
   const target = state && typeof state === "object" ? state : {};
   target.version = VERSION;
   target.meta = mergePlain(fresh.meta, target.meta);
+  target.meta.disclosed = mergePlain(fresh.meta.disclosed, target.meta.disclosed);
+  backfillDisclosure(target.meta);
   target.handshakes = num(target.handshakes, fresh.handshakes);
   target.boss = mergePlain(fresh.boss, target.boss);
   target.boss.turn = mergePlain(fresh.boss.turn, target.boss.turn);
@@ -64,6 +74,19 @@ export function normalizeState(state) {
   target.log = Array.isArray(target.log) ? target.log : fresh.log;
   delete target.deck; // stale v1 key
   return target;
+}
+
+// Backfill the M1 disclosure flags from pre-existing counters so a save made before this field
+// existed (or any player who already engaged) never regresses to the minimal first-contact hub.
+// A FINISHED run is implied by bestScore/lastMode (both set only in recordScore on dead/won),
+// runsCleared, bestAct (a combat win), or banked (a death/win bank). A win ⇒ meta + acts revealed.
+function backfillDisclosure(meta) {
+  const d = meta.disclosed;
+  const won = (meta.runsCleared || 0) > 0;
+  const finished = won || (meta.bestScore || 0) > 0 || (meta.bestAct || 0) > 0
+    || (meta.banked || 0) > 0 || meta.lastMode != null;
+  if (finished) d.stats = true;
+  if (won) { d.meta = true; d.actsRevealed = true; }
 }
 
 function mergePlain(base, override) {
