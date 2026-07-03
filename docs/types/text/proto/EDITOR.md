@@ -2,7 +2,7 @@
 
 ## Current state
 
-Rich structured viewer: parses `syntax`, `package`, `option`, `message` (with fields + field numbers), `service` (with RPCs + streaming direction), and `enum` definitions. Renders each as a colour-coded card with a table of fields/methods. Returns `{ parentNode }`. Monaco is not yet wired for proto files.
+Rich structured viewer: parses `syntax`, `package`, `option`, `message` (with fields + field numbers), `service` (with RPCs + streaming direction), and `enum` definitions. Renders each as a colour-coded card with a table of fields/methods. Returns `{ parentNode }`. `index.js` sets `syntaxLanguage: 'proto'`, which is Monaco's registered language id for Protocol Buffers (aliased as "protobuf"/"Protocol Buffers") — raw-view syntax highlighting is wired.
 
 ## Viewer enhancements (no write-back needed)
 
@@ -10,7 +10,7 @@ Rich structured viewer: parses `syntax`, `package`, `option`, `message` (with fi
 - **Field number validation** — highlight duplicate field numbers and gaps in reserved ranges with inline warning badges inside each message card — S
 - **Dependency graph for imports** — when `import` statements are present, list them as a directed graph showing which `.proto` files are depended on (static rendering only, no file loading) — M
 - **Stub code preview** — for each message and service, show a collapsible panel with generated stub snippets (Go, Python, Java style) synthesised client-side from the parsed AST — M
-- **Monaco syntax highlight** — wire `syntaxLanguage: () => 'protobuf'` (Monaco has built-in protobuf grammar); add to `index.js` capabilities alongside the structured view — S
+- ✅ SHIPPED — **Monaco syntax highlight** — `index.js` already sets `syntaxLanguage: 'proto'` (Monaco's protobuf language id) — S
 
 ## In-browser editing (download-on-save)
 
