@@ -74,7 +74,7 @@
 .mg-stage10__review-btn { margin: 0; }
 .mg-stage10-review .mg-stage10__review-grid { display: grid; gap: 10px; }
 .mg-stage10__review-card {
-  border: 1px solid var(--border, #d3d1c7); border-left: 4px solid var(--memory-accent);
+  border: 1px solid #d3d1c7; border-left: 4px solid var(--memory-accent);
   border-radius: 8px; padding: 10px 12px;
 }
 .mg-stage10__review-card .mg-stage10__card-stage { font-weight: 700; }

@@ -15,7 +15,12 @@ const ctx = await createHarness();
 const { browser, origin } = ctx;
 
 async function newGamePage(viewport, opts = {}) {
-  const c = await browser.newContext({ viewport, ...opts });
+  // `theme` is ours (drives the boot theme via localStorage); the rest is context options.
+  const { theme, ...ctxOpts } = opts;
+  const c = await browser.newContext({ viewport, ...ctxOpts });
+  // Seed the persisted theme BEFORE any page script runs so app.js boot (applyTheme reads
+  // localStorage 'fv:theme') paints the requested theme on first load — no reload needed.
+  if (theme) await c.addInitScript((t) => { try { localStorage.setItem('fv:theme', t); } catch { /* ignore */ } }, theme);
   const page = await c.newPage();
   page.setDefaultTimeout(25000);
   page.on('pageerror', (e) => errors.push({ vp: viewport.width, msg: String(e.message || e) }));
@@ -23,6 +28,11 @@ async function newGamePage(viewport, opts = {}) {
   page.on('dialog', (d) => { d.accept().catch(() => {}); });
   await page.goto(origin, { waitUntil: 'load' });
   await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 20000 });
+  if (theme) {
+    const applied = await page.evaluate(() => document.documentElement.dataset.theme);
+    if (applied !== theme) throw new Error(`theme not applied: wanted ${theme}, got ${applied}`);
+    console.log(`  theme=${applied} confirmed on <html>`);
+  }
   return { c, page };
 }
 
@@ -282,8 +292,113 @@ async function drive(dir, viewport, opts, phoneLite = false) {
   }
 }
 
+// ── Dark pass (desktop viewport, boot theme = dark). Captures ONLY the primary screen per stage so
+// the whole app can be eyeballed for dark-mode legibility without ballooning runtime. Reuses the same
+// stage-navigation helpers as the light drive. ──────────────────────────────────────────────────────
+async function driveDark(dir, viewport) {
+  const { c, page } = await newGamePage(viewport, { theme: 'dark' });
+  try {
+    await openMetagame(page);
+    await shot(page, dir, 'shell-hub');
+
+    // S3 — initial + midgame (light-palette stage; the reported casualty)
+    await gotoStage(page, 3, '.stage3-memory-grid');
+    await shot(page, dir, 's3-initial');
+    await page.click('button[data-action="draft"]').catch(() => {});
+    await page.waitForTimeout(200);
+    await shot(page, dir, 's3-acquire-modal');
+    await page.evaluate(() => document.querySelector('.mg-modal-backdrop')?.click());
+    await page.waitForTimeout(150);
+    await page.evaluate(() => { for (let i = 0; i < 6; i++) window.__fvStage3?.solveCurrent?.(); });
+    await page.waitForTimeout(300);
+    await shot(page, dir, 's3-midgame');
+
+    // S4 — combat (dark stage; verify)
+    await gotoStage(page, 4, '.stage4-fractal-bastion, .stage4-armory');
+    await page.evaluate(() => window.__fvStage4?.selectMap?.(0));
+    await page.waitForSelector('.s4-board', { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(250);
+    await shot(page, dir, 's4-combat');
+
+    // S5 — select + racing (dark stage; verify)
+    await gotoStage(page, 5, '.stage5-signal-racer');
+    await shot(page, dir, 's5-select');
+    await page.evaluate(() => window.__fvStage5?.startRound?.(0));
+    await page.waitForTimeout(900);
+    await shot(page, dir, 's5-racing');
+
+    // S6 — hub + combat (parchment stage)
+    await gotoStage(page, 6, '.stage6-protocol-codex');
+    await shot(page, dir, 's6-hub');
+    await page.evaluate(() => window.__fvStage6?.beginRun?.({}));
+    await page.waitForTimeout(300);
+    const s6node = await page.evaluate(() => {
+      const n = document.querySelector('button.s6db-node.is-available');
+      if (n) n.click();
+      return Boolean(n);
+    });
+    if (s6node) {
+      await page.waitForSelector('.s6db-hand', { timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(250);
+      await shot(page, dir, 's6-combat');
+    }
+
+    // S7 — ss1 + board (parchment stage)
+    await gotoStage(page, 7, '.stage7-identity-arbiter');
+    await shot(page, dir, 's7-ss1');
+    await page.evaluate(() => window.__fvStage7?.solveInvestigation?.());
+    await page.waitForTimeout(250);
+    await page.click('[data-action="open-anchor"]').catch(() => {});
+    await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 }).catch(() => {});
+    await page.click('[data-action="open-source"][data-source="route_table_examined"]').catch(() => {});
+    await page.waitForSelector('[data-pin="fact:route"]', { timeout: 5000 }).catch(() => {});
+    for (const id of ['entity:K', 'field:K:route', 'fact:route']) {
+      await page.click(`[data-pin="${id}"]`).catch(() => {});
+      await page.waitForTimeout(100);
+    }
+    await page.waitForTimeout(150);
+    await shot(page, dir, 's7-board');
+
+    // S8 — initial + late (dark stage; verify)
+    await gotoStage(page, 8, '.stage8-entropy-field');
+    await shot(page, dir, 's8-initial');
+    await page.evaluate(() => window.__fvStage8?.advance?.(12));
+    await page.evaluate(() => document.querySelectorAll('details.s8-tech-panel').forEach((d) => { d.open = true; }));
+    await page.evaluate(() => window.__fvStage8?.bodySolver?.());
+    await page.waitForTimeout(300);
+    await shot(page, dir, 's8-late');
+
+    // S9 — initial (dark stage; verify)
+    await gotoStage(page, 9, '.stage9-observer-state');
+    await page.waitForTimeout(500);
+    await shot(page, dir, 's9-initial');
+
+    // S10 — grid (light-card stage)
+    await page.evaluate(() => document.querySelector('.mg-back')?.click());
+    await page.waitForTimeout(400);
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('fv:games:metagame:v3');
+      if (!raw) return;
+      const save = JSON.parse(raw);
+      if (!save.unlockedStages?.includes(10)) { save.unlockedStages.push(10); localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save)); }
+    });
+    await page.click('.games-card[data-game="metagame"]');
+    await page.waitForSelector('.mg-v3', { timeout: 8000 });
+    await page.waitForTimeout(250);
+    await gotoStage(page, 10, '.mg-stage10');
+    await page.evaluate(() => window.__fvStage10?.integrateAll?.());
+    await page.waitForTimeout(250);
+    await shot(page, dir, 's10-grid');
+  } catch (e) {
+    console.log(`DRIVE ERROR (${dir}):`, e.message);
+  } finally {
+    await c.close().catch(() => {});
+  }
+}
+
 await drive('desktop', { width: 1280, height: 800 }, {});
 await drive('phone', { width: 390, height: 844 }, { hasTouch: true, isMobile: true, deviceScaleFactor: 2 }, true);
+await driveDark('dark', { width: 1280, height: 800 });
 
 await writeFile(`${OUT}metrics.json`, JSON.stringify({ metrics, errors: errors.slice(0, 60) }, null, 2));
 console.log('\nDONE. metrics:', metrics.length, 'console/page errors:', errors.length);

@@ -201,7 +201,7 @@ export function renderStage3(ctx) {
     if (state.retained >= 5) award("retainer", "Retained 5 fragments");
     save?.();
     const drawNext = () => { if (!root.isConnected) return; loadBoard(); paintHud(); };
-    if (animate && grid) { paintHud(); grid.celebrate(drawNext); }
+    if (animate && grid) { paintHud(); grid.celebrate(drawNext, { fragmentName: picto ? picto.name : null }); }
     else drawNext();
   }
 
@@ -425,6 +425,10 @@ export function renderStage3(ctx) {
     draftPending: () => draftPending(state),
     draftOffer: () => acquisitionOffer(state).map((c) => c.id),
     draft,
+    // VISUAL-ONLY test affordance: play the solve-reveal linger (cascade + "fragment: NAME" caption)
+    // on the current board WITHOUT mutating any state or advancing the run — lets the shots/smoke eye
+    // the linger. Does NOT touch the deterministic solveCurrent/bodySolver path or its timing.
+    demoReveal: (name) => { if (grid && board && !board.solved) grid.celebrate(() => {}, { fragmentName: name || "CACHE KEY" }); },
   });
 
   // Dev-menu cheats (see index.js stageMeta.devControls). Pure state mutation via s3dev.js;

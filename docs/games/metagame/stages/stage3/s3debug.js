@@ -13,6 +13,7 @@
 //     draftPending(),        // is a per-run boon draft available? → bool
 //     draftOffer(),          // the current 3-boon offer (ids)
 //     draft(id?),            // pick a boon (default = first offered) → bool
+//     demoReveal(name?),     // VISUAL-ONLY: play the solve-reveal linger caption (no state change)
 //   };
 import { diffKeyFromState } from './content.js';
 import { corruptionForRun } from './board.js';
@@ -44,6 +45,7 @@ export function installStage3Hook(api) {
     draftPending: () => (typeof api.draftPending === 'function' ? api.draftPending() : false),
     draftOffer: () => (typeof api.draftOffer === 'function' ? api.draftOffer() : []),
     draft: (id) => (typeof api.draft === 'function' ? api.draft(id) : false),
+    demoReveal: (name) => (typeof api.demoReveal === 'function' ? api.demoReveal(name) : undefined),
   };
   return () => { if (window.__fvStage3) delete window.__fvStage3; };
 }

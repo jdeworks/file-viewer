@@ -177,6 +177,9 @@
 .mg-hint-btn, .mg-flee { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; }
 .mg-hint-btn { border-color: #e8b339; color: #b07d10; }
+/* Dark: the dark-gold hint text is low-contrast on the dark button — lift it to the amber border tone.
+   (The rest of the shell chrome is already theme-aware via var(--bg)/var(--fg)/var(--border)/--accent.) */
+[data-theme="dark"] .mg-hint-btn { color: #e8b339; }
 .mg-boss { text-align: center; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-2); }
 .mg-boss-sprite { font: 700 40px/1 ui-monospace, monospace; color: #e03131; letter-spacing: -2px; animation: mg-boss-idle 2s ease-in-out infinite; }
 @keyframes mg-boss-idle { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-4px) rotate(1deg); } }

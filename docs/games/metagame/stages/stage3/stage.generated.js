@@ -1125,32 +1125,54 @@ function buildGrid(puzzle, handlers) {
       setTimeout(() => el.classList.remove("s3-wrong"), ms);
     }
   }
-  function celebrate(done) {
+  function celebrate(done, opts = {}) {
+    const fragmentName = opts.fragmentName || null;
     const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) {
-      done?.();
-      return () => {
-      };
+    let caption = null;
+    if (fragmentName) {
+      const host = wrap.closest && wrap.closest(".s3-grid-host") || wrap.parentElement || wrap;
+      caption = document.createElement("div");
+      caption.className = "s3-reveal-caption";
+      const strong = document.createElement("strong");
+      strong.textContent = String(fragmentName);
+      caption.append(document.createTextNode("fragment: "), strong);
+      host.append(caption);
     }
-    const maxDiag = Math.max(1, width + height - 2);
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const cell = cells[y][x];
-        if (cell.state !== FILLED && cell.state !== COLOR_B) continue;
-        cell.el.style.setProperty("--s3-reveal-delay", `${Math.round((x + y) / maxDiag * 260)}ms`);
-        cell.el.classList.add("s3-reveal");
+    if (!reduce) {
+      const maxDiag = Math.max(1, width + height - 2);
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const cell = cells[y][x];
+          if (cell.state !== FILLED && cell.state !== COLOR_B) continue;
+          cell.el.style.setProperty("--s3-reveal-delay", `${Math.round((x + y) / maxDiag * 260)}ms`);
+          cell.el.classList.add("s3-reveal");
+        }
       }
+      wrap.classList.add("s3-solved-flash");
     }
-    wrap.classList.add("s3-solved-flash");
-    const timer = setTimeout(() => {
+    let finished = false;
+    const teardown = (fire) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", onSkip, true);
+      document.removeEventListener("keydown", onSkip, true);
       for (const row of cells) for (const c of row) {
         c.el.classList.remove("s3-reveal");
         c.el.style.removeProperty("--s3-reveal-delay");
       }
       wrap.classList.remove("s3-solved-flash");
-      done?.();
-    }, 440);
-    return () => clearTimeout(timer);
+      caption?.remove();
+      if (fire) done?.();
+    };
+    const onSkip = () => teardown(true);
+    const timer = setTimeout(() => teardown(true), 1500);
+    setTimeout(() => {
+      if (finished) return;
+      document.addEventListener("pointerdown", onSkip, true);
+      document.addEventListener("keydown", onSkip, true);
+    }, 0);
+    return () => teardown(false);
   }
   return { el: wrap, update, flashWrong, celebrate, dims: { maxRow, maxCol, width, height } };
 }
@@ -1242,7 +1264,8 @@ function installStage3Hook(api) {
     bossSolver: () => api.bossSolver(),
     draftPending: () => typeof api.draftPending === "function" ? api.draftPending() : false,
     draftOffer: () => typeof api.draftOffer === "function" ? api.draftOffer() : [],
-    draft: (id) => typeof api.draft === "function" ? api.draft(id) : false
+    draft: (id) => typeof api.draft === "function" ? api.draft(id) : false,
+    demoReveal: (name) => typeof api.demoReveal === "function" ? api.demoReveal(name) : void 0
   };
   return () => {
     if (window.__fvStage3) delete window.__fvStage3;
@@ -1976,7 +1999,7 @@ function renderStage3(ctx) {
     };
     if (animate && grid) {
       paintHud();
-      grid.celebrate(drawNext);
+      grid.celebrate(drawNext, { fragmentName: picto ? picto.name : null });
     } else drawNext();
   }
   function paintHud() {
@@ -2209,7 +2232,14 @@ function renderStage3(ctx) {
     aliasedNow: () => aliasedTotal(board?.puzzle),
     draftPending: () => draftPending(state),
     draftOffer: () => acquisitionOffer(state).map((c) => c.id),
-    draft
+    draft,
+    // VISUAL-ONLY test affordance: play the solve-reveal linger (cascade + "fragment: NAME" caption)
+    // on the current board WITHOUT mutating any state or advancing the run — lets the shots/smoke eye
+    // the linger. Does NOT touch the deterministic solveCurrent/bodySolver path or its timing.
+    demoReveal: (name) => {
+      if (grid && board && !board.solved) grid.celebrate(() => {
+      }, { fragmentName: name || "CACHE KEY" });
+    }
   });
   function dev(id) {
     if (id === "show-solution") {

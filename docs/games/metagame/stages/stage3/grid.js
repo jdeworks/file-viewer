@@ -136,29 +136,60 @@ export function buildGrid(puzzle, handlers) {
     }
   }
 
-  // Solve reveal (UX audit #4) — the genre payoff. One cascade wave over the filled cells (the picture
-  // the snapshot just resolved into) + an accent flash, then `done()`. reduced-motion: instant (no
-  // wave, `done()` fires immediately). Purely visual; the state has already advanced before this runs.
-  function celebrate(done) {
+  // Solve reveal (UX audit #4) — the genre payoff. The solved board + its pictogram LINGER ~1.5s so the
+  // player actually reads the picture, with a small "fragment: NAME" caption pinned near the board; then
+  // `done()` draws the next snapshot. A click/tap/keypress anywhere skips the linger immediately. Motion:
+  // a diagonal cascade wave + accent flash sweep — SUPPRESSED under reduced-motion, but the linger (and
+  // the caption, and skip-to-continue) are KEPT (they're readability, not decoration). Purely visual: the
+  // state has already advanced synchronously before this runs (the deterministic hook never calls it).
+  function celebrate(done, opts = {}) {
+    const fragmentName = opts.fragmentName || null;
     const reduce = typeof window !== "undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce) { done?.(); return () => {}; }
-    const maxDiag = Math.max(1, width + height - 2);
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const cell = cells[y][x];
-        if (cell.state !== FILLED && cell.state !== COLOR_B) continue;
-        cell.el.style.setProperty("--s3-reveal-delay", `${Math.round(((x + y) / maxDiag) * 260)}ms`);
-        cell.el.classList.add("s3-reveal");
-      }
+    // Fragment caption — pinned near the board (the grid host is position:relative).
+    let caption = null;
+    if (fragmentName) {
+      const host = (wrap.closest && wrap.closest(".s3-grid-host")) || wrap.parentElement || wrap;
+      caption = document.createElement("div");
+      caption.className = "s3-reveal-caption";
+      const strong = document.createElement("strong");
+      strong.textContent = String(fragmentName);
+      caption.append(document.createTextNode("fragment: "), strong);
+      host.append(caption);
     }
-    wrap.classList.add("s3-solved-flash");
-    const timer = setTimeout(() => {
+    if (!reduce) {
+      const maxDiag = Math.max(1, width + height - 2);
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const cell = cells[y][x];
+          if (cell.state !== FILLED && cell.state !== COLOR_B) continue;
+          cell.el.style.setProperty("--s3-reveal-delay", `${Math.round(((x + y) / maxDiag) * 260)}ms`);
+          cell.el.classList.add("s3-reveal");
+        }
+      }
+      wrap.classList.add("s3-solved-flash");
+    }
+    let finished = false;
+    const teardown = (fire) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      document.removeEventListener("pointerdown", onSkip, true);
+      document.removeEventListener("keydown", onSkip, true);
       for (const row of cells) for (const c of row) { c.el.classList.remove("s3-reveal"); c.el.style.removeProperty("--s3-reveal-delay"); }
       wrap.classList.remove("s3-solved-flash");
-      done?.();
-    }, 440);
-    return () => clearTimeout(timer);
+      caption?.remove();
+      if (fire) done?.();
+    };
+    const onSkip = () => teardown(true);
+    const timer = setTimeout(() => teardown(true), 1500);
+    // Arm skip on the NEXT tick so the very click/keypress that solved the board can't instantly skip.
+    setTimeout(() => {
+      if (finished) return;
+      document.addEventListener("pointerdown", onSkip, true);
+      document.addEventListener("keydown", onSkip, true);
+    }, 0);
+    return () => teardown(false); // caller-cancel (e.g. teardown): abort WITHOUT drawing the next board
   }
 
   return { el: wrap, update, flashWrong, celebrate, dims: { maxRow, maxCol, width, height } };
