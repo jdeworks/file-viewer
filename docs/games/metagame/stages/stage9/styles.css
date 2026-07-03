@@ -1,8 +1,12 @@
 .stage9-observer-state {
-  min-height: 100%;
-  padding: 16px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
   color: #fff;
   background: #000;
+  overflow: hidden;
   font: 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
@@ -10,16 +14,26 @@
 .s9-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 10px 14px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .s9-layout {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-areas:
+    "arena actions"
+    "arena side";
+  grid-template-rows: auto 1fr;
+  gap: 12px 16px;
 }
+
+.s9-arena-wrap { grid-area: arena; position: relative; display: flex; }
+.s9-actions { grid-area: actions; display: flex; flex-direction: column; gap: 8px; }
+.s9-side { grid-area: side; min-height: 0; overflow: auto; }
 
 .s9-arena,
 .s9-side,
@@ -30,13 +44,69 @@
 }
 
 .s9-arena {
-  min-height: 260px;
+  flex: 1;
   display: grid;
   place-items: center;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.05;
   transition: border-color 90ms ease-out, box-shadow 90ms ease-out, color 90ms ease-out;
 }
+
+/* #2 — fixed crossing marker (▼) pinned above the top of the ring; brightens as the gap approaches. */
+.s9-marker {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #5dcaa5;
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 3;
+  text-shadow: 0 0 2px #000;
+}
+.s9-marker--ready { color: #8ef7d1; text-shadow: 0 0 10px rgba(142, 247, 209, 0.9); }
+
+/* #4 — Cadence beat dot, mirrors the top-pass so the metronome is visible on rhythm levels. */
+.s9-beat {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #8ef7d1;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* #4/#6 — on-screen Cadence streak chip (hits N/M). */
+.s9-streak {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 8px;
+  border: 1px solid #5dcaa5;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #8ef7d1;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 3;
+}
+
+/* #6 — verdict readout under the arena (early/late ±ms on a miss, perfect/crossed on a hit). */
+.s9-readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  text-align: center;
+  font-size: 12px;
+  min-height: 16px;
+}
+.s9-readout--perfect { color: #8ef7d1; }
+.s9-readout--hit { color: #5dcaa5; }
+.s9-readout--miss { color: #f5a623; }
 
 /* Point-of-action CROSS feedback (toggled ~360ms by renderer.js, then fades back). */
 .s9-arena--hit {
@@ -55,14 +125,44 @@
   box-shadow: 0 0 16px rgba(192, 57, 43, 0.65);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .s9-arena { transition: none; }
+/* #4 — unstable (live-random) levels get a restless orange static border, reduced-motion-safe below. */
+.s9-arena--unstable { border-color: #f5a623; animation: s9-jitter 0.42s steps(2) infinite; }
+@keyframes s9-jitter {
+  0% { box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.5); }
+  50% { box-shadow: 0 0 6px 1px rgba(245, 166, 35, 0.35); }
+  100% { box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.6); }
 }
 
-.s9-side button,
-.s9-controls button {
-  margin: 0 8px 8px 0;
+@media (prefers-reduced-motion: reduce) {
+  .s9-arena { transition: none; }
+  .s9-arena--unstable { animation: none; border-style: dashed; }
 }
+
+/* #1 — big CROSS / OBSERVE controls with keyboard hints (hints hidden on coarse pointers). */
+.s9-cross,
+.s9-observe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.s9-cross { font-size: 18px; }
+.s9-kbd {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+@media (pointer: coarse) { .s9-kbd { display: none; } }
+
+.s9-side button,
+.s9-controls button { margin: 0 8px 8px 0; }
 
 .s9-side pre {
   white-space: pre-wrap;
@@ -74,7 +174,8 @@
 .s9-aids {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  margin-bottom: 8px;
 }
 
 .s9-aids strong {
@@ -82,34 +183,88 @@
   color: #5dcaa5;
 }
 
-.s9-aids button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+/* #5 — aid CARDS: name + cost + a visible one-line description, no tooltips. */
+.s9-aid-card {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 6px 8px;
+  font: inherit;
+  color: #fff;
+  background: #000;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
 }
-
-.s9-aids button.s9-aid-owned {
-  border-color: #5dcaa5;
-  color: #5dcaa5;
-}
-
-.s9-log {
-  min-height: 7em;
-  padding-left: 24px;
-}
-
-/* Online-unstable levels (the live-random back third): flag the seed field so the rule change
-   is visible before the first wasted CROSS, not buried in the log. */
-.s9-hud--unstable [data-field="seed"] {
+.s9-aid-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.s9-aid-name { font-weight: 700; }
+.s9-aid-cost { font-size: 11px; color: #5dcaa5; }
+.s9-aid-cost::before { content: "spend "; opacity: 0.6; }
+.s9-aid-desc { font-size: 11px; opacity: 0.75; }
+.s9-aid-tag {
+  justify-self: start;
+  font-size: 10px;
   color: #f5a623;
-  font-weight: bold;
+  border: 1px solid #f5a623;
+  border-radius: 3px;
+  padding: 0 4px;
 }
+.s9-aid-card:disabled { opacity: 0.4; cursor: not-allowed; }
+.s9-aid-card.s9-aid-owned { border-color: #5dcaa5; color: #5dcaa5; }
+
+/* #7 — boss panel: full by default; collapsed to a one-line locked chip until level 13. */
+.s9-boss { margin-top: 10px; }
+.s9-boss-chip { color: #888; font-size: 12px; letter-spacing: 0.04em; }
+.s9-boss--chip { padding: 6px 12px; }
+.s9-boss--chip .s9-boss-full { display: none; }
+.s9-boss:not(.s9-boss--chip) .s9-boss-chip { display: none; }
+
+/* M3 — seed chip: loud orange only while live-random. */
+.s9-seed b { color: #f5a623; font-weight: 700; }
+.s9-hud--unstable .s9-seed b { text-shadow: 0 0 6px rgba(245, 166, 35, 0.6); }
+
+/* #8 — log becomes a 2-line ticker + a 'full log' button (full history in the shared modal). */
+.s9-log-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 8px; }
+.s9-log {
+  flex: 1;
+  margin: 0;
+  padding-left: 20px;
+  max-height: 3em;
+  overflow: hidden;
+  opacity: 0.85;
+  font-size: 12px;
+}
+.s9-log-more {
+  flex: none;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #000;
+  color: #5dcaa5;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.s9-log-full { margin: 0; padding-left: 20px; line-height: 1.6; }
 
 @media (max-width: 760px) {
+  /* Phone (#8): drop the fixed-height desktop contract and let the shell panel scroll — otherwise the
+     flex:1 layout squeezes its grid and the boss/log rows overlap the actions. Order: arena FIRST, then
+     the CROSS zone, then the aid shop / notes. */
+  .stage9-observer-state { height: auto; overflow: visible; }
   .s9-layout {
+    flex: none;
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "arena"
+      "actions"
+      "side";
+    grid-template-rows: auto auto auto;
   }
-  .s9-side button,
-  .s9-controls button {
-    min-height: 40px;
-  }
+  .s9-arena-wrap { min-height: 360px; }
+  .s9-actions { flex-direction: row; }
+  .s9-cross { flex: 2; }
+  .s9-observe { flex: 1; }
+  .s9-side { overflow: visible; }
+  .s9-controls button { min-height: 40px; }
 }

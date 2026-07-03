@@ -9,6 +9,7 @@ export function defaultState() {
     offlineMode: false,
     clarity: 0,
     aids: defaultAids(),
+    aidsRevealed: false,
     currentLevel: 1,
     lockedSeedSamples: [],
     log: [
@@ -42,6 +43,7 @@ export function normalizeState(state) {
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
   target.aids = normalizeAids(target.aids);
+  target.aidsRevealed = Boolean(target.aidsRevealed);
   const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
   target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;

@@ -4,8 +4,8 @@
 
 import { ringChar } from "./ring.js"; // shared glyph picker — kept single-source so the two can't drift
 
-const RING_W = 25;
-const RING_H = 13;
+const RING_W = 33; // densified raster (UX audit #3) — must match ring.js
+const RING_H = 17;
 
 // Two concentric rings: outer at full radius, inner at ~55% radius, each with its own gap. Used by the
 // dual mode where BOTH gaps must face the top at once. opts: { gapWidth, darkZone }.
@@ -14,10 +14,9 @@ export function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
   const grid = blankGrid();
   const cx = (RING_W - 1) / 2;
   const cy = (RING_H - 1) / 2;
-  // outer ring
-  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "─", "│", darkZone);
-  // inner ring (scaled radius)
-  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "=", "‖", darkZone);
+  // outer ring — solid █; inner ring — lighter ▓ so the two rotors stay distinguishable (UX audit #3)
+  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "█", darkZone);
+  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "▓", darkZone);
   return gridToString(grid);
 }
 
@@ -34,7 +33,7 @@ export function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
     if (offGrid(x, y)) continue;
     const inGap = inArc(a, gapAngleDeg, gapWidth);
     let ch = inGap ? " " : ringChar(a);
-    if (inArc(a, eyeAngleDeg, blind)) ch = inGap ? "▒" : "▓"; // eye beam sweep (gap-under-beam = ▒)
+    if (inArc(a, eyeAngleDeg, blind)) ch = inGap ? "░" : "▒"; // eye beam sweep (lighter than the solid ring; gap-under-beam = ░)
     grid[y][x] = ch;
   }
   const ep = project(cx, cy, cx, cy, eyeAngleDeg);
@@ -62,11 +61,11 @@ export function renderMultiGap(gapAngles = [], opts = {}) {
 
 // ── internals ──────────────────────────────────────────────────────────────────────────────────────
 
-function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, hChar, vChar, darkZone) {
+function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, glyph, darkZone) {
   for (let a = 0; a < 360; a += 3) {
     const { x, y } = project(cx, cy, rx, ry, a);
     if (offGrid(x, y)) continue;
-    let ch = (inArc(a, 0, 60) || inArc(a, 180, 60)) ? hChar : (inArc(a, 90, 60) || inArc(a, 270, 60)) ? vChar : "+";
+    let ch = glyph;
     if (inArc(a, gapAngle, gapWidth)) ch = " ";
     if (darkZone && inZone(a, darkZone)) ch = "█";
     grid[y][x] = ch;

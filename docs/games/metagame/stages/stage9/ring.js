@@ -4,8 +4,11 @@
 
 import { makeRng } from "./rng.js";
 
-const RING_W = 25;
-const RING_H = 13;
+// Raster densified to 33×17 (UX audit #3): the higher arc resolution + solid block glyphs make the
+// wheel read as one continuous rotor and the gap POP at speed, instead of the ragged dashed segments
+// the old 25×13 `─│+` projection left on the diagonals.
+const RING_W = 33;
+const RING_H = 17;
 const DEFAULT_GAP_DEG = 20;
 
 // Current gap angle [0,360): a fixed per-seed base angle plus rotation over elapsed time. Deterministic.
@@ -42,14 +45,15 @@ export function renderRingHidden(opts = {}) {
 
 // ── internals ────────────────────────────────────────────────────────────────────────────────────
 
-// Shared ring glyph picker (also imported by rings.js so the two renderers can't drift). The leading
-// mod360 is a defensive normalization; since every caller iterates a ∈ [0,360) and inArc/angularDist
-// already normalize via %360, it never changes output — it only makes the helper safe for any input.
+// Shared ring glyph picker (also imported by rings.js so the two renderers can't drift). Block glyphs
+// (UX audit #3): the cardinal arcs draw as full blocks █ and the diagonals as a slightly lighter ▓, so
+// the whole ring reads solid (no ragged `+` corners) while the gap — plain spaces — pops. The leading
+// mod360 is a defensive normalization; every caller iterates a ∈ [0,360) so it never changes output,
+// it only makes the helper safe for any input.
 export function ringChar(a) {
   const d = mod360(a);
-  if (inArc(d, 0, 60) || inArc(d, 180, 60)) return "─"; // top/bottom arcs
-  if (inArc(d, 90, 60) || inArc(d, 270, 60)) return "│"; // side arcs
-  return "+";
+  if (inArc(d, 0, 60) || inArc(d, 180, 60) || inArc(d, 90, 60) || inArc(d, 270, 60)) return "█"; // cardinal arcs
+  return "▓"; // diagonals (still solid-reading)
 }
 
 function mod360(a) { return ((a % 360) + 360) % 360; }

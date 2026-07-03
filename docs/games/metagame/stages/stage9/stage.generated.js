@@ -72,8 +72,8 @@ function makeRng(seed) {
 }
 
 // ../../docs/games/metagame/stages/stage9/ring.js
-var RING_W = 25;
-var RING_H = 13;
+var RING_W = 33;
+var RING_H = 17;
 var DEFAULT_GAP_DEG = 20;
 function ringAngle(seed, elapsedMs, rotSpeedDegPerSec = 30) {
   const base = makeRng(seed).float() * 360;
@@ -99,9 +99,8 @@ function renderRing(gapAngleDeg, opts = {}) {
 }
 function ringChar(a) {
   const d = mod360(a);
-  if (inArc(d, 0, 60) || inArc(d, 180, 60)) return "─";
-  if (inArc(d, 90, 60) || inArc(d, 270, 60)) return "│";
-  return "+";
+  if (inArc(d, 0, 60) || inArc(d, 180, 60) || inArc(d, 90, 60) || inArc(d, 270, 60)) return "█";
+  return "▓";
 }
 function mod360(a) {
   return (a % 360 + 360) % 360;
@@ -120,15 +119,15 @@ function inZone(a, zone) {
 }
 
 // ../../docs/games/metagame/stages/stage9/rings.js
-var RING_W2 = 25;
-var RING_H2 = 13;
+var RING_W2 = 33;
+var RING_H2 = 17;
 function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
   const { gapWidth = 22, darkZone = null } = opts;
   const grid = blankGrid();
   const cx = (RING_W2 - 1) / 2;
   const cy = (RING_H2 - 1) / 2;
-  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "─", "│", darkZone);
-  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "=", "‖", darkZone);
+  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "█", darkZone);
+  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "▓", darkZone);
   return gridToString(grid);
 }
 function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
@@ -141,7 +140,7 @@ function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
     if (offGrid(x, y)) continue;
     const inGap = inArc2(a, gapAngleDeg, gapWidth);
     let ch = inGap ? " " : ringChar(a);
-    if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "▒" : "▓";
+    if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "░" : "▒";
     grid[y][x] = ch;
   }
   const ep = project(cx, cy, cx, cy, eyeAngleDeg);
@@ -163,11 +162,11 @@ function renderMultiGap(gapAngles = [], opts = {}) {
   }
   return gridToString(grid);
 }
-function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, hChar, vChar, darkZone) {
+function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, glyph, darkZone) {
   for (let a = 0; a < 360; a += 3) {
     const { x, y } = project(cx, cy, rx, ry, a);
     if (offGrid(x, y)) continue;
-    let ch = inArc2(a, 0, 60) || inArc2(a, 180, 60) ? hChar : inArc2(a, 90, 60) || inArc2(a, 270, 60) ? vChar : "+";
+    let ch = glyph;
     if (inArc2(a, gapAngle, gapWidth)) ch = " ";
     if (darkZone && inZone2(a, darkZone)) ch = "█";
     grid[y][x] = ch;
@@ -473,21 +472,32 @@ var MOVEMENTS = [
   { id: 10, name: "Observer", verb: "the full effect (offline)", levels: [16] }
 ];
 var LEVEL_TABLE = {
+  // Signal (simple) — gentlest intro, then L2 escalates SPEED only.
   1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
-  2: { mode: "simple", speed: 40, speedVar: 8, tolerance: 36, display: "open" },
-  3: { mode: "oscillating", oscBase: 36, oscAmp: 16, oscPeriod: 4200, tolerance: 34, display: "open" },
-  4: { mode: "oscillating", oscBase: 46, oscAmp: 24, oscPeriod: 3400, tolerance: 30, display: "open" },
-  5: { mode: "ghostecho", speed: 34, speedVar: 0, tolerance: 28, display: "open" },
-  6: { mode: "ghostecho", speed: 42, speedVar: 6, tolerance: 24, display: "open" },
-  7: { mode: "rhythm", speed: 34, speedVar: 0, chain: 3, tolerance: 30, display: "open" },
-  8: { mode: "rhythm", speed: 44, speedVar: 0, chain: 4, tolerance: 26, display: "open" },
-  9: { mode: "dual", speedInner: 44, speedOuter: 30, tolerance: 32, display: "dual" },
-  10: { mode: "dual", speedInner: 56, speedOuter: 36, tolerance: 28, display: "dual" },
-  11: { mode: "stealth", speed: 40, speedVar: 6, eyeSpeed: 24, blind: 64, tolerance: 26, display: "open" },
-  12: { mode: "reversing", speed: 62, speedVar: 10, tolerance: 26, display: "open", onlineUnstable: true },
-  13: { mode: "multigap", speed: 52, speedVar: 8, gaps: 3, tolerance: 24, display: "open", onlineUnstable: true },
-  14: { mode: "multigap", speed: 60, speedVar: 10, gaps: 4, tolerance: 20, display: "open", onlineUnstable: true },
-  15: { mode: "darkzone", speed: 50, speedVar: 8, tolerance: 22, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  2: { mode: "simple", speed: 42, speedVar: 0, tolerance: 42, display: "open" },
+  // Drift (oscillating) — gentle intro (slow base, small swing, wide window), then L4 escalates oscAmp only.
+  3: { mode: "oscillating", oscBase: 32, oscAmp: 12, oscPeriod: 4600, tolerance: 40, display: "open" },
+  4: { mode: "oscillating", oscBase: 32, oscAmp: 22, oscPeriod: 4600, tolerance: 40, display: "open" },
+  // Echo (ghostecho) — gentle intro, then L6 tightens TOLERANCE only (the ghosts help you close it).
+  5: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 38, display: "open" },
+  6: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 28, display: "open" },
+  // Cadence (rhythm) — gentle intro (chain 3), then L8 lengthens CHAIN only.
+  7: { mode: "rhythm", speed: 30, speedVar: 0, chain: 3, tolerance: 36, display: "open" },
+  8: { mode: "rhythm", speed: 30, speedVar: 0, chain: 4, tolerance: 36, display: "open" },
+  // Interference (dual) — gentle intro, then L10 speeds the INNER ring only.
+  9: { mode: "dual", speedInner: 40, speedOuter: 28, tolerance: 36, display: "dual" },
+  10: { mode: "dual", speedInner: 52, speedOuter: 28, tolerance: 36, display: "dual" },
+  // Surveillance (stealth) — single gentle level (last learnable-online).
+  11: { mode: "stealth", speed: 34, speedVar: 0, eyeSpeed: 22, blind: 60, tolerance: 34, display: "open" },
+  // Back third (onlineUnstable): each is a single gentle archetype intro; the difficulty here is the
+  // un-cheat, not the tuning. Reversal.
+  12: { mode: "reversing", speed: 48, speedVar: 0, tolerance: 32, display: "open", onlineUnstable: true },
+  // Decoys (multigap) — gentle intro (3 gaps), then L14 adds one GAP only.
+  13: { mode: "multigap", speed: 44, speedVar: 0, gaps: 3, tolerance: 30, display: "open", onlineUnstable: true },
+  14: { mode: "multigap", speed: 44, speedVar: 0, gaps: 4, tolerance: 30, display: "open", onlineUnstable: true },
+  // Blackout (darkzone) — single gentle level.
+  15: { mode: "darkzone", speed: 42, speedVar: 0, tolerance: 28, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  // Observer (boss) — the final movement, tightest window.
   16: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
 };
 function movementForLevel(level) {
@@ -531,9 +541,19 @@ function solveMoment(seed, level) {
   const cfg = levelConfig(level);
   return getMode(cfg.mode).solveMoment(cfg, seed);
 }
+function missDelta({ seed, elapsedMs, level }) {
+  const r = crossAttempt({ seed, elapsedMs, level });
+  const speed = Math.abs(rotSpeedFor(seed, level)) || 30;
+  const a = Number.isFinite(r.angle) ? r.angle : r.distance;
+  const signed = (a % 360 + 540) % 360 - 180;
+  return { deltaMs: Math.round(Math.abs(signed) / speed * 1e3), dir: signed >= 0 ? "late" : "early", offsetDeg: signed };
+}
 function renderLevel(seed, level, elapsedMs, ctx = {}) {
   const cfg = levelConfig(level);
   return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
+}
+function rotSpeedFor(seed, level) {
+  return ringSpeed(levelConfig(level), seed);
 }
 function sublevelSeed(level) {
   return (Number(level) || 1) * 31 + 7;
@@ -698,7 +718,7 @@ function startLoop(onFrame) {
 var AIDS = [
   { id: "stabilizer", label: "Stabilizer Lens", cost: 20, desc: "+60% tolerance on your next CROSS (one charge)." },
   { id: "tachometer", label: "Tachometer", cost: 30, desc: "permanent numeric readout: gap angle + speed." },
-  { id: "peek", label: "Single-Frame", cost: 15, desc: "offline only: reveal the gap's angle right now." }
+  { id: "peek", label: "Single-Frame", cost: 15, desc: "reveal the gap's angle right now.", offlineOnly: true }
 ];
 var STABILIZER_TOLERANCE_MULT = 1.6;
 function aidById(id) {
@@ -725,6 +745,14 @@ function buyAid(state, id, { offline = false } = {}) {
   if (id === "tachometer") state.aids.tachometer = true;
   return { ok: true, aid };
 }
+function shouldRevealAids(state) {
+  if (!state) return false;
+  const aids = normalizeAids(state.aids);
+  return Boolean(state.aidsRevealed) || Number(state.clarity || 0) > 0 || aids.stabilizer > 0 || aids.tachometer;
+}
+function shouldRevealPeek(offlineUnlocked) {
+  return Boolean(offlineUnlocked);
+}
 function consumeStabilizer(state) {
   state.aids = normalizeAids(state.aids);
   if (state.aids.stabilizer > 0) {
@@ -732,6 +760,73 @@ function consumeStabilizer(state) {
     return STABILIZER_TOLERANCE_MULT;
   }
   return 1;
+}
+
+// ../../docs/games/metagame/stages/stage9/overlay.js
+function markerIntensity(distance, readyDeg = 30) {
+  const d = Number(distance);
+  if (!Number.isFinite(d) || d >= readyDeg || readyDeg <= 0) return 0;
+  return 1 - d / readyDeg;
+}
+
+// ../../docs/games/metagame/stages/stage9/markup.js
+function aidCard(a) {
+  return `
+    <button type="button" class="s9-aid-card" data-action="aid" data-aid="${a.id}" data-field="aid-${a.id}">
+      <span class="s9-aid-head"><span class="s9-aid-name">${a.label}</span><span class="s9-aid-cost">${a.cost}</span></span>
+      <span class="s9-aid-desc">${a.desc}</span>
+      ${a.offlineOnly ? '<span class="s9-aid-tag">offline only</span>' : ""}
+    </button>`;
+}
+function stage9Markup(AIDS2, BOSS_LEVEL2) {
+  return `
+    <header class="s9-hud">
+      <strong>OBSERVER STATE</strong>
+      <span>level <b data-field="level"></b>/${BOSS_LEVEL2}</span>
+      <span>movement <b data-field="movement"></b></span>
+      <span>clarity <b data-field="clarity"></b></span>
+      <span data-field="tachWrap" hidden>tach <b data-field="tach"></b></span>
+      <span class="s9-seed" data-field="seedWrap" hidden><b data-field="seed"></b></span>
+    </header>
+    <div class="s9-layout">
+      <div class="s9-arena-wrap">
+        <div class="s9-marker" data-field="marker" aria-hidden="true">&#9660;</div>
+        <pre class="s9-arena" data-field="arena" tabindex="0" role="button" aria-label="observer ring — tap or press Space to CROSS"></pre>
+        <span class="s9-beat" data-field="beat" hidden aria-hidden="true"></span>
+        <span class="s9-streak" data-field="streak" hidden></span>
+        <div class="s9-readout" data-field="readout" aria-live="polite"></div>
+      </div>
+      <div class="s9-actions">
+        <button type="button" class="s9-cross" data-action="cross">CROSS<kbd class="s9-kbd">Space</kbd></button>
+        <button type="button" class="s9-observe" data-action="observe"><span data-field="observeLabel">OBSERVE</span><kbd class="s9-kbd">R</kbd></button>
+      </div>
+      <aside class="s9-side">
+        <div class="s9-aids" data-field="aids" hidden>
+          <strong>calibration (spend clarity)</strong>
+          ${AIDS2.map(aidCard).join("")}
+        </div>
+        <hr>
+        <button type="button" data-action="notes">open service-worker-notes.txt</button>
+        <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
+        <pre data-field="notes" hidden></pre>
+      </aside>
+    </div>
+    <div class="s9-boss" data-field="bossPanel">
+      <div class="s9-boss-chip" data-field="bossChip"></div>
+      <div class="s9-boss-full">
+        <strong>THE OBSERVER EFFECT (FULL)</strong>
+        <div data-field="boss"></div>
+        <div data-field="hint"></div>
+      </div>
+    </div>
+    <div class="s9-log-row">
+      <ol class="s9-log" data-field="log"></ol>
+      <button type="button" class="s9-log-more" data-action="log">full log</button>
+    </div>
+    <div class="s9-controls">
+      <button type="button" data-action="bts" hidden>open observer_state.bts</button>
+    </div>
+  `;
 }
 
 // ../../docs/games/metagame/stages/stage9/testhook.js
@@ -841,50 +936,22 @@ function applyDevControl(id, state, { seed = 0 } = {}) {
 }
 
 // ../../docs/games/metagame/stages/stage9/renderer.js
+import { banner, floatNum } from "../../shared/feedback.js";
+import { openModal } from "../../shared/modal.js";
+var MARKER_READY_DEG = 30;
+var BOSS_REVEAL_LEVEL = 13;
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage9-observer-state";
-  root.innerHTML = `
-    <header class="s9-hud">
-      <strong>OBSERVER STATE</strong>
-      <span>level <b data-field="level"></b>/${BOSS_LEVEL}</span>
-      <span>movement <b data-field="movement"></b></span>
-      <span>clarity <b data-field="clarity"></b></span>
-      <span data-field="tachWrap" hidden>tach <b data-field="tach"></b></span>
-      <span>seed <b data-field="seed"></b></span>
-    </header>
-    <div class="s9-layout">
-      <pre class="s9-arena" data-field="arena" aria-label="observer ring arena"></pre>
-      <aside class="s9-side">
-        <button type="button" data-action="observe">OBSERVE (reset rotation)</button>
-        <button type="button" data-action="cross">CROSS</button>
-        <hr>
-        <div class="s9-aids">
-          <strong>calibration (spend clarity)</strong>
-          ${AIDS.map((a) => `<button type="button" data-action="aid" data-aid="${a.id}" title="${a.desc}">${a.label} (${a.cost})</button>`).join("")}
-        </div>
-        <hr>
-        <button type="button" data-action="notes">open service-worker-notes.txt</button>
-        <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
-        <pre data-field="notes" hidden></pre>
-      </aside>
-    </div>
-    <div class="s9-boss">
-      <strong>THE OBSERVER EFFECT (FULL)</strong>
-      <div data-field="boss"></div>
-      <div data-field="hint"></div>
-    </div>
-    <ol class="s9-log"></ol>
-    <div class="s9-controls">
-      <button type="button" data-action="bts" hidden>open observer_state.bts</button>
-    </div>
-  `;
+  root.innerHTML = stage9Markup(AIDS, BOSS_LEVEL);
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const log = root.querySelector(".s9-log");
+  const log = fields.log;
   const hud = root.querySelector(".s9-hud");
+  const arenaWrap = root.querySelector(".s9-arena-wrap");
   const FLASH_CLASSES = ["s9-arena--perfect", "s9-arena--hit", "s9-arena--miss"];
   let flashTimer = null;
+  let bossRevealed = state.currentLevel >= BOSS_REVEAL_LEVEL;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
@@ -908,17 +975,25 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     elapsedMs = 0;
     rhythmChain = 0;
     attempts = [];
+    setReadout("", "");
     const cfg = levelConfig(state.currentLevel);
     if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
       liveSeed = getBossSeed({ state, actions });
     }
   }
   function advanceFrom(level) {
+    const prevMode = levelConfig(level).mode;
     state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
     elapsedMs = 0;
     liveSeed = null;
     rhythmChain = 0;
     attempts = [];
+    setReadout("", "");
+    const cfg = levelConfig(state.currentLevel);
+    if (cfg.mode !== prevMode && !state.boss.defeated) {
+      const mv = movementForLevel(state.currentLevel);
+      banner(arenaWrap, `${mv.name.toUpperCase()} — ${mv.verb}`);
+    }
     if (state.currentLevel >= BOSS_LEVEL) pushLog3(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
   }
   function crossSublevel() {
@@ -971,8 +1046,28 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   }
   function doCross() {
     if (state.boss.defeated) return;
-    const outcome = state.currentLevel >= BOSS_LEVEL ? challengeBoss() : crossSublevel();
+    const level = state.currentLevel;
+    const seed = activeSeed();
+    const pressMs = elapsedMs;
+    const clarityBefore = Number(state.clarity || 0);
+    const outcome = level >= BOSS_LEVEL ? challengeBoss() : crossSublevel();
     flashArena(outcome);
+    updateReadout(outcome, seed, level, pressMs);
+    const gained = Number(state.clarity || 0) - clarityBefore;
+    if (gained > 0) floatNum(arenaWrap, `+${gained} clarity`, "good");
+  }
+  function updateReadout(outcome, seed, level, pressMs) {
+    const cfg = levelConfig(level);
+    const unstableLocked = (cfg.onlineUnstable || level >= BOSS_LEVEL) && !offlineUnlocked();
+    if (outcome === "perfect") return setReadout("perfect — dead centre", "perfect");
+    if (outcome === "hit") return setReadout("crossed", "hit");
+    if (unstableLocked) return setReadout("live-random — nothing to time", "miss");
+    const { deltaMs, dir } = missDelta({ seed, elapsedMs: pressMs, level });
+    setReadout(`${dir} by ${deltaMs}ms`, "miss");
+  }
+  function setReadout(text, kind) {
+    fields.readout.textContent = text;
+    fields.readout.className = "s9-readout" + (text ? ` s9-readout--${kind}` : "");
   }
   function flashArena(outcome) {
     if (!outcome) return;
@@ -988,29 +1083,54 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   }
   root.addEventListener("click", (event) => {
     const button = event.target.closest("button[data-action]");
-    if (!button) return;
-    switch (button.dataset.action) {
-      case "observe":
-        reobserve();
-        break;
-      case "cross":
-        doCross();
-        break;
-      case "aid":
-        buyAidAction(button.dataset.aid);
-        break;
-      case "notes":
-        openNotes();
-        break;
-      case "offline":
-        activateOfflineMode({ state, actions, achievements, bell });
-        break;
-      case "bts":
-        openBts({ bts, viewer });
-        break;
+    if (button) {
+      switch (button.dataset.action) {
+        case "observe":
+          reobserve();
+          break;
+        case "cross":
+          doCross();
+          break;
+        case "aid":
+          buyAidAction(button.dataset.aid);
+          break;
+        case "notes":
+          openNotes();
+          break;
+        case "offline":
+          activateOfflineMode({ state, actions, achievements, bell });
+          break;
+        case "log":
+          openLog();
+          break;
+        case "bts":
+          openBts({ bts, viewer });
+          break;
+      }
+      persistAndPaint();
+      return;
     }
-    persistAndPaint();
+    if (event.target.closest(".s9-arena")) {
+      doCross();
+      persistAndPaint();
+    }
   });
+  function onKey(event) {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+    if (!root.isConnected || document.querySelector(".mg-modal-backdrop")) return;
+    const t = event.target;
+    if (t && typeof t.closest === "function" && t.closest("button, input, textarea, select, [contenteditable]")) return;
+    if (event.key === " " || event.key === "Enter") {
+      event.preventDefault();
+      doCross();
+      persistAndPaint();
+    } else if (event.key === "r" || event.key === "R") {
+      event.preventDefault();
+      reobserve();
+      persistAndPaint();
+    }
+  }
+  document.addEventListener("keydown", onKey);
   function buyAidAction(id) {
     const offline = offlineUnlocked();
     const res = buyAid(state, id, { offline });
@@ -1055,6 +1175,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     destroy() {
       loop.stop();
       if (flashTimer) clearTimeout(flashTimer);
+      document.removeEventListener("keydown", onKey);
       uninstallHook();
       root.remove();
     }
@@ -1067,42 +1188,88 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     if (viewer && typeof viewer.openFile === "function") viewer.openFile(NOTES_PATH, opts);
     else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(NOTES_PATH, opts);
   }
+  function openLog() {
+    const list = document.createElement("ol");
+    list.className = "s9-log-full";
+    for (const line of state.log || []) {
+      const li = document.createElement("li");
+      li.textContent = line;
+      list.appendChild(li);
+    }
+    openModal({ title: "observer log", contentEl: list, className: "s9-log-modal" });
+  }
   function pushLog3(line) {
     state.log = [...state.log || [], line].slice(-6);
   }
   function paintArena() {
     const seed = activeSeed();
     const level = state.currentLevel;
+    const cfg = levelConfig(level);
     const ctx = {};
-    if (levelConfig(level).mode === "ghostecho") {
+    if (cfg.mode === "ghostecho") {
       ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
     }
     fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
+    paintOverlays(seed, level, cfg);
+  }
+  function paintOverlays(seed, level, cfg) {
+    const r = crossAttempt({ seed, elapsedMs, level });
+    const intensity = markerIntensity(r.distance, MARKER_READY_DEG);
+    fields.marker.classList.toggle("s9-marker--ready", intensity > 1e-3);
+    fields.marker.style.opacity = (0.35 + 0.65 * intensity).toFixed(3);
+    const isRhythm = cfg.mode === "rhythm";
+    fields.beat.hidden = !isRhythm;
+    if (isRhythm) {
+      fields.beat.style.opacity = (0.3 + 0.7 * intensity).toFixed(3);
+      fields.beat.style.transform = `translateX(-50%) scale(${(0.85 + 0.5 * intensity).toFixed(3)})`;
+    }
   }
   function repaint() {
     const lock = getBossLockState({ actions, state });
     const movement = movementForLevel(state.currentLevel);
+    const cfg = levelConfig(state.currentLevel);
+    const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
     fields.level.textContent = String(state.currentLevel);
     fields.movement.textContent = `${movement.name} — ${movement.verb}`;
     fields.clarity.textContent = String(state.clarity);
-    const cfg = levelConfig(state.currentLevel);
-    const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
-    fields.seed.textContent = unstable ? lock.unlocked ? "0 (fixed cache)" : "live-random" : "stable";
+    if (!unstable) fields.seedWrap.hidden = true;
+    else {
+      fields.seedWrap.hidden = false;
+      fields.seed.textContent = lock.unlocked ? "seed 0 · fixed cache" : "live-random — unlearnable online";
+    }
     hud.classList.toggle("s9-hud--unstable", unstable && !lock.unlocked);
+    fields.arena.classList.toggle("s9-arena--unstable", unstable && !lock.unlocked);
+    fields.observeLabel.textContent = unstable ? "OBSERVE (reseeds online)" : "OBSERVE (reset rotation)";
+    paintBossPanel(lock, unstable, cfg);
+    paintStreak(cfg);
     paintTach(cfg);
     paintAids();
     paintArena();
-    if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
-    else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
-    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
     fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : modeHint(cfg);
     root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
-    log.replaceChildren(...state.log.slice(-5).map((line) => {
+    log.replaceChildren(...(state.log || []).slice(-2).map((line) => {
       const li = document.createElement("li");
       li.textContent = line;
       return li;
     }));
+  }
+  function paintBossPanel(lock, unstable, cfg) {
+    const reveal = state.currentLevel >= BOSS_REVEAL_LEVEL || state.boss.defeated;
+    fields.bossPanel.classList.toggle("s9-boss--chip", !reveal);
+    fields.bossChip.textContent = `OBSERVER — level ${BOSS_LEVEL} · ${state.boss.defeated ? "defeated" : "locked"}`;
+    if (reveal && !bossRevealed) {
+      bossRevealed = true;
+      banner(arenaWrap, "THE OBSERVER STIRS");
+    }
+    if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
+    else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
+    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
+  }
+  function paintStreak(cfg) {
+    const isRhythm = cfg.mode === "rhythm";
+    fields.streak.hidden = !isRhythm;
+    if (isRhythm) fields.streak.textContent = `hits ${rhythmChain}/${Math.max(2, cfg.chain || 3)}`;
   }
   function paintTach(cfg) {
     const owned = Boolean(state.aids && state.aids.tachometer);
@@ -1114,9 +1281,17 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   }
   function paintAids() {
     const offline = offlineUnlocked();
+    const reveal = shouldRevealAids(state);
+    if (reveal && !state.aidsRevealed) {
+      state.aidsRevealed = true;
+      banner(arenaWrap, "clarity can be spent — calibration available");
+    }
+    fields.aids.hidden = !reveal;
+    const showPeek = shouldRevealPeek(offline);
     for (const aid of AIDS) {
       const btn = root.querySelector(`[data-aid="${aid.id}"]`);
       if (!btn) continue;
+      if (aid.offlineOnly) btn.hidden = !showPeek;
       const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
       const peekLocked = aid.id === "peek" && !offline;
       btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
@@ -1153,6 +1328,7 @@ function defaultState() {
     offlineMode: false,
     clarity: 0,
     aids: defaultAids(),
+    aidsRevealed: false,
     currentLevel: 1,
     lockedSeedSamples: [],
     log: [
@@ -1183,6 +1359,7 @@ function normalizeState(state) {
   target.offlineMode = Boolean(target.offlineMode);
   target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
   target.aids = normalizeAids(target.aids);
+  target.aidsRevealed = Boolean(target.aidsRevealed);
   const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
   target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
   target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;

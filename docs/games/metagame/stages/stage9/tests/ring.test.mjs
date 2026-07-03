@@ -18,14 +18,21 @@ assert.equal(makeRng(0).float(), makeRng(0).float(), "same seed ⇒ same first f
 }
 
 // ── renderRing: the gap sits at the given angle; rendering is deterministic ────────────────────────
+// Raster densified to 33×17 (UX audit #3): centre column is (33-1)/2 = 16, top row is 0.
 {
-  const TOP = [0, 12]; // top row, centre column of the ring grid
+  const TOP = [0, 16]; // top row, centre column of the 33×17 ring grid
+  const lines = renderRing(0, {}).split("\n");
+  assert.equal(lines.length, 17, "densified raster is 17 rows tall");
+  assert.ok(lines.every((l) => l.length === 33), "densified raster is 33 columns wide");
   const gapAtTop = renderRing(0, {}).split("\n");
   const gapAtBottom = renderRing(180, {}).split("\n");
   assert.equal(gapAtTop[TOP[0]][TOP[1]], " ", "gap at 0deg leaves the 12-o'clock cell empty");
   assert.notEqual(gapAtBottom[TOP[0]][TOP[1]], " ", "gap at 180deg fills the 12-o'clock cell with ring");
   assert.equal(renderRing(0, {}), renderRing(0, {}), "renderRing is deterministic");
   assert.ok(renderRing(0, {}).replace(/[\s]/g, "").length > 8, "the ring draws solid chars");
+  // Block glyphs (#3): the ring is drawn with solid █ / ▓ and no ragged `─│+` segments remain.
+  assert.ok(/[█▓]/.test(renderRing(180, {})), "ring draws with block glyphs");
+  assert.ok(!/[─│+]/.test(renderRing(180, {})), "no legacy line glyphs remain");
 }
 
 // ── dark zone + hidden + ghosts ───────────────────────────────────────────────────────────────────
@@ -36,23 +43,20 @@ assert.equal(makeRng(0).float(), makeRng(0).float(), "same seed ⇒ same first f
   assert.ok(renderRing(0, { ghosts: [{ angle: 180, result: "hit" }] }).includes("⊕"), "ghost hit renders as ⊕");
 }
 
-// ── ringChar dedup parity: the shared helper (now imported by rings.js) reproduces the OLD rings.js
-// implementation (which had NO leading mod360) for every angle the renderers actually iterate, so the
-// unification changes ZERO rendered output. ──────────────────────────────────────────────────────────
+// ── ringChar block-glyph mapping (UX audit #3): the shared helper (imported by rings.js so the two
+// renderers can't drift) returns solid █ on the cardinal arcs and a lighter ▓ on the diagonals, and the
+// leading mod360 keeps it safe for out-of-range inputs. ────────────────────────────────────────────────
 {
-  // exact copy of the former rings.js ringChar (no mod360) for the parity reference
   const angDist = (a, b) => Math.abs(((a - b) % 360 + 540) % 360 - 180);
   const inArc = (a, c, w) => angDist(a, c) <= w / 2;
-  const oldRingsChar = (a) => {
-    if (inArc(a, 0, 60) || inArc(a, 180, 60)) return "─";
-    if (inArc(a, 90, 60) || inArc(a, 270, 60)) return "│";
-    return "+";
+  const ref = (a) => {
+    const d = ((a % 360) + 360) % 360;
+    return (inArc(d, 0, 60) || inArc(d, 180, 60) || inArc(d, 90, 60) || inArc(d, 270, 60)) ? "█" : "▓";
   };
-  // every angle the render loops touch: a ∈ [0,360) step 3, and the full integer sweep
-  for (let a = 0; a < 360; a += 3) assert.equal(ringChar(a), oldRingsChar(a), `parity at loop angle ${a}`);
-  for (let a = 0; a < 360; a += 1) assert.equal(ringChar(a), oldRingsChar(a), `parity at angle ${a}`);
-  // the leading mod360 makes the shared helper safe for out-of-range inputs too (still matches)
-  for (const a of [-30, -1, 360, 540, 720.5]) assert.equal(ringChar(a), oldRingsChar(a), `parity at ${a}`);
+  for (let a = 0; a < 360; a += 1) assert.equal(ringChar(a), ref(a), `block-glyph mapping at ${a}`);
+  for (const a of [-30, -1, 360, 540, 720.5]) assert.equal(ringChar(a), ref(a), `block-glyph mapping at ${a}`);
+  assert.equal(ringChar(0), "█", "top is a solid block");
+  assert.equal(ringChar(45), "▓", "the diagonal is the lighter block");
 }
 
 console.log("stage9 ring tests passed");

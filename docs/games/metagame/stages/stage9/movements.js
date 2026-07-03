@@ -26,25 +26,40 @@ export const MOVEMENTS = [
   { id: 10, name: "Observer", verb: "the full effect (offline)", levels: [16] }
 ];
 
-// Per-level config. tolerance tightens and speed steps up across the run; onlineUnstable marks the
-// back third + boss. darkZone/display are overlays layered on the mode's motion (Blackout makes it a
-// load-bearing win condition: the blackout covers the top, so the gap must be extrapolated, not seen).
+// Per-level config. ONE-NEW-THING-PER-LEVEL (UX audit M2): each level changes exactly ONE tuning
+// dimension vs its predecessor, and every archetype's FIRST level runs at its gentlest parameters —
+// the mode change IS the new thing at an archetype boundary, so the intro level resets to generous
+// tolerance / low speed and the archetype's second level then escalates a single dimension. Incidental
+// per-level speedVar was removed so speed is the sole varied dimension where it varies. onlineUnstable
+// marks the back third + boss. darkZone/display are overlays layered on the mode's motion (Blackout
+// makes it a load-bearing win condition: the blackout covers the top, so the gap must be extrapolated).
 const LEVEL_TABLE = {
+  // Signal (simple) — gentlest intro, then L2 escalates SPEED only.
   1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
-  2: { mode: "simple", speed: 40, speedVar: 8, tolerance: 36, display: "open" },
-  3: { mode: "oscillating", oscBase: 36, oscAmp: 16, oscPeriod: 4200, tolerance: 34, display: "open" },
-  4: { mode: "oscillating", oscBase: 46, oscAmp: 24, oscPeriod: 3400, tolerance: 30, display: "open" },
-  5: { mode: "ghostecho", speed: 34, speedVar: 0, tolerance: 28, display: "open" },
-  6: { mode: "ghostecho", speed: 42, speedVar: 6, tolerance: 24, display: "open" },
-  7: { mode: "rhythm", speed: 34, speedVar: 0, chain: 3, tolerance: 30, display: "open" },
-  8: { mode: "rhythm", speed: 44, speedVar: 0, chain: 4, tolerance: 26, display: "open" },
-  9: { mode: "dual", speedInner: 44, speedOuter: 30, tolerance: 32, display: "dual" },
-  10: { mode: "dual", speedInner: 56, speedOuter: 36, tolerance: 28, display: "dual" },
-  11: { mode: "stealth", speed: 40, speedVar: 6, eyeSpeed: 24, blind: 64, tolerance: 26, display: "open" },
-  12: { mode: "reversing", speed: 62, speedVar: 10, tolerance: 26, display: "open", onlineUnstable: true },
-  13: { mode: "multigap", speed: 52, speedVar: 8, gaps: 3, tolerance: 24, display: "open", onlineUnstable: true },
-  14: { mode: "multigap", speed: 60, speedVar: 10, gaps: 4, tolerance: 20, display: "open", onlineUnstable: true },
-  15: { mode: "darkzone", speed: 50, speedVar: 8, tolerance: 22, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  2: { mode: "simple", speed: 42, speedVar: 0, tolerance: 42, display: "open" },
+  // Drift (oscillating) — gentle intro (slow base, small swing, wide window), then L4 escalates oscAmp only.
+  3: { mode: "oscillating", oscBase: 32, oscAmp: 12, oscPeriod: 4600, tolerance: 40, display: "open" },
+  4: { mode: "oscillating", oscBase: 32, oscAmp: 22, oscPeriod: 4600, tolerance: 40, display: "open" },
+  // Echo (ghostecho) — gentle intro, then L6 tightens TOLERANCE only (the ghosts help you close it).
+  5: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 38, display: "open" },
+  6: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 28, display: "open" },
+  // Cadence (rhythm) — gentle intro (chain 3), then L8 lengthens CHAIN only.
+  7: { mode: "rhythm", speed: 30, speedVar: 0, chain: 3, tolerance: 36, display: "open" },
+  8: { mode: "rhythm", speed: 30, speedVar: 0, chain: 4, tolerance: 36, display: "open" },
+  // Interference (dual) — gentle intro, then L10 speeds the INNER ring only.
+  9: { mode: "dual", speedInner: 40, speedOuter: 28, tolerance: 36, display: "dual" },
+  10: { mode: "dual", speedInner: 52, speedOuter: 28, tolerance: 36, display: "dual" },
+  // Surveillance (stealth) — single gentle level (last learnable-online).
+  11: { mode: "stealth", speed: 34, speedVar: 0, eyeSpeed: 22, blind: 60, tolerance: 34, display: "open" },
+  // Back third (onlineUnstable): each is a single gentle archetype intro; the difficulty here is the
+  // un-cheat, not the tuning. Reversal.
+  12: { mode: "reversing", speed: 48, speedVar: 0, tolerance: 32, display: "open", onlineUnstable: true },
+  // Decoys (multigap) — gentle intro (3 gaps), then L14 adds one GAP only.
+  13: { mode: "multigap", speed: 44, speedVar: 0, gaps: 3, tolerance: 30, display: "open", onlineUnstable: true },
+  14: { mode: "multigap", speed: 44, speedVar: 0, gaps: 4, tolerance: 30, display: "open", onlineUnstable: true },
+  // Blackout (darkzone) — single gentle level.
+  15: { mode: "darkzone", speed: 42, speedVar: 0, tolerance: 28, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  // Observer (boss) — the final movement, tightest window.
   16: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
 };
 

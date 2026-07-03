@@ -40,6 +40,19 @@ export function solveMoment(seed, level) {
 // Back-compat alias (older call sites / tests used solveElapsed).
 export const solveElapsed = solveMoment;
 
+// Verdict readout (UX audit #6): how EARLY or LATE a CROSS press was, in ms — a pure function of the
+// already-computed gap angle and the level's effective rotation speed (no engine state touched). The
+// gap's signed offset from the top maps to [-180,180]: a gap that has already swept PAST the top reads
+// as a LATE press, one still approaching reads EARLY. deltaMs = |offset| / speed. Presentation only —
+// it never feeds back into crossAttempt; it just tells the player which way to nudge next time.
+export function missDelta({ seed, elapsedMs, level }) {
+  const r = crossAttempt({ seed, elapsedMs, level });
+  const speed = Math.abs(rotSpeedFor(seed, level)) || 30; // deg/s effective
+  const a = Number.isFinite(r.angle) ? r.angle : r.distance; // gap angle from top (0 = perfect)
+  const signed = ((a % 360) + 540) % 360 - 180; // (-180,180]: >0 gap swept past top, <0 still approaching
+  return { deltaMs: Math.round(Math.abs(signed) / speed * 1000), dir: signed >= 0 ? "late" : "early", offsetDeg: signed };
+}
+
 // Render the arena for (seed, level, elapsedMs) — dispatches to the mode's renderer. ctx carries optional
 // per-frame extras (e.g. ghostecho's attempt ghosts) that don't affect motion (pure presentation).
 export function renderLevel(seed, level, elapsedMs, ctx = {}) {

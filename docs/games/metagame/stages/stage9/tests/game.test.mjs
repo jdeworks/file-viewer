@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {
   levelConfig, crossAttempt, crossOutcome, solveMoment, rotSpeedFor, renderLevel,
-  movementForLevel, modeHint, LEVELS, BOSS_LEVEL
+  missDelta, movementForLevel, modeHint, LEVELS, BOSS_LEVEL
 } from "../game.js";
 
 // ── movement structure: 16 levels, boss last, learnable front / onlineUnstable back third ──────────
@@ -71,6 +71,23 @@ for (let level = 1; level <= BOSS_LEVEL; level += 1) {
   const sol = solveMoment(seed, level);
   const t = Array.isArray(sol) ? sol[0] : sol;
   assert.notEqual(crossOutcome(crossAttempt({ seed, elapsedMs: t, level })), "miss", `level ${level}: solve never flashes miss`);
+}
+
+// ── missDelta (UX audit #6): the early/late ±ms readout is a pure function of the gap angle + speed ───
+// On a top-pass it reads ~0ms; pressing after it reads LATE, before it reads EARLY, and the magnitude
+// recovers the press offset (deltaMs ≈ how far off in time the press was).
+{
+  const level = 1; const seed = 5;
+  const speed = rotSpeedFor(seed, level);
+  const period = 360000 / speed;
+  const base = solveMoment(seed, level) + period; // a genuine top-pass, safely > 0 for the ±300 probes
+  assert.ok(missDelta({ seed, elapsedMs: base, level }).deltaMs <= 20, "on the beat ⇒ ~0ms");
+  const late = missDelta({ seed, elapsedMs: base + 300, level });
+  assert.equal(late.dir, "late", "pressing after the top-pass reads late");
+  assert.ok(Math.abs(late.deltaMs - 300) <= 40, `late delta ≈ press offset (${late.deltaMs}ms)`);
+  const early = missDelta({ seed, elapsedMs: base - 300, level });
+  assert.equal(early.dir, "early", "pressing before the top-pass reads early");
+  assert.ok(Math.abs(early.deltaMs - 300) <= 40, `early delta ≈ press offset (${early.deltaMs}ms)`);
 }
 
 // ── modeHint: each archetype announces its actual verb (onboarding for the unmarked spikes) ───────────

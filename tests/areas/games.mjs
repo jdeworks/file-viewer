@@ -1412,7 +1412,7 @@ export async function run(ctx) {
   // The timing game is wired: a live rotating ASCII ring renders + OBSERVE/CROSS controls exist.
   await page.waitForSelector('.stage9-observer-state [data-action="observe"]', { timeout: 4000 });
   await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
-  const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[─│+]/.test(document.querySelector('.s9-arena')?.textContent || ''));
+  const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[█▓]/.test(document.querySelector('.s9-arena')?.textContent || ''));
   if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
   // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
   const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
