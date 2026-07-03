@@ -4,12 +4,16 @@
 // `controls.setValue(k,v)` applies a loaded preset key-by-key; `getOptions()` returns the
 // current options object to save.
 import { listPresets, getPreset, savePreset, deletePreset } from './presets.js';
+import { escapeHtml } from './charsets.js';
 
 export function wirePresetUi({ sel, saveBtn, delBtn, controls, getOptions }) {
   if (!sel) return { refresh() {} };
   function refresh(selected) {
+    // Preset names are free-form user text (via prompt()), persisted in localStorage —
+    // escape before interpolating into innerHTML so a name like `"><img onerror=…>` can't
+    // inject markup into the real app DOM.
     sel.innerHTML = '<option value="">Preset…</option>'
-      + listPresets().map((n) => `<option value="${n}">${n}</option>`).join('');
+      + listPresets().map((n) => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
     if (selected) sel.value = selected;
   }
   const apply = (opts) => { if (opts) Object.entries(opts).forEach(([k, v]) => controls.setValue(k, v)); };

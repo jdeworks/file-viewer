@@ -39,8 +39,12 @@ Konva has **no built-in undo**; the pattern is *serialize the stage to JSON and 
 
 ## Module layout
 - `adv-edit.js` — the Adv Edit mode: lazy Konva, stage over `.imgv-stage`, object CRUD + selection + transform, in-mode snapshot undo, `flatten(baseImg)→canvas`, `serialize()/deserialize()`, `destroy()`.
-- `adv-edit-actions.js` — focused helpers for colour normalization, shape-size normalization, duplicate/nudge/delete keyboard routing, snap guides, and shape geometry reads/writes.
+- `adv-edit-actions.js` — focused helpers for colour normalization, shape-size normalization, keyboard delete/duplicate/nudge/escape routing (`installAdvKeys`), node cloning/naming, and shape geometry reads/writes.
+- `adv-edit-controls.js` — `installObjectActions` (delete/duplicate/nudge/group/ungroup on the live selection) and `installShapeControls` (wires every toolbar button + per-shape property input).
 - `adv-edit-layers.js` — the Adv Edit layer panel: rows, type icons, rename, lock/unlock, duplicate, visibility, z-order, and row delete.
+- `adv-edit-precision.js` — the non-serializing helper layer for grid lines, drag-to-edge/center snap guides (`snapDrag`), and align/distribute commands.
+- `adv-edit-points.js` — the non-serializing helper layer for line/arrow endpoint + midpoint-insertion point-editing handles.
+- `adv-edit-text.js` — rich text control wiring (bold/italic/underline/strike, align, line height, wrap, padding, stroke/shadow) for selected `Konva.Label` text.
 - `adv-edit-toolbar.js` — toolbar defaults and markup for the larger Konva control surface.
 - Renderer owns the mode framework + wires flatten into ASCII/export.
 
