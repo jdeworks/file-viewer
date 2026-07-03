@@ -2291,178 +2291,178 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/known/sssd-conf/renderer.js
 - [x] docs/types/text/known/stata-do/index.js
 - [x] docs/types/text/known/stata-do/renderer.js
-- [ ] docs/types/text/known/steam-acf/index.js
-- [ ] docs/types/text/known/steam-acf/renderer.js
-- [ ] docs/types/text/known/stunnel-conf/index.js
-- [ ] docs/types/text/known/stunnel-conf/renderer.js
-- [ ] docs/types/text/known/sudoers/index.js
-- [ ] docs/types/text/known/sudoers/renderer.js
-- [ ] docs/types/text/known/supervisord-conf/index.js
-- [ ] docs/types/text/known/supervisord-conf/renderer.js
-- [ ] docs/types/text/known/svelte-component/index.js
-- [ ] docs/types/text/known/svelte-component/renderer.js
-- [ ] docs/types/text/known/svelte-config/index.js
-- [ ] docs/types/text/known/svelte-config/renderer.js
-- [ ] docs/types/text/known/sway-config/index.js
-- [ ] docs/types/text/known/sway-config/renderer.js
-- [ ] docs/types/text/known/swift-lang/index.js
-- [ ] docs/types/text/known/swift-lang/renderer.js
-- [ ] docs/types/text/known/sxhkdrc/index.js
-- [ ] docs/types/text/known/sxhkdrc/renderer.js
-- [ ] docs/types/text/known/sysctl-conf/index.js
-- [ ] docs/types/text/known/sysctl-conf/renderer.js
-- [ ] docs/types/text/known/syslog-ng/index.js
-- [ ] docs/types/text/known/syslog-ng/renderer.js
-- [ ] docs/types/text/known/systemd-unit/index.js
-- [ ] docs/types/text/known/systemd-unit/renderer.js
-- [ ] docs/types/text/known/tandoor-config/index.js
-- [ ] docs/types/text/known/tandoor-config/renderer.js
-- [ ] docs/types/text/known/taskrc/index.js
-- [ ] docs/types/text/known/taskrc/renderer.js
-- [ ] docs/types/text/known/tcl-lang/index.js
-- [ ] docs/types/text/known/tcl-lang/renderer.js
-- [ ] docs/types/text/known/terraform-hcl/index.js
-- [ ] docs/types/text/known/terraform-hcl/renderer.js
-- [ ] docs/types/text/known/terragrunt/index.js
-- [ ] docs/types/text/known/terragrunt/renderer.js
-- [ ] docs/types/text/known/tex-doc/index.js
-- [ ] docs/types/text/known/tex-doc/renderer.js
-- [ ] docs/types/text/known/textile-markup/index.js
-- [ ] docs/types/text/known/textile-markup/renderer.js
-- [ ] docs/types/text/known/tf-lock/index.js
-- [ ] docs/types/text/known/tf-lock/renderer.js
-- [ ] docs/types/text/known/tflint/index.js
-- [ ] docs/types/text/known/tflint/renderer.js
-- [ ] docs/types/text/known/tfvars/index.js
-- [ ] docs/types/text/known/tfvars/renderer.js
-- [ ] docs/types/text/known/tiltfile/index.js
-- [ ] docs/types/text/known/tiltfile/renderer.js
-- [ ] docs/types/text/known/tla-plus/index.js
-- [ ] docs/types/text/known/tla-plus/renderer.js
-- [ ] docs/types/text/known/tlp-conf/index.js
-- [ ] docs/types/text/known/tlp-conf/renderer.js
-- [ ] docs/types/text/known/tmpfiles-d/index.js
-- [ ] docs/types/text/known/tmpfiles-d/renderer.js
-- [ ] docs/types/text/known/tmux-conf/index.js
-- [ ] docs/types/text/known/tmux-conf/renderer.js
-- [ ] docs/types/text/known/tool-versions/index.js
-- [ ] docs/types/text/known/tool-versions/renderer.js
-- [ ] docs/types/text/known/tox-ini/index.js
-- [ ] docs/types/text/known/tox-ini/renderer.js
-- [ ] docs/types/text/known/tox/index.js
-- [ ] docs/types/text/known/tox/renderer.js
-- [ ] docs/types/text/known/traefik-conf/index.js
-- [ ] docs/types/text/known/traefik-conf/renderer.js
-- [ ] docs/types/text/known/truffle-config/index.js
-- [ ] docs/types/text/known/truffle-config/renderer.js
-- [ ] docs/types/text/known/tsup-config/index.js
-- [ ] docs/types/text/known/tsup-config/renderer.js
-- [ ] docs/types/text/known/turtle-rdf/index.js
-- [ ] docs/types/text/known/turtle-rdf/renderer.js
-- [ ] docs/types/text/known/twenty-crm-config/index.js
-- [ ] docs/types/text/known/twenty-crm-config/renderer.js
-- [ ] docs/types/text/known/typst-doc/index.js
-- [ ] docs/types/text/known/typst-doc/renderer.js
-- [ ] docs/types/text/known/udev-rules/index.js
-- [ ] docs/types/text/known/udev-rules/renderer.js
-- [ ] docs/types/text/known/ufw-conf/index.js
-- [ ] docs/types/text/known/ufw-conf/renderer.js
-- [ ] docs/types/text/known/umami-config/index.js
-- [ ] docs/types/text/known/umami-config/renderer.js
-- [ ] docs/types/text/known/unbound-conf/index.js
-- [ ] docs/types/text/known/unbound-conf/renderer.js
-- [ ] docs/types/text/known/unleash-config/index.js
-- [ ] docs/types/text/known/unleash-config/renderer.js
-- [ ] docs/types/text/known/vagrantfile/index.js
-- [ ] docs/types/text/known/vagrantfile/renderer.js
-- [ ] docs/types/text/known/vala-lang/index.js
-- [ ] docs/types/text/known/vala-lang/renderer.js
-- [ ] docs/types/text/known/vale-ini/index.js
-- [ ] docs/types/text/known/vale-ini/renderer.js
-- [ ] docs/types/text/known/varnish-vcl/index.js
-- [ ] docs/types/text/known/varnish-vcl/renderer.js
-- [ ] docs/types/text/known/vault-hcl/index.js
-- [ ] docs/types/text/known/vault-hcl/renderer.js
-- [ ] docs/types/text/known/vaultwarden-config/index.js
-- [ ] docs/types/text/known/vaultwarden-config/renderer.js
-- [ ] docs/types/text/known/vaultwarden-env/index.js
-- [ ] docs/types/text/known/vaultwarden-env/renderer.js
-- [ ] docs/types/text/known/vector-config/index.js
-- [ ] docs/types/text/known/vector-config/renderer.js
-- [ ] docs/types/text/known/verilog/index.js
-- [ ] docs/types/text/known/verilog/renderer.js
-- [ ] docs/types/text/known/versions-tf/index.js
-- [ ] docs/types/text/known/versions-tf/renderer.js
-- [ ] docs/types/text/known/vhdl-lang/index.js
-- [ ] docs/types/text/known/vhdl-lang/renderer.js
-- [ ] docs/types/text/known/vim-config/index.js
-- [ ] docs/types/text/known/vim-config/renderer.js
-- [ ] docs/types/text/known/vite-config/index.js
-- [ ] docs/types/text/known/vite-config/renderer.js
-- [ ] docs/types/text/known/vitepress-config/index.js
-- [ ] docs/types/text/known/vitepress-config/renderer.js
-- [ ] docs/types/text/known/vsftpd-conf/index.js
-- [ ] docs/types/text/known/vsftpd-conf/renderer.js
-- [ ] docs/types/text/known/wallabag-config/index.js
-- [ ] docs/types/text/known/wallabag-config/renderer.js
-- [ ] docs/types/text/known/wallos-config/index.js
-- [ ] docs/types/text/known/wallos-config/renderer.js
-- [ ] docs/types/text/known/watchtower-config/index.js
-- [ ] docs/types/text/known/watchtower-config/renderer.js
-- [ ] docs/types/text/known/waypoint/index.js
-- [ ] docs/types/text/known/waypoint/renderer.js
-- [ ] docs/types/text/known/wdio-config/index.js
-- [ ] docs/types/text/known/wdio-config/renderer.js
-- [ ] docs/types/text/known/webpack-config/index.js
-- [ ] docs/types/text/known/webpack-config/renderer.js
-- [ ] docs/types/text/known/wezterm-conf/index.js
-- [ ] docs/types/text/known/wezterm-conf/renderer.js
-- [ ] docs/types/text/known/wgetrc/index.js
-- [ ] docs/types/text/known/wgetrc/renderer.js
-- [ ] docs/types/text/known/wgsl-shader/index.js
-- [ ] docs/types/text/known/wgsl-shader/renderer.js
-- [ ] docs/types/text/known/windmill-config/index.js
-- [ ] docs/types/text/known/windmill-config/renderer.js
-- [ ] docs/types/text/known/windsurfrules/index.js
-- [ ] docs/types/text/known/windsurfrules/renderer.js
-- [ ] docs/types/text/known/wireguard-conf/index.js
-- [ ] docs/types/text/known/wireguard-conf/renderer.js
-- [ ] docs/types/text/known/wolfram-lang/index.js
-- [ ] docs/types/text/known/wolfram-lang/renderer.js
-- [ ] docs/types/text/known/woodpecker-agent-config/index.js
-- [ ] docs/types/text/known/woodpecker-agent-config/renderer.js
-- [ ] docs/types/text/known/wpa-supplicant-conf/index.js
-- [ ] docs/types/text/known/wpa-supplicant-conf/renderer.js
-- [ ] docs/types/text/known/wren-lang/index.js
-- [ ] docs/types/text/known/wren-lang/renderer.js
-- [ ] docs/types/text/known/wsl-conf/index.js
-- [ ] docs/types/text/known/wsl-conf/renderer.js
-- [ ] docs/types/text/known/xcconfig/index.js
-- [ ] docs/types/text/known/xcconfig/renderer.js
-- [ ] docs/types/text/known/xdg-desktop-entry/index.js
-- [ ] docs/types/text/known/xdg-desktop-entry/renderer.js
-- [ ] docs/types/text/known/xorg-conf/index.js
-- [ ] docs/types/text/known/xorg-conf/renderer.js
-- [ ] docs/types/text/known/xresources/index.js
-- [ ] docs/types/text/known/xresources/renderer.js
-- [ ] docs/types/text/known/xslt-stylesheet/index.js
-- [ ] docs/types/text/known/xslt-stylesheet/renderer.js
-- [ ] docs/types/text/known/yarnrc/index.js
-- [ ] docs/types/text/known/yarnrc/renderer.js
-- [ ] docs/types/text/known/ytdlp-conf/index.js
-- [ ] docs/types/text/known/ytdlp-conf/renderer.js
-- [ ] docs/types/text/known/zabbix-conf/index.js
-- [ ] docs/types/text/known/zabbix-conf/renderer.js
-- [ ] docs/types/text/known/zathurarc/index.js
-- [ ] docs/types/text/known/zathurarc/renderer.js
-- [ ] docs/types/text/known/zig-lang/index.js
-- [ ] docs/types/text/known/zig-lang/renderer.js
-- [ ] docs/types/text/known/zig-zon/index.js
-- [ ] docs/types/text/known/zig-zon/renderer.js
-- [ ] docs/types/text/known/zookeeper-config/index.js
-- [ ] docs/types/text/known/zookeeper-config/renderer.js
-- [ ] docs/types/text/known/zsh-script/index.js
-- [ ] docs/types/text/known/zsh-script/renderer.js
+- [x] docs/types/text/known/steam-acf/index.js
+- [x] docs/types/text/known/steam-acf/renderer.js
+- [x] docs/types/text/known/stunnel-conf/index.js
+- [x] docs/types/text/known/stunnel-conf/renderer.js
+- [x] docs/types/text/known/sudoers/index.js
+- [x] docs/types/text/known/sudoers/renderer.js
+- [x] docs/types/text/known/supervisord-conf/index.js
+- [x] docs/types/text/known/supervisord-conf/renderer.js
+- [x] docs/types/text/known/svelte-component/index.js
+- [x] docs/types/text/known/svelte-component/renderer.js
+- [x] docs/types/text/known/svelte-config/index.js
+- [x] docs/types/text/known/svelte-config/renderer.js
+- [x] docs/types/text/known/sway-config/index.js
+- [x] docs/types/text/known/sway-config/renderer.js
+- [x] docs/types/text/known/swift-lang/index.js
+- [x] docs/types/text/known/swift-lang/renderer.js
+- [x] docs/types/text/known/sxhkdrc/index.js
+- [x] docs/types/text/known/sxhkdrc/renderer.js
+- [x] docs/types/text/known/sysctl-conf/index.js
+- [x] docs/types/text/known/sysctl-conf/renderer.js
+- [x] docs/types/text/known/syslog-ng/index.js
+- [x] docs/types/text/known/syslog-ng/renderer.js
+- [x] docs/types/text/known/systemd-unit/index.js
+- [x] docs/types/text/known/systemd-unit/renderer.js
+- [x] docs/types/text/known/tandoor-config/index.js
+- [x] docs/types/text/known/tandoor-config/renderer.js
+- [x] docs/types/text/known/taskrc/index.js
+- [x] docs/types/text/known/taskrc/renderer.js
+- [x] docs/types/text/known/tcl-lang/index.js
+- [x] docs/types/text/known/tcl-lang/renderer.js
+- [x] docs/types/text/known/terraform-hcl/index.js
+- [x] docs/types/text/known/terraform-hcl/renderer.js
+- [x] docs/types/text/known/terragrunt/index.js
+- [x] docs/types/text/known/terragrunt/renderer.js
+- [x] docs/types/text/known/tex-doc/index.js
+- [x] docs/types/text/known/tex-doc/renderer.js
+- [x] docs/types/text/known/textile-markup/index.js
+- [x] docs/types/text/known/textile-markup/renderer.js
+- [x] docs/types/text/known/tf-lock/index.js
+- [x] docs/types/text/known/tf-lock/renderer.js
+- [x] docs/types/text/known/tflint/index.js
+- [x] docs/types/text/known/tflint/renderer.js
+- [x] docs/types/text/known/tfvars/index.js
+- [x] docs/types/text/known/tfvars/renderer.js
+- [x] docs/types/text/known/tiltfile/index.js
+- [x] docs/types/text/known/tiltfile/renderer.js
+- [x] docs/types/text/known/tla-plus/index.js
+- [x] docs/types/text/known/tla-plus/renderer.js
+- [x] docs/types/text/known/tlp-conf/index.js
+- [x] docs/types/text/known/tlp-conf/renderer.js
+- [x] docs/types/text/known/tmpfiles-d/index.js
+- [x] docs/types/text/known/tmpfiles-d/renderer.js
+- [x] docs/types/text/known/tmux-conf/index.js
+- [x] docs/types/text/known/tmux-conf/renderer.js
+- [x] docs/types/text/known/tool-versions/index.js
+- [x] docs/types/text/known/tool-versions/renderer.js
+- [x] docs/types/text/known/tox-ini/index.js
+- [x] docs/types/text/known/tox-ini/renderer.js
+- [x] docs/types/text/known/tox/index.js
+- [x] docs/types/text/known/tox/renderer.js
+- [x] docs/types/text/known/traefik-conf/index.js
+- [x] docs/types/text/known/traefik-conf/renderer.js
+- [x] docs/types/text/known/truffle-config/index.js
+- [x] docs/types/text/known/truffle-config/renderer.js
+- [x] docs/types/text/known/tsup-config/index.js
+- [x] docs/types/text/known/tsup-config/renderer.js
+- [x] docs/types/text/known/turtle-rdf/index.js
+- [x] docs/types/text/known/turtle-rdf/renderer.js
+- [x] docs/types/text/known/twenty-crm-config/index.js
+- [x] docs/types/text/known/twenty-crm-config/renderer.js
+- [x] docs/types/text/known/typst-doc/index.js
+- [x] docs/types/text/known/typst-doc/renderer.js
+- [x] docs/types/text/known/udev-rules/index.js
+- [x] docs/types/text/known/udev-rules/renderer.js
+- [x] docs/types/text/known/ufw-conf/index.js
+- [x] docs/types/text/known/ufw-conf/renderer.js
+- [x] docs/types/text/known/umami-config/index.js
+- [x] docs/types/text/known/umami-config/renderer.js
+- [x] docs/types/text/known/unbound-conf/index.js
+- [x] docs/types/text/known/unbound-conf/renderer.js
+- [x] docs/types/text/known/unleash-config/index.js
+- [x] docs/types/text/known/unleash-config/renderer.js
+- [x] docs/types/text/known/vagrantfile/index.js
+- [x] docs/types/text/known/vagrantfile/renderer.js
+- [x] docs/types/text/known/vala-lang/index.js
+- [x] docs/types/text/known/vala-lang/renderer.js
+- [x] docs/types/text/known/vale-ini/index.js
+- [x] docs/types/text/known/vale-ini/renderer.js
+- [x] docs/types/text/known/varnish-vcl/index.js
+- [x] docs/types/text/known/varnish-vcl/renderer.js
+- [x] docs/types/text/known/vault-hcl/index.js
+- [x] docs/types/text/known/vault-hcl/renderer.js
+- [x] docs/types/text/known/vaultwarden-config/index.js
+- [x] docs/types/text/known/vaultwarden-config/renderer.js
+- [x] docs/types/text/known/vaultwarden-env/index.js
+- [x] docs/types/text/known/vaultwarden-env/renderer.js
+- [x] docs/types/text/known/vector-config/index.js
+- [x] docs/types/text/known/vector-config/renderer.js
+- [x] docs/types/text/known/verilog/index.js
+- [x] docs/types/text/known/verilog/renderer.js
+- [x] docs/types/text/known/versions-tf/index.js
+- [x] docs/types/text/known/versions-tf/renderer.js
+- [x] docs/types/text/known/vhdl-lang/index.js
+- [x] docs/types/text/known/vhdl-lang/renderer.js
+- [x] docs/types/text/known/vim-config/index.js
+- [x] docs/types/text/known/vim-config/renderer.js
+- [x] docs/types/text/known/vite-config/index.js
+- [x] docs/types/text/known/vite-config/renderer.js
+- [x] docs/types/text/known/vitepress-config/index.js
+- [x] docs/types/text/known/vitepress-config/renderer.js
+- [x] docs/types/text/known/vsftpd-conf/index.js
+- [x] docs/types/text/known/vsftpd-conf/renderer.js
+- [x] docs/types/text/known/wallabag-config/index.js
+- [x] docs/types/text/known/wallabag-config/renderer.js
+- [x] docs/types/text/known/wallos-config/index.js
+- [x] docs/types/text/known/wallos-config/renderer.js
+- [x] docs/types/text/known/watchtower-config/index.js
+- [x] docs/types/text/known/watchtower-config/renderer.js
+- [x] docs/types/text/known/waypoint/index.js
+- [x] docs/types/text/known/waypoint/renderer.js
+- [x] docs/types/text/known/wdio-config/index.js
+- [x] docs/types/text/known/wdio-config/renderer.js
+- [x] docs/types/text/known/webpack-config/index.js
+- [x] docs/types/text/known/webpack-config/renderer.js
+- [x] docs/types/text/known/wezterm-conf/index.js
+- [x] docs/types/text/known/wezterm-conf/renderer.js
+- [x] docs/types/text/known/wgetrc/index.js
+- [x] docs/types/text/known/wgetrc/renderer.js
+- [x] docs/types/text/known/wgsl-shader/index.js
+- [x] docs/types/text/known/wgsl-shader/renderer.js
+- [x] docs/types/text/known/windmill-config/index.js
+- [x] docs/types/text/known/windmill-config/renderer.js
+- [x] docs/types/text/known/windsurfrules/index.js
+- [x] docs/types/text/known/windsurfrules/renderer.js
+- [x] docs/types/text/known/wireguard-conf/index.js
+- [x] docs/types/text/known/wireguard-conf/renderer.js
+- [x] docs/types/text/known/wolfram-lang/index.js
+- [x] docs/types/text/known/wolfram-lang/renderer.js
+- [x] docs/types/text/known/woodpecker-agent-config/index.js
+- [x] docs/types/text/known/woodpecker-agent-config/renderer.js
+- [x] docs/types/text/known/wpa-supplicant-conf/index.js
+- [x] docs/types/text/known/wpa-supplicant-conf/renderer.js
+- [x] docs/types/text/known/wren-lang/index.js
+- [x] docs/types/text/known/wren-lang/renderer.js
+- [x] docs/types/text/known/wsl-conf/index.js
+- [x] docs/types/text/known/wsl-conf/renderer.js
+- [x] docs/types/text/known/xcconfig/index.js
+- [x] docs/types/text/known/xcconfig/renderer.js
+- [x] docs/types/text/known/xdg-desktop-entry/index.js
+- [x] docs/types/text/known/xdg-desktop-entry/renderer.js
+- [x] docs/types/text/known/xorg-conf/index.js
+- [x] docs/types/text/known/xorg-conf/renderer.js
+- [x] docs/types/text/known/xresources/index.js
+- [x] docs/types/text/known/xresources/renderer.js
+- [x] docs/types/text/known/xslt-stylesheet/index.js
+- [x] docs/types/text/known/xslt-stylesheet/renderer.js
+- [x] docs/types/text/known/yarnrc/index.js
+- [x] docs/types/text/known/yarnrc/renderer.js
+- [x] docs/types/text/known/ytdlp-conf/index.js
+- [x] docs/types/text/known/ytdlp-conf/renderer.js
+- [x] docs/types/text/known/zabbix-conf/index.js
+- [x] docs/types/text/known/zabbix-conf/renderer.js
+- [x] docs/types/text/known/zathurarc/index.js
+- [x] docs/types/text/known/zathurarc/renderer.js
+- [x] docs/types/text/known/zig-lang/index.js
+- [x] docs/types/text/known/zig-lang/renderer.js
+- [x] docs/types/text/known/zig-zon/index.js
+- [x] docs/types/text/known/zig-zon/renderer.js
+- [x] docs/types/text/known/zookeeper-config/index.js
+- [x] docs/types/text/known/zookeeper-config/renderer.js
+- [x] docs/types/text/known/zsh-script/index.js
+- [x] docs/types/text/known/zsh-script/renderer.js
 - [ ] docs/types/text/kubeconfig/detect.js
 - [ ] docs/types/text/kubeconfig/EDITOR.md
 - [ ] docs/types/text/kubeconfig/index.js
@@ -3783,92 +3783,92 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/known/sshd-config
 - [x] docs/types/text/known/sssd-conf
 - [x] docs/types/text/known/stata-do
-- [ ] docs/types/text/known/steam-acf
-- [ ] docs/types/text/known/stunnel-conf
-- [ ] docs/types/text/known/sudoers
-- [ ] docs/types/text/known/supervisord-conf
-- [ ] docs/types/text/known/svelte-component
-- [ ] docs/types/text/known/svelte-config
-- [ ] docs/types/text/known/sway-config
-- [ ] docs/types/text/known/swift-lang
-- [ ] docs/types/text/known/sxhkdrc
-- [ ] docs/types/text/known/sysctl-conf
-- [ ] docs/types/text/known/syslog-ng
-- [ ] docs/types/text/known/systemd-unit
-- [ ] docs/types/text/known/tandoor-config
-- [ ] docs/types/text/known/taskrc
-- [ ] docs/types/text/known/tcl-lang
-- [ ] docs/types/text/known/terraform-hcl
-- [ ] docs/types/text/known/terragrunt
-- [ ] docs/types/text/known/tex-doc
-- [ ] docs/types/text/known/textile-markup
-- [ ] docs/types/text/known/tf-lock
-- [ ] docs/types/text/known/tflint
-- [ ] docs/types/text/known/tfvars
-- [ ] docs/types/text/known/tiltfile
-- [ ] docs/types/text/known/tla-plus
-- [ ] docs/types/text/known/tlp-conf
-- [ ] docs/types/text/known/tmpfiles-d
-- [ ] docs/types/text/known/tmux-conf
-- [ ] docs/types/text/known/tool-versions
-- [ ] docs/types/text/known/tox
-- [ ] docs/types/text/known/tox-ini
-- [ ] docs/types/text/known/traefik-conf
-- [ ] docs/types/text/known/truffle-config
-- [ ] docs/types/text/known/tsup-config
-- [ ] docs/types/text/known/turtle-rdf
-- [ ] docs/types/text/known/twenty-crm-config
-- [ ] docs/types/text/known/typst-doc
-- [ ] docs/types/text/known/udev-rules
-- [ ] docs/types/text/known/ufw-conf
-- [ ] docs/types/text/known/umami-config
-- [ ] docs/types/text/known/unbound-conf
-- [ ] docs/types/text/known/unleash-config
-- [ ] docs/types/text/known/vagrantfile
-- [ ] docs/types/text/known/vala-lang
-- [ ] docs/types/text/known/vale-ini
-- [ ] docs/types/text/known/varnish-vcl
-- [ ] docs/types/text/known/vault-hcl
-- [ ] docs/types/text/known/vaultwarden-config
-- [ ] docs/types/text/known/vaultwarden-env
-- [ ] docs/types/text/known/vector-config
-- [ ] docs/types/text/known/verilog
-- [ ] docs/types/text/known/versions-tf
-- [ ] docs/types/text/known/vhdl-lang
-- [ ] docs/types/text/known/vim-config
-- [ ] docs/types/text/known/vite-config
-- [ ] docs/types/text/known/vitepress-config
-- [ ] docs/types/text/known/vsftpd-conf
-- [ ] docs/types/text/known/wallabag-config
-- [ ] docs/types/text/known/wallos-config
-- [ ] docs/types/text/known/watchtower-config
-- [ ] docs/types/text/known/waypoint
-- [ ] docs/types/text/known/wdio-config
-- [ ] docs/types/text/known/webpack-config
-- [ ] docs/types/text/known/wezterm-conf
-- [ ] docs/types/text/known/wgetrc
-- [ ] docs/types/text/known/wgsl-shader
-- [ ] docs/types/text/known/windmill-config
-- [ ] docs/types/text/known/windsurfrules
-- [ ] docs/types/text/known/wireguard-conf
-- [ ] docs/types/text/known/wolfram-lang
-- [ ] docs/types/text/known/woodpecker-agent-config
-- [ ] docs/types/text/known/wpa-supplicant-conf
-- [ ] docs/types/text/known/wren-lang
-- [ ] docs/types/text/known/wsl-conf
-- [ ] docs/types/text/known/xcconfig
-- [ ] docs/types/text/known/xdg-desktop-entry
-- [ ] docs/types/text/known/xorg-conf
-- [ ] docs/types/text/known/xresources
-- [ ] docs/types/text/known/xslt-stylesheet
-- [ ] docs/types/text/known/yarnrc
-- [ ] docs/types/text/known/ytdlp-conf
-- [ ] docs/types/text/known/zabbix-conf
-- [ ] docs/types/text/known/zathurarc
-- [ ] docs/types/text/known/zig-lang
-- [ ] docs/types/text/known/zig-zon
-- [ ] docs/types/text/known/zookeeper-config
-- [ ] docs/types/text/known/zsh-script
+- [x] docs/types/text/known/steam-acf
+- [x] docs/types/text/known/stunnel-conf
+- [x] docs/types/text/known/sudoers
+- [x] docs/types/text/known/supervisord-conf
+- [x] docs/types/text/known/svelte-component
+- [x] docs/types/text/known/svelte-config
+- [x] docs/types/text/known/sway-config
+- [x] docs/types/text/known/swift-lang
+- [x] docs/types/text/known/sxhkdrc
+- [x] docs/types/text/known/sysctl-conf
+- [x] docs/types/text/known/syslog-ng
+- [x] docs/types/text/known/systemd-unit
+- [x] docs/types/text/known/tandoor-config
+- [x] docs/types/text/known/taskrc
+- [x] docs/types/text/known/tcl-lang
+- [x] docs/types/text/known/terraform-hcl
+- [x] docs/types/text/known/terragrunt
+- [x] docs/types/text/known/tex-doc
+- [x] docs/types/text/known/textile-markup
+- [x] docs/types/text/known/tf-lock
+- [x] docs/types/text/known/tflint
+- [x] docs/types/text/known/tfvars
+- [x] docs/types/text/known/tiltfile
+- [x] docs/types/text/known/tla-plus
+- [x] docs/types/text/known/tlp-conf
+- [x] docs/types/text/known/tmpfiles-d
+- [x] docs/types/text/known/tmux-conf
+- [x] docs/types/text/known/tool-versions
+- [x] docs/types/text/known/tox
+- [x] docs/types/text/known/tox-ini
+- [x] docs/types/text/known/traefik-conf
+- [x] docs/types/text/known/truffle-config
+- [x] docs/types/text/known/tsup-config
+- [x] docs/types/text/known/turtle-rdf
+- [x] docs/types/text/known/twenty-crm-config
+- [x] docs/types/text/known/typst-doc
+- [x] docs/types/text/known/udev-rules
+- [x] docs/types/text/known/ufw-conf
+- [x] docs/types/text/known/umami-config
+- [x] docs/types/text/known/unbound-conf
+- [x] docs/types/text/known/unleash-config
+- [x] docs/types/text/known/vagrantfile
+- [x] docs/types/text/known/vala-lang
+- [x] docs/types/text/known/vale-ini
+- [x] docs/types/text/known/varnish-vcl
+- [x] docs/types/text/known/vault-hcl
+- [x] docs/types/text/known/vaultwarden-config
+- [x] docs/types/text/known/vaultwarden-env
+- [x] docs/types/text/known/vector-config
+- [x] docs/types/text/known/verilog
+- [x] docs/types/text/known/versions-tf
+- [x] docs/types/text/known/vhdl-lang
+- [x] docs/types/text/known/vim-config
+- [x] docs/types/text/known/vite-config
+- [x] docs/types/text/known/vitepress-config
+- [x] docs/types/text/known/vsftpd-conf
+- [x] docs/types/text/known/wallabag-config
+- [x] docs/types/text/known/wallos-config
+- [x] docs/types/text/known/watchtower-config
+- [x] docs/types/text/known/waypoint
+- [x] docs/types/text/known/wdio-config
+- [x] docs/types/text/known/webpack-config
+- [x] docs/types/text/known/wezterm-conf
+- [x] docs/types/text/known/wgetrc
+- [x] docs/types/text/known/wgsl-shader
+- [x] docs/types/text/known/windmill-config
+- [x] docs/types/text/known/windsurfrules
+- [x] docs/types/text/known/wireguard-conf
+- [x] docs/types/text/known/wolfram-lang
+- [x] docs/types/text/known/woodpecker-agent-config
+- [x] docs/types/text/known/wpa-supplicant-conf
+- [x] docs/types/text/known/wren-lang
+- [x] docs/types/text/known/wsl-conf
+- [x] docs/types/text/known/xcconfig
+- [x] docs/types/text/known/xdg-desktop-entry
+- [x] docs/types/text/known/xorg-conf
+- [x] docs/types/text/known/xresources
+- [x] docs/types/text/known/xslt-stylesheet
+- [x] docs/types/text/known/yarnrc
+- [x] docs/types/text/known/ytdlp-conf
+- [x] docs/types/text/known/zabbix-conf
+- [x] docs/types/text/known/zathurarc
+- [x] docs/types/text/known/zig-lang
+- [x] docs/types/text/known/zig-zon
+- [x] docs/types/text/known/zookeeper-config
+- [x] docs/types/text/known/zsh-script
 - [x] docs/types/text/toml/known/air-config
 - [x] docs/types/text/toml/known/anchor-toml
 - [x] docs/types/text/toml/known/aws-sam-config

@@ -6,8 +6,10 @@ export const plugin = {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.vala') || name.endsWith('.vapi')) return true;
     const text = intake.text || '';
-    // Require Vala-specific namespace imports or C-style modifiers (avoids matching Lisp defclass, Kotlin class, etc.)
-    return /using\s+GLib|using\s+Gtk|public\s+static\s+int\s+main|\bpublic\s+class\s+\w|\bprivate\s+class\s+\w/.test(text);
+    // Only Vala-idiomatic GObject namespace imports — "public class"/"static int main" are
+    // generic C-family idioms shared by Java/C#/Kotlin and caused false-positive collisions
+    // on any extension-less or misidentified file containing them.
+    return /using\s+GLib\s*;|using\s+Gtk\s*;/.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

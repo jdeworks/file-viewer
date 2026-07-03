@@ -1,5 +1,16 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// Only allow http(s) URLs as real hrefs — reject javascript:/data:/etc. to prevent full-privilege
+// XSS via a malicious `.url = "javascript:..."` in an untrusted build.zig.zon.
+function safeHref(u) {
+  try {
+    const parsed = new URL(u, 'https://example.invalid/');
+    return /^https?:$/.test(parsed.protocol) ? u : null;
+  } catch {
+    return null;
+  }
+}
+
 function zonScalar(text, key) {
   const m = new RegExp('\\.\\s*' + key + '\\s*=\\s*"([^"]*)"').exec(text);
   if (m) return m[1];
@@ -107,7 +118,10 @@ export function render(intake) {
       if (d.url) {
         const display = d.url.replace(/^https?:\/\//, '').slice(0, 50);
         const truncated = d.url.length > 53 ? display + '...' : display;
-        srcHtml = `<span class="zigzon-dep-url"><a class="zigzon-link" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">${esc(truncated)}</a></span>`;
+        const href = safeHref(d.url);
+        srcHtml = href
+          ? `<span class="zigzon-dep-url"><a class="zigzon-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(truncated)}</a></span>`
+          : `<span class="zigzon-dep-url"><span class="zigzon-dep-path">${esc(truncated)}</span></span>`;
       } else if (d.path) {
         srcHtml = `<span class="zigzon-dep-url"><span class="zigzon-dep-path">path: ${esc(d.path)}</span></span>`;
       }

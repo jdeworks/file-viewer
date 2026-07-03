@@ -6646,33 +6646,6 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
-    "tox": {
-      "label": "tox.ini",
-      "baseType": "text",
-      "support": "supported",
-      "sampleFiles": [
-        "tox.ini"
-      ],
-      "extensions": [
-        ".ini"
-      ],
-      "capabilities": {
-        "rawView": true,
-        "preview": true,
-        "diff": true,
-        "magicSelector": false,
-        "screenshot": true
-      },
-      "previewDepth": "structure-only",
-      "metadataDepth": "none",
-      "editCapability": "none",
-      "exportCapability": "download",
-      "securityLimitations": [],
-      "knownParserGaps": [],
-      "testCoverage": "smoke",
-      "sampleSource": "synthetic",
-      "needsRealWorldSample": false
-    },
     "angular": {
       "label": "Angular workspace",
       "baseType": "json",

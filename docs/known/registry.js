@@ -84,7 +84,6 @@ import nvmrc from '../types/text/known/nvmrc/index.js';
 import browserslistrc from '../types/text/known/browserslist/index.js';
 import preCommit from '../types/text/yaml/known/pre-commit/index.js';
 import pyrightconfig from '../types/text/json/known/pyrightconfig/index.js';
-import tox from '../types/text/known/tox/index.js';
 import { plugin as toxIni } from '../types/text/known/tox-ini/index.js';
 import { plugin as pytestIni } from '../types/text/known/pytest-ini/index.js';
 import mypy from '../types/text/known/mypy-ini/index.js';
@@ -947,7 +946,7 @@ export const KNOWN = [glslShader, hlslShader, restructuredtext, orgMode, liquidT
   vscodeSettings, vscodeExtensions, vscodeLaunch, vscodeTasks,
   travis, circleci, amplify, codebuild,
   jsconfigJson, denoJson, nvmrc, browserslistrc,
-  preCommit, pyrightconfig, toxIni, pytestIni, tox, mypy,
+  preCommit, pyrightconfig, toxIni, pytestIni, mypy,
   angularJson, capacitor, nycrc, devcontainer, knip, mocha, gitlabCi, pnpmWorkspace,
   vitest, graphqlConfig, graphqlCodegen, tspconfigYaml, apollo, storybook,
   drone, buildkite, skaffold, hadolint,
