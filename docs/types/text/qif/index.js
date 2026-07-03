@@ -7,6 +7,7 @@ export default {
   syntaxLanguage: null,
   detect,
   loadRenderer: () => import('./renderer.js'),
+  loadExports: () => import('./exports.js'),
   loadMetadata: () => import('./metadata.js').then((m) => ({ extract: m.metadata })),
   settingsUrl: new URL('./settings.default.json', import.meta.url),
 };
