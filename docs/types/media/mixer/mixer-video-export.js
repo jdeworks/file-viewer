@@ -55,7 +55,7 @@ export function buildVideoMixExportPlan(project, options = {}) {
     provenance: {
       renderPath: canRender ? 'ffmpeg-video-mix' : 'ffmpeg-opt-in-required',
       durationMs,
-      fps: project.project?.fps || 30,
+      fps: finite(project.project?.fps, 30) || 30,
       background: project.project?.background || '#000000',
       filterGraph: renderPlan.filterGraph,
       outputMaps: renderPlan.outputMaps,

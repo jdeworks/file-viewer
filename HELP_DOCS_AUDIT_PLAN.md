@@ -905,27 +905,27 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/media/mixer/mixer-context-menu.js
 - [ ] docs/types/media/mixer/mixer-eq-schema.js
 - [ ] docs/types/media/mixer/mixer-hash.js
-- [ ] docs/types/media/mixer/mixer-hit-test.js
-- [ ] docs/types/media/mixer/mixer-import-export.js
-- [ ] docs/types/media/mixer/mixer-interactions.js
-- [ ] docs/types/media/mixer/mixer-media-drop.js
-- [ ] docs/types/media/mixer/mixer-model-helpers.js
-- [ ] docs/types/media/mixer/mixer-model.js
-- [ ] docs/types/media/mixer/mixer-project-settings-ui.js
-- [ ] docs/types/media/mixer/mixer-renderer.js
-- [ ] docs/types/media/mixer/mixer-styles-panels.css
-- [ ] docs/types/media/mixer/mixer-styles.css
-- [ ] docs/types/media/mixer/mixer-ui.js
-- [ ] docs/types/media/mixer/mixer-video-export-helpers.js
-- [ ] docs/types/media/mixer/mixer-video-export-ui.js
-- [ ] docs/types/media/mixer/mixer-video-export.js
-- [ ] docs/types/media/mixer/mixer-video-proxy-runtime.js
-- [ ] docs/types/media/mixer/mixer-video-proxy-ui.js
-- [ ] docs/types/media/mixer/mixer-video-source-helpers.js
-- [ ] docs/types/media/mixer/mixer-video-source-ui.js
-- [ ] docs/types/media/mixer/mixer-video-source.js
-- [ ] docs/types/media/mixer/mixer-visual-preview.js
-- [ ] docs/types/media/mixer/mixer-visual-runtime.js
+- [x] docs/types/media/mixer/mixer-hit-test.js
+- [x] docs/types/media/mixer/mixer-import-export.js
+- [x] docs/types/media/mixer/mixer-interactions.js
+- [x] docs/types/media/mixer/mixer-media-drop.js
+- [x] docs/types/media/mixer/mixer-model-helpers.js
+- [x] docs/types/media/mixer/mixer-model.js
+- [x] docs/types/media/mixer/mixer-project-settings-ui.js
+- [x] docs/types/media/mixer/mixer-renderer.js
+- [x] docs/types/media/mixer/mixer-styles-panels.css
+- [x] docs/types/media/mixer/mixer-styles.css
+- [x] docs/types/media/mixer/mixer-ui.js
+- [x] docs/types/media/mixer/mixer-video-export-helpers.js
+- [x] docs/types/media/mixer/mixer-video-export-ui.js
+- [x] docs/types/media/mixer/mixer-video-export.js
+- [x] docs/types/media/mixer/mixer-video-proxy-runtime.js
+- [x] docs/types/media/mixer/mixer-video-proxy-ui.js
+- [x] docs/types/media/mixer/mixer-video-source-helpers.js
+- [x] docs/types/media/mixer/mixer-video-source-ui.js
+- [x] docs/types/media/mixer/mixer-video-source.js
+- [x] docs/types/media/mixer/mixer-visual-preview.js
+- [x] docs/types/media/mixer/mixer-visual-runtime.js
 - [ ] docs/types/media/modular-mixer-research/00-scope-and-decisions.md
 - [ ] docs/types/media/modular-mixer-research/01-feature-research.md
 - [ ] docs/types/media/modular-mixer-research/02-module-architecture.md
