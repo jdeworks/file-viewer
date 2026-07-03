@@ -75,7 +75,7 @@ export async function render(intake, ctx) {
   tableEditor = new TableEditor(tablePanel, rowsToCsv(currentRows, sep), sep, (newCsv) => {
     // Keep internal copy in sync so export works
     currentRows = newCsv.split('\n').map((line) => line.split(sep).map((c) => c.replace(/^"|"$/g, '')));
-  });
+  }, hasHeader);
 
   // Tab switching
   let chartLoaded = false;

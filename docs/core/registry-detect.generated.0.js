@@ -42,7 +42,7 @@ const detect_csv=(()=>{
 // across the first lines (so we don't misfire on prose).
 function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'csv', 'tsv')) return 0.95;
+  if (hasExtension(intake, 'csv', 'tsv', 'tab')) return 0.95;
   if (mimeMatches(intake, 'csv', 'tab-separated')) return 0.9;
 
   const lines = (intake.textSample || '').split('\n').filter((l) => l.trim()).slice(0, 10);

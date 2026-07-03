@@ -27,16 +27,15 @@ Master overview of all file types supported by the viewer. Columns:
 | [HTML](html.md) | `.html` | Basic | Monaco | download | — | CSS isolation (scoped styles) |
 | [Plain text](/) | `.txt` `.bin` `.gradle` `.mod` | Basic | Monaco | download | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc (6) | — |
 | [Log](log.md) | `.log` | Basic | Monaco | download | — | Filter/tail |
-| [CSV / TSV](csv.md) | `.csv` | Basic | Monaco | download | — | Sort/filter |
 | [JSON Lines](jsonl.md) | `.jsonl` `.ndjson` | Basic | Monaco | download | — | Row limit |
-| [Code](/) | `.py` `.js` `.ts` `.tsx` `.go` `.rs` `.java` `.c` `.cpp` `.cs` `.rb` `.php` `.sh` + 25 more | Fallback | Monaco | download | Dockerfile, .gitignore, .editorconfig (3) | — |
+| [Code](/) | `.py` `.js` `.ts` `.tsx` `.go` `.rs` `.java` `.c` `.cpp` `.cs` `.rb` `.php` `.sh` + 25 more | Fallback | Monaco | download | Makefile, CMakeLists.txt, Bazel BUILD + more (7) | — |
 | [Dockerfile](dockerfile.md) | `Dockerfile` `.dockerfile` | Basic | Monaco | download | Dockerfile (1) | Multi-stage viz |
 | [Docker Compose](docker-compose.md) | `docker-compose.yml` | Basic | Monaco | download | docker-compose (1) | Service graph |
 | [EditorConfig](editorconfig.md) | `.editorconfig` | Basic | Monaco | download | .editorconfig (1) | — |
 | [.gitignore](gitignore.md) | `.gitignore` | Basic | Monaco | download | .gitignore (1) | — |
 | [Git Attributes](gitattributes.md) | `.gitattributes` | Basic | Monaco | download | — | — |
 | [Patch / Diff](patch.md) | `.patch` | Basic | Monaco | download | — | — |
-| [Crash Report](crash.md) | `.crash` | Basic | Monaco | download | — | — |
+| [Crash Report](crash.md) | `.crash` `.ips` `.diagnostic` | Full | Monaco | download | — | — |
 | [SSH Config](ssh-config.md) | `ssh-config` | Basic | Monaco | download | — | — |
 | [RDP Connection](rdp.md) | `.rdp` | Basic | Monaco | download | — | — |
 | [MCP Server Config](mcp-config.md) | `.json` (claude_desktop_config.json) | Basic | Monaco | download | — | — |
@@ -84,7 +83,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Spreadsheet](xlsx.md) | `.xlsx` `.xls` `.xlsm` `.xlsb` `.ods` | Basic | Cell grid | XLSX, CSV, JSON, download | — | Formula text |
-| [CSV / TSV](csv.md) | `.csv` `.tsv` | Basic | Monaco | download | — | Column types |
+| [CSV / TSV](csv.md) | `.csv` `.tsv` `.tab` | Full | Monaco / grid | JSON, XLSX, download | — | Sort/filter |
 
 ---
 
@@ -310,7 +309,7 @@ Enhanced filename matchers are registered across the base types above. This tabl
 | Text/Raw | 6 | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc |
 | Markdown | 2 | CODEOWNERS, Gemfile |
 | XML | 1 | pom.xml |
-| Code | 1 | Dockerfile |
+| Code | 7 | Makefile, CMakeLists.txt, BUILD.bazel, .bazelrc, build.ninja, Jenkinsfile, infra.tf |
 | EditorConfig | 1 | .editorconfig |
 | gitignore | 1 | .gitignore |
 | toml/ini | 1 | tox.ini |

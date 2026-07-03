@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.py`, `.rb`, `.go`, `.rs`, `.java`, `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`, `.cs`, `.php`, `.swift`, `.kt`, `.kts`, `.scala`, `.m`, `.fs`, `.fsx`, `.vb`, `.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`, `.cmd`, `.css`, `.scss`, `.less`, `.sql`, `.graphql`, `.gql`, `.proto`, `.wgsl`, `.sol`, `.lua`, `.r`, `.pl`, `.dart`, `.ex`, `.exs`, `.clj`, `Dockerfile`, `Makefile` |
+| Extension(s) | `.js`, `.mjs`, `.cjs`, `.jsx`, `.ts`, `.tsx`, `.py`, `.rb`, `.go`, `.rs`, `.java`, `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hh`, `.cs`, `.php`, `.swift`, `.kt`, `.kts`, `.scala`, `.m`, `.fs`, `.fsx`, `.vb`, `.sh`, `.bash`, `.zsh`, `.ps1`, `.bat`, `.cmd`, `.css`, `.scss`, `.less`, `.sql`, `.graphql`, `.gql`, `.proto`, `.wgsl`, `.sol`, `.lua`, `.r`, `.pl`, `.dart`, `.ex`, `.exs`, `.clj`, `.tf`, `.hcl`, `.vue`, `.cmake`, `Dockerfile`, `Makefile`, `CMakeLists.txt`, `BUILD.bazel`, `WORKSPACE`, `.bazelrc`, `build.ninja` |
 | MIME type | `text/plain` (varies by language) |
 | Binary / Text | Text |
 | Common use | Application source, scripts, stylesheets, build files, database queries |
