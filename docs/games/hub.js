@@ -79,6 +79,9 @@ export function createHub({ onToast } = {}) {
     stage.hidden = false;
     stage.innerHTML = '';
     root.querySelector('.games-back').hidden = false;
+    // Metagame gets a bounded, wider game area (UX audit F1/F3): toggle .is-meta on the panel so its
+    // CSS height contract kicks in. Arcade games leave it off and keep the compact 720px panel.
+    root.querySelector('.games-panel').classList.toggle('is-meta', id === 'metagame');
     // Add in-game fullscreen button.
     const fsBtn = document.createElement('button');
     fsBtn.className = 'games-fs-btn games-fs-ingame';
@@ -103,6 +106,7 @@ export function createHub({ onToast } = {}) {
     stage.innerHTML = '';
     root.querySelector('.games-grid').hidden = false;
     root.querySelector('.games-back').hidden = true;
+    root.querySelector('.games-panel').classList.remove('is-meta');   // back to the arcade panel size
   }
 
   function open() {

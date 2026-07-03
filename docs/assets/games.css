@@ -30,6 +30,14 @@
   flex: 1; min-height: 0; touch-action: none; }
 .games-stage[hidden] { display: none; }
 
+/* ── Metagame height contract (UX audit F1/F2/F3) — scoped to .is-meta so arcade games keep the
+   compact 720px auto-scroll panel untouched. hub.js toggles .is-meta on the panel while the
+   metagame is mounted. In that state the panel is a fixed-height, WIDER box that itself never
+   scrolls; overflow moves inside .mg-v3-host (see games-chrome.css). The stage fills the panel
+   height (align-items:stretch drops the flex-start top-align). ── */
+.games-panel.is-meta { width: min(1100px, 96vw); height: 92vh; }
+.games-panel.is-meta .games-stage { align-items: stretch; }
+
 .snake-wrap { display: flex; flex-direction: column; align-items: center; gap: 10px; touch-action: none; }
 .snake-hud { display: flex; gap: 14px; align-items: baseline; width: 100%; justify-content: space-between; }
 .snake-score { font-weight: 700; font-variant-numeric: tabular-nums; }

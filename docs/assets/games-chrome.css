@@ -70,6 +70,14 @@
 .mg-v3-loading { padding: 32px; color: #8a93a7; font-size: 0.9rem; letter-spacing: 0.04em; }
 .mg-v3-panel { background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
 .mg-v3-bell { position: relative; }
+/* Metagame height contract (UX audit F1–F3): while .is-meta is on the panel (toggled by hub.js),
+   the shell fills the fixed-height panel as a flex column, widens to the full panel (F3), and makes
+   .mg-v3-host the ONLY scroller (F1). Header + stage nav keep natural height and stay pinned. Stage
+   roots stretch to the host width so nothing shrink-wraps to max-content (F2, e.g. Stage 6). Each
+   stage still overflows the host today and scrolls INSIDE it — never the panel — until converted. */
+.games-panel.is-meta .mg-v3 { width: 100%; display: flex; flex-direction: column; height: 100%; }
+.games-panel.is-meta .mg-v3-host { flex: 1; min-height: 0; overflow: auto; }
+.games-panel.is-meta .mg-v3-host > * { width: 100%; }
 .stage2-glyph-dungeon { width: min(720px, 100%); background: #0f0e0c; color: #ef9f27; border: 1px solid #5b3a10; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .s2-hud { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; font-size: 12px; }
 .s2-grid { margin: 10px 0; padding: 10px; overflow: auto; border: 1px solid #5b3a10; background: #070604; color: #ef9f27; font: 12px/1.05 ui-monospace, monospace; }
