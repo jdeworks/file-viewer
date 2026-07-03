@@ -70,7 +70,7 @@ function assetKind(asset) {
 }
 
 function buildFilterGraph(project, visualItems, audioItems, inputIndex, duration) {
-  const fps = project.project?.fps || 30;
+  const fps = finite(project.project?.fps, 30) || 30;
   const size = outputSize(project);
   const background = safeColor(project.project?.background || '#000000');
   const filters = [`color=c=${background}:s=${size.width}x${size.height}:r=${fps}:d=${duration}[vbase0]`];
