@@ -3,6 +3,17 @@
 // Pure text parsing — no eval, no execution.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+/** Only allow hex/rgb/hsl/named CSS colors as a style value — rejects url(), expression(), or
+ * `;`-injected extra declarations so a config value can never reach an inline style unescaped. */
+function safeCssColor(v) {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(s)) return s;
+  if (/^(rgba?|hsla?)\(\s*[\d.]+%?\s*(,\s*[\d.]+%?\s*){2,3}(,\s*[\d.]+\s*)?\)$/i.test(s)) return s;
+  if (/^[a-z]+$/i.test(s)) return s;
+  return null;
+}
+
 // Detect format: TOML uses `key = value`, YAML uses `key: value`
 function detectFormat(text) {
   const tomlScore = (text.match(/^\s*\w+\s*=\s*/gm) || []).length;
@@ -169,13 +180,15 @@ export function render(intake) {
   if (d.bg || d.fg) {
     html += '<section class="kf-svc"><h3>Colors</h3><ul class="kf-list">';
     if (d.bg) {
+      const bgColor = safeCssColor(d.bg);
       html += '<li class="kf-pat"><code class="ts-key">background</code>'
-        + '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(d.bg) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>'
+        + (bgColor ? '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + bgColor + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>' : '')
         + '<span class="ts-doc" style="flex:1;padding-left:8px">' + esc(d.bg) + '</span></li>';
     }
     if (d.fg) {
+      const fgColor = safeCssColor(d.fg);
       html += '<li class="kf-pat"><code class="ts-key">foreground</code>'
-        + '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(d.fg) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>'
+        + (fgColor ? '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + fgColor + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>' : '')
         + '<span class="ts-doc" style="flex:1;padding-left:8px">' + esc(d.fg) + '</span></li>';
     }
     html += '</ul></section>';

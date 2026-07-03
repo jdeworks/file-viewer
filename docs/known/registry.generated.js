@@ -4961,7 +4961,7 @@ var claude_md_default = {
   match(intake) {
     const path = intake.filename || "";
     const name = path.split("/").pop().toLowerCase();
-    return name === "claude.md" && (name === "claude.md" || path.toLowerCase().endsWith(".claude/claude.md"));
+    return name === "claude.md";
   },
   loadRenderer: () => import("../types/text/known/claude-md/renderer.js"),
   about: {
@@ -7872,9 +7872,12 @@ var harness_pipeline_default = {
 var act_config_default = {
   id: "act-config",
   label: "act config",
+  // `.actrc` is owned by the dedicated `actrc` plugin (registered first in known/registry.js,
+  // so it always wins matchKnown's first-match-wins for that filename); this plugin only
+  // needs to claim the distinct `act.config` name to avoid a fully-shadowed dead branch.
   match: (intake, baseType) => {
     const name = (intake.filename || "").split("/").pop().toLowerCase();
-    return name === ".actrc" || name === "act.config";
+    return name === "act.config";
   },
   loadRenderer: () => import("../types/text/known/act-config/renderer.js"),
   about: {

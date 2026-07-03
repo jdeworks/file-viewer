@@ -4,10 +4,7 @@ export default {
   match(intake) {
     const path = (intake.filename || '');
     const name = path.split('/').pop().toLowerCase();
-    return name === 'claude.md' && (
-      name === 'claude.md' ||
-      path.toLowerCase().endsWith('.claude/claude.md')
-    );
+    return name === 'claude.md';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

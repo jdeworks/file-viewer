@@ -1,4 +1,9 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// http(s)-only allowlist — `git "<url>"` / `binary "<url>"` lines are untrusted file content
+// and must never reach an href unvalidated (rejects javascript:, data:, etc.).
+function safeHref(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim()) ? url : null;
+}
 
 const CSS = `
 .cf-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -62,8 +67,9 @@ export function render(intake) {
   function section(title, list) {
     if (!list.length) return '';
     const rows = list.map((d) => {
-      const nameCell = d.url
-        ? `<a class="cf-link" href="${esc(d.url)}" target="_blank" rel="noopener noreferrer">${esc(d.name)}</a>`
+      const safeUrl = d.url ? safeHref(d.url) : null;
+      const nameCell = safeUrl
+        ? `<a class="cf-link" href="${esc(safeUrl)}" target="_blank" rel="noopener noreferrer">${esc(d.name)}</a>`
         : esc(d.name);
       return `<tr><td>${nameCell}</td><td><span class="cf-ver">${esc(d.constraint) || '<i>any</i>'}</span></td></tr>`;
     }).join('');

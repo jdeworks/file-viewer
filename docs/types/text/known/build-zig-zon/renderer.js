@@ -1,5 +1,15 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const ext = (href, text) => `<a class="zon-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(text)} <span class="zon-exticon">↗</span></a>`;
+// http(s)-only allowlist — a build.zig.zon dependency URL is untrusted file content and must
+// never reach an href unvalidated (rejects javascript:, data:, etc.).
+function safeHref(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim()) ? url : null;
+}
+const ext = (href, text) => {
+  const safe = safeHref(href);
+  return safe
+    ? `<a class="zon-link" href="${esc(safe)}" target="_blank" rel="noopener noreferrer">${esc(text)} <span class="zon-exticon">↗</span></a>`
+    : `<span class="zon-link">${esc(text)}</span>`;
+};
 
 // ZON (Zig Object Notation) is like JSON but with .{ ... } and bare identifiers.
 // We use regex extraction rather than a full parser.
