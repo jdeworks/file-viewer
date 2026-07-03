@@ -1161,11 +1161,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/hl7/metadata.js
 - [x] docs/types/text/hl7/renderer.js
 - [x] docs/types/text/hl7/settings.default.json
-- [ ] docs/types/text/hydrogen/detect.js
-- [ ] docs/types/text/hydrogen/index.js
-- [ ] docs/types/text/hydrogen/metadata.js
-- [ ] docs/types/text/hydrogen/renderer.js
-- [ ] docs/types/text/hydrogen/settings.default.json
+- [x] docs/types/text/hydrogen/detect.js
+- [x] docs/types/text/hydrogen/index.js
+- [x] docs/types/text/hydrogen/metadata.js
+- [x] docs/types/text/hydrogen/renderer.js
+- [x] docs/types/text/hydrogen/settings.default.json
 - [ ] docs/types/text/ini/detect.js
 - [ ] docs/types/text/ini/EDITOR.md
 - [ ] docs/types/text/ini/exports.js

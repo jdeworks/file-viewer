@@ -41,6 +41,7 @@ const TYPE_INFO = {
   'mcp-config': ['MCP config', 'used to configure Model Context Protocol servers for desktop clients.', 'https://modelcontextprotocol.io/'],
   har: ['HAR', 'used to capture browser network requests and timings for debugging.', 'https://en.wikipedia.org/wiki/HAR_(file_format)'],
   hl7: ['HL7 v2 message', 'used for pipe-delimited healthcare messaging between hospital information systems.', 'https://en.wikipedia.org/wiki/Health_Level_7'],
+  hydrogen: ['Hydrogen drum machine file', 'used for Hydrogen song, pattern, and drumkit definitions (XML-based).', 'http://hydrogen-music.org/'],
   json: ['JSON', 'used for structured data interchange and configuration.', 'https://developer.mozilla.org/docs/Learn_web_development/Core/Scripting/JSON'],
   mbtiles: ['MBTiles map tileset', 'used to package offline raster or vector map tiles and map metadata in a SQLite database.', 'https://github.com/mapbox/mbtiles-spec'],
   kmz: ['KMZ map archive', 'used to share compressed KML geographic places, paths, overlays, and Google Earth map data.', 'https://developers.google.com/kml/documentation/kmzarchives'],

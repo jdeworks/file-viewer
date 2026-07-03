@@ -55,7 +55,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [MusicXML](/) | `.musicxml` `.mxl` | Basic | Monaco | download | — | Score render |
 | [ABC Music](abc.md) | `.abc` | Full | Monaco | download, PNG | — | MIDI playback |
 | [Chat Export](chat.md) | `.txt` `.json` (Telegram/WhatsApp/Discord) | Basic | Monaco | download | — | Facebook schema |
-| [Hydrogen](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
+| [Hydrogen](hydrogen.md) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [FITS Astronomy](fits.md) | `.fits` `.fit` `.fts` | Basic | None | download | — | Image render |
 
 ---
@@ -142,7 +142,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [MIDI Sequence](midi.md) | `.mid` `.midi` | Basic | None | download | — | Piano roll |
 | [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
-| [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
+| [Hydrogen Drum](hydrogen.md) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
 | [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
 | [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
 
