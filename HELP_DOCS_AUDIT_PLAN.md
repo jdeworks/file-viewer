@@ -2724,71 +2724,71 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/toml/renderer.js
 - [ ] docs/types/text/toml/settings.default.json
 - [ ] docs/types/text/toml/toml.js
-- [ ] docs/types/text/url/detect.js
-- [ ] docs/types/text/url/EDITOR.md
-- [ ] docs/types/text/url/index.js
-- [ ] docs/types/text/url/metadata.js
-- [ ] docs/types/text/url/renderer.js
-- [ ] docs/types/text/url/settings.default.json
-- [ ] docs/types/text/xml/detect.js
-- [ ] docs/types/text/xml/EDITOR.md
-- [ ] docs/types/text/xml/exports.js
-- [ ] docs/types/text/xml/index.js
-- [ ] docs/types/text/xml/known/android-manifest/index.js
-- [ ] docs/types/text/xml/known/android-manifest/renderer.js
-- [ ] docs/types/text/xml/known/android-strings/index.js
-- [ ] docs/types/text/xml/known/android-strings/renderer.js
-- [ ] docs/types/text/xml/known/ant-build/index.js
-- [ ] docs/types/text/xml/known/ant-build/renderer.js
-- [ ] docs/types/text/xml/known/app-config/index.js
-- [ ] docs/types/text/xml/known/app-config/renderer.js
-- [ ] docs/types/text/xml/known/checkstyle-xml/index.js
-- [ ] docs/types/text/xml/known/checkstyle-xml/renderer.js
-- [ ] docs/types/text/xml/known/clickhouse-config/index.js
-- [ ] docs/types/text/xml/known/clickhouse-config/renderer.js
-- [ ] docs/types/text/xml/known/csproj/index.js
-- [ ] docs/types/text/xml/known/csproj/renderer.js
-- [ ] docs/types/text/xml/known/directory-build/index.js
-- [ ] docs/types/text/xml/known/directory-build/renderer.js
-- [ ] docs/types/text/xml/known/jetbrains-workspace/index.js
-- [ ] docs/types/text/xml/known/jetbrains-workspace/renderer.js
-- [ ] docs/types/text/xml/known/log4j2/index.js
-- [ ] docs/types/text/xml/known/log4j2/renderer.js
-- [ ] docs/types/text/xml/known/logback/index.js
-- [ ] docs/types/text/xml/known/logback/renderer.js
-- [ ] docs/types/text/xml/known/maven-pom/index.js
-- [ ] docs/types/text/xml/known/maven-pom/renderer.js
-- [ ] docs/types/text/xml/known/maven-settings/index.js
-- [ ] docs/types/text/xml/known/maven-settings/renderer.js
-- [ ] docs/types/text/xml/known/msbuild-props/index.js
-- [ ] docs/types/text/xml/known/msbuild-props/renderer.js
-- [ ] docs/types/text/xml/known/nuget-config/index.js
-- [ ] docs/types/text/xml/known/nuget-config/renderer.js
-- [ ] docs/types/text/xml/known/nuspec/index.js
-- [ ] docs/types/text/xml/known/nuspec/renderer.js
-- [ ] docs/types/text/xml/known/packages-config/index.js
-- [ ] docs/types/text/xml/known/packages-config/renderer.js
-- [ ] docs/types/text/xml/known/phpunit-config/index.js
-- [ ] docs/types/text/xml/known/phpunit-config/renderer.js
-- [ ] docs/types/text/xml/known/phpunit/index.js
-- [ ] docs/types/text/xml/known/phpunit/renderer.js
-- [ ] docs/types/text/xml/known/pom-xml/index.js
-- [ ] docs/types/text/xml/known/pom-xml/metadata.js
-- [ ] docs/types/text/xml/known/pom-xml/render.js
-- [ ] docs/types/text/xml/known/psalm-config/index.js
-- [ ] docs/types/text/xml/known/psalm-config/renderer.js
-- [ ] docs/types/text/xml/known/sitemap/index.js
-- [ ] docs/types/text/xml/known/sitemap/renderer.js
-- [ ] docs/types/text/xml/known/spotbugs-config/index.js
-- [ ] docs/types/text/xml/known/spotbugs-config/renderer.js
-- [ ] docs/types/text/xml/known/web-config/index.js
-- [ ] docs/types/text/xml/known/web-config/renderer.js
-- [ ] docs/types/text/xml/known/xcode-scheme/index.js
-- [ ] docs/types/text/xml/known/xcode-scheme/renderer.js
-- [ ] docs/types/text/xml/metadata.js
-- [ ] docs/types/text/xml/renderer.js
-- [ ] docs/types/text/xml/settings.default.json
-- [ ] docs/types/text/xml/xmldiff.js
+- [x] docs/types/text/url/detect.js
+- [x] docs/types/text/url/EDITOR.md
+- [x] docs/types/text/url/index.js
+- [x] docs/types/text/url/metadata.js
+- [x] docs/types/text/url/renderer.js
+- [x] docs/types/text/url/settings.default.json
+- [x] docs/types/text/xml/detect.js
+- [x] docs/types/text/xml/EDITOR.md
+- [x] docs/types/text/xml/exports.js
+- [x] docs/types/text/xml/index.js
+- [x] docs/types/text/xml/known/android-manifest/index.js
+- [x] docs/types/text/xml/known/android-manifest/renderer.js
+- [x] docs/types/text/xml/known/android-strings/index.js
+- [x] docs/types/text/xml/known/android-strings/renderer.js
+- [x] docs/types/text/xml/known/ant-build/index.js
+- [x] docs/types/text/xml/known/ant-build/renderer.js
+- [x] docs/types/text/xml/known/app-config/index.js
+- [x] docs/types/text/xml/known/app-config/renderer.js
+- [x] docs/types/text/xml/known/checkstyle-xml/index.js
+- [x] docs/types/text/xml/known/checkstyle-xml/renderer.js
+- [x] docs/types/text/xml/known/clickhouse-config/index.js
+- [x] docs/types/text/xml/known/clickhouse-config/renderer.js
+- [x] docs/types/text/xml/known/csproj/index.js
+- [x] docs/types/text/xml/known/csproj/renderer.js
+- [x] docs/types/text/xml/known/directory-build/index.js
+- [x] docs/types/text/xml/known/directory-build/renderer.js
+- [x] docs/types/text/xml/known/jetbrains-workspace/index.js
+- [x] docs/types/text/xml/known/jetbrains-workspace/renderer.js
+- [x] docs/types/text/xml/known/log4j2/index.js
+- [x] docs/types/text/xml/known/log4j2/renderer.js
+- [x] docs/types/text/xml/known/logback/index.js
+- [x] docs/types/text/xml/known/logback/renderer.js
+- [x] docs/types/text/xml/known/maven-pom/index.js
+- [x] docs/types/text/xml/known/maven-pom/renderer.js
+- [x] docs/types/text/xml/known/maven-settings/index.js
+- [x] docs/types/text/xml/known/maven-settings/renderer.js
+- [x] docs/types/text/xml/known/msbuild-props/index.js
+- [x] docs/types/text/xml/known/msbuild-props/renderer.js
+- [x] docs/types/text/xml/known/nuget-config/index.js
+- [x] docs/types/text/xml/known/nuget-config/renderer.js
+- [x] docs/types/text/xml/known/nuspec/index.js
+- [x] docs/types/text/xml/known/nuspec/renderer.js
+- [x] docs/types/text/xml/known/packages-config/index.js
+- [x] docs/types/text/xml/known/packages-config/renderer.js
+- [x] docs/types/text/xml/known/phpunit-config/index.js
+- [x] docs/types/text/xml/known/phpunit-config/renderer.js
+- [x] docs/types/text/xml/known/phpunit/index.js
+- [x] docs/types/text/xml/known/phpunit/renderer.js
+- [x] docs/types/text/xml/known/pom-xml/index.js
+- [x] docs/types/text/xml/known/pom-xml/metadata.js
+- [x] docs/types/text/xml/known/pom-xml/render.js
+- [x] docs/types/text/xml/known/psalm-config/index.js
+- [x] docs/types/text/xml/known/psalm-config/renderer.js
+- [x] docs/types/text/xml/known/sitemap/index.js
+- [x] docs/types/text/xml/known/sitemap/renderer.js
+- [x] docs/types/text/xml/known/spotbugs-config/index.js
+- [x] docs/types/text/xml/known/spotbugs-config/renderer.js
+- [x] docs/types/text/xml/known/web-config/index.js
+- [x] docs/types/text/xml/known/web-config/renderer.js
+- [x] docs/types/text/xml/known/xcode-scheme/index.js
+- [x] docs/types/text/xml/known/xcode-scheme/renderer.js
+- [x] docs/types/text/xml/metadata.js
+- [x] docs/types/text/xml/renderer.js
+- [x] docs/types/text/xml/settings.default.json
+- [x] docs/types/text/xml/xmldiff.js
 - [ ] docs/types/text/xyz/detect.js
 - [ ] docs/types/text/xyz/EDITOR.md
 - [ ] docs/types/text/xyz/index.js
