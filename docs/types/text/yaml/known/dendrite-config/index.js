@@ -4,8 +4,10 @@ export default {
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'dendrite.yaml' || n === 'dendrite.yml') return true;
-    const cfg = intake.parsed || {};
-    return !!(cfg.global && cfg.global.server_name) && !!cfg.client_api;
+    // match() is synchronous (js-yaml loads async) and intake.parsed is never populated at
+    // detection time, so this has to be a text heuristic, not a parsed-object check.
+    const text = intake.text || intake.textSample || '';
+    return /^global:/m.test(text) && /server_name:/.test(text) && /^client_api:/m.test(text);
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

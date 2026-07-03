@@ -4,8 +4,10 @@ export default {
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'diun.yaml' || n === 'diun.yml') return true;
-    const cfg = intake.parsed || {};
-    return !!cfg.watch && !!(cfg.providers || cfg.notif);
+    // match() is synchronous (js-yaml loads async) and intake.parsed is never populated at
+    // detection time, so this has to be a text heuristic, not a parsed-object check.
+    const text = intake.text || intake.textSample || '';
+    return /^watch:/m.test(text) && (/^providers:/m.test(text) || /^notif:/m.test(text));
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

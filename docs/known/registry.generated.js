@@ -765,7 +765,7 @@ var azure_pipelines_default = {
   id: "azure-pipelines",
   label: "Azure Pipelines config",
   match: (intake, baseType) => {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType.id)) return false;
+    if (baseType.id !== "yaml") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
     return ["azure-pipelines.yml", "azure-pipelines.yaml"].includes(name);
   },
@@ -866,7 +866,7 @@ var plugin10 = {
   label: "CircleCI Config",
   tags: ["circleci", "ci", "yaml"],
   match(intake, baseType) {
-    if (baseType && !["yaml", "docker-compose", "github-actions"].includes(baseType.id)) return false;
+    if (baseType && baseType.id !== "yaml") return false;
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     const path = (intake.name || intake.filename || "").toLowerCase();
     if (n === "config.yml" && path.includes(".circleci")) return true;
@@ -887,7 +887,7 @@ var amplify_default = {
   id: "amplify",
   label: "AWS Amplify config",
   match: (intake, baseType) => {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType.id)) return false;
+    if (baseType.id !== "yaml") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
     return name === "amplify.yml" || name === "amplify.yaml";
   },
@@ -903,7 +903,7 @@ var codebuild_default = {
   id: "codebuild",
   label: "AWS CodeBuild buildspec",
   match: (intake, baseType) => {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType.id)) return false;
+    if (baseType.id !== "yaml") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
     return name === "buildspec.yml" || name === "buildspec.yaml" || /^buildspec\..+\.ya?ml$/.test(name);
   },
@@ -1367,7 +1367,7 @@ var buildkite_default = {
   id: "buildkite",
   label: "Buildkite pipeline",
   match: (intake, baseType) => {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType.id)) return false;
+    if (baseType.id !== "yaml") return false;
     const fn = intake.filename || "";
     const name = fn.split("/").pop().toLowerCase();
     if (name === "buildkite.yml" || name === "buildkite.yaml") return true;
@@ -2122,7 +2122,7 @@ var appveyor_default = {
   id: "appveyor",
   label: "AppVeyor CI config",
   match: (intake, baseType) => {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType.id)) return false;
+    if (baseType.id !== "yaml") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
     return name === "appveyor.yml" || name === ".appveyor.yml";
   },
@@ -3812,9 +3812,9 @@ var buf_config_default = {
   id: "buf-config",
   label: "Buf config",
   match: (intake, baseType) => {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType?.id)) return false;
+    if (baseType?.id !== "yaml") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
-    return name === "buf.yaml" || name === "buf.gen.yaml";
+    return name === "buf.yaml";
   },
   loadRenderer: () => import("../types/text/yaml/known/buf-config/renderer.js"),
   about: {
@@ -3829,7 +3829,7 @@ var plugin38 = {
   label: "Buf code generation",
   tags: ["protobuf", "grpc", "buf", "codegen"],
   match(intake, baseType) {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType?.id)) return false;
+    if (baseType?.id !== "yaml") return false;
     const name = (intake.filename || intake.name || "").split("/").pop().toLowerCase();
     return name === "buf.gen.yaml";
   },
@@ -3942,7 +3942,7 @@ var citation_cff_default = {
   id: "citation-cff",
   label: "Citation File Format",
   match(intake, baseType) {
-    if (!["yaml", "docker-compose", "github-actions"].includes(baseType?.id)) return false;
+    if (baseType?.id !== "yaml") return false;
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     return name === "citation.cff";
   },
@@ -11369,8 +11369,8 @@ var diun_config_default = {
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "diun.yaml" || n === "diun.yml") return true;
-    const cfg = intake.parsed || {};
-    return !!cfg.watch && !!(cfg.providers || cfg.notif);
+    const text = intake.text || intake.textSample || "";
+    return /^watch:/m.test(text) && (/^providers:/m.test(text) || /^notif:/m.test(text));
   },
   loadRenderer: () => import("../types/text/yaml/known/diun-config/renderer.js"),
   about: {
@@ -11844,8 +11844,8 @@ var dendrite_config_default = {
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "dendrite.yaml" || n === "dendrite.yml") return true;
-    const cfg = intake.parsed || {};
-    return !!(cfg.global && cfg.global.server_name) && !!cfg.client_api;
+    const text = intake.text || intake.textSample || "";
+    return /^global:/m.test(text) && /server_name:/.test(text) && /^client_api:/m.test(text);
   },
   loadRenderer: () => import("../types/text/yaml/known/dendrite-config/renderer.js"),
   about: {
@@ -12241,8 +12241,8 @@ var dashy_config_default = {
       return text.includes("pageInfo") && text.includes("sections");
     }
     if (n === "conf.yml") {
-      const parsed = intake.parsed || {};
-      return typeof parsed.pageInfo === "object" && parsed.pageInfo !== null && Array.isArray(parsed.sections);
+      const text = intake.text || intake.textSample || "";
+      return /^pageInfo:/m.test(text) && /^sections:/m.test(text);
     }
     return false;
   },

@@ -2,7 +2,7 @@ export default {
   id: 'azure-pipelines',
   label: 'Azure Pipelines config',
   match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
+    if (baseType.id !== 'yaml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
     return ['azure-pipelines.yml', 'azure-pipelines.yaml'].includes(name);
   },

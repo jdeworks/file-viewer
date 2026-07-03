@@ -1,5 +1,9 @@
 import { loadGlobal, vendor } from '../../../../../core/script-loader.js';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+// `url`/`repository-code` come straight from an untrusted CITATION.cff — only ever wire them up
+// as a clickable link if they're http(s); otherwise render as inert (escaped) text so a
+// "javascript:" URI can't execute in the page's origin when clicked.
+const isSafeHref = (href) => /^https?:\/\//i.test(String(href || ''));
 
 const CSS = `
 .cff-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -58,8 +62,8 @@ export async function render(intake) {
     ? `<div class="cff-sec"><h3>Metadata</h3><dl class="cff-kv">
       ${version ? `<dt>Version</dt><dd>${esc(version)}</dd>` : ''}
       ${doi ? `<dt>DOI</dt><dd><a href="https://doi.org/${esc(doi)}" target="_blank" rel="noopener">${esc(doi)}</a></dd>` : ''}
-      ${url ? `<dt>URL</dt><dd><a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a></dd>` : ''}
-      ${repoCode ? `<dt>Repository</dt><dd><a href="${esc(repoCode)}" target="_blank" rel="noopener">${esc(repoCode)}</a></dd>` : ''}
+      ${url ? `<dt>URL</dt><dd>${isSafeHref(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(url)}</a>` : esc(url)}</dd>` : ''}
+      ${repoCode ? `<dt>Repository</dt><dd>${isSafeHref(repoCode) ? `<a href="${esc(repoCode)}" target="_blank" rel="noopener">${esc(repoCode)}</a>` : esc(repoCode)}</dd>` : ''}
       ${dateReleased ? `<dt>Released</dt><dd>${esc(dateReleased)}</dd>` : ''}
       ${license ? `<dt>License</dt><dd>${esc(license)}</dd>` : ''}
     </dl></div>`

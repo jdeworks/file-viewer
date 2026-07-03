@@ -2,7 +2,7 @@ export default {
   id: 'buildkite',
   label: 'Buildkite pipeline',
   match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
+    if (baseType.id !== 'yaml') return false;
     const fn = intake.filename || '';
     const name = fn.split('/').pop().toLowerCase();
     if (name === 'buildkite.yml' || name === 'buildkite.yaml') return true;

@@ -2,7 +2,7 @@ export default {
   id: 'appveyor',
   label: 'AppVeyor CI config',
   match: (intake, baseType) => {
-    if (!['yaml', 'docker-compose', 'github-actions'].includes(baseType.id)) return false;
+    if (baseType.id !== 'yaml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
     return name === 'appveyor.yml' || name === '.appveyor.yml';
   },
