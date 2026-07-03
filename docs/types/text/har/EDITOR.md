@@ -7,17 +7,21 @@ css, image, other), computes per-entry start offset and duration from
 total duration), a waterfall chart via Chart.js (horizontal bars, with canvas
 fallback), category filter buttons, a sortable request table (method, URL,
 status badge, MIME, size, duration), and dark-mode styling. Up to full entry
-count displayed.
+count displayed. Clicking a table row opens a request detail panel (URL, MIME,
+per-phase timing breakdown, query string, request/response headers, and
+length-capped request/response body previews). Header/cookie/query values that
+look sensitive (auth, cookie, token, API key, session, etc., matched by name)
+are redacted by NAME in both the table and the detail panel — the Download
+button still serves the untouched original file.
 
 ## Viewer enhancements (no write-back needed)
 
-- **Detailed waterfall with timing breakdown** — Each HAR entry has a `timings`
-  object (dns, connect, ssl, send, wait, receive). Replace the current
-  single-bar waterfall with stacked segments per phase using distinct colors.
-  Tooltip shows each phase in ms — M
-- **Request detail panel** — Click a table row to open a side panel showing
-  request headers, response headers, query string params (parsed from URL), and
-  response body preview (first 4 KB, formatted if JSON/HTML) — M
+- **Stacked waterfall with timing breakdown** — Each HAR entry has a `timings`
+  object (dns, connect, ssl, send, wait, receive); the detail panel already
+  renders this per-phase breakdown for the *selected* entry. Still open: apply
+  the same breakdown to the main aggregate waterfall itself — replace the
+  current single-bar-per-request Chart.js dataset with stacked segments per
+  phase using distinct colors — M
 - **Filter by status code range** — Add status filter chips (2xx / 3xx / 4xx /
   5xx / 0) alongside the existing category filters — S
 - **Filter by domain** — Extract hostname from each URL and add a domain
@@ -52,8 +56,8 @@ count displayed.
   comparison — L
 
 ## Shared toolbar / modular note
-Chart.js is already in use (`/vendor/chartjs/chart.umd.js`). The timing-phase
+Chart.js is already in use (`/vendor/chartjs/chart.umd.js`). The stacked
 waterfall is a natural extension of the existing Chart.js bar dataset — add one
-`data` array per timing phase with stacked: true. The request detail panel is
-the largest new surface and should be a separate `har-detail.js` component to
-keep the main renderer clean.
+`data` array per timing phase with stacked: true. The request detail panel now
+lives inline in `renderer.js`; if it keeps growing, split it into a separate
+`har-detail.js` component to keep the main renderer under the LOC cap.
