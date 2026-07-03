@@ -1,4 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
 
 const CSS = `
 .ps-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -60,10 +64,13 @@ export function render(intake) {
   })();
   const deps = parseDeps(text);
 
+  const homepageHref = homepage ? safeHref(homepage.trim()) : null;
   const metaChips = [
     license && `<span class="ps-meta-chip">⚖ ${esc(license)}</span>`,
     ...platforms.map((p) => `<span class="ps-meta-chip">${esc(p)}</span>`),
-    homepage && `<a class="ps-link ps-meta-chip" href="${esc(homepage)}" target="_blank" rel="noopener noreferrer">${esc(homepage.replace(/^https?:\/\//, '').slice(0, 48))} ↗</a>`,
+    homepageHref
+      ? `<a class="ps-link ps-meta-chip" href="${esc(homepageHref)}" target="_blank" rel="noopener noreferrer">${esc(homepage.replace(/^https?:\/\//, '').slice(0, 48))} ↗</a>`
+      : homepage && `<span class="ps-meta-chip">${esc(homepage.slice(0, 48))}</span>`,
   ].filter(Boolean).join('');
 
   const authorsHtml = authors.length

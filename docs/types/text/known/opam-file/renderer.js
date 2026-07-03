@@ -1,4 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
 
 const CSS = `
 .opam-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -156,8 +160,8 @@ export function render(intake) {
     maintainer ? `<div class="opam-meta"><span>Maintainer</span>${esc(maintainer)}</div>` : '',
     authors.length ? `<div class="opam-authors"><span style="color:var(--fg-2,#888);margin-right:6px">Authors</span>${authors.map(esc).join(', ')}</div>` : '',
     license ? `<div class="opam-meta"><span>License</span>${esc(license)}</div>` : '',
-    homepage ? `<div class="opam-meta"><span>Homepage</span><a href="${esc(homepage)}" target="_blank" rel="noopener">${esc(homepage)}</a></div>` : '',
-    bugReports ? `<div class="opam-meta"><span>Bug reports</span><a href="${esc(bugReports)}" target="_blank" rel="noopener">${esc(bugReports)}</a></div>` : '',
+    homepage ? (safeHref(homepage) ? `<div class="opam-meta"><span>Homepage</span><a href="${esc(safeHref(homepage))}" target="_blank" rel="noopener">${esc(homepage)}</a></div>` : `<div class="opam-meta"><span>Homepage</span>${esc(homepage)}</div>`) : '',
+    bugReports ? (safeHref(bugReports) ? `<div class="opam-meta"><span>Bug reports</span><a href="${esc(safeHref(bugReports))}" target="_blank" rel="noopener">${esc(bugReports)}</a></div>` : `<div class="opam-meta"><span>Bug reports</span>${esc(bugReports)}</div>`) : '',
   ].filter(Boolean).join('');
 
   const identSection = identRows ? `<div class="opam-sec">${identRows}</div>` : '';

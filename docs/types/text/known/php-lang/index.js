@@ -8,6 +8,8 @@ export const plugin = {
     // Yield to more-specific config plugins that come later in the KNOWN array.
     // rector.php / config.php → rector-config
     if (name === 'rector.php' || name === 'config.php') return null;
+    // .php-cs-fixer.php / .php-cs-fixer.dist.php → php-cs-fixer
+    if (name === '.php-cs-fixer.php' || name === '.php-cs-fixer.dist.php') return null;
     // Content guard: must have PHP opening tag
     const sample = (intake.text || '').slice(0, 500);
     if (!sample.includes('<?php') && !sample.includes('<?')) return null;

@@ -1946,183 +1946,183 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/known/msmtp-conf/renderer.js
 - [x] docs/types/text/known/mustache-template/index.js
 - [x] docs/types/text/known/mustache-template/renderer.js
-- [ ] docs/types/text/known/muttrc/index.js
-- [ ] docs/types/text/known/muttrc/renderer.js
-- [ ] docs/types/text/known/my-cnf/index.js
-- [ ] docs/types/text/known/my-cnf/renderer.js
-- [ ] docs/types/text/known/mypy-ini/index.js
-- [ ] docs/types/text/known/mypy-ini/renderer.js
-- [ ] docs/types/text/known/mypy/index.js
-- [ ] docs/types/text/known/mypy/renderer.js
-- [ ] docs/types/text/known/n8n-config/index.js
-- [ ] docs/types/text/known/n8n-config/renderer.js
-- [ ] docs/types/text/known/nagios-conf/index.js
-- [ ] docs/types/text/known/nagios-conf/renderer.js
-- [ ] docs/types/text/known/named-conf/index.js
-- [ ] docs/types/text/known/named-conf/renderer.js
-- [ ] docs/types/text/known/nanorc/index.js
-- [ ] docs/types/text/known/nanorc/renderer.js
-- [ ] docs/types/text/known/nats-config/index.js
-- [ ] docs/types/text/known/nats-config/renderer.js
-- [ ] docs/types/text/known/ncmpcpp-conf/index.js
-- [ ] docs/types/text/known/ncmpcpp-conf/renderer.js
-- [ ] docs/types/text/known/neomutt-conf/index.js
-- [ ] docs/types/text/known/neomutt-conf/renderer.js
-- [ ] docs/types/text/known/neovim-config/index.js
-- [ ] docs/types/text/known/neovim-config/renderer.js
-- [ ] docs/types/text/known/netbox-config/index.js
-- [ ] docs/types/text/known/netbox-config/renderer.js
-- [ ] docs/types/text/known/netdata-conf/index.js
-- [ ] docs/types/text/known/netdata-conf/renderer.js
-- [ ] docs/types/text/known/newsboat-conf/index.js
-- [ ] docs/types/text/known/newsboat-conf/renderer.js
-- [ ] docs/types/text/known/next-config/index.js
-- [ ] docs/types/text/known/next-config/renderer.js
-- [ ] docs/types/text/known/nfs-exports/index.js
-- [ ] docs/types/text/known/nfs-exports/renderer.js
-- [ ] docs/types/text/known/nftables-rules/index.js
-- [ ] docs/types/text/known/nftables-rules/renderer.js
-- [ ] docs/types/text/known/nginx-conf/index.js
-- [ ] docs/types/text/known/nginx-conf/renderer.js
-- [ ] docs/types/text/known/nim-lang/index.js
-- [ ] docs/types/text/known/nim-lang/renderer.js
-- [ ] docs/types/text/known/nimble/index.js
-- [ ] docs/types/text/known/nimble/renderer.js
-- [ ] docs/types/text/known/ninja-build/index.js
-- [ ] docs/types/text/known/ninja-build/renderer.js
-- [ ] docs/types/text/known/nix-config/index.js
-- [ ] docs/types/text/known/nix-config/renderer.js
-- [ ] docs/types/text/known/nix-daemon-conf/index.js
-- [ ] docs/types/text/known/nix-daemon-conf/renderer.js
-- [ ] docs/types/text/known/nix-expr/index.js
-- [ ] docs/types/text/known/nix-expr/renderer.js
-- [ ] docs/types/text/known/nix-flake/index.js
-- [ ] docs/types/text/known/nix-flake/renderer.js
-- [ ] docs/types/text/known/nocodb-config/index.js
-- [ ] docs/types/text/known/nocodb-config/renderer.js
-- [ ] docs/types/text/known/node-version-file/index.js
-- [ ] docs/types/text/known/node-version-file/renderer.js
-- [ ] docs/types/text/known/nomad-job/index.js
-- [ ] docs/types/text/known/nomad-job/renderer.js
-- [ ] docs/types/text/known/npmignore/index.js
-- [ ] docs/types/text/known/npmignore/render.js
-- [ ] docs/types/text/known/npmignore/renderer.js
-- [ ] docs/types/text/known/npmrc/index.js
-- [ ] docs/types/text/known/npmrc/renderer.js
-- [ ] docs/types/text/known/nsq-conf/index.js
-- [ ] docs/types/text/known/nsq-conf/renderer.js
-- [ ] docs/types/text/known/nsswitch-conf/index.js
-- [ ] docs/types/text/known/nsswitch-conf/renderer.js
-- [ ] docs/types/text/known/nunjucks/index.js
-- [ ] docs/types/text/known/nunjucks/renderer.js
-- [ ] docs/types/text/known/nushell-config/index.js
-- [ ] docs/types/text/known/nushell-config/renderer.js
-- [ ] docs/types/text/known/nushell-script/index.js
-- [ ] docs/types/text/known/nushell-script/renderer.js
-- [ ] docs/types/text/known/nuxt-config/index.js
-- [ ] docs/types/text/known/nuxt-config/renderer.js
-- [ ] docs/types/text/known/nvmrc/index.js
-- [ ] docs/types/text/known/nvmrc/renderer.js
-- [ ] docs/types/text/known/nzbget-config/index.js
-- [ ] docs/types/text/known/nzbget-config/renderer.js
-- [ ] docs/types/text/known/oauth2-proxy-config/index.js
-- [ ] docs/types/text/known/oauth2-proxy-config/renderer.js
-- [ ] docs/types/text/known/objc-lang/index.js
-- [ ] docs/types/text/known/objc-lang/renderer.js
-- [ ] docs/types/text/known/ocaml-lang/index.js
-- [ ] docs/types/text/known/ocaml-lang/renderer.js
-- [ ] docs/types/text/known/odin-lang/index.js
-- [ ] docs/types/text/known/odin-lang/renderer.js
-- [ ] docs/types/text/known/opa-policy/index.js
-- [ ] docs/types/text/known/opa-policy/renderer.js
-- [ ] docs/types/text/known/opam-file/index.js
-- [ ] docs/types/text/known/opam-file/renderer.js
-- [ ] docs/types/text/known/open-webui-config/index.js
-- [ ] docs/types/text/known/open-webui-config/renderer.js
-- [ ] docs/types/text/known/openapi/index.js
-- [ ] docs/types/text/known/openapi/metadata.js
-- [ ] docs/types/text/known/openapi/render.js
-- [ ] docs/types/text/known/openldap-conf/index.js
-- [ ] docs/types/text/known/openldap-conf/renderer.js
-- [ ] docs/types/text/known/openrc-init/index.js
-- [ ] docs/types/text/known/openrc-init/renderer.js
-- [ ] docs/types/text/known/openssl-conf/index.js
-- [ ] docs/types/text/known/openssl-conf/renderer.js
-- [ ] docs/types/text/known/openvpn-config/index.js
-- [ ] docs/types/text/known/openvpn-config/renderer.js
-- [ ] docs/types/text/known/org-mode/index.js
-- [ ] docs/types/text/known/org-mode/renderer.js
-- [ ] docs/types/text/known/outline-config/index.js
-- [ ] docs/types/text/known/outline-config/renderer.js
-- [ ] docs/types/text/known/package-swift/index.js
-- [ ] docs/types/text/known/package-swift/renderer.js
-- [ ] docs/types/text/known/pacman-conf/index.js
-- [ ] docs/types/text/known/pacman-conf/renderer.js
-- [ ] docs/types/text/known/paperless-conf/index.js
-- [ ] docs/types/text/known/paperless-conf/renderer.js
-- [ ] docs/types/text/known/pascal-lang/index.js
-- [ ] docs/types/text/known/pascal-lang/renderer.js
-- [ ] docs/types/text/known/pdns-conf/index.js
-- [ ] docs/types/text/known/pdns-conf/renderer.js
-- [ ] docs/types/text/known/pdns-recursor-conf/index.js
-- [ ] docs/types/text/known/pdns-recursor-conf/renderer.js
-- [ ] docs/types/text/known/perl-lang/index.js
-- [ ] docs/types/text/known/perl-lang/renderer.js
-- [ ] docs/types/text/known/pg-hba/index.js
-- [ ] docs/types/text/known/pg-hba/renderer.js
-- [ ] docs/types/text/known/pgbackrest-conf/index.js
-- [ ] docs/types/text/known/pgbackrest-conf/renderer.js
-- [ ] docs/types/text/known/pgbouncer-ini/index.js
-- [ ] docs/types/text/known/pgbouncer-ini/renderer.js
-- [ ] docs/types/text/known/php-cs-fixer/index.js
-- [ ] docs/types/text/known/php-cs-fixer/renderer.js
-- [ ] docs/types/text/known/php-lang/index.js
-- [ ] docs/types/text/known/php-lang/renderer.js
-- [ ] docs/types/text/known/phpstan/index.js
-- [ ] docs/types/text/known/phpstan/renderer.js
-- [ ] docs/types/text/known/picom-conf/index.js
-- [ ] docs/types/text/known/picom-conf/renderer.js
-- [ ] docs/types/text/known/pihole-setupvars/index.js
-- [ ] docs/types/text/known/pihole-setupvars/renderer.js
-- [ ] docs/types/text/known/pip-conf/index.js
-- [ ] docs/types/text/known/pip-conf/renderer.js
-- [ ] docs/types/text/known/pipewire-conf/index.js
-- [ ] docs/types/text/known/pipewire-conf/renderer.js
-- [ ] docs/types/text/known/pipfile/index.js
-- [ ] docs/types/text/known/pipfile/metadata.js
-- [ ] docs/types/text/known/pipfile/render.js
-- [ ] docs/types/text/known/pkgbuild/index.js
-- [ ] docs/types/text/known/pkgbuild/renderer.js
-- [ ] docs/types/text/known/plane-config/index.js
-- [ ] docs/types/text/known/plane-config/renderer.js
-- [ ] docs/types/text/known/plantuml/index.js
-- [ ] docs/types/text/known/plantuml/renderer.js
-- [ ] docs/types/text/known/plausible-config/index.js
-- [ ] docs/types/text/known/plausible-config/renderer.js
-- [ ] docs/types/text/known/playwright-config/index.js
-- [ ] docs/types/text/known/playwright-config/renderer.js
-- [ ] docs/types/text/known/plist/index.js
-- [ ] docs/types/text/known/plist/renderer.js
-- [ ] docs/types/text/known/pocket-id-config/index.js
-- [ ] docs/types/text/known/pocket-id-config/renderer.js
-- [ ] docs/types/text/known/podfile-lock/index.js
-- [ ] docs/types/text/known/podfile-lock/renderer.js
-- [ ] docs/types/text/known/podfile/index.js
-- [ ] docs/types/text/known/podfile/renderer.js
-- [ ] docs/types/text/known/podspec/index.js
-- [ ] docs/types/text/known/podspec/renderer.js
-- [ ] docs/types/text/known/polybar-conf/index.js
-- [ ] docs/types/text/known/polybar-conf/renderer.js
-- [ ] docs/types/text/known/pony-lang/index.js
-- [ ] docs/types/text/known/pony-lang/renderer.js
-- [ ] docs/types/text/known/postfix-conf/index.js
-- [ ] docs/types/text/known/postfix-conf/renderer.js
-- [ ] docs/types/text/known/postfix-main/index.js
-- [ ] docs/types/text/known/postfix-main/renderer.js
-- [ ] docs/types/text/known/postgresql-conf/index.js
-- [ ] docs/types/text/known/postgresql-conf/renderer.js
-- [ ] docs/types/text/known/powershell-lang/index.js
-- [ ] docs/types/text/known/powershell-lang/renderer.js
+- [x] docs/types/text/known/muttrc/index.js
+- [x] docs/types/text/known/muttrc/renderer.js
+- [x] docs/types/text/known/my-cnf/index.js
+- [x] docs/types/text/known/my-cnf/renderer.js
+- [x] docs/types/text/known/mypy-ini/index.js
+- [x] docs/types/text/known/mypy-ini/renderer.js
+- [x] docs/types/text/known/mypy/index.js
+- [x] docs/types/text/known/mypy/renderer.js
+- [x] docs/types/text/known/n8n-config/index.js
+- [x] docs/types/text/known/n8n-config/renderer.js
+- [x] docs/types/text/known/nagios-conf/index.js
+- [x] docs/types/text/known/nagios-conf/renderer.js
+- [x] docs/types/text/known/named-conf/index.js
+- [x] docs/types/text/known/named-conf/renderer.js
+- [x] docs/types/text/known/nanorc/index.js
+- [x] docs/types/text/known/nanorc/renderer.js
+- [x] docs/types/text/known/nats-config/index.js
+- [x] docs/types/text/known/nats-config/renderer.js
+- [x] docs/types/text/known/ncmpcpp-conf/index.js
+- [x] docs/types/text/known/ncmpcpp-conf/renderer.js
+- [x] docs/types/text/known/neomutt-conf/index.js
+- [x] docs/types/text/known/neomutt-conf/renderer.js
+- [x] docs/types/text/known/neovim-config/index.js
+- [x] docs/types/text/known/neovim-config/renderer.js
+- [x] docs/types/text/known/netbox-config/index.js
+- [x] docs/types/text/known/netbox-config/renderer.js
+- [x] docs/types/text/known/netdata-conf/index.js
+- [x] docs/types/text/known/netdata-conf/renderer.js
+- [x] docs/types/text/known/newsboat-conf/index.js
+- [x] docs/types/text/known/newsboat-conf/renderer.js
+- [x] docs/types/text/known/next-config/index.js
+- [x] docs/types/text/known/next-config/renderer.js
+- [x] docs/types/text/known/nfs-exports/index.js
+- [x] docs/types/text/known/nfs-exports/renderer.js
+- [x] docs/types/text/known/nftables-rules/index.js
+- [x] docs/types/text/known/nftables-rules/renderer.js
+- [x] docs/types/text/known/nginx-conf/index.js
+- [x] docs/types/text/known/nginx-conf/renderer.js
+- [x] docs/types/text/known/nim-lang/index.js
+- [x] docs/types/text/known/nim-lang/renderer.js
+- [x] docs/types/text/known/nimble/index.js
+- [x] docs/types/text/known/nimble/renderer.js
+- [x] docs/types/text/known/ninja-build/index.js
+- [x] docs/types/text/known/ninja-build/renderer.js
+- [x] docs/types/text/known/nix-config/index.js
+- [x] docs/types/text/known/nix-config/renderer.js
+- [x] docs/types/text/known/nix-daemon-conf/index.js
+- [x] docs/types/text/known/nix-daemon-conf/renderer.js
+- [x] docs/types/text/known/nix-expr/index.js
+- [x] docs/types/text/known/nix-expr/renderer.js
+- [x] docs/types/text/known/nix-flake/index.js
+- [x] docs/types/text/known/nix-flake/renderer.js
+- [x] docs/types/text/known/nocodb-config/index.js
+- [x] docs/types/text/known/nocodb-config/renderer.js
+- [x] docs/types/text/known/node-version-file/index.js
+- [x] docs/types/text/known/node-version-file/renderer.js
+- [x] docs/types/text/known/nomad-job/index.js
+- [x] docs/types/text/known/nomad-job/renderer.js
+- [x] docs/types/text/known/npmignore/index.js
+- [x] docs/types/text/known/npmignore/render.js
+- [x] docs/types/text/known/npmignore/renderer.js
+- [x] docs/types/text/known/npmrc/index.js
+- [x] docs/types/text/known/npmrc/renderer.js
+- [x] docs/types/text/known/nsq-conf/index.js
+- [x] docs/types/text/known/nsq-conf/renderer.js
+- [x] docs/types/text/known/nsswitch-conf/index.js
+- [x] docs/types/text/known/nsswitch-conf/renderer.js
+- [x] docs/types/text/known/nunjucks/index.js
+- [x] docs/types/text/known/nunjucks/renderer.js
+- [x] docs/types/text/known/nushell-config/index.js
+- [x] docs/types/text/known/nushell-config/renderer.js
+- [x] docs/types/text/known/nushell-script/index.js
+- [x] docs/types/text/known/nushell-script/renderer.js
+- [x] docs/types/text/known/nuxt-config/index.js
+- [x] docs/types/text/known/nuxt-config/renderer.js
+- [x] docs/types/text/known/nvmrc/index.js
+- [x] docs/types/text/known/nvmrc/renderer.js
+- [x] docs/types/text/known/nzbget-config/index.js
+- [x] docs/types/text/known/nzbget-config/renderer.js
+- [x] docs/types/text/known/oauth2-proxy-config/index.js
+- [x] docs/types/text/known/oauth2-proxy-config/renderer.js
+- [x] docs/types/text/known/objc-lang/index.js
+- [x] docs/types/text/known/objc-lang/renderer.js
+- [x] docs/types/text/known/ocaml-lang/index.js
+- [x] docs/types/text/known/ocaml-lang/renderer.js
+- [x] docs/types/text/known/odin-lang/index.js
+- [x] docs/types/text/known/odin-lang/renderer.js
+- [x] docs/types/text/known/opa-policy/index.js
+- [x] docs/types/text/known/opa-policy/renderer.js
+- [x] docs/types/text/known/opam-file/index.js
+- [x] docs/types/text/known/opam-file/renderer.js
+- [x] docs/types/text/known/open-webui-config/index.js
+- [x] docs/types/text/known/open-webui-config/renderer.js
+- [x] docs/types/text/known/openapi/index.js
+- [x] docs/types/text/known/openapi/metadata.js
+- [x] docs/types/text/known/openapi/render.js
+- [x] docs/types/text/known/openldap-conf/index.js
+- [x] docs/types/text/known/openldap-conf/renderer.js
+- [x] docs/types/text/known/openrc-init/index.js
+- [x] docs/types/text/known/openrc-init/renderer.js
+- [x] docs/types/text/known/openssl-conf/index.js
+- [x] docs/types/text/known/openssl-conf/renderer.js
+- [x] docs/types/text/known/openvpn-config/index.js
+- [x] docs/types/text/known/openvpn-config/renderer.js
+- [x] docs/types/text/known/org-mode/index.js
+- [x] docs/types/text/known/org-mode/renderer.js
+- [x] docs/types/text/known/outline-config/index.js
+- [x] docs/types/text/known/outline-config/renderer.js
+- [x] docs/types/text/known/package-swift/index.js
+- [x] docs/types/text/known/package-swift/renderer.js
+- [x] docs/types/text/known/pacman-conf/index.js
+- [x] docs/types/text/known/pacman-conf/renderer.js
+- [x] docs/types/text/known/paperless-conf/index.js
+- [x] docs/types/text/known/paperless-conf/renderer.js
+- [x] docs/types/text/known/pascal-lang/index.js
+- [x] docs/types/text/known/pascal-lang/renderer.js
+- [x] docs/types/text/known/pdns-conf/index.js
+- [x] docs/types/text/known/pdns-conf/renderer.js
+- [x] docs/types/text/known/pdns-recursor-conf/index.js
+- [x] docs/types/text/known/pdns-recursor-conf/renderer.js
+- [x] docs/types/text/known/perl-lang/index.js
+- [x] docs/types/text/known/perl-lang/renderer.js
+- [x] docs/types/text/known/pg-hba/index.js
+- [x] docs/types/text/known/pg-hba/renderer.js
+- [x] docs/types/text/known/pgbackrest-conf/index.js
+- [x] docs/types/text/known/pgbackrest-conf/renderer.js
+- [x] docs/types/text/known/pgbouncer-ini/index.js
+- [x] docs/types/text/known/pgbouncer-ini/renderer.js
+- [x] docs/types/text/known/php-cs-fixer/index.js
+- [x] docs/types/text/known/php-cs-fixer/renderer.js
+- [x] docs/types/text/known/php-lang/index.js
+- [x] docs/types/text/known/php-lang/renderer.js
+- [x] docs/types/text/known/phpstan/index.js
+- [x] docs/types/text/known/phpstan/renderer.js
+- [x] docs/types/text/known/picom-conf/index.js
+- [x] docs/types/text/known/picom-conf/renderer.js
+- [x] docs/types/text/known/pihole-setupvars/index.js
+- [x] docs/types/text/known/pihole-setupvars/renderer.js
+- [x] docs/types/text/known/pip-conf/index.js
+- [x] docs/types/text/known/pip-conf/renderer.js
+- [x] docs/types/text/known/pipewire-conf/index.js
+- [x] docs/types/text/known/pipewire-conf/renderer.js
+- [x] docs/types/text/known/pipfile/index.js
+- [x] docs/types/text/known/pipfile/metadata.js
+- [x] docs/types/text/known/pipfile/render.js
+- [x] docs/types/text/known/pkgbuild/index.js
+- [x] docs/types/text/known/pkgbuild/renderer.js
+- [x] docs/types/text/known/plane-config/index.js
+- [x] docs/types/text/known/plane-config/renderer.js
+- [x] docs/types/text/known/plantuml/index.js
+- [x] docs/types/text/known/plantuml/renderer.js
+- [x] docs/types/text/known/plausible-config/index.js
+- [x] docs/types/text/known/plausible-config/renderer.js
+- [x] docs/types/text/known/playwright-config/index.js
+- [x] docs/types/text/known/playwright-config/renderer.js
+- [x] docs/types/text/known/plist/index.js
+- [x] docs/types/text/known/plist/renderer.js
+- [x] docs/types/text/known/pocket-id-config/index.js
+- [x] docs/types/text/known/pocket-id-config/renderer.js
+- [x] docs/types/text/known/podfile-lock/index.js
+- [x] docs/types/text/known/podfile-lock/renderer.js
+- [x] docs/types/text/known/podfile/index.js
+- [x] docs/types/text/known/podfile/renderer.js
+- [x] docs/types/text/known/podspec/index.js
+- [x] docs/types/text/known/podspec/renderer.js
+- [x] docs/types/text/known/polybar-conf/index.js
+- [x] docs/types/text/known/polybar-conf/renderer.js
+- [x] docs/types/text/known/pony-lang/index.js
+- [x] docs/types/text/known/pony-lang/renderer.js
+- [x] docs/types/text/known/postfix-conf/index.js
+- [x] docs/types/text/known/postfix-conf/renderer.js
+- [x] docs/types/text/known/postfix-main/index.js
+- [x] docs/types/text/known/postfix-main/renderer.js
+- [x] docs/types/text/known/postgresql-conf/index.js
+- [x] docs/types/text/known/postgresql-conf/renderer.js
+- [x] docs/types/text/known/powershell-lang/index.js
+- [x] docs/types/text/known/powershell-lang/renderer.js
 - [ ] docs/types/text/known/prettierignore/index.js
 - [ ] docs/types/text/known/prettierignore/renderer.js
 - [ ] docs/types/text/known/prisma-schema/index.js
@@ -3613,93 +3613,93 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/known/mpv-conf
 - [x] docs/types/text/known/msmtp-conf
 - [x] docs/types/text/known/mustache-template
-- [ ] docs/types/text/known/muttrc
-- [ ] docs/types/text/known/my-cnf
-- [ ] docs/types/text/known/mypy
-- [ ] docs/types/text/known/mypy-ini
-- [ ] docs/types/text/known/n8n-config
-- [ ] docs/types/text/known/nagios-conf
-- [ ] docs/types/text/known/named-conf
-- [ ] docs/types/text/known/nanorc
-- [ ] docs/types/text/known/nats-config
-- [ ] docs/types/text/known/ncmpcpp-conf
-- [ ] docs/types/text/known/neomutt-conf
-- [ ] docs/types/text/known/neovim-config
-- [ ] docs/types/text/known/netbox-config
-- [ ] docs/types/text/known/netdata-conf
-- [ ] docs/types/text/known/newsboat-conf
-- [ ] docs/types/text/known/next-config
-- [ ] docs/types/text/known/nfs-exports
-- [ ] docs/types/text/known/nftables-rules
-- [ ] docs/types/text/known/nginx-conf
-- [ ] docs/types/text/known/nim-lang
-- [ ] docs/types/text/known/nimble
-- [ ] docs/types/text/known/ninja-build
-- [ ] docs/types/text/known/nix-config
-- [ ] docs/types/text/known/nix-daemon-conf
-- [ ] docs/types/text/known/nix-expr
-- [ ] docs/types/text/known/nix-flake
-- [ ] docs/types/text/known/nocodb-config
-- [ ] docs/types/text/known/node-version-file
-- [ ] docs/types/text/known/nomad-job
-- [ ] docs/types/text/known/npmignore
-- [ ] docs/types/text/known/npmrc
-- [ ] docs/types/text/known/nsq-conf
-- [ ] docs/types/text/known/nsswitch-conf
-- [ ] docs/types/text/known/nunjucks
-- [ ] docs/types/text/known/nushell-config
-- [ ] docs/types/text/known/nushell-script
-- [ ] docs/types/text/known/nuxt-config
-- [ ] docs/types/text/known/nvmrc
-- [ ] docs/types/text/known/nzbget-config
-- [ ] docs/types/text/known/oauth2-proxy-config
-- [ ] docs/types/text/known/objc-lang
-- [ ] docs/types/text/known/ocaml-lang
-- [ ] docs/types/text/known/odin-lang
-- [ ] docs/types/text/known/opa-policy
-- [ ] docs/types/text/known/opam-file
-- [ ] docs/types/text/known/open-webui-config
-- [ ] docs/types/text/known/openapi
-- [ ] docs/types/text/known/openldap-conf
-- [ ] docs/types/text/known/openrc-init
-- [ ] docs/types/text/known/openssl-conf
-- [ ] docs/types/text/known/openvpn-config
-- [ ] docs/types/text/known/org-mode
-- [ ] docs/types/text/known/outline-config
-- [ ] docs/types/text/known/package-swift
-- [ ] docs/types/text/known/pacman-conf
-- [ ] docs/types/text/known/paperless-conf
-- [ ] docs/types/text/known/pascal-lang
-- [ ] docs/types/text/known/pdns-conf
-- [ ] docs/types/text/known/pdns-recursor-conf
-- [ ] docs/types/text/known/perl-lang
-- [ ] docs/types/text/known/pg-hba
-- [ ] docs/types/text/known/pgbackrest-conf
-- [ ] docs/types/text/known/pgbouncer-ini
-- [ ] docs/types/text/known/php-cs-fixer
-- [ ] docs/types/text/known/php-lang
-- [ ] docs/types/text/known/phpstan
-- [ ] docs/types/text/known/picom-conf
-- [ ] docs/types/text/known/pihole-setupvars
-- [ ] docs/types/text/known/pip-conf
-- [ ] docs/types/text/known/pipewire-conf
-- [ ] docs/types/text/known/pipfile
-- [ ] docs/types/text/known/pkgbuild
-- [ ] docs/types/text/known/plane-config
-- [ ] docs/types/text/known/plantuml
-- [ ] docs/types/text/known/plausible-config
-- [ ] docs/types/text/known/playwright-config
-- [ ] docs/types/text/known/plist
-- [ ] docs/types/text/known/pocket-id-config
-- [ ] docs/types/text/known/podfile
-- [ ] docs/types/text/known/podfile-lock
-- [ ] docs/types/text/known/podspec
-- [ ] docs/types/text/known/polybar-conf
-- [ ] docs/types/text/known/pony-lang
-- [ ] docs/types/text/known/postfix-conf
-- [ ] docs/types/text/known/postfix-main
-- [ ] docs/types/text/known/postgresql-conf
-- [ ] docs/types/text/known/powershell-lang
+- [x] docs/types/text/known/muttrc
+- [x] docs/types/text/known/my-cnf
+- [x] docs/types/text/known/mypy
+- [x] docs/types/text/known/mypy-ini
+- [x] docs/types/text/known/n8n-config
+- [x] docs/types/text/known/nagios-conf
+- [x] docs/types/text/known/named-conf
+- [x] docs/types/text/known/nanorc
+- [x] docs/types/text/known/nats-config
+- [x] docs/types/text/known/ncmpcpp-conf
+- [x] docs/types/text/known/neomutt-conf
+- [x] docs/types/text/known/neovim-config
+- [x] docs/types/text/known/netbox-config
+- [x] docs/types/text/known/netdata-conf
+- [x] docs/types/text/known/newsboat-conf
+- [x] docs/types/text/known/next-config
+- [x] docs/types/text/known/nfs-exports
+- [x] docs/types/text/known/nftables-rules
+- [x] docs/types/text/known/nginx-conf
+- [x] docs/types/text/known/nim-lang
+- [x] docs/types/text/known/nimble
+- [x] docs/types/text/known/ninja-build
+- [x] docs/types/text/known/nix-config
+- [x] docs/types/text/known/nix-daemon-conf
+- [x] docs/types/text/known/nix-expr
+- [x] docs/types/text/known/nix-flake
+- [x] docs/types/text/known/nocodb-config
+- [x] docs/types/text/known/node-version-file
+- [x] docs/types/text/known/nomad-job
+- [x] docs/types/text/known/npmignore
+- [x] docs/types/text/known/npmrc
+- [x] docs/types/text/known/nsq-conf
+- [x] docs/types/text/known/nsswitch-conf
+- [x] docs/types/text/known/nunjucks
+- [x] docs/types/text/known/nushell-config
+- [x] docs/types/text/known/nushell-script
+- [x] docs/types/text/known/nuxt-config
+- [x] docs/types/text/known/nvmrc
+- [x] docs/types/text/known/nzbget-config
+- [x] docs/types/text/known/oauth2-proxy-config
+- [x] docs/types/text/known/objc-lang
+- [x] docs/types/text/known/ocaml-lang
+- [x] docs/types/text/known/odin-lang
+- [x] docs/types/text/known/opa-policy
+- [x] docs/types/text/known/opam-file
+- [x] docs/types/text/known/open-webui-config
+- [x] docs/types/text/known/openapi
+- [x] docs/types/text/known/openldap-conf
+- [x] docs/types/text/known/openrc-init
+- [x] docs/types/text/known/openssl-conf
+- [x] docs/types/text/known/openvpn-config
+- [x] docs/types/text/known/org-mode
+- [x] docs/types/text/known/outline-config
+- [x] docs/types/text/known/package-swift
+- [x] docs/types/text/known/pacman-conf
+- [x] docs/types/text/known/paperless-conf
+- [x] docs/types/text/known/pascal-lang
+- [x] docs/types/text/known/pdns-conf
+- [x] docs/types/text/known/pdns-recursor-conf
+- [x] docs/types/text/known/perl-lang
+- [x] docs/types/text/known/pg-hba
+- [x] docs/types/text/known/pgbackrest-conf
+- [x] docs/types/text/known/pgbouncer-ini
+- [x] docs/types/text/known/php-cs-fixer
+- [x] docs/types/text/known/php-lang
+- [x] docs/types/text/known/phpstan
+- [x] docs/types/text/known/picom-conf
+- [x] docs/types/text/known/pihole-setupvars
+- [x] docs/types/text/known/pip-conf
+- [x] docs/types/text/known/pipewire-conf
+- [x] docs/types/text/known/pipfile
+- [x] docs/types/text/known/pkgbuild
+- [x] docs/types/text/known/plane-config
+- [x] docs/types/text/known/plantuml
+- [x] docs/types/text/known/plausible-config
+- [x] docs/types/text/known/playwright-config
+- [x] docs/types/text/known/plist
+- [x] docs/types/text/known/pocket-id-config
+- [x] docs/types/text/known/podfile
+- [x] docs/types/text/known/podfile-lock
+- [x] docs/types/text/known/podspec
+- [x] docs/types/text/known/polybar-conf
+- [x] docs/types/text/known/pony-lang
+- [x] docs/types/text/known/postfix-conf
+- [x] docs/types/text/known/postfix-main
+- [x] docs/types/text/known/postgresql-conf
+- [x] docs/types/text/known/powershell-lang
 - [ ] docs/types/text/known/prettierignore
 - [ ] docs/types/text/known/prisma-schema
 - [ ] docs/types/text/known/procfile

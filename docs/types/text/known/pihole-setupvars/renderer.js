@@ -104,6 +104,19 @@ export function render(intake) {
     webuiBoxedLayout ? kv('UI layout', webuiBoxedLayout) : '',
   ].filter(Boolean).join('');
 
+  // pihole-FTL.conf uses a disjoint key set (BLOCKINGMODE, MAXDBDAYS, etc.) from
+  // setupVars.conf — fall back to a generic key/value listing so it isn't blank.
+  const knownKeys = new Set([
+    'BLOCKING_ENABLED', 'PIHOLE_INTERFACE', 'IPV4_ADDRESS', 'IPV6_ADDRESS',
+    'PIHOLE_DNS_1', 'PIHOLE_DNS_2', 'PIHOLE_DNS_3', 'PIHOLE_DNS_4',
+    'DNSSEC', 'DNS_BOGUS_PRIV', 'QUERY_LOGGING', 'WEBPASSWORD',
+    'TEMPERATUREUNIT', 'WEBUIBOXEDLAYOUT',
+  ]);
+  const otherRows = Object.entries(kv_)
+    .filter(([k]) => !knownKeys.has(k))
+    .map(([k, v]) => kv(k, k === 'WEBPASSWORD_BACKUP' ? '[configured]' : v))
+    .join('');
+
   const host = document.createElement('div');
   host.className = 'pihole-doc';
   host.innerHTML = `<style>${CSS}</style>
@@ -113,7 +126,8 @@ ${networkRows || dnsRows ? `<div class="pihole-sec"><h3>Network</h3><div class="
 ${dnsSecRows ? `<div class="pihole-sec"><h3>DNS Settings</h3><div class="pihole-card">${dnsSecRows}</div></div>` : ''}
 ${loggingRows ? `<div class="pihole-sec"><h3>Logging</h3><div class="pihole-card">${loggingRows}</div></div>` : ''}
 ${authRows ? `<div class="pihole-sec"><h3>Security</h3><div class="pihole-card">${authRows}</div></div>` : ''}
-${miscRows ? `<div class="pihole-sec"><h3>Miscellaneous</h3><div class="pihole-card">${miscRows}</div></div>` : ''}`;
+${miscRows ? `<div class="pihole-sec"><h3>Miscellaneous</h3><div class="pihole-card">${miscRows}</div></div>` : ''}
+${otherRows ? `<div class="pihole-sec"><h3>Other Settings</h3><div class="pihole-card">${otherRows}</div></div>` : ''}`;
 
   return { parentNode: host };
 }

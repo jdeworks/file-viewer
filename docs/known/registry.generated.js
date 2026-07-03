@@ -9437,10 +9437,7 @@ var postfix_conf_default = {
   label: "Postfix Config",
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    const text = intake.textSample || intake.text || "";
-    if (n === "main.cf" && text.includes("myhostname")) return true;
-    if (n === "master.cf" && text.includes("smtp") && text.includes("pickup")) return true;
-    if (n === "postfix.conf" || n === "postfix-main.cf") return true;
+    if (n === "postfix.conf") return true;
     return false;
   },
   loadRenderer: () => import("../types/text/known/postfix-conf/renderer.js"),
@@ -9797,10 +9794,11 @@ var pipewire_conf_default = {
   label: "PipeWire Config",
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    if (n === "pipewire.conf" || n === "client.conf" || n === "jack.conf" || n === "client-rt.conf") return true;
+    if (n === "pipewire.conf" || n === "jack.conf" || n === "client-rt.conf") return true;
     const text = intake.textSample || intake.text || "";
     if (text.includes("context.properties") && (text.includes("core.daemon") || text.includes("link.max-buffers"))) return true;
     if (text.includes("context.modules") && text.includes("libpipewire-module-")) return true;
+    if (n === "client.conf" && (text.includes("context.properties") || text.includes("libpipewire-module-"))) return true;
     return false;
   },
   loadRenderer: () => import("../types/text/known/pipewire-conf/renderer.js"),
@@ -13997,6 +13995,7 @@ var plugin150 = {
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (!name.endsWith(".php") && !name.endsWith(".phtml") && !name.endsWith(".php5") && !name.endsWith(".php8")) return false;
     if (name === "rector.php" || name === "config.php") return null;
+    if (name === ".php-cs-fixer.php" || name === ".php-cs-fixer.dist.php") return null;
     const sample = (intake.text || "").slice(0, 500);
     if (!sample.includes("<?php") && !sample.includes("<?")) return null;
     return true;

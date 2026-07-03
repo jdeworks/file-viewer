@@ -53,8 +53,8 @@ function parsePkgbuild(text) {
     // Skip comments
     if (t.startsWith('#')) { i++; continue; }
 
-    // Variable assignment
-    const varMatch = t.match(/^(\w+)=(.*)$/);
+    // Variable assignment (allow optional spaces around `=` for .SRCINFO's `key = value` style)
+    const varMatch = t.match(/^([\w.-]+)\s*=\s*(.*)$/);
     if (varMatch) {
       const key = varMatch[1];
       let val = varMatch[2].trim();
@@ -65,7 +65,10 @@ function parsePkgbuild(text) {
           val += ' ' + lines[i].trim();
         }
       }
-      vars[key] = val.replace(/^['"]|['"]$/g, '');
+      val = val.replace(/^['"]|['"]$/g, '');
+      // .SRCINFO repeats a key on separate lines (e.g. multiple `depends = x`) instead of using
+      // PKGBUILD's `(a b c)` bash-array syntax — accumulate so parseBashArray still sees them all.
+      vars[key] = key in vars ? vars[key] + ' ' + val : val;
     }
     i++;
   }
