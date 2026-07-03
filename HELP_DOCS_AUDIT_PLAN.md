@@ -706,33 +706,33 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/ics/metadata.js
 - [x] docs/types/ics/renderer.js
 - [x] docs/types/ics/settings.default.json
-- [ ] docs/types/image/ADV_EDIT_PHASE3.md
-- [ ] docs/types/image/ADV_EDIT_ROADMAP.md
-- [ ] docs/types/image/ADV_EDIT.md
-- [ ] docs/types/image/adv-edit-actions.js
-- [ ] docs/types/image/adv-edit-controls.js
-- [ ] docs/types/image/adv-edit-layers.js
-- [ ] docs/types/image/adv-edit-points.js
-- [ ] docs/types/image/adv-edit-precision.js
-- [ ] docs/types/image/adv-edit-text.js
-- [ ] docs/types/image/adv-edit-toolbar.js
-- [ ] docs/types/image/adv-edit.js
-- [ ] docs/types/image/ASCII_ADV_GOAL.md
-- [ ] docs/types/image/ascii/audio-track.js
-- [ ] docs/types/image/ascii/charsets.js
-- [ ] docs/types/image/ascii/convert-file.js
-- [ ] docs/types/image/ascii/convert-worker.js
-- [ ] docs/types/image/ascii/convert.js
-- [ ] docs/types/image/ascii/dither.js
-- [ ] docs/types/image/ascii/encode.js
-- [ ] docs/types/image/ascii/engine.js
-- [ ] docs/types/image/ascii/filters.js
-- [ ] docs/types/image/ascii/floating-panel.js
-- [ ] docs/types/image/ascii/gap-fill.js
-- [ ] docs/types/image/ascii/preset-ui.js
-- [ ] docs/types/image/ascii/presets.js
-- [ ] docs/types/image/ascii/process-image.js
-- [ ] docs/types/image/ascii/record-video.js
+- [x] docs/types/image/ADV_EDIT_PHASE3.md
+- [x] docs/types/image/ADV_EDIT_ROADMAP.md
+- [x] docs/types/image/ADV_EDIT.md
+- [x] docs/types/image/adv-edit-actions.js
+- [x] docs/types/image/adv-edit-controls.js
+- [x] docs/types/image/adv-edit-layers.js
+- [x] docs/types/image/adv-edit-points.js
+- [x] docs/types/image/adv-edit-precision.js
+- [x] docs/types/image/adv-edit-text.js
+- [x] docs/types/image/adv-edit-toolbar.js
+- [x] docs/types/image/adv-edit.js
+- [x] docs/types/image/ASCII_ADV_GOAL.md
+- [x] docs/types/image/ascii/audio-track.js
+- [x] docs/types/image/ascii/charsets.js
+- [x] docs/types/image/ascii/convert-file.js
+- [x] docs/types/image/ascii/convert-worker.js
+- [x] docs/types/image/ascii/convert.js
+- [x] docs/types/image/ascii/dither.js
+- [x] docs/types/image/ascii/encode.js
+- [x] docs/types/image/ascii/engine.js
+- [x] docs/types/image/ascii/filters.js
+- [x] docs/types/image/ascii/floating-panel.js
+- [x] docs/types/image/ascii/gap-fill.js
+- [x] docs/types/image/ascii/preset-ui.js
+- [x] docs/types/image/ascii/presets.js
+- [x] docs/types/image/ascii/process-image.js
+- [x] docs/types/image/ascii/record-video.js
 - [ ] docs/types/image/ascii/render.js
 - [ ] docs/types/image/ascii/sample.js
 - [ ] docs/types/image/ascii/state.js

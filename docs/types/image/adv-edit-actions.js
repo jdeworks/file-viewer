@@ -90,32 +90,6 @@ export function writeSize(node, w, h) {
   }
 }
 
-export function snapNodeToGuides(node, layer, stageW, stageH, threshold = 5) {
-  if (!node || !layer) return;
-  const box = node.getClientRect({ skipShadow: true });
-  const stopsX = [0, stageW / 2, stageW];
-  const stopsY = [0, stageH / 2, stageH];
-  layer.find('.obj').forEach((other) => {
-    if (other === node || !other.visible()) return;
-    const r = other.getClientRect({ skipShadow: true });
-    stopsX.push(r.x, r.x + r.width / 2, r.x + r.width);
-    stopsY.push(r.y, r.y + r.height / 2, r.y + r.height);
-  });
-  const edgesX = [{ p: box.x, off: box.x - node.x() }, { p: box.x + box.width / 2, off: box.x + box.width / 2 - node.x() }, { p: box.x + box.width, off: box.x + box.width - node.x() }];
-  const edgesY = [{ p: box.y, off: box.y - node.y() }, { p: box.y + box.height / 2, off: box.y + box.height / 2 - node.y() }, { p: box.y + box.height, off: box.y + box.height - node.y() }];
-  let bestX = null, bestY = null;
-  for (const stop of stopsX) for (const edge of edgesX) {
-    const diff = Math.abs(stop - edge.p);
-    if (diff <= threshold && (!bestX || diff < bestX.diff)) bestX = { diff, value: stop - edge.off };
-  }
-  for (const stop of stopsY) for (const edge of edgesY) {
-    const diff = Math.abs(stop - edge.p);
-    if (diff <= threshold && (!bestY || diff < bestY.diff)) bestY = { diff, value: stop - edge.off };
-  }
-  if (bestX) node.x(bestX.value);
-  if (bestY) node.y(bestY.value);
-}
-
 export function installAdvKeys({ ownerDocument, keyTarget, isActive, getSelection, deleteSelection, duplicateSelection, nudgeSelection, clearSelection }) {
   const onKey = (e) => {
     if (!isActive() || isTypingTarget(e.target)) return;
