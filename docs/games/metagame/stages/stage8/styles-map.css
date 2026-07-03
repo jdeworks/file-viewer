@@ -1,0 +1,110 @@
+/* styles-map.css — Stage 8 Entropy Field: the SPATIAL NODE MAP (UX-audit #2) and its companions —
+   sector blocks, compact node tiles, the SVG cascade-edge overlay, the tile action popover (#2), the
+   tabbed TECH | STRUCTURES panel (#5), the cycle-beat sweep/pulse drama (#6), the below-the-bar banner
+   layer (S8-A defect fix) and the archive debris tray. Split out of styles.css to stay under the LOC
+   cap; index.js injects BOTH sheets. Colours match styles.css (mono terminal palette). */
+
+/* Root positioning context for the absolute popover + banner layer. */
+.stage8-entropy-field { position: relative; }
+
+/* Banner layer: hosts phase banners BELOW the sticky command bar so they never overlap its ticker. */
+.s8-banner-layer { position: relative; height: 0; z-index: 6; }
+
+/* ── The network: sector blocks laid out CORE-centre with α/β/γ around it ──────────────────────── */
+.s8-map { position: relative; }
+.s8-net {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr) minmax(0, 1fr);
+  grid-template-areas:
+    "alpha core beta"
+    "gamma core beta";
+  gap: 10px;
+  align-items: start;
+}
+.s8-sector { min-width: 0; padding: 6px 8px 8px; border: 1px solid #3a3a38; background: #141312; }
+.s8-sector--core  { grid-area: core; }
+.s8-sector--alpha { grid-area: alpha; }
+.s8-sector--beta  { grid-area: beta; }
+.s8-sector--gamma { grid-area: gamma; }
+.s8-sector.is-storming { border-color: #c8553b; background: #1f1512; box-shadow: inset 0 0 24px rgba(200, 85, 59, 0.25); }
+.s8-sector-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;
+  font-size: 10px; letter-spacing: 0.1em; color: #8b9ba8; }
+.s8-sector-head small { color: #6f7c88; }
+.s8-sector-grid { position: relative; z-index: 1; display: grid; gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); }
+
+/* Node tiles — compact, ≥44px tap target; keep the .s8-node + .s8-node-bar contract. */
+.s8-node {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; gap: 4px;
+  min-height: 44px; padding: 5px 6px;
+  border: 1px solid #4a4a4a; background: #20201d; color: inherit;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.s8-node:hover { border-color: #7bb661; }
+.s8-node-id { font-weight: 700; font-size: 11px; line-height: 1; }
+.s8-node-bar { display: block; height: 6px; background: #2c2a26; border: 1px solid #4a4a4a; }
+.s8-node-bar > span { display: block; height: 100%; background: #5dcaa5; }
+.s8-node.is-active { border-color: #5c7a3e; }
+.s8-node.is-degrading { border-color: #8b7355; }
+.s8-node.is-degrading .s8-node-bar > span { background: #d8a657; }
+.s8-node.is-failed { border-color: #7a3b2e; opacity: 0.82; }
+.s8-node.is-failed .s8-node-bar > span { background: #c8553b; }
+.s8-node.is-high-load { box-shadow: inset 0 0 0 1px rgba(216, 166, 87, 0.5); }
+.s8-node.is-stabilized { border-color: #5dcaa5; }
+.s8-node.is-stressed { background: #271d1b; }
+.s8-node-pips { position: absolute; top: 2px; right: 3px; display: flex; gap: 2px; font-size: 9px; font-weight: 700; }
+.s8-node-pip.is-stress { color: #e0a08e; }
+.s8-node-pip.is-frozen { color: #9fe1cb; }
+
+/* Cascade edges drawn UNDER the tiles (pointer-events:none). Stressed = source node failed. */
+svg.s8-edges { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; z-index: 0; }
+.s8-edge { stroke: #3f4a3a; stroke-width: 1; opacity: 0.5; }
+.s8-edge.is-stressed { stroke: #c8553b; stroke-width: 1.5; opacity: 0.9; }
+.s8-edge.is-pulse { animation: s8-edge-pulse 0.6s ease; animation-delay: var(--pulse-delay, 0); }
+@keyframes s8-edge-pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.2; stroke-width: 2.5; } }
+
+/* Cycle-beat sweep — a per-tile settle in decay order (#6). */
+.s8-node.is-sweep { animation: s8-tile-sweep 0.25s ease; animation-delay: var(--sweep-delay, 0); }
+@keyframes s8-tile-sweep {
+  0% { box-shadow: 0 0 0 0 rgba(123, 182, 97, 0); }
+  40% { box-shadow: 0 0 0 2px rgba(123, 182, 97, 0.6); }
+  100% { box-shadow: 0 0 0 0 rgba(123, 182, 97, 0); }
+}
+
+/* ── Tile action popover (#2) — repair / High-Load / freeze, 40px+ targets, one at a time. ──────── */
+.s8-popover { position: absolute; z-index: 20; min-width: 150px; max-width: 220px; padding: 8px;
+  background: #171615; border: 1px solid #6f7c88; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5); }
+.s8-pop-head { margin-bottom: 6px; font-size: 11px; color: #b6ad9c; }
+.s8-pop-head b { color: #ddd5c7; }
+.s8-pop-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.s8-pop-btn { flex: 1 1 auto; min-height: 40px; min-width: 62px; padding: 6px 10px; cursor: pointer;
+  background: #20201d; color: inherit; border: 1px solid #4a4a4a; font: inherit; font-size: 12px; }
+.s8-pop-btn:disabled { opacity: 0.4; cursor: default; }
+.s8-pop-btn.is-on { border-color: #d8a657; color: #f2c879; background: #2c2410; }
+
+/* Archive debris tray (the tap-first drag chips, moved off the map). */
+.s8-debris-tray { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.s8-debris-tray:empty { display: none; }
+.s8-debris { padding: 4px 8px; border: 1px dashed #8b7355; background: #20201d; color: inherit;
+  font: inherit; font-size: 12px; cursor: grab; }
+
+/* RESOURCES-cluster button that opens the tabbed panel. */
+.s8-cl-btn { align-self: center; padding: 6px 10px; cursor: pointer; background: #20201d; color: inherit;
+  border: 1px solid #6f7c88; font: inherit; font-size: 12px; }
+.s8-cl-btn:hover { border-color: #9fe1cb; }
+
+/* Tabbed TECH | STRUCTURES panel (#5) inside the shared modal. */
+.s8-panel-modal { max-width: 760px; }
+.s8-panel-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.s8-tab { padding: 6px 14px; cursor: pointer; background: #20201d; color: #b6ad9c; border: 1px solid #4a4a4a;
+  font: inherit; font-weight: 700; letter-spacing: 0.06em; }
+.s8-tab.is-active { border-color: #5dcaa5; color: #ddd5c7; background: #171615; }
+
+@media (max-width: 760px) {
+  .s8-net { grid-template-columns: 1fr; grid-template-areas: "core" "alpha" "beta" "gamma"; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .s8-node.is-sweep, .s8-edge.is-pulse { animation: none; }
+}

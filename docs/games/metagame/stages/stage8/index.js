@@ -80,12 +80,18 @@ function isSalvageDetail(detail) {
 }
 
 function ensureStyles() {
-  const id = "stage8-entropy-field-styles";
+  // Two sheets (LOC cap): styles.css = shell/HUD/boss/tech grids; styles-map.css = the spatial map,
+  // tiles, edges, tile popover, tabbed panel + cycle-beat drama. Inject both once.
+  injectStyle("stage8-entropy-field-styles", "./styles.css");
+  injectStyle("stage8-entropy-field-map-styles", "./styles-map.css");
+}
+
+function injectStyle(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = new URL(href, import.meta.url).href;
   document.head.append(link);
 }
 

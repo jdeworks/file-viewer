@@ -5,9 +5,8 @@
 // disclosure visibility pass. Split so the shell stays small (CLAUDE.md ≤300 LOC).
 
 import { entropyTreeText } from "./content.js";
-import { status as nodeStatus } from "./engine.js";
-import { nodeById } from "./nodes.js";
 import { paintCommandBar, paintClusters, paintBossChecklist, applyDisclosure } from "./hud.js";
+import { paintMap } from "./map.js";
 
 // Paint the whole field from `state` + the computed `lock` + the `disc`losure map. `els` are the cached
 // DOM handles (fields/map/log/root); `onSelectDebris(id)` is called when a debris chip is clicked.
@@ -34,7 +33,8 @@ export function paintStage8({ state, lock, storm, disc, els, onSelectDebris }) {
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
   paintCollapse(fields, root, state, disc);
-  map.replaceChildren(...state.nodes.map((n) => nodeCard(n, state)), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
+  paintMap(map, state);
+  if (fields.debrisTray) fields.debrisTray.replaceChildren(...state.debris.map((item) => debrisChip(item, onSelectDebris)));
   log.replaceChildren(...state.log.slice(-5).map((line) => {
     const li = document.createElement("li");
     li.textContent = line;
@@ -106,39 +106,6 @@ function paintDebrisSelect(select, state) {
     option.selected = item.id === state.selectedDebrisId;
     return option;
   }));
-}
-
-function nodeCard(n, state) {
-  const def = nodeById(n.id) || {};
-  const s = nodeStatus(n.health);
-  const hl = Boolean(state.highLoad?.[n.id]) && def.supportsHighLoad;
-  const frozen = Number(state.stabilized?.[n.id] || 0);
-  const stress = Number(n.cascadeStress) || 0;
-  const item = document.createElement("div");
-  const classes = [`s8-node`, `is-${s}`];
-  if (hl) classes.push("is-high-load");
-  if (frozen) classes.push("is-stabilized");
-  if (stress > 0) classes.push("is-stressed");
-  item.className = classes.join(" ");
-  const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
-  const stressTag = stress > 0
-    ? ` <span class="s8-node-stress" title="cascade stress from failed neighbours: +${stress}/cycle extra decay">⚠+${stress}</span>` : "";
-  const frozenTag = frozen
-    ? ` <span class="s8-node-frozen" title="stabilized — decay frozen">❄${frozen}</span>` : "";
-  // RISK-TOGGLE: High-Load is offered only on nodes that support it (production + frontier).
-  const hlBtn = def.supportsHighLoad
-    ? `<button type="button" data-high-load="${n.id}" class="s8-node-hl${hl ? " is-on" : ""}" aria-pressed="${hl}" title="High-Load: +50% output, +50% decay">HL${hl ? "✓" : ""}</button>` : "";
-  // ENDURE: deploy a banked Stabilizer to freeze a node through a storm. Unlocks in Band 2 (cycle ≥ 6).
-  // M2: the remaining stabilizer count rides on the freeze button itself (it left the HUD).
-  const showFreeze = (state.cycle || 0) >= 6;
-  const held = Number(state.stabilizers || 0);
-  const canFreeze = showFreeze && held > 0 && !frozen;
-  const freezeBtn = showFreeze
-    ? `<button type="button" data-stabilize-node="${n.id}"${canFreeze ? "" : " disabled"} title="Freeze decay for 2 cycles (spends 1 stabilizer)">freeze ❄${held}</button>` : "";
-  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>${stressTag}${frozenTag}
-    ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
-    <span class="s8-node-actions">${hlBtn}${freezeBtn}<button type="button" data-repair="${n.id}">repair</button></span>`;
-  return item;
 }
 
 function debrisChip(item, onSelectDebris) {

@@ -13,7 +13,9 @@ import { buyTech, techStatus } from "./tech.js";
 import { buildStructure, structureStatus } from "./structures.js";
 import { microstateCollapse, prestigeAvailable, coresPreview } from "./prestige.js";
 import { paintStage8 } from "./paint.js";
-import { paintTech, paintStructures } from "./techpanel.js";
+import { openTechPanel } from "./panel.js";
+import { openNodePopover, closePopover } from "./popover.js";
+import { playCycleBeat, playStormArrival } from "./beat.js";
 import { computeDisclosure, DISCLOSE_ORDER } from "./disclose.js";
 import { banner } from "../../shared/feedback.js";
 import { snapshotRun } from "./state.js";
@@ -34,6 +36,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <span class="s8-cmd-stat is-warn" data-field="stormWrap" hidden><b data-field="stormCountdown"></b><small>storm left</small></span>
       <span class="s8-ticker" data-field="ticker" aria-live="polite"></span>
     </div>
+    <div class="s8-banner-layer" data-field="bannerLayer" aria-hidden="true"></div>
     <div class="s8-hud">
       <div class="s8-cluster">
         <span class="s8-cl-label">NETWORK</span>
@@ -47,6 +50,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <div class="s8-cluster" data-field="resourcesCluster" hidden>
         <span class="s8-cl-label">RESOURCES</span>
         <span class="s8-cl-num"><b data-field="parts"></b> <i data-field="partsRate" class="s8-rate"></i><small>parts</small></span>
+        <button type="button" data-action="open-tech" class="s8-cl-btn">tech ⛭</button>
       </div>
       <div class="s8-cluster" data-field="prestigeCluster" hidden>
         <span class="s8-cl-label">PRESTIGE</span>
@@ -61,6 +65,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
           <select data-field="debrisSelect"></select>
         </label>
         <button type="button" data-action="archive">Archive</button>
+        <div class="s8-debris-tray" data-field="debrisTray" aria-label="debris chips — tap to select, then Archive"></div>
         <div class="s8-drop" data-drop-target="/entropy/active_archive/" tabindex="0" role="button" aria-label="Archive selected debris">Active Archive</div>
         <div class="s8-salvage-progress" title="Heat Death gate progress">
           <span class="s8-salvage-bar"><span data-field="salvageFill"></span></span>
@@ -77,14 +82,6 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
-    <details class="s8-tech-panel" data-field="techPanel" hidden>
-      <summary>TECH TREE — spend parts ⛭</summary>
-      <div class="s8-tech" data-field="tech"></div>
-    </details>
-    <details class="s8-tech-panel" data-field="structPanel" hidden>
-      <summary>STRUCTURES — build with parts ⛭</summary>
-      <div class="s8-tech" data-field="struct"></div>
-    </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="stabilizer" data-field="stabilizerBtn" hidden>build stabilizer (${STABILIZER_COST} States)</button>
@@ -93,7 +90,6 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     </div>
   `;
   host.replaceChildren(root);
-  const cmdbar = root.querySelector(".s8-cmdbar");
   let disclosureSeeded = false;
 
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
@@ -134,30 +130,38 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   });
 
   root.addEventListener("click", (event) => {
-    const repair = event.target.closest("button[data-repair]");
-    if (repair) { applyRepair(state, repair.dataset.repair, REPAIR_STEP); persistAndPaint(); return; }
-    const highLoad = event.target.closest("button[data-high-load]");
-    if (highLoad) { toggleHighLoad(state, highLoad.dataset.highLoad); persistAndPaint(); return; }
-    const freeze = event.target.closest("button[data-stabilize-node]");
-    if (freeze) { applyStabilizer(state, freeze.dataset.stabilizeNode); persistAndPaint(); return; }
-    const tech = event.target.closest("button[data-tech]");
-    if (tech) { buyTech(state, tech.dataset.tech); persistAndPaint(); return; }
-    const struct = event.target.closest("button[data-struct]");
-    if (struct) { buildStructure(state, struct.dataset.struct); persistAndPaint(); return; }
+    // Per-node verbs live in the tile popover now; they carry the SAME delegation hooks as before.
+    const nodeAction = event.target.closest("button[data-repair], button[data-high-load], button[data-stabilize-node]");
+    if (nodeAction) {
+      if (nodeAction.hasAttribute("data-repair")) applyRepair(state, nodeAction.dataset.repair, REPAIR_STEP);
+      else if (nodeAction.hasAttribute("data-high-load")) toggleHighLoad(state, nodeAction.dataset.highLoad);
+      else applyStabilizer(state, nodeAction.dataset.stabilizeNode);
+      closePopover();
+      persistAndPaint();
+      return;
+    }
+    const tile = event.target.closest("[data-node-tile]");
+    if (tile) { openNodePopover({ root, tile, state, nodeId: tile.dataset.nodeTile }); return; }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
-    if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
-    if (button.dataset.action === "storm") braceStorm(state);
-    if (button.dataset.action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
-    if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
-    if (button.dataset.action === "external") {
+    const action = button.dataset.action;
+    if (action === "open-tech") { openPanel(); return; }
+    let advanceResult = null; let bracedStorm = null;
+    if (action === "advance") advanceResult = advanceCycle(state, cycleRng(state.cycle));
+    else if (action === "storm") { const r = braceStorm(state); if (r?.ok) bracedStorm = r.storm; }
+    else if (action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
+    else if (action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
+    else if (action === "external") {
       state.externalImportBonusCycles = 3;
       actions?.setAction?.(8, "external_debris_imported", { source: "external-import" });
     }
-    if (button.dataset.action === "boss") challengeBoss();
-    if (button.dataset.action === "collapse") { if (microstateCollapse(state).ok && run?.reset) run.reset(); }
-    if (button.dataset.action === "bts") openBts({ bts, viewer });
+    else if (action === "boss") challengeBoss();
+    else if (action === "collapse") { if (microstateCollapse(state).ok && run?.reset) run.reset(); }
+    else if (action === "bts") openBts({ bts, viewer });
     persistAndPaint();
+    // Crisis drama (#6) runs AFTER the fresh repaint so it decorates the new-cycle tiles/edges.
+    if (advanceResult) playCycleBeat({ map, state, result: advanceResult, bannerLayer: fields.bannerLayer });
+    if (bracedStorm) playStormArrival({ map, bannerLayer: fields.bannerLayer, sector: bracedStorm.sector, label: bracedStorm.label });
   });
 
   repaint();
@@ -204,6 +208,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     repaint,
     dev,
     destroy() {
+      closePopover();
       if (window.__fvStage8) delete window.__fvStage8;
       root.remove();
     }
@@ -257,8 +262,17 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       els: { fields, map, log, root },
       onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
     });
-    if (disc.parts) paintTech(fields.tech, state);
-    if (disc.structures) paintStructures(fields.struct, state);
+  }
+
+  // Open the tabbed TECH | STRUCTURES panel (#5) — a shared modal; its buy buttons route to the same
+  // engine handlers via these callbacks (the modal lives outside root, so it can't use root delegation).
+  function openPanel() {
+    openTechPanel({
+      state,
+      disc: computeDisclosure(state),
+      onBuyTech: (id) => { buyTech(state, id); persistAndPaint(); },
+      onBuildStruct: (id) => { buildStructure(state, id); persistAndPaint(); }
+    });
   }
 
   // Progressive disclosure (M1): seed the persisted flag set silently on first paint (so a loaded
@@ -275,7 +289,7 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
     for (const key of DISCLOSE_ORDER) {
       if (disc[key] && !state.disclosed[key]) {
         state.disclosed[key] = true;
-        if (!bannered && DISCLOSE_MESSAGES[key]) { banner(cmdbar, DISCLOSE_MESSAGES[key]); bannered = true; }
+        if (!bannered && DISCLOSE_MESSAGES[key]) { banner(fields.bannerLayer, DISCLOSE_MESSAGES[key]); bannered = true; }
       }
     }
   }

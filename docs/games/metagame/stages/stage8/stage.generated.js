@@ -187,6 +187,7 @@ var NODE_BY_ID = new Map(NODES.map((n) => [n.id, n]));
 function nodeById(id) {
   return NODE_BY_ID.get(id) || null;
 }
+var SECTORS = ["core", "alpha", "beta", "gamma"];
 function nodesForSector(sector) {
   return NODES.filter((n) => n.sector === sector);
 }
@@ -349,9 +350,9 @@ function bringSectorOnline(state, sector) {
   for (const n of freshSectorNodes(sector)) if (!have.has(n.id)) state.nodes.push(n);
 }
 function tickStorm(state, rng) {
-  const active = state.activeStorm;
-  if (!active) return null;
-  const dmg = STORM_DAMAGE[active.id] || STORM_DAMAGE.alpha;
+  const active2 = state.activeStorm;
+  if (!active2) return null;
+  const dmg = STORM_DAMAGE[active2.id] || STORM_DAMAGE.alpha;
   for (const n of state.nodes) {
     const z = zoneOf(n.id);
     const d = dmg[z] || 0;
@@ -361,27 +362,27 @@ function tickStorm(state, rng) {
     const target = rng && typeof rng.pick === "function" ? rng.pick(state.nodes) : state.nodes[0];
     if (target) target.health = clamp(target.health - (dmg.spike || 8), 0, 100);
   }
-  active.cyclesLeft -= 1;
-  pushLog(state, `${active.label}: storm cycle, ${active.cyclesLeft} left.`);
-  if (active.cyclesLeft > 0) return { id: active.id, resolved: false, cyclesLeft: active.cyclesLeft };
+  active2.cyclesLeft -= 1;
+  pushLog(state, `${active2.label}: storm cycle, ${active2.cyclesLeft} left.`);
+  if (active2.cyclesLeft > 0) return { id: active2.id, resolved: false, cyclesLeft: active2.cyclesLeft };
   return resolveStorm(state);
 }
 function resolveStorm(state) {
-  const active = state.activeStorm;
+  const active2 = state.activeStorm;
   state.activeStorm = null;
   const coresAlive = state.nodes.filter((n) => isCore(n.id)).every((n) => n.health > 0);
-  const storm = STORM_BY_ID.get(active.id);
+  const storm = STORM_BY_ID.get(active2.id);
   if (!coresAlive) {
-    pushLog(state, `${active.label} broke through — a core fell. Recover and brace again.`);
-    return { id: active.id, resolved: true, survived: false };
+    pushLog(state, `${active2.label} broke through — a core fell. Recover and brace again.`);
+    return { id: active2.id, resolved: true, survived: false };
   }
-  bringSectorOnline(state, active.sector);
+  bringSectorOnline(state, active2.sector);
   state.stormsSurvived = Number(state.stormsSurvived || 0) + 1;
   state.act = Number(state.act || 1) + 1;
   const bonus = storm ? storm.insightBonus : 0;
   if (bonus) earnParts(state, bonus);
-  pushLog(state, `${active.label} ENDURED. Sector ${active.sector} online. +${bonus} parts.`);
-  return { id: active.id, resolved: true, survived: true, sector: active.sector, insightBonus: bonus };
+  pushLog(state, `${active2.label} ENDURED. Sector ${active2.sector} online. +${bonus} parts.`);
+  return { id: active2.id, resolved: true, survived: true, sector: active2.sector, insightBonus: bonus };
 }
 function pushLog(state, line) {
   state.log = [...state.log || [], line].slice(-12);
@@ -1541,7 +1542,7 @@ function advanceCycle(state, rng) {
     } else kept.push(item);
   }
   state.debris = kept;
-  let active = 0;
+  let active2 = 0;
   let degraded = 0;
   let failedCount = 0;
   let degradingCount = 0;
@@ -1549,7 +1550,7 @@ function advanceCycle(state, rng) {
     const def = nodeById(n.id) || {};
     const s = status(n.health);
     const hlMult = state.highLoad[n.id] && def.supportsHighLoad ? 1.5 : 1;
-    if (s === "active") active += (def.baseOutput || 0) * hlMult;
+    if (s === "active") active2 += (def.baseOutput || 0) * hlMult;
     else if (s === "degrading") {
       degraded += (def.degradedOutput || 0) * 0.5 * hlMult;
       degradingCount += 1;
@@ -1557,7 +1558,7 @@ function advanceCycle(state, rng) {
   }
   const entropySink = Math.floor(state.cycle / 3);
   const prestigeMult = Math.max(1, Number(state.prestigeMult || 1));
-  result.income = Math.max(0, Math.round((active + degraded - entropySink) * prestigeMult));
+  result.income = Math.max(0, Math.round((active2 + degraded - entropySink) * prestigeMult));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
   const parts = partsIncome(state, status) * prestigeMult;
@@ -1695,12 +1696,12 @@ function paintCommandBar(fields, state, storm, disc) {
   fields.entropy.textContent = String(entropy);
   if (fields.heatRateWrap) fields.heatRateWrap.hidden = !disc.heat;
   if (disc.heat && fields.cmdHeatRate) fields.cmdHeatRate.textContent = rate(state.heatRate) || "0";
-  const active = state.activeStorm;
-  if (fields.stormWrap) fields.stormWrap.hidden = !active;
-  if (active && fields.stormCountdown) fields.stormCountdown.textContent = String(active.cyclesLeft);
+  const active2 = state.activeStorm;
+  if (fields.stormWrap) fields.stormWrap.hidden = !active2;
+  if (active2 && fields.stormCountdown) fields.stormCountdown.textContent = String(active2.cyclesLeft);
   const braceBtn = fields.braceBtn;
   if (braceBtn) {
-    const show = disc.storm && !active && storm && storm.ok;
+    const show = disc.storm && !active2 && storm && storm.ok;
     braceBtn.hidden = !show;
     if (show) braceBtn.textContent = `brace ${storm.storm.label} ▸`;
   }
@@ -1764,8 +1765,6 @@ function applyDisclosure(els, state, disc) {
   set(fields.archivePanel, disc.debris);
   set(fields.externalBtn, disc.debris);
   set(fields.bossPanel, disc.boss);
-  set(fields.techPanel, disc.parts);
-  set(fields.structPanel, disc.structures);
   if (fields.stabilizerBtn) {
     fields.stabilizerBtn.hidden = !disc.storm;
     fields.stabilizerBtn.textContent = `build stabilizer (${STABILIZER_COST} States) · ${state.stabilizers || 0} held`;
@@ -1775,6 +1774,111 @@ function applyDisclosure(els, state, disc) {
     fields.salvageFill.style.width = `${pct}%`;
     if (fields.salvageNum) fields.salvageNum.textContent = String(state.salvageTotal || 0);
   }
+}
+
+// ../../docs/games/metagame/stages/stage8/layout.js
+function sectorGroups(state) {
+  const online = new Set(state.onlineSectors || ["core"]);
+  const byId = new Map((state.nodes || []).map((n) => [n.id, n]));
+  return SECTORS.filter((s) => online.has(s)).map((sector) => {
+    const nodes = [];
+    for (const live of state.nodes || []) {
+      const def = nodeById(live.id);
+      if (def && def.sector === sector) nodes.push(live);
+    }
+    return { sector, nodes };
+  }).filter((g) => g.nodes.length > 0);
+}
+function mapEdges(state) {
+  const present = new Map((state.nodes || []).map((n) => [n.id, n]));
+  const edges = [];
+  for (const from of state.nodes || []) {
+    for (const to of ADJACENCY.get(from.id) || []) {
+      if (!present.has(to)) continue;
+      edges.push({ from: from.id, to, stressed: status(from.health) === "failed" });
+    }
+  }
+  return edges;
+}
+function decayOrder(state) {
+  return (state.nodes || []).map((n) => n.id);
+}
+
+// ../../docs/games/metagame/stages/stage8/map.js
+var SECTOR_LABEL = { core: "CORE", alpha: "SECTOR α", beta: "SECTOR β", gamma: "SECTOR γ" };
+function paintMap(mapEl, state) {
+  const activeSector = state.activeStorm?.sector || null;
+  const net = document.createElement("div");
+  net.className = "s8-net";
+  for (const group of sectorGroups(state)) net.appendChild(sectorBlock(group, state, activeSector));
+  mapEl.replaceChildren(net);
+  paintEdges(net, state);
+}
+function sectorBlock({ sector, nodes }, state, activeSector) {
+  const block = document.createElement("div");
+  block.className = `s8-sector s8-sector--${sector}${sector === activeSector ? " is-storming" : ""}`;
+  block.dataset.sector = sector;
+  const head = document.createElement("div");
+  head.className = "s8-sector-head";
+  head.innerHTML = `<span>${SECTOR_LABEL[sector] || sector}</span><small>${nodes.length}</small>`;
+  const grid = document.createElement("div");
+  grid.className = "s8-sector-grid";
+  for (const n of nodes) grid.appendChild(tile(n, state));
+  block.append(head, grid);
+  return block;
+}
+function tile(n, state) {
+  const def = nodeById(n.id) || {};
+  const s = status(n.health);
+  const hl = Boolean(state.highLoad?.[n.id]) && def.supportsHighLoad;
+  const frozen = Number(state.stabilized?.[n.id] || 0);
+  const stress = Number(n.cascadeStress) || 0;
+  const el = document.createElement("button");
+  el.type = "button";
+  const classes = ["s8-node", `s8-node--${def.zone || "core"}`, `is-${s}`];
+  if (hl) classes.push("is-high-load");
+  if (frozen) classes.push("is-stabilized");
+  if (stress > 0) classes.push("is-stressed");
+  el.className = classes.join(" ");
+  el.dataset.nodeTile = n.id;
+  el.dataset.nodeId = n.id;
+  el.title = `${n.id} ${def.name || ""} — ${Math.round(n.health)}%${stress ? ` · cascade +${stress}/cyc` : ""}${frozen ? ` · frozen ${frozen}` : ""}`;
+  const pips = (stress > 0 ? `<span class="s8-node-pip is-stress">⚠${stress}</span>` : "") + (frozen ? `<span class="s8-node-pip is-frozen">❄</span>` : "");
+  el.innerHTML = `<span class="s8-node-id">${n.id}</span><span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span><span class="s8-node-pips">${pips}</span>`;
+  return el;
+}
+function paintEdges(net, state) {
+  net.querySelector(":scope > svg.s8-edges")?.remove();
+  const box = net.getBoundingClientRect();
+  if (!box.width) return;
+  const SVG = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "s8-edges");
+  svg.setAttribute("aria-hidden", "true");
+  const w = net.scrollWidth, h = net.scrollHeight;
+  svg.setAttribute("width", String(w));
+  svg.setAttribute("height", String(h));
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const centreOf = (id) => {
+    const t = net.querySelector(`[data-node-id="${id}"]`);
+    if (!t) return null;
+    const r = t.getBoundingClientRect();
+    return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2 };
+  };
+  const frag = document.createDocumentFragment();
+  for (const e of mapEdges(state)) {
+    const a = centreOf(e.from), b = centreOf(e.to);
+    if (!a || !b) continue;
+    const line = document.createElementNS(SVG, "line");
+    line.setAttribute("x1", String(a.x));
+    line.setAttribute("y1", String(a.y));
+    line.setAttribute("x2", String(b.x));
+    line.setAttribute("y2", String(b.y));
+    line.setAttribute("class", `s8-edge${e.stressed ? " is-stressed" : ""}`);
+    frag.appendChild(line);
+  }
+  svg.appendChild(frag);
+  net.insertBefore(svg, net.firstChild);
 }
 
 // ../../docs/games/metagame/stages/stage8/paint.js
@@ -1800,7 +1904,8 @@ function paintStage8({ state, lock, storm, disc, els, onSelectDebris }) {
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
   paintCollapse(fields, root, state, disc);
-  map.replaceChildren(...state.nodes.map((n) => nodeCard(n, state)), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
+  paintMap(map, state);
+  if (fields.debrisTray) fields.debrisTray.replaceChildren(...state.debris.map((item) => debrisChip(item, onSelectDebris)));
   log.replaceChildren(...state.log.slice(-5).map((line) => {
     const li = document.createElement("li");
     li.textContent = line;
@@ -1862,31 +1967,6 @@ function paintDebrisSelect(select, state) {
     return option;
   }));
 }
-function nodeCard(n, state) {
-  const def = nodeById(n.id) || {};
-  const s = status(n.health);
-  const hl = Boolean(state.highLoad?.[n.id]) && def.supportsHighLoad;
-  const frozen = Number(state.stabilized?.[n.id] || 0);
-  const stress = Number(n.cascadeStress) || 0;
-  const item = document.createElement("div");
-  const classes = [`s8-node`, `is-${s}`];
-  if (hl) classes.push("is-high-load");
-  if (frozen) classes.push("is-stabilized");
-  if (stress > 0) classes.push("is-stressed");
-  item.className = classes.join(" ");
-  const bar = `<span class="s8-node-bar"><span style="width:${Math.round(n.health)}%"></span></span>`;
-  const stressTag = stress > 0 ? ` <span class="s8-node-stress" title="cascade stress from failed neighbours: +${stress}/cycle extra decay">⚠+${stress}</span>` : "";
-  const frozenTag = frozen ? ` <span class="s8-node-frozen" title="stabilized — decay frozen">❄${frozen}</span>` : "";
-  const hlBtn = def.supportsHighLoad ? `<button type="button" data-high-load="${n.id}" class="s8-node-hl${hl ? " is-on" : ""}" aria-pressed="${hl}" title="High-Load: +50% output, +50% decay">HL${hl ? "✓" : ""}</button>` : "";
-  const showFreeze = (state.cycle || 0) >= 6;
-  const held = Number(state.stabilizers || 0);
-  const canFreeze = showFreeze && held > 0 && !frozen;
-  const freezeBtn = showFreeze ? `<button type="button" data-stabilize-node="${n.id}"${canFreeze ? "" : " disabled"} title="Freeze decay for 2 cycles (spends 1 stabilizer)">freeze ❄${held}</button>` : "";
-  item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>${stressTag}${frozenTag}
-    ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
-    <span class="s8-node-actions">${hlBtn}${freezeBtn}<button type="button" data-repair="${n.id}">repair</button></span>`;
-  return item;
-}
 function debrisChip(item, onSelectDebris) {
   const debris = document.createElement("button");
   debris.type = "button";
@@ -1897,6 +1977,9 @@ function debrisChip(item, onSelectDebris) {
   debris.addEventListener("click", () => onSelectDebris(item.id));
   return debris;
 }
+
+// ../../docs/games/metagame/stages/stage8/panel.js
+import { openModal } from "../../shared/modal.js";
 
 // ../../docs/games/metagame/stages/stage8/techpanel.js
 var BRANCH_LABEL = { repair: "REPAIR", thermal: "THERMAL", salvage: "SALVAGE", topology: "TOPOLOGY" };
@@ -1953,6 +2036,178 @@ function techRow(t) {
   return btn;
 }
 
+// ../../docs/games/metagame/stages/stage8/panel.js
+function openTechPanel({ state, disc, onBuyTech, onBuildStruct }) {
+  const hasStruct = Boolean(disc?.structures);
+  let tab = "tech";
+  const content = document.createElement("div");
+  content.className = "s8-panel";
+  const tabs = document.createElement("div");
+  tabs.className = "s8-panel-tabs";
+  tabs.setAttribute("role", "tablist");
+  tabs.innerHTML = `<button type="button" class="s8-tab is-active" data-tab="tech" role="tab">TECH</button>` + (hasStruct ? `<button type="button" class="s8-tab" data-tab="struct" role="tab">STRUCTURES</button>` : "");
+  const body = document.createElement("div");
+  body.className = "s8-tech";
+  body.setAttribute("role", "tabpanel");
+  content.append(tabs, body);
+  function render() {
+    if (tab === "struct" && hasStruct) paintStructures(body, state);
+    else paintTech(body, state);
+    for (const b of tabs.querySelectorAll(".s8-tab")) b.classList.toggle("is-active", b.dataset.tab === tab);
+  }
+  tabs.addEventListener("click", (event) => {
+    const t = event.target.closest(".s8-tab");
+    if (!t) return;
+    tab = t.dataset.tab;
+    render();
+  });
+  body.addEventListener("click", (event) => {
+    const tech = event.target.closest("button[data-tech]");
+    if (tech) {
+      onBuyTech?.(tech.dataset.tech);
+      render();
+      return;
+    }
+    const struct = event.target.closest("button[data-struct]");
+    if (struct) {
+      onBuildStruct?.(struct.dataset.struct);
+      render();
+    }
+  });
+  render();
+  return openModal({ title: "Salvage bay — tech & structures", contentEl: content, className: "s8-panel-modal" });
+}
+
+// ../../docs/games/metagame/stages/stage8/popover.js
+var REPAIR_STEP2 = 2;
+var FREEZE_CYCLE = 6;
+function popoverActionSpecs(state, nodeId) {
+  const def = nodeById(nodeId) || {};
+  const live = (state.nodes || []).find((n) => n.id === nodeId) || { health: 0 };
+  const frozen = Number(state.stabilized?.[nodeId] || 0);
+  const held = Number(state.stabilizers || 0);
+  const budget = Number.isFinite(state.repairUnits) ? state.repairUnits : 0;
+  const specs = [{
+    kind: "repair",
+    dataAttr: "data-repair",
+    label: `repair ▸ ${REPAIR_STEP2}u`,
+    disabled: budget < REPAIR_STEP2 || status(live.health) === "active" && live.health >= 100
+  }];
+  if (def.supportsHighLoad) {
+    const on = Boolean(state.highLoad?.[nodeId]);
+    specs.push({ kind: "high-load", dataAttr: "data-high-load", label: `High-Load ${on ? "✓" : "○"}`, disabled: false, on });
+  }
+  if (Number(state.cycle || 0) >= FREEZE_CYCLE) {
+    specs.push({ kind: "freeze", dataAttr: "data-stabilize-node", label: `freeze ❄${held}`, disabled: held < 1 || Boolean(frozen), frozen });
+  }
+  return specs;
+}
+var active = null;
+function closePopover() {
+  if (!active) return;
+  document.removeEventListener("click", active.onDocClick, true);
+  document.removeEventListener("keydown", active.onKey, true);
+  active.el.remove();
+  active = null;
+}
+function openNodePopover({ root, tile: tile2, state, nodeId }) {
+  closePopover();
+  const def = nodeById(nodeId) || {};
+  const el = document.createElement("div");
+  el.className = "s8-popover";
+  el.setAttribute("role", "menu");
+  el.setAttribute("aria-label", `${nodeId} actions`);
+  const live = (state.nodes || []).find((n) => n.id === nodeId) || { health: 0 };
+  const frozen = Number(state.stabilized?.[nodeId] || 0);
+  const buttons = popoverActionSpecs(state, nodeId).map(
+    (s) => `<button type="button" class="s8-pop-btn${s.on ? " is-on" : ""}" ${s.dataAttr}="${nodeId}"${s.disabled ? " disabled" : ""}>${s.label}</button>`
+  ).join("");
+  el.innerHTML = `<div class="s8-pop-head"><b>${nodeId}</b> ${def.name || ""} · ${Math.round(live.health)}%${frozen ? ` · ❄${frozen}` : ""}</div><div class="s8-pop-actions">${buttons}</div>`;
+  root.appendChild(el);
+  positionPopover(el, tile2, root);
+  const onDocClick = (event) => {
+    if (el.contains(event.target) || tile2.contains(event.target)) return;
+    closePopover();
+  };
+  const onKey = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closePopover();
+    }
+  };
+  active = { el, onDocClick, onKey };
+  setTimeout(() => {
+    if (active && active.el === el) {
+      document.addEventListener("click", onDocClick, true);
+      document.addEventListener("keydown", onKey, true);
+    }
+  }, 0);
+  return el;
+}
+function positionPopover(el, tile2, root) {
+  const t = tile2.getBoundingClientRect();
+  const r = root.getBoundingClientRect();
+  el.style.top = `${t.bottom - r.top + 4}px`;
+  const w = el.offsetWidth || 160;
+  let left = t.left - r.left;
+  const max = root.clientWidth - w - 6;
+  if (left > max) left = Math.max(4, max);
+  el.style.left = `${left}px`;
+}
+
+// ../../docs/games/metagame/stages/stage8/beat.js
+import { flash, floatNum, shake, banner } from "../../shared/feedback.js";
+var SWEEP_MS = 250;
+function reducedMotion() {
+  return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function playCycleBeat({ map, state, result, bannerLayer }) {
+  const net = map?.querySelector?.(".s8-net");
+  if (!net) return;
+  const reduce = reducedMotion();
+  if (!reduce) sweep(net, state);
+  flashFailures(net, result);
+  if (!reduce) pulseCascade(net);
+  const surviving = result?.storm?.resolved && result.storm.survived;
+  if (surviving && bannerLayer) banner(bannerLayer, `SECTOR ${result.storm.sector?.toUpperCase?.() || ""} ONLINE`);
+}
+function playStormArrival({ map, bannerLayer, sector, label }) {
+  if (bannerLayer) banner(bannerLayer, `⛆ ${label || "CASCADE STORM"}`);
+  if (reducedMotion()) return;
+  const block = map?.querySelector?.(`.s8-sector[data-sector="${sector}"]`);
+  if (block) shake(block);
+}
+function sweep(net, state) {
+  const order = decayOrder(state);
+  const n = Math.max(1, order.length);
+  order.forEach((id, i) => {
+    const tile2 = net.querySelector(`[data-node-id="${id}"]`);
+    if (!tile2) return;
+    tile2.style.setProperty("--sweep-delay", `${Math.round(i / n * SWEEP_MS)}ms`);
+    tile2.classList.remove("is-sweep");
+    void tile2.offsetWidth;
+    tile2.classList.add("is-sweep");
+    setTimeout(() => tile2.classList.remove("is-sweep"), SWEEP_MS + 260);
+  });
+}
+function flashFailures(net, result) {
+  for (const id of result?.newlyFailed || []) {
+    const tile2 = net.querySelector(`[data-node-id="${id}"]`);
+    if (!tile2) continue;
+    flash(tile2, "bad");
+    const debris = (result.newDebris || []).find((d) => d.node === id);
+    floatNum(tile2, `-${debris?.value ?? "?"} STATES`, "bad");
+  }
+}
+function pulseCascade(net) {
+  const stressed = net.querySelectorAll("svg.s8-edges .s8-edge.is-stressed");
+  stressed.forEach((line, i) => {
+    line.style.setProperty("--pulse-delay", `${i * 60}ms`);
+    line.classList.add("is-pulse");
+    setTimeout(() => line.classList.remove("is-pulse"), 600 + i * 60);
+  });
+}
+
 // ../../docs/games/metagame/stages/stage8/disclose.js
 function isVeteran(state) {
   return Number(state.stormsSurvived || 0) > 0 || Number(state.cycle || 1) >= 8 || Boolean(state.boss?.reached) || Boolean(state.meta?.firstClearComplete);
@@ -1975,8 +2230,8 @@ function computeDisclosure(state) {
 }
 
 // ../../docs/games/metagame/stages/stage8/renderer.js
-import { banner } from "../../shared/feedback.js";
-var REPAIR_STEP2 = 2;
+import { banner as banner2 } from "../../shared/feedback.js";
+var REPAIR_STEP3 = 2;
 function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, run, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
@@ -1990,6 +2245,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <span class="s8-cmd-stat is-warn" data-field="stormWrap" hidden><b data-field="stormCountdown"></b><small>storm left</small></span>
       <span class="s8-ticker" data-field="ticker" aria-live="polite"></span>
     </div>
+    <div class="s8-banner-layer" data-field="bannerLayer" aria-hidden="true"></div>
     <div class="s8-hud">
       <div class="s8-cluster">
         <span class="s8-cl-label">NETWORK</span>
@@ -2003,6 +2259,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <div class="s8-cluster" data-field="resourcesCluster" hidden>
         <span class="s8-cl-label">RESOURCES</span>
         <span class="s8-cl-num"><b data-field="parts"></b> <i data-field="partsRate" class="s8-rate"></i><small>parts</small></span>
+        <button type="button" data-action="open-tech" class="s8-cl-btn">tech ⛭</button>
       </div>
       <div class="s8-cluster" data-field="prestigeCluster" hidden>
         <span class="s8-cl-label">PRESTIGE</span>
@@ -2017,6 +2274,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
           <select data-field="debrisSelect"></select>
         </label>
         <button type="button" data-action="archive">Archive</button>
+        <div class="s8-debris-tray" data-field="debrisTray" aria-label="debris chips — tap to select, then Archive"></div>
         <div class="s8-drop" data-drop-target="/entropy/active_archive/" tabindex="0" role="button" aria-label="Archive selected debris">Active Archive</div>
         <div class="s8-salvage-progress" title="Heat Death gate progress">
           <span class="s8-salvage-bar"><span data-field="salvageFill"></span></span>
@@ -2033,14 +2291,6 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
-    <details class="s8-tech-panel" data-field="techPanel" hidden>
-      <summary>TECH TREE — spend parts ⛭</summary>
-      <div class="s8-tech" data-field="tech"></div>
-    </details>
-    <details class="s8-tech-panel" data-field="structPanel" hidden>
-      <summary>STRUCTURES — build with parts ⛭</summary>
-      <div class="s8-tech" data-field="struct"></div>
-    </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
       <button type="button" data-action="stabilizer" data-field="stabilizerBtn" hidden>build stabilizer (${STABILIZER_COST} States)</button>
@@ -2049,7 +2299,6 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     </div>
   `;
   host.replaceChildren(root);
-  const cmdbar = root.querySelector(".s8-cmdbar");
   let disclosureSeeded = false;
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const map = root.querySelector(".s8-map");
@@ -2083,52 +2332,45 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     }
   });
   root.addEventListener("click", (event) => {
-    const repair = event.target.closest("button[data-repair]");
-    if (repair) {
-      applyRepair(state, repair.dataset.repair, REPAIR_STEP2);
+    const nodeAction = event.target.closest("button[data-repair], button[data-high-load], button[data-stabilize-node]");
+    if (nodeAction) {
+      if (nodeAction.hasAttribute("data-repair")) applyRepair(state, nodeAction.dataset.repair, REPAIR_STEP3);
+      else if (nodeAction.hasAttribute("data-high-load")) toggleHighLoad(state, nodeAction.dataset.highLoad);
+      else applyStabilizer(state, nodeAction.dataset.stabilizeNode);
+      closePopover();
       persistAndPaint();
       return;
     }
-    const highLoad = event.target.closest("button[data-high-load]");
-    if (highLoad) {
-      toggleHighLoad(state, highLoad.dataset.highLoad);
-      persistAndPaint();
-      return;
-    }
-    const freeze = event.target.closest("button[data-stabilize-node]");
-    if (freeze) {
-      applyStabilizer(state, freeze.dataset.stabilizeNode);
-      persistAndPaint();
-      return;
-    }
-    const tech = event.target.closest("button[data-tech]");
-    if (tech) {
-      buyTech(state, tech.dataset.tech);
-      persistAndPaint();
-      return;
-    }
-    const struct = event.target.closest("button[data-struct]");
-    if (struct) {
-      buildStructure(state, struct.dataset.struct);
-      persistAndPaint();
+    const tile2 = event.target.closest("[data-node-tile]");
+    if (tile2) {
+      openNodePopover({ root, tile: tile2, state, nodeId: tile2.dataset.nodeTile });
       return;
     }
     const button = event.target.closest("button[data-action]");
     if (!button) return;
-    if (button.dataset.action === "advance") advanceCycle(state, cycleRng(state.cycle));
-    if (button.dataset.action === "storm") braceStorm(state);
-    if (button.dataset.action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
-    if (button.dataset.action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
-    if (button.dataset.action === "external") {
+    const action = button.dataset.action;
+    if (action === "open-tech") {
+      openPanel();
+      return;
+    }
+    let advanceResult = null;
+    let bracedStorm = null;
+    if (action === "advance") advanceResult = advanceCycle(state, cycleRng(state.cycle));
+    else if (action === "storm") {
+      const r = braceStorm(state);
+      if (r?.ok) bracedStorm = r.storm;
+    } else if (action === "stabilizer") buildStabilizer(state, STABILIZER_COST);
+    else if (action === "archive") archiveSelectedDebris({ state, actions, achievements, bell });
+    else if (action === "external") {
       state.externalImportBonusCycles = 3;
       actions?.setAction?.(8, "external_debris_imported", { source: "external-import" });
-    }
-    if (button.dataset.action === "boss") challengeBoss();
-    if (button.dataset.action === "collapse") {
+    } else if (action === "boss") challengeBoss();
+    else if (action === "collapse") {
       if (microstateCollapse(state).ok && run?.reset) run.reset();
-    }
-    if (button.dataset.action === "bts") openBts({ bts, viewer });
+    } else if (action === "bts") openBts({ bts, viewer });
     persistAndPaint();
+    if (advanceResult) playCycleBeat({ map, state, result: advanceResult, bannerLayer: fields.bannerLayer });
+    if (bracedStorm) playStormArrival({ map, bannerLayer: fields.bannerLayer, sector: bracedStorm.sector, label: bracedStorm.label });
   });
   repaint();
   window.__fvStage8 = {
@@ -2181,6 +2423,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
     repaint,
     dev,
     destroy() {
+      closePopover();
       if (window.__fvStage8) delete window.__fvStage8;
       root.remove();
     }
@@ -2227,8 +2470,20 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
         repaint();
       }
     });
-    if (disc.parts) paintTech(fields.tech, state);
-    if (disc.structures) paintStructures(fields.struct, state);
+  }
+  function openPanel() {
+    openTechPanel({
+      state,
+      disc: computeDisclosure(state),
+      onBuyTech: (id) => {
+        buyTech(state, id);
+        persistAndPaint();
+      },
+      onBuildStruct: (id) => {
+        buildStructure(state, id);
+        persistAndPaint();
+      }
+    });
   }
   function updateDisclosure(disc) {
     if (!state.disclosed || typeof state.disclosed !== "object") state.disclosed = {};
@@ -2242,7 +2497,7 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       if (disc[key] && !state.disclosed[key]) {
         state.disclosed[key] = true;
         if (!bannered && DISCLOSE_MESSAGES[key]) {
-          banner(cmdbar, DISCLOSE_MESSAGES[key]);
+          banner2(fields.bannerLayer, DISCLOSE_MESSAGES[key]);
           bannered = true;
         }
       }
@@ -2340,12 +2595,15 @@ function isSalvageDetail(detail) {
   return Boolean(detail && Number(detail.stage) === 8 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
-  const id = "stage8-entropy-field-styles";
+  injectStyle("stage8-entropy-field-styles", "./styles.css");
+  injectStyle("stage8-entropy-field-map-styles", "./styles-map.css");
+}
+function injectStyle(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = new URL(href, import.meta.url).href;
   document.head.append(link);
 }
 export {

@@ -106,8 +106,7 @@ export function applyDisclosure(els, state, disc) {
   set(fields.archivePanel, disc.debris);
   set(fields.externalBtn, disc.debris);
   set(fields.bossPanel, disc.boss);
-  set(fields.techPanel, disc.parts);
-  set(fields.structPanel, disc.structures);
+  // tech/structures now open from the RESOURCES cluster button (disc.parts gates the cluster itself).
   // build-stabilizer: relevant once storms/defense are in play; show the held count on the button.
   if (fields.stabilizerBtn) {
     fields.stabilizerBtn.hidden = !disc.storm;
