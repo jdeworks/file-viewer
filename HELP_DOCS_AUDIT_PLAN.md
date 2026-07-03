@@ -1210,117 +1210,117 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/ini/row.html
 - [x] docs/types/text/ini/section.html
 - [x] docs/types/text/ini/settings.default.json
-- [ ] docs/types/text/json/detect.js
-- [ ] docs/types/text/json/EDITOR.md
-- [ ] docs/types/text/json/exports.js
-- [ ] docs/types/text/json/index.js
-- [ ] docs/types/text/json/jsondiff.js
-- [ ] docs/types/text/json/jsonparse.js
-- [ ] docs/types/text/json/known/actual-budget-config/index.js
-- [ ] docs/types/text/json/known/actual-budget-config/renderer.js
-- [ ] docs/types/text/json/known/angular/index.js
-- [ ] docs/types/text/json/known/angular/renderer.js
-- [ ] docs/types/text/json/known/apollo/index.js
-- [ ] docs/types/text/json/known/apollo/renderer.js
-- [ ] docs/types/text/json/known/app-json/index.js
-- [ ] docs/types/text/json/known/app-json/renderer.js
-- [ ] docs/types/text/json/known/appsettings/index.js
-- [ ] docs/types/text/json/known/appsettings/renderer.js
-- [ ] docs/types/text/json/known/avro-schema/index.js
-- [ ] docs/types/text/json/known/avro-schema/renderer.js
-- [ ] docs/types/text/json/known/babel/index.js
-- [ ] docs/types/text/json/known/babel/renderer.js
-- [ ] docs/types/text/json/known/babelrc/index.js
-- [ ] docs/types/text/json/known/babelrc/renderer.js
-- [ ] docs/types/text/json/known/biome/index.js
-- [ ] docs/types/text/json/known/biome/renderer.js
-- [ ] docs/types/text/json/known/bruno/index.js
-- [ ] docs/types/text/json/known/bruno/renderer.js
-- [ ] docs/types/text/json/known/capacitor/index.js
-- [ ] docs/types/text/json/known/capacitor/renderer.js
-- [ ] docs/types/text/json/known/cdk-json/index.js
-- [ ] docs/types/text/json/known/cdk-json/renderer.js
-- [ ] docs/types/text/json/known/cmake-presets/index.js
-- [ ] docs/types/text/json/known/cmake-presets/renderer.js
-- [ ] docs/types/text/json/known/commitlint/index.js
-- [ ] docs/types/text/json/known/commitlint/renderer.js
-- [ ] docs/types/text/json/known/composer-json/index.js
-- [ ] docs/types/text/json/known/composer-json/metadata.js
-- [ ] docs/types/text/json/known/composer-json/render.js
-- [ ] docs/types/text/json/known/composer-lock/index.js
-- [ ] docs/types/text/json/known/composer-lock/renderer.js
-- [ ] docs/types/text/json/known/cyclonedx-sbom/index.js
-- [ ] docs/types/text/json/known/cyclonedx-sbom/renderer.js
-- [ ] docs/types/text/json/known/deno/index.js
-- [ ] docs/types/text/json/known/deno/renderer.js
-- [ ] docs/types/text/json/known/devbox-json/index.js
-- [ ] docs/types/text/json/known/devbox-json/renderer.js
-- [ ] docs/types/text/json/known/devcontainer/index.js
-- [ ] docs/types/text/json/known/devcontainer/renderer.js
-- [ ] docs/types/text/json/known/dotnet-global/index.js
-- [ ] docs/types/text/json/known/dotnet-global/renderer.js
-- [ ] docs/types/text/json/known/dprint/index.js
-- [ ] docs/types/text/json/known/dprint/renderer.js
-- [ ] docs/types/text/json/known/eas-json/index.js
-- [ ] docs/types/text/json/known/eas-json/renderer.js
-- [ ] docs/types/text/json/known/elm-json/index.js
-- [ ] docs/types/text/json/known/elm-json/renderer.js
-- [ ] docs/types/text/json/known/eslint/index.js
-- [ ] docs/types/text/json/known/eslint/renderer.js
-- [ ] docs/types/text/json/known/expo/index.js
-- [ ] docs/types/text/json/known/expo/renderer.js
-- [ ] docs/types/text/json/known/filebrowser-config/index.js
-- [ ] docs/types/text/json/known/filebrowser-config/renderer.js
-- [ ] docs/types/text/json/known/firebase/index.js
-- [ ] docs/types/text/json/known/firebase/renderer.js
-- [ ] docs/types/text/json/known/gcp-service-account/index.js
-- [ ] docs/types/text/json/known/gcp-service-account/renderer.js
-- [ ] docs/types/text/json/known/ghost-config/index.js
-- [ ] docs/types/text/json/known/ghost-config/renderer.js
-- [ ] docs/types/text/json/known/google-services/index.js
-- [ ] docs/types/text/json/known/google-services/renderer.js
-- [ ] docs/types/text/json/known/grafana-dashboard/index.js
-- [ ] docs/types/text/json/known/grafana-dashboard/renderer.js
-- [ ] docs/types/text/json/known/graphql-config/index.js
-- [ ] docs/types/text/json/known/graphql-config/renderer.js
-- [ ] docs/types/text/json/known/growthbook/index.js
-- [ ] docs/types/text/json/known/growthbook/renderer.js
-- [ ] docs/types/text/json/known/har/index.js
-- [ ] docs/types/text/json/known/har/renderer.js
-- [ ] docs/types/text/json/known/husky/index.js
-- [ ] docs/types/text/json/known/husky/renderer.js
-- [ ] docs/types/text/json/known/ionic-config/index.js
-- [ ] docs/types/text/json/known/ionic-config/renderer.js
-- [ ] docs/types/text/json/known/jellyseerr-config/index.js
-- [ ] docs/types/text/json/known/jellyseerr-config/renderer.js
-- [ ] docs/types/text/json/known/jest/index.js
-- [ ] docs/types/text/json/known/jest/renderer.js
-- [ ] docs/types/text/json/known/jsconfig/index.js
-- [ ] docs/types/text/json/known/jsconfig/renderer.js
-- [ ] docs/types/text/json/known/kavita-config/index.js
-- [ ] docs/types/text/json/known/kavita-config/renderer.js
-- [ ] docs/types/text/json/known/keycloak-realm/index.js
-- [ ] docs/types/text/json/known/keycloak-realm/renderer.js
-- [ ] docs/types/text/json/known/knip/index.js
-- [ ] docs/types/text/json/known/knip/renderer.js
-- [ ] docs/types/text/json/known/launch-settings/index.js
-- [ ] docs/types/text/json/known/launch-settings/renderer.js
-- [ ] docs/types/text/json/known/lerna/index.js
-- [ ] docs/types/text/json/known/lerna/renderer.js
-- [ ] docs/types/text/json/known/lighthouserc/index.js
-- [ ] docs/types/text/json/known/lighthouserc/renderer.js
-- [ ] docs/types/text/json/known/lint-staged/index.js
-- [ ] docs/types/text/json/known/lint-staged/renderer.js
-- [ ] docs/types/text/json/known/markdownlint/index.js
-- [ ] docs/types/text/json/known/markdownlint/renderer.js
-- [ ] docs/types/text/json/known/mattermost-config/index.js
-- [ ] docs/types/text/json/known/mattermost-config/renderer.js
-- [ ] docs/types/text/json/known/mcp-config/index.js
-- [ ] docs/types/text/json/known/mcp-config/renderer.js
-- [ ] docs/types/text/json/known/mintlify/index.js
-- [ ] docs/types/text/json/known/mintlify/renderer.js
-- [ ] docs/types/text/json/known/mocha/index.js
-- [ ] docs/types/text/json/known/mocha/renderer.js
+- [x] docs/types/text/json/detect.js
+- [x] docs/types/text/json/EDITOR.md
+- [x] docs/types/text/json/exports.js
+- [x] docs/types/text/json/index.js
+- [x] docs/types/text/json/jsondiff.js
+- [x] docs/types/text/json/jsonparse.js
+- [x] docs/types/text/json/known/actual-budget-config/index.js
+- [x] docs/types/text/json/known/actual-budget-config/renderer.js
+- [x] docs/types/text/json/known/angular/index.js
+- [x] docs/types/text/json/known/angular/renderer.js
+- [x] docs/types/text/json/known/apollo/index.js
+- [x] docs/types/text/json/known/apollo/renderer.js
+- [x] docs/types/text/json/known/app-json/index.js
+- [x] docs/types/text/json/known/app-json/renderer.js
+- [x] docs/types/text/json/known/appsettings/index.js
+- [x] docs/types/text/json/known/appsettings/renderer.js
+- [x] docs/types/text/json/known/avro-schema/index.js
+- [x] docs/types/text/json/known/avro-schema/renderer.js
+- [x] docs/types/text/json/known/babel/index.js
+- [x] docs/types/text/json/known/babel/renderer.js
+- [x] docs/types/text/json/known/babelrc/index.js
+- [x] docs/types/text/json/known/babelrc/renderer.js
+- [x] docs/types/text/json/known/biome/index.js
+- [x] docs/types/text/json/known/biome/renderer.js
+- [x] docs/types/text/json/known/bruno/index.js
+- [x] docs/types/text/json/known/bruno/renderer.js
+- [x] docs/types/text/json/known/capacitor/index.js
+- [x] docs/types/text/json/known/capacitor/renderer.js
+- [x] docs/types/text/json/known/cdk-json/index.js
+- [x] docs/types/text/json/known/cdk-json/renderer.js
+- [x] docs/types/text/json/known/cmake-presets/index.js
+- [x] docs/types/text/json/known/cmake-presets/renderer.js
+- [x] docs/types/text/json/known/commitlint/index.js
+- [x] docs/types/text/json/known/commitlint/renderer.js
+- [x] docs/types/text/json/known/composer-json/index.js
+- [x] docs/types/text/json/known/composer-json/metadata.js
+- [x] docs/types/text/json/known/composer-json/render.js
+- [x] docs/types/text/json/known/composer-lock/index.js
+- [x] docs/types/text/json/known/composer-lock/renderer.js
+- [x] docs/types/text/json/known/cyclonedx-sbom/index.js
+- [x] docs/types/text/json/known/cyclonedx-sbom/renderer.js
+- [x] docs/types/text/json/known/deno/index.js
+- [x] docs/types/text/json/known/deno/renderer.js
+- [x] docs/types/text/json/known/devbox-json/index.js
+- [x] docs/types/text/json/known/devbox-json/renderer.js
+- [x] docs/types/text/json/known/devcontainer/index.js
+- [x] docs/types/text/json/known/devcontainer/renderer.js
+- [x] docs/types/text/json/known/dotnet-global/index.js
+- [x] docs/types/text/json/known/dotnet-global/renderer.js
+- [x] docs/types/text/json/known/dprint/index.js
+- [x] docs/types/text/json/known/dprint/renderer.js
+- [x] docs/types/text/json/known/eas-json/index.js
+- [x] docs/types/text/json/known/eas-json/renderer.js
+- [x] docs/types/text/json/known/elm-json/index.js
+- [x] docs/types/text/json/known/elm-json/renderer.js
+- [x] docs/types/text/json/known/eslint/index.js
+- [x] docs/types/text/json/known/eslint/renderer.js
+- [x] docs/types/text/json/known/expo/index.js
+- [x] docs/types/text/json/known/expo/renderer.js
+- [x] docs/types/text/json/known/filebrowser-config/index.js
+- [x] docs/types/text/json/known/filebrowser-config/renderer.js
+- [x] docs/types/text/json/known/firebase/index.js
+- [x] docs/types/text/json/known/firebase/renderer.js
+- [x] docs/types/text/json/known/gcp-service-account/index.js
+- [x] docs/types/text/json/known/gcp-service-account/renderer.js
+- [x] docs/types/text/json/known/ghost-config/index.js
+- [x] docs/types/text/json/known/ghost-config/renderer.js
+- [x] docs/types/text/json/known/google-services/index.js
+- [x] docs/types/text/json/known/google-services/renderer.js
+- [x] docs/types/text/json/known/grafana-dashboard/index.js
+- [x] docs/types/text/json/known/grafana-dashboard/renderer.js
+- [x] docs/types/text/json/known/graphql-config/index.js
+- [x] docs/types/text/json/known/graphql-config/renderer.js
+- [x] docs/types/text/json/known/growthbook/index.js
+- [x] docs/types/text/json/known/growthbook/renderer.js
+- [x] docs/types/text/json/known/har/index.js
+- [x] docs/types/text/json/known/har/renderer.js
+- [x] docs/types/text/json/known/husky/index.js
+- [x] docs/types/text/json/known/husky/renderer.js
+- [x] docs/types/text/json/known/ionic-config/index.js
+- [x] docs/types/text/json/known/ionic-config/renderer.js
+- [x] docs/types/text/json/known/jellyseerr-config/index.js
+- [x] docs/types/text/json/known/jellyseerr-config/renderer.js
+- [x] docs/types/text/json/known/jest/index.js
+- [x] docs/types/text/json/known/jest/renderer.js
+- [x] docs/types/text/json/known/jsconfig/index.js
+- [x] docs/types/text/json/known/jsconfig/renderer.js
+- [x] docs/types/text/json/known/kavita-config/index.js
+- [x] docs/types/text/json/known/kavita-config/renderer.js
+- [x] docs/types/text/json/known/keycloak-realm/index.js
+- [x] docs/types/text/json/known/keycloak-realm/renderer.js
+- [x] docs/types/text/json/known/knip/index.js
+- [x] docs/types/text/json/known/knip/renderer.js
+- [x] docs/types/text/json/known/launch-settings/index.js
+- [x] docs/types/text/json/known/launch-settings/renderer.js
+- [x] docs/types/text/json/known/lerna/index.js
+- [x] docs/types/text/json/known/lerna/renderer.js
+- [x] docs/types/text/json/known/lighthouserc/index.js
+- [x] docs/types/text/json/known/lighthouserc/renderer.js
+- [x] docs/types/text/json/known/lint-staged/index.js
+- [x] docs/types/text/json/known/lint-staged/renderer.js
+- [x] docs/types/text/json/known/markdownlint/index.js
+- [x] docs/types/text/json/known/markdownlint/renderer.js
+- [x] docs/types/text/json/known/mattermost-config/index.js
+- [x] docs/types/text/json/known/mattermost-config/renderer.js
+- [x] docs/types/text/json/known/mcp-config/index.js
+- [x] docs/types/text/json/known/mcp-config/renderer.js
+- [x] docs/types/text/json/known/mintlify/index.js
+- [x] docs/types/text/json/known/mintlify/renderer.js
+- [x] docs/types/text/json/known/mocha/index.js
+- [x] docs/types/text/json/known/mocha/renderer.js
 - [ ] docs/types/text/json/known/ncurc/index.js
 - [ ] docs/types/text/json/known/ncurc/renderer.js
 - [ ] docs/types/text/json/known/nest-cli/index.js
@@ -1409,9 +1409,9 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/json/known/wails-json/renderer.js
 - [ ] docs/types/text/json/known/waybar-config/index.js
 - [ ] docs/types/text/json/known/waybar-config/renderer.js
-- [ ] docs/types/text/json/metadata.js
-- [ ] docs/types/text/json/renderer.js
-- [ ] docs/types/text/json/settings.default.json
+- [x] docs/types/text/json/metadata.js
+- [x] docs/types/text/json/renderer.js
+- [x] docs/types/text/json/settings.default.json
 - [ ] docs/types/text/jsonl/detect.js
 - [ ] docs/types/text/jsonl/EDITOR.md
 - [ ] docs/types/text/jsonl/index.js
@@ -3265,58 +3265,58 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/ini/known/sabnzbd-config
 - [ ] docs/types/text/ini/known/setup-cfg
 - [ ] docs/types/text/ini/known/wandb-config
-- [ ] docs/types/text/json/known/actual-budget-config
-- [ ] docs/types/text/json/known/angular
-- [ ] docs/types/text/json/known/apollo
-- [ ] docs/types/text/json/known/app-json
-- [ ] docs/types/text/json/known/appsettings
-- [ ] docs/types/text/json/known/avro-schema
-- [ ] docs/types/text/json/known/babel
-- [ ] docs/types/text/json/known/babelrc
-- [ ] docs/types/text/json/known/biome
-- [ ] docs/types/text/json/known/bruno
-- [ ] docs/types/text/json/known/capacitor
-- [ ] docs/types/text/json/known/cdk-json
-- [ ] docs/types/text/json/known/cmake-presets
-- [ ] docs/types/text/json/known/commitlint
-- [ ] docs/types/text/json/known/composer-json
-- [ ] docs/types/text/json/known/composer-lock
-- [ ] docs/types/text/json/known/cyclonedx-sbom
-- [ ] docs/types/text/json/known/deno
-- [ ] docs/types/text/json/known/devbox-json
-- [ ] docs/types/text/json/known/devcontainer
-- [ ] docs/types/text/json/known/dotnet-global
-- [ ] docs/types/text/json/known/dprint
-- [ ] docs/types/text/json/known/eas-json
-- [ ] docs/types/text/json/known/elm-json
-- [ ] docs/types/text/json/known/eslint
-- [ ] docs/types/text/json/known/expo
-- [ ] docs/types/text/json/known/filebrowser-config
-- [ ] docs/types/text/json/known/firebase
-- [ ] docs/types/text/json/known/gcp-service-account
-- [ ] docs/types/text/json/known/ghost-config
-- [ ] docs/types/text/json/known/google-services
-- [ ] docs/types/text/json/known/grafana-dashboard
-- [ ] docs/types/text/json/known/graphql-config
-- [ ] docs/types/text/json/known/growthbook
-- [ ] docs/types/text/json/known/har
-- [ ] docs/types/text/json/known/husky
-- [ ] docs/types/text/json/known/ionic-config
-- [ ] docs/types/text/json/known/jellyseerr-config
-- [ ] docs/types/text/json/known/jest
-- [ ] docs/types/text/json/known/jsconfig
-- [ ] docs/types/text/json/known/kavita-config
-- [ ] docs/types/text/json/known/keycloak-realm
-- [ ] docs/types/text/json/known/knip
-- [ ] docs/types/text/json/known/launch-settings
-- [ ] docs/types/text/json/known/lerna
-- [ ] docs/types/text/json/known/lighthouserc
-- [ ] docs/types/text/json/known/lint-staged
-- [ ] docs/types/text/json/known/markdownlint
-- [ ] docs/types/text/json/known/mattermost-config
-- [ ] docs/types/text/json/known/mcp-config
-- [ ] docs/types/text/json/known/mintlify
-- [ ] docs/types/text/json/known/mocha
+- [x] docs/types/text/json/known/actual-budget-config
+- [x] docs/types/text/json/known/angular
+- [x] docs/types/text/json/known/apollo
+- [x] docs/types/text/json/known/app-json
+- [x] docs/types/text/json/known/appsettings
+- [x] docs/types/text/json/known/avro-schema
+- [x] docs/types/text/json/known/babel
+- [x] docs/types/text/json/known/babelrc
+- [x] docs/types/text/json/known/biome
+- [x] docs/types/text/json/known/bruno
+- [x] docs/types/text/json/known/capacitor
+- [x] docs/types/text/json/known/cdk-json
+- [x] docs/types/text/json/known/cmake-presets
+- [x] docs/types/text/json/known/commitlint
+- [x] docs/types/text/json/known/composer-json
+- [x] docs/types/text/json/known/composer-lock
+- [x] docs/types/text/json/known/cyclonedx-sbom
+- [x] docs/types/text/json/known/deno
+- [x] docs/types/text/json/known/devbox-json
+- [x] docs/types/text/json/known/devcontainer
+- [x] docs/types/text/json/known/dotnet-global
+- [x] docs/types/text/json/known/dprint
+- [x] docs/types/text/json/known/eas-json
+- [x] docs/types/text/json/known/elm-json
+- [x] docs/types/text/json/known/eslint
+- [x] docs/types/text/json/known/expo
+- [x] docs/types/text/json/known/filebrowser-config
+- [x] docs/types/text/json/known/firebase
+- [x] docs/types/text/json/known/gcp-service-account
+- [x] docs/types/text/json/known/ghost-config
+- [x] docs/types/text/json/known/google-services
+- [x] docs/types/text/json/known/grafana-dashboard
+- [x] docs/types/text/json/known/graphql-config
+- [x] docs/types/text/json/known/growthbook
+- [x] docs/types/text/json/known/har
+- [x] docs/types/text/json/known/husky
+- [x] docs/types/text/json/known/ionic-config
+- [x] docs/types/text/json/known/jellyseerr-config
+- [x] docs/types/text/json/known/jest
+- [x] docs/types/text/json/known/jsconfig
+- [x] docs/types/text/json/known/kavita-config
+- [x] docs/types/text/json/known/keycloak-realm
+- [x] docs/types/text/json/known/knip
+- [x] docs/types/text/json/known/launch-settings
+- [x] docs/types/text/json/known/lerna
+- [x] docs/types/text/json/known/lighthouserc
+- [x] docs/types/text/json/known/lint-staged
+- [x] docs/types/text/json/known/markdownlint
+- [x] docs/types/text/json/known/mattermost-config
+- [x] docs/types/text/json/known/mcp-config
+- [x] docs/types/text/json/known/mintlify
+- [x] docs/types/text/json/known/mocha
 - [ ] docs/types/text/json/known/ncurc
 - [ ] docs/types/text/json/known/nest-cli
 - [ ] docs/types/text/json/known/netbird-config

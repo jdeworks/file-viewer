@@ -4,7 +4,9 @@ export default {
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    return ['babel.config.json', '.babelrc', '.babelrc.json'].includes(name);
+    // .babelrc / .babelrc.json have their own dedicated plugin (known/babelrc) — don't
+    // shadow it here.
+    return name === 'babel.config.json';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

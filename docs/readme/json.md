@@ -45,13 +45,14 @@
 
 ## Known-File Enhancement
 
-Many well-known JSON files get a Layer-3 plugin that adds a rich summary panel. Current plugins (in `docs/types/text/json/known/`):
+Well over 90 well-known JSON config files get a Layer-3 plugin (`docs/types/text/json/known/<name>/`)
+that adds a rich summary panel — see that directory for the full, current list. A representative
+sample:
 
 | Plugin | File(s) |
 |--------|---------|
 | `package-json` | `package.json` — scripts, dependencies, version |
 | `tsconfig` | `tsconfig.json` / `tsconfig.*.json` — compiler options |
-| `openapi` | OpenAPI / Swagger JSON — paths, operations |
 | `eslint` | `.eslintrc.json`, `eslint.config.json` |
 | `jest` | `jest.config.json` |
 | `babel` | `babel.config.json`, `.babelrc` |
@@ -62,9 +63,12 @@ Many well-known JSON files get a Layer-3 plugin that adds a rich summary panel. 
 | `devcontainer` | `.devcontainer/devcontainer.json` |
 | `lerna` | `lerna.json` |
 | `nx` | `nx.json` |
-| `composer` | `composer.json` |
+| `composer-json` / `composer-lock` | `composer.json` / `composer.lock` (PHP) |
 | `deno` | `deno.json`, `deno.jsonc` |
 | `jsconfig` | `jsconfig.json` |
+
+`openapi` (OpenAPI / Swagger — paths, operations) is a shared plugin at
+`docs/types/text/known/openapi/`, not under `json/known/`, because it matches both YAML and JSON specs.
 
 ## Real-World Examples
 

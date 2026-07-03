@@ -34,13 +34,7 @@ export function render(intake) {
   const testEnv = cfg.testEnvironment || 'node';
   const testMatch = Array.isArray(cfg.testMatch) ? cfg.testMatch : [];
   const testPathIgnore = Array.isArray(cfg.testPathIgnorePatterns) ? cfg.testPathIgnorePatterns : [];
-  const setupFiles = [
-    ...(Array.isArray(cfg.setupFiles) ? cfg.setupFiles : []),
-    ...(Array.isArray(cfg.setupFilesAfterFramework) ? cfg.setupFilesAfterFramework : []),
-    ...(Array.isArray(cfg.setupFilesAfterFramework) ? [] : Array.isArray(cfg.setupFilesAfterFramework) ? cfg.setupFilesAfterFramework : []),
-  ];
-  const setupFilesAfter = Array.isArray(cfg.setupFilesAfterFramework) ? cfg.setupFilesAfterFramework : (Array.isArray(cfg.setupFilesAfterFramework) ? cfg.setupFilesAfterFramework : (cfg.setupFilesAfterFramework ? [cfg.setupFilesAfterFramework] : []));
-  const allSetup = [...(Array.isArray(cfg.setupFiles) ? cfg.setupFiles : []), ...(Array.isArray(cfg.setupFilesAfterFramework) ? cfg.setupFilesAfterFramework : [])];
+  const allSetup = [...(Array.isArray(cfg.setupFiles) ? cfg.setupFiles : []), ...(Array.isArray(cfg.setupFilesAfterEnv) ? cfg.setupFilesAfterEnv : [])];
   const transforms = cfg.transform ? Object.keys(cfg.transform) : [];
   const moduleNameMapper = cfg.moduleNameMapper ? Object.keys(cfg.moduleNameMapper) : [];
   const coverage = cfg.collectCoverage;
@@ -52,7 +46,7 @@ export function render(intake) {
     ${cfg.rootDir ? `<span class="jest-k">rootDir</span><span class="jest-v">${esc(cfg.rootDir)}</span>` : ''}
     ${cfg.testTimeout != null ? `<span class="jest-k">testTimeout</span><span class="jest-v">${esc(cfg.testTimeout)}ms</span>` : ''}
     ${cfg.maxWorkers != null ? `<span class="jest-k">maxWorkers</span><span class="jest-v">${esc(cfg.maxWorkers)}</span>` : ''}
-    ${coverage != null ? `<span class="jest-k">collectCoverage</span><span class="jest-v">${coverage}</span>` : ''}
+    ${coverage != null ? `<span class="jest-k">collectCoverage</span><span class="jest-v">${esc(coverage)}</span>` : ''}
   </div>`;
 
   const covHtml = coverageThreshold ? `<div class="jest-sec"><h3>Coverage thresholds</h3>

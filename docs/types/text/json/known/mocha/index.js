@@ -4,7 +4,7 @@ export default {
   match: (intake, baseType) => {
     if (baseType.id !== 'json') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === '.mocharc.json' || name === '.mocharc.cjs';
+    return name === '.mocharc.json' || name === '.mocharc.jsonc';
   },
   loadRenderer: () => import('./renderer.js'),
   about: { description: 'Mocha JavaScript test runner configuration' },

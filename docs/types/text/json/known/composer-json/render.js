@@ -4,6 +4,7 @@ import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, 
 
 const packagistUrl = (name) => 'https://packagist.org/packages/' + name.split('/').map(encodeURIComponent).join('/');
 const isPlatform = (name) => /^(php(-64bit)?|hhvm|ext-|lib-|composer(-.*)?)/i.test(name);
+const isSafeHref = (href) => /^https?:\/\//i.test(String(href || ''));
 
 const CSS = `
 .composer-json-key{color:#0550ae;font-weight:600}
@@ -11,7 +12,16 @@ const CSS = `
 .composer-note{color:var(--fg-2,#5a6678);font-family:system-ui,sans-serif;font-size:12px}
 `;
 
+// `href` may come straight from an untrusted composer.json (homepage/support.source/support.issues) —
+// only ever wire it up as a clickable link if it's http(s); otherwise render as inert text so a
+// "javascript:" URI can't execute in the page's origin when clicked.
 function extNode(href, text, className = 'pj-link') {
+  if (!isSafeHref(href)) {
+    const span = document.createElement('span');
+    span.className = className;
+    span.textContent = text;
+    return span;
+  }
   const a = document.createElement('a');
   a.className = className;
   a.href = href;
