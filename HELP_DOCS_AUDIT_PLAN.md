@@ -852,36 +852,36 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/mbox/msg.html
 - [x] docs/types/mbox/renderer.js
 - [x] docs/types/mbox/settings.default.json
-- [ ] docs/types/media/AUDIO_LANE_REQUIREMENTS.md
-- [ ] docs/types/media/audio-filters.js
-- [ ] docs/types/media/audio-graph.js
-- [ ] docs/types/media/audio-listen-surface.js
-- [ ] docs/types/media/byte-metadata.js
-- [ ] docs/types/media/chapters.js
-- [ ] docs/types/media/compare-audio.js
-- [ ] docs/types/media/compare-ffmpeg.js
-- [ ] docs/types/media/compare-math.js
-- [ ] docs/types/media/detect.js
-- [ ] docs/types/media/dynamics.js
-- [ ] docs/types/media/editor-advanced.js
-- [ ] docs/types/media/editor-helpers.js
-- [ ] docs/types/media/editor-inputs.js
-- [ ] docs/types/media/editor.js
-- [ ] docs/types/media/EDITOR.md
-- [ ] docs/types/media/export-chapters.js
-- [ ] docs/types/media/export-preset-cards.js
-- [ ] docs/types/media/export-presets.js
-- [ ] docs/types/media/export-progress.js
-- [ ] docs/types/media/export-summary.js
-- [ ] docs/types/media/export-video-controls.js
-- [ ] docs/types/media/ffmpeg-intake.js
-- [ ] docs/types/media/id3.js
-- [ ] docs/types/media/index.js
-- [ ] docs/types/media/loudness.js
-- [ ] docs/types/media/mastering-stages.js
-- [ ] docs/types/media/medialib.js
-- [ ] docs/types/media/metadata.js
-- [ ] docs/types/media/mixer-wav-worker.js
+- [x] docs/types/media/AUDIO_LANE_REQUIREMENTS.md
+- [x] docs/types/media/audio-filters.js
+- [x] docs/types/media/audio-graph.js
+- [x] docs/types/media/audio-listen-surface.js
+- [x] docs/types/media/byte-metadata.js
+- [x] docs/types/media/chapters.js
+- [x] docs/types/media/compare-audio.js
+- [x] docs/types/media/compare-ffmpeg.js
+- [x] docs/types/media/compare-math.js
+- [x] docs/types/media/detect.js
+- [x] docs/types/media/dynamics.js
+- [x] docs/types/media/editor-advanced.js
+- [x] docs/types/media/editor-helpers.js
+- [x] docs/types/media/editor-inputs.js
+- [x] docs/types/media/editor.js
+- [x] docs/types/media/EDITOR.md
+- [x] docs/types/media/export-chapters.js
+- [x] docs/types/media/export-preset-cards.js
+- [x] docs/types/media/export-presets.js
+- [x] docs/types/media/export-progress.js
+- [x] docs/types/media/export-summary.js
+- [x] docs/types/media/export-video-controls.js
+- [x] docs/types/media/ffmpeg-intake.js
+- [x] docs/types/media/id3.js
+- [x] docs/types/media/index.js
+- [x] docs/types/media/loudness.js
+- [x] docs/types/media/mastering-stages.js
+- [x] docs/types/media/medialib.js
+- [x] docs/types/media/metadata.js
+- [x] docs/types/media/mixer-wav-worker.js
 - [ ] docs/types/media/mixer/audio-clip-lane.js
 - [ ] docs/types/media/mixer/audio-listen-lane.css
 - [ ] docs/types/media/mixer/audio-listen-waveform.js
