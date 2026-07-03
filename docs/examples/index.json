@@ -2940,7 +2940,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "devops"
+      "DevOps"
     ],
     "enhanced": true,
     "knownFile": "fly-toml"
@@ -3348,7 +3348,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "devops"
+      "DevOps"
     ],
     "enhanced": true,
     "knownFile": "drone-config"
@@ -3360,7 +3360,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "devops"
+      "DevOps"
     ],
     "enhanced": true
   },
@@ -6714,7 +6714,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "mobile"
+      "Mobile"
     ],
     "enhanced": true,
     "description": "Flutter/Dart static analysis options: linter rules, strong-mode settings, and error severity overrides.",
@@ -6753,7 +6753,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "mobile"
+      "Mobile"
     ],
     "enhanced": true,
     "description": "Expo Application Services config: build profiles for development/preview/production and submit profiles.",
@@ -7202,7 +7202,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "devops"
+      "DevOps"
     ],
     "enhanced": true
   },
@@ -7332,7 +7332,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "devops"
+      "DevOps"
     ],
     "enhanced": true,
     "knownFile": "codefresh-config"
@@ -7838,7 +7838,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "Authentik identity provider environment configuration",
@@ -9146,18 +9146,6 @@
     "description": "release-it automation config: git tag v${version}, GitHub release (draft: false), angular changelog preset into CHANGELOG.md, npm publish public, @release-it/conventional-changelog plugin, before/after hooks."
   },
   {
-    "file": "benthos.yaml",
-    "label": "benthos.yaml",
-    "category": "Infrastructure",
-    "knownFile": "benthos"
-  },
-  {
-    "file": ".kitchen.yml",
-    "label": ".kitchen.yml",
-    "category": "DevOps",
-    "knownFile": "test-kitchen"
-  },
-  {
     "file": "harbor.yml",
     "label": "Harbor Config",
     "mime": "text/yaml",
@@ -9172,22 +9160,10 @@
     "knownFile": "harbor"
   },
   {
-    "file": "garden.yml",
-    "label": "garden.yml",
-    "category": "DevOps",
-    "knownFile": "garden-io"
-  },
-  {
     "file": "shopify.app.toml",
     "label": "shopify.app.toml",
     "category": "Config",
     "knownFile": "shopify-app"
-  },
-  {
-    "file": ".lighthouserc.json",
-    "label": ".lighthouserc.json",
-    "category": "Tooling",
-    "knownFile": "lighthouserc"
   },
   {
     "file": "stryker.conf.json",
@@ -9196,22 +9172,10 @@
     "knownFile": "stryker"
   },
   {
-    "file": "airflow.cfg",
-    "label": "airflow.cfg",
-    "category": "Infrastructure",
-    "knownFile": "airflow-cfg"
-  },
-  {
     "file": "waypoint.hcl",
     "label": "waypoint.hcl",
     "category": "Infrastructure",
     "knownFile": "waypoint"
-  },
-  {
-    "file": "buf.gen.yaml",
-    "label": "buf.gen.yaml",
-    "category": "Tooling",
-    "knownFile": "buf-gen"
   },
   {
     "file": "registries.conf",
@@ -9226,40 +9190,16 @@
     "knownFile": "storage-conf"
   },
   {
-    "file": "codegen.yml",
-    "label": "codegen.yml",
-    "category": "Tooling",
-    "knownFile": "graphql-codegen"
-  },
-  {
     "file": "tspconfig.yaml",
     "label": "tspconfig.yaml",
     "category": "Tooling",
     "knownFile": "tspconfig"
   },
   {
-    "file": "asyncapi.yml",
-    "label": "asyncapi.yml",
-    "category": "API",
-    "knownFile": "asyncapi"
-  },
-  {
     "file": "telegraf.conf",
     "label": "telegraf.conf",
     "category": "Observability",
     "knownFile": "telegraf"
-  },
-  {
-    "file": "devfile.yaml",
-    "label": "devfile.yaml",
-    "category": "DevOps",
-    "knownFile": "devfile"
-  },
-  {
-    "file": ".ncurc.json",
-    "label": ".ncurc.json",
-    "category": "Tooling",
-    "knownFile": "ncurc"
   },
   {
     "file": "influxdb.conf",
@@ -9311,18 +9251,6 @@
     "knownFile": "kibana"
   },
   {
-    "file": "bruno.json",
-    "label": "bruno.json",
-    "category": "API",
-    "knownFile": "bruno"
-  },
-  {
-    "file": "filebeat.yml",
-    "label": "filebeat.yml",
-    "category": "Observability",
-    "knownFile": "filebeat"
-  },
-  {
     "file": "heartbeat.yml",
     "label": "heartbeat.yml",
     "category": "Observability",
@@ -9341,40 +9269,10 @@
     "knownFile": "openapi-generator"
   },
   {
-    "file": "cloudflared.yml",
-    "label": "cloudflared.yml",
-    "category": "Infrastructure",
-    "knownFile": "cloudflared"
-  },
-  {
-    "file": "dnsmasq.conf",
-    "label": "dnsmasq.conf",
-    "category": "Infrastructure",
-    "knownFile": "dnsmasq"
-  },
-  {
-    "file": "01-netcfg.yaml",
-    "label": "01-netcfg.yaml",
-    "category": "System",
-    "knownFile": "netplan"
-  },
-  {
     "file": "syslog-ng.conf",
     "label": "syslog-ng.conf",
     "category": "System",
     "knownFile": "syslog-ng"
-  },
-  {
-    "file": "frpc.toml",
-    "label": "frpc.toml",
-    "category": "DevOps",
-    "knownFile": true
-  },
-  {
-    "file": "frps.toml",
-    "label": "frps.toml",
-    "category": "DevOps",
-    "knownFile": true
   },
   {
     "file": "vsftpd.conf",
@@ -9732,7 +9630,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "BookStack self-hosted wiki environment configuration",
@@ -10159,7 +10057,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "Cal.com self-hosted scheduling configuration",
@@ -10211,7 +10109,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "File Browser self-hosted file manager configuration",
@@ -10302,7 +10200,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "Matrix Conduit self-hosted Matrix server configuration",
@@ -10328,7 +10226,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "Matrix Dendrite server configuration",
@@ -10367,7 +10265,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "changedetection.io web page change monitoring configuration",
@@ -10393,7 +10291,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "Actual Budget personal finance server configuration",
@@ -10419,7 +10317,7 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-hosted"
+      "Self-Hosted"
     ],
     "enhanced": true,
     "description": "Grist self-hosted spreadsheet database environment configuration",
