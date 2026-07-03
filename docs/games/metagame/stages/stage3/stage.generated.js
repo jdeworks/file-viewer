@@ -549,6 +549,333 @@ function aliasedTotal(puzzle) {
   return a ? a.rows.length + a.cols.length : 0;
 }
 
+// ../../docs/games/metagame/stages/stage3/s3pictograms.js
+var PICTOGRAMS = [
+  // ---- 5×5 ----
+  {
+    id: "heart5",
+    name: "HEART",
+    width: 5,
+    height: 5,
+    grid: [".#.#.", "#####", "#####", ".###.", "..#.."]
+  },
+  {
+    id: "diamond5",
+    name: "DIAMOND",
+    width: 5,
+    height: 5,
+    grid: ["..#..", ".###.", "#####", ".###.", "..#.."]
+  },
+  {
+    id: "key5",
+    name: "CACHE KEY",
+    width: 5,
+    height: 5,
+    grid: [".###.", ".#.#.", ".###.", "..#..", "..##."]
+  },
+  {
+    id: "spark5",
+    name: "SPARK",
+    width: 5,
+    height: 5,
+    grid: ["..#..", "..#..", "#####", "..#..", "..#.."]
+  },
+  {
+    id: "arrow5",
+    name: "POINTER",
+    width: 5,
+    height: 5,
+    grid: ["..#..", ".###.", "#.#.#", "..#..", "..#.."]
+  },
+  {
+    id: "bolt5",
+    name: "SIGNAL",
+    width: 5,
+    height: 5,
+    grid: ["..##.", ".##..", "####.", "..##.", ".##.."]
+  },
+  // ---- 6×6 ----
+  {
+    id: "heart6",
+    name: "HEART",
+    width: 6,
+    height: 6,
+    grid: [".##.##", "######", "######", ".####.", "..##..", "......"]
+  },
+  {
+    id: "key6",
+    name: "KEY RING",
+    width: 6,
+    height: 6,
+    grid: [".###..", ".#.#..", ".###..", "..#...", "..#.#.", "..###."]
+  },
+  {
+    id: "disk6",
+    name: "DATA DISK",
+    width: 6,
+    height: 6,
+    grid: ["######", "#....#", "#.##.#", "#.##.#", "#....#", "######"]
+  },
+  {
+    id: "lock6",
+    name: "LOCK",
+    width: 6,
+    height: 6,
+    grid: ["..##..", ".#..#.", "######", "##..##", "##..##", "######"]
+  },
+  {
+    id: "anchor6",
+    name: "ANCHOR",
+    width: 6,
+    height: 6,
+    grid: ["..##..", "..##..", ".####.", "..##..", "#.##.#", "######"]
+  },
+  {
+    id: "bell6",
+    name: "SIGNAL BELL",
+    width: 6,
+    height: 6,
+    grid: ["..##..", ".####.", ".####.", "######", "######", "..##.."]
+  },
+  // ---- 7×7 ----
+  {
+    id: "chip7",
+    name: "MEMORY CHIP",
+    width: 7,
+    height: 7,
+    grid: ["..###..", "#######", "#.###.#", "#.....#", "#.###.#", "#######", "..###.."]
+  },
+  {
+    id: "bell7",
+    name: "ALERT BELL",
+    width: 7,
+    height: 7,
+    grid: ["..###..", ".#####.", ".#####.", ".#####.", "#######", "#######", "...#..."]
+  },
+  {
+    id: "heart7",
+    name: "HEART",
+    width: 7,
+    height: 7,
+    grid: [".##.##.", "#######", "#######", "#######", ".#####.", "..###..", "...#..."]
+  },
+  {
+    id: "leaf7",
+    name: "LEAF",
+    width: 7,
+    height: 7,
+    grid: ["......#", "....###", "..#####", ".####.#", "####..#", "###....", "#......"]
+  },
+  {
+    id: "key7",
+    name: "LONG KEY",
+    width: 7,
+    height: 7,
+    grid: [".###...", ".#.#...", ".###...", "..#....", "..#....", "..##...", "..#.#.."]
+  },
+  {
+    id: "glyph7",
+    name: "GLYPH",
+    width: 7,
+    height: 7,
+    grid: ["#######", "#.....#", "#.###.#", "#.#.#.#", "#.###.#", "#.....#", "#######"]
+  },
+  {
+    id: "disk7",
+    name: "DISK STACK",
+    width: 7,
+    height: 7,
+    grid: ["#######", "#.###.#", "#.....#", "#.....#", "#.###.#", "#.###.#", "#######"]
+  },
+  {
+    id: "spark7",
+    name: "SPARK",
+    width: 7,
+    height: 7,
+    grid: ["...##..", "..##...", ".##....", "#######", "....##.", "...##..", "..##..."]
+  },
+  // ---- 8×8 ----
+  {
+    id: "heart8",
+    name: "HEART",
+    width: 8,
+    height: 8,
+    grid: [".##..##.", "########", "########", "########", ".######.", "..####..", "...##...", "........"]
+  },
+  {
+    id: "star8",
+    name: "STAR",
+    width: 8,
+    height: 8,
+    grid: ["...##...", "...##...", "########", ".######.", "..####..", ".##..##.", ".#....#.", "........"]
+  },
+  {
+    id: "wave8",
+    name: "WAVE",
+    width: 8,
+    height: 8,
+    grid: ["........", ".##..##.", "####.###", "###..###", "###..###", "###.####", ".##..##.", "........"]
+  },
+  {
+    id: "key8",
+    name: "VAULT KEY",
+    width: 8,
+    height: 8,
+    grid: [".####...", ".#..#...", ".#..#...", ".####...", "..##....", "..##....", "..##.##.", "..#####."]
+  },
+  {
+    id: "bell8",
+    name: "BELL",
+    width: 8,
+    height: 8,
+    grid: ["...##...", "..####..", ".######.", ".######.", ".######.", "########", "########", "...##..."]
+  },
+  {
+    id: "anchor8",
+    name: "ANCHOR",
+    width: 8,
+    height: 8,
+    grid: ["...##...", "..####..", "...##...", "...##...", "#..##..#", "#..##..#", "#######.", ".######."]
+  },
+  // ---- 9×9 ----
+  {
+    id: "chip9",
+    name: "MEMORY CHIP",
+    width: 9,
+    height: 9,
+    grid: ["..#####..", "#########", "#.......#", "#.#####.#", "#.#...#.#", "#.#####.#", "#.......#", "#########", "..#####.."]
+  },
+  {
+    id: "diamond9",
+    name: "DIAMOND",
+    width: 9,
+    height: 9,
+    grid: ["....#....", "...###...", "..#####..", ".#######.", "#########", ".#######.", "..#####..", "...###...", "....#...."]
+  },
+  {
+    id: "key9",
+    name: "KEY",
+    width: 9,
+    height: 9,
+    grid: [".#####...", ".#...#...", ".#...#...", ".#####...", "...#.....", "...#.....", "...#.##..", "...#####.", "...#....."]
+  },
+  {
+    id: "bell9",
+    name: "BELL",
+    width: 9,
+    height: 9,
+    grid: ["....#....", "...###...", "..#####..", "..#####..", ".#######.", ".#######.", "#########", "#########", "....#...."]
+  },
+  // ---- 10×10 ----
+  {
+    id: "diamond10",
+    name: "DIAMOND",
+    width: 10,
+    height: 10,
+    grid: ["....##....", "...####...", "..######..", ".########.", "##########", "##########", ".########.", "..######..", "...####...", "....##...."]
+  },
+  {
+    id: "chip10",
+    name: "MEMORY CHIP",
+    width: 10,
+    height: 10,
+    grid: ["..######..", "##########", "#........#", "#.######.#", "#.#....#.#", "#.#....#.#", "#.######.#", "#........#", "##########", "..######.."]
+  },
+  {
+    id: "bell10",
+    name: "BELL",
+    width: 10,
+    height: 10,
+    grid: ["....##....", "...####...", "..######..", "..######..", ".########.", ".########.", "##########", "##########", "##########", "....##...."]
+  },
+  {
+    id: "key10",
+    name: "KEY",
+    width: 10,
+    height: 10,
+    grid: [".#####....", ".#...#....", ".#...#....", ".#####....", "...##.....", "...##.....", "...##.....", "...##.###.", "...#####.#", "...##.###."]
+  },
+  // ---- 11×11 ----
+  {
+    id: "diamond11",
+    name: "DIAMOND",
+    width: 11,
+    height: 11,
+    grid: [".....#.....", "....###....", "...#####...", "..#######..", ".#########.", "###########", ".#########.", "..#######..", "...#####...", "....###....", ".....#....."]
+  },
+  {
+    id: "chip11",
+    name: "MEMORY CHIP",
+    width: 11,
+    height: 11,
+    grid: ["...#####...", "###########", "#.........#", "#.#######.#", "#.#.....#.#", "#.#.###.#.#", "#.#.....#.#", "#.#######.#", "#.........#", "###########", "...#####..."]
+  },
+  {
+    id: "bell11",
+    name: "BELL",
+    width: 11,
+    height: 11,
+    grid: [".....#.....", "....###....", "...#####...", "..#######..", "..#######..", ".#########.", ".#########.", "###########", "###########", "###########", ".....#....."]
+  },
+  // ---- 12×12 ----
+  {
+    id: "diamond12",
+    name: "DIAMOND",
+    width: 12,
+    height: 12,
+    grid: [".....##.....", "....####....", "...######...", "..########..", ".##########.", "############", "############", ".##########.", "..########..", "...######...", "....####....", ".....##....."]
+  },
+  {
+    id: "chip12",
+    name: "MEMORY CHIP",
+    width: 12,
+    height: 12,
+    grid: ["....#####...", "............", "############", "#..........#", "#.########.#", "#.#......#.#", "#.#......#.#", "#.########.#", "#..........#", "############", "............", "....#####..."]
+  },
+  {
+    id: "bell12",
+    name: "BELL",
+    width: 12,
+    height: 12,
+    grid: [".....##.....", "....####....", "...######...", "..########..", "..########..", ".##########.", ".##########.", "############", "############", "############", ".....##.....", "....####...."]
+  }
+];
+function pictogramSolution(picto) {
+  return picto.grid.map((row) => [...row].map((ch) => ch === "#" ? FILLED : EMPTY));
+}
+function cluesOf3(solution, width) {
+  const rowClues = solution.map(runLengths);
+  const colClues = [];
+  for (let c = 0; c < width; c += 1) colClues.push(runLengths(solution.map((row) => row[c])));
+  return { rowClues, colClues };
+}
+function pictogramToPuzzle(picto) {
+  const solution = pictogramSolution(picto);
+  const { rowClues, colClues } = cluesOf3(solution, picto.width);
+  const res = solve(rowClues, colClues);
+  if (!res || !res.solved) return null;
+  return {
+    width: picto.width,
+    height: picto.height,
+    solution,
+    rowClues,
+    colClues,
+    seed: `picto:${picto.id}`,
+    difficulty: res.passes,
+    picto: { id: picto.id, name: picto.name }
+  };
+}
+function pictogramPuzzle(seed, size) {
+  const pool = PICTOGRAMS.filter((p) => p.width === size && p.height === size);
+  if (pool.length === 0) return null;
+  const order = makeRng(`s3-picto:${seed}`).shuffle(pool);
+  for (const picto of order) {
+    const puzzle = pictogramToPuzzle(picto);
+    if (puzzle) return puzzle;
+  }
+  return null;
+}
+
 // ../../docs/games/metagame/stages/stage3/board.js
 var CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 var FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
@@ -562,12 +889,14 @@ function sizeForRun(run, shop) {
 function corruptionForRun(run) {
   return Math.min(8, Math.floor(Number(run.solvedCount || 0) * 8 / BODY_SOLVES));
 }
-function puzzleForRun(run, shop) {
-  const size = sizeForRun(run, shop);
+function puzzleForRun(run, shop, opts = {}) {
+  const size = opts.size || sizeForRun(run, shop);
   const corruption = corruptionForRun(run);
-  if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
-  const puzzle = makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
-  if (corruption >= ALIASED_AT) attachAliased(puzzle, corruption, `${run.seed}:${run.index}`);
+  const seed = `${run.seed}:${run.index}`;
+  if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${seed}:tc`, { width: size, height: size });
+  let puzzle = opts.pictogram === false ? null : pictogramPuzzle(seed, size);
+  if (!puzzle) puzzle = makePuzzle(seed, { width: size, height: size, hard: corruption });
+  if (opts.aliased !== false && corruption >= ALIASED_AT) attachAliased(puzzle, corruption, seed);
   return puzzle;
 }
 function applyPrefetch(board, count) {
@@ -796,11 +1125,37 @@ function buildGrid(puzzle, handlers) {
       setTimeout(() => el.classList.remove("s3-wrong"), ms);
     }
   }
-  return { el: wrap, update, flashWrong };
+  function celebrate(done) {
+    const reduce = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      done?.();
+      return () => {
+      };
+    }
+    const maxDiag = Math.max(1, width + height - 2);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const cell = cells[y][x];
+        if (cell.state !== FILLED && cell.state !== COLOR_B) continue;
+        cell.el.style.setProperty("--s3-reveal-delay", `${Math.round((x + y) / maxDiag * 260)}ms`);
+        cell.el.classList.add("s3-reveal");
+      }
+    }
+    wrap.classList.add("s3-solved-flash");
+    const timer = setTimeout(() => {
+      for (const row of cells) for (const c of row) {
+        c.el.classList.remove("s3-reveal");
+        c.el.style.removeProperty("--s3-reveal-delay");
+      }
+      wrap.classList.remove("s3-solved-flash");
+      done?.();
+    }, 440);
+    return () => clearTimeout(timer);
+  }
+  return { el: wrap, update, flashWrong, celebrate, dims: { maxRow, maxCol, width, height } };
 }
 
 // ../../docs/games/metagame/stages/stage3/shop.js
-import { openModal } from "../../shared/modal.js";
 var SHOP_UPGRADES = [
   { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
   { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
@@ -827,6 +1182,9 @@ function upgradeLevel(state, id) {
 function shopUpgradeList() {
   return SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id));
 }
+function availableUpgrades(state) {
+  return shopUpgradeList().filter((u) => upgradeLevel(state, u.id) < u.max);
+}
 function shopPageHtml(state, up) {
   const lvl = upgradeLevel(state, up.id);
   const maxed = lvl >= up.max;
@@ -835,8 +1193,8 @@ function shopPageHtml(state, up) {
   const bank = Number((retained ? state.retained : state.registers) || 0);
   const afford = !maxed && bank >= cost;
   const unit = retained ? "frag" : "reg";
-  return `<div class="s3-item">
-    <div class="s3-item-name"><strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span></div>
+  return `<div class="s3-item s3-item-upgrade">
+    <div class="s3-item-name"><strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span> <span class="s3-item-tag">upgrade · pay</span></div>
     <div class="s3-item-desc">${up.desc}</div>
     <div class="s3-item-cost">cost: ${maxed ? "—" : cost + " " + unit}</div>
     <button type="button" class="s3-item-action" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAXED" : afford ? `buy · ${cost} ${unit}` : `need ${cost} ${unit}`}</button>
@@ -857,24 +1215,6 @@ function buyUpgrade(state, save, id) {
   state.shopUpgrades[id] = lvl + 1;
   save?.();
   return true;
-}
-function buildShopPanel({ state, save, onClose }) {
-  const ups = shopUpgradeList();
-  const content = document.createElement("div");
-  content.className = "s3-shop-content";
-  function render() {
-    content.innerHTML = `
-      <div class="mg-modal-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
-      <div class="mg-modal-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</div>
-      ${ups.length ? `<div class="mg-modal-grid">${ups.map((up) => shopPageHtml(state, up)).join("")}</div>` : `<div class="mg-modal-empty">nothing available.</div>`}`;
-    content.querySelectorAll("[data-buy]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        if (buyUpgrade(state, save, btn.dataset.buy)) render();
-      });
-    });
-  }
-  render();
-  return openModal({ title: "DEFRAG SHOP", className: "s3-modal-shop", contentEl: content, onClose });
 }
 
 // ../../docs/games/metagame/stages/stage3/s3debug.js
@@ -1063,7 +1403,6 @@ function decayRatio(decay) {
 }
 
 // ../../docs/games/metagame/stages/stage3/s3boons.js
-import { openModal as openModal2 } from "../../shared/modal.js";
 var DRAFT_AT = [0, 5, 10];
 var BOONS = [
   { id: "cache", label: "Cache Primer", desc: "+2 cells pre-filled each snapshot (this run)", effect: { prefetch: 2 } },
@@ -1104,6 +1443,12 @@ function pickBoon(state, id) {
   state.run.draftsTaken += 1;
   return true;
 }
+function consumeDraft(state) {
+  ensureRunBoons(state);
+  if (!draftPending(state)) return false;
+  state.run.draftsTaken += 1;
+  return true;
+}
 function boonBonus(state, key2) {
   if (!state || !state.run || !Array.isArray(state.run.boons)) return 0;
   let total = 0;
@@ -1114,31 +1459,127 @@ function boonBonus(state, key2) {
   return total;
 }
 function boonPageHtml(boon) {
-  return `<div class="s3-item">
-    <div class="s3-item-name"><strong>${boon.label}</strong></div>
+  return `<div class="s3-item s3-item-boon">
+    <div class="s3-item-name"><strong>${boon.label}</strong> <span class="s3-item-tag">boon · free</span></div>
     <div class="s3-item-desc">${boon.desc}</div>
     <button type="button" class="s3-item-action" data-pick="${boon.id}">draft this boon</button>
   </div>`;
 }
+
+// ../../docs/games/metagame/stages/stage3/s3draft.js
+import { openModal } from "../../shared/modal.js";
+var BOON_IDS = new Set(BOONS.map((b) => b.id));
+function acquisitionOffer(state) {
+  ensureRunBoons(state);
+  if (!draftPending(state)) return [];
+  const boons = draftOffer(state);
+  const rng = makeRng(`${state.run.seed}:acq:${state.run.draftsTaken}`);
+  const ups = rng.shuffle(availableUpgrades(state));
+  const cards = [];
+  if (ups.length) cards.push({ kind: "upgrade", id: ups[0].id, up: ups[0] });
+  for (const b of boons) {
+    if (cards.length >= 3) break;
+    cards.push({ kind: "boon", id: b.id, boon: b });
+  }
+  for (let i = 1; i < ups.length && cards.length < 3; i += 1) cards.push({ kind: "upgrade", id: ups[i].id, up: ups[i] });
+  return cards.slice(0, 3);
+}
+function pickDraftCard(state, save, id) {
+  ensureRunBoons(state);
+  if (!draftPending(state)) return false;
+  if (BOON_IDS.has(id)) return pickBoon(state, id);
+  if (SHOP_UPGRADES.some((u) => u.id === id)) {
+    if (!buyUpgrade(state, save, id)) return false;
+    consumeDraft(state);
+    return true;
+  }
+  return false;
+}
+function cardHtml(state, card) {
+  return card.kind === "boon" ? boonPageHtml(card.boon) : shopPageHtml(state, card.up);
+}
 function buildDraftPanel({ state, save, onClose }) {
-  const offer = draftOffer(state);
+  const offer = acquisitionOffer(state);
   const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
   const content = document.createElement("div");
   content.className = "s3-draft-content";
   content.innerHTML = `
-    <div class="mg-modal-note">run-scoped boons — they apply to this run's snapshots only.</div>
-    <div class="mg-modal-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</div>
-    ${offer.length ? `<div class="mg-modal-grid">${offer.map(boonPageHtml).join("")}</div>` : `<div class="mg-modal-empty">nothing available.</div>`}`;
-  const handle = openModal2({ title: "BOON DRAFT", className: "s3-modal-draft", contentEl: content, onClose });
-  content.querySelectorAll("[data-pick]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (pickBoon(state, btn.dataset.pick)) {
-        save?.();
-        handle.close();
-      }
-    });
-  });
+    <div class="mg-modal-note">acquire — pick ONE: a free run boon, or spend to bank a permanent Defrag upgrade.</div>
+    <div class="mg-modal-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag · ${remaining} draft${remaining === 1 ? "" : "s"} pending</div>
+    ${offer.length ? `<div class="mg-modal-grid">${offer.map((c) => cardHtml(state, c)).join("")}</div>` : `<div class="mg-modal-empty">nothing available.</div>`}`;
+  const handle = openModal({ title: "ACQUIRE", className: "s3-modal-draft", contentEl: content, onClose });
+  const resolve = (id) => {
+    if (pickDraftCard(state, save, id)) {
+      save?.();
+      handle.close();
+    }
+  };
+  content.querySelectorAll("[data-pick]").forEach((btn) => btn.addEventListener("click", () => resolve(btn.dataset.pick)));
+  content.querySelectorAll("[data-buy]").forEach((btn) => btn.addEventListener("click", () => resolve(btn.dataset.buy)));
   return handle;
+}
+
+// ../../docs/games/metagame/stages/stage3/s3tiercap.js
+var TIER_CAP = 2;
+var LEARN_SIZE = 5;
+function unlockedTiers(corruption) {
+  const c = Number(corruption || 0);
+  const twoColor = c >= TWOCOLOR_AT;
+  const list = [];
+  if (c >= VOLATILE_AT) list.push("volatile");
+  if (!twoColor && c >= ALIASED_AT) list.push("aliased");
+  if (c >= DECAY_AT) list.push("decay");
+  if (twoColor) list.push("twocolor");
+  return list;
+}
+function activeTiers(corruption, index) {
+  const all = unlockedTiers(corruption);
+  if (all.length <= TIER_CAP) return new Set(all);
+  const forced = all.filter((m) => m === "twocolor");
+  const optional = all.filter((m) => m !== "twocolor");
+  const slots2 = Math.max(0, TIER_CAP - forced.length);
+  const active = new Set(forced);
+  const i = Number(index || 0);
+  for (let k = 0; k < slots2 && optional.length; k += 1) active.add(optional[(i + k) % optional.length]);
+  return active;
+}
+
+// ../../docs/games/metagame/stages/stage3/s3fit.js
+var MAX_CELL = 44;
+var CLUE_RATIO = 0.8;
+function computeCell(availW, availH, dims, minCell = 24, maxCell = MAX_CELL) {
+  const wTracks = dims.maxRow * CLUE_RATIO + dims.width;
+  const hTracks = dims.maxCol * CLUE_RATIO + dims.height;
+  const byW = availW / Math.max(1, wTracks);
+  const byH = availH > 0 ? availH / Math.max(1, hTracks) : byW;
+  const cell = Math.floor(Math.min(byW, byH));
+  return Math.max(minCell, Math.min(maxCell, cell));
+}
+function installBoardFit(root, host, getDims) {
+  const coarse = typeof window !== "undefined" && window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const minCell = coarse ? 36 : 24;
+  function measure() {
+    const dims = getDims && getDims();
+    if (!dims || !host || !host.isConnected) return;
+    const cs = getComputedStyle(host);
+    const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+    const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const availW = Math.max(0, host.clientWidth - padX);
+    const availH = Math.max(0, host.clientHeight - padY);
+    if (availW <= 0) return;
+    const cell = computeCell(availW, availH, dims, minCell);
+    root.style.setProperty("--s3-cell", `${cell}px`);
+    root.style.setProperty("--s3-clue", `${Math.round(cell * CLUE_RATIO)}px`);
+  }
+  let ro = null;
+  if (typeof ResizeObserver !== "undefined") {
+    ro = new ResizeObserver(() => measure());
+    ro.observe(host);
+  }
+  measure();
+  return { measure, destroy() {
+    ro?.disconnect();
+  } };
 }
 
 // ../../docs/games/metagame/stages/stage3/s3tiers.js
@@ -1275,36 +1716,40 @@ function buildStage3Shell() {
     <header class="s3-hud">
       <strong>MEMORY GRID</strong>
       <span>REGISTERS <span data-field="registers"></span></span>
-      <span>RETAINED <span data-field="retained"></span></span>
       <span>SNAPSHOT <span data-field="snap"></span></span>
       <span class="s3-pressure" data-field="pressure"></span>
-      <span data-field="size"></span>
+      <span class="s3-size" data-field="size"></span>
+      <button type="button" class="s3-help-toggle" data-action="help" aria-expanded="false" aria-label="controls" title="controls">?</button>
     </header>
     <div class="s3-objective" data-field="objective"></div>
+    <div class="s3-help" data-field="help" hidden>arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks · on touch: pick a verb below then tap a cell.</div>
     <div class="s3-play">
       <div class="s3-grid-col">
         <div class="s3-grid-host"></div>
         <div class="s3-toolbar">
-          <button type="button" data-action="shop">defrag shop</button>
           <button type="button" data-action="draft" data-field="draftBtn" hidden></button>
           <button type="button" data-action="hint" data-field="hintBtn" hidden></button>
           <button type="button" data-action="check" data-field="checkBtn" hidden></button>
         </div>
       </div>
       <aside class="s3-side">
-        <div class="s3-help">arrows / WASD move · space/1 fill A · 2 fill B (alt-click) · x mark · l lock volatile · click fills, right-click marks · on touch: pick a verb above then tap a cell</div>
-        <section class="s3-boss">
-          <div class="s3-boss-title">THE MEMORY LEAK</div>
-          <div data-field="bossStatus"></div>
-          <div class="s3-hint" data-field="hint"></div>
-          <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
-          <div class="s3-controls">
-            <button type="button" data-action="v1">open memory_v1.log</button>
-            <button type="button" data-action="v2">open memory_v2.log</button>
-            <button type="button" data-action="v3">open memory_v3.log</button>
-            <button type="button" data-action="restore">restore key</button>
-            <button type="button" data-action="boss">solve leak</button>
-            <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
+        <section class="s3-boss" data-field="bossPanel">
+          <div class="s3-boss-chip" data-field="bossChip"></div>
+          <div class="s3-boss-body" data-field="bossBody" hidden>
+            <div class="s3-boss-title">THE MEMORY LEAK</div>
+            <div data-field="bossStatus"></div>
+            <div class="s3-hint" data-field="hint"></div>
+          </div>
+          <div class="s3-boss-gate" data-field="bossGate" hidden>
+            <label class="s3-key-label">restoration key <input class="s3-key" spellcheck="false"></label>
+            <div class="s3-controls">
+              <button type="button" data-action="v1">open memory_v1.log</button>
+              <button type="button" data-action="v2">open memory_v2.log</button>
+              <button type="button" data-action="v3">open memory_v3.log</button>
+              <button type="button" data-action="restore">restore key</button>
+              <button type="button" data-action="boss">solve leak</button>
+              <button type="button" data-action="bts" hidden>open memory_grid.bts</button>
+            </div>
           </div>
         </section>
       </aside>
@@ -1322,22 +1767,33 @@ function verbToCell(verb) {
   if (verb === "fillB") return { mark: false, color: COLOR_B };
   return { mark: false, color: FILLED };
 }
+var VERB_KEY = { fillA: "space", fillB: "G", mark: "X", lock: "L" };
 function createVerbBar({ onSelect } = {}) {
-  return createTouchControls({
+  const bar = createTouchControls({
     className: "s3-verbs",
-    ariaLabel: "tap verb",
+    ariaLabel: "verb",
     toggle: true,
     onAction: onSelect,
     buttons: [
-      { id: "fillA", label: "Fill A", ariaLabel: "tap to fill colour A" },
-      { id: "fillB", label: "Fill B", ariaLabel: "tap to fill colour B" },
-      { id: "mark", label: "Mark", ariaLabel: "tap to mark empty" },
-      { id: "lock", label: "Lock", ariaLabel: "tap to lock volatile cell" }
+      { id: "fillA", label: "Fill A", ariaLabel: "fill colour A (space)" },
+      { id: "fillB", label: "Fill B", ariaLabel: "fill colour B (g)" },
+      { id: "mark", label: "Mark", ariaLabel: "mark empty (x)" },
+      { id: "lock", label: "Lock", ariaLabel: "lock volatile cell (l)" }
     ]
   });
+  for (const [id, key2] of Object.entries(VERB_KEY)) {
+    const btn = bar.el.querySelector(`[data-touch="${id}"]`);
+    if (!btn) continue;
+    const kbd = document.createElement("kbd");
+    kbd.className = "s3-verb-key";
+    kbd.textContent = key2;
+    btn.append(kbd);
+  }
+  return bar;
 }
 
 // ../../docs/games/metagame/stages/stage3/renderer.js
+import { banner } from "../../shared/feedback.js";
 var MOVE = {
   ArrowUp: [0, -1],
   ArrowDown: [0, 1],
@@ -1376,6 +1832,10 @@ function renderStage3(ctx) {
   let lastLog = "";
   let board = null;
   let grid = null;
+  let boardFit = null;
+  let announcedGate = false;
+  let lastStability = null;
+  let draftSeen = false;
   const awarded = state.achievements = state.achievements || {};
   function award(id, title) {
     if (awarded[id]) return;
@@ -1389,11 +1849,16 @@ function renderStage3(ctx) {
   const valveHeadroom = () => boonBonus(state, "decayPct");
   const pressureLimit = () => runPressureLimit(corruptionForRun(state.run), valveHeadroom());
   loadBoard();
+  boardFit = installBoardFit(root, gridHost, () => grid?.dims);
   paintHud();
   function loadBoard() {
     const fresh = !state.run.marks;
-    announceTiers(state, corruptionForRun(state.run));
-    const puzzle = puzzleForRun(state.run, state.shopUpgrades);
+    const corruption = corruptionForRun(state.run);
+    const fired = announceTiers(state, corruption);
+    const learn = fired.length ? fired[fired.length - 1] : null;
+    const active = learn ? /* @__PURE__ */ new Set([learn]) : activeTiers(corruption, state.run.index);
+    const sizeOverride = learn ? Math.min(LEARN_SIZE, sizeForRun(state.run, state.shopUpgrades)) : void 0;
+    const puzzle = puzzleForRun(state.run, state.shopUpgrades, { size: sizeOverride, aliased: active.has("aliased") });
     board = createBoard(puzzle, state.run.marks);
     board.hintsUsed = 0;
     board.checksUsed = 0;
@@ -1403,9 +1868,9 @@ function renderStage3(ctx) {
       applyPrefetch(board, prefetch);
       state.run.marks = encodeMarks(board.marks);
     }
-    initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    if (active.has("volatile")) initVolatile(board, corruption, `${state.run.seed}:${state.run.index}`);
     if (board.volatile) board.decayWindow += boonBonus(state, "volatile");
-    board.decay = createDecay(puzzle, corruptionForRun(state.run));
+    board.decay = createDecay(puzzle, active.has("decay") ? corruption : 0);
     if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
     grid = buildGrid(puzzle, {
       onCell: (x, y, mark, colorB) => {
@@ -1416,6 +1881,7 @@ function renderStage3(ctx) {
     });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
+    boardFit?.measure();
   }
   function tapCell(x, y) {
     board.cursor = { x, y };
@@ -1451,7 +1917,7 @@ function renderStage3(ctx) {
       failSnapshot();
       return;
     }
-    if (board.solved) onSolved();
+    if (board.solved) onSolved(true);
     else {
       save?.();
       paintHud();
@@ -1481,8 +1947,9 @@ function renderStage3(ctx) {
       paintHud();
     }
   }
-  function onSolved() {
+  function onSolved(animate) {
     const size = board.puzzle.width;
+    const picto = board.puzzle.picto;
     const mult = 1 + 0.25 * (upgradeLevel(state, "throughput") + boonBonus(state, "throughput"));
     const corrBonus = 1 + 0.18 * corruptionForRun(state.run);
     const reward = Math.round((size * size + 12) * mult * corrBonus);
@@ -1491,7 +1958,7 @@ function renderStage3(ctx) {
     state.run.index += 1;
     state.run.marks = null;
     if (corruptionForRun(state.run) >= 8) state.boss.corruption8Reached = true;
-    pushLog(state, `snapshot restored. +${reward} registers.`);
+    pushLog(state, picto ? `fragment: ${picto.name} crystallized. +${reward} registers.` : `snapshot restored. +${reward} registers.`);
     if (state.run.solvedCount % RETAIN_EVERY === 0) {
       state.retained += 1;
       pushLog(state, "a fragment crystallized. +1 retained.");
@@ -1502,13 +1969,20 @@ function renderStage3(ctx) {
     if (size >= 10) award("wide_recall", "Cleared a 10×10 snapshot");
     if (state.retained >= 5) award("retainer", "Retained 5 fragments");
     save?.();
-    loadBoard();
-    paintHud();
+    const drawNext = () => {
+      if (!root.isConnected) return;
+      loadBoard();
+      paintHud();
+    };
+    if (animate && grid) {
+      paintHud();
+      grid.celebrate(drawNext);
+    } else drawNext();
   }
   function paintHud() {
     const lock = getBossLockState({ actions, state });
+    const corruption = corruptionForRun(state.run);
     setText(fields.registers, state.registers);
-    setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = board.puzzle.width;
     const mode = board.puzzle.twoColor ? " · 2-colour" : "";
@@ -1517,7 +1991,10 @@ function renderStage3(ctx) {
     setText(fields.size, `${size}×${size} · corruption ${corruptionForRun(state.run)}${mode}${aliasMode} · ${rating(board.puzzle.difficulty)}`);
     const plimit = pressureLimit();
     const pnow = Number(state.run.pressure || 0);
-    setText(fields.pressure, `STABILITY ${Math.max(0, plimit - pnow)}/${plimit}`);
+    const stability = Math.max(0, plimit - pnow);
+    setText(fields.pressure, `STABILITY ${stability}/${plimit}`);
+    if (lastStability !== null && stability !== lastStability) pulse(fields.pressure);
+    lastStability = stability;
     const pratio = plimit ? pnow / plimit : 0;
     fields.pressure.classList.toggle("s3-pressure-warn", pratio >= 0.5 && pratio < 0.8);
     fields.pressure.classList.toggle("s3-pressure-crit", pratio >= 0.8);
@@ -1531,6 +2008,7 @@ function renderStage3(ctx) {
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
+    paintBoss(lock, corruption);
     const oracle = oracleCap();
     const parity = parityCap();
     setHidden(fields.hintBtn, oracle <= 0);
@@ -1550,9 +2028,14 @@ function renderStage3(ctx) {
     const active = verbBar.getActive();
     if (active === "fillB" && !board.puzzle.twoColor || active === "lock" && !board.volatile) verbBar.setActive("fillA");
     const pending = draftPending(state);
-    setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
-    setText(fields.draftBtn, pending ? "boon draft •" : "boons");
+    setHidden(fields.draftBtn, !pending);
+    setText(fields.draftBtn, "acquire •");
     fields.draftBtn.classList.toggle("s3-pending", pending);
+    if (pending && !draftSeen) {
+      draftSeen = true;
+      banner(root, "ACQUIRE — pick 1 of 3");
+      pushLog(state, "an acquisition is available — draft a boon or bank a permanent upgrade.");
+    }
     const sig = state.log.slice(-6).join("\n");
     if (sig !== lastLog) {
       lastLog = sig;
@@ -1562,6 +2045,27 @@ function renderStage3(ctx) {
         return li;
       }));
     }
+  }
+  function paintBoss(lock, corruption) {
+    const stage = lock.bodyReady ? 2 : corruption >= 4 ? 1 : 0;
+    setHidden(fields.bossBody, stage < 1);
+    setHidden(fields.bossGate, stage < 2);
+    const frag = Number(state.retained || 0);
+    const fragNote = frag ? ` · fragments ${frag} feed the leak` : "";
+    const chip = stage === 2 ? `THE MEMORY LEAK · gate open${fragNote}` : stage === 1 ? `THE MEMORY LEAK · corruption ${corruption}/8${fragNote}` : `the leak spreads… ${corruption}/8${fragNote}`;
+    setText(fields.bossChip, chip);
+    fields.bossPanel.classList.toggle("s3-boss-open", stage === 2);
+    if (stage === 2 && !announcedGate) {
+      announcedGate = true;
+      banner(root, "GATE OPEN");
+      bell?.showBell?.("stage3.boss_gate", "the leak's columns are within reach — restore the key.", { stage: 3 });
+      pushLog(state, "the leak's columns are within reach — restore the key.");
+    }
+  }
+  function pulse(el) {
+    el.classList.remove("s3-pulse");
+    void el.offsetWidth;
+    el.classList.add("s3-pulse");
   }
   function useHint() {
     if (board.solved || (board.hintsUsed || 0) >= oracleCap()) return;
@@ -1583,15 +2087,11 @@ function renderStage3(ctx) {
     save?.();
     paintHud();
   }
-  function toggleShop() {
-    if (overlay) {
-      overlay.close();
-      return;
-    }
-    overlay = buildShopPanel({ state, save, onClose: () => {
-      overlay = null;
-      paintHud();
-    } });
+  function toggleHelp(btn) {
+    const show = fields.help.hidden;
+    setHidden(fields.help, !show);
+    btn?.setAttribute("aria-expanded", String(show));
+    btn?.classList.toggle("s3-help-on", show);
   }
   function toggleDraft() {
     if (overlay) {
@@ -1639,8 +2139,8 @@ function renderStage3(ctx) {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
-    if (action === "shop") {
-      toggleShop();
+    if (action === "help") {
+      toggleHelp(button);
       return;
     }
     if (action === "draft") {
@@ -1675,7 +2175,7 @@ function renderStage3(ctx) {
     board.solved = isSolved(board.puzzle, board.marks);
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
-    if (board.solved) onSolved();
+    if (board.solved) onSolved(false);
     return true;
   }
   function tryRestoreKey(key2) {
@@ -1692,8 +2192,9 @@ function renderStage3(ctx) {
     return won;
   }
   function draft(id) {
-    const offer = draftOffer(state).map((b) => b.id);
-    const ok = pickBoon(state, id != null ? id : offer[0]);
+    const offer = acquisitionOffer(state);
+    const target = id != null ? id : (offer.find((c) => c.kind === "boon") || offer[0] || {}).id;
+    const ok = pickDraftCard(state, save, target);
     if (ok) {
       save?.();
       paintHud();
@@ -1707,7 +2208,7 @@ function renderStage3(ctx) {
     bossSolver,
     aliasedNow: () => aliasedTotal(board?.puzzle),
     draftPending: () => draftPending(state),
-    draftOffer: () => draftOffer(state).map((b) => b.id),
+    draftOffer: () => acquisitionOffer(state).map((c) => c.id),
     draft
   });
   function dev(id) {
@@ -1717,7 +2218,7 @@ function renderStage3(ctx) {
       board.solved = isSolved(board.puzzle, board.marks);
       state.run.marks = encodeMarks(board.marks);
       grid.update(board);
-      if (board.solved) onSolved();
+      if (board.solved) onSolved(false);
       return;
     }
     if (id === "give-currency") {
@@ -1745,6 +2246,7 @@ function renderStage3(ctx) {
     dev,
     destroy() {
       overlay?.close?.();
+      boardFit?.destroy();
       window.removeEventListener("keydown", onKey);
       uninstallHook();
       verbBar.destroy();

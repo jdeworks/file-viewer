@@ -8,7 +8,6 @@
 // + draft index, never Date.now()/Math.random().
 
 import { makeRng } from "./rng.js";
-import { openModal } from "../../shared/modal.js";
 
 // Solve milestones at which a draft becomes available (3 picks across the ~13-solve body).
 export const DRAFT_AT = [0, 5, 10];
@@ -39,7 +38,7 @@ export function ensureRunBoons(state) {
 }
 
 // How many draft milestones the current solvedCount has unlocked.
-function milestonesReached(state) {
+export function milestonesReached(state) {
   const solved = Number(state.run.solvedCount || 0);
   return DRAFT_AT.filter((m) => solved >= m).length;
 }
@@ -71,6 +70,15 @@ export function pickBoon(state, id) {
   return true;
 }
 
+// Consume the pending draft WITHOUT taking a boon (used when the acquisition pick was a paid Defrag
+// upgrade instead of a free boon — see s3draft.js). Returns true if a draft was consumed.
+export function consumeDraft(state) {
+  ensureRunBoons(state);
+  if (!draftPending(state)) return false;
+  state.run.draftsTaken += 1;
+  return true;
+}
+
 // Sum of a given effect key across the run's chosen boons.
 export function boonBonus(state, key) {
   if (!state || !state.run || !Array.isArray(state.run.boons)) return 0;
@@ -82,31 +90,12 @@ export function boonBonus(state, key) {
   return total;
 }
 
-// HTML for ONE offered boon's page (name, description, "draft this" button).
+// HTML for ONE offered boon's card (name, description, "draft this" button). Rendered inside the
+// unified acquisition modal (s3draft.js) alongside the purchasable Defrag upgrade cards.
 export function boonPageHtml(boon) {
-  return `<div class="s3-item">
-    <div class="s3-item-name"><strong>${boon.label}</strong></div>
+  return `<div class="s3-item s3-item-boon">
+    <div class="s3-item-name"><strong>${boon.label}</strong> <span class="s3-item-tag">boon · free</span></div>
     <div class="s3-item-desc">${boon.desc}</div>
     <button type="button" class="s3-item-action" data-pick="${boon.id}">draft this boon</button>
   </div>`;
-}
-
-// Draft as the shared modal (UX audit F6) — all offered boons render at once in a grid so the pick is
-// a real comparison. Picking a boon closes the draft (as before). The seeded 3-offer logic is unchanged.
-export function buildDraftPanel({ state, save, onClose }) {
-  const offer = draftOffer(state);
-  const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
-  const content = document.createElement("div");
-  content.className = "s3-draft-content";
-  content.innerHTML = `
-    <div class="mg-modal-note">run-scoped boons — they apply to this run's snapshots only.</div>
-    <div class="mg-modal-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</div>
-    ${offer.length
-      ? `<div class="mg-modal-grid">${offer.map(boonPageHtml).join("")}</div>`
-      : `<div class="mg-modal-empty">nothing available.</div>`}`;
-  const handle = openModal({ title: "BOON DRAFT", className: "s3-modal-draft", contentEl: content, onClose });
-  content.querySelectorAll("[data-pick]").forEach((btn) => {
-    btn.addEventListener("click", () => { if (pickBoon(state, btn.dataset.pick)) { save?.(); handle.close(); } });
-  });
-  return handle;
 }

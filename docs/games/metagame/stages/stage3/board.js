@@ -5,6 +5,7 @@
 import { makePuzzle, FILLED, COLOR_B, EMPTY, UNKNOWN } from "./nonogram.js";
 import { makeTwoColorPuzzle, TWOCOLOR_AT } from "./s3twocolor.js";
 import { ALIASED_AT, attachAliased } from "./s3aliased.js";
+import { pictogramPuzzle } from "./s3pictograms.js";
 
 const CH = { [FILLED]: "#", [COLOR_B]: "@", [EMPTY]: "x", [UNKNOWN]: "." };
 const FROM_CH = { "#": FILLED, "@": COLOR_B, x: EMPTY, ".": UNKNOWN };
@@ -43,14 +44,25 @@ export function corruptionForRun(run) {
   return Math.min(8, Math.floor((Number(run.solvedCount || 0) * 8) / BODY_SOLVES));
 }
 
-export function puzzleForRun(run, shop) {
-  const size = sizeForRun(run, shop);
+// Generate the current snapshot's puzzle. `opts` lets the renderer's tier-cap / learning-window logic
+// shape a snapshot without changing the (uniqueness-preserving) defaults every caller/test relies on:
+//   size      — override the ramped size (a small learning-window board)
+//   pictogram — false to force a generated board (default: use a 1-bit theme pictogram where one of
+//               that size is uniquely line-solvable; else fall back to the generated board)
+//   aliased   — false to suppress the aliased-clue overlay (default: attach it at corruption ≥ ALIASED_AT)
+export function puzzleForRun(run, shop, opts = {}) {
+  const size = opts.size || sizeForRun(run, shop);
   const corruption = corruptionForRun(run);
-  // Two-colour snapshots take over once corruption hits TWOCOLOR_AT (the second-colour tier).
-  if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${run.seed}:${run.index}:tc`, { width: size, height: size });
-  const puzzle = makePuzzle(`${run.seed}:${run.index}`, { width: size, height: size, hard: corruption });
+  const seed = `${run.seed}:${run.index}`;
+  // Two-colour snapshots take over once corruption hits TWOCOLOR_AT (the second-colour tier). These are
+  // 2-bit, so pictograms (1-bit) don't apply.
+  if (corruption >= TWOCOLOR_AT) return makeTwoColorPuzzle(`${seed}:tc`, { width: size, height: size });
+  // Mono: prefer a uniquely-solvable pictogram (chip/key/bell…) so a solved snapshot reveals a PICTURE
+  // (the genre's core payoff); fall back to a generated board when no icon of this size qualifies.
+  let puzzle = opts.pictogram === false ? null : pictogramPuzzle(seed, size);
+  if (!puzzle) puzzle = makePuzzle(seed, { width: size, height: size, hard: corruption });
   // Aliased clues (corruption ≥ ALIASED_AT): obscure a fair, deducible subset of lines as "?".
-  if (corruption >= ALIASED_AT) attachAliased(puzzle, corruption, `${run.seed}:${run.index}`);
+  if (opts.aliased !== false && corruption >= ALIASED_AT) attachAliased(puzzle, corruption, seed);
   return puzzle;
 }
 

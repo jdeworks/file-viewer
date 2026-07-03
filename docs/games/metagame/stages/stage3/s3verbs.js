@@ -17,17 +17,31 @@ export function verbToCell(verb) {
   return { mark: false, color: FILLED }; // fillA (default)
 }
 
+// The keyboard shortcut each verb maps to (UX audit #5 — the verb bar is the primary teacher, so the
+// key lives ON the button as a small kbd hint, hidden on coarse pointers via CSS).
+const VERB_KEY = { fillA: "space", fillB: "G", mark: "X", lock: "L" };
+
 export function createVerbBar({ onSelect } = {}) {
-  return createTouchControls({
+  const bar = createTouchControls({
     className: "s3-verbs",
-    ariaLabel: "tap verb",
+    ariaLabel: "verb",
     toggle: true,
     onAction: onSelect,
     buttons: [
-      { id: "fillA", label: "Fill A", ariaLabel: "tap to fill colour A" },
-      { id: "fillB", label: "Fill B", ariaLabel: "tap to fill colour B" },
-      { id: "mark", label: "Mark", ariaLabel: "tap to mark empty" },
-      { id: "lock", label: "Lock", ariaLabel: "tap to lock volatile cell" },
+      { id: "fillA", label: "Fill A", ariaLabel: "fill colour A (space)" },
+      { id: "fillB", label: "Fill B", ariaLabel: "fill colour B (g)" },
+      { id: "mark", label: "Mark", ariaLabel: "mark empty (x)" },
+      { id: "lock", label: "Lock", ariaLabel: "lock volatile cell (l)" },
     ],
   });
+  // Attach a kbd hint to each verb button (shown on fine pointers, hidden on coarse — see styles.css).
+  for (const [id, key] of Object.entries(VERB_KEY)) {
+    const btn = bar.el.querySelector(`[data-touch="${id}"]`);
+    if (!btn) continue;
+    const kbd = document.createElement("kbd");
+    kbd.className = "s3-verb-key";
+    kbd.textContent = key;
+    btn.append(kbd);
+  }
+  return bar;
 }

@@ -136,5 +136,30 @@ export function buildGrid(puzzle, handlers) {
     }
   }
 
-  return { el: wrap, update, flashWrong };
+  // Solve reveal (UX audit #4) — the genre payoff. One cascade wave over the filled cells (the picture
+  // the snapshot just resolved into) + an accent flash, then `done()`. reduced-motion: instant (no
+  // wave, `done()` fires immediately). Purely visual; the state has already advanced before this runs.
+  function celebrate(done) {
+    const reduce = typeof window !== "undefined" && window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { done?.(); return () => {}; }
+    const maxDiag = Math.max(1, width + height - 2);
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const cell = cells[y][x];
+        if (cell.state !== FILLED && cell.state !== COLOR_B) continue;
+        cell.el.style.setProperty("--s3-reveal-delay", `${Math.round(((x + y) / maxDiag) * 260)}ms`);
+        cell.el.classList.add("s3-reveal");
+      }
+    }
+    wrap.classList.add("s3-solved-flash");
+    const timer = setTimeout(() => {
+      for (const row of cells) for (const c of row) { c.el.classList.remove("s3-reveal"); c.el.style.removeProperty("--s3-reveal-delay"); }
+      wrap.classList.remove("s3-solved-flash");
+      done?.();
+    }, 440);
+    return () => clearTimeout(timer);
+  }
+
+  return { el: wrap, update, flashWrong, celebrate, dims: { maxRow, maxCol, width, height } };
 }

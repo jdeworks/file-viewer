@@ -1,8 +1,8 @@
-// Defrag shop (#7) — spend REGISTERS (earned per solved snapshot) on permanent upgrades that make
+// Defrag upgrades (#7) — spend REGISTERS (earned per solved snapshot) on permanent upgrades that make
 // the loop deeper. Levels live in state.shopUpgrades and apply to every future snapshot, so progress
-// survives the run. Mirrors the Stage 2 glyph shop. Pure-ish: an overlay panel + the upgrade table.
-
-import { openModal } from "../../shared/modal.js";
+// survives the run. Mirrors the Stage 2 glyph shop. UX audit M1: there is no longer a standalone shop
+// menu — these upgrades are OFFERED as cards inside the boon draft (the ONE acquisition surface, see
+// s3draft.js). This file stays the pure economy: the upgrade table + cost/buy logic + a card renderer.
 
 export const SHOP_UPGRADES = [
   { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
@@ -35,12 +35,19 @@ export function upgradeLevel(state, id) {
   return Number((state.shopUpgrades || {})[id] || 0);
 }
 
-// The shop's purchasable upgrades, in display/pagination order (one upgrade per modal page).
+// All purchasable upgrades, in display order.
 export function shopUpgradeList() {
   return SHOP_UPGRADES.filter((u) => ACTIVE.has(u.id));
 }
 
-// HTML for ONE upgrade's page (name, level, description, cost, buy button).
+// The upgrades still worth offering in a draft (not yet maxed) — the pool the acquisition surface
+// draws its "pay registers" cards from.
+export function availableUpgrades(state) {
+  return shopUpgradeList().filter((u) => upgradeLevel(state, u.id) < u.max);
+}
+
+// HTML for ONE upgrade's card (name, level, description, cost, buy button) — rendered in the unified
+// acquisition modal (s3draft.js) next to the free boon cards.
 export function shopPageHtml(state, up) {
   const lvl = upgradeLevel(state, up.id);
   const maxed = lvl >= up.max;
@@ -49,8 +56,8 @@ export function shopPageHtml(state, up) {
   const bank = Number((retained ? state.retained : state.registers) || 0);
   const afford = !maxed && bank >= cost;
   const unit = retained ? "frag" : "reg";
-  return `<div class="s3-item">
-    <div class="s3-item-name"><strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span></div>
+  return `<div class="s3-item s3-item-upgrade">
+    <div class="s3-item-name"><strong>${up.name}</strong> <span class="s3-shop-lv">Lv ${lvl}/${up.max}</span> <span class="s3-item-tag">upgrade · pay</span></div>
     <div class="s3-item-desc">${up.desc}</div>
     <div class="s3-item-cost">cost: ${maxed ? "—" : cost + " " + unit}</div>
     <button type="button" class="s3-item-action" data-buy="${up.id}" ${maxed || !afford ? "disabled" : ""}>${maxed ? "MAXED" : afford ? `buy · ${cost} ${unit}` : `need ${cost} ${unit}`}</button>
@@ -72,25 +79,4 @@ export function buyUpgrade(state, save, id) {
   state.shopUpgrades[id] = lvl + 1;
   save?.();
   return true;
-}
-
-// Defrag shop as the shared modal (UX audit F6) — ALL upgrades render at once in a grid, so the
-// player can compare before spending. Buying re-renders the grid in place (cost/level/bank update).
-export function buildShopPanel({ state, save, onClose }) {
-  const ups = shopUpgradeList();
-  const content = document.createElement("div");
-  content.className = "s3-shop-content";
-  function render() {
-    content.innerHTML = `
-      <div class="mg-modal-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
-      <div class="mg-modal-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</div>
-      ${ups.length
-        ? `<div class="mg-modal-grid">${ups.map((up) => shopPageHtml(state, up)).join("")}</div>`
-        : `<div class="mg-modal-empty">nothing available.</div>`}`;
-    content.querySelectorAll("[data-buy]").forEach((btn) => {
-      btn.addEventListener("click", () => { if (buyUpgrade(state, save, btn.dataset.buy)) render(); });
-    });
-  }
-  render();
-  return openModal({ title: "DEFRAG SHOP", className: "s3-modal-shop", contentEl: content, onClose });
 }

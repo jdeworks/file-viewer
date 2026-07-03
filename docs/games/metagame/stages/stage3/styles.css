@@ -3,22 +3,27 @@
   --s3-fg: #0c447c;
   --s3-line: #cdcabf;
   --s3-blue: #378add;
-  --s3-cell: 24px;
-  --s3-clue: 20px;
+  --s3-cell: 32px;
+  --s3-clue: 26px;
   background: var(--s3-bg);
   border: 1px solid var(--s3-line);
   color: var(--s3-fg);
-  display: grid;
-  gap: 10px;
-  padding: 14px;
-  position: relative; /* containing block for the floating shop/draft modal */
-  width: min(840px, 100%);
+  /* Fit budget (#6 / shell F1): fill the host as a flex column; interior panes (board, log) scroll, the
+     stage itself never does. The board zone (.s3-play) flexes to own the space so the puzzle dominates. */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+  position: relative; /* containing block for the acquire modal + phase banners */
+  width: 100%;
   font: 14px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .stage3-memory-grid * { box-sizing: border-box; }
 
-.s3-hud,
 .s3-controls {
   align-items: center;
   display: flex;
@@ -26,10 +31,21 @@
   gap: 8px 14px;
 }
 
+/* HUD: one compact line (#6). One currency (REGISTERS) — retained fragments moved to the boss chip. */
 .s3-hud {
+  align-items: center;
   border-bottom: 1px solid var(--s3-line);
-  padding-bottom: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-bottom: 6px;
 }
+.s3-hud .s3-size { color: #5c6670; font-size: 0.85em; }
+.s3-help-toggle {
+  background: #e6f1fb; border: 1px solid var(--s3-line); border-radius: 4px; color: var(--s3-fg);
+  cursor: pointer; margin-left: auto; min-height: 28px; min-width: 30px; padding: 2px 8px;
+}
+.s3-help-toggle:hover, .s3-help-toggle.s3-help-on { border-color: var(--s3-blue); }
 
 .s3-objective { color: #0b6b52; font-size: 0.95em; }
 
@@ -56,29 +72,43 @@
   50% { opacity: 0.6; }
 }
 
+/* Board zone flexes to own the space (#1 board dominant, #6 fit). Grid column grows; the side is a
+   fixed rail. On phones this stacks (see the media query). */
 .s3-play {
-  align-items: flex-start;
+  align-items: stretch;
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  flex: 1;
+  gap: 12px;
+  min-height: 0;
 }
 
+.s3-grid-col { display: flex; flex: 1 1 auto; flex-direction: column; gap: 8px; min-width: 0; position: relative; }
+
+/* The board is centred in a flexing host so it reads as the dominant object; --s3-cell is sized to
+   this host by s3fit.js. The host scrolls only if the clamped board can't shrink further. */
 .s3-grid-host {
+  align-items: center;
   background: #fffaf0;
   border: 1px solid var(--s3-line);
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  min-height: 0;
   overflow: auto;
   padding: 10px;
 }
 
 .s3-side {
   display: flex;
-  flex: 1 1 230px;
+  flex: 0 0 240px;
   flex-direction: column;
   gap: 10px;
-  min-width: 230px;
+  min-width: 0;
+  overflow-y: auto;
 }
 
-.s3-help { color: #5c6670; font-size: 0.82em; }
+/* Controls reference (#5) — collapsed behind the ❓ toggle; the verb bar is the primary teacher. */
+.s3-help { background: #fffaf0; border: 1px solid var(--s3-line); color: #5c6670; font-size: 0.82em; padding: 6px 8px; }
 
 /* The interactive nonogram (inline grid-template set by grid.js). */
 .s3-board { display: grid; gap: 1px; user-select: none; }
@@ -131,14 +161,43 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
   100% { background: var(--s3-fg); color: #fffdf7; }
 }
 
+/* Boss panel (#2 staged): a one-line chip early, body at corruption ≥ 4, gate controls only at 8. */
 .s3-boss {
   background: #fffaf0;
   border: 1px solid var(--s3-line);
   padding: 10px;
 }
+.s3-boss.s3-boss-open { border-color: var(--s3-blue); box-shadow: inset 0 0 0 1px var(--s3-blue); }
+.s3-boss-chip { color: #8a5a13; font-size: 0.88em; font-weight: 700; }
+.s3-boss.s3-boss-open .s3-boss-chip { color: var(--s3-blue); }
+.s3-boss-body { margin-top: 8px; }
+.s3-boss-gate { margin-top: 8px; }
 
 .s3-boss-title { font-weight: 700; }
 .s3-hint { color: #5c6670; font-size: 0.85em; margin: 6px 0; }
+
+/* Verb bar (#5): the primary teacher — visible on desktop too (overrides .mg-touch display:none), with
+   small kbd hints on each button that hide on coarse pointers (touch users tap, not type). */
+.stage3-memory-grid .s3-verbs.mg-touch { display: flex; flex-flow: row wrap; gap: 6px; margin-top: 0; }
+.s3-verb-key {
+  background: rgba(12, 68, 124, 0.08); border: 1px solid var(--s3-line); border-radius: 3px;
+  color: #5c6670; font-size: 0.68em; margin-left: 6px; padding: 0 4px;
+}
+@media (pointer: coarse) { .s3-verb-key { display: none; } }
+
+/* Solve reveal (#4): a per-cell cascade pop (delay set inline by grid.js) + an accent flash sweep. */
+.s3-cell.s3-reveal { animation: s3-reveal-pop 0.34s ease both; animation-delay: var(--s3-reveal-delay, 0ms); }
+@keyframes s3-reveal-pop {
+  0% { transform: scale(0.45); filter: brightness(2.2); }
+  60% { transform: scale(1.14); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+.s3-board.s3-solved-flash { animation: s3-solved-flash 0.44s ease; }
+@keyframes s3-solved-flash { 0%, 100% { box-shadow: none; } 40% { box-shadow: 0 0 0 3px var(--s3-blue); } }
+
+/* STABILITY meter 1px pulse on change only (#7). */
+.s3-pressure.s3-pulse { animation: s3-stability-pulse 0.24s ease; }
+@keyframes s3-stability-pulse { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
 
 .s3-key-label { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .s3-key { border: 1px solid var(--s3-line); color: var(--s3-fg); font: inherit; padding: 5px 7px; }
@@ -153,8 +212,7 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
 }
 .s3-controls button:hover { border-color: var(--s3-blue); }
 
-.s3-grid-col { position: relative; }
-.s3-toolbar { display: flex; gap: 8px; margin-top: 8px; }
+.s3-toolbar { display: flex; flex-wrap: wrap; gap: 8px; }
 .s3-toolbar button {
   background: #e6f1fb;
   border: 1px solid var(--s3-line);
@@ -164,11 +222,10 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
 }
 .s3-toolbar button:hover { border-color: var(--s3-blue); }
 
-/* ── Defrag shop + boon draft content (rendered inside the SHARED modal — games-chrome.css) ────────
-   The shared .mg-modal is theme-neutral; here we paper-theme it for Stage 3 and re-declare the --s3-*
-   vars ON the modal panel (it's portaled to <body>, outside .stage3-memory-grid, so the stage's own
-   custom properties don't cascade to it). The item cards below then resolve those vars normally. */
-.mg-modal.s3-modal-shop,
+/* ── Acquire content (M1) — the unified boon+upgrade draft, rendered inside the SHARED modal
+   (games-chrome.css). The shared .mg-modal is theme-neutral; here we paper-theme it for Stage 3 and
+   re-declare the --s3-* vars ON the modal panel (it's portaled to <body>, outside .stage3-memory-grid,
+   so the stage's own custom properties don't cascade to it). The cards below then resolve them. */
 .mg-modal.s3-modal-draft {
   --s3-line: #cdcabf;
   --s3-fg: #0c447c;
@@ -178,10 +235,10 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
   color: var(--s3-fg);
   font: 14px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
-.mg-modal.s3-modal-draft { border-color: #2e7d8a; }
-.s3-shop-content .mg-modal-note, .s3-draft-content .mg-modal-note { color: #5c6670; opacity: 1; }
+.s3-draft-content .mg-modal-note { color: #5c6670; opacity: 1; }
 
-/* One card per upgrade / boon (all shown at once in the modal grid). */
+/* One card per boon (free) or upgrade (pay) — all shown at once in the modal grid. A left rule tints
+   the card by kind so the fold reads at a glance: teal = free boon, blue = purchasable upgrade. */
 .s3-item {
   background: #fffdf7;
   border: 1px solid var(--s3-line);
@@ -191,7 +248,10 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
   gap: 8px;
   padding: 10px;
 }
+.s3-item-boon { border-left: 3px solid #2e7d8a; }
+.s3-item-upgrade { border-left: 3px solid var(--s3-blue); }
 .s3-item-name { font-size: 1.05em; }
+.s3-item-tag { color: #5c6670; font-size: 0.72em; font-weight: 400; }
 .s3-item-desc { color: #4a5560; font-size: 0.9em; }
 .s3-item-cost { color: #5c6670; font-size: 0.85em; }
 .s3-item-action {
@@ -200,11 +260,19 @@ button.s3-pending { background: #e08a2e; color: #2a2a2a; border-color: #b5571f; 
 }
 .s3-item-action:not(:disabled):hover { border-color: var(--s3-blue); }
 .s3-item-action:disabled { cursor: default; opacity: 0.45; }
-.s3-modal-draft .s3-item-action { background: #def0f3; border-color: #2e7d8a; color: #1f6f7d; }
+.s3-item-boon .s3-item-action { background: #def0f3; border-color: #2e7d8a; color: #1f6f7d; }
 .s3-shop-lv { color: #5c6670; font-weight: 400; }
 
-.s3-log { color: #5c6670; font-size: 0.88em; margin: 0 0 0 18px; }
+/* Log: 3 lines with internal scroll (#6) — never grows the stage. */
+.s3-log { color: #5c6670; flex: 0 0 auto; font-size: 0.85em; margin: 0; max-height: 4.4em; overflow-y: auto; padding-left: 18px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .s3-cell.s3-reveal, .s3-board.s3-solved-flash, .s3-pressure.s3-pulse,
+  .s3-cell.s3-volatile, .s3-pressure.s3-pressure-crit { animation: none; }
+}
 
 @media (max-width: 760px) {
   .s3-play { flex-direction: column; }
+  .s3-side { flex: 0 0 auto; overflow: visible; }
+  .s3-grid-host { min-height: 260px; }
 }

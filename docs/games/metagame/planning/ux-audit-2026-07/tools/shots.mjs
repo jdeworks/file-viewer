@@ -103,9 +103,11 @@ async function drive(dir, viewport, opts, phoneLite = false) {
     await shot(page, dir, 's3-initial');
     if (!phoneLite) {
       await shotFull(page, dir, 's3-initial-full');
-      await page.click('button[data-action="shop"]').catch(() => {});
+      // The Defrag shop folded into the acquire draft (UX audit M1) — open THAT surface (the acquire
+      // button is shown while a draft is pending, which a fresh run always is at snapshot 1).
+      await page.click('button[data-action="draft"]').catch(() => {});
       await page.waitForTimeout(300);
-      await shot(page, dir, 's3-shop-modal');
+      await shot(page, dir, 's3-acquire-modal');
       await page.evaluate(() => document.querySelector('.mg-modal-backdrop')?.click());
       await page.waitForTimeout(200);
       await page.evaluate(() => { for (let i = 0; i < 6; i++) window.__fvStage3?.solveCurrent?.(); });

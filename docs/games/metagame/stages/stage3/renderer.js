@@ -2,19 +2,23 @@ import { defeatMemoryLeak, getBossLockState, pushLog, tryRestoreDiffKey } from "
 import { memoryV1Text, memoryV2Text, memoryV3Text } from "./content.js";
 import { BTS_PATH, MEMORY_V1_PATH, MEMORY_V2_PATH, MEMORY_V3_PATH } from "./messages.js";
 import { buildGrid } from "./grid.js";
-import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, wrongCells } from "./board.js";
+import { applyPrefetch, corruptionForRun, createBoard, encodeMarks, firstHintCell, isSolved, moveCursor, progress, puzzleForRun, setCell, sizeForRun, wrongCells } from "./board.js";
 import { FILLED, COLOR_B, UNKNOWN } from "./nonogram.js";
-import { buildShopPanel, upgradeLevel } from "./shop.js";
+import { upgradeLevel } from "./shop.js";
 import { installStage3Hook } from "./s3debug.js";
 import { devFillSolution, devGiveCurrency, devSkipToBody, devClearPressure } from "./s3dev.js";
 import { initVolatile, lockCell, noteFill, tickVolatile, volatileStatus } from "./s3volatile.js";
 import { createDecay, decayFailed, decayRatio, pressureMove, pressureWrong } from "./s3decay.js";
 import { aliasedTotal } from "./s3aliased.js";
-import { boonBonus, buildDraftPanel, draftOffer, draftPending, ensureRunBoons, pickBoon } from "./s3boons.js";
+import { boonBonus, draftPending, ensureRunBoons } from "./s3boons.js";
+import { acquisitionOffer, buildDraftPanel, pickDraftCard } from "./s3draft.js";
+import { activeTiers, LEARN_SIZE } from "./s3tiercap.js";
+import { installBoardFit } from "./s3fit.js";
 import { announceTiers } from "./s3tiers.js";
 import { bumpRunPressure, collapseRun, runPressureLimit, runPressureReached } from "./state.js";
 import { buildStage3Shell } from "./view.js";
 import { createVerbBar, verbToCell } from "./s3verbs.js";
+import { banner } from "../../shared/feedback.js";
 
 const MOVE = {
   ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0],
@@ -36,13 +40,17 @@ export function renderStage3(ctx) {
   // applies the selected verb. Shown only on touch/small screens (CSS); desktop keeps mouse/keyboard.
   const verbBar = createVerbBar();
   root.querySelector(".s3-toolbar").before(verbBar.el);
-  let overlay = null; // open shop panel, or null
+  let overlay = null; // open acquire-draft modal, or null
   const setText = (el, v) => { const s = String(v); if (el.textContent !== s) el.textContent = s; };
   const setHidden = (el, h) => { if (el.hidden !== h) el.hidden = h; };
   const completeOnce = once((result) => onStageComplete?.(result));
   let lastLog = "";
   let board = null;
   let grid = null;
+  let boardFit = null;       // #1 board scaler (installed after the first snapshot draws)
+  let announcedGate = false; // #2 boss-gate arrival beat fires once per mount
+  let lastStability = null;  // #7 STABILITY meter pulses only on change
+  let draftSeen = false;     // M3 the acquire draft announces itself once when first available
   const awarded = state.achievements = state.achievements || {};
   function award(id, title) {
     if (awarded[id]) return;
@@ -62,28 +70,37 @@ export function renderStage3(ctx) {
   const pressureLimit = () => runPressureLimit(corruptionForRun(state.run), valveHeadroom());
 
   loadBoard();
+  boardFit = installBoardFit(root, gridHost, () => grid?.dims); // #1 scale the board to its host
   paintHud();
 
   // Draw the current run's snapshot (regenerated from the seed) and restore any saved marks. A FRESH
   // snapshot (no saved marks) gets the Prefetch Cache pre-fills.
   function loadBoard() {
     const fresh = !state.run.marks;
+    const corruption = corruptionForRun(state.run);
     // Tier-arrival messaging: announce any mechanic whose corruption threshold this snapshot first
-    // reaches (fires once per run, deterministically) so the new rule lands with context.
-    announceTiers(state, corruptionForRun(state.run));
-    const puzzle = puzzleForRun(state.run, state.shopUpgrades);
+    // reaches (fires once per run, deterministically) so the new rule lands with context. The list it
+    // returns drives the M4 LEARNING WINDOW — the first snapshot after an unlock features ONLY the new
+    // mechanic on a small board.
+    const fired = announceTiers(state, corruption);
+    const learn = fired.length ? fired[fired.length - 1] : null;
+    // APPROVED OPTION — tier cap: at most 2 tier mechanics active per snapshot (see s3tiercap.js). A
+    // learning window overrides that to the single new mechanic.
+    const active = learn ? new Set([learn]) : activeTiers(corruption, state.run.index);
+    const sizeOverride = learn ? Math.min(LEARN_SIZE, sizeForRun(state.run, state.shopUpgrades)) : undefined;
+    const puzzle = puzzleForRun(state.run, state.shopUpgrades, { size: sizeOverride, aliased: active.has("aliased") });
     board = createBoard(puzzle, state.run.marks);
     board.hintsUsed = 0;
     board.checksUsed = 0;
     board.mistakes = 0;
     const prefetch = upgradeLevel(state, "prefetch") + boonBonus(state, "prefetch");
     if (fresh && prefetch) { applyPrefetch(board, prefetch); state.run.marks = encodeMarks(board.marks); }
-    // Volatile cells (corruption ≥ 2): a seeded subset of fills decays after a few moves unless locked.
-    initVolatile(board, corruptionForRun(state.run), `${state.run.seed}:${state.run.index}`);
+    // Volatile cells: a seeded subset of fills decays after a few moves unless locked (when active).
+    if (active.has("volatile")) initVolatile(board, corruption, `${state.run.seed}:${state.run.index}`);
     // Stabilizer Field boon: volatile fills survive a few extra moves this run.
     if (board.volatile) board.decayWindow += boonBonus(state, "volatile");
-    // Decay clock (corruption ≥ 4): per-snapshot pressure meter — cross it and this snapshot fails.
-    board.decay = createDecay(puzzle, corruptionForRun(state.run));
+    // Decay clock: per-snapshot pressure meter — cross it and this snapshot fails (when active).
+    board.decay = createDecay(puzzle, active.has("decay") ? corruption : 0);
     // Pressure Valve boon: extra instability headroom this run.
     if (board.decay.active) board.decay.threshold = Math.round(board.decay.threshold * (1 + boonBonus(state, "decayPct")));
     grid = buildGrid(puzzle, {
@@ -92,6 +109,7 @@ export function renderStage3(ctx) {
     });
     gridHost.replaceChildren(grid.el);
     grid.update(board);
+    boardFit?.measure();
   }
 
   // A plain tap applies the verb currently selected in the on-screen toggle (touch path). Lock routes
@@ -121,7 +139,7 @@ export function renderStage3(ctx) {
     grid.update(board);
     if (reverted.length) { grid.flashWrong(reverted); pushLog(state, `${reverted.length} volatile cell${reverted.length === 1 ? "" : "s"} decayed — lock fills with l.`); }
     if (!board.solved && decayFailed(board.decay)) { failSnapshot(); return; }
-    if (board.solved) onSolved();
+    if (board.solved) onSolved(true); // real player solve → play the reveal
     else { save?.(); paintHud(); }
   }
 
@@ -155,9 +173,13 @@ export function renderStage3(ctx) {
   }
 
   // A solved snapshot: bank registers (size² + a small no-mistake-ish base), retain a fragment every
-  // few clears, then draw the next, deeper snapshot.
-  function onSolved() {
+  // few clears, then draw the next, deeper snapshot. `animate` (true only on a real player solve — the
+  // programmatic solveCurrent/dev paths pass false) plays the #4 SOLVE REVEAL: a cascade wave over the
+  // resolved picture, then the next snapshot draws. State fully advances FIRST (synchronously), so the
+  // deferred redraw never desyncs the deterministic hook.
+  function onSolved(animate) {
     const size = board.puzzle.width;
+    const picto = board.puzzle.picto; // the 1-bit picture this snapshot resolved into (if any)
     const mult = 1 + 0.25 * (upgradeLevel(state, "throughput") + boonBonus(state, "throughput")); // Throughput upgrade + boons
     const corrBonus = 1 + 0.18 * corruptionForRun(state.run);  // harder/deeper snapshots pay more
     // Rebalanced for the tightened ~13-solve body: a higher flat base keeps the Defrag shop reachable
@@ -169,7 +191,7 @@ export function renderStage3(ctx) {
     state.run.marks = null;
     // Boss gate (boss-never-from-start): corruption peaking at 8 is reached ONLY here, through play.
     if (corruptionForRun(state.run) >= 8) state.boss.corruption8Reached = true;
-    pushLog(state, `snapshot restored. +${reward} registers.`);
+    pushLog(state, picto ? `fragment: ${picto.name} crystallized. +${reward} registers.` : `snapshot restored. +${reward} registers.`);
     if (state.run.solvedCount % RETAIN_EVERY === 0) { state.retained += 1; pushLog(state, "a fragment crystallized. +1 retained."); }
     // Achievements (#18).
     award("first_restore", "Restored your first snapshot");
@@ -178,14 +200,15 @@ export function renderStage3(ctx) {
     if (size >= 10) award("wide_recall", "Cleared a 10×10 snapshot");
     if (state.retained >= 5) award("retainer", "Retained 5 fragments");
     save?.();
-    loadBoard();
-    paintHud();
+    const drawNext = () => { if (!root.isConnected) return; loadBoard(); paintHud(); };
+    if (animate && grid) { paintHud(); grid.celebrate(drawNext); }
+    else drawNext();
   }
 
   function paintHud() {
     const lock = getBossLockState({ actions, state });
+    const corruption = corruptionForRun(state.run);
     setText(fields.registers, state.registers);
-    setText(fields.retained, state.retained);
     setText(fields.snap, `#${state.run.index + 1}`);
     const size = board.puzzle.width;
     const mode = board.puzzle.twoColor ? " · 2-colour" : "";
@@ -196,7 +219,10 @@ export function renderStage3(ctx) {
     // collapse, with escalating warning as it nears zero. Higher = safer, so it reads non-punitively.
     const plimit = pressureLimit();
     const pnow = Number(state.run.pressure || 0);
-    setText(fields.pressure, `STABILITY ${Math.max(0, plimit - pnow)}/${plimit}`);
+    const stability = Math.max(0, plimit - pnow);
+    setText(fields.pressure, `STABILITY ${stability}/${plimit}`);
+    if (lastStability !== null && stability !== lastStability) pulse(fields.pressure); // #7 pulse on change only
+    lastStability = stability;
     const pratio = plimit ? pnow / plimit : 0;
     fields.pressure.classList.toggle("s3-pressure-warn", pratio >= 0.5 && pratio < 0.8);
     fields.pressure.classList.toggle("s3-pressure-crit", pratio >= 0.8);
@@ -212,6 +238,7 @@ export function renderStage3(ctx) {
     setText(fields.bossStatus, `${lock.unlocked ? "UNLOCKED" : "LOCKED"} / columns ${lock.columnClues} / corruption ${lock.corruptionRate}`);
     setText(fields.hint, lock.hint);
     setHidden(btsBtn, !state.boss.defeated);
+    paintBoss(lock, corruption); // #2 stage the boss (chip → body → gate) + M2 fragment progress
     // Oracle / Parity assist buttons (shown once owned; count = shop level + boons, remaining this snapshot).
     const oracle = oracleCap();
     const parity = parityCap();
@@ -226,16 +253,55 @@ export function renderStage3(ctx) {
     verbBar.setEnabled("lock", Boolean(board.volatile));
     const active = verbBar.getActive();
     if ((active === "fillB" && !board.puzzle.twoColor) || (active === "lock" && !board.volatile)) verbBar.setActive("fillA");
-    // Boon draft button — highlighted while a pick is pending.
+    // Acquire button (M1/M3) — the single acquisition surface; shown only while a pick is pending, and
+    // it announces itself with a banner the first time it becomes available (progressive disclosure).
     const pending = draftPending(state);
-    setHidden(fields.draftBtn, !pending && state.run.boons.length === 0);
-    setText(fields.draftBtn, pending ? "boon draft •" : "boons");
+    setHidden(fields.draftBtn, !pending);
+    setText(fields.draftBtn, "acquire •");
     fields.draftBtn.classList.toggle("s3-pending", pending);
+    if (pending && !draftSeen) {
+      draftSeen = true;
+      banner(root, "ACQUIRE — pick 1 of 3");
+      pushLog(state, "an acquisition is available — draft a boon or bank a permanent upgrade.");
+    }
     const sig = state.log.slice(-6).join("\n");
     if (sig !== lastLog) {
       lastLog = sig;
       log.replaceChildren(...state.log.slice(-6).map((line) => { const li = document.createElement("li"); li.textContent = line; return li; }));
     }
+  }
+
+  // #2 stage the boss: a one-line chip until corruption 4, the panel body at 4–7, and the restoration
+  // controls only at the corruption-8 gate (bodyReady). M2: retained fragments read here as boss
+  // progress, not as a spendable HUD currency. The DOM nodes always exist (we only toggle visibility)
+  // so the boss-lock state stays queryable. Opening the gate fires a one-time banner + bell beat.
+  function paintBoss(lock, corruption) {
+    const stage = lock.bodyReady ? 2 : corruption >= 4 ? 1 : 0;
+    setHidden(fields.bossBody, stage < 1);
+    setHidden(fields.bossGate, stage < 2);
+    const frag = Number(state.retained || 0);
+    const fragNote = frag ? ` · fragments ${frag} feed the leak` : "";
+    const chip = stage === 2
+      ? `THE MEMORY LEAK · gate open${fragNote}`
+      : stage === 1
+        ? `THE MEMORY LEAK · corruption ${corruption}/8${fragNote}`
+        : `the leak spreads… ${corruption}/8${fragNote}`;
+    setText(fields.bossChip, chip);
+    fields.bossPanel.classList.toggle("s3-boss-open", stage === 2);
+    if (stage === 2 && !announcedGate) {
+      announcedGate = true;
+      banner(root, "GATE OPEN");
+      bell?.showBell?.("stage3.boss_gate", "the leak's columns are within reach — restore the key.", { stage: 3 });
+      pushLog(state, "the leak's columns are within reach — restore the key.");
+    }
+  }
+
+  // #7 one-shot pulse on a HUD element (fires only on a STABILITY change). reduced-motion suppresses
+  // the animation in CSS, so this degrades to a no-op there.
+  function pulse(el) {
+    el.classList.remove("s3-pulse");
+    void el.offsetWidth; // reflow so the animation re-triggers
+    el.classList.add("s3-pulse");
   }
 
   // Oracle hint: reveal one correct cell, costing one of this snapshot's hints.
@@ -260,15 +326,18 @@ export function renderStage3(ctx) {
     paintHud();
   }
 
-  // Defrag shop overlay — the shared modal (openModal). Buying upgrades spends registers; closing
-  // repaints (next snapshot reflects prefetch/overclock). The current board isn't retroactively changed.
-  function toggleShop() {
-    if (overlay) { overlay.close(); return; } // close() fires onClose → clears overlay + repaints
-    overlay = buildShopPanel({ state, save, onClose: () => { overlay = null; paintHud(); } });
+  // The controls help (#5/M3) collapses behind the ❓ toggle — the keybinding wall is no longer body
+  // text spoiling the first screen. The verb bar teaches the common verbs; this is the full reference.
+  function toggleHelp(btn) {
+    const show = fields.help.hidden;
+    setHidden(fields.help, !show);
+    btn?.setAttribute("aria-expanded", String(show));
+    btn?.classList.toggle("s3-help-on", show);
   }
 
-  // Boon draft overlay — the shared modal. Drafting a run-scoped boon spends nothing; it just commits a
-  // build choice and closes. Applies to the NEXT snapshot drawn (the current board is not changed).
+  // Acquire overlay (M1) — the ONE acquisition surface (shared modal): a seeded 1-of-3 mix of free run
+  // boons and purchasable permanent Defrag upgrades. Picking either resolves the draft and closes;
+  // it applies to the NEXT snapshot drawn (the current board is not changed).
   function toggleDraft() {
     if (overlay) { overlay.close(); return; }
     overlay = buildDraftPanel({ state, save, onClose: () => { overlay = null; paintHud(); } });
@@ -296,7 +365,7 @@ export function renderStage3(ctx) {
     const button = event.target.closest("button[data-action]");
     if (!button) return;
     const action = button.dataset.action;
-    if (action === "shop") { toggleShop(); return; }
+    if (action === "help") { toggleHelp(button); return; }
     if (action === "draft") { toggleDraft(); return; }
     if (action === "hint") { useHint(); return; }
     if (action === "check") { useCheck(); return; }
@@ -325,7 +394,7 @@ export function renderStage3(ctx) {
     board.solved = isSolved(board.puzzle, board.marks);
     state.run.marks = encodeMarks(board.marks);
     grid.update(board);
-    if (board.solved) onSolved();
+    if (board.solved) onSolved(false); // deterministic path — advance synchronously, no reveal
     return true;
   }
   function tryRestoreKey(key) {
@@ -342,8 +411,11 @@ export function renderStage3(ctx) {
     return won;
   }
   function draft(id) {
-    const offer = draftOffer(state).map((b) => b.id);
-    const ok = pickBoon(state, id != null ? id : offer[0]);
+    const offer = acquisitionOffer(state);
+    // Default (no id) picks the first FREE boon in the offer so the deterministic hook never fails on
+    // affordability; an explicit id routes through the same acquire path a click uses.
+    const target = id != null ? id : (offer.find((c) => c.kind === "boon") || offer[0] || {}).id;
+    const ok = pickDraftCard(state, save, target);
     if (ok) { save?.(); paintHud(); }
     return ok;
   }
@@ -351,7 +423,7 @@ export function renderStage3(ctx) {
     state, solveCurrent, tryRestoreKey, bossSolver,
     aliasedNow: () => aliasedTotal(board?.puzzle),
     draftPending: () => draftPending(state),
-    draftOffer: () => draftOffer(state).map((b) => b.id),
+    draftOffer: () => acquisitionOffer(state).map((c) => c.id),
     draft,
   });
 
@@ -364,7 +436,7 @@ export function renderStage3(ctx) {
       board.solved = isSolved(board.puzzle, board.marks);
       state.run.marks = encodeMarks(board.marks);
       grid.update(board);
-      if (board.solved) onSolved();
+      if (board.solved) onSolved(false);
       return;
     }
     if (id === "give-currency") { devGiveCurrency(state); save?.(); paintHud(); return; }
@@ -375,7 +447,7 @@ export function renderStage3(ctx) {
   return {
     repaint: paintHud,
     dev,
-    destroy() { overlay?.close?.(); window.removeEventListener("keydown", onKey); uninstallHook(); verbBar.destroy(); root.remove(); }
+    destroy() { overlay?.close?.(); boardFit?.destroy(); window.removeEventListener("keydown", onKey); uninstallHook(); verbBar.destroy(); root.remove(); }
   };
 }
 

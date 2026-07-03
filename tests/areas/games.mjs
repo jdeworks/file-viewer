@@ -876,16 +876,20 @@ export async function run(ctx) {
     pass('Stage 3 boss is unreachable from start (key refused before corruption 8)');
   else fail('Stage 3 boss bypassable from start: ' + JSON.stringify(s3Bypass));
 
-  // Per-run build draft: a fresh run offers a 3-boon draft at the start; picking one commits a
-  // run-scoped build choice (deterministic, via the hook).
+  // Acquire fold (UX audit M1): the ONE acquisition surface offers a 3-card MIX of free run boons and
+  // purchasable Defrag upgrades. The offer must contain BOTH kinds (economy still purchasable in-flow);
+  // the default hook pick takes the free boon and resolves the draft (deterministic).
   const s3Draft = await page.evaluate(() => {
+    const UP = ['prefetch', 'throughput', 'oracle', 'parity', 'overclock', 'engram'];
     const pendingBefore = window.__fvStage3.draftPending();
     const offer = window.__fvStage3.draftOffer();
-    const picked = window.__fvStage3.draft();
-    return { pendingBefore, offerLen: offer.length, picked, boons: window.__fvStage3.state().run.boons.length, pendingAfter: window.__fvStage3.draftPending() };
+    const hasUpgrade = offer.some((id) => UP.includes(id));
+    const hasBoon = offer.some((id) => !UP.includes(id));
+    const picked = window.__fvStage3.draft(); // default = the free boon
+    return { pendingBefore, offerLen: offer.length, hasUpgrade, hasBoon, picked, boons: window.__fvStage3.state().run.boons.length, pendingAfter: window.__fvStage3.draftPending() };
   });
-  if (s3Draft.pendingBefore && s3Draft.offerLen === 3 && s3Draft.picked && s3Draft.boons === 1 && !s3Draft.pendingAfter)
-    pass('Stage 3 per-run boon draft: offered 3, picked 1, draft consumed'); else fail('Stage 3 boon draft: ' + JSON.stringify(s3Draft));
+  if (s3Draft.pendingBefore && s3Draft.offerLen === 3 && s3Draft.hasUpgrade && s3Draft.hasBoon && s3Draft.picked && s3Draft.boons === 1 && !s3Draft.pendingAfter)
+    pass('Stage 3 acquire fold: 3-card mix of purchasable upgrade(s) + free boon(s), pick resolves the draft'); else fail('Stage 3 acquire fold: ' + JSON.stringify(s3Draft));
 
   // Play the BODY: solve snapshots until corruption peaks at 8 (deterministic, no real-time play).
   const s3Body = await page.evaluate(() => window.__fvStage3.bodySolver());
