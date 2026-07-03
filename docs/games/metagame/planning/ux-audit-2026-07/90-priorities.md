@@ -48,7 +48,7 @@ items marked OPTION need user sign-off before building.
     preview, S5 legend line, S7 claim grouping + hint-laddered search, S9 verdict
     depth, S3 verb-bar teaching, S10 dedupe/sigil).
 
-## OPTION items awaiting user sign-off (mechanics with tradeoffs)
+## OPTION items — ALL APPROVED by user 2026-07-03 (build in; evaluate via playtests after; each individually revertible)
 - S3: cap simultaneous active tier mechanics at 2 per snapshot.
 - S4: targeting modes → 3 presets.
 - S5: merge the 3 signal sub-effects into one curve.
