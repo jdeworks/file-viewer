@@ -1,5 +1,10 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
+
 const CSS = `
 .rbots-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .rbots-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#0f6fba;color:#fff;vertical-align:middle;margin-right:8px;}
@@ -162,13 +167,21 @@ export function render(intake) {
     h3.textContent = 'Sitemaps';
     sitemapSec.appendChild(h3);
     for (const url of sitemaps) {
-      const a = document.createElement('a');
-      a.className = 'rbots-sitemap-link';
-      a.href = url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.textContent = url;
-      sitemapSec.appendChild(a);
+      const safe = safeHref(url);
+      if (safe) {
+        const a = document.createElement('a');
+        a.className = 'rbots-sitemap-link';
+        a.href = safe;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = url;
+        sitemapSec.appendChild(a);
+      } else {
+        const span = document.createElement('span');
+        span.className = 'rbots-sitemap-link';
+        span.textContent = url;
+        sitemapSec.appendChild(span);
+      }
     }
     host.appendChild(sitemapSec);
   }

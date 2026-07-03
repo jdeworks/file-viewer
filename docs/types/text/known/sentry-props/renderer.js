@@ -20,6 +20,8 @@ const CSS = `
 .snt-off{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:#f3f4f6;border:1px solid #d1d5db;color:#6b7280;margin:2px 3px}
 `;
 
+const SENSITIVE_RE = /password|token|secret|apikey|api_key|credentials/i;
+
 // Mask the secret part of a Sentry DSN (everything before the @)
 function maskDsn(dsn) {
   // DSN format: https://<key>@<host>/<project>
@@ -93,7 +95,7 @@ ${boolBadge('upload-sources', uploadSources)}
     'sentry.upload-sources', 'upload-sources']);
   const otherRows = [...props.entries()]
     .filter(([k]) => !shownKeys.has(k))
-    .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`)
+    .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${SENSITIVE_RE.test(k) ? '[configured]' : esc(v)}</td></tr>`)
     .join('');
   const otherHtml = otherRows ? `
 <div class="snt-sec"><h3>Additional Properties</h3><div class="snt-card">

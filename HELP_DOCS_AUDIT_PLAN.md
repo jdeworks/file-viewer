@@ -2123,174 +2123,174 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/postgresql-conf/renderer.js
 - [ ] docs/types/text/known/powershell-lang/index.js
 - [ ] docs/types/text/known/powershell-lang/renderer.js
-- [ ] docs/types/text/known/prettierignore/index.js
-- [ ] docs/types/text/known/prettierignore/renderer.js
-- [ ] docs/types/text/known/prisma-schema/index.js
-- [ ] docs/types/text/known/prisma-schema/renderer.js
-- [ ] docs/types/text/known/procfile/index.js
-- [ ] docs/types/text/known/procfile/renderer.js
-- [ ] docs/types/text/known/proftpd-conf/index.js
-- [ ] docs/types/text/known/proftpd-conf/renderer.js
-- [ ] docs/types/text/known/proguard-rules/index.js
-- [ ] docs/types/text/known/proguard-rules/renderer.js
-- [ ] docs/types/text/known/project-clj/index.js
-- [ ] docs/types/text/known/project-clj/renderer.js
-- [ ] docs/types/text/known/prolog-lang/index.js
-- [ ] docs/types/text/known/prolog-lang/renderer.js
-- [ ] docs/types/text/known/promela/index.js
-- [ ] docs/types/text/known/promela/renderer.js
-- [ ] docs/types/text/known/pug-template/index.js
-- [ ] docs/types/text/known/pug-template/renderer.js
-- [ ] docs/types/text/known/pulsar-conf/index.js
-- [ ] docs/types/text/known/pulsar-conf/renderer.js
-- [ ] docs/types/text/known/pulseaudio-conf/index.js
-- [ ] docs/types/text/known/pulseaudio-conf/renderer.js
-- [ ] docs/types/text/known/puma-config/index.js
-- [ ] docs/types/text/known/puma-config/renderer.js
-- [ ] docs/types/text/known/purescript-lang/index.js
-- [ ] docs/types/text/known/purescript-lang/renderer.js
-- [ ] docs/types/text/known/pytest-ini/index.js
-- [ ] docs/types/text/known/pytest-ini/renderer.js
-- [ ] docs/types/text/known/python-version/index.js
-- [ ] docs/types/text/known/python-version/renderer.js
-- [ ] docs/types/text/known/r-description/index.js
-- [ ] docs/types/text/known/r-description/renderer.js
-- [ ] docs/types/text/known/r-lang/index.js
-- [ ] docs/types/text/known/r-lang/renderer.js
-- [ ] docs/types/text/known/r-profile/index.js
-- [ ] docs/types/text/known/r-profile/renderer.js
-- [ ] docs/types/text/known/rabbitmq-conf/index.js
-- [ ] docs/types/text/known/rabbitmq-conf/renderer.js
-- [ ] docs/types/text/known/racket-lang/index.js
-- [ ] docs/types/text/known/racket-lang/renderer.js
-- [ ] docs/types/text/known/rallly-config/index.js
-- [ ] docs/types/text/known/rallly-config/renderer.js
-- [ ] docs/types/text/known/ranger-conf/index.js
-- [ ] docs/types/text/known/ranger-conf/renderer.js
-- [ ] docs/types/text/known/rclone-conf/index.js
-- [ ] docs/types/text/known/rclone-conf/renderer.js
-- [ ] docs/types/text/known/rdp-config/index.js
-- [ ] docs/types/text/known/rdp-config/renderer.js
-- [ ] docs/types/text/known/react-native-config/index.js
-- [ ] docs/types/text/known/react-native-config/renderer.js
-- [ ] docs/types/text/known/reason-lang/index.js
-- [ ] docs/types/text/known/reason-lang/renderer.js
-- [ ] docs/types/text/known/rebar-config/index.js
-- [ ] docs/types/text/known/rebar-config/renderer.js
-- [ ] docs/types/text/known/rector-config/index.js
-- [ ] docs/types/text/known/rector-config/renderer.js
-- [ ] docs/types/text/known/red-lang/index.js
-- [ ] docs/types/text/known/red-lang/renderer.js
-- [ ] docs/types/text/known/redirects/index.js
-- [ ] docs/types/text/known/redirects/renderer.js
-- [ ] docs/types/text/known/redis-conf/index.js
-- [ ] docs/types/text/known/redis-conf/renderer.js
-- [ ] docs/types/text/known/redis-sentinel/index.js
-- [ ] docs/types/text/known/redis-sentinel/renderer.js
-- [ ] docs/types/text/known/rego-policy/index.js
-- [ ] docs/types/text/known/rego-policy/renderer.js
-- [ ] docs/types/text/known/remix-config/index.js
-- [ ] docs/types/text/known/remix-config/renderer.js
-- [ ] docs/types/text/known/requirements-txt/index.js
-- [ ] docs/types/text/known/requirements-txt/metadata.js
-- [ ] docs/types/text/known/requirements-txt/parse.js
-- [ ] docs/types/text/known/requirements-txt/render.js
-- [ ] docs/types/text/known/rescript-lang/index.js
-- [ ] docs/types/text/known/rescript-lang/renderer.js
-- [ ] docs/types/text/known/resolv-conf/index.js
-- [ ] docs/types/text/known/resolv-conf/renderer.js
-- [ ] docs/types/text/known/restic-config/index.js
-- [ ] docs/types/text/known/restic-config/renderer.js
-- [ ] docs/types/text/known/restructuredtext/index.js
-- [ ] docs/types/text/known/restructuredtext/renderer.js
-- [ ] docs/types/text/known/robots-txt/index.js
-- [ ] docs/types/text/known/robots-txt/renderer.js
-- [ ] docs/types/text/known/rofi-config/index.js
-- [ ] docs/types/text/known/rofi-config/renderer.js
-- [ ] docs/types/text/known/rollup-config/index.js
-- [ ] docs/types/text/known/rollup-config/renderer.js
-- [ ] docs/types/text/known/rpm-spec/index.js
-- [ ] docs/types/text/known/rpm-spec/renderer.js
-- [ ] docs/types/text/known/rspack-config/index.js
-- [ ] docs/types/text/known/rspack-config/renderer.js
-- [ ] docs/types/text/known/rspec-config/index.js
-- [ ] docs/types/text/known/rspec-config/renderer.js
-- [ ] docs/types/text/known/rsyslog-conf/index.js
-- [ ] docs/types/text/known/rsyslog-conf/renderer.js
-- [ ] docs/types/text/known/ruby-lang/index.js
-- [ ] docs/types/text/known/ruby-lang/renderer.js
-- [ ] docs/types/text/known/ruby-version/index.js
-- [ ] docs/types/text/known/ruby-version/renderer.js
-- [ ] docs/types/text/known/scala-lang/index.js
-- [ ] docs/types/text/known/scala-lang/renderer.js
-- [ ] docs/types/text/known/scalafix-conf/index.js
-- [ ] docs/types/text/known/scalafix-conf/renderer.js
-- [ ] docs/types/text/known/scalafmt-conf/index.js
-- [ ] docs/types/text/known/scalafmt-conf/renderer.js
-- [ ] docs/types/text/known/scheme-lang/index.js
-- [ ] docs/types/text/known/scheme-lang/renderer.js
-- [ ] docs/types/text/known/screenrc/index.js
-- [ ] docs/types/text/known/screenrc/renderer.js
-- [ ] docs/types/text/known/security-txt/index.js
-- [ ] docs/types/text/known/security-txt/renderer.js
-- [ ] docs/types/text/known/sed-script/index.js
-- [ ] docs/types/text/known/sed-script/renderer.js
-- [ ] docs/types/text/known/sentry-props/index.js
-- [ ] docs/types/text/known/sentry-props/renderer.js
-- [ ] docs/types/text/known/settings-gradle/index.js
-- [ ] docs/types/text/known/settings-gradle/renderer.js
-- [ ] docs/types/text/known/shadow-cljs/index.js
-- [ ] docs/types/text/known/shadow-cljs/renderer.js
-- [ ] docs/types/text/known/shell-rc/index.js
-- [ ] docs/types/text/known/shell-rc/renderer.js
-- [ ] docs/types/text/known/smb-conf/index.js
-- [ ] docs/types/text/known/smb-conf/renderer.js
-- [ ] docs/types/text/known/sml-lang/index.js
-- [ ] docs/types/text/known/sml-lang/renderer.js
-- [ ] docs/types/text/known/smtlib/index.js
-- [ ] docs/types/text/known/smtlib/renderer.js
-- [ ] docs/types/text/known/snapcraft-yaml/index.js
-- [ ] docs/types/text/known/snapcraft-yaml/renderer.js
-- [ ] docs/types/text/known/snapfile/index.js
-- [ ] docs/types/text/known/snapfile/renderer.js
-- [ ] docs/types/text/known/snyk-config/index.js
-- [ ] docs/types/text/known/snyk-config/renderer.js
-- [ ] docs/types/text/known/solidity-lang/index.js
-- [ ] docs/types/text/known/solidity-lang/renderer.js
-- [ ] docs/types/text/known/sonar/index.js
-- [ ] docs/types/text/known/sonar/renderer.js
-- [ ] docs/types/text/known/sonarqube-config/index.js
-- [ ] docs/types/text/known/sonarqube-config/renderer.js
-- [ ] docs/types/text/known/sorbet-config/index.js
-- [ ] docs/types/text/known/sorbet-config/renderer.js
-- [ ] docs/types/text/known/sparql-query/index.js
-- [ ] docs/types/text/known/sparql-query/renderer.js
-- [ ] docs/types/text/known/spdx-sbom/index.js
-- [ ] docs/types/text/known/spdx-sbom/renderer.js
-- [ ] docs/types/text/known/speedtest-tracker-config/index.js
-- [ ] docs/types/text/known/speedtest-tracker-config/renderer.js
-- [ ] docs/types/text/known/sphinx-conf/index.js
-- [ ] docs/types/text/known/sphinx-conf/renderer.js
-- [ ] docs/types/text/known/spring-app/index.js
-- [ ] docs/types/text/known/spring-app/renderer.js
-- [ ] docs/types/text/known/sqitch-conf/index.js
-- [ ] docs/types/text/known/sqitch-conf/renderer.js
-- [ ] docs/types/text/known/sql-query/index.js
-- [ ] docs/types/text/known/sql-query/renderer.js
-- [ ] docs/types/text/known/squid-conf/index.js
-- [ ] docs/types/text/known/squid-conf/renderer.js
-- [ ] docs/types/text/known/squirrel-lang/index.js
-- [ ] docs/types/text/known/squirrel-lang/renderer.js
-- [ ] docs/types/text/known/ssh-config/index.js
-- [ ] docs/types/text/known/ssh-config/renderer.js
-- [ ] docs/types/text/known/ssh-known-hosts/index.js
-- [ ] docs/types/text/known/ssh-known-hosts/renderer.js
-- [ ] docs/types/text/known/sshd-config/index.js
-- [ ] docs/types/text/known/sshd-config/renderer.js
-- [ ] docs/types/text/known/sssd-conf/index.js
-- [ ] docs/types/text/known/sssd-conf/renderer.js
-- [ ] docs/types/text/known/stata-do/index.js
-- [ ] docs/types/text/known/stata-do/renderer.js
+- [x] docs/types/text/known/prettierignore/index.js
+- [x] docs/types/text/known/prettierignore/renderer.js
+- [x] docs/types/text/known/prisma-schema/index.js
+- [x] docs/types/text/known/prisma-schema/renderer.js
+- [x] docs/types/text/known/procfile/index.js
+- [x] docs/types/text/known/procfile/renderer.js
+- [x] docs/types/text/known/proftpd-conf/index.js
+- [x] docs/types/text/known/proftpd-conf/renderer.js
+- [x] docs/types/text/known/proguard-rules/index.js
+- [x] docs/types/text/known/proguard-rules/renderer.js
+- [x] docs/types/text/known/project-clj/index.js
+- [x] docs/types/text/known/project-clj/renderer.js
+- [x] docs/types/text/known/prolog-lang/index.js
+- [x] docs/types/text/known/prolog-lang/renderer.js
+- [x] docs/types/text/known/promela/index.js
+- [x] docs/types/text/known/promela/renderer.js
+- [x] docs/types/text/known/pug-template/index.js
+- [x] docs/types/text/known/pug-template/renderer.js
+- [x] docs/types/text/known/pulsar-conf/index.js
+- [x] docs/types/text/known/pulsar-conf/renderer.js
+- [x] docs/types/text/known/pulseaudio-conf/index.js
+- [x] docs/types/text/known/pulseaudio-conf/renderer.js
+- [x] docs/types/text/known/puma-config/index.js
+- [x] docs/types/text/known/puma-config/renderer.js
+- [x] docs/types/text/known/purescript-lang/index.js
+- [x] docs/types/text/known/purescript-lang/renderer.js
+- [x] docs/types/text/known/pytest-ini/index.js
+- [x] docs/types/text/known/pytest-ini/renderer.js
+- [x] docs/types/text/known/python-version/index.js
+- [x] docs/types/text/known/python-version/renderer.js
+- [x] docs/types/text/known/r-description/index.js
+- [x] docs/types/text/known/r-description/renderer.js
+- [x] docs/types/text/known/r-lang/index.js
+- [x] docs/types/text/known/r-lang/renderer.js
+- [x] docs/types/text/known/r-profile/index.js
+- [x] docs/types/text/known/r-profile/renderer.js
+- [x] docs/types/text/known/rabbitmq-conf/index.js
+- [x] docs/types/text/known/rabbitmq-conf/renderer.js
+- [x] docs/types/text/known/racket-lang/index.js
+- [x] docs/types/text/known/racket-lang/renderer.js
+- [x] docs/types/text/known/rallly-config/index.js
+- [x] docs/types/text/known/rallly-config/renderer.js
+- [x] docs/types/text/known/ranger-conf/index.js
+- [x] docs/types/text/known/ranger-conf/renderer.js
+- [x] docs/types/text/known/rclone-conf/index.js
+- [x] docs/types/text/known/rclone-conf/renderer.js
+- [x] docs/types/text/known/rdp-config/index.js
+- [x] docs/types/text/known/rdp-config/renderer.js
+- [x] docs/types/text/known/react-native-config/index.js
+- [x] docs/types/text/known/react-native-config/renderer.js
+- [x] docs/types/text/known/reason-lang/index.js
+- [x] docs/types/text/known/reason-lang/renderer.js
+- [x] docs/types/text/known/rebar-config/index.js
+- [x] docs/types/text/known/rebar-config/renderer.js
+- [x] docs/types/text/known/rector-config/index.js
+- [x] docs/types/text/known/rector-config/renderer.js
+- [x] docs/types/text/known/red-lang/index.js
+- [x] docs/types/text/known/red-lang/renderer.js
+- [x] docs/types/text/known/redirects/index.js
+- [x] docs/types/text/known/redirects/renderer.js
+- [x] docs/types/text/known/redis-conf/index.js
+- [x] docs/types/text/known/redis-conf/renderer.js
+- [x] docs/types/text/known/redis-sentinel/index.js
+- [x] docs/types/text/known/redis-sentinel/renderer.js
+- [x] docs/types/text/known/rego-policy/index.js
+- [x] docs/types/text/known/rego-policy/renderer.js
+- [x] docs/types/text/known/remix-config/index.js
+- [x] docs/types/text/known/remix-config/renderer.js
+- [x] docs/types/text/known/requirements-txt/index.js
+- [x] docs/types/text/known/requirements-txt/metadata.js
+- [x] docs/types/text/known/requirements-txt/parse.js
+- [x] docs/types/text/known/requirements-txt/render.js
+- [x] docs/types/text/known/rescript-lang/index.js
+- [x] docs/types/text/known/rescript-lang/renderer.js
+- [x] docs/types/text/known/resolv-conf/index.js
+- [x] docs/types/text/known/resolv-conf/renderer.js
+- [x] docs/types/text/known/restic-config/index.js
+- [x] docs/types/text/known/restic-config/renderer.js
+- [x] docs/types/text/known/restructuredtext/index.js
+- [x] docs/types/text/known/restructuredtext/renderer.js
+- [x] docs/types/text/known/robots-txt/index.js
+- [x] docs/types/text/known/robots-txt/renderer.js
+- [x] docs/types/text/known/rofi-config/index.js
+- [x] docs/types/text/known/rofi-config/renderer.js
+- [x] docs/types/text/known/rollup-config/index.js
+- [x] docs/types/text/known/rollup-config/renderer.js
+- [x] docs/types/text/known/rpm-spec/index.js
+- [x] docs/types/text/known/rpm-spec/renderer.js
+- [x] docs/types/text/known/rspack-config/index.js
+- [x] docs/types/text/known/rspack-config/renderer.js
+- [x] docs/types/text/known/rspec-config/index.js
+- [x] docs/types/text/known/rspec-config/renderer.js
+- [x] docs/types/text/known/rsyslog-conf/index.js
+- [x] docs/types/text/known/rsyslog-conf/renderer.js
+- [x] docs/types/text/known/ruby-lang/index.js
+- [x] docs/types/text/known/ruby-lang/renderer.js
+- [x] docs/types/text/known/ruby-version/index.js
+- [x] docs/types/text/known/ruby-version/renderer.js
+- [x] docs/types/text/known/scala-lang/index.js
+- [x] docs/types/text/known/scala-lang/renderer.js
+- [x] docs/types/text/known/scalafix-conf/index.js
+- [x] docs/types/text/known/scalafix-conf/renderer.js
+- [x] docs/types/text/known/scalafmt-conf/index.js
+- [x] docs/types/text/known/scalafmt-conf/renderer.js
+- [x] docs/types/text/known/scheme-lang/index.js
+- [x] docs/types/text/known/scheme-lang/renderer.js
+- [x] docs/types/text/known/screenrc/index.js
+- [x] docs/types/text/known/screenrc/renderer.js
+- [x] docs/types/text/known/security-txt/index.js
+- [x] docs/types/text/known/security-txt/renderer.js
+- [x] docs/types/text/known/sed-script/index.js
+- [x] docs/types/text/known/sed-script/renderer.js
+- [x] docs/types/text/known/sentry-props/index.js
+- [x] docs/types/text/known/sentry-props/renderer.js
+- [x] docs/types/text/known/settings-gradle/index.js
+- [x] docs/types/text/known/settings-gradle/renderer.js
+- [x] docs/types/text/known/shadow-cljs/index.js
+- [x] docs/types/text/known/shadow-cljs/renderer.js
+- [x] docs/types/text/known/shell-rc/index.js
+- [x] docs/types/text/known/shell-rc/renderer.js
+- [x] docs/types/text/known/smb-conf/index.js
+- [x] docs/types/text/known/smb-conf/renderer.js
+- [x] docs/types/text/known/sml-lang/index.js
+- [x] docs/types/text/known/sml-lang/renderer.js
+- [x] docs/types/text/known/smtlib/index.js
+- [x] docs/types/text/known/smtlib/renderer.js
+- [x] docs/types/text/known/snapcraft-yaml/index.js
+- [x] docs/types/text/known/snapcraft-yaml/renderer.js
+- [x] docs/types/text/known/snapfile/index.js
+- [x] docs/types/text/known/snapfile/renderer.js
+- [x] docs/types/text/known/snyk-config/index.js
+- [x] docs/types/text/known/snyk-config/renderer.js
+- [x] docs/types/text/known/solidity-lang/index.js
+- [x] docs/types/text/known/solidity-lang/renderer.js
+- [x] docs/types/text/known/sonar/index.js
+- [x] docs/types/text/known/sonar/renderer.js
+- [x] docs/types/text/known/sonarqube-config/index.js
+- [x] docs/types/text/known/sonarqube-config/renderer.js
+- [x] docs/types/text/known/sorbet-config/index.js
+- [x] docs/types/text/known/sorbet-config/renderer.js
+- [x] docs/types/text/known/sparql-query/index.js
+- [x] docs/types/text/known/sparql-query/renderer.js
+- [x] docs/types/text/known/spdx-sbom/index.js
+- [x] docs/types/text/known/spdx-sbom/renderer.js
+- [x] docs/types/text/known/speedtest-tracker-config/index.js
+- [x] docs/types/text/known/speedtest-tracker-config/renderer.js
+- [x] docs/types/text/known/sphinx-conf/index.js
+- [x] docs/types/text/known/sphinx-conf/renderer.js
+- [x] docs/types/text/known/spring-app/index.js
+- [x] docs/types/text/known/spring-app/renderer.js
+- [x] docs/types/text/known/sqitch-conf/index.js
+- [x] docs/types/text/known/sqitch-conf/renderer.js
+- [x] docs/types/text/known/sql-query/index.js
+- [x] docs/types/text/known/sql-query/renderer.js
+- [x] docs/types/text/known/squid-conf/index.js
+- [x] docs/types/text/known/squid-conf/renderer.js
+- [x] docs/types/text/known/squirrel-lang/index.js
+- [x] docs/types/text/known/squirrel-lang/renderer.js
+- [x] docs/types/text/known/ssh-config/index.js
+- [x] docs/types/text/known/ssh-config/renderer.js
+- [x] docs/types/text/known/ssh-known-hosts/index.js
+- [x] docs/types/text/known/ssh-known-hosts/renderer.js
+- [x] docs/types/text/known/sshd-config/index.js
+- [x] docs/types/text/known/sshd-config/renderer.js
+- [x] docs/types/text/known/sssd-conf/index.js
+- [x] docs/types/text/known/sssd-conf/renderer.js
+- [x] docs/types/text/known/stata-do/index.js
+- [x] docs/types/text/known/stata-do/renderer.js
 - [ ] docs/types/text/known/steam-acf/index.js
 - [ ] docs/types/text/known/steam-acf/renderer.js
 - [ ] docs/types/text/known/stunnel-conf/index.js
@@ -3700,89 +3700,89 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/postfix-main
 - [ ] docs/types/text/known/postgresql-conf
 - [ ] docs/types/text/known/powershell-lang
-- [ ] docs/types/text/known/prettierignore
-- [ ] docs/types/text/known/prisma-schema
-- [ ] docs/types/text/known/procfile
-- [ ] docs/types/text/known/proftpd-conf
-- [ ] docs/types/text/known/proguard-rules
-- [ ] docs/types/text/known/project-clj
-- [ ] docs/types/text/known/prolog-lang
-- [ ] docs/types/text/known/promela
-- [ ] docs/types/text/known/pug-template
-- [ ] docs/types/text/known/pulsar-conf
-- [ ] docs/types/text/known/pulseaudio-conf
-- [ ] docs/types/text/known/puma-config
-- [ ] docs/types/text/known/purescript-lang
-- [ ] docs/types/text/known/pytest-ini
-- [ ] docs/types/text/known/python-version
-- [ ] docs/types/text/known/r-description
-- [ ] docs/types/text/known/r-lang
-- [ ] docs/types/text/known/r-profile
-- [ ] docs/types/text/known/rabbitmq-conf
-- [ ] docs/types/text/known/racket-lang
-- [ ] docs/types/text/known/rallly-config
-- [ ] docs/types/text/known/ranger-conf
-- [ ] docs/types/text/known/rclone-conf
-- [ ] docs/types/text/known/rdp-config
-- [ ] docs/types/text/known/react-native-config
-- [ ] docs/types/text/known/reason-lang
-- [ ] docs/types/text/known/rebar-config
-- [ ] docs/types/text/known/rector-config
-- [ ] docs/types/text/known/red-lang
-- [ ] docs/types/text/known/redirects
-- [ ] docs/types/text/known/redis-conf
-- [ ] docs/types/text/known/redis-sentinel
-- [ ] docs/types/text/known/rego-policy
-- [ ] docs/types/text/known/remix-config
-- [ ] docs/types/text/known/requirements-txt
-- [ ] docs/types/text/known/rescript-lang
-- [ ] docs/types/text/known/resolv-conf
-- [ ] docs/types/text/known/restic-config
-- [ ] docs/types/text/known/restructuredtext
-- [ ] docs/types/text/known/robots-txt
-- [ ] docs/types/text/known/rofi-config
-- [ ] docs/types/text/known/rollup-config
-- [ ] docs/types/text/known/rpm-spec
-- [ ] docs/types/text/known/rspack-config
-- [ ] docs/types/text/known/rspec-config
-- [ ] docs/types/text/known/rsyslog-conf
-- [ ] docs/types/text/known/ruby-lang
-- [ ] docs/types/text/known/ruby-version
-- [ ] docs/types/text/known/scala-lang
-- [ ] docs/types/text/known/scalafix-conf
-- [ ] docs/types/text/known/scalafmt-conf
-- [ ] docs/types/text/known/scheme-lang
-- [ ] docs/types/text/known/screenrc
-- [ ] docs/types/text/known/security-txt
-- [ ] docs/types/text/known/sed-script
-- [ ] docs/types/text/known/sentry-props
-- [ ] docs/types/text/known/settings-gradle
-- [ ] docs/types/text/known/shadow-cljs
-- [ ] docs/types/text/known/shell-rc
-- [ ] docs/types/text/known/smb-conf
-- [ ] docs/types/text/known/sml-lang
-- [ ] docs/types/text/known/smtlib
-- [ ] docs/types/text/known/snapcraft-yaml
-- [ ] docs/types/text/known/snapfile
-- [ ] docs/types/text/known/snyk-config
-- [ ] docs/types/text/known/solidity-lang
-- [ ] docs/types/text/known/sonar
-- [ ] docs/types/text/known/sonarqube-config
-- [ ] docs/types/text/known/sorbet-config
-- [ ] docs/types/text/known/sparql-query
-- [ ] docs/types/text/known/spdx-sbom
-- [ ] docs/types/text/known/speedtest-tracker-config
-- [ ] docs/types/text/known/sphinx-conf
-- [ ] docs/types/text/known/spring-app
-- [ ] docs/types/text/known/sqitch-conf
-- [ ] docs/types/text/known/sql-query
-- [ ] docs/types/text/known/squid-conf
-- [ ] docs/types/text/known/squirrel-lang
-- [ ] docs/types/text/known/ssh-config
-- [ ] docs/types/text/known/ssh-known-hosts
-- [ ] docs/types/text/known/sshd-config
-- [ ] docs/types/text/known/sssd-conf
-- [ ] docs/types/text/known/stata-do
+- [x] docs/types/text/known/prettierignore
+- [x] docs/types/text/known/prisma-schema
+- [x] docs/types/text/known/procfile
+- [x] docs/types/text/known/proftpd-conf
+- [x] docs/types/text/known/proguard-rules
+- [x] docs/types/text/known/project-clj
+- [x] docs/types/text/known/prolog-lang
+- [x] docs/types/text/known/promela
+- [x] docs/types/text/known/pug-template
+- [x] docs/types/text/known/pulsar-conf
+- [x] docs/types/text/known/pulseaudio-conf
+- [x] docs/types/text/known/puma-config
+- [x] docs/types/text/known/purescript-lang
+- [x] docs/types/text/known/pytest-ini
+- [x] docs/types/text/known/python-version
+- [x] docs/types/text/known/r-description
+- [x] docs/types/text/known/r-lang
+- [x] docs/types/text/known/r-profile
+- [x] docs/types/text/known/rabbitmq-conf
+- [x] docs/types/text/known/racket-lang
+- [x] docs/types/text/known/rallly-config
+- [x] docs/types/text/known/ranger-conf
+- [x] docs/types/text/known/rclone-conf
+- [x] docs/types/text/known/rdp-config
+- [x] docs/types/text/known/react-native-config
+- [x] docs/types/text/known/reason-lang
+- [x] docs/types/text/known/rebar-config
+- [x] docs/types/text/known/rector-config
+- [x] docs/types/text/known/red-lang
+- [x] docs/types/text/known/redirects
+- [x] docs/types/text/known/redis-conf
+- [x] docs/types/text/known/redis-sentinel
+- [x] docs/types/text/known/rego-policy
+- [x] docs/types/text/known/remix-config
+- [x] docs/types/text/known/requirements-txt
+- [x] docs/types/text/known/rescript-lang
+- [x] docs/types/text/known/resolv-conf
+- [x] docs/types/text/known/restic-config
+- [x] docs/types/text/known/restructuredtext
+- [x] docs/types/text/known/robots-txt
+- [x] docs/types/text/known/rofi-config
+- [x] docs/types/text/known/rollup-config
+- [x] docs/types/text/known/rpm-spec
+- [x] docs/types/text/known/rspack-config
+- [x] docs/types/text/known/rspec-config
+- [x] docs/types/text/known/rsyslog-conf
+- [x] docs/types/text/known/ruby-lang
+- [x] docs/types/text/known/ruby-version
+- [x] docs/types/text/known/scala-lang
+- [x] docs/types/text/known/scalafix-conf
+- [x] docs/types/text/known/scalafmt-conf
+- [x] docs/types/text/known/scheme-lang
+- [x] docs/types/text/known/screenrc
+- [x] docs/types/text/known/security-txt
+- [x] docs/types/text/known/sed-script
+- [x] docs/types/text/known/sentry-props
+- [x] docs/types/text/known/settings-gradle
+- [x] docs/types/text/known/shadow-cljs
+- [x] docs/types/text/known/shell-rc
+- [x] docs/types/text/known/smb-conf
+- [x] docs/types/text/known/sml-lang
+- [x] docs/types/text/known/smtlib
+- [x] docs/types/text/known/snapcraft-yaml
+- [x] docs/types/text/known/snapfile
+- [x] docs/types/text/known/snyk-config
+- [x] docs/types/text/known/solidity-lang
+- [x] docs/types/text/known/sonar
+- [x] docs/types/text/known/sonarqube-config
+- [x] docs/types/text/known/sorbet-config
+- [x] docs/types/text/known/sparql-query
+- [x] docs/types/text/known/spdx-sbom
+- [x] docs/types/text/known/speedtest-tracker-config
+- [x] docs/types/text/known/sphinx-conf
+- [x] docs/types/text/known/spring-app
+- [x] docs/types/text/known/sqitch-conf
+- [x] docs/types/text/known/sql-query
+- [x] docs/types/text/known/squid-conf
+- [x] docs/types/text/known/squirrel-lang
+- [x] docs/types/text/known/ssh-config
+- [x] docs/types/text/known/ssh-known-hosts
+- [x] docs/types/text/known/sshd-config
+- [x] docs/types/text/known/sssd-conf
+- [x] docs/types/text/known/stata-do
 - [ ] docs/types/text/known/steam-acf
 - [ ] docs/types/text/known/stunnel-conf
 - [ ] docs/types/text/known/sudoers

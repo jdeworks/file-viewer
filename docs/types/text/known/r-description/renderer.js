@@ -1,4 +1,5 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const safeHref = (u) => { try { const url = new URL(u, 'https://x.invalid'); return /^https?:$/.test(url.protocol) ? u : null; } catch { return null; } };
 
 const CSS = `
 .rdesc-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f)}
@@ -114,7 +115,10 @@ export function render(intake) {
     const urls = url.split(/[\s,]+/).filter(Boolean);
     html += `<div class="rdesc-sec"><h3>URL${urls.length > 1 ? 's' : ''}</h3>`;
     for (const u of urls) {
-      html += `<div><a class="rdesc-url" href="${esc(u)}" target="_blank" rel="noopener">${esc(u)}</a></div>`;
+      const href = safeHref(u);
+      html += href
+        ? `<div><a class="rdesc-url" href="${esc(href)}" target="_blank" rel="noopener">${esc(u)}</a></div>`
+        : `<div><span class="rdesc-url">${esc(u)}</span></div>`;
     }
     html += `</div>`;
   }
