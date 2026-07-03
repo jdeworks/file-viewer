@@ -126,8 +126,11 @@ return detect;
 })();
 
 const detect_hl7=(()=>{
-// HL7 v2.x messages start with MSH segment using pipe delimiter
-const MSH_RE = /^MSH\|[\^~\\&]\|/m;
+// HL7 v2.x messages start with MSH segment using pipe delimiter, followed by the
+// (usually 4-char) encoding-characters field, e.g. `MSH|^~\&|...`. Use `+` so the
+// whole encoding-characters run is consumed, not just its first character — a bare
+// (unquantified) class here never matches real MSH headers.
+const MSH_RE = /^MSH\|[\^~\\&]+\|/m;
 
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -145,7 +148,11 @@ function detect(intake) {
   if (intake.isBinary) return 0;
   if (hasExtension(intake, 'h2song', 'h2pattern', 'h2drumkit')) return 0.9;
   const t = intake.textSample || '';
-  if (/<hydrogen_drumkit>/i.test(t) || /<song version="[^"]*hydrogen/i.test(t)) return 0.97;
+  // `[^"]*` stops at the closing quote of the `version` attribute value, so it can
+  // never reach the "hydrogen" that actually shows up later in the tag (e.g. the
+  // hydrogen-music.org xsi:noNamespaceSchemaLocation URL) — real .h2song files never
+  // matched this branch. Use `[^>]*` to scan the whole opening tag instead.
+  if (/<hydrogen_drumkit>/i.test(t) || /<song[^>]*hydrogen/i.test(t)) return 0.97;
   return 0;
 }
 return detect;

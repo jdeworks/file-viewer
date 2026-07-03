@@ -1,7 +1,10 @@
 import { hasExtension } from '../../../core/detect.js';
 
-// HL7 v2.x messages start with MSH segment using pipe delimiter
-const MSH_RE = /^MSH\|[\^~\\&]\|/m;
+// HL7 v2.x messages start with MSH segment using pipe delimiter, followed by the
+// (usually 4-char) encoding-characters field, e.g. `MSH|^~\&|...`. Use `+` so the
+// whole encoding-characters run is consumed, not just its first character — a bare
+// (unquantified) class here never matches real MSH headers.
+const MSH_RE = /^MSH\|[\^~\\&]+\|/m;
 
 export function detect(intake) {
   if (intake.isBinary) return 0;

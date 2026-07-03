@@ -1149,23 +1149,23 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/guitar-pro/metadata.js
 - [x] docs/types/text/guitar-pro/renderer.js
 - [x] docs/types/text/guitar-pro/settings.default.json
-- [ ] docs/types/text/har/detect.js
-- [ ] docs/types/text/har/EDITOR.md
-- [ ] docs/types/text/har/index.js
-- [ ] docs/types/text/har/metadata.js
-- [ ] docs/types/text/har/renderer.js
-- [ ] docs/types/text/har/settings.default.json
-- [ ] docs/types/text/hl7/detect.js
-- [ ] docs/types/text/hl7/EDITOR.md
-- [ ] docs/types/text/hl7/index.js
-- [ ] docs/types/text/hl7/metadata.js
-- [ ] docs/types/text/hl7/renderer.js
-- [ ] docs/types/text/hl7/settings.default.json
-- [ ] docs/types/text/hydrogen/detect.js
-- [ ] docs/types/text/hydrogen/index.js
-- [ ] docs/types/text/hydrogen/metadata.js
-- [ ] docs/types/text/hydrogen/renderer.js
-- [ ] docs/types/text/hydrogen/settings.default.json
+- [x] docs/types/text/har/detect.js
+- [x] docs/types/text/har/EDITOR.md
+- [x] docs/types/text/har/index.js
+- [x] docs/types/text/har/metadata.js
+- [x] docs/types/text/har/renderer.js
+- [x] docs/types/text/har/settings.default.json
+- [x] docs/types/text/hl7/detect.js
+- [x] docs/types/text/hl7/EDITOR.md
+- [x] docs/types/text/hl7/index.js
+- [x] docs/types/text/hl7/metadata.js
+- [x] docs/types/text/hl7/renderer.js
+- [x] docs/types/text/hl7/settings.default.json
+- [x] docs/types/text/hydrogen/detect.js
+- [x] docs/types/text/hydrogen/index.js
+- [x] docs/types/text/hydrogen/metadata.js
+- [x] docs/types/text/hydrogen/renderer.js
+- [x] docs/types/text/hydrogen/settings.default.json
 - [ ] docs/types/text/ini/detect.js
 - [ ] docs/types/text/ini/EDITOR.md
 - [ ] docs/types/text/ini/exports.js
