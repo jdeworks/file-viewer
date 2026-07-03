@@ -137,10 +137,12 @@ export function render(intake) {
     makeSectionHtml('Anti-spam restrictions', antispamRows),
   ].filter(Boolean).join('');
 
+  const filename = (intake.name || intake.filename || '').split('/').pop() || 'postfix.conf';
+
   const host = document.createElement('div');
   host.className = 'postfixcfg-doc';
   host.innerHTML = `<style>${CSS}</style>
-<div class="postfixcfg-title"><span class="postfixcfg-badge">Postfix</span>main.cf${tlsChipHtml}</div>
+<div class="postfixcfg-title"><span class="postfixcfg-badge">Postfix</span>${esc(filename)}${tlsChipHtml}</div>
 <div class="postfixcfg-sub">Postfix mail server configuration${hostname ? ' · ' + esc(hostname) : ''} · ${totalParams} parameter${totalParams !== 1 ? 's' : ''}${saslEnabled ? ' · SASL auth enabled' : ''}</div>
 ${sections || '<p class="postfixcfg-empty">No parameters found.</p>'}`;
 

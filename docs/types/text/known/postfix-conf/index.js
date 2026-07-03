@@ -3,10 +3,11 @@ export default {
   label: 'Postfix Config',
   match(intake) {
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
-    const text = intake.textSample || intake.text || '';
-    if (n === 'main.cf' && text.includes('myhostname')) return true;
-    if (n === 'master.cf' && text.includes('smtp') && text.includes('pickup')) return true;
-    if (n === 'postfix.conf' || n === 'postfix-main.cf') return true;
+    // main.cf / master.cf / postfix-*.cf are all handled (more completely — it also parses
+    // master.cf's tabular service format and redacts password keys) by the postfix-main
+    // plugin, which is registered first and always wins those filenames; only claim the
+    // `postfix.conf` name here, which postfix-main's `.cf`-only rules don't cover.
+    if (n === 'postfix.conf') return true;
     return false;
   },
   loadRenderer: () => import('./renderer.js'),

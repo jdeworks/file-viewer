@@ -2,10 +2,8 @@
 // Detects: plugin manager, key mappings, colorscheme, vim.opt settings.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-function tag(text, color) {
-  return color
-    ? '<span class="kf-tag" style="background:' + color + ';color:#fff">' + esc(text) + '</span>'
-    : '<span class="kf-tag">' + esc(text) + '</span>';
+function tag(text) {
+  return '<span class="kf-tag">' + esc(text) + '</span>';
 }
 
 function detectPluginManager(text) {
