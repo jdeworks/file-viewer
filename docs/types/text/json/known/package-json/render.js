@@ -5,6 +5,13 @@ import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, 
 
 const npmUrl = (name) => 'https://www.npmjs.com/package/' + name.split('/').map(encodeURIComponent).join('/');
 
+/** Reject javascript:/data: etc — package.json fields (homepage, bugs.url) are untrusted and
+ * must never become an executable href when the user clicks the rendered link. */
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
+
 const CSS = `
 .pj-review-list{margin:0;padding:0;list-style:none;border:1px solid var(--border,#e0e0e0);border-radius:8px;overflow:hidden}
 .pj-review-list li{padding:6px 14px;border-bottom:1px solid var(--border,#eaecf0);display:flex;gap:7px;align-items:baseline;flex-wrap:wrap;font-size:12px}
@@ -112,10 +119,12 @@ export async function render(intake, _ctx) {
 
 function linkNodes(pkg) {
   const links = [];
-  if (pkg.homepage) links.push(extNode(pkg.homepage, 'Homepage'));
+  const homepage = safeHref(pkg.homepage);
+  if (homepage) links.push(extNode(homepage, 'Homepage'));
   const repo = repoUrl(pkg.repository);
   if (repo) links.push(extNode(repo, 'Repository'));
-  if (pkg.bugs) links.push(extNode(typeof pkg.bugs === 'string' ? pkg.bugs : pkg.bugs.url, 'Issues'));
+  const bugsUrl = safeHref(typeof pkg.bugs === 'string' ? pkg.bugs : pkg.bugs && pkg.bugs.url);
+  if (bugsUrl) links.push(extNode(bugsUrl, 'Issues'));
   if (pkg.name) links.push(extNode(npmUrl(pkg.name), 'View on npm'));
   return links;
 }

@@ -46,7 +46,7 @@ export function render(intake) {
 
   const settingsHtml = `<div class="vt-kv">
     <span class="vt-k">environment</span><span class="vt-v">${esc(env)}</span>
-    ${globals != null ? `<span class="vt-k">globals</span><span class="vt-v">${globals}</span>` : ''}
+    ${globals != null ? `<span class="vt-k">globals</span><span class="vt-v">${esc(globals)}</span>` : ''}
     ${testTimeout != null ? `<span class="vt-k">testTimeout</span><span class="vt-v">${esc(testTimeout)}ms</span>` : ''}
     ${coverageProvider ? `<span class="vt-k">coverage.provider</span><span class="vt-v">${esc(coverageProvider)}</span>` : ''}
   </div>`;

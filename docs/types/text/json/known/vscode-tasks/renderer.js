@@ -35,7 +35,7 @@ export function render(intake) {
       <td><span class="vsc-task-label">${esc(t.label || t.taskName || '?')}</span>${isDefault ? '<span class="vsc-task-default">default</span>' : ''}</td>
       <td><span class="vsc-task-type">${esc(t.type || '?')}</span></td>
       <td><span class="vsc-mono">${esc(cmd || '—')}</span></td>
-      <td><span class="vsc-task-group ${group}">${esc(group)}</span></td>
+      <td><span class="vsc-task-group ${esc(group)}">${esc(group)}</span></td>
     </tr>`;
   }).join('');
 

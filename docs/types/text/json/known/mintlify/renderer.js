@@ -20,6 +20,17 @@ const CSS = `
 .mfy-page{font-size:12px;padding:2px 0 2px 14px;color:var(--fg-2,#555);font-family:ui-monospace,monospace}
 `;
 
+/** Only allow hex/rgb/hsl/named CSS colors as a style value — rejects url(), expression(), etc. so an
+ * off-origin-triggering value in config JSON can never reach an inline style attribute. */
+function safeCssColor(v) {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(s)) return s;
+  if (/^(rgba?|hsla?)\(\s*[\d.]+%?\s*(,\s*[\d.]+%?\s*){2,3}(,\s*[\d.]+\s*)?\)$/i.test(s)) return s;
+  if (/^[a-z]+$/i.test(s)) return s;
+  return null;
+}
+
 function countPages(navArr) {
   let count = 0;
   function walk(v) {
@@ -81,9 +92,9 @@ export function render(intake) {
     logoLight ? `<div class="mfy-kv"><span class="mfy-kv-k">Logo (light)</span><span class="mfy-kv-v">${esc(logoLight)}</span></div>` : '',
     logoDark ? `<div class="mfy-kv"><span class="mfy-kv-k">Logo (dark)</span><span class="mfy-kv-v">${esc(logoDark)}</span></div>` : '',
     favicon ? `<div class="mfy-kv"><span class="mfy-kv-k">Favicon</span><span class="mfy-kv-v">${esc(favicon)}</span></div>` : '',
-    primaryColor ? `<div class="mfy-kv"><span class="mfy-kv-k">Primary color</span><span class="mfy-kv-v"><span class="mfy-color" style="background:${esc(primaryColor)}"></span>${esc(primaryColor)}</span></div>` : '',
-    colors.light ? `<div class="mfy-kv"><span class="mfy-kv-k">Light bg</span><span class="mfy-kv-v"><span class="mfy-color" style="background:${esc(colors.light)}"></span>${esc(colors.light)}</span></div>` : '',
-    colors.dark ? `<div class="mfy-kv"><span class="mfy-kv-k">Dark bg</span><span class="mfy-kv-v"><span class="mfy-color" style="background:${esc(colors.dark)}"></span>${esc(colors.dark)}</span></div>` : '',
+    primaryColor ? `<div class="mfy-kv"><span class="mfy-kv-k">Primary color</span><span class="mfy-kv-v">${safeCssColor(primaryColor) ? `<span class="mfy-color" style="background:${safeCssColor(primaryColor)}"></span>` : ''}${esc(primaryColor)}</span></div>` : '',
+    colors.light ? `<div class="mfy-kv"><span class="mfy-kv-k">Light bg</span><span class="mfy-kv-v">${safeCssColor(colors.light) ? `<span class="mfy-color" style="background:${safeCssColor(colors.light)}"></span>` : ''}${esc(colors.light)}</span></div>` : '',
+    colors.dark ? `<div class="mfy-kv"><span class="mfy-kv-k">Dark bg</span><span class="mfy-kv-v">${safeCssColor(colors.dark) ? `<span class="mfy-color" style="background:${safeCssColor(colors.dark)}"></span>` : ''}${esc(colors.dark)}</span></div>` : '',
   ].filter(Boolean).join('');
   const brandingHtml = brandingRows
     ? `<div class="mfy-sec"><h3>Branding</h3><div class="mfy-card">${brandingRows}</div></div>`

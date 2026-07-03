@@ -67,8 +67,13 @@ export function render(intake) {
     ? (cfg.IfaceBlacklist || cfg.iface_blacklist || cfg.ifaceBlacklist)
     : [];
 
+  let managementHost = '';
+  if (managementUrl) {
+    try { managementHost = new URL(managementUrl).hostname; } catch { managementHost = managementUrl; }
+  }
+
   const subParts = [
-    managementUrl ? new URL(managementUrl).hostname : '',
+    managementHost,
     wgIface || '',
     ipAddress || '',
   ].filter(Boolean);

@@ -283,8 +283,13 @@ function registryLink(name, resolved) {
 
 function packageUrl(name, resolved) {
   if (/registry\.npmjs\.org/i.test(resolved || '')) return 'https://www.npmjs.com/package/' + encodeURIComponent(name);
-  try { return new URL(resolved).href; }
-  catch { return 'https://www.npmjs.com/package/' + encodeURIComponent(name); }
+  // "resolved" is untrusted lockfile content — only accept http(s) so a crafted
+  // "javascript:" or "data:" value can never reach the <a href> below.
+  try {
+    const u = new URL(resolved);
+    if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
+  } catch { /* fall through to npm URL */ }
+  return 'https://www.npmjs.com/package/' + encodeURIComponent(name);
 }
 
 function versionLabel(version) {

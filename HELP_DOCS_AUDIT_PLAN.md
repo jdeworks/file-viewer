@@ -1311,104 +1311,104 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/json/known/lighthouserc/renderer.js
 - [ ] docs/types/text/json/known/lint-staged/index.js
 - [ ] docs/types/text/json/known/lint-staged/renderer.js
-- [ ] docs/types/text/json/known/markdownlint/index.js
-- [ ] docs/types/text/json/known/markdownlint/renderer.js
-- [ ] docs/types/text/json/known/mattermost-config/index.js
-- [ ] docs/types/text/json/known/mattermost-config/renderer.js
-- [ ] docs/types/text/json/known/mcp-config/index.js
-- [ ] docs/types/text/json/known/mcp-config/renderer.js
-- [ ] docs/types/text/json/known/mintlify/index.js
-- [ ] docs/types/text/json/known/mintlify/renderer.js
-- [ ] docs/types/text/json/known/mocha/index.js
-- [ ] docs/types/text/json/known/mocha/renderer.js
-- [ ] docs/types/text/json/known/ncurc/index.js
-- [ ] docs/types/text/json/known/ncurc/renderer.js
-- [ ] docs/types/text/json/known/nest-cli/index.js
-- [ ] docs/types/text/json/known/nest-cli/renderer.js
-- [ ] docs/types/text/json/known/netbird-config/index.js
-- [ ] docs/types/text/json/known/netbird-config/renderer.js
-- [ ] docs/types/text/json/known/nx/index.js
-- [ ] docs/types/text/json/known/nx/renderer.js
-- [ ] docs/types/text/json/known/nycrc/index.js
-- [ ] docs/types/text/json/known/nycrc/renderer.js
-- [ ] docs/types/text/json/known/overseerr-config/index.js
-- [ ] docs/types/text/json/known/overseerr-config/renderer.js
-- [ ] docs/types/text/json/known/package-json/index.js
-- [ ] docs/types/text/json/known/package-json/metadata.js
-- [ ] docs/types/text/json/known/package-json/render.js
-- [ ] docs/types/text/json/known/package-lock/index.js
-- [ ] docs/types/text/json/known/package-lock/renderer.js
-- [ ] docs/types/text/json/known/package-resolved/index.js
-- [ ] docs/types/text/json/known/package-resolved/renderer.js
-- [ ] docs/types/text/json/known/packer/index.js
-- [ ] docs/types/text/json/known/packer/renderer.js
-- [ ] docs/types/text/json/known/parcelrc/index.js
-- [ ] docs/types/text/json/known/parcelrc/renderer.js
-- [ ] docs/types/text/json/known/postcss/index.js
-- [ ] docs/types/text/json/known/postcss/renderer.js
-- [ ] docs/types/text/json/known/postman-collection/index.js
-- [ ] docs/types/text/json/known/postman-collection/renderer.js
-- [ ] docs/types/text/json/known/prettierrc/index.js
-- [ ] docs/types/text/json/known/prettierrc/renderer.js
-- [ ] docs/types/text/json/known/pyrightconfig/index.js
-- [ ] docs/types/text/json/known/pyrightconfig/renderer.js
-- [ ] docs/types/text/json/known/railway-json/index.js
-- [ ] docs/types/text/json/known/railway-json/renderer.js
-- [ ] docs/types/text/json/known/release-please-config/index.js
-- [ ] docs/types/text/json/known/release-please-config/renderer.js
-- [ ] docs/types/text/json/known/releaserc/index.js
-- [ ] docs/types/text/json/known/releaserc/renderer.js
-- [ ] docs/types/text/json/known/renovate/index.js
-- [ ] docs/types/text/json/known/renovate/renderer.js
-- [ ] docs/types/text/json/known/rush/index.js
-- [ ] docs/types/text/json/known/rush/renderer.js
-- [ ] docs/types/text/json/known/semaphore-config/index.js
-- [ ] docs/types/text/json/known/semaphore-config/renderer.js
-- [ ] docs/types/text/json/known/sftpgo-config/index.js
-- [ ] docs/types/text/json/known/sftpgo-config/renderer.js
-- [ ] docs/types/text/json/known/slsa-provenance/index.js
-- [ ] docs/types/text/json/known/slsa-provenance/renderer.js
-- [ ] docs/types/text/json/known/storybook/index.js
-- [ ] docs/types/text/json/known/storybook/renderer.js
-- [ ] docs/types/text/json/known/stryker/index.js
-- [ ] docs/types/text/json/known/stryker/renderer.js
-- [ ] docs/types/text/json/known/stylelint/index.js
-- [ ] docs/types/text/json/known/stylelint/renderer.js
-- [ ] docs/types/text/json/known/swcrc/index.js
-- [ ] docs/types/text/json/known/swcrc/renderer.js
-- [ ] docs/types/text/json/known/tailscale-acl/index.js
-- [ ] docs/types/text/json/known/tailscale-acl/renderer.js
-- [ ] docs/types/text/json/known/tailwind/index.js
-- [ ] docs/types/text/json/known/tailwind/renderer.js
-- [ ] docs/types/text/json/known/tauri-conf/index.js
-- [ ] docs/types/text/json/known/tauri-conf/renderer.js
-- [ ] docs/types/text/json/known/tsconfig/index.js
-- [ ] docs/types/text/json/known/tsconfig/metadata.js
-- [ ] docs/types/text/json/known/tsconfig/render.js
-- [ ] docs/types/text/json/known/turbo/index.js
-- [ ] docs/types/text/json/known/turbo/renderer.js
-- [ ] docs/types/text/json/known/uptime-kuma-config/index.js
-- [ ] docs/types/text/json/known/uptime-kuma-config/renderer.js
-- [ ] docs/types/text/json/known/vcpkg/index.js
-- [ ] docs/types/text/json/known/vcpkg/renderer.js
-- [ ] docs/types/text/json/known/vercel/index.js
-- [ ] docs/types/text/json/known/vercel/renderer.js
-- [ ] docs/types/text/json/known/vitest/index.js
-- [ ] docs/types/text/json/known/vitest/renderer.js
-- [ ] docs/types/text/json/known/volta/index.js
-- [ ] docs/types/text/json/known/volta/renderer.js
-- [ ] docs/types/text/json/known/vscode-extensions/index.js
-- [ ] docs/types/text/json/known/vscode-extensions/renderer.js
-- [ ] docs/types/text/json/known/vscode-launch/index.js
-- [ ] docs/types/text/json/known/vscode-launch/renderer.js
-- [ ] docs/types/text/json/known/vscode-settings/index.js
-- [ ] docs/types/text/json/known/vscode-settings/renderer.js
-- [ ] docs/types/text/json/known/vscode-tasks/index.js
-- [ ] docs/types/text/json/known/vscode-tasks/renderer.js
-- [ ] docs/types/text/json/known/wails-json/index.js
-- [ ] docs/types/text/json/known/wails-json/renderer.js
-- [ ] docs/types/text/json/known/waybar-config/index.js
-- [ ] docs/types/text/json/known/waybar-config/renderer.js
+- [x] docs/types/text/json/known/markdownlint/index.js
+- [x] docs/types/text/json/known/markdownlint/renderer.js
+- [x] docs/types/text/json/known/mattermost-config/index.js
+- [x] docs/types/text/json/known/mattermost-config/renderer.js
+- [x] docs/types/text/json/known/mcp-config/index.js
+- [x] docs/types/text/json/known/mcp-config/renderer.js
+- [x] docs/types/text/json/known/mintlify/index.js
+- [x] docs/types/text/json/known/mintlify/renderer.js
+- [x] docs/types/text/json/known/mocha/index.js
+- [x] docs/types/text/json/known/mocha/renderer.js
+- [x] docs/types/text/json/known/ncurc/index.js
+- [x] docs/types/text/json/known/ncurc/renderer.js
+- [x] docs/types/text/json/known/nest-cli/index.js
+- [x] docs/types/text/json/known/nest-cli/renderer.js
+- [x] docs/types/text/json/known/netbird-config/index.js
+- [x] docs/types/text/json/known/netbird-config/renderer.js
+- [x] docs/types/text/json/known/nx/index.js
+- [x] docs/types/text/json/known/nx/renderer.js
+- [x] docs/types/text/json/known/nycrc/index.js
+- [x] docs/types/text/json/known/nycrc/renderer.js
+- [x] docs/types/text/json/known/overseerr-config/index.js
+- [x] docs/types/text/json/known/overseerr-config/renderer.js
+- [x] docs/types/text/json/known/package-json/index.js
+- [x] docs/types/text/json/known/package-json/metadata.js
+- [x] docs/types/text/json/known/package-json/render.js
+- [x] docs/types/text/json/known/package-lock/index.js
+- [x] docs/types/text/json/known/package-lock/renderer.js
+- [x] docs/types/text/json/known/package-resolved/index.js
+- [x] docs/types/text/json/known/package-resolved/renderer.js
+- [x] docs/types/text/json/known/packer/index.js
+- [x] docs/types/text/json/known/packer/renderer.js
+- [x] docs/types/text/json/known/parcelrc/index.js
+- [x] docs/types/text/json/known/parcelrc/renderer.js
+- [x] docs/types/text/json/known/postcss/index.js
+- [x] docs/types/text/json/known/postcss/renderer.js
+- [x] docs/types/text/json/known/postman-collection/index.js
+- [x] docs/types/text/json/known/postman-collection/renderer.js
+- [x] docs/types/text/json/known/prettierrc/index.js
+- [x] docs/types/text/json/known/prettierrc/renderer.js
+- [x] docs/types/text/json/known/pyrightconfig/index.js
+- [x] docs/types/text/json/known/pyrightconfig/renderer.js
+- [x] docs/types/text/json/known/railway-json/index.js
+- [x] docs/types/text/json/known/railway-json/renderer.js
+- [x] docs/types/text/json/known/release-please-config/index.js
+- [x] docs/types/text/json/known/release-please-config/renderer.js
+- [x] docs/types/text/json/known/releaserc/index.js
+- [x] docs/types/text/json/known/releaserc/renderer.js
+- [x] docs/types/text/json/known/renovate/index.js
+- [x] docs/types/text/json/known/renovate/renderer.js
+- [x] docs/types/text/json/known/rush/index.js
+- [x] docs/types/text/json/known/rush/renderer.js
+- [x] docs/types/text/json/known/semaphore-config/index.js
+- [x] docs/types/text/json/known/semaphore-config/renderer.js
+- [x] docs/types/text/json/known/sftpgo-config/index.js
+- [x] docs/types/text/json/known/sftpgo-config/renderer.js
+- [x] docs/types/text/json/known/slsa-provenance/index.js
+- [x] docs/types/text/json/known/slsa-provenance/renderer.js
+- [x] docs/types/text/json/known/storybook/index.js
+- [x] docs/types/text/json/known/storybook/renderer.js
+- [x] docs/types/text/json/known/stryker/index.js
+- [x] docs/types/text/json/known/stryker/renderer.js
+- [x] docs/types/text/json/known/stylelint/index.js
+- [x] docs/types/text/json/known/stylelint/renderer.js
+- [x] docs/types/text/json/known/swcrc/index.js
+- [x] docs/types/text/json/known/swcrc/renderer.js
+- [x] docs/types/text/json/known/tailscale-acl/index.js
+- [x] docs/types/text/json/known/tailscale-acl/renderer.js
+- [x] docs/types/text/json/known/tailwind/index.js
+- [x] docs/types/text/json/known/tailwind/renderer.js
+- [x] docs/types/text/json/known/tauri-conf/index.js
+- [x] docs/types/text/json/known/tauri-conf/renderer.js
+- [x] docs/types/text/json/known/tsconfig/index.js
+- [x] docs/types/text/json/known/tsconfig/metadata.js
+- [x] docs/types/text/json/known/tsconfig/render.js
+- [x] docs/types/text/json/known/turbo/index.js
+- [x] docs/types/text/json/known/turbo/renderer.js
+- [x] docs/types/text/json/known/uptime-kuma-config/index.js
+- [x] docs/types/text/json/known/uptime-kuma-config/renderer.js
+- [x] docs/types/text/json/known/vcpkg/index.js
+- [x] docs/types/text/json/known/vcpkg/renderer.js
+- [x] docs/types/text/json/known/vercel/index.js
+- [x] docs/types/text/json/known/vercel/renderer.js
+- [x] docs/types/text/json/known/vitest/index.js
+- [x] docs/types/text/json/known/vitest/renderer.js
+- [x] docs/types/text/json/known/volta/index.js
+- [x] docs/types/text/json/known/volta/renderer.js
+- [x] docs/types/text/json/known/vscode-extensions/index.js
+- [x] docs/types/text/json/known/vscode-extensions/renderer.js
+- [x] docs/types/text/json/known/vscode-launch/index.js
+- [x] docs/types/text/json/known/vscode-launch/renderer.js
+- [x] docs/types/text/json/known/vscode-settings/index.js
+- [x] docs/types/text/json/known/vscode-settings/renderer.js
+- [x] docs/types/text/json/known/vscode-tasks/index.js
+- [x] docs/types/text/json/known/vscode-tasks/renderer.js
+- [x] docs/types/text/json/known/wails-json/index.js
+- [x] docs/types/text/json/known/wails-json/renderer.js
+- [x] docs/types/text/json/known/waybar-config/index.js
+- [x] docs/types/text/json/known/waybar-config/renderer.js
 - [ ] docs/types/text/json/metadata.js
 - [ ] docs/types/text/json/renderer.js
 - [ ] docs/types/text/json/settings.default.json
@@ -3312,54 +3312,54 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/json/known/lerna
 - [ ] docs/types/text/json/known/lighthouserc
 - [ ] docs/types/text/json/known/lint-staged
-- [ ] docs/types/text/json/known/markdownlint
-- [ ] docs/types/text/json/known/mattermost-config
-- [ ] docs/types/text/json/known/mcp-config
-- [ ] docs/types/text/json/known/mintlify
-- [ ] docs/types/text/json/known/mocha
-- [ ] docs/types/text/json/known/ncurc
-- [ ] docs/types/text/json/known/nest-cli
-- [ ] docs/types/text/json/known/netbird-config
-- [ ] docs/types/text/json/known/nx
-- [ ] docs/types/text/json/known/nycrc
-- [ ] docs/types/text/json/known/overseerr-config
-- [ ] docs/types/text/json/known/package-json
-- [ ] docs/types/text/json/known/package-lock
-- [ ] docs/types/text/json/known/package-resolved
-- [ ] docs/types/text/json/known/packer
-- [ ] docs/types/text/json/known/parcelrc
-- [ ] docs/types/text/json/known/postcss
-- [ ] docs/types/text/json/known/postman-collection
-- [ ] docs/types/text/json/known/prettierrc
-- [ ] docs/types/text/json/known/pyrightconfig
-- [ ] docs/types/text/json/known/railway-json
-- [ ] docs/types/text/json/known/release-please-config
-- [ ] docs/types/text/json/known/releaserc
-- [ ] docs/types/text/json/known/renovate
-- [ ] docs/types/text/json/known/rush
-- [ ] docs/types/text/json/known/semaphore-config
-- [ ] docs/types/text/json/known/sftpgo-config
-- [ ] docs/types/text/json/known/slsa-provenance
-- [ ] docs/types/text/json/known/storybook
-- [ ] docs/types/text/json/known/stryker
-- [ ] docs/types/text/json/known/stylelint
-- [ ] docs/types/text/json/known/swcrc
-- [ ] docs/types/text/json/known/tailscale-acl
-- [ ] docs/types/text/json/known/tailwind
-- [ ] docs/types/text/json/known/tauri-conf
-- [ ] docs/types/text/json/known/tsconfig
-- [ ] docs/types/text/json/known/turbo
-- [ ] docs/types/text/json/known/uptime-kuma-config
-- [ ] docs/types/text/json/known/vcpkg
-- [ ] docs/types/text/json/known/vercel
-- [ ] docs/types/text/json/known/vitest
-- [ ] docs/types/text/json/known/volta
-- [ ] docs/types/text/json/known/vscode-extensions
-- [ ] docs/types/text/json/known/vscode-launch
-- [ ] docs/types/text/json/known/vscode-settings
-- [ ] docs/types/text/json/known/vscode-tasks
-- [ ] docs/types/text/json/known/wails-json
-- [ ] docs/types/text/json/known/waybar-config
+- [x] docs/types/text/json/known/markdownlint
+- [x] docs/types/text/json/known/mattermost-config
+- [x] docs/types/text/json/known/mcp-config
+- [x] docs/types/text/json/known/mintlify
+- [x] docs/types/text/json/known/mocha
+- [x] docs/types/text/json/known/ncurc
+- [x] docs/types/text/json/known/nest-cli
+- [x] docs/types/text/json/known/netbird-config
+- [x] docs/types/text/json/known/nx
+- [x] docs/types/text/json/known/nycrc
+- [x] docs/types/text/json/known/overseerr-config
+- [x] docs/types/text/json/known/package-json
+- [x] docs/types/text/json/known/package-lock
+- [x] docs/types/text/json/known/package-resolved
+- [x] docs/types/text/json/known/packer
+- [x] docs/types/text/json/known/parcelrc
+- [x] docs/types/text/json/known/postcss
+- [x] docs/types/text/json/known/postman-collection
+- [x] docs/types/text/json/known/prettierrc
+- [x] docs/types/text/json/known/pyrightconfig
+- [x] docs/types/text/json/known/railway-json
+- [x] docs/types/text/json/known/release-please-config
+- [x] docs/types/text/json/known/releaserc
+- [x] docs/types/text/json/known/renovate
+- [x] docs/types/text/json/known/rush
+- [x] docs/types/text/json/known/semaphore-config
+- [x] docs/types/text/json/known/sftpgo-config
+- [x] docs/types/text/json/known/slsa-provenance
+- [x] docs/types/text/json/known/storybook
+- [x] docs/types/text/json/known/stryker
+- [x] docs/types/text/json/known/stylelint
+- [x] docs/types/text/json/known/swcrc
+- [x] docs/types/text/json/known/tailscale-acl
+- [x] docs/types/text/json/known/tailwind
+- [x] docs/types/text/json/known/tauri-conf
+- [x] docs/types/text/json/known/tsconfig
+- [x] docs/types/text/json/known/turbo
+- [x] docs/types/text/json/known/uptime-kuma-config
+- [x] docs/types/text/json/known/vcpkg
+- [x] docs/types/text/json/known/vercel
+- [x] docs/types/text/json/known/vitest
+- [x] docs/types/text/json/known/volta
+- [x] docs/types/text/json/known/vscode-extensions
+- [x] docs/types/text/json/known/vscode-launch
+- [x] docs/types/text/json/known/vscode-settings
+- [x] docs/types/text/json/known/vscode-tasks
+- [x] docs/types/text/json/known/wails-json
+- [x] docs/types/text/json/known/waybar-config
 - [ ] docs/types/text/known/act-config
 - [ ] docs/types/text/known/actrc
 - [ ] docs/types/text/known/ada-lang
