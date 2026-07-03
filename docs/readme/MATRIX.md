@@ -143,7 +143,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
 | [Hydrogen Drum](/) | `.h2song` `.h2pattern` `.h2drumkit` | Basic | Monaco | download | — | — |
-| [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
+| [Guitar Pro](guitar-pro.md) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
 | [Subtitles](subtitle.md) | `.srt` `.vtt` | Basic | Monaco | SRT/VTT conversion, download | — | ASS support |
 
 ---
@@ -292,7 +292,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Adobe Premiere](/) | `.prproj` | Basic | None | download | — | Timeline view |
 | [LMMS Project](lmms.md) | `.mmp` `.mmpz` | Basic | None | download | — | Automation |
 | [Ableton Live Set](als.md) | `.als` | Basic | None | download | — | Track list |
-| [Guitar Pro](/) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
+| [Guitar Pro](guitar-pro.md) | `.gp3` `.gp4` `.gp5` `.gpx` | Basic | None | download | — | Tab render |
 | [ASCII / ANSI Art](asciiart.md) | `.ans` | Basic | Monaco | download | — | — |
 
 ---

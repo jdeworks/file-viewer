@@ -1143,12 +1143,12 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/gitignore/metadata.js
 - [x] docs/types/text/gitignore/renderer.js
 - [x] docs/types/text/gitignore/settings.default.json
-- [ ] docs/types/text/guitar-pro/detect.js
-- [ ] docs/types/text/guitar-pro/EDITOR.md
-- [ ] docs/types/text/guitar-pro/index.js
-- [ ] docs/types/text/guitar-pro/metadata.js
-- [ ] docs/types/text/guitar-pro/renderer.js
-- [ ] docs/types/text/guitar-pro/settings.default.json
+- [x] docs/types/text/guitar-pro/detect.js
+- [x] docs/types/text/guitar-pro/EDITOR.md
+- [x] docs/types/text/guitar-pro/index.js
+- [x] docs/types/text/guitar-pro/metadata.js
+- [x] docs/types/text/guitar-pro/renderer.js
+- [x] docs/types/text/guitar-pro/settings.default.json
 - [ ] docs/types/text/har/detect.js
 - [ ] docs/types/text/har/EDITOR.md
 - [ ] docs/types/text/har/index.js
