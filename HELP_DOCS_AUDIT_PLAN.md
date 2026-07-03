@@ -1781,171 +1781,171 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/haproxy-config/renderer.js
 - [ ] docs/types/text/known/hardhat-config/index.js
 - [ ] docs/types/text/known/hardhat-config/renderer.js
-- [ ] docs/types/text/known/haskell-lang/index.js
-- [ ] docs/types/text/known/haskell-lang/renderer.js
-- [ ] docs/types/text/known/haxe-lang/index.js
-- [ ] docs/types/text/known/haxe-lang/renderer.js
-- [ ] docs/types/text/known/hlsl-shader/index.js
-- [ ] docs/types/text/known/hlsl-shader/renderer.js
-- [ ] docs/types/text/known/hoarder-config/index.js
-- [ ] docs/types/text/known/hoarder-config/renderer.js
-- [ ] docs/types/text/known/hoppscotch-config/index.js
-- [ ] docs/types/text/known/hoppscotch-config/renderer.js
-- [ ] docs/types/text/known/hosts-file/index.js
-- [ ] docs/types/text/known/hosts-file/renderer.js
-- [ ] docs/types/text/known/htaccess/index.js
-- [ ] docs/types/text/known/htaccess/renderer.js
-- [ ] docs/types/text/known/htpasswd/index.js
-- [ ] docs/types/text/known/htpasswd/renderer.js
-- [ ] docs/types/text/known/hugo-config/index.js
-- [ ] docs/types/text/known/hugo-config/renderer.js
-- [ ] docs/types/text/known/humans-txt/index.js
-- [ ] docs/types/text/known/humans-txt/renderer.js
-- [ ] docs/types/text/known/hyprland-conf/index.js
-- [ ] docs/types/text/known/hyprland-conf/renderer.js
-- [ ] docs/types/text/known/i3-config/index.js
-- [ ] docs/types/text/known/i3-config/renderer.js
-- [ ] docs/types/text/known/idris-lang/index.js
-- [ ] docs/types/text/known/idris-lang/renderer.js
-- [ ] docs/types/text/known/immich-config/index.js
-- [ ] docs/types/text/known/immich-config/renderer.js
-- [ ] docs/types/text/known/infisical-config/index.js
-- [ ] docs/types/text/known/infisical-config/renderer.js
-- [ ] docs/types/text/known/ink-script/index.js
-- [ ] docs/types/text/known/ink-script/renderer.js
-- [ ] docs/types/text/known/inputrc/index.js
-- [ ] docs/types/text/known/inputrc/renderer.js
-- [ ] docs/types/text/known/invoiceninja-config/index.js
-- [ ] docs/types/text/known/invoiceninja-config/renderer.js
-- [ ] docs/types/text/known/iptables-rules/index.js
-- [ ] docs/types/text/known/iptables-rules/renderer.js
-- [ ] docs/types/text/known/isabelle-thy/index.js
-- [ ] docs/types/text/known/isabelle-thy/renderer.js
-- [ ] docs/types/text/known/janet-lang/index.js
-- [ ] docs/types/text/known/janet-lang/renderer.js
-- [ ] docs/types/text/known/jenkinsfile/index.js
-- [ ] docs/types/text/known/jenkinsfile/renderer.js
-- [ ] docs/types/text/known/jest-config/index.js
-- [ ] docs/types/text/known/jest-config/renderer.js
-- [ ] docs/types/text/known/jinja2-template/index.js
-- [ ] docs/types/text/known/jinja2-template/renderer.js
-- [ ] docs/types/text/known/joplin-server-config/index.js
-- [ ] docs/types/text/known/joplin-server-config/renderer.js
-- [ ] docs/types/text/known/journald-conf/index.js
-- [ ] docs/types/text/known/journald-conf/renderer.js
-- [ ] docs/types/text/known/jsonnet/index.js
-- [ ] docs/types/text/known/jsonnet/renderer.js
-- [ ] docs/types/text/known/julia-lang/index.js
-- [ ] docs/types/text/known/julia-lang/renderer.js
-- [ ] docs/types/text/known/justfile/index.js
-- [ ] docs/types/text/known/justfile/renderer.js
-- [ ] docs/types/text/known/jvm-options/index.js
-- [ ] docs/types/text/known/jvm-options/renderer.js
-- [ ] docs/types/text/known/k6-config/index.js
-- [ ] docs/types/text/known/k6-config/renderer.js
-- [ ] docs/types/text/known/kafka-server-props/index.js
-- [ ] docs/types/text/known/kafka-server-props/renderer.js
-- [ ] docs/types/text/known/kdl-doc/index.js
-- [ ] docs/types/text/known/kdl-doc/renderer.js
-- [ ] docs/types/text/known/keepalived-conf/index.js
-- [ ] docs/types/text/known/keepalived-conf/renderer.js
-- [ ] docs/types/text/known/keycloak-config/index.js
-- [ ] docs/types/text/known/keycloak-config/renderer.js
-- [ ] docs/types/text/known/kitty-conf/index.js
-- [ ] docs/types/text/known/kitty-conf/renderer.js
-- [ ] docs/types/text/known/knexfile/index.js
-- [ ] docs/types/text/known/knexfile/renderer.js
-- [ ] docs/types/text/known/koka-lang/index.js
-- [ ] docs/types/text/known/koka-lang/renderer.js
-- [ ] docs/types/text/known/kotlin-lang/index.js
-- [ ] docs/types/text/known/kotlin-lang/renderer.js
-- [ ] docs/types/text/known/krb5-conf/index.js
-- [ ] docs/types/text/known/krb5-conf/renderer.js
-- [ ] docs/types/text/known/lean-lang/index.js
-- [ ] docs/types/text/known/lean-lang/renderer.js
-- [ ] docs/types/text/known/lex-yacc/index.js
-- [ ] docs/types/text/known/lex-yacc/renderer.js
-- [ ] docs/types/text/known/lfrc/index.js
-- [ ] docs/types/text/known/lfrc/renderer.js
-- [ ] docs/types/text/known/license/index.js
-- [ ] docs/types/text/known/license/renderer.js
-- [ ] docs/types/text/known/lighttpd-conf/index.js
-- [ ] docs/types/text/known/lighttpd-conf/renderer.js
-- [ ] docs/types/text/known/limits-conf/index.js
-- [ ] docs/types/text/known/limits-conf/renderer.js
-- [ ] docs/types/text/known/linkding-config/index.js
-- [ ] docs/types/text/known/linkding-config/renderer.js
-- [ ] docs/types/text/known/linkwarden-config/index.js
-- [ ] docs/types/text/known/linkwarden-config/renderer.js
-- [ ] docs/types/text/known/liquibase-props/index.js
-- [ ] docs/types/text/known/liquibase-props/renderer.js
-- [ ] docs/types/text/known/liquid-template/index.js
-- [ ] docs/types/text/known/liquid-template/renderer.js
-- [ ] docs/types/text/known/livescript-lang/index.js
-- [ ] docs/types/text/known/livescript-lang/renderer.js
-- [ ] docs/types/text/known/loader-conf/index.js
-- [ ] docs/types/text/known/loader-conf/renderer.js
-- [ ] docs/types/text/known/logrotate-conf/index.js
-- [ ] docs/types/text/known/logrotate-conf/renderer.js
-- [ ] docs/types/text/known/logstash-conf/index.js
-- [ ] docs/types/text/known/logstash-conf/renderer.js
-- [ ] docs/types/text/known/lua-lang/index.js
-- [ ] docs/types/text/known/lua-lang/renderer.js
-- [ ] docs/types/text/known/lxc-config/index.js
-- [ ] docs/types/text/known/lxc-config/renderer.js
-- [ ] docs/types/text/known/m4-macro/index.js
-- [ ] docs/types/text/known/m4-macro/renderer.js
-- [ ] docs/types/text/known/mailmap/index.js
-- [ ] docs/types/text/known/mailmap/render.js
-- [ ] docs/types/text/known/mailmap/renderer.js
-- [ ] docs/types/text/known/makefile/index.js
-- [ ] docs/types/text/known/makefile/renderer.js
-- [ ] docs/types/text/known/makepkg-conf/index.js
-- [ ] docs/types/text/known/makepkg-conf/renderer.js
-- [ ] docs/types/text/known/mako-conf/index.js
-- [ ] docs/types/text/known/mako-conf/renderer.js
-- [ ] docs/types/text/known/matchfile/index.js
-- [ ] docs/types/text/known/matchfile/renderer.js
-- [ ] docs/types/text/known/maybe-config/index.js
-- [ ] docs/types/text/known/maybe-config/renderer.js
-- [ ] docs/types/text/known/mealie-config/index.js
-- [ ] docs/types/text/known/mealie-config/renderer.js
-- [ ] docs/types/text/known/mediawiki-markup/index.js
-- [ ] docs/types/text/known/mediawiki-markup/renderer.js
-- [ ] docs/types/text/known/memos-config/index.js
-- [ ] docs/types/text/known/memos-config/renderer.js
-- [ ] docs/types/text/known/mermaid-diagram/index.js
-- [ ] docs/types/text/known/mermaid-diagram/renderer.js
-- [ ] docs/types/text/known/meson-build/index.js
-- [ ] docs/types/text/known/meson-build/renderer.js
-- [ ] docs/types/text/known/metro-config/index.js
-- [ ] docs/types/text/known/metro-config/renderer.js
-- [ ] docs/types/text/known/miniflux-conf/index.js
-- [ ] docs/types/text/known/miniflux-conf/renderer.js
-- [ ] docs/types/text/known/minio-config/index.js
-- [ ] docs/types/text/known/minio-config/renderer.js
-- [ ] docs/types/text/known/mix-exs/index.js
-- [ ] docs/types/text/known/mix-exs/renderer.js
-- [ ] docs/types/text/known/mkinitcpio-conf/index.js
-- [ ] docs/types/text/known/mkinitcpio-conf/renderer.js
-- [ ] docs/types/text/known/modprobe-conf/index.js
-- [ ] docs/types/text/known/modprobe-conf/renderer.js
-- [ ] docs/types/text/known/mojo-lang/index.js
-- [ ] docs/types/text/known/mojo-lang/renderer.js
-- [ ] docs/types/text/known/mongod-conf/index.js
-- [ ] docs/types/text/known/mongod-conf/renderer.js
-- [ ] docs/types/text/known/monica-config/index.js
-- [ ] docs/types/text/known/monica-config/renderer.js
-- [ ] docs/types/text/known/mosquitto-conf/index.js
-- [ ] docs/types/text/known/mosquitto-conf/renderer.js
-- [ ] docs/types/text/known/mpd-conf/index.js
-- [ ] docs/types/text/known/mpd-conf/renderer.js
-- [ ] docs/types/text/known/mpv-conf/index.js
-- [ ] docs/types/text/known/mpv-conf/renderer.js
-- [ ] docs/types/text/known/msmtp-conf/index.js
-- [ ] docs/types/text/known/msmtp-conf/renderer.js
-- [ ] docs/types/text/known/mustache-template/index.js
-- [ ] docs/types/text/known/mustache-template/renderer.js
+- [x] docs/types/text/known/haskell-lang/index.js
+- [x] docs/types/text/known/haskell-lang/renderer.js
+- [x] docs/types/text/known/haxe-lang/index.js
+- [x] docs/types/text/known/haxe-lang/renderer.js
+- [x] docs/types/text/known/hlsl-shader/index.js
+- [x] docs/types/text/known/hlsl-shader/renderer.js
+- [x] docs/types/text/known/hoarder-config/index.js
+- [x] docs/types/text/known/hoarder-config/renderer.js
+- [x] docs/types/text/known/hoppscotch-config/index.js
+- [x] docs/types/text/known/hoppscotch-config/renderer.js
+- [x] docs/types/text/known/hosts-file/index.js
+- [x] docs/types/text/known/hosts-file/renderer.js
+- [x] docs/types/text/known/htaccess/index.js
+- [x] docs/types/text/known/htaccess/renderer.js
+- [x] docs/types/text/known/htpasswd/index.js
+- [x] docs/types/text/known/htpasswd/renderer.js
+- [x] docs/types/text/known/hugo-config/index.js
+- [x] docs/types/text/known/hugo-config/renderer.js
+- [x] docs/types/text/known/humans-txt/index.js
+- [x] docs/types/text/known/humans-txt/renderer.js
+- [x] docs/types/text/known/hyprland-conf/index.js
+- [x] docs/types/text/known/hyprland-conf/renderer.js
+- [x] docs/types/text/known/i3-config/index.js
+- [x] docs/types/text/known/i3-config/renderer.js
+- [x] docs/types/text/known/idris-lang/index.js
+- [x] docs/types/text/known/idris-lang/renderer.js
+- [x] docs/types/text/known/immich-config/index.js
+- [x] docs/types/text/known/immich-config/renderer.js
+- [x] docs/types/text/known/infisical-config/index.js
+- [x] docs/types/text/known/infisical-config/renderer.js
+- [x] docs/types/text/known/ink-script/index.js
+- [x] docs/types/text/known/ink-script/renderer.js
+- [x] docs/types/text/known/inputrc/index.js
+- [x] docs/types/text/known/inputrc/renderer.js
+- [x] docs/types/text/known/invoiceninja-config/index.js
+- [x] docs/types/text/known/invoiceninja-config/renderer.js
+- [x] docs/types/text/known/iptables-rules/index.js
+- [x] docs/types/text/known/iptables-rules/renderer.js
+- [x] docs/types/text/known/isabelle-thy/index.js
+- [x] docs/types/text/known/isabelle-thy/renderer.js
+- [x] docs/types/text/known/janet-lang/index.js
+- [x] docs/types/text/known/janet-lang/renderer.js
+- [x] docs/types/text/known/jenkinsfile/index.js
+- [x] docs/types/text/known/jenkinsfile/renderer.js
+- [x] docs/types/text/known/jest-config/index.js
+- [x] docs/types/text/known/jest-config/renderer.js
+- [x] docs/types/text/known/jinja2-template/index.js
+- [x] docs/types/text/known/jinja2-template/renderer.js
+- [x] docs/types/text/known/joplin-server-config/index.js
+- [x] docs/types/text/known/joplin-server-config/renderer.js
+- [x] docs/types/text/known/journald-conf/index.js
+- [x] docs/types/text/known/journald-conf/renderer.js
+- [x] docs/types/text/known/jsonnet/index.js
+- [x] docs/types/text/known/jsonnet/renderer.js
+- [x] docs/types/text/known/julia-lang/index.js
+- [x] docs/types/text/known/julia-lang/renderer.js
+- [x] docs/types/text/known/justfile/index.js
+- [x] docs/types/text/known/justfile/renderer.js
+- [x] docs/types/text/known/jvm-options/index.js
+- [x] docs/types/text/known/jvm-options/renderer.js
+- [x] docs/types/text/known/k6-config/index.js
+- [x] docs/types/text/known/k6-config/renderer.js
+- [x] docs/types/text/known/kafka-server-props/index.js
+- [x] docs/types/text/known/kafka-server-props/renderer.js
+- [x] docs/types/text/known/kdl-doc/index.js
+- [x] docs/types/text/known/kdl-doc/renderer.js
+- [x] docs/types/text/known/keepalived-conf/index.js
+- [x] docs/types/text/known/keepalived-conf/renderer.js
+- [x] docs/types/text/known/keycloak-config/index.js
+- [x] docs/types/text/known/keycloak-config/renderer.js
+- [x] docs/types/text/known/kitty-conf/index.js
+- [x] docs/types/text/known/kitty-conf/renderer.js
+- [x] docs/types/text/known/knexfile/index.js
+- [x] docs/types/text/known/knexfile/renderer.js
+- [x] docs/types/text/known/koka-lang/index.js
+- [x] docs/types/text/known/koka-lang/renderer.js
+- [x] docs/types/text/known/kotlin-lang/index.js
+- [x] docs/types/text/known/kotlin-lang/renderer.js
+- [x] docs/types/text/known/krb5-conf/index.js
+- [x] docs/types/text/known/krb5-conf/renderer.js
+- [x] docs/types/text/known/lean-lang/index.js
+- [x] docs/types/text/known/lean-lang/renderer.js
+- [x] docs/types/text/known/lex-yacc/index.js
+- [x] docs/types/text/known/lex-yacc/renderer.js
+- [x] docs/types/text/known/lfrc/index.js
+- [x] docs/types/text/known/lfrc/renderer.js
+- [x] docs/types/text/known/license/index.js
+- [x] docs/types/text/known/license/renderer.js
+- [x] docs/types/text/known/lighttpd-conf/index.js
+- [x] docs/types/text/known/lighttpd-conf/renderer.js
+- [x] docs/types/text/known/limits-conf/index.js
+- [x] docs/types/text/known/limits-conf/renderer.js
+- [x] docs/types/text/known/linkding-config/index.js
+- [x] docs/types/text/known/linkding-config/renderer.js
+- [x] docs/types/text/known/linkwarden-config/index.js
+- [x] docs/types/text/known/linkwarden-config/renderer.js
+- [x] docs/types/text/known/liquibase-props/index.js
+- [x] docs/types/text/known/liquibase-props/renderer.js
+- [x] docs/types/text/known/liquid-template/index.js
+- [x] docs/types/text/known/liquid-template/renderer.js
+- [x] docs/types/text/known/livescript-lang/index.js
+- [x] docs/types/text/known/livescript-lang/renderer.js
+- [x] docs/types/text/known/loader-conf/index.js
+- [x] docs/types/text/known/loader-conf/renderer.js
+- [x] docs/types/text/known/logrotate-conf/index.js
+- [x] docs/types/text/known/logrotate-conf/renderer.js
+- [x] docs/types/text/known/logstash-conf/index.js
+- [x] docs/types/text/known/logstash-conf/renderer.js
+- [x] docs/types/text/known/lua-lang/index.js
+- [x] docs/types/text/known/lua-lang/renderer.js
+- [x] docs/types/text/known/lxc-config/index.js
+- [x] docs/types/text/known/lxc-config/renderer.js
+- [x] docs/types/text/known/m4-macro/index.js
+- [x] docs/types/text/known/m4-macro/renderer.js
+- [x] docs/types/text/known/mailmap/index.js
+- [x] docs/types/text/known/mailmap/render.js
+- [x] docs/types/text/known/mailmap/renderer.js
+- [x] docs/types/text/known/makefile/index.js
+- [x] docs/types/text/known/makefile/renderer.js
+- [x] docs/types/text/known/makepkg-conf/index.js
+- [x] docs/types/text/known/makepkg-conf/renderer.js
+- [x] docs/types/text/known/mako-conf/index.js
+- [x] docs/types/text/known/mako-conf/renderer.js
+- [x] docs/types/text/known/matchfile/index.js
+- [x] docs/types/text/known/matchfile/renderer.js
+- [x] docs/types/text/known/maybe-config/index.js
+- [x] docs/types/text/known/maybe-config/renderer.js
+- [x] docs/types/text/known/mealie-config/index.js
+- [x] docs/types/text/known/mealie-config/renderer.js
+- [x] docs/types/text/known/mediawiki-markup/index.js
+- [x] docs/types/text/known/mediawiki-markup/renderer.js
+- [x] docs/types/text/known/memos-config/index.js
+- [x] docs/types/text/known/memos-config/renderer.js
+- [x] docs/types/text/known/mermaid-diagram/index.js
+- [x] docs/types/text/known/mermaid-diagram/renderer.js
+- [x] docs/types/text/known/meson-build/index.js
+- [x] docs/types/text/known/meson-build/renderer.js
+- [x] docs/types/text/known/metro-config/index.js
+- [x] docs/types/text/known/metro-config/renderer.js
+- [x] docs/types/text/known/miniflux-conf/index.js
+- [x] docs/types/text/known/miniflux-conf/renderer.js
+- [x] docs/types/text/known/minio-config/index.js
+- [x] docs/types/text/known/minio-config/renderer.js
+- [x] docs/types/text/known/mix-exs/index.js
+- [x] docs/types/text/known/mix-exs/renderer.js
+- [x] docs/types/text/known/mkinitcpio-conf/index.js
+- [x] docs/types/text/known/mkinitcpio-conf/renderer.js
+- [x] docs/types/text/known/modprobe-conf/index.js
+- [x] docs/types/text/known/modprobe-conf/renderer.js
+- [x] docs/types/text/known/mojo-lang/index.js
+- [x] docs/types/text/known/mojo-lang/renderer.js
+- [x] docs/types/text/known/mongod-conf/index.js
+- [x] docs/types/text/known/mongod-conf/renderer.js
+- [x] docs/types/text/known/monica-config/index.js
+- [x] docs/types/text/known/monica-config/renderer.js
+- [x] docs/types/text/known/mosquitto-conf/index.js
+- [x] docs/types/text/known/mosquitto-conf/renderer.js
+- [x] docs/types/text/known/mpd-conf/index.js
+- [x] docs/types/text/known/mpd-conf/renderer.js
+- [x] docs/types/text/known/mpv-conf/index.js
+- [x] docs/types/text/known/mpv-conf/renderer.js
+- [x] docs/types/text/known/msmtp-conf/index.js
+- [x] docs/types/text/known/msmtp-conf/renderer.js
+- [x] docs/types/text/known/mustache-template/index.js
+- [x] docs/types/text/known/mustache-template/renderer.js
 - [ ] docs/types/text/known/muttrc/index.js
 - [ ] docs/types/text/known/muttrc/renderer.js
 - [ ] docs/types/text/known/my-cnf/index.js
@@ -3531,88 +3531,88 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/haproxy-conf
 - [ ] docs/types/text/known/haproxy-config
 - [ ] docs/types/text/known/hardhat-config
-- [ ] docs/types/text/known/haskell-lang
-- [ ] docs/types/text/known/haxe-lang
-- [ ] docs/types/text/known/hlsl-shader
-- [ ] docs/types/text/known/hoarder-config
-- [ ] docs/types/text/known/hoppscotch-config
-- [ ] docs/types/text/known/hosts-file
-- [ ] docs/types/text/known/htaccess
-- [ ] docs/types/text/known/htpasswd
-- [ ] docs/types/text/known/hugo-config
-- [ ] docs/types/text/known/humans-txt
-- [ ] docs/types/text/known/hyprland-conf
-- [ ] docs/types/text/known/i3-config
-- [ ] docs/types/text/known/idris-lang
-- [ ] docs/types/text/known/immich-config
-- [ ] docs/types/text/known/infisical-config
-- [ ] docs/types/text/known/ink-script
-- [ ] docs/types/text/known/inputrc
-- [ ] docs/types/text/known/invoiceninja-config
-- [ ] docs/types/text/known/iptables-rules
-- [ ] docs/types/text/known/isabelle-thy
-- [ ] docs/types/text/known/janet-lang
-- [ ] docs/types/text/known/jenkinsfile
-- [ ] docs/types/text/known/jest-config
-- [ ] docs/types/text/known/jinja2-template
-- [ ] docs/types/text/known/joplin-server-config
-- [ ] docs/types/text/known/journald-conf
-- [ ] docs/types/text/known/jsonnet
-- [ ] docs/types/text/known/julia-lang
-- [ ] docs/types/text/known/justfile
-- [ ] docs/types/text/known/jvm-options
-- [ ] docs/types/text/known/k6-config
-- [ ] docs/types/text/known/kafka-server-props
-- [ ] docs/types/text/known/kdl-doc
-- [ ] docs/types/text/known/keepalived-conf
-- [ ] docs/types/text/known/keycloak-config
-- [ ] docs/types/text/known/kitty-conf
-- [ ] docs/types/text/known/knexfile
-- [ ] docs/types/text/known/koka-lang
-- [ ] docs/types/text/known/kotlin-lang
-- [ ] docs/types/text/known/krb5-conf
-- [ ] docs/types/text/known/lean-lang
-- [ ] docs/types/text/known/lex-yacc
-- [ ] docs/types/text/known/lfrc
-- [ ] docs/types/text/known/license
-- [ ] docs/types/text/known/lighttpd-conf
-- [ ] docs/types/text/known/limits-conf
-- [ ] docs/types/text/known/linkding-config
-- [ ] docs/types/text/known/linkwarden-config
-- [ ] docs/types/text/known/liquibase-props
-- [ ] docs/types/text/known/liquid-template
-- [ ] docs/types/text/known/livescript-lang
-- [ ] docs/types/text/known/loader-conf
-- [ ] docs/types/text/known/logrotate-conf
-- [ ] docs/types/text/known/logstash-conf
-- [ ] docs/types/text/known/lua-lang
-- [ ] docs/types/text/known/lxc-config
-- [ ] docs/types/text/known/m4-macro
-- [ ] docs/types/text/known/mailmap
-- [ ] docs/types/text/known/makefile
-- [ ] docs/types/text/known/makepkg-conf
-- [ ] docs/types/text/known/mako-conf
-- [ ] docs/types/text/known/matchfile
-- [ ] docs/types/text/known/maybe-config
-- [ ] docs/types/text/known/mealie-config
-- [ ] docs/types/text/known/mediawiki-markup
-- [ ] docs/types/text/known/memos-config
-- [ ] docs/types/text/known/mermaid-diagram
-- [ ] docs/types/text/known/meson-build
-- [ ] docs/types/text/known/metro-config
-- [ ] docs/types/text/known/miniflux-conf
-- [ ] docs/types/text/known/minio-config
-- [ ] docs/types/text/known/mix-exs
-- [ ] docs/types/text/known/mkinitcpio-conf
-- [ ] docs/types/text/known/modprobe-conf
-- [ ] docs/types/text/known/mojo-lang
-- [ ] docs/types/text/known/mongod-conf
-- [ ] docs/types/text/known/monica-config
-- [ ] docs/types/text/known/mosquitto-conf
-- [ ] docs/types/text/known/mpd-conf
-- [ ] docs/types/text/known/mpv-conf
-- [ ] docs/types/text/known/msmtp-conf
-- [ ] docs/types/text/known/mustache-template
+- [x] docs/types/text/known/haskell-lang
+- [x] docs/types/text/known/haxe-lang
+- [x] docs/types/text/known/hlsl-shader
+- [x] docs/types/text/known/hoarder-config
+- [x] docs/types/text/known/hoppscotch-config
+- [x] docs/types/text/known/hosts-file
+- [x] docs/types/text/known/htaccess
+- [x] docs/types/text/known/htpasswd
+- [x] docs/types/text/known/hugo-config
+- [x] docs/types/text/known/humans-txt
+- [x] docs/types/text/known/hyprland-conf
+- [x] docs/types/text/known/i3-config
+- [x] docs/types/text/known/idris-lang
+- [x] docs/types/text/known/immich-config
+- [x] docs/types/text/known/infisical-config
+- [x] docs/types/text/known/ink-script
+- [x] docs/types/text/known/inputrc
+- [x] docs/types/text/known/invoiceninja-config
+- [x] docs/types/text/known/iptables-rules
+- [x] docs/types/text/known/isabelle-thy
+- [x] docs/types/text/known/janet-lang
+- [x] docs/types/text/known/jenkinsfile
+- [x] docs/types/text/known/jest-config
+- [x] docs/types/text/known/jinja2-template
+- [x] docs/types/text/known/joplin-server-config
+- [x] docs/types/text/known/journald-conf
+- [x] docs/types/text/known/jsonnet
+- [x] docs/types/text/known/julia-lang
+- [x] docs/types/text/known/justfile
+- [x] docs/types/text/known/jvm-options
+- [x] docs/types/text/known/k6-config
+- [x] docs/types/text/known/kafka-server-props
+- [x] docs/types/text/known/kdl-doc
+- [x] docs/types/text/known/keepalived-conf
+- [x] docs/types/text/known/keycloak-config
+- [x] docs/types/text/known/kitty-conf
+- [x] docs/types/text/known/knexfile
+- [x] docs/types/text/known/koka-lang
+- [x] docs/types/text/known/kotlin-lang
+- [x] docs/types/text/known/krb5-conf
+- [x] docs/types/text/known/lean-lang
+- [x] docs/types/text/known/lex-yacc
+- [x] docs/types/text/known/lfrc
+- [x] docs/types/text/known/license
+- [x] docs/types/text/known/lighttpd-conf
+- [x] docs/types/text/known/limits-conf
+- [x] docs/types/text/known/linkding-config
+- [x] docs/types/text/known/linkwarden-config
+- [x] docs/types/text/known/liquibase-props
+- [x] docs/types/text/known/liquid-template
+- [x] docs/types/text/known/livescript-lang
+- [x] docs/types/text/known/loader-conf
+- [x] docs/types/text/known/logrotate-conf
+- [x] docs/types/text/known/logstash-conf
+- [x] docs/types/text/known/lua-lang
+- [x] docs/types/text/known/lxc-config
+- [x] docs/types/text/known/m4-macro
+- [x] docs/types/text/known/mailmap
+- [x] docs/types/text/known/makefile
+- [x] docs/types/text/known/makepkg-conf
+- [x] docs/types/text/known/mako-conf
+- [x] docs/types/text/known/matchfile
+- [x] docs/types/text/known/maybe-config
+- [x] docs/types/text/known/mealie-config
+- [x] docs/types/text/known/mediawiki-markup
+- [x] docs/types/text/known/memos-config
+- [x] docs/types/text/known/mermaid-diagram
+- [x] docs/types/text/known/meson-build
+- [x] docs/types/text/known/metro-config
+- [x] docs/types/text/known/miniflux-conf
+- [x] docs/types/text/known/minio-config
+- [x] docs/types/text/known/mix-exs
+- [x] docs/types/text/known/mkinitcpio-conf
+- [x] docs/types/text/known/modprobe-conf
+- [x] docs/types/text/known/mojo-lang
+- [x] docs/types/text/known/mongod-conf
+- [x] docs/types/text/known/monica-config
+- [x] docs/types/text/known/mosquitto-conf
+- [x] docs/types/text/known/mpd-conf
+- [x] docs/types/text/known/mpv-conf
+- [x] docs/types/text/known/msmtp-conf
+- [x] docs/types/text/known/mustache-template
 - [ ] docs/types/text/known/muttrc
 - [ ] docs/types/text/known/my-cnf
 - [ ] docs/types/text/known/mypy

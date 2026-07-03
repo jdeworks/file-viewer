@@ -5,7 +5,7 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.koka')) return true;
-    const txt = intake.textSnippet || '';
+    const txt = intake.textSample || '';
     return /\beffect\b/.test(txt) && /\bfun\b/.test(txt) && /\bhandle\b/.test(txt);
   },
   loadRenderer: () => import('./renderer.js'),

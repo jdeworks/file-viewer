@@ -2,6 +2,11 @@
 // Detects: modifier key, font, keybindings, workspaces, bar settings, colors, gaps, startup apps.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// i3 colors are #RRGGBB hex only — validate before use in a style attribute (CSS injection guard).
+function safeHexColor(v) {
+  return /^#[0-9a-fA-F]{6}$/.test(v || '') ? v : null;
+}
+
 function parseVars(text) {
   const vars = {};
   const re = /^set\s+(\$\w+)\s+(.+)$/gm;
@@ -192,11 +197,12 @@ export function render(intake) {
 
   // Colors
   if (colors.length) {
-    const rows = colors.map((c) =>
-      '<li class="kf-pat"><code class="ts-key">' + esc(c.name) + '</code>'
-      + (c.bg ? '<span style="display:inline-block;width:14px;height:14px;border-radius:2px;background:' + esc(c.bg) + ';margin-left:8px;vertical-align:middle"></span>' : '')
-      + '</li>'
-    ).join('');
+    const rows = colors.map((c) => {
+      const safeBg = safeHexColor(c.bg);
+      return '<li class="kf-pat"><code class="ts-key">' + esc(c.name) + '</code>'
+      + (safeBg ? '<span style="display:inline-block;width:14px;height:14px;border-radius:2px;background:' + safeBg + ';margin-left:8px;vertical-align:middle"></span>' : '')
+      + '</li>';
+    }).join('');
     html += '<section class="kf-svc"><h3>Colors</h3><ul class="kf-list">' + rows + '</ul></section>';
   }
 

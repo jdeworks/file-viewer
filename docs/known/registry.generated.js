@@ -9994,7 +9994,7 @@ var mpv_conf_default = {
     if (n === "mpv.conf") return true;
     if (n === "input.conf") {
       const text2 = intake.textSample || intake.text || "";
-      if (text2.match(/^[A-Z_]+\s+\w/m) && text2.includes("seek") || text2.includes("playlist")) return true;
+      if (text2.match(/^[A-Z_]+\s+\w/m) && (text2.includes("seek") || text2.includes("playlist"))) return true;
     }
     const text = intake.textSample || intake.text || "";
     if (text.includes("video-output") || text.includes("vo=") || text.includes("hwdec=")) return true;
@@ -15194,7 +15194,7 @@ var plugin196 = {
   match(intake) {
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (name.endsWith(".koka")) return true;
-    const txt = intake.textSnippet || "";
+    const txt = intake.textSample || "";
     return /\beffect\b/.test(txt) && /\bfun\b/.test(txt) && /\bhandle\b/.test(txt);
   },
   loadRenderer: () => import("../types/text/known/koka-lang/renderer.js"),

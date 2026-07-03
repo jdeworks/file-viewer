@@ -3,6 +3,16 @@
 // Pure text parsing — no eval, no execution.
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// kitty color values can be #hex, named CSS colors, or rgb()/rgba() — validate before use in a
+// style attribute (CSS injection guard); anything else is dropped rather than interpolated raw.
+function safeCssColor(v) {
+  const s = String(v || '').trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return s;
+  if (/^[a-zA-Z][a-zA-Z0-9]*$/.test(s)) return s;
+  if (/^rgba?\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*(,\s*[\d.]+\s*)?\)$/.test(s)) return s;
+  return null;
+}
+
 function parseKitty(text) {
   const lines = text.split('\n');
   const data = {
@@ -127,13 +137,15 @@ export function render(intake) {
   if (d.background || d.foreground) {
     html += '<section class="kf-svc"><h3>Colors</h3><ul class="kf-list">';
     if (d.background) {
+      const swatchColor = safeCssColor(d.background);
       html += '<li class="kf-pat"><code class="ts-key">background</code>'
-        + '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(d.background) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>'
+        + (swatchColor ? '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(swatchColor) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>' : '')
         + '<span class="ts-doc" style="flex:1;padding-left:8px">' + esc(d.background) + '</span></li>';
     }
     if (d.foreground) {
+      const swatchColor = safeCssColor(d.foreground);
       html += '<li class="kf-pat"><code class="ts-key">foreground</code>'
-        + '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(d.foreground) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>'
+        + (swatchColor ? '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(swatchColor) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>' : '')
         + '<span class="ts-doc" style="flex:1;padding-left:8px">' + esc(d.foreground) + '</span></li>';
     }
     html += '</ul></section>';
@@ -148,8 +160,9 @@ export function render(intake) {
     }
     if (d.cursorBlink) html += '<li class="kf-pat"><code class="ts-key">cursor_blink_interval</code><span class="ts-doc" style="flex:1;padding-left:8px">' + esc(d.cursorBlink) + 's</span></li>';
     if (d.cursor && d.cursor !== 'none') {
+      const swatchColor = safeCssColor(d.cursor);
       html += '<li class="kf-pat"><code class="ts-key">cursor</code>'
-        + '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(d.cursor) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>'
+        + (swatchColor ? '<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:' + esc(swatchColor) + ';margin-left:8px;vertical-align:middle;border:1px solid #555"></span>' : '')
         + '<span class="ts-doc" style="flex:1;padding-left:8px">' + esc(d.cursor) + '</span></li>';
     }
     html += '</ul></section>';

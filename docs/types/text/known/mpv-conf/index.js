@@ -7,7 +7,7 @@ export default {
     if (n === 'input.conf') {
       const text = intake.textSample || intake.text || '';
       // input.conf has lines like: KEY command arg
-      if (text.match(/^[A-Z_]+\s+\w/m) && text.includes('seek') || text.includes('playlist')) return true;
+      if (text.match(/^[A-Z_]+\s+\w/m) && (text.includes('seek') || text.includes('playlist'))) return true;
     }
     const text = intake.textSample || intake.text || '';
     if (text.includes('video-output') || text.includes('vo=') || text.includes('hwdec=')) return true;
