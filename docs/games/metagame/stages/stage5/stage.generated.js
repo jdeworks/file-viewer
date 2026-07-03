@@ -356,86 +356,52 @@ var UPGRADES = [
   {
     id: "engine",
     label: "Engine",
-    desc: "Higher top speed on every track.",
+    desc: "Speed & overclock — faster top speed and stronger, longer bursts.",
+    cost: 45,
+    costScale: 1.45,
+    maxLevel: 7,
+    effect: (t, l) => {
+      t.topSpeed = +(1 + 0.04 * l).toFixed(3);
+      t.overclockSpeed = +(1.6 + 0.06 * l).toFixed(3);
+      t.overclockBonusMs = 250 * l;
+    }
+  },
+  {
+    id: "hull",
+    label: "Hull",
+    desc: "Integrity & collisions — more hull, and hits/off-beat switches cost less.",
     cost: 50,
-    costScale: 1.6,
-    maxLevel: 4,
+    costScale: 1.45,
+    maxLevel: 7,
     effect: (t, l) => {
-      t.topSpeed = +(1 + 0.07 * l).toFixed(3);
+      t.maxIntegrity = 100 + 8 * l;
+      t.offBeatPenalty = +Math.max(0, 1 - 0.13 * l).toFixed(3);
+      t.bumpDamage = +Math.max(0, 1 - 0.13 * l).toFixed(3);
+      t.bumpSlow = +Math.max(0.1, 0.5 - 0.055 * l).toFixed(3);
     }
   },
   {
-    id: "chassis",
-    label: "Chassis",
-    desc: "More hull integrity to spend on hits.",
-    cost: 60,
-    costScale: 1.6,
-    maxLevel: 4,
-    effect: (t, l) => {
-      t.maxIntegrity = 100 + 12 * l;
-    }
-  },
-  {
-    id: "cooling",
-    label: "Cooling",
-    desc: "Stronger, longer overclock bursts.",
-    cost: 70,
-    costScale: 1.7,
-    maxLevel: 3,
-    effect: (t, l) => {
-      t.overclockSpeed = +(1.6 + 0.12 * l).toFixed(3);
-      t.overclockBonusMs = 500 * l;
-    }
-  },
-  {
-    id: "navArray",
-    label: "Nav Array",
-    desc: "See more rows ahead — read tunnels & forks sooner.",
-    cost: 55,
-    costScale: 1.7,
-    maxLevel: 3,
-    effect: (t, l) => {
-      t.lookAhead = 8 + l;
-    }
-  },
-  {
-    id: "traction",
-    label: "Traction",
-    desc: "Off-beat switches & rival bumps cost less.",
-    cost: 50,
-    costScale: 1.6,
-    maxLevel: 3,
-    effect: (t, l) => {
-      t.offBeatPenalty = +Math.max(0, 1 - 0.3 * l).toFixed(3);
-      t.bumpSlow = +Math.max(0.1, 0.5 - 0.12 * l).toFixed(3);
-      t.bumpDamage = +Math.max(0, 1 - 0.3 * l).toFixed(3);
-    }
-  },
-  {
-    id: "signalAmp",
-    label: "Signal Amp",
-    desc: "Boost gates & packet rewards pay more.",
-    cost: 60,
-    costScale: 1.6,
-    maxLevel: 3,
+    id: "signal",
+    label: "Signal",
+    desc: "One clean signal curve — more packets, longer read, tougher against static.",
+    cost: 48,
+    costScale: 1.4,
+    maxLevel: 8,
     effect: (t, l) => {
       t.gateValue = 5 + 2 * l;
-      t.packetMult = +(1 + 0.08 * l).toFixed(3);
-    }
-  },
-  {
-    id: "noiseFilter",
-    label: "Noise Filter",
-    desc: "Less damage from ░ static.",
-    cost: 55,
-    costScale: 1.7,
-    maxLevel: 2,
-    effect: (t, l) => {
-      t.noiseDamage = +Math.max(0.5, 2 - 0.75 * l).toFixed(3);
+      t.packetMult = +(1 + 0.05 * l).toFixed(3);
+      t.lookAhead = 8 + Math.floor(l / 2);
+      t.noiseDamage = +Math.max(0.5, 2 - 0.12 * l).toFixed(3);
     }
   }
 ];
 var byId = new Map(UPGRADES.map((u) => [u.id, u]));
+var LEGACY_GROUPS = {
+  engine: ["engine", "cooling"],
+  hull: ["chassis", "traction"],
+  signal: ["navArray", "signalAmp", "noiseFilter"]
+};
+var LEGACY_ONLY = ["cooling", "chassis", "traction", "navArray", "signalAmp", "noiseFilter"];
 function levelOf(shop, id) {
   return Math.max(0, Math.floor(Number(shop?.[id]) || 0));
 }
@@ -459,6 +425,18 @@ function applyUpgrades(shop = {}, base = BASE_TUNING) {
     if (level > 0 && typeof def.effect === "function") def.effect(t, level);
   }
   return t;
+}
+function migrateShop(shop) {
+  if (!shop || typeof shop !== "object") return {};
+  const lv = (k) => Math.max(0, Math.floor(Number(shop[k]) || 0));
+  const hasLegacy = LEGACY_ONLY.some((k) => Object.prototype.hasOwnProperty.call(shop, k));
+  const out = {};
+  for (const id of ["engine", "hull", "signal"]) {
+    const raw = hasLegacy ? LEGACY_GROUPS[id].reduce((s, k) => s + lv(k), 0) : lv(id);
+    const clamped = Math.min(maxLevelOf(id), raw);
+    if (clamped > 0) out[id] = clamped;
+  }
+  return out;
 }
 function buyUpgrade(state, id) {
   const def = byId.get(id);
@@ -959,8 +937,12 @@ function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onEnd, get
       channel,
       inFork: inForkSpan(tick),
       hasFork: Boolean(round.hasFork),
-      beatOpen: Boolean(activeRow(tick)?.beatOpen)
+      beatOpen: Boolean(activeRow(tick)?.beatOpen),
       // drives the beat-pulse glow (matches the '*' marker)
+      packets: Number(state.packets || 0),
+      // for race-fx: a $ cache pickup pops a float
+      powerups: Number(run.powerupsCollected || 0)
+      // for race-fx: a buff/repair pickup pops a float
     });
   }
   function damageFor(glyph) {
@@ -1166,23 +1148,42 @@ function createEngine({ onTick, getTickMs }) {
 }
 
 // ../../docs/games/metagame/stages/stage5/render-track.js
-var CELL = {
-  empty: " · ",
-  "░": " ░ ",
-  "▒": " ▒ ",
-  "▓": " ▓ ",
-  ">>": ">> ",
-  // powerup pickups (placed by powerups.js into clear lanes)
-  U: " U ",
-  O: " O ",
-  E: " E ",
-  "+": " + ",
-  $: " $ ",
-  // time-trial ghosts (overlaid like rivals, drawn faint with parentheses)
-  P: "(P)",
-  G: "(G)"
+var DISP = {
+  empty: "·",
+  "░": "░",
+  "▒": "▒",
+  "▓": "▓",
+  ">>": "»",
+  U: "U",
+  O: "O",
+  E: "E",
+  "+": "+",
+  $: "$",
+  P: "p",
+  G: "g"
+  // time-trial ghosts (par + prior-best), drawn lower-case + faint
 };
-function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rivals = [], channel = "lo" }) {
+var PLAYER = "▲";
+function disp(glyph) {
+  return DISP[glyph] || DISP.empty;
+}
+function padCell(ch, width) {
+  const total = Math.max(0, width - 1);
+  const left = Math.floor(total / 2);
+  return " ".repeat(left) + ch + " ".repeat(total - left);
+}
+function renderTrackGrid({
+  table,
+  tick,
+  lane,
+  lookAhead = 8,
+  wrap = false,
+  rivals = [],
+  channel = "lo",
+  laneWidth = 3,
+  speed = 0,
+  reducedMotion = false
+}) {
   const rows = [];
   const raw = (t) => {
     if (wrap && table.length) return table[(t % table.length + table.length) % table.length];
@@ -1198,22 +1199,34 @@ function renderTrackGrid({ table, tick, lane, lookAhead = 8, wrap = false, rival
   for (const r of rivals) {
     if (r && r.ahead >= 0 && r.ahead < lookAhead) rivalAt.set(`${r.ahead},${r.lane}`, r.glyph || "o");
   }
-  const header = [0, 1, 2].map((l) => l === here.counterPhaseLane ? " ~ " : "   ").join(" ");
-  rows.push(`${header} ${here.beatOpen ? "*" : " "}`);
+  const dens = speed < 0 ? 0 : speed > 1 ? 1 : speed;
+  const gapEvery = 3 + Math.round(dens * 3);
+  const sepAt = (w) => reducedMotion ? "|" : w % gapEvery === 0 ? " " : "|";
+  const gutterAt = (screenRow) => reducedMotion ? " " : (tick * 2 + screenRow) % 4 === 0 ? "≡" : " ";
+  const header = [0, 1, 2].map((l) => padCell(l === here.counterPhaseLane ? "~" : " ", laneWidth)).join(" ");
+  rows.push(` ${header}  ${here.beatOpen ? "*" : " "}`);
   for (let ahead = lookAhead - 1; ahead >= 0; ahead -= 1) {
+    const screenRow = lookAhead - 1 - ahead;
+    const w = tick + ahead;
     const row = at(tick + ahead);
     const cells = [0, 1, 2].map((l) => {
       const rival = rivalAt.get(`${ahead},${l}`);
-      return rival ? ` ${rival} ` : cell(row ? row.lanes[l] : null);
+      return padCell(rival ? rival : disp(row ? row.lanes[l] : null), laneWidth);
     });
-    rows.push(cells.join("|"));
+    const g = gutterAt(screenRow);
+    rows.push(`${g}${cells.join(sepAt(w))}${g}`);
   }
-  const playerCells = [0, 1, 2].map((l) => l === lane ? "[>]" : " · ");
-  rows.push(playerCells.join("|"));
+  const playerCells = [0, 1, 2].map((l) => padCell(l === lane ? PLAYER : "·", laneWidth));
+  rows.push(` ${playerCells.join("|")} `);
   return rows.join("\n");
 }
-function cell(glyph) {
-  return CELL[glyph] || CELL.empty;
+function attractGrid({ seed = "idle", laneWidth = 5, rows = 8, lane = 1 } = {}) {
+  const rng = makeRng(String(seed));
+  const table = [];
+  for (let i = 0; i < rows; i += 1) {
+    table.push({ lanes: [0, 1, 2].map(() => rng.chance(0.22) ? "░" : null), beatOpen: true, counterPhaseLane: null });
+  }
+  return renderTrackGrid({ table, tick: 0, lane, lookAhead: rows, laneWidth, reducedMotion: true });
 }
 
 // ../../docs/games/metagame/stages/stage5/content.js
@@ -1249,7 +1262,7 @@ var GLYPH_LEGEND = [
   ["░", "static (−2)"],
   ["▒", "pulse (−2, off-beat hurts)"],
   ["▓", "dense block (−5)"],
-  [">>", "boost gate (+packets)"],
+  ["»", "boost gate (+packets)"],
   ["~", "shield lane (phase through)"],
   ["o", "rival racer (bump = −integrity)"],
   ["U", "shield buff"],
@@ -1257,10 +1270,29 @@ var GLYPH_LEGEND = [
   ["+", "repair (+12 hull)"],
   ["$", "packet cache (+15p)"],
   ["E", "EMP (set a rival back)"],
-  ["P", "par ghost (the clock to beat)"],
-  ["G", "your prior-best ghost"],
+  ["p", "par ghost (the clock to beat)"],
+  ["g", "your prior-best ghost"],
   ["↑↓", "commit HI / LO route at a fork"]
 ];
+var OBSTACLE_DISPLAY = { "░": "░", "▒": "▒", "▓": "▓", ">>": "»" };
+var LEGEND_TEXT = new Map(GLYPH_LEGEND);
+function roundGlyphLegend(round) {
+  const glyphs = [];
+  for (const g of round?.glyphs || []) {
+    const shown = OBSTACLE_DISPLAY[g] || g;
+    if (LEGEND_TEXT.has(shown)) glyphs.push(shown);
+  }
+  if (round?.counterPhaseShift) glyphs.push("~");
+  if (Number(round?.rivals) > 0) glyphs.push("o");
+  const seen = /* @__PURE__ */ new Set();
+  const out = [];
+  for (const g of glyphs) {
+    if (seen.has(g)) continue;
+    seen.add(g);
+    out.push([g, LEGEND_TEXT.get(g)]);
+  }
+  return out;
+}
 
 // ../../docs/games/metagame/stages/stage5/calibration.js
 function isTransmissionHum(path) {
@@ -1401,21 +1433,6 @@ var ASCENSION_MODS = [
 ];
 
 // ../../docs/games/metagame/stages/stage5/panels.js
-function shopButtonEls({ shop = {}, packets = 0, playing = false }) {
-  return UPGRADES.map((u) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.dataset.buy = u.id;
-    const level = levelOf(shop, u.id);
-    const max = maxLevelOf(u.id);
-    const maxed = isMaxed(shop, u.id);
-    const cost = costOf(shop, u.id);
-    btn.disabled = maxed || playing || Number(packets) < cost;
-    btn.title = u.desc;
-    btn.textContent = maxed ? `${u.label} ${level}/${max} ✓` : `${u.label} ${level}/${max} (${cost}p)`;
-    return btn;
-  });
-}
 function roundEstEl(low, high) {
   const span = document.createElement("span");
   span.className = "s5-round-est";
@@ -1460,6 +1477,7 @@ function installDebugHook(h) {
         const loop = h.getLoop();
         if (loop && h.getMode() === "playing") loop.autoSolve();
       }
+      h.dismissResult?.();
       return Number(h.state.run.clearedRounds || 0);
     },
     calibrate() {
@@ -1549,8 +1567,141 @@ function createSteer(deps) {
   return controls;
 }
 
+// ../../docs/games/metagame/stages/stage5/disclosure.js
+function disclosure(state) {
+  const cleared = Math.max(0, Number(state?.run?.clearedRounds || 0));
+  const defeated = Boolean(state?.boss?.defeated);
+  return {
+    cleared,
+    attract: cleared === 0 && !defeated,
+    // fresh: just the road + START ROUND 1
+    showRoundList: cleared >= 1 || defeated,
+    // the full round grid arrives after round 1
+    showEstimates: cleared >= 1 || defeated,
+    // per-round packet bands after the first clear
+    bossFull: cleared >= 6 || defeated,
+    // JAMMER panel (R6) — a locked chip before that
+    showCalibration: cleared >= 6 || defeated,
+    // the calibration HUD chip rides with the boss reveal
+    showAscension: defeated
+    // opt-in replay depth only once beaten
+  };
+}
+
+// ../../docs/games/metagame/stages/stage5/pitstop.js
+var STAT_IDS = UPGRADES.map((u) => u.id);
+function pitStopOffer({ seed, roundIdx, shop = {} }) {
+  const avail = STAT_IDS.filter((id) => !isMaxed(shop, id));
+  if (avail.length <= 2) return avail;
+  const rng = makeRng(`${String(seed)}:pit:${Number(roundIdx) || 0}`);
+  return rng.shuffle(avail).slice(0, 2);
+}
+
+// ../../docs/games/metagame/stages/stage5/overlay.js
+var STAT = new Map(UPGRADES.map((u) => [u.id, u]));
+function priceSpan(cost) {
+  const s = document.createElement("span");
+  s.className = "s5-pit-price";
+  s.textContent = Number.isFinite(cost) ? ` ${cost}p` : " —";
+  return s;
+}
+function buildResultOverlay({ summary, offers = [], shop = {}, packets = 0, canRetry = false, resolvedNote = "" }) {
+  const card = document.createElement("div");
+  card.className = "s5-overlay-card";
+  const head = document.createElement("div");
+  head.className = "s5-overlay-head";
+  head.textContent = summary.title;
+  const sub = document.createElement("div");
+  sub.className = "s5-overlay-sub";
+  sub.textContent = summary.detail || "";
+  card.append(head, sub);
+  if (offers.length) {
+    const pit = document.createElement("div");
+    pit.className = "s5-pit";
+    const ph = document.createElement("div");
+    ph.className = "s5-pit-head";
+    ph.textContent = `PIT STOP — pick 1 (${packets}p)`;
+    pit.append(ph);
+    const row = document.createElement("div");
+    row.className = "s5-pit-offers";
+    for (const id of offers) {
+      const def = STAT.get(id);
+      if (!def) continue;
+      const cost = costOf(shop, id);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.pit = id;
+      btn.className = "s5-pit-btn";
+      btn.title = def.desc;
+      btn.disabled = isMaxed(shop, id) || Number(packets) < cost;
+      btn.append(`${def.label} ${levelOf(shop, id)}→${levelOf(shop, id) + 1}/${maxLevelOf(id)}`, priceSpan(cost));
+      row.append(btn);
+    }
+    pit.append(row);
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "s5-pit-skip";
+    skip.dataset.pitSkip = "1";
+    skip.textContent = "skip pit";
+    pit.append(skip);
+    card.append(pit);
+  } else if (resolvedNote) {
+    const note = document.createElement("div");
+    note.className = "s5-pit-note";
+    note.textContent = resolvedNote;
+    card.append(note);
+  }
+  const actions = document.createElement("div");
+  actions.className = "s5-overlay-actions";
+  const cont = document.createElement("button");
+  cont.type = "button";
+  cont.dataset.overlay = "continue";
+  cont.className = "s5-overlay-continue";
+  cont.textContent = summary.continueLabel || "continue";
+  actions.append(cont);
+  if (canRetry) {
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.dataset.overlay = "retry";
+    retry.textContent = "retry";
+    actions.append(retry);
+  }
+  card.append(actions);
+  return card;
+}
+
+// ../../docs/games/metagame/stages/stage5/race-fx.js
+import { flash, shake, floatNum } from "../../shared/feedback.js";
+function createRaceFx({ trackCol, arena, integrityChip }) {
+  let prev = null;
+  return {
+    reset() {
+      prev = null;
+    },
+    onPaint(view) {
+      if (!view) return;
+      if (prev) {
+        if (view.integrity < prev.integrity - 1e-3) {
+          shake(arena);
+          flash(integrityChip, "bad");
+        }
+        if ((view.gates || 0) > (prev.gates || 0)) floatNum(trackCol, "»", "good");
+        if ((view.packets || 0) > (prev.packets || 0)) floatNum(trackCol, "$", "warn");
+        if ((view.powerups || 0) > (prev.powerups || 0)) floatNum(trackCol, "+", "good");
+      }
+      prev = {
+        integrity: view.integrity,
+        gates: view.gates || 0,
+        packets: view.packets || 0,
+        powerups: view.powerups || 0
+      };
+    }
+  };
+}
+
 // ../../docs/games/metagame/stages/stage5/renderer.js
 var BOSS_IDX2 = ROUNDS.length - 1;
+var RACE_LANE_WIDTH = 5;
 function renderStage5(ctx) {
   const { host, state, actions, achievements, bell, bts, viewer, save, onStageComplete, orchestrator } = ctx;
   const ascension = createAscension({ save: orchestrator?.save || null, stageId: 5, modifiers: ASCENSION_MODS });
@@ -1562,33 +1713,43 @@ function renderStage5(ctx) {
   root.innerHTML = `
     <header class="s5-hud">
       <strong>SIGNAL RACER</strong>
-      <span>ROUND <span data-field="round"></span></span>
-      <span data-field="raceBox">RACE <span data-field="race"></span></span>
-      <span data-field="posBox">POS <span data-field="position"></span></span>
-      <span>INTEGRITY <span data-field="integrity"></span></span>
-      <span>PACKETS <span data-field="packets"></span></span>
-      <span>CALIBRATION <span data-field="calib"></span></span>
+      <span>ROUND <b data-field="round"></b></span>
+      <span data-field="raceBox">RACE <b data-field="race"></b></span>
+      <span data-field="posBox">POS <b data-field="position"></b></span>
+      <span data-field="integrityBox">INTEGRITY <b data-field="integrity"></b></span>
+      <span data-field="packetsBox">PACKETS <b data-field="packets"></b></span>
+      <span data-field="calibBox">CALIBRATION <b data-field="calib"></b></span>
+      <div class="s5-progress" data-field="progressBox"><i class="s5-progress-fill" data-field="progressFill"></i></div>
     </header>
     <div class="s5-layout">
-      <pre class="s5-track-grid" data-field="arena" aria-label="signal racer track"></pre>
+      <div class="s5-track-col" data-field="trackCol">
+        <div class="s5-jammer" data-field="jammer" hidden></div>
+        <pre class="s5-track-grid" data-field="arena" aria-label="signal racer track"></pre>
+        <div class="s5-race-legend" data-field="raceLegend"></div>
+      </div>
       <aside class="s5-side">
+        <div class="s5-primary" data-field="primary"></div>
         <div class="s5-rounds" data-field="rounds"></div>
-        <div class="s5-shop" data-field="shop"></div>
+        <details class="s5-legend-wrap" data-field="legendWrap">
+          <summary>❓ glyph legend</summary>
+          <pre class="s5-legend" data-field="legend"></pre>
+        </details>
         <div class="s5-ascension" data-field="ascension"></div>
-        <pre class="s5-legend" data-field="legend"></pre>
       </aside>
     </div>
-    <section class="s5-boss-panel">
+    <section class="s5-boss-panel" data-field="bossPanel">
       <strong>THE JAMMER</strong>
       <div data-field="bossState"></div>
       <div class="s5-hint" data-field="hint"></div>
     </section>
+    <div class="s5-boss-chip" data-field="bossChip"></div>
     <ol class="s5-log"></ol>
     <div class="s5-controls">
       <button type="button" data-action="resume" hidden>resume race</button>
-      <button type="button" data-action="audio">open transmission_hum.mp3</button>
+      <button type="button" data-action="audio" hidden>open transmission_hum.mp3</button>
       <button type="button" data-action="bts" hidden>open signal_racer.bts</button>
     </div>
+    <div class="s5-overlay" data-field="overlay"></div>
   `;
   host.replaceChildren(root);
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
@@ -1597,9 +1758,13 @@ function renderStage5(ctx) {
   let loop = null;
   let engine = null;
   let mode = "select";
+  let resultCtx = null;
   const steer = createSteer({ getMode: () => mode, getLoop: () => loop });
-  root.insertBefore(steer.el, root.querySelector(".s5-controls"));
+  fields.trackCol.append(steer.el);
+  const fx = createRaceFx({ trackCol: fields.trackCol, arena: fields.arena, integrityChip: fields.integrityBox });
   fields.legend.textContent = GLYPH_LEGEND.map(([g, t]) => `${g}  ${t}`).join("\n");
+  const reducedMotion = () => Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+  const speedParam = (tickMs) => Math.max(0, Math.min(1, (180 - (Number(tickMs) || 160)) / 80));
   function calibrated() {
     return getBossLockState({ actions, state }).unlocked;
   }
@@ -1619,9 +1784,12 @@ function renderStage5(ctx) {
     const roundIdx = Math.max(0, Math.min(BOSS_IDX2, Number(idx) || 0));
     if (roundIdx > unlockedRounds()) return;
     if (isBossRound(roundIdx) && state.run.clearedRounds < BOSS_IDX2) return;
+    resultCtx = null;
+    renderOverlay();
     const round = roundByIdx(roundIdx);
     const prevGhost = state.timeTrial?.[round.id] || null;
     pushLog3(roundIntro(roundIdx));
+    fx.reset();
     loop = createGameLoop({
       state,
       seed: state.calibration.seed,
@@ -1643,11 +1811,12 @@ function renderStage5(ctx) {
     if (!loop || view.tick % 24 !== 0) return;
     raceRun.checkpoint({ ...loop.path(), ascLevel: ascension.level(), seed: state.calibration.seed });
   }
-  function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording }) {
+  function handleEnd({ result, round, roundIdx, packets, medal, finishTick, parTick, ghostRecording, position, fieldSize }) {
     engine?.stop();
     engine = null;
     mode = "result";
     raceRun.reset();
+    const boss = isBossRound(roundIdx);
     if (result === "clear") {
       const medalNote = medal ? ` [${medal} · ${finishTick} vs par ${parTick}]` : "";
       pushLog3(roundLogLine(roundIdx) + (packets ? ` (+${packets} packets)` : "") + medalNote);
@@ -1657,7 +1826,7 @@ function renderStage5(ctx) {
           state.timeTrial = { ...state.timeTrial || {}, [round.id]: ghostRecording };
         }
       }
-      if (!isBossRound(roundIdx)) {
+      if (!boss) {
         state.run.clearedRounds = Math.max(Number(state.run.clearedRounds || 0), roundIdx + 1);
       } else {
         const r = raceTheJammer({ state, actions });
@@ -1673,7 +1842,46 @@ function renderStage5(ctx) {
     } else {
       pushLog3("signal integrity collapsed. recalibrate and run it again.");
     }
+    if (!boss) showResult({ result, round, roundIdx, packets, medal, finishTick, parTick, position, fieldSize });
     persistAndPaint();
+  }
+  function showResult(info) {
+    const { result, round, roundIdx, packets, medal, finishTick, parTick, position, fieldSize } = info;
+    let title;
+    let detail;
+    const clear = result === "clear";
+    if (clear) {
+      title = fieldSize > 1 ? `FINISH — P${position}/${fieldSize}` : "ROUND CLEAR";
+      detail = `+${packets} packets` + (medal ? ` · ${medal} (${finishTick} vs par ${parTick})` : "");
+    } else if (round.archetype === "time-trial") {
+      title = "MISSED PAR";
+      detail = "beat the clock next time — survival alone is not a clear.";
+    } else {
+      title = "SIGNAL LOST";
+      detail = "integrity collapsed — take the offer and run it again.";
+    }
+    resultCtx = {
+      roundIdx,
+      resolved: false,
+      note: "",
+      summary: { title, detail, continueLabel: clear ? "continue" : "back to rounds" },
+      canRetry: true
+    };
+    renderOverlay();
+  }
+  function renderOverlay() {
+    fields.overlay.replaceChildren();
+    root.classList.toggle("s5-has-overlay", Boolean(resultCtx));
+    if (!resultCtx) return;
+    const offers = resultCtx.resolved ? [] : pitStopOffer({ seed: state.calibration.seed, roundIdx: resultCtx.roundIdx, shop: state.shop || {} });
+    fields.overlay.append(buildResultOverlay({
+      summary: resultCtx.summary,
+      offers,
+      shop: state.shop || {},
+      packets: state.packets,
+      canRetry: resultCtx.canRetry,
+      resolvedNote: resultCtx.note
+    }));
   }
   function paintArena(view) {
     checkpointRace(view);
@@ -1684,40 +1892,77 @@ function renderStage5(ctx) {
       lookAhead: view.lookAhead,
       wrap: view.archetype === "circuit",
       rivals: view.rivals || [],
-      channel: view.channel || "lo"
+      channel: view.channel || "lo",
+      laneWidth: RACE_LANE_WIDTH,
+      speed: speedParam(view.round?.tickMs),
+      reducedMotion: reducedMotion()
     });
     fields.arena.classList.toggle("s5-beat-open", Boolean(view.beatOpen));
+    fields.arena.classList.toggle("s5-suppressed", Boolean(view.suppressionActive));
+    paintJammer(view);
+    fx.onPaint(view);
     fields.integrity.textContent = `${Math.round(view.integrity)}%`;
     const pct = Math.round((view.progress || 0) * 100);
+    fields.progressFill.style.width = `${pct}%`;
     const fork = view.hasFork ? ` · ${view.channel === "hi" ? "HI" : "LO"}${view.inFork ? "◆" : ""}` : "";
     fields.race.textContent = view.archetype === "circuit" ? `${view.archetype} · lap ${view.lap}/${view.laps}${fork}` : `${view.archetype} · ${pct}%${fork}`;
     fields.position.textContent = view.fieldSize > 1 ? `${view.position}/${view.fieldSize}` : "—";
   }
+  function paintJammer(view) {
+    const boss = view.archetype === "boss";
+    fields.jammer.hidden = !boss;
+    if (!boss) return;
+    const closing = Math.max(0, Math.min(1, view.progress || 0));
+    fields.jammer.style.setProperty("--s5-close", String(closing));
+    fields.jammer.textContent = `⟪ THE JAMMER ${"▓".repeat(2 + Math.round(closing * 6))} ⟫`;
+  }
+  function raceLegendLine(round) {
+    return roundGlyphLegend(round).map(([g, t]) => `${g} ${t}`).join("   ");
+  }
   function repaint() {
+    const disc = disclosure(state);
     const lock = getBossLockState({ actions, state });
     const idx = Number(state.run.roundIdx || 0);
     const r = roundByIdx(idx);
-    fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
     const playing = mode === "playing";
+    root.classList.toggle("s5-mode-playing", playing);
+    root.classList.toggle("s5-mode-result", mode === "result");
+    root.classList.toggle("s5-mode-select", mode === "select");
+    fields.round.textContent = `${r.id}/${FINAL_ROUND_ID} ${r.label}`;
     fields.raceBox.hidden = !playing;
     fields.posBox.hidden = !playing;
+    fields.progressBox.hidden = !playing;
+    fields.packetsBox.hidden = playing;
+    fields.calibBox.hidden = playing || !disc.showCalibration;
     steer.el.hidden = !playing;
-    if (!playing) {
+    if (playing) {
+      fields.raceLegend.textContent = raceLegendLine(roundByIdx(Number(state.run.roundIdx || idx)));
+    } else {
+      fields.arena.textContent = attractGrid({ seed: `${state.calibration.seed}:attract`, laneWidth: RACE_LANE_WIDTH, lane: state.run.lane });
+      fields.arena.classList.remove("s5-beat-open", "s5-suppressed");
+      fields.jammer.hidden = true;
+      fields.raceLegend.textContent = "";
       fields.integrity.textContent = `${Math.round(state.run.integrity)}%`;
       fields.race.textContent = r.archetype || "sprint";
       fields.position.textContent = "—";
-      fields.arena.classList.remove("s5-beat-open");
     }
     fields.packets.textContent = String(state.packets);
     fields.calib.textContent = lock.unlocked ? "LOCKED-IN" : calibrationProgressStr(state);
+    fields.bossPanel.hidden = !disc.bossFull;
+    fields.bossChip.hidden = disc.bossFull || playing;
+    fields.bossChip.textContent = state.boss.defeated ? "THE JAMMER — defeated" : "THE JAMMER — locked (clear round 6 to reveal)";
     fields.bossState.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.jammerSuppression} / ${lock.unlocked ? "beatable" : "suppression dominant"}`;
     fields.hint.textContent = lock.hint;
-    renderRoundButtons();
-    renderShop();
+    fields.legendWrap.hidden = disc.attract;
+    renderPrimary(disc);
+    renderRoundButtons(disc);
     renderAscension();
+    const controls = root.querySelector(".s5-controls");
+    controls.hidden = playing || disc.attract;
+    root.querySelector('[data-action="audio"]').hidden = !disc.showCalibration;
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
     const resumeBtn = root.querySelector('[data-action="resume"]');
-    const ck = mode === "playing" ? null : pendingResume();
+    const ck = playing ? null : pendingResume();
     resumeBtn.hidden = !ck;
     if (ck) resumeBtn.textContent = `resume race (round ${roundByIdx(ck.roundIdx).id}, lap-saved)`;
     log.replaceChildren(...state.log.slice(-6).map((line) => {
@@ -1726,7 +1971,24 @@ function renderStage5(ctx) {
       return li;
     }));
   }
-  function renderRoundButtons() {
+  function renderPrimary(disc) {
+    if (disc.showRoundList) {
+      fields.primary.replaceChildren();
+      return;
+    }
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.startRound = "0";
+    btn.className = "s5-primary-btn";
+    btn.disabled = mode === "playing";
+    btn.textContent = `START ROUND 1 — ${roundByIdx(0).label}`;
+    fields.primary.replaceChildren(btn);
+  }
+  function renderRoundButtons(disc) {
+    if (!disc.showRoundList) {
+      fields.rounds.replaceChildren();
+      return;
+    }
     const unlocked = unlockedRounds();
     const cleared = Number(state.run.clearedRounds || 0);
     const tuning = applyUpgrades(state.shop || {});
@@ -1737,17 +1999,16 @@ function renderStage5(ctx) {
       const boss = isBossRound(i);
       const locked = boss ? cleared < BOSS_IDX2 : i > unlocked;
       btn.disabled = locked || mode === "playing";
-      const { low, high } = estimateRoundPackets(round, tuning);
-      btn.append(
-        `${round.id}. ${round.label}${i < cleared ? " ✓" : ""}${locked ? " 🔒" : ""}`,
-        roundEstEl(low, high)
-      );
+      const label = `${round.id}. ${round.label}${i < cleared ? " ✓" : ""}${locked ? " 🔒" : ""}`;
+      if (disc.showEstimates && !locked) {
+        const { low, high } = estimateRoundPackets(round, tuning);
+        btn.append(label, roundEstEl(low, high));
+      } else {
+        btn.append(label);
+      }
       if (boss) btn.classList.add("s5-boss-btn");
       return btn;
     }));
-  }
-  function renderShop() {
-    fields.shop.replaceChildren(...shopButtonEls({ shop: state.shop || {}, packets: state.packets, playing: mode === "playing" }));
   }
   function renderAscension() {
     fields.ascension.replaceChildren(...ascensionPanelEls({
@@ -1763,9 +2024,34 @@ function renderStage5(ctx) {
       startRound(Number(startBtn.dataset.startRound));
       return;
     }
-    const buyBtn = event.target.closest("button[data-buy]");
-    if (buyBtn) {
-      buyUpgrade(state, buyBtn.dataset.buy);
+    const pitBtn = event.target.closest("button[data-pit]");
+    if (pitBtn && resultCtx) {
+      const res = buyUpgrade(state, pitBtn.dataset.pit);
+      resultCtx.resolved = true;
+      resultCtx.note = res.bought ? `upgraded ${pitBtn.dataset.pit.toUpperCase()} (−${res.cost}p)` : "could not upgrade";
+      save?.();
+      renderOverlay();
+      repaint();
+      return;
+    }
+    if (event.target.closest("button[data-pit-skip]") && resultCtx) {
+      resultCtx.resolved = true;
+      resultCtx.note = "pit skipped";
+      renderOverlay();
+      return;
+    }
+    const overlayBtn = event.target.closest("button[data-overlay]");
+    if (overlayBtn && resultCtx) {
+      const idx = resultCtx.roundIdx;
+      if (overlayBtn.dataset.overlay === "retry") {
+        resultCtx = null;
+        renderOverlay();
+        startRound(idx);
+        return;
+      }
+      resultCtx = null;
+      mode = "select";
+      renderOverlay();
       persistAndPaint();
       return;
     }
@@ -1790,6 +2076,11 @@ function renderStage5(ctx) {
     if (action.dataset.action === "bts") bts?.open?.(5);
     persistAndPaint();
   });
+  fields.arena.addEventListener("click", (event) => {
+    if (mode !== "playing" || !loop) return;
+    const rect = fields.arena.getBoundingClientRect();
+    loop.handleKey(event.clientX - rect.left < rect.width / 2 ? "ArrowLeft" : "ArrowRight");
+  });
   const onKey = (event) => {
     if (mode !== "playing" || !loop) return;
     if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
@@ -1812,7 +2103,12 @@ function renderStage5(ctx) {
     calibrated,
     ascension,
     ascensionMods,
-    raceRun
+    raceRun,
+    dismissResult: () => {
+      resultCtx = null;
+      renderOverlay();
+      repaint();
+    }
   });
   function dev(id) {
     if (applyDev(id, state, actions)) persistAndPaint();
@@ -1897,7 +2193,7 @@ function normalizeState(state, context = {}) {
   target.boss = mergePlain(fresh.boss, target.boss);
   target.run = mergePlain(fresh.run, target.run);
   target.run.integrity = Number.isFinite(Number(target.run.integrity)) ? Number(target.run.integrity) : fresh.run.integrity;
-  target.shop = mergePlain(fresh.shop, target.shop);
+  target.shop = migrateShop(mergePlain(fresh.shop, target.shop));
   target.timeTrial = target.timeTrial && typeof target.timeTrial === "object" ? target.timeTrial : {};
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;
@@ -1972,12 +2268,15 @@ function subscribeStage5Actions(actions, handler) {
   };
 }
 function ensureStyles() {
-  const id = "stage5-signal-racer-styles";
+  ensureLink("stage5-signal-racer-styles", new URL("./styles.css", import.meta.url).href);
+  ensureLink("stage5-signal-racer-race-styles", new URL("./styles-race.css", import.meta.url).href);
+}
+function ensureLink(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 export {

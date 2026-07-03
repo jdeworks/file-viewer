@@ -1,4 +1,5 @@
 import { LOOP_DURATION_MS } from './messages.js';
+import { migrateShop } from './shop.js';
 
 export function defaultState(context = {}) {
   // Deterministic seed: explicit context.seed (tests/replays) or a fixed default — never the wall
@@ -50,7 +51,10 @@ export function normalizeState(state, context = {}) {
   target.boss = mergePlain(fresh.boss, target.boss);
   target.run = mergePlain(fresh.run, target.run);
   target.run.integrity = Number.isFinite(Number(target.run.integrity)) ? Number(target.run.integrity) : fresh.run.integrity;
-  target.shop = mergePlain(fresh.shop, target.shop);
+  // Rebase the vehicle shop onto the three stats (UX audit M1). migrateShop maps any legacy 7-part
+  // save onto ENGINE/HULL/SIGNAL (summed, clamped) so no purchase is lost; a three-stat save is
+  // sanitised in place. Idempotent, so it runs safely on every load.
+  target.shop = migrateShop(mergePlain(fresh.shop, target.shop));
   target.timeTrial = (target.timeTrial && typeof target.timeTrial === 'object') ? target.timeTrial : {};
   target.log = Array.isArray(target.log) ? target.log : [...fresh.log];
   return target;

@@ -1027,15 +1027,21 @@ export async function run(ctx) {
   pass('Stage 4 clears via blueprint un-cheat + recursion-point coverage after all maps cleared');
 
   await page.waitForSelector('.stage5-signal-racer', { timeout: 8000 });
-  // The thin-gate bypass is gone: there is no "simulate full loop" calibrate button.
-  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 9);
-  if (s5NoBypass) pass('Stage 5 is a real racer: 9 rounds (incl. time-trial + fork relay) + engine hook, no simulate-loop bypass'); else fail('Stage 5 bypass present or game not wired');
+  // UX-audit M3: the select screen now OPENS ON PLAY — a fresh save shows one primed START (round 1),
+  // not a 9-button wall (the full list is disclosed after the first clear). The thin-gate bypass is
+  // still gone (no "simulate full loop" calibrate button); the engine hook is still wired.
+  const s5NoBypass = await page.evaluate(() => !document.querySelector('[data-action="calibrate"]') && Boolean(window.__fvStage5) && document.querySelectorAll('[data-start-round]').length === 1);
+  if (s5NoBypass) pass('Stage 5 opens on play: one primed START (round 1), no simulate-loop bypass'); else fail('Stage 5 bypass present, list not diet-gated, or game not wired');
   // Ascension ladder is wired (shared/ascension.js): 4 cumulative difficulty rungs available for replay.
   const s5Asc = await page.evaluate(() => window.__fvStage5.ascension());
   if (s5Asc.maxLevel === 4) pass('Stage 5 ascension ladder wired: 4 rungs (opt-in replay depth)'); else fail(`Stage 5 ascension maxLevel ${s5Asc.maxLevel}`);
-  // The Jammer is gated behind the full run: from a fresh start the boss round (last) is locked.
-  const s5Gate = await page.evaluate(() => ({ cleared: window.__fvStage5.state().run.clearedRounds, bossLocked: document.querySelector('[data-start-round="8"]')?.disabled }));
-  if (s5Gate.cleared === 0 && s5Gate.bossLocked) pass('Stage 5 boss is locked until the run is cleared'); else fail('Stage 5 boss reachable from start');
+  // The Jammer is gated behind the full run: from a fresh start, invoking the boss round (index 8) is
+  // refused (clearedRounds < 8), so the race never enters play mode.
+  const s5Gate = await page.evaluate(() => {
+    window.__fvStage5.startRound(8);
+    return { cleared: window.__fvStage5.state().run.clearedRounds, playing: Boolean(document.querySelector('.stage5-signal-racer.s5-mode-playing')) };
+  });
+  if (s5Gate.cleared === 0 && !s5Gate.playing) pass('Stage 5 boss is locked until the run is cleared (boss round refuses to start from fresh)'); else fail('Stage 5 boss reachable from start');
   // Play the eight real body rounds (incl. the time-trial + fork relay) to reach the jammer.
   const s5Cleared = await page.evaluate(() => window.__fvStage5.solveRun());
   if (s5Cleared === 8) pass('Stage 5 run cleared: rounds 1–8 (incl. time-trial + fork relay) played to reach The Jammer'); else fail(`Stage 5 only cleared ${s5Cleared}/8 rounds`);

@@ -13,7 +13,10 @@ export function installDebugHook(h) {
     startRound: h.startRound,
     solveRound() { const loop = h.getLoop(); if (loop && h.getMode() === 'playing') return loop.autoSolve(); return null; },
     solveRun() {
+      // startRound auto-clears any pending result/pit-stop card, so the loop never blocks; we also
+      // dismiss the final round's card at the end so it can't sit over the boss flow / audio button.
       for (let i = 0; i < h.bossIdx; i += 1) { h.startRound(i); const loop = h.getLoop(); if (loop && h.getMode() === 'playing') loop.autoSolve(); }
+      h.dismissResult?.();
       return Number(h.state.run.clearedRounds || 0);
     },
     calibrate() {

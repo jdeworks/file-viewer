@@ -39,7 +39,7 @@ export const GLYPH_LEGEND = [
   ['░', 'static (−2)'],
   ['▒', 'pulse (−2, off-beat hurts)'],
   ['▓', 'dense block (−5)'],
-  ['>>', 'boost gate (+packets)'],
+  ['»', 'boost gate (+packets)'],
   ['~', 'shield lane (phase through)'],
   ['o', 'rival racer (bump = −integrity)'],
   ['U', 'shield buff'],
@@ -47,7 +47,32 @@ export const GLYPH_LEGEND = [
   ['+', 'repair (+12 hull)'],
   ['$', 'packet cache (+15p)'],
   ['E', 'EMP (set a rival back)'],
-  ['P', 'par ghost (the clock to beat)'],
-  ['G', 'your prior-best ghost'],
+  ['p', 'par ghost (the clock to beat)'],
+  ['g', 'your prior-best ghost'],
   ['↑↓', 'commit HI / LO route at a fork'],
 ];
+
+// The display glyph the renderer draws for each obstacle-config glyph (mirrors render-track's DISP).
+const OBSTACLE_DISPLAY = { '░': '░', '▒': '▒', '▓': '▓', '>>': '»' };
+const LEGEND_TEXT = new Map(GLYPH_LEGEND);
+
+// The IN-RACE legend (UX audit #5): only the glyphs actually present in THIS round — its obstacle
+// glyphs (+ the shield lane when it uses counter-phase, + the rival marker). Returns [glyph,text]
+// pairs; the renderer draws them as one short 12px line under the road. Pure.
+export function roundGlyphLegend(round) {
+  const glyphs = [];
+  for (const g of (round?.glyphs || [])) {
+    const shown = OBSTACLE_DISPLAY[g] || g;
+    if (LEGEND_TEXT.has(shown)) glyphs.push(shown);
+  }
+  if (round?.counterPhaseShift) glyphs.push('~');
+  if (Number(round?.rivals) > 0) glyphs.push('o');
+  const seen = new Set();
+  const out = [];
+  for (const g of glyphs) {
+    if (seen.has(g)) continue;
+    seen.add(g);
+    out.push([g, LEGEND_TEXT.get(g)]);
+  }
+  return out;
+}

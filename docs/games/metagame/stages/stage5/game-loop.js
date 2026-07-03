@@ -157,6 +157,8 @@ export function createGameLoop({ state, seed, roundIdx, calibrated, onPaint, onE
       position: run.position, fieldSize: rivals.length + 1,
       channel, inFork: inForkSpan(tick), hasFork: Boolean(round.hasFork),
       beatOpen: Boolean(activeRow(tick)?.beatOpen), // drives the beat-pulse glow (matches the '*' marker)
+      packets: Number(state.packets || 0),          // for race-fx: a $ cache pickup pops a float
+      powerups: Number(run.powerupsCollected || 0), // for race-fx: a buff/repair pickup pops a float
     });
   }
 

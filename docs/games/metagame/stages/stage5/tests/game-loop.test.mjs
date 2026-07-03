@@ -74,13 +74,13 @@ for (let roundIdx = 0; roundIdx < BOSS_IDX; roundIdx += 1) {
   assert.equal(outcome, 'clear', 'a calibrated boss run survives with optimal play');
 }
 
-// ── vehicle upgrades fold into the run: chassis raises the starting hull cap ────────────────────────
+// ── vehicle upgrades fold into the run: HULL raises the starting hull cap (M1: 3-stat shop) ─────────
 {
   const state = defaultState();
-  state.shop = { chassis: 3 };
+  state.shop = { hull: 3 };
   createGameLoop({ state, seed: 's5', roundIdx: 0, calibrated: false });
-  assert.equal(state.run.maxIntegrity, 136, 'chassis L3 → 136 max integrity');
-  assert.equal(state.run.integrity, 136, 'run starts at the raised hull cap');
+  assert.equal(state.run.maxIntegrity, 124, 'hull L3 → 124 max integrity (100 + 8·L)');
+  assert.equal(state.run.integrity, 124, 'run starts at the raised hull cap');
 }
 
 // ── determinism: same seed ⇒ same outcome + integrity ─────────────────────────────────────────────

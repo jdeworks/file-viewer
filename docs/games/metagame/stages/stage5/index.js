@@ -72,12 +72,19 @@ function subscribeStage5Actions(actions, handler) {
 }
 
 function ensureStyles() {
-  const id = 'stage5-signal-racer-styles';
+  // Two sheets: base widgets (styles.css) + the race-mode takeover/overlay (styles-race.css). Split to
+  // hold each under the soft LOC cap; both are same-origin and precached like any other stage asset.
+  // Literal new URL(...) calls so esbuild keeps them verbatim as url-tokens (see build/metagame).
+  ensureLink('stage5-signal-racer-styles', new URL('./styles.css', import.meta.url).href);
+  ensureLink('stage5-signal-racer-race-styles', new URL('./styles-race.css', import.meta.url).href);
+}
+
+function ensureLink(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement('link');
   link.id = id;
   link.rel = 'stylesheet';
-  link.href = new URL('./styles.css', import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 

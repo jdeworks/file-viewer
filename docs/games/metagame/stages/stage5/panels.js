@@ -1,26 +1,8 @@
-// panels.js — Stage 5 Signal Racer: pure DOM builders for the side-panel widgets (vehicle shop +
-// ascension ladder). They take plain inputs and return arrays of <button>/<div> elements; the
-// renderer owns the click wiring (via data- attributes) and repaint cadence. Kept out of renderer.js
-// to hold both files under the soft LOC cap.
-
-import { UPGRADES, levelOf, maxLevelOf, costOf, isMaxed } from './shop.js';
-
-// Vehicle-shop rows: one button per part showing rank/max and the next-rank price (or ✓ when maxed).
-export function shopButtonEls({ shop = {}, packets = 0, playing = false }) {
-  return UPGRADES.map((u) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.dataset.buy = u.id;
-    const level = levelOf(shop, u.id);
-    const max = maxLevelOf(u.id);
-    const maxed = isMaxed(shop, u.id);
-    const cost = costOf(shop, u.id);
-    btn.disabled = maxed || playing || Number(packets) < cost;
-    btn.title = u.desc;
-    btn.textContent = maxed ? `${u.label} ${level}/${max} ✓` : `${u.label} ${level}/${max} (${cost}p)`;
-    return btn;
-  });
-}
+// panels.js — Stage 5 Signal Racer: pure DOM builders for the side-panel widgets (per-round packet
+// estimate span + the ascension ladder). They take plain inputs and return elements; the renderer owns
+// the click wiring (via data- attributes) and repaint cadence. Kept out of renderer.js to hold both
+// files under the soft LOC cap. (The vehicle shop that used to live here is gone — upgrades are now an
+// in-flow PIT STOP; see overlay.js / pitstop.js.)
 
 // Muted per-round packet-reward estimate span for a round-selector button (renderer appends it).
 export function roundEstEl(low, high) {
