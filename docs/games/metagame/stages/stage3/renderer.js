@@ -260,22 +260,18 @@ export function renderStage3(ctx) {
     paintHud();
   }
 
-  // Defrag shop overlay — buying upgrades spends registers; closing repaints (next snapshot reflects
-  // prefetch/overclock). The current board isn't retroactively changed.
+  // Defrag shop overlay — the shared modal (openModal). Buying upgrades spends registers; closing
+  // repaints (next snapshot reflects prefetch/overclock). The current board isn't retroactively changed.
   function toggleShop() {
-    if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
-    const panel = buildShopPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
-    overlay = panel.el;
-    root.appendChild(panel.el);
+    if (overlay) { overlay.close(); return; } // close() fires onClose → clears overlay + repaints
+    overlay = buildShopPanel({ state, save, onClose: () => { overlay = null; paintHud(); } });
   }
 
-  // Boon draft overlay — drafting a run-scoped boon spends nothing; it just commits a build choice and
-  // closes. Applies to the NEXT snapshot drawn (the current board is not retroactively changed).
+  // Boon draft overlay — the shared modal. Drafting a run-scoped boon spends nothing; it just commits a
+  // build choice and closes. Applies to the NEXT snapshot drawn (the current board is not changed).
   function toggleDraft() {
-    if (overlay) { overlay.remove(); overlay = null; paintHud(); return; }
-    const panel = buildDraftPanel({ state, save, onClose: () => { if (overlay) { overlay.remove(); overlay = null; } paintHud(); } });
-    overlay = panel.el;
-    root.appendChild(panel.el);
+    if (overlay) { overlay.close(); return; }
+    overlay = buildDraftPanel({ state, save, onClose: () => { overlay = null; paintHud(); } });
   }
 
   const onKey = (event) => {
@@ -379,7 +375,7 @@ export function renderStage3(ctx) {
   return {
     repaint: paintHud,
     dev,
-    destroy() { window.removeEventListener("keydown", onKey); uninstallHook(); verbBar.destroy(); root.remove(); }
+    destroy() { overlay?.close?.(); window.removeEventListener("keydown", onKey); uninstallHook(); verbBar.destroy(); root.remove(); }
   };
 }
 

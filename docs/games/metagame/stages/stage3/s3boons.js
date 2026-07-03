@@ -8,7 +8,7 @@
 // + draft index, never Date.now()/Math.random().
 
 import { makeRng } from "./rng.js";
-import { buildPaginatedModal } from "./s3modal.js";
+import { openModal } from "../../shared/modal.js";
 
 // Solve milestones at which a draft becomes available (3 picks across the ~13-solve body).
 export const DRAFT_AT = [0, 5, 10];
@@ -91,22 +91,22 @@ export function boonPageHtml(boon) {
   </div>`;
 }
 
-// Draft as a true floating modal, paginated one offered boon per page. Picking a boon closes the
-// draft (as before). The seeded 3-offer logic is unchanged.
+// Draft as the shared modal (UX audit F6) — all offered boons render at once in a grid so the pick is
+// a real comparison. Picking a boon closes the draft (as before). The seeded 3-offer logic is unchanged.
 export function buildDraftPanel({ state, save, onClose }) {
   const offer = draftOffer(state);
   const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
-  return buildPaginatedModal({
-    title: "BOON DRAFT",
-    accentClass: "s3-modal-draft",
-    note: "run-scoped boons — they apply to this run's snapshots only.",
-    bank: () => `pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending`,
-    count: () => offer.length,
-    page: (i) => boonPageHtml(offer[i]),
-    wire: (pageEl, i, modal) => {
-      const btn = pageEl.querySelector("[data-pick]");
-      btn?.addEventListener("click", () => { if (pickBoon(state, offer[i].id)) { save?.(); modal.close(); } });
-    },
-    onClose,
+  const content = document.createElement("div");
+  content.className = "s3-draft-content";
+  content.innerHTML = `
+    <div class="mg-modal-note">run-scoped boons — they apply to this run's snapshots only.</div>
+    <div class="mg-modal-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</div>
+    ${offer.length
+      ? `<div class="mg-modal-grid">${offer.map(boonPageHtml).join("")}</div>`
+      : `<div class="mg-modal-empty">nothing available.</div>`}`;
+  const handle = openModal({ title: "BOON DRAFT", className: "s3-modal-draft", contentEl: content, onClose });
+  content.querySelectorAll("[data-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => { if (pickBoon(state, btn.dataset.pick)) { save?.(); handle.close(); } });
   });
+  return handle;
 }

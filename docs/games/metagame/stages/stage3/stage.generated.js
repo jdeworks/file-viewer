@@ -799,67 +799,8 @@ function buildGrid(puzzle, handlers) {
   return { el: wrap, update, flashWrong };
 }
 
-// ../../docs/games/metagame/stages/stage3/s3modal.js
-function buildPaginatedModal(opts) {
-  const { title, accentClass, note, bank, count, page, wire, onClose } = opts;
-  const backdrop = document.createElement("div");
-  backdrop.className = "s3-modal-backdrop";
-  const panel = document.createElement("div");
-  panel.className = "s3-modal" + (accentClass ? " " + accentClass : "");
-  panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", title);
-  backdrop.appendChild(panel);
-  let idx = 0;
-  const close = () => onClose?.();
-  const api = {
-    refresh: () => paint(),
-    close,
-    goto: (i) => {
-      idx = i;
-      paint();
-    }
-  };
-  function paint() {
-    const total = count();
-    if (idx > total - 1) idx = Math.max(0, total - 1);
-    if (idx < 0) idx = 0;
-    const bankHtml = bank ? bank() : "";
-    const body = total ? page(idx) : `<div class="s3-modal-empty">nothing available.</div>`;
-    panel.innerHTML = `
-      <div class="s3-modal-head">${title}
-        ${bankHtml ? `<span class="s3-modal-bank">${bankHtml}</span>` : ""}
-        <button type="button" class="s3-modal-x" data-modal="close" aria-label="close">&#10005;</button>
-      </div>
-      ${note ? `<div class="s3-modal-note">${note}</div>` : ""}
-      <div class="s3-modal-page">${body}</div>
-      <div class="s3-modal-nav">
-        <button type="button" class="s3-modal-btn s3-modal-prev" data-modal="prev" ${idx <= 0 ? "disabled" : ""} aria-label="previous">&#8249; Prev</button>
-        <span class="s3-modal-count" aria-live="polite">${total ? idx + 1 : 0} / ${total}</span>
-        <button type="button" class="s3-modal-btn s3-modal-next" data-modal="next" ${idx >= total - 1 ? "disabled" : ""} aria-label="next">Next &#8250;</button>
-      </div>`;
-    panel.querySelector('[data-modal="close"]').addEventListener("click", close);
-    panel.querySelector('[data-modal="prev"]').addEventListener("click", () => {
-      if (idx > 0) {
-        idx -= 1;
-        paint();
-      }
-    });
-    panel.querySelector('[data-modal="next"]').addEventListener("click", () => {
-      if (idx < count() - 1) {
-        idx += 1;
-        paint();
-      }
-    });
-    if (total) wire?.(panel.querySelector(".s3-modal-page"), idx, api);
-  }
-  backdrop.addEventListener("click", (event) => {
-    if (event.target === backdrop) close();
-  });
-  paint();
-  return { el: backdrop, api };
-}
-
 // ../../docs/games/metagame/stages/stage3/shop.js
+import { openModal } from "../../shared/modal.js";
 var SHOP_UPGRADES = [
   { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
   { id: "throughput", name: "Throughput", desc: "+25% registers per solve", max: 5 },
@@ -919,22 +860,21 @@ function buyUpgrade(state, save, id) {
 }
 function buildShopPanel({ state, save, onClose }) {
   const ups = shopUpgradeList();
-  return buildPaginatedModal({
-    title: "DEFRAG SHOP",
-    accentClass: "s3-modal-shop",
-    note: "spend registers on permanent upgrades — they apply to every snapshot.",
-    bank: () => `${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag`,
-    count: () => ups.length,
-    page: (i) => shopPageHtml(state, ups[i]),
-    wire: (pageEl, i, modal) => {
-      const btn = pageEl.querySelector("[data-buy]");
-      btn?.addEventListener("click", () => {
-        buyUpgrade(state, save, ups[i].id);
-        modal.refresh();
+  const content = document.createElement("div");
+  content.className = "s3-shop-content";
+  function render() {
+    content.innerHTML = `
+      <div class="mg-modal-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
+      <div class="mg-modal-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</div>
+      ${ups.length ? `<div class="mg-modal-grid">${ups.map((up) => shopPageHtml(state, up)).join("")}</div>` : `<div class="mg-modal-empty">nothing available.</div>`}`;
+    content.querySelectorAll("[data-buy]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (buyUpgrade(state, save, btn.dataset.buy)) render();
       });
-    },
-    onClose
-  });
+    });
+  }
+  render();
+  return openModal({ title: "DEFRAG SHOP", className: "s3-modal-shop", contentEl: content, onClose });
 }
 
 // ../../docs/games/metagame/stages/stage3/s3debug.js
@@ -1123,6 +1063,7 @@ function decayRatio(decay) {
 }
 
 // ../../docs/games/metagame/stages/stage3/s3boons.js
+import { openModal as openModal2 } from "../../shared/modal.js";
 var DRAFT_AT = [0, 5, 10];
 var BOONS = [
   { id: "cache", label: "Cache Primer", desc: "+2 cells pre-filled each snapshot (this run)", effect: { prefetch: 2 } },
@@ -1182,24 +1123,22 @@ function boonPageHtml(boon) {
 function buildDraftPanel({ state, save, onClose }) {
   const offer = draftOffer(state);
   const remaining = Math.max(0, milestonesReached(state) - state.run.draftsTaken);
-  return buildPaginatedModal({
-    title: "BOON DRAFT",
-    accentClass: "s3-modal-draft",
-    note: "run-scoped boons — they apply to this run's snapshots only.",
-    bank: () => `pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending`,
-    count: () => offer.length,
-    page: (i) => boonPageHtml(offer[i]),
-    wire: (pageEl, i, modal) => {
-      const btn = pageEl.querySelector("[data-pick]");
-      btn?.addEventListener("click", () => {
-        if (pickBoon(state, offer[i].id)) {
-          save?.();
-          modal.close();
-        }
-      });
-    },
-    onClose
+  const content = document.createElement("div");
+  content.className = "s3-draft-content";
+  content.innerHTML = `
+    <div class="mg-modal-note">run-scoped boons — they apply to this run's snapshots only.</div>
+    <div class="mg-modal-bank">pick 1 · ${remaining} draft${remaining === 1 ? "" : "s"} pending</div>
+    ${offer.length ? `<div class="mg-modal-grid">${offer.map(boonPageHtml).join("")}</div>` : `<div class="mg-modal-empty">nothing available.</div>`}`;
+  const handle = openModal2({ title: "BOON DRAFT", className: "s3-modal-draft", contentEl: content, onClose });
+  content.querySelectorAll("[data-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (pickBoon(state, btn.dataset.pick)) {
+        save?.();
+        handle.close();
+      }
+    });
   });
+  return handle;
 }
 
 // ../../docs/games/metagame/stages/stage3/s3tiers.js
@@ -1646,37 +1585,23 @@ function renderStage3(ctx) {
   }
   function toggleShop() {
     if (overlay) {
-      overlay.remove();
-      overlay = null;
-      paintHud();
+      overlay.close();
       return;
     }
-    const panel = buildShopPanel({ state, save, onClose: () => {
-      if (overlay) {
-        overlay.remove();
-        overlay = null;
-      }
+    overlay = buildShopPanel({ state, save, onClose: () => {
+      overlay = null;
       paintHud();
     } });
-    overlay = panel.el;
-    root.appendChild(panel.el);
   }
   function toggleDraft() {
     if (overlay) {
-      overlay.remove();
-      overlay = null;
-      paintHud();
+      overlay.close();
       return;
     }
-    const panel = buildDraftPanel({ state, save, onClose: () => {
-      if (overlay) {
-        overlay.remove();
-        overlay = null;
-      }
+    overlay = buildDraftPanel({ state, save, onClose: () => {
+      overlay = null;
       paintHud();
     } });
-    overlay = panel.el;
-    root.appendChild(panel.el);
   }
   const onKey = (event) => {
     if (!root.isConnected || overlay) return;
@@ -1819,6 +1744,7 @@ function renderStage3(ctx) {
     repaint: paintHud,
     dev,
     destroy() {
+      overlay?.close?.();
       window.removeEventListener("keydown", onKey);
       uninstallHook();
       verbBar.destroy();

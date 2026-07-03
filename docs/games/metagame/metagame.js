@@ -163,15 +163,19 @@ export function mount(host, { onExit } = {}) {
     if (saveData.global.devUnlocked || devUnlockedPersisted()) devBtn.hidden = false;
     devBtn.addEventListener('click', () => toggleDevMenu());
     const nav = host.querySelector('.mg-v3-stages');
+    const currentStage = Number(saveData.currentStage);
     nav.replaceChildren(...listStageMetas().filter((meta) => saveData.unlockedStages.includes(meta.id)).map((meta) => {
       const defeated = saveData.defeated.includes(meta.id);
       // Stage 10's "rest" final route leaves the entity dormant — surface a "(resting)" hub state.
       const resting = meta.id === 10 && defeated && saveData.stageState?.[meta.id]?.final?.route === 'rest';
       const button = document.createElement('button');
       button.type = 'button';
-      button.className = `mg-v3-stage${resting ? ' is-resting' : ''}`;
+      // F4 (phone chrome diet): the button carries a number chip + the full name in separate spans.
+      // Desktop shows both inline (unchanged "1. Name *"); on phone CSS hides the name so the nav
+      // collapses to one scroll-snap row of numbered chips. is-current / is-defeated drive the chip.
+      button.className = `mg-v3-stage${resting ? ' is-resting' : ''}${defeated ? ' is-defeated' : ''}${meta.id === currentStage ? ' is-current' : ''}`;
       button.dataset.stage = String(meta.id);
-      button.textContent = `${meta.id}. ${meta.name}${defeated ? ' *' : ''}${resting ? ' (resting)' : ''}`;
+      button.innerHTML = `<span class="mg-v3-stage-num">${meta.id}</span><span class="mg-v3-stage-name">. ${esc(meta.name)}${defeated ? ' *' : ''}${resting ? ' (resting)' : ''}</span>`;
       button.addEventListener('click', () => selectStage(meta.id));
       nav.appendChild(button);
       return button;

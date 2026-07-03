@@ -49,6 +49,10 @@ const ALLOWED_SHARED = new Set([
   '../../shared/economy.js',
   '../../shared/shop.js',
   '../../shared/ascension.js',
+  // Shared metagame modal (UX audit F6). One vendored same-origin instance every stage reuses (S3's
+  // Defrag shop + boon draft today) rather than each stage inlining a copy — kept external like the
+  // other shared singletons above.
+  '../../shared/modal.js',
   // Shared on-screen touch-control component (d-pad / verb toggle). Stateless factory reused across
   // stages (S5 steering, S3 verb toggle); kept external like the other shared singletons.
   '../../touch-controls.js',

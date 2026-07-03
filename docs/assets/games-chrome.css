@@ -65,6 +65,7 @@
 .mg-dev-btn[hidden], .mg-help-btn[hidden] { display: none; }
 .mg-v3-stages { display: flex; gap: 6px; flex-wrap: wrap; }
 .mg-v3-stage { background: var(--bg-2); color: var(--fg); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; cursor: pointer; font-size: 12px; }
+.mg-v3-stage.is-current { border-color: var(--accent); color: var(--accent); }
 .mg-v3-stage:disabled { opacity: .45; cursor: not-allowed; }
 .mg-v3-host { display: flex; justify-content: center; }
 .mg-v3-loading { padding: 32px; color: #8a93a7; font-size: 0.9rem; letter-spacing: 0.04em; }
@@ -78,6 +79,65 @@
 .games-panel.is-meta .mg-v3 { width: 100%; display: flex; flex-direction: column; height: 100%; }
 .games-panel.is-meta .mg-v3-host { flex: 1; min-height: 0; overflow: auto; }
 .games-panel.is-meta .mg-v3-host > * { width: 100%; }
+
+/* ── Shared modal (UX audit F6 — docs/games/metagame/shared/modal.js) ──────────────────────────────
+   One standard overlay every stage reuses: fixed, viewport-centred, internal scroll, content is a
+   grid (no pagination). Portaled to <body>; z-index sits ABOVE the dev menu (60) and games overlay. */
+.mg-modal-backdrop { position: fixed; inset: 0; z-index: 70; display: flex; align-items: center;
+  justify-content: center; padding: 16px; background: rgba(0,0,0,.5); }
+.mg-modal { display: flex; flex-direction: column; gap: 10px; width: min(680px, 100%); max-height: 80vh;
+  overflow: auto; padding: 16px; background: var(--bg); color: var(--fg); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 16px 44px rgba(0,0,0,.5); animation: mg-modal-in .16s ease; }
+.mg-modal:focus { outline: none; }
+.mg-modal-head { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+.mg-modal-title { flex: 1; font-weight: 700; }
+.mg-modal-x { background: none; border: 1px solid var(--border); color: inherit; cursor: pointer;
+  border-radius: 8px; min-width: 40px; min-height: 40px; padding: 2px 8px; line-height: 1; }
+.mg-modal-x:hover { border-color: var(--accent); }
+.mg-modal-body { display: flex; flex-direction: column; gap: 10px; }
+.mg-modal-note { font-size: .85em; opacity: .8; }
+.mg-modal-bank { font-size: .9em; font-variant-numeric: tabular-nums; }
+.mg-modal-empty { opacity: .7; font-style: italic; padding: 24px 0; text-align: center; }
+.mg-modal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+@keyframes mg-modal-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ── Shared micro-feedback kit (UX audit F5 — docs/games/metagame/shared/feedback.js) ──────────────
+   Stages attach these classes / spawn these nodes for a hit flash, a shake, a rising number, or a
+   phase banner. All animation-driven; the reduced-motion block below degrades each to instant/colour. */
+.mg-hit--good { animation: mg-flash-good .34s ease; }
+.mg-hit--bad  { animation: mg-flash-bad  .34s ease; }
+.mg-hit--warn { animation: mg-flash-warn .34s ease; }
+@keyframes mg-flash-good { 0% { box-shadow: 0 0 0 0 rgba(46,160,67,.7); } 100% { box-shadow: 0 0 0 8px rgba(46,160,67,0); } }
+@keyframes mg-flash-bad  { 0% { box-shadow: 0 0 0 0 rgba(224,49,49,.7); } 100% { box-shadow: 0 0 0 8px rgba(224,49,49,0); } }
+@keyframes mg-flash-warn { 0% { box-shadow: 0 0 0 0 rgba(224,163,46,.75); } 100% { box-shadow: 0 0 0 8px rgba(224,163,46,0); } }
+.mg-shake { animation: mg-shake .4s ease; }
+@keyframes mg-shake { 10%,90% { transform: translateX(-1px); } 20%,80% { transform: translateX(2px); }
+  30%,50%,70% { transform: translateX(-4px); } 40%,60% { transform: translateX(4px); } }
+.mg-float { position: absolute; left: 50%; top: 0; transform: translateX(-50%); pointer-events: none;
+  font-weight: 700; font-variant-numeric: tabular-nums; z-index: 5; animation: mg-float .9s ease-out forwards; }
+.mg-float--good { color: #2ea043; } .mg-float--bad { color: #e03131; } .mg-float--warn { color: #d19a1e; }
+@keyframes mg-float { 0% { opacity: 0; transform: translate(-50%, 4px); } 15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -34px); } }
+.mg-banner { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); z-index: 6;
+  pointer-events: none; padding: 8px 18px; border-radius: 10px; font-weight: 700; letter-spacing: .04em;
+  background: color-mix(in srgb, var(--accent) 88%, #000); color: var(--accent-fg);
+  box-shadow: 0 6px 22px rgba(0,0,0,.4); animation: mg-banner 1.2s ease both; }
+@keyframes mg-banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.9); }
+  15%,80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }
+
+/* Reduced motion: no movement — flashes degrade to a static ring, float/banner appear instantly and
+   are removed by the JS fallback timer (animationend never fires when animation is suppressed). */
+@media (prefers-reduced-motion: reduce) {
+  .mg-modal { animation: none; }
+  .mg-hit--good, .mg-hit--bad, .mg-hit--warn, .mg-shake, .mg-float, .mg-banner { animation: none; }
+  .mg-hit--good { box-shadow: inset 0 0 0 2px rgba(46,160,67,.8); }
+  .mg-hit--bad  { box-shadow: inset 0 0 0 2px rgba(224,49,49,.8); }
+  .mg-hit--warn { box-shadow: inset 0 0 0 2px rgba(224,163,46,.8); }
+  .mg-float { opacity: 1; }
+  .mg-banner { opacity: 1; }
+}
+
 .stage2-glyph-dungeon { width: min(720px, 100%); background: #0f0e0c; color: #ef9f27; border: 1px solid #5b3a10; border-radius: 8px; padding: 12px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .s2-hud { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 6px; font-size: 12px; }
 .s2-grid { margin: 10px 0; padding: 10px; overflow: auto; border: 1px solid #5b3a10; background: #070604; color: #ef9f27; font: 12px/1.05 ui-monospace, monospace; }
@@ -118,6 +178,24 @@
   /* Global touch-target rule — lifts the tiny stage buttons the audit flagged (S1 ×N counts, S8 node
      repair/HL/freeze, S10 dialogue, S4/S5 secondary controls) to a comfortable height at once. */
   .mg-v3 button { min-height: 40px; }
+
+  /* ── F4 (phone chrome diet): claw back the ~700px of shell before the game starts ────────────────
+     Header collapses to ONE ~44px row (banner+name left, actions right — no wrapping); the stage nav
+     collapses from up-to-5 rows of full-name pills into ONE horizontal scroll-snap strip of numbered
+     chips. Desktop keeps the full pills + multi-line header (rules scoped to this media query only). */
+  .mg-v3-head { flex-wrap: nowrap; align-items: center; gap: 8px; }
+  .mg-v3-head > div:first-child { display: flex; align-items: baseline; gap: 6px; overflow: hidden; }
+  .mg-v3-head > div:first-child .mg-stage-banner { flex: 0 0 auto; font-size: 11px; }
+  .mg-v3-head > div:first-child strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .mg-v3-head-actions { flex: 0 0 auto; flex-wrap: nowrap; gap: 6px; }
+  .mg-back { padding: 5px 9px; white-space: nowrap; }
+
+  .mg-v3-stages { flex-wrap: nowrap; overflow-x: auto; gap: 4px; padding-bottom: 2px;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+  .mg-v3-stage { flex: 0 0 auto; min-width: 40px; padding: 5px 0; text-align: center; scroll-snap-align: start; }
+  .mg-v3-stage-name { display: none; }              /* phone: chips show the number only */
+  .mg-v3-stage.is-defeated { border-color: #3a7d44; color: #7ee787; }
+  .mg-v3-stage.is-current { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 
   .mg-touch:not([hidden]) { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
   .mg-touch .mg-touch-btn { min-height: 48px; }

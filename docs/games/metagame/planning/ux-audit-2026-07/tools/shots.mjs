@@ -93,7 +93,7 @@ async function drive(dir, viewport, opts, phoneLite = false) {
       await page.click('button[data-action="shop"]').catch(() => {});
       await page.waitForTimeout(300);
       await shot(page, dir, 's3-shop-modal');
-      await page.evaluate(() => document.querySelector('.s3-modal-backdrop')?.click());
+      await page.evaluate(() => document.querySelector('.mg-modal-backdrop')?.click());
       await page.waitForTimeout(200);
       await page.evaluate(() => { for (let i = 0; i < 6; i++) window.__fvStage3?.solveCurrent?.(); });
       await page.waitForTimeout(400);

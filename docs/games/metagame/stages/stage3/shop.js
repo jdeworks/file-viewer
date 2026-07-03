@@ -2,7 +2,7 @@
 // the loop deeper. Levels live in state.shopUpgrades and apply to every future snapshot, so progress
 // survives the run. Mirrors the Stage 2 glyph shop. Pure-ish: an overlay panel + the upgrade table.
 
-import { buildPaginatedModal } from "./s3modal.js";
+import { openModal } from "../../shared/modal.js";
 
 export const SHOP_UPGRADES = [
   { id: "prefetch", name: "Prefetch Cache", desc: "+1 correct cell pre-filled each snapshot", max: 6 },
@@ -74,21 +74,23 @@ export function buyUpgrade(state, save, id) {
   return true;
 }
 
-// Defrag shop as a true floating modal, paginated one upgrade per page. Buying stays on the same
-// page and refreshes it (cost/level/bank update in place).
+// Defrag shop as the shared modal (UX audit F6) — ALL upgrades render at once in a grid, so the
+// player can compare before spending. Buying re-renders the grid in place (cost/level/bank update).
 export function buildShopPanel({ state, save, onClose }) {
   const ups = shopUpgradeList();
-  return buildPaginatedModal({
-    title: "DEFRAG SHOP",
-    accentClass: "s3-modal-shop",
-    note: "spend registers on permanent upgrades — they apply to every snapshot.",
-    bank: () => `${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag`,
-    count: () => ups.length,
-    page: (i) => shopPageHtml(state, ups[i]),
-    wire: (pageEl, i, modal) => {
-      const btn = pageEl.querySelector("[data-buy]");
-      btn?.addEventListener("click", () => { buyUpgrade(state, save, ups[i].id); modal.refresh(); });
-    },
-    onClose,
-  });
+  const content = document.createElement("div");
+  content.className = "s3-shop-content";
+  function render() {
+    content.innerHTML = `
+      <div class="mg-modal-note">spend registers on permanent upgrades — they apply to every snapshot.</div>
+      <div class="mg-modal-bank">${Number(state.registers || 0)} reg · ${Number(state.retained || 0)} frag</div>
+      ${ups.length
+        ? `<div class="mg-modal-grid">${ups.map((up) => shopPageHtml(state, up)).join("")}</div>`
+        : `<div class="mg-modal-empty">nothing available.</div>`}`;
+    content.querySelectorAll("[data-buy]").forEach((btn) => {
+      btn.addEventListener("click", () => { if (buyUpgrade(state, save, btn.dataset.buy)) render(); });
+    });
+  }
+  render();
+  return openModal({ title: "DEFRAG SHOP", className: "s3-modal-shop", contentEl: content, onClose });
 }
