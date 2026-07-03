@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 const CSS = `
@@ -36,7 +38,8 @@ function dbChip(backend) {
 }
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  let cfg = {};
+  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
   const g = cfg.global || {};
   const tls = g.tls || {};
   const wellKnown = g.well_known || {};

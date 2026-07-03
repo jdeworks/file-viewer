@@ -60,12 +60,8 @@ function countKeys(obj) {
 export function render(intake) {
   let cfg = {};
   try {
-    if (intake.parsed && typeof intake.parsed === 'object') {
-      cfg = intake.parsed;
-    } else {
-      const text = intake.text || (intake.bytes ? new TextDecoder().decode(intake.bytes) : '');
-      cfg = parseTOML(text);
-    }
+    const text = intake.text || (intake.bytes ? new TextDecoder().decode(intake.bytes) : '');
+    cfg = parseTOML(text) || {};
   } catch { cfg = {}; }
 
   const theme = cfg.theme || null;

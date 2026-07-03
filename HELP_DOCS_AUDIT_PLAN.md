@@ -2622,58 +2622,58 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/thrift/metadata.js
 - [ ] docs/types/text/thrift/renderer.js
 - [ ] docs/types/text/thrift/settings.default.json
-- [ ] docs/types/text/toml/detect.js
-- [ ] docs/types/text/toml/EDITOR.md
-- [ ] docs/types/text/toml/exports.js
-- [ ] docs/types/text/toml/form-editor.js
-- [ ] docs/types/text/toml/index.js
-- [ ] docs/types/text/toml/known/air-config/index.js
-- [ ] docs/types/text/toml/known/air-config/renderer.js
-- [ ] docs/types/text/toml/known/anchor-toml/index.js
-- [ ] docs/types/text/toml/known/anchor-toml/renderer.js
-- [ ] docs/types/text/toml/known/aws-sam-config/index.js
-- [ ] docs/types/text/toml/known/aws-sam-config/renderer.js
-- [ ] docs/types/text/toml/known/bunfig/index.js
-- [ ] docs/types/text/toml/known/bunfig/renderer.js
-- [ ] docs/types/text/toml/known/cargo-config/index.js
-- [ ] docs/types/text/toml/known/cargo-config/renderer.js
-- [ ] docs/types/text/toml/known/cargo-deny/index.js
-- [ ] docs/types/text/toml/known/cargo-deny/renderer.js
-- [ ] docs/types/text/toml/known/cargo-lock/index.js
-- [ ] docs/types/text/toml/known/cargo-lock/renderer.js
-- [ ] docs/types/text/toml/known/cargo-toml/index.js
-- [ ] docs/types/text/toml/known/cargo-toml/metadata.js
-- [ ] docs/types/text/toml/known/cargo-toml/render.js
-- [ ] docs/types/text/toml/known/cliff/index.js
-- [ ] docs/types/text/toml/known/cliff/renderer.js
-- [ ] docs/types/text/toml/known/clippy-toml/index.js
-- [ ] docs/types/text/toml/known/clippy-toml/renderer.js
-- [ ] docs/types/text/toml/known/conduit-config/index.js
-- [ ] docs/types/text/toml/known/conduit-config/renderer.js
-- [ ] docs/types/text/toml/known/fly/index.js
-- [ ] docs/types/text/toml/known/fly/renderer.js
-- [ ] docs/types/text/toml/known/foundry-toml/index.js
-- [ ] docs/types/text/toml/known/foundry-toml/renderer.js
-- [ ] docs/types/text/toml/known/frpc-config/index.js
-- [ ] docs/types/text/toml/known/frpc-config/renderer.js
-- [ ] docs/types/text/toml/known/frps-config/index.js
-- [ ] docs/types/text/toml/known/frps-config/renderer.js
-- [ ] docs/types/text/toml/known/gitleaks-config/index.js
-- [ ] docs/types/text/toml/known/gitleaks-config/renderer.js
-- [ ] docs/types/text/toml/known/gleam-toml/index.js
-- [ ] docs/types/text/toml/known/gleam-toml/renderer.js
-- [ ] docs/types/text/toml/known/gradle-version-catalog/index.js
-- [ ] docs/types/text/toml/known/gradle-version-catalog/renderer.js
-- [ ] docs/types/text/toml/known/hatch/index.js
-- [ ] docs/types/text/toml/known/hatch/renderer.js
-- [ ] docs/types/text/toml/known/helix-config/index.js
-- [ ] docs/types/text/toml/known/helix-config/renderer.js
-- [ ] docs/types/text/toml/known/influxdb/index.js
-- [ ] docs/types/text/toml/known/influxdb/renderer.js
-- [ ] docs/types/text/toml/known/julia-manifest/index.js
-- [ ] docs/types/text/toml/known/julia-manifest/renderer.js
-- [ ] docs/types/text/toml/known/julia-project/index.js
-- [ ] docs/types/text/toml/known/julia-project/renderer.js
+- [x] docs/types/text/toml/detect.js
+- [x] docs/types/text/toml/EDITOR.md
+- [x] docs/types/text/toml/exports.js
+- [x] docs/types/text/toml/form-editor.js
+- [x] docs/types/text/toml/index.js
+- [x] docs/types/text/toml/known/air-config/index.js
+- [x] docs/types/text/toml/known/air-config/renderer.js
+- [x] docs/types/text/toml/known/anchor-toml/index.js
+- [x] docs/types/text/toml/known/anchor-toml/renderer.js
+- [x] docs/types/text/toml/known/aws-sam-config/index.js
+- [x] docs/types/text/toml/known/aws-sam-config/renderer.js
+- [x] docs/types/text/toml/known/bunfig/index.js
+- [x] docs/types/text/toml/known/bunfig/renderer.js
+- [x] docs/types/text/toml/known/cargo-config/index.js
+- [x] docs/types/text/toml/known/cargo-config/renderer.js
+- [x] docs/types/text/toml/known/cargo-deny/index.js
+- [x] docs/types/text/toml/known/cargo-deny/renderer.js
+- [x] docs/types/text/toml/known/cargo-lock/index.js
+- [x] docs/types/text/toml/known/cargo-lock/renderer.js
+- [x] docs/types/text/toml/known/cargo-toml/index.js
+- [x] docs/types/text/toml/known/cargo-toml/metadata.js
+- [x] docs/types/text/toml/known/cargo-toml/render.js
+- [x] docs/types/text/toml/known/cliff/index.js
+- [x] docs/types/text/toml/known/cliff/renderer.js
+- [x] docs/types/text/toml/known/clippy-toml/index.js
+- [x] docs/types/text/toml/known/clippy-toml/renderer.js
+- [x] docs/types/text/toml/known/conduit-config/index.js
+- [x] docs/types/text/toml/known/conduit-config/renderer.js
+- [x] docs/types/text/toml/known/fly/index.js
+- [x] docs/types/text/toml/known/fly/renderer.js
+- [x] docs/types/text/toml/known/foundry-toml/index.js
+- [x] docs/types/text/toml/known/foundry-toml/renderer.js
+- [x] docs/types/text/toml/known/frpc-config/index.js
+- [x] docs/types/text/toml/known/frpc-config/renderer.js
+- [x] docs/types/text/toml/known/frps-config/index.js
+- [x] docs/types/text/toml/known/frps-config/renderer.js
+- [x] docs/types/text/toml/known/gitleaks-config/index.js
+- [x] docs/types/text/toml/known/gitleaks-config/renderer.js
+- [x] docs/types/text/toml/known/gleam-toml/index.js
+- [x] docs/types/text/toml/known/gleam-toml/renderer.js
+- [x] docs/types/text/toml/known/gradle-version-catalog/index.js
+- [x] docs/types/text/toml/known/gradle-version-catalog/renderer.js
+- [x] docs/types/text/toml/known/hatch/index.js
+- [x] docs/types/text/toml/known/hatch/renderer.js
+- [x] docs/types/text/toml/known/helix-config/index.js
+- [x] docs/types/text/toml/known/helix-config/renderer.js
+- [x] docs/types/text/toml/known/influxdb/index.js
+- [x] docs/types/text/toml/known/influxdb/renderer.js
+- [x] docs/types/text/toml/known/julia-manifest/index.js
+- [x] docs/types/text/toml/known/julia-manifest/renderer.js
+- [x] docs/types/text/toml/known/julia-project/index.js
+- [x] docs/types/text/toml/known/julia-project/renderer.js
 - [ ] docs/types/text/toml/known/listmonk-config/index.js
 - [ ] docs/types/text/toml/known/listmonk-config/renderer.js
 - [ ] docs/types/text/toml/known/lldap-config/index.js
@@ -2720,10 +2720,10 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/toml/known/vector-toml/renderer.js
 - [ ] docs/types/text/toml/known/wrangler/index.js
 - [ ] docs/types/text/toml/known/wrangler/renderer.js
-- [ ] docs/types/text/toml/metadata.js
-- [ ] docs/types/text/toml/renderer.js
-- [ ] docs/types/text/toml/settings.default.json
-- [ ] docs/types/text/toml/toml.js
+- [x] docs/types/text/toml/metadata.js
+- [x] docs/types/text/toml/renderer.js
+- [x] docs/types/text/toml/settings.default.json
+- [x] docs/types/text/toml/toml.js
 - [ ] docs/types/text/url/detect.js
 - [ ] docs/types/text/url/EDITOR.md
 - [ ] docs/types/text/url/index.js
@@ -3869,29 +3869,29 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/text/known/zig-zon
 - [ ] docs/types/text/known/zookeeper-config
 - [ ] docs/types/text/known/zsh-script
-- [ ] docs/types/text/toml/known/air-config
-- [ ] docs/types/text/toml/known/anchor-toml
-- [ ] docs/types/text/toml/known/aws-sam-config
-- [ ] docs/types/text/toml/known/bunfig
-- [ ] docs/types/text/toml/known/cargo-config
-- [ ] docs/types/text/toml/known/cargo-deny
-- [ ] docs/types/text/toml/known/cargo-lock
-- [ ] docs/types/text/toml/known/cargo-toml
-- [ ] docs/types/text/toml/known/cliff
-- [ ] docs/types/text/toml/known/clippy-toml
-- [ ] docs/types/text/toml/known/conduit-config
-- [ ] docs/types/text/toml/known/fly
-- [ ] docs/types/text/toml/known/foundry-toml
-- [ ] docs/types/text/toml/known/frpc-config
-- [ ] docs/types/text/toml/known/frps-config
-- [ ] docs/types/text/toml/known/gitleaks-config
-- [ ] docs/types/text/toml/known/gleam-toml
-- [ ] docs/types/text/toml/known/gradle-version-catalog
-- [ ] docs/types/text/toml/known/hatch
-- [ ] docs/types/text/toml/known/helix-config
-- [ ] docs/types/text/toml/known/influxdb
-- [ ] docs/types/text/toml/known/julia-manifest
-- [ ] docs/types/text/toml/known/julia-project
+- [x] docs/types/text/toml/known/air-config
+- [x] docs/types/text/toml/known/anchor-toml
+- [x] docs/types/text/toml/known/aws-sam-config
+- [x] docs/types/text/toml/known/bunfig
+- [x] docs/types/text/toml/known/cargo-config
+- [x] docs/types/text/toml/known/cargo-deny
+- [x] docs/types/text/toml/known/cargo-lock
+- [x] docs/types/text/toml/known/cargo-toml
+- [x] docs/types/text/toml/known/cliff
+- [x] docs/types/text/toml/known/clippy-toml
+- [x] docs/types/text/toml/known/conduit-config
+- [x] docs/types/text/toml/known/fly
+- [x] docs/types/text/toml/known/foundry-toml
+- [x] docs/types/text/toml/known/frpc-config
+- [x] docs/types/text/toml/known/frps-config
+- [x] docs/types/text/toml/known/gitleaks-config
+- [x] docs/types/text/toml/known/gleam-toml
+- [x] docs/types/text/toml/known/gradle-version-catalog
+- [x] docs/types/text/toml/known/hatch
+- [x] docs/types/text/toml/known/helix-config
+- [x] docs/types/text/toml/known/influxdb
+- [x] docs/types/text/toml/known/julia-manifest
+- [x] docs/types/text/toml/known/julia-project
 - [ ] docs/types/text/toml/known/listmonk-config
 - [ ] docs/types/text/toml/known/lldap-config
 - [ ] docs/types/text/toml/known/mise

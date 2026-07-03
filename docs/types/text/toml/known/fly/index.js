@@ -2,7 +2,8 @@ export const plugin = {
   id: 'fly-toml',
   label: 'Fly.io',
   tags: ['fly', 'deploy', 'paas'],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'toml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'fly.toml';
   },

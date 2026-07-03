@@ -25,9 +25,7 @@ const CSS = `
 
 export function render(intake) {
   let cfg = {};
-  try {
-    cfg = (intake.parsed && typeof intake.parsed === 'object') ? intake.parsed : (parseTOML(intake.text || '') || {});
-  } catch { cfg = {}; }
+  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
 
   const changelog = cfg.changelog || {};
   const git = cfg.git || {};

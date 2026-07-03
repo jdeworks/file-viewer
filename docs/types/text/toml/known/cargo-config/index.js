@@ -1,7 +1,8 @@
 export default {
   id: 'cargo-config',
   label: 'Cargo config',
-  match: (intake) => {
+  match: (intake, baseType) => {
+    if (baseType?.id !== 'toml') return false;
     const name = (intake.filename || '').split('/').pop().toLowerCase();
     const p = intake.path || '';
     return (name === 'config.toml' && p.includes('/.cargo/')) || name === 'cargo.config.toml';

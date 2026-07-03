@@ -2,7 +2,8 @@ export const plugin = {
   id: 'cliff-toml',
   label: 'cliff.toml',
   tags: ['git-cliff', 'changelog', 'toml'],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'toml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return n === 'cliff.toml';
   },

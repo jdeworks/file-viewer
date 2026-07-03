@@ -634,7 +634,8 @@ var plugin8 = {
   id: "fly-toml",
   label: "Fly.io",
   tags: ["fly", "deploy", "paas"],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== "toml") return false;
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     return n === "fly.toml";
   },
@@ -651,7 +652,8 @@ var plugin9 = {
   id: "cliff-toml",
   label: "cliff.toml",
   tags: ["git-cliff", "changelog", "toml"],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== "toml") return false;
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     return n === "cliff.toml";
   },
@@ -2034,7 +2036,7 @@ var sonar_default = {
 var hatch_default = {
   id: "hatch",
   label: "Hatch (Python build)",
-  match: (intake) => (intake.filename || "").split("/").pop().toLowerCase() === "hatch.toml",
+  match: (intake, baseType) => baseType?.id === "toml" && (intake.filename || "").split("/").pop().toLowerCase() === "hatch.toml",
   loadRenderer: () => import("../types/text/toml/known/hatch/renderer.js"),
   about: { description: "Hatch Python build system config — build targets, environments, scripts, and versioning." }
 };
@@ -2414,7 +2416,8 @@ var typos_default = {
 var cargo_deny_default = {
   id: "cargo-deny",
   label: "cargo-deny config",
-  match: (intake) => {
+  match: (intake, baseType) => {
+    if (baseType?.id !== "toml") return false;
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     return name === "deny.toml" || name === "cargo-deny.toml";
   },
@@ -2429,7 +2432,8 @@ var cargo_deny_default = {
 var cargo_config_default = {
   id: "cargo-config",
   label: "Cargo config",
-  match: (intake) => {
+  match: (intake, baseType) => {
+    if (baseType?.id !== "toml") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
     const p = intake.path || "";
     return name === "config.toml" && p.includes("/.cargo/") || name === "cargo.config.toml";
@@ -10142,7 +10146,8 @@ var wgetrc_default = {
 var helix_config_default = {
   id: "helix-config",
   label: "Helix Config",
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== "toml") return false;
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "config.toml" || n === "helix.toml") {
       const text = intake.textSample || intake.text || "";
@@ -11802,11 +11807,12 @@ var invoiceninja_config_default = {
 var conduit_config_default = {
   id: "conduit-config",
   label: "Conduit Config",
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== "toml") return false;
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "conduit.toml") return true;
-    const g = (intake.parsed || {}).global || {};
-    return !!g.server_name && !!g.database_backend;
+    const text = intake.textSample || intake.text || "";
+    return /^\s*server_name\s*=/m.test(text) && /^\s*database_backend\s*=/m.test(text);
   },
   loadRenderer: () => import("../types/text/toml/known/conduit-config/renderer.js")
 };

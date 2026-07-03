@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 const CSS = `
@@ -15,7 +17,8 @@ const CSS = `
 `;
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  let cfg = {};
+  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
   const common = cfg.common || cfg;
 
   const bindAddr = common.bindAddr || common.bind_addr || '';

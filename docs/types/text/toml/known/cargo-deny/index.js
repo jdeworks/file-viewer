@@ -1,7 +1,8 @@
 export default {
   id: 'cargo-deny',
   label: 'cargo-deny config',
-  match: (intake) => {
+  match: (intake, baseType) => {
+    if (baseType?.id !== 'toml') return false;
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     return name === 'deny.toml' || name === 'cargo-deny.toml';
   },

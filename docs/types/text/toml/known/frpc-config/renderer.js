@@ -1,3 +1,5 @@
+import { parseTOML } from '../../toml.js';
+
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
 const REDACT_KEYS = new Set(['token','secretkey','secret_key','password','passwd']);
@@ -22,7 +24,8 @@ const CSS = `
 `;
 
 export function render(intake) {
-  const cfg = intake.parsed || {};
+  let cfg = {};
+  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
 
   // Server info (common section)
   const common = cfg.common || cfg;

@@ -29,13 +29,7 @@ function boolPill(label, val, allowIsGreen) {
 
 export function render(intake) {
   let cfg = {};
-  try {
-    if (intake.parsed && typeof intake.parsed === 'object') {
-      cfg = intake.parsed;
-    } else {
-      cfg = parseTOML(intake.text || '') || {};
-    }
-  } catch { cfg = {}; }
+  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
 
   const msrv = cfg['msrv'];
   const cogComplexity = cfg['cognitive-complexity-threshold'];

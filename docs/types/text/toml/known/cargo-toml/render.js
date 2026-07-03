@@ -3,6 +3,13 @@
 import { chip, ensureKnownUiStyle, esc, issueList, sourceButton, sourcePreview, wireSourceLinks } from '../../../../../core/known-ui.js';
 import { parseTOML } from '../../toml.js';
 
+/** Reject javascript:/data: etc — Cargo.toml package.homepage/repository/documentation are
+ * untrusted and must never become an executable href when the user clicks the rendered link. */
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
+
 const CSS = `
 .cargo-src-key{color:#0550ae;font-weight:700}
 .cargo-src-string{color:#0a7f38}
@@ -184,9 +191,12 @@ export async function render(intake, _ctx) {
 
 function linkNodes(pkg) {
   const links = [];
-  if (pkg.homepage) links.push(extNode(pkg.homepage, 'Homepage'));
-  if (pkg.repository) links.push(extNode(pkg.repository, 'Repository'));
-  if (pkg.documentation) links.push(extNode(pkg.documentation, 'Docs'));
+  const homepage = safeHref(pkg.homepage);
+  if (homepage) links.push(extNode(homepage, 'Homepage'));
+  const repository = safeHref(pkg.repository);
+  if (repository) links.push(extNode(repository, 'Repository'));
+  const documentation = safeHref(pkg.documentation);
+  if (documentation) links.push(extNode(documentation, 'Docs'));
   if (pkg.name) links.push(extNode(crateUrl(pkg.name), 'View on crates.io'));
   return links;
 }

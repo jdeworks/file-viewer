@@ -1,7 +1,8 @@
 export default {
   id: 'helix-config',
   label: 'Helix Config',
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== 'toml') return false;
     const n = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (n === 'config.toml' || n === 'helix.toml') {
       const text = intake.textSample || intake.text || '';

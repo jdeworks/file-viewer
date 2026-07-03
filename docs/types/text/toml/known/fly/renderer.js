@@ -32,13 +32,7 @@ function kv(key, val) {
 
 export function render(intake) {
   let cfg = {};
-  try {
-    if (intake.parsed && typeof intake.parsed === 'object') {
-      cfg = intake.parsed;
-    } else {
-      cfg = parseTOML(intake.text || '') || {};
-    }
-  } catch { cfg = {}; }
+  try { cfg = parseTOML(intake.text || '') || {}; } catch { cfg = {}; }
 
   const appName = cfg.app || '—';
   const region = cfg.primary_region || '';
