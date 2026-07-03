@@ -25,11 +25,14 @@ const TYPE_INFO = {
   xml: ['XML', 'used for structured documents, data exchange, feeds, and configuration.', 'https://developer.mozilla.org/docs/Web/XML/XML_introduction'],
   als: ['Ableton Live Set', 'used by Ableton Live projects to store tracks, clips, devices, and timing.', 'https://help.ableton.com/hc/en-us/articles/209773265-File-types-used-by-Ableton-Live'],
   abc: ['ABC Music Notation', 'used for plain-text traditional/folk tune transcriptions with header fields and note tokens.', 'https://en.wikipedia.org/wiki/ABC_notation'],
+  musicxml: ['MusicXML score', 'used for interchange of music notation between Sibelius, Finale, MuseScore, and other notation software.', 'https://en.wikipedia.org/wiki/MusicXML'],
   acf: ['Steam App Manifest', 'used by Steam to track installed depots, build ID, and update state for a game.', 'https://developer.valvesoftware.com/wiki/KeyValues'],
   env: ['Environment file', 'used to store environment variables for local apps and services.', 'https://en.wikipedia.org/wiki/Environment_variable'],
   ini: ['INI config', 'used for simple sectioned key-value configuration.', 'https://en.wikipedia.org/wiki/INI_file'],
   patch: ['Patch/diff', 'used to describe line-based source changes that can be reviewed or applied.', 'https://en.wikipedia.org/wiki/Diff'],
   log: ['Log file', 'used to record timestamped events, diagnostics, and application activity.', 'https://en.wikipedia.org/wiki/Log_file'],
+  mt940: ['MT940 bank statement', 'used for SWIFT-formatted bank statement exports from banking systems.', 'https://en.wikipedia.org/wiki/SWIFT_message_types'],
+  ofx: ['OFX/QFX financial data', 'used for bank and brokerage data exchange with Quicken, Mint, and financial aggregators.', 'https://en.wikipedia.org/wiki/Open_Financial_Exchange'],
   crash: ['Crash report', 'used to diagnose application or operating-system failures.', 'https://en.wikipedia.org/wiki/Core_dump'],
   subtitle: ['Subtitle file', 'used to time captions or translated dialogue for video.', 'https://en.wikipedia.org/wiki/SubRip'],
   vcard: ['vCard', 'used for contact cards with names, organizations, phone numbers, and email.', 'https://en.wikipedia.org/wiki/VCard'],
@@ -107,6 +110,7 @@ const TYPE_INFO = {
   chat: ['Chat export', 'used to archive exported conversations from messaging apps like WhatsApp, Telegram, Discord, and Messenger.', 'https://en.wikipedia.org/wiki/Instant_messaging'],
   cif: ['CIF crystallographic data', 'used to store crystal structure data from X-ray, neutron, and electron diffraction experiments.', 'https://en.wikipedia.org/wiki/Crystallographic_Information_File'],
   bio: ['Bioinformatics data', 'used to store DNA/RNA/protein sequences, sequencer reads, and genomic variants for bioinformatics pipelines.', 'https://en.wikipedia.org/wiki/FASTA_format'],
+  pdb: ['PDB protein structure', 'used to store atomic coordinates and metadata for protein and macromolecule structures from X-ray, cryo-EM, and NMR experiments.', 'https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)'],
 };
 
 const KNOWN_INFO = {

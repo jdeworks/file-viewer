@@ -2,7 +2,7 @@
 
 ## Current state
 
-Colorised diff viewer: classifies each line as `p-file` (file header), `p-hunk` (@@), `p-add` (+), or `p-del` (-); renders via HTML templates in `doc.html` / `row.html`. `patchStats()` extracts added/removed/file/hunk/new-file/deleted-file/rename counts for the metadata panel. Pure presentation — no patching logic. Returns `{ bodyHtml }`.
+Colorised diff viewer: classifies each line as `p-file` (file header), `p-hunk` (@@), `p-add` (+), or `p-del` (-); renders via inline JS template strings in `renderer.js` (no separate `.html` template files for this type). Per-hunk include/exclude checkboxes rebuild a filtered patch (selected hunks only) into a copyable readonly textarea. `patchStats()` extracts added/removed/file/hunk/new-file/deleted-file/rename counts for the metadata panel. Pure presentation — no patching logic. Returns `{ bodyHtml }`.
 
 ## Viewer enhancements (no write-back needed)
 

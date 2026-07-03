@@ -1,3 +1,7 @@
+function safeHref(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim()) ? url : null;
+}
+
 export function appendKubeconfigTables(body, parsed) {
   appendCurrentContext(body, parsed);
   appendContextsTable(body, parsed);
@@ -112,13 +116,21 @@ function appendClustersTable(body, parsed) {
 
     const serverTd = document.createElement('td');
     if (cluster.server) {
-      const link = document.createElement('a');
-      link.className = 'kc-server-link';
-      link.href = cluster.server;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = cluster.server;
-      serverTd.appendChild(link);
+      const href = safeHref(cluster.server);
+      if (href) {
+        const link = document.createElement('a');
+        link.className = 'kc-server-link';
+        link.href = href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = cluster.server;
+        serverTd.appendChild(link);
+      } else {
+        const span = document.createElement('span');
+        span.className = 'kc-server-link';
+        span.textContent = cluster.server;
+        serverTd.appendChild(span);
+      }
 
       if (cluster.insecure) {
         const insecureBadge = document.createElement('span');

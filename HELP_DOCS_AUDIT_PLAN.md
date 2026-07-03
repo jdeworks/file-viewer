@@ -2463,65 +2463,65 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/known/zookeeper-config/renderer.js
 - [x] docs/types/text/known/zsh-script/index.js
 - [x] docs/types/text/known/zsh-script/renderer.js
-- [ ] docs/types/text/kubeconfig/detect.js
-- [ ] docs/types/text/kubeconfig/EDITOR.md
-- [ ] docs/types/text/kubeconfig/index.js
-- [ ] docs/types/text/kubeconfig/kubeconfig-tables.js
-- [ ] docs/types/text/kubeconfig/metadata.js
-- [ ] docs/types/text/kubeconfig/renderer.js
-- [ ] docs/types/text/kubeconfig/settings.default.json
-- [ ] docs/types/text/log/container.html
-- [ ] docs/types/text/log/detect.js
-- [ ] docs/types/text/log/EDITOR.md
-- [ ] docs/types/text/log/index.js
-- [ ] docs/types/text/log/metadata.js
-- [ ] docs/types/text/log/renderer.js
-- [ ] docs/types/text/log/row.html
-- [ ] docs/types/text/log/settings.default.json
-- [ ] docs/types/text/mcp-config/detect.js
-- [ ] docs/types/text/mcp-config/EDITOR.md
-- [ ] docs/types/text/mcp-config/index.js
-- [ ] docs/types/text/mcp-config/metadata.js
-- [ ] docs/types/text/mcp-config/renderer.js
-- [ ] docs/types/text/mcp-config/settings.default.json
-- [ ] docs/types/text/mt940/detect.js
-- [ ] docs/types/text/mt940/EDITOR.md
-- [ ] docs/types/text/mt940/index.js
-- [ ] docs/types/text/mt940/metadata.js
-- [ ] docs/types/text/mt940/renderer.js
-- [ ] docs/types/text/mt940/settings.default.json
-- [ ] docs/types/text/musicxml/detect.js
-- [ ] docs/types/text/musicxml/EDITOR.md
-- [ ] docs/types/text/musicxml/index.js
-- [ ] docs/types/text/musicxml/metadata.js
-- [ ] docs/types/text/musicxml/renderer.js
-- [ ] docs/types/text/musicxml/settings.default.json
-- [ ] docs/types/text/ofx/detect.js
-- [ ] docs/types/text/ofx/EDITOR.md
-- [ ] docs/types/text/ofx/exports.js
-- [ ] docs/types/text/ofx/index.js
-- [ ] docs/types/text/ofx/metadata.js
-- [ ] docs/types/text/ofx/renderer.js
-- [ ] docs/types/text/ofx/settings.default.json
-- [ ] docs/types/text/patch/detect.js
-- [ ] docs/types/text/patch/EDITOR.md
-- [ ] docs/types/text/patch/index.js
-- [ ] docs/types/text/patch/metadata.js
-- [ ] docs/types/text/patch/renderer.js
-- [ ] docs/types/text/patch/settings.default.json
-- [ ] docs/types/text/pdb/detect.js
-- [ ] docs/types/text/pdb/EDITOR.md
-- [ ] docs/types/text/pdb/index.js
-- [ ] docs/types/text/pdb/metadata.js
-- [ ] docs/types/text/pdb/renderer.js
-- [ ] docs/types/text/pdb/settings.default.json
-- [ ] docs/types/text/pem/asn1.js
-- [ ] docs/types/text/pem/detect.js
-- [ ] docs/types/text/pem/EDITOR.md
-- [ ] docs/types/text/pem/index.js
-- [ ] docs/types/text/pem/metadata.js
-- [ ] docs/types/text/pem/renderer.js
-- [ ] docs/types/text/pem/settings.default.json
+- [x] docs/types/text/kubeconfig/detect.js
+- [x] docs/types/text/kubeconfig/EDITOR.md
+- [x] docs/types/text/kubeconfig/index.js
+- [x] docs/types/text/kubeconfig/kubeconfig-tables.js
+- [x] docs/types/text/kubeconfig/metadata.js
+- [x] docs/types/text/kubeconfig/renderer.js
+- [x] docs/types/text/kubeconfig/settings.default.json
+- [x] docs/types/text/log/container.html
+- [x] docs/types/text/log/detect.js
+- [x] docs/types/text/log/EDITOR.md
+- [x] docs/types/text/log/index.js
+- [x] docs/types/text/log/metadata.js
+- [x] docs/types/text/log/renderer.js
+- [x] docs/types/text/log/row.html
+- [x] docs/types/text/log/settings.default.json
+- [x] docs/types/text/mcp-config/detect.js
+- [x] docs/types/text/mcp-config/EDITOR.md
+- [x] docs/types/text/mcp-config/index.js
+- [x] docs/types/text/mcp-config/metadata.js
+- [x] docs/types/text/mcp-config/renderer.js
+- [x] docs/types/text/mcp-config/settings.default.json
+- [x] docs/types/text/mt940/detect.js
+- [x] docs/types/text/mt940/EDITOR.md
+- [x] docs/types/text/mt940/index.js
+- [x] docs/types/text/mt940/metadata.js
+- [x] docs/types/text/mt940/renderer.js
+- [x] docs/types/text/mt940/settings.default.json
+- [x] docs/types/text/musicxml/detect.js
+- [x] docs/types/text/musicxml/EDITOR.md
+- [x] docs/types/text/musicxml/index.js
+- [x] docs/types/text/musicxml/metadata.js
+- [x] docs/types/text/musicxml/renderer.js
+- [x] docs/types/text/musicxml/settings.default.json
+- [x] docs/types/text/ofx/detect.js
+- [x] docs/types/text/ofx/EDITOR.md
+- [x] docs/types/text/ofx/exports.js
+- [x] docs/types/text/ofx/index.js
+- [x] docs/types/text/ofx/metadata.js
+- [x] docs/types/text/ofx/renderer.js
+- [x] docs/types/text/ofx/settings.default.json
+- [x] docs/types/text/patch/detect.js
+- [x] docs/types/text/patch/EDITOR.md
+- [x] docs/types/text/patch/index.js
+- [x] docs/types/text/patch/metadata.js
+- [x] docs/types/text/patch/renderer.js
+- [x] docs/types/text/patch/settings.default.json
+- [x] docs/types/text/pdb/detect.js
+- [x] docs/types/text/pdb/EDITOR.md
+- [x] docs/types/text/pdb/index.js
+- [x] docs/types/text/pdb/metadata.js
+- [x] docs/types/text/pdb/renderer.js
+- [x] docs/types/text/pdb/settings.default.json
+- [x] docs/types/text/pem/asn1.js
+- [x] docs/types/text/pem/detect.js
+- [x] docs/types/text/pem/EDITOR.md
+- [x] docs/types/text/pem/index.js
+- [x] docs/types/text/pem/metadata.js
+- [x] docs/types/text/pem/renderer.js
+- [x] docs/types/text/pem/settings.default.json
 - [ ] docs/types/text/plist/detect.js
 - [ ] docs/types/text/plist/EDITOR.md
 - [ ] docs/types/text/plist/index.js

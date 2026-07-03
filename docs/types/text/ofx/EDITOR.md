@@ -1,9 +1,9 @@
 # Editor Roadmap — OFX / QFX (Open Financial Exchange)
 
 ## Current state
-Full-featured viewer: parses both SGML (OFX 1.x) and XML (OFX 2.x/QFX) modes. Shows account info card, ledger balance with date, and a paginated transaction table (date / type / amount / memo, capped at 200 rows, colour-coded positive/negative). Account numbers are masked to last 4 digits.
+Full-featured viewer: parses both SGML (OFX 1.x) and XML (OFX 2.x/QFX) modes. Shows account info card, ledger balance with date, and a paginated transaction table (date / type / amount / memo, capped at 200 rows, colour-coded positive/negative). Account numbers are masked to last 4 digits. A running-balance line chart (Chart.js, lazy-loaded) renders once at least two transactions are present.
 
-A CSV export module (`exports.js`, `getExports` → "Export transactions as CSV", columns Date/Type/Amount/Name/Memo/FITID) is WRITTEN but NOT wired: `index.js` does not declare `loadExports`, so the export is unreachable from the UI. Wiring it (add `loadExports: () => import('./exports.js')` to index.js) would ship the "Export categorized CSV" item below with one line.
+A CSV export module (`exports.js`, `getExports` → "Export transactions as CSV", columns Date/Type/Amount/Name/Memo/FITID) is wired via `loadExports: () => import('./exports.js')` in `index.js` and reachable from the export menu. The in-preview "Export CSV" button (renderer.js) is a separate, narrower export covering Date/Type/Amount/Memo only — the two are complementary, not duplicates.
 
 ## Viewer enhancements (no write-back needed)
 - Running balance chart — draw a line chart with Chart.js (CDN-free, pre-bundle `chart.umd.min.js`) computing a cumulative running balance from oldest to newest transaction — S
