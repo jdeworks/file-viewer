@@ -1247,6 +1247,15 @@
     ]
   },
   {
+    "file": "sample.topojson",
+    "label": "Sample.topojson",
+    "mime": "application/json",
+    "category": "Geo",
+    "categories": [
+      "Geo"
+    ]
+  },
+  {
     "label": "Sample.gpx",
     "file": "sample.gpx",
     "mime": "application/gpx+xml",

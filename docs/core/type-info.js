@@ -83,6 +83,7 @@ const TYPE_INFO = {
   url: ['Internet shortcut', 'used to store a URL or target location as a small shortcut file.', 'https://en.wikipedia.org/wiki/Internet_shortcut'],
   asciiart: ['ANSI/ASCII art', 'used for terminal-style text art, often with ANSI color codes.', 'https://en.wikipedia.org/wiki/ANSI_art'],
   gcode: ['G-code', 'used to drive CNC machines and 3D printers with motion commands.', 'https://en.wikipedia.org/wiki/G-code'],
+  geojson: ['GeoJSON/TopoJSON', 'used to encode geographic features and topology-preserving map data as JSON.', 'https://en.wikipedia.org/wiki/GeoJSON'],
   gitignore: ['Git ignore rules', 'used to exclude generated or local files from Git tracking.', 'https://git-scm.com/docs/gitignore'],
   gitattributes: ['Git attributes', 'used to control path-specific Git behavior such as diff, merge, and text normalization.', 'https://git-scm.com/docs/gitattributes'],
   editorconfig: ['EditorConfig', 'used to share editor formatting rules across tools and projects.', 'https://editorconfig.org/'],

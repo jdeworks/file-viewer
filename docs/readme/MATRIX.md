@@ -243,6 +243,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Map (GeoJSON/GPX)](geo.md) | `.geojson` `.gpx` | Basic | Monaco | GeoJSON, GPX, download | — | Tile map render |
+| [GeoJSON/TopoJSON](geojson.md) | `.topojson` (alt. for `.geojson`) | Basic | Monaco | download | — | Interactive map |
 | [KML Map](/) | `.kml` | Basic | Monaco | download | — | Map tile render |
 | [KMZ Archive](kmz.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |

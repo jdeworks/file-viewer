@@ -1122,11 +1122,11 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/gcode/metadata.js
 - [x] docs/types/text/gcode/renderer.js
 - [x] docs/types/text/gcode/settings.default.json
-- [ ] docs/types/text/geojson/detect.js
-- [ ] docs/types/text/geojson/index.js
-- [ ] docs/types/text/geojson/metadata.js
-- [ ] docs/types/text/geojson/renderer.js
-- [ ] docs/types/text/geojson/settings.default.json
+- [x] docs/types/text/geojson/detect.js
+- [x] docs/types/text/geojson/index.js
+- [x] docs/types/text/geojson/metadata.js
+- [x] docs/types/text/geojson/renderer.js
+- [x] docs/types/text/geojson/settings.default.json
 - [ ] docs/types/text/gff/detect.js
 - [ ] docs/types/text/gff/EDITOR.md
 - [ ] docs/types/text/gff/index.js

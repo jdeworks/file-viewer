@@ -4,6 +4,25 @@ import { parseRom } from '../types/binary/gamerom/headers.js';
 function hasExtension(intake,...exts){const name=(intake.filename||'').toLowerCase();return exts.some((e)=>name.endsWith('.'+e.toLowerCase().replace(/^\./,'')));}
 function mimeMatches(intake,...needles){const m=(intake.mimeType||'').toLowerCase();return needles.some((n)=>m.includes(n));}
 
+const detect_pem=(()=>{
+function detect(intake) {
+  const ext = intake.filename?.split('.').pop()?.toLowerCase();
+  const PEM_EXTS = new Set(['pem', 'crt', 'cer', 'key', 'der', 'p7b', 'p7c']);
+
+  // Strong signal: PEM header in text
+  if (intake.textSample?.includes('-----BEGIN ')) return 0.95;
+
+  // DER binary: starts with 0x30 (ASN.1 SEQUENCE tag) + known extension
+  if (intake.bytes?.[0] === 0x30 && PEM_EXTS.has(ext)) return 0.85;
+
+  // Extension only
+  if (PEM_EXTS.has(ext)) return 0.6;
+
+  return 0;
+}
+return detect;
+})();
+
 const detect_gamerom=(()=>{
 function detect(intake) {
   const b = intake.bytes || new Uint8Array();
@@ -174,4 +193,4 @@ function detect(intake) {
 return detect;
 })();
 
-export const DETECTORS={"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
+export const DETECTORS={"pem":detect_pem,"gamerom":detect_gamerom,"exe":detect_exe,"apk":detect_apk,"iso":detect_iso,"ruffle":detect_ruffle,"v86":detect_v86,"emulatorjs":detect_emulatorjs,"code":detect_code,"raw":detect_raw};
