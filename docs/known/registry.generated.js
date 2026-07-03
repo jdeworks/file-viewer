@@ -2694,6 +2694,11 @@ var syslog_ng_default = plugin27;
 var haproxy_config_default = {
   id: "haproxy-config",
   label: "HAProxy config",
+  // NOTE: this plugin's filename match ('haproxy.cfg'/'haproxy.conf') is identical to (a subset
+  // of) haproxy-cfg's, and haproxy-cfg is registered earlier in docs/known/registry.js's KNOWN
+  // array (first-match-wins), so under the current registry order this plugin never actually
+  // wins for a real file — it is fully shadowed/unreachable dead code. Kept behaviorally correct
+  // (rather than deleted) in case registry order ever changes.
   match(intake) {
     const n = (intake.filename || intake.name || "").split("/").pop().toLowerCase();
     return n === "haproxy.cfg" || n === "haproxy.conf";
@@ -2710,11 +2715,17 @@ var haproxy_conf_default = {
   id: "haproxy-conf",
   label: "HAProxy Config",
   tags: ["haproxy", "load-balancer", "proxy", "config"],
-  match(intake) {
+  // NOTE: this plugin's filename match is a strict subset of haproxy-cfg's, and haproxy-cfg is
+  // registered earlier in docs/known/registry.js's KNOWN array (first-match-wins), so under the
+  // current registry order this plugin never actually wins for real files — it is fully shadowed.
+  // Kept behaviorally correct (rather than deleted) in case registry order ever changes.
+  match(intake, baseType) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "haproxy.cfg" || n === "haproxy.conf") return true;
+    if (baseType?.id !== "code") return false;
     const t = intake.text || "";
-    return /^frontend\b/m.test(t) && /^backend\b/m.test(t);
+    if (!(/^frontend\b/m.test(t) && /^backend\b/m.test(t))) return false;
+    return /^\s*(bind|mode|balance|default_backend|acl)\s/m.test(t);
   },
   loadRenderer: () => import("../types/text/known/haproxy-conf/renderer.js"),
   about: {
@@ -2728,11 +2739,13 @@ var plugin28 = {
   id: "haproxy-cfg",
   label: "HAProxy Config",
   tags: ["haproxy", "load-balancer", "proxy", "config"],
-  match(intake) {
+  match(intake, baseType) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "haproxy.cfg" || n === "haproxy.conf") return true;
+    if (baseType?.id !== "code") return false;
     const t = intake.text || "";
-    return /^frontend\b/m.test(t) && /^backend\b/m.test(t);
+    if (!(/^frontend\b/m.test(t) && /^backend\b/m.test(t))) return false;
+    return /^\s*(bind|mode|balance|default_backend|acl)\s/m.test(t);
   },
   loadRenderer: () => import("../types/text/known/haproxy-cfg/renderer.js"),
   about: {
@@ -5295,7 +5308,12 @@ var esbuild_config_default = {
   label: "esbuild config",
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    return n === "esbuild.config.mjs" || n === "esbuild.config.js" || n === "esbuild.config.ts" || n === "esbuild.config.cjs" || n === "build.mjs";
+    if (n === "esbuild.config.mjs" || n === "esbuild.config.js" || n === "esbuild.config.ts" || n === "esbuild.config.cjs") return true;
+    if (n === "build.mjs") {
+      const text = intake.textSample || intake.text || "";
+      return /(?:from|require\()\s*['"]esbuild['"]/.test(text);
+    }
+    return false;
   },
   loadRenderer: () => import("../types/text/known/esbuild-config/renderer.js"),
   about: {
@@ -5726,7 +5744,7 @@ var fluentd_conf_default = {
   label: "Fluentd config",
   match(intake) {
     const n = (intake.filename || intake.name || "").split("/").pop().toLowerCase();
-    return n === "fluent.conf" || n === "fluentd.conf";
+    return n === "fluent.conf" || n === "fluentd.conf" || n === "td-agent.conf";
   },
   loadRenderer: () => import("../types/text/known/fluentd-conf/renderer.js"),
   about: {
@@ -8986,7 +9004,7 @@ var graphql_schema_default = {
     const text = intake.textSample || intake.text || "";
     if (n.endsWith(".graphql") || n.endsWith(".gql")) return true;
     if (n === "schema.graphql" || n === "schema.gql") return true;
-    if (text.includes("type Query") || text.includes("type Mutation") || text.includes("type Subscription")) return true;
+    if (/\btype\s+(Query|Mutation|Subscription)\s*\{/.test(text)) return true;
     return false;
   },
   loadRenderer: () => import("../types/text/known/graphql-schema/renderer.js"),
@@ -15260,7 +15278,7 @@ var plugin199 = {
   match(intake) {
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (name.endsWith(".factor")) return true;
-    const txt = intake.textSnippet || "";
+    const txt = intake.textSample || intake.text || "";
     return /\bUSING:/.test(txt) && /\bIN:/.test(txt);
   },
   loadRenderer: () => import("../types/text/known/factor-lang/renderer.js"),

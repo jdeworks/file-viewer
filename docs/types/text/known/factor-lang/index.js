@@ -5,7 +5,7 @@ export const plugin = {
   match(intake) {
     const name = (intake.name || intake.filename || '').split('/').pop().toLowerCase();
     if (name.endsWith('.factor')) return true;
-    const txt = intake.textSnippet || '';
+    const txt = intake.textSample || intake.text || '';
     return /\bUSING:/.test(txt) && /\bIN:/.test(txt);
   },
   loadRenderer: () => import('./renderer.js'),

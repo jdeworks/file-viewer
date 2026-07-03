@@ -3,7 +3,7 @@ export default {
   label: 'Fluentd config',
   match(intake) {
     const n = (intake.filename || intake.name || '').split('/').pop().toLowerCase();
-    return n === 'fluent.conf' || n === 'fluentd.conf';
+    return n === 'fluent.conf' || n === 'fluentd.conf' || n === 'td-agent.conf';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

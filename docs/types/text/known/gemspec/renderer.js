@@ -1,4 +1,8 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function safeHref(url) {
+  if (typeof url !== 'string') return null;
+  return /^https?:\/\//i.test(url.trim()) ? url : null;
+}
 
 const CSS = `
 .gem-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
@@ -67,7 +71,7 @@ export function render(intake) {
   const metaChips = [
     license && `<span class="gem-meta-chip">⚖ ${esc(license)}</span>`,
     rubyVersion && `<span class="gem-meta-chip">ruby ${esc(rubyVersion)}</span>`,
-    homepage && `<a class="gem-link gem-meta-chip" href="${esc(homepage)}" target="_blank" rel="noopener noreferrer">${esc(homepage.replace(/^https?:\/\//, ''))} ↗</a>`,
+    safeHref(homepage) && `<a class="gem-link gem-meta-chip" href="${esc(homepage)}" target="_blank" rel="noopener noreferrer">${esc(homepage.replace(/^https?:\/\//, ''))} ↗</a>`,
   ].filter(Boolean).join('');
 
   const authorsHtml = authors.length

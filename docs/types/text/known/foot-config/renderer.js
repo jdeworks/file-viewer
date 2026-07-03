@@ -81,7 +81,8 @@ function parseFootIni(text) {
 function colorSwatch(hex) {
   if (!hex) return '';
   const normalized = hex.startsWith('#') ? hex : '#' + hex;
-  return `<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:${esc(normalized)};vertical-align:middle;border:1px solid #555;margin-left:6px"></span>`;
+  if (!/^#[0-9a-fA-F]{3,8}$/.test(normalized)) return '';
+  return `<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:${normalized};vertical-align:middle;border:1px solid #555;margin-left:6px"></span>`;
 }
 
 function fmtScrollback(n) {
