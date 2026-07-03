@@ -3165,15 +3165,6 @@
     ]
   },
   {
-    "label": "pre-commit config",
-    "file": "pre-commit-config.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
     "label": "Pyright config",
     "file": "pyrightconfig.json",
     "mime": "application/json",
@@ -5753,7 +5744,7 @@
     "description": "Julia package manifest: name, UUID, version, dependencies."
   },
   {
-    "label": "Manifest.toml",
+    "label": "Manifest.toml (Julia Manifest)",
     "file": "Manifest.toml",
     "mime": "application/toml",
     "category": "Config",
@@ -5761,7 +5752,8 @@
       "Config"
     ],
     "enhanced": true,
-    "description": "Julia package lockfile: resolved dependency tree with versions and content hashes."
+    "description": "Julia package lockfile: resolved dependency tree with versions and content hashes.",
+    "knownFile": "julia-manifest"
   },
   {
     "label": "shard.yml",
@@ -8223,17 +8215,6 @@
     "knownFile": "rsyslog-conf"
   },
   {
-    "file": "Manifest.toml",
-    "label": "Manifest.toml (Julia Manifest)",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "mime": "application/toml",
-    "enhanced": true,
-    "knownFile": "julia-manifest"
-  },
-  {
     "file": "named.conf",
     "label": "named.conf (BIND DNS)",
     "category": "Config",
@@ -9214,12 +9195,6 @@
     "knownFile": "buf-gen"
   },
   {
-    "file": "registries.conf",
-    "label": "registries.conf",
-    "category": "Infrastructure",
-    "knownFile": "registries-conf"
-  },
-  {
     "file": "storage.conf",
     "label": "storage.conf",
     "category": "Infrastructure",
@@ -9262,12 +9237,6 @@
     "knownFile": "ncurc"
   },
   {
-    "file": "influxdb.conf",
-    "label": "influxdb.conf",
-    "category": "Infrastructure",
-    "knownFile": "influxdb"
-  },
-  {
     "file": "influxdb.yml",
     "label": "InfluxDB Config",
     "mime": "text/yaml",
@@ -9281,34 +9250,10 @@
     "knownFile": "influxdb-config"
   },
   {
-    "file": "nsqd.cfg",
-    "label": "nsqd.cfg",
-    "category": "Infrastructure",
-    "knownFile": "nsq-conf"
-  },
-  {
     "file": "standalone.conf",
     "label": "standalone.conf",
     "category": "Infrastructure",
     "knownFile": "pulsar-conf"
-  },
-  {
-    "file": "mint.json",
-    "label": "mint.json",
-    "category": "Documentation",
-    "knownFile": "mintlify"
-  },
-  {
-    "file": "insomnia.yaml",
-    "label": "insomnia.yaml",
-    "category": "API",
-    "knownFile": "insomnia"
-  },
-  {
-    "file": "kibana.yml",
-    "label": "kibana.yml",
-    "category": "Observability",
-    "knownFile": "kibana"
   },
   {
     "file": "bruno.json",
@@ -9321,24 +9266,6 @@
     "label": "filebeat.yml",
     "category": "Observability",
     "knownFile": "filebeat"
-  },
-  {
-    "file": "heartbeat.yml",
-    "label": "heartbeat.yml",
-    "category": "Observability",
-    "knownFile": "heartbeat"
-  },
-  {
-    "file": "nix.conf",
-    "label": "nix.conf",
-    "category": "System",
-    "knownFile": "nix-daemon-conf"
-  },
-  {
-    "file": "openapi-generator-config.yaml",
-    "label": "openapi-generator-config.yaml",
-    "category": "Tooling",
-    "knownFile": "openapi-generator"
   },
   {
     "file": "cloudflared.yml",
@@ -9380,24 +9307,6 @@
     "file": "vsftpd.conf",
     "label": "vsftpd.conf",
     "category": "Server",
-    "knownFile": true
-  },
-  {
-    "file": "proftpd.conf",
-    "label": "proftpd.conf",
-    "category": "Server",
-    "knownFile": true
-  },
-  {
-    "file": "pdns.conf",
-    "label": "pdns.conf",
-    "category": "Network",
-    "knownFile": true
-  },
-  {
-    "file": "recursor.conf",
-    "label": "recursor.conf",
-    "category": "Network",
     "knownFile": true
   },
   {
@@ -10967,7 +10876,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Infrastructure"
     ],
     "enhanced": true,
     "knownFile": "influxdb",
@@ -10979,7 +10889,8 @@
     "mime": "text/yaml",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "API"
     ],
     "enhanced": true,
     "knownFile": "insomnia",
@@ -10991,7 +10902,8 @@
     "mime": "text/yaml",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Observability"
     ],
     "enhanced": true,
     "knownFile": "kibana",
@@ -11003,7 +10915,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Infrastructure"
     ],
     "enhanced": true,
     "knownFile": "nsq-conf",
@@ -11015,7 +10928,8 @@
     "mime": "text/yaml",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Tooling"
     ],
     "enhanced": true,
     "knownFile": "openapi-generator",
@@ -11027,7 +10941,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Network"
     ],
     "enhanced": true,
     "knownFile": "pdns-conf",
@@ -11039,7 +10954,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Server"
     ],
     "enhanced": true,
     "knownFile": "proftpd-conf",
@@ -11051,7 +10967,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Network"
     ],
     "enhanced": true,
     "knownFile": "pdns-recursor-conf",
@@ -11063,7 +10980,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Infrastructure"
     ],
     "enhanced": true,
     "knownFile": "registries-conf",
@@ -11183,7 +11101,8 @@
     "mime": "text/plain",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "System"
     ],
     "enhanced": true,
     "knownFile": "nix-daemon-conf",
@@ -11195,7 +11114,8 @@
     "mime": "application/json",
     "category": "Config",
     "categories": [
-      "Config"
+      "Config",
+      "Documentation"
     ],
     "enhanced": true,
     "knownFile": "mintlify",
@@ -11397,15 +11317,6 @@
     "knownFile": "kdl-doc"
   },
   {
-    "label": "robots.txt (demo)",
-    "file": "robots.txt",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
     "label": "security.txt (demo)",
     "file": "security.txt",
     "mime": "text/plain",
@@ -11463,30 +11374,12 @@
     ]
   },
   {
-    "label": "humans.txt (demo)",
-    "file": "humans.txt",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
     "label": "Jsonnet template (demo)",
     "file": "sample.jsonnet",
     "mime": "text/plain",
     "category": "Code",
     "categories": [
       "Code"
-    ]
-  },
-  {
-    "label": "CUE schema (demo)",
-    "file": "sample.cue",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
     ]
   },
   {
