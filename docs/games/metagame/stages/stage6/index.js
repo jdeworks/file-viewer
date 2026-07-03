@@ -74,12 +74,16 @@ function isProtocolChapter9Detail(detail) {
 }
 
 function ensureStyles() {
-  const id = "stage6-protocol-codex-styles";
+  ensureStylesheet("stage6-protocol-codex-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage6-protocol-codex-combat-styles", new URL("./styles-combat.css", import.meta.url).href);
+}
+
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 

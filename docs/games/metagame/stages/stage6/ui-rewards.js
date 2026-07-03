@@ -13,6 +13,7 @@
 
 import { cardById } from "./cards.js";
 import { REWARD_POOL } from "./cards.js";
+import { cardFaceInner, cardTypeClass } from "./card-face.js";
 import { canUpgrade, upgradeIdFor } from "./card-upgrades.js";
 import { removalCost, UPGRADE_COST, RELIC_COST, POTION_COST, POTION_SLOTS } from "./run.js";
 import { makeRng, strHash } from "./combat.js";
@@ -256,13 +257,9 @@ function cardOption(id, attr, value) {
   const card = cardById(id);
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `s6db-card s6db-card--${(card?.type || "").toLowerCase()}`;
+  button.className = `s6db-card ${cardTypeClass(card)}`;
   button.dataset[attr] = value;
-  button.innerHTML = `
-    <span class="s6db-card-cost">${card?.cost ?? "?"}</span>
-    <strong class="s6db-card-id">${esc(card?.id || id)}</strong>
-    <span class="s6db-card-type">${esc(card?.type || "")}</span>
-    <small class="s6db-card-text">${esc(card?.text || "")}</small>`;
+  button.innerHTML = cardFaceInner(id);
   return button;
 }
 

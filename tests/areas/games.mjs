@@ -1104,8 +1104,13 @@ export async function run(ctx) {
   // one. Enter a combat, play one card, and confirm the persisted snapshot is a resumable partial
   // turn (not over, tagged with the run seed, with a card already played).
   await page.click('.s6db-map .s6db-node.is-available[data-node]');
-  await page.waitForSelector('.s6db-combat .s6db-hand button[data-play]:not([disabled])', { timeout: 4000 });
-  await page.click('.s6db-combat .s6db-hand button[data-play]:not([disabled])');
+  // Designed flow (UX audit stage6 #2): a hand card is SELECT→INSPECT→PLAY, not instant-play. First
+  // click raises an affordable card to the inspect close-up; then the PLAY button commits it to the
+  // engine (the delegated [data-play] play path is unchanged — it just moved onto the inspect button).
+  await page.waitForSelector('.s6db-combat .s6db-hand .s6db-card[data-inspect]:not(.is-unaffordable)', { timeout: 4000 });
+  await page.click('.s6db-combat .s6db-hand .s6db-card[data-inspect]:not(.is-unaffordable)');
+  await page.waitForSelector('.s6db-inspect .s6db-play-btn:not([disabled])', { timeout: 4000 });
+  await page.click('.s6db-inspect .s6db-play-btn:not([disabled])');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));

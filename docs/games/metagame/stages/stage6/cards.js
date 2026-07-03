@@ -21,6 +21,22 @@ export const CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAE
 
 const BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 
+// Human-readable display NAME for a card id (UX audit stage6 #3). Display-only: engine + test keys
+// stay the raw id. Names derive from the id (title-case, acronyms preserved) with a few flavour
+// overrides. Upgraded "<ID>+" forms inherit the base name via `...base` (see card-upgrades.js) and
+// show a "+" BADGE rather than a name suffix — so displayName is only ever called for base ids.
+const NAME_ACRONYMS = new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP"]);
+const NAME_OVERRIDES = {
+  SYN: "SYN Pulse", ACK: "ACK Guard", RST: "Reset Kill", DDOS: "DDoS Storm",
+  ICMP: "ICMP Echo", SACK: "Selective ACK", TCP_STACK: "TCP Stack", XOR_PAD: "XOR Pad",
+  NAGLE: "Nagle Hold", ONION: "Onion Wrap", DEFRAG: "Defrag"
+};
+export function displayName(id) {
+  if (NAME_OVERRIDES[id]) return NAME_OVERRIDES[id];
+  return String(id).split("_").map((w) => NAME_ACRONYMS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
+}
+for (const card of CARDS) card.name = displayName(card.id);
+
 export function cardById(id) {
   return BY_ID.get(id) || null;
 }

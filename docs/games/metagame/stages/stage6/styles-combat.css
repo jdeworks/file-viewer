@@ -1,0 +1,124 @@
+/* Stage 6 — combat screen (Slay-the-Spire layout: one viewport, no scroll). Split from styles.css
+   (UX audit stage6 #1–#4/#6). The card BASE face lives in styles.css; this sheet owns the three-band
+   combat column, the enemy/player panels, the arena strip, the hand-dock FAN, the inspect close-up,
+   and the play-feedback fly clone. Loaded AFTER styles.css so the fan hover wins on tie. */
+
+/* Column that fills the bounded host: battlefield (top) · arena (flex) · dock (bottom). */
+.s6db-combat { position: relative; display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+
+/* ── top band: enemy (left) vs player (right) ─────────────────────────────────── */
+.s6db-battlefield { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 0 0 auto; }
+.s6db-fighter { position: relative; border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 12px; }
+.s6db-enemy { border-color: #8b2020; }
+.s6db-fighter-name { font-size: 1.15rem; font-weight: 700; }
+.s6db-hp { font-size: 0.82rem; color: #6b513a; }
+.s6db-bar { height: 14px; border-radius: 5px; background: #d8c7a6; overflow: hidden; margin: 4px 0; }
+.s6db-bar span { display: block; height: 100%; transition: width 0.32s ease; }
+.s6db-bar--enemy span { background: linear-gradient(90deg, #c0392b, #8b2020); }
+.s6db-bar--player span { background: linear-gradient(90deg, #3a9188, #2f6f6a); }
+.s6db-meta { display: flex; gap: 8px; font-size: 0.82rem; }
+.s6db-block { color: #2f6f6a; font-weight: 700; }
+.s6db-armor { color: #6b513a; font-weight: 700; }
+.s6db-fighter-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.s6db-tier { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.08em; padding: 1px 7px; border-radius: 10px; color: #fff8e9; }
+.s6db-tier--elite { background: #7a4ea3; }
+.s6db-tier--boss { background: #8b2020; }
+.s6db-enemy--elite { border-color: #7a4ea3; box-shadow: inset 0 0 0 1px #7a4ea3; }
+.s6db-enemy--boss { border-color: #8b2020; box-shadow: inset 0 0 0 2px #8b2020, 0 2px 10px rgba(139, 32, 32, 0.25); }
+
+/* intent + 2-turn telegraph */
+.s6db-intent { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 6px 10px; border-radius: 8px; font-weight: 700; background: #2c1810; color: #f0e2c8; border-left: 4px solid #8b2020; }
+.s6db-intent-icon { font-size: 1.25rem; line-height: 1; }
+.s6db-intent-num { font-size: 1.2rem; min-width: 1.4em; }
+.s6db-intent-detail { font-size: 0.74rem; font-weight: 400; color: #c9b896; letter-spacing: 0.02em; }
+.s6db-intent--attack, .s6db-intent--pierce, .s6db-intent--mirror { border-left-color: #c0392b; }
+.s6db-intent--pierce { background: #3a1410; }
+.s6db-intent--block { border-left-color: #2f6f6a; }
+.s6db-intent--buff { border-left-color: #b8962e; }
+.s6db-intent--debuff { border-left-color: #7a4ea3; }
+.s6db-intent--wait, .s6db-intent--unknown { border-left-color: #6b513a; }
+.s6db-intent-next { margin-top: 4px; font-size: 0.75rem; color: #6b513a; opacity: 0.8; }
+
+/* status chips */
+.s6db-status { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.s6db-status-chip { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: #1e2840; color: #f6efdf; }
+.s6db-status-chip--vulnerable { background: #8b2020; }
+.s6db-status-chip--weak { background: #6b513a; }
+.s6db-status-chip--strength { background: #2f6f6a; }
+
+/* ── middle band: arena strip (ticker + float/banner landing zone) ────────────── */
+.s6db-arena { position: relative; flex: 1 1 auto; min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 10px; border-radius: 8px; background: rgba(44, 24, 16, 0.06); }
+.s6db-ticker { display: flex; flex-direction: column; gap: 2px; text-align: center; font-size: 0.82rem; color: #3b2a1c; max-width: 60ch; }
+.s6db-ticker p { margin: 0; }
+.s6db-ticker p:last-child { font-weight: 700; }
+.s6db-arena-tools { display: flex; gap: 8px; }
+.s6db-chip { font: inherit; font-size: 0.74rem; padding: 2px 10px; border-radius: 12px; border: 1px solid #b8962e; background: #f6efdf; color: #3b2a1c; cursor: pointer; }
+.s6db-chip:hover { border-color: #8b2020; }
+.s6db-jammed { margin: 0; font-size: 0.8rem; color: #8b2020; text-align: center; }
+.s6db-jammed-label { font-weight: 700; }
+.s6db-card--jammed { display: inline-block; padding: 2px 6px; margin: 0 4px; border: 1px dashed #8b2020; border-radius: 4px; opacity: 0.7; }
+
+/* ── boss negotiation banner (kept, compact, above the battlefield) ───────────── */
+.s6db-boss-banner { border: 2px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 8px 12px; flex: 0 0 auto; }
+.s6db-boss-banner.is-locked { border-color: #8b2020; background: #f7e7e2; }
+.s6db-boss-banner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.s6db-boss-banner-head strong { letter-spacing: 0.04em; }
+.s6db-boss-phase { font-size: 0.82rem; color: #6b513a; }
+.s6db-boss-rule { margin: 4px 0 0; font-style: italic; color: #3b2a1c; }
+.s6db-boss-mismatch { margin: 4px 0; color: #8b2020; font-weight: 700; }
+
+/* ── bottom band: the hand dock ───────────────────────────────────────────────── */
+.s6db-dock { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex: 0 0 auto; }
+.s6db-dock-left, .s6db-dock-right { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; }
+.s6db-dock-right { align-items: flex-end; }
+.s6db-pilechips { display: flex; gap: 6px; }
+.s6db-pilechip { font: inherit; font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; border: 1px solid #1e2840; background: #f6efdf; color: #1e2840; cursor: pointer; }
+.s6db-pilechip:hover { border-color: #8b2020; }
+.s6db-pilechip b { font-variant-numeric: tabular-nums; }
+.s6db-endturn { align-self: flex-end; }
+
+/* energy crystal */
+.s6db-energy { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 0.82rem; color: #6b513a; }
+.s6db-pips { display: inline-flex; gap: 5px; }
+.s6db-pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #1e2840; background: transparent; }
+.s6db-pip.is-full { background: radial-gradient(circle at 35% 30%, #ffe9a8, #b8962e); border-color: #b8962e; }
+.s6db-energy-num { font-weight: 700; }
+.s6db-window { font-size: 0.78rem; color: #2f6f6a; font-weight: 600; }
+
+/* the FAN: cards overlap via a negative-margin ramp + per-index rotation (JS-computed CSS vars, no
+   RNG). transform-origin bottom center; hover/focus lifts + brings the card to the top. */
+.s6db-hand { flex: 1 1 auto; display: flex; justify-content: center; align-items: flex-end; padding-top: 34px; min-height: 132px; }
+.s6db-hand .s6db-card { width: 138px; min-height: 116px; transform-origin: bottom center; transform: translateY(var(--ty, 0)) rotate(var(--rot, 0deg)); transition: transform 0.14s ease, box-shadow 0.14s ease; cursor: pointer; z-index: var(--z, 0); }
+.s6db-hand .s6db-card:not(:first-child) { margin-left: -32px; }
+.s6db-hand .s6db-card:hover, .s6db-hand .s6db-card:focus-visible { transform: translateY(-28px) scale(1.12); box-shadow: 0 12px 26px rgba(30, 40, 64, 0.35); z-index: 30; outline: none; }
+.s6db-hand .s6db-card.is-unaffordable { opacity: 0.55; }
+.s6db-hand .s6db-card.is-pending { visibility: hidden; }
+
+/* ── inspect close-up: the raised card centred above the hand ─────────────────── */
+.s6db-inspect { position: absolute; left: 50%; bottom: 158px; transform: translateX(-50%); z-index: 40; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.s6db-inspect-card { width: 214px; min-height: 172px; box-shadow: 0 18px 44px rgba(20, 20, 30, 0.45); }
+.s6db-inspect-card .s6db-card-name { font-size: 1.28rem; }
+.s6db-inspect-card .s6db-card-text { font-size: 0.95rem; }
+.s6db-inspect-actions { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 10px; background: rgba(20, 14, 10, 0.86); }
+.s6db-play-btn { font-size: 1rem; padding: 8px 18px; }
+.s6db-inspect-hint { font-size: 0.74rem; color: #e8dcc8; }
+
+/* played-card fly clone (feedback #4) — a fixed body-level node that flies to the arena + dissolves. */
+.s6db-fly { position: fixed; z-index: 80; pointer-events: none; transition: transform 0.22s ease, opacity 0.22s ease; }
+
+/* full combat log modal body. */
+.s6db-logfull p { margin: 0 0 4px; font-size: 0.86rem; }
+
+/* ── phone (390px): enemy intent + hand co-visible; narrower, more-overlapped fan ── */
+@media (max-width: 720px) {
+  .s6db-battlefield { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .s6db-fighter { padding: 8px; }
+  .s6db-fighter-name { font-size: 0.98rem; }
+  .s6db-intent-num { font-size: 1.05rem; }
+  .s6db-dock { gap: 6px; }
+  .s6db-hand { min-height: 116px; padding-top: 30px; }
+  .s6db-hand .s6db-card { width: 116px; min-height: 100px; }
+  .s6db-hand .s6db-card:not(:first-child) { margin-left: -46px; }
+  .s6db-inspect { bottom: 138px; }
+  .s6db-inspect-card { width: 188px; min-height: 150px; }
+}

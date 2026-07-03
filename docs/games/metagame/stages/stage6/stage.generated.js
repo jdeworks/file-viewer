@@ -5,7 +5,7 @@
 // external (NOT inlined). The hub's stage-manifest.js LOADERS import THIS file.
 
 
-// ../../docs/games/metagame/stages/stage6/messages.js
+// docs/games/metagame/stages/stage6/messages.js
 var ACTION_NAME = "protocol_ch9_read";
 var REQUIRED_ACTION = "6.protocol_ch9_read";
 var ACHIEVEMENT_ID = "stage6.protocol_ch9_read";
@@ -34,7 +34,7 @@ var combatLines = {
   defeated: "The Refused Connection closes without refusal."
 };
 
-// ../../docs/games/metagame/stages/stage6/boss.js
+// docs/games/metagame/stages/stage6/boss.js
 function hasProtocolChapter9(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(6, ACTION_NAME));
 }
@@ -92,7 +92,7 @@ function unlockAchievement(achievements, id, detail) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/cards-signal.js
+// docs/games/metagame/stages/stage6/cards-signal.js
 var SIGNAL_CARDS = [
   {
     id: "SYN",
@@ -328,7 +328,7 @@ var SIGNAL_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-protocol.js
+// docs/games/metagame/stages/stage6/cards-protocol.js
 var PROTOCOL_CARDS = [
   {
     id: "ACK",
@@ -505,7 +505,7 @@ var PROTOCOL_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-layer.js
+// docs/games/metagame/stages/stage6/cards-layer.js
 var LAYER_CARDS = [
   {
     id: "CIPHER_LAYER",
@@ -598,7 +598,7 @@ var LAYER_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-daemon.js
+// docs/games/metagame/stages/stage6/cards-daemon.js
 var DAEMON_CARDS = [
   {
     id: "FORK_BOMB",
@@ -715,7 +715,7 @@ var DAEMON_CARDS = [
   } }
 ];
 
-// ../../docs/games/metagame/stages/stage6/cards-recursion.js
+// docs/games/metagame/stages/stage6/cards-recursion.js
 var RECURSION_CARDS = [
   {
     id: "STACK_FRAME",
@@ -814,7 +814,7 @@ var RECURSION_CARDS = [
   { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
 ];
 
-// ../../docs/games/metagame/stages/stage6/combat-rng.js
+// docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
   return function rng() {
@@ -859,9 +859,28 @@ function strHash(str) {
   return h || 1;
 }
 
-// ../../docs/games/metagame/stages/stage6/cards.js
+// docs/games/metagame/stages/stage6/cards.js
 var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
+var NAME_ACRONYMS = /* @__PURE__ */ new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP"]);
+var NAME_OVERRIDES = {
+  SYN: "SYN Pulse",
+  ACK: "ACK Guard",
+  RST: "Reset Kill",
+  DDOS: "DDoS Storm",
+  ICMP: "ICMP Echo",
+  SACK: "Selective ACK",
+  TCP_STACK: "TCP Stack",
+  XOR_PAD: "XOR Pad",
+  NAGLE: "Nagle Hold",
+  ONION: "Onion Wrap",
+  DEFRAG: "Defrag"
+};
+function displayName(id) {
+  if (NAME_OVERRIDES[id]) return NAME_OVERRIDES[id];
+  return String(id).split("_").map((w) => NAME_ACRONYMS.has(w) ? w : w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
+}
+for (const card of CARDS) card.name = displayName(card.id);
 function cardById(id) {
   return BY_ID.get(id) || null;
 }
@@ -907,7 +926,7 @@ function draftRewardCards(seed, act, count = 3) {
   return picks;
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-damage.js
+// docs/games/metagame/stages/stage6/combat-damage.js
 function dealToEnemy(combat, baseAmount) {
   let amount = Math.max(0, Math.round(baseAmount));
   if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
@@ -957,7 +976,7 @@ function log(combat, line) {
   combat.log = [...combat.log, line].slice(-10);
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-ctx.js
+// docs/games/metagame/stages/stage6/combat-ctx.js
 var MAX_ECHO_DEPTH = 4;
 function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
@@ -1168,7 +1187,7 @@ function runHook(combat, name, card = null) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-piles.js
+// docs/games/metagame/stages/stage6/combat-piles.js
 function drawCards(combat, n) {
   for (let i = 0; i < n; i++) {
     if (combat.draw.length === 0) {
@@ -1190,7 +1209,7 @@ function releaseJam(combat) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-enemy.js
+// docs/games/metagame/stages/stage6/combat-enemy.js
 function currentIntent(combat) {
   const script = combat.enemy.script;
   return script[combat.enemy.intentIndex % script.length];
@@ -1242,7 +1261,7 @@ function resolveIntent(combat, intent) {
   if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-modes.js
+// docs/games/metagame/stages/stage6/combat-modes.js
 var WINDOW_CAP = 5;
 var WINDOW_FLOOR = 2;
 var CONGESTION_ACT = 3;
@@ -1296,7 +1315,7 @@ function resolvePending(combat) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/combat.js
+// docs/games/metagame/stages/stage6/combat.js
 var HAND_SIZE = 5;
 var START_ENERGY = 3;
 function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
@@ -1440,7 +1459,7 @@ function checkPlayerDead(combat) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/enemies.js
+// docs/games/metagame/stages/stage6/enemies.js
 var ENEMIES = {
   // ── Standard trash ──────────────────────────────────────────────────────────────────────────────
   "corrupt-packet": {
@@ -1791,7 +1810,7 @@ function instantiateEnemy(id, act = 1) {
   };
 }
 
-// ../../docs/games/metagame/stages/stage6/relics.js
+// docs/games/metagame/stages/stage6/relics.js
 var RELICS = [
   {
     id: "handshake-token",
@@ -2043,7 +2062,7 @@ function rollRelics(seed, owned = [], count = 3) {
   return out;
 }
 
-// ../../docs/games/metagame/stages/stage6/potions.js
+// docs/games/metagame/stages/stage6/potions.js
 var POTIONS = [
   {
     id: "hotfix",
@@ -2154,7 +2173,7 @@ function rollPotion(seed) {
   return POTIONS[POTIONS.length - 1].id;
 }
 
-// ../../docs/games/metagame/stages/stage6/mapgen.js
+// docs/games/metagame/stages/stage6/mapgen.js
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
   2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
@@ -2254,7 +2273,7 @@ function enemyForNode(node, act = 1, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
-// ../../docs/games/metagame/stages/stage6/card-upgrades.js
+// docs/games/metagame/stages/stage6/card-upgrades.js
 var UPGRADED_SUFFIX = "+";
 var SPECS = {
   SYN: { text: "Deal 11. If ACK was played this turn, draw 2.", effect: (ctx) => {
@@ -2514,7 +2533,7 @@ var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
-// ../../docs/games/metagame/stages/stage6/ascension-mods.js
+// docs/games/metagame/stages/stage6/ascension-mods.js
 function baseRunConfig() {
   return {
     handshakeMult: 1,
@@ -2620,7 +2639,7 @@ function foldAscension(baseConfig, level) {
   return acc;
 }
 
-// ../../docs/games/metagame/stages/stage6/superboss.js
+// docs/games/metagame/stages/stage6/superboss.js
 var SUPERBOSS_ID = "the-kernel-of-refusal";
 var SUPERBOSS_PHASE_HP = [82, 88, 94];
 var SUPERBOSS_PHASE_SCRIPTS = [
@@ -2669,7 +2688,7 @@ function rewireSuperboss(combat) {
   return combat;
 }
 
-// ../../docs/games/metagame/stages/stage6/run.js
+// docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
 var REWARD_CHOICES = 3;
@@ -2950,7 +2969,7 @@ function screenForNode(node) {
   return node.type;
 }
 
-// ../../docs/games/metagame/stages/stage6/events.js
+// docs/games/metagame/stages/stage6/events.js
 var RARE_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "rare");
 var COMMON_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "common");
 function damage(run, n) {
@@ -3212,7 +3231,7 @@ function applyEventChoice(run, eventId, choiceId) {
   return { ok: true, notice };
 }
 
-// ../../docs/games/metagame/stages/stage6/boss-combat.js
+// docs/games/metagame/stages/stage6/boss-combat.js
 var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60, 4: 60 };
 var DEMAND_LEAD_SYN = "lead-syn";
 var DEMAND_ACK_FIRST = "ack-first";
@@ -3288,7 +3307,7 @@ function playFirstMatch(combat, pred) {
   return false;
 }
 
-// ../../docs/games/metagame/stages/stage6/testhook.js
+// docs/games/metagame/stages/stage6/testhook.js
 var REPRESENTATIVE_ENDGAME_DECK = [
   "SYN+",
   "SYN+",
@@ -3440,7 +3459,7 @@ function removeStage6TestHook() {
   if (window.__fvStage6) delete window.__fvStage6;
 }
 
-// ../../docs/games/metagame/stages/stage6/combat-persist.js
+// docs/games/metagame/stages/stage6/combat-persist.js
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
@@ -3533,16 +3552,32 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
   return combat;
 }
 
-// ../../docs/games/metagame/stages/stage6/renderer.js
+// docs/games/metagame/stages/stage6/renderer.js
 import { createRun as createRunState } from "../../shared/run-state.js";
 import { createAscension } from "../../shared/ascension.js";
 
-// ../../docs/games/metagame/stages/stage6/ui-combat.js
-var STATUS_LABEL = {
-  strength: "STR",
-  vulnerable: "VULN",
-  weak: "WEAK"
-};
+// docs/games/metagame/stages/stage6/card-face.js
+function cardTypeClass(card) {
+  return `s6db-card--${(card?.type || "").toLowerCase()}`;
+}
+function cardFaceInner(id) {
+  const card = cardById(id);
+  const upgraded = Boolean(card?.upgraded) || typeof id === "string" && id.endsWith("+");
+  const name = card?.name || String(id).replace(/\+$/, "");
+  return `
+    <span class="s6db-card-strip" aria-hidden="true"></span>
+    <span class="s6db-card-cost">${card?.cost ?? "?"}</span>
+    ${upgraded ? `<span class="s6db-card-badge" title="upgraded">+</span>` : ""}
+    <strong class="s6db-card-name">${esc(name)}</strong>
+    <span class="s6db-card-type">${esc(card?.type || "")}</span>
+    <small class="s6db-card-text">${esc(card?.text || "")}</small>`;
+}
+function esc(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+}
+
+// docs/games/metagame/stages/stage6/ui-combat.js
+var STATUS_LABEL = { strength: "STR", vulnerable: "VULN", weak: "WEAK" };
 var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 var PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
 var DEMAND_TEXT = {
@@ -3555,37 +3590,35 @@ function phaseRuleText(combat) {
   const mutating = phase === 3 ? "MUTATING — " : "";
   return `${PHASE_NAME[phase] || ""} — ${mutating}${DEMAND_TEXT[demand] || ""}`;
 }
-function combatView(combat, run) {
+function normalizePending(idx, combat) {
+  return idx == null || idx < 0 || idx >= combat.hand.length ? null : idx;
+}
+function combatView(combat, run, opts = {}) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
+  const pending = normalizePending(opts.pendingCardIndex, combat);
   el.innerHTML = `
     ${bossBanner(combat)}
-    <div class="s6db-combat-head">
-      <span class="s6db-turn">turn ${combat.turn}</span>
-      <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
-    </div>
-    <div class="s6db-fighters">
+    <div class="s6db-battlefield">
       ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
     </div>
-    <div class="s6db-energy" aria-label="energy">
-      ${energyPips(combat.player.energy, combat.player.maxEnergy)}
-      <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
-      ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
-    </div>
-    ${jammedRow(combat)}
-    ${potionBelt(run)}
-    <div class="s6db-hand" aria-label="hand"></div>
-    <div class="s6db-combat-controls">
-      <button type="button" data-action="end-turn">end turn ▸</button>
-    </div>
-    <ol class="s6db-log" aria-label="combat log"></ol>
-  `;
+    <div class="s6db-arena">${arenaStrip(combat)}</div>
+    ${inspectOverlay(combat, pending)}
+    <div class="s6db-dock">
+      <div class="s6db-dock-left">
+        ${energyBlock(combat)}
+        ${potionBelt(run)}
+      </div>
+      <div class="s6db-hand" aria-label="hand"></div>
+      <div class="s6db-dock-right">
+        ${pileChips(combat)}
+        <button type="button" class="s6db-endturn" data-action="end-turn">end turn ▸</button>
+      </div>
+    </div>`;
   const hand = el.querySelector(".s6db-hand");
-  hand.replaceChildren(...combat.hand.map((id, i) => handCard(id, i, combat.player.energy)));
-  const log2 = el.querySelector(".s6db-log");
-  log2.replaceChildren(...combat.log.slice(-5).map(toLi));
+  hand.replaceChildren(...combat.hand.map((id, i) => handCard(id, i, combat.hand.length, combat.player.energy, pending)));
   return el;
 }
 function bossBanner(combat) {
@@ -3597,10 +3630,16 @@ function bossBanner(combat) {
         <strong>THE REFUSED CONNECTION</strong>
         <span class="s6db-boss-phase">phase ${combat.bossPhase} / 3</span>
       </div>
-      <p class="s6db-boss-rule">${esc(phaseRuleText(combat))}</p>
+      <p class="s6db-boss-rule">${esc2(phaseRuleText(combat))}</p>
       ${locked ? `<p class="s6db-boss-mismatch">PROTOCOL MISMATCH — every Signal deals 0 until you read Chapter 9.</p>
            <button type="button" data-action="epub">open the codex</button>` : ""}
     </div>`;
+}
+function arenaStrip(combat) {
+  const lines = (combat.log || []).slice(-2);
+  const ticker = lines.length ? `<div class="s6db-ticker">${lines.map((l) => `<p>${esc2(l)}</p>`).join("")}</div>` : "";
+  const logChip = (combat.log || []).length ? `<button type="button" class="s6db-chip" data-log>log ▾</button>` : "";
+  return `${ticker}${jammedRow(combat)}${logChip ? `<div class="s6db-arena-tools">${logChip}</div>` : ""}`;
 }
 function describeIntent(intent, combat) {
   if (!intent) return { kind: "unknown", icon: "…", primary: "—", detail: "" };
@@ -3630,7 +3669,7 @@ function enemyPanel(enemy, intent, combat) {
   return `
     <section class="s6db-fighter s6db-enemy s6db-enemy--${enemy.tier || "standard"}">
       <div class="s6db-fighter-top">
-        <span class="s6db-fighter-name">${esc(enemy.name)}</span>
+        <span class="s6db-fighter-name">${esc2(enemy.name)}</span>
         ${tier ? `<span class="s6db-tier s6db-tier--${enemy.tier}">${tier}</span>` : ""}
       </div>
       ${bar(enemy.hp, enemy.maxHp, "enemy")}
@@ -3640,34 +3679,13 @@ function enemyPanel(enemy, intent, combat) {
         ${enemy.armor ? `<span class="s6db-armor">armor ${enemy.armor}</span>` : ""}
       </div>
       ${statusChips(enemy.statuses)}
-      <div class="s6db-intent s6db-intent--${d.kind}" title="${esc(intent?.label || "")}">
+      <div class="s6db-intent s6db-intent--${d.kind}" title="${esc2(intent?.label || "")}">
         <span class="s6db-intent-icon">${d.icon}</span>
-        <span class="s6db-intent-num">${esc(d.primary)}</span>
-        <span class="s6db-intent-detail">${esc(d.detail || intent?.label || "")}</span>
+        <span class="s6db-intent-num">${esc2(d.primary)}</span>
+        <span class="s6db-intent-detail">${esc2(d.detail || intent?.label || "")}</span>
       </div>
       ${nextIntentTelegraph(enemy, combat)}
     </section>`;
-}
-function potionBelt(run) {
-  const potions = run?.potions || [];
-  if (!potions.length) return "";
-  const chips = potions.map((id, i) => {
-    const p = potionById(id);
-    return `<button type="button" class="s6db-potion" data-potion="${i}" title="${esc(p?.text || "")}">⚗ ${esc(p?.name || id)}</button>`;
-  }).join("");
-  return `<div class="s6db-potions" aria-label="potion belt"><span class="s6db-potions-label">BELT:</span> ${chips}</div>`;
-}
-function jammedRow(combat) {
-  if (!combat.jammed || !combat.jammed.length) return "";
-  const chips = combat.jammed.map((id) => `<span class="s6db-card s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc(id)}</span>`).join("");
-  return `<div class="s6db-jammed" aria-label="jammed (packet loss)"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</div>`;
-}
-function nextIntentTelegraph(enemy, combat) {
-  const script = enemy.script;
-  if (!script || script.length < 2) return "";
-  const next = script[(enemy.intentIndex + 1) % script.length];
-  const d = describeIntent(next, combat);
-  return `<div class="s6db-intent-next" title="${esc(next?.label || "")}">then ${d.icon} <strong>${esc(d.primary)}</strong></div>`;
 }
 function playerPanel(player) {
   return `
@@ -3681,26 +3699,74 @@ function playerPanel(player) {
       ${statusChips(player.statuses)}
     </section>`;
 }
-function energyPips(energy, maxEnergy) {
+function potionBelt(run) {
+  const potions = run?.potions || [];
+  if (!potions.length) return "";
+  const chips = potions.map((id, i) => {
+    const p = potionById(id);
+    return `<button type="button" class="s6db-potion" data-potion="${i}" title="${esc2(p?.text || "")}">⚗ ${esc2(p?.name || id)}</button>`;
+  }).join("");
+  return `<div class="s6db-potions" aria-label="potion belt"><span class="s6db-potions-label">BELT:</span> ${chips}</div>`;
+}
+function jammedRow(combat) {
+  if (!combat.jammed || !combat.jammed.length) return "";
+  const chips = combat.jammed.map((id) => `<span class="s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc2(id)}</span>`).join("");
+  return `<p class="s6db-jammed"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</p>`;
+}
+function nextIntentTelegraph(enemy, combat) {
+  const script = enemy.script;
+  if (!script || script.length < 2) return "";
+  const next = script[(enemy.intentIndex + 1) % script.length];
+  const d = describeIntent(next, combat);
+  return `<div class="s6db-intent-next" title="${esc2(next?.label || "")}">then ${d.icon} <strong>${esc2(d.primary)}</strong></div>`;
+}
+function energyBlock(combat) {
+  const { energy, maxEnergy } = combat.player;
   const total = Math.max(maxEnergy, energy);
   let pips = "";
   for (let i = 0; i < total; i++) pips += `<span class="s6db-pip${i < energy ? " is-full" : ""}"></span>`;
-  return `<span class="s6db-pips" aria-hidden="true">${pips}</span>`;
+  return `<div class="s6db-energy" aria-label="energy">
+    <span class="s6db-pips" aria-hidden="true">${pips}</span>
+    <span class="s6db-energy-num">${energy}/${maxEnergy}</span>
+    ${combat.congestion ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
+  </div>`;
 }
-function handCard(id, index, energy) {
+function pileChips(combat) {
+  const chip = (kind, n, label) => `<button type="button" class="s6db-pilechip" data-pile="${kind}">${label} <b>${n}</b></button>`;
+  return `<div class="s6db-pilechips">
+    ${chip("draw", combat.draw.length, "draw")}
+    ${chip("discard", combat.discard.length, "disc")}
+    ${combat.exhaust.length ? chip("exhaust", combat.exhaust.length, "exh") : ""}
+  </div>`;
+}
+function handCard(id, index, count, energy, pending) {
   const card = cardById(id);
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `s6db-card s6db-card--${(card?.type || "").toLowerCase()}`;
-  button.dataset.play = String(index);
-  const affordable = card && card.cost <= energy;
-  button.disabled = !affordable;
-  button.innerHTML = `
-    <span class="s6db-card-cost">${card?.cost ?? "?"}</span>
-    <strong class="s6db-card-id">${esc(card?.id || id)}</strong>
-    <span class="s6db-card-type">${esc(card?.type || "")}</span>
-    <small class="s6db-card-text">${esc(card?.text || "")}</small>`;
+  button.className = `s6db-card ${cardTypeClass(card)}`;
+  button.dataset.inspect = String(index);
+  if (!(card && card.cost <= energy)) button.classList.add("is-unaffordable");
+  if (pending === index) button.classList.add("is-pending");
+  const mid = (count - 1) / 2;
+  const t = count > 1 ? (index - mid) / mid : 0;
+  button.style.setProperty("--rot", `${(t * 6).toFixed(2)}deg`);
+  button.style.setProperty("--ty", `${(t * t * 16).toFixed(1)}px`);
+  button.style.setProperty("--z", String(index));
+  button.innerHTML = cardFaceInner(id);
   return button;
+}
+function inspectOverlay(combat, idx) {
+  if (idx == null) return "";
+  const id = combat.hand[idx];
+  const card = cardById(id);
+  const affordable = card && card.cost <= combat.player.energy;
+  return `<div class="s6db-inspect" role="dialog" aria-label="inspect card">
+    <div class="s6db-inspect-card s6db-card ${cardTypeClass(card)}">${cardFaceInner(id)}</div>
+    <div class="s6db-inspect-actions">
+      <button type="button" class="s6db-play-btn" data-play="${idx}"${affordable ? "" : " disabled"}>play ▸</button>
+      <span class="s6db-inspect-hint">${affordable ? "Enter plays · Esc cancels" : "not enough energy"}</span>
+    </div>
+  </div>`;
 }
 function statusChips(statuses) {
   const keys = Object.keys(statuses || {}).filter((k) => statuses[k]);
@@ -3711,16 +3777,86 @@ function bar(value, max, who) {
   const pct = max > 0 ? Math.max(0, Math.min(100, Math.round(value / max * 100))) : 0;
   return `<div class="s6db-bar s6db-bar--${who}"><span style="width:${pct}%"></span></div>`;
 }
-function toLi(line) {
-  const li = document.createElement("li");
-  li.textContent = line;
-  return li;
-}
-function esc(value) {
+function esc2(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/ui-map.js
+// docs/games/metagame/stages/stage6/combat-fx.js
+import { flash, shake, floatNum, banner } from "../../shared/feedback.js";
+var reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+function applyCombatFx(node, fx) {
+  if (!node || !fx) return;
+  const enemy = node.querySelector(".s6db-enemy");
+  const player = node.querySelector(".s6db-player");
+  const arena = node.querySelector(".s6db-arena");
+  if (fx.banner && arena) banner(arena, fx.banner);
+  if (fx.fly && arena) flyCard(fx.fly, arena);
+  if (fx.enemyDamage && enemy) {
+    flash(enemy, "bad");
+    floatNum(enemy, `-${fx.enemyDamage}`, "bad");
+  }
+  if (fx.blockGain && player) flash(player, "good");
+  if (fx.playerDamage && player) {
+    flash(player, "bad");
+    floatNum(player, `-${fx.playerDamage}`, "bad");
+    shake(node.querySelector(".s6db-battlefield"));
+  }
+}
+function flyCard({ rect, faceHTML }, arena) {
+  if (!rect || reduce() || typeof document === "undefined") return;
+  const clone2 = document.createElement("div");
+  clone2.className = "s6db-fly s6db-card";
+  clone2.innerHTML = faceHTML || "";
+  clone2.style.left = `${rect.left}px`;
+  clone2.style.top = `${rect.top}px`;
+  clone2.style.width = `${rect.width}px`;
+  clone2.style.height = `${rect.height}px`;
+  document.body.appendChild(clone2);
+  const a = arena.getBoundingClientRect();
+  const dx = a.left + a.width / 2 - (rect.left + rect.width / 2);
+  const dy = a.top + a.height / 2 - (rect.top + rect.height / 2);
+  requestAnimationFrame(() => {
+    clone2.style.transform = `translate(${dx}px, ${dy}px) scale(0.4)`;
+    clone2.style.opacity = "0";
+  });
+  setTimeout(() => clone2.remove(), 240);
+}
+
+// docs/games/metagame/stages/stage6/combat-modals.js
+import { openModal } from "../../shared/modal.js";
+function openPileModal(combat, kind) {
+  if (!combat) return;
+  const ids = kind === "draw" ? combat.draw : kind === "discard" ? combat.discard : combat.exhaust;
+  const grid = document.createElement("div");
+  grid.className = "mg-modal-grid";
+  if (ids.length) {
+    grid.replaceChildren(...ids.map((id) => {
+      const d = document.createElement("div");
+      d.className = `s6db-card ${cardTypeClass(cardById(id))}`;
+      d.innerHTML = cardFaceInner(id);
+      return d;
+    }));
+  } else {
+    const p = document.createElement("p");
+    p.className = "mg-modal-empty";
+    p.textContent = "empty";
+    grid.appendChild(p);
+  }
+  openModal({ title: `${kind} pile (${ids.length})`, contentEl: grid, className: "s6db-modal" });
+}
+function openLogModal(combat) {
+  if (!combat) return;
+  const box = document.createElement("div");
+  box.className = "s6db-logfull";
+  box.replaceChildren(...(combat.log || []).map((line) => {
+    const p = document.createElement("p");
+    p.textContent = line;
+    return p;
+  }));
+  openModal({ title: "combat log", contentEl: box, className: "s6db-modal" });
+}
+
+// docs/games/metagame/stages/stage6/ui-map.js
 var NODE_ICON = {
   combat: "⚔",
   elite: "☠",
@@ -3758,7 +3894,7 @@ function hubView(state, lock, asc = null) {
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
     </div>
     ${ascensionPicker(asc, hasRun)}
-    <p class="s6db-hint">${esc2(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
+    <p class="s6db-hint">${esc3(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>
   `;
   return el;
 }
@@ -3795,7 +3931,7 @@ function ascensionPicker(asc, hasRun) {
 function activeRules(level) {
   const active = activeAscensionMods(level);
   if (!active.length) return "";
-  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc2(mod.label)}</strong> — ${esc2(mod.desc)}</li>`).join("")}</ul>`;
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc3(mod.label)}</strong> — ${esc3(mod.desc)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -3809,7 +3945,7 @@ function mapView(run) {
       <span>Act ${run.act} / ${total} — choose your route</span>
       <span class="s6db-act-track" aria-label="act ${run.act} of ${total}">${dots}</span>
     </div>
-    ${run.notice ? `<div class="s6db-notice">${esc2(run.notice)}</div>` : ""}`;
+    ${run.notice ? `<div class="s6db-notice">${esc3(run.notice)}</div>` : ""}`;
   const grid = document.createElement("div");
   grid.className = "s6db-map-grid";
   for (const layer of act.layers) {
@@ -3842,7 +3978,7 @@ function nodeChip(node, run, available, cleared) {
     chip.dataset.node = node.id;
   }
   chip.innerHTML = `<span class="s6db-node-icon">${NODE_ICON[node.type] || "?"}</span>
-    <span class="s6db-node-type">${esc2(node.type)}</span>`;
+    <span class="s6db-node-type">${esc3(node.type)}</span>`;
   return chip;
 }
 function deathView(state, run) {
@@ -3887,15 +4023,15 @@ function scoreLine(state, run) {
   if (run?.dailyKey) {
     const seedBest = state.meta.dailyBest && state.meta.dailyBest[run.dailyKey] || 0;
     const label = run.mode === "daily" ? "daily" : "seed";
-    parts.push(`<span>${esc2(label)} <code>${esc2(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
+    parts.push(`<span>${esc3(label)} <code>${esc3(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
   }
   return `<p class="s6db-score-line">${parts.join(" · ")}</p>`;
 }
-function esc2(value) {
+function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/ui-rewards.js
+// docs/games/metagame/stages/stage6/ui-rewards.js
 var PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
 function rewardView(run) {
   const el = document.createElement("div");
@@ -3903,7 +4039,7 @@ function rewardView(run) {
   const cards = run.pendingReward?.cards || [];
   const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
   el.innerHTML = `<h2>Signal recovered</h2>
-    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc3(relic.name)}</strong>: ${esc3(relic.text)}</p>` : ""}
+    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc4(relic.name)}</strong>: ${esc4(relic.text)}</p>` : ""}
     <p>Add one card to your deck.</p>`;
   const row = document.createElement("div");
   row.className = "s6db-card-row";
@@ -3923,10 +4059,10 @@ function potionOffer(run, potionId) {
   wrap.className = "s6db-potion-offer";
   const belt = run.potions || [];
   if (belt.length < POTION_SLOTS) {
-    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}</p>
+    wrap.innerHTML = `<p>Potion found — <strong>${esc4(p?.name || potionId)}</strong>: ${esc4(p?.text || "")}</p>
       <button type="button" data-take-potion="">grab potion ⚗</button>`;
   } else {
-    wrap.innerHTML = `<p>Potion found — <strong>${esc3(p?.name || potionId)}</strong>: ${esc3(p?.text || "")}. Belt full — replace one:</p>`;
+    wrap.innerHTML = `<p>Potion found — <strong>${esc4(p?.name || potionId)}</strong>: ${esc4(p?.text || "")}. Belt full — replace one:</p>`;
     const actions = document.createElement("div");
     actions.className = "s6db-hub-actions";
     actions.replaceChildren(...belt.map((id, i) => {
@@ -3953,7 +4089,7 @@ function bossRewardView(run) {
     b.type = "button";
     b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
     b.dataset.bossRelic = relic.id;
-    b.innerHTML = `<strong>⬢ ${esc3(relic.name)}</strong><small class="s6db-card-text">${esc3(relic.text)}</small>`;
+    b.innerHTML = `<strong>⬢ ${esc4(relic.name)}</strong><small class="s6db-card-text">${esc4(relic.text)}</small>`;
     return b;
   }));
   el.appendChild(row);
@@ -4054,7 +4190,7 @@ function shopView(run) {
     b.dataset.buyPotion = id;
     b.dataset.price = String(POTION_COST);
     b.disabled = beltFull || run.handshakes < POTION_COST;
-    b.innerHTML = `<strong>⚗ ${esc3(p?.name || id)}</strong><small class="s6db-card-text">${esc3(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
+    b.innerHTML = `<strong>⚗ ${esc4(p?.name || id)}</strong><small class="s6db-card-text">${esc4(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
     return b;
   }));
   el.querySelector(".s6db-shop-potions").appendChild(potRow);
@@ -4074,9 +4210,9 @@ function eventView(run, event) {
   const el = document.createElement("div");
   el.className = "s6db-event";
   el.innerHTML = `
-    <h2>${esc3(event?.title || "An anomaly idles in the corridor")}</h2>
-    <p>${esc3(event?.text || "")}</p>
-    ${run.notice ? `<p class="s6db-hint">${esc3(run.notice)}</p>` : ""}`;
+    <h2>${esc4(event?.title || "An anomaly idles in the corridor")}</h2>
+    <p>${esc4(event?.text || "")}</p>
+    ${run.notice ? `<p class="s6db-hint">${esc4(run.notice)}</p>` : ""}`;
   const actions = document.createElement("div");
   actions.className = "s6db-hub-actions";
   const buttons = (event?.choices || []).map((c) => {
@@ -4119,20 +4255,16 @@ function cardOption(id, attr, value) {
   const card = cardById(id);
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `s6db-card s6db-card--${(card?.type || "").toLowerCase()}`;
+  button.className = `s6db-card ${cardTypeClass(card)}`;
   button.dataset[attr] = value;
-  button.innerHTML = `
-    <span class="s6db-card-cost">${card?.cost ?? "?"}</span>
-    <strong class="s6db-card-id">${esc3(card?.id || id)}</strong>
-    <span class="s6db-card-type">${esc3(card?.type || "")}</span>
-    <small class="s6db-card-text">${esc3(card?.text || "")}</small>`;
+  button.innerHTML = cardFaceInner(id);
   return button;
 }
-function esc3(value) {
+function esc4(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// ../../docs/games/metagame/stages/stage6/s6dev.js
+// docs/games/metagame/stages/stage6/s6dev.js
 var DEV_CARDS = ["HANDSHAKE", "FIREWALL", "TCP_STACK"];
 var ALL_KEYS = [KEY_UNTOUCHABLE, KEY_ASCETIC, KEY_SACRIFICE];
 function devHeal(run, combatPlayer) {
@@ -4182,7 +4314,7 @@ function applyDev(id, run, combatPlayer) {
   }
 }
 
-// ../../docs/games/metagame/stages/stage6/renderer.js
+// docs/games/metagame/stages/stage6/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
 function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
@@ -4196,6 +4328,8 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   const ascension = orchestrator?.save ? createAscension({ save: orchestrator.save, stageId: 6, modifiers: ASCENSION_MODS }) : null;
   const ascInfo = () => ascension ? { level: ascension.level(), maxUnlocked: ascension.maxUnlocked(), maxCleared: ascension.maxCleared(), maxLevel: ascension.maxLevel, floor: state.meta.protocolVersion || 0 } : null;
   let combat = null;
+  let pendingCardIndex = null;
+  let pendingFx = null;
   let dailyKeyOverride = null;
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
@@ -4207,6 +4341,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     route();
   };
   root.addEventListener("click", handleClick);
+  root.addEventListener("keydown", handleKey);
   route();
   installStage6TestHook({
     state,
@@ -4298,7 +4433,52 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
       finishCombat(run);
       return route();
     }
-    mount(combatView(combat, run));
+    const node = combatView(combat, run, { pendingCardIndex });
+    mount(node);
+    if (pendingFx) {
+      applyCombatFx(node, pendingFx);
+      pendingFx = null;
+    }
+  }
+  function doPlay(idx, sourceEl) {
+    if (!combat || combat.over) return false;
+    const card = cardById(combat.hand[idx]);
+    if (!card || card.cost > combat.player.energy) return false;
+    const enemyBefore = combat.enemy.hp;
+    const blockBefore = combat.player.block;
+    const rect = sourceEl ? sourceEl.getBoundingClientRect() : null;
+    const faceHTML = sourceEl ? sourceEl.innerHTML : "";
+    playCard(combat, idx);
+    pendingCardIndex = null;
+    pendingFx = {
+      enemyDamage: Math.max(0, enemyBefore - combat.enemy.hp),
+      blockGain: Math.max(0, combat.player.block - blockBefore),
+      fly: rect ? { rect, faceHTML } : null
+    };
+    if (combat.over) finishCombat(state.run);
+    else checkpointCombat(combat, state.run);
+    return true;
+  }
+  function handleKey(event) {
+    if (!combat || combat.over || state.ui.screen !== "run") return;
+    if (event.key >= "1" && event.key <= "9") {
+      const idx = Number(event.key) - 1;
+      if (idx < combat.hand.length) {
+        pendingCardIndex = idx;
+        route();
+        event.preventDefault();
+      }
+    } else if (event.key === "Enter" && pendingCardIndex != null) {
+      const src = root.querySelector(".s6db-inspect .s6db-card");
+      if (doPlay(pendingCardIndex, src)) {
+        event.preventDefault();
+        commit();
+      }
+    } else if (event.key === "Escape" && pendingCardIndex != null) {
+      pendingCardIndex = null;
+      route();
+      event.preventDefault();
+    }
   }
   function loadOrMakeCombat(run) {
     const snap = combatRun?.restore();
@@ -4349,6 +4529,8 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
+    pendingCardIndex = null;
+    pendingFx = null;
     if (win && isFinalBoss) finalBossDefeated(run);
     if (run.status === "dead" || run.status === "won") recordScore(run);
   }
@@ -4406,6 +4588,8 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     state.ui.screen = "run";
     if (combatRun) combatRun.reset();
     combat = null;
+    pendingCardIndex = null;
+    pendingFx = null;
   }
   function currentDailyKey() {
     if (dailyKeyOverride) return dailyKeyOverride;
@@ -4435,18 +4619,29 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   }
   function handleClick(event) {
     const run = state.run;
+    let cancelled = false;
+    if (pendingCardIndex != null && !event.target.closest("[data-inspect],[data-play]")) {
+      pendingCardIndex = null;
+      cancelled = true;
+    }
+    const inspect = event.target.closest("[data-inspect]");
+    if (inspect && combat && !combat.over) {
+      const i = Number(inspect.dataset.inspect);
+      pendingCardIndex = pendingCardIndex === i ? null : i;
+      return route();
+    }
+    const pile = event.target.closest("[data-pile]");
+    if (pile && combat) return openPileModal(combat, pile.dataset.pile);
+    if (event.target.closest("[data-log]") && combat) return openLogModal(combat);
     if (handleTarget(event, run)) return commit();
     const btn = event.target.closest("button[data-action]");
-    if (!btn) return;
-    if (!runAction(btn.dataset.action, run)) return;
-    commit();
+    if (btn && runAction(btn.dataset.action, run)) return commit();
+    if (cancelled) route();
   }
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
     if (play && combat && !combat.over) {
-      playCard(combat, Number(play.dataset.play));
-      if (combat.over) finishCombat(run);
-      else checkpointCombat(combat, run);
+      doPlay(Number(play.dataset.play), root.querySelector(".s6db-inspect .s6db-card"));
       return true;
     }
     const ascBtn = event.target.closest("[data-ascension]");
@@ -4569,7 +4764,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         return true;
       case "end-turn":
         if (combat && !combat.over) {
+          pendingCardIndex = null;
+          const hpBefore = combat.player.hp;
           endTurn(combat);
+          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp) };
           if (combat.over) finishCombat(run);
           else checkpointCombat(combat, run);
         }
@@ -4610,7 +4808,7 @@ function once(fn) {
   };
 }
 
-// ../../docs/games/metagame/stages/stage6/state.js
+// docs/games/metagame/stages/stage6/state.js
 var VERSION = 2;
 function defaultState() {
   return {
@@ -4676,7 +4874,7 @@ function num(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// ../../docs/games/metagame/stages/stage6/index.js
+// docs/games/metagame/stages/stage6/index.js
 var stageMeta = {
   id: 6,
   slug: "protocol-codex",
@@ -4736,12 +4934,15 @@ function isProtocolChapter9Detail(detail) {
   return Boolean(detail && Number(detail.stage) === 6 && detail.action === ACTION_NAME);
 }
 function ensureStyles() {
-  const id = "stage6-protocol-codex-styles";
+  ensureStylesheet("stage6-protocol-codex-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage6-protocol-codex-combat-styles", new URL("./styles-combat.css", import.meta.url).href);
+}
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 export {

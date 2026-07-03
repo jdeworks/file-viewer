@@ -142,7 +142,11 @@ async function drive(dir, viewport, opts, phoneLite = false) {
       await shotFull(page, dir, 's6-combat-full');
       await scrollPanelTo(page, '.s6db-hand');
       await shot(page, dir, 's6-combat-hand');
-      await page.evaluate(() => document.querySelector('.s6db-hand [data-play]:not([disabled])')?.click());
+      // Select → inspect → play (stage6 #2): raise an affordable hand card, then click PLAY so the
+      // after-play shot still shows a resolved play (float + fly feedback) rather than a raised card.
+      await page.evaluate(() => document.querySelector('.s6db-hand .s6db-card[data-inspect]:not(.is-unaffordable)')?.click());
+      await page.waitForTimeout(150);
+      await page.evaluate(() => document.querySelector('.s6db-inspect .s6db-play-btn:not([disabled])')?.click());
       await page.waitForTimeout(400);
       await shot(page, dir, 's6-combat-after-play');
     }

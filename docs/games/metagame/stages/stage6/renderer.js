@@ -27,6 +27,8 @@ import { createRun as createRunState } from "../../shared/run-state.js";
 import { createAscension } from "../../shared/ascension.js";
 import { ASCENSION_MODS } from "./ascension-mods.js";
 import { combatView } from "./ui-combat.js";
+import { applyCombatFx } from "./combat-fx.js";
+import { openPileModal, openLogModal } from "./combat-modals.js";
 import { hubView, mapView, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
 import { ACTION_NAME, BTS_PATH, EPUB_PATH } from "./messages.js";
@@ -62,6 +64,10 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     : null;
 
   let combat = null; // live engine instance; its full state is checkpointed into combatRun
+  // Combat VIEW-state (never persisted, never engine state): the inspected hand card (stage6 #2) and
+  // the one-shot feedback descriptor applied after the next combat re-mount (stage6 #4, combat-fx.js).
+  let pendingCardIndex = null;
+  let pendingFx = null;
   // Daily-seed clock: read ONCE per run at creation (a SEED, never consulted inside the combat loop,
   // so it honors the no-live-entropy rule). Overridable for deterministic tests via the test hook.
   let dailyKeyOverride = null;
@@ -71,6 +77,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   const commit = () => { if (typeof save === "function") save(); route(); };
 
   root.addEventListener("click", handleClick);
+  root.addEventListener("keydown", handleKey);
   route();
 
   // TEST/DEBUG hook (not a player affordance, not a hub button). It only fast-forwards position +
@@ -128,7 +135,46 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   function mountCombat(run) {
     if (!combat || combat.nodeId !== run.currentNodeId) combat = loadOrMakeCombat(run);
     if (combat.over) { finishCombat(run); return route(); }
-    mount(combatView(combat, run));
+    const node = combatView(combat, run, { pendingCardIndex });
+    mount(node);
+    // Feedback (stage6 #4) is spawned AFTER mount so it attaches to the fresh DOM. One-shot.
+    if (pendingFx) { applyCombatFx(node, pendingFx); pendingFx = null; }
+  }
+
+  // Play the inspected/selected hand card through the engine, capturing feedback deltas + the played
+  // card's on-screen rect (for the fly animation) BEFORE the rebuild. `sourceEl` is the on-screen card
+  // node the play flew from. Returns false (no-op) if the card is unaffordable or combat is over.
+  function doPlay(idx, sourceEl) {
+    if (!combat || combat.over) return false;
+    const card = cardById(combat.hand[idx]);
+    if (!card || card.cost > combat.player.energy) return false;
+    const enemyBefore = combat.enemy.hp;
+    const blockBefore = combat.player.block;
+    const rect = sourceEl ? sourceEl.getBoundingClientRect() : null;
+    const faceHTML = sourceEl ? sourceEl.innerHTML : "";
+    playCard(combat, idx);
+    pendingCardIndex = null;
+    pendingFx = {
+      enemyDamage: Math.max(0, enemyBefore - combat.enemy.hp),
+      blockGain: Math.max(0, combat.player.block - blockBefore),
+      fly: rect ? { rect, faceHTML } : null
+    };
+    if (combat.over) finishCombat(state.run); else checkpointCombat(combat, state.run);
+    return true;
+  }
+
+  // Keyboard: 1–9 selects/inspects a hand card; Enter plays the inspected card; Esc cancels (stage6 #1/#2).
+  function handleKey(event) {
+    if (!combat || combat.over || state.ui.screen !== "run") return;
+    if (event.key >= "1" && event.key <= "9") {
+      const idx = Number(event.key) - 1;
+      if (idx < combat.hand.length) { pendingCardIndex = idx; route(); event.preventDefault(); }
+    } else if (event.key === "Enter" && pendingCardIndex != null) {
+      const src = root.querySelector(".s6db-inspect .s6db-card");
+      if (doPlay(pendingCardIndex, src)) { event.preventDefault(); commit(); }
+    } else if (event.key === "Escape" && pendingCardIndex != null) {
+      pendingCardIndex = null; route(); event.preventDefault();
+    }
   }
 
   // Resume the persisted fight for this exact node/run if one was checkpointed; otherwise create a
@@ -194,6 +240,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     if (win && run.act > (state.meta.bestAct || 0)) state.meta.bestAct = run.act;
     if (!win) state.meta.banked = (state.meta.banked || 0) + Math.floor((run.handshakes || 0) * 0.5);
     combat = null;
+    pendingCardIndex = null; // combat over — drop any raised card / pending feedback so it can't leak
+    pendingFx = null;
     if (win && isFinalBoss) finalBossDefeated(run);
     // A run that just resolved (death, or the final-boss win) banks its self-competition score.
     if (run.status === "dead" || run.status === "won") recordScore(run);
@@ -262,6 +310,8 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     state.ui.screen = "run";
     if (combatRun) combatRun.reset(); // drop any stale combat snapshot from a previous run
     combat = null;
+    pendingCardIndex = null;
+    pendingFx = null;
   }
 
   // The daily seed key (YYYY-MM-DD). Read ONCE at run creation (a seed, not loop entropy); tests may
@@ -298,16 +348,34 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   // ── click delegation ─────────────────────────────────────────────────────────────────────────
   function handleClick(event) {
     const run = state.run;
+    // Inspect cancel (stage6 #2): a click anywhere that is NOT a hand card or the PLAY button, while a
+    // card is raised, drops the inspect. Deferred (cancelled) so a click that ALSO triggers another
+    // action (e.g. end turn) still runs; a bare cancel re-renders at the end.
+    let cancelled = false;
+    if (pendingCardIndex != null && !event.target.closest("[data-inspect],[data-play]")) {
+      pendingCardIndex = null; cancelled = true;
+    }
+    // Raise a hand card to the inspect close-up (view-state only — no save, no engine mutation).
+    const inspect = event.target.closest("[data-inspect]");
+    if (inspect && combat && !combat.over) {
+      const i = Number(inspect.dataset.inspect);
+      pendingCardIndex = pendingCardIndex === i ? null : i;
+      return route();
+    }
+    // Pile / log modals (transient; no save).
+    const pile = event.target.closest("[data-pile]");
+    if (pile && combat) return openPileModal(combat, pile.dataset.pile);
+    if (event.target.closest("[data-log]") && combat) return openLogModal(combat);
+
     if (handleTarget(event, run)) return commit();
     const btn = event.target.closest("button[data-action]");
-    if (!btn) return;
-    if (!runAction(btn.dataset.action, run)) return;
-    commit();
+    if (btn && runAction(btn.dataset.action, run)) return commit();
+    if (cancelled) route();
   }
 
   function handleTarget(event, run) {
     const play = event.target.closest("[data-play]");
-    if (play && combat && !combat.over) { playCard(combat, Number(play.dataset.play)); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); return true; }
+    if (play && combat && !combat.over) { doPlay(Number(play.dataset.play), root.querySelector(".s6db-inspect .s6db-card")); return true; }
     // Hub ascension picker (no run yet): choose the difficulty rung for the next run.
     const ascBtn = event.target.closest("[data-ascension]");
     if (ascBtn) { if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension)); return true; }
@@ -363,7 +431,16 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
       case "prestige": doPrestige(); return true;
       case "to-hub": state.ui.screen = "hub"; return true;
       case "to-map": if (run) closeNode(run); return true;
-      case "end-turn": if (combat && !combat.over) { endTurn(combat); if (combat.over) finishCombat(run); else checkpointCombat(combat, run); } return true;
+      case "end-turn":
+        if (combat && !combat.over) {
+          pendingCardIndex = null;
+          const hpBefore = combat.player.hp;
+          endTurn(combat);
+          // Enemy-turn feedback (stage6 #4): a banner + damage floats in the same language as play.
+          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp) };
+          if (combat.over) finishCombat(run); else checkpointCombat(combat, run);
+        }
+        return true;
       case "epub":
         openEpub({ viewer, actions, achievements, bell, state });
         // Reading ch9 mid-fight unlocks the negotiation: drop the locked snapshot and rebuild the boss

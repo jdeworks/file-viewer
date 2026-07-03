@@ -1,20 +1,24 @@
-// ui-combat.js — Stage 6 combat screen (pure view over a combat.js snapshot).
+// ui-combat.js — Stage 6 combat screen (Slay-the-Spire layout: one viewport, no scroll).
 //
-// Returns a detached element; the renderer mounts it and handles clicks through delegation:
-//   [data-play="<handIndex>"]  play the card at that hand index
-//   [data-action="end-turn"]   end the player's turn (enemy acts)
-// No listeners are attached here — the view is rebuilt on every state change.
+// Pure view over a combat.js snapshot; the renderer mounts it and handles clicks through delegation:
+//   [data-inspect="<handIndex>"]  raise the card at that hand index to the inspect close-up (view-state)
+//   [data-play="<handIndex>"]     PLAY the inspected card (renderer commits it to the engine)
+//   [data-pile="draw|discard|exhaust"]  open that pile's card-list modal
+//   [data-log]                    open the full combat log modal
+//   [data-action="end-turn"]      end the player's turn (enemy acts)
+// No listeners are attached here — the view is rebuilt on every state change; feedback is spawned by
+// the renderer AFTER mount (combat-fx.js). Layout: top band = enemy vs player · middle band = arena
+// strip (ticker + floating numbers land here) · bottom band = the hand dock (fan + energy + piles +
+// end turn). The inspect close-up is renderer view-state (pendingCardIndex), never engine/persisted.
 
 import { cardById } from "./cards.js";
 import { currentIntent } from "./combat.js";
 import { currentDemand } from "./boss-combat.js";
 import { potionById } from "./potions.js";
+import { cardFaceInner, cardTypeClass } from "./card-face.js";
 
-const STATUS_LABEL = {
-  strength: "STR", vulnerable: "VULN", weak: "WEAK"
-};
+const STATUS_LABEL = { strength: "STR", vulnerable: "VULN", weak: "WEAK" };
 const TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
-
 const PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
 const DEMAND_TEXT = {
   "lead-syn": "lead this turn with SYN, or your Signals are refused.",
@@ -29,45 +33,44 @@ function phaseRuleText(combat) {
   return `${PHASE_NAME[phase] || ""} — ${mutating}${DEMAND_TEXT[demand] || ""}`;
 }
 
-export function combatView(combat, run) {
+// idx is valid only if it points at a real hand card (a stale pending index after a rebuild → null).
+function normalizePending(idx, combat) {
+  return (idx == null || idx < 0 || idx >= combat.hand.length) ? null : idx;
+}
+
+export function combatView(combat, run, opts = {}) {
   const el = document.createElement("div");
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
+  const pending = normalizePending(opts.pendingCardIndex, combat);
   el.innerHTML = `
     ${bossBanner(combat)}
-    <div class="s6db-combat-head">
-      <span class="s6db-turn">turn ${combat.turn}</span>
-      <span class="s6db-pile">draw ${combat.draw.length} · discard ${combat.discard.length}${combat.exhaust.length ? ` · exhaust ${combat.exhaust.length}` : ""}</span>
-    </div>
-    <div class="s6db-fighters">
+    <div class="s6db-battlefield">
       ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
     </div>
-    <div class="s6db-energy" aria-label="energy">
-      ${energyPips(combat.player.energy, combat.player.maxEnergy)}
-      <span class="s6db-energy-num">${combat.player.energy} / ${combat.player.maxEnergy} energy</span>
-      ${combat.congestion ? `<span class="s6db-window">⇄ congestion window ${combat.window} (cap ${combat.windowCap})</span>` : ""}
-    </div>
-    ${jammedRow(combat)}
-    ${potionBelt(run)}
-    <div class="s6db-hand" aria-label="hand"></div>
-    <div class="s6db-combat-controls">
-      <button type="button" data-action="end-turn">end turn ▸</button>
-    </div>
-    <ol class="s6db-log" aria-label="combat log"></ol>
-  `;
+    <div class="s6db-arena">${arenaStrip(combat)}</div>
+    ${inspectOverlay(combat, pending)}
+    <div class="s6db-dock">
+      <div class="s6db-dock-left">
+        ${energyBlock(combat)}
+        ${potionBelt(run)}
+      </div>
+      <div class="s6db-hand" aria-label="hand"></div>
+      <div class="s6db-dock-right">
+        ${pileChips(combat)}
+        <button type="button" class="s6db-endturn" data-action="end-turn">end turn ▸</button>
+      </div>
+    </div>`;
 
   const hand = el.querySelector(".s6db-hand");
-  hand.replaceChildren(...combat.hand.map((id, i) => handCard(id, i, combat.player.energy)));
-
-  const log = el.querySelector(".s6db-log");
-  log.replaceChildren(...combat.log.slice(-5).map(toLi));
+  hand.replaceChildren(...combat.hand.map((id, i) => handCard(id, i, combat.hand.length, combat.player.energy, pending)));
   return el;
 }
 
-// The act-4 boss negotiation banner: only rendered for a wired boss combat (combat.bossPhase set).
-// Shows the active phase rule, and — while ch9 is unread (locked) — a PROTOCOL MISMATCH warning and
-// a button to open the codex (reading Chapter 9 is the load-bearing un-cheat).
+// The act-4 boss negotiation banner: only for a wired boss combat (combat.bossPhase set). Shows the
+// active phase rule and — while ch9 is unread (locked) — a PROTOCOL MISMATCH warning + a codex button
+// (reading Chapter 9 is the load-bearing un-cheat). Kept working inside the new layout.
 function bossBanner(combat) {
   if (!combat.bossPhase) return "";
   const locked = Boolean(combat.bossLocked);
@@ -85,6 +88,16 @@ function bossBanner(combat) {
     </div>`;
 }
 
+// The middle band: last two log lines as a ticker (empty log renders NOTHING — no dead box), a full-
+// log chip, and the jammed (Packet Loss) row. Floating damage numbers + the ENEMY TURN banner land
+// here (the arena is position:relative). Kept minimal so the band can flex-shrink on small viewports.
+function arenaStrip(combat) {
+  const lines = (combat.log || []).slice(-2);
+  const ticker = lines.length ? `<div class="s6db-ticker">${lines.map((l) => `<p>${esc(l)}</p>`).join("")}</div>` : "";
+  const logChip = (combat.log || []).length ? `<button type="button" class="s6db-chip" data-log>log ▾</button>` : "";
+  return `${ticker}${jammedRow(combat)}${logChip ? `<div class="s6db-arena-tools">${logChip}</div>` : ""}`;
+}
+
 // Classify an enemy intent so the UI can telegraph it with an icon, a kind colour, and the number
 // that actually matters this turn (incoming damage, block gained, etc.).
 function describeIntent(intent, combat) {
@@ -95,7 +108,6 @@ function describeIntent(intent, combat) {
   }
   if (intent.attack) {
     const hits = intent.hits || 1;
-    // DELAY: a ramp intent grows with the enemy's uninterrupted-turn count.
     const each = intent.attack + (intent.ramp ? intent.ramp * (combat?.enemy?.rttStacks || 0) : 0);
     const total = each * hits;
     return {
@@ -136,6 +148,19 @@ function enemyPanel(enemy, intent, combat) {
     </section>`;
 }
 
+function playerPanel(player) {
+  return `
+    <section class="s6db-fighter s6db-player">
+      <div class="s6db-fighter-top"><span class="s6db-fighter-name">You</span></div>
+      ${bar(player.hp, player.maxHp, "player")}
+      <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
+      <div class="s6db-meta">
+        <span class="s6db-block">🛡 ${player.block}</span>
+      </div>
+      ${statusChips(player.statuses)}
+    </section>`;
+}
+
 // The potion belt: click a potion to consume it during combat ([data-potion="<beltIndex>"]).
 function potionBelt(run) {
   const potions = run?.potions || [];
@@ -150,8 +175,8 @@ function potionBelt(run) {
 // THROUGHPUT: show Packet-Loss jammed cards (unplayable this turn; Defrag returns them).
 function jammedRow(combat) {
   if (!combat.jammed || !combat.jammed.length) return "";
-  const chips = combat.jammed.map((id) => `<span class="s6db-card s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc(id)}</span>`).join("");
-  return `<div class="s6db-jammed" aria-label="jammed (packet loss)"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</div>`;
+  const chips = combat.jammed.map((id) => `<span class="s6db-card--jammed" title="Packet Loss — jammed">⛔ ${esc(id)}</span>`).join("");
+  return `<p class="s6db-jammed"><span class="s6db-jammed-label">JAMMED:</span> ${chips}</p>`;
 }
 
 // DELAY: telegraph the enemy's NEXT intent (2 turns ahead) so a growing RTT hit is learnable.
@@ -163,40 +188,63 @@ function nextIntentTelegraph(enemy, combat) {
   return `<div class="s6db-intent-next" title="${esc(next?.label || "")}">then ${d.icon} <strong>${esc(d.primary)}</strong></div>`;
 }
 
-function playerPanel(player) {
-  return `
-    <section class="s6db-fighter s6db-player">
-      <div class="s6db-fighter-top"><span class="s6db-fighter-name">You</span></div>
-      ${bar(player.hp, player.maxHp, "player")}
-      <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
-      <div class="s6db-meta">
-        <span class="s6db-block">🛡 ${player.block}</span>
-      </div>
-      ${statusChips(player.statuses)}
-    </section>`;
-}
-
-function energyPips(energy, maxEnergy) {
+// Energy crystal pips + count, plus the congestion-window readout (act 3+).
+function energyBlock(combat) {
+  const { energy, maxEnergy } = combat.player;
   const total = Math.max(maxEnergy, energy);
   let pips = "";
   for (let i = 0; i < total; i++) pips += `<span class="s6db-pip${i < energy ? " is-full" : ""}"></span>`;
-  return `<span class="s6db-pips" aria-hidden="true">${pips}</span>`;
+  return `<div class="s6db-energy" aria-label="energy">
+    <span class="s6db-pips" aria-hidden="true">${pips}</span>
+    <span class="s6db-energy-num">${energy}/${maxEnergy}</span>
+    ${combat.congestion ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
+  </div>`;
 }
 
-function handCard(id, index, energy) {
+// Draw / discard / exhaust pile chips with live counts — click opens that pile's card-list modal.
+function pileChips(combat) {
+  const chip = (kind, n, label) => `<button type="button" class="s6db-pilechip" data-pile="${kind}">${label} <b>${n}</b></button>`;
+  return `<div class="s6db-pilechips">
+    ${chip("draw", combat.draw.length, "draw")}
+    ${chip("discard", combat.discard.length, "disc")}
+    ${combat.exhaust.length ? chip("exhaust", combat.exhaust.length, "exh") : ""}
+  </div>`;
+}
+
+// A single fanned hand card. Geometry is fully derived from index/count (NO Math.random anywhere):
+// rotation ramps −6°…+6° across the fan, with a slight downward arc at the edges. The values are set
+// as inline CSS vars so the stylesheet's hover/focus rule can override the resting transform.
+function handCard(id, index, count, energy, pending) {
   const card = cardById(id);
   const button = document.createElement("button");
   button.type = "button";
-  button.className = `s6db-card s6db-card--${(card?.type || "").toLowerCase()}`;
-  button.dataset.play = String(index);
-  const affordable = card && card.cost <= energy;
-  button.disabled = !affordable;
-  button.innerHTML = `
-    <span class="s6db-card-cost">${card?.cost ?? "?"}</span>
-    <strong class="s6db-card-id">${esc(card?.id || id)}</strong>
-    <span class="s6db-card-type">${esc(card?.type || "")}</span>
-    <small class="s6db-card-text">${esc(card?.text || "")}</small>`;
+  button.className = `s6db-card ${cardTypeClass(card)}`;
+  button.dataset.inspect = String(index);
+  if (!(card && card.cost <= energy)) button.classList.add("is-unaffordable");
+  if (pending === index) button.classList.add("is-pending");
+  const mid = (count - 1) / 2;
+  const t = count > 1 ? (index - mid) / mid : 0; // −1 … +1 across the fan
+  button.style.setProperty("--rot", `${(t * 6).toFixed(2)}deg`);
+  button.style.setProperty("--ty", `${(t * t * 16).toFixed(1)}px`);
+  button.style.setProperty("--z", String(index));
+  button.innerHTML = cardFaceInner(id);
   return button;
+}
+
+// The raised inspect close-up (stage6 #2): enlarged card centred above the hand + an explicit PLAY.
+// Cost-disabled cards still inspect, with PLAY greyed. Rendered from pendingCardIndex (view-state).
+function inspectOverlay(combat, idx) {
+  if (idx == null) return "";
+  const id = combat.hand[idx];
+  const card = cardById(id);
+  const affordable = card && card.cost <= combat.player.energy;
+  return `<div class="s6db-inspect" role="dialog" aria-label="inspect card">
+    <div class="s6db-inspect-card s6db-card ${cardTypeClass(card)}">${cardFaceInner(id)}</div>
+    <div class="s6db-inspect-actions">
+      <button type="button" class="s6db-play-btn" data-play="${idx}"${affordable ? "" : " disabled"}>play ▸</button>
+      <span class="s6db-inspect-hint">${affordable ? "Enter plays · Esc cancels" : "not enough energy"}</span>
+    </div>
+  </div>`;
 }
 
 function statusChips(statuses) {
@@ -210,12 +258,6 @@ function statusChips(statuses) {
 function bar(value, max, who) {
   const pct = max > 0 ? Math.max(0, Math.min(100, Math.round((value / max) * 100))) : 0;
   return `<div class="s6db-bar s6db-bar--${who}"><span style="width:${pct}%"></span></div>`;
-}
-
-function toLi(line) {
-  const li = document.createElement("li");
-  li.textContent = line;
-  return li;
 }
 
 function esc(value) {

@@ -1,19 +1,28 @@
-/* Stage 6 — Protocol Codex (deck-builder). Parchment + navy archive aesthetic. */
+/* Stage 6 — Protocol Codex (deck-builder). Parchment + navy archive aesthetic.
+   Combat-screen layout lives in styles-combat.css (split for the 500-LOC cap). This sheet owns the
+   shell, hub, map, reward/shop/rest, card BASE face, and end screens. */
 .stage6-protocol-codex {
-  min-height: 100%;
+  height: 100%;
+  box-sizing: border-box;
   padding: 16px;
   color: #241913;
   background: #e8dcc8;
   font-family: Georgia, "Times New Roman", serif;
+  display: flex;
+  flex-direction: column;
 }
+.stage6-protocol-codex *, .stage6-protocol-codex *::before, .stage6-protocol-codex *::after { box-sizing: border-box; }
 
 .s6db-top {
   padding: 6px 0 12px;
   letter-spacing: 0.18em;
   border-bottom: 2px solid #b8962e;
+  flex: 0 0 auto;
 }
 
-.s6db-screen { margin-top: 14px; }
+/* The screen area fills the bounded host (00-F1) and is the ONLY scroller: combat fills it exactly
+   (no scroll); the taller flow screens (hub/map/shop) scroll INSIDE it, never the panel. */
+.s6db-screen { flex: 1; min-height: 0; margin-top: 14px; overflow: auto; }
 
 /* ── shared chrome ─────────────────────────────────────────────────────────── */
 .s6db-hub-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
@@ -59,17 +68,7 @@
 .s6db-hub-title { margin: 0 0 4px; }
 .s6db-hub-sub { max-width: 60ch; color: #3b2a1c; }
 
-.s6db-log {
-  min-height: 6rem;
-  margin: 14px 0 0;
-  padding: 12px 12px 12px 28px;
-  color: #e8dcc8;
-  background: #2c1810;
-  border-radius: 6px;
-  font-size: 0.9rem;
-}
-
-/* ── cards ─────────────────────────────────────────────────────────────────── */
+/* ── cards (BASE face — shared by combat hand, inspect, reward/shop) ──────────── */
 .s6db-card-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
 .s6db-card {
   position: relative;
@@ -83,22 +82,42 @@
   background: #fff8e9 !important;
   border: 2px solid #1e2840 !important;
   border-radius: 8px;
-  padding: 10px 10px 22px;
+  padding: 14px 10px 22px;
 }
 .s6db-card--protocol { border-color: #2f6f6a !important; }
 .s6db-card--layer { border-color: #7a4ea3 !important; }
+.s6db-card--daemon { border-color: #3a7a2f !important; }
+.s6db-card--recursion { border-color: #b8962e !important; }
 .s6db-card-cost {
   position: absolute; top: -10px; left: -10px;
   width: 24px; height: 24px; line-height: 24px; text-align: center;
   border-radius: 50%; background: #1e2840; color: #f6efdf; font-weight: 700;
 }
-.s6db-card-id { font-size: 1rem; }
+.s6db-card-name { font-size: 0.98rem; font-weight: 700; line-height: 1.1; }
 .s6db-card-type { font-size: 0.72rem; color: #6b513a; text-transform: uppercase; letter-spacing: 0.08em; }
 .s6db-card-text { line-height: 1.3; font-size: 0.82rem; }
 .s6db-price { position: absolute; bottom: 4px; right: 8px; font-weight: 700; color: #8b2020; }
 
+/* Coloured type strip across the top of every card face + the upgrade "+" badge. */
+.s6db-card-strip { position: absolute; top: 0; left: 0; right: 0; height: 6px; border-radius: 6px 6px 0 0; background: #1e2840; }
+.s6db-card--protocol .s6db-card-strip { background: #2f6f6a; }
+.s6db-card--layer .s6db-card-strip { background: #7a4ea3; }
+.s6db-card--signal .s6db-card-strip { background: #8b2020; }
+.s6db-card--daemon .s6db-card-strip { background: #3a7a2f; }
+.s6db-card--recursion .s6db-card-strip { background: #b8962e; }
+.s6db-card-badge {
+  position: absolute; top: -10px; right: -10px;
+  width: 22px; height: 22px; line-height: 18px; text-align: center;
+  border-radius: 50%; background: #b8962e; color: #241913; font-weight: 700; border: 2px solid #fff8e9;
+}
+
+/* Reward/shop card lift (the fan lift lives in styles-combat.css and is more specific). */
+.s6db-card { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.s6db-card-row .s6db-card:not(:disabled):hover { transform: translateY(-6px); box-shadow: 0 8px 18px rgba(30, 40, 64, 0.3); }
+.s6db-card:disabled { opacity: 0.5; }
+
 /* ── map ───────────────────────────────────────────────────────────────────── */
-.s6db-map-head { font-weight: 700; margin-bottom: 10px; }
+.s6db-map-head { font-weight: 700; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .s6db-map-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
 .s6db-map-col { display: flex; flex-direction: column; gap: 10px; min-width: 78px; }
 .s6db-node {
@@ -115,71 +134,18 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-map-foot { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 12px; font-weight: 700; color: #3b2a1c; }
 .s6db-notice { margin: 6px 0 10px; padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; font-weight: 700; }
 .s6db-relic-won { padding: 6px 10px; border-left: 3px solid #7a4ea3; background: #f1e7d2; color: #4a2f6b; }
+.s6db-act-track { display: inline-flex; gap: 6px; }
+.s6db-act-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b8962e; background: transparent; }
+.s6db-act-dot.is-done { background: #b8962e; }
+.s6db-act-dot.is-here { border-color: #8b2020; background: #8b2020; box-shadow: 0 0 0 3px rgba(139, 32, 32, 0.2); }
+.s6db-node--elite { border-color: #7a4ea3; }
+.s6db-node--boss { border-color: #8b2020; border-width: 2px; }
+.s6db-node--rest { border-color: #2f6f6a; }
+.s6db-node--shop { border-color: #b8962e; }
+.s6db-node--event { border-color: #4a2f6b; }
+button.s6db-node.is-available:hover { transform: translateY(-3px); transition: transform 0.12s ease; }
 
-/* ── combat ────────────────────────────────────────────────────────────────── */
-.s6db-fighters { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.s6db-fighter { border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 12px; }
-.s6db-enemy { border-color: #8b2020; }
-.s6db-fighter-name { font-size: 1.15rem; font-weight: 700; }
-.s6db-hp { font-size: 0.82rem; color: #6b513a; }
-.s6db-bar { height: 10px; border-radius: 5px; background: #d8c7a6; overflow: hidden; margin: 4px 0; }
-.s6db-bar span { display: block; height: 100%; }
-.s6db-bar--enemy span { background: #8b2020; }
-.s6db-bar--player span { background: #2f6f6a; }
-.s6db-meta { display: flex; gap: 8px; font-size: 0.82rem; }
-.s6db-block { color: #2f6f6a; font-weight: 700; }
-.s6db-armor { color: #6b513a; font-weight: 700; }
-.s6db-intent {
-  display: flex; align-items: center; gap: 8px; margin-top: 8px;
-  padding: 6px 10px; border-radius: 8px; font-weight: 700;
-  background: #2c1810; color: #f0e2c8; border-left: 4px solid #8b2020;
-}
-.s6db-intent-icon { font-size: 1.25rem; line-height: 1; }
-.s6db-intent-num { font-size: 1.2rem; min-width: 1.4em; }
-.s6db-intent-detail { font-size: 0.74rem; font-weight: 400; color: #c9b896; letter-spacing: 0.02em; }
-.s6db-intent--attack, .s6db-intent--pierce, .s6db-intent--mirror { border-left-color: #c0392b; }
-.s6db-intent--pierce { background: #3a1410; }
-.s6db-intent--block { border-left-color: #2f6f6a; }
-.s6db-intent--buff { border-left-color: #b8962e; }
-.s6db-intent--debuff { border-left-color: #7a4ea3; }
-.s6db-intent--wait, .s6db-intent--unknown { border-left-color: #6b513a; }
-.s6db-status { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.s6db-status-chip { font-size: 0.7rem; padding: 1px 6px; border-radius: 10px; background: #1e2840; color: #f6efdf; }
-.s6db-status-chip--vulnerable { background: #8b2020; }
-.s6db-status-chip--weak { background: #6b513a; }
-.s6db-status-chip--strength { background: #2f6f6a; }
-.s6db-energy { margin: 12px 0 4px; font-size: 0.9rem; }
-.s6db-pile { margin-left: 12px; color: #6b513a; }
-.s6db-combat-controls { margin: 8px 0; }
-
-/* ── boss ──────────────────────────────────────────────────────────────────── */
-.s6db-boss-hud { display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; padding-bottom: 10px; border-bottom: 2px solid #b8962e; }
-.s6db-boss-status { color: #8b2020; font-weight: 700; }
-.s6db-boss-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(200px, 300px); gap: 16px; margin: 14px 0; }
-.s6db-boss-hint { font-style: italic; color: #3b2a1c; }
-.s6db-boss-turn { font-size: 0.82rem; color: #6b513a; margin-bottom: 8px; }
-.s6db-boss-rules { display: grid; gap: 8px; align-content: start; }
-.s6db-boss-rules article { display: grid; gap: 4px; border: 1px solid #b8962e; border-radius: 6px; background: #f6efdf; padding: 10px; }
-
-/* The act-4 real-deck negotiation banner (above the combat screen). */
-.s6db-boss-banner { border: 2px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 10px 12px; margin-bottom: 10px; }
-.s6db-boss-banner.is-locked { border-color: #8b2020; background: #f7e7e2; }
-.s6db-boss-banner-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.s6db-boss-banner-head strong { letter-spacing: 0.04em; }
-.s6db-boss-phase { font-size: 0.82rem; color: #6b513a; }
-.s6db-boss-rule { margin: 6px 0 0; font-style: italic; color: #3b2a1c; }
-.s6db-boss-mismatch { margin: 6px 0; color: #8b2020; font-weight: 700; }
-
-/* DELAY: the 2-turns-ahead enemy intent telegraph. */
-.s6db-intent-next { margin-top: 4px; font-size: 0.75rem; color: #6b513a; opacity: 0.8; }
-
-/* THROUGHPUT: the congestion-window readout next to the energy pips. */
-.s6db-window { margin-left: 10px; font-size: 0.78rem; color: #2f6f6a; font-weight: 600; }
-.s6db-jammed { margin: 6px 0; font-size: 0.8rem; color: #8b2020; }
-.s6db-jammed-label { font-weight: 700; }
-.s6db-card--jammed { display: inline-block; padding: 2px 6px; margin: 0 4px; border: 1px dashed #8b2020; border-radius: 4px; opacity: 0.7; }
-
-/* The potion belt (combat) + drop/shop offers. */
+/* The potion belt (shared) + drop/shop offers. */
 .s6db-potions { margin: 6px 0; font-size: 0.82rem; }
 .s6db-potions-label { font-weight: 700; color: #6a4fb0; margin-right: 4px; }
 .s6db-potion { padding: 3px 8px; margin: 0 4px 4px 0; border: 1px solid #6a4fb0; border-radius: 6px; background: #f3effb; color: #3a2a66; cursor: pointer; font: inherit; }
@@ -199,46 +165,6 @@ button.s6db-node.is-available { background: #fff8e9 !important; color: #241913 !
 .s6db-end--dead h2 { color: #8b2020; }
 .s6db-end--won h2 { color: #2f6f6a; }
 
-/* ── combat depth: header, tier badges, energy pips, animated bars ───────────── */
-.s6db-combat-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 0.82rem; color: #6b513a; margin-bottom: 8px; }
-.s6db-turn { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-
-.s6db-fighter-top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.s6db-tier { font-size: 0.64rem; font-weight: 700; letter-spacing: 0.08em; padding: 1px 7px; border-radius: 10px; color: #fff8e9; }
-.s6db-tier--elite { background: #7a4ea3; }
-.s6db-tier--boss { background: #8b2020; }
-.s6db-enemy--elite { border-color: #7a4ea3; box-shadow: inset 0 0 0 1px #7a4ea3; }
-.s6db-enemy--boss { border-color: #8b2020; box-shadow: inset 0 0 0 2px #8b2020, 0 2px 10px rgba(139, 32, 32, 0.25); }
-
-.s6db-bar { height: 14px; }
-.s6db-bar span { transition: width 0.32s ease; }
-.s6db-bar--enemy span { background: linear-gradient(90deg, #c0392b, #8b2020); }
-.s6db-bar--player span { background: linear-gradient(90deg, #3a9188, #2f6f6a); }
-
-.s6db-pips { display: inline-flex; gap: 5px; vertical-align: middle; margin-right: 8px; }
-.s6db-pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #1e2840; background: transparent; }
-.s6db-pip.is-full { background: radial-gradient(circle at 35% 30%, #ffe9a8, #b8962e); border-color: #b8962e; }
-.s6db-energy-num { font-size: 0.82rem; color: #6b513a; }
-
-.s6db-card { transition: transform 0.12s ease, box-shadow 0.12s ease; }
-.s6db-card:not(:disabled):hover { transform: translateY(-6px); box-shadow: 0 8px 18px rgba(30, 40, 64, 0.3); }
-.s6db-card:disabled { opacity: 0.5; }
-
-/* ── map depth: node-type colour + act tracker ───────────────────────────────── */
-.s6db-map-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.s6db-act-track { display: inline-flex; gap: 6px; }
-.s6db-act-dot { width: 11px; height: 11px; border-radius: 50%; border: 2px solid #b8962e; background: transparent; }
-.s6db-act-dot.is-done { background: #b8962e; }
-.s6db-act-dot.is-here { border-color: #8b2020; background: #8b2020; box-shadow: 0 0 0 3px rgba(139, 32, 32, 0.2); }
-
-.s6db-node--elite { border-color: #7a4ea3; }
-.s6db-node--boss { border-color: #8b2020; border-width: 2px; }
-.s6db-node--rest { border-color: #2f6f6a; }
-.s6db-node--shop { border-color: #b8962e; }
-.s6db-node--event { border-color: #4a2f6b; }
-button.s6db-node.is-available:hover { transform: translateY(-3px); transition: transform 0.12s ease; }
-
 @media (max-width: 720px) {
-  .s6db-fighters, .s6db-boss-layout { grid-template-columns: 1fr; }
-  .s6db-card { width: 100%; }
+  .s6db-card-row .s6db-card { width: 100%; }
 }

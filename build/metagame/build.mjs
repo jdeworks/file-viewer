@@ -53,6 +53,9 @@ const ALLOWED_SHARED = new Set([
   // Defrag shop + boon draft today) rather than each stage inlining a copy — kept external like the
   // other shared singletons above.
   '../../shared/modal.js',
+  // Shared micro-feedback kit (UX audit F5): flash/shake/floatNum/banner. Stateless helpers every
+  // stage attaches (S6 combat play-feedback today); kept external like the other shared singletons.
+  '../../shared/feedback.js',
   // Shared on-screen touch-control component (d-pad / verb toggle). Stateless factory reused across
   // stages (S5 steering, S3 verb toggle); kept external like the other shared singletons.
   '../../touch-controls.js',
