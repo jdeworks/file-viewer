@@ -6,11 +6,12 @@ export default {
     if (n === 'stirling-pdf-settings.yml' || n === 'stirling-pdf-settings.yaml') return true;
     const nameMatch = n === 'settings.yml' || n === 'settings.yaml';
     if (!nameMatch) return false;
-    const cfg = intake.parsed || {};
-    const hasUi = cfg.ui && typeof cfg.ui === 'object' &&
-      (cfg.ui.appName || cfg.ui['app-name'] || cfg.ui.homeDescription);
-    const hasSecurity = cfg.security && typeof cfg.security === 'object';
-    return !!(hasUi && hasSecurity);
+    // Generic filename — disambiguate via Stirling-PDF's distinctive top-level section shape
+    // (intake.parsed is never populated by the intake layer, so parse the heuristic from text).
+    const text = intake.text || '';
+    const hasUi = /^ui:\s*$/m.test(text) && /^\s+(appName|app-name|homeDescription)\s*:/m.test(text);
+    const hasSecurity = /^security:\s*$/m.test(text);
+    return hasUi && hasSecurity;
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

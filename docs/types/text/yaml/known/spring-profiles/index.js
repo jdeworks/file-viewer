@@ -4,9 +4,10 @@ export default {
   match(intake, baseType) {
     if (baseType?.id !== 'yaml') return false;
     const rawName = (intake.name || intake.filename || '').split('/').pop();
-    const nameMatch = rawName === 'application.yml'
-      || rawName === 'application.yaml'
-      || /^application-[^/]+\.ya?ml$/.test(rawName);
+    // Profile-suffixed files only (application-{profile}.yml) — the bare application.yml is
+    // owned by the spring-app-yml plugin; matching it here would shadow that plugin since this
+    // one registers earlier in the known-file registry (first match wins).
+    const nameMatch = /^application-[^/]+\.ya?ml$/.test(rawName);
     if (!nameMatch) return false;
     const text = intake.textSample || intake.text || '';
     return text.includes('spring:')

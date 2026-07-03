@@ -1,4 +1,5 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const isSafeHref = (href) => /^https?:\/\//i.test(String(href || ''));
 
 function scalar(text, key) {
   const m = new RegExp('^' + key + ':\\s*(.+)', 'm').exec(text);
@@ -78,8 +79,11 @@ export function render(intake) {
     if (!list.length) return '';
     const rows = list.map((d) => {
       const src = depSource(d);
+      // src.url may come straight from an untrusted shard.yml `git:` field — only wire it up
+      // as a clickable link if it's http(s); otherwise render as inert text so a "javascript:"
+      // URI can't execute in the page's origin when clicked.
       const srcHtml = src
-        ? (src.url
+        ? (src.url && isSafeHref(src.url)
           ? `<a class="shard-dep-src" href="${esc(src.url)}" target="_blank" rel="noopener noreferrer">${esc(src.label)}: ${esc(src.display)} ↗</a>`
           : `<span class="shard-dep-src">${esc(src.label)}: ${esc(src.display)}</span>`)
         : '';
