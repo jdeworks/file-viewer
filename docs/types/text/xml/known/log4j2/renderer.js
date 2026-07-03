@@ -27,7 +27,10 @@ function attr(el, name) {
 function levelBadge(level) {
   if (!level) return '';
   const l = level.toUpperCase();
-  return `<span class="l4j-level ${l}">${esc(l)}</span>`;
+  // `l` comes straight from the untrusted file's level="..." attribute; it must be esc()'d for
+  // the class attribute too, not just the text node — a raw `"` here breaks out of class="..."
+  // and this renderer's output lands in the parent pane (real DOM), not the sandboxed iframe.
+  return `<span class="l4j-level ${esc(l)}">${esc(l)}</span>`;
 }
 
 // Log4j2 XML uses a different structure from Logback — all elements are children of

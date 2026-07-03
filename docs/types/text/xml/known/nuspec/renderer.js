@@ -29,6 +29,14 @@ const CSS = `
 .ns-more{color:#8b949e;font-size:11px;font-style:italic;margin-top:4px}
 `;
 
+// projectUrl/repository url come straight from the untrusted .nuspec file and this renderer's
+// output is inserted directly into the app's own page (parentNode — NOT the sandboxed preview
+// iframe), so a crafted `javascript:`/`data:` href would run with full app privileges on click.
+// Only allow it as a clickable link when it's actually http(s); otherwise show it as plain text.
+function safeHref(url) {
+  return /^https?:\/\//i.test(url || '') ? url : null;
+}
+
 function childText(el, tag) {
   if (!el) return '';
   const lower = tag.toLowerCase();
@@ -111,13 +119,14 @@ export function render(intake) {
     repoUrl && ['Repository', repoUrl, repoUrl],
   ].filter(Boolean);
 
-  const gridHtml = infoRows.map(([k, v, href]) =>
-    `<div class="ns-key">${esc(k)}</div><div class="ns-val">${
-      href
-        ? `<a class="ns-link" href="${esc(href)}" target="_blank" rel="noopener noreferrer">${esc(v)}</a>`
+  const gridHtml = infoRows.map(([k, v, href]) => {
+    const safe = href ? safeHref(href) : null;
+    return `<div class="ns-key">${esc(k)}</div><div class="ns-val">${
+      safe
+        ? `<a class="ns-link" href="${esc(safe)}" target="_blank" rel="noopener noreferrer">${esc(v)}</a>`
         : esc(v)
-    }</div>`
-  ).join('');
+    }</div>`;
+  }).join('');
 
   const depsHtml = shownDeps.length
     ? `<ul class="ns-list">${shownDeps.map((d) =>
