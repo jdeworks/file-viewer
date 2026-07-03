@@ -4949,7 +4949,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sample.glsl | sample.glsl (GLSL Shader) | Graphics, Shader
 - [x] sample.gnuplot | sample.gnuplot (gnuplot) | Code
 - [x] sample.gp5 | Guitar Pro 5 Tab (binary) | Music
-- [ ] sample.gpx | Sample.gpx | Data
+- [x] sample.gpx | Sample.gpx | Data
 - [x] sample.gr | sample.gr (Grain) | Code
 - [x] sample.groovy | sample.groovy | JVM, Programming
 - [x] sample.h2song | Demo Beat (Hydrogen) | Music
@@ -5027,7 +5027,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sample.nim | sample.nim | Systems, Programming
 - [x] sample.nix | sample.nix (Nix expression) | Config, Nix
 - [x] sample.njk | sample.njk (Nunjucks Template) | Code
-- [ ] sample.npy | sample.npy | Other
+- [x] sample.npy | sample.npy | Other
 - [x] sample.nu | sample.nu (Nushell Script) | Code
 - [x] sample.nupkg | NuGet package (demo) | code, binary, archive
 - [x] sample.nut | sample.nut (Squirrel) | Code
@@ -5168,7 +5168,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] shadow-cljs.edn | shadow-cljs.edn | Config
 - [x] shard.yml | shard.yml | Package
 - [x] shopify.app.toml | shopify.app.toml | Config
-- [ ] shopify.app.toml | shopify.app.toml | uncategorized
+- [x] shopify.app.toml | shopify.app.toml | uncategorized
 - [x] sitemap.xml | XML Sitemap (demo) | Config
 - [x] skaffold.yaml | skaffold.yaml | Config, devops
 - [x] slapd.conf | slapd.conf (OpenLDAP Config) | Config
@@ -5193,15 +5193,15 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sssd.conf | sssd.conf (SSSD) | Config
 - [x] stack.yaml | stack.yaml | Config
 - [x] standalone.conf | standalone.conf | Config
-- [ ] standalone.conf | standalone.conf | uncategorized
+- [x] standalone.conf | standalone.conf | uncategorized
 - [x] starship.toml | starship.toml | Config, Terminal
 - [x] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
 - [x] storage.conf | storage.conf | Config
-- [ ] storage.conf | storage.conf | uncategorized
+- [x] storage.conf | storage.conf | uncategorized
 - [x] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
 - [x] strings.xml | strings.xml (Android Strings) | Config
 - [x] stryker.conf.json | stryker.conf.json | Config
-- [ ] stryker.conf.json | stryker.conf.json | uncategorized
+- [x] stryker.conf.json | stryker.conf.json | uncategorized
 - [x] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
 - [x] styles.css | styles.css | Code
 - [x] sudoers | sudoers (sudo access control) | Config, Security
@@ -5214,7 +5214,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sys.config | sys.config | Config, Erlang
 - [x] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
 - [x] syslog-ng.conf | syslog-ng.conf | Config
-- [ ] syslog-ng.conf | syslog-ng.conf | uncategorized
+- [x] syslog-ng.conf | syslog-ng.conf | uncategorized
 - [x] system.yaml | system.yaml | Config
 - [x] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
 - [x] tailwind.config.json | tailwind.config.json | Config
@@ -5223,7 +5223,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] tauri.conf.json | tauri.conf.json (Tauri) | Config
 - [x] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
 - [x] telegraf.conf | telegraf.conf | Config
-- [ ] telegraf.conf | telegraf.conf | uncategorized
+- [x] telegraf.conf | telegraf.conf | uncategorized
 - [x] tempo.yaml | tempo.yaml | Config
 - [x] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
 - [x] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
@@ -5242,7 +5242,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
 - [x] tsconfig.json | tsconfig.json | Config
 - [x] tspconfig.yaml | tspconfig.yaml | Config
-- [ ] tspconfig.yaml | tspconfig.yaml | uncategorized
+- [x] tspconfig.yaml | tspconfig.yaml | uncategorized
 - [x] tsup.config.ts | tsup.config.ts | Config
 - [x] turbo.json | turbo.json | Config
 - [x] twenty.env | twenty.env | Config, Application, CRM
@@ -5276,7 +5276,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] vscode-settings.json | vscode-settings.json | Config
 - [x] vscode-tasks.json | vscode-tasks.json | Config
 - [x] vsftpd.conf | vsftpd.conf | Config
-- [ ] vsftpd.conf | vsftpd.conf | uncategorized
+- [x] vsftpd.conf | vsftpd.conf | uncategorized
 - [x] wails.json | wails.json (Wails) | Config
 - [x] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
 - [x] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
@@ -5286,7 +5286,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] watchtower.env | Watchtower Config | Config, DevOps
 - [x] waybar-config.json | waybar/config | Config, Desktop
 - [x] waypoint.hcl | waypoint.hcl | Config
-- [ ] waypoint.hcl | waypoint.hcl | uncategorized
+- [x] waypoint.hcl | waypoint.hcl | uncategorized
 - [x] wdio.conf.js | wdio.conf.js | Config
 - [x] web.config | web.config (IIS/ASP.NET) | Config
 - [x] webpack.config.js | webpack.config.js | Config
@@ -7370,7 +7370,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] shadow-cljs.edn | shadow-cljs.edn | Config
 - [x] shard.yml | shard.yml | Package
 - [x] shopify.app.toml | shopify.app.toml | Config
-- [ ] shopify.app.toml | shopify.app.toml | uncategorized
+- [x] shopify.app.toml | shopify.app.toml | uncategorized
 - [x] sitemap.xml | XML Sitemap (demo) | Config
 - [x] skaffold.yaml | skaffold.yaml | Config, devops
 - [x] slapd.conf | slapd.conf (OpenLDAP Config) | Config
@@ -7395,15 +7395,15 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sssd.conf | sssd.conf (SSSD) | Config
 - [x] stack.yaml | stack.yaml | Config
 - [x] standalone.conf | standalone.conf | Config
-- [ ] standalone.conf | standalone.conf | uncategorized
+- [x] standalone.conf | standalone.conf | uncategorized
 - [x] starship.toml | starship.toml | Config, Terminal
 - [x] stirling-pdf-settings.yml | stirling-pdf-settings.yml | Config, Application
 - [x] storage.conf | storage.conf | Config
-- [ ] storage.conf | storage.conf | uncategorized
+- [x] storage.conf | storage.conf | uncategorized
 - [x] storybook.main.json | storybook.main.json (.storybook/main.json) | Config
 - [x] strings.xml | strings.xml (Android Strings) | Config
 - [x] stryker.conf.json | stryker.conf.json | Config
-- [ ] stryker.conf.json | stryker.conf.json | uncategorized
+- [x] stryker.conf.json | stryker.conf.json | uncategorized
 - [x] stunnel.conf | stunnel.conf (SSL tunnel) | Config, Security
 - [x] styles.css | styles.css | Code
 - [x] sudoers | sudoers (sudo access control) | Config, Security
@@ -7416,7 +7416,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] sys.config | sys.config | Config, Erlang
 - [x] sysctl.conf | sysctl.conf (Linux kernel parameters) | Config, System
 - [x] syslog-ng.conf | syslog-ng.conf | Config
-- [ ] syslog-ng.conf | syslog-ng.conf | uncategorized
+- [x] syslog-ng.conf | syslog-ng.conf | uncategorized
 - [x] system.yaml | system.yaml | Config
 - [x] tailscale-acl.hujson | tailscale-acl.hujson | Networking, Security
 - [x] tailwind.config.json | tailwind.config.json | Config
@@ -7425,7 +7425,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] tauri.conf.json | tauri.conf.json (Tauri) | Config
 - [x] tekton-pipeline.yaml | tekton-pipeline.yaml (Tekton) | Config
 - [x] telegraf.conf | telegraf.conf | Config
-- [ ] telegraf.conf | telegraf.conf | uncategorized
+- [x] telegraf.conf | telegraf.conf | uncategorized
 - [x] tempo.yaml | tempo.yaml | Config
 - [x] terraform.tfvars | terraform.tfvars (Terraform variables) | Config
 - [x] terragrunt.hcl | terragrunt.hcl (Terragrunt) | Config
@@ -7444,7 +7444,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] truffle-config.js | truffle-config.js (Truffle) | Config, Blockchain
 - [x] tsconfig.json | tsconfig.json | Config
 - [x] tspconfig.yaml | tspconfig.yaml | Config
-- [ ] tspconfig.yaml | tspconfig.yaml | uncategorized
+- [x] tspconfig.yaml | tspconfig.yaml | uncategorized
 - [x] tsup.config.ts | tsup.config.ts | Config
 - [x] turbo.json | turbo.json | Config
 - [x] twenty.env | twenty.env | Config, Application, CRM
@@ -7478,7 +7478,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] vscode-settings.json | vscode-settings.json | Config
 - [x] vscode-tasks.json | vscode-tasks.json | Config
 - [x] vsftpd.conf | vsftpd.conf | Config
-- [ ] vsftpd.conf | vsftpd.conf | uncategorized
+- [x] vsftpd.conf | vsftpd.conf | uncategorized
 - [x] wails.json | wails.json (Wails) | Config
 - [x] wakapi.yaml | Wakapi config | Productivity, Coding, Self-Hosted
 - [x] wakapi.yml | wakapi.yml (Wakapi) | Config, Application, Developer Tools
@@ -7488,7 +7488,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] watchtower.env | Watchtower Config | Config, DevOps
 - [x] waybar-config.json | waybar/config | Config, Desktop
 - [x] waypoint.hcl | waypoint.hcl | Config
-- [ ] waypoint.hcl | waypoint.hcl | uncategorized
+- [x] waypoint.hcl | waypoint.hcl | uncategorized
 - [x] wdio.conf.js | wdio.conf.js | Config
 - [x] web.config | web.config (IIS/ASP.NET) | Config
 - [x] webpack.config.js | webpack.config.js | Config
