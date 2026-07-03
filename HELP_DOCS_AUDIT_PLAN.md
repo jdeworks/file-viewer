@@ -1058,28 +1058,28 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/cif/metadata.js
 - [x] docs/types/text/cif/renderer.js
 - [x] docs/types/text/cif/settings.default.json
-- [ ] docs/types/text/code/codelens.js
-- [ ] docs/types/text/code/detect.js
-- [ ] docs/types/text/code/EDITOR.md
-- [ ] docs/types/text/code/index.js
-- [ ] docs/types/text/code/langmap.js
-- [ ] docs/types/text/code/metadata.js
-- [ ] docs/types/text/code/metrics.js
-- [ ] docs/types/text/code/settings.default.json
-- [ ] docs/types/text/crash/detect.js
-- [ ] docs/types/text/crash/EDITOR.md
-- [ ] docs/types/text/crash/index.js
-- [ ] docs/types/text/crash/metadata.js
-- [ ] docs/types/text/crash/renderer.js
-- [ ] docs/types/text/crash/settings.default.json
-- [ ] docs/types/text/csv/detect.js
-- [ ] docs/types/text/csv/EDITOR.md
-- [ ] docs/types/text/csv/exports.js
-- [ ] docs/types/text/csv/index.js
-- [ ] docs/types/text/csv/metadata.js
-- [ ] docs/types/text/csv/renderer.js
-- [ ] docs/types/text/csv/settings.default.json
-- [ ] docs/types/text/csv/table-editor.js
+- [x] docs/types/text/code/codelens.js
+- [x] docs/types/text/code/detect.js
+- [x] docs/types/text/code/EDITOR.md
+- [x] docs/types/text/code/index.js
+- [x] docs/types/text/code/langmap.js
+- [x] docs/types/text/code/metadata.js
+- [x] docs/types/text/code/metrics.js
+- [x] docs/types/text/code/settings.default.json
+- [x] docs/types/text/crash/detect.js
+- [x] docs/types/text/crash/EDITOR.md
+- [x] docs/types/text/crash/index.js
+- [x] docs/types/text/crash/metadata.js
+- [x] docs/types/text/crash/renderer.js
+- [x] docs/types/text/crash/settings.default.json
+- [x] docs/types/text/csv/detect.js
+- [x] docs/types/text/csv/EDITOR.md
+- [x] docs/types/text/csv/exports.js
+- [x] docs/types/text/csv/index.js
+- [x] docs/types/text/csv/metadata.js
+- [x] docs/types/text/csv/renderer.js
+- [x] docs/types/text/csv/settings.default.json
+- [x] docs/types/text/csv/table-editor.js
 - [ ] docs/types/text/docker-compose/detect.js
 - [ ] docs/types/text/docker-compose/EDITOR.md
 - [ ] docs/types/text/docker-compose/index.js

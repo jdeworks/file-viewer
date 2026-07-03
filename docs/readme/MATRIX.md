@@ -27,7 +27,6 @@ Master overview of all file types supported by the viewer. Columns:
 | [HTML](html.md) | `.html` | Basic | Monaco | download | — | CSS isolation (scoped styles) |
 | [Plain text](/) | `.txt` `.bin` `.gradle` `.mod` | Basic | Monaco | download | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc (6) | — |
 | [Log](log.md) | `.log` | Basic | Monaco | download | — | Filter/tail |
-| [CSV / TSV](csv.md) | `.csv` | Basic | Monaco | download | — | Sort/filter |
 | [JSON Lines](jsonl.md) | `.jsonl` `.ndjson` | Basic | Monaco | download | — | Row limit |
 | [Code](/) | `.py` `.js` `.ts` `.tsx` `.go` `.rs` `.java` `.c` `.cpp` `.cs` `.rb` `.php` `.sh` + 25 more | Fallback | Monaco | download | Makefile, CMakeLists.txt, Bazel BUILD + more (7) | — |
 | [Dockerfile](dockerfile.md) | `Dockerfile` `.dockerfile` | Basic | Monaco | download | Dockerfile (1) | Multi-stage viz |
@@ -84,7 +83,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Spreadsheet](xlsx.md) | `.xlsx` `.xls` `.xlsm` `.xlsb` `.ods` | Basic | Cell grid | XLSX, CSV, JSON, download | — | Formula text |
-| [CSV / TSV](csv.md) | `.csv` `.tsv` | Basic | Monaco | download | — | Column types |
+| [CSV / TSV](csv.md) | `.csv` `.tsv` `.tab` | Full | Monaco / grid | JSON, XLSX, download | — | Sort/filter |
 
 ---
 

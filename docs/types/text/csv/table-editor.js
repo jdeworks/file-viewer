@@ -75,11 +75,15 @@ function toCsvText(rows, sep) {
 }
 
 export class TableEditor {
-  constructor(container, text, sep, onChange) {
+  constructor(container, text, sep, onChange, hasHeader = true) {
     this._sep = sep || ',';
     this._onChange = onChange;
     this._rows = parseCsvText(text, this._sep);
     this._container = container;
+    // "First row is header" setting: only style row 0 as a header when honored —
+    // keeps the table view consistent with the Chart tab / JSON export, which
+    // already respect this setting (see renderer.js / exports.js).
+    this._hasHeader = hasHeader !== false;
     this._render();
   }
 
@@ -125,9 +129,12 @@ export class TableEditor {
       const tr = document.createElement('tr');
 
       // Row index gutter cell
+      const isHeaderRow = this._hasHeader && ri === 0;
       const idx = document.createElement('td');
       idx.className = 'te-idx';
-      idx.textContent = ri === 0 ? '#' : String(ri);
+      // Data-row numbering is always 1-based, regardless of whether row 0 is a header
+      // (so it stays "1, 2, 3…" either way instead of starting at 0 when there's no header).
+      idx.textContent = isHeaderRow ? '#' : String(this._hasHeader ? ri : ri + 1);
       idx.title = 'Right-click to delete this row';
       idx.addEventListener('contextmenu', (e) => {
         e.preventDefault();
@@ -140,7 +147,7 @@ export class TableEditor {
       // Data cells
       for (let ci = 0; ci < maxCols; ci++) {
         const td = document.createElement('td');
-        td.className = ri === 0 ? 'te-cell te-header' : 'te-cell';
+        td.className = isHeaderRow ? 'te-cell te-header' : 'te-cell';
         td.contentEditable = 'true';
         td.textContent = row[ci] ?? '';
         td.dataset.ri = ri;

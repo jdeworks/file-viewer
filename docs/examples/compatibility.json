@@ -387,7 +387,9 @@
         "sample.csv"
       ],
       "extensions": [
-        ".csv"
+        ".csv",
+        ".tsv",
+        ".tab"
       ],
       "capabilities": {
         "rawView": true,
@@ -402,12 +404,12 @@
       },
       "partialSamples": [],
       "realWorldQuality": "needs-review",
-      "notes": "Initial matrix row generated from the current sample catalog; review sample quality and FileExamples compatibility depth.",
+      "notes": "Renders an interactive editable data grid (table-editor.js: contenteditable cells, add/delete rows+columns) plus a lazy Chart.js chart tab, not just a static card.",
       "fileExamplesSlug": "csv",
-      "previewDepth": "basic",
+      "previewDepth": "rich",
       "metadataDepth": "basic",
       "editCapability": "basic",
-      "exportCapability": "download",
+      "exportCapability": "transform",
       "securityLimitations": [],
       "knownParserGaps": [],
       "testCoverage": "smoke",
