@@ -236,7 +236,7 @@ export async function run(ctx) {
   if (/last|Firefox|chrome/i.test(brlText)) pass('browserslistrc: queries shown'); else fail('browserslist queries: ' + brlText.slice(0, 200));
 
   // ── pre-commit-config.yaml viewer ──
-  await openExample('pre-commit config');
+  await openExample('.pre-commit-config.yaml');
   await page.waitForSelector('#previewHost .prc-doc', { timeout: 12000 });
   const prcText = await page.$eval('#previewHost .prc-doc', (e) => e.textContent);
   if (/pre-commit/i.test(prcText)) pass('pre-commit-config.yaml: badge shown'); else fail('pre-commit badge: ' + prcText.slice(0, 200));

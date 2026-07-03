@@ -3175,7 +3175,7 @@
     ],
     "enhanced": true,
     "description": "pre-commit framework config: repos, hook IDs, revisions, CI autofix settings, and default language versions.",
-    "knownFile": "pre-commit-config"
+    "knownFile": "pre-commit"
   },
   {
     "label": "Pyright config",
