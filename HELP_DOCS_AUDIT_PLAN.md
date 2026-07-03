@@ -1166,50 +1166,50 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/hydrogen/metadata.js
 - [x] docs/types/text/hydrogen/renderer.js
 - [x] docs/types/text/hydrogen/settings.default.json
-- [ ] docs/types/text/ini/detect.js
-- [ ] docs/types/text/ini/EDITOR.md
-- [ ] docs/types/text/ini/exports.js
-- [ ] docs/types/text/ini/form-editor.js
-- [ ] docs/types/text/ini/index.js
-- [ ] docs/types/text/ini/known/airflow/index.js
-- [ ] docs/types/text/ini/known/airflow/renderer.js
-- [ ] docs/types/text/ini/known/alembic/index.js
-- [ ] docs/types/text/ini/known/alembic/renderer.js
-- [ ] docs/types/text/ini/known/aws-config/index.js
-- [ ] docs/types/text/ini/known/aws-config/renderer.js
-- [ ] docs/types/text/ini/known/aws-credentials/index.js
-- [ ] docs/types/text/ini/known/aws-credentials/renderer.js
-- [ ] docs/types/text/ini/known/flake8/index.js
-- [ ] docs/types/text/ini/known/flake8/renderer.js
-- [ ] docs/types/text/ini/known/forgejo-config/index.js
-- [ ] docs/types/text/ini/known/forgejo-config/renderer.js
-- [ ] docs/types/text/ini/known/glances-config/index.js
-- [ ] docs/types/text/ini/known/glances-config/renderer.js
-- [ ] docs/types/text/ini/known/grafana-ini/index.js
-- [ ] docs/types/text/ini/known/grafana-ini/renderer.js
-- [ ] docs/types/text/ini/known/netdata-config/index.js
-- [ ] docs/types/text/ini/known/netdata-config/renderer.js
-- [ ] docs/types/text/ini/known/odoo-conf/index.js
-- [ ] docs/types/text/ini/known/odoo-conf/renderer.js
-- [ ] docs/types/text/ini/known/php-ini/index.js
-- [ ] docs/types/text/ini/known/php-ini/renderer.js
-- [ ] docs/types/text/ini/known/podman-quadlet/index.js
-- [ ] docs/types/text/ini/known/podman-quadlet/renderer.js
-- [ ] docs/types/text/ini/known/pylintrc/index.js
-- [ ] docs/types/text/ini/known/pylintrc/renderer.js
-- [ ] docs/types/text/ini/known/radicale-config/index.js
-- [ ] docs/types/text/ini/known/radicale-config/renderer.js
-- [ ] docs/types/text/ini/known/sabnzbd-config/index.js
-- [ ] docs/types/text/ini/known/sabnzbd-config/renderer.js
-- [ ] docs/types/text/ini/known/setup-cfg/index.js
-- [ ] docs/types/text/ini/known/setup-cfg/renderer.js
-- [ ] docs/types/text/ini/known/wandb-config/index.js
-- [ ] docs/types/text/ini/known/wandb-config/renderer.js
-- [ ] docs/types/text/ini/metadata.js
-- [ ] docs/types/text/ini/renderer.js
-- [ ] docs/types/text/ini/row.html
-- [ ] docs/types/text/ini/section.html
-- [ ] docs/types/text/ini/settings.default.json
+- [x] docs/types/text/ini/detect.js
+- [x] docs/types/text/ini/EDITOR.md
+- [x] docs/types/text/ini/exports.js
+- [x] docs/types/text/ini/form-editor.js
+- [x] docs/types/text/ini/index.js
+- [x] docs/types/text/ini/known/airflow/index.js
+- [x] docs/types/text/ini/known/airflow/renderer.js
+- [x] docs/types/text/ini/known/alembic/index.js
+- [x] docs/types/text/ini/known/alembic/renderer.js
+- [x] docs/types/text/ini/known/aws-config/index.js
+- [x] docs/types/text/ini/known/aws-config/renderer.js
+- [x] docs/types/text/ini/known/aws-credentials/index.js
+- [x] docs/types/text/ini/known/aws-credentials/renderer.js
+- [x] docs/types/text/ini/known/flake8/index.js
+- [x] docs/types/text/ini/known/flake8/renderer.js
+- [x] docs/types/text/ini/known/forgejo-config/index.js
+- [x] docs/types/text/ini/known/forgejo-config/renderer.js
+- [x] docs/types/text/ini/known/glances-config/index.js
+- [x] docs/types/text/ini/known/glances-config/renderer.js
+- [x] docs/types/text/ini/known/grafana-ini/index.js
+- [x] docs/types/text/ini/known/grafana-ini/renderer.js
+- [x] docs/types/text/ini/known/netdata-config/index.js
+- [x] docs/types/text/ini/known/netdata-config/renderer.js
+- [x] docs/types/text/ini/known/odoo-conf/index.js
+- [x] docs/types/text/ini/known/odoo-conf/renderer.js
+- [x] docs/types/text/ini/known/php-ini/index.js
+- [x] docs/types/text/ini/known/php-ini/renderer.js
+- [x] docs/types/text/ini/known/podman-quadlet/index.js
+- [x] docs/types/text/ini/known/podman-quadlet/renderer.js
+- [x] docs/types/text/ini/known/pylintrc/index.js
+- [x] docs/types/text/ini/known/pylintrc/renderer.js
+- [x] docs/types/text/ini/known/radicale-config/index.js
+- [x] docs/types/text/ini/known/radicale-config/renderer.js
+- [x] docs/types/text/ini/known/sabnzbd-config/index.js
+- [x] docs/types/text/ini/known/sabnzbd-config/renderer.js
+- [x] docs/types/text/ini/known/setup-cfg/index.js
+- [x] docs/types/text/ini/known/setup-cfg/renderer.js
+- [x] docs/types/text/ini/known/wandb-config/index.js
+- [x] docs/types/text/ini/known/wandb-config/renderer.js
+- [x] docs/types/text/ini/metadata.js
+- [x] docs/types/text/ini/renderer.js
+- [x] docs/types/text/ini/row.html
+- [x] docs/types/text/ini/section.html
+- [x] docs/types/text/ini/settings.default.json
 - [ ] docs/types/text/json/detect.js
 - [ ] docs/types/text/json/EDITOR.md
 - [ ] docs/types/text/json/exports.js

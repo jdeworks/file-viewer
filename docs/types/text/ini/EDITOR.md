@@ -4,7 +4,7 @@
 
 - Parser (renderer.js `parseIni`): tolerant of `=` and `:` separators, `#` and `;` comments, quoted values; produces `[{ name, pairs: [{key, value}] }]` — nameless section for pre-header keys; `[section]` headers group subsequent pairs
 - Viewer renders via template system (`section.html` / `row.html` + `core/template.js`): section header + key-value table rows, HTML-escaped via `{{slot}}`
-- Form editor class exists (form-editor.js): IniFormEditor with collapsible sections, editable key and value text inputs, add/delete row per section, add/delete section, inline section rename, serialize back to `key = value` format. NOTE: this class is present but NOT yet wired into renderer.js — the renderer ships read-only tables only; the form editor is not surfaced. (It does NOT support reorder-sections-by-drag, despite an older roadmap note.)
+- Form editor class exists (form-editor.js): IniFormEditor with collapsible sections, editable key and value text inputs, add/delete row per section, add/delete section, inline section rename, serialize back to `key = value` format. ✅ SHIPPED — wired via `core/rawpane-forms.js` (an "Edit as form" toolbar button toggles it in the raw pane, swapping Monaco for the form and flushing text back on exit); the read-only preview table in renderer.js is unaffected. (It does NOT support reorder-sections-by-drag, despite an older roadmap note.)
 - ✅ SHIPPED — Export to JSON: `exports.js` (`loadExports` in index.js) converts `[{ name, pairs }]` to a nested JSON object (global keys under `global`, sections as objects) and downloads. TOML export is NOT shipped.
 
 ## Viewer enhancements (no write-back needed)
