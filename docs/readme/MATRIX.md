@@ -51,7 +51,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Steam ACF](acf.md) | `.acf` | Basic | Monaco | download | — | — |
 | [PostScript / EPS](/) | `.ps` `.eps` `.ai` | Basic | Monaco | download | — | No PS render |
 | [KiCad EDA](/) | `.kicad_pcb` `.kicad_sch` `.kicad_pro` | Basic | Monaco | download | — | Board render |
-| [G-code](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
+| [G-code](gcode.md) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
 | [MusicXML](/) | `.musicxml` `.mxl` | Basic | Monaco | download | — | Score render |
 | [ABC Music](abc.md) | `.abc` | Full | Monaco | download, PNG | — | MIDI playback |
 | [Chat Export](chat.md) | `.txt` `.json` (Telegram/WhatsApp/Discord) | Basic | Monaco | download | — | Facebook schema |
@@ -130,7 +130,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Blender Scene](blend.md) | `.blend` `.blend1` `.blend2` | Basic | None | download | — | Scene tree |
 | [FBX Animation](fbx.md) | `.fbx` | Basic | None | download | — | Mesh data |
 | [Fusion 360](f3d.md) | `.f3d` `.f3z` | Basic | None | download | — | 3D geometry |
-| [G-code (3D Print)](/) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
+| [G-code (3D Print)](gcode.md) | `.gcode` | Basic | Monaco | download | — | Tool path viz |
 
 ---
 
@@ -243,6 +243,7 @@ Master overview of all file types supported by the viewer. Columns:
 | Type | Extensions | Preview depth | Edit | Export | Known-file plugins | Gap |
 |------|-----------|---------------|------|--------|--------------------|-----|
 | [Map (GeoJSON/GPX)](geo.md) | `.geojson` `.gpx` | Basic | Monaco | GeoJSON, GPX, download | — | Tile map render |
+| [GeoJSON/TopoJSON](geojson.md) | `.topojson` (alt. for `.geojson`) | Basic | Monaco | download | — | Interactive map |
 | [KML Map](/) | `.kml` | Basic | Monaco | download | — | Map tile render |
 | [KMZ Archive](kmz.md) | `.kmz` | Basic | None | download | — | Overlay render |
 | [ESRI Shapefile](/) | `.shp` | Basic | None | download | — | Map render |
@@ -261,7 +262,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [HL7 v2 Health](hl7.md) | `.hl7` `.hl7v2` `.msh` | Basic | Monaco | download | — | FHIR support |
 | [DICOM Medical](dicom.md) | `.dcm` `.dicom` | Partial | None | download | — | Pixel render |
 | [Bioinformatics](bio.md) | `.fasta` `.fa` `.fq` `.fastq` `.vcf` `.bed` | Basic | Monaco | download | — | Alignment view |
-| [GFF/GTF Genomic](/) | `.gff` `.gff3` `.gtf` | Basic | Monaco | download | — | Genome browser |
+| [GFF/GTF Genomic](gff.md) | `.gff` `.gff3` `.gtf` | Basic | Monaco | download | — | Genome browser |
 | [OFX / QFX Financial](/) | `.ofx` `.qfx` `.ofc` | Basic | Monaco | download | — | — |
 | [QIF Financial](/) | `.qif` `.qfx` | Full | Monaco | download | — | Split transactions |
 | [MT940 Bank Statement](/) | `.mt940` `.mt942` `.sta` | Full | Monaco | download | — | Multi-statement |

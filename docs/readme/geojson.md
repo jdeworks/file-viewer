@@ -6,10 +6,23 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.geojson`, `.json`, `.topojson` |
+| Extension(s) | `.topojson` (primary), `.geojson` (alternate — see Relationship note) |
 | MIME type | `application/geo+json`, `application/json` |
 | Binary / Text | Text (JSON) |
 | Common use | Web maps, spatial data exchange, cartography |
+
+## Relationship to the Map (GeoJSON/GPX) type
+
+There are two independent viewers that can open a `.geojson` file: this one
+(`docs/types/text/geojson/`, id `geojson`) and [`docs/types/geo/`](geo.md)
+(id `geo`, "Map (GeoJSON/GPX)"). `geoType` renders an SVG map and also handles
+`.gpx`; this type renders a feature/geometry summary table and is the only one
+of the two that understands **TopoJSON**. To avoid both types claiming the same
+file, `geoType` wins `.geojson` detection at confidence 0.97 and this type
+deliberately yields at 0.50 (see `docs/types/text/geojson/detect.js`) — it only
+becomes the winner for `.topojson`, which `geoType` does not handle at all. You
+can still switch to this viewer manually via the type selector on a `.geojson`
+file.
 
 ## Capabilities Matrix
 

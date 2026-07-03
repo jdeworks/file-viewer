@@ -2,9 +2,10 @@
 
 ## Current state
 Summary viewer only. Parses directives (##gff-version, ##sequence-region),
-counts features by type with a colored badge table, and lists up to 1000 feature
-rows with per-chromosome chip list. GTF is handled because the same tab-delimited
-9-column structure is shared.
+counts features by type with a colored badge table, and shows a per-chromosome
+chip list. Up to 1000 feature rows are parsed internally (seqname/type/start/end/
+strand/attrs) but not yet rendered as a table — see "First features table" below.
+GTF is handled because the same tab-delimited 9-column structure is shared.
 
 ## Viewer enhancements (no write-back needed)
 

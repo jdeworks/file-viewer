@@ -845,6 +845,41 @@
       "sampleSource": "synthetic",
       "needsRealWorldSample": false
     },
+    "geojson": {
+      "label": "GeoJSON / TopoJSON",
+      "support": "supported",
+      "sampleFiles": [
+        "sample.topojson"
+      ],
+      "extensions": [
+        ".topojson",
+        ".geojson"
+      ],
+      "capabilities": {
+        "rawView": true,
+        "preview": true,
+        "diff": true,
+        "magicSelector": false,
+        "screenshot": true
+      },
+      "provenance": {
+        "sourced": 0,
+        "total": 1
+      },
+      "partialSamples": [],
+      "realWorldQuality": "needs-review",
+      "notes": "Re-registered 2026-07-03 after being pulled from the registry (commit b9ce0e8a) to fix a detection tie with geoType on .geojson; detect.js already yields to geoType (0.50 vs 0.97) so re-adding it only restores .topojson, which geoType does not handle. Wins .geojson only if the user manually switches type.",
+      "fileExamplesSlug": null,
+      "previewDepth": "basic",
+      "metadataDepth": "basic",
+      "editCapability": "basic",
+      "exportCapability": "download",
+      "securityLimitations": [],
+      "knownParserGaps": [],
+      "testCoverage": "smoke",
+      "sampleSource": "synthetic",
+      "needsRealWorldSample": true
+    },
     "gitattributes": {
       "label": "Git Attributes",
       "support": "supported",

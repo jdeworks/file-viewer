@@ -148,6 +148,7 @@ import sarifType from '../types/text/sarif/index.js';
 import sdfType from '../types/text/sdf/index.js';
 import regType from '../types/text/reg/index.js';
 import gcodeType from '../types/text/gcode/index.js';
+import geojsonType from '../types/text/geojson/index.js';
 import gitignoreType from '../types/text/gitignore/index.js';
 import gitattributesType from '../types/text/gitattributes/index.js';
 import editorconfigType from '../types/text/editorconfig/index.js';
@@ -302,6 +303,7 @@ export const REGISTRY = [
   protoType,
   thriftType,
   gcodeType,
+  geojsonType,
   gitignoreType,
   gitattributesType,
   editorconfigType,

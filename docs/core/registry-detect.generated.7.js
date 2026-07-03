@@ -213,6 +213,22 @@ function detect(intake) {
 return detect;
 })();
 
+const detect_geojson=(()=>{
+function detect(intake) {
+  if (intake.isBinary) return 0;
+  // .topojson is not handled by geoType — own it
+  if (hasExtension(intake, 'topojson')) return 0.92;
+  // .geojson is handled by geoType (id:'geo') which returns 0.97 for the extension.
+  // Return a LOWER score so geoType wins for .geojson but we appear as an alternative.
+  if (hasExtension(intake, 'geojson')) return 0.50;
+  const head = (intake.textSample || '').slice(0, 300).trim();
+  if (/"type"\s*:\s*"Topology"/.test(head)) return 0.95;
+  if (/"type"\s*:\s*"FeatureCollection"/.test(head) && /"features"/.test(head)) return 0.30;
+  return 0;
+}
+return detect;
+})();
+
 const detect_gitignore=(()=>{
 function detect(intake) {
   if (intake.isBinary) return 0;
@@ -299,23 +315,4 @@ function detect(intake) {
 return detect;
 })();
 
-const detect_pem=(()=>{
-function detect(intake) {
-  const ext = intake.filename?.split('.').pop()?.toLowerCase();
-  const PEM_EXTS = new Set(['pem', 'crt', 'cer', 'key', 'der', 'p7b', 'p7c']);
-
-  // Strong signal: PEM header in text
-  if (intake.textSample?.includes('-----BEGIN ')) return 0.95;
-
-  // DER binary: starts with 0x30 (ASN.1 SEQUENCE tag) + known extension
-  if (intake.bytes?.[0] === 0x30 && PEM_EXTS.has(ext)) return 0.85;
-
-  // Extension only
-  if (PEM_EXTS.has(ext)) return 0.6;
-
-  return 0;
-}
-return detect;
-})();
-
-export const DETECTORS={"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp,"pem":detect_pem};
+export const DETECTORS={"chat":detect_chat,"guitar-pro":detect_guitar_pro,"postscript":detect_postscript,"acf":detect_acf,"fits":detect_fits,"kml":detect_kml,"abc":detect_abc,"hl7":detect_hl7,"hydrogen":detect_hydrogen,"prproj":detect_prproj,"proto":detect_proto,"thrift":detect_thrift,"gcode":detect_gcode,"geojson":detect_geojson,"gitignore":detect_gitignore,"gitattributes":detect_gitattributes,"editorconfig":detect_editorconfig,"ssh-config":detect_ssh_config,"rdp":detect_rdp};

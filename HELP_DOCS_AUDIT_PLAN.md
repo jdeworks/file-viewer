@@ -1116,23 +1116,23 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/fits/metadata.js
 - [x] docs/types/text/fits/renderer.js
 - [x] docs/types/text/fits/settings.default.json
-- [ ] docs/types/text/gcode/detect.js
-- [ ] docs/types/text/gcode/EDITOR.md
-- [ ] docs/types/text/gcode/index.js
-- [ ] docs/types/text/gcode/metadata.js
-- [ ] docs/types/text/gcode/renderer.js
-- [ ] docs/types/text/gcode/settings.default.json
-- [ ] docs/types/text/geojson/detect.js
-- [ ] docs/types/text/geojson/index.js
-- [ ] docs/types/text/geojson/metadata.js
-- [ ] docs/types/text/geojson/renderer.js
-- [ ] docs/types/text/geojson/settings.default.json
-- [ ] docs/types/text/gff/detect.js
-- [ ] docs/types/text/gff/EDITOR.md
-- [ ] docs/types/text/gff/index.js
-- [ ] docs/types/text/gff/metadata.js
-- [ ] docs/types/text/gff/renderer.js
-- [ ] docs/types/text/gff/settings.default.json
+- [x] docs/types/text/gcode/detect.js
+- [x] docs/types/text/gcode/EDITOR.md
+- [x] docs/types/text/gcode/index.js
+- [x] docs/types/text/gcode/metadata.js
+- [x] docs/types/text/gcode/renderer.js
+- [x] docs/types/text/gcode/settings.default.json
+- [x] docs/types/text/geojson/detect.js
+- [x] docs/types/text/geojson/index.js
+- [x] docs/types/text/geojson/metadata.js
+- [x] docs/types/text/geojson/renderer.js
+- [x] docs/types/text/geojson/settings.default.json
+- [x] docs/types/text/gff/detect.js
+- [x] docs/types/text/gff/EDITOR.md
+- [x] docs/types/text/gff/index.js
+- [x] docs/types/text/gff/metadata.js
+- [x] docs/types/text/gff/renderer.js
+- [x] docs/types/text/gff/settings.default.json
 - [x] docs/types/text/gitattributes/detect.js
 - [x] docs/types/text/gitattributes/index.js
 - [x] docs/types/text/gitattributes/metadata.js

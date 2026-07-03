@@ -70,6 +70,16 @@ export async function run(ctx) {
   ]);
   if (/\.gpx$/.test(gpxDl.suggestedFilename())) pass('GeoJSON → GPX download (' + gpxDl.suggestedFilename() + ')'); else fail('geo→gpx: ' + gpxDl.suggestedFilename());
 
+  // ── TopoJSON: geoType doesn't understand it, so the dedicated geojson type (which
+  // deliberately yields to geoType on plain .geojson) should own it exclusively. ──
+  await openExample('Sample.topojson');
+  await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });
+  const topoTypeId = await page.$eval('#typeSelect', (s) => s.value);
+  if (topoTypeId === 'geojson') pass('.topojson detected as GeoJSON/TopoJSON viewer'); else fail('topojson type: ' + topoTypeId);
+  const topof = await frameOf('iframe.fv-preview-frame');
+  const topoText = await topof.$eval('.geo-preview', (e) => e.textContent);
+  if (/TopoJSON/.test(topoText) && /Geometries/.test(topoText)) pass('TopoJSON summary rendered'); else fail('topojson render: ' + topoText.slice(0, 200));
+
   // ── GPX track viewer ── canvas map, elevation profile, stats, metadata, and GeoJSON export. ──
   await openExample('Sample.gpx');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 30000 });

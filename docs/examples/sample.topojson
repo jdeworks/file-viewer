@@ -1,0 +1,18 @@
+{
+  "type": "Topology",
+  "objects": {
+    "landmarks": {
+      "type": "GeometryCollection",
+      "geometries": [
+        { "type": "Point", "properties": { "name": "Start" }, "coordinates": [13.405, 52.52] },
+        { "type": "LineString", "arcs": [0] },
+        { "type": "Polygon", "arcs": [[1]] }
+      ]
+    }
+  },
+  "arcs": [
+    [[13.405, 52.52], [13.42, 52.50], [13.45, 52.49]],
+    [[13.41, 52.515], [13.43, 52.515], [13.43, 52.505], [13.41, 52.505], [13.41, 52.515]]
+  ],
+  "bbox": [13.405, 52.49, 13.45, 52.52]
+}
