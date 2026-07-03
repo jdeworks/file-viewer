@@ -59,7 +59,7 @@ export function render(intake) {
   const capped = allResults.length > MAX_RENDER;
   const rows = rendered.map(r => {
     const c = SEVERITY_COLORS[r.severity] || SEVERITY_COLORS.none;
-    const loc = r.file ? `${esc(r.file.split('/').pop())}${r.line ? ':' + r.line : ''}` : '';
+    const loc = r.file ? `${esc(r.file.split('/').pop())}${r.line ? ':' + esc(String(r.line)) : ''}` : '';
     return `<tr data-sev="${esc(r.severity)}" style="background:${c.bg}">
       <td><span class="sarif-level" style="background:${c.badge};color:#fff">${esc(r.severity)}</span></td>
       <td><code style="font-size:0.8rem">${esc(r.ruleId)}</code></td>
