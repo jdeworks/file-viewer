@@ -84,6 +84,7 @@ const TYPE_INFO = {
   asciiart: ['ANSI/ASCII art', 'used for terminal-style text art, often with ANSI color codes.', 'https://en.wikipedia.org/wiki/ANSI_art'],
   gcode: ['G-code', 'used to drive CNC machines and 3D printers with motion commands.', 'https://en.wikipedia.org/wiki/G-code'],
   geojson: ['GeoJSON/TopoJSON', 'used to encode geographic features and topology-preserving map data as JSON.', 'https://en.wikipedia.org/wiki/GeoJSON'],
+  gff: ['GFF/GTF genomic feature format', 'used to annotate genes, transcripts, and other genomic features on a sequence.', 'https://en.wikipedia.org/wiki/General_feature_format'],
   gitignore: ['Git ignore rules', 'used to exclude generated or local files from Git tracking.', 'https://git-scm.com/docs/gitignore'],
   gitattributes: ['Git attributes', 'used to control path-specific Git behavior such as diff, merge, and text normalization.', 'https://git-scm.com/docs/gitattributes'],
   editorconfig: ['EditorConfig', 'used to share editor formatting rules across tools and projects.', 'https://editorconfig.org/'],

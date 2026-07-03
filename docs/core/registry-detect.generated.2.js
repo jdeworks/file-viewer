@@ -43,10 +43,13 @@ function detect(intake) {
   if (/^##gff-version\s+2/i.test(s)) return isGffExt ? 0.99 : 0.94;
   if (/^##gff-version/i.test(s)) return isGffExt ? 0.97 : 0.90;
 
-  // GTF/GFF2: 9 tab-separated columns with gene_id / transcript_id in col 9
+  // GTF/GFF2: 9 tab-separated columns with gene_id / transcript_id in col 9.
+  // Most real GTF files (e.g. Ensembl) never carry a ##gff-version directive, so this is
+  // the common case for .gtf — score above the bio module's flat 0.88 extension match
+  // (docs/types/text/bio/detect.js) so this dedicated viewer keeps winning for real files.
   if (isGffExt) {
     const firstData = s.split('\n').find(l => !l.startsWith('#') && l.includes('\t'));
-    if (firstData && firstData.split('\t').length >= 9) return 0.85;
+    if (firstData && firstData.split('\t').length >= 9) return 0.90;
     return 0.5;
   }
   return 0;
