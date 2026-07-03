@@ -2940,7 +2940,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "DevOps"
+      "DevOps",
+      "devops"
     ],
     "enhanced": true,
     "knownFile": "fly-toml"
@@ -3165,13 +3166,16 @@
     ]
   },
   {
-    "label": "pre-commit config",
+    "label": ".pre-commit-config.yaml",
     "file": "pre-commit-config.yaml",
     "mime": "text/yaml",
     "category": "Config",
     "categories": [
       "Config"
-    ]
+    ],
+    "enhanced": true,
+    "description": "pre-commit framework config: repos, hook IDs, revisions, CI autofix settings, and default language versions.",
+    "knownFile": "pre-commit-config"
   },
   {
     "label": "Pyright config",
@@ -3348,7 +3352,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "DevOps"
+      "DevOps",
+      "devops"
     ],
     "enhanced": true,
     "knownFile": "drone-config"
@@ -3360,7 +3365,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "DevOps"
+      "DevOps",
+      "devops"
     ],
     "enhanced": true
   },
@@ -6714,7 +6720,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Mobile"
+      "Mobile",
+      "mobile"
     ],
     "enhanced": true,
     "description": "Flutter/Dart static analysis options: linter rules, strong-mode settings, and error severity overrides.",
@@ -6753,7 +6760,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Mobile"
+      "Mobile",
+      "mobile"
     ],
     "enhanced": true,
     "description": "Expo Application Services config: build profiles for development/preview/production and submit profiles.",
@@ -7202,7 +7210,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "DevOps"
+      "DevOps",
+      "devops"
     ],
     "enhanced": true
   },
@@ -7332,7 +7341,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "DevOps"
+      "DevOps",
+      "devops"
     ],
     "enhanced": true,
     "knownFile": "codefresh-config"
@@ -7838,7 +7848,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "Authentik identity provider environment configuration",
@@ -8221,17 +8232,6 @@
     "mime": "text/plain",
     "enhanced": true,
     "knownFile": "rsyslog-conf"
-  },
-  {
-    "file": "Manifest.toml",
-    "label": "Manifest.toml (Julia Manifest)",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "mime": "application/toml",
-    "enhanced": true,
-    "knownFile": "julia-manifest"
   },
   {
     "file": "named.conf",
@@ -8993,18 +8993,6 @@
     "knownFile": "udev-rules"
   },
   {
-    "label": ".pre-commit-config.yaml",
-    "file": "pre-commit-config.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "description": "pre-commit framework config: repos, hook IDs, revisions, CI autofix settings, and default language versions.",
-    "knownFile": "pre-commit-config"
-  },
-  {
     "label": "conky.conf",
     "file": "conky.conf",
     "mime": "text/plain",
@@ -9160,52 +9148,102 @@
     "knownFile": "harbor"
   },
   {
-    "file": "shopify.app.toml",
     "label": "shopify.app.toml",
+    "file": "shopify.app.toml",
+    "mime": "text/plain",
     "category": "Config",
-    "knownFile": "shopify-app"
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "shopify-app",
+    "description": "Shopify app configuration — client ID, scopes, webhook subscriptions, and access settings."
   },
   {
-    "file": "stryker.conf.json",
     "label": "stryker.conf.json",
-    "category": "Testing",
-    "knownFile": "stryker"
+    "file": "stryker.conf.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "stryker",
+    "description": "Stryker mutation testing configuration — mutators, test runner, and coverage thresholds."
   },
   {
-    "file": "waypoint.hcl",
     "label": "waypoint.hcl",
-    "category": "Infrastructure",
-    "knownFile": "waypoint"
+    "file": "waypoint.hcl",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "waypoint",
+    "description": "Waypoint application deployment configuration — build, deploy, and release workflow."
   },
   {
-    "file": "registries.conf",
     "label": "registries.conf",
-    "category": "Infrastructure",
-    "knownFile": "registries-conf"
+    "file": "registries.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Infrastructure"
+    ],
+    "enhanced": true,
+    "knownFile": "registries-conf",
+    "description": "Container registry configuration (registries.conf) — mirror endpoints and search paths for Podman/Buildah."
   },
   {
-    "file": "storage.conf",
     "label": "storage.conf",
-    "category": "Infrastructure",
-    "knownFile": "storage-conf"
+    "file": "storage.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "storage-conf",
+    "description": "Container storage configuration (storage.conf) — driver, root paths, and overlay options."
   },
   {
-    "file": "tspconfig.yaml",
     "label": "tspconfig.yaml",
-    "category": "Tooling",
-    "knownFile": "tspconfig"
+    "file": "tspconfig.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "tspconfig",
+    "description": "TypeSpec compiler configuration — emitters, options, and package references."
   },
   {
-    "file": "telegraf.conf",
     "label": "telegraf.conf",
-    "category": "Observability",
-    "knownFile": "telegraf"
+    "file": "telegraf.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "telegraf",
+    "description": "Telegraf metrics collection agent — input plugins, processors, and output targets."
   },
   {
-    "file": "influxdb.conf",
     "label": "influxdb.conf",
-    "category": "Infrastructure",
-    "knownFile": "influxdb"
+    "file": "influxdb.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Infrastructure"
+    ],
+    "enhanced": true,
+    "knownFile": "influxdb",
+    "description": "InfluxDB 1.x configuration — storage engine, HTTP API, and retention policy settings."
   },
   {
     "file": "influxdb.yml",
@@ -9221,10 +9259,17 @@
     "knownFile": "influxdb-config"
   },
   {
-    "file": "nsqd.cfg",
     "label": "nsqd.cfg",
-    "category": "Infrastructure",
-    "knownFile": "nsq-conf"
+    "file": "nsqd.cfg",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Infrastructure"
+    ],
+    "enhanced": true,
+    "knownFile": "nsq-conf",
+    "description": "NSQ message queue daemon configuration — TCP/HTTP addresses, data paths, and limits."
   },
   {
     "file": "standalone.conf",
@@ -9233,70 +9278,132 @@
     "knownFile": "pulsar-conf"
   },
   {
-    "file": "mint.json",
     "label": "mint.json",
-    "category": "Documentation",
-    "knownFile": "mintlify"
+    "file": "mint.json",
+    "mime": "application/json",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Documentation"
+    ],
+    "enhanced": true,
+    "knownFile": "mintlify",
+    "description": "Mintlify documentation configuration — navigation, theming, and API reference settings."
   },
   {
-    "file": "insomnia.yaml",
     "label": "insomnia.yaml",
-    "category": "API",
-    "knownFile": "insomnia"
+    "file": "insomnia.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "API"
+    ],
+    "enhanced": true,
+    "knownFile": "insomnia",
+    "description": "Insomnia REST client export — API requests, environments, and collection metadata."
   },
   {
-    "file": "kibana.yml",
     "label": "kibana.yml",
-    "category": "Observability",
-    "knownFile": "kibana"
+    "file": "kibana.yml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Observability"
+    ],
+    "enhanced": true,
+    "knownFile": "kibana",
+    "description": "Kibana configuration — Elasticsearch connection, server binding, and security settings."
   },
   {
-    "file": "heartbeat.yml",
-    "label": "heartbeat.yml",
-    "category": "Observability",
-    "knownFile": "heartbeat"
-  },
-  {
-    "file": "nix.conf",
     "label": "nix.conf",
-    "category": "System",
-    "knownFile": "nix-daemon-conf"
+    "file": "nix.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "System"
+    ],
+    "enhanced": true,
+    "knownFile": "nix-daemon-conf",
+    "description": "Nix daemon configuration — trusted users, binary caches, sandbox settings, and build options."
   },
   {
-    "file": "openapi-generator-config.yaml",
     "label": "openapi-generator-config.yaml",
-    "category": "Tooling",
-    "knownFile": "openapi-generator"
+    "file": "openapi-generator-config.yaml",
+    "mime": "text/yaml",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Tooling"
+    ],
+    "enhanced": true,
+    "knownFile": "openapi-generator",
+    "description": "OpenAPI Generator configuration — target language, library, and code generation options."
   },
   {
-    "file": "syslog-ng.conf",
     "label": "syslog-ng.conf",
-    "category": "System",
-    "knownFile": "syslog-ng"
+    "file": "syslog-ng.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "syslog-ng",
+    "description": "syslog-ng configuration — log sources, filters, destinations, and routing rules."
   },
   {
-    "file": "vsftpd.conf",
     "label": "vsftpd.conf",
-    "category": "Server",
-    "knownFile": true
+    "file": "vsftpd.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "enhanced": true,
+    "knownFile": "vsftpd-conf",
+    "description": "vsftpd FTP server configuration — anonymous access, chroot, and TLS settings."
   },
   {
-    "file": "proftpd.conf",
     "label": "proftpd.conf",
-    "category": "Server",
-    "knownFile": true
+    "file": "proftpd.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Server"
+    ],
+    "enhanced": true,
+    "knownFile": "proftpd-conf",
+    "description": "ProFTPD server configuration — virtual hosts, user limits, and module settings."
   },
   {
-    "file": "pdns.conf",
     "label": "pdns.conf",
-    "category": "Network",
-    "knownFile": true
+    "file": "pdns.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "enhanced": true,
+    "knownFile": "pdns-conf",
+    "description": "PowerDNS authoritative server configuration — backends, listeners, and API settings."
   },
   {
-    "file": "recursor.conf",
     "label": "recursor.conf",
-    "category": "Network",
-    "knownFile": true
+    "file": "recursor.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config",
+      "Network"
+    ],
+    "enhanced": true,
+    "knownFile": "pdns-recursor-conf",
+    "description": "PowerDNS Recursor configuration — DNS resolver with forward zones and rate limiting."
   },
   {
     "file": "borgmatic.yaml",
@@ -9630,7 +9737,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "BookStack self-hosted wiki environment configuration",
@@ -10057,7 +10165,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "Cal.com self-hosted scheduling configuration",
@@ -10109,7 +10218,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "File Browser self-hosted file manager configuration",
@@ -10200,7 +10310,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "Matrix Conduit self-hosted Matrix server configuration",
@@ -10226,7 +10337,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "Matrix Dendrite server configuration",
@@ -10265,7 +10377,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "changedetection.io web page change monitoring configuration",
@@ -10291,7 +10404,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "Actual Budget personal finance server configuration",
@@ -10317,7 +10431,8 @@
     "category": "Config",
     "categories": [
       "Config",
-      "Self-Hosted"
+      "Self-Hosted",
+      "Self-hosted"
     ],
     "enhanced": true,
     "description": "Grist self-hosted spreadsheet database environment configuration",
@@ -10860,210 +10975,6 @@
     "description": "Garden.io project configuration — Kubernetes-based development workflow with modules and services."
   },
   {
-    "label": "influxdb.conf",
-    "file": "influxdb.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "influxdb",
-    "description": "InfluxDB 1.x configuration — storage engine, HTTP API, and retention policy settings."
-  },
-  {
-    "label": "insomnia.yaml",
-    "file": "insomnia.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "insomnia",
-    "description": "Insomnia REST client export — API requests, environments, and collection metadata."
-  },
-  {
-    "label": "kibana.yml",
-    "file": "kibana.yml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "kibana",
-    "description": "Kibana configuration — Elasticsearch connection, server binding, and security settings."
-  },
-  {
-    "label": "nsqd.cfg",
-    "file": "nsqd.cfg",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "nsq-conf",
-    "description": "NSQ message queue daemon configuration — TCP/HTTP addresses, data paths, and limits."
-  },
-  {
-    "label": "openapi-generator-config.yaml",
-    "file": "openapi-generator-config.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "openapi-generator",
-    "description": "OpenAPI Generator configuration — target language, library, and code generation options."
-  },
-  {
-    "label": "pdns.conf",
-    "file": "pdns.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "pdns-conf",
-    "description": "PowerDNS authoritative server configuration — backends, listeners, and API settings."
-  },
-  {
-    "label": "proftpd.conf",
-    "file": "proftpd.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "proftpd-conf",
-    "description": "ProFTPD server configuration — virtual hosts, user limits, and module settings."
-  },
-  {
-    "label": "recursor.conf",
-    "file": "recursor.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "pdns-recursor-conf",
-    "description": "PowerDNS Recursor configuration — DNS resolver with forward zones and rate limiting."
-  },
-  {
-    "label": "registries.conf",
-    "file": "registries.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "registries-conf",
-    "description": "Container registry configuration (registries.conf) — mirror endpoints and search paths for Podman/Buildah."
-  },
-  {
-    "label": "shopify.app.toml",
-    "file": "shopify.app.toml",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "shopify-app",
-    "description": "Shopify app configuration — client ID, scopes, webhook subscriptions, and access settings."
-  },
-  {
-    "label": "storage.conf",
-    "file": "storage.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "storage-conf",
-    "description": "Container storage configuration (storage.conf) — driver, root paths, and overlay options."
-  },
-  {
-    "label": "stryker.conf.json",
-    "file": "stryker.conf.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "stryker",
-    "description": "Stryker mutation testing configuration — mutators, test runner, and coverage thresholds."
-  },
-  {
-    "label": "syslog-ng.conf",
-    "file": "syslog-ng.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "syslog-ng",
-    "description": "syslog-ng configuration — log sources, filters, destinations, and routing rules."
-  },
-  {
-    "label": "telegraf.conf",
-    "file": "telegraf.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "telegraf",
-    "description": "Telegraf metrics collection agent — input plugins, processors, and output targets."
-  },
-  {
-    "label": "tspconfig.yaml",
-    "file": "tspconfig.yaml",
-    "mime": "text/yaml",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "tspconfig",
-    "description": "TypeSpec compiler configuration — emitters, options, and package references."
-  },
-  {
-    "label": "vsftpd.conf",
-    "file": "vsftpd.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "vsftpd-conf",
-    "description": "vsftpd FTP server configuration — anonymous access, chroot, and TLS settings."
-  },
-  {
-    "label": "waypoint.hcl",
-    "file": "waypoint.hcl",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "waypoint",
-    "description": "Waypoint application deployment configuration — build, deploy, and release workflow."
-  },
-  {
     "label": "netplan.yaml",
     "file": "netplan.yaml",
     "mime": "text/yaml",
@@ -11074,30 +10985,6 @@
     "enhanced": true,
     "knownFile": "netplan",
     "description": "Netplan network configuration — YAML-based network renderer for systemd-networkd and NetworkManager."
-  },
-  {
-    "label": "nix.conf",
-    "file": "nix.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "nix-daemon-conf",
-    "description": "Nix daemon configuration — trusted users, binary caches, sandbox settings, and build options."
-  },
-  {
-    "label": "mint.json",
-    "file": "mint.json",
-    "mime": "application/json",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "enhanced": true,
-    "knownFile": "mintlify",
-    "description": "Mintlify documentation configuration — navigation, theming, and API reference settings."
   },
   {
     "label": "gitolite.conf",
@@ -11142,16 +11029,6 @@
       "Config"
     ],
     "description": "Maven user settings — repository mirrors, server credentials, and proxy configuration."
-  },
-  {
-    "label": "standalone.conf",
-    "file": "standalone.conf",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ],
-    "description": "WildFly/JBoss standalone server configuration — JVM options and system properties."
   },
   {
     "file": ".lighthouserc.json",
@@ -11295,15 +11172,6 @@
     "knownFile": "kdl-doc"
   },
   {
-    "label": "robots.txt (demo)",
-    "file": "robots.txt",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
     "label": "security.txt (demo)",
     "file": "security.txt",
     "mime": "text/plain",
@@ -11350,42 +11218,6 @@
     "enhanced": true,
     "description": "CUE configuration/validation schema with package declaration, imports, and definitions.",
     "knownFile": "cue-lang"
-  },
-  {
-    "label": "security.txt (demo)",
-    "file": "security.txt",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "humans.txt (demo)",
-    "file": "humans.txt",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
-  },
-  {
-    "label": "Jsonnet template (demo)",
-    "file": "sample.jsonnet",
-    "mime": "text/plain",
-    "category": "Code",
-    "categories": [
-      "Code"
-    ]
-  },
-  {
-    "label": "CUE schema (demo)",
-    "file": "sample.cue",
-    "mime": "text/plain",
-    "category": "Config",
-    "categories": [
-      "Config"
-    ]
   },
   {
     "label": "sample.mmd (Mermaid Diagram)",

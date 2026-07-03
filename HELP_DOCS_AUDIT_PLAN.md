@@ -4539,392 +4539,390 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] graylog.conf | graylog.conf | Monitoring, Config
 - [x] grist.env | Grist Config | Config, Self-hosted
 - [x] growthbook.json | growthbook.json | Config
-- [ ] grub | grub (/etc/default/grub) | Config, System
-- [ ] haproxy.cfg | haproxy.cfg | Config
-- [ ] harbor.yml | Harbor Config | Config, Self-hosted, DevOps
-- [ ] hardhat.config.js | hardhat.config.js (Hardhat) | Config, Blockchain
-- [ ] harness-pipeline.yaml | Harness Pipeline | Config, devops
-- [ ] hatch.toml | hatch.toml | Config
-- [ ] headscale-config.yaml | headscale-config.yaml (Headscale) | Config, networking
-- [ ] headscale.yaml | Headscale Config | Config, Self-hosted, Networking
-- [ ] heartbeat.yml | heartbeat.yml (Heartbeat) | Config, Monitoring, Observability
-- [ ] heartbeat.yml | heartbeat.yml | uncategorized
-- [ ] helix.toml | helix.toml | Config
-- [ ] helmfile.yaml | helmfile.yaml | Infrastructure, Kubernetes, Helm
-- [ ] heroku-app.json | heroku-app.json | Config, Deploy
-- [ ] heroku.yml | heroku.yml | Config
-- [ ] hoarder.env | Hoarder / Karakeep config | Productivity, Bookmarks, Self-Hosted
-- [ ] homarr.yaml | Homarr dashboard config | Dashboard, Self-Hosted, YAML
-- [ ] homepage-services.yaml | Homepage services config | Dashboard, Self-Hosted, YAML
-- [ ] homer.yml | homer.yml | Config, Self-hosted
-- [ ] homeserver.yaml | homeserver.yaml (Synapse) | Config, Messaging
-- [ ] hoppscotch.env | hoppscotch.env | Config, Application, API
-- [ ] hosts | hosts | Config, Network
-- [ ] httpd.conf | httpd.conf (Apache HTTP Server) | Config, Web Server
-- [ ] hugo.toml | hugo.toml | Config, Hugo
-- [ ] humans.txt | humans.txt (demo) | Config
-- [ ] humans.txt | humans.txt (demo) | Config
-- [ ] hydra-config.yaml | hydra-config.yaml (Hydra Config) | Config, Data Science
-- [ ] hyprland.conf | hyprland.conf (Hyprland Wayland compositor) | Config, Desktop
-- [ ] i3.config | i3.config (i3 WM) | Config, Desktop
-- [ ] immich.env | immich.env | Config, Application
-- [ ] index.php | index.php | Code
-- [ ] infisical.env | infisical.env | Config, Application, Security
-- [ ] influxdb.conf | influxdb.conf | Config
-- [ ] influxdb.conf | influxdb.conf | uncategorized
-- [ ] influxdb.yml | InfluxDB Config | Config, Monitoring
-- [ ] infra.tf | infra.tf | Code, Config
-- [ ] infracost.yml | infracost.yml | Config
-- [ ] init.el | init.el (Emacs) | Config
-- [ ] init.lua | init.lua (Neovim) | Config
-- [ ] insomnia.yaml | insomnia.yaml | Config
-- [ ] insomnia.yaml | insomnia.yaml | uncategorized
-- [ ] inventory | inventory (Ansible Inventory) | Config, Ansible
-- [ ] inventory.yml | inventory.yml | Config
-- [ ] invidious-config.yml | Invidious Config | Config, Self-hosted
-- [ ] invoiceninja.env | Invoice Ninja Config | Config, Self-hosted
-- [ ] ionic.config.json | ionic.config.json | Config
-- [ ] iptables.rules | iptables.rules (Firewall Rules) | Config, Network
-- [ ] istio-virtual-service.yaml | istio-virtual-service.yaml (Istio) | Config
-- [ ] jaeger-config.yaml | jaeger-config.yaml | Config
-- [ ] jail.local | jail.local (Fail2ban) | Config, Security
-- [ ] jellyseerr-settings.json | Jellyseerr config | Media, Requests, Self-Hosted
-- [ ] Jenkinsfile | Jenkinsfile | Config
-- [ ] jest.config.js | jest.config.js | Config
-- [ ] jest.config.json | jest.config.json | Config
-- [ ] Job.scala | Job.scala | Code
-- [ ] joplin.env | Joplin Server config | Productivity, Notes, Self-Hosted
-- [ ] journald.conf | journald.conf (journald) | Config
-- [ ] jsconfig.json | jsconfig.json | Config
-- [ ] justfile | Justfile | Config
-- [ ] Justfile | Justfile | Config
-- [ ] jvm.options | jvm.options | Config
-- [ ] k6.config.js | k6.config.js | Config
-- [ ] k8s-hpa.yaml | k8s-hpa.yaml (HPA) | Config
-- [ ] k8s-ingress.yaml | k8s-ingress.yaml | Config
-- [ ] k8s-network-policy.yaml | k8s-network-policy.yaml | Config
-- [ ] k8s-rbac.yaml | k8s-rbac.yaml (Kubernetes RBAC) | Config
-- [ ] k8s-role.yaml | k8s-role.yaml | Config
-- [ ] kamal.yml | kamal.yml | DevOps, Config
-- [ ] kavita-appsettings.json | Kavita config | Media, Books, Self-Hosted
-- [ ] keda-scaledobject.yaml | keda-scaledobject.yaml (KEDA) | Config
-- [ ] keepalived.conf | keepalived.conf (Keepalived VRRP) | Config, Network
-- [ ] keycloak-realm.json | keycloak-realm.json (Keycloak Realm) | Config, Security
-- [ ] keycloak.conf | Keycloak Config | Config, Security
-- [ ] kibana.yml | kibana.yml | Config
-- [ ] kibana.yml | kibana.yml | uncategorized
-- [ ] kitty.conf | kitty.conf | Config, Terminal
-- [ ] knexfile.js | knexfile.js | Config
-- [ ] knip.json | knip.json | Config
-- [ ] known_hosts | known_hosts (SSH) | Config
-- [ ] komga.yml | komga.yml | Config, Application, Media, Comics
-- [ ] kong.yaml | kong.yaml | Config
-- [ ] krb5.conf | krb5.conf (Kerberos) | Config, Security
-- [ ] kubeconfig | kubeconfig | Other
-- [ ] kubeconfig.yaml | kubeconfig.yaml | Config
-- [ ] kustomization.yaml | kustomization.yaml (Kustomize) | DevOps, Config
-- [ ] kyverno-policy.yaml | kyverno-policy.yaml | Config
-- [ ] launchSettings.json | launchSettings.json (ASP.NET) | Config
-- [ ] lefthook.yml | lefthook.yml | Config
-- [ ] lerna.json | lerna.json | Config
-- [ ] lfrc | lfrc | Config
-- [ ] libs.versions.toml | libs.versions.toml (Gradle Version Catalog) | Config
-- [ ] LICENSE | LICENSE | Documents
-- [ ] lighttpd.conf | lighttpd.conf (Lighttpd Web Server) | Config, Network
-- [ ] limits.conf | limits.conf (PAM Limits) | Config
-- [ ] linkding.env | linkding.env | Config, Application
-- [ ] linkerd-config.yaml | linkerd-config.yaml (Linkerd) | Config
-- [ ] linkwarden.env | Linkwarden config | Productivity, Bookmarks, Self-Hosted
-- [ ] liquibase.properties | liquibase.properties | Config, Database
-- [ ] listmonk-config.toml | listmonk-config.toml | Config, Application, Email
-- [ ] lldap_config.toml | lldap_config.toml | Config, Security, Identity, LDAP
-- [ ] loader.conf | loader.conf | Config
-- [ ] Localizable.strings | Localizable.strings | Config
-- [ ] log4j2.xml | log4j2.xml | Config
-- [ ] logback.xml | logback.xml | Config
-- [ ] logrotate.conf | logrotate.conf (Log Rotation) | Config, System
-- [ ] logstash.conf | logstash.conf | Config
-- [ ] loki-config.yaml | loki-config.yaml | Config
-- [ ] lxc.config | lxc.config (LXC container) | Config, Container
-- [ ] main.c | main.c | Code
-- [ ] main.cf | main.cf (Postfix Mail Server) | Config, Mail
-- [ ] Main.java | Main.java | Code
-- [ ] Main.kt | Main.kt | Code
-- [ ] main.py | main.py | Code
-- [ ] main.rb | main.rb | Code
-- [ ] Makefile | Makefile | Code
-- [ ] makepkg.conf | makepkg.conf (makepkg Config) | Config, Arch Linux
-- [ ] mako | mako (mako notification daemon) | Config, Desktop
-- [ ] Manifest.toml | Manifest.toml (Julia Manifest) | Config
-- [ ] Manifest.toml | Manifest.toml | Config
-- [ ] Matchfile | Matchfile (Fastlane Match) | Config
-- [ ] mattermost-config.json | mattermost-config.json | Config, Application
-- [ ] maven-settings.xml | maven-settings.xml | Config
-- [ ] maybe.env | Maybe Config | Config, Self-hosted
-- [ ] mealie.env | mealie.env | Config, Application
-- [ ] meltano.yml | meltano.yml | Data, Config
-- [ ] memos.env | Memos config | Productivity, Notes, Self-Hosted
-- [ ] mesh.cpp | mesh.cpp | Code
-- [ ] meson.build | meson.build | Code
-- [ ] metagame/stage10/identity_echo.jpg | Awakening identity_echo.jpg | Metagame
-- [ ] metagame/stage10/nested/echoes/pattern_echo.json | Awakening pattern_echo.json | Metagame
-- [ ] metagame/stage10/syntax_echo.txt | Awakening syntax_echo.txt | Metagame
-- [ ] metagame/stage2/cipher.txt | Glyph Dungeon cipher.txt | Metagame
-- [ ] metagame/stage5/transmission_hum.mp3 | Signal Racer transmission_hum.mp3 | Metagame
-- [ ] metagame/stage6/protocols_of_the_entity.epub | Protocol Codex protocols_of_the_entity.epub | Metagame
-- [ ] metagame/stage7/entity_a_verification.png | Identity Arbiter Entity A image | Metagame
-- [ ] metagame/stage7/entity_f_verification.png | Identity Arbiter Entity F image | Metagame
-- [ ] metagame/stage7/entity_metadata.json | Identity Arbiter metadata sidecar | Metagame
-- [ ] metro.config.js | metro.config.js | Config
-- [ ] mimir.yaml | mimir.yaml | Config
-- [ ] miniflux.conf | miniflux.conf | Config, Application
-- [ ] minio.env | minio.env | Config, Self-hosted
-- [ ] mint.json | mint.json | Config
-- [ ] mint.json | mint.json | uncategorized
-- [ ] mise.toml | mise.toml | Config
-- [ ] mix.exs | mix.exs | Code
-- [ ] mkdocs.yml | mkdocs.yml | Config
-- [ ] mkinitcpio.conf | mkinitcpio.conf (mkinitcpio) | Config
-- [ ] MLproject | MLproject (MLflow Project) | Config, Data Science
-- [ ] Module.vb | Module.vb | Code
-- [ ] molecule.yml | molecule.yml | Config, Ansible, Testing
-- [ ] mongod.conf | mongod.conf | Config
-- [ ] monica.env | monica.env | Config, Application
-- [ ] moon.yml | moon.yml | Config
-- [ ] mosquitto.conf | mosquitto.conf | Config, Networking
-- [ ] mpd.conf | mpd.conf | Config, Audio
-- [ ] mpv.conf | mpv.conf | Config
-- [ ] my.cnf | my.cnf (MySQL) | Config
-- [ ] myapp.container | myapp.container (Podman Quadlet) | Config
-- [ ] myapp.service | myapp.service (systemd Service) | Config, System
-- [ ] MyApp.xcscheme | MyApp.xcscheme (Xcode Scheme) | Config, mobile
-- [ ] mypackage.opam | mypackage.opam | Code, OCaml
-- [ ] mypy.ini | mypy config | Config
-- [ ] n8n.env | n8n.env | Config, Application, Automation
-- [ ] nagios.cfg | nagios.cfg | Monitoring, Config
-- [ ] named.conf | named.conf (BIND DNS) | Config, Network
-- [ ] nats.conf | nats.conf | Config
-- [ ] ncmpcpp.conf | ncmpcpp.conf | Config, Music
-- [ ] nest-cli.json | nest-cli.json | Config
-- [ ] netbird.json | netbird.json | Networking, Config
-- [ ] netbox-configuration.py | netbox-configuration.py | Config, Application, Network
-- [ ] netdata.conf | netdata.conf (Netdata) | Monitoring, Infrastructure, Self-Hosted
-- [ ] netlify.toml | Netlify config (netlify.toml demo) | Config, devops
-- [ ] netplan.yaml | netplan.yaml | Config
-- [ ] newrelic.yml | newrelic.yml (New Relic Agent) | Config, Monitoring
-- [ ] newsboat.conf | newsboat.conf | Config
-- [ ] next.config.js | next.config.js | Config
-- [ ] nfpm.yaml | nfpm.yaml (nfpm) | Config
-- [ ] nftables.conf | nftables.conf (nftables Firewall Rules) | Config, Network
-- [ ] nginx.conf | nginx.conf | Config
-- [ ] nix.conf | nix.conf | Config
-- [ ] nix.conf | nix.conf | uncategorized
-- [ ] nocodb.env | nocodb.env | Config, Application, Database
-- [ ] nsqd.cfg | nsqd.cfg | Config
-- [ ] nsqd.cfg | nsqd.cfg | uncategorized
-- [ ] nsswitch.conf | nsswitch.conf (NSSwitch) | Config
-- [ ] ntfy-server.yml | ntfy-server.yml (ntfy) | Config, Application, Notifications
-- [ ] nuget.config | nuget.config | Config
-- [ ] nuxt.config.ts | nuxt.config.ts | Config
-- [ ] nvmrc | .nvmrc | Config
-- [ ] nx.json | nx.json | Config
-- [ ] nzbget.conf | NZBGet config | Download, Usenet, Self-Hosted
-- [ ] oauth2-proxy.cfg | oauth2-proxy.cfg (OAuth2 Proxy) | Config, Security
-- [ ] odoo.conf | odoo.conf | Config, Application
-- [ ] open-webui.env | Open WebUI Config | Config, AI, Self-hosted
-- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | Config
-- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | uncategorized
-- [ ] openapi.yaml | openapi.yaml | Config
-- [ ] opencost.yaml | opencost.yaml | Config
-- [ ] openrc-myapp | openrc-myapp (OpenRC) | Config
-- [ ] openssl.cnf | openssl.cnf | Config, Security
-- [ ] opentelemetry-k8s.yaml | opentelemetry-k8s.yaml (OTel Operator) | Config
-- [ ] org.example.App.yaml | org.example.App.yaml (Flatpak Manifest) | Config
-- [ ] osv-scanner.toml | osv-scanner.toml | Config
-- [ ] otel-collector-config.yaml | otel-collector-config.yaml | Config
-- [ ] outline.env | outline.env | Config, Application
-- [ ] overseerr-settings.json | Overseerr config | Media, Requests, Self-Hosted
-- [ ] Overwriter.frag | Overwriter.frag | Code
-- [ ] package-lock.json | package-lock.json | Config
-- [ ] package.json | package.json | Config
-- [ ] package.nuspec | package.nuspec | Config
-- [ ] Package.resolved | Package.resolved | Config
-- [ ] Package.swift | Package.swift | Code
-- [ ] packages.config | packages.config (NuGet) | Config
-- [ ] packer.json | packer.json (HashiCorp Packer) | DevOps, Config
-- [ ] pacman.conf | pacman.conf | Config
-- [ ] Panel.vue | Panel.vue | Code
-- [ ] paperless.conf | paperless.conf | Config, Application
-- [ ] patroni.yml | patroni.yml | Config, Database
-- [ ] pdns.conf | pdns.conf | Config
-- [ ] pdns.conf | pdns.conf | uncategorized
-- [ ] pg_hba.conf | pg_hba.conf | Config, Database
-- [ ] pgbackrest.conf | pgbackrest.conf | Config, Database
-- [ ] pgbouncer.ini | pgbouncer.ini | Config
-- [ ] photoprism-options.yml | photoprism-options.yml | Config, Application
-- [ ] php.ini | php.ini | Config
-- [ ] phpstan.neon | phpstan.neon | Config
-- [ ] phpunit.xml | phpunit.xml | Config
-- [ ] phpunit.xml.dist | phpunit.xml.dist (PHPUnit Config) | Config
-- [ ] picom.conf | picom.conf | Config
-- [ ] pihole-setupVars.conf | setupVars.conf (Pi-hole) | Networking, Config
-- [ ] pip.conf | pip.conf | Config
-- [ ] pipeline.ex | pipeline.ex | Code
-- [ ] pipewire.conf | pipewire.conf | Config
-- [ ] Pipfile | Pipfile | Config
-- [ ] pixi.toml | pixi.toml | Config
-- [ ] PKGBUILD | PKGBUILD (Arch Linux) | Config
-- [ ] plane.env | plane.env | Config, Application, Project Management
-- [ ] plausible.env | plausible.env | Config, Application, Analytics
-- [ ] playwright.config.ts | playwright.config.ts | Config
-- [ ] pnpm-lock.yaml | pnpm-lock.yaml | Config
-- [ ] pnpm-workspace.yaml | pnpm-workspace.yaml | Config
-- [ ] pocket-id.env | Pocket ID config | Authentication, Identity, Self-Hosted
-- [ ] Podfile | Podfile | Config
-- [ ] Podfile.lock | Podfile.lock (CocoaPods) | Config, mobile
-- [ ] poetry.lock | poetry.lock | Config
-- [ ] policy.rego | policy.rego | Config
-- [ ] polybar.ini | polybar.ini (Polybar status bar) | Config, Desktop
-- [ ] pom.xml | pom.xml (Maven POM) | Config, Java
-- [ ] postcss.config.json | postcss.config.json | Config
-- [ ] postgresql.conf | postgresql.conf | Config
-- [ ] pre-commit-config.yaml | .pre-commit-config.yaml | Config
-- [ ] pre-commit-config.yaml | pre-commit config | Config
-- [ ] prefect.yaml | prefect.yaml | DevOps, Config
-- [ ] Procfile | Procfile | Config, DevOps
-- [ ] proftpd.conf | proftpd.conf | Config
-- [ ] proftpd.conf | proftpd.conf | uncategorized
-- [ ] Program.cs | Program.cs | Code
-- [ ] proguard-rules.pro | proguard-rules.pro (ProGuard Rules) | Config
-- [ ] project.clj | project.clj | Config
-- [ ] Project.toml | Project.toml | Config
-- [ ] prometheus-rules.yaml | prometheus-rules.yaml | Config
-- [ ] prometheus.yml | prometheus.yml | Config
-- [ ] promtail-config.yaml | promtail-config.yaml | Config
-- [ ] provenance.json | provenance.json (SLSA Provenance) | Security
-- [ ] psalm.xml | psalm.xml | Config
-- [ ] pubspec.lock | pubspec.lock (demo) | Config, mobile
-- [ ] pubspec.yaml | Flutter pubspec.yaml (demo) | Config, mobile
-- [ ] Pulumi.yaml | Pulumi.yaml (Pulumi project) | DevOps, Config
-- [ ] puma.rb | puma.rb (Puma) | Config
-- [ ] pyproject.toml | pyproject.toml | Config
-- [ ] pyrightconfig.json | Pyright config | Config
-- [ ] pytest.ini | pytest.ini (pytest Config) | Config, Python
-- [ ] query.sql | query.sql | Code, Data
-- [ ] rabbitmq.conf | rabbitmq.conf | Config
-- [ ] radicale.conf | radicale.conf | Config, Application
-- [ ] railway.json | railway.json | Config
-- [ ] rallly.env | Rallly Config | Config, Self-hosted
-- [ ] ranger.conf | ranger.conf | Config
-- [ ] rclone.conf | rclone.conf | Config
-- [ ] react-native.config.js | react-native.config.js | Config
-- [ ] rebar.config | rebar.config | Config
-- [ ] rector.php | rector.php (Rector Config) | Config
-- [ ] recursor.conf | recursor.conf | Config
-- [ ] recursor.conf | recursor.conf | uncategorized
-- [ ] redis.conf | redis.conf | Config
-- [ ] registries.conf | registries.conf | Config
-- [ ] registries.conf | registries.conf | uncategorized
-- [ ] release-please-config.json | release-please-config.json | Config
-- [ ] Release.xcconfig | Release.xcconfig | Config
-- [ ] remix.config.js | remix.config.js | Config
-- [ ] render.yaml | render.yaml | Config
-- [ ] renovate.json | renovate.json | Config
-- [ ] report.pl | report.pl | Code
-- [ ] requirements.txt | requirements.txt | Config
-- [ ] requirements.yml | requirements.yml | Config
-- [ ] resolv.conf | resolv.conf | Config, Network
-- [ ] resticprofile.toml | resticprofile.toml | Config
-- [ ] robots.txt | robots.txt (demo) | Config
-- [ ] robots.txt | robots.txt (demo) | Config
-- [ ] rollup.config.js | rollup.config.js | Config
-- [ ] rspack.config.js | rspack.config.js | Config
-- [ ] rsyslog.conf | rsyslog.conf (rsyslog) | Config, System
-- [ ] ruff.toml | ruff.toml (Ruff linter) | Config
-- [ ] rush.json | rush.json | Config
-- [ ] rust-toolchain.toml | rust-toolchain.toml | Config
-- [ ] rustfmt.toml | rustfmt.toml (rustfmt) | Config
-- [ ] sabnzbd.ini | SABnzbd config | Download, Usenet, Self-Hosted
-- [ ] sam-template.yaml | sam-template.yaml (AWS SAM) | Config
-- [ ] samconfig.toml | samconfig.toml (SAM Config) | Config
-- [ ] sample_old.png | sample_old.png | Image, Media
-- [ ] sample-alloy.als | sample-alloy.als (Alloy) | Code
-- [ ] sample-k8s.yaml | Kubernetes Deployment manifest (demo) | Config, devops
-- [ ] sample-locked.zip | Locked.zip | Archive & Binary
-- [ ] sample-pages.pdf | Sample (3 pages).pdf | Documents
-- [ ] sample-telegram.json | Telegram Chat Export (JSON) | Data
-- [ ] sample-variants.vcf | Sample variants (VCF) | Data
-- [ ] sample-workflow.yml | GitHub Actions CI workflow (demo) | Code, devops
-- [ ] sample.3mf | Sample.3mf | Media, 3D
-- [ ] Sample.7z | Sample.7z | Archive & Binary
-- [ ] sample.aac | Sample.aac | Media
-- [ ] sample.abc | Folk Tunes (ABC) | Music
-- [ ] sample.acf | Steam App Manifest (ACF) | Data
-- [ ] sample.adoc | sample.adoc (AsciiDoc) | Docs, Documentation
-- [ ] sample.ads | sample.ads | Systems, Programming
-- [ ] sample.agda | sample.agda (Agda) | Code
-- [ ] sample.als | Sample.als | Media
-- [ ] sample.ans | Sample.ans | Text
-- [ ] sample.apk | Android Package (APK stub) | Binary
-- [ ] sample.arrow | Apache Arrow IPC File (demo) | data, binary, scientific
-- [ ] sample.asm | sample.asm | Systems, Programming
-- [ ] Sample.avi | Sample.avi | Media
-- [ ] sample.avif | Sample.avif | Image, Media
-- [ ] sample.avro | Avro Employee Schema (demo) | data, binary
-- [ ] sample.avsc | Avro Schema (demo) | Data
-- [ ] sample.awk | sample.awk (AWK) | Code
-- [ ] sample.bal | sample.bal (Ballerina) | Code
-- [ ] sample.bbc | sample.bbc (BBCode) | Document
-- [ ] sample.bicep | sample.bicep (Azure Bicep) | Config, Infrastructure
-- [ ] sample.bin | Sample.bin | Archive & Binary
-- [ ] sample.blend | Blender 3D scene (demo) | 3D, binary, Design
-- [ ] sample.bmp | Sample.bmp | Image, Media
-- [ ] sample.bson | BSON document (demo) | data, binary
-- [ ] sample.bsp | Quake BSP Game Map (demo) | game, binary
-- [ ] sample.capnp | sample.capnp (Cap'n Proto) | Schema, Serialization
-- [ ] sample.carbon | sample.carbon (Carbon) | Code
-- [ ] sample.cbor | CBOR API Response (demo) | data, binary
-- [ ] sample.cbz | Sample.cbz | Documents, Ebook, Archive & Binary
-- [ ] sample.chpl | sample.chpl (Chapel) | Code
-- [ ] sample.cif | Aspirin Crystal Structure (CIF) | chemical, scientific
-- [ ] sample.class | sample.class | Binary
-- [ ] sample.clip | Sample.clip | Image, Media
-- [ ] sample.clj | sample.clj | Functional, Lisp
-- [ ] sample.cob | sample.cob | Legacy, Programming
-- [ ] sample.coffee | sample.coffee (CoffeeScript) | Code
-- [ ] sample.coq | sample.coq (Coq) | Code
-- [ ] sample.cr | sample.cr | Systems, Programming
-- [ ] sample.crash | sample.crash | Code
-- [ ] sample.csv | Sample.csv | Data
-- [ ] sample.cue | CUE schema (demo) | Config
-- [ ] sample.cue | sample.cue | Config
-- [ ] sample.d | sample.d | Systems, Programming
-- [ ] sample.dart | sample.dart | Mobile, Programming
-- [ ] sample.dbf | dBase DBF database (demo) | data, binary
-- [ ] sample.dcm | DICOM Medical Image (demo) | Binary
-- [ ] sample.deb | Debian package (demo) | code, binary, archive
-- [ ] sample.desktop | sample.desktop (Desktop Entry) | Config
-- [ ] sample.dfy | sample.dfy (Dafny) | Code
-- [ ] sample.dhall | sample.dhall (Dhall) | Config, Functional
-- [ ] sample.djvu | Sample.djvu | Documents, Ebook
-- [ ] sample.dmp | Windows Minidump (demo) | Binary
-- [ ] sample.do | sample.do (Stata) | Code
-- [ ] sample.docx | Sample.docx | Office
-- [ ] sample.dot | sample.dot | Diagram, Visualization
-- [ ] sample.dwg | AutoCAD DWG drawing (demo) | Design, binary
-- [ ] sample.dxf | AutoCAD DXF Drawing (demo) | Design
-- [ ] sample.e | sample.e (Eiffel) | Code
-- [ ] sample.ejs | sample.ejs (EJS Template) | Code
-- [ ] sample.el | sample.el (Emacs Lisp) | Code
-- [ ] sample.elf | ELF Executable (x86-64 Linux stub) | Binary
-- [ ] sample.elm | sample.elm | Functional, Frontend
-- [ ] sample.elv | sample.elv (Elvish) | Code
-- [ ] sample.eml | Sample.eml | Data
-- [ ] sample.env | sample.env (environment variables) | Secrets, Config
-- [ ] sample.eps | Hello PostScript (EPS) | Data
-- [ ] sample.epub | Sample.epub | Documents, Ebook
-- [ ] sample.erl | sample.erl | Functional, Programming
-- [ ] sample.ex | sample.ex (Elixir) | Code
+- [x] grub | grub (/etc/default/grub) | Config, System
+- [x] haproxy.cfg | haproxy.cfg | Config
+- [x] harbor.yml | Harbor Config | Config, Self-hosted, DevOps
+- [x] hardhat.config.js | hardhat.config.js (Hardhat) | Config, Blockchain
+- [x] harness-pipeline.yaml | Harness Pipeline | Config, devops
+- [x] hatch.toml | hatch.toml | Config
+- [x] headscale-config.yaml | headscale-config.yaml (Headscale) | Config, networking
+- [x] headscale.yaml | Headscale Config | Config, Self-hosted, Networking
+- [x] heartbeat.yml | heartbeat.yml (Heartbeat) | Config, Monitoring, Observability
+- [x] heartbeat.yml | heartbeat.yml | uncategorized
+- [x] helix.toml | helix.toml | Config
+- [x] helmfile.yaml | helmfile.yaml | Infrastructure, Kubernetes, Helm
+- [x] heroku-app.json | heroku-app.json | Config, Deploy
+- [x] heroku.yml | heroku.yml | Config
+- [x] hoarder.env | Hoarder / Karakeep config | Productivity, Bookmarks, Self-Hosted
+- [x] homarr.yaml | Homarr dashboard config | Dashboard, Self-Hosted, YAML
+- [x] homepage-services.yaml | Homepage services config | Dashboard, Self-Hosted, YAML
+- [x] homer.yml | homer.yml | Config, Self-hosted
+- [x] homeserver.yaml | homeserver.yaml (Synapse) | Config, Messaging
+- [x] hoppscotch.env | hoppscotch.env | Config, Application, API
+- [x] hosts | hosts | Config, Network
+- [x] httpd.conf | httpd.conf (Apache HTTP Server) | Config, Web Server
+- [x] hugo.toml | hugo.toml | Config, Hugo
+- [x] humans.txt | humans.txt (demo) | Config
+- [x] hydra-config.yaml | hydra-config.yaml (Hydra Config) | Config, Data Science
+- [x] hyprland.conf | hyprland.conf (Hyprland Wayland compositor) | Config, Desktop
+- [x] i3.config | i3.config (i3 WM) | Config, Desktop
+- [x] immich.env | immich.env | Config, Application
+- [x] index.php | index.php | Code
+- [x] infisical.env | infisical.env | Config, Application, Security
+- [x] influxdb.conf | influxdb.conf | Config
+- [x] influxdb.conf | influxdb.conf | uncategorized
+- [x] influxdb.yml | InfluxDB Config | Config, Monitoring
+- [x] infra.tf | infra.tf | Code, Config
+- [x] infracost.yml | infracost.yml | Config
+- [x] init.el | init.el (Emacs) | Config
+- [x] init.lua | init.lua (Neovim) | Config
+- [x] insomnia.yaml | insomnia.yaml | Config
+- [x] insomnia.yaml | insomnia.yaml | uncategorized
+- [x] inventory | inventory (Ansible Inventory) | Config, Ansible
+- [x] inventory.yml | inventory.yml | Config
+- [x] invidious-config.yml | Invidious Config | Config, Self-hosted
+- [x] invoiceninja.env | Invoice Ninja Config | Config, Self-hosted
+- [x] ionic.config.json | ionic.config.json | Config
+- [x] iptables.rules | iptables.rules (Firewall Rules) | Config, Network
+- [x] istio-virtual-service.yaml | istio-virtual-service.yaml (Istio) | Config
+- [x] jaeger-config.yaml | jaeger-config.yaml | Config
+- [x] jail.local | jail.local (Fail2ban) | Config, Security
+- [x] jellyseerr-settings.json | Jellyseerr config | Media, Requests, Self-Hosted
+- [x] Jenkinsfile | Jenkinsfile | Config
+- [x] jest.config.js | jest.config.js | Config
+- [x] jest.config.json | jest.config.json | Config
+- [x] Job.scala | Job.scala | Code
+- [x] joplin.env | Joplin Server config | Productivity, Notes, Self-Hosted
+- [x] journald.conf | journald.conf (journald) | Config
+- [x] jsconfig.json | jsconfig.json | Config
+- [x] justfile | Justfile | Config
+- [x] Justfile | Justfile | Config
+- [x] jvm.options | jvm.options | Config
+- [x] k6.config.js | k6.config.js | Config
+- [x] k8s-hpa.yaml | k8s-hpa.yaml (HPA) | Config
+- [x] k8s-ingress.yaml | k8s-ingress.yaml | Config
+- [x] k8s-network-policy.yaml | k8s-network-policy.yaml | Config
+- [x] k8s-rbac.yaml | k8s-rbac.yaml (Kubernetes RBAC) | Config
+- [x] k8s-role.yaml | k8s-role.yaml | Config
+- [x] kamal.yml | kamal.yml | DevOps, Config
+- [x] kavita-appsettings.json | Kavita config | Media, Books, Self-Hosted
+- [x] keda-scaledobject.yaml | keda-scaledobject.yaml (KEDA) | Config
+- [x] keepalived.conf | keepalived.conf (Keepalived VRRP) | Config, Network
+- [x] keycloak-realm.json | keycloak-realm.json (Keycloak Realm) | Config, Security
+- [x] keycloak.conf | Keycloak Config | Config, Security
+- [x] kibana.yml | kibana.yml | Config
+- [x] kibana.yml | kibana.yml | uncategorized
+- [x] kitty.conf | kitty.conf | Config, Terminal
+- [x] knexfile.js | knexfile.js | Config
+- [x] knip.json | knip.json | Config
+- [x] known_hosts | known_hosts (SSH) | Config
+- [x] komga.yml | komga.yml | Config, Application, Media, Comics
+- [x] kong.yaml | kong.yaml | Config
+- [x] krb5.conf | krb5.conf (Kerberos) | Config, Security
+- [x] kubeconfig | kubeconfig | Other
+- [x] kubeconfig.yaml | kubeconfig.yaml | Config
+- [x] kustomization.yaml | kustomization.yaml (Kustomize) | DevOps, Config
+- [x] kyverno-policy.yaml | kyverno-policy.yaml | Config
+- [x] launchSettings.json | launchSettings.json (ASP.NET) | Config
+- [x] lefthook.yml | lefthook.yml | Config
+- [x] lerna.json | lerna.json | Config
+- [x] lfrc | lfrc | Config
+- [x] libs.versions.toml | libs.versions.toml (Gradle Version Catalog) | Config
+- [x] LICENSE | LICENSE | Documents
+- [x] lighttpd.conf | lighttpd.conf (Lighttpd Web Server) | Config, Network
+- [x] limits.conf | limits.conf (PAM Limits) | Config
+- [x] linkding.env | linkding.env | Config, Application
+- [x] linkerd-config.yaml | linkerd-config.yaml (Linkerd) | Config
+- [x] linkwarden.env | Linkwarden config | Productivity, Bookmarks, Self-Hosted
+- [x] liquibase.properties | liquibase.properties | Config, Database
+- [x] listmonk-config.toml | listmonk-config.toml | Config, Application, Email
+- [x] lldap_config.toml | lldap_config.toml | Config, Security, Identity, LDAP
+- [x] loader.conf | loader.conf | Config
+- [x] Localizable.strings | Localizable.strings | Config
+- [x] log4j2.xml | log4j2.xml | Config
+- [x] logback.xml | logback.xml | Config
+- [x] logrotate.conf | logrotate.conf (Log Rotation) | Config, System
+- [x] logstash.conf | logstash.conf | Config
+- [x] loki-config.yaml | loki-config.yaml | Config
+- [x] lxc.config | lxc.config (LXC container) | Config, Container
+- [x] main.c | main.c | Code
+- [x] main.cf | main.cf (Postfix Mail Server) | Config, Mail
+- [x] Main.java | Main.java | Code
+- [x] Main.kt | Main.kt | Code
+- [x] main.py | main.py | Code
+- [x] main.rb | main.rb | Code
+- [x] Makefile | Makefile | Code
+- [x] makepkg.conf | makepkg.conf (makepkg Config) | Config, Arch Linux
+- [x] mako | mako (mako notification daemon) | Config, Desktop
+- [x] Manifest.toml | Manifest.toml (Julia Manifest) | Config
+- [x] Manifest.toml | Manifest.toml | Config
+- [x] Matchfile | Matchfile (Fastlane Match) | Config
+- [x] mattermost-config.json | mattermost-config.json | Config, Application
+- [x] maven-settings.xml | maven-settings.xml | Config
+- [x] maybe.env | Maybe Config | Config, Self-hosted
+- [x] mealie.env | mealie.env | Config, Application
+- [x] meltano.yml | meltano.yml | Data, Config
+- [x] memos.env | Memos config | Productivity, Notes, Self-Hosted
+- [x] mesh.cpp | mesh.cpp | Code
+- [x] meson.build | meson.build | Code
+- [x] metagame/stage10/identity_echo.jpg | Awakening identity_echo.jpg | Metagame
+- [x] metagame/stage10/nested/echoes/pattern_echo.json | Awakening pattern_echo.json | Metagame
+- [x] metagame/stage10/syntax_echo.txt | Awakening syntax_echo.txt | Metagame
+- [x] metagame/stage2/cipher.txt | Glyph Dungeon cipher.txt | Metagame
+- [x] metagame/stage5/transmission_hum.mp3 | Signal Racer transmission_hum.mp3 | Metagame
+- [x] metagame/stage6/protocols_of_the_entity.epub | Protocol Codex protocols_of_the_entity.epub | Metagame
+- [x] metagame/stage7/entity_a_verification.png | Identity Arbiter Entity A image | Metagame
+- [x] metagame/stage7/entity_f_verification.png | Identity Arbiter Entity F image | Metagame
+- [x] metagame/stage7/entity_metadata.json | Identity Arbiter metadata sidecar | Metagame
+- [x] metro.config.js | metro.config.js | Config
+- [x] mimir.yaml | mimir.yaml | Config
+- [x] miniflux.conf | miniflux.conf | Config, Application
+- [x] minio.env | minio.env | Config, Self-hosted
+- [x] mint.json | mint.json | Config
+- [x] mint.json | mint.json | uncategorized
+- [x] mise.toml | mise.toml | Config
+- [x] mix.exs | mix.exs | Code
+- [x] mkdocs.yml | mkdocs.yml | Config
+- [x] mkinitcpio.conf | mkinitcpio.conf (mkinitcpio) | Config
+- [x] MLproject | MLproject (MLflow Project) | Config, Data Science
+- [x] Module.vb | Module.vb | Code
+- [x] molecule.yml | molecule.yml | Config, Ansible, Testing
+- [x] mongod.conf | mongod.conf | Config
+- [x] monica.env | monica.env | Config, Application
+- [x] moon.yml | moon.yml | Config
+- [x] mosquitto.conf | mosquitto.conf | Config, Networking
+- [x] mpd.conf | mpd.conf | Config, Audio
+- [x] mpv.conf | mpv.conf | Config
+- [x] my.cnf | my.cnf (MySQL) | Config
+- [x] myapp.container | myapp.container (Podman Quadlet) | Config
+- [x] myapp.service | myapp.service (systemd Service) | Config, System
+- [x] MyApp.xcscheme | MyApp.xcscheme (Xcode Scheme) | Config, mobile
+- [x] mypackage.opam | mypackage.opam | Code, OCaml
+- [x] mypy.ini | mypy config | Config
+- [x] n8n.env | n8n.env | Config, Application, Automation
+- [x] nagios.cfg | nagios.cfg | Monitoring, Config
+- [x] named.conf | named.conf (BIND DNS) | Config, Network
+- [x] nats.conf | nats.conf | Config
+- [x] ncmpcpp.conf | ncmpcpp.conf | Config, Music
+- [x] nest-cli.json | nest-cli.json | Config
+- [x] netbird.json | netbird.json | Networking, Config
+- [x] netbox-configuration.py | netbox-configuration.py | Config, Application, Network
+- [x] netdata.conf | netdata.conf (Netdata) | Monitoring, Infrastructure, Self-Hosted
+- [x] netlify.toml | Netlify config (netlify.toml demo) | Config, devops
+- [x] netplan.yaml | netplan.yaml | Config
+- [x] newrelic.yml | newrelic.yml (New Relic Agent) | Config, Monitoring
+- [x] newsboat.conf | newsboat.conf | Config
+- [x] next.config.js | next.config.js | Config
+- [x] nfpm.yaml | nfpm.yaml (nfpm) | Config
+- [x] nftables.conf | nftables.conf (nftables Firewall Rules) | Config, Network
+- [x] nginx.conf | nginx.conf | Config
+- [x] nix.conf | nix.conf | Config
+- [x] nix.conf | nix.conf | uncategorized
+- [x] nocodb.env | nocodb.env | Config, Application, Database
+- [x] nsqd.cfg | nsqd.cfg | Config
+- [x] nsqd.cfg | nsqd.cfg | uncategorized
+- [x] nsswitch.conf | nsswitch.conf (NSSwitch) | Config
+- [x] ntfy-server.yml | ntfy-server.yml (ntfy) | Config, Application, Notifications
+- [x] nuget.config | nuget.config | Config
+- [x] nuxt.config.ts | nuxt.config.ts | Config
+- [x] nvmrc | .nvmrc | Config
+- [x] nx.json | nx.json | Config
+- [x] nzbget.conf | NZBGet config | Download, Usenet, Self-Hosted
+- [x] oauth2-proxy.cfg | oauth2-proxy.cfg (OAuth2 Proxy) | Config, Security
+- [x] odoo.conf | odoo.conf | Config, Application
+- [x] open-webui.env | Open WebUI Config | Config, AI, Self-hosted
+- [x] openapi-generator-config.yaml | openapi-generator-config.yaml | Config
+- [x] openapi-generator-config.yaml | openapi-generator-config.yaml | uncategorized
+- [x] openapi.yaml | openapi.yaml | Config
+- [x] opencost.yaml | opencost.yaml | Config
+- [x] openrc-myapp | openrc-myapp (OpenRC) | Config
+- [x] openssl.cnf | openssl.cnf | Config, Security
+- [x] opentelemetry-k8s.yaml | opentelemetry-k8s.yaml (OTel Operator) | Config
+- [x] org.example.App.yaml | org.example.App.yaml (Flatpak Manifest) | Config
+- [x] osv-scanner.toml | osv-scanner.toml | Config
+- [x] otel-collector-config.yaml | otel-collector-config.yaml | Config
+- [x] outline.env | outline.env | Config, Application
+- [x] overseerr-settings.json | Overseerr config | Media, Requests, Self-Hosted
+- [x] Overwriter.frag | Overwriter.frag | Code
+- [x] package-lock.json | package-lock.json | Config
+- [x] package.json | package.json | Config
+- [x] package.nuspec | package.nuspec | Config
+- [x] Package.resolved | Package.resolved | Config
+- [x] Package.swift | Package.swift | Code
+- [x] packages.config | packages.config (NuGet) | Config
+- [x] packer.json | packer.json (HashiCorp Packer) | DevOps, Config
+- [x] pacman.conf | pacman.conf | Config
+- [x] Panel.vue | Panel.vue | Code
+- [x] paperless.conf | paperless.conf | Config, Application
+- [x] patroni.yml | patroni.yml | Config, Database
+- [x] pdns.conf | pdns.conf | Config
+- [x] pdns.conf | pdns.conf | uncategorized
+- [x] pg_hba.conf | pg_hba.conf | Config, Database
+- [x] pgbackrest.conf | pgbackrest.conf | Config, Database
+- [x] pgbouncer.ini | pgbouncer.ini | Config
+- [x] photoprism-options.yml | photoprism-options.yml | Config, Application
+- [x] php.ini | php.ini | Config
+- [x] phpstan.neon | phpstan.neon | Config
+- [x] phpunit.xml | phpunit.xml | Config
+- [x] phpunit.xml.dist | phpunit.xml.dist (PHPUnit Config) | Config
+- [x] picom.conf | picom.conf | Config
+- [x] pihole-setupVars.conf | setupVars.conf (Pi-hole) | Networking, Config
+- [x] pip.conf | pip.conf | Config
+- [x] pipeline.ex | pipeline.ex | Code
+- [x] pipewire.conf | pipewire.conf | Config
+- [x] Pipfile | Pipfile | Config
+- [x] pixi.toml | pixi.toml | Config
+- [x] PKGBUILD | PKGBUILD (Arch Linux) | Config
+- [x] plane.env | plane.env | Config, Application, Project Management
+- [x] plausible.env | plausible.env | Config, Application, Analytics
+- [x] playwright.config.ts | playwright.config.ts | Config
+- [x] pnpm-lock.yaml | pnpm-lock.yaml | Config
+- [x] pnpm-workspace.yaml | pnpm-workspace.yaml | Config
+- [x] pocket-id.env | Pocket ID config | Authentication, Identity, Self-Hosted
+- [x] Podfile | Podfile | Config
+- [x] Podfile.lock | Podfile.lock (CocoaPods) | Config, mobile
+- [x] poetry.lock | poetry.lock | Config
+- [x] policy.rego | policy.rego | Config
+- [x] polybar.ini | polybar.ini (Polybar status bar) | Config, Desktop
+- [x] pom.xml | pom.xml (Maven POM) | Config, Java
+- [x] postcss.config.json | postcss.config.json | Config
+- [x] postgresql.conf | postgresql.conf | Config
+- [x] pre-commit-config.yaml | .pre-commit-config.yaml | Config
+- [x] pre-commit-config.yaml | pre-commit config | Config
+- [x] prefect.yaml | prefect.yaml | DevOps, Config
+- [x] Procfile | Procfile | Config, DevOps
+- [x] proftpd.conf | proftpd.conf | Config
+- [x] proftpd.conf | proftpd.conf | uncategorized
+- [x] Program.cs | Program.cs | Code
+- [x] proguard-rules.pro | proguard-rules.pro (ProGuard Rules) | Config
+- [x] project.clj | project.clj | Config
+- [x] Project.toml | Project.toml | Config
+- [x] prometheus-rules.yaml | prometheus-rules.yaml | Config
+- [x] prometheus.yml | prometheus.yml | Config
+- [x] promtail-config.yaml | promtail-config.yaml | Config
+- [x] provenance.json | provenance.json (SLSA Provenance) | Security
+- [x] psalm.xml | psalm.xml | Config
+- [x] pubspec.lock | pubspec.lock (demo) | Config, mobile
+- [x] pubspec.yaml | Flutter pubspec.yaml (demo) | Config, mobile
+- [x] Pulumi.yaml | Pulumi.yaml (Pulumi project) | DevOps, Config
+- [x] puma.rb | puma.rb (Puma) | Config
+- [x] pyproject.toml | pyproject.toml | Config
+- [x] pyrightconfig.json | Pyright config | Config
+- [x] pytest.ini | pytest.ini (pytest Config) | Config, Python
+- [x] query.sql | query.sql | Code, Data
+- [x] rabbitmq.conf | rabbitmq.conf | Config
+- [x] radicale.conf | radicale.conf | Config, Application
+- [x] railway.json | railway.json | Config
+- [x] rallly.env | Rallly Config | Config, Self-hosted
+- [x] ranger.conf | ranger.conf | Config
+- [x] rclone.conf | rclone.conf | Config
+- [x] react-native.config.js | react-native.config.js | Config
+- [x] rebar.config | rebar.config | Config
+- [x] rector.php | rector.php (Rector Config) | Config
+- [x] recursor.conf | recursor.conf | Config
+- [x] recursor.conf | recursor.conf | uncategorized
+- [x] redis.conf | redis.conf | Config
+- [x] registries.conf | registries.conf | Config
+- [x] registries.conf | registries.conf | uncategorized
+- [x] release-please-config.json | release-please-config.json | Config
+- [x] Release.xcconfig | Release.xcconfig | Config
+- [x] remix.config.js | remix.config.js | Config
+- [x] render.yaml | render.yaml | Config
+- [x] renovate.json | renovate.json | Config
+- [x] report.pl | report.pl | Code
+- [x] requirements.txt | requirements.txt | Config
+- [x] requirements.yml | requirements.yml | Config
+- [x] resolv.conf | resolv.conf | Config, Network
+- [x] resticprofile.toml | resticprofile.toml | Config
+- [x] robots.txt | robots.txt (demo) | Config
+- [x] rollup.config.js | rollup.config.js | Config
+- [x] rspack.config.js | rspack.config.js | Config
+- [x] rsyslog.conf | rsyslog.conf (rsyslog) | Config, System
+- [x] ruff.toml | ruff.toml (Ruff linter) | Config
+- [x] rush.json | rush.json | Config
+- [x] rust-toolchain.toml | rust-toolchain.toml | Config
+- [x] rustfmt.toml | rustfmt.toml (rustfmt) | Config
+- [x] sabnzbd.ini | SABnzbd config | Download, Usenet, Self-Hosted
+- [x] sam-template.yaml | sam-template.yaml (AWS SAM) | Config
+- [x] samconfig.toml | samconfig.toml (SAM Config) | Config
+- [x] sample_old.png | sample_old.png | Image, Media
+- [x] sample-alloy.als | sample-alloy.als (Alloy) | Code
+- [x] sample-k8s.yaml | Kubernetes Deployment manifest (demo) | Config, devops
+- [x] sample-locked.zip | Locked.zip | Archive & Binary
+- [x] sample-pages.pdf | Sample (3 pages).pdf | Documents
+- [x] sample-telegram.json | Telegram Chat Export (JSON) | Data
+- [x] sample-variants.vcf | Sample variants (VCF) | Data
+- [x] sample-workflow.yml | GitHub Actions CI workflow (demo) | Code, devops
+- [x] sample.3mf | Sample.3mf | Media, 3D
+- [x] Sample.7z | Sample.7z | Archive & Binary
+- [x] sample.aac | Sample.aac | Media
+- [x] sample.abc | Folk Tunes (ABC) | Music
+- [x] sample.acf | Steam App Manifest (ACF) | Data
+- [x] sample.adoc | sample.adoc (AsciiDoc) | Docs, Documentation
+- [x] sample.ads | sample.ads | Systems, Programming
+- [x] sample.agda | sample.agda (Agda) | Code
+- [x] sample.als | Sample.als | Media
+- [x] sample.ans | Sample.ans | Text
+- [x] sample.apk | Android Package (APK stub) | Binary
+- [x] sample.arrow | Apache Arrow IPC File (demo) | data, binary, scientific
+- [x] sample.asm | sample.asm | Systems, Programming
+- [x] Sample.avi | Sample.avi | Media
+- [x] sample.avif | Sample.avif | Image, Media
+- [x] sample.avro | Avro Employee Schema (demo) | data, binary
+- [x] sample.avsc | Avro Schema (demo) | Data
+- [x] sample.awk | sample.awk (AWK) | Code
+- [x] sample.bal | sample.bal (Ballerina) | Code
+- [x] sample.bbc | sample.bbc (BBCode) | Document
+- [x] sample.bicep | sample.bicep (Azure Bicep) | Config, Infrastructure
+- [x] sample.bin | Sample.bin | Archive & Binary
+- [x] sample.blend | Blender 3D scene (demo) | 3D, binary, Design
+- [x] sample.bmp | Sample.bmp | Image, Media
+- [x] sample.bson | BSON document (demo) | data, binary
+- [x] sample.bsp | Quake BSP Game Map (demo) | game, binary
+- [x] sample.capnp | sample.capnp (Cap'n Proto) | Schema, Serialization
+- [x] sample.carbon | sample.carbon (Carbon) | Code
+- [x] sample.cbor | CBOR API Response (demo) | data, binary
+- [x] sample.cbz | Sample.cbz | Documents, Ebook, Archive & Binary
+- [x] sample.chpl | sample.chpl (Chapel) | Code
+- [x] sample.cif | Aspirin Crystal Structure (CIF) | chemical, scientific
+- [x] sample.class | sample.class | Binary
+- [x] sample.clip | Sample.clip | Image, Media
+- [x] sample.clj | sample.clj | Functional, Lisp
+- [x] sample.cob | sample.cob | Legacy, Programming
+- [x] sample.coffee | sample.coffee (CoffeeScript) | Code
+- [x] sample.coq | sample.coq (Coq) | Code
+- [x] sample.cr | sample.cr | Systems, Programming
+- [x] sample.crash | sample.crash | Code
+- [x] sample.csv | Sample.csv | Data
+- [x] sample.cue | CUE schema (demo) | Config
+- [x] sample.cue | sample.cue | Config
+- [x] sample.d | sample.d | Systems, Programming
+- [x] sample.dart | sample.dart | Mobile, Programming
+- [x] sample.dbf | dBase DBF database (demo) | data, binary
+- [x] sample.dcm | DICOM Medical Image (demo) | Binary
+- [x] sample.deb | Debian package (demo) | code, binary, archive
+- [x] sample.desktop | sample.desktop (Desktop Entry) | Config
+- [x] sample.dfy | sample.dfy (Dafny) | Code
+- [x] sample.dhall | sample.dhall (Dhall) | Config, Functional
+- [x] sample.djvu | Sample.djvu | Documents, Ebook
+- [x] sample.dmp | Windows Minidump (demo) | Binary
+- [x] sample.do | sample.do (Stata) | Code
+- [x] sample.docx | Sample.docx | Office
+- [x] sample.dot | sample.dot | Diagram, Visualization
+- [x] sample.dwg | AutoCAD DWG drawing (demo) | Design, binary
+- [x] sample.dxf | AutoCAD DXF Drawing (demo) | Design
+- [x] sample.e | sample.e (Eiffel) | Code
+- [x] sample.ejs | sample.ejs (EJS Template) | Code
+- [x] sample.el | sample.el (Emacs Lisp) | Code
+- [x] sample.elf | ELF Executable (x86-64 Linux stub) | Binary
+- [x] sample.elm | sample.elm | Functional, Frontend
+- [x] sample.elv | sample.elv (Elvish) | Code
+- [x] sample.eml | Sample.eml | Data
+- [x] sample.env | sample.env (environment variables) | Secrets, Config
+- [x] sample.eps | Hello PostScript (EPS) | Data
+- [x] sample.epub | Sample.epub | Documents, Ebook
+- [x] sample.erl | sample.erl | Functional, Programming
+- [x] sample.ex | sample.ex (Elixir) | Code
 - [ ] sample.exr | OpenEXR HDR image (demo) | Image, binary
 - [ ] sample.f3d | Fusion 360 design (demo) | Design, 3D, binary
 - [ ] sample.f90 | sample.f90 | Science, Systems
@@ -5685,388 +5683,388 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/examples/graylog.conf
 - [x] docs/examples/grist.env
 - [x] docs/examples/growthbook.json
-- [ ] docs/examples/grub
-- [ ] docs/examples/haproxy.cfg
-- [ ] docs/examples/harbor.yml
-- [ ] docs/examples/hardhat.config.js
-- [ ] docs/examples/harness-pipeline.yaml
-- [ ] docs/examples/hatch.toml
-- [ ] docs/examples/headscale-config.yaml
-- [ ] docs/examples/headscale.yaml
-- [ ] docs/examples/heartbeat.yml
-- [ ] docs/examples/helix.toml
-- [ ] docs/examples/helmfile.yaml
-- [ ] docs/examples/heroku-app.json
-- [ ] docs/examples/heroku.yml
-- [ ] docs/examples/hoarder.env
-- [ ] docs/examples/homarr.yaml
-- [ ] docs/examples/homepage-services.yaml
-- [ ] docs/examples/homer.yml
-- [ ] docs/examples/homeserver.yaml
-- [ ] docs/examples/hoppscotch.env
-- [ ] docs/examples/hosts
-- [ ] docs/examples/httpd.conf
-- [ ] docs/examples/hugo.toml
-- [ ] docs/examples/humans.txt
-- [ ] docs/examples/hydra-config.yaml
-- [ ] docs/examples/hyprland.conf
-- [ ] docs/examples/i3.config
-- [ ] docs/examples/immich.env
+- [x] docs/examples/grub
+- [x] docs/examples/haproxy.cfg
+- [x] docs/examples/harbor.yml
+- [x] docs/examples/hardhat.config.js
+- [x] docs/examples/harness-pipeline.yaml
+- [x] docs/examples/hatch.toml
+- [x] docs/examples/headscale-config.yaml
+- [x] docs/examples/headscale.yaml
+- [x] docs/examples/heartbeat.yml
+- [x] docs/examples/helix.toml
+- [x] docs/examples/helmfile.yaml
+- [x] docs/examples/heroku-app.json
+- [x] docs/examples/heroku.yml
+- [x] docs/examples/hoarder.env
+- [x] docs/examples/homarr.yaml
+- [x] docs/examples/homepage-services.yaml
+- [x] docs/examples/homer.yml
+- [x] docs/examples/homeserver.yaml
+- [x] docs/examples/hoppscotch.env
+- [x] docs/examples/hosts
+- [x] docs/examples/httpd.conf
+- [x] docs/examples/hugo.toml
+- [x] docs/examples/humans.txt
+- [x] docs/examples/hydra-config.yaml
+- [x] docs/examples/hyprland.conf
+- [x] docs/examples/i3.config
+- [x] docs/examples/immich.env
 - [ ] docs/examples/index.json
-- [ ] docs/examples/index.php
-- [ ] docs/examples/infisical.env
-- [ ] docs/examples/influxdb.conf
-- [ ] docs/examples/influxdb.yml
-- [ ] docs/examples/infra.tf
-- [ ] docs/examples/infracost.yml
-- [ ] docs/examples/init.el
-- [ ] docs/examples/init.lua
-- [ ] docs/examples/insomnia.yaml
-- [ ] docs/examples/inventory
-- [ ] docs/examples/inventory.yml
-- [ ] docs/examples/invidious-config.yml
-- [ ] docs/examples/invoiceninja.env
-- [ ] docs/examples/ionic.config.json
-- [ ] docs/examples/iptables.rules
-- [ ] docs/examples/istio-virtual-service.yaml
-- [ ] docs/examples/jaeger-config.yaml
-- [ ] docs/examples/jail.local
-- [ ] docs/examples/jellyseerr-settings.json
-- [ ] docs/examples/Jenkinsfile
-- [ ] docs/examples/jest.config.js
-- [ ] docs/examples/jest.config.json
-- [ ] docs/examples/Job.scala
-- [ ] docs/examples/joplin.env
-- [ ] docs/examples/journald.conf
-- [ ] docs/examples/jsconfig.json
-- [ ] docs/examples/justfile
-- [ ] docs/examples/Justfile
-- [ ] docs/examples/jvm.options
-- [ ] docs/examples/k6.config.js
-- [ ] docs/examples/k8s-hpa.yaml
-- [ ] docs/examples/k8s-ingress.yaml
-- [ ] docs/examples/k8s-network-policy.yaml
-- [ ] docs/examples/k8s-rbac.yaml
-- [ ] docs/examples/k8s-role.yaml
-- [ ] docs/examples/kamal.yml
-- [ ] docs/examples/kavita-appsettings.json
-- [ ] docs/examples/keda-scaledobject.yaml
-- [ ] docs/examples/keepalived.conf
-- [ ] docs/examples/keycloak-realm.json
-- [ ] docs/examples/keycloak.conf
-- [ ] docs/examples/kibana.yml
-- [ ] docs/examples/kitty.conf
-- [ ] docs/examples/knexfile.js
-- [ ] docs/examples/knip.json
-- [ ] docs/examples/known_hosts
-- [ ] docs/examples/komga.yml
-- [ ] docs/examples/kong.yaml
-- [ ] docs/examples/krb5.conf
-- [ ] docs/examples/kubeconfig
-- [ ] docs/examples/kubeconfig.yaml
-- [ ] docs/examples/kustomization.yaml
-- [ ] docs/examples/kyverno-policy.yaml
-- [ ] docs/examples/launchSettings.json
-- [ ] docs/examples/lefthook.yml
-- [ ] docs/examples/lerna.json
-- [ ] docs/examples/lfrc
-- [ ] docs/examples/libs.versions.toml
-- [ ] docs/examples/LICENSE
-- [ ] docs/examples/lighttpd.conf
-- [ ] docs/examples/limits.conf
-- [ ] docs/examples/linkding.env
-- [ ] docs/examples/linkerd-config.yaml
-- [ ] docs/examples/linkwarden.env
-- [ ] docs/examples/liquibase.properties
-- [ ] docs/examples/listmonk-config.toml
-- [ ] docs/examples/lldap_config.toml
-- [ ] docs/examples/loader.conf
-- [ ] docs/examples/Localizable.strings
-- [ ] docs/examples/log4j2.xml
-- [ ] docs/examples/logback.xml
-- [ ] docs/examples/logrotate.conf
-- [ ] docs/examples/logstash.conf
-- [ ] docs/examples/loki-config.yaml
-- [ ] docs/examples/lxc.config
-- [ ] docs/examples/main.c
-- [ ] docs/examples/main.cf
-- [ ] docs/examples/Main.java
-- [ ] docs/examples/Main.kt
-- [ ] docs/examples/main.py
-- [ ] docs/examples/main.rb
-- [ ] docs/examples/Makefile
-- [ ] docs/examples/makepkg.conf
-- [ ] docs/examples/mako
-- [ ] docs/examples/Manifest.toml
-- [ ] docs/examples/Matchfile
-- [ ] docs/examples/mattermost-config.json
-- [ ] docs/examples/maven-settings.xml
-- [ ] docs/examples/maybe.env
-- [ ] docs/examples/mealie.env
-- [ ] docs/examples/meltano.yml
-- [ ] docs/examples/memos.env
-- [ ] docs/examples/mesh.cpp
-- [ ] docs/examples/meson.build
-- [ ] docs/examples/metagame/stage10/identity_echo.jpg
-- [ ] docs/examples/metagame/stage10/nested/echoes/pattern_echo.json
-- [ ] docs/examples/metagame/stage10/syntax_echo.txt
-- [ ] docs/examples/metagame/stage2/cipher.txt
+- [x] docs/examples/index.php
+- [x] docs/examples/infisical.env
+- [x] docs/examples/influxdb.conf
+- [x] docs/examples/influxdb.yml
+- [x] docs/examples/infra.tf
+- [x] docs/examples/infracost.yml
+- [x] docs/examples/init.el
+- [x] docs/examples/init.lua
+- [x] docs/examples/insomnia.yaml
+- [x] docs/examples/inventory
+- [x] docs/examples/inventory.yml
+- [x] docs/examples/invidious-config.yml
+- [x] docs/examples/invoiceninja.env
+- [x] docs/examples/ionic.config.json
+- [x] docs/examples/iptables.rules
+- [x] docs/examples/istio-virtual-service.yaml
+- [x] docs/examples/jaeger-config.yaml
+- [x] docs/examples/jail.local
+- [x] docs/examples/jellyseerr-settings.json
+- [x] docs/examples/Jenkinsfile
+- [x] docs/examples/jest.config.js
+- [x] docs/examples/jest.config.json
+- [x] docs/examples/Job.scala
+- [x] docs/examples/joplin.env
+- [x] docs/examples/journald.conf
+- [x] docs/examples/jsconfig.json
+- [x] docs/examples/justfile
+- [x] docs/examples/Justfile
+- [x] docs/examples/jvm.options
+- [x] docs/examples/k6.config.js
+- [x] docs/examples/k8s-hpa.yaml
+- [x] docs/examples/k8s-ingress.yaml
+- [x] docs/examples/k8s-network-policy.yaml
+- [x] docs/examples/k8s-rbac.yaml
+- [x] docs/examples/k8s-role.yaml
+- [x] docs/examples/kamal.yml
+- [x] docs/examples/kavita-appsettings.json
+- [x] docs/examples/keda-scaledobject.yaml
+- [x] docs/examples/keepalived.conf
+- [x] docs/examples/keycloak-realm.json
+- [x] docs/examples/keycloak.conf
+- [x] docs/examples/kibana.yml
+- [x] docs/examples/kitty.conf
+- [x] docs/examples/knexfile.js
+- [x] docs/examples/knip.json
+- [x] docs/examples/known_hosts
+- [x] docs/examples/komga.yml
+- [x] docs/examples/kong.yaml
+- [x] docs/examples/krb5.conf
+- [x] docs/examples/kubeconfig
+- [x] docs/examples/kubeconfig.yaml
+- [x] docs/examples/kustomization.yaml
+- [x] docs/examples/kyverno-policy.yaml
+- [x] docs/examples/launchSettings.json
+- [x] docs/examples/lefthook.yml
+- [x] docs/examples/lerna.json
+- [x] docs/examples/lfrc
+- [x] docs/examples/libs.versions.toml
+- [x] docs/examples/LICENSE
+- [x] docs/examples/lighttpd.conf
+- [x] docs/examples/limits.conf
+- [x] docs/examples/linkding.env
+- [x] docs/examples/linkerd-config.yaml
+- [x] docs/examples/linkwarden.env
+- [x] docs/examples/liquibase.properties
+- [x] docs/examples/listmonk-config.toml
+- [x] docs/examples/lldap_config.toml
+- [x] docs/examples/loader.conf
+- [x] docs/examples/Localizable.strings
+- [x] docs/examples/log4j2.xml
+- [x] docs/examples/logback.xml
+- [x] docs/examples/logrotate.conf
+- [x] docs/examples/logstash.conf
+- [x] docs/examples/loki-config.yaml
+- [x] docs/examples/lxc.config
+- [x] docs/examples/main.c
+- [x] docs/examples/main.cf
+- [x] docs/examples/Main.java
+- [x] docs/examples/Main.kt
+- [x] docs/examples/main.py
+- [x] docs/examples/main.rb
+- [x] docs/examples/Makefile
+- [x] docs/examples/makepkg.conf
+- [x] docs/examples/mako
+- [x] docs/examples/Manifest.toml
+- [x] docs/examples/Matchfile
+- [x] docs/examples/mattermost-config.json
+- [x] docs/examples/maven-settings.xml
+- [x] docs/examples/maybe.env
+- [x] docs/examples/mealie.env
+- [x] docs/examples/meltano.yml
+- [x] docs/examples/memos.env
+- [x] docs/examples/mesh.cpp
+- [x] docs/examples/meson.build
+- [x] docs/examples/metagame/stage10/identity_echo.jpg
+- [x] docs/examples/metagame/stage10/nested/echoes/pattern_echo.json
+- [x] docs/examples/metagame/stage10/syntax_echo.txt
+- [x] docs/examples/metagame/stage2/cipher.txt
 - [ ] docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json
-- [ ] docs/examples/metagame/stage5/transmission_hum.mp3
-- [ ] docs/examples/metagame/stage6/protocols_of_the_entity.epub
+- [x] docs/examples/metagame/stage5/transmission_hum.mp3
+- [x] docs/examples/metagame/stage6/protocols_of_the_entity.epub
 - [ ] docs/examples/metagame/stage7/access_log.csv
 - [ ] docs/examples/metagame/stage7/audit_trail.txt
 - [ ] docs/examples/metagame/stage7/comms_transcript.txt
-- [ ] docs/examples/metagame/stage7/entity_a_verification.png
+- [x] docs/examples/metagame/stage7/entity_a_verification.png
 - [ ] docs/examples/metagame/stage7/entity_anchor_0043.txt
 - [ ] docs/examples/metagame/stage7/entity_f_verification.jpg
-- [ ] docs/examples/metagame/stage7/entity_f_verification.png
-- [ ] docs/examples/metagame/stage7/entity_metadata.json
+- [x] docs/examples/metagame/stage7/entity_f_verification.png
+- [x] docs/examples/metagame/stage7/entity_metadata.json
 - [ ] docs/examples/metagame/stage7/handshake_log.csv
 - [ ] docs/examples/metagame/stage7/quorum_spec.json
 - [ ] docs/examples/metagame/stage7/route_table.csv
 - [ ] docs/examples/metagame/stage7/session_ledger.csv
 - [ ] docs/examples/metagame/stage7/system_spec.json
-- [ ] docs/examples/metro.config.js
-- [ ] docs/examples/mimir.yaml
-- [ ] docs/examples/miniflux.conf
-- [ ] docs/examples/minio.env
-- [ ] docs/examples/mint.json
-- [ ] docs/examples/mise.toml
-- [ ] docs/examples/mix.exs
-- [ ] docs/examples/mkdocs.yml
-- [ ] docs/examples/mkinitcpio.conf
-- [ ] docs/examples/MLproject
-- [ ] docs/examples/Module.vb
-- [ ] docs/examples/molecule.yml
-- [ ] docs/examples/mongod.conf
-- [ ] docs/examples/monica.env
-- [ ] docs/examples/moon.yml
-- [ ] docs/examples/mosquitto.conf
-- [ ] docs/examples/mpd.conf
-- [ ] docs/examples/mpv.conf
-- [ ] docs/examples/my.cnf
-- [ ] docs/examples/myapp.container
-- [ ] docs/examples/myapp.service
-- [ ] docs/examples/MyApp.xcscheme
-- [ ] docs/examples/mypackage.opam
-- [ ] docs/examples/mypy.ini
-- [ ] docs/examples/n8n.env
-- [ ] docs/examples/nagios.cfg
-- [ ] docs/examples/named.conf
-- [ ] docs/examples/nats.conf
-- [ ] docs/examples/ncmpcpp.conf
-- [ ] docs/examples/nest-cli.json
-- [ ] docs/examples/netbird.json
-- [ ] docs/examples/netbox-configuration.py
-- [ ] docs/examples/netdata.conf
-- [ ] docs/examples/netlify.toml
-- [ ] docs/examples/netplan.yaml
-- [ ] docs/examples/newrelic.yml
-- [ ] docs/examples/newsboat.conf
-- [ ] docs/examples/next.config.js
-- [ ] docs/examples/nfpm.yaml
-- [ ] docs/examples/nftables.conf
-- [ ] docs/examples/nginx.conf
-- [ ] docs/examples/nix.conf
-- [ ] docs/examples/nocodb.env
-- [ ] docs/examples/nsqd.cfg
-- [ ] docs/examples/nsswitch.conf
-- [ ] docs/examples/ntfy-server.yml
-- [ ] docs/examples/nuget.config
-- [ ] docs/examples/nuxt.config.ts
-- [ ] docs/examples/nvmrc
-- [ ] docs/examples/nx.json
-- [ ] docs/examples/nzbget.conf
-- [ ] docs/examples/oauth2-proxy.cfg
-- [ ] docs/examples/odoo.conf
-- [ ] docs/examples/open-webui.env
-- [ ] docs/examples/openapi-generator-config.yaml
-- [ ] docs/examples/openapi.yaml
-- [ ] docs/examples/opencost.yaml
-- [ ] docs/examples/openrc-myapp
-- [ ] docs/examples/openssl.cnf
-- [ ] docs/examples/opentelemetry-k8s.yaml
-- [ ] docs/examples/org.example.App.yaml
-- [ ] docs/examples/osv-scanner.toml
-- [ ] docs/examples/otel-collector-config.yaml
-- [ ] docs/examples/outline.env
-- [ ] docs/examples/overseerr-settings.json
-- [ ] docs/examples/Overwriter.frag
-- [ ] docs/examples/package-lock.json
-- [ ] docs/examples/package.json
-- [ ] docs/examples/package.nuspec
-- [ ] docs/examples/Package.resolved
-- [ ] docs/examples/Package.swift
-- [ ] docs/examples/packages.config
-- [ ] docs/examples/packer.json
-- [ ] docs/examples/pacman.conf
-- [ ] docs/examples/Panel.vue
-- [ ] docs/examples/paperless.conf
-- [ ] docs/examples/patroni.yml
-- [ ] docs/examples/pdns.conf
-- [ ] docs/examples/pg_hba.conf
-- [ ] docs/examples/pgbackrest.conf
-- [ ] docs/examples/pgbouncer.ini
-- [ ] docs/examples/photoprism-options.yml
-- [ ] docs/examples/php.ini
-- [ ] docs/examples/phpstan.neon
-- [ ] docs/examples/phpunit.xml
-- [ ] docs/examples/phpunit.xml.dist
-- [ ] docs/examples/picom.conf
-- [ ] docs/examples/pihole-setupVars.conf
-- [ ] docs/examples/pip.conf
-- [ ] docs/examples/pipeline.ex
-- [ ] docs/examples/pipewire.conf
-- [ ] docs/examples/Pipfile
-- [ ] docs/examples/pixi.toml
-- [ ] docs/examples/PKGBUILD
-- [ ] docs/examples/plane.env
-- [ ] docs/examples/plausible.env
-- [ ] docs/examples/playwright.config.ts
-- [ ] docs/examples/pnpm-lock.yaml
-- [ ] docs/examples/pnpm-workspace.yaml
-- [ ] docs/examples/pocket-id.env
-- [ ] docs/examples/Podfile
-- [ ] docs/examples/Podfile.lock
-- [ ] docs/examples/poetry.lock
-- [ ] docs/examples/policy.rego
-- [ ] docs/examples/polybar.ini
-- [ ] docs/examples/pom.xml
-- [ ] docs/examples/postcss.config.json
-- [ ] docs/examples/postgresql.conf
-- [ ] docs/examples/pre-commit-config.yaml
-- [ ] docs/examples/prefect.yaml
-- [ ] docs/examples/Procfile
-- [ ] docs/examples/proftpd.conf
-- [ ] docs/examples/Program.cs
-- [ ] docs/examples/proguard-rules.pro
-- [ ] docs/examples/project.clj
-- [ ] docs/examples/Project.toml
-- [ ] docs/examples/prometheus-rules.yaml
-- [ ] docs/examples/prometheus.yml
-- [ ] docs/examples/promtail-config.yaml
-- [ ] docs/examples/provenance.json
-- [ ] docs/examples/psalm.xml
-- [ ] docs/examples/pubspec.lock
-- [ ] docs/examples/pubspec.yaml
-- [ ] docs/examples/Pulumi.yaml
-- [ ] docs/examples/puma.rb
-- [ ] docs/examples/pyproject.toml
-- [ ] docs/examples/pyrightconfig.json
-- [ ] docs/examples/pytest.ini
-- [ ] docs/examples/query.sql
-- [ ] docs/examples/rabbitmq.conf
-- [ ] docs/examples/radicale.conf
-- [ ] docs/examples/railway.json
-- [ ] docs/examples/rallly.env
-- [ ] docs/examples/ranger.conf
-- [ ] docs/examples/rclone.conf
-- [ ] docs/examples/react-native.config.js
-- [ ] docs/examples/rebar.config
-- [ ] docs/examples/rector.php
-- [ ] docs/examples/recursor.conf
-- [ ] docs/examples/redis.conf
-- [ ] docs/examples/registries.conf
-- [ ] docs/examples/release-please-config.json
-- [ ] docs/examples/Release.xcconfig
-- [ ] docs/examples/remix.config.js
-- [ ] docs/examples/render.yaml
-- [ ] docs/examples/renovate.json
-- [ ] docs/examples/report.pl
-- [ ] docs/examples/requirements.txt
-- [ ] docs/examples/requirements.yml
-- [ ] docs/examples/resolv.conf
-- [ ] docs/examples/resticprofile.toml
-- [ ] docs/examples/robots.txt
-- [ ] docs/examples/rollup.config.js
-- [ ] docs/examples/rspack.config.js
-- [ ] docs/examples/rsyslog.conf
-- [ ] docs/examples/ruff.toml
-- [ ] docs/examples/rush.json
-- [ ] docs/examples/rust-toolchain.toml
-- [ ] docs/examples/rustfmt.toml
-- [ ] docs/examples/sabnzbd.ini
-- [ ] docs/examples/sam-template.yaml
-- [ ] docs/examples/samconfig.toml
-- [ ] docs/examples/sample_old.png
-- [ ] docs/examples/sample-alloy.als
-- [ ] docs/examples/sample-k8s.yaml
-- [ ] docs/examples/sample-locked.zip
-- [ ] docs/examples/sample-pages.pdf
-- [ ] docs/examples/sample-telegram.json
-- [ ] docs/examples/sample-variants.vcf
-- [ ] docs/examples/sample-workflow.yml
-- [ ] docs/examples/sample.3mf
-- [ ] docs/examples/Sample.7z
-- [ ] docs/examples/sample.aac
-- [ ] docs/examples/sample.abc
-- [ ] docs/examples/sample.acf
-- [ ] docs/examples/sample.adoc
-- [ ] docs/examples/sample.ads
-- [ ] docs/examples/sample.agda
-- [ ] docs/examples/sample.als
-- [ ] docs/examples/sample.ans
-- [ ] docs/examples/sample.apk
-- [ ] docs/examples/sample.arrow
-- [ ] docs/examples/sample.asm
-- [ ] docs/examples/Sample.avi
-- [ ] docs/examples/sample.avif
-- [ ] docs/examples/sample.avro
-- [ ] docs/examples/sample.avsc
-- [ ] docs/examples/sample.awk
-- [ ] docs/examples/sample.bal
-- [ ] docs/examples/sample.bbc
+- [x] docs/examples/metro.config.js
+- [x] docs/examples/mimir.yaml
+- [x] docs/examples/miniflux.conf
+- [x] docs/examples/minio.env
+- [x] docs/examples/mint.json
+- [x] docs/examples/mise.toml
+- [x] docs/examples/mix.exs
+- [x] docs/examples/mkdocs.yml
+- [x] docs/examples/mkinitcpio.conf
+- [x] docs/examples/MLproject
+- [x] docs/examples/Module.vb
+- [x] docs/examples/molecule.yml
+- [x] docs/examples/mongod.conf
+- [x] docs/examples/monica.env
+- [x] docs/examples/moon.yml
+- [x] docs/examples/mosquitto.conf
+- [x] docs/examples/mpd.conf
+- [x] docs/examples/mpv.conf
+- [x] docs/examples/my.cnf
+- [x] docs/examples/myapp.container
+- [x] docs/examples/myapp.service
+- [x] docs/examples/MyApp.xcscheme
+- [x] docs/examples/mypackage.opam
+- [x] docs/examples/mypy.ini
+- [x] docs/examples/n8n.env
+- [x] docs/examples/nagios.cfg
+- [x] docs/examples/named.conf
+- [x] docs/examples/nats.conf
+- [x] docs/examples/ncmpcpp.conf
+- [x] docs/examples/nest-cli.json
+- [x] docs/examples/netbird.json
+- [x] docs/examples/netbox-configuration.py
+- [x] docs/examples/netdata.conf
+- [x] docs/examples/netlify.toml
+- [x] docs/examples/netplan.yaml
+- [x] docs/examples/newrelic.yml
+- [x] docs/examples/newsboat.conf
+- [x] docs/examples/next.config.js
+- [x] docs/examples/nfpm.yaml
+- [x] docs/examples/nftables.conf
+- [x] docs/examples/nginx.conf
+- [x] docs/examples/nix.conf
+- [x] docs/examples/nocodb.env
+- [x] docs/examples/nsqd.cfg
+- [x] docs/examples/nsswitch.conf
+- [x] docs/examples/ntfy-server.yml
+- [x] docs/examples/nuget.config
+- [x] docs/examples/nuxt.config.ts
+- [x] docs/examples/nvmrc
+- [x] docs/examples/nx.json
+- [x] docs/examples/nzbget.conf
+- [x] docs/examples/oauth2-proxy.cfg
+- [x] docs/examples/odoo.conf
+- [x] docs/examples/open-webui.env
+- [x] docs/examples/openapi-generator-config.yaml
+- [x] docs/examples/openapi.yaml
+- [x] docs/examples/opencost.yaml
+- [x] docs/examples/openrc-myapp
+- [x] docs/examples/openssl.cnf
+- [x] docs/examples/opentelemetry-k8s.yaml
+- [x] docs/examples/org.example.App.yaml
+- [x] docs/examples/osv-scanner.toml
+- [x] docs/examples/otel-collector-config.yaml
+- [x] docs/examples/outline.env
+- [x] docs/examples/overseerr-settings.json
+- [x] docs/examples/Overwriter.frag
+- [x] docs/examples/package-lock.json
+- [x] docs/examples/package.json
+- [x] docs/examples/package.nuspec
+- [x] docs/examples/Package.resolved
+- [x] docs/examples/Package.swift
+- [x] docs/examples/packages.config
+- [x] docs/examples/packer.json
+- [x] docs/examples/pacman.conf
+- [x] docs/examples/Panel.vue
+- [x] docs/examples/paperless.conf
+- [x] docs/examples/patroni.yml
+- [x] docs/examples/pdns.conf
+- [x] docs/examples/pg_hba.conf
+- [x] docs/examples/pgbackrest.conf
+- [x] docs/examples/pgbouncer.ini
+- [x] docs/examples/photoprism-options.yml
+- [x] docs/examples/php.ini
+- [x] docs/examples/phpstan.neon
+- [x] docs/examples/phpunit.xml
+- [x] docs/examples/phpunit.xml.dist
+- [x] docs/examples/picom.conf
+- [x] docs/examples/pihole-setupVars.conf
+- [x] docs/examples/pip.conf
+- [x] docs/examples/pipeline.ex
+- [x] docs/examples/pipewire.conf
+- [x] docs/examples/Pipfile
+- [x] docs/examples/pixi.toml
+- [x] docs/examples/PKGBUILD
+- [x] docs/examples/plane.env
+- [x] docs/examples/plausible.env
+- [x] docs/examples/playwright.config.ts
+- [x] docs/examples/pnpm-lock.yaml
+- [x] docs/examples/pnpm-workspace.yaml
+- [x] docs/examples/pocket-id.env
+- [x] docs/examples/Podfile
+- [x] docs/examples/Podfile.lock
+- [x] docs/examples/poetry.lock
+- [x] docs/examples/policy.rego
+- [x] docs/examples/polybar.ini
+- [x] docs/examples/pom.xml
+- [x] docs/examples/postcss.config.json
+- [x] docs/examples/postgresql.conf
+- [x] docs/examples/pre-commit-config.yaml
+- [x] docs/examples/prefect.yaml
+- [x] docs/examples/Procfile
+- [x] docs/examples/proftpd.conf
+- [x] docs/examples/Program.cs
+- [x] docs/examples/proguard-rules.pro
+- [x] docs/examples/project.clj
+- [x] docs/examples/Project.toml
+- [x] docs/examples/prometheus-rules.yaml
+- [x] docs/examples/prometheus.yml
+- [x] docs/examples/promtail-config.yaml
+- [x] docs/examples/provenance.json
+- [x] docs/examples/psalm.xml
+- [x] docs/examples/pubspec.lock
+- [x] docs/examples/pubspec.yaml
+- [x] docs/examples/Pulumi.yaml
+- [x] docs/examples/puma.rb
+- [x] docs/examples/pyproject.toml
+- [x] docs/examples/pyrightconfig.json
+- [x] docs/examples/pytest.ini
+- [x] docs/examples/query.sql
+- [x] docs/examples/rabbitmq.conf
+- [x] docs/examples/radicale.conf
+- [x] docs/examples/railway.json
+- [x] docs/examples/rallly.env
+- [x] docs/examples/ranger.conf
+- [x] docs/examples/rclone.conf
+- [x] docs/examples/react-native.config.js
+- [x] docs/examples/rebar.config
+- [x] docs/examples/rector.php
+- [x] docs/examples/recursor.conf
+- [x] docs/examples/redis.conf
+- [x] docs/examples/registries.conf
+- [x] docs/examples/release-please-config.json
+- [x] docs/examples/Release.xcconfig
+- [x] docs/examples/remix.config.js
+- [x] docs/examples/render.yaml
+- [x] docs/examples/renovate.json
+- [x] docs/examples/report.pl
+- [x] docs/examples/requirements.txt
+- [x] docs/examples/requirements.yml
+- [x] docs/examples/resolv.conf
+- [x] docs/examples/resticprofile.toml
+- [x] docs/examples/robots.txt
+- [x] docs/examples/rollup.config.js
+- [x] docs/examples/rspack.config.js
+- [x] docs/examples/rsyslog.conf
+- [x] docs/examples/ruff.toml
+- [x] docs/examples/rush.json
+- [x] docs/examples/rust-toolchain.toml
+- [x] docs/examples/rustfmt.toml
+- [x] docs/examples/sabnzbd.ini
+- [x] docs/examples/sam-template.yaml
+- [x] docs/examples/samconfig.toml
+- [x] docs/examples/sample_old.png
+- [x] docs/examples/sample-alloy.als
+- [x] docs/examples/sample-k8s.yaml
+- [x] docs/examples/sample-locked.zip
+- [x] docs/examples/sample-pages.pdf
+- [x] docs/examples/sample-telegram.json
+- [x] docs/examples/sample-variants.vcf
+- [x] docs/examples/sample-workflow.yml
+- [x] docs/examples/sample.3mf
+- [x] docs/examples/Sample.7z
+- [x] docs/examples/sample.aac
+- [x] docs/examples/sample.abc
+- [x] docs/examples/sample.acf
+- [x] docs/examples/sample.adoc
+- [x] docs/examples/sample.ads
+- [x] docs/examples/sample.agda
+- [x] docs/examples/sample.als
+- [x] docs/examples/sample.ans
+- [x] docs/examples/sample.apk
+- [x] docs/examples/sample.arrow
+- [x] docs/examples/sample.asm
+- [x] docs/examples/Sample.avi
+- [x] docs/examples/sample.avif
+- [x] docs/examples/sample.avro
+- [x] docs/examples/sample.avsc
+- [x] docs/examples/sample.awk
+- [x] docs/examples/sample.bal
+- [x] docs/examples/sample.bbc
 - [ ] docs/examples/sample.bbcode
-- [ ] docs/examples/sample.bicep
-- [ ] docs/examples/sample.bin
-- [ ] docs/examples/sample.blend
-- [ ] docs/examples/sample.bmp
-- [ ] docs/examples/sample.bson
-- [ ] docs/examples/sample.bsp
-- [ ] docs/examples/sample.capnp
-- [ ] docs/examples/sample.carbon
-- [ ] docs/examples/sample.cbor
-- [ ] docs/examples/sample.cbz
-- [ ] docs/examples/sample.chpl
-- [ ] docs/examples/sample.cif
-- [ ] docs/examples/sample.class
-- [ ] docs/examples/sample.clip
-- [ ] docs/examples/sample.clj
-- [ ] docs/examples/sample.cob
-- [ ] docs/examples/sample.coffee
-- [ ] docs/examples/sample.coq
-- [ ] docs/examples/sample.cr
-- [ ] docs/examples/sample.crash
-- [ ] docs/examples/sample.csv
-- [ ] docs/examples/sample.cue
-- [ ] docs/examples/sample.d
-- [ ] docs/examples/sample.dart
-- [ ] docs/examples/sample.dbf
-- [ ] docs/examples/sample.dcm
-- [ ] docs/examples/sample.deb
-- [ ] docs/examples/sample.desktop
-- [ ] docs/examples/sample.dfy
-- [ ] docs/examples/sample.dhall
-- [ ] docs/examples/sample.djvu
-- [ ] docs/examples/sample.dmp
-- [ ] docs/examples/sample.do
-- [ ] docs/examples/sample.docx
-- [ ] docs/examples/sample.dot
-- [ ] docs/examples/sample.dwg
-- [ ] docs/examples/sample.dxf
-- [ ] docs/examples/sample.e
-- [ ] docs/examples/sample.ejs
-- [ ] docs/examples/sample.el
-- [ ] docs/examples/sample.elf
-- [ ] docs/examples/sample.elm
-- [ ] docs/examples/sample.elv
-- [ ] docs/examples/sample.eml
-- [ ] docs/examples/sample.env
-- [ ] docs/examples/sample.eps
-- [ ] docs/examples/sample.epub
-- [ ] docs/examples/sample.erl
-- [ ] docs/examples/sample.ex
+- [x] docs/examples/sample.bicep
+- [x] docs/examples/sample.bin
+- [x] docs/examples/sample.blend
+- [x] docs/examples/sample.bmp
+- [x] docs/examples/sample.bson
+- [x] docs/examples/sample.bsp
+- [x] docs/examples/sample.capnp
+- [x] docs/examples/sample.carbon
+- [x] docs/examples/sample.cbor
+- [x] docs/examples/sample.cbz
+- [x] docs/examples/sample.chpl
+- [x] docs/examples/sample.cif
+- [x] docs/examples/sample.class
+- [x] docs/examples/sample.clip
+- [x] docs/examples/sample.clj
+- [x] docs/examples/sample.cob
+- [x] docs/examples/sample.coffee
+- [x] docs/examples/sample.coq
+- [x] docs/examples/sample.cr
+- [x] docs/examples/sample.crash
+- [x] docs/examples/sample.csv
+- [x] docs/examples/sample.cue
+- [x] docs/examples/sample.d
+- [x] docs/examples/sample.dart
+- [x] docs/examples/sample.dbf
+- [x] docs/examples/sample.dcm
+- [x] docs/examples/sample.deb
+- [x] docs/examples/sample.desktop
+- [x] docs/examples/sample.dfy
+- [x] docs/examples/sample.dhall
+- [x] docs/examples/sample.djvu
+- [x] docs/examples/sample.dmp
+- [x] docs/examples/sample.do
+- [x] docs/examples/sample.docx
+- [x] docs/examples/sample.dot
+- [x] docs/examples/sample.dwg
+- [x] docs/examples/sample.dxf
+- [x] docs/examples/sample.e
+- [x] docs/examples/sample.ejs
+- [x] docs/examples/sample.el
+- [x] docs/examples/sample.elf
+- [x] docs/examples/sample.elm
+- [x] docs/examples/sample.elv
+- [x] docs/examples/sample.eml
+- [x] docs/examples/sample.env
+- [x] docs/examples/sample.eps
+- [x] docs/examples/sample.epub
+- [x] docs/examples/sample.erl
+- [x] docs/examples/sample.ex
 - [ ] docs/examples/sample.exr
 - [ ] docs/examples/sample.f3d
 - [ ] docs/examples/sample.f90
@@ -6847,356 +6845,354 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] graylog.conf | graylog.conf | Monitoring, Config
 - [x] grist.env | Grist Config | Config, Self-hosted
 - [x] growthbook.json | growthbook.json | Config
-- [ ] grub | grub (/etc/default/grub) | Config, System
-- [ ] haproxy.cfg | haproxy.cfg | Config
-- [ ] harbor.yml | Harbor Config | Config, Self-hosted, DevOps
-- [ ] hardhat.config.js | hardhat.config.js (Hardhat) | Config, Blockchain
-- [ ] harness-pipeline.yaml | Harness Pipeline | Config, devops
-- [ ] hatch.toml | hatch.toml | Config
-- [ ] headscale-config.yaml | headscale-config.yaml (Headscale) | Config, networking
-- [ ] headscale.yaml | Headscale Config | Config, Self-hosted, Networking
-- [ ] heartbeat.yml | heartbeat.yml (Heartbeat) | Config, Monitoring, Observability
-- [ ] heartbeat.yml | heartbeat.yml | uncategorized
-- [ ] helix.toml | helix.toml | Config
-- [ ] helmfile.yaml | helmfile.yaml | Infrastructure, Kubernetes, Helm
-- [ ] heroku-app.json | heroku-app.json | Config, Deploy
-- [ ] heroku.yml | heroku.yml | Config
-- [ ] hoarder.env | Hoarder / Karakeep config | Productivity, Bookmarks, Self-Hosted
-- [ ] homarr.yaml | Homarr dashboard config | Dashboard, Self-Hosted, YAML
-- [ ] homepage-services.yaml | Homepage services config | Dashboard, Self-Hosted, YAML
-- [ ] homer.yml | homer.yml | Config, Self-hosted
-- [ ] homeserver.yaml | homeserver.yaml (Synapse) | Config, Messaging
-- [ ] hoppscotch.env | hoppscotch.env | Config, Application, API
-- [ ] hosts | hosts | Config, Network
-- [ ] httpd.conf | httpd.conf (Apache HTTP Server) | Config, Web Server
-- [ ] hugo.toml | hugo.toml | Config, Hugo
-- [ ] humans.txt | humans.txt (demo) | Config
-- [ ] humans.txt | humans.txt (demo) | Config
-- [ ] hydra-config.yaml | hydra-config.yaml (Hydra Config) | Config, Data Science
-- [ ] hyprland.conf | hyprland.conf (Hyprland Wayland compositor) | Config, Desktop
-- [ ] i3.config | i3.config (i3 WM) | Config, Desktop
-- [ ] immich.env | immich.env | Config, Application
-- [ ] index.php | index.php | Code
-- [ ] infisical.env | infisical.env | Config, Application, Security
-- [ ] influxdb.conf | influxdb.conf | Config
-- [ ] influxdb.conf | influxdb.conf | uncategorized
-- [ ] influxdb.yml | InfluxDB Config | Config, Monitoring
-- [ ] infra.tf | infra.tf | Code, Config
-- [ ] infracost.yml | infracost.yml | Config
-- [ ] init.el | init.el (Emacs) | Config
-- [ ] init.lua | init.lua (Neovim) | Config
-- [ ] insomnia.yaml | insomnia.yaml | Config
-- [ ] insomnia.yaml | insomnia.yaml | uncategorized
-- [ ] inventory | inventory (Ansible Inventory) | Config, Ansible
-- [ ] inventory.yml | inventory.yml | Config
-- [ ] invidious-config.yml | Invidious Config | Config, Self-hosted
-- [ ] invoiceninja.env | Invoice Ninja Config | Config, Self-hosted
-- [ ] ionic.config.json | ionic.config.json | Config
-- [ ] iptables.rules | iptables.rules (Firewall Rules) | Config, Network
-- [ ] istio-virtual-service.yaml | istio-virtual-service.yaml (Istio) | Config
-- [ ] jaeger-config.yaml | jaeger-config.yaml | Config
-- [ ] jail.local | jail.local (Fail2ban) | Config, Security
-- [ ] jellyseerr-settings.json | Jellyseerr config | Media, Requests, Self-Hosted
-- [ ] Jenkinsfile | Jenkinsfile | Config
-- [ ] jest.config.js | jest.config.js | Config
-- [ ] jest.config.json | jest.config.json | Config
-- [ ] Job.scala | Job.scala | Code
-- [ ] joplin.env | Joplin Server config | Productivity, Notes, Self-Hosted
-- [ ] journald.conf | journald.conf (journald) | Config
-- [ ] jsconfig.json | jsconfig.json | Config
-- [ ] justfile | Justfile | Config
-- [ ] Justfile | Justfile | Config
-- [ ] jvm.options | jvm.options | Config
-- [ ] k6.config.js | k6.config.js | Config
-- [ ] k8s-hpa.yaml | k8s-hpa.yaml (HPA) | Config
-- [ ] k8s-ingress.yaml | k8s-ingress.yaml | Config
-- [ ] k8s-network-policy.yaml | k8s-network-policy.yaml | Config
-- [ ] k8s-rbac.yaml | k8s-rbac.yaml (Kubernetes RBAC) | Config
-- [ ] k8s-role.yaml | k8s-role.yaml | Config
-- [ ] kamal.yml | kamal.yml | DevOps, Config
-- [ ] kavita-appsettings.json | Kavita config | Media, Books, Self-Hosted
-- [ ] keda-scaledobject.yaml | keda-scaledobject.yaml (KEDA) | Config
-- [ ] keepalived.conf | keepalived.conf (Keepalived VRRP) | Config, Network
-- [ ] keycloak-realm.json | keycloak-realm.json (Keycloak Realm) | Config, Security
-- [ ] keycloak.conf | Keycloak Config | Config, Security
-- [ ] kibana.yml | kibana.yml | Config
-- [ ] kibana.yml | kibana.yml | uncategorized
-- [ ] kitty.conf | kitty.conf | Config, Terminal
-- [ ] knexfile.js | knexfile.js | Config
-- [ ] knip.json | knip.json | Config
-- [ ] known_hosts | known_hosts (SSH) | Config
-- [ ] komga.yml | komga.yml | Config, Application, Media, Comics
-- [ ] kong.yaml | kong.yaml | Config
-- [ ] krb5.conf | krb5.conf (Kerberos) | Config, Security
-- [ ] kubeconfig.yaml | kubeconfig.yaml | Config
-- [ ] kustomization.yaml | kustomization.yaml (Kustomize) | DevOps, Config
-- [ ] kyverno-policy.yaml | kyverno-policy.yaml | Config
-- [ ] launchSettings.json | launchSettings.json (ASP.NET) | Config
-- [ ] lefthook.yml | lefthook.yml | Config
-- [ ] lerna.json | lerna.json | Config
-- [ ] lfrc | lfrc | Config
-- [ ] libs.versions.toml | libs.versions.toml (Gradle Version Catalog) | Config
-- [ ] LICENSE | LICENSE | Documents
-- [ ] lighttpd.conf | lighttpd.conf (Lighttpd Web Server) | Config, Network
-- [ ] limits.conf | limits.conf (PAM Limits) | Config
-- [ ] linkding.env | linkding.env | Config, Application
-- [ ] linkerd-config.yaml | linkerd-config.yaml (Linkerd) | Config
-- [ ] linkwarden.env | Linkwarden config | Productivity, Bookmarks, Self-Hosted
-- [ ] liquibase.properties | liquibase.properties | Config, Database
-- [ ] listmonk-config.toml | listmonk-config.toml | Config, Application, Email
-- [ ] lldap_config.toml | lldap_config.toml | Config, Security, Identity, LDAP
-- [ ] loader.conf | loader.conf | Config
-- [ ] Localizable.strings | Localizable.strings | Config
-- [ ] log4j2.xml | log4j2.xml | Config
-- [ ] logback.xml | logback.xml | Config
-- [ ] logrotate.conf | logrotate.conf (Log Rotation) | Config, System
-- [ ] logstash.conf | logstash.conf | Config
-- [ ] loki-config.yaml | loki-config.yaml | Config
-- [ ] lxc.config | lxc.config (LXC container) | Config, Container
-- [ ] main.c | main.c | Code
-- [ ] main.cf | main.cf (Postfix Mail Server) | Config, Mail
-- [ ] Main.java | Main.java | Code
-- [ ] Main.kt | Main.kt | Code
-- [ ] main.py | main.py | Code
-- [ ] main.rb | main.rb | Code
-- [ ] Makefile | Makefile | Code
-- [ ] makepkg.conf | makepkg.conf (makepkg Config) | Config, Arch Linux
-- [ ] mako | mako (mako notification daemon) | Config, Desktop
-- [ ] Manifest.toml | Manifest.toml (Julia Manifest) | Config
-- [ ] Manifest.toml | Manifest.toml | Config
-- [ ] Matchfile | Matchfile (Fastlane Match) | Config
-- [ ] mattermost-config.json | mattermost-config.json | Config, Application
-- [ ] maven-settings.xml | maven-settings.xml | Config
-- [ ] maybe.env | Maybe Config | Config, Self-hosted
-- [ ] mealie.env | mealie.env | Config, Application
-- [ ] meltano.yml | meltano.yml | Data, Config
-- [ ] memos.env | Memos config | Productivity, Notes, Self-Hosted
-- [ ] mesh.cpp | mesh.cpp | Code
-- [ ] meson.build | meson.build | Code
-- [ ] metagame/stage10/identity_echo.jpg | Awakening identity_echo.jpg | Metagame
-- [ ] metagame/stage10/nested/echoes/pattern_echo.json | Awakening pattern_echo.json | Metagame
-- [ ] metagame/stage10/syntax_echo.txt | Awakening syntax_echo.txt | Metagame
-- [ ] metagame/stage2/cipher.txt | Glyph Dungeon cipher.txt | Metagame
-- [ ] metagame/stage5/transmission_hum.mp3 | Signal Racer transmission_hum.mp3 | Metagame
-- [ ] metagame/stage6/protocols_of_the_entity.epub | Protocol Codex protocols_of_the_entity.epub | Metagame
-- [ ] metagame/stage7/entity_a_verification.png | Identity Arbiter Entity A image | Metagame
-- [ ] metagame/stage7/entity_f_verification.png | Identity Arbiter Entity F image | Metagame
-- [ ] metagame/stage7/entity_metadata.json | Identity Arbiter metadata sidecar | Metagame
-- [ ] metro.config.js | metro.config.js | Config
-- [ ] mimir.yaml | mimir.yaml | Config
-- [ ] miniflux.conf | miniflux.conf | Config, Application
-- [ ] minio.env | minio.env | Config, Self-hosted
-- [ ] mint.json | mint.json | Config
-- [ ] mint.json | mint.json | uncategorized
-- [ ] mise.toml | mise.toml | Config
-- [ ] mix.exs | mix.exs | Code
-- [ ] mkdocs.yml | mkdocs.yml | Config
-- [ ] mkinitcpio.conf | mkinitcpio.conf (mkinitcpio) | Config
-- [ ] MLproject | MLproject (MLflow Project) | Config, Data Science
-- [ ] Module.vb | Module.vb | Code
-- [ ] molecule.yml | molecule.yml | Config, Ansible, Testing
-- [ ] mongod.conf | mongod.conf | Config
-- [ ] monica.env | monica.env | Config, Application
-- [ ] moon.yml | moon.yml | Config
-- [ ] mosquitto.conf | mosquitto.conf | Config, Networking
-- [ ] mpd.conf | mpd.conf | Config, Audio
-- [ ] mpv.conf | mpv.conf | Config
-- [ ] my.cnf | my.cnf (MySQL) | Config
-- [ ] myapp.container | myapp.container (Podman Quadlet) | Config
-- [ ] myapp.service | myapp.service (systemd Service) | Config, System
-- [ ] MyApp.xcscheme | MyApp.xcscheme (Xcode Scheme) | Config, mobile
-- [ ] mypackage.opam | mypackage.opam | Code, OCaml
-- [ ] mypy.ini | mypy config | Config
-- [ ] n8n.env | n8n.env | Config, Application, Automation
-- [ ] nagios.cfg | nagios.cfg | Monitoring, Config
-- [ ] named.conf | named.conf (BIND DNS) | Config, Network
-- [ ] nats.conf | nats.conf | Config
-- [ ] ncmpcpp.conf | ncmpcpp.conf | Config, Music
-- [ ] nest-cli.json | nest-cli.json | Config
-- [ ] netbird.json | netbird.json | Networking, Config
-- [ ] netbox-configuration.py | netbox-configuration.py | Config, Application, Network
-- [ ] netdata.conf | netdata.conf (Netdata) | Monitoring, Infrastructure, Self-Hosted
-- [ ] netlify.toml | Netlify config (netlify.toml demo) | Config, devops
-- [ ] netplan.yaml | netplan.yaml | Config
-- [ ] newrelic.yml | newrelic.yml (New Relic Agent) | Config, Monitoring
-- [ ] newsboat.conf | newsboat.conf | Config
-- [ ] next.config.js | next.config.js | Config
-- [ ] nfpm.yaml | nfpm.yaml (nfpm) | Config
-- [ ] nftables.conf | nftables.conf (nftables Firewall Rules) | Config, Network
-- [ ] nginx.conf | nginx.conf | Config
-- [ ] nix.conf | nix.conf | Config
-- [ ] nix.conf | nix.conf | uncategorized
-- [ ] nocodb.env | nocodb.env | Config, Application, Database
-- [ ] nsqd.cfg | nsqd.cfg | Config
-- [ ] nsqd.cfg | nsqd.cfg | uncategorized
-- [ ] nsswitch.conf | nsswitch.conf (NSSwitch) | Config
-- [ ] ntfy-server.yml | ntfy-server.yml (ntfy) | Config, Application, Notifications
-- [ ] nuget.config | nuget.config | Config
-- [ ] nuxt.config.ts | nuxt.config.ts | Config
-- [ ] nvmrc | .nvmrc | Config
-- [ ] nx.json | nx.json | Config
-- [ ] nzbget.conf | NZBGet config | Download, Usenet, Self-Hosted
-- [ ] oauth2-proxy.cfg | oauth2-proxy.cfg (OAuth2 Proxy) | Config, Security
-- [ ] odoo.conf | odoo.conf | Config, Application
-- [ ] open-webui.env | Open WebUI Config | Config, AI, Self-hosted
-- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | Config
-- [ ] openapi-generator-config.yaml | openapi-generator-config.yaml | uncategorized
-- [ ] openapi.yaml | openapi.yaml | Config
-- [ ] opencost.yaml | opencost.yaml | Config
-- [ ] openrc-myapp | openrc-myapp (OpenRC) | Config
-- [ ] openssl.cnf | openssl.cnf | Config, Security
-- [ ] opentelemetry-k8s.yaml | opentelemetry-k8s.yaml (OTel Operator) | Config
-- [ ] org.example.App.yaml | org.example.App.yaml (Flatpak Manifest) | Config
-- [ ] osv-scanner.toml | osv-scanner.toml | Config
-- [ ] otel-collector-config.yaml | otel-collector-config.yaml | Config
-- [ ] outline.env | outline.env | Config, Application
-- [ ] overseerr-settings.json | Overseerr config | Media, Requests, Self-Hosted
-- [ ] Overwriter.frag | Overwriter.frag | Code
-- [ ] package-lock.json | package-lock.json | Config
-- [ ] package.json | package.json | Config
-- [ ] package.nuspec | package.nuspec | Config
-- [ ] Package.resolved | Package.resolved | Config
-- [ ] Package.swift | Package.swift | Code
-- [ ] packages.config | packages.config (NuGet) | Config
-- [ ] packer.json | packer.json (HashiCorp Packer) | DevOps, Config
-- [ ] pacman.conf | pacman.conf | Config
-- [ ] Panel.vue | Panel.vue | Code
-- [ ] paperless.conf | paperless.conf | Config, Application
-- [ ] patroni.yml | patroni.yml | Config, Database
-- [ ] pdns.conf | pdns.conf | Config
-- [ ] pdns.conf | pdns.conf | uncategorized
-- [ ] pg_hba.conf | pg_hba.conf | Config, Database
-- [ ] pgbackrest.conf | pgbackrest.conf | Config, Database
-- [ ] pgbouncer.ini | pgbouncer.ini | Config
-- [ ] photoprism-options.yml | photoprism-options.yml | Config, Application
-- [ ] php.ini | php.ini | Config
-- [ ] phpstan.neon | phpstan.neon | Config
-- [ ] phpunit.xml | phpunit.xml | Config
-- [ ] phpunit.xml.dist | phpunit.xml.dist (PHPUnit Config) | Config
-- [ ] picom.conf | picom.conf | Config
-- [ ] pihole-setupVars.conf | setupVars.conf (Pi-hole) | Networking, Config
-- [ ] pip.conf | pip.conf | Config
-- [ ] pipeline.ex | pipeline.ex | Code
-- [ ] pipewire.conf | pipewire.conf | Config
-- [ ] Pipfile | Pipfile | Config
-- [ ] pixi.toml | pixi.toml | Config
-- [ ] PKGBUILD | PKGBUILD (Arch Linux) | Config
-- [ ] plane.env | plane.env | Config, Application, Project Management
-- [ ] plausible.env | plausible.env | Config, Application, Analytics
-- [ ] playwright.config.ts | playwright.config.ts | Config
-- [ ] pnpm-lock.yaml | pnpm-lock.yaml | Config
-- [ ] pnpm-workspace.yaml | pnpm-workspace.yaml | Config
-- [ ] pocket-id.env | Pocket ID config | Authentication, Identity, Self-Hosted
-- [ ] Podfile | Podfile | Config
-- [ ] Podfile.lock | Podfile.lock (CocoaPods) | Config, mobile
-- [ ] poetry.lock | poetry.lock | Config
-- [ ] policy.rego | policy.rego | Config
-- [ ] polybar.ini | polybar.ini (Polybar status bar) | Config, Desktop
-- [ ] pom.xml | pom.xml (Maven POM) | Config, Java
-- [ ] postcss.config.json | postcss.config.json | Config
-- [ ] postgresql.conf | postgresql.conf | Config
-- [ ] pre-commit-config.yaml | .pre-commit-config.yaml | Config
-- [ ] pre-commit-config.yaml | pre-commit config | Config
-- [ ] prefect.yaml | prefect.yaml | DevOps, Config
-- [ ] Procfile | Procfile | Config, DevOps
-- [ ] proftpd.conf | proftpd.conf | Config
-- [ ] proftpd.conf | proftpd.conf | uncategorized
-- [ ] Program.cs | Program.cs | Code
-- [ ] proguard-rules.pro | proguard-rules.pro (ProGuard Rules) | Config
-- [ ] project.clj | project.clj | Config
-- [ ] Project.toml | Project.toml | Config
-- [ ] prometheus-rules.yaml | prometheus-rules.yaml | Config
-- [ ] prometheus.yml | prometheus.yml | Config
-- [ ] promtail-config.yaml | promtail-config.yaml | Config
-- [ ] provenance.json | provenance.json (SLSA Provenance) | Security
-- [ ] psalm.xml | psalm.xml | Config
-- [ ] pubspec.lock | pubspec.lock (demo) | Config, mobile
-- [ ] pubspec.yaml | Flutter pubspec.yaml (demo) | Config, mobile
-- [ ] Pulumi.yaml | Pulumi.yaml (Pulumi project) | DevOps, Config
-- [ ] puma.rb | puma.rb (Puma) | Config
-- [ ] pyproject.toml | pyproject.toml | Config
-- [ ] pyrightconfig.json | Pyright config | Config
-- [ ] pytest.ini | pytest.ini (pytest Config) | Config, Python
-- [ ] query.sql | query.sql | Code, Data
-- [ ] rabbitmq.conf | rabbitmq.conf | Config
-- [ ] radicale.conf | radicale.conf | Config, Application
-- [ ] railway.json | railway.json | Config
-- [ ] rallly.env | Rallly Config | Config, Self-hosted
-- [ ] ranger.conf | ranger.conf | Config
-- [ ] rclone.conf | rclone.conf | Config
-- [ ] react-native.config.js | react-native.config.js | Config
-- [ ] rebar.config | rebar.config | Config
-- [ ] rector.php | rector.php (Rector Config) | Config
-- [ ] recursor.conf | recursor.conf | Config
-- [ ] recursor.conf | recursor.conf | uncategorized
-- [ ] redis.conf | redis.conf | Config
-- [ ] registries.conf | registries.conf | Config
-- [ ] registries.conf | registries.conf | uncategorized
-- [ ] release-please-config.json | release-please-config.json | Config
-- [ ] Release.xcconfig | Release.xcconfig | Config
-- [ ] remix.config.js | remix.config.js | Config
-- [ ] render.yaml | render.yaml | Config
-- [ ] renovate.json | renovate.json | Config
-- [ ] report.pl | report.pl | Code
-- [ ] requirements.txt | requirements.txt | Config
-- [ ] requirements.yml | requirements.yml | Config
-- [ ] resolv.conf | resolv.conf | Config, Network
-- [ ] resticprofile.toml | resticprofile.toml | Config
-- [ ] robots.txt | robots.txt (demo) | Config
-- [ ] robots.txt | robots.txt (demo) | Config
-- [ ] rollup.config.js | rollup.config.js | Config
-- [ ] rspack.config.js | rspack.config.js | Config
-- [ ] rsyslog.conf | rsyslog.conf (rsyslog) | Config, System
-- [ ] ruff.toml | ruff.toml (Ruff linter) | Config
-- [ ] rush.json | rush.json | Config
-- [ ] rust-toolchain.toml | rust-toolchain.toml | Config
-- [ ] rustfmt.toml | rustfmt.toml (rustfmt) | Config
-- [ ] sabnzbd.ini | SABnzbd config | Download, Usenet, Self-Hosted
-- [ ] sam-template.yaml | sam-template.yaml (AWS SAM) | Config
-- [ ] samconfig.toml | samconfig.toml (SAM Config) | Config
-- [ ] sample-alloy.als | sample-alloy.als (Alloy) | Code
-- [ ] sample-k8s.yaml | Kubernetes Deployment manifest (demo) | Config, devops
-- [ ] sample-workflow.yml | GitHub Actions CI workflow (demo) | Code, devops
-- [ ] sample.aac | Sample.aac | Media
-- [ ] sample.adoc | sample.adoc (AsciiDoc) | Docs, Documentation
-- [ ] sample.ads | sample.ads | Systems, Programming
-- [ ] sample.agda | sample.agda (Agda) | Code
-- [ ] sample.asm | sample.asm | Systems, Programming
-- [ ] sample.avif | Sample.avif | Image, Media
-- [ ] sample.avsc | Avro Schema (demo) | Data
-- [ ] sample.awk | sample.awk (AWK) | Code
-- [ ] sample.bal | sample.bal (Ballerina) | Code
-- [ ] sample.bbc | sample.bbc (BBCode) | Document
-- [ ] sample.bicep | sample.bicep (Azure Bicep) | Config, Infrastructure
-- [ ] sample.bmp | Sample.bmp | Image, Media
-- [ ] sample.capnp | sample.capnp (Cap'n Proto) | Schema, Serialization
-- [ ] sample.carbon | sample.carbon (Carbon) | Code
-- [ ] sample.chpl | sample.chpl (Chapel) | Code
-- [ ] sample.clj | sample.clj | Functional, Lisp
-- [ ] sample.cob | sample.cob | Legacy, Programming
-- [ ] sample.coffee | sample.coffee (CoffeeScript) | Code
-- [ ] sample.coq | sample.coq (Coq) | Code
-- [ ] sample.cr | sample.cr | Systems, Programming
-- [ ] sample.crash | sample.crash | Code
-- [ ] sample.cue | CUE schema (demo) | Config
-- [ ] sample.cue | sample.cue | Config
-- [ ] sample.d | sample.d | Systems, Programming
-- [ ] sample.dart | sample.dart | Mobile, Programming
-- [ ] sample.desktop | sample.desktop (Desktop Entry) | Config
-- [ ] sample.dfy | sample.dfy (Dafny) | Code
-- [ ] sample.dhall | sample.dhall (Dhall) | Config, Functional
-- [ ] sample.djvu | Sample.djvu | Documents, Ebook
-- [ ] sample.do | sample.do (Stata) | Code
-- [ ] sample.dot | sample.dot | Diagram, Visualization
-- [ ] sample.e | sample.e (Eiffel) | Code
-- [ ] sample.ejs | sample.ejs (EJS Template) | Code
-- [ ] sample.el | sample.el (Emacs Lisp) | Code
-- [ ] sample.elm | sample.elm | Functional, Frontend
-- [ ] sample.elv | sample.elv (Elvish) | Code
-- [ ] sample.env | sample.env (environment variables) | Secrets, Config
-- [ ] sample.epub | Sample.epub | Documents, Ebook
-- [ ] sample.erl | sample.erl | Functional, Programming
-- [ ] sample.ex | sample.ex (Elixir) | Code
+- [x] grub | grub (/etc/default/grub) | Config, System
+- [x] haproxy.cfg | haproxy.cfg | Config
+- [x] harbor.yml | Harbor Config | Config, Self-hosted, DevOps
+- [x] hardhat.config.js | hardhat.config.js (Hardhat) | Config, Blockchain
+- [x] harness-pipeline.yaml | Harness Pipeline | Config, devops
+- [x] hatch.toml | hatch.toml | Config
+- [x] headscale-config.yaml | headscale-config.yaml (Headscale) | Config, networking
+- [x] headscale.yaml | Headscale Config | Config, Self-hosted, Networking
+- [x] heartbeat.yml | heartbeat.yml (Heartbeat) | Config, Monitoring, Observability
+- [x] heartbeat.yml | heartbeat.yml | uncategorized
+- [x] helix.toml | helix.toml | Config
+- [x] helmfile.yaml | helmfile.yaml | Infrastructure, Kubernetes, Helm
+- [x] heroku-app.json | heroku-app.json | Config, Deploy
+- [x] heroku.yml | heroku.yml | Config
+- [x] hoarder.env | Hoarder / Karakeep config | Productivity, Bookmarks, Self-Hosted
+- [x] homarr.yaml | Homarr dashboard config | Dashboard, Self-Hosted, YAML
+- [x] homepage-services.yaml | Homepage services config | Dashboard, Self-Hosted, YAML
+- [x] homer.yml | homer.yml | Config, Self-hosted
+- [x] homeserver.yaml | homeserver.yaml (Synapse) | Config, Messaging
+- [x] hoppscotch.env | hoppscotch.env | Config, Application, API
+- [x] hosts | hosts | Config, Network
+- [x] httpd.conf | httpd.conf (Apache HTTP Server) | Config, Web Server
+- [x] hugo.toml | hugo.toml | Config, Hugo
+- [x] humans.txt | humans.txt (demo) | Config
+- [x] hydra-config.yaml | hydra-config.yaml (Hydra Config) | Config, Data Science
+- [x] hyprland.conf | hyprland.conf (Hyprland Wayland compositor) | Config, Desktop
+- [x] i3.config | i3.config (i3 WM) | Config, Desktop
+- [x] immich.env | immich.env | Config, Application
+- [x] index.php | index.php | Code
+- [x] infisical.env | infisical.env | Config, Application, Security
+- [x] influxdb.conf | influxdb.conf | Config
+- [x] influxdb.conf | influxdb.conf | uncategorized
+- [x] influxdb.yml | InfluxDB Config | Config, Monitoring
+- [x] infra.tf | infra.tf | Code, Config
+- [x] infracost.yml | infracost.yml | Config
+- [x] init.el | init.el (Emacs) | Config
+- [x] init.lua | init.lua (Neovim) | Config
+- [x] insomnia.yaml | insomnia.yaml | Config
+- [x] insomnia.yaml | insomnia.yaml | uncategorized
+- [x] inventory | inventory (Ansible Inventory) | Config, Ansible
+- [x] inventory.yml | inventory.yml | Config
+- [x] invidious-config.yml | Invidious Config | Config, Self-hosted
+- [x] invoiceninja.env | Invoice Ninja Config | Config, Self-hosted
+- [x] ionic.config.json | ionic.config.json | Config
+- [x] iptables.rules | iptables.rules (Firewall Rules) | Config, Network
+- [x] istio-virtual-service.yaml | istio-virtual-service.yaml (Istio) | Config
+- [x] jaeger-config.yaml | jaeger-config.yaml | Config
+- [x] jail.local | jail.local (Fail2ban) | Config, Security
+- [x] jellyseerr-settings.json | Jellyseerr config | Media, Requests, Self-Hosted
+- [x] Jenkinsfile | Jenkinsfile | Config
+- [x] jest.config.js | jest.config.js | Config
+- [x] jest.config.json | jest.config.json | Config
+- [x] Job.scala | Job.scala | Code
+- [x] joplin.env | Joplin Server config | Productivity, Notes, Self-Hosted
+- [x] journald.conf | journald.conf (journald) | Config
+- [x] jsconfig.json | jsconfig.json | Config
+- [x] justfile | Justfile | Config
+- [x] Justfile | Justfile | Config
+- [x] jvm.options | jvm.options | Config
+- [x] k6.config.js | k6.config.js | Config
+- [x] k8s-hpa.yaml | k8s-hpa.yaml (HPA) | Config
+- [x] k8s-ingress.yaml | k8s-ingress.yaml | Config
+- [x] k8s-network-policy.yaml | k8s-network-policy.yaml | Config
+- [x] k8s-rbac.yaml | k8s-rbac.yaml (Kubernetes RBAC) | Config
+- [x] k8s-role.yaml | k8s-role.yaml | Config
+- [x] kamal.yml | kamal.yml | DevOps, Config
+- [x] kavita-appsettings.json | Kavita config | Media, Books, Self-Hosted
+- [x] keda-scaledobject.yaml | keda-scaledobject.yaml (KEDA) | Config
+- [x] keepalived.conf | keepalived.conf (Keepalived VRRP) | Config, Network
+- [x] keycloak-realm.json | keycloak-realm.json (Keycloak Realm) | Config, Security
+- [x] keycloak.conf | Keycloak Config | Config, Security
+- [x] kibana.yml | kibana.yml | Config
+- [x] kibana.yml | kibana.yml | uncategorized
+- [x] kitty.conf | kitty.conf | Config, Terminal
+- [x] knexfile.js | knexfile.js | Config
+- [x] knip.json | knip.json | Config
+- [x] known_hosts | known_hosts (SSH) | Config
+- [x] komga.yml | komga.yml | Config, Application, Media, Comics
+- [x] kong.yaml | kong.yaml | Config
+- [x] krb5.conf | krb5.conf (Kerberos) | Config, Security
+- [x] kubeconfig.yaml | kubeconfig.yaml | Config
+- [x] kustomization.yaml | kustomization.yaml (Kustomize) | DevOps, Config
+- [x] kyverno-policy.yaml | kyverno-policy.yaml | Config
+- [x] launchSettings.json | launchSettings.json (ASP.NET) | Config
+- [x] lefthook.yml | lefthook.yml | Config
+- [x] lerna.json | lerna.json | Config
+- [x] lfrc | lfrc | Config
+- [x] libs.versions.toml | libs.versions.toml (Gradle Version Catalog) | Config
+- [x] LICENSE | LICENSE | Documents
+- [x] lighttpd.conf | lighttpd.conf (Lighttpd Web Server) | Config, Network
+- [x] limits.conf | limits.conf (PAM Limits) | Config
+- [x] linkding.env | linkding.env | Config, Application
+- [x] linkerd-config.yaml | linkerd-config.yaml (Linkerd) | Config
+- [x] linkwarden.env | Linkwarden config | Productivity, Bookmarks, Self-Hosted
+- [x] liquibase.properties | liquibase.properties | Config, Database
+- [x] listmonk-config.toml | listmonk-config.toml | Config, Application, Email
+- [x] lldap_config.toml | lldap_config.toml | Config, Security, Identity, LDAP
+- [x] loader.conf | loader.conf | Config
+- [x] Localizable.strings | Localizable.strings | Config
+- [x] log4j2.xml | log4j2.xml | Config
+- [x] logback.xml | logback.xml | Config
+- [x] logrotate.conf | logrotate.conf (Log Rotation) | Config, System
+- [x] logstash.conf | logstash.conf | Config
+- [x] loki-config.yaml | loki-config.yaml | Config
+- [x] lxc.config | lxc.config (LXC container) | Config, Container
+- [x] main.c | main.c | Code
+- [x] main.cf | main.cf (Postfix Mail Server) | Config, Mail
+- [x] Main.java | Main.java | Code
+- [x] Main.kt | Main.kt | Code
+- [x] main.py | main.py | Code
+- [x] main.rb | main.rb | Code
+- [x] Makefile | Makefile | Code
+- [x] makepkg.conf | makepkg.conf (makepkg Config) | Config, Arch Linux
+- [x] mako | mako (mako notification daemon) | Config, Desktop
+- [x] Manifest.toml | Manifest.toml (Julia Manifest) | Config
+- [x] Manifest.toml | Manifest.toml | Config
+- [x] Matchfile | Matchfile (Fastlane Match) | Config
+- [x] mattermost-config.json | mattermost-config.json | Config, Application
+- [x] maven-settings.xml | maven-settings.xml | Config
+- [x] maybe.env | Maybe Config | Config, Self-hosted
+- [x] mealie.env | mealie.env | Config, Application
+- [x] meltano.yml | meltano.yml | Data, Config
+- [x] memos.env | Memos config | Productivity, Notes, Self-Hosted
+- [x] mesh.cpp | mesh.cpp | Code
+- [x] meson.build | meson.build | Code
+- [x] metagame/stage10/identity_echo.jpg | Awakening identity_echo.jpg | Metagame
+- [x] metagame/stage10/nested/echoes/pattern_echo.json | Awakening pattern_echo.json | Metagame
+- [x] metagame/stage10/syntax_echo.txt | Awakening syntax_echo.txt | Metagame
+- [x] metagame/stage2/cipher.txt | Glyph Dungeon cipher.txt | Metagame
+- [x] metagame/stage5/transmission_hum.mp3 | Signal Racer transmission_hum.mp3 | Metagame
+- [x] metagame/stage6/protocols_of_the_entity.epub | Protocol Codex protocols_of_the_entity.epub | Metagame
+- [x] metagame/stage7/entity_a_verification.png | Identity Arbiter Entity A image | Metagame
+- [x] metagame/stage7/entity_f_verification.png | Identity Arbiter Entity F image | Metagame
+- [x] metagame/stage7/entity_metadata.json | Identity Arbiter metadata sidecar | Metagame
+- [x] metro.config.js | metro.config.js | Config
+- [x] mimir.yaml | mimir.yaml | Config
+- [x] miniflux.conf | miniflux.conf | Config, Application
+- [x] minio.env | minio.env | Config, Self-hosted
+- [x] mint.json | mint.json | Config
+- [x] mint.json | mint.json | uncategorized
+- [x] mise.toml | mise.toml | Config
+- [x] mix.exs | mix.exs | Code
+- [x] mkdocs.yml | mkdocs.yml | Config
+- [x] mkinitcpio.conf | mkinitcpio.conf (mkinitcpio) | Config
+- [x] MLproject | MLproject (MLflow Project) | Config, Data Science
+- [x] Module.vb | Module.vb | Code
+- [x] molecule.yml | molecule.yml | Config, Ansible, Testing
+- [x] mongod.conf | mongod.conf | Config
+- [x] monica.env | monica.env | Config, Application
+- [x] moon.yml | moon.yml | Config
+- [x] mosquitto.conf | mosquitto.conf | Config, Networking
+- [x] mpd.conf | mpd.conf | Config, Audio
+- [x] mpv.conf | mpv.conf | Config
+- [x] my.cnf | my.cnf (MySQL) | Config
+- [x] myapp.container | myapp.container (Podman Quadlet) | Config
+- [x] myapp.service | myapp.service (systemd Service) | Config, System
+- [x] MyApp.xcscheme | MyApp.xcscheme (Xcode Scheme) | Config, mobile
+- [x] mypackage.opam | mypackage.opam | Code, OCaml
+- [x] mypy.ini | mypy config | Config
+- [x] n8n.env | n8n.env | Config, Application, Automation
+- [x] nagios.cfg | nagios.cfg | Monitoring, Config
+- [x] named.conf | named.conf (BIND DNS) | Config, Network
+- [x] nats.conf | nats.conf | Config
+- [x] ncmpcpp.conf | ncmpcpp.conf | Config, Music
+- [x] nest-cli.json | nest-cli.json | Config
+- [x] netbird.json | netbird.json | Networking, Config
+- [x] netbox-configuration.py | netbox-configuration.py | Config, Application, Network
+- [x] netdata.conf | netdata.conf (Netdata) | Monitoring, Infrastructure, Self-Hosted
+- [x] netlify.toml | Netlify config (netlify.toml demo) | Config, devops
+- [x] netplan.yaml | netplan.yaml | Config
+- [x] newrelic.yml | newrelic.yml (New Relic Agent) | Config, Monitoring
+- [x] newsboat.conf | newsboat.conf | Config
+- [x] next.config.js | next.config.js | Config
+- [x] nfpm.yaml | nfpm.yaml (nfpm) | Config
+- [x] nftables.conf | nftables.conf (nftables Firewall Rules) | Config, Network
+- [x] nginx.conf | nginx.conf | Config
+- [x] nix.conf | nix.conf | Config
+- [x] nix.conf | nix.conf | uncategorized
+- [x] nocodb.env | nocodb.env | Config, Application, Database
+- [x] nsqd.cfg | nsqd.cfg | Config
+- [x] nsqd.cfg | nsqd.cfg | uncategorized
+- [x] nsswitch.conf | nsswitch.conf (NSSwitch) | Config
+- [x] ntfy-server.yml | ntfy-server.yml (ntfy) | Config, Application, Notifications
+- [x] nuget.config | nuget.config | Config
+- [x] nuxt.config.ts | nuxt.config.ts | Config
+- [x] nvmrc | .nvmrc | Config
+- [x] nx.json | nx.json | Config
+- [x] nzbget.conf | NZBGet config | Download, Usenet, Self-Hosted
+- [x] oauth2-proxy.cfg | oauth2-proxy.cfg (OAuth2 Proxy) | Config, Security
+- [x] odoo.conf | odoo.conf | Config, Application
+- [x] open-webui.env | Open WebUI Config | Config, AI, Self-hosted
+- [x] openapi-generator-config.yaml | openapi-generator-config.yaml | Config
+- [x] openapi-generator-config.yaml | openapi-generator-config.yaml | uncategorized
+- [x] openapi.yaml | openapi.yaml | Config
+- [x] opencost.yaml | opencost.yaml | Config
+- [x] openrc-myapp | openrc-myapp (OpenRC) | Config
+- [x] openssl.cnf | openssl.cnf | Config, Security
+- [x] opentelemetry-k8s.yaml | opentelemetry-k8s.yaml (OTel Operator) | Config
+- [x] org.example.App.yaml | org.example.App.yaml (Flatpak Manifest) | Config
+- [x] osv-scanner.toml | osv-scanner.toml | Config
+- [x] otel-collector-config.yaml | otel-collector-config.yaml | Config
+- [x] outline.env | outline.env | Config, Application
+- [x] overseerr-settings.json | Overseerr config | Media, Requests, Self-Hosted
+- [x] Overwriter.frag | Overwriter.frag | Code
+- [x] package-lock.json | package-lock.json | Config
+- [x] package.json | package.json | Config
+- [x] package.nuspec | package.nuspec | Config
+- [x] Package.resolved | Package.resolved | Config
+- [x] Package.swift | Package.swift | Code
+- [x] packages.config | packages.config (NuGet) | Config
+- [x] packer.json | packer.json (HashiCorp Packer) | DevOps, Config
+- [x] pacman.conf | pacman.conf | Config
+- [x] Panel.vue | Panel.vue | Code
+- [x] paperless.conf | paperless.conf | Config, Application
+- [x] patroni.yml | patroni.yml | Config, Database
+- [x] pdns.conf | pdns.conf | Config
+- [x] pdns.conf | pdns.conf | uncategorized
+- [x] pg_hba.conf | pg_hba.conf | Config, Database
+- [x] pgbackrest.conf | pgbackrest.conf | Config, Database
+- [x] pgbouncer.ini | pgbouncer.ini | Config
+- [x] photoprism-options.yml | photoprism-options.yml | Config, Application
+- [x] php.ini | php.ini | Config
+- [x] phpstan.neon | phpstan.neon | Config
+- [x] phpunit.xml | phpunit.xml | Config
+- [x] phpunit.xml.dist | phpunit.xml.dist (PHPUnit Config) | Config
+- [x] picom.conf | picom.conf | Config
+- [x] pihole-setupVars.conf | setupVars.conf (Pi-hole) | Networking, Config
+- [x] pip.conf | pip.conf | Config
+- [x] pipeline.ex | pipeline.ex | Code
+- [x] pipewire.conf | pipewire.conf | Config
+- [x] Pipfile | Pipfile | Config
+- [x] pixi.toml | pixi.toml | Config
+- [x] PKGBUILD | PKGBUILD (Arch Linux) | Config
+- [x] plane.env | plane.env | Config, Application, Project Management
+- [x] plausible.env | plausible.env | Config, Application, Analytics
+- [x] playwright.config.ts | playwright.config.ts | Config
+- [x] pnpm-lock.yaml | pnpm-lock.yaml | Config
+- [x] pnpm-workspace.yaml | pnpm-workspace.yaml | Config
+- [x] pocket-id.env | Pocket ID config | Authentication, Identity, Self-Hosted
+- [x] Podfile | Podfile | Config
+- [x] Podfile.lock | Podfile.lock (CocoaPods) | Config, mobile
+- [x] poetry.lock | poetry.lock | Config
+- [x] policy.rego | policy.rego | Config
+- [x] polybar.ini | polybar.ini (Polybar status bar) | Config, Desktop
+- [x] pom.xml | pom.xml (Maven POM) | Config, Java
+- [x] postcss.config.json | postcss.config.json | Config
+- [x] postgresql.conf | postgresql.conf | Config
+- [x] pre-commit-config.yaml | .pre-commit-config.yaml | Config
+- [x] pre-commit-config.yaml | pre-commit config | Config
+- [x] prefect.yaml | prefect.yaml | DevOps, Config
+- [x] Procfile | Procfile | Config, DevOps
+- [x] proftpd.conf | proftpd.conf | Config
+- [x] proftpd.conf | proftpd.conf | uncategorized
+- [x] Program.cs | Program.cs | Code
+- [x] proguard-rules.pro | proguard-rules.pro (ProGuard Rules) | Config
+- [x] project.clj | project.clj | Config
+- [x] Project.toml | Project.toml | Config
+- [x] prometheus-rules.yaml | prometheus-rules.yaml | Config
+- [x] prometheus.yml | prometheus.yml | Config
+- [x] promtail-config.yaml | promtail-config.yaml | Config
+- [x] provenance.json | provenance.json (SLSA Provenance) | Security
+- [x] psalm.xml | psalm.xml | Config
+- [x] pubspec.lock | pubspec.lock (demo) | Config, mobile
+- [x] pubspec.yaml | Flutter pubspec.yaml (demo) | Config, mobile
+- [x] Pulumi.yaml | Pulumi.yaml (Pulumi project) | DevOps, Config
+- [x] puma.rb | puma.rb (Puma) | Config
+- [x] pyproject.toml | pyproject.toml | Config
+- [x] pyrightconfig.json | Pyright config | Config
+- [x] pytest.ini | pytest.ini (pytest Config) | Config, Python
+- [x] query.sql | query.sql | Code, Data
+- [x] rabbitmq.conf | rabbitmq.conf | Config
+- [x] radicale.conf | radicale.conf | Config, Application
+- [x] railway.json | railway.json | Config
+- [x] rallly.env | Rallly Config | Config, Self-hosted
+- [x] ranger.conf | ranger.conf | Config
+- [x] rclone.conf | rclone.conf | Config
+- [x] react-native.config.js | react-native.config.js | Config
+- [x] rebar.config | rebar.config | Config
+- [x] rector.php | rector.php (Rector Config) | Config
+- [x] recursor.conf | recursor.conf | Config
+- [x] recursor.conf | recursor.conf | uncategorized
+- [x] redis.conf | redis.conf | Config
+- [x] registries.conf | registries.conf | Config
+- [x] registries.conf | registries.conf | uncategorized
+- [x] release-please-config.json | release-please-config.json | Config
+- [x] Release.xcconfig | Release.xcconfig | Config
+- [x] remix.config.js | remix.config.js | Config
+- [x] render.yaml | render.yaml | Config
+- [x] renovate.json | renovate.json | Config
+- [x] report.pl | report.pl | Code
+- [x] requirements.txt | requirements.txt | Config
+- [x] requirements.yml | requirements.yml | Config
+- [x] resolv.conf | resolv.conf | Config, Network
+- [x] resticprofile.toml | resticprofile.toml | Config
+- [x] robots.txt | robots.txt (demo) | Config
+- [x] rollup.config.js | rollup.config.js | Config
+- [x] rspack.config.js | rspack.config.js | Config
+- [x] rsyslog.conf | rsyslog.conf (rsyslog) | Config, System
+- [x] ruff.toml | ruff.toml (Ruff linter) | Config
+- [x] rush.json | rush.json | Config
+- [x] rust-toolchain.toml | rust-toolchain.toml | Config
+- [x] rustfmt.toml | rustfmt.toml (rustfmt) | Config
+- [x] sabnzbd.ini | SABnzbd config | Download, Usenet, Self-Hosted
+- [x] sam-template.yaml | sam-template.yaml (AWS SAM) | Config
+- [x] samconfig.toml | samconfig.toml (SAM Config) | Config
+- [x] sample-alloy.als | sample-alloy.als (Alloy) | Code
+- [x] sample-k8s.yaml | Kubernetes Deployment manifest (demo) | Config, devops
+- [x] sample-workflow.yml | GitHub Actions CI workflow (demo) | Code, devops
+- [x] sample.aac | Sample.aac | Media
+- [x] sample.adoc | sample.adoc (AsciiDoc) | Docs, Documentation
+- [x] sample.ads | sample.ads | Systems, Programming
+- [x] sample.agda | sample.agda (Agda) | Code
+- [x] sample.asm | sample.asm | Systems, Programming
+- [x] sample.avif | Sample.avif | Image, Media
+- [x] sample.avsc | Avro Schema (demo) | Data
+- [x] sample.awk | sample.awk (AWK) | Code
+- [x] sample.bal | sample.bal (Ballerina) | Code
+- [x] sample.bbc | sample.bbc (BBCode) | Document
+- [x] sample.bicep | sample.bicep (Azure Bicep) | Config, Infrastructure
+- [x] sample.bmp | Sample.bmp | Image, Media
+- [x] sample.capnp | sample.capnp (Cap'n Proto) | Schema, Serialization
+- [x] sample.carbon | sample.carbon (Carbon) | Code
+- [x] sample.chpl | sample.chpl (Chapel) | Code
+- [x] sample.clj | sample.clj | Functional, Lisp
+- [x] sample.cob | sample.cob | Legacy, Programming
+- [x] sample.coffee | sample.coffee (CoffeeScript) | Code
+- [x] sample.coq | sample.coq (Coq) | Code
+- [x] sample.cr | sample.cr | Systems, Programming
+- [x] sample.crash | sample.crash | Code
+- [x] sample.cue | CUE schema (demo) | Config
+- [x] sample.cue | sample.cue | Config
+- [x] sample.d | sample.d | Systems, Programming
+- [x] sample.dart | sample.dart | Mobile, Programming
+- [x] sample.desktop | sample.desktop (Desktop Entry) | Config
+- [x] sample.dfy | sample.dfy (Dafny) | Code
+- [x] sample.dhall | sample.dhall (Dhall) | Config, Functional
+- [x] sample.djvu | Sample.djvu | Documents, Ebook
+- [x] sample.do | sample.do (Stata) | Code
+- [x] sample.dot | sample.dot | Diagram, Visualization
+- [x] sample.e | sample.e (Eiffel) | Code
+- [x] sample.ejs | sample.ejs (EJS Template) | Code
+- [x] sample.el | sample.el (Emacs Lisp) | Code
+- [x] sample.elm | sample.elm | Functional, Frontend
+- [x] sample.elv | sample.elv (Elvish) | Code
+- [x] sample.env | sample.env (environment variables) | Secrets, Config
+- [x] sample.epub | Sample.epub | Documents, Ebook
+- [x] sample.erl | sample.erl | Functional, Programming
+- [x] sample.ex | sample.ex (Elixir) | Code
 - [ ] sample.f90 | sample.f90 | Science, Systems
 - [ ] sample.factor | sample.factor (Factor) | Code
 - [ ] sample.fbs | sample.fbs (FlatBuffers) | Schema, Serialization
