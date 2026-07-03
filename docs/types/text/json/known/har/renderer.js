@@ -164,7 +164,7 @@ export function render(intake) {
     tr.innerHTML = `<td class="har-kn-num">${i + 1}</td>` +
       `<td><span class="har-kn-method">${esc(method)}</span></td>` +
       `<td><span class="har-kn-url" title="${esc(url)}">${esc(truncUrl)}</span></td>` +
-      `<td><span class="har-kn-status ${sc}">${status || '—'}</span></td>` +
+      `<td><span class="har-kn-status ${sc}">${esc(status || '—')}</span></td>` +
       `<td>${esc(shortMime(mime))}</td>` +
       `<td class="har-kn-num">${size > 0 ? fmtBytes(size) : '—'}</td>` +
       `<td class="har-kn-dur">${fmtMs(duration)}</td>` +

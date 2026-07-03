@@ -538,7 +538,7 @@ var babel_default = {
   match: (intake, baseType) => {
     if (baseType.id !== "json") return false;
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
-    return ["babel.config.json", ".babelrc", ".babelrc.json"].includes(name);
+    return name === "babel.config.json";
   },
   loadRenderer: () => import("../types/text/json/known/babel/renderer.js"),
   about: {
@@ -1160,7 +1160,7 @@ var mocha_default = {
   match: (intake, baseType) => {
     if (baseType.id !== "json") return false;
     const name = (intake.filename || "").split("/").pop().toLowerCase();
-    return name === ".mocharc.json" || name === ".mocharc.cjs";
+    return name === ".mocharc.json" || name === ".mocharc.jsonc";
   },
   loadRenderer: () => import("../types/text/json/known/mocha/renderer.js"),
   about: { description: "Mocha JavaScript test runner configuration" }
@@ -5350,7 +5350,8 @@ var plugin46 = {
   id: "lighthouserc",
   label: "Lighthouse CI",
   tags: ["lighthouse", "performance", "ci", "lhci"],
-  match(intake) {
+  match(intake, baseType) {
+    if (baseType?.id !== "json") return false;
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     return n === ".lighthouserc.json" || n === "lighthouserc.json" || n === ".lighthouserc.js" || n === "lighthouserc.js";
   },
