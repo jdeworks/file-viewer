@@ -1,7 +1,7 @@
 # Editor Roadmap — MT940 (SWIFT Bank Statement)
 
 ## Current state
-Viewer parses the MT940 field structure (`:20:` reference, `:25:` account, `:28C:` statement number, `:60F:`/`:60M:` opening balance, `:62F:`/`:62M:` closing balance, `:61:` statement lines). Handles FIN envelope stripping and multi-statement files. Renders a summary card and a 20-row transaction table (date / signed amount / reference). Currency is shown in the section title.
+Viewer parses the MT940 field structure (`:20:` reference, `:25:` account, `:28C:` statement number, `:60F:`/`:60M:` opening balance, `:62F:`/`:62M:` closing balance, `:61:` statement lines). Handles FIN envelope stripping and multi-statement files. Renders a summary card and a 20-row transaction table (date / signed amount / reference). Currency is shown in the section title. The `:25:` account/IBAN is masked to the last 4 characters (`****1234`) in both the summary card and the metadata panel, matching the OFX viewer's account-masking convention.
 
 ## Viewer enhancements (no write-back needed)
 - Running balance chart — compute daily running balance starting from opening balance, plot with Chart.js (pre-bundled) — S

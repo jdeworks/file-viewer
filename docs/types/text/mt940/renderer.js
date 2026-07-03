@@ -2,6 +2,13 @@ function esc(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Mask account/IBAN numbers to the last 4 characters, matching the convention used by the
+// sibling OFX viewer (docs/types/text/ofx/renderer.js) for bank account identifiers.
+function maskAccount(acct) {
+  const s = String(acct || '').trim();
+  return s.length > 4 ? '****' + s.slice(-4) : s ? '****' : '';
+}
+
 function parseDate(d) {
   // YYMMDD or YYYYMMDD
   if (!d) return '';
@@ -91,7 +98,7 @@ export function render(intake) {
 
   const rows = [
     ['Format', 'MT940 Bank Statement'],
-    st.account ? ['Account', st.account] : null,
+    st.account ? ['Account', maskAccount(st.account)] : null,
     st.ref ? ['Reference', st.ref] : null,
     st.stmtNo ? ['Statement no.', st.stmtNo] : null,
     st.openBalance != null ? ['Opening balance', `${cur} ${st.openBalance >= 0 ? '+' : ''}${st.openBalance.toFixed(2)} (${st.openDate})`] : null,
