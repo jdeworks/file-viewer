@@ -3248,23 +3248,23 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 ### Known Plugins
 
 <!-- AUDIT_SECTION known-plugins START -->
-- [ ] docs/types/text/ini/known/airflow
-- [ ] docs/types/text/ini/known/alembic
-- [ ] docs/types/text/ini/known/aws-config
-- [ ] docs/types/text/ini/known/aws-credentials
-- [ ] docs/types/text/ini/known/flake8
-- [ ] docs/types/text/ini/known/forgejo-config
-- [ ] docs/types/text/ini/known/glances-config
-- [ ] docs/types/text/ini/known/grafana-ini
-- [ ] docs/types/text/ini/known/netdata-config
-- [ ] docs/types/text/ini/known/odoo-conf
-- [ ] docs/types/text/ini/known/php-ini
-- [ ] docs/types/text/ini/known/podman-quadlet
-- [ ] docs/types/text/ini/known/pylintrc
-- [ ] docs/types/text/ini/known/radicale-config
-- [ ] docs/types/text/ini/known/sabnzbd-config
-- [ ] docs/types/text/ini/known/setup-cfg
-- [ ] docs/types/text/ini/known/wandb-config
+- [x] docs/types/text/ini/known/airflow
+- [x] docs/types/text/ini/known/alembic
+- [x] docs/types/text/ini/known/aws-config
+- [x] docs/types/text/ini/known/aws-credentials
+- [x] docs/types/text/ini/known/flake8
+- [x] docs/types/text/ini/known/forgejo-config
+- [x] docs/types/text/ini/known/glances-config
+- [x] docs/types/text/ini/known/grafana-ini
+- [x] docs/types/text/ini/known/netdata-config
+- [x] docs/types/text/ini/known/odoo-conf
+- [x] docs/types/text/ini/known/php-ini
+- [x] docs/types/text/ini/known/podman-quadlet
+- [x] docs/types/text/ini/known/pylintrc
+- [x] docs/types/text/ini/known/radicale-config
+- [x] docs/types/text/ini/known/sabnzbd-config
+- [x] docs/types/text/ini/known/setup-cfg
+- [x] docs/types/text/ini/known/wandb-config
 - [x] docs/types/text/json/known/actual-budget-config
 - [x] docs/types/text/json/known/angular
 - [x] docs/types/text/json/known/apollo
@@ -3915,31 +3915,31 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/toml/known/uv
 - [x] docs/types/text/toml/known/vector-toml
 - [x] docs/types/text/toml/known/wrangler
-- [ ] docs/types/text/xml/known/android-manifest
-- [ ] docs/types/text/xml/known/android-strings
-- [ ] docs/types/text/xml/known/ant-build
-- [ ] docs/types/text/xml/known/app-config
-- [ ] docs/types/text/xml/known/checkstyle-xml
-- [ ] docs/types/text/xml/known/clickhouse-config
-- [ ] docs/types/text/xml/known/csproj
-- [ ] docs/types/text/xml/known/directory-build
-- [ ] docs/types/text/xml/known/jetbrains-workspace
-- [ ] docs/types/text/xml/known/log4j2
-- [ ] docs/types/text/xml/known/logback
-- [ ] docs/types/text/xml/known/maven-pom
-- [ ] docs/types/text/xml/known/maven-settings
-- [ ] docs/types/text/xml/known/msbuild-props
-- [ ] docs/types/text/xml/known/nuget-config
-- [ ] docs/types/text/xml/known/nuspec
-- [ ] docs/types/text/xml/known/packages-config
-- [ ] docs/types/text/xml/known/phpunit
-- [ ] docs/types/text/xml/known/phpunit-config
-- [ ] docs/types/text/xml/known/pom-xml
-- [ ] docs/types/text/xml/known/psalm-config
-- [ ] docs/types/text/xml/known/sitemap
-- [ ] docs/types/text/xml/known/spotbugs-config
-- [ ] docs/types/text/xml/known/web-config
-- [ ] docs/types/text/xml/known/xcode-scheme
+- [x] docs/types/text/xml/known/android-manifest
+- [x] docs/types/text/xml/known/android-strings
+- [x] docs/types/text/xml/known/ant-build
+- [x] docs/types/text/xml/known/app-config
+- [x] docs/types/text/xml/known/checkstyle-xml
+- [x] docs/types/text/xml/known/clickhouse-config
+- [x] docs/types/text/xml/known/csproj
+- [x] docs/types/text/xml/known/directory-build
+- [x] docs/types/text/xml/known/jetbrains-workspace
+- [x] docs/types/text/xml/known/log4j2
+- [x] docs/types/text/xml/known/logback
+- [x] docs/types/text/xml/known/maven-pom
+- [x] docs/types/text/xml/known/maven-settings
+- [x] docs/types/text/xml/known/msbuild-props
+- [x] docs/types/text/xml/known/nuget-config
+- [x] docs/types/text/xml/known/nuspec
+- [x] docs/types/text/xml/known/packages-config
+- [x] docs/types/text/xml/known/phpunit
+- [x] docs/types/text/xml/known/phpunit-config
+- [x] docs/types/text/xml/known/pom-xml
+- [x] docs/types/text/xml/known/psalm-config
+- [x] docs/types/text/xml/known/sitemap
+- [x] docs/types/text/xml/known/spotbugs-config
+- [x] docs/types/text/xml/known/web-config
+- [x] docs/types/text/xml/known/xcode-scheme
 - [x] docs/types/text/yaml/known/act-runner-config
 - [x] docs/types/text/yaml/known/aider-conf
 - [x] docs/types/text/yaml/known/alertmanager
