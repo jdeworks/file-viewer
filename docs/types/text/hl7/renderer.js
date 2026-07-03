@@ -36,14 +36,17 @@ function parseSegments(text) {
   }).filter((s) => /^[A-Z0-9]{2,3}$/.test(s.name));
 }
 
+// `msh.fields` is `parts.slice(1)` (see parseSegments) — it does NOT include the
+// leading "MSH" token, so it is offset by one from standard 1-based MSH-n field
+// numbering (fields[0] = MSH-2, fields[7] = MSH-9, ...).
 function mshSummary(msh) {
   const f = msh.fields;
-  const msgType = f[8] || '';
-  const version = f[11] || '';
-  const sendingApp = f[2] || '';
-  const receivingApp = f[4] || '';
-  const dateTime = f[6] || '';
-  const controlId = f[9] || '';
+  const msgType = f[7] || '';       // MSH-9 Message Type
+  const version = f[10] || '';      // MSH-12 Version ID
+  const sendingApp = f[1] || '';    // MSH-3 Sending Application
+  const receivingApp = f[3] || '';  // MSH-5 Receiving Application
+  const dateTime = f[5] || '';      // MSH-7 Date/Time of Message
+  const controlId = f[8] || '';     // MSH-10 Message Control ID
   return { msgType, version, sendingApp, receivingApp, dateTime, controlId };
 }
 

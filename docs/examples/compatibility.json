@@ -3319,7 +3319,9 @@
         "sample.hl7"
       ],
       "extensions": [
-        ".hl7"
+        ".hl7",
+        ".hl7v2",
+        ".msh"
       ],
       "capabilities": {
         "rawView": true,

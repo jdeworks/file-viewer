@@ -376,6 +376,14 @@ export async function run(ctx) {
   if (hl7Badge === 'HL7') pass('HL7 badge shown'); else fail('hl7 badge: ' + hl7Badge);
   const hl7Segs = await hl7f.$$eval('.hl7-table tbody tr', (els) => els.length);
   if (hl7Segs >= 8) pass('HL7 segment table rows rendered'); else fail('hl7 segs: ' + hl7Segs);
+  // MSH-9/10/11/12/3/7 field indices (guards against off-by-one in mshSummary's
+  // fields-excluding-"MSH" array): message type, version stat, and summary rows.
+  const hl7Subtitle = await hl7f.$eval('.hl7-subtitle', (e) => e.textContent);
+  if (/ADT\s*\/\s*A01/.test(hl7Subtitle)) pass('HL7 message type parsed correctly (MSH-9)'); else fail('hl7 subtitle: ' + hl7Subtitle);
+  const hl7VersionStat = await hl7f.$eval('.hl7-stats', (e) => e.textContent);
+  if (/v2\.5\.1/.test(hl7VersionStat)) pass('HL7 version parsed correctly (MSH-12)'); else fail('hl7 version stat: ' + hl7VersionStat);
+  const hl7Summary = await hl7f.$eval('.hl7-summary', (e) => e.textContent);
+  if (/FVLAB/.test(hl7Summary) && /HIS/.test(hl7Summary) && /MSG001234/.test(hl7Summary)) pass('HL7 summary rows (sending/receiving app, control ID) parsed correctly'); else fail('hl7 summary: ' + hl7Summary.replace(/\s+/g, ' '));
 
   // ── Hydrogen drum machine viewer ──
   await openExample('Demo Beat (Hydrogen)');
