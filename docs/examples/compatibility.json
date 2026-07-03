@@ -27232,10 +27232,17 @@
       "baseType": "raw",
       "support": "supported",
       "sampleFiles": [
-        "sample.y"
+        "sample.y",
+        "sample.l"
       ],
       "extensions": [
-        ".yml"
+        ".l",
+        ".ll",
+        ".lex",
+        ".y",
+        ".yy",
+        ".ypp",
+        ".yacc"
       ],
       "capabilities": {
         "rawView": true,

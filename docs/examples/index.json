@@ -9272,10 +9272,14 @@
     "description": "NSQ message queue daemon configuration — TCP/HTTP addresses, data paths, and limits."
   },
   {
-    "file": "standalone.conf",
     "label": "standalone.conf",
-    "category": "Infrastructure",
-    "knownFile": "pulsar-conf"
+    "file": "standalone.conf",
+    "mime": "text/plain",
+    "category": "Config",
+    "categories": [
+      "Config"
+    ],
+    "description": "WildFly/JBoss standalone server configuration — JVM options and system properties."
   },
   {
     "label": "mint.json",
@@ -13059,5 +13063,17 @@
       "Other"
     ],
     "description": "A mysterious file. Open it and see what happens. 🎮"
+  },
+  {
+    "label": "sample.l (Lex)",
+    "file": "sample.l",
+    "mime": "text/plain",
+    "category": "Code",
+    "categories": [
+      "Code"
+    ],
+    "enhanced": true,
+    "description": "Lex/Flex lexical analyzer specification with token rules and scanner definitions",
+    "knownFile": "lex-yacc"
   }
 ]
