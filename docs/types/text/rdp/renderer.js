@@ -30,6 +30,14 @@ function formatValue(entry) {
   return entry.raw;
 }
 
+// RDP files can carry a DPAPI-encrypted "password 51:b:..." blob (or, from non-standard
+// generators, plaintext "password:s:"/gateway credential keys). Redact any key that looks
+// like a credential rather than dumping it verbatim in the settings table — same pattern as
+// the known/rdp-config plugin's isPasswordKey().
+function isPasswordKey(key) {
+  return /password|passwd|credential/i.test(key);
+}
+
 const SECTION_KEYS = {
   Connection: ['full address', 'username', 'domain', 'alternate full address', 'loadbalanceinfo'],
   Display: ['desktopwidth', 'desktopheight', 'session bpp', 'screen mode id', 'smart sizing', 'dynamic resolution', 'use multimon'],
@@ -336,8 +344,9 @@ export async function render(intake) {
 
     for (const key of present) {
       const entry = entries[key];
+      const redact = isPasswordKey(key);
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${esc(key)}</td><td>${esc(formatValue(entry))}</td>`;
+      tr.innerHTML = `<td>${esc(key)}</td><td>${redact ? '<em>[configured — redacted]</em>' : esc(formatValue(entry))}</td>`;
       tbody.appendChild(tr);
     }
 
