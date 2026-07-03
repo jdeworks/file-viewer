@@ -36,7 +36,12 @@ import { defaultState } from "../state.js";
   const state = defaultState();
   state.substage = SUBSTAGE.DUP;
   assert.equal(diffField({ state, fieldName: "Software" }).ok, false, "matching field is not the diff");
-  assert.equal(state.substage, SUBSTAGE.DUP);
+  // Decoy row (#7): ColorSpace ALSO differs between A and F, but it is a benign re-encode artefact, so
+  // the dup test now requires a real comparison — clicking it does NOT complete the case.
+  const benign = diffField({ state, fieldName: "ColorSpace" });
+  assert.equal(benign.ok, false, "the benign-difference decoy is not the tamper");
+  assert.equal(benign.reason, "benign-diff");
+  assert.equal(state.substage, SUBSTAGE.DUP, "the decoy does not advance the case");
   const hit = diffField({ state, fieldName: "GPSInfo" });
   assert.equal(hit.complete, true);
   assert.equal(state.evidence.dupTestComplete, true);
@@ -49,6 +54,9 @@ import { defaultState } from "../state.js";
   const state = defaultState();
   state.substage = SUBSTAGE.TIMELINE;
   assert.equal(markImpossible({ state, evId: "ev1" }).ok, false, "plausible entry is not impossible");
+  // Decoy row (#7): ev2b is a SECOND event at cycle 0040 — a duplicate-cycle that LOOKS anomalous but
+  // is routine (two events per cycle already occur), so it must not read as the impossible entry.
+  assert.equal(markImpossible({ state, evId: "ev2b" }).ok, false, "the duplicate-cycle decoy is plausible");
   assert.equal(state.substage, SUBSTAGE.TIMELINE);
   const hit = markImpossible({ state, evId: "ev6" });
   assert.equal(hit.complete, true);

@@ -174,12 +174,23 @@ async function drive(dir, viewport, opts, phoneLite = false) {
       await page.evaluate(() => window.__fvStage7?.solveInvestigation?.());
       await page.waitForTimeout(300);
       await shot(page, dir, 's7-ss4');
-      await page.evaluate(() => {
-        const h = window.__fvStage7; if (!h) return;
-        h.state().substage = 5; h.solveCase2();
-      });
-      await page.waitForTimeout(300);
+      // Reach the Case-2 board the real way (break the chain), open the route table to mint its fact
+      // card, then PIN a LIVE triad by tapping the three cards — so the board shot shows the string
+      // overlay converging + the DOSSIER/CLAIM/FACT sockets full + the armed accuse plate (un-accused).
+      await page.click('[data-action="open-anchor"]').catch(() => {});
+      await page.waitForFunction(() => window.__fvStage7?.state().substage === 5, null, { timeout: 5000 }).catch(() => {});
+      await page.click('[data-action="open-source"][data-source="route_table_examined"]').catch(() => {});
+      await page.waitForSelector('[data-pin="fact:route"]', { timeout: 5000 }).catch(() => {});
+      for (const id of ['entity:K', 'field:K:route', 'fact:route']) {
+        await page.click(`[data-pin="${id}"]`).catch(() => {});
+        await page.waitForTimeout(120);
+      }
+      await page.waitForTimeout(200);
       await shot(page, dir, 's7-board');
+      // Scroll the host so the socket plate + converging strings + armed accuse are in frame.
+      await scrollPanelTo(page, '.s7-accuse-plate');
+      await page.waitForTimeout(200);
+      await shot(page, dir, 's7-board-plate');
       await shotFull(page, dir, 's7-board-full');
     }
 

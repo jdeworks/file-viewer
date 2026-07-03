@@ -140,8 +140,8 @@ function commitIdentity({ state, entity }) {
   pushLog(state, arbiterLines.defeated);
   return { ok: true, defeated: true };
 }
-function pushLog(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
+function pushLog(state, line2) {
+  state.log = [...state.log || [], line2].slice(-8);
 }
 function markContradicted(state, entity) {
   const set = new Set(state.evidence.contradicted || []);
@@ -175,13 +175,24 @@ var metadataRows = {
   A: [
     ["DateTimeOriginal", "Boot cycle 0047"],
     ["GPSInfo", "Layer-0 coordinates"],
+    ["ColorSpace", "sRGB"],
     ["Software", "Boot Vision 1.0"]
   ],
   F: [
     ["DateTimeOriginal", "Boot cycle 0047"],
     ["GPSInfo", "52.3N, 4.8E / outside known layers"],
+    // Decoy row (UX audit #7): ColorSpace ALSO differs from A, but it is a benign re-encode artefact —
+    // so the dup test now needs a real comparison (which divergence is TAMPERING vs routine).
+    ["ColorSpace", "Display-P3"],
     ["Software", "Boot Vision 1.0"]
   ]
+};
+var DUP_FIELDS = {
+  GPSInfo: { tamper: true },
+  ColorSpace: {
+    benignDiff: true,
+    note: "ColorSpace differs (sRGB vs Display-P3) — a routine re-encode artefact, not tampering. Look again."
+  }
 };
 var entityFields = {
   B: [
@@ -236,9 +247,22 @@ var ambientFacts = [
   "All entities exhibit non-zero timing variance",
   "ENTITY_ANCHOR_0043 decommissioned at cycle 0043"
 ];
+var AMBIENT_TRIGGERS = [
+  ["E"],
+  // "Current cycle: 0047"           — E's post-0043 route status
+  ["D"],
+  // "Valid event types…"            — D's invalid LAYER_MERGE event
+  ["C"],
+  // "…non-zero timing variance"     — C's scripted 0ms timing
+  ["B", "E"]
+  // "ENTITY_ANCHOR_0043 decommissioned" — B's route-active + E's route-status claims
+];
 var entityFEventLog = [
   { cycle: "0039", event: "BOOT", id: "ev1" },
   { cycle: "0040", event: "SYNC", id: "ev2" },
+  // Decoy (UX audit #7): a SECOND event at cycle 0040 LOOKS like a duplicate-cycle anomaly, but two
+  // events sharing a cycle is routine — the only IMPOSSIBLE entry is a contradictory ACTIVE/DORMANT.
+  { cycle: "0040", event: "PING", id: "ev2b" },
   { cycle: "0041", event: "PING", id: "ev3" },
   { cycle: "0042", event: "WATCHDOG", id: "ev4" },
   { cycle: "0043", event: "ACTIVE", id: "ev5" },
@@ -299,6 +323,8 @@ var CASE2_SOURCES = [
       id: "fact:spec",
       kind: "fact",
       caseId: 2,
+      stamp: "system_spec.json",
+      about: ["H"],
       label: "Spec: valid tiers TIER-1..3 (incl. -LEGACY); layers {0,1,2}; one active route/entity."
     }
   },
@@ -309,6 +335,8 @@ var CASE2_SOURCES = [
       id: "fact:route",
       kind: "fact",
       caseId: 2,
+      stamp: "route_table.csv",
+      about: ["K"],
       label: "Route table: R-0091 = INACTIVE (closed cycle 0044)."
     }
   },
@@ -319,6 +347,7 @@ var CASE2_SOURCES = [
       id: "fact:activity",
       kind: "fact",
       caseId: 2,
+      stamp: "access_log.csv",
       label: "Access log: G/H/J/K all last-seen cycle 0047."
     }
   },
@@ -329,6 +358,7 @@ var CASE2_SOURCES = [
       id: "fact:comms",
       kind: "fact",
       caseId: 2,
+      stamp: "comms_transcript.txt",
       label: "Comms: the real holder answers the cycle-0047 challenge; the duplicate stalls."
     }
   }
@@ -386,6 +416,8 @@ var CASE3_SOURCES = [
       id: "fact:qspec",
       kind: "fact",
       caseId: 3,
+      stamp: "quorum_spec.json",
+      about: ["Q"],
       label: "Spec: valid tiers TIER-0-ROOT..TIER-3; layers {0,1,2}; one active session/entity."
     }
   },
@@ -396,6 +428,8 @@ var CASE3_SOURCES = [
       id: "fact:audit",
       kind: "fact",
       caseId: 3,
+      stamp: "audit_trail.txt",
+      about: ["P"],
       label: "Audit: P holds a SANCTIONED temporary LAYER-3 elevation (cycle 0046)."
     }
   },
@@ -406,6 +440,7 @@ var CASE3_SOURCES = [
       id: "fact:handshake",
       kind: "fact",
       caseId: 3,
+      stamp: "handshake_log.csv",
       label: "Handshake log: L/M/N/P/Q all completed the cycle-0047 handshake."
     }
   },
@@ -416,6 +451,7 @@ var CASE3_SOURCES = [
       id: "fact:ledgerhint",
       kind: "fact",
       caseId: 3,
+      stamp: "session_ledger.csv",
       label: "Ledger lists session tokens — SEARCH it for a claimed token to learn its true status."
     }
   }
@@ -428,6 +464,8 @@ var CASE3_SEARCH = {
     id: "fact:session",
     kind: "fact",
     caseId: 3,
+    stamp: "session_ledger.csv",
+    about: ["N"],
     label: "Ledger search: token S-7741 = REVOKED (cycle 0045). N's 'active' claim is false."
   }
 };
@@ -544,9 +582,10 @@ function flagField({ state, entityId, fieldId }) {
   return { ok: true, complete };
 }
 function diffField({ state, fieldName }) {
-  if (fieldName !== "GPSInfo") {
-    pushLog2(state, "this field matches across both dossiers.");
-    return { ok: false };
+  const info = DUP_FIELDS[fieldName];
+  if (!info?.tamper) {
+    pushLog2(state, info?.benignDiff ? info.note : "this field matches across both dossiers.");
+    return { ok: false, reason: info?.benignDiff ? "benign-diff" : "match" };
   }
   state.evidence.partialContra = [.../* @__PURE__ */ new Set([...state.evidence.partialContra || [], "F.GPSInfo"])];
   state.evidence.dupTestComplete = true;
@@ -591,8 +630,8 @@ function carryCase1Facts(state) {
 function advance(state, to) {
   if (Number(state.substage || 1) < to) state.substage = to;
 }
-function pushLog2(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
+function pushLog2(state, line2) {
+  state.log = [...state.log || [], line2].slice(-8);
 }
 
 // ../../docs/games/metagame/stages/stage7/accusation.js
@@ -676,9 +715,9 @@ function attemptAccusationForCase(state, caseId, { entityId, fieldId, factId } =
   if (!entityId || !fieldId || !factId) return { ok: false, reason: "incomplete", silent: true };
   const entityCard = getCard(state, `entity:${entityId}`);
   const fieldCard = getCard(state, `field:${entityId}:${fieldId}`);
-  const factCard = getCard(state, factId);
-  if (!entityCard || !fieldCard || !factCard) return { ok: false, reason: "missing-card", silent: true };
-  if (!entityCard.pinned || !fieldCard.pinned || !factCard.pinned) return { ok: false, reason: "unpinned", silent: true };
+  const factCard2 = getCard(state, factId);
+  if (!entityCard || !fieldCard || !factCard2) return { ok: false, reason: "missing-card", silent: true };
+  if (!entityCard.pinned || !fieldCard.pinned || !factCard2.pinned) return { ok: false, reason: "unpinned", silent: true };
   const t = caseCfg.triad;
   const correct = entityId === t.entity && fieldId === t.fieldId && factId === t.factId;
   const attemptsKey = `case${caseCfg.id}Attempts`;
@@ -693,11 +732,11 @@ function attemptAccusationForCase(state, caseId, { entityId, fieldId, factId } =
   }
   setPinned(state, entityCard.id, true);
   drawLink(state, entityCard.id, fieldCard.id);
-  drawLink(state, fieldCard.id, factCard.id);
+  drawLink(state, fieldCard.id, factCard2.id);
   establishFact(state, {
     id: `triad:${entityId}`,
     label: caseCfg.id === 3 ? `Entity ${entityId} is the duplicate — an active-session claim the ledger reports revoked.` : `Entity ${entityId} is the duplicate — an active-route claim the route table refutes.`,
-    cards: [entityCard.id, fieldCard.id, factCard.id]
+    cards: [entityCard.id, fieldCard.id, factCard2.id]
   });
   state.evidence[`case${caseCfg.id}Solved`] = true;
   state.evidence.eliminated = [.../* @__PURE__ */ new Set([...state.evidence.eliminated || [], entityId])];
@@ -706,8 +745,8 @@ function attemptAccusationForCase(state, caseId, { entityId, fieldId, factId } =
   if (Number(state.substage || 1) < caseCfg.nextSubstage) state.substage = caseCfg.nextSubstage;
   return { ok: true, solved: true };
 }
-function pushLog3(state, line) {
-  state.log = [...state.log || [], line].slice(-8);
+function pushLog3(state, line2) {
+  state.log = [...state.log || [], line2].slice(-8);
 }
 
 // ../../docs/games/metagame/stages/stage7/s7dev.js
@@ -765,38 +804,192 @@ function applyDev(state, id) {
   else if (id === "mark-uncheat") devMarkUncheat(state);
 }
 
+// ../../docs/games/metagame/stages/stage7/board-derive.js
+var SEARCH_FILE = CASE3_SEARCH.file;
+var SEARCH_QUERY = CASE3_SEARCH.query;
+function socketState(state, caseId = 2) {
+  const pinned = pinnedCards(state).filter((c) => Number(c.caseId) === Number(caseId));
+  const sock = (kind) => {
+    const cards = pinned.filter((c) => c.kind === kind);
+    return { kind, count: cards.length, filled: cards.length >= 1, conflicted: cards.length > 1, card: cards[0] || null };
+  };
+  const dossier = sock("entity");
+  const claim = sock("field");
+  const fact = sock("fact");
+  const complete = dossier.count === 1 && claim.count === 1 && fact.count === 1;
+  return { dossier, claim, fact, complete };
+}
+function accusedMonogram(state, caseId = 2) {
+  const s = socketState(state, caseId);
+  return s.complete ? s.dossier.card?.entity || null : null;
+}
+function searchLabelState(state) {
+  const step = Math.max(0, Number(state?.evidence?.case3HintStep || 0));
+  if (step >= 2) return { step, revealsToken: true, label: `search ${SEARCH_FILE} for "${SEARCH_QUERY}"` };
+  if (step === 1) return { step, revealsToken: false, label: `search the SESSION column of ${SEARCH_FILE}` };
+  return { step, revealsToken: false, label: `search ${SEARCH_FILE}` };
+}
+function partitionFacts(state, caseId = 2) {
+  const eliminated = new Set(state?.evidence?.eliminated || []);
+  const facts = cardsForCase(state, caseId).filter((c) => c.kind === "fact");
+  const live = [];
+  const archived = [];
+  for (const f of facts) {
+    const about = Array.isArray(f.about) ? f.about : [];
+    (about.length && about.every((e) => eliminated.has(e)) ? archived : live).push(f);
+  }
+  return { live, archived };
+}
+
+// ../../docs/games/metagame/stages/stage7/board-cards.js
+var ROT = [-2, 1.5, -1.5, 2, -1, 1];
+function renderColumns(state, cid) {
+  const grid = el("div", "s7-board-grid");
+  grid.append(dossierCol(state, cid));
+  grid.append(claimCol(state, cid));
+  grid.append(factCol(state, cid));
+  return grid;
+}
+function dossierCol(state, cid) {
+  const col = el("section", "s7-board-col s7-col--dossier");
+  col.innerHTML = `<h4>Dossiers</h4>`;
+  const cards = cardsForCase(state, cid).filter((c) => c.kind === "entity");
+  if (!cards.length) col.append(emptyNote("—"));
+  cards.forEach((c, i) => col.append(dossierCard(c, i, state)));
+  return col;
+}
+function claimCol(state, cid) {
+  const col = el("section", "s7-board-col s7-col--claim");
+  col.innerHTML = `<h4>Claims</h4>`;
+  const cards = cardsForCase(state, cid).filter((c) => c.kind === "field");
+  if (!cards.length) return col.append(emptyNote("—")), col;
+  const groups = /* @__PURE__ */ new Map();
+  for (const c of cards) {
+    if (!groups.has(c.entity)) groups.set(c.entity, []);
+    groups.get(c.entity).push(c);
+  }
+  let i = 0;
+  for (const [entity, group] of groups) {
+    const det = el("details", "s7-claim-group");
+    det.open = true;
+    const sum = document.createElement("summary");
+    sum.className = "s7-claim-head";
+    sum.textContent = `Entity ${entity}`;
+    det.append(sum);
+    for (const c of group) det.append(slipCard(c, i++));
+    col.append(det);
+  }
+  return col;
+}
+function factCol(state, cid) {
+  const col = el("section", "s7-board-col s7-col--fact");
+  col.innerHTML = `<h4>Source facts</h4>`;
+  const { live } = partitionFacts(state, cid);
+  if (!live.length) {
+    col.append(emptyNote("No facts yet — open / search the system files."));
+    return col;
+  }
+  live.forEach((c, i) => col.append(factCard(c, i)));
+  return col;
+}
+function dossierCard(card, i, state) {
+  const b = pinButton(card, i, "s7-cardface--dossier");
+  const eliminated = (state?.evidence?.eliminated || []).includes(card.entity);
+  if (eliminated) b.classList.add("is-eliminated");
+  b.innerHTML = `<span class="s7-mono" aria-hidden="true">${esc(card.entity)}</span><span class="s7-cardface-body"><strong>${esc(card.label)}</strong></span>`;
+  b.append(pin());
+  return b;
+}
+function slipCard(card, i) {
+  const b = pinButton(card, i, "s7-cardface--claim");
+  b.innerHTML = `<span class="s7-cardface-body">${esc(card.label)}</span>`;
+  b.append(pin());
+  return b;
+}
+function factCard(card, i) {
+  const b = pinButton(card, i, "s7-cardface--fact");
+  const stamp2 = card.stamp ? `<span class="s7-fact-stamp" aria-hidden="true">${esc(card.stamp)}</span>` : "";
+  b.innerHTML = stamp2 + `<span class="s7-cardface-body">${esc(card.label)}</span>`;
+  b.append(pin());
+  return b;
+}
+function pinButton(card, i, faceClass) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.setAttribute("data-pin", card.id);
+  b.className = `s7-cardface ${faceClass}`;
+  if (card.pinned) {
+    b.classList.add("is-pinned");
+    b.style.setProperty("--rot", `${ROT[i % ROT.length]}deg`);
+  }
+  return b;
+}
+function pin() {
+  const s = document.createElement("span");
+  s.className = "s7-pin";
+  s.setAttribute("aria-hidden", "true");
+  return s;
+}
+function renderSockets(state, cid) {
+  const s = socketState(state, cid);
+  const row = el("div", "s7-sockets");
+  row.append(socketEl("DOSSIER", s.dossier, s.dossier.card?.entity || ""));
+  row.append(socketEl("CLAIM", s.claim, s.claim.card ? claimShort(s.claim.card) : ""));
+  row.append(socketEl("FACT", s.fact, s.fact.card?.stamp || (s.fact.card ? "fact" : "")));
+  return row;
+}
+function socketEl(label, sock, fill) {
+  const d = el("div", "s7-socket");
+  if (sock.filled) d.classList.add("is-filled");
+  if (sock.conflicted) d.classList.add("is-conflict");
+  d.innerHTML = `<span class="s7-socket-label">${label}</span><span class="s7-socket-fill">${sock.filled ? esc(fill) : "○"}</span>`;
+  return d;
+}
+function claimShort(card) {
+  const m = String(card.label || "").split("·").pop();
+  return (m || card.fieldId || "claim").trim();
+}
+function emptyNote(text) {
+  const p = el("p", "s7-board-empty");
+  p.textContent = text;
+  return p;
+}
+function el(tag, className) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  return node;
+}
+function esc(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+}
+
 // ../../docs/games/metagame/stages/stage7/board-render.js
-var KIND_GROUPS = [
-  ["entity", "Dossiers"],
-  ["field", "Claims"],
-  ["fact", "Source facts (open / search the files)"]
-];
 var SOURCES_FOR_CASE = { 2: CASE2_SOURCES, 3: CASE3_SOURCES };
+var ACCUSE_COST = 10;
 var HEADERS = {
   2: "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.",
   3: "CASE 3 — QUORUM GHOST. Two anomalies are decoys (different files clear them). SEARCH the ledger to expose the real lie."
 };
 function renderAccusation(state, caseId = 2) {
   const cid = Number(caseId);
-  const wrap = el("div", "s7-board");
-  const header = el("p", "s7-board-header");
+  const wrap = el2("div", "s7-board");
+  const header = el2("p", "s7-board-header");
   header.textContent = HEADERS[cid] || HEADERS[2];
   wrap.append(header);
-  const hint = el("p", "s7-hint");
+  const hint = el2("p", "s7-hint");
   hint.textContent = caseHint(state, cid);
   wrap.append(hint);
-  const carried = (state.board?.established || []).filter((f) => f.id.startsWith("case1:"));
-  if (carried.length) {
-    const c = el("ul", "s7-established s7-carried");
-    c.innerHTML = `<h4>Case file — established earlier</h4>`;
-    for (const f of carried) {
-      const li = document.createElement("li");
-      li.textContent = f.label;
-      c.append(li);
-    }
-    wrap.append(c);
-  }
-  const sources = el("div", "s7-sources");
+  wrap.append(renderSources(state, cid));
+  const surface = el2("div", "s7-board-surface");
+  surface.append(renderColumns(state, cid));
+  surface.append(renderPlate(state, cid));
+  wrap.append(surface);
+  const casefile = renderCaseFile(state, cid);
+  if (casefile) wrap.append(casefile);
+  return wrap;
+}
+function renderSources(state, cid) {
+  const sources = el2("div", "s7-sources");
   for (const s of SOURCES_FOR_CASE[cid] || []) {
     const b = button({ "data-action": "open-source", "data-source": s.action });
     const opened = cardsForCase(state, cid).some((c) => c.id === s.card.id);
@@ -806,51 +999,54 @@ function renderAccusation(state, caseId = 2) {
   }
   if (cid === 3) {
     const searched = cardsForCase(state, 3).some((c) => c.id === CASE3_SEARCH.card.id);
+    const label = searchLabelState(state).label;
     const sb = button({ "data-action": "search-source", "data-source": CASE3_SEARCH.action });
     sb.classList.add("s7-search-btn");
-    sb.textContent = `${searched ? "[done] " : "[search] "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
+    sb.textContent = `${searched ? "[done] " : "[search] "}${label}`;
     if (searched) sb.classList.add("is-opened");
     sources.append(sb);
   }
-  wrap.append(sources);
-  const board = el("div", "s7-board-grid");
-  for (const [kind, label] of KIND_GROUPS) {
-    const col = el("section", "s7-board-col");
-    col.innerHTML = `<h4>${label}</h4>`;
-    const cards = cardsForCase(state, cid).filter((c) => c.kind === kind);
-    if (!cards.length) {
-      const empty = el("p", "s7-board-empty");
-      empty.textContent = kind === "fact" ? "No facts yet — open / search the system files." : "—";
-      col.append(empty);
-    }
-    for (const c of cards) {
-      const b = button({ "data-pin": c.id });
-      if (c.pinned) b.classList.add("is-pinned");
-      b.textContent = (c.pinned ? "[pinned] " : "") + c.label;
-      col.append(b);
-    }
-    board.append(col);
-  }
-  wrap.append(board);
+  return sources;
+}
+function renderPlate(state, cid) {
+  const plate = el2("div", "s7-accuse-plate");
+  plate.append(renderSockets(state, cid));
   const triad = pinnedTriad(state, cid);
-  const accuseRow = el("div", "s7-accuse-row");
+  const mono = accusedMonogram(state, cid);
+  const row = el2("div", "s7-accuse-row");
   const accuse = button({ "data-accuse": String(cid) });
+  accuse.className = "s7-accuse-btn" + (triad ? " is-armed" : "");
   accuse.disabled = !triad;
-  accuse.textContent = triad ? `Accuse ${triad.entityId} (${triad.fieldId})` : "Pin one dossier, one claim, one fact";
-  accuseRow.append(accuse);
-  wrap.append(accuseRow);
+  accuse.innerHTML = triad ? `NAME THE DUPLICATE — <strong>${esc2(mono)}</strong> <small>&middot; costs ${ACCUSE_COST} if wrong</small>` : "Pin one dossier, one claim, one fact";
+  row.append(accuse);
+  plate.append(row);
+  const strip = el2("div", "s7-status-strip");
+  const last = (state.log || [])[(state.log || []).length - 1] || "";
+  strip.textContent = last;
+  plate.append(strip);
+  return plate;
+}
+function renderCaseFile(state, cid) {
+  const carried = (state.board?.established || []).filter((f) => f.id.startsWith("case1:"));
   const established = (state.board?.established || []).filter((f) => f.id.startsWith("triad:"));
-  if (established.length) {
-    const facts = el("ul", "s7-established");
-    facts.innerHTML = `<h4>Established</h4>`;
-    for (const f of established) {
-      const li = document.createElement("li");
-      li.textContent = f.label;
-      facts.append(li);
-    }
-    wrap.append(facts);
-  }
-  return wrap;
+  const { archived } = partitionFacts(state, cid);
+  const count = carried.length + established.length + archived.length;
+  if (!count) return null;
+  const det = el2("details", "s7-casefile");
+  const sum = document.createElement("summary");
+  sum.textContent = `Case file — ${count} settled`;
+  det.append(sum);
+  const body = el2("div", "s7-casefile-body");
+  for (const f of established) body.append(fileLine(f.label, "is-established"));
+  for (const f of carried) body.append(fileLine(f.label));
+  for (const f of archived) body.append(fileLine(f.label, "is-archived"));
+  det.append(body);
+  return det;
+}
+function fileLine(text, cls) {
+  const p = el2("p", "s7-casefile-line" + (cls ? " " + cls : ""));
+  p.textContent = text;
+  return p;
 }
 function button(dataset) {
   const b = document.createElement("button");
@@ -858,11 +1054,236 @@ function button(dataset) {
   for (const [k, v] of Object.entries(dataset)) b.setAttribute(k, v);
   return b;
 }
-function el(tag, className) {
+function el2(tag, className) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   return node;
 }
+function esc2(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+}
+
+// ../../docs/games/metagame/stages/stage7/substage-views.js
+function revealedAmbient(state) {
+  const flags = state?.evidence?.flags || {};
+  const scanComplete = SCAN_ENTITIES.every((e) => flags[e]);
+  const set = /* @__PURE__ */ new Set();
+  AMBIENT_TRIGGERS.forEach((triggers, i) => {
+    if (scanComplete || triggers.some((e) => flags[e])) set.add(i);
+  });
+  return set;
+}
+function renderScan(state) {
+  const wrap = el3("div", "s7-ss1");
+  const facts = el3("aside", "s7-ambient-facts");
+  const revealed = revealedAmbient(state);
+  const items = ambientFacts.map((f, i) => revealed.has(i) ? `<li class="is-revealed">${esc3(f)}</li>` : "").join("");
+  facts.innerHTML = `<h3>Ambient facts</h3>` + (items ? `<ul>${items}</ul>` : `<p class="s7-ambient-empty">Facts surface as you flag contradictions.</p>`);
+  const cards = el3("div", "s7-cards");
+  for (const id of SCAN_ENTITIES) {
+    const card = el3("article", "s7-card");
+    if (state.evidence.flags[id]) card.classList.add("is-flagged");
+    card.innerHTML = `<strong>Entity ${esc3(id)}</strong>`;
+    for (const f of entityFields[id]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.entity = id;
+      b.dataset.flag = f.id;
+      b.disabled = Boolean(state.evidence.flags[id]);
+      b.innerHTML = `<span>${esc3(f.label)}</span><em>${esc3(f.value)}</em>`;
+      card.append(b);
+    }
+    cards.append(card);
+  }
+  wrap.append(facts, cards);
+  return wrap;
+}
+function renderDup(state) {
+  const wrap = el3("div", "s7-ss2");
+  const panel = el3("div", "s7-duptest-panel");
+  const colA = el3("div", "s7-duptest-col");
+  colA.innerHTML = `<h3>Entity A</h3>${metadataRows.A.map(([f, v]) => `<div class="s7-row"><span>${esc3(f)}</span><em>${esc3(v)}</em></div>`).join("")}`;
+  const colF = el3("div", "s7-duptest-col");
+  colF.innerHTML = `<h3>Entity F</h3>`;
+  for (const [f, v] of metadataRows.F) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.diff = f;
+    b.innerHTML = `<span>${esc3(f)}</span><em>${esc3(v)}</em>`;
+    colF.append(b);
+  }
+  panel.append(colA, colF);
+  const note = el3("p", "s7-duptest-hint");
+  note.textContent = "DIFF DOSSIERS — two fields differ, but only one is tampering. Identify it on Entity F.";
+  wrap.append(panel, note);
+  return wrap;
+}
+function renderTimeline() {
+  const wrap = el3("div", "s7-ss3");
+  wrap.innerHTML = `<p class="s7-audit-header">TIMELINE AUDIT — Entity F activity log. One entry is logically impossible; the rest are plausible. Mark it.</p>`;
+  const list = el3("ol", "s7-timeline");
+  for (const ev of entityFEventLog) {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>cycle ${esc3(ev.cycle)}</span><span>${esc3(ev.event)}</span>`;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.ev = ev.id;
+    b.textContent = "mark impossible";
+    li.append(b);
+    list.append(li);
+  }
+  wrap.append(list);
+  return wrap;
+}
+function renderChain() {
+  const wrap = el3("div", "s7-ss4");
+  wrap.innerHTML = `
+    <article class="s7-dossier-chain">
+      <h3>Entity F — Credential Chain</h3>
+      <p>Route active via: <strong>ENTITY_ANCHOR_0043</strong></p>
+      <p>Chain reference:
+        <button type="button" data-action="open-anchor">CREDENTIAL_CHAIN &rarr; ENTITY_ANCHOR_0043 [open exhibit]</button>
+      </p>
+    </article>
+    <p class="s7-chase-hint">Follow the citation. Open the referenced anchor record in the viewer.</p>`;
+  return wrap;
+}
+function renderBoss(state, lock) {
+  const wrap = el3("div", "s7-ss5");
+  const header = el3("header", "s7-boss-header");
+  header.textContent = "IDENTITY REQUIRES PRIMARY SOURCE VERIFICATION";
+  wrap.append(header);
+  const intro = el3("p");
+  intro.textContent = "Entity F presents a verification image. Inspect its embedded metadata.";
+  wrap.append(intro);
+  const controls = el3("div", "s7-controls");
+  controls.innerHTML = `<button type="button" data-action="photo">open Entity F photo</button>`;
+  wrap.append(controls);
+  if (lock.unlocked) {
+    const verdict = el3("div", "s7-verdict");
+    verdict.innerHTML = `<p>Entity F's image GPS is outside every known entity layer. F is eliminated.</p>
+      <p>Commit to the real credential holder.</p>`;
+    const row = el3("div", "s7-commit-row");
+    for (const c of candidates) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.commit = c.id;
+      b.disabled = state.boss.defeated;
+      b.textContent = `commit ${c.id}`;
+      row.append(b);
+    }
+    verdict.append(row);
+    wrap.append(verdict);
+  } else {
+    const waiting = el3("p", "s7-hint");
+    waiting.textContent = lock.hint;
+    wrap.append(waiting);
+  }
+  return wrap;
+}
+function el3(tag, className) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  return node;
+}
+function esc3(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+}
+
+// ../../docs/games/metagame/stages/stage7/board-strings.js
+var SVG = "http://www.w3.org/2000/svg";
+function paintBoardStrings(surface, state, caseId = 2, opts = {}) {
+  if (!surface || typeof surface.getBoundingClientRect !== "function") return;
+  surface.querySelector(":scope > svg.s7-strings")?.remove();
+  const rect = surface.getBoundingClientRect();
+  if (!rect.width) return;
+  const plate = surface.querySelector(".s7-sockets") || surface.querySelector(".s7-accuse-plate");
+  if (!plate) return;
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "s7-strings");
+  svg.setAttribute("aria-hidden", "true");
+  const w = surface.scrollWidth;
+  const h = surface.scrollHeight;
+  svg.setAttribute("width", String(w));
+  svg.setAttribute("height", String(h));
+  svg.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  const pt = (el4, anchor) => {
+    const b = el4.getBoundingClientRect();
+    const x = b.left - rect.left + surface.scrollLeft + b.width / 2;
+    const yMid = b.top - rect.top + surface.scrollTop + b.height / 2;
+    const yTop = b.top - rect.top + surface.scrollTop + Math.min(22, b.height / 2);
+    return { x, y: anchor === "top" ? yTop : yMid };
+  };
+  const target = pt(plate, "top");
+  const frag = document.createDocumentFragment();
+  const wrong = opts.verdict === "wrong";
+  for (const btn of surface.querySelectorAll("[data-pin].is-pinned")) {
+    const a = pt(btn, "mid");
+    frag.appendChild(line(a.x, a.y, target.x, target.y, "s7-string" + (wrong ? " is-wrong" : "")));
+  }
+  for (const link of state?.board?.links || []) {
+    if (!link.established) continue;
+    const from = surface.querySelector(`[data-pin="${cssEsc(link.from)}"]`);
+    const to = surface.querySelector(`[data-pin="${cssEsc(link.to)}"]`);
+    if (!from || !to) continue;
+    const a = pt(from, "mid");
+    const b = pt(to, "mid");
+    frag.appendChild(line(a.x, a.y, b.x, b.y, "s7-string is-established"));
+  }
+  svg.appendChild(frag);
+  surface.insertBefore(svg, surface.firstChild);
+}
+function line(x1, y1, x2, y2, cls) {
+  const l = document.createElementNS(SVG, "line");
+  l.setAttribute("x1", String(x1));
+  l.setAttribute("y1", String(y1));
+  l.setAttribute("x2", String(x2));
+  l.setAttribute("y2", String(y2));
+  l.setAttribute("class", cls);
+  return l;
+}
+function cssEsc(value) {
+  return String(value).replace(/["\\]/g, "\\$&");
+}
+
+// ../../docs/games/metagame/stages/stage7/board-feedback.js
+import { shake, floatNum, banner } from "../../shared/feedback.js";
+var STAMP_MS = 1500;
+function fireVerdict(main, state, { cid, correct, caseName, reward = 0 }) {
+  if (!main) return;
+  const surface = main.querySelector(".s7-board-surface");
+  const plate = main.querySelector(".s7-accuse-plate") || surface || main;
+  if (correct) {
+    stamp(plate, "ESTABLISHED", "good");
+    if (reward) floatNum(plate, `+${reward} addresses`, "good");
+    banner(surface || main, `CASE CLOSED — ${caseName}`);
+  } else {
+    shake(surface || main);
+    stamp(plate, "DOES NOT HOLD", "bad");
+    floatNum(plate, "-10 addresses", "bad");
+    if (surface) paintBoardStrings(surface, state, cid, { verdict: "wrong" });
+  }
+}
+function stamp(host, text, kind) {
+  if (!host || typeof document === "undefined") return;
+  const el4 = document.createElement("div");
+  el4.className = `s7-stamp s7-stamp--${kind}`;
+  el4.textContent = text;
+  host.appendChild(el4);
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    el4.removeEventListener("animationend", finish);
+    el4.remove();
+  };
+  const timer = setTimeout(finish, STAMP_MS);
+  el4.addEventListener("animationend", finish);
+}
+
+// ../../docs/games/metagame/stages/stage7/renderer.js
+import { banner as banner2 } from "../../shared/feedback.js";
 
 // ../../docs/games/metagame/stages/stage7/test-hook.js
 function installStage7Hook({ state, persistAndPaint }) {
@@ -909,6 +1330,16 @@ var SUBSTAGE_LABEL = {
   6: "6/7 QUORUM GHOST",
   7: "7/7 EXIF ARBITER (BOSS)"
 };
+var ARRIVAL = {
+  1: "CREDENTIAL SCAN",
+  2: "DUPLICATE TEST",
+  3: "TIMELINE AUDIT",
+  4: "REFERENCE CHASE",
+  5: "CASE 2 — DUPLICATE ROSTER",
+  6: "CASE 3 — QUORUM GHOST",
+  7: "EXIF ARBITER"
+};
+var BOARD_SUBSTAGES = /* @__PURE__ */ new Set([SUBSTAGE.ACCUSE, SUBSTAGE.ACCUSE3]);
 function renderStage7({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage7-identity-arbiter";
@@ -920,34 +1351,42 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     </header>
     <section class="s7-main" aria-label="investigation"></section>
     <p class="s7-hint" data-field="hint"></p>
-    <ol class="s7-log" aria-label="judgment log"></ol>
+    <details class="s7-log-wrap"><summary>judgment log</summary>
+      <ol class="s7-log" aria-label="judgment log"></ol>
+    </details>
     <div class="s7-controls">
       <button type="button" data-action="bts" hidden>open trace.bts</button>
     </div>
   `;
   host.replaceChildren(root);
-  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el3) => [el3.dataset.field, el3]));
+  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el4) => [el4.dataset.field, el4]));
   const main = root.querySelector(".s7-main");
   const log = root.querySelector(".s7-log");
   const completeOnce = once((result) => {
     if (typeof onStageComplete === "function") onStageComplete(result);
   });
+  let lastSubstage = state.substage;
+  let verdictInFlight = false;
   root.addEventListener("click", (event) => {
     const button2 = event.target.closest("button[data-action], button[data-flag], button[data-diff], button[data-ev], button[data-commit], button[data-pin], button[data-accuse]");
     if (!button2) return;
     const d = button2.dataset;
+    let verdict = null;
     if (d.flag) flagField({ state, entityId: d.entity, fieldId: d.flag });
     else if (d.diff) diffField({ state, fieldName: d.diff });
     else if (d.ev) markImpossible({ state, evId: d.ev });
     else if (d.pin) togglePin(state, d.pin);
-    else if (d.accuse) accuseFromBoard(state, Number(d.accuse));
+    else if (d.accuse) verdict = doAccuse(Number(d.accuse));
     else if (d.commit) commitBoss(d.commit);
     else if (d.action === "open-source") openSource(d.source);
     else if (d.action === "search-source") searchSource();
     else if (d.action === "open-anchor") openInViewer(ENTITY_ANCHOR_PATH, { mime: "text/plain", source: "stage7" });
     else if (d.action === "photo") openInViewer(ENTITY_F_IMAGE_PATH, buildEntityFPhotoOpenOptions());
     else if (d.action === "bts") openBts({ bts, viewer });
+    verdictInFlight = Boolean(verdict);
     persistAndPaint();
+    verdictInFlight = false;
+    if (verdict) fireVerdict(main, state, verdict);
   });
   repaint();
   installStage7Hook({ state, persistAndPaint });
@@ -964,6 +1403,12 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
       root.remove();
     }
   };
+  function doAccuse(cid) {
+    const result = accuseFromBoard(state, cid);
+    if (result.silent) return null;
+    const cfg = CASES[cid] || {};
+    return { cid, correct: result.solved === true, caseName: cfg.name || `CASE ${cid}`, reward: rewardFor(cid, result) };
+  }
   function commitBoss(entity) {
     const result = commitIdentity({ state, entity });
     if (result.defeated) completeOnce({ stage: 7, defeated: true, reward: { addresses: 150 }, btsPath: BTS_PATH });
@@ -978,157 +1423,63 @@ function renderStage7({ host, state, actions, achievements, bell, bts, viewer, s
     fields.addresses.textContent = String(state.addresses);
     fields.hint.textContent = state.boss.defeated ? "Case closed." : substageHints[state.substage] || lock.hint;
     renderMain(lock);
+    if (state.substage !== lastSubstage) {
+      if (!verdictInFlight && ARRIVAL[state.substage]) banner2(main, ARRIVAL[state.substage]);
+      lastSubstage = state.substage;
+    }
     root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
-    log.replaceChildren(...state.log.slice(-6).map((line) => {
+    log.replaceChildren(...state.log.slice(-6).map((line2) => {
       const li = document.createElement("li");
-      li.textContent = line;
+      li.textContent = line2;
       return li;
     }));
   }
   function renderMain(lock) {
-    if (state.substage === SUBSTAGE.SCAN) return main.replaceChildren(renderScan());
-    if (state.substage === SUBSTAGE.DUP) return main.replaceChildren(renderDup());
+    if (state.substage === SUBSTAGE.SCAN) return main.replaceChildren(renderScan(state));
+    if (state.substage === SUBSTAGE.DUP) return main.replaceChildren(renderDup(state));
     if (state.substage === SUBSTAGE.TIMELINE) return main.replaceChildren(renderTimeline());
     if (state.substage === SUBSTAGE.CHAIN) return main.replaceChildren(renderChain());
     if (state.substage === SUBSTAGE.ACCUSE) {
       ensureCase2(state);
-      return main.replaceChildren(renderAccusation(state, 2));
+      main.replaceChildren(renderAccusation(state, 2));
+      return paintStrings(2);
     }
     if (state.substage === SUBSTAGE.ACCUSE3) {
       ensureCase3(state);
-      return main.replaceChildren(renderAccusation(state, 3));
+      main.replaceChildren(renderAccusation(state, 3));
+      return paintStrings(3);
     }
-    return main.replaceChildren(renderBoss(lock));
+    return main.replaceChildren(renderBoss(state, lock));
+  }
+  function paintStrings(cid) {
+    if (!BOARD_SUBSTAGES.has(state.substage)) return;
+    paintBoardStrings(main.querySelector(".s7-board-surface"), state, cid, {});
   }
   function openSource(action) {
     const path = SOURCE_PATHS[action];
     if (path) openInViewer(path, { source: "stage7" });
   }
   function searchSource() {
-    if (viewer && typeof viewer.searchViewerFile === "function") {
+    const { revealsToken } = searchLabelState(state);
+    if (revealsToken && viewer && typeof viewer.searchViewerFile === "function") {
       viewer.searchViewerFile(CASE3_SEARCH_PATH, CASE3_SEARCH_QUERY, { source: "stage7" });
-    } else if (viewer && typeof viewer.searchFile === "function") {
+    } else if (revealsToken && viewer && typeof viewer.searchFile === "function") {
       viewer.searchFile(CASE3_SEARCH_PATH, CASE3_SEARCH_QUERY, { source: "stage7" });
-    }
-  }
-  function renderScan() {
-    const wrap = el2("div", "s7-ss1");
-    const facts = el2("aside", "s7-ambient-facts");
-    facts.innerHTML = `<h3>Ambient facts</h3><ul>${ambientFacts.map((f) => `<li>${f}</li>`).join("")}</ul>`;
-    const cards = el2("div", "s7-cards");
-    for (const id of SCAN_ENTITIES) {
-      const card = el2("article", "s7-card");
-      if (state.evidence.flags[id]) card.classList.add("is-flagged");
-      card.innerHTML = `<strong>Entity ${id}</strong>`;
-      for (const f of entityFields[id]) {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.dataset.entity = id;
-        b.dataset.flag = f.id;
-        b.disabled = Boolean(state.evidence.flags[id]);
-        b.innerHTML = `<span>${f.label}</span><em>${f.value}</em>`;
-        card.append(b);
-      }
-      cards.append(card);
-    }
-    wrap.append(facts, cards);
-    return wrap;
-  }
-  function renderDup() {
-    const wrap = el2("div", "s7-ss2");
-    const panel = el2("div", "s7-duptest-panel");
-    const colA = el2("div", "s7-duptest-col");
-    colA.innerHTML = `<h3>Entity A</h3>${metadataRows.A.map(([f, v]) => `<div class="s7-row"><span>${f}</span><em>${v}</em></div>`).join("")}`;
-    const colF = el2("div", "s7-duptest-col");
-    colF.innerHTML = `<h3>Entity F</h3>`;
-    for (const [f, v] of metadataRows.F) {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.dataset.diff = f;
-      b.innerHTML = `<span>${f}</span><em>${v}</em>`;
-      colF.append(b);
-    }
-    panel.append(colA, colF);
-    const note = el2("p", "s7-duptest-hint");
-    note.textContent = "DIFF DOSSIERS — identify the tampered field on Entity F.";
-    wrap.append(panel, note);
-    return wrap;
-  }
-  function renderTimeline() {
-    const wrap = el2("div", "s7-ss3");
-    wrap.innerHTML = `<p class="s7-audit-header">TIMELINE AUDIT — Entity F activity log. Mark the impossible entry.</p>`;
-    const list = el2("ol", "s7-timeline");
-    for (const ev of entityFEventLog) {
-      const li = document.createElement("li");
-      li.innerHTML = `<span>cycle ${ev.cycle}</span><span>${ev.event}</span>`;
-      const b = document.createElement("button");
-      b.type = "button";
-      b.dataset.ev = ev.id;
-      b.textContent = "mark impossible";
-      li.append(b);
-      list.append(li);
-    }
-    wrap.append(list);
-    return wrap;
-  }
-  function renderChain() {
-    const wrap = el2("div", "s7-ss4");
-    wrap.innerHTML = `
-      <article class="s7-dossier-chain">
-        <h3>Entity F — Credential Chain</h3>
-        <p>Route active via: <strong>ENTITY_ANCHOR_0043</strong></p>
-        <p>Chain reference:
-          <button type="button" data-action="open-anchor">CREDENTIAL_CHAIN → ENTITY_ANCHOR_0043 [open exhibit]</button>
-        </p>
-      </article>
-      <p class="s7-chase-hint">Follow the citation. Open the referenced anchor record in the viewer.</p>`;
-    return wrap;
-  }
-  function renderBoss(lock) {
-    const wrap = el2("div", "s7-ss5");
-    const header = el2("header", "s7-boss-header");
-    header.textContent = "IDENTITY REQUIRES PRIMARY SOURCE VERIFICATION";
-    wrap.append(header);
-    const intro = el2("p");
-    intro.textContent = "Entity F presents a verification image. Inspect its embedded metadata.";
-    wrap.append(intro);
-    const controls = el2("div", "s7-controls");
-    controls.innerHTML = `<button type="button" data-action="photo">open Entity F photo</button>`;
-    wrap.append(controls);
-    if (lock.unlocked) {
-      const verdict = el2("div", "s7-verdict");
-      verdict.innerHTML = `<p>Entity F's image GPS is outside every known entity layer. F is eliminated.</p>
-        <p>Commit to the real credential holder.</p>`;
-      const row = el2("div", "s7-commit-row");
-      for (const c of candidates) {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.dataset.commit = c.id;
-        b.disabled = state.boss.defeated;
-        b.textContent = `commit ${c.id}`;
-        row.append(b);
-      }
-      verdict.append(row);
-      wrap.append(verdict);
     } else {
-      const waiting = el2("p", "s7-hint");
-      waiting.textContent = lock.hint;
-      wrap.append(waiting);
+      openInViewer(CASE3_SEARCH_PATH, { source: "stage7" });
     }
-    return wrap;
   }
   function persistAndPaint() {
     if (typeof save === "function") save();
     repaint();
   }
 }
+var ACCUSE_REWARD2 = { 2: 40, 3: 60 };
+function rewardFor(cid, result) {
+  return result.solved ? ACCUSE_REWARD2[cid] || 40 : 0;
+}
 function buildEntityFPhotoOpenOptions() {
   return { mime: "image/jpeg", source: "stage7", entity: "F" };
-}
-function el2(tag, className) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  return node;
 }
 function openBts({ bts, viewer }) {
   if (bts && typeof bts.open === "function") bts.open(7);
@@ -1313,12 +1664,15 @@ function subscribeToActionName(actions, actionName, onFire) {
   return () => window.removeEventListener("fv:games:action", handler);
 }
 function ensureStyles() {
-  const id = "stage7-identity-arbiter-styles";
+  injectSheet("stage7-identity-arbiter-styles", "./styles.css");
+  injectSheet("stage7-identity-arbiter-board-styles", "./styles-board.css");
+}
+function injectSheet(id, rel) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = new URL(rel, import.meta.url).href;
   document.head.append(link);
 }
 export {

@@ -105,12 +105,16 @@ function subscribeToActionName(actions, actionName, onFire) {
 }
 
 function ensureStyles() {
-  const id = "stage7-identity-arbiter-styles";
+  injectSheet("stage7-identity-arbiter-styles", "./styles.css");
+  injectSheet("stage7-identity-arbiter-board-styles", "./styles-board.css");
+}
+
+function injectSheet(id, rel) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = new URL(rel, import.meta.url).href;
   document.head.append(link);
 }
 

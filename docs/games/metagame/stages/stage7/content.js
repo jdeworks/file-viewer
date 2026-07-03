@@ -11,13 +11,25 @@ export const metadataRows = {
   A: [
     ["DateTimeOriginal", "Boot cycle 0047"],
     ["GPSInfo", "Layer-0 coordinates"],
+    ["ColorSpace", "sRGB"],
     ["Software", "Boot Vision 1.0"]
   ],
   F: [
     ["DateTimeOriginal", "Boot cycle 0047"],
     ["GPSInfo", "52.3N, 4.8E / outside known layers"],
+    // Decoy row (UX audit #7): ColorSpace ALSO differs from A, but it is a benign re-encode artefact —
+    // so the dup test now needs a real comparison (which divergence is TAMPERING vs routine).
+    ["ColorSpace", "Display-P3"],
     ["Software", "Boot Vision 1.0"]
   ]
+};
+
+// SS2 field classification for diffField: only GPSInfo is the decisive tamper; ColorSpace is a benign
+// difference decoy; every other row matches across A and F.
+export const DUP_FIELDS = {
+  GPSInfo: { tamper: true },
+  ColorSpace: { benignDiff: true,
+    note: "ColorSpace differs (sRGB vs Display-P3) — a routine re-encode artefact, not tampering. Look again." }
 };
 
 // ── Sub-stage 1 (Credential Scan): each impostor entity has exactly one field that contradicts an
@@ -60,10 +72,22 @@ export const ambientFacts = [
   "ENTITY_ANCHOR_0043 decommissioned at cycle 0043"
 ];
 
+// M2 — ambient facts arrive AS USED: each fact is revealed the first time a field it supports is
+// flagged (its trigger entities), and all are revealed once the scan completes. Parallel to ambientFacts.
+export const AMBIENT_TRIGGERS = [
+  ["E"],      // "Current cycle: 0047"           — E's post-0043 route status
+  ["D"],      // "Valid event types…"            — D's invalid LAYER_MERGE event
+  ["C"],      // "…non-zero timing variance"     — C's scripted 0ms timing
+  ["B", "E"]  // "ENTITY_ANCHOR_0043 decommissioned" — B's route-active + E's route-status claims
+];
+
 // ── Sub-stage 3 (Timeline Audit): Entity F's activity log holds one logically impossible entry. ─────
 export const entityFEventLog = [
   { cycle: "0039", event: "BOOT", id: "ev1" },
   { cycle: "0040", event: "SYNC", id: "ev2" },
+  // Decoy (UX audit #7): a SECOND event at cycle 0040 LOOKS like a duplicate-cycle anomaly, but two
+  // events sharing a cycle is routine — the only IMPOSSIBLE entry is a contradictory ACTIVE/DORMANT.
+  { cycle: "0040", event: "PING", id: "ev2b" },
   { cycle: "0041", event: "PING", id: "ev3" },
   { cycle: "0042", event: "WATCHDOG", id: "ev4" },
   { cycle: "0043", event: "ACTIVE", id: "ev5" },
@@ -122,16 +146,16 @@ export const CASE2 = {
 // WHICH fact actually refutes a claim (fact:spec exonerates the red herring, so accusing H is silent).
 export const CASE2_SOURCES = [
   { action: "spec_examined", file: "system_spec.json",
-    card: { id: "fact:spec", kind: "fact", caseId: 2,
+    card: { id: "fact:spec", kind: "fact", caseId: 2, stamp: "system_spec.json", about: ["H"],
       label: "Spec: valid tiers TIER-1..3 (incl. -LEGACY); layers {0,1,2}; one active route/entity." } },
   { action: "route_table_examined", file: "route_table.csv",
-    card: { id: "fact:route", kind: "fact", caseId: 2,
+    card: { id: "fact:route", kind: "fact", caseId: 2, stamp: "route_table.csv", about: ["K"],
       label: "Route table: R-0091 = INACTIVE (closed cycle 0044)." } },
   { action: "access_log_examined", file: "access_log.csv",
-    card: { id: "fact:activity", kind: "fact", caseId: 2,
+    card: { id: "fact:activity", kind: "fact", caseId: 2, stamp: "access_log.csv",
       label: "Access log: G/H/J/K all last-seen cycle 0047." } },
   { action: "comms_examined", file: "comms_transcript.txt",
-    card: { id: "fact:comms", kind: "fact", caseId: 2,
+    card: { id: "fact:comms", kind: "fact", caseId: 2, stamp: "comms_transcript.txt",
       label: "Comms: the real holder answers the cycle-0047 challenge; the duplicate stalls." } }
 ];
 
@@ -189,16 +213,16 @@ export const CASE3 = {
 // fact:ledgerhint just points the player at the SEARCH. The decisive fact is fact:session (search-only).
 export const CASE3_SOURCES = [
   { action: "quorum_spec_examined", file: "quorum_spec.json",
-    card: { id: "fact:qspec", kind: "fact", caseId: 3,
+    card: { id: "fact:qspec", kind: "fact", caseId: 3, stamp: "quorum_spec.json", about: ["Q"],
       label: "Spec: valid tiers TIER-0-ROOT..TIER-3; layers {0,1,2}; one active session/entity." } },
   { action: "audit_examined", file: "audit_trail.txt",
-    card: { id: "fact:audit", kind: "fact", caseId: 3,
+    card: { id: "fact:audit", kind: "fact", caseId: 3, stamp: "audit_trail.txt", about: ["P"],
       label: "Audit: P holds a SANCTIONED temporary LAYER-3 elevation (cycle 0046)." } },
   { action: "handshake_examined", file: "handshake_log.csv",
-    card: { id: "fact:handshake", kind: "fact", caseId: 3,
+    card: { id: "fact:handshake", kind: "fact", caseId: 3, stamp: "handshake_log.csv",
       label: "Handshake log: L/M/N/P/Q all completed the cycle-0047 handshake." } },
   { action: "ledger_examined", file: "session_ledger.csv",
-    card: { id: "fact:ledgerhint", kind: "fact", caseId: 3,
+    card: { id: "fact:ledgerhint", kind: "fact", caseId: 3, stamp: "session_ledger.csv",
       label: "Ledger lists session tokens — SEARCH it for a claimed token to learn its true status." } }
 ];
 
@@ -209,7 +233,7 @@ export const CASE3_SEARCH = {
   action: "session_revoked_found",
   file: "session_ledger.csv",
   query: "S-7741",
-  card: { id: "fact:session", kind: "fact", caseId: 3,
+  card: { id: "fact:session", kind: "fact", caseId: 3, stamp: "session_ledger.csv", about: ["N"],
     label: "Ledger search: token S-7741 = REVOKED (cycle 0045). N's 'active' claim is false." }
 };
 

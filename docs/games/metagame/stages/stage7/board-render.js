@@ -1,20 +1,18 @@
-// board-render.js — Stage 7 accusation view: the evidence board UI, shared by Case 2 (Duplicate
-// Roster) and Case 3 (Quorum Ghost). Split out of renderer.js to keep it under the LOC cap. Builds DOM
-// with data-attributes that renderer.js's click delegation handles (data-action="open-source" /
-// "search-source", data-pin, data-accuse). Pure render — all state mutation goes through accusation.js
-// / evidence-board.js from the renderer.
+// board-render.js — Stage 7 accusation view: the evidence BOARD, shared by Case 2 (Duplicate Roster)
+// and Case 3 (Quorum Ghost). A dark board surface (styles-board.css) holding three distinct card
+// surfaces (board-cards.js), a red-string SVG overlay painted by the renderer (board-strings.js), the
+// DOSSIER/CLAIM/FACT socket plate + armed Accuse button (#3, M3), a status strip with the last judgment
+// line (#5), and a collapsing case-file accordion of settled evidence (#5, M1). Pure render — all state
+// mutation goes through accusation.js / evidence-board.js from the renderer via data-* delegation.
 
 import { cardsForCase } from "./evidence-board.js";
 import { caseHint, pinnedTriad } from "./accusation.js";
+import { renderColumns, renderSockets } from "./board-cards.js";
+import { searchLabelState, accusedMonogram, partitionFacts } from "./board-derive.js";
 import { CASE2_SOURCES, CASE3_SOURCES, CASE3_SEARCH } from "./content.js";
 
-const KIND_GROUPS = [
-  ["entity", "Dossiers"],
-  ["field", "Claims"],
-  ["fact", "Source facts (open / search the files)"]
-];
-
 const SOURCES_FOR_CASE = { 2: CASE2_SOURCES, 3: CASE3_SOURCES };
+const ACCUSE_COST = 10;
 
 const HEADERS = {
   2: "CASE 2 — DUPLICATE ROSTER. Open the system files, pin a triad, name the duplicate.",
@@ -33,16 +31,23 @@ export function renderAccusation(state, caseId = 2) {
   hint.textContent = caseHint(state, cid);
   wrap.append(hint);
 
-  // Carried Case-1 deductions (continuity) — shown atop Case 2 so the case file reads as one thread.
-  const carried = (state.board?.established || []).filter((f) => f.id.startsWith("case1:"));
-  if (carried.length) {
-    const c = el("ul", "s7-established s7-carried");
-    c.innerHTML = `<h4>Case file — established earlier</h4>`;
-    for (const f of carried) { const li = document.createElement("li"); li.textContent = f.label; c.append(li); }
-    wrap.append(c);
-  }
+  wrap.append(renderSources(state, cid));
 
-  // Source-file shelf — opening each in the real viewer mints its fact card (load-bearing).
+  // The board surface: position:relative so the SVG string overlay + verdict stamp anchor to it.
+  const surface = el("div", "s7-board-surface");
+  surface.append(renderColumns(state, cid));
+  surface.append(renderPlate(state, cid));
+  wrap.append(surface);
+
+  const casefile = renderCaseFile(state, cid);
+  if (casefile) wrap.append(casefile);
+
+  return wrap;
+}
+
+// Source-file shelf — opening each in the real viewer mints its fact card (load-bearing). The Case-3
+// SEARCH is a distinct affordance whose LABEL hides the decisive token until the ladder earns it (#6).
+function renderSources(state, cid) {
   const sources = el("div", "s7-sources");
   for (const s of SOURCES_FOR_CASE[cid] || []) {
     const b = button({ "data-action": "open-source", "data-source": s.action });
@@ -51,63 +56,68 @@ export function renderAccusation(state, caseId = 2) {
     if (opened) b.classList.add("is-opened");
     sources.append(b);
   }
-  // Case 3 SEARCH un-cheat: a distinct affordance — the decisive fact is search-only.
   if (cid === 3) {
     const searched = cardsForCase(state, 3).some((c) => c.id === CASE3_SEARCH.card.id);
+    const label = searchLabelState(state).label;
     const sb = button({ "data-action": "search-source", "data-source": CASE3_SEARCH.action });
     sb.classList.add("s7-search-btn");
-    sb.textContent = `${searched ? "[done] " : "[search] "}search ${CASE3_SEARCH.file} for "${CASE3_SEARCH.query}"`;
+    sb.textContent = `${searched ? "[done] " : "[search] "}${label}`;
     if (searched) sb.classList.add("is-opened");
     sources.append(sb);
   }
-  wrap.append(sources);
+  return sources;
+}
 
-  // The board: clue cards grouped by kind. Click a card to pin/unpin it into the triad.
-  const board = el("div", "s7-board-grid");
-  for (const [kind, label] of KIND_GROUPS) {
-    const col = el("section", "s7-board-col");
-    col.innerHTML = `<h4>${label}</h4>`;
-    const cards = cardsForCase(state, cid).filter((c) => c.kind === kind);
-    if (!cards.length) {
-      const empty = el("p", "s7-board-empty");
-      empty.textContent = kind === "fact" ? "No facts yet — open / search the system files." : "—";
-      col.append(empty);
-    }
-    for (const c of cards) {
-      const b = button({ "data-pin": c.id });
-      if (c.pinned) b.classList.add("is-pinned");
-      b.textContent = (c.pinned ? "[pinned] " : "") + c.label;
-      col.append(b);
-    }
-    board.append(col);
-  }
-  wrap.append(board);
+// The accuse plate: the socket triad (#3), the armed Accuse button carrying the accused monogram + the
+// wrong-cost at decision time (#3, M3), and the last-judgment status strip (#5).
+function renderPlate(state, cid) {
+  const plate = el("div", "s7-accuse-plate");
+  plate.append(renderSockets(state, cid));
 
-  // Accusation row — enabled only when a full triad is pinned (silent otherwise).
   const triad = pinnedTriad(state, cid);
-  const accuseRow = el("div", "s7-accuse-row");
+  const mono = accusedMonogram(state, cid);
+  const row = el("div", "s7-accuse-row");
   const accuse = button({ "data-accuse": String(cid) });
+  accuse.className = "s7-accuse-btn" + (triad ? " is-armed" : "");
   accuse.disabled = !triad;
-  accuse.textContent = triad
-    ? `Accuse ${triad.entityId} (${triad.fieldId})`
+  accuse.innerHTML = triad
+    ? `NAME THE DUPLICATE — <strong>${esc(mono)}</strong> <small>&middot; costs ${ACCUSE_COST} if wrong</small>`
     : "Pin one dossier, one claim, one fact";
-  accuseRow.append(accuse);
-  wrap.append(accuseRow);
+  row.append(accuse);
+  plate.append(row);
 
-  // Established triad facts (persistent across the rest of the run).
+  const strip = el("div", "s7-status-strip");
+  const last = (state.log || [])[(state.log || []).length - 1] || "";
+  strip.textContent = last;
+  plate.append(strip);
+  return plate;
+}
+
+// The case-file accordion: settled evidence collapses out of the live board so it shrinks as you solve
+// (#5, M1) — carried Case-1 deductions, ESTABLISHED triads, and facts whose subject is now eliminated.
+function renderCaseFile(state, cid) {
+  const carried = (state.board?.established || []).filter((f) => f.id.startsWith("case1:"));
   const established = (state.board?.established || []).filter((f) => f.id.startsWith("triad:"));
-  if (established.length) {
-    const facts = el("ul", "s7-established");
-    facts.innerHTML = `<h4>Established</h4>`;
-    for (const f of established) {
-      const li = document.createElement("li");
-      li.textContent = f.label;
-      facts.append(li);
-    }
-    wrap.append(facts);
-  }
+  const { archived } = partitionFacts(state, cid);
+  const count = carried.length + established.length + archived.length;
+  if (!count) return null;
 
-  return wrap;
+  const det = el("details", "s7-casefile");
+  const sum = document.createElement("summary");
+  sum.textContent = `Case file — ${count} settled`;
+  det.append(sum);
+  const body = el("div", "s7-casefile-body");
+  for (const f of established) body.append(fileLine(f.label, "is-established"));
+  for (const f of carried) body.append(fileLine(f.label));
+  for (const f of archived) body.append(fileLine(f.label, "is-archived"));
+  det.append(body);
+  return det;
+}
+
+function fileLine(text, cls) {
+  const p = el("p", "s7-casefile-line" + (cls ? " " + cls : ""));
+  p.textContent = text;
+  return p;
 }
 
 function button(dataset) {
@@ -121,4 +131,8 @@ function el(tag, className) {
   const node = document.createElement(tag);
   if (className) node.className = className;
   return node;
+}
+
+function esc(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
 }

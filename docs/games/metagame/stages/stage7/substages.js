@@ -2,7 +2,7 @@
 // the boss (SS5). Each correct deduction advances state.substage; the boss is only reachable at SS5,
 // so the run must be worked through before any commit (honors boss-never-from-start). No DOM/timers.
 
-import { entityFields, entityFEventLog, SCAN_ENTITIES } from "./content.js";
+import { entityFields, entityFEventLog, SCAN_ENTITIES, DUP_FIELDS } from "./content.js";
 import { establishFact } from "./evidence-board.js";
 
 export const SUBSTAGE = { SCAN: 1, DUP: 2, TIMELINE: 3, CHAIN: 4, ACCUSE: 5, ACCUSE3: 6, BOSS: 7 };
@@ -35,9 +35,11 @@ export function flagField({ state, entityId, fieldId }) {
 
 // SS2 — Duplicate Test: diff Entity F against Entity A. GPSInfo is the tampered field.
 export function diffField({ state, fieldName }) {
-  if (fieldName !== "GPSInfo") {
-    pushLog(state, "this field matches across both dossiers.");
-    return { ok: false };
+  const info = DUP_FIELDS[fieldName];
+  if (!info?.tamper) {
+    // A benign-difference decoy (ColorSpace) gives a specific nudge; anything else simply matches.
+    pushLog(state, info?.benignDiff ? info.note : "this field matches across both dossiers.");
+    return { ok: false, reason: info?.benignDiff ? "benign-diff" : "match" };
   }
   state.evidence.partialContra = [...new Set([...(state.evidence.partialContra || []), "F.GPSInfo"])];
   state.evidence.dupTestComplete = true;
