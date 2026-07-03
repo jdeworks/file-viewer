@@ -111,6 +111,10 @@ const TYPE_INFO = {
   cif: ['CIF crystallographic data', 'used to store crystal structure data from X-ray, neutron, and electron diffraction experiments.', 'https://en.wikipedia.org/wiki/Crystallographic_Information_File'],
   bio: ['Bioinformatics data', 'used to store DNA/RNA/protein sequences, sequencer reads, and genomic variants for bioinformatics pipelines.', 'https://en.wikipedia.org/wiki/FASTA_format'],
   pdb: ['PDB protein structure', 'used to store atomic coordinates and metadata for protein and macromolecule structures from X-ray, cryo-EM, and NMR experiments.', 'https://en.wikipedia.org/wiki/Protein_Data_Bank_(file_format)'],
+  postscript: ['PostScript / EPS', 'used for vector graphics, print-ready artwork, and legacy illustration files.', 'https://en.wikipedia.org/wiki/PostScript'],
+  prproj: ['Adobe Premiere Project', 'used for Adobe Premiere Pro video editing projects.', 'https://en.wikipedia.org/wiki/Adobe_Premiere_Pro'],
+  qif: ['QIF Financial', 'used for Quicken, Microsoft Money, and GnuCash account exports.', 'https://en.wikipedia.org/wiki/Quicken_Interchange_Format'],
+  sarif: ['SARIF Security Report', 'used to exchange static analysis results between tools like CodeQL, ESLint, Semgrep, and Bandit.', 'https://sarifweb.azurewebsites.net/'],
 };
 
 const KNOWN_INFO = {

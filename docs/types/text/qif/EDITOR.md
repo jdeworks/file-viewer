@@ -16,7 +16,7 @@ Viewer parses QIF account type header (`!Type:`), splits records on `^`, and sur
 - Edit payee and memo — inline text inputs per row; regenerate QIF on save using the existing record structure — M — no lib
 - Categorize transactions — dropdown or text field on each row for the `L` field; serialize back to QIF — M — no lib
 - Export as OFX — convert QIF records to OFX 1.x SGML (reuse the OFX type's `parseOfx` for reference structure); download as `.ofx` — L — no lib, custom serializer
-- ✅ SHIPPED — Export as CSV — flat export of all fields (date, payee, amount, memo, category, cleared, number) as RFC 4180 CSV — S — no lib *(shipped; current export covers date/payee/amount/category/memo — cleared & number not yet included)*
+- ✅ SHIPPED — Export as CSV — flat export of all fields (date, payee, amount, memo, category, cleared, number) as RFC 4180 CSV — S — no lib *(shipped; the in-preview button covers date/payee/amount/category/memo, and `exports.js` — now wired via `loadExports` into the global export menu — covers date/amount/payee/memo/number; neither list includes `cleared` yet, and the two column sets still diverge)*
 - Add new transaction — form at the bottom of the table; appends a new `^`-terminated record block — M
 
 ## Full write-back editing (companion required)

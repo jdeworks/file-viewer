@@ -2522,65 +2522,65 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/pem/metadata.js
 - [x] docs/types/text/pem/renderer.js
 - [x] docs/types/text/pem/settings.default.json
-- [ ] docs/types/text/plist/detect.js
-- [ ] docs/types/text/plist/EDITOR.md
-- [ ] docs/types/text/plist/index.js
-- [ ] docs/types/text/plist/metadata.js
-- [ ] docs/types/text/plist/renderer.js
-- [ ] docs/types/text/plist/settings.default.json
-- [ ] docs/types/text/postscript/detect.js
-- [ ] docs/types/text/postscript/EDITOR.md
-- [ ] docs/types/text/postscript/index.js
-- [ ] docs/types/text/postscript/metadata.js
-- [ ] docs/types/text/postscript/renderer.js
-- [ ] docs/types/text/postscript/settings.default.json
-- [ ] docs/types/text/proto/detect.js
-- [ ] docs/types/text/proto/EDITOR.md
-- [ ] docs/types/text/proto/index.js
-- [ ] docs/types/text/proto/metadata.js
-- [ ] docs/types/text/proto/renderer.js
-- [ ] docs/types/text/proto/settings.default.json
-- [ ] docs/types/text/prproj/detect.js
-- [ ] docs/types/text/prproj/EDITOR.md
-- [ ] docs/types/text/prproj/index.js
-- [ ] docs/types/text/prproj/metadata.js
-- [ ] docs/types/text/prproj/renderer.js
-- [ ] docs/types/text/prproj/settings.default.json
-- [ ] docs/types/text/qif/detect.js
-- [ ] docs/types/text/qif/EDITOR.md
-- [ ] docs/types/text/qif/exports.js
-- [ ] docs/types/text/qif/index.js
-- [ ] docs/types/text/qif/metadata.js
-- [ ] docs/types/text/qif/renderer.js
-- [ ] docs/types/text/qif/settings.default.json
-- [ ] docs/types/text/raw/detect.js
-- [ ] docs/types/text/raw/index.js
-- [ ] docs/types/text/raw/metadata.js
-- [ ] docs/types/text/raw/renderer.js
-- [ ] docs/types/text/raw/settings.default.json
-- [ ] docs/types/text/rdp/detect.js
-- [ ] docs/types/text/rdp/EDITOR.md
-- [ ] docs/types/text/rdp/index.js
-- [ ] docs/types/text/rdp/metadata.js
-- [ ] docs/types/text/rdp/renderer.js
-- [ ] docs/types/text/rdp/settings.default.json
-- [ ] docs/types/text/reg/detect.js
-- [ ] docs/types/text/reg/EDITOR.md
-- [ ] docs/types/text/reg/index.js
-- [ ] docs/types/text/reg/metadata.js
-- [ ] docs/types/text/reg/renderer.js
-- [ ] docs/types/text/reg/settings.default.json
-- [ ] docs/types/text/rtf/detect.js
-- [ ] docs/types/text/rtf/index.js
-- [ ] docs/types/text/rtf/metadata.js
-- [ ] docs/types/text/rtf/renderer.js
-- [ ] docs/types/text/rtf/settings.default.json
-- [ ] docs/types/text/sarif/detect.js
-- [ ] docs/types/text/sarif/EDITOR.md
-- [ ] docs/types/text/sarif/index.js
-- [ ] docs/types/text/sarif/metadata.js
-- [ ] docs/types/text/sarif/renderer.js
-- [ ] docs/types/text/sarif/settings.default.json
+- [x] docs/types/text/plist/detect.js
+- [x] docs/types/text/plist/EDITOR.md
+- [x] docs/types/text/plist/index.js
+- [x] docs/types/text/plist/metadata.js
+- [x] docs/types/text/plist/renderer.js
+- [x] docs/types/text/plist/settings.default.json
+- [x] docs/types/text/postscript/detect.js
+- [x] docs/types/text/postscript/EDITOR.md
+- [x] docs/types/text/postscript/index.js
+- [x] docs/types/text/postscript/metadata.js
+- [x] docs/types/text/postscript/renderer.js
+- [x] docs/types/text/postscript/settings.default.json
+- [x] docs/types/text/proto/detect.js
+- [x] docs/types/text/proto/EDITOR.md
+- [x] docs/types/text/proto/index.js
+- [x] docs/types/text/proto/metadata.js
+- [x] docs/types/text/proto/renderer.js
+- [x] docs/types/text/proto/settings.default.json
+- [x] docs/types/text/prproj/detect.js
+- [x] docs/types/text/prproj/EDITOR.md
+- [x] docs/types/text/prproj/index.js
+- [x] docs/types/text/prproj/metadata.js
+- [x] docs/types/text/prproj/renderer.js
+- [x] docs/types/text/prproj/settings.default.json
+- [x] docs/types/text/qif/detect.js
+- [x] docs/types/text/qif/EDITOR.md
+- [x] docs/types/text/qif/exports.js
+- [x] docs/types/text/qif/index.js
+- [x] docs/types/text/qif/metadata.js
+- [x] docs/types/text/qif/renderer.js
+- [x] docs/types/text/qif/settings.default.json
+- [x] docs/types/text/raw/detect.js
+- [x] docs/types/text/raw/index.js
+- [x] docs/types/text/raw/metadata.js
+- [x] docs/types/text/raw/renderer.js
+- [x] docs/types/text/raw/settings.default.json
+- [x] docs/types/text/rdp/detect.js
+- [x] docs/types/text/rdp/EDITOR.md
+- [x] docs/types/text/rdp/index.js
+- [x] docs/types/text/rdp/metadata.js
+- [x] docs/types/text/rdp/renderer.js
+- [x] docs/types/text/rdp/settings.default.json
+- [x] docs/types/text/reg/detect.js
+- [x] docs/types/text/reg/EDITOR.md
+- [x] docs/types/text/reg/index.js
+- [x] docs/types/text/reg/metadata.js
+- [x] docs/types/text/reg/renderer.js
+- [x] docs/types/text/reg/settings.default.json
+- [x] docs/types/text/rtf/detect.js
+- [x] docs/types/text/rtf/index.js
+- [x] docs/types/text/rtf/metadata.js
+- [x] docs/types/text/rtf/renderer.js
+- [x] docs/types/text/rtf/settings.default.json
+- [x] docs/types/text/sarif/detect.js
+- [x] docs/types/text/sarif/EDITOR.md
+- [x] docs/types/text/sarif/index.js
+- [x] docs/types/text/sarif/metadata.js
+- [x] docs/types/text/sarif/renderer.js
+- [x] docs/types/text/sarif/settings.default.json
 - [x] docs/types/text/sdf/detect.js
 - [x] docs/types/text/sdf/EDITOR.md
 - [x] docs/types/text/sdf/index.js

@@ -28,6 +28,15 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+// Some real-world plists (app prefs, launch agents) carry secrets under keys like
+// APIKey / Password / AuthToken / ClientSecret. Redact string leaf values whose dict key
+// matches — same convention as the .env viewer's SENSITIVE key match.
+const SENSITIVE_KEY = /password|passwd|pwd|secret|token|credential|apikey|api[_-]?key|private[_-]?key/i;
+
+function isSensitiveKey(k) {
+  return SENSITIVE_KEY.test(k);
+}
+
 function renderValue(val, depth) {
   if (val === null || val === undefined) {
     return '<span class="pl-null">null</span>';
@@ -80,6 +89,10 @@ function renderValue(val, depth) {
           + `<span class="pl-key" title="${esc(k)}">${esc(k)}</span>`
           + `<div class="pl-children">${inner}</div>`
           + `</div>`;
+      }
+      if (typeof child === 'string' && !child.startsWith('<data: ') && isSensitiveKey(k)) {
+        return `<div class="pl-row"><span class="pl-key-plain">${esc(k)}</span>: `
+          + `<span class="pl-data" title="masked because &quot;${esc(k)}&quot; matches a common secret key name">[redacted]</span></div>`;
       }
       return `<div class="pl-row"><span class="pl-key-plain">${esc(k)}</span>: ${renderValue(child, depth + 1)}</div>`;
     }).join('');

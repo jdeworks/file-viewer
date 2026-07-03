@@ -22,7 +22,7 @@
 | Date range | ✅ | First and last transaction dates |
 | Income total | ✅ | Sum of positive amounts |
 | Expense total | ✅ | Sum of negative amounts |
-| Cleared status | ✅ | `C` field parsed (X = cleared) |
+| Cleared status | ⚠️ Partial | `C` field is parsed into each transaction but not shown in the preview table or account summary |
 | Memo / note | ⚠️ Partial | Parsed and included in CSV export, not shown in the preview table |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Diff | ❌ | Disabled |
@@ -38,7 +38,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Download original | ✅ | Always available |
-| Export as CSV | ✅ | Preview table includes an `Export CSV` action when transactions are present |
+| Export as CSV | ✅ | Preview table includes an `Export CSV` action when transactions are present; the global export menu also offers a CSV export (`exports.js`, wired via `loadExports`) |
 
 ## Real-World Examples
 
@@ -48,7 +48,7 @@
 
 - Split transactions (multiple `S` lines) not rendered
 - Investment transactions (buy/sell) not specifically parsed
-- CSV export is implemented inside the preview, not in the global export menu
+- The preview's inline CSV export (date/payee/amount/category/memo) and the global export menu's CSV export (date/amount/payee/memo/number) use slightly different column sets — neither includes both category and number
 
 ## Gap Analysis
 
