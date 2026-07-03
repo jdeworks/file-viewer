@@ -1,8 +1,9 @@
 # Modular Media Mixer Research Package
 
-Status: ready for review; not yet approved as the implementation source of
-truth. Use `14-review-summary.md` for the short read and
-`10-review-checklist.md` to record approval or amendments.
+Status: approved as the implementation source of truth (see the `10-review-checklist.md`
+sign-off, 2026-06-26); Stage 1-8 implementation is complete per `STUDIO_TRACKER.md`. Use
+`14-review-summary.md` for the short read and `10-review-checklist.md` for the approval
+record.
 
 This folder defines the research baseline for a new modular media mixer/editor
 inside the file-viewer media studio.
@@ -91,9 +92,10 @@ Build a general, capability-aware timeline/mixer module:
   - `/home/jens/repos/narratu/apps/web/src/components/workspace/EqPanel.tsx`
   - `/home/jens/repos/narratu/apps/web/src/utils/eq-engine.ts`
   - `/home/jens/repos/narratu/apps/web/src/utils/eq-presets.ts`
-- File-viewer current prototype:
+- File-viewer prototype at research time (mixer-engine.js, timeline.js, and
+  compare-ui.js were later retired/deleted in Stage 8 — see `STUDIO_TRACKER.md`):
   - `docs/types/media/renderer.js`
-  - `docs/types/media/mixer-engine.js`
-  - `docs/types/media/timeline.js`
-  - `docs/types/media/compare-ui.js`
+  - `docs/types/media/mixer-engine.js` (retired/deleted)
+  - `docs/types/media/timeline.js` (retired/deleted)
+  - `docs/types/media/compare-ui.js` (retired/deleted)
   - `docs/types/media/studio-export.js`
