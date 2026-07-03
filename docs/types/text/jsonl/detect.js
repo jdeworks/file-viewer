@@ -2,7 +2,7 @@ import { hasExtension } from '../../../core/detect.js';
 
 export function detect(intake) {
   if (intake.isBinary) return 0;
-  if (hasExtension(intake, 'jsonl', 'ndjson')) return 0.92;
+  if (hasExtension(intake, 'jsonl', 'ndjson', 'ldjson')) return 0.92;
   // Content heuristic: two separate JSON values on consecutive lines (don't fire on .json)
   if (!hasExtension(intake, 'json')) {
     const lines = (intake.text || '').split('\n').filter((l) => l.trim() && !l.trim().startsWith('#'));

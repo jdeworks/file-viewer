@@ -1,9 +1,12 @@
 export default {
   id: 'act-config',
   label: 'act config',
+  // `.actrc` is owned by the dedicated `actrc` plugin (registered first in known/registry.js,
+  // so it always wins matchKnown's first-match-wins for that filename); this plugin only
+  // needs to claim the distinct `act.config` name to avoid a fully-shadowed dead branch.
   match: (intake, baseType) => {
     const name = (intake.filename || '').split('/').pop().toLowerCase();
-    return name === '.actrc' || name === 'act.config';
+    return name === 'act.config';
   },
   loadRenderer: () => import('./renderer.js'),
   about: {

@@ -1412,202 +1412,202 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/json/metadata.js
 - [x] docs/types/text/json/renderer.js
 - [x] docs/types/text/json/settings.default.json
-- [ ] docs/types/text/jsonl/detect.js
-- [ ] docs/types/text/jsonl/EDITOR.md
-- [ ] docs/types/text/jsonl/index.js
-- [ ] docs/types/text/jsonl/metadata.js
-- [ ] docs/types/text/jsonl/renderer.js
-- [ ] docs/types/text/jsonl/settings.default.json
-- [ ] docs/types/text/kicad/detect.js
-- [ ] docs/types/text/kicad/EDITOR.md
-- [ ] docs/types/text/kicad/index.js
-- [ ] docs/types/text/kicad/metadata.js
-- [ ] docs/types/text/kicad/renderer.js
-- [ ] docs/types/text/kicad/settings.default.json
-- [ ] docs/types/text/kml/detect.js
-- [ ] docs/types/text/kml/index.js
-- [ ] docs/types/text/kml/metadata.js
-- [ ] docs/types/text/kml/renderer.js
-- [ ] docs/types/text/kml/settings.default.json
-- [ ] docs/types/text/known/act-config/index.js
-- [ ] docs/types/text/known/act-config/renderer.js
-- [ ] docs/types/text/known/actrc/index.js
-- [ ] docs/types/text/known/actrc/renderer.js
-- [ ] docs/types/text/known/ada-lang/index.js
-- [ ] docs/types/text/known/ada-lang/renderer.js
-- [ ] docs/types/text/known/agda-lang/index.js
-- [ ] docs/types/text/known/agda-lang/renderer.js
-- [ ] docs/types/text/known/alacritty-conf/index.js
-- [ ] docs/types/text/known/alacritty-conf/renderer.js
-- [ ] docs/types/text/known/alloy-lang/index.js
-- [ ] docs/types/text/known/alloy-lang/renderer.js
-- [ ] docs/types/text/known/ansible-cfg/index.js
-- [ ] docs/types/text/known/ansible-cfg/renderer.js
-- [ ] docs/types/text/known/ansible-hosts/index.js
-- [ ] docs/types/text/known/ansible-hosts/renderer.js
-- [ ] docs/types/text/known/apache-conf/index.js
-- [ ] docs/types/text/known/apache-conf/renderer.js
-- [ ] docs/types/text/known/apparmor-profile/index.js
-- [ ] docs/types/text/known/apparmor-profile/renderer.js
-- [ ] docs/types/text/known/appfile/index.js
-- [ ] docs/types/text/known/appfile/renderer.js
-- [ ] docs/types/text/known/appsmith-config/index.js
-- [ ] docs/types/text/known/appsmith-config/renderer.js
-- [ ] docs/types/text/known/apt-sources/index.js
-- [ ] docs/types/text/known/apt-sources/renderer.js
-- [ ] docs/types/text/known/archivebox-config/index.js
-- [ ] docs/types/text/known/archivebox-config/renderer.js
-- [ ] docs/types/text/known/arduino-sketch/index.js
-- [ ] docs/types/text/known/arduino-sketch/renderer.js
-- [ ] docs/types/text/known/aria2-conf/index.js
-- [ ] docs/types/text/known/aria2-conf/renderer.js
-- [ ] docs/types/text/known/asciidoc/index.js
-- [ ] docs/types/text/known/asciidoc/renderer.js
-- [ ] docs/types/text/known/asm-lang/index.js
-- [ ] docs/types/text/known/asm-lang/renderer.js
-- [ ] docs/types/text/known/astro-config/index.js
-- [ ] docs/types/text/known/astro-config/renderer.js
-- [ ] docs/types/text/known/atlas-hcl/index.js
-- [ ] docs/types/text/known/atlas-hcl/renderer.js
-- [ ] docs/types/text/known/audiobookshelf-config/index.js
-- [ ] docs/types/text/known/audiobookshelf-config/renderer.js
-- [ ] docs/types/text/known/audit-rules/index.js
-- [ ] docs/types/text/known/audit-rules/renderer.js
-- [ ] docs/types/text/known/authentik-config/index.js
-- [ ] docs/types/text/known/authentik-config/renderer.js
-- [ ] docs/types/text/known/avahi-daemon-conf/index.js
-- [ ] docs/types/text/known/avahi-daemon-conf/renderer.js
-- [ ] docs/types/text/known/awk-script/index.js
-- [ ] docs/types/text/known/awk-script/renderer.js
-- [ ] docs/types/text/known/azure-bicep/index.js
-- [ ] docs/types/text/known/azure-bicep/renderer.js
-- [ ] docs/types/text/known/ballerina-lang/index.js
-- [ ] docs/types/text/known/ballerina-lang/renderer.js
-- [ ] docs/types/text/known/bazel/index.js
-- [ ] docs/types/text/known/bazel/renderer.js
-- [ ] docs/types/text/known/bazelrc/index.js
-- [ ] docs/types/text/known/bazelrc/renderer.js
-- [ ] docs/types/text/known/bbcode-text/index.js
-- [ ] docs/types/text/known/bbcode-text/renderer.js
-- [ ] docs/types/text/known/berksfile/index.js
-- [ ] docs/types/text/known/berksfile/renderer.js
-- [ ] docs/types/text/known/bind-zone/index.js
-- [ ] docs/types/text/known/bind-zone/renderer.js
-- [ ] docs/types/text/known/bookstack-config/index.js
-- [ ] docs/types/text/known/bookstack-config/renderer.js
-- [ ] docs/types/text/known/bookstack-env/index.js
-- [ ] docs/types/text/known/bookstack-env/renderer.js
-- [ ] docs/types/text/known/brewfile/index.js
-- [ ] docs/types/text/known/brewfile/renderer.js
-- [ ] docs/types/text/known/browserslist/index.js
-- [ ] docs/types/text/known/browserslist/renderer.js
-- [ ] docs/types/text/known/bspwmrc/index.js
-- [ ] docs/types/text/known/bspwmrc/renderer.js
-- [ ] docs/types/text/known/build-gradle/index.js
-- [ ] docs/types/text/known/build-gradle/metadata.js
-- [ ] docs/types/text/known/build-gradle/render.js
-- [ ] docs/types/text/known/build-gradle/renderer.js
-- [ ] docs/types/text/known/build-sbt/index.js
-- [ ] docs/types/text/known/build-sbt/renderer.js
-- [ ] docs/types/text/known/build-zig-zon/index.js
-- [ ] docs/types/text/known/build-zig-zon/renderer.js
-- [ ] docs/types/text/known/cabal/index.js
-- [ ] docs/types/text/known/cabal/renderer.js
-- [ ] docs/types/text/known/caddyfile/index.js
-- [ ] docs/types/text/known/caddyfile/renderer.js
-- [ ] docs/types/text/known/cal-com-config/index.js
-- [ ] docs/types/text/known/cal-com-config/renderer.js
-- [ ] docs/types/text/known/capnp/index.js
-- [ ] docs/types/text/known/capnp/renderer.js
-- [ ] docs/types/text/known/carbon-lang/index.js
-- [ ] docs/types/text/known/carbon-lang/renderer.js
-- [ ] docs/types/text/known/cartfile/index.js
-- [ ] docs/types/text/known/cartfile/renderer.js
-- [ ] docs/types/text/known/changedetection-config/index.js
-- [ ] docs/types/text/known/changedetection-config/renderer.js
-- [ ] docs/types/text/known/chapel-lang/index.js
-- [ ] docs/types/text/known/chapel-lang/renderer.js
-- [ ] docs/types/text/known/chrony-conf/index.js
-- [ ] docs/types/text/known/chrony-conf/renderer.js
-- [ ] docs/types/text/known/claude-md/index.js
-- [ ] docs/types/text/known/claude-md/renderer.js
-- [ ] docs/types/text/known/clojure-lang/index.js
-- [ ] docs/types/text/known/clojure-lang/renderer.js
-- [ ] docs/types/text/known/cmake/index.js
-- [ ] docs/types/text/known/cmake/renderer.js
-- [ ] docs/types/text/known/cmus-conf/index.js
-- [ ] docs/types/text/known/cmus-conf/renderer.js
-- [ ] docs/types/text/known/cobol-lang/index.js
-- [ ] docs/types/text/known/cobol-lang/renderer.js
-- [ ] docs/types/text/known/codeowners/index.js
-- [ ] docs/types/text/known/codeowners/metadata.js
-- [ ] docs/types/text/known/codeowners/render.js
-- [ ] docs/types/text/known/coder-config/index.js
-- [ ] docs/types/text/known/coder-config/renderer.js
-- [ ] docs/types/text/known/coffeescript-lang/index.js
-- [ ] docs/types/text/known/coffeescript-lang/renderer.js
-- [ ] docs/types/text/known/common-lisp/index.js
-- [ ] docs/types/text/known/common-lisp/renderer.js
-- [ ] docs/types/text/known/conanfile/index.js
-- [ ] docs/types/text/known/conanfile/renderer.js
-- [ ] docs/types/text/known/concourse-config/index.js
-- [ ] docs/types/text/known/concourse-config/renderer.js
-- [ ] docs/types/text/known/conky-conf/index.js
-- [ ] docs/types/text/known/conky-conf/renderer.js
-- [ ] docs/types/text/known/consul-config/index.js
-- [ ] docs/types/text/known/consul-config/renderer.js
-- [ ] docs/types/text/known/containerd-config/index.js
-- [ ] docs/types/text/known/containerd-config/renderer.js
-- [ ] docs/types/text/known/copilot-instructions/index.js
-- [ ] docs/types/text/known/copilot-instructions/renderer.js
-- [ ] docs/types/text/known/coq-lang/index.js
-- [ ] docs/types/text/known/coq-lang/renderer.js
-- [ ] docs/types/text/known/corefile/index.js
-- [ ] docs/types/text/known/corefile/renderer.js
-- [ ] docs/types/text/known/corosync-conf/index.js
-- [ ] docs/types/text/known/corosync-conf/renderer.js
-- [ ] docs/types/text/known/coturn-conf/index.js
-- [ ] docs/types/text/known/coturn-conf/renderer.js
-- [ ] docs/types/text/known/cpanfile/index.js
-- [ ] docs/types/text/known/cpanfile/renderer.js
-- [ ] docs/types/text/known/crontab/index.js
-- [ ] docs/types/text/known/crontab/renderer.js
-- [ ] docs/types/text/known/crypttab/index.js
-- [ ] docs/types/text/known/crypttab/renderer.js
-- [ ] docs/types/text/known/crystal-lang/index.js
-- [ ] docs/types/text/known/crystal-lang/renderer.js
-- [ ] docs/types/text/known/cue-lang/index.js
-- [ ] docs/types/text/known/cue-lang/renderer.js
-- [ ] docs/types/text/known/cups-conf/index.js
-- [ ] docs/types/text/known/cups-conf/renderer.js
-- [ ] docs/types/text/known/curlrc/index.js
-- [ ] docs/types/text/known/curlrc/renderer.js
-- [ ] docs/types/text/known/cursor-rules/index.js
-- [ ] docs/types/text/known/cursor-rules/renderer.js
-- [ ] docs/types/text/known/cypress-config/index.js
-- [ ] docs/types/text/known/cypress-config/renderer.js
-- [ ] docs/types/text/known/d-lang/index.js
-- [ ] docs/types/text/known/d-lang/renderer.js
-- [ ] docs/types/text/known/dafny/index.js
-- [ ] docs/types/text/known/dafny/renderer.js
-- [ ] docs/types/text/known/dart-lang/index.js
-- [ ] docs/types/text/known/dart-lang/renderer.js
-- [ ] docs/types/text/known/debian-control/index.js
-- [ ] docs/types/text/known/debian-control/renderer.js
-- [ ] docs/types/text/known/deps-edn/index.js
-- [ ] docs/types/text/known/deps-edn/renderer.js
-- [ ] docs/types/text/known/dhall-config/index.js
-- [ ] docs/types/text/known/dhall-config/renderer.js
-- [ ] docs/types/text/known/dhcpd-conf/index.js
-- [ ] docs/types/text/known/dhcpd-conf/renderer.js
-- [ ] docs/types/text/known/django-settings/index.js
-- [ ] docs/types/text/known/django-settings/renderer.js
-- [ ] docs/types/text/known/dnf-conf/index.js
-- [ ] docs/types/text/known/dnf-conf/renderer.js
-- [ ] docs/types/text/known/dnsmasq/index.js
-- [ ] docs/types/text/known/dnsmasq/renderer.js
-- [ ] docs/types/text/known/docker-bake/index.js
-- [ ] docs/types/text/known/docker-bake/renderer.js
+- [x] docs/types/text/jsonl/detect.js
+- [x] docs/types/text/jsonl/EDITOR.md
+- [x] docs/types/text/jsonl/index.js
+- [x] docs/types/text/jsonl/metadata.js
+- [x] docs/types/text/jsonl/renderer.js
+- [x] docs/types/text/jsonl/settings.default.json
+- [x] docs/types/text/kicad/detect.js
+- [x] docs/types/text/kicad/EDITOR.md
+- [x] docs/types/text/kicad/index.js
+- [x] docs/types/text/kicad/metadata.js
+- [x] docs/types/text/kicad/renderer.js
+- [x] docs/types/text/kicad/settings.default.json
+- [x] docs/types/text/kml/detect.js
+- [x] docs/types/text/kml/index.js
+- [x] docs/types/text/kml/metadata.js
+- [x] docs/types/text/kml/renderer.js
+- [x] docs/types/text/kml/settings.default.json
+- [x] docs/types/text/known/act-config/index.js
+- [x] docs/types/text/known/act-config/renderer.js
+- [x] docs/types/text/known/actrc/index.js
+- [x] docs/types/text/known/actrc/renderer.js
+- [x] docs/types/text/known/ada-lang/index.js
+- [x] docs/types/text/known/ada-lang/renderer.js
+- [x] docs/types/text/known/agda-lang/index.js
+- [x] docs/types/text/known/agda-lang/renderer.js
+- [x] docs/types/text/known/alacritty-conf/index.js
+- [x] docs/types/text/known/alacritty-conf/renderer.js
+- [x] docs/types/text/known/alloy-lang/index.js
+- [x] docs/types/text/known/alloy-lang/renderer.js
+- [x] docs/types/text/known/ansible-cfg/index.js
+- [x] docs/types/text/known/ansible-cfg/renderer.js
+- [x] docs/types/text/known/ansible-hosts/index.js
+- [x] docs/types/text/known/ansible-hosts/renderer.js
+- [x] docs/types/text/known/apache-conf/index.js
+- [x] docs/types/text/known/apache-conf/renderer.js
+- [x] docs/types/text/known/apparmor-profile/index.js
+- [x] docs/types/text/known/apparmor-profile/renderer.js
+- [x] docs/types/text/known/appfile/index.js
+- [x] docs/types/text/known/appfile/renderer.js
+- [x] docs/types/text/known/appsmith-config/index.js
+- [x] docs/types/text/known/appsmith-config/renderer.js
+- [x] docs/types/text/known/apt-sources/index.js
+- [x] docs/types/text/known/apt-sources/renderer.js
+- [x] docs/types/text/known/archivebox-config/index.js
+- [x] docs/types/text/known/archivebox-config/renderer.js
+- [x] docs/types/text/known/arduino-sketch/index.js
+- [x] docs/types/text/known/arduino-sketch/renderer.js
+- [x] docs/types/text/known/aria2-conf/index.js
+- [x] docs/types/text/known/aria2-conf/renderer.js
+- [x] docs/types/text/known/asciidoc/index.js
+- [x] docs/types/text/known/asciidoc/renderer.js
+- [x] docs/types/text/known/asm-lang/index.js
+- [x] docs/types/text/known/asm-lang/renderer.js
+- [x] docs/types/text/known/astro-config/index.js
+- [x] docs/types/text/known/astro-config/renderer.js
+- [x] docs/types/text/known/atlas-hcl/index.js
+- [x] docs/types/text/known/atlas-hcl/renderer.js
+- [x] docs/types/text/known/audiobookshelf-config/index.js
+- [x] docs/types/text/known/audiobookshelf-config/renderer.js
+- [x] docs/types/text/known/audit-rules/index.js
+- [x] docs/types/text/known/audit-rules/renderer.js
+- [x] docs/types/text/known/authentik-config/index.js
+- [x] docs/types/text/known/authentik-config/renderer.js
+- [x] docs/types/text/known/avahi-daemon-conf/index.js
+- [x] docs/types/text/known/avahi-daemon-conf/renderer.js
+- [x] docs/types/text/known/awk-script/index.js
+- [x] docs/types/text/known/awk-script/renderer.js
+- [x] docs/types/text/known/azure-bicep/index.js
+- [x] docs/types/text/known/azure-bicep/renderer.js
+- [x] docs/types/text/known/ballerina-lang/index.js
+- [x] docs/types/text/known/ballerina-lang/renderer.js
+- [x] docs/types/text/known/bazel/index.js
+- [x] docs/types/text/known/bazel/renderer.js
+- [x] docs/types/text/known/bazelrc/index.js
+- [x] docs/types/text/known/bazelrc/renderer.js
+- [x] docs/types/text/known/bbcode-text/index.js
+- [x] docs/types/text/known/bbcode-text/renderer.js
+- [x] docs/types/text/known/berksfile/index.js
+- [x] docs/types/text/known/berksfile/renderer.js
+- [x] docs/types/text/known/bind-zone/index.js
+- [x] docs/types/text/known/bind-zone/renderer.js
+- [x] docs/types/text/known/bookstack-config/index.js
+- [x] docs/types/text/known/bookstack-config/renderer.js
+- [x] docs/types/text/known/bookstack-env/index.js
+- [x] docs/types/text/known/bookstack-env/renderer.js
+- [x] docs/types/text/known/brewfile/index.js
+- [x] docs/types/text/known/brewfile/renderer.js
+- [x] docs/types/text/known/browserslist/index.js
+- [x] docs/types/text/known/browserslist/renderer.js
+- [x] docs/types/text/known/bspwmrc/index.js
+- [x] docs/types/text/known/bspwmrc/renderer.js
+- [x] docs/types/text/known/build-gradle/index.js
+- [x] docs/types/text/known/build-gradle/metadata.js
+- [x] docs/types/text/known/build-gradle/render.js
+- [x] docs/types/text/known/build-gradle/renderer.js
+- [x] docs/types/text/known/build-sbt/index.js
+- [x] docs/types/text/known/build-sbt/renderer.js
+- [x] docs/types/text/known/build-zig-zon/index.js
+- [x] docs/types/text/known/build-zig-zon/renderer.js
+- [x] docs/types/text/known/cabal/index.js
+- [x] docs/types/text/known/cabal/renderer.js
+- [x] docs/types/text/known/caddyfile/index.js
+- [x] docs/types/text/known/caddyfile/renderer.js
+- [x] docs/types/text/known/cal-com-config/index.js
+- [x] docs/types/text/known/cal-com-config/renderer.js
+- [x] docs/types/text/known/capnp/index.js
+- [x] docs/types/text/known/capnp/renderer.js
+- [x] docs/types/text/known/carbon-lang/index.js
+- [x] docs/types/text/known/carbon-lang/renderer.js
+- [x] docs/types/text/known/cartfile/index.js
+- [x] docs/types/text/known/cartfile/renderer.js
+- [x] docs/types/text/known/changedetection-config/index.js
+- [x] docs/types/text/known/changedetection-config/renderer.js
+- [x] docs/types/text/known/chapel-lang/index.js
+- [x] docs/types/text/known/chapel-lang/renderer.js
+- [x] docs/types/text/known/chrony-conf/index.js
+- [x] docs/types/text/known/chrony-conf/renderer.js
+- [x] docs/types/text/known/claude-md/index.js
+- [x] docs/types/text/known/claude-md/renderer.js
+- [x] docs/types/text/known/clojure-lang/index.js
+- [x] docs/types/text/known/clojure-lang/renderer.js
+- [x] docs/types/text/known/cmake/index.js
+- [x] docs/types/text/known/cmake/renderer.js
+- [x] docs/types/text/known/cmus-conf/index.js
+- [x] docs/types/text/known/cmus-conf/renderer.js
+- [x] docs/types/text/known/cobol-lang/index.js
+- [x] docs/types/text/known/cobol-lang/renderer.js
+- [x] docs/types/text/known/codeowners/index.js
+- [x] docs/types/text/known/codeowners/metadata.js
+- [x] docs/types/text/known/codeowners/render.js
+- [x] docs/types/text/known/coder-config/index.js
+- [x] docs/types/text/known/coder-config/renderer.js
+- [x] docs/types/text/known/coffeescript-lang/index.js
+- [x] docs/types/text/known/coffeescript-lang/renderer.js
+- [x] docs/types/text/known/common-lisp/index.js
+- [x] docs/types/text/known/common-lisp/renderer.js
+- [x] docs/types/text/known/conanfile/index.js
+- [x] docs/types/text/known/conanfile/renderer.js
+- [x] docs/types/text/known/concourse-config/index.js
+- [x] docs/types/text/known/concourse-config/renderer.js
+- [x] docs/types/text/known/conky-conf/index.js
+- [x] docs/types/text/known/conky-conf/renderer.js
+- [x] docs/types/text/known/consul-config/index.js
+- [x] docs/types/text/known/consul-config/renderer.js
+- [x] docs/types/text/known/containerd-config/index.js
+- [x] docs/types/text/known/containerd-config/renderer.js
+- [x] docs/types/text/known/copilot-instructions/index.js
+- [x] docs/types/text/known/copilot-instructions/renderer.js
+- [x] docs/types/text/known/coq-lang/index.js
+- [x] docs/types/text/known/coq-lang/renderer.js
+- [x] docs/types/text/known/corefile/index.js
+- [x] docs/types/text/known/corefile/renderer.js
+- [x] docs/types/text/known/corosync-conf/index.js
+- [x] docs/types/text/known/corosync-conf/renderer.js
+- [x] docs/types/text/known/coturn-conf/index.js
+- [x] docs/types/text/known/coturn-conf/renderer.js
+- [x] docs/types/text/known/cpanfile/index.js
+- [x] docs/types/text/known/cpanfile/renderer.js
+- [x] docs/types/text/known/crontab/index.js
+- [x] docs/types/text/known/crontab/renderer.js
+- [x] docs/types/text/known/crypttab/index.js
+- [x] docs/types/text/known/crypttab/renderer.js
+- [x] docs/types/text/known/crystal-lang/index.js
+- [x] docs/types/text/known/crystal-lang/renderer.js
+- [x] docs/types/text/known/cue-lang/index.js
+- [x] docs/types/text/known/cue-lang/renderer.js
+- [x] docs/types/text/known/cups-conf/index.js
+- [x] docs/types/text/known/cups-conf/renderer.js
+- [x] docs/types/text/known/curlrc/index.js
+- [x] docs/types/text/known/curlrc/renderer.js
+- [x] docs/types/text/known/cursor-rules/index.js
+- [x] docs/types/text/known/cursor-rules/renderer.js
+- [x] docs/types/text/known/cypress-config/index.js
+- [x] docs/types/text/known/cypress-config/renderer.js
+- [x] docs/types/text/known/d-lang/index.js
+- [x] docs/types/text/known/d-lang/renderer.js
+- [x] docs/types/text/known/dafny/index.js
+- [x] docs/types/text/known/dafny/renderer.js
+- [x] docs/types/text/known/dart-lang/index.js
+- [x] docs/types/text/known/dart-lang/renderer.js
+- [x] docs/types/text/known/debian-control/index.js
+- [x] docs/types/text/known/debian-control/renderer.js
+- [x] docs/types/text/known/deps-edn/index.js
+- [x] docs/types/text/known/deps-edn/renderer.js
+- [x] docs/types/text/known/dhall-config/index.js
+- [x] docs/types/text/known/dhall-config/renderer.js
+- [x] docs/types/text/known/dhcpd-conf/index.js
+- [x] docs/types/text/known/dhcpd-conf/renderer.js
+- [x] docs/types/text/known/django-settings/index.js
+- [x] docs/types/text/known/django-settings/renderer.js
+- [x] docs/types/text/known/dnf-conf/index.js
+- [x] docs/types/text/known/dnf-conf/renderer.js
+- [x] docs/types/text/known/dnsmasq/index.js
+- [x] docs/types/text/known/dnsmasq/renderer.js
+- [x] docs/types/text/known/docker-bake/index.js
+- [x] docs/types/text/known/docker-bake/renderer.js
 - [ ] docs/types/text/known/dockerfile/index.js
 - [ ] docs/types/text/known/dockerfile/metadata.js
 - [ ] docs/types/text/known/dockerfile/render.js
@@ -3360,94 +3360,94 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/text/json/known/vscode-tasks
 - [x] docs/types/text/json/known/wails-json
 - [x] docs/types/text/json/known/waybar-config
-- [ ] docs/types/text/known/act-config
-- [ ] docs/types/text/known/actrc
-- [ ] docs/types/text/known/ada-lang
-- [ ] docs/types/text/known/agda-lang
-- [ ] docs/types/text/known/alacritty-conf
-- [ ] docs/types/text/known/alloy-lang
-- [ ] docs/types/text/known/ansible-cfg
-- [ ] docs/types/text/known/ansible-hosts
-- [ ] docs/types/text/known/apache-conf
-- [ ] docs/types/text/known/apparmor-profile
-- [ ] docs/types/text/known/appfile
-- [ ] docs/types/text/known/appsmith-config
-- [ ] docs/types/text/known/apt-sources
-- [ ] docs/types/text/known/archivebox-config
-- [ ] docs/types/text/known/arduino-sketch
-- [ ] docs/types/text/known/aria2-conf
-- [ ] docs/types/text/known/asciidoc
-- [ ] docs/types/text/known/asm-lang
-- [ ] docs/types/text/known/astro-config
-- [ ] docs/types/text/known/atlas-hcl
-- [ ] docs/types/text/known/audiobookshelf-config
-- [ ] docs/types/text/known/audit-rules
-- [ ] docs/types/text/known/authentik-config
-- [ ] docs/types/text/known/avahi-daemon-conf
-- [ ] docs/types/text/known/awk-script
-- [ ] docs/types/text/known/azure-bicep
-- [ ] docs/types/text/known/ballerina-lang
-- [ ] docs/types/text/known/bazel
-- [ ] docs/types/text/known/bazelrc
-- [ ] docs/types/text/known/bbcode-text
-- [ ] docs/types/text/known/berksfile
-- [ ] docs/types/text/known/bind-zone
-- [ ] docs/types/text/known/bookstack-config
-- [ ] docs/types/text/known/bookstack-env
-- [ ] docs/types/text/known/brewfile
-- [ ] docs/types/text/known/browserslist
-- [ ] docs/types/text/known/bspwmrc
-- [ ] docs/types/text/known/build-gradle
-- [ ] docs/types/text/known/build-sbt
-- [ ] docs/types/text/known/build-zig-zon
-- [ ] docs/types/text/known/cabal
-- [ ] docs/types/text/known/caddyfile
-- [ ] docs/types/text/known/cal-com-config
-- [ ] docs/types/text/known/capnp
-- [ ] docs/types/text/known/carbon-lang
-- [ ] docs/types/text/known/cartfile
-- [ ] docs/types/text/known/changedetection-config
-- [ ] docs/types/text/known/chapel-lang
-- [ ] docs/types/text/known/chrony-conf
-- [ ] docs/types/text/known/claude-md
-- [ ] docs/types/text/known/clojure-lang
-- [ ] docs/types/text/known/cmake
-- [ ] docs/types/text/known/cmus-conf
-- [ ] docs/types/text/known/cobol-lang
-- [ ] docs/types/text/known/codeowners
-- [ ] docs/types/text/known/coder-config
-- [ ] docs/types/text/known/coffeescript-lang
-- [ ] docs/types/text/known/common-lisp
-- [ ] docs/types/text/known/conanfile
-- [ ] docs/types/text/known/concourse-config
-- [ ] docs/types/text/known/conky-conf
-- [ ] docs/types/text/known/consul-config
-- [ ] docs/types/text/known/containerd-config
-- [ ] docs/types/text/known/copilot-instructions
-- [ ] docs/types/text/known/coq-lang
-- [ ] docs/types/text/known/corefile
-- [ ] docs/types/text/known/corosync-conf
-- [ ] docs/types/text/known/coturn-conf
-- [ ] docs/types/text/known/cpanfile
-- [ ] docs/types/text/known/crontab
-- [ ] docs/types/text/known/crypttab
-- [ ] docs/types/text/known/crystal-lang
-- [ ] docs/types/text/known/cue-lang
-- [ ] docs/types/text/known/cups-conf
-- [ ] docs/types/text/known/curlrc
-- [ ] docs/types/text/known/cursor-rules
-- [ ] docs/types/text/known/cypress-config
-- [ ] docs/types/text/known/d-lang
-- [ ] docs/types/text/known/dafny
-- [ ] docs/types/text/known/dart-lang
-- [ ] docs/types/text/known/debian-control
-- [ ] docs/types/text/known/deps-edn
-- [ ] docs/types/text/known/dhall-config
-- [ ] docs/types/text/known/dhcpd-conf
-- [ ] docs/types/text/known/django-settings
-- [ ] docs/types/text/known/dnf-conf
-- [ ] docs/types/text/known/dnsmasq
-- [ ] docs/types/text/known/docker-bake
+- [x] docs/types/text/known/act-config
+- [x] docs/types/text/known/actrc
+- [x] docs/types/text/known/ada-lang
+- [x] docs/types/text/known/agda-lang
+- [x] docs/types/text/known/alacritty-conf
+- [x] docs/types/text/known/alloy-lang
+- [x] docs/types/text/known/ansible-cfg
+- [x] docs/types/text/known/ansible-hosts
+- [x] docs/types/text/known/apache-conf
+- [x] docs/types/text/known/apparmor-profile
+- [x] docs/types/text/known/appfile
+- [x] docs/types/text/known/appsmith-config
+- [x] docs/types/text/known/apt-sources
+- [x] docs/types/text/known/archivebox-config
+- [x] docs/types/text/known/arduino-sketch
+- [x] docs/types/text/known/aria2-conf
+- [x] docs/types/text/known/asciidoc
+- [x] docs/types/text/known/asm-lang
+- [x] docs/types/text/known/astro-config
+- [x] docs/types/text/known/atlas-hcl
+- [x] docs/types/text/known/audiobookshelf-config
+- [x] docs/types/text/known/audit-rules
+- [x] docs/types/text/known/authentik-config
+- [x] docs/types/text/known/avahi-daemon-conf
+- [x] docs/types/text/known/awk-script
+- [x] docs/types/text/known/azure-bicep
+- [x] docs/types/text/known/ballerina-lang
+- [x] docs/types/text/known/bazel
+- [x] docs/types/text/known/bazelrc
+- [x] docs/types/text/known/bbcode-text
+- [x] docs/types/text/known/berksfile
+- [x] docs/types/text/known/bind-zone
+- [x] docs/types/text/known/bookstack-config
+- [x] docs/types/text/known/bookstack-env
+- [x] docs/types/text/known/brewfile
+- [x] docs/types/text/known/browserslist
+- [x] docs/types/text/known/bspwmrc
+- [x] docs/types/text/known/build-gradle
+- [x] docs/types/text/known/build-sbt
+- [x] docs/types/text/known/build-zig-zon
+- [x] docs/types/text/known/cabal
+- [x] docs/types/text/known/caddyfile
+- [x] docs/types/text/known/cal-com-config
+- [x] docs/types/text/known/capnp
+- [x] docs/types/text/known/carbon-lang
+- [x] docs/types/text/known/cartfile
+- [x] docs/types/text/known/changedetection-config
+- [x] docs/types/text/known/chapel-lang
+- [x] docs/types/text/known/chrony-conf
+- [x] docs/types/text/known/claude-md
+- [x] docs/types/text/known/clojure-lang
+- [x] docs/types/text/known/cmake
+- [x] docs/types/text/known/cmus-conf
+- [x] docs/types/text/known/cobol-lang
+- [x] docs/types/text/known/codeowners
+- [x] docs/types/text/known/coder-config
+- [x] docs/types/text/known/coffeescript-lang
+- [x] docs/types/text/known/common-lisp
+- [x] docs/types/text/known/conanfile
+- [x] docs/types/text/known/concourse-config
+- [x] docs/types/text/known/conky-conf
+- [x] docs/types/text/known/consul-config
+- [x] docs/types/text/known/containerd-config
+- [x] docs/types/text/known/copilot-instructions
+- [x] docs/types/text/known/coq-lang
+- [x] docs/types/text/known/corefile
+- [x] docs/types/text/known/corosync-conf
+- [x] docs/types/text/known/coturn-conf
+- [x] docs/types/text/known/cpanfile
+- [x] docs/types/text/known/crontab
+- [x] docs/types/text/known/crypttab
+- [x] docs/types/text/known/crystal-lang
+- [x] docs/types/text/known/cue-lang
+- [x] docs/types/text/known/cups-conf
+- [x] docs/types/text/known/curlrc
+- [x] docs/types/text/known/cursor-rules
+- [x] docs/types/text/known/cypress-config
+- [x] docs/types/text/known/d-lang
+- [x] docs/types/text/known/dafny
+- [x] docs/types/text/known/dart-lang
+- [x] docs/types/text/known/debian-control
+- [x] docs/types/text/known/deps-edn
+- [x] docs/types/text/known/dhall-config
+- [x] docs/types/text/known/dhcpd-conf
+- [x] docs/types/text/known/django-settings
+- [x] docs/types/text/known/dnf-conf
+- [x] docs/types/text/known/dnsmasq
+- [x] docs/types/text/known/docker-bake
 - [ ] docs/types/text/known/dockerfile
 - [ ] docs/types/text/known/dockerignore
 - [ ] docs/types/text/known/docusaurus-config
