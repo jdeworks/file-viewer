@@ -793,7 +793,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/types/image/procreate/metadata.js
 - [x] docs/types/image/procreate/renderer.js
 - [x] docs/types/image/procreate/settings.default.json
-- [ ] docs/types/image/renderer.generated.js
+- [x] docs/types/image/renderer.generated.js
 - [x] docs/types/image/renderer.js
 - [x] docs/types/image/settings.default.json
 - [x] docs/types/image/sketch/detect.js
