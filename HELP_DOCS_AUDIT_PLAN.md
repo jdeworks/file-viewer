@@ -5720,7 +5720,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/examples/hyprland.conf
 - [x] docs/examples/i3.config
 - [x] docs/examples/immich.env
-- [ ] docs/examples/index.json
+- [x] docs/examples/index.json
 - [x] docs/examples/index.php
 - [x] docs/examples/infisical.env
 - [x] docs/examples/influxdb.conf
@@ -5819,22 +5819,22 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/examples/metagame/stage10/nested/echoes/pattern_echo.json
 - [x] docs/examples/metagame/stage10/syntax_echo.txt
 - [x] docs/examples/metagame/stage2/cipher.txt
-- [ ] docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json
+- [x] docs/examples/metagame/stage4/towers/upgrades/tier3_blueprints/recursion_points.json
 - [x] docs/examples/metagame/stage5/transmission_hum.mp3
 - [x] docs/examples/metagame/stage6/protocols_of_the_entity.epub
-- [ ] docs/examples/metagame/stage7/access_log.csv
-- [ ] docs/examples/metagame/stage7/audit_trail.txt
-- [ ] docs/examples/metagame/stage7/comms_transcript.txt
+- [x] docs/examples/metagame/stage7/access_log.csv
+- [x] docs/examples/metagame/stage7/audit_trail.txt
+- [x] docs/examples/metagame/stage7/comms_transcript.txt
 - [x] docs/examples/metagame/stage7/entity_a_verification.png
-- [ ] docs/examples/metagame/stage7/entity_anchor_0043.txt
-- [ ] docs/examples/metagame/stage7/entity_f_verification.jpg
+- [x] docs/examples/metagame/stage7/entity_anchor_0043.txt
+- [x] docs/examples/metagame/stage7/entity_f_verification.jpg
 - [x] docs/examples/metagame/stage7/entity_f_verification.png
 - [x] docs/examples/metagame/stage7/entity_metadata.json
-- [ ] docs/examples/metagame/stage7/handshake_log.csv
-- [ ] docs/examples/metagame/stage7/quorum_spec.json
-- [ ] docs/examples/metagame/stage7/route_table.csv
-- [ ] docs/examples/metagame/stage7/session_ledger.csv
-- [ ] docs/examples/metagame/stage7/system_spec.json
+- [x] docs/examples/metagame/stage7/handshake_log.csv
+- [x] docs/examples/metagame/stage7/quorum_spec.json
+- [x] docs/examples/metagame/stage7/route_table.csv
+- [x] docs/examples/metagame/stage7/session_ledger.csv
+- [x] docs/examples/metagame/stage7/system_spec.json
 - [x] docs/examples/metro.config.js
 - [x] docs/examples/mimir.yaml
 - [x] docs/examples/miniflux.conf
@@ -6025,7 +6025,7 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [x] docs/examples/sample.awk
 - [x] docs/examples/sample.bal
 - [x] docs/examples/sample.bbc
-- [ ] docs/examples/sample.bbcode
+- [x] docs/examples/sample.bbcode
 - [x] docs/examples/sample.bicep
 - [x] docs/examples/sample.bin
 - [x] docs/examples/sample.blend

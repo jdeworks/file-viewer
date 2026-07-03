@@ -12408,6 +12408,18 @@
     "knownFile": "bbcode-text"
   },
   {
+    "label": "sample.bbcode (BBCode, extended)",
+    "file": "sample.bbcode",
+    "mime": "text/plain",
+    "category": "Document",
+    "categories": [
+      "Document"
+    ],
+    "enhanced": true,
+    "description": "Extended BBCode forum post covering tables, spoilers, alignment, and fonts",
+    "knownFile": "bbcode-text"
+  },
+  {
     "label": "sample.vala (Vala)",
     "file": "sample.vala",
     "mime": "text/plain",
