@@ -6,7 +6,7 @@
 
 | Field | Value |
 |-------|-------|
-| Extension(s) | `.gitignore`, `.npmignore`, `.dockerignore`, `.prettierignore`, `.eslintignore` |
+| Extension(s) | `.gitignore`, `.npmignore`, `.dockerignore`, `.prettierignore`, `.eslintignore`, `.hgignore` |
 | MIME type | `text/plain` |
 | Binary / Text | Text |
 | Common use | Specifying files/patterns excluded from version control or tool processing |
@@ -22,7 +22,7 @@
 | Rule count summary | ✅ | Total active rules displayed prominently |
 | Source view | ✅ | Monaco editor (plaintext mode) |
 | Text diff | ✅ | Standard line diff |
-| Metadata | ✅ | Rule count, comment count, negation count |
+| Metadata | ✅ | Rule count, comment count, negation count, directory rule count |
 
 ### Edit
 | Capability | Status | Notes |
