@@ -1012,21 +1012,6 @@ var pyrightconfig_default = {
   }
 };
 
-// ../../docs/types/text/known/tox/index.js
-var tox_default = {
-  id: "tox",
-  label: "tox.ini",
-  match: (intake) => {
-    const name = (intake.filename || "").split("/").pop().toLowerCase();
-    return name === "tox.ini";
-  },
-  loadRenderer: () => import("../types/text/known/tox/renderer.js"),
-  about: {
-    description: "tox.ini — Python test automation: defines test environments, dependencies, and commands across multiple Python versions.",
-    usedFor: [{ label: "Python testing", description: "Run tests in isolated environments across Python versions", href: "https://tox.wiki" }]
-  }
-};
-
 // ../../docs/types/text/known/tox-ini/index.js
 var plugin11 = {
   id: "tox-ini",
@@ -7767,7 +7752,8 @@ var sway_config_default = {
       if (text.includes("# sway") || text.includes("output ") && text.includes("resolution") && text.includes("bindsym")) return true;
       if (text.includes("set $mod") && text.includes("input ") && text.includes("bindsym") && text.includes("swaymsg")) return true;
     }
-    if (text.includes("output * bg ") || text.includes("swaymsg") || text.includes("swaylock") || text.includes("swaybar")) return true;
+    const looksUnrelated = /\.(md|markdown|txt|rst|sh|bash|zsh|py|js|ts|json|log)$/.test(n);
+    if (!looksUnrelated && (text.includes("output * bg ") || text.includes("swaymsg") || text.includes("swaylock") || text.includes("swaybar"))) return true;
     return false;
   },
   loadRenderer: () => import("../types/text/known/sway-config/renderer.js"),
@@ -9955,8 +9941,8 @@ var xorg_conf_default = {
   match(intake) {
     const n = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (n === "xorg.conf" || n.endsWith(".conf") && n.startsWith("xorg.conf")) return true;
-    if (n.match(/^\d{2}-\w+\.conf$/) || n === "xorg.conf") return true;
     const text = intake.textSample || intake.text || "";
+    if (n.match(/^\d{2}-\w+\.conf$/) && /Section\s+"/.test(text)) return true;
     if (text.includes('Section "ServerLayout"') || text.includes('Section "Screen"')) return true;
     if (text.includes('Section "Device"') && (text.includes("Driver") || text.includes("Option"))) return true;
     if (text.includes('Section "InputClass"') && text.includes("MatchIsPointer")) return true;
@@ -15027,7 +15013,7 @@ var plugin188 = {
     const name = (intake.name || intake.filename || "").split("/").pop().toLowerCase();
     if (name.endsWith(".vala") || name.endsWith(".vapi")) return true;
     const text = intake.text || "";
-    return /using\s+GLib|using\s+Gtk|public\s+static\s+int\s+main|\bpublic\s+class\s+\w|\bprivate\s+class\s+\w/.test(text);
+    return /using\s+GLib\s*;|using\s+Gtk\s*;/.test(text);
   },
   loadRenderer: () => import("../types/text/known/vala-lang/renderer.js"),
   about: {
@@ -16455,7 +16441,6 @@ var KNOWN = [
   pyrightconfig_default,
   plugin11,
   plugin12,
-  tox_default,
   mypy_ini_default,
   angular_default,
   capacitor_default,

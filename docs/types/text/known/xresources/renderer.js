@@ -1,5 +1,17 @@
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+// Strict allowlist for values interpolated into a `style="background:…"` attribute — an
+// .Xresources color value is untrusted file content. esc() alone only stops attribute
+// breakout; it does not stop CSS injection (extra `;`-separated declarations, `url(...)`
+// triggering an off-origin fetch). Reject anything that isn't a plain hex/rgb/hsl/named color.
+function safeCssColor(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (/^#[0-9a-fA-F]{3,8}$/.test(s)) return s;
+  if (/^(?:rgb|hsl)a?\([0-9.%,\s]+\)$/i.test(s)) return s;
+  if (/^[a-zA-Z]{3,20}$/.test(s)) return s; // named CSS color (e.g. "red", "steelblue")
+  return null;
+}
+
 const CSS = `
 .xrdb-doc{padding:16px 18px;max-width:860px;margin:0 auto;font:14px/1.55 system-ui,sans-serif;color:var(--fg,#24292f);}
 .xrdb-badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:700;background:#1c1c1c;color:#fff;vertical-align:middle;margin-right:8px;}
@@ -170,8 +182,8 @@ export function render(intake) {
     body += `<div class="xrdb-sec"><h3>Color Palette</h3><div class="xrdb-card">`;
     if (fg || bg) {
       body += `<div style="display:flex;gap:12px;margin-bottom:8px;font-size:12px;">`;
-      if (bg) body += `<span>${chip('background')} <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${esc(bg)};border:1px solid rgba(0,0,0,.2);vertical-align:middle;"></span> <span style="font-family:ui-monospace,monospace">${esc(bg)}</span></span>`;
-      if (fg) body += `<span>${chip('foreground')} <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${esc(fg)};border:1px solid rgba(0,0,0,.2);vertical-align:middle;"></span> <span style="font-family:ui-monospace,monospace">${esc(fg)}</span></span>`;
+      if (bg) { const bgc = safeCssColor(bg); body += `<span>${chip('background')} <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${bgc || 'transparent'};border:1px solid rgba(0,0,0,.2);vertical-align:middle;"></span> <span style="font-family:ui-monospace,monospace">${esc(bg)}</span></span>`; }
+      if (fg) { const fgc = safeCssColor(fg); body += `<span>${chip('foreground')} <span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:${fgc || 'transparent'};border:1px solid rgba(0,0,0,.2);vertical-align:middle;"></span> <span style="font-family:ui-monospace,monospace">${esc(fg)}</span></span>`; }
       body += `</div>`;
     }
     if (filledColors >= 8) {
@@ -179,7 +191,7 @@ export function render(intake) {
       for (let i = 0; i <= 15; i++) {
         const c = colors[i];
         body += `<div>`;
-        body += `<div class="xrdb-swatch" style="background:${c ? esc(c) : 'transparent'}" title="color${i}: ${c || 'unset'}"></div>`;
+        body += `<div class="xrdb-swatch" style="background:${c ? (safeCssColor(c) || 'transparent') : 'transparent'}" title="color${i}: ${esc(c || 'unset')}"></div>`;
         body += `<div class="xrdb-swatch-label">${i}</div>`;
         body += `</div>`;
       }
