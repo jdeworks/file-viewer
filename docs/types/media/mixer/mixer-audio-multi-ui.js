@@ -121,10 +121,10 @@ export function buildLaneControlsEl(laneModel, element) {
   index.className = 'mmx-mix-lane-index al-mini';
   index.textContent = String((laneModel.order ?? 0) + 1);
   controls.append(index);
-  const mute = createButton('M', 'Mute lane', 'mmx-mix-mute');
+  const mute = createButton('M', 'Mute lane', 'mmx-mix-mute al-btn');
   mute.dataset.laneId = laneModel.id;
   mute.setAttribute('aria-pressed', laneModel.muted ? 'true' : 'false');
-  const solo = createButton('S', 'Solo lane', 'mmx-mix-solo');
+  const solo = createButton('S', 'Solo lane', 'mmx-mix-solo al-btn');
   solo.dataset.laneId = laneModel.id;
   solo.setAttribute('aria-pressed', laneModel.solo ? 'true' : 'false');
   const gain = laneRange('mmx-mix-lane-gain', laneModel.id, laneModel.audio?.gain ?? 1, 0, 2, 0.01, 'Lane gain');
@@ -222,12 +222,12 @@ export function buildMixToolbar() {
   const controls = document.createElement('div');
   controls.className = 'mmx-mix-controls';
   controls.append(
-    mk('Play', 'Play mix preview', 'mmx-mix-play'),
-    mk('Stop', 'Stop mix preview', 'mmx-mix-stop'),
-    mk('+ Tone', 'Add generated tone lane', 'mmx-mix-add-tone'),
-    mk('+ Pink noise', 'Add pink-noise room-tone lane', 'mmx-mix-add-pink'),
+    mk('Play', 'Play mix preview', 'mmx-mix-play al-btn'),
+    mk('Stop', 'Stop mix preview', 'mmx-mix-stop al-btn'),
+    mk('+ Tone', 'Add generated tone lane', 'mmx-mix-add-tone al-btn'),
+    mk('+ Pink noise', 'Add pink-noise room-tone lane', 'mmx-mix-add-pink al-btn'),
     masterLabel,
-    mk('Mixdown → WAV', 'Download browser audio mixdown WAV', 'mmx-mix-download'),
+    mk('Mixdown → WAV', 'Download browser audio mixdown WAV', 'mmx-mix-download al-btn'),
     videoPlanBtn, dropZone,
   );
   const toolbar = document.createElement('div');
