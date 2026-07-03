@@ -733,33 +733,33 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/image/ascii/presets.js
 - [ ] docs/types/image/ascii/process-image.js
 - [ ] docs/types/image/ascii/record-video.js
-- [ ] docs/types/image/ascii/render.js
-- [ ] docs/types/image/ascii/sample.js
-- [ ] docs/types/image/ascii/state.js
-- [ ] docs/types/image/ascii/studio-controls.js
-- [ ] docs/types/image/ascii/studio.css
-- [ ] docs/types/image/ascii/studio.js
-- [ ] docs/types/image/ascii/update-scheduler.js
-- [ ] docs/types/image/ascii/video-frames.js
-- [ ] docs/types/image/ascii/webcam.js
-- [ ] docs/types/image/byte-metadata.js
-- [ ] docs/types/image/compare-view.js
-- [ ] docs/types/image/convolve.js
-- [ ] docs/types/image/curves.js
-- [ ] docs/types/image/detect.js
-- [ ] docs/types/image/doc.html
-- [ ] docs/types/image/draw-overlay.js
-- [ ] docs/types/image/edit-bg.js
-- [ ] docs/types/image/edit-convolve.js
-- [ ] docs/types/image/edit-curves.js
-- [ ] docs/types/image/edit-els.js
-- [ ] docs/types/image/edit-filters.js
-- [ ] docs/types/image/edit-geometry.js
-- [ ] docs/types/image/edit-select-masks.js
-- [ ] docs/types/image/edit-select.js
-- [ ] docs/types/image/edit-tabs.js
-- [ ] docs/types/image/edit-text.js
-- [ ] docs/types/image/edit-tools.html
+- [x] docs/types/image/ascii/render.js
+- [x] docs/types/image/ascii/sample.js
+- [x] docs/types/image/ascii/state.js
+- [x] docs/types/image/ascii/studio-controls.js
+- [x] docs/types/image/ascii/studio.css
+- [x] docs/types/image/ascii/studio.js
+- [x] docs/types/image/ascii/update-scheduler.js
+- [x] docs/types/image/ascii/video-frames.js
+- [x] docs/types/image/ascii/webcam.js
+- [x] docs/types/image/byte-metadata.js
+- [x] docs/types/image/compare-view.js
+- [x] docs/types/image/convolve.js
+- [x] docs/types/image/curves.js
+- [x] docs/types/image/detect.js
+- [x] docs/types/image/doc.html
+- [x] docs/types/image/draw-overlay.js
+- [x] docs/types/image/edit-bg.js
+- [x] docs/types/image/edit-convolve.js
+- [x] docs/types/image/edit-curves.js
+- [x] docs/types/image/edit-els.js
+- [x] docs/types/image/edit-filters.js
+- [x] docs/types/image/edit-geometry.js
+- [x] docs/types/image/edit-select-masks.js
+- [x] docs/types/image/edit-select.js
+- [x] docs/types/image/edit-tabs.js
+- [x] docs/types/image/edit-text.js
+- [x] docs/types/image/edit-tools.html
 - [ ] docs/types/image/edit-undo-key.js
 - [ ] docs/types/image/editor-core.js
 - [ ] docs/types/image/editor-guide.md
