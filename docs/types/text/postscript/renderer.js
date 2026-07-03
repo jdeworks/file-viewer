@@ -16,6 +16,10 @@ function strip(v) {
   return v.replace(/^\(|\)$/g, '').trim();
 }
 
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function parseDsc(text) {
   const lines = text.slice(0, 8000).split('\n');
   const fields = {};
@@ -49,7 +53,7 @@ function bbox(v) {
 
 function row(label, value) {
   if (!value) return '';
-  return `<tr><td class="ps-key">${label}</td><td>${value}</td></tr>`;
+  return `<tr><td class="ps-key">${esc(label)}</td><td>${esc(value)}</td></tr>`;
 }
 
 export function render(intake) {
