@@ -29,7 +29,7 @@ Master overview of all file types supported by the viewer. Columns:
 | [Log](log.md) | `.log` | Basic | Monaco | download | — | Filter/tail |
 | [CSV / TSV](csv.md) | `.csv` | Basic | Monaco | download | — | Sort/filter |
 | [JSON Lines](jsonl.md) | `.jsonl` `.ndjson` | Basic | Monaco | download | — | Row limit |
-| [Code](/) | `.py` `.js` `.ts` `.tsx` `.go` `.rs` `.java` `.c` `.cpp` `.cs` `.rb` `.php` `.sh` + 25 more | Fallback | Monaco | download | Dockerfile, .gitignore, .editorconfig (3) | — |
+| [Code](/) | `.py` `.js` `.ts` `.tsx` `.go` `.rs` `.java` `.c` `.cpp` `.cs` `.rb` `.php` `.sh` + 25 more | Fallback | Monaco | download | Makefile, CMakeLists.txt, Bazel BUILD + more (7) | — |
 | [Dockerfile](dockerfile.md) | `Dockerfile` `.dockerfile` | Basic | Monaco | download | Dockerfile (1) | Multi-stage viz |
 | [Docker Compose](/) | `docker-compose.yml` | Basic | Monaco | download | docker-compose (1) | Service graph |
 | [EditorConfig](editorconfig.md) | `.editorconfig` | Basic | Monaco | download | .editorconfig (1) | — |
@@ -310,7 +310,7 @@ Enhanced filename matchers are registered across the base types above. This tabl
 | Text/Raw | 6 | requirements.txt, go.mod, build.gradle, .npmrc, .nvmrc, .browserslistrc |
 | Markdown | 2 | CODEOWNERS, Gemfile |
 | XML | 1 | pom.xml |
-| Code | 1 | Dockerfile |
+| Code | 7 | Makefile, CMakeLists.txt, BUILD.bazel, .bazelrc, build.ninja, Jenkinsfile, infra.tf |
 | EditorConfig | 1 | .editorconfig |
 | gitignore | 1 | .gitignore |
 | toml/ini | 1 | tox.ini |
