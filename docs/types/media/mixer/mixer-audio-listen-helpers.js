@@ -4,52 +4,6 @@ import {
   selectTarget,
   updateElement,
 } from './mixer-model.js';
-import { MIXER_LAYOUT } from './mixer-hit-test.js';
-
-export function attachSourceMoveDrag(root, onMoveDelta) {
-  let active = null;
-  const onPointerDown = (event) => {
-    const region = event.target?.closest?.('.media-lane-trim');
-    const surface = root.querySelector('.media-waveform-surface');
-    if (!region || !surface || event.button !== 0) return;
-    active = {
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      width: Math.max(1, surface.getBoundingClientRect().width - MIXER_LAYOUT.gutterWidth),
-      duration: Number(root.dataset.mixerDurationSec) || 1,
-      lastDeltaSec: 0,
-    };
-    region.classList.add('mmx-source-moving');
-    try { region.setPointerCapture?.(event.pointerId); } catch { /* synthetic events may not capture */ }
-    event.preventDefault();
-    event.stopPropagation();
-  };
-  const onPointerMove = (event) => {
-    if (!active || event.pointerId !== active.pointerId) return;
-    const deltaSec = ((event.clientX - active.startX) / active.width) * active.duration;
-    const incremental = deltaSec - active.lastDeltaSec;
-    active.lastDeltaSec = deltaSec;
-    onMoveDelta(incremental);
-    event.preventDefault();
-    event.stopPropagation();
-  };
-  const finish = (event) => {
-    if (!active || event.pointerId !== active.pointerId) return;
-    root.querySelector('.media-lane-trim')?.classList.remove('mmx-source-moving');
-    active = null;
-    event.stopPropagation();
-  };
-  root.addEventListener('pointerdown', onPointerDown);
-  root.addEventListener('pointermove', onPointerMove);
-  root.addEventListener('pointerup', finish);
-  root.addEventListener('pointercancel', finish);
-  return () => {
-    root.removeEventListener('pointerdown', onPointerDown);
-    root.removeEventListener('pointermove', onPointerMove);
-    root.removeEventListener('pointerup', finish);
-    root.removeEventListener('pointercancel', finish);
-  };
-}
 
 export async function decodeSummary(intake) {
   const file = intake.file || (intake.bytes ? new File([intake.bytes], intake.filename || 'audio') : null);
@@ -158,34 +112,3 @@ export function createButton(text, label, className) {
   return node;
 }
 
-export function aliasInput(root, selector, className) {
-  const input = root.querySelector(selector);
-  if (input) input.classList.add(className);
-}
-
-export function decorateRoomTone(body, element) {
-  if (!body) return;
-  const layer = document.createElement('div');
-  layer.className = 'media-lane-room-tone';
-  layer.hidden = !element?.audio?.roomTone;
-  body.append(layer);
-}
-
-export function decorateChapters(body, chapters, totalMs) {
-  if (!body) return;
-  const layer = document.createElement('div');
-  layer.className = 'media-wv-chapter-layer';
-  for (const [index, chapter] of chapters.entries()) {
-    const marker = document.createElement('div');
-    marker.className = 'media-wv-chapter-marker';
-    marker.title = chapter.title || `Chapter ${index + 1}`;
-    marker.dataset.chapter = String(index + 1);
-    marker.style.left = `${(Math.max(0, Number(chapter.start) || 0) * 1000 / Math.max(1, totalMs)) * 100}%`;
-    const label = document.createElement('span');
-    label.className = 'media-wv-chapter-label';
-    label.textContent = marker.title;
-    marker.append(label);
-    layer.append(marker);
-  }
-  body.append(layer);
-}

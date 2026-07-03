@@ -417,7 +417,7 @@ export function mountModularCompare(panel, intake, mediaEl = null, kind = 'audio
   function renderAnalyzeButton() {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'mmx-compare-analyze';
+    button.className = 'mmx-compare-analyze al-btn';
     button.textContent = overlayKind(project) === 'visual' ? 'Analyze overlap frames' : 'Analyze overlap audio';
     button.addEventListener('click', (event) => { event.stopPropagation(); runCompareAnalysis(); });
     return button;

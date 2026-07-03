@@ -882,29 +882,29 @@ Use HELP_DOCS_AUDIT_PLAN.md as the deterministic source of truth for the file-vi
 - [ ] docs/types/media/medialib.js
 - [ ] docs/types/media/metadata.js
 - [ ] docs/types/media/mixer-wav-worker.js
-- [ ] docs/types/media/mixer/audio-clip-lane.js
-- [ ] docs/types/media/mixer/audio-listen-lane.css
-- [ ] docs/types/media/mixer/audio-listen-waveform.js
-- [ ] docs/types/media/mixer/index.js
-- [ ] docs/types/media/mixer/mixer-audio-cache.js
-- [ ] docs/types/media/mixer/mixer-audio-export.js
-- [ ] docs/types/media/mixer/mixer-audio-listen-helpers.js
-- [ ] docs/types/media/mixer/mixer-audio-listen.js
-- [ ] docs/types/media/mixer/mixer-audio-multi-decorators.js
-- [ ] docs/types/media/mixer/mixer-audio-multi-eq.js
-- [ ] docs/types/media/mixer/mixer-audio-multi-helpers.js
-- [ ] docs/types/media/mixer/mixer-audio-multi-ui.js
-- [ ] docs/types/media/mixer/mixer-audio-multi.js
-- [ ] docs/types/media/mixer/mixer-audio-playback.js
-- [ ] docs/types/media/mixer/mixer-capabilities.js
-- [ ] docs/types/media/mixer/mixer-compare-analysis.js
-- [ ] docs/types/media/mixer/mixer-compare-overlay.js
-- [ ] docs/types/media/mixer/mixer-compare-ui.js
-- [ ] docs/types/media/mixer/mixer-compare.js
-- [ ] docs/types/media/mixer/mixer-config.js
-- [ ] docs/types/media/mixer/mixer-context-menu.js
-- [ ] docs/types/media/mixer/mixer-eq-schema.js
-- [ ] docs/types/media/mixer/mixer-hash.js
+- [x] docs/types/media/mixer/audio-clip-lane.js
+- [x] docs/types/media/mixer/audio-listen-lane.css
+- [x] docs/types/media/mixer/audio-listen-waveform.js
+- [x] docs/types/media/mixer/index.js
+- [x] docs/types/media/mixer/mixer-audio-cache.js
+- [x] docs/types/media/mixer/mixer-audio-export.js
+- [x] docs/types/media/mixer/mixer-audio-listen-helpers.js
+- [x] docs/types/media/mixer/mixer-audio-listen.js
+- [x] docs/types/media/mixer/mixer-audio-multi-decorators.js
+- [x] docs/types/media/mixer/mixer-audio-multi-eq.js
+- [x] docs/types/media/mixer/mixer-audio-multi-helpers.js
+- [x] docs/types/media/mixer/mixer-audio-multi-ui.js
+- [x] docs/types/media/mixer/mixer-audio-multi.js
+- [x] docs/types/media/mixer/mixer-audio-playback.js
+- [x] docs/types/media/mixer/mixer-capabilities.js
+- [x] docs/types/media/mixer/mixer-compare-analysis.js
+- [x] docs/types/media/mixer/mixer-compare-overlay.js
+- [x] docs/types/media/mixer/mixer-compare-ui.js
+- [x] docs/types/media/mixer/mixer-compare.js
+- [x] docs/types/media/mixer/mixer-config.js
+- [x] docs/types/media/mixer/mixer-context-menu.js
+- [x] docs/types/media/mixer/mixer-eq-schema.js
+- [x] docs/types/media/mixer/mixer-hash.js
 - [ ] docs/types/media/mixer/mixer-hit-test.js
 - [ ] docs/types/media/mixer/mixer-import-export.js
 - [ ] docs/types/media/mixer/mixer-interactions.js
