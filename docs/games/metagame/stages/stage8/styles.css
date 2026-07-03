@@ -6,20 +6,66 @@
   font: 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
-.s8-hud,
-.s8-controls {
+/* ── Sticky command bar (UX-audit #1): the verb + the 4 decisive numbers, pinned at the top of the
+   stage while the rest scrolls inside .mg-v3-host (the shell's only scroller). */
+.s8-cmdbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 10px 14px;
+  margin: -16px -16px 12px;
+  padding: 10px 16px;
+  background: #141312;
+  border-bottom: 1px solid #4a4a4a;
 }
+.s8-cmd-advance { font-weight: 700; background: #2c3a1e; color: #cfe6a8; border: 1px solid #5c7a3e; padding: 6px 14px; cursor: pointer; font: inherit; }
+.s8-cmd-brace { background: #3a2016; color: #e0a08e; border: 1px solid #c8553b; padding: 6px 12px; cursor: pointer; font: inherit; }
+.s8-cmd-stat { display: inline-flex; flex-direction: column; line-height: 1.05; text-align: center; }
+.s8-cmd-stat b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.s8-cmd-stat small { font-size: 10px; color: #8b9ba8; text-transform: uppercase; letter-spacing: 0.06em; }
+.s8-cmd-stat.is-warn b { color: #e0a08e; }
+.s8-ticker { flex: 1 1 160px; min-width: 0; color: #b6ad9c; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Labelled HUD clusters (UX-audit #4) — key number large, rate as a small chip. */
+.s8-hud { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.s8-cluster { display: flex; align-items: baseline; gap: 12px; padding: 8px 12px; border: 1px solid #4a4a4a; background: #171615; }
+.s8-cl-label { font-size: 10px; letter-spacing: 0.1em; color: #8b9ba8; align-self: flex-start; }
+.s8-cl-num { display: inline-flex; flex-direction: column; line-height: 1.05; }
+.s8-cl-num b { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.s8-cl-num small { font-size: 10px; color: #8b9ba8; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.s8-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; }
+.s8-controls button, .s8-external, .s8-boss-btn { cursor: pointer; background: #20201d; color: inherit; border: 1px solid #4a4a4a; font: inherit; padding: 6px 12px; }
+.s8-controls button:disabled, .s8-boss-btn:disabled { opacity: 0.5; cursor: default; }
 
 .s8-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
   gap: 16px;
 }
+.s8-layout.is-solo { grid-template-columns: 1fr; }
+
+/* ── Boss-gate checklist (UX-audit #3) — 5 labelled live rows, or a single next-gate chip. */
+.s8-boss-gate { margin: 8px 0; }
+.s8-gate-chip { display: inline-block; padding: 6px 10px; border: 1px solid #8b7355; background: #20201d; color: #d8a657; font-size: 13px; }
+.s8-gate-chip.is-done { border-color: #5c7a3e; color: #b6d39a; }
+.s8-gate-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
+.s8-gate-tick { width: 1.2em; color: #c8553b; font-weight: 700; text-align: center; }
+.s8-gate-row.is-met .s8-gate-tick { color: #7bb661; }
+.s8-gate-label { flex: 1; color: #ddd5c7; }
+.s8-gate-val { color: #b6ad9c; font-variant-numeric: tabular-nums; }
+.s8-boss-hint { font-size: 12px; color: #b6ad9c; margin: 6px 0; }
+.s8-boss-btn { margin-top: 6px; }
+
+/* ── Salvage boss-progress bar on the archive panel (M2 — salvage left the HUD). */
+.s8-salvage-progress { margin-top: 12px; }
+.s8-salvage-bar { display: block; height: 8px; background: #2c2a26; border: 1px solid #4a4a4a; margin-bottom: 4px; }
+.s8-salvage-bar > span { display: block; height: 100%; width: 0; background: #d8a657; transition: width 0.3s linear; }
+.s8-salvage-progress small { font-size: 11px; color: #b6ad9c; }
+.s8-external { margin-top: 10px; display: block; width: 100%; text-align: left; }
 
 .s8-map,
 .s8-files,
@@ -161,9 +207,11 @@
    (0–1) and data-entropy ("low"|"mid"|"high"|"critical") on the root — no JS animation loop, no
    randomness. Respects prefers-reduced-motion. */
 .stage8-entropy-field { --entropy-level: 0; transition: box-shadow 0.4s linear; }
-.stage8-entropy-field[data-entropy="mid"] .s8-hud [data-field="entropy"] { color: #d8a657; }
-.stage8-entropy-field[data-entropy="high"] .s8-hud [data-field="entropy"],
-.stage8-entropy-field[data-entropy="critical"] .s8-hud [data-field="entropy"] { color: #e0a08e; font-weight: 700; }
+/* the command bar (position: sticky, above) hosts the one-time disclosure arrival banners — .mg-banner
+   is position:absolute and anchors to the nearest positioned ancestor. */
+.stage8-entropy-field[data-entropy="mid"] .s8-cmdbar [data-field="entropy"] { color: #d8a657; }
+.stage8-entropy-field[data-entropy="high"] .s8-cmdbar [data-field="entropy"],
+.stage8-entropy-field[data-entropy="critical"] .s8-cmdbar [data-field="entropy"] { color: #e0a08e; font-weight: 700; }
 .stage8-entropy-field[data-entropy="high"],
 .stage8-entropy-field[data-entropy="critical"] {
   box-shadow: inset 0 0 90px rgba(200, 85, 59, calc(var(--entropy-level) * 0.45));
@@ -181,4 +229,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .stage8-entropy-field .s8-map { animation: none !important; }
+  .s8-salvage-bar > span { transition: none; }
 }

@@ -34,13 +34,12 @@ export function defaultState() {
     states: 0,
     totalStatesEarned: 0,
     salvageTotal: 0,
-    scrap: 0,
-    scrapTotal: 0,
-    insight: 0,
-    insightTotal: 0,
-    insightRate: 0,
+    parts: 0,          // merged SALVAGE PARTS currency (resources.js): tech + structures both spend it
+    partsTotal: 0,     // lifetime parts earned
+    partsRate: 0,      // per-cycle parts income (HUD chip)
     tech: {},
     structures: {},
+    disclosed: {},     // progressive-disclosure flags (M1): which systems' UI has been revealed
     manualArchiveDone: false,
     prestigeMult: 1,
     ...defaultTechBonuses(),
@@ -125,13 +124,19 @@ export function normalizeState(state) {
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
-  target.scrap = Math.max(0, num(target.scrap, 0));
-  target.scrapTotal = Math.max(0, num(target.scrapTotal, 0));
-  target.insight = Math.max(0, num(target.insight, 0));
-  target.insightTotal = Math.max(0, num(target.insightTotal, 0));
-  target.insightRate = num(target.insightRate, 0);
+  // CURRENCY MERGE (UX-audit 2026-07): fold any legacy Scrap+Insight into the single parts pool.
+  // Additive + idempotent — the legacy fields are dropped after folding, so a second normalize is a
+  // no-op. Never regresses a save (parts only ever grows here).
+  const legacyParts = Math.max(0, num(target.scrap, 0)) + Math.max(0, num(target.insight, 0));
+  const legacyPartsTotal = Math.max(0, num(target.scrapTotal, 0)) + Math.max(0, num(target.insightTotal, 0));
+  target.parts = Math.max(0, num(target.parts, 0)) + legacyParts;
+  target.partsTotal = Math.max(0, num(target.partsTotal, 0)) + legacyPartsTotal;
+  target.partsRate = num(target.partsRate, num(target.insightRate, 0));
+  delete target.scrap; delete target.scrapTotal;
+  delete target.insight; delete target.insightTotal; delete target.insightRate;
   target.tech = plain(target.tech);
   target.structures = plain(target.structures);
+  target.disclosed = plain(target.disclosed);
   target.manualArchiveDone = Boolean(target.manualArchiveDone);
   recomputeTechBonuses(target);      // rebuild tech bonus fields from the purchased set (source of truth)
   recomputeStructureBonuses(target); // rebuild struct bonus fields from the built set
@@ -175,13 +180,12 @@ export function snapshotRun(state) {
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,
     salvageTotal: state.salvageTotal,
-    scrap: state.scrap || 0,
-    scrapTotal: state.scrapTotal || 0,
-    insight: state.insight || 0,
-    insightTotal: state.insightTotal || 0,
-    insightRate: state.insightRate || 0,
+    parts: state.parts || 0,
+    partsTotal: state.partsTotal || 0,
+    partsRate: state.partsRate || 0,
     tech: { ...(state.tech || {}) },
     structures: { ...(state.structures || {}) },
+    disclosed: { ...(state.disclosed || {}) },
     manualArchiveDone: Boolean(state.manualArchiveDone),
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,

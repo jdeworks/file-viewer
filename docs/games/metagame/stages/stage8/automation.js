@@ -10,7 +10,7 @@
 //     hand archive has fired), so it grants States + Scrap but NEVER fires the un-cheat action.
 
 import { nodeById } from "./nodes.js";
-import { earnScrap, scrapYield } from "./resources.js";
+import { earnParts, partsYield } from "./resources.js";
 
 const AUTO_HEAL = 6; // health restored per drone to its target node
 
@@ -40,8 +40,8 @@ function autoArchive(state, detail) {
   if (!rate || !Array.isArray(state.debris) || !state.debris.length) return;
   // oldest debris first (stable: cycle asc, then id)
   const order = [...state.debris].sort((a, b) => (a.cycle - b.cycle) || (a.id < b.id ? -1 : 1));
-  const scrapBonus = Math.max(0, Number(state.structScrapBonus || 0));
-  const scrapMult = Math.max(1, Number(state.scrapMult || 1));
+  const partsBonus = Math.max(0, Number(state.structScrapBonus || 0));
+  const partsMult = Math.max(1, Number(state.scrapMult || 1));
   for (let i = 0; i < rate && i < order.length; i += 1) {
     const debris = order[i];
     const idx = state.debris.findIndex((d) => d.id === debris.id);
@@ -51,7 +51,7 @@ function autoArchive(state, detail) {
     state.archive = [...(state.archive || []), archived];
     state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
     state.states = Number(state.states || 0) + Number(debris.value || 0);
-    earnScrap(state, Math.round(scrapYield(debris) * scrapMult) + scrapBonus);
+    earnParts(state, Math.round(partsYield(debris) * partsMult) + partsBonus);
     detail.archived.push(debris.id);
   }
   if (detail.archived.length) pushLog(state, `Cold Storage auto-archived ${detail.archived.length} file(s).`);

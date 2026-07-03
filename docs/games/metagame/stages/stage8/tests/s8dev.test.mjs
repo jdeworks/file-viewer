@@ -16,12 +16,11 @@ import {
 // ── devGiveResources ──────────────────────────────────────────────────────────────────────────────────
 {
   const s = defaultState();
-  const before = { states: s.states, scrap: s.scrap, insight: s.insight, total: s.totalStatesEarned };
+  const before = { states: s.states, parts: s.parts, total: s.totalStatesEarned };
   devGiveResources(s);
   assert.equal(s.states, before.states + 500, "states +500");
   assert.equal(s.totalStatesEarned, before.total + 500, "totalStatesEarned +500");
-  assert.equal(s.scrap, before.scrap + 200, "scrap +200");
-  assert.ok(s.insight >= before.insight + 100, "insight +100");
+  assert.equal(s.parts, before.parts + 300, "parts +300 (merged 200 scrap + 100 insight)");
   assert.ok(Array.isArray(s.log) && s.log.some((l) => l.startsWith("DEV:")), "log entry added");
 }
 
@@ -31,7 +30,7 @@ import {
   devGiveResources(s);
   devGiveResources(s);
   assert.equal(s.states, 1000, "double call doubles states");
-  assert.equal(s.scrap, 400, "double call doubles scrap");
+  assert.equal(s.parts, 600, "double call doubles parts");
 }
 
 // ── devSkipStorm ──────────────────────────────────────────────────────────────────────────────────────
@@ -41,7 +40,7 @@ import {
   assert.equal(s.stormsSurvived, 1, "one storm survived");
   assert.equal(s.act, 2, "advanced to act 2");
   assert.ok(s.onlineSectors.includes("alpha"), "alpha sector online");
-  assert.ok(s.insight > 0, "insight bonus credited");
+  assert.ok(s.parts > 0, "parts bonus credited");
 }
 
 {
@@ -59,10 +58,10 @@ import {
   const s = defaultState();
   s.stormsSurvived = TOTAL_STORMS;
   s.act = TOTAL_STORMS + 1;
-  const insightBefore = s.insight;
+  const partsBefore = s.parts;
   devSkipStorm(s);
   assert.equal(s.stormsSurvived, TOTAL_STORMS, "no extra storm incremented");
-  assert.equal(s.insight, insightBefore, "no insight credited when nothing to skip");
+  assert.equal(s.parts, partsBefore, "no parts credited when nothing to skip");
 }
 
 // clears active storm if one is in progress

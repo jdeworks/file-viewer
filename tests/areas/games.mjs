@@ -1308,16 +1308,17 @@ export async function run(ctx) {
   });
   if (s8Fresh) pass('Stage 8 boots fresh at cycle 1 (no pre-seeded debris/States)'); else fail('Stage 8 booted a pre-seeded stub');
   // BYPASS CLOSED: the old "archive twice → Heat Death → win" path. On a fresh field there is nothing
-  // to archive, and challenging Heat Death returns LOCKED — it must NOT defeat the boss.
-  await page.click('[data-action="archive"]');
-  await page.click('[data-action="archive"]');
-  await page.click('[data-action="boss"]');
+  // to archive, and challenging Heat Death returns LOCKED — it must NOT defeat the boss. (Post UX-audit
+  // 2026-07 progressive disclosure the archive + boss controls are hidden until their systems unlock,
+  // so this drives the boss attempt through the engine hook rather than dead DOM buttons — same
+  // semantic: a fresh Heat Death attempt is locked, not a win.)
   const s8BypassFailed = await page.evaluate(() => {
+    const r = window.__fvStage8.bossSolver();
     const lock = window.__fvStage8.lockState();
     const s = window.__fvStage8.state();
     let save = null;
     try { save = JSON.parse(localStorage.getItem('fv:games:metagame:v3')); } catch {}
-    return !lock.unlocked && !s.boss.defeated && !(save?.defeated?.includes(8));
+    return !r.defeated && r.locked && !lock.unlocked && !s.boss.defeated && !(save?.defeated?.includes(8));
   });
   if (s8BypassFailed) pass('Stage 8 BYPASS CLOSED: fresh two-click Heat Death attempt is locked, not a win'); else fail('Stage 8 two-click bypass still wins');
   // Drive the REAL multi-act survival sim to the boss gate (repair the spine, BRACE + weather each
@@ -1370,18 +1371,18 @@ export async function run(ctx) {
     const buy = window.__fvStage8.buyTech('rep1');
     const s = window.__fvStage8.state();
     const sal3 = window.__fvStage8.techStatus().find((t) => t.id === 'sal3');
-    return { hadResources: before.insight >= 18 && before.scrap >= 12, bought: buy.ok, bonus: s.repairBudgetBonus, manualArchiveDone: s.manualArchiveDone, coldGated: sal3.reason !== 'needs-archive' };
+    return { hadResources: before.parts >= 30, bought: buy.ok, bonus: s.repairBudgetBonus, manualArchiveDone: s.manualArchiveDone, coldGated: sal3.reason !== 'needs-archive' };
   });
-  if (s8Tech.bought && s8Tech.bonus === 3) pass('Stage 8 tech tree: Insight+Scrap buys a tech and applies its effect'); else fail(`Stage 8 tech buy failed: ${JSON.stringify(s8Tech)}`);
+  if (s8Tech.bought && s8Tech.bonus === 3) pass('Stage 8 tech tree: salvage parts buys a tech and applies its effect'); else fail(`Stage 8 tech buy failed: ${JSON.stringify(s8Tech)}`);
   // Structures: Scrap builds a Heat Sink (folds into venting); Cold Storage automation stays gated
   // behind the manual archive un-cheat (cannot even be BUILT without it).
   const s8Struct = await page.evaluate(() => {
     const r = window.__fvStage8.buildStructure('heatSink');
     const s = window.__fvStage8.state();
     const cold = window.__fvStage8.structureStatus().find((x) => x.id === 'coldStorage');
-    return { built: r.ok, reason: r.reason, scrap: Math.floor(s.scrap), vent: s.structHeatVent, coldNeedsTech: cold.reason };
+    return { built: r.ok, reason: r.reason, parts: Math.floor(s.parts), vent: s.structHeatVent, coldNeedsTech: cold.reason };
   });
-  if (s8Struct.built && s8Struct.vent === 4) pass('Stage 8 structures: Scrap builds a Heat Sink that folds into venting'); else fail(`Stage 8 structure build failed: ${JSON.stringify(s8Struct)}`);
+  if (s8Struct.built && s8Struct.vent === 4) pass('Stage 8 structures: salvage parts builds a Heat Sink that folds into venting'); else fail(`Stage 8 structure build failed: ${JSON.stringify(s8Struct)}`);
   // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
   const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
   if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);

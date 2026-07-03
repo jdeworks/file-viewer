@@ -28,10 +28,10 @@ import { buyTech } from "../tech.js";
   s.meta.firstClearComplete = true;
   s.totalStatesEarned = 1200; // 1200/400 = 3
   s.stormsSurvived = 3;       // +3 → 6 cores
-  s.cycle = 25; s.states = 800; s.scrap = 50; s.insight = 90;
+  s.cycle = 25; s.states = 800; s.parts = 140;
   s.act = 4; s.onlineSectors = ["core", "alpha", "beta", "gamma"];
   // a researched tech persists across the collapse (permanent progress)
-  s.insight = 5000; s.scrap = 5000; buyTech(s, "rep1");
+  s.parts = 5000; buyTech(s, "rep1");
   const preview = coresPreview(s);
   const r = microstateCollapse(s);
   assert.equal(r.ok, true, "collapsed");

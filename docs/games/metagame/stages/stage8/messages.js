@@ -46,6 +46,21 @@ export function gateHint(lock) {
   return `reserves are deep enough (${lock.inHandStates} in hand vs ~${lock.burnEstimate} burn). Heat Death can be endured.`;
 }
 
+// One-line arrival banners fired the first time each system is revealed (disclose.js / renderer).
+export const DISCLOSE_MESSAGES = {
+  states: "STATES ONLINE — the field is producing.",
+  debris: "WRECKAGE — failed nodes shed .sav debris. Archive it before it decays.",
+  parts: "SALVAGE PARTS can be spent — TECH TREE online.",
+  structures: "STRUCTURES — build with parts.",
+  heat: "THERMAL LOAD is rising — watch the heat.",
+  storm: "CASCADE STORM inbound — brace to endure it.",
+  boss: "THE HEAT DEATH stirs — the end-gate is in reach.",
+  prestige: "MICROSTATE COLLAPSE unlocked — replay deeper."
+};
+
+// In-fiction label for the external-import verb (M3) — no longer reads as a debug button.
+export const EXTERNAL_IMPORT_LABEL = "import external debris (+3 cycles)";
+
 export const btsSummary = [
   "Stage 8 uses internal drag and drop because OS file dragging behaves differently across browsers, touch devices, and assistive technology.",
   "The critical lesson is still the file action: a generated .sav moves from debris into an active archive before decay.",

@@ -6,7 +6,7 @@ import { nodeById, ADJACENCY } from "./nodes.js";
 import { createDebris } from "./state.js";
 import { resolveEvent, telegraphNext } from "./events.js";
 import { computeHeatDelta, thermalDecayBonus, thermalEntropy, clampHeat, THERMAL_THRESHOLD } from "./heat.js";
-import { insightIncome, earnInsight } from "./resources.js";
+import { partsIncome, earnParts } from "./resources.js";
 import { tickStorm, announceStorm } from "./storms.js";
 import { runAutomation } from "./automation.js";
 
@@ -147,11 +147,11 @@ export function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round((active + degraded - entropySink) * prestigeMult));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  // 8a. Insight income (research output of online Core/Production nodes), also prestige-scaled.
-  const insight = insightIncome(state, status) * prestigeMult;
-  earnInsight(state, insight);
-  state.insightRate = insight;
-  result.insight = insight;
+  // 8a. Parts income (research output of online Core/Production/Research nodes), also prestige-scaled.
+  const parts = partsIncome(state, status) * prestigeMult;
+  earnParts(state, parts);
+  state.partsRate = parts;
+  result.parts = parts;
   // 8b. recompute Heat from the post-decay/post-repair node statuses (generation − venting).
   const heat = computeHeatDelta(state, status);
   state.heat = clampHeat(state.heat + heat.delta);

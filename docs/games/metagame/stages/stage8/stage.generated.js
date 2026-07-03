@@ -41,6 +41,17 @@ function gateHint(lock) {
   }
   return `reserves are deep enough (${lock.inHandStates} in hand vs ~${lock.burnEstimate} burn). Heat Death can be endured.`;
 }
+var DISCLOSE_MESSAGES = {
+  states: "STATES ONLINE — the field is producing.",
+  debris: "WRECKAGE — failed nodes shed .sav debris. Archive it before it decays.",
+  parts: "SALVAGE PARTS can be spent — TECH TREE online.",
+  structures: "STRUCTURES — build with parts.",
+  heat: "THERMAL LOAD is rising — watch the heat.",
+  storm: "CASCADE STORM inbound — brace to endure it.",
+  boss: "THE HEAT DEATH stirs — the end-gate is in reach.",
+  prestige: "MICROSTATE COLLAPSE unlocked — replay deeper."
+};
+var EXTERNAL_IMPORT_LABEL = "import external debris (+3 cycles)";
 var btsSummary = [
   "Stage 8 uses internal drag and drop because OS file dragging behaves differently across browsers, touch devices, and assistive technology.",
   "The critical lesson is still the file action: a generated .sav moves from debris into an active archive before decay.",
@@ -229,35 +240,29 @@ var ADJACENCY = (() => {
 })();
 
 // ../../docs/games/metagame/stages/stage8/resources.js
-var ZONE_INSIGHT = { core: 0.6, production: 0.45, research: 1.4, mid: 0, frontier: 0, coolant: 0 };
-function scrapYield(debris) {
+var ZONE_PARTS = { core: 0.6, production: 0.45, research: 1.4, mid: 0, frontier: 0, coolant: 0 };
+function partsYield(debris) {
   const tier = Math.max(1, Number(debris?.tier || 1));
   const value = Math.max(0, Number(debris?.value || 0));
   return tier * 2 + Math.floor(value / 8);
 }
-function insightIncome(state, statusOf, isOnline = () => true) {
+function partsIncome(state, statusOf, isOnline = () => true) {
   let income = 0;
   for (const n of state.nodes) {
     if (!isOnline(n)) continue;
     const s = statusOf(n.health);
     if (s === "failed") continue;
     const def = nodeById(n.id) || {};
-    const base = ZONE_INSIGHT[def.zone] || 0;
+    const base = ZONE_PARTS[def.zone] || 0;
     income += s === "degrading" ? base * 0.5 : base;
   }
   return round2(income);
 }
-function earnScrap(state, amount) {
-  const n = Math.max(0, Math.floor(Number(amount) || 0));
-  state.scrap = Math.max(0, Number(state.scrap || 0)) + n;
-  state.scrapTotal = Number(state.scrapTotal || 0) + n;
-  return state.scrap;
-}
-function earnInsight(state, amount) {
+function earnParts(state, amount) {
   const n = Math.max(0, Number(amount) || 0);
-  state.insight = Math.max(0, Number(state.insight || 0)) + n;
-  state.insightTotal = Number(state.insightTotal || 0) + n;
-  return state.insight;
+  state.parts = Math.max(0, Number(state.parts || 0)) + n;
+  state.partsTotal = Number(state.partsTotal || 0) + n;
+  return state.parts;
 }
 function round2(v) {
   return Math.round(v * 100) / 100;
@@ -374,8 +379,8 @@ function resolveStorm(state) {
   state.stormsSurvived = Number(state.stormsSurvived || 0) + 1;
   state.act = Number(state.act || 1) + 1;
   const bonus = storm ? storm.insightBonus : 0;
-  if (bonus) earnInsight(state, bonus);
-  pushLog(state, `${active.label} ENDURED. Sector ${active.sector} online. +${bonus} Insight.`);
+  if (bonus) earnParts(state, bonus);
+  pushLog(state, `${active.label} ENDURED. Sector ${active.sector} online. +${bonus} parts.`);
   return { id: active.id, resolved: true, survived: true, sector: active.sector, insightBonus: bonus };
 }
 function pushLog(state, line) {
@@ -406,11 +411,11 @@ function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
-  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
-  earnScrap(state, scrap);
+  const parts = Math.round(partsYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
+  earnParts(state, parts);
   state.manualArchiveDone = true;
   state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog2(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
+  pushLog2(state, `archived ${debris.id}. +${debris.value} States, +${parts} parts.`);
   const firstArchive = !hasSalvageArchived(actions);
   if (actions && typeof actions.setAction === "function") {
     actions.setAction(8, ACTION_NAME, {
@@ -549,14 +554,14 @@ function unlockAchievement(achievements, id, detail) {
 
 // ../../docs/games/metagame/stages/stage8/tech.js
 var TECHS = [
+  // parts cost = old insight + old scrap (see header — balance-neutral currency merge).
   // ── REPAIR branch ────────────────────────────────────────────────────────────────────────────────
   {
     id: "rep1",
     branch: "repair",
     label: "Repair Drones Mk I",
     desc: "+3 repair units / cycle.",
-    insight: 18,
-    scrap: 12,
+    parts: 30,
     requires: null,
     apply: (b) => {
       b.repairBudgetBonus += 3;
@@ -567,8 +572,7 @@ var TECHS = [
     branch: "repair",
     label: "Efficient Welds",
     desc: "+2 health restored per repair unit.",
-    insight: 40,
-    scrap: 30,
+    parts: 70,
     requires: "rep1",
     apply: (b) => {
       b.repairEfficiencyBonus += 2;
@@ -579,8 +583,7 @@ var TECHS = [
     branch: "repair",
     label: "Auto-Repair Drone",
     desc: "Automation: repairs the weakest spine node each cycle.",
-    insight: 85,
-    scrap: 60,
+    parts: 145,
     requires: "rep2",
     apply: (b) => {
       b.autoRepair = true;
@@ -592,8 +595,7 @@ var TECHS = [
     branch: "thermal",
     label: "Heat Sinks",
     desc: "+5 passive heat venting / cycle.",
-    insight: 18,
-    scrap: 12,
+    parts: 30,
     requires: null,
     apply: (b) => {
       b.heatVentBonus += 5;
@@ -604,8 +606,7 @@ var TECHS = [
     branch: "thermal",
     label: "Thermal Throttle",
     desc: "+12 heat before it amplifies decay.",
-    insight: 40,
-    scrap: 28,
+    parts: 68,
     requires: "thm1",
     apply: (b) => {
       b.thermalThresholdBonus += 12;
@@ -616,8 +617,7 @@ var TECHS = [
     branch: "thermal",
     label: "Cryo Loop",
     desc: "+8 more passive heat venting / cycle.",
-    insight: 80,
-    scrap: 55,
+    parts: 135,
     requires: "thm2",
     apply: (b) => {
       b.heatVentBonus += 8;
@@ -628,9 +628,8 @@ var TECHS = [
     id: "sal1",
     branch: "salvage",
     label: "Refinery Optics",
-    desc: "+50% Scrap from archived debris.",
-    insight: 20,
-    scrap: 10,
+    desc: "+50% parts from archived debris.",
+    parts: 30,
     requires: null,
     apply: (b) => {
       b.scrapMult += 0.5;
@@ -641,8 +640,7 @@ var TECHS = [
     branch: "salvage",
     label: "Deep Salvage",
     desc: "Debris survives +1 cycle before decaying.",
-    insight: 42,
-    scrap: 30,
+    parts: 72,
     requires: "sal1",
     apply: (b) => {
       b.debrisDecayBonus += 1;
@@ -653,8 +651,7 @@ var TECHS = [
     branch: "salvage",
     label: "Cold Storage",
     desc: "Automation: auto-archives a debris file each cycle (after you have archived by hand).",
-    insight: 95,
-    scrap: 80,
+    parts: 175,
     requires: "sal2",
     needsManualArchive: true,
     apply: (b) => {
@@ -667,8 +664,7 @@ var TECHS = [
     branch: "topology",
     label: "Reinforced Relays",
     desc: "-1 base decay on every node.",
-    insight: 22,
-    scrap: 14,
+    parts: 36,
     requires: null,
     apply: (b) => {
       b.decayReduction += 1;
@@ -679,8 +675,7 @@ var TECHS = [
     branch: "topology",
     label: "Load Balancer",
     desc: "Cascade stress propagates at half strength.",
-    insight: 45,
-    scrap: 32,
+    parts: 77,
     requires: "top1",
     apply: (b) => {
       b.cascadeStressMult = Math.min(b.cascadeStressMult, 0.5);
@@ -691,8 +686,7 @@ var TECHS = [
     branch: "topology",
     label: "Redundant Cores",
     desc: "Core anchors regenerate +3 health / cycle.",
-    insight: 90,
-    scrap: 65,
+    parts: 155,
     requires: "top2",
     apply: (b) => {
       b.coreRegen += 3;
@@ -724,8 +718,7 @@ function buyBlockReason(state, id) {
   if (isPurchased(state, id)) return "owned";
   if (tech.requires && !isPurchased(state, tech.requires)) return "requires";
   if (tech.needsManualArchive && !state.manualArchiveDone) return "needs-archive";
-  if (Number(state.insight || 0) < tech.insight) return "insight";
-  if (Number(state.scrap || 0) < tech.scrap) return "scrap";
+  if (Number(state.parts || 0) < tech.parts) return "parts";
   return null;
 }
 function canBuyTech(state, id) {
@@ -736,8 +729,7 @@ function buyTech(state, id) {
   if (reason) return { ok: false, reason };
   const tech = TECH_BY_ID.get(id);
   if (!state.tech || typeof state.tech !== "object") state.tech = {};
-  state.insight = Number(state.insight || 0) - tech.insight;
-  state.scrap = Number(state.scrap || 0) - tech.scrap;
+  state.parts = Number(state.parts || 0) - tech.parts;
   state.tech[id] = true;
   recomputeTechBonuses(state);
   pushLog3(state, `tech: ${tech.label} online.`);
@@ -755,8 +747,7 @@ function techStatus(state) {
     branch: t.branch,
     label: t.label,
     desc: t.desc,
-    insight: t.insight,
-    scrap: t.scrap,
+    parts: t.parts,
     requires: t.requires,
     owned: isPurchased(state, t.id),
     reason: buyBlockReason(state, t.id),
@@ -773,7 +764,7 @@ var STRUCTURES = [
     id: "heatSink",
     label: "Heat Sink",
     desc: "+4 passive heat venting.",
-    scrap: 20,
+    parts: 20,
     costScale: 1.6,
     max: 5,
     field: "structHeatVent",
@@ -783,7 +774,7 @@ var STRUCTURES = [
     id: "buffer",
     label: "Buffer Capacitor",
     desc: "+2 repair units / cycle.",
-    scrap: 24,
+    parts: 24,
     costScale: 1.6,
     max: 5,
     field: "structRepairBonus",
@@ -791,9 +782,9 @@ var STRUCTURES = [
   },
   {
     id: "refinery",
-    label: "Scrap Refinery",
-    desc: "+2 Scrap per archived file.",
-    scrap: 18,
+    label: "Parts Refinery",
+    desc: "+2 parts per archived file.",
+    parts: 18,
     costScale: 1.6,
     max: 5,
     field: "structScrapBonus",
@@ -803,7 +794,7 @@ var STRUCTURES = [
     id: "drone",
     label: "Auto-Repair Drone",
     desc: "Automation: heals a weak node each cycle.",
-    scrap: 40,
+    parts: 40,
     costScale: 1.8,
     max: 3,
     field: "autoRepairUnits",
@@ -814,7 +805,7 @@ var STRUCTURES = [
     id: "coldStorage",
     label: "Cold Storage Bay",
     desc: "Automation: auto-archives a debris file each cycle.",
-    scrap: 60,
+    parts: 60,
     costScale: 1.8,
     max: 2,
     field: "coldStorageRate",
@@ -833,7 +824,7 @@ function levelOf(state, id) {
 function costOf(state, id) {
   const def = STRUCT_BY_ID.get(id);
   if (!def) return Infinity;
-  return Math.round(def.scrap * Math.pow(def.costScale, levelOf(state, id)));
+  return Math.round(def.parts * Math.pow(def.costScale, levelOf(state, id)));
 }
 function buildBlockReason(state, id) {
   const def = STRUCT_BY_ID.get(id);
@@ -841,7 +832,7 @@ function buildBlockReason(state, id) {
   if (levelOf(state, id) >= def.max) return "max";
   if (def.requiresTech && !isPurchased(state, def.requiresTech)) return "requires-tech";
   if (def.needsManualArchive && !state.manualArchiveDone) return "needs-archive";
-  if (Number(state.scrap || 0) < costOf(state, id)) return "scrap";
+  if (Number(state.parts || 0) < costOf(state, id)) return "parts";
   return null;
 }
 function canBuildStructure(state, id) {
@@ -852,7 +843,7 @@ function buildStructure(state, id) {
   if (reason) return { ok: false, reason };
   const cost = costOf(state, id);
   if (!state.structures || typeof state.structures !== "object") state.structures = {};
-  state.scrap = Number(state.scrap || 0) - cost;
+  state.parts = Number(state.parts || 0) - cost;
   state.structures[id] = levelOf(state, id) + 1;
   recomputeStructureBonuses(state);
   const def = STRUCT_BY_ID.get(id);
@@ -919,9 +910,8 @@ function resetField(state, carry) {
   state.states = 0;
   state.totalStatesEarned = 0;
   state.salvageTotal = 0;
-  state.scrap = 0;
-  state.insight = 0;
-  state.insightRate = 0;
+  state.parts = 0;
+  state.partsRate = 0;
   state.heat = 0;
   state.heatRate = 0;
   state.entropy = 0;
@@ -961,13 +951,16 @@ function defaultState() {
     states: 0,
     totalStatesEarned: 0,
     salvageTotal: 0,
-    scrap: 0,
-    scrapTotal: 0,
-    insight: 0,
-    insightTotal: 0,
-    insightRate: 0,
+    parts: 0,
+    // merged SALVAGE PARTS currency (resources.js): tech + structures both spend it
+    partsTotal: 0,
+    // lifetime parts earned
+    partsRate: 0,
+    // per-cycle parts income (HUD chip)
     tech: {},
     structures: {},
+    disclosed: {},
+    // progressive-disclosure flags (M1): which systems' UI has been revealed
     manualArchiveDone: false,
     prestigeMult: 1,
     ...defaultTechBonuses(),
@@ -1039,13 +1032,19 @@ function normalizeState(state) {
   target.states = num(target.states, fresh.states);
   target.totalStatesEarned = num(target.totalStatesEarned, fresh.totalStatesEarned);
   target.salvageTotal = num(target.salvageTotal, fresh.salvageTotal);
-  target.scrap = Math.max(0, num(target.scrap, 0));
-  target.scrapTotal = Math.max(0, num(target.scrapTotal, 0));
-  target.insight = Math.max(0, num(target.insight, 0));
-  target.insightTotal = Math.max(0, num(target.insightTotal, 0));
-  target.insightRate = num(target.insightRate, 0);
+  const legacyParts = Math.max(0, num(target.scrap, 0)) + Math.max(0, num(target.insight, 0));
+  const legacyPartsTotal = Math.max(0, num(target.scrapTotal, 0)) + Math.max(0, num(target.insightTotal, 0));
+  target.parts = Math.max(0, num(target.parts, 0)) + legacyParts;
+  target.partsTotal = Math.max(0, num(target.partsTotal, 0)) + legacyPartsTotal;
+  target.partsRate = num(target.partsRate, num(target.insightRate, 0));
+  delete target.scrap;
+  delete target.scrapTotal;
+  delete target.insight;
+  delete target.insightTotal;
+  delete target.insightRate;
   target.tech = plain(target.tech);
   target.structures = plain(target.structures);
+  target.disclosed = plain(target.disclosed);
   target.manualArchiveDone = Boolean(target.manualArchiveDone);
   recomputeTechBonuses(target);
   recomputeStructureBonuses(target);
@@ -1087,13 +1086,12 @@ function snapshotRun(state) {
     states: state.states,
     totalStatesEarned: state.totalStatesEarned,
     salvageTotal: state.salvageTotal,
-    scrap: state.scrap || 0,
-    scrapTotal: state.scrapTotal || 0,
-    insight: state.insight || 0,
-    insightTotal: state.insightTotal || 0,
-    insightRate: state.insightRate || 0,
+    parts: state.parts || 0,
+    partsTotal: state.partsTotal || 0,
+    partsRate: state.partsRate || 0,
     tech: { ...state.tech || {} },
     structures: { ...state.structures || {} },
+    disclosed: { ...state.disclosed || {} },
     manualArchiveDone: Boolean(state.manualArchiveDone),
     selectedDebrisId: state.selectedDebrisId,
     externalImportBonusCycles: state.externalImportBonusCycles || 0,
@@ -1157,9 +1155,8 @@ var pushLog5 = (state, line) => {
 function devGiveResources(state) {
   state.states = Number(state.states || 0) + 500;
   state.totalStatesEarned = Number(state.totalStatesEarned || 0) + 500;
-  earnScrap(state, 200);
-  earnInsight(state, 100);
-  pushLog5(state, "DEV: +500 States, +200 Scrap, +100 Insight.");
+  earnParts(state, 300);
+  pushLog5(state, "DEV: +500 States, +300 parts.");
 }
 function devSkipStorm(state) {
   const idx = Math.max(0, Number(state.act || 1) - 1);
@@ -1174,8 +1171,8 @@ function devSkipStorm(state) {
   state.act = Number(state.act || 1) + 1;
   if (!Array.isArray(state.announcedStorms)) state.announcedStorms = [];
   if (!state.announcedStorms.includes(storm.id)) state.announcedStorms.push(storm.id);
-  earnInsight(state, storm.insightBonus);
-  pushLog5(state, `DEV: Storm ${storm.id} skipped — sector ${storm.sector} online, +${storm.insightBonus} Insight.`);
+  earnParts(state, storm.insightBonus);
+  pushLog5(state, `DEV: Storm ${storm.id} skipped — sector ${storm.sector} online, +${storm.insightBonus} parts.`);
 }
 function devUnlockBossGate(state) {
   for (const storm of STORMS) {
@@ -1428,8 +1425,8 @@ function autoArchive(state, detail) {
   const rate2 = Math.max(0, Math.floor(Number(state.coldStorageRate || 0)));
   if (!rate2 || !Array.isArray(state.debris) || !state.debris.length) return;
   const order = [...state.debris].sort((a, b) => a.cycle - b.cycle || (a.id < b.id ? -1 : 1));
-  const scrapBonus = Math.max(0, Number(state.structScrapBonus || 0));
-  const scrapMult = Math.max(1, Number(state.scrapMult || 1));
+  const partsBonus = Math.max(0, Number(state.structScrapBonus || 0));
+  const partsMult = Math.max(1, Number(state.scrapMult || 1));
   for (let i = 0; i < rate2 && i < order.length; i += 1) {
     const debris = order[i];
     const idx = state.debris.findIndex((d) => d.id === debris.id);
@@ -1439,7 +1436,7 @@ function autoArchive(state, detail) {
     state.archive = [...state.archive || [], archived];
     state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
     state.states = Number(state.states || 0) + Number(debris.value || 0);
-    earnScrap(state, Math.round(scrapYield(debris) * scrapMult) + scrapBonus);
+    earnParts(state, Math.round(partsYield(debris) * partsMult) + partsBonus);
     detail.archived.push(debris.id);
   }
   if (detail.archived.length) pushLog7(state, `Cold Storage auto-archived ${detail.archived.length} file(s).`);
@@ -1563,10 +1560,10 @@ function advanceCycle(state, rng) {
   result.income = Math.max(0, Math.round((active + degraded - entropySink) * prestigeMult));
   state.states = (state.states || 0) + result.income;
   state.totalStatesEarned = (state.totalStatesEarned || 0) + result.income;
-  const insight = insightIncome(state, status) * prestigeMult;
-  earnInsight(state, insight);
-  state.insightRate = insight;
-  result.insight = insight;
+  const parts = partsIncome(state, status) * prestigeMult;
+  earnParts(state, parts);
+  state.partsRate = parts;
+  result.parts = parts;
   const heat = computeHeatDelta(state, status);
   state.heat = clampHeat(state.heat + heat.delta);
   state.heatRate = heat.delta;
@@ -1686,37 +1683,123 @@ function entropyTreeText(state) {
   ].join("\n");
 }
 
-// ../../docs/games/metagame/stages/stage8/paint.js
-function paintStage8({ state, lock, storm, els, onSelectDebris }) {
-  const { fields, map, log, root } = els;
-  if (fields.act) fields.act.textContent = String(state.act || 1);
-  if (fields.storms) fields.storms.textContent = String(state.stormsSurvived || 0);
+// ../../docs/games/metagame/stages/stage8/hud.js
+function rate(v) {
+  const n = Math.round((Number(v) || 0) * 10) / 10;
+  if (!n) return "";
+  return n > 0 ? `+${n}` : `${n}`;
+}
+function paintCommandBar(fields, state, storm, disc) {
   fields.cycle.textContent = String(state.cycle);
-  fields.states.textContent = String(state.states);
   const entropy = Math.round(state.entropy || 0);
   fields.entropy.textContent = String(entropy);
+  if (fields.heatRateWrap) fields.heatRateWrap.hidden = !disc.heat;
+  if (disc.heat && fields.cmdHeatRate) fields.cmdHeatRate.textContent = rate(state.heatRate) || "0";
+  const active = state.activeStorm;
+  if (fields.stormWrap) fields.stormWrap.hidden = !active;
+  if (active && fields.stormCountdown) fields.stormCountdown.textContent = String(active.cyclesLeft);
+  const braceBtn = fields.braceBtn;
+  if (braceBtn) {
+    const show = disc.storm && !active && storm && storm.ok;
+    braceBtn.hidden = !show;
+    if (show) braceBtn.textContent = `brace ${storm.storm.label} ▸`;
+  }
+  if (fields.ticker) fields.ticker.textContent = state.log?.[state.log.length - 1] || "";
+}
+function paintClusters(fields, state, disc) {
+  fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
+  if (fields.statesWrap) fields.statesWrap.hidden = !disc.states;
+  if (disc.states) fields.states.textContent = String(state.states);
+  if (fields.thermalCluster) fields.thermalCluster.hidden = !disc.heat;
+  if (disc.heat && fields.heat) fields.heat.textContent = `${Math.round(state.heat || 0)}/100`;
+  if (fields.resourcesCluster) fields.resourcesCluster.hidden = !disc.parts;
+  if (disc.parts) {
+    fields.parts.textContent = String(Math.floor(state.parts || 0));
+    if (fields.partsRate) fields.partsRate.textContent = rate(state.partsRate);
+  }
+  const cores = Number(state.meta?.cores || 0);
+  const mult = Number(state.prestigeMult || 1);
+  const showPrestige = disc.prestige && Boolean(state.meta?.firstClearComplete);
+  if (fields.prestigeCluster) fields.prestigeCluster.hidden = !showPrestige;
+  if (showPrestige) {
+    fields.cores.textContent = String(cores);
+    if (fields.prestigeMult) fields.prestigeMult.textContent = mult > 1 ? `×${mult.toFixed(2)}` : "";
+  }
+}
+function bossGateRows(lock) {
+  return [
+    ["survive Cascade Storms", `${lock.stormsSurvived}/${lock.stormsRequired}`, Boolean(lock.enoughStorms)],
+    ["archive .sav by hand", lock.actionReady ? "done" : "not yet", Boolean(lock.actionReady)],
+    ["salvage banked", `${lock.salvageTotal}/${lock.salvageRequired}`, Boolean(lock.enoughSalvage)],
+    ["reach cycle", `${lock.cycle}/${lock.minCycle}`, Boolean(lock.enoughCycles)],
+    ["lifetime States", `${lock.totalEarned}/${lock.statesRequired}`, Boolean(lock.enoughStates)]
+  ];
+}
+function paintBossChecklist(el, lock) {
+  if (!el) return;
+  if (lock.defeated) {
+    el.innerHTML = `<div class="s8-gate-chip is-done">✓ Heat Death defeated — BTS trace available.</div>`;
+    return;
+  }
+  const rows = bossGateRows(lock);
+  const met = rows.filter((r) => r[2]).length;
+  if (met < 3) {
+    const next = rows.find((r) => !r[2]) || rows[0];
+    el.innerHTML = `<div class="s8-gate-chip">🔒 next gate — ${next[0]} (${next[1]})</div>`;
+    return;
+  }
+  el.replaceChildren(...rows.map(([label, value, ok]) => {
+    const row = document.createElement("div");
+    row.className = `s8-gate-row${ok ? " is-met" : ""}`;
+    row.innerHTML = `<span class="s8-gate-tick">${ok ? "✓" : "✗"}</span><span class="s8-gate-label">${label}</span><span class="s8-gate-val">${value}</span>`;
+    return row;
+  }));
+}
+function applyDisclosure(els, state, disc) {
+  const { fields, root } = els;
+  root.querySelector(".s8-layout")?.classList.toggle("is-solo", !disc.debris);
+  const set = (el, show) => {
+    if (el) el.hidden = !show;
+  };
+  set(fields.archivePanel, disc.debris);
+  set(fields.externalBtn, disc.debris);
+  set(fields.bossPanel, disc.boss);
+  set(fields.techPanel, disc.parts);
+  set(fields.structPanel, disc.structures);
+  if (fields.stabilizerBtn) {
+    fields.stabilizerBtn.hidden = !disc.storm;
+    fields.stabilizerBtn.textContent = `build stabilizer (${STABILIZER_COST} States) · ${state.stabilizers || 0} held`;
+  }
+  if (disc.debris && fields.salvageFill) {
+    const pct = Math.min(100, Number(state.salvageTotal || 0) / SALVAGE_REQUIRED * 100);
+    fields.salvageFill.style.width = `${pct}%`;
+    if (fields.salvageNum) fields.salvageNum.textContent = String(state.salvageTotal || 0);
+  }
+}
+
+// ../../docs/games/metagame/stages/stage8/paint.js
+function paintStage8({ state, lock, storm, disc, els, onSelectDebris }) {
+  const { fields, map, log, root } = els;
+  const entropy = Math.round(state.entropy || 0);
   root.style.setProperty("--entropy-level", (entropy / 100).toFixed(2));
   root.dataset.entropy = entropy >= 80 ? "critical" : entropy >= 60 ? "high" : entropy >= 35 ? "mid" : "low";
-  if (fields.stress) {
-    const totalStress = state.nodes.reduce((sum, n) => sum + (Number(n.cascadeStress) || 0), 0);
-    fields.stress.textContent = String(totalStress);
+  paintCommandBar(fields, state, storm, disc);
+  paintClusters(fields, state, disc);
+  applyDisclosure(els, state, disc);
+  if (disc.boss) {
+    paintBossChecklist(fields.bossGate, lock);
+    fields.hint.textContent = lock.hint;
+    const bossBtn = fields.bossBtn;
+    if (bossBtn) {
+      bossBtn.disabled = !lock.unlocked || Boolean(state.boss.defeated);
+    }
   }
-  if (fields.heat) fields.heat.textContent = `${Math.round(state.heat || 0)}/100`;
-  if (fields.heatRate) fields.heatRate.textContent = rate(state.heatRate);
-  fields.repairUnits.textContent = String(Number.isFinite(state.repairUnits) ? state.repairUnits : 6);
-  fields.stabilizers.textContent = String(state.stabilizers || 0);
-  if (fields.scrap) fields.scrap.textContent = String(Math.floor(state.scrap || 0));
-  if (fields.insight) fields.insight.textContent = String(Math.floor(state.insight || 0));
-  if (fields.insightRate) fields.insightRate.textContent = rate(state.insightRate);
-  fields.salvage.textContent = String(state.salvageTotal);
-  paintPrestige(fields, root, state);
   fields.tree.textContent = entropyTreeText(state);
-  fields.boss.textContent = state.boss.defeated ? "defeated. BTS trace available." : `${lock.unlocked ? "UNLOCKED" : "LOCKED"} · storms ${tick(lock.enoughStorms)} · action ${tick(lock.actionReady)} · salvage ${tick(lock.enoughSalvage)} · cycles ${tick(lock.enoughCycles)} · lifetime-States ${tick(lock.enoughStates)}`;
-  fields.hint.textContent = lock.hint;
   paintTelegraph(fields.telegraph, state);
-  paintStorm(root, state, storm);
+  paintStorm(root, state, storm, disc);
   paintBurn(fields.burn, state.boss.burn);
   paintDebrisSelect(fields.debrisSelect, state);
+  paintCollapse(fields, root, state, disc);
   map.replaceChildren(...state.nodes.map((n) => nodeCard(n, state)), ...state.debris.map((item) => debrisChip(item, onSelectDebris)));
   log.replaceChildren(...state.log.slice(-5).map((line) => {
     const li = document.createElement("li");
@@ -1725,23 +1808,10 @@ function paintStage8({ state, lock, storm, els, onSelectDebris }) {
   }));
   root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
 }
-function tick(ok) {
-  return ok ? "✓" : "✗";
-}
-function rate(v) {
-  const n = Math.round((Number(v) || 0) * 10) / 10;
-  if (!n) return "";
-  return n > 0 ? `(+${n})` : `(${n})`;
-}
-function paintPrestige(fields, root, state) {
-  const cores = Number(state.meta?.cores || 0);
-  const mult = Number(state.prestigeMult || 1);
-  const cleared = Boolean(state.meta?.firstClearComplete);
-  if (fields.coresWrap) fields.coresWrap.hidden = !cleared;
-  if (cleared && fields.cores) fields.cores.textContent = String(cores);
-  if (cleared && fields.prestigeMult) fields.prestigeMult.textContent = mult > 1 ? `(×${mult.toFixed(2)})` : "";
+function paintCollapse(fields, root, state, disc) {
   const btn = root.querySelector('[data-action="collapse"]');
   if (!btn) return;
+  const cleared = disc.prestige && Boolean(state.meta?.firstClearComplete);
   if (cleared) {
     const preview = Math.floor(Number(state.totalStatesEarned || 0) / 400) + Number(state.stormsSurvived || 0);
     btn.hidden = false;
@@ -1751,18 +1821,8 @@ function paintPrestige(fields, root, state) {
     btn.hidden = true;
   }
 }
-function paintStorm(root, state, storm) {
-  const btn = root.querySelector('[data-action="storm"]');
-  if (!btn) return;
-  const active = state.activeStorm;
-  if (active) {
-    btn.hidden = true;
-  } else if (storm && storm.ok) {
-    btn.hidden = false;
-    btn.textContent = `brace for ${storm.storm.label} ▸`;
-  } else {
-    btn.hidden = true;
-  }
+function paintStorm(root, state, storm, disc) {
+  root.dataset.storm = state.activeStorm ? "active" : "";
 }
 function paintTelegraph(el, state) {
   if (!el) return;
@@ -1772,7 +1832,6 @@ function paintTelegraph(el, state) {
     el.textContent = `⛆ ${state.activeStorm.label} — ${state.activeStorm.cyclesLeft} cycle(s) left. hold the cores.`;
     return;
   }
-  if (!el) return;
   const pending = state.pendingEvent;
   if (pending) {
     el.hidden = false;
@@ -1820,8 +1879,9 @@ function nodeCard(n, state) {
   const frozenTag = frozen ? ` <span class="s8-node-frozen" title="stabilized — decay frozen">❄${frozen}</span>` : "";
   const hlBtn = def.supportsHighLoad ? `<button type="button" data-high-load="${n.id}" class="s8-node-hl${hl ? " is-on" : ""}" aria-pressed="${hl}" title="High-Load: +50% output, +50% decay">HL${hl ? "✓" : ""}</button>` : "";
   const showFreeze = (state.cycle || 0) >= 6;
-  const canFreeze = showFreeze && (state.stabilizers || 0) > 0 && !frozen;
-  const freezeBtn = showFreeze ? `<button type="button" data-stabilize-node="${n.id}"${canFreeze ? "" : " disabled"} title="Freeze decay for 2 cycles (spends 1 stabilizer)">freeze</button>` : "";
+  const held = Number(state.stabilizers || 0);
+  const canFreeze = showFreeze && held > 0 && !frozen;
+  const freezeBtn = showFreeze ? `<button type="button" data-stabilize-node="${n.id}"${canFreeze ? "" : " disabled"} title="Freeze decay for 2 cycles (spends 1 stabilizer)">freeze ❄${held}</button>` : "";
   item.innerHTML = `<span class="s8-node-id">${n.id}</span> <span class="s8-node-name">${def.name || ""}</span>${stressTag}${frozenTag}
     ${bar} <span class="s8-node-hp">${Math.round(n.health)}%</span>
     <span class="s8-node-actions">${hlBtn}${freezeBtn}<button type="button" data-repair="${n.id}">repair</button></span>`;
@@ -1843,8 +1903,7 @@ var BRANCH_LABEL = { repair: "REPAIR", thermal: "THERMAL", salvage: "SALVAGE", t
 var REASON_HINT = {
   requires: "needs prerequisite",
   "needs-archive": "archive by hand first",
-  insight: "more Insight",
-  scrap: "more Scrap"
+  parts: "more parts"
 };
 function paintTech(el, state) {
   if (!el) return;
@@ -1864,7 +1923,7 @@ var STRUCT_REASON = {
   max: "at max",
   "requires-tech": "research it first",
   "needs-archive": "archive by hand first",
-  scrap: "more Scrap"
+  parts: "more parts"
 };
 function paintStructures(el, state) {
   if (!el) return;
@@ -1888,72 +1947,110 @@ function techRow(t) {
   btn.dataset.tech = t.id;
   if (t.owned) btn.classList.add("is-owned");
   btn.disabled = t.owned || !t.canBuy;
-  const status2 = t.owned ? "✓ owned" : `${t.insight}◈ ${t.scrap}⛭`;
+  const status2 = t.owned ? "✓ owned" : `${t.parts}⛭`;
   const blocked = !t.owned && !t.canBuy && t.reason ? ` · ${REASON_HINT[t.reason] || t.reason}` : "";
   btn.innerHTML = `<span class="s8-tech-name">${t.label}</span><span class="s8-tech-cost">${status2}${blocked}</span><span class="s8-tech-desc">${t.desc}</span>`;
   return btn;
 }
 
+// ../../docs/games/metagame/stages/stage8/disclose.js
+function isVeteran(state) {
+  return Number(state.stormsSurvived || 0) > 0 || Number(state.cycle || 1) >= 8 || Boolean(state.boss?.reached) || Boolean(state.meta?.firstClearComplete);
+}
+var DISCLOSE_ORDER = ["states", "debris", "parts", "structures", "heat", "storm", "boss", "prestige"];
+function computeDisclosure(state) {
+  const d = state.disclosed && typeof state.disclosed === "object" ? state.disclosed : {};
+  const vet = isVeteran(state);
+  const on = (key, cond) => Boolean(d[key]) || vet || Boolean(cond);
+  return {
+    states: on("states", Number(state.totalStatesEarned || 0) > 0),
+    debris: on("debris", (state.debris?.length || 0) > 0 || (state.archive?.length || 0) > 0 || Boolean(state.manualArchiveDone) || Number(state.salvageTotal || 0) > 0),
+    heat: on("heat", Number(state.heat || 0) > 0 || Number(state.heatRate || 0) !== 0),
+    parts: on("parts", Number(state.parts || 0) > 0 || Number(state.partsTotal || 0) > 0),
+    structures: on("structures", Object.keys(state.tech || {}).length > 0),
+    storm: on("storm", (state.announcedStorms?.length || 0) > 0 || Boolean(state.activeStorm) || Number(state.stormsSurvived || 0) > 0),
+    boss: on("boss", Number(state.stormsSurvived || 0) > 0),
+    prestige: on("prestige", Boolean(state.boss?.reached) || Number(state.boss?.attempts || 0) > 0 || Boolean(state.meta?.firstClearComplete))
+  };
+}
+
 // ../../docs/games/metagame/stages/stage8/renderer.js
+import { banner } from "../../shared/feedback.js";
 var REPAIR_STEP2 = 2;
 function renderStage8({ host, state, actions, achievements, bell, bts, viewer, save, run, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
   root.innerHTML = `
-    <header class="s8-hud">
-      <strong>ENTROPY FIELD</strong>
-      <span>act <b data-field="act"></b>/3</span>
-      <span>storms <b data-field="storms"></b>/3</span>
-      <span>cycle <b data-field="cycle"></b></span>
-      <span>States <b data-field="states"></b></span>
-      <span>entropy <b data-field="entropy"></b>%</span>
-      <span>stress <b data-field="stress"></b></span>
-      <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
-      <span>repair <b data-field="repairUnits"></b></span>
-      <span>stabilizers <b data-field="stabilizers"></b></span>
-      <span>scrap <b data-field="scrap"></b></span>
-      <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
-      <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
-      <span data-field="coresWrap" hidden>cores <b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i></span>
-    </header>
+    <div class="s8-cmdbar" role="group" aria-label="cycle command bar">
+      <button type="button" data-action="advance" class="s8-cmd-advance">advance cycle ▸</button>
+      <button type="button" data-action="storm" data-field="braceBtn" class="s8-cmd-brace" hidden>brace ▸</button>
+      <span class="s8-cmd-stat"><b data-field="cycle"></b><small>cycle</small></span>
+      <span class="s8-cmd-stat"><b data-field="entropy"></b><small>entropy %</small></span>
+      <span class="s8-cmd-stat" data-field="heatRateWrap" hidden><b data-field="cmdHeatRate"></b><small>heat/cyc</small></span>
+      <span class="s8-cmd-stat is-warn" data-field="stormWrap" hidden><b data-field="stormCountdown"></b><small>storm left</small></span>
+      <span class="s8-ticker" data-field="ticker" aria-live="polite"></span>
+    </div>
+    <div class="s8-hud">
+      <div class="s8-cluster">
+        <span class="s8-cl-label">NETWORK</span>
+        <span class="s8-cl-num"><b data-field="repairUnits"></b><small>repair</small></span>
+        <span class="s8-cl-num" data-field="statesWrap" hidden><b data-field="states"></b><small>States</small></span>
+      </div>
+      <div class="s8-cluster" data-field="thermalCluster" hidden>
+        <span class="s8-cl-label">THERMAL</span>
+        <span class="s8-cl-num"><b data-field="heat"></b><small>heat</small></span>
+      </div>
+      <div class="s8-cluster" data-field="resourcesCluster" hidden>
+        <span class="s8-cl-label">RESOURCES</span>
+        <span class="s8-cl-num"><b data-field="parts"></b> <i data-field="partsRate" class="s8-rate"></i><small>parts</small></span>
+      </div>
+      <div class="s8-cluster" data-field="prestigeCluster" hidden>
+        <span class="s8-cl-label">PRESTIGE</span>
+        <span class="s8-cl-num"><b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i><small>cores</small></span>
+      </div>
+    </div>
     <div class="s8-layout">
       <div class="s8-map" aria-label="node status"></div>
-      <div class="s8-files">
+      <div class="s8-files" data-field="archivePanel" hidden>
         <pre data-field="tree" aria-label="entropy virtual file tree"></pre>
         <label>Debris
           <select data-field="debrisSelect"></select>
         </label>
         <button type="button" data-action="archive">Archive</button>
         <div class="s8-drop" data-drop-target="/entropy/active_archive/" tabindex="0" role="button" aria-label="Archive selected debris">Active Archive</div>
+        <div class="s8-salvage-progress" title="Heat Death gate progress">
+          <span class="s8-salvage-bar"><span data-field="salvageFill"></span></span>
+          <small>salvage <b data-field="salvageNum"></b>/${SALVAGE_REQUIRED} archived</small>
+        </div>
+        <button type="button" data-action="external" data-field="externalBtn" class="s8-external">${EXTERNAL_IMPORT_LABEL}</button>
       </div>
     </div>
-    <div class="s8-boss">
+    <div class="s8-boss" data-field="bossPanel" hidden>
       <strong>THE HEAT DEATH</strong>
-      <div data-field="boss"></div>
-      <div data-field="hint"></div>
+      <div data-field="bossGate" class="s8-boss-gate"></div>
+      <div data-field="hint" class="s8-boss-hint"></div>
+      <button type="button" data-action="boss" data-field="bossBtn" class="s8-boss-btn">challenge Heat Death</button>
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
-    <details class="s8-tech-panel">
-      <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
+    <details class="s8-tech-panel" data-field="techPanel" hidden>
+      <summary>TECH TREE — spend parts ⛭</summary>
       <div class="s8-tech" data-field="tech"></div>
     </details>
-    <details class="s8-tech-panel">
-      <summary>STRUCTURES — build with Scrap ⛭</summary>
+    <details class="s8-tech-panel" data-field="structPanel" hidden>
+      <summary>STRUCTURES — build with parts ⛭</summary>
       <div class="s8-tech" data-field="struct"></div>
     </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
-      <button type="button" data-action="advance">advance cycle ▸</button>
-      <button type="button" data-action="storm" hidden>brace for Cascade Storm</button>
-      <button type="button" data-action="stabilizer">build stabilizer (${STABILIZER_COST} States)</button>
-      <button type="button" data-action="boss">challenge Heat Death</button>
-      <button type="button" data-action="external">simulate external import</button>
+      <button type="button" data-action="stabilizer" data-field="stabilizerBtn" hidden>build stabilizer (${STABILIZER_COST} States)</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
       <button type="button" data-action="collapse" hidden>collapse to Microstate</button>
     </div>
   `;
   host.replaceChildren(root);
+  const cmdbar = root.querySelector(".s8-cmdbar");
+  let disclosureSeeded = false;
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const map = root.querySelector(".s8-map");
   const log = root.querySelector(".s8-log");
@@ -2117,9 +2214,12 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
       state.selectedDebrisId = state.debris[0]?.id || "";
     }
     const lock = getBossLockState({ actions, state });
+    const disc = computeDisclosure(state);
+    updateDisclosure(disc);
     paintStage8({
       state,
       lock,
+      disc,
       storm: stormAvailable(state),
       els: { fields, map, log, root },
       onSelectDebris: (id) => {
@@ -2127,8 +2227,26 @@ function renderStage8({ host, state, actions, achievements, bell, bts, viewer, s
         repaint();
       }
     });
-    paintTech(fields.tech, state);
-    paintStructures(fields.struct, state);
+    if (disc.parts) paintTech(fields.tech, state);
+    if (disc.structures) paintStructures(fields.struct, state);
+  }
+  function updateDisclosure(disc) {
+    if (!state.disclosed || typeof state.disclosed !== "object") state.disclosed = {};
+    if (!disclosureSeeded) {
+      for (const key of Object.keys(disc)) if (disc[key]) state.disclosed[key] = true;
+      disclosureSeeded = true;
+      return;
+    }
+    let bannered = false;
+    for (const key of DISCLOSE_ORDER) {
+      if (disc[key] && !state.disclosed[key]) {
+        state.disclosed[key] = true;
+        if (!bannered && DISCLOSE_MESSAGES[key]) {
+          banner(cmdbar, DISCLOSE_MESSAGES[key]);
+          bannered = true;
+        }
+      }
+    }
   }
   function persistAndPaint() {
     if (run && typeof run.checkpoint === "function" && !state.boss.defeated) {
@@ -2164,7 +2282,7 @@ var stageMeta = {
   requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
-    { id: "resources", label: "+500 States / +200 Scrap / +100 Insight" },
+    { id: "resources", label: "+500 States / +300 parts" },
     { id: "skip-storm", label: "Skip Cascade Storm" },
     { id: "boss-gate", label: "Unlock Boss Gate" },
     { id: "cool-field", label: "Cool Field (restore nodes)" },

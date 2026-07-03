@@ -13,7 +13,7 @@
 // tickStorm; the renderer/solver call stormAvailable + braceStorm.
 
 import { nodeById, freshSectorNodes } from "./nodes.js";
-import { earnInsight } from "./resources.js";
+import { earnParts } from "./resources.js";
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const zoneOf = (id) => (nodeById(id) || {}).zone;
@@ -141,8 +141,8 @@ function resolveStorm(state) {
   state.stormsSurvived = Number(state.stormsSurvived || 0) + 1;
   state.act = Number(state.act || 1) + 1;
   const bonus = storm ? storm.insightBonus : 0;
-  if (bonus) earnInsight(state, bonus);
-  pushLog(state, `${active.label} ENDURED. Sector ${active.sector} online. +${bonus} Insight.`);
+  if (bonus) earnParts(state, bonus);
+  pushLog(state, `${active.label} ENDURED. Sector ${active.sector} online. +${bonus} parts.`);
   return { id: active.id, resolved: true, survived: true, sector: active.sector, insightBonus: bonus };
 }
 

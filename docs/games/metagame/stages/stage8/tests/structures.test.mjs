@@ -9,7 +9,7 @@ import { runAutomation } from "../automation.js";
 {
   assert.equal(STRUCTURES.length, 5, "five structures");
   const s = defaultState();
-  s.scrap = 1000;
+  s.parts = 1000;
   const c0 = costOf(s, "heatSink");
   buildStructure(s, "heatSink");
   assert.equal(levelOf(s, "heatSink"), 1, "heat sink built");
@@ -20,7 +20,7 @@ import { runAutomation } from "../automation.js";
 // ── struct bonuses fold independently of tech bonuses (no field collision) ─────────────────────────
 {
   const s = defaultState();
-  s.scrap = 1000; s.insight = 1000;
+  s.parts = 2000;
   buyTech(s, "thm1");               // tech heatVentBonus = 5
   buildStructure(s, "heatSink");    // struct structHeatVent = 4
   assert.equal(s.heatVentBonus, 5, "tech vent intact");
@@ -30,10 +30,9 @@ import { runAutomation } from "../automation.js";
 // ── automation structures require their tech (drone→rep3, cold storage→sal3+manual archive) ────────
 {
   const s = defaultState();
-  s.scrap = 1000;
+  s.parts = 5000;
   assert.equal(buildBlockReason(s, "drone"), "requires-tech", "drone needs rep3");
   assert.equal(buildBlockReason(s, "coldStorage"), "requires-tech", "cold storage needs sal3");
-  s.insight = 5000;
   buyTech(s, "rep1"); buyTech(s, "rep2"); buyTech(s, "rep3");
   assert.equal(canBuildStructure(s, "drone"), true, "drone buildable after rep3");
 }
@@ -41,7 +40,7 @@ import { runAutomation } from "../automation.js";
 // ── Cold Storage stays gated behind the MANUAL archive un-cheat at BOTH tech and build ──────────────
 {
   const s = defaultState();
-  s.scrap = 5000; s.insight = 5000;
+  s.parts = 5000;
   buyTech(s, "sal1"); buyTech(s, "sal2");
   assert.equal(buyTech(s, "sal3").reason, "needs-archive", "sal3 tech blocked without a hand archive");
   s.manualArchiveDone = true;
@@ -69,7 +68,7 @@ import { runAutomation } from "../automation.js";
   assert.equal(d2.archived.length, 1, "one debris auto-archived");
   assert.equal(s.debris.length, 0, "debris removed");
   assert.ok(s.salvageTotal > before, "salvage credited");
-  assert.ok(s.scrap > 0, "scrap refined from the auto-archive");
+  assert.ok(s.parts > 0, "parts refined from the auto-archive");
 }
 
 // ── determinism: same state ⇒ same automation result ───────────────────────────────────────────────
@@ -82,7 +81,7 @@ import { runAutomation } from "../automation.js";
 // ── builds survive a snapshot/restore round-trip (bonuses rebuilt) ─────────────────────────────────
 {
   const s = defaultState();
-  s.scrap = 1000;
+  s.parts = 1000;
   buildStructure(s, "buffer");
   const t = defaultState();
   restoreRun(t, snapshotRun(s));

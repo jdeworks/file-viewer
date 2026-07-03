@@ -4,7 +4,7 @@ import {
   handleDebrisDrop,
   recordHeatDeathAttempt
 } from "./boss.js";
-import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST, ACTION_NAME } from "./messages.js";
+import { btsSummary, BTS_PATH, SALVAGE_REQUIRED, STABILIZER_COST, ACTION_NAME, EXTERNAL_IMPORT_LABEL, DISCLOSE_MESSAGES } from "./messages.js";
 import { devGiveResources, devSkipStorm, devUnlockBossGate, devCoolField, devSpawnDebris } from "./s8dev.js";
 import { advanceCycle, applyRepair, applyStabilizer, buildStabilizer, toggleHighLoad } from "./engine.js";
 import { driveToGate } from "./solver.js";
@@ -14,6 +14,8 @@ import { buildStructure, structureStatus } from "./structures.js";
 import { microstateCollapse, prestigeAvailable, coresPreview } from "./prestige.js";
 import { paintStage8 } from "./paint.js";
 import { paintTech, paintStructures } from "./techpanel.js";
+import { computeDisclosure, DISCLOSE_ORDER } from "./disclose.js";
+import { banner } from "../../shared/feedback.js";
 import { snapshotRun } from "./state.js";
 import { makeRng } from "./rng.js";
 
@@ -23,60 +25,76 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
   const root = document.createElement("section");
   root.className = "stage8-entropy-field";
   root.innerHTML = `
-    <header class="s8-hud">
-      <strong>ENTROPY FIELD</strong>
-      <span>act <b data-field="act"></b>/3</span>
-      <span>storms <b data-field="storms"></b>/3</span>
-      <span>cycle <b data-field="cycle"></b></span>
-      <span>States <b data-field="states"></b></span>
-      <span>entropy <b data-field="entropy"></b>%</span>
-      <span>stress <b data-field="stress"></b></span>
-      <span>heat <b data-field="heat"></b> <i data-field="heatRate" class="s8-rate"></i></span>
-      <span>repair <b data-field="repairUnits"></b></span>
-      <span>stabilizers <b data-field="stabilizers"></b></span>
-      <span>scrap <b data-field="scrap"></b></span>
-      <span>insight <b data-field="insight"></b> <i data-field="insightRate" class="s8-rate"></i></span>
-      <span>salvage <b data-field="salvage"></b>/${SALVAGE_REQUIRED}</span>
-      <span data-field="coresWrap" hidden>cores <b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i></span>
-    </header>
+    <div class="s8-cmdbar" role="group" aria-label="cycle command bar">
+      <button type="button" data-action="advance" class="s8-cmd-advance">advance cycle ▸</button>
+      <button type="button" data-action="storm" data-field="braceBtn" class="s8-cmd-brace" hidden>brace ▸</button>
+      <span class="s8-cmd-stat"><b data-field="cycle"></b><small>cycle</small></span>
+      <span class="s8-cmd-stat"><b data-field="entropy"></b><small>entropy %</small></span>
+      <span class="s8-cmd-stat" data-field="heatRateWrap" hidden><b data-field="cmdHeatRate"></b><small>heat/cyc</small></span>
+      <span class="s8-cmd-stat is-warn" data-field="stormWrap" hidden><b data-field="stormCountdown"></b><small>storm left</small></span>
+      <span class="s8-ticker" data-field="ticker" aria-live="polite"></span>
+    </div>
+    <div class="s8-hud">
+      <div class="s8-cluster">
+        <span class="s8-cl-label">NETWORK</span>
+        <span class="s8-cl-num"><b data-field="repairUnits"></b><small>repair</small></span>
+        <span class="s8-cl-num" data-field="statesWrap" hidden><b data-field="states"></b><small>States</small></span>
+      </div>
+      <div class="s8-cluster" data-field="thermalCluster" hidden>
+        <span class="s8-cl-label">THERMAL</span>
+        <span class="s8-cl-num"><b data-field="heat"></b><small>heat</small></span>
+      </div>
+      <div class="s8-cluster" data-field="resourcesCluster" hidden>
+        <span class="s8-cl-label">RESOURCES</span>
+        <span class="s8-cl-num"><b data-field="parts"></b> <i data-field="partsRate" class="s8-rate"></i><small>parts</small></span>
+      </div>
+      <div class="s8-cluster" data-field="prestigeCluster" hidden>
+        <span class="s8-cl-label">PRESTIGE</span>
+        <span class="s8-cl-num"><b data-field="cores"></b> <i data-field="prestigeMult" class="s8-rate"></i><small>cores</small></span>
+      </div>
+    </div>
     <div class="s8-layout">
       <div class="s8-map" aria-label="node status"></div>
-      <div class="s8-files">
+      <div class="s8-files" data-field="archivePanel" hidden>
         <pre data-field="tree" aria-label="entropy virtual file tree"></pre>
         <label>Debris
           <select data-field="debrisSelect"></select>
         </label>
         <button type="button" data-action="archive">Archive</button>
         <div class="s8-drop" data-drop-target="/entropy/active_archive/" tabindex="0" role="button" aria-label="Archive selected debris">Active Archive</div>
+        <div class="s8-salvage-progress" title="Heat Death gate progress">
+          <span class="s8-salvage-bar"><span data-field="salvageFill"></span></span>
+          <small>salvage <b data-field="salvageNum"></b>/${SALVAGE_REQUIRED} archived</small>
+        </div>
+        <button type="button" data-action="external" data-field="externalBtn" class="s8-external">${EXTERNAL_IMPORT_LABEL}</button>
       </div>
     </div>
-    <div class="s8-boss">
+    <div class="s8-boss" data-field="bossPanel" hidden>
       <strong>THE HEAT DEATH</strong>
-      <div data-field="boss"></div>
-      <div data-field="hint"></div>
+      <div data-field="bossGate" class="s8-boss-gate"></div>
+      <div data-field="hint" class="s8-boss-hint"></div>
+      <button type="button" data-action="boss" data-field="bossBtn" class="s8-boss-btn">challenge Heat Death</button>
       <pre data-field="burn" class="s8-burn" hidden></pre>
     </div>
     <div data-field="telegraph" class="s8-telegraph" hidden></div>
-    <details class="s8-tech-panel">
-      <summary>TECH TREE — spend Insight ◈ + Scrap ⛭</summary>
+    <details class="s8-tech-panel" data-field="techPanel" hidden>
+      <summary>TECH TREE — spend parts ⛭</summary>
       <div class="s8-tech" data-field="tech"></div>
     </details>
-    <details class="s8-tech-panel">
-      <summary>STRUCTURES — build with Scrap ⛭</summary>
+    <details class="s8-tech-panel" data-field="structPanel" hidden>
+      <summary>STRUCTURES — build with parts ⛭</summary>
       <div class="s8-tech" data-field="struct"></div>
     </details>
     <ol class="s8-log"></ol>
     <div class="s8-controls">
-      <button type="button" data-action="advance">advance cycle ▸</button>
-      <button type="button" data-action="storm" hidden>brace for Cascade Storm</button>
-      <button type="button" data-action="stabilizer">build stabilizer (${STABILIZER_COST} States)</button>
-      <button type="button" data-action="boss">challenge Heat Death</button>
-      <button type="button" data-action="external">simulate external import</button>
+      <button type="button" data-action="stabilizer" data-field="stabilizerBtn" hidden>build stabilizer (${STABILIZER_COST} States)</button>
       <button type="button" data-action="bts" hidden>open entropy_field.bts</button>
       <button type="button" data-action="collapse" hidden>collapse to Microstate</button>
     </div>
   `;
   host.replaceChildren(root);
+  const cmdbar = root.querySelector(".s8-cmdbar");
+  let disclosureSeeded = false;
 
   const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
   const map = root.querySelector(".s8-map");
@@ -229,15 +247,37 @@ export function renderStage8({ host, state, actions, achievements, bell, bts, vi
       state.selectedDebrisId = state.debris[0]?.id || "";
     }
     const lock = getBossLockState({ actions, state });
+    const disc = computeDisclosure(state);
+    updateDisclosure(disc);
     paintStage8({
       state,
       lock,
+      disc,
       storm: stormAvailable(state),
       els: { fields, map, log, root },
       onSelectDebris: (id) => { state.selectedDebrisId = id; repaint(); }
     });
-    paintTech(fields.tech, state);
-    paintStructures(fields.struct, state);
+    if (disc.parts) paintTech(fields.tech, state);
+    if (disc.structures) paintStructures(fields.struct, state);
+  }
+
+  // Progressive disclosure (M1): seed the persisted flag set silently on first paint (so a loaded
+  // veteran save fires no banners), then on later repaints fire ONE arrival banner per newly-revealed
+  // system and persist the flag. Display-only — never touches the engine or the gate.
+  function updateDisclosure(disc) {
+    if (!state.disclosed || typeof state.disclosed !== "object") state.disclosed = {};
+    if (!disclosureSeeded) {
+      for (const key of Object.keys(disc)) if (disc[key]) state.disclosed[key] = true;
+      disclosureSeeded = true;
+      return;
+    }
+    let bannered = false;
+    for (const key of DISCLOSE_ORDER) {
+      if (disc[key] && !state.disclosed[key]) {
+        state.disclosed[key] = true;
+        if (!bannered && DISCLOSE_MESSAGES[key]) { banner(cmdbar, DISCLOSE_MESSAGES[key]); bannered = true; }
+      }
+    }
   }
 
   function persistAndPaint() {

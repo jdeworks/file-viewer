@@ -12,7 +12,7 @@ export const stageMeta = {
   requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
   devControls: [
-    { id: "resources",   label: "+500 States / +200 Scrap / +100 Insight" },
+    { id: "resources",   label: "+500 States / +300 parts" },
     { id: "skip-storm",  label: "Skip Cascade Storm" },
     { id: "boss-gate",   label: "Unlock Boss Gate" },
     { id: "cool-field",  label: "Cool Field (restore nodes)" },

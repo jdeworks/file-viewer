@@ -59,9 +59,8 @@ function resetField(state, carry) {
   state.states = 0;
   state.totalStatesEarned = 0;
   state.salvageTotal = 0;
-  state.scrap = 0;
-  state.insight = 0;
-  state.insightRate = 0;
+  state.parts = 0;
+  state.partsRate = 0;
   state.heat = 0;
   state.heatRate = 0;
   state.entropy = 0;

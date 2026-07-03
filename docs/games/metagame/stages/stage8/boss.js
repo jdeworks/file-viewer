@@ -12,7 +12,7 @@ import {
 } from "./messages.js";
 import { simulateHeatDeath, estimateBurnTotal } from "./burn.js";
 import { makeRng } from "./rng.js";
-import { scrapYield, earnScrap } from "./resources.js";
+import { partsYield, earnParts } from "./resources.js";
 import { TOTAL_STORMS } from "./storms.js";
 
 export function hasSalvageArchived(actions) {
@@ -40,11 +40,11 @@ export function archiveDebris({
   state.archive.push(archived);
   state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
   state.states = Number(state.states || 0) + Number(debris.value || 0);
-  const scrap = Math.round(scrapYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
-  earnScrap(state, scrap);
+  const parts = Math.round(partsYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
+  earnParts(state, parts);
   state.manualArchiveDone = true; // the manual un-cheat has fired — gates the Cold Storage automation
   state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${scrap} Scrap.`);
+  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${parts} parts.`);
 
   const firstArchive = !hasSalvageArchived(actions);
   if (actions && typeof actions.setAction === "function") {

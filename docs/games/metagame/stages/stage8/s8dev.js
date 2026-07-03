@@ -2,7 +2,7 @@
 // Each function takes `state` and mutates it in place. Called by renderer.js dev(id) which also
 // handles any action-bus side-effects (e.g. actions.setAction for the boss-gate cheat).
 
-import { earnScrap, earnInsight } from "./resources.js";
+import { earnParts } from "./resources.js";
 import { STORMS, bringSectorOnline } from "./storms.js";
 import { TOTAL_STORMS } from "./storms.js";
 import { createDebris } from "./state.js";
@@ -14,9 +14,8 @@ const pushLog = (state, line) => { state.log = [...(state.log || []), line].slic
 export function devGiveResources(state) {
   state.states = Number(state.states || 0) + 500;
   state.totalStatesEarned = Number(state.totalStatesEarned || 0) + 500;
-  earnScrap(state, 200);
-  earnInsight(state, 100);
-  pushLog(state, "DEV: +500 States, +200 Scrap, +100 Insight.");
+  earnParts(state, 300);
+  pushLog(state, "DEV: +500 States, +300 parts.");
 }
 
 // 2 — Instantly survive the current act's Cascade Storm: bring its sector online and advance act.
@@ -31,8 +30,8 @@ export function devSkipStorm(state) {
   state.act = Number(state.act || 1) + 1;
   if (!Array.isArray(state.announcedStorms)) state.announcedStorms = [];
   if (!state.announcedStorms.includes(storm.id)) state.announcedStorms.push(storm.id);
-  earnInsight(state, storm.insightBonus);
-  pushLog(state, `DEV: Storm ${storm.id} skipped — sector ${storm.sector} online, +${storm.insightBonus} Insight.`);
+  earnParts(state, storm.insightBonus);
+  pushLog(state, `DEV: Storm ${storm.id} skipped — sector ${storm.sector} online, +${storm.insightBonus} parts.`);
 }
 
 // 3 — Satisfy every state-side boss-gate condition in one shot. After this returns, callers that

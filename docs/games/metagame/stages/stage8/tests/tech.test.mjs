@@ -13,13 +13,16 @@ import {
 }
 
 // ── cost gating + prerequisite chain ───────────────────────────────────────────────────────────────
+// UX-audit 2026-07 currency merge: techs are now priced in the single "parts" pool (parts = old
+// insight + old scrap), so the block reason for an unaffordable tech is "parts", not "insight"/"scrap".
 {
   const s = defaultState();
-  assert.equal(buyBlockReason(s, "rep1"), "insight", "cannot afford with no resources");
-  s.insight = 1000; s.scrap = 1000;
+  assert.equal(buyBlockReason(s, "rep1"), "parts", "cannot afford with no parts");
+  s.parts = 2000;
   assert.equal(canBuyTech(s, "rep1"), true, "affordable tier-1 buyable");
   assert.equal(buyBlockReason(s, "rep2"), "requires", "tier-2 needs its prerequisite");
   assert.equal(buyTech(s, "rep1").ok, true, "bought rep1");
+  assert.equal(s.parts, 1970, "rep1 debited 30 parts (18 insight + 12 scrap)");
   assert.equal(s.repairBudgetBonus, 3, "rep1 effect applied (+3 repair budget)");
   assert.equal(canBuyTech(s, "rep2"), true, "rep2 now unlocked");
   buyTech(s, "rep2");
@@ -29,19 +32,19 @@ import {
 // ── effects feed the engine bonus fields ───────────────────────────────────────────────────────────
 {
   const s = defaultState();
-  s.insight = 1000; s.scrap = 1000;
+  s.parts = 2000;
   buyTech(s, "thm1");
   assert.equal(s.heatVentBonus, 5, "Heat Sinks vent");
   buyTech(s, "top1");
   assert.equal(s.decayReduction, 1, "Reinforced Relays decay reduction");
   buyTech(s, "sal1");
-  assert.equal(s.scrapMult, 1.5, "Refinery Optics scrap multiplier");
+  assert.equal(s.scrapMult, 1.5, "Refinery Optics parts-from-debris multiplier");
 }
 
 // ── Cold Storage automation is gated behind the MANUAL archive un-cheat ─────────────────────────────
 {
   const s = defaultState();
-  s.insight = 1000; s.scrap = 1000;
+  s.parts = 2000;
   buyTech(s, "sal1"); buyTech(s, "sal2");
   assert.equal(buyBlockReason(s, "sal3"), "needs-archive", "Cold Storage blocked until a manual archive has fired");
   s.manualArchiveDone = true;
@@ -53,7 +56,7 @@ import {
 // ── bonuses are derived: a normalize/snapshot round-trip rebuilds them from the purchased set ───────
 {
   const s = defaultState();
-  s.insight = 1000; s.scrap = 1000;
+  s.parts = 2000;
   buyTech(s, "thm1");
   const snap = snapshotRun(s);
   const t = defaultState();

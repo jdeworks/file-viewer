@@ -9,8 +9,7 @@ const BRANCH_LABEL = { repair: "REPAIR", thermal: "THERMAL", salvage: "SALVAGE",
 const REASON_HINT = {
   requires: "needs prerequisite",
   "needs-archive": "archive by hand first",
-  insight: "more Insight",
-  scrap: "more Scrap"
+  parts: "more parts"
 };
 
 export function paintTech(el, state) {
@@ -32,7 +31,7 @@ const STRUCT_REASON = {
   max: "at max",
   "requires-tech": "research it first",
   "needs-archive": "archive by hand first",
-  scrap: "more Scrap"
+  parts: "more parts"
 };
 
 // Build the placeable-structures panel: each row is a [data-struct] build button.
@@ -61,7 +60,7 @@ function techRow(t) {
   btn.dataset.tech = t.id;
   if (t.owned) btn.classList.add("is-owned");
   btn.disabled = t.owned || !t.canBuy;
-  const status = t.owned ? "✓ owned" : `${t.insight}◈ ${t.scrap}⛭`;
+  const status = t.owned ? "✓ owned" : `${t.parts}⛭`;
   const blocked = !t.owned && !t.canBuy && t.reason ? ` · ${REASON_HINT[t.reason] || t.reason}` : "";
   btn.innerHTML = `<span class="s8-tech-name">${t.label}</span>` +
     `<span class="s8-tech-cost">${status}${blocked}</span>` +

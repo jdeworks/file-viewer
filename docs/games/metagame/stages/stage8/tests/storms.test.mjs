@@ -48,7 +48,7 @@ import { advanceCycle } from "../engine.js";
   assert.ok(s.nodes.some((n) => n.id === "R1"), "α research node appended to the live field");
   assert.equal(s.stormsSurvived, 1, "storm counted");
   assert.equal(s.act, 2, "advanced to act 2");
-  assert.ok(s.insight > 0, "insight windfall banked");
+  assert.ok(s.parts > 0, "parts windfall banked (storm survival dividend)");
 }
 
 // ── a storm that fells both cores does NOT advance the act (retryable, no permanent loss) ───────────

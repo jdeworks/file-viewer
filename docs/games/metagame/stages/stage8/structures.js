@@ -10,16 +10,19 @@
 
 import { isPurchased } from "./tech.js";
 
+// Built with the merged SALVAGE PARTS currency (UX-audit 2026-07) — the same pool the tech tree
+// spends, so structures now compete directly with research for parts. Base `parts` costs kept at the
+// old Scrap numbers (structures were the Scrap sink); scaling is unchanged.
 export const STRUCTURES = [
-  { id: "heatSink", label: "Heat Sink", desc: "+4 passive heat venting.", scrap: 20, costScale: 1.6, max: 5,
+  { id: "heatSink", label: "Heat Sink", desc: "+4 passive heat venting.", parts: 20, costScale: 1.6, max: 5,
     field: "structHeatVent", per: 4 },
-  { id: "buffer", label: "Buffer Capacitor", desc: "+2 repair units / cycle.", scrap: 24, costScale: 1.6, max: 5,
+  { id: "buffer", label: "Buffer Capacitor", desc: "+2 repair units / cycle.", parts: 24, costScale: 1.6, max: 5,
     field: "structRepairBonus", per: 2 },
-  { id: "refinery", label: "Scrap Refinery", desc: "+2 Scrap per archived file.", scrap: 18, costScale: 1.6, max: 5,
+  { id: "refinery", label: "Parts Refinery", desc: "+2 parts per archived file.", parts: 18, costScale: 1.6, max: 5,
     field: "structScrapBonus", per: 2 },
-  { id: "drone", label: "Auto-Repair Drone", desc: "Automation: heals a weak node each cycle.", scrap: 40, costScale: 1.8, max: 3,
+  { id: "drone", label: "Auto-Repair Drone", desc: "Automation: heals a weak node each cycle.", parts: 40, costScale: 1.8, max: 3,
     field: "autoRepairUnits", per: 1, requiresTech: "rep3" },
-  { id: "coldStorage", label: "Cold Storage Bay", desc: "Automation: auto-archives a debris file each cycle.", scrap: 60, costScale: 1.8, max: 2,
+  { id: "coldStorage", label: "Cold Storage Bay", desc: "Automation: auto-archives a debris file each cycle.", parts: 60, costScale: 1.8, max: 2,
     field: "coldStorageRate", per: 1, requiresTech: "sal3", needsManualArchive: true }
 ];
 
@@ -37,7 +40,7 @@ export function levelOf(state, id) {
 export function costOf(state, id) {
   const def = STRUCT_BY_ID.get(id);
   if (!def) return Infinity;
-  return Math.round(def.scrap * Math.pow(def.costScale, levelOf(state, id)));
+  return Math.round(def.parts * Math.pow(def.costScale, levelOf(state, id)));
 }
 
 export function buildBlockReason(state, id) {
@@ -46,7 +49,7 @@ export function buildBlockReason(state, id) {
   if (levelOf(state, id) >= def.max) return "max";
   if (def.requiresTech && !isPurchased(state, def.requiresTech)) return "requires-tech";
   if (def.needsManualArchive && !state.manualArchiveDone) return "needs-archive";
-  if (Number(state.scrap || 0) < costOf(state, id)) return "scrap";
+  if (Number(state.parts || 0) < costOf(state, id)) return "parts";
   return null;
 }
 
@@ -60,7 +63,7 @@ export function buildStructure(state, id) {
   if (reason) return { ok: false, reason };
   const cost = costOf(state, id);
   if (!state.structures || typeof state.structures !== "object") state.structures = {};
-  state.scrap = Number(state.scrap || 0) - cost;
+  state.parts = Number(state.parts || 0) - cost;
   state.structures[id] = levelOf(state, id) + 1;
   recomputeStructureBonuses(state);
   const def = STRUCT_BY_ID.get(id);

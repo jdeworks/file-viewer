@@ -69,4 +69,31 @@ const CORE_COUNT = nodesForSector("core").length; // 14 — the network starts a
   assert.equal(target.nodes[0].health, 37);
 }
 
+// CURRENCY MERGE (UX-audit 2026-07): a current-version save with legacy scrap+insight folds them into
+// the single parts pool, additively + idempotently, and drops the legacy fields.
+{
+  const legacy = normalizeState({ version: STATE_VERSION, scrap: 50, scrapTotal: 60, insight: 30, insightTotal: 40, insightRate: 7 });
+  assert.equal(legacy.parts, 80, "parts = scrap + insight");
+  assert.equal(legacy.partsTotal, 100, "lifetime parts = scrapTotal + insightTotal");
+  assert.equal(legacy.partsRate, 7, "parts rate seeded from legacy insight rate");
+  assert.equal(legacy.scrap, undefined, "legacy scrap field dropped");
+  assert.equal(legacy.insight, undefined, "legacy insight field dropped");
+  // idempotent: re-normalizing does not double-count (legacy fields are already gone)
+  const again = normalizeState(legacy);
+  assert.equal(again.parts, 80, "migration idempotent — parts unchanged on a second pass");
+  // additive: a save that ALREADY has parts keeps them and adds the legacy pair on top
+  const mixed = normalizeState({ version: STATE_VERSION, parts: 10, scrap: 5, insight: 5 });
+  assert.equal(mixed.parts, 20, "existing parts + legacy scrap + legacy insight");
+}
+
+// PROGRESSIVE DISCLOSURE (M1): the disclosed flag-set round-trips through snapshot/restore.
+{
+  const s = defaultState();
+  assert.deepEqual(s.disclosed, {}, "fresh save discloses nothing");
+  s.disclosed = { states: true, parts: true };
+  const t = defaultState();
+  restoreRun(t, snapshotRun(s));
+  assert.deepEqual(t.disclosed, { states: true, parts: true }, "disclosed flags survive snapshot/restore");
+}
+
 console.log("stage8 state tests passed");
