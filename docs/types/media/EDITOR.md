@@ -35,9 +35,9 @@
 - ✅ SHIPPED — **Spectrum / frequency view** — toggle between waveform and real-time FFT spectrum. Implementation: `AnalyserNode` (fftSize=4096, smoothingTimeConstant=0.75), 80 log bars mapped 20Hz–20kHz (`freq = 20 * Math.pow(1000, i/80)`), color per bar `hsl(200-(i/80)*200, 65%, 25+norm*30%)`, frequency grid lines at 60/120/250/500/1k/2k/4k/8k/12kHz labeled in monospace. EQ curve overlay in `#4a9eff88` drawn from BiquadFilter math (low/highshelf + peaking approximations — no actual AudioNode needed for the curve). **CPU-conscious**: RAF loop starts only when the "Spectrum" tab is active and the audio element is playing; `cancelAnimationFrame` on tab hide / pause. Narratu source: `SpectrumAnalyzer.tsx` (1:1 portable to vanilla JS + Canvas). No lib needed. — S
 - ✅ SHIPPED — **Live LUFS meter** — floating loudness number updated every 250ms during playback. Simplified formula: `rmsDb - 0.691` (K-weighting approximation sufficient for display). Show integrated LUFS over the full track in the info bar after the `decodeAudioData` decode. Color-code: green ≤ -14 LUFS, yellow -14 to -6, red above -6 (too loud). Only activate when the spectrum tab is selected. — S
 - ✅ SHIPPED — **Band energy bands** — below the FFT canvas, show 8 labelled bars (Sub-bass 20-80Hz, Bass 80-250Hz, Low-mid 250-500Hz, Mid 500-2kHz, Presence 2-4kHz, Sibilance 4-6kHz, Brilliance 6-10kHz, Air 10-20kHz) computed from the same AnalyserNode frequencyData. Useful as a quick "is this file sibilant / bassy" diagnostic. Narratu reference: `audio-analysis.ts` `BandEnergy` interface and `analyzeAudio()`. — S
-- **ID3 cover art** — extract embedded APIC frame from the ID3 tag and show it alongside the track name; already have `id3.js` for tag parsing, extend to return image bytes. — S
-- **Chapter markers** — read ID3v2 CHAP/CTOC frames (podcasts, audiobooks) and render vertical tick marks on the waveform with chapter names on hover. — M
-- **Speed presets** — add 0.75×/1.0×/1.25×/1.5×/2.0× buttons that set `audio.playbackRate`; complement the existing browser control. — S
+- ✅ SHIPPED — **ID3 cover art** — `id3.js` `parseApic` extracts the embedded APIC frame; `playback-extras.js` `buildCoverArt` renders it as a blob-URL thumbnail prepended to the audio workspace head in `renderer.js`. — S
+- ✅ SHIPPED — **Chapter markers** (audio only) — `id3.js` parses ID3v2 CHAP/CTOC frames (with CTOC-ordered flattening) and `chapters.js` also parses `.vtt`/`.ffmetadata`/text sidecars; `normalizeChapters` clamps/sorts/titles them, and `audio-listen-surface.js` renders tick marks on the waveform (title shown via the marker's `title` attribute) plus a clickable list via `playback-extras.js` `buildChapterList`. Video chapters are NOT wired (chapter parsing in `renderer.js` is gated to `info.kind === 'audio'`) — the video bullet below stays open. — M
+- ✅ SHIPPED — **Speed presets** — `playback-extras.js` `buildSpeedPresets` (0.5/0.75/1/1.25/1.5/2×), mounted via `renderer-tools.js` next to the transport. — S
 
 ### In-browser editing (download-on-save)
 
@@ -82,12 +82,12 @@ The mixer panel should be a separate `mixer.js` ES module lazy-imported from `re
 
 ### Viewer enhancements (no write-back needed)
 
-- **Frame-step buttons** — step one frame forward/back: `video.currentTime += 1 / fps`; estimate fps from `getVideoPlaybackQuality()` or default 30. Add Prev Frame / Next Frame buttons to the existing `media-video-controls` row. — S
-- **Picture-in-picture** — button calls `video.requestPictureInPicture()`; guard with `document.pictureInPictureEnabled` feature check; show only when supported. — S — browser PiP API, no lib
-- **Speed control presets** — 0.5×/0.75×/1×/1.25×/1.5×/2× buttons setting `video.playbackRate`; surface in `media-video-controls` alongside seek buttons. — S
-- **Timeline with chapter markers** — horizontal scrub bar below the video (replacing or augmenting the browser seekbar) with `<video>` `textTracks` chapter cues rendered as tick marks; also parse WebVTT chapter files if a `.vtt` sidecar is present in the folder. — M
-- **Subtitle overlay** — load `.srt` file (dragged or from folder sidecar): parse with a small hand-written SRT parser (~30 lines), create a `<track kind="subtitles">` element and add as `<track>` child, or render as an absolutely-positioned `<div>` overlay timed to `timeupdate`. No lib needed for basic SRT. — M
-- **Keyboard shortcuts** — Space: play/pause, Left/Right: ±5 s, `[`/`]`: ±frame, `f`: fullscreen, `p`: PiP. Attach `keydown` on the host div when focused. — S
+- ✅ SHIPPED — **Frame-step buttons** — `playback-extras.js` `buildVideoExtras` steps `video.currentTime ± 1/fps` (fps from `el.dataset.fps` or a 30fps default), mounted via `renderer-tools.js`. — S
+- ✅ SHIPPED — **Picture-in-picture** — `playback-extras.js` `buildVideoExtras`, gated on `document.pictureInPictureEnabled`. — S — browser PiP API, no lib
+- ✅ SHIPPED — **Speed control presets** — `playback-extras.js` `buildSpeedPresets`, shared with the audio path (`renderer-tools.js`). — S
+- **Timeline with chapter markers** — horizontal scrub bar below the video (replacing or augmenting the browser seekbar) with `<video>` `textTracks` chapter cues rendered as tick marks; also parse WebVTT chapter files if a `.vtt` sidecar is present in the folder. NOT shipped for video — `renderer.js` only reads/normalizes chapters when `info.kind === 'audio'`; the chapter list/markers UI never mounts for video. — M
+- ✅ SHIPPED — **Subtitle overlay** — `subtitles.js` `mountSubtitles`/`buildSubtitleLoader`, wired into the video "Subtitles" mode tab in `renderer-mode-panels.js` (plus an OCR-based `.srt`/`.vtt` generator in `ocr-subtitles.js`). — M
+- ✅ SHIPPED — **Keyboard shortcuts** — `playback-extras.js` `attachShortcuts` (space/k, ←/→ ±5s, ↑/↓ volume, `f` fullscreen, `p` PiP, `,`/`.` frame-step), attached to the focusable host in `renderer.js`. — S
 
 ### In-browser editing (download-on-save)
 
