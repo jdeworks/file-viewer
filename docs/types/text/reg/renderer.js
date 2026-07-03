@@ -108,6 +108,17 @@ function parseValue(rawValue) {
   return { type: 'unknown', display: rawValue };
 }
 
+// ── Credential redaction ──────────────────────────────────────────────────────
+// Registry exports can legitimately carry cleartext or lightly-obfuscated secrets — e.g.
+// HKLM\...\Winlogon\DefaultPassword (autologon, historically plaintext REG_SZ), VNC server
+// "Password" values, stored license/API keys. Redact by value name, same convention as the
+// .env viewer's SENSITIVE key match.
+const SENSITIVE_VALUE_NAME = /password|passwd|pwd|secret|token|credential|apikey|api[_-]?key/i;
+
+function isSensitiveValueName(name) {
+  return SENSITIVE_VALUE_NAME.test(name);
+}
+
 // ── Hive color badges ─────────────────────────────────────────────────────────
 
 const HIVE_COLORS = {
@@ -251,10 +262,14 @@ td:last-child{font-family:monospace;word-break:break-all;color:var(--text,#333)}
           ? `<span class="reg-default">${esc(val.name)}</span>`
           : esc(val.name);
         const deletedRowClass = val.deleted ? ' class="reg-val-deleted"' : '';
+        const redact = isSensitiveValueName(val.name);
+        const valueHtml = redact
+          ? `<em title="masked because &quot;${esc(val.name)}&quot; matches a common secret value name">[redacted]</em>`
+          : esc(parsed2.display);
         parts.push(`<tr${deletedRowClass}>`);
         parts.push(`<td>${nameHtml}</td>`);
         parts.push(`<td><span class="reg-type-badge ${typeClass}">${esc(parsed2.type)}</span></td>`);
-        parts.push(`<td>${esc(parsed2.display)}</td>`);
+        parts.push(`<td>${valueHtml}</td>`);
         parts.push(`</tr>`);
       }
       parts.push(`</tbody></table>`);
