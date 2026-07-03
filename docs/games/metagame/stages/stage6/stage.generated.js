@@ -5,7 +5,7 @@
 // external (NOT inlined). The hub's stage-manifest.js LOADERS import THIS file.
 
 
-// docs/games/metagame/stages/stage6/messages.js
+// ../../docs/games/metagame/stages/stage6/messages.js
 var ACTION_NAME = "protocol_ch9_read";
 var REQUIRED_ACTION = "6.protocol_ch9_read";
 var ACHIEVEMENT_ID = "stage6.protocol_ch9_read";
@@ -34,7 +34,7 @@ var combatLines = {
   defeated: "The Refused Connection closes without refusal."
 };
 
-// docs/games/metagame/stages/stage6/boss.js
+// ../../docs/games/metagame/stages/stage6/boss.js
 function hasProtocolChapter9(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(6, ACTION_NAME));
 }
@@ -92,7 +92,7 @@ function unlockAchievement(achievements, id, detail) {
   }
 }
 
-// docs/games/metagame/stages/stage6/cards-signal.js
+// ../../docs/games/metagame/stages/stage6/cards-signal.js
 var SIGNAL_CARDS = [
   {
     id: "SYN",
@@ -328,7 +328,7 @@ var SIGNAL_CARDS = [
   } }
 ];
 
-// docs/games/metagame/stages/stage6/cards-protocol.js
+// ../../docs/games/metagame/stages/stage6/cards-protocol.js
 var PROTOCOL_CARDS = [
   {
     id: "ACK",
@@ -505,7 +505,7 @@ var PROTOCOL_CARDS = [
   } }
 ];
 
-// docs/games/metagame/stages/stage6/cards-layer.js
+// ../../docs/games/metagame/stages/stage6/cards-layer.js
 var LAYER_CARDS = [
   {
     id: "CIPHER_LAYER",
@@ -598,7 +598,7 @@ var LAYER_CARDS = [
   } }
 ];
 
-// docs/games/metagame/stages/stage6/cards-daemon.js
+// ../../docs/games/metagame/stages/stage6/cards-daemon.js
 var DAEMON_CARDS = [
   {
     id: "FORK_BOMB",
@@ -715,7 +715,7 @@ var DAEMON_CARDS = [
   } }
 ];
 
-// docs/games/metagame/stages/stage6/cards-recursion.js
+// ../../docs/games/metagame/stages/stage6/cards-recursion.js
 var RECURSION_CARDS = [
   {
     id: "STACK_FRAME",
@@ -814,7 +814,7 @@ var RECURSION_CARDS = [
   { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
 ];
 
-// docs/games/metagame/stages/stage6/combat-rng.js
+// ../../docs/games/metagame/stages/stage6/combat-rng.js
 function makeRng(seed) {
   let a = Number(seed) >>> 0 || 1;
   return function rng() {
@@ -859,7 +859,7 @@ function strHash(str) {
   return h || 1;
 }
 
-// docs/games/metagame/stages/stage6/cards.js
+// ../../docs/games/metagame/stages/stage6/cards.js
 var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 var NAME_ACRONYMS = /* @__PURE__ */ new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP"]);
@@ -926,7 +926,7 @@ function draftRewardCards(seed, act, count = 3) {
   return picks;
 }
 
-// docs/games/metagame/stages/stage6/combat-damage.js
+// ../../docs/games/metagame/stages/stage6/combat-damage.js
 function dealToEnemy(combat, baseAmount) {
   let amount = Math.max(0, Math.round(baseAmount));
   if (combat.player.statuses.strength) amount += combat.player.statuses.strength;
@@ -976,7 +976,7 @@ function log(combat, line) {
   combat.log = [...combat.log, line].slice(-10);
 }
 
-// docs/games/metagame/stages/stage6/combat-ctx.js
+// ../../docs/games/metagame/stages/stage6/combat-ctx.js
 var MAX_ECHO_DEPTH = 4;
 function baseId(id) {
   return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
@@ -1187,7 +1187,7 @@ function runHook(combat, name, card = null) {
   }
 }
 
-// docs/games/metagame/stages/stage6/combat-piles.js
+// ../../docs/games/metagame/stages/stage6/combat-piles.js
 function drawCards(combat, n) {
   for (let i = 0; i < n; i++) {
     if (combat.draw.length === 0) {
@@ -1209,7 +1209,7 @@ function releaseJam(combat) {
   }
 }
 
-// docs/games/metagame/stages/stage6/combat-enemy.js
+// ../../docs/games/metagame/stages/stage6/combat-enemy.js
 function currentIntent(combat) {
   const script = combat.enemy.script;
   return script[combat.enemy.intentIndex % script.length];
@@ -1261,7 +1261,7 @@ function resolveIntent(combat, intent) {
   if (intent.applyPlayer) addStatus(combat.player, intent.applyPlayer.status, intent.applyPlayer.value);
 }
 
-// docs/games/metagame/stages/stage6/combat-modes.js
+// ../../docs/games/metagame/stages/stage6/combat-modes.js
 var WINDOW_CAP = 5;
 var WINDOW_FLOOR = 2;
 var CONGESTION_ACT = 3;
@@ -1315,7 +1315,7 @@ function resolvePending(combat) {
   }
 }
 
-// docs/games/metagame/stages/stage6/combat.js
+// ../../docs/games/metagame/stages/stage6/combat.js
 var HAND_SIZE = 5;
 var START_ENERGY = 3;
 function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion = false, windowCap = WINDOW_CAP }) {
@@ -1459,7 +1459,7 @@ function checkPlayerDead(combat) {
   }
 }
 
-// docs/games/metagame/stages/stage6/enemies.js
+// ../../docs/games/metagame/stages/stage6/enemies.js
 var ENEMIES = {
   // ── Standard trash ──────────────────────────────────────────────────────────────────────────────
   "corrupt-packet": {
@@ -1810,7 +1810,7 @@ function instantiateEnemy(id, act = 1) {
   };
 }
 
-// docs/games/metagame/stages/stage6/relics.js
+// ../../docs/games/metagame/stages/stage6/relics.js
 var RELICS = [
   {
     id: "handshake-token",
@@ -2062,7 +2062,7 @@ function rollRelics(seed, owned = [], count = 3) {
   return out;
 }
 
-// docs/games/metagame/stages/stage6/potions.js
+// ../../docs/games/metagame/stages/stage6/potions.js
 var POTIONS = [
   {
     id: "hotfix",
@@ -2173,7 +2173,7 @@ function rollPotion(seed) {
   return POTIONS[POTIONS.length - 1].id;
 }
 
-// docs/games/metagame/stages/stage6/mapgen.js
+// ../../docs/games/metagame/stages/stage6/mapgen.js
 var STANDARD_POOLS = {
   1: ["corrupt-packet", "firewall-entity", "null-pointer"],
   2: ["corrupt-packet", "firewall-entity", "null-pointer", "race-condition", "round-trip-timer"],
@@ -2273,7 +2273,7 @@ function enemyForNode(node, act = 1, rng) {
   return pool[Math.floor(rng() * pool.length)];
 }
 
-// docs/games/metagame/stages/stage6/card-upgrades.js
+// ../../docs/games/metagame/stages/stage6/card-upgrades.js
 var UPGRADED_SUFFIX = "+";
 var SPECS = {
   SYN: { text: "Deal 11. If ACK was played this turn, draw 2.", effect: (ctx) => {
@@ -2533,7 +2533,7 @@ var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
-// docs/games/metagame/stages/stage6/ascension-mods.js
+// ../../docs/games/metagame/stages/stage6/ascension-mods.js
 function baseRunConfig() {
   return {
     handshakeMult: 1,
@@ -2639,7 +2639,7 @@ function foldAscension(baseConfig, level) {
   return acc;
 }
 
-// docs/games/metagame/stages/stage6/superboss.js
+// ../../docs/games/metagame/stages/stage6/superboss.js
 var SUPERBOSS_ID = "the-kernel-of-refusal";
 var SUPERBOSS_PHASE_HP = [82, 88, 94];
 var SUPERBOSS_PHASE_SCRIPTS = [
@@ -2688,7 +2688,7 @@ function rewireSuperboss(combat) {
   return combat;
 }
 
-// docs/games/metagame/stages/stage6/run.js
+// ../../docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
 var REWARD_CHOICES = 3;
@@ -2969,7 +2969,7 @@ function screenForNode(node) {
   return node.type;
 }
 
-// docs/games/metagame/stages/stage6/events.js
+// ../../docs/games/metagame/stages/stage6/events.js
 var RARE_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "rare");
 var COMMON_POOL = REWARD_POOL.filter((id) => cardById(id)?.rarity === "common");
 function damage(run, n) {
@@ -3231,7 +3231,7 @@ function applyEventChoice(run, eventId, choiceId) {
   return { ok: true, notice };
 }
 
-// docs/games/metagame/stages/stage6/boss-combat.js
+// ../../docs/games/metagame/stages/stage6/boss-combat.js
 var BOSS_PHASE_HP = { 1: 60, 2: 80, 3: 60, 4: 60 };
 var DEMAND_LEAD_SYN = "lead-syn";
 var DEMAND_ACK_FIRST = "ack-first";
@@ -3307,7 +3307,7 @@ function playFirstMatch(combat, pred) {
   return false;
 }
 
-// docs/games/metagame/stages/stage6/testhook.js
+// ../../docs/games/metagame/stages/stage6/testhook.js
 var REPRESENTATIVE_ENDGAME_DECK = [
   "SYN+",
   "SYN+",
@@ -3459,7 +3459,7 @@ function removeStage6TestHook() {
   if (window.__fvStage6) delete window.__fvStage6;
 }
 
-// docs/games/metagame/stages/stage6/combat-persist.js
+// ../../docs/games/metagame/stages/stage6/combat-persist.js
 function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
@@ -3552,11 +3552,11 @@ function restoreCombat(snapshot, { relics = [] } = {}) {
   return combat;
 }
 
-// docs/games/metagame/stages/stage6/renderer.js
+// ../../docs/games/metagame/stages/stage6/renderer.js
 import { createRun as createRunState } from "../../shared/run-state.js";
 import { createAscension } from "../../shared/ascension.js";
 
-// docs/games/metagame/stages/stage6/card-face.js
+// ../../docs/games/metagame/stages/stage6/card-face.js
 function cardTypeClass(card) {
   return `s6db-card--${(card?.type || "").toLowerCase()}`;
 }
@@ -3576,7 +3576,7 @@ function esc(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// docs/games/metagame/stages/stage6/ui-combat.js
+// ../../docs/games/metagame/stages/stage6/ui-combat.js
 var STATUS_LABEL = { strength: "STR", vulnerable: "VULN", weak: "WEAK" };
 var TIER_BADGE = { elite: "☠ ELITE", boss: "☣ BOSS" };
 var PHASE_NAME = { 1: "HANDSHAKE", 2: "ESTABLISHED", 3: "MAINTAIN" };
@@ -3598,13 +3598,14 @@ function combatView(combat, run, opts = {}) {
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   const pending = normalizePending(opts.pendingCardIndex, combat);
+  const arena = arenaStrip(combat);
   el.innerHTML = `
     ${bossBanner(combat)}
     <div class="s6db-battlefield">
       ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
     </div>
-    <div class="s6db-arena">${arenaStrip(combat)}</div>
+    <div class="s6db-arena${arena ? "" : " is-empty"}">${arena}</div>
     ${inspectOverlay(combat, pending)}
     <div class="s6db-dock">
       <div class="s6db-dock-left">
@@ -3781,7 +3782,7 @@ function esc2(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// docs/games/metagame/stages/stage6/combat-fx.js
+// ../../docs/games/metagame/stages/stage6/combat-fx.js
 import { flash, shake, floatNum, banner } from "../../shared/feedback.js";
 var reduce = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 function applyCombatFx(node, fx) {
@@ -3822,7 +3823,7 @@ function flyCard({ rect, faceHTML }, arena) {
   setTimeout(() => clone2.remove(), 240);
 }
 
-// docs/games/metagame/stages/stage6/combat-modals.js
+// ../../docs/games/metagame/stages/stage6/combat-modals.js
 import { openModal } from "../../shared/modal.js";
 function openPileModal(combat, kind) {
   if (!combat) return;
@@ -3856,7 +3857,7 @@ function openLogModal(combat) {
   openModal({ title: "combat log", contentEl: box, className: "s6db-modal" });
 }
 
-// docs/games/metagame/stages/stage6/ui-map.js
+// ../../docs/games/metagame/stages/stage6/ui-map.js
 var NODE_ICON = {
   combat: "⚔",
   elite: "☠",
@@ -4031,7 +4032,7 @@ function esc3(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// docs/games/metagame/stages/stage6/ui-rewards.js
+// ../../docs/games/metagame/stages/stage6/ui-rewards.js
 var PRICE = { common: 25, uncommon: 40, rare: 60, starter: 20 };
 function rewardView(run) {
   const el = document.createElement("div");
@@ -4264,7 +4265,7 @@ function esc4(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
-// docs/games/metagame/stages/stage6/s6dev.js
+// ../../docs/games/metagame/stages/stage6/s6dev.js
 var DEV_CARDS = ["HANDSHAKE", "FIREWALL", "TCP_STACK"];
 var ALL_KEYS = [KEY_UNTOUCHABLE, KEY_ASCETIC, KEY_SACRIFICE];
 function devHeal(run, combatPlayer) {
@@ -4314,7 +4315,7 @@ function applyDev(id, run, combatPlayer) {
   }
 }
 
-// docs/games/metagame/stages/stage6/renderer.js
+// ../../docs/games/metagame/stages/stage6/renderer.js
 var REFUSED_CONNECTION = "the-refused-connection";
 function renderStage6({ host, state, actions, achievements, bell, bts, viewer, save, orchestrator, onStageComplete }) {
   const root = document.createElement("section");
@@ -4808,7 +4809,7 @@ function once(fn) {
   };
 }
 
-// docs/games/metagame/stages/stage6/state.js
+// ../../docs/games/metagame/stages/stage6/state.js
 var VERSION = 2;
 function defaultState() {
   return {
@@ -4874,7 +4875,7 @@ function num(value, fallback) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-// docs/games/metagame/stages/stage6/index.js
+// ../../docs/games/metagame/stages/stage6/index.js
 var stageMeta = {
   id: 6,
   slug: "protocol-codex",

@@ -8,7 +8,9 @@
 
 /* ── top band: enemy (left) vs player (right) ─────────────────────────────────── */
 .s6db-battlefield { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 0 0 auto; }
-.s6db-fighter { position: relative; border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 12px; }
+/* min-width:0 everywhere a flex/grid child could refuse to shrink — the stage must NEVER overflow
+   horizontally (phone defect 2026-07-03: the dock pushed end-turn past the 390px edge). */
+.s6db-fighter { position: relative; border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 12px; min-width: 0; }
 .s6db-enemy { border-color: #8b2020; }
 .s6db-fighter-name { font-size: 1.15rem; font-weight: 700; }
 .s6db-hp { font-size: 0.82rem; color: #6b513a; }
@@ -48,6 +50,9 @@
 
 /* ── middle band: arena strip (ticker + float/banner landing zone) ────────────── */
 .s6db-arena { position: relative; flex: 1 1 auto; min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 10px; border-radius: 8px; background: rgba(44, 24, 16, 0.06); }
+/* Empty arena = invisible spacer (stage6 #6 — the same no-dead-box rule that killed the old log box):
+   it keeps its flex slot as the float/banner landing zone, but shows NO panel until it has content. */
+.s6db-arena.is-empty { background: none; padding: 0; }
 .s6db-ticker { display: flex; flex-direction: column; gap: 2px; text-align: center; font-size: 0.82rem; color: #3b2a1c; max-width: 60ch; }
 .s6db-ticker p { margin: 0; }
 .s6db-ticker p:last-child { font-weight: 700; }
@@ -87,8 +92,10 @@
 
 /* the FAN: cards overlap via a negative-margin ramp + per-index rotation (JS-computed CSS vars, no
    RNG). transform-origin bottom center; hover/focus lifts + brings the card to the top. */
-.s6db-hand { flex: 1 1 auto; display: flex; justify-content: center; align-items: flex-end; padding-top: 34px; min-height: 132px; }
-.s6db-hand .s6db-card { width: 138px; min-height: 116px; transform-origin: bottom center; transform: translateY(var(--ty, 0)) rotate(var(--rot, 0deg)); transition: transform 0.14s ease, box-shadow 0.14s ease; cursor: pointer; z-index: var(--z, 0); }
+.s6db-hand { flex: 1 1 auto; min-width: 0; display: flex; justify-content: center; align-items: flex-end; padding-top: 34px; min-height: 132px; }
+/* min-width:0 lets big hands compress (cards shrink below their preferred width) instead of pushing
+   the dock — and the panel — into horizontal overflow; the inspect close-up restores readability. */
+.s6db-hand .s6db-card { width: 138px; min-width: 0; min-height: 116px; transform-origin: bottom center; transform: translateY(var(--ty, 0)) rotate(var(--rot, 0deg)); transition: transform 0.14s ease, box-shadow 0.14s ease; cursor: pointer; z-index: var(--z, 0); }
 .s6db-hand .s6db-card:not(:first-child) { margin-left: -32px; }
 .s6db-hand .s6db-card:hover, .s6db-hand .s6db-card:focus-visible { transform: translateY(-28px) scale(1.12); box-shadow: 0 12px 26px rgba(30, 40, 64, 0.35); z-index: 30; outline: none; }
 .s6db-hand .s6db-card.is-unaffordable { opacity: 0.55; }
@@ -109,16 +116,25 @@
 /* full combat log modal body. */
 .s6db-logfull p { margin: 0 0 4px; font-size: 0.86rem; }
 
-/* ── phone (390px): enemy intent + hand co-visible; narrower, more-overlapped fan ── */
+/* ── phone (390px): enemy intent + hand co-visible; narrower, more-overlapped fan ──
+   The dock RESTACKS: the fan becomes its own full-width row (order:-1), and the side columns fold
+   into ONE controls row underneath — energy left, pile chips + end-turn right — that always fits the
+   viewport (no side-by-side squeeze, no horizontal overflow, end-turn always reachable). */
 @media (max-width: 720px) {
   .s6db-battlefield { grid-template-columns: 1fr 1fr; gap: 6px; }
   .s6db-fighter { padding: 8px; }
   .s6db-fighter-name { font-size: 0.98rem; }
+  .s6db-intent { flex-wrap: wrap; }
   .s6db-intent-num { font-size: 1.05rem; }
-  .s6db-dock { gap: 6px; }
-  .s6db-hand { min-height: 116px; padding-top: 30px; }
-  .s6db-hand .s6db-card { width: 116px; min-height: 100px; }
-  .s6db-hand .s6db-card:not(:first-child) { margin-left: -46px; }
-  .s6db-inspect { bottom: 138px; }
+  .s6db-dock { flex-wrap: wrap; align-items: center; gap: 6px; }
+  .s6db-hand { order: -1; flex-basis: 100%; min-height: 112px; padding-top: 28px; }
+  /* Controls sit ABOVE any dipping fan-card corner (edge cards arc down ~16px + rotate) so end-turn
+     and the pile chips are always fully tappable. */
+  .s6db-dock-left { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; position: relative; z-index: 35; }
+  .s6db-dock-right { flex-direction: row; align-items: center; gap: 6px; margin-left: auto; position: relative; z-index: 35; }
+  .s6db-endturn { align-self: center; }
+  .s6db-hand .s6db-card { width: 112px; min-height: 100px; }
+  .s6db-hand .s6db-card:not(:first-child) { margin-left: -52px; }
+  .s6db-inspect { bottom: 148px; max-width: 96vw; }
   .s6db-inspect-card { width: 188px; min-height: 150px; }
 }

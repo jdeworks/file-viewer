@@ -43,13 +43,17 @@ export function combatView(combat, run, opts = {}) {
   el.className = "s6db-combat";
   const intent = currentIntent(combat);
   const pending = normalizePending(opts.pendingCardIndex, combat);
+  // An EMPTY arena renders nothing visible (stage6 #6 — no dead box): the element stays in the flow
+  // as the flexible spacer + float/banner landing zone, but its panel background/padding only appear
+  // once it actually has content (ticker / jammed row / log chip).
+  const arena = arenaStrip(combat);
   el.innerHTML = `
     ${bossBanner(combat)}
     <div class="s6db-battlefield">
       ${enemyPanel(combat.enemy, intent, combat)}
       ${playerPanel(combat.player)}
     </div>
-    <div class="s6db-arena">${arenaStrip(combat)}</div>
+    <div class="s6db-arena${arena ? "" : " is-empty"}">${arena}</div>
     ${inspectOverlay(combat, pending)}
     <div class="s6db-dock">
       <div class="s6db-dock-left">

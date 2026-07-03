@@ -42,17 +42,30 @@ async function gotoStage(page, n, rootSel) {
   await page.waitForTimeout(500);
 }
 
-// Player-view screenshot + scroll metrics for the games panel.
+// Player-view screenshot + scroll metrics for the games panel. Records BOTH axes: vertical
+// (panelScrollH vs panelClientH) and horizontal (panel + .mg-v3-host scrollWidth vs clientWidth,
+// plus the host's live scrollLeft) — any scrollWidth > clientWidth prints a loud H-OVERFLOW marker
+// (2026-07-03: a phone dock overflow slipped past the vertical-only metric).
 async function shot(page, dir, name) {
   await mkdir(`${OUT}${dir}`, { recursive: true });
   await page.screenshot({ path: `${OUT}${dir}/${name}.png` });
   const m = await page.evaluate(() => {
     const panel = document.querySelector('.games-panel');
     if (!panel) return null;
-    return { panelScrollH: panel.scrollHeight, panelClientH: panel.clientHeight, winH: innerHeight, winW: innerWidth };
+    const host = document.querySelector('.mg-v3-host');
+    return {
+      panelScrollH: panel.scrollHeight, panelClientH: panel.clientHeight, winH: innerHeight, winW: innerWidth,
+      panelScrollW: panel.scrollWidth, panelClientW: panel.clientWidth,
+      hostScrollW: host ? host.scrollWidth : null, hostClientW: host ? host.clientWidth : null,
+      hostScrollLeft: host ? host.scrollLeft : null,
+    };
   });
   metrics.push({ dir, name, ...m });
-  console.log(`shot ${dir}/${name}`, m ? `content ${m.panelScrollH}px vs visible ${m.panelClientH}px` : '');
+  const hOver = m && ((m.panelScrollW > m.panelClientW) || (m.hostScrollW != null && m.hostScrollW > m.hostClientW));
+  const hNote = !m ? '' : hOver
+    ? `  *** H-OVERFLOW panel ${m.panelScrollW}/${m.panelClientW}px host ${m.hostScrollW}/${m.hostClientW}px scrollLeft ${m.hostScrollLeft} ***`
+    : '';
+  console.log(`shot ${dir}/${name}`, m ? `content ${m.panelScrollH}px vs visible ${m.panelClientH}px${hNote}` : '');
 }
 
 // Full-content screenshot: temporarily un-clip the panel so the WHOLE stage document is visible.
