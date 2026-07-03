@@ -24,15 +24,44 @@ import { echoTokenFor } from "./echo-token.js";
 import { echoVerb } from "./echo-verbs.js";
 import { STAGE_ID } from "./messages.js";
 import { renderStepper } from "./renderer-memory.js";
+import { renderGrid, buildReviewElement } from "./renderer-grid.js";
 import { renderConfront } from "./renderer-confront.js";
-import { renderCompletion, renderFinalQuestion } from "./renderer-final.js";
+import { renderCompletion, renderFinalQuestion, completionBeats } from "./renderer-final.js";
+import { createReveal } from "./reveal.js";
+import { openModal } from "../../shared/modal.js";
+import { flash, banner } from "../../shared/feedback.js";
 
 const LAST = memories.length - 1;
+const REVEAL_MS = 250;
+
+function prefersReducedMotion() {
+  try { return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true; } catch { return false; }
+}
 
 export function renderStage10(ctx) {
   const { host, state } = ctx;
   const save = () => (ctx.orchestrator && ctx.orchestrator.save) || null;
   let destroyed = false;
+  let reveal = null;         // staged-reveal state machine for the completion screen (reveal.js)
+  let revealTimer = null;    // interval that advances the reveal one beat at a time
+  let reviewModal = null;    // open "review memories" overlay handle (closed on destroy)
+  let prev = snapshot(state); // ceremony diff baseline (witnessed / integrated / confront / completed)
+
+  const clearReveal = () => { if (revealTimer) { clearInterval(revealTimer); revealTimer = null; } };
+
+  // Once the finale completes, size the reveal to exactly the route's beats and stage them in.
+  const ensureReveal = (finalState) => {
+    if (reveal) return;
+    const total = completionBeats(state, finalState).length;
+    reveal = createReveal(total, { reducedMotion: prefersReducedMotion() });
+    if (!reveal.done) {
+      revealTimer = setInterval(() => {
+        if (destroyed) return clearReveal();
+        if (!reveal.tick()) clearReveal();
+        repaint();
+      }, REVEAL_MS);
+    }
+  };
 
   const repaint = () => {
     if (destroyed) return;
@@ -41,49 +70,85 @@ export function renderStage10(ctx) {
     const ui = state.ui;
 
     let body;
+    let mode = "grid";
     if (state.final?.completed) {
-      body = renderCompletion(state, finalState);
+      ensureReveal(finalState);
+      body = renderCompletion(state, finalState, reveal);
+      mode = "completion";
     } else if (ui.view === "final" && !finalState.locked) {
       // Entry gate cleared → fight the Defragmenter; only after the confrontation is won does the
       // actual final question appear (boss never self-unlocks).
-      body = finalState.confrontCompleted ? renderFinalQuestion(finalState) : renderConfront(state, save());
+      const confronting = !finalState.confrontCompleted;
+      body = confronting ? renderConfront(state, save()) : renderFinalQuestion(finalState);
+      mode = confronting ? "confront" : "final";
+    } else if (ui.view === "memories" && ui.detail) {
+      markMemoryRead({ state, memoryId: memories[ui.cursor].id }); // auto-read on detail open (M2)
+      body = renderStepper(state);
+      mode = "detail";
     } else {
-      body = renderStepper(state, counts, finalState);
+      body = renderGrid(state, counts, finalState);
     }
 
     host.innerHTML = `
-      <section class="mg-stage10" aria-label="Stage 10 Awakening">
+      <section class="mg-stage10 mg-stage10--${mode}${mode === "confront" ? " is-confronting" : ""}" aria-label="Stage 10 Awakening">
         <header class="mg-stage10__header">
           <div>
             <p class="mg-stage10__eyebrow">Stage 10</p>
             <h2>Awakening</h2>
           </div>
-          <dl class="mg-stage10__counts">
-            <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
-            <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
-            <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
-            <div><dt>Echoes</dt><dd>${getEchoCounts(state).witnessed}/9</dd></div>
-          </dl>
+          ${renderHeaderProgress(counts, state)}
         </header>
         ${body}
       </section>
     `;
+
+    const next = snapshot(state);
+    runCeremony(prev, next, mode);
+    prev = next;
+  };
+
+  const openDetail = (index) => {
+    state.ui.cursor = Math.min(Math.max(index, 0), LAST);
+    state.ui.detail = true;
+    markMemoryRead({ state, memoryId: memories[state.ui.cursor].id }); // reading it is opening it (M2)
+    saveAndPaint(ctx, repaint);
   };
 
   const onClick = (event) => {
     if (handleMemoryClicks(event, ctx, repaint)) return;
     if (handleConfrontClicks(event, ctx, save, repaint)) return;
 
+    const card = event.target.closest("[data-memory-card]");
+    if (card) { openDetail(memories.findIndex((m) => m.id === card.dataset.memoryCard)); return; }
+
     const stepButton = event.target.closest("[data-step]");
-    if (stepButton) {
-      const delta = Number(stepButton.dataset.step);
-      state.ui.cursor = Math.min(Math.max(state.ui.cursor + delta, 0), LAST);
+    if (stepButton) { openDetail(state.ui.cursor + Number(stepButton.dataset.step)); return; }
+
+    if (event.target.closest("[data-back-grid]")) {
+      state.ui.detail = false;
       saveAndPaint(ctx, repaint);
+      return;
+    }
+
+    if (event.target.closest("[data-review-memories]")) {
+      if (reviewModal) reviewModal.close();
+      reviewModal = openModal({
+        title: "Memory review",
+        className: "mg-stage10-review",
+        contentEl: buildReviewElement(state),
+        onClose: () => { reviewModal = null; }
+      });
+      return;
+    }
+
+    if (event.target.closest("[data-skip-reveal]")) {
+      if (reveal && reveal.skip()) { clearReveal(); repaint(); }
       return;
     }
 
     if (event.target.closest("[data-goto-final]")) {
       state.ui.view = "final";
+      state.ui.detail = false;
       startConfront(state); // begin the confrontation (idempotent; no-op if already started/won)
       saveAndPaint(ctx, repaint);
       return;
@@ -91,6 +156,7 @@ export function renderStage10(ctx) {
 
     if (event.target.closest("[data-back-memories]")) {
       state.ui.view = "memories";
+      state.ui.detail = false;
       saveAndPaint(ctx, repaint);
       return;
     }
@@ -111,6 +177,8 @@ export function renderStage10(ctx) {
     dev(id) { devCheat(state, id); saveAndPaint(ctx, repaint); },
     destroy() {
       destroyed = true;
+      clearReveal();
+      if (reviewModal) { reviewModal.close(); reviewModal = null; }
       if (window.__fvStage10) delete window.__fvStage10;
       host.removeEventListener("click", onClick);
       host.innerHTML = "";
@@ -118,12 +186,64 @@ export function renderStage10(ctx) {
   };
 }
 
-// ── memory-body clicks (read / resolve / open-echo / integrate) ──────────────────────────────────
+// ── header (M1: ONE progress notion + expandable four-way detail) ────────────────────────────────
+function renderHeaderProgress(counts, state) {
+  const echoes = getEchoCounts(state).witnessed;
+  return `
+    <details class="mg-stage10__progress-detail">
+      <summary class="mg-stage10__restored">Memories restored <strong>${counts.integrated}/9</strong></summary>
+      <dl class="mg-stage10__counts">
+        <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
+        <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
+        <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
+        <div><dt>Echoes</dt><dd>${echoes}/9</dd></div>
+      </dl>
+    </details>
+  `;
+}
+
+// ── ceremony (UX audit #3 — reduced-motion aware via games-chrome.css) ───────────────────────────
+// A pure snapshot of the beats worth celebrating; the renderer diffs consecutive snapshots and attaches
+// the shared micro-feedback classes (flash/banner) to the freshly-rendered nodes. Sigil slide-in and
+// phase-pill motion are pure CSS keyframes on element creation — no JS needed for those.
+function snapshot(state) {
+  const witnessed = new Set();
+  const integrated = new Set();
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (slot?.echoWitnessed) witnessed.add(m.id);
+    if (slot?.state === "integrated") integrated.add(m.id);
+  }
+  return { witnessed, integrated, confronting: state.ui.view === "final", completed: Boolean(state.final?.completed) };
+}
+
+function runCeremony(prev, next, mode) {
+  if (typeof document === "undefined") return;
+  const host = document.querySelector(".mg-stage10");
+  if (!host) return;
+  const newWitness = [...next.witnessed].filter((id) => !prev.witnessed.has(id));
+  const newIntegrate = [...next.integrated].filter((id) => !prev.integrated.has(id));
+
+  for (const id of newWitness) {
+    const el = host.querySelector(`.mg-stage10__echo`) || host.querySelector(`[data-memory-card="${id}"]`);
+    if (el) flash(el, "good");
+  }
+  if (newWitness.length) banner(host, "Echo witnessed");
+
+  for (const id of newIntegrate) {
+    const el = host.querySelector(`.mg-stage10__memory`) || host.querySelector(`[data-memory-card="${id}"]`);
+    if (el) flash(el, "good");
+    const restored = host.querySelector(".mg-stage10__restored strong");
+    if (restored) flash(restored, "good");
+  }
+  if (newIntegrate.length) banner(host, "Memory integrated");
+
+  if (next.completed && !prev.completed) banner(host, "Awakening");
+}
+
+// ── memory-body clicks (resolve / open-echo / integrate) ─────────────────────────────────────────
 function handleMemoryClicks(event, ctx, repaint) {
   const { state } = ctx;
-  const readButton = event.target.closest("[data-read-memory]");
-  if (readButton) { markMemoryRead({ state, memoryId: readButton.dataset.readMemory }); saveAndPaint(ctx, repaint); return true; }
-
   const resolveButton = event.target.closest("[data-resolve-memory]");
   if (resolveButton) {
     resolveMemory({ state, memoryId: resolveButton.dataset.resolveMemory, choice: resolveButton.dataset.choice, actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
@@ -231,8 +351,22 @@ function installTestHook(ctx, save, repaint) {
     },
     witness(id) { const r = witnessEcho({ state, memoryId: id }); paint(); return r; },
     witnessAll() { for (const m of memories) witnessEcho({ state, memoryId: m.id }); paint(); return getEchoCounts(state).witnessed; },
+    // resolveAll / integrateAll drive the real engine functions so the screenshot/smoke tools can
+    // actually REACH the confrontation (which needs resolved memories, not just witnessed echoes).
+    resolveAll() {
+      for (const m of memories) resolveMemory({ state, memoryId: m.id, choice: state.memories[m.id].choice || m.choices[0], actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
+      paint();
+      return getMemoryCounts(state);
+    },
+    integrateAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      this.resolveAll();
+      for (const m of memories) integrateMemory({ state, memoryId: m.id, achievements: ctx.achievements, bell: ctx.bell });
+      paint();
+      return getMemoryCounts(state);
+    },
     confront: {
-      start() { state.ui.view = "final"; startConfront(state); paint(); return getConfrontState(state, save()); },
+      start() { state.ui.view = "final"; state.ui.detail = false; startConfront(state); paint(); return getConfrontState(state, save()); },
       state() { return getConfrontState(state, save()); },
       answerCompactionAll() { for (const id of challengedMemoryIds(state)) answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save: save() }); paint(); return getConfrontState(state, save()); },
       resolveFragmentationAll() { const s = save(); for (const id of challengedMemoryIds(state)) if (fragStatus(state, s, id) === "pending") rewitnessFragmentation({ state, memoryId: id, save: s }); paint(); return getConfrontState(state, save()); },

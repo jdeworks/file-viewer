@@ -236,15 +236,24 @@ async function drive(dir, viewport, opts, phoneLite = false) {
     await page.waitForSelector('.mg-v3', { timeout: 8000 });
     await page.waitForTimeout(300);
     await gotoStage(page, 10, '.mg-stage10');
-    await shot(page, dir, 's10-stepper');
+    // The stage opens on the 3×3 grid home view. Open a card → the detail view (auto-reads it).
+    await page.click('[data-memory-card]').catch(() => {});
+    await page.waitForTimeout(300);
+    await shot(page, dir, 's10-detail');
+    await page.click('[data-back-grid]').catch(() => {});
+    await page.waitForTimeout(200);
     if (!phoneLite) {
-      await shotFull(page, dir, 's10-stepper-full');
-      await page.evaluate(() => window.__fvStage10?.witnessAll?.());
+      // Fill the board through the REAL engine (witness + resolve + integrate all nine) so the grid,
+      // the Defragmenter gate, and the confrontation are actually REACHABLE for the shots below.
+      await page.evaluate(() => window.__fvStage10?.integrateAll?.());
       await page.waitForTimeout(300);
-      await shot(page, dir, 's10-stepper-witnessed');
+    }
+    await shot(page, dir, 's10-grid');          // primary: 9 cards + gate + Defragmenter presence
+    if (!phoneLite) {
+      await shotFull(page, dir, 's10-grid-full');
       await page.evaluate(() => window.__fvStage10?.confront?.start?.());
       await page.waitForTimeout(300);
-      await shot(page, dir, 's10-confront-a');
+      await shot(page, dir, 's10-confront-a');   // sigil + darkened stage + titled+quoted challenge items
       await shotFull(page, dir, 's10-confront-a-full');
       await page.evaluate(() => window.__fvStage10?.confront?.answerCompactionAll?.());
       await page.waitForTimeout(300);
@@ -260,7 +269,9 @@ async function drive(dir, viewport, opts, phoneLite = false) {
         const b = [...document.querySelectorAll('[data-final-choice]')].find((x) => !x.disabled);
         b?.click();
       });
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(700);
+      await page.evaluate(() => document.querySelector('[data-skip-reveal]')?.click()); // reveal end-state
+      await page.waitForTimeout(300);
       await shot(page, dir, 's10-ending');
       await shotFull(page, dir, 's10-ending-full');
     }

@@ -1,0 +1,121 @@
+/* Stage 10 — memory grid home view, Defragmenter identity, and the ceremony pass (UX audit #1/#3/#5).
+   Split out of styles.css (which is at the soft cap) — index.js link-tags all three sheets. Every
+   animation is gated by prefers-reduced-motion at the bottom. Palette stays the stage's white serif. */
+
+/* ── header: ONE progress notion, four-way detail on demand (M1) ── */
+.mg-stage10__progress-detail { margin: 0; text-align: right; }
+.mg-stage10__restored {
+  color: #3a3a3a; cursor: pointer; font: 14px/1.4 "Courier New", monospace;
+  list-style: none; white-space: nowrap;
+}
+.mg-stage10__restored::-webkit-details-marker { display: none; }
+.mg-stage10__restored strong { font-size: 20px; }
+.mg-stage10__restored::after { content: " ▸"; color: #a7a397; }
+.mg-stage10__progress-detail[open] .mg-stage10__restored::after { content: " ▾"; }
+.mg-stage10__progress-detail[open] .mg-stage10__counts { margin-top: 10px; }
+
+/* ── memory board grid (3×3 → 1-col on phone) ── */
+.mg-stage10__grid {
+  display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0 0 16px;
+}
+.mg-stage10__card {
+  align-content: start; display: grid; gap: 5px;
+  border: 1px solid #d3d1c7 !important; border-left: 4px solid var(--memory-accent) !important;
+  border-radius: 8px !important; padding: 10px 12px !important; text-align: left !important;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.mg-stage10__card:hover:not(:disabled) { box-shadow: 0 2px 10px rgba(0,0,0,.08); transform: translateY(-1px); }
+.mg-stage10__card.is-cursor { box-shadow: 0 0 0 2px color-mix(in srgb, var(--memory-accent) 60%, #fff); }
+.mg-stage10__card.is-integrated { background: color-mix(in srgb, var(--memory-accent) 8%, #fff); }
+.mg-stage10__card-stage { color: #5f5b52; font: 11px/1.3 "Courier New", monospace; }
+.mg-stage10__card-title { font-family: Georgia, serif; font-size: 17px; }
+.mg-stage10__card-state { color: #5f5b52; font: 11px/1.4 "Courier New", monospace; }
+
+/* state glyphs — text letters (R read · S stance · E echo · I integrated), filled once earned */
+.mg-stage10__glyphs { display: flex; gap: 5px; }
+.mg-stage10__glyph {
+  align-items: center; border: 1px solid #c7c4ba; border-radius: 4px; color: #b4b0a5;
+  display: inline-flex; font: 11px/1 "Courier New", monospace; height: 20px; justify-content: center; width: 20px;
+}
+.mg-stage10__glyph.is-on {
+  background: var(--memory-accent); border-color: var(--memory-accent);
+  color: #fff; font-weight: 700;
+}
+
+/* ── Defragmenter identity (persistent sigil + nameplate + dark voice) (#5) ── */
+.mg-stage10__defrag { display: grid; gap: 14px; grid-template-columns: auto 1fr; align-items: start; }
+.mg-stage10__defrag-plate {
+  align-items: center; display: grid; gap: 6px; justify-items: center;
+}
+.mg-stage10__sigil {
+  background: #14151a; border-radius: 8px; color: #6ee7a8; margin: 0;
+  font: 10px/1.05 "Courier New", monospace; letter-spacing: 1px; padding: 10px 12px; white-space: pre;
+}
+.mg-stage10__defrag-name {
+  color: #5f5b52; font: 10px/1.3 "Courier New", monospace; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.mg-stage10__defrag-voice p { margin: 0 0 8px; }
+.mg-stage10__assembly-head { font-weight: 700; }
+.mg-stage10__assembly-counts { color: #5f5b52; font: 13px/1.5 "Courier New", monospace; }
+
+/* the Defragmenter's speech gets a distinct dark block wherever it speaks */
+.mg-stage10__voice--defrag {
+  background: #14151a; border-radius: 10px; color: #d8d6cf; max-width: none; padding: 16px 18px;
+}
+.mg-stage10__voice--defrag .mg-stage10__defrag-plate { float: left; margin: 0 16px 8px 0; }
+.mg-stage10__voice--defrag .mg-stage10__defrag-name { color: #8f8b80; }
+.mg-stage10__voice--defrag p { color: #d8d6cf; }
+
+/* ── detail view chrome ── */
+.mg-stage10__detail-bar { align-items: baseline; display: flex; gap: 14px; justify-content: space-between; margin: 0 0 14px; }
+.mg-stage10__detail-count { color: #5f5b52; font: 12px/1.4 "Courier New", monospace; }
+
+/* ── review overlay (read-only) (#2) ── */
+.mg-stage10__review-btn { margin: 0; }
+.mg-stage10-review .mg-stage10__review-grid { display: grid; gap: 10px; }
+.mg-stage10__review-card {
+  border: 1px solid var(--border, #d3d1c7); border-left: 4px solid var(--memory-accent);
+  border-radius: 8px; padding: 10px 12px;
+}
+.mg-stage10__review-card .mg-stage10__card-stage { font-weight: 700; }
+.mg-stage10__review-quote { font-style: italic; margin: 6px 0 4px; }
+.mg-stage10__review-stance { font-size: 0.85em; margin: 0; opacity: 0.8; }
+
+/* ── Phase-A challenge quote (the thing the player experienced) (#2) ── */
+.mg-stage10__challenge-quote { font-style: italic; margin: 0; opacity: 0.9; }
+
+/* ── ceremony motion (#3) — all suppressed under reduced-motion at the bottom ── */
+.mg-stage10.is-confronting { background: #edece5; }
+.mg-stage10__confront .mg-stage10__voice--defrag { animation: s10-sigil-in .45s ease both; }
+@keyframes s10-sigil-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+.mg-stage10__confront-steps li.is-current { animation: s10-pill .5s ease; }
+@keyframes s10-pill { 0% { transform: scale(.9); } 55% { transform: scale(1.06); } 100% { transform: scale(1); } }
+
+/* staged ending reveal */
+.mg-stage10__final--staged { position: relative; }
+.mg-stage10__skip {
+  position: absolute; right: 0; top: -6px; font: 12px/1 "Courier New", monospace !important;
+  padding: 6px 10px !important;
+}
+.mg-stage10__beat { opacity: 0; transform: translateY(8px); transition: opacity .4s ease, transform .4s ease; }
+.mg-stage10__beat.is-shown { opacity: 1; transform: none; }
+.mg-stage10__capstone-tile { animation: s10-tile-in .4s ease both; animation-delay: calc(var(--tile-i, 0) * 90ms); }
+@keyframes s10-tile-in { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+
+/* ≥40px touch targets everywhere (#6) */
+.mg-stage10 button { min-height: 40px; }
+
+@media (max-width: 640px) {
+  .mg-stage10__grid { grid-template-columns: 1fr; }
+  .mg-stage10__card { min-height: 0; }
+  .mg-stage10__defrag { grid-template-columns: 1fr; }
+  .mg-stage10__progress-detail { text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mg-stage10__card, .mg-stage10__beat { transition: none; }
+  .mg-stage10__beat { opacity: 1; transform: none; }
+  .mg-stage10__confront .mg-stage10__voice--defrag,
+  .mg-stage10__confront-steps li.is-current,
+  .mg-stage10__capstone-tile { animation: none; }
+}

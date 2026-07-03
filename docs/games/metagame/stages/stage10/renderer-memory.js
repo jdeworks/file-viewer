@@ -4,36 +4,25 @@ import { escapeHtml, escapeAttr } from "./escape.js";
 
 const LAST = memories.length - 1;
 
-// ── Memory stepper (one memory at a time) ──────────────────────────────────────────────────────
+// ── Memory detail view (one memory, opened from the grid) ────────────────────────────────────────
+// Reached by clicking a card on the grid home view. Opening it auto-marks the memory read (M2), so
+// there is no READ verb here — only the deliberate beats: pick a stance, witness the echo, integrate.
+// Prev/next stepper stays INSIDE the detail; a back affordance returns to the grid (the whole board).
 
-export function renderStepper(state, counts, finalState) {
+export function renderStepper(state /* , counts, finalState */) {
   const cursor = state.ui.cursor;
   const memory = memories[cursor];
   const slot = state.memories[memory.id];
   return `
-    ${renderProgress(state, cursor)}
+    <div class="mg-stage10__detail-bar">
+      <button type="button" class="mg-stage10__back" data-back-grid>&larr; Back to the board</button>
+      <span class="mg-stage10__detail-count">Memory ${cursor + 1} of ${memories.length}</span>
+    </div>
     ${renderMemory(memory, slot)}
     <nav class="mg-stage10__nav" aria-label="Memory navigation">
       <button type="button" data-step="-1" ${cursor === 0 ? "disabled" : ""}>&larr; Previous</button>
       <button type="button" data-step="1" ${cursor === LAST ? "disabled" : ""}>Next &rarr;</button>
     </nav>
-    ${renderAssembly(finalState, counts)}
-  `;
-}
-
-function renderProgress(state, cursor) {
-  const dots = memories.map((memory, index) => {
-    const slot = state.memories[memory.id];
-    const cls = ["mg-stage10__dot", `is-${slot.state}`, index === cursor ? "is-current" : ""]
-      .filter(Boolean)
-      .join(" ");
-    return `<span class="${cls}" style="--memory-accent: ${memory.accent}" title="${escapeAttr(`${memory.stage}. ${memory.title}`)}"></span>`;
-  }).join("");
-  return `
-    <div class="mg-stage10__progress">
-      <p class="mg-stage10__progress-label">Memory ${cursor + 1} of ${memories.length}</p>
-      <div class="mg-stage10__dots" aria-hidden="true">${dots}</div>
-    </div>
   `;
 }
 
@@ -58,13 +47,11 @@ function renderMemory(memory, slot) {
   `;
 }
 
-// Reveal the interaction appropriate to the memory's current state, one step at a time:
-// unread -> Read; read -> pick a stance; resolved -> Integrate; integrated -> nothing left.
+// Reveal the interaction appropriate to the memory's current state. Reading is automatic (opening the
+// detail marks it read — M2), so the first deliberate beat is picking a stance: read -> pick a stance;
+// resolved -> Integrate (echo-gated); integrated -> nothing left.
 function renderMemoryActions(memory, slot, resolved, integrated) {
-  if (slot.state === "unread") {
-    return `<button type="button" data-read-memory="${memory.id}">Read this memory</button>`;
-  }
-  if (slot.state === "read") {
+  if (slot.state === "read" || slot.state === "unread") {
     return `
       <p class="mg-stage10__ask">How did it feel?</p>
       ${memory.choices.map((choice) => `
@@ -109,29 +96,6 @@ function renderEcho(memory, slot) {
   `;
 }
 
-function renderAssembly(finalState, counts) {
-  const summary = finalState.routeSummary;
-  const gate = finalState.gate;
-  const locked = finalState.locked;
-  return `
-    <section class="mg-stage10__assembly" aria-label="Memory assembly status">
-      <p>${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
-      <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
-      <p>${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
-      ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Face the Defragmenter &rarr;</button>`}
-    </section>
-  `;
-}
-
-function lockedAssemblyMessage(gate, counts) {
-  if (!gate.finalQuestionUnlocked) {
-    const need = 5 - counts.resolved;
-    return `Resolve ${need} more ${need === 1 ? "memory" : "memories"} before the Defragmenter can be confronted.`;
-  }
-  const need = 5 - gate.echoCount;
-  return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will engage.`;
-}
-
 export function getMemoryStateText(memory, slot) {
   if (slot.state === "integrated") return memory.integratedText;
   if (slot.state === "resolved") return memory.reflections?.[slot.choice] || memory.resolvedText;
@@ -139,8 +103,10 @@ export function getMemoryStateText(memory, slot) {
   return memory.unreadText;
 }
 
+// Dedupe (UX audit #4): the footer keeps ONLY the state word (and the chosen stance once answered) —
+// the echo hint lives solely in the echo block above, never repeated here.
 export function getMemoryFooter(memory, slot, integrated) {
   const status = integrated ? "integrated" : slot.state;
-  if (!slot.choice) return `${status} - echo: ${memory.echo}`;
+  if (!slot.choice) return status;
   return `${status} - answered: ${slot.choice}`;
 }

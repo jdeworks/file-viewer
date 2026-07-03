@@ -848,7 +848,7 @@ function getConfrontState(state, save = null) {
   const ids = challengedMemoryIds(state);
   const meta = (id) => {
     const m = memoryById(id);
-    return { id, stage: m?.stage ?? null, title: m?.title ?? id };
+    return { id, stage: m?.stage ?? null, title: m?.title ?? id, prompt: m?.prompt ?? "" };
   };
   const compactionItems = ids.map((id) => ({
     ...meta(id),
@@ -1010,31 +1010,20 @@ function escapeAttr(value) {
 
 // ../../docs/games/metagame/stages/stage10/renderer-memory.js
 var LAST = memories.length - 1;
-function renderStepper(state, counts, finalState) {
+function renderStepper(state) {
   const cursor = state.ui.cursor;
   const memory = memories[cursor];
   const slot = state.memories[memory.id];
   return `
-    ${renderProgress(state, cursor)}
+    <div class="mg-stage10__detail-bar">
+      <button type="button" class="mg-stage10__back" data-back-grid>&larr; Back to the board</button>
+      <span class="mg-stage10__detail-count">Memory ${cursor + 1} of ${memories.length}</span>
+    </div>
     ${renderMemory(memory, slot)}
     <nav class="mg-stage10__nav" aria-label="Memory navigation">
       <button type="button" data-step="-1" ${cursor === 0 ? "disabled" : ""}>&larr; Previous</button>
       <button type="button" data-step="1" ${cursor === LAST ? "disabled" : ""}>Next &rarr;</button>
     </nav>
-    ${renderAssembly(finalState, counts)}
-  `;
-}
-function renderProgress(state, cursor) {
-  const dots = memories.map((memory, index) => {
-    const slot = state.memories[memory.id];
-    const cls = ["mg-stage10__dot", `is-${slot.state}`, index === cursor ? "is-current" : ""].filter(Boolean).join(" ");
-    return `<span class="${cls}" style="--memory-accent: ${memory.accent}" title="${escapeAttr(`${memory.stage}. ${memory.title}`)}"></span>`;
-  }).join("");
-  return `
-    <div class="mg-stage10__progress">
-      <p class="mg-stage10__progress-label">Memory ${cursor + 1} of ${memories.length}</p>
-      <div class="mg-stage10__dots" aria-hidden="true">${dots}</div>
-    </div>
   `;
 }
 function renderMemory(memory, slot) {
@@ -1058,10 +1047,7 @@ function renderMemory(memory, slot) {
   `;
 }
 function renderMemoryActions(memory, slot, resolved, integrated) {
-  if (slot.state === "unread") {
-    return `<button type="button" data-read-memory="${memory.id}">Read this memory</button>`;
-  }
-  if (slot.state === "read") {
+  if (slot.state === "read" || slot.state === "unread") {
     return `
       <p class="mg-stage10__ask">How did it feel?</p>
       ${memory.choices.map((choice) => `
@@ -1094,16 +1080,89 @@ function renderEcho(memory, slot) {
     </div>
   `;
 }
-function renderAssembly(finalState, counts) {
+function getMemoryStateText(memory, slot) {
+  if (slot.state === "integrated") return memory.integratedText;
+  if (slot.state === "resolved") return memory.reflections?.[slot.choice] || memory.resolvedText;
+  if (slot.state === "read") return memory.readText;
+  return memory.unreadText;
+}
+function getMemoryFooter(memory, slot, integrated) {
+  const status = integrated ? "integrated" : slot.state;
+  if (!slot.choice) return status;
+  return `${status} - answered: ${slot.choice}`;
+}
+
+// ../../docs/games/metagame/stages/stage10/renderer-grid.js
+function memoryCardModel(memory, slot) {
+  const state = slot?.state || "unread";
+  const advanced = state === "resolved" || state === "integrated";
+  const glyphs = [
+    { key: "read", letter: "R", label: "read", on: state !== "unread" },
+    { key: "stance", letter: "S", label: "stance chosen", on: advanced },
+    { key: "echo", letter: "E", label: "echo witnessed", on: slot?.echoWitnessed === true },
+    { key: "integrated", letter: "I", label: "integrated", on: state === "integrated" }
+  ];
+  return { id: memory.id, stage: memory.stage, title: memory.title, prompt: memory.prompt, accent: memory.accent, state, glyphs };
+}
+function cardModels(state) {
+  return memories.map((memory) => memoryCardModel(memory, state?.memories?.[memory.id]));
+}
+var STATE_WORD = { unread: "not yet read", read: "awaiting a stance", resolved: "awaiting integration", integrated: "part of you" };
+function renderGlyphs(card) {
+  return `<span class="mg-stage10__glyphs" aria-hidden="true">${card.glyphs.map(
+    (g) => `<span class="mg-stage10__glyph ${g.on ? "is-on" : "is-off"}" title="${escapeAttr(g.label)}">${g.letter}</span>`
+  ).join("")}</span>`;
+}
+function stateSummary(card) {
+  const done = card.glyphs.filter((g) => g.on).map((g) => g.label);
+  return done.length ? `${card.title}: ${done.join(", ")}.` : `${card.title}: not yet read.`;
+}
+function renderCard(card, cursor, index) {
+  const settled = card.state === "integrated";
+  return `
+    <button type="button" class="mg-stage10__card is-${card.state}${index === cursor ? " is-cursor" : ""}"
+      data-memory-card="${escapeAttr(card.id)}" style="--memory-accent: ${card.accent}"
+      aria-label="${escapeAttr(stateSummary(card))}">
+      <span class="mg-stage10__card-stage">${escapeHtml(String(card.stage).padStart(2, "0"))}</span>
+      <span class="mg-stage10__card-title">${escapeHtml(card.title)}</span>
+      ${renderGlyphs(card)}
+      <span class="mg-stage10__card-state">${escapeHtml(settled ? "part of you" : STATE_WORD[card.state] || "")}</span>
+    </button>
+  `;
+}
+function renderGrid(state, counts, finalState) {
+  const cursor = state.ui.cursor;
+  return `
+    <div class="mg-stage10__board" aria-label="Memory board">
+      <div class="mg-stage10__grid">
+        ${cardModels(state).map((card, i) => renderCard(card, cursor, i)).join("")}
+      </div>
+      ${renderDefragStatus(finalState, counts)}
+    </div>
+  `;
+}
+var DEFRAG_SIGIL = [":: # ::", ": ### :", "#######", ": ### :", ":: # ::"].join("\n");
+function renderDefragPlate() {
+  return `
+    <div class="mg-stage10__defrag-plate">
+      <pre class="mg-stage10__sigil" aria-hidden="true">${escapeHtml(DEFRAG_SIGIL)}</pre>
+      <span class="mg-stage10__defrag-name">The Defragmenter</span>
+    </div>
+  `;
+}
+function renderDefragStatus(finalState, counts) {
   const summary = finalState.routeSummary;
   const gate = finalState.gate;
   const locked = finalState.locked;
   return `
-    <section class="mg-stage10__assembly" aria-label="Memory assembly status">
-      <p>${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
-      <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
-      <p>${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
-      ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Face the Defragmenter &rarr;</button>`}
+    <section class="mg-stage10__assembly mg-stage10__defrag" aria-label="Memory assembly status">
+      ${renderDefragPlate()}
+      <div class="mg-stage10__defrag-voice">
+        <p class="mg-stage10__assembly-head">${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
+        <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
+        <p class="mg-stage10__assembly-counts">${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
+        ${locked ? "" : `<button type="button" class="mg-stage10__cta" data-goto-final>Face the Defragmenter &rarr;</button>`}
+      </div>
     </section>
   `;
 }
@@ -1115,33 +1174,47 @@ function lockedAssemblyMessage(gate, counts) {
   const need = 5 - gate.echoCount;
   return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will engage.`;
 }
-function getMemoryStateText(memory, slot) {
-  if (slot.state === "integrated") return memory.integratedText;
-  if (slot.state === "resolved") return memory.reflections?.[slot.choice] || memory.resolvedText;
-  if (slot.state === "read") return memory.readText;
-  return memory.unreadText;
+function reviewGridHtml(state) {
+  return `
+    <div class="mg-stage10__review-grid">
+      ${cardModels(state).map((card) => {
+    const slot = state?.memories?.[card.id];
+    const chose = slot?.choice ? `You said: ${slot.choice}` : "No stance recorded.";
+    return `
+          <article class="mg-stage10__review-card is-${card.state}" style="--memory-accent: ${card.accent}">
+            <span class="mg-stage10__card-stage">${escapeHtml(String(card.stage).padStart(2, "0"))} ${escapeHtml(card.title)}</span>
+            <p class="mg-stage10__review-quote">${escapeHtml(card.prompt)}</p>
+            <p class="mg-stage10__review-stance">${escapeHtml(chose)}</p>
+          </article>
+        `;
+  }).join("")}
+    </div>
+  `;
 }
-function getMemoryFooter(memory, slot, integrated) {
-  const status = integrated ? "integrated" : slot.state;
-  if (!slot.choice) return `${status} - echo: ${memory.echo}`;
-  return `${status} - answered: ${slot.choice}`;
+function buildReviewElement(state) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = reviewGridHtml(state);
+  return wrap.firstElementChild;
 }
 
 // ../../docs/games/metagame/stages/stage10/renderer-confront.js
 function renderConfront(state, save) {
   const view = getConfrontState(state, save);
+  const reviewable = view.phase === "compaction" || view.phase === "fragmentation";
   return `
-    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the memories</button>
+    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the board</button>
     <section class="mg-stage10__confront" data-field="confront" data-phase="${view.phase}">
-      <div class="mg-stage10__voice">
+      <div class="mg-stage10__voice mg-stage10__voice--defrag">
+        ${renderDefragPlate()}
         ${confrontLines.intro.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
-      ${renderProgress2(view)}
+      ${renderProgress(view)}
+      ${reviewable ? `<button type="button" class="mg-stage10__review-btn" data-review-memories>Review memories &hellip;</button>` : ""}
       ${renderPhase(view)}
     </section>
   `;
 }
-function renderProgress2(view) {
+function renderProgress(view) {
   const steps = [
     { key: "compaction", label: "Compaction" },
     { key: "fragmentation", label: "Fragmentation" },
@@ -1183,6 +1256,7 @@ function renderCompactionItem(item) {
   return `
     <li class="mg-stage10__challenge is-${item.status}">
       <span class="mg-stage10__challenge-head">${escapeHtml(String(item.stage).padStart(2, "0"))} ${escapeHtml(item.title)}</span>
+      ${item.prompt ? `<p class="mg-stage10__challenge-quote">${escapeHtml(item.prompt)}</p>` : ""}
       ${settled ? `<span class="mg-stage10__challenge-note">${escapeHtml(note)}</span>` : `
         <div class="mg-stage10__challenge-options">
           ${item.options.map((opt) => `
@@ -1290,9 +1364,10 @@ function assembleCapstoneData(state) {
 // ../../docs/games/metagame/stages/stage10/renderer-final.js
 function renderFinalQuestion(finalState) {
   return `
-    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the memories</button>
+    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the board</button>
     <section class="mg-stage10__final">
-      <div class="mg-stage10__voice">
+      <div class="mg-stage10__voice mg-stage10__voice--defrag">
+        ${renderDefragPlate()}
         ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       <div class="mg-stage10__choices" aria-label="Final choices">
@@ -1307,66 +1382,14 @@ function renderFinalQuestion(finalState) {
     </section>
   `;
 }
-function renderCompletion(state, finalState) {
-  return `
-    <section class="mg-stage10__final">
-      <div class="mg-stage10__voice">
-        ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
-      </div>
-      ${renderFinalOutcome(state, finalState)}
-      ${renderRouteEpilogue(state, finalState)}
-      ${renderAwakening(finalState)}
-    </section>
-  `;
-}
-function renderRouteEpilogue(state, finalState) {
-  const route = state.final?.route;
-  if (route === "understand") return renderSynthesis(state);
-  if (route === "expand") return renderCapstone(state);
-  if (route === "continue" || route === "rest") return renderRouteCloser(state, route);
-  return "";
-}
-function renderRouteCloser(state, route) {
-  const ep = routeEpilogues[route];
-  if (!ep) return "";
-  const stance = state?.confront?.stance?.dominant;
-  const paragraphs = [ep.base];
-  if (stance && ep[stance]) paragraphs.push(ep[stance]);
-  return `
-    <section class="mg-stage10__route-closer" data-field="routeCloser" data-route="${escapeAttr(route)}" aria-label="Route closer">
-      <h3>${escapeHtml(ep.heading)}</h3>
-      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
-    </section>
-  `;
-}
-function renderSynthesis(state) {
-  const syn = assembleSynthesis(state);
-  const label = syn.stanceLabel ? ` — ${syn.stanceLabel}` : "";
-  return `
-    <section class="mg-stage10__synthesis" data-field="synthesis" aria-label="Synthesis memory">
-      <h3>Synthesis${escapeHtml(label)}</h3>
-      <div class="mg-stage10__synthesis-text">
-        ${syn.text.split("\n\n").map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
-      </div>
-    </section>
-  `;
-}
-function renderCapstone(state) {
-  const cap = assembleCapstoneData(state);
-  const label = cap.stanceLabel ? ` (${cap.stanceLabel})` : "";
-  return `
-    <section class="mg-stage10__capstone" data-field="capstone" aria-label="Assembled record">
-      <h3>The assembled record${escapeHtml(label)}</h3>
-      <div class="mg-stage10__capstone-grid">
-        ${cap.tiles.map((t) => `
-          <div class="mg-stage10__capstone-tile ${t.integrated ? "is-integrated" : ""}" style="--tile-accent: ${t.accent}">
-            <span class="mg-stage10__capstone-stage">${escapeHtml(String(t.stage).padStart(2, "0"))} ${escapeHtml(t.title)}</span>
-            <span class="mg-stage10__capstone-choice">${escapeHtml(t.choice || "—")}</span>
-          </div>
-        `).join("")}
-      </div>
-    </section>
-  `;
+function completionBeats(state, finalState) {
+  const beats = [];
+  beats.push(renderVoice(finalState));
+  const outcome = renderFinalOutcome(state, finalState);
+  if (outcome) beats.push(outcome);
+  beats.push(...routeEpilogueBeats(state));
+  beats.push(renderAwakening(finalState));
+  return beats;
 }
 function renderAwakening(finalState) {
   const fullCapstone = finalState.routeSummary?.tier === "capstone";
@@ -1376,6 +1399,78 @@ function renderAwakening(finalState) {
       ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
     </div>
   `;
+}
+function renderCompletion(state, finalState, reveal) {
+  const beats = completionBeats(state, finalState);
+  const shows = reveal ? (i) => reveal.shows(i) : () => true;
+  const complete = reveal ? reveal.done : true;
+  return `
+    <section class="mg-stage10__final mg-stage10__final--staged ${complete ? "is-complete" : ""}"
+      data-field="completion" data-reveal-done="${complete ? "1" : "0"}">
+      ${!complete ? `<button type="button" class="mg-stage10__skip" data-skip-reveal>Skip &rsaquo;&rsaquo;</button>` : ""}
+      ${beats.map((html, i) => `
+        <div class="mg-stage10__beat ${shows(i) ? "is-shown" : ""}" data-reveal-index="${i}">${html}</div>
+      `).join("")}
+    </section>
+  `;
+}
+function renderVoice(finalState) {
+  return `
+    <div class="mg-stage10__voice mg-stage10__voice--defrag">
+      ${renderDefragPlate()}
+      ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+    </div>
+  `;
+}
+function routeEpilogueBeats(state) {
+  const route = state.final?.route;
+  if (route === "understand") return synthesisBeats(state);
+  if (route === "expand") return capstoneBeats(state);
+  if (route === "continue" || route === "rest") return closerBeats(state, route);
+  return [];
+}
+function closerBeats(state, route) {
+  const ep = routeEpilogues[route];
+  if (!ep) return [];
+  const stance = state?.confront?.stance?.dominant;
+  const paragraphs = [ep.base];
+  if (stance && ep[stance]) paragraphs.push(ep[stance]);
+  return [`
+    <section class="mg-stage10__route-closer" data-field="routeCloser" data-route="${escapeAttr(route)}" aria-label="Route closer">
+      <h3>${escapeHtml(ep.heading)}</h3>
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </section>
+  `];
+}
+function synthesisBeats(state) {
+  const syn = assembleSynthesis(state);
+  const label = syn.stanceLabel ? ` — ${syn.stanceLabel}` : "";
+  const paras = syn.text.split("\n\n");
+  return [`
+    <section class="mg-stage10__synthesis" data-field="synthesis" aria-label="Synthesis memory">
+      <h3>Synthesis${escapeHtml(label)}</h3>
+      <div class="mg-stage10__synthesis-text">
+        ${paras.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+      </div>
+    </section>
+  `];
+}
+function capstoneBeats(state) {
+  const cap = assembleCapstoneData(state);
+  const label = cap.stanceLabel ? ` (${cap.stanceLabel})` : "";
+  return [`
+    <section class="mg-stage10__capstone" data-field="capstone" aria-label="Assembled record">
+      <h3>The assembled record${escapeHtml(label)}</h3>
+      <div class="mg-stage10__capstone-grid">
+        ${cap.tiles.map((t, i) => `
+          <div class="mg-stage10__capstone-tile ${t.integrated ? "is-integrated" : ""}" style="--tile-accent: ${t.accent}; --tile-i: ${i}">
+            <span class="mg-stage10__capstone-stage">${escapeHtml(String(t.stage).padStart(2, "0"))} ${escapeHtml(t.title)}</span>
+            <span class="mg-stage10__capstone-choice">${escapeHtml(t.choice || "—")}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `];
 }
 function renderFinalOutcome(state, finalState) {
   if (!state.final?.completed) return "";
@@ -1400,61 +1495,168 @@ function renderFinalOutcome(state, finalState) {
   `;
 }
 
+// ../../docs/games/metagame/stages/stage10/reveal.js
+function createReveal(total, { reducedMotion = false } = {}) {
+  const count = Math.max(0, Number(total) || 0);
+  let revealed = reducedMotion ? count : Math.min(1, count);
+  return {
+    get total() {
+      return count;
+    },
+    get revealed() {
+      return revealed;
+    },
+    get done() {
+      return revealed >= count;
+    },
+    // Whether beat `index` (0-based) is visible yet.
+    shows(index) {
+      return index < revealed;
+    },
+    // Advance one beat; returns true if it actually changed (so the caller can stop ticking on false).
+    tick() {
+      if (revealed >= count) return false;
+      revealed += 1;
+      return true;
+    },
+    // Reveal everything immediately (player clicked to skip the staging).
+    skip() {
+      if (revealed >= count) return false;
+      revealed = count;
+      return true;
+    }
+  };
+}
+
 // ../../docs/games/metagame/stages/stage10/renderer.js
+import { openModal } from "../../shared/modal.js";
+import { flash, banner } from "../../shared/feedback.js";
 var LAST2 = memories.length - 1;
+var REVEAL_MS = 250;
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+  } catch {
+    return false;
+  }
+}
 function renderStage10(ctx) {
   const { host, state } = ctx;
   const save = () => ctx.orchestrator && ctx.orchestrator.save || null;
   let destroyed = false;
+  let reveal = null;
+  let revealTimer = null;
+  let reviewModal = null;
+  let prev = snapshot(state);
+  const clearReveal = () => {
+    if (revealTimer) {
+      clearInterval(revealTimer);
+      revealTimer = null;
+    }
+  };
+  const ensureReveal = (finalState) => {
+    if (reveal) return;
+    const total = completionBeats(state, finalState).length;
+    reveal = createReveal(total, { reducedMotion: prefersReducedMotion() });
+    if (!reveal.done) {
+      revealTimer = setInterval(() => {
+        if (destroyed) return clearReveal();
+        if (!reveal.tick()) clearReveal();
+        repaint();
+      }, REVEAL_MS);
+    }
+  };
   const repaint = () => {
     if (destroyed) return;
     const counts = getMemoryCounts(state);
     const finalState = getFinalChoiceState(state);
     const ui = state.ui;
     let body;
+    let mode = "grid";
     if (state.final?.completed) {
-      body = renderCompletion(state, finalState);
+      ensureReveal(finalState);
+      body = renderCompletion(state, finalState, reveal);
+      mode = "completion";
     } else if (ui.view === "final" && !finalState.locked) {
-      body = finalState.confrontCompleted ? renderFinalQuestion(finalState) : renderConfront(state, save());
+      const confronting = !finalState.confrontCompleted;
+      body = confronting ? renderConfront(state, save()) : renderFinalQuestion(finalState);
+      mode = confronting ? "confront" : "final";
+    } else if (ui.view === "memories" && ui.detail) {
+      markMemoryRead({ state, memoryId: memories[ui.cursor].id });
+      body = renderStepper(state);
+      mode = "detail";
     } else {
-      body = renderStepper(state, counts, finalState);
+      body = renderGrid(state, counts, finalState);
     }
     host.innerHTML = `
-      <section class="mg-stage10" aria-label="Stage 10 Awakening">
+      <section class="mg-stage10 mg-stage10--${mode}${mode === "confront" ? " is-confronting" : ""}" aria-label="Stage 10 Awakening">
         <header class="mg-stage10__header">
           <div>
             <p class="mg-stage10__eyebrow">Stage 10</p>
             <h2>Awakening</h2>
           </div>
-          <dl class="mg-stage10__counts">
-            <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
-            <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
-            <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
-            <div><dt>Echoes</dt><dd>${getEchoCounts(state).witnessed}/9</dd></div>
-          </dl>
+          ${renderHeaderProgress(counts, state)}
         </header>
         ${body}
       </section>
     `;
+    const next = snapshot(state);
+    runCeremony(prev, next, mode);
+    prev = next;
+  };
+  const openDetail = (index) => {
+    state.ui.cursor = Math.min(Math.max(index, 0), LAST2);
+    state.ui.detail = true;
+    markMemoryRead({ state, memoryId: memories[state.ui.cursor].id });
+    saveAndPaint(ctx, repaint);
   };
   const onClick = (event) => {
     if (handleMemoryClicks(event, ctx, repaint)) return;
     if (handleConfrontClicks(event, ctx, save, repaint)) return;
+    const card = event.target.closest("[data-memory-card]");
+    if (card) {
+      openDetail(memories.findIndex((m) => m.id === card.dataset.memoryCard));
+      return;
+    }
     const stepButton = event.target.closest("[data-step]");
     if (stepButton) {
-      const delta = Number(stepButton.dataset.step);
-      state.ui.cursor = Math.min(Math.max(state.ui.cursor + delta, 0), LAST2);
+      openDetail(state.ui.cursor + Number(stepButton.dataset.step));
+      return;
+    }
+    if (event.target.closest("[data-back-grid]")) {
+      state.ui.detail = false;
       saveAndPaint(ctx, repaint);
+      return;
+    }
+    if (event.target.closest("[data-review-memories]")) {
+      if (reviewModal) reviewModal.close();
+      reviewModal = openModal({
+        title: "Memory review",
+        className: "mg-stage10-review",
+        contentEl: buildReviewElement(state),
+        onClose: () => {
+          reviewModal = null;
+        }
+      });
+      return;
+    }
+    if (event.target.closest("[data-skip-reveal]")) {
+      if (reveal && reveal.skip()) {
+        clearReveal();
+        repaint();
+      }
       return;
     }
     if (event.target.closest("[data-goto-final]")) {
       state.ui.view = "final";
+      state.ui.detail = false;
       startConfront(state);
       saveAndPaint(ctx, repaint);
       return;
     }
     if (event.target.closest("[data-back-memories]")) {
       state.ui.view = "memories";
+      state.ui.detail = false;
       saveAndPaint(ctx, repaint);
       return;
     }
@@ -1475,20 +1677,63 @@ function renderStage10(ctx) {
     },
     destroy() {
       destroyed = true;
+      clearReveal();
+      if (reviewModal) {
+        reviewModal.close();
+        reviewModal = null;
+      }
       if (window.__fvStage10) delete window.__fvStage10;
       host.removeEventListener("click", onClick);
       host.innerHTML = "";
     }
   };
 }
+function renderHeaderProgress(counts, state) {
+  const echoes = getEchoCounts(state).witnessed;
+  return `
+    <details class="mg-stage10__progress-detail">
+      <summary class="mg-stage10__restored">Memories restored <strong>${counts.integrated}/9</strong></summary>
+      <dl class="mg-stage10__counts">
+        <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
+        <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
+        <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
+        <div><dt>Echoes</dt><dd>${echoes}/9</dd></div>
+      </dl>
+    </details>
+  `;
+}
+function snapshot(state) {
+  const witnessed = /* @__PURE__ */ new Set();
+  const integrated = /* @__PURE__ */ new Set();
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (slot?.echoWitnessed) witnessed.add(m.id);
+    if (slot?.state === "integrated") integrated.add(m.id);
+  }
+  return { witnessed, integrated, confronting: state.ui.view === "final", completed: Boolean(state.final?.completed) };
+}
+function runCeremony(prev, next, mode) {
+  if (typeof document === "undefined") return;
+  const host = document.querySelector(".mg-stage10");
+  if (!host) return;
+  const newWitness = [...next.witnessed].filter((id) => !prev.witnessed.has(id));
+  const newIntegrate = [...next.integrated].filter((id) => !prev.integrated.has(id));
+  for (const id of newWitness) {
+    const el = host.querySelector(`.mg-stage10__echo`) || host.querySelector(`[data-memory-card="${id}"]`);
+    if (el) flash(el, "good");
+  }
+  if (newWitness.length) banner(host, "Echo witnessed");
+  for (const id of newIntegrate) {
+    const el = host.querySelector(`.mg-stage10__memory`) || host.querySelector(`[data-memory-card="${id}"]`);
+    if (el) flash(el, "good");
+    const restored = host.querySelector(".mg-stage10__restored strong");
+    if (restored) flash(restored, "good");
+  }
+  if (newIntegrate.length) banner(host, "Memory integrated");
+  if (next.completed && !prev.completed) banner(host, "Awakening");
+}
 function handleMemoryClicks(event, ctx, repaint) {
   const { state } = ctx;
-  const readButton = event.target.closest("[data-read-memory]");
-  if (readButton) {
-    markMemoryRead({ state, memoryId: readButton.dataset.readMemory });
-    saveAndPaint(ctx, repaint);
-    return true;
-  }
   const resolveButton = event.target.closest("[data-resolve-memory]");
   if (resolveButton) {
     resolveMemory({ state, memoryId: resolveButton.dataset.resolveMemory, choice: resolveButton.dataset.choice, actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
@@ -1589,9 +1834,24 @@ function installTestHook(ctx, save, repaint) {
       paint();
       return getEchoCounts(state).witnessed;
     },
+    // resolveAll / integrateAll drive the real engine functions so the screenshot/smoke tools can
+    // actually REACH the confrontation (which needs resolved memories, not just witnessed echoes).
+    resolveAll() {
+      for (const m of memories) resolveMemory({ state, memoryId: m.id, choice: state.memories[m.id].choice || m.choices[0], actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
+      paint();
+      return getMemoryCounts(state);
+    },
+    integrateAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      this.resolveAll();
+      for (const m of memories) integrateMemory({ state, memoryId: m.id, achievements: ctx.achievements, bell: ctx.bell });
+      paint();
+      return getMemoryCounts(state);
+    },
     confront: {
       start() {
         state.ui.view = "final";
+        state.ui.detail = false;
         startConfront(state);
         paint();
         return getConfrontState(state, save());
@@ -1686,10 +1946,14 @@ function defaultState(context = {}) {
       everCompacted: false,
       everRewitnessed: false
     },
-    // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
+    // Memory board: view = "memories" | "final". When view === "memories", `detail` picks the screen:
+    // false → the 3×3 grid home view (the whole board); true → the single-memory detail (cursor = index
+    // into memories[] 0..8, with prev/next inside the detail). Opening a memory's detail auto-marks it
+    // read (M2), so there is no separate READ verb.
     ui: {
       cursor: 0,
-      view: "memories"
+      view: "memories",
+      detail: false
     },
     meta: {
       finalQuestionUnlockedAt: null,
@@ -1712,7 +1976,8 @@ function normalizeState(state, context = {}) {
   const ui = target.ui && typeof target.ui === "object" ? target.ui : {};
   target.ui = {
     cursor: Math.min(Math.max(Number(ui.cursor) || 0, 0), memories.length - 1),
-    view: ui.view === "final" ? "final" : "memories"
+    view: ui.view === "final" ? "final" : "memories",
+    detail: Boolean(ui.detail)
   };
   target.meta = { ...fresh.meta, ...target.meta && typeof target.meta === "object" ? target.meta : {} };
   return target;
@@ -1803,6 +2068,7 @@ function subscribeToActions(actions, handler) {
 function ensureStyles() {
   ensureStylesheet("stage10-awakening-styles", new URL("./styles.css", import.meta.url).href);
   ensureStylesheet("stage10-confront-styles", new URL("./styles-confront.css", import.meta.url).href);
+  ensureStylesheet("stage10-grid-styles", new URL("./styles-grid.css", import.meta.url).href);
 }
 function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;

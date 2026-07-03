@@ -161,7 +161,7 @@ function advanceConfront(state, save, now) {
 export function getConfrontState(state, save = null) {
   const c = ensureConfront(state);
   const ids = challengedMemoryIds(state);
-  const meta = (id) => { const m = memoryById(id); return { id, stage: m?.stage ?? null, title: m?.title ?? id }; };
+  const meta = (id) => { const m = memoryById(id); return { id, stage: m?.stage ?? null, title: m?.title ?? id, prompt: m?.prompt ?? "" }; };
 
   const compactionItems = ids.map((id) => ({
     ...meta(id),

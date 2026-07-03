@@ -1,19 +1,26 @@
 import { getConfrontState } from "./confront.js";
 import { confrontLines } from "./content-confront.js";
+import { renderDefragPlate } from "./renderer-grid.js";
 import { escapeHtml, escapeAttr } from "./escape.js";
 
 // The three-phase Defragmenter confrontation UI. Reached only after the memory body + ≥5 echoes
 // (renderer routes here when ui.view === "final" && !confront.completed). `save` is the orchestrator
-// save (prior un-cheat flags) — null-guarded all the way down through getConfrontState.
+// save (prior un-cheat flags) — null-guarded all the way down through getConfrontState. The stage
+// darkens (`.mg-stage10.is-confronting`, set by the renderer) so the fight reads as its own space.
 export function renderConfront(state, save) {
   const view = getConfrontState(state, save);
+  // "Review memories" (read-only grid overlay, UX audit #2) is offered during recall Phases A/B so the
+  // player leans on MEANING, not trivia — never in Phase C (that is expression, not recall).
+  const reviewable = view.phase === "compaction" || view.phase === "fragmentation";
   return `
-    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the memories</button>
+    <button type="button" class="mg-stage10__back" data-back-memories>&larr; Back to the board</button>
     <section class="mg-stage10__confront" data-field="confront" data-phase="${view.phase}">
-      <div class="mg-stage10__voice">
+      <div class="mg-stage10__voice mg-stage10__voice--defrag">
+        ${renderDefragPlate()}
         ${confrontLines.intro.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
       </div>
       ${renderProgress(view)}
+      ${reviewable ? `<button type="button" class="mg-stage10__review-btn" data-review-memories>Review memories &hellip;</button>` : ""}
       ${renderPhase(view)}
     </section>
   `;
@@ -66,6 +73,7 @@ function renderCompactionItem(item) {
   return `
     <li class="mg-stage10__challenge is-${item.status}">
       <span class="mg-stage10__challenge-head">${escapeHtml(String(item.stage).padStart(2, "0"))} ${escapeHtml(item.title)}</span>
+      ${item.prompt ? `<p class="mg-stage10__challenge-quote">${escapeHtml(item.prompt)}</p>` : ""}
       ${settled ? `<span class="mg-stage10__challenge-note">${escapeHtml(note)}</span>` : `
         <div class="mg-stage10__challenge-options">
           ${item.options.map((opt) => `

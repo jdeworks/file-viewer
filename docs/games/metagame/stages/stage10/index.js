@@ -69,6 +69,7 @@ function subscribeToActions(actions, handler) {
 function ensureStyles() {
   ensureStylesheet("stage10-awakening-styles", new URL("./styles.css", import.meta.url).href);
   ensureStylesheet("stage10-confront-styles", new URL("./styles-confront.css", import.meta.url).href);
+  ensureStylesheet("stage10-grid-styles", new URL("./styles-grid.css", import.meta.url).href);
 }
 
 function ensureStylesheet(id, href) {

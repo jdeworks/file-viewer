@@ -54,12 +54,6 @@
   margin: 0;
 }
 
-.mg-stage10__grid {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-}
-
 .mg-stage10__assembly {
   border-left: 4px solid #1a1a1a;
   color: #3a3a3a;
@@ -218,52 +212,6 @@
   display: inline;
   font-weight: 700;
   margin-right: 6px;
-}
-
-.mg-stage10__progress {
-  align-items: center;
-  display: flex;
-  gap: 14px;
-  margin: 0 0 14px;
-}
-
-.mg-stage10__progress-label {
-  color: #5f5b52;
-  font: 13px/1.4 "Courier New", monospace;
-  margin: 0;
-  white-space: nowrap;
-}
-
-.mg-stage10__dots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-}
-
-.mg-stage10__dot {
-  background: #fff;
-  border: 1px solid #c7c4ba;
-  border-radius: 50%;
-  height: 12px;
-  width: 12px;
-}
-
-.mg-stage10__dot.is-read {
-  border-color: var(--memory-accent);
-}
-
-.mg-stage10__dot.is-resolved {
-  background: color-mix(in srgb, var(--memory-accent) 45%, #fff);
-  border-color: var(--memory-accent);
-}
-
-.mg-stage10__dot.is-integrated {
-  background: var(--memory-accent);
-  border-color: var(--memory-accent);
-}
-
-.mg-stage10__dot.is-current {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 3px #1a1a1a;
 }
 
 .mg-stage10__memory--solo {

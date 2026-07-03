@@ -39,10 +39,14 @@ export function defaultState(context = {}) {
       everCompacted: false,
       everRewitnessed: false
     },
-    // One-memory-at-a-time stepper: cursor = index into memories[] (0..8); view = "memories" | "final".
+    // Memory board: view = "memories" | "final". When view === "memories", `detail` picks the screen:
+    // false → the 3×3 grid home view (the whole board); true → the single-memory detail (cursor = index
+    // into memories[] 0..8, with prev/next inside the detail). Opening a memory's detail auto-marks it
+    // read (M2), so there is no separate READ verb.
     ui: {
       cursor: 0,
-      view: "memories"
+      view: "memories",
+      detail: false
     },
     meta: {
       finalQuestionUnlockedAt: null,
@@ -66,7 +70,8 @@ export function normalizeState(state, context = {}) {
   const ui = target.ui && typeof target.ui === "object" ? target.ui : {};
   target.ui = {
     cursor: Math.min(Math.max(Number(ui.cursor) || 0, 0), memories.length - 1),
-    view: ui.view === "final" ? "final" : "memories"
+    view: ui.view === "final" ? "final" : "memories",
+    detail: Boolean(ui.detail)
   };
   target.meta = { ...fresh.meta, ...(target.meta && typeof target.meta === "object" ? target.meta : {}) };
   return target;

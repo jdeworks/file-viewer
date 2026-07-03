@@ -1485,10 +1485,13 @@ export async function run(ctx) {
   // whose verb IS the navigated open — does NOT witness on a bare open: the player must do the verb.
   // (The games overlay covers the app toolbar, so feature verbs are driven via window.__fv / the
   // real renderer functions, exactly as a player would via the toolbar after closing the overlay.)
+  // Open the first memory's detail from the grid home view. Opening a memory auto-marks it read (M2),
+  // so there is no separate READ verb; the deliberate beats (stance / echo / integrate) stay. Prev/next
+  // lives inside the detail; the 3×3 grid is the board.
+  await page.waitForSelector('[data-memory-card]', { timeout: 5000 });
+  await page.click('[data-memory-card]');
   let realVerbGates = 0;
   for (let i = 0; i < 9; i++) {
-    await page.waitForSelector('[data-read-memory]', { timeout: 5000 });
-    await page.click('[data-read-memory]');
     await page.waitForSelector('[data-resolve-memory]', { timeout: 5000 });
     await page.click('[data-resolve-memory]');
     if (i === 0) {
@@ -1545,6 +1548,9 @@ export async function run(ctx) {
   }
   if (realVerbGates >= 6) pass(`Stage 10 echoes include ${realVerbGates} DISTINCT real-feature gates (raw Original, search, Diff, nested-path, metadata, download)`);
   else fail(`Stage 10 expected >=6 real-feature echo gates, drove ${realVerbGates}`);
+  // Back to the board — the assembly gate + Defragmenter status live under the grid now.
+  await page.waitForSelector('[data-back-grid]', { timeout: 5000 });
+  await page.click('[data-back-grid]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
