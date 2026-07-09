@@ -31,7 +31,10 @@ function getWorker(onProgress) {
       workerPath: vendor('tesseract/worker.min.js'),
       corePath: vendor('tesseract/tesseract-core-' + (SIMD ? 'simd-' : '') + 'lstm.wasm.js'),
       langPath: vendor('tesseract').replace(/\/$/, ''),     // dir holding eng.traineddata.gz
-      logger: onProgress ? (m) => onProgress(m) : undefined,
+      // Only pass `logger` when we actually have a callback. Passing `logger: undefined`
+      // clobbers tesseract's default no-op logger (via _objectSpread), and the worker then
+      // calls it on the first "progress" message → "TypeError: m is not a function".
+      ...(onProgress ? { logger: (m) => onProgress(m) } : {}),
     });
     return worker;
   })();
