@@ -280,6 +280,21 @@ export const ENEMIES = {
   }
 };
 
+// Per-enemy avatar glyph (small icon shown on the combat board so a fight has a face + something to
+// animate when it attacks/guards). Falls back to a tier default for any id not listed.
+const ENEMY_GLYPH = {
+  "corrupt-packet": "📦", "firewall-entity": "🧱", "null-pointer": "🕳️", "race-condition": "🏁",
+  "round-trip-timer": "⏱️", "packet-storm": "🌩️", "congestion-collapse": "🚦", "heisenbug": "🎲",
+  "daemon-process": "😈", "infinite-loop": "♾️", "recursive-call": "🔁",
+  "expired-certificate": "📜", "man-in-the-middle": "🕵️", "segfault": "💥",
+  "kernel-panic": "💀", "buffer-overflow": "🌊", "deadlock": "🔒", "session-hijack": "🎭",
+  "stack-overflow": "📚", "the-refused-connection": "⛔", "the-kernel-of-refusal": "👹"
+};
+const TIER_GLYPH = { standard: "👾", elite: "☠️", boss: "👹" };
+export function enemyGlyph(def) {
+  return ENEMY_GLYPH[def?.id] || TIER_GLYPH[def?.tier] || "👾";
+}
+
 export function instantiateEnemy(id, act = 1) {
   const def = ENEMIES[id];
   if (!def) throw new Error(`Unknown enemy: ${id}`);
@@ -288,6 +303,7 @@ export function instantiateEnemy(id, act = 1) {
     id: def.id,
     name: def.name,
     tier: def.tier,
+    glyph: enemyGlyph(def),
     immuneCorruption: Boolean(def.immuneCorruption),
     hp: def.hp + def.hpPerAct * scale,
     armor: def.armor + def.armorPerAct * scale,

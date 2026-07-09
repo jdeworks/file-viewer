@@ -77,7 +77,7 @@ import { STARTING_DECK } from "../cards.js";
   const r = resolveCombat(run, { win: true, hpRemaining: 55 });
   assert.equal(r.status, "reward");
   assert.equal(run.handshakes, 10, "combat grants 10 handshakes");
-  assert.equal(run.pendingReward.cards.length, 3, "three card choices");
+  assert.equal(run.pendingReward.cards.length, 4, "four card choices (wider draft)");
   takeReward(run, run.pendingReward.cards[0]);
   assert.equal(run.deck.length, before + 1, "chosen reward card added");
   assert.equal(run.status, "map");

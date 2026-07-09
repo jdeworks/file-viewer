@@ -117,5 +117,8 @@ export const SIGNAL_CARDS = [
   { id: "ICMP", type: "Signal", cost: 1, rarity: "common", text: "Deal 5. Gain 3 block.", effect: (ctx) => { ctx.deal(5); ctx.block(3); } },
   { id: "TEARDOWN", type: "Signal", cost: 2, rarity: "common", text: "Deal 11.", effect: (ctx) => ctx.deal(11) },
   { id: "DATAGRAM", type: "Signal", cost: 1, rarity: "common", text: "Deal 6.", effect: (ctx) => ctx.deal(6) },
-  { id: "BROADCAST", type: "Signal", cost: 2, rarity: "common", text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.deal(6); ctx.applyEnemy("weak", 1); } }
+  { id: "BROADCAST", type: "Signal", cost: 2, rarity: "common", text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.deal(6); ctx.applyEnemy("weak", 1); } },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "SYN_ACK", type: "Signal", cost: 1, rarity: "uncommon", text: "Deal 7. If ACK was played this turn, apply 2 Vulnerable.", effect: (ctx) => { ctx.deal(7); if (ctx.playedThisTurn("ACK")) ctx.applyEnemy("vulnerable", 2); } },
+  { id: "PORT_SCAN", type: "Signal", cost: 1, rarity: "common", text: "Deal 5. If it's the first card you play this turn, draw 1.", effect: (ctx) => { ctx.deal(5); if (ctx.isFirstCard) ctx.draw(1); } }
 ];

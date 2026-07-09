@@ -45,6 +45,7 @@ export function createCombat({ deck, player, enemy, seed = 1, relics = [], conge
     enemy: {
       id: enemy.id,
       name: enemy.name,
+      glyph: enemy.glyph,
       hp: enemy.hp,
       maxHp: enemy.hp,
       block: 0,

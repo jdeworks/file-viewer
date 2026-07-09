@@ -72,7 +72,7 @@ export function combatView(combat, run, opts = {}) {
       </div>
       <div class="s6db-hand" aria-label="hand"></div>
       <div class="s6db-dock-right">
-        ${pileChips(combat)}
+        ${pileChips(combat, run)}
         <button type="button" class="s6db-endturn" data-action="end-turn">end turn ▸</button>
       </div>
     </div>`;
@@ -143,6 +143,7 @@ function enemyPanel(enemy, intent, combat) {
   return `
     <section class="s6db-fighter s6db-enemy s6db-enemy--${enemy.tier || "standard"}">
       <div class="s6db-fighter-top">
+        <span class="s6db-fighter-avatar" aria-hidden="true">${enemy.glyph || "👾"}</span>
         <span class="s6db-fighter-name">${esc(enemy.name)}</span>
         ${tier ? `<span class="s6db-tier s6db-tier--${enemy.tier}">${tier}</span>` : ""}
       </div>
@@ -165,7 +166,10 @@ function enemyPanel(enemy, intent, combat) {
 function playerPanel(player) {
   return `
     <section class="s6db-fighter s6db-player">
-      <div class="s6db-fighter-top"><span class="s6db-fighter-name">You</span></div>
+      <div class="s6db-fighter-top">
+        <span class="s6db-fighter-avatar" aria-hidden="true">💻</span>
+        <span class="s6db-fighter-name">You</span>
+      </div>
       ${bar(player.hp, player.maxHp, "player")}
       <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
       <div class="s6db-meta">
@@ -216,9 +220,12 @@ function energyBlock(combat) {
 }
 
 // Draw / discard / exhaust pile chips with live counts — click opens that pile's card-list modal.
-function pileChips(combat) {
+// The DECK chip opens the whole run deck (data-deck) so the player can review their build mid-fight.
+function pileChips(combat, run) {
   const chip = (kind, n, label) => `<button type="button" class="s6db-pilechip" data-pile="${kind}">${label} <b>${n}</b></button>`;
+  const deckN = (run?.deck || []).length;
   return `<div class="s6db-pilechips">
+    ${deckN ? `<button type="button" class="s6db-pilechip s6db-pilechip--deck" data-deck>deck <b>${deckN}</b></button>` : ""}
     ${chip("draw", combat.draw.length, "draw")}
     ${chip("discard", combat.discard.length, "disc")}
     ${combat.exhaust.length ? chip("exhaust", combat.exhaust.length, "exh") : ""}
@@ -239,25 +246,24 @@ function handCard(id, index, count, energy, pending) {
   const mid = (count - 1) / 2;
   const t = count > 1 ? (index - mid) / mid : 0; // −1 … +1 across the fan
   button.style.setProperty("--rot", `${(t * 6).toFixed(2)}deg`);
-  button.style.setProperty("--ty", `${(t * t * 16).toFixed(1)}px`);
+  button.style.setProperty("--ty", `${(t * t * 8).toFixed(1)}px`); // gentle fan arc (kept small so edge cards don't dip out of the dock)
   button.style.setProperty("--z", String(index));
   button.innerHTML = cardFaceInner(id);
   return button;
 }
 
-// The raised inspect close-up (stage6 #2): enlarged card centred above the hand + an explicit PLAY.
-// Cost-disabled cards still inspect, with PLAY greyed. Rendered from pendingCardIndex (view-state).
+// The raised inspect close-up (stage6 #2): the selected card enlarged above the hand. There is NO
+// separate play button — clicking the raised card (or the hand card) AGAIN plays it, clicking outside
+// deselects (renderer handleClick). `data-inspect` on the raised card routes the second click through
+// the same select→play handler. Rendered from pendingCardIndex (view-state).
 function inspectOverlay(combat, idx) {
   if (idx == null) return "";
   const id = combat.hand[idx];
   const card = cardById(id);
   const affordable = card && card.cost <= combat.player.energy;
   return `<div class="s6db-inspect" role="dialog" aria-label="inspect card">
-    <div class="s6db-inspect-card s6db-card ${cardTypeClass(card)}">${cardFaceInner(id)}</div>
-    <div class="s6db-inspect-actions">
-      <button type="button" class="s6db-play-btn" data-play="${idx}"${affordable ? "" : " disabled"}>play ▸</button>
-      <span class="s6db-inspect-hint">${affordable ? "Enter plays · Esc cancels" : "not enough energy"}</span>
-    </div>
+    <div class="s6db-inspect-card s6db-card ${cardTypeClass(card)}" data-inspect="${idx}">${cardFaceInner(id)}</div>
+    <p class="s6db-inspect-hint">${affordable ? "click again to play · Esc cancels" : "not enough energy"}</p>
   </div>`;
 }
 

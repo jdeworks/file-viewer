@@ -25,7 +25,7 @@ const BY_ID = new Map(CARDS.map((card) => [card.id, card]));
 // stay the raw id. Names derive from the id (title-case, acronyms preserved) with a few flavour
 // overrides. Upgraded "<ID>+" forms inherit the base name via `...base` (see card-upgrades.js) and
 // show a "+" BADGE rather than a name suffix — so displayName is only ever called for base ids.
-const NAME_ACRONYMS = new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP"]);
+const NAME_ACRONYMS = new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP", "MTU"]);
 const NAME_OVERRIDES = {
   SYN: "SYN Pulse", ACK: "ACK Guard", RST: "Reset Kill", DDOS: "DDoS Storm",
   ICMP: "ICMP Echo", SACK: "Selective ACK", TCP_STACK: "TCP Stack", XOR_PAD: "XOR Pad",

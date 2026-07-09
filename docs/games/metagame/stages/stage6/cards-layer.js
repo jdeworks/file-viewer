@@ -48,5 +48,8 @@ export const LAYER_CARDS = [
   { id: "SHIM", type: "Layer", cost: 1, rarity: "common", text: "Gain 1 Strength.", effect: (ctx) => ctx.applySelf("strength", 1) },
   { id: "ROTATE", type: "Layer", cost: 1, rarity: "common", text: "Gain 4 block. Draw 1.", effect: (ctx) => { ctx.block(4); ctx.draw(1); } },
   { id: "XOR_PAD", type: "Layer", cost: 1, rarity: "common", text: "Gain 5 block.", effect: (ctx) => ctx.block(5) },
-  { id: "NONCE", type: "Layer", cost: 0, rarity: "common", text: "Gain 3 block. Draw 1.", effect: (ctx) => { ctx.block(3); ctx.draw(1); } }
+  { id: "NONCE", type: "Layer", cost: 0, rarity: "common", text: "Gain 3 block. Draw 1.", effect: (ctx) => { ctx.block(3); ctx.draw(1); } },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "KEY_EXCHANGE", type: "Layer", cost: 1, rarity: "uncommon", text: "Gain 1 Strength.", effect: (ctx) => ctx.applySelf("strength", 1) },
+  { id: "SIDE_CHANNEL", type: "Layer", cost: 2, rarity: "rare", text: "Gain 1 Strength and draw 1.", effect: (ctx) => { ctx.applySelf("strength", 1); ctx.draw(1); } }
 ];

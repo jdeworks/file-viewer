@@ -5,6 +5,10 @@
 
 /* Column that fills the bounded host: battlefield (top) · arena (flex) · dock (bottom). */
 .s6db-combat { position: relative; display: flex; flex-direction: column; gap: 10px; height: 100%; min-height: 0; }
+/* Combat is a self-contained, height:100% no-scroll viewport — but the hand FAN's rotated edge cards
+   dip a few px below the dock. Clip at the scroll ancestor ONLY when it holds a combat (the map/reward
+   screens keep their overflow:auto), so combat never sprouts a scrollbar. */
+.s6db-screen:has(.s6db-combat) { overflow: hidden; }
 
 /* ── top band: enemy (left) vs player (right) ─────────────────────────────────── */
 .s6db-battlefield { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 0 0 auto; }
@@ -12,7 +16,21 @@
    horizontally (phone defect 2026-07-03: the dock pushed end-turn past the 390px edge). */
 .s6db-fighter { position: relative; border: 1px solid #b8962e; border-radius: 8px; background: #f6efdf; padding: 12px; min-width: 0; }
 .s6db-enemy { border-color: #8b2020; }
+.s6db-fighter-top { display: flex; align-items: center; gap: 8px; }
 .s6db-fighter-name { font-size: 1.15rem; font-weight: 700; }
+
+/* Fighter avatar (stage6 #3): a small character icon that gives the fight a face + something to animate
+   on attack/guard. Sits at the front of the fighter-top row. */
+.s6db-fighter-avatar { font-size: 1.7rem; line-height: 1; display: inline-block; transform-origin: center bottom; will-change: transform; }
+.s6db-anim-lunge-l { animation: s6db-lunge-l 0.34s ease; }
+.s6db-anim-lunge-r { animation: s6db-lunge-r 0.34s ease; }
+.s6db-anim-guard  { animation: s6db-guard 0.4s ease; }
+@keyframes s6db-lunge-l { 0% { transform: translateX(0); } 45% { transform: translateX(-12px) scale(1.15); } 100% { transform: translateX(0); } }
+@keyframes s6db-lunge-r { 0% { transform: translateX(0); } 45% { transform: translateX(12px) scale(1.15); } 100% { transform: translateX(0); } }
+@keyframes s6db-guard   { 0% { transform: scale(1); } 40% { transform: scale(0.82) translateY(2px); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .s6db-anim-lunge-l, .s6db-anim-lunge-r, .s6db-anim-guard { animation: none; }
+}
 .s6db-hp { font-size: 0.82rem; color: #6b513a; }
 .s6db-bar { height: 14px; border-radius: 5px; background: #d8c7a6; overflow: hidden; margin: 4px 0; }
 .s6db-bar span { display: block; height: 100%; transition: width 0.32s ease; }
@@ -49,14 +67,19 @@
 .s6db-status-chip--strength { background: #2f6f6a; }
 
 /* ── middle band: arena strip (ticker + float/banner landing zone) ────────────── */
-.s6db-arena { position: relative; flex: 1 1 auto; min-height: 46px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 10px; border-radius: 8px; background: rgba(44, 24, 16, 0.06); }
+/* flex:1 1 0 + min-height:0 + overflow:hidden — the arena ABSORBS slack and CLIPS its content instead
+   of growing the column. Before this, the ticker + log-chip that appear after the first card was played
+   grew the flex column past the host and made the .s6db-screen ancestor sprout a scrollbar (2026-07-09). */
+.s6db-arena { position: relative; flex: 1 1 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 10px; border-radius: 8px; background: rgba(44, 24, 16, 0.06); }
 /* Empty arena = invisible spacer (stage6 #6 — the same no-dead-box rule that killed the old log box):
    it keeps its flex slot as the float/banner landing zone, but shows NO panel until it has content. */
 .s6db-arena.is-empty { background: none; padding: 0; }
 .s6db-ticker { display: flex; flex-direction: column; gap: 2px; text-align: center; font-size: 0.82rem; color: #3b2a1c; max-width: 60ch; }
 .s6db-ticker p { margin: 0; }
 .s6db-ticker p:last-child { font-weight: 700; }
-.s6db-arena-tools { display: flex; gap: 8px; }
+/* Absolutely placed so the log chip floats in the arena corner and never adds a stacked row of height
+   (which would push the centred ticker and re-grow the column). */
+.s6db-arena-tools { position: absolute; top: 4px; right: 8px; display: flex; gap: 8px; }
 .s6db-chip { font: inherit; font-size: 0.74rem; padding: 2px 10px; border-radius: 12px; border: 1px solid #b8962e; background: #f6efdf; color: #3b2a1c; cursor: pointer; }
 .s6db-chip:hover { border-color: #8b2020; }
 .s6db-jammed { margin: 0; font-size: 0.8rem; color: #8b2020; text-align: center; }
@@ -80,6 +103,7 @@
 .s6db-pilechip { font: inherit; font-size: 0.72rem; padding: 3px 8px; border-radius: 8px; border: 1px solid #1e2840; background: #f6efdf; color: #1e2840; cursor: pointer; }
 .s6db-pilechip:hover { border-color: #8b2020; }
 .s6db-pilechip b { font-variant-numeric: tabular-nums; }
+.s6db-pilechip--deck { border-color: #8b2020; font-weight: 700; }
 .s6db-endturn { align-self: flex-end; }
 
 /* energy crystal */
@@ -100,15 +124,26 @@
 .s6db-hand .s6db-card:hover, .s6db-hand .s6db-card:focus-visible { transform: translateY(-28px) scale(1.12); box-shadow: 0 12px 26px rgba(30, 40, 64, 0.35); z-index: 30; outline: none; }
 .s6db-hand .s6db-card.is-unaffordable { opacity: 0.55; }
 .s6db-hand .s6db-card.is-pending { visibility: hidden; }
+/* Synergy highlight (hover): cards that connect to the hovered one glow; the targeted enemy pulses. */
+.s6db-hand .s6db-card--synergy { box-shadow: 0 0 0 3px #2f8f6a, 0 10px 22px rgba(47, 143, 106, 0.4); z-index: 20; }
+.s6db-enemy.s6db-enemy--targeted { box-shadow: 0 0 0 2px #8b2020, 0 0 18px -2px #8b2020; }
+
+/* Card hover tooltip: full rules text + keyword glossary, floated above the hand. pointer-events:none
+   so moving toward it never steals the hover / causes flicker. */
+.s6db-tooltip { position: fixed; transform: translate(-50%, -100%); z-index: 60; max-width: 260px; pointer-events: none;
+  display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 8px; border: 1px solid #b8962e;
+  background: #14100a; color: #f3e9d6; font-size: 0.82rem; box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5); }
+.s6db-tooltip strong { font-size: 0.92rem; color: #ffd98a; }
+.s6db-tooltip-keys { font-style: normal; color: #bfc9e0; font-size: 0.74rem; border-top: 1px solid #3a2f22; padding-top: 4px; }
+.s6db-tooltip-keys b { color: #7fd0b0; }
+@media (prefers-reduced-motion: reduce) { .s6db-hand .s6db-card--synergy { box-shadow: 0 0 0 3px #2f8f6a; } }
 
 /* ── inspect close-up: the raised card centred above the hand ─────────────────── */
 .s6db-inspect { position: absolute; left: 50%; bottom: 158px; transform: translateX(-50%); z-index: 40; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .s6db-inspect-card { width: 214px; min-height: 172px; box-shadow: 0 18px 44px rgba(20, 20, 30, 0.45); }
 .s6db-inspect-card .s6db-card-name { font-size: 1.28rem; }
 .s6db-inspect-card .s6db-card-text { font-size: 0.95rem; }
-.s6db-inspect-actions { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 10px; background: rgba(20, 14, 10, 0.86); }
-.s6db-play-btn { font-size: 1rem; padding: 8px 18px; }
-.s6db-inspect-hint { font-size: 0.74rem; color: #e8dcc8; }
+.s6db-inspect-hint { margin: 0; font-size: 0.74rem; color: #e8dcc8; padding: 4px 12px; border-radius: 10px; background: rgba(20, 14, 10, 0.86); }
 
 /* played-card fly clone (feedback #4) — a fixed body-level node that flies to the arena + dissolves. */
 .s6db-fly { position: fixed; z-index: 80; pointer-events: none; transition: transform 0.22s ease, opacity 0.22s ease; }

@@ -7,10 +7,8 @@ import { cardById } from "./cards.js";
 import { cardFaceInner, cardTypeClass } from "./card-face.js";
 import { openModal } from "../../shared/modal.js";
 
-// Open the card-list for a pile ("draw"|"discard"|"exhaust") as a grid of card faces.
-export function openPileModal(combat, kind) {
-  if (!combat) return;
-  const ids = kind === "draw" ? combat.draw : kind === "discard" ? combat.discard : combat.exhaust;
+// A grid of card faces for a list of ids (shared by the pile + deck modals).
+function cardGrid(ids) {
   const grid = document.createElement("div");
   grid.className = "mg-modal-grid";
   if (ids.length) {
@@ -26,7 +24,22 @@ export function openPileModal(combat, kind) {
     p.textContent = "empty";
     grid.appendChild(p);
   }
-  openModal({ title: `${kind} pile (${ids.length})`, contentEl: grid, className: "s6db-modal" });
+  return grid;
+}
+
+// Open the card-list for a pile ("draw"|"discard"|"exhaust") as a grid of card faces.
+export function openPileModal(combat, kind) {
+  if (!combat) return;
+  const ids = kind === "draw" ? combat.draw : kind === "discard" ? combat.discard : combat.exhaust;
+  openModal({ title: `${kind} pile (${ids.length})`, contentEl: cardGrid(ids), className: "s6db-modal" });
+}
+
+// Open the player's FULL run deck (run.deck) — viewable in combat AND on the map. Read-only; sorts by
+// type then id so copies group together (the draw/discard/exhaust piles show live order instead).
+export function openDeckModal(deck) {
+  const ids = [...(deck || [])].sort((a, b) =>
+    (cardById(a)?.type || "").localeCompare(cardById(b)?.type || "") || String(a).localeCompare(String(b)));
+  openModal({ title: `your deck (${ids.length})`, contentEl: cardGrid(ids), className: "s6db-modal" });
 }
 
 // Open the FULL combat log (the arena strip shows only the last two lines — stage6 #6).

@@ -101,7 +101,18 @@ const SPECS = {
   NULL_DEREF: { text: "Deal 7. If the enemy is corrupted, deal 4 more.", effect: (ctx) => { ctx.deal(7); if (ctx.enemyCorruption > 0) ctx.deal(4); } },
   SPORE: { text: "Apply 2 Corruption. Draw 1.", effect: (ctx) => { ctx.applyCorruption(2); ctx.draw(1); } },
   TRACE: { text: "Deal 7. If the previous card was a Recursion card, gain 4 block.", effect: (ctx) => { ctx.deal(7); if (ctx.lastPlayedType === "Recursion") ctx.block(4); } },
-  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) }
+  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) },
+  // ── 2026-07-09 pool expansion (upgraded forms) ──────────────────────────────────────────────────────
+  SYN_ACK: { text: "Deal 10. If ACK was played this turn, apply 3 Vulnerable.", effect: (ctx) => { ctx.deal(10); if (ctx.playedThisTurn("ACK")) ctx.applyEnemy("vulnerable", 3); } },
+  PORT_SCAN: { text: "Deal 8. If it's the first card you play this turn, draw 1.", effect: (ctx) => { ctx.deal(8); if (ctx.isFirstCard) ctx.draw(1); } },
+  CHECKSUM: { text: "Gain 9 block. If ACK was played this turn, draw 1.", effect: (ctx) => { ctx.block(9); if (ctx.playedThisTurn("ACK")) ctx.draw(1); } },
+  MTU_PROBE: { text: "Gain 11 block. Apply 1 Weak to the enemy.", effect: (ctx) => { ctx.block(11); ctx.applyEnemy("weak", 1); } },
+  KEY_EXCHANGE: { text: "Gain 2 Strength.", effect: (ctx) => ctx.applySelf("strength", 2) },
+  SIDE_CHANNEL: { text: "Gain 2 Strength and draw 1.", effect: (ctx) => { ctx.applySelf("strength", 2); ctx.draw(1); } },
+  HEAP_SPRAY: { text: "Apply 6 Corruption.", effect: (ctx) => ctx.applyCorruption(6) },
+  SPYWARE: { text: "Apply 5 Corruption. Draw 1.", effect: (ctx) => { ctx.applyCorruption(5); ctx.draw(1); } },
+  THUNK: { text: "Deal 9. If a card was replayed this turn, draw 1.", effect: (ctx) => { ctx.deal(9); if (ctx.chainCount > 0) ctx.draw(1); } },
+  PROPAGATE: { text: "Deal 7. If a card was replayed this turn, deal 7 more.", effect: (ctx) => { ctx.deal(7); if (ctx.chainCount > 0) ctx.deal(7); } }
 };
 
 export function isUpgradedId(id) {

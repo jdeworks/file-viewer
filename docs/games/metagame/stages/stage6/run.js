@@ -18,7 +18,7 @@ export { POTION_SLOTS, POTION_COST, addPotion, usePotion, takePotion, buyPotion 
 
 export const PLAYER_MAX_HP = 60;
 const REST_HEAL_FRACTION = 0.30;
-const REWARD_CHOICES = 3;
+const REWARD_CHOICES = 4; // wider draft (was 3) so runs see more of the pool per node
 const HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
 // Skipping a reward card pays a few handshakes — deck-thinning is rewarded, so decks stay lean (12–18).
 const SKIP_REWARD = 5;

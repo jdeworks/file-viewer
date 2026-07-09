@@ -325,6 +325,15 @@ var SIGNAL_CARDS = [
   { id: "BROADCAST", type: "Signal", cost: 2, rarity: "common", text: "Deal 6. Apply 1 Weak to the enemy.", effect: (ctx) => {
     ctx.deal(6);
     ctx.applyEnemy("weak", 1);
+  } },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "SYN_ACK", type: "Signal", cost: 1, rarity: "uncommon", text: "Deal 7. If ACK was played this turn, apply 2 Vulnerable.", effect: (ctx) => {
+    ctx.deal(7);
+    if (ctx.playedThisTurn("ACK")) ctx.applyEnemy("vulnerable", 2);
+  } },
+  { id: "PORT_SCAN", type: "Signal", cost: 1, rarity: "common", text: "Deal 5. If it's the first card you play this turn, draw 1.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.isFirstCard) ctx.draw(1);
   } }
 ];
 
@@ -502,6 +511,15 @@ var PROTOCOL_CARDS = [
   { id: "SLOW_START", type: "Protocol", cost: 1, rarity: "common", text: "Gain 6 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
     ctx.block(6);
     ctx.applyEnemy("weak", 1);
+  } },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "CHECKSUM", type: "Protocol", cost: 1, rarity: "common", text: "Gain 6 block. If ACK was played this turn, draw 1.", effect: (ctx) => {
+    ctx.block(6);
+    if (ctx.playedThisTurn("ACK")) ctx.draw(1);
+  } },
+  { id: "MTU_PROBE", type: "Protocol", cost: 2, rarity: "uncommon", text: "Gain 8 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(8);
+    ctx.applyEnemy("weak", 1);
   } }
 ];
 
@@ -594,6 +612,12 @@ var LAYER_CARDS = [
   { id: "XOR_PAD", type: "Layer", cost: 1, rarity: "common", text: "Gain 5 block.", effect: (ctx) => ctx.block(5) },
   { id: "NONCE", type: "Layer", cost: 0, rarity: "common", text: "Gain 3 block. Draw 1.", effect: (ctx) => {
     ctx.block(3);
+    ctx.draw(1);
+  } },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "KEY_EXCHANGE", type: "Layer", cost: 1, rarity: "uncommon", text: "Gain 1 Strength.", effect: (ctx) => ctx.applySelf("strength", 1) },
+  { id: "SIDE_CHANNEL", type: "Layer", cost: 2, rarity: "rare", text: "Gain 1 Strength and draw 1.", effect: (ctx) => {
+    ctx.applySelf("strength", 1);
     ctx.draw(1);
   } }
 ];
@@ -712,6 +736,12 @@ var DAEMON_CARDS = [
   { id: "SPORE", type: "Daemon", cost: 0, rarity: "common", text: "Apply 1 Corruption. Draw 1.", effect: (ctx) => {
     ctx.applyCorruption(1);
     ctx.draw(1);
+  } },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "HEAP_SPRAY", type: "Daemon", cost: 1, rarity: "common", text: "Apply 4 Corruption.", effect: (ctx) => ctx.applyCorruption(4) },
+  { id: "SPYWARE", type: "Daemon", cost: 1, rarity: "uncommon", text: "Apply 3 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(3);
+    ctx.draw(1);
   } }
 ];
 
@@ -811,7 +841,16 @@ var RECURSION_CARDS = [
     ctx.deal(5);
     if (ctx.lastPlayedType === "Recursion") ctx.block(3);
   } },
-  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
+  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "THUNK", type: "Recursion", cost: 1, rarity: "uncommon", text: "Deal 6. If a card was replayed this turn, draw 1.", effect: (ctx) => {
+    ctx.deal(6);
+    if (ctx.chainCount > 0) ctx.draw(1);
+  } },
+  { id: "PROPAGATE", type: "Recursion", cost: 1, rarity: "uncommon", text: "Deal 5. If a card was replayed this turn, deal 5 more.", effect: (ctx) => {
+    ctx.deal(5);
+    if (ctx.chainCount > 0) ctx.deal(5);
+  } }
 ];
 
 // ../../docs/games/metagame/stages/stage6/combat-rng.js
@@ -862,7 +901,7 @@ function strHash(str) {
 // ../../docs/games/metagame/stages/stage6/cards.js
 var CARDS = [...SIGNAL_CARDS, ...PROTOCOL_CARDS, ...LAYER_CARDS, ...DAEMON_CARDS, ...RECURSION_CARDS];
 var BY_ID = new Map(CARDS.map((card) => [card.id, card]));
-var NAME_ACRONYMS = /* @__PURE__ */ new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP"]);
+var NAME_ACRONYMS = /* @__PURE__ */ new Set(["SYN", "ACK", "RST", "TCP", "DDOS", "ICMP", "SACK", "XOR", "RTT", "GC", "TTL", "IP", "MTU"]);
 var NAME_OVERRIDES = {
   SYN: "SYN Pulse",
   ACK: "ACK Guard",
@@ -1343,6 +1382,7 @@ function createCombat({ deck, player, enemy, seed = 1, relics = [], congestion =
     enemy: {
       id: enemy.id,
       name: enemy.name,
+      glyph: enemy.glyph,
       hp: enemy.hp,
       maxHp: enemy.hp,
       block: 0,
@@ -1795,6 +1835,33 @@ var ENEMIES = {
     ]
   }
 };
+var ENEMY_GLYPH = {
+  "corrupt-packet": "📦",
+  "firewall-entity": "🧱",
+  "null-pointer": "🕳️",
+  "race-condition": "🏁",
+  "round-trip-timer": "⏱️",
+  "packet-storm": "🌩️",
+  "congestion-collapse": "🚦",
+  "heisenbug": "🎲",
+  "daemon-process": "😈",
+  "infinite-loop": "♾️",
+  "recursive-call": "🔁",
+  "expired-certificate": "📜",
+  "man-in-the-middle": "🕵️",
+  "segfault": "💥",
+  "kernel-panic": "💀",
+  "buffer-overflow": "🌊",
+  "deadlock": "🔒",
+  "session-hijack": "🎭",
+  "stack-overflow": "📚",
+  "the-refused-connection": "⛔",
+  "the-kernel-of-refusal": "👹"
+};
+var TIER_GLYPH = { standard: "👾", elite: "☠️", boss: "👹" };
+function enemyGlyph(def) {
+  return ENEMY_GLYPH[def?.id] || TIER_GLYPH[def?.tier] || "👾";
+}
 function instantiateEnemy(id, act = 1) {
   const def = ENEMIES[id];
   if (!def) throw new Error(`Unknown enemy: ${id}`);
@@ -1803,6 +1870,7 @@ function instantiateEnemy(id, act = 1) {
     id: def.id,
     name: def.name,
     tier: def.tier,
+    glyph: enemyGlyph(def),
     immuneCorruption: Boolean(def.immuneCorruption),
     hp: def.hp + def.hpPerAct * scale,
     armor: def.armor + def.armorPerAct * scale,
@@ -2516,7 +2584,42 @@ var SPECS = {
     ctx.deal(7);
     if (ctx.lastPlayedType === "Recursion") ctx.block(4);
   } },
-  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) }
+  BASE_CASE: { text: "Deal 10.", effect: (ctx) => ctx.deal(10) },
+  // ── 2026-07-09 pool expansion (upgraded forms) ──────────────────────────────────────────────────────
+  SYN_ACK: { text: "Deal 10. If ACK was played this turn, apply 3 Vulnerable.", effect: (ctx) => {
+    ctx.deal(10);
+    if (ctx.playedThisTurn("ACK")) ctx.applyEnemy("vulnerable", 3);
+  } },
+  PORT_SCAN: { text: "Deal 8. If it's the first card you play this turn, draw 1.", effect: (ctx) => {
+    ctx.deal(8);
+    if (ctx.isFirstCard) ctx.draw(1);
+  } },
+  CHECKSUM: { text: "Gain 9 block. If ACK was played this turn, draw 1.", effect: (ctx) => {
+    ctx.block(9);
+    if (ctx.playedThisTurn("ACK")) ctx.draw(1);
+  } },
+  MTU_PROBE: { text: "Gain 11 block. Apply 1 Weak to the enemy.", effect: (ctx) => {
+    ctx.block(11);
+    ctx.applyEnemy("weak", 1);
+  } },
+  KEY_EXCHANGE: { text: "Gain 2 Strength.", effect: (ctx) => ctx.applySelf("strength", 2) },
+  SIDE_CHANNEL: { text: "Gain 2 Strength and draw 1.", effect: (ctx) => {
+    ctx.applySelf("strength", 2);
+    ctx.draw(1);
+  } },
+  HEAP_SPRAY: { text: "Apply 6 Corruption.", effect: (ctx) => ctx.applyCorruption(6) },
+  SPYWARE: { text: "Apply 5 Corruption. Draw 1.", effect: (ctx) => {
+    ctx.applyCorruption(5);
+    ctx.draw(1);
+  } },
+  THUNK: { text: "Deal 9. If a card was replayed this turn, draw 1.", effect: (ctx) => {
+    ctx.deal(9);
+    if (ctx.chainCount > 0) ctx.draw(1);
+  } },
+  PROPAGATE: { text: "Deal 7. If a card was replayed this turn, deal 7 more.", effect: (ctx) => {
+    ctx.deal(7);
+    if (ctx.chainCount > 0) ctx.deal(7);
+  } }
 };
 function isUpgradedId(id) {
   return typeof id === "string" && id.endsWith(UPGRADED_SUFFIX);
@@ -2527,9 +2630,9 @@ function canUpgrade(id) {
 function upgradeIdFor(id) {
   return canUpgrade(id) ? id + UPGRADED_SUFFIX : null;
 }
-var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId3, spec]) => {
-  const base = cardById(baseId3);
-  return { ...base, ...spec, id: baseId3 + UPGRADED_SUFFIX, base: baseId3, upgraded: true };
+var UPGRADED_CARDS = Object.entries(SPECS).map(([baseId4, spec]) => {
+  const base = cardById(baseId4);
+  return { ...base, ...spec, id: baseId4 + UPGRADED_SUFFIX, base: baseId4, upgraded: true };
 });
 for (const card of UPGRADED_CARDS) registerCard(card);
 
@@ -2691,7 +2794,7 @@ function rewireSuperboss(combat) {
 // ../../docs/games/metagame/stages/stage6/run.js
 var PLAYER_MAX_HP = 60;
 var REST_HEAL_FRACTION = 0.3;
-var REWARD_CHOICES = 3;
+var REWARD_CHOICES = 4;
 var HANDSHAKE_REWARD = { combat: 10, elite: 30, boss: 0 };
 var SKIP_REWARD = 5;
 var REMOVAL_BASE = 25;
@@ -3645,7 +3748,7 @@ function combatView(combat, run, opts = {}) {
       </div>
       <div class="s6db-hand" aria-label="hand"></div>
       <div class="s6db-dock-right">
-        ${pileChips(combat)}
+        ${pileChips(combat, run)}
         <button type="button" class="s6db-endturn" data-action="end-turn">end turn ▸</button>
       </div>
     </div>`;
@@ -3701,6 +3804,7 @@ function enemyPanel(enemy, intent, combat) {
   return `
     <section class="s6db-fighter s6db-enemy s6db-enemy--${enemy.tier || "standard"}">
       <div class="s6db-fighter-top">
+        <span class="s6db-fighter-avatar" aria-hidden="true">${enemy.glyph || "👾"}</span>
         <span class="s6db-fighter-name">${esc2(enemy.name)}</span>
         ${tier ? `<span class="s6db-tier s6db-tier--${enemy.tier}">${tier}</span>` : ""}
       </div>
@@ -3722,7 +3826,10 @@ function enemyPanel(enemy, intent, combat) {
 function playerPanel(player) {
   return `
     <section class="s6db-fighter s6db-player">
-      <div class="s6db-fighter-top"><span class="s6db-fighter-name">You</span></div>
+      <div class="s6db-fighter-top">
+        <span class="s6db-fighter-avatar" aria-hidden="true">💻</span>
+        <span class="s6db-fighter-name">You</span>
+      </div>
       ${bar(player.hp, player.maxHp, "player")}
       <div class="s6db-hp">HP ${player.hp} / ${player.maxHp}</div>
       <div class="s6db-meta">
@@ -3763,9 +3870,11 @@ function energyBlock(combat) {
     ${combat.congestion && (combat.turn || 1) > 1 ? `<span class="s6db-window">⇄ ${combat.window}/${combat.windowCap}</span>` : ""}
   </div>`;
 }
-function pileChips(combat) {
+function pileChips(combat, run) {
   const chip = (kind, n, label) => `<button type="button" class="s6db-pilechip" data-pile="${kind}">${label} <b>${n}</b></button>`;
+  const deckN = (run?.deck || []).length;
   return `<div class="s6db-pilechips">
+    ${deckN ? `<button type="button" class="s6db-pilechip s6db-pilechip--deck" data-deck>deck <b>${deckN}</b></button>` : ""}
     ${chip("draw", combat.draw.length, "draw")}
     ${chip("discard", combat.discard.length, "disc")}
     ${combat.exhaust.length ? chip("exhaust", combat.exhaust.length, "exh") : ""}
@@ -3782,7 +3891,7 @@ function handCard(id, index, count, energy, pending) {
   const mid = (count - 1) / 2;
   const t = count > 1 ? (index - mid) / mid : 0;
   button.style.setProperty("--rot", `${(t * 6).toFixed(2)}deg`);
-  button.style.setProperty("--ty", `${(t * t * 16).toFixed(1)}px`);
+  button.style.setProperty("--ty", `${(t * t * 8).toFixed(1)}px`);
   button.style.setProperty("--z", String(index));
   button.innerHTML = cardFaceInner(id);
   return button;
@@ -3793,11 +3902,8 @@ function inspectOverlay(combat, idx) {
   const card = cardById(id);
   const affordable = card && card.cost <= combat.player.energy;
   return `<div class="s6db-inspect" role="dialog" aria-label="inspect card">
-    <div class="s6db-inspect-card s6db-card ${cardTypeClass(card)}">${cardFaceInner(id)}</div>
-    <div class="s6db-inspect-actions">
-      <button type="button" class="s6db-play-btn" data-play="${idx}"${affordable ? "" : " disabled"}>play ▸</button>
-      <span class="s6db-inspect-hint">${affordable ? "Enter plays · Esc cancels" : "not enough energy"}</span>
-    </div>
+    <div class="s6db-inspect-card s6db-card ${cardTypeClass(card)}" data-inspect="${idx}">${cardFaceInner(id)}</div>
+    <p class="s6db-inspect-hint">${affordable ? "click again to play · Esc cancels" : "not enough energy"}</p>
   </div>`;
 }
 function statusChips(statuses) {
@@ -3828,11 +3934,22 @@ function applyCombatFx(node, fx) {
     floatNum(enemy, `-${fx.enemyDamage}`, "bad");
   }
   if (fx.blockGain && player) flash(player, "good");
+  if (fx.playerAttack) avatarAnim(player, "s6db-anim-lunge-l");
+  if (fx.enemyAction === "attack") avatarAnim(enemy, "s6db-anim-lunge-r");
+  else if (fx.enemyAction === "guard") avatarAnim(enemy, "s6db-anim-guard");
   if (fx.playerDamage && player) {
     flash(player, "bad");
     floatNum(player, `-${fx.playerDamage}`, "bad");
     shake(node.querySelector(".s6db-battlefield"));
   }
+}
+function avatarAnim(fighter, cls) {
+  const avatar = fighter?.querySelector(".s6db-fighter-avatar");
+  if (!avatar) return;
+  avatar.classList.add(cls);
+  const done = () => avatar.classList.remove(cls);
+  avatar.addEventListener("animationend", done, { once: true });
+  setTimeout(done, 600);
 }
 function flyCard({ rect, faceHTML }, arena) {
   if (!rect || reduce() || typeof document === "undefined") return;
@@ -3856,9 +3973,7 @@ function flyCard({ rect, faceHTML }, arena) {
 
 // ../../docs/games/metagame/stages/stage6/combat-modals.js
 import { openModal } from "../../shared/modal.js";
-function openPileModal(combat, kind) {
-  if (!combat) return;
-  const ids = kind === "draw" ? combat.draw : kind === "discard" ? combat.discard : combat.exhaust;
+function cardGrid(ids) {
   const grid = document.createElement("div");
   grid.className = "mg-modal-grid";
   if (ids.length) {
@@ -3874,7 +3989,16 @@ function openPileModal(combat, kind) {
     p.textContent = "empty";
     grid.appendChild(p);
   }
-  openModal({ title: `${kind} pile (${ids.length})`, contentEl: grid, className: "s6db-modal" });
+  return grid;
+}
+function openPileModal(combat, kind) {
+  if (!combat) return;
+  const ids = kind === "draw" ? combat.draw : kind === "discard" ? combat.discard : combat.exhaust;
+  openModal({ title: `${kind} pile (${ids.length})`, contentEl: cardGrid(ids), className: "s6db-modal" });
+}
+function openDeckModal(deck) {
+  const ids = [...deck || []].sort((a, b) => (cardById(a)?.type || "").localeCompare(cardById(b)?.type || "") || String(a).localeCompare(String(b)));
+  openModal({ title: `your deck (${ids.length})`, contentEl: cardGrid(ids), className: "s6db-modal" });
 }
 function openLogModal(combat) {
   if (!combat) return;
@@ -3886,6 +4010,116 @@ function openLogModal(combat) {
     return p;
   }));
   openModal({ title: "combat log", contentEl: box, className: "s6db-modal" });
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-synergy.js
+var KEYWORDS = {
+  ACK: "An ACK Guard was played this turn — several Signals pay off after an ACK.",
+  SYN: "SYN pressure — aggressive Signal tempo that scales with cards played.",
+  Corruption: "Stacking damage-over-time on the enemy; Daemon cards build and detonate it.",
+  Exhaust: "Removed from the deck for the rest of combat once played.",
+  "X-cost": "Spends ALL remaining energy; its effect scales with the amount spent.",
+  Chain: "Copy / replay effects — Recursion cards echo the last card played.",
+  Block: "Gains defence for the turn; Protocol cards convert and reuse Block.",
+  Lead: "Rewards being the FIRST card played this turn."
+};
+function baseId3(id) {
+  return typeof id === "string" && id.endsWith("+") ? id.slice(0, -1) : id;
+}
+var PROVIDER_TAGS = { ACK: ["ack"] };
+function tagsFor(id) {
+  const b = baseId3(id);
+  const card = cardById(id) || cardById(b);
+  const t = (card?.text || "").toLowerCase();
+  const tags = new Set(PROVIDER_TAGS[b] || []);
+  if (/\back\b/.test(t)) tags.add("ack");
+  if (/first card|lead|preamble|finalize/.test(t)) tags.add("lead");
+  if (/corrupt/.test(t)) tags.add("corruption");
+  if (/exhaust/.test(t)) tags.add("exhaust");
+  if (/chain|recursion|replay|echo|copy/.test(t)) tags.add("chain");
+  if (/block/.test(t)) tags.add("block");
+  if (card?.type) tags.add(`type:${card.type}`);
+  return tags;
+}
+function keywordsFor(id) {
+  const card = cardById(id) || cardById(baseId3(id));
+  const t = (card?.text || "").toLowerCase();
+  const out = [];
+  if (/\back\b/.test(t)) out.push("ACK");
+  if (/\bsyn\b/.test(t)) out.push("SYN");
+  if (/corrupt/.test(t)) out.push("Corruption");
+  if (/exhaust/.test(t) || card?.exhaust) out.push("Exhaust");
+  if (card?.xcost || /all .*energy|x energy|x-cost/.test(t)) out.push("X-cost");
+  if (/chain|replay|echo|copy|recursion/.test(t)) out.push("Chain");
+  if (/block/.test(t)) out.push("Block");
+  if (/first card|lead|preamble|finalize/.test(t)) out.push("Lead");
+  return out;
+}
+function isAttack(id) {
+  const card = cardById(id) || cardById(baseId3(id));
+  return /deal|damage|\bhit\b/i.test(card?.text || "");
+}
+function relatedHandIndices(hoverId, hand) {
+  const mine = tagsFor(hoverId);
+  if (!mine.size) return [];
+  const out = [];
+  (hand || []).forEach((id, i) => {
+    const theirs = tagsFor(id);
+    for (const tag of theirs) if (mine.has(tag)) {
+      out.push(i);
+      break;
+    }
+  });
+  return out;
+}
+
+// ../../docs/games/metagame/stages/stage6/combat-hover.js
+function installCombatHover(root, getCombat) {
+  let tip = null;
+  const ensureTip = () => {
+    if (!tip) {
+      tip = document.createElement("div");
+      tip.className = "s6db-tooltip";
+      tip.hidden = true;
+      root.appendChild(tip);
+    }
+    return tip;
+  };
+  const clear = () => {
+    if (tip) tip.hidden = true;
+    root.querySelectorAll(".s6db-card--synergy").forEach((el) => el.classList.remove("s6db-card--synergy"));
+    root.querySelector(".s6db-enemy--targeted")?.classList.remove("s6db-enemy--targeted");
+  };
+  root.addEventListener("mouseover", (event) => {
+    const cardEl = event.target.closest(".s6db-hand .s6db-card[data-inspect]");
+    const combat = getCombat();
+    if (!cardEl || !combat || combat.over) return;
+    const idx = Number(cardEl.dataset.inspect);
+    const id = combat.hand[idx];
+    if (id == null) return;
+    clear();
+    for (const i of relatedHandIndices(id, combat.hand)) {
+      if (i === idx) continue;
+      root.querySelector(`.s6db-hand .s6db-card[data-inspect="${i}"]`)?.classList.add("s6db-card--synergy");
+    }
+    if (isAttack(id)) root.querySelector(".s6db-enemy")?.classList.add("s6db-enemy--targeted");
+    const card = cardById(id);
+    const kw = keywordsFor(id).map((k) => `<b>${esc3(k)}</b> — ${esc3(KEYWORDS[k] || "")}`).join("<br>");
+    const t = ensureTip();
+    t.innerHTML = `<strong>${esc3(card?.name || id)}</strong><span>${esc3(card?.text || "")}</span>` + (kw ? `<em class="s6db-tooltip-keys">${kw}</em>` : "");
+    const r = cardEl.getBoundingClientRect();
+    t.style.left = `${Math.round(r.left + r.width / 2)}px`;
+    t.style.top = `${Math.round(r.top - 8)}px`;
+    t.hidden = false;
+  });
+  root.addEventListener("mouseout", (event) => {
+    const to = event.relatedTarget;
+    if (to && to.closest && to.closest(".s6db-hand .s6db-card")) return;
+    clear();
+  });
+}
+function esc3(value) {
+  return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
 // ../../docs/games/metagame/stages/stage6/ui-map.js
@@ -3934,7 +4168,7 @@ function hubView(state, lock, asc = null) {
       <span>cost ${prestigeCost(m.protocolVersion)} banked · each version: +5 max HP, +1 starting relic &amp; one harder rule</span>
     </div>` : ""}
     ${d.meta ? ascensionPicker(asc, hasRun) : ""}
-    ${d.stats ? `<p class="s6db-hint">${esc3(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
+    ${d.stats ? `<p class="s6db-hint">${esc4(lock.unlocked ? "Chapter 9 is read. The connection can be negotiated." : "The connection refuses everything you send. The codex explains why.")}</p>` : ""}
   `;
   return el;
 }
@@ -3971,7 +4205,7 @@ function ascensionPicker(asc, hasRun) {
 function activeRules(level) {
   const active = activeAscensionMods(level);
   if (!active.length) return "";
-  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc3(mod.label)}</strong> — ${esc3(mod.desc)}</li>`).join("")}</ul>`;
+  return `<ul class="s6db-modifiers" aria-label="active rules">${active.map((mod) => `<li>⚠ <strong>${esc4(mod.label)}</strong> — ${esc4(mod.desc)}</li>`).join("")}</ul>`;
 }
 function mapView(run) {
   const el = document.createElement("div");
@@ -3985,7 +4219,7 @@ function mapView(run) {
       <span>Act ${run.act} / ${total} — choose your route</span>
       <span class="s6db-act-track" aria-label="act ${run.act} of ${total}">${dots}</span>
     </div>
-    ${run.notice ? `<div class="s6db-notice">${esc3(run.notice)}</div>` : ""}`;
+    ${run.notice ? `<div class="s6db-notice">${esc4(run.notice)}</div>` : ""}`;
   const grid = document.createElement("div");
   grid.className = "s6db-map-grid";
   for (const layer of act.layers) {
@@ -3999,7 +4233,7 @@ function mapView(run) {
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
-    <span>deck ${run.deck.length}</span>
+    <button type="button" data-deck class="s6db-ghost s6db-map-deck" title="view your deck">deck ${run.deck.length} ▾</button>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);
@@ -4009,10 +4243,10 @@ function inventoryStrip(run) {
   const relics = (run.relics || []).map(relicById).filter(Boolean);
   const keys = run.keys || [];
   const vet = isVeteranRun(run);
-  const rItems = relics.length ? relics.map((r) => `<li><strong>⬢ ${esc3(r.name)}</strong> — ${esc3(r.text)}</li>`).join("") : `<li class="s6db-inv-none">No relics yet — clear elites and act bosses to earn them.</li>`;
+  const rItems = relics.length ? relics.map((r) => `<li><strong>⬢ ${esc4(r.name)}</strong> — ${esc4(r.text)}</li>`).join("") : `<li class="s6db-inv-none">No relics yet — clear elites and act bosses to earn them.</li>`;
   const keyRows = KEY_ORDER.filter((id) => vet || keys.includes(id)).map((id) => {
     const got = keys.includes(id);
-    return `<li class="${got ? "is-earned" : ""}"><strong>${got ? "⚷" : "○"} ${esc3(KEY_INFO[id].name)}</strong> — ${esc3(KEY_INFO[id].hint)}</li>`;
+    return `<li class="${got ? "is-earned" : ""}"><strong>${got ? "⚷" : "○"} ${esc4(KEY_INFO[id].name)}</strong> — ${esc4(KEY_INFO[id].hint)}</li>`;
   }).join("");
   const keySection = keyRows ? `<div class="s6db-inv-keys"><h4>True-ending keys ${keys.length}/3</h4><ul>${keyRows}</ul></div>` : "";
   return `<details class="s6db-inv"><summary>relics ${relics.length} · keys ${keys.length}/3</summary>
@@ -4074,7 +4308,7 @@ function nodeChip(node, run, available, cleared) {
   }
   chip.dataset.nodeId = node.id;
   chip.innerHTML = `<span class="s6db-node-icon">${NODE_ICON[node.type] || "?"}</span>
-    <span class="s6db-node-type">${esc3(node.type)}</span>`;
+    <span class="s6db-node-type">${esc4(node.type)}</span>`;
   return chip;
 }
 function deathView(state, run) {
@@ -4119,11 +4353,11 @@ function scoreLine(state, run) {
   if (run?.dailyKey) {
     const seedBest = state.meta.dailyBest && state.meta.dailyBest[run.dailyKey] || 0;
     const label = run.mode === "daily" ? "daily" : "seed";
-    parts.push(`<span>${esc3(label)} <code>${esc3(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
+    parts.push(`<span>${esc4(label)} <code>${esc4(run.dailyKey)}</code> best: <strong>${seedBest}</strong></span>`);
   }
   return `<p class="s6db-score-line">${parts.join(" · ")}</p>`;
 }
-function esc3(value) {
+function esc4(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
@@ -4135,7 +4369,7 @@ function rewardView(run) {
   const cards = run.pendingReward?.cards || [];
   const relic = run.pendingReward?.relic ? relicById(run.pendingReward.relic) : null;
   el.innerHTML = `<h2>Signal recovered</h2>
-    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc4(relic.name)}</strong>: ${esc4(relic.text)}</p>` : ""}
+    ${relic ? `<p class="s6db-relic-won">⬢ Relic acquired — <strong>${esc5(relic.name)}</strong>: ${esc5(relic.text)}</p>` : ""}
     <p>Add one card to your deck.</p>
     ${keyTelegraph(run, "ascetic", "skip everything to stay ascetic ⚷")}`;
   const row = document.createElement("div");
@@ -4156,10 +4390,10 @@ function potionOffer(run, potionId) {
   wrap.className = "s6db-potion-offer";
   const belt = run.potions || [];
   if (belt.length < POTION_SLOTS) {
-    wrap.innerHTML = `<p>Potion found — <strong>${esc4(p?.name || potionId)}</strong>: ${esc4(p?.text || "")}</p>
+    wrap.innerHTML = `<p>Potion found — <strong>${esc5(p?.name || potionId)}</strong>: ${esc5(p?.text || "")}</p>
       <button type="button" data-take-potion="">grab potion ⚗</button>`;
   } else {
-    wrap.innerHTML = `<p>Potion found — <strong>${esc4(p?.name || potionId)}</strong>: ${esc4(p?.text || "")}. Belt full — replace one:</p>`;
+    wrap.innerHTML = `<p>Potion found — <strong>${esc5(p?.name || potionId)}</strong>: ${esc5(p?.text || "")}. Belt full — replace one:</p>`;
     const actions = document.createElement("div");
     actions.className = "s6db-hub-actions";
     actions.replaceChildren(...belt.map((id, i) => {
@@ -4186,7 +4420,7 @@ function bossRewardView(run) {
     b.type = "button";
     b.className = `s6db-relic-choice${relic.cursed ? " is-cursed" : ""}`;
     b.dataset.bossRelic = relic.id;
-    b.innerHTML = `<strong>⬢ ${esc4(relic.name)}</strong><small class="s6db-card-text">${esc4(relic.text)}</small>`;
+    b.innerHTML = `<strong>⬢ ${esc5(relic.name)}</strong><small class="s6db-card-text">${esc5(relic.text)}</small>`;
     return b;
   }));
   el.appendChild(row);
@@ -4288,7 +4522,7 @@ function shopView(run) {
     b.dataset.buyPotion = id;
     b.dataset.price = String(POTION_COST);
     b.disabled = beltFull || run.handshakes < POTION_COST;
-    b.innerHTML = `<strong>⚗ ${esc4(p?.name || id)}</strong><small class="s6db-card-text">${esc4(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
+    b.innerHTML = `<strong>⚗ ${esc5(p?.name || id)}</strong><small class="s6db-card-text">${esc5(p?.text || "")}</small><span class="s6db-price">${POTION_COST} ✋</span>`;
     return b;
   }));
   el.querySelector(".s6db-shop-potions").appendChild(potRow);
@@ -4308,9 +4542,9 @@ function eventView(run, event) {
   const el = document.createElement("div");
   el.className = "s6db-event";
   el.innerHTML = `
-    <h2>${esc4(event?.title || "An anomaly idles in the corridor")}</h2>
-    <p>${esc4(event?.text || "")}</p>
-    ${run.notice ? `<p class="s6db-hint">${esc4(run.notice)}</p>` : ""}`;
+    <h2>${esc5(event?.title || "An anomaly idles in the corridor")}</h2>
+    <p>${esc5(event?.text || "")}</p>
+    ${run.notice ? `<p class="s6db-hint">${esc5(run.notice)}</p>` : ""}`;
   const actions = document.createElement("div");
   actions.className = "s6db-hub-actions";
   const buttons = (event?.choices || []).map((c) => {
@@ -4351,7 +4585,7 @@ function shopPotionOffers(run) {
 }
 function keyTelegraph(run, keyId, text) {
   if (!isVeteranRun(run) || (run?.keys || []).includes(keyId)) return "";
-  return `<p class="s6db-telegraph">${esc4(text)}</p>`;
+  return `<p class="s6db-telegraph">${esc5(text)}</p>`;
 }
 function cardOption(id, attr, value) {
   const card = cardById(id);
@@ -4362,7 +4596,7 @@ function cardOption(id, attr, value) {
   button.innerHTML = cardFaceInner(id);
   return button;
 }
-function esc4(value) {
+function esc5(value) {
   return String(value).replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 }
 
@@ -4474,6 +4708,7 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   };
   root.addEventListener("click", handleClick);
   root.addEventListener("keydown", handleKey);
+  installCombatHover(root, () => combat);
   route();
   installStage6TestHook({
     state,
@@ -4585,9 +4820,12 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     const faceHTML = sourceEl ? sourceEl.innerHTML : "";
     playCard(combat, idx);
     pendingCardIndex = null;
+    const enemyDamage = Math.max(0, enemyBefore - combat.enemy.hp);
     pendingFx = {
-      enemyDamage: Math.max(0, enemyBefore - combat.enemy.hp),
+      enemyDamage,
       blockGain: Math.max(0, combat.player.block - blockBefore),
+      playerAttack: enemyDamage > 0,
+      // lunge the player avatar when the card actually hit
       fly: rect ? { rect, faceHTML } : null
     };
     if (combat.over) finishCombat(state.run);
@@ -4768,18 +5006,23 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
   function handleClick(event) {
     const run = state.run;
     let cancelled = false;
-    if (pendingCardIndex != null && !event.target.closest("[data-inspect],[data-play]")) {
+    if (pendingCardIndex != null && !event.target.closest("[data-inspect]")) {
       pendingCardIndex = null;
       cancelled = true;
     }
     const inspect = event.target.closest("[data-inspect]");
     if (inspect && combat && !combat.over) {
       const i = Number(inspect.dataset.inspect);
-      pendingCardIndex = pendingCardIndex === i ? null : i;
+      if (pendingCardIndex === i) {
+        if (doPlay(i, root.querySelector(".s6db-inspect .s6db-card"))) return commit();
+        return route();
+      }
+      pendingCardIndex = i;
       return route();
     }
     const pile = event.target.closest("[data-pile]");
     if (pile && combat) return openPileModal(combat, pile.dataset.pile);
+    if (event.target.closest("[data-deck]") && run) return openDeckModal(run.deck);
     if (event.target.closest("[data-log]") && combat) return openLogModal(combat);
     if (handleTarget(event, run)) return commit();
     const btn = event.target.closest("button[data-action]");
@@ -4787,11 +5030,6 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
     if (cancelled) route();
   }
   function handleTarget(event, run) {
-    const play = event.target.closest("[data-play]");
-    if (play && combat && !combat.over) {
-      doPlay(Number(play.dataset.play), root.querySelector(".s6db-inspect .s6db-card"));
-      return true;
-    }
     const ascBtn = event.target.closest("[data-ascension]");
     if (ascBtn) {
       if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension));
@@ -4915,8 +5153,10 @@ function renderStage6({ host, state, actions, achievements, bell, bts, viewer, s
         if (combat && !combat.over) {
           pendingCardIndex = null;
           const hpBefore = combat.player.hp;
+          const intent = currentIntent(combat);
+          const enemyAction = intent?.attack || intent?.mirror || intent?.pierce ? "attack" : intent?.block ? "guard" : "buff";
           endTurn(combat);
-          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp) };
+          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp), enemyAction };
           if (combat.over) finishCombat(run);
           else checkpointCombat(combat, run);
         }

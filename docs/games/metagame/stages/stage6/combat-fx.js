@@ -12,7 +12,7 @@ const reduce = () =>
   typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 // Apply a captured fx descriptor to a freshly-mounted combat node.
-//   fx = { enemyDamage?, blockGain?, playerDamage?, banner?, fly?:{ rect, faceHTML } }
+//   fx = { enemyDamage?, blockGain?, playerDamage?, banner?, fly?, playerAttack?, enemyAction? }
 export function applyCombatFx(node, fx) {
   if (!node || !fx) return;
   const enemy = node.querySelector(".s6db-enemy");
@@ -22,11 +22,28 @@ export function applyCombatFx(node, fx) {
   if (fx.fly && arena) flyCard(fx.fly, arena);
   if (fx.enemyDamage && enemy) { flash(enemy, "bad"); floatNum(enemy, `-${fx.enemyDamage}`, "bad"); }
   if (fx.blockGain && player) flash(player, "good");
+  // Avatar choreography (stage6 #4): the player lunges when a card lands; the enemy lunges on an
+  // attack turn and braces on a guard turn. One-shot CSS class the browser plays then we strip.
+  if (fx.playerAttack) avatarAnim(player, "s6db-anim-lunge-l");   // player (right panel) lunges left at the enemy
+  if (fx.enemyAction === "attack") avatarAnim(enemy, "s6db-anim-lunge-r"); // enemy (left panel) lunges right at you
+  else if (fx.enemyAction === "guard") avatarAnim(enemy, "s6db-anim-guard");
   if (fx.playerDamage && player) {
     flash(player, "bad");
     floatNum(player, `-${fx.playerDamage}`, "bad");
     shake(node.querySelector(".s6db-battlefield"));
   }
+}
+
+// Add a one-shot animation class to a fighter's avatar, removed when the animation ends (or after a
+// fallback timeout). Reduced-motion is respected by the keyframes themselves (they no-op under the CSS
+// media query), so no JS gate is needed here.
+function avatarAnim(fighter, cls) {
+  const avatar = fighter?.querySelector(".s6db-fighter-avatar");
+  if (!avatar) return;
+  avatar.classList.add(cls);
+  const done = () => avatar.classList.remove(cls);
+  avatar.addEventListener("animationend", done, { once: true });
+  setTimeout(done, 600);
 }
 
 // The played card animates from where it sat toward the arena strip, then dissolves (~220ms). The

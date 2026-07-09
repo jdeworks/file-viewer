@@ -146,7 +146,7 @@ export function mapView(run) {
   const footer = document.createElement("div");
   footer.className = "s6db-map-foot";
   footer.innerHTML = `<span>HP ${run.hp}/${run.maxHp}</span><span>handshakes ${run.handshakes}</span>
-    <span>deck ${run.deck.length}</span>
+    <button type="button" data-deck class="s6db-ghost s6db-map-deck" title="view your deck">deck ${run.deck.length} ▾</button>
     <button type="button" data-action="to-hub" class="s6db-ghost">to hub</button>
     <button type="button" data-action="abandon" class="s6db-ghost">abandon run</button>`;
   el.appendChild(footer);

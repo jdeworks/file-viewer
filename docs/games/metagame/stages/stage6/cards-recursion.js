@@ -55,5 +55,8 @@ export const RECURSION_CARDS = [
   },
   // ── H · additional commons (pool depth — cheap chain filler) ────────────────────────────────────────
   { id: "TRACE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 5. If the previous card was a Recursion card, gain 3 block.", effect: (ctx) => { ctx.deal(5); if (ctx.lastPlayedType === "Recursion") ctx.block(3); } },
-  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) }
+  { id: "BASE_CASE", type: "Recursion", cost: 1, rarity: "common", text: "Deal 7.", effect: (ctx) => ctx.deal(7) },
+  // ── 2026-07-09 pool expansion ──────────────────────────────────────────────────────────────────────
+  { id: "THUNK", type: "Recursion", cost: 1, rarity: "uncommon", text: "Deal 6. If a card was replayed this turn, draw 1.", effect: (ctx) => { ctx.deal(6); if (ctx.chainCount > 0) ctx.draw(1); } },
+  { id: "PROPAGATE", type: "Recursion", cost: 1, rarity: "uncommon", text: "Deal 5. If a card was replayed this turn, deal 5 more.", effect: (ctx) => { ctx.deal(5); if (ctx.chainCount > 0) ctx.deal(5); } }
 ];

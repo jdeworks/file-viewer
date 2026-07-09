@@ -5,7 +5,7 @@
 // stage-clear gate is unchanged: read the codex (epub) — without it every Signal deals 0 — then
 // defeat the boss with the deck built across acts 1–3.
 
-import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct } from "./combat.js";
+import { createCombat, playCard, endTurn, makeRng, applyPotionEffect, strHash, congestionForAct, currentIntent } from "./combat.js";
 import { cardById } from "./cards.js";
 import { instantiateEnemy } from "./enemies.js";
 import { relicsFor } from "./relics.js";
@@ -31,7 +31,8 @@ import { createAscension } from "../../shared/ascension.js";
 import { ASCENSION_MODS } from "./ascension-mods.js";
 import { combatView } from "./ui-combat.js";
 import { applyCombatFx } from "./combat-fx.js";
-import { openPileModal, openLogModal } from "./combat-modals.js";
+import { openPileModal, openLogModal, openDeckModal } from "./combat-modals.js";
+import { installCombatHover } from "./combat-hover.js";
 import { hubView, mapView, paintMapEdges, deathView, wonView } from "./ui-map.js";
 import { rewardView, restView, shopView, eventView, bossRewardView } from "./ui-rewards.js";
 import { openEpub, openBts, once } from "./renderer-open.js";
@@ -86,6 +87,7 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
 
   root.addEventListener("click", handleClick);
   root.addEventListener("keydown", handleKey);
+  installCombatHover(root, () => combat); // card hover: tooltip + synergy highlight (view-only)
   route();
 
   // TEST/DEBUG hook (not a player affordance, not a hub button). It only fast-forwards position +
@@ -167,9 +169,11 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
     const faceHTML = sourceEl ? sourceEl.innerHTML : "";
     playCard(combat, idx);
     pendingCardIndex = null;
+    const enemyDamage = Math.max(0, enemyBefore - combat.enemy.hp);
     pendingFx = {
-      enemyDamage: Math.max(0, enemyBefore - combat.enemy.hp),
+      enemyDamage,
       blockGain: Math.max(0, combat.player.block - blockBefore),
+      playerAttack: enemyDamage > 0, // lunge the player avatar when the card actually hit
       fly: rect ? { rect, faceHTML } : null
     };
     if (combat.over) finishCombat(state.run); else checkpointCombat(combat, state.run);
@@ -376,23 +380,31 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   // ── click delegation ─────────────────────────────────────────────────────────────────────────
   function handleClick(event) {
     const run = state.run;
-    // Inspect cancel (stage6 #2): a click anywhere that is NOT a hand card or the PLAY button, while a
-    // card is raised, drops the inspect. Deferred (cancelled) so a click that ALSO triggers another
-    // action (e.g. end turn) still runs; a bare cancel re-renders at the end.
+    // Inspect cancel (stage6 #2): a click anywhere that is NOT a card (hand card or the raised close-up,
+    // both [data-inspect]) while a card is raised drops the selection. Deferred (cancelled) so a click
+    // that ALSO triggers another action (e.g. end turn) still runs; a bare cancel re-renders at the end.
     let cancelled = false;
-    if (pendingCardIndex != null && !event.target.closest("[data-inspect],[data-play]")) {
+    if (pendingCardIndex != null && !event.target.closest("[data-inspect]")) {
       pendingCardIndex = null; cancelled = true;
     }
-    // Raise a hand card to the inspect close-up (view-state only — no save, no engine mutation).
+    // Card click: FIRST click selects (raises the close-up); clicking the SAME card again PLAYS it;
+    // clicking outside deselects (handled above). No separate play button.
     const inspect = event.target.closest("[data-inspect]");
     if (inspect && combat && !combat.over) {
       const i = Number(inspect.dataset.inspect);
-      pendingCardIndex = pendingCardIndex === i ? null : i;
+      if (pendingCardIndex === i) {
+        // Second click on the selected card → play it (fly from the raised close-up). If unaffordable,
+        // doPlay is a no-op and the card stays raised.
+        if (doPlay(i, root.querySelector(".s6db-inspect .s6db-card"))) return commit();
+        return route();
+      }
+      pendingCardIndex = i;
       return route();
     }
-    // Pile / log modals (transient; no save).
+    // Pile / deck / log modals (transient; no save). Deck view works in combat AND on the map.
     const pile = event.target.closest("[data-pile]");
     if (pile && combat) return openPileModal(combat, pile.dataset.pile);
+    if (event.target.closest("[data-deck]") && run) return openDeckModal(run.deck);
     if (event.target.closest("[data-log]") && combat) return openLogModal(combat);
 
     if (handleTarget(event, run)) return commit();
@@ -402,8 +414,6 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
   }
 
   function handleTarget(event, run) {
-    const play = event.target.closest("[data-play]");
-    if (play && combat && !combat.over) { doPlay(Number(play.dataset.play), root.querySelector(".s6db-inspect .s6db-card")); return true; }
     // Hub ascension picker (no run yet): choose the difficulty rung for the next run.
     const ascBtn = event.target.closest("[data-ascension]");
     if (ascBtn) { if (ascension) ascension.setLevel(Number(ascBtn.dataset.ascension)); return true; }
@@ -463,9 +473,13 @@ export function renderStage6({ host, state, actions, achievements, bell, bts, vi
         if (combat && !combat.over) {
           pendingCardIndex = null;
           const hpBefore = combat.player.hp;
+          // Classify the enemy's telegraphed intent BEFORE endTurn (its intentIndex advances inside),
+          // so the avatar can lunge on an attack vs brace on a guard (stage6 #4 turn animation).
+          const intent = currentIntent(combat);
+          const enemyAction = intent?.attack || intent?.mirror || intent?.pierce ? "attack" : intent?.block ? "guard" : "buff";
           endTurn(combat);
           // Enemy-turn feedback (stage6 #4): a banner + damage floats in the same language as play.
-          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp) };
+          pendingFx = { banner: "ENEMY TURN", playerDamage: Math.max(0, hpBefore - combat.player.hp), enemyAction };
           if (combat.over) finishCombat(run); else checkpointCombat(combat, run);
         }
         return true;
