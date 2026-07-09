@@ -171,7 +171,7 @@ function injectOcrStyle() {
     .imgv-ocr-x { border:none; background:transparent; color:inherit; cursor:pointer; font-size:13px; }
     .imgv-ocr-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .imgv-ocr-chk { display:inline-flex; align-items:center; gap:4px; }
-    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; }
+    .imgv-ocr-out { width:100%; min-height:96px; box-sizing:border-box; resize:vertical; font-family:monospace; font-size:12px; overscroll-behavior:contain; }
     .imgv-ocr-acts { display:flex; gap:8px; margin-top:6px; }
     .imgv-ocr-panel button { cursor:pointer; }
     .imgv-ocr-err { color:#f88; }`;
