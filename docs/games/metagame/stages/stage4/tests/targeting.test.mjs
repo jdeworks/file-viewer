@@ -84,4 +84,40 @@ assert.equal(TARGET_MODES.length, 5, 'engine still knows all five comparator key
   assert.ok(state.enemies.find((e) => e.id === 'strong'), 'the high-hp leader survived');
 }
 
+// REGRESSION (2026-07-09): enemies must walk the ROAD between sparse corner waypoints, not snap onto
+// them. A depth-1 map has only 6 waypoints 12–35 cells apart; if placeOnPath quantized an enemy to
+// pathTiles[floor(pathIndex)] it sat on a corner while the drawn road stayed empty, so a tower placed
+// beside the road (but between corners) had dist(tower,e) > range forever and NEVER fired — the whole
+// stage read as "enemies invisible + towers don't shoot". This asserts a mid-segment enemy is
+// interpolated onto the road cell AND that a nearby tower actually fires at it.
+{
+  const path = buildPath('alpha', 1);
+  const a = path.tiles[0];
+  const b = path.tiles[1];              // segment 0→1 is axis-aligned (turtle moves cardinally)
+  const horiz = a.y === b.y;
+  const mid = { x: Math.round((a.x + b.x) / 2), y: Math.round((a.y + b.y) / 2) };
+  const towerCell = horiz ? { x: mid.x, y: mid.y + 1 } : { x: mid.x + 1, y: mid.y }; // one cell off-road
+  assert.ok(!path.tiles.some((t) => t.x === towerCell.x && t.y === towerCell.y), 'test tower cell is off the road');
+
+  const state = defaultState({ seed: 'alpha' });
+  state.cycles = 5000;
+  state.waveActive = true;
+  state.spawnQueue = [];
+  const placed = placeTower(state, { x: towerCell.x, y: towerCell.y, type: 'pulse_node' });
+  assert.ok(placed.ok, 'pulse_node placed beside the road');
+
+  // Enemy sitting HALFWAY along segment 0→1 (fractional pathIndex), far from either corner waypoint.
+  state.enemies = [{ id: 'walker', type: 'recursion', hp: 500, maxHp: 500, x: 0, y: 0, pathIndex: 0.5, speed: 0, armor: 0 }];
+  tick(state, 250, path.tiles);
+  const e = state.enemies[0];
+
+  // Interpolation: the enemy is on the mid-segment road cell, NOT snapped back to corner `a`.
+  assert.deepEqual({ x: e.x, y: e.y }, mid, 'enemy interpolated to the mid-segment road cell');
+  assert.ok(!(e.x === a.x && e.y === a.y), 'enemy is NOT snapped onto the corner waypoint');
+
+  // Firing: the adjacent tower (range 3, dist 1) shot the mid-segment enemy — the day-one bug is gone.
+  assert.ok(placed.tower.lastFiredMs >= 0, 'tower fired (lastFiredMs advanced from -Infinity)');
+  assert.ok(e.hp < e.maxHp, 'the mid-segment enemy took tower damage');
+}
+
 console.log('stage4 targeting tests passed');

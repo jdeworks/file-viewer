@@ -1187,11 +1187,16 @@ function applyFields(state, dt) {
 function statusPass(state, dt) {
   for (const e of state.enemies) tickStatus(state, e, dt);
 }
+var CELL_SPEED = 8;
 function moveEnemies(state, dt, pathTiles, exitIndex) {
   const survivors = [];
   for (const e of state.enemies) {
     const eff = e.speed * statusSpeedFactor(e);
-    e.pathIndex += eff * (dt / 1e3);
+    const seg = Math.min(exitIndex - 1, Math.max(0, Math.floor(e.pathIndex)));
+    const a = pathTiles[seg];
+    const b = pathTiles[seg + 1];
+    const segLen = a && b ? Math.abs(b.x - a.x) + Math.abs(b.y - a.y) || 1 : 1;
+    e.pathIndex += eff * CELL_SPEED * (dt / 1e3) / segLen;
     if (e.pathIndex >= exitIndex) {
       const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
@@ -1307,11 +1312,15 @@ function scaleEnemyHp(e, scale) {
   }
 }
 function placeOnPath(enemy, pathTiles) {
-  const tile = pathTiles[Math.min(pathTiles.length - 1, Math.max(0, Math.floor(enemy.pathIndex)))];
-  if (tile) {
-    enemy.x = tile.x;
-    enemy.y = tile.y;
-  }
+  const maxI = pathTiles.length - 1;
+  const idx = Math.max(0, Math.min(maxI, enemy.pathIndex || 0));
+  const i = Math.min(maxI - 1, Math.floor(idx));
+  const a = pathTiles[i];
+  const b = pathTiles[i + 1] || a;
+  if (!a) return;
+  const frac = idx - i;
+  enemy.x = Math.round(a.x + (b.x - a.x) * frac);
+  enemy.y = Math.round(a.y + (b.y - a.y) * frac);
 }
 function dist2(a, b) {
   return Math.hypot((a.x || 0) - (b.x || 0), (a.y || 0) - (b.y || 0));

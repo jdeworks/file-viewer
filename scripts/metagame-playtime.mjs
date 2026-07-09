@@ -32,10 +32,12 @@ const note = [];
     const comp = waveComposition(w, "x");
     const n = comp.enemies.reduce((s, e) => s + e.count, 0);
     totalEnemies += n;
-    const exitIndex = Math.max(1, buildPath("x", waveGroupDepth(w)).tiles.length - 1);
+    const tiles = buildPath("x", waveGroupDepth(w)).tiles;
+    let pathCells = 0; for (let i = 0; i < tiles.length - 1; i++) pathCells += Math.abs(tiles[i + 1].x - tiles[i].x) + Math.abs(tiles[i + 1].y - tiles[i].y);
+    const CELL_SPEED = 8; // must match engine.js moveEnemies (cell-normalized enemy pace)
     const slowest = Math.min(...comp.enemies.map((e) => ENEMY_TYPES[e.type]?.speed || 1));
     floorMs += Math.max(0, n - 1) * SPAWN_INTERVAL_MS + WAVE_GAP_MS;
-    tailMs += (exitIndex / slowest) * 1000; // residual traversal of the last enemy if never killed
+    tailMs += (pathCells / (slowest * CELL_SPEED)) * 1000; // residual cell-traversal of the last enemy if never killed
   }
   rows.push({ stage: "4 Fractal Bastion", body: "30 waves", forced: fmt(floorMs / 1000), interactions: "tower placements (open)", reading: "—",
     realistic: `${fmt(floorMs / 1000)} – ${fmt((floorMs + tailMs) / 1000)}`, kind: "engine-timed" });

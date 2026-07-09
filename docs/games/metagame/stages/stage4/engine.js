@@ -150,11 +150,23 @@ function statusPass(state, dt) {
   for (const e of state.enemies) tickStatus(state, e, dt);
 }
 
+// Enemy pace is CELL-normalized, not waypoint-normalized. pathIndex counts waypoints, but a waypoint
+// hop is 1 cell on a depth-3 path and up to 35 cells on a depth-1 path — so advancing pathIndex by a
+// flat speed*dt made depth-1 enemies cross in ~5s while depth-3 took ~2min. We instead advance pathIndex
+// so the enemy covers `speed * CELL_SPEED` CELLS per second regardless of depth (divide by the current
+// segment's cell length). `speed` (enemies.js) is now a relative cells/sec multiplier; CELL_SPEED sets
+// the absolute pace. This keeps every map's crossing time in a consistent, playable band (≈13/20/33s at
+// speed 1 for depth 1/2/3) so towers get a real firing window on every map.
+const CELL_SPEED = 8; // cells/sec at enemy speed 1.0
+
 function moveEnemies(state, dt, pathTiles, exitIndex) {
   const survivors = [];
   for (const e of state.enemies) {
     const eff = e.speed * statusSpeedFactor(e);
-    e.pathIndex += eff * (dt / 1000);
+    const seg = Math.min(exitIndex - 1, Math.max(0, Math.floor(e.pathIndex)));
+    const a = pathTiles[seg]; const b = pathTiles[seg + 1];
+    const segLen = (a && b) ? (Math.abs(b.x - a.x) + Math.abs(b.y - a.y)) || 1 : 1;
+    e.pathIndex += (eff * CELL_SPEED * (dt / 1000)) / segLen;
     if (e.pathIndex >= exitIndex) {
       const def = enemyDef(e);
       state.integrity = Math.max(0, (state.integrity || 0) - (def.integrityDrain || 0));
@@ -293,9 +305,23 @@ function scaleEnemyHp(e, scale) {
   if (e.shield) { e.shield = Math.round(e.shield * scale); e.shieldMax = Math.round(e.shieldMax * scale); }
 }
 
+// Position an enemy along the ROAD, not just on the sparse corner waypoints. buildPath returns only
+// the L-system corner waypoints (6 cells, 12–35 apart on a depth-1 map); pathIndex's fractional part
+// places the enemy BETWEEN pathTiles[i] and pathTiles[i+1] so it walks the drawn road continuously.
+// Rounded to the integer grid (the board renders on grid[y][x] and towers carry integer coords; segments
+// are axis-aligned so a rounded interpolated cell lands exactly on a road cell). Without this, an enemy
+// snaps to a handful of far-apart corners → it appears invisible (teleporting) AND every tower's
+// dist(tower,e) <= range check is false, so nothing ever fires.
 function placeOnPath(enemy, pathTiles) {
-  const tile = pathTiles[Math.min(pathTiles.length - 1, Math.max(0, Math.floor(enemy.pathIndex)))];
-  if (tile) { enemy.x = tile.x; enemy.y = tile.y; }
+  const maxI = pathTiles.length - 1;
+  const idx = Math.max(0, Math.min(maxI, enemy.pathIndex || 0));
+  const i = Math.min(maxI - 1, Math.floor(idx)); // segment start; clamp so i+1 is valid
+  const a = pathTiles[i];
+  const b = pathTiles[i + 1] || a;
+  if (!a) return;
+  const frac = idx - i;
+  enemy.x = Math.round(a.x + (b.x - a.x) * frac);
+  enemy.y = Math.round(a.y + (b.y - a.y) * frac);
 }
 
 function dist(a, b) {
