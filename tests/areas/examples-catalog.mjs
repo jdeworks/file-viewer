@@ -261,6 +261,23 @@ export async function run(ctx) {
   if (asciiLoaded > 20) pass('ASCII Studio tool loads linked sample image from same-origin query');
   else fail('ASCII Studio linked sample did not render ASCII output');
 
+  // A JPEG ?sample= must render the real image, NOT silently fall back to the
+  // generated placeholder. Prove it by comparing against a forced-fallback render
+  // (an unknown sample name → placeholder): a real image yields different ASCII.
+  const asciiFor = async (sampleName) => {
+    await page.goto(origin + '/tools/ascii-studio/index.html?sample=' + sampleName, { waitUntil: 'load' });
+    await page.waitForSelector('.asx-root .asx-out', { timeout: 10000 });
+    await page.waitForFunction(() => (document.querySelector('.asx-out')?.textContent || '').trim().length > 20, null, { timeout: 10000 });
+    return page.$eval('.asx-out', (el) => (el.textContent || '').trim());
+  };
+  const jpegAscii = await asciiFor('sample.jpeg');
+  const placeholderAscii = await asciiFor('__no_such_sample__.jpg');
+  if (jpegAscii.length > 20 && jpegAscii !== placeholderAscii) {
+    pass('ASCII Studio renders a JPEG ?sample= (not the placeholder)');
+  } else {
+    fail('ASCII Studio JPEG ?sample= fell back to the placeholder: ' + JSON.stringify({ jpegLen: jpegAscii.length, sameAsPlaceholder: jpegAscii === placeholderAscii }));
+  }
+
   // Single canonical webcam entry: no page-level "Webcam" tab; the ONLY camera
   // door is the studio's own 📷 Camera toolbar button (matches the in-viewer studio).
   const camEntry = await page.evaluate(() => ({
