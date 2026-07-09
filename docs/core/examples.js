@@ -133,14 +133,19 @@ function renderFilterBar(container) {
   }
   tools.appendChild(kindRow);
 
-  return tools;
-}
+  // One standalone entry to the ASCII Studio for the whole gallery — the studio
+  // opens with its own sample and accepts uploads/drag-drop, so it is not tied
+  // to any single catalog file (no per-sample tool links).
+  const asciiLink = document.createElement('a');
+  asciiLink.className = 'ex-ascii-studio';
+  asciiLink.href = 'tools/ascii-studio/index.html';
+  asciiLink.target = '_blank';
+  asciiLink.rel = 'noopener noreferrer';
+  asciiLink.textContent = '🎨 Open ASCII Studio';
+  asciiLink.title = 'Open the standalone ASCII art studio (image + webcam → ASCII).';
+  tools.appendChild(asciiLink);
 
-function appendExternalExamplesLink(host) {
-  const note = document.createElement('p');
-  note.className = 'ex-more';
-  note.innerHTML = 'Want to try more? <a href="https://www.fileexamples.com/" target="_blank" rel="noopener noreferrer">File Examples</a> has many more sample files. Most common formats should open here; executable or VM-oriented files are inspected, not run.';
-  host.appendChild(note);
+  return tools;
 }
 
 function matchesFilters(el, filters) {
@@ -391,7 +396,6 @@ function renderGallery(host, list, onPick) {
     host.appendChild(renderFilterBar(host));
     host.appendChild(row);
     applyFilter(host);
-    appendExternalExamplesLink(host);
   }
 
   function showAll() {
@@ -420,7 +424,6 @@ function renderGallery(host, list, onPick) {
     }
 
     applyFilter(host);
-    appendExternalExamplesLink(host);
   }
 
   function readSuperOpen(superCat) {
@@ -512,8 +515,6 @@ function renderGallery(host, list, onPick) {
     showall.textContent = 'Show all files';
     showall.onclick = () => showAll();
     host.appendChild(showall);
-
-    appendExternalExamplesLink(host);
   }
 
   // Resume last session's category if set and still valid

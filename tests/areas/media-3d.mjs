@@ -264,6 +264,31 @@ export async function run(ctx) {
   await page.keyboard.down('Control'); await page.keyboard.press('='); await page.keyboard.up('Control');
   const wPostKey = await page.$eval('#previewHost .imgv-img', (e) => parseFloat(e.style.width) || 0);
   if (wPostKey > wPreKey) pass('Ctrl+= zooms in (keyboard)'); else fail('ctrl-zoom key: ' + wPreKey + ' -> ' + wPostKey);
+  // Wheel over a control layered on the stage (OCR result panel / text tool) must scroll
+  // THAT control, not zoom the image. Inject a textarea into the stage: a wheel over it
+  // leaves the zoom untouched, while a wheel over the bare stage still zooms.
+  const wheelGuard = await page.evaluate(() => {
+    const stage = document.querySelector('#previewHost .imgv-stage');
+    const zoomEl = document.querySelector('#previewHost .imgv-zoom');
+    const ta = document.createElement('textarea');
+    ta.style.cssText = 'position:absolute;top:8px;right:8px;width:120px;height:60px;';
+    stage.appendChild(ta);
+    const fire = (el, x, y) => el.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+    const rt = ta.getBoundingClientRect();
+    const rs = stage.getBoundingClientRect();
+    const before = zoomEl.textContent;
+    fire(ta, rt.left + rt.width / 2, rt.top + rt.height / 2);
+    const afterTextarea = zoomEl.textContent;
+    fire(stage, rs.left + rs.width / 2, rs.top + rs.height / 2);
+    const afterStage = zoomEl.textContent;
+    ta.remove();
+    return { before, afterTextarea, afterStage };
+  });
+  if (wheelGuard.afterTextarea === wheelGuard.before && wheelGuard.afterStage !== wheelGuard.before) {
+    pass('wheel over a stage-layered textarea does not zoom the image (' + wheelGuard.before + '→' + wheelGuard.afterStage + ' only on stage)');
+  } else {
+    fail('stage wheel guard: ' + JSON.stringify(wheelGuard));
+  }
   // Touch (phone): a single pointer drag pans the canvas (translate3d) and two touch pointers
   // pinch-zoom — so a zoomed image is navigable without a mouse/wheel. Driven by synthetic
   // PointerEvents on the stage (pointerType:'touch'); reset the view afterwards.

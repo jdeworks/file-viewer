@@ -218,52 +218,40 @@ export async function run(ctx) {
   if (sourcedBadgeOk.ok) pass('sourced badge visible on sample.png in examples gallery');
   else fail('sourced badge missing: ' + sourcedBadgeOk.reason);
 
-  const toolMetadataOk = await page.evaluate(async () => {
+  // ASCII Studio is NOT attached to individual samples — no catalog entry should
+  // carry a per-sample tools link. It is reached only via the one global button.
+  const noPerSampleTool = await page.evaluate(async () => {
     const res = await fetch('examples/index.json');
     const examples = res.ok ? await res.json() : [];
-    const linked = examples.filter((ex) => Array.isArray(ex.tools) && ex.tools.some((tool) => tool.href?.startsWith('tools/ascii-studio/index.html?sample=')));
-    const png = examples.find((ex) => ex.file === 'sample.png');
-    const pngTool = png?.tools?.find((tool) => tool.label === 'ASCII Studio');
-    return {
-      count: linked.length,
-      pngHref: pngTool?.href || '',
-      pngDescription: pngTool?.description || '',
-      allSameOriginRelative: linked.every((ex) => ex.tools.every((tool) => /^tools\/ascii-studio\/index\.html\?sample=[A-Za-z0-9._/-]+$/.test(tool.href || ''))),
-    };
+    const linked = examples.filter((ex) => Array.isArray(ex.tools) && ex.tools.some((tool) => (tool.href || '').includes('tools/ascii-studio/')));
+    return { total: examples.length, linked: linked.length };
   });
-  if (toolMetadataOk.count >= 5 && toolMetadataOk.pngHref === 'tools/ascii-studio/index.html?sample=sample.png'
-      && toolMetadataOk.pngDescription.includes('same-origin') && toolMetadataOk.allSameOriginRelative) {
-    pass('sample metadata links relevant images to same-origin ASCII Studio tool');
+  if (noPerSampleTool.total > 0 && noPerSampleTool.linked === 0) {
+    pass('no sample is individually linked to the ASCII Studio tool');
   } else {
-    fail('sample tool metadata invalid: ' + JSON.stringify(toolMetadataOk));
+    fail('samples still carry ASCII Studio tool links: ' + JSON.stringify(noPerSampleTool));
   }
 
-  const toolLinkOk = await page.evaluate(async () => {
-    const cards = Array.from(document.querySelectorAll('.ex-folder-card'));
-    const imageCard = cards.find((c) => c.dataset.categories === 'Image');
-    if (imageCard) {
-      imageCard.click();
-      await new Promise((r) => setTimeout(r, 100));
-    }
-    const btns = Array.from(document.querySelectorAll('.ex-file-btn'));
-    const pngBtn = btns.find((b) => (b.dataset.search || '').includes('sample.png'));
-    const entry = pngBtn?.closest('.ex-file-entry');
-    const link = entry?.querySelector('.ex-tool-link');
-    if (!link) return { ok: false, reason: 'ASCII Studio tool link not rendered for sample.png' };
+  // One standalone gallery-level button opens the ASCII Studio (no ?sample=).
+  const asciiBtnOk = await page.evaluate(() => {
+    const link = document.querySelector('.ex-ascii-studio');
+    const perCard = document.querySelectorAll('.ex-tool-link').length;
+    if (!link) return { ok: false, reason: 'global ASCII Studio button not rendered' };
     return {
       ok: true,
-      text: link.textContent,
       href: link.getAttribute('href'),
       absolute: link.href,
       target: link.target,
       rel: link.rel,
+      perCard,
     };
   });
-  if (toolLinkOk.ok && toolLinkOk.text === 'ASCII Studio' && toolLinkOk.href === 'tools/ascii-studio/index.html?sample=sample.png'
-      && toolLinkOk.absolute.startsWith(origin + '/tools/ascii-studio/') && toolLinkOk.target === '_blank' && toolLinkOk.rel.includes('noopener')) {
-    pass('examples gallery renders same-origin ASCII Studio link on image samples');
+  if (asciiBtnOk.ok && asciiBtnOk.href === 'tools/ascii-studio/index.html'
+      && asciiBtnOk.absolute.startsWith(origin + '/tools/ascii-studio/') && !asciiBtnOk.absolute.includes('?sample=')
+      && asciiBtnOk.target === '_blank' && asciiBtnOk.rel.includes('noopener') && asciiBtnOk.perCard === 0) {
+    pass('gallery exposes one standalone ASCII Studio button (no per-sample links)');
   } else {
-    fail('examples gallery tool link invalid: ' + JSON.stringify(toolLinkOk));
+    fail('gallery ASCII Studio button invalid: ' + JSON.stringify(asciiBtnOk));
   }
 
   await page.goto(origin + '/tools/ascii-studio/index.html?sample=sample.png', { waitUntil: 'load' });
@@ -272,6 +260,32 @@ export async function run(ctx) {
   const asciiLoaded = await page.$eval('.asx-out', (el) => (el.textContent || '').trim().length);
   if (asciiLoaded > 20) pass('ASCII Studio tool loads linked sample image from same-origin query');
   else fail('ASCII Studio linked sample did not render ASCII output');
+
+  // A JPEG ?sample= must render the real image, NOT silently fall back to the
+  // generated placeholder. Prove it by comparing against a forced-fallback render
+  // (an unknown sample name → placeholder): a real image yields different ASCII.
+  const asciiFor = async (sampleName) => {
+    await page.goto(origin + '/tools/ascii-studio/index.html?sample=' + sampleName, { waitUntil: 'load' });
+    await page.waitForSelector('.asx-root .asx-out', { timeout: 10000 });
+    await page.waitForFunction(() => (document.querySelector('.asx-out')?.textContent || '').trim().length > 20, null, { timeout: 10000 });
+    return page.$eval('.asx-out', (el) => (el.textContent || '').trim());
+  };
+  const jpegAscii = await asciiFor('sample.jpeg');
+  const placeholderAscii = await asciiFor('__no_such_sample__.jpg');
+  if (jpegAscii.length > 20 && jpegAscii !== placeholderAscii) {
+    pass('ASCII Studio renders a JPEG ?sample= (not the placeholder)');
+  } else {
+    fail('ASCII Studio JPEG ?sample= fell back to the placeholder: ' + JSON.stringify({ jpegLen: jpegAscii.length, sameAsPlaceholder: jpegAscii === placeholderAscii }));
+  }
+
+  // Single canonical webcam entry: no page-level "Webcam" tab; the ONLY camera
+  // door is the studio's own 📷 Camera toolbar button (matches the in-viewer studio).
+  const camEntry = await page.evaluate(() => ({
+    pageTab: !!document.getElementById('tab-webcam'),
+    studioCamBtn: !!document.querySelector('button.asx-cam'),
+  }));
+  if (!camEntry.pageTab && camEntry.studioCamBtn) pass('ASCII Studio tool has a single webcam entry (studio 📷 button, no page tab)');
+  else fail('ASCII Studio webcam entry not canonical: ' + JSON.stringify(camEntry));
 
   await page.evaluate(() => { try { sessionStorage.clear(); } catch {} });
   await page.goto(origin, { waitUntil: 'load' });

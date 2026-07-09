@@ -34,6 +34,14 @@ const CSS = `
 .kf-symbol-signature{font-family:ui-monospace,monospace;word-break:break-word}
 .kf-symbol-docs{margin-top:2px;color:var(--fg-2,#5a6678)}
 .kf-symbol-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+/* Dark mode: these render in the MAIN document (ensureKnownUiStyle injects into the host's doc),
+   so the dark signal is [data-theme="dark"] (set on <html>), not the iframe's body.fv-dark. */
+[data-theme="dark"] .kf-src-line:target,[data-theme="dark"] .kf-src-line.kf-source-hit{background:#3a3410}
+[data-theme="dark"] .kf-chip{background:#26305a;color:#c7d2fe}
+[data-theme="dark"] .kf-chip-info{background:#0e2a3a;color:#7dd3fc}
+[data-theme="dark"] .kf-chip-ok{background:#0f2e1c;color:#86efac}
+[data-theme="dark"] .kf-chip-warn{background:#2f2711;color:#fcd34d}
+[data-theme="dark"] .kf-chip-danger{background:#38151a;color:#fca5a5}
 `;
 
 export function ensureKnownUiStyle(root = document) {

@@ -2122,7 +2122,7 @@ function initLayout(deps) {
   renderPreview = deps.renderPreview;
   openSettings = deps.openSettings;
 }
-var OVERFLOW_IDS = ["typeSelect", "rawMode", "tableModeBtn", "formatBtn", "saveBtn", "downloadBtn", "screenshotBtn", "exportBtn", "metaBtn", "settingsBtn"];
+var OVERFLOW_IDS = ["typeSelect", "rawMode", "compareBtn", "tableModeBtn", "formatBtn", "saveBtn", "downloadBtn", "screenshotBtn", "exportBtn", "metaBtn", "settingsBtn"];
 var overflowAnchors = null;
 function layoutTopbar() {
   if (!overflowAnchors) {
@@ -9261,9 +9261,11 @@ async function activateType(type, knownOverride = null) {
   $12("previewOnlyBadge").hidden = canRaw !== false;
   const canPreview = type.capabilities.preview || !!state19.known && !state19.forceBase;
   const canDiff = type.capabilities.diff && canRaw && !state19.intake.isBinary;
+  const canCompare = canRaw && !state19.intake.isBinary;
   const both = canRaw && canPreview;
   $12("viewMode").hidden = !both || isMobile4();
   $12("rawMode").hidden = !canDiff;
+  $12("compareBtn").hidden = !canCompare;
   $12("downloadBtn").hidden = !canDiff;
   $12("formatBtn").hidden = !(canRaw && ["json", "code"].includes(type.id));
   syncSaveBtn();

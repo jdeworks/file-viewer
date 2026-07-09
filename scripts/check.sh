@@ -143,6 +143,14 @@ run_phase_detect_lite() {
 run_phase "regenerating lightweight detector metadata (must be committed fresh)…" \
   run_phase_detect_lite
 
+run_phase_darkmode() {
+  node scripts/gen-darkmode-overrides.mjs >/dev/null
+  stale "preview.css / preview-chrome.css dark-mode overrides changed" docs/assets/preview.css docs/assets/preview-chrome.css
+}
+
+run_phase "regenerating dark-mode overrides (must be committed fresh)…" \
+  run_phase_darkmode
+
 run_phase_asset_manifest() {
   node scripts/gen-asset-manifest.mjs >/dev/null
   if ! git diff --quiet -- docs/asset-manifest.json; then

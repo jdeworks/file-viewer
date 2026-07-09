@@ -113,6 +113,11 @@ export function createView(ctx) {
     apply();
   }
   stageEl.addEventListener('wheel', (e) => {
+    // Scrollable UI layered over the stage (OCR result panel, the text tool's
+    // textarea, any form control) must consume its own wheel — otherwise the
+    // event bubbles here, we preventDefault its native scroll, and the image
+    // zooms instead of the panel scrolling. Let those targets handle it.
+    if (e.target?.closest?.('.imgv-ocr-panel, textarea, input, select')) return;
     e.preventDefault();
     zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY);
   }, { passive: false });

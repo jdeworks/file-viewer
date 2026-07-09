@@ -678,6 +678,47 @@ body.fv-dragging .intake::after {
 .sbs-host.sbs-split .sbs-source { border-right: 1px solid var(--border); }
 .sbs-host.sbs-split .sbs-preview iframe { position: absolute; inset: 0; }
 @media (max-width: 760px) { .sbs-body { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } .sbs-pane { border-right: 0; border-bottom: 1px solid var(--border); } }
+/* Missing-aware Merge mode (env/ini): grouped key comparison + transfer-to-combined controls. */
+.sbs-merge { flex: 1; min-height: 0; overflow: auto; background: var(--bg); }
+.kv-merge-root { max-width: 1100px; margin: 0 auto; padding: 14px 18px 40px; font: 13px/1.5 system-ui, sans-serif; color: var(--fg); }
+.kv-merge-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.kv-merge-head-l { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.kv-merge-title { font-weight: 600; font-size: 15px; }
+.kv-legend { display: flex; gap: 6px; flex-wrap: wrap; }
+.kv-merge-actions { display: flex; gap: 8px; }
+.kv-merge-summary { margin: 8px 0 14px; color: var(--fg-2); font-size: 12px; }
+.kv-btn { background: var(--bg); border: 1px solid var(--border); color: var(--fg); border-radius: 6px; padding: 4px 12px; font-size: 12px; cursor: pointer; line-height: 1.4; }
+.kv-btn:hover:not(:disabled) { border-color: var(--accent); }
+.kv-btn:disabled { opacity: .45; cursor: not-allowed; }
+.kv-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.kv-btn-sm { padding: 2px 8px; font-size: 11px; }
+.kv-btn-on { background: rgba(31,157,85,.15); border-color: #1f9d55; color: #1f9d55; }
+.kv-group { margin: 0 0 14px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.kv-group-head { display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--bg-2); border-bottom: 1px solid var(--border); }
+.kv-group-name { font-weight: 600; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.kv-rows { display: flex; flex-direction: column; }
+.kv-row { display: grid; grid-template-columns: minmax(140px, 1.2fr) 1fr 1fr auto auto; gap: 10px; align-items: center; padding: 5px 12px; border-bottom: 1px solid var(--border); }
+.kv-row:last-child { border-bottom: 0; }
+.kv-row-only-right { background: rgba(31,157,85,.06); }
+.kv-row-conflict { background: rgba(199,119,0,.07); }
+.kv-key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; }
+.kv-dup { color: var(--danger); font-size: 11px; }
+.kv-val { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; word-break: break-all; color: var(--fg); }
+.kv-val.masked { color: var(--fg-2); font-style: italic; }
+.kv-val.kv-absent { color: var(--fg-2); opacity: .5; }
+.kv-val.kv-empty { color: var(--fg-2); font-style: italic; }
+.kv-pill { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; border: 1px solid transparent; }
+.kv-pill.kv-eq { color: var(--fg-2); border-color: var(--border); }
+.kv-pill.kv-right { color: #1f9d55; background: rgba(31,157,85,.13); }
+.kv-pill.kv-conflict { color: #c77700; background: rgba(199,119,0,.14); }
+.kv-pill.kv-left { color: #7a68d8; background: rgba(122,104,216,.14); }
+.kv-ctl { display: flex; justify-content: flex-end; }
+.kv-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.kv-seg-btn { background: var(--bg); border: 0; border-right: 1px solid var(--border); color: var(--fg-2); padding: 2px 8px; font-size: 11px; cursor: pointer; }
+.kv-seg-btn:last-child { border-right: 0; }
+.kv-seg-btn.active { background: var(--accent); color: var(--accent-fg); }
+.kv-kept { color: var(--fg-2); font-size: 11px; }
+@media (max-width: 700px) { .kv-row { grid-template-columns: 1fr 1fr; } }
 /* Cache-download modal: pick offline bundles with sizes. */
 .cache-modal-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.5);
   display: flex; align-items: center; justify-content: center; padding: 16px; }

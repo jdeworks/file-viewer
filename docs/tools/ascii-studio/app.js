@@ -1,17 +1,32 @@
 // Standalone ASCII Studio harness. Reuses the exact same self-contained modules
-// the file viewer uses (../../types/image/ascii/*) — image conversion via the
-// studio, live conversion via the webcam consumer. No build step: open
-// index.html directly.
+// the file viewer uses (../../types/image/ascii/*). Image is the single view;
+// the webcam is reached only through the studio's own 📷 Camera toolbar button
+// (which lazy-loads webcam.js), exactly like the in-viewer studio. No build
+// step: open index.html directly.
 
 import { mountAsciiStudio } from '../../types/image/ascii/studio.js';
 
 const $ = (id) => document.getElementById(id);
 let studio = null;
-let webcamMounted = false;
 
 function ensureStudio() {
   if (!studio) studio = mountAsciiStudio($('studio'), { filename: 'image' });
   return studio;
+}
+
+// Some hosts/CDNs serve images with a generic content-type (application/octet-stream),
+// which would make a strict `image/*` check reject a perfectly valid file. The studio
+// decodes bytes via createImageBitmap/Image (which sniff content, not the declared
+// MIME), so recover an image MIME from the extension when the server's type is missing.
+const IMAGE_EXT_MIME = {
+  jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
+  webp: 'image/webp', bmp: 'image/bmp', avif: 'image/avif', svg: 'image/svg+xml',
+  tif: 'image/tiff', tiff: 'image/tiff', ico: 'image/x-icon',
+};
+function imageMimeFor(name, declared) {
+  if (declared && declared.startsWith('image/')) return declared;
+  const ext = (String(name).split('.').pop() || '').toLowerCase();
+  return IMAGE_EXT_MIME[ext] || '';
 }
 
 async function loadFile(file) {
@@ -26,8 +41,9 @@ async function loadExampleSample(name) {
   const res = await fetch('../../examples/' + clean).catch(() => null);
   if (!res?.ok) return false;
   const blob = await res.blob();
-  if (!blob.type.startsWith('image/')) return false;
-  await loadFile(new File([blob], clean.split('/').pop() || 'sample', { type: blob.type }));
+  const mime = imageMimeFor(clean, blob.type);
+  if (!mime) return false; // fetched OK but not a recognizable image
+  await loadFile(new File([blob], clean.split('/').pop() || 'sample', { type: mime }));
   return true;
 }
 
@@ -45,21 +61,6 @@ function loadSample() {
   ensureStudio().setImage({ source: c });
 }
 
-// Tabs
-function show(view) {
-  const isImg = view === 'image';
-  $('image-view').hidden = !isImg;
-  $('webcam-view').hidden = isImg;
-  $('tab-image').classList.toggle('active', isImg);
-  $('tab-webcam').classList.toggle('active', !isImg);
-  if (!isImg && !webcamMounted) {
-    webcamMounted = true;
-    import('../../types/image/ascii/webcam.js').then(({ mountAsciiWebcam }) => mountAsciiWebcam($('webcam'), {}));
-  }
-}
-$('tab-image').addEventListener('click', () => show('image'));
-$('tab-webcam').addEventListener('click', () => show('webcam'));
-
 // File input + drag/drop
 $('pick').addEventListener('click', () => $('file').click());
 $('sample').addEventListener('click', loadSample);
@@ -70,5 +71,8 @@ const drop = $('drop');
 drop.addEventListener('drop', (e) => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
 
 const initialSample = new URLSearchParams(location.search).get('sample');
-if (initialSample) loadExampleSample(initialSample).then((ok) => { if (!ok) loadSample(); });
-else loadSample();
+if (initialSample) {
+  loadExampleSample(initialSample).then((ok) => {
+    if (!ok) { console.warn('ASCII Studio: sample "' + initialSample + '" could not be loaded; showing the generated placeholder.'); loadSample(); }
+  });
+} else loadSample();
