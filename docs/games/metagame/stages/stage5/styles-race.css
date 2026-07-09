@@ -28,6 +28,24 @@
   overflow: auto;
 }
 
+/* Per-glyph colour (renderTrackGrid html mode). The road used to be one flat white, so hazards read
+   only by fill density (░ ▒ ▓) — the commonest hazard (░) the least visible. Now DANGER is the red
+   family (bright, bold for the −5 ▓) and REWARDS are cool/warm accents, so threat vs. pickup reads at a
+   glance. `.s5g` spans are inline; only colour/weight change (no layout) so monospace alignment holds. */
+.s5-track-grid .s5g-static  { color: #ff8a5b; }                 /* ░ static  (−2), the common hazard — lifted well off the road */
+.s5-track-grid .s5g-pulse   { color: #ff5d7e; }                 /* ▒ pulse   (−2, off-beat) — distinct pink-red */
+.s5-track-grid .s5g-block   { color: #ff2f2f; font-weight: 700; text-shadow: 0 0 6px rgba(255, 47, 47, 0.55); } /* ▓ dense (−5) — hottest, boldest */
+.s5-track-grid .s5g-gate    { color: #57e0ff; font-weight: 700; } /* » boost gate — reward */
+.s5-track-grid .s5g-repair  { color: #5fe08a; font-weight: 700; } /* + repair — heal green */
+.s5-track-grid .s5g-cache   { color: #ffd24d; font-weight: 700; } /* $ packets — gold */
+.s5-track-grid .s5g-buff    { color: #b98cff; font-weight: 700; } /* U/O/E powerups — purple */
+.s5-track-grid .s5g-player  { color: #ffffff; font-weight: 700; text-shadow: 0 0 8px rgba(120, 220, 255, 0.9); } /* ▲ you — pops */
+.s5-track-grid .s5g-rival   { color: #ffb02e; }                 /* o rival car — amber threat */
+.s5-track-grid .s5g-ghost   { color: #7b7ba6; }                 /* p/g time-trial ghosts — faint */
+.s5-track-grid .s5g-shield  { color: var(--s5-counter); }        /* ~ shield/counter-phase lane */
+.s5-track-grid .s5g-beat    { color: #ffe066; }                 /* * beat-open marker */
+.s5-track-grid .s5g-empty   { color: #3c3c5c; }                 /* · road dots — recede */
+
 /* Beat-pulse: the genre's sensory promise — the beat is FELT, not just read as '*'. Toggled by the
    renderer from view.beatOpen (game-state-driven); the animation is pure presentation. */
 .s5-track-grid.s5-beat-open { animation: s5-beat-pulse 0.5s ease-in-out infinite alternate; }

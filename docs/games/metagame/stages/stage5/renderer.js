@@ -203,10 +203,11 @@ export function renderStage5(ctx) {
 
   function paintArena(view) {
     checkpointRace(view);
-    fields.arena.textContent = renderTrackGrid({
+    fields.arena.innerHTML = renderTrackGrid({
       table: view.table, tick: view.tick, lane: view.lane, lookAhead: view.lookAhead,
       wrap: view.archetype === 'circuit', rivals: view.rivals || [], channel: view.channel || 'lo',
       laneWidth: RACE_LANE_WIDTH, speed: speedParam(view.round?.tickMs), reducedMotion: reducedMotion(),
+      html: true, // colour each glyph by kind (hazard/pickup/rival/player) for legibility
     });
     fields.arena.classList.toggle('s5-beat-open', Boolean(view.beatOpen));
     fields.arena.classList.toggle('s5-suppressed', Boolean(view.suppressionActive)); // boss edge-static (#4)

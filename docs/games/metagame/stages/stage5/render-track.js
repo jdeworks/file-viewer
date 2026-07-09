@@ -18,18 +18,33 @@ const DISP = {
 };
 const PLAYER = '▲';
 
+// Display char → semantic KIND, so the HTML renderer can COLOUR each glyph (styles-race.css). The
+// arena used to be one `textContent` string in a single colour, so every hazard, pickup, rival and
+// ghost read as the same white and the three block-shade hazards (░ ▒ ▓) differed only by fill density
+// — the least-visible glyph (░) being the most common. Kinds group them by meaning: red-family hazards
+// vs. green/pink pickups vs. a bright player, so danger reads at a glance.
+const KIND = {
+  '·': 'empty', ' ': 'empty', '░': 'static', '▒': 'pulse', '▓': 'block', '»': 'gate',
+  U: 'buff', O: 'buff', E: 'buff', '+': 'repair', $: 'cache',
+  p: 'ghost', g: 'ghost', '▲': 'player', '~': 'shield', '*': 'beat',
+};
+function kindOf(ch) { return KIND[ch] || 'rival'; } // rival cars (o / custom glyph) fall through to rival
+function esc(ch) { return ch === '&' ? '&amp;' : ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : ch; }
+function markup(ch, html) { return (html && ch !== ' ') ? `<span class="s5g s5g-${kindOf(ch)}">${esc(ch)}</span>` : ch; }
+
 function disp(glyph) { return DISP[glyph] || DISP.empty; }
 
-// Center a single char in a laneWidth-wide cell (e.g. width 5 → "  ▲  ").
-function padCell(ch, width) {
+// Center a single char in a laneWidth-wide cell (e.g. width 5 → "  ▲  "). In html mode the char is
+// wrapped in a kind-classed span; padding stays literal so monospace alignment is byte-identical.
+function padCell(ch, width, html = false) {
   const total = Math.max(0, width - 1);
   const left = Math.floor(total / 2);
-  return ' '.repeat(left) + ch + ' '.repeat(total - left);
+  return ' '.repeat(left) + markup(ch, html) + ' '.repeat(total - left);
 }
 
 export function renderTrackGrid({
   table, tick, lane, lookAhead = 8, wrap = false, rivals = [], channel = 'lo',
-  laneWidth = 3, speed = 0, reducedMotion = false,
+  laneWidth = 3, speed = 0, reducedMotion = false, html = false,
 }) {
   const rows = [];
   const raw = (t) => {
@@ -57,8 +72,8 @@ export function renderTrackGrid({
   const gutterAt = (screenRow) => (reducedMotion ? ' ' : (((tick * 2 + screenRow) % 4 === 0) ? '≡' : ' '));
 
   // Counter-phase header: '~' marks the current shield lane; '*' marks a beat-open tick.
-  const header = [0, 1, 2].map((l) => padCell(l === here.counterPhaseLane ? '~' : ' ', laneWidth)).join(' ');
-  rows.push(` ${header}  ${here.beatOpen ? '*' : ' '}`);
+  const header = [0, 1, 2].map((l) => padCell(l === here.counterPhaseLane ? '~' : ' ', laneWidth, html)).join(' ');
+  rows.push(` ${header}  ${here.beatOpen ? markup('*', html) : ' '}`);
 
   // Obstacle rows: farthest (tick+lookAhead-1) at top, nearest (tick) at the bottom.
   for (let ahead = lookAhead - 1; ahead >= 0; ahead -= 1) {
@@ -67,14 +82,14 @@ export function renderTrackGrid({
     const row = at(tick + ahead);
     const cells = [0, 1, 2].map((l) => {
       const rival = rivalAt.get(`${ahead},${l}`);
-      return padCell(rival ? rival : disp(row ? row.lanes[l] : null), laneWidth);
+      return padCell(rival ? rival : disp(row ? row.lanes[l] : null), laneWidth, html);
     });
     const g = gutterAt(screenRow);
     rows.push(`${g}${cells.join(sepAt(w))}${g}`);
   }
 
   // Player row — solid separators, the car centered in its lane.
-  const playerCells = [0, 1, 2].map((l) => padCell(l === lane ? PLAYER : '·', laneWidth));
+  const playerCells = [0, 1, 2].map((l) => padCell(l === lane ? PLAYER : '·', laneWidth, html));
   rows.push(` ${playerCells.join('|')} `);
   return rows.join('\n');
 }

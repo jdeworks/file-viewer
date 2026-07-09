@@ -13,18 +13,25 @@ const LANES = 3;
 const HI_DENSITY = 0.55;
 const LO_DENSITY = 0.30;
 
-function buildLanes(rng, density, glyphs, beatOpen, withGates) {
+// Each sub-channel keeps its own reachable SAFE lane (never blocked, drifts ≤1/tick on beat-open ticks)
+// — the same winnability invariant as the main track (track.js). `safeLane` is threaded per-row so a
+// committed channel is always dodgeable within the one-lane-per-tick limit.
+function buildLanes(rng, density, glyphs, beatOpen, withGates, safeLane) {
   const lanes = [null, null, null];
-  let blocked = 0;
   for (let l = 0; l < LANES; l += 1) {
-    if (rng.chance(density)) { lanes[l] = rng.pick(glyphs); blocked += 1; }
+    if (l === safeLane) continue;                    // the safe lane is never blocked
+    if (rng.chance(density)) lanes[l] = rng.pick(glyphs);
   }
-  if (blocked >= LANES) lanes[rng.int(0, LANES - 1)] = null; // always an escape
   if (withGates && beatOpen && rng.chance(0.5)) {
     const open = [0, 1, 2].filter((l) => lanes[l] === null);
     if (open.length) lanes[rng.pick(open)] = '>>';
   }
   return lanes;
+}
+
+function driftSafe(rng, safeLane, beatOpen) {
+  if (!beatOpen || !rng.chance(0.4)) return safeLane;
+  return Math.max(0, Math.min(LANES - 1, safeLane + rng.pick([-1, 1])));
 }
 
 // applyForks(table, rng, round) — mutate `table` in place, tagging fork-span rows with { fork: true,
@@ -40,13 +47,20 @@ export function applyForks(table, rng, round = {}) {
 
   for (let start = first; start + span < table.length - 8; start += gap) {
     entries.push(start);
+    // Both sub-channels start their safe lane at CENTER; the commit row (i===0) is fully clear so the
+    // player can align to center from whatever main-channel lane they entered on (≤1 move), then track
+    // the wandering safe lane through the span. This keeps HI and LO both winnable, not just "escapable".
+    let safeHi = 1;
+    let safeLo = 1;
     for (let i = 0; i < span; i += 1) {
       const t = start + i;
       const row = table[t];
       if (!row) continue;
       const beatOpen = row.beatOpen !== false;
-      const forkHi = buildLanes(rng, HI_DENSITY, hiGlyphs, beatOpen, true);
-      const forkLo = buildLanes(rng, LO_DENSITY, loGlyphs, beatOpen, false);
+      const entryClear = i === 0;
+      if (!entryClear) { safeHi = driftSafe(rng, safeHi, beatOpen); safeLo = driftSafe(rng, safeLo, beatOpen); }
+      const forkHi = entryClear ? [null, null, null] : buildLanes(rng, HI_DENSITY, hiGlyphs, beatOpen, true, safeHi);
+      const forkLo = entryClear ? [null, null, null] : buildLanes(rng, LO_DENSITY, loGlyphs, beatOpen, false, safeLo);
       row.fork = true;
       row.forkEntry = i === 0;
       row.forkHi = forkHi;

@@ -1,7 +1,7 @@
 // track.test.mjs — Stage 5: obstacle-table generation invariants.
 import assert from 'node:assert/strict';
 import { buildObstacleTable, isBlock, isGate } from '../track.js';
-import { ROUNDS, roundByIdx, isBossRound } from '../rounds.js';
+import { ROUNDS, roundByIdx, isBossRound, GLYPH_DAMAGE } from '../rounds.js';
 
 const R1 = ROUNDS[0];
 

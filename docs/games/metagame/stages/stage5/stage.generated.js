@@ -112,19 +112,19 @@ function buildObstacleTable(seed, roundDef, densityBonus = 0) {
   const density = Math.min(0.7, (DENSITY[roundDef.id] ?? 0.45) + Math.max(0, Number(densityBonus) || 0));
   const burst = Array.isArray(roundDef.burstPattern) ? roundDef.burstPattern : null;
   const shift = Number(roundDef.counterPhaseShift) || 0;
+  let safeLane = rng.int(0, LANES - 1);
   const table = [];
   for (let tick = 0; tick < count; tick += 1) {
     const beatOpen = burst ? burst[tick % burst.length] === 0 : true;
     const counterPhaseLane = shift > 0 ? Math.floor(tick / shift) % LANES : null;
-    const lanes = [null, null, null];
-    let blocked = 0;
-    for (let lane = 0; lane < LANES; lane += 1) {
-      if (rng.chance(density)) {
-        lanes[lane] = rng.pick(obstacleGlyphs);
-        blocked += 1;
-      }
+    if (beatOpen && rng.chance(0.4)) {
+      safeLane = Math.max(0, Math.min(LANES - 1, safeLane + rng.pick([-1, 1])));
     }
-    if (blocked >= LANES) lanes[rng.int(0, LANES - 1)] = null;
+    const lanes = [null, null, null];
+    for (let lane = 0; lane < LANES; lane += 1) {
+      if (lane === safeLane) continue;
+      if (rng.chance(density)) lanes[lane] = rng.pick(obstacleGlyphs);
+    }
     if (roundDef.hasGates && beatOpen && rng.chance(0.4)) {
       const open = [0, 1, 2].filter((lane) => lanes[lane] === null);
       if (open.length) lanes[rng.pick(open)] = ">>";
@@ -715,21 +715,21 @@ function medalFor(finishTick, parTick) {
 var LANES2 = 3;
 var HI_DENSITY = 0.55;
 var LO_DENSITY = 0.3;
-function buildLanes(rng, density, glyphs, beatOpen, withGates) {
+function buildLanes(rng, density, glyphs, beatOpen, withGates, safeLane) {
   const lanes = [null, null, null];
-  let blocked = 0;
   for (let l = 0; l < LANES2; l += 1) {
-    if (rng.chance(density)) {
-      lanes[l] = rng.pick(glyphs);
-      blocked += 1;
-    }
+    if (l === safeLane) continue;
+    if (rng.chance(density)) lanes[l] = rng.pick(glyphs);
   }
-  if (blocked >= LANES2) lanes[rng.int(0, LANES2 - 1)] = null;
   if (withGates && beatOpen && rng.chance(0.5)) {
     const open = [0, 1, 2].filter((l) => lanes[l] === null);
     if (open.length) lanes[rng.pick(open)] = ">>";
   }
   return lanes;
+}
+function driftSafe(rng, safeLane, beatOpen) {
+  if (!beatOpen || !rng.chance(0.4)) return safeLane;
+  return Math.max(0, Math.min(LANES2 - 1, safeLane + rng.pick([-1, 1])));
 }
 function applyForks(table, rng, round = {}) {
   const span = Math.max(8, Number(round.forkSpan) || 36);
@@ -740,13 +740,20 @@ function applyForks(table, rng, round = {}) {
   const entries = [];
   for (let start = first; start + span < table.length - 8; start += gap) {
     entries.push(start);
+    let safeHi = 1;
+    let safeLo = 1;
     for (let i = 0; i < span; i += 1) {
       const t = start + i;
       const row = table[t];
       if (!row) continue;
       const beatOpen = row.beatOpen !== false;
-      const forkHi = buildLanes(rng, HI_DENSITY, hiGlyphs, beatOpen, true);
-      const forkLo = buildLanes(rng, LO_DENSITY, loGlyphs, beatOpen, false);
+      const entryClear = i === 0;
+      if (!entryClear) {
+        safeHi = driftSafe(rng, safeHi, beatOpen);
+        safeLo = driftSafe(rng, safeLo, beatOpen);
+      }
+      const forkHi = entryClear ? [null, null, null] : buildLanes(rng, HI_DENSITY, hiGlyphs, beatOpen, true, safeHi);
+      const forkLo = entryClear ? [null, null, null] : buildLanes(rng, LO_DENSITY, loGlyphs, beatOpen, false, safeLo);
       row.fork = true;
       row.forkEntry = i === 0;
       row.forkHi = forkHi;
@@ -1164,13 +1171,40 @@ var DISP = {
   // time-trial ghosts (par + prior-best), drawn lower-case + faint
 };
 var PLAYER = "▲";
+var KIND = {
+  "·": "empty",
+  " ": "empty",
+  "░": "static",
+  "▒": "pulse",
+  "▓": "block",
+  "»": "gate",
+  U: "buff",
+  O: "buff",
+  E: "buff",
+  "+": "repair",
+  $: "cache",
+  p: "ghost",
+  g: "ghost",
+  "▲": "player",
+  "~": "shield",
+  "*": "beat"
+};
+function kindOf(ch) {
+  return KIND[ch] || "rival";
+}
+function esc(ch) {
+  return ch === "&" ? "&amp;" : ch === "<" ? "&lt;" : ch === ">" ? "&gt;" : ch;
+}
+function markup(ch, html) {
+  return html && ch !== " " ? `<span class="s5g s5g-${kindOf(ch)}">${esc(ch)}</span>` : ch;
+}
 function disp(glyph) {
   return DISP[glyph] || DISP.empty;
 }
-function padCell(ch, width) {
+function padCell(ch, width, html = false) {
   const total = Math.max(0, width - 1);
   const left = Math.floor(total / 2);
-  return " ".repeat(left) + ch + " ".repeat(total - left);
+  return " ".repeat(left) + markup(ch, html) + " ".repeat(total - left);
 }
 function renderTrackGrid({
   table,
@@ -1182,7 +1216,8 @@ function renderTrackGrid({
   channel = "lo",
   laneWidth = 3,
   speed = 0,
-  reducedMotion = false
+  reducedMotion = false,
+  html = false
 }) {
   const rows = [];
   const raw = (t) => {
@@ -1203,20 +1238,20 @@ function renderTrackGrid({
   const gapEvery = 3 + Math.round(dens * 3);
   const sepAt = (w) => reducedMotion ? "|" : w % gapEvery === 0 ? " " : "|";
   const gutterAt = (screenRow) => reducedMotion ? " " : (tick * 2 + screenRow) % 4 === 0 ? "≡" : " ";
-  const header = [0, 1, 2].map((l) => padCell(l === here.counterPhaseLane ? "~" : " ", laneWidth)).join(" ");
-  rows.push(` ${header}  ${here.beatOpen ? "*" : " "}`);
+  const header = [0, 1, 2].map((l) => padCell(l === here.counterPhaseLane ? "~" : " ", laneWidth, html)).join(" ");
+  rows.push(` ${header}  ${here.beatOpen ? markup("*", html) : " "}`);
   for (let ahead = lookAhead - 1; ahead >= 0; ahead -= 1) {
     const screenRow = lookAhead - 1 - ahead;
     const w = tick + ahead;
     const row = at(tick + ahead);
     const cells = [0, 1, 2].map((l) => {
       const rival = rivalAt.get(`${ahead},${l}`);
-      return padCell(rival ? rival : disp(row ? row.lanes[l] : null), laneWidth);
+      return padCell(rival ? rival : disp(row ? row.lanes[l] : null), laneWidth, html);
     });
     const g = gutterAt(screenRow);
     rows.push(`${g}${cells.join(sepAt(w))}${g}`);
   }
-  const playerCells = [0, 1, 2].map((l) => padCell(l === lane ? PLAYER : "·", laneWidth));
+  const playerCells = [0, 1, 2].map((l) => padCell(l === lane ? PLAYER : "·", laneWidth, html));
   rows.push(` ${playerCells.join("|")} `);
   return rows.join("\n");
 }
@@ -1885,7 +1920,7 @@ function renderStage5(ctx) {
   }
   function paintArena(view) {
     checkpointRace(view);
-    fields.arena.textContent = renderTrackGrid({
+    fields.arena.innerHTML = renderTrackGrid({
       table: view.table,
       tick: view.tick,
       lane: view.lane,
@@ -1895,7 +1930,9 @@ function renderStage5(ctx) {
       channel: view.channel || "lo",
       laneWidth: RACE_LANE_WIDTH,
       speed: speedParam(view.round?.tickMs),
-      reducedMotion: reducedMotion()
+      reducedMotion: reducedMotion(),
+      html: true
+      // colour each glyph by kind (hazard/pickup/rival/player) for legibility
     });
     fields.arena.classList.toggle("s5-beat-open", Boolean(view.beatOpen));
     fields.arena.classList.toggle("s5-suppressed", Boolean(view.suppressionActive));
