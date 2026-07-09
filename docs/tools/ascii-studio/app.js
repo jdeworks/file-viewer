@@ -1,13 +1,13 @@
 // Standalone ASCII Studio harness. Reuses the exact same self-contained modules
-// the file viewer uses (../../types/image/ascii/*) — image conversion via the
-// studio, live conversion via the webcam consumer. No build step: open
-// index.html directly.
+// the file viewer uses (../../types/image/ascii/*). Image is the single view;
+// the webcam is reached only through the studio's own 📷 Camera toolbar button
+// (which lazy-loads webcam.js), exactly like the in-viewer studio. No build
+// step: open index.html directly.
 
 import { mountAsciiStudio } from '../../types/image/ascii/studio.js';
 
 const $ = (id) => document.getElementById(id);
 let studio = null;
-let webcamMounted = false;
 
 function ensureStudio() {
   if (!studio) studio = mountAsciiStudio($('studio'), { filename: 'image' });
@@ -44,21 +44,6 @@ function loadSample() {
   g.fillText('ASCII', 160, 260);
   ensureStudio().setImage({ source: c });
 }
-
-// Tabs
-function show(view) {
-  const isImg = view === 'image';
-  $('image-view').hidden = !isImg;
-  $('webcam-view').hidden = isImg;
-  $('tab-image').classList.toggle('active', isImg);
-  $('tab-webcam').classList.toggle('active', !isImg);
-  if (!isImg && !webcamMounted) {
-    webcamMounted = true;
-    import('../../types/image/ascii/webcam.js').then(({ mountAsciiWebcam }) => mountAsciiWebcam($('webcam'), {}));
-  }
-}
-$('tab-image').addEventListener('click', () => show('image'));
-$('tab-webcam').addEventListener('click', () => show('webcam'));
 
 // File input + drag/drop
 $('pick').addEventListener('click', () => $('file').click());

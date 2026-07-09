@@ -9,10 +9,6 @@
 <body>
   <header class="top">
     <h1>ASCII Studio</h1>
-    <nav>
-      <button id="tab-image" class="tab active">Image</button>
-      <button id="tab-webcam" class="tab">Webcam</button>
-    </nav>
   </header>
 
   <main id="image-view">
@@ -21,11 +17,6 @@
       <p>Drop an image here, or <button id="pick" class="link">choose a file</button>. <button id="sample" class="link">Use a sample</button>.</p>
     </div>
     <div id="studio" class="studio-host"></div>
-  </main>
-
-  <main id="webcam-view" hidden>
-    <p class="hint">Grant camera access to convert your webcam to ASCII, frame by frame. Nothing leaves your device.</p>
-    <div id="webcam" class="webcam-host"></div>
   </main>
 
   <script type="module" src="./app.js"></script>

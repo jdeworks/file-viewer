@@ -133,6 +133,18 @@ function renderFilterBar(container) {
   }
   tools.appendChild(kindRow);
 
+  // One standalone entry to the ASCII Studio for the whole gallery — the studio
+  // opens with its own sample and accepts uploads/drag-drop, so it is not tied
+  // to any single catalog file (no per-sample tool links).
+  const asciiLink = document.createElement('a');
+  asciiLink.className = 'ex-ascii-studio';
+  asciiLink.href = 'tools/ascii-studio/index.html';
+  asciiLink.target = '_blank';
+  asciiLink.rel = 'noopener noreferrer';
+  asciiLink.textContent = '🎨 Open ASCII Studio';
+  asciiLink.title = 'Open the standalone ASCII art studio (image + webcam → ASCII).';
+  tools.appendChild(asciiLink);
+
   return tools;
 }
 
