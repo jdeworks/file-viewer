@@ -73,8 +73,6 @@
 .ex-super-label { flex: 1; min-width: 0; }
 .ex-super-count { font-weight: 400; color: var(--fg-2); font-size: 10px; white-space: nowrap; }
 .ex-badge { margin-left: 6px; opacity: .75; }
-.ex-more { margin: 2px 0 0; color: var(--fg-2); font-size: 11px; line-height: 1.4; text-align: center; }
-.ex-more a { color: var(--accent); }
 @media (max-height: 680px) { .examples { max-height: 34dvh; } }
 
 /* Known files searchable section */

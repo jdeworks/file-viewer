@@ -182,9 +182,6 @@ export async function run(ctx) {
   const catChipCount = await page.$$eval('#examples .ex-cat-chip', (els) => els.length);
   if (catChipCount === 0) pass('examples omit duplicate category filter chips');
   else fail('examples category chips still rendered: ' + catChipCount);
-  const moreHref = await page.$eval('#examples .ex-more a', (a) => a.href);
-  if (moreHref === 'https://www.fileexamples.com/') pass('examples link to external sample library');
-  else fail('examples external sample link missing: ' + moreHref);
   await page.click('#examples .ex-showall-btn');
   await page.waitForSelector('#examples .ex-file-btn', { timeout: 4000 });
   const welcomeTip = await page.$eval('#examples .ex-file-btn', (el) => el.getAttribute('title') || '');
@@ -278,19 +275,6 @@ export async function run(ctx) {
   else fail('generic text metadata missing: ' + formatInfo.replace(/\s+/g, ' ').slice(0, 220));
   await page.click('#metaDrawer [data-close]');
 
-  await openExample('Sample.json');
-  await page.click('#metaBtn');
-  await page.waitForSelector('#metaBody .meta-row a[href="https://www.fileexamples.com/formats/json"]', { timeout: 6000 });
-  const jsonFormatLinks = await page.$$eval('#metaBody .meta-row a', (links) => links.map((a) => ({
-    text: a.textContent,
-    href: a.href,
-    target: a.target,
-    rel: a.rel,
-  })));
-  const jsonGuide = jsonFormatLinks.find((a) => a.href === 'https://www.fileexamples.com/formats/json');
-  if (jsonGuide && /File Examples/.test(jsonGuide.text) && jsonGuide.target === '_blank' && /\bnoopener\b/.test(jsonGuide.rel)) pass('metadata drawer links to File Examples format guide');
-  else fail('File Examples format guide link missing or unsafe: ' + JSON.stringify(jsonFormatLinks));
-  await page.click('#metaDrawer [data-close]');
   await openExample('Welcome.md');
   await page.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
   f = await frameOf('iframe.fv-preview-frame');

@@ -148,13 +148,6 @@ function renderFilterBar(container) {
   return tools;
 }
 
-function appendExternalExamplesLink(host) {
-  const note = document.createElement('p');
-  note.className = 'ex-more';
-  note.innerHTML = 'Want to try more? <a href="https://www.fileexamples.com/" target="_blank" rel="noopener noreferrer">File Examples</a> has many more sample files. Most common formats should open here; executable or VM-oriented files are inspected, not run.';
-  host.appendChild(note);
-}
-
 function matchesFilters(el, filters) {
   const q = (filters.q || '').toLowerCase();
   if (q && !(el.dataset.search || '').includes(q)) return false;
@@ -403,7 +396,6 @@ function renderGallery(host, list, onPick) {
     host.appendChild(renderFilterBar(host));
     host.appendChild(row);
     applyFilter(host);
-    appendExternalExamplesLink(host);
   }
 
   function showAll() {
@@ -432,7 +424,6 @@ function renderGallery(host, list, onPick) {
     }
 
     applyFilter(host);
-    appendExternalExamplesLink(host);
   }
 
   function readSuperOpen(superCat) {
@@ -524,8 +515,6 @@ function renderGallery(host, list, onPick) {
     showall.textContent = 'Show all files';
     showall.onclick = () => showAll();
     host.appendChild(showall);
-
-    appendExternalExamplesLink(host);
   }
 
   // Resume last session's category if set and still valid
