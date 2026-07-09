@@ -203,9 +203,13 @@ async function activateType(type, knownOverride = null) {
   // A matched known-file enhancement provides a preview even if the base type doesn't.
   const canPreview = type.capabilities.preview || (!!state.known && !state.forceBase);
   const canDiff = type.capabilities.diff && canRaw && !state.intake.isBinary;
+  // Compare/merge (side-by-side) is independent of the in-editor Diff: it stays available for text
+  // types that disable Diff (e.g. .env, whose Merge mode is the secret-safe alternative).
+  const canCompare = canRaw && !state.intake.isBinary;
   const both = canRaw && canPreview;
   $('viewMode').hidden = !both || isMobile();
   $('rawMode').hidden = !canDiff;
+  $('compareBtn').hidden = !canCompare;
   $('downloadBtn').hidden = !canDiff;
   $('formatBtn').hidden = !(canRaw && ['json', 'code'].includes(type.id));
   syncSaveBtn();

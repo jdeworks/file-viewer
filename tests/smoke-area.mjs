@@ -13,6 +13,7 @@ import { createHarness, finish } from './harness.mjs';
 const AREAS = {
   'core-ui':           () => import('./areas/core-ui.mjs'),
   'diff':              () => import('./areas/diff.mjs'),
+  'kv-merge':          () => import('./areas/kv-merge.mjs'),
   'tabular-office':    () => import('./areas/tabular-office.mjs'),
   'structured-types':  () => import('./areas/structured-types.mjs'),
   'simple-types':      () => import('./areas/simple-types.mjs'),

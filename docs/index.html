@@ -137,8 +137,10 @@
         <button data-raw="current" class="active" title="Current" aria-label="Current">≡</button>
         <button data-raw="diff" title="Diff" aria-label="Diff">⇄</button>
         <button data-raw="movediff" title="Move-aware diff" aria-label="Move-aware diff">⇅</button>
-        <button id="compareBtn" data-raw="compare" title="Open another file side by side (compare is a mode)" aria-label="Open another file side by side">⧉</button>
       </div>
+      <!-- Compare/merge lives OUTSIDE #rawMode so it stays reachable for types (e.g. .env) that
+           intentionally disable the in-editor Diff. Gated on its own #compareBtn visibility. -->
+      <button class="icon-btn" id="compareBtn" title="Open another file side by side (compare / merge)" aria-label="Open another file side by side" hidden>⧉</button>
       <input type="file" id="compareInput" hidden aria-hidden="true">
 
       <!-- View-mode switch (icons). Visible only when the type supports a preview. -->

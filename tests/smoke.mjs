@@ -5,6 +5,7 @@
 import { createHarness, finish } from './harness.mjs';
 import * as coreUi from './areas/core-ui.mjs';
 import * as diff from './areas/diff.mjs';
+import * as kvMerge from './areas/kv-merge.mjs';
 import * as tabularOffice from './areas/tabular-office.mjs';
 import * as structuredTypes from './areas/structured-types.mjs';
 import * as simpleTypes from './areas/simple-types.mjs';
@@ -44,6 +45,7 @@ try {
   if (shouldTimeAreas) {
     await runArea('core-ui', () => coreUi.run(ctx));
     await runArea('diff', () => diff.run(ctx));
+    await runArea('kv-merge', () => kvMerge.run(ctx));
     await runArea('tabular-office', () => tabularOffice.run(ctx));
     await runArea('structured-types', () => structuredTypes.run(ctx));
     await runArea('simple-types', () => simpleTypes.run(ctx));
@@ -60,6 +62,7 @@ try {
   } else {
     await coreUi.run(ctx);
     await diff.run(ctx);
+    await kvMerge.run(ctx);
     await tabularOffice.run(ctx);
     await structuredTypes.run(ctx);
     await simpleTypes.run(ctx);
