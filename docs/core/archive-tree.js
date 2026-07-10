@@ -43,22 +43,24 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
 
   let archiveRoot = null;
 
-  async function openArchiveNode(nodeOrPath) {
+  async function openArchiveNode(nodeOrPath, {
+    skipFolderFlush = false, sidebarNavigationToken = null,
+  } = {}) {
     const node = typeof nodeOrPath === 'string'
       ? entries.find((entry) => entry.path === nodeOrPath)
       : nodeOrPath;
     if (!node) {
       toast('Could not open ' + nodeOrPath);
-      return;
+      return false;
     }
     if (node.encrypted || !openEntry) {
       toast('Password-protected archive entries cannot be opened yet.');
-      return;
+      return false;
     }
     try {
-      flushFolderEdit();
+      if (!skipFolderFlush) flushFolderEdit();
       // Flush any pending binary edit (e.g. image edit) before switching entries.
-      if (state.currentFolderPath && state.binaryEdit?.dirty) {
+      if (!skipFolderFlush && state.currentFolderPath && state.binaryEdit?.dirty) {
         (state.binaryEdits = state.binaryEdits || new Map()).set(state.currentFolderPath, state.binaryEdit);
       }
       const stashed = state.folderEdits.get(node.path);
@@ -67,20 +69,20 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
         : await openEntry(node.path);
       if (!intake) {
         toast('Could not open ' + node.path);
-        return;
+        return false;
       }
-      state.currentFolderPath = node.path;
-      archiveRoot.currentFolderPath = node.path;
-      state.treeApi?.setActive?.(node.path);
       state._skipDiscardGuard = true;
       state._skipSidebarRoot = true;
-      await loadIntake(intake);
+      const loaded = await loadIntake(intake, { sidebarNavigationToken });
+      if (loaded === false) return false;
       state.currentFolderPath = node.path;
       archiveRoot.currentFolderPath = node.path;
       state.treeApi?.setActive?.(node.path);
       if (isMobile()) setTree(false);
+      return true;
     } catch {
       toast('Could not open ' + node.path);
+      return false;
     }
   }
 
@@ -93,7 +95,7 @@ export function mountArchiveTree(archive, openEntry, loadIntake, archiveIntake) 
   archiveRoot = addArchiveRoot({
     label: rootName,
     entries,
-    openNode: (entry, path) => openArchiveNode(path || entry.path),
+    openNode: (entry, path, options) => openArchiveNode(path || entry.path, options),
     archiveIntake,
     alreadyCaptured: true,
   });

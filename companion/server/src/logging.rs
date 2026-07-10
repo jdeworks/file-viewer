@@ -145,7 +145,12 @@ pub fn error(msg: impl Into<String>) {
 
 /// Recent log entries (newest last), filtered by minimum level, case-insensitive substring, and an
 /// RFC3339 `since` cutoff. `limit` caps the returned count (most recent kept).
-pub fn recent(min_level: Option<Level>, contains: Option<&str>, since: Option<&str>, limit: usize) -> Vec<LogEntry> {
+pub fn recent(
+    min_level: Option<Level>,
+    contains: Option<&str>,
+    since: Option<&str>,
+    limit: usize,
+) -> Vec<LogEntry> {
     let Some(logger) = LOGGER.get() else {
         return vec![];
     };
@@ -156,7 +161,9 @@ pub fn recent(min_level: Option<Level>, contains: Option<&str>, since: Option<&s
     let mut out: Vec<LogEntry> = ring
         .iter()
         .filter(|e| match min_level {
-            Some(min) => Level::from_filter(&e.level).map(|l| l >= min).unwrap_or(true),
+            Some(min) => Level::from_filter(&e.level)
+                .map(|l| l >= min)
+                .unwrap_or(true),
             None => true,
         })
         .filter(|e| match &needle {

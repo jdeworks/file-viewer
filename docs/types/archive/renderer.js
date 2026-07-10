@@ -1,7 +1,7 @@
 // Archive listing renderer for 7z, RAR, tar and compressed tar archives.
 // Requires enableArchiveWasm setting — shows an opt-in panel when it is off.
 // Shares styling with the zip renderer (zip-doc, zip-meta, zip-table) from preview.css.
-import { listArchive, fmtSize } from '../../core/archivelib.js';
+import { listArchive, fmtSize, OFFLINE_DEPENDENCY_ERROR } from '../../core/archivelib.js';
 import { esc } from '../../core/template.js';
 
 const ICON = { dir: '&#x1F4C1;', file: '&#x1F4C4;' }; // folder / page emoji via HTML entity
@@ -34,6 +34,9 @@ export async function render(intake, ctx) {
   try {
     listing = await listArchive(intake);
   } catch (e) {
+    // A missing opt-in viewer dependency after a hard offline reload is the app-level offline-miss
+    // case, not a corrupt archive. Let the shell replace it with the actionable offline message.
+    if (e?.code === OFFLINE_DEPENDENCY_ERROR) throw e;
     const bodyHtml = '<div class="zip-doc"><div class="archive-hint archive-hint--error">'
       + '<strong>Could not read archive</strong><br>' + esc(e.message) + '</div></div>';
     return { bodyHtml, hadUnsafe: false };

@@ -162,6 +162,11 @@ dl.kv dd{padding:6px 12px;word-break:break-all}
 .empty{padding:10px 12px;color:var(--fg2,#999);font-style:italic}
 .err{background:#fff3f3;border:1px solid #f5c6c6;border-radius:6px;padding:10px 14px;color:#b00020;font-size:12px;margin-bottom:12px}
 .nc4-note{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:6px;padding:10px 14px;color:#1b5e20;font-size:12px;margin-bottom:12px}
+body.fv-dark{--fg:#e6e6e6;--fg2:#aeb7c2;--bg:#1e1e1e;--bg2:#2d2d30;--panel:#252526;--border:#45464a;--th-bg:#2d2d30;--hover:#333438}
+body.fv-dark .badge-ver{background:#122b45;color:#9dccff;border-color:#315b80}
+body.fv-dark .td-type{color:#79c0ff}
+body.fv-dark .err{background:#35171a;color:#ff938a;border-color:#7d3439}
+body.fv-dark .nc4-note{background:#16351f;color:#a7e3b5;border-color:#397249}
 `;
 
 export function render(intake) {

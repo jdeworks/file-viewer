@@ -435,7 +435,14 @@ function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
     }
   }
 }
-function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, initialOpenDepth = Infinity }) {
+function renderTree(host, root, {
+  onOpen,
+  onMove,
+  onDelete,
+  onReveal,
+  canDiskAction = () => true,
+  initialOpenDepth = Infinity
+}) {
   host.innerHTML = "";
   const inner = document.createElement("div");
   inner.className = "ft-virtual-inner";
@@ -496,6 +503,7 @@ function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, initialOpe
     }, 100) };
   }
   function appendRowActions(row, target) {
+    if (!canDiskAction(target)) return;
     if (onReveal) {
       const rev = document.createElement("button");
       rev.className = "ft-reveal";
@@ -703,6 +711,9 @@ function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, initialOpe
   function refresh() {
     startMarquee(inner.querySelector(".ft-row.active"));
   }
+  function rerender() {
+    buildFlat();
+  }
   function stop() {
     stopMarquee();
     host.removeEventListener("scroll", onScroll);
@@ -713,7 +724,7 @@ function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, initialOpe
   host.addEventListener("scroll", onScroll, { passive: true });
   new ResizeObserver(paint).observe(host);
   buildFlat();
-  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, expandAll, collapseAll, getOpenFolders, openPaths, stop };
+  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, rerender, expandAll, collapseAll, getOpenFolders, openPaths, stop };
 }
 function escapeHtml(s) {
   return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -727,7 +738,24 @@ var VKEY = "fv:offline:savedVersion";
 function initOffline(statusEl) {
   if (!("serviceWorker" in navigator) || !statusEl) return;
   let currentVersion = null;
-  const send = (msg) => navigator.serviceWorker.controller?.postMessage(msg);
+  let statusKnown = false;
+  let fullAvailable = false;
+  let cachedAssets = 0;
+  let totalAssets = 0;
+  let pendingMessage = null;
+  let activePrecacheRequest = null;
+  let requestSequence = 0;
+  const nextRequestId = () => {
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    return `offline-${Date.now().toString(36)}-${(++requestSequence).toString(36)}-${random[0].toString(36)}`;
+  };
+  const send = (msg) => {
+    const controller = navigator.serviceWorker.controller;
+    if (!controller) return false;
+    controller.postMessage(msg);
+    return true;
+  };
   const setState = (cls, html, title) => {
     statusEl.hidden = false;
     statusEl.className = "offline-status " + cls;
@@ -736,39 +764,64 @@ function initOffline(statusEl) {
   };
   function rest() {
     const saved = localStorage.getItem(VKEY);
-    if (!saved) {
-      setState("idle", '<span class="off-ring"></span> Save offline', "Cache everything so the whole app works without a connection");
-    } else if (currentVersion && saved !== currentVersion) {
-      setState("update", '<span class="off-check">✓</span> Update available', "A newer build exists — serving the saved copy. Click to refresh.");
+    if (!statusKnown) {
+      if (saved) setState("checking", '<span class="off-spin"></span> Checking offline save…', "Verifying the saved offline files");
+      else setState("idle", '<span class="off-ring"></span> Save offline', "Choose files and viewers to make available without a connection");
+    } else if (fullAvailable && currentVersion) {
+      localStorage.setItem(VKEY, currentVersion);
+      setState("ready", '<span class="off-check">✓</span> Available offline', "The complete current viewer is saved for offline use");
+    } else if (cachedAssets > 0) {
+      localStorage.removeItem(VKEY);
+      const count = totalAssets ? cachedAssets + " / " + totalAssets + " assets saved" : "Selected bundles are saved";
+      setState("partial", '<span class="off-check">✓</span> Selected bundles saved', count + ". Choose more bundles at any time.");
     } else {
-      setState("ready", '<span class="off-check">✓</span> Available offline', "Everything is saved for offline use");
+      localStorage.removeItem(VKEY);
+      setState("idle", '<span class="off-ring"></span> Save offline', "Choose bundles to make available without a connection");
     }
   }
   navigator.serviceWorker.addEventListener("message", (e) => {
     const d = e.data || {};
+    const isPrecacheMessage = d.type === "precache-progress" || d.type === "precache-done" || d.type === "precache-error";
+    if (isPrecacheMessage && (!activePrecacheRequest || d.requestId !== activePrecacheRequest)) return;
     if (d.type === "cache-status") {
       currentVersion = d.version || currentVersion;
+      statusKnown = true;
+      fullAvailable = !!d.full;
+      cachedAssets = Number(d.cached) || 0;
+      totalAssets = Number(d.total) || 0;
       rest();
     } else if (d.type === "precache-progress") {
       setState("caching", '<span class="off-spin"></span> Saving for offline… ' + d.done + " / " + d.total);
     } else if (d.type === "precache-done") {
-      if (d.version) {
-        currentVersion = d.version;
-        localStorage.setItem(VKEY, d.version);
-      }
+      currentVersion = d.version || currentVersion;
+      statusKnown = true;
+      fullAvailable = !!d.full;
+      cachedAssets = Number(d.cached) || 0;
+      totalAssets = Number(d.total) || 0;
+      activePrecacheRequest = null;
       rest();
     } else if (d.type === "precache-error") {
-      rest();
+      activePrecacheRequest = null;
+      fullAvailable = false;
+      localStorage.removeItem(VKEY);
+      setState("error", '<span aria-hidden="true">!</span> Offline save incomplete — retry', d.error || "Some files could not be saved. Retry while online.");
     }
   });
   statusEl.style.cursor = "pointer";
   statusEl.setAttribute("role", "button");
   statusEl.tabIndex = 0;
   const onActivate = () => {
-    if (statusEl.classList.contains("caching")) return;
+    if (statusEl.classList.contains("caching") || statusEl.classList.contains("preparing")) return;
     openCacheModal((files) => {
-      setState("caching", '<span class="off-spin"></span> Saving for offline…');
-      send({ type: "precache", files });
+      activePrecacheRequest = nextRequestId();
+      const message = { type: "precache", files, requestId: activePrecacheRequest };
+      if (send(message)) setState("caching", '<span class="off-spin"></span> Saving for offline…');
+      else {
+        pendingMessage = message;
+        setState("preparing", '<span class="off-spin"></span> Preparing offline save…', "Waiting for offline support to become ready");
+      }
+    }, (error) => {
+      setState("error", '<span aria-hidden="true">!</span> Offline options unavailable — retry', error?.message || String(error));
     });
   };
   statusEl.addEventListener("click", onActivate);
@@ -781,8 +834,16 @@ function initOffline(statusEl) {
   rest();
   navigator.serviceWorker.register("sw.js").then(async (reg) => {
     await navigator.serviceWorker.ready;
-    send({ type: "status" });
-    navigator.serviceWorker.addEventListener("controllerchange", () => send({ type: "status" }));
+    const onController = () => {
+      if (pendingMessage && send(pendingMessage)) {
+        pendingMessage = null;
+        setState("caching", '<span class="off-spin"></span> Saving for offline…');
+      } else {
+        send({ type: "status" });
+      }
+    };
+    onController();
+    navigator.serviceWorker.addEventListener("controllerchange", onController);
     const promptIfWaiting = (worker) => {
       if (worker && navigator.serviceWorker.controller) showUpdateBanner(worker);
     };
@@ -804,7 +865,10 @@ function initOffline(statusEl) {
     };
     document.addEventListener("visibilitychange", checkForUpdate);
     window.addEventListener("focus", checkForUpdate);
-  }).catch(() => {
+  }).catch((error) => {
+    pendingMessage = null;
+    activePrecacheRequest = null;
+    setState("error", '<span aria-hidden="true">!</span> Offline support unavailable', error?.message || "Service worker registration failed.");
   });
 }
 var updateBannerShown = false;
@@ -843,7 +907,7 @@ function fmtSize2(n) {
 function emulatorsEnabled() {
   try {
     const saved = JSON.parse(localStorage.getItem("fv:settings:global") || "null");
-    return saved?.enableEmulators === true;
+    return saved?.values?.enableEmulators === true || saved?.enableEmulators === true;
   } catch {
     return false;
   }
@@ -873,6 +937,7 @@ var CACHE_PRESETS = [
       "vendor:utif",
       "vendor:libheif",
       "vendor:fonts",
+      "vendor:monaco",
       "examples:catalog",
       "examples:text-config",
       "examples:data",
@@ -931,6 +996,7 @@ var CACHE_PRESETS = [
       "vendor:pptxviewjs",
       "vendor:cfb",
       "vendor:html2canvas",
+      "vendor:monaco",
       "examples:catalog",
       "examples:office",
       "examples:text-config",
@@ -966,18 +1032,28 @@ var CACHE_PRESETS = [
   }
 ];
 var DEFAULT_CACHE_BUNDLES = new Set(CACHE_PRESETS[0].bundles);
-async function openCacheModal(onConfirm) {
+var cacheModalOpening = false;
+async function openCacheModal(onConfirm, onError = () => {
+}) {
+  const existing = document.querySelector(".cache-modal");
+  if (existing) {
+    existing.querySelector(".cm-close")?.focus();
+    return;
+  }
+  if (cacheModalOpening) return;
+  cacheModalOpening = true;
   let bundles;
   try {
-    bundles = (await (await fetch("asset-manifest.json", { cache: "no-store" })).json()).bundles || [];
-  } catch {
-    onConfirm(void 0);
+    const response = await fetch("asset-manifest.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("Could not load offline options (" + response.status + ").");
+    bundles = (await response.json()).bundles || [];
+    if (!bundles.length) throw new Error("No offline bundles are available.");
+  } catch (error) {
+    cacheModalOpening = false;
+    onError(error);
     return;
   }
-  if (!bundles.length) {
-    onConfirm(void 0);
-    return;
-  }
+  cacheModalOpening = false;
   if (!emulatorsEnabled()) bundles = bundles.filter((b) => b.group !== "Emulators");
   const grouped = /* @__PURE__ */ new Map();
   for (const b of bundles) {
@@ -991,8 +1067,10 @@ async function openCacheModal(onConfirm) {
   });
   const root = document.createElement("div");
   root.className = "cache-modal-backdrop";
-  root.innerHTML = '<div class="cache-modal" role="dialog" aria-label="Save for offline"><header class="cm-head"><h2>Save for offline</h2><button class="cm-close" aria-label="Close">✕</button></header><p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p><div class="cm-toolbar"><button class="cm-all">Select all</button><button class="cm-none">Deselect all</button>' + CACHE_PRESETS.map((p) => '<button class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '">' + p.label + "</button>").join("") + '<span class="cm-grand-total"></span></div><div class="cm-groups"></div><footer class="cm-foot"><span class="cm-total"></span><button class="cm-save">Save selected</button></footer></div>';
+  root.innerHTML = '<div class="cache-modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle"><header class="cm-head"><h2 id="cacheModalTitle">Save for offline</h2><button type="button" class="cm-close" aria-label="Close">✕</button></header><p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p><div class="cm-toolbar"><button type="button" class="cm-all">Select all</button><button type="button" class="cm-none">Deselect all</button>' + CACHE_PRESETS.map((p) => '<button type="button" class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '" aria-pressed="' + (p.id === "common-v") + '">' + p.label + "</button>").join("") + '<span class="cm-grand-total"></span></div><div class="cm-groups"></div><footer class="cm-foot"><span class="cm-total"></span><button type="button" class="cm-save">Save selected</button></footer></div>';
+  const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.body.appendChild(root);
+  document.body.classList.add("cache-modal-open");
   const groupsEl = root.querySelector(".cm-groups");
   const totalEl = root.querySelector(".cm-total");
   const grandEl = root.querySelector(".cm-grand-total");
@@ -1001,25 +1079,33 @@ async function openCacheModal(onConfirm) {
     const checked = isCore || DEFAULT_CACHE_BUNDLES.has(b.id);
     return '<label class="cm-row' + (b.heavy ? " cm-row-heavy" : "") + '"><input type="checkbox" class="cm-chk" data-id="' + b.id + '" data-size="' + b.size + '"' + (checked ? " checked" : "") + (isCore ? " disabled" : "") + '><span class="cm-label">' + (b.label || b.id) + (isCore ? ' <span class="cm-req">(required)</span>' : "") + "</span>" + (b.heavy ? '<span class="cm-heavy">large</span>' : "") + '<span class="cm-size">' + fmtSize2(b.size) + "</span></label>";
   }
-  for (const cat of cats) {
+  cats.forEach((cat, groupIndex) => {
     const bs = grouped.get(cat);
     const isAppShell = cat === "App shell";
     const sec = document.createElement("div");
     sec.className = "cm-group";
-    const head = document.createElement("div");
+    const head = document.createElement("button");
+    head.type = "button";
     head.className = "cm-group-head";
-    head.innerHTML = '<button class="cm-toggle">' + (isAppShell ? "▸" : "▾") + '</button><span class="cm-group-label">' + cat + '</span><span class="cm-group-meta"></span>';
+    head.setAttribute("aria-expanded", String(!isAppShell));
+    const bodyId = "cacheModalGroup" + groupIndex;
+    head.setAttribute("aria-controls", bodyId);
+    head.innerHTML = '<span class="cm-toggle" aria-hidden="true">' + (isAppShell ? "▸" : "▾") + '</span><span class="cm-group-label">' + cat + '</span><span class="cm-group-meta"></span>';
     const body = document.createElement("div");
+    body.id = bodyId;
     body.className = "cm-group-body" + (isAppShell ? " cm-collapsed" : "");
+    body.hidden = isAppShell;
     body.innerHTML = bs.map(rowHtml).join("");
     sec.appendChild(head);
     sec.appendChild(body);
     groupsEl.appendChild(sec);
     head.addEventListener("click", () => {
       const collapsed = body.classList.toggle("cm-collapsed");
+      body.hidden = collapsed;
+      head.setAttribute("aria-expanded", String(!collapsed));
       head.querySelector(".cm-toggle").textContent = collapsed ? "▸" : "▾";
     });
-  }
+  });
   function updateTotals() {
     let grand = 0;
     for (const sec of groupsEl.querySelectorAll(".cm-group")) {
@@ -1040,13 +1126,21 @@ async function openCacheModal(onConfirm) {
     grandEl.textContent = "Total: " + fmtSize2(grand);
   }
   updateTotals();
-  groupsEl.addEventListener("change", updateTotals);
+  const setActivePreset = (id = null) => {
+    root.querySelectorAll(".cm-preset").forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.preset === id)));
+  };
+  groupsEl.addEventListener("change", () => {
+    setActivePreset();
+    updateTotals();
+  });
   root.querySelector(".cm-all").addEventListener("click", () => {
     for (const c of root.querySelectorAll(".cm-chk:not(:disabled)")) c.checked = true;
+    setActivePreset();
     updateTotals();
   });
   root.querySelector(".cm-none").addEventListener("click", () => {
     for (const c of root.querySelectorAll(".cm-chk:not(:disabled)")) c.checked = false;
+    setActivePreset();
     updateTotals();
   });
   root.querySelectorAll(".cm-preset").forEach((btn) => {
@@ -1055,27 +1149,51 @@ async function openCacheModal(onConfirm) {
       if (!preset) return;
       const ids = new Set(preset.bundles);
       for (const c of root.querySelectorAll(".cm-chk:not(:disabled)")) c.checked = ids.has(c.dataset.id);
+      setActivePreset(preset.id);
       updateTotals();
     });
   });
-  const close = () => root.remove();
+  const focusable = () => [...root.querySelectorAll("button:not(:disabled), input:not(:disabled)")].filter((element) => !element.hidden && element.getClientRects().length > 0);
+  const onKeydown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      close();
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const items = focusable();
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", onKeydown);
+    root.remove();
+    document.body.classList.remove("cache-modal-open");
+    if (previousActive?.isConnected) previousActive.focus();
+  };
   root.querySelector(".cm-close").addEventListener("click", close);
   root.addEventListener("click", (e) => {
     if (e.target === root) close();
   });
-  document.addEventListener("keydown", function esc3(e) {
-    if (e.key === "Escape") {
-      close();
-      document.removeEventListener("keydown", esc3);
-    }
-  });
+  document.addEventListener("keydown", onKeydown);
   root.querySelector(".cm-save").addEventListener("click", () => {
     const chosen = /* @__PURE__ */ new Set();
     for (const c of root.querySelectorAll(".cm-chk")) if (c.checked || c.disabled) chosen.add(c.dataset.id);
-    const files = bundles.filter((b) => chosen.has(b.id)).flatMap((b) => b.files);
+    const files = [...new Set(bundles.filter((b) => chosen.has(b.id)).flatMap((b) => b.files))];
     close();
     onConfirm(files);
   });
+  root.querySelector(".cm-close").focus();
 }
 function initOfflineBadge() {
   const badge = document.getElementById("offlineBadge");
@@ -1090,7 +1208,7 @@ function initOfflineBadge() {
   });
 }
 function offlineMissHtml() {
-  return '<div class="offline-miss"><div class="om-icon">📡</div><p><strong>Not available offline yet.</strong></p><p>This viewer wasn’t loaded while you were online, so it isn’t in the cache. Anything you’ve already opened still works offline.</p><p>Reconnect once to use it — or, next time you have a connection, tap <strong>“Save offline”</strong> (bottom-left) to cache the whole app.</p></div>';
+  return '<div class="offline-miss"><div class="om-icon">📡</div><p><strong>Not available offline yet.</strong></p><p>This viewer wasn’t loaded while you were online, so it isn’t in the cache. Anything you’ve already opened still works offline.</p><p>Reconnect once to use it — or, next time you have a connection, tap <strong>“Save offline”</strong> in the top bar (under More controls on a phone) and include the bundle this viewer needs.</p></div>';
 }
 
 // ../../docs/core/persistence.js
@@ -2122,7 +2240,7 @@ function initLayout(deps) {
   renderPreview = deps.renderPreview;
   openSettings = deps.openSettings;
 }
-var OVERFLOW_IDS = ["typeSelect", "rawMode", "compareBtn", "tableModeBtn", "formatBtn", "saveBtn", "downloadBtn", "screenshotBtn", "exportBtn", "metaBtn", "settingsBtn"];
+var OVERFLOW_IDS = ["typeSelect", "rawMode", "compareBtn", "tableModeBtn", "formatBtn", "saveBtn", "downloadBtn", "screenshotBtn", "exportBtn", "metaBtn", "settingsBtn", "offlineStatus"];
 var overflowAnchors = null;
 function layoutTopbar() {
   if (!overflowAnchors) {
@@ -2133,8 +2251,12 @@ function layoutTopbar() {
   }
   const menu = $("moreMenu");
   if (isMobile()) {
-    for (const { el } of overflowAnchors) menu.appendChild(el);
-    const anyVisible = overflowAnchors.some(({ el }) => !el.hidden);
+    const landing = !$("intake").hidden;
+    for (const { el, parent, next } of overflowAnchors) {
+      if (el.id === "offlineStatus" && landing) parent.insertBefore(el, next);
+      else menu.appendChild(el);
+    }
+    const anyVisible = overflowAnchors.some(({ el }) => el.parentNode === menu && !el.hidden);
     $("moreBtn").hidden = !anyVisible;
   } else {
     for (const { el, parent, next } of overflowAnchors) parent.insertBefore(el, next);
@@ -2206,6 +2328,8 @@ function applyLayout() {
   }
   const vm = $("viewMode");
   if (vm) vm.hidden = wysiwyg || !both || isMobile();
+  const tabbar = $("tabbar");
+  if (tabbar) tabbar.style.display = !wysiwyg && both && isMobile() ? "flex" : "none";
   document.querySelectorAll("#viewMode button").forEach((b) => b.classList.toggle("active", b.dataset.mode === state2.mode));
   document.querySelectorAll("#tabbar button").forEach((b) => b.classList.toggle("active", b.dataset.mode === state2.tab));
   applyPreviewPaneWidth();
@@ -2215,7 +2339,8 @@ var MIN_EDITOR_PX = 380;
 var DIVIDER_PX = 6;
 function applyPreviewPaneWidth() {
   const caps = state2.type?.capabilities;
-  const both = caps && caps.rawView && caps.preview;
+  const hasPreview = caps && (caps.preview || !!state2.known && !state2.forceBase);
+  const both = caps && caps.rawView && hasPreview;
   const splitActive = both && !isMobile() && state2.mode === "split" && !state2.wysiwygActive;
   $("splitDivider").hidden = !splitActive;
   const previewPane = $("previewPane"), rawPane = $("rawPane");
@@ -6032,7 +6157,7 @@ async function downloadCurrent() {
 }
 
 // ../../docs/core/folder.js
-import { state as state13, $ as $8, isMobile as isMobile2, toast as toast8, escapeHtml as escapeHtml2 } from "./state.js";
+import { state as state13, $ as $8, isMobile as isMobile3, toast as toast8, escapeHtml as escapeHtml2 } from "./state.js";
 
 // ../../docs/core/git.js
 var dec = new TextDecoder();
@@ -6636,15 +6761,27 @@ async function repackZipWithDeletions(intake, opts = {}) {
 }
 
 // ../../docs/core/sidebar-roots.js
-import { $ as $7, state as state12, toast as toast7 } from "./state.js";
+import { $ as $7, isMobile as isMobile2, state as state12, toast as toast7 } from "./state.js";
 var loadIntake = null;
+var onTreeDelete = null;
+var onTreeReveal = null;
+var onRootActivate = null;
 var nextId = 1;
 function setSidebar(open) {
   $7("fileTree").hidden = !open;
-  $7("ftResize").hidden = !open || window.matchMedia("(max-width: 760px)").matches;
+  $7("ftResize").hidden = !open || isMobile2();
+  if (isMobile2()) $7("scrim").hidden = !open;
 }
-function initSidebarRoots({ loadIntake: loader }) {
+function initSidebarRoots({
+  loadIntake: loader,
+  onDelete = null,
+  onReveal = null,
+  onActivate = null
+}) {
   loadIntake = loader;
+  onTreeDelete = onDelete;
+  onTreeReveal = onReveal;
+  onRootActivate = onActivate;
 }
 function roots() {
   if (!state12.sidebarRoots) state12.sidebarRoots = [];
@@ -6683,6 +6820,20 @@ function captureActiveSidebarRoot() {
     root.folderExported = false;
     capturedDirtyFileRoot = true;
   }
+  if (root.kind === "folder" && state12.currentFolderPath && state12.rawview?.isDirty?.()) {
+    const edits = state12.folderEdits || root.folderEdits || /* @__PURE__ */ new Map();
+    edits.set(state12.currentFolderPath, state12.rawview.getValue());
+    state12.folderEdits = edits;
+    root.folderEdits = edits;
+    root.folderExported = false;
+  }
+  if ((root.kind === "folder" || root.kind === "archive") && state12.currentFolderPath && state12.binaryEdit?.dirty) {
+    const edits = state12.binaryEdits || root.binaryEdits || /* @__PURE__ */ new Map();
+    edits.set(state12.currentFolderPath, state12.binaryEdit);
+    state12.binaryEdits = edits;
+    root.binaryEdits = edits;
+    root.folderExported = false;
+  }
   if (!capturedDirtyFileRoot) {
     root.treeEntries = state12.treeEntries || root.treeEntries || [];
     root.folderEdits = state12.folderEdits || /* @__PURE__ */ new Map();
@@ -6717,6 +6868,7 @@ function activateSidebarRoot(root, { skipCapture = false } = {}) {
   $7("ftSearch").hidden = !!root.git || root.kind === "file";
   $7("ftSearchInput").value = "";
   $7("ftSearchCount").textContent = "";
+  onRootActivate?.(root);
 }
 function displayEntries() {
   const out = [];
@@ -6748,6 +6900,7 @@ function rootForPath(path) {
   return roots().find((root) => path === root.label || path.startsWith(root.label + "/"));
 }
 function removeActiveSidebarRoot() {
+  if (state12.sidebarNavigationPending || state12.companionOperationToken) return;
   const root = roots().find((item) => item.id === state12.activeSidebarRootId);
   if (!root) return;
   const next = roots().filter((item) => item.id !== root.id);
@@ -6757,15 +6910,18 @@ function removeActiveSidebarRoot() {
   renderSidebarRoots(next.at(-1) || null);
   toast7("Removed from sidebar. Nothing was deleted from disk.");
 }
-function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCapture = false } = {}) {
+function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCapture = false, openSidebar = true } = {}) {
   const list = roots();
   if (!list.length) {
     state12.treeApi?.stop?.();
     state12.treeApi = null;
     state12.treeEntries = null;
     state12.activeSidebarRootId = null;
+    state12.sidebarNavigationPending = false;
+    state12.sidebarNavigationToken = null;
     $7("ftRemoveRootBtn").hidden = true;
     setSidebar(false);
+    onRootActivate?.(null);
     return;
   }
   const active = activeRoot || list.find((root) => root.id === state12.activeSidebarRootId) || list[list.length - 1];
@@ -6775,32 +6931,58 @@ function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCap
     onOpen: async (node) => {
       const root = roots().find((item) => item.id === node.sidebarRootId);
       if (!root || !loadIntake) return;
+      if (state12.sidebarNavigationPending || state12.companionOperationToken) return;
+      const previousRoot = roots().find((item) => item.id === state12.activeSidebarRootId) || null;
+      const navigationToken = {};
+      state12.sidebarNavigationPending = true;
+      state12.sidebarNavigationToken = navigationToken;
       activateSidebarRoot(root);
-      if (node.sidebarChild && root.getChildIntake) {
-        const intake = await root.getChildIntake(node.sidebarInnerPath);
-        if (intake) {
-          state12._skipDiscardGuard = true;
-          state12._skipSidebarRoot = true;
-          await loadIntake(intake);
+      let loaded = false;
+      let activeInnerPath2 = null;
+      try {
+        if (node.sidebarChild && root.getChildIntake) {
+          const intake = await root.getChildIntake(node.sidebarInnerPath);
+          if (intake) {
+            state12._skipDiscardGuard = true;
+            state12._skipSidebarRoot = true;
+            loaded = await loadIntake(intake, { sidebarNavigationToken: navigationToken }) !== false;
+          }
+          activeInnerPath2 = node.sidebarInnerPath;
+        } else {
+          const innerPath = node.sidebarInnerPath || node.path.slice(root.label.length + 1);
+          const entry = (root.treeEntries || []).find((item) => item.path === innerPath);
+          if (!entry) return;
+          if (root.openNode) {
+            loaded = await root.openNode(entry, innerPath, {
+              skipFolderFlush: true,
+              sidebarNavigationToken: navigationToken
+            }) !== false;
+          } else {
+            const edited = root.folderEdits?.get(innerPath);
+            state12._skipDiscardGuard = true;
+            state12._skipSidebarRoot = true;
+            loaded = await loadIntake(edited != null ? intakeFromText(edited, innerPath.split("/").pop()) : entry.intake, { sidebarNavigationToken: navigationToken }) !== false;
+          }
+          if (loaded) {
+            state12.currentFolderPath = root.kind === "file" ? null : innerPath;
+            root.currentFolderPath = state12.currentFolderPath;
+            activeInnerPath2 = innerPath;
+          }
         }
-        renderSidebarRoots(root, node.sidebarInnerPath);
-        return;
+      } finally {
+        const rootStillPresent = roots().includes(root);
+        const finalRoot = loaded && rootStillPresent ? root : previousRoot && roots().includes(previousRoot) ? previousRoot : roots().at(-1);
+        state12.sidebarNavigationPending = false;
+        state12.sidebarNavigationToken = null;
+        if (finalRoot) {
+          renderSidebarRoots(finalRoot, loaded ? activeInnerPath2 : finalRoot.currentFolderPath, {
+            skipCapture: true
+          });
+        } else {
+          renderSidebarRoots();
+        }
+        if (isMobile2() && loaded) setSidebar(false);
       }
-      const innerPath = node.sidebarInnerPath || node.path.slice(root.label.length + 1);
-      const entry = (root.treeEntries || []).find((item) => item.path === innerPath);
-      if (!entry) return;
-      root.currentFolderPath = innerPath;
-      if (root.openNode) {
-        await root.openNode(entry, innerPath);
-      } else {
-        const edited = root.folderEdits?.get(innerPath);
-        state12._skipDiscardGuard = true;
-        state12._skipSidebarRoot = true;
-        await loadIntake(edited != null ? intakeFromText(edited, innerPath.split("/").pop()) : entry.intake);
-      }
-      state12.currentFolderPath = root.kind === "file" ? null : innerPath;
-      root.currentFolderPath = state12.currentFolderPath;
-      renderSidebarRoots(root, innerPath);
     },
     onMove: (srcPath, destFolderPath) => {
       const root = rootForPath(srcPath);
@@ -6811,6 +6993,12 @@ function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCap
       root.onMove(src, dest);
       root.treeEntries = state12.treeEntries || root.treeEntries;
       renderSidebarRoots(root, state12.currentFolderPath);
+    },
+    onDelete: onTreeDelete ? (target) => onTreeDelete(target) : null,
+    onReveal: onTreeReveal ? (target) => onTreeReveal(target) : null,
+    canDiskAction: (target) => {
+      const root = rootForPath(target.path);
+      return root?.id === state12.activeSidebarRootId && root.kind === "folder" && !!root.companionFolderRoot && !state12.sidebarNavigationPending && !state12.companionOperationToken && document.body.classList.contains("companion-folder-active");
     },
     initialOpenDepth: Infinity
   });
@@ -6838,7 +7026,7 @@ function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCap
   $7("ftRemoveRootBtn").hidden = false;
   $7("ftExpandBtn").hidden = false;
   $7("ftCollapseBtn").hidden = false;
-  setSidebar(true);
+  setSidebar(openSidebar);
 }
 function addFileRoot(intake) {
   if (!intake || state12._skipSidebarRoot) return;
@@ -6855,7 +7043,7 @@ function addFileRoot(intake) {
     }]
   };
   roots().push(root);
-  renderSidebarRoots(root, label, { skipCapture: true });
+  renderSidebarRoots(root, label, { skipCapture: true, openSidebar: !isMobile2() });
 }
 function expandActiveFileRootToFolder({ entries, getIntake }) {
   const root = roots().find((item) => item.id === state12.activeSidebarRootId);
@@ -6867,8 +7055,9 @@ function expandActiveFileRootToFolder({ entries, getIntake }) {
 }
 function addFolderRoot({ label, entries, git = false, openNode = null, alreadyCaptured = false }) {
   if (!alreadyCaptured) captureActiveSidebarRoot();
-  const rootLabel = uniqueLabel(label || "Folder");
-  const prefix = rootLabel + "/";
+  const sourceLabel = label || "Folder";
+  const rootLabel = uniqueLabel(sourceLabel);
+  const prefix = sourceLabel + "/";
   const normalizedEntries = (entries || []).map((entry) => {
     if (!entry.path?.startsWith(prefix)) return entry;
     const originalPath = entry.originalPath || entry.path;
@@ -6918,8 +7107,8 @@ var loadIntake2 = () => {
 };
 var confirmDiscard2 = () => true;
 var onFolderFileOpened = null;
-var onTreeDelete = null;
-var onTreeReveal = null;
+var onTreeDelete2 = null;
+var onTreeReveal2 = null;
 var viewerActionsPromise2 = null;
 function viewerActions2() {
   if (!viewerActionsPromise2) viewerActionsPromise2 = import("../games/metagame/viewer-actions.js");
@@ -6929,8 +7118,8 @@ function initFolder(deps) {
   loadIntake2 = deps.loadIntake;
   confirmDiscard2 = deps.confirmDiscard;
   onFolderFileOpened = deps.onFolderFileOpened || null;
-  onTreeDelete = deps.onTreeDelete || null;
-  onTreeReveal = deps.onTreeReveal || null;
+  onTreeDelete2 = deps.onTreeDelete || null;
+  onTreeReveal2 = deps.onTreeReveal || null;
 }
 var _moveNoticed = false;
 var _repoViewToken = 0;
@@ -6974,7 +7163,8 @@ function recordMove(src, dest) {
 }
 var _onMove = null;
 async function loadFolder(entries, { repoWalkLimit, openPath, openFolders } = {}) {
-  if (!confirmDiscard2()) return;
+  if (state13.companionOperationToken || state13.sidebarNavigationPending) return null;
+  if (!confirmDiscard2()) return null;
   captureActiveSidebarRoot();
   const git = findGitDir(entries);
   state13.repoEntries = git ? entries : null;
@@ -7028,12 +7218,12 @@ async function loadFolder(entries, { repoWalkLimit, openPath, openFolders } = {}
   showFolderLoading("Building file tree…", { progress: 0.45, detail: display.length.toLocaleString() + " visible file" + (display.length === 1 ? "" : "s") });
   await nextFrame();
   const tree = buildTree(display);
-  state13.treeApi = renderTree($8("ftBody"), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, onDelete: (t) => onTreeDelete?.(t), onReveal: (t) => onTreeReveal?.(t), initialOpenDepth: 0 });
+  state13.treeApi = renderTree($8("ftBody"), tree, { onOpen: (node) => openTreeFile(node), onMove: _onMove, onDelete: (t) => onTreeDelete2?.(t), onReveal: (t) => onTreeReveal2?.(t), initialOpenDepth: 0 });
   const folderRoot = addFolderRoot({
     label: rootName,
     entries: display,
     git: !!git,
-    openNode: (entry, path) => openTreeFile({ file: entry.file, path }),
+    openNode: (entry, path, options) => openTreeFile({ file: entry.file, path }, options),
     alreadyCaptured: true
   });
   folderRoot.onMove = _onMove;
@@ -7057,20 +7247,7 @@ async function loadFolder(entries, { repoWalkLimit, openPath, openFolders } = {}
   } finally {
     hideFolderLoading();
   }
-}
-function renderFolderTree({ openFolders = [], activePath = null } = {}) {
-  if (state13.treeApi) state13.treeApi.stop();
-  state13.treeApi = renderTree($8("ftBody"), buildTree(state13.treeEntries), {
-    onOpen: (node) => openTreeFile(node),
-    onMove: _onMove,
-    onDelete: (t) => onTreeDelete?.(t),
-    onReveal: (t) => onTreeReveal?.(t),
-    initialOpenDepth: 0
-  });
-  if (openFolders.length) state13.treeApi.openPaths(openFolders);
-  for (const dest of state13.folderMoves.values()) state13.treeApi.setMoved(dest, dest);
-  for (const p of state13.folderEdits.keys()) state13.treeApi.setEdited(p, true);
-  if (activePath) state13.treeApi.setActive(activePath);
+  return folderRoot;
 }
 async function openRepoView({ auto = false, walkLimit } = {}) {
   if (!state13.repoEntries) return;
@@ -7112,11 +7289,14 @@ async function openRepoView({ auto = false, walkLimit } = {}) {
     panel.innerHTML = '<p class="repo-hint">Could not read repository: ' + escapeHtml2(e.message) + "</p>";
   }
 }
-async function openTreeFile(node) {
+async function openTreeFile(node, {
+  skipFolderFlush = false,
+  sidebarNavigationToken = null
+} = {}) {
   const showReadNotice = !state13.folderEdits.has(node.path) && node.file?.size >= FILE_LOAD_FEEDBACK_BYTES;
   try {
     _repoViewToken++;
-    flushFolderEdit();
+    if (!skipFolderFlush) flushFolderEdit();
     const stashed = state13.folderEdits.get(node.path);
     if (showReadNotice) {
       showFolderLoading("Reading " + node.path.split("/").pop() + "…", {
@@ -7127,12 +7307,15 @@ async function openTreeFile(node) {
     const intake = stashed != null ? intakeFromText(stashed, node.path.split("/").pop()) : await intakeFromFile(node.file);
     state13._skipDiscardGuard = true;
     state13._skipSidebarRoot = true;
-    await loadIntake2(intake);
+    const loaded = await loadIntake2(intake, { sidebarNavigationToken });
+    if (loaded === false) return false;
     state13.currentFolderPath = node.path;
     onFolderFileOpened?.(node);
-    if (isMobile2()) setTree(false);
+    if (isMobile3()) setTree(false);
+    return true;
   } catch (err) {
     toast8("Could not open " + node.path);
+    return false;
   } finally {
     if (showReadNotice) hideFolderLoading();
   }
@@ -7166,9 +7349,14 @@ async function searchTreeContents() {
   const ql = q.toLowerCase();
   $8("ftSearchCount").textContent = "searching…";
   const matched = /* @__PURE__ */ new Set();
+  const activeRoot = state13.sidebarRoots?.find((root) => root.id === state13.activeSidebarRootId);
+  const addMatchedPath = (path) => {
+    matched.add(path);
+    if (activeRoot && activeRoot.kind !== "file") matched.add(activeRoot.label + "/" + path);
+  };
   for (const e of state13.treeEntries) {
     if (e.path.toLowerCase().includes(ql)) {
-      matched.add(e.path);
+      addMatchedPath(e.path);
       continue;
     }
     if (e.file.size > CONTENT_SEARCH_MAX) continue;
@@ -7176,7 +7364,7 @@ async function searchTreeContents() {
       const text = await e.file.text();
       if (text.includes("\0")) continue;
       if (text.toLowerCase().includes(ql)) {
-        matched.add(e.path);
+        addMatchedPath(e.path);
         const line = text.split(/\r?\n/).find((entry) => entry.includes(q));
         viewerActions2().then(({ recordStage2SearchResult }) => recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() }));
       }
@@ -7254,8 +7442,8 @@ function folderContext() {
 }
 function setTree(open) {
   $8("fileTree").hidden = !open;
-  $8("ftResize").hidden = !open || isMobile2();
-  if (isMobile2()) $8("scrim").hidden = !open;
+  $8("ftResize").hidden = !open || isMobile3();
+  if (isMobile3()) $8("scrim").hidden = !open;
 }
 var TREE_MIN = 170;
 var TREE_MAX = 560;
@@ -7305,7 +7493,7 @@ function onTreeKey(e) {
 }
 
 // ../../docs/core/archive-tree.js
-import { $ as $9, isMobile as isMobile3, state as state14, toast as toast9 } from "./state.js";
+import { $ as $9, isMobile as isMobile4, state as state14, toast as toast9 } from "./state.js";
 function mountArchiveTree(archive, openEntry, loadIntake4, archiveIntake) {
   state14.skipNextFileSidebarRoot = true;
   captureActiveSidebarRoot();
@@ -7339,39 +7527,42 @@ function mountArchiveTree(archive, openEntry, loadIntake4, archiveIntake) {
   $9("ftSearchInput").value = "";
   $9("ftSearchCount").textContent = "";
   let archiveRoot = null;
-  async function openArchiveNode(nodeOrPath) {
+  async function openArchiveNode(nodeOrPath, {
+    skipFolderFlush = false,
+    sidebarNavigationToken = null
+  } = {}) {
     const node = typeof nodeOrPath === "string" ? entries.find((entry) => entry.path === nodeOrPath) : nodeOrPath;
     if (!node) {
       toast9("Could not open " + nodeOrPath);
-      return;
+      return false;
     }
     if (node.encrypted || !openEntry) {
       toast9("Password-protected archive entries cannot be opened yet.");
-      return;
+      return false;
     }
     try {
-      flushFolderEdit();
-      if (state14.currentFolderPath && state14.binaryEdit?.dirty) {
+      if (!skipFolderFlush) flushFolderEdit();
+      if (!skipFolderFlush && state14.currentFolderPath && state14.binaryEdit?.dirty) {
         (state14.binaryEdits = state14.binaryEdits || /* @__PURE__ */ new Map()).set(state14.currentFolderPath, state14.binaryEdit);
       }
       const stashed = state14.folderEdits.get(node.path);
       const intake = stashed != null ? intakeFromText(stashed, node.file.name) : await openEntry(node.path);
       if (!intake) {
         toast9("Could not open " + node.path);
-        return;
+        return false;
       }
-      state14.currentFolderPath = node.path;
-      archiveRoot.currentFolderPath = node.path;
-      state14.treeApi?.setActive?.(node.path);
       state14._skipDiscardGuard = true;
       state14._skipSidebarRoot = true;
-      await loadIntake4(intake);
+      const loaded = await loadIntake4(intake, { sidebarNavigationToken });
+      if (loaded === false) return false;
       state14.currentFolderPath = node.path;
       archiveRoot.currentFolderPath = node.path;
       state14.treeApi?.setActive?.(node.path);
-      if (isMobile3()) setTree(false);
+      if (isMobile4()) setTree(false);
+      return true;
     } catch {
       toast9("Could not open " + node.path);
+      return false;
     }
   }
   state14.archiveOpenNode = openArchiveNode;
@@ -7383,7 +7574,7 @@ function mountArchiveTree(archive, openEntry, loadIntake4, archiveIntake) {
   archiveRoot = addArchiveRoot({
     label: rootName,
     entries,
-    openNode: (entry, path) => openArchiveNode(path || entry.path),
+    openNode: (entry, path, options) => openArchiveNode(path || entry.path, options),
     archiveIntake,
     alreadyCaptured: true
   });
@@ -7448,7 +7639,7 @@ function clearArchiveTree({ keepRoot = false } = {}) {
 }
 
 // ../../docs/core/app.js
-import { $ as $12, isMobile as isMobile4, state as state19, toast as toast14, themeIsDark as themeIsDark2, escapeHtml as escapeHtml4, debounce as debounce2 } from "./state.js";
+import { $ as $12, isMobile as isMobile5, state as state19, toast as toast14, themeIsDark as themeIsDark2, escapeHtml as escapeHtml4, debounce as debounce2 } from "./state.js";
 
 // ../../docs/core/companion-ui.js
 import { $ as $10, state as state16, toast as toast13, escapeHtml as escapeHtml3 } from "./state.js";
@@ -7467,7 +7658,11 @@ function isEnabled() {
 function setEnabled(on) {
   localStorage.setItem(LS_ENABLED, on ? "true" : "false");
 }
+function requireEnabled() {
+  if (!isEnabled()) throw new Error("Companion is disabled");
+}
 async function detectCompanion() {
+  if (!isEnabled()) return false;
   try {
     const res = await Promise.race([
       fetch(`${BASE}/ping`),
@@ -7491,6 +7686,7 @@ function getToken() {
   return _token;
 }
 async function findFile(name, size) {
+  requireEnabled();
   const params = new URLSearchParams({ name, size });
   const res = await fetch(`${BASE}/find-file?${params}`);
   if (!res.ok) throw new Error(`find-file failed: ${res.status}`);
@@ -7504,6 +7700,7 @@ async function findFolder(relPath, size, mtime) {
   return (await res.json()).matches;
 }
 async function saveFile(absolutePath, bytes) {
+  requireEnabled();
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
     method: "POST",
     headers: { "X-Companion-Token": _token || "", "Content-Type": "application/octet-stream" },
@@ -7513,6 +7710,7 @@ async function saveFile(absolutePath, bytes) {
   return res.json();
 }
 async function deleteFile(absolutePath) {
+  requireEnabled();
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
     method: "DELETE",
     headers: { "X-Companion-Token": _token || "" }
@@ -7521,6 +7719,7 @@ async function deleteFile(absolutePath) {
   return res.json();
 }
 async function revealFile(absolutePath) {
+  requireEnabled();
   const res = await fetch(`${BASE}/reveal?path=${encodeURIComponent(absolutePath)}`, {
     method: "POST",
     headers: { "X-Companion-Token": _token || "" }
@@ -7529,20 +7728,24 @@ async function revealFile(absolutePath) {
   return res.json();
 }
 async function getWatchedPaths() {
+  requireEnabled();
   const res = await fetch(`${BASE}/watched-paths`);
   return (await res.json()).paths;
 }
 async function listFiles(path) {
+  requireEnabled();
   const res = await fetch(`${BASE}/files?path=${encodeURIComponent(path)}`);
   if (!res.ok) throw new Error(`files failed: ${res.status}`);
   return (await res.json()).entries;
 }
 async function getTree(absRoot) {
+  requireEnabled();
   const res = await fetch(`${BASE}/tree?path=${encodeURIComponent(absRoot)}`);
   if (!res.ok) throw new Error(`tree failed: ${res.status}`);
   return res.json();
 }
 async function fetchFileBlob(absPath) {
+  requireEnabled();
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absPath)}`);
   if (!res.ok) throw new Error(`read failed: ${res.status}`);
   return res.blob();
@@ -7566,6 +7769,7 @@ function watchFolder(rootAbs, onChange) {
   return () => es.close();
 }
 async function getLogs({ level, q, since, limit } = {}) {
+  requireEnabled();
   const params = new URLSearchParams();
   if (level) params.set("level", level);
   if (q) params.set("q", q);
@@ -7576,14 +7780,18 @@ async function getLogs({ level, q, since, limit } = {}) {
   return (await res.json()).entries;
 }
 async function addWatchedPath(path) {
+  requireEnabled();
   const res = await fetch(`${BASE}/watched-paths`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Companion-Token": _token || "" },
     body: JSON.stringify({ path })
   });
-  return res.json();
+  const result = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(result?.error || `add watched folder failed: ${res.status}`);
+  return result;
 }
 async function pickFolder() {
+  if (!isEnabled()) return null;
   try {
     const res = await fetch(`${BASE}/path-picker`, {
       method: "POST",
@@ -7596,12 +7804,15 @@ async function pickFolder() {
   }
 }
 async function removeWatchedPath(path) {
+  requireEnabled();
   const res = await fetch(`${BASE}/watched-paths`, {
     method: "DELETE",
     headers: { "Content-Type": "application/json", "X-Companion-Token": _token || "" },
     body: JSON.stringify({ path })
   });
-  return res.json();
+  const result = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(result?.error || `remove watched folder failed: ${res.status}`);
+  return result;
 }
 function watchFile(absolutePath, onChanged) {
   if (!isEnabled() || !absolutePath) return () => {
@@ -7752,28 +7963,57 @@ import { state as state15, toast as toast11 } from "./state.js";
 var MAX_SYNC_FILES = 1e3;
 var DEBOUNCE_MS = 1200;
 var LS_AUTO = "fv:companion:autorefresh";
-var getFolderRoot = () => null;
+var getFolderContext = () => null;
 var autoRefresh = false;
 var _watchCleanup = null;
 var _debounce = null;
 var _refreshBtn = null;
 var _autoBtn = null;
-var _busy = false;
-var _known = /* @__PURE__ */ new Map();
-function setupFolderRefresh({ getFolderRoot: getter }) {
-  getFolderRoot = getter || getFolderRoot;
+var _busyRoots = /* @__PURE__ */ new WeakSet();
+function setupFolderRefresh({ getFolderContext: getter }) {
+  getFolderContext = getter || getFolderContext;
   autoRefresh = localStorage.getItem(LS_AUTO) === "true";
 }
-function rootInfo() {
-  const root = getFolderRoot();
-  if (!root) return null;
+function rootInfo(context = getFolderContext()) {
+  const sidebarRoot = context?.sidebarRoot;
+  const root = context?.root;
+  if (!sidebarRoot || !root || sidebarRoot.companionFolderRoot !== root) return null;
   const sep = root.includes("\\") && !root.includes("/") ? "\\" : "/";
   const base = root.endsWith(sep) ? root.slice(0, -1) : root;
-  return { root, sep, base, rootName: base.split(/[\\/]/).pop() || "Folder" };
+  return {
+    sidebarRoot,
+    root,
+    sep,
+    base,
+    linkGeneration: sidebarRoot._companionLinkGeneration || 0,
+    authorizationGeneration: context.authorizationGeneration
+  };
 }
-var relOf = (treePath) => treePath.split("/").slice(1).join("/");
-var treeOf = (rootName, rel) => rootName + "/" + rel;
 var absOf = (ri, rel) => ri.base + ri.sep + rel.split("/").join(ri.sep);
+function contextStillLinked(ri) {
+  const current = getFolderContext();
+  return !!ri && current?.authorizationGeneration === ri.authorizationGeneration && state15.sidebarRoots?.includes(ri.sidebarRoot) && ri.sidebarRoot.companionFolderRoot === ri.root && (ri.sidebarRoot._companionLinkGeneration || 0) === ri.linkGeneration;
+}
+function contextStillActive(ri) {
+  const current = rootInfo();
+  return contextStillLinked(ri) && current?.sidebarRoot === ri.sidebarRoot && current.root === ri.root && current.linkGeneration === ri.linkGeneration;
+}
+function knownFor(ri) {
+  const root = ri.sidebarRoot;
+  if (root._companionKnownRoot !== ri.root || root._companionKnownGeneration !== ri.linkGeneration) {
+    root._companionKnownRoot = ri.root;
+    root._companionKnownGeneration = ri.linkGeneration;
+    root._companionKnown = /* @__PURE__ */ new Map();
+    root._companionSeedGeneration = (root._companionSeedGeneration || 0) + 1;
+  }
+  return root._companionKnown;
+}
+function commitKnown(ri, known) {
+  if (!contextStillLinked(ri)) return false;
+  ri.sidebarRoot._companionSeedGeneration = (ri.sidebarRoot._companionSeedGeneration || 0) + 1;
+  ri.sidebarRoot._companionKnown = known;
+  return true;
+}
 function onlineName(rel) {
   const slash = rel.lastIndexOf("/");
   const dir = slash >= 0 ? rel.slice(0, slash + 1) : "";
@@ -7783,13 +8023,19 @@ function onlineName(rel) {
   const ext = dot > 0 ? name.slice(dot) : "";
   return dir + baseName + " (online)" + ext;
 }
-async function seedKnown() {
-  const ri = rootInfo();
+async function seedKnown(ri = rootInfo()) {
   if (!ri) return;
+  const seedGeneration = (ri.sidebarRoot._companionSeedGeneration || 0) + 1;
+  ri.sidebarRoot._companionSeedGeneration = seedGeneration;
   try {
     const t = await getTree(ri.root);
-    _known = new Map((t.files || []).map((f) => [f.path, { size: f.size, mtime: f.mtime || 0 }]));
+    if (!contextStillLinked(ri) || ri.sidebarRoot._companionSeedGeneration !== seedGeneration) return;
+    ri.sidebarRoot._companionKnown = new Map(
+      (t.files || []).map((f) => [f.path, { size: f.size, mtime: f.mtime || 0 }])
+    );
+    return true;
   } catch {
+    return false;
   }
 }
 function ensureButtons() {
@@ -7829,9 +8075,9 @@ function setAuto(on) {
 }
 function startWatch() {
   stopWatch();
-  const root = getFolderRoot();
-  if (!root || !autoRefresh) return;
-  _watchCleanup = watchFolder(root, () => onDiskChange());
+  const ri = rootInfo();
+  if (!ri || !autoRefresh) return;
+  _watchCleanup = watchFolder(ri.root, () => onDiskChange(ri));
 }
 function stopWatch() {
   if (_watchCleanup) {
@@ -7840,21 +8086,29 @@ function stopWatch() {
   }
   clearTimeout(_debounce);
 }
-function onDiskChange() {
+function onDiskChange(ri) {
+  if (!contextStillActive(ri)) return;
   clearTimeout(_debounce);
-  _debounce = setTimeout(() => refreshFolderFromDisk({ silent: true }), DEBOUNCE_MS);
+  _debounce = setTimeout(() => {
+    if (contextStillActive(ri)) refreshFolderFromDisk({ silent: true });
+  }, DEBOUNCE_MS);
 }
 function onFolderRootResolved() {
+  const ri = rootInfo();
+  if (!ri) {
+    onFolderRootCleared();
+    return;
+  }
+  stopWatch();
   ensureButtons();
   if (_refreshBtn) _refreshBtn.hidden = false;
   if (_autoBtn) _autoBtn.hidden = false;
   document.body.classList.add("companion-folder-active");
-  seedKnown();
+  if (!knownFor(ri).size) seedKnown(ri);
   if (autoRefresh) startWatch();
 }
 function onFolderRootCleared() {
   stopWatch();
-  _known = /* @__PURE__ */ new Map();
   if (_refreshBtn) _refreshBtn.hidden = true;
   if (_autoBtn) _autoBtn.hidden = true;
   document.body.classList.remove("companion-folder-active");
@@ -7865,11 +8119,16 @@ async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
     if (manual) toast11("No companion folder linked.");
     return;
   }
-  if (_busy) return;
-  _busy = true;
-  if (_refreshBtn) _refreshBtn.classList.add("ft-spin");
+  const root = ri.sidebarRoot;
+  if (_busyRoots.has(root)) return;
+  _busyRoots.add(root);
+  if (_refreshBtn && contextStillActive(ri)) _refreshBtn.classList.add("ft-spin");
   try {
-    if (!_known.size) await seedKnown();
+    if (!knownFor(ri).size) {
+      await seedKnown(ri);
+      if (!contextStillLinked(ri)) return;
+    }
+    const known = new Map(knownFor(ri));
     let tree;
     try {
       tree = await getTree(ri.root);
@@ -7877,17 +8136,18 @@ async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
       if (!silent) toast11("Sync failed: " + e.message);
       return;
     }
+    if (!contextStillLinked(ri)) return;
     const now = new Map((tree.files || []).map((f) => [f.path, { size: f.size, mtime: f.mtime || 0 }]));
     const added = [], modified = [], removed = [];
     for (const [p, m] of now) {
-      const prev = _known.get(p);
+      const prev = known.get(p);
       if (!prev) added.push(p);
       else if (prev.size !== m.size || prev.mtime !== m.mtime) modified.push(p);
     }
-    for (const p of _known.keys()) if (!now.has(p)) removed.push(p);
-    _known = now;
+    for (const p of known.keys()) if (!now.has(p)) removed.push(p);
     if (!added.length && !modified.length && !removed.length) {
-      if (manual) toast11("No changes on disk.");
+      commitKnown(ri, now);
+      if (manual && contextStillActive(ri)) toast11("No changes on disk.");
       return;
     }
     if (added.length + modified.length > MAX_SYNC_FILES) {
@@ -7895,10 +8155,11 @@ async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
       return;
     }
     const byRel = /* @__PURE__ */ new Map();
-    for (const e of state15.treeEntries || []) byRel.set(relOf(e.path), e);
+    for (const e of root.treeEntries || []) byRel.set(e.path, e);
+    const folderEdits = root.folderEdits || /* @__PURE__ */ new Map();
     const conflicts = [];
     for (const rel of removed) {
-      if (state15.folderEdits.has(treeOf(ri.rootName, rel))) {
+      if (folderEdits.has(rel)) {
         conflicts.push({ name: rel.split("/").pop(), kind: "removed" });
         continue;
       }
@@ -7908,36 +8169,42 @@ async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
       let blob;
       try {
         blob = await fetchFileBlob(absOf(ri, rel));
-      } catch {
-        continue;
+      } catch (e) {
+        if (!silent) toast11("Sync failed: " + e.message);
+        return;
       }
+      if (!contextStillLinked(ri)) return;
       const file = new File([blob], rel.split("/").pop());
-      const treePath = treeOf(ri.rootName, rel);
-      if (modified.includes(rel) && state15.folderEdits.has(treePath)) {
+      if (modified.includes(rel) && folderEdits.has(rel)) {
         const onlineRel = onlineName(rel);
-        byRel.set(onlineRel, { file, path: treeOf(ri.rootName, onlineRel) });
+        byRel.set(onlineRel, { file, path: onlineRel, originalPath: onlineRel });
         conflicts.push({ name: rel.split("/").pop(), kind: "modified" });
       } else {
         const existing = byRel.get(rel);
-        if (existing) existing.file = file;
-        else byRel.set(rel, { file, path: treePath });
+        if (existing) byRel.set(rel, { ...existing, file });
+        else byRel.set(rel, { file, path: rel, originalPath: rel });
       }
     }
-    state15.treeEntries = [...byRel.values()];
-    const openFolders = state15.treeApi?.getOpenFolders?.() || [];
-    renderFolderTree({ openFolders, activePath: state15.currentFolderPath });
+    if (!contextStillLinked(ri)) return;
+    root.treeEntries = [...byRel.values()];
+    commitKnown(ri, now);
+    if (contextStillActive(ri)) {
+      state15.treeEntries = root.treeEntries;
+      state15.folderEdits = folderEdits;
+      renderSidebarRoots(root, root.currentFolderPath, { skipCapture: true });
+    }
     const parts = [];
     if (added.length) parts.push(added.length + " added");
     if (modified.length) parts.push(modified.length + " changed");
     if (removed.length) parts.push(removed.length + " removed");
-    if (manual || !silent) toast11("Folder synced: " + parts.join(", "));
-    if (conflicts.length) {
+    if (contextStillActive(ri) && (manual || !silent)) toast11("Folder synced: " + parts.join(", "));
+    if (contextStillActive(ri) && conflicts.length) {
       const names = conflicts.map((c) => c.name).join(", ");
       toast11(`Heads up: you have local edits in ${names}, and they also changed on disk. Your version is kept; the disk copy was added as "(online)" — open both to compare and decide.`, 9e3);
     }
   } finally {
-    _busy = false;
-    if (_refreshBtn) _refreshBtn.classList.remove("ft-spin");
+    _busyRoots.delete(root);
+    if (_refreshBtn && contextStillActive(ri)) _refreshBtn.classList.remove("ft-spin");
   }
 }
 
@@ -8007,7 +8274,7 @@ function appendCompanionDownloadPanel(panel) {
   description.textContent = "The Companion is an optional local app that lets this viewer save files and delete files or subfolders inside folders you choose. It never deletes a watched root. The viewer works fully without it.";
   const net = document.createElement("p");
   net.className = "companion-net";
-  net.innerHTML = "It listens only on loopback at <code>127.0.0.1:7700</code>. Its browser CORS barrier allows this deployed viewer and pages served from <code>localhost</code> or <code>127.0.0.1</code> on any port; those pages can read <code>/ping</code>, including its session token. CORS does not constrain local processes. File reads and mutations are restricted to watched roots you explicitly add, and only mutating requests require the token.";
+  net.innerHTML = "It listens only on loopback at <code>127.0.0.1:7700</code>, so it is not exposed to the LAN or internet. Loopback is machine-wide, not per account: any local process or OS account able to reach it can use the Companion’s permissions to act inside watched roots. CORS and the session token do not authenticate local processes. The browser CORS barrier allows this deployed viewer and pages served from <code>localhost</code> or <code>127.0.0.1</code> on any port; those pages can read <code>/ping</code>, including its session token. File reads and mutations are restricted to watched roots you explicitly add, and only mutating requests require the token.";
   const tableLabel = document.createElement("p");
   tableLabel.className = "companion-table-label";
   tableLabel.textContent = "Every request it can make (inspect them in your Network tab):";
@@ -8156,18 +8423,19 @@ function renderCompanionSettings(container) {
     setEnabled(enableToggle.checked);
     if (enableToggle.checked) {
       const ok = await detectCompanion();
+      if (!isEnabled()) return;
       setCompanionAvailable(ok);
-      document.body.classList.toggle("companion-active", ok);
-      summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? "connected" : ""}">${ok ? "● connected" : "○ not found"}</span>`;
+      const connected = isCompanionAvailable();
+      document.body.classList.toggle("companion-active", connected);
+      summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? "connected" : ""}">${connected ? "● connected" : "○ not found"}</span>`;
       syncSaveBtn();
-      updateConnButton(ok);
-      if (ok) showCompanionIndicator();
+      updateConnButton(connected);
+      if (connected) showCompanionIndicator();
       else toast12("Companion not found — is it running on :7700?");
-      if (ok) refreshFolders();
+      if (connected) refreshFolders();
       else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
     } else {
       setCompanionAvailable(false);
-      stopWatching();
       document.body.classList.remove("companion-active");
       summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
       syncSaveBtn();
@@ -8185,12 +8453,14 @@ function renderCompanionSettings(container) {
     testBtn.disabled = true;
     const ok = await detectCompanion();
     testBtn.disabled = false;
+    if (!isEnabled()) return;
     setCompanionAvailable(ok);
-    document.body.classList.toggle("companion-active", ok);
-    summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? "connected" : ""}">${ok ? "● connected" : "○ not found"}</span>`;
+    const connected = isCompanionAvailable();
+    document.body.classList.toggle("companion-active", connected);
+    summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? "connected" : ""}">${connected ? "● connected" : "○ not found"}</span>`;
     syncSaveBtn();
-    updateConnButton(ok);
-    toast12(ok ? "Companion connected ✓" : "Companion not found — is it running?");
+    updateConnButton(connected);
+    toast12(connected ? "Companion connected ✓" : "Companion not found — is it running?");
   });
   const enableControls = document.createElement("div");
   enableControls.style.display = "flex";
@@ -8307,7 +8577,7 @@ Watching it makes the companion scan it recursively on every file lookup and sav
         await refreshFolders();
         const risk = looksLikeRiskyPath(res.chosen || "");
         if (risk) toast12(`Heads up: that folder looks like ${risk} — watching it may be slow.`, 5e3);
-      }
+      } else if (res.error) toast12("Pick failed: " + res.error);
     } catch (err) {
       toast12("Pick failed: " + err.message);
     } finally {
@@ -8330,6 +8600,7 @@ var companionFolderRoot = null;
 var loadIntakeCallback = null;
 var _watchCleanup2 = null;
 var _healthTimer = null;
+var _availabilityGeneration = 0;
 var _selfSaved = /* @__PURE__ */ new Map();
 var SELF_SAVE_WINDOW_MS = 4e3;
 function markSelfSaved(absPath) {
@@ -8347,20 +8618,90 @@ function wasSelfSaved(absPath) {
 }
 function initCompanionUi({ loadIntake: loadIntake4 }) {
   loadIntakeCallback = loadIntake4;
-  setupFolderRefresh({ getFolderRoot: () => companionFolderRoot });
+  setupFolderRefresh({
+    getFolderContext: () => {
+      if (!companionAvailable || !isEnabled() || !companionFolderRoot) return null;
+      const sidebarRoot = state16.sidebarRoots?.find(
+        (candidate) => candidate.id === state16.activeSidebarRootId
+      );
+      if (sidebarRoot?.kind !== "folder" || sidebarRoot.companionFolderRoot !== companionFolderRoot) return null;
+      return {
+        sidebarRoot,
+        root: companionFolderRoot,
+        authorizationGeneration: _availabilityGeneration
+      };
+    }
+  });
 }
 function isCompanionAvailable() {
   return companionAvailable;
 }
 function setCompanionAvailable(v) {
-  companionAvailable = v;
+  const effective = !!v && isEnabled();
+  if (effective !== companionAvailable) _availabilityGeneration++;
+  companionAvailable = effective;
+  document.body.classList.toggle("companion-active", companionAvailable && isEnabled());
+  if (!companionAvailable || !isEnabled()) {
+    companionFolderRoot = null;
+    state16.companionOperationToken = null;
+    state16.companionReloadToken = null;
+    stopWatching();
+    onFolderRootCleared();
+  } else {
+    const activeRoot = state16.sidebarRoots?.find(
+      (candidate) => candidate.id === state16.activeSidebarRootId
+    );
+    companionFolderRoot = activeRoot?.kind === "folder" ? activeRoot.companionFolderRoot || null : null;
+    if (companionFolderRoot) onFolderRootResolved();
+    else onFolderRootCleared();
+    if (companionLinkedPath && !state16.currentFolderPath) startWatching(companionLinkedPath);
+  }
+  state16.treeApi?.rerender?.();
+  syncSaveBtn();
 }
 function hasCompanionFolderRoot() {
   return !!companionFolderRoot;
 }
 function resetCompanionFolderRoot() {
+  _availabilityGeneration++;
   companionFolderRoot = null;
   onFolderRootCleared();
+}
+function activateCompanionSidebarRoot(sidebarRoot) {
+  companionFolderRoot = companionAvailable && isEnabled() && sidebarRoot?.kind === "folder" ? sidebarRoot.companionFolderRoot || null : null;
+  if (companionFolderRoot) onFolderRootResolved();
+  else onFolderRootCleared();
+  syncSaveBtn();
+}
+function captureOperationContext() {
+  return {
+    authorizationGeneration: _availabilityGeneration,
+    intake: state16.intake,
+    activeSidebarRootId: state16.activeSidebarRootId || null,
+    linkedPath: companionLinkedPath,
+    folderRoot: companionFolderRoot,
+    currentFolderPath: state16.currentFolderPath || null
+  };
+}
+function beginCompanionOperation() {
+  if (state16.companionOperationToken) return null;
+  const token = {};
+  state16.companionOperationToken = token;
+  syncSaveBtn();
+  return token;
+}
+function operationAuthorized(context, token) {
+  return !!context && !!token && state16.companionOperationToken === token && companionAvailable && isEnabled() && context.authorizationGeneration === _availabilityGeneration;
+}
+function operationContextCurrent(context, token) {
+  return operationAuthorized(context, token) && state16.intake === context.intake && (state16.activeSidebarRootId || null) === context.activeSidebarRootId && companionLinkedPath === context.linkedPath && companionFolderRoot === context.folderRoot && (state16.currentFolderPath || null) === context.currentFolderPath;
+}
+function finishCompanionOperation(token) {
+  if (state16.companionOperationToken !== token) return;
+  state16.companionOperationToken = null;
+  if (state16.companionReloadToken === token) state16.companionReloadToken = null;
+  syncSaveBtn();
+  state16.treeApi?.rerender?.();
 }
 function showCompanionIndicator() {
   toast13("Companion connected — save files back to disk with 💾", 3500);
@@ -8391,8 +8732,15 @@ function promptFolderRootPicker(matches) {
     modal.showModal();
   });
 }
-async function resolveDroppedFolderRoot(entries) {
+async function resolveDroppedFolderRoot(entries, targetSidebarRoot = null) {
   if (!companionAvailable || !isEnabled() || !entries || !entries.length) return;
+  const targetRoot = targetSidebarRoot || state16.sidebarRoots?.find(
+    (candidate) => candidate.id === state16.activeSidebarRootId
+  );
+  if (targetRoot?.kind !== "folder" || !state16.sidebarRoots?.includes(targetRoot)) return;
+  const resolveGeneration = (targetRoot._companionResolveGeneration || 0) + 1;
+  targetRoot._companionResolveGeneration = resolveGeneration;
+  const availabilityGeneration = _availabilityGeneration;
   const first = entries[0];
   const relPath = first.path || first.file?.webkitRelativePath;
   if (!relPath) return;
@@ -8403,17 +8751,32 @@ async function resolveDroppedFolderRoot(entries) {
   } else if (matches.length > 1) {
     root = await promptFolderRootPicker(matches);
   }
-  companionFolderRoot = root;
-  if (root) {
+  if (!companionAvailable || !isEnabled() || availabilityGeneration !== _availabilityGeneration || targetRoot._companionResolveGeneration !== resolveGeneration || !state16.sidebarRoots?.includes(targetRoot)) return;
+  targetRoot.companionFolderRoot = root || null;
+  targetRoot._companionLinkGeneration = (targetRoot._companionLinkGeneration || 0) + 1;
+  const targetStillActive = targetRoot.id === state16.activeSidebarRootId;
+  if (targetStillActive) companionFolderRoot = root;
+  if (root && targetStillActive) {
     syncSaveBtn();
     onFolderRootResolved();
     const currentAbsPath = absolutePathForFile(state16.currentFolderPath);
     if (currentAbsPath && state16.currentFolderPath) startWatching(currentAbsPath);
+  } else if (targetStillActive) {
+    onFolderRootCleared();
+    syncSaveBtn();
   }
+  if (targetStillActive) state16.treeApi?.rerender?.();
 }
-function absolutePathForFile(relPath) {
+function absolutePathForFile(relPath, { sidebarPath = false } = {}) {
   if (!companionFolderRoot || !relPath) return null;
-  const relFromRoot = relPath.split("/").slice(1);
+  let relFromRoot = relPath.split("/").filter(Boolean);
+  if (sidebarPath) {
+    const activeRoot = state16.sidebarRoots?.find(
+      (candidate) => candidate.id === state16.activeSidebarRootId
+    );
+    if (!activeRoot || relFromRoot[0] !== activeRoot.label) return null;
+    relFromRoot = relFromRoot.slice(1);
+  }
   if (!relFromRoot.length) return null;
   const sep = companionFolderRoot.includes("\\") && !companionFolderRoot.includes("/") ? "\\" : "/";
   const base = companionFolderRoot.endsWith(sep) ? companionFolderRoot.slice(0, -1) : companionFolderRoot;
@@ -8422,14 +8785,16 @@ function absolutePathForFile(relPath) {
 async function tryAutoLink() {
   if (!companionAvailable || !isEnabled() || !state16.intake) return;
   if (state16.currentFolderPath || companionLinkedPath) return;
-  const { filename, size } = state16.intake;
+  const intake = state16.intake;
+  const authorizationGeneration = _availabilityGeneration;
+  const { filename, size } = intake;
   let matches;
   try {
     matches = await findFile(filename, size);
   } catch {
     return;
   }
-  if (matches && matches.length === 1 && state16.intake && state16.intake.filename === filename) {
+  if (matches && matches.length === 1 && companionAvailable && isEnabled() && authorizationGeneration === _availabilityGeneration && state16.intake === intake && !state16.currentFolderPath && !companionLinkedPath) {
     setCompanionLinked(matches[0]);
     syncSaveBtn();
   }
@@ -8444,11 +8809,12 @@ function setCompanionLinked(absPath) {
   } else {
     el.hidden = true;
   }
-  if (absPath && companionAvailable) startWatching(absPath);
+  if (absPath && companionAvailable && isEnabled()) startWatching(absPath);
   else stopWatching();
 }
 function startWatching(absolutePath) {
   stopWatching();
+  if (!companionAvailable || !isEnabled() || !absolutePath) return;
   _watchCleanup2 = watchFile(absolutePath, (event) => {
     if (event.kind !== "remove" && wasSelfSaved(absolutePath)) return;
     showReloadBanner(absolutePath, event.kind);
@@ -8462,28 +8828,60 @@ function stopWatching() {
   document.querySelector(".companion-reload-banner")?.remove();
 }
 async function reloadFromDisk(absolutePath) {
+  if (!companionAvailable || !isEnabled() || state16.sidebarNavigationPending) return;
+  const context = captureOperationContext();
+  const token = beginCompanionOperation();
+  if (!token) return;
   try {
     const res = await fetch(`http://127.0.0.1:7700/file?path=${encodeURIComponent(absolutePath)}`);
+    if (!operationContextCurrent(context, token)) return;
     if (!res.ok) {
       toast13("Reload failed: " + res.status);
       return;
     }
     const blob = await res.blob();
-    const file = new File([blob], absolutePath.split("/").pop() || "file", { type: blob.type });
+    if (!operationContextCurrent(context, token)) return;
+    const file = new File([blob], absolutePath.split(/[\\/]/).pop() || "file", { type: blob.type });
     const intake = await intakeFromFile(file);
-    const savedFolderPath = state16.currentFolderPath;
+    if (!operationContextCurrent(context, token)) return;
+    const savedFolderPath = context.currentFolderPath;
     state16._skipDiscardGuard = true;
-    await loadIntakeCallback(intake);
+    state16._skipSidebarRoot = true;
+    state16.companionReloadToken = token;
+    const loaded = await loadIntakeCallback(intake);
+    state16.companionReloadToken = null;
+    if (loaded === false || !operationAuthorized(context, token)) return;
+    const sidebarRoot = state16.sidebarRoots?.find(
+      (candidate) => candidate.id === context.activeSidebarRootId
+    );
     if (savedFolderPath) {
+      const entry = sidebarRoot?.treeEntries?.find((candidate) => candidate.path === savedFolderPath);
+      if (entry) {
+        entry.file = file;
+        entry.intake = intake;
+      }
+      sidebarRoot?.folderEdits?.delete(savedFolderPath);
+      if (sidebarRoot) sidebarRoot.currentFolderPath = savedFolderPath;
       state16.currentFolderPath = savedFolderPath;
       state16.treeApi?.setActive?.(savedFolderPath);
+      companionFolderRoot = context.folderRoot;
       if (companionFolderRoot) startWatching(absolutePath);
     } else {
+      const entry = sidebarRoot?.kind === "file" ? sidebarRoot.treeEntries?.[0] : null;
+      if (entry) {
+        entry.file = file;
+        entry.intake = intake;
+      }
+      sidebarRoot?.folderEdits?.clear?.();
       setCompanionLinked(absolutePath);
     }
+    syncSaveBtn();
     toast13("Reloaded from disk");
   } catch (err) {
-    toast13("Reload error: " + err.message);
+    if (operationAuthorized(context, token)) toast13("Reload error: " + err.message);
+  } finally {
+    state16.companionReloadToken = null;
+    finishCompanionOperation(token);
   }
 }
 function showReloadBanner(absolutePath, kind) {
@@ -8510,21 +8908,31 @@ function showReloadBanner(absolutePath, kind) {
 function syncSaveBtn() {
   const btn = $10("saveBtn");
   if (!btn) return;
+  const diskActionsReady = companionAvailable && isEnabled() && !state16.sidebarNavigationPending && !state16.companionOperationToken;
   const isFolderFile = !!(state16.currentFolderPath && state16.treeEntries && !state16.sessionTree);
   const folderSaveReady = isFolderFile ? !!companionFolderRoot : true;
   const canSaveBinaryEdit = !!(state16.binaryEdit?.dirty && typeof state16.binaryEdit.getBytes === "function");
-  const show = companionAvailable && !!state16.intake && (!state16.intake.isBinary || canSaveBinaryEdit) && folderSaveReady;
+  const wholeFileLoaded = !!state16.intake && !state16.intake.truncated;
+  const show = diskActionsReady && wholeFileLoaded && (!state16.intake.isBinary || canSaveBinaryEdit) && folderSaveReady;
   btn.hidden = !show;
   const delBtn = $10("deleteBtn");
   if (delBtn) {
     const linked = !!companionLinkedPath || isFolderFile && !!companionFolderRoot;
-    delBtn.hidden = !(companionAvailable && !!state16.intake && linked);
+    delBtn.hidden = !(diskActionsReady && !!state16.intake && linked);
   }
   if (show || delBtn && !delBtn.hidden) layoutTopbar();
 }
 async function onSaveClick() {
-  if (!companionAvailable || !state16.intake) return;
-  const { filename, size } = state16.intake;
+  if (!companionAvailable || !isEnabled() || !state16.intake || state16.sidebarNavigationPending || state16.companionOperationToken) return;
+  if (state16.intake.truncated) {
+    syncSaveBtn();
+    toast13("Save disabled: this viewer loaded only part of the file. Download a copy or reopen the complete file before saving to disk.");
+    return;
+  }
+  const context = captureOperationContext();
+  const token = beginCompanionOperation();
+  if (!token) return;
+  const { filename, size } = context.intake;
   $10("saveBtn").disabled = true;
   try {
     let absPath = null;
@@ -8540,14 +8948,16 @@ async function onSaveClick() {
       try {
         matches = await findFile(filename, size);
       } catch (err) {
-        toast13("Companion: could not search — " + err.message);
+        if (operationContextCurrent(context, token)) toast13("Companion: could not search — " + err.message);
         return;
       }
+      if (!operationContextCurrent(context, token)) return;
       if (!matches || matches.length === 0) {
         if (!confirm(`Couldn't find "${filename}" in your watched folders.
 
 Do you want to create it as a new file? You'll choose which watched folder to put it in.`)) return;
         const dir = await browseForFolder({ title: `Choose a folder to create "${filename}" in:` });
+        if (!operationContextCurrent(context, token)) return;
         if (!dir) return;
         absPath = joinPath(dir, filename);
         isCreate = true;
@@ -8555,10 +8965,13 @@ Do you want to create it as a new file? You'll choose which watched folder to pu
         absPath = matches[0];
       } else {
         absPath = await pickCompanionPath(matches);
+        if (!operationContextCurrent(context, token)) return;
         if (!absPath) return;
       }
     }
+    if (!operationContextCurrent(context, token)) return;
     const isBinaryEdit = !!(state16.binaryEdit?.dirty && typeof state16.binaryEdit.getBytes === "function");
+    const binaryEdit = state16.binaryEdit;
     const msg = isBinaryEdit ? `Overwrite image on disk?
 
 ${absPath}
@@ -8566,10 +8979,33 @@ ${absPath}
 This replaces the original file with the edited image bytes.` : `Save to:
 ${absPath}?`;
     if (!isCreate && !confirm(msg)) return;
-    const bytes = isBinaryEdit ? await state16.binaryEdit.getBytes() : state16.rawview ? new TextEncoder().encode(state16.rawview.getValue()) : state16.intake.bytes || new TextEncoder().encode(state16.intake.text || "");
+    const bytes = isBinaryEdit ? await binaryEdit.getBytes() : state16.rawview ? new TextEncoder().encode(state16.rawview.getValue()) : context.intake.bytes || new TextEncoder().encode(context.intake.text || "");
+    if (!operationContextCurrent(context, token) || isBinaryEdit && state16.binaryEdit !== binaryEdit) return;
+    const savedFile = new File([bytes], filename, {
+      type: context.intake.mimeType || "",
+      lastModified: Date.now()
+    });
+    const savedIntake = await intakeFromFile(savedFile);
+    if (!operationContextCurrent(context, token)) return;
     try {
       await saveFile(absPath, bytes);
       markSelfSaved(absPath);
+      if (!operationContextCurrent(context, token)) return;
+      const sidebarRoot = state16.sidebarRoots?.find(
+        (candidate) => candidate.id === context.activeSidebarRootId
+      );
+      const storedEntry = context.currentFolderPath ? sidebarRoot?.treeEntries?.find((candidate) => candidate.path === context.currentFolderPath) : sidebarRoot?.kind === "file" ? sidebarRoot.treeEntries?.[0] : null;
+      if (storedEntry) {
+        storedEntry.file = savedFile;
+        storedEntry.intake = savedIntake;
+      }
+      Object.assign(context.intake, {
+        bytes: savedIntake.bytes,
+        text: savedIntake.text,
+        size: savedIntake.size,
+        loadedBytes: savedIntake.loadedBytes,
+        truncated: false
+      });
       if (!state16.currentFolderPath) setCompanionLinked(absPath);
       if (isBinaryEdit) state16.binaryEdit.dirty = false;
       if (state16.sessionEdits.has(state16.intake.filename)) {
@@ -8586,15 +9022,19 @@ ${absPath}?`;
       syncSaveBtn();
       toast13((isCreate ? "Created on disk: " : "Saved to disk: ") + absPath);
     } catch (err) {
-      toast13("Save failed: " + err.message);
+      if (operationContextCurrent(context, token)) toast13("Save failed: " + err.message);
     }
   } finally {
     $10("saveBtn").disabled = false;
+    finishCompanionOperation(token);
   }
 }
 async function onDeleteClick() {
-  if (!companionAvailable || !state16.intake) return;
-  const { filename, size } = state16.intake;
+  if (!companionAvailable || !isEnabled() || !state16.intake || state16.sidebarNavigationPending || state16.companionOperationToken) return;
+  const context = captureOperationContext();
+  const token = beginCompanionOperation();
+  if (!token) return;
+  const { filename, size } = context.intake;
   const btn = $10("deleteBtn");
   if (btn) btn.disabled = true;
   try {
@@ -8606,14 +9046,16 @@ async function onDeleteClick() {
       try {
         matches = await findFile(filename, size);
       } catch (err) {
-        toast13("Companion: could not search — " + err.message);
+        if (operationContextCurrent(context, token)) toast13("Companion: could not search — " + err.message);
         return;
       }
+      if (!operationContextCurrent(context, token)) return;
       if (!matches || matches.length === 0) {
         toast13("File not found in watched folders.");
         return;
       }
       absPath = matches.length === 1 ? matches[0] : await pickCompanionPath(matches);
+      if (!operationContextCurrent(context, token)) return;
       if (!absPath) return;
     }
     if (!confirm(`Delete "${filename}" from disk?
@@ -8621,28 +9063,34 @@ async function onDeleteClick() {
 ${absPath}
 
 This permanently deletes the file and cannot be undone. (It stays open here, so you can still re-download this copy.)`)) return;
+    if (!operationContextCurrent(context, token)) return;
     try {
       await deleteFile(absPath);
+      if (!operationContextCurrent(context, token)) return;
       setCompanionLinked(null);
       syncSaveBtn();
       toast13("Deleted from disk: " + absPath);
     } catch (err) {
-      toast13("Delete failed: " + err.message);
+      if (operationContextCurrent(context, token)) toast13("Delete failed: " + err.message);
     }
   } finally {
     if (btn) btn.disabled = false;
+    finishCompanionOperation(token);
   }
 }
 async function deleteTreePath({ path, isFolder, name }) {
-  if (!companionAvailable || !companionFolderRoot) {
+  if (!companionAvailable || !isEnabled() || !companionFolderRoot || state16.sidebarNavigationPending || state16.companionOperationToken) {
     toast13("Companion folder not linked.");
     return;
   }
-  const absPath = absolutePathForFile(path);
+  const absPath = absolutePathForFile(path, { sidebarPath: true });
   if (!absPath) {
     toast13("Could not resolve that path on disk.");
     return;
   }
+  const context = captureOperationContext();
+  const token = beginCompanionOperation();
+  if (!token) return;
   const msg = isFolder ? `Delete the folder "${name}" and everything inside it from disk?
 
 ${absPath}
@@ -8652,30 +9100,43 @@ This permanently deletes the folder and all its contents and cannot be undone.` 
 ${absPath}
 
 This permanently deletes the file and cannot be undone.`;
-  if (!confirm(msg)) return;
+  if (!confirm(msg)) {
+    finishCompanionOperation(token);
+    return;
+  }
   try {
+    if (!operationContextCurrent(context, token)) return;
     await deleteFile(absPath);
+    if (!operationContextCurrent(context, token)) return;
     if (companionLinkedPath === absPath) setCompanionLinked(null);
     toast13((isFolder ? "Folder deleted: " : "Deleted: ") + absPath);
     refreshFolderFromDisk({ silent: true });
   } catch (err) {
-    toast13("Delete failed: " + err.message);
+    if (operationContextCurrent(context, token)) toast13("Delete failed: " + err.message);
+  } finally {
+    finishCompanionOperation(token);
   }
 }
 async function revealTreePath({ path }) {
-  if (!companionAvailable || !companionFolderRoot) {
+  if (!companionAvailable || !isEnabled() || !companionFolderRoot || state16.sidebarNavigationPending || state16.companionOperationToken) {
     toast13("Companion folder not linked.");
     return;
   }
-  const absPath = absolutePathForFile(path);
+  const absPath = absolutePathForFile(path, { sidebarPath: true });
   if (!absPath) {
     toast13("Could not resolve that path on disk.");
     return;
   }
+  const context = captureOperationContext();
+  const token = beginCompanionOperation();
+  if (!token) return;
   try {
     await revealFile(absPath);
+    if (!operationContextCurrent(context, token)) return;
   } catch (err) {
-    toast13("Reveal failed: " + err.message);
+    if (operationContextCurrent(context, token)) toast13("Reveal failed: " + err.message);
+  } finally {
+    finishCompanionOperation(token);
   }
 }
 function pickCompanionPath(paths) {
@@ -8736,18 +9197,14 @@ async function healthTick() {
     ok = false;
   }
   if (ok !== companionAvailable) {
-    companionAvailable = ok;
-    document.body.classList.toggle("companion-active", ok);
-    if (!ok) {
-      stopWatching();
-      toast13("Companion disconnected — is it still running on :7700?");
-    } else {
-      showCompanionIndicator();
-    }
-    syncSaveBtn();
+    setCompanionAvailable(ok);
+    if (!isCompanionAvailable()) {
+      if (isEnabled()) toast13("Companion disconnected — is it still running on :7700?");
+    } else showCompanionIndicator();
   }
-  updateConnButton(ok);
-  if (ok) {
+  const connected = isCompanionAvailable();
+  updateConnButton(connected);
+  if (connected) {
     _backoffIdx = 0;
     scheduleHealth(POLL_CONNECTED_MS);
   } else {
@@ -8790,11 +9247,10 @@ async function onConnButtonClick() {
       ok = await detectCompanion().catch(() => false);
     }
   }
-  companionAvailable = ok;
-  document.body.classList.toggle("companion-active", ok);
-  updateConnButton(ok);
-  syncSaveBtn();
-  if (ok) {
+  setCompanionAvailable(ok);
+  const connected = isCompanionAvailable();
+  updateConnButton(connected);
+  if (connected) {
     _backoffIdx = 0;
     startHealthCheck();
     showCompanionIndicator();
@@ -8805,13 +9261,10 @@ async function onConnButtonClick() {
 function detectCompanionOnStartup() {
   if (!isEnabled()) return;
   detectCompanion().then((ok) => {
-    companionAvailable = ok;
-    document.body.classList.toggle("companion-active", ok);
-    if (ok) {
-      showCompanionIndicator();
-      syncSaveBtn();
-    }
-    updateConnButton(ok);
+    setCompanionAvailable(ok);
+    const connected = isCompanionAvailable();
+    if (connected) showCompanionIndicator();
+    updateConnButton(connected);
     startHealthCheck();
   });
 }
@@ -9135,10 +9588,12 @@ function typeSelectRuntime() {
   if (!typeSelectPromise) typeSelectPromise = import("./type-select.js");
   return typeSelectPromise;
 }
-async function loadIntake3(intake) {
+async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
+  if (state19.sidebarNavigationPending && sidebarNavigationToken !== state19.sidebarNavigationToken) return false;
+  if (state19.companionOperationToken && state19.companionReloadToken !== state19.companionOperationToken) return false;
   const fromTree = state19._skipDiscardGuard;
   const skipSidebarRoot = state19._skipSidebarRoot;
-  if (fromTree && !flushSessionEdit()) captureActiveSidebarRoot();
+  if (fromTree && !state19.sidebarNavigationPending && !flushSessionEdit()) captureActiveSidebarRoot();
   if (state19._skipDiscardGuard) state19._skipDiscardGuard = false;
   if (state19._skipSidebarRoot) state19._skipSidebarRoot = false;
   else {
@@ -9146,7 +9601,7 @@ async function loadIntake3(intake) {
     const retainedSidebarEdit = retainedSessionEdit ? false : captureActiveSidebarRoot();
     const retainedCurrentEdit = retainedSessionEdit || retainedSidebarEdit;
     const onlyRetainedSessionEdits = (state19.sessionEdits.size > 0 || retainedSidebarEdit) && state19.folderEdits.size === 0 && !state19.binaryEdit?.dirty && !(state19.rawview?.isDirty() && !retainedCurrentEdit);
-    if (!onlyRetainedSessionEdits && !confirmDiscard()) return;
+    if (!onlyRetainedSessionEdits && !confirmDiscard()) return false;
   }
   if (!fromTree) {
     state19.folderEdits = /* @__PURE__ */ new Map();
@@ -9157,10 +9612,10 @@ async function loadIntake3(intake) {
   if (intake.truncated) {
     const mb = (intake.size / 1048576).toFixed(0);
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
-    if (!confirm(`This file is ${mb} MB — too large to load fully. Only the first ${shown} MB will be shown. Open anyway?`)) return;
+    if (!confirm(`This file is ${mb} MB — too large to load fully. Only the first ${shown} MB will be shown. Open anyway?`)) return false;
   } else if (!intake.streamed && intake.size > LARGE_FILE_BYTES) {
     const mb = (intake.size / 1048576).toFixed(1);
-    if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
+    if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return false;
   }
   state19.downloadedSinceEdit = true;
   state19.binaryEdit = null;
@@ -9187,8 +9642,10 @@ async function loadIntake3(intake) {
     toast14(`Large file: showing the first ${shown} MB of ${total} MB.`, 6e3);
   }
   updateSessionTree(intake, { skipSidebarRoot });
+  applyLayout();
   if (!fromTree) tryAutoLink();
   maybeUnlockEasteregg(intake.text);
+  return true;
 }
 function maybeUnlockEasteregg(text) {
   if (!text || !state19.games || state19.games.isUnlocked()) return;
@@ -9219,14 +9676,16 @@ function showFileLoading(message, { detail = "" } = {}) {
   detailEl.hidden = !detail;
 }
 async function openFolderEntries(entries) {
-  resetCompanionFolderRoot();
-  await loadFolder(entries);
-  resolveDroppedFolderRoot(entries);
+  const folderRoot = await loadFolder(entries);
+  if (!folderRoot) return false;
+  resolveDroppedFolderRoot(entries, folderRoot);
+  return true;
 }
 function showIntake() {
   $12("intake").hidden = false;
   $12("workspace").hidden = true;
   $12("repoPanel").hidden = true;
+  if (isMobile5()) layoutTopbar();
 }
 async function openSidebarDropSideBySide(node) {
   if (!state19.intake) return;
@@ -9265,19 +9724,19 @@ async function activateType(type, knownOverride = null) {
   const canDiff = type.capabilities.diff && canRaw && !state19.intake.isBinary;
   const canCompare = canRaw && !state19.intake.isBinary;
   const both = canRaw && canPreview;
-  $12("viewMode").hidden = !both || isMobile4();
+  $12("viewMode").hidden = !both || isMobile5();
   $12("rawMode").hidden = !canDiff;
   $12("compareBtn").hidden = !canCompare;
   $12("downloadBtn").hidden = !canDiff;
   $12("formatBtn").hidden = !(canRaw && ["json", "code"].includes(type.id));
   syncSaveBtn();
-  $12("tabbar").style.display = both && isMobile4() ? "flex" : "none";
+  $12("tabbar").style.display = both && isMobile5() ? "flex" : "none";
   $12("screenshotBtn").hidden = !(type.capabilities.screenshot && canPreview);
   const preferredMode = ["raw", "split", "preview"].includes(type.preferredMode) ? type.preferredMode : "split";
   state19.mode = both ? preferredMode : canPreview && !canRaw ? "preview" : "raw";
   state19.rawMode = "current";
   resetCompare();
-  state19.tab = both ? isMobile4() ? "preview" : "raw" : canPreview && !canRaw ? "preview" : "raw";
+  state19.tab = both ? isMobile5() ? "preview" : "raw" : canPreview && !canRaw ? "preview" : "raw";
   state19.htmlAllowScripts = false;
   state19.htmlAsked = false;
   if (canRaw) await buildRawView();
@@ -9290,7 +9749,7 @@ async function activateType(type, knownOverride = null) {
   if (canPreview) await renderPreview3();
   else clearPreview();
   applyLayout();
-  if (isMobile4()) layoutTopbar();
+  if (isMobile5()) layoutTopbar();
 }
 async function renderPreview3() {
   const type = state19.type;
@@ -9405,11 +9864,12 @@ function updateEnhanceChip() {
   const btn = chip.querySelector(".ec-toggle");
   btn.textContent = showingEnhanced ? "Show default view" : "Show enhanced view";
 }
-function toggleEnhance() {
+async function toggleEnhance() {
   if (!state19.known) return;
   state19.forceBase = !state19.forceBase;
   updateEnhanceChip();
-  renderPreview3();
+  await renderPreview3();
+  applyLayout();
 }
 function openSettings2() {
   renderSettings($12("settingsBody"), state19.settingsModel, { onChange: onSettingsChange, toast: toast14 });
@@ -9484,7 +9944,12 @@ var META_BTN_MSGS = [
 function init() {
   initCompanionUi({ loadIntake: loadIntake3 });
   initSessionTree({ loadIntake: loadIntake3 });
-  initSidebarRoots({ loadIntake: loadIntake3 });
+  initSidebarRoots({
+    loadIntake: loadIntake3,
+    onDelete: deleteTreePath,
+    onReveal: revealTreePath,
+    onActivate: activateCompanionSidebarRoot
+  });
   initViewerOpen({ loadIntake: loadIntake3 });
   installGlobalScreensaver();
   initFolder({
@@ -9594,7 +10059,7 @@ function init() {
   });
   $12("scrim").addEventListener("click", () => {
     closeDrawers();
-    if (isMobile4()) setTree(false);
+    if (isMobile5()) setTree(false);
   });
   document.querySelectorAll("[data-close]").forEach((b) => b.addEventListener("click", closeDrawers));
   $12("fullscreenBtn").addEventListener("click", () => {
@@ -9636,9 +10101,6 @@ function init() {
   window.matchMedia("(max-width: 760px)").addEventListener("change", () => {
     layoutTopbar();
     if (!state19.type) return;
-    const canPreview = state19.type.capabilities.preview && !state19.intake.isBinary;
-    $12("viewMode").hidden = !canPreview || isMobile4();
-    $12("tabbar").style.display = canPreview && isMobile4() ? "flex" : "none";
     applyLayout();
   });
   window.addEventListener("resize", debounce2(() => {

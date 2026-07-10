@@ -26,6 +26,11 @@ interfaces. Watched roots constrain file-content and directory reads as well as 
 `DELETE /file` may recursively remove a subfolder inside a watched root, but it refuses to remove
 the watched root itself.
 
+Loopback is machine-wide, not per-account isolation. Any local process or OS account able to reach
+`127.0.0.1:7700` can call the Companion, which then acts with the running account's permissions
+inside configured watched roots. On a shared or otherwise untrusted machine, enable the Companion
+only if you trust every local account and process that can reach loopback.
+
 CORS is a browser-origin barrier, not local-process authentication. The configured deployed viewer
 origin (default `https://jdeworks.github.io`) and any page served over HTTP from `localhost` or
 `127.0.0.1` on any port may read responses, including the session token returned by `/ping`. Other
@@ -34,7 +39,8 @@ and can call the loopback API directly.
 
 Read endpoints do not require a token. Mutating or side-effecting endpoints require the per-session
 token in the `X-Companion-Token` header. The token limits accidental or blind mutation requests; it
-is not a security boundary against software already running as your user.
+is returned by `/ping` and does not authenticate local processes or OS accounts. Neither CORS nor
+the token is a security boundary against software that can reach the machine's loopback interface.
 
 ## Local build & test (no CI — build locally)
 

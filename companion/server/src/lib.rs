@@ -1,13 +1,16 @@
+mod atomic_replace;
 pub mod auth;
 pub mod config;
 pub mod finder;
 pub mod logging;
 pub mod paths;
 pub mod routes;
+pub mod storage;
 pub mod watcher;
 
 use axum::{
-    http::{HeaderValue, Method},
+    extract::DefaultBodyLimit,
+    http::{header, HeaderName, HeaderValue, Method},
     middleware,
     routing::{delete, get, post},
     Router,
@@ -23,6 +26,9 @@ use watcher::WatchEvent;
 pub struct AppState {
     pub token: String,
     pub watched_paths: Arc<Mutex<Vec<std::path::PathBuf>>>,
+    /// Captured once at process startup. Tests inject a path under `tempfile::TempDir`, so route
+    /// mutations can never fall through to the real per-user config directory.
+    pub config_path: std::path::PathBuf,
     pub debug: bool,
     pub watcher_tx: broadcast::Sender<WatchEvent>,
 }
@@ -52,22 +58,31 @@ pub fn router(state: AppState, pages_origin: String) -> Router {
 /// The caller applies its own auth `route_layer` to `extra` when those routes mutate; the final
 /// `.with_state` here supplies the state both that middleware and the handlers need.
 pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState>) -> Router {
+    let cors_origin = pages_origin.clone();
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::predicate(move |origin: &HeaderValue, _| {
-            let o = origin.to_str().unwrap_or("");
-            o.starts_with("http://localhost:")
-                || o.starts_with("http://127.0.0.1:")
-                || o == pages_origin
+            auth::is_allowed_origin(origin, &cors_origin)
         }))
         .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
-        .allow_headers(tower_http::cors::Any);
+        .allow_headers([
+            header::CONTENT_TYPE,
+            HeaderName::from_static("x-companion-token"),
+        ]);
 
     let protected = Router::new()
         .route("/watched-paths", post(routes::add_watched_path))
         .route("/watched-paths", delete(routes::remove_watched_path))
-        .route("/file", post(routes::post_file).delete(routes::delete_file))
+        .route(
+            "/file",
+            post(routes::post_file)
+                .delete(routes::delete_file)
+                .layer(DefaultBodyLimit::max(routes::MAX_WRITE_BYTES)),
+        )
         .route("/reveal", post(routes::reveal))
-        .route_layer(middleware::from_fn_with_state(state.clone(), auth::require_token));
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth::require_token,
+        ));
 
     Router::new()
         .route("/ping", get(routes::ping))
@@ -82,6 +97,9 @@ pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState
         .merge(protected)
         .merge(extra)
         .layer(cors)
+        .layer(middleware::from_fn(move |req, next| {
+            auth::require_allowed_origin(pages_origin.clone(), req, next)
+        }))
         .with_state(state)
 }
 

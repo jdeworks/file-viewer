@@ -7,7 +7,7 @@ import {
   detectCompanion, isEnabled as companionEnabled, setEnabled as setCompanionEnabled,
   getToken, setToken, getWatchedPaths, addWatchedPath, removeWatchedPath, pickFolder, getLogs, isMobileDevice,
 } from './companion.js';
-import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, stopWatching, showCompanionIndicator, updateConnButton } from './companion-ui.js';
+import { isCompanionAvailable, setCompanionAvailable, syncSaveBtn, showCompanionIndicator, updateConnButton } from './companion-ui.js';
 
 // Heuristic guard: flag watched folders that are a whole drive / system root / very large tree.
 // Watching one forces a recursive scan on every find/save and exposes a lot of files. Returns a
@@ -64,7 +64,7 @@ function appendCompanionDownloadPanel(panel) {
   // What network access it opens — the key disclosure.
   const net = document.createElement('p');
   net.className = 'companion-net';
-  net.innerHTML = 'It listens only on loopback at <code>127.0.0.1:7700</code>. Its browser CORS barrier allows this deployed viewer and pages served from <code>localhost</code> or <code>127.0.0.1</code> on any port; those pages can read <code>/ping</code>, including its session token. CORS does not constrain local processes. File reads and mutations are restricted to watched roots you explicitly add, and only mutating requests require the token.';
+  net.innerHTML = 'It listens only on loopback at <code>127.0.0.1:7700</code>, so it is not exposed to the LAN or internet. Loopback is machine-wide, not per account: any local process or OS account able to reach it can use the Companion’s permissions to act inside watched roots. CORS and the session token do not authenticate local processes. The browser CORS barrier allows this deployed viewer and pages served from <code>localhost</code> or <code>127.0.0.1</code> on any port; those pages can read <code>/ping</code>, including its session token. File reads and mutations are restricted to watched roots you explicitly add, and only mutating requests require the token.';
 
   // Endpoint table — exactly what flows through the companion.
   const tableLabel = document.createElement('p');
@@ -217,18 +217,19 @@ export function renderCompanionSettings(container) {
     setCompanionEnabled(enableToggle.checked);
     if (enableToggle.checked) {
       const ok = await detectCompanion();
+      if (!companionEnabled()) return; // the user opted out while /ping was in flight
       setCompanionAvailable(ok);
-      document.body.classList.toggle('companion-active', ok);
-      summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
+      const connected = isCompanionAvailable();
+      document.body.classList.toggle('companion-active', connected);
+      summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? 'connected' : ''}">${connected ? '● connected' : '○ not found'}</span>`;
       syncSaveBtn();
-      updateConnButton(ok);
-      if (ok) showCompanionIndicator();
+      updateConnButton(connected);
+      if (connected) showCompanionIndicator();
       else toast('Companion not found — is it running on :7700?');
-      if (ok) refreshFolders();
+      if (connected) refreshFolders();
       else foldersList.innerHTML = '<span class="companion-folders-empty">Start the Companion app to manage folders.</span>';
     } else {
       setCompanionAvailable(false);
-      stopWatching();
       document.body.classList.remove('companion-active');
       summary.innerHTML = `Companion <span class="companion-status-dot">○ not found</span>`;
       syncSaveBtn();
@@ -244,12 +245,14 @@ export function renderCompanionSettings(container) {
     testBtn.disabled = true;
     const ok = await detectCompanion();
     testBtn.disabled = false;
+    if (!companionEnabled()) return; // ignore a stale result after opt-out
     setCompanionAvailable(ok);
-    document.body.classList.toggle('companion-active', ok);
-    summary.innerHTML = `Companion <span class="companion-status-dot ${ok ? 'connected' : ''}">${ok ? '● connected' : '○ not found'}</span>`;
+    const connected = isCompanionAvailable();
+    document.body.classList.toggle('companion-active', connected);
+    summary.innerHTML = `Companion <span class="companion-status-dot ${connected ? 'connected' : ''}">${connected ? '● connected' : '○ not found'}</span>`;
     syncSaveBtn();
-    updateConnButton(ok);
-    toast(ok ? 'Companion connected ✓' : 'Companion not found — is it running?');
+    updateConnButton(connected);
+    toast(connected ? 'Companion connected ✓' : 'Companion not found — is it running?');
   });
 
   const enableControls = document.createElement('div');
@@ -356,7 +359,7 @@ export function renderCompanionSettings(container) {
         // The native dialog already added it server-side, so warn (don't block) if it's risky.
         const risk = looksLikeRiskyPath(res.chosen || '');
         if (risk) toast(`Heads up: that folder looks like ${risk} — watching it may be slow.`, 5000);
-      }
+      } else if (res.error) toast('Pick failed: ' + res.error);
     } catch (err) { toast('Pick failed: ' + err.message); }
     finally { pickBtn.disabled = false; }
   });

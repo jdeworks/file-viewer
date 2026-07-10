@@ -56,6 +56,38 @@ export function parseMidi(intake) {
 export async function render(intake, _ctx) {
   let midi;
   try { midi = parseMidi(intake); } catch (err) { return { bodyHtml: '<p class="midi-doc">Preview failed: ' + esc(err.message) + '</p>', hadUnsafe: false }; }
-  const rows = midi.tracks.map((t, i) => `<tr><td>${i + 1}</td><td>${esc(t.name || 'Track ' + (i + 1))}</td><td>${esc(t.channel || '—')}</td><td>${esc(t.program != null ? GM[t.program] || ('Program ' + t.program) : t.instrumentName || '—')}</td><td>${t.notes}</td></tr>`).join('');
-  return { hadUnsafe: false, bodyHtml: `<section class="midi-doc"><style>.midi-doc{max-width:920px;margin:0 auto;padding:18px;color:#172033;font-family:system-ui,sans-serif}.midi-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.midi-card{border:1px solid #d9e1ec;border-radius:8px;background:#f8fafc;padding:10px 12px;min-width:120px}.midi-card strong{display:block;font-size:1.2rem}.midi-card span{font-size:.82rem;color:#5a6678}.midi-table{width:100%;border-collapse:collapse;font-size:.9rem}.midi-table th,.midi-table td{border-bottom:1px solid #e2e8f0;padding:8px;text-align:left}.fv-dark .midi-doc{color:#e8edf7}.fv-dark .midi-card{background:#111827;border-color:#304052}.fv-dark .midi-card span{color:#aab5c6}.fv-dark .midi-table th,.fv-dark .midi-table td{border-color:#304052}</style><div class="midi-summary"><div class="midi-card"><strong>Type ${midi.format}</strong><span>Format</span></div><div class="midi-card"><strong>${midi.declaredTracks}</strong><span>Tracks</span></div><div class="midi-card"><strong>${midi.ppqn}</strong><span>PPQN</span></div><div class="midi-card"><strong>${esc(midi.bpmText)}</strong><span>BPM</span></div><div class="midi-card"><strong>${esc(midi.timeSignature)}</strong><span>Time signature</span></div><div class="midi-card"><strong>${midi.durationSeconds.toFixed(2)}s</strong><span>Duration</span></div><div class="midi-card"><strong>${midi.totalNotes}</strong><span>Notes</span></div><div class="midi-card"><strong>${midi.uniquePitches}</strong><span>Unique pitches</span></div></div><table class="midi-table"><thead><tr><th>#</th><th>Name</th><th>Channel</th><th>Instrument</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table></section>` };
+  const rows = midi.tracks.map((t, i) => {
+    const instrument = t.program != null ? GM[t.program] || ('Program ' + t.program) : t.instrumentName || '—';
+    return `<tr><td data-label="#">${i + 1}</td><td data-label="Name">${esc(t.name || 'Track ' + (i + 1))}</td>`
+      + `<td data-label="Channel">${esc(t.channel || '—')}</td><td data-label="Instrument">${esc(instrument)}</td>`
+      + `<td data-label="Notes">${t.notes}</td></tr>`;
+  }).join('');
+  const styles = `<style>
+    .midi-doc{max-width:920px;margin:0 auto;padding:18px;color:#172033;font-family:system-ui,sans-serif}
+    .midi-summary{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+    .midi-card{border:1px solid #d9e1ec;border-radius:8px;background:#f8fafc;padding:10px 12px;min-width:120px}
+    .midi-card strong{display:block;font-size:1.2rem}.midi-card span{font-size:.82rem;color:#5a6678}
+    .midi-table{width:100%;border-collapse:collapse;font-size:.9rem}
+    .midi-table th,.midi-table td{border-bottom:1px solid #e2e8f0;padding:8px;text-align:left}
+    .fv-dark .midi-doc{color:#e8edf7}.fv-dark .midi-card{background:#111827;border-color:#304052}
+    .fv-dark .midi-card span{color:#aab5c6}.fv-dark .midi-table th,.fv-dark .midi-table td{border-color:#304052}
+    @media(max-width:520px){
+      .midi-doc{padding:12px}.midi-card{flex:1 1 105px;min-width:0}
+      .midi-table,.midi-table tbody,.midi-table tr,.midi-table td{display:block;width:100%}.midi-table thead{display:none}
+      .midi-table tr{border:1px solid #d9e1ec;border-radius:8px;margin:0 0 10px;overflow:hidden}
+      .midi-table td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere;white-space:normal}
+      .midi-table td:last-child{border-bottom:0}.midi-table td::before{content:attr(data-label);font-weight:600;color:#5a6678;white-space:nowrap}
+      .fv-dark .midi-table tr{border-color:#304052}.fv-dark .midi-table td::before{color:#aab5c6}
+    }
+  </style>`;
+  const summary = `<div class="midi-summary"><div class="midi-card"><strong>Type ${midi.format}</strong><span>Format</span></div>`
+    + `<div class="midi-card"><strong>${midi.declaredTracks}</strong><span>Tracks</span></div>`
+    + `<div class="midi-card"><strong>${midi.ppqn}</strong><span>PPQN</span></div>`
+    + `<div class="midi-card"><strong>${esc(midi.bpmText)}</strong><span>BPM</span></div>`
+    + `<div class="midi-card"><strong>${esc(midi.timeSignature)}</strong><span>Time signature</span></div>`
+    + `<div class="midi-card"><strong>${midi.durationSeconds.toFixed(2)}s</strong><span>Duration</span></div>`
+    + `<div class="midi-card"><strong>${midi.totalNotes}</strong><span>Notes</span></div>`
+    + `<div class="midi-card"><strong>${midi.uniquePitches}</strong><span>Unique pitches</span></div></div>`;
+  const table = `<table class="midi-table"><thead><tr><th>#</th><th>Name</th><th>Channel</th><th>Instrument</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return { hadUnsafe: false, bodyHtml: `<section class="midi-doc">${styles}${summary}${table}</section>` };
 }

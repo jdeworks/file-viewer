@@ -10,8 +10,23 @@
 import { loadGlobal, vendor } from '../../../core/script-loader.js';
 import { parseEpub, resolvePath, splitFrag, guessMime } from './epublib.js';
 import { fingerprint, loadState, saveState } from '../../../core/persistence.js';
+import { sanitizeSvg } from '../../image/svg-sanitize.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const EPUB_ALLOWED_URI = /^(?:(?:(?:f|ht)tps?|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
+
+function isPreservableAbsoluteResource(value) {
+  const raw = String(value || '').trim();
+  if (/^(?:data|blob):/i.test(raw)) return true;
+  try {
+    const appUrl = new URL(window.location.href);
+    const resourceUrl = new URL(raw, appUrl);
+    if (appUrl.protocol === 'file:' && resourceUrl.protocol === 'file:') return true;
+    return /^(?:https?):$/.test(resourceUrl.protocol) && resourceUrl.origin === appUrl.origin;
+  } catch {
+    return false;
+  }
+}
 
 export async function render(intake, _ctx) {
   const host = document.createElement('div');
@@ -105,7 +120,10 @@ export async function render(intake, _ctx) {
     if (blobs.has(path)) return blobs.get(path);
     const u8 = await book.readU8(path);
     if (!u8) return null;
-    const url = URL.createObjectURL(new Blob([u8], { type: mime }));
+    // An in-book SVG is still active XML when used as an image. Sanitize it before creating the
+    // blob URL so a nested image/filter/CSS reference cannot escape the archive and phone home.
+    const payload = mime === 'image/svg+xml' ? sanitizeSvg(new TextDecoder().decode(u8)) : u8;
+    const url = URL.createObjectURL(new Blob([payload], { type: mime }));
     blobs.set(path, url);
     return url;
   }
@@ -137,10 +155,19 @@ export async function render(intake, _ctx) {
     // form POST) — only <img> and SVG <image> are resolved to in-book blob: URLs below, so
     // everything else that could reach the network must be stripped outright.
     const frag2 = DOMPurify.sanitize(bodyHtml, {
-      FORBID_TAGS: ['script', 'link', 'style', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
+      ALLOWED_URI_REGEXP: EPUB_ALLOWED_URI,
+      FORBID_TAGS: ['script', 'link', 'style', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base', 'animate', 'animateMotion', 'animateTransform', 'set'],
       FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
       RETURN_DOM_FRAGMENT: true,
     });
+    // DOMPurify understands markup but not CSS/SVG resource semantics. Run each inline SVG
+    // through the same inert parser used by the SVG viewer before resolving its safe archive refs.
+    for (const svg of [...frag2.querySelectorAll('svg')]) {
+      const holder = document.createElement('template');
+      holder.innerHTML = sanitizeSvg(svg.outerHTML);
+      const replacement = holder.content.querySelector('svg');
+      if (replacement) svg.replaceWith(replacement); else svg.remove();
+    }
     await rewriteResources(frag2, item.path);
     // Wrap in an inner flow element so two-column mode (CSS columns) balances within the chapter
     // while the outer .epub-content keeps scrolling vertically (no horizontal column overflow).
@@ -159,21 +186,48 @@ export async function render(intake, _ctx) {
     persist();
   }
 
-  // Rewrite img/svg-image/source resource refs to blob: URLs from the zip; remove anything not
-  // in the book. Internal <a> become chapter navigations; external links open in a new tab.
+  // Rewrite every eager source and non-link SVG href to a blob URL from the zip. Explicit
+  // same-origin/data/blob values are safe to preserve; unresolved archive paths and off-origin
+  // absolute values are removed. Internal <a> become chapter navigations; external links open in
+  // a new tab because navigation requires a deliberate user action.
   async function rewriteResources(root, chapterPath) {
-    for (const img of root.querySelectorAll('img')) {
-      const src = img.getAttribute('src');
-      img.removeAttribute('srcset');
-      const path = src && resolvePath(chapterPath, src);
-      if (path) { const url = await ensureBlob(path, guessMime(path)); if (url) { img.src = url; continue; } }
-      img.removeAttribute('src');                 // not in book → never request off-origin
+    async function rewriteAttribute(element, attribute) {
+      const raw = (element.getAttribute(attribute) || '').trim();
+      element.removeAttribute(attribute);
+      if (!raw) return;
+      if (raw.startsWith('#') || /^(?:data|blob):/i.test(raw)) {
+        element.setAttribute(attribute, raw);
+        return;
+      }
+      // Root-relative, scheme-relative, and explicitly schemed URLs refer outside the archive.
+      // Preserve only those that resolve back to this app's own origin.
+      if (/^(?:[a-z][a-z0-9+.\-]*:|\/\/|\/)/i.test(raw)) {
+        if (isPreservableAbsoluteResource(raw)) element.setAttribute(attribute, raw);
+        return;
+      }
+      const { path: resourcePath, frag: resourceFrag } = splitFrag(raw);
+      const path = resourcePath && resolvePath(chapterPath, resourcePath);
+      if (!path) return;
+      const url = await ensureBlob(path, guessMime(path));
+      if (url) element.setAttribute(attribute, url + (resourceFrag ? '#' + resourceFrag : ''));
     }
-    for (const im of root.querySelectorAll('image')) {
-      const href = im.getAttribute('xlink:href') || im.getAttribute('href');
-      const path = href && resolvePath(chapterPath, href);
-      im.removeAttribute('xlink:href'); im.removeAttribute('href');
-      if (path) { const url = await ensureBlob(path, guessMime(path)); if (url) im.setAttribute('href', url); }
+
+    for (const element of root.querySelectorAll('[src]')) {
+      element.removeAttribute('srcset');
+      await rewriteAttribute(element, 'src');
+    }
+    for (const svg of root.querySelectorAll('svg')) {
+      for (const element of [svg, ...svg.querySelectorAll('*')]) {
+        if (element.namespaceURI !== 'http://www.w3.org/2000/svg' || element.localName.toLowerCase() === 'a') continue;
+        const hrefs = [...element.attributes].filter((attribute) => attribute.localName.toLowerCase() === 'href');
+        if (!hrefs.length) continue;
+        // Modern unprefixed href wins when a book supplies both forms. Normalize legacy xlink:href
+        // after removing the exact Attr nodes (qualified-name removal is unreliable in XML DOMs).
+        const preferred = hrefs.find((attribute) => !attribute.prefix) || hrefs[0];
+        for (const attribute of hrefs) element.removeAttributeNode(attribute);
+        element.setAttribute('href', preferred.value);
+        await rewriteAttribute(element, 'href');
+      }
     }
     for (const a of root.querySelectorAll('a[href]')) {
       const href = a.getAttribute('href');

@@ -153,6 +153,13 @@ dl.kv dd{padding:6px 12px;word-break:break-all}
 .dxf-canvas-wrap{position:relative;background:var(--panel,#fbfbfb);border:1px solid var(--border,#e0e0e0);border-radius:6px;overflow:hidden}
 .dxf-canvas{display:block;width:100%;height:440px;touch-action:none;cursor:grab}
 .dxf-canvas:active{cursor:grabbing}
+body.fv-dark{--fg:#e6e6e6;--fg2:#aeb7c2;--bg:#1e1e1e;--bg2:#2d2d30;--panel:#252526;--border:#45464a;--th-bg:#2d2d30;--hover:#333438}
+body.fv-dark .badge-ver{background:#122b45;color:#9dccff;border-color:#315b80}
+body.fv-dark .badge-units{background:#16351f;color:#a7e3b5;border-color:#397249}
+body.fv-dark .pill{background:#27313e;color:#d7e0ea;border-color:#526276}
+body.fv-dark .pill.present{background:#1d3a24;color:#b9e6c3;border-color:#477854}
+body.fv-dark .dxf-canvas-wrap{background:#17191c}
+body.fv-dark .dxf-tools button{background:#252526;color:#e6e6e6}
 `;
 
 // Inline canvas renderer, run inside the sandboxed preview iframe. Reads the injected GEO object

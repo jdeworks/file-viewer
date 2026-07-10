@@ -17,14 +17,17 @@ async fn main() {
 
     // Logging writes to stdout + a daily file next to config.json (logs/companion-YYYY-MM-DD.log),
     // kept for 7 days. Always on — running the bare server now shows live activity.
-    logging::init(Some(config_path()));
+    let app_config_path = config_path();
+    logging::init(Some(app_config_path.clone()));
 
     // The listening socket is the single-instance claim shared with the desktop tray app.
     let server_listener = match bind_server_listener(7700) {
         Ok(listener) => listener,
         Err(e) => {
             eprintln!("ERROR: could not start — 127.0.0.1:7700 is already in use ({e}).");
-            eprintln!("Another companion (the tray app or another console server) is already running.");
+            eprintln!(
+                "Another companion (the tray app or another console server) is already running."
+            );
             logging::error(format!("cannot bind 127.0.0.1:7700: {e}"));
             return;
         }
@@ -68,6 +71,7 @@ async fn main() {
     let state = AppState {
         token,
         watched_paths,
+        config_path: app_config_path,
         debug,
         watcher_tx,
     };

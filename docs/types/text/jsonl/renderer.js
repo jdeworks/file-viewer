@@ -66,9 +66,9 @@ export async function render(intake, _ctx) {
     const thead = '<tr>' + cols.map((k) => '<th>' + esc(k) + '</th>').join('') + '</tr>';
     const tbody = shown.map((r, i) => {
       if (!r || typeof r !== 'object' || Array.isArray(r)) {
-        return '<tr data-qp-rec="' + i + '"><td colspan="' + cols.length + '">' + esc(JSON.stringify(r)) + '</td></tr>';
+        return '<tr data-qp-rec="' + i + '"><td data-label="Record" colspan="' + cols.length + '">' + esc(JSON.stringify(r)) + '</td></tr>';
       }
-      return '<tr data-qp-rec="' + i + '">' + cols.map((k) => '<td>' + cellVal(r[k]) + '</td>').join('') + '</tr>';
+      return '<tr data-qp-rec="' + i + '">' + cols.map((k) => '<td data-label="' + esc(k) + '">' + cellVal(r[k]) + '</td>').join('') + '</tr>';
     }).join('');
     bodyHtml = '<table class="jsonl-table"><thead>' + thead + '</thead><tbody>' + tbody + '</tbody></table>'
       + (truncated ? '<p class="jsonl-note">Showing first ' + MAX_ROWS + ' of ' + records.length + ' records.</p>' : '');

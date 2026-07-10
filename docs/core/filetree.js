@@ -94,7 +94,9 @@ function collectFolderPaths(node, prefix, out, depth = 0, maxDepth = Infinity) {
 
 // Render into `host`. onOpen(node) fires on a file click. onMove(srcPath, destFolderPath) fires
 // when a file is dropped onto a folder row. Returns controller API.
-export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, initialOpenDepth = Infinity }) {
+export function renderTree(host, root, {
+  onOpen, onMove, onDelete, onReveal, canDiskAction = () => true, initialOpenDepth = Infinity,
+}) {
   host.innerHTML = '';
   const inner = document.createElement('div');
   inner.className = 'ft-virtual-inner';
@@ -164,6 +166,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
   // A per-row delete affordance (shown on hover via CSS, only while a companion folder is active).
   // stopPropagation so clicking it never opens the file or toggles the folder.
   function appendRowActions(row, target) {
+    if (!canDiskAction(target)) return;
     // Reveal in the OS file manager (added before delete so 🗑 stays rightmost).
     if (onReveal) {
       const rev = document.createElement('button');
@@ -383,6 +386,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
   }
 
   function refresh() { startMarquee(inner.querySelector('.ft-row.active')); }
+  function rerender() { buildFlat(); }
   function stop() { stopMarquee(); host.removeEventListener('scroll', onScroll); }
 
   function onScroll() { paint(); }
@@ -391,7 +395,7 @@ export function renderTree(host, root, { onOpen, onMove, onDelete, onReveal, ini
 
   buildFlat();
 
-  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, expandAll, collapseAll, getOpenFolders, openPaths, stop };
+  return { setActive, setEdited, setMoved, filter, clearFilter, navigate, refresh, rerender, expandAll, collapseAll, getOpenFolders, openPaths, stop };
 }
 
 function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }

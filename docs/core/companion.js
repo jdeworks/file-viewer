@@ -17,8 +17,12 @@ export function isMobileDevice() {
 }
 export function isEnabled() { return !isMobileDevice() && localStorage.getItem(LS_ENABLED) === 'true'; }
 export function setEnabled(on) { localStorage.setItem(LS_ENABLED, on ? 'true' : 'false'); }
+function requireEnabled() {
+  if (!isEnabled()) throw new Error('Companion is disabled');
+}
 
 export async function detectCompanion() {
+  if (!isEnabled()) return false;
   try {
     const res = await Promise.race([
       fetch(`${BASE}/ping`),
@@ -42,6 +46,7 @@ export function setToken(token) {
 export function getToken() { return _token; }
 
 export async function findFile(name, size) {
+  requireEnabled();
   const params = new URLSearchParams({ name, size });
   const res = await fetch(`${BASE}/find-file?${params}`);
   if (!res.ok) throw new Error(`find-file failed: ${res.status}`);
@@ -57,6 +62,7 @@ export async function findFolder(relPath, size, mtime) {
 }
 
 export async function saveFile(absolutePath, bytes) {
+  requireEnabled();
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
     method: 'POST',
     headers: { 'X-Companion-Token': _token || '', 'Content-Type': 'application/octet-stream' },
@@ -70,6 +76,7 @@ export async function saveFile(absolutePath, bytes) {
 // The caller MUST confirm with the user first — this is destructive. The Download button is
 // unaffected; this only removes the on-disk original the file is linked to.
 export async function deleteFile(absolutePath) {
+  requireEnabled();
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absolutePath)}`, {
     method: 'DELETE',
     headers: { 'X-Companion-Token': _token || '' },
@@ -81,6 +88,7 @@ export async function deleteFile(absolutePath) {
 // Show a file/folder in the OS file manager (Explorer/Finder). Path-restricted server-side; opens
 // the native browser only — never runs the file.
 export async function revealFile(absolutePath) {
+  requireEnabled();
   const res = await fetch(`${BASE}/reveal?path=${encodeURIComponent(absolutePath)}`, {
     method: 'POST',
     headers: { 'X-Companion-Token': _token || '' },
@@ -90,6 +98,7 @@ export async function revealFile(absolutePath) {
 }
 
 export async function getWatchedPaths() {
+  requireEnabled();
   const res = await fetch(`${BASE}/watched-paths`);
   return (await res.json()).paths;
 }
@@ -97,6 +106,7 @@ export async function getWatchedPaths() {
 // List the entries of a directory inside a watched folder ({ name, size, isDir }[]). Used by the
 // folder-browser (create-unknown-file flow). Path-restricted server-side to watched folders.
 export async function listFiles(path) {
+  requireEnabled();
   const res = await fetch(`${BASE}/files?path=${encodeURIComponent(path)}`);
   if (!res.ok) throw new Error(`files failed: ${res.status}`);
   return (await res.json()).entries;
@@ -105,6 +115,7 @@ export async function listFiles(path) {
 // Recursive file listing under a folder: { files: [{ path, size }], truncated } where path is
 // relative to `absRoot` ('/'-separated). Used to refresh the folder tree from disk.
 export async function getTree(absRoot) {
+  requireEnabled();
   const res = await fetch(`${BASE}/tree?path=${encodeURIComponent(absRoot)}`);
   if (!res.ok) throw new Error(`tree failed: ${res.status}`);
   return res.json();
@@ -112,6 +123,7 @@ export async function getTree(absRoot) {
 
 // Fetch a single file's bytes as a Blob (for rebuilding the in-memory folder on refresh).
 export async function fetchFileBlob(absPath) {
+  requireEnabled();
   const res = await fetch(`${BASE}/file?path=${encodeURIComponent(absPath)}`);
   if (!res.ok) throw new Error(`read failed: ${res.status}`);
   return res.blob();
@@ -139,6 +151,7 @@ export function watchFolder(rootAbs, onChange) {
 // minimum level ("info"|"warn"|"error"), a case-insensitive substring `q`, and an RFC3339 `since`
 // cutoff. Used by the in-settings log viewer.
 export async function getLogs({ level, q, since, limit } = {}) {
+  requireEnabled();
   const params = new URLSearchParams();
   if (level) params.set('level', level);
   if (q) params.set('q', q);
@@ -150,18 +163,22 @@ export async function getLogs({ level, q, since, limit } = {}) {
 }
 
 export async function addWatchedPath(path) {
+  requireEnabled();
   const res = await fetch(`${BASE}/watched-paths`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Companion-Token': _token || '' },
     body: JSON.stringify({ path }),
   });
-  return res.json();
+  const result = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(result?.error || `add watched folder failed: ${res.status}`);
+  return result;
 }
 
 // Browser-initiated native folder picker. Only the desktop (Tauri) companion implements this —
 // the standalone server has no GUI and returns 404, in which case this resolves to null and the
 // caller falls back to the typed "Add path" field.
 export async function pickFolder() {
+  if (!isEnabled()) return null;
   try {
     const res = await fetch(`${BASE}/path-picker`, {
       method: 'POST',
@@ -173,12 +190,15 @@ export async function pickFolder() {
 }
 
 export async function removeWatchedPath(path) {
+  requireEnabled();
   const res = await fetch(`${BASE}/watched-paths`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', 'X-Companion-Token': _token || '' },
     body: JSON.stringify({ path }),
   });
-  return res.json();
+  const result = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(result?.error || `remove watched folder failed: ${res.status}`);
+  return result;
 }
 
 // Watch a specific absolute path for changes via SSE.  Only opens the

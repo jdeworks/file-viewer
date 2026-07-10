@@ -25,6 +25,7 @@ import { mountSelection } from './edit-select.js';
 import { mountAdvEdit } from './adv-edit.js';
 import { mountGifPlayer } from './gif-anim.js';
 import { decodeGifFrames } from './gif-decode.js';
+import { sanitizeSvg } from './svg-sanitize.js';
 
 // Toolbar markup lives in sibling .html templates (real HTML, easy to extend).
 // doc.html is the shell (fit/zoom/ascii bar + stage + ascii-out) with an
@@ -38,24 +39,14 @@ const EDIT_TOOLS_TPL = new URL('./edit-tools.html', import.meta.url);
 // matter as long as it decodes. AVIF belongs here for parity with PNG/JPEG/WebP.
 const EDITABLE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/avif', 'image/bmp', 'image/gif']);
 
-// DOMPurify's SVG profile keeps <image>/<style> (real SVGs need them to render correctly) but
-// doesn't stop an <image href="http://…">/<use…>/<feImage…> or a CSS url()/@import inside
-// <style> from firing an eager off-origin request the instant the file is opened — the same
-// tracking-pixel-style leak the markdown/eml/odf renderers already block for <img src>, and a
-// violation of this app's "zero off-origin at runtime" rule. Neutralize absolute http(s)
-// references only; same-origin/relative/data: URLs are left alone.
-function stripOffOriginSvgRefs(svg) {
-  return svg
-    .replace(/(<(?:image|use|feimage)\b[^>]*?\s)(?:xlink:)?href\s*=\s*(?:"https?:[^"]*"|'https?:[^']*')/gi, '$1href=""')
-    .replace(/url\(\s*(?:"https?:[^")]*"|'https?:[^')]*'|https?:[^)\s'"]*)\s*\)/gi, 'url()')
-    .replace(/@import\s+(?:url\([^)]*\)|"https?:[^"]*"|'https?:[^']*')\s*;?/gi, '');
-}
-
 export async function render(intake, ctx = {}) {
   if (isSvg(intake)) {
     const DOMPurify = await loadGlobal(vendor('dompurify/purify.min.js'), 'DOMPurify');
     DOMPurify.removed = [];
-    const clean = stripOffOriginSvgRefs(DOMPurify.sanitize(intake.text || '', { USE_PROFILES: { svg: true, svgFilters: true } }));
+    const clean = sanitizeSvg(DOMPurify.sanitize(intake.text || '', {
+      USE_PROFILES: { svg: true, svgFilters: true },
+      ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+    }));
     return { bodyHtml: '<div class="img-doc">' + clean + '</div>', hadUnsafe: DOMPurify.removed.length > 0 };
   }
 

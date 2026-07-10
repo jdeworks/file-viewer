@@ -17,7 +17,7 @@ import { initRawPane, buildRawView, onRawEdited, hasUnsavedWork, confirmDiscard,
 import { initFolder, loadFolder, openRepoView, onTreeSearchInput, searchTreeContents, exportFolder, folderContext, setTree, initTreeResize, onTreeKey, showFolderLoading, hideFolderLoading } from './folder.js';
 import { clearArchiveTree, mountArchiveTree } from './archive-tree.js';
 import { $, isMobile, state, toast, themeIsDark, escapeHtml, debounce } from './state.js';
-import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
+import { initCompanionUi, isCompanionAvailable, hasCompanionFolderRoot, setCompanionLinked, resetCompanionFolderRoot, resolveDroppedFolderRoot, activateCompanionSidebarRoot, absolutePathForFile, startWatching, syncSaveBtn, onSaveClick, onDeleteClick, renderCompanionSettings, detectCompanionOnStartup, tryAutoLink, deleteTreePath, revealTreePath, onConnButtonClick } from './companion-ui.js';
 import { initSessionTree, updateSessionTree, createNewFile, flushSessionEdit } from './session-tree.js';
 import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchViewerFile } from './viewer-open.js';
 import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder } from './sidebar-roots.js';
@@ -47,11 +47,18 @@ function typeSelectRuntime() {
   return typeSelectPromise;
 }
 
-async function loadIntake(intake) {
+async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
+  if (state.sidebarNavigationPending
+    && sidebarNavigationToken !== state.sidebarNavigationToken) return false;
+  if (state.companionOperationToken
+    && state.companionReloadToken !== state.companionOperationToken) return false;
   // Guard unsaved work — unless loadFolder already asked for this same action.
   const fromTree = state._skipDiscardGuard;
   const skipSidebarRoot = state._skipSidebarRoot;
-  if (fromTree && !flushSessionEdit()) captureActiveSidebarRoot();
+  // Combined-sidebar navigation captures the previous root before activating the target. Repeating
+  // that capture now would see the old dirty editor with the new root's maps and cross-contaminate
+  // them during the async transition.
+  if (fromTree && !state.sidebarNavigationPending && !flushSessionEdit()) captureActiveSidebarRoot();
   if (state._skipDiscardGuard) state._skipDiscardGuard = false;
   if (state._skipSidebarRoot) state._skipSidebarRoot = false;
   else {
@@ -62,7 +69,7 @@ async function loadIntake(intake) {
       && state.folderEdits.size === 0
       && !state.binaryEdit?.dirty
       && !(state.rawview?.isDirty() && !retainedCurrentEdit);
-    if (!onlyRetainedSessionEdits && !confirmDiscard()) return;
+    if (!onlyRetainedSessionEdits && !confirmDiscard()) return false;
   }
   // Leaving folder context for a fresh top-level file open: discard stale folder state so
   // old folderEdits don't trigger a false "unsaved changes" prompt on the next open.
@@ -73,10 +80,10 @@ async function loadIntake(intake) {
   if (intake.truncated) {
     const mb = (intake.size / 1048576).toFixed(0);
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
-    if (!confirm(`This file is ${mb} MB — too large to load fully. Only the first ${shown} MB will be shown. Open anyway?`)) return;
+    if (!confirm(`This file is ${mb} MB — too large to load fully. Only the first ${shown} MB will be shown. Open anyway?`)) return false;
   } else if (!intake.streamed && intake.size > LARGE_FILE_BYTES) {
     const mb = (intake.size / 1048576).toFixed(1);
-    if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return;
+    if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return false;
   }
   state.downloadedSinceEdit = true;    // fresh document — nothing unsaved yet
   state.binaryEdit = null;
@@ -104,10 +111,15 @@ async function loadIntake(intake) {
     toast(`Large file: showing the first ${shown} MB of ${total} MB.`, 6000);
   }
   updateSessionTree(intake, { skipSidebarRoot });
+  // A new desktop root docks the sidebar after activateType() performed its first layout.
+  // Re-read the now-smaller pane width so the preview clamp cannot leave a stale, tiny editor.
+  // On mobile this also reapplies the active tab after registering the intentionally closed root.
+  applyLayout();
   // Silently link a single opened file to its on-disk match (recursive in watched folders, incl.
   // subfolders) so Save-to-existing and Delete light up without a manual save first.
   if (!fromTree) tryAutoLink();
   maybeUnlockEasteregg(intake.text);
+  return true;
 }
 
 // Easter egg: opening (or editing) any file whose text contains a line `import easteregg`
@@ -146,9 +158,12 @@ function showFileLoading(message, { detail = '' } = {}) {
 // Load a dropped/picked folder: reset any prior companion root, build the tree, then resolve the
 // dropped folder's real disk root (for save/watch). Shared by wireIntake and the boot bridge.
 async function openFolderEntries(entries) {
-  resetCompanionFolderRoot();
-  await loadFolder(entries);
-  resolveDroppedFolderRoot(entries);   // pass {file, path} entries — `path` is the real relative path
+  const folderRoot = await loadFolder(entries);
+  if (!folderRoot) return false;        // discard/cancel left the previous root completely intact
+  // Pass the exact newly-created root. Resolution is async and another root may become active
+  // before /find-folder responds; the result must never be attached to whichever root is current.
+  resolveDroppedFolderRoot(entries, folderRoot);
+  return true;
 }
 
 // Return to the intake screen to pick another file/folder (keeps any loaded tree).
@@ -156,6 +171,7 @@ function showIntake() {
   $('intake').hidden = false;
   $('workspace').hidden = true;
   $('repoPanel').hidden = true;
+  if (isMobile()) layoutTopbar();
 }
 
 async function openSidebarDropSideBySide(node) {
@@ -357,11 +373,14 @@ function updateEnhanceChip() {
   btn.textContent = showingEnhanced ? 'Show default view' : 'Show enhanced view';
 }
 
-function toggleEnhance() {
+async function toggleEnhance() {
   if (!state.known) return;
   state.forceBase = !state.forceBase;
   updateEnhanceChip();
-  renderPreview();
+  await renderPreview();
+  // The enhancement can add a preview to a raw-only base type. Recompute forced/raw vs
+  // preview-tab layout after each transition so mobile never remains on an empty preview pane.
+  applyLayout();
 }
 
 /* ─────────────────────────── Settings (WP03) ─────────────────────────── */
@@ -467,7 +486,12 @@ const META_BTN_MSGS = [
 function init() {
   initCompanionUi({ loadIntake });
   initSessionTree({ loadIntake });
-  initSidebarRoots({ loadIntake });
+  initSidebarRoots({
+    loadIntake,
+    onDelete: deleteTreePath,
+    onReveal: revealTreePath,
+    onActivate: activateCompanionSidebarRoot,
+  });
   initViewerOpen({ loadIntake });
   installGlobalScreensaver();   // app-wide idle screensaver (suppressed during media/games/fullscreen)
   // Inject the core-flow callbacks the folder module needs (one-way: app imports folder, folder
@@ -601,9 +625,6 @@ function init() {
   window.matchMedia('(max-width: 760px)').addEventListener('change', () => {
     layoutTopbar();                              // move controls in/out of the ⋯ menu
     if (!state.type) return;
-    const canPreview = state.type.capabilities.preview && !state.intake.isBinary;
-    $('viewMode').hidden = !canPreview || isMobile();
-    $('tabbar').style.display = canPreview && isMobile() ? 'flex' : 'none';
     applyLayout();
   });
 

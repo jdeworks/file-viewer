@@ -119,6 +119,13 @@ export async function render(intake, ctx = {}) {
     videoModes,
   } = workspace;
 
+  const setWorkspaceTime = () => {
+    if (!workspaceTime) return;
+    const now = fmtTimeValue(el.currentTime) || '0:00';
+    const dur = fmtTimeValue(el.duration) || '--:--';
+    workspaceTime.textContent = `${now} / ${dur}`;
+  };
+
   const enableFfmpeg = !!ctx.settings?.enableFfmpeg;
   let exportPanel = null;       // P1/P3 export + fades panel
 
@@ -135,6 +142,23 @@ export async function render(intake, ctx = {}) {
     listenSurface?.setChapters?.(normalizedChapters);
     exportPanel?.updateChapters?.(normalizedChapters);
   };
+  // Bind metadata synchronization before any file reads or lazy studio imports can yield. The
+  // immediate call also covers a tiny media file whose metadata completed between assigning src
+  // and installing these listeners.
+  const saved = loadState(intake);
+  let resumeApplied = false;
+  const syncMetadata = () => {
+    setWorkspaceTime();
+    refreshChapters();
+    if (resumeApplied || !Number.isFinite(el.duration) || el.duration <= 0) return;
+    resumeApplied = true;
+    if (saved && saved.kind === 'media' && saved.time > 0 && saved.time < el.duration - 2) {
+      el.currentTime = saved.time;
+    }
+  };
+  el.addEventListener('loadedmetadata', syncMetadata);
+  el.addEventListener('durationchange', syncMetadata);
+  syncMetadata();
   if (info.kind === 'audio' && intake.file && typeof intake.file.slice === 'function') {
     try {
       const head = new Uint8Array(await intake.file.slice(0, 512 * 1024).arrayBuffer());
@@ -248,13 +272,6 @@ export async function render(intake, ctx = {}) {
     if (idx >= 0) panels.splice(idx, 1);
   };
 
-  const setWorkspaceTime = () => {
-    if (!workspaceTime) return;
-    const now = fmtTimeValue(el.currentTime) || '0:00';
-    const dur = fmtTimeValue(el.duration) || '--:--';
-    workspaceTime.textContent = `${now} / ${dur}`;
-  };
-
   let audioListenMode = null;
   let subtitleController = null;
   if (info.kind === 'audio') {
@@ -322,16 +339,6 @@ export async function render(intake, ctx = {}) {
     host.append(hintPanel);
     if (editorPanel) host.append(editorPanel);
   }
-
-  // ── Resume position ──
-  const saved = loadState(intake);
-  el.addEventListener('loadedmetadata', () => {
-    setWorkspaceTime();
-    refreshChapters();
-    if (saved && saved.kind === 'media' && saved.time > 0 && saved.time < el.duration - 2) {
-      el.currentTime = saved.time;
-    }
-  }, { once: true });
 
   let lastSave = 0;
   let lastPlaybackTime = null;
@@ -418,6 +425,8 @@ export async function render(intake, ctx = {}) {
         videoStudio.destroy();
         videoStudio = null;
       }
+      el.removeEventListener('loadedmetadata', syncMetadata);
+      el.removeEventListener('durationchange', syncMetadata);
     },
   };
 }

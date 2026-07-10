@@ -90,7 +90,16 @@ export const isBenignConsoleError = (text, url) =>
   // (rapid open→navigate). A real same-origin/file 404 keeps its http(s)/file: URL and still fails.
   (url.startsWith('blob:') && /Failed to load resource/.test(text));
 
-export async function createHarness() {
+export function isSameOriginUrl(raw, expectedOrigin) {
+  try { return new URL(raw).origin === new URL(expectedOrigin).origin; }
+  catch { return false; }
+}
+
+export function isAllowedHarnessUrl(raw, expectedOrigin) {
+  return /^(?:data|blob):/i.test(raw) || isSameOriginUrl(raw, expectedOrigin);
+}
+
+export async function createHarness({ launchArgs = [] } = {}) {
   // Establish this run's verdict ledger BEFORE anything can fail, and install the process-level
   // guards so a late/teardown rejection is attributed instead of silently flipping the exit code.
   const runState = { tearingDown: false };
@@ -120,7 +129,9 @@ export async function createHarness() {
   // --expose-gc lets the periodic-reload path force a GC so renderer memory doesn't accumulate
   // across hundreds of opens (large areas like known-files re-parse Monaco's 13 MB bundle each
   // reload; without an explicit GC the renderer can OOM-crash mid-run on constrained hosts).
-  const browser = await chromium.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--js-flags=--expose-gc'] });
+  const browser = await chromium.launch({
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--js-flags=--expose-gc', ...launchArgs],
+  });
   const ctx = await browser.newContext({ viewport: { width: 1100, height: 800 } });
   const page = await ctx.newPage();
   // Raise the default and navigation timeouts (30s) to 60s so that networkidle
@@ -138,7 +149,7 @@ export async function createHarness() {
   const _goto = page.goto.bind(page);
   page.goto = async (url, opts) => {
     const res = await _goto(url, opts);
-    if (typeof url === 'string' && url.startsWith(origin)) {
+    if (typeof url === 'string' && isSameOriginUrl(url, origin)) {
       await page.waitForFunction(() => typeof window.__fv !== 'undefined', { timeout: 15000 }).catch(() => {});
     }
     return res;
@@ -172,7 +183,7 @@ export async function createHarness() {
   page.on('pageerror', (e) => { if (!isBenignPageError(e.message)) consoleErrors.push('pageerror: ' + e.message); });
   page.on('request', (req) => {
     const u = req.url();
-    if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u);
+    if (!isAllowedHarnessUrl(u, origin)) offOrigin.push(u);
   });
 
   // Self-healing example opener. Opening a file routes through the app's loadIntake, which

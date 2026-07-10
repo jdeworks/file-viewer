@@ -16,12 +16,18 @@ use tokio_stream::{wrappers::BroadcastStream, StreamExt};
 use std::sync::atomic::{AtomicBool, AtomicI64, Ordering};
 
 use crate::{
-    config::save_config,
+    config::save_config_to,
     finder::{find_file, find_folder},
     logging,
-    paths::{validate_path, validate_path_for_write},
+    paths::{contains_watched_root, validate_path, validate_path_for_write},
+    storage::atomic_write,
     AppState,
 };
+
+const MAX_WATCHED_PATHS: usize = 128;
+/// Browser intake reads at most 64 MiB for editable non-media files. Keep bounded headroom for
+/// edits/encodings while making the accepted limit explicit instead of Axum's 2 MiB default.
+pub const MAX_WRITE_BYTES: usize = 128 * 1024 * 1024;
 
 // Log "viewer connected" only once per process (ping is polled periodically by the browser, so we
 // don't want a line every 30s). Reset implicitly by a server restart.
@@ -116,8 +122,22 @@ pub async fn add_watched_path(
     Json(body): Json<WatchedPathBody>,
 ) -> Response {
     let pb = PathBuf::from(&body.path);
+    if !pb.is_absolute() {
+        logging::warn(format!(
+            "rejected watched folder (path is not absolute): {}",
+            body.path
+        ));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "path must be absolute" })),
+        )
+            .into_response();
+    }
     if !pb.is_dir() {
-        logging::warn(format!("rejected watched folder (not a directory): {}", body.path));
+        logging::warn(format!(
+            "rejected watched folder (not a directory): {}",
+            body.path
+        ));
         return (
             StatusCode::BAD_REQUEST,
             Json(serde_json::json!({ "error": "path is not a directory" })),
@@ -126,14 +146,34 @@ pub async fn add_watched_path(
     }
     let paths = {
         let mut locked = state.watched_paths.lock().unwrap();
-        if !locked.contains(&pb) {
-            locked.push(pb);
+        if locked.contains(&pb) {
+            locked.clone()
+        } else {
+            if locked.len() >= MAX_WATCHED_PATHS {
+                logging::warn(format!(
+                    "rejected watched folder (limit reached): {}",
+                    body.path
+                ));
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "watched folder limit reached" })),
+                )
+                    .into_response();
+            }
+            let mut updated = locked.clone();
+            updated.push(pb);
+            if let Err(e) = save_config_to(&state.config_path, &updated) {
+                logging::error(format!("failed to save config: {e}"));
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": "could not persist watched folders" })),
+                )
+                    .into_response();
+            }
+            *locked = updated.clone();
+            updated
         }
-        locked.clone()
     };
-    if let Err(e) = save_config(&paths) {
-        logging::error(format!("failed to save config: {e}"));
-    }
     logging::info(format!("watched folder added: {}", body.path));
     let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
@@ -152,14 +192,32 @@ pub async fn remove_watched_path(
     Json(body): Json<WatchedPathBody>,
 ) -> Response {
     let pb = PathBuf::from(&body.path);
+    if !pb.is_absolute() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "path must be absolute" })),
+        )
+            .into_response();
+    }
     let paths = {
         let mut locked = state.watched_paths.lock().unwrap();
-        locked.retain(|p| p != &pb);
-        locked.clone()
+        if !locked.contains(&pb) {
+            locked.clone()
+        } else {
+            let mut updated = locked.clone();
+            updated.retain(|p| p != &pb);
+            if let Err(e) = save_config_to(&state.config_path, &updated) {
+                logging::error(format!("failed to save config: {e}"));
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(serde_json::json!({ "error": "could not persist watched folders" })),
+                )
+                    .into_response();
+            }
+            *locked = updated.clone();
+            updated
+        }
     };
-    if let Err(e) = save_config(&paths) {
-        logging::error(format!("failed to save config: {e}"));
-    }
     logging::info(format!("watched folder removed: {}", body.path));
     let path_strs: Vec<String> = paths.iter().map(|p| p.display().to_string()).collect();
     (
@@ -182,6 +240,7 @@ pub struct FindFileQuery {
 #[derive(Serialize)]
 pub struct FindFileResponse {
     pub matches: Vec<String>,
+    pub truncated: bool,
 }
 
 pub async fn get_find_file(
@@ -189,7 +248,9 @@ pub async fn get_find_file(
     Query(q): Query<FindFileQuery>,
 ) -> Json<FindFileResponse> {
     let watched = state.watched_paths.lock().unwrap().clone();
-    let matches: Vec<String> = find_file(&q.name, q.size, &watched)
+    let result = find_file(&q.name, q.size, &watched);
+    let matches: Vec<String> = result
+        .matches
         .into_iter()
         .map(|p| p.display().to_string())
         .collect();
@@ -199,7 +260,10 @@ pub async fn get_find_file(
         q.size,
         matches.len()
     ));
-    Json(FindFileResponse { matches })
+    Json(FindFileResponse {
+        matches,
+        truncated: result.truncated,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -247,6 +311,11 @@ pub async fn get_file(State(state): State<AppState>, Query(q): Query<FileQuery>)
             Json(serde_json::json!({ "error": e })),
         )
             .into_response(),
+        Ok(canonical) if !canonical.is_file() => (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "path is not a regular file" })),
+        )
+            .into_response(),
         Ok(canonical) => match tokio::fs::read(&canonical).await {
             Err(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -287,6 +356,13 @@ pub async fn post_file(
                 .into_response()
         }
         Ok(canonical) => {
+            if canonical.is_dir() {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "target path is a directory" })),
+                )
+                    .into_response();
+            }
             let is_create = !canonical.exists();
             // Create any missing intermediate subfolders (validate_path_for_write already proved the
             // target stays within a watched dir), so saving into a not-yet-existing subfolder works.
@@ -300,17 +376,8 @@ pub async fn post_file(
                         .into_response();
                 }
             }
-            let tmp_path = format!("{}.companion_tmp", canonical.display());
             let byte_count = body.len();
-            if let Err(e) = tokio::fs::write(&tmp_path, &body).await {
-                logging::error(format!("save failed ({}): {e}", canonical.display()));
-                return (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(serde_json::json!({ "error": e.to_string() })),
-                )
-                    .into_response();
-            }
-            if let Err(e) = tokio::fs::rename(&tmp_path, &canonical).await {
+            if let Err(e) = atomic_write(&canonical, &body).await {
                 logging::error(format!("save failed ({}): {e}", canonical.display()));
                 return (
                     StatusCode::INTERNAL_SERVER_ERROR,
@@ -349,17 +416,28 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
         )
             .into_response(),
         Ok(canonical) => {
+            if std::fs::symlink_metadata(&pb)
+                .map(|metadata| metadata.file_type().is_symlink())
+                .unwrap_or(false)
+            {
+                logging::warn(format!("delete refused (symbolic link): {}", pb.display()));
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "refusing to delete a symbolic link" })),
+                )
+                    .into_response();
+            }
             if canonical.is_dir() {
-                // A subfolder can be deleted (recursively), but NEVER a watched root itself — that
-                // would wipe the whole folder the user configured.
-                let is_root = watched.iter().any(|w| {
-                    std::fs::canonicalize(w).map(|cw| cw == canonical).unwrap_or(false)
-                });
-                if is_root {
-                    logging::warn(format!("delete refused (watched root): {}", canonical.display()));
+                // A subfolder can be deleted recursively only when it is neither a watched root nor
+                // an ancestor of another watched root.
+                if contains_watched_root(&canonical, &watched) {
+                    logging::warn(format!(
+                        "delete refused (contains watched root): {}",
+                        canonical.display()
+                    ));
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(serde_json::json!({ "error": "refusing to delete a watched folder root" })),
+                        Json(serde_json::json!({ "error": "refusing to delete a watched folder root or its ancestor" })),
                     )
                         .into_response();
                 }
@@ -374,7 +452,11 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
                     }
                     Ok(()) => {
                         logging::info(format!("deleted folder {}", canonical.display()));
-                        (StatusCode::OK, Json(serde_json::json!({ "ok": true, "folder": true }))).into_response()
+                        (
+                            StatusCode::OK,
+                            Json(serde_json::json!({ "ok": true, "folder": true })),
+                        )
+                            .into_response()
                     }
                 };
             }
@@ -389,11 +471,7 @@ pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuer
                 }
                 Ok(()) => {
                     logging::info(format!("deleted {}", canonical.display()));
-                    (
-                        StatusCode::OK,
-                        Json(serde_json::json!({ "ok": true })),
-                    )
-                        .into_response()
+                    (StatusCode::OK, Json(serde_json::json!({ "ok": true }))).into_response()
                 }
             }
         }
@@ -410,7 +488,11 @@ pub async fn reveal(State(state): State<AppState>, Query(q): Query<FileQuery>) -
     let watched = state.watched_paths.lock().unwrap().clone();
     let pb = PathBuf::from(&q.path);
     match validate_path(&pb, &watched) {
-        Err(e) => (StatusCode::FORBIDDEN, Json(serde_json::json!({ "error": e }))).into_response(),
+        Err(e) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
         Ok(canonical) => {
             #[cfg(target_os = "windows")]
             {
@@ -427,7 +509,11 @@ pub async fn reveal(State(state): State<AppState>, Query(q): Query<FileQuery>) -
             #[cfg(target_os = "linux")]
             {
                 // No portable "select the file", so open its containing directory.
-                let dir = if canonical.is_dir() { canonical.as_path() } else { canonical.parent().unwrap_or(&canonical) };
+                let dir = if canonical.is_dir() {
+                    canonical.as_path()
+                } else {
+                    canonical.parent().unwrap_or(&canonical)
+                };
                 let _ = std::process::Command::new("xdg-open").arg(dir).spawn();
             }
             logging::info(format!("revealed {}", canonical.display()));
@@ -463,6 +549,13 @@ pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>
         )
             .into_response(),
         Ok(canonical) => {
+            if !canonical.is_dir() {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "path is not a directory" })),
+                )
+                    .into_response();
+            }
             let mut entries = Vec::new();
             let mut read_dir = match tokio::fs::read_dir(&canonical).await {
                 Ok(rd) => rd,
@@ -475,12 +568,16 @@ pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>
                 }
             };
             while let Ok(Some(entry)) = read_dir.next_entry().await {
+                let file_type = match entry.file_type().await {
+                    Ok(file_type) if !file_type.is_symlink() => file_type,
+                    _ => continue,
+                };
                 let name = entry.file_name().to_string_lossy().into_owned();
                 let meta = match entry.metadata().await {
                     Ok(m) => m,
                     Err(_) => continue,
                 };
-                let is_dir = meta.is_dir();
+                let is_dir = file_type.is_dir();
                 let size = if is_dir { 0 } else { meta.len() };
                 entries.push(DirEntry { name, size, is_dir });
             }
@@ -496,6 +593,8 @@ pub async fn get_files(State(state): State<AppState>, Query(q): Query<FileQuery>
 // ---------------------------------------------------------------------------
 
 const TREE_MAX_FILES: usize = 5000;
+const TREE_MAX_ENTRIES: usize = 20_000;
+const TREE_MAX_DEPTH: usize = 64;
 
 #[derive(Serialize)]
 pub struct TreeFile {
@@ -510,8 +609,19 @@ pub struct TreeResponse {
     pub truncated: bool,
 }
 
-fn walk_tree(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<TreeFile>, truncated: &mut bool) {
+fn walk_tree(
+    root: &std::path::Path,
+    dir: &std::path::Path,
+    depth: usize,
+    visited: &mut usize,
+    out: &mut Vec<TreeFile>,
+    truncated: &mut bool,
+) {
     if *truncated {
+        return;
+    }
+    if depth > TREE_MAX_DEPTH {
+        *truncated = true;
         return;
     }
     let rd = match std::fs::read_dir(dir) {
@@ -519,21 +629,26 @@ fn walk_tree(root: &std::path::Path, dir: &std::path::Path, out: &mut Vec<TreeFi
         Err(_) => return,
     };
     for entry in rd.flatten() {
-        if out.len() >= TREE_MAX_FILES {
+        if out.len() >= TREE_MAX_FILES || *visited >= TREE_MAX_ENTRIES {
             *truncated = true;
             return;
         }
+        *visited += 1;
         let path = entry.path();
+        let file_type = match entry.file_type() {
+            Ok(file_type) if !file_type.is_symlink() => file_type,
+            _ => continue,
+        };
         let meta = match entry.metadata() {
             Ok(m) => m,
             Err(_) => continue,
         };
-        if meta.is_dir() {
-            walk_tree(root, &path, out, truncated);
+        if file_type.is_dir() {
+            walk_tree(root, &path, depth + 1, visited, out, truncated);
             if *truncated {
                 return;
             }
-        } else if meta.is_file() {
+        } else if file_type.is_file() {
             if let Ok(rel) = path.strip_prefix(root) {
                 let mtime = meta
                     .modified()
@@ -555,11 +670,30 @@ pub async fn get_tree(State(state): State<AppState>, Query(q): Query<FileQuery>)
     let watched = state.watched_paths.lock().unwrap().clone();
     let pb = PathBuf::from(&q.path);
     match validate_path(&pb, &watched) {
-        Err(e) => (StatusCode::FORBIDDEN, Json(serde_json::json!({ "error": e }))).into_response(),
+        Err(e) => (
+            StatusCode::FORBIDDEN,
+            Json(serde_json::json!({ "error": e })),
+        )
+            .into_response(),
         Ok(canonical) => {
+            if !canonical.is_dir() {
+                return (
+                    StatusCode::BAD_REQUEST,
+                    Json(serde_json::json!({ "error": "path is not a directory" })),
+                )
+                    .into_response();
+            }
             let mut files = Vec::new();
             let mut truncated = false;
-            walk_tree(&canonical, &canonical, &mut files, &mut truncated);
+            let mut visited = 0;
+            walk_tree(
+                &canonical,
+                &canonical,
+                0,
+                &mut visited,
+                &mut files,
+                &mut truncated,
+            );
             logging::info(format!(
                 "tree {} → {} file(s){}",
                 canonical.display(),

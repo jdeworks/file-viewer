@@ -149,6 +149,12 @@
 .stl-canvas { display: block; touch-action: none; cursor: grab; }
 .stl-canvas:active { cursor: grabbing; }
 .stl-empty { color: var(--fg-2); padding: 16px; }
+@media (max-width: 520px) {
+  .stl-bar { flex-wrap: wrap; gap: 5px; padding: 6px 8px; align-content: flex-start; }
+  .stl-info { flex: 1 0 100%; white-space: normal; line-height: 1.25; }
+  .mv-mode { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+  .stl-bar .stl-reset { margin-left: 0; }
+}
 
 /* Raster image viewer (parent pane): fit-to-screen by default + size-based zoom. */
 .preview-host .imgv-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
@@ -399,6 +405,16 @@
 .jsonl-block { background: var(--bg-2); border: 1px solid var(--border); border-radius: 6px; padding: 10px; margin-bottom: 8px; overflow-x: auto; font-size: .83rem; }
 .jsonl-note { color: var(--fg-2); font-size: .82rem; margin-top: 10px; }
 .jsonl-empty { color: var(--fg-2); padding: 20px; text-align: center; }
+@media (max-width: 600px) {
+  .jsonl-preview { padding: 10px; }
+  .jsonl-table, .jsonl-table tbody, .jsonl-table tr, .jsonl-table td { display: block; width: 100%; }
+  .jsonl-table thead { display: none; }
+  .jsonl-table tr { margin-bottom: 10px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-2); }
+  .jsonl-table td { display: grid; grid-template-columns: minmax(78px, 34%) minmax(0, 1fr); gap: 8px;
+    max-width: none; padding: 7px 9px; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+  .jsonl-table td::before { content: attr(data-label); color: var(--fg-2); font-weight: 600; }
+  .jsonl-table td:last-child { border-bottom: 0; }
+}
 
 /* CSV / TSV table editor (parentNode) */
 .csv-doc { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
@@ -731,17 +747,44 @@ html[data-theme="dark"] .qp-preview .json-warning { color: #ffd166; background: 
    scroll clear of the fixed offline pill in the bottom-left corner, which would otherwise overlap
    and intercept clicks on it. */
 .preview-host .mol-doc { position: absolute; inset: 0; overflow: auto; background: var(--bg); padding: 16px 16px 72px; }
+.pdb-doc { min-width: 0; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.pdb-preview { min-width: 0; max-width: 100%; font: 14px/1.5 system-ui, sans-serif; }
+.pdb-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 12px; }
+.badge-pdb { display: inline-flex; align-items: center; border-radius: 5px; padding: 3px 9px;
+  background: #5b21b6; color: #f3e8ff; font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; }
+.pdb-id { color: #6d28d9; font: 700 14px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.pdb-title { flex: 1 1 220px; min-width: 0; font-weight: 650; overflow-wrap: anywhere; }
+.pdb-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; margin: 0 0 16px; }
+.pdb-stat { min-width: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); padding: 9px 10px; text-align: center; }
+.pdb-stat-value { color: var(--accent); font: 700 16px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.pdb-stat-label { margin-top: 3px; color: var(--fg-2); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.pdb-meta,.pdb-chains,.pdb-ligands { width: 100%; max-width: 100%; border-collapse: collapse; font-size: 13px; }
+.pdb-meta { margin-bottom: 16px; }
+.pdb-meta td,.pdb-chains th,.pdb-chains td,.pdb-ligands th,.pdb-ligands td { padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: normal; vertical-align: top; overflow-wrap: anywhere; }
+.pdb-key { width: 9rem; color: var(--accent); font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+.pdb-val { min-width: 0; }
+.pdb-section { margin: 16px 0 7px; color: var(--fg-2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.pdb-chains th,.pdb-ligands th { background: var(--bg-2); color: var(--fg-2); text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+.pdb-chain,.pdb-lig-name { color: var(--accent); font-weight: 700; }
 .mol3d-panel { margin-top: 16px; }
 .mol3d-load-btn { font-size: 13px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-2); color: var(--fg); cursor: pointer; }
 .mol3d-load-btn:hover { background: var(--bg); }
 .mol3d-load-btn:disabled { opacity: 0.6; cursor: default; }
-.mol3d-bar { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+.mol3d-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 0; }
 .mol3d-bar select, .mol3d-btn { font-size: 12px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .mol3d-btn--on { background: var(--accent, #4978c8); color: #fff; }
-.mol3d-label { margin-left: auto; font-size: 12px; color: var(--fg-2); }
+.mol3d-label { margin-left: auto; min-width: 0; font-size: 12px; color: var(--fg-2); overflow-wrap: anywhere; }
 .mol3d-stage { position: relative; width: 100%; height: 440px; min-height: 280px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--bg-2); }
-.mol3d-stage canvas { display: block; }
+.mol3d-stage canvas { display: block; max-width: none; }
 .mol3d-err { color: var(--danger, #c00); font-size: 13px; padding: 8px 0; }
+@media (max-width: 520px) {
+  .preview-host .pdb-doc { padding: 12px 12px 88px; }
+  .pdb-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pdb-key { width: 7.25rem; }
+  .mol3d-bar select,.mol3d-btn { min-height: 36px; }
+  .mol3d-label { flex: 1 0 100%; margin-left: 0; }
+  .mol3d-stage { height: min(56vh, 360px); min-height: 280px; }
+}
 
 /* XLSX inline grid editor (parent pane). */
 .preview-host .xe-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }

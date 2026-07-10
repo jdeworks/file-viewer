@@ -1,19 +1,14 @@
 function esc(s) {
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(s).replace(/[&<>"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
 }
 
 const SEVERITY_ORDER = ['error', 'warning', 'note', 'none'];
-const SEVERITY_COLORS = {
-  error: { bg: '#ffebee', border: '#c62828', text: '#b71c1c', badge: '#c62828' },
-  warning: { bg: '#fff8e1', border: '#f57f17', text: '#e65100', badge: '#f57f17' },
-  note: { bg: '#e3f2fd', border: '#1565c0', text: '#0d47a1', badge: '#1565c0' },
-  none: { bg: '#f5f5f5', border: '#9e9e9e', text: '#616161', badge: '#757575' },
-};
+const severityClass = (severity) => SEVERITY_ORDER.includes(severity) ? severity : 'none';
 
 export function render(intake) {
   const src = intake.text || intake.textSample || '';
   let sarif;
-  try { sarif = JSON.parse(src); } catch { return { bodyHtml: '<p style="color:#c62828">Invalid SARIF JSON</p>', hadUnsafe: false }; }
+  try { sarif = JSON.parse(src); } catch { return { bodyHtml: '<p class="sarif-preview sarif-invalid">Invalid SARIF JSON</p>', hadUnsafe: false }; }
 
   const runs = Array.isArray(sarif.runs) ? sarif.runs : [];
   const version = sarif.version || '?';
@@ -46,8 +41,7 @@ export function render(intake) {
   const summaryBadges = SEVERITY_ORDER
     .filter(s => counts[s])
     .map(s => {
-      const c = SEVERITY_COLORS[s] || SEVERITY_COLORS.none;
-      return `<span class="sarif-sev-badge" style="background:${c.badge};color:#fff">${counts[s]} ${s}</span>`;
+      return `<span class="sarif-sev-badge sarif-sev-${severityClass(s)}">${counts[s]} ${s}</span>`;
     }).join(' ');
 
   // Findings table — every finding (no 20-row cap), with a client-side severity filter and
@@ -58,21 +52,20 @@ export function render(intake) {
   const rendered = allResults.slice(0, MAX_RENDER);
   const capped = allResults.length > MAX_RENDER;
   const rows = rendered.map(r => {
-    const c = SEVERITY_COLORS[r.severity] || SEVERITY_COLORS.none;
+    const sevClass = severityClass(r.severity);
     const loc = r.file ? `${esc(r.file.split('/').pop())}${r.line ? ':' + esc(String(r.line)) : ''}` : '';
-    return `<tr data-sev="${esc(r.severity)}" style="background:${c.bg}">
-      <td><span class="sarif-level" style="background:${c.badge};color:#fff">${esc(r.severity)}</span></td>
-      <td><code style="font-size:0.8rem">${esc(r.ruleId)}</code></td>
-      <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.msg)}">${esc(r.msg.slice(0, 120))}${r.msg.length > 120 ? '…' : ''}</td>
-      <td style="font-size:0.8rem;color:#546e7a">${loc}</td>
+    return `<tr data-sev="${esc(r.severity)}" class="sarif-row-${sevClass}">
+      <td><span class="sarif-level sarif-sev-${sevClass}">${esc(r.severity)}</span></td>
+      <td><code class="sarif-rule">${esc(r.ruleId)}</code></td>
+      <td class="sarif-message" title="${esc(r.msg)}">${esc(r.msg.slice(0, 120))}${r.msg.length > 120 ? '…' : ''}</td>
+      <td class="sarif-location">${loc}</td>
     </tr>`;
   }).join('');
 
   // Severity filter chips (All + each present severity), driven by the inline script.
   const filterChips = [`<button type="button" class="sarif-filter active" data-sev="all">All ${allResults.length}</button>`]
     .concat(SEVERITY_ORDER.filter(s => counts[s]).map(s => {
-      const c = SEVERITY_COLORS[s] || SEVERITY_COLORS.none;
-      return `<button type="button" class="sarif-filter" data-sev="${s}" style="border-color:${c.badge};color:${c.text}">${counts[s]} ${s}</button>`;
+      return `<button type="button" class="sarif-filter sarif-filter-${severityClass(s)}" data-sev="${s}">${counts[s]} ${s}</button>`;
     })).join('');
 
   const overviewHtml = `
@@ -85,25 +78,8 @@ export function render(intake) {
 
   return {
     bodyHtml: `
-      <style>
-        .badge-sarif { background: #b71c1c; color: #fff; }
-        .sarif-sev-badge { display:inline-block; border-radius:3px; padding:2px 8px; font-size:0.82rem; margin:2px; font-weight:bold; }
-        .sarif-level { display:inline-block; border-radius:3px; padding:1px 6px; font-size:0.78rem; font-weight:bold; }
-        .sarif-table { width:100%; border-collapse:collapse; font-size:0.85rem; }
-        .sarif-table th { text-align:left; padding:6px 8px; background:#eceff1; font-weight:600; }
-        .sarif-table td { padding:5px 8px; border-bottom:1px solid #f0f0f0; vertical-align:top; }
-        .sarif-filters { display:flex; flex-wrap:wrap; gap:6px; margin:0 0 10px; }
-        .sarif-filter { cursor:pointer; border:1px solid #b0bec5; background:#fff; color:#37474f;
-          border-radius:14px; padding:3px 11px; font-size:0.8rem; font-weight:600; }
-        .sarif-filter.active { background:#37474f; color:#fff; border-color:#37474f; }
-        .sarif-pager { display:flex; align-items:center; gap:12px; margin:10px 0 4px; font-size:0.85rem; }
-        .sarif-pg-btn { cursor:pointer; border:1px solid #b0bec5; background:#fff; color:#37474f;
-          border-radius:6px; padding:4px 12px; font-size:0.85rem; }
-        .sarif-pg-btn:disabled { opacity:0.4; cursor:default; }
-        .sarif-page-info { color:#546e7a; }
-        .sarif-cap-note { color:#e65100; font-size:0.8rem; margin:4px 0 0; }
-      </style>
-      <div class="badge-row"><span class="badge badge-sarif">SARIF</span></div>
+      <section class="sarif-preview">
+      <div class="badge-row"><span class="badge-sarif">SARIF</span></div>
       <div class="meta-section">
         <h4 class="meta-section-title">Overview</h4>
         ${overviewHtml}
@@ -111,14 +87,16 @@ export function render(intake) {
       ${rows ? `<div class="meta-section">
         <h4 class="meta-section-title">Findings</h4>
         <div class="sarif-filters">${filterChips}</div>
-        <table class="sarif-table">
-          <thead><tr><th>Level</th><th>Rule</th><th>Message</th><th>Location</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
         <div class="sarif-pager">
           <button type="button" id="sarif-prev" class="sarif-pg-btn">‹ Prev</button>
           <span id="sarif-page-info" class="sarif-page-info"></span>
           <button type="button" id="sarif-next" class="sarif-pg-btn">Next ›</button>
+        </div>
+        <div class="sarif-table-wrap">
+        <table class="sarif-table">
+          <thead><tr><th>Level</th><th>Rule</th><th>Message</th><th>Location</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
         </div>
         ${capped ? `<p class="sarif-cap-note">Showing the first ${MAX_RENDER} findings of ${allResults.length} — download the file for the full set.</p>` : ''}
         <script>
@@ -152,7 +130,8 @@ export function render(intake) {
           render();
         })();
         </script>
-      </div>` : '<p style="color:#388e3c;padding:8px">No findings — clean scan!</p>'}
+      </div>` : '<p class="sarif-empty">No findings — clean scan!</p>'}
+      </section>
     `,
     hadUnsafe: false,
   };

@@ -18,6 +18,9 @@ pub fn is_within_watched(path: &Path, watched: &[PathBuf]) -> bool {
 /// Canonicalize `path` and verify it remains within a watched directory.
 /// Returns the canonical path or an error string.
 pub fn validate_path(path: &Path, watched: &[PathBuf]) -> Result<PathBuf, String> {
+    if !path.is_absolute() {
+        return Err(format!("Path '{}' is not absolute", path.display()));
+    }
     let canonical = std::fs::canonicalize(path)
         .map_err(|e| format!("Cannot resolve path '{}': {}", path.display(), e))?;
 
@@ -41,13 +44,19 @@ pub fn validate_path(path: &Path, watched: &[PathBuf]) -> Result<PathBuf, String
 /// intermediate directories.) An existing path still goes through the stricter [`validate_path`].
 /// Returns the absolute path to write to (built under the canonicalized existing ancestor).
 pub fn validate_path_for_write(path: &Path, watched: &[PathBuf]) -> Result<PathBuf, String> {
+    if !path.is_absolute() {
+        return Err(format!("Path '{}' is not absolute", path.display()));
+    }
     if path.exists() {
         return validate_path(path, watched);
     }
     // Reject explicit traversal up front: with no `..` component, any descendant of a watched dir is
     // guaranteed to stay within it, so checking the nearest existing ancestor is sufficient.
     if path.components().any(|c| c == Component::ParentDir) {
-        return Err(format!("Path '{}' contains a '..' component", path.display()));
+        return Err(format!(
+            "Path '{}' contains a '..' component",
+            path.display()
+        ));
     }
     if path.file_name().is_none() {
         return Err(format!("Path '{}' has no file name", path.display()));
@@ -65,8 +74,8 @@ pub fn validate_path_for_write(path: &Path, watched: &[PathBuf]) -> Result<PathB
         }
         cur = a.parent();
     }
-    let existing = existing
-        .ok_or_else(|| format!("No existing parent directory for '{}'", path.display()))?;
+    let existing =
+        existing.ok_or_else(|| format!("No existing parent directory for '{}'", path.display()))?;
     // Canonicalize the existing ancestor (resolves symlinks/`.`); it must be within a watched dir.
     let canonical_existing = std::fs::canonicalize(existing)
         .map_err(|e| format!("Cannot resolve '{}': {}", existing.display(), e))?;
@@ -81,10 +90,23 @@ pub fn validate_path_for_write(path: &Path, watched: &[PathBuf]) -> Result<PathB
         ));
     }
     // Re-root the not-yet-existing tail (e.g. `subfolder/new.txt`) under the canonical ancestor.
-    let tail = path
-        .strip_prefix(existing)
-        .map_err(|_| format!("Cannot resolve '{}' under a watched directory", path.display()))?;
+    let tail = path.strip_prefix(existing).map_err(|_| {
+        format!(
+            "Cannot resolve '{}' under a watched directory",
+            path.display()
+        )
+    })?;
     Ok(canonical_existing.join(tail))
+}
+
+/// True when `directory` is a watched root or contains another watched root below it.
+/// Recursive deletion must reject both cases.
+pub fn contains_watched_root(directory: &Path, watched: &[PathBuf]) -> bool {
+    watched.iter().any(|root| {
+        std::fs::canonicalize(root)
+            .map(|canonical_root| canonical_root.starts_with(directory))
+            .unwrap_or(false)
+    })
 }
 
 #[cfg(test)]
@@ -186,7 +208,10 @@ mod tests {
         let resolved = validate_path_for_write(&nested, &watched).unwrap();
         assert!(resolved.ends_with("new.txt"));
         let cw = std::fs::canonicalize(tmp.path()).unwrap();
-        assert!(resolved.starts_with(&cw), "resolved {resolved:?} not under {cw:?}");
+        assert!(
+            resolved.starts_with(&cw),
+            "resolved {resolved:?} not under {cw:?}"
+        );
     }
 
     #[test]
@@ -196,5 +221,42 @@ mod tests {
         // Parent escapes the watched dir via `..`; canonicalize resolves it out of scope.
         let escaped = tmp.path().join("..").join("escaped.txt");
         assert!(validate_path_for_write(&escaped, &watched).is_err());
+    }
+
+    #[test]
+    fn test_contains_nested_watched_root() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        let parent = tmp.path().join("parent");
+        let nested = parent.join("nested");
+        std::fs::create_dir_all(&nested).unwrap();
+        let canonical_parent = std::fs::canonicalize(&parent).unwrap();
+        assert!(contains_watched_root(&canonical_parent, &[nested]));
+    }
+
+    #[test]
+    fn test_validate_rejects_relative_path() {
+        let tmp = tempfile::TempDir::new().unwrap();
+        assert!(validate_path(Path::new("relative.txt"), &[tmp.path().to_path_buf()]).is_err());
+        assert!(
+            validate_path_for_write(Path::new("relative.txt"), &[tmp.path().to_path_buf()])
+                .is_err()
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_validate_rejects_symlink_escape_for_existing_and_new_files() {
+        use std::os::unix::fs::symlink;
+        let watched = tempfile::TempDir::new().unwrap();
+        let outside = tempfile::TempDir::new().unwrap();
+        std::fs::write(outside.path().join("secret.txt"), b"secret").unwrap();
+        let link = watched.path().join("escape");
+        symlink(outside.path(), &link).unwrap();
+
+        assert!(validate_path(&link.join("secret.txt"), &[watched.path().to_path_buf()]).is_err());
+        assert!(
+            validate_path_for_write(&link.join("new.txt"), &[watched.path().to_path_buf()])
+                .is_err()
+        );
     }
 }

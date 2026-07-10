@@ -15,9 +15,27 @@ const VKEY = 'fv:offline:savedVersion';   // version of the last completed full 
 
 export function initOffline(statusEl) {
   if (!('serviceWorker' in navigator) || !statusEl) return;
-  let currentVersion = null;               // latest manifest version (from the SW status)
+  let currentVersion = null;
+  let statusKnown = false;
+  let fullAvailable = false;
+  let cachedAssets = 0;
+  let totalAssets = 0;
+  let pendingMessage = null;
+  let activePrecacheRequest = null;
+  let requestSequence = 0;
 
-  const send = (msg) => (navigator.serviceWorker.controller)?.postMessage(msg);
+  const nextRequestId = () => {
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    return `offline-${Date.now().toString(36)}-${(++requestSequence).toString(36)}-${random[0].toString(36)}`;
+  };
+
+  const send = (msg) => {
+    const controller = navigator.serviceWorker.controller;
+    if (!controller) return false;
+    controller.postMessage(msg);
+    return true;
+  };
 
   const setState = (cls, html, title) => {
     statusEl.hidden = false;
@@ -26,30 +44,54 @@ export function initOffline(statusEl) {
     if (title) statusEl.title = title;
   };
 
-  // Resting state derived from saved-vs-current version (works offline; falls back to "saved").
+  // Cache Storage status is authoritative. localStorage is only a fast startup hint: browsers can
+  // evict Cache Storage without evicting localStorage, so it must never independently claim ready.
   function rest() {
     const saved = localStorage.getItem(VKEY);
-    if (!saved) {
-      setState('idle', '<span class="off-ring"></span> Save offline', 'Cache everything so the whole app works without a connection');
-    } else if (currentVersion && saved !== currentVersion) {
-      setState('update', '<span class="off-check">✓</span> Update available', 'A newer build exists — serving the saved copy. Click to refresh.');
+    if (!statusKnown) {
+      if (saved) setState('checking', '<span class="off-spin"></span> Checking offline save…', 'Verifying the saved offline files');
+      else setState('idle', '<span class="off-ring"></span> Save offline', 'Choose files and viewers to make available without a connection');
+    } else if (fullAvailable && currentVersion) {
+      localStorage.setItem(VKEY, currentVersion);
+      setState('ready', '<span class="off-check">✓</span> Available offline', 'The complete current viewer is saved for offline use');
+    } else if (cachedAssets > 0) {
+      localStorage.removeItem(VKEY);
+      const count = totalAssets ? cachedAssets + ' / ' + totalAssets + ' assets saved' : 'Selected bundles are saved';
+      setState('partial', '<span class="off-check">✓</span> Selected bundles saved', count + '. Choose more bundles at any time.');
     } else {
-      setState('ready', '<span class="off-check">✓</span> Available offline', 'Everything is saved for offline use');
+      localStorage.removeItem(VKEY);
+      setState('idle', '<span class="off-ring"></span> Save offline', 'Choose bundles to make available without a connection');
     }
   }
 
   navigator.serviceWorker.addEventListener('message', (e) => {
     const d = e.data || {};
+    const isPrecacheMessage = d.type === 'precache-progress' || d.type === 'precache-done' || d.type === 'precache-error';
+    // Each save is queued by the worker and replies only to its initiating tab. The request check
+    // is a second guard against a stale/broadcast worker making one tab claim another tab's save.
+    if (isPrecacheMessage && (!activePrecacheRequest || d.requestId !== activePrecacheRequest)) return;
     if (d.type === 'cache-status') {
       currentVersion = d.version || currentVersion;
+      statusKnown = true;
+      fullAvailable = !!d.full;
+      cachedAssets = Number(d.cached) || 0;
+      totalAssets = Number(d.total) || 0;
       rest();
     } else if (d.type === 'precache-progress') {
       setState('caching', '<span class="off-spin"></span> Saving for offline… ' + d.done + ' / ' + d.total);
     } else if (d.type === 'precache-done') {
-      if (d.version) { currentVersion = d.version; localStorage.setItem(VKEY, d.version); }
+      currentVersion = d.version || currentVersion;
+      statusKnown = true;
+      fullAvailable = !!d.full;
+      cachedAssets = Number(d.cached) || 0;
+      totalAssets = Number(d.total) || 0;
+      activePrecacheRequest = null;
       rest();
     } else if (d.type === 'precache-error') {
-      rest();
+      activePrecacheRequest = null;
+      fullAvailable = false;
+      localStorage.removeItem(VKEY);
+      setState('error', '<span aria-hidden="true">!</span> Offline save incomplete — retry', d.error || 'Some files could not be saved. Retry while online.');
     }
   });
 
@@ -57,27 +99,37 @@ export function initOffline(statusEl) {
   statusEl.setAttribute('role', 'button');
   statusEl.tabIndex = 0;
   const onActivate = () => {
-    if (statusEl.classList.contains('caching')) return;        // already saving
-    openCacheModal((files) => {                                // user picked bundles → precache them
-      setState('caching', '<span class="off-spin"></span> Saving for offline…');
-      send({ type: 'precache', files });
+    if (statusEl.classList.contains('caching') || statusEl.classList.contains('preparing')) return;
+    openCacheModal((files) => {
+      activePrecacheRequest = nextRequestId();
+      const message = { type: 'precache', files, requestId: activePrecacheRequest };
+      if (send(message)) setState('caching', '<span class="off-spin"></span> Saving for offline…');
+      else {
+        pendingMessage = message;
+        setState('preparing', '<span class="off-spin"></span> Preparing offline save…', 'Waiting for offline support to become ready');
+      }
+    }, (error) => {
+      setState('error', '<span aria-hidden="true">!</span> Offline options unavailable — retry', error?.message || String(error));
     });
   };
   statusEl.addEventListener('click', onActivate);
   statusEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onActivate(); } });
 
-  // Show the pill immediately in its derived resting state. Previously it only appeared once the
-  // SW replied with a cache-status message — but `send` no-ops when there's no controller yet
-  // (first load / after a deploy / hard reload), so the pill could stay hidden ("disappears").
-  // rest() reads localStorage and works without the SW; the SW message just refines it later.
+  // Show the control immediately, but do not call a localStorage hint "ready" until the SW verifies it.
   rest();
 
   navigator.serviceWorker.register('sw.js').then(async (reg) => {
     await navigator.serviceWorker.ready;
-    // Do NOT auto-precache. Just ask for status to pick the resting state.
-    send({ type: 'status' });
-    // controller may not be set on the very first load; retry once it takes over.
-    navigator.serviceWorker.addEventListener('controllerchange', () => send({ type: 'status' }));
+    const onController = () => {
+      if (pendingMessage && send(pendingMessage)) {
+        pendingMessage = null;
+        setState('caching', '<span class="off-spin"></span> Saving for offline…');
+      } else {
+        send({ type: 'status' });
+      }
+    };
+    onController();
+    navigator.serviceWorker.addEventListener('controllerchange', onController);
 
     // ── Update guard ──────────────────────────────────────────────────────────
     // A deploy bumps the version stamped into sw.js, so its bytes change → the browser installs a
@@ -100,7 +152,11 @@ export function initOffline(statusEl) {
     };
     document.addEventListener('visibilitychange', checkForUpdate);
     window.addEventListener('focus', checkForUpdate);
-  }).catch(() => { /* offline support unavailable — stay online-only */ });
+  }).catch((error) => {
+    pendingMessage = null;
+    activePrecacheRequest = null;
+    setState('error', '<span aria-hidden="true">!</span> Offline support unavailable', error?.message || 'Service worker registration failed.');
+  });
 }
 
 // "New version available — reload?" banner. Shown once a newer build's SW is installed and waiting.
@@ -142,7 +198,9 @@ function fmtSize(n) {
 function emulatorsEnabled() {
   try {
     const saved = JSON.parse(localStorage.getItem('fv:settings:global') || 'null');
-    return saved?.enableEmulators === true;
+    // Settings persists a versioned value bag. Keep the legacy flat read for older local data, but
+    // never require a test-only shape that the real Settings UI cannot produce.
+    return saved?.values?.enableEmulators === true || saved?.enableEmulators === true;
   } catch { return false; }
 }
 
@@ -156,6 +214,7 @@ const CACHE_PRESETS = [
     bundles: ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml', 'vendor:papaparse',
       'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
       'vendor:html2canvas', 'vendor:gifuct', 'vendor:utif', 'vendor:libheif', 'vendor:fonts',
+      'vendor:monaco',
       'examples:catalog', 'examples:text-config', 'examples:data', 'examples:office'],
   },
   {
@@ -174,7 +233,8 @@ const CACHE_PRESETS = [
     title: 'Office viewing: Markdown, PDF, spreadsheets, slides, Word/OpenDocument, archives used by Office formats, and office examples.',
     bundles: ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml',
       'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
-      'vendor:html2canvas', 'examples:catalog', 'examples:office', 'examples:text-config', 'examples:data'],
+      'vendor:html2canvas', 'vendor:monaco',
+      'examples:catalog', 'examples:office', 'examples:text-config', 'examples:data'],
   },
   {
     id: 'office-e',
@@ -188,11 +248,24 @@ const CACHE_PRESETS = [
 ];
 const DEFAULT_CACHE_BUNDLES = new Set(CACHE_PRESETS[0].bundles);
 
-async function openCacheModal(onConfirm) {
+let cacheModalOpening = false;
+async function openCacheModal(onConfirm, onError = () => {}) {
+  const existing = document.querySelector('.cache-modal');
+  if (existing) { existing.querySelector('.cm-close')?.focus(); return; }
+  if (cacheModalOpening) return;
+  cacheModalOpening = true;
   let bundles;
-  try { bundles = (await (await fetch('asset-manifest.json', { cache: 'no-store' })).json()).bundles || []; }
-  catch { onConfirm(undefined); return; }
-  if (!bundles.length) { onConfirm(undefined); return; }
+  try {
+    const response = await fetch('asset-manifest.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Could not load offline options (' + response.status + ').');
+    bundles = (await response.json()).bundles || [];
+    if (!bundles.length) throw new Error('No offline bundles are available.');
+  } catch (error) {
+    cacheModalOpening = false;
+    onError(error);
+    return;
+  }
+  cacheModalOpening = false;
 
   // Filter emulator bundles unless enabled in Advanced settings
   if (!emulatorsEnabled()) bundles = bundles.filter((b) => b.group !== 'Emulators');
@@ -212,16 +285,18 @@ async function openCacheModal(onConfirm) {
   const root = document.createElement('div');
   root.className = 'cache-modal-backdrop';
   root.innerHTML =
-    '<div class="cache-modal" role="dialog" aria-label="Save for offline">'
-    + '<header class="cm-head"><h2>Save for offline</h2><button class="cm-close" aria-label="Close">✕</button></header>'
+    '<div class="cache-modal" role="dialog" aria-modal="true" aria-labelledby="cacheModalTitle">'
+    + '<header class="cm-head"><h2 id="cacheModalTitle">Save for offline</h2><button type="button" class="cm-close" aria-label="Close">✕</button></header>'
     + '<p class="cm-intro">Choose what to cache so it works without a connection. Sizes are downloads.</p>'
-    + '<div class="cm-toolbar"><button class="cm-all">Select all</button><button class="cm-none">Deselect all</button>'
-    + CACHE_PRESETS.map((p) => '<button class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '">' + p.label + '</button>').join('')
+    + '<div class="cm-toolbar"><button type="button" class="cm-all">Select all</button><button type="button" class="cm-none">Deselect all</button>'
+    + CACHE_PRESETS.map((p) => '<button type="button" class="cm-preset" data-preset="' + p.id + '" title="' + p.title + '" aria-pressed="' + (p.id === 'common-v') + '">' + p.label + '</button>').join('')
     + '<span class="cm-grand-total"></span></div>'
     + '<div class="cm-groups"></div>'
-    + '<footer class="cm-foot"><span class="cm-total"></span><button class="cm-save">Save selected</button></footer>'
+    + '<footer class="cm-foot"><span class="cm-total"></span><button type="button" class="cm-save">Save selected</button></footer>'
     + '</div>';
+  const previousActive = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.body.appendChild(root);
+  document.body.classList.add('cache-modal-open');
 
   const groupsEl = root.querySelector('.cm-groups');
   const totalEl = root.querySelector('.cm-total');
@@ -239,18 +314,24 @@ async function openCacheModal(onConfirm) {
   }
 
   // Build group sections
-  for (const cat of cats) {
+  cats.forEach((cat, groupIndex) => {
     const bs = grouped.get(cat);
     const isAppShell = cat === 'App shell';
     const sec = document.createElement('div');
     sec.className = 'cm-group';
-    const head = document.createElement('div');
+    const head = document.createElement('button');
+    head.type = 'button';
     head.className = 'cm-group-head';
-    head.innerHTML = '<button class="cm-toggle">' + (isAppShell ? '▸' : '▾') + '</button>'
+    head.setAttribute('aria-expanded', String(!isAppShell));
+    const bodyId = 'cacheModalGroup' + groupIndex;
+    head.setAttribute('aria-controls', bodyId);
+    head.innerHTML = '<span class="cm-toggle" aria-hidden="true">' + (isAppShell ? '▸' : '▾') + '</span>'
       + '<span class="cm-group-label">' + cat + '</span>'
       + '<span class="cm-group-meta"></span>';
     const body = document.createElement('div');
+    body.id = bodyId;
     body.className = 'cm-group-body' + (isAppShell ? ' cm-collapsed' : '');
+    body.hidden = isAppShell;
     body.innerHTML = bs.map(rowHtml).join('');
     sec.appendChild(head);
     sec.appendChild(body);
@@ -258,9 +339,11 @@ async function openCacheModal(onConfirm) {
 
     head.addEventListener('click', () => {
       const collapsed = body.classList.toggle('cm-collapsed');
+      body.hidden = collapsed;
+      head.setAttribute('aria-expanded', String(!collapsed));
       head.querySelector('.cm-toggle').textContent = collapsed ? '▸' : '▾';
     });
-  }
+  });
 
   function updateTotals() {
     let grand = 0;
@@ -278,14 +361,19 @@ async function openCacheModal(onConfirm) {
     grandEl.textContent = 'Total: ' + fmtSize(grand);
   }
   updateTotals();
-  groupsEl.addEventListener('change', updateTotals);
+  const setActivePreset = (id = null) => {
+    root.querySelectorAll('.cm-preset').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.preset === id)));
+  };
+  groupsEl.addEventListener('change', () => { setActivePreset(); updateTotals(); });
 
   root.querySelector('.cm-all').addEventListener('click', () => {
     for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = true;
+    setActivePreset();
     updateTotals();
   });
   root.querySelector('.cm-none').addEventListener('click', () => {
     for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = false;
+    setActivePreset();
     updateTotals();
   });
   root.querySelectorAll('.cm-preset').forEach((btn) => {
@@ -294,21 +382,42 @@ async function openCacheModal(onConfirm) {
       if (!preset) return;
       const ids = new Set(preset.bundles);
       for (const c of root.querySelectorAll('.cm-chk:not(:disabled)')) c.checked = ids.has(c.dataset.id);
+      setActivePreset(preset.id);
       updateTotals();
     });
   });
 
-  const close = () => root.remove();
+  const focusable = () => [...root.querySelectorAll('button:not(:disabled), input:not(:disabled)')]
+    .filter((element) => !element.hidden && element.getClientRects().length > 0);
+  const onKeydown = (event) => {
+    if (event.key === 'Escape') { event.preventDefault(); close(); return; }
+    if (event.key !== 'Tab') return;
+    const items = focusable();
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
+  let closed = false;
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', onKeydown);
+    root.remove();
+    document.body.classList.remove('cache-modal-open');
+    if (previousActive?.isConnected) previousActive.focus();
+  };
   root.querySelector('.cm-close').addEventListener('click', close);
   root.addEventListener('click', (e) => { if (e.target === root) close(); });
-  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); } });
+  document.addEventListener('keydown', onKeydown);
   root.querySelector('.cm-save').addEventListener('click', () => {
     const chosen = new Set();
     for (const c of root.querySelectorAll('.cm-chk')) if (c.checked || c.disabled) chosen.add(c.dataset.id);
-    const files = bundles.filter((b) => chosen.has(b.id)).flatMap((b) => b.files);
+    const files = [...new Set(bundles.filter((b) => chosen.has(b.id)).flatMap((b) => b.files))];
     close();
     onConfirm(files);
   });
+  root.querySelector('.cm-close').focus();
 }
 
 export function initOfflineBadge() {
@@ -329,6 +438,6 @@ export function offlineMissHtml() {
     + '<p>This viewer wasn’t loaded while you were online, so it isn’t in the cache. '
     + 'Anything you’ve already opened still works offline.</p>'
     + '<p>Reconnect once to use it — or, next time you have a connection, tap '
-    + '<strong>“Save offline”</strong> (bottom-left) to cache the whole app.</p>'
+    + '<strong>“Save offline”</strong> in the top bar (under More controls on a phone) and include the bundle this viewer needs.</p>'
     + '</div>';
 }

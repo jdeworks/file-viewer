@@ -39,6 +39,15 @@ function styleSpec(style) {
   }
 }
 
+// PDB files can contain solvent or detached ligands far away from the polymer. Framing every
+// coordinate in that case makes the actual structure microscopic. Prefer the polymer for the
+// initial/reset camera when ATOM records exist; small-molecule PDB files made only of HETATM
+// records still frame the complete model.
+export function zoomSelectionForStructure(format, text) {
+  if (format === 'pdb' && /^ATOM(?:\s|$)/m.test(text)) return { hetflag: false };
+  return {};
+}
+
 export function build3dPanel(text, format, opts = {}) {
   const panel = document.createElement('div');
   panel.className = 'mol3d-panel';
@@ -54,6 +63,7 @@ export function build3dPanel(text, format, opts = {}) {
   let ro = null;           // ResizeObserver
   let spinning = false;
   let curStyle = opts.style || defaultStyle(format, text);
+  const zoomSelection = opts.zoomSelection || zoomSelectionForStructure(format, text);
   let mounted = false;
   let loading = false;
 
@@ -115,7 +125,7 @@ export function build3dPanel(text, format, opts = {}) {
       viewer = $3Dmol.createViewer(stage, { backgroundColor: 'white', backgroundAlpha: 0 });
       viewer.addModel(text, format);
       applyStyle(curStyle);
-      viewer.zoomTo();
+      viewer.zoomTo(zoomSelection);
       viewer.render();
     } catch (e) {
       teardown();
@@ -140,7 +150,7 @@ export function build3dPanel(text, format, opts = {}) {
       viewer.spin(spinning ? 'y' : false);
       spinBtn.classList.toggle('mol3d-btn--on', spinning);
     });
-    resetBtn.addEventListener('click', () => { viewer.zoomTo(); viewer.render(); });
+    resetBtn.addEventListener('click', () => { viewer.zoomTo(zoomSelection); viewer.render(); });
 
     // Keep the canvas sized to its container.
     ro = new ResizeObserver(() => { try { viewer.resize(); } catch { /* ignore */ } });

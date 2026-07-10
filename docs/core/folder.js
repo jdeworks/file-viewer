@@ -83,7 +83,8 @@ export function recordMove(src, dest) {
 let _onMove = null;
 
 export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders } = {}) {
-  if (!confirmDiscard()) return;               // guard unsaved work before swapping folders
+  if (state.companionOperationToken || state.sidebarNavigationPending) return null;
+  if (!confirmDiscard()) return null;          // explicit abort: callers must not resolve/link it
   captureActiveSidebarRoot();
   // A .git dir makes this a repository: hide git internals from the tree, surface a
   // branch/commit browser, and default to it instead of opening a file.
@@ -142,7 +143,7 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
     label: rootName,
     entries: display,
     git: !!git,
-    openNode: (entry, path) => openTreeFile({ file: entry.file, path }),
+    openNode: (entry, path, options) => openTreeFile({ file: entry.file, path }, options),
     alreadyCaptured: true,
   });
   folderRoot.onMove = _onMove;
@@ -166,6 +167,7 @@ export async function loadFolder(entries, { repoWalkLimit, openPath, openFolders
   } finally {
     hideFolderLoading();
   }
+  return folderRoot;
 }
 
 // Re-render the tree from the CURRENT state.treeEntries without reopening files or refetching bytes
@@ -219,11 +221,13 @@ export async function openRepoView({ auto = false, walkLimit } = {}) {
   }
 }
 
-async function openTreeFile(node) {
+async function openTreeFile(node, {
+  skipFolderFlush = false, sidebarNavigationToken = null,
+} = {}) {
   const showReadNotice = !state.folderEdits.has(node.path) && node.file?.size >= FILE_LOAD_FEEDBACK_BYTES;
   try {
     _repoViewToken++;
-    flushFolderEdit();                 // stash any pending edit of the file we're leaving
+    if (!skipFolderFlush) flushFolderEdit(); // sidebar root switching captured the old edit already
     // If this folder file was edited earlier, reopen its edited text (edits persist across nav).
     const stashed = state.folderEdits.get(node.path);
     if (showReadNotice) {
@@ -237,12 +241,15 @@ async function openTreeFile(node) {
       : await intakeFromFile(node.file);
     state._skipDiscardGuard = true;    // folder edits are preserved in folderEdits — no discard prompt
     state._skipSidebarRoot = true;
-    await loadIntake(intake);
+    const loaded = await loadIntake(intake, { sidebarNavigationToken });
+    if (loaded === false) return false;
     state.currentFolderPath = node.path;   // mark this as a folder file (loadIntake cleared it)
     onFolderFileOpened?.(node);        // notify app.js so it can start per-file watch
     if (isMobile()) setTree(false);    // collapse the overlay after picking on phones
+    return true;
   } catch (err) {
     toast('Could not open ' + node.path);
+    return false;
   } finally {
     if (showReadNotice) hideFolderLoading();
   }
@@ -277,14 +284,23 @@ export async function searchTreeContents() {
   const ql = q.toLowerCase();
   $('ftSearchCount').textContent = 'searching…';
   const matched = new Set();
+  // The append-only sidebar renders a folder entry as "<root label>/<inner path>", while
+  // state.treeEntries intentionally keeps paths relative to the active root. Register both
+  // spellings so a content match survives that display-path boundary. Filename filtering did
+  // not expose this because it receives the already-prefixed sidebar path directly.
+  const activeRoot = state.sidebarRoots?.find((root) => root.id === state.activeSidebarRootId);
+  const addMatchedPath = (path) => {
+    matched.add(path);
+    if (activeRoot && activeRoot.kind !== 'file') matched.add(activeRoot.label + '/' + path);
+  };
   for (const e of state.treeEntries) {
-    if (e.path.toLowerCase().includes(ql)) { matched.add(e.path); continue; }   // filename match
+    if (e.path.toLowerCase().includes(ql)) { addMatchedPath(e.path); continue; }   // filename match
     if (e.file.size > CONTENT_SEARCH_MAX) continue;
     try {
       const text = await e.file.text();
       if (text.includes('\0')) continue;                  // looks binary
       if (text.toLowerCase().includes(ql)) {
-        matched.add(e.path);
+        addMatchedPath(e.path);
         const line = text.split(/\r?\n/).find((entry) => entry.includes(q));
         viewerActions().then(({ recordStage2SearchResult }) => recordStage2SearchResult({ file: e.path, query: q, result: line && line.trim() }));
       }

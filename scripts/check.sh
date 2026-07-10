@@ -179,6 +179,7 @@ FULL_UNIT_TESTS=(
   tests/media-mixer-capabilities.test.mjs
   tests/media-mixer-hit-test.test.mjs
   tests/movediff.test.mjs
+  tests/harness-origin.test.mjs
   tests/markdown-edit-actions.test.mjs
   tests/image-fill.test.mjs
   tests/image-geometry.test.mjs
@@ -186,6 +187,11 @@ FULL_UNIT_TESTS=(
   tests/image-curves.test.mjs
   tests/image-convolve.test.mjs
   tests/image-gif.test.mjs
+  tests/layered-psd.test.mjs
+  tests/molview.test.mjs
+  tests/mobile-renderer-layout.test.mjs
+  tests/core-layout-regressions.mjs
+  tests/archivelib-paths.test.mjs
   tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
@@ -617,6 +623,15 @@ run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
 
 run_phase "Markdown remote-resource privacy (headless Chromium)…" \
   node tests/markdown-remote-resources.test.mjs
+
+run_phase "HTML remote-resource privacy (headless Chromium)…" \
+  node tests/html-remote-resources.test.mjs
+
+run_phase "Embedded SVG/email/EPUB remote-resource privacy (headless Chromium)…" \
+  node tests/embedded-remote-resources.test.mjs
+
+run_phase "Offline save/update readiness (headless Chromium)…" \
+  node tests/release-readiness-offline.mjs
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."

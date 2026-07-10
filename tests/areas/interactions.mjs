@@ -1,4 +1,4 @@
-import { isBenignPageError, isBenignConsoleError } from '../harness.mjs';
+import { isAllowedHarnessUrl, isBenignPageError, isBenignConsoleError } from '../harness.mjs';
 
 export async function run(ctx) {
   const { browser, page, origin, frameOf, pass, fail, consoleErrors, offOrigin, openExample, waitForFv } = ctx;
@@ -428,7 +428,7 @@ export async function run(ctx) {
   const mpage = await mctx.newPage();
   mpage.on('console', (m) => { if (m.type() === 'error' && !isBenignConsoleError(m.text(), m.location()?.url || '')) consoleErrors.push('[mobile] ' + m.text()); });
   mpage.on('pageerror', (e) => { if (!isBenignPageError(e.message)) consoleErrors.push('[mobile] pageerror: ' + e.message); });
-  mpage.on('request', (req) => { const u = req.url(); if (!u.startsWith(origin) && !u.startsWith('data:') && !u.startsWith('blob:')) offOrigin.push(u); });
+  mpage.on('request', (req) => { const u = req.url(); if (!isAllowedHarnessUrl(u, origin)) offOrigin.push(u); });
   await mpage.goto(origin, { waitUntil: 'load' });
   await openExample('Welcome.md', mpage);
   const mframe = await mpage.waitForSelector('iframe.fv-preview-frame', { timeout: 20000 });
@@ -479,6 +479,13 @@ export async function run(ctx) {
     const op = await octx.newPage();
     const oErr = [];
     op.on('pageerror', (e) => oErr.push(e.message));
+    // This scenario explicitly verifies a complete offline save. Make emulator bundles visible so
+    // "select everything" really selects every manifest asset; with the default hidden-emulator
+    // view, saving all visible rows is intentionally and truthfully a partial save.
+    await op.addInitScript(() => {
+      try { localStorage.setItem('fv:settings:global', JSON.stringify({ enableEmulators: true })); }
+      catch { /* sandboxed preview frames have no localStorage */ }
+    });
     await op.goto(origin, { waitUntil: 'load' });
     // Default is cache-on-use: the pill rests at "idle" (offers an opt-in full save), it does
     // NOT auto-precache everything.
@@ -486,10 +493,14 @@ export async function run(ctx) {
     pass('offline precache is opt-in (pill rests at idle, no auto-precache)');
     const offlinePos = await op.$eval('#offlineStatus', (e) => {
       const s = getComputedStyle(e);
-      return { position: s.position, left: s.left, bottom: s.bottom, hidden: e.hidden };
+      const r = e.getBoundingClientRect();
+      const topbar = e.closest('.topbar')?.getBoundingClientRect();
+      return { position: s.position, hidden: e.hidden, parent: e.parentElement?.className || '',
+        top: r.top, bottom: r.bottom, topbarTop: topbar?.top, topbarBottom: topbar?.bottom };
     });
-    if (!offlinePos.hidden && offlinePos.position === 'fixed' && offlinePos.left === '12px' && offlinePos.bottom === '12px')
-      pass('offline control stays fixed at bottom-left');
+    if (!offlinePos.hidden && offlinePos.position !== 'fixed' && /topbar/.test(offlinePos.parent)
+      && offlinePos.top >= offlinePos.topbarTop && offlinePos.bottom <= offlinePos.topbarBottom)
+      pass('offline control stays inside non-overlapping topbar chrome');
     else fail('offline control position: ' + JSON.stringify(offlinePos));
     // Opt in: clicking the pill opens the cache-download modal (pick bundles + sizes).
     await op.click('#offlineStatus');
@@ -498,7 +509,7 @@ export async function run(ctx) {
     const easymdeChecked = await op.$eval('.cm-chk[data-id="vendor:easymde"]', (e) => e.checked);
     const coreRequired = await op.$eval('.cm-chk[data-id="core"]', (e) => e.disabled && e.checked);
     const hasSizes = await op.$$eval('.cm-size', (els) => els.length > 5 && els.every((e) => /\d/.test(e.textContent)));
-    if (monacoChecked === false && easymdeChecked === false && coreRequired && hasSizes) pass('cache modal: sized bundles listed; core required, uncommon editors opt-in'); else fail('cache modal: monacoChecked=' + monacoChecked + ' easymdeChecked=' + easymdeChecked + ' coreReq=' + coreRequired + ' sizes=' + hasSizes);
+    if (monacoChecked === true && easymdeChecked === false && coreRequired && hasSizes) pass('cache modal: sized bundles listed; core + common Monaco runtime selected, uncommon editors opt-in'); else fail('cache modal: monacoChecked=' + monacoChecked + ' easymdeChecked=' + easymdeChecked + ' coreReq=' + coreRequired + ' sizes=' + hasSizes);
     const presets = await op.$$eval('.cm-preset', (els) => els.map((e) => e.textContent.trim()));
     const eastereggBundle = await op.$('.cm-chk[data-id="easteregg"]');
     if (['Common V', 'Common E', 'Office V', 'Office E'].every((p) => presets.includes(p)) && eastereggBundle) {
@@ -507,16 +518,12 @@ export async function run(ctx) {
       fail('cache modal presets=' + presets.join(',') + ' easteregg=' + !!eastereggBundle);
     }
     await op.click('.cm-preset[data-preset="office-v"]');
-    const officePreset = await op.evaluate(() => ({
-      pdfjs: document.querySelector('.cm-chk[data-id="vendor:pdfjs"]')?.checked,
-      xlsx: document.querySelector('.cm-chk[data-id="vendor:xlsx"]')?.checked,
-      mammoth: document.querySelector('.cm-chk[data-id="vendor:mammoth"]')?.checked,
-      officeExamples: document.querySelector('.cm-chk[data-id="examples:office"]')?.checked,
-      monaco: document.querySelector('.cm-chk[data-id="vendor:monaco"]')?.checked,
-      easteregg: document.querySelector('.cm-chk[data-id="easteregg"]')?.checked,
-    }));
-    if (officePreset.pdfjs && officePreset.xlsx && officePreset.mammoth && officePreset.officeExamples && !officePreset.monaco && !officePreset.easteregg) {
-      pass('cache modal: Office V preset selects office viewing without editor/easteregg bundles');
+    const officePreset = await op.$$eval('.cm-chk:checked', (els) => els.map((el) => el.dataset.id).sort());
+    const expectedOfficePreset = ['core', 'known', 'types', 'vendor:dompurify', 'vendor:markdown-it', 'vendor:js-yaml',
+      'vendor:jszip', 'vendor:pdfjs', 'vendor:xlsx', 'vendor:mammoth', 'vendor:pptxviewjs', 'vendor:cfb',
+      'vendor:html2canvas', 'vendor:monaco', 'examples:catalog', 'examples:office', 'examples:text-config', 'examples:data'].sort();
+    if (JSON.stringify(officePreset) === JSON.stringify(expectedOfficePreset)) {
+      pass('cache modal: Office V preset selects the exact viewing dependency set (including Monaco)');
     } else {
       fail('Office V preset: ' + JSON.stringify(officePreset));
     }

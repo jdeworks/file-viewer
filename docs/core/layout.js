@@ -16,7 +16,7 @@ export function initLayout(deps) { renderPreview = deps.renderPreview; openSetti
 // On phones, keep only the essentials in the top bar (tree, file name, open, fullscreen)
 // and move the rest into the ⋯ popover. On desktop the controls return to their original
 // spots (same DOM nodes, so their handlers + hidden-state logic keep working).
-const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'compareBtn', 'tableModeBtn', 'formatBtn', 'saveBtn', 'downloadBtn', 'screenshotBtn', 'exportBtn', 'metaBtn', 'settingsBtn'];
+const OVERFLOW_IDS = ['typeSelect', 'rawMode', 'compareBtn', 'tableModeBtn', 'formatBtn', 'saveBtn', 'downloadBtn', 'screenshotBtn', 'exportBtn', 'metaBtn', 'settingsBtn', 'offlineStatus'];
 let overflowAnchors = null;
 export function layoutTopbar() {
   if (!overflowAnchors) {
@@ -24,8 +24,14 @@ export function layoutTopbar() {
   }
   const menu = $('moreMenu');
   if (isMobile()) {
-    for (const { el } of overflowAnchors) menu.appendChild(el);   // array order = menu order
-    const anyVisible = overflowAnchors.some(({ el }) => !el.hidden);
+    const landing = !$('intake').hidden;
+    for (const { el, parent, next } of overflowAnchors) {
+      // Keep the full Save offline control discoverable on the empty mobile screen. Once a file
+      // is open, move it into the existing ⋯ global-control surface so it cannot cover content.
+      if (el.id === 'offlineStatus' && landing) parent.insertBefore(el, next);
+      else menu.appendChild(el);                                  // array order = menu order
+    }
+    const anyVisible = overflowAnchors.some(({ el }) => el.parentNode === menu && !el.hidden);
     $('moreBtn').hidden = !anyVisible;
   } else {
     for (const { el, parent, next } of overflowAnchors) parent.insertBefore(el, next);
@@ -84,6 +90,7 @@ export function applyLayout() {
     panes.setAttribute('data-mode', wysiwyg ? 'raw' : (both ? state.mode : forced));
   }
   const vm = $('viewMode'); if (vm) vm.hidden = wysiwyg || !both || isMobile();
+  const tabbar = $('tabbar'); if (tabbar) tabbar.style.display = !wysiwyg && both && isMobile() ? 'flex' : 'none';
   document.querySelectorAll('#viewMode button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.mode));
   document.querySelectorAll('#tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.mode === state.tab));
   applyPreviewPaneWidth();
@@ -95,7 +102,8 @@ export function applyLayout() {
 const MIN_EDITOR_PX = 380, DIVIDER_PX = 6;
 export function applyPreviewPaneWidth() {
   const caps = state.type?.capabilities;
-  const both = caps && caps.rawView && caps.preview;
+  const hasPreview = caps && (caps.preview || (!!state.known && !state.forceBase));
+  const both = caps && caps.rawView && hasPreview;
   const splitActive = both && !isMobile() && state.mode === 'split' && !state.wysiwygActive;
   $('splitDivider').hidden = !splitActive;
   const previewPane = $('previewPane'), rawPane = $('rawPane');

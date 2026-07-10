@@ -15,7 +15,9 @@ async function loadPsd(intake) {
 
   function extractLayers(children) {
     if (!children) return [];
-    return children.slice().reverse().map((l) => {
+    // ag-psd already exposes layers in bottom-to-top paint order. Reversing it paints an opaque
+    // background over every foreground layer (the sample PSD makes this immediately visible).
+    return children.map((l) => {
       if (l.children) {
         return { name: l.name || 'Group', type: 'group', visibility: !l.hidden, children: extractLayers(l.children) };
       }
@@ -23,7 +25,7 @@ async function loadPsd(intake) {
         name: l.name || 'Layer',
         type: 'layer',
         visibility: !l.hidden,
-        opacity: (l.opacity ?? 255) / 255,
+        opacity: normalizePsdOpacity(l.opacity),
         imageData: l.imageData,
         x: l.left || 0,
         y: l.top || 0,
@@ -33,6 +35,14 @@ async function loadPsd(intake) {
 
   const layers = extractLayers(psd.children);
   return { W, H, layers, mergedImageData: psd.imageData };
+}
+
+// ag-psd uses 0..1 opacity, while older/alternate decoders may expose the PSD's byte range.
+export function normalizePsdOpacity(value) {
+  if (value == null) return 1;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.max(0, Math.min(1, numeric > 1 ? numeric / 255 : numeric));
 }
 
 // ── Compositing ───────────────────────────────────────────────────────────────
