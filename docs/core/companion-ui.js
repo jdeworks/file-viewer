@@ -12,6 +12,7 @@ let companionLinkedPath = null;
 let companionFolderRoot = null;
 let loadIntakeCallback = null;
 let _watchCleanup = null;
+let _fileWatchGeneration = 0;
 let _healthTimer = null;
 let _availabilityGeneration = 0;
 // Paths we just wrote ourselves → suppress the "changed on disk" banner for our OWN save (the
@@ -64,7 +65,7 @@ export function setCompanionAvailable(v) {
     companionFolderRoot = null;
     state.companionOperationToken = null;
     state.companionReloadToken = null;
-    stopWatching();
+    setCompanionLinked(null, { persist: false });
     onFolderRootCleared();
   } else {
     const activeRoot = state.sidebarRoots?.find(
@@ -73,9 +74,15 @@ export function setCompanionAvailable(v) {
     companionFolderRoot = activeRoot?.kind === 'folder'
       ? (activeRoot.companionFolderRoot || null)
       : null;
+    setCompanionLinked(activeRoot?.kind === 'file'
+      ? (activeRoot.companionLinkedPath || null)
+      : null, { persist: false });
     if (companionFolderRoot) onFolderRootResolved();
     else onFolderRootCleared();
-    if (companionLinkedPath && !state.currentFolderPath) startWatching(companionLinkedPath);
+    if (companionFolderRoot && state.currentFolderPath) {
+      const currentAbsPath = absolutePathForFile(state.currentFolderPath);
+      if (currentAbsPath) startWatching(currentAbsPath);
+    }
   }
   // Rebuild row affordances as availability changes; hiding them only with CSS leaves stale,
   // programmatically clickable destructive controls in the DOM.
@@ -100,6 +107,12 @@ export function activateCompanionSidebarRoot(sidebarRoot) {
   companionFolderRoot = companionAvailable && companionEnabled() && sidebarRoot?.kind === 'folder'
     ? (sidebarRoot.companionFolderRoot || null)
     : null;
+  setCompanionLinked(
+    companionAvailable && companionEnabled() && sidebarRoot?.kind === 'file'
+      ? (sidebarRoot.companionLinkedPath || null)
+      : null,
+    { persist: false },
+  );
   if (companionFolderRoot) onFolderRootResolved();
   else onFolderRootCleared();
   syncSaveBtn();
@@ -271,8 +284,14 @@ export async function tryAutoLink() {
   }
 }
 
-export function setCompanionLinked(absPath) {
+export function setCompanionLinked(absPath, { persist = true } = {}) {
   companionLinkedPath = absPath;
+  if (persist) {
+    const activeRoot = state.sidebarRoots?.find(
+      (candidate) => candidate.id === state.activeSidebarRootId,
+    );
+    if (activeRoot?.kind === 'file') activeRoot.companionLinkedPath = absPath || null;
+  }
   const el = $('companionLinked');
   if (!el) return;
   if (absPath) {
@@ -288,20 +307,44 @@ export function setCompanionLinked(absPath) {
 export function startWatching(absolutePath) {
   stopWatching();
   if (!companionAvailable || !companionEnabled() || !absolutePath) return;
+  const generation = ++_fileWatchGeneration;
+  const watchContext = {
+    generation,
+    authorizationGeneration: _availabilityGeneration,
+    absolutePath,
+    activeSidebarRootId: state.activeSidebarRootId || null,
+    currentFolderPath: state.currentFolderPath || null,
+    folderRoot: companionFolderRoot,
+    linkedPath: companionLinkedPath,
+  };
   _watchCleanup = watchFile(absolutePath, (event) => {
+    if (!fileWatchContextCurrent(watchContext)) return;
     // Don't prompt "changed on disk" for the write WE just made (our save fires a modify event).
     if (event.kind !== 'remove' && wasSelfSaved(absolutePath)) return;
-    showReloadBanner(absolutePath, event.kind);
+    showReloadBanner(absolutePath, event.kind, watchContext);
   });
 }
 
 export function stopWatching() {
+  _fileWatchGeneration++;
   if (_watchCleanup) { _watchCleanup(); _watchCleanup = null; }
   document.querySelector('.companion-reload-banner')?.remove();
 }
 
-async function reloadFromDisk(absolutePath) {
+function fileWatchContextCurrent(context) {
+  return !!context
+    && context.generation === _fileWatchGeneration
+    && context.authorizationGeneration === _availabilityGeneration
+    && companionAvailable && companionEnabled()
+    && (state.activeSidebarRootId || null) === context.activeSidebarRootId
+    && (state.currentFolderPath || null) === context.currentFolderPath
+    && companionFolderRoot === context.folderRoot
+    && companionLinkedPath === context.linkedPath;
+}
+
+async function reloadFromDisk(absolutePath, watchContext = null) {
   if (!companionAvailable || !companionEnabled() || state.sidebarNavigationPending) return;
+  if (watchContext && !fileWatchContextCurrent(watchContext)) return;
   const context = captureOperationContext();
   const token = beginCompanionOperation();
   if (!token) return;
@@ -357,7 +400,7 @@ async function reloadFromDisk(absolutePath) {
   }
 }
 
-function showReloadBanner(absolutePath, kind) {
+function showReloadBanner(absolutePath, kind, watchContext) {
   document.querySelector('.companion-reload-banner')?.remove();
 
   const banner = document.createElement('div');
@@ -367,7 +410,10 @@ function showReloadBanner(absolutePath, kind) {
   const reloadBtn = document.createElement('button');
   reloadBtn.className = 'reload-btn';
   reloadBtn.textContent = 'Reload';
-  reloadBtn.addEventListener('click', () => { banner.remove(); reloadFromDisk(absolutePath); });
+  reloadBtn.addEventListener('click', () => {
+    banner.remove();
+    reloadFromDisk(absolutePath, watchContext);
+  });
   const dismissBtn = document.createElement('button');
   dismissBtn.className = 'dismiss-btn';
   dismissBtn.textContent = '✕';

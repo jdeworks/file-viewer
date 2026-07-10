@@ -6916,6 +6916,7 @@ function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { skipCap
     state12.treeApi?.stop?.();
     state12.treeApi = null;
     state12.treeEntries = null;
+    $7("ftBody").innerHTML = "";
     state12.activeSidebarRootId = null;
     state12.sidebarNavigationPending = false;
     state12.sidebarNavigationToken = null;
@@ -7969,6 +7970,7 @@ var _watchCleanup = null;
 var _debounce = null;
 var _refreshBtn = null;
 var _autoBtn = null;
+var _spinnerOwner = null;
 var _busyRoots = /* @__PURE__ */ new WeakSet();
 function setupFolderRefresh({ getFolderContext: getter }) {
   getFolderContext = getter || getFolderContext;
@@ -8122,7 +8124,12 @@ async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
   const root = ri.sidebarRoot;
   if (_busyRoots.has(root)) return;
   _busyRoots.add(root);
-  if (_refreshBtn && contextStillActive(ri)) _refreshBtn.classList.add("ft-spin");
+  let spinnerToken = null;
+  if (_refreshBtn && contextStillActive(ri)) {
+    spinnerToken = {};
+    _spinnerOwner = spinnerToken;
+    _refreshBtn.classList.add("ft-spin");
+  }
   try {
     if (!knownFor(ri).size) {
       await seedKnown(ri);
@@ -8204,7 +8211,10 @@ async function refreshFolderFromDisk({ manual = false, silent = false } = {}) {
     }
   } finally {
     _busyRoots.delete(root);
-    if (_refreshBtn && contextStillActive(ri)) _refreshBtn.classList.remove("ft-spin");
+    if (_refreshBtn && _spinnerOwner === spinnerToken) {
+      _spinnerOwner = null;
+      _refreshBtn.classList.remove("ft-spin");
+    }
   }
 }
 
@@ -8599,6 +8609,7 @@ var companionLinkedPath = null;
 var companionFolderRoot = null;
 var loadIntakeCallback = null;
 var _watchCleanup2 = null;
+var _fileWatchGeneration = 0;
 var _healthTimer = null;
 var _availabilityGeneration = 0;
 var _selfSaved = /* @__PURE__ */ new Map();
@@ -8645,16 +8656,20 @@ function setCompanionAvailable(v) {
     companionFolderRoot = null;
     state16.companionOperationToken = null;
     state16.companionReloadToken = null;
-    stopWatching();
+    setCompanionLinked(null, { persist: false });
     onFolderRootCleared();
   } else {
     const activeRoot = state16.sidebarRoots?.find(
       (candidate) => candidate.id === state16.activeSidebarRootId
     );
     companionFolderRoot = activeRoot?.kind === "folder" ? activeRoot.companionFolderRoot || null : null;
+    setCompanionLinked(activeRoot?.kind === "file" ? activeRoot.companionLinkedPath || null : null, { persist: false });
     if (companionFolderRoot) onFolderRootResolved();
     else onFolderRootCleared();
-    if (companionLinkedPath && !state16.currentFolderPath) startWatching(companionLinkedPath);
+    if (companionFolderRoot && state16.currentFolderPath) {
+      const currentAbsPath = absolutePathForFile(state16.currentFolderPath);
+      if (currentAbsPath) startWatching(currentAbsPath);
+    }
   }
   state16.treeApi?.rerender?.();
   syncSaveBtn();
@@ -8669,6 +8684,10 @@ function resetCompanionFolderRoot() {
 }
 function activateCompanionSidebarRoot(sidebarRoot) {
   companionFolderRoot = companionAvailable && isEnabled() && sidebarRoot?.kind === "folder" ? sidebarRoot.companionFolderRoot || null : null;
+  setCompanionLinked(
+    companionAvailable && isEnabled() && sidebarRoot?.kind === "file" ? sidebarRoot.companionLinkedPath || null : null,
+    { persist: false }
+  );
   if (companionFolderRoot) onFolderRootResolved();
   else onFolderRootCleared();
   syncSaveBtn();
@@ -8799,8 +8818,14 @@ async function tryAutoLink() {
     syncSaveBtn();
   }
 }
-function setCompanionLinked(absPath) {
+function setCompanionLinked(absPath, { persist: persist2 = true } = {}) {
   companionLinkedPath = absPath;
+  if (persist2) {
+    const activeRoot = state16.sidebarRoots?.find(
+      (candidate) => candidate.id === state16.activeSidebarRootId
+    );
+    if (activeRoot?.kind === "file") activeRoot.companionLinkedPath = absPath || null;
+  }
   const el = $10("companionLinked");
   if (!el) return;
   if (absPath) {
@@ -8815,20 +8840,36 @@ function setCompanionLinked(absPath) {
 function startWatching(absolutePath) {
   stopWatching();
   if (!companionAvailable || !isEnabled() || !absolutePath) return;
+  const generation = ++_fileWatchGeneration;
+  const watchContext = {
+    generation,
+    authorizationGeneration: _availabilityGeneration,
+    absolutePath,
+    activeSidebarRootId: state16.activeSidebarRootId || null,
+    currentFolderPath: state16.currentFolderPath || null,
+    folderRoot: companionFolderRoot,
+    linkedPath: companionLinkedPath
+  };
   _watchCleanup2 = watchFile(absolutePath, (event) => {
+    if (!fileWatchContextCurrent(watchContext)) return;
     if (event.kind !== "remove" && wasSelfSaved(absolutePath)) return;
-    showReloadBanner(absolutePath, event.kind);
+    showReloadBanner(absolutePath, event.kind, watchContext);
   });
 }
 function stopWatching() {
+  _fileWatchGeneration++;
   if (_watchCleanup2) {
     _watchCleanup2();
     _watchCleanup2 = null;
   }
   document.querySelector(".companion-reload-banner")?.remove();
 }
-async function reloadFromDisk(absolutePath) {
+function fileWatchContextCurrent(context) {
+  return !!context && context.generation === _fileWatchGeneration && context.authorizationGeneration === _availabilityGeneration && companionAvailable && isEnabled() && (state16.activeSidebarRootId || null) === context.activeSidebarRootId && (state16.currentFolderPath || null) === context.currentFolderPath && companionFolderRoot === context.folderRoot && companionLinkedPath === context.linkedPath;
+}
+async function reloadFromDisk(absolutePath, watchContext = null) {
   if (!companionAvailable || !isEnabled() || state16.sidebarNavigationPending) return;
+  if (watchContext && !fileWatchContextCurrent(watchContext)) return;
   const context = captureOperationContext();
   const token = beginCompanionOperation();
   if (!token) return;
@@ -8884,7 +8925,7 @@ async function reloadFromDisk(absolutePath) {
     finishCompanionOperation(token);
   }
 }
-function showReloadBanner(absolutePath, kind) {
+function showReloadBanner(absolutePath, kind, watchContext) {
   document.querySelector(".companion-reload-banner")?.remove();
   const banner = document.createElement("div");
   banner.className = "companion-reload-banner";
@@ -8895,7 +8936,7 @@ function showReloadBanner(absolutePath, kind) {
   reloadBtn.textContent = "Reload";
   reloadBtn.addEventListener("click", () => {
     banner.remove();
-    reloadFromDisk(absolutePath);
+    reloadFromDisk(absolutePath, watchContext);
   });
   const dismissBtn = document.createElement("button");
   dismissBtn.className = "dismiss-btn";
@@ -9623,7 +9664,7 @@ async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
   state19.intake = intake;
   metaBtnClicks = 0;
   clearTimeout(_metaBtnTimer);
-  setCompanionLinked(null);
+  setCompanionLinked(null, { persist: false });
   if (!fromTree) resetCompanionFolderRoot();
   const liteCandidates = await rankLiteCandidates(intake);
   if (liteCandidates.length) {

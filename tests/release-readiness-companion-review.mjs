@@ -9,8 +9,8 @@ const captureRoot = join(releaseRoot, 'companion-browser');
 const evidencePath = join(captureRoot, 'evidence.json');
 const files = (await readdir(captureRoot)).filter((name) => /^companion-[a-z-]+\.png$/.test(name)).sort();
 
-assert.equal(files.length, 7, 'expected all seven Companion browser captures');
-assert.equal(Object.keys(companionJudgments).length, 7, 'every capture needs a judgment');
+assert.equal(files.length, 8, 'expected all eight Companion browser captures');
+assert.equal(Object.keys(companionJudgments).length, 8, 'every capture needs a judgment');
 
 const screenshots = [];
 for (const file of files) {
@@ -33,7 +33,7 @@ await writeFile(evidencePath, JSON.stringify({
   schemaVersion: 1,
   reviewedAt: new Date().toISOString(),
   reviewer: 'Codex Companion browser visual lane — individual original-resolution pixel inspection',
-  summary: { passes: 7, failures: 0, pending: 0, screenshotsInspected: 7 },
+  summary: { passes: 8, failures: 0, pending: 0, screenshotsInspected: 8 },
   screenshots,
 }, null, 2) + '\n');
-console.log('Companion browser review merged: 7 hash-matched visual passes.');
+console.log('Companion browser review merged: 8 hash-matched visual passes.');

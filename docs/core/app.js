@@ -90,7 +90,9 @@ async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
   state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
   state.intake = intake;
   metaBtnClicks = 0; clearTimeout(_metaBtnTimer);  // opening a file ends any meta-button click streak (resets the easter-egg counter)
-  setCompanionLinked(null);            // clear any prior linked path on new file open
+  // Clear the live link while loading without erasing the append-only root we are leaving; that
+  // root restores its own association when activated again.
+  setCompanionLinked(null, { persist: false });
   // When loading a single top-level file (not a folder-tree navigation), reset the folder root
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();

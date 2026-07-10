@@ -22,6 +22,7 @@ let _watchCleanup = null;
 let _debounce = null;
 let _refreshBtn = null;
 let _autoBtn = null;
+let _spinnerOwner = null;
 const _busyRoots = new WeakSet();
 
 export function setupFolderRefresh({ getFolderContext: getter }) {
@@ -195,7 +196,12 @@ export async function refreshFolderFromDisk({ manual = false, silent = false } =
   const root = ri.sidebarRoot;
   if (_busyRoots.has(root)) return;
   _busyRoots.add(root);
-  if (_refreshBtn && contextStillActive(ri)) _refreshBtn.classList.add('ft-spin');
+  let spinnerToken = null;
+  if (_refreshBtn && contextStillActive(ri)) {
+    spinnerToken = {};
+    _spinnerOwner = spinnerToken;
+    _refreshBtn.classList.add('ft-spin');
+  }
   try {
     if (!knownFor(ri).size) {
       await seedKnown(ri);   // ensure a baseline so we don't treat everything as new
@@ -275,6 +281,9 @@ export async function refreshFolderFromDisk({ manual = false, silent = false } =
     }
   } finally {
     _busyRoots.delete(root);
-    if (_refreshBtn && contextStillActive(ri)) _refreshBtn.classList.remove('ft-spin');
+    if (_refreshBtn && _spinnerOwner === spinnerToken) {
+      _spinnerOwner = null;
+      _refreshBtn.classList.remove('ft-spin');
+    }
   }
 }

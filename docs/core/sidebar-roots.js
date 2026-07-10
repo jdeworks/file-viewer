@@ -174,6 +174,7 @@ export function renderSidebarRoots(activeRoot = null, activeInnerPath = null, { 
     state.treeApi?.stop?.();
     state.treeApi = null;
     state.treeEntries = null;
+    $('ftBody').innerHTML = '';
     state.activeSidebarRootId = null;
     state.sidebarNavigationPending = false;
     state.sidebarNavigationToken = null;

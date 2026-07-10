@@ -109,8 +109,58 @@ async function main() {
   const secondShared = join(secondWatched, 'shared', 'same.txt');
   mkdirSync(dirname(secondShared), { recursive: true });
   writeFileSync(secondShared, 'second root');
+
+  // Adversarial browser fixtures: delayed root resolution/refresh, duplicate basenames, large-file
+  // navigation cancellation, and same-name auto-link races all remain inside this disposable tree.
+  const slowWatched = join(work, 'slow-root');
+  const slowFile = join(slowWatched, 'slow-only.txt');
+  mkdirSync(slowWatched, { recursive: true });
+  writeFileSync(slowFile, 'slow root bytes');
+  const fastWatched = join(work, 'fast-root');
+  const fastFile = join(fastWatched, 'fast-only.txt');
+  mkdirSync(fastWatched, { recursive: true });
+  writeFileSync(fastFile, 'fast root bytes');
+  const sameParentA = join(work, 'same-parent-a');
+  const sameParentB = join(work, 'same-parent-b');
+  const sameProjectA = join(sameParentA, 'project');
+  const sameProjectB = join(sameParentB, 'project');
+  const sameProjectAFile = join(sameProjectA, 'first-only.txt');
+  const sameProjectBFile = join(sameProjectB, 'second-only.txt');
+  mkdirSync(sameProjectA, { recursive: true });
+  mkdirSync(sameProjectB, { recursive: true });
+  writeFileSync(sameProjectAFile, 'first project');
+  writeFileSync(sameProjectBFile, 'second project');
+  const largeWatched = join(work, 'large-root');
+  const largeSmallFile = join(largeWatched, 'a-small.txt');
+  const largeCancelFile = join(largeWatched, 'z-large.bin');
+  mkdirSync(largeWatched, { recursive: true });
+  writeFileSync(largeSmallFile, 'small root anchor');
+  writeFileSync(largeCancelFile, Buffer.alloc(9 * 1024 * 1024, 0x4c));
+  const rootLevelFile = join(watched, 'root-level.txt');
+  writeFileSync(rootLevelFile, 'root level original');
+  const createSource = join(work, 'create-through-browser.txt');
+  writeFileSync(createSource, 'CREATED THROUGH REAL BROWSER FLOW');
+  const switchAwayFile = join(work, 'switch-away.txt');
+  writeFileSync(switchAwayFile, 'switch away');
+  const sameNameWatched = join(watched, 'race-same.txt');
+  writeFileSync(sameNameWatched, 'MATCH');
+  const sameNameOutsideDir = join(work, 'outside-same-name');
+  mkdirSync(sameNameOutsideDir);
+  const sameNameOutside = join(sameNameOutsideDir, 'race-same.txt');
+  writeFileSync(sameNameOutside, 'MATCH');
+  const delayedSaveTarget = join(watched, 'delayed-save.txt');
+  writeFileSync(delayedSaveTarget, 'TARGET MUST STAY');
+  const delayedSaveOutsideDir = join(work, 'outside-delayed-save');
+  mkdirSync(delayedSaveOutsideDir);
+  const delayedSaveSource = join(delayedSaveOutsideDir, 'delayed-save.txt');
+  writeFileSync(delayedSaveSource, 'SOURCE IN VIEWER');
   const cfgPath = join(work, 'config.json');
-  writeFileSync(cfgPath, JSON.stringify({ watched_paths: [watched, secondWatched] }));
+  writeFileSync(cfgPath, JSON.stringify({
+    watched_paths: [
+      watched, secondWatched, slowWatched, fastWatched,
+      sameProjectA, sameProjectB, largeWatched,
+    ],
+  }));
 
   let server = spawnCompanion(cfgPath);
 
@@ -217,7 +267,13 @@ async function main() {
     try { return new URL(raw).origin === expected; } catch { return false; }
   };
   let dialogMsg = null;
-  page.on('dialog', (d) => { dialogMsg = d.message(); d.accept(); });   // auto-accept the delete confirm
+  const dialogActions = [];
+  page.on('dialog', (d) => {
+    dialogMsg = d.message();
+    const action = dialogActions.shift();
+    if (action?.dismiss) d.dismiss();
+    else d.accept(action?.text);
+  });
 
     // Start disabled: opening a local file must still make Settings available without sending any
     // loopback traffic. Enable through the actual Settings toggle (not localStorage injection), then
@@ -533,6 +589,68 @@ async function main() {
       else fail('external reload lost the Companion disk-link controls');
     }
 
+    // Hold a second external reload at the byte fetch and attempt a competing intake. Reload owns
+    // the navigation transaction, so B must be rejected until A commits; switching away/back after
+    // commit must reopen the exact reloaded bytes from A's updated sidebar snapshot.
+    const reloadedRootLabel = await page.evaluate(() => window.__fv.state.sidebarRoots.find(
+      (root) => root.id === window.__fv.state.activeSidebarRootId,
+    )?.label);
+    await page.waitForTimeout(300); // the reload intentionally replaces the SSE source; let it open
+    writeFileSync(filePath, 'EXTERNAL DELAYED RELOAD');
+    const secondReloadBanner = await page.waitForFunction(() =>
+      document.querySelector('.companion-reload-banner .reload-btn'), null,
+    { timeout: 8000 }).then(() => true).catch(() => false);
+    if (!secondReloadBanner) throw new Error('second external change produced no reload banner');
+    const delayedReloadUrl = `http://127.0.0.1:${PORT}/file?path=${encodeURIComponent(filePath)}`;
+    let delayedReloadStartedResolve;
+    const delayedReloadStarted = new Promise((resolveStarted) => { delayedReloadStartedResolve = resolveStarted; });
+    let releaseDelayedReload;
+    const delayedReloadRelease = new Promise((resolveRelease) => { releaseDelayedReload = resolveRelease; });
+    await page.route(delayedReloadUrl, async (route) => {
+      if (route.request().method() !== 'GET') { await route.continue().catch(() => {}); return; }
+      delayedReloadStartedResolve();
+      await delayedReloadRelease;
+      await route.continue().catch(() => {});
+    });
+    await page.click('.companion-reload-banner .reload-btn');
+    if (!await Promise.race([delayedReloadStarted.then(() => true), sleep(8000).then(() => false)])) {
+      throw new Error('timed out waiting for delayed external reload request');
+    }
+    await page.setInputFiles('#fileInput', switchAwayFile);
+    await page.waitForTimeout(100);
+    const reloadBlockedCompetingIntake = await page.evaluate(() =>
+      window.__fv?.state?.intake?.filename === 'note.txt'
+        && !!window.__fv.state.companionOperationToken);
+    releaseDelayedReload();
+    const delayedReloadCommitted = await page.waitForFunction(() =>
+      window.__fv?.state?.rawview?.getValue?.() === 'EXTERNAL DELAYED RELOAD'
+        && !window.__fv.state.companionOperationToken,
+    null, { timeout: 8000 }).then(() => true).catch(() => false);
+    if (!delayedReloadCommitted) {
+      throw new Error('delayed external reload did not commit: ' + JSON.stringify(await page.evaluate(() => ({
+        value: window.__fv?.state?.rawview?.getValue?.(),
+        operation: !!window.__fv?.state?.companionOperationToken,
+        intake: window.__fv?.state?.intake?.filename,
+        toast: document.getElementById('toast')?.textContent || '',
+      }))));
+    }
+    await page.unroute(delayedReloadUrl);
+    await page.setInputFiles('#fileInput', []);
+    await page.setInputFiles('#fileInput', switchAwayFile);
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'switch-away.txt');
+    await page.locator(`.ft-row.ft-file[data-full-path="${reloadedRootLabel}"]`).click();
+    const restoredReloadSnapshot = await page.waitForFunction(() =>
+      !window.__fv?.state?.sidebarNavigationPending
+        && window.__fv.state.rawview?.getValue?.() === 'EXTERNAL DELAYED RELOAD'
+        && !document.getElementById('saveBtn')?.hidden
+        && !document.getElementById('deleteBtn')?.hidden,
+    null, { timeout: 8000 }).then(() => true).catch(() => false);
+    if (reloadBlockedCompetingIntake && restoredReloadSnapshot) {
+      pass('delayed reload blocks competing intake and persists exact bytes/link across root switches');
+    } else fail('reload navigation/snapshot isolation failed: ' + JSON.stringify({
+      reloadBlockedCompetingIntake, restoredReloadSnapshot,
+    }));
+
     // Download the current Companion-linked bytes, then delete the disk original through the real
     // topbar confirmation flow. Keep a global SSE listener open so the watcher must also report the
     // removal event rather than only returning an HTTP success.
@@ -542,7 +660,7 @@ async function main() {
     ]);
     const currentDownloadPath = await currentDownload.path();
     const currentDownloadBytes = currentDownloadPath ? readFileSync(currentDownloadPath, 'utf8') : null;
-    if (currentDownload.suggestedFilename() === 'note.txt' && currentDownloadBytes === 'EXTERNAL CHANGE') {
+    if (currentDownload.suggestedFilename() === 'note.txt' && currentDownloadBytes === 'EXTERNAL DELAYED RELOAD') {
       pass('Companion-linked current file downloads with the exact latest bytes');
     } else fail('Companion-linked download mismatch: ' + JSON.stringify({
       name: currentDownload.suggestedFilename(), currentDownloadBytes,
@@ -590,6 +708,48 @@ async function main() {
     } else fail('Companion-linked CSV export mismatch: ' + JSON.stringify({
       name: csvExport.suggestedFilename(), csvExportRows,
     }));
+
+    // Drive the real unknown-file create workflow end to end: Save → confirmation → watched-root
+    // browser → + New folder prompt → current bytes written to the new nested destination.
+    await page.setInputFiles('#fileInput', createSource);
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'create-through-browser.txt'
+      && !document.getElementById('saveBtn')?.hidden);
+    dialogActions.push({}, { text: 'browser-created' });
+    await page.click('#saveBtn');
+    await page.waitForSelector('.companion-browse', { state: 'visible' });
+    await page.getByRole('button', { name: watched, exact: true }).click();
+    await page.waitForFunction((path) => document.querySelector('.companion-browse-path')?.textContent === path,
+      watched);
+    await capture(page, 'companion-create-browser');
+    await page.locator('.companion-browse button', { hasText: '+ New folder' }).click();
+    const browserCreatedPath = join(watched, 'browser-created', 'create-through-browser.txt');
+    for (let i = 0; i < 40 && !existsSync(browserCreatedPath); i++) await sleep(100);
+    if (existsSync(browserCreatedPath)
+      && readFileSync(browserCreatedPath, 'utf8') === 'CREATED THROUGH REAL BROWSER FLOW') {
+      pass('Save UI browses a watched root and creates current bytes in a new nested folder');
+    } else fail('browser create workflow did not persist exact bytes at ' + browserCreatedPath);
+
+    // A successful Save must update the append-only sidebar snapshot and retain the per-file disk
+    // association. Switching away/back should show the committed bytes and restore Save/Delete.
+    await page.evaluate(() => window.__fv.state.rawview.setValue('SAVED SNAPSHOT THROUGH UI'));
+    await page.click('#saveBtn');
+    for (let i = 0; i < 40 && readFileSync(browserCreatedPath, 'utf8') !== 'SAVED SNAPSHOT THROUGH UI'; i++) {
+      await sleep(100);
+    }
+    const savedRootLabel = await page.evaluate(() => window.__fv.state.sidebarRoots.find(
+      (root) => root.id === window.__fv.state.activeSidebarRootId,
+    )?.label);
+    await page.setInputFiles('#fileInput', switchAwayFile);
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'switch-away.txt');
+    await page.locator(`.ft-row.ft-file[data-full-path="${savedRootLabel}"]`).click();
+    const restoredSavedSnapshot = await page.waitForFunction(() =>
+      window.__fv?.state?.rawview?.getValue?.() === 'SAVED SNAPSHOT THROUGH UI'
+        && !document.getElementById('saveBtn')?.hidden
+        && !document.getElementById('deleteBtn')?.hidden,
+    null, { timeout: 8000 }).then(() => true).catch(() => false);
+    if (restoredSavedSnapshot) {
+      pass('switching away/back restores exact saved bytes and the standalone Companion link');
+    } else fail('saved sidebar snapshot/link was stale after root switch');
 
     // Item 3 (create-unknown-file, backend): saveFile to a path that does NOT exist yet must create
     // it inside the watched folder (server validate_path_for_write parent-dir check).
@@ -671,6 +831,77 @@ async function main() {
     await page.setInputFiles('#folderInput', watched);
     await page.waitForFunction(() => document.body.classList.contains('companion-folder-active'), null,
       { timeout: 8000 });
+    const watchedRootId = await page.evaluate(() => window.__fv.state.activeSidebarRootId);
+
+    // Root-level folder paths contain no slash. They must map to <absolute root>/<filename>, not be
+    // dropped as an empty relative path. Also prove declining a new folder while this editor is
+    // dirty neither creates/resolves the rejected root nor changes the active disk association.
+    const rootLevelRow = page.locator(
+      `.ft-row.ft-file[data-full-path="${watchedName}/root-level.txt"]`,
+    );
+    await rootLevelRow.click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'root-level.txt'
+      && window.__fv.state.rawview?.getValue?.() === 'root level original'
+      && !document.getElementById('saveBtn')?.hidden);
+    await page.evaluate(() => window.__fv.state.rawview.setValue('ROOT LEVEL SAVED'));
+    await page.waitForFunction(() => window.__fv?.state?.rawview?.isDirty?.()
+      && window.__fv.state.downloadedSinceEdit === false
+      && window.__fv.state.folderEdits?.get('root-level.txt') === 'ROOT LEVEL SAVED');
+    const rootsBeforeCancelledFolder = await page.evaluate(() => window.__fv.state.sidebarRoots.length);
+    dialogActions.push({ dismiss: true });
+    await page.setInputFiles('#folderInput', fastWatched);
+    await page.waitForTimeout(500);
+    const cancelledFolderState = await page.evaluate(({ id, count }) => ({
+      active: window.__fv.state.activeSidebarRootId,
+      count: window.__fv.state.sidebarRoots.length,
+      currentPath: window.__fv.state.currentFolderPath,
+      fastAttached: window.__fv.state.sidebarRoots.some((root) => root.title === 'fast-root'),
+      unchanged: window.__fv.state.activeSidebarRootId === id
+        && window.__fv.state.sidebarRoots.length === count,
+    }), { id: watchedRootId, count: rootsBeforeCancelledFolder });
+    if (cancelledFolderState.unchanged && !cancelledFolderState.fastAttached
+      && cancelledFolderState.currentPath === 'root-level.txt') {
+      pass('declining a dirty folder replacement leaves the active linked root untouched');
+    } else fail('cancelled folder intake changed root state: ' + JSON.stringify(cancelledFolderState));
+    await page.click('#saveBtn');
+    for (let i = 0; i < 40 && readFileSync(rootLevelFile, 'utf8') !== 'ROOT LEVEL SAVED'; i++) await sleep(100);
+    if (readFileSync(rootLevelFile, 'utf8') === 'ROOT LEVEL SAVED') {
+      pass('root-level folder file Save resolves to the exact watched-root path');
+    } else fail('root-level folder Save did not update ' + rootLevelFile);
+
+    // Cancel the large-file confirmation during a cross-root navigation. The transaction must roll
+    // back to the linked A file with its bytes/actions intact; the 9 MiB B file stays untouched.
+    await page.setInputFiles('#folderInput', largeWatched);
+    await page.waitForFunction(() => window.__fv?.state?.sidebarRoots?.some(
+      (root) => root.label === 'large-root' && !!root.companionFolderRoot,
+    ), null, { timeout: 8000 });
+    await page.locator(`.ft-row.ft-file[data-full-path="${watchedName}/root-level.txt"]`).click();
+    await page.waitForFunction((id) => window.__fv?.state?.activeSidebarRootId === id
+      && !window.__fv.state.sidebarNavigationPending
+      && window.__fv.state.rawview?.getValue?.() === 'ROOT LEVEL SAVED'
+      && !document.getElementById('saveBtn')?.hidden
+      && !document.getElementById('deleteBtn')?.hidden, watchedRootId);
+    dialogActions.push({ dismiss: true });
+    await page.locator('.ft-row.ft-file[data-full-path="large-root/z-large.bin"]').click();
+    await page.waitForFunction((id) => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.activeSidebarRootId === id
+      && window.__fv.state.rawview?.getValue?.() === 'ROOT LEVEL SAVED', watchedRootId);
+    const largeCancelState = await page.evaluate((id) => ({
+      active: window.__fv.state.activeSidebarRootId,
+      currentPath: window.__fv.state.currentFolderPath,
+      value: window.__fv.state.rawview?.getValue?.(),
+      saveHidden: document.getElementById('saveBtn')?.hidden,
+      deleteHidden: document.getElementById('deleteBtn')?.hidden,
+    }), watchedRootId);
+    if (largeCancelState.active === watchedRootId
+      && largeCancelState.currentPath === 'root-level.txt'
+      && largeCancelState.value === 'ROOT LEVEL SAVED'
+      && !largeCancelState.saveHidden && !largeCancelState.deleteHidden
+      && statSync(largeCancelFile).size === 9 * 1024 * 1024) {
+      pass('cancelled large cross-root open rolls back bytes, root association, and disk actions');
+    } else fail('large-file cancel did not roll back safely: ' + JSON.stringify(largeCancelState));
+
     await page.evaluate((rootName) => {
       window.__fv.state.treeApi.openPaths([
         rootName,
@@ -747,6 +978,397 @@ async function main() {
     } else fail('two-root delete isolation failed: ' + JSON.stringify({
       firstExists: existsSync(firstShared), secondExists: existsSync(secondShared), dialogMsg,
     }));
+    await page.waitForFunction(() => !window.__fv?.state?.companionOperationToken
+      && !window.__fv?.state?.sidebarNavigationPending);
+
+    // Delay A's /find-folder response, open B, and let B resolve first. Each result must attach to
+    // the root captured before its await—not whichever root happens to be active on completion.
+    const findFolderPattern = new RegExp(`^http://127\\.0\\.0\\.1:${PORT}/find-folder\\?`);
+    let slowFindStartedResolve;
+    const slowFindStarted = new Promise((resolveStarted) => { slowFindStartedResolve = resolveStarted; });
+    let releaseSlowFind;
+    const slowFindRelease = new Promise((resolveRelease) => { releaseSlowFind = resolveRelease; });
+    let slowFindNotified = false;
+    await page.route(findFolderPattern, async (route) => {
+      const relPath = new URL(route.request().url()).searchParams.get('relPath') || '';
+      if (relPath.startsWith('slow-root/')) {
+        if (!slowFindNotified) { slowFindNotified = true; slowFindStartedResolve(); }
+        await slowFindRelease;
+      }
+      await route.continue().catch(() => {});
+    });
+    await page.setInputFiles('#folderInput', slowWatched);
+    if (!await Promise.race([slowFindStarted.then(() => true), sleep(8000).then(() => false)])) {
+      throw new Error('timed out waiting for delayed slow-root find-folder request');
+    }
+    await page.setInputFiles('#folderInput', fastWatched);
+    await page.waitForFunction((fast) => {
+      const roots = window.__fv?.state?.sidebarRoots || [];
+      const fastRoot = roots.find((root) => root.label === 'fast-root');
+      return fastRoot?.companionFolderRoot === fast
+        && window.__fv.state.activeSidebarRootId === fastRoot.id;
+    }, fastWatched, { timeout: 8000 });
+    releaseSlowFind();
+    const outOfOrderResolved = await page.waitForFunction(({ slow, fast }) => {
+      const roots = window.__fv?.state?.sidebarRoots || [];
+      const slowRoot = roots.find((root) => root.label === 'slow-root');
+      const fastRoot = roots.find((root) => root.label === 'fast-root');
+      return slowRoot?.companionFolderRoot === slow
+        && fastRoot?.companionFolderRoot === fast
+        && window.__fv.state.activeSidebarRootId === fastRoot.id;
+    }, { slow: slowWatched, fast: fastWatched }, { timeout: 8000 }).then(() => true).catch(() => false);
+    await page.unroute(findFolderPattern);
+    if (outOfOrderResolved) pass('out-of-order folder resolution stays attached to each captured root');
+    else fail('delayed folder resolution attached to the wrong sidebar root');
+
+    // Two watched folders with the same basename get display labels "project" / "project 2", but
+    // each incoming path still begins with the original "project/". Save through the second row and
+    // prove normalization targets B, never A or a spurious B/project/... nesting.
+    await page.setInputFiles('#folderInput', sameProjectA);
+    await page.waitForFunction((path) => window.__fv?.state?.sidebarRoots?.some(
+      (root) => root.label === 'project' && root.companionFolderRoot === path,
+    ), sameProjectA);
+    await page.setInputFiles('#folderInput', sameProjectB);
+    await page.waitForFunction((path) => window.__fv?.state?.sidebarRoots?.some(
+      (root) => root.label === 'project 2' && root.companionFolderRoot === path,
+    ), sameProjectB);
+    const duplicateRootShape = await page.evaluate(() => {
+      const a = window.__fv.state.sidebarRoots.find((root) => root.label === 'project');
+      const b = window.__fv.state.sidebarRoots.find((root) => root.label === 'project 2');
+      return { a: a?.treeEntries?.map((entry) => entry.path), b: b?.treeEntries?.map((entry) => entry.path) };
+    });
+    await page.locator('.ft-row.ft-file[data-full-path="project 2/second-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'second-only.txt');
+    await page.evaluate(() => window.__fv.state.rawview.setValue('SECOND PROJECT SAVED'));
+    await page.click('#saveBtn');
+    for (let i = 0; i < 40 && readFileSync(sameProjectBFile, 'utf8') !== 'SECOND PROJECT SAVED'; i++) {
+      await sleep(100);
+    }
+    if (JSON.stringify(duplicateRootShape) === JSON.stringify({
+      a: ['first-only.txt'], b: ['second-only.txt'],
+    }) && readFileSync(sameProjectAFile, 'utf8') === 'first project'
+      && readFileSync(sameProjectBFile, 'utf8') === 'SECOND PROJECT SAVED') {
+      pass('same-basename sidebar roots normalize and save to the exact second disk root');
+    } else fail('same-basename root mapping failed: ' + JSON.stringify({
+      duplicateRootShape,
+      a: readFileSync(sameProjectAFile, 'utf8'),
+      b: readFileSync(sameProjectBFile, 'utf8'),
+    }));
+
+    // Start a delayed refresh of slow-root, then switch to fast-root before /tree resolves. The
+    // captured slow root may finish safely in the background, but it must never overwrite B's
+    // global tree or resolve its fetched rows against B's disk association.
+    await page.locator('.ft-row.ft-file[data-full-path="slow-root/slow-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'slow-only.txt');
+    await page.waitForTimeout(300); // allow the root-scoped seed request to settle
+    const slowRefreshFile = join(slowWatched, 'slow-refresh.txt');
+    writeFileSync(slowRefreshFile, 'new during delayed refresh');
+    let delayedTreeStartedResolve;
+    const delayedTreeStarted = new Promise((resolveStarted) => { delayedTreeStartedResolve = resolveStarted; });
+    let releaseDelayedTree;
+    const delayedTreeRelease = new Promise((resolveRelease) => { releaseDelayedTree = resolveRelease; });
+    let delayedTreeNotified = false;
+    const treePattern = new RegExp(`^http://127\\.0\\.0\\.1:${PORT}/tree\\?`);
+    await page.route(treePattern, async (route) => {
+      const path = new URL(route.request().url()).searchParams.get('path');
+      if (path === slowWatched) {
+        if (!delayedTreeNotified) { delayedTreeNotified = true; delayedTreeStartedResolve(); }
+        await delayedTreeRelease;
+      }
+      await route.continue().catch(() => {});
+    });
+    let staleRefreshFileGets = 0;
+    const countStaleRefreshGet = (request) => {
+      const url = new URL(request.url());
+      if (request.method() === 'GET' && url.origin === companionOrigin
+        && url.pathname === '/file' && url.searchParams.get('path') === slowRefreshFile) {
+        staleRefreshFileGets++;
+      }
+    };
+    page.on('request', countStaleRefreshGet);
+    await page.click('#ftRefreshBtn');
+    if (!await Promise.race([delayedTreeStarted.then(() => true), sleep(8000).then(() => false)])) {
+      throw new Error('timed out waiting for delayed slow-root refresh request');
+    }
+    await page.locator('.ft-row.ft-file[data-full-path="fast-root/fast-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'fast-only.txt');
+    releaseDelayedTree();
+    await page.waitForTimeout(400);
+    const refreshSwitchState = await page.evaluate(() => ({
+      activeLabel: window.__fv.state.sidebarRoots.find(
+        (root) => root.id === window.__fv.state.activeSidebarRootId,
+      )?.label,
+      paths: (window.__fv.state.treeEntries || []).map((entry) => entry.path),
+      slowPaths: window.__fv.state.sidebarRoots.find(
+        (root) => root.label === 'slow-root',
+      )?.treeEntries?.map((entry) => entry.path),
+    }));
+    page.off('request', countStaleRefreshGet);
+    await page.unroute(treePattern);
+    if (staleRefreshFileGets === 1 && refreshSwitchState.activeLabel === 'fast-root'
+      && refreshSwitchState.paths.includes('fast-only.txt')
+      && !refreshSwitchState.paths.includes('slow-refresh.txt')
+      && refreshSwitchState.slowPaths.includes('slow-refresh.txt')) {
+      pass('delayed refresh updates only its captured root without overwriting the active root');
+    } else fail('refresh/root-switch isolation failed: ' + JSON.stringify({
+      staleRefreshFileGets, refreshSwitchState,
+    }));
+
+    // Deliver an older same-name find result after a second file has become current. The stale
+    // request must not attach A's absolute path or expose Delete on B.
+    const raceFindPattern = new RegExp(`^http://127\\.0\\.0\\.1:${PORT}/find-file\\?`);
+    let raceFindCount = 0;
+    let firstRaceFindResolve;
+    const firstRaceFind = new Promise((resolveStarted) => { firstRaceFindResolve = resolveStarted; });
+    await page.route(raceFindPattern, async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('name') !== 'race-same.txt') {
+        await route.continue().catch(() => {});
+        return;
+      }
+      const requestNumber = ++raceFindCount;
+      if (requestNumber === 1) {
+        firstRaceFindResolve();
+        await sleep(650);
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': origin },
+        body: JSON.stringify({ matches: requestNumber === 1 ? [sameNameWatched] : [] }),
+      });
+    });
+    await page.setInputFiles('#fileInput', sameNameWatched);
+    if (!await Promise.race([firstRaceFind.then(() => true), sleep(8000).then(() => false)])) {
+      throw new Error('timed out waiting for delayed same-name find-file request');
+    }
+    await page.setInputFiles('#fileInput', sameNameOutside);
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'race-same.txt'
+      && window.__fv.state.sidebarRoots.find(
+        (root) => root.id === window.__fv.state.activeSidebarRootId,
+      )?.label === 'race-same.txt 2');
+    await page.waitForTimeout(800);
+    const staleAutoLinkState = await page.evaluate(() => ({
+      deleteHidden: document.getElementById('deleteBtn')?.hidden,
+      linkedHidden: document.getElementById('companionLinked')?.hidden,
+      linkedText: document.getElementById('companionLinked')?.textContent || '',
+    }));
+    await page.unroute(raceFindPattern);
+    if (raceFindCount === 2 && staleAutoLinkState.deleteHidden
+      && staleAutoLinkState.linkedHidden && !staleAutoLinkState.linkedText.includes(sameNameWatched)) {
+      pass('late same-name auto-link result cannot attach to the newer intake');
+    } else fail('stale same-name auto-link leaked across intake identity: ' + JSON.stringify({
+      raceFindCount, staleAutoLinkState,
+    }));
+
+    // Instrument EventSource.close, then manually deliver a queued A event after switching to B.
+    // A closed watcher callback must be generation-scoped and unable to create a stale reload UI.
+    await page.evaluate(() => {
+      const NativeEventSource = window.EventSource;
+      window.__trackedCompanionSources = [];
+      window.EventSource = class TrackingEventSource extends NativeEventSource {
+        constructor(...args) {
+          super(...args);
+          this.__closedByViewer = false;
+          window.__trackedCompanionSources.push(this);
+        }
+        close() {
+          this.__closedByViewer = true;
+          return super.close();
+        }
+      };
+    });
+    await page.locator('.ft-row.ft-file[data-full-path="slow-root/slow-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'slow-only.txt'
+      && window.__trackedCompanionSources.length > 0);
+    await page.evaluate(() => { window.__staleCompanionSource = window.__trackedCompanionSources.at(-1); });
+    await page.locator('.ft-row.ft-file[data-full-path="fast-root/fast-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'fast-only.txt');
+    await page.evaluate((path) => {
+      document.querySelector('.companion-reload-banner')?.remove();
+      window.__staleCompanionSource?.onmessage?.({
+        data: JSON.stringify({ path, kind: 'modify' }),
+      });
+    }, slowFile);
+    await page.waitForTimeout(100);
+    const staleWatcherBanner = await page.locator('.companion-reload-banner').count();
+    if (staleWatcherBanner === 0) pass('closed A watcher cannot surface a reload banner after switching to B');
+    else fail('stale watcher event leaked into the newly active root');
+
+    // Enable folder auto-watch, delay a refresh at /tree, then opt out while it is in flight. Both
+    // file/folder EventSources must close, row actions disappear, and no later /file fetch may start.
+    await page.locator('.ft-row.ft-file[data-full-path="slow-root/slow-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'slow-only.txt');
+    const autoWasOn = await page.locator('#ftAutoRefreshBtn').evaluate((button) =>
+      button.classList.contains('ft-auto-on'));
+    if (!autoWasOn) await page.click('#ftAutoRefreshBtn');
+    await page.waitForTimeout(200);
+    writeFileSync(slowFile, 'changed before opt-out');
+    await page.evaluate(() => document.querySelector('.companion-reload-banner')?.remove());
+    let disableTreeStartedResolve;
+    const disableTreeStarted = new Promise((resolveStarted) => { disableTreeStartedResolve = resolveStarted; });
+    let releaseDisableTree;
+    const disableTreeRelease = new Promise((resolveRelease) => { releaseDisableTree = resolveRelease; });
+    let disableTreeNotified = false;
+    await page.route(treePattern, async (route) => {
+      const path = new URL(route.request().url()).searchParams.get('path');
+      if (path === slowWatched) {
+        if (!disableTreeNotified) { disableTreeNotified = true; disableTreeStartedResolve(); }
+        await disableTreeRelease;
+      }
+      await route.continue().catch(() => {});
+    });
+    let postDisableFileGets = 0;
+    let disabledAt = Infinity;
+    const postDisableCompanionRequests = [];
+    const countPostDisable = (request) => {
+      const url = new URL(request.url());
+      if (url.origin !== companionOrigin) return;
+      if (Date.now() >= disabledAt) postDisableCompanionRequests.push(request.url());
+      if (Date.now() >= disabledAt && request.method() === 'GET' && url.pathname === '/file'
+        && url.searchParams.get('path') === slowFile) postDisableFileGets++;
+    };
+    page.on('request', countPostDisable);
+    await page.click('#ftRefreshBtn');
+    if (!await Promise.race([disableTreeStarted.then(() => true), sleep(8000).then(() => false)])) {
+      throw new Error('timed out waiting for opt-out refresh request');
+    }
+    await page.evaluate(() => document.getElementById('settingsBtn').click());
+    await page.waitForSelector('.companion-panel #companionEnabledToggle', { state: 'attached' });
+    await page.evaluate(() => { document.querySelector('.companion-panel').open = true; });
+    disabledAt = Date.now();
+    await page.uncheck('#companionEnabledToggle');
+    releaseDisableTree();
+    await page.waitForFunction(() => !document.body.classList.contains('companion-active')
+      && !document.body.classList.contains('companion-folder-active'));
+    await page.waitForTimeout(900);
+    page.off('request', countPostDisable);
+    await page.unroute(treePattern);
+    const optOutState = await page.evaluate(() => ({
+      closed: (window.__trackedCompanionSources || []).filter((source) => source.__closedByViewer).length,
+      total: (window.__trackedCompanionSources || []).length,
+      actions: document.querySelectorAll('.ft-del,.ft-reveal').length,
+      refreshHidden: document.getElementById('ftRefreshBtn')?.hidden,
+      autoHidden: document.getElementById('ftAutoRefreshBtn')?.hidden,
+    }));
+    if (postDisableFileGets === 0 && postDisableCompanionRequests.length === 0
+      && optOutState.total >= 2 && optOutState.closed === optOutState.total && optOutState.actions === 0
+      && optOutState.refreshHidden && optOutState.autoHidden) {
+      pass('opt-out closes folder/file watchers and cancels all post-await Companion traffic/actions');
+    } else fail('Companion opt-out left live work or controls: ' + JSON.stringify({
+      postDisableFileGets, postDisableCompanionRequests, optOutState,
+    }));
+    await page.check('#companionEnabledToggle');
+    await page.waitForFunction(() => document.body.classList.contains('companion-active')
+      && document.body.classList.contains('companion-folder-active'));
+    await page.click('#settingsDrawer [data-close]');
+
+    // Hold the Save action's second find-file response. A competing intake is locked out; opting
+    // out before the response resumes invalidates the continuation and prevents the POST entirely.
+    let delayedFindCount = 0;
+    let delayedSaveFindResolve;
+    const delayedSaveFindStarted = new Promise((resolveStarted) => { delayedSaveFindResolve = resolveStarted; });
+    let releaseDelayedFind;
+    const delayedFindRelease = new Promise((resolveRelease) => { releaseDelayedFind = resolveRelease; });
+    await page.route(raceFindPattern, async (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('name') !== 'delayed-save.txt') {
+        await route.continue().catch(() => {});
+        return;
+      }
+      const requestNumber = ++delayedFindCount;
+      if (requestNumber === 2) {
+        delayedSaveFindResolve();
+        await delayedFindRelease;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'Access-Control-Allow-Origin': origin },
+        body: JSON.stringify({ matches: requestNumber === 1 ? [] : [delayedSaveTarget] }),
+      });
+    });
+    await page.setInputFiles('#fileInput', delayedSaveSource);
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'delayed-save.txt'
+      && !document.getElementById('saveBtn')?.hidden);
+    for (let i = 0; i < 40 && delayedFindCount < 1; i++) await sleep(50);
+    let delayedSavePosts = 0;
+    const countDelayedSavePost = (request) => {
+      if (request.method() === 'POST' && request.url().startsWith(`http://127.0.0.1:${PORT}/file?`)) {
+        delayedSavePosts++;
+      }
+    };
+    page.on('request', countDelayedSavePost);
+    await page.click('#saveBtn');
+    if (!await Promise.race([delayedSaveFindStarted.then(() => true), sleep(8000).then(() => false)])) {
+      throw new Error('timed out waiting for delayed Save find-file request');
+    }
+    await page.setInputFiles('#fileInput', switchAwayFile);
+    await page.waitForTimeout(100);
+    const competingIntakeBlocked = await page.evaluate(() =>
+      window.__fv?.state?.intake?.filename === 'delayed-save.txt'
+        && !!window.__fv.state.companionOperationToken);
+    await page.evaluate(() => document.getElementById('settingsBtn').click());
+    await page.waitForSelector('.companion-panel #companionEnabledToggle', { state: 'attached' });
+    await page.evaluate(() => { document.querySelector('.companion-panel').open = true; });
+    await page.uncheck('#companionEnabledToggle');
+    releaseDelayedFind();
+    await page.waitForTimeout(500);
+    page.off('request', countDelayedSavePost);
+    await page.unroute(raceFindPattern);
+    if (competingIntakeBlocked && delayedSavePosts === 0
+      && readFileSync(delayedSaveTarget, 'utf8') === 'TARGET MUST STAY') {
+      pass('in-flight Save blocks competing intake and opt-out invalidates the pre-mutation continuation');
+    } else fail('delayed Save race mutated or switched state: ' + JSON.stringify({
+      competingIntakeBlocked, delayedSavePosts, target: readFileSync(delayedSaveTarget, 'utf8'),
+    }));
+    await page.check('#companionEnabledToggle');
+    await page.waitForFunction(() => document.body.classList.contains('companion-active'));
+    await page.click('#settingsDrawer [data-close]');
+
+    // Reduce to one linked folder through the test seam, then remove it through the real UI. The
+    // empty-list transition must clear the global association, controls, actions, and live watcher.
+    await page.locator('.ft-row.ft-file[data-full-path="slow-root/slow-only.txt"]').click();
+    await page.waitForFunction(() => !window.__fv?.state?.sidebarNavigationPending
+      && window.__fv.state.currentFolderPath === 'slow-only.txt');
+    const watchedRootRow = page.locator('.ft-row.ft-folder', { hasText: 'slow-root' }).first();
+    await watchedRootRow.hover();
+    dialogMsg = null;
+    await watchedRootRow.locator('.ft-del').click();
+    await page.waitForFunction(() => /Could not resolve that path on disk/.test(
+      document.getElementById('toast')?.textContent || '',
+    ));
+    if (existsSync(slowWatched) && dialogMsg === null) {
+      pass('tree UI refuses deletion of the watched root itself');
+    } else fail('watched-root deletion was not refused safely');
+    await page.evaluate(() => {
+      const active = window.__fv.state.sidebarRoots.find(
+        (root) => root.id === window.__fv.state.activeSidebarRootId,
+      );
+      window.__fv.state.sidebarRoots = [active];
+    });
+    await page.click('#ftRemoveRootBtn');
+    const lastRootRemoval = await page.evaluate(() => ({
+      roots: window.__fv.state.sidebarRoots.length,
+      active: window.__fv.state.activeSidebarRootId,
+      fileTreeHidden: document.getElementById('fileTree')?.hidden,
+      bodyActive: document.body.classList.contains('companion-folder-active'),
+      actions: document.querySelectorAll('.ft-del,.ft-reveal').length,
+      refreshHidden: document.getElementById('ftRefreshBtn')?.hidden,
+      deleteHidden: document.getElementById('deleteBtn')?.hidden,
+    }));
+    if (lastRootRemoval.roots === 0 && lastRootRemoval.active === null
+      && lastRootRemoval.fileTreeHidden && !lastRootRemoval.bodyActive
+      && lastRootRemoval.actions === 0 && lastRootRemoval.refreshHidden
+      && lastRootRemoval.deleteHidden) {
+      pass('removing the last linked root clears its watcher, association, and destructive controls');
+    } else fail('last-root removal left stale Companion state: ' + JSON.stringify(lastRootRemoval));
 
     // Stop current source and drive the visible disconnected + reconnecting states. The Settings
     // Test connection path must report the failure, the topbar must turn red, and clicking it must
@@ -801,7 +1423,7 @@ async function main() {
       }));
     }
   } catch (e) {
-    fail('e2e exception: ' + e.message);
+    fail('e2e exception: ' + (e.stack || e.message));
   } finally {
     await stopCompanion(server);
     cleanup();
