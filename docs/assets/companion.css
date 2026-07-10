@@ -12,13 +12,14 @@
 .companion-status-dot { font-size: 11px; margin-left: 6px; color: var(--fg-2); }
 .companion-status-dot.connected { color: #2f9e44; }
 
-/* Token input: blurred by default, click to reveal */
+/* Token input uses the browser's password masking; click-to-reveal is wired in Settings. Avoid a
+   CSS blur filter here: Chromium may promote the whole drawer into a broken black compositor layer
+   during screenshots/remote desktops, and password masking is both clearer and more robust. */
 .companion-token-wrap { flex: 1; }
 .companion-token-input { width: 100%; font-family: ui-monospace, monospace; font-size: 13px;
   padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
   background: var(--bg); color: var(--fg); }
-.companion-token-reveal { filter: blur(4px); cursor: pointer; transition: filter .15s; }
-.companion-token-reveal:focus, .companion-token-reveal:hover { filter: blur(0); }
+.companion-token-reveal { cursor: pointer; }
 
 /* Watched folders list */
 .companion-folders-label { font-size: 12px; font-weight: 600; color: var(--fg-2);

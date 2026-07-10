@@ -33,6 +33,14 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function capture(page, name) {
   if (!captureDir) return;
   mkdirSync(captureDir, { recursive: true });
+  // Chromium can hand a screenshot request a half-committed iframe/drawer compositing surface on
+  // loaded WSL runners (large black rectangles despite a correct live page). Settle two paints and
+  // take an unpersisted warm-up capture before the evidence frame.
+  await page.waitForTimeout(200);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() =>
+    requestAnimationFrame(resolve))));
+  await page.screenshot({ animations: 'disabled' });
+  await page.waitForTimeout(100);
   await page.screenshot({ path: join(captureDir, `${name}.png`), animations: 'disabled' });
 }
 
@@ -260,7 +268,10 @@ async function main() {
     } else fail(label + ' token mutation boundary failed: ' + response.status);
   }
 
-  ctx = await createHarness();
+  // Evidence captures favor Chromium's deterministic software compositor. Headless GPU surfaces
+  // intermittently produce large black rectangles in otherwise-correct iframe/drawer screenshots
+  // on WSL; the behavioral run keeps the default path, while the capture lane disables only GPU.
+  ctx = await createHarness({ launchArgs: captureDir ? ['--disable-gpu'] : [] });
   const { page, origin } = ctx;
   const companionOrigin = `http://127.0.0.1:${PORT}`;
   const hasOrigin = (raw, expected) => {
@@ -326,6 +337,18 @@ async function main() {
     if (/connected/i.test(connectedUi.summary) && connectedUi.indicator === '●' && connectedUi.up) {
       pass('Settings Test connection reports the connected state');
     } else fail('connected Settings state is dishonest: ' + JSON.stringify(connectedUi));
+    const tokenMask = await page.evaluate(() => {
+      const input = document.querySelector('.companion-token-input');
+      return { type: input?.type, filter: input ? getComputedStyle(input).filter : null };
+    });
+    await page.click('.companion-token-input');
+    const tokenRevealed = await page.locator('.companion-token-input').getAttribute('type');
+    await page.click('.companion-token-input');
+    if (tokenMask.type === 'password' && tokenMask.filter === 'none' && tokenRevealed === 'text') {
+      pass('token uses native password masking and explicit click-to-reveal without a blur compositor');
+    } else fail('token masking/reveal state is unsafe or compositor-backed: ' + JSON.stringify({
+      tokenMask, tokenRevealed,
+    }));
     await capture(page, 'companion-settings-connected');
     await page.click('#settingsDrawer [data-close]');
 
@@ -720,6 +743,7 @@ async function main() {
     await page.getByRole('button', { name: watched, exact: true }).click();
     await page.waitForFunction((path) => document.querySelector('.companion-browse-path')?.textContent === path,
       watched);
+    await page.waitForFunction(() => document.querySelector('.companion-browse-list')?.textContent !== 'Loading…');
     await capture(page, 'companion-create-browser');
     await page.locator('.companion-browse button', { hasText: '+ New folder' }).click();
     const browserCreatedPath = join(watched, 'browser-created', 'create-through-browser.txt');
