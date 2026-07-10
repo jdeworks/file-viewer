@@ -186,6 +186,7 @@ FULL_UNIT_TESTS=(
   tests/image-curves.test.mjs
   tests/image-convolve.test.mjs
   tests/image-gif.test.mjs
+  tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
   tests/example-compatibility.test.mjs
@@ -613,6 +614,9 @@ fi
 
 run_phase "smoke test: core areas (headless Chromium, zero off-origin)…" \
   run_smoke_core
+
+run_phase "Markdown remote-resource privacy (headless Chromium)…" \
+  node tests/markdown-remote-resources.test.mjs
 
 if [ "$FAST" = 1 ]; then
   echo "→ fast mode: SKIPPING known-file + binary smoke suites + exhaustive Sokoban replay suite (the heaviest)."

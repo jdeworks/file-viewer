@@ -10,7 +10,7 @@
 // The server binds 127.0.0.1:7700 (hardcoded) — the test refuses to run if something else already
 // holds that port, so it can't accidentally talk to a developer's live companion.
 import { createHarness, finish, pass, fail } from './harness.mjs';
-import { spawn, execSync } from 'node:child_process';
+import { spawn, spawnSync, execSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
@@ -43,11 +43,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Build the binary if needed (local-only; there is no CI building this).
-  if (!existsSync(BIN)) {
-    console.log('building companion binary…');
-    execSync('cargo build --offline', { cwd: companionDir, stdio: 'inherit' });
-  }
+  // Always compile current source explicitly. A stale target/debug binary must never make this
+  // integration test pass without exercising the checkout under test.
+  console.log('building companion binary…');
+  execSync('cargo build --offline --locked', { cwd: companionDir, stdio: 'inherit' });
 
   // Isolated watched folder + config.
   const work = mkdtempSync(join(tmpdir(), 'fv-companion-e2e-'));
@@ -69,6 +68,24 @@ async function main() {
   for (let i = 0; i < 40 && !up; i++) { up = await ping(); if (!up) await new Promise((r) => setTimeout(r, 250)); }
   if (!up) { fail('e2e: companion did not come up on :7700'); server.kill(); cleanup(); console.log('\nSMOKE FAILED'); process.exit(1); }
   pass('companion server is up on :7700');
+
+  // A second launch must exit without killing or replacing the established server. This guards
+  // against the old executable-name takeover, which could terminate unrelated processes and broke
+  // once release binaries were renamed with a version suffix.
+  const duplicate = spawnSync(BIN, [], {
+    env: { ...process.env, COMPANION_TOKEN: 'duplicate', COMPANION_CONFIG: cfgPath },
+    encoding: 'utf8',
+    timeout: 3000,
+  });
+  if (!duplicate.error && duplicate.status !== null
+    && /already running/.test(duplicate.stderr || '') && await ping()) {
+    pass('second companion exits without replacing the first server');
+  } else {
+    fail('second companion takeover guard failed: ' + JSON.stringify({
+      error: duplicate.error?.message, status: duplicate.status, signal: duplicate.signal,
+      stderr: duplicate.stderr,
+    }));
+  }
 
   const ctx = await createHarness();   // browser + docs/ server (its offOrigin array is NOT asserted here)
   const { page, origin } = ctx;

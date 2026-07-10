@@ -1,108 +1,104 @@
 # File Viewer
 
-A **mobile-first, client-only file viewer** that runs entirely in your browser. Drop in a file (or a whole folder) and read it — source, rendered, or side-by-side — with a real code editor and a move-aware diff.
+**v0.1.0 Public beta**
 
-**▶ Live: https://jdeworks.github.io/file-viewer/**
+File Viewer is a private, browser-based file workbench for opening, inspecting, comparing, and editing files without first sending them to a hosted service.
 
-> **Under construction:** File Viewer is actively being built and should not be treated as a finished full release yet.
+**[Open File Viewer](https://jdeworks.github.io/file-viewer/)**
 
-No install. No PWA. No account. Nothing to run.
+![File Viewer desktop workspace](.github/assets/file-viewer-desktop.png)
 
-## Why
+![File Viewer mobile preview](.github/assets/file-viewer-mobile.png)
 
-The point is trust. **Zero off-origin requests at runtime** — there is no server, no CDN, no analytics, no telemetry. Every library is vendored into this repo and served from the same origin as the page. Your files never leave the tab. The smoke test asserts "zero off-origin requests" on every run, so this stays true.
+## Why File Viewer
 
-> **Don't take our word for it — verify it yourself.** Open your browser's **DevTools → Network tab**, then load a file and click around. Every request goes to this site's own origin only (plus `data:`/`blob:` URLs, which never leave your machine) — nothing to any third party, ever. That's the trust guarantee: your files are processed entirely in the tab.
->
-> *(Note: assets are loaded lazily from the origin as you use features, so going fully offline isn't supported yet — see [Offline use](#offline-use).)*
+Open a file, a folder, or pasted text in a browser workspace that adapts to the content. Read source beside a rendered preview, inspect metadata, make an edit, compare revisions, and download the result. On phones, source and preview remain usable as separate tabs.
 
-- 📱 **Mobile is a first-class target** — on phones the raw/preview views become tabs instead of cramped side-by-side panes.
-- 🔒 **Secure preview** — rendered output lives in a `sandbox="allow-scripts"` iframe (opaque origin, never `allow-same-origin`). Untrusted HTML is DOMPurify-sanitized. If a file contains scripts or inline JS, you're asked before anything runs. Program source (Python, JS, …) is shown, never executed.
-- 🧩 **Modular** — adding a file type is one folder plus one line.
+The public beta is for people who need a practical local-first viewer before reaching for a desktop application, an upload site, or a one-off conversion tool.
 
-## Features
+## Privacy and network modes
 
-- **Open anything** — file picker, folder picker (tree sidebar with detected type + size), drag-and-drop, or paste.
-- **Three ways to look at a file** — raw source in [Monaco](https://microsoft.github.io/monaco-editor/), rendered preview in a sandboxed iframe, or both at once (tabs on mobile).
-- **Move-aware diff** — a 4-way switch: original / current / standard diff / move-aware diff. The move-aware mode detects relocated lines and paragraphs (≥80% similarity = "same, moved") and draws arrows instead of flagging a delete + an add.
-- **Magic selector** — click a rendered element to jump to its source, with live scroll sync between panes.
-- **Screenshot** the rendered preview to PNG.
-- **Settings** — surfaced Monaco options plus per-type viewer settings, with presets, revert, and localStorage persistence.
-- **Metadata** — name, size, type, and any embedded timestamps.
-- Dark / light, zoom, fullscreen, download.
+File Viewer has different network behavior depending on the mode you choose:
 
-## Supported types
+| Mode | What to expect |
+| --- | --- |
+| Browser mode (default) | By default, app requests stay on the app's own origin. The normal browser workflow is designed without file uploads, accounts, analytics, telemetry, or runtime CDN dependencies. |
+| Documents with external resources | A file can reference remote images, media, fonts, or links. Preview behavior varies by format; an allowed resource can make a browser request to its referenced origin. Markdown remote images are shown without loading them by default. |
+| Confirmed script-enabled HTML | HTML previews are sanitized by default. If you explicitly confirm that a document's scripts may run, that document can make network requests according to its own code. |
+| Optional Companion | The desktop Companion is opt-in. When enabled, the browser exchanges selected file paths and bytes with its local service at `127.0.0.1` for watched-folder workflows and save-back. |
 
-Markdown · PDF · CSV · Excel/ODS (`.xlsx`/`.ods`) · Word (`.docx`) · PowerPoint (`.pptx`) · HTML · JSON · images (incl. SVG) · source code (~50 languages) · plain text. More are added over time.
+Browser developer tools remain the best way to inspect requests for your browser, deployment, and selected file. The viewer is designed so ordinary file handling stays in the tab; external references are not the same as uploading the opened file, but they can still disclose normal request metadata to their destination.
+
+## Everyday workflows
+
+- Open individual files, folders, drag-and-drop content, or paste text.
+- Read raw source, a rendered preview, or both side by side; use mobile tabs when space is tight.
+- Edit supported text formats, format documents, and download your changes.
+- Compare original and current content with standard or move-aware diffs.
+- Browse a folder tree, inspect file metadata, search content, and export edited work.
+- Capture supported rendered previews as PNGs.
+
+## Formats
+
+File Viewer currently covers **140+ base types** plus hundreds of recognized developer/config files. Detection is intentionally broad, while rendering depth varies by format and browser.
+
+Curated categories include:
+
+- Documents and books: Markdown, HTML, PDF, EPUB, FB2, DOCX, ODT, PPTX, and RTF.
+- Data and structured text: JSON, CSV, YAML, TOML, XML, INI, SQL, GeoJSON, GPX, calendars, and contacts.
+- Code and configuration: common source languages plus project, editor, CI, package-manager, infrastructure, and operating-system configuration files.
+- Media and images: common raster, vector, audio, video, subtitle, and font formats.
+- Office, archives, binaries, 3D, and scientific formats: spreadsheets, presentations, ZIP-family containers, SQLite, 3D models, and selected specialist files.
+
+Use the built-in examples to see the current presentation for a specific format. Some advanced formats and codecs depend on the browser and may offer inspection or download rather than a complete preview.
 
 ## Offline use
 
-**It works offline** — for a train with no signal, no install, no app store. A
-[service worker](docs/sw.js) precaches every asset in the background on your first visit
-(watch the pill in the corner go from "Saving for offline…" to a green **✓ Available
-offline**). After that the whole app runs from the local cache.
+No installation is required. File Viewer uses a browser-mode web app manifest and a service worker, not an install-first application flow.
 
-**How to use it offline:** just visit the page once while online and wait for the green
-check. Then you can lose the network entirely — open the bookmark again, hard-reload,
-open any file type — and it all works.
+- **Cache on use:** assets fetched while you work can remain available for later offline use.
+- **Save offline bundles:** choose bundles from the in-app **Save offline** control when you want a more deliberate offline set.
+- **Optional heavy packages:** larger viewers and examples are selectable, so a full offline bundle does not have to be the starting point.
 
-**Do I need to do anything when the network drops?** No. This is handled automatically.
-A service worker, once registered, intercepts the browser's page request: when you're
-offline it serves the cached copy instead of letting the browser show its "no internet"
-page. The browser only shows that error for sites *without* a service worker. The one
-requirement is that **the first visit must be online** (so there's something to cache),
-and the browser must not have evicted the cache since.
+An offline preview can be unavailable when its renderer was not previously cached. Reconnect once, open the needed feature, or save an appropriate offline bundle before going offline.
 
-This is **not** an installed app: there's no Web App Manifest and no "Add to Home Screen"
-prompt — the service worker only caches transparently in the background. It works the same
-on desktop and on phones (iOS Safari and Android Chrome).
+## Optional Companion
 
-To verify: load the page, wait for **✓ Available offline**, then switch your device to
-airplane mode and reload. Everything still works.
+The browser app is useful on its own. The optional [Companion](companion/README.md) adds local watched folders, save-back, file-change watching, and native folder selection where supported. It runs a local service on `127.0.0.1` and requires an explicit browser opt-in.
 
-## Run it locally
+Release builds may be unsigned while the project establishes its distribution process. Treat operating-system and browser warnings as a prompt to verify the release source and checksum; checksums help verify downloaded bytes, but do not establish publisher identity. See [Releases](https://github.com/jdeworks/file-viewer/releases) for published artifacts and [Issues](https://github.com/jdeworks/file-viewer/issues) for beta feedback.
 
-It's static files — serve `docs/` with anything:
+## Beta notes
 
-```bash
-cd docs && python3 -m http.server 8000
-# open http://localhost:8000
-```
+Core workflows are ready for broad testing; advanced format support is still improving. Please report a reproducible file type, browser/version, and expected versus observed behavior in [Issues](https://github.com/jdeworks/file-viewer/issues).
+
+- Automated coverage targets Chromium. Firefox and Safari are best-effort targets.
+- Media codecs and advanced-format behavior can vary by browser, operating system, and available decoding support.
+- Non-media files over 64 MiB are read as a bounded head for browsing instead of fully loaded into memory. Formats that require the complete file may not render from that bounded head. Large audio and video may stream from the browser's file handle instead.
 
 ## Develop
 
-```
-docs/
-  index.html          # app shell
-  core/               # orchestrator, intake, raw view, secure iframe, settings, diff, file tree
-  types/<id>/         # one folder per file type (index.js, detect.js, renderer.js, settings.default.json)
-  vendor/             # all third-party libs, served at runtime (no CDN)
-  examples/           # sample files for the picker
-scripts/vendor.sh     # re-vendor libs from node_modules into docs/vendor/
-tests/                # smoke.mjs (headless Chromium) + movediff.test.mjs (unit)
+File Viewer is a static client application served from `docs/`:
+
+```sh
+cd docs
+python3 -m http.server 8000
+# http://localhost:8000
 ```
 
-### Adding a file type
+Core orchestration lives in `docs/core/`; file-type modules live in `docs/types/<id>/`; runtime libraries are vendored in `docs/vendor/`. To add a type, create its module folder and register it in `docs/core/registry.js`. Keep runtime dependencies local to the repository rather than adding a CDN.
 
-1. Create `docs/types/<id>/` (see the descriptor contract documented at the top of `docs/core/registry.js`).
-2. Add one line to the `REGISTRY` array in `docs/core/registry.js`.
+## Test
 
-Everything else about a type stays inside its own folder — single source of truth, no drift.
-
-### Vendoring libraries
-
-Runtime serves `docs/vendor/` only. To add or bump a lib: edit `package.json` devDependencies → `npm install` → `./scripts/vendor.sh`. Pinned versions are recorded in `docs/vendor/VERSIONS.json`.
-
-### Tests
-
-```bash
-node tests/smoke.mjs        # serves docs/, drives headless Chromium, asserts ZERO off-origin requests
+```sh
 node tests/movediff.test.mjs
+node tests/smoke.mjs
+./scripts/check.sh
 ```
 
-The smoke harness uses the Playwright install from a sibling `make-it-look-good` checkout.
+The smoke test serves the app and drives Chromium while checking for unexpected off-origin requests in the default browser mode.
 
 ## License
 
-[MIT](LICENSE). Vendored third-party libraries under `docs/vendor/` retain their own
-licenses (listed at the bottom of the [LICENSE](LICENSE) file).
+[MIT](LICENSE). Vendored packages retain their own licenses; pinned versions are recorded in
+[`docs/vendor/VERSIONS.json`](docs/vendor/VERSIONS.json).

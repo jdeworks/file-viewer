@@ -7982,17 +7982,19 @@ function looksLikeRiskyPath(p) {
   return null;
 }
 var COMPANION_ENDPOINTS = [
-  ["GET /ping", "nothing sent; version + capabilities back"],
+  ["GET /ping", "nothing sent; version + capabilities + session token back"],
   ["GET /watched-paths", "nothing sent; your configured folder paths back"],
   ["POST/DELETE /watched-paths", "a folder path to add/remove"],
   ["GET /find-file", "filename + size (no content); matching absolute paths back"],
   ["GET /find-folder", "a relative path; matching root folders back"],
   ["GET /file", "an absolute path; file bytes back"],
   ["POST /file", "an absolute path + new bytes (save-back / create)"],
-  ["DELETE /file", "an absolute path (delete on disk)"],
+  ["DELETE /file", "an absolute path; deletes a file or recursive subfolder, never a watched root"],
   ["GET /files", "a folder path; its directory listing back"],
-  ["GET /watch", "an absolute path; change/delete events streamed (SSE)"],
+  ["GET /tree", "a watched root path; its recursive file listing back"],
+  ["GET /watch", "nothing sent; change/delete paths streamed (SSE)"],
   ["GET /logs", "optional filters; the companion’s own activity log back"],
+  ["POST /reveal", "an absolute path; opens it in the OS file manager"],
   ["POST /path-picker", "nothing; desktop app shows the native folder dialog, adds the choice"]
 ];
 function appendCompanionDownloadPanel(panel) {
@@ -8002,10 +8004,10 @@ function appendCompanionDownloadPanel(panel) {
   title.className = "companion-folders-label";
   title.textContent = "Get the Companion";
   const description = document.createElement("p");
-  description.textContent = "The Companion is an optional local app that lets this viewer save (and delete) the files you open, back to disk. The viewer works fully without it.";
+  description.textContent = "The Companion is an optional local app that lets this viewer save files and delete files or subfolders inside folders you choose. It never deletes a watched root. The viewer works fully without it.";
   const net = document.createElement("p");
   net.className = "companion-net";
-  net.innerHTML = "It runs a local server on <code>127.0.0.1:7700</code> only — never any external network. Requests are CORS-locked to localhost and this site, and every file action is restricted to folders you explicitly add. Mutating actions also require a per-session token.";
+  net.innerHTML = "It listens only on loopback at <code>127.0.0.1:7700</code>. Its browser CORS barrier allows this deployed viewer and pages served from <code>localhost</code> or <code>127.0.0.1</code> on any port; those pages can read <code>/ping</code>, including its session token. CORS does not constrain local processes. File reads and mutations are restricted to watched roots you explicitly add, and only mutating requests require the token.";
   const tableLabel = document.createElement("p");
   tableLabel.className = "companion-table-label";
   tableLabel.textContent = "Every request it can make (inspect them in your Network tab):";
@@ -8021,16 +8023,16 @@ function appendCompanionDownloadPanel(panel) {
     table.appendChild(tr);
   }
   const source = document.createElement("a");
-  source.href = "https://github.com/jdeworks/file-viewer/tree/dev/companion";
+  source.href = "https://github.com/jdeworks/file-viewer/tree/v0.1.0/companion";
   source.target = "_blank";
   source.rel = "noopener noreferrer";
-  source.textContent = "Review the companion source code →";
+  source.textContent = "Review the companion source code before building →";
   const checksum = document.createElement("p");
   checksum.className = "companion-checksum";
-  checksum.textContent = "Before running a downloaded binary, compare its SHA-256 against the checksum on the release page (or build from source above).";
+  checksum.textContent = "Compare a download’s SHA-256 with the published checksum. This checks transfer integrity; it is not proof of publisher identity or software safety.";
   const signing = document.createElement("p");
   signing.className = "companion-checksum";
-  signing.textContent = 'Builds are unsigned, so antivirus or SmartScreen may flag a fresh binary that opens a local port and touches files (e.g. "IDP.Generic") — a false positive, not malware. Building from source and trusting your own build is the most reliable path.';
+  signing.textContent = "Builds are unsigned, so antivirus or SmartScreen may warn about a new binary that opens a loopback port and accesses files. A warning alone proves neither malware nor safety. Building from reviewed source with a toolchain and dependencies you trust gives you more control, but is not a guarantee.";
   const download = document.createElement("a");
   download.className = "companion-download-btn";
   download.href = "https://github.com/jdeworks/file-viewer/releases";

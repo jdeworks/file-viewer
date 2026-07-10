@@ -1,5 +1,6 @@
 target/
 src-tauri/gen/
+dist/
 
 # Windows cross-compile build caches (see scripts/build-windows.sh)
 .win-target/

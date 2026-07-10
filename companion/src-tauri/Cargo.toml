@@ -3,6 +3,8 @@ name = "file-viewer-companion-desktop"
 version = "0.1.0"
 edition = "2021"
 description = "Tray wrapper around the file-viewer companion server (tray + autostart + native folder picker)"
+license = "MIT"
+repository = "https://github.com/jdeworks/file-viewer"
 
 # Standalone workspace: kept OUT of companion/Cargo.toml's workspace so the server's
 # `cargo build/test --offline` loop never has to compile the heavy Tauri/wry graph.

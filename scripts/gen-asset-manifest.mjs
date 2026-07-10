@@ -2,9 +2,11 @@
 // content-hash version. The service worker precaches this list so the app works fully
 // offline. Re-run whenever files are added/removed: `node scripts/gen-asset-manifest.mjs`.
 // The smoke test fails if the manifest is stale, so it can't silently drift.
+import { createReadStream } from 'node:fs';
 import { readdir, stat, readFile, writeFile } from 'node:fs/promises';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 const DOCS = new URL('../docs/', import.meta.url).pathname;
 const EXCLUDE = new Set(['asset-manifest.json', 'sw.js']);   // manifest + SW manage themselves
@@ -16,10 +18,32 @@ async function walk(dir, out) {
     if (st.isDirectory()) {
       if (name.startsWith('_')) continue;                   // _-prefixed dirs are local/scratch (e.g. _held) — never deployed
       await walk(full, out);
-    } else out.push({ path: relative(DOCS, full).split('\\').join('/'), size: st.size });
+    } else out.push({ path: relative(DOCS, full).split('\\').join('/'), fullPath: full, size: st.size });
   }
 }
 
+// Hash asset metadata and bytes incrementally so large vendored files do not need to be buffered.
+export async function contentVersion(files) {
+  const hash = createHash('sha256');
+  const sorted = [...files].sort((a, b) => a.path.localeCompare(b.path));
+  const count = Buffer.allocUnsafe(4);
+  count.writeUInt32BE(sorted.length);
+  hash.update(count);
+
+  for (const file of sorted) {
+    const path = Buffer.from(file.path);
+    const header = Buffer.allocUnsafe(12);
+    header.writeUInt32BE(path.length, 0);
+    header.writeBigUInt64BE(BigInt(file.size), 4);
+    hash.update(header);
+    hash.update(path);
+    for await (const chunk of createReadStream(file.fullPath)) hash.update(chunk);
+  }
+
+  return hash.digest('hex').slice(0, 12);
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
 const files = [];
 await walk(DOCS, files);
 const kept = files.filter((f) => !EXCLUDE.has(f.path)).sort((a, b) => a.path.localeCompare(b.path));
@@ -118,10 +142,8 @@ const bundles = [...groups.values()]
   .map((g) => ({ ...g, group: groupFor(g.id), heavy: !NEVER_HEAVY.has(g.id) && (g.size > HEAVY_BYTES || FORCE_HEAVY.has(g.id)) }))
   .sort((a, b) => (a.id === 'core' ? -1 : b.id === 'core' ? 1 : a.label.localeCompare(b.label)));
 
-// Version = hash of path+size pairs, so any change to the asset set bumps it.
-const hash = createHash('sha256');
-for (const f of kept) hash.update(f.path + ':' + f.size + '\n');
-const version = hash.digest('hex').slice(0, 12);
+// Version changes when the asset set or any asset bytes change.
+const version = await contentVersion(kept);
 
 await writeFile(join(DOCS, 'asset-manifest.json'), JSON.stringify({ version, assets, bundles }, null, 0) + '\n');
 
@@ -167,3 +189,4 @@ if (swStamped !== swOriginal) await writeFile(SW, swStamped);
 
 console.log('asset-manifest.json: ' + assets.length + ' assets, ' + bundles.length + ' bundles, version ' + version);
 console.log('sw.js: VERSION stamped to ' + version);
+}

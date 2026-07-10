@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>File Viewer Companion - Third-Party Licenses</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { max-width: 960px; margin: 0 auto; padding: 24px; line-height: 1.5; }
+    a { color: #1565c0; }
+    .overview { columns: 2 280px; }
+    .license { margin-top: 32px; border-top: 1px solid #8886; padding-top: 16px; }
+    .used-by { padding-left: 20px; }
+    pre { overflow: auto; padding: 16px; background: #8881; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>File Viewer Companion - Third-Party Licenses</h1>
+    <p>This notice covers the Rust dependencies in the desktop application graph for x86_64 Linux and Windows. It was generated with cargo-about 0.8.2.</p>
+    <h2>License overview</h2>
+    <ul class="overview">
+      {{#each overview}}
+      <li><a href="#{{id}}">{{name}}</a> ({{count}})</li>
+      {{/each}}
+    </ul>
+    <h2>License texts</h2>
+    {{#each licenses}}
+    <section class="license">
+      {{#if first_of_kind}}<h3 id="{{id}}">{{name}}</h3>{{/if}}
+      <h4>{{name}}</h4>
+      <p>Used by:</p>
+      <ul class="used-by">
+        {{#each used_by}}
+        <li><a href="{{#if crate.repository}}{{crate.repository}}{{else}}https://crates.io/crates/{{crate.name}}{{/if}}">{{crate.name}} {{crate.version}}</a></li>
+        {{/each}}
+      </ul>
+      <pre>{{text}}</pre>
+    </section>
+    {{/each}}
+  </main>
+</body>
+</html>
+

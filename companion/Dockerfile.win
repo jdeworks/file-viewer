@@ -10,5 +10,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       clang lld llvm \
     && rm -rf /var/lib/apt/lists/*
 RUN rustup target add x86_64-pc-windows-msvc
-RUN cargo install cargo-xwin --version 0.23.0
+RUN cargo install --locked cargo-xwin --version 0.23.0
 ENV XWIN_CACHE_DIR=/work/.xwin-cache

@@ -10,8 +10,9 @@
 use axum::{extract::State, middleware, routing::post, Json, Router};
 use file_viewer_companion::{
     auth::require_token,
+    bind_server_listener,
     config::{config_path, load_config, save_config},
-    kill_other_companion_processes, logging, router_with,
+    logging, router_with,
     watcher::FileWatcher,
     AppState,
 };
@@ -152,9 +153,19 @@ async fn path_picker(handle: tauri::AppHandle, state: AppState) -> Json<serde_js
 
 fn main() {
     logging::init(Some(config_path()));
-    // Take over from any old instance still sitting in the tray, or a console server (frees :7700).
-    kill_other_companion_processes();
-    std::thread::sleep(std::time::Duration::from_millis(400));
+
+    // The listening socket is the cross-platform single-instance claim shared with the standalone
+    // server. Reserve it before creating the watcher or tray so a second launch exits cleanly.
+    let server_listener = match bind_server_listener(PORT) {
+        Ok(listener) => listener,
+        Err(e) => {
+            logging::info(format!(
+                "companion not started: 127.0.0.1:{PORT} is unavailable ({e})"
+            ));
+            return;
+        }
+    };
+
     let token =
         std::env::var("COMPANION_TOKEN").unwrap_or_else(|_| uuid::Uuid::new_v4().to_string());
     let watched_paths = Arc::new(Mutex::new(load_config()));
@@ -235,11 +246,17 @@ fn main() {
                         )
                         .route_layer(middleware::from_fn_with_state(mw_state, require_token));
                     let app = router_with(server_state, PAGES_ORIGIN.to_string(), extra);
-                    match tokio::net::TcpListener::bind(("127.0.0.1", PORT)).await {
-                        Ok(listener) => {
-                            let _ = axum::serve(listener, app).await;
+                    let listener = match tokio::net::TcpListener::from_std(server_listener) {
+                        Ok(listener) => listener,
+                        Err(e) => {
+                            logging::error(format!("cannot start companion server: {e}"));
+                            handle.exit(1);
+                            return;
                         }
-                        Err(e) => eprintln!("companion: cannot bind 127.0.0.1:{PORT}: {e}"),
+                    };
+                    if let Err(e) = axum::serve(listener, app).await {
+                        logging::error(format!("companion server stopped: {e}"));
+                        handle.exit(1);
                     }
                 });
             });

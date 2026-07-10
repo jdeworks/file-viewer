@@ -70,6 +70,10 @@ export async function run(ctx) {
   await page.goto(origin, { waitUntil: 'load' });
   pass('page loaded');
 
+  const statusBadge = await page.$eval('.construction-badge', (el) => el.textContent.trim()).catch(() => null);
+  if (statusBadge === 'Public beta') pass('status badge identifies the release as Public beta');
+  else fail('status badge text: ' + JSON.stringify(statusBadge));
+
   // ── Phased boot ── boot.js is the eager entry; app.js (heavy registry/detection) loads in the
   // background and resolves window.__fv. The empty shell must accept input the instant it paints.
   {
@@ -435,20 +439,31 @@ export async function run(ctx) {
     const checksum = [...el.querySelectorAll('p')].find((p) => /SHA-256/i.test(p.textContent));
     const signing = [...el.querySelectorAll('p')].find((p) => /unsigned/i.test(p.textContent));
     return {
-      hasSource: !!source && /\/tree\/dev\/companion$/.test(source.href),
+      hasSource: !!source && /\/tree\/v0\.1\.0\/companion$/.test(source.href),
       hasChecksum: !!checksum,
       hasDownload: !!download && /\/releases\/?$/.test(download.href),
-      hasSigningDisclosure: !!signing && /false positive/i.test(signing.textContent),
+      hasSigningDisclosure: !!signing,
+      sourceText: source?.textContent || '',
+      checksumText: checksum?.textContent || '',
+      signingText: signing?.textContent || '',
       sourceBeforeChecksum: !!source && !!checksum && (source.compareDocumentPosition(checksum) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
       checksumBeforeDownload: !!checksum && !!download && (checksum.compareDocumentPosition(download) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0,
     };
   });
+  const accurateTrustCopy = /Review the companion source code before building/.test(companionOrder.sourceText)
+    && /transfer integrity; it is not proof of publisher identity or software safety/.test(companionOrder.checksumText)
+    && /Builds are unsigned/.test(companionOrder.signingText)
+    && /proves neither malware nor safety/.test(companionOrder.signingText)
+    && /not a guarantee/.test(companionOrder.signingText);
+  const rejectsNotMalwareClaim = !/\bnot malware\b/i.test(companionOrder.signingText);
   if (companionOrder.hasSource && companionOrder.hasChecksum && companionOrder.hasDownload
     && companionOrder.sourceBeforeChecksum && companionOrder.checksumBeforeDownload) {
     pass('companion download panel orders source, checksum, then release download');
   } else fail('companion download panel order: ' + JSON.stringify(companionOrder));
-  if (companionOrder.hasSigningDisclosure) pass('companion download panel discloses unsigned-binary / AV false-positive risk');
-  else fail('companion download panel missing unsigned/AV disclosure: ' + JSON.stringify(companionOrder));
+  if (companionOrder.hasSigningDisclosure && accurateTrustCopy && rejectsNotMalwareClaim) {
+    pass('companion panel qualifies source review, checksum integrity, and unsigned warnings without a not-malware claim');
+  } else fail('companion panel has inaccurate trust disclosure: order=' + JSON.stringify(companionOrder)
+    + ' accurate=' + accurateTrustCopy + ' rejectsNotMalware=' + rejectsNotMalwareClaim);
 
   // Companion panel is collapsed by default (it grew large) — content is in the DOM but not open.
   const companionClosed = await page.$eval('#settingsBody .companion-panel', (el) => el.tagName === 'DETAILS' && !el.open).catch(() => null);

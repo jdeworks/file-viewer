@@ -12,6 +12,8 @@ use axum::{
     routing::{delete, get, post},
     Router,
 };
+use std::io;
+use std::net::{Ipv4Addr, TcpListener};
 use std::sync::{Arc, Mutex};
 use tokio::sync::broadcast;
 use tower_http::cors::{AllowOrigin, CorsLayer};
@@ -25,43 +27,22 @@ pub struct AppState {
     pub watcher_tx: broadcast::Sender<WatchEvent>,
 }
 
-/// Terminate any OTHER running companion processes — both the console server (`companion`) and the
-/// desktop tray app (`file-viewer-companion-desktop`) — except our own PID. Lets a freshly launched
-/// companion reclaim 127.0.0.1:7700 from a leftover instance or the other variant, so it can
-/// actually start after being closed. Best-effort and dependency-free (taskkill on Windows,
-/// pgrep+kill on Unix).
-pub fn kill_other_companion_processes() {
-    let self_pid = std::process::id();
-    #[cfg(target_os = "windows")]
-    let names = ["companion.exe", "file-viewer-companion-desktop.exe"];
-    #[cfg(not(target_os = "windows"))]
-    let names = ["companion", "file-viewer-companion-desktop"];
-    for name in names {
-        #[cfg(target_os = "windows")]
-        {
-            let _ = std::process::Command::new("taskkill")
-                .args(["/F", "/T", "/IM", name, "/FI", &format!("PID ne {self_pid}")])
-                .output();
-        }
-        #[cfg(not(target_os = "windows"))]
-        {
-            if let Ok(out) = std::process::Command::new("pgrep").args(["-x", name]).output() {
-                for line in String::from_utf8_lossy(&out.stdout).lines() {
-                    if let Ok(pid) = line.trim().parse::<u32>() {
-                        if pid != self_pid {
-                            let _ = std::process::Command::new("kill").arg(pid.to_string()).output();
-                        }
-                    }
-                }
-            }
-        }
-    }
+/// Claim the Companion server port on IPv4 loopback before starting any long-lived UI.
+///
+/// Keeping the returned listener alive reserves the port. A second standalone or tray process gets
+/// `AddrInUse` and can exit without creating a nonfunctional tray. The socket is nonblocking so it
+/// can be passed to `tokio::net::TcpListener::from_std`.
+pub fn bind_server_listener(port: u16) -> io::Result<TcpListener> {
+    let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))?;
+    listener.set_nonblocking(true)?;
+    Ok(listener)
 }
 
 /// Build the full companion HTTP router (public + token-protected routes + CORS). Shared by the
 /// standalone server binary, the Tauri desktop wrapper, and the integration tests, so the route
-/// surface and security middleware can never drift between them. CORS is locked to localhost,
-/// 127.0.0.1, and `pages_origin` (the deployed viewer origin).
+/// surface and security middleware can never drift between them. The browser CORS barrier allows
+/// `pages_origin` (the deployed viewer) plus HTTP localhost/127.0.0.1 on any port. CORS does not
+/// constrain non-browser local processes.
 pub fn router(state: AppState, pages_origin: String) -> Router {
     router_with(state, pages_origin, Router::new())
 }
@@ -102,4 +83,33 @@ pub fn router_with(state: AppState, pages_origin: String, extra: Router<AppState
         .merge(extra)
         .layer(cors)
         .with_state(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::bind_server_listener;
+    use std::io::ErrorKind;
+
+    #[test]
+    fn server_listener_claim_is_exclusive_and_released_on_drop() {
+        let first = bind_server_listener(0).expect("claim an available loopback port");
+        let port = first.local_addr().unwrap().port();
+
+        let error = bind_server_listener(port).expect_err("a second claim must fail");
+        assert_eq!(error.kind(), ErrorKind::AddrInUse);
+
+        drop(first);
+        bind_server_listener(port).expect("dropping the owner must release the port");
+    }
+
+    #[test]
+    fn server_listener_is_loopback_and_nonblocking() {
+        let listener = bind_server_listener(0).expect("claim an available loopback port");
+        assert!(listener.local_addr().unwrap().ip().is_loopback());
+
+        let error = listener
+            .accept()
+            .expect_err("accept must not block without a client");
+        assert_eq!(error.kind(), ErrorKind::WouldBlock);
+    }
 }

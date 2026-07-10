@@ -335,8 +335,8 @@ pub async fn post_file(
 
 // ---------------------------------------------------------------------------
 // DELETE /file?path=   (token required — enforced by middleware layer)
-// Deletes a single file inside a watched folder. Refuses directories. The browser
-// gates this behind an explicit confirm; the Download button is unaffected.
+// Deletes a file or recursively deletes a subfolder inside a watched root. A watched root itself
+// is never deleted. The browser gates this behind an explicit confirm; Download is unaffected.
 // ---------------------------------------------------------------------------
 
 pub async fn delete_file(State(state): State<AppState>, Query(q): Query<FileQuery>) -> Response {

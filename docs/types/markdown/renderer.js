@@ -3,6 +3,8 @@
 import { loadGlobal, vendor } from '../../core/script-loader.js';
 
 let mdInstance = null;
+// DOMPurify's default URI policy plus blob:, which the viewer uses for local in-memory files.
+const MARKDOWN_ALLOWED_URI = /^(?:(?:(?:f|ht)tps?|blob|mailto|tel|callto|sms|cid|xmpp):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i;
 
 async function ensureLibs() {
   const [markdownit, DOMPurify] = await Promise.all([
@@ -41,6 +43,71 @@ function wrapMarkdownTables(html) {
   return tpl.innerHTML;
 }
 
+function isLocalResourceUrl(value) {
+  const raw = String(value || '').trim();
+  if (/^(?:data|blob):/i.test(raw)) return true;
+  try {
+    const appUrl = new URL(window.location.href);
+    const resourceUrl = new URL(raw, appUrl);
+    if (appUrl.protocol === 'file:' && resourceUrl.protocol === 'file:') return true;
+    return /^(?:https?):$/.test(resourceUrl.protocol) && resourceUrl.origin === appUrl.origin;
+  } catch {
+    return false;
+  }
+}
+
+function blockedImageNotice(img, src) {
+  const notice = document.createElement('span');
+  notice.className = 'md-remote-image-blocked';
+  notice.setAttribute('role', 'note');
+  notice.append('Remote image blocked: ');
+
+  const label = img.getAttribute('alt')?.trim() || src;
+  if (img.closest('a[href]')) {
+    notice.append(label);
+  } else {
+    const link = document.createElement('a');
+    link.href = src;
+    link.textContent = label;
+    if (label !== src) link.title = src;
+    notice.appendChild(link);
+  }
+  return notice;
+}
+
+// Work on an inert template so no resource can load before every fetch-capable URL is checked.
+// Links remain links because navigation is user-initiated; only eager resource references are
+// neutralized. Relative URLs resolve against the trusted app URL, not user-provided markup.
+function neutralizeRemoteResources(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  let hadBlocked = false;
+
+  for (const el of tpl.content.querySelectorAll('[src]')) {
+    const src = el.getAttribute('src');
+    if (isLocalResourceUrl(src)) continue;
+    hadBlocked = true;
+    if (el.localName.toLowerCase() === 'img'
+      || (el.localName.toLowerCase() === 'input' && el.type.toLowerCase() === 'image')) {
+      el.replaceWith(blockedImageNotice(el, src));
+    } else {
+      el.removeAttribute('src');
+    }
+  }
+
+  for (const el of tpl.content.querySelectorAll('svg [href], svg [xlink\\:href]')) {
+    if (!['image', 'use', 'feimage'].includes(el.localName.toLowerCase())) continue;
+    for (const attr of ['href', 'xlink:href']) {
+      const value = el.getAttribute(attr);
+      if (value == null || isLocalResourceUrl(value)) continue;
+      el.removeAttribute(attr);
+      hadBlocked = true;
+    }
+  }
+
+  return { html: tpl.innerHTML, hadBlocked };
+}
+
 export async function render(intake, ctx) {
   const { md, DOMPurify } = await ensureLibs();
   // markdown-it parser options are user-tunable via settings (applied per render).
@@ -58,13 +125,15 @@ export async function render(intake, ctx) {
   // form POST). Mirrors the vector list used by the epub/eml renderers.
   const clean = DOMPurify.sanitize(dirty, {
     ADD_ATTR: ['data-fv-src', 'target'],
+    ALLOWED_URI_REGEXP: MARKDOWN_ALLOWED_URI,
     FORBID_TAGS: ['script', 'style', 'link', 'iframe', 'object', 'embed', 'video', 'audio', 'source', 'track', 'form', 'meta', 'base'],
     FORBID_ATTR: ['srcset', 'style', 'background', 'poster', 'onerror', 'onload', 'onclick'],
   });
-  const hadUnsafe = DOMPurify.removed.length > 0;
+  const hadSanitizerRemoval = DOMPurify.removed.length > 0;
+  const resources = neutralizeRemoteResources(clean);
   return {
-    bodyHtml: '<article class="markdown-body">' + wrapMarkdownTables(clean) + '</article>',
-    hadUnsafe,
+    bodyHtml: '<article class="markdown-body">' + wrapMarkdownTables(resources.html) + '</article>',
+    hadUnsafe: hadSanitizerRemoval || resources.hadBlocked,
     // sourceMap: data-fv-src carries "startLine:endLine" (0-based, end-exclusive).
     sourceMap: true,
   };
