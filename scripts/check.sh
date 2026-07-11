@@ -195,6 +195,7 @@ FULL_UNIT_TESTS=(
   tests/archive-metadata.test.mjs
   tests/example-fixture-quality.test.mjs
   tests/rich-example-fixtures.test.mjs
+  tests/format-parser-hardening.test.mjs
   tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs

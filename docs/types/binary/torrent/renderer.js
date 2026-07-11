@@ -1,3 +1,5 @@
+import { decodeBencode, isBencodeDictionary } from './bencode.js';
+
 function esc(s) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -10,52 +12,12 @@ function fmtBytes(n) {
   return (n / 1073741824).toFixed(2) + ' GB';
 }
 
-const td = new TextDecoder();
-const tdStrict = new TextDecoder('utf-8', { fatal: true });
-
-function parseBencode(bytes, off) {
-  const b = bytes[off];
-  if (b === 105) { // 'i'
-    let e = off + 1; while (bytes[e] !== 101) e++;
-    return { v: parseInt(td.decode(bytes.slice(off + 1, e)), 10), end: e + 1 };
-  }
-  if (b === 108) { // 'l'
-    const list = []; let p = off + 1;
-    while (bytes[p] !== 101) { const r = parseBencode(bytes, p); list.push(r.v); p = r.end; }
-    return { v: list, end: p + 1 };
-  }
-  if (b === 100) { // 'd'
-    const obj = {}; let p = off + 1;
-    while (bytes[p] !== 101) {
-      const kr = parseBencode(bytes, p); p = kr.end;
-      const vr = parseBencode(bytes, p); p = vr.end;
-      if (typeof kr.v === 'string') obj[kr.v] = vr.v;
-    }
-    return { v: obj, end: p + 1 };
-  }
-  // string: N:data
-  let c = off; while (bytes[c] !== 58) c++; // ':'
-  const len = parseInt(td.decode(bytes.slice(off, c)), 10);
-  const data = bytes.slice(c + 1, c + 1 + len);
-  let str; try { str = tdStrict.decode(data); } catch { str = null; }
-  return { v: str !== null ? str : data, end: c + 1 + len };
-}
-
-// Find raw bytes of the info dict value for SHA-1 infohash computation.
-async function computeInfoHash(bytes) {
-  // Search for "4:info" marker [0x34,0x3a,0x69,0x6e,0x66,0x6f]
-  for (let i = 1; i < bytes.length - 6; i++) {
-    if (bytes[i] === 52 && bytes[i+1] === 58 && bytes[i+2] === 105 &&
-        bytes[i+3] === 110 && bytes[i+4] === 102 && bytes[i+5] === 111) {
-      try {
-        const infoStart = i + 6;
-        const { end } = parseBencode(bytes, infoStart);
-        const hashBuf = await crypto.subtle.digest('SHA-1', bytes.slice(infoStart, end));
-        return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-      } catch { return null; }
-    }
-  }
-  return null;
+async function computeInfoHash(bytes, infoRange) {
+  if (!infoRange) return null;
+  try {
+    const hashBuf = await crypto.subtle.digest('SHA-1', bytes.slice(infoRange.start, infoRange.end));
+    return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch { return null; }
 }
 
 const STYLE = `
@@ -77,23 +39,24 @@ ul.fl li:last-child{border-bottom:none}
 `;
 
 export async function render(intake, _ctx) {
-  let torrent;
+  let decoded;
   try {
-    torrent = parseBencode(intake.bytes, 0).v;
+    decoded = decodeBencode(intake.bytes);
   } catch (e) {
     return { bodyHtml: `<p style="color:var(--fg);padding:16px">Parse error: ${esc(e.message)}</p>`, hadUnsafe: false };
   }
-  if (typeof torrent !== 'object' || !torrent) {
+  const torrent = decoded.value;
+  if (!isBencodeDictionary(torrent)) {
     return { bodyHtml: '<p style="color:var(--fg);padding:16px">Not a valid torrent file.</p>', hadUnsafe: false };
   }
 
-  const info = (typeof torrent.info === 'object' && torrent.info) ? torrent.info : {};
+  const info = isBencodeDictionary(torrent.info) ? torrent.info : Object.create(null);
   const name = typeof info.name === 'string' ? info.name : (intake.name || '—');
 
   let totalSize = 0, fileCount = 0;
   if (Array.isArray(info.files)) {
     fileCount = info.files.length;
-    totalSize = info.files.reduce((s, f) => s + (typeof f.length === 'number' ? f.length : 0), 0);
+    totalSize = info.files.reduce((s, f) => s + (isBencodeDictionary(f) && typeof f.length === 'number' ? f.length : 0), 0);
   } else if (typeof info.length === 'number') {
     fileCount = 1; totalSize = info.length;
   }
@@ -104,7 +67,7 @@ export async function render(intake, _ctx) {
     torrent['announce-list'].flat().forEach((t) => { if (typeof t === 'string') trackers.add(t); });
   }
 
-  const infoHash = await computeInfoHash(intake.bytes);
+  const infoHash = await computeInfoHash(intake.bytes, decoded.infoRange);
 
   let html = `<style>${STYLE}</style><h2>${esc(name)}</h2>`;
 
@@ -115,7 +78,8 @@ export async function render(intake, _ctx) {
   if (typeof torrent.comment === 'string') html += `<dt>Comment</dt><dd>${esc(torrent.comment)}</dd>`;
   if (typeof torrent['created by'] === 'string') html += `<dt>Created by</dt><dd>${esc(torrent['created by'])}</dd>`;
   if (typeof torrent['creation date'] === 'number') {
-    html += `<dt>Created</dt><dd>${esc(new Date(torrent['creation date'] * 1000).toISOString().slice(0, 10))}</dd>`;
+    const created = new Date(torrent['creation date'] * 1000);
+    if (Number.isFinite(created.getTime())) html += `<dt>Created</dt><dd>${esc(created.toISOString().slice(0, 10))}</dd>`;
   }
   if (infoHash) html += `<dt>Info hash</dt><dd class="mono" title="Magnet info hash (SHA-1)">${esc(infoHash)}</dd>`;
   html += `</dl></div>`;
@@ -134,10 +98,10 @@ export async function render(intake, _ctx) {
     const MAX = 200;
     html += `<div class="sec"><div class="sec-title">Files (${info.files.length})</div><ul class="fl">`;
     for (const f of info.files.slice(0, MAX)) {
-      const path = Array.isArray(f.path)
+      const path = isBencodeDictionary(f) && Array.isArray(f.path)
         ? f.path.map((p) => (typeof p === 'string' ? p : '?')).join('/')
         : '?';
-      html += `<li><span class="fn">${esc(path)}</span><span class="fs">${esc(fmtBytes(typeof f.length === 'number' ? f.length : null))}</span></li>`;
+      html += `<li><span class="fn">${esc(path)}</span><span class="fs">${esc(fmtBytes(isBencodeDictionary(f) && typeof f.length === 'number' ? f.length : null))}</span></li>`;
     }
     if (info.files.length > MAX) html += `<div class="more">… and ${info.files.length - MAX} more files</div>`;
     html += `</ul></div>`;
