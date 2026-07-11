@@ -49,7 +49,7 @@
 
 ## Real-World Examples
 
-- [`sample.apk`](../examples/sample.apk) — deterministic unsigned APK structure fixture accepted by independent AXML/DEX readers; it demonstrates inventory parsing, not Android installability
+- [`sample.apk`](../examples/sample.apk) — deterministic unsigned package containing structurally framed binary AXML and a checksum-valid minimal DEX, covered by fixture tests; it demonstrates inventory parsing, not Android installability
 
 ## Gap Analysis
 
