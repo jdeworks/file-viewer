@@ -105,6 +105,18 @@ const multiChannelHtml = (await renderMidi({ bytes: multiChannelMidi })).bodyHtm
 assert.match(multiChannelHtml, /data-label="Channel">1, 2/);
 assert.match(multiChannelHtml, /Acoustic Grand Piano \(ch 1\); Acoustic Bass \(ch 2\)/);
 
+const changingProgramMidi = Buffer.from(
+  '4d546864000000060000000101e04d54726b0000001200c00000903c4000c0200090304000ff2f00',
+  'hex',
+);
+const changingProgram = parseMidi({ bytes: changingProgramMidi });
+assert.deepEqual(changingProgram.tracks[0].programs, [
+  { channel: 1, program: 0 }, { channel: 1, program: 32 },
+]);
+const changingProgramHtml = (await renderMidi({ bytes: changingProgramMidi })).bodyHtml;
+assert.match(changingProgramHtml, /Acoustic Grand Piano \(ch 1\); Acoustic Bass \(ch 1\)/);
+assert.match(changingProgramHtml, /Instruments used/);
+
 const dicomElement = (group, element, vr, value) => {
   const data = Buffer.from(value);
   const header = Buffer.alloc(8);

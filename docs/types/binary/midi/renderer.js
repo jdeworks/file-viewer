@@ -75,7 +75,8 @@ export function parseMidi(intake) {
     p = trackStart;
     const t = { name: '', instrumentName: '', channel: null, program: null, programs: [], notes: 0 };
     const trackChannels = new Set();
-    const trackPrograms = new Map();
+    const activePrograms = new Map();
+    const usedPrograms = new Map();
     const trackTempos = [];
     let tick = 0, running = 0;
     while (p < end) {
@@ -119,12 +120,19 @@ export function parseMidi(intake) {
       if (dataLength > end - p) throw new Error('MIDI channel event exceeds track bounds');
       const a = b[p++], c = needsTwo ? b[p++] : 0;
       if (a >= 0x80 || (needsTwo && c >= 0x80)) throw new Error('Invalid MIDI channel data byte');
-      if (op === 0x90 && c > 0) { totalNotes++; t.notes++; pitches.add(a); }
-      else if (op === 0xc0) trackPrograms.set(ch, a);
+      if (op === 0x90 && c > 0) {
+        totalNotes++; t.notes++; pitches.add(a);
+        const programs = usedPrograms.get(ch) || new Set();
+        programs.add(activePrograms.get(ch) ?? 0);
+        usedPrograms.set(ch, programs);
+      } else if (op === 0xc0) {
+        activePrograms.set(ch, a);
+      }
     }
     const channels = [...trackChannels];
     t.channel = channels.length === 1 ? channels[0] : (channels.join(', ') || null);
-    t.programs = [...trackPrograms].map(([channel, program]) => ({ channel, program }));
+    t.programs = [...usedPrograms].flatMap(([channel, programs]) =>
+      [...programs].map((program) => ({ channel, program })));
     t.program = t.programs.length === 1 ? t.programs[0].program : null;
     tracks.push(t);
     trackTimelines.push({ maxTick: tick, tempos: trackTempos });
@@ -162,10 +170,12 @@ export async function render(intake, _ctx) {
   try { midi = parseMidi(intake); } catch (err) { return { bodyHtml: '<p class="midi-doc">Preview failed: ' + esc(err.message) + '</p>', hadUnsafe: false }; }
   const rows = midi.tracks.map((t, i) => {
     const instrument = t.programs.length
-      ? t.programs.map(({ channel, program }) => `${GM[program] || ('Program ' + program)} (ch ${channel})`).join('; ')
+      ? t.programs.map(({ channel, program }) => channel === 10
+        ? 'Percussion (ch 10)'
+        : `${GM[program] || ('Program ' + program)} (ch ${channel})`).join('; ')
       : t.instrumentName || '—';
     return `<tr><td data-label="#">${i + 1}</td><td data-label="Name">${esc(t.name || 'Track ' + (i + 1))}</td>`
-      + `<td data-label="Channel">${esc(t.channel || '—')}</td><td data-label="Instrument">${esc(instrument)}</td>`
+      + `<td data-label="Channel">${esc(t.channel || '—')}</td><td data-label="Instruments used">${esc(instrument)}</td>`
       + `<td data-label="Notes">${t.notes}</td></tr>`;
   }).join('');
   const styles = `<style>
@@ -194,6 +204,6 @@ export async function render(intake, _ctx) {
     + `<div class="midi-card"><strong>${midi.durationSeconds == null ? '—' : midi.durationSeconds.toFixed(2) + 's'}</strong><span>${midi.durationLabel}</span></div>`
     + `<div class="midi-card"><strong>${midi.totalNotes}</strong><span>Notes</span></div>`
     + `<div class="midi-card"><strong>${midi.uniquePitches}</strong><span>Unique pitches</span></div></div>`;
-  const table = `<table class="midi-table"><thead><tr><th>#</th><th>Name</th><th>Channel</th><th>Instrument</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const table = `<table class="midi-table"><thead><tr><th>#</th><th>Name</th><th>Channel</th><th>Instruments used</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;
   return { hadUnsafe: false, bodyHtml: `<section class="midi-doc">${styles}${summary}${table}</section>` };
 }
