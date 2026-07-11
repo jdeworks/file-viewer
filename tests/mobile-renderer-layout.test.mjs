@@ -58,7 +58,9 @@ try {
       instrumentVisible: document.body.innerText.includes('Acoustic Grand Piano'),
       instrumentLabelsContained: instrumentCells.length > 0 && instrumentCells.every((cell) => {
         const labelStyle = getComputedStyle(cell, '::before');
-        return labelStyle.whiteSpace !== 'nowrap' && cell.scrollWidth <= cell.clientWidth + 1;
+        const labelTrack = Number.parseFloat(getComputedStyle(cell).gridTemplateColumns);
+        return labelStyle.whiteSpace !== 'nowrap' && labelStyle.overflowWrap === 'normal'
+          && labelTrack >= 108 && cell.scrollWidth <= cell.clientWidth + 1;
       }),
     };
   });
