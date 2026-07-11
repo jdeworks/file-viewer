@@ -80,38 +80,44 @@ export function getBossLockState({ actions, state }) {
     seedMode: unlocked ? "fixed-cache" : "live-random",
     seed: unlocked ? FIXED_OFFLINE_SEED : state.boss.lastLockedSeed,
     rotation: unlocked ? "30deg/s predictable clockwise" : "server jitter every sample",
-    defeatPossible: unlocked,
+    defeatPossible: true,
     hint: unlocked ? "the seed is fixed. cross using the learned rotation." : lockedHintLadder[hintIndex]
   };
 }
 
-// Attempt the boss CROSS at a given elapsed (ms). Now routed through the REAL timing engine, not a
-// flag-check: offline (the un-cheat) fixes the seed so the rotation is learnable, but you must still
-// time the press to land the gap at the top. Online, each attempt reseeds (Math.random) → the base
-// angle jumps → no timing survives, so the boss is impossible without offline mode.
-export function recordObserverBossAttempt({ state, actions, elapsedMs = 0 }) {
+// Attempt the boss CROSS at a given elapsed (ms), against `seed` (the seed CURRENTLY on screen — the
+// renderer's activeSeed(), so the evaluation always matches what the player was actually watching).
+//
+// 2026-07-11 playtest fix: offline mode is an optional buff now, not a gate. Online, the seed still
+// reseeds after every attempt (so a pattern memorized in advance never survives to the next try), but
+// the press IS genuinely evaluated against the live seed the player was watching — a real-time read of
+// the rendered rotation (not memorization) can still land the gap. Offline fixes the seed so the SAME
+// pattern can be learned/memorized ahead of time, turning a live read into a reliable, planned cross —
+// a real, big buff, just no longer the only door.
+export function recordObserverBossAttempt({ state, actions, elapsedMs = 0, seed }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
-  if (!lock.unlocked) {
-    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    getBossSeed({ state, actions }); // online: resample → the gap jumps again
-    pushLog(state, "the gap changed again. no timing survived contact.");
-    return { defeated: false, unlocked: false, hit: false, seedMode: "live-random" };
-  }
-  // Offline: the seed is fixed (0). Still a real timing press.
-  const result = crossAttempt({ seed: FIXED_OFFLINE_SEED, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  const activeSeed = lock.unlocked ? FIXED_OFFLINE_SEED : (Number.isFinite(seed) ? seed : getBossSeed({ state, actions }));
+  const result = crossAttempt({ seed: activeSeed, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+
   if (!result.hit) {
-    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+    if (!lock.unlocked) {
+      state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+      getBossSeed({ state, actions }); // reseed for the NEXT attempt's live display
+      pushLog(state, `online, mistimed the live gap (off by ${Math.round(result.distance)}deg). it reseeds again.`);
+      return { defeated: false, unlocked: false, hit: false, seedMode: "live-random", distance: result.distance };
+    }
     pushLog(state, `offline, but the cross was mistimed (off by ${Math.round(result.distance)}deg).`);
     return { defeated: false, unlocked: true, hit: false, seedMode: "fixed-cache", distance: result.distance };
   }
+
   state.boss.defeated = true;
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
   state.clarity = Number(state.clarity || 0) + 25;
-  pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, hit: true, seedMode: "fixed-cache", seed: FIXED_OFFLINE_SEED };
+  pushLog(state, lock.unlocked ? bellMessages.defeated : "a live read landed it — the gap held just long enough.");
+  return { defeated: true, unlocked: lock.unlocked, hit: true, seedMode: lock.unlocked ? "fixed-cache" : "live-random", seed: activeSeed };
 }
 
 // The learnable solution: the earliest elapsed (ms) at which the offline (seed-0) gap reaches the top.

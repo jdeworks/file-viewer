@@ -3,7 +3,9 @@
 // (only `now = Date.now()` injectable defaults for timestamps). It never lowers the canonical
 // slot.echoWitnessed — Phase B uses TRANSIENT confront flags so re-witnessing during the fight does
 // not touch the integration gate. The boss is never self-unlocked: confront is only "ready" after
-// the full memory body + ≥5 echoes (the same gate the final question already used).
+// the full memory body (≥5 resolved memories). 2026-07-11 playtest fix: witnessed echoes are an
+// optional buff now (a better-quality Defragmenter response, and the "expand"/"understand" ending
+// variants) — not a requirement to reach or win the confrontation. See boss.js's getFinalChoiceState.
 import { memories, memoryById } from "./content.js";
 import { getThresholdState, unlockAchievement } from "./boss.js";
 import { uncheatForMemory } from "./crossstage.js";
@@ -17,10 +19,11 @@ export function challengedMemoryIds(state) {
   return memories.filter((m) => RESOLVED.has(state?.memories?.[m.id]?.state)).map((m) => m.id);
 }
 
-// Entry gate: identical to the final-question gate (body resolved + Defragmenter echo access).
+// Entry gate: the memory body alone (≥5 resolved) — echo access is a response-quality buff now, not
+// a requirement to reach the confrontation.
 export function isConfrontReady(state) {
   const gate = getThresholdState(state);
-  return gate.finalQuestionUnlocked && gate.defragmenterAccess;
+  return gate.finalQuestionUnlocked;
 }
 
 function ensureConfront(state) {

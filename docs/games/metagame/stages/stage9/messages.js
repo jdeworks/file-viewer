@@ -79,7 +79,7 @@ export const defragmenterRebuttalLines = {
   refuse: [
     "I see only the choices you made inside yourself.",
     "The files you opened, the traces you witnessed — those are missing.",
-    "The archive isn't ready. Come back when you've witnessed the echoes."
+    "The archive is thin. Witness the echoes and I'll have more to answer with — but you don't have to wait for it."
   ],
   caveat: "Some traces are still absent. The answer is possible, but incomplete."
 };

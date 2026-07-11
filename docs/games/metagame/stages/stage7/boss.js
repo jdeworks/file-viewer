@@ -11,6 +11,16 @@ export function hasExifContradiction(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(7, ACTION_NAME));
 }
 
+// 2026-07-11 playtest fix: the EXIF read is an optional buff now, not a gate. A wrong accusation used
+// to be a hard-refused non-attempt (the boss.unlocked check ran BEFORE the guess was ever evaluated,
+// so even guessing the correct entity "A" while locked failed with no useful feedback). Now every
+// accusation is genuinely evaluated: a wrong guess eliminates that entity (the SAME `contradicted`
+// marker the EXIF buff uses) and costs real address progress (ACCUSE_PENALTY, matching Case 2/3's
+// established cost), so a determined investigator can always narrow the 6 candidates down to A
+// through elimination alone — worst case 5 costly wrong guesses. Reading the EXIF pre-eliminates F
+// for free, skipping one of those costs.
+const ACCUSE_PENALTY = 10; // matches accusation.js's Case 2/3 wrong-accusation cost
+
 export function getBossLockState({ actions, state }) {
   const unlocked = hasExifContradiction(actions) || Boolean(state?.boss?.unlocked);
   const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
@@ -19,7 +29,7 @@ export function getBossLockState({ actions, state }) {
     defeated: Boolean(state?.boss?.defeated),
     informationState: unlocked ? "Entity F contradicted" : "A/F unresolved",
     contradicted: [...(state?.evidence?.contradicted || [])],
-    defeatPossible: unlocked,
+    defeatPossible: true,
     requiredSelection: "A",
     hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
   };
@@ -77,18 +87,16 @@ export function commitIdentity({ state, entity }) {
   if (Number(state.substage || 1) < 7) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
-
-  if (!state.boss.unlocked) {
-    recordLockedBossAttempt(state);
-    return { ok: false, reason: "locked" };
-  }
-
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+
   if (selected !== "A") {
+    markContradicted(state, selected);
+    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
+    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
     if (selected === "F") {
       pushLog(state, "Entity F is already contradicted — the GPS places it outside every known layer. Commit to the entity that survives all five investigations.");
     } else {
-      pushLog(state, `${selected || "unknown"} is not the real credential holder.`);
+      pushLog(state, `${selected || "unknown"} is not the real credential holder — eliminated (-${ACCUSE_PENALTY} addresses). the field narrows.`);
     }
     return { ok: false, reason: "wrong-entity" };
   }

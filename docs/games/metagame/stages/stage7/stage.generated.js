@@ -62,6 +62,7 @@ var arbiterLines = {
 function hasExifContradiction(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(7, ACTION_NAME));
 }
+var ACCUSE_PENALTY = 10;
 function getBossLockState({ actions, state }) {
   const unlocked = hasExifContradiction(actions) || Boolean(state?.boss?.unlocked);
   const hintIndex = Math.min(Math.max(Number(state?.boss?.lockHintStep || 0), 0), lockedHintLadder.length - 1);
@@ -70,7 +71,7 @@ function getBossLockState({ actions, state }) {
     defeated: Boolean(state?.boss?.defeated),
     informationState: unlocked ? "Entity F contradicted" : "A/F unresolved",
     contradicted: [...state?.evidence?.contradicted || []],
-    defeatPossible: unlocked,
+    defeatPossible: true,
     requiredSelection: "A",
     hint: unlocked ? bellMessages.unlock : lockedHintLadder[hintIndex]
   };
@@ -121,16 +122,15 @@ function commitIdentity({ state, entity }) {
   if (Number(state.substage || 1) < 7) return { ok: false, reason: "not-yet-boss" };
   state.boss.reached = true;
   state.evidence.selectedEntity = selected;
-  if (!state.boss.unlocked) {
-    recordLockedBossAttempt(state);
-    return { ok: false, reason: "locked" };
-  }
   state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (selected !== "A") {
+    markContradicted(state, selected);
+    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
+    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
     if (selected === "F") {
       pushLog(state, "Entity F is already contradicted — the GPS places it outside every known layer. Commit to the entity that survives all five investigations.");
     } else {
-      pushLog(state, `${selected || "unknown"} is not the real credential holder.`);
+      pushLog(state, `${selected || "unknown"} is not the real credential holder — eliminated (-${ACCUSE_PENALTY} addresses). the field narrows.`);
     }
     return { ok: false, reason: "wrong-entity" };
   }
@@ -635,7 +635,7 @@ function pushLog2(state, line2) {
 }
 
 // ../../docs/games/metagame/stages/stage7/accusation.js
-var ACCUSE_PENALTY = 10;
+var ACCUSE_PENALTY2 = 10;
 var ACCUSE_REWARD = { 2: 40, 3: 60 };
 var ALL_SOURCE_CARDS = [...CASE2_SOURCES, ...CASE3_SOURCES, CASE3_SEARCH];
 var HINT_LADDERS = {
@@ -726,7 +726,7 @@ function attemptAccusationForCase(state, caseId, { entityId, fieldId, factId } =
   if (!correct) {
     state.evidence[attemptsKey] = Number(state.evidence[attemptsKey] || 0) + 1;
     state.evidence[hintKey] = Math.min(Number(state.evidence[hintKey] || 0) + 1, ladder.length - 1);
-    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY);
+    state.addresses = Math.max(0, Number(state.addresses || 0) - ACCUSE_PENALTY2);
     pushLog3(state, "The triad does not hold. Re-examine the evidence.");
     return { ok: false, reason: "incorrect" };
   }

@@ -1445,8 +1445,11 @@ export async function run(ctx) {
   if (s8Spend.tachOk && s8Spend.owned && s8Spend.spent > 0 && s8Spend.peekReason === 'offline-only')
     pass('Stage 8 clarity spend: Tachometer bought online; Single-Frame peek refused while live (offline-only)');
   else fail(`Stage 8 clarity spend wrong: ${JSON.stringify(s8Spend)}`);
-  // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
-  // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
+  // The onlineUnstable back-third sublevels genuinely require offline mode (their gap reseeds every
+  // OBSERVE, unchanged). 2026-07-11 playtest fix: the BOSS itself is different now — it's reachable
+  // and winnable online via a live read of the current seed (see stage8/tests/boss.test.mjs); offline
+  // mode is a buff (a fixed, memorizable seed) rather than the only door. Read service-worker-notes.txt
+  // and activate offline mode here anyway, to also clear the (still-gated) back-third sublevels.
   await page.click('[data-action="notes"]');
   await page.waitForFunction(() => window.__fv.state.intake?.filename === 'service-worker-notes.txt', null, { timeout: 5000 });
   await page.click('[data-action="offline"]');

@@ -77,11 +77,11 @@ function completeConfront(state, save = null) {
 
   resolveMemory({ state, memoryId: memories[4].id, choice: memories[4].choices[0], now: 300 });
   assert.equal(getThresholdState(state).finalQuestionUnlocked, true);
-  // Resolved-enough but no echoes yet → still locked (Defragmenter refuses without witnessed traces).
-  assert.equal(getFinalChoiceState(state).locked, true);
-  assert.equal(chooseFinal({ state, choiceId: "continue" }).reason, "echo-gate");
-  witnessAll(state, 5);
-  assert.equal(getFinalChoiceState(state).locked, false, "entry gate cleared at 5 resolved + 5 echoes");
+  // 2026-07-11 playtest fix: echo access is an optional buff now (response quality + the "expand"/
+  // "understand" ending variants), not an entry gate — 5 resolved memories alone unlocks entry, with
+  // ZERO echoes ever witnessed.
+  assert.equal(getFinalChoiceState(state).locked, false, "entry gate cleared at 5 resolved memories, 0 echoes");
+  assert.equal(getDefragmenterRebuttal(state).mode, "refuse", "the rebuttal is still low-quality with 0 echoes — a real, felt cost, just not a hard block");
   // Boss never self-unlocks: the final choice is gated behind the three-phase confrontation.
   assert.equal(chooseFinal({ state, choiceId: "continue" }).reason, "confront-incomplete");
   completeConfront(state);

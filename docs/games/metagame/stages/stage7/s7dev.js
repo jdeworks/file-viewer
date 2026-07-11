@@ -10,8 +10,8 @@
 //                    At SS6: mint fact:session, pin correct triad, submit Case 3 accusation.
 //                    No-op at any other substage.
 //   mark-uncheat     Set state.boss.unlocked = true (the flag applyExifContradictionUnlock sets
-//                    when the GPS row renders in the Metadata pane — the real boss un-cheat gate).
-//                    Also marks Entity F contradicted. Does NOT weaken any gating logic.
+//                    when the GPS row renders in the Metadata pane — an optional buff, not a gate:
+//                    it pre-eliminates Entity F for free). Also marks Entity F contradicted.
 
 import { flagField, diffField, markImpossible, markChainBroken } from "./substages.js";
 import { mintSourceFact, ensureCase2, ensureCase3, attemptAccusationForCase } from "./accusation.js";

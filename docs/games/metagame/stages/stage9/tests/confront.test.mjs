@@ -36,6 +36,14 @@ function fullBody(now = 1000) {
   assert.equal(challengedMemoryIds(state).length, 8);
 }
 
+// 2026-07-11 playtest fix: witnessed echoes are a response-quality/ending-variant buff now, not an
+// entry gate — 5 resolved memories alone reaches the confrontation, with zero echoes ever witnessed.
+{
+  const state = defaultState({ now: 1 });
+  for (const m of memories.slice(0, 5)) resolveMemory({ state, memoryId: m.id, choice: m.choices[0], now: 1 });
+  assert.equal(isConfrontReady(state), true, "5 resolved memories alone unlock the confrontation, no echoes required");
+}
+
 // ── deterministic compaction options: include the real stance + are seed-stable ──────────────────
 {
   const state = fullBody(424242);

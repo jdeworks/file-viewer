@@ -634,23 +634,23 @@ function getBossLockState({ actions, state }) {
     seedMode: unlocked ? "fixed-cache" : "live-random",
     seed: unlocked ? FIXED_OFFLINE_SEED : state.boss.lastLockedSeed,
     rotation: unlocked ? "30deg/s predictable clockwise" : "server jitter every sample",
-    defeatPossible: unlocked,
+    defeatPossible: true,
     hint: unlocked ? "the seed is fixed. cross using the learned rotation." : lockedHintLadder[hintIndex]
   };
 }
-function recordObserverBossAttempt({ state, actions, elapsedMs = 0 }) {
+function recordObserverBossAttempt({ state, actions, elapsedMs = 0, seed }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
-  if (!lock.unlocked) {
-    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    getBossSeed({ state, actions });
-    pushLog(state, "the gap changed again. no timing survived contact.");
-    return { defeated: false, unlocked: false, hit: false, seedMode: "live-random" };
-  }
-  const result = crossAttempt({ seed: FIXED_OFFLINE_SEED, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  const activeSeed = lock.unlocked ? FIXED_OFFLINE_SEED : Number.isFinite(seed) ? seed : getBossSeed({ state, actions });
+  const result = crossAttempt({ seed: activeSeed, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
   if (!result.hit) {
-    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+    if (!lock.unlocked) {
+      state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+      getBossSeed({ state, actions });
+      pushLog(state, `online, mistimed the live gap (off by ${Math.round(result.distance)}deg). it reseeds again.`);
+      return { defeated: false, unlocked: false, hit: false, seedMode: "live-random", distance: result.distance };
+    }
     pushLog(state, `offline, but the cross was mistimed (off by ${Math.round(result.distance)}deg).`);
     return { defeated: false, unlocked: true, hit: false, seedMode: "fixed-cache", distance: result.distance };
   }
@@ -658,8 +658,8 @@ function recordObserverBossAttempt({ state, actions, elapsedMs = 0 }) {
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
   state.clarity = Number(state.clarity || 0) + 25;
-  pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, hit: true, seedMode: "fixed-cache", seed: FIXED_OFFLINE_SEED };
+  pushLog(state, lock.unlocked ? bellMessages.defeated : "a live read landed it — the gap held just long enough.");
+  return { defeated: true, unlocked: lock.unlocked, hit: true, seedMode: lock.unlocked ? "fixed-cache" : "live-random", seed: activeSeed };
 }
 function pushLog(state, line) {
   state.log = [...state.log || [], line].slice(-6);
@@ -1053,7 +1053,8 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     return "miss";
   }
   function challengeBoss() {
-    const result = recordObserverBossAttempt({ state, actions, elapsedMs });
+    const result = recordObserverBossAttempt({ state, actions, elapsedMs, seed: activeSeed() });
+    if (!result.unlocked && !result.hit) liveSeed = state.boss.lastLockedSeed;
     if (result.defeated) completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     return result.hit ? "perfect" : "miss";
   }
@@ -1071,7 +1072,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
   }
   function updateReadout(outcome, seed, level, pressMs) {
     const cfg = levelConfig(level);
-    const unstableLocked = (cfg.onlineUnstable || level >= BOSS_LEVEL) && !offlineUnlocked();
+    const unstableLocked = cfg.onlineUnstable && !offlineUnlocked() && level < BOSS_LEVEL;
     if (outcome === "perfect") return setReadout("perfect — dead centre", "perfect");
     if (outcome === "hit") return setReadout("crossed", "hit");
     if (unstableLocked) return setReadout("live-random — nothing to time", "miss");
@@ -1285,7 +1286,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     }
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
-    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
+    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "reachable — read the live gap, or go offline to learn it"} / ${lock.seedMode}`;
   }
   function paintStreak(cfg) {
     const isRhythm = cfg.mode === "rhythm";

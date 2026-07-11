@@ -157,7 +157,10 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
   }
 
   function challengeBoss() {
-    const result = recordObserverBossAttempt({ state, actions, elapsedMs });
+    // Evaluate against activeSeed() — whatever the player is actually watching right now — so a live
+    // reaction to the on-screen rotation is genuinely possible even before offline mode (see boss.js).
+    const result = recordObserverBossAttempt({ state, actions, elapsedMs, seed: activeSeed() });
+    if (!result.unlocked && !result.hit) liveSeed = state.boss.lastLockedSeed; // pick up the reseed boss.js just committed for the next attempt
     if (result.defeated) completeOnce({ stage: 8, defeated: true, btsPath: BTS_PATH });
     return result.hit ? "perfect" : "miss";
   }
@@ -179,7 +182,10 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
   // The ±ms is meaningless while an unstable level is still live (the gap reseeds), so we say so instead.
   function updateReadout(outcome, seed, level, pressMs) {
     const cfg = levelConfig(level);
-    const unstableLocked = (cfg.onlineUnstable || level >= BOSS_LEVEL) && !offlineUnlocked();
+    // 2026-07-11 playtest fix: the boss level is genuinely evaluable now even online (a live read of
+    // the on-screen rotation, see boss.js) — only the pre-boss onlineUnstable SUBLEVELS still reseed
+    // out from under any press (that gate is unchanged, it's stage-body pacing, not the boss un-cheat).
+    const unstableLocked = cfg.onlineUnstable && !offlineUnlocked() && level < BOSS_LEVEL;
     if (outcome === "perfect") return setReadout("perfect — dead centre", "perfect");
     if (outcome === "hit") return setReadout("crossed", "hit");
     if (unstableLocked) return setReadout("live-random — nothing to time", "miss");
@@ -400,7 +406,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     if (reveal && !bossRevealed) { bossRevealed = true; banner(arenaWrap, "THE OBSERVER STIRS"); }
     if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
     else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
-    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
+    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "reachable — read the live gap, or go offline to learn it"} / ${lock.seedMode}`;
   }
 
   // Cadence streak chip (#4/#6): visible on rhythm levels, showing the live on-beat chain progress.

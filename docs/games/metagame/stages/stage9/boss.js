@@ -156,16 +156,19 @@ export function getFinalChoiceState(state) {
   // is read directly (no import) to avoid a boss.js ⇄ confront.js cycle.
   const confrontCompleted = Boolean(state?.confront?.completed);
   return {
-    // `locked` is the ENTRY gate to the confrontation: enough resolved memories + Defragmenter echo
-    // access. The renderer routes a non-locked, not-yet-won state into the confront UI; only after
-    // confrontCompleted does it show the actual final choices.
-    locked: !gate.finalQuestionUnlocked || !gate.defragmenterAccess,
+    // 2026-07-11 playtest fix: `locked` is the ENTRY gate to the confrontation — the memory body alone
+    // (≥5 resolved) now, matching confront.js's isConfrontReady. Defragmenter echo access no longer
+    // gates entry; it only scales the rebuttal's quality (refuse/caveat/full, still below) and unlocks
+    // the "expand"/"understand" ending variants (per-choice echoRequired, still below) — a genuine
+    // buff, not the only door to a completed run. The renderer routes a non-locked, not-yet-won state
+    // into the confront UI; only after confrontCompleted does it show the actual final choices.
+    locked: !gate.finalQuestionUnlocked,
     confrontCompleted,
     gate,
     rebuttal,
     choices: finalChoices.map((choice) => ({
       ...choice,
-      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
+      disabled: !gate.finalQuestionUnlocked || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
     })),
     defragmenter: rebuttal.lines,
     routeSummary: getRouteSummary(state)
@@ -224,7 +227,9 @@ export function chooseFinal({ state, choiceId, onStageComplete, achievements, no
   }
   const finalState = getFinalChoiceState(state);
   if (!finalState.gate.finalQuestionUnlocked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
-  if (!finalState.gate.defragmenterAccess) return { ok: false, reason: "echo-gate", required: echoThresholds.defragmenterAccess, echoCount: finalState.gate.echoCount };
+  // 2026-07-11 playtest fix: Defragmenter echo access no longer gates the final choice — it only
+  // gates the "expand"/"understand" ending VARIANTS below (per-choice echoRequired), same as it
+  // always did for those two specifically. "continue"/"rest" (echoRequired: 0) are always reachable.
   // Boss-never-self-unlocks: the final choice is only valid after the three-phase confrontation is
   // won. Re-read live so even a console chooseFinal cannot skip the fight.
   if (!state?.confront?.completed) return { ok: false, reason: "confront-incomplete" };

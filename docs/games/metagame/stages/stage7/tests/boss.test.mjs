@@ -16,15 +16,39 @@ const unlockedActions = { hasAction: (stage, action) => stage === 7 && action ==
   const lock = getBossLockState({ actions: lockedActions, state });
   assert.equal(lock.unlocked, false);
   assert.equal(lock.informationState, "A/F unresolved");
-  assert.equal(lock.defeatPossible, false);
+  // 2026-07-11 playtest fix: the EXIF read is an optional buff now, not a gate — the boss is always
+  // defeatPossible, even with zero EXIF progress (a determined investigator can accuse their way there).
+  assert.equal(lock.defeatPossible, true);
   assert.equal(commitIdentity({ state, entity: "A" }).reason, "not-yet-boss", "no commit before the boss substage");
   state.substage = 5;
   assert.equal(commitIdentity({ state, entity: "A" }).reason, "not-yet-boss", "Case 2 accusation (5) is still before the boss");
   state.substage = 6;
   assert.equal(commitIdentity({ state, entity: "A" }).reason, "not-yet-boss", "Case 3 accusation (6) is still before the boss");
   state.substage = 7;
-  assert.equal(commitIdentity({ state, entity: "A" }).reason, "locked", "at the boss but exif not yet inspected");
+  // A correct accusation wins EVEN with zero EXIF progress — it's no longer refused outright.
+  const win = commitIdentity({ state, entity: "A" });
+  assert.equal(win.ok, true, "a correct accusation wins even before the EXIF is ever inspected");
+  assert.equal(state.boss.defeated, true);
+}
+
+{
+  // A wrong accusation before the EXIF read is a real, costly setback (not a free non-attempt): it
+  // eliminates the accused entity and costs addresses — never a dead-end refusal.
+  const state = defaultState();
+  state.substage = 7;
+  state.addresses = 100;
+  const wrong = commitIdentity({ state, entity: "B" });
+  assert.equal(wrong.ok, false);
+  assert.equal(wrong.reason, "wrong-entity");
   assert.equal(state.boss.defeated, false);
+  assert.equal(state.addresses, 90, "wrong accusation costs the same 10-address penalty as Case 2/3");
+  assert.deepEqual(state.evidence.contradicted, ["B"], "the wrong entity is eliminated, same marker the EXIF buff uses");
+  // The field is genuinely narrowable: eliminate every wrong entity in turn, then win on A.
+  for (const bad of ["C", "D", "E", "F"]) commitIdentity({ state, entity: bad });
+  assert.deepEqual(state.evidence.contradicted.sort(), ["B", "C", "D", "E", "F"], "all five wrong entities eliminated through costly accusations alone");
+  const finalWin = commitIdentity({ state, entity: "A" });
+  assert.equal(finalWin.ok, true, "A still wins after grinding out every wrong entity blind");
+  assert.equal(state.addresses, 200, "50 left after 5 penalties, +150 defeat reward on the final correct commit");
 }
 
 {

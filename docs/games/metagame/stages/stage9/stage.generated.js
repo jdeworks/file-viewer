@@ -317,7 +317,7 @@ var defragmenterRebuttalLines = {
   refuse: [
     "I see only the choices you made inside yourself.",
     "The files you opened, the traces you witnessed — those are missing.",
-    "The archive isn't ready. Come back when you've witnessed the echoes."
+    "The archive is thin. Witness the echoes and I'll have more to answer with — but you don't have to wait for it."
   ],
   caveat: "Some traces are still absent. The answer is possible, but incomplete."
 };
@@ -465,16 +465,19 @@ function getFinalChoiceState(state) {
   const rebuttal = getDefragmenterRebuttal(state);
   const confrontCompleted = Boolean(state?.confront?.completed);
   return {
-    // `locked` is the ENTRY gate to the confrontation: enough resolved memories + Defragmenter echo
-    // access. The renderer routes a non-locked, not-yet-won state into the confront UI; only after
-    // confrontCompleted does it show the actual final choices.
-    locked: !gate.finalQuestionUnlocked || !gate.defragmenterAccess,
+    // 2026-07-11 playtest fix: `locked` is the ENTRY gate to the confrontation — the memory body alone
+    // (≥5 resolved) now, matching confront.js's isConfrontReady. Defragmenter echo access no longer
+    // gates entry; it only scales the rebuttal's quality (refuse/caveat/full, still below) and unlocks
+    // the "expand"/"understand" ending variants (per-choice echoRequired, still below) — a genuine
+    // buff, not the only door to a completed run. The renderer routes a non-locked, not-yet-won state
+    // into the confront UI; only after confrontCompleted does it show the actual final choices.
+    locked: !gate.finalQuestionUnlocked,
     confrontCompleted,
     gate,
     rebuttal,
     choices: finalChoices.map((choice) => ({
       ...choice,
-      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
+      disabled: !gate.finalQuestionUnlocked || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
     })),
     defragmenter: rebuttal.lines,
     routeSummary: getRouteSummary(state)
@@ -521,7 +524,6 @@ function chooseFinal({ state, choiceId, onStageComplete, achievements, now = Dat
   }
   const finalState = getFinalChoiceState(state);
   if (!finalState.gate.finalQuestionUnlocked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
-  if (!finalState.gate.defragmenterAccess) return { ok: false, reason: "echo-gate", required: echoThresholds.defragmenterAccess, echoCount: finalState.gate.echoCount };
   if (!state?.confront?.completed) return { ok: false, reason: "confront-incomplete" };
   const choice = finalChoices.find((item) => item.id === choiceId);
   if (!choice) return { ok: false, reason: "unknown-choice" };
@@ -702,7 +704,7 @@ function challengedMemoryIds(state) {
 }
 function isConfrontReady(state) {
   const gate = getThresholdState(state);
-  return gate.finalQuestionUnlocked && gate.defragmenterAccess;
+  return gate.finalQuestionUnlocked;
 }
 function ensureConfront(state) {
   if (!state.confront || typeof state.confront !== "object") {
