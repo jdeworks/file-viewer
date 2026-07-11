@@ -128,6 +128,7 @@
 .preview-host .pptx-doc:focus { outline: none; }
 .pptx-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); flex-wrap: wrap; }
 .pptx-info { font-size: 12px; color: var(--fg-2); margin-right: auto; }
+.pptx-notes-status { font-size: 11px; color: var(--fg-2); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; }
 .pptx-bar button { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--fg); cursor: pointer; }
 .pptx-bar button:disabled { opacity: 0.4; cursor: default; }
 .pptx-bar .pptx-viewmode.active { border-color: var(--accent); color: var(--accent); }
@@ -137,6 +138,18 @@
 .pptx-slides { flex: 1; overflow: auto; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .pptx-slide-wrap { max-width: 100%; }
 .pptx-slide { display: block; max-width: 100%; height: auto; box-shadow: 0 1px 10px rgba(0,0,0,.25); background: #fff; }
+.pptx-notes-card { margin-top: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--fg); overflow: hidden; }
+.pptx-notes-card summary { display: grid; grid-template-columns: auto minmax(8rem,1fr) auto; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; list-style-position: inside; font-size: 12px; }
+.pptx-notes-headline { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--fg-2); }
+.pptx-notes-count { color: var(--fg-2); white-space: nowrap; font-size: 11px; }
+.pptx-notes-body { border-top: 1px solid var(--border); padding: 8px 12px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.pptx-notes-body p { margin: 0 0 7px; white-space: pre-wrap; }
+.pptx-notes-body p:last-child { margin-bottom: 0; }
+.pptx-notes-bounded { color: var(--fg-2); font-style: italic; }
+@media (max-width:520px) {
+  .pptx-notes-card summary { grid-template-columns: 1fr auto; }
+  .pptx-notes-headline { grid-column: 1/-1; grid-row: 2; white-space: normal; }
+}
 
 /* STL 3D viewer (parent pane): canvas + drag-to-orbit. */
 .preview-host .stl-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }

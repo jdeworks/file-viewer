@@ -1,6 +1,8 @@
 // PPTX preview: render each slide to a canvas (parent) and embed as an image in the
 // parent preview pane, same pattern as PDF. Slide cap is reported, not silent.
 import { loadPptxViewer } from './pptxlib.js';
+import { loadGlobal, vendor } from '../../../core/script-loader.js';
+import { extractPptxSpeakerNotes, formatPptxNotesStatus } from './notes.js';
 
 const MAX_SLIDES = 50;
 
@@ -41,12 +43,28 @@ export async function render(intake, ctx) {
     if (ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
     const count = viewer.getSlideCount();
     const max = Math.min(count, MAX_SLIDES);
+    let notesResult = null;
+    let notesError = false;
+    try {
+      const JSZip = await loadGlobal(vendor('jszip/jszip.min.js'), 'JSZip');
+      const zip = await JSZip.loadAsync(intake.bytes);
+      notesResult = await extractPptxSpeakerNotes(
+        async (part) => zip.file(part) ? zip.file(part).async('string') : null,
+        { maxSlides: MAX_SLIDES, signal: ctx?.signal },
+      );
+    } catch (error) {
+      if (ctx?.signal?.aborted || error?.name === 'AbortError') throw error;
+      notesError = true;
+    }
+    if (ctx?.signal?.aborted) throw new DOMException('Preview superseded', 'AbortError');
+    const notesBySlide = new Map((notesResult?.slides || []).map((notes) => [notes.slideNumber, notes]));
 
     const host = document.createElement('div');
     host.className = 'pptx-doc';
     host.innerHTML =
     '<div class="pptx-bar">'
     + '<span class="pptx-info"></span>'
+    + '<span class="pptx-notes-status"></span>'
     + '<button class="pptx-viewmode" title="Switch between continuous and single-slide view">Single slide</button>'
     + '<span class="pptx-slide-nav" hidden>'
     + '<button class="pptx-slide-prev" title="Previous slide">‹</button>'
@@ -93,6 +111,39 @@ export async function render(intake, ctx) {
       img.alt = 'Slide ' + (i + 1);
       img.src = canvas.toDataURL('image/png');
       wrap.appendChild(img);
+      const notes = notesBySlide.get(i + 1);
+      if (notes) {
+        const card = document.createElement('details');
+        card.className = 'pptx-notes-card';
+        card.dataset.slideNumber = String(i + 1);
+        const summary = document.createElement('summary');
+        const label = document.createElement('strong');
+        label.textContent = 'Slide ' + (i + 1) + ' notes';
+        const headline = document.createElement('span');
+        headline.className = 'pptx-notes-headline';
+        headline.textContent = notes.headline;
+        const countLabel = document.createElement('span');
+        countLabel.className = 'pptx-notes-count';
+        countLabel.textContent = notes.paragraphCount + (notes.truncated ? '+' : '')
+          + ' paragraph' + (notes.paragraphCount === 1 && !notes.truncated ? '' : 's');
+        summary.append(label, headline, countLabel);
+        card.appendChild(summary);
+        const body = document.createElement('div');
+        body.className = 'pptx-notes-body';
+        for (const paragraph of notes.paragraphs) {
+          const p = document.createElement('p');
+          p.textContent = paragraph;
+          body.appendChild(p);
+        }
+        if (notes.truncated) {
+          const bounded = document.createElement('p');
+          bounded.className = 'pptx-notes-bounded';
+          bounded.textContent = 'Additional note content is not shown in this bounded preview.';
+          body.appendChild(bounded);
+        }
+        card.appendChild(body);
+        wrap.appendChild(card);
+      }
       slidesEl.appendChild(wrap);
     }
   if (count > max) {
@@ -102,6 +153,8 @@ export async function render(intake, ctx) {
     slidesEl.appendChild(note);
   }
   infoEl.textContent = count + ' slide' + (count === 1 ? '' : 's');
+  const notesStatus = host.querySelector('.pptx-notes-status');
+  notesStatus.textContent = formatPptxNotesStatus(notesResult, { error: notesError });
   host.querySelector('.pptx-viewmode').addEventListener('click', () => {
     viewMode = viewMode === 'single' ? 'continuous' : 'single';
     updateSlideMode();

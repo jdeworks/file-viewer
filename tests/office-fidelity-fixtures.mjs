@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const XLSX = require('xlsx');
@@ -106,5 +107,55 @@ export async function inspectDocxOoxml(bytes) {
     footnotesXml: await read('word/footnotes.xml'),
     headerXml: await read('word/header1.xml'),
     relationshipsXml: await read('word/_rels/document.xml.rels'),
+  };
+}
+
+function notesSlideXml({ headline, detail, extra = '' }) {
+  const extraShape = extra ? `<p:sp><p:nvSpPr><p:cNvPr id="8" name="Additional cue"/><p:cNvSpPr/><p:nvPr/></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>${extra}</a:t></a:r></a:p></p:txBody></p:sp>` : '';
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree>
+  <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr/>
+  <p:sp><p:nvSpPr><p:cNvPr id="2" name="Slide image"/><p:cNvSpPr/><p:nvPr><p:ph type="sldImg"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>EXCLUDED IMAGE PLACEHOLDER</a:t></a:r></a:p></p:txBody></p:sp>
+  <p:sp><p:nvSpPr><p:cNvPr id="3" name="Notes body"/><p:cNvSpPr/><p:nvPr><p:ph type="body"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>${headline}</a:t></a:r></a:p><a:p><a:r><a:t>${detail}</a:t></a:r></a:p></p:txBody></p:sp>
+  <p:sp><p:nvSpPr><p:cNvPr id="4" name="Header"/><p:cNvSpPr/><p:nvPr><p:ph type="hdr"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>EXCLUDED HEADER</a:t></a:r></a:p></p:txBody></p:sp>
+  <p:sp><p:nvSpPr><p:cNvPr id="5" name="Footer"/><p:cNvSpPr/><p:nvPr><p:ph type="ftr"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>EXCLUDED FOOTER</a:t></a:r></a:p></p:txBody></p:sp>
+  <p:sp><p:nvSpPr><p:cNvPr id="6" name="Date"/><p:cNvSpPr/><p:nvPr><p:ph type="dt"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:fld><a:t>EXCLUDED DATE</a:t></a:fld></a:p></p:txBody></p:sp>
+  <p:sp><p:nvSpPr><p:cNvPr id="7" name="Slide number"/><p:cNvSpPr/><p:nvPr><p:ph type="sldNum"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:fld><a:t>999</a:t></a:fld></a:p></p:txBody></p:sp>
+  ${extraShape}
+</p:spTree></p:cSld></p:notes>`;
+}
+
+export async function createPptxNotesFixture() {
+  const source = readFileSync(new URL('../docs/examples/sample.pptx', import.meta.url));
+  const zip = await JSZip.loadAsync(source);
+  const presentation = await zip.file('ppt/presentation.xml').async('string');
+  const listMatch = presentation.match(/<p:sldIdLst>([\s\S]*?)<\/p:sldIdLst>/);
+  if (!listMatch) throw new Error('sample PPTX has no slide order list');
+  const slideIds = listMatch[1].match(/<p:sldId\b[^>]*\/>/g) || [];
+  if (slideIds.length !== 2) throw new Error('sample PPTX must have exactly two slides');
+  zip.file('ppt/presentation.xml', presentation.replace(listMatch[0], `<p:sldIdLst>${slideIds.reverse().join('')}</p:sldIdLst>`));
+  // Physical slide2 is presented first after reordering; physical slide1 is presented second.
+  zip.file('ppt/notesSlides/notesSlide2.xml', notesSlideXml({
+    headline: 'Presented first headline',
+    detail: 'Presented first detail &lt;img src=x onerror=alert(1)&gt;',
+  }));
+  zip.file('ppt/notesSlides/notesSlide1.xml', notesSlideXml({
+    headline: 'Presented second headline',
+    detail: 'Presented second detail',
+    extra: 'Additional speaker cue',
+  }));
+  return new Uint8Array(await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+}
+
+export async function inspectPptxOoxml(bytes) {
+  const zip = await JSZip.loadAsync(bytes);
+  const read = async (name) => zip.file(name) ? zip.file(name).async('string') : '';
+  return {
+    presentationXml: await read('ppt/presentation.xml'),
+    presentationRelationshipsXml: await read('ppt/_rels/presentation.xml.rels'),
+    slide1RelationshipsXml: await read('ppt/slides/_rels/slide1.xml.rels'),
+    slide2RelationshipsXml: await read('ppt/slides/_rels/slide2.xml.rels'),
+    notesSlide1Xml: await read('ppt/notesSlides/notesSlide1.xml'),
+    notesSlide2Xml: await read('ppt/notesSlides/notesSlide2.xml'),
   };
 }

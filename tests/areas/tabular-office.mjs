@@ -1,5 +1,6 @@
 import { runXlsxFidelity } from './xlsx-fidelity.mjs';
 import { runDocxFidelity } from './docx-fidelity.mjs';
+import { runPptxNotesFidelity } from './pptx-notes-fidelity.mjs';
 
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
@@ -336,6 +337,8 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
   const slideDims = await page.$$eval('#previewHost img.pptx-slide', (els) => els.map((e) => e.naturalWidth));
   if (slideDims.length === 2 && slideDims.every((w) => w > 100)) pass('PPTX: ' + slideDims.length + ' slides rendered to images'); else fail('pptx slides: ' + JSON.stringify(slideDims));
+  const sampleNotesStatus = await page.$eval('#previewHost .pptx-notes-status', (element) => element.textContent);
+  if (/No speaker notes found/.test(sampleNotesStatus)) pass('PPTX reports when the deck has no speaker notes'); else fail('sample PPTX notes status: ' + sampleNotesStatus);
   await page.click('#previewHost .pptx-viewmode');
   await page.waitForFunction(() => document.querySelector('#previewHost .pptx-doc')?.classList.contains('pptx-single-on'), null, { timeout: 4000 });
   const pptxSingleVisible = await page.$$eval('#previewHost .pptx-slide-wrap', (els) => els.filter((el) => !el.hidden).length);
@@ -359,5 +362,7 @@ export async function run(ctx) {
   await page.waitForSelector('#previewHost img.pptx-slide', { timeout: 25000 });
   const reopenedSlides = await page.$$eval('#previewHost img.pptx-slide', (els) => els.length);
   if (reopenedSlides === 2) pass('PPTX sidebar root reopens after loading a folder'); else fail('pptx reopen slides: ' + reopenedSlides);
+
+  await runPptxNotesFidelity(ctx);
 
 }
