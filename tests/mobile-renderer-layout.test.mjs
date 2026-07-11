@@ -50,11 +50,16 @@ try {
   const midi = await midiFrame.evaluate(() => {
     const root = document.documentElement;
     const cells = [...document.querySelectorAll('.midi-table td')];
+    const instrumentCells = cells.filter((cell) => cell.dataset.label === 'Instruments used');
     return {
       noOverflow: root.scrollWidth <= root.clientWidth + 2,
       labeled: cells.length > 0 && cells.every((cell) => cell.dataset.label),
       cardLayout: cells.length > 0 && getComputedStyle(cells[0]).display === 'grid',
       instrumentVisible: document.body.innerText.includes('Acoustic Grand Piano'),
+      instrumentLabelsContained: instrumentCells.length > 0 && instrumentCells.every((cell) => {
+        const labelStyle = getComputedStyle(cell, '::before');
+        return labelStyle.whiteSpace !== 'nowrap' && cell.scrollWidth <= cell.clientWidth + 1;
+      }),
     };
   });
   if (Object.values(midi).every(Boolean)) pass('mobile MIDI tracks use labeled cards with the full instrument visible');

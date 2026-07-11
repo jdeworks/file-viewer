@@ -223,7 +223,7 @@ export async function render(intake, _ctx) {
       .midi-table,.midi-table tbody,.midi-table tr,.midi-table td{display:block;width:100%}.midi-table thead{display:none}
       .midi-table tr{border:1px solid #d9e1ec;border-radius:8px;margin:0 0 10px;overflow:hidden}
       .midi-table td{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;border-bottom:1px solid #e2e8f0;overflow-wrap:anywhere;white-space:normal}
-      .midi-table td:last-child{border-bottom:0}.midi-table td::before{content:attr(data-label);font-weight:600;color:#5a6678;white-space:nowrap}
+      .midi-table td:last-child{border-bottom:0}.midi-table td::before{content:attr(data-label);font-weight:600;color:#5a6678;white-space:normal;line-height:1.25}
       .fv-dark .midi-table tr{border-color:#304052}.fv-dark .midi-table td::before{color:#aab5c6}
     }
   </style>`;
