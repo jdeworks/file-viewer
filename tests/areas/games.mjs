@@ -1264,6 +1264,33 @@ export async function run(ctx) {
   } else {
     fail(`Stage 6 next run's starting deck missing the permanent upgrade at slot ${chosenIndex}: ${JSON.stringify(s6nextDeck)}`);
   }
+  // Regression guard for a real bug this prestige work surfaced: ui-rewards.js's shopView() used
+  // to throw building EVERY non-empty deck's "Purge a card" row (cardOption's dataset[attr] = value
+  // threw on the hyphenated attrs "buy-remove"/"buy-upgrade" — same DOMStringMap restriction as the
+  // prestige picker above). shopView() had NO test coverage at all, so this was live-broken with no
+  // failing test to catch it — a shop node visit would have silently failed to render for any player
+  // with cards in their deck (always). A real run's shop layer/position is seed-random, so drive the
+  // pure view function directly (dynamic-imported from its raw module) rather than hunting a shop
+  // node through map RNG — deterministic, and exercises the exact code path that was broken.
+  const s6shop = await page.evaluate(async (o) => {
+    const mod = await import(o + '/games/metagame/stages/stage6/ui-rewards.js');
+    const fakeRun = { handshakes: 500, deck: ['SYN', 'SYN', 'ACK', 'RST'], potions: [], removalsPurchased: 0, skipRewardMod: 0, removalCostMod: 0 };
+    try {
+      const el = mod.shopView(fakeRun);
+      return {
+        threw: false,
+        removeBtns: el.querySelectorAll('[data-buy-remove]').length,
+        upgradeBtns: el.querySelectorAll('[data-buy-upgrade]').length
+      };
+    } catch (e) {
+      return { threw: true, message: e.message };
+    }
+  }, origin);
+  if (!s6shop.threw && s6shop.removeBtns === 4 && s6shop.upgradeBtns === 4) {
+    pass('Stage 6 shop screen renders (purge/upgrade rows no longer throw on a non-empty deck)');
+  } else {
+    fail(`Stage 6 shop screen broken: ${JSON.stringify(s6shop)}`);
+  }
   await page.click('.s6db-map [data-action="abandon"]');
   await page.waitForSelector('.s6db-hub [data-action="begin-run"]', { timeout: 4000 });
   // Navigate back to Stage 7 so the flow below continues where it left off.

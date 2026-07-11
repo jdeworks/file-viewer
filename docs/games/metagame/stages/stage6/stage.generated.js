@@ -4120,7 +4120,7 @@ function shopView(run) {
   const purgeRow = document.createElement("div");
   purgeRow.className = "s6db-card-row";
   purgeRow.replaceChildren(...run.deck.map((id, i) => {
-    const chip = cardOption(id, "buy-remove", String(i));
+    const chip = cardOption(id, "buyRemove", String(i));
     chip.disabled = !affordable;
     return chip;
   }));
@@ -4134,7 +4134,7 @@ function shopView(run) {
     const upRow = document.createElement("div");
     upRow.className = "s6db-card-row";
     upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
-      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      const chip = cardOption(upgradeIdFor(id), "buyUpgrade", String(i));
       chip.dataset.price = String(UPGRADE_COST);
       chip.disabled = run.handshakes < UPGRADE_COST;
       return chip;

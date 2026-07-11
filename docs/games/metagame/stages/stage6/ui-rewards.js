@@ -150,7 +150,12 @@ export function shopView(run) {
   const purgeRow = document.createElement("div");
   purgeRow.className = "s6db-card-row";
   purgeRow.replaceChildren(...run.deck.map((id, i) => {
-    const chip = cardOption(id, "buy-remove", String(i));
+    // "buyRemove" (camelCase, not "buy-remove") — cardOption does dataset[attr] = value, and
+    // DOMStringMap THROWS on a literal hyphen-then-lowercase-letter property name (it can't be
+    // unambiguously reverse-mapped from the camelCase form the browser expects). This was live-
+    // broken: shopView() threw here for any non-empty deck (i.e. always), so the shop screen never
+    // rendered. The HTML attribute produced is unaffected — still `data-buy-remove` either way.
+    const chip = cardOption(id, "buyRemove", String(i));
     chip.disabled = !affordable;
     return chip;
   }));
@@ -164,7 +169,7 @@ export function shopView(run) {
     const upRow = document.createElement("div");
     upRow.className = "s6db-card-row";
     upRow.replaceChildren(...upgradeable.map(({ id, i }) => {
-      const chip = cardOption(upgradeIdFor(id), "buy-upgrade", String(i));
+      const chip = cardOption(upgradeIdFor(id), "buyUpgrade", String(i)); // see buyRemove note above
       chip.dataset.price = String(UPGRADE_COST);
       chip.disabled = run.handshakes < UPGRADE_COST;
       return chip;
