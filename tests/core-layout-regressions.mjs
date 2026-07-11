@@ -38,7 +38,7 @@ async function sourceContext(viewport) {
   });
   const page = await context.newPage();
   page.setDefaultTimeout(30000);
-  page.on('pageerror', (error) => errors.push(`pageerror: ${error.message}`));
+  page.on('pageerror', (error) => errors.push(`pageerror: ${error.stack || error.message}`));
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(`console: ${message.text()}`);
   });
@@ -170,6 +170,181 @@ async function mobileEnhancementToggleRegression() {
   }
 }
 
+async function previewConcurrencyRegression() {
+  const { context, page } = await sourceContext({ width: 1280, height: 720 });
+  const packageJson = JSON.stringify({ name: 'race-package', version: '1.0.0', scripts: { test: 'node test.js' } }, null, 2) + '\n';
+  const dockerfile = 'FROM node:20-alpine AS build\nRUN echo race-safe\nFROM nginx:alpine\nCOPY --from=build /app /usr/share/nginx/html\n';
+
+  async function openText(name, text, expectedKnown) {
+    await page.evaluate(({ name, text }) => window.__fv.openViewerFile(name, { text }), { name, text });
+    await page.waitForFunction(({ name, expectedKnown }) => {
+      const state = window.__fv?.state;
+      return state?.intake?.filename === name && (!expectedKnown || state.known?.id === expectedKnown);
+    }, { name, expectedKnown });
+  }
+
+  async function holdNext({ filename, stage, fail = false }) {
+    await page.evaluate(({ filename, stage, fail }) => {
+      window.__previewRace = { filename, stage, fail, used: false, cleanups: 0 };
+      window.__previewRaceRelease = null;
+      window.__fv.setPreviewTestHook((event) => {
+        const cfg = window.__previewRace;
+        if (!cfg || event.snapshot.intake?.filename !== cfg.filename) return;
+        if (event.stage === 'request-started') {
+          event.onCleanup(() => { cfg.cleanups++; });
+        }
+        if (cfg.used || event.stage !== cfg.stage) return;
+        cfg.used = true;
+        cfg.heldId = event.id;
+        return new Promise((resolve, reject) => {
+          window.__previewRaceRelease = () => cfg.fail ? reject(new Error('forced delayed render failure')) : resolve();
+        });
+      });
+    }, { filename, stage, fail });
+  }
+
+  async function waitUntilHeld() {
+    await page.waitForFunction(() => typeof window.__previewRaceRelease === 'function');
+  }
+
+  async function releaseHeld() {
+    await page.evaluate(() => window.__previewRaceRelease?.());
+    await page.waitForTimeout(30);
+  }
+
+  try {
+    // Confirmed reproduction: a package.json enhancement toggle is paused after rendering, then a
+    // Dockerfile becomes current and commits before the older JSON result is allowed to finish.
+    await openText('package.json', packageJson, 'package-json');
+    await page.waitForSelector('#previewHost .pj-doc');
+    await holdNext({ filename: 'package.json', stage: 'rendered' });
+    await page.click('#enhanceChip .ec-toggle');
+    await waitUntilHeld();
+    await page.evaluate(({ dockerfile }) => { window.__fv.openViewerFile('Dockerfile', { text: dockerfile }); }, { dockerfile });
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'Dockerfile'
+      && /node:20-alpine/.test(document.getElementById('previewHost')?.innerText || ''));
+    assert.equal(await page.evaluate(() => window.__previewRace.cleanups), 1, 'superseding file must dispose the held package request');
+    await releaseHeld();
+    const afterPackage = await page.evaluate(() => ({
+      filename: window.__fv.state.intake.filename,
+      preview: document.getElementById('previewHost').innerText,
+    }));
+    assert.equal(afterPackage.filename, 'Dockerfile');
+    assert.match(afterPackage.preview, /node:20-alpine/);
+    assert.doesNotMatch(afterPackage.preview, /Invalid JSON|race-package/);
+
+    // Older rejection after a newer success must be silent.
+    await openText('package.json', packageJson, 'package-json');
+    await holdNext({ filename: 'package.json', stage: 'module-loaded', fail: true });
+    await page.evaluate(() => { window.__fv.rerenderPreview(); });
+    await waitUntilHeld();
+    await page.evaluate(({ dockerfile }) => { window.__fv.openViewerFile('Dockerfile', { text: dockerfile }); }, { dockerfile });
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'Dockerfile'
+      && /race-safe/.test(document.getElementById('previewHost')?.innerText || ''));
+    await releaseHeld();
+    assert.doesNotMatch(await page.locator('#previewHost').innerText(), /Preview failed|forced delayed|Invalid JSON/);
+
+    // Two theme-driven same-file rerenders resolve newest-first. Releasing the older request cannot
+    // replace the newer request identity or run its cleanup twice.
+    await holdNext({ filename: 'Dockerfile', stage: 'before-commit' });
+    await page.click('#themeBtn');
+    await waitUntilHeld();
+    await page.click('#themeBtn');
+    await page.waitForFunction(() => window.__fv.previewRequest()?.id !== window.__previewRace.heldId
+      && /race-safe/.test(document.getElementById('previewHost')?.innerText || ''));
+    const newestId = await page.evaluate(() => window.__fv.previewRequest()?.id);
+    assert.ok(Number.isInteger(newestId));
+    assert.equal(await page.evaluate(() => window.__previewRace.cleanups), 1);
+    await releaseHeld();
+    assert.equal(await page.evaluate(() => window.__fv.previewRequest()?.id), newestId);
+    assert.equal(await page.evaluate(() => window.__previewRace.cleanups), 1);
+    assert.match(await page.locator('#previewHost').innerText(), /race-safe/);
+
+    // A current request that allocates cleanup and then rejects shows its own error and drains the
+    // allocation once; a following rerender recovers normally.
+    await holdNext({ filename: 'Dockerfile', stage: 'module-loaded', fail: true });
+    await page.evaluate(() => { window.__fv.rerenderPreview(); });
+    await waitUntilHeld();
+    await releaseHeld();
+    await page.waitForFunction(() => /forced delayed render failure/.test(document.getElementById('previewHost')?.innerText || ''));
+    assert.equal(await page.evaluate(() => window.__previewRace.cleanups), 1);
+    await page.evaluate(() => {
+      window.__fv.setPreviewTestHook(null);
+      return window.__fv.rerenderPreview();
+    });
+    await page.waitForFunction(() => /race-safe/.test(document.getElementById('previewHost')?.innerText || ''));
+
+    // A raw-only file intent invalidates a held preview even though it never starts a replacement
+    // renderer. Releasing the old package result must leave the preview empty.
+    await openText('package.json', packageJson, 'package-json');
+    await holdNext({ filename: 'package.json', stage: 'before-commit' });
+    await page.evaluate(() => { window.__fv.rerenderPreview(); });
+    await waitUntilHeld();
+    await page.evaluate(() => { window.__fv.openViewerFile('plain.js', { text: 'const rawOnlySentinel = true;\n' }); });
+    await page.waitForFunction(() => window.__fv?.state?.intake?.filename === 'plain.js'
+      && document.getElementById('previewHost')?.children.length === 0);
+    await releaseHeld();
+    assert.equal(await page.locator('#previewHost').innerText(), '');
+    assert.equal(await page.evaluate(() => window.__previewRace.cleanups), 1);
+
+    // The independent side-by-side host has the same contract: a newer render wins, and destroy
+    // during a pending render prevents a late append.
+    await page.evaluate(async () => {
+      const [{ buildPane }, { intakeFromText }] = await Promise.all([
+        import('/core/sidebyside-pane.js'),
+        import('/core/intake.js'),
+      ]);
+      const pane = document.createElement('section');
+      pane.className = 'sbs-pane';
+      pane.innerHTML = '<div class="sbs-name"></div><div class="sbs-host"></div>';
+      document.body.appendChild(pane);
+      const controller = buildPane(pane, intakeFromText('{"sentinel":"OLDER_SIDE_SENTINEL"}\n', 'side-race.json'));
+      await controller.ready;
+      window.__sbsRace = { pane, controller, cleanups: 0, used: false };
+      window.__fvSideBySidePreviewTestHook = (event) => {
+        const race = window.__sbsRace;
+        if (event.stage === 'request-started') event.onCleanup(() => { race.cleanups++; });
+        if (race.used || event.stage !== 'before-commit') return;
+        race.used = true;
+        return new Promise((resolve) => { race.release = resolve; });
+      };
+      controller.setView('preview');
+    });
+    await page.waitForFunction(() => typeof window.__sbsRace?.release === 'function');
+    await page.evaluate(async () => {
+      window.__sbsRace.controller.rawview().setValue('{"sentinel":"NEWEST_SIDE_SENTINEL"}\n');
+      await window.__sbsRace.controller.setView('preview');
+    });
+    assert.equal(await page.evaluate(() => window.__sbsRace.cleanups), 1);
+    await page.evaluate(() => window.__sbsRace.release());
+    await page.waitForTimeout(30);
+    const sideText = await page.locator('.sbs-pane .sbs-preview').innerText();
+    assert.match(sideText, /NEWEST_SIDE_SENTINEL/);
+    assert.doesNotMatch(sideText, /OLDER_SIDE_SENTINEL/);
+
+    await page.evaluate(() => {
+      const race = window.__sbsRace;
+      race.used = false;
+      race.release = null;
+      race.controller.rawview().setValue('{"sentinel":"destroyed-late"}\n');
+      race.controller.setView('preview');
+    });
+    await page.waitForFunction(() => typeof window.__sbsRace?.release === 'function');
+    await page.evaluate(() => window.__sbsRace.controller.destroy());
+    await page.evaluate(() => window.__sbsRace.release());
+    await page.waitForTimeout(30);
+    assert.equal(await page.locator('.sbs-pane .sbs-host').innerText(), '');
+    assert.equal(await page.locator('.sbs-pane .sbs-host').locator('*').count(), 0);
+  } finally {
+    await page.evaluate(() => {
+      window.__fv?.setPreviewTestHook(null);
+      window.__fvSideBySidePreviewTestHook = null;
+      window.__sbsRace?.pane?.remove();
+    }).catch(() => {});
+    await context.close();
+  }
+}
+
 async function offlineStatusResponsiveRegression() {
   const viewports = [
     { width: 1440, height: 900 },
@@ -280,6 +455,8 @@ try {
   console.log('✓ first desktop split relayout uses post-sidebar width');
   await mobileEnhancementToggleRegression();
   console.log('✓ mobile known/base toggle reapplies tab layout and restores both surfaces');
+  await previewConcurrencyRegression();
+  console.log('✓ preview requests are deterministic latest-request-wins across success, rejection, rerender, and raw-only replacement');
   await offlineStatusResponsiveRegression();
   console.log('✓ offline control stays discoverable on landing and outside renderer content at all target viewports');
   assert.deepEqual(offOrigin, [], `off-origin requests: ${offOrigin.join(', ')}`);

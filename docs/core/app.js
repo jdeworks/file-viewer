@@ -23,8 +23,43 @@ import { initViewerOpen, openExampleFile, openViewerFile, openBlobFile, searchVi
 import { initSidebarRoots, captureActiveSidebarRoot, removeActiveSidebarRoot, expandActiveFileRootToFolder } from './sidebar-roots.js';
 import { installGlobalScreensaver } from './global-screensaver.js';
 import { rankLiteCandidates } from './detect-lite.js';
+import { createLatestRequestController } from './request-lifecycle.js';
 
 /* ─────────────────────────── Intake → render ─────────────────────────── */
+
+const previewRequests = createLatestRequestController({
+  onCleanupError: (error) => console.warn('Preview cleanup failed:', error),
+});
+const activationRequests = createLatestRequestController({
+  onCleanupError: (error) => console.warn('Activation cleanup failed:', error),
+});
+
+function beginActivation(intake) {
+  previewRequests.invalidate('new activation intent');
+  return activationRequests.begin({ intake });
+}
+
+function activationIsCurrent(activation) {
+  return activationRequests.isCurrent(activation)
+    && activation.snapshot.intake === state.intake;
+}
+
+function snapshotSettings(values) {
+  try { return structuredClone(values || {}); }
+  catch { return { ...(values || {}) }; }
+}
+
+let previewTestHook = null;
+async function previewCheckpoint(stage, request) {
+  if (typeof previewTestHook !== 'function') return;
+  await previewTestHook({
+    stage,
+    id: request.id,
+    snapshot: request.snapshot,
+    signal: request.signal,
+    onCleanup: (cleanup) => request.registerCleanup(cleanup),
+  });
+}
 
 let knownRegistryPromise = null;
 function knownRegistry() {
@@ -85,6 +120,10 @@ async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return false;
   }
+  // Invalidate the prior activation/preview as soon as the new file intent is accepted — before
+  // detection or renderer imports. Otherwise an older async activation can finish last and become
+  // the apparent newest file.
+  const activation = beginActivation(intake);
   state.downloadedSinceEdit = true;    // fresh document — nothing unsaved yet
   state.binaryEdit = null;
   state.currentFolderPath = null;      // single-file load by default; openTreeFile re-sets it
@@ -97,16 +136,20 @@ async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
   // so save doesn't accidentally compute paths against a stale folder.
   if (!fromTree) resetCompanionFolderRoot();
   const liteCandidates = await rankLiteCandidates(intake);
+  if (!activationIsCurrent(activation)) return false;
   if (liteCandidates.length) {
     showFileLoading('Detecting file type', { detail: liteCandidates.map((row) => row.type.label).join(', ') });
   }
   const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+  if (!activationIsCurrent(activation)) return false;
   const enableEmulators = readGlobalKey('enableEmulators', false) === true;
   const { type, ranking } = pickType(intake, { enableEmulators });
   const { matchAllKnown } = await knownRegistry();
+  if (!activationIsCurrent(activation)) return false;
   state.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake, state.knownCandidates);
-  await activateType(type);
+  if (!await activateType(type, null, activation)) return false;
+  if (!activationIsCurrent(activation)) return false;
   showFileLoading(null);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -195,14 +238,20 @@ async function openSidebarDropSideBySide(node) {
 
 /* ─────────────────────────── Type activation ─────────────────────────── */
 
-async function activateType(type, knownOverride = null) {
+async function activateType(type, knownOverride = null, activation = null) {
+  const request = activation || beginActivation(state.intake);
+  const intake = request.snapshot.intake;
+  const [settingsModel, { matchKnown }] = await Promise.all([
+    getModel(type),
+    knownRegistry(),
+  ]);
+  if (!activationIsCurrent(request)) return false;
   state.type = type;
-  state.settingsModel = await getModel(type);   // cached per type (no re-fetch per file)
+  state.settingsModel = settingsModel;   // cached per type (no re-fetch per file)
   // Layer 3: does a known-file enhancement apply (e.g. package.json, Dockerfile)? A known
   // renderer can supply a preview even when the base type has none (e.g. Dockerfile→code).
   // knownOverride lets the type-select force a specific known-file view.
-  const { matchKnown } = await knownRegistry();
-  state.known = knownOverride || matchKnown(state.intake, type);
+  state.known = knownOverride || matchKnown(intake, type);
   state.forceBase = false;
   updateEnhanceChip();
   // Show workspace + relevant chrome.
@@ -242,7 +291,13 @@ async function activateType(type, knownOverride = null) {
   state.tab = both ? (isMobile() ? 'preview' : 'raw') : (canPreview && !canRaw ? 'preview' : 'raw');
   state.htmlAllowScripts = false; state.htmlAsked = false;   // re-ask per file
 
-  if (canRaw) await buildRawView();
+  if (canRaw) {
+    const built = await buildRawView({
+      isCurrent: () => activationIsCurrent(request),
+      signal: request.signal,
+    });
+    if (built === false || !activationIsCurrent(request)) return false;
+  }
   else { state.rawview?.dispose(); state.rawview = null; $('editor').innerHTML = ''; }
   // Clear the prior file's preview synchronously before the (async) render of this new file, so
   // the previous file's DOM can't linger in #previewHost during the await (stale-content flash /
@@ -251,25 +306,59 @@ async function activateType(type, knownOverride = null) {
   // would cause an empty-pane flash.
   clearPreview();
   if (canPreview) await renderPreview(); else clearPreview();
+  if (!activationIsCurrent(request)) return false;
   applyLayout();
   if (isMobile()) layoutTopbar();   // re-sync ⋯ visibility now that button hidden-states are set
+  return true;
 }
 
 /* ─────────────────────────── Preview (iframe) ─────────────────────────── */
 
 async function renderPreview() {
   const type = state.type;
+  const intake = state.intake;
+  if (!type || !intake) { clearPreview(); return false; }
   // A matched known-file enhancement (Layer 3) overrides the base renderer unless the user
   // toggled "show the plain view".
-  const useKnown = state.known && !state.forceBase;
-  if (!useKnown && !type.loadRenderer) return clearPreview();
+  const known = state.known;
+  const forceBase = state.forceBase;
+  const useKnown = known && !forceBase;
+  const snapshot = {
+    intake,
+    type,
+    known,
+    forceBase,
+    renderMode: useKnown ? 'enhanced' : 'default',
+    layoutMode: state.mode,
+    mobile: isMobile(),
+    settingsModel: state.settingsModel,
+    settings: snapshotSettings(state.settingsModel?.values),
+    folder: folderContext(),
+    htmlAllowScripts: state.htmlAllowScripts,
+    htmlAsked: state.htmlAsked,
+    theme: themeIsDark() ? 'dark' : 'light',
+  };
+  const request = previewRequests.begin(snapshot);
+  if (!useKnown && !type.loadRenderer) {
+    if (request.isCurrent()) clearMountedPreview();
+    request.dispose('no renderer');
+    return false;
+  }
   let rendered;
   try {
-    const mod = useKnown ? await state.known.loadRenderer() : await type.loadRenderer();
+    await previewCheckpoint('request-started', request);
+    if (!request.isCurrent()) return false;
+    const mod = useKnown ? await known.loadRenderer() : await type.loadRenderer();
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint('module-loaded', request);
+    if (!request.isCurrent()) return false;
     const ctx = {
-      settings: state.settingsModel.values,
-      folder: folderContext(),
+      settings: snapshot.settings,
+      folder: snapshot.folder,
+      signal: request.signal,
+      onCleanup: (cleanup) => request.registerCleanup(cleanup),
       onBinaryEdit: (edit) => {
+        if (!request.isCurrent()) return;
         if (state.archiveTree && state.currentFolderPath && edit?.dirty) {
           (state.binaryEdits = state.binaryEdits || new Map()).set(state.currentFolderPath, edit);
         }
@@ -278,71 +367,116 @@ async function renderPreview() {
         syncSaveBtn();
       },
       openIntake: async (innerIntake, activePath = null) => {
+        if (!request.isCurrent()) return false;
         state._skipDiscardGuard = true;
-        await loadIntake(innerIntake);
-        if (activePath) state.treeApi?.setActive?.(activePath);
+        const loaded = await loadIntake(innerIntake);
+        if (loaded !== false && activePath && state.intake === innerIntake) state.treeApi?.setActive?.(activePath);
+        return loaded;
       },
-      toast,
+      toast: (...args) => { if (request.isCurrent()) toast(...args); },
     };
-    if (type.id === 'html') ctx.allowScripts = state.htmlAllowScripts;
-    rendered = await mod.render(state.intake, ctx);
+    if (type.id === 'html') ctx.allowScripts = snapshot.htmlAllowScripts;
+    rendered = await mod.render(intake, ctx);
+    if (rendered?.revoke) request.registerCleanup(rendered.revoke);
+    if (rendered?.destroy && rendered.destroy !== rendered.revoke) request.registerCleanup(rendered.destroy);
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint('rendered', request);
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint('before-commit', request);
+    if (!request.isCurrent()) return false;
   } catch (err) {
+    if (!request.isCurrent()) return false;
+    clearMountedPreview();
     // Offline + this renderer module was never cached (cache-on-use never saw it): a dynamic
     // import()/fetch fails. Show a friendly, actionable note instead of a raw error.
-    if (!navigator.onLine) { $('previewHost').innerHTML = offlineMissHtml(); return; }
-    $('previewHost').innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml(err.message) + '</p>';
-    return;
+    if (!navigator.onLine) $('previewHost').innerHTML = offlineMissHtml();
+    else $('previewHost').innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml(err.message) + '</p>';
+    request.dispose('render failed');
+    updateExportButton();
+    return false;
   }
   // WP07 script gate: HTML with scripts is sanitized by default; ask once before running them.
-  if (type.id === 'html' && rendered.containsScripts && !state.htmlAllowScripts && !state.htmlAsked) {
+  if (type.id === 'html' && rendered.containsScripts && !snapshot.htmlAllowScripts && !snapshot.htmlAsked) {
+    if (!request.isCurrent()) return false;
     state.htmlAsked = true;
     if (confirm('This HTML contains scripts. Run them in a sandboxed iframe?\n\nThey cannot access this page or your data, but only continue if you trust the source. Cancel to view it sanitized (scripts removed).')) {
+      if (!request.isCurrent()) return false;
       state.htmlAllowScripts = true;
+      request.dispose('HTML script choice changed');
       return renderPreview();
     }
   }
-  // Free any previous out-of-sandbox resource (e.g. a media blob URL).
-  state.previewCleanup?.(); state.previewCleanup = null;
+  if (!request.isCurrent()) return false;
+  // The final current check and the synchronous clear/mount below form one atomic commit.
+  clearMountedPreview();
   // Some types (media) render a live node directly in the preview pane — outside the
   // sandboxed iframe, which can't reach blob: URLs. Safe: media bytes aren't markup.
   if (rendered.parentNode) {
-    clearPreview();
     $('previewHost').appendChild(rendered.parentNode);
-    if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, state.intake);
+    if (rendered.archiveTree && request.isCurrent()) {
+      // The mounted archive root deliberately outlives this preview: opening one entry replaces
+      // the preview while the root remains available for sibling navigation. Transfer its
+      // extractor at commit time instead of tying it to the disposed preview request.
+      mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, intake);
+    }
     // Live-node previews aren't screenshot-able via the sanitized-body path UNLESS the renderer
     // also supplies a static bodyHtml (e.g. structured trees that add a live query panel but keep
     // a screenshot-able HTML tree).
     state.lastBodyHtml = rendered.bodyHtml || null;
-    state.previewCleanup = rendered.revoke || null;
+    state.previewCleanup = () => request.dispose('preview unmounted');
     state.preview = { iframe: null, highlight() {}, scrollTo() {}, destroy() { $('previewHost').innerHTML = ''; } };
     updateExportButton();
-    return;
+    return true;
   }
-  if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, state.intake);
+  if (rendered.archiveTree && request.isCurrent()) {
+    // See the live-node path above: archive-tree ownership persists independently after commit.
+    mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake, intake);
+  }
   // Remember the sanitized body for screenshots + Print/Save-as-PDF (null for script full docs).
   state.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
-  state.preview = mountPreview($('previewHost'), {
+  const preview = mountPreview($('previewHost'), {
     bodyHtml: rendered.bodyHtml,
     fullDoc: rendered.fullDoc,
     allowScripts: !!rendered.ranScripts,
-    theme: themeIsDark() ? 'dark' : 'light',
-    style: previewStyle(state.settingsModel.values),
-    onSelect: (src) => mapPreviewToRaw(src),
-    onHover: (src) => mapPreviewToRaw(src, false),
-    onScroll: (ratio) => syncScrollFromPreview(ratio),
-    onOpen: rendered.openEntry ? (name) => openInnerEntry(rendered.openEntry, name) : undefined,
+    theme: snapshot.theme,
+    style: previewStyle(snapshot.settings),
+    onSelect: (src) => { if (request.isCurrent()) mapPreviewToRaw(src); },
+    onHover: (src) => { if (request.isCurrent()) mapPreviewToRaw(src, false); },
+    onScroll: (ratio) => { if (request.isCurrent()) syncScrollFromPreview(ratio); },
+    onOpen: rendered.openEntry ? (name) => {
+      if (request.isCurrent()) openInnerEntry(guardedOpenEntry(request, rendered.openEntry), name);
+    } : undefined,
   });
-  if (rendered.hadUnsafe) toast('Some unsafe HTML (scripts/handlers) was removed for safety.');
+  request.registerCleanup(() => preview.destroy());
+  state.preview = preview;
+  state.previewCleanup = () => request.dispose('preview unmounted');
+  if (rendered.hadUnsafe && request.isCurrent()) toast('Some unsafe HTML (scripts/handlers) was removed for safety.');
   updateExportButton();
+  return true;
 }
 
-function clearPreview() {
-  state.previewCleanup?.(); state.previewCleanup = null;
-  state.preview?.destroy();
+function guardedOpenEntry(request, openEntry) {
+  if (typeof openEntry !== 'function') return undefined;
+  return async (...args) => {
+    if (!request.isCurrent()) return null;
+    return openEntry(...args);
+  };
+}
+
+function clearMountedPreview() {
+  const cleanup = state.previewCleanup;
+  state.previewCleanup = null;
+  if (cleanup) cleanup();
+  else state.preview?.destroy();
   state.preview = null;
   state.lastBodyHtml = null;
   updateExportButton();
   $('previewHost').innerHTML = '';
+}
+
+function clearPreview() {
+  previewRequests.invalidate('preview cleared');
+  clearMountedPreview();
 }
 
 // Open one entry from inside a container preview (e.g. a file inside a zip): the renderer's
@@ -379,8 +513,16 @@ function updateEnhanceChip() {
 async function toggleEnhance() {
   if (!state.known) return;
   state.forceBase = !state.forceBase;
+  const expected = {
+    intake: state.intake,
+    type: state.type,
+    known: state.known,
+    forceBase: state.forceBase,
+  };
   updateEnhanceChip();
   await renderPreview();
+  if (state.intake !== expected.intake || state.type !== expected.type
+      || state.known !== expected.known || state.forceBase !== expected.forceBase) return;
   // The enhancement can add a preview to a raw-only base type. Recompute forced/raw vs
   // preview-tab layout after each transition so mobile never remains on an empty preview pane.
   applyLayout();
@@ -420,10 +562,13 @@ async function onSettingsChange(model, changedKey) {
     persistGlobalKey(changedKey, model.values[changedKey]);
   }
   if (changedKey === 'enableEmulators' && state.intake && state.type) {
+    const activation = beginActivation(state.intake);
     const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+    if (!activationIsCurrent(activation)) return;
     const { type, ranking } = pickType(state.intake, { enableEmulators: model.values.enableEmulators === true });
     populateTypeSelect(ranking, type.id, !!model.values.showAllTypes, state.intake, state.knownCandidates || []);
-    if (type.id !== state.type.id) await activateType(type);
+    if (type.id !== state.type.id) await activateType(type, null, activation);
+    else await renderPreview();
     return;
   }
   if (!state.type?.capabilities.preview) return;
@@ -571,15 +716,19 @@ function init() {
 
   $('typeSelect').addEventListener('change', async (e) => {
     const val = e.target.value;
+    const activation = beginActivation(state.intake);
     if (val.startsWith('known:')) {
       const knownId = val.slice(6);
       const match = (state.knownCandidates || []).find((m) => m.known.id === knownId);
-      if (match) await activateType(match.baseType, match.known);
+      if (match) await activateType(match.baseType, match.known, activation);
+      else if (activationIsCurrent(activation)) await renderPreview();
       return;
     }
     const { getType } = await registryRuntime();
+    if (!activationIsCurrent(activation)) return;
     const t = getType(val);
-    if (t) await activateType(t);
+    if (t) await activateType(t, null, activation);
+    else if (activationIsCurrent(activation)) await renderPreview();
   });
   $('themeBtn').addEventListener('click', () => applyTheme(!themeIsDark()));
   $('settingsBtn').addEventListener('click', () => openDrawer('settingsDrawer', openSettings));
@@ -690,6 +839,12 @@ function init() {
     // entries (e.g. its split frames) — the same sidebar item gains the frames underneath.
     expandFileRootToFolder: (opts) => expandActiveFileRootToFolder(opts),
     persistence,
+    rerenderPreview: renderPreview,
+    setPreviewTestHook: (hook) => { previewTestHook = typeof hook === 'function' ? hook : null; },
+    previewRequest: () => {
+      const request = previewRequests.current();
+      return request ? { id: request.id, snapshot: request.snapshot } : null;
+    },
     get games() { return state.games; },
     screenshot: () => captureBodyHtml(state.lastBodyHtml, { theme: themeIsDark() ? 'dark' : 'light', style: previewStyle(state.settingsModel.values) }),
   };

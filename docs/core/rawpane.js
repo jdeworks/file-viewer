@@ -159,7 +159,8 @@ export async function exitWysiwygForFeature() {
   return true;
 }
 
-export async function buildRawView() {
+export async function buildRawView({ isCurrent = () => true, signal } = {}) {
+  if (!isCurrent() || signal?.aborted) return false;
   stopAutosave();
   hideWordCount();
   // Tear down the alternate editor surfaces (HTML visual / CSV table) when rebuilding.
@@ -180,6 +181,7 @@ export async function buildRawView() {
     updateWysiwygBtn();
   }
   state.rawview?.dispose();
+  state.rawview = null;
   // syntaxLanguage may be a function(intake) for types that pick the language per file (code).
   const sl = state.type.syntaxLanguage;
   const lang = state.intake.isBinary ? 'plaintext' : ((typeof sl === 'function' ? sl(state.intake) : sl) || 'plaintext');
@@ -187,7 +189,7 @@ export async function buildRawView() {
   const text = state.intake.isBinary
     ? hexDump(state.intake.bytes)
     : (state.intake.text || '');
-  state.rawview = await createRawView($('editor'), {
+  const nextRawview = await createRawView($('editor'), {
     originalText: text, currentText: text, language: lang,
     theme: themeIsDark() ? 'dark' : 'light',
     options: { readOnly: state.intake.isBinary, ...monacoOptions(state.settingsModel) },
@@ -213,7 +215,14 @@ export async function buildRawView() {
           (mod.render || mod.default)(host, original, current);
         }
       : undefined,
+    signal,
+    isCurrent,
   });
+  if (!nextRawview || !isCurrent() || signal?.aborted) {
+    nextRawview?.dispose();
+    return false;
+  }
+  state.rawview = nextRawview;
   if (!state.intake.isBinary) state.rawview.addCommand?.('ctrl+s', downloadCurrent);
   // Editor mode for Monaco-backed code types (code/dockerfile/dxf/gcode): explicitly editable
   // Monaco + Ctrl+S download. Additive — read view + Download button are untouched.
@@ -227,7 +236,9 @@ export async function buildRawView() {
   // Auto-activate WYSIWYG if the user's preference is set
   if (state.type?.id === 'markdown' && !state.intake.isBinary
       && state.settingsModel?.values?.markdownEditor === 'wysiwyg') {
+    if (!isCurrent() || signal?.aborted) return false;
     await toggleWysiwyg({ skipPersist: true });
+    if (!isCurrent() || signal?.aborted) return false;
   }
   wireJsonTools();
   setJsonToolsVisible(state.type?.id === 'json' && !state.intake.isBinary);
@@ -310,6 +321,7 @@ export async function buildRawView() {
     startAutosave();
     updateWordCount(state.intake?.text || '', state.type?.id);
   }
+  return true;
 }
 
 // §10A.3 — The Defragmenter cheat-disable toast. Prefer the app's toast; else a 3s DIY overlay.

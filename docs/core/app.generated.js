@@ -2659,9 +2659,12 @@ async function createRawView(host, {
   onContextMenu,
   onPaste,
   onMoveDiff,
-  onCustomDiff
+  onCustomDiff,
+  signal,
+  isCurrent
 }) {
   const monaco = await loadMonaco();
+  if (signal?.aborted || isCurrent && !isCurrent()) return null;
   import("../types/text/code/codelens.js").then((m) => m.registerCodeMetrics?.(monaco)).catch(() => {
   });
   host.innerHTML = "";
@@ -5897,7 +5900,8 @@ async function exitWysiwygForFeature() {
   await toggleWysiwyg();
   return true;
 }
-async function buildRawView() {
+async function buildRawView({ isCurrent = () => true, signal } = {}) {
+  if (!isCurrent() || signal?.aborted) return false;
   stopAutosave();
   hideWordCount();
   teardownHtmlWysiwyg();
@@ -5912,10 +5916,11 @@ async function buildRawView() {
     updateWysiwygBtn();
   }
   state11.rawview?.dispose();
+  state11.rawview = null;
   const sl = state11.type.syntaxLanguage;
   const lang = state11.intake.isBinary ? "plaintext" : (typeof sl === "function" ? sl(state11.intake) : sl) || "plaintext";
   const text = state11.intake.isBinary ? hexDump(state11.intake.bytes) : state11.intake.text || "";
-  state11.rawview = await createRawView($6("editor"), {
+  const nextRawview = await createRawView($6("editor"), {
     originalText: text,
     currentText: text,
     language: lang,
@@ -5941,8 +5946,15 @@ async function buildRawView() {
       }
       const mod = await loader();
       (mod.render || mod.default)(host, original, current);
-    } : void 0
+    } : void 0,
+    signal,
+    isCurrent
   });
+  if (!nextRawview || !isCurrent() || signal?.aborted) {
+    nextRawview?.dispose();
+    return false;
+  }
+  state11.rawview = nextRawview;
   if (!state11.intake.isBinary) state11.rawview.addCommand?.("ctrl+s", downloadCurrent);
   applyEditorMode(state11.rawview, state11.type, { isBinary: state11.intake.isBinary, onSave: downloadCurrent });
   wireMarkdownTools();
@@ -5952,7 +5964,9 @@ async function buildRawView() {
     state11.rawview.addCommand?.("ctrl+i", () => runMarkdownAction("italic"));
   }
   if (state11.type?.id === "markdown" && !state11.intake.isBinary && state11.settingsModel?.values?.markdownEditor === "wysiwyg") {
+    if (!isCurrent() || signal?.aborted) return false;
     await toggleWysiwyg({ skipPersist: true });
+    if (!isCurrent() || signal?.aborted) return false;
   }
   wireJsonTools();
   setJsonToolsVisible(state11.type?.id === "json" && !state11.intake.isBinary);
@@ -6029,6 +6043,7 @@ async function buildRawView() {
     startAutosave();
     updateWordCount(state11.intake?.text || "", state11.type?.id);
   }
+  return true;
 }
 function showCheatToast(msg) {
   if (typeof toast6 === "function") {
@@ -9615,7 +9630,116 @@ async function rankLiteCandidates(intake, limit = 5) {
   return rows.slice(0, limit);
 }
 
+// ../../docs/core/request-lifecycle.js
+function once(fn, onError) {
+  let active = true;
+  return () => {
+    if (!active) return;
+    active = false;
+    try {
+      fn();
+    } catch (error) {
+      onError?.(error);
+    }
+  };
+}
+function createLatestRequestController({ onCleanupError } = {}) {
+  let sequence = 0;
+  let current = null;
+  function begin(snapshot = {}) {
+    current?.dispose("superseded");
+    const aborter = new AbortController();
+    const cleanups = /* @__PURE__ */ new Set();
+    const cleanupByFunction = /* @__PURE__ */ new Map();
+    let disposed = false;
+    const request = {
+      id: ++sequence,
+      snapshot: Object.freeze({ ...snapshot }),
+      signal: aborter.signal,
+      isCurrent() {
+        return current === request && !disposed;
+      },
+      registerCleanup(fn) {
+        if (typeof fn !== "function") return () => {
+        };
+        if (cleanupByFunction.has(fn)) return cleanupByFunction.get(fn).release;
+        const cleanup = once(fn, onCleanupError);
+        if (disposed) {
+          cleanup();
+          return () => {
+          };
+        }
+        cleanups.add(cleanup);
+        const release = () => {
+          cleanups.delete(cleanup);
+          cleanupByFunction.delete(fn);
+        };
+        cleanupByFunction.set(fn, { cleanup, release });
+        return release;
+      },
+      dispose(reason = "invalidated") {
+        if (disposed) return;
+        disposed = true;
+        if (current === request) current = null;
+        try {
+          aborter.abort(reason);
+        } catch {
+          aborter.abort();
+        }
+        for (const cleanup of [...cleanups].reverse()) cleanup();
+        cleanups.clear();
+        cleanupByFunction.clear();
+      }
+    };
+    current = request;
+    return request;
+  }
+  return {
+    begin,
+    invalidate(reason) {
+      current?.dispose(reason);
+    },
+    isCurrent(request) {
+      return current === request && request?.isCurrent();
+    },
+    current() {
+      return current;
+    }
+  };
+}
+
 // ../../docs/core/app.js
+var previewRequests = createLatestRequestController({
+  onCleanupError: (error) => console.warn("Preview cleanup failed:", error)
+});
+var activationRequests = createLatestRequestController({
+  onCleanupError: (error) => console.warn("Activation cleanup failed:", error)
+});
+function beginActivation(intake) {
+  previewRequests.invalidate("new activation intent");
+  return activationRequests.begin({ intake });
+}
+function activationIsCurrent(activation) {
+  return activationRequests.isCurrent(activation) && activation.snapshot.intake === state19.intake;
+}
+function snapshotSettings(values) {
+  try {
+    return structuredClone(values || {});
+  } catch {
+    return { ...values || {} };
+  }
+}
+var previewTestHook = null;
+async function previewCheckpoint(stage, request) {
+  if (typeof previewTestHook !== "function") return;
+  await previewTestHook({
+    stage,
+    id: request.id,
+    snapshot: request.snapshot,
+    signal: request.signal,
+    onCleanup: (cleanup) => request.registerCleanup(cleanup)
+  });
+}
 var knownRegistryPromise = null;
 function knownRegistry() {
   if (!knownRegistryPromise) knownRegistryPromise = import("../known/registry.generated.js");
@@ -9665,6 +9789,7 @@ async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
     const mb = (intake.size / 1048576).toFixed(1);
     if (!confirm(`This file is ${mb} MB. Large files may be slow in the editor. Open anyway?`)) return false;
   }
+  const activation = beginActivation(intake);
   state19.downloadedSinceEdit = true;
   state19.binaryEdit = null;
   state19.currentFolderPath = null;
@@ -9674,16 +9799,20 @@ async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
   setCompanionLinked(null, { persist: false });
   if (!fromTree) resetCompanionFolderRoot();
   const liteCandidates = await rankLiteCandidates(intake);
+  if (!activationIsCurrent(activation)) return false;
   if (liteCandidates.length) {
     showFileLoading("Detecting file type", { detail: liteCandidates.map((row) => row.type.label).join(", ") });
   }
   const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+  if (!activationIsCurrent(activation)) return false;
   const enableEmulators = readGlobalKey("enableEmulators", false) === true;
   const { type, ranking } = pickType(intake, { enableEmulators });
   const { matchAllKnown } = await knownRegistry();
+  if (!activationIsCurrent(activation)) return false;
   state19.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state19.settingsModel?.values?.showAllTypes, intake, state19.knownCandidates);
-  await activateType(type);
+  if (!await activateType(type, null, activation)) return false;
+  if (!activationIsCurrent(activation)) return false;
   showFileLoading(null);
   if (intake.truncated) {
     const shown = (intake.loadedBytes / 1048576).toFixed(0);
@@ -9752,11 +9881,17 @@ async function openSidebarDropSideBySide(node) {
     toast14("Could not read file: " + err.message);
   }
 }
-async function activateType(type, knownOverride = null) {
+async function activateType(type, knownOverride = null, activation = null) {
+  const request = activation || beginActivation(state19.intake);
+  const intake = request.snapshot.intake;
+  const [settingsModel, { matchKnown }] = await Promise.all([
+    getModel(type),
+    knownRegistry()
+  ]);
+  if (!activationIsCurrent(request)) return false;
   state19.type = type;
-  state19.settingsModel = await getModel(type);
-  const { matchKnown } = await knownRegistry();
-  state19.known = knownOverride || matchKnown(state19.intake, type);
+  state19.settingsModel = settingsModel;
+  state19.known = knownOverride || matchKnown(intake, type);
   state19.forceBase = false;
   updateEnhanceChip();
   $12("intake").hidden = true;
@@ -9788,8 +9923,13 @@ async function activateType(type, knownOverride = null) {
   state19.tab = both ? isMobile5() ? "preview" : "raw" : canPreview && !canRaw ? "preview" : "raw";
   state19.htmlAllowScripts = false;
   state19.htmlAsked = false;
-  if (canRaw) await buildRawView();
-  else {
+  if (canRaw) {
+    const built = await buildRawView({
+      isCurrent: () => activationIsCurrent(request),
+      signal: request.signal
+    });
+    if (built === false || !activationIsCurrent(request)) return false;
+  } else {
     state19.rawview?.dispose();
     state19.rawview = null;
     $12("editor").innerHTML = "";
@@ -9797,20 +9937,57 @@ async function activateType(type, knownOverride = null) {
   clearPreview();
   if (canPreview) await renderPreview3();
   else clearPreview();
+  if (!activationIsCurrent(request)) return false;
   applyLayout();
   if (isMobile5()) layoutTopbar();
+  return true;
 }
 async function renderPreview3() {
   const type = state19.type;
-  const useKnown = state19.known && !state19.forceBase;
-  if (!useKnown && !type.loadRenderer) return clearPreview();
+  const intake = state19.intake;
+  if (!type || !intake) {
+    clearPreview();
+    return false;
+  }
+  const known = state19.known;
+  const forceBase = state19.forceBase;
+  const useKnown = known && !forceBase;
+  const snapshot = {
+    intake,
+    type,
+    known,
+    forceBase,
+    renderMode: useKnown ? "enhanced" : "default",
+    layoutMode: state19.mode,
+    mobile: isMobile5(),
+    settingsModel: state19.settingsModel,
+    settings: snapshotSettings(state19.settingsModel?.values),
+    folder: folderContext(),
+    htmlAllowScripts: state19.htmlAllowScripts,
+    htmlAsked: state19.htmlAsked,
+    theme: themeIsDark2() ? "dark" : "light"
+  };
+  const request = previewRequests.begin(snapshot);
+  if (!useKnown && !type.loadRenderer) {
+    if (request.isCurrent()) clearMountedPreview();
+    request.dispose("no renderer");
+    return false;
+  }
   let rendered;
   try {
-    const mod = useKnown ? await state19.known.loadRenderer() : await type.loadRenderer();
+    await previewCheckpoint("request-started", request);
+    if (!request.isCurrent()) return false;
+    const mod = useKnown ? await known.loadRenderer() : await type.loadRenderer();
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint("module-loaded", request);
+    if (!request.isCurrent()) return false;
     const ctx = {
-      settings: state19.settingsModel.values,
-      folder: folderContext(),
+      settings: snapshot.settings,
+      folder: snapshot.folder,
+      signal: request.signal,
+      onCleanup: (cleanup) => request.registerCleanup(cleanup),
       onBinaryEdit: (edit) => {
+        if (!request.isCurrent()) return;
         if (state19.archiveTree && state19.currentFolderPath && edit?.dirty) {
           (state19.binaryEdits = state19.binaryEdits || /* @__PURE__ */ new Map()).set(state19.currentFolderPath, edit);
         }
@@ -9819,69 +9996,111 @@ async function renderPreview3() {
         syncSaveBtn();
       },
       openIntake: async (innerIntake, activePath = null) => {
+        if (!request.isCurrent()) return false;
         state19._skipDiscardGuard = true;
-        await loadIntake3(innerIntake);
-        if (activePath) state19.treeApi?.setActive?.(activePath);
+        const loaded = await loadIntake3(innerIntake);
+        if (loaded !== false && activePath && state19.intake === innerIntake) state19.treeApi?.setActive?.(activePath);
+        return loaded;
       },
-      toast: toast14
+      toast: (...args) => {
+        if (request.isCurrent()) toast14(...args);
+      }
     };
-    if (type.id === "html") ctx.allowScripts = state19.htmlAllowScripts;
-    rendered = await mod.render(state19.intake, ctx);
+    if (type.id === "html") ctx.allowScripts = snapshot.htmlAllowScripts;
+    rendered = await mod.render(intake, ctx);
+    if (rendered?.revoke) request.registerCleanup(rendered.revoke);
+    if (rendered?.destroy && rendered.destroy !== rendered.revoke) request.registerCleanup(rendered.destroy);
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint("rendered", request);
+    if (!request.isCurrent()) return false;
+    await previewCheckpoint("before-commit", request);
+    if (!request.isCurrent()) return false;
   } catch (err) {
-    if (!navigator.onLine) {
-      $12("previewHost").innerHTML = offlineMissHtml();
-      return;
-    }
-    $12("previewHost").innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml4(err.message) + "</p>";
-    return;
+    if (!request.isCurrent()) return false;
+    clearMountedPreview();
+    if (!navigator.onLine) $12("previewHost").innerHTML = offlineMissHtml();
+    else $12("previewHost").innerHTML = '<p style="padding:16px;color:var(--danger)">Preview failed: ' + escapeHtml4(err.message) + "</p>";
+    request.dispose("render failed");
+    updateExportButton();
+    return false;
   }
-  if (type.id === "html" && rendered.containsScripts && !state19.htmlAllowScripts && !state19.htmlAsked) {
+  if (type.id === "html" && rendered.containsScripts && !snapshot.htmlAllowScripts && !snapshot.htmlAsked) {
+    if (!request.isCurrent()) return false;
     state19.htmlAsked = true;
     if (confirm("This HTML contains scripts. Run them in a sandboxed iframe?\n\nThey cannot access this page or your data, but only continue if you trust the source. Cancel to view it sanitized (scripts removed).")) {
+      if (!request.isCurrent()) return false;
       state19.htmlAllowScripts = true;
+      request.dispose("HTML script choice changed");
       return renderPreview3();
     }
   }
-  state19.previewCleanup?.();
-  state19.previewCleanup = null;
+  if (!request.isCurrent()) return false;
+  clearMountedPreview();
   if (rendered.parentNode) {
-    clearPreview();
     $12("previewHost").appendChild(rendered.parentNode);
-    if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, state19.intake);
+    if (rendered.archiveTree && request.isCurrent()) {
+      mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, intake);
+    }
     state19.lastBodyHtml = rendered.bodyHtml || null;
-    state19.previewCleanup = rendered.revoke || null;
+    state19.previewCleanup = () => request.dispose("preview unmounted");
     state19.preview = { iframe: null, highlight() {
     }, scrollTo() {
     }, destroy() {
       $12("previewHost").innerHTML = "";
     } };
     updateExportButton();
-    return;
+    return true;
   }
-  if (rendered.archiveTree) mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, state19.intake);
+  if (rendered.archiveTree && request.isCurrent()) {
+    mountArchiveTree(rendered.archiveTree, rendered.openEntry, loadIntake3, intake);
+  }
   state19.lastBodyHtml = rendered.fullDoc ? null : rendered.bodyHtml;
-  state19.preview = mountPreview($12("previewHost"), {
+  const preview = mountPreview($12("previewHost"), {
     bodyHtml: rendered.bodyHtml,
     fullDoc: rendered.fullDoc,
     allowScripts: !!rendered.ranScripts,
-    theme: themeIsDark2() ? "dark" : "light",
-    style: previewStyle(state19.settingsModel.values),
-    onSelect: (src) => mapPreviewToRaw(src),
-    onHover: (src) => mapPreviewToRaw(src, false),
-    onScroll: (ratio) => syncScrollFromPreview(ratio),
-    onOpen: rendered.openEntry ? (name) => openInnerEntry(rendered.openEntry, name) : void 0
+    theme: snapshot.theme,
+    style: previewStyle(snapshot.settings),
+    onSelect: (src) => {
+      if (request.isCurrent()) mapPreviewToRaw(src);
+    },
+    onHover: (src) => {
+      if (request.isCurrent()) mapPreviewToRaw(src, false);
+    },
+    onScroll: (ratio) => {
+      if (request.isCurrent()) syncScrollFromPreview(ratio);
+    },
+    onOpen: rendered.openEntry ? (name) => {
+      if (request.isCurrent()) openInnerEntry(guardedOpenEntry(request, rendered.openEntry), name);
+    } : void 0
   });
-  if (rendered.hadUnsafe) toast14("Some unsafe HTML (scripts/handlers) was removed for safety.");
+  request.registerCleanup(() => preview.destroy());
+  state19.preview = preview;
+  state19.previewCleanup = () => request.dispose("preview unmounted");
+  if (rendered.hadUnsafe && request.isCurrent()) toast14("Some unsafe HTML (scripts/handlers) was removed for safety.");
   updateExportButton();
+  return true;
 }
-function clearPreview() {
-  state19.previewCleanup?.();
+function guardedOpenEntry(request, openEntry) {
+  if (typeof openEntry !== "function") return void 0;
+  return async (...args) => {
+    if (!request.isCurrent()) return null;
+    return openEntry(...args);
+  };
+}
+function clearMountedPreview() {
+  const cleanup = state19.previewCleanup;
   state19.previewCleanup = null;
-  state19.preview?.destroy();
+  if (cleanup) cleanup();
+  else state19.preview?.destroy();
   state19.preview = null;
   state19.lastBodyHtml = null;
   updateExportButton();
   $12("previewHost").innerHTML = "";
+}
+function clearPreview() {
+  previewRequests.invalidate("preview cleared");
+  clearMountedPreview();
 }
 async function openInnerEntry(openEntry, name) {
   try {
@@ -9916,8 +10135,15 @@ function updateEnhanceChip() {
 async function toggleEnhance() {
   if (!state19.known) return;
   state19.forceBase = !state19.forceBase;
+  const expected = {
+    intake: state19.intake,
+    type: state19.type,
+    known: state19.known,
+    forceBase: state19.forceBase
+  };
   updateEnhanceChip();
   await renderPreview3();
+  if (state19.intake !== expected.intake || state19.type !== expected.type || state19.known !== expected.known || state19.forceBase !== expected.forceBase) return;
   applyLayout();
 }
 function openSettings2() {
@@ -9945,10 +10171,13 @@ async function onSettingsChange(model, changedKey) {
     persistGlobalKey(changedKey, model.values[changedKey]);
   }
   if (changedKey === "enableEmulators" && state19.intake && state19.type) {
+    const activation = beginActivation(state19.intake);
     const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+    if (!activationIsCurrent(activation)) return;
     const { type, ranking } = pickType(state19.intake, { enableEmulators: model.values.enableEmulators === true });
     populateTypeSelect(ranking, type.id, !!model.values.showAllTypes, state19.intake, state19.knownCandidates || []);
-    if (type.id !== state19.type.id) await activateType(type);
+    if (type.id !== state19.type.id) await activateType(type, null, activation);
+    else await renderPreview3();
     return;
   }
   if (!state19.type?.capabilities.preview) return;
@@ -10080,15 +10309,19 @@ function init() {
   initSplitDivider();
   $12("typeSelect").addEventListener("change", async (e) => {
     const val = e.target.value;
+    const activation = beginActivation(state19.intake);
     if (val.startsWith("known:")) {
       const knownId = val.slice(6);
       const match = (state19.knownCandidates || []).find((m) => m.known.id === knownId);
-      if (match) await activateType(match.baseType, match.known);
+      if (match) await activateType(match.baseType, match.known, activation);
+      else if (activationIsCurrent(activation)) await renderPreview3();
       return;
     }
     const { getType } = await registryRuntime();
+    if (!activationIsCurrent(activation)) return;
     const t = getType(val);
-    if (t) await activateType(t);
+    if (t) await activateType(t, null, activation);
+    else if (activationIsCurrent(activation)) await renderPreview3();
   });
   $12("themeBtn").addEventListener("click", () => applyTheme(!themeIsDark2()));
   $12("settingsBtn").addEventListener("click", () => openDrawer("settingsDrawer", openSettings2));
@@ -10211,6 +10444,14 @@ function init() {
     // entries (e.g. its split frames) — the same sidebar item gains the frames underneath.
     expandFileRootToFolder: (opts) => expandActiveFileRootToFolder(opts),
     persistence: persistence_exports,
+    rerenderPreview: renderPreview3,
+    setPreviewTestHook: (hook) => {
+      previewTestHook = typeof hook === "function" ? hook : null;
+    },
+    previewRequest: () => {
+      const request = previewRequests.current();
+      return request ? { id: request.id, snapshot: request.snapshot } : null;
+    },
     get games() {
       return state19.games;
     },

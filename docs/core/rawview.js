@@ -11,8 +11,10 @@ function fill(el) { el.style.position = 'absolute'; el.style.inset = '0'; return
 export async function createRawView(host, {
   originalText, currentText, language, theme, options = {},
   onChange, onCursor, onScroll, onContextMenu, onPaste, onMoveDiff, onCustomDiff,
+  signal, isCurrent,
 }) {
   const monaco = await loadMonaco();
+  if (signal?.aborted || (isCurrent && !isCurrent())) return null;
   import('../types/text/code/codelens.js')
     .then((m) => m.registerCodeMetrics?.(monaco))
     .catch(() => {});
