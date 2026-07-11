@@ -92,14 +92,18 @@ function formatPemForDisplay(type, bytes) {
 
 function renderCertInfo(cert, type, block, badgeClass, badgeLabel, isCSR) {
   const now = Date.now();
-  const expiredMs = cert.notAfter ? cert.notAfter.getTime() : null;
-  const expiringSoonMs = expiredMs ? expiredMs - 30 * 24 * 60 * 60 * 1000 : null;
+  const notBeforeMs = cert.notBefore?.getTime();
+  const notAfterMs = cert.notAfter?.getTime();
+  const hasFiniteValidity = Number.isFinite(notBeforeMs) && Number.isFinite(notAfterMs);
+  const expiringSoonMs = hasFiniteValidity ? notAfterMs - 30 * 24 * 60 * 60 * 1000 : null;
 
   let validityBadge = '';
-  if (!isCSR && expiredMs !== null) {
-    if (cert.notBefore && now < cert.notBefore.getTime()) {
+  if (!isCSR) {
+    if (!hasFiniteValidity) {
+      validityBadge = '<span class="badge badge-other">Invalid/unknown validity dates</span>';
+    } else if (now < notBeforeMs) {
       validityBadge = '<span class="badge badge-expiring">Not yet within validity dates</span>';
-    } else if (now > expiredMs) {
+    } else if (now > notAfterMs) {
       validityBadge = '<span class="badge badge-expired">Expired (date)</span>';
     } else if (expiringSoonMs !== null && now > expiringSoonMs) {
       validityBadge = '<span class="badge badge-expiring">Expires soon</span>';

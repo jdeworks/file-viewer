@@ -84,4 +84,16 @@ assertHonestCertificateLabels(await renderCertificate(
   `-----BEGIN CERTIFICATE-----\n${corruptBase64}\n-----END CERTIFICATE-----\n`,
 ));
 
+const invalidDateDer = Buffer.from(match[1].replace(/\s/g, ''), 'base64');
+const originalNotAfter = Buffer.from('350604110438Z');
+const notAfterOffset = invalidDateDer.indexOf(originalNotAfter);
+assert.notEqual(notAfterOffset, -1, 'sample certificate contains the expected notAfter field');
+Buffer.from('359904110438Z').copy(invalidDateDer, notAfterOffset);
+const invalidDateBase64 = invalidDateDer.toString('base64').match(/.{1,64}/g).join('\n');
+const invalidDateHtml = await renderCertificate(
+  `-----BEGIN CERTIFICATE-----\n${invalidDateBase64}\n-----END CERTIFICATE-----\n`,
+);
+assert.match(invalidDateHtml, /Invalid\/unknown validity dates/);
+assert.doesNotMatch(invalidDateHtml, /Within validity dates/);
+
 console.log('package and certificate trust-label tests passed');

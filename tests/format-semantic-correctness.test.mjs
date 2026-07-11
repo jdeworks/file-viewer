@@ -41,6 +41,18 @@ assert.equal(midi.bpmText, '60-120');
 assert.equal(midi.durationSeconds, 1.5);
 assert.match((await renderMidi({ bytes: tempoChangeMidi })).bodyHtml, /1\.50s/);
 
+// Type 2 tracks are independent patterns: track order must not change the longest-track duration.
+const type2Header = '4d546864000000060002000201e0';
+const fastTrack = '4d54726b0000000c00ff510307a1208360ff2f00';
+const slowTrack = '4d54726b0000000c00ff51030f42408360ff2f00';
+for (const body of [fastTrack + slowTrack, slowTrack + fastTrack]) {
+  const independentMidi = Buffer.from(type2Header + body, 'hex');
+  const parsed = parseMidi({ bytes: independentMidi });
+  assert.equal(parsed.durationSeconds, 1);
+  assert.equal(parsed.durationLabel, 'Longest track');
+  assert.match((await renderMidi({ bytes: independentMidi })).bodyHtml, /1\.00s<\/strong><span>Longest track/);
+}
+
 const dicomElement = (group, element, vr, value) => {
   const data = Buffer.from(value);
   const header = Buffer.alloc(8);
