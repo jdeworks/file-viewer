@@ -74,58 +74,63 @@ finish with clean `dev` pushed safely to `origin`.
 - Commercial ROM handling can contaminate evidence. Keep the fixture ignored, reselect it manually
   after reload/offline transitions, and delete emulator saves/browser contexts after each gate.
 
-## Resume checkpoint — 2026-07-11, EmulatorJS focused matrix complete
+## Resume checkpoint — 2026-07-11, implementation and local validation complete
 
-- Baseline/plan `8628bec2`; bounded APK `c3bd632e`; Media ASCII Studio `6127570b`;
-  pinned complete EmulatorJS vendor closure `91573769`.
-  Live preference/runtime/teardown commit: `01f3b99f`.
-- Private fixture exists at `.example-files-internet/Super Mario Bros. (World).nes`, is 40,976 bytes,
-  and remains ignored; never stage or retain derived output from it.
-- APK/AAB/XAPK retain the specialist summary and expose central-directory contents through the
-  normal intake path. ZIP and APK clear-entry opening share explicit entry/session/ratio/depth/time
-  bounds plus unsafe-path, duplicate, symlink, encryption, stale-request, and actual-size handling.
-- APK green validation: `archive-entry-bounds`, package trust labels, archive metadata, syntax checks,
-  `git diff --check`, and the full `binary-types` browser area including APK→JSON opening and all
-  other binary/container viewers.
-- ASCII Studio now exists only in the expanded Media category and follows post-filter visible Media
-  samples; it is absent from Image, folder overview, and after back navigation. The exhaustive
-  `examples-catalog` browser area passed all 1,115 samples, all 144 registered types, Media search
-  and kind-filter transitions, standalone image/JPEG conversion, zero console errors, and zero
+- The implementation is split into recoverable commits: plan `8628bec2`; bounded APK browsing
+  `c3bd632e`; Media-only ASCII Studio `6127570b`; pinned EmulatorJS closure `91573769`; live
+  preference/runtime teardown `01f3b99f`; portable core/settings matrices `34a58dd6`; and fresh-page
+  core lifecycle isolation `97c1cbac`.
+- APK/AAB/XAPK keep their specialist structure and trust summary while exposing bounded contents
+  through normal intake. ZIP and APK opening share caps of 10,000 entries, 64 MiB per entry,
+  256 MiB per renderer/session, 1,000:1 expansion, depth three, one active extraction, and 15 seconds,
+  with unsafe paths, duplicates, symlinks, encryption, corruption, stale work, actual-size overruns,
+  cancellation, and disposal covered. The binary browser matrix proves APK `assets/config.json`
+  re-detects and opens as JSON while AAB/XAPK inventories remain honest.
+- ASCII Studio now appears exactly once inside expanded Media and only while the post-filter Media
+  set is nonempty. It is absent from Image, folder overview, show-all, and back navigation. The
+  exhaustive catalog repeatedly opened all 1,115 samples across all 144 registered types and passed
+  Media search/kind transitions, direct same-origin image/JPEG handoff, zero console errors, and zero
   off-origin requests.
-- The mutable stable label is resolved to official EmulatorJS 4.2.3 tag/commit `e150dc04` and the
-  published 303,554,683-byte release archive SHA-256. A deterministic staged installer and strict
-  verifier lock 39 retained files: frontend, all compression helpers, six reports, normal+legacy
-  non-threaded variants for all six advertised cores, full frontend/core/helper licenses, and exact
-  source snapshots. BIOS, firmware, ROMs, threaded cores, localization, ads, and netplay files are
-  excluded. The regenerated manifest contains a 40-file/14,225,124-byte EmulatorJS offline bundle,
-  5,119 total assets, and service-worker version `a458340be7a2`.
-- Green validation: release-asset hash matched GitHub's published digest; current frontend hashes
-  matched that release; staged install and independent vendor verifier pass; asset-manifest tests
-  pass and enumerate the complete bundle.
-- Preference-aware detection preserves raw 0.99/0.92 NES confidences but promotes EmulatorJS while
-  enabled, never promotes unsupported N64, applies the toggle immediately, synchronizes cached
-  settings models, and restores Game ROM Header on disable. The emulator reload box is removed;
-  the setting discloses the 14 MB same-origin bundle and remaining heavy-package rows wrap.
-- Runtime now disables threaded cores, locale fetches (using 4.2.3's actual inverted flag), ads and
-  netplay; neutralizes localhost update checks without a request; converts Wake Lock denial to a
-  no-op; rejects any other off-origin HTTP; explains missing locked assets; and tears down frame
-  loop, gamepad, audio, globals, injected nodes, fetch/wake guards, and ROM URL.
-- Green tests: registry preference/raw-score contract, runtime/lock contract, settings defaults,
-  asset manifest, vendor verifier, full `core-ui`, and repeated private-ROM gate. The private NES
-  boots online and after hard-offline reload+disk reselection with ready/start signals, advancing
-  frames, nonblank rendered pixels, core-observed Start keydown/up, zero HTTP errors, zero
-  localization/off-origin requests, zero console/page errors, and verified live teardown. No ROM or
-  ROM-derived artifact was written or retained.
-- Portable six-core browser coverage now loads each real report, chosen normal/legacy core archive,
-  7z decompressor, and initialized Module using generated non-copyrighted placeholder bytes; all six
-  closures return HTTP 200 with zero localization or off-origin requests. This is dependency/load
-  validation only—the private NES gate remains the sole gameplay claim.
-- The settings matrix passes at 1100×800 and 390×844 in both light and dark themes: live switch,
-  drawer/row containment, zero horizontal overflow, contained toggle, ≥11 px/14 px hint typography,
-  ≥3:1 hint contrast, and no emulator reload box. The mobile test uses the real More-controls path.
-- Next: commit the focused matrices, run relevant aggregate browser/offline/privacy gates and full
-  `./scripts/check.sh`, inspect any changed visuals, reach generated fixed point, update final notes,
-  clean only task-owned temporary files, then safely fetch/push/verify.
+- EmulatorJS is pinned to official 4.2.3 commit `e150dc0491ae747028919fb82d6598954976ede6`.
+  The staged installer and strict verifier retain 39 source- and hash-locked files: frontend,
+  compression helpers, six reports, and normal plus legacy non-threaded data for fceumm, snes9x,
+  gambatte, mgba, genesis_plus_gx, and stella2014, with the relevant licenses. BIOS, firmware, ROMs,
+  threaded cores, localization, ads, and netplay are excluded. The fixed-point release manifest has
+  5,119 assets, 49 bundles, a 40-file/14,225,124-byte EmulatorJS bundle, and service-worker version
+  `568fc2189dd2`.
+- Preference-aware detection preserves the raw NES confidence scores (Game ROM 0.99, EmulatorJS
+  0.92) but selects EmulatorJS when enabled, never promotes unsupported N64, applies changes live,
+  and restores Game ROM Header on disable. The old reload affordance is removed. Runtime disables
+  threads and locale fetching, blocks off-origin fallbacks, neutralizes the localhost version probe,
+  tolerates Wake Lock denial, and tears down the main loop, gamepad, audio, globals, injected nodes,
+  fetch/wake guards, and ROM URL.
+- Portable browser coverage initializes all six real locked report/core/decompressor closures from
+  generated non-copyrighted placeholder bytes. A full-gate run exposed that reloading a page with an
+  active Emscripten loop can abort navigation as the frame detaches; `97c1cbac` now gives every core
+  a fresh page. The six-core matrix then passed three consecutive focused runs and the final full
+  gate, always with HTTP 200 assets and zero localization/off-origin requests. This proves dependency
+  closure and Module initialization, not gameplay.
+- The ignored 40,976-byte private NES remains only at
+  `.example-files-internet/Super Mario Bros. (World).nes`. Repeated gates, including the final run,
+  prove online boot and hard-offline reload plus disk reselection, ready/start signals, advancing
+  frame count, nonblank multi-color rendered pixels, player-one Start keydown/up, live-disable
+  teardown, and zero 404/off-origin/console/page errors. No ROM bytes, hashes, saves, screenshots,
+  cache entries, logs, or derived artifacts were retained.
+- Settings automation passes at 1100×800 and 390×844 in light and dark: drawer/row/toggle
+  containment, no horizontal overflow, legible typography, at least 3:1 hint contrast, live rerank,
+  and no reload block. Temporary desktop/phone light/dark captures and an APK capture were inspected
+  at original resolution; APK contents and settings layout were readable and contained. All captures
+  and the temporary capture script were deleted; no NES screenshot was taken.
+- Final `./scripts/check.sh` is green from generator fixed-point and vendor verification through the
+  full parser/unit corpus, core smoke, all three remote-resource privacy suites, all 11 exact-byte
+  offline scenarios, Sokoban replay, known-file viewers, binary/container viewers, six-core closure,
+  and four-case responsive settings matrix, ending with `✓ all checks passed`. An earlier fresh
+  Chromium process transiently SIGSEGVed before the embedded-privacy page opened; that suite passed
+  immediately alone and twice in later full runs, so no privacy assertion was bypassed.
+- Final non-code steps only: capture durable YAMS facts and run non-destructive maintenance; commit
+  these checkpoint notes; classify/remove task-owned temporary material; require a clean worktree;
+  fetch and prove `origin/dev` is an ancestor; push `dev` normally; fetch again and verify local HEAD
+  equals `origin/dev`. Do not force-push, tag, publish, or delete the committed beta evidence.
 
 ## Open Questions
 
