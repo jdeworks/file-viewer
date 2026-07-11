@@ -219,9 +219,16 @@ The verification database is a persistent reference panel (always accessible):
 
 ## G. Boss — The Name Collision
 
-### Boss lock — LOCKED state (correct answer unknowable without EXIF)
+### Boss lock — LOCKED state (correct answer unknowable without EXIF) *(SUPERSEDED, see below)*
 
 **The boss is literally unwinnable without using the image viewer's EXIF panel.**
+
+> SUPERSEDED (2026-07-11): every accusation is now genuinely evaluated (previously even guessing the
+> correct entity while "locked" failed with no feedback). A wrong guess eliminates that entity and
+> costs addresses (matching Case 2/3's existing penalty), so a determined investigator can always
+> narrow the 6 candidates down through elimination alone. EXIF pre-eliminates the impostor for free —
+> a buff, not a gate. See `boss-lock-and-bts-system.md`'s banner and
+> `docs/games/metagame/stages/stage7/boss.js`.
 
 In LOCKED state, the 10 actions available are distributed such that 5 entities can be
 eliminated through non-EXIF methods — but the remaining 2 candidates (Entity A and Entity F)

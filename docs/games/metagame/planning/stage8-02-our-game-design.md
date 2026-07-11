@@ -1,5 +1,11 @@
 # Stage 8 — 02: Entropy Field — Our Game Design
 
+> **REMOVED FROM THE GAME (2026-07-11):** Entropy Field ("The Heat Death") was removed entirely —
+> playtesters found it too hard to understand/use. It is not recoverable through normal play (only
+> via `git log`/`git show`). Stage numbers 9 and 10 shifted down to 8 and 9 (Observer State,
+> Awakening); see `docs/games/metagame/stage-manifest.js`. This document is kept as historical
+> record only.
+
 Maps the genre research (`stage8-01`) onto **Stage 8 of the Defragmenter metagame**.
 Stage 8 is a survival resource management game built around node decay, cascade failure,
 and the thermodynamic principle that disorder is the default — and order requires constant effort.

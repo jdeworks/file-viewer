@@ -319,9 +319,18 @@ but applied to the level itself.
 
 ## I. Boss — The Observer Effect (Full)
 
-### Boss lock — LOCKED state (boss level is epistemically uncompletable online)
+### Boss lock — LOCKED state (boss level is epistemically uncompletable online) *(SUPERSEDED, see below)*
 
 **The boss level is literally impossible to complete while the game is connected to the internet.**
+
+> SUPERSEDED (2026-07-11): a press is now genuinely evaluated against whatever seed the renderer is
+> actually showing (`activeSeed()`) — a live, in-the-moment read of the on-screen rotation can land
+> the gap even online (the seed still reseeds after every miss, so nothing memorized in advance
+> survives). Offline mode fixes the seed so the SAME pattern becomes learnable ahead of time — a big
+> buff, not the only door. Note: this doc predates the 2026-07-11 stage renumbering — "Stage 9" here
+> is the CURRENT Stage 8 (Observer State); the old Stage 8 (Entropy Field / "The Heat Death") was
+> removed entirely. See `boss-lock-and-bts-system.md`'s banner and
+> `docs/games/metagame/stages/stage8/boss.js`.
 
 In LOCKED (online) state, the boss observer's rotation speed is **server-randomized every 3 seconds**
 via the live seed endpoint. The rotation is not a consistent 15°/0.5s — it jitters between

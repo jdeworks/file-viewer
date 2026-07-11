@@ -1,34 +1,52 @@
 # Defragmenter — File Viewer Integration: Boss Lock System & Behind the Scenes
 
+> **SUPERSEDED (2026-07-11) — the "unwinnable without the tool" mandate below (Part 1's core
+> principle, and every per-stage "Required change" in Part 2) is no longer the design. Playtesting
+> found the literal-unbeatable-until-the-tool pattern didn't land with players. Every stage boss is
+> now **winnable from the moment it's reached, no tool required** — genuinely hard (each stage's
+> boss.js was retuned so a fresh/skilled attempt is a real, felt struggle, not a rubber-stamp win),
+> but never a hard wall. The file-viewer action for each stage is now an **optional buff**: it makes
+> the same fight meaningfully easier/faster/safer (extra damage, a big-but-not-total drain reduction,
+> a fixed learnable pattern instead of a live read, etc. — per-stage, see each stage's boss.js for the
+> actual current mechanic), never the only door. Bosses still taunt and still hint at the tool as a
+> real advantage — only the literal "cannot be bypassed" mechanical claim is retired. Part 1 and
+> Part 2 below are kept as historical record of the ORIGINAL design (useful context for why each
+> stage's un-cheat action exists at all); do not implement new stages against this mandate. See the
+> "Package 6" commits (stages 1-6, stages 7-9) in this repo's history for the concrete before/after
+> per stage, and each stage's `boss.js` for the authoritative current behavior.
+
 ## Overview
 
 This document defines two interlocking systems that must be built into every stage:
 
-1. **The Boss Lock** — every stage boss is literally unbeatable without leaving the game and
-   using the file viewer feature being taught. The boss has a hard mechanic that cannot be
-   bypassed; the tool use removes or disables it.
+1. **The Boss Lock** *(SUPERSEDED, see banner above)* — every stage boss is literally unbeatable
+   without leaving the game and using the file viewer feature being taught. The boss has a hard
+   mechanic that cannot be bypassed; the tool use removes or disables it.
 
 2. **The Behind the Scenes (BTS) system** — after every boss defeat, a button appears that
    opens a `.bts` file in the file viewer. The file is a markdown document explaining the
    design intent, the narrative logic, and the real-world skill the player just learned.
+   (Unaffected by the 2026-07-11 change — BTS still unlocks on defeat, tool-used-or-not.)
 
 ---
 
-## Part 1 — The Boss Lock System
+## Part 1 — The Boss Lock System *(historical — see SUPERSEDED banner at the top of this file)*
 
-### Core principle
+### Core principle (ORIGINAL — no longer the design; see banner at top of file)
 
-> **The boss is not "harder without the tool." The boss is unwinnable without the tool.**
+> ~~The boss is not "harder without the tool." The boss is unwinnable without the tool.~~
+> **Current (2026-07-11): the boss is hard without the tool, and easier/better with it. Never unwinnable.**
 
-The distinction matters:
-- "Harder without" = the player might struggle but could eventually grind through
+The distinction that used to matter here:
+- "Harder without" = the player might struggle but could eventually grind through — **this is now
+  the actual design for every stage boss.**
 - "Unwinnable without" = there is a shield, mechanic, or protection that makes the boss
-  immune to damage (or unable to be defeated) until the file viewer action is taken
+  immune to damage (or unable to be defeated) until the file viewer action is taken — **retired.**
 
-Every stage boss must have a clearly unbeatable first encounter. The boss should taunt
-or hint at what is wrong during that first encounter. Players who read carefully will
-understand what they need to do; players who don't will need to die several times before
-the pattern becomes clear.
+Every stage boss now has a genuinely hard first encounter (real risk of losing, tuned per stage —
+see each stage's boss.js and its unit tests for the specific numbers) rather than a scripted-loss
+first encounter. The boss still taunts or hints at the file-viewer action as a real, worthwhile
+advantage during that first encounter — it's just no longer the only way to eventually win.
 
 ### The mechanic loop per stage
 
@@ -671,7 +689,9 @@ knowledge. If you can do it, you've reached the stage's intended mastery level.
 
 ---
 
-## Part 5 — Implementation Checklist
+## Part 5 — Implementation Checklist *(historical — the "LOCKED state" items below describe the
+SUPERSEDED 0-damage-until-tool mechanic; see the banner at the top of this file for the current
+"hard, buffed by the tool, never unwinnable" design)*
 
 ### Boss Lock System
 
@@ -726,7 +746,8 @@ knowledge. If you can do it, you've reached the stage's intended mastery level.
 
 ---
 
-## Part 6 — Narrative justification for the lock mechanic
+## Part 6 — Narrative justification for the lock mechanic *(historical — "the boss NEEDS the tool"
+below is now "the boss REWARDS the tool"; see the banner at the top of this file)*
 
 The boss lock is not a tutorial gatekeep. It is thematically coherent with each stage.
 

@@ -295,9 +295,14 @@ to be perfect to reach it.
 
 ## H. Boss — The Jammer (Championship Race)
 
-### Boss lock — LOCKED state (race is unwinnable without audio)
+### Boss lock — LOCKED state (race is unwinnable without audio) *(SUPERSEDED, see below)*
 
 **The championship race against the Jammer is literally unwinnable without playing `transmission_hum.mp3`.**
+
+> SUPERSEDED (2026-07-11): the suppression drain is now interval-based, not per-tick — a near-maxed
+> (Hull + Engine) rig survives an uncalibrated race with a real, tight margin (empirically verified).
+> Calibration cancels the drain outright — a big buff, not the only door. See
+> `boss-lock-and-bts-system.md`'s banner and `docs/games/metagame/stages/stage5/game-loop.js`.
 
 In LOCKED state, Signal Suppression has **no cooldown** — it is permanent from lap 1. The
 Jammer uses enhanced rubber-band AI to stay permanently within 1 car-length of the player.

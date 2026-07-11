@@ -324,9 +324,15 @@ Regen on lap: +750 HP per lap completion
 Integrity damage on exit: -50 (instant fail if it escapes)
 ```
 
-### Boss lock — LOCKED state (boss is immune to all damage without blueprints)
+### Boss lock — LOCKED state (boss is immune to all damage without blueprints) *(SUPERSEDED, see below)*
 
 **The Infinite Loop is literally unkillable without the recursion points blueprint.**
+
+> SUPERSEDED (2026-07-11): recursion points sit at fixed but invisible coordinates whether or not the
+> blueprint's been read — a tower placed there lands real damage even blind (statistically findable by
+> covering ground). The blueprint reveals exact coordinates AND raises the per-point damage rate — a
+> buff, not a gate. See `boss-lock-and-bts-system.md`'s banner and
+> `docs/games/metagame/stages/stage4/boss.js`.
 
 In LOCKED state, the boss has `ARMOR = total` — every tower hit shows `0` damage. The boss
 completes all 3 laps, exits, and the player loses Integrity. The wave fails. The boss cannot

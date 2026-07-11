@@ -19,9 +19,16 @@ Use `implemented/04-game-plan.md` plus the current `file-viewer/docs/games/metag
 as primary source for Stage 1.
 
 Treat `defragmenter_stage_design_v2.md` as the high-level narrative map, not exact mechanics. It
-still contains older "helpful but not required" file-viewer mechanics. The canonical version is:
+still contains older "helpful but not required" file-viewer mechanics.
 
-> every stage boss lock is unbeatable or unknowable until the required viewer feature is used.
+**SUPERSEDED (2026-07-11):** the line that used to stand as canon here —
+*"every stage boss lock is unbeatable or unknowable until the required viewer feature is used"* —
+is retired; playtesting found it didn't land. The current canonical version is:
+
+> every stage boss is genuinely winnable the moment it's reached, tuned hard; the required viewer
+> feature is a real, meaningful buff (extra damage, a big difficulty reduction, a learnable pattern,
+> etc. — per stage), never the only way to win. See `boss-lock-and-bts-system.md`'s superseding
+> banner and each stage's `boss.js` for the authoritative current mechanic per stage.
 
 ## Legacy Code Canon
 

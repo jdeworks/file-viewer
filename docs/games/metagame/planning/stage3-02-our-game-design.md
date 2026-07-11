@@ -274,9 +274,15 @@ its value is obscured.
 3. Work inward, solving each column before corruption reaches it
 4. Use Hint Tokens on cells that are time-critical
 
-### Boss lock — LOCKED state (puzzle is mathematically unsolvable without diff)
+### Boss lock — LOCKED state (puzzle is mathematically unsolvable without diff) *(SUPERSEDED, see below)*
 
 **The 20×20 boss puzzle is literally unsolvable without opening the diff viewer.**
+
+> SUPERSEDED (2026-07-11): wrong restoration-key submissions now progressively leak real characters
+> of the actual key after the static hint ladder is exhausted, so a determined player can eventually
+> grind out the whole 9-char key blind (~13 wrong attempts). Diffing the logs is the fast, guess-free
+> path, not the only one. See `boss-lock-and-bts-system.md`'s banner and
+> `docs/games/metagame/stages/stage3/boss.js`.
 
 In LOCKED state, the corruption spreads at 3× normal speed. ALL column clues become hidden
 within the first 60 seconds. Without column clues, the puzzle is mathematically unsolvable

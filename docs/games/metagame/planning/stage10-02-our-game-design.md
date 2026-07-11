@@ -159,9 +159,18 @@ This final choice most strongly determines the Defragmenter's final speech in Ac
 
 ### Act 2 — The Question (10–15 minutes)
 
-### Boss lock — LOCKED state (response options are unselectable without gallery)
+### Boss lock — LOCKED state (response options are unselectable without gallery) *(STALE — see below)*
 
 **The four response options in Act 2 are greyed out and cannot be clicked without opening the examples gallery.**
+
+> STALE / SUPERSEDED (2026-07-11): this doc predates both the stage renumbering ("Stage 10" here is
+> the CURRENT Stage 9, Awakening — the finale) AND the actual implementation, which is already more
+> nuanced than a simple greyed-out toggle: 8 memories, each with an independently-witnessed "echo"
+> feeding a graduated refuse/caveat/full Defragmenter response quality (not a binary lock). As of
+> 2026-07-11, reaching and completing the final confrontation requires only 5 resolved memories —
+> witnessed echoes are entirely optional, driving response quality and two ending variants
+> ("expand"/"understand") rather than gating entry at all. See `boss-lock-and-bts-system.md`'s banner
+> and `docs/games/metagame/stages/stage9/boss.js` for the authoritative current design.
 
 In LOCKED state, the Defragmenter delivers its opening speech and asks "What are you going to
 do now?" — but the response options appear as greyed, unclickable text. A message appears below:

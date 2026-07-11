@@ -379,9 +379,14 @@ Moves at triple normal speed. Teleports to a random tile every 8s (blink animati
 - ATK: 20, DEF: 0, SPD: 3 attacks/sec (fast!)
 - Defeat triggers Stage 2 completion sequence
 
-### Boss lock — LOCKED state (Phase 2 is unbeatable without Search)
+### Boss lock — LOCKED state (Phase 2 is unbeatable without Search) *(SUPERSEDED, see below)*
 
 **Phase 2 is literally unbeatable without opening `cipher.txt` and using search.**
+
+> SUPERSEDED (2026-07-11): the boss is now genuinely winnable without PASSAGE — a wrong challenge
+> attempt lands real (lower-rate) damage and costs a real counter-hit, rather than 0-damage-and-refuse.
+> PASSAGE is a buff (a one-hit clean clear), not a gate. See `boss-lock-and-bts-system.md`'s banner
+> and `docs/games/metagame/stages/stage2/boss.js`.
 
 In LOCKED state, the boss fires projectiles in a 16-way spread every 0.5 seconds with no
 navigable gap. The arena geometry makes it mathematically impossible to reach the boss

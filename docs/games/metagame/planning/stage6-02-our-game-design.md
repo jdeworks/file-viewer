@@ -278,9 +278,15 @@ Potion:         50H (single-use combat consumable)
 
 ## G. Boss — The Refused Connection
 
-### Boss lock — LOCKED state (all cards deal 0 damage without epub)
+### Boss lock — LOCKED state (all cards deal 0 damage without epub) *(SUPERSEDED, see below)*
 
 **The Refused Connection boss is literally unbeatable without reading epub Chapter 9.**
+
+> SUPERSEDED (2026-07-11): the handshake demand-gate (the real sequencing challenge) now applies
+> identically whether or not ch9 is read; unread just scales the boss's HP pools up
+> (`UNCH9_HP_MULT`, within the game's existing ascension "tougher boss" range) — a difficulty cost,
+> not a 0-damage wall. See `boss-lock-and-bts-system.md`'s banner and
+> `docs/games/metagame/stages/stage6/boss-combat.js`.
 
 In LOCKED state, all cards deal **0 damage** regardless of type, combo, or energy spent.
 Every attack is absorbed. The boss has permanent `PROTOCOL MISMATCH` status. After 20 turns
