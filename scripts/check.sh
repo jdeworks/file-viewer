@@ -179,6 +179,7 @@ FULL_UNIT_TESTS=(
   tests/media-mixer-capabilities.test.mjs
   tests/media-mixer-hit-test.test.mjs
   tests/movediff.test.mjs
+  tests/comic-resource-bounds.test.mjs
   tests/harness-origin.test.mjs
   tests/markdown-edit-actions.test.mjs
   tests/image-fill.test.mjs
@@ -410,6 +411,9 @@ run_fast_unit_tests() {
       docs/types/media/*|docs/assets/preview-media.css|tests/media-parsers.test.mjs|tests/areas/media-studio.mjs|tests/areas/media-studio-*.mjs)
         add_unit_test tests/media-parsers.test.mjs
         ;;
+      docs/types/ebook/comic/*|docs/readme/comic.md|tests/comic-resource-bounds.test.mjs)
+        add_unit_test tests/comic-resource-bounds.test.mjs
+        ;;
       docs/types/ebook/*|tests/areas/ebook-git.mjs|tests/movediff.test.mjs)
         add_unit_test tests/movediff.test.mjs
         ;;
@@ -557,6 +561,9 @@ run_smoke_core() {
         ;;
       tests/areas/media-3d.mjs|docs/types/3d/*|docs/types/image/*|docs/types/binary/midi/*|docs/types/binary/gamerom/*)
         add_smoke_area media-3d
+        ;;
+      docs/types/ebook/comic/*|docs/readme/comic.md|tests/comic-resource-bounds.test.mjs)
+        add_smoke_area email-archives
         ;;
       docs/types/ebook/*)
         add_smoke_area ebook-git

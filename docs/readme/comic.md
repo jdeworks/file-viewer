@@ -1,6 +1,6 @@
 # Comic Book Archive
 
-> Comic archive reader for CBZ plus opt-in RAR/7z/Tar comics — renders ordered image pages as lazy blob images with a two-page spread toggle.
+> Comic archive reader for CBZ plus opt-in RAR/7z/Tar comics — extracts ordered image pages on demand with a bounded blob cache and a two-page spread toggle.
 
 ## Format Details
 
@@ -17,10 +17,10 @@
 ### View
 | Capability | Status | Notes |
 |------------|--------|-------|
-| Page rendering | ✅ | Ordered image pages rendered vertically with lazy-loaded blob URLs |
+| Page rendering | ✅ | The first 3 pages load immediately; later pages are extracted as they approach the scroll viewport |
 | Page count | ✅ | Header shows total page count |
 | Two-page spread | ✅ | Spread toggle lays pages out in book mode on wider screens |
-| CBZ (ZIP) support | ✅ | Fully supported |
+| CBZ (ZIP) support | ✅ | ZIP directory is indexed up front; page payloads are decompressed individually on demand |
 | CBR (RAR) support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in |
 | CB7 support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in |
 | CBT support | ⚠️ Partial | Requires Archive support / libarchive WASM opt-in (libarchive.js handles tar natively) |
@@ -47,6 +47,8 @@ No known-file plugin — all comic archives use the same reader.
 ## Known Limitations
 
 - CBR/CB7/CBT decompression depends on the opt-in archive WASM path; large archives may fail
+- The reader displays at most 2,000 pages, blocks individual expanded page files above 64 MB, runs at most 2 page extractions concurrently, and keeps at most 8 page blob URLs / 192 MB active at once. The header discloses when a limit applies.
+- Distant pages can be released and extracted again when revisited; this bounds memory at the cost of occasional repeat decompression
 - No thumbnail strip or jump-to-page control yet
 - Reading direction is always left-to-right (no RTL mode for manga)
 
