@@ -17,7 +17,7 @@
 | Capability | Status | Notes |
 |------------|--------|-------|
 | Certificate inspection | ✅ | Subject, issuer, SAN list, validity period, serial number |
-| Validity badge | ✅ | VALID / EXPIRING SOON / EXPIRED colored badge |
+| Date-window badge | ✅ | Not-yet-within-dates / within-validity-dates / expires-soon / expired status; this is not a trust verdict |
 | CA flag | ✅ | Basic constraints CA:TRUE shown |
 | CSR inspection | ⚠️ Partial | CSR PEM blocks are identified; full CSR field decoding may fall back to parse errors |
 | Public key info | ✅ | Certificate public-key type and size/curve where decoded |
@@ -44,6 +44,7 @@
 
 - **Private key content is never displayed in the preview.** If a file contains a `-----BEGIN ... PRIVATE KEY-----` block, the preview shows the block type and DER byte size only.
 - The viewer parses ASN.1 entirely in-browser using a hand-rolled decoder (`asn1.js`). No key material is sent to any server.
+- Subject/issuer equality is labelled **self-issued**, not self-signed. Certificate signatures and trust chains are not verified, and the date-window badge must not be read as a trust decision.
 
 ## Real-World Examples
 
@@ -55,6 +56,7 @@
 - PKCS#7/CMS and CSR blocks are identified but not fully decoded like X.509 certificates
 - ECDSA curve parameters may not be decoded for all OIDs
 - Very long certificate chains may truncate in the card view
+- Certificate signature, chain, revocation, and platform trust-anchor validation are not implemented
 
 ## Gap Analysis
 

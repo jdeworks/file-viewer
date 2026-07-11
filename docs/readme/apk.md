@@ -1,6 +1,6 @@
-# Android Package (APK / AAB)
+# Android Package / Bundle (APK / AAB / XAPK)
 
-> APK/AAB viewer — DEX file count, native ABI list, asset count, resource presence, signing status, and file inventory.
+> APK/AAB/XAPK inventory viewer — format-aware manifests, DEX files, native ABIs, assets, resources, embedded APKs, and unverified signature-artifact evidence.
 
 ## Format Details
 
@@ -20,9 +20,11 @@
 | Native ABIs | ✅ | `armeabi-v7a`, `arm64-v8a`, `x86_64`, etc. |
 | Asset count | ✅ | Files under `assets/` |
 | Total file count | ✅ | All files inside the ZIP |
-| Signing (META-INF) | ✅ | META-INF/ presence detected; manifest shown |
-| Resources | ✅ | `resources.arsc` presence detected |
-| AndroidManifest.xml | ✅ | Presence check (binary XML — not parsed) |
+| Signature artifacts | ⚠️ Partial | Coordinated v1/JAR files and structurally placed APK Signing Blocks are reported as evidence only; signatures and trust are not verified |
+| Resources | ✅ | APK `resources.arsc` and AAB module `resources.pb` paths |
+| AndroidManifest.xml | ✅ | APK root and AAB module manifest presence (binary XML — not parsed) |
+| AAB module layout | ✅ | Module manifests, `dex/`, `lib/`, `assets/`, and `resources.pb` inventory |
+| XAPK outer layout | ⚠️ Partial | Lists embedded APKs and `manifest.json`; embedded APK contents/signatures are not recursively inspected |
 | Source view | ❌ | Binary format |
 | Diff | ❌ | Binary format |
 | Screenshot | ✅ | Preview screenshot available |
@@ -41,11 +43,13 @@
 ## Known Limitations
 
 - `AndroidManifest.xml` is binary-encoded XML — package name / version not parsed
+- Signature artifacts are not cryptographically verified and no platform trust chain is evaluated
+- XAPK embedded APKs are listed but not recursively opened
 - No in-browser APK decompiler or smali viewer
 
 ## Real-World Examples
 
-- [`sample.apk`](../examples/sample.apk) — compact APK-like ZIP sample for package inventory checks
+- [`sample.apk`](../examples/sample.apk) — deterministic unsigned APK structure fixture accepted by independent AXML/DEX readers; it demonstrates inventory parsing, not Android installability
 
 ## Gap Analysis
 
