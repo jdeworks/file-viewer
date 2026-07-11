@@ -1,9 +1,14 @@
 import { parseJsonLike } from './jsonparse.js';
+import { diagnoseDuplicateJsonKeys } from './duplicate-keys.js';
 
 export function extract(intake) {
+  const duplicates = diagnoseDuplicateJsonKeys(intake.text || '');
   let parsed, data, ok = true;
   try { parsed = parseJsonLike(intake.text || '', ''); data = parsed.data; } catch { ok = false; }
-  if (!ok) return [{ label: 'Valid JSON', value: 'no' }];
+  if (!ok) return [
+    { label: 'Valid JSON', value: 'no' },
+    ...(duplicates.totalDuplicates ? [{ label: 'Duplicate keys before error', value: String(duplicates.totalDuplicates) }] : []),
+  ];
   let nodes = 0, maxDepth = 0, objects = 0, arrays = 0;
   (function walk(v, d) {
     nodes++; if (d > maxDepth) maxDepth = d;
@@ -14,7 +19,8 @@ export function extract(intake) {
   const root = Array.isArray(data) ? 'array' : (data === null ? 'null' : typeof data);
   const out = [
     { label: 'Valid JSON', value: 'yes' },
-    { label: 'Parse mode', value: parsed.mode === 'jsonc' ? 'JSONC recovery' : 'strict JSON' },
+    { label: 'Parse mode', value: parsed.mode === 'jsonc' ? (parsed.hadBom ? 'JSONC + BOM recovery' : 'JSONC recovery') : parsed.mode === 'bom' ? 'BOM recovery' : 'strict JSON' },
+    { label: 'Duplicate keys', value: String(duplicates.totalDuplicates) },
     { label: 'Root type', value: root },
     { label: 'Total nodes', value: String(nodes) },
     { label: 'Max depth', value: String(maxDepth) },

@@ -201,6 +201,7 @@ FULL_UNIT_TESTS=(
   tests/xlsx-fidelity.test.mjs
   tests/docx-fidelity.test.mjs
   tests/pptx-notes-fidelity.test.mjs
+  tests/json-duplicate-keys.test.mjs
   tests/archivelib-paths.test.mjs
   tests/archive-entry-bounds.test.mjs
   tests/archive-metadata.test.mjs

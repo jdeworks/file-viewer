@@ -30,7 +30,11 @@ export function diffJson(aText, bText) {
   let a, b, aParsed, bParsed;
   try { aParsed = parseJsonLike(aText || 'null'); a = aParsed.data; } catch (e) { return { error: 'Original is not valid JSON: ' + e.message }; }
   try { bParsed = parseJsonLike(bText || 'null'); b = bParsed.data; } catch (e) { return { error: 'Current is not valid JSON: ' + e.message }; }
-  return { ...treeDiff(a, b, jsonAdapter), recovered: aParsed.mode === 'jsonc' || bParsed.mode === 'jsonc' };
+  return {
+    ...treeDiff(a, b, jsonAdapter),
+    recoveredJsonc: aParsed.mode === 'jsonc' || bParsed.mode === 'jsonc',
+    ignoredBom: aParsed.hadBom || bParsed.hadBom,
+  };
 }
 
 const fmtVal = (v) => {
@@ -72,7 +76,10 @@ export function renderJsonDiff(host, aText, bText) {
   const clean = !(c.added + c.removed + c.changed);
   const summary = clean ? 'No structural differences (keys may have been reordered/reformatted).'
     : c.added + ' added · ' + c.removed + ' removed · ' + c.changed + ' changed';
-  const recovered = d.recovered ? '<span class="jd-note">JSONC recovery applied before diffing.</span>' : '';
+  const recovered = [
+    d.recoveredJsonc && 'JSONC comments/trailing commas were ignored before diffing.',
+    d.ignoredBom && 'A leading BOM was ignored before diffing.',
+  ].filter(Boolean).map((note) => '<span class="jd-note">' + note + '</span>').join('');
   host.innerHTML = '<div class="jsondiff"><div class="jd-head"><strong>JSON key diff</strong> — ' + esc(summary)
     + recovered + '<span class="jd-note">Compared by key/path (keys sorted); reordering and formatting are ignored.</span></div>'
     + '<div class="jd-tree">' + nodeHtml(d.root, true) + '</div></div>';

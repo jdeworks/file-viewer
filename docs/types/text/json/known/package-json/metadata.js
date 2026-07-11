@@ -1,5 +1,8 @@
+import { parseJsonLike } from '../../jsonparse.js';
+import { diagnoseDuplicateJsonKeys } from '../../duplicate-keys.js';
+
 function parse(text) {
-  try { return JSON.parse(text || '{}'); } catch { return {}; }
+  try { return parseJsonLike(text || '{}', '{}').data; } catch { return {}; }
 }
 
 function count(obj) {
@@ -8,6 +11,7 @@ function count(obj) {
 
 export function extract(intake) {
   const pkg = parse(intake.text);
+  const duplicateKeys = diagnoseDuplicateJsonKeys(intake.text || '').totalDuplicates;
   const deps = count(pkg.dependencies);
   const dev = count(pkg.devDependencies);
   const peer = count(pkg.peerDependencies);
@@ -23,5 +27,6 @@ export function extract(intake) {
     { label: 'Peer dependencies', value: String(peer) },
     { label: 'Optional dependencies', value: String(optional) },
     { label: 'Scripts', value: String(scripts) },
+    { label: 'Duplicate keys', value: String(duplicateKeys) },
   ];
 }
