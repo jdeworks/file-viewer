@@ -196,6 +196,7 @@ FULL_UNIT_TESTS=(
   tests/example-fixture-quality.test.mjs
   tests/rich-example-fixtures.test.mjs
   tests/format-parser-hardening.test.mjs
+  tests/torrent-v2-semantics.test.mjs
   tests/format-semantic-correctness.test.mjs
   tests/package-trust-labels.test.mjs
   tests/asset-manifest.test.mjs
@@ -411,6 +412,9 @@ run_fast_unit_tests() {
         ;;
       docs/types/ebook/*|tests/areas/ebook-git.mjs|tests/movediff.test.mjs)
         add_unit_test tests/movediff.test.mjs
+        ;;
+      docs/types/binary/torrent/*|tests/torrent-v2-semantics.test.mjs)
+        add_unit_test tests/torrent-v2-semantics.test.mjs
         ;;
       docs/types/image/*|tests/image-*.test.mjs|tests/areas/media-3d.mjs)
         add_image_unit_tests

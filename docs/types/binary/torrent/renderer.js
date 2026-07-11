@@ -1,4 +1,5 @@
 import { decodeBencode, isBencodeDictionary } from './bencode.js';
+import { inspectTorrentInfo } from './semantics.js';
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -12,10 +13,10 @@ function fmtBytes(n) {
   return (n / 1073741824).toFixed(2) + ' GB';
 }
 
-async function computeInfoHash(bytes, infoRange) {
+async function computeDigest(bytes, infoRange, algorithm) {
   if (!infoRange) return null;
   try {
-    const hashBuf = await crypto.subtle.digest('SHA-1', bytes.slice(infoRange.start, infoRange.end));
+    const hashBuf = await crypto.subtle.digest(algorithm, bytes.slice(infoRange.start, infoRange.end));
     return Array.from(new Uint8Array(hashBuf)).map((b) => b.toString(16).padStart(2, '0')).join('');
   } catch { return null; }
 }
@@ -52,14 +53,8 @@ export async function render(intake, _ctx) {
 
   const info = isBencodeDictionary(torrent.info) ? torrent.info : Object.create(null);
   const name = typeof info.name === 'string' ? info.name : (intake.name || '—');
-
-  let totalSize = 0, fileCount = 0;
-  if (Array.isArray(info.files)) {
-    fileCount = info.files.length;
-    totalSize = info.files.reduce((s, f) => s + (isBencodeDictionary(f) && typeof f.length === 'number' ? f.length : 0), 0);
-  } else if (typeof info.length === 'number') {
-    fileCount = 1; totalSize = info.length;
-  }
+  const semantics = inspectTorrentInfo(info);
+  const inventory = semantics.inventory;
 
   const trackers = new Set();
   if (typeof torrent.announce === 'string') trackers.add(torrent.announce);
@@ -67,13 +62,19 @@ export async function render(intake, _ctx) {
     torrent['announce-list'].flat().forEach((t) => { if (typeof t === 'string') trackers.add(t); });
   }
 
-  const infoHash = await computeInfoHash(intake.bytes, decoded.infoRange);
+  const [v1Hash, v2Hash] = await Promise.all([
+    semantics.hasV1 ? computeDigest(intake.bytes, decoded.infoRange, 'SHA-1') : null,
+    semantics.hasV2 ? computeDigest(intake.bytes, decoded.infoRange, 'SHA-256') : null,
+  ]);
+  const v2Multihash = v2Hash ? `1220${v2Hash}` : null;
 
   let html = `<style>${STYLE}</style><h2>${esc(name)}</h2>`;
 
   html += `<div class="sec"><div class="sec-title">Info</div><dl>`;
-  html += `<dt>Size</dt><dd>${esc(fmtBytes(totalSize))}</dd>`;
-  html += `<dt>Files</dt><dd>${fileCount}</dd>`;
+  html += `<dt>Size</dt><dd>${inventory.totalSizeComplete === false ? 'At least ' : ''}${esc(fmtBytes(inventory.totalSize))}</dd>`;
+  html += `<dt>Files</dt><dd>${inventory.truncated ? 'At least ' : ''}${inventory.fileCount}</dd>`;
+  if (semantics.hasV2 && semantics.hasV1) html += '<dt>Version</dt><dd>BitTorrent v1 + v2 hybrid</dd>';
+  else if (semantics.hasV2) html += '<dt>Version</dt><dd>BitTorrent v2</dd>';
   if (typeof info['piece length'] === 'number') html += `<dt>Piece size</dt><dd>${esc(fmtBytes(info['piece length']))}</dd>`;
   if (typeof torrent.comment === 'string') html += `<dt>Comment</dt><dd>${esc(torrent.comment)}</dd>`;
   if (typeof torrent['created by'] === 'string') html += `<dt>Created by</dt><dd>${esc(torrent['created by'])}</dd>`;
@@ -81,11 +82,18 @@ export async function render(intake, _ctx) {
     const created = new Date(torrent['creation date'] * 1000);
     if (Number.isFinite(created.getTime())) html += `<dt>Created</dt><dd>${esc(created.toISOString().slice(0, 10))}</dd>`;
   }
-  if (infoHash) html += `<dt>Info hash</dt><dd class="mono" title="Magnet info hash (SHA-1)">${esc(infoHash)}</dd>`;
+  if (v1Hash) {
+    const label = v2Hash ? 'SHA-1 info hash' : 'Info hash';
+    html += `<dt>${label}</dt><dd class="mono" title="Magnet info hash (SHA-1)">${esc(v1Hash)}</dd>`;
+  }
+  if (v2Hash) html += `<dt>SHA-256 info hash</dt><dd class="mono" title="BitTorrent v2 info hash">${esc(v2Hash)}</dd>`;
   html += `</dl></div>`;
 
-  if (infoHash) {
-    const params = [`xt=urn:btih:${infoHash}`];
+  const exactTopics = [];
+  if (v2Multihash) exactTopics.push(`xt=urn:btmh:${v2Multihash}`);
+  if (v1Hash) exactTopics.push(`xt=urn:btih:${v1Hash}`);
+  if (exactTopics.length) {
+    const params = [...exactTopics];
     if (typeof info.name === 'string') params.push(`dn=${encodeURIComponent(info.name)}`);
     for (const t of trackers) params.push(`tr=${encodeURIComponent(t)}`);
     const magnet = `magnet:?${params.join('&')}`;
@@ -94,17 +102,26 @@ export async function render(intake, _ctx) {
     html += `</div>`;
   }
 
-  if (Array.isArray(info.files) && info.files.length > 0) {
-    const MAX = 200;
-    html += `<div class="sec"><div class="sec-title">Files (${info.files.length})</div><ul class="fl">`;
-    for (const f of info.files.slice(0, MAX)) {
-      const path = isBencodeDictionary(f) && Array.isArray(f.path)
-        ? f.path.map((p) => (typeof p === 'string' ? p : '?')).join('/')
-        : '?';
-      html += `<li><span class="fn">${esc(path)}</span><span class="fs">${esc(fmtBytes(isBencodeDictionary(f) && typeof f.length === 'number' ? f.length : null))}</span></li>`;
+  if (inventory.files.length > 0) {
+    const countLabel = inventory.truncated ? `at least ${inventory.fileCount}` : inventory.fileCount;
+    html += `<div class="sec"><div class="sec-title">Files (${countLabel})</div><ul class="fl">`;
+    for (const file of inventory.files) {
+      html += `<li><span class="fn">${esc(file.path)}</span><span class="fs">${esc(fmtBytes(file.length))}</span></li>`;
     }
-    if (info.files.length > MAX) html += `<div class="more">… and ${info.files.length - MAX} more files</div>`;
+    if (inventory.inventoryTruncated && !inventory.truncated) {
+      html += `<div class="more">… and ${inventory.fileCount - inventory.files.length} more files</div>`;
+    }
     html += `</ul></div>`;
+  }
+
+  if (semantics.hasV2 && inventory.truncated) {
+    html += '<div class="more">File tree traversal limit reached; counts and size are partial.</div>';
+  }
+  if (semantics.hasV2 && inventory.overflow) {
+    html += '<div class="more">File sizes exceed the supported total-size range.</div>';
+  }
+  if (semantics.hasV2 && inventory.malformed) {
+    html += '<div class="more">The BitTorrent v2 file tree is malformed; totals may be incomplete.</div>';
   }
 
   if (trackers.size > 0) {

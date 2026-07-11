@@ -1,17 +1,13 @@
 import { decodeBencode, isBencodeDictionary } from './bencode.js';
+import { inspectTorrentInfo } from './semantics.js';
 
 export function extract(intake) {
   try {
     const torrent = decodeBencode(intake.bytes).value;
     if (!isBencodeDictionary(torrent)) return {};
     const info = isBencodeDictionary(torrent.info) ? torrent.info : Object.create(null);
-    let totalSize = 0, fileCount = 0;
-    if (Array.isArray(info.files)) {
-      fileCount = info.files.length;
-      totalSize = info.files.reduce((s, f) => s + (isBencodeDictionary(f) && typeof f.length === 'number' ? f.length : 0), 0);
-    } else if (typeof info.length === 'number') {
-      fileCount = 1; totalSize = info.length;
-    }
+    const semantics = inspectTorrentInfo(info);
+    const inventory = semantics.inventory;
     const trackers = new Set();
     if (typeof torrent.announce === 'string') trackers.add(torrent.announce);
     if (Array.isArray(torrent['announce-list'])) {
@@ -19,8 +15,8 @@ export function extract(intake) {
     }
     return {
       name: typeof info.name === 'string' ? info.name : null,
-      totalSize,
-      fileCount,
+      totalSize: inventory.totalSize,
+      fileCount: inventory.fileCount,
       pieceSize: typeof info['piece length'] === 'number' ? info['piece length'] : null,
       trackerCount: trackers.size,
       createdBy: typeof torrent['created by'] === 'string' ? torrent['created by'] : null,
