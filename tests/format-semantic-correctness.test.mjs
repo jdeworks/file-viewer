@@ -24,6 +24,7 @@ const fitsBytes = new TextEncoder().encode(fitsText.padEnd(2880, ' '));
 const fitsIntake = { bytes: fitsBytes, isBinary: true, text: null };
 assert.equal(parseFitsHeader(fitsIntake).length, 5);
 const fitsHtml = renderFits(fitsIntake).bodyHtml;
+assert.match(fitsHtml, /Header metadata only — image pixel data is not decoded or rendered\./);
 assert.match(fitsHtml, /counts \/ s/);
 assert.match(fitsHtml, /brightness unit/);
 assert.match(fitsHtml, /O'Brien \/ field/);

@@ -74,6 +74,7 @@ export function render(intake) {
   const bodyHtml = `<div class="fits-preview">
   <div class="fits-header"><span class="fits-badge">FITS</span><span class="fits-subhead">${esc(val(cards, 'OBJECT')) || 'Flexible Image Transport System'}</span></div>
   ${statsHtml}
+  <p class="fits-note fits-capability-note">Header metadata only — image pixel data is not decoded or rendered.</p>
   ${keyRows ? `<table class="fits-table">${keyRows}</table>` : ''}
   <details class="fits-all"><summary>${cards.length} header cards</summary><table class="fits-table">${allRows}</table></details>
 </div>`;

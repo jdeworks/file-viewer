@@ -541,6 +541,7 @@
 .fits-stat-label { font-size: .72em; color: var(--fg-2); margin-top: 3px; text-transform: uppercase; letter-spacing: .04em; }
 .fits-table { border-collapse: collapse; font-size: 12px; margin-bottom: 10px; } .fits-key { padding: 2px 14px 2px 0; color: var(--accent); font: 12px ui-monospace,monospace; white-space: nowrap; vertical-align: top; } .fits-table td { padding: 2px 0; } .fits-comment { color: var(--fg-2); font-size: .85em; }
 .fits-all summary { cursor: pointer; font-size: .8em; color: var(--fg-2); margin-bottom: 6px; } .fits-note { font-size: .8em; color: var(--fg-2); }
+.fits-capability-note { margin: -4px 0 14px; padding: 8px 10px; border-left: 3px solid #38bdf8; border-radius: 4px; background: var(--surface); }
 /* KML map */
 .kml-preview { padding: 12px; } .kml-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .kml-badge { background: #166534; color: #bbf7d0; font: 700 11px ui-monospace,monospace; padding: 2px 8px; border-radius: 4px; } .kml-title { font-weight: 600; font-size: .95em; }
