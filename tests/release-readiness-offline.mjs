@@ -136,9 +136,10 @@ const chromium = loadChromium();
 const headedCapture = Boolean(captureDir && (process.env.DISPLAY || process.env.WAYLAND_DISPLAY));
 const browser = await chromium.launch({
   headless: !headedCapture,
-  // Nested modal scrollers can leave unchanged compositor tiles black in WSL screenshots. Force
-  // software compositing so top/bottom evidence reflects the live modal instead of GPU tile loss.
-  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
+  // Headless Chromium's own compositor is more reliable for nested-scroll evidence. The headed
+  // WSL path still uses software compositing because WSLg otherwise leaves stale GPU tiles.
+  args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
+    ...(headedCapture ? ['--disable-gpu'] : [])],
 });
 const failures = [];
 let passes = 0;
@@ -438,14 +439,24 @@ await scenario('offline modal fits phone, tablet, and desktop in both themes', a
           const modal = page.locator('.cache-modal');
           const clip = await modal.boundingBox();
           assert.ok(clip, `${viewport.id}/${theme}: modal screenshot bounds`);
-          // Capture the viewport surface: element clipping can drop nested-scroll tiles in WSL.
-          const screenshotOptions = {};
-          await page.screenshot({ path: join(captureDir, `offline-modal-${viewport.id}-${theme}-top.png`),
-            animations: 'disabled', ...screenshotOptions });
-          await page.$eval('.cm-groups', (element) => { element.scrollTop = element.scrollHeight; });
+          // Capture the asserted modal bounds directly. Whole-page WSL captures can retain stale
+          // black compositor tiles after the nested list scrolls, obscuring the sticky controls.
+          await modal.screenshot({ path: join(captureDir, `offline-modal-${viewport.id}-${theme}-top.png`),
+            animations: 'disabled' });
+          await page.$eval('.cache-modal', (element) => {
+            const groups = element.querySelector('.cm-groups');
+            groups.scrollTop = groups.scrollHeight;
+            // Rebuild the compositor layer after moving the nested scroller. Merely waiting leaves
+            // transparent/stale tiles on some WSL Chromium paths, especially at desktop width.
+            element.style.display = 'none';
+            void document.body.offsetHeight;
+            element.style.display = '';
+            groups.scrollTop = groups.scrollHeight;
+            void element.offsetHeight;
+          });
           await page.waitForTimeout(100);
-          await page.screenshot({ path: join(captureDir, `offline-modal-${viewport.id}-${theme}-bottom.png`),
-            animations: 'disabled', ...screenshotOptions });
+          await modal.screenshot({ path: join(captureDir, `offline-modal-${viewport.id}-${theme}-bottom.png`),
+            animations: 'disabled' });
         }
         appearances.set(`${viewport.id}/${theme}`, `${metrics.background}/${metrics.color}`);
       } finally { await context.close(); }
