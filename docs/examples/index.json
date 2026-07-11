@@ -1783,6 +1783,8 @@
     "label": "sample.torrent",
     "file": "sample.torrent",
     "mime": "application/x-bittorrent",
+    "type": "torrent",
+    "binary": true,
     "category": "Archive & Binary",
     "categories": [
       "Archive & Binary"
@@ -2202,9 +2204,11 @@
     "description": "Steam App Manifest for Dota 2 — Valve KeyValues format tracking installation state, depot sizes, and update metadata."
   },
   {
-    "label": "Helix Nebula (FITS)",
+    "label": "Synthetic Gradient (FITS)",
     "file": "sample.fits",
     "mime": "image/fits",
+    "type": "fits",
+    "binary": true,
     "category": "Data",
     "categories": [
       "Data"
@@ -2296,8 +2300,10 @@
   },
   {
     "file": "sample.apk",
-    "label": "Android Package (APK stub)",
+    "label": "Android Package (unsigned demo)",
     "mime": "application/vnd.android.package-archive",
+    "type": "apk",
+    "binary": true,
     "category": "Binary",
     "categories": [
       "Binary"

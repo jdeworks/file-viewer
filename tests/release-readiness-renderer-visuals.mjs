@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
@@ -268,9 +269,19 @@ try {
   assert.ok(pdbLayout.barOverflow <= 1, JSON.stringify(pdbLayout));
   assert.ok(pdbLayout.stageTop >= pdbLayout.hostTop - 1 && pdbLayout.stageBottom <= pdbLayout.hostBottom + 1, JSON.stringify(pdbLayout));
   assert.ok(pdbLayout.canvas.width > 0 && pdbLayout.canvas.height > 0, JSON.stringify(pdbLayout));
-  const pdbPixels = foregroundStats(await page.locator('.mol3d-stage').screenshot({ animations: 'disabled' }));
-  assert.ok(pdbPixels.pixels > 500 && pdbPixels.width > 80 && pdbPixels.height > 30,
-    `PDB polymer must be visibly framed instead of reduced to distant-coordinate hairlines: ${JSON.stringify(pdbPixels)}`);
+  assert.equal(await page.locator('.mol3d-style').inputValue(), 'cartoon');
+  const cartoonBytes = await page.locator('.mol3d-stage').screenshot({ animations: 'disabled' });
+  const cartoonPixels = foregroundStats(cartoonBytes);
+  assert.ok(cartoonPixels.pixels > 500 && cartoonPixels.width > 80 && cartoonPixels.height > 30,
+    `PDB cartoon must be visibly framed instead of reduced to distant-coordinate hairlines: ${JSON.stringify(cartoonPixels)}`);
+  await page.locator('.mol3d-style').selectOption('stick');
+  await page.waitForTimeout(250);
+  const stickBytes = await page.locator('.mol3d-stage').screenshot({ animations: 'disabled' });
+  const stickPixels = foregroundStats(stickBytes);
+  assert.ok(stickPixels.pixels > 500 && stickPixels.width > 80 && stickPixels.height > 30,
+    `PDB stick representation must remain visibly framed: ${JSON.stringify(stickPixels)}`);
+  assert.notEqual(createHash('sha256').update(stickBytes).digest('hex'), createHash('sha256').update(cartoonBytes).digest('hex'),
+    'PDB representation control must change rendered pixels');
   await capture('pdb-phone-light-stage', '#previewHost');
 
   console.log('renderer visual readiness test passed');

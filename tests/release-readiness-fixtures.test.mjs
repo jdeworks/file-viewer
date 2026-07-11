@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { createHash, X509Certificate } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { basename, join } from 'node:path';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -13,6 +14,8 @@ import { intakeFromBytes } from '../docs/core/intake.js';
 import { pickType } from '../docs/core/detect.js';
 import { REGISTRY } from '../docs/core/registry-runtime.generated.js';
 import { matchKnown } from '../docs/known/registry.generated.js';
+import { parseMidi } from '../docs/types/binary/midi/renderer.js';
+import { extract as torrentMetadata } from '../docs/types/binary/torrent/metadata.js';
 
 const require = createRequire(import.meta.url);
 const JSZip = require('jszip');
@@ -170,11 +173,45 @@ async function validateFixture(row, bytes) {
         extractedCharacters += (await zip.file(name).async('string')).length;
       }
       const valid = markers.every((name) => names.includes(name));
-      const minimumFiles = { docx: 3, pptx: 10, odf: 3, zip: 4, epub: 6, comic: 3, apk: 8 }[row.expectedType];
-      const contentRich = row.expectedType === 'comic'
-        || (row.expectedType === 'apk' && names.includes('classes.dex') && names.some((name) => name.startsWith('lib/')))
-        || extractedCharacters >= 100;
-      return result(valid, names.length >= minimumFiles && contentRich, { entries: names.length, firstEntries: names.slice(0, 12), extractedCharacters });
+      const minimumFiles = { docx: 3, pptx: 10, odf: 3, zip: 4, epub: 6, comic: 3, apk: 5 }[row.expectedType];
+      let specialized = null;
+      if (row.expectedType === 'comic') {
+        const pages = [];
+        for (const name of names.filter((name) => /\.png$/i.test(name))) {
+          const data = await zip.file(name).async('nodebuffer');
+          pages.push({
+            name,
+            bytes: data.length,
+            width: starts(data, [137,80,78,71,13,10,26,10]) ? u32be(data, 16) : 0,
+            height: starts(data, [137,80,78,71,13,10,26,10]) ? u32be(data, 20) : 0,
+            sha256: createHash('sha256').update(data).digest('hex'),
+          });
+        }
+        specialized = {
+          valid: pages.length >= 3 && pages.every((page) => page.width >= 600 && page.height >= 900 && page.bytes >= 10000)
+            && new Set(pages.map((page) => page.sha256)).size === pages.length,
+          pages,
+        };
+      } else if (row.expectedType === 'apk') {
+        const manifest = await zip.file('AndroidManifest.xml')?.async('nodebuffer');
+        const dex = await zip.file('classes.dex')?.async('nodebuffer');
+        const libraries = await Promise.all(names.filter((name) => /^lib\/.+\.so$/.test(name))
+          .map(async (name) => ({ name, data: await zip.file(name).async('nodebuffer') })));
+        specialized = {
+          valid: manifest?.readUInt16LE(0) === 3 && manifest.readUInt32LE(4) === manifest.length
+            && dex?.subarray(0, 8).toString('ascii') === 'dex\n035\0' && dex.readUInt32LE(32) === dex.length
+            && libraries.length >= 2 && libraries.every(({ data }) => starts(data, [0x7f, 0x45, 0x4c, 0x46]))
+            && !names.some((name) => name.startsWith('META-INF/')),
+          manifestBytes: manifest?.length || 0,
+          dexBytes: dex?.length || 0,
+          libraries: libraries.map(({ name, data }) => ({ name, bytes: data.length, machine: u16le(data, 18) })),
+          unsigned: !names.some((name) => name.startsWith('META-INF/')),
+        };
+      }
+      const contentRich = row.expectedType === 'comic' || row.expectedType === 'apk'
+        ? specialized?.valid
+        : extractedCharacters >= 100;
+      return result(valid, names.length >= minimumFiles && contentRich, { entries: names.length, firstEntries: names.slice(0, 12), extractedCharacters, specialized });
     }
     case 'rtf':
       return result(/^\{\\rtf/.test(s), s.split(/\s+/).length >= 150, { wordsIncludingControls: s.split(/\s+/).length, characters: s.length });
@@ -199,8 +236,13 @@ async function validateFixture(row, bytes) {
       return result(webm || mp4, bytes.length >= 10000 && (webm || (video?.width >= 160 && video?.height >= 90)),
         { bytes: bytes.length, container: webm ? 'WebM' : mp4 ? 'ISO BMFF' : 'unknown', brand: mp4 ? s.slice(8, 12) : null, video });
     }
-    case 'midi':
-      return result(s.slice(0, 4) === 'MThd', u16be(bytes, 10) >= 2, { format: u16be(bytes, 8), tracks: u16be(bytes, 10), division: u16be(bytes, 12) });
+    case 'midi': {
+      const midi = parseMidi({ bytes });
+      const musicalTracks = midi.tracks.filter((track) => track.notes > 0);
+      return result(s.slice(0, 4) === 'MThd', midi.declaredTracks >= 3 && midi.totalNotes >= 24
+        && midi.uniquePitches >= 8 && midi.durationSeconds >= 4 && new Set(musicalTracks.map((track) => track.program)).size >= 2,
+      { format: midi.format, tracks: midi.declaredTracks, division: midi.ppqn, notes: midi.totalNotes, uniquePitches: midi.uniquePitches, durationSeconds: midi.durationSeconds, musicalPrograms: musicalTracks.map((track) => track.program) });
+    }
     case 'font': {
       const signature = u32be(bytes, 0);
       return result(signature === 0x00010000 || s.slice(0, 4) === 'OTTO', u16be(bytes, 4) >= 10 && bytes.length >= 50000, { tables: u16be(bytes, 4), bytes: bytes.length });
@@ -224,14 +266,34 @@ async function validateFixture(row, bytes) {
       const placemarks = (s.match(/<Placemark\b/g) || []).length;
       return result(/<kml\b/.test(s), placemarks >= 3, { placemarks, characters: s.length });
     }
-    case 'dicom':
-      return result(s.slice(128, 132) === 'DICM', bytes.length >= 500 && /DEMO\^PATIENT/.test(s), { bytes: bytes.length, hasPixelTag: bytes.some((_, i) => bytes[i] === 0xe0 && bytes[i + 1] === 0x7f), syntheticMetadataFixture: true });
-    case 'netcdf':
-      return result(s.slice(0, 3) === 'CDF', bytes.length >= 500 && /temperature/.test(s), { version: bytes[3], bytes: bytes.length, containsTemperature: /temperature/.test(s) });
+    case 'dicom': {
+      const pixelTag = Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength).indexOf(Buffer.from([0xe0, 0x7f, 0x10, 0x00, 0x4f, 0x57]));
+      const pixelBytes = pixelTag >= 0 && pixelTag + 12 <= bytes.length ? u32le(bytes, pixelTag + 8) : 0;
+      const hasRequiredIdentity = /1\.2\.826\.0\.1\.3680043\.10\.543\.[2345]/.test(s);
+      return result(s.slice(128, 132) === 'DICM', bytes.length >= 8192 && /DEMO\^PATIENT/.test(s)
+        && /MONOCHROME2/.test(s) && hasRequiredIdentity && pixelBytes === 64 * 64 * 2,
+      { bytes: bytes.length, pixelBytes, hasRequiredIdentity, syntheticPixelFixture: true });
+    }
+    case 'netcdf': {
+      const nonzeroTail = bytes.subarray(Math.max(0, bytes.length - 512)).some((value) => value !== 0);
+      return result(s.slice(0, 3) === 'CDF', bytes.length >= 1500 && /temperature/.test(s) && /pressure/.test(s) && nonzeroTail,
+        { version: bytes[3], bytes: bytes.length, containsTemperature: /temperature/.test(s), containsPressure: /pressure/.test(s), nonzeroTail });
+    }
     case 'pdb': {
-      const atoms = (s.match(/^ATOM\s/gm) || []).length;
-      const chains = new Set(s.split(/\r?\n/).filter((line) => line.startsWith('ATOM')).map((line) => line.slice(21, 22)).filter(Boolean)).size;
-      return result(/^HEADER/m.test(s) && atoms > 0, atoms >= 15 && chains >= 2, { atoms, chains, lines: s.split(/\r?\n/).length });
+      const atomLines = s.split(/\r?\n/).filter((line) => line.startsWith('ATOM'));
+      const atoms = atomLines.length;
+      const chains = new Set(atomLines.map((line) => line.slice(21, 22)).filter(Boolean)).size;
+      const residues = new Map();
+      for (const line of atomLines) {
+        const key = `${line.slice(21, 22)}:${line.slice(22, 26).trim()}`;
+        if (!residues.has(key)) residues.set(key, new Set());
+        residues.get(key).add(line.slice(12, 16).trim());
+      }
+      const completeBackbones = [...residues.values()].filter((names) => ['N', 'CA', 'C', 'O'].every((name) => names.has(name))).length;
+      const ligandAtoms = s.split(/\r?\n/).filter((line) => line.startsWith('HETATM') && line.slice(17, 20).trim() === 'LIG').length;
+      return result(/^HEADER/m.test(s) && atoms > 0, atoms >= 100 && chains >= 2 && residues.size >= 20
+        && completeBackbones === residues.size && ligandAtoms >= 8 && /^COMPND.*MOLECULE:/m.test(s) && /^SOURCE.*ORGANISM_SCIENTIFIC:/m.test(s),
+      { atoms, chains, residues: residues.size, completeBackbones, ligandAtoms, lines: s.split(/\r?\n/).length });
     }
     case 'fits': {
       const cards = [];
@@ -280,8 +342,12 @@ async function validateFixture(row, bytes) {
         bytes[4] === 2 && programHeaders >= 2 && sectionHeaders >= 5 && completeSectionTable && entry > 0,
         { class: bytes[4] === 2 ? '64-bit' : '32-bit', machine: bytes[18] | bytes[19] << 8, bytes: bytes.length, entry, programHeaders, sectionHeaders, completeSectionTable });
     }
-    case 'torrent':
-      return result(bytes[0] === 0x64 && bytes.at(-1) === 0x65, /announce/.test(s) && /pieces/.test(s) && bytes.length >= 100, { bytes: bytes.length, hasAnnounce: /announce/.test(s), hasPieces: /pieces/.test(s) });
+    case 'torrent': {
+      const metadata = torrentMetadata({ bytes });
+      return result(bytes[0] === 0x64 && bytes.at(-1) === 0x65,
+        /announce/.test(s) && /pieces/.test(s) && bytes.length >= 300 && metadata.fileCount >= 3 && metadata.pieceSize > 0,
+      { bytes: bytes.length, hasAnnounce: /announce/.test(s), hasPieces: /pieces/.test(s), fileCount: metadata.fileCount, pieceSize: metadata.pieceSize, totalSize: metadata.totalSize });
+    }
     case 'dockerfile': {
       const stages = (s.match(/^FROM\s+/gmi) || []).length;
       const instructions = (s.match(/^(FROM|RUN|COPY|CMD|ENTRYPOINT|ENV|ARG|WORKDIR|EXPOSE|USER|HEALTHCHECK)\b/gmi) || []).length;
@@ -301,7 +367,12 @@ async function validateFixture(row, bytes) {
     case 'pem': {
       const match = s.match(/-----BEGIN ([^-]+)-----([\s\S]+?)-----END \1-----/);
       const decoded = match ? Buffer.from(match[2].replace(/\s/g, ''), 'base64') : Buffer.alloc(0);
-      return result(!!match && decoded.length > 0, decoded.length >= 500, { blockType: match?.[1] || null, derBytes: decoded.length });
+      let certificate = null;
+      try { certificate = match?.[1] === 'CERTIFICATE' ? new X509Certificate(s) : null; } catch { certificate = null; }
+      const selfVerified = certificate ? certificate.subject === certificate.issuer && certificate.verify(certificate.publicKey) : false;
+      return result(!!match && decoded.length > 0, decoded.length >= 500 && certificate?.publicKey.asymmetricKeyType === 'rsa'
+        && certificate.publicKey.asymmetricKeyDetails.modulusLength >= 2048 && selfVerified,
+      { blockType: match?.[1] || null, derBytes: decoded.length, subject: certificate?.subject || null, keyType: certificate?.publicKey.asymmetricKeyType || null, keyBits: certificate?.publicKey.asymmetricKeyDetails?.modulusLength || null, selfVerified });
     }
     case 'patch': {
       const files = (s.match(/^diff --git /gm) || []).length;

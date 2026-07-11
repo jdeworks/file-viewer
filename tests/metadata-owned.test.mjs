@@ -629,9 +629,9 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   const rows = dicomMeta({ filename: 'sample.dcm', bytes: data, isBinary: true, size: data.length });
   assert.equal(rows.Format, 'DICOM');
   assert.equal(rows.Modality, 'CT - Computed Tomography');
-  assert.equal(rows.Rows, '512');
-  assert.equal(rows.Columns, '512');
-  assert.equal(rows.Dimensions, '512 x 512');
+  assert.equal(rows.Rows, '64');
+  assert.equal(rows.Columns, '64');
+  assert.equal(rows.Dimensions, '64 x 64');
   assert.equal(rows.Institution, 'File Viewer Demo Hospital');
   assert.equal(rows['Patient name present'], 'yes');
 
@@ -884,12 +884,12 @@ function glbHeader({ version = 2, length = 20, chunkLength = 0, chunkType = 0x4e
   assert.ok(nc4Score > hdf5Score, `netcdf score ${nc4Score} should beat hdf5 score ${hdf5Score} for a .nc4 file`);
   const rows = netcdfMeta({ bytes: data });
   assert.equal(rows.Format, 'NetCDF-3 Classic');
-  assert.equal(rows.Dimensions, '4');
+  assert.equal(rows.Dimensions, '3');
   assert.equal(rows.Variables, '5');
   assert.equal(rows.Title, 'File Viewer Demo Climate Dataset');
   assert.equal(rows.Institution, 'File Viewer Demo Institute');
   const rendered = renderNetcdf({ bytes: data, size: data.length }).bodyHtml;
-  assert.match(rendered, /Dimensions \(4\)/);
+  assert.match(rendered, /Dimensions \(3\)/);
   assert.match(rendered, /Variables \(5\)/);
 }
 

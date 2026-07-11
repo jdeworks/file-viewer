@@ -188,12 +188,12 @@ export async function run(ctx) {
   const dcmText = await dcmf.$eval('body', (el) => el.textContent);
   if (/DICOM/i.test(dcmText)) pass('DICOM badge shown'); else fail('dcm badge missing');
   if (/CT|Computed Tomography/i.test(dcmText)) pass('DICOM modality CT shown'); else fail('dcm mod: ' + dcmText.slice(0, 300));
-  if (/512|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
+  if (/64|Demo Hospital/i.test(dcmText)) pass('DICOM image info shown'); else fail('dcm info: ' + dcmText.slice(0, 300));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const dcmMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Format\s*DICOM/.test(dcmMeta)) pass('DICOM metadata includes format'); else fail('dcm meta format: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
-  if (/Dimensions\s*512 x 512/.test(dcmMeta)) pass('DICOM metadata includes image dimensions'); else fail('dcm meta dimensions: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
+  if (/Dimensions\s*64 x 64/.test(dcmMeta)) pass('DICOM metadata includes image dimensions'); else fail('dcm meta dimensions: ' + dcmMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
   // ── NetCDF Scientific Data ────────────────────────────────────────────────────
@@ -244,7 +244,7 @@ export async function run(ctx) {
   const pdbText = await page.$eval('#previewHost .pdb-doc', (el) => el.textContent);
   if (/PDB/i.test(pdbText)) pass('PDB badge shown'); else fail('pdb badge missing');
   if (/DEMO/i.test(pdbText)) pass('PDB ID shown'); else fail('pdb id: ' + pdbText.slice(0, 300));
-  if (/Homo sapiens|HYDROLASE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
+  if (/SYNTHETIC CONSTRUCT|DEMO PEPTIDE/i.test(pdbText)) pass('PDB organism/type shown'); else fail('pdb org: ' + pdbText.slice(0, 300));
   if (/Chain|chain|1\.80|Residue|residue/i.test(pdbText)) pass('PDB structure info shown'); else fail('pdb struct: ' + pdbText.slice(0, 300));
   await checkMol3d('PDB');
 

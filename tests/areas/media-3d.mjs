@@ -1726,11 +1726,13 @@ export async function run(ctx) {
   await midif.waitForSelector('.midi-doc .midi-table', { timeout: 8000 });
   const midiCards = await midif.$$eval('.midi-card', (els) => Object.fromEntries(els.map((e) => [e.querySelector('span')?.textContent || '', e.querySelector('strong')?.textContent || ''])));
   const midiTable = await midif.$eval('.midi-table', (e) => e.textContent);
-  if (midiCards.Format === 'Type 1' && midiCards.Tracks === '2' && midiCards.PPQN === '480' && midiCards.BPM === '120' && /Lead/.test(midiTable) && /Acoustic Grand Piano/.test(midiTable)) pass('MIDI header + tracks parsed'); else fail('midi doc: ' + JSON.stringify({ midiCards, midiTable }).slice(0, 220));
+  if (midiCards.Format === 'Type 1' && midiCards.Tracks === '3' && midiCards.PPQN === '480' && midiCards.BPM === '120'
+      && /Piano Melody/.test(midiTable) && /Acoustic Grand Piano/.test(midiTable)
+      && /Bass Foundation/.test(midiTable) && /Acoustic Bass/.test(midiTable)) pass('MIDI header + tracks parsed'); else fail('midi doc: ' + JSON.stringify({ midiCards, midiTable }).slice(0, 220));
   await page.click('#metaBtn');
   await page.waitForSelector('#metaBody .meta-row', { timeout: 6000 });
   const midiMeta = await page.$eval('#metaBody', (e) => e.textContent);
-  if (/Format\s*Type 1/.test(midiMeta) && /Tracks\s*2/.test(midiMeta) && /Notes\s*2/.test(midiMeta) && /Unique pitches\s*2/.test(midiMeta)) pass('MIDI metadata includes parsed fields'); else fail('midi meta: ' + midiMeta.replace(/\s+/g, ' ').slice(0, 180));
+  if (/Format\s*Type 1/.test(midiMeta) && /Tracks\s*3/.test(midiMeta) && /Notes\s*48/.test(midiMeta) && /Unique pitches\s*15/.test(midiMeta)) pass('MIDI metadata includes parsed fields'); else fail('midi meta: ' + midiMeta.replace(/\s+/g, ' ').slice(0, 180));
   await page.click('#metaDrawer [data-close]');
 
 }
