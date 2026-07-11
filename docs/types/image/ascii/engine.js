@@ -25,8 +25,13 @@ function makeCanvas(w = 1, h = 1) {
   return c;
 }
 
-export function createAsciiEngine(initialOptions) {
-  const options = { ...defaultOptions(), ...(initialOptions || {}) };
+export function createAsciiEngine(initialOptions, { shareOptions = false } = {}) {
+  const seededOptions = { ...defaultOptions(), ...(initialOptions || {}) };
+  // Image and camera mode use separate rendering engines but one canonical option
+  // object. Other consumers keep the historical defensive clone.
+  const options = shareOptions && initialOptions
+    ? Object.assign(initialOptions, seededOptions)
+    : seededOptions;
   const sourceCanvas = makeCanvas();
   const processedCanvas = makeCanvas();
   const scratch = makeCanvas();

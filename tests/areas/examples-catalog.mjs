@@ -327,6 +327,35 @@ export async function run(ctx) {
     fail('ASCII Studio JPEG ?sample= fell back to the placeholder: ' + JSON.stringify({ jpegLen: jpegAscii.length, sameAsPlaceholder: jpegAscii === placeholderAscii }));
   }
 
+  // Default mode keeps the generated starter art but Use a sample must open a
+  // real, keyboard-accessible gallery and allow several maintained examples.
+  await page.goto(origin + '/tools/ascii-studio/index.html', { waitUntil: 'load' });
+  await page.waitForFunction(() => (document.querySelector('.asx-out')?.textContent || '').trim().length > 20, null, { timeout: 10000 });
+  const standaloneLayout = await page.evaluate(() => {
+    const host = document.querySelector('.studio-host').getBoundingClientRect();
+    return { hostHeight: host.height, viewportHeight: window.innerHeight, bodyOverflow: getComputedStyle(document.body).overflow };
+  });
+  if (standaloneLayout.hostHeight > standaloneLayout.viewportHeight * 0.72 && standaloneLayout.bodyOverflow === 'hidden') {
+    pass('ASCII Studio uses the full remaining viewport');
+  } else fail('ASCII Studio standalone height: ' + JSON.stringify(standaloneLayout));
+  const generatedAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  await page.click('#sample');
+  const gallery = await page.evaluate(() => ({
+    open: document.querySelector('#sample-dialog')?.open,
+    count: document.querySelectorAll('.sample-card').length,
+    focused: document.activeElement?.classList.contains('sample-card'),
+  }));
+  if (gallery.open && gallery.count >= 6 && gallery.focused) pass('Use a sample opens the maintained accessible image gallery');
+  else fail('ASCII sample gallery: ' + JSON.stringify(gallery));
+  await page.click('.sample-card[data-sample="sample.jpg"]');
+  await page.waitForFunction(() => !document.querySelector('#sample-dialog').open, null, { timeout: 10000 });
+  await page.waitForFunction((before) => document.querySelector('.asx-out')?.textContent !== before, generatedAscii, { timeout: 10000 });
+  const jpgAscii = await page.$eval('.asx-out', (el) => el.textContent);
+  await page.click('#sample');
+  await page.click('.sample-card[data-sample="sample.gif"]');
+  await page.waitForFunction((before) => !document.querySelector('#sample-dialog').open && document.querySelector('.asx-out')?.textContent !== before, jpgAscii, { timeout: 10000 });
+  pass('ASCII sample gallery loads multiple distinct maintained images');
+
   // Single canonical webcam entry: no page-level "Webcam" tab; the ONLY camera
   // door is the studio's own 📷 Camera toolbar button (matches the in-viewer studio).
   const camEntry = await page.evaluate(() => ({

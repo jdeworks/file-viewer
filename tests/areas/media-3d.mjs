@@ -1388,8 +1388,8 @@ export async function run(ctx) {
   pass('ASCII studio gradient change re-converts');
 
   // ── Camera mode UI ── the 📷 button mounts the webcam consumer (no getUserMedia
-  // until "Start camera"). It has its OWN toolbar incl. working flip/rotate, and
-  // the image-studio toolbar's buttons hide so they don't drive the wrong engine.
+  // until "Start camera"). Camera transport is separate, while the one canonical
+  // settings panel remains mounted and its state survives the exclusive mode swap.
   await page.click('#previewHost .asx-cam');
   await page.waitForSelector('#previewHost .asx-cam-host .cam-out', { timeout: 8000 });
   const camUi = await page.evaluate(() => {
@@ -1399,11 +1399,13 @@ export async function run(ctx) {
       barScoped: document.querySelector('#previewHost .asx-bar').classList.contains('asx-cam-on'),
       imageRotHidden: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-rot-l')).display === 'none',
       backVisible: getComputedStyle(document.querySelector('#previewHost .asx-bar .asx-cam')).display !== 'none',
+      settingsVisible: getComputedStyle(document.querySelector('#previewHost .asx-panel')).display !== 'none',
+      settingsPanels: document.querySelectorAll('#previewHost .asx-panel, #previewHost .cam-settings').length,
       startFlash: sb.classList.contains('cam-flash'),
       startPlay: /▶/.test(sb.textContent),
     };
   });
-  if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible) pass('camera mode: own flip/rotate toolbar + image buttons hidden'); else fail('camera ui: ' + JSON.stringify(camUi));
+  if (camUi.transforms === 4 && camUi.barScoped && camUi.imageRotHidden && camUi.backVisible && camUi.settingsVisible && camUi.settingsPanels === 1) pass('camera mode: exclusive camera surface with one shared settings panel'); else fail('camera ui: ' + JSON.stringify(camUi));
   if (camUi.startFlash && camUi.startPlay) pass('camera Start button flashes + shows ▶ until started'); else fail('start button: ' + JSON.stringify({ startFlash: camUi.startFlash, startPlay: camUi.startPlay }));
   const camStartProbe = await page.evaluate(async () => {
     const video = document.querySelector('#previewHost .cam-video');
@@ -1503,8 +1505,16 @@ export async function run(ctx) {
     && recProbe.studioReady && !recProbe.openedBeforeStudioClick)
     pass('camera recording captures ASCII canvas stream at selected FPS, then offers download and explicit Studio handoff');
   else fail('camera recording stream: ' + JSON.stringify(recProbe));
+  await page.evaluate(() => {
+    const input = document.querySelector('#previewHost .asx-panel input[data-key="columns"]');
+    input.value = '72';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
   await page.click('#previewHost .asx-cam');   // back to image
   await page.waitForSelector('#previewHost .asx-out', { timeout: 5000 });
+  const sharedColumns = await page.$eval('#previewHost .asx-panel input[data-key="columns"]', (el) => el.value);
+  if (sharedColumns === '72') pass('camera and image modes retain the same canonical ASCII settings');
+  else fail('shared camera settings lost: ' + sharedColumns);
 
   let discardPrompt = '';
   const acceptDiscard = (dialog) => {

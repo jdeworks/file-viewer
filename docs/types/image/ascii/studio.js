@@ -47,7 +47,7 @@ const EYE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke=
  */
 export function mountAsciiStudio(host, opts = {}) {
   injectStyle();
-  const baseName = (opts.filename || 'image').replace(/\.[^.]+$/, '') + '-ascii';
+  let baseName = (opts.filename || 'image').replace(/\.[^.]+$/, '') + '-ascii';
   host.classList.add('asx-root');
   host.innerHTML = `
     <div class="asx-bar">
@@ -83,9 +83,9 @@ export function mountAsciiStudio(host, opts = {}) {
         <div class="asx-busy" hidden aria-live="polite">⏳ Converting…</div>
         <figure class="asx-peek" hidden><figcaption></figcaption><canvas></canvas></figure>
       </div>
-      <div class="asx-panel"></div>
     </div>
-    <div class="asx-cam-host" hidden></div>`;
+    <div class="asx-cam-host" hidden></div>
+    <div class="asx-panel"></div>`;
 
   const q = (s) => host.querySelector(s);
   const pre = q('.asx-out');
@@ -95,7 +95,8 @@ export function mountAsciiStudio(host, opts = {}) {
   const peekCanvas = peek.querySelector('canvas');
   const peekCaption = peek.querySelector('figcaption');
 
-  const engine = createAsciiEngine(loadLast() || undefined);   // seed from last-used settings (persists + carries to webcam)
+  const engine = createAsciiEngine(loadLast() || undefined);   // owns the canonical settings object shared with webcam
+  let imageRequest = 0;
   // Busy badge for slow (phone) conversions: the convert is synchronous, so we can't keep
   // the UI live during it, but we surface that work is happening (and yield a frame so the
   // badge paints first). Gated on the last convert's duration so fast machines never flash it.
@@ -203,6 +204,7 @@ export function mountAsciiStudio(host, opts = {}) {
   // Debounced persist of the current settings as "last used" (shared with webcam + across sessions).
   let saveTimer = 0;
   const rememberSoon = () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveLast({ ...engine.options }), 400); };
+  let webcam = null;
   const controls = buildControls(floatingPanel.body, engine.options, (key, value, dirty, displayOnly) => {
     engine.options[key] = value;
     // Background colour has no effect when the BG is transparent — disable it.
@@ -211,6 +213,7 @@ export function mountAsciiStudio(host, opts = {}) {
     }
     if (key === 'colorMode') syncColorControls(controls, value);   // colour off → hide source + glyph-colour
     rememberSoon();
+    webcam?.optionsChanged(key, dirty, displayOnly);
     if (displayOnly) { applyDisplay(); return; }
     engine.markDirty(...dirty);
     updateScheduler.scheduleUpdate();
@@ -250,10 +253,16 @@ export function mountAsciiStudio(host, opts = {}) {
   // once DejaVu (≈0.602) swaps in it's slightly wider, so re-run the fit to avoid a scrollbar.
   ensureAsciiFont().then(() => applyDisplay());
   // Geometric transforms — re-draw the source then reconvert (works on image + video).
-  q('.asx-rot-l').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 270) % 360; updateScheduler.scheduleRegrab(); });
-  q('.asx-rot-r').addEventListener('click', () => { engine.options.rotate = ((engine.options.rotate || 0) + 90) % 360; updateScheduler.scheduleRegrab(); });
-  q('.asx-flip-h').addEventListener('click', () => { engine.options.flipH = !engine.options.flipH; updateScheduler.scheduleRegrab(); });
-  q('.asx-flip-v').addEventListener('click', () => { engine.options.flipV = !engine.options.flipV; updateScheduler.scheduleRegrab(); });
+  function setTransform(key, value) {
+    engine.options[key] = value;
+    updateScheduler.scheduleRegrab();
+    webcam?.optionsChanged(key, ['processedImage']);
+    rememberSoon();
+  }
+  q('.asx-rot-l').addEventListener('click', () => setTransform('rotate', ((engine.options.rotate || 0) + 270) % 360));
+  q('.asx-rot-r').addEventListener('click', () => setTransform('rotate', ((engine.options.rotate || 0) + 90) % 360));
+  q('.asx-flip-h').addEventListener('click', () => setTransform('flipH', !engine.options.flipH));
+  q('.asx-flip-v').addEventListener('click', () => setTransform('flipV', !engine.options.flipV));
   q('.asx-reset-filters').addEventListener('click', () => resetKeys(FILTER_KEYS));
   q('.asx-reset-all').addEventListener('click', () => resetKeys(Object.keys(engine.options)));
   function resetKeys(keys) {
@@ -266,23 +275,31 @@ export function mountAsciiStudio(host, opts = {}) {
       if (k === 'rotate' || k === 'flipH' || k === 'flipV') { engine.options[k] = defs[k]; transformReset = true; }
       else controls.setValue(k, defs[k]);
     });
-    if (transformReset) updateScheduler.scheduleRegrab();
+    if (transformReset) {
+      updateScheduler.scheduleRegrab();
+      webcam?.optionsChanged('transform', ['processedImage']);
+      rememberSoon();
+    }
   }
 
   // ── webcam easter egg ── the 📷 button swaps in the live-camera consumer.
   const camHost = q('.asx-cam-host');
   const body = q('.asx-body');
   const bar = q('.asx-bar');
-  let webcam = null;
+  let cameraRequest = 0;
+  let cameraMode = false;
   function closeCamera() {
-    if (!webcam) return;
-    webcam.destroy(); webcam = null;   // stops the MediaStream tracks
+    cameraRequest++;
+    cameraMode = false;
+    webcam?.destroy(); webcam = null;   // stops MediaStream tracks and any late start
     camHost.hidden = true; body.hidden = false;
     bar.classList.remove('asx-cam-on');
     q('.asx-cam').textContent = '📷 Camera';
   }
   q('.asx-cam').addEventListener('click', async () => {
-    if (webcam) { closeCamera(); return; }
+    if (cameraMode) { closeCamera(); return; }
+    cameraMode = true;
+    const request = ++cameraRequest;
     body.hidden = true; camHost.hidden = false;
     // Camera has its OWN toolbar (incl. its own transforms/exports that act on the
     // live frame) — hide the image-studio toolbar buttons so they don't clutter or
@@ -290,12 +307,21 @@ export function mountAsciiStudio(host, opts = {}) {
     bar.classList.add('asx-cam-on');
     q('.asx-cam').textContent = '🖼 Back to image';
     const { mountAsciiWebcam } = await import('./webcam.js');
-    // Inherit the current image-mode settings as the camera's starting point.
+    if (request !== cameraRequest || !cameraMode) return;
+    // Both engines consume the same option object and the studio owns the only
+    // settings panel. Camera-specific transport and recording controls stay local.
     // A finished recording stays in webcam mode so the user can download first,
     // then open that same .webm in the media/video studio. Standalone mode falls
     // back to auto-download because it has no blob-intake bridge.
     webcam = mountAsciiWebcam(camHost, {
-      initialOptions: { ...engine.options },
+      options: engine.options,
+      setOption(key, value, { dirty = ['processedImage'], displayOnly = false, regrab = false } = {}) {
+        engine.options[key] = value;
+        if (regrab) updateScheduler.scheduleRegrab();
+        else if (displayOnly) applyDisplay();
+        else { engine.markDirty(...dirty); updateScheduler.scheduleUpdate(); }
+        rememberSoon();
+      },
       onRecorded: window.__fv?.openBlobFile
         ? (blob) => window.__fv.openBlobFile(blob, 'webcam-recording.webm', { mime: blob.type })
         : undefined,
@@ -303,23 +329,28 @@ export function mountAsciiStudio(host, opts = {}) {
   });
 
   // Set (or replace) the source image and convert.
-  async function setImage({ bytes, mime, source } = {}) {
+  async function setImage({ bytes, mime, source, filename } = {}) {
+    const request = ++imageRequest;
     let src = source;
     if (!src && bytes) src = await decode(bytes, mime);
-    if (!src) { pre.textContent = 'No image to convert.'; return; }
+    if (request !== imageRequest) { src?.close?.(); return false; }
+    if (!src) { pre.textContent = 'No image to convert.'; return false; }
     engine.setSource(src);
+    if (filename) baseName = filename.replace(/\.[^.]+$/, '') + '-ascii';
     updateScheduler.scheduleUpdate(0);
     if (activeEye) paintPeek();
     opts.onActivate?.();
+    return true;
   }
   if (opts.source || opts.bytes) setImage(opts);
 
   return {
     engine,
     setImage,
-    isCameraActive: () => !!webcam,
+    getBaseName: () => baseName,
+    isCameraActive: () => cameraMode,
     stopCamera: closeCamera,
-    destroy() { updateScheduler.destroy(); ro.disconnect(); floatingPanel.destroy(); webcam?.destroy(); engine.terminate(); host.classList.remove('asx-root'); host.innerHTML = ''; },
+    destroy() { imageRequest++; cameraRequest++; updateScheduler.destroy(); ro.disconnect(); floatingPanel.destroy(); webcam?.destroy(); engine.terminate(); host.classList.remove('asx-root'); host.innerHTML = ''; },
   };
 }
 

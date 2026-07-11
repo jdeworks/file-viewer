@@ -14,10 +14,22 @@
   <main id="image-view">
     <div id="drop" class="drop">
       <input id="file" type="file" accept="image/*" hidden>
-      <p>Drop an image here, or <button id="pick" class="link">choose a file</button>. <button id="sample" class="link">Use a sample</button>.</p>
+      <p>Drop an image here, <button id="pick" type="button" class="link">choose a file</button>, or <button id="sample" type="button" class="link">use a sample</button>.</p>
     </div>
     <div id="studio" class="studio-host"></div>
   </main>
+
+  <dialog id="sample-dialog" class="sample-dialog" aria-labelledby="sample-title">
+    <div class="sample-head">
+      <div>
+        <h2 id="sample-title">Choose a sample image</h2>
+        <p>Open any maintained browser-safe image example.</p>
+      </div>
+      <button id="sample-close" type="button" class="sample-close" aria-label="Close sample gallery">✕</button>
+    </div>
+    <div id="sample-error" class="sample-error" role="status" aria-live="polite"></div>
+    <div id="sample-grid" class="sample-grid"></div>
+  </dialog>
 
   <script type="module" src="./app.js"></script>
 </body>
