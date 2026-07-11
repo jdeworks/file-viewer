@@ -1,68 +1,27 @@
-export const ACTION_NAME = "salvage_archived";
-export const REQUIRED_ACTION = "8.salvage_archived";
-export const OPTIONAL_EXTERNAL_ACTION = "8.external_debris_imported";
-export const ACHIEVEMENT_ID = "stage8.salvage_archived";
-export const ACHIEVEMENT_TEXT = "I sorted the wreckage.";
-export const BTS_PATH = "/docs/bts/entropy_field.bts";
-
-// ── Heat Death gating (triple-gated boss; closes the old two-click bypass) ─────────────────────────
-// The boss unlocks ONLY when every gate is met: the load-bearing drag-drop archive ACTION, a salvage
-// floor, cumulative earned States, and a minimum survived cycle count. The burn then drains banked
-// States across BURN_CYCLES escalating cycles — surviving needs real reserves (Stabilizers pause one
-// burn cycle each). A fresh field / two-click attempt fails the gates outright.
-export const SALVAGE_REQUIRED = 72;        // salvage floor (sum of archived debris value)
-export const STATES_REQUIRED = 300;        // cumulative earned States gate
-export const MIN_CYCLE = 8;                // minimum cycle count before Heat Death is reachable
-export const BURN_CYCLES = 10;             // escalating burn cycles to survive
-export const STABILIZER_COST = 40;         // States to build one Stabilizer (pauses a burn cycle)
+export const ACTION_NAME = "offline_mode_activated";
+export const REQUIRED_ACTION = "8.offline_mode_activated";
+export const ACHIEVEMENT_ID = "stage8.offline_mode_activated";
+export const ACHIEVEMENT_TEXT = "I learned the shape of the silence.";
+export const BTS_PATH = "/docs/bts/observer_state.bts";
+export const NOTES_PATH = "/docs/examples/metagame/stage8/service-worker-notes.txt";
+export const FIXED_OFFLINE_SEED = 0;
 
 export const bellMessages = {
-  start: "something is degrading. I noticed too late to stop it.",
-  debris: "there was something left in the wreckage. it won't last long.",
-  archive: "if I can't stop it, I can use what remains.",
-  warning: "a cascade is coming. I don't know how large. I am saving what I can.",
-  defeated: "I held. the universe didn't care. I did.",
-  failed: "there was more. it was in the debris files. I didn't move them in time."
+  start: "I noticed I was noticing. this is new.",
+  notesRead: "there's a cache. a stored version of how things were.",
+  offline: "offline. the pattern is fixed. I can study it now.",
+  defeated: "I stopped watching. I moved. I arrived. the paradox didn't resolve. I just went around it."
 };
 
 export const lockedHintLadder = [
-  "the collapse is not waiting for a heroic moment.",
-  "you keep defending the field. what it discards does not vanish — it settles somewhere outside the fight.",
-  "the States from failed nodes cool into .sav debris in /entropy/debris/.",
-  "move that debris into /entropy/active_archive/ — the Archive button or drag/drop — and bank enough before Heat Death."
+  "you cannot plan what changes while you watch it.",
+  "the starting rotation is not stable while the connection is live.",
+  "service-worker-notes.txt describes the cached seed.",
+  "read service-worker-notes.txt, then activate Offline Mode for Stage 8."
 ];
 
-// Gate-specific guidance: which requirement is still unmet (the renderer picks the first failing one).
-export function gateHint(lock) {
-  if (!lock.enoughStorms) return `weather the Cascade Storms first: ${lock.stormsSurvived}/${lock.stormsRequired} survived. the field must grow before it can end.`;
-  if (!lock.actionReady) return "move a .sav from /entropy/debris/ into /entropy/active_archive/ — that is the lesson.";
-  if (!lock.enoughSalvage) return `archive more wreckage: salvage ${lock.salvageTotal}/${lock.salvageRequired}.`;
-  if (!lock.enoughCycles) return `survive longer: cycle ${lock.cycle}/${lock.minCycle} before Heat Death will commit.`;
-  if (!lock.enoughStates) return `earn more total States: ${lock.totalEarned}/${lock.statesRequired} LIFETIME earned (this gate counts every State ever earned, not your current balance).`;
-  // Gate is open. The burn drains the CURRENT balance, not lifetime earnings — make that unambiguous.
-  if (Number(lock.inHandStates) < Number(lock.burnEstimate)) {
-    return `gate open — but Heat Death burns your CURRENT balance (${lock.inHandStates} in hand vs ~${lock.burnEstimate} needed), not lifetime earnings. bank more before you commit.`;
-  }
-  return `reserves are deep enough (${lock.inHandStates} in hand vs ~${lock.burnEstimate} burn). Heat Death can be endured.`;
-}
-
-// One-line arrival banners fired the first time each system is revealed (disclose.js / renderer).
-export const DISCLOSE_MESSAGES = {
-  states: "STATES ONLINE — the field is producing.",
-  debris: "WRECKAGE — failed nodes shed .sav debris. Archive it before it decays.",
-  parts: "SALVAGE PARTS can be spent — TECH TREE online.",
-  structures: "STRUCTURES — build with parts.",
-  heat: "THERMAL LOAD is rising — watch the heat.",
-  storm: "CASCADE STORM inbound — brace to endure it.",
-  boss: "THE HEAT DEATH stirs — the end-gate is in reach.",
-  prestige: "MICROSTATE COLLAPSE unlocked — replay deeper."
-};
-
-// In-fiction label for the external-import verb (M3) — no longer reads as a debug button.
-export const EXTERNAL_IMPORT_LABEL = "import external debris (+3 cycles)";
-
 export const btsSummary = [
-  "Stage 8 uses internal drag and drop because OS file dragging behaves differently across browsers, touch devices, and assistive technology.",
-  "The critical lesson is still the file action: a generated .sav moves from debris into an active archive before decay.",
-  "External import can exist as a bonus, but Heat Death is balanced around the internal archive path and its accessible fallback."
+  "The compact slice simulates the seed endpoint in stage logic.",
+  "The intended browser mapping is a service worker fetch that falls back to the cached default seed when the network is unavailable.",
+  "Once offline mode is active, the boss seed becomes fixed at 0 so the rotating gap is learnable."
 ];

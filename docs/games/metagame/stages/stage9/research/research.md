@@ -1,421 +1,381 @@
-# Stage 9 "Observer State" — Game Design Research
+# Stage 10 "Awakening" — Game Design Research
 
-**Date:** 2026-06-26
-**Branch:** worktree-metagame-bitfoundry
-**Stage status entering this research:** THIN GATE — 4 clicks, no rendered mechanic, Math.random in
-live path, hint-text-only rotating-gap puzzle, currentLevel/clarity in state but unused by gameplay.
-
----
-
-## 1. GENRE: Reflex / Timing + Observer-Effect Puzzle
-
-### What defines the genre
-
-A **reflex-timing game** presents a repeating, periodic state (a gap in a rotating ring, a corridor
-between moving hazards, a rhythm beat) and asks the player to press at the precise moment that state
-is favorable. The core skill loop is:
-
-- **Perceive** the periodic signal (rotation speed, gap width, pattern).
-- **Anticipate** the alignment window slightly ahead of the gap's arrival (reaction time is ~250 ms;
-  the player must act before the optimal moment, not at it).
-- **Execute** a single, binary commitment (press or wait).
-- **Receive immediate feedback** (success / bounce-back / death) with near-zero latency.
-
-Instant respawn / retry is the mandatory corollary: any delay between failure and retry kills the
-feedback loop.
-
-An **observer-effect puzzle** adds a second constraint: the act of examining the state changes it.
-In quantum mechanics, measuring a particle's position collapses its wave-function to a definite
-state that differs from the superposition it was in before measurement. Game designers use this
-metaphor to force a *decision about when to look*: look too early and you spend a shrinking window
-acting on stale information; look too late and the state resamples under you.
-
-The two genres combine into a single compound skill: **choose when to observe, then time the
-press against what you just collapsed**. The offline/SW mechanic maps directly onto this — in
-online mode sampling (observing) the seed resets it to Math.random, so every observation is
-destructive; in offline/cached mode the seed is deterministic, so observation is free and learning
-is possible.
-
-### The 3-5 best games in this compound genre
-
-**Tunnel Rush (browser, 2016 — Unblocked/Poki)**
-A first-person tunnel where sliced rings (rings with one open wedge) and rotating half-barriers
-rotate and approach. Core mechanics that make it fun:
-- Obstacles follow *consistent* rotation speeds. Once the player recognises the rhythm, they can
-  predict exactly when a gap aligns with their lane. This is learnable pattern, not pure luck.
-- Difficulty escalates by adding shape variety and increasing speed (not just speed). New shapes
-  introduce new reading-skills: horizontal bars need a horizontal dodge, diagonal slashes need
-  diagonal timing. Each shape is a new verb.
-- No power-ups, no shields — purity. Every run starts fresh. Failure is always the player's.
-- Speed increases the longer you survive, compressing the reaction window. Players self-select
-  their ceiling, not a difficulty dial.
-[Source: Tunnel Rush at Zen Arcades](https://zenarcades.com/tunnel-rush-unblocked/)
-[Source: Tunnel Rush at SEELE AI Gaming](https://www.seeles.ai/games/action/tunnel-rush-fast-paced-3d-tunnel-racing-game)
-
-**Geometry Dash (RobTop, 2013)**
-A side-scrolling rhythm platformer where each obstacle is synchronised to a music track. Core
-mechanics:
-- *Music synchronisation*: players are not reacting visually — they learn the level as a piece of
-  music. This shifts the skill from reaction time (limited by neurology) to anticipation (learnable
-  with repetition). Higher Hz displays do reduce the error margin, but the ceiling is learned, not
-  reflexed.
-- *Millisecond tolerance windows* with immediate feedback (hit wall → back to start) keep the
-  loop tight. Levels are 40 seconds to 3 minutes; the time-to-retry is never the level length,
-  it's the distance to where you died.
-- *Pattern recognition escalation*: each difficulty tier introduces a new movement mode (ship,
-  ball, UFO, wave) rather than just tighter gaps. New mode = new rules = new learning arc.
-[Source: Geometry Dash design analysis — mograph.com](https://mograph.com/renders/geometry-dash-a-rhythm-fueled-challenge-that-defines-precision-gaming/)
-[Source: Geometry Dash Wikipedia](https://en.wikipedia.org/wiki/Geometry_Dash)
-
-**Super Meat Boy (Team Meat, 2010)**
-A precision platformer where each level is completable in under 30 seconds at mastery. Core
-mechanics:
-- *Instantaneous respawn* after death. No animation, no confirm dialog, no score. Failure cost is
-  zero. This makes 50 attempts on one room feel like one extended learning session, not 50
-  punishments.
-- *Ghost replay on completion*: every run the player has died on is shown as a ghost. Players read
-  their own history of failure to find the line that works. This is the "echo" mechanic — your
-  past attempts become legible data.
-- *Short mastery arc per level*: once the pattern is memorised, the run feels like muscle memory.
-  Mastery is the reward, not a score.
-[Source: Super Meat Boy on Grokipedia](https://grokipedia.com/page/Super_Meat_Boy)
-
-**Observe (2024, Steam)**
-A puzzle game where "your vision is the only tool at your disposal — watch as the world around
-you reacts to being observed." Puzzle rooms contain lasers, mirrors, conveyor belts, duplicators
-that *react to where the player is looking*. The escalation mechanic:
-- Actions in completed rooms are *replayed* as the player enters future rooms. Players must think
-  ahead: what will my past self do here, and can future-me use that?
-- This is the temporal echo of Super Meat Boy's ghost, made into a *positive* mechanic rather than
-  an informational one: your replayed self is a collaborator.
-- The core skill is *choosing which observable sequence to create*, not just reacting to what is.
-[Source: Observe on Thinky Games](https://thinkygames.com/games/observe/)
-[Source: Observe on Steam](https://store.steampowered.com/app/2738190/Observe/)
-
-**Frogger / Crossy Road**
-The prototypical gap-crossing timing game. Hazards move in lanes at fixed speeds; the player reads
-gaps in traffic and commits to crossing a lane. Core mechanic:
-- Multiple simultaneous lanes creates *multi-track timing*: the player does not just time one gap
-  but a sequence of gaps across lanes that must all be clear during a traversal.
-- Holding still is punished (Crossy Road's scrolling camera erases the character). Commitment is
-  mandatory; hesitation is death.
-- Escalation via lane density and speed, not route complexity.
-[Source: Evolution of crossing games — GRFCG](https://grfcg.in/the-evolution-of-crossing-games-from-frogger-to-chicken-road-2-38/)
+Stage context: a 28-click dialog tree (9 memories, 4 final choices, Defragmenter voice) with
+well-written prose but no skill, no economy, and a self-unlocking boss. The 9 echo hints point
+at real host-app actions per stage but are never wired. Verdict before this doc: THIN GATE.
 
 ---
 
-## 2. OUR CORE LOOP (what to build)
+## 1. GENRE — Narrative Choice + Capstone Retrospective
 
-### The game that does not yet exist
+### Defining traits
 
-The current stage9 code has state (`currentLevel: 12`, `clarity: 84`) and a boss path but NO
-rendered mechanics — the boss diagram is static ASCII text, the gap is only mentioned in hint
-text, and `getBossSeed` calls `Math.random` in the live path (both prohibited: no real game,
-determinism violation). The entire stage is a shell waiting for a game.
+A capstone retrospective game presents the player with materials from their own prior journey and
+asks them to reinterpret those materials with new understanding. The "content" of the finale is
+the prior 9 stages — the game doesn't need new set-pieces, it needs a mechanism that makes the
+player *prove* they engaged, then offers a genuinely different Defragmenter response depending on
+the depth of that proof.
 
-### The moment-to-moment loop
+Knowledge-gating (the "Metroidbrainia" pattern) is the closest mechanical analogue: progression
+unlocks not when the player collects an item but when they demonstrate understanding by performing
+an action. Outer Wilds is the genre's canonical example — "knowledge becomes your upgrades; the
+player improves, not the avatar" — and the key insight is that the gate is invisible until the
+moment of comprehension, after which everything is recontextualised. [1]
 
-**Arena:** a terminal-style ASCII circle (~15 chars radius) rotates clockwise around centre `O`.
-A gap of 3 chars is cut from the ring. The player `@` stands at `START` (bottom of the vertical
-lane). `EXIT` is at the top. The crossing lane is the vertical axis through the centre.
+### The 5 reference games and what specifically makes each one work
 
-```
-           EXIT
-            |
-  ─────────────────────
-   ──── . . . . ────
-    ───              ──     <- ring with gap at ~0deg (12-o-clock = aligned)
-   ─────────────────────
-            |
-           [ @ ]
-          START
+**1. Planescape: Torment (Black Isle, 1999)**
+- Central question — "What can change the nature of a man?" — recurs throughout and carries
+  mechanical weight because the player's answer at the finale is shaped by every prior choice.
+  The question is not a riddle with a correct answer; it is a provocation whose weight is
+  proportional to player investment. [2][3]
+- Memory as currency: the Nameless One reconstructs identity through recovered memories;
+  each recovered fragment increases available dialogue options (not just stat bonuses). Players
+  only reach the confrontation with the Transcendent One after painstakingly assembling self.
+- Dialogue-based "boss fight": relational confrontation replaces combat. The player's companions
+  become mirrors. Victory means accepting failure, not conquering an external threat. [2]
+- **Replayable because**: different identity constructions produce meaningfully different
+  confrontations; the philosophical provocation still has no definitive answer on re-read.
 
-  [ OBSERVE ]  [ CROSS ]
-```
+**2. Disco Elysium (ZA/UM, 2019)**
+- Skills as internal voices: 24 skills interrupt conversations with unsolicited advice. The player
+  must decide which parts of their own mind to follow, making character-building an act of
+  identity selection. [4]
+- Thought Cabinet: players accept skill-suggested thoughts without knowing their bonuses until
+  internalized ("strategic uncertainty"). The internalization step transforms what could be a
+  passive upgrade tree into an active commitment. Thoughts can be forgotten, enabling error
+  recovery. [4]
+- Self-balancing difficulty: opposition emerges from internal conflict, not external enemies.
+  As skills increase, more of them interrupt, making choices harder — the system tracks the
+  narrative of increasing instability. [4]
+- **Replayable because**: different skill distributions produce distinct dialogue paths;
+  different thought combinations produce distinct characterizations of the same protagonist.
 
-The ring rotates at a deterministic rate derived from the current `seed` and `level`. The **gap
-angle** at any `tick` is:
-```
-angle(t) = (seedBaseAngle + rotSpeed * t) % 360
-```
-When `angle(t)` is within the tolerance window (e.g. 330..30 deg = a ±30 deg window that shrinks
-per cycle), pressing `CROSS` succeeds. Outside that window, the player bounces back to START.
+**3. Outer Wilds (Mobius Digital, 2019)**
+- Knowledge as the only currency: the finale unlocks when the player understands the solar
+  system's interconnected mysteries, not when they collect items. [1]
+- Invisible gates: the player doesn't know a gate exists until the moment of comprehension;
+  then everything explored before is recontextualised. [1]
+- No streamlining of repetitive actions (suit-up before leaving the ship persists throughout)
+  — this preserves immersion and makes the ending feel arrived-at rather than triggered. [1]
+- **Replayable because**: knowing the ending changes what you notice on a second pass; the
+  emotional arc of acceptance is reproducible even with prior knowledge.
 
-**The observer connection:**
-- **ONLINE (live seed, Math.random):** every time the player presses `OBSERVE` to sample the
-  current angle, the seed is redrawn from `Math.random`. The ring's base angle jumps to a new
-  random value. Observing *destroys* predictability — exactly the quantum measurement collapse.
-  No amount of watching or timing helps because watching is what breaks it.
-- **OFFLINE (SW cached seed = 0):** `seedBaseAngle` and `rotSpeed` are constants derived from
-  seed 0. Pressing `OBSERVE` reads the current angle without disturbing it. The player can now
-  *learn* the rotation and cross with confidence.
+**4. Her Story (Sam Barlow, 2015)**
+- Player types search queries; the database returns clips. "If you can Google, you can play." [5]
+  The mechanic is simple but the richness emerges from what the player chooses to search for.
+- Non-linear investigation: no scripted progression; the player assembles the narrative
+  themselves from fragments. The game is "done" when the player decides they understand, not
+  when they trigger a final scene.
+- **Replayable because**: different search paths surface clips in different orders, producing
+  different subjective narrative arcs from the same material.
 
-**The "aha" moment:** the player eventually realises that trying harder online makes it worse (each
-sample resets the ring). Going offline is not a cheat — it is the only way to stop being the
-thing that breaks the system.
+**5. What Remains of Edith Finch (Giant Sparrow, 2017)**
+- Each memory vignette uses a *different* control scheme / mechanic metaphor. The vignette
+  for Lewis uses a split-screen between fantasy navigation and factory-line clicking; the
+  vignette for Barbara is a comic panel. Each "room" teaches a new verb. [6]
+- No choices in the traditional sense — the game makes you want to make the choices it has
+  already made for you. Narrative railroading disguised as spatial exploration. [6]
+- **Replayable because**: the emotional compression of each vignette is so high that re-reading
+  produces new resonances against the known ending.
 
-### Why this is fun
+### The design DNA for Stage 10
 
-- Timing games are universally satisfying because the feedback loop (press → succeed/fail) is the
-  fastest possible reward cycle (< 1 second per attempt).
-- The observer-effect metaphor is intellectually novel: players who get it feel smart, not lucky.
-- The offline un-cheat is *diegetically consistent* with the theme — "stop watching and it
-  stabilises" maps cleanly to "go offline and the SW serves a fixed seed".
-- Zero learning curve to start (one button, watch the gap, press when aligned), deep ceiling
-  (the later bands require holding multiple rhythms, making inferences from occluded state).
-
----
-
-## 3. THE EXPANSION ARC — ordered new mechanics per band
-
-### Model: Stage 2 Glyph Dungeon
-
-Each Stage 2 biome band introduces a strictly new verb, not bigger numbers:
-- Warrens (floors 1-3): move + avoid terrain.
-- Cisterns (floors 4-6): break line-of-sight from ranged attackers.
-- Emberworks (floors 7-9): manage spreading fire (a new timer / area mechanic).
-- Overflow (floors 10+): manage darkness (FOV shrinks; new information budget).
-
-Stage 9 must follow exactly this model. Deeper always means "a new thing to think about."
-
-### The six bands of Observer State
-
----
-
-**BAND 1 — "Signal" (levels 1-3)**
-**NEW VERB: WATCH AND TIME (basic timing)**
-
-Single ring. One gap. Constant rotation clockwise at 30 deg/s. Full ring visible. Tolerance
-window: ±30 deg. The player's only task: press CROSS when the gap is near 12 o'clock.
-
-This is the tutorial. No observer effect yet; the seed is fixed (level 1 always uses the same
-starting angle). The player learns: ring rotates, gap cycles, timing window exists.
+Stage 10 is closest to a hybrid of Planescape: Torment (memory as currency, dialogue boss) and
+Outer Wilds (knowledge-gate each memory with a real host-app action). The Edith Finch model
+provides the expansion arc skeleton: each memory/sub-stage introduces a new verb (a new way to
+engage with the host-app viewer), not bigger numbers.
 
 ---
 
-**BAND 2 — "Interference" (levels 4-6)**
-**NEW VERB: HOLD MULTIPLE RHYTHMS**
+## 2. OUR CORE LOOP
 
-Two concentric rings, each at a different speed (inner: 45 deg/s, outer: 30 deg/s). Both gaps
-must be simultaneously aligned with the crossing lane for the cross to succeed. The aligned window
-is the AND of both gaps — it is shorter and occurs less frequently.
+### Current loop (as built)
 
-New skill: track two independent periodicities, recognise when they converge. This is the same
-cognitive load as Crossy Road's multi-lane timing but visualised on a single axis. The online
-observer-effect is already present: sampling (observing) resamples both rings independently,
-making convergence prediction impossible without the fixed seed.
+The player steps through 9 memories, each with 4 states: unread → read → resolved → integrated.
 
----
+1. Click "Read this memory" — state transitions to "read", shows a text fragment.
+2. Click one of 3 stance choices ("How did it feel?") — state becomes "resolved".
+3. Click "Integrate this memory" — state becomes "integrated".
+4. At 5 resolved memories: "Answer the final question" unlocks automatically.
+5. Player sees Defragmenter lines (1–4 lines based on tier: minimum/enriched/complete/capstone).
+6. Player clicks one of 4 final choices (continue / expand / rest / understand).
+7. Completion screen with route summary.
 
-**BAND 3 — "Collapse" (levels 7-9)**
-**NEW VERB: CHOOSE WHEN TO OBSERVE**
+**Problems**: each echo ("Open stage_01_source_excerpt.js in raw mode.") is shown only as footer
+text. The echo is never verified. The boss self-unlocks at 5 clicks with zero app interaction.
+The 4 final choices are cosmetically different but produce no different mechanical outcome. There
+is no Defragmenter rebuttal challenge. Integration is a single button click with no prerequisite.
 
-One ring, but the display is uncertain: characters are replaced with `?` while the ring rotates
-normally. The player must press OBSERVE (not CROSS) to *collapse* the display: the actual
-characters appear for 1.5 seconds, then return to `?`. The player must time the CROSS within
-that reveal window before the certainty expires.
+### The intended loop (to build)
 
-New skill: a two-step decision — WHEN to observe (the reveal window you'll be working in) and
-WHEN to cross (within the revealed window). The cost of observing too early is that certainty
-expires before the gap arrives. The cost of observing too late is that the gap has already passed.
+The core loop must add three real layers without replacing the existing prose:
 
-This is the most direct translation of the quantum observer effect into mechanics. Online, pressing
-OBSERVE also resamples the seed, so the revealed position is a new random angle — the very act
-of looking breaks what you learn. Offline, OBSERVE shows the real current angle without
-disturbing the trajectory.
+**Layer A — Echo as gate (the un-cheat).** Each memory's integration is blocked until the echo
+action has been witnessed by the host app. "Witnessed" means the host app fires a callback
+(e.g., onFileOpen, onSearch, onMetadataInspect) that sets `memories[id].echoWitnessed = true`
+in stage-10 state. The player sees the echo hint from the first read step, but cannot integrate
+until they go perform it. This is the load-bearing gate. It must be checked server-side (or
+at minimum in a verifiable way the player cannot shortcut via console).
 
----
+**Layer B — Defragmenter rebuttal (the challenge).** When the player first navigates to the
+"final question" view, the Defragmenter does not immediately offer choices. It delivers a
+rebuttal proportional to the gap between resolved memories and witnessed echoes:
+- All 9 echoes witnessed: Defragmenter acknowledges the evidence and asks the final question.
+- 5–8 echoes witnessed: Defragmenter acknowledges a partial history and asks the question with
+  a caveat line ("Some traces are absent. The answer is possible but incomplete.").
+- Fewer than 5 echoes: Defragmenter refuses ("I see only the choices you made inside yourself.
+  The files you opened, the searches you ran — those are missing. The archive isn't ready.").
+  Final choices remain locked until more echoes are witnessed.
 
-**BAND 4 — "Persistence" (levels 10-12)**
-**NEW VERB: MAP ACROSS RUNS (run-to-run learning)**
+**Layer C — Final choice mechanical weight.** Each of the 4 final choices does something
+concrete in addition to changing the completion text:
 
-The ring now has TWO gaps, but one is real (safe crossing) and one is a phantom (bounce-back,
-marked with `x` in the ring character). Which slot is safe is determined by seed and not displayed
-upfront. The first attempt is a 50/50 guess. But the result is logged: "gap at ~45 deg was safe"
-or "gap at ~200 deg was phantom."
-
-On the NEXT attempt, the player knows which gap to aim for. Over 3 attempts per level, the player
-builds a map of this seed's safe gap. The new skill: *run-to-run memory*, using failure not as
-punishment but as information that accumulates toward a correct crossing.
-
-This also means the online mode is now doubly unlearnable: not only does each OBSERVE resample
-the angles, but even knowing "the safe gap was at 200 deg last time" is useless because the seed
-has changed and safe/phantom have potentially swapped. The offline seed 0 ensures the same gap
-assignment every run — only the timing varies.
-
----
-
-**BAND 5 — "Echo" (levels 13-15)**
-**NEW VERB: READ YOUR OWN HISTORY**
-
-The last two complete crossing attempts (successful or failed) are drawn as faint ghost rings
-(`·` characters) overlaid on the current ring. Each ghost shows: where the gap was when the
-player pressed, what the result was.
-
-New skill: read your own mistake. Did you press too early (ghost gap was 20 deg before 12 o-clock)?
-Or too late (ghost gap was 20 deg past)? The ghosts are calibration instruments, not noise. A
-player who reads them can correct ±20 deg of timing error between runs without any additional
-information.
-
-This is Super Meat Boy's ghost replay mechanic, adapted for a one-axis timing game. The
-information density of the echo is exact enough to make it genuinely useful, but requires the
-player to mentally project "where was the gap when I pressed" — a slightly higher cognitive load
-than just watching the gap.
+- "continue" → records the standard completion; no extra gate. The hub shows the completed
+  stage icon in normal resolved color.
+- "expand" → unlocks a cross-stage capstone view in the hub (the "assembled identity" panel:
+  all 9 stage icons rendered in their accent colors simultaneously, with the player's chosen
+  stances as captions). Requires at least 7 echoes witnessed.
+- "rest" → writes a special `restingState` flag that changes the Awakening entry in the hub
+  to a dim/quiet variant. Available at the minimum threshold (5 resolved).
+- "understand" → requires fullCapstone (all 9 integrated AND all 9 echoes witnessed). Unlocks
+  a 10th hidden memory: "Synthesis" — a single final text that assembles all 9 chosen
+  reflections into one paragraph, shown only in this route.
 
 ---
 
-**BAND 6 — "Blind Crossing" (levels 16+ / boss)**
-**NEW VERB: INFER OCCLUDED STATE**
+## 3. THE EXPANSION ARC — NEW VERB PER SUB-STAGE
 
-One quarter of the ring (a 90 deg arc containing the gap for part of every rotation) is replaced
-by `█` characters — it is dark, unobservable. The player cannot directly see the gap when it
-enters this zone. They must calculate: "the gap was at 120 deg 1.4 seconds ago, rotating at
-30 deg/s, so now it is at 120 + (1.4 × 30) = 162 deg — it will exit the dark zone at 180 deg
-in (180-162)/30 = 0.6 seconds."
+The model is Stage 2 (Glyph Dungeon): each biome band adds a new verb (avoid terrain → break
+line-of-sight → manage spreading fire → manage darkness). Stage 10's "floors" are its 9 memories,
+each mapped to a previous stage. The new verb each memory introduces is the host-app action
+required to witness the echo — but crucially the player does not know this verb is coming until
+they read the echo hint.
 
-This is a pure inference exercise. It is tractable if and only if:
-1. The speed is deterministic (known, not jittered by new seeds).
-2. The last known position was reliable (not corrupted by a resampled observation).
+The arc is ordered by cognitive load: early verbs are the simplest app operations (open a file,
+switch mode); later verbs require multi-step or compound operations (navigate a path, diff two
+files, access metadata). Each new verb is genuinely new — the player cannot re-use the verb they
+learned for memory N to satisfy memory N+1.
 
-Both conditions are met only with the offline/SW cached seed. Online, every sample resets the
-base angle, so the last known position is meaningless for extrapolation — you cannot project from
-a landmark that keeps moving when you look at it.
+### Sub-stage 1 — Genesis (Stage 1: Bit Foundry)
+**New verb: Switch to raw mode.**
+Echo: "Open stage_01_source_excerpt.js in raw mode."
+The player must open a specific file AND switch the viewer to raw/source mode (not the default
+rendered view). This teaches mode-switching — the most fundamental two-step operation in the
+viewer. Lowest cognitive load; introduces the idea that the echo requires a precise app action,
+not just "open a file."
 
-**This is where the un-cheat becomes load-bearing.** Without the SW cache, level 16 is provably
-impossible, not merely hard. The player cannot guess well enough; the gap is always somewhere
-random behind the dark zone. With seed 0 and the ring running at 30 deg/s, the inference is a
-straightforward two-step mental calculation that a player who has learned through bands 1-5 can
-perform. Going offline is not a bypass — it is the required tool.
+### Sub-stage 2 — Syntax (Stage 2: Glyph Dungeon)
+**New verb: In-file search.**
+Echo: "Search stage_02_cipher_retrospective.txt for PASSAGE."
+The player must open the file AND use the in-viewer search to find the token "PASSAGE." This
+teaches that the viewer has active search, not just passive display. The verification callback
+triggers when the search term "PASSAGE" is confirmed found in that file.
 
-**Boss crossing:** the boss attempt is at level 18 (the "clarity 100" threshold). The ring runs
-at 45 deg/s with a 60 deg dark zone and a ±15 deg tolerance window. The player must:
-1. Activate offline mode (read service-worker-notes.txt → activate SW cache → seed fixed to 0).
-2. Observe the ring base angle at start.
-3. Track the gap through the dark zone using mental arithmetic or counting at the known speed.
-4. Press CROSS when the inferred angle crosses ~355..15 deg.
+### Sub-stage 3 — Memory (Stage 3)
+**New verb: Diff two files.**
+Echo: "Diff stage_03_memory_before.log and stage_03_memory_after.log."
+The player must open both log files and invoke the diff/compare view. This is the first two-file
+operation — the player must learn that the viewer can hold two artifacts simultaneously. Moderate
+cognitive load because the workflow is new and requires knowing both files exist.
+
+### Sub-stage 4 — Pattern (Stage 4)
+**New verb: Navigate a nested file path.**
+Echo: "Open pattern/nested/recursion_note.json."
+The player must locate and open a file buried inside a nested folder hierarchy. This teaches
+directory navigation and path-following, echoing Stage 4's recursion mechanic thematically.
+The new cognitive challenge: the player cannot just search by name — they must follow the path.
+
+### Sub-stage 5 — Signal (Stage 5)
+**New verb: Trigger media playback.**
+Echo: "Play stage_05_signal_hum.mp3."
+The player must open an audio file and allow it to begin playing (the media renderer fires the
+witness callback on first play event). This introduces the media type of the viewer — a genuinely
+different renderer from all prior files. Moderate load; also the first non-text artifact.
+
+### Sub-stage 6 — Protocol (Stage 6)
+**New verb: Open a rich document format.**
+Echo: "Open stage_06_protocol_appendix.epub."
+The player must open an EPUB. This introduces the rich-document / ebook renderer — different
+again from text, code, audio. The verification triggers when the EPUB renders its first chapter.
+Thematically echoes Stage 6's "rules as the first bridge that didn't collapse under wanting."
+
+### Sub-stage 7 — Identity (Stage 7)
+**New verb: Inspect file metadata.**
+Echo: "Inspect metadata on stage_07_identity_photo.png."
+The player must open a PNG AND navigate to its metadata panel (EXIF / file info tab). This
+teaches that the viewer has a secondary information layer beneath the rendered surface — directly
+echoing Stage 7's "evidence beneath the image." This is the first operation that requires the
+player to look past the primary render view.
+
+### Sub-stage 8 — Entropy (Stage 8)
+**New verb: Download/archive a file.**
+Echo: "Archive one memory fragment from debris/."
+The player must open a file from the `debris/` directory and use the Download button to save it.
+This teaches that the viewer is not read-only — the player can extract artifacts. Echoes Stage 8
+("survival is not purity; it is salvage with attention"). The verification triggers on the
+download event.
+
+### Sub-stage 9 — Observation (Stage 9)
+**New verb: Revisit a previously opened artifact.**
+Echo: "Open the cached observation memory."
+The player must return to a file they already opened (the viewer's recent-file history / cache
+is the mechanism). The verification triggers when the player opens `stage_09_observation.log`
+from the recents panel rather than navigating to it fresh. Thematically: "I can act from memory
+without watching forever." The cognitive challenge is the highest because it requires the player
+to remember and locate something from their prior session.
+
+### Summary arc table
+
+| Sub-stage | Memory    | New verb introduced              | Cognitive load |
+|-----------|-----------|----------------------------------|----------------|
+| 1         | Genesis   | Switch viewer mode (raw)         | Lowest         |
+| 2         | Syntax    | In-file search for a term        | Low            |
+| 3         | Memory    | Diff / compare two files         | Medium-low     |
+| 4         | Pattern   | Navigate a nested folder path    | Medium         |
+| 5         | Signal    | Trigger media playback           | Medium         |
+| 6         | Protocol  | Open a rich document (EPUB)      | Medium         |
+| 7         | Identity  | Inspect file metadata panel      | Medium-high    |
+| 8         | Entropy   | Download / archive a file        | Medium-high    |
+| 9         | Observation | Return to cached/recent file   | Highest        |
+
+Each new verb is genuinely different from all prior verbs. The player cannot satisfy Memory 7
+(metadata inspect) using the same action they learned for Memory 2 (in-file search). "Deeper"
+always means "a new thing to think about," not bigger numbers or more clicking.
 
 ---
 
-### Summary table
+## 4. FUN & RETENTION — Economy, Risk-Reward, Sustaining 40min–2h
 
-| Band | Levels | New verb                        | What changes from previous band                        |
-|------|--------|---------------------------------|-------------------------------------------------------|
-| 1    | 1-3    | Watch and time                  | Nothing yet — baseline established                    |
-| 2    | 4-6    | Hold multiple rhythms           | Second ring at different speed; AND-window timing     |
-| 3    | 7-9    | Choose when to observe          | Two-step decision; reveal window expires; OBSERVE key |
-| 4    | 10-12  | Map across runs                 | Safe/phantom gap; failure is information; run memory  |
-| 5    | 13-15  | Read own history (ghost echoes) | Past attempts drawn as overlay; calibration from self |
-| 6    | 16+    | Infer occluded state            | Dark zone hides gap; arithmetic extrapolation needed  |
+### The economy
 
----
-
-## 4. FUN AND RETENTION (40 min to 2 hr arc)
-
-### Economy and meta-loop
-
-- **Clarity** is the score (0-100, then bonus above 100). Each successful crossing at band N adds
-  `N * 5` clarity. Clean crossing (no bounce on the level) adds `+2` clarity bonus.
-- At clarity 100, the boss level (18) unlocks. The boss is not harder than a normal band 6 level —
-  it just requires the full un-cheat precondition (offline mode). This is the carrot: players who
-  have learned inference in band 6 will beat the boss on the first attempt IF they think to go
-  offline. Players who have not learnt will keep bouncing without understanding why.
-- Clarity persists across sessions (state.clarity already exists). No reset on death.
+There is no currency, no HP, no XP. The economy is **attention and discovery**. The scarcity
+resource is the echo actions: each one requires the player to leave the game modal and interact
+with the real host-app viewer. This makes each echo feel costly in a good way — the player is
+spending real cognitive effort (navigating the actual tool) to earn the right to integrate a
+memory. The return on that investment is the integration text, which is the most emotionally
+resonant prose in the stage.
 
 ### Risk-reward decisions
 
-- **OBSERVE vs. CROSS trade-off (Bands 3-6):** every OBSERVE press has a cost. Online: destroys
-  current seed. Band 3: starts an expiring certainty window. Band 5: echoes consume display space.
-  Band 6: an OBSERVE press in the dark zone reveals the gap position but does so AT a cost of the
-  certainty countdown — pressing at the wrong moment reveals nothing useful.
-- **Skip attempts:** at any level, pressing CROSS immediately (no observation) is a valid strategy
-  for fast bands where the speed is so well-known that blind-fire has >50% hit rate. This is a
-  skill test, not a patience test.
-- **Clarity floor:** you cannot lose clarity (only fail to gain it). This eliminates loss aversion
-  and makes attempting the boss freely accessible once level 15 is cleared.
+Three genuine decisions carry weight:
 
-### What sustains 40min-2hr
+1. **Which memories to resolve first.** Resolving 5 memories unlocks the final question with
+   the minimum route. A player who wants the "understand" ending must do all 9 echoes and all 9
+   integrations. The player chooses how thorough to be — but the Defragmenter rebuttal makes
+   incompleteness visible and mildly uncomfortable, without blocking completion.
 
-1. Band transitions: each of the 6 bands reads as a new game in the same frame. Players who feel
-   "done" with band 2 discover band 3 is a completely different decision problem.
-2. The aha-moment arc: bands 1-2 feel like a timing game; band 3 reveals the observer-effect
-   theme explicitly (the OBSERVE key is destructive online); band 6 delivers the intellectual
-   payoff ("I need to go offline, not because I'm cheating but because the physics of the system
-   demand it").
-3. Instant retry: each level attempt is 3-15 seconds. No waiting, no loading, no penalty screens.
-   The throughput of attempts is high enough that reaching band 5 from band 4 takes dozens of
-   short loops, not one long grind.
-4. Legible progress: the clarity counter rises visibly, the band name changes (Signal /
-   Interference / Collapse / Persistence / Echo / Blind Crossing), and the ring visual complexity
-   increases. The player can always see where they are and how far they have come.
+2. **Whether to integrate (or just resolve).** Integration requires performing the echo; resolve
+   does not. A player can resolve 5 memories via the stance choices alone and reach the final
+   question, but will be challenged by the Defragmenter if fewer than 5 echoes are witnessed.
+   This creates a real tradeoff: take the quick route or do the work.
+
+3. **Which final choice to make.** "understand" requires the most work (all 9 integrated + all 9
+   echoes) but unlocks the most content (the Synthesis memory). "expand" requires 7 echoes and
+   unlocks the hub capstone view. "continue" and "rest" are available at the minimum threshold
+   but produce qualitatively different hub states. The player must decide how much of the prior
+   journey they want to literally reassemble before they answer.
+
+### What sustains 40min–2h
+
+- **The echo excursions sustain the time.** Each echo requires the player to go use a real app
+  feature. For a player unfamiliar with that feature, discovery + use can take 5–15 minutes.
+  Nine echoes at 5–10 minutes each = 45–90 minutes of actual host-app use, which is the intended
+  time budget. The stage is not padded; it uses real tool discovery as its content.
+
+- **The prose rewards attention.** The four-state arc per memory (unread → read → resolved →
+  integrated) reveals progressively more resonant text. A player who integrates all 9 memories
+  reads 4 × 9 = 36 distinct prose fragments (plus 3 stance reflections per resolved memory).
+  The prose is high enough quality that re-reading earlier states after later ones produces new
+  meaning.
+
+- **The Defragmenter rebuttal creates genuine tension.** The first time the player arrives at
+  the final question and is challenged (or even refused), they must decide: accept the minimum
+  route, or go back and earn more echoes. This is the game's closest thing to a fail state and
+  its closest thing to a retry loop.
+
+- **The "understand" route is a completionist magnet.** A player who discovers that one final
+  choice requires all 9 echoes + integrations will feel the pull to do the extra work. The
+  Synthesis memory (the assembled-identity paragraph from all 9 chosen reflections) is the
+  reward: it is unique to that player's specific combination of stances and exists nowhere else
+  in the game.
 
 ---
 
-## 5. CAVEATS — determinism, perf, uniqueness
+## 5. CAVEATS — Determinism, Performance, Uniqueness
 
-### Determinism (critical — Math.random is banned in the live path)
+### Determinism
 
-The existing `getBossSeed` in `boss.js` calls `Math.random()` directly in the live path — this
-must be replaced. The correct model:
-
-- **Live path (online):** `getBossSeed` still calls `Math.random()` but this is the *content* of
-  the game mechanic (the destructive observation), NOT the seeding of the game engine. The ring
-  animation tick itself must be deterministic, driven by `performance.now()` - `t0` (elapsed ms)
-  and the current seed value. The seed value is what changes (legitimately) when the player
-  observes online.
-- **The animation loop** must use: `angle(t) = (baseAngle + rotSpeed * elapsed) % 360` where
-  `baseAngle` and `rotSpeed` are derived from seed via a deterministic transform (e.g., Mulberry32
-  or the existing `rng.js` LCG from stage3). `Math.random` must NEVER appear in the angle
-  calculation.
-- **The offline seed (0)** produces a specific `baseAngle` and `rotSpeed` every time. The ring is
-  always in the same position at t=0. This is the requirement for inference in band 6.
+- Echo verification must NOT use `Date.now()` or `Math.random()` in the live state path.
+  The `echoWitnessed` flag is a boolean set by a host-app callback — deterministic from the
+  action, not from time.
+- If the Defragmenter rebuttal lines need any variation, derive variation from a seed built from
+  `state.createdAt` (already in state) XOR-ed with the count of witnessed echoes — never live
+  entropy. The `content.js` pattern (already using a fixed seed in analogous stages) applies.
+- The Synthesis memory (for the "understand" route) must be assembled deterministically from the
+  player's recorded `slot.choice` values — no random element. The text generator takes the 9
+  chosen reflection strings and assembles them in memory order (Genesis first, Observation last).
 
 ### Performance
 
-The ring animation is a ~15-char ASCII string redrawn via `setInterval` at 100ms (10 fps).
-This is fast enough to show rotation convincingly and trivially cheap on a static-hosting page.
-No canvas, no WebGL. DOM text node `.textContent` updates at 10fps are imperceptible in CPU cost.
+- The echo verification callbacks must be thin: set a flag in state, call `save()`, repaint.
+  No heavy computation on the callback path. The host-app event system already fires on
+  file-open, search, mode-switch — hooking those events must not slow the viewer.
+- The Synthesis memory text assembly is O(9) string concatenation — negligible.
+- No new vendor dependencies; all logic is pure JS in the stage bundle.
 
-### Uniqueness within the metagame
+### Uniqueness to this stage
 
-- Stage 2 (Glyph Dungeon): grid-movement roguelike, turn-based, spatial.
-- Stage 3 (Nonogram): logical deduction, no time pressure.
-- Stage 5 (Calibration): ???
-- Stage 7: ???
-- Stage 9 (Observer State): real-time timing + epistemological puzzle about observation cost.
-
-Stage 9 is the ONLY stage with real-time animation and a timing press mechanic. It is also the
-only stage where the un-cheat is motivated by the stage's own thematic content (quantum observer
-effect = go offline to freeze the seed). No other stage has this double layer of coherence
-between theme, mechanic, and un-cheat.
-
-### The "not bypassable" test for the boss un-cheat
-
-Can a player beat the boss (level 18, band 6) without going offline?
-
-No. Band 6 requires inferring the gap position behind a 60 deg dark zone. The gap's base angle
-resets to `Math.random` every time the player observes online. Even if the player guesses the
-speed correctly (30 deg/s), they cannot extrapolate from a base angle that changes on each look.
-The variance from a pure random base angle means the correct press time varies by up to ±5 seconds
-across attempts. No human can time within ±15 deg of a 45 deg/s ring with 5 seconds of base-angle
-uncertainty. The offline seed = 0 eliminates base-angle uncertainty entirely, reducing the
-required precision to sub-second anticipation — achievable.
+- **The un-cheat is the stage.** Other stages have mini-games (Bit Foundry's clicker, Glyph
+  Dungeon's roguelite, etc.). Stage 10's "game" is the host-app itself: every echo is a
+  first-person encounter with a real viewer feature. The stage cannot be separated from the tool.
+- **The Defragmenter must not be a push-over and must not be trivially bypassable.** The rebuttal
+  gate on echo count is the only real mechanical gate — it must be server-side-verifiable or at
+  minimum checked in a way that a console `state.memories.genesis.echoWitnessed = true` would
+  not satisfy without the app actually firing the callback. The recommended implementation is:
+  each callback sets both `echoWitnessed` and an `echoToken` (a hash of the file path + a
+  stage-seed, precomputed at build time) that the boss.js gate checks against a known value.
+  Spoofing requires knowing the token, which requires reading the bundle — which is itself a
+  kind of engagement.
+- **The cross-stage hub capstone reward** (the assembled-identity panel: all 9 stage icons in
+  accent color with chosen stances) must be visual and persistent. It is the only reward in the
+  whole metagame that spans all 9 prior stages simultaneously and is visible from the hub.
+  It should be designed so that two players who both chose "expand" but made different stance
+  choices see visually different panels — the capstone is personalized, not universal.
+- **The "rest" ending** must not feel like a lesser route. It should have its own distinct
+  Defragmenter final line ("I'll keep optimizing. You'll be here when you're ready.") and its
+  own hub state (the Awakening card appears dim but with a small asterisk indicating "resting").
 
 ---
 
 ## Sources
 
-- [Tunnel Rush at Zen Arcades](https://zenarcades.com/tunnel-rush-unblocked/)
-- [Tunnel Rush at SEELE AI Gaming](https://www.seeles.ai/games/action/tunnel-rush-fast-paced-3d-tunnel-racing-game)
-- [Geometry Dash design analysis at mograph.com](https://mograph.com/renders/geometry-dash-a-rhythm-fueled-challenge-that-defines-precision-gaming/)
-- [Geometry Dash Wikipedia](https://en.wikipedia.org/wiki/Geometry_Dash)
-- [Super Meat Boy on Grokipedia](https://grokipedia.com/page/Super_Meat_Boy)
-- [Observe puzzle game on Thinky Games](https://thinkygames.com/games/observe/)
-- [Observe on Steam](https://store.steampowered.com/app/2738190/Observe/)
-- [Evolution of crossing games (Frogger / Crossy Road) — GRFCG](https://grfcg.in/the-evolution-of-crossing-games-from-frogger-to-chicken-road-2-38/)
-- [Geometry Dash: Complete Case Study on Rhythm — geometrydash.co.uk](https://geometrydash.co.uk/what-is-geometry-dash/)
-- [Recreate Flappy Bird's flight mechanic — Raspberry Pi / Wireframe #29](https://www.raspberrypi.com/news/recreate-flappy-birds-flight-mechanic-wireframe-29/)
-- [Replayability, Part 2: Game Mechanics — Game Developer](https://www.gamedeveloper.com/design/replayability-part-2-game-mechanics)
-- [Game Design Principles — gamedesignskills.com](https://gamedesignskills.com/game-design/concepts/)
-- [Service Workers and Offline Caching — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers)
-- [Caching strategies overview — Chrome for Developers / Workbox](https://developer.chrome.com/docs/workbox/caching-strategies-overview)
-- [Service worker caching and HTTP caching — web.dev](https://web.dev/articles/service-worker-caching-and-http-caching)
+1. Outer Wilds critical analysis — Game Developer
+   https://www.gamedeveloper.com/design/outer-wilds-critical-analysis
+
+2. "WHAT CAN CHANGE THE NATURE OF A MAN?" — Adam Robertson, Medium
+   https://medium.com/@adamjohnrobertson/what-can-change-the-nature-of-a-man-c1d9e3d08556
+
+3. Planescape: Torment as Philosophy — Springer Nature
+   https://link.springer.com/rwe/10.1007/978-3-319-97134-6_94-2
+
+4. Disco Elysium RPG System Analysis — Game Design Thinking
+   https://gamedesignthinking.com/disco-elysium-rpg-system-analysis/
+
+5. Her Story — Sam Barlow on non-linear narrative / investigative design
+   http://artcoregamer.nicolaslafarge.fr/en/her-story-entre-narration-non-lineaire-et-narration-interactive/
+
+6. Narrative Design Analysis: What Remains of Edith Finch — RPGFan
+   https://www.rpgfan.com/feature/narrative-design-analysis-what-remains-of-edith-finch/
+
+7. Freedom and Consequence: The Importance of Narrative in Choice-Driven Games — Game Developer
+   https://www.gamedeveloper.com/design/freedom-and-consequence-the-importance-of-narrative-in-choice-driven-games
+
+8. Disco Elysium and the Power of System-Driven Storytelling — Medium
+   https://medium.com/@Urzashottub/disco-elysium-and-the-power-of-system-driven-storytelling-e1f326456121
+
+9. Gameplay Design Fundamentals: Gameplay Progression — Game Developer
+   https://www.gamedeveloper.com/design/gameplay-design-fundamentals-gameplay-progression
+
+10. Why writing matters — literary qualities of Disco Elysium and Planescape: Torment
+    https://alexanderwinter.se/gaming-texts/literary-writing-in-disco-elysium-and-planescape-torment/

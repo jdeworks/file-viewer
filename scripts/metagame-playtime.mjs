@@ -55,9 +55,9 @@ const note = [];
   note.push(`Stage 5: per-round forced time = [${perRound.map((s) => Math.round(s) + "s").join(", ")}]; total ${Math.round(sum)}s clean. Integrity loss forces full-round replays (×2–4 realistic).`);
 }
 
-// ── Stage 9 — Observer State: rotation period + earliest-solve per sublevel (12–17) ────────────────
+// ── Stage 8 — Observer State: rotation period + earliest-solve per sublevel (12–17) ────────────────
 {
-  const { levelConfig, rotSpeedFor, solveElapsed, sublevelSeed } = await import("../docs/games/metagame/stages/stage9/game.js");
+  const { levelConfig, rotSpeedFor, solveElapsed, sublevelSeed } = await import("../docs/games/metagame/stages/stage8/game.js");
   let minSolve = 0;
   const lines = [];
   for (let lvl = 12; lvl <= 17; lvl++) {
@@ -70,9 +70,9 @@ const note = [];
   }
   // realistic: a player watches ~2 revolutions to read the timing, then crosses, per sublevel
   const watchS = [...Array(6)].reduce((a, _, i) => a + 2 * (360 / rotSpeedFor(sublevelSeed(12 + i), 12 + i)), 0);
-  rows.push({ stage: "9 Observer State", body: "6 sublevels (12–17)", forced: fmt(minSolve), interactions: "OBSERVE/CROSS per level", reading: "—",
+  rows.push({ stage: "8 Observer State", body: "6 sublevels (12–17)", forced: fmt(minSolve), interactions: "OBSERVE/CROSS per level", reading: "—",
     realistic: `${fmt(minSolve)} (perfect) · ${fmt(minSolve + watchS)}+ (learning)`, kind: "engine-timed" });
-  note.push(`Stage 9: ${lines.join(" | ")}. 'Perfect' = cross on the first window; 'learning' adds ~2 revolutions watched per sublevel.`);
+  note.push(`Stage 8: ${lines.join(" | ")}. 'Perfect' = cross on the first window; 'learning' adds ~2 revolutions watched per sublevel.`);
 }
 
 // ── Stage 7 — Identity Arbiter: interaction count + reading load (SS1–SS4, no boss) ────────────────
@@ -92,10 +92,10 @@ const note = [];
   note.push(`Stage 7: ${interactions} required interactions + ~${words} words of evidence prose. Reading-paced, not engine-paced.`);
 }
 
-// ── Stage 10 — Awakening: interaction count + reading load (9 memories, no final-choice = "boss") ──
+// ── Stage 9 — Awakening: interaction count + reading load (8 memories, no final-choice = "boss") ──
 {
-  const { memories } = await import("../docs/games/metagame/stages/stage10/content.js");
-  // required interactions per memory: read + resolve + open-echo + integrate (+8 Next steps between)
+  const { memories } = await import("../docs/games/metagame/stages/stage9/content.js");
+  // required interactions per memory: read + resolve + open-echo + integrate (+7 Next steps between)
   const interactions = memories.length * 4 + (memories.length - 1);
   let words = 0;
   for (const m of memories) {
@@ -104,9 +104,9 @@ const note = [];
   }
   const readS = (words / WPM) * 60;
   const clickS = interactions * CLICK_S;
-  rows.push({ stage: "10 Awakening", body: "9 memories", forced: "—", interactions: String(interactions), reading: `${words}w ≈ ${fmt(readS)}`,
+  rows.push({ stage: "9 Awakening", body: "8 memories", forced: "—", interactions: String(interactions), reading: `${words}w ≈ ${fmt(readS)}`,
     realistic: fmt(readS + clickS), kind: "read+click" });
-  note.push(`Stage 10: ${interactions} required interactions (incl. 9 echo file-opens) + ~${words} words. Reading-paced finale.`);
+  note.push(`Stage 9: ${interactions} required interactions (incl. 8 echo file-opens) + ~${words} words. Reading-paced finale.`);
 }
 
 // ── render ─────────────────────────────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ console.log("  " + "-".repeat(86));
 for (const r of rows) {
   console.log("  " + pad(r.stage, 20) + pad(r.body, 22) + pad(r.forced, 12) + pad(r.reading, 16) + r.realistic);
 }
-console.log("\n  Stages 8 (cycle/click survival) is interaction-driven with no forced clock — omitted from the timed table.\n");
+console.log("");
 console.log("  Notes:");
 for (const n of note) console.log("   • " + n);
 console.log("");

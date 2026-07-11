@@ -85,25 +85,27 @@ function validStageModule(id = 2) {
 
 {
   const save = createFreshSave(1000);
-  ok(isValidSave(save), 'save: fresh v5 validates');
-  ok(save.version === 5 && save.currentStage === 1, 'save: fresh v5 starts at stage 1');
-  ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'save: fresh v5 unlocks stages 1–9 (stage 10 gated)');
-  ok(!save.unlockedStages.includes(10), 'save: fresh v5 does NOT unlock stage 10');
-  ok(Object.keys(save.stageState).length === 10 && save.stageState[10], 'save: fresh v5 creates all stageState slots');
-  ok(save.runs && Object.keys(save.runs).length === 0, 'save: fresh v5 has an empty run-counter map');
-  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'save: fresh v5 seeds the ascension summary');
+  ok(isValidSave(save), 'save: fresh v6 validates');
+  ok(save.version === 6 && save.currentStage === 1, 'save: fresh v6 starts at stage 1');
+  ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8', 'save: fresh v6 unlocks stages 1–8 (stage 9 gated)');
+  ok(!save.unlockedStages.includes(9), 'save: fresh v6 does NOT unlock stage 9');
+  ok(Object.keys(save.stageState).length === 9 && save.stageState[9], 'save: fresh v6 creates all stageState slots');
+  ok(save.runs && Object.keys(save.runs).length === 0, 'save: fresh v6 has an empty run-counter map');
+  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'save: fresh v6 seeds the ascension summary');
 }
 
 {
   const storage = new MemoryStorage({ [SAVE_KEY]: '{bad json' });
   const save = loadSave({ storage, timestamp: 2000 });
-  ok(isValidSave(save), 'save: malformed storage becomes fresh v5');
+  ok(isValidSave(save), 'save: malformed storage becomes fresh v6');
   ok(JSON.parse(storage.getItem(SAVE_KEY)).version === SAVE_VERSION, 'save: malformed replacement is persisted');
 }
 
 {
-  // A valid v3 save with real player data MIGRATES forward to v5 with all prior data intact and the
+  // A valid v3 save with real player data MIGRATES forward to v6 with all prior data intact and the
   // freshly-defaulted additive fields (`runs`, the ascension summary) — it must NOT be discarded/reset.
+  // Stages 1-7 are untouched by the v5->v6 stage-renumbering step, so this fixture's stage-3/stage-6
+  // substate is a faithful regression check that ordinary per-stage data survives the full ladder.
   const v3 = {
     version: 3,
     currentStage: 6,
@@ -118,19 +120,19 @@ function validStageModule(id = 2) {
   };
   const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v3) });
   const save = loadSave({ storage, timestamp: 3000 });
-  ok(isValidSave(save) && save.version === 5, 'save: a valid v3 save migrates forward to v5');
+  ok(isValidSave(save) && save.version === 6, 'save: a valid v3 save migrates forward to v6');
   ok(save.defeated.join(',') === '1,2', 'migrate: defeated preserved');
-  ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'migrate: an old [1,2,3] save normalizes to 1–9 unlocked (stage 10 still gated)');
+  ok(save.unlockedStages.join(',') === '1,2,3,4,5,6,7,8', 'migrate: an old [1,2,3] save normalizes to 1–8 unlocked (stage 9 still gated)');
   ok(save.achievements['stage1.cheat_disabled'] && save.actions['2.search_passage'].detail.value === 'PASSAGE', 'migrate: achievements/actions preserved');
   ok(save.stageState[3].progress === 7 && save.stageState[6].run.hp === 42, 'migrate: per-stage progress preserved');
   ok(save.global.loopCount === 3 && save.global.createdAt === 111, 'migrate: global data preserved (not reset to fresh)');
-  ok(save.runs && Object.keys(save.runs).length === 0, 'migrate: v3->v5 backfills an empty runs map');
-  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v3->v5 backfills the ascension summary');
-  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 5, 'migrate: the upgraded save is persisted back');
+  ok(save.runs && Object.keys(save.runs).length === 0, 'migrate: v3->v6 backfills an empty runs map');
+  ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v3->v6 backfills the ascension summary');
+  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 6, 'migrate: the upgraded save is persisted back');
 }
 
 {
-  // A valid v4 save MIGRATES forward to v5: the 4->5 step backfills the ascension summary and
+  // A valid v4 save MIGRATES forward to v6: the 4->5 step backfills the ascension summary and
   // preserves all existing data, including any global fields the player already had.
   const v4 = {
     version: 4,
@@ -147,42 +149,93 @@ function validStageModule(id = 2) {
   };
   const storage = new MemoryStorage({ [SAVE_KEY]: JSON.stringify(v4) });
   const save = loadSave({ storage, timestamp: 4200 });
-  ok(isValidSave(save) && save.version === 5, 'save: a valid v4 save migrates forward to v5');
+  ok(isValidSave(save) && save.version === 6, 'save: a valid v4 save migrates forward to v6');
   ok(save.runs[1] === 3 && save.stageState[1].economy.balance === 88, 'migrate: v4 runs/stage substate preserved');
   ok(save.global.loopCount === 1 && save.global.crashCourseUnlocked === true && save.global.createdAt === 5, 'migrate: v4 global data preserved');
   ok(save.global.maxAscension === 0 && save.global.ascensionCleared && Object.keys(save.global.ascensionCleared).length === 0, 'migrate: v4->v5 backfills the ascension summary');
-  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 5, 'migrate: the upgraded v4 save is persisted back');
+  ok(JSON.parse(storage.getItem(SAVE_KEY)).version === 6, 'migrate: the upgraded v4 save is persisted back');
 }
 
 {
-  // Stages 1–9 unlocked by default: a full reset must yield 1–9 (and never stage 10), so the stage
-  // buttons exist immediately. Stage 10 stays gated (only beating stage 9 / dev unlock-all adds it).
+  // Stages 1–8 unlocked by default: a full reset must yield 1–8 (and never stage 9), so the stage
+  // buttons exist immediately. Stage 9 (the finale) stays gated (only beating stage 8 / dev unlock-all
+  // adds it).
   const storage = new MemoryStorage();
   const reset = resetSave({ storage, timestamp: 8000 });
-  ok(reset.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'reset: a full reset unlocks stages 1–9');
-  ok(!reset.unlockedStages.includes(10), 'reset: a full reset does NOT unlock stage 10');
+  ok(reset.unlockedStages.join(',') === '1,2,3,4,5,6,7,8', 'reset: a full reset unlocks stages 1–8');
+  ok(!reset.unlockedStages.includes(9), 'reset: a full reset does NOT unlock stage 9');
 
-  // An old save with only [1] normalizes forward to 1–9.
+  // An old save with only [1] normalizes forward to 1–8.
   const bare = ensureSaveShape({ ...createFreshSave(8100), unlockedStages: [1] }, 8100);
-  ok(bare.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'normalize: a bare [1] save becomes 1–9 unlocked');
-  ok(!bare.unlockedStages.includes(10), 'normalize: a bare [1] save still has stage 10 gated');
+  ok(bare.unlockedStages.join(',') === '1,2,3,4,5,6,7,8', 'normalize: a bare [1] save becomes 1–8 unlocked');
+  ok(!bare.unlockedStages.includes(9), 'normalize: a bare [1] save still has stage 9 gated');
 
-  // A save that had already earned stage 10 KEEPS it (forward-migration must not lose progress).
-  const earned = ensureSaveShape({ ...createFreshSave(8200), unlockedStages: [1, 2, 3, 10], defeated: [9] }, 8200);
-  ok(earned.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9,10', 'normalize: an earned-stage-10 save keeps stage 10');
+  // A save that had already earned stage 9 (the finale) KEEPS it (forward-migration must not lose
+  // progress). ensureSaveShape only normalizes within the CURRENT schema's stage numbering — the
+  // cross-version stage-8/9/10 renumbering itself is migrateSave's v5->v6 step, tested below.
+  const earned = ensureSaveShape({ ...createFreshSave(8200), unlockedStages: [1, 2, 3, 9], defeated: [8] }, 8200);
+  ok(earned.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'normalize: an earned-stage-9 save keeps stage 9');
 }
 
 {
   // Legacy/degenerate older versions are shape-upgraded (backfilled), not discarded.
   const up = migrateSave({ version: 1, defeated: [4], stageState: { 4: { kept: true } } }, 500);
-  ok(up && up.version === 5, 'migrate: v1 walks the full ladder to v5');
+  ok(up && up.version === 6, 'migrate: v1 walks the full ladder to v6');
   ok(up.defeated.join(',') === '4' && up.stageState[4].kept === true, 'migrate: v1 player data survives the ladder');
-  ok(Object.keys(up.stageState).length === 10, 'migrate: v1 upgrade fills all 10 stage slots');
+  ok(Object.keys(up.stageState).length === 9, 'migrate: v1 upgrade fills all 9 stage slots');
   ok(up.global.maxAscension === 0 && Object.keys(up.global.ascensionCleared).length === 0, 'migrate: v1 ladder ends with the ascension summary');
   // Truly-unmigratable inputs return null so the caller falls back to fresh.
   ok(migrateSave(null) === null && migrateSave({ noVersion: true }) === null, 'migrate: corrupt/versionless inputs return null');
   ok(migrateSave({ version: 999 }) === null, 'migrate: a future version is not down-migrated');
-  ok(migrateSave({ ...createFreshSave(1), version: 5 }) !== null, 'migrate: a current-version save passes through');
+  ok(migrateSave({ ...createFreshSave(1), version: SAVE_VERSION }) !== null, 'migrate: a current-version save passes through');
+}
+
+{
+  // 5->6: Entropy Field (the old stage 8) is DROPPED; Observer State moves 9->8; Awakening (the
+  // finale) moves 10->9. All stage-numbered player data must survive the renumbering.
+  const v5 = {
+    version: 5,
+    currentStage: 10,
+    defeated: [1, 7, 9], // 9 (old Observer State) -> remaps to 8; 1/7 untouched
+    unlockedStages: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    achievements: {
+      'stage1.cheat_disabled': { id: 'stage1.cheat_disabled' },
+      'stage8.salvage_archived': { id: 'stage8.salvage_archived' },       // old Entropy Field — dropped
+      'stage9.offline_mode_activated': { id: 'stage9.offline_mode_activated' }, // -> stage8
+      'stage10.full_capstone': { id: 'stage10.full_capstone' },           // -> stage9
+    },
+    actions: {
+      '1.cheat_disabled': { detail: {} },
+      '8.salvage_archived': { detail: { v: 'old-entropy' } },  // old Entropy Field — dropped
+      '9.offline_mode_activated': { detail: { v: 'observer' } }, // -> 8.offline_mode_activated
+      '10.memory_resolved': { detail: { v: 'awakening' } },      // -> 9.memory_resolved
+    },
+    bell: { seen: [], log: [] },
+    bts: { opened: {} },
+    runs: { 1: 2, 8: 5, 9: 1, 10: 3 },
+    stageState: {
+      1: { kept: 1 }, 2: {}, 3: {}, 4: {}, 5: {}, 6: {}, 7: {},
+      8: { entropySpecific: true },   // old Entropy Field — dropped entirely
+      9: { observerRun: 'alive' },    // -> stageState[8]
+      10: { memories: 'alive' },      // -> stageState[9]
+    },
+    global: { loopCount: 9, maxAscension: 2, ascensionCleared: {}, createdAt: 1, updatedAt: 1 },
+  };
+  const up = migrateSave(v5, 900);
+  ok(up && up.version === 6, 'migrate: v5 walks the 5->6 stage-renumbering step');
+  ok(up.defeated.join(',') === '1,7,8', 'migrate: defeated remaps 9->8 (1/7 untouched)');
+  ok(up.unlockedStages.join(',') === '1,2,3,4,5,6,7,8,9', 'migrate: unlockedStages remaps and drops old stage 8, de-dupes/sorts');
+  ok(up.currentStage === 9, 'migrate: currentStage 10->9');
+  ok(up.stageState[8].observerRun === 'alive' && up.stageState[9].memories === 'alive', 'migrate: stageState 9->8 and 10->9');
+  ok(!('10' in up.stageState) && Object.keys(up.stageState).length === 9, 'migrate: old stage-8 slot dropped, no stray stage-10 slot remains');
+  ok(up.runs[8] === 1 && up.runs[9] === 3 && up.runs[1] === 2, 'migrate: runs counter remapped 9->8 and 10->9');
+  ok(!('8' in up.runs) || up.runs[8] === 1, 'migrate: old runs[8] (Entropy Field) is gone, not merged into the new runs[8]');
+  ok(up.actions['8.offline_mode_activated']?.detail.v === 'observer', 'migrate: action key 9.offline_mode_activated -> 8.offline_mode_activated');
+  ok(up.actions['9.memory_resolved']?.detail.v === 'awakening', 'migrate: action key 10.memory_resolved -> 9.memory_resolved');
+  ok(!up.actions['8.salvage_archived'] && !up.actions['9.offline_mode_activated'] && !up.actions['10.memory_resolved'], 'migrate: dropped/old action keys are gone');
+  ok(up.achievements['stage8.offline_mode_activated'] && up.achievements['stage9.full_capstone'], 'migrate: achievement ids remap stage9->stage8, stage10->stage9');
+  ok(!up.achievements['stage8.salvage_archived'] && !up.achievements['stage9.offline_mode_activated'] && !up.achievements['stage10.full_capstone'], 'migrate: dropped/old achievement ids are gone');
+  ok(up.achievements['stage1.cheat_disabled'], 'migrate: unaffected stage-1 achievement untouched');
 }
 
 {

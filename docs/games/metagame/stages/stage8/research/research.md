@@ -1,541 +1,421 @@
-# Stage 8 — Entropy Field: Game Design Research
+# Stage 9 "Observer State" — Game Design Research
 
-_Research brief for the expansion + real-game design of Stage 8._
-_Companion docs: `planning/stage8-01-survival-resource-research.md` (genre deep-dive),
-`planning/stage8-02-our-game-design.md` (566-line implementation spec)._
-
----
-
-## 1. GENRE — Survival Resource Management / Decay Simulation
-
-### What the genre is
-
-A survival resource management game imposes **persistent depletion**: every resource in the
-system trends toward exhaustion unless the player actively counters it. The core loop is
-not "build toward a goal" but "maintain a system against its own tendency to fall apart."
-Decay simulation is a sub-genre that makes the depletion mechanism explicit and structural —
-resources do not just run out, they rot, cascade, and pull adjacent systems down with them.
-
-The genre's distinguishing traits:
-
-- **Rate-vs-total tension.** Players must track not just how much they have but how fast it is
-  changing. A large stockpile draining fast is more dangerous than a small stockpile holding
-  steady. Games that hide rates (only show totals) feel opaque; the best games show both.
-- **Cascade failure.** The failure of one sub-system stresses adjacent sub-systems. A single
-  broken node can cause a progressive collapse that exceeds what any individual failure would
-  justify. This is both the primary threat and the primary dramatic engine.
-- **Bounded rationality under scarcity.** The player can never repair everything, feed everyone,
-  or maintain all infrastructure simultaneously. Decisions are always about trade-offs under
-  time pressure. This is what makes every cycle feel meaningful rather than mechanical.
-- **Preparation / reaction alternation.** The best survival games create a rhythm: a planning
-  window (safe, deliberate) followed by an event window (reactive, stressful). Neither alone
-  is engaging for long.
-- **Knowledge as meta-progression.** The game's "difficulty" is substantially about learning
-  what to prioritize. A player on their third run has fundamentally better judgment than on
-  their first — even with the same in-run resources.
-
-### The 3-5 best games and what specifically makes them work
-
-**Don't Starve (2013, Klei Entertainment)**
-Three interlocked meters — Health, Hunger, Sanity — each depleting from different causes and
-interacting with each other. Low Sanity causes hallucinations that threaten Health; eating
-bad food restores Hunger but damages Sanity. The *interdependence* across meters is what
-separates Don't Starve from simpler survival games: you cannot optimize for one meter without
-creating risk on another. The day/night cycle (roughly 10 real minutes) imposes a forced
-decision rhythm that prevents turtling. The most elegant design choice: **Sanity changes what
-the player perceives** — the world looks different at low Sanity (shadow creatures appear,
-audio degrades). The mechanical state IS the aesthetic experience. Players feel entropy
-before they read it. Permadeath with full knowledge retention means every death teaches
-permanently, making death feel productive rather than punishing.
-
-Sources: [Survival Game Design Principles (gamedesignskills.com)](https://gamedesignskills.com/game-design/survival/),
-[How Survival Games Teach Resource Management (gamerant.com)](https://gamerant.com/best-survival-games-teaching-resource-management/)
-
-**Oxygen Not Included (2019, Klei Entertainment)**
-A closed-system colony sim where resources form **flow networks**: oxygen is produced,
-transported, and consumed; CO2 accumulates; heat builds. The genius is making the player
-design infrastructure (pipe layouts, power grids) whose spatial arrangement determines
-system behavior. There is no antagonist AI — the player is their own enemy: "for every
-action, a reaction." Heating water to purify it raises ambient temperature, preventing crops
-from growing. The emergent crises from this self-made interdependency create the most
-compelling cascade narratives in the genre: a power shortage causes the water pump to fail,
-which stops irrigation, which kills food crops, which causes starvation. No single designed
-enemy produced any of this. The "race against entropy" pacing is also distinctive: starting
-resources are abundant, depletion is gradual, and the player must establish sustainable
-systems before initial stockpiles run out. The deadline is self-imposed and invisible until
-it is urgent.
-
-Sources: [The Genius Design of Oxygen Not Included (gideonsgaming.com)](https://gideonsgaming.com/the-genius-design-of-oxygen-not-included-a-review/),
-[ONI Game Mechanics wiki](https://oxygennotincluded.wiki.gg/wiki/Game_Mechanics)
-
-**Frostpunk (2018, 11 Bit Studios)**
-Dual-axis management: physical resources (coal, food, steel) and social resources (Hope,
-Discontent). Both axes have fail states; they interact: harsh decisions produce more coal but
-reduce Hope. The **moral ratchet** — enacted laws cannot be revoked — means early decisions
-compound into late-game constraints, giving choices lasting weight. Countdown-event pressure
-("temperature drops to -100C in 12 days") creates a specific kind of tension: preparing for
-a *known future state*, distinct from ONI's gradual invisible depletion. Resource pipeline
-visibility (rates always displayed alongside totals) is the UX lesson the whole genre learned.
-Frostpunk 2 (2024) pushed further: individual buildings became districts (nodes), each
-producing resources and requiring supplies. The district/node model simplifies cognitive load
-while deepening strategic thinking — the node-as-unit approach rather than building-as-unit
-directly informs Stage 8's design.
-
-Sources: [Why Frostpunk's Game Design Is So Good (retrostylegames.com)](https://retrostylegames.com/blog/frostpunk-game-design/),
-[Frostpunk Analysis: Emotional Narrative Engagement (gamedeveloper.com)](https://www.gamedeveloper.com/design/frostpunk-an-analysis-of-emotional-narrative-engagement)
-
-**Into the Breach (2018, Subset Games)**
-Not a survival resource game in the traditional sense, but the most important design reference
-for **failure that teaches rather than punishes**. The core mechanic: the player always knows
-enemy attack locations before acting. This makes failure feel like a puzzle unsolved rather
-than a trap sprung. The true fail state is losing the Power Grid (cities destroyed), not losing
-mechs — players must "unlearn" protecting their units and learn to protect the world. The grid
-is shared across all islands, meaning losses compound. New threats per island change the
-decision space without inflating numbers. The lesson for Stage 8: **the boss should test
-preparation, not reflexes.** The Heat Death is Into the Breach's Power Grid at maximum
-pressure: a finite buffer that accumulated decisions have either filled or not.
-
-Sources: [Reimagining Failure in Strategy Game Design: Into the Breach (gamedeveloper.com)](https://www.gamedeveloper.com/design/reimagining-failure-in-strategy-game-design-in-i-into-the-breach-i-),
-[Core Gameplay Mechanics of Into the Breach (winenfood.com)](https://winenfood.com/explaining-the-into-the-breach-game-mechanics/)
-
-**Rimworld (2018, Ludeon Studios) — for cascade failure as dramatic engine**
-The most important reference for cascade failure design. Rimworld's genius is that its
-disaster events are calibrated to colony wealth, preventing catastrophic punishment during
-recovery phases. The expectations system adjusts colonist mood requirements downward after
-disasters. Most critically, the "deus ex machina safety valve" (the Man in Black: one
-guaranteed rescue in truly hopeless situations) preserves stakes while offering redemption.
-The design lesson: **allow dramatic spirals but build in recovery possibility.** A cascade
-that cannot be recovered from is just unfairness; a cascade that CAN be recovered from, with
-effort, is the genre's highest-stakes drama.
-
-Sources: [The Art of the Spiral: Failure Cascades in Simulation Games (gamedeveloper.com)](https://www.gamedeveloper.com/design/the-art-of-the-spiral-failure-cascades-in-simulation-games),
-[8 Survival Strategy Games Rewarding Smart Planning (techtimes.com)](https://www.techtimes.com/articles/314815/20260225/8-survival-strategy-games-that-reward-smart-planning-over-fast-reflexes.htm)
+**Date:** 2026-06-26
+**Branch:** worktree-metagame-bitfoundry
+**Stage status entering this research:** THIN GATE — 4 clicks, no rendered mechanic, Math.random in
+live path, hint-text-only rotating-gap puzzle, currentLevel/clarity in state but unused by gameplay.
 
 ---
 
-## 2. OUR CORE LOOP
+## 1. GENRE: Reflex / Timing + Observer-Effect Puzzle
 
-### Situation assessment
+### What defines the genre
 
-The existing code (state.js, renderer.js, boss.js, content.js) is a thin stub. The "game"
-as currently built:
+A **reflex-timing game** presents a repeating, periodic state (a gap in a rotating ring, a corridor
+between moving hazards, a rhythm beat) and asks the player to press at the precise moment that state
+is favorable. The core skill loop is:
 
-- Starts with 3 pre-made debris files (cycle 14, nodes already failed)
-- Presents a static node map with 4 nodes, 2 already failed
-- Win condition: archive 2 starter debris files → challenge Heat Death → instant win
-- No cycle engine, no repair system, no cascade, no events
-- This is trivially won in under 30 seconds
+- **Perceive** the periodic signal (rotation speed, gap width, pattern).
+- **Anticipate** the alignment window slightly ahead of the gap's arrival (reaction time is ~250 ms;
+  the player must act before the optimal moment, not at it).
+- **Execute** a single, binary commitment (press or wait).
+- **Receive immediate feedback** (success / bounce-back / death) with near-zero latency.
 
-The **566-line design spec** in `planning/stage8-02-our-game-design.md` is the real game.
-It is not built. What follows is the complete design for what must be implemented.
+Instant respawn / retry is the mandatory corollary: any delay between failure and retry kills the
+feedback loop.
+
+An **observer-effect puzzle** adds a second constraint: the act of examining the state changes it.
+In quantum mechanics, measuring a particle's position collapses its wave-function to a definite
+state that differs from the superposition it was in before measurement. Game designers use this
+metaphor to force a *decision about when to look*: look too early and you spend a shrinking window
+acting on stale information; look too late and the state resamples under you.
+
+The two genres combine into a single compound skill: **choose when to observe, then time the
+press against what you just collapsed**. The offline/SW mechanic maps directly onto this — in
+online mode sampling (observing) the seed resets it to Math.random, so every observation is
+destructive; in offline/cached mode the seed is deterministic, so observation is free and learning
+is possible.
+
+### The 3-5 best games in this compound genre
+
+**Tunnel Rush (browser, 2016 — Unblocked/Poki)**
+A first-person tunnel where sliced rings (rings with one open wedge) and rotating half-barriers
+rotate and approach. Core mechanics that make it fun:
+- Obstacles follow *consistent* rotation speeds. Once the player recognises the rhythm, they can
+  predict exactly when a gap aligns with their lane. This is learnable pattern, not pure luck.
+- Difficulty escalates by adding shape variety and increasing speed (not just speed). New shapes
+  introduce new reading-skills: horizontal bars need a horizontal dodge, diagonal slashes need
+  diagonal timing. Each shape is a new verb.
+- No power-ups, no shields — purity. Every run starts fresh. Failure is always the player's.
+- Speed increases the longer you survive, compressing the reaction window. Players self-select
+  their ceiling, not a difficulty dial.
+[Source: Tunnel Rush at Zen Arcades](https://zenarcades.com/tunnel-rush-unblocked/)
+[Source: Tunnel Rush at SEELE AI Gaming](https://www.seeles.ai/games/action/tunnel-rush-fast-paced-3d-tunnel-racing-game)
+
+**Geometry Dash (RobTop, 2013)**
+A side-scrolling rhythm platformer where each obstacle is synchronised to a music track. Core
+mechanics:
+- *Music synchronisation*: players are not reacting visually — they learn the level as a piece of
+  music. This shifts the skill from reaction time (limited by neurology) to anticipation (learnable
+  with repetition). Higher Hz displays do reduce the error margin, but the ceiling is learned, not
+  reflexed.
+- *Millisecond tolerance windows* with immediate feedback (hit wall → back to start) keep the
+  loop tight. Levels are 40 seconds to 3 minutes; the time-to-retry is never the level length,
+  it's the distance to where you died.
+- *Pattern recognition escalation*: each difficulty tier introduces a new movement mode (ship,
+  ball, UFO, wave) rather than just tighter gaps. New mode = new rules = new learning arc.
+[Source: Geometry Dash design analysis — mograph.com](https://mograph.com/renders/geometry-dash-a-rhythm-fueled-challenge-that-defines-precision-gaming/)
+[Source: Geometry Dash Wikipedia](https://en.wikipedia.org/wiki/Geometry_Dash)
+
+**Super Meat Boy (Team Meat, 2010)**
+A precision platformer where each level is completable in under 30 seconds at mastery. Core
+mechanics:
+- *Instantaneous respawn* after death. No animation, no confirm dialog, no score. Failure cost is
+  zero. This makes 50 attempts on one room feel like one extended learning session, not 50
+  punishments.
+- *Ghost replay on completion*: every run the player has died on is shown as a ghost. Players read
+  their own history of failure to find the line that works. This is the "echo" mechanic — your
+  past attempts become legible data.
+- *Short mastery arc per level*: once the pattern is memorised, the run feels like muscle memory.
+  Mastery is the reward, not a score.
+[Source: Super Meat Boy on Grokipedia](https://grokipedia.com/page/Super_Meat_Boy)
+
+**Observe (2024, Steam)**
+A puzzle game where "your vision is the only tool at your disposal — watch as the world around
+you reacts to being observed." Puzzle rooms contain lasers, mirrors, conveyor belts, duplicators
+that *react to where the player is looking*. The escalation mechanic:
+- Actions in completed rooms are *replayed* as the player enters future rooms. Players must think
+  ahead: what will my past self do here, and can future-me use that?
+- This is the temporal echo of Super Meat Boy's ghost, made into a *positive* mechanic rather than
+  an informational one: your replayed self is a collaborator.
+- The core skill is *choosing which observable sequence to create*, not just reacting to what is.
+[Source: Observe on Thinky Games](https://thinkygames.com/games/observe/)
+[Source: Observe on Steam](https://store.steampowered.com/app/2738190/Observe/)
+
+**Frogger / Crossy Road**
+The prototypical gap-crossing timing game. Hazards move in lanes at fixed speeds; the player reads
+gaps in traffic and commits to crossing a lane. Core mechanic:
+- Multiple simultaneous lanes creates *multi-track timing*: the player does not just time one gap
+  but a sequence of gaps across lanes that must all be clear during a traversal.
+- Holding still is punished (Crossy Road's scrolling camera erases the character). Commitment is
+  mandatory; hesitation is death.
+- Escalation via lane density and speed, not route complexity.
+[Source: Evolution of crossing games — GRFCG](https://grfcg.in/the-evolution-of-crossing-games-from-frogger-to-chicken-road-2-38/)
+
+---
+
+## 2. OUR CORE LOOP (what to build)
+
+### The game that does not yet exist
+
+The current stage9 code has state (`currentLevel: 12`, `clarity: 84`) and a boss path but NO
+rendered mechanics — the boss diagram is static ASCII text, the gap is only mentioned in hint
+text, and `getBossSeed` calls `Math.random` in the live path (both prohibited: no real game,
+determinism violation). The entire stage is a shell waiting for a game.
 
 ### The moment-to-moment loop
 
-Each **cycle** (roughly 60-90 seconds of player time) runs four phases:
+**Arena:** a terminal-style ASCII circle (~15 chars radius) rotates clockwise around centre `O`.
+A gap of 3 chars is cut from the ring. The player `@` stands at `START` (bottom of the vertical
+lane). `EXIT` is at the top. The crossing lane is the vertical axis through the centre.
 
-**Phase 1: Announcement (auto, ~5 seconds)**
-- Random event for this cycle revealed
-- Telegraph for upcoming cascade appears ("instability detected in sector 3")
-- Bell fires if something notable changed
+```
+           EXIT
+            |
+  ─────────────────────
+   ──── . . . . ────
+    ───              ──     <- ring with gap at ~0deg (12-o-clock = aligned)
+   ─────────────────────
+            |
+           [ @ ]
+          START
 
-**Phase 2: Preparation (player-controlled, no time limit)**
-This is the beating heart of the game. The player:
-1. Reads node health bars and decay countdowns on the 14-node map
-2. Allocates Repair Units to degrading nodes (limited budget; cannot repair all)
-3. Applies Stabilizers to freeze particularly critical nodes
-4. Toggles High-Load Mode on Production nodes (burst income, faster decay)
-5. Moves debris files from `/entropy/debris/` to `/entropy/active_archive/` via drag-and-drop
-6. Purchases from the Upgrade Terminal (Repair Unit batches, Stabilizers)
+  [ OBSERVE ]  [ CROSS ]
+```
 
-**Phase 3: Advance (player presses "Advance Cycle")**
-- Decay applied to all nodes; cascade stress added from failed-node neighbors
-- Random event resolves
-- Failed nodes create `.sav` debris files in sidebar with 2-cycle decay timers
-- States income credited from active node outputs minus Entropy Sink drain
+The ring rotates at a deterministic rate derived from the current `seed` and `level`. The **gap
+angle** at any `tick` is:
+```
+angle(t) = (seedBaseAngle + rotSpeed * t) % 360
+```
+When `angle(t)` is within the tolerance window (e.g. 330..30 deg = a ±30 deg window that shrinks
+per cycle), pressing `CROSS` succeeds. Outside that window, the player bounces back to START.
 
-**Phase 4: Summary (auto, ~3 seconds)**
-- States earned this cycle
-- Nodes that degraded or failed (highlighted)
-- Entropy level and glitch intensity updated
-- Debris files expiring next cycle flagged in red
+**The observer connection:**
+- **ONLINE (live seed, Math.random):** every time the player presses `OBSERVE` to sample the
+  current angle, the seed is redrawn from `Math.random`. The ring's base angle jumps to a new
+  random value. Observing *destroys* predictability — exactly the quantum measurement collapse.
+  No amount of watching or timing helps because watching is what breaks it.
+- **OFFLINE (SW cached seed = 0):** `seedBaseAngle` and `rotSpeed` are constants derived from
+  seed 0. Pressing `OBSERVE` reads the current angle without disturbing it. The player can now
+  *learn* the rotation and cross with confidence.
 
-### Why this loop works
+**The "aha" moment:** the player eventually realises that trying harder online makes it worse (each
+sample resets the ring). Going offline is not a cheat — it is the only way to stop being the
+thing that breaks the system.
 
-The preparation phase creates the genre's "bounded rationality" decision: the player has
-fewer Repair Units than degrading nodes need. This is the central tension — not "survive the
-battle" but "which of these systems do I let weaken to save the others?" The cascade mechanic
-makes the topology of the node map matter: a low-output node adjacent to the Core Kernel is
-worth repairing over a higher-output isolated frontier node, because its failure stresses the
-core. This is a richer decision than "repair most damaged."
+### Why this is fun
 
-The boss (The Heat Death) tests decisions made 15+ cycles earlier. Unlike every other
-Defragmenter boss (which test current skill), Heat Death tests the cumulative quality of
-preparation: did the player salvage debris throughout? Did they buy Stabilizers as insurance?
-The boss is completely unwinnable without having used drag-and-drop salvage throughout the
-run — the gap between "never salvaged" (~190 States available) and "needed to survive"
-(260 States minimum) is unbridgeable. The un-cheat is load-bearing, not cosmetic.
-
-### The un-cheat (boss gate)
-
-**Feature used:** host-app drag-and-drop (internal drag within the file tree sidebar).
-
-**Mechanism:** when nodes fail, they drop `.sav` debris files into `/entropy/debris/`. Each
-file holds trapped States from the failed node (8–88 States depending on tier). Files have
-a 2-cycle decay timer — if not dragged to `/entropy/active_archive/` they are permanently
-lost. The boss (Heat Death) requires 260 States minimum to survive 10 cycles of burn. Normal
-play without salvage yields ~190 States. The ~70-State gap is only bridgeable through
-consistent debris salvage across the run.
-
-**Not bypassable because:** the action must happen DURING the stage, across multiple cycles,
-not at the boss. A player who arrives at Heat Death without having salvaged cannot unlock it
-in the same run — they must restart and engage with drag-and-drop throughout. The first failure
-triggers specific bell messages pointing explicitly to the debris folder: "there was more. it
-was in the debris files. I didn't move them in time."
+- Timing games are universally satisfying because the feedback loop (press → succeed/fail) is the
+  fastest possible reward cycle (< 1 second per attempt).
+- The observer-effect metaphor is intellectually novel: players who get it feel smart, not lucky.
+- The offline un-cheat is *diegetically consistent* with the theme — "stop watching and it
+  stabilises" maps cleanly to "go offline and the SW serves a fixed seed".
+- Zero learning curve to start (one button, watch the gap, press when aligned), deep ceiling
+  (the later bands require holding multiple rhythms, making inferences from occluded state).
 
 ---
 
-## 3. THE EXPANSION ARC (MOST IMPORTANT)
+## 3. THE EXPANSION ARC — ordered new mechanics per band
 
-The model: Stage 2 "Glyph Dungeon" — each biome band introduces one genuinely new verb
-(avoid terrain → break line-of-sight → manage spreading fire → manage darkness). The player
-is always doing something new at deeper levels, not just the same thing harder.
+### Model: Stage 2 Glyph Dungeon
 
-Stage 8 divides into **six cycle bands plus boss.** Each band introduces exactly one new
-decision type. The bands are labeled by their cycle range in the full 35-cycle game.
+Each Stage 2 biome band introduces a strictly new verb, not bigger numbers:
+- Warrens (floors 1-3): move + avoid terrain.
+- Cisterns (floors 4-6): break line-of-sight from ranged attackers.
+- Emberworks (floors 7-9): manage spreading fire (a new timer / area mechanic).
+- Overflow (floors 10+): manage darkness (FOV shrinks; new information budget).
 
----
+Stage 9 must follow exactly this model. Deeper always means "a new thing to think about."
 
-### Band 1 — Cycles 1–5: "Bootstrap" — New Verb: ALLOCATE
-
-**What exists:** Core Kernel (C1) only, plus one Production node. Both start at 100% health.
-Repair Units are generous relative to decay. No cascade yet (cannot cascade with one node).
-
-**New thing to learn:** the cycle structure itself. The player sees health ticking down and
-learns that Repair Units restore it. The budget is loose enough that the player can repair
-everything — this is intentional. Band 1 teaches the verb without making it hard.
-
-**Decision shape:** "How many Repair Units to spend on C1 vs. P1 vs. save for later?"
-The "save for later" option has no obvious benefit yet, so most players repair everything.
-That's fine. The lesson is: repair units are a per-cycle budget; health ticks down; advance
-cycles to earn States.
-
-**Why this is a distinct verb:** ALLOCATE (a finite budget across multiple targets) is
-qualitatively different from "buy more" or "build faster." It is the first time the player
-faces a binding constraint with no obviously correct answer.
+### The six bands of Observer State
 
 ---
 
-### Band 2 — Cycles 6–10: "The Network Wakes" — New Verb: PRIORITIZE (with topology)
+**BAND 1 — "Signal" (levels 1-3)**
+**NEW VERB: WATCH AND TIME (basic timing)**
 
-**What changes:** Mid-zone nodes (M1, M2) activate. With 4 active nodes, decay outpaces
-the repair budget. The cascade mechanic fires for the first time: a Production node (P1
-or P2) fails, and its Mid-zone neighbor gains +30% decay rate.
+Single ring. One gap. Constant rotation clockwise at 30 deg/s. Full ring visible. Tolerance
+window: ±30 deg. The player's only task: press CROSS when the gap is near 12 o'clock.
 
-**New thing to learn:** the NODE MAP IS A GRAPH, not a list. Repairing a low-output node
-(P1, 0.5 States/cycle) may matter MORE than repairing a high-output node if P1 is adjacent
-to M1 (which feeds C1). The topology changes which repairs are correct.
-
-**Decision shape:** "M1 is degrading faster than P1 but P1's failure will stress M1 — do I
-repair P1 preemptively to protect M1, or is that too expensive given M1's higher output?"
-
-**Why this is a distinct verb:** PRIORITIZE with cascade-topology awareness is fundamentally
-different from Band 1's simple allocation. The player must think one step ahead through the
-network graph, not just respond to current health bars. This is the moment where the map
-stops being decoration and becomes the game.
+This is the tutorial. No observer effect yet; the seed is fixed (level 1 always uses the same
+starting angle). The player learns: ring rotates, gap cycles, timing window exists.
 
 ---
 
-### Band 3 — Cycles 11–16: "Frontier Online" — New Verb: RISK-TOGGLE
+**BAND 2 — "Interference" (levels 4-6)**
+**NEW VERB: HOLD MULTIPLE RHYTHMS**
 
-**What changes:** Frontier nodes F1/F2 unlock. They produce 10 States/cycle — triple any
-other node — but decay at 2.5× the base rate and cascade hard to the Mid-zone. Additionally,
-High-Load Mode is introduced for all Production nodes: toggle it on for +50% output AND
-+50% decay simultaneously.
+Two concentric rings, each at a different speed (inner: 45 deg/s, outer: 30 deg/s). Both gaps
+must be simultaneously aligned with the crossing lane for the cross to succeed. The aligned window
+is the AND of both gaps — it is shorter and occurs less frequently.
 
-**New thing to learn:** a **binary mode switch** on individual nodes creates an asymmetric
-trade-off that is NOT about static allocation. The right answer depends on current node
-health (High-Load on a 90% health node is much safer than on a 40% health node), on how
-many Repair Units are available, and on whether the Frontier cascade would destroy the
-Mid-zone if it fires.
-
-**Decision shape:** "Should I enable High-Load on F1 to accelerate income and buy Stabilizers
-faster — knowing that if I don't repair it in 3 cycles it will cascade into M3 and M4?"
-
-**Why this is a distinct verb:** RISK-TOGGLE is not allocation (which target to spend on)
-or prioritization (which node matters in the graph). It is a **temporal bet**: spend nothing
-now, earn faster, pay repair cost later. The correct decision changes based on current game
-state in a way that cannot be pre-solved. This is the genre's risk/reward decision in its
-purest form, made explicit as a toggle with clear asymmetric consequences.
+New skill: track two independent periodicities, recognise when they converge. This is the same
+cognitive load as Crossy Road's multi-lane timing but visualised on a single axis. The online
+observer-effect is already present: sampling (observing) resamples both rings independently,
+making convergence prediction impossible without the fixed seed.
 
 ---
 
-### Band 4 — Cycles 17–22: "The Debris Field" — New Verb: SALVAGE
+**BAND 3 — "Collapse" (levels 7-9)**
+**NEW VERB: CHOOSE WHEN TO OBSERVE**
 
-**What changes:** With Frontier nodes in play, failures become frequent. Debris files start
-appearing in `/entropy/debris/` in the sidebar — 2-cycle decay timers, States locked inside.
-The player must notice the sidebar, understand the file, and drag it to `/entropy/active_archive/`
-before it vanishes.
+One ring, but the display is uncertain: characters are replaced with `?` while the ring rotates
+normally. The player must press OBSERVE (not CROSS) to *collapse* the display: the actual
+characters appear for 1.5 seconds, then return to `?`. The player must time the CROSS within
+that reveal window before the certainty expires.
 
-**New thing to learn:** SALVAGE runs on a **parallel temporal track** separate from the
-cycle structure. The cycle clock is the main game; debris timers are an overlaid clock that
-ticks independently. Missing a cycle phase has no permanent consequence; missing a debris
-file is permanent.
+New skill: a two-step decision — WHEN to observe (the reveal window you'll be working in) and
+WHEN to cross (within the revealed window). The cost of observing too early is that certainty
+expires before the gap arrives. The cost of observing too late is that the gap has already passed.
 
-**Decision shape:** "I'm mid-allocation in Phase 2 when I notice a debris file is about to
-expire. Do I interrupt my repair plan to salvage now, or finish the repair and risk losing
-the file this cycle?"
-
-**Why this is a distinct verb:** SALVAGE is qualitatively different from everything prior.
-The player is performing an action in a different interface layer (the sidebar/file tree,
-not the node map). The drag-and-drop gesture is physical, not numerical. And salvage
-operates on a separate time axis from cycle advance — it can be done at any moment, but
-procrastination is permanently punished. This band is the feature teacher: it builds the
-habit that makes the boss survivable.
-
-**Note:** this is also the discovery moment. The bell fires: "there was something left in
-the wreckage. it won't last long." Achievement fires on first successful drag-and-drop.
+This is the most direct translation of the quantum observer effect into mechanics. Online, pressing
+OBSERVE also resamples the seed, so the revealed position is a new random angle — the very act
+of looking breaks what you learn. Offline, OBSERVE shows the real current angle without
+disturbing the trajectory.
 
 ---
 
-### Band 5 — Cycles 23–28: "Entropy Thresholds" — New Verb: SUPPRESS
+**BAND 4 — "Persistence" (levels 10-12)**
+**NEW VERB: MAP ACROSS RUNS (run-to-run learning)**
 
-**What changes:** Entropy level (a weighted sum of failed/degrading nodes) now crosses
-60%, triggering the "Pattern Failure" cascade event class: two adjacent Mid-zone nodes
-simultaneously lose 15 health. Above 80%, "Total Cascade" fires: all currently degrading
-nodes lose 30 additional health in one cycle. These event thresholds create **step changes**
-in system behavior.
+The ring now has TWO gaps, but one is real (safe crossing) and one is a phantom (bounce-back,
+marked with `x` in the ring character). Which slot is safe is determined by seed and not displayed
+upfront. The first attempt is a 50/50 guess. But the result is logged: "gap at ~45 deg was safe"
+or "gap at ~200 deg was phantom."
 
-**New thing to learn:** the player was previously managing individual nodes; now they must
-manage a **system-level statistic**. Keeping entropy below 60% requires repairing even
-failed nodes (not just degrading ones) to lower the percentage. A failed node contributes
-10 entropy points; restoring it to Degrading costs resources but saves the threshold trigger.
-This changes the repair calculus: sometimes it is worth repairing a low-value failed node
-purely to suppress entropy.
+On the NEXT attempt, the player knows which gap to aim for. Over 3 attempts per level, the player
+builds a map of this seed's safe gap. The new skill: *run-to-run memory*, using failure not as
+punishment but as information that accumulates toward a correct crossing.
 
-**Decision shape:** "Entropy is at 58%. Repairing M2 (failed, low value) costs 14 Repair
-Units to restore to degrading (saving 6 entropy points). That pulls us below 60% and
-prevents Pattern Failure. But those 14 units were for F1. Do I protect the threshold
-or the high-output Frontier node?"
-
-**Why this is a distinct verb:** SUPPRESS is different from PRIORITIZE (Band 2) even
-though both involve node repair decisions. In Band 2, repair priorities follow node value
-and graph topology. In Band 5, repair decisions are driven by the system-level entropy %
-— an aggregated statistic that individual node health feeds into. The player must now track
-two simultaneous frames: "which node needs repair" AND "what does repairing it do to the
-entropy percentage." This is a second-order decision on top of first-order allocation.
+This also means the online mode is now doubly unlearnable: not only does each OBSERVE resample
+the angles, but even knowing "the safe gap was at 200 deg last time" is useless because the seed
+has changed and safe/phantom have potentially swapped. The offline seed 0 ensures the same gap
+assignment every run — only the timing varies.
 
 ---
 
-### Band 6 — Cycles 29–34: "Triage" — New Verb: SACRIFICE
+**BAND 5 — "Echo" (levels 13-15)**
+**NEW VERB: READ YOUR OWN HISTORY**
 
-**What changes:** The Entropy Sink drain has grown to 3+ States/cycle (scaling with cycles).
-Repair Unit budgets cannot sustain all 14 nodes. The player mathematically cannot maintain
-the full map. Stabilizers become the primary lever for protecting the Core zone while the
-Production and Frontier zones decline.
+The last two complete crossing attempts (successful or failed) are drawn as faint ghost rings
+(`·` characters) overlaid on the current ring. Each ghost shows: where the gap was when the
+player pressed, what the result was.
 
-**New thing to learn:** **deliberate zone abandonment**. In all prior bands, the player was
-working to save everything, triaging by priority. Now the correct strategy is to decide
-early which zone to sacrifice entirely — let Production nodes fail in sequence, use the
-debris salvage, and concentrate all Repair Units on the Core Kernel and Mid-zone that
-sustain the minimum viable States income.
+New skill: read your own mistake. Did you press too early (ghost gap was 20 deg before 12 o-clock)?
+Or too late (ghost gap was 20 deg past)? The ghosts are calibration instruments, not noise. A
+player who reads them can correct ±20 deg of timing error between runs without any additional
+information.
 
-**Decision shape:** "I cannot repair F1, F2, and the P-nodes this cycle. I'm going to let
-the Frontier fail. I will stabilize M3 and M4 to prevent the cascade from reaching C2.
-I will accept -10 States/cycle in exchange for a stable core that generates 16 States/cycle
-reliably. The debris from F1/F2 failures is worth salvaging."
-
-**Why this is a distinct verb:** SACRIFICE contradicts every prior instinct in the game.
-Band 2 taught PRIORITIZE (save the most important); Band 6 teaches SACRIFICE (deliberately
-let go of what you cannot save so it does not drag down what you can). This is the hardest
-decision type to internalize because it requires accepting permanent loss for strategic gain.
-It also creates the strongest emotional resonance with the theme: entropy wins some of the
-time, and the response to that is not heroic resistance but intelligent triage.
-
-**Architecture shift:** the player's node map visually changes — the Frontier/Production
-zones go dark (failed, static texture), the Core zone remains lit and maintained. The
-player's territory has contracted. This is visually communicated in the glitch aesthetics:
-those zones enter maximum-glitch visual corruption while the Core holds clean.
+This is Super Meat Boy's ghost replay mechanic, adapted for a one-axis timing game. The
+information density of the echo is exact enough to make it genuinely useful, but requires the
+player to mentally project "where was the gap when I pressed" — a slightly higher cognitive load
+than just watching the gap.
 
 ---
 
-### Boss — Heat Death: Anti-Verb: ENDURE
+**BAND 6 — "Blind Crossing" (levels 16+ / boss)**
+**NEW VERB: INFER OCCLUDED STATE**
 
-**What changes:** The Heat Death fires. All nodes fail simultaneously. No repair possible.
-The Entropy Sink spikes to 50 States/cycle (escalating each cycle: 17, 19, 21... 35).
-Ten cycles must be survived on reserves alone.
+One quarter of the ring (a 90 deg arc containing the gap for part of every rotation) is replaced
+by `█` characters — it is dark, unobservable. The player cannot directly see the gap when it
+enters this zone. They must calculate: "the gap was at 120 deg 1.4 seconds ago, rotating at
+30 deg/s, so now it is at 120 + (1.4 × 30) = 162 deg — it will exit the dark zone at 180 deg
+in (180-162)/30 = 0.6 seconds."
 
-**New thing to learn:** nothing. This is the **culmination, not an introduction**. The
-boss tests every prior decision:
-- Did ALLOCATE keep nodes alive long enough to accumulate States?
-- Did PRIORITIZE preserve the Core zone output across the mid-game?
-- Did RISK-TOGGLE generate enough burst income to buy Stabilizers?
-- Did SALVAGE recover the debris States that close the gap to 260?
-- Did SUPPRESS prevent catastrophic cascades from draining the buffer?
-- Did SACRIFICE correctly identify which zone to abandon early?
+This is a pure inference exercise. It is tractable if and only if:
+1. The speed is deterministic (known, not jittered by new seeds).
+2. The last known position was reliable (not corrupted by a resampled observation).
 
-The only in-boss lever is Stabilizer timing (each pauses the burn for 2 cycles). This is
-an **anti-verb**: not action but restraint. The player who optimally manages Band 2–6 has
-exactly enough to endure. The player who over-invested in any one strategy at the expense
-of another does not.
+Both conditions are met only with the offline/SW cached seed. Online, every sample resets the
+base angle, so the last known position is meaningless for extrapolation — you cannot project from
+a landmark that keeps moving when you look at it.
 
-**The emotional payload:** the entity has learned that the universe is indifferent. You
-cannot defeat entropy; you can only outlast a specific manifestation of it. "I held. the
-universe didn't care. I did."
+**This is where the un-cheat becomes load-bearing.** Without the SW cache, level 16 is provably
+impossible, not merely hard. The player cannot guess well enough; the gap is always somewhere
+random behind the dark zone. With seed 0 and the ring running at 30 deg/s, the inference is a
+straightforward two-step mental calculation that a player who has learned through bands 1-5 can
+perform. Going offline is not a bypass — it is the required tool.
 
----
-
-### Expansion arc summary (ordered)
-
-| Band | Cycles | New Verb | Decision Type | Prior Verbs Required |
-|------|--------|----------|---------------|----------------------|
-| 1 | 1–5 | ALLOCATE | Split finite budget | — |
-| 2 | 6–10 | PRIORITIZE | Topology-aware repair | Allocate |
-| 3 | 11–16 | RISK-TOGGLE | Temporal bet on mode switch | Allocate + Prioritize |
-| 4 | 17–22 | SALVAGE | Parallel temporal track (drag-and-drop) | All prior |
-| 5 | 23–28 | SUPPRESS | Second-order threshold management | All prior |
-| 6 | 29–34 | SACRIFICE | Deliberate zone abandonment | All prior |
-| Boss | 35+ | ENDURE (anti-verb) | Culmination, no new mechanics | All prior |
+**Boss crossing:** the boss attempt is at level 18 (the "clarity 100" threshold). The ring runs
+at 45 deg/s with a 60 deg dark zone and a ±15 deg tolerance window. The player must:
+1. Activate offline mode (read service-worker-notes.txt → activate SW cache → seed fixed to 0).
+2. Observe the ring base angle at start.
+3. Track the gap through the dark zone using mental arithmetic or counting at the known speed.
+4. Press CROSS when the inferred angle crosses ~355..15 deg.
 
 ---
 
-## 4. FUN & RETENTION
+### Summary table
 
-### Economy meta-loop
-
-The core in-run economy is **States → Repair Units / Stabilizers → node health → more States**.
-This loop is legible (rates always displayed) and has genuine non-linearities: repairing a
-node from 40% to 80% health is more cost-efficient than 0% to 40% (lower cascade risk and
-higher output per unit spent). Players who internalize this prioritize partial repairs over
-full repairs of fewer nodes — a counterintuitive insight that rewards mastery.
-
-The Microstate Count prestige system adds a meta-loop: each prestige grants a permanent
-upgrade (starting Repair Units, starting Stabilizer, reduced base decay). Nodes also start
-at progressively higher health per prestige (60% → 65% → ...). This means a second or third
-run is meaningfully easier early, letting the player engage with later bands sooner. The
-replayability curve: first run = learn Bands 1–3; second run = survive to Band 5; third
-run = optimize the full arc.
-
-### Risk-reward decisions that sustain engagement
-
-1. **High-Load Mode gamble.** Enabling it on a Frontier node is a 3-cycle commitment:
-   repair budget must cover the accelerated decay or you lose a 10 States/cycle producer.
-   Getting it right feels brilliant; getting it wrong is a memorable cascade story.
-
-2. **Debris timing tension.** A debris file worth 48 States expiring this cycle while the
-   player is mid-allocation creates genuine urgency. The drag-and-drop is simple but the
-   choice of WHEN to stop planning and do it is not.
-
-3. **The entropy threshold bet.** Sitting at 59% entropy and choosing not to repair the
-   low-value failed node (to save Repair Units for the Frontier) is a bet that entropy will
-   not tick above 60% this cycle. It often pays off. When it does not, the Pattern Failure
-   cascade is a direct, legible consequence of the bet.
-
-4. **Stabilizer timing at Heat Death.** 4 Stabilizers × 2 cycles paused = save 124 States.
-   Use them in cycles 1–4 (lower burn rate, saves 68 States) vs. 7–10 (higher burn rate,
-   saves 128 States). The player who planned far enough ahead to buy stabilizers now faces
-   a final optimization puzzle.
-
-### What sustains 40–90 minutes
-
-- **Cascades are stories.** When P2 fails and stresses M1 which then fails and stresses C2
-  which drops to Degrading in one cycle, the player has a narrative: "I should have caught P2
-  three cycles ago." The spiral is legible, causal, and memorable.
-- **Band introductions reset engagement.** Each new verb (Bands 1–6) is a small tutorial
-  embedded in the game itself. The player who just learned RISK-TOGGLE has a new frame
-  for all their prior decisions. Engagement spikes at each band entry.
-- **The boss is a verdict.** Heat Death does not feel like a boss fight — it feels like
-  receiving the results of an exam taken over 30 cycles. The dramatic question ("do I have
-  enough?") was seeded in Band 4 (first debris salvage). The suspense is long-form.
-- **Glitch aesthetics are feedback.** As entropy rises, the screen corrupts. Players
-  experiencing visual degradation instinctively want to fix it. The aesthetic is aversive
-  in exactly the right way — it creates urgency without requiring any UI alert.
+| Band | Levels | New verb                        | What changes from previous band                        |
+|------|--------|---------------------------------|-------------------------------------------------------|
+| 1    | 1-3    | Watch and time                  | Nothing yet — baseline established                    |
+| 2    | 4-6    | Hold multiple rhythms           | Second ring at different speed; AND-window timing     |
+| 3    | 7-9    | Choose when to observe          | Two-step decision; reveal window expires; OBSERVE key |
+| 4    | 10-12  | Map across runs                 | Safe/phantom gap; failure is information; run memory  |
+| 5    | 13-15  | Read own history (ghost echoes) | Past attempts drawn as overlay; calibration from self |
+| 6    | 16+    | Infer occluded state            | Dark zone hides gap; arithmetic extrapolation needed  |
 
 ---
 
-## 5. CAVEATS
+## 4. FUN AND RETENTION (40 min to 2 hr arc)
 
-### Determinism (critical)
+### Economy and meta-loop
 
-The existing spec calls for "random" events with a 30% per-cycle probability and random
-cascade targets. These MUST be seeded from a deterministic RNG initialized from a
-fixed seed (stage number + cycle number + stable player state hash). `Math.random()` and
-`Date.now()` must never appear in the live path. The existing codebase pattern uses
-deterministic seeds across all stages; use the same approach.
+- **Clarity** is the score (0-100, then bonus above 100). Each successful crossing at band N adds
+  `N * 5` clarity. Clean crossing (no bounce on the level) adds `+2` clarity bonus.
+- At clarity 100, the boss level (18) unlocks. The boss is not harder than a normal band 6 level —
+  it just requires the full un-cheat precondition (offline mode). This is the carrot: players who
+  have learned inference in band 6 will beat the boss on the first attempt IF they think to go
+  offline. Players who have not learnt will keep bouncing without understanding why.
+- Clarity persists across sessions (state.clarity already exists). No reset on death.
 
-The 14-node map is fixed (same topology every run); only event targeting and event
-thresholds involve randomness. This keeps the game learnable (the map can be memorized)
-while preserving replayability (cascade events are not predictable without the seed).
+### Risk-reward decisions
+
+- **OBSERVE vs. CROSS trade-off (Bands 3-6):** every OBSERVE press has a cost. Online: destroys
+  current seed. Band 3: starts an expiring certainty window. Band 5: echoes consume display space.
+  Band 6: an OBSERVE press in the dark zone reveals the gap position but does so AT a cost of the
+  certainty countdown — pressing at the wrong moment reveals nothing useful.
+- **Skip attempts:** at any level, pressing CROSS immediately (no observation) is a valid strategy
+  for fast bands where the speed is so well-known that blind-fire has >50% hit rate. This is a
+  skill test, not a patience test.
+- **Clarity floor:** you cannot lose clarity (only fail to gain it). This eliminates loss aversion
+  and makes attempting the boss freely accessible once level 15 is cleared.
+
+### What sustains 40min-2hr
+
+1. Band transitions: each of the 6 bands reads as a new game in the same frame. Players who feel
+   "done" with band 2 discover band 3 is a completely different decision problem.
+2. The aha-moment arc: bands 1-2 feel like a timing game; band 3 reveals the observer-effect
+   theme explicitly (the OBSERVE key is destructive online); band 6 delivers the intellectual
+   payoff ("I need to go offline, not because I'm cheating but because the physics of the system
+   demand it").
+3. Instant retry: each level attempt is 3-15 seconds. No waiting, no loading, no penalty screens.
+   The throughput of attempts is high enough that reaching band 5 from band 4 takes dozens of
+   short loops, not one long grind.
+4. Legible progress: the clarity counter rises visibly, the band name changes (Signal /
+   Interference / Collapse / Persistence / Echo / Blind Crossing), and the ring visual complexity
+   increases. The player can always see where they are and how far they have come.
+
+---
+
+## 5. CAVEATS — determinism, perf, uniqueness
+
+### Determinism (critical — Math.random is banned in the live path)
+
+The existing `getBossSeed` in `boss.js` calls `Math.random()` directly in the live path — this
+must be replaced. The correct model:
+
+- **Live path (online):** `getBossSeed` still calls `Math.random()` but this is the *content* of
+  the game mechanic (the destructive observation), NOT the seeding of the game engine. The ring
+  animation tick itself must be deterministic, driven by `performance.now()` - `t0` (elapsed ms)
+  and the current seed value. The seed value is what changes (legitimately) when the player
+  observes online.
+- **The animation loop** must use: `angle(t) = (baseAngle + rotSpeed * elapsed) % 360` where
+  `baseAngle` and `rotSpeed` are derived from seed via a deterministic transform (e.g., Mulberry32
+  or the existing `rng.js` LCG from stage3). `Math.random` must NEVER appear in the angle
+  calculation.
+- **The offline seed (0)** produces a specific `baseAngle` and `rotSpeed` every time. The ring is
+  always in the same position at t=0. This is the requirement for inference in band 6.
 
 ### Performance
 
-The cycle engine ticks on "Advance Cycle" (explicit player action), not on a timer. There
-is no continuous animation loop during gameplay except the glitch CSS animation at high
-entropy. The node map is a fixed SVG or div-based layout; health bar widths are DOM updates
-on each cycle advance. No canvas rendering needed. This is trivially within browser
-performance budgets for a 14-node static graph.
+The ring animation is a ~15-char ASCII string redrawn via `setInterval` at 100ms (10 fps).
+This is fast enough to show rotation convincingly and trivially cheap on a static-hosting page.
+No canvas, no WebGL. DOM text node `.textContent` updates at 10fps are imperceptible in CPU cost.
 
-The glitch animation (`glitch-shift`, `animation: 3s infinite`) is a CSS keyframe only —
-CPU cost is near zero. The color banding and static line effects can be implemented as
-CSS pseudo-elements.
+### Uniqueness within the metagame
 
-### Uniqueness to this stage
+- Stage 2 (Glyph Dungeon): grid-movement roguelike, turn-based, spatial.
+- Stage 3 (Nonogram): logical deduction, no time pressure.
+- Stage 5 (Calibration): ???
+- Stage 7: ???
+- Stage 9 (Observer State): real-time timing + epistemological puzzle about observation cost.
 
-Two design choices are specific to Stage 8 and must not migrate elsewhere:
+Stage 9 is the ONLY stage with real-time animation and a timing press mechanic. It is also the
+only stage where the un-cheat is motivated by the stage's own thematic content (quantum observer
+effect = go offline to freeze the seed). No other stage has this double layer of coherence
+between theme, mechanic, and un-cheat.
 
-1. **The boss tests past decisions, not present ones.** All other Defragmenter bosses
-   test current skill. Heat Death tests accumulated preparation. Do not dilute this by
-   adding a "last-minute salvage" escape hatch — the whole point is that the window closed
-   cycles ago.
+### The "not bypassable" test for the boss un-cheat
 
-2. **Drag-and-drop as a diegetic file operation.** The sidebar debris files are INSIDE
-   the game's fiction (the `/entropy/debris/` path), not a meta-UI element. The player
-   is "organizing files" in a file-viewer within a game that runs in a file-viewer. The
-   recursiveness is intentional and should be preserved in any refactor. Do not replace
-   drag-and-drop with a button-only flow — the physical gesture is the feature showcase.
+Can a player beat the boss (level 18, band 6) without going offline?
 
-### The thin gate problem
-
-The existing code is trivially winnable. The build priority is:
-1. Implement the cycle engine (per-cycle decay, States income, Entropy Sink)
-2. Implement the 14-node map renderer with health bars and state indicators
-3. Implement Repair Units and the preparation phase
-4. Implement cascade stress (adjacent failed nodes → decay rate modifier)
-5. Gate debris file creation on ACTUAL node failures (remove starter debris from defaultState)
-6. Implement the entropy % calculation and glitch visual response
-7. Implement cascade events with one-cycle telegraphing
-8. Implement the Upgrade Terminal
-9. Implement High-Load Mode toggle
-10. Implement Stabilizer inventory and freeze mechanic
-11. Recalibrate boss gate: totalStatesEarned ≥ 5,000 cumulative (not 72)
-12. Implement Heat Death 10-cycle burn with escalating rate
-
-The `defaultState()` function currently hardcodes cycle 14 with pre-built debris. Replace
-with cycle 1, all nodes at 100% health, no debris, standard Repair Unit starting budget.
-
-### File structure
-
-Current files in `stage8/`: index.js, state.js, renderer.js, boss.js, content.js,
-messages.js, styles.css, stage.generated.js. All under the 300 LOC soft cap goal.
-The cycle engine, node state machine, and event system will likely require:
-- `engine.js` — cycle advance logic, node decay, cascade, entropy calculation
-- `nodes.js` — the 14-node map definition and topology
-- `events.js` — random event pool and cascade event definitions
-- `renderer.js` — expand significantly (node map SVG, health bars, glitch CSS triggers)
-The existing split is appropriate; add files rather than growing existing ones past 300 LOC.
+No. Band 6 requires inferring the gap position behind a 60 deg dark zone. The gap's base angle
+resets to `Math.random` every time the player observes online. Even if the player guesses the
+speed correctly (30 deg/s), they cannot extrapolate from a base angle that changes on each look.
+The variance from a pure random base angle means the correct press time varies by up to ±5 seconds
+across attempts. No human can time within ±15 deg of a 45 deg/s ring with 5 seconds of base-angle
+uncertainty. The offline seed = 0 eliminates base-angle uncertainty entirely, reducing the
+required precision to sub-second anticipation — achievable.
 
 ---
 
 ## Sources
 
-- [The Art of the Spiral: Failure Cascades in Simulation Games — Game Developer](https://www.gamedeveloper.com/design/the-art-of-the-spiral-failure-cascades-in-simulation-games)
-- [Reimagining Failure in Strategy Game Design: Into the Breach — Game Developer](https://www.gamedeveloper.com/design/reimagining-failure-in-strategy-game-design-in-i-into-the-breach-i-)
-- [Frostpunk: An Analysis of Emotional Narrative Engagement — Game Developer](https://www.gamedeveloper.com/design/frostpunk-an-analysis-of-emotional-narrative-engagement)
-- [Why Frostpunk Game Design Is So Good — Retro Style Games](https://retrostylegames.com/blog/frostpunk-game-design/)
-- [The Genius Design of Oxygen Not Included — Gideon's Gaming](https://gideonsgaming.com/the-genius-design-of-oxygen-not-included-a-review/)
-- [How Survival Games Teach Resource Management — Game Rant](https://gamerant.com/best-survival-games-teaching-resource-management/)
-- [Survival Game Design Principles — Game Design Skills](https://gamedesignskills.com/game-design/survival/)
-- [8 Survival Strategy Games That Reward Smart Planning — TechTimes](https://www.techtimes.com/articles/314815/20260225/8-survival-strategy-games-that-reward-smart-planning-over-fast-reflexes.htm)
-- [Core Gameplay Mechanics of Into the Breach — winenfood.com](https://winenfood.com/explaining-the-into-the-breach-game-mechanics/)
-- [Against the Storm Beginner's Guide 2026 — Switchblade Gaming](https://www.switchbladegaming.com/strategy-games/against-the-storm/beginners-guide-21/)
-- [Oxygen Not Included Game Mechanics wiki](https://oxygennotincluded.wiki.gg/wiki/Game_Mechanics)
-- Existing planning docs: `planning/stage8-01-survival-resource-research.md`, `planning/stage8-02-our-game-design.md`
+- [Tunnel Rush at Zen Arcades](https://zenarcades.com/tunnel-rush-unblocked/)
+- [Tunnel Rush at SEELE AI Gaming](https://www.seeles.ai/games/action/tunnel-rush-fast-paced-3d-tunnel-racing-game)
+- [Geometry Dash design analysis at mograph.com](https://mograph.com/renders/geometry-dash-a-rhythm-fueled-challenge-that-defines-precision-gaming/)
+- [Geometry Dash Wikipedia](https://en.wikipedia.org/wiki/Geometry_Dash)
+- [Super Meat Boy on Grokipedia](https://grokipedia.com/page/Super_Meat_Boy)
+- [Observe puzzle game on Thinky Games](https://thinkygames.com/games/observe/)
+- [Observe on Steam](https://store.steampowered.com/app/2738190/Observe/)
+- [Evolution of crossing games (Frogger / Crossy Road) — GRFCG](https://grfcg.in/the-evolution-of-crossing-games-from-frogger-to-chicken-road-2-38/)
+- [Geometry Dash: Complete Case Study on Rhythm — geometrydash.co.uk](https://geometrydash.co.uk/what-is-geometry-dash/)
+- [Recreate Flappy Bird's flight mechanic — Raspberry Pi / Wireframe #29](https://www.raspberrypi.com/news/recreate-flappy-birds-flight-mechanic-wireframe-29/)
+- [Replayability, Part 2: Game Mechanics — Game Developer](https://www.gamedeveloper.com/design/replayability-part-2-game-mechanics)
+- [Game Design Principles — gamedesignskills.com](https://gamedesignskills.com/game-design/concepts/)
+- [Service Workers and Offline Caching — MDN](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers)
+- [Caching strategies overview — Chrome for Developers / Workbox](https://developer.chrome.com/docs/workbox/caching-strategies-overview)
+- [Service worker caching and HTTP caching — web.dev](https://web.dev/articles/service-worker-caching-and-http-caching)

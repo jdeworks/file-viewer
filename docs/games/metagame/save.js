@@ -2,13 +2,25 @@
 // though the in-save schema is now v4 — old saves were written under this key, and migrating them
 // forward (rather than orphaning them by changing the key) is the whole point of the ladder below.
 export const SAVE_KEY = 'fv:games:metagame:v3';
-export const SAVE_VERSION = 5;
-export const STAGE_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-// Stages 1–9 are unlocked by default (the stage buttons exist even after a full reset). Stage 10
-// stays gated: it is added to unlockedStages ONLY by beating stage 9 (metagame.js id+1 progression)
-// or via the dev unlock-all. This is the stage-to-stage META unlock only — each stage's internal
-// boss/un-cheat gating is unchanged (a boss is still reachable only after its stage body).
-export const DEFAULT_UNLOCKED_STAGES = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+export const SAVE_VERSION = 6;
+// NOTE (2026-07-11): the game used to have 10 stages. Entropy Field (the old stage 8) was removed
+// entirely; Observer State moved 9→8; Awakening (the finale) moved 10→9. See MIGRATIONS[5] below for
+// how an existing save's stage-numbered data (stageState/unlockedStages/defeated/runs/actions/
+// achievements) is remapped forward without losing player progress.
+export const STAGE_IDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+// Stages 1–8 are unlocked by default (the stage buttons exist even after a full reset). Stage 9
+// (the finale) stays gated: it is added to unlockedStages ONLY by beating stage 8 (metagame.js id+1
+// progression) or via the dev unlock-all. This is the stage-to-stage META unlock only — each stage's
+// internal boss/un-cheat gating is unchanged (a boss is still reachable only after its stage body).
+export const DEFAULT_UNLOCKED_STAGES = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8]);
+// The stage numbering as it existed for schema versions 1 through 5 (before the 5->6 renumbering
+// step below). `upgradeShape` (the 1->2/2->3 legacy backfill) MUST use this, not the current
+// `STAGE_IDS`, to fill a pre-v6 save's missing stageState slots — otherwise a save that enters the
+// ladder below v5 (e.g. a true v1) would already be reshaped to the NEW 9-stage numbering by the
+// time it reaches the 5->6 step, which assumes it's still seeing the OLD 10-stage shape and would
+// incorrectly drop/remap already-correct data.
+const LEGACY_STAGE_IDS_V5 = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const LEGACY_DEFAULT_UNLOCKED_V5 = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
 function nowMs() {
   return Date.now();
@@ -104,10 +116,10 @@ export function ensureSaveShape(value, timestamp = nowMs()) {
   if (!isValidSave(value)) return createFreshSave(timestamp);
   value.currentStage = STAGE_IDS.includes(Number(value.currentStage)) ? Number(value.currentStage) : 1;
   value.defeated = uniqueStageList(value.defeated, []);
-  // Stages 1–9 are always unlocked (forward-migrates any older save — including a bare [1] or a
-  // fresh-after-reset save — without ever losing an already-earned stage 10). uniqueStageList only
+  // Stages 1–8 are always unlocked (forward-migrates any older save — including a bare [1] or a
+  // fresh-after-reset save — without ever losing an already-earned stage 9). uniqueStageList only
   // applies its fallback when value isn't an array, so we explicitly UNION the defaults in, then sort
-  // so the nav renders in stage order. Stage 10 is preserved when present but never added here.
+  // so the nav renders in stage order. Stage 9 (the finale) is preserved when present but never added here.
   value.unlockedStages = uniqueStageList(value.unlockedStages, DEFAULT_UNLOCKED_STAGES);
   for (const stage of DEFAULT_UNLOCKED_STAGES) {
     if (!value.unlockedStages.includes(stage)) value.unlockedStages.push(stage);
@@ -127,6 +139,10 @@ export function ensureSaveShape(value, timestamp = nowMs()) {
 
 // Backfill any missing top-level fields from a fresh save (legacy shapes predate the bell/bts/global
 // split) WITHOUT clobbering existing player data, then stamp the target version.
+// Backfills using LEGACY_STAGE_IDS_V5/LEGACY_DEFAULT_UNLOCKED_V5 (the 10-stage numbering), NOT the
+// current STAGE_IDS/DEFAULT_UNLOCKED_STAGES — this step only ever runs for a save below v5, so it
+// must reproduce the shape a save actually had back then. Reshaping to the CURRENT (v6, 9-stage)
+// numbering here would corrupt the later 5->6 step, which assumes it's still seeing the old shape.
 function upgradeShape(value, timestamp, toVersion) {
   const fresh = createFreshSave(timestamp);
   const merged = { ...fresh, ...value };
@@ -139,8 +155,9 @@ function upgradeShape(value, timestamp, toVersion) {
   if (!plainObject(merged.bts.opened)) merged.bts.opened = {};
   merged.global = plainObject(merged.global) ? { ...fresh.global, ...merged.global } : { ...fresh.global };
   const stageState = plainObject(merged.stageState) ? merged.stageState : {};
-  for (const id of STAGE_IDS) if (!plainObject(stageState[id])) stageState[id] = {};
+  for (const id of LEGACY_STAGE_IDS_V5) if (!plainObject(stageState[id])) stageState[id] = {};
   merged.stageState = stageState;
+  if (!Array.isArray(value.unlockedStages)) merged.unlockedStages = [...LEGACY_DEFAULT_UNLOCKED_V5];
   merged.version = toVersion;
   return merged;
 }
@@ -164,6 +181,60 @@ const MIGRATIONS = {
     }
     if (!plainObject(value.global.ascensionCleared)) value.global.ascensionCleared = {};
     value.version = 5;
+    return value;
+  },
+  // 5->6: Entropy Field (the old stage 8) was removed from the game entirely; Observer State moved
+  // 9->8; Awakening (the finale) moved 10->9. Remap every piece of stage-numbered save data forward
+  // so an existing player's progress survives the renumbering. Old stage-8 (Entropy Field) data has
+  // no equivalent stage in the new game and is dropped, not merged into anything.
+  5: (value) => {
+    const REMAP = { 8: null, 9: 8, 10: 9 }; // old stage id -> new id, or null to drop
+    const remapStage = (id) => {
+      const n = Number(id);
+      return n in REMAP ? REMAP[n] : n; // stages 1-7 pass through unchanged
+    };
+    if (plainObject(value.stageState)) {
+      const next = {};
+      for (const [key, val] of Object.entries(value.stageState)) {
+        const n = remapStage(key);
+        if (n != null) next[n] = val;
+      }
+      value.stageState = next;
+    }
+    if (plainObject(value.runs)) {
+      const next = {};
+      for (const [key, val] of Object.entries(value.runs)) {
+        const n = remapStage(key);
+        if (n != null) next[n] = val;
+      }
+      value.runs = next;
+    }
+    for (const field of ['unlockedStages', 'defeated']) {
+      if (Array.isArray(value[field])) {
+        value[field] = [...new Set(value[field].map(remapStage).filter((n) => n != null))].sort((a, b) => a - b);
+      }
+    }
+    if (value.currentStage != null) {
+      const n = remapStage(value.currentStage);
+      if (n != null) value.currentStage = n;
+    }
+    // action/achievement keys carry a numeric stage prefix, either "N.foo" (actions) or "stageN.foo"
+    // (achievements) — remap the prefix, dropping any key whose stage has no new home.
+    const remapKeyedObject = (obj) => {
+      if (!plainObject(obj)) return obj;
+      const next = {};
+      for (const [key, val] of Object.entries(obj)) {
+        const m = key.match(/^(stage)?(\d+)\.(.+)$/);
+        if (!m) { next[key] = val; continue; } // not stage-numbered (shouldn't happen, kept as-is)
+        const n = remapStage(m[2]);
+        if (n == null) continue; // drop — old stage 8 (Entropy Field) has no new home
+        next[`${m[1] || ''}${n}.${m[3]}`] = val;
+      }
+      return next;
+    };
+    value.actions = remapKeyedObject(value.actions);
+    value.achievements = remapKeyedObject(value.achievements);
+    value.version = 6;
     return value;
   },
 };

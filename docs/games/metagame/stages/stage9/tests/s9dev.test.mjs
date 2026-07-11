@@ -1,136 +1,127 @@
-// s9dev.test.mjs — Stage 9 dev-menu cheat logic: each pure state mutation is asserted here.
-// DOM-only cheats don't exist in this stage; every control mutates state or logs — all testable.
 import assert from "node:assert/strict";
-import {
-  DEV_CONTROLS,
-  devAddClarity,
-  devStabilizer3,
-  devUnlockOffline,
-  devSkipToBoss,
-  devRevealPattern,
-  applyDevControl
-} from "../s9dev.js";
+import { devGrantEchoes, devResolveAll, devIntegrateAll, devWinConfront, devCheat } from "../s9dev.js";
+import { getEchoCounts, getThresholdState } from "../boss.js";
+import { isConfrontReady, getConfrontState } from "../confront.js";
 import { defaultState } from "../state.js";
-import { BOSS_LEVEL } from "../movements.js";
-import { FIXED_OFFLINE_SEED } from "../messages.js";
-import { solveMoment } from "../game.js";
+import { memories } from "../content.js";
 
-// DEV_CONTROLS catalog is well formed
-assert.ok(Array.isArray(DEV_CONTROLS) && DEV_CONTROLS.length >= 2, "at least 2 dev controls");
-for (const c of DEV_CONTROLS) assert.ok(c.id && c.label, `control has id+label: ${JSON.stringify(c)}`);
-
-// devAddClarity — adds exactly 100
+// ── devGrantEchoes: all 9 echoes witnessed, gate opens ─────────────────────────────────────────
 {
-  const state = defaultState();
-  state.clarity = 50;
-  devAddClarity(state);
-  assert.equal(state.clarity, 150, "clarity +100");
-  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
-}
-
-// devAddClarity — stacks on further calls
-{
-  const state = defaultState();
-  devAddClarity(state);
-  devAddClarity(state);
-  assert.equal(state.clarity, 200, "two calls → 200 clarity");
-}
-
-// devStabilizer3 — arms 3 charges from zero
-{
-  const state = defaultState();
-  devStabilizer3(state);
-  assert.equal(state.aids.stabilizer, 3, "3 charges armed");
-  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
-}
-
-// devStabilizer3 — stacks on existing charges
-{
-  const state = defaultState();
-  state.aids.stabilizer = 2;
-  devStabilizer3(state);
-  assert.equal(state.aids.stabilizer, 5, "stacks on existing charges");
-}
-
-// devUnlockOffline — flips all the offline flags
-{
-  const state = defaultState();
-  assert.equal(state.offlineMode, false);
-  devUnlockOffline(state);
-  assert.equal(state.offlineMode, true, "offlineMode set");
-  assert.equal(state.offlineControlVisible, true, "offline control visible");
-  assert.equal(state.notesRead, true, "notes marked read");
-  assert.equal(state.boss.fixedSeed, FIXED_OFFLINE_SEED, "fixedSeed = 0");
-  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
-}
-
-// devSkipToBoss — jumps level AND unlocks offline
-{
-  const state = defaultState();
-  assert.equal(state.currentLevel, 1);
-  devSkipToBoss(state);
-  assert.equal(state.currentLevel, BOSS_LEVEL, `currentLevel is BOSS_LEVEL (${BOSS_LEVEL})`);
-  assert.equal(state.offlineMode, true, "offline mode set by skip");
-  assert.equal(state.boss.fixedSeed, FIXED_OFFLINE_SEED, "seed fixed");
-  // Two log lines pushed: one from devUnlockOffline, one from devSkipToBoss itself.
-  assert.ok(state.log.length >= 2, "at least two log entries");
-}
-
-// devRevealPattern — returns the same solve moment as solveMoment(seed, level)
-{
-  const state = defaultState();
-  const level = state.currentLevel; // 1
-  const seed = 42;
-  const returned = devRevealPattern(state, seed);
-  const expected = solveMoment(seed, level);
-  assert.deepEqual(returned, expected, "devRevealPattern returns solveMoment(seed, level)");
-  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
-}
-
-// devRevealPattern — rhythm levels return an array
-{
-  const state = defaultState();
-  state.currentLevel = 7; // rhythm mode
-  const sol = devRevealPattern(state, 0);
-  assert.ok(Array.isArray(sol), "rhythm level returns array");
-  assert.ok(sol.length >= 2, "at least 2 beats");
-  assert.ok(state.log.at(-1).includes("beats:"), "log mentions beats");
-}
-
-// devRevealPattern — non-rhythm level returns a number
-{
-  const state = defaultState();
-  state.currentLevel = 1; // simple mode
-  const sol = devRevealPattern(state, 0);
-  assert.ok(typeof sol === "number", "simple level returns a number");
-  assert.ok(sol >= 0, "solve moment is non-negative");
-  assert.ok(state.log.at(-1).includes("solve at"), "log says 'solve at'");
-}
-
-// applyDevControl dispatcher — all ids handled
-{
-  for (const { id } of DEV_CONTROLS) {
-    const state = defaultState();
-    const ok = applyDevControl(id, state, { seed: 0 });
-    assert.equal(ok, true, `dispatcher handled id="${id}"`);
+  const state = defaultState({ now: 1 });
+  assert.equal(getEchoCounts(state).witnessed, 0);
+  devGrantEchoes(state);
+  assert.equal(getEchoCounts(state).witnessed, 8, "all 8 echoes witnessed");
+  const gate = getThresholdState(state);
+  assert.equal(gate.defragmenterAccess, true, "defragmenter-access gate (≥5) passes");
+  // every slot has echoWitnessed set — the integration load-bearing check
+  for (const m of memories) {
+    assert.equal(state.memories[m.id].echoWitnessed, true, `${m.id} echoWitnessed`);
   }
 }
 
-// applyDevControl — unknown id returns false without throwing
+// ── devGrantEchoes: idempotent ──────────────────────────────────────────────────────────────────
 {
-  const state = defaultState();
-  assert.equal(applyDevControl("not-a-thing", state), false, "unknown id → false");
+  const state = defaultState({ now: 1 });
+  devGrantEchoes(state);
+  devGrantEchoes(state);
+  assert.equal(getEchoCounts(state).witnessed, 8, "double grant does not over-count");
 }
 
-// applyDevControl — each routed call actually mutates state
+// ── devResolveAll: all 9 resolved, thresholds satisfied ────────────────────────────────────────
 {
-  const base = () => defaultState();
-
-  const s1 = base(); applyDevControl("add-clarity",    s1, { seed: 0 }); assert.equal(s1.clarity, 100);
-  const s2 = base(); applyDevControl("stabilizer-3",   s2, { seed: 0 }); assert.equal(s2.aids.stabilizer, 3);
-  const s3 = base(); applyDevControl("unlock-offline",  s3, { seed: 0 }); assert.equal(s3.offlineMode, true);
-  const s4 = base(); applyDevControl("skip-to-boss",   s4, { seed: 0 }); assert.equal(s4.currentLevel, BOSS_LEVEL);
-  const s5 = base(); applyDevControl("reveal-pattern",  s5, { seed: 0 }); assert.ok(s5.log.length > 0);
+  const state = defaultState({ now: 1 });
+  assert.equal(getThresholdState(state).resolved, 0);
+  devResolveAll(state);
+  const after = getThresholdState(state);
+  assert.equal(after.resolved, 8, "all 8 resolved");
+  assert.equal(after.finalQuestionUnlocked, true, "finalQuestionUnlocked (≥5)");
+  assert.equal(after.memoryRouteComplete, true, "memoryRouteComplete (≥9)");
+  // first choice recorded where no prior choice existed
+  for (const m of memories) {
+    assert.equal(state.memories[m.id].choice, m.choices[0], `${m.id} first choice`);
+    assert.equal(state.memories[m.id].resolvedAt, 1, "DEV_NOW sentinel timestamp");
+  }
 }
+
+// ── devResolveAll: does not downgrade integrated memories or clobber prior choices ─────────────
+{
+  const state = defaultState({ now: 1 });
+  state.memories.genesis.state = "integrated";
+  state.memories.genesis.choice = memories[0].choices[2];
+  state.memories.genesis.integratedAt = 42;
+  devResolveAll(state);
+  assert.equal(state.memories.genesis.state, "integrated", "integrated left unchanged");
+  assert.equal(state.memories.genesis.choice, memories[0].choices[2], "prior choice kept");
+  assert.equal(state.memories.genesis.integratedAt, 42, "integratedAt not touched");
+}
+
+// ── devIntegrateAll: all integrated, fullCapstoneComplete, echoes also granted ─────────────────
+{
+  const state = defaultState({ now: 1 });
+  devIntegrateAll(state);
+  const after = getThresholdState(state);
+  assert.equal(after.integrated, 8, "all 8 integrated");
+  assert.equal(after.fullCapstoneComplete, true, "fullCapstoneComplete (≥9 integrated)");
+  assert.equal(getEchoCounts(state).witnessed, 8, "echoes also granted by devIntegrateAll");
+  for (const m of memories) {
+    assert.equal(state.memories[m.id].state, "integrated", `${m.id} state`);
+    assert.equal(state.memories[m.id].integratedAt, 1, "integratedAt is DEV_NOW sentinel");
+  }
+}
+
+// ── devWinConfront: completes all three phases, confront.completed = true ──────────────────────
+{
+  const state = defaultState({ now: 1 });
+  assert.equal(state.confront.completed, false);
+  devWinConfront(state);
+  assert.equal(state.confront.completed, true, "confront completed after devWinConfront");
+  assert.equal(state.confront.phase, "done", "phase = done");
+  assert.ok(state.confront.stance, "stance assigned by Phase C");
+  // echo + memory gates were also satisfied as a side-effect
+  assert.equal(isConfrontReady(state), true, "isConfrontReady after devWinConfront");
+  const cs = getConfrontState(state, null);
+  assert.equal(cs.completed, true);
+  assert.equal(cs.compaction.done, true, "Phase A complete");
+  assert.equal(cs.fragmentation.done, true, "Phase B complete (via re-witness)");
+  assert.equal(cs.core.done, true, "Phase C complete");
+}
+
+// ── devWinConfront: idempotent when already completed ──────────────────────────────────────────
+{
+  const state = defaultState({ now: 1 });
+  devWinConfront(state);
+  const stamp = state.confront.completedAt;
+  const stance = state.confront.stance;
+  devWinConfront(state); // second call: must not touch completedAt or stance
+  assert.equal(state.confront.completedAt, stamp, "completedAt preserved");
+  assert.deepEqual(state.confront.stance, stance, "stance preserved");
+  assert.equal(state.confront.phase, "done");
+}
+
+// ── devWinConfront: Phase C stance is "seeker" (deterministic) ─────────────────────────────────
+{
+  const state = defaultState({ now: 1 });
+  devWinConfront(state);
+  assert.equal(state.confront.stance.dominant, "seeker", "seeker stance from all-seeker Phase C picks");
+}
+
+// ── devCheat dispatch: known ids route to the right cheat ──────────────────────────────────────
+{
+  const state = defaultState({ now: 1 });
+  devCheat(state, "grant-echoes");
+  assert.equal(getEchoCounts(state).witnessed, 8, "grant-echoes routed correctly");
+}
+
+// ── devCheat dispatch: unknown id is a silent no-op ───────────────────────────────────────────
+{
+  const state = defaultState({ now: 1 });
+  assert.doesNotThrow(() => devCheat(state, "unknown-id"));
+  assert.doesNotThrow(() => devCheat(state, ""));
+  assert.doesNotThrow(() => devCheat(state, undefined));
+  assert.equal(getEchoCounts(state).witnessed, 0, "state unchanged by unknown id");
+}
+
+// NOTE: dev(id) in renderer.js calls saveAndPaint(ctx, repaint) after devCheat — this is DOM-only
+// and cannot be unit-tested here. The dispatch + state mutation is fully covered above.
 
 console.log("stage9 s9dev tests passed");

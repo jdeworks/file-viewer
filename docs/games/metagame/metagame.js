@@ -106,9 +106,12 @@ export function mount(host, { onExit } = {}) {
 
   function completeStage(stage) {
     const id = Number(stage);
+    // The last stage's id is derived from the live manifest (not a hardcoded literal) so this never
+    // needs a manual bump again if the game's stage count changes (see stage-manifest.js NOTE).
+    const maxStageId = listStageMetas().length;
     if (!saveData.defeated.includes(id)) saveData.defeated.push(id);
-    if (id < 10 && !saveData.unlockedStages.includes(id + 1)) saveData.unlockedStages.push(id + 1);
-    saveData.currentStage = id < 10 ? id + 1 : id;
+    if (id < maxStageId && !saveData.unlockedStages.includes(id + 1)) saveData.unlockedStages.push(id + 1);
+    saveData.currentStage = id < maxStageId ? id + 1 : id;
     bell.showBell(`stage${id}.defeated`, `${stageMetaFor(id)?.name || `Stage ${id}`} cleared.`, { stage: id });
     persist();
     render();
@@ -164,10 +167,12 @@ export function mount(host, { onExit } = {}) {
     devBtn.addEventListener('click', () => toggleDevMenu());
     const nav = host.querySelector('.mg-v3-stages');
     const currentStage = Number(saveData.currentStage);
-    nav.replaceChildren(...listStageMetas().filter((meta) => saveData.unlockedStages.includes(meta.id)).map((meta) => {
+    const allStageMetas = listStageMetas();
+    const finalStageId = allStageMetas.length;
+    nav.replaceChildren(...allStageMetas.filter((meta) => saveData.unlockedStages.includes(meta.id)).map((meta) => {
       const defeated = saveData.defeated.includes(meta.id);
-      // Stage 10's "rest" final route leaves the entity dormant — surface a "(resting)" hub state.
-      const resting = meta.id === 10 && defeated && saveData.stageState?.[meta.id]?.final?.route === 'rest';
+      // The finale's "rest" final route leaves the entity dormant — surface a "(resting)" hub state.
+      const resting = meta.id === finalStageId && defeated && saveData.stageState?.[meta.id]?.final?.route === 'rest';
       const button = document.createElement('button');
       button.type = 'button';
       // F4 (phone chrome diet): the button carries a number chip + the full name in separate spans.
@@ -270,7 +275,7 @@ export function mount(host, { onExit } = {}) {
       return `<button type="button" data-dev="stage" data-n="${id}">${id}</button>`;
     }).join('');
     // Boss-jump buttons: "1b", "2b" … land you on the stage with its boss already
-    // reachable (stage 1: max bits + every tier owned so Confront opens; stages 2-10:
+    // reachable (stage 1: max bits + every tier owned so Confront opens; every other stage:
     // the stage's requiredAction pre-fired so the boss lock is lifted).
     const bossBtns = listStageMetas().map((meta) => {
       const id = meta.id;
@@ -338,7 +343,7 @@ export function mount(host, { onExit } = {}) {
         }
         selectStage(n);
       } else if (kind === 'unlock-all') {
-        for (let i = 1; i <= 10; i++) if (!saveData.unlockedStages.includes(i)) saveData.unlockedStages.push(i);
+        for (const meta of listStageMetas()) if (!saveData.unlockedStages.includes(meta.id)) saveData.unlockedStages.push(meta.id);
         persist(); render();
       } else if (kind === 'reset') {
         saveData = resetSave(); render();

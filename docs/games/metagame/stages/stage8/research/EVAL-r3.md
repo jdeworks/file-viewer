@@ -1,180 +1,241 @@
-# Stage 8 — Entropy Field: Self-Evaluation Report (Round 3)
+# Stage 9 "Observer State" — Round 3 Self-Evaluation
 
-_Date: 2026-06-27. Read-only code audit. Unit tests run: 13/13 pass._
+**Evaluated:** 2026-06-27  
+**Branch:** `worktree-metagame-bitfoundry`  
+**Tests:** 5/5 pass (`node --test docs/games/metagame/stages/stage9/tests/*.test.mjs`)  
+**Reviewer stance:** skeptical critic; no flattery; every claim cited to source file and line.
 
 ---
 
 ## Scores
 
-| # | Dimension | Score | Rationale summary |
-|---|-----------|-------|-------------------|
-| 1 | Genre fidelity | **8/10** | Real decay engine, cascade topology, Heat axis, tech tree, storm mid-bosses — close to ONI/Frostpunk; the RISK-TOGGLE verb (High-Load) is implemented but not exposed in UI |
-| 2 | Fun / engagement | **7/10** | Core loop is genuine; storms add drama; tech tree adds discovery; but cascade stress is invisible, High-Load toggle is missing from the UI, repair is click-only |
-| 3 | Theme fit | **8/10** | "Managing .sav files in a file-viewer inside a file-viewer" diegesis is intact; log messages and Heat Death payoff line land well |
-| 4 | Depth & length | **7/10** | 3-act storm structure plausibly spans 50–120 min first run; tech/structure discovery adds time; later arc (SUPPRESS/SACRIFICE verbs) is underdeveloped |
-| 5 | Difficulty curve & onboarding | **6/10** | Storm gates provide implicit pacing; no band announcement bells; no High-Load tutorial; cascade stress invisible; SUPPRESS/entropy threshold mechanic absent |
-| 6 | Polish / UX / readability | **5/10** | No cascade stress on node cards; no High-Load toggle per node; no Stabilizer-apply button per node; no entropy-level glitch animation; node map is a flat list, not zoned |
-| 7 | Determinism & correctness | **9/10** | xmur3+mulberry32 seeded from `"8:cyc:N"` throughout; no Math.random/Date.now in live path; burn simulation deterministic; version migration wipes old stub states cleanly |
-| 8 | Replayability (prestige) | **8/10** | Microstate Collapse: Cores = totalStatesEarned/400 + stormsSurvived; prestigeMult = 1 + 0.08×Cores; tech/structures persist across collapses; first-clear gated correctly |
-| 9 | Technical health | **9/10** | 13/13 tests pass; all source files under 300 LOC (max: state.js 241, renderer.js 245, boss.js 211, engine.js 208); module separation excellent; LOC cap respected |
-| 10 | Un-cheat discoverability | **7/10** | 4-condition gate with tick marks; `gateHint()` gives ordered specific guidance; 4-step hint ladder; bell fires on boss-attempt failure; debris log entry on node fail; no bell on debris creation |
+| # | Dimension | Score | Summary |
+|---|-----------|-------|---------|
+| 1 | Genre fidelity | 6/10 | Timing half excellent; observer-effect half reduced to meta-gimmick |
+| 2 | Fun / engagement | 6/10 | 9 distinct verbs but zero visual feedback kills the reflex loop |
+| 3 | Theme fit | 7/10 | Macro coherent; individual archetypes vary in thematic alignment |
+| 4 | Depth & length | 7/10 | 10 movements, 16 levels; hits the 40–120 min window |
+| 5 | Difficulty curve & onboarding | 5/10 | Mostly good; rhythm chain is an unannounced spike |
+| 6 | Polish / UX / readability | 4/10 | Log-only feedback; no CSS animations; mobile absent |
+| 7 | Determinism & correctness | 9/10 | Clean discipline; one cosmetic loop comment mismatch |
+| 8 | Replayability | 5/10 | Fixed per-level seeds; identical every run for levels 1–11 |
+| 9 | Technical health | 7/10 | Dead export; utility duplication; renderer.js over soft cap |
+| 10 | Un-cheat discoverability | 7/10 | 4-step hint ladder; notes button always visible; correct gating |
 
-**Weighted average: 7.4 / 10**
-(Weights: fun 0.15, curve/onboard 0.12, depth 0.12, UX 0.12, determinism 0.12, genre 0.10, replayability 0.08, health 0.07, un-cheat 0.07, theme 0.05)
+**Weighted overall: 6.3 / 10**  
+(Polish ×1.5, Fun ×1.5, Determinism ×1.2; others ×0.8–1.0)
 
 ---
 
 ## Global Law Compliance
 
-| Law | Status |
-|-----|--------|
-| Boss only after full stage body (no bypass) | **PASS** — 4-gate lock: `enoughStorms` (stormsSurvived >= 3), `actionReady` (drag-drop), `enoughSalvage` (≥ 72), `enoughStates` (totalEarned ≥ 300), `enoughCycles` (cycle ≥ 8). Storm gate requires ~30+ cycles minimum. Previous bypass is closed (boss.test.mjs confirms). |
-| Un-cheat uses a REAL app feature, not trivially bypassable | **PASS** — Internal drag-and-drop required. Cold Storage automation gated behind both `sal3` tech AND `state.manualArchiveDone`, so automation can never substitute for the first hand-archive. |
-| Zero off-origin | **PASS** — No remote fetches. All imports are local. |
-| Deterministic seeded RNG | **PASS** — `rng.js` copies xmur3+mulberry32 from stage2. Seeds are `"8:cyc:${cycle}"` per advanceCycle, `"8:burn:${cycle}"` for Heat Death. No Math.random or Date.now in engine/events/burn paths. |
-| Modular files (300 soft / 500 hard LOC) | **PASS** — All source files under 300 LOC. No violations. |
+| Law | Status | Evidence |
+|-----|--------|---------|
+| Boss only after full stage body | PASS | `advanceFrom` increments level by 1 only on a real hit (`renderer.js:104–111`); level 16 (boss) is reachable only from level 15. No bypass button or skip path. |
+| Un-cheat uses REAL app feature | PASS | Notes opened via `viewer.openFile` / `viewer.openViewerFile` (real file viewer, `renderer.js:237–243`); offline control hidden until `state.offlineControlVisible` is set by reading notes; `actions.setAction` hooks into the app action bus. Boss still requires real timing after unlock. |
+| Zero off-origin at runtime | PASS | No CDN or network fetch in any source file. |
+| Deterministic seeded RNG | PASS | `Math.random` appears only at `boss.js:66` in the intentional online-destructive path. All mode functions are pure `f(seed, elapsedMs)`. `loop.js` uses `performance.now()` with 100ms cap on delta. |
+| Modular files ≤500 LOC hard / 300 soft | WARN | `renderer.js` = 332 lines (over 300 soft cap, under 500 hard). All other files are well under soft cap. |
+
+---
+
+## What Was Built vs. Intended
+
+The build plan specified a 6-band, 18-level structure (Signal / Interference / Collapse / Persistence / Echo / Blind Crossing). The implementation delivers a substantially different and arguably richer 10-movement, 16-level structure with 9 distinct mode archetypes:
+
+| Movement | Levels | Mode | New verb |
+|----------|--------|------|----------|
+| Signal | 1–2 | simple | watch & time |
+| Drift | 3–4 | oscillating | read a changing speed |
+| Echo | 5–6 | ghostecho | read your own error |
+| Cadence | 7–8 | rhythm | hold the beat (chain) |
+| Interference | 9–10 | dual | hold two rhythms |
+| Surveillance | 11 | stealth | wait for the blind window |
+| Reversal | 12 | reversing | track the flips (online-unstable) |
+| Decoys | 13–14 | multigap | pick the real gap (online-unstable) |
+| Blackout | 15 | darkzone | extrapolate the occluded gap (online-unstable) |
+| Observer | 16 | simple+darkzone | the full effect (boss) |
+
+The four modes not in the plan (oscillating, rhythm, stealth, reversing) are genuine additions that each introduce a different cognitive load. This is the right direction — more verbs, not more levels. The plan's Band 3 "choose when to observe" mechanic (OBSERVE starts a 1.5s reveal window that expires, making the timing a two-step decision) was not implemented; the OBSERVE button simply resets the elapsed clock and reseeds online-unstable levels, which is weaker than the plan's intent.
+
+---
+
+## Dimension Analysis
+
+### 1. Genre Fidelity — 6/10
+
+The timing game half is well-executed. Nine modes each with a clean `evaluate(cfg, seed, ms) → { hit, distance }` interface and correct `solveMoment` proof. The Geometry Dash model (each band introduces a new verb, not tighter numbers) is followed.
+
+The observer-effect half is significantly diluted. The design intent (`research.md:147–155`) called for OBSERVE itself to be costly: online, it reseeds (destructive); offline, it reveals without cost — so the player must choose WHEN to observe as a game-mechanical decision. In the build, OBSERVE is never destructive within a level attempt — it just resets the elapsed clock. The seed reseeds on each online attempt at an unstable level, but this is an automatic background event, not a player-initiated collapse. The "choose when to observe" tension is gone. What remains is: "play these levels online, get frustrated that the gap keeps jumping, eventually read the notes and go offline." That is an aha-moment, but it does not deliver the second-by-second "is it cheaper to observe now or to extrapolate from my last observation?" decision the research described.
+
+Cite: `research.md:218–230` (Band 3 mechanic); `renderer.js:94–103` (actual OBSERVE implementation: just resets elapsed + reseeds).
+
+### 2. Fun / Engagement — 6/10
+
+Strong mechanical variety: rhythm's consecutive-chain requirement (7–8 hits in a row to clear) is the most engaging and most replayable mode — it genuinely creates tension because a single miss resets the chain (`renderer.js:143–148`). Stealth's blind window is clever: the eye sweeps independently and must not cover the crossing lane (`modes.js:234–247`), requiring two simultaneous reads. The dual mode (both rings must align) is well-proven by the test at `modes.test.mjs:86–100`.
+
+However, the reflex-game genre is defined by instant feedback. Super Meat Boy has no death screen; Geometry Dash's feedback is 0ms visual. Here, every hit and miss is communicated through the `<ol class="s9-log">` (`renderer.js:280–285`): the player must shift eye focus from the ring animation to a log list below it, then read a text line, to know if they succeeded. For the 333ms cross window on the boss level (±15° at 46°/s), the player's attention has already moved on before the log updates. There is no visual class toggle on the arena, no flash, no border color change, no sound. This is the single biggest engagement failure in a genre where sub-second feedback is load-bearing.
+
+### 3. Theme Fit — 7/10
+
+"Observer State" is coherent: the bell messages (`messages.js:9–14`) and the boss defeat text ("I stopped watching. I moved. I arrived. the paradox didn't resolve. I just went around it.") are the best writing in the metagame. The online/offline seed split maps cleanly to measurement collapse. The movement names Signal, Drift, Echo, Interference, Blackout, Observer have a consistent signal/noise register.
+
+Where it slips: `stealth` mode with the scanning `@` eye is spy-thriller vocabulary, not quantum physics. `reversing` mode ("track the flips") has no thematic anchor in the observer-effect metaphor. The `multigap` phantom-decoy mode is closer to "three-card monte" than quantum state. These are fine mechanics but they reduce thematic density in the back third (movements 7–9), exactly where the theme should be most intense before the boss.
+
+### 4. Depth & Length — 7/10
+
+Estimated per-mode investment based on mechanics:
+- Signal + Drift (1–4): 15–25 min (simple learning curves)
+- Echo + Cadence (5–8): 20–40 min (chain requirement is deep)
+- Interference + Surveillance (9–11): 15–25 min
+- Reversal + Decoys (12–14): 15–30 min (run-to-run learning for multigap)
+- Blackout + Boss (15–16): 20–40 min (inference + offline un-cheat)
+
+Total: 85–160 min. Hits the 40–120 min target comfortably; likely lands around 90 min for a deliberate player.
+
+Depth concern: the `echoHistory` from the plan (`state.js` session section) was not implemented. The ghostecho mode (`renderer.js:254–258`) only tracks `attempts` in local renderer state — these reset on every `reobserve()` call and are not persisted to `state`. A player who presses OBSERVE between attempts loses their ghost calibration data. The plan called for persistence per-level to accumulate calibration across sessions.
+
+### 5. Difficulty Curve & Onboarding — 5/10
+
+Tolerance shrinks level-by-level across the run (42° down to 16° at the boss), and speed steps up — the structural curve is correct.
+
+Two unmarked spikes:
+1. **Level 7 (Cadence / rhythm mode)**: Every previous mode requires exactly one CROSS press per level. Level 7 requires 3 consecutive on-beat presses (`movements.js:39`, `chain: 3`); level 8 requires 4 (`chain: 4`). This is a fundamentally different win condition — a miss resets the chain to 0 (`renderer.js:143`). There is no announcement or explanation. The HUD shows "movement Cadence — hold the beat" which is correct but tiny. A first-time player will assume they need one press, land it, see "on beat (1/3)" in the log (if they notice the log), and press again before the next beat — likely missing. The natural assumption is "I just did it wrong" rather than "this is a chained mechanic."
+2. **Level 11 (Surveillance / stealth mode)**: The eye covers the crossing lane with a 64° blind arc. A CROSS only succeeds when BOTH the gap is at the top AND the eye is NOT covering the top. `modes.js:239`: `watched = angularDist(eye, 0) <= blind/2`. The player must now simultaneously track two independent rotating elements and identify their joint favorable window. No introduction is given.
+
+The hint text at `renderer.js:276–278` only changes for unstable levels, not per-mode.
+
+### 6. Polish / UX / Readability — 4/10
+
+The build plan's `styles.css` increment (7.2, `buildplan.md:420–428`) listed:
+- `.s9-feedback.success` green flash (0.8s fade) — **absent**
+- `.s9-feedback.bounce` red flash — **absent**
+- `.s9-clarity-milestone` pulse at 25/50/75/100 — **absent**
+- `@keyframes s9-pulse` — **absent**
+- Mobile touch button sizing — **absent** (only grid-column collapse at `styles.css:78–82`)
+
+The only dynamic CSS class applied outside of static layout is `s9-aid-owned` on the tachometer button (`renderer.js:307`). The arena `<pre>` has no class changes on hit or miss — `fields.arena.textContent` is overwritten every frame but no class state is toggled.
+
+The `s9-boss` section is always rendered, even at level 1. On level 1 it says "clear levels to reach the Observer (level 16)" which is acceptable as a destination signal, but the border box dominates the lower third of the screen and visually competes with the arena.
+
+The aid buttons display cost in parens and their description only in `title` attribute (`renderer.js:43`). On touch devices, `title` is never shown. Aid costs are undiscoverable on mobile.
+
+The `OBSERVE (reset rotation)` label is UX-correct but breaks the quantum vocabulary. "OBSERVE (reset rotation)" says what it does mechanically but not why (for unstable levels, it also reseeds — the parenthetical is incomplete and misleading for those levels).
+
+### 7. Determinism & Correctness — 9/10
+
+This is the strongest dimension. `rng.js` is xmur3 + mulberry32, identical to stage2/stage3. Every mode function is a pure function: `evaluate(cfg, seed, ms)` and `render(cfg, seed, ms)` are referentially transparent. `Math.random` appears ONLY at `boss.js:66` as the mechanic of destructive observation (intentional). The `loop.js` implementation accumulates per-frame deltas rather than computing from a fixed `t0`, which is actually more robust for tab-switch recovery than the plan described (the 100ms delta clamp at `loop.js:19` prevents a single large jump from skipping a full rotation).
+
+The `game.test.mjs:37–48` loop covers all 16 levels: for each level, `solveMoment(seed, level)` returns a moment (or array of moments for rhythm) where `crossAttempt.hit === true`. All 16 pass. The `boss.test.mjs` proves: online → fail; offline mistimed → fail; offline at `offlineSolveElapsed()` → win.
+
+One cosmetic issue: `loop.js:3` comment says "performance.now() - t0" but the implementation has no `t0` — it accumulates deltas. Not a bug but the comment is incorrect.
+
+### 8. Replayability — 5/10
+
+Stable level seeds are `level * 31 + 7` (`game.js:47`). This means every playthrough of levels 1–11 is IDENTICAL — same base angles, same oscillation phases, same rhythm beat positions. Once a player learns "level 3 starts with the gap at roughly 6 o'clock," that knowledge is permanent. The game is solved-once for the stable front.
+
+The online-unstable back third (levels 12–15) has seed variation per OBSERVE press, but this variation is designed to be frustrating (proving the un-cheat is needed), not replayable in a rewarding sense.
+
+The rhythm chain requirement is the strongest replayability mechanic — even with a fixed seed, landing 3–4 consecutive beats is a skill that takes many attempts. The `multigap` phantom-decoy mode has per-attempt run-to-run learning value (first attempt 50/50, second 100%). Both are good.
+
+The aids (Stabilizer charges, Tachometer) add mild meta-progression but the Tachometer is permanent once bought and Stabilizer charges are minor convenience items.
+
+### 9. Technical Health — 7/10
+
+Good structure overall. Issues:
+
+1. **Dead export**: `content.js:11` exports `bossDiagram(lock)` — a static ASCII function the build plan (`buildplan.md:394`) said to remove. It is not imported anywhere in the stage (checked all imports). Dead code.
+
+2. **Utility duplication**: `rings.js:82–93` copies five helper functions (`mod360`, `angularDist`, `inArc`, `inZone`, `ringChar`) from `ring.js:52–67` verbatim. These are pure math; they should be imported from `ring.js`, not duplicated. If either copy diverges in a bug fix, the other stays broken.
+
+3. **renderer.js LOC**: 332 lines, exceeding the 300 soft cap. The file does more than it should: `crossSublevel`, `challengeBoss`, `doCross`, `buyAidAction`, `doPeek`, `openNotes`, `paintArena`, `repaint`, `paintTach`, `paintAids`, `persistAndPaint`. A `ui.js` module for the paint functions would bring renderer.js under 250 lines.
+
+4. Test coverage is otherwise good. The `aids.test.mjs` covers the offline-only peek gate. The `modes.test.mjs` proves stealth's eye blocks (the `blocked` probe at line 55–62 is excellent) and the dual AND-window (line 85–99).
+
+### 10. Un-cheat Discoverability — 7/10
+
+Path:
+1. Reach level 12 (first `onlineUnstable` level).
+2. Press CROSS → log: "the gap reseeded the instant you committed. nothing holds while live. (go offline.)" Hint steps through `lockedHintLadder` (`messages.js:16–21`): 4 hints culminating in "read service-worker-notes.txt, then activate Offline Mode for Stage 9."
+3. "open service-worker-notes.txt" button is always visible in the sidebar (not hidden until needed, `renderer.js:46`). This is discoverability-positive.
+4. Notes display the cache explanation (`content.js:1–9`) and the real file viewer opens.
+5. "Activate Offline Mode (Stage 9)" button appears (was hidden; now visible after notes are read, `renderer.js:279`).
+6. Clicking it calls `activateOfflineMode` → sets fixed seed 0 → boss is now beatable by timing.
+7. Boss still requires a real CROSS at the right moment (`boss.js:103`). Offline does not auto-win.
+
+The path is well-designed. Docked slightly: the first unstable level produces only a log message and a −1 clarity penalty. A player grinding through the stable levels on speed would easily miss the log text and assume they're just timing badly. A visual indicator on the HUD that this level's seed is "live-random" (`renderer.js:269` does show "seed: live-random" but this requires reading a small HUD field, not a visual alert) would catch more players earlier.
 
 ---
 
 ## Top Issues
 
-### Issue 1 — High-Load Mode toggle has NO UI affordance [CRITICAL]
-**What's wrong:** `toggleHighLoad(state, nodeId)` is fully implemented in `engine.js:198–204` and correctly applies 1.5× decay when `highLoad[nodeId]` is true. But `paint.js` nodeCard (line 135) renders no `[data-high-load]` button, and `renderer.js` click handler (lines 116–137) has no `data-action="high-load"` branch. The `state.highLoad` object is initialized and serialized but can never be set by the player.
+**1. No visual hit/miss feedback** (severity: HIGH)  
+**File:** `renderer.js` + `styles.css`  
+All hit/miss information is in the `<ol class="s9-log">` list. Timing games require sub-second feedback at the point of action. The log is below the fold of the arena and requires a deliberate eye shift that takes longer than the tolerance window.  
+**Fix:** After `crossAttempt`, toggle a class on `fields.arena` (`s9-arena--hit` or `s9-arena--miss`) for 400ms with a CSS border-color transition (`#5dcaa5` for hit, `#c0392b` for miss). 12 lines of CSS, 5 lines of JS.
 
-**Impact:** The RISK-TOGGLE verb — the central Band 3 design pillar ("a temporal bet: spend nothing now, earn faster, pay repair cost later") — is **completely invisible**. Players have no way to discover or use High-Load mode. The RISK-TOGGLE mechanic is the most asymmetric decision in the game and is the primary engagement driver in cycles 11–22.
+**2. OBSERVE is not a game mechanic — it is a reset button** (severity: HIGH)  
+**File:** `renderer.js:94–103`, `research.md:218–230`  
+The plan's Band 3 "choose when to observe" verb — where pressing OBSERVE collapses the ring to visible state for 1.5s, after which it returns to `?` (hidden), creating a two-step decision — was not implemented. The OBSERVE button only resets elapsed and reseeds. The observer-effect mechanic lives entirely at the meta level (online/offline seed), not within any level's moment-to-moment gameplay.  
+**Fix:** For online-unstable levels, add a `revealExpiresAt` timer: OBSERVE shows the real ring for 1.5s (class-toggled hidden/revealed), then hides it. A CROSS pressed after the window expires returns 'expired' with no clarity change. This is roughly 40 lines across `game.js` and `renderer.js`.
 
-**Fix:** In `paint.js` `nodeCard()`: add `<button type="button" data-high-load="${n.id}">HL</button>` for nodes where `nodeById(n.id).supportsHighLoad`. In `renderer.js` click handler: add `const hl = event.target.closest("button[data-high-load]"); if (hl) { toggleHighLoad(state, hl.dataset.highLoad); persistAndPaint(); return; }`. Add `is-high-load` class to node card when active. Effort: ~10 lines.
+**3. No per-movement announcement when a new archetype first appears** (severity: MEDIUM)  
+**File:** `renderer.js`, no change currently  
+Level 7 introduces the rhythm chain (new verb: land N consecutive presses). Level 11 introduces the stealth eye (new verb: wait for the blind window). Level 12 is the first online-unstable level. None of these transitions carry an in-UI announcement. The `fields.hint` element exists but shows only online-unstable hints or the static "watch the gap; CROSS when it faces the top."  
+**Fix:** Track which movements have been seen in `state`; on first entry to a movement, set `fields.hint.textContent` to a one-sentence verb description for 10 seconds. 20 lines.
 
-**Severity: CRITICAL — an implemented engine mechanic is player-invisible.**
+**4. Rhythm chain spike with no contextual briefing** (severity: MEDIUM)  
+**File:** `renderer.js:130–148`, `movements.js:39`  
+Levels 1–6 all require a single CROSS press. Level 7 requires 3 consecutive presses (`chain: 3`). The HUD shows "Cadence — hold the beat" but the win condition (consecutive chain) is not communicated until the first partial-hit result appears in the log. Most players will interpret "on beat (1/3)" as an error message on first encounter.  
+**Fix:** Include chain requirement in the movement description ("hold the beat — land 3 in a row") and display it in the hint on first entry.
 
----
+**5. Dead `bossDiagram` export in `content.js`** (severity: LOW)  
+**File:** `content.js:11–23`  
+The build plan explicitly said to remove this (`buildplan.md:394`). It is not imported anywhere. 13 lines of dead code.  
+**Fix:** Delete lines 11–23 of `content.js`.
 
-### Issue 2 — Cascade stress not shown on node cards [HIGH]
-**What's wrong:** `engine.js:109–119` correctly computes `n.cascadeStress` on each cycle from failed neighbors. `paint.js:135–145` `nodeCard()` reads neither `n.cascadeStress` nor the node's effective decay rate. The player sees a node at 78% health with no indication it is decaying at 2× base rate because P1 failed next door.
+**6. `renderer.js` over soft LOC cap** (severity: LOW)  
+**File:** `renderer.js` (332 lines; soft cap 300)  
+`paintArena`, `paintTach`, `paintAids`, and `repaint` are ~90 lines of pure DOM-update logic that could move to a `ui.js` module.  
+**Fix:** Extract to `stage9/ui.js`; renderer.js drops to ~240 lines.
 
-**Impact:** The topology lesson ("the node map is a graph, not a list") — the central design goal of the PRIORITIZE verb — cannot be learned if cascade stress is invisible. Players will repair the most-damaged node instead of the most-strategically-critical one because the cascade mechanic is opaque.
+**7. Utility function duplication between `ring.js` and `rings.js`** (severity: LOW)  
+**Files:** `rings.js:82–93`, `ring.js:52–67`  
+`mod360`, `angularDist`, `inArc`, `inZone`, `ringChar` are copied verbatim. A divergent bug fix in one copy will silently leave the other broken.  
+**Fix:** Export these from `ring.js` (already present); import in `rings.js`.
 
-**Fix:** In `nodeCard()`: add a conditional stress indicator, e.g. `${n.cascadeStress > 0 ? ` <span class="s8-node-stress">+${n.cascadeStress}</span>` : ""}`. Add `.s8-node-stress { color: #c8553b; font-size: 12px; }` to `styles.css`. One line in `paint.js`, one CSS rule. Effort: ~3 lines.
-
-**Severity: HIGH — the game's core spatial decision is unteachable without this.**
-
----
-
-### Issue 3 — No UI to apply Stabilizer to a node [HIGH]
-**What's wrong:** `applyStabilizer(state, nodeId)` is implemented in `engine.js:177–184`. `paint.js` renders no "stabilize" button per node. `renderer.js` click handler has no `data-action="stabilizer-node"` branch. The only stabilizer-related UI is `[data-action="stabilizer"]` (build a new Stabilizer from States) and the burn simulation (which auto-spends stabilizers). The player can buy stabilizers but cannot deploy them during the body game.
-
-**Impact:** The mid-game ENDURE mechanic (freeze a critical node for 2 cycles to protect it through a storm) is inaccessible. Stabilizers become a Heat-Death-only resource, losing their in-game tactical value.
-
-**Fix:** Add a "freeze" button per node in `nodeCard()` (enabled only when `state.stabilizers > 0`). Wire it in `renderer.js`. Effort: ~8 lines. Consider gating visibility to cycles >= 6 (Band 2+) to avoid overwhelming Band 1.
-
-**Severity: HIGH — the "insurance" mechanic is built but unusable.**
-
----
-
-### Issue 4 — Entropy threshold events are RNG-events, not threshold-driven [MEDIUM]
-**What's wrong:** The buildplan D2 called for threshold-driven events: when `state.entropy >= 60`, fire Pattern Failure (two mid-zone nodes lose 15 health); when `state.entropy >= 80`, fire Total Cascade (all degrading nodes lose 30 health). These were to be **deterministic consequences of crossing the threshold**. Instead, `events.js` implements `pattern_failure` (hit the weakest node for -18) and `jitter_storm` (field-wide -3) as random 60%-per-cycle events unrelated to the entropy level.
-
-**Impact:** The Band 5 SUPPRESS verb ("second-order threshold management") is absent. Players never learn to repair a low-value failed node purely to push entropy below 60% to avoid a threshold event. The system-level entropy statistic is display-only rather than load-bearing.
-
-**Fix:** In `engine.js` `advanceCycle()` after line 155 (where `result.entropy` is set), add:
-```js
-if (state.cycle >= 23 && result.entropy >= 80) triggerTotalCascade(state, rng);
-else if (state.cycle >= 23 && result.entropy >= 60) triggerPatternFailure(state, rng);
-```
-Where `triggerPatternFailure` picks 2 mid-zone nodes by RNG and applies -15, and `triggerTotalCascade` applies -30 to all degrading nodes. The existing random events in `events.js` can stay as-is; the threshold events are additive. Effort: ~20 lines.
-
-**Severity: MEDIUM — a designed player verb is absent; entropy% is cosmetic past cycle 23.**
-
----
-
-### Issue 5 — No glitch/sacrifice visual (CSS entropy level) [MEDIUM]
-**What's wrong:** The buildplan D4 specified a `--entropy-level` CSS custom property set via JS, a `@keyframes glitch-shift` animation, and `.s8-zone-frontier.is-fully-failed` zone-darkening styles. `styles.css` (148 lines) has none of these. `paint.js` never calls `root.style.setProperty(...)`. The node map renders a flat list with no zone grouping.
-
-**Impact:** The "field visually degrades as entropy rises" design goal (research.md §4: "players experiencing visual degradation instinctively want to fix it — the aesthetic is aversive in exactly the right way") is entirely absent. The Band 6 sacrifice visual ("Frontier zone goes dark") has no feedback channel. The atmospheric driver that makes entropy feel threatening rather than merely numerical is missing.
-
-**Fix:** (a) Add `@keyframes glitch-shift` and zone-grouped CSS to `styles.css`. (b) In `paint.js` `paintStage8()`: `root.style.setProperty('--entropy-level', (state.entropy / 100).toFixed(2))` and assign zone classes to node cards. (c) Wrap `map.replaceChildren()` by grouping nodes into zone `<section>` elements. Effort: ~30 lines CSS + 10 lines JS.
-
-**Severity: MEDIUM — thematic feedback absent; the game's signature aesthetic is missing.**
-
----
-
-### Issue 6 — No band announcement bells [MEDIUM]
-**What's wrong:** The buildplan D3 called for `BAND_INTRO_BELLS` in `messages.js` and a check in `engine.js` `advanceCycle()` to fire a bell when the cycle crosses a band threshold. Neither `messages.js` nor `engine.js` has this. The storms implicitly introduce new sectors, but there is no explicit "here's the new verb" moment for the player.
-
-**Impact:** First-run players will not understand that they have entered a qualitatively new phase of the game. The engagement spike from "the game just taught me something new" (band transitions) is absent. Notably, the storm system partially replaces this (each storm brings a new sector type online — Research nodes for Insight, Coolant nodes for Heat venting), but there is no telegraphing that says "Research nodes now produce Insight: spend it in the Tech Tree."
-
-**Fix:** Add 3–5 storm-milestone log messages in `storms.js` `bringSectorOnline()` or `resolveStorm()` that describe what the new nodes do. This is simpler than full band bells and fits the storm-based structure that was built. Effort: ~8 lines.
-
-**Severity: MEDIUM — first-run onboarding gap; each storm win is a key engagement reset.**
-
----
-
-### Issue 7 — `content.js` `nodeRows` export is dead stub data [LOW]
-**What's wrong:** `content.js:1–6` exports `nodeRows` with hardcoded entries for C1 ("Core Kernel"), M2 ("Memory Shard B"), P1 ("Process Node A"), F1 ("Frontier Ext A"). These names ("Memory Shard B", "Process Node A") predate the node topology rewrite; M2 is now "Mid Relay 2", P1 is "Production 1". The export is not consumed by any live code path (only `entropyTreeText` is called), but it is dead/wrong data.
-
-**Fix:** Delete `nodeRows` from `content.js`, or replace with `export { NODES as nodeRows } from "./nodes.js"`. Effort: 1 line.
-
-**Severity: LOW — dead code; harmless but confusing.**
-
----
-
-### Issue 8 — Boss economic gate checks `totalStatesEarned` but burn consumes `state.states` [LOW-MEDIUM]
-**What's wrong:** `getBossLockState()` in `boss.js:111` gates on `totalStatesEarned >= STATES_REQUIRED (300)`. But the Heat Death burn (`burn.js`) drains from `state.states` (current in-hand States), not from the cumulative total. A player who earned 300 States cumulative but spent 270 on tech and structures has ~30 in hand and cannot survive the burn (which costs ~255–275). The gate hint says "bank deeper reserves: X/300 States earned" — "reserves" implies in-hand, but the gate checks cumulative.
-
-**Fix:** Consider a parallel gate: `state.states >= BURN_ESTIMATE (240)` where `BURN_ESTIMATE` is the expected burn total without stabilizers. Or add to the hint: "earned total (spend carefully — the burn costs your current reserves, not your lifetime)". The existing test in `boss.test.mjs` already demonstrates this gap (states=50, totalEarned=600 → gate passes, burn fails, not defeated) — which is correct behavior, but the gate message is misleading.
-
-**Severity: LOW-MEDIUM — confusing UX, not a correctness bug; the burn correctly reflects actual reserves.**
+**8. No visual signal distinguishing online-unstable levels before first CROSS** (severity: MEDIUM)  
+**File:** `renderer.js:268–269`  
+The HUD shows "seed: live-random" in a small text field, which is easy to miss. A player arriving at level 12 after completing level 11 has no UI affordance warning that the rules have changed.  
+**Fix:** Add an `s9-hud--unstable` class to the HUD when `cfg.onlineUnstable` is true, with a CSS amber border or text color on the seed field. 5 CSS lines + 2 JS lines.
 
 ---
 
 ## Top Opportunities
 
-### Opportunity 1 — Add the High-Load toggle (highest-ROI action in round 4)
-This is already fully built in `engine.js`. Adding ~10 lines of UI to `paint.js` and `renderer.js` activates the RISK-TOGGLE verb that the design identified as the third core mechanic. It would immediately deepen the engagement from cycle 11 onward with zero engine risk (the engine path is tested). This is the single most impactful action for round 4.
+**1. Visual hit/miss flash (highest ROI)**  
+10 lines of CSS + 5 lines of JS — immediately transforms how the game FEELS. This is the genre's most basic expectation and its absence most undermines everything else. Do this first.
 
-### Opportunity 2 — Add cascade stress indicator to node cards
-3 lines: one in `paint.js` nodeCard, one CSS rule. Turns the cascade mechanic from invisible to legible. Every player who has had a cascade spiral will immediately understand why. High signal-to-effort ratio.
+**2. Implement the in-level OBSERVE reveal window for unstable levels**  
+The deepest missing mechanic from the research. "Choose when to observe" is a genuine second cognitive layer that would make the observer-effect theme load-bearing within each attempt, not just at the meta level. Roughly 40 lines of new logic.
 
-### Opportunity 3 — The 3-act storm structure is richer than the 6-band design
-The built game has a better expansion arc than the research.md's cycle-band system. Cascade Storms are genuine mid-bosses with multi-cycle scripted damage, variable duration, survival conditions (cores alive), and sector-unlock rewards. This is closer to Frostpunk's countdown events than the band system. The round-4 eval should recognize this as a genuine design improvement and not force it back to the band model. The opportunity is to complete it — add band intro messages keyed to storm wins, not cycle numbers.
+**3. Per-movement announcement overlay on first entry**  
+20 lines. Directly addresses the onboarding gaps at Cadence (level 7) and Surveillance (level 11). Pays forward every band transition.
 
-### Opportunity 4 — Entropy threshold events (Band 5 SUPPRESS)
-~20 lines in `engine.js`, gated at cycle >= 23. Would add the last major missing verb (second-order entropy management). Combined with the existing `state.entropy` display, this would make the entropy readout load-bearing rather than cosmetic.
+**4. Vary stable-level seeds across playthroughs**  
+Currently all stable levels replay identically. Including a per-session counter in the seed derivation (e.g., `sublevelSeed(level, playthrough)`) would make repeat plays feel fresh. 5-line change in `game.js`.
 
-### Opportunity 5 — Glitch CSS animation
-~30 lines CSS + 10 lines JS. Zero engine complexity. The visual payoff is high — a field at 80% entropy twitching with glitch-shift animation makes entropy feel threatening in a way no HUD number can. This is the cheapest atmospheric upgrade available.
+**5. CSS clarity milestones (25/50/75/100 clarity)**  
+20 CSS lines (`@keyframes s9-pulse`, `.s9-clarity-milestone`). This was in the plan and would give players visible forward progress signals between level completions.
 
 ---
 
 ## Overall Verdict
 
-**Score: 7.4 / 10.**
+**6.3 / 10** — A genuinely built stage that replaced the thin gate with real mechanics. The 10-movement, 9-archetype structure is richer than the 6-band plan. Determinism is disciplined. The boss is gated correctly and requires both the offline un-cheat and real timing skill. The rhythm chain and stealth blind-window modes are the strongest contributions.
 
-This is a real game. The cycle engine, cascade topology, Heat axis, three Cascade Storm mid-bosses, 12-tech tree, placeable structures, Microstate Collapse prestige, and deterministic 4-gated Heat Death boss represent a substantial, working survival resource management sim. The boss bypass that motivated this round has been fully closed. The technical quality (test coverage, module separation, LOC discipline, determinism) is excellent.
+The stage's core failure is a genre-level mismatch: this is a timing game with no instant visual feedback. Every classic in the reflex/timing genre — Geometry Dash, Super Meat Boy, Tunnel Rush — puts feedback at the point of action, in the frame the button was pressed. Stage 9 puts feedback in a log list that requires a deliberate eye movement to read. For a level where the tolerance window is 333ms, the log has already been crowded by new messages before the player looks at it.
 
-The gap between 7.4 and 9.0 is almost entirely in the UI layer, not the engine. Three implemented mechanics have no player-facing affordances: High-Load toggle, node Stabilizer application, and cascade stress display. These are engines running in the dark. The SUPPRESS verb (entropy threshold cascades) and the glitch aesthetic (entropy-level CSS) are the two most significant design-complete gaps. The band announcement system is the onboarding debt.
+The observer-effect theme is present at the meta level (online = destructive, offline = learnable) but absent within any individual level attempt. The plan's Band 3 mechanic — where OBSERVE itself is costly, starting a countdown, making "when to observe" a real-time decision — would complete the theme. Without it, the game's name is thematically sound but its mechanics are not.
 
-**Single most important round-4 action:** Add the High-Load mode toggle button per eligible node in `paint.js` and wire it in `renderer.js`. It is the highest-leverage UI change — one already-built, tested, and engine-integrated mechanic, inaccessible only for lack of a button. It unlocks the RISK-TOGGLE verb, directly addresses the 7/10 fun score, and requires fewer than 15 lines of change.
-
----
-
-## Test Results
-
-```
-node --test docs/games/metagame/stages/stage8/tests/*.test.mjs
-✔ boss.test.mjs       (63ms)
-✔ burn.test.mjs       (61ms)
-✔ engine.test.mjs     (59ms)
-✔ events.test.mjs     (57ms)
-✔ heat.test.mjs       (56ms)
-✔ nodes.test.mjs      (55ms)
-✔ prestige.test.mjs   (54ms)
-✔ resources.test.mjs  (52ms)
-✔ solver.test.mjs     (52ms)
-✔ state.test.mjs      (50ms)
-✔ storms.test.mjs     (48ms)
-✔ structures.test.mjs (46ms)
-✔ tech.test.mjs       (63ms)
-
-13 tests, 13 pass, 0 fail. Duration: 92ms.
-```
+**Single most important round-4 action: add hit/miss visual feedback to the arena element.** Two CSS classes, one 400ms transition, triggered immediately after `crossAttempt`. This is the prerequisite for every other improvement: it makes the game *feel* like a timing game before any new mechanic is added.

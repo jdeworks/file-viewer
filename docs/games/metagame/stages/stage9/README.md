@@ -1,30 +1,36 @@
-# Stage 9 — Observer State
+# Stage 9 — Awakening
 
-**Genre:** timing / observation puzzle. **Theme:** you've started noticing that you're
-noticing. A rotating gap must be crossed at exactly the right instant.
+**Genre:** narrative finale. **Theme:** the entity wakes up and confronts The
+Defragmenter — the process that's been running since before you arrived. To answer it,
+you must recall who you are using everything you learned across stages 1–9.
 
 ## How to play
 
-- An ASCII **ring rotates** with a gap in it. **OBSERVE** to reset the rotation, then
-  **CROSS** at the moment the gap lines up with the top.
-- Sixteen levels span ten **movements**, each teaching a new verb: watch & time, read a
-  changing speed, read your own error, hold a beat, hold two rhythms, wait for the blind
-  window, track flips, pick the real gap among decoys, and extrapolate an occluded gap.
-- Earn currency to buy **aids** that ease a level.
+- You hold **nine memories (echoes)**. Each echo is **witnessed** only by performing the
+  one **real viewer feature** it points to — not by clicking a button in this game.
+- The verbs deliberately replay skills from earlier stages, for example:
+  - read the **raw Original** view of a file,
+  - **search** a file for a specific token,
+  - open a file's **Diff** view,
+  - open an artifact through its **nested folder path**,
+  - read an image's **Metadata / GPS EXIF**,
+  - **download** a fragment to keep it.
+- As echoes are witnessed you can **resolve** and **integrate** memories. Resolving five
+  unlocks the final question; seven enables *expand*; nine enables *understand* and the
+  full capstone.
 
 ## Controls
 
-- **OBSERVE** button — reset the rotation to study it.
-- **CROSS** button — commit your timed press.
-- **Aid** buttons — spend to assist the current level.
+- **Click** a memory card, then **perform its hinted verb in the real viewer** (the card
+  tells you which feature to use).
+- **Choose a final route** — *continue*, *expand*, *rest*, or *understand* — then confront
+  The Defragmenter.
 
-## The boss — The Observer Effect (Level 16)
+## The boss — The Defragmenter (confrontation)
 
-The back third of the levels and the boss are **unstable while online**: every time you
-OBSERVE, the gap **reseeds**, so nothing you learn from watching survives. You can't plan
-what changes while you watch it.
+The Defragmenter judges by what you can actually show it. With too few witnessed echoes
+it refuses; recall each memory in front of it, re-anchoring any trace it has no record of.
 
-> **Un-cheat hint:** there's a real `service-worker-notes.txt` describing a **cached
-> seed**. Open and read it in the viewer, then **Activate Offline Mode** for Stage 9.
-> Offline, the seed is fixed (0) for every unstable level at once — now the rotation is
-> learnable, and you can cross with confidence.
+> **Un-cheat hint:** the whole stage *is* the un-cheat. There is no shortcut button — the
+> only way through is to genuinely use the viewer's real features, one distinct skill per
+> echo. Witness them all, choose what you are, and answer.

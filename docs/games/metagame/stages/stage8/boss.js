@@ -2,199 +2,122 @@ import {
   ACHIEVEMENT_ID,
   ACHIEVEMENT_TEXT,
   ACTION_NAME,
-  SALVAGE_REQUIRED,
-  STATES_REQUIRED,
-  MIN_CYCLE,
-  BURN_CYCLES,
+  FIXED_OFFLINE_SEED,
   bellMessages,
-  gateHint,
   lockedHintLadder
 } from "./messages.js";
-import { simulateHeatDeath, estimateBurnTotal } from "./burn.js";
-import { makeRng } from "./rng.js";
-import { partsYield, earnParts } from "./resources.js";
-import { TOTAL_STORMS } from "./storms.js";
+import { crossAttempt, solveElapsed, BOSS_LEVEL } from "./game.js";
 
-export function hasSalvageArchived(actions) {
+export function hasOfflineModeActivated(actions) {
   return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(8, ACTION_NAME));
 }
 
-export function archiveDebris({
+export function readServiceWorkerNotes({ state, bell }) {
+  const firstRead = !state.notesRead;
+  state.notesRead = true;
+  state.offlineControlVisible = true;
+  if (firstRead) {
+    pushLog(state, "service-worker-notes.txt read. offline control revealed.");
+    notifyBell(bell, bellMessages.notesRead, "stage8.service_worker_notes_read");
+  }
+  return { notesRead: true, controlVisible: true, firstRead };
+}
+
+export function activateOfflineMode({
   state,
   actions,
   achievements,
   bell,
-  debrisId,
-  source = "internal-drag-drop",
-  fallback = false
+  source = "offline-control",
+  browserOffline = false
 }) {
-  const index = state.debris.findIndex((item) => item.id === debrisId && item.id.endsWith(".sav"));
-  if (index < 0) return { archived: false, reason: "missing-debris" };
-
-  const [debris] = state.debris.splice(index, 1);
-  const archived = {
-    ...debris,
-    archivedAtCycle: state.cycle,
-    path: `/entropy/active_archive/${debris.id}`
-  };
-  state.archive.push(archived);
-  state.salvageTotal = Number(state.salvageTotal || 0) + Number(debris.value || 0);
-  state.states = Number(state.states || 0) + Number(debris.value || 0);
-  const parts = Math.round(partsYield(debris) * Math.max(1, Number(state.scrapMult || 1))) + Math.max(0, Number(state.structScrapBonus || 0));
-  earnParts(state, parts);
-  state.manualArchiveDone = true; // the manual un-cheat has fired — gates the Cold Storage automation
-  state.selectedDebrisId = state.debris[0]?.id || "";
-  pushLog(state, `archived ${debris.id}. +${debris.value} States, +${parts} parts.`);
-
-  const firstArchive = !hasSalvageArchived(actions);
+  if (!state.notesRead && !browserOffline) return { activated: false, reason: "notes-unread" };
+  const firstActivation = !hasOfflineModeActivated(actions);
+  state.offlineMode = true;
+  state.offlineControlVisible = true;
+  state.boss.fixedSeed = FIXED_OFFLINE_SEED;
+  pushLog(state, "offline mode active. seed endpoint resolves to cached default.");
   if (actions && typeof actions.setAction === "function") {
     actions.setAction(8, ACTION_NAME, {
       source,
-      file: debris.id,
-      from: "/entropy/debris/",
-      to: "/entropy/active_archive/",
-      fallback
+      file: state.notesRead ? "service-worker-notes.txt" : null,
+      mode: browserOffline ? "browser-offline-cache" : "simulated-cache"
     });
   }
-  if (firstArchive) {
-    notifyBell(bell, bellMessages.archive, "stage8.salvage_archived");
+  if (firstActivation) {
+    notifyBell(bell, bellMessages.offline, "stage8.offline_mode_activated");
     unlockAchievement(achievements, ACHIEVEMENT_ID, {
       id: ACHIEVEMENT_ID,
       stage: 8,
       text: ACHIEVEMENT_TEXT,
-      action: "8.salvage_archived"
+      action: "8.offline_mode_activated"
     });
   }
-  return { archived: true, debris: archived, firstArchive };
+  return { activated: true, firstActivation, seed: FIXED_OFFLINE_SEED };
 }
 
-export function handleDebrisDrop({ state, actions, achievements, bell, debrisId, targetPath }) {
-  if (targetPath !== "/entropy/active_archive/") return { archived: false, reason: "wrong-target" };
-  return archiveDebris({ state, actions, achievements, bell, debrisId, source: "internal-drag-drop", fallback: false });
-}
-
-export function archiveSelectedDebris({ state, actions, achievements, bell, source = "archive-button" }) {
-  return archiveDebris({
-    state,
-    actions,
-    achievements,
-    bell,
-    debrisId: state.selectedDebrisId,
-    source,
-    fallback: true
-  });
-}
-
-export function applyExternalDebrisImport({ state, actions }) {
-  state.externalImportBonusCycles = Math.max(Number(state.externalImportBonusCycles || 0), 3);
-  pushLog(state, "external debris import buffered decay for 3 cycles.");
-  if (actions && typeof actions.setAction === "function") {
-    actions.setAction(8, "external_debris_imported", {
-      source: "external-import",
-      bonus: "debris-decay-buffer"
-    });
+export function getBossSeed({ state, actions, rng = Math.random }) {
+  if (hasOfflineModeActivated(actions) || state.offlineMode) {
+    state.offlineMode = true;
+    state.boss.fixedSeed = FIXED_OFFLINE_SEED;
+    return FIXED_OFFLINE_SEED;
   }
+  let seed = Math.floor(rng() * 1000000);
+  if (seed === state.boss.lastLockedSeed) seed = (seed + 1) % 1000000;
+  state.boss.lastLockedSeed = seed;
+  state.lockedSeedSamples = [...(state.lockedSeedSamples || []), seed].slice(-6);
+  return seed;
 }
 
-// Heat Death is TRIPLE-gated (closes the old two-click bypass): it unlocks only when ALL hold —
-//   1. the load-bearing drag-drop archive ACTION (8.salvage_archived) has fired,
-//   2. a salvage floor of archived debris value is banked,
-//   3. cumulative earned States reach the reserve threshold (the burn drains everything), and
-//   4. the field has survived a minimum number of cycles.
-// A fresh field / two-click attempt fails gates 2–4 outright, so it returns LOCKED.
 export function getBossLockState({ actions, state }) {
-  const actionReady = hasSalvageArchived(actions);
-  const salvageTotal = Number(state.salvageTotal || 0);
-  const totalEarned = Number(state.totalStatesEarned || 0);
-  const cycle = Number(state.cycle || 0);
-  const enoughSalvage = salvageTotal >= SALVAGE_REQUIRED;
-  const enoughStates = totalEarned >= STATES_REQUIRED;
-  const enoughCycles = cycle >= MIN_CYCLE;
-  const stormsSurvived = Number(state.stormsSurvived || 0);
-  const enoughStorms = stormsSurvived >= TOTAL_STORMS;
-  const unlocked = enoughStorms && actionReady && enoughSalvage && enoughStates && enoughCycles;
-  const lock = {
+  const unlocked = hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
+  const hintIndex = Math.min(Math.max(Number(state.boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+  return {
     unlocked,
     defeated: Boolean(state.boss.defeated),
-    actionReady,
-    enoughSalvage,
-    enoughStates,
-    enoughCycles,
-    enoughStorms,
-    stormsSurvived,
-    stormsRequired: TOTAL_STORMS,
-    salvageTotal,
-    salvageRequired: SALVAGE_REQUIRED,
-    totalEarned,
-    statesRequired: STATES_REQUIRED,
-    inHandStates: Number(state.states || 0),   // current balance the burn actually drains
-    burnEstimate: estimateBurnTotal(),          // representative burn cost (for the readout only)
-    cycle,
-    minCycle: MIN_CYCLE,
+    notesRead: Boolean(state.notesRead),
+    offlineControlVisible: Boolean(state.offlineControlVisible),
+    seedMode: unlocked ? "fixed-cache" : "live-random",
+    seed: unlocked ? FIXED_OFFLINE_SEED : state.boss.lastLockedSeed,
+    rotation: unlocked ? "30deg/s predictable clockwise" : "server jitter every sample",
     defeatPossible: unlocked,
-    burnCycles: BURN_CYCLES
+    hint: unlocked ? "the seed is fixed. cross using the learned rotation." : lockedHintLadder[hintIndex]
   };
-  lock.hint = gateHint(lock);
-  return lock;
 }
 
-// Challenge Heat Death. If locked → failure (rewind). If unlocked → run the real escalating burn:
-// surviving it (banked States outlast ~10 escalating drain cycles, Stabilizers pausing the worst)
-// defeats it; failing the burn rewinds to the warning checkpoint. `rng` is a seeded bundle from the
-// caller (run.seed-derived) so the burn replays identically across reloads.
-export function recordHeatDeathAttempt({ state, actions, rng }) {
+// Attempt the boss CROSS at a given elapsed (ms). Now routed through the REAL timing engine, not a
+// flag-check: offline (the un-cheat) fixes the seed so the rotation is learnable, but you must still
+// time the press to land the gap at the top. Online, each attempt reseeds (Math.random) → the base
+// angle jumps → no timing survives, so the boss is impossible without offline mode.
+export function recordObserverBossAttempt({ state, actions, elapsedMs = 0 }) {
   state.boss.reached = true;
   const lock = getBossLockState({ actions, state });
-  if (!lock.unlocked) return { ...recordHeatDeathFailure(state, lock), locked: true };
-
-  const burn = simulateHeatDeath(state, rng || makeRng("8:burn"));
-  state.boss.burn = burn;
-  if (!burn.survived) {
-    pushLog(state, `Heat Death overran reserves at burn cycle ${burn.failedAt}.`);
-    return { ...recordHeatDeathFailure(state, lock), burn, locked: false };
+  if (!lock.unlocked) {
+    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
+    getBossSeed({ state, actions }); // online: resample → the gap jumps again
+    pushLog(state, "the gap changed again. no timing survived contact.");
+    return { defeated: false, unlocked: false, hit: false, seedMode: "live-random" };
   }
-  state.states = Math.max(0, Math.round(burn.remainingStates));
-  state.stabilizers = burn.stabilizersLeft;
+  // Offline: the seed is fixed (0). Still a real timing press.
+  const result = crossAttempt({ seed: FIXED_OFFLINE_SEED, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
+  if (!result.hit) {
+    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
+    pushLog(state, `offline, but the cross was mistimed (off by ${Math.round(result.distance)}deg).`);
+    return { defeated: false, unlocked: true, hit: false, seedMode: "fixed-cache", distance: result.distance };
+  }
   state.boss.defeated = true;
   state.meta.firstClearComplete = true;
   state.meta.btsAvailable = true;
+  state.clarity = Number(state.clarity || 0) + 25;
   pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, btsAvailable: true, burn };
+  return { defeated: true, unlocked: true, hit: true, seedMode: "fixed-cache", seed: FIXED_OFFLINE_SEED };
 }
 
-export function recordHeatDeathFailure(state, lock = null) {
-  state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-  state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-  if (!state.warningCheckpoint) state.warningCheckpoint = makeWarningCheckpoint(state);
-  const checkpoint = rewindToWarningCheckpoint(state);
-  pushLog(state, bellMessages.failed);
-  return {
-    defeated: false,
-    unlocked: Boolean(lock?.unlocked),
-    canRewindWarningCheckpoint: true,
-    checkpointCycle: checkpoint.cycle
-  };
-}
-
-export function makeWarningCheckpoint(state) {
-  return {
-    cycle: Math.max(1, Number(state.cycle || 1) - 5),
-    states: Math.max(0, Number(state.states || 0)),
-    salvageTotal: Number(state.salvageTotal || 0),
-    debris: state.debris.map((item) => ({ ...item })),
-    archive: state.archive.map((item) => ({ ...item }))
-  };
-}
-
-export function rewindToWarningCheckpoint(state) {
-  const checkpoint = state.warningCheckpoint || makeWarningCheckpoint(state);
-  state.cycle = checkpoint.cycle;
-  state.states = checkpoint.states;
-  state.salvageTotal = checkpoint.salvageTotal;
-  state.debris = checkpoint.debris.map((item) => ({ ...item }));
-  state.archive = checkpoint.archive.map((item) => ({ ...item }));
-  state.boss.firstFailureRewound = true;
-  return checkpoint;
+// The learnable solution: the earliest elapsed (ms) at which the offline (seed-0) gap reaches the top.
+// A player infers this by watching the fixed rotation; the smoke uses it to cross at the right moment.
+export function offlineSolveElapsed() {
+  return solveElapsed(FIXED_OFFLINE_SEED, BOSS_LEVEL);
 }
 
 export function pushLog(state, line) {

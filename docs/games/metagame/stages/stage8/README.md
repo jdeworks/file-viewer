@@ -1,33 +1,30 @@
-# Stage 8 — Entropy Field
+# Stage 8 — Observer State
 
-**Genre:** idle / automation survival. **Theme:** something is degrading and won't
-stop. You can't prevent the collapse — but you can use what it leaves behind.
+**Genre:** timing / observation puzzle. **Theme:** you've started noticing that you're
+noticing. A rotating gap must be crossed at exactly the right instant.
 
 ## How to play
 
-- Manage a decaying field of **nodes**. Earn and balance resources — **States**,
-  **Scrap**, **Insight** — by repairing nodes, building **structures**, and buying
-  **tech**.
-- Weather **three Cascade Storms**; the field must grow before it can end.
-- **Heat** rises toward the boss. **Prestige** (microstate collapse) banks cores for a
-  stronger restart.
-- Failed nodes don't vanish — their States **cool into `.sav` debris** in
-  `/entropy/debris/`.
+- An ASCII **ring rotates** with a gap in it. **OBSERVE** to reset the rotation, then
+  **CROSS** at the moment the gap lines up with the top.
+- Sixteen levels span ten **movements**, each teaching a new verb: watch & time, read a
+  changing speed, read your own error, hold a beat, hold two rhythms, wait for the blind
+  window, track flips, pick the real gap among decoys, and extrapolate an occluded gap.
+- Earn currency to buy **aids** that ease a level.
 
 ## Controls
 
-- **Click** to repair, build structures, buy tech, and brace storms.
-- **Drag and drop** a `.sav` from `/entropy/debris/` into `/entropy/active_archive/`
-  (or use the **Archive** button — an accessible fallback).
-- Build **Stabilizers** to pause a burn cycle each.
+- **OBSERVE** button — reset the rotation to study it.
+- **CROSS** button — commit your timed press.
+- **Aid** buttons — spend to assist the current level.
 
-## The boss — Heat Death
+## The boss — The Observer Effect (Level 16)
 
-Heat Death is **triple-gated** — a two-click rush will fail. You must survive enough
-storms, clear a **salvage floor**, earn enough **lifetime States**, and survive a
-minimum cycle count. The burn then drains your **current** banked States across ten
-escalating cycles, so bank deep reserves first.
+The back third of the levels and the boss are **unstable while online**: every time you
+OBSERVE, the gap **reseeds**, so nothing you learn from watching survives. You can't plan
+what changes while you watch it.
 
-> **Un-cheat hint:** the load-bearing move is a real **file action** — move the `.sav`
-> debris out of `/entropy/debris/` and into the **active archive** before it decays,
-> and bank enough before Heat Death commits. Salvage what remains.
+> **Un-cheat hint:** there's a real `service-worker-notes.txt` describing a **cached
+> seed**. Open and read it in the viewer, then **Activate Offline Mode** for Stage 8.
+> Offline, the seed is fixed (0) for every unstable level at once — now the rotation is
+> learnable, and you can cross with confidence.

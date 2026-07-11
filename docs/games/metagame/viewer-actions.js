@@ -1,6 +1,6 @@
 import { setAction as sharedSetAction, emitTransientAction as sharedEmitTransient } from './action-flags.js';
-import { echoTokenFor } from './stages/stage10/echo-token.js';
-import { echoVerb, isRealVerb, rawModeMatches, echoIdByFile } from './stages/stage10/echo-verbs.js';
+import { echoTokenFor } from './stages/stage9/echo-token.js';
+import { echoVerb, isRealVerb, rawModeMatches, echoIdByFile } from './stages/stage9/echo-verbs.js';
 
 const STAGE1_FILE = 'Overwriter.frag';
 const STAGE2_FILE = 'cipher.txt';
@@ -282,17 +282,23 @@ export function recordStage7Search({ file, query, result, match, setAction = sha
   return true;
 }
 
-export function stage10EchoMemoryId(file) {
+// NOTE (2026-07-11 stage renumbering): Awakening moved from stage 10 to stage 9 when Entropy Field
+// (the old stage 8) was removed and Observer State was promoted 9→8. The functions below still
+// carry their original "Stage10" names where docs/core/rawpane.js, docs/core/viewer-open.js, and
+// docs/types/image/metadata.js (general lane — out of scope for a metagame-lane rename) import them
+// by that exact name; only the functions that are ONLY called from within this file were renamed.
+// The actual stage id everywhere below is correctly 9 (see fireEcho).
+export function stage9EchoMemoryId(file) {
   const base = basename(file);
   const match = base.match(/^([a-z]+)_echo\./);
   return match ? match[1] : null;
 }
 
 // Fire the echo for a memory via a genuine real-feature action. Every recorder stamps the per-memory
-// token so the Stage-10 subscription can tell a real viewer action from a forged console action
+// token so the Stage-9 subscription can tell a real viewer action from a forged console action
 // (verifyEchoToken). One private helper keeps the token/detail shape identical across all verbs.
 function fireEcho(id, source, extra, setAction) {
-  setAction?.(10, `echo_${id}`, { source, memory: id, token: echoTokenFor(id), ...extra });
+  setAction?.(9, `echo_${id}`, { source, memory: id, token: echoTokenFor(id), ...extra });
   return true;
 }
 
@@ -300,8 +306,8 @@ function fireEcho(id, source, extra, setAction) {
 // download, …) are intentionally NOT witnessed by a bare open — opening their artifact is step one;
 // the player must then perform the verb (fired by recordStage10EchoRawMode / recordStage10EchoDownload
 // from the real feature site). See echo-verbs.js for the per-memory verb map.
-export function recordStage10EchoOpen({ file, setAction = sharedSetAction } = {}) {
-  const id = stage10EchoMemoryId(file);
+export function recordStage9EchoOpen({ file, setAction = sharedSetAction } = {}) {
+  const id = stage9EchoMemoryId(file);
   if (!id || isRealVerb(id)) return false;
   return fireEcho(id, 'viewer-open', { file: basename(file) }, setAction);
 }
@@ -309,17 +315,18 @@ export function recordStage10EchoOpen({ file, setAction = sharedSetAction } = {}
 // Raw-pane MODE echoes (genesis → Original, memory → Diff). Called from rawpane.setRawMode when the
 // player switches the loaded echo artifact into the required raw mode — a real, distinct app verb.
 export function recordStage10EchoRawMode({ file, mode, setAction = sharedSetAction } = {}) {
-  const id = stage10EchoMemoryId(file);
+  const id = stage9EchoMemoryId(file);
   if (!id) return false;
   const spec = echoVerb(id);
   if (!(spec.verb === 'rawmode' || spec.verb === 'diff') || !rawModeMatches(spec, mode)) return false;
   return fireEcho(id, 'raw-mode', { file: basename(file), mode }, setAction);
 }
 
-// DOWNLOAD echoes (entropy → salvage the fragment). Called from rawpane.downloadCurrent when the
-// player downloads the loaded echo artifact.
+// DOWNLOAD echoes. Called from rawpane.downloadCurrent when the player downloads the loaded echo
+// artifact. Currently no memory uses verb 'download' (its one user, Entropy Field, was removed —
+// see the stage-renumbering note above) — kept as generic, reusable infrastructure for a future one.
 export function recordStage10EchoDownload({ file, setAction = sharedSetAction } = {}) {
-  const id = stage10EchoMemoryId(file);
+  const id = stage9EchoMemoryId(file);
   if (!id || echoVerb(id).verb !== 'download') return false;
   return fireEcho(id, 'download', { file: basename(file) }, setAction);
 }
@@ -329,7 +336,7 @@ export function recordStage10EchoDownload({ file, setAction = sharedSetAction } 
 // matches the memory's decisive query AND the matched line actually contains the proof token — so a
 // bare open, or a vague search that finds nothing, witnesses nothing. Mirrors recordStage7Search.
 export function recordStage10EchoSearch({ file, query, result, match, setAction = sharedSetAction } = {}) {
-  const id = stage10EchoMemoryId(file);
+  const id = stage9EchoMemoryId(file);
   if (!id) return false;
   const spec = echoVerb(id);
   if (spec.verb !== 'search') return false;
@@ -347,9 +354,9 @@ export function recordStage10EchoSearch({ file, query, result, match, setAction 
 // NESTED-navigation echoes (pattern → the answer was deeper than the root). Called from the viewer
 // open path. Load-bearing un-cheat: fires ONLY when the OPENED path actually contains the required
 // nested folder segment — opening a top-level file (or any other artifact) witnesses nothing.
-export function recordStage10EchoNested({ file, path, setAction = sharedSetAction } = {}) {
+export function recordStage9EchoNested({ file, path, setAction = sharedSetAction } = {}) {
   const target = path || file;
-  const id = stage10EchoMemoryId(target);
+  const id = stage9EchoMemoryId(target);
   if (!id) return false;
   const spec = echoVerb(id);
   if (spec.verb !== 'nested') return false;
@@ -379,10 +386,10 @@ export function recordMetagameViewerOpen({ file, path, opts = {}, setAction = sh
     recordStage6CodexOpen({ file: target, setAction }),
     recordStage7AnchorOpen({ file: target, setAction }),
     recordStage7SourceOpen({ file: target, setAction }),
-    recordStage10EchoOpen({ file: target, setAction }),
+    recordStage9EchoOpen({ file: target, setAction }),
     // Nested-navigation echo needs the FULL opened path (not just the basename) to verify the player
     // reached the artifact through its repeating nested folders, so pass path explicitly.
-    recordStage10EchoNested({ file: target, path: path || file, setAction }),
+    recordStage9EchoNested({ file: target, path: path || file, setAction }),
     // NOTE: Stage 7's EXIF contradiction is deliberately NOT recorded here. It fires only from the
     // image metadata renderer (docs/types/image/metadata.js → recordStage7MetadataInspection) when
     // the player navigates to the metadata pane and the GPS row renders — never on file-open.

@@ -1,241 +1,236 @@
-# Stage 9 "Observer State" — Round 3 Self-Evaluation
+# Stage 10 "Awakening" — Round 3 Evaluation
 
-**Evaluated:** 2026-06-27  
-**Branch:** `worktree-metagame-bitfoundry`  
-**Tests:** 5/5 pass (`node --test docs/games/metagame/stages/stage9/tests/*.test.mjs`)  
-**Reviewer stance:** skeptical critic; no flattery; every claim cited to source file and line.
+**Evaluator:** Rigorous critic pass. Read-only. Tests run; no edits made.
+**Test result:** 6/6 files PASS (achievements, boss, confront, crossstage, echo-token, epilogue).
 
 ---
 
 ## Scores
 
-| # | Dimension | Score | Summary |
-|---|-----------|-------|---------|
-| 1 | Genre fidelity | 6/10 | Timing half excellent; observer-effect half reduced to meta-gimmick |
-| 2 | Fun / engagement | 6/10 | 9 distinct verbs but zero visual feedback kills the reflex loop |
-| 3 | Theme fit | 7/10 | Macro coherent; individual archetypes vary in thematic alignment |
-| 4 | Depth & length | 7/10 | 10 movements, 16 levels; hits the 40–120 min window |
-| 5 | Difficulty curve & onboarding | 5/10 | Mostly good; rhythm chain is an unannounced spike |
-| 6 | Polish / UX / readability | 4/10 | Log-only feedback; no CSS animations; mobile absent |
-| 7 | Determinism & correctness | 9/10 | Clean discipline; one cosmetic loop comment mismatch |
-| 8 | Replayability | 5/10 | Fixed per-level seeds; identical every run for levels 1–11 |
-| 9 | Technical health | 7/10 | Dead export; utility duplication; renderer.js over soft cap |
-| 10 | Un-cheat discoverability | 7/10 | 4-step hint ladder; notes button always visible; correct gating |
+| # | Dimension | Score | One-line justification |
+|---|-----------|-------|------------------------|
+| 1 | Genre fidelity (narrative finale) | 7/10 | Three-phase confront + stance epilogue is genuinely Planescape-flavored; echo verb diversity (the Edith Finch skeleton) was never built |
+| 2 | Fun / engagement | 5/10 | Phase A recall mechanic is clever; echo excursions collapse to "open a txt file 9 times" — no discovery, no verb learning |
+| 3 | Theme fit (compaction metaphor) | 8/10 | "I compact what isn't load-bearing" is pitch-perfect; Defragmenter voice is the best prose in the metagame |
+| 4 | Depth & length (40–120 min target) | 4/10 | With txt-only echoes, 9 excursions take ~5 min total not 45–90; target unreachable without real verb diversity |
+| 5 | Difficulty curve & onboarding | 6/10 | Four-state memory arc is well-paced; Phase A scramble could be near-impossible without memory; echo hint names actions that aren't enforced |
+| 6 | Polish / UX / readability | 5/10 | CSS architecture is good BUT `.mg-stage10__echo` has zero CSS rules — the load-bearing gate block is completely unstyled |
+| 7 | Determinism & correctness | 8/10 | FNV-1a compaction seed, token gate in subscribeToEchoes, null-guarded crossstage — all solid; Phase B re-witness bypass is a logic flaw |
+| 8 | Replayability (routes/endings) | 7/10 | Four routes with real content differences; stance system (keeper/seeker/free) genuinely personalises the epilogue; `understand` synthesis is strong |
+| 9 | Technical health | 7/10 | All files under 300 LOC, tests pass, no live entropy in state path, token anti-spoof correct; Phase B and missing echo CSS are the two structural defects |
+| 10 | Un-cheat discoverability | 5/10 | Echo block visible on every memory, disabled-button copy is clear, but "raw mode" / "diff" / "play mp3" hints describe gates that are never enforced |
 
-**Weighted overall: 6.3 / 10**  
-(Polish ×1.5, Fun ×1.5, Determinism ×1.2; others ×0.8–1.0)
-
----
-
-## Global Law Compliance
-
-| Law | Status | Evidence |
-|-----|--------|---------|
-| Boss only after full stage body | PASS | `advanceFrom` increments level by 1 only on a real hit (`renderer.js:104–111`); level 16 (boss) is reachable only from level 15. No bypass button or skip path. |
-| Un-cheat uses REAL app feature | PASS | Notes opened via `viewer.openFile` / `viewer.openViewerFile` (real file viewer, `renderer.js:237–243`); offline control hidden until `state.offlineControlVisible` is set by reading notes; `actions.setAction` hooks into the app action bus. Boss still requires real timing after unlock. |
-| Zero off-origin at runtime | PASS | No CDN or network fetch in any source file. |
-| Deterministic seeded RNG | PASS | `Math.random` appears only at `boss.js:66` in the intentional online-destructive path. All mode functions are pure `f(seed, elapsedMs)`. `loop.js` uses `performance.now()` with 100ms cap on delta. |
-| Modular files ≤500 LOC hard / 300 soft | WARN | `renderer.js` = 332 lines (over 300 soft cap, under 500 hard). All other files are well under soft cap. |
+**Weighted average: 6.2 / 10**
 
 ---
 
-## What Was Built vs. Intended
+## GLOBAL LAW COMPLIANCE
 
-The build plan specified a 6-band, 18-level structure (Signal / Interference / Collapse / Persistence / Echo / Blind Crossing). The implementation delivers a substantially different and arguably richer 10-movement, 16-level structure with 9 distinct mode archetypes:
-
-| Movement | Levels | Mode | New verb |
-|----------|--------|------|----------|
-| Signal | 1–2 | simple | watch & time |
-| Drift | 3–4 | oscillating | read a changing speed |
-| Echo | 5–6 | ghostecho | read your own error |
-| Cadence | 7–8 | rhythm | hold the beat (chain) |
-| Interference | 9–10 | dual | hold two rhythms |
-| Surveillance | 11 | stealth | wait for the blind window |
-| Reversal | 12 | reversing | track the flips (online-unstable) |
-| Decoys | 13–14 | multigap | pick the real gap (online-unstable) |
-| Blackout | 15 | darkzone | extrapolate the occluded gap (online-unstable) |
-| Observer | 16 | simple+darkzone | the full effect (boss) |
-
-The four modes not in the plan (oscillating, rhythm, stealth, reversing) are genuine additions that each introduce a different cognitive load. This is the right direction — more verbs, not more levels. The plan's Band 3 "choose when to observe" mechanic (OBSERVE starts a 1.5s reveal window that expires, making the timing a two-step decision) was not implemented; the OBSERVE button simply resets the elapsed clock and reseeds online-unstable levels, which is weaker than the plan's intent.
+| Law | Status | Notes |
+|-----|--------|-------|
+| Boss only after full stage body | PASS | `chooseFinal` requires `state.confront.completed` (boss.js:230); confront entry gate is `finalQuestionUnlocked && defragmenterAccess` |
+| Un-cheat uses a REAL app feature, not trivially bypassable | PARTIAL FAIL | Integration echo gate is real and token-protected; Phase B re-witness is bypassable on click (see Issue #2) |
+| Zero off-origin | PASS | No CDN references in any stage10 source |
+| Deterministic seeded RNG | PASS | `getCompactionOptions` uses FNV-1a seeded from `createdAt`; echo tokens are static functions of memoryId only |
+| Modular files (300 soft / 500 hard LOC) | PASS | Largest file is boss.js at 296 LOC |
 
 ---
 
-## Dimension Analysis
+## TOP ISSUES
 
-### 1. Genre Fidelity — 6/10
+### Issue 1 — Echo verbs all collapse to plain-text opens (CRITICAL)
 
-The timing game half is well-executed. Nine modes each with a clean `evaluate(cfg, seed, ms) → { hit, distance }` interface and correct `solveMoment` proof. The Geometry Dash model (each band introduces a new verb, not tighter numbers) is followed.
+**Where:** `viewer-actions.js:253–259`, `content.js:238–246`, `/docs/bts/awakening/*`
 
-The observer-effect half is significantly diluted. The design intent (`research.md:147–155`) called for OBSERVE itself to be costly: online, it reseeds (destructive); offline, it reveals without cost — so the player must choose WHEN to observe as a game-mechanical decision. In the build, OBSERVE is never destructive within a level attempt — it just resets the elapsed clock. The seed reseeds on each online attempt at an unstable level, but this is an automatic background event, not a player-initiated collapse. The "choose when to observe" tension is gone. What remains is: "play these levels online, get frustrated that the gap keeps jumping, eventually read the notes and go offline." That is an aha-moment, but it does not deliver the second-by-second "is it cheaper to observe now or to extrapolate from my last observation?" decision the research described.
+The design's core mechanic — 9 distinct viewer capabilities as echo gates (raw mode, in-file search, diff, nested navigation, media playback, epub, metadata panel, download, recents) — was never implemented. Every echo resolves to `*_echo.txt` open events, handled by a single `recordStage10EchoOpen` function that only checks the filename pattern (`/^([a-z]+)_echo\./`). No mode, no format, no interaction type is checked.
 
-Cite: `research.md:218–230` (Band 3 mechanic); `renderer.js:94–103` (actual OBSERVE implementation: just resets elapsed + reseeds).
+The actual echo hints describe verbs that are never enforced:
+- Genesis: "Open stage_01_source_excerpt.js **in raw mode**" — opens a txt in any mode.
+- Memory: "**Diff** stage_03_memory_before.log and stage_03_memory_after.log" — only `memory_echo.txt` exists; no diff pair; no diff verb.
+- Signal: "**Play** stage_05_signal_hum.mp3" — opens `signal_echo.txt`, a text file; no audio renderer.
+- Protocol: "Open stage_06_protocol_appendix.**epub**" — opens `protocol_echo.txt`.
+- Identity: "**Inspect metadata** on stage_07_identity_photo.png" — opens `identity_echo.txt`.
+- Entropy: "Archive one memory fragment from **debris/**" — there is no `debris/` subdirectory; opens `entropy_echo.txt`.
+- Observation: "Open the **cached** observation memory" (recents panel) — just a txt open.
 
-### 2. Fun / Engagement — 6/10
+This collapses the most distinctive design element of Stage 10 into nine identical interactions. The Edith Finch "new verb per sub-stage" arc does not exist.
 
-Strong mechanical variety: rhythm's consecutive-chain requirement (7–8 hits in a row to clear) is the most engaging and most replayable mode — it genuinely creates tension because a single miss resets the chain (`renderer.js:143–148`). Stealth's blind window is clever: the eye sweeps independently and must not cover the crossing lane (`modes.js:234–247`), requiring two simultaneous reads. The dual mode (both rings must align) is well-proven by the test at `modes.test.mjs:86–100`.
-
-However, the reflex-game genre is defined by instant feedback. Super Meat Boy has no death screen; Geometry Dash's feedback is 0ms visual. Here, every hit and miss is communicated through the `<ol class="s9-log">` (`renderer.js:280–285`): the player must shift eye focus from the ring animation to a log list below it, then read a text line, to know if they succeeded. For the 333ms cross window on the boss level (±15° at 46°/s), the player's attention has already moved on before the log updates. There is no visual class toggle on the arena, no flash, no border color change, no sound. This is the single biggest engagement failure in a genre where sub-second feedback is load-bearing.
-
-### 3. Theme Fit — 7/10
-
-"Observer State" is coherent: the bell messages (`messages.js:9–14`) and the boss defeat text ("I stopped watching. I moved. I arrived. the paradox didn't resolve. I just went around it.") are the best writing in the metagame. The online/offline seed split maps cleanly to measurement collapse. The movement names Signal, Drift, Echo, Interference, Blackout, Observer have a consistent signal/noise register.
-
-Where it slips: `stealth` mode with the scanning `@` eye is spy-thriller vocabulary, not quantum physics. `reversing` mode ("track the flips") has no thematic anchor in the observer-effect metaphor. The `multigap` phantom-decoy mode is closer to "three-card monte" than quantum state. These are fine mechanics but they reduce thematic density in the back third (movements 7–9), exactly where the theme should be most intense before the boss.
-
-### 4. Depth & Length — 7/10
-
-Estimated per-mode investment based on mechanics:
-- Signal + Drift (1–4): 15–25 min (simple learning curves)
-- Echo + Cadence (5–8): 20–40 min (chain requirement is deep)
-- Interference + Surveillance (9–11): 15–25 min
-- Reversal + Decoys (12–14): 15–30 min (run-to-run learning for multigap)
-- Blackout + Boss (15–16): 20–40 min (inference + offline un-cheat)
-
-Total: 85–160 min. Hits the 40–120 min target comfortably; likely lands around 90 min for a deliberate player.
-
-Depth concern: the `echoHistory` from the plan (`state.js` session section) was not implemented. The ghostecho mode (`renderer.js:254–258`) only tracks `attempts` in local renderer state — these reset on every `reobserve()` call and are not persisted to `state`. A player who presses OBSERVE between attempts loses their ghost calibration data. The plan called for persistence per-level to accumulate calibration across sessions.
-
-### 5. Difficulty Curve & Onboarding — 5/10
-
-Tolerance shrinks level-by-level across the run (42° down to 16° at the boss), and speed steps up — the structural curve is correct.
-
-Two unmarked spikes:
-1. **Level 7 (Cadence / rhythm mode)**: Every previous mode requires exactly one CROSS press per level. Level 7 requires 3 consecutive on-beat presses (`movements.js:39`, `chain: 3`); level 8 requires 4 (`chain: 4`). This is a fundamentally different win condition — a miss resets the chain to 0 (`renderer.js:143`). There is no announcement or explanation. The HUD shows "movement Cadence — hold the beat" which is correct but tiny. A first-time player will assume they need one press, land it, see "on beat (1/3)" in the log (if they notice the log), and press again before the next beat — likely missing. The natural assumption is "I just did it wrong" rather than "this is a chained mechanic."
-2. **Level 11 (Surveillance / stealth mode)**: The eye covers the crossing lane with a 64° blind arc. A CROSS only succeeds when BOTH the gap is at the top AND the eye is NOT covering the top. `modes.js:239`: `watched = angularDist(eye, 0) <= blind/2`. The player must now simultaneously track two independent rotating elements and identify their joint favorable window. No introduction is given.
-
-The hint text at `renderer.js:276–278` only changes for unstable levels, not per-mode.
-
-### 6. Polish / UX / Readability — 4/10
-
-The build plan's `styles.css` increment (7.2, `buildplan.md:420–428`) listed:
-- `.s9-feedback.success` green flash (0.8s fade) — **absent**
-- `.s9-feedback.bounce` red flash — **absent**
-- `.s9-clarity-milestone` pulse at 25/50/75/100 — **absent**
-- `@keyframes s9-pulse` — **absent**
-- Mobile touch button sizing — **absent** (only grid-column collapse at `styles.css:78–82`)
-
-The only dynamic CSS class applied outside of static layout is `s9-aid-owned` on the tachometer button (`renderer.js:307`). The arena `<pre>` has no class changes on hit or miss — `fields.arena.textContent` is overwritten every frame but no class state is toggled.
-
-The `s9-boss` section is always rendered, even at level 1. On level 1 it says "clear levels to reach the Observer (level 16)" which is acceptable as a destination signal, but the border box dominates the lower third of the screen and visually competes with the arena.
-
-The aid buttons display cost in parens and their description only in `title` attribute (`renderer.js:43`). On touch devices, `title` is never shown. Aid costs are undiscoverable on mobile.
-
-The `OBSERVE (reset rotation)` label is UX-correct but breaks the quantum vocabulary. "OBSERVE (reset rotation)" says what it does mechanically but not why (for unstable levels, it also reseeds — the parenthetical is incomplete and misleading for those levels).
-
-### 7. Determinism & Correctness — 9/10
-
-This is the strongest dimension. `rng.js` is xmur3 + mulberry32, identical to stage2/stage3. Every mode function is a pure function: `evaluate(cfg, seed, ms)` and `render(cfg, seed, ms)` are referentially transparent. `Math.random` appears ONLY at `boss.js:66` as the mechanic of destructive observation (intentional). The `loop.js` implementation accumulates per-frame deltas rather than computing from a fixed `t0`, which is actually more robust for tab-switch recovery than the plan described (the 100ms delta clamp at `loop.js:19` prevents a single large jump from skipping a full rotation).
-
-The `game.test.mjs:37–48` loop covers all 16 levels: for each level, `solveMoment(seed, level)` returns a moment (or array of moments for rhythm) where `crossAttempt.hit === true`. All 16 pass. The `boss.test.mjs` proves: online → fail; offline mistimed → fail; offline at `offlineSolveElapsed()` → win.
-
-One cosmetic issue: `loop.js:3` comment says "performance.now() - t0" but the implementation has no `t0` — it accumulates deltas. Not a bug but the comment is incorrect.
-
-### 8. Replayability — 5/10
-
-Stable level seeds are `level * 31 + 7` (`game.js:47`). This means every playthrough of levels 1–11 is IDENTICAL — same base angles, same oscillation phases, same rhythm beat positions. Once a player learns "level 3 starts with the gap at roughly 6 o'clock," that knowledge is permanent. The game is solved-once for the stable front.
-
-The online-unstable back third (levels 12–15) has seed variation per OBSERVE press, but this variation is designed to be frustrating (proving the un-cheat is needed), not replayable in a rewarding sense.
-
-The rhythm chain requirement is the strongest replayability mechanic — even with a fixed seed, landing 3–4 consecutive beats is a skill that takes many attempts. The `multigap` phantom-decoy mode has per-attempt run-to-run learning value (first attempt 50/50, second 100%). Both are good.
-
-The aids (Stabilizer charges, Tachometer) add mild meta-progression but the Tachometer is permanent once bought and Stabilizer charges are minor convenience items.
-
-### 9. Technical Health — 7/10
-
-Good structure overall. Issues:
-
-1. **Dead export**: `content.js:11` exports `bossDiagram(lock)` — a static ASCII function the build plan (`buildplan.md:394`) said to remove. It is not imported anywhere in the stage (checked all imports). Dead code.
-
-2. **Utility duplication**: `rings.js:82–93` copies five helper functions (`mod360`, `angularDist`, `inArc`, `inZone`, `ringChar`) from `ring.js:52–67` verbatim. These are pure math; they should be imported from `ring.js`, not duplicated. If either copy diverges in a bug fix, the other stays broken.
-
-3. **renderer.js LOC**: 332 lines, exceeding the 300 soft cap. The file does more than it should: `crossSublevel`, `challengeBoss`, `doCross`, `buyAidAction`, `doPeek`, `openNotes`, `paintArena`, `repaint`, `paintTach`, `paintAids`, `persistAndPaint`. A `ui.js` module for the paint functions would bring renderer.js under 250 lines.
-
-4. Test coverage is otherwise good. The `aids.test.mjs` covers the offline-only peek gate. The `modes.test.mjs` proves stealth's eye blocks (the `blocked` probe at line 55–62 is excellent) and the dual AND-window (line 85–99).
-
-### 10. Un-cheat Discoverability — 7/10
-
-Path:
-1. Reach level 12 (first `onlineUnstable` level).
-2. Press CROSS → log: "the gap reseeded the instant you committed. nothing holds while live. (go offline.)" Hint steps through `lockedHintLadder` (`messages.js:16–21`): 4 hints culminating in "read service-worker-notes.txt, then activate Offline Mode for Stage 9."
-3. "open service-worker-notes.txt" button is always visible in the sidebar (not hidden until needed, `renderer.js:46`). This is discoverability-positive.
-4. Notes display the cache explanation (`content.js:1–9`) and the real file viewer opens.
-5. "Activate Offline Mode (Stage 9)" button appears (was hidden; now visible after notes are read, `renderer.js:279`).
-6. Clicking it calls `activateOfflineMode` → sets fixed seed 0 → boss is now beatable by timing.
-7. Boss still requires a real CROSS at the right moment (`boss.js:103`). Offline does not auto-win.
-
-The path is well-designed. Docked slightly: the first unstable level produces only a log message and a −1 clarity penalty. A player grinding through the stable levels on speed would easily miss the log text and assume they're just timing badly. A visual indicator on the HUD that this level's seed is "live-random" (`renderer.js:269` does show "seed: live-random" but this requires reading a small HUD field, not a visual alert) would catch more players earlier.
+**Fix:** Implement Phase 2 (#6–#7 from buildplan): create real artifact files (`signal_echo.mp3`, `memory_before.log`/`memory_after.log`, `identity_echo.png`, `debris/fragment_01.txt`), then extend `recordMetagameViewerOpen` (and add a mode-switch hook, a diff-open hook, a download hook) to dispatch the correct echo verb. Priority order: genesis (raw mode, just check `opts.mode === 'raw'`), signal (mp3 actual file, fires on media renderer mount), entropy (download event on any file in `debris/`). Those three alone differentiate the experience; the rest follow the same pattern.
 
 ---
 
-## Top Issues
+### Issue 2 — Phase B re-witness fires on click, not on actual viewer open (HIGH)
 
-**1. No visual hit/miss feedback** (severity: HIGH)  
-**File:** `renderer.js` + `styles.css`  
-All hit/miss information is in the `<ol class="s9-log">` list. Timing games require sub-second feedback at the point of action. The log is below the fold of the arena and requires a deliberate eye shift that takes longer than the tolerance window.  
-**Fix:** After `crossAttempt`, toggle a class on `fields.arena` (`s9-arena--hit` or `s9-arena--miss`) for 400ms with a CSS border-color transition (`#5dcaa5` for hit, `#c0392b` for miss). 12 lines of CSS, 5 lines of JS.
+**Where:** `renderer.js:155–159`
 
-**2. OBSERVE is not a game mechanic — it is a reset button** (severity: HIGH)  
-**File:** `renderer.js:94–103`, `research.md:218–230`  
-The plan's Band 3 "choose when to observe" verb — where pressing OBSERVE collapses the ring to visible state for 1.5s, after which it returns to `?` (hidden), creating a two-step decision — was not implemented. The OBSERVE button only resets elapsed and reseeds. The observer-effect mechanic lives entirely at the meta level (online/offline seed), not within any level's moment-to-moment gameplay.  
-**Fix:** For online-unstable levels, add a `revealExpiresAt` timer: OBSERVE shows the real ring for 1.5s (class-toggled hidden/revealed), then hides it. A CROSS pressed after the window expires returns 'expired' with no clarity change. This is roughly 40 lines across `game.js` and `renderer.js`.
+```js
+const fragButton = event.target.closest("[data-confront-echo]");
+if (fragButton) {
+  const id = fragButton.dataset.confrontEcho;
+  openEcho(ctx, id);                                    // fire-and-forget
+  rewitnessFragmentation({ state, memoryId: id, save: save() }); // fires unconditionally
+  saveAndPaint(ctx, repaint);
+  return true;
+}
+```
 
-**3. No per-movement announcement when a new archetype first appears** (severity: MEDIUM)  
-**File:** `renderer.js`, no change currently  
-Level 7 introduces the rhythm chain (new verb: land N consecutive presses). Level 11 introduces the stealth eye (new verb: wait for the blind window). Level 12 is the first online-unstable level. None of these transitions carry an in-UI announcement. The `fields.hint` element exists but shows only online-unstable hints or the static "watch the gap; CROSS when it faces the top."  
-**Fix:** Track which movements have been seen in `state`; on first entry to a movement, set `fields.hint.textContent` to a one-sentence verb description for 10 seconds. 20 lines.
+`rewitnessFragmentation` sets the transient confront flag immediately, regardless of whether `openEcho` finds a viewer or the file loads. A player can click "Re-open echo in viewer →" in Phase B and advance without the viewer doing anything (e.g., if `ctx.viewer` is absent, or the file fails to load). This undermines the Phase B "prove you did the work" premise.
 
-**4. Rhythm chain spike with no contextual briefing** (severity: MEDIUM)  
-**File:** `renderer.js:130–148`, `movements.js:39`  
-Levels 1–6 all require a single CROSS press. Level 7 requires 3 consecutive presses (`chain: 3`). The HUD shows "Cadence — hold the beat" but the win condition (consecutive chain) is not communicated until the first partial-hit result appears in the log. Most players will interpret "on beat (1/3)" as an error message on first encounter.  
-**Fix:** Include chain requirement in the movement description ("hold the beat — land 3 in a row") and display it in the hint on first entry.
+The integration echo gate (Phase A prerequisite) is properly token-gated via the `subscribeToEchoes` action subscription in index.js. Phase B should use the same path: the click opens the file; `rewitnessFragmentation` fires when the echo action returns from the viewer (carrying the valid token), not immediately.
 
-**5. Dead `bossDiagram` export in `content.js`** (severity: LOW)  
-**File:** `content.js:11–23`  
-The build plan explicitly said to remove this (`buildplan.md:394`). It is not imported anywhere. 13 lines of dead code.  
-**Fix:** Delete lines 11–23 of `content.js`.
-
-**6. `renderer.js` over soft LOC cap** (severity: LOW)  
-**File:** `renderer.js` (332 lines; soft cap 300)  
-`paintArena`, `paintTach`, `paintAids`, and `repaint` are ~90 lines of pure DOM-update logic that could move to a `ui.js` module.  
-**Fix:** Extract to `stage9/ui.js`; renderer.js drops to ~240 lines.
-
-**7. Utility function duplication between `ring.js` and `rings.js`** (severity: LOW)  
-**Files:** `rings.js:82–93`, `ring.js:52–67`  
-`mod360`, `angularDist`, `inArc`, `inZone`, `ringChar` are copied verbatim. A divergent bug fix in one copy will silently leave the other broken.  
-**Fix:** Export these from `ring.js` (already present); import in `rings.js`.
-
-**8. No visual signal distinguishing online-unstable levels before first CROSS** (severity: MEDIUM)  
-**File:** `renderer.js:268–269`  
-The HUD shows "seed: live-random" in a small text field, which is easy to miss. A player arriving at level 12 after completing level 11 has no UI affordance warning that the rules have changed.  
-**Fix:** Add an `s9-hud--unstable` class to the HUD when `cfg.onlineUnstable` is true, with a CSS amber border or text color on the seed field. 5 CSS lines + 2 JS lines.
+**Fix:** Remove the direct `rewitnessFragmentation` call from the click handler. In `subscribeToEchoes` (index.js:34–41), when `state.confront.phase === 'fragmentation'`, already call `rewitnessFragmentation` after a successful token-verified echo. This path exists — it just needs to be the only path.
 
 ---
 
-## Top Opportunities
+### Issue 3 — Echo block has no CSS (HIGH)
 
-**1. Visual hit/miss flash (highest ROI)**  
-10 lines of CSS + 5 lines of JS — immediately transforms how the game FEELS. This is the genre's most basic expectation and its absence most undermines everything else. Do this first.
+**Where:** `styles.css` (338 lines), `styles-confront.css` (182 lines)
 
-**2. Implement the in-level OBSERVE reveal window for unstable levels**  
-The deepest missing mechanic from the research. "Choose when to observe" is a genuine second cognitive layer that would make the observer-effect theme load-bearing within each attempt, not just at the meta level. Roughly 40 lines of new logic.
+The renderer-memory.js echo block uses these classes:
+- `.mg-stage10__echo`, `.mg-stage10__echo.is-witnessed`, `.mg-stage10__echo.is-pending`
+- `.mg-stage10__echo-label`, `.mg-stage10__echo-hint`
 
-**3. Per-movement announcement overlay on first entry**  
-20 lines. Directly addresses the onboarding gaps at Cadence (level 7) and Surveillance (level 11). Pays forward every band transition.
+None appear in either stylesheet. Every player on every memory sees an unstyled block — no visual distinction between witnessed and pending states, no border/background indicating "this is a gate." The "Open echo in viewer →" button gets the generic button style but the surrounding block has no container style.
 
-**4. Vary stable-level seeds across playthroughs**  
-Currently all stable levels replay identically. Including a per-session counter in the seed derivation (e.g., `sublevelSeed(level, playthrough)`) would make repeat plays feel fresh. 5-line change in `game.js`.
+The `.mg-stage10__echo-req` class in `renderer-final.js:22` (shown when a choice requires more echoes than the player has) is also unstyled.
 
-**5. CSS clarity milestones (25/50/75/100 clarity)**  
-20 CSS lines (`@keyframes s9-pulse`, `.s9-clarity-milestone`). This was in the plan and would give players visible forward progress signals between level completions.
+**Fix:** ~25 lines of CSS in `styles.css`:
+
+```css
+.mg-stage10__echo {
+  border-left: 3px solid #c7c4ba;
+  margin: 10px 0;
+  padding: 8px 10px;
+}
+.mg-stage10__echo.is-witnessed {
+  border-color: #35d07f;
+  background: rgba(53, 208, 127, 0.07);
+}
+.mg-stage10__echo.is-pending {
+  border-color: #d59b2d;
+  background: rgba(213, 155, 45, 0.07);
+}
+.mg-stage10__echo-label {
+  color: #5f5b52;
+  display: block;
+  font: 11px/1.4 "Courier New", monospace;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+.mg-stage10__echo-hint {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.mg-stage10__echo-req {
+  display: block;
+  font-size: 12px;
+  font-style: normal;
+  opacity: 0.7;
+  padding-top: 4px;
+}
+```
 
 ---
 
-## Overall Verdict
+### Issue 4 — Playtime target unreachable under current echo design (HIGH)
 
-**6.3 / 10** — A genuinely built stage that replaced the thin gate with real mechanics. The 10-movement, 9-archetype structure is richer than the 6-band plan. Determinism is disciplined. The boss is gated correctly and requires both the offline un-cheat and real timing skill. The rhythm chain and stealth blind-window modes are the strongest contributions.
+**Where:** Design level, downstream of Issue 1
 
-The stage's core failure is a genre-level mismatch: this is a timing game with no instant visual feedback. Every classic in the reflex/timing genre — Geometry Dash, Super Meat Boy, Tunnel Rush — puts feedback at the point of action, in the frame the button was pressed. Stage 9 puts feedback in a log list that requires a deliberate eye movement to read. For a level where the tolerance window is 333ms, the log has already been crowded by new messages before the player looks at it.
+The buildplan's 40–120 min estimate rests on "nine echoes at 5–10 minutes each" because "for a player unfamiliar with that feature, discovery + use can take 5–15 minutes." With all echoes as txt opens, each excursion takes 30 seconds. Total echo time: ~5 minutes. Total stage time: ~20–30 minutes maximum. This falls well below the finale's bar for a payoff stage.
 
-The observer-effect theme is present at the meta level (online = destructive, offline = learnable) but absent within any individual level attempt. The plan's Band 3 mechanic — where OBSERVE itself is costly, starting a countdown, making "when to observe" a real-time decision — would complete the theme. Without it, the game's name is thematically sound but its mechanics are not.
+This is not fixable without addressing Issue 1. Even implementing 3 of the 9 real verb types (e.g., genesis raw-mode, signal audio, entropy download) extends per-echo time to 2–5 minutes for unfamiliar features.
 
-**Single most important round-4 action: add hit/miss visual feedback to the arena element.** Two CSS classes, one 400ms transition, triggered immediately after `crossAttempt`. This is the prerequisite for every other improvement: it makes the game *feel* like a timing game before any new mechanic is added.
+---
+
+### Issue 5 — Phase A flawless-compaction is near-impossible without prior notes (MEDIUM)
+
+**Where:** `confront.js:53–61`, `getCompactionOptions`
+
+Compaction options are shuffled per-save via FNV-1a. A player who clicked through their memory stances hours or sessions ago faces a 1-in-3 random chance per memory, with no context shown (the Defragmenter prompt only says "choose the one that was yours"). For a player who resolved all 9 memories: (1/3)^9 ≈ 0.005% chance of a clean first pass. The `flawlessCompaction` achievement is in practice a "remember your notes" badge.
+
+The game correctly allows re-affirm after a wrong pick (you can still correct a "compacted" state), so flawless is the only thing lost. But the `confrontLines.compaction.prompt` ("choose the one that was yours") gives no hint that the player can scroll back to check — and the stepper view is replaced by the confront view while fighting.
+
+**Fix:** During Phase A, show the player's resolved memory text (slot.resolvedText or reflections[slot.choice]) underneath each compaction item BEFORE they answer — or at minimum show a "Your memory: [slot text preview]" hint. This turns Phase A from "random 1-in-3" to "reading comprehension" as intended.
+
+---
+
+### Issue 6 — Observation echo is mechanically contradictory (MEDIUM)
+
+**Where:** `content.js:208`, `viewer-actions.js:247–259`
+
+The echo hint says "Open the cached observation memory" — implying the player must use the recents panel to navigate to a previously opened file. But the echo artifact is `observation_echo.txt`, a file the player opens for the first time. There is no recents-panel check in `recordStage10EchoOpen`. The hint describes an interaction that cannot be satisfied by the artifact.
+
+The buildplan's design (second open of the same file, or `source: 'recents'` flag) was not implemented.
+
+**Fix:** Either (a) change the echo hint to "Open observation_echo.txt" (matching the trivial implementation), or (b) implement the recents-gate by checking `opts.source === 'recents'` in the recorder and updating the observation hint accordingly.
+
+---
+
+### Issue 7 — `synthesis.js` result not persisted to state (LOW)
+
+**Where:** `boss.js:236–251`, `renderer-final.js:69–79`
+
+The buildplan (#11) specifies storing `state.final.synthesisText = synthesis.text` on `chooseFinal('understand')`. The current `chooseFinal` does not call `assembleSynthesis` or write to state. The synthesis is re-assembled at render time from `assembleSynthesis(state)`. This is functionally correct (it's deterministic), but the `state.final` shape documented in the buildplan diverges from the actual implementation. If another system reads `state.final.synthesisText` expecting it to be populated, it will be null.
+
+**Fix:** Either remove `synthesisText` from the documented state shape (it's not needed since the render is pure), or add the `assembleSynthesis` call in `chooseFinal` for alignment with the design doc. Low risk either way.
+
+---
+
+### Issue 8 — `observation` accent (#1a1a1a black) is invisible on dark backgrounds (LOW)
+
+**Where:** `content.js:193`
+
+The Observation memory's accent is `#1a1a1a` — near-black. The capstone grid tile will render a near-black border-left against the white tile background, which is legible but indistinct from "no accent." On any theme with a dark background this becomes invisible. All other 8 accents are vivid colors.
+
+**Fix:** Change `observation` accent to something thematically "quiet but visible" — e.g., `#4a5568` (slate-gray) or `#6b7280`. Black has semantic meaning as "final/dark" but is a poor CSS accent color.
+
+---
+
+## TOP OPPORTUNITIES
+
+### Opportunity 1 — Echo CSS (immediate, zero risk)
+
+25 lines of CSS (see Issue 3 fix above) transforms the most-touched UI element from unstyled to visually communicative. The pending/witnessed state distinction is critical for players to understand what they need to do. This is the highest ratio of impact-to-effort in the codebase.
+
+### Opportunity 2 — Genesis + Signal as proof-of-concept for verb diversity
+
+Genesis raw-mode check: extend `recordMetagameViewerOpen` to accept `opts.mode`; in `recordStage10EchoOpen` add `if (id === 'genesis' && opts.mode !== 'raw') return false`. Replace `genesis_echo.txt` with `genesis_echo.js` (the current content works; just rename). This implements the raw-mode verb with about 3 lines of code.
+
+Signal audio: replace `signal_echo.txt` with a tiny real `.mp3` file (or reuse an existing BTS audio file from Stage 5). Add a `recordStage10EchoOnPlay` function that fires `echo_signal` when media playback starts on `signal_echo.mp3`. These two implementations prove the verb-diversity concept with minimal scope.
+
+### Opportunity 3 — Debris directory for entropy echo
+
+Create `docs/bts/awakening/debris/fragment_01.txt` with thematic content. Wire the entropy echo to fire on download of any file matching `debris/*`. The download event is already tracked in other stages — this is a one-recorder addition plus one directory + one file.
+
+### Opportunity 4 — Phase A hint: show the player's prior reflection
+
+During Phase A compaction, show a 1-line preview of what the player chose in the memory body (`slot.reflections[slot.choice]` truncated to 60 chars with "…"). This turns a 1-in-3 guess into a reading comprehension check — much more satisfying for a finale that is supposed to test what the player actually remembers. Renders in the compaction item BEFORE the options, just like the concede lines do in Phase B.
+
+### Opportunity 5 — Rest-route hub state (buildplan #13, not yet visible)
+
+The buildplan specifies a `.mg-v3-stage--resting` class on the hub nav button for the rest route, rendering it dim with "(resting)" appended. The `metagame.js` handler for `onStageComplete` does not yet read `result.route`. Since the rest route's distinctive epilogue is already written (`routeEpilogues.rest`), wiring the hub state would close the full loop of "rest means something visible in the hub."
+
+---
+
+## OVERALL VERDICT
+
+**6.2 / 10** — The architecture is sound and the confrontation is the strongest boss in the metagame. The three-phase Defragmenter fight (active recall → trace evidence → self-definition) is well-designed, fully tested, and genuinely harder to bypass than any prior stage boss. The prose quality (Defragmenter voice, memory texts, stance epilogues) is the best writing in the whole game.
+
+What prevents this from being a satisfying finale is the collapse of the echo design. Stage 10's pitch is "the host app is the game" — nine viewer features as the real content of the stage. That pitch was never built. Instead, all nine echoes are plain-text file opens, which takes ~5 minutes total and teaches the player nothing about the viewer they didn't already know. A player who spent 40+ hours with the prior 9 stages deserves a finale that explicitly exercises and celebrates those specific skills. The crossstage.js Phase B references (concede lines per prior-stage un-cheat) come closest to this — they're excellent — but they're only visible during the fight, not during the main body.
+
+**Does it succeed as a satisfying finale?** Not yet. It succeeds as a satisfying boss fight. The finale frame (retrospective + confrontation + choice) is correct; the frame content (nine echo excursions) is currently hollow.
+
+---
+
+## SINGLE MOST IMPORTANT ROUND-4 ACTION
+
+**Add CSS for the echo block.** It is the only defect that every player hits on every memory in the stage, it requires ~25 lines of CSS, and it has zero logic risk. Without it, the load-bearing gate that defines Stage 10's identity is visually invisible. Fix this first, then address echo verb diversity — the two are sequentially independent and the CSS unblocks accurate playtesting of the verb-diversity work.
+
+---
+
+*Scores table summary for quick reference:*
+
+| Dim | 1 Genre | 2 Fun | 3 Theme | 4 Depth | 5 Curve | 6 Polish | 7 Determinism | 8 Replay | 9 Tech | 10 Uncheat | **Avg** |
+|-----|---------|-------|---------|---------|---------|---------|--------------|---------|--------|-----------|---------|
+| Score | 7 | 5 | 8 | 4 | 6 | 5 | 8 | 7 | 7 | 5 | **6.2** |

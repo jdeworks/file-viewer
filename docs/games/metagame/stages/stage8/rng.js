@@ -1,4 +1,4 @@
-// rng.js — Stage 8 Entropy Field: tiny seedable PRNG (copied from stage2/rng.js, unmodified).
+// rng.js — Stage 8 Observer State: tiny seedable PRNG (copied from stage2/rng.js, unmodified).
 // Re-deriving from `8:${cycle}` regenerates the exact same cycle on reload — deterministic, no deps.
 
 function xmur3(str) {

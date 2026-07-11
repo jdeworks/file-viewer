@@ -1,180 +1,270 @@
-.stage8-entropy-field {
-  min-height: 100%;
-  padding: 16px;
-  color: #ddd5c7;
-  background: #0e0e0e;
+.stage8-observer-state {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  color: #fff;
+  background: #000;
+  overflow: hidden;
   font: 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace;
 }
 
-/* ── Sticky command bar (UX-audit #1): the verb + the 4 decisive numbers, pinned at the top of the
-   stage while the rest scrolls inside .mg-v3-host (the shell's only scroller). */
-.s8-cmdbar {
-  position: sticky;
-  top: 0;
-  z-index: 5;
+.s8-hud,
+.s8-controls {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 10px 14px;
-  margin: -16px -16px 12px;
-  padding: 10px 16px;
-  background: #141312;
-  border-bottom: 1px solid #4a4a4a;
+  align-items: center;
+  margin-bottom: 10px;
 }
-.s8-cmd-advance { font-weight: 700; background: #2c3a1e; color: #cfe6a8; border: 1px solid #5c7a3e; padding: 6px 14px; cursor: pointer; font: inherit; }
-.s8-cmd-brace { background: #3a2016; color: #e0a08e; border: 1px solid #c8553b; padding: 6px 12px; cursor: pointer; font: inherit; }
-.s8-cmd-stat { display: inline-flex; flex-direction: column; line-height: 1.05; text-align: center; }
-.s8-cmd-stat b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.s8-cmd-stat small { font-size: 10px; color: #8b9ba8; text-transform: uppercase; letter-spacing: 0.06em; }
-.s8-cmd-stat.is-warn b { color: #e0a08e; }
-.s8-ticker { flex: 1 1 160px; min-width: 0; color: #b6ad9c; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* ── Labelled HUD clusters (UX-audit #4) — key number large, rate as a small chip. */
-.s8-hud { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
-.s8-cluster { display: flex; align-items: baseline; gap: 12px; padding: 8px 12px; border: 1px solid #4a4a4a; background: #171615; }
-.s8-cl-label { font-size: 10px; letter-spacing: 0.1em; color: #8b9ba8; align-self: flex-start; }
-.s8-cl-num { display: inline-flex; flex-direction: column; line-height: 1.05; }
-.s8-cl-num b { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.s8-cl-num small { font-size: 10px; color: #8b9ba8; text-transform: uppercase; letter-spacing: 0.05em; }
-
-.s8-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 12px; }
-.s8-controls button, .s8-external, .s8-boss-btn { cursor: pointer; background: #20201d; color: inherit; border: 1px solid #4a4a4a; font: inherit; padding: 6px 12px; }
-.s8-controls button:disabled, .s8-boss-btn:disabled { opacity: 0.5; cursor: default; }
 
 .s8-layout {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  grid-template-areas:
+    "arena actions"
+    "arena side";
+  grid-template-rows: auto 1fr;
+  gap: 12px 16px;
 }
-.s8-layout.is-solo { grid-template-columns: 1fr; }
 
-/* ── Boss-gate checklist (UX-audit #3) — 5 labelled live rows, or a single next-gate chip. */
-.s8-boss-gate { margin: 8px 0; }
-.s8-gate-chip { display: inline-block; padding: 6px 10px; border: 1px solid #8b7355; background: #20201d; color: #d8a657; font-size: 13px; }
-.s8-gate-chip.is-done { border-color: #5c7a3e; color: #b6d39a; }
-.s8-gate-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
-.s8-gate-tick { width: 1.2em; color: #c8553b; font-weight: 700; text-align: center; }
-.s8-gate-row.is-met .s8-gate-tick { color: #7bb661; }
-.s8-gate-label { flex: 1; color: #ddd5c7; }
-.s8-gate-val { color: #b6ad9c; font-variant-numeric: tabular-nums; }
-.s8-boss-hint { font-size: 12px; color: #b6ad9c; margin: 6px 0; }
-.s8-boss-btn { margin-top: 6px; }
+.s8-arena-wrap { grid-area: arena; position: relative; display: flex; }
+.s8-actions { grid-area: actions; display: flex; flex-direction: column; gap: 8px; }
+.s8-side { grid-area: side; min-height: 0; overflow: auto; }
 
-/* ── Salvage boss-progress bar on the archive panel (M2 — salvage left the HUD). */
-.s8-salvage-progress { margin-top: 12px; }
-.s8-salvage-bar { display: block; height: 8px; background: #2c2a26; border: 1px solid #4a4a4a; margin-bottom: 4px; }
-.s8-salvage-bar > span { display: block; height: 100%; width: 0; background: #d8a657; transition: width 0.3s linear; }
-.s8-salvage-progress small { font-size: 11px; color: #b6ad9c; }
-.s8-external { margin-top: 10px; display: block; width: 100%; text-align: left; }
-
-.s8-map,
-.s8-files,
+.s8-arena,
+.s8-side,
 .s8-boss {
-  border: 1px solid #4a4a4a;
+  border: 1px solid #fff;
   padding: 12px;
-  background: #171615;
+  background: #000;
 }
 
-/* The spatial node map, its tiles, edges, tile popover and tabbed panel live in styles-map.css. */
-
-.s8-drop {
-  margin-top: 12px;
-  padding: 18px;
-  border: 2px solid #5dcaa5;
-  color: #9fe1cb;
-  text-align: center;
-}
-
-.s8-files pre {
-  overflow: auto;
-  max-height: 220px;
-}
-
-.s8-telegraph {
-  margin: 12px 0;
-  padding: 8px 12px;
-  border: 1px solid #8b7355;
-  background: #20201d;
-}
-.s8-telegraph[data-tone="bad"] { border-color: #c8553b; color: #e0a08e; }
-.s8-telegraph[data-tone="good"] { border-color: #5c7a3e; color: #b6d39a; }
-
-.s8-burn {
-  margin-top: 10px;
-  padding: 8px;
-  border: 1px solid #c8553b;
-  background: #1a1310;
-  color: #e0a08e;
-  white-space: pre-wrap;
-  overflow: auto;
-  max-height: 200px;
-}
-
-.s8-rate { color: #8b9ba8; font-style: normal; font-size: 12px; }
-
-/* Tech-tree grids (rendered inside the shared modal by panel.js). */
-.s8-tech {
+.s8-arena {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 12px;
-  margin-top: 10px;
-}
-.s8-tech-branch h4 { margin: 0 0 6px; color: #9fe1cb; font-size: 12px; letter-spacing: 0.08em; }
-.s8-tech-item {
-  display: block;
-  width: 100%;
-  margin: 0 0 6px;
-  padding: 6px 8px;
-  text-align: left;
-  color: inherit;
-  background: #20201d;
-  border: 1px solid #4a4a4a;
-  cursor: pointer;
-}
-.s8-tech-item:disabled { cursor: default; opacity: 0.55; }
-.s8-tech-item.is-owned { border-color: #5c7a3e; opacity: 0.85; }
-.s8-tech-name { display: block; font-weight: 700; }
-.s8-tech-cost { display: block; color: #d8a657; font-size: 12px; }
-.s8-tech-desc { display: block; color: #b6ad9c; font-size: 12px; }
-
-.s8-log {
-  min-height: 7em;
-  padding-left: 24px;
+  place-items: center;
+  color: #fff;
+  font-size: 15px;
+  line-height: 1.05;
+  transition: border-color 90ms ease-out, box-shadow 90ms ease-out, color 90ms ease-out;
 }
 
-@media (max-width: 760px) {
-  .s8-layout {
-    grid-template-columns: 1fr;
-  }
+/* #2 — fixed crossing marker (▼) pinned above the top of the ring; brightens as the gap approaches. */
+.s8-marker {
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #5dcaa5;
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 3;
+  text-shadow: 0 0 2px #000;
+}
+.s8-marker--ready { color: #8ef7d1; text-shadow: 0 0 10px rgba(142, 247, 209, 0.9); }
+
+/* #4 — Cadence beat dot, mirrors the top-pass so the metronome is visible on rhythm levels. */
+.s8-beat {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #8ef7d1;
+  pointer-events: none;
+  z-index: 3;
 }
 
-/* ── Glitch aesthetic ─────────────────────────────────────────────────────────────────────────────
-   The field visibly corrupts as entropy rises. Fully state-driven: paint.js sets --entropy-level
-   (0–1) and data-entropy ("low"|"mid"|"high"|"critical") on the root — no JS animation loop, no
-   randomness. Respects prefers-reduced-motion. */
-.stage8-entropy-field { --entropy-level: 0; transition: box-shadow 0.4s linear; }
-/* The one-time disclosure + storm arrival banners anchor to .s8-banner-layer (styles-map.css), a
-   zero-height positioned strip directly BELOW the sticky command bar, so a banner never overlaps the
-   bar's ticker text (S8-A defect fix). */
-.stage8-entropy-field[data-entropy="mid"] .s8-cmdbar [data-field="entropy"] { color: #d8a657; }
-.stage8-entropy-field[data-entropy="high"] .s8-cmdbar [data-field="entropy"],
-.stage8-entropy-field[data-entropy="critical"] .s8-cmdbar [data-field="entropy"] { color: #e0a08e; font-weight: 700; }
-.stage8-entropy-field[data-entropy="high"],
-.stage8-entropy-field[data-entropy="critical"] {
-  box-shadow: inset 0 0 90px rgba(200, 85, 59, calc(var(--entropy-level) * 0.45));
+/* #4/#6 — on-screen Cadence streak chip (hits N/M). */
+.s8-streak {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 8px;
+  border: 1px solid #5dcaa5;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #8ef7d1;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 3;
 }
 
-@keyframes s8-glitch-shift {
-  0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-1px, 1px); }
-  40% { transform: translate(1px, -1px); }
-  60% { transform: translate(-1px, 0); }
-  80% { transform: translate(1px, 1px); }
+/* #6 — verdict readout under the arena (early/late ±ms on a miss, perfect/crossed on a hit). */
+.s8-readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  text-align: center;
+  font-size: 12px;
+  min-height: 16px;
 }
-.stage8-entropy-field[data-entropy="high"] .s8-map { animation: s8-glitch-shift 2.2s steps(2, end) infinite; }
-.stage8-entropy-field[data-entropy="critical"] .s8-map { animation: s8-glitch-shift 0.9s steps(2, end) infinite; }
+.s8-readout--perfect { color: #8ef7d1; }
+.s8-readout--hit { color: #5dcaa5; }
+.s8-readout--miss { color: #f5a623; }
+
+/* Point-of-action CROSS feedback (toggled ~360ms by renderer.js, then fades back). */
+.s8-arena--hit {
+  border-color: #5dcaa5;
+  box-shadow: 0 0 16px rgba(93, 202, 165, 0.65);
+}
+
+.s8-arena--perfect {
+  border-color: #8ef7d1;
+  color: #d6fff2;
+  box-shadow: 0 0 24px rgba(142, 247, 209, 0.9);
+}
+
+.s8-arena--miss {
+  border-color: #c0392b;
+  box-shadow: 0 0 16px rgba(192, 57, 43, 0.65);
+}
+
+/* #4 — unstable (live-random) levels get a restless orange static border, reduced-motion-safe below. */
+.s8-arena--unstable { border-color: #f5a623; animation: s8-jitter 0.42s steps(2) infinite; }
+@keyframes s8-jitter {
+  0% { box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.5); }
+  50% { box-shadow: 0 0 6px 1px rgba(245, 166, 35, 0.35); }
+  100% { box-shadow: 0 0 0 1px rgba(245, 166, 35, 0.6); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .stage8-entropy-field .s8-map { animation: none !important; }
-  .s8-salvage-bar > span { transition: none; }
+  .s8-arena { transition: none; }
+  .s8-arena--unstable { animation: none; border-style: dashed; }
+}
+
+/* #1 — big CROSS / OBSERVE controls with keyboard hints (hints hidden on coarse pointers). */
+.s8-cross,
+.s8-observe {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.s8-cross { font-size: 18px; }
+.s8-kbd {
+  font-size: 11px;
+  font-weight: 400;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+@media (pointer: coarse) { .s8-kbd { display: none; } }
+
+.s8-side button,
+.s8-controls button { margin: 0 8px 8px 0; }
+
+.s8-side pre {
+  white-space: pre-wrap;
+  border-top: 1px solid #5dcaa5;
+  padding-top: 12px;
+  color: #dffbf4;
+}
+
+.s8-aids {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.s8-aids strong {
+  font-size: 12px;
+  color: #5dcaa5;
+}
+
+/* #5 — aid CARDS: name + cost + a visible one-line description, no tooltips. */
+.s8-aid-card {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: 6px 8px;
+  font: inherit;
+  color: #fff;
+  background: #000;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.s8-aid-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.s8-aid-name { font-weight: 700; }
+.s8-aid-cost { font-size: 11px; color: #5dcaa5; }
+.s8-aid-cost::before { content: "spend "; opacity: 0.6; }
+.s8-aid-desc { font-size: 11px; opacity: 0.75; }
+.s8-aid-tag {
+  justify-self: start;
+  font-size: 10px;
+  color: #f5a623;
+  border: 1px solid #f5a623;
+  border-radius: 3px;
+  padding: 0 4px;
+}
+.s8-aid-card:disabled { opacity: 0.4; cursor: not-allowed; }
+.s8-aid-card.s8-aid-owned { border-color: #5dcaa5; color: #5dcaa5; }
+
+/* #7 — boss panel: full by default; collapsed to a one-line locked chip until level 13. */
+.s8-boss { margin-top: 10px; }
+.s8-boss-chip { color: #888; font-size: 12px; letter-spacing: 0.04em; }
+.s8-boss--chip { padding: 6px 12px; }
+.s8-boss--chip .s8-boss-full { display: none; }
+.s8-boss:not(.s8-boss--chip) .s8-boss-chip { display: none; }
+
+/* M3 — seed chip: loud orange only while live-random. */
+.s8-seed b { color: #f5a623; font-weight: 700; }
+.s8-hud--unstable .s8-seed b { text-shadow: 0 0 6px rgba(245, 166, 35, 0.6); }
+
+/* #8 — log becomes a 2-line ticker + a 'full log' button (full history in the shared modal). */
+.s8-log-row { display: flex; align-items: flex-start; gap: 10px; margin-top: 8px; }
+.s8-log {
+  flex: 1;
+  margin: 0;
+  padding-left: 20px;
+  max-height: 3em;
+  overflow: hidden;
+  opacity: 0.85;
+  font-size: 12px;
+}
+.s8-log-more {
+  flex: none;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #000;
+  color: #5dcaa5;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.s8-log-full { margin: 0; padding-left: 20px; line-height: 1.6; }
+
+@media (max-width: 760px) {
+  /* Phone (#8): drop the fixed-height desktop contract and let the shell panel scroll — otherwise the
+     flex:1 layout squeezes its grid and the boss/log rows overlap the actions. Order: arena FIRST, then
+     the CROSS zone, then the aid shop / notes. */
+  .stage8-observer-state { height: auto; overflow: visible; }
+  .s8-layout {
+    flex: none;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "arena"
+      "actions"
+      "side";
+    grid-template-rows: auto auto auto;
+  }
+  .s8-arena-wrap { min-height: 360px; }
+  .s8-actions { flex-direction: row; }
+  .s8-cross { flex: 2; }
+  .s8-observe { flex: 1; }
+  .s8-side { overflow: visible; }
+  .s8-controls button { min-height: 40px; }
 }

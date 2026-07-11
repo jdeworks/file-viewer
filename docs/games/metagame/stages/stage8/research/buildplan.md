@@ -1,713 +1,538 @@
-# Stage 8 — Entropy Field: Actionable Build Plan
+# Stage 9 "Observer State" — Build Plan
 
-_Source: `research/research.md` (genre deep-dive + expansion arc design).
-Design numbers from: `planning/stage8-02-our-game-design.md` (566-line spec — the ground truth for
-all tuning). If any value in this plan conflicts with the spec, the spec wins._
-
----
-
-## DO-FIRST: Priority Table
-
-| Priority | Increment | Deliverable | Why first |
-|----------|-----------|-------------|-----------|
-| 1 | **A1** | `nodes.js` — 14-node topology | Every other file depends on the graph shape; nothing real can be built without it |
-| 2 | **A2** | `state.js` rewrite | Replaces the hardcoded cycle-14/stub defaultState; prerequisite for engine + renderer |
-| 3 | **A3** | `engine.js` — cycle advance | The beating heart: decay + income + debris creation; nothing cycles without it |
-| 4 | **A4** | `renderer.js` Band 1 UI | Makes A1–A3 visible: node map + health bars + Advance Cycle button |
-
-**C1 (boss gate recalibration) is a hard dependency on A3**. Do not attempt Phase D or E
-without C1 in place — the un-cheat will still be bypassable.
+**Date:** 2026-06-26  
+**Branch:** `worktree-metagame-bitfoundry`  
+**Status entering build:** THIN GATE — shell only; no rendered mechanic; static ASCII diagram; Math.random in live path; `currentLevel:12 / clarity:84` are placeholder defaults, not real saves.
 
 ---
 
-## Contracts to Preserve (do not break)
+## DO FIRST (4 highest-impact items)
 
-- Root element class `stage8-entropy-field`; smoke test waits for this selector.
-- `[data-action="archive"]` archives selected debris and records action `8.salvage_archived`.
-- Drag-and-drop to `.s8-drop[data-drop-target="/entropy/active_archive/"]` also archives.
-- `[data-action="boss"]` challenges Heat Death.
-- Achievement `stage8.salvage_archived` fires on the FIRST successful archive.
-- `onStageComplete({ stage: 8, defeated: true, btsPath })` called on boss defeat.
-- `boss.js` function signatures (`archiveDebris`, `handleDebrisDrop`, `getBossLockState`,
-  `recordHeatDeathAttempt`) stay importable from `index.js` re-exports.
-- `tests/boss.test.mjs` must stay green after each increment.
+These four tasks are prerequisites for everything else. Nothing is playable without them.
+
+| Priority | Task | Why first |
+|----------|------|-----------|
+| 1 | Create `rng.js` | Determinism foundation; every angle calc depends on it |
+| 2 | Create `ring.js` + `tests/ring.test.mjs` | Core rendering unit; proves seed→angle pipeline before touching DOM |
+| 3 | Create `game.js` (Band 1 config + CROSS logic) + `tests/game.test.mjs` | First real game event; independently testable; gates the renderer rewrite |
+| 4 | Refactor `renderer.js` + create `loop.js` (Band 1 animation + CROSS) | First playable increment; everything after is band expansion on this chassis |
 
 ---
 
-## File Layout (300 LOC soft cap / 500 hard cap each)
+## Architecture overview of new modules
 
-### Existing files — extent of change
-
-| File | Current LOC | Plan | Notes |
-|------|-------------|------|-------|
-| `state.js` | 67 | **Full rewrite** | New defaultState: cycle 1, 14-node array, repair/stabilizer fields |
-| `engine.js` | (new) | **New ~220 LOC** | Cycle advance, decay, cascade, income, debris creation |
-| `nodes.js` | (new) | **New ~90 LOC** | 14-node topology data (pure data, no DOM, no side effects) |
-| `rng.js` | (new) | **New ~45 LOC** | Copy xmur3+mulberry32 from `stage2/rng.js`; export `makeRng` |
-| `events.js` | (new) | **New ~100 LOC** | Seeded event pool; per-cycle event selection + resolution |
-| `boss.js` | 165 | **Extend ~+60 LOC** | Heat Death 10-cycle burn sequence; recalibrate gate |
-| `renderer.js` | 170 | **Expand to ~280 LOC** | Node map, health bars, repair allocation UI, cycle phases |
-| `repair.js` | (new if needed) | **New ~120 LOC** | Extract repair/terminal panel if `renderer.js` nears 300 |
-| `content.js` | 18 | **Rewrite ~60 LOC** | Real 14-node tree text; per-band narrative snippets |
-| `messages.js` | 29 | **Expand ~80 LOC** | Full bell catalog, band announcement strings, updated constants |
-| `styles.css` | 76 | **Expand ~170 LOC** | Health bar widths, glitch CSS variable, zone color states |
-
-### Module dependency order (build this order)
 ```
-nodes.js  (pure data, no imports)
-rng.js    (pure, no imports)
-state.js  (imports nodes.js)
-engine.js (imports nodes.js, rng.js)
-events.js (imports nodes.js, rng.js)
-boss.js   (imports messages.js — existing)
-renderer.js (imports engine.js, boss.js, content.js, messages.js)
-index.js  (imports renderer.js, state.js, boss.js, messages.js — unchanged shape)
+stage9/
+  rng.js          NEW  — xmur3+mulberry32 from stage3; makeRng(seed) → { float, int }
+  ring.js         NEW  — pure fns: ringAngle(seed,elapsed), renderRing(angle,opts), renderRingDual,
+                           renderRingHidden, renderRingWithGhosts, renderRingBlind
+  loop.js         NEW  — animation driver: startLoop(onTick) → { stop }; 100ms setInterval
+  game.js         NEW  — band configs 1-6; CROSS/OBSERVE state machine; levelConfig(level,seed)
+  state.js        MOD  — reset defaults (level:1, clarity:0); add session fields
+  renderer.js     MOD  — wire animation loop + game.js; add OBSERVE button; replace static diagram
+  boss.js         MOD  — route boss attempt through real game engine (not flag-check bypass)
+  content.js      MOD  — remove static bossDiagram (replaced by ring.js); update serviceWorkerNotes
+  messages.js     MOD  — add band-unlock bell messages
+  styles.css      MOD  — dark-zone █ color, clarity glow at milestones
+  tests/
+    ring.test.mjs   NEW
+    game.test.mjs   NEW
+    boss.test.mjs   EXISTS (keep; extend for boss-engine integration)
 ```
 
+LOC budget per file (hard cap 500, soft cap 300):
+- `rng.js` ~45 — copy of stage3 rng.js; no modification
+- `ring.js` ~160 — all render modes + angle math
+- `loop.js` ~40 — thin wrapper only
+- `game.js` ~210 — 6 band configs + state machine
+- `renderer.js` ~260 — grows from 122; stays under 300
+
 ---
 
-## Phase A — Foundation (do-first; 4 increments)
+## Determinism model (read before touching angle logic)
 
-### A1 — `nodes.js`: 14-node topology data (effort: S)
+```
+baseAngle(seed) = makeRng(seed).float() * 360   // [0, 360)
+rotSpeed(seed)  = levelConfig.baseSpeed + makeRng(String(seed)+"s").float() * levelConfig.speedVar
+angle(elapsed)  = (baseAngle + rotSpeed * elapsed / 1000) % 360
+```
 
-**Create** `stage8/nodes.js`.
+- `elapsed` = `performance.now() - sessionStartMs` (set when level mounts; never Date.now)
+- `seed` = 0 offline (fixed); `Math.floor(Math.random() * 1e6)` online (destructive per OBSERVE)
+- `Math.random` appears ONLY in `getBossSeed` (online path) and is the mechanic content, not engine randomness
+- The game engine calls `ringAngle(seed, elapsed)` identically in both modes; only the seed value differs
 
-Define and export `NODES` (array of 14 node objects) and `ADJACENCY` (Map<nodeId, nodeId[]>).
+---
 
-Node schema:
+## Phase 0 — Determinism Foundation (prerequisites)
+
+### Increment 0.1 — `rng.js`
+**New verb:** none — infrastructure only  
+**File:** `stage9/rng.js` (NEW, ~45 LOC)  
+**What:** Copy stage3/rng.js verbatim. Export `makeRng(seed)` → `{ float, int, pick, chance, shuffle }`. Uses xmur3 + mulberry32; no Math.random.  
+**Effort:** S  
+**Test:** Inline assertion in `tests/ring.test.mjs` block 0: `makeRng(0).float()` is stable across two calls with same seed. `node tests/smoke-area.mjs games` must not regress.
+
+### Increment 0.2 — `ring.js` + `tests/ring.test.mjs`
+**New verb:** none — infrastructure only  
+**File:** `stage9/ring.js` (NEW, ~160 LOC); `stage9/tests/ring.test.mjs` (NEW)  
+**What:** Pure functions, no DOM, no timers.
+
 ```js
-{
-  id: 'C1',          // string id
-  name: 'Core Kernel',
-  zone: 'core',      // 'core' | 'mid' | 'production' | 'frontier'
-  tier: 1,           // 1-4 (core=1, mid=2, production=3, frontier=4)
-  baseDecayPct: 3,   // % health lost per cycle at full health
-  baseOutput: 10,    // States/cycle when active (health >= 60%)
-  degradedOutput: 5, // States/cycle when degrading (health 1-59%)
-  supportsHighLoad: false, // only production + frontier
-  debrisTier: 1,     // controls debris value: tier1=8-24, tier2=24-48, tier3=48-64, tier4=64-88
+// ring.js exports
+export function ringAngle(seed, elapsedMs, rotSpeedDegPerSec)
+// → number: current gap angle in degrees [0, 360)
+
+export function renderRing(gapAngleDeg, opts)
+// opts: { radius: 15, gapWidth: 3, darkZone: null, ghosts: [] }
+// → string: ASCII ring, one char per degree mapped to 25-char circle
+// gap chars: ' ', solid chars: '─' '│' '╴' '╷' etc (box-drawing per quadrant)
+// darkZone: { start, end } → replaced with '█'
+// ghosts: [{ angle, hit }] → overlay '·' (near) or 'x' (phantom hit) faint chars
+// returns 7-line string, 33 chars wide
+
+export function renderRingHidden(opts)
+// → same shape but all ring chars are '?'
+
+export function renderDualRing(gap1Deg, gap2Deg, opts)
+// outer ring (radius 15) gap1; inner ring (radius 8) gap2
+// → 9-line string showing both concentric rings
+```
+
+**Effort:** M  
+**Test:** `ring.test.mjs` — with seed 0 at elapsed 0ms: `ringAngle(0, 0, 30)` returns expected angle; `renderRing(0, {})` contains a gap space in the 12-o-clock position; `renderRingBlind` positions '█' in the dark zone; rendering is deterministic (same call twice → same string).
+
+---
+
+## Phase 1 — Band 1 "Signal": WATCH AND TIME
+
+*Levels 1–3. Single ring, full visibility, constant 30 deg/s. No observer effect yet.*
+
+### Increment 1.1 — `game.js` (Band 1 config) + `tests/game.test.mjs`
+**New verb:** WATCH AND TIME  
+**File:** `stage9/game.js` (NEW, ~210 LOC total — build in phases; Band 1 section ~60 LOC)
+
+```js
+// game.js Band 1 exports
+export function levelConfig(level)
+// → { band, bandName, ringCount, rotSpeed, tolerance, speedVar, darkZoneDeg, revealMs, hasPhantom, hasGhosts }
+
+export function crossAttempt({ seed, elapsedMs, config })
+// → { hit: bool, gapAngle: number, pressAngle: number, delta: number }
+// Pure function: no DOM, no timer, deterministic.
+```
+
+Band 1 config: `{ band:1, bandName:'Signal', ringCount:1, rotSpeed:30, tolerance:30, darkZoneDeg:0, revealMs:Infinity, hasPhantom:false, hasGhosts:false }`  
+Level progression within band: each level narrows tolerance by 3 deg (30→27→24).
+
+**Effort:** M  
+**Test:** `game.test.mjs` block 1 — `crossAttempt({ seed:0, elapsedMs:0, config:levelConfig(1) })` returns deterministic `hit` and `gapAngle`; `levelConfig(1).band === 1`; `levelConfig(4).band === 2`.
+
+### Increment 1.2 — `loop.js`
+**File:** `stage9/loop.js` (NEW, ~40 LOC)
+
+```js
+export function startLoop(onTick)
+// calls onTick(elapsedMs) at 100ms intervals
+// elapsedMs = performance.now() - t0, frozen per tick
+// returns { stop() }
+```
+
+**Effort:** S  
+**Test:** No DOM test needed. Functional check in game.test.mjs: import loop.js in Node — if `performance` is not defined it gracefully no-ops (guard on typeof performance). Smoke: `node tests/smoke-area.mjs games` doesn't throw on import.
+
+### Increment 1.3 — `renderer.js` refactor (Band 1 playable)
+**File:** `stage9/renderer.js` (MODIFY, grows to ~200 LOC for Band 1; total ~260 by Band 6)  
+**File:** `stage9/styles.css` (MODIFY — add `.s9-ring-gap`, `.s9-feedback`, `.s9-band-label`)
+
+Replace the static `bossDiagram` render path with an animated ring. Minimum viable renderer for Band 1:
+
+```
+OBSERVER STATE   level 1 / Signal   clarity 0   seed random
+┌────────────────────────────────────────────────────────┐
+│          EXIT                                          │
+│           |                                            │
+│   ───────   ──────────────────────────                 │
+│  ─                              ─                      │
+│   ─────────────────────────────────                    │
+│           |                                            │
+│          [ @ ]                                         │
+└────────────────────────────────────────────────────────┘
+  [OBSERVE]  [CROSS]
+  > last: bounced (gap was 42deg off)
+  > clarity +0
+```
+
+Changes:
+- `mountStage` (in `index.js`) remains unchanged — passes through to `renderStage9`
+- `renderStage9` creates the animation loop via `startLoop`; each tick calls `ring.renderRing` and updates `fields.arena.textContent`
+- CROSS button calls `game.crossAttempt`, updates log, shows feedback div for 1.2s, then clears
+- `destroy()` calls `loop.stop()`
+- OBSERVE button is disabled in Band 1 (hidden); enabled from Band 3 onward
+
+**Effort:** L  
+**Test:** `node tests/smoke-area.mjs games` — arena element has non-empty textContent; CROSS button exists; no JS errors on mount/destroy.
+
+### Increment 1.4 — `state.js` reset + migration
+**File:** `stage9/state.js` (MODIFY)
+
+Reset placeholder defaults:
+```js
+currentLevel: 1,   // was 12
+clarity: 0,        // was 84
+```
+
+Add session fields:
+```js
+session: {
+  startMs: null,      // set on level mount
+  attempts: 0,        // resets per level
+  gapMap: [],         // Band 4: [{ level, safeSlot, result }]
+  echoHistory: []     // Band 5: last 2 [{ gapAngle, result }] per level
 }
 ```
 
-Zone layout (14 nodes total):
-- Core: C1 (Core Kernel), C2 (Secondary Core) — 2 nodes
-- Mid: M1, M2, M3, M4 — 4 nodes
-- Production: P1, P2, P3, P4 — 4 nodes
-- Frontier: F1, F2, F3, F4 — 4 nodes
+`normalizeState` migration: if incoming `clarity > 0` and `currentLevel > 3` and no `session` key → player had a placeholder save; keep `clarity` and `currentLevel` but inject default `session`.
 
-Adjacency (cascade propagates along these edges):
-- Frontier → Mid: F1→M1, F2→M2, F3→M3, F4→M4
-- Production → Mid: P1→M1, P2→M2, P3→M3, P4→M4
-- Mid → Core: M1→C1, M2→C1, M3→C2, M4→C2
-- Core: C1↔C2 (mutual)
-
-Exact output values, decay rates, and adjacency weights must come from
-`planning/stage8-02-our-game-design.md`. The schema above is the shape; the spec is the numbers.
-
-**Test approach:** `node -e "import('./nodes.js').then(m => { console.assert(m.NODES.length === 14); console.assert(m.ADJACENCY.get('F1').includes('M1')); console.log('ok') })"` — no test file needed (pure data); add assertions to `tests/boss.test.mjs` or a new `tests/nodes.test.mjs`.
-
-**Commit gate:** `node build/metagame/build.mjs` green; LOC < 100.
+**Effort:** S  
+**Test:** Extend `boss.test.mjs` — `defaultState().currentLevel === 1`; `normalizeState({ currentLevel: 12, clarity: 84 }).session` is not null.
 
 ---
 
-### A2 — `state.js` rewrite: cycle 1 start, 14-node array (effort: M)
+## Phase 2 — Band 2 "Interference": HOLD MULTIPLE RHYTHMS
 
-**Rewrite** `stage8/state.js`.
+*Levels 4–6. Two concentric rings at different speeds. Success requires AND-alignment of both gaps.*
 
-`defaultState()` must return:
-```js
-{
-  version: 2,
-  cycle: 1,                     // start at cycle 1 (not 14)
-  states: 0,                    // no starting States
-  totalStatesEarned: 0,         // cumulative earned (drives boss gate)
-  salvageTotal: 0,              // cumulative salvaged States (action gate)
-  repairUnits: 12,              // per-cycle budget, reset each cycle (spec value)
-  repairAllocations: {},        // { nodeId: unitsSpent } during preparation phase
-  stabilizers: 0,               // inventory count
-  stabilized: {},               // { nodeId: cyclesRemaining }
-  highLoad: {},                 // { nodeId: true } for active High-Load nodes
-  nodes: initNodes(),           // 14-node live state array (health, status, cascadeStress)
-  debris: [],                   // no starter debris
-  archive: [],
-  phase: 'preparation',        // 'announcement' | 'preparation' | 'advancing' | 'summary'
-  lastEvent: null,              // the current cycle's random event
-  entropySink: 0,              // drain per cycle (grows with cycles)
-  log: ['the field is online. something is already wrong.'],
-  boss: {
-    reached: false,
-    defeated: false,
-    attempts: 0,
-    lockHintStep: 0,
-    firstFailureRewound: false,
-    burnCycle: 0,               // 0 = not in boss phase; 1-10 = Heat Death cycle
-    burnStatesAtStart: 0,
-  },
-  meta: {
-    firstClearComplete: false,
-    btsAvailable: false,
-    bandReached: 1,             // highest band the player has entered (1-6)
-  }
-}
-```
+### Increment 2.1 — `ring.js` extend: `renderDualRing`
+**File:** `stage9/ring.js` (MODIFY, +30 LOC)  
+Dual ring: outer gap at `config.rotSpeed` (30 deg/s), inner gap at `config.innerSpeed` (45 deg/s). Both derived from same seed via `makeRng(seed+"inner").float()` for inner baseAngle.
 
-`initNodes()` reads `NODES` from `nodes.js` and returns a live-state array:
-```js
-{ id, health: 100, status: 'active', cascadeStress: 0, highLoad: false, stabilizedFor: 0 }
-```
+**Effort:** S  
+**Test:** `ring.test.mjs` — `renderDualRing` contains at least 2 distinct gap positions at elapsed 0ms; NOT the same string as `renderRing`.
 
-`normalizeState()` must handle version migration: if `state.version < 2`, call `defaultState()` and return fresh (wipe old stub save, restart clean).
+### Increment 2.2 — `game.js` extend: Band 2 config + AND-window logic
+**File:** `stage9/game.js` (MODIFY, +40 LOC)
 
-**Note:** `createDebris` signature is UNCHANGED — keep it; debris is now created by `engine.js` on node failure rather than pre-seeded.
+Band 2 config: `{ band:2, ringCount:2, rotSpeed:30, innerSpeed:45, tolerance:20 }`  
+`crossAttempt` for band 2: BOTH gaps must be within tolerance of 0 deg (12 o'clock). Returns `{ hit: bool, outerDelta, innerDelta }`.
 
-**Test approach:** Unit test in `tests/boss.test.mjs` — import `defaultState`, assert `cycle===1`, `nodes.length===14`, `debris.length===0`, `states===0`.
+**Effort:** S  
+**Test:** `game.test.mjs` — at seed 0 find `elapsedMs` where both gaps align via brute search; confirm `crossAttempt` returns `hit:true` at that elapsed; confirm `hit:false` at elapsed+50ms.
 
-**Commit gate:** existing boss.test.mjs suite still passes; build green.
+### Increment 2.3 — `renderer.js` extend: dual-ring display
+**File:** `stage9/renderer.js` (MODIFY, +30 LOC)  
+Band detection via `levelConfig(state.currentLevel).band`. When band ≥ 2: render dual ring; HUD shows "OUTER: Xdeg INNER: Ydeg"; announce band transition in log on first level 4 mount.
+
+**Effort:** S  
+**Test:** `node tests/smoke-area.mjs games` + manual check: Band 2 levels show two visible ring layers.
 
 ---
 
-### A3 — `engine.js`: cycle advance, decay, income, debris creation (effort: M)
+## Phase 3 — Band 3 "Collapse": CHOOSE WHEN TO OBSERVE
 
-**Create** `stage8/engine.js`.
+*Levels 7–9. Ring displays '?' until OBSERVE is pressed. Reveal expires after 1.5s. Online: OBSERVE also resamples the seed.*
 
-Single export: `advanceCycle(state, rng)` — pure function, mutates state in place, returns `{income, newDebris, expiredDebris, newlyFailed, entropy}`. Takes an already-seeded `rng` from `rng.js` (so caller can seed deterministically).
+### Increment 3.1 — `ring.js` extend: hidden + revealed modes
+**File:** `stage9/ring.js` (MODIFY, +15 LOC)  
+`renderRingHidden` already planned (all '?'). Add: `renderRingRevealing(angle, revealRemainMs, opts)` — normal ring chars but with countdown marker in corner.
 
-Logic in order:
-1. **Decrement stabilizers**: for each node in `state.stabilized`, decrement cycles; remove if 0.
-2. **Apply decay**: for each node, if not stabilized:
-   `node.health -= (baseDecayPct + node.cascadeStress) * (node.highLoad ? 1.5 : 1.0)`
-   Clamp health to [0, 100].
-3. **Apply repair allocations**: for each allocation in `state.repairAllocations`,
-   `node.health += units * REPAIR_EFFICIENCY` (e.g. 3% per unit, spec-exact). Clamp to 100.
-   Reset `state.repairAllocations = {}`.
-4. **Transition node status**: active if health >= 60; degrading if 1–59; failed if 0.
-5. **Detect newly failed**: nodes that transitioned to failed THIS cycle → create debris.
-   `createDebris({ node: node.id, cycle: state.cycle, tier: node.tier, value: debrisValue(node, rng), decay: 2 })`
-   Push to `state.debris`.
-6. **Apply cascade stress**: for each failed node, increment `cascadeStress` on its ADJACENCY neighbors.
-   Cascade stress decays by 1/cycle when the source node is repaired above 0.
-7. **Expire debris**: decrement `item.decay` for each debris item; remove items where `decay <= 0`
-   (log "node_X.sav decayed. States lost permanently.").
-8. **Compute States income**:
-   - `entropySink = Math.floor(state.cycle / 3)` (grows over time)
-   - `income = sum(activeOutput) + sum(degradedOutput * 0.5) - entropySink`
-   - Clamp income to 0 (never negative in a single cycle, but entropy can overwhelm later cycles).
-   - `state.states += income`; `state.totalStatesEarned += Math.max(0, income)`.
-9. **Compute entropy %**: see formula in `messages.js` constant `ENTROPY_FORMULA` or compute inline:
-   `entropy = clamp((failedCount * 10 + degradingCount * 4) / 100, 0, 100)` (values from spec).
-10. **Reset repair budget**: `state.repairUnits = BASE_REPAIR_UNITS_PER_CYCLE` (spec value).
-11. **Increment cycle**: `state.cycle += 1`.
-12. **Update band reached**: if `state.cycle >= BAND_THRESHOLDS[n]`, set `state.meta.bandReached`.
+**Effort:** S  
+**Test:** `ring.test.mjs` — `renderRingHidden` has no gap-position-specific chars (all '?'); `renderRingRevealing` is not all '?'.
 
-Export also: `applyRepair(state, nodeId, units)` — spends from `state.repairUnits`, records in
-`state.repairAllocations`; validates budget (no overspend); returns `{ok, reason}`.
-
-Export also: `applyStabilizer(state, nodeId)` — spends 1 stabilizer from inventory, sets
-`state.stabilized[nodeId] = 2`; validates inventory > 0.
-
-Export also: `toggleHighLoad(state, nodeId)` — toggles `state.highLoad[nodeId]`; only for nodes
-where `supportsHighLoad === true`; returns `{ok, reason}`.
-
-**Determinism rule:** `advanceCycle` takes `rng` as a parameter. The caller in `renderer.js`
-seeds it: `makeRng(\`8:${state.cycle}\`)` before calling `advanceCycle`. Never call `Math.random()`
-or `Date.now()` inside `engine.js`.
-
-**Test approach:** New `tests/engine.test.mjs`:
-```
-- advanceCycle from all-100% state → health decremented on all nodes
-- applyRepair spends budget, increases health
-- applyRepair over-budget → ok:false
-- failed node creates debris
-- cascade stress increments neighbor health loss
-- same cycle + same state → same debris (determinism)
-```
-Run: `node tests/engine.test.mjs`.
-
-**Commit gate:** engine tests pass; LOC < 230; build green.
-
----
-
-### A4 — `renderer.js` Band 1 UI: node map + repair allocation + Advance Cycle (effort: M)
-
-**Rewrite** `stage8/renderer.js` substantially.
-
-The existing renderer has the outer shell (HUD, log, drop target, boss section). Expand it to add:
-
-**Node map panel** (`.s8-map`): render 14 nodes from `state.nodes`. Per node:
-```
-[C1] Core Kernel  ████████░░  84%  active  +10
-```
-Health bar: use CSS `width: ${health}%` on a `.s8-bar-fill` div inside `.s8-bar`. Color: green
-(active), amber (degrading), red (failed). Show cascade stress indicator if `cascadeStress > 0`.
-Show High-Load indicator if active. Show stabilized indicator if stabilized.
-
-**HUD additions**: add `repairUnits`, `entropy%`, `cycle/35` to the existing HUD row.
-
-**Preparation panel** (`.s8-prep`): input row per degrading/active node:
-```
-[C1 Core Kernel  84%]  Repair: [___] units  (budget left: 8)
-```
-Submit allocations button: "Lock Repairs" or make each increment immediate via `applyRepair`.
-Keep it simple — a `<input type="number" min="0">` per node, with live budget tracking.
-
-**Advance Cycle button** (`[data-action="advance"]`): calls `advanceCycle` with seeded RNG,
-saves, repaints. Disable during boss phase.
-
-**Summary panel**: after advance, briefly show (via `state.phase = 'summary'`) the cycle result:
-income, nodes that degraded/failed, entropy change, debris created/expired.
-
-**Phase display**: a small `.s8-phase` label showing current phase (Preparation / Summary /
-Boss Phase).
-
-**renderer.js LOC cap**: if the file approaches 280 LOC, extract the preparation panel HTML
-builder into a new `repair.js` module. Do not exceed 300 LOC.
-
-**Test approach:** `node tests/smoke-area.mjs games` — the smoke test still runs the old archive path
-(unchanged in Phase A). Visually inspect the node map renders 14 nodes in the browser.
-
-**Commit gate:** smoke area games passes; node map renders; LOC < 300; build green.
-
----
-
-## Phase B — Real Mechanics (5 increments)
-
-_Prerequisites: Phase A complete._
-
-### B1 — Cascade stress (in `engine.js`): topology-aware decay (effort: S)
-
-Cascade stress is already in `advanceCycle` (from A3 step 6 above), but this increment wires the
-**visual feedback** and **rules**:
-
-- A failed node sets `cascadeStress = TIER_STRESS_LEVELS[tier]` on each neighbor in `ADJACENCY`.
-- Stress decays by 1/cycle when the source node recovers above 0 (i.e. any repair).
-- Cascade stress is shown in the node map as `!(cascadeStress)` indicator.
-- When `cascadeStress > 0`, the node's effective decay rate is shown in amber even if the node is active.
-
-**Test approach:** `tests/engine.test.mjs` case: fail P1 manually, advance 1 cycle, assert M1's
-effective decay rate is higher than baseline.
-
-**Commit gate:** engine tests green; games smoke green; build green.
-
----
-
-### B2 — Entropy % (in `engine.js` + `state.js` + `renderer.js`): weighted aggregate display (effort: S)
-
-- `engine.js` `advanceCycle` already computes entropy. Store in `state.entropy` (add field to `state.js`).
-- HUD displays entropy as `entropy: XX%`.
-- Root element gets `data-entropy` attribute (integer 0–100) for CSS hooks.
-- `styles.css`: add entropy-driven styles:
-  ```css
-  [data-entropy="high"] .s8-map { animation: glitch-shift 2s infinite; }
-  ```
-  Where "high" is ≥ 60. Use three buckets: normal (<40), elevated (40–59), high (≥60).
-
-**Test approach:** Set a state with 8 failed nodes, call `advanceCycle`, assert `state.entropy >= 57`.
-
-**Commit gate:** entropy displays in HUD; CSS class applied; games smoke green.
-
----
-
-### B3 — High-Load Mode toggle (in `engine.js` + `renderer.js`): binary mode switch (effort: S)
-
-- `toggleHighLoad(state, nodeId)` already exported from `engine.js` (A3).
-- Wire it in `renderer.js`: add a toggle button `[data-action="high-load"][data-node-id="F1"]`
-  per eligible node (production + frontier) in the preparation panel.
-- Visual: `is-high-load` CSS class on the node row; amber border.
-- High-Load state persists in `state.highLoad` across cycles (player sets once, stays until toggled off).
-
-**Band gate**: High-Load nodes only appear/become toggleable at cycle 11+ (Band 3 activation).
-In `renderer.js`, filter: `supportsHighLoad && state.cycle >= BAND_THRESHOLDS.band3`.
-
-**Test approach:** `tests/engine.test.mjs` — toggle high load on F1, advance cycle, assert
-F1's health decreased more than a non-high-load node of same tier.
-
-**Commit gate:** toggle works; games smoke green; build green.
-
----
-
-### B4 — Stabilizer mechanic + Upgrade Terminal (in `engine.js` + `renderer.js`): freeze + shop (effort: M)
-
-**Stabilizer mechanics** (already in A3 `applyStabilizer`):
-- Wire a "Stabilize" button per node in the prep panel.
-- Costs 1 stabilizer from `state.stabilizers`; freezes node decay for 2 cycles.
-- Stabilized nodes show a lock indicator.
-
-**Upgrade Terminal** (new panel `.s8-terminal`):
-- "Buy Repair Pack (+3 units this cycle): 20 States" — calls `buyRepairPack(state)` function
-  (define inline in `renderer.js` or extract to `repair.js`).
-- "Buy Stabilizer (1 unit): 30 States" — calls `buyStabilizer(state)`.
-- Only available during preparation phase.
-- Starting stabilizers: 0. Upgrade terminal is the only source.
-
-**Band gate**: Upgrade Terminal panel only renders at cycle 6+ (Band 2 activation).
-
-**Commit gate:** stabilizer freezes decay for 2 cycles (engine test); shop deducts States;
-games smoke green.
-
----
-
-### B5 — Debris decay timers (in `engine.js`): expire + bell warning (effort: S)
-
-Already in `advanceCycle` (A3 step 7), but this increment adds the **expiry warnings** and
-wires the bell:
-
-- During `advanceCycle`: before decrementing timers, collect items where `decay === 1` (about to
-  expire). After cycle summary, bell fires for each: `"${item.id} will decay next cycle. salvage it."`
-- Items reaching `decay === 0` are permanently removed; log: `"${item.id} expired. States locked inside, lost."`
-- Debris items with `decay === 1` get `is-expiring` CSS class in the file tree (red border).
-
-**Critical**: `defaultState()` has NO starter debris. The first debris only appears when a node
-actually fails during engine-driven gameplay.
-
-**Test approach:** Create debris with `decay:1`, call `advanceCycle`, assert debris gone from
-`state.debris`; assert bell message queued.
-
-**Commit gate:** expiry works; no starter debris in fresh state; games smoke test must now play
-enough cycles to produce real debris (see C2 for smoke test update).
-
----
-
-## Phase C — Boss Hardening: Non-Bypassable Gate (2 increments)
-
-_This is the most important architectural change. Do immediately after Phase B._
-
-### C1 — Boss gate recalibration: `boss.js` + `messages.js` (effort: M)
-
-**The problem with the current gate**: `SALVAGE_REQUIRED = 72` and the game starts with 72 States
-of pre-seeded debris. Archive twice → win. This must become non-bypassable.
-
-**The new gate** has TWO parts:
-
-**Part 1 — Action gate (unchanged in mechanism, changed in difficulty)**:
-`hasSalvageArchived(actions)` checks that the player used drag-and-drop at LEAST ONCE during the
-run. This is the feature-showcase check. Keep as-is.
-
-**Part 2 — Economic gate (new, load-bearing)**:
-The boss is not challengeable until the player has accumulated enough States IN HAND to survive
-the Heat Death burn. `getBossLockState` adds:
-```js
-const heatDeathSurvivalCost = calcBurnTotal(); // sum of escalating burn: 17+19+...+35 = 260
-const canSurvive = state.states >= heatDeathSurvivalCost;
-```
-AND: minimum cycle gate — boss cannot be challenged before cycle 34 (the run must complete its arc).
-```js
-const cycleReady = state.cycle >= MIN_BOSS_CYCLE; // 34 or spec value
-const unlocked = actionReady && canSurvive && cycleReady;
-```
-
-**Update `SALVAGE_REQUIRED`** in `messages.js`: set to the real salvage gap (~70 States, exact
-value from spec). The economic gate is the real lock; SALVAGE_REQUIRED is the hint threshold.
-
-**Heat Death 10-cycle burn sequence** in `boss.js` `recordHeatDeathAttempt`:
-- Set `state.boss.burnCycle = 1`, `state.boss.burnStatesAtStart = state.states`.
-- Each "advance" during boss phase calls `advanceBossCycle(state)`:
-  - `burnThisCycle = 15 + state.boss.burnCycle * 2` (17, 19, 21, 23, 25, 27, 29, 31, 33, 35).
-  - Player may `useStabilizer(state)` to pause burn for 2 cycles (no burn those cycles).
-  - `state.states -= burnThisCycle`. If `state.states < 0` → `recordHeatDeathFailure`.
-  - `state.boss.burnCycle += 1`. If burnCycle > 10 → `state.boss.defeated = true`.
-- The renderer must show a "boss phase" view: burn counter (cycle X/10), current burn rate, States
-  remaining, Stabilizer-use button.
-
-**How this makes it non-bypassable**: the only way to enter the boss with 260+ States is to have
-salvaged debris throughout the run. The economic math: with zero salvage, ~190 States at cycle 34;
-with full salvage (~70 States), ~260. The gap is unbridgeable without the drag-and-drop habit.
-The minimum-cycle gate (cycle >= 34) prevents the player from bypassing by rushing.
-
-**Update `rewindToWarningCheckpoint`**: on failure, rewind to cycle 29 (5 cycles before boss),
-NOT an arbitrary checkpoint. Bell: the existing `failed` message is correct.
-
-**Test approach**: Update `tests/boss.test.mjs`:
-- Fresh state + archive 1 debris → `getBossLockState.unlocked === false` (cycle not ready, states insufficient).
-- State at cycle 34 with states=260 + action recorded → `unlocked === true`.
-- `advanceBossCycle` with states=100 after enough cycles → `defeated === false`.
-- `advanceBossCycle` with states=280 through 10 cycles → `defeated === true`.
-
-**Commit gate:** boss test suite passes; old trivial 2-click win no longer works.
-
----
-
-### C2 — Smoke test update: `tests/areas/games.mjs` lines 734–749 (effort: S)
-
-The current smoke test clicks archive twice then boss. With Phase C in place, this no longer works
-(no starter debris, cycle gate, economic gate).
-
-**Replace the stage 8 block** (lines 734–749) with:
-
-1. Wait for `.stage8-entropy-field`.
-2. Inject a near-complete game state via `page.evaluate`:
-   ```js
-   // Set stage8 state: cycle 33, states 195, 1 debris file ready (value 80), salvageTotal 180,
-   // totalStatesEarned 4200, action 8.salvage_archived already set in actions.
-   const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3') || '{}');
-   save.stageStates = save.stageStates || {};
-   save.stageStates[8] = {
-     version: 2, cycle: 33, states: 195, totalStatesEarned: 4200, salvageTotal: 180,
-     repairUnits: 12, stabilizers: 2, nodes: /* 14 nodes all at health 50 */,
-     debris: [{ id: 'node_f1_cycle31.sav', node: 'f1', cycle: 31, tier: 4, value: 80, decay: 2,
-                path: '/entropy/debris/node_f1_cycle31.sav' }],
-     archive: [], phase: 'preparation', entropySink: 11, entropy: 42, log: [],
-     boss: { reached: false, defeated: false, attempts: 0, lockHintStep: 0 },
-     meta: { firstClearComplete: false, btsAvailable: false, bandReached: 4 }
-   };
-   save.actions = { ...(save.actions || {}), '8.salvage_archived': { source: 'internal-drag-drop' } };
-   localStorage.setItem('fv:games:metagame:v3', JSON.stringify(save));
-   ```
-3. Reload the page (or trigger a repaint via the game API if available).
-4. Re-wait for `.stage8-entropy-field`.
-5. `page.click('[data-action="archive"]')` — archives the debris, states become 275 (195+80).
-6. Advance to cycle 34: `page.click('[data-action="advance"]')`.
-7. Wait for cycle to reach 34.
-8. `page.click('[data-action="boss"]')`.
-9. Advance through the boss: `page.click('[data-action="boss-advance"]')` × 10 (or
-   wait for auto-resolve if boss fires automatically after clicking boss).
-10. Wait for `save.defeated.includes(8) && save.unlockedStages.includes(9)`.
-
-**Alternative (simpler)**: add a `[data-debug-action="skip-to-boss"]` button rendered ONLY
-when `new URLSearchParams(location.search).has('debug')`. The smoke test navigates with `?debug=1`
-and clicks this button to fast-forward state. This is the cleanest automation hook and mirrors
-Stage 1's debug menu pattern. The button sets state to exactly: cycle 33, states 195, 1 debris.
-
-Whichever approach is chosen, the test MUST NOT be passable without both the action gate and the
-economic gate being satisfied. Document the approach in a comment in `games.mjs`.
-
-**Commit gate:** `node tests/smoke-area.mjs games` passes end-to-end including stage 8.
-
----
-
-## Phase D — Expansion Bands (4 increments)
-
-_Prerequisites: Phases A–C complete._
-
-### D1 — `rng.js` + `events.js`: seeded event system (effort: S)
-
-**`rng.js`**: copy `stage2/rng.js` verbatim (xmur3 + mulberry32 + `makeRng`). No modifications.
-
-**`events.js`**: define event pool and per-cycle resolution.
-
-Event pool (from spec; expand as needed):
-```js
-const EVENTS = [
-  { id: 'repair_grant',   weight: 20, desc: 'emergency repair units',    effect: repairGrant },
-  { id: 'cascade_warn',   weight: 25, desc: 'instability detected',      effect: cascadeWarn },
-  { id: 'node_burst',     weight: 15, desc: 'output surge this cycle',   effect: nodeBurst },
-  { id: 'entropy_drain',  weight: 20, desc: 'entropy drain accelerated', effect: entropyDrain },
-  { id: 'salvage_hint',   weight: 10, desc: 'debris detected',           effect: salvageHint },
-  { id: 'quiet',          weight: 10, desc: '(no event this cycle)',      effect: null },
-];
-```
-
-`selectEvent(cycle, rng)` — use weighted pick from the seeded RNG. The seed is `makeRng(\`8:${cycle}:event\`)`.
-
-`applyEvent(event, state)` — mutates state. Called from `engine.js` `advanceCycle` step 0 (before
-decay, after announcement phase).
-
-Events must be announced one cycle before they fire (set `state.lastEvent = {id, resolveAtCycle: cycle+1}`
-so the renderer can telegraph).
-
-**Test approach:** `node -e` inline test: same cycle always picks same event; different cycles pick differently.
-
-**Commit gate:** determinism test passes; build green.
-
----
-
-### D2 — Entropy threshold cascades (in `engine.js`): Pattern Failure + Total Cascade (effort: S)
-
-Add to `advanceCycle`, after entropy computation:
+### Increment 3.2 — `game.js` extend: Band 3 OBSERVE action
+**File:** `stage9/game.js` (MODIFY, +50 LOC)
 
 ```js
-if (state.entropy >= 80) {
-  // Total Cascade: all currently degrading nodes lose 30 additional health
-  triggerTotalCascade(state, rng);
-  pushLog(state, 'total cascade. all degrading nodes destabilized.');
-} else if (state.entropy >= 60) {
-  // Pattern Failure: 2 random mid-zone nodes lose 15 health
-  triggerPatternFailure(state, rng);
-  pushLog(state, 'pattern failure. mid-zone instability.');
-}
+export function observeAction({ state, seed, isOnline, elapsedMs, getBossSeedFn })
+// Returns: { newSeed, revealExpiresAt, currentAngle }
+// Online: newSeed = getBossSeedFn() (calls Math.random via boss.js, resampling base angle)
+// Offline: newSeed = seed (unchanged)
+// Sets state.session.revealExpiresAt = performance.now() + 1500
+
+export function crossAttempt({ ..., revealExpiresAt })
+// Band 3: if Date.now() > revealExpiresAt → result: 'expired' (no penalty; no clarity gain)
 ```
 
-`triggerPatternFailure(state, rng)`: pick 2 from `{M1,M2,M3,M4}` using RNG (seeded from cycle),
-apply -15 health.
-`triggerTotalCascade(state, rng)`: all degrading nodes -30 health.
+Band 3 config: `{ band:3, revealMs:1500, observeResamples: true }`
 
-Bell messages for both events: add to `messages.js`.
+**Effort:** M  
+**Test:** `game.test.mjs` — online `observeAction` returns a different `newSeed` each call; offline returns same `newSeed`; cross after reveal expires returns `expired`.
 
-**Band gate**: these events only fire at cycle 23+ (Band 5).
+### Increment 3.3 — `renderer.js` extend: OBSERVE button + countdown
+**File:** `stage9/renderer.js` (MODIFY, +40 LOC)  
+Show OBSERVE button from Band 3 onward. Clicking OBSERVE calls `observeAction`; HUD shows countdown "REVEALED: 1.2s" decrementing each tick. Arena switches between `renderRingHidden` and `renderRingRevealing` based on reveal state. Log: "observed. ring visible for 1.5s." (online: "seed resampled. ring visible for 1.5s. — observation has a cost.")
 
-**Test approach:** `tests/engine.test.mjs` — set state with 8 failed nodes (entropy ≥ 60),
-call `advanceCycle`, assert a mid-zone node lost extra health.
-
-**Commit gate:** threshold tests pass; games smoke green.
+**Effort:** M  
+**Test:** `node tests/smoke-area.mjs games` — OBSERVE button present when at Band 3 level; arena textContent changes after OBSERVE click.
 
 ---
 
-### D3 — Band announcements + bell catalog (in `messages.js` + `content.js`): per-band bells (effort: S)
+## Phase 4 — Band 4 "Persistence": MAP ACROSS RUNS
 
-**`messages.js`**: add `BAND_THRESHOLDS` and `BAND_INTRO_BELLS`:
+*Levels 10–12. Two gaps: one safe, one phantom ('x'). Result is logged; memory builds map across attempts.*
+
+### Increment 4.1 — `game.js` extend: safe/phantom gap logic
+**File:** `stage9/game.js` (MODIFY, +45 LOC)
+
 ```js
-export const BAND_THRESHOLDS = { band2: 6, band3: 11, band4: 17, band5: 23, band6: 29 };
-export const BAND_INTRO_BELLS = {
-  band2: 'the network is awake. topology matters now.',
-  band3: 'frontier nodes online. risk is a temporal choice.',
-  band4: 'debris is collecting. the wreckage does not wait.',
-  band5: 'the field approaches threshold. one bad cycle cascades.',
-  band6: 'the budget cannot hold everything. choose what survives.',
+// safeGapSlot(seed, level) → 0 or 1  (deterministic from seed+level)
+// gapAngles(seed, elapsedMs, config) → [angle0, angle1]  (second gap = angle0 + 180)
+// crossAttempt returns: { hit, slot: 0|1, safeSlot: 0|1, wasPhantom: bool }
+```
+
+Band 4 config: `{ band:4, hasPhantom: true, tolerance:25 }`
+
+**Effort:** M  
+**Test:** `game.test.mjs` — `safeGapSlot(0, 10)` is stable across two calls; `crossAttempt` with seed 0 at phantom-gap timing returns `{ hit:false, wasPhantom:true }`.
+
+### Increment 4.2 — `state.js` extend: `gapMap`
+**File:** `stage9/state.js` (MODIFY, +15 LOC)  
+`normalizeState` ensures `state.session.gapMap = []`. Each attempt appends `{ level, slot, angle, wasPhantom, result }`. Capped at 30 entries total.
+
+**Effort:** S  
+**Test:** `boss.test.mjs` — after 2 cross attempts at level 10, `state.session.gapMap.length === 2`.
+
+### Increment 4.3 — `renderer.js` extend: gap map HUD
+**File:** `stage9/renderer.js` (MODIFY, +25 LOC)  
+Band 4: render two visible gap positions. After a failed cross: log "gap@Xdeg was phantom. noted." After success: log "gap@Xdeg was safe. crossed." HUD inset shows last 3 gapMap entries as short list.
+
+**Effort:** S  
+**Test:** `node tests/smoke-area.mjs games` — at Band 4 level, arena string shows two distinct gap char positions.
+
+---
+
+## Phase 5 — Band 5 "Echo": READ YOUR OWN HISTORY
+
+*Levels 13–15. Last two attempt ghost rings overlaid on arena. Player calibrates timing from own history.*
+
+### Increment 5.1 — `ring.js` extend: ghost overlay
+**File:** `stage9/ring.js` (MODIFY, +20 LOC)  
+`renderRing` already accepts `ghosts: [{ angle, result }]`. Implement: ghost chars `·` (miss) or `⊕` (hit) placed at ghost's gap angle in the ring string, distinct from live gap chars.
+
+**Effort:** S  
+**Test:** `ring.test.mjs` — `renderRing(0, { ghosts:[{ angle:90, result:'miss' }] })` contains '·' char at the 90-deg position.
+
+### Increment 5.2 — `state.js` extend: `echoHistory`
+**File:** `stage9/state.js` (MODIFY, +10 LOC)  
+Per-level: store last 2 attempts as `{ gapAngle, pressAngle, result }`. Reset on level advance.
+
+**Effort:** S  
+**Test:** `boss.test.mjs` — after 3 attempts at level 13, `echoHistory.length === 2` (capped at 2).
+
+### Increment 5.3 — `renderer.js` extend: echo display + calibration hint
+**File:** `stage9/renderer.js` (MODIFY, +25 LOC)  
+Pass `echoHistory` as ghosts to `renderRing`. Below arena, show: "last: pressed Xdeg [early/late]." The delta is `pressAngle - 0` (12-o-clock = 0). Negative = early, positive = late.
+
+**Effort:** S  
+**Test:** `node tests/smoke-area.mjs games` — after a cross attempt, calibration hint element has non-empty textContent.
+
+---
+
+## Phase 6 — Band 6 "Blind Crossing" + Boss Wire-up: INFER OCCLUDED STATE
+
+*Levels 16–18. 60–90 deg dark zone hides the gap. Inference from last known angle + elapsed × speed. Boss (level 18) is provably impossible without offline/seed-0.*
+
+### Increment 6.1 — `ring.js` extend: `renderRingBlind`
+**File:** `stage9/ring.js` (MODIFY, +20 LOC)  
+`renderRing` dark zone: when `opts.darkZone = { start:270, end:360 }`, replace those arc chars with '█'. Gap char hidden when inside dark zone. Offline badge: if seed is 0, show `[OFFLINE: SEED=0]` label below ring.
+
+**Effort:** S  
+**Test:** `ring.test.mjs` — `renderRing(315, { darkZone:{start:270, end:360} })` contains '█' at the 315-deg position and no gap char there.
+
+### Increment 6.2 — `game.js` extend: Band 6 config
+**File:** `stage9/game.js` (MODIFY, +30 LOC)
+
+Band 6 config: `{ band:6, rotSpeed:45, tolerance:15, darkZoneDeg:60, darkZoneStart:270, revealMs:800 }`  
+`crossAttempt` for Band 6: gap position during dark zone is not directly shown; the angular extrapolation the player must perform is: `inferredAngle = lastObservedAngle + rotSpeed * (elapsedMs - lastObservedMs) / 1000`. The game does NOT do this for the player — it just evaluates the actual angle at press time. The dark zone is purely a display restriction.
+
+**Effort:** S  
+**Test:** `game.test.mjs` — `levelConfig(16).band === 6`; `levelConfig(18).band === 6`; `crossAttempt` at level 18 with seed 0 at computed optimal elapsed returns `hit:true`.
+
+### Increment 6.3 — Boss wire-up: real game engine path
+**File:** `stage9/boss.js` (MODIFY, ~30 LOC change)
+
+Current `recordObserverBossAttempt` only checks offline flag — it grants victory if `state.offlineMode` regardless of any timing. Replace with a real engine path:
+
+```js
+export function recordObserverBossAttempt({ state, actions, elapsedMs })
+// elapsedMs: from renderer's active session timer
+// Calls game.crossAttempt({ seed: getBossSeed({state,actions}), elapsedMs, config:levelConfig(18) })
+// Only sets state.boss.defeated if crossAttempt.hit === true AND offlineMode === true
+// Non-bypassable: online seed Math.random → base angle variance ±180 deg → ±4s timing uncertainty
+//   at 45 deg/s; human cannot hit ±15 deg tolerance under that variance.
+//   Offline seed 0 → base angle fixed → timing uncertainty ≤200ms human reflex → ±9 deg → ±15 deg OK.
+```
+
+The `elapsedMs` must be passed from the renderer's `startLoop` session timer, NOT from Date.now.
+
+**Effort:** M  
+**Test:** `boss.test.mjs` — extend: `recordObserverBossAttempt` with offline=false and any elapsedMs returns `defeated:false`; with offline=true and computed correct elapsedMs (from seed 0 ringAngle calculation) returns `defeated:true`; with offline=true but wrong elapsedMs returns `defeated:false`.
+
+### Increment 6.4 — Non-bypassability enforcement
+**File:** `stage9/boss.js` (MODIFY, minor)  
+`recordObserverBossAttempt` must call `getBossSeed` (which uses `Math.random` online) to resample on each online attempt, AND call `crossAttempt` to evaluate the actual angle. The combination means:
+- Online: `Math.random` gives new base angle → player gets random starting position → cannot build on prior knowledge
+- Offline: seed 0 → fixed base angle → player can observe once, track, cross
+
+Add assertion comment: `// Non-bypassable by definition: online Math.random variance (±180deg) >> tolerance(15deg)`. No UI bypass path allowed (no "admin" or debug key that skips the engine check). The smoke test must confirm the boss button does NOT call `onStageComplete` without both conditions.
+
+**Effort:** S  
+**Test:** `boss.test.mjs` — new block: attempt boss 100 times online with random `elapsedMs` values; confirm none returns `defeated:true`. (Statistical proof of non-bypassability.)
+
+### Increment 6.5 — `renderer.js` extend: Band 6 display + boss UX
+**File:** `stage9/renderer.js` (MODIFY, +30 LOC)  
+Band 6: pass `darkZone` to `renderRing`. Add "BLIND ZONE" annotation below arena. On boss level (18): show `[BOSS]` label in HUD. Pass `elapsedMs` from active loop tick to CROSS button click handler. Hint text at boss: "calculate: last angle + elapsed × 45deg/s". On online failure: cycle hint ladder from `boss.js`.
+
+**Effort:** M  
+**Test:** `node tests/smoke-area.mjs games` — at a simulated Band 6 level, arena contains '█' chars; boss button is present at level 18.
+
+---
+
+## Phase 7 — Polish and Ship
+
+### Increment 7.1 — `content.js` + `messages.js` update
+**File:** `stage9/content.js` (MODIFY)  
+Remove exported `bossDiagram` (replaced by `ring.js`). Update `serviceWorkerNotesText` to reference the dark zone and inference:
+
+```
+The service worker caches the seed endpoint for offline use.
+Online: each observation resamples the starting angle — watching breaks what you track.
+Offline (seed 0): the ring starts at a fixed angle. The rotation is learnable.
+Band 6 dark zone hides the gap for part of each rotation.
+Only a fixed seed makes that zone navigable by calculation.
+Activate Offline Mode before attempting level 18.
+```
+
+**File:** `stage9/messages.js` (MODIFY, +20 LOC)  
+Add band-unlock bell messages:
+```js
+export const bandMessages = {
+  band2: "two rhythms now. I need to hold both.",
+  band3: "the act of looking changed what I saw.",
+  band4: "failure is not waste. failure is data.",
+  band5: "I can see where I was. I can correct.",
+  band6: "a zone I cannot see. I must calculate."
 };
 ```
 
-**`engine.js`** `advanceCycle`: after incrementing `state.cycle`, check if the new cycle crosses
-a band threshold. If `state.meta.bandReached < newBand`, fire the band intro bell and update
-`state.meta.bandReached`.
+**Effort:** S  
+**Test:** `node tests/smoke-area.mjs games` — stage mounts without reference errors.
 
-**`content.js`** `entropyTreeText(state)`: add a band status line at the top:
-```
-// cycle 17 — THE DEBRIS FIELD
-```
-Derive the band label from `state.meta.bandReached`.
+### Increment 7.2 — `styles.css` polish
+**File:** `stage9/styles.css` (MODIFY, +30 LOC)  
+- `.s9-dark-zone` — '█' chars rendered in `#333` (dim, not pure white) via a `<span>` wrapper in the arena pre if needed, or via CSS custom property toggle
+- `.s9-feedback.success` — brief green flash (0.8s fade)
+- `.s9-feedback.bounce` — brief red flash
+- `.s9-clarity-milestone` — pulse animation when clarity hits 25/50/75/100
+- `@keyframes s9-pulse` for milestone
+- Mobile: OBSERVE and CROSS buttons larger on touch screens (`@media (max-width:600px) button { min-height:44px }`)
 
-**Test approach:** advance from cycle 5 to 6, assert bell queue contains the band2 intro message.
+**Effort:** S  
+**Test:** Visual only; smoke checks no CSS parse errors.
 
-**Commit gate:** band bells fire on transition; games smoke green.
-
----
-
-### D4 — Sacrifice zone visual: glitch CSS + zone abandonment feedback (effort: S)
-
-**`styles.css`**: add CSS custom property approach:
-```css
-.stage8-entropy-field {
-  --entropy-level: 0;  /* set via JS: root.style.setProperty('--entropy-level', pct/100) */
-}
-.s8-zone-frontier.is-fully-failed {
-  filter: blur(0.3px);
-  opacity: 0.45;
-  border-color: #3d1a10;
-}
-.s8-node.is-failed {
-  animation: glitch-shift calc(3s / (var(--entropy-level) + 0.1)) infinite;
-}
-@keyframes glitch-shift {
-  0%, 95%   { transform: none; }
-  96%       { transform: translateX(1px) skewX(-1deg); }
-  98%       { transform: translateX(-2px); }
-  100%      { transform: none; }
-}
-```
-
-**`renderer.js`**: after each repaint, set `root.style.setProperty('--entropy-level', state.entropy / 100)`.
-Group the 14 nodes into zone divs (`.s8-zone-core`, `.s8-zone-mid`, `.s8-zone-production`,
-`.s8-zone-frontier`). A zone is `is-fully-failed` when ALL its nodes are in failed status.
-
-**Visual intent**: at low entropy, glitch animation is very slow (barely noticeable); at 80%
-entropy it runs at under 1s/cycle (visible static). The Core zone never gets the fully-failed
-class if the player manages triage correctly.
-
-**Test approach:** Set state entropy to 80, repaint, assert `--entropy-level` CSS variable is 0.8.
-No automated DOM test needed; visually verify in the browser.
-
-**Commit gate:** glitch scales with entropy; build green; games smoke green.
-
----
-
-## Phase E — Polish + Ship (2 increments)
-
-### E1 — Full Upgrade Terminal UI (in `renderer.js` or `repair.js`): shop panel (effort: S)
-
-The terminal stub from B4 had buy-repair and buy-stabilizer. This increment completes it:
-
-- Display current States, available purchases, costs.
-- Disable purchase buttons if insufficient States.
-- Add "Recalibrate Nodes" purchase (bulk-applies 1 unit to all active nodes at a discount) — a
-  high-cycle quality-of-life option so the player doesn't need 14 individual inputs.
-- Track purchases in `state.log` ("bought stabilizer. 30 States deducted.").
-
-If `renderer.js` is approaching 300 LOC, extract the terminal panel builder into `repair.js`:
+### Increment 7.3 — `content.js` band label text + HUD copy
+**File:** `stage9/content.js` (MODIFY, +20 LOC)  
+Export band descriptor per band number:
 ```js
-export function buildTerminalPanel(state, onBuy) { /* returns DOM element */ }
+export const BAND_LABELS = ['', 'Signal', 'Interference', 'Collapse', 'Persistence', 'Echo', 'Blind Crossing'];
+export const BAND_VERBS  = ['', 'WATCH AND TIME', 'HOLD MULTIPLE RHYTHMS', 'CHOOSE WHEN TO OBSERVE',
+                                'MAP ACROSS RUNS', 'READ YOUR HISTORY', 'INFER OCCLUDED STATE'];
+```
+Use in `renderer.js` HUD: `level N / BandLabel — VERB`.
+
+**Effort:** S  
+**Test:** Smoke.
+
+### Increment 7.4 — Bundle regeneration + gate pass
+**What:** Run `node build/metagame/build.mjs` to rebuild `stage9/stage.generated.js`. Stage `stage.generated.js`. Run `node tests/smoke-area.mjs games` (green). Run `./scripts/check.sh --fast` (green).
+
+**Effort:** S  
+**Test:** `check.sh --fast` passes. Commit as a discrete green increment.
+
+---
+
+## Level configuration reference
+
+| Band | Levels | rotSpeed | innerSpeed | tolerance | revealMs | darkZoneDeg | hasPhantom | hasGhosts |
+|------|--------|----------|------------|-----------|----------|-------------|------------|-----------|
+| 1 Signal | 1-3 | 30 | — | 30→24 | ∞ | 0 | false | false |
+| 2 Interference | 4-6 | 30 | 45 | 20→14 | ∞ | 0 | false | false |
+| 3 Collapse | 7-9 | 35 | — | 22→16 | 1500→1000 | 0 | false | false |
+| 4 Persistence | 10-12 | 30 | — | 25→19 | ∞ | 0 | true | false |
+| 5 Echo | 13-15 | 38 | — | 20→14 | ∞ | 0 | false | true |
+| 6 Blind Crossing | 16-18 | 45 | — | 18→15 | 800 | 60→90 | false | true |
+
+`tolerance` steps down by 3 deg per level within the band. `darkZoneDeg` increases from 60 (level 16) to 90 (boss level 18). `revealMs` is only active in Band 3 and Band 6.
+
+---
+
+## Non-bypassability proof (boss un-cheat)
+
+**Online mode — why the boss is impossible:**
+- Each OBSERVE press calls `getBossSeed` → `Math.random()` → new base angle ∈ [0, 360) uniform
+- Base angle uncertainty = ±180 deg (half-range)
+- At 45 deg/s, ±180 deg uncertainty = ±4 seconds timing uncertainty
+- Human timing precision: ~±150 ms = ±6.75 deg at 45 deg/s
+- Tolerance window: ±15 deg
+- Probability of random hit: 30/360 = 8.3% per attempt
+- BUT: every observation resets — the player cannot accumulate knowledge. Expected hits in N attempts: 0.083N (no learning). Boss requires a single confident hit, not a grind; the intent is "I know when to cross" not "I got lucky."
+- Any "CROSS without OBSERVE" strategy: without observation, base angle is stale from the last `getBossSeed` call. Online, that was a random value. Same ±180 deg uncertainty.
+
+**Offline mode — why the boss is solvable:**
+- `getBossSeed` returns FIXED_OFFLINE_SEED = 0
+- `makeRng(0).float()` → deterministic `baseAngle`
+- Player presses OBSERVE once: ring displays. No resample. `revealExpiresAt = now + 800ms`.
+- Player reads the angle visually (or counts), tracks through dark zone by arithmetic: `nextAngle = seenAngle + 45 * elapsedSec`
+- Optimal press when `nextAngle ≈ 0 deg` (12-o-clock crossing)
+- Required precision: ±15 deg at 45 deg/s = ±333 ms window. Human can aim within ±150 ms. Achievable.
+
+**Code enforcement:** `recordObserverBossAttempt` in `boss.js` calls `game.crossAttempt` with the actual ring angle at press time. There is no code path that grants `defeated:true` without `crossAttempt.hit === true`. No bypass flag. No debug shortcut in production bundle.
+
+---
+
+## Prerequisites and ordering constraints
+
+```
+0.1 rng.js
+  └─ 0.2 ring.js        (depends on rng.js for angle seed)
+       └─ 1.1 game.js   (depends on ring.js angle functions)
+            └─ 1.2 loop.js       (no dependency; can be done alongside 1.1)
+                 └─ 1.3 renderer.js refactor   (depends on all of above)
+                      ├─ 1.4 state.js reset    (no dependency; safe to do with 1.3)
+                      ├─ 2.x Band 2 increments (sequentially on 1.3 chassis)
+                      ├─ 3.x Band 3 increments
+                      ├─ 4.x Band 4 increments
+                      ├─ 5.x Band 5 increments
+                      └─ 6.x Band 6 + boss     (6.3 boss.js MOD depends on game.js Band 6 config)
 ```
 
-**Test approach:** Click "Buy Stabilizer" → assert `state.stabilizers` incremented and `state.states`
-decremented by 30. (Unit test in `tests/engine.test.mjs` or inline test.)
-
-**Commit gate:** terminal functional; LOC caps respected; build green.
-
----
-
-### E2 — Bundle regeneration + final audit (effort: S)
-
-1. Run `node build/metagame/build.mjs` — regenerates `stage8/stage.generated.js`.
-2. Run `./scripts/check.sh --fast` — fails if any generated file is stale; run generators, stage,
-   re-run.
-3. LOC audit: `wc -l docs/games/metagame/stages/stage8/*.js` — each file must be < 500 (hard cap),
-   ideally < 300 (soft cap). If any source file exceeds 300, split it before this commit.
-4. Run `node tests/smoke-area.mjs games` — must pass end to end.
-5. Run `node tests/smoke-area.mjs games` a second time to confirm no state bleed.
-6. Run unit tests: `node tests/stage8/boss.test.mjs` + `node tests/stage8/engine.test.mjs`
-   (if created) + `node tests/stage8/nodes.test.mjs` (if created).
-7. Stage all changed generated files (`git add stage8/stage.generated.js`) before commit.
-
-**Commit gate:** ALL tests pass; no file over 500 LOC; generated file is fresh; `check.sh --fast` green.
+Increments within a phase (e.g. 2.1 → 2.2 → 2.3) are sequential.  
+Phase 7 polish is independent of phase order; can be interleaved with any phase.  
+Bundle regeneration (7.4) must run after every commit touching source files.
 
 ---
 
-## Increment Summary Table
+## Per-increment commit contract
 
-| Phase | # | Increment | Files Created/Changed | Effort | Test |
-|-------|---|-----------|----------------------|--------|------|
-| A | 1 | nodes.js — 14-node topology | CREATE `nodes.js` | S | inline assert, `engine.test.mjs` |
-| A | 2 | state.js rewrite — cycle 1, nodes array | REWRITE `state.js` | M | `boss.test.mjs` |
-| A | 3 | engine.js — cycle advance, decay, income | CREATE `engine.js` | M | CREATE `tests/engine.test.mjs` |
-| A | 4 | renderer.js Band 1 — node map + Advance Cycle | EXPAND `renderer.js`, `styles.css` | M | `smoke-area games` |
-| B | 5 | Cascade stress — topology-aware decay | `engine.js` | S | `engine.test.mjs` |
-| B | 6 | Entropy % — weighted aggregate, HUD | `engine.js`, `state.js`, `renderer.js`, `styles.css` | S | `engine.test.mjs` |
-| B | 7 | High-Load toggle — binary mode switch | `engine.js`, `renderer.js` | S | `engine.test.mjs` |
-| B | 8 | Stabilizer + Upgrade Terminal stub | `engine.js`, `renderer.js` | M | `engine.test.mjs` |
-| B | 9 | Debris decay timers — expire + bell warn | `engine.js`, `boss.js` | S | `engine.test.mjs` |
-| C | 10 | Boss gate recalibration — economic gate + burn sequence | `boss.js`, `messages.js`, `state.js` | M | `boss.test.mjs` |
-| C | 11 | Smoke test update — real cycle-engine win path | `tests/areas/games.mjs` | S | `smoke-area games` |
-| D | 12 | rng.js + events.js — seeded event system | CREATE `rng.js`, `events.js` | S | inline determinism test |
-| D | 13 | Entropy threshold cascades — 60%/80% events | `engine.js`, `messages.js` | S | `engine.test.mjs` |
-| D | 14 | Band announcements + bell catalog | `messages.js`, `content.js`, `engine.js` | S | `engine.test.mjs` |
-| D | 15 | Sacrifice zone visual — glitch CSS + zone abandonment | `styles.css`, `renderer.js` | S | visual + `smoke-area games` |
-| E | 16 | Full Upgrade Terminal UI | `renderer.js` or `repair.js` | S | `engine.test.mjs` |
-| E | 17 | Bundle regen + final audit | `stage.generated.js`, all | S | `check.sh --fast` |
+Each numbered increment = one commit. Before committing:
+1. `node tests/smoke-area.mjs games` — green
+2. `node docs/games/metagame/stages/stage9/tests/*.test.mjs` — all pass
+3. `node build/metagame/build.mjs` — rebuilds `stage.generated.js` without error
+4. `git add stage.generated.js` — never commit stale bundle
+
+Commit message format: `Stage 9 [X.Y]: <one-line description of new mechanic>`
 
 ---
 
-## Non-Bypassable Gate: Exact Mechanism
+## Summary table
 
-**The un-cheat is load-bearing in two ways that cannot be collapsed into a single cycle:**
-
-1. **Action gate** (`hasSalvageArchived`): requires at least one drag-and-drop (or archive-button
-   fallback with `fallback:true` — acceptable per existing design) during the run. Checked via the
-   `actions` store (`8.salvage_archived`). This proves the player touched the file-management verb.
-
-2. **Economic gate** (`state.states >= calcBurnTotal()`): The Heat Death burns 17+19+21+23+25+
-   27+29+31+33+35 = 260 States over 10 cycles. A player who never salvaged has ~190 States at
-   cycle 34. The 70-State gap is closed ONLY by salvaging debris files across multiple cycles.
-   Each debris file (value 8–88 States) must be archived within 2 cycles of appearing or it
-   is permanently lost. No shortcut exists to retroactively close this gap.
-
-3. **Cycle gate** (`state.cycle >= MIN_BOSS_CYCLE`): the boss cannot be triggered before cycle 34
-   regardless of States. This prevents a "hoard States, skip game, boss" bypass.
-
-**What happens on failure**: `rewindToWarningCheckpoint` sends the player to cycle 29. The
-`failed` bell message fires: "there was more. it was in the debris files. I didn't move them in
-time." The hint ladder in `lockedHintLadder` escalates on each failed attempt, eventually giving
-an explicit drag-and-drop instruction. The player cannot un-fail the run without restarting Band 5
-and salvaging throughout.
-
----
-
-## Guardrails Checklist (verify per increment)
-
-- [ ] No `Math.random()` or `Date.now()` in `engine.js` or `events.js` — RNG is always seeded
-  from `makeRng('8:${cycle}:...')`.
-- [ ] ASCII rendering: node health bar uses CSS width, not canvas. Terminal output is `<pre>` text.
-  No images required for the game to function.
-- [ ] Every new module ≤ 300 LOC soft cap; reject commit if any exceeds 500 hard cap.
-- [ ] `node build/metagame/build.mjs` regenerates `stage8/stage.generated.js` after EVERY change
-  to stage8 source. Stage `stage.generated.js` before every commit.
-- [ ] `node tests/smoke-area.mjs games` passes after every increment.
-- [ ] `node tests/stage8/boss.test.mjs` passes after every increment.
-- [ ] Zero off-origin requests: no CDN, no remote fetch. Verify with smoke test assertion.
+| Phase | Increments | New mechanic introduced | Key files created/modified |
+|-------|------------|------------------------|---------------------------|
+| 0 Foundation | 0.1–0.2 | None (infrastructure) | `rng.js` NEW, `ring.js` NEW, `tests/ring.test.mjs` NEW |
+| 1 Band 1 Signal | 1.1–1.4 | WATCH AND TIME | `game.js` NEW, `loop.js` NEW, `renderer.js` MOD, `state.js` MOD |
+| 2 Band 2 Interference | 2.1–2.3 | HOLD MULTIPLE RHYTHMS | `ring.js` MOD, `game.js` MOD, `renderer.js` MOD |
+| 3 Band 3 Collapse | 3.1–3.3 | CHOOSE WHEN TO OBSERVE | `ring.js` MOD, `game.js` MOD, `renderer.js` MOD |
+| 4 Band 4 Persistence | 4.1–4.3 | MAP ACROSS RUNS | `game.js` MOD, `state.js` MOD, `renderer.js` MOD |
+| 5 Band 5 Echo | 5.1–5.3 | READ YOUR OWN HISTORY | `ring.js` MOD, `state.js` MOD, `renderer.js` MOD |
+| 6 Band 6 + Boss | 6.1–6.5 | INFER OCCLUDED STATE (boss non-bypassable) | `ring.js` MOD, `game.js` MOD, `boss.js` MOD, `renderer.js` MOD |
+| 7 Polish | 7.1–7.4 | — | `content.js` MOD, `messages.js` MOD, `styles.css` MOD, bundle regen |

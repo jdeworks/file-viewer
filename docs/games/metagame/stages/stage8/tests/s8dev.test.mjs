@@ -1,165 +1,136 @@
-// s8dev.test.mjs — Stage 8 dev-menu cheat functions: state mutation correctness.
-// NOTE: devUnlockBossGate's action-bus side (actions.setAction) is DOM/context-bound and is
-// NOT tested here — it lives in renderer.js dev() which has access to `actions`.
+// s8dev.test.mjs — Stage 8 dev-menu cheat logic: each pure state mutation is asserted here.
+// DOM-only cheats don't exist in this stage; every control mutates state or logs — all testable.
 import assert from "node:assert/strict";
-import { defaultState } from "../state.js";
-import { STATES_REQUIRED, SALVAGE_REQUIRED, MIN_CYCLE } from "../messages.js";
-import { TOTAL_STORMS } from "../storms.js";
 import {
-  devGiveResources,
-  devSkipStorm,
-  devUnlockBossGate,
-  devCoolField,
-  devSpawnDebris
+  DEV_CONTROLS,
+  devAddClarity,
+  devStabilizer3,
+  devUnlockOffline,
+  devSkipToBoss,
+  devRevealPattern,
+  applyDevControl
 } from "../s8dev.js";
+import { defaultState } from "../state.js";
+import { BOSS_LEVEL } from "../movements.js";
+import { FIXED_OFFLINE_SEED } from "../messages.js";
+import { solveMoment } from "../game.js";
 
-// ── devGiveResources ──────────────────────────────────────────────────────────────────────────────────
+// DEV_CONTROLS catalog is well formed
+assert.ok(Array.isArray(DEV_CONTROLS) && DEV_CONTROLS.length >= 2, "at least 2 dev controls");
+for (const c of DEV_CONTROLS) assert.ok(c.id && c.label, `control has id+label: ${JSON.stringify(c)}`);
+
+// devAddClarity — adds exactly 100
 {
-  const s = defaultState();
-  const before = { states: s.states, parts: s.parts, total: s.totalStatesEarned };
-  devGiveResources(s);
-  assert.equal(s.states, before.states + 500, "states +500");
-  assert.equal(s.totalStatesEarned, before.total + 500, "totalStatesEarned +500");
-  assert.equal(s.parts, before.parts + 300, "parts +300 (merged 200 scrap + 100 insight)");
-  assert.ok(Array.isArray(s.log) && s.log.some((l) => l.startsWith("DEV:")), "log entry added");
+  const state = defaultState();
+  state.clarity = 50;
+  devAddClarity(state);
+  assert.equal(state.clarity, 150, "clarity +100");
+  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
 }
 
-// additive on repeated calls
+// devAddClarity — stacks on further calls
 {
-  const s = defaultState();
-  devGiveResources(s);
-  devGiveResources(s);
-  assert.equal(s.states, 1000, "double call doubles states");
-  assert.equal(s.parts, 600, "double call doubles parts");
+  const state = defaultState();
+  devAddClarity(state);
+  devAddClarity(state);
+  assert.equal(state.clarity, 200, "two calls → 200 clarity");
 }
 
-// ── devSkipStorm ──────────────────────────────────────────────────────────────────────────────────────
+// devStabilizer3 — arms 3 charges from zero
 {
-  const s = defaultState(); // act 1, stormsSurvived 0
-  devSkipStorm(s);
-  assert.equal(s.stormsSurvived, 1, "one storm survived");
-  assert.equal(s.act, 2, "advanced to act 2");
-  assert.ok(s.onlineSectors.includes("alpha"), "alpha sector online");
-  assert.ok(s.parts > 0, "parts bonus credited");
+  const state = defaultState();
+  devStabilizer3(state);
+  assert.equal(state.aids.stabilizer, 3, "3 charges armed");
+  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
 }
 
+// devStabilizer3 — stacks on existing charges
 {
-  const s = defaultState();
-  devSkipStorm(s); // α
-  devSkipStorm(s); // β
-  devSkipStorm(s); // γ
-  assert.equal(s.stormsSurvived, TOTAL_STORMS, "all three storms skipped");
-  assert.equal(s.act, TOTAL_STORMS + 1, "past all acts");
-  assert.ok(s.onlineSectors.includes("gamma"), "gamma sector online");
+  const state = defaultState();
+  state.aids.stabilizer = 2;
+  devStabilizer3(state);
+  assert.equal(state.aids.stabilizer, 5, "stacks on existing charges");
 }
 
-// idempotent when all storms are done
+// devUnlockOffline — flips all the offline flags
 {
-  const s = defaultState();
-  s.stormsSurvived = TOTAL_STORMS;
-  s.act = TOTAL_STORMS + 1;
-  const partsBefore = s.parts;
-  devSkipStorm(s);
-  assert.equal(s.stormsSurvived, TOTAL_STORMS, "no extra storm incremented");
-  assert.equal(s.parts, partsBefore, "no parts credited when nothing to skip");
+  const state = defaultState();
+  assert.equal(state.offlineMode, false);
+  devUnlockOffline(state);
+  assert.equal(state.offlineMode, true, "offlineMode set");
+  assert.equal(state.offlineControlVisible, true, "offline control visible");
+  assert.equal(state.notesRead, true, "notes marked read");
+  assert.equal(state.boss.fixedSeed, FIXED_OFFLINE_SEED, "fixedSeed = 0");
+  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
 }
 
-// clears active storm if one is in progress
+// devSkipToBoss — jumps level AND unlocks offline
 {
-  const s = defaultState();
-  s.activeStorm = { id: "alpha", sector: "alpha", cyclesLeft: 2, duration: 3, label: "α" };
-  devSkipStorm(s);
-  assert.equal(s.activeStorm, null, "active storm cleared");
+  const state = defaultState();
+  assert.equal(state.currentLevel, 1);
+  devSkipToBoss(state);
+  assert.equal(state.currentLevel, BOSS_LEVEL, `currentLevel is BOSS_LEVEL (${BOSS_LEVEL})`);
+  assert.equal(state.offlineMode, true, "offline mode set by skip");
+  assert.equal(state.boss.fixedSeed, FIXED_OFFLINE_SEED, "seed fixed");
+  // Two log lines pushed: one from devUnlockOffline, one from devSkipToBoss itself.
+  assert.ok(state.log.length >= 2, "at least two log entries");
 }
 
-// ── devUnlockBossGate ─────────────────────────────────────────────────────────────────────────────────
+// devRevealPattern — returns the same solve moment as solveMoment(seed, level)
 {
-  const s = defaultState();
-  devUnlockBossGate(s);
-  assert.ok(Number(s.cycle) >= MIN_CYCLE, "cycle meets gate");
-  assert.ok(Number(s.totalStatesEarned) >= STATES_REQUIRED, "totalStatesEarned meets gate");
-  assert.equal(Number(s.stormsSurvived), TOTAL_STORMS, "all storms recorded");
-  assert.ok(Number(s.salvageTotal) >= SALVAGE_REQUIRED, "salvage floor met");
-  assert.equal(s.manualArchiveDone, true, "manual archive flag set");
-  assert.ok(Number(s.states) >= 400, "in-hand states adequate for burn");
-  assert.ok(s.onlineSectors.includes("alpha") && s.onlineSectors.includes("beta") && s.onlineSectors.includes("gamma"),
-    "all sectors online");
-  assert.ok(Array.isArray(s.archive) && s.archive.length > 0, "dummy debris in archive");
+  const state = defaultState();
+  const level = state.currentLevel; // 1
+  const seed = 42;
+  const returned = devRevealPattern(state, seed);
+  const expected = solveMoment(seed, level);
+  assert.deepEqual(returned, expected, "devRevealPattern returns solveMoment(seed, level)");
+  assert.ok(state.log.at(-1).includes("[dev]"), "log line pushed");
 }
 
-// double-call is idempotent (no counter drift)
+// devRevealPattern — rhythm levels return an array
 {
-  const s = defaultState();
-  devUnlockBossGate(s);
-  const stormsAfterFirst = s.stormsSurvived;
-  const salvageAfterFirst = s.salvageTotal;
-  const archiveLenAfterFirst = s.archive.length;
-  devUnlockBossGate(s);
-  assert.equal(s.stormsSurvived, stormsAfterFirst, "stormsSurvived unchanged on double-call");
-  assert.equal(s.salvageTotal, salvageAfterFirst, "salvageTotal unchanged on double-call");
-  assert.equal(s.archive.length, archiveLenAfterFirst, "no duplicate archive entry");
+  const state = defaultState();
+  state.currentLevel = 7; // rhythm mode
+  const sol = devRevealPattern(state, 0);
+  assert.ok(Array.isArray(sol), "rhythm level returns array");
+  assert.ok(sol.length >= 2, "at least 2 beats");
+  assert.ok(state.log.at(-1).includes("beats:"), "log mentions beats");
 }
 
-// preserves states already above 400
+// devRevealPattern — non-rhythm level returns a number
 {
-  const s = defaultState();
-  s.states = 800;
-  s.totalStatesEarned = 800;
-  devUnlockBossGate(s);
-  assert.ok(s.states >= 800, "high state balance preserved");
+  const state = defaultState();
+  state.currentLevel = 1; // simple mode
+  const sol = devRevealPattern(state, 0);
+  assert.ok(typeof sol === "number", "simple level returns a number");
+  assert.ok(sol >= 0, "solve moment is non-negative");
+  assert.ok(state.log.at(-1).includes("solve at"), "log says 'solve at'");
 }
 
-// ── devCoolField ──────────────────────────────────────────────────────────────────────────────────────
+// applyDevControl dispatcher — all ids handled
 {
-  const s = defaultState();
-  s.heat = 80;
-  s.heatRate = 3;
-  s.entropy = 40;
-  for (const n of s.nodes) { n.health = 20; n.cascadeStress = 5; }
-  devCoolField(s);
-  assert.equal(s.heat, 0, "heat zeroed");
-  assert.equal(s.heatRate, 0, "heatRate zeroed");
-  assert.equal(s.entropy, 0, "entropy zeroed");
-  assert.ok(s.nodes.every((n) => n.health === 100), "all nodes at full health");
-  assert.ok(s.nodes.every((n) => n.cascadeStress === 0), "cascade stress cleared");
+  for (const { id } of DEV_CONTROLS) {
+    const state = defaultState();
+    const ok = applyDevControl(id, state, { seed: 0 });
+    assert.equal(ok, true, `dispatcher handled id="${id}"`);
+  }
 }
 
-// repairUnits is at least 6 after cooling
+// applyDevControl — unknown id returns false without throwing
 {
-  const s = defaultState();
-  s.repairUnits = 0;
-  devCoolField(s);
-  assert.ok(s.repairUnits >= 6, "repairUnits restored to at least 6");
+  const state = defaultState();
+  assert.equal(applyDevControl("not-a-thing", state), false, "unknown id → false");
 }
 
-// ── devSpawnDebris ────────────────────────────────────────────────────────────────────────────────────
+// applyDevControl — each routed call actually mutates state
 {
-  const s = defaultState();
-  assert.equal(s.debris.length, 0, "fresh state has no debris");
-  devSpawnDebris(s);
-  assert.ok(s.debris.length >= 3, "3 debris items spawned");
-  assert.ok(typeof s.selectedDebrisId === "string" && s.selectedDebrisId.length > 0, "selectedDebrisId set");
-  assert.ok(s.debris.every((d) => d.id.endsWith(".sav")), "all debris ids end with .sav (archivable)");
-}
+  const base = () => defaultState();
 
-// idempotent: second call adds no duplicates when debris still present
-{
-  const s = defaultState();
-  devSpawnDebris(s);
-  const firstCount = s.debris.length;
-  devSpawnDebris(s);
-  assert.equal(s.debris.length, firstCount, "duplicate ids not re-added");
-}
-
-// re-spawns after items are archived (ids removed from debris)
-{
-  const s = defaultState();
-  devSpawnDebris(s);
-  const beforeIds = s.debris.map((d) => d.id);
-  // simulate archiving all of them
-  s.debris = [];
-  devSpawnDebris(s);
-  assert.deepEqual(s.debris.map((d) => d.id), beforeIds, "same ids re-spawned after archiving");
+  const s1 = base(); applyDevControl("add-clarity",    s1, { seed: 0 }); assert.equal(s1.clarity, 100);
+  const s2 = base(); applyDevControl("stabilizer-3",   s2, { seed: 0 }); assert.equal(s2.aids.stabilizer, 3);
+  const s3 = base(); applyDevControl("unlock-offline",  s3, { seed: 0 }); assert.equal(s3.offlineMode, true);
+  const s4 = base(); applyDevControl("skip-to-boss",   s4, { seed: 0 }); assert.equal(s4.currentLevel, BOSS_LEVEL);
+  const s5 = base(); applyDevControl("reveal-pattern",  s5, { seed: 0 }); assert.ok(s5.log.length > 0);
 }
 
 console.log("stage8 s8dev tests passed");

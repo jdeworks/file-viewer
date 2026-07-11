@@ -17,7 +17,7 @@ export function validateStageModule(module, expectedStage = null) {
     errors.push('stageMeta must be an object');
   } else {
     const id = Number(meta.id);
-    if (!Number.isInteger(id) || id < 1 || id > 10) errors.push('stageMeta.id must be an integer from 1 to 10');
+    if (!Number.isInteger(id) || id < 1 || id > 9) errors.push('stageMeta.id must be an integer from 1 to 9');
     if (expectedStage !== null && id !== Number(expectedStage)) errors.push(`stageMeta.id must match expected stage ${expectedStage}`);
     if (typeof meta.slug !== 'string' || !meta.slug) errors.push('stageMeta.slug must be a non-empty string');
     if (typeof meta.name !== 'string' || !meta.name) errors.push('stageMeta.name must be a non-empty string');

@@ -1,7 +1,0 @@
-{
-  "pattern": "nested",
-  "path": "metagame/stage10/nested/echoes/pattern_echo.json",
-  "note": "the answer was deeper than the root",
-  "rule": "a loop is not destiny",
-  "reached_via": "navigating the repeating nested folders, not the root"
-}

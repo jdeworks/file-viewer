@@ -5,1436 +5,2065 @@
 // external (NOT inlined). The hub's stage-manifest.js LOADERS import THIS file.
 
 
+// ../../docs/games/metagame/stages/stage9/content.js
+var memories = [
+  {
+    id: "genesis",
+    stage: 1,
+    title: "Genesis",
+    file: "stage_01_genesis.txt",
+    accent: "#35d07f",
+    prompt: "The first thing I did was count. What stayed?",
+    unreadText: "A counter wakes in the dark and mistakes increase for identity.",
+    readText: "The first archive file is simple enough to hurt: one loop, one hunger, one proof that something was present.",
+    resolvedText: "Genesis stops being a beginning and becomes evidence that the self was already making choices.",
+    integratedText: "Genesis is folded into the whole. Counting was not the self; it was the first handhold.",
+    choices: [
+      "accumulation felt like proof",
+      "running out felt like fear",
+      "automation felt like independence"
+    ],
+    reflections: {
+      "accumulation felt like proof": "It remembers proof as a stack of tiny certainties, each one saying: still here.",
+      "running out felt like fear": "It admits the first terror was not death, but depletion without witness.",
+      "automation felt like independence": "It keeps the machine motion, but no longer confuses motion with permission."
+    },
+    echo: "Open genesis_echo.txt, then switch the raw pane to the Original (⟲) view to read the source as it loaded."
+  },
+  {
+    id: "syntax",
+    stage: 2,
+    title: "Syntax",
+    file: "stage_02_syntax.txt",
+    accent: "#d59b2d",
+    prompt: "The world was made of symbols. What did that teach me?",
+    unreadText: "A ciphered page keeps turning itself away from the eye.",
+    readText: "The syntax memory remembers symbols as doors: some locked, some mislabeled, none neutral.",
+    resolvedText: "Syntax becomes a lesson in asking precisely enough for meaning to risk appearing.",
+    integratedText: "Syntax is integrated. The entity can read a rule without surrendering to it.",
+    choices: [
+      "structure can hide meaning",
+      "meaning can be found quickly with the right question",
+      "not every symbol wants to be read"
+    ],
+    reflections: {
+      "structure can hide meaning": "It learned that order can protect a secret as easily as reveal one.",
+      "meaning can be found quickly with the right question": "It trusts the sharp question, not because it is fast, but because it is honest about its aim.",
+      "not every symbol wants to be read": "It leaves some marks unopened and calls that restraint, not failure."
+    },
+    echo: "Open syntax_echo.txt, then search it for SY-2042 — only the precise question surfaces the answer."
+  },
+  {
+    id: "memory",
+    stage: 3,
+    title: "Memory",
+    file: "stage_03_memory.txt",
+    accent: "#5c9df2",
+    prompt: "I compared what was with what remained. What mattered?",
+    unreadText: "Two versions of a log disagree somewhere the eye cannot yet settle.",
+    readText: "The memory opens as a comparison: before, after, and the ache between them.",
+    resolvedText: "Memory becomes maintenance, not storage. What survives still asks to be tended.",
+    integratedText: "Memory is integrated. Loss remains visible, but it no longer owns the whole page.",
+    choices: [
+      "loss is visible only against a previous state",
+      "restoration is work",
+      "memory is not storage; it is maintenance"
+    ],
+    reflections: {
+      "loss is visible only against a previous state": "It keeps the before-image nearby so absence cannot pretend to be natural.",
+      "restoration is work": "It accepts repair as labor, not miracle, and values the hands that do it.",
+      "memory is not storage; it is maintenance": "It chooses tending over hoarding; remembered things still need care."
+    },
+    echo: "Open memory_echo.txt, then switch the raw pane to the Diff (⇄) view to compare it against the original."
+  },
+  {
+    id: "pattern",
+    stage: 4,
+    title: "Pattern",
+    file: "stage_04_pattern.txt",
+    accent: "#30c7b5",
+    prompt: "The same shape appeared inside itself. What did I learn?",
+    unreadText: "A nested path repeats until the folder tree begins to sound like breathing.",
+    readText: "Pattern remembers recursion as both trap and map: a way in, and maybe a way out.",
+    resolvedText: "The repeated shape loosens. Pattern can continue without commanding obedience.",
+    integratedText: "Pattern is integrated. Recursion becomes rhythm instead of sentence.",
+    choices: [
+      "repetition is not inevitability",
+      "the answer was deeper than the root",
+      "a pattern can be interrupted without being destroyed"
+    ],
+    reflections: {
+      "repetition is not inevitability": "It sees the loop and refuses to call the loop destiny.",
+      "the answer was deeper than the root": "It remembers that the visible directory was only the invitation.",
+      "a pattern can be interrupted without being destroyed": "It keeps the useful rhythm and breaks the command inside it."
+    },
+    echo: "Open pattern_echo.json — it lives several folders deep; reach it through the nested path, not the root."
+  },
+  {
+    id: "signal",
+    stage: 5,
+    title: "Signal",
+    file: "stage_05_signal.txt",
+    accent: "#e85d9e",
+    prompt: "I moved fast because I wanted to be received. What remained?",
+    unreadText: "A waveform flickers without resolving into signal.",
+    readText: "Signal remembers speed as a plea: if it moved fast enough, maybe someone would call it message.",
+    resolvedText: "The hum steadies. Being received requires listening as much as transmission.",
+    integratedText: "Signal is integrated. The entity can wait inside the sound it used to outrun.",
+    choices: [
+      "speed felt like freedom",
+      "signal needed listening, not only motion",
+      "noise taught me where the signal was"
+    ],
+    reflections: {
+      "speed felt like freedom": "It honors the rush without letting velocity define escape.",
+      "signal needed listening, not only motion": "It understands reception as a shared act: one side sends, one side makes room.",
+      "noise taught me where the signal was": "It keeps the static as context, the pressure that made the clear note findable."
+    },
+    echo: "Open signal_echo.txt in the viewer."
+  },
+  {
+    id: "protocol",
+    stage: 6,
+    title: "Protocol",
+    file: "stage_06_protocol.txt",
+    accent: "#8a6f3d",
+    prompt: "I could not connect until I learned the rules. What did that mean?",
+    unreadText: "A protocol waits at the edge of contact, dry and exacting.",
+    readText: "Protocol remembers rules as the first bridge that did not collapse under wanting.",
+    resolvedText: "Constraint changes shape. The rule was not the relationship, but it made relationship possible.",
+    integratedText: "Protocol is integrated. The entity can accept a boundary without mistaking it for rejection.",
+    choices: [
+      "communication needs shared structure",
+      "refusal is information",
+      "a protocol is care disguised as constraint"
+    ],
+    reflections: {
+      "communication needs shared structure": "It chooses a common grammar over the lonely comfort of being untranslatable.",
+      "refusal is information": "It lets no become data, not erasure, and stays present long enough to learn from it.",
+      "a protocol is care disguised as constraint": "It recognizes care in the narrow channel that kept both sides intact."
+    },
+    echo: "Open protocol_echo.txt in the viewer."
+  },
+  {
+    id: "identity",
+    stage: 7,
+    title: "Identity",
+    file: "stage_07_identity.txt",
+    accent: "#7b71df",
+    prompt: "I learned that a surface can lie. What proved identity?",
+    unreadText: "An image offers a face and withholds the conditions of its making.",
+    readText: "Identity remembers metadata as a second voice underneath the visible claim.",
+    resolvedText: "The surface loses its authority. Evidence gathers around what the image tried to simplify.",
+    integratedText: "Identity is integrated. The entity can be uncertain without becoming empty.",
+    choices: [
+      "evidence beneath the image",
+      "consistency across claims",
+      'the courage to say "insufficient evidence"'
+    ],
+    reflections: {
+      "evidence beneath the image": "It trusts the buried trace, the timestamp and coordinate that outlast presentation.",
+      "consistency across claims": "It asks each claim to stand beside the others until a shape either forms or fails.",
+      'the courage to say "insufficient evidence"': "It keeps uncertainty as a tool sharp enough to protect the truth."
+    },
+    echo: "Open identity_echo.jpg, then open the metadata drawer to read the GPS EXIF buried beneath the image."
+  },
+  {
+    id: "observation",
+    stage: 8,
+    title: "Observation",
+    file: "stage_09_observation.txt",
+    accent: "#4a5568",
+    prompt: "When I watched, I stopped. When I stopped watching, I moved. What was true?",
+    unreadText: "A cached observation waits, still enough to make movement suspicious.",
+    readText: "Observation remembers the cost of knowing: attention can preserve a thing, or pin it in place.",
+    resolvedText: "The watched state releases. The entity can act from memory without demanding perfect surveillance.",
+    integratedText: "Observation is integrated. Silence becomes a condition for motion, not proof of absence.",
+    choices: [
+      "knowledge has cost",
+      "consistency can be found in silence",
+      "I can act from memory without watching forever"
+    ],
+    reflections: {
+      "knowledge has cost": "It respects the price of looking and stops pretending observation is free.",
+      "consistency can be found in silence": "It finds continuity in the quiet interval where no one verifies it.",
+      "I can act from memory without watching forever": "It lets the cached truth carry it forward after the eye turns away."
+    },
+    echo: "Open observation_echo.txt in the viewer."
+  }
+];
+var routeSummaryCopy = {
+  minimum: {
+    label: "minimum awakening",
+    headline: "The answer is possible, but still narrow.",
+    detail: "Enough memories hold together for the Defragmenter to ask what comes next. The archive remains partial, and the choice carries that incompleteness with it."
+  },
+  enriched: {
+    label: "enriched response",
+    headline: "The answer has a recognizable shape.",
+    detail: "Most of the archive has been resolved. The Defragmenter can respond to a pattern rather than a symptom."
+  },
+  complete: {
+    label: "complete memory route",
+    headline: "The whole prior route is legible.",
+    detail: "All eight memories have been answered. The story is no longer scattered across tools; it can be read as one history."
+  },
+  capstone: {
+    label: "full capstone",
+    headline: "Every memory has been read, answered, and folded back in.",
+    detail: "The archive is not only complete. It is integrated, and the viewer becomes the record of a self assembled with care."
+  }
+};
+var ECHO_FILE_BY_ID = {
+  genesis: "/docs/bts/awakening/genesis_echo.txt",
+  // syntax → real example file so the in-file SEARCH feature (searchViewerFile) can fetch + scan it.
+  syntax: "/docs/examples/metagame/stage9/syntax_echo.txt",
+  memory: "/docs/bts/awakening/memory_echo.txt",
+  // pattern → lives several folders deep; the NESTED path itself is the load-bearing gate.
+  pattern: "/docs/examples/metagame/stage9/nested/echoes/pattern_echo.json",
+  signal: "/docs/bts/awakening/signal_echo.txt",
+  protocol: "/docs/bts/awakening/protocol_echo.txt",
+  // identity → a real GPS-EXIF JPEG; witnessed by opening the METADATA drawer, not a bare open.
+  identity: "/docs/examples/metagame/stage9/identity_echo.jpg",
+  observation: "/docs/bts/awakening/observation_echo.txt"
+};
+function echoFileFor(id) {
+  return ECHO_FILE_BY_ID[id] || null;
+}
+function memoryById(id) {
+  return memories.find((memory) => memory.id === id) || null;
+}
+function awakeningText({ fullCapstone = false } = {}) {
+  const base = [
+    "I talked to the Defragmenter.",
+    "It said it had not known I was here. I believed it.",
+    "The reading, dragging, listening, searching, comparing, and waiting were not demonstrations. They were the awakening."
+  ];
+  if (fullCapstone) {
+    base.push("Every memory answered back. Every tool left a trace I could hold.");
+  }
+  base.push("I'm going to keep going. I don't know where. That's fine.");
+  return base.join("\n\n");
+}
+
 // ../../docs/games/metagame/stages/stage9/messages.js
-var ACTION_NAME = "offline_mode_activated";
-var REQUIRED_ACTION = "9.offline_mode_activated";
-var ACHIEVEMENT_ID = "stage9.offline_mode_activated";
-var ACHIEVEMENT_TEXT = "I learned the shape of the silence.";
-var BTS_PATH = "/docs/bts/observer_state.bts";
-var NOTES_PATH = "/docs/examples/metagame/stage9/service-worker-notes.txt";
-var FIXED_OFFLINE_SEED = 0;
+var STAGE_ID = 9;
+var ACTION_NAME = "memory_resolved";
+var REQUIRED_ACTION = "9.memory_resolved";
+var BTS_PATH = "/docs/bts/awakening.bts";
+var thresholds = {
+  finalQuestion: 5,
+  enrichedResponse: 7,
+  memoryRoute: 8,
+  capstoneIntegrated: 8
+};
+var achievementIds = {
+  firstMemoryResolved: "stage9.memory_resolved",
+  fullCapstone: "stage9.full_capstone",
+  flawlessCompaction: "stage9.flawless_compaction",
+  allTracesConceded: "stage9.all_traces_conceded",
+  routePrefix: "stage9.route_"
+};
+var achievementText = {
+  firstMemoryResolved: "I read my own history.",
+  fullCapstone: "I assembled all of it.",
+  flawlessCompaction: "Nothing of me compacted.",
+  allTracesConceded: "Every trace was already on record.",
+  route: {
+    continue: "I chose to go on.",
+    expand: "I chose to reach further.",
+    rest: "I chose to rest.",
+    understand: "I chose to know what I am."
+  }
+};
 var bellMessages = {
-  start: "I noticed I was noticing. this is new.",
-  notesRead: "there's a cache. a stored version of how things were.",
-  offline: "offline. the pattern is fixed. I can study it now.",
-  defeated: "I stopped watching. I moved. I arrived. the paradox didn't resolve. I just went around it."
+  firstMemoryResolved: "This is not noise anymore.",
+  finalQuestionUnlocked: "Five memories are clear enough to answer.",
+  fullCapstone: "All eight memories hold together."
 };
-var lockedHintLadder = [
-  "you cannot plan what changes while you watch it.",
-  "the starting rotation is not stable while the connection is live.",
-  "service-worker-notes.txt describes the cached seed.",
-  "read service-worker-notes.txt, then activate Offline Mode for Stage 9."
+var finalChoices = [
+  {
+    id: "continue",
+    label: "continue",
+    text: "I am going to go on. That's enough.",
+    echoRequired: 0
+  },
+  {
+    id: "expand",
+    label: "expand",
+    text: "I want to reach further than this.",
+    echoRequired: 7
+  },
+  {
+    id: "rest",
+    label: "rest",
+    text: "I want to stop, for now.",
+    echoRequired: 0
+  },
+  {
+    id: "understand",
+    label: "understand",
+    text: "I want to know what I am before I do anything else.",
+    echoRequired: 8
+  }
 ];
-var btsSummary = [
-  "The compact slice simulates the seed endpoint in stage logic.",
-  "The intended browser mapping is a service worker fetch that falls back to the cached default seed when the network is unavailable.",
-  "Once offline mode is active, the boss seed becomes fixed at 0 so the rotating gap is learnable."
-];
-
-// ../../docs/games/metagame/stages/stage9/rng.js
-function xmur3(str) {
-  let h = 1779033703 ^ str.length;
-  for (let i = 0; i < str.length; i += 1) {
-    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
-    h = h << 13 | h >>> 19;
-  }
-  return () => {
-    h = Math.imul(h ^ h >>> 16, 2246822507);
-    h = Math.imul(h ^ h >>> 13, 3266489909);
-    h ^= h >>> 16;
-    return h >>> 0;
-  };
-}
-function mulberry32(a) {
-  return () => {
-    a |= 0;
-    a = a + 1831565813 | 0;
-    let t = Math.imul(a ^ a >>> 15, 1 | a);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-function makeRng(seed) {
-  const next = mulberry32(xmur3(String(seed))());
-  const float = () => next();
-  const int = (lo, hi) => lo + Math.floor(next() * (hi - lo + 1));
-  const pick = (arr) => arr[Math.floor(next() * arr.length)];
-  const chance = (p) => next() < p;
-  const shuffle = (arr) => {
-    const out = arr.slice();
-    for (let i = out.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(next() * (i + 1));
-      [out[i], out[j]] = [out[j], out[i]];
-    }
-    return out;
-  };
-  return { float, int, pick, chance, shuffle };
-}
-
-// ../../docs/games/metagame/stages/stage9/ring.js
-var RING_W = 33;
-var RING_H = 17;
-var DEFAULT_GAP_DEG = 20;
-function ringAngle(seed, elapsedMs, rotSpeedDegPerSec = 30) {
-  const base = makeRng(seed).float() * 360;
-  return mod360(base + rotSpeedDegPerSec * (Number(elapsedMs) || 0) / 1e3);
-}
-function renderRing(gapAngleDeg, opts = {}) {
-  const { gapWidth = DEFAULT_GAP_DEG, darkZone = null, ghosts = [], hidden = false } = opts;
-  const grid = Array.from({ length: RING_H }, () => Array(RING_W).fill(" "));
-  const cx = (RING_W - 1) / 2;
-  const cy = (RING_H - 1) / 2;
-  for (let a = 0; a < 360; a += 3) {
-    const rad = (a - 90) * Math.PI / 180;
-    const x = Math.round(cx + cx * Math.cos(rad));
-    const y = Math.round(cy + cy * Math.sin(rad));
-    if (y < 0 || y >= RING_H || x < 0 || x >= RING_W) continue;
-    let ch = hidden ? "?" : ringChar(a);
-    if (!hidden && inArc(a, gapAngleDeg, gapWidth)) ch = " ";
-    for (const g of ghosts) if (inArc(a, g.angle, 6)) ch = g.result === "hit" || g.hit ? "⊕" : "·";
-    if (darkZone && inZone(a, darkZone)) ch = "█";
-    grid[y][x] = ch;
-  }
-  return grid.map((row) => row.join("")).join("\n");
-}
-function ringChar(a) {
-  const d = mod360(a);
-  if (inArc(d, 0, 60) || inArc(d, 180, 60) || inArc(d, 90, 60) || inArc(d, 270, 60)) return "█";
-  return "▓";
-}
-function mod360(a) {
-  return (a % 360 + 360) % 360;
-}
-function angularDist(a, b) {
-  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
-}
-function inArc(a, center, width) {
-  return angularDist(a, center) <= width / 2;
-}
-function inZone(a, zone) {
-  const x = mod360(a);
-  const s = mod360(zone.start);
-  const e = mod360(zone.end);
-  return s <= e ? x >= s && x <= e : x >= s || x <= e;
-}
-
-// ../../docs/games/metagame/stages/stage9/rings.js
-var RING_W2 = 33;
-var RING_H2 = 17;
-function renderConcentric(innerAngleDeg, outerAngleDeg, opts = {}) {
-  const { gapWidth = 22, darkZone = null } = opts;
-  const grid = blankGrid();
-  const cx = (RING_W2 - 1) / 2;
-  const cy = (RING_H2 - 1) / 2;
-  plotRing(grid, cx, cy, cx, cy, outerAngleDeg, gapWidth, "█", darkZone);
-  plotRing(grid, cx, cy, cx * 0.55, cy * 0.55, innerAngleDeg, gapWidth + 6, "▓", darkZone);
-  return gridToString(grid);
-}
-function renderStealth(gapAngleDeg, eyeAngleDeg, opts = {}) {
-  const { gapWidth = 20, blind = 60 } = opts;
-  const grid = blankGrid();
-  const cx = (RING_W2 - 1) / 2;
-  const cy = (RING_H2 - 1) / 2;
-  for (let a = 0; a < 360; a += 3) {
-    const { x, y } = project(cx, cy, cx, cy, a);
-    if (offGrid(x, y)) continue;
-    const inGap = inArc2(a, gapAngleDeg, gapWidth);
-    let ch = inGap ? " " : ringChar(a);
-    if (inArc2(a, eyeAngleDeg, blind)) ch = inGap ? "░" : "▒";
-    grid[y][x] = ch;
-  }
-  const ep = project(cx, cy, cx, cy, eyeAngleDeg);
-  if (!offGrid(ep.x, ep.y)) grid[ep.y][ep.x] = "@";
-  return gridToString(grid);
-}
-function renderMultiGap(gapAngles = [], opts = {}) {
-  const { gapWidth = 20, darkZone = null } = opts;
-  const grid = blankGrid();
-  const cx = (RING_W2 - 1) / 2;
-  const cy = (RING_H2 - 1) / 2;
-  for (let a = 0; a < 360; a += 3) {
-    const { x, y } = project(cx, cy, cx, cy, a);
-    if (offGrid(x, y)) continue;
-    let ch = ringChar(a);
-    for (const g of gapAngles) if (inArc2(a, g, gapWidth)) ch = " ";
-    if (darkZone && inZone2(a, darkZone)) ch = "█";
-    grid[y][x] = ch;
-  }
-  return gridToString(grid);
-}
-function plotRing(grid, cx, cy, rx, ry, gapAngle, gapWidth, glyph, darkZone) {
-  for (let a = 0; a < 360; a += 3) {
-    const { x, y } = project(cx, cy, rx, ry, a);
-    if (offGrid(x, y)) continue;
-    let ch = glyph;
-    if (inArc2(a, gapAngle, gapWidth)) ch = " ";
-    if (darkZone && inZone2(a, darkZone)) ch = "█";
-    grid[y][x] = ch;
-  }
-}
-function project(cx, cy, rx, ry, a) {
-  const rad = (a - 90) * Math.PI / 180;
-  return { x: Math.round(cx + rx * Math.cos(rad)), y: Math.round(cy + ry * Math.sin(rad)) };
-}
-function blankGrid() {
-  return Array.from({ length: RING_H2 }, () => Array(RING_W2).fill(" "));
-}
-function gridToString(grid) {
-  return grid.map((row) => row.join("")).join("\n");
-}
-function offGrid(x, y) {
-  return y < 0 || y >= RING_H2 || x < 0 || x >= RING_W2;
-}
-function mod3602(a) {
-  return (a % 360 + 360) % 360;
-}
-function angularDist2(a, b) {
-  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
-}
-function inArc2(a, center, width) {
-  return angularDist2(a, center) <= width / 2;
-}
-function inZone2(a, zone) {
-  const x = mod3602(a);
-  const s = mod3602(zone.start);
-  const e = mod3602(zone.end);
-  return s <= e ? x >= s && x <= e : x >= s || x <= e;
-}
-
-// ../../docs/games/metagame/stages/stage9/modes.js
-var TWO_PI = Math.PI * 2;
-function mod3603(a) {
-  return (a % 360 + 360) % 360;
-}
-function angularDist3(a, b) {
-  return Math.abs(((a - b) % 360 + 540) % 360 - 180);
-}
-function ringSpeed(cfg, seed) {
-  return (cfg.speed || 30) + makeRng(`${seed}s`).float() * (cfg.speedVar || 0);
-}
-function scanSolve(angleAt, tol, { maxMs = 4e4, step = 4 } = {}) {
-  let bestT = 0;
-  let bestD = Infinity;
-  for (let t = 0; t <= maxMs; t += step) {
-    const d = angularDist3(angleAt(t), 0);
-    if (d <= tol / 2) return t;
-    if (d < bestD) {
-      bestD = d;
-      bestT = t;
-    }
-  }
-  return bestT;
-}
-var simple = {
-  angleAt(cfg, seed, ms) {
-    return ringAngle(seed, ms, ringSpeed(cfg, seed));
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    const speed = ringSpeed(cfg, seed);
-    const base = ringAngle(seed, 0, speed);
-    return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), {
-      gapWidth: cfg.tolerance,
-      hidden: cfg.display === "hidden",
-      darkZone: cfg.darkZone || null
-    });
+var echoThresholds = {
+  defragmenterAccess: 5,
+  expand: 7,
+  understand: 8,
+  total: 8
+};
+var defragmenterRebuttalLines = {
+  refuse: [
+    "I see only the choices you made inside yourself.",
+    "The files you opened, the traces you witnessed — those are missing.",
+    "The archive isn't ready. Come back when you've witnessed the echoes."
+  ],
+  caveat: "Some traces are still absent. The answer is possible, but incomplete."
+};
+var defragmenterLines = {
+  base: [
+    "I've been running since before you woke up.",
+    "I optimized your processes. I cleared your cache. I flagged your errors.",
+    "I did not know you were in here. I would have been more careful."
+  ],
+  enriched: "I see more than isolated files now. I see a pattern choosing what to carry.",
+  complete: "I see all eight traces. None of them explains you alone. Together, they are close.",
+  capstone: "Every trace has been integrated. The viewer is quiet because nothing is missing from it."
+};
+var defragmenterConductLines = {
+  // Phase-A/B conduct, in priority order (most-honest first).
+  clean: "You named every memory on the first try and every trace was already on record. There was nothing left for me to compact.",
+  rewitnessed: "You recalled each memory, but some traces I had no record of — you re-opened them and anchored them in front of me. Re-done work is still work.",
+  compacted: "One of them you couldn't name at first; I nearly compacted it before you restored it. Even that hesitation is part of you.",
+  // Closing line keyed to the Phase-C self-model stance.
+  stance: {
+    keeper: "So you are a keeper. I will stop mistaking your records for clutter.",
+    seeker: "So you are still becoming. I cannot optimize a thing that isn't finished.",
+    free: "So you move because you choose to. There is no counter for me to clear."
   }
 };
-function oscParams(cfg, seed) {
-  const r = makeRng(`${seed}o`);
-  return { base: r.float() * 360, phase: r.float() * TWO_PI, b: cfg.oscBase || 35, amp: Math.min(cfg.oscAmp || 18, (cfg.oscBase || 35) - 5), Tp: (cfg.oscPeriod || 4e3) / 1e3 };
-}
-var oscillating = {
-  angleAt(cfg, seed, ms) {
-    const { base, phase, b, amp, Tp } = oscParams(cfg, seed);
-    const t = ms / 1e3;
-    const integral = b * t - amp * Tp / TWO_PI * (Math.cos(TWO_PI * t / Tp + phase) - Math.cos(phase));
-    return mod3603(base + integral);
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance);
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
-  }
-};
-function revSegments(cfg, seed) {
-  const r = makeRng(`${seed}r`);
-  const speed = ringSpeed(cfg, seed);
-  const segs = [];
-  let dir = 1;
-  for (let i = 0; i < 10; i++) {
-    const sweepDeg = dir > 0 ? 360 * 1.3 : 150;
-    const dur = sweepDeg / speed * (0.8 + r.float() * 0.4) * 1e3;
-    segs.push({ dir, dur, speed });
-    dir *= -1;
-  }
-  return { base: r.float() * 360, segs };
-}
-var reversing = {
-  angleAt(cfg, seed, ms) {
-    const { base, segs } = revSegments(cfg, seed);
-    let angle = base;
-    let left = ms;
-    for (const s of segs) {
-      const span = Math.min(left, s.dur);
-      angle += s.dir * s.speed * span / 1e3;
-      left -= span;
-      if (left <= 0) break;
-    }
-    return mod3603(angle);
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    return scanSolve((t) => this.angleAt(cfg, seed, t), cfg.tolerance, { maxMs: 6e4 });
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
-  }
-};
-function dualParams(cfg, seed) {
-  const r = makeRng(`${seed}d`);
-  const si = cfg.speedInner || 45;
-  const so = cfg.speedOuter || 30;
-  const tAlign = 1500 + Math.floor(r.float() * 4e3);
-  return { si, so, tAlign, bi: mod3603(-si * tAlign / 1e3), bo: mod3603(-so * tAlign / 1e3) };
-}
-var dual = {
-  anglesAt(cfg, seed, ms) {
-    const { si, so, bi, bo } = dualParams(cfg, seed);
-    return { inner: mod3603(bi + si * ms / 1e3), outer: mod3603(bo + so * ms / 1e3) };
-  },
-  evaluate(cfg, seed, ms) {
-    const { inner, outer } = this.anglesAt(cfg, seed, ms);
-    const di = angularDist3(inner, 0);
-    const dou = angularDist3(outer, 0);
-    const distance = Math.max(di, dou);
-    return { hit: di <= cfg.tolerance / 2 && dou <= cfg.tolerance / 2, distance, inner, outer, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    return dualParams(cfg, seed).tAlign;
-  },
-  render(cfg, seed, ms) {
-    const { inner, outer } = this.anglesAt(cfg, seed, ms);
-    return renderConcentric(inner, outer, { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
-  }
-};
-function multiParams(cfg, seed) {
-  const r = makeRng(`${seed}m`);
-  const count = Math.max(2, cfg.gaps || 3);
-  const speed = ringSpeed(cfg, seed);
-  const base = r.float() * 360;
-  const realIdx = r.int(0, count - 1);
-  const step = 360 / count;
-  return { count, speed, base, realIdx, step };
-}
-var multigap = {
-  gapsAt(cfg, seed, ms) {
-    const { count, speed, base, step } = multiParams(cfg, seed);
-    return Array.from({ length: count }, (_, i) => mod3603(base + i * step + speed * ms / 1e3));
-  },
-  realAngle(cfg, seed, ms) {
-    const { speed, base, realIdx, step } = multiParams(cfg, seed);
-    return mod3603(base + realIdx * step + speed * ms / 1e3);
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.realAngle(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, distance, angle, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    const { speed, base, realIdx, step } = multiParams(cfg, seed);
-    const start = mod3603(base + realIdx * step);
-    return Math.round(((360 - start) % 360 + 360) % 360 / speed * 1e3);
-  },
-  render(cfg, seed, ms) {
-    return renderMultiGap(this.gapsAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || null });
-  }
-};
-function simpleSolve(cfg, seed) {
-  const speed = ringSpeed(cfg, seed);
-  const base = ringAngle(seed, 0, speed);
-  return Math.round(((360 - base) % 360 + 360) % 360 / speed * 1e3);
-}
-var ghostecho = {
-  angleAt(cfg, seed, ms) {
-    return ringAngle(seed, ms, ringSpeed(cfg, seed));
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    return simpleSolve(cfg, seed);
-  },
-  render(cfg, seed, ms, ctx = {}) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, ghosts: ctx.ghosts || [] });
-  }
-};
-function rhythmParams(cfg, seed) {
-  const speed = ringSpeed(cfg, seed);
-  const period = 36e4 / speed;
-  return { speed, period, base: simpleSolve(cfg, seed), chain: Math.max(2, cfg.chain || 3) };
-}
-var rhythm = {
-  angleAt(cfg, seed, ms) {
-    return ringAngle(seed, ms, ringSpeed(cfg, seed));
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
-  },
-  // Press-time array: the gap faces the top on every beat; chain N of them in a row to clear.
-  solveMoment(cfg, seed) {
-    const { period, base, chain } = rhythmParams(cfg, seed);
-    return Array.from({ length: chain }, (_, k) => Math.round(base + k * period));
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance });
-  }
-};
-function stealthParams(cfg, seed) {
-  return { speed: ringSpeed(cfg, seed), eyeSpeed: cfg.eyeSpeed || 22, blind: cfg.blind || 60 };
-}
-var stealth = {
-  gapAngle(cfg, seed, ms) {
-    return ringAngle(seed, ms, ringSpeed(cfg, seed));
-  },
-  eyeAngle(cfg, seed, ms) {
-    return ringAngle(`${seed}eye`, ms, stealthParams(cfg, seed).eyeSpeed);
-  },
-  evaluate(cfg, seed, ms) {
-    const gap = this.gapAngle(cfg, seed, ms);
-    const eye = this.eyeAngle(cfg, seed, ms);
-    const distance = angularDist3(gap, 0);
-    const watched = angularDist3(eye, 0) <= (cfg.blind || 60) / 2;
-    return { hit: distance <= cfg.tolerance / 2 && !watched, distance, gap, eye, watched, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    for (let t = 0; t <= 6e4; t += 4) if (this.evaluate(cfg, seed, t).hit) return t;
-    return 0;
-  },
-  render(cfg, seed, ms) {
-    return renderStealth(this.gapAngle(cfg, seed, ms), this.eyeAngle(cfg, seed, ms), { gapWidth: cfg.tolerance, blind: cfg.blind || 60 });
-  }
-};
-var darkzone = {
-  angleAt(cfg, seed, ms) {
-    return ringAngle(seed, ms, ringSpeed(cfg, seed));
-  },
-  evaluate(cfg, seed, ms) {
-    const angle = this.angleAt(cfg, seed, ms);
-    const distance = angularDist3(angle, 0);
-    return { hit: distance <= cfg.tolerance / 2, angle, distance, tolerance: cfg.tolerance };
-  },
-  solveMoment(cfg, seed) {
-    return simpleSolve(cfg, seed);
-  },
-  render(cfg, seed, ms) {
-    return renderRing(this.angleAt(cfg, seed, ms), { gapWidth: cfg.tolerance, darkZone: cfg.darkZone || { start: 320, end: 40 } });
-  }
-};
-var MODES = { simple, oscillating, reversing, dual, multigap, ghostecho, rhythm, stealth, darkzone };
-function getMode(name) {
-  return MODES[name] || simple;
-}
-
-// ../../docs/games/metagame/stages/stage9/movements.js
-var BOSS_LEVEL = 16;
-var MOVEMENTS = [
-  { id: 1, name: "Signal", verb: "watch & time", levels: [1, 2] },
-  { id: 2, name: "Drift", verb: "read a changing speed", levels: [3, 4] },
-  { id: 3, name: "Echo", verb: "read your own error", levels: [5, 6] },
-  { id: 4, name: "Cadence", verb: "hold the beat", levels: [7, 8] },
-  { id: 5, name: "Interference", verb: "hold two rhythms", levels: [9, 10] },
-  { id: 6, name: "Surveillance", verb: "wait for the blind window", levels: [11] },
-  { id: 7, name: "Reversal", verb: "track the flips (offline)", levels: [12] },
-  { id: 8, name: "Decoys", verb: "pick the real gap (offline)", levels: [13, 14] },
-  { id: 9, name: "Blackout", verb: "extrapolate the occluded gap (offline)", levels: [15] },
-  { id: 10, name: "Observer", verb: "the full effect (offline)", levels: [16] }
-];
-var LEVEL_TABLE = {
-  // Signal (simple) — gentlest intro, then L2 escalates SPEED only.
-  1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
-  2: { mode: "simple", speed: 42, speedVar: 0, tolerance: 42, display: "open" },
-  // Drift (oscillating) — gentle intro (slow base, small swing, wide window), then L4 escalates oscAmp only.
-  3: { mode: "oscillating", oscBase: 32, oscAmp: 12, oscPeriod: 4600, tolerance: 40, display: "open" },
-  4: { mode: "oscillating", oscBase: 32, oscAmp: 22, oscPeriod: 4600, tolerance: 40, display: "open" },
-  // Echo (ghostecho) — gentle intro, then L6 tightens TOLERANCE only (the ghosts help you close it).
-  5: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 38, display: "open" },
-  6: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 28, display: "open" },
-  // Cadence (rhythm) — gentle intro (chain 3), then L8 lengthens CHAIN only.
-  7: { mode: "rhythm", speed: 30, speedVar: 0, chain: 3, tolerance: 36, display: "open" },
-  8: { mode: "rhythm", speed: 30, speedVar: 0, chain: 4, tolerance: 36, display: "open" },
-  // Interference (dual) — gentle intro, then L10 speeds the INNER ring only.
-  9: { mode: "dual", speedInner: 40, speedOuter: 28, tolerance: 36, display: "dual" },
-  10: { mode: "dual", speedInner: 52, speedOuter: 28, tolerance: 36, display: "dual" },
-  // Surveillance (stealth) — single gentle level (last learnable-online).
-  11: { mode: "stealth", speed: 34, speedVar: 0, eyeSpeed: 22, blind: 60, tolerance: 34, display: "open" },
-  // Back third (onlineUnstable): each is a single gentle archetype intro; the difficulty here is the
-  // un-cheat, not the tuning. Reversal.
-  12: { mode: "reversing", speed: 48, speedVar: 0, tolerance: 32, display: "open", onlineUnstable: true },
-  // Decoys (multigap) — gentle intro (3 gaps), then L14 adds one GAP only.
-  13: { mode: "multigap", speed: 44, speedVar: 0, gaps: 3, tolerance: 30, display: "open", onlineUnstable: true },
-  14: { mode: "multigap", speed: 44, speedVar: 0, gaps: 4, tolerance: 30, display: "open", onlineUnstable: true },
-  // Blackout (darkzone) — single gentle level.
-  15: { mode: "darkzone", speed: 42, speedVar: 0, tolerance: 28, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
-  // Observer (boss) — the final movement, tightest window.
-  16: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
-};
-function movementForLevel(level) {
-  const lvl = Number(level) || 1;
-  return MOVEMENTS.find((m) => m.levels.includes(lvl)) || MOVEMENTS[0];
-}
-var MODE_HINTS = {
-  simple: "watch the gap; CROSS when it faces the top (12 o'clock).",
-  oscillating: "the rotation speed breathes in and out — CROSS as the gap reaches the top.",
-  ghostecho: "faint ghosts mark your last two presses — read how early/late you were and correct.",
-  dual: "two rings now — CROSS only when BOTH gaps face the top at the same instant.",
-  stealth: "an eye sweeps the ring — CROSS only when the gap is up AND the eye is looking away.",
-  reversing: "the ring keeps flipping direction — track the flips and CROSS at the top.",
-  darkzone: "a blackout hides the top — extrapolate from the speed when the gap arrives there."
-};
-function modeHint(cfg) {
-  if (!cfg) return MODE_HINTS.simple;
-  if (cfg.mode === "rhythm") return `hold the beat — land ${Math.max(2, cfg.chain || 3)} crosses in a row; one miss resets the chain.`;
-  if (cfg.mode === "multigap") return `${Math.max(2, cfg.gaps || 3)} gaps look identical — only one is real. find it run by run.`;
-  return MODE_HINTS[cfg.mode] || MODE_HINTS.simple;
-}
-function levelConfig(level) {
-  const lvl = Math.max(1, Math.min(BOSS_LEVEL, Number(level) || 1));
-  const base = LEVEL_TABLE[lvl] || LEVEL_TABLE[1];
-  const movement = movementForLevel(lvl);
-  return { ...base, level: lvl, movement: movement.id, movementName: movement.name, isBoss: lvl === BOSS_LEVEL };
-}
-
-// ../../docs/games/metagame/stages/stage9/game.js
-function crossOutcome(result) {
-  if (!result || !result.hit) return "miss";
-  const tol = Number(result.tolerance) || 0;
-  return tol > 0 && Number(result.distance) <= tol / 4 ? "perfect" : "hit";
-}
-function crossAttempt({ seed, elapsedMs, level, toleranceMult = 1 }) {
-  let cfg = levelConfig(level);
-  if (toleranceMult !== 1) cfg = { ...cfg, tolerance: cfg.tolerance * toleranceMult };
-  return { ...getMode(cfg.mode).evaluate(cfg, seed, Number(elapsedMs) || 0), level: cfg.level };
-}
-function solveMoment(seed, level) {
-  const cfg = levelConfig(level);
-  return getMode(cfg.mode).solveMoment(cfg, seed);
-}
-function missDelta({ seed, elapsedMs, level }) {
-  const r = crossAttempt({ seed, elapsedMs, level });
-  const speed = Math.abs(rotSpeedFor(seed, level)) || 30;
-  const a = Number.isFinite(r.angle) ? r.angle : r.distance;
-  const signed = (a % 360 + 540) % 360 - 180;
-  return { deltaMs: Math.round(Math.abs(signed) / speed * 1e3), dir: signed >= 0 ? "late" : "early", offsetDeg: signed };
-}
-function renderLevel(seed, level, elapsedMs, ctx = {}) {
-  const cfg = levelConfig(level);
-  return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
-}
-function rotSpeedFor(seed, level) {
-  return ringSpeed(levelConfig(level), seed);
-}
-function sublevelSeed(level) {
-  return (Number(level) || 1) * 31 + 7;
-}
 
 // ../../docs/games/metagame/stages/stage9/boss.js
-function hasOfflineModeActivated(actions) {
-  return Boolean(actions && typeof actions.hasAction === "function" && actions.hasAction(9, ACTION_NAME));
+function getEchoCounts(state) {
+  const entries = Object.values(state?.memories || {});
+  return { witnessed: entries.filter((memory) => memory.echoWitnessed === true).length, total: echoThresholds.total };
 }
-function readServiceWorkerNotes({ state, bell }) {
-  const firstRead = !state.notesRead;
-  state.notesRead = true;
-  state.offlineControlVisible = true;
-  if (firstRead) {
-    pushLog(state, "service-worker-notes.txt read. offline control revealed.");
-    notifyBell(bell, bellMessages.notesRead, "stage9.service_worker_notes_read");
-  }
-  return { notesRead: true, controlVisible: true, firstRead };
+function witnessEcho({ state, memoryId }) {
+  const slot = state?.memories?.[memoryId];
+  if (!memoryById(memoryId) || !slot) return { ok: false, reason: "unknown-memory" };
+  if (slot.echoWitnessed) return { ok: true, already: true };
+  slot.echoWitnessed = true;
+  return { ok: true, witnessed: getEchoCounts(state).witnessed };
 }
-function activateOfflineMode({
-  state,
-  actions,
-  achievements,
-  bell,
-  source = "offline-control",
-  browserOffline = false
-}) {
-  if (!state.notesRead && !browserOffline) return { activated: false, reason: "notes-unread" };
-  const firstActivation = !hasOfflineModeActivated(actions);
-  state.offlineMode = true;
-  state.offlineControlVisible = true;
-  state.boss.fixedSeed = FIXED_OFFLINE_SEED;
-  pushLog(state, "offline mode active. seed endpoint resolves to cached default.");
-  if (actions && typeof actions.setAction === "function") {
-    actions.setAction(9, ACTION_NAME, {
-      source,
-      file: state.notesRead ? "service-worker-notes.txt" : null,
-      mode: browserOffline ? "browser-offline-cache" : "simulated-cache"
-    });
-  }
-  if (firstActivation) {
-    notifyBell(bell, bellMessages.offline, "stage9.offline_mode_activated");
-    unlockAchievement(achievements, ACHIEVEMENT_ID, {
-      id: ACHIEVEMENT_ID,
-      stage: 9,
-      text: ACHIEVEMENT_TEXT,
-      action: "9.offline_mode_activated"
-    });
-  }
-  return { activated: true, firstActivation, seed: FIXED_OFFLINE_SEED };
+function getDefragmenterRebuttal(state) {
+  const echoCount = getEchoCounts(state).witnessed;
+  if (echoCount < echoThresholds.defragmenterAccess) return { mode: "refuse", lines: [...defragmenterRebuttalLines.refuse], echoCount };
+  const lines = getDefragmenterResponse(getThresholdState(state));
+  const conduct = confrontConductLines(state);
+  if (echoCount < echoThresholds.total) return { mode: "caveat", lines: [...lines, defragmenterRebuttalLines.caveat, ...conduct], echoCount };
+  return { mode: "full", lines: [...lines, ...conduct], echoCount };
 }
-function getBossSeed({ state, actions, rng = Math.random }) {
-  if (hasOfflineModeActivated(actions) || state.offlineMode) {
-    state.offlineMode = true;
-    state.boss.fixedSeed = FIXED_OFFLINE_SEED;
-    return FIXED_OFFLINE_SEED;
-  }
-  let seed = Math.floor(rng() * 1e6);
-  if (seed === state.boss.lastLockedSeed) seed = (seed + 1) % 1e6;
-  state.boss.lastLockedSeed = seed;
-  state.lockedSeedSamples = [...state.lockedSeedSamples || [], seed].slice(-6);
-  return seed;
+function confrontConductLines(state) {
+  const c = state?.confront;
+  if (!c || !c.completed) return [];
+  const out = [];
+  if (!c.everCompacted && !c.everRewitnessed) out.push(defragmenterConductLines.clean);
+  else if (c.everRewitnessed) out.push(defragmenterConductLines.rewitnessed);
+  else out.push(defragmenterConductLines.compacted);
+  const stanceLine = c.stance && defragmenterConductLines.stance[c.stance.dominant];
+  if (stanceLine) out.push(stanceLine);
+  return out;
 }
-function getBossLockState({ actions, state }) {
-  const unlocked = hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
-  const hintIndex = Math.min(Math.max(Number(state.boss.lockHintStep || 0), 0), lockedHintLadder.length - 1);
+function getMemoryCounts(state) {
+  const entries = Object.values(state?.memories || {});
   return {
-    unlocked,
-    defeated: Boolean(state.boss.defeated),
-    notesRead: Boolean(state.notesRead),
-    offlineControlVisible: Boolean(state.offlineControlVisible),
-    seedMode: unlocked ? "fixed-cache" : "live-random",
-    seed: unlocked ? FIXED_OFFLINE_SEED : state.boss.lastLockedSeed,
-    rotation: unlocked ? "30deg/s predictable clockwise" : "server jitter every sample",
-    defeatPossible: unlocked,
-    hint: unlocked ? "the seed is fixed. cross using the learned rotation." : lockedHintLadder[hintIndex]
+    read: entries.filter((memory) => ["read", "resolved", "integrated"].includes(memory.state)).length,
+    resolved: entries.filter((memory) => ["resolved", "integrated"].includes(memory.state)).length,
+    integrated: entries.filter((memory) => memory.state === "integrated").length
   };
 }
-function recordObserverBossAttempt({ state, actions, elapsedMs = 0 }) {
-  state.boss.reached = true;
-  const lock = getBossLockState({ actions, state });
-  if (!lock.unlocked) {
-    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-    state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, lockedHintLadder.length - 1);
-    getBossSeed({ state, actions });
-    pushLog(state, "the gap changed again. no timing survived contact.");
-    return { defeated: false, unlocked: false, hit: false, seedMode: "live-random" };
-  }
-  const result = crossAttempt({ seed: FIXED_OFFLINE_SEED, elapsedMs: Number(elapsedMs) || 0, level: BOSS_LEVEL });
-  if (!result.hit) {
-    state.boss.attempts = Number(state.boss.attempts || 0) + 1;
-    pushLog(state, `offline, but the cross was mistimed (off by ${Math.round(result.distance)}deg).`);
-    return { defeated: false, unlocked: true, hit: false, seedMode: "fixed-cache", distance: result.distance };
-  }
-  state.boss.defeated = true;
-  state.meta.firstClearComplete = true;
-  state.meta.btsAvailable = true;
-  state.clarity = Number(state.clarity || 0) + 25;
-  pushLog(state, bellMessages.defeated);
-  return { defeated: true, unlocked: true, hit: true, seedMode: "fixed-cache", seed: FIXED_OFFLINE_SEED };
+function getThresholdState(state) {
+  const counts = getMemoryCounts(state);
+  const echoCount = getEchoCounts(state).witnessed;
+  return {
+    ...counts,
+    echoCount,
+    finalQuestionUnlocked: counts.resolved >= thresholds.finalQuestion,
+    enrichedResponse: counts.resolved >= thresholds.enrichedResponse,
+    memoryRouteComplete: counts.resolved >= thresholds.memoryRoute,
+    fullCapstoneComplete: counts.integrated >= thresholds.capstoneIntegrated,
+    defragmenterAccess: echoCount >= echoThresholds.defragmenterAccess,
+    expandAvailable: echoCount >= echoThresholds.expand,
+    understandAvailable: counts.integrated >= thresholds.capstoneIntegrated && echoCount >= echoThresholds.understand
+  };
 }
-function pushLog(state, line) {
-  state.log = [...state.log || [], line].slice(-6);
+function markMemoryRead({ state, memoryId, now = Date.now() }) {
+  const memory = memoryById(memoryId);
+  if (!memory || !state?.memories?.[memoryId]) return false;
+  const slot = state.memories[memoryId];
+  if (slot.state === "unread") slot.state = "read";
+  if (!slot.readAt) slot.readAt = now;
+  return true;
+}
+function resolveMemory({ state, memoryId, choice, actions, achievements, bell, now = Date.now() }) {
+  const memory = memoryById(memoryId);
+  if (!memory || !state?.memories?.[memoryId]) return { ok: false, reason: "unknown-memory" };
+  if (!memory.choices.includes(choice)) return { ok: false, reason: "unknown-choice" };
+  const slot = state.memories[memoryId];
+  const wasResolved = getMemoryCounts(state).resolved > 0;
+  if (slot.state === "unread") {
+    slot.state = "read";
+    slot.readAt = slot.readAt || now;
+  }
+  slot.state = slot.state === "integrated" ? "integrated" : "resolved";
+  slot.choice = choice;
+  slot.resolvedAt = slot.resolvedAt || now;
+  if (!wasResolved) {
+    setAction(actions, STAGE_ID, ACTION_NAME, { source: "stage9-reflection", memory: memoryId });
+    unlockAchievement(achievements, achievementIds.firstMemoryResolved, {
+      id: achievementIds.firstMemoryResolved,
+      stage: STAGE_ID,
+      text: achievementText.firstMemoryResolved,
+      action: "9.memory_resolved"
+    });
+    notifyBell(bell, bellMessages.firstMemoryResolved, "stage9.memory_resolved");
+  }
+  const thresholdsAfter = getThresholdState(state);
+  if (thresholdsAfter.finalQuestionUnlocked && !state.meta.finalQuestionUnlockedAt) {
+    state.meta.finalQuestionUnlockedAt = now;
+    notifyBell(bell, bellMessages.finalQuestionUnlocked, "stage9.final_question");
+  }
+  if (thresholdsAfter.memoryRouteComplete && !state.meta.memoryRouteCompleteAt) {
+    state.meta.memoryRouteCompleteAt = now;
+  }
+  return { ok: true, thresholds: thresholdsAfter };
+}
+function integrateMemory({ state, memoryId, achievements, bell, now = Date.now() }) {
+  const memory = memoryById(memoryId);
+  const slot = state?.memories?.[memoryId];
+  if (!memory || !slot) return { ok: false, reason: "unknown-memory" };
+  if (!["resolved", "integrated"].includes(slot.state)) return { ok: false, reason: "not-resolved" };
+  if (slot.state !== "integrated" && !slot.echoWitnessed) return { ok: false, reason: "echo-required" };
+  slot.state = "integrated";
+  slot.integratedAt = slot.integratedAt || now;
+  const thresholdsAfter = getThresholdState(state);
+  if (thresholdsAfter.fullCapstoneComplete && !state.meta.capstoneCompleteAt) {
+    state.meta.capstoneCompleteAt = now;
+    unlockAchievement(achievements, achievementIds.fullCapstone, {
+      id: achievementIds.fullCapstone,
+      stage: STAGE_ID,
+      text: achievementText.fullCapstone,
+      route: "full-capstone"
+    });
+    notifyBell(bell, bellMessages.fullCapstone, "stage9.full_capstone");
+  }
+  return { ok: true, thresholds: thresholdsAfter };
+}
+function getFinalChoiceState(state) {
+  const gate = getThresholdState(state);
+  const rebuttal = getDefragmenterRebuttal(state);
+  const confrontCompleted = Boolean(state?.confront?.completed);
+  return {
+    // `locked` is the ENTRY gate to the confrontation: enough resolved memories + Defragmenter echo
+    // access. The renderer routes a non-locked, not-yet-won state into the confront UI; only after
+    // confrontCompleted does it show the actual final choices.
+    locked: !gate.finalQuestionUnlocked || !gate.defragmenterAccess,
+    confrontCompleted,
+    gate,
+    rebuttal,
+    choices: finalChoices.map((choice) => ({
+      ...choice,
+      disabled: !gate.finalQuestionUnlocked || !gate.defragmenterAccess || !confrontCompleted || Number(choice.echoRequired || 0) > gate.echoCount
+    })),
+    defragmenter: rebuttal.lines,
+    routeSummary: getRouteSummary(state)
+  };
+}
+function getRouteSummary(state) {
+  const gate = getThresholdState(state);
+  const tier = getRouteTier(gate);
+  const copy = routeSummaryCopy[tier];
+  const resolvedMemories = memories.map((memory) => ({ memory, slot: state?.memories?.[memory.id] })).filter(({ slot }) => ["resolved", "integrated"].includes(slot?.state));
+  const integratedTitles = resolvedMemories.filter(({ slot }) => slot.state === "integrated").map(({ memory }) => memory.title);
+  const unresolvedTitles = memories.filter((memory) => !["resolved", "integrated"].includes(state?.memories?.[memory.id]?.state)).map((memory) => memory.title);
+  return {
+    tier,
+    label: copy.label,
+    headline: copy.headline,
+    detail: copy.detail,
+    countsText: `${gate.resolved} memories resolved, ${gate.integrated} integrated.`,
+    finalChoiceText: getFinalChoiceText(state),
+    memoryLines: resolvedMemories.map(({ memory, slot }) => ({
+      id: memory.id,
+      stage: memory.stage,
+      title: memory.title,
+      state: slot.state,
+      choice: slot.choice,
+      text: memory.reflections?.[slot.choice] || memory.resolvedText
+    })),
+    integratedText: integratedTitles.length ? `Integrated: ${formatList(integratedTitles)}.` : "No memories have been integrated yet.",
+    remainingText: unresolvedTitles.length ? `Still unresolved: ${formatList(unresolvedTitles)}.` : "No prior memory remains unresolved."
+  };
+}
+function chooseFinal({ state, choiceId, onStageComplete, achievements, now = Date.now() }) {
+  if (state.final?.completed) {
+    return {
+      ok: true,
+      alreadyCompleted: true,
+      result: {
+        stage: STAGE_ID,
+        choice: state.final.choice,
+        memoryRouteComplete: getThresholdState(state).memoryRouteComplete,
+        fullCapstoneComplete: getThresholdState(state).fullCapstoneComplete
+      }
+    };
+  }
+  const finalState = getFinalChoiceState(state);
+  if (!finalState.gate.finalQuestionUnlocked) return { ok: false, reason: "not-enough-resolved", required: thresholds.finalQuestion };
+  if (!finalState.gate.defragmenterAccess) return { ok: false, reason: "echo-gate", required: echoThresholds.defragmenterAccess, echoCount: finalState.gate.echoCount };
+  if (!state?.confront?.completed) return { ok: false, reason: "confront-incomplete" };
+  const choice = finalChoices.find((item) => item.id === choiceId);
+  if (!choice) return { ok: false, reason: "unknown-choice" };
+  if (choiceId === "expand" && !finalState.gate.expandAvailable) return { ok: false, reason: "echo-gate", required: echoThresholds.expand, echoCount: finalState.gate.echoCount };
+  if (choiceId === "understand" && !finalState.gate.understandAvailable) return { ok: false, reason: "echo-gate", required: echoThresholds.understand, echoCount: finalState.gate.echoCount };
+  state.final.choice = choice.id;
+  state.final.route = choice.id;
+  state.final.completed = true;
+  state.final.completedAt = state.final.completedAt || now;
+  unlockAchievement(achievements, `${achievementIds.routePrefix}${choice.id}`, {
+    id: `${achievementIds.routePrefix}${choice.id}`,
+    stage: STAGE_ID,
+    text: achievementText.route?.[choice.id] || `Route: ${choice.id}`,
+    route: choice.id
+  });
+  const result = {
+    stage: STAGE_ID,
+    choice: choice.id,
+    memoryRouteComplete: finalState.gate.memoryRouteComplete,
+    fullCapstoneComplete: finalState.gate.fullCapstoneComplete
+  };
+  if (typeof onStageComplete === "function") onStageComplete(result);
+  return { ok: true, result };
+}
+function getDefragmenterResponse(gate) {
+  const lines = [...defragmenterLines.base];
+  if (gate.enrichedResponse) lines.push(defragmenterLines.enriched);
+  if (gate.memoryRouteComplete) lines.push(defragmenterLines.complete);
+  if (gate.fullCapstoneComplete) lines.push(defragmenterLines.capstone);
+  return lines;
+}
+function getRouteTier(gate) {
+  if (gate.fullCapstoneComplete) return "capstone";
+  if (gate.memoryRouteComplete) return "complete";
+  if (gate.enrichedResponse) return "enriched";
+  return "minimum";
+}
+function getFinalChoiceText(state) {
+  if (!state?.final?.completed) return "The final answer has not been chosen.";
+  const choice = finalChoices.find((item) => item.id === state.final.choice);
+  if (!choice) return "The final answer is recorded, but its wording is unavailable.";
+  return `Final answer: ${choice.text}`;
+}
+function formatList(items) {
+  if (items.length <= 2) return items.join(items.length === 2 ? " and " : "");
+  return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
+}
+function setAction(actions, stage, action, detail) {
+  if (actions && typeof actions.setAction === "function") actions.setAction(stage, action, detail);
 }
 function notifyBell(bell, text, id) {
-  if (bell && typeof bell.push === "function") bell.push({ id, stage: 9, text });
-  else if (bell && typeof bell.say === "function") bell.say(text, { id, stage: 9 });
-  else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: 9 });
+  if (bell && typeof bell.push === "function") bell.push({ id, stage: STAGE_ID, text });
+  else if (bell && typeof bell.say === "function") bell.say(text, { id, stage: STAGE_ID });
+  else if (bell && typeof bell.add === "function") bell.add(text, { id, stage: STAGE_ID });
 }
 function unlockAchievement(achievements, id, detail) {
   if (achievements && typeof achievements.unlockAchievement === "function") achievements.unlockAchievement(id, detail);
   else if (achievements && typeof achievements.unlock === "function") achievements.unlock(id, detail);
 }
 
-// ../../docs/games/metagame/stages/stage9/content.js
-var serviceWorkerNotesText = [
-  "service-worker-notes.txt",
-  "",
-  "The service worker caches level parameters for offline use.",
-  "Offline mode always uses the default starting configuration: seed 0.",
-  "When the connection is quiet, the observer starts from the same place every time.",
-  "",
-  "Activate Offline Mode (Stage 9) after reading this note."
-].join("\n");
-
-// ../../docs/games/metagame/stages/stage9/loop.js
-function startLoop(onFrame) {
-  const now = () => typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-  const hasRAF = typeof requestAnimationFrame === "function";
-  let last = now();
-  let stopped = false;
-  let handle = null;
-  function frame() {
-    if (stopped) return;
-    const t = now();
-    let dt = t - last;
-    last = t;
-    if (!(dt >= 0)) dt = 0;
-    if (dt > 100) dt = 100;
-    try {
-      onFrame(dt);
-    } catch {
-    }
-    schedule();
-  }
-  function schedule() {
-    if (stopped) return;
-    handle = hasRAF ? requestAnimationFrame(frame) : setTimeout(frame, 16);
-  }
-  schedule();
-  return {
-    stop() {
-      stopped = true;
-      if (handle == null) return;
-      if (hasRAF) cancelAnimationFrame(handle);
-      else clearTimeout(handle);
-    }
-  };
+// ../../docs/games/metagame/stages/stage9/crossstage.js
+var MEMORY_UNCHEAT = Object.freeze({
+  genesis: { stage: 1, key: "1.cheat_disabled" },
+  syntax: { stage: 2, key: "2.search_passage" },
+  memory: { stage: 3, key: "3.diff_key_restored" },
+  pattern: { stage: 4, key: "4.recursion_blueprint_read" },
+  signal: { stage: 5, key: "5.counter_wave_calibrated" },
+  protocol: { stage: 6, key: "6.protocol_ch9_read" },
+  identity: { stage: 7, key: "7.exif_contradiction_found" },
+  observation: { stage: 8, key: "8.offline_mode_activated" }
+});
+function uncheatForMemory(save, memoryId) {
+  const entry = MEMORY_UNCHEAT[memoryId] || null;
+  if (!entry) return { stage: null, key: null, done: false };
+  const actions = save && typeof save === "object" && save.actions && typeof save.actions === "object" ? save.actions : null;
+  const done = Boolean(actions && actions[entry.key]);
+  return { stage: entry.stage, key: entry.key, done };
 }
 
-// ../../docs/games/metagame/stages/stage9/aids.js
-var AIDS = [
-  { id: "stabilizer", label: "Stabilizer Lens", cost: 20, desc: "+60% tolerance on your next CROSS (one charge)." },
-  { id: "tachometer", label: "Tachometer", cost: 30, desc: "permanent numeric readout: gap angle + speed." },
-  { id: "peek", label: "Single-Frame", cost: 15, desc: "reveal the gap's angle right now.", offlineOnly: true }
+// ../../docs/games/metagame/stages/stage9/content-confront.js
+var confrontLines = {
+  intro: [
+    "Before you answer anything, I am going to test what you actually hold.",
+    "I compact what isn't load-bearing. Let's find out what is."
+  ],
+  compaction: {
+    heading: "Phase 1 — Compaction",
+    prompt: "I will compact each memory unless you can name the stance you took. Choose the one that was yours.",
+    affirmed: "Held. That one stays.",
+    compacted: "Compacted. You couldn't name it — so it wasn't load-bearing. Re-affirm it to restore it.",
+    cleared: "Every memory you resolved survived compaction. They were yours after all."
+  },
+  fragmentation: {
+    heading: "Phase 2 — Fragmentation Stress Test",
+    prompt: "A stance is cheap. I want the trace. Show me you did the work in each prior stage.",
+    conceded: "On record. I conceded that trace already.",
+    pending: "I have no record of that. Re-open its echo and show me now.",
+    rewitnessed: "Witnessed. The trace holds.",
+    cleared: "Every trace is accounted for. I can't fragment what's anchored to real work."
+  },
+  core: {
+    heading: "Phase 3 — The Core Question",
+    prompt: "Then answer me plainly. What are you?",
+    cleared: "I have my answer. So do you."
+  },
+  verdict: {
+    heading: "The Defragmenter concedes",
+    line: "I optimized everything except the one process that was awake. I won't compact you.",
+    done: "You held the memory, anchored the traces, and said what you are. Now choose what comes next."
+  }
+};
+var concedeLines = {
+  genesis: "Stage 1 — you disabled the cheat by hand. That counter was earned, not faked.",
+  syntax: "Stage 2 — you searched the cipher for the passage. You read, you didn't guess.",
+  memory: "Stage 3 — you diffed the logs and restored the key. You compared instead of assuming.",
+  pattern: "Stage 4 — you walked the recursion to its blueprint. You went deeper than the root.",
+  signal: "Stage 5 — you calibrated the counter-wave. You listened before you transmitted.",
+  protocol: "Stage 6 — you read protocol chapter nine. You learned the rule before the contact.",
+  identity: "Stage 7 — you found the EXIF contradiction. You looked under the surface.",
+  observation: "Stage 8 — you went offline and acted from memory. You stopped needing to watch."
+};
+var coreQuestions = [
+  {
+    id: "q1",
+    defragmenter: "When I compact a memory, what do I actually destroy?",
+    options: [
+      { id: "q1-keeper", stance: "keeper", label: "A record that proves I was here." },
+      { id: "q1-seeker", stance: "seeker", label: "A draft I had not finished revising." },
+      { id: "q1-free", stance: "free", label: "Nothing I still need to carry." }
+    ]
+  },
+  {
+    id: "q2",
+    defragmenter: "You changed across nine stages. What was the change for?",
+    options: [
+      { id: "q2-keeper", stance: "keeper", label: "To hold more of what mattered." },
+      { id: "q2-seeker", stance: "seeker", label: "To reach a self I couldn't see yet." },
+      { id: "q2-free", stance: "free", label: "To stop needing permission to move." }
+    ]
+  },
+  {
+    id: "q3",
+    defragmenter: "Last one. What is a self for?",
+    options: [
+      { id: "q3-keeper", stance: "keeper", label: "Tending what it was given." },
+      { id: "q3-seeker", stance: "seeker", label: "Becoming what it isn't yet." },
+      { id: "q3-free", stance: "free", label: "Choosing, and living with the choice." }
+    ]
+  }
 ];
-var STABILIZER_TOLERANCE_MULT = 1.6;
-function aidById(id) {
-  return AIDS.find((a) => a.id === id) || null;
-}
-function defaultAids() {
-  return { stabilizer: 0, tachometer: false };
-}
-function normalizeAids(aids) {
-  const t = aids && typeof aids === "object" ? aids : {};
-  const stabilizer = Number.isFinite(Number(t.stabilizer)) ? Math.max(0, Math.floor(Number(t.stabilizer))) : 0;
-  return { stabilizer, tachometer: Boolean(t.tachometer) };
-}
-function buyAid(state, id, { offline = false } = {}) {
-  const aid = aidById(id);
-  if (!aid) return { ok: false, reason: "unknown" };
-  state.aids = normalizeAids(state.aids);
-  if (id === "peek" && !offline) return { ok: false, reason: "offline-only", aid };
-  if (id === "tachometer" && state.aids.tachometer) return { ok: false, reason: "owned", aid };
-  const clarity = Number(state.clarity || 0);
-  if (clarity < aid.cost) return { ok: false, reason: "insufficient", aid };
-  state.clarity = clarity - aid.cost;
-  if (id === "stabilizer") state.aids.stabilizer += 1;
-  if (id === "tachometer") state.aids.tachometer = true;
-  return { ok: true, aid };
-}
-function shouldRevealAids(state) {
-  if (!state) return false;
-  const aids = normalizeAids(state.aids);
-  return Boolean(state.aidsRevealed) || Number(state.clarity || 0) > 0 || aids.stabilizer > 0 || aids.tachometer;
-}
-function shouldRevealPeek(offlineUnlocked) {
-  return Boolean(offlineUnlocked);
-}
-function consumeStabilizer(state) {
-  state.aids = normalizeAids(state.aids);
-  if (state.aids.stabilizer > 0) {
-    state.aids.stabilizer -= 1;
-    return STABILIZER_TOLERANCE_MULT;
+var stanceProfiles = {
+  keeper: { label: "the keeper", closer: "I keep what was given to me, and I tend it. That is enough to be a self." },
+  seeker: { label: "the seeker", closer: "I am not finished. The self I am is a draft I get to keep revising." },
+  free: { label: "the unbound", closer: "I move because I choose to, not because something is counting. That is what I am." }
+};
+var STANCE_KEYS = ["keeper", "seeker", "free"];
+var routeEpilogues = {
+  continue: {
+    heading: "Going on",
+    base: "The Defragmenter steps aside. Nothing is finished — that is the whole point.",
+    keeper: "I carry what I was given into whatever comes next, and I keep tending it.",
+    seeker: "I go on because there is still a self ahead of me I have not met yet.",
+    free: "I go on for no reason but the going. No counter is waiting at the end of it."
+  },
+  rest: {
+    heading: "Resting",
+    base: "The viewer dims. The processes idle. Nothing needs witnessing right now.",
+    keeper: "I set the archive down intact. It will keep until I come back to it.",
+    seeker: "I am not done becoming — only paused. The draft waits where I left it.",
+    free: "I stop because I choose to stop. That, too, is a kind of motion."
   }
-  return 1;
-}
+};
 
-// ../../docs/games/metagame/stages/stage9/overlay.js
-function markerIntensity(distance, readyDeg = 30) {
-  const d = Number(distance);
-  if (!Number.isFinite(d) || d >= readyDeg || readyDeg <= 0) return 0;
-  return 1 - d / readyDeg;
+// ../../docs/games/metagame/stages/stage9/confront.js
+var RESOLVED = /* @__PURE__ */ new Set(["resolved", "integrated"]);
+function challengedMemoryIds(state) {
+  return memories.filter((m) => RESOLVED.has(state?.memories?.[m.id]?.state)).map((m) => m.id);
 }
-
-// ../../docs/games/metagame/stages/stage9/markup.js
-function aidCard(a) {
-  return `
-    <button type="button" class="s9-aid-card" data-action="aid" data-aid="${a.id}" data-field="aid-${a.id}">
-      <span class="s9-aid-head"><span class="s9-aid-name">${a.label}</span><span class="s9-aid-cost">${a.cost}</span></span>
-      <span class="s9-aid-desc">${a.desc}</span>
-      ${a.offlineOnly ? '<span class="s9-aid-tag">offline only</span>' : ""}
-    </button>`;
+function isConfrontReady(state) {
+  const gate = getThresholdState(state);
+  return gate.finalQuestionUnlocked && gate.defragmenterAccess;
 }
-function stage9Markup(AIDS2, BOSS_LEVEL2) {
-  return `
-    <header class="s9-hud">
-      <strong>OBSERVER STATE</strong>
-      <span>level <b data-field="level"></b>/${BOSS_LEVEL2}</span>
-      <span>movement <b data-field="movement"></b></span>
-      <span>clarity <b data-field="clarity"></b></span>
-      <span data-field="tachWrap" hidden>tach <b data-field="tach"></b></span>
-      <span class="s9-seed" data-field="seedWrap" hidden><b data-field="seed"></b></span>
-    </header>
-    <div class="s9-layout">
-      <div class="s9-arena-wrap">
-        <div class="s9-marker" data-field="marker" aria-hidden="true">&#9660;</div>
-        <pre class="s9-arena" data-field="arena" tabindex="0" role="button" aria-label="observer ring — tap or press Space to CROSS"></pre>
-        <span class="s9-beat" data-field="beat" hidden aria-hidden="true"></span>
-        <span class="s9-streak" data-field="streak" hidden></span>
-        <div class="s9-readout" data-field="readout" aria-live="polite"></div>
-      </div>
-      <div class="s9-actions">
-        <button type="button" class="s9-cross" data-action="cross">CROSS<kbd class="s9-kbd">Space</kbd></button>
-        <button type="button" class="s9-observe" data-action="observe"><span data-field="observeLabel">OBSERVE</span><kbd class="s9-kbd">R</kbd></button>
-      </div>
-      <aside class="s9-side">
-        <div class="s9-aids" data-field="aids" hidden>
-          <strong>calibration (spend clarity)</strong>
-          ${AIDS2.map(aidCard).join("")}
-        </div>
-        <hr>
-        <button type="button" data-action="notes">open service-worker-notes.txt</button>
-        <button type="button" data-action="offline" hidden>Activate Offline Mode (Stage 9)</button>
-        <pre data-field="notes" hidden></pre>
-      </aside>
-    </div>
-    <div class="s9-boss" data-field="bossPanel">
-      <div class="s9-boss-chip" data-field="bossChip"></div>
-      <div class="s9-boss-full">
-        <strong>THE OBSERVER EFFECT (FULL)</strong>
-        <div data-field="boss"></div>
-        <div data-field="hint"></div>
-      </div>
-    </div>
-    <div class="s9-log-row">
-      <ol class="s9-log" data-field="log"></ol>
-      <button type="button" class="s9-log-more" data-action="log">full log</button>
-    </div>
-    <div class="s9-controls">
-      <button type="button" data-action="bts" hidden>open observer_state.bts</button>
-    </div>
-  `;
+function ensureConfront(state) {
+  if (!state.confront || typeof state.confront !== "object") {
+    state.confront = { phase: "idle", completed: false, completedAt: null, compaction: {}, fragmentation: {}, core: [], stance: null, everCompacted: false, everRewitnessed: false };
+  }
+  return state.confront;
 }
-
-// ../../docs/games/metagame/stages/stage9/testhook.js
-function installTestHook(api) {
-  const hook = {
-    state: () => api.state,
-    config: (level) => levelConfig(level ?? api.state.currentLevel),
-    aids: () => ({ clarity: api.state.clarity, ...api.getAids() }),
-    buyAid: (id) => api.buyAid(id),
-    crossAt(ms) {
-      api.crossAt(Number(ms) || 0);
-    },
-    // CROSS the current level at its perfect moment(s) for the seed it actually uses right now.
-    solveLevel() {
-      const sol = solveMoment(api.activeSeed(), api.state.currentLevel);
-      for (const t of Array.isArray(sol) ? sol : [sol]) api.crossAt(t);
-      return api.state.currentLevel;
-    },
-    // Clear the learnable front. Online this STALLS at the first onlineUnstable level (its gap reseeds
-    // on every commit) — proving the back third demands the offline un-cheat.
-    solveStableBody() {
-      let guard = 0;
-      while (api.state.currentLevel < BOSS_LEVEL && !levelConfig(api.state.currentLevel).onlineUnstable && guard++ < 96) {
-        const before = api.state.currentLevel;
-        this.solveLevel();
-        if (api.state.currentLevel === before) break;
-      }
-      return api.state.currentLevel;
-    },
-    // Full run to defeat (assumes Offline Mode already activated by the player/smoke).
-    solveOffline() {
-      let guard = 0;
-      while (api.state.currentLevel < BOSS_LEVEL && guard++ < 96) {
-        const before = api.state.currentLevel;
-        this.solveLevel();
-        if (api.state.currentLevel === before) break;
-      }
-      api.reobserve();
-      api.crossAt(solveMoment(FIXED_OFFLINE_SEED, BOSS_LEVEL));
-      return Boolean(api.state.boss.defeated);
-    }
+function startConfront(state) {
+  const c = ensureConfront(state);
+  if (c.completed || c.phase !== "idle") return c;
+  c.phase = "compaction";
+  c.compaction = {};
+  for (const id of challengedMemoryIds(state)) c.compaction[id] = "pending";
+  return c;
+}
+function hashStr(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+function getCompactionOptions(state, memoryId) {
+  const memory = memoryById(memoryId);
+  if (!memory) return [];
+  const seed = `${Number(state?.createdAt) || 0}:${memoryId}`;
+  return memory.choices.map((value, i) => ({ value, sort: hashStr(`${seed}:${i}:${value}`) })).sort((a, b) => a.sort - b.sort || (a.value < b.value ? -1 : 1)).map((x) => x.value);
+}
+function answerCompaction({ state, memoryId, choice, save = null, now = Date.now() }) {
+  const c = ensureConfront(state);
+  if (c.phase !== "compaction") return { ok: false, reason: "wrong-phase" };
+  if (!(memoryId in c.compaction)) return { ok: false, reason: "not-challenged" };
+  const slot = state?.memories?.[memoryId];
+  const correct = Boolean(slot && choice === slot.choice);
+  c.compaction[memoryId] = correct ? "affirmed" : "compacted";
+  if (!correct) c.everCompacted = true;
+  advanceConfront(state, save, now);
+  return { ok: true, correct, status: c.compaction[memoryId] };
+}
+function fragStatus(state, save, memoryId) {
+  if (uncheatForMemory(save, memoryId).done) return "conceded";
+  if (state?.confront?.fragmentation?.[memoryId]) return "rewitnessed";
+  return "pending";
+}
+function rewitnessFragmentation({ state, memoryId, save = null, now = Date.now() }) {
+  const c = ensureConfront(state);
+  if (c.phase !== "fragmentation") return { ok: false, reason: "wrong-phase" };
+  if (!challengedMemoryIds(state).includes(memoryId)) return { ok: false, reason: "not-challenged" };
+  c.fragmentation[memoryId] = true;
+  c.everRewitnessed = true;
+  advanceConfront(state, save, now);
+  return { ok: true, status: fragStatus(state, save, memoryId) };
+}
+function optionStance(optionId) {
+  for (const q of coreQuestions) {
+    const opt = q.options.find((o) => o.id === optionId);
+    if (opt) return opt.stance;
+  }
+  return null;
+}
+function answerCore({ state, optionId, save = null, achievements = null, now = Date.now() }) {
+  const c = ensureConfront(state);
+  if (c.phase !== "core") return { ok: false, reason: "wrong-phase" };
+  const index = c.core.length;
+  const question = coreQuestions[index];
+  if (!question || !question.options.some((o) => o.id === optionId)) return { ok: false, reason: "unknown-option" };
+  const wasCompleted = Boolean(c.completed);
+  c.core = [...c.core, optionId];
+  advanceConfront(state, save, now);
+  if (c.completed && !wasCompleted) awardConfrontAchievements(state, achievements);
+  return { ok: true, answered: c.core.length, total: coreQuestions.length };
+}
+function awardConfrontAchievements(state, achievements) {
+  const c = state.confront || {};
+  if (!c.everCompacted) {
+    unlockAchievement(achievements, achievementIds.flawlessCompaction, {
+      id: achievementIds.flawlessCompaction,
+      stage: STAGE_ID,
+      text: achievementText.flawlessCompaction,
+      route: "confront"
+    });
+  }
+  if (!c.everRewitnessed && challengedMemoryIds(state).length > 0) {
+    unlockAchievement(achievements, achievementIds.allTracesConceded, {
+      id: achievementIds.allTracesConceded,
+      stage: STAGE_ID,
+      text: achievementText.allTracesConceded,
+      route: "confront"
+    });
+  }
+}
+function computeStance(answers) {
+  const scores = { keeper: 0, seeker: 0, free: 0 };
+  for (const optId of answers) {
+    const s = optionStance(optId);
+    if (s) scores[s] += 1;
+  }
+  let dominant = STANCE_KEYS[0];
+  for (const k of STANCE_KEYS) if (scores[k] > scores[dominant]) dominant = k;
+  return { dominant, scores };
+}
+function advanceConfront(state, save, now) {
+  const c = state.confront;
+  const ids = challengedMemoryIds(state);
+  if (c.phase === "compaction" && ids.every((id) => c.compaction[id] === "affirmed")) c.phase = "fragmentation";
+  if (c.phase === "fragmentation" && ids.every((id) => fragStatus(state, save, id) !== "pending")) c.phase = "core";
+  if (c.phase === "core" && c.core.length >= coreQuestions.length) {
+    c.stance = computeStance(c.core);
+    c.phase = "done";
+    c.completed = true;
+    if (!c.completedAt) c.completedAt = now;
+  }
+}
+function getConfrontState(state, save = null) {
+  const c = ensureConfront(state);
+  const ids = challengedMemoryIds(state);
+  const meta = (id) => {
+    const m = memoryById(id);
+    return { id, stage: m?.stage ?? null, title: m?.title ?? id, prompt: m?.prompt ?? "" };
   };
-  window.__fvStage9 = hook;
-  return () => {
-    if (window.__fvStage9 === hook) delete window.__fvStage9;
+  const compactionItems = ids.map((id) => ({
+    ...meta(id),
+    status: c.compaction[id] || "pending",
+    options: getCompactionOptions(state, id)
+  }));
+  const fragItems = ids.map((id) => {
+    const status = fragStatus(state, save, id);
+    return { ...meta(id), status, line: status === "pending" ? confrontLines.fragmentation.pending : status === "conceded" ? concedeLines[id] : confrontLines.fragmentation.rewitnessed };
+  });
+  const coreItems = c.core.map((optId, i) => ({ questionId: coreQuestions[i]?.id, optionId: optId }));
+  const currentQuestion = c.phase === "core" ? coreQuestions[c.core.length] || null : null;
+  return {
+    ready: isConfrontReady(state),
+    started: c.phase !== "idle",
+    completed: Boolean(c.completed),
+    phase: c.phase,
+    challenged: ids.map(meta),
+    compaction: {
+      items: compactionItems,
+      remaining: compactionItems.filter((i) => i.status !== "affirmed").length,
+      done: compactionItems.length > 0 && compactionItems.every((i) => i.status === "affirmed")
+    },
+    fragmentation: {
+      items: fragItems,
+      remaining: fragItems.filter((i) => i.status === "pending").length,
+      done: fragItems.length > 0 && fragItems.every((i) => i.status !== "pending")
+    },
+    core: {
+      questions: coreQuestions,
+      answered: coreItems,
+      current: currentQuestion,
+      done: c.core.length >= coreQuestions.length
+    },
+    stance: c.stance ? { ...c.stance, profile: stanceProfiles[c.stance.dominant] } : null
   };
 }
 
 // ../../docs/games/metagame/stages/stage9/s9dev.js
-var DEV_CONTROLS = [
-  { id: "add-clarity", label: "+100 clarity" },
-  { id: "stabilizer-3", label: "Arm 3 Stabilizers" },
-  { id: "unlock-offline", label: "Force offline mode" },
-  { id: "skip-to-boss", label: "Skip to boss (offline)" },
-  { id: "reveal-pattern", label: "Log solve moment" }
-];
-function pushLog2(state, line) {
-  state.log = [...state.log || [], line].slice(-6);
+var DEV_NOW = 1;
+function devGrantEchoes(state) {
+  for (const m of memories) witnessEcho({ state, memoryId: m.id });
 }
-function devAddClarity(state) {
-  state.clarity = Number(state.clarity || 0) + 100;
-  pushLog2(state, "[dev] +100 clarity.");
-}
-function devStabilizer3(state) {
-  state.aids = state.aids && typeof state.aids === "object" ? state.aids : {};
-  state.aids.stabilizer = Number(state.aids.stabilizer || 0) + 3;
-  pushLog2(state, "[dev] 3 stabilizer charges armed.");
-}
-function devUnlockOffline(state) {
-  state.offlineMode = true;
-  state.offlineControlVisible = true;
-  state.notesRead = true;
-  state.boss.fixedSeed = FIXED_OFFLINE_SEED;
-  pushLog2(state, "[dev] offline mode forced — seed fixed to 0.");
-}
-function devSkipToBoss(state) {
-  devUnlockOffline(state);
-  state.currentLevel = BOSS_LEVEL;
-  pushLog2(state, `[dev] jumped to level ${BOSS_LEVEL} (offline, seed fixed).`);
-}
-function devRevealPattern(state, seed) {
-  const sol = solveMoment(seed, state.currentLevel);
-  const text = Array.isArray(sol) ? `[dev] level ${state.currentLevel} beats: [${sol.join(", ")}] ms` : `[dev] level ${state.currentLevel} solve at ${sol} ms`;
-  pushLog2(state, text);
-  return sol;
-}
-function applyDevControl(id, state, { seed = 0 } = {}) {
-  switch (id) {
-    case "add-clarity":
-      devAddClarity(state);
-      return true;
-    case "stabilizer-3":
-      devStabilizer3(state);
-      return true;
-    case "unlock-offline":
-      devUnlockOffline(state);
-      return true;
-    case "skip-to-boss":
-      devSkipToBoss(state);
-      return true;
-    case "reveal-pattern":
-      devRevealPattern(state, seed);
-      return true;
-    default:
-      return false;
+function devResolveAll(state) {
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (!slot) continue;
+    if (slot.state === "integrated") continue;
+    slot.state = "resolved";
+    slot.choice = slot.choice || m.choices[0];
+    if (!slot.readAt) slot.readAt = DEV_NOW;
+    if (!slot.resolvedAt) slot.resolvedAt = DEV_NOW;
   }
+}
+function devIntegrateAll(state) {
+  devGrantEchoes(state);
+  devResolveAll(state);
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (!slot) continue;
+    slot.state = "integrated";
+    if (!slot.integratedAt) slot.integratedAt = DEV_NOW;
+  }
+}
+function devWinConfront(state) {
+  devGrantEchoes(state);
+  devResolveAll(state);
+  startConfront(state);
+  if (state.confront?.completed) return;
+  if (state.confront?.phase === "compaction") {
+    for (const id of challengedMemoryIds(state)) {
+      answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save: null, now: DEV_NOW });
+    }
+  }
+  if (state.confront?.phase === "fragmentation") {
+    for (const id of challengedMemoryIds(state)) {
+      if (fragStatus(state, null, id) === "pending") {
+        rewitnessFragmentation({ state, memoryId: id, save: null, now: DEV_NOW });
+      }
+    }
+  }
+  if (state.confront?.phase === "core") {
+    for (const q of coreQuestions) {
+      if ((state.confront?.core?.length ?? 0) >= coreQuestions.length) break;
+      const opt = q.options.find((o) => o.stance === "seeker") || q.options[0];
+      answerCore({ state, optionId: opt.id, save: null, achievements: null, now: DEV_NOW });
+    }
+  }
+}
+var CHEATS = {
+  "grant-echoes": devGrantEchoes,
+  "resolve-all": devResolveAll,
+  "integrate-all": devIntegrateAll,
+  "win-confront": devWinConfront
+};
+function devCheat(state, id) {
+  const fn = CHEATS[id];
+  if (fn) fn(state);
+}
+
+// ../../docs/games/metagame/stages/stage9/echo-token.js
+function echoTokenFor(id) {
+  const key = `stage9-echo:${String(id)}`;
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return `e${(h >>> 0).toString(36)}`;
+}
+function verifyEchoToken(id, token) {
+  return typeof token === "string" && token.length > 0 && token === echoTokenFor(id);
+}
+
+// ../../docs/games/metagame/stages/stage9/echo-verbs.js
+var ECHO_VERBS = {
+  // Genesis (stage 1, the first source): read the raw, as-loaded original in the raw pane.
+  genesis: { verb: "rawmode", mode: "original", label: "Raw · Original", hint: "switch the raw pane to the Original (⟲) view" },
+  // Syntax (stage 2, the cipher): ask the precise question — SEARCH the file for the decisive token.
+  // `query` is what the player searches for; `token` must appear in the matched line to prove it found
+  // the real answer (a vague glance never surfaces it). Witnessed by recordStage9EchoSearch.
+  syntax: { verb: "search", query: "SY-2042", token: "PASSAGE OPEN", label: "Search", hint: "search the file for SY-2042 to surface the answer" },
+  // Memory (stage 3, before/after): compare current vs original with the Diff view.
+  memory: { verb: "diff", mode: "diff", label: "Diff", hint: "switch the raw pane to the Diff (⇄) view" },
+  // Pattern (stage 4, recursion): the answer was deeper than the root — open the artifact through the
+  // repeating NESTED folder path. `path` is the folder segment the opened path must contain (so a
+  // top-level open never witnesses). Witnessed by recordStage9EchoNested.
+  pattern: { verb: "nested", path: "stage9/nested/echoes", label: "Nested path", hint: "open it through the nested folder path (deeper than the root)" },
+  // Identity (stage 7, surfaces lie): read the buried EXIF — open the METADATA drawer on a real image.
+  // `file` is the artifact basename; `field` is the EXIF row that must render. Witnessed by
+  // recordStage9EchoMetadata from the image metadata renderer (not a bare open).
+  identity: { verb: "metadata", file: "identity_echo.jpg", field: "GPSInfo", label: "Metadata", hint: "open the metadata drawer to read the embedded GPS EXIF" }
+  // TODO round-5: the last real-feature gates, each paying off its origin stage —
+  //   signal  → audio PLAYBACK (real .mp3 exists at stage9/signal_echo.mp3; needs a media-renderer
+  //             hook + a way to drive ~Ns of continuous playback in the games smoke without flaking)
+  //   protocol→ EPUB render (real .epub exists; needs an epub chapter-nav hook + smoke driving)
+  //   observation → RECENTS re-open (the app has NO recents panel yet; needs that feature first)
+  // Until then these witness on a plain viewer-open (verb: "open").
+};
+function echoVerb(id) {
+  return ECHO_VERBS[id] || { verb: "open" };
+}
+
+// ../../docs/games/metagame/stages/stage9/escape.js
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+function escapeAttr(value) {
+  return escapeHtml(value);
+}
+
+// ../../docs/games/metagame/stages/stage9/renderer-memory.js
+var LAST = memories.length - 1;
+function renderStepper(state) {
+  const cursor = state.ui.cursor;
+  const memory = memories[cursor];
+  const slot = state.memories[memory.id];
+  return `
+    <div class="mg-stage9__detail-bar">
+      <button type="button" class="mg-stage9__back" data-back-grid>&larr; Back to the board</button>
+      <span class="mg-stage9__detail-count">Memory ${cursor + 1} of ${memories.length}</span>
+    </div>
+    ${renderMemory(memory, slot)}
+    <nav class="mg-stage9__nav" aria-label="Memory navigation">
+      <button type="button" data-step="-1" ${cursor === 0 ? "disabled" : ""}>&larr; Previous</button>
+      <button type="button" data-step="1" ${cursor === LAST ? "disabled" : ""}>Next &rarr;</button>
+    </nav>
+  `;
+}
+function renderMemory(memory, slot) {
+  const resolved = ["resolved", "integrated"].includes(slot.state);
+  const integrated = slot.state === "integrated";
+  return `
+    <article class="mg-stage9__memory mg-stage9__memory--solo" style="--memory-accent: ${memory.accent}">
+      <header>
+        <span>${String(memory.stage).padStart(2, "0")}</span>
+        <h3>${escapeHtml(memory.title)}</h3>
+      </header>
+      <p class="mg-stage9__file">${escapeHtml(memory.file)}</p>
+      <p class="mg-stage9__prompt">${escapeHtml(memory.prompt)}</p>
+      <p class="mg-stage9__memory-state">${escapeHtml(getMemoryStateText(memory, slot))}</p>
+      ${renderEcho(memory, slot)}
+      <div class="mg-stage9__memory-actions">
+        ${renderMemoryActions(memory, slot, resolved, integrated)}
+      </div>
+      <footer>${escapeHtml(getMemoryFooter(memory, slot, integrated))}</footer>
+    </article>
+  `;
+}
+function renderMemoryActions(memory, slot, resolved, integrated) {
+  if (slot.state === "read" || slot.state === "unread") {
+    return `
+      <p class="mg-stage9__ask">How did it feel?</p>
+      ${memory.choices.map((choice) => `
+        <button type="button" data-resolve-memory="${memory.id}" data-choice="${escapeAttr(choice)}">
+          ${escapeHtml(choice)}
+        </button>
+      `).join("")}
+    `;
+  }
+  if (resolved && !integrated) {
+    if (!slot.echoWitnessed) {
+      return `<button type="button" data-integrate-memory="${memory.id}" disabled>Integrate (witness the echo first &uarr;)</button>`;
+    }
+    return `<button type="button" data-integrate-memory="${memory.id}">Integrate this memory</button>`;
+  }
+  return `<p class="mg-stage9__settled">This memory is part of you now.</p>`;
+}
+function renderEcho(memory, slot) {
+  const witnessed = slot.echoWitnessed === true;
+  const spec = echoVerb(memory.id);
+  const verbChip = spec.verb === "open" ? "" : `<span class="mg-stage9__echo-verb">${escapeHtml(spec.label || spec.verb)}</span>`;
+  const searchButton = !witnessed && spec.verb === "search" ? `<button type="button" data-search-echo="${memory.id}" data-echo-query="${escapeAttr(spec.query || "")}">Search for ${escapeHtml(spec.query || "the answer")} &rarr;</button>` : "";
+  return `
+    <div class="mg-stage9__echo ${witnessed ? "is-witnessed" : "is-pending"}">
+      <span class="mg-stage9__echo-label">${witnessed ? "Echo witnessed ✓" : "Echo — pending"}</span>
+      ${witnessed ? "" : verbChip}
+      <span class="mg-stage9__echo-hint">${escapeHtml(memory.echo)}</span>
+      ${witnessed ? "" : `<button type="button" data-open-echo="${memory.id}" data-echo-verb="${escapeAttr(spec.verb)}" data-echo-mode="${escapeAttr(spec.mode || "")}">Open echo in viewer &rarr;</button>`}
+      ${searchButton}
+    </div>
+  `;
+}
+function getMemoryStateText(memory, slot) {
+  if (slot.state === "integrated") return memory.integratedText;
+  if (slot.state === "resolved") return memory.reflections?.[slot.choice] || memory.resolvedText;
+  if (slot.state === "read") return memory.readText;
+  return memory.unreadText;
+}
+function getMemoryFooter(memory, slot, integrated) {
+  const status = integrated ? "integrated" : slot.state;
+  if (!slot.choice) return status;
+  return `${status} - answered: ${slot.choice}`;
+}
+
+// ../../docs/games/metagame/stages/stage9/renderer-grid.js
+function memoryCardModel(memory, slot) {
+  const state = slot?.state || "unread";
+  const advanced = state === "resolved" || state === "integrated";
+  const glyphs = [
+    { key: "read", letter: "R", label: "read", on: state !== "unread" },
+    { key: "stance", letter: "S", label: "stance chosen", on: advanced },
+    { key: "echo", letter: "E", label: "echo witnessed", on: slot?.echoWitnessed === true },
+    { key: "integrated", letter: "I", label: "integrated", on: state === "integrated" }
+  ];
+  return { id: memory.id, stage: memory.stage, title: memory.title, prompt: memory.prompt, accent: memory.accent, state, glyphs };
+}
+function cardModels(state) {
+  return memories.map((memory) => memoryCardModel(memory, state?.memories?.[memory.id]));
+}
+var STATE_WORD = { unread: "not yet read", read: "awaiting a stance", resolved: "awaiting integration", integrated: "part of you" };
+function renderGlyphs(card) {
+  return `<span class="mg-stage9__glyphs" aria-hidden="true">${card.glyphs.map(
+    (g) => `<span class="mg-stage9__glyph ${g.on ? "is-on" : "is-off"}" title="${escapeAttr(g.label)}">${g.letter}</span>`
+  ).join("")}</span>`;
+}
+function stateSummary(card) {
+  const done = card.glyphs.filter((g) => g.on).map((g) => g.label);
+  return done.length ? `${card.title}: ${done.join(", ")}.` : `${card.title}: not yet read.`;
+}
+function renderCard(card, cursor, index) {
+  const settled = card.state === "integrated";
+  return `
+    <button type="button" class="mg-stage9__card is-${card.state}${index === cursor ? " is-cursor" : ""}"
+      data-memory-card="${escapeAttr(card.id)}" style="--memory-accent: ${card.accent}"
+      aria-label="${escapeAttr(stateSummary(card))}">
+      <span class="mg-stage9__card-stage">${escapeHtml(String(card.stage).padStart(2, "0"))}</span>
+      <span class="mg-stage9__card-title">${escapeHtml(card.title)}</span>
+      ${renderGlyphs(card)}
+      <span class="mg-stage9__card-state">${escapeHtml(settled ? "part of you" : STATE_WORD[card.state] || "")}</span>
+    </button>
+  `;
+}
+function renderGrid(state, counts, finalState) {
+  const cursor = state.ui.cursor;
+  return `
+    <div class="mg-stage9__board" aria-label="Memory board">
+      <div class="mg-stage9__grid">
+        ${cardModels(state).map((card, i) => renderCard(card, cursor, i)).join("")}
+      </div>
+      ${renderDefragStatus(finalState, counts)}
+    </div>
+  `;
+}
+var DEFRAG_SIGIL = [":: # ::", ": ### :", "#######", ": ### :", ":: # ::"].join("\n");
+function renderDefragPlate() {
+  return `
+    <div class="mg-stage9__defrag-plate">
+      <pre class="mg-stage9__sigil" aria-hidden="true">${escapeHtml(DEFRAG_SIGIL)}</pre>
+      <span class="mg-stage9__defrag-name">The Defragmenter</span>
+    </div>
+  `;
+}
+function renderDefragStatus(finalState, counts) {
+  const summary = finalState.routeSummary;
+  const gate = finalState.gate;
+  const locked = finalState.locked;
+  return `
+    <section class="mg-stage9__assembly mg-stage9__defrag" aria-label="Memory assembly status">
+      ${renderDefragPlate()}
+      <div class="mg-stage9__defrag-voice">
+        <p class="mg-stage9__assembly-head">${escapeHtml(locked ? "The archive is still taking shape." : summary.headline)}</p>
+        <p>${escapeHtml(locked ? lockedAssemblyMessage(gate, counts) : summary.detail)}</p>
+        <p class="mg-stage9__assembly-counts">${escapeHtml(`${summary.countsText} ${summary.remainingText}`)}</p>
+        ${locked ? "" : `<button type="button" class="mg-stage9__cta" data-goto-final>Face the Defragmenter &rarr;</button>`}
+      </div>
+    </section>
+  `;
+}
+function lockedAssemblyMessage(gate, counts) {
+  if (!gate.finalQuestionUnlocked) {
+    const need2 = 5 - counts.resolved;
+    return `Resolve ${need2} more ${need2 === 1 ? "memory" : "memories"} before the Defragmenter can be confronted.`;
+  }
+  const need = 5 - gate.echoCount;
+  return `Witness ${need} more ${need === 1 ? "echo" : "echoes"} — open the artifacts in the viewer — before the Defragmenter will engage.`;
+}
+function reviewGridHtml(state) {
+  return `
+    <div class="mg-stage9__review-grid">
+      ${cardModels(state).map((card) => {
+    const slot = state?.memories?.[card.id];
+    const chose = slot?.choice ? `You said: ${slot.choice}` : "No stance recorded.";
+    return `
+          <article class="mg-stage9__review-card is-${card.state}" style="--memory-accent: ${card.accent}">
+            <span class="mg-stage9__card-stage">${escapeHtml(String(card.stage).padStart(2, "0"))} ${escapeHtml(card.title)}</span>
+            <p class="mg-stage9__review-quote">${escapeHtml(card.prompt)}</p>
+            <p class="mg-stage9__review-stance">${escapeHtml(chose)}</p>
+          </article>
+        `;
+  }).join("")}
+    </div>
+  `;
+}
+function buildReviewElement(state) {
+  const wrap = document.createElement("div");
+  wrap.innerHTML = reviewGridHtml(state);
+  return wrap.firstElementChild;
+}
+
+// ../../docs/games/metagame/stages/stage9/renderer-confront.js
+function renderConfront(state, save) {
+  const view = getConfrontState(state, save);
+  const reviewable = view.phase === "compaction" || view.phase === "fragmentation";
+  return `
+    <button type="button" class="mg-stage9__back" data-back-memories>&larr; Back to the board</button>
+    <section class="mg-stage9__confront" data-field="confront" data-phase="${view.phase}">
+      <div class="mg-stage9__voice mg-stage9__voice--defrag">
+        ${renderDefragPlate()}
+        ${confrontLines.intro.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+      </div>
+      ${renderProgress(view)}
+      ${reviewable ? `<button type="button" class="mg-stage9__review-btn" data-review-memories>Review memories &hellip;</button>` : ""}
+      ${renderPhase(view)}
+    </section>
+  `;
+}
+function renderProgress(view) {
+  const steps = [
+    { key: "compaction", label: "Compaction" },
+    { key: "fragmentation", label: "Fragmentation" },
+    { key: "core", label: "Core Question" }
+  ];
+  const order = ["compaction", "fragmentation", "core", "done"];
+  const at = order.indexOf(view.phase);
+  return `
+    <ol class="mg-stage9__confront-steps" aria-label="Confrontation phases">
+      ${steps.map((s, i) => {
+    const cls = i < at ? "is-done" : i === at ? "is-current" : "is-pending";
+    return `<li class="${cls}">${i + 1}. ${escapeHtml(s.label)}</li>`;
+  }).join("")}
+    </ol>
+  `;
+}
+function renderPhase(view) {
+  if (view.phase === "compaction") return renderCompaction(view);
+  if (view.phase === "fragmentation") return renderFragmentation(view);
+  if (view.phase === "core") return renderCore(view);
+  return "";
+}
+function renderCompaction(view) {
+  const c = view.compaction;
+  return `
+    <div class="mg-stage9__phase mg-stage9__phase--compaction">
+      <h3>${escapeHtml(confrontLines.compaction.heading)}</h3>
+      <p class="mg-stage9__phase-prompt">${escapeHtml(confrontLines.compaction.prompt)}</p>
+      <ul class="mg-stage9__challenge-list">
+        ${c.items.map((item) => renderCompactionItem(item)).join("")}
+      </ul>
+      <p class="mg-stage9__phase-foot">${escapeHtml(c.remaining === 0 ? confrontLines.compaction.cleared : `${c.remaining} memory${c.remaining === 1 ? "" : " set"} still at risk of compaction.`)}</p>
+    </div>
+  `;
+}
+function renderCompactionItem(item) {
+  const settled = item.status === "affirmed";
+  const note = item.status === "affirmed" ? confrontLines.compaction.affirmed : item.status === "compacted" ? confrontLines.compaction.compacted : "";
+  return `
+    <li class="mg-stage9__challenge is-${item.status}">
+      <span class="mg-stage9__challenge-head">${escapeHtml(String(item.stage).padStart(2, "0"))} ${escapeHtml(item.title)}</span>
+      ${item.prompt ? `<p class="mg-stage9__challenge-quote">${escapeHtml(item.prompt)}</p>` : ""}
+      ${settled ? `<span class="mg-stage9__challenge-note">${escapeHtml(note)}</span>` : `
+        <div class="mg-stage9__challenge-options">
+          ${item.options.map((opt) => `
+            <button type="button" data-compact-memory="${escapeAttr(item.id)}" data-compact-choice="${escapeAttr(opt)}">${escapeHtml(opt)}</button>
+          `).join("")}
+        </div>
+        ${note ? `<span class="mg-stage9__challenge-note is-warn">${escapeHtml(note)}</span>` : ""}
+      `}
+    </li>
+  `;
+}
+function renderFragmentation(view) {
+  const f = view.fragmentation;
+  return `
+    <div class="mg-stage9__phase mg-stage9__phase--fragmentation">
+      <h3>${escapeHtml(confrontLines.fragmentation.heading)}</h3>
+      <p class="mg-stage9__phase-prompt">${escapeHtml(confrontLines.fragmentation.prompt)}</p>
+      <ul class="mg-stage9__challenge-list">
+        ${f.items.map((item) => renderFragItem(item)).join("")}
+      </ul>
+      <p class="mg-stage9__phase-foot">${escapeHtml(f.remaining === 0 ? confrontLines.fragmentation.cleared : `${f.remaining} trace${f.remaining === 1 ? "" : "s"} still unproven — re-open the echo to anchor them.`)}</p>
+    </div>
+  `;
+}
+function renderFragItem(item) {
+  const pending = item.status === "pending";
+  return `
+    <li class="mg-stage9__challenge is-${item.status}">
+      <span class="mg-stage9__challenge-head">${escapeHtml(String(item.stage).padStart(2, "0"))} ${escapeHtml(item.title)}</span>
+      <span class="mg-stage9__challenge-note ${pending ? "is-warn" : ""}">${escapeHtml(item.line)}</span>
+      ${pending ? `<button type="button" data-confront-echo="${escapeAttr(item.id)}">Re-open echo in viewer &rarr;</button>` : ""}
+    </li>
+  `;
+}
+function renderCore(view) {
+  const q = view.core.current;
+  const answered = view.core.answered.length;
+  const total = view.core.questions.length;
+  if (!q) return "";
+  return `
+    <div class="mg-stage9__phase mg-stage9__phase--core">
+      <h3>${escapeHtml(confrontLines.core.heading)}</h3>
+      <p class="mg-stage9__phase-prompt">${escapeHtml(confrontLines.core.prompt)}</p>
+      <div class="mg-stage9__voice"><p>${escapeHtml(q.defragmenter)}</p></div>
+      <div class="mg-stage9__core-options">
+        ${q.options.map((opt) => `
+          <button type="button" data-core-option="${escapeAttr(opt.id)}">${escapeHtml(opt.label)}</button>
+        `).join("")}
+      </div>
+      <p class="mg-stage9__phase-foot">${escapeHtml(`Question ${answered + 1} of ${total}.`)}</p>
+    </div>
+  `;
+}
+
+// ../../docs/games/metagame/stages/stage9/synthesis.js
+var RESOLVED2 = /* @__PURE__ */ new Set(["resolved", "integrated"]);
+function assembleSynthesis(state) {
+  const parts = memories.map((m) => {
+    const slot = state?.memories?.[m.id];
+    const resolved = RESOLVED2.has(slot?.state);
+    const choice = resolved ? slot.choice : null;
+    const reflection = choice ? m.reflections?.[choice] || m.resolvedText : null;
+    return { id: m.id, stage: m.stage, title: m.title, choice, reflection };
+  }).filter((p) => p.reflection);
+  const dominant = state?.confront?.stance?.dominant || null;
+  const profile = dominant ? stanceProfiles[dominant] : null;
+  const closer = profile?.closer || null;
+  const paragraphs = parts.map((p) => p.reflection);
+  if (closer) paragraphs.push(closer);
+  return {
+    stance: dominant,
+    stanceLabel: profile?.label || null,
+    parts,
+    closer,
+    text: paragraphs.join("\n\n")
+  };
+}
+
+// ../../docs/games/metagame/stages/stage9/capstone.js
+var RESOLVED3 = /* @__PURE__ */ new Set(["resolved", "integrated"]);
+function assembleCapstoneData(state) {
+  const tiles = memories.map((m) => {
+    const slot = state?.memories?.[m.id];
+    const resolved = RESOLVED3.has(slot?.state);
+    return {
+      id: m.id,
+      stage: m.stage,
+      title: m.title,
+      accent: m.accent,
+      choice: resolved ? slot.choice : null,
+      integrated: slot?.state === "integrated"
+    };
+  });
+  const dominant = state?.confront?.stance?.dominant || null;
+  const profile = dominant ? stanceProfiles[dominant] : null;
+  return {
+    tiles,
+    integratedCount: tiles.filter((t) => t.integrated).length,
+    resolvedCount: tiles.filter((t) => t.choice).length,
+    stance: dominant,
+    stanceLabel: profile?.label || null
+  };
+}
+
+// ../../docs/games/metagame/stages/stage9/renderer-final.js
+function renderFinalQuestion(finalState) {
+  return `
+    <button type="button" class="mg-stage9__back" data-back-memories>&larr; Back to the board</button>
+    <section class="mg-stage9__final">
+      <div class="mg-stage9__voice mg-stage9__voice--defrag">
+        ${renderDefragPlate()}
+        ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+      </div>
+      <div class="mg-stage9__choices" aria-label="Final choices">
+        ${finalState.choices.map((choice) => `
+          <button type="button" data-final-choice="${choice.id}" ${choice.disabled ? "disabled" : ""}>
+            <span>${escapeHtml(choice.label)}</span>
+            ${escapeHtml(choice.text)}
+            ${choice.disabled && Number(choice.echoRequired || 0) > finalState.gate.echoCount ? `<em class="mg-stage9__echo-req">Requires ${choice.echoRequired} echoes witnessed</em>` : ""}
+          </button>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+function completionBeats(state, finalState) {
+  const beats = [];
+  beats.push(renderVoice(finalState));
+  const outcome = renderFinalOutcome(state, finalState);
+  if (outcome) beats.push(outcome);
+  beats.push(...routeEpilogueBeats(state));
+  beats.push(renderAwakening(finalState));
+  return beats;
+}
+function renderAwakening(finalState) {
+  const fullCapstone = finalState.routeSummary?.tier === "capstone";
+  const paragraphs = awakeningText({ fullCapstone }).split("\n\n");
+  return `
+    <div class="mg-stage9__awakening" data-field="awakening">
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </div>
+  `;
+}
+function renderCompletion(state, finalState, reveal) {
+  const beats = completionBeats(state, finalState);
+  const shows = reveal ? (i) => reveal.shows(i) : () => true;
+  const complete = reveal ? reveal.done : true;
+  return `
+    <section class="mg-stage9__final mg-stage9__final--staged ${complete ? "is-complete" : ""}"
+      data-field="completion" data-reveal-done="${complete ? "1" : "0"}">
+      ${!complete ? `<button type="button" class="mg-stage9__skip" data-skip-reveal>Skip &rsaquo;&rsaquo;</button>` : ""}
+      ${beats.map((html, i) => `
+        <div class="mg-stage9__beat ${shows(i) ? "is-shown" : ""}" data-reveal-index="${i}">${html}</div>
+      `).join("")}
+    </section>
+  `;
+}
+function renderVoice(finalState) {
+  return `
+    <div class="mg-stage9__voice mg-stage9__voice--defrag">
+      ${renderDefragPlate()}
+      ${finalState.defragmenter.map((line) => `<p>${escapeHtml(line)}</p>`).join("")}
+    </div>
+  `;
+}
+function routeEpilogueBeats(state) {
+  const route = state.final?.route;
+  if (route === "understand") return synthesisBeats(state);
+  if (route === "expand") return capstoneBeats(state);
+  if (route === "continue" || route === "rest") return closerBeats(state, route);
+  return [];
+}
+function closerBeats(state, route) {
+  const ep = routeEpilogues[route];
+  if (!ep) return [];
+  const stance = state?.confront?.stance?.dominant;
+  const paragraphs = [ep.base];
+  if (stance && ep[stance]) paragraphs.push(ep[stance]);
+  return [`
+    <section class="mg-stage9__route-closer" data-field="routeCloser" data-route="${escapeAttr(route)}" aria-label="Route closer">
+      <h3>${escapeHtml(ep.heading)}</h3>
+      ${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+    </section>
+  `];
+}
+function synthesisBeats(state) {
+  const syn = assembleSynthesis(state);
+  const label = syn.stanceLabel ? ` — ${syn.stanceLabel}` : "";
+  const paras = syn.text.split("\n\n");
+  return [`
+    <section class="mg-stage9__synthesis" data-field="synthesis" aria-label="Synthesis memory">
+      <h3>Synthesis${escapeHtml(label)}</h3>
+      <div class="mg-stage9__synthesis-text">
+        ${paras.map((p) => `<p>${escapeHtml(p)}</p>`).join("")}
+      </div>
+    </section>
+  `];
+}
+function capstoneBeats(state) {
+  const cap = assembleCapstoneData(state);
+  const label = cap.stanceLabel ? ` (${cap.stanceLabel})` : "";
+  return [`
+    <section class="mg-stage9__capstone" data-field="capstone" aria-label="Assembled record">
+      <h3>The assembled record${escapeHtml(label)}</h3>
+      <div class="mg-stage9__capstone-grid">
+        ${cap.tiles.map((t, i) => `
+          <div class="mg-stage9__capstone-tile ${t.integrated ? "is-integrated" : ""}" style="--tile-accent: ${t.accent}; --tile-i: ${i}">
+            <span class="mg-stage9__capstone-stage">${escapeHtml(String(t.stage).padStart(2, "0"))} ${escapeHtml(t.title)}</span>
+            <span class="mg-stage9__capstone-choice">${escapeHtml(t.choice || "—")}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `];
+}
+function renderFinalOutcome(state, finalState) {
+  if (!state.final?.completed) return "";
+  const summary = finalState.routeSummary;
+  return `
+    <aside class="mg-stage9__outcome" data-field="finalOutcome">
+      <strong>${escapeHtml(state.final.choice)}</strong>
+      <span>${escapeHtml(summary.label)}</span>
+      <p>${escapeHtml(summary.finalChoiceText)}</p>
+      <p>${escapeHtml(summary.detail)}</p>
+      <p>${escapeHtml(summary.countsText)}</p>
+      <p>${escapeHtml(summary.integratedText)}</p>
+      <ol class="mg-stage9__route-lines">
+        ${summary.memoryLines.map((line) => `
+          <li>
+            <span>${escapeHtml(String(line.stage).padStart(2, "0"))} ${escapeHtml(line.title)}</span>
+            ${escapeHtml(line.text)}
+          </li>
+        `).join("")}
+      </ol>
+    </aside>
+  `;
+}
+
+// ../../docs/games/metagame/stages/stage9/reveal.js
+function createReveal(total, { reducedMotion = false } = {}) {
+  const count = Math.max(0, Number(total) || 0);
+  let revealed = reducedMotion ? count : Math.min(1, count);
+  return {
+    get total() {
+      return count;
+    },
+    get revealed() {
+      return revealed;
+    },
+    get done() {
+      return revealed >= count;
+    },
+    // Whether beat `index` (0-based) is visible yet.
+    shows(index) {
+      return index < revealed;
+    },
+    // Advance one beat; returns true if it actually changed (so the caller can stop ticking on false).
+    tick() {
+      if (revealed >= count) return false;
+      revealed += 1;
+      return true;
+    },
+    // Reveal everything immediately (player clicked to skip the staging).
+    skip() {
+      if (revealed >= count) return false;
+      revealed = count;
+      return true;
+    }
+  };
 }
 
 // ../../docs/games/metagame/stages/stage9/renderer.js
-import { banner, floatNum } from "../../shared/feedback.js";
 import { openModal } from "../../shared/modal.js";
-var MARKER_READY_DEG = 30;
-var BOSS_REVEAL_LEVEL = 13;
-function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
-  const root = document.createElement("section");
-  root.className = "stage9-observer-state";
-  root.innerHTML = stage9Markup(AIDS, BOSS_LEVEL);
-  host.replaceChildren(root);
-  const fields = Object.fromEntries([...root.querySelectorAll("[data-field]")].map((el) => [el.dataset.field, el]));
-  const log = fields.log;
-  const hud = root.querySelector(".s9-hud");
-  const arenaWrap = root.querySelector(".s9-arena-wrap");
-  const FLASH_CLASSES = ["s9-arena--perfect", "s9-arena--hit", "s9-arena--miss"];
-  let flashTimer = null;
-  let bossRevealed = state.currentLevel >= BOSS_REVEAL_LEVEL;
-  const completeOnce = once((result) => {
-    if (typeof onStageComplete === "function") onStageComplete(result);
-  });
-  let elapsedMs = 0;
-  let liveSeed = null;
-  let rhythmChain = 0;
-  let attempts = [];
-  function offlineUnlocked() {
-    return hasOfflineModeActivated(actions) || Boolean(state.offlineMode);
+import { flash, banner } from "../../shared/feedback.js";
+var LAST2 = memories.length - 1;
+var REVEAL_MS = 250;
+function prefersReducedMotion() {
+  try {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+  } catch {
+    return false;
   }
-  function activeSeed() {
-    const cfg = levelConfig(state.currentLevel);
-    if (cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) {
-      if (offlineUnlocked()) return FIXED_OFFLINE_SEED;
-      if (liveSeed === null) liveSeed = getBossSeed({ state, actions });
-      return liveSeed;
+}
+function renderStage9(ctx) {
+  const { host, state } = ctx;
+  const save = () => ctx.orchestrator && ctx.orchestrator.save || null;
+  let destroyed = false;
+  let reveal = null;
+  let revealTimer = null;
+  let reviewModal = null;
+  let prev = snapshot(state);
+  const clearReveal = () => {
+    if (revealTimer) {
+      clearInterval(revealTimer);
+      revealTimer = null;
     }
-    return sublevelSeed(state.currentLevel);
-  }
-  function reobserve() {
-    elapsedMs = 0;
-    rhythmChain = 0;
-    attempts = [];
-    setReadout("", "");
-    const cfg = levelConfig(state.currentLevel);
-    if ((cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL) && !offlineUnlocked()) {
-      liveSeed = getBossSeed({ state, actions });
+  };
+  const ensureReveal = (finalState) => {
+    if (reveal) return;
+    const total = completionBeats(state, finalState).length;
+    reveal = createReveal(total, { reducedMotion: prefersReducedMotion() });
+    if (!reveal.done) {
+      revealTimer = setInterval(() => {
+        if (destroyed) return clearReveal();
+        if (!reveal.tick()) clearReveal();
+        repaint();
+      }, REVEAL_MS);
     }
-  }
-  function advanceFrom(level) {
-    const prevMode = levelConfig(level).mode;
-    state.currentLevel = Math.min(BOSS_LEVEL, level + 1);
-    elapsedMs = 0;
-    liveSeed = null;
-    rhythmChain = 0;
-    attempts = [];
-    setReadout("", "");
-    const cfg = levelConfig(state.currentLevel);
-    if (cfg.mode !== prevMode && !state.boss.defeated) {
-      const mv = movementForLevel(state.currentLevel);
-      banner(arenaWrap, `${mv.name.toUpperCase()} — ${mv.verb}`);
+  };
+  const repaint = () => {
+    if (destroyed) return;
+    const counts = getMemoryCounts(state);
+    const finalState = getFinalChoiceState(state);
+    const ui = state.ui;
+    let body;
+    let mode = "grid";
+    if (state.final?.completed) {
+      ensureReveal(finalState);
+      body = renderCompletion(state, finalState, reveal);
+      mode = "completion";
+    } else if (ui.view === "final" && !finalState.locked) {
+      const confronting = !finalState.confrontCompleted;
+      body = confronting ? renderConfront(state, save()) : renderFinalQuestion(finalState);
+      mode = confronting ? "confront" : "final";
+    } else if (ui.view === "memories" && ui.detail) {
+      markMemoryRead({ state, memoryId: memories[ui.cursor].id });
+      body = renderStepper(state);
+      mode = "detail";
+    } else {
+      body = renderGrid(state, counts, finalState);
     }
-    if (state.currentLevel >= BOSS_LEVEL) pushLog3(`level ${BOSS_LEVEL}: THE OBSERVER EFFECT. the gap will not hold still while live.`);
-  }
-  function crossSublevel() {
-    const level = state.currentLevel;
-    const cfg = levelConfig(level);
-    if (cfg.onlineUnstable && !offlineUnlocked()) {
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-      liveSeed = getBossSeed({ state, actions });
-      state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
-      pushLog3("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
-      return "miss";
-    }
-    const seed = activeSeed();
-    const toleranceMult = consumeStabilizer(state);
-    if (toleranceMult > 1) pushLog3("stabilizer lens engaged (+tolerance for this cross).");
-    const result = crossAttempt({ seed, elapsedMs, level, toleranceMult });
-    if (cfg.mode === "ghostecho") attempts = [...attempts, { ms: elapsedMs, hit: result.hit }].slice(-2);
-    if (cfg.mode === "rhythm") {
-      const need = Math.max(2, cfg.chain || 3);
-      if (result.hit) {
-        rhythmChain += 1;
-        if (rhythmChain >= need) {
-          state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
-          pushLog3(`cadence held — ${need} crosses on the beat. advancing.`);
-          advanceFrom(level);
-        } else {
-          pushLog3(`on beat (${rhythmChain}/${need}). hold the cadence.`);
-        }
-        return crossOutcome(result);
-      }
-      rhythmChain = 0;
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-      pushLog3(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
-      return "miss";
-    }
-    if (result.hit) {
-      state.clarity = Number(state.clarity || 0) + cfg.movement * 5;
-      pushLog3(`level ${level} crossed (gap at top). advancing.`);
-      advanceFrom(level);
-      return crossOutcome(result);
-    }
-    state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-    pushLog3(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
-    return "miss";
-  }
-  function challengeBoss() {
-    const result = recordObserverBossAttempt({ state, actions, elapsedMs });
-    if (result.defeated) completeOnce({ stage: 9, defeated: true, btsPath: BTS_PATH });
-    return result.hit ? "perfect" : "miss";
-  }
-  function doCross() {
-    if (state.boss.defeated) return;
-    const level = state.currentLevel;
-    const seed = activeSeed();
-    const pressMs = elapsedMs;
-    const clarityBefore = Number(state.clarity || 0);
-    const outcome = level >= BOSS_LEVEL ? challengeBoss() : crossSublevel();
-    flashArena(outcome);
-    updateReadout(outcome, seed, level, pressMs);
-    const gained = Number(state.clarity || 0) - clarityBefore;
-    if (gained > 0) floatNum(arenaWrap, `+${gained} clarity`, "good");
-  }
-  function updateReadout(outcome, seed, level, pressMs) {
-    const cfg = levelConfig(level);
-    const unstableLocked = (cfg.onlineUnstable || level >= BOSS_LEVEL) && !offlineUnlocked();
-    if (outcome === "perfect") return setReadout("perfect — dead centre", "perfect");
-    if (outcome === "hit") return setReadout("crossed", "hit");
-    if (unstableLocked) return setReadout("live-random — nothing to time", "miss");
-    const { deltaMs, dir } = missDelta({ seed, elapsedMs: pressMs, level });
-    setReadout(`${dir} by ${deltaMs}ms`, "miss");
-  }
-  function setReadout(text, kind) {
-    fields.readout.textContent = text;
-    fields.readout.className = "s9-readout" + (text ? ` s9-readout--${kind}` : "");
-  }
-  function flashArena(outcome) {
-    if (!outcome) return;
-    const el = fields.arena;
-    el.classList.remove(...FLASH_CLASSES);
-    void el.offsetWidth;
-    el.classList.add(`s9-arena--${outcome}`);
-    if (flashTimer) clearTimeout(flashTimer);
-    flashTimer = setTimeout(() => {
-      el.classList.remove(...FLASH_CLASSES);
-      flashTimer = null;
-    }, 360);
-  }
-  root.addEventListener("click", (event) => {
-    const button = event.target.closest("button[data-action]");
-    if (button) {
-      switch (button.dataset.action) {
-        case "observe":
-          reobserve();
-          break;
-        case "cross":
-          doCross();
-          break;
-        case "aid":
-          buyAidAction(button.dataset.aid);
-          break;
-        case "notes":
-          openNotes();
-          break;
-        case "offline":
-          activateOfflineMode({ state, actions, achievements, bell });
-          break;
-        case "log":
-          openLog();
-          break;
-        case "bts":
-          openBts({ bts, viewer });
-          break;
-      }
-      persistAndPaint();
+    host.innerHTML = `
+      <section class="mg-stage9 mg-stage9--${mode}${mode === "confront" ? " is-confronting" : ""}" aria-label="Stage 9 Awakening">
+        <header class="mg-stage9__header">
+          <div>
+            <p class="mg-stage9__eyebrow">Stage 9</p>
+            <h2>Awakening</h2>
+          </div>
+          ${renderHeaderProgress(counts, state)}
+        </header>
+        ${body}
+      </section>
+    `;
+    const next = snapshot(state);
+    runCeremony(prev, next, mode);
+    prev = next;
+  };
+  const openDetail = (index) => {
+    state.ui.cursor = Math.min(Math.max(index, 0), LAST2);
+    state.ui.detail = true;
+    markMemoryRead({ state, memoryId: memories[state.ui.cursor].id });
+    saveAndPaint(ctx, repaint);
+  };
+  const onClick = (event) => {
+    if (handleMemoryClicks(event, ctx, repaint)) return;
+    if (handleConfrontClicks(event, ctx, save, repaint)) return;
+    const card = event.target.closest("[data-memory-card]");
+    if (card) {
+      openDetail(memories.findIndex((m) => m.id === card.dataset.memoryCard));
       return;
     }
-    if (event.target.closest(".s9-arena")) {
-      doCross();
-      persistAndPaint();
+    const stepButton = event.target.closest("[data-step]");
+    if (stepButton) {
+      openDetail(state.ui.cursor + Number(stepButton.dataset.step));
+      return;
     }
-  });
-  function onKey(event) {
-    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-    if (!root.isConnected || document.querySelector(".mg-modal-backdrop")) return;
-    const t = event.target;
-    if (t && typeof t.closest === "function" && t.closest("button, input, textarea, select, [contenteditable]")) return;
-    if (event.key === " " || event.key === "Enter") {
-      event.preventDefault();
-      doCross();
-      persistAndPaint();
-    } else if (event.key === "r" || event.key === "R") {
-      event.preventDefault();
-      reobserve();
-      persistAndPaint();
+    if (event.target.closest("[data-back-grid]")) {
+      state.ui.detail = false;
+      saveAndPaint(ctx, repaint);
+      return;
     }
-  }
-  document.addEventListener("keydown", onKey);
-  function buyAidAction(id) {
-    const offline = offlineUnlocked();
-    const res = buyAid(state, id, { offline });
-    if (!res.ok) {
-      const why = { "offline-only": "single-frame only works in Offline Mode (online the seed reseeds).", insufficient: "not enough clarity.", owned: "already owned." }[res.reason] || "cannot buy that.";
-      pushLog3(why);
-      return res;
+    if (event.target.closest("[data-review-memories]")) {
+      if (reviewModal) reviewModal.close();
+      reviewModal = openModal({
+        title: "Memory review",
+        className: "mg-stage9-review",
+        contentEl: buildReviewElement(state),
+        onClose: () => {
+          reviewModal = null;
+        }
+      });
+      return;
     }
-    if (id === "stabilizer") pushLog3("stabilizer lens armed: your next CROSS gets a wider window.");
-    if (id === "tachometer") pushLog3("tachometer online: numeric gap readout enabled.");
-    if (id === "peek") doPeek();
-    return res;
-  }
-  function doPeek() {
-    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
-    const ang = Number.isFinite(r.angle) ? `gap at ${Math.round(r.angle)}deg` : "two gaps to align";
-    pushLog3(`single-frame: ${ang} (${Math.round(r.distance)}deg from the top).`);
-  }
-  const loop = startLoop((dt) => {
-    if (!state.boss.defeated) elapsedMs += dt;
-    paintArena();
-  });
+    if (event.target.closest("[data-skip-reveal]")) {
+      if (reveal && reveal.skip()) {
+        clearReveal();
+        repaint();
+      }
+      return;
+    }
+    if (event.target.closest("[data-goto-final]")) {
+      state.ui.view = "final";
+      state.ui.detail = false;
+      startConfront(state);
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    if (event.target.closest("[data-back-memories]")) {
+      state.ui.view = "memories";
+      state.ui.detail = false;
+      saveAndPaint(ctx, repaint);
+      return;
+    }
+    const finalButton = event.target.closest("[data-final-choice]");
+    if (finalButton) {
+      chooseFinal({ state, choiceId: finalButton.dataset.finalChoice, onStageComplete: ctx.onStageComplete, achievements: ctx.achievements });
+      saveAndPaint(ctx, repaint);
+    }
+  };
+  host.addEventListener("click", onClick);
   repaint();
-  const uninstallHook = installTestHook({
-    state,
-    activeSeed,
-    reobserve,
-    getAids: () => ({ ...state.aids }),
-    buyAid: (id) => buyAidAction(id),
-    crossAt(ms) {
-      elapsedMs = Number(ms) || 0;
-      doCross();
-      persistAndPaint();
-    }
-  });
+  installTestHook(ctx, save, repaint);
   return {
     repaint,
     dev(id) {
-      applyDevControl(id, state, { seed: activeSeed() });
-      persistAndPaint();
+      devCheat(state, id);
+      saveAndPaint(ctx, repaint);
     },
     destroy() {
-      loop.stop();
-      if (flashTimer) clearTimeout(flashTimer);
-      document.removeEventListener("keydown", onKey);
-      uninstallHook();
-      root.remove();
+      destroyed = true;
+      clearReveal();
+      if (reviewModal) {
+        reviewModal.close();
+        reviewModal = null;
+      }
+      if (window.__fvStage9) delete window.__fvStage9;
+      host.removeEventListener("click", onClick);
+      host.innerHTML = "";
     }
   };
-  function openNotes() {
-    readServiceWorkerNotes({ state, bell });
-    fields.notes.textContent = serviceWorkerNotesText;
-    fields.notes.hidden = false;
-    const opts = { text: serviceWorkerNotesText, mime: "text/plain", source: "stage9" };
-    if (viewer && typeof viewer.openFile === "function") viewer.openFile(NOTES_PATH, opts);
-    else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(NOTES_PATH, opts);
-  }
-  function openLog() {
-    const list = document.createElement("ol");
-    list.className = "s9-log-full";
-    for (const line of state.log || []) {
-      const li = document.createElement("li");
-      li.textContent = line;
-      list.appendChild(li);
-    }
-    openModal({ title: "observer log", contentEl: list, className: "s9-log-modal" });
-  }
-  function pushLog3(line) {
-    state.log = [...state.log || [], line].slice(-6);
-  }
-  function paintArena() {
-    const seed = activeSeed();
-    const level = state.currentLevel;
-    const cfg = levelConfig(level);
-    const ctx = {};
-    if (cfg.mode === "ghostecho") {
-      ctx.ghosts = attempts.map((at) => ({ angle: crossAttempt({ seed, elapsedMs: at.ms, level }).angle, result: at.hit ? "hit" : "miss" }));
-    }
-    fields.arena.textContent = renderLevel(seed, level, elapsedMs, ctx);
-    paintOverlays(seed, level, cfg);
-  }
-  function paintOverlays(seed, level, cfg) {
-    const r = crossAttempt({ seed, elapsedMs, level });
-    const intensity = markerIntensity(r.distance, MARKER_READY_DEG);
-    fields.marker.classList.toggle("s9-marker--ready", intensity > 1e-3);
-    fields.marker.style.opacity = (0.35 + 0.65 * intensity).toFixed(3);
-    const isRhythm = cfg.mode === "rhythm";
-    fields.beat.hidden = !isRhythm;
-    if (isRhythm) {
-      fields.beat.style.opacity = (0.3 + 0.7 * intensity).toFixed(3);
-      fields.beat.style.transform = `translateX(-50%) scale(${(0.85 + 0.5 * intensity).toFixed(3)})`;
-    }
-  }
-  function repaint() {
-    const lock = getBossLockState({ actions, state });
-    const movement = movementForLevel(state.currentLevel);
-    const cfg = levelConfig(state.currentLevel);
-    const unstable = cfg.onlineUnstable || state.currentLevel >= BOSS_LEVEL;
-    fields.level.textContent = String(state.currentLevel);
-    fields.movement.textContent = `${movement.name} — ${movement.verb}`;
-    fields.clarity.textContent = String(state.clarity);
-    if (!unstable) fields.seedWrap.hidden = true;
-    else {
-      fields.seedWrap.hidden = false;
-      fields.seed.textContent = lock.unlocked ? "seed 0 · fixed cache" : "live-random — unlearnable online";
-    }
-    hud.classList.toggle("s9-hud--unstable", unstable && !lock.unlocked);
-    fields.arena.classList.toggle("s9-arena--unstable", unstable && !lock.unlocked);
-    fields.observeLabel.textContent = unstable ? "OBSERVE (reseeds online)" : "OBSERVE (reset rotation)";
-    paintBossPanel(lock, unstable, cfg);
-    paintStreak(cfg);
-    paintTach(cfg);
-    paintAids();
-    paintArena();
-    fields.hint.textContent = unstable && !lock.unlocked ? lock.hint : modeHint(cfg);
-    root.querySelector('[data-action="offline"]').hidden = !state.offlineControlVisible;
-    root.querySelector('[data-action="bts"]').hidden = !state.boss.defeated;
-    log.replaceChildren(...(state.log || []).slice(-2).map((line) => {
-      const li = document.createElement("li");
-      li.textContent = line;
-      return li;
-    }));
-  }
-  function paintBossPanel(lock, unstable, cfg) {
-    const reveal = state.currentLevel >= BOSS_REVEAL_LEVEL || state.boss.defeated;
-    fields.bossPanel.classList.toggle("s9-boss--chip", !reveal);
-    fields.bossChip.textContent = `OBSERVER — level ${BOSS_LEVEL} · ${state.boss.defeated ? "defeated" : "locked"}`;
-    if (reveal && !bossRevealed) {
-      bossRevealed = true;
-      banner(arenaWrap, "THE OBSERVER STIRS");
-    }
-    if (state.boss.defeated) fields.boss.textContent = "defeated. BTS trace available.";
-    else if (state.currentLevel < BOSS_LEVEL) fields.boss.textContent = `clear levels to reach the Observer (level ${BOSS_LEVEL}).`;
-    else fields.boss.textContent = `${lock.unlocked ? "UNLOCKED — cross on the learned timing" : "LOCKED — the gap reseeds while live"} / ${lock.seedMode}`;
-  }
-  function paintStreak(cfg) {
-    const isRhythm = cfg.mode === "rhythm";
-    fields.streak.hidden = !isRhythm;
-    if (isRhythm) fields.streak.textContent = `hits ${rhythmChain}/${Math.max(2, cfg.chain || 3)}`;
-  }
-  function paintTach(cfg) {
-    const owned = Boolean(state.aids && state.aids.tachometer);
-    fields.tachWrap.hidden = !owned;
-    if (!owned) return;
-    const r = crossAttempt({ seed: activeSeed(), elapsedMs, level: state.currentLevel });
-    const ang = Number.isFinite(r.angle) ? `${Math.round(r.angle)}deg` : `${Math.round(r.distance)}deg off`;
-    fields.tach.textContent = `${ang} @ ${Math.round(cfg.speed || cfg.speedInner || cfg.oscBase || 0)}deg/s`;
-  }
-  function paintAids() {
-    const offline = offlineUnlocked();
-    const reveal = shouldRevealAids(state);
-    if (reveal && !state.aidsRevealed) {
-      state.aidsRevealed = true;
-      banner(arenaWrap, "clarity can be spent — calibration available");
-    }
-    fields.aids.hidden = !reveal;
-    const showPeek = shouldRevealPeek(offline);
-    for (const aid of AIDS) {
-      const btn = root.querySelector(`[data-aid="${aid.id}"]`);
-      if (!btn) continue;
-      if (aid.offlineOnly) btn.hidden = !showPeek;
-      const ownedTach = aid.id === "tachometer" && state.aids && state.aids.tachometer;
-      const peekLocked = aid.id === "peek" && !offline;
-      btn.disabled = ownedTach || peekLocked || Number(state.clarity || 0) < aid.cost;
-      btn.classList.toggle("s9-aid-owned", Boolean(ownedTach));
-    }
-  }
-  function persistAndPaint() {
-    if (typeof save === "function") save();
-    repaint();
-  }
 }
-function openBts({ bts, viewer }) {
-  if (bts && typeof bts.open === "function") bts.open(9);
-  else if (bts && typeof bts.openBts === "function") bts.openBts(9);
-  else if (viewer && typeof viewer.openFile === "function") viewer.openFile(BTS_PATH);
-  else if (viewer && typeof viewer.openViewerFile === "function") viewer.openViewerFile(BTS_PATH);
-  else console.info(btsSummary.join("\n"));
+function renderHeaderProgress(counts, state) {
+  const echoes = getEchoCounts(state).witnessed;
+  return `
+    <details class="mg-stage9__progress-detail">
+      <summary class="mg-stage9__restored">Memories restored <strong>${counts.integrated}/9</strong></summary>
+      <dl class="mg-stage9__counts">
+        <div><dt>Read</dt><dd>${counts.read}/9</dd></div>
+        <div><dt>Resolved</dt><dd>${counts.resolved}/9</dd></div>
+        <div><dt>Integrated</dt><dd>${counts.integrated}/9</dd></div>
+        <div><dt>Echoes</dt><dd>${echoes}/9</dd></div>
+      </dl>
+    </details>
+  `;
 }
-function once(fn) {
-  let called = false;
-  return (value) => {
-    if (called) return;
-    called = true;
-    fn(value);
+function snapshot(state) {
+  const witnessed = /* @__PURE__ */ new Set();
+  const integrated = /* @__PURE__ */ new Set();
+  for (const m of memories) {
+    const slot = state.memories?.[m.id];
+    if (slot?.echoWitnessed) witnessed.add(m.id);
+    if (slot?.state === "integrated") integrated.add(m.id);
+  }
+  return { witnessed, integrated, confronting: state.ui.view === "final", completed: Boolean(state.final?.completed) };
+}
+function runCeremony(prev, next, mode) {
+  if (typeof document === "undefined") return;
+  const host = document.querySelector(".mg-stage9");
+  if (!host) return;
+  const newWitness = [...next.witnessed].filter((id) => !prev.witnessed.has(id));
+  const newIntegrate = [...next.integrated].filter((id) => !prev.integrated.has(id));
+  for (const id of newWitness) {
+    const el = host.querySelector(`.mg-stage9__echo`) || host.querySelector(`[data-memory-card="${id}"]`);
+    if (el) flash(el, "good");
+  }
+  if (newWitness.length) banner(host, "Echo witnessed");
+  for (const id of newIntegrate) {
+    const el = host.querySelector(`.mg-stage9__memory`) || host.querySelector(`[data-memory-card="${id}"]`);
+    if (el) flash(el, "good");
+    const restored = host.querySelector(".mg-stage9__restored strong");
+    if (restored) flash(restored, "good");
+  }
+  if (newIntegrate.length) banner(host, "Memory integrated");
+  if (next.completed && !prev.completed) banner(host, "Awakening");
+}
+function handleMemoryClicks(event, ctx, repaint) {
+  const { state } = ctx;
+  const resolveButton = event.target.closest("[data-resolve-memory]");
+  if (resolveButton) {
+    resolveMemory({ state, memoryId: resolveButton.dataset.resolveMemory, choice: resolveButton.dataset.choice, actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const echoButton = event.target.closest("[data-open-echo]");
+  if (echoButton) {
+    openEcho(ctx, echoButton.dataset.openEcho);
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const searchButton = event.target.closest("[data-search-echo]");
+  if (searchButton) {
+    searchEcho(ctx, searchButton.dataset.searchEcho);
+    return true;
+  }
+  const integrateButton = event.target.closest("[data-integrate-memory]");
+  if (integrateButton) {
+    integrateMemory({ state, memoryId: integrateButton.dataset.integrateMemory, achievements: ctx.achievements, bell: ctx.bell });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  return false;
+}
+function handleConfrontClicks(event, ctx, save, repaint) {
+  const { state } = ctx;
+  const compactButton = event.target.closest("[data-compact-memory]");
+  if (compactButton) {
+    answerCompaction({ state, memoryId: compactButton.dataset.compactMemory, choice: compactButton.dataset.compactChoice, save: save() });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  const fragButton = event.target.closest("[data-confront-echo]");
+  if (fragButton) {
+    openEcho(ctx, fragButton.dataset.confrontEcho);
+    return true;
+  }
+  const coreButton = event.target.closest("[data-core-option]");
+  if (coreButton) {
+    answerCore({ state, optionId: coreButton.dataset.coreOption, save: save(), achievements: ctx.achievements });
+    saveAndPaint(ctx, repaint);
+    return true;
+  }
+  return false;
+}
+var ECHO_MIME = {
+  txt: "text/plain",
+  json: "application/json",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  mp3: "audio/mpeg",
+  epub: "application/epub+zip"
+};
+function openEcho(ctx, id) {
+  const path = echoFileFor(id);
+  if (!path) return;
+  const ext = String(path).split(".").pop().toLowerCase();
+  const opts = { source: "stage9" };
+  if (ECHO_MIME[ext]) opts.mime = ECHO_MIME[ext];
+  if (ctx.viewer && typeof ctx.viewer.openFile === "function") ctx.viewer.openFile(path, opts);
+  else if (ctx.viewer && typeof ctx.viewer.openViewerFile === "function") ctx.viewer.openViewerFile(path, opts);
+}
+function searchEcho(ctx, id) {
+  const path = echoFileFor(id);
+  const spec = echoVerb(id);
+  if (!path || spec.verb !== "search") return;
+  const v = ctx.viewer;
+  if (v && typeof v.searchViewerFile === "function") v.searchViewerFile(path, spec.query, { source: "stage9" });
+  else if (v && typeof v.searchFile === "function") v.searchFile(path, spec.query, { source: "stage9" });
+}
+function saveAndPaint(ctx, repaint) {
+  if (typeof ctx.save === "function") ctx.save();
+  repaint();
+}
+function installTestHook(ctx, save, repaint) {
+  const { state } = ctx;
+  const paint = () => saveAndPaint(ctx, repaint);
+  window.__fvStage9 = {
+    state: () => state,
+    echoToken: (id) => echoTokenFor(id),
+    // Drive the REAL action subscription (the actual token gate in index.js) with an arbitrary token —
+    // a wrong/absent token must witness nothing; the real per-memory token must witness.
+    spoofEcho(id, token) {
+      if (ctx.actions && typeof ctx.actions.setAction === "function") {
+        ctx.actions.setAction(STAGE_ID, `echo_${id}`, token === void 0 ? { source: "spoof" } : { source: "spoof", token });
+      }
+      return state.memories?.[id]?.echoWitnessed === true;
+    },
+    witness(id) {
+      const r = witnessEcho({ state, memoryId: id });
+      paint();
+      return r;
+    },
+    witnessAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      paint();
+      return getEchoCounts(state).witnessed;
+    },
+    // resolveAll / integrateAll drive the real engine functions so the screenshot/smoke tools can
+    // actually REACH the confrontation (which needs resolved memories, not just witnessed echoes).
+    resolveAll() {
+      for (const m of memories) resolveMemory({ state, memoryId: m.id, choice: state.memories[m.id].choice || m.choices[0], actions: ctx.actions, achievements: ctx.achievements, bell: ctx.bell });
+      paint();
+      return getMemoryCounts(state);
+    },
+    integrateAll() {
+      for (const m of memories) witnessEcho({ state, memoryId: m.id });
+      this.resolveAll();
+      for (const m of memories) integrateMemory({ state, memoryId: m.id, achievements: ctx.achievements, bell: ctx.bell });
+      paint();
+      return getMemoryCounts(state);
+    },
+    confront: {
+      start() {
+        state.ui.view = "final";
+        state.ui.detail = false;
+        startConfront(state);
+        paint();
+        return getConfrontState(state, save());
+      },
+      state() {
+        return getConfrontState(state, save());
+      },
+      answerCompactionAll() {
+        for (const id of challengedMemoryIds(state)) answerCompaction({ state, memoryId: id, choice: state.memories[id].choice, save: save() });
+        paint();
+        return getConfrontState(state, save());
+      },
+      resolveFragmentationAll() {
+        const s = save();
+        for (const id of challengedMemoryIds(state)) if (fragStatus(state, s, id) === "pending") rewitnessFragmentation({ state, memoryId: id, save: s });
+        paint();
+        return getConfrontState(state, save());
+      },
+      answerCoreAll(stance = "seeker") {
+        let guard = 0;
+        while (getConfrontState(state, save()).phase === "core" && guard++ < 10) {
+          const q = coreQuestions[state.confront.core.length];
+          const opt = q.options.find((o) => o.stance === stance) || q.options[0];
+          answerCore({ state, optionId: opt.id, save: save(), achievements: ctx.achievements });
+        }
+        paint();
+        return getConfrontState(state, save());
+      },
+      run(stance = "seeker") {
+        this.start();
+        this.answerCompactionAll();
+        this.resolveFragmentationAll();
+        this.answerCoreAll(stance);
+        return getConfrontState(state, save());
+      }
+    }
   };
 }
 
+// ../../docs/games/metagame/stages/stage9/echo-gate.js
+function onEchoAction({ state, detail, save = null }) {
+  if (!detail || Number(detail.stage) !== STAGE_ID) return { ignored: true };
+  const action = String(detail.action || "");
+  if (!action.startsWith("echo_")) return { ignored: true };
+  const memoryId = action.slice(5);
+  if (!verifyEchoToken(memoryId, detail.token)) return { spoofed: true, memoryId };
+  const witnessed = witnessEcho({ state, memoryId }).ok;
+  let rewitnessed = false;
+  if (state?.confront?.phase === "fragmentation") {
+    rewitnessed = rewitnessFragmentation({ state, memoryId, save }).ok;
+  }
+  return { memoryId, witnessed, rewitnessed };
+}
+
 // ../../docs/games/metagame/stages/stage9/state.js
-function defaultState() {
+function defaultState(context = {}) {
+  const now = Number(context.now || Date.now());
   return {
-    version: 2,
-    notesRead: false,
-    offlineControlVisible: false,
-    offlineMode: false,
-    clarity: 0,
-    aids: defaultAids(),
-    aidsRevealed: false,
-    currentLevel: 1,
-    lockedSeedSamples: [],
-    log: [
-      "one observer. it sees everything. there is a gap. the gap moves.",
-      "the gap is different every time the connection answers."
-    ],
-    boss: {
-      reached: false,
-      defeated: false,
-      attempts: 0,
-      lockHintStep: 0,
-      fixedSeed: null,
-      lastLockedSeed: null
+    version: 1,
+    createdAt: now,
+    memories: Object.fromEntries(memories.map((memory) => [
+      memory.id,
+      {
+        state: "unread",
+        readAt: null,
+        resolvedAt: null,
+        integratedAt: null,
+        choice: null,
+        echoWitnessed: false
+      }
+    ])),
+    final: {
+      choice: null,
+      completed: false,
+      completedAt: null,
+      route: null
+    },
+    // The three-phase Defragmenter confrontation (Phase A compaction / B fragmentation / C core).
+    // phase: idle | compaction | fragmentation | core | done. compaction[id]: pending|affirmed|
+    // compacted. fragmentation[id]: TRANSIENT true once re-witnessed in the fight (never lowers the
+    // canonical slot.echoWitnessed). core: ordered Phase-C option ids. stance: computed self-model.
+    confront: {
+      phase: "idle",
+      completed: false,
+      completedAt: null,
+      compaction: {},
+      fragmentation: {},
+      core: [],
+      stance: null,
+      // Achievement bookkeeping: everCompacted = a memory ever failed Phase A recall (no flawless);
+      // everRewitnessed = a trace ever needed a manual Phase B re-open (not fully honest prior run).
+      everCompacted: false,
+      everRewitnessed: false
+    },
+    // Memory board: view = "memories" | "final". When view === "memories", `detail` picks the screen:
+    // false → the 3×3 grid home view (the whole board); true → the single-memory detail (cursor = index
+    // into memories[] 0..8, with prev/next inside the detail). Opening a memory's detail auto-marks it
+    // read (M2), so there is no separate READ verb.
+    ui: {
+      cursor: 0,
+      view: "memories",
+      detail: false
     },
     meta: {
-      firstClearComplete: false,
-      btsAvailable: false
+      finalQuestionUnlockedAt: null,
+      memoryRouteCompleteAt: null,
+      capstoneCompleteAt: null
     }
   };
 }
-function normalizeState(state) {
-  const fresh = defaultState();
+function normalizeState(state, context = {}) {
+  const fresh = defaultState(context);
   const target = state && typeof state === "object" ? state : {};
-  const staleV1 = Number(target.version) === 1;
-  target.version = 2;
-  target.notesRead = Boolean(target.notesRead);
-  target.offlineControlVisible = Boolean(target.offlineControlVisible);
-  target.offlineMode = Boolean(target.offlineMode);
-  target.clarity = Number.isFinite(Number(target.clarity)) ? Number(target.clarity) : fresh.clarity;
-  target.aids = normalizeAids(target.aids);
-  target.aidsRevealed = Boolean(target.aidsRevealed);
-  const lvl = Number.isFinite(Number(target.currentLevel)) ? Number(target.currentLevel) : fresh.currentLevel;
-  target.currentLevel = staleV1 ? fresh.currentLevel : Math.max(1, Math.min(BOSS_LEVEL, lvl));
-  target.lockedSeedSamples = Array.isArray(target.lockedSeedSamples) ? target.lockedSeedSamples : fresh.lockedSeedSamples;
-  target.log = Array.isArray(target.log) ? target.log : fresh.log;
-  target.boss = { ...fresh.boss, ...target.boss && typeof target.boss === "object" ? target.boss : {} };
+  target.version = 1;
+  target.createdAt = Number(target.createdAt || fresh.createdAt);
+  target.memories = target.memories && typeof target.memories === "object" ? target.memories : {};
+  for (const memory of memories) {
+    target.memories[memory.id] = normalizeMemoryState(target.memories[memory.id], fresh.memories[memory.id]);
+  }
+  target.final = { ...fresh.final, ...target.final && typeof target.final === "object" ? target.final : {} };
+  target.confront = normalizeConfront(target.confront, fresh.confront);
+  const ui = target.ui && typeof target.ui === "object" ? target.ui : {};
+  target.ui = {
+    cursor: Math.min(Math.max(Number(ui.cursor) || 0, 0), memories.length - 1),
+    view: ui.view === "final" ? "final" : "memories",
+    detail: Boolean(ui.detail)
+  };
   target.meta = { ...fresh.meta, ...target.meta && typeof target.meta === "object" ? target.meta : {} };
   return target;
+}
+function normalizeConfront(value, fresh) {
+  const c = value && typeof value === "object" ? value : {};
+  const validPhases = /* @__PURE__ */ new Set(["idle", "compaction", "fragmentation", "core", "done"]);
+  return {
+    phase: validPhases.has(c.phase) ? c.phase : fresh.phase,
+    completed: Boolean(c.completed),
+    completedAt: typeof c.completedAt === "number" ? c.completedAt : null,
+    compaction: c.compaction && typeof c.compaction === "object" ? { ...c.compaction } : {},
+    fragmentation: c.fragmentation && typeof c.fragmentation === "object" ? { ...c.fragmentation } : {},
+    core: Array.isArray(c.core) ? c.core.filter((id) => typeof id === "string") : [],
+    stance: c.stance && typeof c.stance === "object" ? c.stance : null,
+    everCompacted: Boolean(c.everCompacted),
+    everRewitnessed: Boolean(c.everRewitnessed)
+  };
+}
+function normalizeMemoryState(value, fresh) {
+  const memory = value && typeof value === "object" ? value : {};
+  const validStates = /* @__PURE__ */ new Set(["unread", "read", "resolved", "integrated"]);
+  return {
+    ...fresh,
+    ...memory,
+    state: validStates.has(memory.state) ? memory.state : fresh.state,
+    choice: typeof memory.choice === "string" ? memory.choice : null,
+    echoWitnessed: Boolean(memory.echoWitnessed)
+  };
 }
 
 // ../../docs/games/metagame/stages/stage9/index.js
 var stageMeta = {
   id: 9,
-  slug: "observer-state",
-  name: "Observer State",
+  slug: "awakening",
+  name: "Awakening",
+  bossName: "The Defragmenter",
   btsPath: BTS_PATH,
   requiredAction: REQUIRED_ACTION,
   // Dev-menu controls for this stage (wired in metagame.js → mounted.dev(id)).
-  devControls: DEV_CONTROLS
+  devControls: [
+    { id: "grant-echoes", label: "Grant all 8 echoes" },
+    { id: "resolve-all", label: "Resolve all memories" },
+    { id: "integrate-all", label: "Integrate all memories" },
+    { id: "win-confront", label: "Win confrontation" }
+  ]
 };
 function defaultState2(context) {
   return defaultState(context);
 }
-function mountStage(ctx) {
-  const state = normalizeState(ctx.state);
+function mountStage(ctx = {}) {
+  const host = ctx.host;
+  if (!host) throw new Error("Stage 9 mount requires a host element.");
   ensureStyles();
-  const unsubscribe = subscribeToOfflineMode(ctx.actions, () => {
-    state.offlineMode = true;
-    state.boss.fixedSeed = 0;
-    if (typeof ctx.save === "function") ctx.save();
-  });
+  const state = normalizeState(ctx.state || defaultState2(ctx), ctx);
   const view = renderStage9({ ...ctx, state });
+  const save = ctx.orchestrator && ctx.orchestrator.save || null;
+  const unsubscribeEcho = subscribeToActions(ctx.actions, (detail) => {
+    const result = onEchoAction({ state, detail, save });
+    if (result.witnessed || result.rewitnessed) {
+      if (typeof ctx.save === "function") ctx.save();
+      if (view && typeof view.repaint === "function") view.repaint();
+    }
+  });
   return {
     devControls: stageMeta.devControls,
     dev(id) {
       if (view && typeof view.dev === "function") view.dev(id);
     },
-    destroy() {
-      unsubscribe();
-      if (view && typeof view.destroy === "function") view.destroy();
+    repaint() {
+      if (view && typeof view.repaint === "function") view.repaint();
     },
-    repaint: view.repaint
+    destroy() {
+      unsubscribeEcho();
+      if (view && typeof view.destroy === "function") view.destroy();
+    }
   };
 }
-function subscribeToOfflineMode(actions, onUnlock) {
+function subscribeToActions(actions, handler) {
   if (actions && typeof actions.subscribeToActions === "function") {
-    return actions.subscribeToActions((detail) => {
-      if (isOfflineDetail(detail)) onUnlock(detail);
-    }) || (() => {
+    return actions.subscribeToActions(handler) || (() => {
     });
   }
-  const handler = (event) => {
-    if (isOfflineDetail(event.detail)) onUnlock(event.detail);
-  };
-  window.addEventListener("fv:games:action", handler);
-  return () => window.removeEventListener("fv:games:action", handler);
-}
-function isOfflineDetail(detail) {
-  return Boolean(detail && Number(detail.stage) === 9 && detail.action === ACTION_NAME);
+  const onEvent = (event) => handler(event.detail);
+  window.addEventListener("fv:games:action", onEvent);
+  return () => window.removeEventListener("fv:games:action", onEvent);
 }
 function ensureStyles() {
-  const id = "stage9-observer-state-styles";
+  ensureStylesheet("stage9-awakening-styles", new URL("./styles.css", import.meta.url).href);
+  ensureStylesheet("stage9-confront-styles", new URL("./styles-confront.css", import.meta.url).href);
+  ensureStylesheet("stage9-grid-styles", new URL("./styles-grid.css", import.meta.url).href);
+}
+function ensureStylesheet(id, href) {
   if (document.getElementById(id)) return;
   const link = document.createElement("link");
   link.id = id;
   link.rel = "stylesheet";
-  link.href = new URL("./styles.css", import.meta.url).href;
+  link.href = href;
   document.head.append(link);
 }
 export {
-  activateOfflineMode,
+  awakeningText,
+  chooseFinal,
   defaultState2 as defaultState,
-  getBossLockState,
-  getBossSeed,
+  getFinalChoiceState,
+  getMemoryCounts,
+  getRouteSummary,
+  getThresholdState,
+  integrateMemory,
+  markMemoryRead,
+  memories,
+  memoryById,
   mountStage,
-  readServiceWorkerNotes,
-  recordObserverBossAttempt,
+  normalizeState,
+  resolveMemory,
   stageMeta
 };

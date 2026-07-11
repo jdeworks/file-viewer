@@ -564,8 +564,8 @@ export async function run(ctx) {
     text: button.textContent,
   })));
   const freshStages = freshStageButtons.map((b) => b.stage).join(',');
-  if (freshStages === '1,2,3,4,5,6,7,8,9' && freshStageButtons.every((b) => !b.disabled)) {
-    pass('Defragmenter fresh start shows stages 1–9 unlocked (stage 10 gated)');
+  if (freshStages === '1,2,3,4,5,6,7,8' && freshStageButtons.every((b) => !b.disabled)) {
+    pass('Defragmenter fresh start shows stages 1–8 unlocked (stage 9 gated)');
   } else {
     fail('Defragmenter fresh stage buttons unexpected: ' + JSON.stringify(freshStageButtons));
   }
@@ -576,10 +576,10 @@ export async function run(ctx) {
   });
   if (bellInHeader) pass('Defragmenter bell control sits in header before Back to arcade'); else fail('Defragmenter bell control is not in header next to Back to arcade');
   const freshSave = await page.evaluate(() => JSON.parse(localStorage.getItem('fv:games:metagame:v3')));
-  if (freshSave?.version === 5 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
-    pass('Defragmenter initializes fresh v5 save with Stage 1');
+  if (freshSave?.version === 6 && freshSave.unlockedStages?.includes(1) && freshSave.stageState?.[1]) {
+    pass('Defragmenter initializes fresh v6 save with Stage 1');
   } else {
-    fail('Defragmenter v5 save invalid: ' + JSON.stringify(freshSave));
+    fail('Defragmenter v6 save invalid: ' + JSON.stringify(freshSave));
   }
   await page.click('.games-back');
   await page.waitForSelector('.games-grid:not([hidden])', { timeout: 4000 });
@@ -1386,146 +1386,40 @@ export async function run(ctx) {
   }, null, { timeout: 5000 });
   pass('Stage 7: full investigation + EXIF un-cheat clears Identity Arbiter');
 
-  await page.waitForSelector('.stage8-entropy-field', { timeout: 8000 });
-  // The survival sim is wired: node health bars render from the 14-node state + an Advance Cycle
-  // control and the engine hook exist (engine correctness is covered by engine.test).
-  await page.waitForSelector('.stage8-entropy-field .s8-node .s8-node-bar', { timeout: 4000 });
-  await page.waitForSelector('.stage8-entropy-field [data-action="advance"]', { timeout: 4000 });
-  const s8Wired = await page.evaluate(() => Boolean(window.__fvStage8) && window.__fvStage8.state().nodes.length === 14);
-  if (s8Wired) pass('Stage 8 survival sim wired: 14 node health bars + Advance Cycle + engine hook'); else fail('Stage 8 sim not wired');
-  // The field boots FRESH at cycle 1 — no pre-seeded debris/States stub (the old bypass substrate).
-  const s8Fresh = await page.evaluate(() => {
-    const s = window.__fvStage8.state();
-    return s.cycle === 1 && s.debris.length === 0 && s.states === 0 && s.totalStatesEarned === 0;
-  });
-  if (s8Fresh) pass('Stage 8 boots fresh at cycle 1 (no pre-seeded debris/States)'); else fail('Stage 8 booted a pre-seeded stub');
-  // BYPASS CLOSED: the old "archive twice → Heat Death → win" path. On a fresh field there is nothing
-  // to archive, and challenging Heat Death returns LOCKED — it must NOT defeat the boss. (Post UX-audit
-  // 2026-07 progressive disclosure the archive + boss controls are hidden until their systems unlock,
-  // so this drives the boss attempt through the engine hook rather than dead DOM buttons — same
-  // semantic: a fresh Heat Death attempt is locked, not a win.)
-  const s8BypassFailed = await page.evaluate(() => {
-    const r = window.__fvStage8.bossSolver();
-    const lock = window.__fvStage8.lockState();
-    const s = window.__fvStage8.state();
-    let save = null;
-    try { save = JSON.parse(localStorage.getItem('fv:games:metagame:v3')); } catch {}
-    return !r.defeated && r.locked && !lock.unlocked && !s.boss.defeated && !(save?.defeated?.includes(8));
-  });
-  if (s8BypassFailed) pass('Stage 8 BYPASS CLOSED: fresh two-click Heat Death attempt is locked, not a win'); else fail('Stage 8 two-click bypass still wins');
-  // Drive the REAL multi-act survival sim to the boss gate (repair the spine, BRACE + weather each
-  // Cascade Storm so the network grows core→α→β→γ, let the frontier shed .sav debris). bodySolver
-  // only fast-forwards the real engine — it does NOT archive or touch the Heat Death boss.
-  const s8Gate = await page.evaluate(() => window.__fvStage8.bodySolver());
-  if (s8Gate.enoughCycles && s8Gate.enoughStates && !s8Gate.actionReady && !s8Gate.unlocked) pass('Stage 8 body gate reached (cycles + reserves), boss still locked pending the un-cheat'); else fail(`Stage 8 body gate not reached: ${JSON.stringify(s8Gate)}`);
-  // 3-act escalation: surviving the three Cascade Storms grew the network 14→34 and the boss now
-  // requires all three storms (boss-never-from-start, stronger than the prior gate).
-  const s8Acts = await page.evaluate(() => {
-    const s = window.__fvStage8.state();
-    return { storms: s.stormsSurvived, nodes: s.nodes.length, sectors: s.onlineSectors.length, act: s.act, enoughStorms: window.__fvStage8.lockState().enoughStorms };
-  });
-  if (s8Acts.storms === 3 && s8Acts.nodes === 34 && s8Acts.sectors === 4 && s8Acts.enoughStorms) pass('Stage 8 three Cascade Storms survived: network grew core→α→β→γ (14→34), storm gate met'); else fail(`Stage 8 storm/act progression wrong: ${JSON.stringify(s8Acts)}`);
-  // Run-state retrofit: the in-progress sim is checkpointed into the "runsim" slot (tagged with the
-  // run identity), so a reload resumes this exact mid-run position instead of re-seeding.
-  const s8Resume = await page.evaluate(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      const snap = save?.stageState?.[8]?.runsim;
-      return Boolean(snap) && snap.runTag === '8:0' && snap.cycle === window.__fvStage8.state().cycle;
-    } catch { return false; }
-  });
-  if (s8Resume) pass('Stage 8 run is checkpointed to the "runsim" slot (reload resumes the same run)'); else fail('Stage 8 run-state snapshot not persisted');
-  // Un-cheat (load-bearing): archive .sav debris from /entropy/debris/ into /entropy/active_archive/
-  // via the real renderer until the salvage floor is met. This fires 8.salvage_archived.
-  for (let i = 0; i < 8; i += 1) {
-    const lock = await page.evaluate(() => window.__fvStage8.lockState());
-    if (lock.enoughSalvage && lock.actionReady) break;
-    await page.click('[data-action="archive"]');
-  }
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['8.salvage_archived'] && save.achievements?.['stage8.salvage_archived']);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  const s8Unlocked = await page.evaluate(() => window.__fvStage8.lockState().unlocked);
-  if (s8Unlocked) pass('Stage 8 fully gated after the archive un-cheat (all four gates met)'); else fail('Stage 8 still locked after archiving');
-  // Archive the remaining debris from the grown network to bank Scrap for the economy below.
-  for (let i = 0; i < 16; i += 1) {
-    const has = await page.evaluate(() => window.__fvStage8.state().debris.length > 0);
-    if (!has) break;
-    await page.click('[data-action="archive"]');
-  }
-  // Tech tree: Insight (from research nodes + storms) + Scrap (from the archives just made) buys tech.
-  // Cold Storage automation stays gated behind the MANUAL archive un-cheat (load-bearing preserved).
-  const s8Tech = await page.evaluate(() => {
-    const before = window.__fvStage8.state();
-    const buy = window.__fvStage8.buyTech('rep1');
-    const s = window.__fvStage8.state();
-    const sal3 = window.__fvStage8.techStatus().find((t) => t.id === 'sal3');
-    return { hadResources: before.parts >= 30, bought: buy.ok, bonus: s.repairBudgetBonus, manualArchiveDone: s.manualArchiveDone, coldGated: sal3.reason !== 'needs-archive' };
-  });
-  if (s8Tech.bought && s8Tech.bonus === 3) pass('Stage 8 tech tree: salvage parts buys a tech and applies its effect'); else fail(`Stage 8 tech buy failed: ${JSON.stringify(s8Tech)}`);
-  // Structures: Scrap builds a Heat Sink (folds into venting); Cold Storage automation stays gated
-  // behind the manual archive un-cheat (cannot even be BUILT without it).
-  const s8Struct = await page.evaluate(() => {
-    const r = window.__fvStage8.buildStructure('heatSink');
-    const s = window.__fvStage8.state();
-    const cold = window.__fvStage8.structureStatus().find((x) => x.id === 'coldStorage');
-    return { built: r.ok, reason: r.reason, parts: Math.floor(s.parts), vent: s.structHeatVent, coldNeedsTech: cold.reason };
-  });
-  if (s8Struct.built && s8Struct.vent === 4) pass('Stage 8 structures: salvage parts builds a Heat Sink that folds into venting'); else fail(`Stage 8 structure build failed: ${JSON.stringify(s8Struct)}`);
-  // Defeat the REAL escalating burn (deep reserves earned by the run outlast ~10 escalating cycles).
-  const s8Boss = await page.evaluate(() => window.__fvStage8.bossSolver());
-  if (s8Boss.defeated && s8Boss.burn?.survived) pass('Stage 8 Heat Death endured via the real burn'); else fail(`Stage 8 burn not survived: ${JSON.stringify(s8Boss)}`);
-  // Microstate prestige: once cleared, collapsing the field banks depth-scaled Cores and applies a
-  // permanent income multiplier on the fresh run (optional replay depth on top of the clear).
-  const s8Prestige = await page.evaluate(() => {
-    if (!window.__fvStage8) return { skipped: true };
-    const avail = window.__fvStage8.prestigeState();
-    const r = window.__fvStage8.collapse();
-    const after = window.__fvStage8.prestigeState();
-    return { available: avail.available.ok, preview: avail.preview, collapsed: r.ok, cores: after.cores, mult: after.mult };
-  });
-  if (s8Prestige.skipped || (s8Prestige.collapsed && s8Prestige.cores >= 3 && s8Prestige.mult > 1)) pass('Stage 8 Microstate prestige: collapse banks Cores + a permanent income multiplier'); else fail(`Stage 8 prestige failed: ${JSON.stringify(s8Prestige)}`);
-  await page.waitForFunction(() => {
-    try {
-      const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(8) && save.unlockedStages?.includes(9);
-    } catch { return false; }
-  }, null, { timeout: 5000 });
-  pass('Stage 8: real survival run + archive un-cheat + endured burn clears Entropy Field');
+  // NOTE (2026-07-11): Entropy Field (the old stage 8, "survival sim") was removed from the game
+  // entirely — playtesters found it too hard to understand/use. Observer State moved 9→8 (below);
+  // Awakening (the finale) moved 10→9. See docs/games/metagame/stage-manifest.js.
 
-  await page.waitForSelector('.stage9-observer-state', { timeout: 8000 });
+  await page.waitForSelector('.stage8-observer-state', { timeout: 8000 });
   // The timing game is wired: a live rotating ASCII ring renders + OBSERVE/CROSS controls exist.
-  await page.waitForSelector('.stage9-observer-state [data-action="observe"]', { timeout: 4000 });
-  await page.waitForSelector('.stage9-observer-state [data-action="cross"]', { timeout: 4000 });
-  const s9Wired = await page.evaluate(() => Boolean(window.__fvStage9) && /[█▓]/.test(document.querySelector('.s9-arena')?.textContent || ''));
-  if (s9Wired) pass('Stage 9 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 9 ring not wired');
+  await page.waitForSelector('.stage8-observer-state [data-action="observe"]', { timeout: 4000 });
+  await page.waitForSelector('.stage8-observer-state [data-action="cross"]', { timeout: 4000 });
+  const s8Wired = await page.evaluate(() => Boolean(window.__fvStage8) && /[█▓]/.test(document.querySelector('.s8-arena')?.textContent || ''));
+  if (s8Wired) pass('Stage 8 timing game wired: rotating ring + OBSERVE/CROSS + engine hook'); else fail('Stage 8 ring not wired');
   // The boss is gated behind the run: the player starts on movement 1, not at the Observer.
-  const s9StartLevel = await page.evaluate(() => window.__fvStage9.state().currentLevel);
-  if (s9StartLevel === 1) pass('Stage 9 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 9 started at level ${s9StartLevel}`);
+  const s8StartLevel = await page.evaluate(() => window.__fvStage8.state().currentLevel);
+  if (s8StartLevel === 1) pass('Stage 8 starts on movement 1 (boss gated behind the full run)'); else fail(`Stage 8 started at level ${s8StartLevel}`);
   // The learnable front movements clear ONLINE, but the run stalls at the onlineUnstable back third:
   // those gaps reseed on every commit while live, so the offline un-cheat is required to continue.
-  const s9Stall = await page.evaluate(() => {
-    const reached = window.__fvStage9.solveStableBody();
-    return { reached, unstable: !!window.__fvStage9.config(reached).onlineUnstable, boss: window.__fvStage9.config(reached).isBoss };
+  const s8Stall = await page.evaluate(() => {
+    const reached = window.__fvStage8.solveStableBody();
+    return { reached, unstable: !!window.__fvStage8.config(reached).onlineUnstable, boss: window.__fvStage8.config(reached).isBoss };
   });
-  if (s9Stall.reached > 1 && s9Stall.unstable && !s9Stall.boss)
-    pass('Stage 9 online run clears the learnable front, then stalls at the onlineUnstable back third');
-  else fail(`Stage 9 online run did not stall at the back third: ${JSON.stringify(s9Stall)}`);
+  if (s8Stall.reached > 1 && s8Stall.unstable && !s8Stall.boss)
+    pass('Stage 8 online run clears the learnable front, then stalls at the onlineUnstable back third');
+  else fail(`Stage 8 online run did not stall at the back third: ${JSON.stringify(s8Stall)}`);
   // Clarity SPEND: clearing the front banked clarity; a Tachometer is buyable online, but the
   // Single-Frame peek is OFFLINE-ONLY so it can never bypass the un-cheat (still online here ⇒ rejected).
-  const s9Spend = await page.evaluate(() => {
-    const before = window.__fvStage9.aids().clarity;
-    const tach = window.__fvStage9.buyAid('tachometer');
-    const after = window.__fvStage9.aids();
-    const peekOnline = window.__fvStage9.buyAid('peek');
+  const s8Spend = await page.evaluate(() => {
+    const before = window.__fvStage8.aids().clarity;
+    const tach = window.__fvStage8.buyAid('tachometer');
+    const after = window.__fvStage8.aids();
+    const peekOnline = window.__fvStage8.buyAid('peek');
     return { before, tachOk: tach.ok, owned: after.tachometer, spent: before - after.clarity, peekReason: peekOnline.reason };
   });
-  if (s9Spend.tachOk && s9Spend.owned && s9Spend.spent > 0 && s9Spend.peekReason === 'offline-only')
-    pass('Stage 9 clarity spend: Tachometer bought online; Single-Frame peek refused while live (offline-only)');
-  else fail(`Stage 9 clarity spend wrong: ${JSON.stringify(s9Spend)}`);
+  if (s8Spend.tachOk && s8Spend.owned && s8Spend.spent > 0 && s8Spend.peekReason === 'offline-only')
+    pass('Stage 8 clarity spend: Tachometer bought online; Single-Frame peek refused while live (offline-only)');
+  else fail(`Stage 8 clarity spend wrong: ${JSON.stringify(s8Spend)}`);
   // Un-cheat (load-bearing): read service-worker-notes.txt, then activate offline mode so the back
   // third + boss seed is fixed (online the gap reseeds every OBSERVE → unbeatable).
   await page.click('[data-action="notes"]');
@@ -1534,42 +1428,43 @@ export async function run(ctx) {
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['9.offline_mode_activated'] && save.achievements?.['stage9.offline_mode_activated']);
+      return Boolean(save.actions?.['8.offline_mode_activated'] && save.achievements?.['stage8.offline_mode_activated']);
     } catch { return false; }
   }, null, { timeout: 5000 });
   // Now offline, the Single-Frame peek becomes buyable (there's a fixed seed to reveal) — the aid only
   // ever exists once the un-cheat is active, so it deepens play without weakening the gate.
-  const s9Peek = await page.evaluate(() => window.__fvStage9.buyAid('peek').ok);
-  if (s9Peek) pass('Stage 9 Single-Frame peek buyable once offline (aid gated by the un-cheat, not a bypass)');
-  else fail('Stage 9 peek not buyable offline');
+  const s8Peek = await page.evaluate(() => window.__fvStage8.buyAid('peek').ok);
+  if (s8Peek) pass('Stage 8 Single-Frame peek buyable once offline (aid gated by the un-cheat, not a bypass)');
+  else fail('Stage 8 peek not buyable offline');
   // Drive the real run: clear every sublevel by CROSSing on its solve timing, then cross the boss
   // on the learned offline timing. (Not a bypass — each level is a genuine timed CROSS.)
-  await page.evaluate(() => window.__fvStage9.solveOffline());
+  await page.evaluate(() => window.__fvStage8.solveOffline());
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(9) && save.unlockedStages?.includes(10);
+      return save.defeated?.includes(8) && save.unlockedStages?.includes(9);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 9: full run cleared + offline-timed CROSS defeats Observer State');
+  pass('Stage 8: full run cleared + offline-timed CROSS defeats Observer State');
 
-  await page.waitForSelector('.mg-stage10', { timeout: 8000 });
+  await page.waitForSelector('.mg-stage9', { timeout: 8000 });
   // Anti-spoof: the echo witness is token-gated. A forged action with no/wrong token must witness
   // nothing; only a genuine viewer-open (which carries the per-memory token) does. Prove the negative
   // here (the positive is proven by the real opens below clearing the stage).
   const spoofWitnessed = await page.evaluate(() => {
-    const bad = window.__fvStage10.spoofEcho('genesis', 'bogus-token');
-    const none = window.__fvStage10.spoofEcho('genesis');
-    return bad || none || window.__fvStage10.state().memories.genesis.echoWitnessed === true;
+    const bad = window.__fvStage9.spoofEcho('genesis', 'bogus-token');
+    const none = window.__fvStage9.spoofEcho('genesis');
+    return bad || none || window.__fvStage9.state().memories.genesis.echoWitnessed === true;
   });
-  if (!spoofWitnessed) pass('Stage 10 echo witness is token-gated (a spoofed action without the real token is rejected)');
-  else fail('Stage 10 echo witnessed from a spoofed action without the real token');
-  // Stage 10: read -> pick a stance -> WITNESS the echo -> integrate -> Next. The echo is the
+  if (!spoofWitnessed) pass('Stage 9 echo witness is token-gated (a spoofed action without the real token is rejected)');
+  else fail('Stage 9 echo witnessed from a spoofed action without the real token');
+  // Stage 9: read -> pick a stance -> WITNESS the echo -> integrate -> Next. The echo is the
   // load-bearing gate: a resolved memory cannot be integrated until its echo is witnessed. Some
-  // echoes witness on a plain viewer-open, but SIX pay off a DISTINCT real viewer feature the player
+  // echoes witness on a plain viewer-open, but FIVE pay off a DISTINCT real viewer feature the player
   // learned earlier — genesis = raw Original view, syntax = in-file SEARCH, memory = Diff view,
-  // pattern = NESTED-path navigation, identity = METADATA inspection, entropy = download. Each is
-  // driven through the genuine feature (never a forged action) and — except the nested-path one,
+  // pattern = NESTED-path navigation, identity = METADATA inspection. (A sixth, "download", existed
+  // for the Entropy Field memory before the 2026-07-11 stage removal — no memory uses it now.) Each
+  // is driven through the genuine feature (never a forged action) and — except the nested-path one,
   // whose verb IS the navigated open — does NOT witness on a bare open: the player must do the verb.
   // (The games overlay covers the app toolbar, so feature verbs are driven via window.__fv / the
   // real renderer functions, exactly as a player would via the toolbar after closing the overlay.)
@@ -1579,13 +1474,13 @@ export async function run(ctx) {
   await page.waitForSelector('[data-memory-card]', { timeout: 5000 });
   await page.click('[data-memory-card]');
   let realVerbGates = 0;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 8; i++) {
     await page.waitForSelector('[data-resolve-memory]', { timeout: 5000 });
     await page.click('[data-resolve-memory]');
     if (i === 0) {
       // Prove the gate: before witnessing the echo, the integrate button is disabled.
       const gated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
-      if (gated) pass('Stage 10 integration is echo-gated (boss not reachable without witnessing echoes)'); else fail('Stage 10 integrate not gated by echo');
+      if (gated) pass('Stage 9 integration is echo-gated (boss not reachable without witnessing echoes)'); else fail('Stage 9 integrate not gated by echo');
     }
     await page.waitForSelector('[data-open-echo]', { timeout: 5000 });
     const { memoryId, verb, mode } = await page.$eval('[data-open-echo]', (el) => ({
@@ -1599,7 +1494,7 @@ export async function run(ctx) {
       // artifact, so opening it through that path is the witness.
       if (verb !== 'nested') {
         const stillGated = await page.$eval('[data-integrate-memory]', (el) => el.disabled);
-        if (!stillGated) fail(`Stage 10 ${memoryId} echo witnessed on a bare open (real-feature gate bypassed)`);
+        if (!stillGated) fail(`Stage 9 ${memoryId} echo witnessed on a bare open (real-feature gate bypassed)`);
       }
       if (verb === 'search') {
         // Wait for the text artifact to load, then ask the precise question via the real search.
@@ -1632,17 +1527,17 @@ export async function run(ctx) {
     }
     await page.waitForSelector('[data-integrate-memory]:not([disabled])', { timeout: 5000 });
     await page.click('[data-integrate-memory]');
-    if (i < 8) await page.click('[data-step="1"]');
+    if (i < 7) await page.click('[data-step="1"]');
   }
-  if (realVerbGates >= 6) pass(`Stage 10 echoes include ${realVerbGates} DISTINCT real-feature gates (raw Original, search, Diff, nested-path, metadata, download)`);
-  else fail(`Stage 10 expected >=6 real-feature echo gates, drove ${realVerbGates}`);
+  if (realVerbGates >= 5) pass(`Stage 9 echoes include ${realVerbGates} DISTINCT real-feature gates (raw Original, search, Diff, nested-path, metadata)`);
+  else fail(`Stage 9 expected >=5 real-feature echo gates, drove ${realVerbGates}`);
   // Back to the board — the assembly gate + Defragmenter status live under the grid now.
   await page.waitForSelector('[data-back-grid]', { timeout: 5000 });
   await page.click('[data-back-grid]');
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return Boolean(save.actions?.['10.memory_resolved'] && save.achievements?.['stage10.memory_resolved'] && save.achievements?.['stage10.full_capstone']);
+      return Boolean(save.actions?.['9.memory_resolved'] && save.achievements?.['stage9.memory_resolved'] && save.achievements?.['stage9.full_capstone']);
     } catch { return false; }
   }, null, { timeout: 5000 });
   await page.waitForSelector('[data-goto-final]', { timeout: 5000 });
@@ -1651,23 +1546,23 @@ export async function run(ctx) {
   // confrontation is won (boss never self-unlocks).
   await page.waitForSelector('[data-field="confront"]', { timeout: 5000 });
   const choiceLeaked = await page.$('[data-final-choice]');
-  if (!choiceLeaked) pass('Stage 10 final choice is gated behind the confrontation'); else fail('Stage 10 final choice exposed before the confrontation was won');
+  if (!choiceLeaked) pass('Stage 9 final choice is gated behind the confrontation'); else fail('Stage 9 final choice exposed before the confrontation was won');
   // Drive it deterministically through the same engine functions a player's clicks call: affirm each
   // compaction with the recorded stance (Phase A), anchor each fragmentation trace — prior un-cheats
   // concede instantly, the rest re-witness (Phase B), answer the core question (Phase C).
-  const confrontDone = await page.evaluate(() => window.__fvStage10.confront.run('seeker').completed);
-  if (confrontDone) pass('Stage 10 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 10 confrontation did not complete');
+  const confrontDone = await page.evaluate(() => window.__fvStage9.confront.run('seeker').completed);
+  if (confrontDone) pass('Stage 9 three-phase confrontation completed (compaction + fragmentation + core)'); else fail('Stage 9 confrontation did not complete');
   // Conduct badges: run() affirms each compaction first-try (flawless) and — since the smoke did every
   // prior un-cheat honestly — Phase B conceded every trace with no re-opens (all-traces-conceded).
   const confrontBadges = await page.waitForFunction(() => {
     try {
       const a = JSON.parse(localStorage.getItem('fv:games:metagame:v3')).achievements || {};
-      return Boolean(a['stage10.flawless_compaction'] && a['stage10.all_traces_conceded']);
+      return Boolean(a['stage9.flawless_compaction'] && a['stage9.all_traces_conceded']);
     } catch { return false; }
   }, null, { timeout: 5000 }).then(() => true).catch(() => false);
-  if (confrontBadges) pass('Stage 10 confront achievements unlocked (flawless compaction + all traces conceded)'); else fail('Stage 10 confront achievements not unlocked');
+  if (confrontBadges) pass('Stage 9 confront achievements unlocked (flawless compaction + all traces conceded)'); else fail('Stage 9 confront achievements not unlocked');
   await page.waitForFunction(() => {
-    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[10]?.confront?.completed); } catch { return false; }
+    try { return Boolean(JSON.parse(localStorage.getItem('fv:games:metagame:v3')).stageState?.[9]?.confront?.completed); } catch { return false; }
   }, null, { timeout: 5000 });
   // Now the final question is reachable. Choose "understand" → the woven Synthesis epilogue.
   await page.waitForSelector('[data-final-choice="understand"]:not([disabled])', { timeout: 5000 });
@@ -1675,25 +1570,25 @@ export async function run(ctx) {
   await page.waitForFunction(() => {
     try {
       const save = JSON.parse(localStorage.getItem('fv:games:metagame:v3'));
-      return save.defeated?.includes(10) && save.stageState?.[10]?.final?.completed && save.stageState?.[10]?.final?.route === 'understand'
-        && Boolean(save.achievements?.['stage10.route_understand']);
+      return save.defeated?.includes(9) && save.stageState?.[9]?.final?.completed && save.stageState?.[9]?.final?.route === 'understand'
+        && Boolean(save.achievements?.['stage9.route_understand']);
     } catch { return false; }
   }, null, { timeout: 5000 });
-  pass('Stage 10 route achievement unlocked for the chosen final route (understand)');
+  pass('Stage 9 route achievement unlocked for the chosen final route (understand)');
   const finalOutcome = await page.$eval('[data-field="finalOutcome"]', (el) => el.textContent);
-  if (/full capstone/i.test(finalOutcome) && /9 memories resolved, 9 integrated/.test(finalOutcome)) pass('Stage 10 final outcome summarizes the completed route'); else fail('Stage 10 final outcome summary unexpected: ' + finalOutcome);
+  if (/full capstone/i.test(finalOutcome) && /8 memories resolved, 8 integrated/.test(finalOutcome)) pass('Stage 9 final outcome summarizes the completed route'); else fail('Stage 9 final outcome summary unexpected: ' + finalOutcome);
   // Post-confront rebuttal depth: the Defragmenter's completion voice reflects HOW the fight went.
   // The smoke did every prior un-cheat honestly and affirmed each compaction first-try → the "clean"
   // conduct line; it answered the core questions as 'seeker' → the seeker stance line.
-  const finalVoice = await page.$eval('.mg-stage10__final .mg-stage10__voice', (el) => el.textContent);
-  if (/nothing left for me to compact/i.test(finalVoice) && /still becoming/i.test(finalVoice)) pass('Stage 10 Defragmenter rebuttal reflects confront conduct + Phase-C stance'); else fail('Stage 10 conduct/stance rebuttal lines missing: ' + finalVoice);
-  // The "understand" route weaves the Synthesis epilogue from the nine chosen reflections + closer.
+  const finalVoice = await page.$eval('.mg-stage9__final .mg-stage9__voice', (el) => el.textContent);
+  if (/nothing left for me to compact/i.test(finalVoice) && /still becoming/i.test(finalVoice)) pass('Stage 9 Defragmenter rebuttal reflects confront conduct + Phase-C stance'); else fail('Stage 9 conduct/stance rebuttal lines missing: ' + finalVoice);
+  // The "understand" route weaves the Synthesis epilogue from the eight chosen reflections + closer.
   const synthesis = await page.$eval('[data-field="synthesis"]', (el) => el.textContent);
-  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 10 understand route renders the woven Synthesis epilogue'); else fail('Stage 10 synthesis epilogue unexpected: ' + synthesis);
+  if (/Synthesis/.test(synthesis) && synthesis.length > 80) pass('Stage 9 understand route renders the woven Synthesis epilogue'); else fail('Stage 9 synthesis epilogue unexpected: ' + synthesis);
   // The ending narration (awakeningText) now renders on completion; capstone gets the extra line.
   const awakening = await page.$eval('[data-field="awakening"]', (el) => el.textContent);
-  if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 10 renders the awakening ending (capstone)'); else fail('Stage 10 awakening ending unexpected: ' + awakening);
-  pass('Stage 10 resolves, integrates all memories, wins the confrontation, and completes Awakening');
+  if (/They were the awakening/i.test(awakening) && /Every memory answered back/i.test(awakening)) pass('Stage 9 renders the awakening ending (capstone)'); else fail('Stage 9 awakening ending unexpected: ' + awakening);
+  pass('Stage 9 resolves, integrates all memories, wins the confrontation, and completes Awakening');
   await page.click('.games-close');
 
   const btsOk = await page.evaluate(async () => {
