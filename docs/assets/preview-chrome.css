@@ -804,8 +804,27 @@ html[data-theme="dark"] .qp-preview .json-warning { color: #ffd166; background: 
 .xe-tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
 .xe-tab { font-size: 12px; padding: 3px 10px; border-radius: 6px 6px 0 0; border: 1px solid var(--border); background: var(--bg); color: var(--fg-2); cursor: pointer; white-space: nowrap; }
 .xe-tab.active { color: var(--accent); border-color: var(--accent); }
+.xe-sheet-state { margin-left: 3px; border: 1px solid currentColor; border-radius: 999px; padding: 0 5px; font-size: 9px; text-transform: uppercase; letter-spacing: .04em; }
+.xe-tab-hidden .xe-sheet-state { color: #9a6700; }
+.xe-tab-very-hidden .xe-sheet-state { color: #b42318; }
 .xe-download { font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid transparent; background: var(--accent); color: var(--accent-fg); cursor: pointer; }
 .xe-download:disabled { opacity: 0.4; cursor: default; background: var(--bg); color: var(--fg-2); border-color: var(--border); }
+.xe-fidelity-note,.xe-formula-warning { padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.xe-fidelity-note { color: var(--fg-2); background: var(--bg); }
+.xe-formula-warning { color: #7a2e0e; background: color-mix(in srgb, #f59e0b 16%, var(--bg)); }
+.xe-inspector { display: grid; grid-template-columns: repeat(3,minmax(10rem,1fr)); gap: 6px 12px; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--bg-2); max-height: 176px; overflow: auto; font-size: 12px; }
+.xe-inspector-heading { grid-column: 1/-1; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.xe-inspector-heading strong { overflow-wrap: anywhere; }
+.xe-kind { border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; color: var(--fg-2); font-size: 10px; }
+.xe-inspector-field { display: grid; grid-template-columns: minmax(5.5rem,auto) minmax(0,1fr); gap: 6px; min-width: 0; }
+.xe-inspector-label { color: var(--fg-2); font-weight: 600; }
+.xe-inspector-value { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.xe-inspector-field[data-field="formula"] .xe-inspector-value { font-family: ui-monospace,monospace; }
+.xe-inspector-value a { color: var(--accent); }
+.xe-link-blocked { color: var(--fg-2); }
+.xe-inspector-actions { grid-column: 1/-1; display: flex; align-items: center; gap: 8px; }
+.xe-formula-replace,.xe-formula-dialog button { border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); padding: 4px 10px; cursor: pointer; font: inherit; }
+.xe-replacement-enabled { color: #b42318; font-weight: 600; }
 .xe-grid { flex: 1; overflow: auto; }
 .xe-panel { padding: 0; }
 .xe-table { border-collapse: collapse; font-size: 13px; font-family: ui-monospace, monospace; }
@@ -816,6 +835,24 @@ html[data-theme="dark"] .qp-preview .json-warning { color: #ffd166; background: 
 .xe-cell { border: 1px solid var(--border); padding: 3px 6px; color: var(--fg); min-width: 72px; max-width: 320px; overflow: hidden; white-space: pre; }
 .xe-cell:focus { outline: 2px solid var(--accent); outline-offset: -2px; background: var(--bg-2); }
 .xe-cell.xe-dirty { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.xe-cell.xe-selected { box-shadow: inset 0 0 0 2px var(--accent); }
+.xe-cell.xe-formula { cursor: pointer; font-style: italic; background-color: color-mix(in srgb, var(--accent) 7%, var(--bg)); }
+.xe-cell.xe-formula-unlocked { cursor: text; box-shadow: inset 0 0 0 2px #b42318; }
+.xe-cell.xe-has-comment { background-image: linear-gradient(225deg,#f59e0b 0 7px,transparent 7px); }
+.xe-cell.xe-has-link { text-decoration: underline dotted; text-underline-offset: 2px; }
+.xe-formula-dialog { width: min(460px,calc(100vw - 28px)); border: 1px solid var(--border); border-radius: 12px; background: var(--bg); color: var(--fg); padding: 18px; box-shadow: 0 20px 70px #0008; }
+.xe-formula-dialog::backdrop { background: #0008; }
+.xe-formula-dialog h2 { margin: 0 0 10px; font-size: 18px; }
+.xe-formula-dialog p { margin: 8px 0; color: var(--fg-2); line-height: 1.45; }
+.xe-formula-dialog code { display: block; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.xe-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.xe-formula-dialog .xe-dialog-danger { border-color: #b42318; background: #b42318; color: #fff; }
+@media (max-width:520px) {
+  .xe-inspector { grid-template-columns: 1fr; max-height: 220px; padding: 8px; }
+  .xe-inspector-heading,.xe-inspector-actions { grid-column: 1; }
+  .xe-inspector-field { grid-template-columns: 5.5rem minmax(0,1fr); }
+  .xe-fidelity-note,.xe-formula-warning { padding-inline: 8px; }
+}
 
 /* DOCX rich-text editor (parent pane). */
 .preview-host .dx-doc { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }

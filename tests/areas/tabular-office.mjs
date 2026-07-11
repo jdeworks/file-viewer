@@ -1,3 +1,5 @@
+import { runXlsxFidelity } from './xlsx-fidelity.mjs';
+
 export async function run(ctx) {
   const { page, origin, frameOf, pass, fail, openExample } = ctx;
 
@@ -187,6 +189,8 @@ export async function run(ctx) {
 
   const csvViewport = page.viewportSize() || { width: 1280, height: 720 };
   await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForFunction(() => matchMedia('(max-width: 760px)').matches
+    && document.getElementById('exportBtn')?.parentElement?.id === 'moreMenu');
   const raggedMobile = await page.evaluate(() => ({
     pageOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     visibleFallbacks: [...document.querySelectorAll('#previewHost .te-header-fallback')]
@@ -196,6 +200,8 @@ export async function run(ctx) {
     pass('ragged CSV fallback headers stay visible without page overflow at 390px');
   } else fail('ragged CSV mobile layout: ' + JSON.stringify(raggedMobile));
   await page.setViewportSize(csvViewport);
+  await page.waitForFunction(() => !matchMedia('(max-width: 760px)').matches
+    && document.getElementById('exportBtn')?.parentElement?.id !== 'moreMenu');
 
   const wideHeaderCsv = 'a,b,c,d\n1,2\n3,4,5,6';
   await page.evaluate((source) => window.__fv.openBlobFile(
@@ -259,6 +265,8 @@ export async function run(ctx) {
   const xMeta = await page.$eval('#metaBody', (e) => e.textContent);
   if (/Sheets\s*2/.test(xMeta) && /Sheet names\s*People, Totals/.test(xMeta)) pass('Excel metadata: sheet count + names'); else fail('xlsx meta: ' + xMeta.replace(/\s+/g, ' ').slice(0, 200));
   await page.click('#metaDrawer [data-close]');
+
+  await runXlsxFidelity(ctx);
 
   // ── Word module ── mammoth → sanitized HTML, now an editor in the parent pane (Edit + export).
   await page.goto(origin, { waitUntil: 'load' });
