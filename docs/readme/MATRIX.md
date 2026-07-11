@@ -300,7 +300,9 @@ Master overview of all file types supported by the viewer. Columns:
 
 ## Known-file plugin summary
 
-Enhanced filename matchers are registered across the base types above. This table is a compact snapshot; the exhaustive known-plugin audit is tracked separately in `HELP_DOCS_AUDIT_PLAN.md`.
+Enhanced filename matchers are registered across the base types above. This table is a compact
+snapshot; `docs/compatibility.json` and the generated known-file registry are the machine-readable
+inventories.
 
 | Base type | Plugin count | Examples |
 |-----------|-------------|---------|
