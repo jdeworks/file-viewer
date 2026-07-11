@@ -31,7 +31,9 @@ const rows = [
   ['archive', 'Archives/e-books', 'docs/examples/Sample.7z', ['README.md', 'data/people.csv']],
   ['zip', 'Archives/e-books', 'docs/examples/sample.zip', ['README.txt', 'src/app.js']],
   ['epub', 'Archives/e-books', 'docs/examples/sample.epub', ['The Gift of the Magi', 'O. Henry']],
-  ['comic', 'Archives/e-books', 'docs/examples/sample.cbz', [], { requirePixels: true, minVisualItems: 3 }],
+  ['comic', 'Archives/e-books', 'docs/examples/sample.cbz', [], {
+    requirePixels: true, minVisualItems: 3, nestedScrollSelector: '.comic-pages',
+  }],
   ['media', 'Media', 'docs/examples/sample.mp4', [], { requirePixels: true }],
   ['midi', 'Media', 'docs/examples/sample.mid', ['Type 1 Format', '3 Tracks']],
   ['font', 'Fonts', 'docs/examples/sample.ttf', ['quick brown fox', 'SIZE RAMP']],

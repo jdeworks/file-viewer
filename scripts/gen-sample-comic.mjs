@@ -111,8 +111,8 @@ function drawPage(index, page) {
   const canvas = makeCanvas(index, page.colors);
   rect(canvas, 24, 22, 552, 72, [249, 247, 237]);
   frame(canvas, 24, 22, 552, 72, [249, 247, 237]);
-  text(canvas, 'FILE VIEWER', 48, 38, 6);
-  text(canvas, page.label, 390, 48, 3, page.colors[0]);
+  text(canvas, 'FILE VIEWER', 48, 40, 5);
+  text(canvas, page.label, 420, 49, 3, page.colors[0]);
   if (index === 0) {
     frame(canvas, 28, 118, 544, 300, [205, 232, 239]);
     line(canvas, 48, 376, 540, 156, page.colors[0], 8);
