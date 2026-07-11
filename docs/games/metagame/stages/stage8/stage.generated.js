@@ -473,32 +473,32 @@ var MOVEMENTS = [
 ];
 var LEVEL_TABLE = {
   // Signal (simple) — gentlest intro, then L2 escalates SPEED only.
-  1: { mode: "simple", speed: 30, speedVar: 0, tolerance: 42, display: "open" },
-  2: { mode: "simple", speed: 42, speedVar: 0, tolerance: 42, display: "open" },
+  1: { mode: "simple", speed: 36, speedVar: 0, tolerance: 30, display: "open" },
+  2: { mode: "simple", speed: 50, speedVar: 0, tolerance: 30, display: "open" },
   // Drift (oscillating) — gentle intro (slow base, small swing, wide window), then L4 escalates oscAmp only.
-  3: { mode: "oscillating", oscBase: 32, oscAmp: 12, oscPeriod: 4600, tolerance: 40, display: "open" },
-  4: { mode: "oscillating", oscBase: 32, oscAmp: 22, oscPeriod: 4600, tolerance: 40, display: "open" },
+  3: { mode: "oscillating", oscBase: 38, oscAmp: 14, oscPeriod: 4600, tolerance: 28, display: "open" },
+  4: { mode: "oscillating", oscBase: 38, oscAmp: 26, oscPeriod: 4600, tolerance: 28, display: "open" },
   // Echo (ghostecho) — gentle intro, then L6 tightens TOLERANCE only (the ghosts help you close it).
-  5: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 38, display: "open" },
-  6: { mode: "ghostecho", speed: 32, speedVar: 0, tolerance: 28, display: "open" },
+  5: { mode: "ghostecho", speed: 38, speedVar: 0, tolerance: 26, display: "open" },
+  6: { mode: "ghostecho", speed: 38, speedVar: 0, tolerance: 19, display: "open" },
   // Cadence (rhythm) — gentle intro (chain 3), then L8 lengthens CHAIN only.
-  7: { mode: "rhythm", speed: 30, speedVar: 0, chain: 3, tolerance: 36, display: "open" },
-  8: { mode: "rhythm", speed: 30, speedVar: 0, chain: 4, tolerance: 36, display: "open" },
+  7: { mode: "rhythm", speed: 36, speedVar: 0, chain: 3, tolerance: 25, display: "open" },
+  8: { mode: "rhythm", speed: 36, speedVar: 0, chain: 4, tolerance: 25, display: "open" },
   // Interference (dual) — gentle intro, then L10 speeds the INNER ring only.
-  9: { mode: "dual", speedInner: 40, speedOuter: 28, tolerance: 36, display: "dual" },
-  10: { mode: "dual", speedInner: 52, speedOuter: 28, tolerance: 36, display: "dual" },
+  9: { mode: "dual", speedInner: 46, speedOuter: 32, tolerance: 25, display: "dual" },
+  10: { mode: "dual", speedInner: 60, speedOuter: 32, tolerance: 25, display: "dual" },
   // Surveillance (stealth) — single gentle level (last learnable-online).
-  11: { mode: "stealth", speed: 34, speedVar: 0, eyeSpeed: 22, blind: 60, tolerance: 34, display: "open" },
+  11: { mode: "stealth", speed: 40, speedVar: 0, eyeSpeed: 26, blind: 60, tolerance: 24, display: "open" },
   // Back third (onlineUnstable): each is a single gentle archetype intro; the difficulty here is the
   // un-cheat, not the tuning. Reversal.
-  12: { mode: "reversing", speed: 48, speedVar: 0, tolerance: 32, display: "open", onlineUnstable: true },
+  12: { mode: "reversing", speed: 54, speedVar: 0, tolerance: 22, display: "open", onlineUnstable: true },
   // Decoys (multigap) — gentle intro (3 gaps), then L14 adds one GAP only.
-  13: { mode: "multigap", speed: 44, speedVar: 0, gaps: 3, tolerance: 30, display: "open", onlineUnstable: true },
-  14: { mode: "multigap", speed: 44, speedVar: 0, gaps: 4, tolerance: 30, display: "open", onlineUnstable: true },
+  13: { mode: "multigap", speed: 50, speedVar: 0, gaps: 3, tolerance: 22, display: "open", onlineUnstable: true },
+  14: { mode: "multigap", speed: 50, speedVar: 0, gaps: 4, tolerance: 22, display: "open", onlineUnstable: true },
   // Blackout (darkzone) — single gentle level.
-  15: { mode: "darkzone", speed: 42, speedVar: 0, tolerance: 28, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
-  // Observer (boss) — the final movement, tightest window.
-  16: { mode: "simple", speed: 46, speedVar: 0, tolerance: 16, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
+  15: { mode: "darkzone", speed: 48, speedVar: 0, tolerance: 20, display: "dark", darkZone: { start: 312, end: 48 }, onlineUnstable: true },
+  // Observer (boss) — the final movement, tightest window (already tight; nudged, not overhauled).
+  16: { mode: "simple", speed: 48, speedVar: 0, tolerance: 14, display: "dark", darkZone: { start: 300, end: 60 }, onlineUnstable: true }
 };
 function movementForLevel(level) {
   const lvl = Number(level) || 1;
@@ -551,6 +551,12 @@ function missDelta({ seed, elapsedMs, level }) {
 function renderLevel(seed, level, elapsedMs, ctx = {}) {
   const cfg = levelConfig(level);
   return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
+}
+function gapAngleAt(seed, level, elapsedMs) {
+  const cfg = levelConfig(level);
+  const mode = getMode(cfg.mode);
+  const fn = mode.angleAt || mode.gapAngle;
+  return typeof fn === "function" ? fn.call(mode, cfg, seed, Number(elapsedMs) || 0) : null;
 }
 function rotSpeedFor(seed, level) {
   return ringSpeed(levelConfig(level), seed);
@@ -791,6 +797,12 @@ function stage8Markup(AIDS2, BOSS_LEVEL2) {
     <div class="s8-layout">
       <div class="s8-arena-wrap">
         <div class="s8-marker" data-field="marker" aria-hidden="true">&#9660;</div>
+        <!-- Smoothly-ANIMATED ring (playtest: "the crossing needs at least some animation" — the
+             ASCII grid below is technically a continuous f(seed,elapsedMs), but character-cell
+             quantization reads as static/choppy). Pure CSS: a conic-gradient wheel rotated via
+             --s8-gap-angle every frame, driven by the SAME crossAttempt() angle the ASCII uses —
+             no simulation change, presentation only. See paintOverlays() in renderer.js. -->
+        <div class="s8-ring-wheel" data-field="ringWheel" aria-hidden="true"></div>
         <pre class="s8-arena" data-field="arena" tabindex="0" role="button" aria-label="observer ring — tap or press Space to CROSS"></pre>
         <span class="s8-beat" data-field="beat" hidden aria-hidden="true"></span>
         <span class="s8-streak" data-field="streak" hidden></span>
@@ -940,6 +952,7 @@ import { banner, floatNum } from "../../shared/feedback.js";
 import { openModal } from "../../shared/modal.js";
 var MARKER_READY_DEG = 30;
 var BOSS_REVEAL_LEVEL = 13;
+var MISS_CLARITY_COST = 4;
 function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
   root.className = "stage8-observer-state";
@@ -1000,7 +1013,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const level = state.currentLevel;
     const cfg = levelConfig(level);
     if (cfg.onlineUnstable && !offlineUnlocked()) {
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      state.clarity = Math.max(0, Number(state.clarity || 0) - MISS_CLARITY_COST);
       liveSeed = getBossSeed({ state, actions });
       state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
       pushLog3("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
@@ -1025,7 +1038,7 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
         return crossOutcome(result);
       }
       rhythmChain = 0;
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      state.clarity = Math.max(0, Number(state.clarity || 0) - MISS_CLARITY_COST);
       pushLog3(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
       return "miss";
     }
@@ -1035,8 +1048,8 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
       advanceFrom(level);
       return crossOutcome(result);
     }
-    state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-    pushLog3(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+    state.clarity = Math.max(0, Number(state.clarity || 0) - MISS_CLARITY_COST);
+    pushLog3(`mistimed (off by ${Math.round(result.distance)}deg). clarity -${MISS_CLARITY_COST}.`);
     return "miss";
   }
   function challengeBoss() {
@@ -1217,6 +1230,14 @@ function renderStage9({ host, state, actions, achievements, bell, bts, viewer, s
     const intensity = markerIntensity(r.distance, MARKER_READY_DEG);
     fields.marker.classList.toggle("s8-marker--ready", intensity > 1e-3);
     fields.marker.style.opacity = (0.35 + 0.65 * intensity).toFixed(3);
+    const angle = gapAngleAt(seed, level, elapsedMs);
+    const hidden = cfg.display === "hidden" || angle == null;
+    fields.ringWheel.hidden = angle == null;
+    fields.ringWheel.classList.toggle("s8-ring-wheel--hidden", hidden);
+    if (!hidden) {
+      fields.ringWheel.style.setProperty("--s8-gap-angle", `${angle.toFixed(2)}deg`);
+      fields.ringWheel.style.setProperty("--s8-gap-deg", `${cfg.tolerance || 20}deg`);
+    }
     const isRhythm = cfg.mode === "rhythm";
     fields.beat.hidden = !isRhythm;
     if (isRhythm) {

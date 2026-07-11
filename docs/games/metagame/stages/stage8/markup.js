@@ -25,6 +25,12 @@ export function stage8Markup(AIDS, BOSS_LEVEL) {
     <div class="s8-layout">
       <div class="s8-arena-wrap">
         <div class="s8-marker" data-field="marker" aria-hidden="true">&#9660;</div>
+        <!-- Smoothly-ANIMATED ring (playtest: "the crossing needs at least some animation" — the
+             ASCII grid below is technically a continuous f(seed,elapsedMs), but character-cell
+             quantization reads as static/choppy). Pure CSS: a conic-gradient wheel rotated via
+             --s8-gap-angle every frame, driven by the SAME crossAttempt() angle the ASCII uses —
+             no simulation change, presentation only. See paintOverlays() in renderer.js. -->
+        <div class="s8-ring-wheel" data-field="ringWheel" aria-hidden="true"></div>
         <pre class="s8-arena" data-field="arena" tabindex="0" role="button" aria-label="observer ring — tap or press Space to CROSS"></pre>
         <span class="s8-beat" data-field="beat" hidden aria-hidden="true"></span>
         <span class="s8-streak" data-field="streak" hidden></span>

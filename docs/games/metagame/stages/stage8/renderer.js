@@ -10,6 +10,7 @@ import {
   BOSS_LEVEL,
   crossAttempt,
   crossOutcome,
+  gapAngleAt,
   levelConfig,
   missDelta,
   modeHint,
@@ -30,6 +31,11 @@ import { openModal } from "../../shared/modal.js";
 
 const MARKER_READY_DEG = 30;   // gap within this of the top ⇒ the crossing marker brightens (#2)
 const BOSS_REVEAL_LEVEL = 13;  // the boss panel stays a one-line locked chip until this level (#7)
+// Playtest fix (2026-07-11, "way too easy"): a miss used to cost a flat -1 clarity with instant,
+// unlimited free retries, so a wrong press barely registered. Raised so retrying has a real cost —
+// tuned against clarity income (a level clear grants cfg.movement*5, i.e. 5-80 across the game) so
+// a miss stings without making a rough level unrecoverable.
+const MISS_CLARITY_COST = 4;
 
 export function renderStage9({ host, state, actions, achievements, bell, bts, viewer, save, onStageComplete }) {
   const root = document.createElement("section");
@@ -106,7 +112,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     const cfg = levelConfig(level);
     // Online-unstable level while still online: the gap reseeds — no press can land (go offline).
     if (cfg.onlineUnstable && !offlineUnlocked()) {
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      state.clarity = Math.max(0, Number(state.clarity || 0) - MISS_CLARITY_COST);
       liveSeed = getBossSeed({ state, actions });
       state.boss.lockHintStep = Math.min(Number(state.boss.lockHintStep || 0) + 1, 3);
       pushLog("the gap reseeded the instant you committed. nothing holds while live. (go offline.)");
@@ -134,7 +140,7 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
         return crossOutcome(result);
       }
       rhythmChain = 0;
-      state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
+      state.clarity = Math.max(0, Number(state.clarity || 0) - MISS_CLARITY_COST);
       pushLog(`chain broken (off by ${Math.round(result.distance)}deg). cadence reset.`);
       return "miss";
     }
@@ -145,8 +151,8 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
       advanceFrom(level);
       return crossOutcome(result);
     }
-    state.clarity = Math.max(0, Number(state.clarity || 0) - 1);
-    pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -1.`);
+    state.clarity = Math.max(0, Number(state.clarity || 0) - MISS_CLARITY_COST);
+    pushLog(`mistimed (off by ${Math.round(result.distance)}deg). clarity -${MISS_CLARITY_COST}.`);
     return "miss";
   }
 
@@ -332,6 +338,18 @@ export function renderStage9({ host, state, actions, achievements, bell, bts, vi
     const intensity = markerIntensity(r.distance, MARKER_READY_DEG);
     fields.marker.classList.toggle("s8-marker--ready", intensity > 0.001);
     fields.marker.style.opacity = (0.35 + 0.65 * intensity).toFixed(3);
+    // Smoothly-animated ring wheel (CSS conic-gradient rotated via --s8-gap-angle) — same angle the
+    // ASCII ring already renders from, just driven every frame for real motion instead of a redraw.
+    // Not every mode has a single representative angle (dual/multigap — see gapAngleAt's doc comment
+    // in game.js); those fall back to hiding the wheel and relying on the ASCII rendering alone.
+    const angle = gapAngleAt(seed, level, elapsedMs);
+    const hidden = cfg.display === "hidden" || angle == null;
+    fields.ringWheel.hidden = angle == null;
+    fields.ringWheel.classList.toggle("s8-ring-wheel--hidden", hidden);
+    if (!hidden) {
+      fields.ringWheel.style.setProperty("--s8-gap-angle", `${angle.toFixed(2)}deg`);
+      fields.ringWheel.style.setProperty("--s8-gap-deg", `${(cfg.tolerance || 20)}deg`);
+    }
     const isRhythm = cfg.mode === "rhythm";
     fields.beat.hidden = !isRhythm;
     if (isRhythm) {

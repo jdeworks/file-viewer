@@ -60,6 +60,19 @@ export function renderLevel(seed, level, elapsedMs, ctx = {}) {
   return getMode(cfg.mode).render(cfg, seed, Number(elapsedMs) || 0, ctx);
 }
 
+// The single gap angle for (seed, level, elapsedMs), for a smoothly-animated presentation layer (the
+// CSS ring wheel) that needs ONE rotation angle per frame. Most modes expose angleAt(cfg,seed,ms); the
+// two-ring "stealth" mode exposes gapAngle(cfg,seed,ms) instead (its OTHER ring, "eye", has no single
+// combined angle worth animating this way). "dual" (two rings that must BOTH align) and "multigap"
+// (several gaps on one ring) have no single representative angle at all — returns null for those, so
+// the caller can fall back to ASCII-only for those levels rather than animating something misleading.
+export function gapAngleAt(seed, level, elapsedMs) {
+  const cfg = levelConfig(level);
+  const mode = getMode(cfg.mode);
+  const fn = mode.angleAt || mode.gapAngle;
+  return typeof fn === "function" ? fn.call(mode, cfg, seed, Number(elapsedMs) || 0) : null;
+}
+
 // Single-ring rotation speed for a (seed, level) — kept for the HUD / simple-mode display.
 export function rotSpeedFor(seed, level) {
   return ringSpeed(levelConfig(level), seed);

@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import {
   levelConfig, crossAttempt, crossOutcome, solveMoment, rotSpeedFor, renderLevel,
-  missDelta, movementForLevel, modeHint, LEVELS, BOSS_LEVEL
+  missDelta, movementForLevel, modeHint, gapAngleAt, LEVELS, BOSS_LEVEL
 } from "../game.js";
 
 // ── movement structure: 16 levels, boss last, learnable front / onlineUnstable back third ──────────
@@ -99,5 +99,19 @@ assert.match(modeHint(levelConfig(11)), /eye/, "stealth hint names the eye");
 assert.match(modeHint(levelConfig(13)), /3 gaps/, "multigap hint names the gap count");
 assert.match(modeHint(levelConfig(15)), /blackout/i, "darkzone hint names the blackout");
 assert.equal(typeof modeHint(undefined), "string", "modeHint never throws on missing cfg");
+
+// ── gapAngleAt: the single-angle presentation helper for the animated ring wheel (renderer.js) ─────
+// simple/oscillating/ghostecho/rhythm/reversing/darkzone all expose angleAt — a real number every time.
+assert.equal(typeof gapAngleAt("seed", 1, 500), "number", "simple (level 1) has a single gap angle");
+assert.ok(Number.isFinite(gapAngleAt("seed", 1, 500)), "the angle is finite");
+// stealth (level 11) exposes gapAngle instead of angleAt — gapAngleAt falls back to it.
+assert.equal(typeof gapAngleAt("seed", 11, 500), "number", "stealth (level 11) falls back to gapAngle");
+// dual (level 9, two rings that must BOTH align) and multigap (level 13, several gaps on one ring)
+// have no single representative angle — gapAngleAt returns null so the caller can hide the wheel
+// and fall back to the ASCII rendering, rather than animating something misleading.
+assert.equal(gapAngleAt("seed", 9, 500), null, "dual (level 9) has no single gap angle");
+assert.equal(gapAngleAt("seed", 13, 500), null, "multigap (level 13) has no single gap angle");
+// Determinism: same (seed, level, elapsedMs) ⇒ same angle (matches the "pure f(seed,elapsedMs)" law).
+assert.equal(gapAngleAt("seed", 1, 777), gapAngleAt("seed", 1, 777), "gapAngleAt is deterministic");
 
 console.log("stage8 game tests passed");

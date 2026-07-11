@@ -51,6 +51,39 @@
   font-size: 15px;
   line-height: 1.05;
   transition: border-color 90ms ease-out, box-shadow 90ms ease-out, color 90ms ease-out;
+  /* The ring visual is now the CSS wheel below (dominant, smoothly animated); this ASCII grid stays
+     rendered underneath (dim, not removed) — it's still a real f(seed,elapsedMs) fallback/detail
+     layer and existing test coverage checks its glyphs, so it keeps producing correct text output,
+     it's just no longer what the player's eye reads as "the ring". */
+  opacity: 0.22;
+}
+
+/* Smoothly-animated ring (playtest: "the crossing needs at least some animation"). A conic-gradient
+   wheel: the gap is a transparent wedge baked into the gradient at 12-o'clock, and --s8-gap-angle
+   (set every frame in renderer.js's paintOverlays, from the SAME crossAttempt() angle the ASCII ring
+   already uses) rotates the whole wheel via transform — real, continuous, GPU-driven motion, not
+   text-cell-quantized redraws. `hidden` (dark-zone/blind levels) removes the gap entirely: the wheel
+   renders as a solid ring, matching the ASCII's own '?' "can't see the gap" semantics. */
+.s8-ring-wheel {
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  --s8-gap-deg: 20deg;
+  background: conic-gradient(from 0deg,
+    #5dcaa5 0deg, #5dcaa5 calc(360deg - var(--s8-gap-deg)),
+    transparent calc(360deg - var(--s8-gap-deg)), transparent 360deg);
+  transform: rotate(var(--s8-gap-angle, 0deg));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 14px), #000 calc(100% - 13px));
+}
+.s8-ring-wheel.s8-ring-wheel--hidden {
+  background: #5dcaa5; /* solid — the gap position can't be seen, matching the ASCII '?' state */
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .s8-ring-wheel { transition: none; }
 }
 
 /* #2 — fixed crossing marker (▼) pinned above the top of the ring; brightens as the gap approaches. */
