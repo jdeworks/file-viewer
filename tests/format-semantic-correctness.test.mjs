@@ -114,6 +114,16 @@ assert.match(calibrationHtml, /64 × 64 pixels/);
 assert.doesNotMatch(calibrationHtml, /Slice thickness/);
 assert.doesNotMatch(calibrationHtml, /YES mm/);
 
+class NoWholeTailSlice extends Uint8Array {
+  slice(start, end) {
+    if (start === 132 && end === undefined) throw new Error('renderer copied the complete DICOM tail');
+    return super.slice(start, end);
+  }
+}
+const guardedDicom = new NoWholeTailSlice(calibrationOnly.length);
+guardedDicom.set(calibrationOnly);
+assert.doesNotThrow(() => renderDicom({ bytes: guardedDicom, size: guardedDicom.length }));
+
 const realSliceThickness = dicom(
   dicomText(0x0018, 0x0050, 'DS', '1.25'),
   dicomUs(0x0028, 0x0010, 64),
