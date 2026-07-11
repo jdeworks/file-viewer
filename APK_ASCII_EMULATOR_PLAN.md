@@ -139,10 +139,11 @@ finish with clean `dev` pushed safely to `origin`.
   then completed a non-destructive repo rescan plus pointer, consolidation, temporal-graph, quality,
   and generalization maintenance. Four quality findings were repaired; no duplicate, contradiction,
   dead-pointer, or temporal-chain retirement was needed.
-- Final Git steps only: commit this post-rebase handoff update; classify/remove task-owned
-  temporary material; require a clean worktree; fetch and prove `origin/dev` is an ancestor; push
-  `dev` normally; fetch again and verify local HEAD equals `origin/dev`. Do not force-push, tag,
-  publish, or delete the committed beta evidence.
+- Completion state: the rebased series was pushed normally to `origin/dev`; a fresh fetch showed
+  zero ahead/behind divergence and exact local/remote HEAD equality. The index/worktree, task-temp
+  search, and test/browser process search were empty. This notes-only completion checkpoint is also
+  pushed and SHA-verified before handoff. No force-push, tag, publication, evidence deletion, or
+  remote-configuration change was performed.
 
 ## Open Questions
 
