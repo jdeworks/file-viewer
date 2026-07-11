@@ -21,6 +21,13 @@ const v1Artifacts = analyzeAndroidPackage([
 assert.match(v1Artifacts.signatureEvidence, /v1\/JAR signature files present \(not cryptographically verified\)/);
 assert.equal(v1Artifacts.jarManifestPath, 'META-INF/MANIFEST.MF');
 
+const nestedV1Decoys = analyzeAndroidPackage([
+  'AndroidManifest.xml', 'classes.dex', 'META-INF/MANIFEST.MF',
+  'META-INF/nested/CERT.SF', 'META-INF/nested/CERT.RSA',
+], new Uint8Array(), 'apk');
+assert.match(nestedV1Decoys.signatureEvidence, /No recognized signature material/);
+assert.doesNotMatch(nestedV1Decoys.signatureEvidence, /v1\/JAR/);
+
 const aab = analyzeAndroidPackage([
   'base/manifest/AndroidManifest.xml', 'base/dex/classes.dex', 'base/lib/arm64-v8a/libdemo.so',
   'base/resources.pb', 'base/assets/config.json', 'feature/manifest/AndroidManifest.xml',

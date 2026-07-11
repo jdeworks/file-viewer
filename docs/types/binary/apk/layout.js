@@ -42,9 +42,9 @@ function v1SignatureEvidence(files) {
   const sfBases = new Set();
   const blockBases = new Set();
   for (const upper of upperToOriginal.keys()) {
-    let match = upper.match(/^META-INF\/(.+)\.SF$/);
+    let match = upper.match(/^META-INF\/([^/]+)\.SF$/);
     if (match) sfBases.add(match[1]);
-    match = upper.match(/^META-INF\/(.+)\.(RSA|DSA|EC)$/);
+    match = upper.match(/^META-INF\/([^/]+)\.(RSA|DSA|EC)$/);
     if (match) blockBases.add(match[1]);
   }
   const coordinated = [...sfBases].some((base) => blockBases.has(base));
