@@ -125,6 +125,13 @@ const invalidPieceLength = torrentFixture({ ...v2Info, 'piece length': 12000 });
 const invalidPieceHtml = (await renderTorrent({ bytes: invalidPieceLength.bytes, name: 'invalid-piece.torrent' })).bodyHtml;
 assert.doesNotMatch(invalidPieceHtml, /magnet:\?/);
 
+for (const pieceLength of [32 * 1024 * 1024, 4 * 1024 * 1024 * 1024]) {
+  const largePiece = torrentFixture({ ...v2Info, 'piece length': pieceLength });
+  const largePieceHash = `1220${digest('sha256', largePiece.infoBytes)}`;
+  const largePieceHtml = (await renderTorrent({ bytes: largePiece.bytes, name: 'large-piece.torrent' })).bodyHtml;
+  assert.match(largePieceHtml, new RegExp(`xt=urn:btmh:${largePieceHash}`));
+}
+
 const fileNode = (length) => ({ '': { length, ...(length > 0 ? { 'pieces root': Buffer.alloc(32, 0x55) } : {}) } });
 const wideTree = {
   f1: fileNode(1),

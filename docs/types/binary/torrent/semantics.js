@@ -189,7 +189,7 @@ export function inspectTorrentInfo(info) {
     : null;
   const pieceLength = isBencodeDictionary(info) ? info['piece length'] : null;
   const validV2PieceLength = Number.isSafeInteger(pieceLength) && pieceLength >= 16384
-    && pieceLength <= 16777216 && (pieceLength & (pieceLength - 1)) === 0;
+    && (BigInt(pieceLength) & (BigInt(pieceLength) - 1n)) === 0n;
   const validV2 = isV2 && v2.totalSizeComplete && validV2PieceLength;
   return {
     metaVersion,
