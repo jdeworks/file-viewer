@@ -117,6 +117,24 @@ const changingProgramHtml = (await renderMidi({ bytes: changingProgramMidi })).b
 assert.match(changingProgramHtml, /Acoustic Grand Piano \(ch 1\); Acoustic Bass \(ch 1\)/);
 assert.match(changingProgramHtml, /Instruments used/);
 
+const setupTrackBody = '4d54726b0000000700c02000ff2f00';
+const noteTrackBody = '4d54726b0000000801903c4000ff2f00';
+const sharedProgramMidi = Buffer.from(
+  `4d546864000000060001000201e0${setupTrackBody}${noteTrackBody}`,
+  'hex',
+);
+const sharedProgram = parseMidi({ bytes: sharedProgramMidi });
+assert.deepEqual(sharedProgram.tracks[0].programs, []);
+assert.deepEqual(sharedProgram.tracks[1].programs, [{ channel: 1, program: 32 }]);
+assert.match((await renderMidi({ bytes: sharedProgramMidi })).bodyHtml, /Acoustic Bass \(ch 1\)/);
+
+const independentProgramMidi = Buffer.from(
+  `4d546864000000060002000201e0${setupTrackBody}${noteTrackBody}`,
+  'hex',
+);
+assert.deepEqual(parseMidi({ bytes: independentProgramMidi }).tracks[1].programs,
+  [{ channel: 1, program: 0 }]);
+
 const dicomElement = (group, element, vr, value) => {
   const data = Buffer.from(value);
   const header = Buffer.alloc(8);

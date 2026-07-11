@@ -75,13 +75,13 @@ export function parseMidi(intake) {
     p = trackStart;
     const t = { name: '', instrumentName: '', channel: null, program: null, programs: [], notes: 0 };
     const trackChannels = new Set();
-    const activePrograms = new Map();
-    const usedPrograms = new Map();
     const trackTempos = [];
-    let tick = 0, running = 0;
+    const channelEvents = [];
+    let tick = 0, running = 0, currentPort = 0, eventOrder = 0;
     while (p < end) {
       const d = vlq(b, p, end); tick += d.v; p = d.p; maxTick = Math.max(maxTick, tick);
       if (p >= end) throw new Error('Missing MIDI event after delta time');
+      const order = eventOrder++;
       let status = b[p++];
       if (status < 0x80) {
         if (!running) throw new Error('Running status used before a channel status');
@@ -104,6 +104,7 @@ export function parseMidi(intake) {
           }
         }
         else if (type === 0x58 && data.length >= 2) signatures.push(data[0] + '/' + (1 << data[1]));
+        else if (type === 0x21 && data.length === 1) currentPort = data[0];
         continue;
       }
       if (status === 0xf0 || status === 0xf7) {
@@ -122,23 +123,53 @@ export function parseMidi(intake) {
       if (a >= 0x80 || (needsTwo && c >= 0x80)) throw new Error('Invalid MIDI channel data byte');
       if (op === 0x90 && c > 0) {
         totalNotes++; t.notes++; pitches.add(a);
-        const programs = usedPrograms.get(ch) || new Set();
-        programs.add(activePrograms.get(ch) ?? 0);
-        usedPrograms.set(ch, programs);
+        channelEvents.push({ kind: 'note', tick, order, port: currentPort, channel: ch });
       } else if (op === 0xc0) {
-        activePrograms.set(ch, a);
+        channelEvents.push({ kind: 'program', tick, order, port: currentPort, channel: ch, program: a });
       }
     }
     const channels = [...trackChannels];
     t.channel = channels.length === 1 ? channels[0] : (channels.join(', ') || null);
-    t.programs = [...usedPrograms].flatMap(([channel, programs]) =>
-      [...programs].map((program) => ({ channel, program })));
-    t.program = t.programs.length === 1 ? t.programs[0].program : null;
     tracks.push(t);
-    trackTimelines.push({ maxTick: tick, tempos: trackTempos });
+    trackTimelines.push({ maxTick: tick, tempos: trackTempos, channelEvents });
     p = end; trackIndex++;
   }
   if (p !== b.length) throw new Error('Unexpected trailing MIDI data');
+
+  const usedKeys = tracks.map(() => new Set());
+  const recordPrograms = (events) => {
+    const active = new Map();
+    for (const event of events) {
+      const channelKey = `${event.port}:${event.channel}`;
+      if (event.kind === 'program') {
+        active.set(channelKey, event.program);
+        continue;
+      }
+      const program = active.get(channelKey) ?? 0;
+      const usedKey = `${event.port}:${event.channel}:${program}`;
+      if (usedKeys[event.trackIndex].has(usedKey)) continue;
+      usedKeys[event.trackIndex].add(usedKey);
+      tracks[event.trackIndex].programs.push({
+        channel: event.channel,
+        program,
+        ...(event.port ? { port: event.port } : {}),
+      });
+    }
+  };
+  if (format === 2) {
+    for (let index = 0; index < trackTimelines.length; index++) {
+      recordPrograms(trackTimelines[index].channelEvents
+        .map((event) => ({ ...event, trackIndex: index }))
+        .sort((left, right) => left.tick - right.tick || left.order - right.order));
+    }
+  } else {
+    recordPrograms(trackTimelines.flatMap((track, trackIndexValue) =>
+      track.channelEvents.map((event) => ({ ...event, trackIndex: trackIndexValue })))
+      .sort((left, right) => left.tick - right.tick
+        || left.trackIndex - right.trackIndex || left.order - right.order));
+  }
+  for (const track of tracks) track.program = track.programs.length === 1 ? track.programs[0].program : null;
+
   const bpmValues = tempos.length
     ? tempos.map(({ micros }) => Math.round(60000000 / micros))
     : (ppqn ? [120] : []);
@@ -170,9 +201,9 @@ export async function render(intake, _ctx) {
   try { midi = parseMidi(intake); } catch (err) { return { bodyHtml: '<p class="midi-doc">Preview failed: ' + esc(err.message) + '</p>', hadUnsafe: false }; }
   const rows = midi.tracks.map((t, i) => {
     const instrument = t.programs.length
-      ? t.programs.map(({ channel, program }) => channel === 10
+      ? t.programs.map(({ channel, program, port }) => channel === 10
         ? 'Percussion (ch 10)'
-        : `${GM[program] || ('Program ' + program)} (ch ${channel})`).join('; ')
+        : `${GM[program] || ('Program ' + program)} (${port ? `port ${port}, ` : ''}ch ${channel})`).join('; ')
       : t.instrumentName || '—';
     return `<tr><td data-label="#">${i + 1}</td><td data-label="Name">${esc(t.name || 'Track ' + (i + 1))}</td>`
       + `<td data-label="Channel">${esc(t.channel || '—')}</td><td data-label="Instruments used">${esc(instrument)}</td>`
