@@ -177,7 +177,7 @@ export function render(intake) {
   const bitsAlloc   = g(tags, '00280100');
   const bitsStored  = g(tags, '00280101');
   const pixelSpacing = g(tags, '00280030');
-  const sliceThick  = g(tags, '00500004') ?? g(tags, '00180050');
+  const sliceThick  = g(tags, '00180050');
   const kvp         = g(tags, '00180060');
   const seriesDesc  = g(tags, '0008103e');
   const studyDesc   = g(tags, '00081030');

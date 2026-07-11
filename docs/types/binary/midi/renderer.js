@@ -33,7 +33,10 @@ export function parseMidi(intake) {
         const data = b.slice(p, p + len.v); p += len.v;
         if (type === 0x03) t.name = new TextDecoder().decode(data);
         else if (type === 0x04) t.instrumentName = new TextDecoder().decode(data);
-        else if (type === 0x51 && data.length >= 3) tempos.push((data[0] << 16) | (data[1] << 8) | data[2]);
+        else if (type === 0x51 && data.length >= 3) {
+          const micros = (data[0] << 16) | (data[1] << 8) | data[2];
+          if (micros > 0) tempos.push({ tick, micros, order: tempos.length });
+        }
         else if (type === 0x58 && data.length >= 2) signatures.push(data[0] + '/' + (1 << data[1]));
         continue;
       }
@@ -47,9 +50,23 @@ export function parseMidi(intake) {
     tracks.push(t);
     p = end; trackIndex++;
   }
-  const bpmValues = tempos.length ? tempos.map((n) => Math.round(60000000 / n)) : [120];
+  const bpmValues = tempos.length ? tempos.map(({ micros }) => Math.round(60000000 / micros)) : [120];
   const bpmText = Math.min(...bpmValues) === Math.max(...bpmValues) ? String(bpmValues[0]) : Math.min(...bpmValues) + '-' + Math.max(...bpmValues);
-  const seconds = ppqn ? maxTick / ppqn * ((tempos[0] || 500000) / 1000000) : 0;
+  let seconds = 0;
+  if (ppqn) {
+    let priorTick = 0;
+    let microsPerQuarter = 500000;
+    for (const tempo of [...tempos].sort((a, b) => a.tick - b.tick || a.order - b.order)) {
+      const tick = Math.min(maxTick, tempo.tick);
+      if (tick >= priorTick) {
+        seconds += (tick - priorTick) / ppqn * microsPerQuarter / 1000000;
+        priorTick = tick;
+        microsPerQuarter = tempo.micros;
+      }
+      if (tempo.tick > maxTick) break;
+    }
+    seconds += (maxTick - priorTick) / ppqn * microsPerQuarter / 1000000;
+  }
   return { format, declaredTracks, ppqn, bpmText, timeSignature: signatures[0] || '4/4', durationSeconds: seconds, tracks, totalNotes, uniquePitches: pitches.size };
 }
 

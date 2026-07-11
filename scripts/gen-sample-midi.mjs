@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generates docs/examples/sample.mid — a deterministic Type-1 sequence with a conductor track,
-// piano melody, bass line, 48 notes, 12 pitches, two channels/programs, and eight seconds of music.
+// piano melody, bass line, 48 notes, 15 pitches, two channels/programs, and eight seconds of music.
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
