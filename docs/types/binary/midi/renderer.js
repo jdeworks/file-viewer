@@ -26,11 +26,33 @@ function durationFromTempoMap(maxTick, tempos, ppqn) {
   return seconds + (maxTick - priorTick) / ppqn * microsPerQuarter / 1000000;
 }
 
+function decodeTimingDivision(division) {
+  if (!(division & 0x8000)) {
+    return { ppqn: division, smpte: null, timingLabel: 'PPQN', timingValue: String(division) };
+  }
+  const frameCode = 256 - (division >>> 8);
+  const ticksPerFrame = division & 0xff;
+  const validFrameCode = [24, 25, 29, 30].includes(frameCode);
+  if (!validFrameCode || ticksPerFrame === 0) {
+    return { ppqn: 0, smpte: null, timingLabel: 'SMPTE timing', timingValue: 'Invalid' };
+  }
+  const dropFrame = frameCode === 29;
+  const framesPerSecond = dropFrame ? 30000 / 1001 : frameCode;
+  const rateText = dropFrame ? '29.97 drop-frame' : String(frameCode);
+  return {
+    ppqn: 0,
+    smpte: { frameCode, framesPerSecond, ticksPerFrame, dropFrame },
+    timingLabel: 'SMPTE timing',
+    timingValue: `${rateText} fps × ${ticksPerFrame}`,
+  };
+}
+
 export function parseMidi(intake) {
   const b = intake.bytes || new Uint8Array();
   if (b.length < 14 || str(b, 0, 4) !== 'MThd') throw new Error('Missing MThd header');
   const format = u16(b, 8), declaredTracks = u16(b, 10), division = u16(b, 12);
-  const ppqn = division & 0x8000 ? 0 : division;
+  const timing = decodeTimingDivision(division);
+  const { ppqn, smpte } = timing;
   const tempos = [], signatures = [], pitches = new Set();
   let totalNotes = 0, maxTick = 0, p = 8 + u32(b, 4), trackIndex = 0;
   const tracks = [], trackTimelines = [];
@@ -71,18 +93,27 @@ export function parseMidi(intake) {
     trackTimelines.push({ maxTick: tick, tempos: trackTempos });
     p = end; trackIndex++;
   }
-  const bpmValues = tempos.length ? tempos.map(({ micros }) => Math.round(60000000 / micros)) : [120];
-  const bpmText = Math.min(...bpmValues) === Math.max(...bpmValues) ? String(bpmValues[0]) : Math.min(...bpmValues) + '-' + Math.max(...bpmValues);
-  let seconds = 0;
+  const bpmValues = tempos.length
+    ? tempos.map(({ micros }) => Math.round(60000000 / micros))
+    : (ppqn ? [120] : []);
+  const bpmText = !bpmValues.length ? '—'
+    : (Math.min(...bpmValues) === Math.max(...bpmValues)
+      ? String(bpmValues[0])
+      : Math.min(...bpmValues) + '-' + Math.max(...bpmValues));
+  let seconds = null;
   if (ppqn) {
     // Format 2 tracks are independent sequences, so each has its own tempo map. Report the
     // longest pattern instead of merging unrelated timelines into an order-dependent duration.
     seconds = format === 2
       ? Math.max(0, ...trackTimelines.map((track) => durationFromTempoMap(track.maxTick, track.tempos, ppqn)))
       : durationFromTempoMap(maxTick, tempos, ppqn);
+  } else if (smpte) {
+    seconds = maxTick / (smpte.framesPerSecond * smpte.ticksPerFrame);
   }
   return {
-    format, declaredTracks, ppqn, bpmText, timeSignature: signatures[0] || '4/4',
+    format, declaredTracks, ppqn, smpte, timingLabel: timing.timingLabel,
+    timingValue: timing.timingValue, bpmText, bpmLabel: ppqn ? 'BPM' : 'Tempo meta BPM',
+    timeSignature: signatures[0] || '4/4',
     durationSeconds: seconds, durationLabel: format === 2 ? 'Longest track' : 'Duration',
     tracks, totalNotes, uniquePitches: pitches.size,
   };
@@ -117,10 +148,10 @@ export async function render(intake, _ctx) {
   </style>`;
   const summary = `<div class="midi-summary"><div class="midi-card"><strong>Type ${midi.format}</strong><span>Format</span></div>`
     + `<div class="midi-card"><strong>${midi.declaredTracks}</strong><span>Tracks</span></div>`
-    + `<div class="midi-card"><strong>${midi.ppqn}</strong><span>PPQN</span></div>`
-    + `<div class="midi-card"><strong>${esc(midi.bpmText)}</strong><span>BPM</span></div>`
+    + `<div class="midi-card"><strong>${esc(midi.timingValue)}</strong><span>${midi.timingLabel}</span></div>`
+    + `<div class="midi-card"><strong>${esc(midi.bpmText)}</strong><span>${midi.bpmLabel}</span></div>`
     + `<div class="midi-card"><strong>${esc(midi.timeSignature)}</strong><span>Time signature</span></div>`
-    + `<div class="midi-card"><strong>${midi.durationSeconds.toFixed(2)}s</strong><span>${midi.durationLabel}</span></div>`
+    + `<div class="midi-card"><strong>${midi.durationSeconds == null ? '—' : midi.durationSeconds.toFixed(2) + 's'}</strong><span>${midi.durationLabel}</span></div>`
     + `<div class="midi-card"><strong>${midi.totalNotes}</strong><span>Notes</span></div>`
     + `<div class="midi-card"><strong>${midi.uniquePitches}</strong><span>Unique pitches</span></div></div>`;
   const table = `<table class="midi-table"><thead><tr><th>#</th><th>Name</th><th>Channel</th><th>Instrument</th><th>Notes</th></tr></thead><tbody>${rows}</tbody></table>`;

@@ -54,6 +54,31 @@ for (const body of [fastTrack + slowTrack, slowTrack + fastTrack]) {
   assert.match((await renderMidi({ bytes: independentMidi })).bodyHtml, /1\.00s<\/strong><span>Longest track/);
 }
 
+// SMPTE division -25 fps × 40 ticks/frame gives exactly 1 second at tick 1000.
+const smpteMidi = Buffer.from(
+  '4d5468640000000600000001e7284d54726b000000058768ff2f00',
+  'hex',
+);
+const smpte = parseMidi({ bytes: smpteMidi });
+assert.equal(smpte.ppqn, 0);
+assert.equal(smpte.timingLabel, 'SMPTE timing');
+assert.equal(smpte.timingValue, '25 fps × 40');
+assert.equal(smpte.bpmText, '—');
+assert.equal(smpte.durationSeconds, 1);
+const smpteHtml = (await renderMidi({ bytes: smpteMidi })).bodyHtml;
+assert.match(smpteHtml, /25 fps × 40<\/strong><span>SMPTE timing/);
+assert.match(smpteHtml, /—<\/strong><span>Tempo meta BPM/);
+assert.match(smpteHtml, /1\.00s<\/strong><span>Duration/);
+
+// The -29 code is the 29.97 fps drop-frame rate, not integer 29 fps.
+const dropFrameMidi = Buffer.from(
+  '4d5468640000000600000001e3504d54726b000000059260ff2f00',
+  'hex',
+);
+const dropFrame = parseMidi({ bytes: dropFrameMidi });
+assert.equal(dropFrame.timingValue, '29.97 drop-frame fps × 80');
+assert.ok(Math.abs(dropFrame.durationSeconds - 1.001) < 1e-12);
+
 const dicomElement = (group, element, vr, value) => {
   const data = Buffer.from(value);
   const header = Buffer.alloc(8);
