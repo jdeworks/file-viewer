@@ -380,12 +380,10 @@ export const judgments = {
   "42-sarif": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The repaired dark SARIF shell exposes overview counts, filters, pagination, and high-contrast severity rows without fixed badges covering controls.",
-      "primarySurface": "All severity chips and the first findings rows are readable; the wide table is intentionally contained in its own horizontal scroller.",
-      "previewBottom": "The lower capture reaches additional findings with consistent red, amber, and blue contrast while pagination stays visible above the table."
+      "shell": "The dark SARIF shell exposes overview counts, filters, pagination, and labeled severity cards without fixed badges or right-edge clipping.",
+      "primarySurface": "All severity chips and the first findings cards are readable at 390 px; level, rule, wrapped message, and location remain visible without horizontal scrolling.",
+      "previewBottom": "The lower capture reaches additional labeled findings with consistent red, amber, and blue contrast while pagination stays visible above the cards."
     },
-    "defects": [
-      "At 390 px, complete SARIF message and location columns require a horizontal swipe through a measured 332 px internal scroll range; the static view has no visible horizontal-scroll affordance."
-    ]
+    "defects": []
   }
 };
