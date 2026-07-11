@@ -193,12 +193,16 @@ button {
   color: #6a4a12;
   font-style: italic;
 }
+/* Parchment/case-file toned, matching every other surface in this stage (.s7-card, .s7-timeline,
+   .s7-dossier-chain) — this used to be a hardcoded dark terminal box, the only log across all 10
+   stages styled that way; every sibling stage's log is transparent/theme-toned, not opaque. */
 .s7-log {
   min-height: 6rem;
   margin: 8px 0 0;
   padding: 12px 12px 12px 28px;
-  color: #f5ecd7;
-  background: #1a1a1a;
+  color: #1a1a1a;
+  background: #ede3cc;
+  border: 1px solid #9d8f74;
   border-radius: 6px;
 }
 
