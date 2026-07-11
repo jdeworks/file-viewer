@@ -24,10 +24,6 @@ export const HEAVY_PACKAGES = {
       await preloadArchiveLib();
     },
   },
-  enableEmulators: {
-    label: 'emulator engines',
-    load: null,   // per-engine, downloaded on first use — nothing to pre-fetch
-  },
 };
 
 const MOUNTED = new WeakMap();   // row element -> its .heavy-dl box

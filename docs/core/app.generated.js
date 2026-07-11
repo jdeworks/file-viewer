@@ -1361,11 +1361,11 @@ var GENERAL_DESCRIPTORS = [
   },
   {
     key: "enableEmulators",
-    label: "Emulators (v86, EmulatorJS, Ruffle Flash — download per-engine on first use)",
+    label: "Prefer emulators for supported game files",
     category: "advanced",
     type: "bool",
     default: false,
-    hint: "Run retro console ROMs, DOS software, and Flash games in-browser. Each emulator engine downloads on first use (1–4 MB each). Only open files from sources you trust — emulated software runs with reduced but non-zero access."
+    hint: "Apply immediately. Uses same-origin emulator engines that are cached on first use; the complete optional EmulatorJS bundle is about 14 MB. Only open files from sources you trust — emulated software runs with reduced but non-zero access."
   }
 ];
 var MONACO_DESCRIPTORS = [
@@ -1848,11 +1848,6 @@ var HEAVY_PACKAGES = {
       const { preloadArchiveLib } = await import("./archivelib.js");
       await preloadArchiveLib();
     }
-  },
-  enableEmulators: {
-    label: "emulator engines",
-    load: null
-    // per-engine, downloaded on first use — nothing to pre-fetch
   }
 };
 var MOUNTED = /* @__PURE__ */ new WeakMap();
@@ -2018,6 +2013,12 @@ function persistGlobalKey(key2, value) {
   const cur = readSaved(GLOBAL_KEY) || {};
   cur[key2] = value;
   localStorage.setItem(GLOBAL_KEY, JSON.stringify({ version: SETTINGS_VERSION, values: cur }));
+  for (const model of modelCache.values()) {
+    if (model.descriptors.some((descriptor) => descriptor.key === key2)) {
+      model.values[key2] = value;
+      model.selectedPresetId = matchPreset(model.values, model.presets, model.descriptors);
+    }
+  }
 }
 function persistTypeKey(typeId, key2, value) {
   const k = typeKey(typeId);
@@ -9677,7 +9678,8 @@ async function loadIntake3(intake, { sidebarNavigationToken = null } = {}) {
     showFileLoading("Detecting file type", { detail: liteCandidates.map((row) => row.type.label).join(", ") });
   }
   const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
-  const { type, ranking } = pickType(intake);
+  const enableEmulators = readGlobalKey("enableEmulators", false) === true;
+  const { type, ranking } = pickType(intake, { enableEmulators });
   const { matchAllKnown } = await knownRegistry();
   state19.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state19.settingsModel?.values?.showAllTypes, intake, state19.knownCandidates);
@@ -9928,7 +9930,9 @@ async function onSettingsChange(model, changedKey) {
     persistGlobalKey("showAllTypes", model.values.showAllTypes);
     if (state19.intake && state19.type) {
       const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
-      const { ranking } = pickType(state19.intake);
+      const { ranking } = pickType(state19.intake, {
+        enableEmulators: readGlobalKey("enableEmulators", false) === true
+      });
       const selId = state19.known && !state19.forceBase ? "known:" + state19.known.id : state19.type.id;
       populateTypeSelect(ranking, selId, !!state19.settingsModel?.values?.showAllTypes, state19.intake, state19.knownCandidates || []);
     }
@@ -9939,6 +9943,13 @@ async function onSettingsChange(model, changedKey) {
   }
   if (changedKey === "enableFfmpeg" || changedKey === "enableArchiveWasm" || changedKey === "enableEmulators") {
     persistGlobalKey(changedKey, model.values[changedKey]);
+  }
+  if (changedKey === "enableEmulators" && state19.intake && state19.type) {
+    const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+    const { type, ranking } = pickType(state19.intake, { enableEmulators: model.values.enableEmulators === true });
+    populateTypeSelect(ranking, type.id, !!model.values.showAllTypes, state19.intake, state19.knownCandidates || []);
+    if (type.id !== state19.type.id) await activateType(type);
+    return;
   }
   if (!state19.type?.capabilities.preview) return;
   if (changedKey === "previewMaxWidth" || changedKey === "previewWidthMode") applyLayout();

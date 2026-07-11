@@ -529,22 +529,32 @@ export async function run(ctx) {
   const rmOff = await page.evaluate(() => !document.documentElement.classList.contains('reduce-motion'));
   if (rmOff) pass('reduce-motion toggle clears the root class'); else fail('reduce-motion did not clear');
 
-  // Heavy opt-in package: enabling one mounts a "Reload to apply" affordance under the row.
-  // Use Emulators — it has nothing to pre-download, so the reload button is enabled immediately
-  // (ffmpeg/archive would start a multi-MB fetch we don't want in smoke).
+  // Emulator preference applies live: it must not mount the generic download/reload box that used
+  // to break this row's layout. FFmpeg/archive retain that separate workflow.
   const emuToggle = await page.$('#set-enableEmulators');
   if (emuToggle) {
     await page.click('label[for="set-enableEmulators"]');
-    await page.waitForSelector('#settingsBody .set-row .heavy-dl .heavy-dl-reload', { timeout: 3000 });
-    const reloadState = await page.$eval('#settingsBody .heavy-dl .heavy-dl-reload', (b) => ({ text: b.textContent, disabled: b.disabled }));
-    if (/reload/i.test(reloadState.text) && reloadState.disabled === false) pass('heavy package enable shows an enabled reload-to-apply button (no-download case)');
-    else fail('heavy reload button state: ' + JSON.stringify(reloadState));
+    await page.waitForTimeout(120);
+    const emuState = await page.evaluate(() => ({
+      checked: document.getElementById('set-enableEmulators')?.checked,
+      reloads: document.querySelectorAll('#settingsBody .heavy-dl').length,
+      saved: JSON.parse(localStorage.getItem('fv:settings:global') || '{}')?.values?.enableEmulators,
+      label: document.querySelector('label[for="set-enableEmulators"]')?.textContent,
+      hint: document.getElementById('set-enableEmulators')?.closest('.set-row')?.querySelector('.set-hint')?.textContent,
+    }));
+    if (emuState.checked && emuState.saved === true && emuState.reloads === 0
+        && /Prefer emulators/.test(emuState.label || '') && /Apply immediately/.test(emuState.hint || '')) {
+      pass('emulator preference persists and applies live without a reload affordance');
+    } else fail('live emulator setting state: ' + JSON.stringify(emuState));
     await page.click('label[for="set-enableEmulators"]');   // restore: untoggle
     await page.waitForTimeout(80);
-    const gone = await page.$('#settingsBody .heavy-dl');
-    if (!gone) pass('disabling a heavy package removes the reload affordance'); else fail('heavy-dl affordance lingered after untoggle');
+    const restored = await page.evaluate(() => !document.getElementById('set-enableEmulators')?.checked
+      && JSON.parse(localStorage.getItem('fv:settings:global') || '{}')?.values?.enableEmulators === false
+      && !document.querySelector('#settingsBody .heavy-dl'));
+    if (restored) pass('disabling emulator preference restores clean live settings state');
+    else fail('emulator preference did not restore cleanly');
   } else {
-    fail('enableEmulators toggle not found for heavy-package test');
+    fail('enableEmulators toggle not found for live-preference test');
   }
 
   await page.click('#settingsDrawer [data-close]');

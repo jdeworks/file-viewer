@@ -1,7 +1,7 @@
 const EXT_CORE = {
-  '.nes': 'fceumm', '.fds': 'fceumm',
+  '.nes': 'fceumm',
   '.sfc': 'snes9x', '.smc': 'snes9x',
-  '.gb': 'gambatte', '.gbc': 'gambatte', '.sgb': 'gambatte',
+  '.gb': 'gambatte', '.gbc': 'gambatte',
   '.gba': 'mgba',
   '.gen': 'genesis_plus_gx', '.smd': 'genesis_plus_gx',
   '.a26': 'stella2014',

@@ -18,12 +18,17 @@ export function detectAll(intake) {
   return scored;
 }
 
-export function pickType(intake) {
+export function pickType(intake, { enableEmulators = false } = {}) {
   const scored = detectAll(intake);
-  const best = scored[0];
+  // EmulatorJS is opt-in preference, not a detector-score mutation. Preserve every detector's
+  // raw confidence for the dropdown/debugging, but make a supported EmulatorJS candidate the
+  // automatic winner while the global emulator setting is enabled.
+  const emulator = enableEmulators ? scored.find((row) => row.type.id === 'emulatorjs' && row.score > 0) : null;
+  const ranking = emulator ? [emulator, ...scored.filter((row) => row !== emulator)] : scored;
+  const best = ranking[0];
   // Nothing matched with any confidence -> raw fallback (never a dead end).
-  if (!best || best.score === 0) return { type: FALLBACK_TYPE, score: 0, ranking: scored };
-  return { type: best.type, score: best.score, ranking: scored };
+  if (!best || best.score === 0) return { type: FALLBACK_TYPE, score: 0, ranking };
+  return { type: best.type, score: best.score, ranking, preferred: !!emulator };
 }
 
 // Shared helpers for type detectors, so each detect.js stays tiny.

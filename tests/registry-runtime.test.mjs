@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { REGISTRY as FULL } from '../docs/core/registry.js';
 import { REGISTRY as RUNTIME, FALLBACK_TYPE, getType } from '../docs/core/registry-runtime.generated.js';
 import { matchKnown } from '../docs/known/registry.generated.js';
+import { detectAll, pickType } from '../docs/core/detect.js';
 
 const fullIds = FULL.map((t) => t.id);
 const runtimeIds = RUNTIME.map((t) => t.id);
@@ -87,6 +88,20 @@ assert.equal(winner(RUNTIME, intake('config.yaml', { text: '---\nname: app\n' })
 const pkZip = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
 assert.equal(winner(RUNTIME, intake('bundle.aab', { bytes: pkZip, isBinary: true }))[0], 'apk', '.aab ZIP package routes to Android Package');
 assert.equal(winner(RUNTIME, intake('bundle.xapk', { bytes: pkZip, isBinary: true }))[0], 'apk', '.xapk ZIP package routes to Android Package');
+const nes = intake('demo.nes', {
+  bytes: new Uint8Array([0x4e, 0x45, 0x53, 0x1a, 1, 1, 0, 0]), isBinary: true,
+});
+const nesScores = new Map(detectAll(nes).map((row) => [row.type.id, row.score]));
+assert.equal(nesScores.get('gamerom'), 0.99, 'NES Game ROM detector score remains raw confidence');
+assert.equal(nesScores.get('emulatorjs'), 0.92, 'NES EmulatorJS detector score remains raw confidence');
+assert.equal(pickType(nes).type.id, 'gamerom', 'NES defaults to header viewer while emulator preference is off');
+const preferredNes = pickType(nes, { enableEmulators: true });
+assert.equal(preferredNes.type.id, 'emulatorjs', 'enabled emulator preference promotes supported NES');
+assert.equal(preferredNes.ranking[0].type.id, 'emulatorjs', 'preferred EmulatorJS candidate leads ranking');
+assert.equal(preferredNes.score, 0.92, 'promotion does not falsify detector confidence');
+assert.equal(pickType(intake('unknown.n64', {
+  bytes: new Uint8Array([0x80, 0x37, 0x12, 0x40]), isBinary: true,
+}), { enableEmulators: true }).type.id, 'gamerom', 'unsupported N64 is never promoted to an absent core');
 const sqliteHeader = new TextEncoder().encode('SQLite format 3\0');
 assert.equal(winner(RUNTIME, intake('sample.clip', { bytes: sqliteHeader, isBinary: true }))[0], 'clip', '.clip SQLite payload routes to Clip Studio Paint');
 assert.equal(winner(RUNTIME, intake('draft.clip', { bytes: new Uint8Array([1, 2, 3, 4]), isBinary: true }))[0], 'clip', '.clip extension keeps Clip Studio Paint available for unusual payloads');

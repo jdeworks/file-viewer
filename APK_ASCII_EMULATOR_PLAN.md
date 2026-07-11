@@ -74,9 +74,10 @@ finish with clean `dev` pushed safely to `origin`.
 - Commercial ROM handling can contaminate evidence. Keep the fixture ignored, reselect it manually
   after reload/offline transitions, and delete emulator saves/browser contexts after each gate.
 
-## Resume checkpoint — 2026-07-11, EmulatorJS vendor closure ready to commit
+## Resume checkpoint — 2026-07-11, live EmulatorJS runtime ready to commit
 
-- Baseline/plan `8628bec2`; bounded APK browsing `c3bd632e`; Media-only ASCII Studio `6127570b`.
+- Baseline/plan `8628bec2`; bounded APK `c3bd632e`; Media ASCII Studio `6127570b`;
+  pinned complete EmulatorJS vendor closure `91573769`.
 - Private fixture exists at `.example-files-internet/Super Mario Bros. (World).nes`, is 40,976 bytes,
   and remains ignored; never stage or retain derived output from it.
 - APK/AAB/XAPK retain the specialist summary and expose central-directory contents through the
@@ -100,8 +101,22 @@ finish with clean `dev` pushed safely to `origin`.
 - Green validation: release-asset hash matched GitHub's published digest; current frontend hashes
   matched that release; staged install and independent vendor verifier pass; asset-manifest tests
   pass and enumerate the complete bundle.
-- Next: commit the vendor closure, then configure runtime origin/language/core behavior and live
-  preference/settings transitions before the private NES boot gate.
+- Preference-aware detection preserves raw 0.99/0.92 NES confidences but promotes EmulatorJS while
+  enabled, never promotes unsupported N64, applies the toggle immediately, synchronizes cached
+  settings models, and restores Game ROM Header on disable. The emulator reload box is removed;
+  the setting discloses the 14 MB same-origin bundle and remaining heavy-package rows wrap.
+- Runtime now disables threaded cores, locale fetches (using 4.2.3's actual inverted flag), ads and
+  netplay; neutralizes localhost update checks without a request; converts Wake Lock denial to a
+  no-op; rejects any other off-origin HTTP; explains missing locked assets; and tears down frame
+  loop, gamepad, audio, globals, injected nodes, fetch/wake guards, and ROM URL.
+- Green tests: registry preference/raw-score contract, runtime/lock contract, settings defaults,
+  asset manifest, vendor verifier, full `core-ui`, and repeated private-ROM gate. The private NES
+  boots online and after hard-offline reload+disk reselection with ready/start signals, advancing
+  frames, nonblank rendered pixels, core-observed Start keydown/up, zero HTTP errors, zero
+  localization/off-origin requests, zero console/page errors, and verified live teardown. No ROM or
+  ROM-derived artifact was written or retained.
+- Next: commit this stage, add phone/light/dark settings assertions and six-core dependency request
+  coverage, then run broad offline/smoke/full gates and cleanup.
 
 ## Open Questions
 

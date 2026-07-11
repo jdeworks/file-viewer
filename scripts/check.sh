@@ -207,6 +207,7 @@ FULL_UNIT_TESTS=(
   tests/asset-manifest.test.mjs
   tests/settings-defaults.test.mjs
   tests/registry-runtime.test.mjs
+  tests/emulatorjs-runtime-contract.test.mjs
   tests/example-compatibility.test.mjs
   tests/type-info.test.mjs
   tests/metadata-normalize.test.mjs

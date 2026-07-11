@@ -101,7 +101,8 @@ async function loadIntake(intake, { sidebarNavigationToken = null } = {}) {
     showFileLoading('Detecting file type', { detail: liteCandidates.map((row) => row.type.label).join(', ') });
   }
   const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
-  const { type, ranking } = pickType(intake);
+  const enableEmulators = readGlobalKey('enableEmulators', false) === true;
+  const { type, ranking } = pickType(intake, { enableEmulators });
   const { matchAllKnown } = await knownRegistry();
   state.knownCandidates = matchAllKnown(intake, ranking);
   populateTypeSelect(ranking, type.id, !!state.settingsModel?.values?.showAllTypes, intake, state.knownCandidates);
@@ -401,7 +402,9 @@ async function onSettingsChange(model, changedKey) {
     persistGlobalKey('showAllTypes', model.values.showAllTypes);
     if (state.intake && state.type) {
       const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
-      const { ranking } = pickType(state.intake);
+      const { ranking } = pickType(state.intake, {
+        enableEmulators: readGlobalKey('enableEmulators', false) === true,
+      });
       const selId = state.known && !state.forceBase ? 'known:' + state.known.id : state.type.id;
       populateTypeSelect(ranking, selId, !!state.settingsModel?.values?.showAllTypes, state.intake, state.knownCandidates || []);
     }
@@ -415,6 +418,13 @@ async function onSettingsChange(model, changedKey) {
   // eager download + "Reload to apply" flow actually sticks across the reload.
   if (changedKey === 'enableFfmpeg' || changedKey === 'enableArchiveWasm' || changedKey === 'enableEmulators') {
     persistGlobalKey(changedKey, model.values[changedKey]);
+  }
+  if (changedKey === 'enableEmulators' && state.intake && state.type) {
+    const [{ pickType }, { populateTypeSelect }] = await Promise.all([detectRuntime(), typeSelectRuntime()]);
+    const { type, ranking } = pickType(state.intake, { enableEmulators: model.values.enableEmulators === true });
+    populateTypeSelect(ranking, type.id, !!model.values.showAllTypes, state.intake, state.knownCandidates || []);
+    if (type.id !== state.type.id) await activateType(type);
+    return;
   }
   if (!state.type?.capabilities.preview) return;
   if (changedKey === 'previewMaxWidth' || changedKey === 'previewWidthMode') applyLayout();   // resize the split pane too
