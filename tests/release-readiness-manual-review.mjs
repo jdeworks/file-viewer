@@ -55,7 +55,7 @@ assert.deepEqual(summary, {
   rows: 45,
   passes: 45,
   failures: 0,
-  screenshotsInspected: 106,
+  screenshotsInspected: 107,
 });
 
 await writeFile(
@@ -66,4 +66,3 @@ console.log(
   `Wrote ${reviewPath}: ${summary.screenshotsInspected} screenshots, `
   + `${summary.passes} pass, ${summary.failures} fail.`,
 );
-

@@ -28,8 +28,8 @@ export const judgments = {
   "19-archive": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The repaired archive shell reports four files and now shows complete nested paths and basenames with sizes.",
-      "primarySurface": "README.md, nested/data.json, nested/deeper/notes.txt, and src/example.js are all present in a clean table."
+      "shell": "The real 7z shell reports four files and 296 bytes, with complete nested paths and individual sizes.",
+      "primarySurface": "data/people.csv, docs/guide.txt, README.md, and src/example.js are all present in a clean, nonempty table."
     },
     "defects": []
   },
@@ -61,8 +61,8 @@ export const judgments = {
   "43-pem": {
     "verdict": "pass",
     "perShot": {
-      "shell": "Certificate source and a structured light summary form a balanced split with no clipped controls.",
-      "primarySurface": "Certificate, CA, validity, subject, issuer, key, algorithm, serial, and version details are clearly grouped and legible."
+      "shell": "Certificate source and the ISRG Root X1 summary form a balanced split; the date-window badge is visible alongside explicit signature caveats.",
+      "primarySurface": "Subject, issuer, 2015–2035 validity, RSA 4096-bit key, algorithm, serial, and version are legible; Self-issued (signature not verified) and Signature and trust chain are not verified prevent a false trust verdict."
     },
     "defects": []
   },
@@ -110,16 +110,16 @@ export const judgments = {
     "verdict": "pass",
     "perShot": {
       "shell": "The repaired NetCDF dark view shows global attributes, dimensions, and variables with strong contrast and no badge overlap.",
-      "primarySurface": "Dataset values, unlimited time dimension, sizes, types, shapes, and attributes are visually distinguishable.",
-      "previewBottom": "The lower variables table remains readable through temperature, with long attributes deliberately ellipsized inside stable columns."
+      "primarySurface": "The five global attributes, fixed time=3, latitude=4, and longitude=6 dimensions, and five typed variable rows are visually distinguishable.",
+      "previewBottom": "The lower table remains readable through temperature and pressure, with their (time, latitude, longitude) shapes and long attributes contained inside stable columns."
     },
     "defects": []
   },
   "38-apk": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The dark APK shell shows package identity, DEX, ABI, resource, asset, file-count, signing, and manifest facts without clipping.",
-      "primarySurface": "The compact metadata table is nonblank, aligned, and comfortably legible."
+      "shell": "The dark APK shell shows one manifest, one DEX, arm64-v8a and x86_64 native ABIs, one asset, and five total entries without clipping.",
+      "primarySurface": "The aligned inventory explicitly says No recognized signature material (package may be unsigned), avoiding an unsupported signing or trust claim."
     },
     "defects": []
   },
@@ -184,8 +184,8 @@ export const judgments = {
   "39-torrent": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The mobile torrent summary fits the light shell and wraps its long hash and magnet link within the viewport.",
-      "primarySurface": "Filename, size, file count, piece size, info hash, magnet link, and tracker are complete and selectable."
+      "shell": "The mobile v1 torrent summary fits the light shell and wraps its exact SHA-1 info hash and magnet link within the viewport.",
+      "primarySurface": "The 214-byte total, three file paths and sizes, 64-byte piece size, magnet, and both HTTPS and UDP trackers are complete and selectable."
     },
     "defects": []
   },
@@ -226,12 +226,11 @@ export const judgments = {
   "22-comic": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The exercised spread mode shows three distinct red, blue, and green pages with the page count and toggle intact.",
-      "primarySurface": "All three checked-in page images render as nonblank content, but the synthetic artwork is intentionally sparse."
+      "shell": "Spread mode shows two detailed illustrated pages with panel borders and large lettering; the header reports three pages plus the on-demand, concurrency, URL, and byte caps.",
+      "primarySurface": "Pages 01 and 02 are crisp, distinct, fully colored comic layouts with readable OPEN, INSPECT, OFFLINE, COMPARE, LIGHT, and DARK lettering.",
+      "nestedBottom": "The nested scroller reaches the separately loaded PAGE 10 artwork, whose THE END and KEEP EXPLORING lettering proves natural page ordering and lower-page rendering."
     },
-    "defects": [
-      "The checked-in comic fixture is only three simple colored pages, so it does not provide confidence for dense lettering, panels, or real comic-page scaling."
-    ]
+    "defects": []
   },
   "28-dxf": {
     "verdict": "pass",
@@ -245,11 +244,11 @@ export const judgments = {
   "34-fits": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The FITS dark shell presents a balanced header source and styled metadata summary with readable cards and rows.",
-      "primarySurface": "Dimensions, axes, 32-bit float type, telescope, instrument, observation, and all visible header cards are legible."
+      "shell": "The FITS dark shell balances raw cards with the FV-GRADIENT summary and visibly states that image pixels are not decoded or rendered.",
+      "primarySurface": "The 64 by 48 dimensions, two axes, 16-bit integer type, FileViewer telescope, DemoCam instrument, observation fields, and 18 header cards are legible."
     },
     "defects": [
-      "The checked-in FITS fixture and renderer evidence exercise header metadata only; this corpus does not prove astronomy image-plane pixel rendering."
+      "The fixture contains a valid nonzero 16-bit image plane, but this renderer intentionally exposes only header metadata and does not render astronomy pixels."
     ]
   },
   "40-dockerfile": {
@@ -356,9 +355,9 @@ export const judgments = {
   "24-midi": {
     "verdict": "pass",
     "perShot": {
-      "shell": "The redesigned dark mobile summary cards and per-track record cards fit 390 px; Instrument remains on one line after the label-width repair.",
-      "primarySurface": "Type, tracks, PPQN, tempo, duration, note totals, names, channels, and instrument values are all readable without horizontal clipping.",
-      "previewBottom": "The bottom capture reaches both complete track cards, including Acoustic Grand Piano and final note count."
+      "shell": "The corrected dark mobile cards fit 390 px; the Instruments used label wraps only at the word boundary and stays separate from the program value.",
+      "primarySurface": "Type 1, three tracks, 480 PPQN, 120 BPM, 8.00-second duration, 48 notes, and the conductor and piano rows remain readable without horizontal overlap.",
+      "previewBottom": "The bottom capture reaches all three track cards and cleanly shows Acoustic Grand Piano (ch 1), Acoustic Bass (ch 2), and their 32/16 note counts."
     },
     "defects": []
   },
@@ -390,4 +389,3 @@ export const judgments = {
     ]
   }
 };
-
